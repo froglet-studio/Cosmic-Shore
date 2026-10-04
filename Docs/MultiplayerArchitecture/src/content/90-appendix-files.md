@@ -33,7 +33,7 @@ Canonical locations for everything referenced in this document. Line counts are 
 | `ClientPlayerVesselInitializer.cs` | 395 | Client pair init + RPCs |
 | `ServerPlayerVesselInitializerWithAI.cs` | 353 | AI pre-spawn + team balancing |
 | `MenuCrystalClickHandler.cs` | 347 | Play-from-menu freestyle toggle |
-| `MenuVesselSelectionPanelController.cs` | 251 | Network-aware vessel swap |
+| _(retired 2026-09-23: the freestyle vessel-selection panel — see CLAUDE.md ▸ Vessel selection)_ | — | — |
 | `ArcadeConfigSyncManager.cs` | 243 | Config sync |
 | `MenuServerPlayerVesselInitializer.cs` | 238 | Menu autopilot spawner |
 | `DomainAssigner.cs` | — | Team pool assignment |

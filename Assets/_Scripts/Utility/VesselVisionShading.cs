@@ -99,6 +99,7 @@ namespace CosmicShore.Utility
         static Transform _localVessel;
         static MaterialPropertyBlock _block;
         static int _healCursor;
+        static bool _capturePass;
 
         /// <summary>True while the law is publishing a live band.</summary>
         public static bool IsActive => _publishedActive;
@@ -198,6 +199,122 @@ namespace CosmicShore.Utility
         /// <summary>The vessel currently excluded as the local pilot's, or null.</summary>
         public static Transform LocalVessel => _localVessel;
 
+        /// <summary>True while a capture pass is holding the band open (tests / diagnostics).</summary>
+        public static bool IsCapturePassActive => _capturePass;
+
+        /// <summary>
+        /// Open the band for ONE hand-stepped render: mark every vessel further than
+        /// <paramref name="markThresholdDistance"/> from the lens and nothing nearer, and include
+        /// the local pilot's own hull — both undone by <see cref="EndCapturePass"/>.
+        ///
+        /// <para><b>It is a THRESHOLD, not a band.</b> The law's four control points exist because
+        /// a mark that pops on reads as a new object appearing, which is continuity of existence
+        /// applied to visibility — and a photograph is ONE frame, so there is nothing for it to pop
+        /// against. Dropping the graded edges is therefore free here and is the whole simplification:
+        /// beyond the threshold a hull is the solid domain-coloured silhouette, inside it the hull
+        /// renders as itself, and there is no in-between for a shot to land in. An earlier version
+        /// rescaled the law's whole three-beat arc onto each concept's own zoom range; it was
+        /// correct and it made "when is a ship marked?" a question about which concept was rolled.</para>
+        ///
+        /// <para>The break-up closes at the same threshold for the same reason: over distance the
+        /// band opens its centre into cells and closes them again by
+        /// <c>breakupEndDistance</c>, and leaving that authored 900 in place would have every
+        /// photograph come back an outline with a dithered middle.</para>
+        ///
+        /// <para>This is NOT the suppression hold this law deliberately does not have, and the
+        /// difference is the whole justification: a suppression hold would let a camera switch the
+        /// aid OFF, which is what makes an aid authorable-away. This only ever marks MORE, for one
+        /// render, on a camera that is not anybody's eye — the screenshot director's, which renders
+        /// into a RenderTexture by calling <c>Camera.Render()</c> by hand
+        /// (<c>Docs/SCREENSHOT_DIRECTOR.md</c>). Nothing a player is looking through can reach it.</para>
+        ///
+        /// <para>The local exclusion has to lift or the feature is empty: the subject of a
+        /// photograph is usually the local pilot's own ship, which is precisely the hull
+        /// <see cref="EffectiveTint"/> paints with the transparent sentinel. What the exclusion is
+        /// FOR — a pilot not wanting their own cockpit view cluttered by a mark on their own hull —
+        /// simply does not apply to a photograph of that hull.</para>
+        ///
+        /// <para>Safe against a missed release by construction: the publisher re-writes all four
+        /// globals every <c>LateUpdate</c>, so an override that escaped its <c>finally</c> would
+        /// last at most one frame — but the release is unconditional anyway, because the STAMP
+        /// half does not self-heal for a frame or more (the heal is round-robin).</para>
+        ///
+        /// <para>Returns false, changing nothing, when the law is authored off — a caller must
+        /// still call <see cref="EndCapturePass"/> only if it got true, on the identity-guard
+        /// principle the corridor's hold uses.</para>
+        /// </summary>
+        public static bool BeginCapturePass(float markThresholdDistance)
+        {
+            var config = Config;
+            if (!config.Enabled || _capturePass) return false;
+
+            float start = Mathf.Max(0f, markThresholdDistance);
+            float solid = start + MinCaptureEdgeWidth;
+
+            // The FAR edges are deliberately NOT moved. They exist so a pilot is not reading
+            // coloured dots across half an arena, which is a thing a cockpit does and a photograph
+            // never does. Raised only where the threshold would have overtaken them, since an
+            // inverted band is the one shape the shader cannot render sanely.
+            float farFullEnd = Mathf.Max(config.FarFullEnd, solid);
+            float farFadeEnd = Mathf.Max(config.FarFadeEnd, farFullEnd + MinCaptureEdgeWidth);
+
+            Shader.SetGlobalVector(BandId, new Vector4(start, solid, farFullEnd, farFadeEnd));
+
+            if (config.BreakupActive)
+                Shader.SetGlobalVector(BreakupId, new Vector4(
+                    config.BreakupCells, config.BreakupReach, config.BreakupStrength, solid));
+
+            _capturePass = true;
+            ReapplyFor(_localVessel);
+            return true;
+        }
+
+        /// <summary>
+        /// Close a <see cref="BeginCapturePass"/>: restore the authored band and re-exclude the
+        /// local pilot's hull, immediately rather than on the next publish, so a second render in
+        /// the same frame cannot inherit the photograph's band.
+        /// </summary>
+        public static void EndCapturePass()
+        {
+            if (!_capturePass) return;
+            _capturePass = false;
+            ReapplyFor(_localVessel);
+            Publish();
+        }
+
+        /// <summary>Smallest gap that keeps a capture band's edges ordered for the shader.</summary>
+        const float MinCaptureEdgeWidth = 0.01f;
+
+        /// <summary>
+        /// Fill <paramref name="into"/> with every live vessel currently carrying a stamp.
+        ///
+        /// <para>A pure INDEX READ — it spawns, moves, tints and removes nothing, and holding the
+        /// list changes no behaviour of the law. It exists because this roster is already the one
+        /// correct answer to "which vessels are in the arena right now": every vessel joins it
+        /// through <c>VesselHelper.SetShipProperties</c>, the single method a vessel's domain flows
+        /// through on every path (spawn, vessel swap, every replicated <c>NetDomain</c> change), so
+        /// it covers local and remote, human and AI, with nothing per-mode to wire — and a caller
+        /// reading it cannot drift from what is actually on screen. Compare
+        /// <c>Object.FindObjectsByType</c>, which would also sweep up prefab-built props.</para>
+        ///
+        /// <para>Display-only models are deliberately absent, because <see cref="StampDisplayModel"/>
+        /// never joins the roster — so a toy matrix's mini hulls can never be mistaken for pilots.
+        /// Destroyed and deactivated vessels are skipped here rather than pruned, since pruning is
+        /// the heal pass's business and a read must not mutate.</para>
+        /// </summary>
+        public static void CollectStampedVessels(List<Transform> into)
+        {
+            if (into == null) return;
+            into.Clear();
+
+            for (int i = 0; i < _entries.Count; i++)
+            {
+                var vessel = _entries[i].Vessel;
+                if (vessel == null || !vessel.gameObject.activeInHierarchy) continue;
+                into.Add(vessel);
+            }
+        }
+
         static void ReapplyFor(Transform vessel)
         {
             if (vessel == null) return;
@@ -215,7 +332,7 @@ namespace CosmicShore.Utility
         /// costs nothing on the GPU — the fragment takes the early-out every unstamped object takes.
         /// </summary>
         static Color EffectiveTint(Entry entry) =>
-            ReferenceEquals(entry.Vessel, _localVessel) ? Color.clear : entry.Tint;
+            !_capturePass && ReferenceEquals(entry.Vessel, _localVessel) ? Color.clear : entry.Tint;
 
         /// <summary>
         /// Mark a DISPLAY-ONLY model — a mini hull in a toy matrix, built from a ship prefab asset
@@ -256,6 +373,7 @@ namespace CosmicShore.Utility
             _entries.Clear();
             _healCursor = 0;
             _localVessel = null;
+            _capturePass = false;
         }
 
         // ---------------- Internals ----------------

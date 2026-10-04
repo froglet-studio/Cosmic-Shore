@@ -75,12 +75,13 @@ look at it — because that is the question the player is actually asking.
     outliers set `K` for everybody and squash the other eighteen species into the bottom
     of the band.  So the sizing budget is capped; the PLANTING budget is untouched.
 
-WHERE HEART WORLD SCALE IS READ AS GAMEPLAY (all five — check before retuning)
+WHERE HEART WORLD SCALE IS READ AS GAMEPLAY (all four — check before retuning)
 -----------------------------------------------------------------------------
   A. collect reward     SkimmerAdjustElementLevelByCrystalEffectSO.Execute
                         `min(|lossyScale.x| × 0.1, 0.5)` element levels
-  B. live domain buff   DomainFaunaBuffSystem.ComputeHeartValue — the same function,
-                        summed over every LIVING heart of a domain
+                        (this used to be read B as well — the live domain fauna buff,
+                        the same function summed over a domain's living hearts — which
+                        was REMOVED; see Docs/ECOSYSTEM.md §15)
   C. pickup radius      every crystal prefab's root SphereCollider is radius 1, so the
                         world trigger radius EQUALS the root world scale
   D. vacuum speed       Crystal.Vacuum divides by lossyScale.x — a bigger heart is drawn
@@ -152,14 +153,17 @@ FAUNA_PREFABS = {
 }
 
 FLORA_PREFABS = {
+    "Apollonia":    "Assets/_Prefabs/FloraAndFauna/ApolloniaFlora.prefab",
     "Arbor":        "Assets/_Prefabs/FloraAndFauna/ArborFlora.prefab",
     "Borromean":    "Assets/_Prefabs/FloraAndFauna/BorromeanFlora.prefab",
     "Branching":    "Assets/_Prefabs/FloraAndFauna/BranchingFlora.prefab",
     "Cacti":        "Assets/_Prefabs/FloraAndFauna/CactiFlora.prefab",
     "Coral":        "Assets/_Prefabs/FloraAndFauna/CoralFlora.prefab",
+    "Coral Bloom":  "Assets/_Prefabs/FloraAndFauna/CoralBloomFlora.prefab",
     "Frond":        "Assets/_Prefabs/FloraAndFauna/FrondFlora.prefab",
     "Gyroid":       "Assets/_Prefabs/FloraAndFauna/GyroidFlora.prefab",
     "Lantern":      "Assets/_Prefabs/FloraAndFauna/LanternFlora.prefab",
+    "Mandelbulb":   "Assets/_Prefabs/FloraAndFauna/MandelbulbFlora.prefab",
     "Nerve":        "Assets/_Prefabs/FloraAndFauna/NerveFlora.prefab",
     "Pine":         "Assets/_Prefabs/FloraAndFauna/PineFlora.prefab",
     "Quasicrystal": "Assets/_Prefabs/FloraAndFauna/QuasicrystalFlora.prefab",
@@ -169,6 +173,7 @@ FLORA_PREFABS = {
     "Spire":        "Assets/_Prefabs/FloraAndFauna/SpireFlora.prefab",
     "Tendril":      "Assets/_Prefabs/FloraAndFauna/TendrilFlora.prefab",
     "Wall":         "Assets/_Prefabs/FloraAndFauna/WallFlora.prefab",
+    "Watershed":    "Assets/_Prefabs/FloraAndFauna/WatershedFlora.prefab",
 }
 
 
@@ -523,6 +528,24 @@ def species_of(asset_name: str) -> str:
     return stem.replace(" ", "")
 
 
+def _species_key(name: str, prefabs) -> str | None:
+    """The FLORA_PREFABS/FAUNA_PREFABS key an asset NAME resolves to, if any.
+
+    `species_of` de-spaces ('Worm Colony Mass' -> 'WormColony'), and most keys are one word,
+    so a straight `name in prefabs` worked until a key arrived with a SPACE in it. It did:
+    'Coral Bloom' is the only two-word key, so its four canonical assets resolved to
+    'CoralBloom', missed, and were skipped for as long as the species has existed - while the
+    CELL-CONFIG path, which resolves by prefab GUID rather than by name, sized its copies
+    correctly. The two halves of one script disagreed about which assets it owns, and the only
+    symptom was one species' canonical hearts silently never moving off whatever wrote them
+    last. Match on the de-spaced form on BOTH sides, so a key's spelling stops being load-bearing.
+    """
+    if name in prefabs:
+        return name
+    squashed = {k.replace(" ", ""): k for k in prefabs}
+    return squashed.get(name)
+
+
 def _prefab_guid_index():
     """{prefab guid: species key} for every species this script knows how to measure."""
     idx = _meta_index()
@@ -614,9 +637,9 @@ def read_canonical_variants():
         if el is None or int(el) not in ELEMENTS:
             continue                          # WormColonyConfig / …FaunaConfig: no element
 
-        species = species_of(path.stem)
         prefabs = FLORA_PREFABS if kind == "flora" else FAUNA_PREFABS
-        if species not in prefabs:
+        species = _species_key(species_of(path.stem), prefabs)
+        if species is None:
             continue
 
         out.append(Variant(

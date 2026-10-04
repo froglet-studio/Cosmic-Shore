@@ -55,6 +55,13 @@ namespace CosmicShore.Gameplay
                  "Keeps a lopsided pull from reading as the energize stance.")]
         [SerializeField, Range(0f, 1f)] float stanceCenterEpsilon = 0.4f;
 
+        [Header("Combos (RHINO_SWORD_COMBOS.md)")]
+        [Tooltip("Flourishes called by rapid strings of trigger taps (RR, RL, RLR, ...), with an upgraded " +
+                 "set for an ENERGIZED blade. Empty = no combos; the analog swordsmanship is unaffected " +
+                 "either way. Authored by Tools/Build/author_rhino_sword_combos.py.")]
+        [SerializeField] RhinoSwordComboLibrarySO comboLibrary;
+
+        public RhinoSwordComboLibrarySO ComboLibrary => comboLibrary;
         public float SwipeYawDegrees => swipeYawDegrees;
         public float SwipeRollDegrees => swipeRollDegrees;
         public float ChopPitchDegrees => chopPitchDegrees;

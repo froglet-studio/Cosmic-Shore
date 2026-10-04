@@ -275,7 +275,18 @@ this document first**. We have already tried both, and they don't work.
 | `Assets/_Scripts/System/AuthenticationSceneController.cs` | `LoadMainMenuNetworkedAsync` — uses `.AsMainThread()` on every relay-wait. |
 | `Assets/_Scripts/Controller/Multiplayer/MultiplayerSetup.cs` | Same UGS APIs from OUTSIDE the party layer — six sites, marshalled 2026-09-12. `OnTransportFailure` is the one wired at sign-in, so it is live in `Menu_Main`. |
 
-## `.AsMainThread()` covers the SUCCESS path only (2026-08-27)
+## `.AsMainThread()` covers the SUCCESS path only (2026-08-27) — FIXED 2026-09
+
+> **Superseded.** Since 2026-09 all four `AsMainThread` overloads marshal in a `finally`, so a
+> faulted or cancelled task ALSO resumes on the main thread before its exception reaches the
+> caller's `catch`. The explicit `SwitchToMainThreadAsync()` calls this section prescribed are now
+> redundant but harmless, and are left in place. **One shape is still NOT covered and needs the
+> explicit switch:** cancellation attached OUTSIDE the marshal — `task.AsUniTask()
+> .AttachExternalCancellation(cts.Token)` with no `.AsMainThread()`, or
+> `x.AsMainThread().AttachExternalCancellation(...)`, or a `UniTask.WhenAny` race — because there
+> the timer completes the await without ever passing through `AsMainThread`. The record below is
+> kept for why the rule existed.
+
 
 ```csharp
 try   { await SomethingAsync(linkedCts.Token).AsMainThread(); }
@@ -369,7 +380,7 @@ call it. And when ranking which bare await to fix first, ask **which scene its h
 in**: a callback wired at sign-in outlives every scene transition, so its blast radius is the
 whole session rather than the operation that registered it.
 
-**Known gap, not introduced here.** `.AsMainThread()` still covers the success path only (see the
-2026-08-27 entry above), so a throwing UGS call resumes its `catch` off-thread at every one of
-these sites. It is safe as written — the four catch bodies do only `Debug.Log*` (thread-safe) and
+**Known gap — CLOSED 2026-09.** `.AsMainThread()` covered the success path only (see the
+2026-08-27 entry above), so a throwing UGS call resumed its `catch` off-thread at every one of
+these sites. It now marshals in a `finally` on both outcomes. It is safe as written — the four catch bodies do only `Debug.Log*` (thread-safe) and
 a `string.Contains` rate-limit test — but it is safe by inspection, not by construction.

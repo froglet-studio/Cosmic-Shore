@@ -1,18 +1,20 @@
 # Serpent — Scope (Space) + Sniper Shot (Charge)
 
-Hold the **left trigger**: the view drops into the cockpit and magnifies with the trigger's own
-depth. While it is up, the **right trigger** stops being the cloak and becomes a **sniper shot** —
-one hitscan round down the scope's line that destroys what it hits, **including super-shielded
-mass**, on a long cooldown.
+Hold the **left trigger**: a magnified view down the vessel's own nose opens in an eyepiece beside
+the flight view, zoomed by the trigger's own depth, and a **reticle at the shot's true angular
+size** appears in both pictures — growing in the eyepiece as the zoom narrows it, staying small over
+the flight view. The pilot's own camera never moves. While the scope is up, the **right trigger**
+stops being the cloak and becomes a **sniper shot** — one hitscan round down the scope's line that
+destroys what it hits, **including super-shielded mass**, on a long cooldown.
 
 Two of the Serpent's three open element slots are now filled. **Mass stays open.**
 
 | Element | Ability | Input | Quantitative parameter | Level-5 upgrade |
 |---|---|---|---|---|
-| Charge | **Sniper Shot** | RT (`RightStickAction`) | cooldown: 12 s at rest → 5.4 s at Charge 10 | **Pierce** — the round carries through up to 3 prisms instead of stopping at the first |
+| Charge | **Sniper Shot** | RT (`RightStickAction`) | cooldown: 12 s at rest → 5.4 s at Charge 10 | **Pierce** — the round may break SUPER-SHIELDED mass. Below it armour is not a target at all and the round flies past it |
 | Mass | *(open design slot)* | — | — | — |
 | Space | **Scope** | LT (`LeftStickAction`) | magnification: 22° FOV at full zoom at rest → 11° at Space 10, floored at 8° | **Deep Focus** — ×1.6 more zoom depth, and the floor drops with it (13.8° at rest, 6.9° at Space 10) |
-| Time | Boost Duration | A / Space (`Button1Action`) | boost duration ×1.6 at L10 | — *(unchanged)* |
+| Time | Solid Fuel Pellets | A / Space (`Button1Action`) | burn duration ×1.6 at L10 | — *(restored 2026-09-25, `SERPENT_FUEL_PELLETS.md`)* |
 
 ## Why these elements
 
@@ -210,9 +212,9 @@ for the retired Steady Eye bleed; round 4 removed the bleed and the field with i
 | `cooldownSeconds` | 12 | wait between shots at resting Charge — the ability's whole cost |
 | `cooldownMultiplierAtFullCharge` | 0.45 | → 5.4 s at Charge 10 |
 | `rangeUnits` | 3000 | the whole flight; there is no projectile to outrun |
-| `coneHalfAngleDegrees` | 0.5° | angular half-width of the hitscan — 26.2 u at 3,000 u, ~49 px across at the 22° scope |
-| `minPathRadius` | 6 u | radius floor near the muzzle; the angular term takes over past 688 u |
-| `pierceCount` | 3 | prisms a PIERCING round takes; 0 = unlimited |
+| `coneHalfAngleDegrees` | 1.5° | angular half-width of the hitscan — **78.5 u** at 3,000 u (round 10; it was 0.5° = 26 u, then 10° = 529 u for one playtest) |
+| `minPathRadius` | 6 u | radius floor near the muzzle; the angular term takes over past **229 u** |
+| `pierceCount` | **0** | prisms the round takes, at EVERY tier; 0 = unlimited — everything the cone contains |
 | `debrisSpeed` / `debrisSpeedLimit` | 90 / 120 | true-velocity debris and its ceiling |
 | `beamSeconds` | 0.35 s | how long the tracer takes to fade out |
 | `beamStartWidth` | 1.5 u | tracer width at the muzzle; the far end is drawn at the cone's own radius |
@@ -229,11 +231,11 @@ for the retired Steady Eye bleed; round 4 removed the bleed and the field with i
 | `_Scripts/Controller/Vessel/VesselController.cs` | round 1 bound that view at the four `IsLocalPilot` sites; **round 4 removed the four lines** |
 | `…/R_VesselActions/Data Containers/SniperScopeActionSO.cs` | **new** — Space ability config |
 | `…/R_VesselActions/Data Containers/SniperShotActionSO.cs` | **new** — Charge ability config |
-| `…/R_VesselActions/Executors/SniperScopeActionExecutor.cs` | **new** — scope state, zoom drive, `IsScoped` |
-| `…/R_VesselActions/Executors/SniperShotActionExecutor.cs` | **new** — hitscan, cooldown, super-shield teardown, tracer |
+| `…/R_VesselActions/Executors/SniperScopeActionExecutor.cs` | **new** — scope state, zoom drive, `IsScoped`; **+** (round 9) passes the shot's range through to the overlay |
+| `…/R_VesselActions/Executors/SniperShotActionExecutor.cs` | **new** — hitscan, cooldown, super-shield teardown, tracer; **+** (round 9) `RangeUnits`, the anchor the flight view's reticle is projected at |
 | `…/R_VesselActions/Executors/SniperBeam.cs` | **new** — the pooled domain-coloured tracer + impact flare |
-| `…/R_VesselActions/Executors/SniperScopeOverlay.cs` | **new** — the eyepiece, the reticle inside it and the recharge ring around it |
-| `…/R_VesselActions/Executors/SniperScopeDiagnostics.cs` | **new** (round 6) — warn-once reporting for a system whose failure mode is a blank screen |
+| `…/R_VesselActions/Executors/SniperScopeOverlay.cs` | **new** — the eyepiece, the reticle inside it and the recharge ring around it; **+** (round 9) a second reticle over the FLIGHT view, and `ReticleRadiusPixels` generalised into the shared `ReticlePixels` both draw through |
+| `…/R_VesselActions/Executors/SniperScopeDiagnostics.cs` | **new** (round 6) — warn-once reporting for a system whose failure mode is a blank screen; **+** (round 9) `NoGameCamera`, which stands the flight reticle down and leaves the eyepiece alone |
 | `_Scripts/UI/View/ScopeRingGraphic.cs` | **new** — the generated ring/arc |
 | `_Scripts/UI/View/ScopePetalGeometry.cs` | **new** (round 8) — the CHARGE petal's outline, traced off the shipped sprite, plus the inradius/circumradius/area derived from it |
 | `_Scripts/UI/View/ScopePetalImage.cs` | **new** (round 8) — the eyepiece. A `RawImage` SUBCLASS overriding only `OnPopulateMesh`, so every part of the surface that renders is inherited |
@@ -271,10 +273,12 @@ world distance and a pilot aims in ANGLE.** Anything wide enough to be aimable a
 blunderbuss at 100 u, which is the opposite of a sniper rifle. A bundle of parallel rays — the
 other suggestion — has the same problem plus gaps between the rays, and costs N queries.
 
-So the path is an **angular cone**: `radius(t) = max(minRadius, t · tan(halfAngle))`. At a **0.5°**
-half-angle that is 26.2 u at 3,000 u and, crucially, **the same on-screen size at every range** —
-about 49 px across at the 22° scope, 135 px at full magnification. *That* is what lets the reticle
-be drawn at the beam's true size rather than at a guess, which is the whole of §2 below.
+So the path is an **angular cone**: `radius(t) = max(minRadius, t · tan(halfAngle))`. The property
+that matters is that it is **the same on-screen size at every range**, whatever the angle — *that*
+is what lets the reticle be drawn at the beam's true size rather than at a guess, which is the whole
+of §2 below. The angle shipped at **0.5°** (26.2 u at 3,000 u, ~49 px across at the 22° scope) and
+was raised to **10°** by authored instruction in round 9b, which is 529 u at 3,000 u — see §9b for
+what that costs.
 
 The `minPathRadius` floor (6 u) is not a fudge: a pure cone has **zero** radius at the apex, so
 mass the ship is about to fly into would be missed by the one weapon pointed straight at it. The
@@ -882,8 +886,498 @@ miter is `1/sin 36° = 1.70` and a plain bisector offset would produce a feather
 the point read as harder-edged than the rest of the outline. Verified numerically — a 1.5 unit offset
 moves **both** adjacent edges out by exactly 1.5 at every corner, apex included.
 
+## Round 9 — "there should be a reticle in both the zoomed section and the main view"
+
+> *"both should match the radius of the blast, this means it should grow as the player zooms in on
+> the zoom view and stay small on the main view. the reticles should only appear while using
+> zoom."*
+
+Rounds 1–8 left exactly one reticle, and it lives inside the eyepiece. Round 3 had drawn one over
+the middle of the screen — correctly, because at the time the middle of the screen *was* the scope
+— and round 8's inversion moved it into the window and left the flight view bare. That is a real
+gap rather than a tidy-up: a scoped Serpent pilot is reading **two pictures at once**, the eyepiece
+to identify the target and the flight view to keep flying, and only one of them was telling them
+where the round would go.
+
+### Both reticles are ONE function; the difference is entirely in the arguments
+
+`ReticlePixels(coneHalfAngle, tan(fov/2), halfHeight, minPixels)` is the whole of it, and it
+replaces the old single-view `ReticleRadiusPixels`. A vertical field of view is what a picture's
+vertical extent subtends, so half that extent in pixels over `tan(fov/2)` is that picture's
+pixels-per-unit-tangent, and the cone's own tangent scales straight through it:
+
+| | half-height | field of view | radius at 1080p |
+|---|---|---|---|
+| **Eyepiece** | half the petal's side (270 px) | the scope's own, 60° → 8° as the trigger goes down | **4.1 px → 33.6 px** (capped at the petal's 139.3 px budget) |
+| **Flight view** | half the gameplay camera's `pixelHeight` (540 px) | `Camera.main.fieldOfView`, live | **4.7 px** at 90°, 8.2 px at 60° |
+
+That table IS the request: the eyepiece's grows **8×** across the zoom dial because its field of
+view narrows while the cone does not, and the flight view's stays a few pixels because the gameplay
+camera's field of view is not the scope's dial. Two circles the pilot can compare, both of them
+true, and neither of them authored.
+
+The floor is the **caller's** rather than baked into the helper, because the two views want
+opposite ones. The eyepiece keeps round 3's 6 px so its ring stays a ring at the wide end of the
+dial. The flight view takes **3 px**: it is *supposed* to be small, so a floor generous enough for
+the eyepiece would here be an inflation of the very number the ring exists to state, which is the
+one thing a measurement may not do. At the widest field of view the fleet runs, 3 px does not bind.
+
+### The flight reticle is PROJECTED, not centred — and that is not belt-and-braces
+
+The obvious implementation is a circle at screen centre. It would be right most of the time on this
+hull and wrong in a way nobody could diagnose the rest of it. The shot leaves along
+`hull.forward` from `hull.position` (`SniperShotActionExecutor.ResolveShot`), and the gameplay
+camera is only on that axis when it is exactly behind the hull:
+
+- **In the steady state it is.** `SerpentCameraSettingsSO.followOffset` is a pure `(0, 0, -250)`
+  and `CustomCameraController` places the camera at `target.position + target.rotation * offset`
+  and looks at the target — so the axis projects to a single point at screen centre, and the range
+  you project at does not matter.
+- **Through a turn it is not.** `followSmoothTime 0.1` / `rotationSmoothTime 7` mean the camera
+  lags, which is exactly when a pilot is swinging the nose onto a target.
+- **In the rear view it is behind the pilot entirely** (`CustomCameraController.EffectiveOffset`
+  mirrors z), where a centred reticle would be marking a shot going the other way.
+
+So the centre is `Camera.main.WorldToScreenPoint(hull.position + hull.forward × RangeUnits)`,
+re-measured every frame, and the reticle is **stood down outright** when that projection's `z` is
+non-positive. That guard is not decoration: `WorldToScreenPoint` on a point behind the camera
+returns a **mirrored** position, which is a plausible-looking lie rather than an obvious failure —
+the reticle would appear on screen, in the wrong place, with nothing to say so.
+
+`SniperShotActionExecutor.RangeUnits` is new, and exists only for this: the eyepiece's camera sits
+*on* the shot's axis, so there every range projects to the same place and the number is never
+needed.
+
+### Only while scoped, and only ever one authority on that
+
+Both reticles are built with the rest of the instrument, shown by `SniperScopeOverlay.Tick` and
+taken down by `Hide`, and `Tick` is only ever reached from `SniperScopeActionExecutor.Update`
+behind `if (!_engaged) return`. There is no second path and no new lifetime to get wrong — a pilot
+who is not holding the trigger has no mark on their screen at all, which is what makes the mark
+mean *I am aiming* rather than *I am a Serpent*.
+
+### Three details that are decisions rather than defaults
+
+- **The flight reticle's root is its own**, a sibling of the eyepiece rather than a child, so it can
+  be placed in screen coordinates and stood down on its own — a rear-view flip hides it while the
+  eyepiece keeps working. It is anchored to the canvas's bottom-left with a centred pivot and zero
+  size, which makes `anchoredPosition` a screen pixel coordinate outright: the canvas is
+  ScreenSpaceOverlay with deliberately no `CanvasScaler`, so a canvas unit IS a screen pixel and
+  `WorldToScreenPoint`'s answer is written straight in with no mapping to keep in step.
+- **`SetVisible` only ever switches it OFF.** Its visibility has two levels — the scope is up,
+  *and* the aim point can be projected this frame — and `DrawFlightReticle` owns the second, so
+  leaving the ON case to that method is not an oversight. Re-activating it every tick would mean a
+  frame it had just stood down (the rear view) gets re-activated on the next one and stood down
+  again, and each toggle runs `Graphic.OnEnable → SetAllDirty`: a rebuild of both its meshes, every
+  frame, for as long as the pilot is looking backwards. `SetActive` with the value an object
+  already has is a no-op, so the split costs nothing.
+- **It is built FIRST**, so it is the earliest sibling. UGUI draws siblings in order, and on the
+  rare frame the aim point projects into the top-left the opaque eyepiece should cover it rather
+  than have a stray ring floating over the picture.
+- **Its band and pip are derived from its own radius**, not authored. The eyepiece's fixed 2 px band
+  and 2.5 px dot are proportionally tiny inside a 33 px ring and would together fill a 5 px one
+  solid; `thickness = min(2, r/2)` and `dot = clamp(0.3r, 1, 2.5)` keep it reading as a ring with a
+  pip in it at any size the cone works out to.
+
+### What it does NOT change
+
+The cone itself is untouched — still the authored `coneHalfAngleDegrees 0.5`, still deliberately not
+a function of zoom (a locally-smoothed value cannot decide which conserved mass dies on every peer).
+The eyepiece's reticle, its recharge ring, the petal, the window camera and every number in rounds
+3–8 are byte-for-byte unchanged; `ReticlePixels` called with the eyepiece's old arguments and a
+6 px floor is the old `ReticleRadiusPixels` exactly. The flight reticle also deliberately ignores
+`minPathRadius` (the 6-unit tube the cone floors at inside ~687 u), for the same reason the
+eyepiece's always has: both rings state the CONE, which is the part of the shot that is a constant
+angular size, and a ring that grew as a target came closer would stop being comparable between the
+two views.
+
+### One new diagnostic rung
+
+`SniperScopeDiagnostics.Reason.NoGameCamera` — no perspective `Camera.main` to project through.
+It stands the flight reticle down and leaves the eyepiece alone, which is precisely why it is its
+own reason rather than a refusal of the whole instrument: the eyepiece carries its own camera and
+is unaffected, so reporting it as "the scope window is not drawn" would send the next reader to the
+wrong half.
+
+## Round 9a — the playtest, and the two things it reported at once
+
+> *"I got a lot of this error, but i could not see either reticle — `Property
+> (_PrismSightPeerApex) exceeds previous array size (8 vs 4). Cap to previous size. Restart Unity
+> to recreate the arrays.`"*
+>
+> *"this is filling the consul with this error. And still no retical in site. please check that
+> you are putting it in the center of the charge petal shaped zoom window."*
+
+Two reports in one sentence, and they are **independent**. Separating them was the whole of this
+round; neither defect is where the report points, and one of them is not in this feature at all.
+
+### The array error was a SUPERSESSION artefact, and the fix is a RENAME — not a restart
+
+`_PrismSightPeerApex` is one of the five peer-bank globals the LIT system publishes. Nothing in
+the scope touches it. It is written from exactly one place — `PrismLit.Flush`, at a fixed length of
+`PrismLit.Slots` = **8** — and the shader declares 8, with `PrismLitTests` holding the two in step.
+
+The 4 came from the system `PrismLit` **replaced**. Commit `8618ea98` ("promote LIT to a
+fundamental") deleted `Assets/_Scripts/Utility/PrismDestructionSight.cs`, whose `PeerSlots` was
+**4**, and wrote `PrismLit` in its place with 8 — **inheriting the retired system's property
+names**. Unity binds a shader GLOBAL array at the length of its **first** write, keyed on the
+property NAME, and keeps that length **for the whole editor session**; so an editor that had ever
+run the old code had those names pinned at 4, every frame after the script reload logged the
+error, and peers 5–8 of the LIT system were silently dropped.
+
+Round 9a's first answer was *restart Unity*, which is what the message itself says. **It came back
+with the error still on screen, and that is the finding**: a restart only helps the machine that
+performs it, only until the next supersession, and only if whoever hits the wall knows to. The fix
+that does not depend on any of that is the **rename** — the bank is now
+`_PrismLitPeerApex/Axis/Gape/Tint/Shape/Count`, sized by `PRISM_LIT_PEER_SLOTS` and tuned by
+`PRISM_LIT_PEER_DESATURATION`/`_GAIN`. **A name Unity has never been asked to bind cannot carry a
+pinned length**, so the first write in any session, fresh or reloaded, is the one that sets it. It
+also stops the bank being named for a system that no longer owns it.
+
+Proven by `Tools/Shaders/verify_prism_sight_composition.py`, which compiles and RUNS the shipped
+HLSL: all five composition properties hold under the new names, byte for byte.
+
+**General rule (now in `Docs/LIT.md` and `CLAUDE.md`): superseding or resizing anything that
+publishes a shader global ARRAY is a one-time, session-scoped, loud-and-lossy event that no
+offline gate can see — and the answer is to rename the globals in the same commit, not to tell
+everyone to restart.**
+
+Its practical cost here was the second report: the spam buried the `[SerpentScope]` lines that are
+the one documented way to tell why a reticle is missing.
+
+### "still no reticle in sight" — the reticle is CORRECTLY PLACED and a few pixels across
+
+The question asked — *is it in the centre of the petal window?* — has a clean answer, and it is
+yes, by construction:
+
+- `ScopePetalGeometry.Centre` is **(0.5, 0.5)**, the petal outline's own bounding-box centre, which
+  is the picture's optical centre because the outline is normalised over that box and its
+  coordinates double as the render target's UVs. That is where the camera's axis lands.
+- `MakeRing` / `MakeCross` anchor every reticle piece at **(0.5, 0.5) of the parent rect** with a
+  centred pivot, zero `anchoredPosition` and zero `sizeDelta`. A UGUI anchor is a fraction of the
+  parent's RECT and is independent of the parent's pivot, so the eyepiece's own top-left pivot does
+  not move them.
+- `MakePetal` insets the RECT symmetrically on all four sides, so the picture shrinks about that
+  same centre.
+
+So the three things that have to agree — the petal's optical centre, the rect's centre, and the
+reticle's anchor — are one point. **The placement was never the defect.**
+
+The defect is the SIZE, and it is arithmetic rather than a guess. `SniperShotAction.asset` authors
+`coneHalfAngleDegrees: 0.5`. A reticle drawn at the shot's true angular size is therefore
+`H · tan(0.5°) / tan(fov/2)`:
+
+| view | half-height | field of view | ring radius |
+|---|---|---|---|
+| eyepiece, wide end | 270 px (side 540 at 1080p) | 60° | 4.1 px → floored to **6** |
+| eyepiece, zoomed | 270 px | 22° | **12.1 px** |
+| eyepiece, Deep Focus | 270 px | 11° | **24.5 px** |
+| flight view | 540 px | 60° | **8.2 px** |
+
+That is a **2 px hairline ring 6–24 px across, inside a 540 px window**, drawn over a magnified
+render of a lit arena — about 1% of the window. It is the correct measurement and it is under the
+threshold of being noticed, which is exactly what came back twice.
+
+**The fix is not to draw it bigger than it is.** `ScopeCrosshairGraphic` adds four fixed-size
+**posts** around each ring: **the posts LOCATE and the ring MEASURES.** Their arms are a fixed
+16 px so the mark is always the same findable size whatever the weapon's angle or the zoom; their
+inner ends sit 6 px outside the ring, so they point at it and the whole reticle visibly opens up as
+the pilot zooms in and the ring grows. The mark is therefore **~44–92 px across** where the ring
+alone was 12–48, and **the ring itself is untouched** — every number the instrument states is the
+number it stated before.
+
+Three details that are not decoration:
+
+- The eyepiece's ring is now capped so the POST's outer end fits the petal's inradius budget, not
+  the ring's edge. In practice it never binds (24 px against ~139), which is the point: it is a
+  guarantee that the mark stays inside the shaped window at any weapon angle, not a tuning.
+- The recharge arc's radius clears the posts as well as the ring, so a wide-open reticle cannot
+  collide with the readout around it.
+- The posts' ENDS are hard while their long sides carry the usual zero-alpha feather. A faded inner
+  end would blur the gap the pilot looks at the target through, which is the one part of a reticle
+  that has to be crisp.
+
+**General rule: a mark drawn at a true physical size is a measurement, and a measurement can be
+correct and unreadable at the same time. Add a locator at a fixed size; never inflate the number.**
+
+The diagnostic line was widened to say both, so the next report cannot conflate them again — it now
+prints the ring radius AND the mark's span for each view:
+
+| What the line says | What it means |
+|---|---|
+| no `[SerpentScope]` line at all, no warning | the scope never engaged; the executor is not ticking |
+| an unconditional `[SerpentScope]` warning | a named gate refused — the warning says which |
+| `ring 6 px` and it does not grow with the trigger | the zoom is not reaching `ReticlePixels` |
+| `Flight reticle STOOD DOWN` | no gameplay camera, or the aim point projected behind it |
+| both rings and marks printed and plausible | they are drawing and something is **over** them — `FrogletTools > Diagnostics > Report On-Screen UI`, in play mode |
+
+That last row is deliberately not a warning, for the reason this file already records: an
+unconditional "everything checks out" becomes a permanent false positive the day the real defect is
+fixed. **The whole procedure is one switch** — `CSLogChannel.SerpentScope` in FrogletTools >
+Toolbox > Logging.
+
+## Round 9b — "I still see no reticle at all. increase the radius of the sniper shot to 10"
+
+Round 9a answered a size complaint with a **locator** (four fixed 16 px posts, the ring untouched)
+on the reasoning that the fix for a mark too small to see is never to draw it bigger than it is.
+The posts shipped and the report came back **identical**: *"I still see no reticle at all."*
+
+**That is the fourth consecutive round in which a correct change bought no part of the
+complaint**, and this file already records what that means (round 7): *when successive correct
+fixes keep buying diminishing amounts of the same complaint, the defect is one layer below the one
+being fixed.* So this round does two separate things, and they are separate on purpose.
+
+### 1. The weapon's angle, by instruction
+
+`SniperShotAction.asset` — `coneHalfAngleDegrees: 0.5` → **`10`**. This is an authored gameplay
+change, not a UI one, and it is stated plainly rather than folded into the reticle work:
+
+- **The hitscan cone is twenty times wider.** `PrismSpatialIndex.QueryCone` now sweeps a cone of
+  radius **529 u at 3,000 u** where it swept 26.2 u, and the `minPathRadius` floor stops mattering
+  past **34 u** rather than past 688 u. Everything about pierce, super-shield teardown and debris
+  is unchanged; what changed is how much mass one trigger pull can reach.
+- **The eyepiece ring is 82 px at the wide end** (`270 · tan10 / tan30`), against 6 px before —
+  13.7× — and the flight view's is **95 px at the game's default 90° FOV**, against 4.7.
+
+### 2. What the cap now does, which is the honest cost
+
+`ReticleBudgetPixels` caps anything drawn at the eyepiece's optical centre to the petal's measured
+**inradius** (a shaped window cannot bound its own furniture by its bounding box), and round 9a
+took the posts' outer ends out of that budget as well. At 0.5° that cap **never bound**. At 10° it
+binds over most of the dial:
+
+| scope FOV | ring would be | ring is drawn at |
+|---|---|---|
+| 60° (wide end) | 82.5 px | **82.5** |
+| 50° | 102.1 px | **102.1** |
+| ~44° | 117.2 px | **117.2** — the ceiling |
+| 22° (full zoom) | 244.9 px | **117.3**, pinned |
+| 8° (Deep Focus) | 680.8 px | **117.3**, pinned |
+
+So the original request's *"it should grow as the player zooms in"* now holds across roughly the
+**first third** of the trigger's travel and not past it. That pin is not a bug — a 10° cone
+genuinely subtends more than a 540 px window can show once magnified, and a ring that left the
+petal would be a worse lie than one that stops growing. **If it reads badly, the dial to move is
+the weapon's angle; never the cap, which is what keeps the mark inside the shape.**
+
+### 3. The one gap in `SelfCheck`, closed
+
+Every check `SelfCheck` ran was a **construction** fact: canvas enabled, `Graphic.IsActive()`,
+eyepiece size, backing alpha, panel on screen. **Every one of them is satisfied by a window that
+draws perfectly with nothing in it** — which is precisely the report. The eyepiece is a `RawImage`
+subclass and the rings are bare `MaskableGraphic`s, so there is a whole class of failure that takes
+the marks out and leaves the picture untouched, and none of it throws:
+
+- the graphic is **disabled**,
+- its `CanvasRenderer` is **culled** (a mask whose rect does not intersect it),
+- its colour is **transparent**.
+
+`CheckMarkVisible` now tests all three on the reticle ring, its posts and the recharge arc, and
+reports the first fault **unconditionally by name**. A fourth case — a colour that is black against
+a black backing — is deliberately *not* guessed at here: `ResolveTracerColour` falls back to
+**white**, not to a palette field that can author black (`Docs/PALETTE.md` §2.5), which is what
+keeps it off the list.
+
+**What this round does NOT claim.** It does not explain why the marks were invisible. It raises the
+ring from 6 px to 82 and closes the one blind spot in the check that was supposed to catch this, so
+the next report can only be one of two things — *still nothing*, which now means the rings are not
+drawing at all and size was never the cause, or *there it is*. Either answer is progress; a fifth
+round of reading source would not be. `CSLogChannel.SerpentScope` in FrogletTools > Toolbox >
+Logging, and `FrogletTools > Diagnostics > Report On-Screen UI` in play mode, are still the
+separator — and note round 9a's console was being **flooded** by an unrelated per-frame
+`_PrismSightPeer*` array error, which is exactly the shape of thing that buries a once-per-session
+diagnostic line. That spam is fixed (see `Docs/LIT.md`), so the scope's own report is readable now
+in a way it was not when rounds 9 and 9a were played.
+
+## Round 10 — "still no reticle in the zoom window ... just get something to appear in the pip"
+
+The playtest after round 9b, and it reported three things at once:
+
+> still no reticle in the zoom window. the effect cone widened like a cone (too big not desired),
+> but the destruction was small (too small not desired). it should pierce through everything. do a
+> full audit of what is going on. the zoom is working great, but i havn't seen you draw anything in
+> the center of the pip. start there. just get something to appear in the pip
+
+### What round 9b actually proved
+
+It was a size experiment and it came back NEGATIVE, which is worth as much as a fix. The eyepiece
+ring went from **6–24 px** to **82–117 px** — a factor of roughly ten, across the whole dial, with
+four fixed-size posts around it — and the report is identical to the three before it. **Size was
+never the cause.** Nothing that makes the mark bigger can make it appear, and the two remaining
+explanations are that the generated geometry never reaches the screen or that nothing parented
+under the eyepiece does.
+
+Neither is decidable from source, and rounds 5 and 6 of this instrument were both spent trying:
+
+- `ScopeRingGraphic.OnPopulateMesh` was read in full again and is correct. Its radius is measured
+  from `GetPixelAdjustedRect().center`, which is `(0, 0)` for a centred pivot at any rect size;
+  `Graphic.DoMeshGeneration` only guards `width >= 0 && height >= 0`, which zero passes; and every
+  `Radius`/`Thickness`/`Sweep01` setter calls `SetVerticesDirty`.
+- `ScopePipView` was grepped for re-parenting or sibling reordering that could put the picture over
+  the marks. It writes `_surface.texture`, `_surface.enabled` and `_camera.enabled` and touches no
+  transform in the canvas.
+- The colour was ruled out: `SO_ColorSet.GetDomainSignalColor` normalises by the brightest channel
+  and returns **white** when the palette authors black, `ResolveTracerColour` falls back to white
+  when there is no ColorSet at all, and `WithAlpha` then forces the alpha explicitly. It cannot be
+  transparent and it cannot be black.
+- `Tick` is running: `_pip.Tick` is the last thing in it, the zoom works, and every ring write is
+  above that line — a null ring would throw before the picture ever updated.
+
+### What shipped instead: a PROBE
+
+`SniperScopeOverlay` now draws a fifth mark inside the eyepiece, out of five plain
+`UnityEngine.UI.Image` quads — a centre pip and four posts — laid out around the **same measured
+radius** the real reticle was given that frame, at full alpha, drawn last.
+
+A sprite-less `Image` falls through to `Graphic.OnPopulateMesh`, which emits one quad filling its
+rect. It shares **no geometry code** with `ScopeRingGraphic` or `ScopeCrosshairGraphic`, and shares
+only the canvas, the parent and the draw order with them. So one playtest now splits the two
+remaining explanations:
+
+| What the next playtest shows | What it means |
+|---|---|
+| The probe appears, the ring still does not | The fault is inside the generated `MaskableGraphic` path |
+| Neither appears while the picture does | The fault is in what is parented under the eyepiece |
+| Both appear | It was the zero-sized rect (below), and the instrument is fixed |
+
+This is the same discipline round 7 used on the window itself: **when a component renders and
+another does not, reach for the one that provably renders rather than reasoning about the one that
+does not.**
+
+### And the one measurable difference, removed
+
+Every generated graphic in this overlay was built with `rect.sizeDelta = Vector2.zero`. The
+eyepiece's two petals — the components that provably render — are built with a **full-size** rect.
+That was the only structural difference between them, so it is gone: `MakeRing` and `MakeCross` now
+give their rects `GraphicRectPixels` (512) on both axes.
+
+**Nothing about the geometry moves.** A centred pivot on centred anchors keeps `rect.center` at
+`(0, 0)` whatever the size, every radius these components draw is measured from that centre in
+absolute units, and there is no mask anywhere in this canvas, so a rect is not a clip. It is
+removed because it was the last difference worth removing, not because it was diagnosed.
+
+`SelfCheck` now checks the probe alongside the three marks it already checked.
+
+### The weapon half — "the destruction was small ... it should pierce through everything"
+
+Two separate defects, both real, both found by reading `SniperShotActionExecutor.ResolveShot`.
+
+**The round destroyed ONE prism.** The budget was
+
+```csharp
+bool pierces = IsPierceUnlocked;                            // Charge 5
+int budget = pierces ? (so.PierceCount <= 0 ? int.MaxValue  // authored 3
+                                            : so.PierceCount)
+                     : 1;                                   // <- every un-upgraded shot
+```
+
+so an un-upgraded rifle on a **twelve-second** cooldown was worth exactly one prism, and an
+upgraded one three. That is not a sniper round, and it is what the pilot measured. **The round now
+pierces by default**: the budget is the authored number at every tier, and the asset authors **0**,
+which is unlimited — everything the cone contains.
+
+**Charge 5 "Pierce" was then an upgrade whose whole content had become the base behaviour**, which
+is a dead upgrade rather than a generous one. It is re-cut onto the thing the ability already does
+and had never gated: **ARMOUR**. Below Charge 5 a super-shielded prism is not a target at all, so
+the round flies *through* it and kills whatever is behind; at Charge 5 the sanctioned teardown in
+`DestroyPrism` runs and the Serpent is the fleet's second force that can take a super-shield off.
+
+The gate lives in `IsValidTarget` rather than in the loop, and that placement is the whole of why
+it works: `Prism.Damage` **hard-ignores** super-shielded mass, so an un-upgraded round that treated
+armour as a target would stop on it, set the tracer's end point there, and destroy nothing —
+visibly dying against a wall it was supposed to pass. Excluding it from the target set instead
+means the round never notices it. **"Pierce" now names a CAPABILITY rather than a count: how many
+prisms the round goes through is the weapon's, and what it can go through is the element's.**
+
+**The cone came back down.** `coneHalfAngleDegrees` **10° → 1.5°**. Ten degrees was round 9b's size
+experiment and it swept a **529 u** radius at 3,000 u — a shotgun, which is what the pilot saw and
+did not want. Half a degree (26 u) is a needle. One and a half is a rifle: **78.5 u** at full
+range, and the tracer is drawn at that same radius because the beam IS the volume tested. It also
+keeps the eyepiece ring inside the petal for most of the dial — 24.5 px at fov 60, 72.7 px at fov
+22, pinning at the 117 px cap only near the very bottom of the zoom.
+
+The general rule round 9b left behind is unchanged and was followed here: **the dial to move is the
+weapon's angle, never the cap.**
+
+### The audit's clean bill
+
+Everything else in the shot was re-read and is correct as it stands: the `QueryCone` snapshot is
+re-sorted along the axis before anything dies and each prism is re-tested after the sort (a kill
+can destroy others through its own side effects); the stop point is read *before* the kill, because
+a destroyed prism's transform is on its way back to the pool; `IsValidTarget` still never eats the
+pilot's own wall; `devastate: true` on the ordinary path stops an armoured prism costing two
+twelve-second cooldowns; and the debris carries a true-velocity vector with its matching ceiling
+rather than saturating the explosion prefab's legacy 33.33 u/s clamp.
+
+One latent trap found and left alone, because it is not live: `coneHalfAngleDegrees` carries
+`[Range(0.05f, 5f)]`, and a `RangeAttribute` is a **property drawer** — it clamps in the inspector
+and not at deserialization. The authored 10 was therefore live the whole time, and would have
+snapped to 5 the first time anyone touched that asset in the inspector. At 1.5 it is inside the
+range again, so nothing is at risk now; but *a serialized value outside its own `Range` is a value
+that changes the next time a human looks at it.*
+
+## Round 11 — the probe answered, and the answer is ambiguous on purpose
+
+> *"this is good i saw the recital and it changes size nicely."*
+
+**The mark is on screen and it tracks the zoom.** That is the promise the whole instrument was
+built to make and it is the first round in which a pilot has reported it kept. Nothing in the code
+changed for this round; it is recorded because the round-10 table asked a question and the answer
+is worth writing down along with what it does **not** settle.
+
+### What it settled
+
+Both weapon-half defects are closed by the same report. The cone reads as a rifle rather than a
+shotgun at **1.5°**, and the round is not being described as destroying one prism. And the mark
+inside the eyepiece is legible at a size the pilot could watch change — so the *posts LOCATE, ring
+MEASURES* split (round 9a) plus the 1.5° cone together clear the readability floor that four
+rounds of correct measurement did not.
+
+### What it did not settle, and the open item
+
+**Round 10 shipped TWO changes that could each have made the mark appear**, and one report cannot
+separate them: the PROBE (five plain `Image` quads) and the **512 px rect** the generated rings
+and posts were given in the same commit. The pilot's words name neither component.
+
+So the probe is still in the instrument, and it is still scaffolding:
+
+| If | then |
+|---|---|
+| The rings draw now (the rect was the fault) | the probe is a duplicated mark drawn at full alpha over a correct one, and should come out |
+| Only the probe draws | `ScopeRingGraphic` / `ScopeCrosshairGraphic` never reach the screen here, and the probe is the reticle — which means the two generated classes should be retired instead |
+
+**It was not removed on this pass and that is the deliberate call**, because removing it is exactly
+the move that risks regressing the one thing the pilot has just approved: if it was the probe they
+saw, the reticle vanishes again and round 12 is round 6. The experiment that settles it costs one
+observation and no code — **switch the probe off and look**:
+
+```csharp
+// SniperScopeOverlay.Tick, in place of the DrawProbeReticle(radius, colour) call
+if (_probe != null) foreach (var p in _probe) p.enabled = false;
+```
+
+Reticle still there → delete `BuildProbeReticle` / `DrawProbeReticle` / `_probe` / `_probeRect` /
+`ProbePipPixels` and the `SelfCheck` line that reads them. Reticle gone → keep the probe, and the
+next pass is about why a bare `MaskableGraphic` submits nothing under this canvas while a
+`RawImage` subclass parented beside it submits fine.
+
+Its cost while it stays, stated rather than hidden: the eyepiece draws its reticle **twice** — once
+as a ring with locator posts, once as a pip with square posts at the same radius — and the probe's
+copy is at **full alpha at every moment**, so it does not dim while the weapon recharges. The
+instrument therefore reads as slightly busier than it is designed to, and the recharge dim is half
+as loud as it should be.
+
+The general rule this round leaves behind: **when two fixes ship in one commit and either could be
+the one that worked, the report cannot tell them apart — so budget a second observation, and keep
+the cheaper-to-undo one switchable.**
+
 ## Drive-by corrections
 
+- **The doc's own opening paragraph still described the round-1 COCKPIT** — *"the view drops into
+  the cockpit and magnifies"* — which round 4 deleted outright (`VesselFirstPersonView` is gone and
+  `CustomCameraController` no longer carries a first-person flag). Eight rounds of record sat under
+  a summary contradicting all of them, which is the shape of drift that sends a reader looking for
+  a system that does not exist. Corrected in round 9 to describe the shipped eyepiece.
 - **`Serpent.asset`'s Time entry had `Input: 0`** (`FullSpeedStraightAction`) while
   `ConsumeBoostAction` actually rides `Button1Action`. That field is not documentation: the ability
   lockup DRAWS each card's control chip from it (`map entry → InputHintBindingMap.BindingFor`), so
@@ -892,8 +1386,18 @@ moves **both** adjacent edges out by exactly 1.5 at every corner, apex included.
 - **`SniperShotActionExecutor` resolves its registry with `GetComponentInParent`, not
   `GetComponent`.** On every shipped vessel the registry lives on the `ShipActions` container and
   each executor sits on a **child** of it, so a same-object lookup returns null and every fallback
-  below it is silently dead. `ToggleTranslationModeActionExecutor` carries that bug today and is
-  deliberately left alone — it is another ability's play-tested behaviour.
+  below it is silently dead. `ToggleTranslationModeActionExecutor` still uses the same-object form
+  and is deliberately left alone — **measured, it is a latent trap rather than a live defect**, and
+  the measurement is the reason it is left rather than an excuse: that registry feeds exactly one
+  field (`seedAssemblerExecutor`, resolved only when the prefab leaves it empty), the **Serpent**
+  authors it outright (`fileID: 8230992318499782635`) so the fallback never runs, and the
+  **Sparrow** — the only other vessel carrying the executor — has no `SeedAssemblerActionExecutor`
+  and no `stationarySeedConfig` at all, so the null field matches reality. It bites the day a third
+  vessel takes the ability, or the day somebody clears the Serpent's reference expecting the
+  fallback to cover them. Worth noting alongside it: neither `ToggleStationaryModeAction.asset`
+  serializes `stationaryMode`, so **both** fall back to the C# initializer `Mode.Serpent` — the
+  Sparrow's stationary mode runs the Serpent branch and is carried only by that branch's own null
+  guards (rule 4-i, met in the wild).
 
 ## Checked and clear
 
@@ -929,7 +1433,7 @@ moves **both** adjacent edges out by exactly 1.5 at every corner, apex included.
   **Unprofiled**, and it is now more expensive than round 3 on all three axes (2.0× the pixels of
   that 360p 16:9 target, 1.5× the refresh, and a post stack) because it is the picture the pilot
   aims with rather than a glance.
-- **The scope overlay rebuilds six small UI meshes per frame while held** (≈96 segments each,
+- **The scope overlay rebuilds eight small UI meshes per frame while held** (≈96 segments each,
   guarded by `Mathf.Approximately` so an unchanged value costs nothing). Cheap, and unmeasured.
 - **The shot has no FMOD event.** `fireEvent` ships **empty**, which is silence — never a borrowed
   event (CLAUDE.md's audio convention). It is an inspector-visible TODO on the
@@ -941,8 +1445,12 @@ moves **both** adjacent edges out by exactly 1.5 at every corner, apex included.
 ## In-editor verification
 
 Everything below is unverified — the branch was authored headlessly. The C# was type-checked
-against a Roslyn stub harness whose 34 stub signatures were each grepped out of the real sources
-(and negative-controlled), and the six out-of-editor gates pass, but neither can see a camera.
+against a Roslyn stub harness whose stub signatures were each grepped out of the real sources (and
+negative-controlled), and the six out-of-editor gates pass, but neither can see a camera. Round 9
+re-ran that harness over the whole scope chain — `SniperScopeOverlay`, `SniperScopeDiagnostics`,
+`SniperScopeActionExecutor`, `ScopeRingGraphic`, `ScopePetalImage`, `ScopePetalGeometry` and
+`ScopePipView` — clean, with two negative controls (a wrong `Tick` arity and an undeclared
+constant) both firing.
 
 1. **Scene:** any Serpent-capable scene (Menu_Main freestyle is enough; swap to the Serpent with
    the vessel-changer toy). Confirm no console errors on spawn.
@@ -971,7 +1479,10 @@ against a Roslyn stub harness whose 34 stub signatures were each grepped out of 
    League rail and fire. Expect the stella octangula to shed as debris *and* the prism to die —
    both, in one shot. Anything less (a deflect wobble, or the shield popping with the prism
    surviving) means the two-step sequence regressed.
-8. **Pierce:** raise Charge to 5 and fire down a line of 3+ prisms — expect 3 destroyed, not 1.
+8. **Pierce:** fire down a line of prisms at ANY Charge level — expect every prism in the cone
+   destroyed, not one. Then point at super-shielded mass below Charge 5: the round must fly
+   PAST it and kill whatever is behind. At Charge 5 the same shot takes the armour off and kills
+   it (step 7).
 9. **The contextual trigger:** unscoped, press RT — the **cloak** should engage exactly as it does
    today. Scoped, press RT — the cloak must **not** engage.
 10. **Teardown:** while scoped, open the overview / pause (or let a turn end). The window must
@@ -1071,8 +1582,39 @@ against a Roslyn stub harness whose 34 stub signatures were each grepped out of 
     point in the sweep. If either does, `ReticleBudgetPixels` is no longer reading
     `ScopePetalGeometry.Inradius01`.
 
+32. **START HERE (round 9): there are TWO reticles and one of them is small.** Hold LT. Expect the
+    eyepiece's reticle as before, **and** a second small ring with a centre pip out over the flight
+    view, in your domain colour. At 1080p / 90° FOV it is about **9 px across** — deliberately
+    small, so look for it rather than expecting it to announce itself. Release: **both** must
+    vanish. If the flight one never appears, read the console first (step 22's rule) — a
+    `[SerpentScope] … NoGameCamera` warning names the cause in one line.
+33. **The flight reticle is where the shot GOES (round 9).** Fly straight and level: it should sit
+    on or very near screen centre, because the Serpent's camera is authored exactly behind the hull
+    on the shot's own axis. Now haul the stick over and hold the turn — as the camera's smoothing
+    lags, the reticle must **slide off centre and track the nose**, not stay pinned to the middle of
+    the screen. That drift is the feature: a centred circle would be marking the camera rather than
+    the round. Fire mid-turn and confirm what dies is what the ring was on, not what screen centre
+    was on.
+34. **Only the eyepiece's grows (round 9).** Hold LT and roll the trigger from released to full.
+    The eyepiece's ring must grow visibly (≈8×); the flight view's must **not move at all**. If
+    both grow, the flight one is being handed the scope's field of view instead of the camera's.
+    Then let go of the trigger and accelerate to top speed: the flight reticle **should** grow a
+    little as the speed tunnel narrows the gameplay camera — that is correct and is the same
+    measurement following its own optics — while the eyepiece's must not.
+35. **Both are stood down when the scope is (round 9).** Fly unscoped around the arena: no ring
+    anywhere on screen. Then open the overview / pause while scoped, and swap hulls while scoped —
+    the flight reticle must go with the eyepiece in both cases, not linger.
+36. **The rear view (round 9).** While scoped, flip to the look-back camera (**C**, or **LB+RB**).
+    The flight reticle must **disappear** rather than appear mirrored somewhere plausible — the aim
+    point is behind the camera there. The eyepiece must keep working throughout.
+37. **MPPM (round 9).** Scope on client A; client B must get **neither** reticle. This is step 12's
+    check widened to the new one.
+
 ## Follow-ups
 
+- **Settle the PROBE and take it out (round 11).** One observation with the five `Image`
+  quads disabled says whether the generated rings draw. Until then the eyepiece draws its
+  reticle twice and the probe's copy never dims. Steps + both outcomes: round 11 above.
 - Wire the four ability icons (art + `Wire Vessel Ability Row`). The Charge veil no longer needs
   one, but the row still cannot say WHICH ability is recharging.
 - Profile the scope window on a phone. It is a second render of the world at 512² / 30 Hz and it is
@@ -1081,9 +1623,16 @@ against a Roslyn stub harness whose 34 stub signatures were each grepped out of 
   and whether a left-handed or small-screen layout wants it elsewhere.
 - Author the FMOD event for the shot — this is the one half of "I didn't notice the shot" this
   branch does not close.
-- Consider whether the reticle should be shown UNSCOPED too (it currently is not: the cone is the
-  same cone, but the shot cannot fire unscoped, and a permanent reticle on a hull with no crosshair
-  would be a claim about a weapon that is not available).
+- ~~Consider whether the reticle should be shown UNSCOPED too~~ — **settled in round 9, and the
+  answer stands**: the reticle is drawn over the flight view now, but still only while the scope is
+  up. The reasoning is unchanged — the shot cannot fire unscoped, so a permanent reticle would be a
+  claim about a weapon that is not available — and it is what makes the mark mean *I am aiming*.
+- The flight reticle states the CONE, so like the eyepiece's it ignores `minPathRadius` — the
+  6-unit tube the shot floors at inside ~687 u, which subtends a LARGER angle than the cone at
+  close range. Both rings therefore under-state the shot's reach against a target you are nearly on
+  top of. Deliberate (a ring that grew as a target closed would stop being comparable between the
+  two views, and a sniper's shot is not a close-range one), and worth revisiting only if a playtest
+  reports missing point-blank.
 - Fill the **Mass** slot — the last open Serpent design slot. `Docs/ElementalAbilitySystem/FLEET_MAPS.md`
   §2 still proposes *wall prism scale* / **Fortified Wall**, which does not collide with either
   ability added here.

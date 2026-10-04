@@ -25,10 +25,6 @@ namespace CosmicShore.Utility
         [Tooltip("Raised once per periodic fauna spawn-cycle tick (per species loop) with the " +
                  "wave's domain + nucleus-claim state. Scoring systems (Brood Rush) listen here.")]
         [SerializeField] public ScriptableEventFaunaWave OnFaunaWaveSpawned;
-        [Tooltip("Raised when the set of living fauna hearts changes (a fauna gained its " +
-                 "lineage heart, or died and dropped it). The domain fauna buff system listens " +
-                 "here to re-sum domain elemental power without waiting for its reconcile sweep.")]
-        [SerializeField] public ScriptableEventNoParam OnFaunaHeartsChanged;
         [Tooltip("Raised with the KILLER'S NAME when a fauna dies to an attributed force - a " +
                  "player shooting its body prisms out, or a crystal joust. Ecology-internal " +
                  "deaths (starvation, predation) are deliberately NOT published: a mode scored " +
@@ -113,19 +109,16 @@ namespace CosmicShore.Utility
         /// <summary>
         /// Get crystal transform for local player (falls back to neutral, then first crystal).
         /// Returns null if no crystal exists.
+        ///
+        /// A cell with NO crystal is an ordinary state, not a fault - Barren, the Arkway's
+        /// satellite cells and every bare-canvas config hold none - and this accessor is read
+        /// PER TICK by every herbivore in the cell (twice per tick at some call sites), so the
+        /// warning it used to log here was a per-frame log with a full managed+native stack
+        /// trace behind it: console spam that measurably cost frame time in an Arkway corridor.
+        /// Every caller already null-checks. Returning null IS the answer.
         /// </summary>
-        public Transform CrystalTransform
-        {
-            get
-            {
-                if (!TryGetLocalCrystal(out Crystal crystal))
-                {
-                    CSDebug.LogWarning("[CellRuntimeDataSO] No local crystal found!");
-                    return null;
-                }
-                return crystal.transform;
-            }
-        }
+        public Transform CrystalTransform =>
+            TryGetLocalCrystal(out Crystal crystal) ? crystal.transform : null;
 
         /// <summary>
         /// Get crystal for local player.
@@ -248,6 +241,11 @@ namespace CosmicShore.Utility
 
             if (Crystals != null)
             {
+                // No per-crystal line here, on any channel: a log inside a per-object loop is
+                // spam on a toy that resets a cell every crossing, and LogVerbose is
+                // [Conditional] - it removes the CALL in a release build but not the argument
+                // evaluation in the Editor, so an interpolated string is built every time even
+                // when the channel is off.
                 for (int i = Crystals.Count - 1; i >= 0; i--)
                 {
                     if (Crystals[i] && Crystals[i].gameObject)

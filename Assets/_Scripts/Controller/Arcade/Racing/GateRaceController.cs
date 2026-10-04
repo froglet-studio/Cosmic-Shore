@@ -306,6 +306,13 @@ namespace CosmicShore.Gameplay
             public bool HasLastPosition;
 
             /// <summary>
+            /// <c>VesselTransformer.TeleportCount</c> as of the last sample. A CHANGE means the
+            /// step we are about to test is a jump rather than a flight, and a jump threads
+            /// nothing — see the note in <see cref="GateRaceController.Update"/>.
+            /// </summary>
+            public int TeleportCount;
+
+            /// <summary>
             /// Gates this machine BELIEVES the pilot has threaded. On the server it tracks the
             /// authoritative stat exactly; on a client it may run ahead of the replicated value
             /// while a report is in flight, which is the point - without it a pilot flying a
@@ -671,8 +678,24 @@ namespace CosmicShore.Gameplay
 
         // ── Detection ─────────────────────────────────────────────────────
 
+        /// <summary>
+        /// One server tick, for a subclass that has to DRIVE something every frame rather than
+        /// answer a question — Waystation presses the Butterfly's Fold for its autopilots here.
+        ///
+        /// <para>It exists because <see cref="Update"/> is a Unity message rather than a virtual:
+        /// a subclass that declared its own <c>Update</c> would HIDE this one, Unity would call
+        /// only the derived slot, and crossing detection — the whole race — would silently stop
+        /// working with nothing in the console. No gate-race subclass had ever declared one, so
+        /// the hazard was untested rather than absent. Called on the server every frame,
+        /// unconditionally: a driver usually needs the turn-running test, and a driver TEARING
+        /// DOWN what it started needs the frames after it.</para>
+        /// </summary>
+        protected virtual void OnServerTick() { }
+
         void Update()
         {
+            if (IsServer) OnServerTick();
+
             // Ahead of every guard below: the course is built while the turn has NOT started
             // (that is what the arena-build announcement is holding the connecting panel for),
             // so a retry gated on IsTurnRunning would never run.
@@ -731,12 +754,31 @@ namespace CosmicShore.Gameplay
                 if (!run.HasLastPosition)
                 {
                     run.LastPosition = cur;
+                    run.TeleportCount = TeleportCountOf(vessel);
                     run.HasLastPosition = true;
                     continue;
                 }
 
                 Vector3 prev = run.LastPosition;
                 run.LastPosition = cur;
+
+                // A GATE IS THREADED BY FLYING THROUGH IT. A teleport is a jump from one place
+                // to another and threads nothing on the line between them — the Butterfly's Fold
+                // crosses hundreds of units along its own heading, and the next cluster's rings
+                // are on that heading by construction.
+                //
+                // The step guard below does NOT cover this, and the way it fails is the reason
+                // this is a counter rather than a distance: it rejects a LONG jump by accident
+                // and credits a SHORT one, so the rule would be "a fold far enough away does not
+                // cheat". The mover states the fact instead (VesselTransformer.TeleportCount),
+                // and comparing COUNTS rather than magnitudes is correct whatever the frame
+                // ordering and however many jumps land in one frame.
+                int teleports = TeleportCountOf(vessel);
+                if (teleports != run.TeleportCount)
+                {
+                    run.TeleportCount = teleports;
+                    continue;
+                }
 
                 // A respawn, an eject or a frame-rate hitch is not a gate.
                 if ((cur - prev).sqrMagnitude > maxStepSqr) continue;
@@ -767,6 +809,18 @@ namespace CosmicShore.Gameplay
         {
             if (confirmed >= run.Optimistic) { run.Optimistic = confirmed; return; }
             if (Time.time - run.LastReportTime > reportResyncSeconds) run.Optimistic = confirmed;
+        }
+
+        /// <summary>
+        /// This vessel's teleport tally, or 0 for a hull that has no transformer to ask (nothing
+        /// shipped, but the vessel is being torn down on some of the frames this runs on). 0 is
+        /// safe: the only thing done with it is a comparison against the last one we saw, and a
+        /// vessel whose count cannot be read cannot be teleporting either.
+        /// </summary>
+        static int TeleportCountOf(IVessel vessel)
+        {
+            var transformer = vessel?.VesselStatus?.VesselTransformer;
+            return transformer ? transformer.TeleportCount : 0;
         }
 
         void Forget(IPlayer p)

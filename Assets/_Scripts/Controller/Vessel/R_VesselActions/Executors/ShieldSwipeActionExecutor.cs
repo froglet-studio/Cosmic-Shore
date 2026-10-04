@@ -1,3 +1,4 @@
+using CosmicShore.Core;
 using CosmicShore.Utility;
 using Obvious.Soap;
 using UnityEngine;
@@ -17,6 +18,13 @@ namespace CosmicShore.Gameplay
     /// press/release events drive the same rig at full deflection. Only scale is driven
     /// on this transform elsewhere (ShieldSkimmerScaleDriver), so rotation/position are
     /// ours to animate.
+    ///
+    /// COMBOS ride on top: a rapid string of trigger TAPS (RR, RL, RLR, …) calls an authored
+    /// flourish from <see cref="RhinoSwordComboLibrarySO"/> — a separate, upgraded set while
+    /// the blade is ENERGIZED — which blends in from the current pose, plays its path, and
+    /// blends back to wherever the fingers are. A held trigger is never a tap, so positioning
+    /// the sword is untouched. Detection reads the replicated trigger MIRRORS (the same values
+    /// the energize stance reads), so every peer calls the same combo. See RHINO_SWORD_COMBOS.md.
     /// </summary>
     public sealed class ShieldSwipeActionExecutor : ShipActionExecutorBase
     {
@@ -59,6 +67,18 @@ namespace CosmicShore.Gameplay
         float _activeSign; // event-driven stance (+1/-1/0) for non-analog inputs
         bool _rightHeld;   // event-side per-direction held state (cross-swipe handoff)
         bool _leftHeld;
+
+        // --- Combos -------------------------------------------------------------------------
+        RhinoSwordComboDetector _comboDetector;
+        RhinoSwordComboLibrarySO _comboLibraryConfigured; // library the detector was configured from
+        RhinoSwordComboPath _flourish;         // playing flourish, null when the fingers own the pose
+        float _flourishElapsed;
+        SwordPoseChannels _flourishEntry;      // pose the flourish blends in FROM (wrapped)
+        SwordPoseChannels _lastApplied;        // last pose written to the sword, in channel space
+        RhinoSwordFXController _fx;            // the blade's own FX (same GameObject as shieldRoot)
+
+        /// <summary>The flourish currently playing, or null. For FX/HUD/diagnostics.</summary>
+        public RhinoSwordComboPath ActiveFlourish => _flourish;
 
         void OnEnable()
         {
@@ -137,18 +157,144 @@ namespace CosmicShore.Gameplay
             // applied — a sword recovering from a swing must still be able to chop and energize.
             FeedSwordStance();
 
+            // Combos read the same replicated mirrors, so a flourish starts on every peer.
+            TickCombos();
+
             // Lateral recovery gates the SWIPE axis only; the chop (sum) passes through untouched.
             diffTarget = ApplySwipeRecovery(diffTarget);
 
             // A resting pose still has to be re-applied when the blade's LENGTH moved: the hilt
             // anchor is a function of that length, so skipping the write would leave the sword
             // growing out of both ends of its mount again (the staff read this fix removes).
-            bool poseAtRest = _diff == 0f && _sum == 0f && diffTarget == 0f && sumTarget == 0f;
+            bool poseAtRest = _flourish == null
+                              && _diff == 0f && _sum == 0f && diffTarget == 0f && sumTarget == 0f;
             if (poseAtRest && Mathf.Approximately(AnchorOffsetLocal(), _appliedAnchor)) return;
 
+            // The fingers keep driving underneath a flourish, so the blend back lands exactly
+            // where the triggers are at that moment rather than where they were when it began.
             _diff = Drive(_diff, diffTarget, analog);
             _sum = Drive(_sum, sumTarget, analog);
-            ApplyShieldPose();
+
+            ApplyShieldPose(_flourish != null ? AdvanceFlourish(Time.deltaTime) : AnalogChannels());
+        }
+
+        /// <summary>The trigger reparameterization, expressed in pose channels.</summary>
+        SwordPoseChannels AnalogChannels() => new(
+            _diff * config.SwipeYawDegrees,
+            _diff * config.SwipeRollDegrees,
+            0.5f * _sum * config.ChopPitchDegrees,
+            0f);
+
+        /// <summary>
+        /// Feed this frame's trigger MIRRORS to the combo detector and start a flourish when a
+        /// string of taps resolves. The mirrors are Owner-write/Everyone-read, so the owner and
+        /// every replica see the same edges and call the same combo (to within a network tick
+        /// of timing). A paused owner's mirrors freeze rather than zero, so the owner's
+        /// autopilot drops the chain the same way it drops the stance.
+        /// </summary>
+        void TickCombos()
+        {
+            var library = config.ComboLibrary;
+            if (!library)
+            {
+                _comboDetector?.Reset();
+                return;
+            }
+
+            if (_comboDetector == null || _comboLibraryConfigured != library)
+            {
+                _comboDetector ??= new RhinoSwordComboDetector(library.DetectorSettings);
+                _comboDetector.Configure(library.DetectorSettings);
+                _comboDetector.Reset();
+                _comboLibraryConfigured = library;
+            }
+
+            var input = _status.InputStatus;
+            if (input == null || (_status.IsLocalUser && _status.AutoPilotEnabled))
+            {
+                _comboDetector.Reset();
+                return;
+            }
+
+            float lt = ApplyDeadzone(input.LeftTriggerAnalog);
+            float rt = ApplyDeadzone(input.RightTriggerAnalog);
+            if (!_comboDetector.Step(Time.time, lt, rt, out var combo)) return;
+
+            bool energized = Sword is { IsEnergized: true };
+            if (!library.TryGet(combo.Sequence, energized, out var path)) return;
+            StartFlourish(library, path, combo.IsFinisher, energized && path.Energized);
+        }
+
+        void StartFlourish(RhinoSwordComboLibrarySO library, RhinoSwordComboPath path, bool finisher, bool energized)
+        {
+            _flourishEntry = _lastApplied.Wrapped();
+            _flourish = path;
+            _flourishElapsed = 0f;
+
+            // A finisher plays out: presses during most of it neither chain nor cancel it.
+            if (finisher)
+                _comboDetector.SuppressPressesUntil(Time.time + path.DurationSeconds * library.FinisherLockoutFraction);
+
+            // The flourish is the swing — it never owes the recovery a lone swipe would.
+            ClearSwipeRecovery();
+
+            if (!path.Sound.IsNull && AudioSystem.Instance)
+                AudioSystem.Instance.PlaySFXEventAttached(path.Sound, shieldRoot.gameObject);
+
+            if (!_fx) shieldRoot.TryGetComponent(out _fx);
+            if (_fx) _fx.NotifyCombo(finisher, energized);
+        }
+
+        /// <summary>
+        /// Advance the playing flourish and return this frame's pose: blend in from the entry
+        /// pose, follow the authored path, then blend out to the LIVE trigger pose. The end pose
+        /// is wrapped before the blend out (visually identical — see
+        /// <see cref="SwordPoseChannels.Wrapped"/>) so a flourish that spun the blade a full turn
+        /// does not unwind it on the way back to the fingers.
+        /// </summary>
+        SwordPoseChannels AdvanceFlourish(float dt)
+        {
+            var library = config.ComboLibrary;
+            float blendIn = library ? library.BlendInSeconds : 0.06f;
+            float blendOut = library ? library.BlendOutSeconds : 0.18f;
+
+            _flourishElapsed += dt;
+            float duration = _flourish.DurationSeconds;
+
+            if (_flourishElapsed <= duration)
+            {
+                var onPath = _flourish.Sample(_flourishElapsed / duration);
+                float w = Smooth01(_flourishElapsed / blendIn);
+                return SwordPoseChannels.Lerp(_flourishEntry, onPath, w);
+            }
+
+            float outT = (_flourishElapsed - duration) / blendOut;
+            var live = AnalogChannels();
+            if (outT >= 1f)
+            {
+                EndFlourish();
+                return live;
+            }
+            return SwordPoseChannels.Lerp(_flourish.EndPose.Wrapped(), live, Smooth01(outT));
+        }
+
+        void EndFlourish()
+        {
+            _flourish = null;
+            _flourishElapsed = 0f;
+            ClearSwipeRecovery();
+        }
+
+        void ClearSwipeRecovery()
+        {
+            _rightReadyAt = _leftReadyAt = 0f;
+            _rightSwung = _leftSwung = false;
+        }
+
+        static float Smooth01(float x)
+        {
+            x = Mathf.Clamp01(x);
+            return x * x * (3f - 2f * x);
         }
 
         /// <summary>
@@ -313,11 +459,11 @@ namespace CosmicShore.Gameplay
         static float ApplyDeadzone(float value) =>
             value < TriggerDeadzone ? 0f : (value - TriggerDeadzone) / (1f - TriggerDeadzone);
 
-        void ApplyShieldPose()
+        void ApplyShieldPose(SwordPoseChannels channels)
         {
-            float yaw = _diff * config.SwipeYawDegrees;
-            float roll = _diff * config.SwipeRollDegrees;
-            float pitch = 0.5f * _sum * config.ChopPitchDegrees;
+            float yaw = channels.yaw;
+            float roll = channels.roll;
+            float pitch = channels.pitch;
 
             // Pitch innermost so the chop lowers the blade in front first and the
             // yaw/roll swipe then carries the lowered blade around the vessel. With
@@ -335,9 +481,12 @@ namespace CosmicShore.Gameplay
             // middle. Offsetting the centre by the blade's own half-extent pins the HILT to
             // the authored mount and sends every unit of growth out the tip, so the sword
             // reads as a sword at every length the energy meter produces.
+            // THRUST (combos only) slides the whole blade out along itself — a lunge — as a
+            // fraction of that same anchor length, so it reads the same at every blade size.
             float anchor = AnchorOffsetLocal();
-            shieldRoot.localPosition = sweep * _baseLocalPos + pose * Vector3.up * anchor;
+            shieldRoot.localPosition = sweep * _baseLocalPos + pose * Vector3.up * (anchor * (1f + channels.thrust));
             _appliedAnchor = anchor;
+            _lastApplied = channels;
         }
 
         /// <summary>
@@ -380,6 +529,10 @@ namespace CosmicShore.Gameplay
             _diff = 0f;
             _sum = 0f;
             ClearStance();
+            _flourish = null;
+            _flourishElapsed = 0f;
+            _lastApplied = default;
+            _comboDetector?.Reset();
 
             // Drop the energize gesture too, so a turn-end/despawn mid-hold can't leave
             // the sword charging forever off a stance edge that will never release.

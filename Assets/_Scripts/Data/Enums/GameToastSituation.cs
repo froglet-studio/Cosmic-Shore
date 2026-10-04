@@ -131,6 +131,34 @@ namespace CosmicShore.Data
         BroadsideVerbHint = 115,        // idle hint: your hull already has a weapon - use it
         BroadsideCloseHint = 116,       // idle hint: a contact strike pays more than a round
 
+        // Waystation. TWO IDLE HINTS AND NOTHING ELSE, and the absence is the decision: the
+        // gate-race platform has no gate-threaded hook, so a milestone or lead-change situation
+        // here would have no poster - an enum member nothing raises reads exactly like a feature,
+        // and the next person to look would spend an afternoon finding out it never fires. An
+        // idle hint needs no poster at all (the toast system fires it off idleSeconds), which is
+        // why Regatta authored only hints too. Both take no args, and they are the mode's two
+        // verbs: a new pilot who never finds the Fold simply orbits the first cluster forever.
+        WaystationRingHint = 117,       // idle hint: thread every ring around you
+        WaystationFoldHint = 118,       // idle hint: hold the fold and aim at the next cluster
+
+        // Dustup. {0} = leading domain, {1} = that domain's dustings, {2} = point target. The
+        // hint takes no args: the mode's whole tutorial is "the dust hangs BELOW you".
+        DustupQuarter = 119,            // the leading domain is a quarter of the way to the target
+        DustupHalf = 120,               // the leading domain is halfway
+        DustupLeadChanged = 121,        // the lead changes hands after a milestone
+        DustupAboveHint = 122,          // idle hint: switch to Dust mode and fly OVER a rival
+
+        // Tapestry. {0} = leading domain, {1} = that domain's standing volume. The two hints
+        // take no args and are the mode's two verbs: paint wide, raid narrow.
+        TapestryLeadChanged = 123,      // the lead changes hands (sampled, after the opening)
+        TapestryPaintHint = 124,        // idle hint: Mass mode paints a wide wake - that is your score
+        TapestryRaidHint = 125,         // idle hint: Dust mode over a rival's paint takes it away
+
+        // Sirocco. {0} = leading domain, {1} = its prisms destroyed, {2} = target. The hint takes
+        // no args.
+        SiroccoLeadChanged = 126,       // the lead changes hands past the first milestone
+        SiroccoDustHint = 127,          // idle hint: Dust mode, fly low over the forest
+
         // END-OF-GAME LOBBY. Shared across every multiplayer mode, so 100+ rather than crowding
         // the per-mode blocks. {0} = player name, {1} = how many have asked so far, {2} = how many
         // humans are in the match.

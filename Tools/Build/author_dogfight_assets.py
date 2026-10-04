@@ -370,9 +370,9 @@ emit(SHOCKWAVE_PATH + ".meta", asset_meta(G_ASSET["VesselCombatHitByMissileShock
 
 # ── 4. Wire them onto the Sparrow's weapons ─────────────────────────────────
 #
-# BULLETS: append to the full-auto container's existing projectileShipEffects (which already
-# spins and shrinks the victim's skimmer) - the scoring effect is additive and changes nothing
-# about how a bullet already feels.
+# BULLETS: append to the full-auto container's existing projectileShipEffects - the scoring
+# effect is additive and changes nothing about how a bullet already feels. (That container used
+# to carry a SPIN as well; it was removed - a vessel may not move an opposing vessel.)
 FULLAUTO_PATH = ("Assets/_SO_Assets/Effects/Effect Containers/Projectile Containers/"
                  "SparrowFullAutoProjectileImpactContainer.asset")
 fullauto = read(FULLAUTO_PATH)

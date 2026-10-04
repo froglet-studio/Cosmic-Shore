@@ -24,7 +24,7 @@ namespace CosmicShore.Tests
     [TestFixture]
     public class MicroscenePatternsTests
     {
-        // 1500 = the shipped Toy_Conveyor budget (20 scenes × 1500 = the belt's 30,000-prism
+        // 1500 = the shipped Wander_WithoutArk budget (20 scenes × 1500 = the belt's 30,000-prism
         // conserved stock); the small values keep the low-budget paths honest.
         static readonly int[] Budgets = { 12, 42, 60, 100, 1500 };
         static readonly int[] Seeds = { 1, 7, 12345 };

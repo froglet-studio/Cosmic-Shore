@@ -32,8 +32,10 @@ CELL first ("Rampage Borromean Flora Mass Config Data"), and a prefix rule would
 handed every adopting cell's copy silently back to it.
 
 DEPLOYMENT, stated plainly because the claim rots: as of this commit the species grows in
-RAMPAGE (as mass to destroy), WRECKING BALL and WILDLIFE BLITZ cells 1 and 2, as well as
-being reachable through the freestyle Lifeform Matrix toy.  `DEPLOYMENTS` below is this
+RAMPAGE (as mass to destroy), WRECKING BALL, WILDLIFE BLITZ cells 1 and 2 and the
+freestyle ARBORETUM (as a SPECIMEN - one of each element, the only cell that grows it to
+be looked at rather than flown through), as well as being reachable through the freestyle
+Spawn Matrix toy.  `DEPLOYMENTS` below is this
 tool's half of that; the other half is each cell's own generator, which owns the
 `SupportedFloras` list and the volume ladder the adoption moves.  WRECKING BALL is
 deliberately NOT in `DEPLOYMENTS` - it FORKS Rampage's configs, so it has one owner for its
@@ -52,7 +54,7 @@ FLORACS = A('_Scripts/Controller/Environment/FloraAndFauna/BorromeanFlora.cs')
 PREFAB  = A('_Prefabs/FloraAndFauna/BorromeanFlora.prefab')
 DONOR   = A('_Prefabs/FloraAndFauna/SchwarzPFlora.prefab')
 LIFEDIR = A('_SO_Assets/Lifeforms')
-MATRIX  = A('_SO_Assets/Toys/Toy_LifeformMatrix.asset')
+MATRIX  = A('_SO_Assets/Toys/Toy_SpawnMatrix.asset')
 
 FLORA_CONFIG_SCRIPT_GUID = 'a32a297a7606432885f4d3e1f83bea9a'   # FloraConfigurationSO.cs.meta
 DONOR_SCRIPT_GUID        = 'd3651588f6d7bbd4ba59c18516075c9a'   # AssembledFlora.cs.meta
@@ -101,6 +103,14 @@ DEPLOYMENTS = [
     # forest. It takes the Borromean four the same way it takes the other five.
     ('_SO_Assets/Cell Configs/WildLife Blitz Cells/Cell 1', 'Wildlife Cell 1', 1, 2, (0.25, 0.85)),
     ('_SO_Assets/Cell Configs/WildLife Blitz Cells/Cell 2', 'Wildlife Cell 2', 1, 2, (0.25, 0.85)),
+    # THE ARBORETUM is the one deployment that is not a forest: cap 1 means ONE specimen of
+    # each element, which is that cell's whole proposition (Docs/ECOSYSTEM.md 57). Its band
+    # is wider and starts further out than the others' because it has to clear the ~392u
+    # nucleus - Flora.ResolvePlantRadius collapses a band authored inside a control zone to
+    # one degenerate shell, and sixteen Mandelbulb specimens plus these four on one sphere
+    # is not an arboretum. That cell's own generator owns its SupportedFloras list and its
+    # volume ladder, and READS these four back rather than re-authoring them.
+    ('_SO_Assets/Cell Configs/Arboretum Cell',    'Arboretum',        1,  1, (0.42, 0.92)),
 ]
 
 
@@ -351,7 +361,7 @@ def serialized_fields(cs_path):
 
 
 def register_in_matrix(prefab_guid_unused, cfg_guids):
-    """Splice a Borromean row into the freestyle Lifeform Matrix toy's flora kingdom.
+    """Splice a Borromean row into the freestyle Spawn Matrix toy's flora kingdom.
 
     The species is in no SpawnProfile, so the matrix IS its deployment - and a species
     nothing can reach is a species nobody can look at.  Done here rather than by hand so
@@ -360,7 +370,7 @@ def register_in_matrix(prefab_guid_unused, cfg_guids):
     each run and replaces any existing Borromean row.
     """
     if not os.path.exists(MATRIX):
-        sys.exit('Toy_LifeformMatrix.asset is missing')
+        sys.exit('Toy_SpawnMatrix.asset is missing')
     t = open(MATRIX).read()
     row = ('  - Name: Borromean\n'
            '    ElementConfigs:\n'
@@ -371,7 +381,7 @@ def register_in_matrix(prefab_guid_unused, cfg_guids):
     t = re.sub(r'^  - Name: Borromean\n(?:    .*\n)+', '', t, flags=re.M)
     m = re.search(r'^  floraSpecies:\n((?:  - Name: .*\n(?:    .*\n)+)*)', t, re.M)
     if not m:
-        sys.exit('floraSpecies list not found in Toy_LifeformMatrix.asset')
+        sys.exit('floraSpecies list not found in Toy_SpawnMatrix.asset')
     return t[:m.end(1)] + row + t[m.end(1):]
 
 

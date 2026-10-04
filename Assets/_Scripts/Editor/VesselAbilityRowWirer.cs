@@ -20,8 +20,8 @@ namespace CosmicShore.Editor
     /// Four-Icon Ability Row (LOCKED structure)").
     ///
     /// <para>Because that contract is fleet-wide, so is this tool. It was the Dolphin's private
-    /// wirer until 2026-08-17; nothing about the row's geometry was ever Dolphin-specific, and three
-    /// vessels (Manta, Rhino, Serpent) still report <b>0/4 icons</b> against the audit. Pointing this
+    /// wirer until 2026-08-17; nothing about the row's geometry was ever Dolphin-specific, and the
+    /// Rhino still reports <b>0/4 icons</b> against the audit (the Serpent binds 1/4, Time only). Pointing this
     /// at one of them creates the whole row from nothing, correctly placed and correctly bound —
     /// which is the entire mechanical half of bringing a vessel into compliance. The remaining half
     /// is design (authoring that vessel's `ElementalAbilityMapSO`), which no tool can do.</para>

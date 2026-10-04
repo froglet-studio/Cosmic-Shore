@@ -71,6 +71,37 @@ namespace CosmicShore.Gameplay
             if (spindle) PrismSway.TryStamp(this, spindle);
         }
 
+        /// <summary>
+        /// Severs this prism from the plant and limb it belonged to, WITHOUT the death cascade
+        /// a removal normally triggers. Called by <see cref="EnvironmentPrismPool.TryRelease"/>:
+        /// a prism in the pool belongs to nobody.
+        ///
+        /// <para>Without this a released prism kept THREE back-references into its previous
+        /// life - <see cref="LifeForm"/>, <c>OwnerFauna</c>, and the cached <c>spindle</c> - and
+        /// the old owner's trackers kept it too. The pool then re-issued it to a plant growing
+        /// in a DIFFERENT cell, and two things went wrong: <see cref="Initialize"/>'s
+        /// <c>spindle ??=</c> kept the OLD limb (so the prism joined a limb about to be
+        /// destroyed), and when the retired world was finally torn down its lifeforms ran
+        /// <c>Die</c> -> <c>DamageAll</c> over a tracker that still listed the re-issued prism,
+        /// blowing it out of the NEW plant. That is the Arkway's "later cells lose their prisms
+        /// but keep their spindles and crystals": the corridor retires a cell while the next one
+        /// grows, so re-issue and teardown overlap, and the loss grows as the pool's stock of
+        /// recycled prisms does.</para>
+        /// </summary>
+        public void DetachForPool()
+        {
+            if (spindle)
+                spindle.ForgetHealthBlock(this);
+            spindle = null;
+
+            var owner = LifeForm;
+            LifeForm = null;
+            if (owner) owner.ForgetHealthBlock(this);
+
+            OwnerFauna = null;
+            PrismSway.Clear(this);
+        }
+
         public void Reparent(Transform newParent)
         {
             spindle ??= transform.parent.GetComponent<Spindle>();

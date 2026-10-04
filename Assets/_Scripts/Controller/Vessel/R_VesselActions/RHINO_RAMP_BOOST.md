@@ -41,9 +41,40 @@ CurrentBoostAmount() + MinimumSpeed`, and the Rhino authors `DefaultThrottleScal
 | quantity | expression | value |
 |---|---|---|
 | cruise (full throttle, no boost) | `50 × 1 + 0` | **50 u/s** |
-| top (ramp engaged, dead straight) | `50 × 24 + 0` | **1200 u/s** |
-| build time cruise → top | `(1200 − 50) / 220` | **5.2 s** |
-| coast time top → cruise (disengaged) | `(1200 − 50) / 120` | **9.6 s** |
+| top (ramp engaged, dead straight) | `50 × 16.8 + 0` | **840 u/s** |
+| build time cruise → top | `(840 − 50) / 220` | **3.6 s** |
+| coast time top → cruise (disengaged) | `(840 − 50) / 120` | **6.6 s** |
+
+> **RETUNED 2026-09-25 — top speed to 70%, speed-driven turning to 40%.** `maxBoostMultiplier`
+> 24 → **16.8** (top 1200 → **840 u/s**; cruise untouched at 50) and `Rhino.prefab`'s
+> `RotationThrottleScaler` 0.5 → **0.2** (the term that makes turning grow with speed). At top
+> speed ω is now `840 × 0.2 + 90` = **258 °/s** (was 690), the minimum radius **186.5 u** (was
+> 99.6), the asymptote `180/(π·0.2)` = **286.5 u** (was 114.6) and the flat-out radius
+> **666.2 u** (was 355.9). Cruise radius barely moves (24.9 → 28.6 u). The tables further down
+> this document (the convergence table, the stick/speed/radius table and every Headlong figure
+> quoted from them) were derived at the OLD numbers and are kept as the record of that tuning;
+> the live curve is:
+>
+> | stick | sustained speed | radius it holds | ×flat-out |
+> |---|---|---|---|
+> | 0.30 (plateau edge) | 840 u/s | 622 u | 0.93 |
+> | 0.40 | 727 | 442 | 0.66 |
+> | 0.50 | 614 | 331 | 0.50 |
+> | 0.60 | 501 | 252 | 0.38 |
+> | 0.70 | 389 | 190 | 0.28 |
+> | 0.80 | 276 | 136 | 0.20 |
+> | 0.90 | 163 | 85 | 0.13 |
+> | 1.00 | 50 | 29 | 0.04 |
+>
+> The agility-grows-with-speed identity survives (the radius still converges) but is much
+> weaker: a 10× speed increase now costs 85 u of radius rather than 13. Consequences, measured
+> by compiling and running the shipped `HeadlongCircuit` + `HeadlongCircuitTests` offline
+> (400 seeds × 4 intensities): every Headlong level got HARDER — median corners that cost speed
+> 1/2/2/3 → **2/4/4/5**, median hardest corner 99/80/50/37% of top → **92/66/47/34%** — because
+> the cell shell is fixed while the flat-out circle nearly doubled. Level 1's safety floor went
+> `CornerRadiusFactor` 0.62 → **0.75** to keep its "never a hairpin" promise; levels 2-4 are
+> unchanged and still ordered. Regatta and Broadside `--check` are unchanged (the Rhino carries
+> no Time handicap row on either card).
 | bleed while still steering | `bleedPerSecond` | **300 u/s** |
 
 > **`DefaultMinimumSpeed` was 10 until the minimum-throttle brake** (`MinimumThrottleBrake`,

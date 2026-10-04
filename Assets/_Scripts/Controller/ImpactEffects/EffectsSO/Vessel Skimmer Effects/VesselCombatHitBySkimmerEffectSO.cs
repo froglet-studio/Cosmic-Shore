@@ -93,6 +93,21 @@ namespace CosmicShore.Gameplay
                                                sameVictimCooldownSeconds, out int supersededRank))
                 return;
 
+            // Routed through the same seam as every other reported hit, so the rule "a hit bites
+            // what it is priced at" is structural rather than remembered. It is a NO-OP for the
+            // Strike class shipped here - a contact strike's drain is authored per weapon (the
+            // Squirrel's overtake mirrors it as an ally buff), so CombatHitDrain declines it.
+            // A Strike is the fleet's CONTACT verb, so ElementalTransfer.FormFor sends its petals
+            // straight to the attacker rather than into the arena - you flew into them and took
+            // it off them. The velocity is therefore unused for this class and passed anyway, so
+            // the call reads the same at all three reporters and a future ejecting skimmer verb
+            // needs no new argument. Note Strike is one of the two classes CombatHitDrain declines
+            // (its size is authored per weapon), so on the Squirrel this is a no-op and the
+            // overtake asset does the work; on the Rhino's sword it is the only path there is.
+            CombatHitDrain.Apply(victimStatus, shooterStatus, hitClass, supersededRank,
+                                 shooterStatus.Course * shooterStatus.Speed,
+                                 ElementalDebuffSources.VesselContact);
+
             onCombatHitLanded.Raise(new CombatHitStats
             {
                 ShooterName = shooterName,

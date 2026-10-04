@@ -115,14 +115,15 @@ namespace CosmicShore.Utility
         static readonly int GapeId = Shader.PropertyToID("_PrismSightGape");
         static readonly int ParamsId = Shader.PropertyToID("_PrismSightParams");
         static readonly int StrengthId = Shader.PropertyToID("_PrismSightStrength");
+        static readonly int BlockerColorId = Shader.PropertyToID("_PrismSightBlockerColor");
 
         // --- every other light (a fixed bank of array slots) ---
-        static readonly int BankOriginId = Shader.PropertyToID("_PrismSightPeerApex");
-        static readonly int BankAxisId = Shader.PropertyToID("_PrismSightPeerAxis");
-        static readonly int BankGapeId = Shader.PropertyToID("_PrismSightPeerGape");
-        static readonly int BankTintId = Shader.PropertyToID("_PrismSightPeerTint");
-        static readonly int BankShapeId = Shader.PropertyToID("_PrismSightPeerShape");
-        static readonly int BankCountId = Shader.PropertyToID("_PrismSightPeerCount");
+        static readonly int BankOriginId = Shader.PropertyToID("_PrismLitPeerApex");
+        static readonly int BankAxisId = Shader.PropertyToID("_PrismLitPeerAxis");
+        static readonly int BankGapeId = Shader.PropertyToID("_PrismLitPeerGape");
+        static readonly int BankTintId = Shader.PropertyToID("_PrismLitPeerTint");
+        static readonly int BankShapeId = Shader.PropertyToID("_PrismLitPeerShape");
+        static readonly int BankCountId = Shader.PropertyToID("_PrismLitPeerCount");
 
         static bool _publishedAimed;
 
@@ -151,7 +152,7 @@ namespace CosmicShore.Utility
 
         // Always sent at full length: Unity binds an array global at the length of its first
         // write, so a short write later would silently leave the tail of the previous frame's
-        // bank live. Unused slots are zeroed and _PrismSightPeerCount is the real bound.
+        // bank live. Unused slots are zeroed and _PrismLitPeerCount is the real bound.
         static readonly Vector4[] _bankOrigin = new Vector4[Slots];
         static readonly Vector4[] _bankAxis = new Vector4[Slots];
         static readonly Vector4[] _bankGape = new Vector4[Slots];
@@ -233,6 +234,14 @@ namespace CosmicShore.Utility
             // Its own scalar rather than Params' spare slot: a fade sharing a vector with the
             // volume's geometry reads fine today and gets misinterpreted six months from now.
             Shader.SetGlobalFloat(StrengthId, strength01);
+
+            // The BLOCKER colour: a super-shield inside this cone ends the blast, so the shader
+            // paints it in the palette's own danger colour (PrismDestructionSight.hlsl § BLOCKERS).
+            // Read from the palette rather than typed into the shader so the mark cannot drift
+            // from the danger tier it borrows. Alpha 0 (no palette yet, or one that authors no
+            // danger colour) tells the shader to use its fallback — never paint black.
+            Shader.SetGlobalVector(BlockerColorId,
+                ColorSet != null ? (Vector4)ColorSet.GetDangerSignalColor() : Vector4.zero);
 
             _publishedAimed = true;
         }

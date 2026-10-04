@@ -22,5 +22,6 @@ namespace CosmicShore.Data
         Shrike = 10,
         Sparrow = 11,
         Scarab = 12,
+        Butterfly = 13,
     }
 }

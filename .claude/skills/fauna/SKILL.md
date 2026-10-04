@@ -38,7 +38,7 @@ The authoritative set is *"every distinct `FaunaPrefab` guid across `_SO_Assets/
 ## 2. The five things a creature needs to be ALIVE
 
 The Clawfish shipped for ~2 years with a prefab, four element configs, a Codex page, a
-baked portrait and a station on the Lifeform Matrix bench, and **did nothing at all**
+baked portrait and a station on the Spawn Matrix bench, and **did nothing at all**
 (`Docs/ECOSYSTEM.md §45`). Every item below was individually invisible. Check all five,
 by measurement, before you conclude a creature is fine.
 

@@ -347,8 +347,8 @@ namespace CosmicShore.Utility
                  "to suit THIS plant, so a rosette's heart is a rosette's and a gyroid " +
                  "octagon's is an octagon's. 0 = keep the platform default on " +
                  "ElementalCrystalSet.\n\n" +
-                 "This is a GAMEPLAY number as well as a visual one: the collect reward and the " +
-                 "live domain fauna buff both read the heart's world scale, so a bigger plant's " +
+                 "This is a GAMEPLAY number as well as a visual one: the collect reward reads " +
+                 "the heart's world scale, so a bigger plant's " +
                  "heart is worth more to whoever takes it. The whole authored band must " +
                  "therefore stay under ElementalCrystalSetSO.MaxSafeHeartWorldScale - past it " +
                  "two visibly different hearts pay the same. Authored by " +

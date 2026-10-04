@@ -30,8 +30,9 @@ namespace CosmicShore.Gameplay
     /// <para><b>⚠ CHANGED UNDER THIS MODE'S FEET (2026-09).</b> This doc used to say "the tank
     /// does not regenerate - the ONLY refuel is an omni crystal
     /// (<c>SparrowVesselChangeResourceByCrystalEffect</c>)". That asset is DELETED. The Sparrow's
-    /// missiles now reload by DESTROYING HOSTILE PRISMS
-    /// (<c>VesselRearmOnPrismDestruction</c>, 0.01 per prism = 50 prisms per rocket), and the omni
+    /// missiles now reload by DESTROYING PRISMS WITH GUNFIRE - any domain, and a rocket's own
+    /// blast pays nothing (<c>VesselRearmOnPrismDestruction</c>, 0.01 per prism = 25 prisms per
+    /// BASE rocket, 50 per heavy one), and the omni
     /// crystal instead grants an 8-second elemental-debuff ward. This mode's premise is therefore
     /// softened rather than broken: a Sparrow tearing up the Boneyard is now self-funding, so the
     /// crystal line is an ACCELERANT rather than the sole tap, and the tension between "shoot the

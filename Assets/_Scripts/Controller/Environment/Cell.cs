@@ -418,12 +418,16 @@ namespace CosmicShore.Gameplay
         /// or null when the position is in open space. O(cells-in-scene) - call
         /// at object lifecycle points (spawn/destroy), not per frame.
         /// </summary>
-        public static Cell FindCellContaining(Vector3 position)
+        /// <param name="sceneCellsOnly">Skip satellites (preview arenas, Arkway traversal
+        /// cells). A caller that wants the SCENE'S cell — the one to revert, swap or return
+        /// home to — must not be handed a satellite that happens to be closer.</param>
+        public static Cell FindCellContaining(Vector3 position, bool sceneCellsOnly = false)
         {
             for (int i = 0; i < ActiveCells.Count; i++)
             {
                 var c = ActiveCells[i];
-                if (c && c.ContainsPosition(position))
+                if (!c || (sceneCellsOnly && c.IsSatellite)) continue;
+                if (c.ContainsPosition(position))
                     return c;
             }
             return null;
@@ -436,14 +440,14 @@ namespace CosmicShore.Gameplay
         /// read state from when the player isn't inside any (e.g. Menu_Main's
         /// orbital camera, between-cell transit).
         /// </summary>
-        public static Cell FindNearestActiveCell(Vector3 position)
+        public static Cell FindNearestActiveCell(Vector3 position, bool sceneCellsOnly = false)
         {
             Cell best = null;
             float bestSqr = float.PositiveInfinity;
             for (int i = 0; i < ActiveCells.Count; i++)
             {
                 var c = ActiveCells[i];
-                if (!c) continue;
+                if (!c || (sceneCellsOnly && c.IsSatellite)) continue;
                 float d = (c.transform.position - position).sqrMagnitude;
                 if (d < bestSqr) { bestSqr = d; best = c; }
             }
@@ -928,6 +932,32 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// ENVIRONMENT volume laid under <paramref name="domain"/> INSIDE the nucleus - the
+        /// territorial claim itself. 0 when this cell has no nucleus control zone.
+        /// </summary>
+        public float GetNucleusDomainVolume(Domains domain)
+        {
+            if (!HasNucleusControlZone) return 0f;
+            EnsureVolumeFresh();
+            return nucleusEnvVolumeByDomain.GetValueOrDefault(domain, 0f);
+        }
+
+        /// <summary>
+        /// The volume that DECIDES this cell - exactly the source <see cref="DominantDomain"/>
+        /// reads: the nucleus environment volume in a cell with a control zone, the whole-cell
+        /// live volume in one without.
+        ///
+        /// It exists so a HUD cannot disagree with the control it is drawing. A gauge fed from
+        /// <see cref="GetDomainVolume"/> in a nucleus cell reports whole-cell mass while
+        /// <see cref="DominantDomain"/> is deciding on the nucleus alone - so it can show one
+        /// domain leading while the cell is held by another, with nothing wrong on either side.
+        /// Ask this when the question is "who holds this cell"; ask
+        /// <see cref="GetDomainVolume"/> when it is "how full is this cell".
+        /// </summary>
+        public float GetControlVolume(Domains domain) =>
+            HasNucleusControlZone ? GetNucleusDomainVolume(domain) : GetDomainVolume(domain);
+
+        /// <summary>
         /// The herbivore PREY signal in volume units (fauna bodies excluded - not
         /// edible, counting them would seed fauna against phantom food). With a
         /// nucleus control zone this is ALL environment volume outside the nucleus
@@ -1232,7 +1262,11 @@ namespace CosmicShore.Gameplay
         {
             // [Inject] fields aren't available in OnEnable. Retry subscription
             // here with deduplicate guard so Initialize() fires on OnInitializeGame.
-            if (gameData != null)
+            // Never for a satellite: InitializeSatellite unsubscribes deliberately, and a
+            // satellite activated and initialised in the same frame reaches Start AFTER that
+            // — re-subscribing here would let a later OnInitializeGame raise re-run a
+            // traversal cell's whole bootstrap under a player flying in it.
+            if (gameData != null && !IsSatellite)
             {
                 gameData.OnInitializeGame.OnRaised -= Initialize;
                 gameData.OnInitializeGame.OnRaised += Initialize;
@@ -1281,6 +1315,17 @@ namespace CosmicShore.Gameplay
                 _volumeSumPending = false;
             }
             if (_volumeSumNative.IsCreated) _volumeSumNative.Dispose();
+
+            // Each density grid owns persistent NativeArrays; SetupDensityGrids disposes the
+            // old set on re-init, but a destroyed cell must free its last set too, or every
+            // cell leaks them once per scene load. Dispose is idempotent, and clearing means
+            // a late re-init can't reach these again.
+            if (countGrids != null)
+            {
+                foreach (var grid in countGrids.Values)
+                    grid?.Dispose();
+                countGrids.Clear();
+            }
         }
 
         void ResetCell()
@@ -1488,7 +1533,7 @@ namespace CosmicShore.Gameplay
         /// <para><b>Every producer must ask the CELL, never the config</b> - the same rule, for
         /// the same reason, as <see cref="ResolveFaunaPopulation"/>. Flora has FOUR producers
         /// (<c>RandomLifeSpawner</c>, <c>IntensityWiseLifeSpawner</c>, <c>Flora.TryReproduce</c>
-        /// and the freestyle <c>Microscene</c> conveyor / Lifeform Matrix toy), and which
+        /// and the freestyle <c>Microscene</c> conveyor / Spawn Matrix toy), and which
         /// SPAWNER a biome runs is decided by an unrelated field - <c>CellTypeChoiceOptions</c>
         /// <c>.IntensityWise</c> silently swaps the class - so a density rule implemented in one
         /// producer is dead code in exactly the modes that asked for it. The cell is the one
@@ -1601,17 +1646,6 @@ namespace CosmicShore.Gameplay
             // Bind runtime -> this cell
             runtime.Cell = this;
             runtime.EnsureCellStats(ID);
-
-            // Elemental integration: any scene with a living cell gets the domain fauna buff
-            // system — living fauna hearts empower their domain's vessels, platform-wide.
-            // NEVER for a satellite: EnsureExists REBINDS the existing system's runtime
-            // subscription (AttachRuntime swaps it onto the instance passed in), so a satellite
-            // would steal the scene system off the scene cell's runtime and leave it holding a
-            // destroyed SO when the satellite is struck — which is a chaos that only shows up
-            // AFTER the first preview is left. The satellite's fauna simply don't feed the buff
-            // pool, which is correct: a preview arena's hearts are not the menu's economy.
-            if (!IsSatellite)
-                DomainFaunaBuffSystem.EnsureExists(gameObject, gameData, runtime);
 
             AssignConfig();
 
@@ -2162,19 +2196,35 @@ namespace CosmicShore.Gameplay
             {
                 if (CellConfigs == null) return null;
                 for (int i = 0; i < CellConfigs.Count; i++)
-                {
-                    var cfg = CellConfigs[i];
-                    if (!cfg || cfg.EnvironmentPrefab != null) continue;
-
-                    var profile = cfg.SpawnProfile;
-                    // No profile at all is as bare as it gets.
-                    if (!profile) return cfg;
-                    if (profile.SupportedFloras is { Count: > 0 }) continue;
-                    if (profile.SupportedFaunas is { Count: > 0 }) continue;
-                    return cfg;
-                }
+                    if (IsBareCanvas(CellConfigs[i]))
+                        return CellConfigs[i];
                 return EnvironmentFreeConfig;
             }
+        }
+
+        /// <summary>
+        /// Does THIS config grow nothing — no authored <c>EnvironmentPrefab</c> and a
+        /// <c>SpawnProfile</c> listing no flora and no fauna? The one-config half of
+        /// <see cref="BareCanvasConfig"/>, split out because a second reader arrived that asks
+        /// about a config it already has rather than searching for one.
+        ///
+        /// <para>It is the answer to a question <c>EnvironmentPrefab == null</c> looks like it
+        /// answers and does not: that field says how a world is BUILT (laid up front, or grown),
+        /// and MOST environment-free configs are not empty at all — the Lattice cell IS twelve
+        /// colonies, the Arboretum IS sixteen specimens, and every Rampage, Tollway and Wrecking
+        /// Ball cell grows its whole forest. Docs/ECOSYSTEM.md §36.10's rule, met by its third
+        /// reader.</para>
+        /// </summary>
+        public static bool IsBareCanvas(CellConfigDataSO config)
+        {
+            if (!config || config.EnvironmentPrefab != null) return false;
+
+            var profile = config.SpawnProfile;
+            // No profile at all is as bare as it gets.
+            if (!profile) return true;
+            if (profile.SupportedFloras is { Count: > 0 }) return false;
+            if (profile.SupportedFaunas is { Count: > 0 }) return false;
+            return true;
         }
 
         // ── Satellite cells ──────────────────────────────────────────────────
@@ -2981,7 +3031,8 @@ namespace CosmicShore.Gameplay
                         gridTracked[block] = blockPosition; // remembered for the symmetric remove
 
                         foreach (var t in s_playableDomains)
-                            if (t != registeredDomain) countGrids[t].AddBlockAt(blockPosition);
+                            if (t != registeredDomain && countGrids.TryGetValue(t, out var grid))
+                                grid.AddBlockAt(blockPosition);
 
                         if (countGrids.TryGetValue(Domains.Blue, out var anyGrid))
                             anyGrid.AddBlockAt(blockPosition);
@@ -3026,7 +3077,8 @@ namespace CosmicShore.Gameplay
             if (gridTracked.Remove(block, out Vector3 filedAt))
             {
                 foreach (Domains t in s_playableDomains)
-                    if (t != registeredDomain) countGrids[t].RemoveBlockAt(filedAt);
+                    if (t != registeredDomain && countGrids.TryGetValue(t, out var grid))
+                        grid.RemoveBlockAt(filedAt);
 
                 if (countGrids.TryGetValue(Domains.Blue, out var anyGrid))
                     anyGrid.RemoveBlockAt(filedAt);
@@ -3139,6 +3191,36 @@ namespace CosmicShore.Gameplay
             if (runtime != null && runtime.CrystalTransform)
                 return runtime.CrystalTransform.position;
             return transform.position;
+        }
+
+        /// <summary>
+        /// True when <paramref name="position"/> is inside this cell's VISIBLE MEMBRANE — the
+        /// boundary the player can see, as distinct from <see cref="ContainsPosition"/>'s
+        /// SENSING radius, which a large arena widens past the membrane
+        /// (<see cref="CellConfigDataSO.SenseRadiusOverride"/>) so fauna can find mass across a
+        /// whole track. Anything answering "which cell am I in" for the PLAYER wants this one:
+        /// the sensing radius can legitimately swallow a neighbouring world, which is a correct
+        /// answer for prism registration and a wrong one for a HUD. False before the membrane
+        /// has spawned.
+        /// </summary>
+        public bool IsInsideMembrane(Vector3 position)
+        {
+            float radius = MembraneRadius;
+            if (radius <= 0f) return false;
+            return (position - transform.position).sqrMagnitude < radius * radius;
+        }
+
+        /// <summary>The enabled cell whose visible MEMBRANE contains <paramref name="position"/>,
+        /// or null. See <see cref="IsInsideMembrane"/> for why this is not
+        /// <see cref="FindCellContaining"/>.</summary>
+        public static Cell FindCellByMembrane(Vector3 position)
+        {
+            for (int i = 0; i < ActiveCells.Count; i++)
+            {
+                var c = ActiveCells[i];
+                if (c && c.IsInsideMembrane(position)) return c;
+            }
+            return null;
         }
 
         public bool ContainsPosition(Vector3 position)

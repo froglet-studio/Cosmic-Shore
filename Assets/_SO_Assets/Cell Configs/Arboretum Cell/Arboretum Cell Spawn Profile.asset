@@ -1,0 +1,56 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e8d8aa5d835249798a256e18f2f7d912, type: 3}
+  m_Name: Arboretum Cell Spawn Profile
+  m_EditorClassIdentifier:
+  FloraExcludeLocalDomain: 0
+  FloraSpawnVolumeCeiling: 12000
+  FloraInitialDelaySeconds: 0
+  FloraSpawnIntervalSeconds: 0
+  FloraPopulationScale: 1
+  FloraPlantBudgetScale: 1
+  SupportedFloras:
+  - {fileID: 11400000, guid: cf7c84c6bb54e84a01f2855c9c2bcfed, type: 2}
+  - {fileID: 11400000, guid: 040320ddbf26835fc36fceb6ca9b2b45, type: 2}
+  - {fileID: 11400000, guid: 02cef999ebd33fab0096e82d17bfd329, type: 2}
+  - {fileID: 11400000, guid: 77ec9bf0c93a7b6f55087a2e7f22bfe7, type: 2}
+  - {fileID: 11400000, guid: 9212856fa17c33d33dcc08960752d643, type: 2}
+  - {fileID: 11400000, guid: fe5229c21613caddedca10ad3c41caaf, type: 2}
+  - {fileID: 11400000, guid: 65603aca7ba4d6ea4802254a85385e19, type: 2}
+  - {fileID: 11400000, guid: 8491a77fe854a215cb33309af4418c68, type: 2}
+  - {fileID: 11400000, guid: 81cb3a1bdea0ca86043a7eae63db63fb, type: 2}
+  - {fileID: 11400000, guid: ca8e7a3643f2cc5462f7cd939b5425d8, type: 2}
+  - {fileID: 11400000, guid: 8139468306e2b4ec8bdf96708a38a463, type: 2}
+  - {fileID: 11400000, guid: 748cad230cc447bcfd33877ca4ce328b, type: 2}
+  - {fileID: 11400000, guid: 7c4169e4fd77392b4d60e35ec0fa152f, type: 2}
+  - {fileID: 11400000, guid: 09b07cb4d26b8c03901d6aef10165a29, type: 2}
+  - {fileID: 11400000, guid: d28de3266d5cf723422740e16b990aca, type: 2}
+  - {fileID: 11400000, guid: d32b240ad47e40833ac000452f48ce18, type: 2}
+  - {fileID: 11400000, guid: 0832de1ccd19eb9bbdbb10c7faefedf9, type: 2}
+  - {fileID: 11400000, guid: 07358be7257b21cddd5aa759ab6c7862, type: 2}
+  - {fileID: 11400000, guid: 34a2c3df841d2d649ebd1f5bdff9c766, type: 2}
+  - {fileID: 11400000, guid: ad3139747fbb93fc47eab0e3867959e1, type: 2}
+  FaunaExcludeLocalDomain: 0
+  InitialFaunaSpawnWaitTime: 20
+  FaunaSpawnVolumeThreshold: 1
+  FaunaPopulationScale: 1
+  BaseFaunaSpawnTime: 30
+  SeedFullWaveEveryTick: 0
+  FaunaFoodFloor: 5
+  FaunaInitialDelaySeconds: 0
+  FaunaSpawnIntervalSeconds: 0
+  HerbivoreSpawnPointCount: 3
+  HerbivoreSpawnRadius: 800
+  PredatorSpawnPointCount: 0
+  PredatorSpawnRadius: 900
+  SupportedFaunas:
+  - {fileID: 11400000, guid: 7e709dc7969b7d393bef8cbfa055b48f, type: 2}

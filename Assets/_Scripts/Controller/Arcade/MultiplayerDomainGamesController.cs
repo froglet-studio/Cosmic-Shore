@@ -95,6 +95,15 @@ namespace CosmicShore.Gameplay
         void OnCountdownTimerEnded_ClientRpc()
         {
             CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "[FLOW-9] [DomainGamesCtrl] OnCountdownTimerEnded_ClientRpc - SetPlayersActive + StartTurn");
+
+            // The game starts here, so the score starts here - the same once-per-game zero the
+            // base ClientRpc performs. This override replaces that RPC wholesale, and until
+            // 2026-09 it skipped the zero, so EVERY domain mode (i.e. every shipping arcade mode)
+            // counted whatever was credited during the arena build and the countdown. Pilots are
+            // frozen then, but the world is not: fauna graze, AI pre-spawn, environment mass
+            // settles - and several modes had grown their own local zero to compensate.
+            ZeroStatsForGameStartOnce();
+
             gameData.SetPlayersActive();
             gameData.StartTurn();
             EnsureLocalHumanCanMove();

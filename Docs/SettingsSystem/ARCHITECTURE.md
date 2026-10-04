@@ -100,9 +100,9 @@ the in-scene **Benchmark**, which measures real frame cost via the author's
 
 ## Benchmark scene
 
-- **The scene:** `BenchmarkStressTest.unity` (Singleplayer Scenes) is committed to the repo and
-  registered in Build Settings — there is exactly ONE and it is never re-created (the one-shot
-  creation tool has been removed). It was originally cloned from `MinigameWildlifeBlitz`
+- **The scene:** `BenchmarkStressTest.unity` (Singleplayer Scenes) is committed to the repo — there is exactly ONE and it is never re-created (the one-shot
+  creation tool has been removed). **Correction (2026-09): it is NOT in Build Settings or the Linux build profile**, so a Netcode
+  load of it is expected to fail in a player build. It was originally cloned from `MinigameWildlifeBlitz` (retired 2026-09)
   (preserving NetworkObjects, ContainerScope, Cell + RandomLifeSpawner, crystal manager, camera);
   its Cell now runs the menu's Blob Cell Config on all four intensity slots.
 - **Launch:** Settings → Run Benchmark calls `BenchmarkSceneLauncher.LaunchBenchmark()` → sets

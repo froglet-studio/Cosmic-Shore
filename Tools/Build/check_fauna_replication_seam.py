@@ -17,7 +17,7 @@ every other case.  A producer that instantiates a fauna prefab and skips it
 leaves a live hazard behind.
 
 This has now shipped TWICE - `Docs/PartySystem/BUGS.md` B16, then B5 when three
-producers (`ModePreviewArena`, `LifeformMatrixToy`, `Microscene`) reached
+producers (`ModePreviewArena`, `SpawnMatrixToy`, `Microscene`) reached
 `CellLifeSpawnerBase.SpawnFaunaWithDomain` directly and so bypassed a seam that
 lived one level up in `SpawnFaunaBanded`.  The seam has since moved down to the
 one `Instantiate` every producer reaches, which closes those three by

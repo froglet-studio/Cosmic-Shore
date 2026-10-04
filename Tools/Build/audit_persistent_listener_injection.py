@@ -146,8 +146,6 @@ BASELINE = {
     ("HangarVesselDetailView", "CloseUnlockPanel"),
     ("MenuCrystalClickHandler", "ToggleTransition"),
     ("MenuMiniGameHUD", "Show"),
-    ("MenuVesselSelectionPanelController", "OnCloseButtonClicked"),
-    ("MenuVesselSelectionPanelController", "OnResumeButtonClicked"),
     ("MiniGameHUD", "OnPipInitialized"),
     ("MiniGameHUD", "ToggleReadyButton"),
     ("MiniGameHUD", "UpdateTurnMonitorDisplay"),

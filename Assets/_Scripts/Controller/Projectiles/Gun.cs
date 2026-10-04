@@ -76,13 +76,19 @@ namespace CosmicShore.Gameplay
             int energy = 0, bool detachAfterSpawn = false,
             bool stopOnFirstPrismImpact = false, bool spareOwnDomain = false,
             Vector3? aimDirection = null, float flightGrowthFactor = 1f,
-            int sphericalPoints = 0)
+            int sphericalPoints = 0, ProjectilePayload? payload = null)
         {
             if (_onCooldown && !ignoreCooldown) return;
 
             switch (firingPattern)
             {
                 case FiringPatterns.Spherical:
+                    // NOTE: payload is deliberately NOT forwarded here. A spherical burst is a
+                    // fan of many rounds and no caller carries a per-shot payload onto one (the
+                    // Urchin's spikes are its only user and pass none), so plumbing it through
+                    // FireSpherical would add surface for a case that does not exist. If a
+                    // spherical weapon ever needs one, forward it rather than discovering that a
+                    // payload handed to this pattern is silently ignored.
                     FireSpherical(containerTransform, speed, inheritedVelocity,
                         projectileScale, projectileTime, charge, energy, sphericalPoints);
                     break;
@@ -93,7 +99,7 @@ namespace CosmicShore.Gameplay
                     // itself owns no spread policy and rolls no dice: it is handed a direction.
                     FireSingle(containerTransform, speed, inheritedVelocity,
                         projectileScale, Vector3.zero, projectileTime, charge, energy, aimDirection, detachAfterSpawn,
-                        stopOnFirstPrismImpact, spareOwnDomain, flightGrowthFactor);
+                        stopOnFirstPrismImpact, spareOwnDomain, flightGrowthFactor, payload);
                     break;
             }
 
@@ -270,7 +276,8 @@ namespace CosmicShore.Gameplay
             bool detachAfterSpawn = false,
             bool stopOnFirstPrismImpact = false,
             bool spareOwnDomain = false,
-            float flightGrowthFactor = 1f)
+            float flightGrowthFactor = 1f,
+            ProjectilePayload? payload = null)
         {
             if (_vesselStatus == null)
             {
@@ -320,6 +327,11 @@ namespace CosmicShore.Gameplay
             // MASS in-flight growth: set BEFORE launch, which is where the round captures the
             // scale it will grow from. The gun owns no growth policy - it is handed a factor.
             projectile.SetFlightGrowth(flightGrowthFactor);
+
+            // What this FLIGHT is carrying, as distinct from what the prefab authors. Null =
+            // the prefab's own payloads and no flight trail, which Initialize has already
+            // restored - so every caller that does not opt in is byte-identical to before.
+            if (payload.HasValue) projectile.SetPayload(payload.Value);
 
             projectile.Velocity = direction * speed + inheritedVelocity;
             projectile.LaunchProjectile(projectileTime);

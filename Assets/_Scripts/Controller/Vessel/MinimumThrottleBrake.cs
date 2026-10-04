@@ -67,14 +67,38 @@ namespace CosmicShore.Gameplay
         /// curve the fleet has always had, with an end on it.
         /// </summary>
         /// <param name="stepped">This frame's exponentially-stepped speed.</param>
-        /// <param name="current">The speed at the top of the frame. A non-positive value means
-        /// there is nothing to brake (the vector model can hand a negative nose component here
-        /// when the velocity points behind the nose), and the brake stands down.</param>
-        /// <param name="target">The commanded cruise target. Anything above zero is a vessel with
-        /// a floor or a pilot still asking for speed, and the brake stands down.</param>
-        public static float Apply(float stepped, float current, float target, float ratePerSecond, float dt)
+        /// <param name="current">The speed at the top of the frame. Zero means there is nothing to
+        /// brake. A NEGATIVE value is the mirror case and is handled only when
+        /// <paramref name="symmetric"/> is set: the vector model routinely hands a negative nose
+        /// component here when the velocity points behind the nose, and braking that toward zero
+        /// would change how every drifting hull recovers — so the mirror is opt-in, taken today
+        /// only by a transformer whose throttle can actually COMMAND reverse.</param>
+        /// <param name="target">The commanded cruise target. ANY non-zero target — a vessel with a
+        /// floor, a pilot still asking for speed, or a pilot asking for reverse — stands the brake
+        /// down. (Before reverse existed this read <c>target &gt; 0f</c>, which is the same test
+        /// while no shipped transformer can produce a negative target: <c>XDiff</c> is in [0, 1],
+        /// the scalers are positive and <c>CurrentBoostAmount</c> is at least 1. The reverse-capable
+        /// axis is the first thing that can, and it must not be clamped to a stop at zero.)</param>
+        /// <param name="symmetric">Brake a NEGATIVE <paramref name="current"/> up to zero as well.
+        /// Off for every hull that cannot command reverse, which makes this a provable no-op for
+        /// them — see the <paramref name="current"/> note.</param>
+        public static float Apply(float stepped, float current, float target, float ratePerSecond,
+                                  float dt, bool symmetric = false)
         {
-            if (target > 0f || current <= 0f || ratePerSecond <= 0f || dt <= 0f) return stepped;
+            if (target != 0f || ratePerSecond <= 0f || dt <= 0f) return stepped;
+
+            if (current < 0f)
+            {
+                // The mirror of the branch below: a reversing vessel released to centre is asking
+                // for a STOP exactly as a forward one is, and the exponential tails off toward zero
+                // from below just as hopelessly. MIN with zero so the brake can never push the
+                // vessel forward past the stop it was asked for.
+                return symmetric
+                    ? Mathf.Min(0f, Mathf.Max(stepped, current + ratePerSecond * dt))
+                    : stepped;
+            }
+
+            if (current == 0f) return stepped;
 
             // MIN of the two candidate speeds, never the SUM. Subtracting the rate from the
             // already-stepped value applies BOTH every frame, which is 40% below the legacy curve

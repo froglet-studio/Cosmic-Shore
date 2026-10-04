@@ -28,7 +28,8 @@ a reader: no writes, no ship contract, no Unity. Skill: `/element-ability-table`
 
 Note it covers **four** scaling channels, not one: the map's generic multiplier, bespoke
 `…AtRest<Element>`/`…AtFull<Element>` endpoints on an action or effect SO, an `ElementalFloat`
-(pure serialized data with no call site at all — the Squirrel's Mass slot is only this), and a
+(pure serialized data with no call site at all — the Manta's Mass slot is only this; the
+Squirrel's was too until its 2026-09-24 re-cut fixed that trail at a constant), and a
 direct `GetLevel(Element.X)` read feeding a lerp beside it (the Urchin's Slip is only this). A
 grep for `ElementalScaling` sees at most half of them.
 
@@ -170,7 +171,7 @@ consumers scale symmetrically down through debuffs — codebase-consistent behav
 
 | Element | Quantitative (continuous) | Attach point | Level-5 upgrade | Attach point |
 |---|---|---|---|---|
-| **Space** | Gun range (projectile speed and/or lifetime; range = v·T·2/π) | `FullAutoActionExecutor` fire tick + `FireGunActionExecutor.Fire` — live `FullAutoActionSO.spaceSpeedMultiplier` on speed/lifetime (authored `speedValue` **375** — a plain `float` since 2026-09-20, because nothing scales the base — × an `ElementalFloat` 1 → **9** floored 0.4, so SPACE 0 ≈ 72 u and SPACE 15 ≈ 931 u — the numbers are unchanged by the 2026-09-18 unification, only their home is) | **Piercing bullets** — and ONLY that, on **both** fire modes (bullets and turret prism rounds). SPACE owns REACH; the armour on fired prisms is **MASS 5** (it spent 2026-08 rounds 4–6 here and was returned by sign-off on 2026-08-13) | Per-shot `piercing` flag through `Gun.FireGun → Projectile.Initialize`; prism-impact flow returns the projectile to the factory after the damage effect when not piercing. Must not reuse `DisableColliderNow` until the dud bug is fixed |
+| **Space** | **HOLE (2026-09-28)** — gun range is now FIXED and no element scales it | Retired: `FullAutoActionSO.spaceSpeedMultiplier` (x1 → x9) is deleted and `speedValue` is a fixed **1350** u/s = **257.8 u** range, 2x the old Space-1 range (`SPARROW_SPRAY_ACCURACY.md` Round 7). The guns card now shows the gun's HEAT instead. The row still names the Pulsefire Cannons and needs a re-cut | **Piercing bullets** — and ONLY that, on **both** fire modes (bullets and turret prism rounds). SPACE owns REACH; the armour on fired prisms is **MASS 5** (it spent 2026-08 rounds 4–6 here and was returned by sign-off on 2026-08-13) | Per-shot `piercing` flag through `Gun.FireGun → Projectile.Initialize`; prism-impact flow returns the projectile to the factory after the damage effect when not piercing. Must not reuse `DisableColliderNow` until the dud bug is fixed |
 | **Time** | Boost speed, on an **indefinite** boost (no heat, no meter) | `VesselTransformer.CurrentBoostAmount()` — live `Multiplier(Time)` on top of `VesselStatus.BoostMultiplier`; the shared field is never mutated | **Elemental Ward**: while boosting, negative `ResourceSystem.ApplyElementalEffect` calls are dropped — buffs still land, live debuffs still decay, non-elemental danger punishments (slow, input mute) still apply | The general `ResourceSystem` immunity state + the shared `VesselElementalImmunity` driver (`WhileBoosting`, gated `Element.Time`, warding `ElementalDebuffSources.All` — a ward declares WHICH debuff classes it stops, and the Sparrow's stops every one; the Dolphin's Drift Ward stops `DangerPrism` alone). The **strafing roll is now BASE kit**, ungated, on `BarrelRollController` (left stick at perimeter + boost). Detail: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER.md` |
 | **Mass** | Turret prism stretch (long z-axis) **+ in-flight round growth on BOTH fire modes** (rounds swell across their flight: 3× at resting Mass, 6× at Mass 10, linear in level over [-5, 15]) | `FullAutoBlockShootActionExecutor` — multiply `BlockScale.z` by `Multiplier(Mass)` at fire time, routed through `TargetScale` + `Prism.Initialize`. Growth: `FullAutoActionSO.ResolveGrowthFactor` → `Projectile.SetFlightGrowth`, scaling the drawn cross-section and the swept hit radius by the same factor every frame | **Shielded Prisms** — turret-fired prisms arrive with one-hit ablative octahedron armour and a wider hit sphere. Returned here from Space 5 by design sign-off (2026-08-13): **MASS owns the SUBSTANCE of what you fire, SPACE owns its REACH** | `FiredPrismState.ShieldedAtMass5` sets `prismProperties.IsShielded` before `Initialize`, off an `IsUpgradeActive(Mass)` snapshot taken per volley |
 | **Charge** | Skyburst blast radius | `FireGunActionExecutor.Fire`: replace the literal `0` with `Clamp01(GetLevel(Charge)/10)`; author real min/max on the three skyburst effect assets (the `Lerp(MinScale, MaxScale, Charge)` pipe already exists in `ProjectileDetonatorSO`) | **Skybursts spare the shooter's own domain** | Gate the direct-hit damage in `SkyBurstProjectileDamagePrismEffectSO` on domain when unlocked (per-shot flag plumbed like piercing). **The AOE follows the same per-shot flag** since 2026-08: `ProjectileDetonatorSO` passes `AffectSelfOverride = !SpareOwnDomain`, because the prefabs' authored `affectSelf: 0` had the blast sparing own domain at EVERY level — half the upgrade was pre-unlocked. Prereq: wire steal → `PrismSpatialIndex.UpdateDomain` so "own domain" is live |
@@ -244,8 +245,7 @@ which applies three independent layers so the signal survives any per-vessel pre
 | Element badge | That element's **petal**, in the level-5 **white**, blooms in at a corner of the icon (withers out on re-lock — nothing pops in or out) | Always. It is a *child* of the icon, so views that repaint the icon colour every frame cannot stomp it. Sprite + white come from `ElementalBarsConfigSO`, so level 5 reads as the same "all petals white" the flower shows |
 | Tint + persistent scale bump | Icon tints to `upgradeHighlightColor` and rests at `upgradeHighlightScale`, with a one-shot unlock punch | Vessels whose icon colour is otherwise static. Set `tintIconOnUpgrade = false` where the icon colour is a live gameplay gauge |
 
-**Vessels whose icons are live gauges** (the Squirrel: tube cooldown fill, drift lean, impact flash,
-heat tint) must override `SetAbilityUpgraded` and re-anchor their own captured rest scales to
+**Vessels whose icons are live gauges** (the Squirrel: ring cooldown, impact flash) must override `SetAbilityUpgraded` and re-anchor their own captured rest scales to
 `AbilityIconRestScale(element)` — otherwise the view's own tweens settle back to the *pre-upgrade*
 scale and wipe the bump. `SquirrelVesselHUDView` is the reference implementation.
 
@@ -356,14 +356,15 @@ and no `UpgradeLabel`, and its HUD carries 0–2 lower-right icons. (The Manta l
 L5 upgrades; see FLEET_MAPS.md §2 Manta and
 `_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOOM.md`. The **Serpent** left it
 2026-09-16 for its Charge and Space rows — the scope + rifle re-cut, FLEET_MAPS.md §2 Serpent and
-`SERPENT_SNIPER_SCOPE.md` — though its Mass row is still open and its HUD still binds NO icons, so
-its four lockup cards render LOCKED and only the Charge card's cooldown veil moves.) Run
+`SERPENT_SNIPER_SCOPE.md` — and 2026-09-25 for its Time row, Solid Fuel Pellets
+(`SERPENT_FUEL_PELLETS.md`), which bound its first icon: the Time card now shows the four-pellet
+fuel tank, while Charge/Mass/Space still render LOCKED and the Charge card's cooldown veil moves.) Run
 **FrogletTools > Vessels > Audit Vessel Ability Rows** (`VesselAbilityRowAuditor`) for the live table — it
 checks map completeness, icon count and order, pitch/size uniformity and hint coverage across the whole
 fleet from assets alone. At runtime a vessel with no row now warns once per class instead of failing
 silently. The
-remaining flyable HUDs (Rhino, Serpent — whose map is now partly authored but whose icons are
-not — and the Urchin until its row is authored) have no `abilityIcons` bindings and varied lower-right layouts; wiring them is per-vessel HUD work — the
+remaining flyable HUDs (Rhino, Serpent — 1/4, Time only, since 2026-09-25 — and the Urchin until
+its row is authored) have no or partial `abilityIcons` bindings and varied lower-right layouts; wiring them is per-vessel HUD work — the
 framework above needs no further changes.
 
 ### 7.3 Gotcha: never write a control hint's SIZE

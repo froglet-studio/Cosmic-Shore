@@ -180,6 +180,13 @@ OWNED_ELSEWHERE = {
     "Lattice ": ("prefix", "Tools/Build/author_lattice_cell.py"),
     "Garland ": ("prefix", "Tools/Build/author_garland_cell.py"),
     "Borromean": ("species", "Tools/Build/author_borromean_flora_assets.py"),
+    # The Mandelbulb family: four species on one growth rule, each with a MEASURED
+    # per-element budget, so their own generator owns the populations wherever the config
+    # lives.  Matched as a SPECIES (never a prefix) for the reason stated above.
+    "Mandelbulb": ("species", "Tools/Build/author_mandelbulb_flora_assets.py"),
+    "Coral Bloom": ("species", "Tools/Build/author_mandelbulb_flora_assets.py"),
+    "Watershed": ("species", "Tools/Build/author_mandelbulb_flora_assets.py"),
+    "Apollonia": ("species", "Tools/Build/author_mandelbulb_flora_assets.py"),
 }
 
 
@@ -280,7 +287,7 @@ def collect_targets(guids, defaults):
                     referenced.append(target)
 
     # The shared per-element species assets (_SO_Assets/Lifeforms) are the ELEMENT PALETTE and
-    # the Lifeform Matrix toy's source. A lattice species' budget is its element identity, so the
+    # the Spawn Matrix toy's source. A lattice species' budget is its element identity, so the
     # unit-cell shrink has to land there too or the toy keeps spawning the old 1000-prism plant.
     lifeforms = os.path.join(SO, "Lifeforms")
     for name in sorted(os.listdir(lifeforms)):

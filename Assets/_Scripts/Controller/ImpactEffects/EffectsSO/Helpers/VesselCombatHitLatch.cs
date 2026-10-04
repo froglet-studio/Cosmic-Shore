@@ -12,7 +12,7 @@ namespace CosmicShore.Gameplay
     /// carrying its own:
     ///
     ///   1. <b>A rocket scores through two code paths for one shot.</b> A skyburst that hits a
-    ///      vessel directly detonates on impact (<c>VesselSpinBySkyBurstProjectileEffectSO</c>),
+    ///      vessel directly detonates on impact (<c>VesselDetonateSkyBurstProjectileEffectSO</c>),
     ///      so the direct hit fires from <c>ProjectileImpactor</c> and the blast fires again
     ///      from <c>ExplosionImpactor</c> a fraction of a second later - one missile, two
     ///      events, and at fifty points each that is not a rounding error.

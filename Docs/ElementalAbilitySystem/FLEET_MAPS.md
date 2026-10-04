@@ -58,12 +58,13 @@ day after the channel it referred to had been deleted.
 |---|---|---|---|
 | Dolphin | 4/4 | 4/4 | 4/4 |
 | Sparrow | 4/4 | 4/4 | 4/4 |
-| Squirrel | 4/4 | 4/4 | 4/4 |
+| Squirrel | 4/4 | 4/4 | 4/4 |  *(Charge scaling filled 2026-09-28 — the joust's STEAL; see the re-cut below)*
 | Urchin | 4/4 | 4/4 | 4/4 |
 | Manta | 4/4 | 4/4 | 3/4 |
 | Serpent | 3/4 | 3/4 | 2/4 |
 | Scarab | 4/4 | 4/4 | 2/4 |
 | Rhino | 2/4 | 3/4 | 0/4 |
+| **Butterfly** | **4/4** | **4/4** | **4/4** | *(added 2026-09-22 — code + map only; its prefab is built by `FrogletTools ▸ Vessels ▸ Create Butterfly Vessel` and is NOT on the branch yet, so the tool cannot see it until that has been run)* |
 
 Everything the tool still flags is a **design gap, not a wiring bug** — three rows: the Rhino's
 Charge and Space, and the Serpent's Mass. The full list, with what each one would cost to fill, is
@@ -113,7 +114,7 @@ beside the code: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER
 |---|---|---|
 | Charge | skyburst blast radius (authored on the skyburst effect assets, 100→170) | **Domain-Safe Skybursts** — explosions spare your own domain's prisms, and the warhead spares your own domain's wildlife and pilots (one friendly-fire decision for the whole detonation) |
 | Mass | turret-fired prism stretch (2.5) | *(open again — Shielded Prisms moved to Space 5, 2026-08 round 4)* |
-| Space | gun range (steepened: base halved twice, atFull 9 — SPACE 15 unchanged) | **Piercing Bullets** — shots pierce, and turret prisms arrive SHIELDED with a wider hit sphere (moved from Mass 5, 2026-08 round 4) |
+| Space | **HOLE (2026-09-28)** — gun range is now FIXED (1350 u/s, 257.8 u = 2x the old Space-1 range); SPACE scales nothing on the guns until the row is re-cut (`SPARROW_SPRAY_ACCURACY.md` Round 7) | **Piercing Bullets** — shots pierce, and turret prisms arrive SHIELDED with a wider hit sphere (moved from Mass 5, 2026-08 round 4) |
 | Time | boost SPEED (1.5), consumed by `VesselTransformer.CurrentBoostAmount()` | **Elemental Ward** — while boosting, negative `ApplyElementalEffect` calls are dropped, for every debuff source class (`VesselElementalImmunity.wardedSources: All` → `ResourceSystem.IsImmuneTo`) |
 
 **TIME row, changed 2026-08 — do not restore the old design:**
@@ -152,12 +153,14 @@ beside the code: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER
 
 **CHARGE row, changed 2026-09 — the rocket's ECONOMY and its FUZE:**
 
-- **Missiles are no longer crystal-stocked.** They recharge by DESTROYING HOSTILE MASS (**0.01**
-  per prism, so **50 prisms per rocket** and 100 for a full rack — halved from 0.02 later in the
-  same pass) through `VesselRearmOnPrismDestruction` on the vessel root, which
-  listens on the prism-destroyed SOAP channel — the only producer that sees all five ways a Sparrow
-  destroys a prism, including the missile blast, whose Burst batch path dispatches no per-prism
-  effects at all.
+- **Missiles are no longer crystal-stocked.** They recharge by DESTROYING MASS WITH GUNFIRE
+  (**0.01** per prism, so **25 prisms per BASE rocket**, 50 per heavy one, and 100 for a full
+  rack — halved from 0.02 later in the same pass) through `VesselRearmOnPrismDestruction` on the
+  vessel root, which listens on the prism-destroyed SOAP channel — the only producer that sees all
+  five ways a Sparrow destroys a prism, which is what makes it possible to DECLINE four of them in
+  one line. Only direct gunfire pays, and its DOMAIN does not matter: a rocket's own blast funding
+  the next rocket closes the shoot-to-reload loop on itself, while a colour gate dried the reload
+  up in arenas whose mass wears the pilot's own.
 - **The omni crystal changed jobs**: it now grants **8 s of elemental-debuff immunity**
   (`VesselTimedElementalWard`, the event-driven sibling of `VesselElementalImmunity`). Checked
   against the mono-vessel-mode rule — none of Dog Fight, Salvo or Wildlife Liberation scores on an
@@ -261,7 +264,9 @@ to four loosely-related mechanics:
   TEAM-locked. **Twin Seed is retired** — the yield is one crystal per cycle at every level.
 - **Mass gave up the trail entirely.** `trailVolume` is disabled and `massUpgradeShieldsTrail` is
   off on `Dolphin.prefab`; the Dolphin no longer grows its drift prisms or shields them. (The
-  machinery stays — it is the Squirrel's Heavy Trail — it is simply no longer wired here.)
+  machinery stays. It was the Squirrel's Heavy Trail until the 2026-09-24 re-cut, where the shield
+  half became BASE and the flag was renamed `driftShieldsTrail`; the VOLUME half is now live only
+  on the Manta.)
 - **Space narrowed to REACH only.** It still scales the blast self-similarly through
   `_heightMultiplierAtFullSpace`; what changed is that Charge now moves the capsule diameter on
   top of that, so the three elements own three orthogonal dimensions and none can steal what
@@ -331,7 +336,7 @@ Element assignment and the right-trigger resolution were confirmed in the same s
 | Charge | **Sniper Shot** on RT — the RECOVERY: 12 s at rest → 5.4 s at Charge 10 (`SniperShotAction.asset`) | **Pierce** — the round carries through up to 3 prisms instead of stopping at the first (`SniperShotActionExecutor`, gated on `IsUpgradeActive(Charge)`) |
 | Mass | *(open)* → proposal below still stands | **Fortified Wall** — woven wall prisms arrive shielded |
 | Space | **Scope** on LT — the MAGNIFICATION: 22° FOV at full zoom at rest → 11° at Space 10, floored at 8° (`SniperScopeAction.asset`) | **Deep Focus** — ×1.6 more zoom depth, and the floor drops with it, so the extra reach is reachable (13.8° at rest, 6.9° at Space 10; `SniperScopeActionExecutor`, gated on `IsUpgradeActive(Space)`) |
-| Time | boost duration (1.6) | *(open)* → proposal: **Endless Coil** — consuming a boost charge while boosting chains without the reload pause |
+| Time | **Solid Fuel Pellets** on A — burn DURATION per pellet: ×1 at rest → ×1.6 at Time 10 (`ConsumeBoostAction.asset`). Restored 2026-09-25: one press burns one pellet, burns overlap additively, the fuel tank refills at a fixed rate and holds four (`R_VesselActions/SERPENT_FUEL_PELLETS.md`) | *(open)* — the old **Endless Coil** proposal ("chains without the reload pause") is void: the reload no longer exists |
 
 Retired with the re-cut: the Charge proposal *boost stack potency* / **Venom Wake**, and the Space
 proposal *skimmer scale* / **Coil Reach**. `VesselPrismController.EnableDangerMode` is still
@@ -370,7 +375,7 @@ Drive-by: the Time entry's `Input` was `0` (`FullSpeedStraightAction`) while `Co
 rides `Button1Action`. The ability lockup DRAWS each card's control chip from that field, so it was
 a wrong glyph, not a stale comment. Corrected to `6`.
 
-### Squirrel — racer (drift + tube) — APPROVED + SHIPPED
+### Squirrel — racer (drift + tube) — APPROVED + SHIPPED, **RE-CUT 2026-09-24**
 
 The original proposal table below was superseded by Garrett's markup; the shipped design:
 
@@ -382,10 +387,59 @@ The original proposal table below was superseded by Garrett's markup; the shippe
 | Time | boost-ring cooldown ×0.5 at level 10 (`SquirrelTubeActionSO.cooldownMultiplierAtFullTime`) | **Twin Rings** — the tube deploys a second ring (baseline reduced 2→1 ring; `upgradeExtraRings`) |
 
 Removed: Time→top speed (prefab `ThrottleScalerMultiplier` disabled — one parameter per element).
+
+#### The 2026-09-24 re-cut — **SHIPPED**
+
+Every row moved. The organising idea is that each element now owns the thing it is *named* for on
+this hull: **Mass creates mass, Time makes you faster, Charge is the threat you carry into a
+lifeform, Space is how far your steal reaches.**
+
+| Element | Ability | Input | Quantitative (LIVE) | L5 upgrade (LIVE) |
+|---|---|---|---|---|
+| **Charge** | **Crystal Joust** | passive | **Petals stolen per overtake ×1 → ×2.5** (`VesselOvertakeBySkimmerEffectSO.stealScale`, added 2026-09-28 by design request). Read off the THIEF's REPLICATED level, so every peer moves the same petals. ×1 at rest keeps the priced Strike (0.8 petal per element); ×2.5 at level 10 is 2 whole petals per element. Opponent branch only — the ally buff keeps the base. The Rhino's sword shares the type and authors it disabled | **Shepherd** (moved from Space) — `SquirrelVesselWitherLifeformByCrystalEffect.allyUpgradeElement: 3 → 1`. The upgrade now sits on the ability it upgrades |
+| **Mass** | **Boost Ring** (moved from Time) | RT | deploy cooldown ×1 → ×0.5 (`SquirrelTubeActionSO.cooldownMultiplierAtFullMass`, renamed with `[FormerlySerializedAs]`) | **Twin Rings** — `IsUpgradeActive(Element.Time)` → `Element.Mass` in `SquirrelTubeActionExecutor` |
+| **Space** | **Steal** | passive | skimmer `Scale` ElementalFloat 15 → 30, **unchanged** — the sphere IS the steal reach, so the number did not have to move with the label | **Iron Grip** (NEW) — a shielded prism is stolen OUTRIGHT and keeps its armour, instead of only being stripped of the shield |
+| **Time** | **Skimming** (moved from Charge) | passive | skim energy per collision ×1 → ×2 (`SkimmerBoostPrismEffectSO.energyMultiplier`, renamed with `[FormerlySerializedAs]`, `element: 1 → 4`) | **Live Wire** — the danger 10× bonus, now element-addressed by the new authored `dangerBonusElement: 4` instead of a hardcoded `Element.Charge` |
+
+**Mass's old row is retired to BASE, not moved.** `trailVolume` is now a fixed **1.35×** on
+`Squirrel.prefab` (`Enabled: 0, Value: 1.35` — `ElementalFloat.EvaluateLive` returns `Value`
+when disabled, so this needed no code), and the shield gate lost its L5 term:
+`massUpgradeShieldsTrail` → **`driftShieldsTrail`** (`[FormerlySerializedAs]`), so **drifting lays
+shielded prisms for every pilot at every level**. The Manta's `turnUpgradeShieldsTrail` branch
+**keeps** its `IsUpgradeActive(Element.Mass)` gate — that is the Manta's shipped level-5 and
+nothing here touches it.
+
+**Four things worth carrying off this branch:**
+
+1. **`superSteal` already existed and nobody passed it.** `PrismTeamManager.Steal`'s third
+   parameter had been in the tree the whole time: `!superSteal && IsShielded` → shed the shield
+   and return, versus a flip that never clears `IsShielded`. Iron Grip is therefore ~6 lines
+   rather than a new mechanic. Super-shielded mass is still refused at every level.
+2. **Both effect assets were already Squirrel-only** — `SkimmerBoostPrismEffect.asset` and
+   `SkimmerStealPrismEffect.asset` are each referenced by exactly ONE container
+   (`SquirrelSkimmerImpactorDataContainer`), *measured*, so rule 8's fork-before-changing was
+   satisfied without forking. Both new element fields still default to the old behaviour, so a
+   second vessel adopting either asset type is unchanged.
+3. **A moved ability drags its HUD gauge with it**, and on this hull every icon carried a second
+   binding: `boostFill` (skim gauge) Charge → **Time**, `tubeCooldownIcon` Time → **Mass**,
+   `impactIcon` (joust + crystal flash) Space → **Charge**. `SetTubeCooldownReady` also had to
+   move its `SetAbilityCooldown(Element.Time, …)` to `Element.Mass` — the veil is addressed by
+   ELEMENT, so a moved ability with an un-moved cooldown call draws its recharge on a stranger's
+   card.
+4. **Two bindings were retired rather than re-homed.** `driftButtonIcon` (the drift sprite/lean)
+   was sitting on the card the Boost Ring now occupies, and the drift is core flight with no
+   element — so it goes, along with its three SOAP subscriptions. `overheatIcon` went with it:
+   `SetOverheatHeat`/`JuiceOverheat*` have had **no callers** since the Sparrow's overheat
+   mechanic was deleted, so that card had been showing a gauge nothing drove. ⚠ **Stated cost:
+   the Squirrel now has no drift readout on the HUD at all** — `ElementalBarsView.JuiceDriftStart`
+   exists, is fully written and is ALSO dead (no callers anywhere), so if drift feedback is wanted
+   back it is one line in `SquirrelVesselHUDController` pointing at the petal flowers instead of
+   at an ability icon.
+
 HUD: the shared upgrade-highlight system (`VesselHUDView.abilityIcons` + base
 `VesselHUDController` subscribing `OnUpgradeStateChanged`) is wired on the Squirrel's four
-icons (boost gauge / drift / impact / tube); other vessels adopt by filling their view's
-`abilityIcons` bindings — no code.
+icons (joust impact / ring cooldown / steal / skim gauge); other vessels adopt by filling their
+view's `abilityIcons` bindings — no code.
 
 ### Urchin — chain spikes + trail rider — APPROVED + SHIPPED (2026-08-15, RE-CUT 2026-08-18)
 

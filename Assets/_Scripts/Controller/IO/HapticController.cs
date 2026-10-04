@@ -83,7 +83,11 @@ namespace CosmicShore.Gameplay
         // held, so it sits at the BOTTOM of the priority order and never suppresses anything.
         const float SprayMinIntervalSec = 0.035f;  // backstop floor; the caller sets the real cadence
         const float SprayDurationSec = 0.050f;     // one short buzz per pulse
-        const float SkimDurationSec = 0.070f;      // the skim clip's length — read only by spray
+        const float SkimDurationSec = 0.070f;      // the skim clip's length — read only by spray/bind
+
+        // The bind grind is the second TEXTURE: it repeats while the Rhino's blade is held inside
+        // super-shielded mass it cannot cut. Bottom of the order beside the spray, same reasons.
+        const float BindMinIntervalSec = 0.060f;   // backstop floor; the caller sets the real cadence
 
         static float s_lastSkimTime = -999f;
         static float s_skimBusyUntil = -999f;      // spray is suppressed until here (skim outranks it)
@@ -92,6 +96,7 @@ namespace CosmicShore.Gameplay
         static float s_lastAlertTime = -999f;
         static float s_alertBusyUntil = -999f;     // skim AND punish are suppressed until here
         static float s_lastSprayTime = -999f;
+        static float s_lastBindTime = -999f;
 
         // These are compared against Time.unscaledTime, which restarts at 0 every play session —
         // with domain reload disabled a leftover busy-until stamp from a long session would
@@ -106,6 +111,7 @@ namespace CosmicShore.Gameplay
             s_lastAlertTime = -999f;
             s_alertBusyUntil = -999f;
             s_lastSprayTime = -999f;
+            s_lastBindTime = -999f;
         }
 
         /// <summary>
@@ -206,6 +212,41 @@ namespace CosmicShore.Gameplay
             PlayPattern(s_sprayJson, s_sprayRumble, level * Mathf.Clamp01(strength01));
         }
 
+        /// <summary>
+        /// The BIND grind — the fifth feel, added deliberately (Docs/HAPTICS.md ▸ "Adding /
+        /// changing a feel"): a low, heavy, transient-free rumble that repeats while the Rhino's
+        /// NON-energized blade is held inside a super-shielded prism it cannot cut
+        /// (RHINO_ENERGY_SWORD.md § "Binding"). It answers the question the pilot is asking in
+        /// that moment — "am I still stuck in it?" — and stops the frame the blade comes free.
+        ///
+        /// Character sits between the thud and the spray: the LOW motor carries it (it is armour
+        /// resisting, heavy like the punish) but it is short and repeating (a texture, like the
+        /// spray), with a low frequency (0.15, against punish 0.0 and spray 0.45) so the two
+        /// textures stay separable if a future vessel ever had both.
+        ///
+        /// Priority: the bottom, beside the spray — alert, punish and skim all suppress it and it
+        /// suppresses nothing. The ENTRY into the armour is not this feel; the caller plays the
+        /// punish thud for that, and this grind cannot cut the thud short.
+        ///
+        /// Fenced to the Rhino's blade binding on the LOCAL HUMAN pilot's own vessel. Do not hang
+        /// it on anything else.
+        /// </summary>
+        public static void PlayBind(float strength01)
+        {
+            if (!TryBeginPlayback(out var level)) return;
+
+            float now = Time.unscaledTime;
+            if (now < s_alertBusyUntil) return;                  // alert outranks everything
+            if (now < s_punishBusyUntil) return;                 // the entry thud must land intact
+            if (now < s_skimBusyUntil) return;                   // so must a reward pulse
+            if (now - s_lastBindTime < BindMinIntervalSec) return;
+            s_lastBindTime = now;
+            // Deliberately sets NO busy window: a texture never suppresses another feel.
+
+            EnsureClips();
+            PlayPattern(s_bindJson, s_bindRumble, level * Mathf.Clamp01(strength01));
+        }
+
         // Shared gate on the player's setting. Returns the output level (haptics "volume") to use.
         static bool TryBeginPlayback(out float level)
         {
@@ -227,10 +268,12 @@ namespace CosmicShore.Gameplay
         static byte[] s_punishJson;
         static byte[] s_alertJson;
         static byte[] s_sprayJson;
+        static byte[] s_bindJson;
         static GamepadRumblePattern s_skimRumble;
         static GamepadRumblePattern s_punishRumble;
         static GamepadRumblePattern s_alertRumble;
         static GamepadRumblePattern s_sprayRumble;
+        static GamepadRumblePattern s_bindRumble;
         static bool s_clipsBuilt;
 
         static void EnsureClips()
@@ -299,6 +342,20 @@ namespace CosmicShore.Gameplay
                 new[] { 30, 20 },
                 low:  new[] { 0.85f, 0.55f },
                 high: new[] { 0.70f, 0.45f });
+
+            // Bind — a low GRIND, ~80 ms. No transient (that is the skim's), low frequency
+            // (0.15 — heavier than the spray, lighter than the thud's 0.0), carried by the LOW
+            // motor with a little high-motor grit so it reads as friction rather than a hum. The
+            // caller repeats it with a small gap, so it pulses like a blade dragging on armour.
+            s_bindJson = ClipJson(
+                "{\"time\":0.0,\"amplitude\":0.8}," +
+                "{\"time\":0.05,\"amplitude\":1.0}," +
+                "{\"time\":0.08,\"amplitude\":0.0}",
+                frequency: "0.15", durationSec: "0.08");
+            s_bindRumble = Rumble(
+                new[] { 50, 30 },
+                low:  new[] { 0.95f, 0.55f },
+                high: new[] { 0.25f, 0.10f });
         }
 
         // Builds a continuous .haptic clip: the caller supplies the amplitude breakpoints; frequency

@@ -5,7 +5,8 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Fail-loud reporting for the Serpent scope's on-screen instrument
-    /// (<see cref="SniperScopeOverlay"/>).
+    /// (<see cref="SniperScopeOverlay"/>) — the eyepiece, and the reticle drawn over the
+    /// flight view beside it.
     ///
     /// <para><b>Its failure mode is a BLANK SCREEN, and a blank screen is one report for three
     /// completely different faults.</b> Since round 4 retired the main-camera cockpit, the
@@ -58,10 +59,18 @@ namespace CosmicShore.Gameplay
             /// invisible. The detail names which.
             /// </summary>
             Unusable = 4,
+
+            /// <summary>
+            /// No usable gameplay camera, so the FLIGHT view's reticle has no optics to be
+            /// projected through and is stood down. The EYEPIECE is unaffected — it carries its
+            /// own camera — which is exactly why this is its own reason rather than a refusal of
+            /// the whole instrument.
+            /// </summary>
+            NoGameCamera = 5,
         }
 
         static bool _drawingReported;
-        static readonly bool[] _reported = new bool[5];
+        static readonly bool[] _reported = new bool[6];
 
         // Domain reload can be disabled, which would otherwise latch every flag from the previous
         // play session and make the whole diagnostic silent exactly when it is being iterated on.
@@ -101,15 +110,45 @@ namespace CosmicShore.Gameplay
         /// Report the first frame the instrument lays out — on a CHANNEL, off by default, because
         /// this is bring-up telemetry for a working system rather than a fault. The refusals above
         /// stay unconditional warnings.
+        ///
+        /// <para><b>It reports the two RETICLES as well as the window, because they are a separate
+        /// report.</b> "I could not see either reticle" and "I could not see the window" are
+        /// different sentences with different causes, and until they are each stated here the only
+        /// fact this line carried was the eyepiece's rect — which is satisfied by a window drawing
+        /// perfectly with nothing in it. Both reticle radii are the SAME measurement through
+        /// different optics (<c>SniperScopeOverlay.ReticlePixels</c>), so printing them together
+        /// also states whether the zoom is reaching the eyepiece's: it should be several times the
+        /// flight view's at any zoom past the wide end, and equal to it only when both views share
+        /// a field of view.</para>
         /// </summary>
-        public static void Drawing(Vector2 centre, float radius, Vector2 screen)
+        /// <param name="centre">The eyepiece's centre in screen coordinates.</param>
+        /// <param name="radius">Half the eyepiece's side.</param>
+        /// <param name="screen">The live screen size.</param>
+        /// <param name="eyeReticlePixels">The reticle radius drawn INSIDE the eyepiece.</param>
+        /// <param name="flight">Where the FLIGHT view's reticle landed this frame, or null when it
+        /// stood down (no gameplay camera, or the aim point behind it).</param>
+        /// <param name="flightReticlePixels">That reticle's radius, meaningless when it stood down.</param>
+        public static void Drawing(Vector2 centre, float radius, Vector2 screen,
+                                   float eyeReticlePixels, Vector2? flight, float flightReticlePixels,
+                                   float postReachPixels)
         {
             if (_drawingReported) return;
             _drawingReported = true;
+
+            string flightLine = flight.HasValue
+                ? $"Flight reticle at {flight.Value} ring {flightReticlePixels:0.#} px, mark " +
+                  $"{(flightReticlePixels + postReachPixels) * 2f:0.#} px across."
+                : "Flight reticle STOOD DOWN this frame — no gameplay camera, or the aim point " +
+                  "projected behind it (a rear view does exactly that).";
+
             CSDebug.LogVerbose(CSLogChannel.SerpentScope,
                 $"[SerpentScope] Eyepiece laid out: centre {centre} radius {radius:0.#} px on a " +
-                $"{screen.x:0}x{screen.y:0} screen. If nothing is visible there, the window is " +
-                $"being covered — run FrogletTools > Diagnostics > Report On-Screen UI in play mode.");
+                $"{screen.x:0}x{screen.y:0} screen. Eyepiece reticle ring {eyeReticlePixels:0.#} px, " +
+                $"mark {(eyeReticlePixels + postReachPixels) * 2f:0.#} px across. {flightLine} " +
+                $"The RING is the shot's true angular size and is legitimately a few pixels wide; " +
+                $"the MARK is the four posts around it, which is what the pilot can actually see. " +
+                $"If nothing is visible where these say it is, they are drawing and being covered " +
+                $"— run FrogletTools > Diagnostics > Report On-Screen UI in play mode.");
         }
 
         static string Explain(Reason reason, string detail) => reason switch
@@ -129,6 +168,11 @@ namespace CosmicShore.Gameplay
                 "no root, which should be impossible. The scope's eye has nowhere to sit.",
             Reason.Unusable =>
                 $"the instrument ticked but cannot be seen: {detail}",
+            Reason.NoGameCamera =>
+                "there is no perspective Camera.main to project the flight view's reticle " +
+                "through, so only the eyepiece's reticle is drawn. The eyepiece itself is " +
+                "unaffected. If this fires in a gameplay scene, something has disabled or " +
+                "untagged the gameplay camera.",
             _ => "unknown reason.",
         };
     }

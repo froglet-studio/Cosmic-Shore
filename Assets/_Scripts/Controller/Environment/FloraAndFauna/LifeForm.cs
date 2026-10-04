@@ -225,6 +225,14 @@ namespace CosmicShore.Gameplay
             // skim-collectable until death drops it. Cleared by ActivateCrystal in Die.
             if (crystal) crystal.SetEmbeddedIn(this);
 
+            // The ELEMENT gets the last word on this lifeform's FORM, and it has to get it
+            // here: the crystal that carries the element was resolved two lines up, and
+            // BindEmbeddedParts on the next line stamps the prefab's own prisms. A form
+            // applied after that leaves the SEED prism at the pre-element size while
+            // everything grown afterwards expresses the element - the same ordering argument
+            // Flora.ApplyCellPrismScale records. See Flora.OnElementResolved.
+            OnElementResolved();
+
             BindEmbeddedParts();
 
             // The ELEMENT gets the last word on the cadence - after the prefab, after the
@@ -274,6 +282,28 @@ namespace CosmicShore.Gameplay
             healthTracker.Remove(healthPrism, killerName);
             spindleTracker.CleanupDeadRefs();
             CheckIfDead(killerName);
+        }
+
+        /// <summary>Drops a prism from this lifeform's tracker with NO death check - the prism
+        /// is leaving for the pool (<see cref="HealthPrism.DetachForPool"/>), not dying. A
+        /// retired world's lifeforms must not later act on mass that already belongs to
+        /// somebody else.</summary>
+        public void ForgetHealthBlock(HealthPrism healthPrism)
+        {
+            if (healthPrism) healthTracker?.Remove(healthPrism);
+        }
+
+        /// <summary>
+        /// The world this lifeform lives in is being retired as a whole (an Arkway cell strike):
+        /// no death, no crystal drop, no death sound - the world goes, and the lifeform with it.
+        /// Without this every plant in a struck cell ran the full <c>Die</c> path as its root
+        /// was destroyed, one creature-death SFX each.
+        /// </summary>
+        public void RetireWithWorld()
+        {
+            isCleaningUp = true;
+            dying = true;
+            StopAllCoroutines();
         }
 
         // --- Spindle Management (delegates to SpindleTracker) ---
@@ -448,6 +478,20 @@ namespace CosmicShore.Gameplay
         /// overrides afterwards.</para>
         /// </summary>
         protected virtual float ResolveShieldPeriod(float authored) => authored;
+
+        /// <summary>
+        /// Called once during <see cref="Initialize"/>, after the crystal carrying this
+        /// lifeform's ELEMENT has been resolved and BEFORE the prefab's own prisms are bound
+        /// and stamped. The hook for anything whose value is a function of the element and has
+        /// to be in place before the first prism exists - today, the flora leaf form
+        /// (<c>Flora.OnElementResolved</c> -> <c>FloraElementalForm</c>).
+        ///
+        /// <para>Base does nothing, deliberately: <b>fauna are not plants.</b> The elemental
+        /// FORM laws are written about the food web's mass, and a creature's body prisms are
+        /// not that - the same reason <see cref="ResolveShieldPeriod"/> is overridden on
+        /// <c>Flora</c> rather than here.</para>
+        /// </summary>
+        protected virtual void OnElementResolved() { }
 
         IEnumerator ShieldRegenCoroutine()
         {

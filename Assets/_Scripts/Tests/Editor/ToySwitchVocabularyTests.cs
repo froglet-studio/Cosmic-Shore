@@ -35,9 +35,14 @@ namespace CosmicShore.Tests
             ["PaintingRunner.cs"] =
                 "the painting's stroke-start gates - crossing one sets the stroke's domain",
             ["ScarabSwitch.cs"] =
-                "the Scarab's placed switch - the one wearer OUTSIDE the toybox, where the colour " +
-                "names the domain the switch belongs to (SCARAB.md section 5). Nothing in that " +
-                "mode changes a pilot's domain, so the two readings never share a screen.",
+                "the Scarab's placed switch - the first wearer OUTSIDE the toybox, where the " +
+                "colour names the domain the switch belongs to (SCARAB.md section 5). Nothing in " +
+                "that mode changes a pilot's domain, so the two readings never share a screen.",
+            ["FoldGate.cs"] =
+                "the Butterfly's fold gate - the second such wearer (BUTTERFLY_FOLD.md section 6). " +
+                "The colour says WHO MAY THREAD IT, which is a claim about the gate and not about " +
+                "the pilot: a gate never changes anyone's domain, it only declines pilots who are " +
+                "not already in it.",
         };
 
         // Files that NAME the member without requesting a switch.
