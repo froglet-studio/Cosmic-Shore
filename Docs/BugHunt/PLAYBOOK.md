@@ -268,5 +268,20 @@ write them, not just C#.
 
 ---
 
+## 10. A networked flag changed after init, but the local copy did not follow
+
+**Shows up as:** an object behaves as its old type on some or all peers after a server-side
+conversion (BH-1.12: a human pilot handed to the AI still read as human).
+
+**Why:** a plain local property (`IsInitializedAsAI`) is copied from a `NetworkVariable` once at
+init. Anything that later writes only the `NetworkVariable` leaves the copy stale.
+
+**Fix pattern:** subscribe to the variable's `OnValueChanged` for the object's whole spawned life
+(subscribe in `OnNetworkSpawn`, unsubscribe in `OnNetworkDespawn`) and update the copy there.
+When hunting a similar bug, `rg "\.Value = " ` for writes to that variable and check each writer
+also refreshes the copy.
+
+---
+
 Threading errors (`EnsureRunningOnMainThread`, UGS callbacks off the main thread) have their own
 guide: [`../THREADING.md`](../THREADING.md).
