@@ -49,6 +49,7 @@ Confidence scale:
 | 22 | **Invite-clear always takes the lobby mutex unless the caller holds it (was §2.3).** The shared `_insideRefreshCycle` flag meant "some refresh is running", so a user cancel, a party-leave callback, or a fire-and-forget clear that outlived its refresh skipped the lock and could race a send. It is replaced by an explicit `callerHoldsLobbyMutex` argument, true only for the one awaited call inside `RefreshPartyMembersAsync`. Shipped on `Bug_Hunt`. | `HostConnectionService`, `LobbyPropertyWriter` (comment) |
 | 23 | **Reconnect from the menu is a valid app-state transition (was §2.4).** `ApplicationStateMachine` refused `MainMenu → Authenticating`, so reconnect logged `Invalid transition` and the state mirror stayed `MainMenu` during the re-boot. The edge is now in the table from the menu and from the in-game states, with tests. Shipped on `Bug_Hunt`. | `ApplicationStateMachine`, `ApplicationStateMachineTests` |
 | 24 | **Play Again fade-in is armed before the init delay (was §3.1).** `FadeFromBlackOnReplay` was subscribed to `OnClientReady` after the 1 s `InitDelayMs` wait, so a vessel that became ready earlier left the replay overlay black. It is now armed in `OnNetworkSpawn` and removed on despawn. Shipped on `Bug_Hunt`. | `MultiplayerMiniGameControllerBase` |
+| 25 | **Stat report RPCs reject NaN volumes and out-of-turn reports (was §4).** `ReportEnvironmentPrismDestroyed` and `ReportPrismStolen` now use `!(volume >= 0f)`, and the five owner-reported stat RPCs (fauna kill, combat hit, fuses beaten, environment prism destroyed, prism stolen) ignore reports unless a turn is running. Shipped on `Bug_Hunt`. | `Player` |
 
 ### Playtest items for the shipped fixes
 - **Squirrel ring (#6):** fly Menu_Main freestyle → an arcade game → back, 2-3 round trips, then
@@ -124,6 +125,11 @@ Confidence scale:
   Play Again several times in a row. Every peer must fade back in to the arena each time; the
   screen must never stay black. Also quit to the menu right after pressing Play Again once, and
   start a normal game: it must not fade oddly.
+- **STILL TO TEST (revisit): 4 (stat report RPC guards), kept on Bug_Hunt untested at Yash's call.**
+- **Stat reports (§4):** play a multiplayer match with a client in a mode that scores kills or hits
+  (Dogfight, Rampage or a flora mode). The client's scores must still rise during the round, as
+  before. After the round ends, the final scoreboard must not change. A normal match is all that is
+  needed; a NaN cannot be sent without a hacked build.
 
 ---
 
@@ -144,8 +150,6 @@ Confidence scale:
 | Item | Where | Fix |
 |---|---|---|
 | Bloomrush restarts a tied 0-0-0 round when Jade is not fielded | Bloomrush end-of-round | tie-break over FIELDED domains only |
-| NaN volume accepted by the stat report RPCs | `Player.Report*_ServerRpc` | `if (!(volume >= 0f)) return;` (catches NaN) |
-| Report RPCs are not gated on a running turn | same | `if (!gameData.IsTurnRunning) return;` |
 | Trunk count re-rolled every iteration | `BranchingFlora.cs:~150` | roll once before the loop |
 | Name generator never picks the last word | `NameGenerationData.cs:20-21` | `Random.Range(0, list.Count)` (dead code today) |
 | `PrismTimerManager.CancelScheduledActions` is O(N²) | `PrismTimerManager` | index by prism; only matters on mass cancels |

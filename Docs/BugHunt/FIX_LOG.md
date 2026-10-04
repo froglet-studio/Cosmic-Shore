@@ -8,6 +8,27 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ---
 
+## BH-4.2 / 4.3 — owner stat-report RPCs accepted NaN volumes and out-of-turn reports
+
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Symptom (risk):** a client could send a NaN volume that passed the `volume < 0f` check (every
+  comparison with NaN is false) and poisoned that player's volume totals. A report that arrived
+  after the turn had ended, or before it started, was credited into `RoundStats`, which can
+  disagree with a result the server already froze.
+- **Root cause:** the report RPCs in `Player.cs` trusted the value and ignored the turn state;
+  only `ReportSwitchThreaded_ServerRpc` had a turn gate.
+- **Fix:** `ReportEnvironmentPrismDestroyed_ServerRpc` and `ReportPrismStolen_ServerRpc` use
+  `if (!(volume >= 0f)) return;` so NaN is rejected. A new `TurnAcceptsStatReports` property
+  (`gameData.IsTurnRunning`) gates `ReportFaunaKill`, `ReportCombatHit`, `ReportFusesBeaten`,
+  `ReportEnvironmentPrismDestroyed` and `ReportPrismStolen`.
+- **Trade-off:** a legitimate report still in flight when the turn ends is now dropped. That is the
+  intended behaviour, the same as the switch-thread gate.
+- **Verification:** gate scripts pass; not run in Unity (needs a multiplayer match). Retest is on
+  the handoff playtest list.
+- **PR/commit:** pending.
+
+---
+
 ## BH-3.1 — Play Again could leave the screen black when the vessel was ready early
 
 - **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.

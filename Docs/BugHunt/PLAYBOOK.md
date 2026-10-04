@@ -354,5 +354,18 @@ scene.
 
 ---
 
+## 16. Validate client-sent numbers with the form that rejects NaN
+
+**Shows up as:** a total that becomes NaN and stays NaN, or a result that changes after the game
+has ended (BH-4.2/4.3).
+
+**Why:** every comparison with NaN is false, so `if (volume < 0f) return;` lets NaN through. A
+server RPC that credits stats also has to ignore reports that arrive when no turn is running.
+
+**Fix pattern:** write the check as the thing you accept, `if (!(value >= 0f)) return;`, and gate
+owner-reported stat RPCs on `gameData.IsTurnRunning` (`Player.TurnAcceptsStatReports`).
+
+---
+
 Threading errors (`EnsureRunningOnMainThread`, UGS callbacks off the main thread) have their own
 guide: [`../THREADING.md`](../THREADING.md).
