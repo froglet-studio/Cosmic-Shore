@@ -99,6 +99,7 @@ Confidence scale:
   console may show "adopting it instead of uploading local data", and the original progress must
   still be there. It must never reset to a new-player state. (c) A fresh account still saves its
   first changes.
+- **STILL TO TEST (revisit): 2.2, merged untested at Yash's call.**
 - **Presence lobby rejoin (2.2):** needs two online players. Start both on Menu_Main and confirm
   each sees the other in the online list. Cut one machine's network for about 30 seconds (long
   enough for three failed refreshes, then a failed rejoin), then restore it. Within about a

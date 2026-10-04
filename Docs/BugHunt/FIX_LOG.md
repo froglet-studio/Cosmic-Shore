@@ -10,7 +10,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ## BH-2.2 — presence lobby was never rejoined after a failed reconnect
 
-- **Date:** fixed 2026-10-05; awaiting Yash's retest on `Bug_Hunt`. Repro skipped.
+- **Date:** fixed 2026-10-05; merged 2026-10-05 at Yash's call with the retest deferred to the handoff revisit list. Repro skipped.
 - **Symptom:** after a network blip the online list stays empty and invites stop arriving until
   the app is restarted.
 - **Root cause:** after three consecutive refresh errors `RefreshAsync` calls `ForceReset()` and
