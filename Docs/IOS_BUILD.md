@@ -3,9 +3,12 @@
 Status: **the unsigned-ipa path ran end to end on 2026-10-02.** Run 37072677118 took a
 Windows-exported, **RAR5**-packed Xcode project (402 MB archive, 2.5 GB unpacked) and built it with
 Xcode 16.4 on `macos-15` in about **18 minutes**. It produced a 163 MB `CosmicShore-dev.ipa` whose
-bundle id is `com.FrogletGames.CosmicShore.dev`. Installing that `.ipa` on a phone with Sideloadly
-has **not** been confirmed yet, and neither has playing it; Path B and the cross-platform section
-are still plans. The four failed runs before it are recorded in the workflow's comments and commit
+bundle id is `com.FrogletGames.CosmicShore.dev`. On 2026-10-04 that `.ipa` was **sideloaded with a
+free Apple ID through Sideloadly and the game was played** on an iPhone, so Path A works end to end.
+Path B and the cross-platform section are still plans. For Sideloadly, use iTunes and iCloud from
+Apple's website, not the Microsoft Store versions: iTunes from apple.com/itunes/download/win64, and
+the iCloud installer that sideloadly.io links to. iCloud only has to be installed; never sign in to
+it. Developer Mode must stay on for a sideloaded build to open; TestFlight builds do not need it. The four failed runs before it are recorded in the workflow's comments and commit
 history: a RAR archive, Homebrew 7-Zip lacking the RAR codec, a relative project path, and a disk
 cleanup that deleted the selected Xcode.
 
