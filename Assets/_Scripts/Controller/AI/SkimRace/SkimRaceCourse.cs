@@ -23,6 +23,7 @@ namespace CosmicShore.Gameplay
         readonly Quaternion[] _rotations;   // each prism's pose (identity frames when unknown)
         readonly Quaternion[] _invRotations; // cached inverses for ShellClearance (called per rollout step)
         readonly Vector3[] _shellHalf;      // each prism's contact-shell half-extents (zero = unknown)
+        readonly float[] _shellRadius;      // |_shellHalf|: the sphere through the shell box's corners
         readonly float[] _cumulative; // _cumulative[i] = arc length from point 0 to point i
         readonly float _length;
 
@@ -41,6 +42,7 @@ namespace CosmicShore.Gameplay
             _rotations = new Quaternion[n];
             _invRotations = new Quaternion[n];
             _shellHalf = new Vector3[n];
+            _shellRadius = new float[n];
             HasShells = rotations != null && shellHalfExtents != null
                         && rotations.Count == n && shellHalfExtents.Count == n;
             for (int i = 0; i < n; i++)
@@ -48,6 +50,7 @@ namespace CosmicShore.Gameplay
                 _rotations[i] = HasShells ? rotations[i] : Quaternion.identity;
                 _invRotations[i] = Quaternion.Inverse(_rotations[i]);
                 _shellHalf[i] = HasShells ? shellHalfExtents[i] : Vector3.zero;
+                _shellRadius[i] = _shellHalf[i].magnitude;
             }
             _cumulative = new float[n + 1];
             for (int i = 0; i < n; i++)
@@ -154,7 +157,14 @@ namespace CosmicShore.Gameplay
             {
                 int i = ((hint + k) % n + n) % n;
                 Vector3 d = position - _points[i];
-                if (d.sqrMagnitude > 60f * 60f) continue;
+                float d2 = d.sqrMagnitude;
+                if (d2 > 60f * 60f) continue;
+                // The stella lies inside the sphere through its box corners, so |d| - that radius is a
+                // lower bound on its distance: a prism that cannot beat the best so far is skipped
+                // without the exact (8-triangle) test. Same answer, a fraction of the cost - this runs
+                // inside every MPC rollout step, and its cost is paid in the game's frame time.
+                float lower = Mathf.Sqrt(d2) - _shellRadius[i];
+                if (lower >= best) continue;
                 float c = SkimRaceShell.StellaDistance(_invRotations[i] * d, _shellHalf[i]);
                 if (c < best) { best = c; nearest = i; }
             }

@@ -278,6 +278,8 @@ sealed class Obstacles
 
 static class Race
 {
+    // Wall-clock cost of the shipped decision core (the sim's own dt never sees it; the game's frame does).
+    public static long DecideTicks, DecideCalls;
     // Unity's Random.onUnitSphere stand-in (the shape matters, not the stream).
     static Vector3 OnUnitSphere(System.Random r)
     {
@@ -414,7 +416,9 @@ static class Race
                         driver.Obstacles.Add(new SkimRaceObstacle { Center = it.c, Rotation = it.r, Half = it.half });
                     }
                 }
+                long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
                 var a = driver.Decide(o, course, t, dt);
+                DecideTicks += System.Diagnostics.Stopwatch.GetTimestamp() - t0; DecideCalls++;
                 if (driver.LastTrackError >= 0f && ag.Frames % 4 == 0) ag.TrackErrors.Add(driver.LastTrackError);
                 if (ph.LineDiag != 0 && ag.Frames % 20 == 0)
                 {
@@ -851,6 +855,8 @@ static class Program
             var (cfg, ph) = Parse(args.Skip(4).Where(a => !a.StartsWith("seedbase=") && !a.StartsWith("diag=") && !a.StartsWith("limit=")));
             if (mode == "trace") { var r = Race.Run(def, prisms, course, cfg, ph, 1000 + seeds, limit, true); Console.WriteLine($"finished={r.Finished} t={r.Time:F2} {r.Collected}/{r.Required}"); return 0; }
             var e = Evaluate(def, prisms, course, cfg, ph, seeds, limit, seedBase);
+            Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "  decide cost: {0:F3} ms per seat per frame (sim runtime, {1} calls)",
+                1000.0 * Race.DecideTicks / System.Diagnostics.Stopwatch.Frequency / Math.Max(1, Race.DecideCalls), Race.DecideCalls));
             Console.WriteLine($"I{intensity} track={course.Length:F0}u prisms={prisms.Points.Count} finished {e.fin}/{seeds} " +
                               $"median={e.median:F2} mean={e.mean:F2} worst={e.worst:F2} score={e.score:F2}");
             {

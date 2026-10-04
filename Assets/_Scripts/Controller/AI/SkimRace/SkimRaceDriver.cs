@@ -549,7 +549,7 @@ namespace CosmicShore.Gameplay
         void LevelApproach(in SkimRaceObservation o, SkimRaceCourse course, Vector3 passPoint, float now,
             float throttle, ref float yaw, ref float pitch)
         {
-            if (now >= _nextLevel || !_levelValid)
+            if (now >= _nextLevel)
             {
                 _nextLevel = now + 1f / Mathf.Max(1f, _cfg.LevelHz);
                 course.Project(o.Position, ref _levelHint, out _, out _);
@@ -727,7 +727,7 @@ namespace CosmicShore.Gameplay
         void Mpc(in SkimRaceObservation o, SkimRaceCourse course, Vector3 aim, float now,
             ref float yaw, ref float pitch, ref float throttle)
         {
-            if (now >= _nextMpc || !_mpcValid)
+            if (now >= _nextMpc)
             {
                 _mpcTargetS = course != null ? course.Wrap(o.CourseProgress + o.TargetAheadOnCourse) : -1f;
                 _nextMpc = now + 1f / Mathf.Max(1f, _cfg.MpcHz);
@@ -768,6 +768,10 @@ namespace CosmicShore.Gameplay
             float capture = o.HasTarget ? Mathf.Max(4f, (o.TargetRadius > 0f ? o.TargetRadius : _cfg.DefaultCaptureRadius) - _cfg.PassMargin) : 0f;
             int hint = _trackHint;
             float sum = 0f; int n = 0;
+            // The course position of the rollout's CURRENT point, projected once per step and reused by the
+            // next step's continuation (it is the same point). This rollout runs ~26 times per decision and
+            // its cost is paid in the game's frame time.
+            bool haveS = false; float sPos = 0f;
             for (float t = 0f; t < H; t += dt)
             {
                 float y = yaw, p = pitch;
@@ -776,7 +780,7 @@ namespace CosmicShore.Gameplay
                     Vector3 a = aim;
                     if (lineMode)
                     {
-                        float sr0 = course.Project(pos, ref hint, out _, out _);
+                        float sr0 = haveS ? sPos : course.Project(pos, ref hint, out _, out _);
                         a = LinePoint(course, sr0 + _lookDist);
                     }
                     Steer(rot * Vector3.forward, rot * Vector3.up, rot * Vector3.right, cmd * Vector3.forward,
@@ -790,19 +794,28 @@ namespace CosmicShore.Gameplay
                 pos += (rot * Vector3.forward) * speed * dt;
                 if (o.HasTarget && (pos - o.TargetPosition).sqrMagnitude <= capture * capture)
                     return sum / Mathf.Max(1, n) - _cfg.TrackMpcCaptureReward * (H - t);
+                haveS = false;
                 if (_cfg.TrackMpcStrikeCost > 0f && course.HasShells)
                 {
-                    course.Project(pos, ref hint, out _, out _);
-                    Vector3 wing = rot * (Vector3.right * _cfg.HullHalfWidth);
-                    float clear = Mathf.Min(course.ShellClearance(pos, hint, 6, out _),
-                        Mathf.Min(course.ShellClearance(pos + wing, hint, 6, out _), course.ShellClearance(pos - wing, hint, 6, out _)));
+                    sPos = course.Project(pos, ref hint, out _, out _);
+                    haveS = true;
+                    float clear = course.ShellClearance(pos, hint, 6, out _);
+                    // A wingtip is HullHalfWidth from the centre, so it can be at most that much closer to a
+                    // shell: only when the centre is within reach of the margin can a wingtip decide it.
+                    if (clear < _cfg.MpcHullMargin + _cfg.HullHalfWidth)
+                    {
+                        Vector3 wing = rot * (Vector3.right * _cfg.HullHalfWidth);
+                        clear = Mathf.Min(clear, Mathf.Min(course.ShellClearance(pos + wing, hint, 6, out _),
+                                                           course.ShellClearance(pos - wing, hint, 6, out _)));
+                    }
                     if (clear < _cfg.MpcHullMargin)
                         return sum / Mathf.Max(1, n) + _cfg.TrackMpcStrikeCost * (1f + (H - t) / H);
                 }
                 Vector3 target;
                 if (lineMode)
                 {
-                    float sr = course.Project(pos, ref hint, out _, out _);
+                    float sr = haveS ? sPos : course.Project(pos, ref hint, out _, out _);
+                    sPos = sr; haveS = true;
                     target = LinePoint(course, sr + _cfg.TrackMpcLead);
                     float d = Vector3.Distance(pos, target);
                     sum += d * d; n++;
@@ -820,7 +833,7 @@ namespace CosmicShore.Gameplay
         void TrackMpc(in SkimRaceObservation o, SkimRaceCourse course, Vector3 aim, bool lineMode, float now,
             ref float yaw, ref float pitch, float throttle)
         {
-            if (now >= _nextTrack || !_trackValid)
+            if (now >= _nextTrack)
             {
                 _nextTrack = now + 1f / Mathf.Max(1f, _cfg.TrackMpcHz);
                 course.Project(o.Position, ref _trackHint, out _, out _);
