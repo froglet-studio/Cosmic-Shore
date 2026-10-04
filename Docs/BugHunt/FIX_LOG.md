@@ -10,7 +10,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ## BH-1.12 — a departed player's vessel handed to the AI was not marked AI
 
-- **Date:** fixed 2026-10-05; awaiting Yash's retest on `Bug_Hunt`. Repro skipped.
+- **Date:** fixed 2026-10-05; merged 2026-10-05 at Yash's call with the retest deferred to the handoff revisit list. Repro skipped.
 - **Symptom:** after a client leaves mid-match the ship flies on under the AI, but the rest of the
   game still treats that Player as a human (ready gates, round reset, HUD checks).
 - **Root cause:** `ServerPlayerVesselInitializer.ConvertPlayerToAI` flips the networked

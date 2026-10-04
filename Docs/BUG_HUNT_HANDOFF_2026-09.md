@@ -84,6 +84,7 @@ Confidence scale:
 - **No tofu in UI text (1.11):** open the spectator overlay (buttons, hint line, Leave), the Toy
   configure modal (Back, and a branching variant card), and finish a Dogfight, Broadside and
   Undertow round (scoreboard breakdown lines). Every character must be a real glyph, no empty boxes.
+- **STILL TO TEST (revisit): 1.12, merged untested at Yash's call.**
 - **Departed pilot becomes AI (1.12):** start a 2-device match (host plus one client), have the
   client quit mid-round. The ship must keep flying under the AI, its object name must change to
   `AI`, and at the next round reset it must be restarted by the AI (not left idle). Watch for the
