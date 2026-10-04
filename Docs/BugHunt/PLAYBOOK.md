@@ -239,5 +239,18 @@ error, and the flow carries on. With no network and no session, Guest shows the 
 
 ---
 
+## 8. Culture-dependent `DateTime` / number formatting
+
+**Shows up as:** a timestamp or file name with the wrong year or non-Latin digits on devices set to
+ar-SA, th-TH or fa-IR (BH-1.9). Never an error.
+
+**Fix pattern:** any string meant for a machine (analytics, file names, JSON, logs you parse) is
+formatted with `CultureInfo.InvariantCulture`: `dt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)`.
+`$"{dt:yyyy}"` uses the current culture, so convert it to an explicit `ToString`. The same goes for
+`float.ToString` / `float.Parse`. Find candidates with
+`rg -n 'DateTime[A-Za-z.()]*\.ToString\("' Assets/_Scripts`.
+
+---
+
 Threading errors (`EnsureRunningOnMainThread`, UGS callbacks off the main thread) have their own
 guide: [`../THREADING.md`](../THREADING.md).

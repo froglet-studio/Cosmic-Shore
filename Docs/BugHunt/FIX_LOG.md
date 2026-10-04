@@ -8,6 +8,26 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ---
 
+## BH-1.9 — culture-dependent timestamps in analytics and file names
+
+- **Date:** fixed 2026-10-05; merged 2026-10-05 at Yash's call with the retest deferred to the handoff revisit list. Repro skipped.
+- **Symptom:** on a device whose culture uses a non-Gregorian calendar or non-Latin digits (ar-SA,
+  th-TH, fa-IR) the PostHog event timestamp and generated file names carried the wrong year or
+  digits. Nothing in the Console.
+- **Root cause:** `DateTime.ToString("yyyy-MM-dd...")` and `$"{dt:format}"` with no culture use the
+  current culture.
+- **Fix:** `CultureInfo.InvariantCulture` on all four sites the handoff listed:
+  `PostHogAnalyticsSink` (event timestamp), `AnalyticsServiceFacade` (`timestamp_utc_iso`),
+  `ScreenshotDirectorConfigSO.BuildFileName` and `DesktopPlatformServices.TimestampedName`.
+- **Not changed (dev tools only):** a similar `DateTime...ToString` stamp exists in
+  `PrismExplosionBenchmark`, `LoadInsightReport`, `DiagnosticsHUD`, `ProfilerCsvLogger` and
+  `LogControlWindow` (benchmark/diagnostic file names and display text). They are outside the
+  handoff list; sweep them if a diagnostic ever needs to be machine-parsed.
+- **Verification:** all gate scripts pass; not run in Unity. Retest is on the handoff playtest list.
+- **PR/commit:** pending.
+
+---
+
 ## BH-1.7 — combat-hit latch pruned every entry by one window
 
 - **Date:** fixed 2026-10-05; merged 2026-10-05 at Yash's call with the retest and Broadside balance re-check deferred to the handoff revisit list. Repro skipped.
