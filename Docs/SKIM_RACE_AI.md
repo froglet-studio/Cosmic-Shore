@@ -414,6 +414,26 @@ These are environment results, not AI results (the simulator at 115 ms frames al
 same policy from 53 s to 77 s). **The in-editor matrix for the current code is still owed** - run it
 on an idle machine with the editor focused (§7), 2 launches x 5 races per cell, players 3 and 4.
 
+### 8.0a v2-i2 editor runs (2026-10-04) - all INVALID (editor throttled in the background)
+
+Every run used `skimrace-v2-i2` and every one ran at 111-134 ms frames (the matrix is calibrated at
+25-45 ms), with Rider the frontmost app throughout - `osascript ... activate` did not hold Unity in
+front. The control proves it is the environment, not the new policy: I1 with the UNCHANGED
+`skimrace-v4-i1` (1 AI seat) ran at 112 ms frames and won in 89.1 / 114.1 s, where on 2026-10-03 it ran
+at 24-26 ms and 53-74 s.
+
+| Session | Cell | Winners (s) | Frame ms |
+|---|---|---|---|
+| `skimrace_I2_20261004-144446` | I2, 2 AI | 51.5*, 115.0, 115.8, 110.8, 119.0 | 74-132 (*race 0: 3.7 s stall, clock suspect) |
+| `skimrace_I2_20261004-151146` | I2, 2 AI | 111.8, 107.3, 119.7, 113.5, 109.7 | 129-134 |
+| `skimrace_I2_20261004-154017` | I2, 2 AI (after the perf fix) | 141.5, 116.5, 123.8, 137.9, 124.8 | 123-126 |
+| `skimrace_I1_20261004-160736` | I1, 1 AI (control) | 89.1, 114.1 | 112-114 |
+
+One real defect surfaced on the way: v2's tracking MPC cost 1.75 ms per seat per frame in the
+simulator (40x v1) because it recomputed every frame instead of at `TrackMpcHz`; now 0.37 ms
+(commit `perf(ai): cut the Skim Race pilot's per-frame decision cost`). **The v2-i2 editor result is
+still owed**: run the matrix with Unity frontmost for the whole run (close or minimise Rider).
+
 ### 8.1 Validation matrix before the geometry fixes (2026-10-03, every race listed, none selected)
 
 Branch `feat/skimrace-ai`, editor 6000.3.17f1, focused, no other load. Policies:
