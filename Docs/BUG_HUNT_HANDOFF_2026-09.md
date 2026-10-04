@@ -39,6 +39,7 @@ Confidence scale:
 | 12 | **Gamepad triggers released on strategy switch and pause (was §1.2).** `GamepadInputStrategy` had no `OnStrategyDeactivated` / `OnPaused`, so a trigger or speed gesture held when the player touched the keyboard or mouse (or paused) never sent its release and the vessel kept the ability held. It now releases held triggers and speed effects and resets its state, mirroring `KeyboardInputStrategy`; the trigger edge logic moved into a shared `DispatchTriggers`. Shipped on `Bug_Hunt`. | `GamepadInputStrategy` |
 | 13 | **Auth scene: cached-auth timeout stays on the main thread, and a silent sign-in failure is no longer treated as success (was §1.3 and §1.4).** `TrySignInCachedWithTimeoutAsync` switches to the main thread in both catches (the `CancelAfter` timer thread used to resume it) and uses `.AsMainThread()` on the success path; `HostConnectionService.WaitForProfileInitAsync` got the same switch. `OnGuestLoginAsync` and `AttemptAutoSignInAsync` now check `_facade.IsSignedIn` after the await: guest shows the error and re-enables the button, auto sign-in goes to the main menu instead of waiting out the profile timeout. Shipped on `Bug_Hunt`. | `AuthenticationSceneController`, `HostConnectionService` |
 | 14 | **Friends init no longer latches on a failed start (was §1.5).** `FriendsInitializer.InitializeFriendsAsync` set `_initialized = true` right after `friendsService.InitializeAsync()`, but the facade swallows its own failures, so a failed init still latched and every retry was refused for the session. It now takes `friendsService.IsInitialized` and returns (without setting presence) when the service is not up. Shipped on `Bug_Hunt`. | `FriendsInitializer` |
+| 15 | **Online Duel rematch starts from zero round/turn counters (was §1.6).** `ResetForReplay_ClientRpc` reset scores but not `RoundsPlayed` / `TurnsTakenThisRound`, so the in-place replay (Cellular Duel, the one mode that does not reload the scene) started with the last game's counters: the rematch ended early and swapped vessels on its first round. Both are now zeroed on every peer in the RPC. Shipped on `Bug_Hunt`. | `MultiplayerMiniGameControllerBase` |
 
 ### Playtest items for the shipped fixes
 - **Squirrel ring (#6):** fly Menu_Main freestyle → an arcade game → back, 2-3 round trips, then
@@ -63,17 +64,14 @@ Confidence scale:
 - **Friends init retry (1.5):** boot with no network / UGS Friends unreachable, then restore the
   connection and sign in again (or trigger the sign-in event). Friends should initialize on the
   second attempt, and the log should show "Friends service did not come up" for the first one.
+- **STILL TO TEST (revisit): 1.6 was merged without a two-peer retest** (and 1.3/1.4 above). Run the next item.
+- **Online Duel rematch (1.6):** play a full Cellular Duel with two peers, then Play Again (rematch).
+  The rematch must play the full set of rounds/turns, and its first round must NOT swap vessels.
+  Re-check this if a rematch ever ends early or starts swapped.
 
 ---
 
 ## 1. Tier 2 — small, local, high value (do these first)
-
-### 1.6 Online Duel rematch starts with stale round/turn counters — Medium
-- **Where:** `MultiplayerMiniGameControllerBase.ResetForReplay_ClientRpc` (793).
-- **Bug:** the in-place replay path resets scores but not `RoundsPlayed` / `TurnsTakenThisRound`.
-- **Trigger:** Cellular Duel (the one mode that does NOT replay by scene reload) → rematch.
-- **Consequence:** the rematch ends early or skips the vessel-swap round.
-- **Fix:** zero both counters in the RPC, on every peer.
 
 ### 1.7 Combat-hit latch prunes by one global window — Medium
 - **Where:** `Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Helpers/VesselCombatHitLatch.cs`.

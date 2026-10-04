@@ -8,6 +8,27 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ---
 
+## BH-1.6 — online duel rematch started with the last game's round/turn counters
+
+- **Date:** fixed 2026-10-05; merged 2026-10-05 at Yash's call with the two-peer retest deferred to the handoff revisit list. Repro skipped.
+- **Symptom:** Cellular Duel, finish a game, Play Again. The rematch ends early and/or swaps the
+  vessels on its very first round.
+- **Root cause:** `MultiplayerMiniGameControllerBase.ResetForReplay_ClientRpc` (the in-place replay;
+  Cellular Duel is the one mode that does not reload the scene) reset scores and players but never
+  `GameDataSO.RoundsPlayed` / `TurnsTakenThisRound`. The server's `SetupNewRound` zeroes the turn
+  counter, but `RoundsPlayed` stayed at the old game's value on every peer, so
+  `RoundsPlayed >= numberOfRounds` held almost at once and
+  `OnlineDuelForTheCellController.SetupNewRound` (`allowSwap = RoundsPlayed > 0`) swapped on round one.
+- **Fix:** `Assets/_Scripts/Controller/Arcade/MultiplayerMiniGameControllerBase.cs` zeroes both
+  counters in `ResetForReplay_ClientRpc`, so it runs on every peer. Deliberately NOT
+  `GameDataSO.ResetRuntimeDataForReplay`, which also clears `GameConfigSynced` and the spawn poses
+  that a live session must keep.
+- **Verification:** all gate scripts pass; not run in Unity. Retest steps (two peers) are on the
+  handoff playtest list.
+- **PR/commit:** pending.
+
+---
+
 ## BH-1.5 — friends init latched `_initialized` even when the service failed to start
 
 - **Date:** fixed 2026-10-02; awaiting Yash's retest on `Bug_Hunt`. Repro skipped.
