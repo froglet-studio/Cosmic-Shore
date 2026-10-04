@@ -8,6 +8,26 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ---
 
+## BH-1.11 — non-ASCII characters in UI strings rendered as empty boxes
+
+- **Date:** fixed 2026-10-05; merged 2026-10-05 at Yash's call with the retest deferred to the handoff revisit list. Repro skipped.
+- **Symptom:** arrows, a cross, a middle dot, a times sign and shape bullets in UI text show as
+  empty boxes. Nothing in the Console.
+- **Root cause:** the only UI font (`ALDRICH-REGULAR SDF`) carries 97 glyphs (ASCII, nbsp and an
+  ellipsis) with no fallback table. See `Docs/claude/ANTI_PATTERNS.md`.
+- **Fix:** ASCII replacements, all in strings that reach a `TMP_Text`:
+  - `SpectatorOverlay`: `<` and `>` buttons, `X  LEAVE`, and the hint line `< > / Q E ...`.
+  - `ToyConfigureModal`: `<  Back`. `ToyVariantCard`: branch marker `>`.
+  - `DogFightScoringRuleSO`: `N pts - B rounds, M rockets` (was `N pts · B×● M×◆`, the shapes
+    had no meaning without a legend).
+  - `BroadsideScoringRuleSO` and `UndertowScoringRuleSO`: the `·` separator became `, `.
+- **Verification:** all gate scripts pass; no test asserted the old strings; not run in Unity.
+  Retest is on the handoff playtest list. Alternative if the symbols are wanted back: add the
+  glyphs to the font asset instead.
+- **PR/commit:** pending.
+
+---
+
 ## BH-1.9 — culture-dependent timestamps in analytics and file names
 
 - **Date:** fixed 2026-10-05; merged 2026-10-05 at Yash's call with the retest deferred to the handoff revisit list. Repro skipped.
