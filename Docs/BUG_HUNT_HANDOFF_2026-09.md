@@ -69,6 +69,7 @@ Confidence scale:
 - **Online Duel rematch (1.6):** play a full Cellular Duel with two peers, then Play Again (rematch).
   The rematch must play the full set of rounds/turns, and its first round must NOT swap vessels.
   Re-check this if a rematch ever ends early or starts swapped.
+- **STILL TO TEST (revisit): 1.7 was merged without a retest or the Broadside balance re-check.** Run the next item.
 - **Combat-hit latch (1.7):** fight with a long-window weapon (Rhino sword) while a short-window one
   (Urchin spike) is also landing hits in the same match. One sword swing must pay once per 1.4 s
   window, never twice. Re-check the Broadside balance model (`BROADSIDE.md`) against the windows.

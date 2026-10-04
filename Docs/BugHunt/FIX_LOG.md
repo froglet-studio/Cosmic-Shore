@@ -10,7 +10,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ## BH-1.7 — combat-hit latch pruned every entry by one window
 
-- **Date:** fixed 2026-10-05; awaiting Yash's retest on `Bug_Hunt`. Repro skipped.
+- **Date:** fixed 2026-10-05; merged 2026-10-05 at Yash's call with the retest and Broadside balance re-check deferred to the handoff revisit list. Repro skipped.
 - **Symptom:** a hit with a long per-weapon window (Rhino sword 1.4 s) could pay twice, because its
   latch entry was dropped before its own window ran out.
 - **Root cause:** windows are authored per weapon asset, but `VesselCombatHitLatch.Prune` judged
