@@ -18,6 +18,7 @@ namespace CosmicShore.Core
     ///   Bootstrapping → Authenticating : AppManager.RunBootstrapAsync() after OnBootstrapComplete
     ///   Authenticating → MainMenu    : AuthenticationSceneController on successful auth + scene load
     ///   MainMenu → LoadingGame       : SceneLoader.LaunchGame()
+    ///   MainMenu → Authenticating    : ReconnectService (re-runs the boot chain in place)
     ///   LoadingGame → InGame         : MiniGame controller (via GameDataSO.OnSessionStarted)
     ///   InGame → GameOver            : Scoring / turn system (via GameDataSO.OnMiniGameEnd)
     ///   GameOver → MainMenu          : SceneLoader.ReturnToMainMenu()
@@ -57,6 +58,7 @@ namespace CosmicShore.Core
             [ApplicationState.MainMenu] = new HashSet<ApplicationState>
             {
                 ApplicationState.LoadingGame,
+                ApplicationState.Authenticating, // reconnect re-runs the boot chain from the menu
             },
             [ApplicationState.LoadingGame] = new HashSet<ApplicationState>
             {

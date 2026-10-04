@@ -8,6 +8,25 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ---
 
+## BH-2.4 — reconnect from the main menu was refused by the app-state machine
+
+- **Date:** fixed 2026-10-05; awaiting Yash's retest on `Bug_Hunt`. Repro skipped.
+- **Symptom:** after tapping Reconnect in the menu the console shows `[AppState] Invalid
+  transition: MainMenu → Authenticating`, and the app-state mirror stays `MainMenu` while the auth
+  scene runs. Anything keyed on app state sees the wrong phase during the re-boot.
+- **Root cause:** `ReconnectService` calls `TransitionTo(Authenticating)` from the menu, but the
+  transition table only listed `MainMenu → LoadingGame`.
+- **Fix:** `MainMenu → Authenticating` added to the table (reconnect is a legitimate path), the
+  class summary lists it, and `ApplicationStateMachineTests` has a new case.
+- **Not changed:** other states are still refused. A reconnect started from `InGame` or
+  `GameOver` would still log the same warning; the Reconnect controls live in the menu, so this
+  was left alone rather than loosening the table further.
+- **Verification:** gate scripts pass; the new EditMode test was not run (Unity not available
+  here). Retest is on the handoff playtest list.
+- **PR/commit:** pending.
+
+---
+
 ## BH-2.3 — invite-clear could skip the lobby mutex and race an invite send
 
 - **Date:** fixed 2026-10-05; merged 2026-10-05 at Yash's call with the retest deferred to the handoff revisit list. Repro skipped.

@@ -325,5 +325,20 @@ the locked section. Fire-and-forget work started inside the section takes the lo
 
 ---
 
+## 14. A caller's transition must exist in the state table
+
+**Shows up as:** `[AppState] Invalid transition: A → B` in the console, with the state mirror
+staying on `A` while the app is already doing the `B` work (BH-2.4).
+
+**Why:** `ApplicationStateMachine` only allows the edges listed in `ValidTransitions`. A new code
+path that calls `TransitionTo` from a state nobody planned for is refused, and the caller ignores the
+`false` return, so the failure is only a warning.
+
+**Fix pattern:** decide whether the path is legitimate. If it is, add the edge to the table, to the
+class summary, and add a test in `ApplicationStateMachineTests`. If it is not, fix the caller instead
+of loosening the table.
+
+---
+
 Threading errors (`EnsureRunningOnMainThread`, UGS callbacks off the main thread) have their own
 guide: [`../THREADING.md`](../THREADING.md).

@@ -47,6 +47,7 @@ Confidence scale:
 | 20 | **Cloud Save no longer tells a failed load apart from "no data" (was §2.1).** `ICloudSaveProvider.TryLoadAsync` reports `Loaded`, `Missing` or `Failed`. After a `Failed` load a repository keeps using its local snapshot but does not upload to the cloud until a retry gets a definite answer (`Missing` allows the write; `Loaded` adopts the real record). An unreadable stored value now counts as `Failed`. Shipped on `Bug_Hunt`. | `ICloudSaveProvider`, `UGSCloudSaveProvider`, `CloudDataRepository` |
 | 21 | **Presence lobby is rejoined with backoff after a failed reconnect (was §2.2).** After three refresh errors the lobby was cleared and rejoined once; if that one attempt failed the lobby stayed null and nothing retried. `HostConnectionService` now retries from `Update` at 3s, 6s, 12s up to 60s until the lobby is back. Shipped on `Bug_Hunt`. | `HostConnectionService` |
 | 22 | **Invite-clear always takes the lobby mutex unless the caller holds it (was §2.3).** The shared `_insideRefreshCycle` flag meant "some refresh is running", so a user cancel, a party-leave callback, or a fire-and-forget clear that outlived its refresh skipped the lock and could race a send. It is replaced by an explicit `callerHoldsLobbyMutex` argument, true only for the one awaited call inside `RefreshPartyMembersAsync`. Shipped on `Bug_Hunt`. | `HostConnectionService`, `LobbyPropertyWriter` (comment) |
+| 23 | **Reconnect from the menu is a valid app-state transition (was §2.4).** `ApplicationStateMachine` refused `MainMenu → Authenticating`, so reconnect logged `Invalid transition` and the state mirror stayed `MainMenu` during the re-boot. The edge is now in the table, with a test. Shipped on `Bug_Hunt`. | `ApplicationStateMachine`, `ApplicationStateMachineTests` |
 
 ### Playtest items for the shipped fixes
 - **Squirrel ring (#6):** fly Menu_Main freestyle → an arcade game → back, 2-3 round trips, then
@@ -112,6 +113,10 @@ Confidence scale:
   then send it again; the second invite must arrive and fire once. Repeat while the other player
   joins or leaves the party. Also let an invite time out, then re-invite. No stuck or doubled
   invites, and no hang on the invite button (a hang would mean a lock deadlock).
+- **Reconnect app state (2.4):** in Menu_Main, trigger Reconnect (the online status indicator or the
+  disconnect notice). The console must not show `Invalid transition: MainMenu → Authenticating`;
+  with the `Boot` channel verbose you should see `[AppState] MainMenu → Authenticating`, then
+  `Authenticating → MainMenu` once the menu is back. The menu should still load as before.
 
 ---
 
@@ -120,15 +125,6 @@ Confidence scale:
 ---
 
 ## 2. Larger items (need design or several files)
-
-### 2.4 `ApplicationStateMachine` refuses MainMenu → Authenticating — High
-- **Where:** `Assets/_Scripts/System/ReconnectService.cs:193` calls
-  `TransitionTo(ApplicationState.Authenticating)` from `MainMenu`. The transition table does not
-  allow it.
-- **Consequence:** reconnect logs `Invalid transition` and the app-state mirror stays `MainMenu`
-  while the auth scene runs. Anything keyed on app state misreads the phase.
-- **Fix:** add `MainMenu → Authenticating` to the table (reconnect is a legitimate path), and add a
-  case to `ApplicationStateMachineTests`.
 
 ---
 
