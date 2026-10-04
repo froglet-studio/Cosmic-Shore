@@ -8,6 +8,26 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ---
 
+## BH-1.7 — combat-hit latch pruned every entry by one window
+
+- **Date:** fixed 2026-10-05; awaiting Yash's retest on `Bug_Hunt`. Repro skipped.
+- **Symptom:** a hit with a long per-weapon window (Rhino sword 1.4 s) could pay twice, because its
+  latch entry was dropped before its own window ran out.
+- **Root cause:** windows are authored per weapon asset, but `VesselCombatHitLatch.Prune` judged
+  every entry against the cooldown of whichever call happened to trigger the periodic sweep (every
+  128 admissions). A short-window call (Urchin spike 0.12 s) therefore pruned long-window entries
+  early. The handoff also said entries could be KEPT past their window, but admission compares
+  against the calling asset's own cooldown, so a stale entry only costs memory; only the early-drop
+  half was a real gameplay bug.
+- **Fix:** `Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Helpers/VesselCombatHitLatch.cs`
+  stores the admitting window on each `Entry` and `Prune(now)` drops an entry only when
+  `now - entry.Time >= entry.Window`. `TryAdmit` behaviour is unchanged.
+- **Verification:** all gate scripts pass; not run in Unity. Retest and the Broadside balance
+  re-check are on the handoff playtest list.
+- **PR/commit:** pending.
+
+---
+
 ## BH-1.6 — online duel rematch started with the last game's round/turn counters
 
 - **Date:** fixed 2026-10-05; merged 2026-10-05 at Yash's call with the two-peer retest deferred to the handoff revisit list. Repro skipped.

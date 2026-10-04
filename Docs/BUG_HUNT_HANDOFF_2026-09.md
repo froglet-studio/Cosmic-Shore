@@ -40,6 +40,7 @@ Confidence scale:
 | 13 | **Auth scene: cached-auth timeout stays on the main thread, and a silent sign-in failure is no longer treated as success (was §1.3 and §1.4).** `TrySignInCachedWithTimeoutAsync` switches to the main thread in both catches (the `CancelAfter` timer thread used to resume it) and uses `.AsMainThread()` on the success path; `HostConnectionService.WaitForProfileInitAsync` got the same switch. `OnGuestLoginAsync` and `AttemptAutoSignInAsync` now check `_facade.IsSignedIn` after the await: guest shows the error and re-enables the button, auto sign-in goes to the main menu instead of waiting out the profile timeout. Shipped on `Bug_Hunt`. | `AuthenticationSceneController`, `HostConnectionService` |
 | 14 | **Friends init no longer latches on a failed start (was §1.5).** `FriendsInitializer.InitializeFriendsAsync` set `_initialized = true` right after `friendsService.InitializeAsync()`, but the facade swallows its own failures, so a failed init still latched and every retry was refused for the session. It now takes `friendsService.IsInitialized` and returns (without setting presence) when the service is not up. Shipped on `Bug_Hunt`. | `FriendsInitializer` |
 | 15 | **Online Duel rematch starts from zero round/turn counters (was §1.6).** `ResetForReplay_ClientRpc` reset scores but not `RoundsPlayed` / `TurnsTakenThisRound`, so the in-place replay (Cellular Duel, the one mode that does not reload the scene) started with the last game's counters: the rematch ended early and swapped vessels on its first round. Both are now zeroed on every peer in the RPC. Shipped on `Bug_Hunt`. | `MultiplayerMiniGameControllerBase` |
+| 16 | **Combat-hit latch prunes each entry by its own window (was §1.7).** `VesselCombatHitLatch` pruned every entry with whichever call's cooldown triggered the sweep, so a long-window entry (Rhino sword 1.4 s) could be dropped early by a short-window call (Urchin spike 0.12 s) and the same hit paid twice. Each entry now stores the window it was admitted under and is pruned by that. Admission itself is unchanged. Shipped on `Bug_Hunt`; Broadside's balance should be re-checked (see playtest list). | `VesselCombatHitLatch` |
 
 ### Playtest items for the shipped fixes
 - **Squirrel ring (#6):** fly Menu_Main freestyle → an arcade game → back, 2-3 round trips, then
@@ -68,19 +69,13 @@ Confidence scale:
 - **Online Duel rematch (1.6):** play a full Cellular Duel with two peers, then Play Again (rematch).
   The rematch must play the full set of rounds/turns, and its first round must NOT swap vessels.
   Re-check this if a rematch ever ends early or starts swapped.
+- **Combat-hit latch (1.7):** fight with a long-window weapon (Rhino sword) while a short-window one
+  (Urchin spike) is also landing hits in the same match. One sword swing must pay once per 1.4 s
+  window, never twice. Re-check the Broadside balance model (`BROADSIDE.md`) against the windows.
 
 ---
 
 ## 1. Tier 2 — small, local, high value (do these first)
-
-### 1.7 Combat-hit latch prunes by one global window — Medium
-- **Where:** `Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Helpers/VesselCombatHitLatch.cs`.
-- **Bug:** windows are authored PER ASSET (the Rhino sword 1.4 s, the Urchin spike 0.12 s), but the
-  prune pass uses a single window. An entry is either dropped before its own window elapses (double
-  pay) or kept past it (a legitimate hit refused).
-- **Fix:** store the window on the entry and prune `now - t > entry.window`.
-- **Note:** Broadside's balance rests on these windows (`BROADSIDE.md`). Re-check the balance model
-  after the fix.
 
 ### 1.9 Analytics timestamps are culture-dependent — High
 - **Where:** `PostHogAnalyticsSink.cs:199`, `AnalyticsServiceFacade.cs:768`. Also sweep
