@@ -216,6 +216,18 @@ namespace CosmicShore.Gameplay
         private float  _nextForcedRefreshAllowed;
         private float  _nextConvergeAllowed;
         private int    _consecutiveRefreshErrors;
+
+        // Presence-lobby REJOIN after a failed reconnect. The refresh watchdog clears the lobby
+        // reference and tries to rejoin once; if that single attempt fails (still offline, rate
+        // limited, UGS hiccup) the lobby stays null and Update's IsInPresenceLobby gate stays
+        // closed for good - the online list empties and invites stop until the app restarts.
+        // These drive a retry with exponential backoff from Update instead.
+        private const float PRESENCE_REJOIN_BASE_DELAY_SECONDS = 3f;
+        private const float PRESENCE_REJOIN_MAX_DELAY_SECONDS  = 60f;
+        private bool   _presenceRejoinPending;
+        private bool   _presenceRejoinInFlight;
+        private int    _presenceRejoinAttempts;
+        private float  _nextPresenceRejoinAllowed;
         private int    _publishedPartyCount = -1;
         private string _publishedMatchName  = "<UNSET>";
         private string _publishedPartySessionId = "<UNSET>";
@@ -415,6 +427,12 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
+            if (_presenceRejoinPending)
+            {
+                TryPresenceRejoin();
+                return;
+            }
+
             if (!IsInPresenceLobby) return;
             if (_lobbyMutex.CurrentCount == 0) return;                   // someone is already inside the mutex
             if (Time.unscaledTime < _rateLimitBackoffUntil) return;
@@ -536,8 +554,11 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private async UniTask EnsureInitializedAsync()
         {
-            if (IsInPresenceLobby || _joining) return;
+            if (IsInPresenceLobby || _joining || _presenceRejoinInFlight) return;
             _joining = true;
+            // The front-door init supersedes any pending background rejoin.
+            _presenceRejoinPending = false;
+            _presenceRejoinAttempts = 0;
             try
             {
                 SubscribeToProfileChanges();
@@ -1523,9 +1544,75 @@ namespace CosmicShore.Gameplay
                 // which keeps the user-visible recovery in one place.
                 _eventBus.RaiseHostConnectionLost();
 
-                await _lobbyService.JoinOrCreateAsync(presenceLobbyMaxPlayers);
-                ApplyPostLobbyJoinState();
+                try { await _lobbyService.JoinOrCreateAsync(presenceLobbyMaxPlayers); }
+                catch (Exception e)
+                {
+                    CSDebug.LogWarning($"[HostConnectionService] Presence lobby rejoin threw ({e.GetType().Name}): {e.Message}");
+                }
+
+                if (_lobbyService.ActiveLobby == null)
+                    SchedulePresenceRejoin();
+                else
+                    ApplyPostLobbyJoinState();
             }
+        }
+
+        /// <summary>
+        /// Queues the next presence-lobby rejoin attempt, backing off 3s, 6s, 12s ... up to 60s.
+        /// </summary>
+        private void SchedulePresenceRejoin()
+        {
+            float delay = Mathf.Min(PRESENCE_REJOIN_MAX_DELAY_SECONDS,
+                PRESENCE_REJOIN_BASE_DELAY_SECONDS * Mathf.Pow(2f, Mathf.Min(_presenceRejoinAttempts, 10)));
+            _presenceRejoinAttempts++;
+            _presenceRejoinPending = true;
+            _nextPresenceRejoinAllowed = Time.unscaledTime + delay;
+            CSDebug.LogWarning($"[HostConnectionService] Presence lobby not rejoined - retrying in {delay:0}s (attempt {_presenceRejoinAttempts}).");
+        }
+
+        private void TryPresenceRejoin()
+        {
+            // Stand down if the service was shut down, went offline, or something else (the
+            // front-door init) already restored the lobby.
+            if (!IsInitialized || _lobbyService.ActiveLobby != null ||
+                (_gameData != null && _gameData.IsOfflineSession))
+            {
+                _presenceRejoinPending = false;
+                _presenceRejoinAttempts = 0;
+                return;
+            }
+
+            if (_joining || _presenceRejoinInFlight) return;
+            if (Time.unscaledTime < _nextPresenceRejoinAllowed) return;
+
+            RejoinPresenceLobbyAsync().Forget();
+        }
+
+        private async UniTaskVoid RejoinPresenceLobbyAsync()
+        {
+            _presenceRejoinInFlight = true;
+            try
+            {
+                await _lobbyService.JoinOrCreateAsync(presenceLobbyMaxPlayers);
+
+                if (_lobbyService.ActiveLobby == null)
+                {
+                    SchedulePresenceRejoin();
+                    return;
+                }
+
+                _presenceRejoinPending = false;
+                _presenceRejoinAttempts = 0;
+                ApplyPostLobbyJoinState();
+                CSDebug.LogVerbose(CSLogChannel.Party,
+                    $"[HostConnectionService] Presence lobby rejoined - lobby: {_lobbyService.ActiveLobby.Id}");
+            }
+            catch (Exception e)
+            {
+                CSDebug.LogWarning($"[HostConnectionService] Presence lobby rejoin threw ({e.GetType().Name}): {e.Message}");
+                SchedulePresenceRejoin();
+            }
+            finally { _presenceRejoinInFlight = false; }
         }
 
         private bool TryFindIncomingInvite(IReadOnlyPlayer sender, out PartyInviteData invite)

@@ -193,6 +193,13 @@ no-op). Called only by `HostConnectionService.RefreshAsync` when the
 consecutive-error counter exceeds the reconnect threshold (and the
 catch-guard at the top of `RefreshAsync` did not fire).
 
+**If the rejoin after a ForceReset fails** (still offline, rate limited, UGS error) the
+lobby reference stays null. `HostConnectionService` then sets `_presenceRejoinPending` and
+`Update` retries `JoinOrCreateAsync` with backoff (3s, 6s, 12s ... capped at 60s) until a lobby
+is back, the service shuts down, or the session goes offline (BH-2.2). Before this the single
+failed attempt left `IsInPresenceLobby` false forever and the online list stayed empty until a
+restart.
+
 **False ForceReset is the main historical failure surface** — the YS2
 bug (commit `a1a8eb9`) was an in-flight refresh that fired ForceReset
 during a successful party transition, leaving the joiner in a private
