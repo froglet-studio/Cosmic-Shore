@@ -6,6 +6,9 @@ Revision 2 checkpoint of 31 July.
 
 > ## Re-run, 4 Oct 2026 — nine days, 315 commits, and the build artifact nobody has
 >
+> Full write-up: **[`STEAM_CHECKPOINT_REV6_READINESS_AUDIT.pdf`](STEAM_CHECKPOINT_REV6_READINESS_AUDIT.pdf)**
+> (8 pages). The series index is [`STEAM_CHECKPOINT_SERIES.md`](STEAM_CHECKPOINT_SERIES.md).
+>
 > Measured against `bleeding-edge` @ **`8c4e853a9`**, with the same rulers the earlier
 > revisions used. **The game grew again and the verification did not.**
 >

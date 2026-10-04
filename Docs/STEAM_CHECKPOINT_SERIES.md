@@ -1,16 +1,16 @@
 # Steam checkpoint — the revision series
 
-There are **five** revisions of the Steam checkpoint. **All five are now in this repository** (Revisions 2 and 4 were both recovered on 21 Sep 2026). This file is the
+There are **six** revisions of the Steam checkpoint. **All six are in this repository** (Revisions 2 and 4 were both recovered on 21 Sep 2026). This file is the
 index, and it exists because the series is the thing that drifts: each revision changed the
 *destination*, and a runbook that cites "the checkpoint" without a revision number inherits
 whichever one it happens to open.
 
-**If you only read one, read Revision 5** — it is the current state and it corrects three of
-Revision 4's claims. The live work board derived from the series is `Docs/STEAM_RELEASE_TASKS.md`.
+**If you only read one, read Revision 6** — it is the current state. It corrects Revision 5 on the
+item Revision 5 had itself corrected Revision 4 on: the weekly Windows player build. The live work board derived from the series is `Docs/STEAM_RELEASE_TASKS.md`.
 
 > **The six-week window Revision 2 was written against closed on 11 September 2026.** Every revision
 > after it measures a project that is past its own plan date, and Revision 5 states that first
-> because no earlier revision did.
+> because no earlier revision did. Revision 6 puts it at **23 days** past.
 
 ---
 
@@ -23,6 +23,7 @@ Revision 4's claims. The live work board derived from the series is `Docs/STEAM_
 | **3** | 10 Sep 2026 | Engineering readiness audit *against* Rev 2 | ✅ yes | `Docs/STEAM_CHECKPOINT_REV3_READINESS_AUDIT.html` / `.pdf` |
 | **4** | 12 Sep 2026 | Re-run of the readiness audit — **three claims corrected by Rev 5** | ✅ **yes, as of 21 Sep 2026** | `Docs/STEAM_CHECKPOINT_REV4_READINESS_AUDIT.html` / `.pdf` |
 | **5** | 21 Sep 2026 | Re-run; corrects three Rev 4 claims; states the elapsed window | ✅ yes | `Docs/STEAM_CHECKPOINT_REV5_READINESS_AUDIT.html` / `.pdf` |
+| **6** | 4 Oct 2026 | Re-run over 315 commits; **the weekly Windows player keeps no player and has been red since 24 Sep**; five cards cannot unlock with the progression gate off | ✅ yes | `Docs/STEAM_CHECKPOINT_REV6_READINESS_AUDIT.html` / `.pdf` |
 
 ---
 
