@@ -98,6 +98,8 @@ namespace CosmicShore.Utility.AITraining
             if (_control.Archive == null) return;
             if (_gameData == null) return;
             if (_gameData.IsTraining) return;
+            // Skim Race seats belong to the dedicated SkimRacePilot in normal play.
+            if (CosmicShore.Gameplay.SkimRaceAIDeployment.Claims(_gameData)) return;
 
             StartCoroutine(InstallAfterFrame(clientId));
         }

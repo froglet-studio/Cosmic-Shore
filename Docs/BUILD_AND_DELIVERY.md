@@ -151,6 +151,8 @@ Project settings changed to enable it: `enableCrashReportAPI: 1` and
 
 The Standalone bundle identifier was `com.Froglet-Games.Tail-Glider` — the project's previous title — and is now `com.FrogletGames.CosmicShore`, matching the Android convention. It does **not** move any save data: on Windows both `Application.persistentDataPath` (`%userprofile%\AppData\LocalLow\<companyname>\<productname>`) and `PlayerPrefs` (`HKCU\Software\<companyname>\<productname>`) key off `companyName` / `productName`, which are already `Froglet Games` / `Cosmic Shore` and were not touched. The identifier is what `Application.identifier` returns, so it is the grouping key crash reports and Cloud Diagnostics file under — which is the reason to fix it before a build outsiders see.
 
+**2026-10-02:** Android followed (`com.FrogletGames.TailGlider` → `com.FrogletGames.CosmicShore`) and iOS moved to the **test** id `com.FrogletGames.CosmicShore.dev`. No platform carries the old title any more. Why iOS is on a test id, and what the change costs the existing TestFlight and itch.io installs, is in [`IOS_BUILD.md`](IOS_BUILD.md) §1.
+
 `PaintingShareExporter` already guarded itself (`#if UNITY_EDITOR || UNITY_STANDALONE`), and Ads /
 DailyRewardCard were already mobile-gated. Multi-mouse input already has a Windows raw-input path.
 

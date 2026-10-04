@@ -277,6 +277,22 @@ public class VesselTransformer : MonoBehaviour
         protected float throttleMultiplier = 1f;
         public float SpeedMultiplier => throttleMultiplier;
 
+        /// <summary>
+        /// The orientation the pilot's stick input has COMMANDED so far — the target the visible
+        /// hull slerps toward at <see cref="RotationFollowRate"/> per second. Read-only. An
+        /// autopilot that steers off <c>transform.forward</c> alone sees the hull up to ~80°
+        /// behind its own input in a hard turn and overshoots every corner; this is the term it
+        /// needs to lead that lag (the Skim Race pilot, <c>SkimRaceDriver</c>).
+        /// </summary>
+        public Quaternion CommandedRotation => accumulatedRotation;
+
+        /// <summary>Per-second fraction with which the hull's rotation and the smoothed cruise
+        /// speed close on their commanded values (the shared <c>LERP_AMOUNT</c>). Read-only.</summary>
+        public static float RotationFollowRate => LERP_AMOUNT;
+
+        /// <summary>The boost ceiling this hull's skim boost saturates at. Read-only.</summary>
+        public float MaxBoost => MaxBoostMultiplier;
+
         protected Vector3 velocityShift = Vector3.zero;
 
         // Tracks whether the body flare is currently raised, so the rest-state material write
