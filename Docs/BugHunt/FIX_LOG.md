@@ -10,7 +10,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ## BH-1.9 — culture-dependent timestamps in analytics and file names
 
-- **Date:** fixed 2026-10-05; awaiting Yash's retest on `Bug_Hunt`. Repro skipped.
+- **Date:** fixed 2026-10-05; merged 2026-10-05 at Yash's call with the retest deferred to the handoff revisit list. Repro skipped.
 - **Symptom:** on a device whose culture uses a non-Gregorian calendar or non-Latin digits (ar-SA,
   th-TH, fa-IR) the PostHog event timestamp and generated file names carried the wrong year or
   digits. Nothing in the Console.

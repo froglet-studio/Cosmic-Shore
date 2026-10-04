@@ -74,6 +74,7 @@ Confidence scale:
 - **Combat-hit latch (1.7):** fight with a long-window weapon (Rhino sword) while a short-window one
   (Urchin spike) is also landing hits in the same match. One sword swing must pay once per 1.4 s
   window, never twice. Re-check the Broadside balance model (`BROADSIDE.md`) against the windows.
+- **STILL TO TEST (revisit): 1.9 was merged without a retest.** Run the next item.
 - **Culture-safe timestamps (1.9):** set the device/Editor culture to ar-SA, th-TH or fa-IR, then
   trigger an analytics event, a screenshot and a share. The PostHog payload timestamp must read like
   `2026-10-05T12:00:00.000Z` and the file names must use Latin digits and the Gregorian year.
