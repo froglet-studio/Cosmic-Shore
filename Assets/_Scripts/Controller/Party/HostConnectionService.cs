@@ -151,9 +151,12 @@ namespace CosmicShore.Gameplay
         //   _propertyWriter.LobbyMutex           serialises lobby reads/writes
         //   _propertyWriter.SessionCreationMutex  deduplicates session creation
         //
-        // _insideRefreshCycle makes the re-entrant case explicit: helpers called
-        // from inside RefreshAsync (which holds LobbyMutex) skip re-acquiring;
-        // helpers called from outside acquire normally.
+        // Re-entrancy is explicit, per call: a helper that can run both inside and outside a
+        // mutex-holding cycle takes a `callerHoldsLobbyMutex` argument. There used to be a single
+        // shared "inside a refresh cycle" flag instead, but it said "some refresh is running",
+        // not "THIS caller holds the lock", so an unrelated caller (user cancel, a session
+        // callback, a fire-and-forget continuation that outlived the refresh) skipped the lock
+        // whenever any refresh happened to be running (BH-2.3).
         // ─────────────────────────────────────────────────────────────────────
 
         /// <summary>Owns both mutexes and the mutex+refresh+save-with-retry write pattern.</summary>
@@ -192,8 +195,6 @@ namespace CosmicShore.Gameplay
         // Shortcut properties to keep call sites readable.
         private SemaphoreSlim _lobbyMutex           => _propertyWriter.LobbyMutex;
         private SemaphoreSlim _sessionCreationMutex => _propertyWriter.SessionCreationMutex;
-
-        private bool _insideRefreshCycle;
 
         // ─────────────────────────────────────────────────────────────────────
         // Lifecycle / state
@@ -1122,7 +1123,6 @@ namespace CosmicShore.Gameplay
             // mid-refresh and will observe the departure itself - one authoritative
             // pass is enough, so we skip rather than queue.
             if (!await _lobbyMutex.WaitAsync(0)) return;
-            _insideRefreshCycle = true;
             try
             {
                 int before = connectionData.PartyMembers?.Count ?? 0;
@@ -1140,7 +1140,6 @@ namespace CosmicShore.Gameplay
             }
             finally
             {
-                _insideRefreshCycle = false;
                 _lobbyMutex.Release();
             }
         }
@@ -1375,7 +1374,6 @@ namespace CosmicShore.Gameplay
             if (!await _lobbyMutex.WaitAsync(0))
                 return;
 
-            _insideRefreshCycle = true;
             bool shouldReconnect = false;
             try
             {
@@ -1505,7 +1503,7 @@ namespace CosmicShore.Gameplay
                     // window on invite-receive, so the counter can already be at 1-2) and
                     // falsely escalate to ForceReset + Reconnecting + a throwaway lobby on a
                     // *successful* join. Reset wipes any stale accumulation too.  The finally
-                    // block below still releases _lobbyMutex / clears _insideRefreshCycle.
+                    // block below still releases _lobbyMutex.
                     if (PartyInviteController.Instance != null && PartyInviteController.Instance.IsTransitioning)
                     {
                         _consecutiveRefreshErrors = 0;
@@ -1528,7 +1526,6 @@ namespace CosmicShore.Gameplay
             }
             finally
             {
-                _insideRefreshCycle = false;
                 _lobbyMutex.Release();
             }
 
@@ -1892,7 +1889,9 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            // Already inside RefreshAsync (mutex held) → fire-and-forget.
+            // Fire-and-forget from inside RefreshAsync. NOT marked as holding the mutex: this
+            // continuation outlives the refresh, so it waits for the refresh to release the mutex
+            // and then writes under it (the refresh does not await it, so there is no deadlock).
             foreach (var joinedId in joinedPlayerIds)
                 _ = ClearOutgoingInviteIfPresentAsync(joinedId, "presence-join");
         }
@@ -1999,7 +1998,7 @@ namespace CosmicShore.Gameplay
                 _partySessionService.ActiveSession, localId);
 
             foreach (var joinedId in joinedPlayerIds)
-                await ClearOutgoingInviteIfPresentAsync(joinedId, "party-join");
+                await ClearOutgoingInviteIfPresentAsync(joinedId, "party-join", callerHoldsLobbyMutex: true);   // RefreshPartyMembersAsync always runs under the lobby mutex
 
             // A new party member appeared in the Relay session.
             // If we're Inviting (sent an invite and they connected), transition to InParty.
@@ -2090,16 +2089,17 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Clears an outgoing invite from the tracker, fires the UI-cleared event,
         /// and republishes the composite property to the lobby.
-        /// Reentrant: callers from inside <see cref="RefreshAsync"/> (mutex already
-        /// held) skip re-acquiring; external callers acquire normally.
+        /// Pass <paramref name="callerHoldsLobbyMutex"/> = true only when the caller awaits this
+        /// while itself holding the lobby mutex; everyone else (including fire-and-forget calls
+        /// made from inside a refresh) takes the mutex.
         /// </summary>
-        private async UniTask ClearOutgoingInviteIfPresentAsync(string playerId, string reason)
+        private async UniTask ClearOutgoingInviteIfPresentAsync(string playerId, string reason, bool callerHoldsLobbyMutex = false)
         {
             if (_lobbyService.ActiveLobby == null || string.IsNullOrEmpty(playerId)) return;
             if (!_inviteService.Contains(playerId)) return;
 
             _inviteService.Remove(playerId);
-            await HandleInviteClearedAsync(playerId, reason);
+            await HandleInviteClearedAsync(playerId, reason, callerHoldsLobbyMutex);
         }
 
         /// <summary>
@@ -2111,14 +2111,20 @@ namespace CosmicShore.Gameplay
         /// presence-leave path (<see cref="ClearOutgoingInviteIfPresentAsync"/>, after
         /// <see cref="InviteService.Remove"/>).
         /// </summary>
-        private async UniTask HandleInviteClearedAsync(string playerId, string reason)
+        /// <param name="callerHoldsLobbyMutex">
+        /// True ONLY when the caller itself is awaiting this inside a section that holds the lobby
+        /// mutex (it must not re-acquire, the mutex is not re-entrant). Every other caller,
+        /// including fire-and-forget calls made from inside a refresh, passes false and waits for
+        /// the mutex: the write then cannot interleave with a send or a refresh.
+        /// </param>
+        private async UniTask HandleInviteClearedAsync(string playerId, string reason, bool callerHoldsLobbyMutex = false)
         {
             CSDebug.LogVerbose(CSLogChannel.Party,
                 $"[INVITE-SEND] Clearing invite for '{playerId}' (reason: {reason})");
             OutgoingInviteCleared?.Invoke(playerId);
 
             if (_lobbyService.ActiveLobby == null) return;
-            bool needsLock = !_insideRefreshCycle;
+            bool needsLock = !callerHoldsLobbyMutex;
             if (needsLock) await _lobbyMutex.WaitAsync();
             try
             {

@@ -8,6 +8,29 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ---
 
+## BH-2.3 — invite-clear could skip the lobby mutex and race an invite send
+
+- **Date:** fixed 2026-10-05; awaiting Yash's retest on `Bug_Hunt`. Repro skipped.
+- **Symptom (risk):** an invite that never arrives, or one that fires twice, when a clear and a
+  send overlap.
+- **Root cause:** `HandleInviteClearedAsync` decided whether to take `_lobbyMutex` from a shared
+  `_insideRefreshCycle` flag. That flag only meant "some refresh or reconcile is running", not
+  "this caller holds the lock". So user-cancel, the party-leave callback and the fire-and-forget
+  clears started inside a refresh (which keep running after the refresh releases the mutex) wrote the
+  invite property without the lock whenever a refresh was in flight.
+- **Fix:** `_insideRefreshCycle` is removed. `ClearOutgoingInviteIfPresentAsync` and
+  `HandleInviteClearedAsync` take `callerHoldsLobbyMutex` (default false). Only the awaited call
+  inside `RefreshPartyMembersAsync`, which always runs under the mutex, passes true. All other
+  callers (Update expiry, user cancel, presence-leave, presence-join, party-leave) wait for the
+  mutex. The fire-and-forget ones are not awaited by the refresh, so they cannot deadlock it.
+- **Audit:** the six callers were checked; the invite send path (`SendInviteAsync`) writes under
+  its own mutex hold and does not call the clear.
+- **Verification:** all gate scripts pass; not run in Unity (two players needed). Retest is on
+  the handoff playtest list.
+- **PR/commit:** pending.
+
+---
+
 ## BH-2.2 — presence lobby was never rejoined after a failed reconnect
 
 - **Date:** fixed 2026-10-05; merged 2026-10-05 at Yash's call with the retest deferred to the handoff revisit list. Repro skipped.
