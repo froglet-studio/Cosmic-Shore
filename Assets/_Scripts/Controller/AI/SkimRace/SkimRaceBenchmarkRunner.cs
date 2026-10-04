@@ -35,7 +35,8 @@ namespace CosmicShore.Gameplay
             public int Races = 10;
             public int Intensity = 4;
             public int TotalPlayers = 2;   // host + AI backfill
-            public float LimitSeconds = 70f;
+            [Tooltip("Benchmark limit in seconds. 0 or less = SkimRaceRaceRecorder.DefaultLimitSeconds(Intensity).")]
+            public float LimitSeconds = 0f;
             public float TimeoutSeconds = 150f;
             public string Commit = "";
             public string OutputDirectory = "";
@@ -74,6 +75,7 @@ namespace CosmicShore.Gameplay
         {
             Active = this;
             _s = s;
+            if (_s.LimitSeconds <= 0f) _s.LimitSeconds = SkimRaceRaceRecorder.DefaultLimitSeconds(_s.Intensity);
             _session = DateTime.UtcNow.ToString("yyyyMMdd-HHmmss", System.Globalization.CultureInfo.InvariantCulture);
             string dir = string.IsNullOrEmpty(s.OutputDirectory)
                 ? Path.Combine(Directory.GetParent(Application.dataPath).FullName, "BenchmarkResults", "SkimRaceAI")

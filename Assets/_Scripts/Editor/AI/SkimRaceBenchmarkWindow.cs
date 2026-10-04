@@ -24,7 +24,7 @@ namespace CosmicShore.Editor.AI
         int _races = 10;
         int _intensity = 4;
         int _players = 2;
-        float _limit = 70f;
+        float _limit = 0f;   // 0 = the intensity's default (SkimRaceRaceRecorder.DefaultLimitSeconds)
         float _timeout = 150f;
 
         [MenuItem("FrogletTools/AI/Skim Race AI Benchmark")]
@@ -37,7 +37,9 @@ namespace CosmicShore.Editor.AI
             _races = EditorGUILayout.IntSlider("Races", _races, 1, 50);
             _intensity = EditorGUILayout.IntSlider("Intensity", _intensity, 1, 4);
             _players = EditorGUILayout.IntSlider("Total players (host + AI)", _players, 2, 4);
-            _limit = EditorGUILayout.FloatField("Benchmark limit (s)", _limit);
+            _limit = EditorGUILayout.FloatField("Benchmark limit (s, 0 = default)", _limit);
+            if (_limit <= 0f)
+                EditorGUILayout.LabelField(" ", $"default for I{_intensity}: {SkimRaceRaceRecorder.DefaultLimitSeconds(_intensity):F0} s");
             _timeout = EditorGUILayout.FloatField("Per-race timeout (s)", _timeout);
 
             using (new EditorGUI.DisabledScope(EditorApplication.isPlaying))

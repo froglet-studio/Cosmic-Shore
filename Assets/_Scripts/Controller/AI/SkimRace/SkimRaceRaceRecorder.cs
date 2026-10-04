@@ -383,6 +383,25 @@ namespace CosmicShore.Gameplay
         }
     
         /// <summary>
+        /// The benchmark's time limit for an intensity - the ONE source of truth the runner, the
+        /// benchmark window and the remote command default to (an explicit limit still overrides).
+        /// I2 was re-baselined from 70 s to 80 s by product decision (Docs/SKIM_RACE_AI.md §6.11): 70 s
+        /// is not reachable there without changing the game for every pilot. The other intensities
+        /// stay at 70 s and are written out so it is plain that only I2 moved.
+        /// </summary>
+        public static float DefaultLimitSeconds(int intensity)
+        {
+            switch (intensity)
+            {
+                case 1: return 70f;
+                case 2: return 80f;
+                case 3: return 70f;
+                case 4: return 70f;
+                default: return 70f;
+            }
+        }
+
+        /// <summary>
         /// The benchmark verdict, as a pure function so it can be tested: SUCCESS only when a
         /// domain finished, that domain is the AI's, it collected at least the required count,
         /// and the authoritative finish time is positive and at or under the limit.

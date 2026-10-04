@@ -452,6 +452,37 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void TrackerAndCaptureSearch_DefaultToOff_AndAreUnsetInEveryShippedPolicy()
+        {
+            Assert.IsFalse(Config().UseLineTracker);
+            Assert.IsFalse(Config().CaptureThrottleSearch);
+            foreach (var name in new[] { "SkimRaceAIConfig", "SkimRaceAIConfig_I1", "SkimRaceAIConfig_I2", "SkimRaceAIConfig_I4" })
+            {
+                var p = Resources.Load<SkimRaceAIConfigSO>(name);
+                Assert.IsNotNull(p, name);
+                Assert.IsFalse(p.UseLineTracker, name);
+                Assert.IsFalse(p.CaptureThrottleSearch, name);
+            }
+        }
+
+        [Test]
+        public void CaptureThrottleSearch_LiftsOnlyWhenTheRolloutMisses()
+        {
+            // A crystal dead ahead is captured at full throttle: the search must not lift.
+            var cfg = Config();
+            cfg.CaptureThrottleSearch = true;
+            cfg.ReachabilityMargin = 0f;
+            var d = new SkimRaceDriver(cfg);
+            var ahead = d.Decide(Obs(Vector3.zero, Vector3.forward, new Vector3(0f, 0f, 120f)), null, 0f, 0.02f);
+            Assert.AreEqual(cfg.CruiseThrottle, ahead.Throttle, 1e-4f);
+
+            // A crystal close and abeam at 250 u/s is passed outside the sphere at full throttle: lift.
+            var d2 = new SkimRaceDriver(cfg);
+            var abeam = d2.Decide(Obs(Vector3.zero, Vector3.forward, new Vector3(70f, 0f, 60f), speed: 250f), null, 0f, 0.02f);
+            Assert.Less(abeam.Throttle, cfg.CruiseThrottle);
+        }
+
+        [Test]
         public void ShippedPolicies_DoNotEnableUnsetCrossingControls_OnI1()
         {
             var i1 = Resources.Load<SkimRaceAIConfigSO>("SkimRaceAIConfig_I1");
@@ -476,6 +507,35 @@ namespace CosmicShore.Tests
             Assert.IsFalse(SkimRaceRaceRecorder.Evaluate(false, "Blue", "Ruby", 10, 24, 0f, 70f, "timeout", out var to));
             Assert.AreEqual("timeout", to);
             Assert.IsFalse(SkimRaceRaceRecorder.Evaluate(true, "Ruby", "Ruby", 24, 24, 0f, 70f, null, out _), "no finish time is not a finish");
+        }
+
+        [Test]
+        public void Verdict_JudgesAgainstTheLimitItIsGiven()
+        {
+            Assert.IsTrue(SkimRaceRaceRecorder.Evaluate(true, "Ruby", "Ruby", 30, 30, 79.9f, 80f, null, out _));
+            Assert.IsFalse(SkimRaceRaceRecorder.Evaluate(true, "Ruby", "Ruby", 30, 30, 80.01f, 80f, null, out var slow));
+            StringAssert.Contains("> 80", slow);
+        }
+
+        [Test]
+        public void DefaultLimit_OnlyIntensityTwoWasRebaselined()
+        {
+            Assert.AreEqual(70f, SkimRaceRaceRecorder.DefaultLimitSeconds(1));
+            Assert.AreEqual(80f, SkimRaceRaceRecorder.DefaultLimitSeconds(2));
+            Assert.AreEqual(70f, SkimRaceRaceRecorder.DefaultLimitSeconds(3));
+            Assert.AreEqual(70f, SkimRaceRaceRecorder.DefaultLimitSeconds(4));
+        }
+
+        [Test]
+        public void LevelApproach_DefaultsToOff_AndIsUnsetInI1AndI4()
+        {
+            Assert.IsFalse(Config().UseLevelApproach);
+            foreach (var name in new[] { "SkimRaceAIConfig", "SkimRaceAIConfig_I1", "SkimRaceAIConfig_I4" })
+            {
+                var p = Resources.Load<SkimRaceAIConfigSO>(name);
+                Assert.IsNotNull(p, name);
+                Assert.IsFalse(p.UseLevelApproach, name);
+            }
         }
     }
 }

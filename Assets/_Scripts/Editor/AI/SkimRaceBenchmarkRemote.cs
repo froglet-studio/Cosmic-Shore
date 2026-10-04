@@ -13,7 +13,8 @@ namespace CosmicShore.Editor.AI
     /// a GUI and without depending on any particular editor-automation package.
     ///
     /// Drop <c>Library/SkimRaceAIRemote/command.json</c> containing
-    /// <c>{"op":"bench","races":10,"intensity":4,"players":2,"limit":70,"timeout":150}</c>
+    /// <c>{"op":"bench","races":10,"intensity":4,"players":2,"timeout":150}</c> (add <c>"limit":N</c> to
+    /// override the intensity's default, <see cref="SkimRaceRaceRecorder.DefaultLimitSeconds"/>)
     /// (or <c>{"op":"stop"}</c>); the editor consumes it within a second.
     /// <c>Library/SkimRaceAIRemote/status.json</c> is rewritten every second with play state,
     /// compile state and runner progress, and <c>errors.log</c> collects every console error and
@@ -29,7 +30,7 @@ namespace CosmicShore.Editor.AI
             public int races = 10;
             public int intensity = 4;
             public int players = 2;
-            public float limit = 70f;
+            public float limit = 0f;   // 0 = SkimRaceRaceRecorder.DefaultLimitSeconds(intensity)
             public float timeout = 150f;
             public string filter = "";
             public int quality = -1;

@@ -217,6 +217,25 @@ namespace CosmicShore.Gameplay
         [Tooltip("Roll stick used to keep the hull's up near world up (cosmetic; does not change the path).")]
         [Range(0f, 1f)] public float LevelingRoll = 0.25f;
 
+        [Header("Line tracker (lag-inverting path following)")]
+        [Tooltip("Follow the racing line with a model-based tracker instead of pure pursuit: the hull's heading " +
+                 "is a first-order lag of the commanded heading (tau = 1/FollowRate), so the controller commands " +
+                 "the desired heading PLUS the turn the line will make during tau (curvature x speed x tau), with a " +
+                 "cross-track correction. Pure pursuit with a capped lead cannot lead a tight curve at speed. Off = pursuit.")]
+        public bool UseLineTracker = false;
+        [Tooltip("Cross-track correction: the hull aims to rejoin the line within this many seconds of travel.")]
+        [Min(0.05f)] public float TrackerConvergeSeconds = 0.6f;
+        [Tooltip("Floor on the cross-track rejoin distance (world units).")]
+        [Min(1f)] public float TrackerConvergeMin = 20f;
+        [Tooltip("Scale on the lag feedforward (1 = exactly the measured follow-rate lag).")]
+        [Min(0f)] public float TrackerFeedforwardGain = 1f;
+        [Tooltip("Extra lead on the remaining hull heading error (0 = none), as in the pursuit steering law.")]
+        [Min(0f)] public float TrackerHeadingGain = 0.6f;
+        [Tooltip("Cap on the total commanded-vs-desired lead, degrees.")]
+        [Range(0f, 120f)] public float TrackerMaxLeadDegrees = 90f;
+        [Tooltip("Distance along the line (world units) over which its curvature is measured.")]
+        [Min(2f)] public float TrackerCurvatureSpan = 12f;
+
         [Header("Throttle")]
         [Range(0f, 1f)] public float CruiseThrottle = 1f;
         [Tooltip("Throttle floor while slowing to tighten a turn onto a crystal.")]
@@ -224,6 +243,44 @@ namespace CosmicShore.Gameplay
         [Tooltip("A crystal closer than (this x the current turn radius x sin(off-angle)) is " +
                  "treated as unreachable at this speed and the throttle is eased.")]
         [Min(0f)] public float ReachabilityMargin = 1.25f;
+
+        [Tooltip("Near a crystal, roll the hull's own dynamics forward under this driver's pursuit at a few " +
+                 "throttle levels and fly the HIGHEST throttle whose predicted path enters the capture sphere " +
+                 "(a slower hull turns tighter). A missed pickup orbits and stalls into recovery, which - not " +
+                 "strikes - dominates the slowest seat's time. Off = the Dubins test alone.")]
+        public bool CaptureThrottleSearch = false;
+        [Tooltip("Rollout horizon of the capture search (seconds).")]
+        [Min(0.2f)] public float CaptureHorizon = 1.5f;
+        [Tooltip("The search runs while the pass point is within this many seconds of travel.")]
+        [Min(0.1f)] public float CaptureWindowSeconds = 2f;
+        [Tooltip("Units inside the capture radius a rollout must reach to count as a pickup.")]
+        [Min(0f)] public float CaptureMargin = 3f;
+
+        [Header("Level approach")]
+        [Tooltip("Near a crystal, choose the stick by rolling the hull's own dynamics forward over a grid of " +
+                 "stick commands (held, then this driver's pursuit of the pass point until capture, then ~1 s of " +
+                 "exit back toward the skim line) and fly the one that captures with the most clearance from the " +
+                 "track's contact shells. Most I2 strikes are the hull diving into the plate's face on the approach " +
+                 "and just after the pickup. Off = pursuit alone.")]
+        public bool UseLevelApproach = false;
+        [Tooltip("The level approach runs while the pass point is within this many seconds of travel.")]
+        [Min(0.2f)] public float LevelApproachSeconds = 2f;
+        [Tooltip("How long a candidate stick is held before the pursuit continuation takes over (seconds).")]
+        [Min(0.02f)] public float LevelSegment = 0.3f;
+        [Tooltip("Exit horizon after the predicted capture (seconds).")]
+        [Min(0f)] public float LevelExitSeconds = 1f;
+        [Tooltip("Decisions per second (the chosen stick is held between).")]
+        [Min(1f)] public float LevelHz = 15f;
+        [Tooltip("Predicted hull-centre/wingtip clearance from a track shell below which a rollout counts as a strike.")]
+        [Min(0f)] public float LevelStrikeMargin = 1f;
+        [Tooltip("Clearance (world units) above which more clearance earns nothing.")]
+        [Min(0f)] public float LevelClearanceCap = 4f;
+        [Tooltip("Seconds of time a unit of clearance (up to the cap) is worth.")]
+        [Min(0f)] public float LevelClearanceWeight = 0.15f;
+        [Tooltip("Cost (seconds) of a predicted strike.")]
+        [Min(0f)] public float LevelStrikeCost = 6f;
+        [Tooltip("Preference (seconds) for the pursuit controller's own stick.")]
+        [Min(0f)] public float LevelNominalBias = 0.05f;
 
         [Header("Drift")]
         [Tooltip("Use the hull's normal drift input on sharp heading changes.")]

@@ -367,6 +367,207 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>Drive the stick so the COMMANDED heading reaches <paramref name="cmdTarget"/> (the lower half of <see cref="Steer"/>).</summary>
+        void StickToward(Vector3 up, Vector3 right, Vector3 cmdFwd, Vector3 cmdTarget, out float yaw, out float pitch, out float cmdErr)
+        {
+            cmdErr = Vector3.Angle(cmdFwd, cmdTarget);
+            yaw = 0f; pitch = 0f;
+            if (cmdErr <= 0.01f) return;
+            Vector3 axis = Vector3.Cross(cmdFwd, cmdTarget);
+            if (axis.sqrMagnitude < 1e-8f) axis = up;
+            axis.Normalize();
+            float stick = Mathf.Clamp01(cmdErr * _cfg.StickGainPerDegree);
+            float u = Vector3.Dot(axis, up), r = Vector3.Dot(axis, right);
+            float m = Mathf.Max(Mathf.Abs(u), Mathf.Abs(r), 1e-4f);
+            yaw = stick * u / m;
+            pitch = stick * r / m;
+        }
+
+        /// <summary>Unit tangent of the racing line at arc length <paramref name="s"/> (central difference).</summary>
+        Vector3 LineTangent(SkimRaceCourse c, float s, float h)
+        {
+            Vector3 d = LinePoint(c, s + h) - LinePoint(c, s - h);
+            return d.sqrMagnitude > 1e-8f ? d.normalized : Vector3.forward;
+        }
+
+        /// <summary>
+        /// The line tracker (<see cref="SkimRaceAIConfigSO.UseLineTracker"/>). The hull's heading is a
+        /// first-order lag of the commanded heading with tau = 1/FollowRate, so to fly heading h_d(t) the
+        /// command must be h_d + tau x dh_d/dt. Along a line of curvature k at speed v that lead is the
+        /// angle k x v x tau, about the line's binormal. The desired heading is the line tangent bent toward
+        /// the line by the cross-track error (rejoin within TrackerConvergeSeconds of travel).
+        /// Returns the commanded target direction; <paramref name="headingErr"/> is hull vs desired.
+        /// </summary>
+        Vector3 TrackerCommand(in SkimRaceObservation o, SkimRaceCourse c, out float headingErr, out Vector3 desired)
+        {
+            float v = Mathf.Max(o.Speed, 30f);
+            float tau = 1f / Mathf.Max(o.FollowRate, 0.1f);
+            int h = _trackerHint;
+            float s0 = c.Project(o.Position, ref h, out _, out _);
+            _trackerHint = h;
+            float span = _cfg.TrackerCurvatureSpan;
+            // Closest line point near the hull's own course progress (the line is a smooth offset of the course).
+            float best = float.MaxValue, sBest = s0;
+            for (float ds = -24f; ds <= 24f; ds += 6f)
+            {
+                float d2 = (LinePoint(c, s0 + ds) - o.Position).sqrMagnitude;
+                if (d2 < best) { best = d2; sBest = s0 + ds; }
+            }
+            Vector3 lp = LinePoint(c, sBest);
+            Vector3 t0 = LineTangent(c, sBest, span * 0.5f);
+            Vector3 e = o.Position - lp;
+            e -= t0 * Vector3.Dot(e, t0);
+            float D = Mathf.Max(v * _cfg.TrackerConvergeSeconds, _cfg.TrackerConvergeMin);
+            desired = (t0 * D - e).normalized;
+
+            // Lag feedforward: the turn the line makes over the next tau of travel, applied as a lead.
+            float sAhead = sBest + v * tau * 0.5f;
+            Vector3 ta = LineTangent(c, sAhead - span, span * 0.5f), tb = LineTangent(c, sAhead + span, span * 0.5f);
+            Vector3 axis = Vector3.Cross(ta, tb);
+            float turnPerUnit = Vector3.Angle(ta, tb) / (2f * span);          // degrees per world unit
+            float ffDeg = turnPerUnit * v * tau * _cfg.TrackerFeedforwardGain;
+
+            headingErr = Vector3.Angle(o.Forward, desired);
+            Vector3 cmdTarget = desired;
+            if (headingErr > 0.05f)
+            {
+                Vector3 ax = Vector3.Cross(o.Forward, desired);
+                if (ax.sqrMagnitude > 1e-8f)
+                    cmdTarget = Quaternion.AngleAxis(Mathf.Min(headingErr * _cfg.TrackerHeadingGain, _cfg.TrackerMaxLeadDegrees), ax.normalized) * desired;
+            }
+            if (ffDeg > 0.05f && axis.sqrMagnitude > 1e-10f)
+                cmdTarget = Quaternion.AngleAxis(Mathf.Min(ffDeg, _cfg.TrackerMaxLeadDegrees), axis.normalized) * cmdTarget;
+            return cmdTarget;
+        }
+        int _trackerHint = -1;
+
+        static readonly float[] CaptureThrottles = { 1f, 0.8f, 0.6f, 0.45f, 0.3f };
+
+        /// <summary>
+        /// Would the hull MISS the crystal's capture sphere (closest approach reached outside it within
+        /// <see cref="SkimRaceAIConfigSO.CaptureHorizon"/>) if it pursued <paramref name="aim"/> at
+        /// <paramref name="throttle"/>? Returns true unless such a miss is predicted. Rolls the transformer's own
+        /// dynamics (commanded rotation at the turn rate, hull slerp at the follow rate, speed lerp) with
+        /// this driver's steering law re-applied every step.
+        /// </summary>
+        bool RolloutCaptures(in SkimRaceObservation o, Vector3 aim, float throttle)
+        {
+            const float dt = 0.04f;
+            Quaternion rot = o.Rotation, cmd = o.CommandedRotation;
+            Vector3 pos = o.Position;
+            float speed = o.Speed, boost = Mathf.Max(1f, o.BoostMultiplier);
+            float r = Mathf.Max(4f, (o.TargetRadius > 0f ? o.TargetRadius : _cfg.DefaultCaptureRadius) - _cfg.CaptureMargin);
+            float prevD = (pos - o.TargetPosition).magnitude;
+            for (float t = 0f; t < _cfg.CaptureHorizon; t += dt)
+            {
+                Steer(rot * Vector3.forward, rot * Vector3.up, rot * Vector3.right, cmd * Vector3.forward,
+                    (aim - pos).normalized, out float y, out float p, out _, out _);
+                cmd = Quaternion.AngleAxis(y * o.TurnRateDegrees * dt, rot * Vector3.up) * cmd;
+                cmd = Quaternion.AngleAxis(p * o.TurnRateDegrees * dt, rot * Vector3.right) * cmd;
+                rot = Quaternion.Slerp(rot, cmd, o.FollowRate * dt);
+                boost = boost > 1f ? boost - 0.3f * dt : 1f;
+                speed = Mathf.Lerp(speed, throttle * o.ThrottleScaler * boost, o.FollowRate * dt);
+                pos += (rot * Vector3.forward) * speed * dt;
+                float d = (pos - o.TargetPosition).magnitude;
+                if (d <= r) return true;
+                // Closest approach passed outside the sphere: a MISS. Still closing at the horizon is not
+                // a miss - the crystal is simply further away than the rollout looks.
+                if (d > prevD + 0.01f) return false;
+                prevD = d;
+            }
+            return true;
+        }
+
+        // ── Level approach ───────────────────────────────────────────────────
+        float _nextLevel;
+        float _levelYaw, _levelPitch;
+        bool _levelValid;
+        int _levelHint = -1;
+        public int LevelOverrides { get; private set; }
+
+        /// <summary>
+        /// Cost (seconds-equivalent, lower is better) of holding (<paramref name="yaw"/>, <paramref name="pitch"/>)
+        /// for LevelSegment, then pursuing <paramref name="passPoint"/> with this driver's steering law until
+        /// the predicted capture, then re-following the racing line for LevelExitSeconds - rolled through the
+        /// transformer's own dynamics and tested against the visible track shells (centre and wingtips).
+        /// </summary>
+        float LevelCost(in SkimRaceObservation o, SkimRaceCourse course, float yaw, float pitch, float throttle, Vector3 passPoint)
+        {
+            const float dt = 0.05f;
+            Quaternion rot = o.Rotation, cmd = o.CommandedRotation;
+            Vector3 pos = o.Position;
+            float speed = o.Speed, boost = Mathf.Max(1f, o.BoostMultiplier);
+            float r = Mathf.Max(4f, (o.TargetRadius > 0f ? o.TargetRadius : _cfg.DefaultCaptureRadius) - _cfg.CaptureMargin);
+            float approachH = _cfg.LevelApproachSeconds * 1.5f;
+            float captureAt = -1f, minClear = float.PositiveInfinity, prevD = (pos - o.TargetPosition).magnitude;
+            int hint = _levelHint;
+            float w = _cfg.HullHalfWidth;
+            for (float t = 0f; t < approachH + _cfg.LevelExitSeconds; t += dt)
+            {
+                if (captureAt < 0f && t > approachH) break;
+                if (captureAt >= 0f && t > captureAt + _cfg.LevelExitSeconds) break;
+                float y = yaw, p = pitch;
+                if (t >= _cfg.LevelSegment)
+                {
+                    Vector3 a;
+                    if (captureAt < 0f) a = passPoint;
+                    else
+                    {
+                        float sr = course.Project(pos, ref hint, out _, out _);
+                        a = LinePoint(course, sr + _lookDist);
+                    }
+                    Steer(rot * Vector3.forward, rot * Vector3.up, rot * Vector3.right, cmd * Vector3.forward,
+                        (a - pos).normalized, out y, out p, out _, out _);
+                }
+                cmd = Quaternion.AngleAxis(y * o.TurnRateDegrees * dt, rot * Vector3.up) * cmd;
+                cmd = Quaternion.AngleAxis(p * o.TurnRateDegrees * dt, rot * Vector3.right) * cmd;
+                rot = Quaternion.Slerp(rot, cmd, o.FollowRate * dt);
+                boost = boost > 1f ? boost - 0.3f * dt : 1f;
+                speed = Mathf.Lerp(speed, throttle * o.ThrottleScaler * boost, o.FollowRate * dt);
+                pos += (rot * Vector3.forward) * speed * dt;
+
+                course.Project(pos, ref hint, out _, out _);
+                Vector3 wing = rot * (Vector3.right * w);
+                float c = Mathf.Min(course.ShellClearance(pos, hint, 4, out _),
+                    Mathf.Min(course.ShellClearance(pos + wing, hint, 4, out _), course.ShellClearance(pos - wing, hint, 4, out _)));
+                if (c < minClear) minClear = c;
+                if (c < _cfg.LevelStrikeMargin)
+                    return _cfg.LevelStrikeCost + (captureAt < 0f ? approachH - t : 0f);
+
+                if (captureAt < 0f)
+                {
+                    float d = (pos - o.TargetPosition).magnitude;
+                    if (d <= r) captureAt = t;
+                    else if (d > prevD + 0.01f) return 100f + d;   // passed the crystal outside its sphere
+                    prevD = d;
+                }
+            }
+            float time = captureAt >= 0f ? captureAt : approachH + prevD / Mathf.Max(speed, 60f);
+            return time - _cfg.LevelClearanceWeight * Mathf.Min(minClear, _cfg.LevelClearanceCap);
+        }
+
+        void LevelApproach(in SkimRaceObservation o, SkimRaceCourse course, Vector3 passPoint, float now,
+            float throttle, ref float yaw, ref float pitch)
+        {
+            if (now >= _nextLevel || !_levelValid)
+            {
+                _nextLevel = now + 1f / Mathf.Max(1f, _cfg.LevelHz);
+                course.Project(o.Position, ref _levelHint, out _, out _);
+                float best = LevelCost(o, course, yaw, pitch, throttle, passPoint) - _cfg.LevelNominalBias;
+                float by = yaw, bp = pitch;
+                for (int a = 0; a < MpcSticks.Length; a++)
+                for (int b = 0; b < MpcSticks.Length; b++)
+                {
+                    float c = LevelCost(o, course, MpcSticks[a], MpcSticks[b], throttle, passPoint);
+                    if (c < best) { best = c; by = MpcSticks[a]; bp = MpcSticks[b]; }
+                }
+                _levelValid = !(by == yaw && bp == pitch);
+                _levelYaw = by; _levelPitch = bp;
+                if (_levelValid) LevelOverrides++;
+            }
+            if (_levelValid) { yaw = _levelYaw; pitch = _levelPitch; }
+        }
+
         float RolloutClearance(in SkimRaceObservation o, float yaw, float pitch, float throttle, Vector3 aim,
             float stopBelow, out Vector3 endPos)
         {
@@ -857,6 +1058,8 @@ namespace CosmicShore.Gameplay
             _nextMpc = 0f; _mpcValid = false; MpcOverrides = 0;
             _nextTrack = 0f; _trackValid = false; _trackHint = -1;
             _lookDist = 100f;
+            _trackerHint = -1;
+            _nextLevel = 0f; _levelValid = false; _levelHint = -1; LevelOverrides = 0;
             _bumpActive = false;
         }
 
@@ -962,6 +1165,11 @@ namespace CosmicShore.Gameplay
             // ── 2. Lag-compensated steering ────────────────────────────────
             Steer(o.Forward, o.Up, o.Right, o.CommandedForward, desired, out float yaw, out float pitch,
                 out float headingErr, out float cmdErr);
+            if (_cfg.UseLineTracker && linePursuit && !guarded)
+            {
+                Vector3 cmdTarget = TrackerCommand(o, course, out headingErr, out desired);
+                StickToward(o.Up, o.Right, o.CommandedForward, cmdTarget, out yaw, out pitch, out cmdErr);
+            }
 
             // Cosmetic levelling only: roll the wings toward the ribbon plane.
             float roll = 0f;
@@ -989,6 +1197,19 @@ namespace CosmicShore.Gameplay
                     unreachable = true;
                     throttle = _cfg.MinThrottle;
                 }
+            }
+            if (_cfg.CaptureThrottleSearch && o.HasTarget && pull
+                && passDist <= Mathf.Max(o.Speed, 60f) * _cfg.CaptureWindowSeconds)
+            {
+                // Highest throttle that still captures; if none does, the lowest (tightest turn).
+                float chosen = CaptureThrottles[CaptureThrottles.Length - 1];
+                for (int k = 0; k < CaptureThrottles.Length; k++)
+                {
+                    float th = Mathf.Min(CaptureThrottles[k], _cfg.CruiseThrottle);
+                    if (RolloutCaptures(o, aim, th)) { chosen = th; break; }
+                }
+                throttle = chosen;   // the rollout supersedes the Dubins estimate above
+                unreachable = chosen < _cfg.CruiseThrottle;
             }
             if (_cfg.CrossingThrottle < 1f && haveCourse && ApproachingCrossing(course, o.CourseProgress, _cfg.CrossingSlowDistance))
                 throttle = Mathf.Min(throttle, _cfg.CrossingThrottle);
@@ -1025,6 +1246,10 @@ namespace CosmicShore.Gameplay
             }
             if (_cfg.UseTrackMpc && haveCourse && _mode != Mode.Recovering)
                 TrackMpc(o, course, aim, linePursuit, now, ref yaw, ref pitch, throttle);
+            if (_cfg.UseLevelApproach && haveCourse && course.HasShells && o.HasTarget && _mode != Mode.Recovering
+                && !behind && passDist <= Mathf.Max(o.Speed, 60f) * _cfg.LevelApproachSeconds)
+                LevelApproach(o, course, passPoint, now, throttle, ref yaw, ref pitch);
+            else _levelValid = false;
 
             if (_cfg.UseMpc && o.HasTarget)
             {
