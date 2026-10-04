@@ -10,7 +10,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ## BH-2.4 — reconnect from the main menu was refused by the app-state machine
 
-- **Date:** fixed 2026-10-05; awaiting Yash's retest on `Bug_Hunt`. Repro skipped.
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
 - **Symptom:** after tapping Reconnect in the menu the console shows `[AppState] Invalid
   transition: MainMenu → Authenticating`, and the app-state mirror stays `MainMenu` while the auth
   scene runs. Anything keyed on app state sees the wrong phase during the re-boot.

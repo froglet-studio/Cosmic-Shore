@@ -113,6 +113,7 @@ Confidence scale:
   then send it again; the second invite must arrive and fire once. Repeat while the other player
   joins or leaves the party. Also let an invite time out, then re-invite. No stuck or doubled
   invites, and no hang on the invite button (a hang would mean a lock deadlock).
+- **STILL TO TEST (revisit): 2.4, kept on Bug_Hunt untested at Yash's call (no merge to bleeding-edge until all fixes are tested together).**
 - **Reconnect app state (2.4):** in Menu_Main (and again from the disconnect notice mid-game or on the game-over screen), trigger Reconnect (the online status indicator or the
   disconnect notice). The console must not show `Invalid transition: MainMenu → Authenticating`;
   with the `Boot` channel verbose you should see `[AppState] MainMenu → Authenticating`, then
