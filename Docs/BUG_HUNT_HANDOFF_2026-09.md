@@ -90,6 +90,7 @@ Confidence scale:
   client quit mid-round. The ship must keep flying under the AI, its object name must change to
   `AI`, and at the next round reset it must be restarted by the AI (not left idle). Watch for the
   host console showing no new errors.
+- **STILL TO TEST (revisit): 2.1, merged untested at Yash's call.**
 - **Cloud Save failed load (2.1):** (a) normal boot online: profile, hangar, settings and
   progress load as before, and a change you make is still saved (check the cloud record or relaunch).
   (b) With a signed-in account that has progress, start the game with the network cut (or block
