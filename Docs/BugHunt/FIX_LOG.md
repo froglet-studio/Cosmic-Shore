@@ -8,6 +8,27 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ---
 
+## BH-2.2 — presence lobby was never rejoined after a failed reconnect
+
+- **Date:** fixed 2026-10-05; awaiting Yash's retest on `Bug_Hunt`. Repro skipped.
+- **Symptom:** after a network blip the online list stays empty and invites stop arriving until
+  the app is restarted.
+- **Root cause:** after three consecutive refresh errors `RefreshAsync` calls `ForceReset()` and
+  runs `JoinOrCreateAsync` once. If that attempt fails (`CreateAsync` swallows its own errors and
+  leaves the lobby null), `Update` is gated on `IsInPresenceLobby` (lobby not null), so nothing ever
+  ran the join again. A throw from `JoinOrCreateAsync` there was also unobserved.
+- **Fix:** `HostConnectionService` sets `_presenceRejoinPending` when the rejoin leaves no lobby
+  (or throws). `Update` then calls `TryPresenceRejoin`, which retries `JoinOrCreateAsync` with
+  exponential backoff (3s doubling to 60s). It stops when the lobby is back, the service is
+  disconnected, the session is offline, or the normal `EnsureInitializedAsync` path takes over.
+  `Docs/PresenceSystem/ARCHITECTURE.md` documents it under ForceReset.
+- **Verification:** all gate scripts pass; not run in Unity (needs two players and a network cut).
+  Retest is on the handoff playtest list. The identity republish after rejoin still comes from
+  `LivePropertySource` as before.
+- **PR/commit:** pending.
+
+---
+
 ## BH-2.1 — Cloud Save could not tell "load failed" from "no data yet"
 
 - **Date:** fixed 2026-10-05; merged 2026-10-05 at Yash's call with the retest deferred to the handoff revisit list. Repro skipped.

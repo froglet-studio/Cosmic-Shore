@@ -299,5 +299,18 @@ provider's save directly.
 
 ---
 
+## 12. A recovery that runs once is not a recovery
+
+**Shows up as:** a feature (online list, invites) dead after a blip until restart (BH-2.2).
+
+**Why:** the code resets state and retries once; the per-frame loop that would retry is gated on the
+very state the failed retry left unset.
+
+**Fix pattern:** when a recovery attempt can fail, record "still needs recovery" in its own flag
+that the loop checks before the gate, retry with capped exponential backoff, and clear the flag on
+success, shutdown or when another path restores the state. Log each retry once.
+
+---
+
 Threading errors (`EnsureRunningOnMainThread`, UGS callbacks off the main thread) have their own
 guide: [`../THREADING.md`](../THREADING.md).

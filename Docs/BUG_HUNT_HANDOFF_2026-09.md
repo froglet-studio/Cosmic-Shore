@@ -45,6 +45,7 @@ Confidence scale:
 | 18 | **Non-ASCII UI strings replaced with ASCII (was §1.11).** The only UI font (ALDRICH) has 97 glyphs, so `◀ ▶ ✕ › · × ● ◆` rendered as empty boxes. Replaced in `SpectatorOverlay` (buttons and hint), `ToyConfigureModal` (Back), `ToyVariantCard` (branch marker), `DogFightScoringRuleSO` (breakdown now reads `N pts - B rounds, M rockets`), and the Broadside and Undertow scoring-rule labels (`·` became `,`). Shipped on `Bug_Hunt`. | `SpectatorOverlay`, `ToyConfigureModal`, `ToyVariantCard`, `DogFightScoringRuleSO`, `BroadsideScoringRuleSO`, `UndertowScoringRuleSO` |
 | 19 | **A departed player's vessel handed to the AI is now marked AI (was §1.12).** `ConvertPlayerToAI` only flipped `NetIsAI`, so the local `Player.IsInitializedAsAI` stayed false on the server and every client. `Player` now follows `NetIsAI` changes (`OnNetIsAIChanged`). Shipped on `Bug_Hunt`. | `Player` |
 | 20 | **Cloud Save no longer tells a failed load apart from "no data" (was §2.1).** `ICloudSaveProvider.TryLoadAsync` reports `Loaded`, `Missing` or `Failed`. After a `Failed` load a repository keeps using its local snapshot but does not upload to the cloud until a retry gets a definite answer (`Missing` allows the write; `Loaded` adopts the real record). An unreadable stored value now counts as `Failed`. Shipped on `Bug_Hunt`. | `ICloudSaveProvider`, `UGSCloudSaveProvider`, `CloudDataRepository` |
+| 21 | **Presence lobby is rejoined with backoff after a failed reconnect (was §2.2).** After three refresh errors the lobby was cleared and rejoined once; if that one attempt failed the lobby stayed null and nothing retried. `HostConnectionService` now retries from `Update` at 3s, 6s, 12s up to 60s until the lobby is back. Shipped on `Bug_Hunt`. | `HostConnectionService` |
 
 ### Playtest items for the shipped fixes
 - **Squirrel ring (#6):** fly Menu_Main freestyle → an arcade game → back, 2-3 round trips, then
@@ -98,6 +99,12 @@ Confidence scale:
   console may show "adopting it instead of uploading local data", and the original progress must
   still be there. It must never reset to a new-player state. (c) A fresh account still saves its
   first changes.
+- **Presence lobby rejoin (2.2):** needs two online players. Start both on Menu_Main and confirm
+  each sees the other in the online list. Cut one machine's network for about 30 seconds (long
+  enough for three failed refreshes, then a failed rejoin), then restore it. Within about a
+  minute the console should show "Presence lobby rejoined", the online list should refill on both
+  sides, and an invite sent after that should arrive. Before the fix the list stayed empty until
+  a restart.
 
 ---
 
@@ -106,15 +113,6 @@ Confidence scale:
 ---
 
 ## 2. Larger items (need design or several files)
-
-### 2.2 Presence lobby is never rejoined after it drops — Medium
-- **Where:** `HostConnectionService.cs`: the `Update` gate (~418), the refresh loop (~1496-1528), and
-  join (~537-572).
-- **Bug:** once the presence lobby is lost (network blip, lobby expiry), the refresh loop's gate
-  stays closed. Nothing re-runs the join.
-- **Consequence:** the online list goes empty and invites stop arriving until the app restarts.
-- **Fix:** on refresh failure with a lobby-not-found/unauthorised class error, clear the lobby and
-  re-enter the join path with backoff. `Docs/PresenceSystem/ARCHITECTURE.md` has the lifecycle.
 
 ### 2.3 Invite-clear runs without the property-write mutex — Medium
 - **Where:** `HostConnectionService.cs` ~2034 (`needsLock`). Callers: ~757, 1729, 1810, 1915, 2000, 2422.
