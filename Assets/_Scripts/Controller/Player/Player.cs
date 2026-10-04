@@ -780,6 +780,7 @@ namespace CosmicShore.Gameplay
             // OnNetNameValueChanged / OnNetDefaultVesselTypeChanged catches
             // the first client value replication.
             NetDomain.OnValueChanged += OnNetDomainChanged;
+            NetIsAI.OnValueChanged += OnNetIsAIChanged;
             NetName.OnValueChanged += OnNetNameValueChanged;
             NetDefaultVesselType.OnValueChanged += OnNetDefaultVesselTypeChanged;
             NetVesselId.OnValueChanged += OnNetVesselIdChanged;
@@ -869,12 +870,27 @@ namespace CosmicShore.Gameplay
             InputController.Initialize();
         }
 
+        /// <summary>
+        /// Keeps <see cref="IsInitializedAsAI"/> in step with <see cref="NetIsAI"/> after the
+        /// pair is initialised. A departed human is handed to the AI mid-match by flipping
+        /// <c>NetIsAI</c> only (ServerPlayerVesselInitializer.ConvertPlayerToAI); without this
+        /// the local flag stayed false on the server and on every client, so ready gates,
+        /// HUDs, round reset and the AI pilot restart all still treated the ship as a human.
+        /// </summary>
+        void OnNetIsAIChanged(bool previous, bool current)
+        {
+            if (IsInitializedAsAI == current) return;
+            IsInitializedAsAI = current;
+            SetGameObjectName();
+        }
+
         public override void OnNetworkDespawn()
         {
             _spawnEventRaised = false;
             gameData.Players.Remove(this);
 
             NetDomain.OnValueChanged -= OnNetDomainChanged;
+            NetIsAI.OnValueChanged -= OnNetIsAIChanged;
             NetName.OnValueChanged -= OnNetNameValueChanged;
             NetDefaultVesselType.OnValueChanged -= OnNetDefaultVesselTypeChanged;
             NetVesselId.OnValueChanged -= OnNetVesselIdChanged;
