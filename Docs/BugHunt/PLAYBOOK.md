@@ -231,7 +231,8 @@ touches. Full background: [`../THREADING.md`](../THREADING.md).
 
 **Related, BH-1.4:** a facade call that reports failure through an event (for example
 `AuthenticationServiceFacade.OnSignInFailed`) does not throw, so a bare `await` is not proof of
-success. Check the state afterwards (`_facade.IsSignedIn`) before moving on.
+success. Check the state afterwards (`_facade.IsSignedIn`) before moving on. Same for BH-1.5: `FriendsServiceFacade.InitializeAsync` swallows its failure, so
+check `IsInitialized` before latching a flag.
 
 **Verify:** shorten the timeout to ~0.1 s (or go offline) and boot: no `EnsureRunningOnMainThread`
 error, and the flow carries on. With no network and no session, Guest shows the error at once.

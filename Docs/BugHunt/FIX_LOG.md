@@ -8,6 +8,26 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ---
 
+## BH-1.5 — friends init latched `_initialized` even when the service failed to start
+
+- **Date:** fixed 2026-10-02; awaiting Yash's retest on `Bug_Hunt`. Repro skipped.
+- **Symptom:** if Friends initialization fails once (UGS slow or unreachable at sign-in), friends and
+  presence stay dead for the rest of the session. Only a warning from the facade is logged.
+- **Root cause:** `FriendsServiceFacade.InitializeAsync` catches its own exceptions and returns, so
+  `FriendsInitializer.InitializeFriendsAsync` could not tell failure from success and set
+  `_initialized = true`. The guard in that method and in `HandleSignedInEvent` then refused every
+  retry.
+- **Fix:** `Assets/_Scripts/Controller/Party/FriendsInitializer.cs` now sets
+  `_initialized = friendsService.IsInitialized` and returns early (no presence write) when the
+  service is not up, so the next sign-in event can retry. The facade already resets its own
+  in-progress flag on failure, so a retry is a real second attempt.
+- **Verification:** all gate scripts pass; not run in Unity. Retest steps are on the handoff
+  playtest list. Same lesson as BH-1.4 (PLAYBOOK §7): a call that swallows failures is not proof of
+  success; check the state after it.
+- **PR/commit:** pending.
+
+---
+
 ## CAM-1 — Sparrow freestyle: camera stops following after the turret stance (partial)
 
 - **Date:** 2026-10-02. **Status: not reproduced; root cause of the stance trigger NOT found.**
