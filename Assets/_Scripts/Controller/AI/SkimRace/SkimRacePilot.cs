@@ -148,6 +148,7 @@ namespace CosmicShore.Gameplay
                 _raceActive = true;
                 _raceStart = Time.time;
                 _lastForward = _vessel.Transform.forward;
+                EnsureEditorRaceRecorder();
                 RaceStarted?.Invoke(this);
             }
 
@@ -167,6 +168,30 @@ namespace CosmicShore.Gameplay
             }
 
             Apply(_held);
+        }
+
+        static string s_manualSession;
+        static int s_manualRace;
+
+        /// <summary>
+        /// In the EDITOR, a race played by hand (no benchmark runner) records itself exactly as a benchmark
+        /// race does - finish time, frame time, every seat's crystals and speed, the boost-reset log - to
+        /// <c>BenchmarkResults/SkimRaceAI/manual_I&lt;n&gt;_&lt;session&gt;.jsonl</c>. Without this a slow race
+        /// played by hand cannot be told apart from a slow AI. One recorder per race (the first pilot to
+        /// start creates it); it only reads the game. Never in a player build.
+        /// </summary>
+        void EnsureEditorRaceRecorder()
+        {
+            if (!Application.isEditor || SkimRaceBenchmarkRunner.Active != null) return;
+            if (FindAnyObjectByType<SkimRaceRaceRecorder>() != null) return;
+            int intensity = _gameData.SelectedIntensity != null ? _gameData.SelectedIntensity.Value : 0;
+            s_manualSession ??= System.DateTime.UtcNow.ToString("yyyyMMdd-HHmmss", System.Globalization.CultureInfo.InvariantCulture);
+            string dir = System.IO.Path.Combine(System.IO.Directory.GetParent(Application.dataPath).FullName, "BenchmarkResults", "SkimRaceAI");
+            var go = new GameObject("[Skim Race Recorder (manual)]");
+            var rec = go.AddComponent<SkimRaceRaceRecorder>();
+            rec.Configure(_gameData, System.IO.Path.Combine(dir, $"manual_I{intensity}_{s_manualSession}.jsonl"),
+                "manual-" + s_manualSession, "", s_manualRace++, SkimRaceRaceRecorder.DefaultLimitSeconds(intensity), 600f);
+            rec.TraceFrames = true;
         }
 
         readonly List<Prism> _nearPrisms = new();
