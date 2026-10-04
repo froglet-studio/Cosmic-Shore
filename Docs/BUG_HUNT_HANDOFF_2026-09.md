@@ -42,6 +42,7 @@ Confidence scale:
 | 15 | **Online Duel rematch starts from zero round/turn counters (was §1.6).** `ResetForReplay_ClientRpc` reset scores but not `RoundsPlayed` / `TurnsTakenThisRound`, so the in-place replay (Cellular Duel, the one mode that does not reload the scene) started with the last game's counters: the rematch ended early and swapped vessels on its first round. Both are now zeroed on every peer in the RPC. Shipped on `Bug_Hunt`. | `MultiplayerMiniGameControllerBase` |
 | 16 | **Combat-hit latch prunes each entry by its own window (was §1.7).** `VesselCombatHitLatch` pruned every entry with whichever call's cooldown triggered the sweep, so a long-window entry (Rhino sword 1.4 s) could be dropped early by a short-window call (Urchin spike 0.12 s) and the same hit paid twice. Each entry now stores the window it was admitted under and is pruned by that. Admission itself is unchanged. Shipped on `Bug_Hunt`; Broadside's balance should be re-checked (see playtest list). | `VesselCombatHitLatch` |
 | 17 | **Timestamps formatted with the invariant culture (was §1.9).** `PostHogAnalyticsSink` and `AnalyticsServiceFacade` wrote their ISO-8601 UTC timestamps with the device culture, and `ScreenshotDirectorConfigSO.BuildFileName` and `DesktopPlatformServices.TimestampedName` built file names the same way. On ar-SA, th-TH and fa-IR that renders a non-Gregorian year or non-Latin digits. All four now pass `CultureInfo.InvariantCulture`. Shipped on `Bug_Hunt`. | `PostHogAnalyticsSink`, `AnalyticsServiceFacade`, `ScreenshotDirectorConfigSO`, `DesktopPlatformServices` |
+| 18 | **Non-ASCII UI strings replaced with ASCII (was §1.11).** The only UI font (ALDRICH) has 97 glyphs, so `◀ ▶ ✕ › · × ● ◆` rendered as empty boxes. Replaced in `SpectatorOverlay` (buttons and hint), `ToyConfigureModal` (Back), `ToyVariantCard` (branch marker), `DogFightScoringRuleSO` (breakdown now reads `N pts - B rounds, M rockets`), and the Broadside and Undertow scoring-rule labels (`·` became `,`). Shipped on `Bug_Hunt`. | `SpectatorOverlay`, `ToyConfigureModal`, `ToyVariantCard`, `DogFightScoringRuleSO`, `BroadsideScoringRuleSO`, `UndertowScoringRuleSO` |
 
 ### Playtest items for the shipped fixes
 - **Squirrel ring (#6):** fly Menu_Main freestyle → an arcade game → back, 2-3 round trips, then
@@ -78,18 +79,14 @@ Confidence scale:
 - **Culture-safe timestamps (1.9):** set the device/Editor culture to ar-SA, th-TH or fa-IR, then
   trigger an analytics event, a screenshot and a share. The PostHog payload timestamp must read like
   `2026-10-05T12:00:00.000Z` and the file names must use Latin digits and the Gregorian year.
+- **STILL TO TEST (revisit): 1.11, merged untested at Yash's call.**
+- **No tofu in UI text (1.11):** open the spectator overlay (buttons, hint line, Leave), the Toy
+  configure modal (Back, and a branching variant card), and finish a Dogfight, Broadside and
+  Undertow round (scoreboard breakdown lines). Every character must be a real glyph, no empty boxes.
 
 ---
 
 ## 1. Tier 2 — small, local, high value (do these first)
-
-### 1.11 Non-ASCII glyphs render as tofu — High
-- **Where:** `SpectatorOverlay.cs` 125 (`◀`), 138 (`▶`), 150 (`✕`). Also check
-  `ToyConfigureModal.cs` (~514), `DogFightScoringRuleSO.cs` (~141), the `·` in the Broadside and
-  Undertow scoring-rule labels, and `ToyVariantCard.cs` (~188).
-- **Bug:** the only UI font (ALDRICH) has 97 glyphs: ASCII plus nbsp and the ellipsis. See CLAUDE.md,
-  "Any non-ASCII character in a string that reaches a TMP_Text".
-- **Fix:** use ASCII (`<`, `>`, `X`, `-`), or add the glyphs to the font asset.
 
 ### 1.12 A departed player's vessel converted to AI is not marked AI — Medium
 - **Where:** `ServerPlayerVesselInitializer.ConvertPlayerToAI` (809).

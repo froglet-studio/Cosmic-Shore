@@ -252,5 +252,21 @@ formatted with `CultureInfo.InvariantCulture`: `dt.ToString("yyyy-MM-dd", Cultur
 
 ---
 
+## 9. Tofu (empty boxes) in UI text
+
+**Shows up as:** an empty box where an arrow, check mark, middle dot, times sign or other symbol
+should be. No console message (BH-1.11).
+
+**Why:** the UI font has only 97 glyphs (ASCII, nbsp, ellipsis) and no fallback fonts.
+
+**Find it:** `rg -nP '[^\x00-\x7F]' Assets/_Scripts --glob '*.cs'` and ignore comments, tooltips and
+log strings (they never reach the font). Only strings that end up in a `TMP_Text` matter.
+
+**Fix pattern:** use ASCII (`<`, `>`, `X`, `-`, `,`), or add the glyph to
+`ALDRICH-REGULAR SDF.asset` (or give it a fallback). Also check prefabs and the generators that
+write them, not just C#.
+
+---
+
 Threading errors (`EnsureRunningOnMainThread`, UGS callbacks off the main thread) have their own
 guide: [`../THREADING.md`](../THREADING.md).
