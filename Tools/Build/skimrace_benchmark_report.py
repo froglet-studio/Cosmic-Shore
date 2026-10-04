@@ -45,7 +45,11 @@ def judged(race):
     are not observable; their crystal count at that moment is reported instead."""
     seat = ai_seat(race) or {}
     won = race["finished"] and seat.get("domain") == race["winnerDomain"]
-    ok = (won and seat.get("crystals", 0) >= race["requiredCrystals"]
+    # The game scores a DOMAIN: with more seats than domains two AIs can share one, and their summed
+    # crystals reach the target together. Judge by the domain total the recorder wrote (it is what
+    # SkimRaceController ends the race on); the per-seat count is reported separately as 'team'.
+    domain_crystals = race.get("aiDomainCrystals", seat.get("crystals", 0))
+    ok = (won and domain_crystals >= race["requiredCrystals"]
           and 0 < race["authoritativeFinishTime"] <= race.get("benchmarkLimitSeconds", 70.0))
     if race.get("timeScaleMin", 1.0) < 0.999 or race.get("timeScaleMax", 1.0) > 1.001:
         ok = False
@@ -72,7 +76,8 @@ def main(argv):
         rows.append({
             "session": r["session"], "race": r["raceIndex"], "commit": r.get("commit", ""),
             "intensity": r["intensity"], "seed": r["trackSeed"], "required": r["requiredCrystals"],
-            "collected": seat.get("crystals", r["aiDomainCrystals"]), "finished": r["finished"], "winner": r["winnerDomain"],
+            "collected": r.get("aiDomainCrystals", seat.get("crystals", 0)),
+            "team": sum(1 for o in r.get("seats", []) if o.get("domain") == seat.get("domain")) > 1, "finished": r["finished"], "winner": r["winnerDomain"],
             "ai": seat.get("domain", r["aiDomain"]), "finish": r["authoritativeFinishTime"], "success": ok,
             "others": " ".join(others),
             "reason": r.get("failureReason", ""), "recoveries": seat.get("recoveries", 0),
@@ -101,7 +106,7 @@ def main(argv):
         for x in rows:
             print(f"{x['session']} r{x['race']} I{x['intensity']} seed={x['seed']} "
                   f"{x['collected']}/{x['required']} finish={x['finish']:.2f} "
-                  f"{'PASS' if x['success'] else 'FAIL'} otherAI={x['others'] or '-'} recov={x['recoveries']} "
+                  f"{'PASS' if x['success'] else 'FAIL'}{' (team win)' if x['team'] else ''} otherAI={x['others'] or '-'} recov={x['recoveries']} "
                   f"meanSpeed={x['meanSpeed']:.0f} frame={x['frameMs']:.1f}ms max={x['maxFrameMs']:.0f}ms")
 
     out.append(f"races: {n}")
