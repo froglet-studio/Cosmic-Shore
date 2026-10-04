@@ -64,6 +64,7 @@ Confidence scale:
 - **Friends init retry (1.5):** boot with no network / UGS Friends unreachable, then restore the
   connection and sign in again (or trigger the sign-in event). Friends should initialize on the
   second attempt, and the log should show "Friends service did not come up" for the first one.
+- **STILL TO TEST (revisit): 1.6 was merged without a two-peer retest** (and 1.3/1.4 above). Run the next item.
 - **Online Duel rematch (1.6):** play a full Cellular Duel with two peers, then Play Again (rematch).
   The rematch must play the full set of rounds/turns, and its first round must NOT swap vessels.
   Re-check this if a rematch ever ends early or starts swapped.

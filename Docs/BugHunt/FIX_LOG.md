@@ -10,7 +10,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ## BH-1.6 — online duel rematch started with the last game's round/turn counters
 
-- **Date:** fixed 2026-10-05; awaiting Yash's retest on `Bug_Hunt` (needs two peers). Repro skipped.
+- **Date:** fixed 2026-10-05; merged 2026-10-05 at Yash's call with the two-peer retest deferred to the handoff revisit list. Repro skipped.
 - **Symptom:** Cellular Duel, finish a game, Play Again. The rematch ends early and/or swaps the
   vessels on its very first round.
 - **Root cause:** `MultiplayerMiniGameControllerBase.ResetForReplay_ClientRpc` (the in-place replay;
