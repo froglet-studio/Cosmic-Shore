@@ -6,6 +6,16 @@ improvements, Cleave scoring, game-data JSON schema, profile/ads, quit button,
 menu camera, pause-menu perf, display-name validation, Windows build failures)
 · **Owner of this file:** the `/qa-backlog` skill — do not hand-edit.
 
+> **Amended 2026-10-04 — two items added, NO rescan.** `QA-PROGRESSION-GATE-OPEN` and
+> `QA-PROGRESSION-GATE-ENFORCED` were added by hand at the top of P0 after the
+> quest-progression merge (`bleeding-edge` @ `f6a7303a4`) put a live progression service in
+> `Menu_Main` for the first time. **The `Scan covers:` line above is unchanged and still
+> reads 13 Aug** — the merge rescan is board item **R2** and has not been run. Measured
+> 2026-10-04: **2,936 commits on `bleeding-edge`'s own mainline since that scan, 1,886 of
+> them merges**, and the live Arcade roster has gone from **10 cards to 25** in that window.
+> Do not read the two new items as evidence the list is current — it covers a materially smaller
+> game than the one that now exists.
+
 Every item below landed on a shared branch **without ever being opened in Unity**
 by its author (or was play-tested only in part). Work top-down: P0 first.
 
@@ -53,6 +63,112 @@ game Ids` (Unity Ads was removed in #694) and no `GetComponent` crash frame unde
 **FAIL:** a build that dies in the linker · a player that closes on reaching the menu
 · any managed exception in `Player.log` that does not appear in the Editor. Attach the
 last 100 lines of `Player.log` for any failure.
+
+### QA-PROGRESSION-GATE-OPEN ⬜ — with the shipped settings, nothing is locked
+**Source:** the quest-progression merge (`bleeding-edge` @ `f6a7303a4`, board item **R17**).
+**Why P0:** `Menu_Main` now runs a progression service for the first time — before this merge
+nothing created it, so no lock in the game could ever switch on. It ships with a master
+switch called the **Master Developer Unlock** turned **ON**, which is meant to leave every
+vessel, game mode and intensity open. If that switch does not do what it says, cards and
+vessels most of this list needs are unreachable and those items cannot be run at all.
+
+1. Open the project in Unity. Wait until Unity finishes importing before touching anything.
+2. Open the Console window (menu: **Window ▸ General ▸ Console**). Turn **Error Pause** off
+   and **Clear on Play** off, so nothing halts the game or scrolls away.
+3. Open the menu **FrogletTools ▸ Toolbox**. Click the **Quest Debug** tab. Find the block
+   headed **Master Developer Unlock**.
+4. Read the line under the tick-box. It must say
+   **"OPEN - every vessel, game mode and intensity is playable, and the quest graph does not
+   run at all."** If it says **ENFORCED** instead, press the button
+   **"Reset to shipped default (open)"** and read the line again. These are the settings this
+   test is about — do not change anything else in this window.
+5. Press **Play**. Sign in and wait for the main menu to appear.
+6. Go to the **Arcade** screen. Scroll all the way to the bottom of the grid. Count the cards:
+   there should be **25**.
+7. Click each card in turn. Open each one's launch panel and close it again. No card may show
+   a padlock, a greyed-out look, or a "locked"/"complete X to unlock" message.
+8. On any one card, open the intensity control and try all four settings — **1, 2, 3 and 4**.
+   All four must be selectable.
+9. Go to the **Arena** screen and do steps 7 and 8 again on its **4** cards.
+10. Open the **Vessel Hangar**. It must open. Click through every vessel in it; none may be
+    locked or hidden.
+11. Through all of the above, watch for a quest panel, an objective banner, or a character
+    talking to you. None of those should appear anywhere.
+12. Stop Play. Read the Console from the top.
+
+**PASS:** all 25 Arcade cards and all 4 Arena cards open and launch · no padlock or
+"unlock" message anywhere · intensities 1–4 all selectable on every card tried · the Vessel
+Hangar opens and every vessel in it is selectable · no quest panel and no tutorial dialogue
+appears at any point · the Console contains exactly **one** warning beginning
+`[DeveloperUnlockGate] ALL ENTITLEMENTS OPEN` and no red errors mentioning
+`GameModeProgressionService`, `QuestGraphRunner` or `ProgressionData`.
+**FAIL:** any card is locked or refuses to launch · an intensity cannot be picked · the
+Vessel Hangar will not open, or a vessel inside it is locked · a quest panel or tutorial
+dialogue appears · the `ALL ENTITLEMENTS OPEN` warning is missing · any red error naming the
+three classes above. Copy the full text of any red error, with everything indented under it,
+into your report.
+
+### QA-PROGRESSION-GATE-ENFORCED ⬜ — turn the master unlock off and see what the player would actually get
+**Source:** the quest-progression merge (`bleeding-edge` @ `f6a7303a4`, board item **R17**);
+settings read from `_SO_Assets/GameModeQuest/ProgressionConfig.asset` and the four
+`GameModeQuest_*.asset` files. **Why P0:** this is the only way to see the real
+progression the game would ship with, and **nobody has ever looked at it**. The switch in
+`QA-PROGRESSION-GATE-OPEN` hides all of it. Run that item first — if the switch does not
+work, this one tells you nothing.
+
+> **This test deliberately leaves the project in a changed state.** The last step puts it
+> back. Do not skip it, or every later item on this list will be run against locks that are
+> not supposed to be on.
+
+1. Do steps 1–2 of **QA-PROGRESSION-GATE-OPEN** (open the project, open the Console).
+2. Open **FrogletTools ▸ Toolbox ▸ Quest Debug ▸ Master Developer Unlock**. Untick
+   **"Unlock everything (vessels, modes, intensities, hangar)"**. The line underneath must
+   change to **"ENFORCED - real progression is in effect. Locks, the quest graph and the FTUE
+   funnel all apply."**
+3. Press **Play**. Sign in and wait for the main menu.
+4. Go to the **Arcade** screen and write down, for each of the 25 cards, whether it is locked
+   or unlocked. You will compare this against the list below.
+5. Find the card named **Scurry**. It must be **unlocked** — it is the one free game.
+6. Find the cards named **Hex Race**, **Joust** and **Maelstrom**. All three must be
+   **locked** at this point.
+7. On the **Scurry** card, open the intensity control. Intensities **1, 2 and 3** must be
+   selectable and **4 must not be**.
+8. Open the **Maelstrom** card's intensity control. All four must be selectable (this mode is
+   deliberately exempt from the intensity ladder).
+9. Open the **Vessel Hangar**. It must be **locked or refuse to open** — it is the reward for
+   finishing the whole chain.
+10. Play one **Scurry** game at intensity 1 to the end, through the final scoreboard and back
+    to the main menu. Watch for a quest panel or objective banner — with this switch off, one
+    is supposed to appear.
+11. Stop Play, then press **Play** again and go back to the Arcade screen. Note whether your
+    Scurry progress from step 10 survived.
+12. **Put the project back:** open **FrogletTools ▸ Toolbox ▸ Quest Debug ▸ Master Developer
+    Unlock** and press **"Reset to shipped default (open)"**. Confirm the line reads **OPEN**
+    again.
+
+**PASS:** Scurry is unlocked and Hex Race, Joust and Maelstrom are locked · Scurry offers
+intensities 1–3 only and Maelstrom offers all four · the Vessel Hangar is locked · a quest or
+objective display appears while playing · the Console contains **no** `ALL ENTITLEMENTS OPEN`
+warning and no red error naming `GameModeProgressionService`, `QuestGraphRunner` or
+`ProgressionData` · step 12 returns the line to OPEN.
+**FAIL:** Scurry is locked (there would be no first game at all) · any of Hex Race, Joust or
+Maelstrom is already unlocked · Scurry offers intensity 4 · the Vessel Hangar opens · no quest
+display appears anywhere · any red error naming the three classes above · step 12 does not
+restore OPEN.
+
+**Known, do not fail on — these are already recorded, just confirm them:**
+- **Progress is not saved between runs.** Cloud saving for progression is switched off on
+  purpose (`ProgressionBackendGate.CloudEnabled` is `false`), so step 11 is expected to show
+  your Scurry progress **gone**. Report what you actually saw; do not mark the item failed
+  for it.
+- **Five cards can never be unlocked.** With this switch off, these are locked and there is
+  no game you can play to open them: **Scarab Scramble** (Arcade), **Astro League** and
+  **Brood Rush** (Arena), **Multiplayer Freestyle** and **Online Duel for the Cell**. Confirm
+  they are locked and move on — a fix is a design decision, not a bug for you to file.
+
+**Judgement call — say what you think:** with this switch off, a brand-new player gets one
+game (Scurry) at intensity 1 and nothing else. Is that a first five minutes you would ship?
+Write a sentence either way in the free-text section; that answer is the point of the test.
 
 ### QA-MENU-CAMERA-RIG ⬜ — Menu_Main's camera is no longer Cinemachine
 **Source:** PR #671 (`4245cf8f` — 335 lines of vCam orchestration deleted, replaced by
