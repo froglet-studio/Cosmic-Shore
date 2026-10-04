@@ -92,7 +92,6 @@ namespace CosmicShore.Gameplay
             WriteNeutral();
         }
 
-        /// <summary>Clear all per-race state and hold neutral input.</summary>
         /// <summary>
         /// This seat's lane: its rank among the AI seats in the race, ordered by domain then name -
         /// public facts every machine agrees on. Lanes skim at different heights so one AI never
@@ -112,6 +111,7 @@ namespace CosmicShore.Gameplay
             return lane;
         }
 
+        /// <summary>Clear all per-race state and hold neutral input.</summary>
         public void ResetRace()
         {
             _raceActive = false;

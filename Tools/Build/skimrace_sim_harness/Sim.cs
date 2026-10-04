@@ -97,10 +97,10 @@ class Physics
     public float RailOffset = 9.66f, RailSpacing = 7f, TrailGrace = 1f;
     public int RingGeometry = 1;
     public int TrackHits = 1, MassHits = 1;
-    public int Seats = 1;
+    public int Seats = 1;           // AI seats racing at once (each its own crystal stream)
     public int TargetHintFix = 1;   // 0 = project the crystal from the VESSEL's hint (the pre-fix behaviour), for A/B only
     public int LineDiag = 0;
-    public float ExtraTime = 60f;   // a race is cut at limit + this                   // AI seats racing at once (each its own crystal stream)
+    public float ExtraTime = 60f;   // a race is cut at limit + this
     public float ColliderDelay = 0.5f;      // VesselPrismController defaultWaitTime: a laid prism's collider is off this long for everyone   // diagnostic switches: 0 = that contact class never strikes
     public float HullHalfX = 2.06f, HullHalfZ = 1.55f;
     public float HullSlow = 0.5f;        // throttle multiplier applied for HullSlowSeconds on a strike
