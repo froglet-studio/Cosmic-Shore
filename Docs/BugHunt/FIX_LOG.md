@@ -10,7 +10,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ## BH-2.3 — invite-clear could skip the lobby mutex and race an invite send
 
-- **Date:** fixed 2026-10-05; awaiting Yash's retest on `Bug_Hunt`. Repro skipped.
+- **Date:** fixed 2026-10-05; merged 2026-10-05 at Yash's call with the retest deferred to the handoff revisit list. Repro skipped.
 - **Symptom (risk):** an invite that never arrives, or one that fires twice, when a clear and a
   send overlap.
 - **Root cause:** `HandleInviteClearedAsync` decided whether to take `_lobbyMutex` from a shared

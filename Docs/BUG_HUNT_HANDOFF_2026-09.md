@@ -107,6 +107,7 @@ Confidence scale:
   minute the console should show "Presence lobby rejoined", the online list should refill on both
   sides, and an invite sent after that should arrive. Before the fix the list stayed empty until
   a restart.
+- **STILL TO TEST (revisit): 2.3, merged untested at Yash's call.**
 - **Invite clear vs send (2.3):** with two players, send an invite and cancel it straight away,
   then send it again; the second invite must arrive and fire once. Repeat while the other player
   joins or leaves the party. Also let an invite time out, then re-invite. No stuck or doubled
