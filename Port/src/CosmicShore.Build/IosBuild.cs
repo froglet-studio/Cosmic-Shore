@@ -61,7 +61,7 @@ namespace CosmicShore.Build
             {
                 "build", Toolchain.MobileProject(_project), "-f", "net10.0-ios", "-c", config,
                 // Only the iOS target: on a Mac the project also lists Android, whose workload a CI runner lacks.
-                "-p:TargetFrameworks=net10.0-ios",
+                "-p:CsPlatform=ios",
                 "-p:RuntimeIdentifier=ios-arm64",
                 "-p:ApplicationId=" + id,
                 "-p:ApplicationTitle=" + product,

@@ -14,6 +14,10 @@
     <TargetFrameworks>net10.0-android</TargetFrameworks>
     <!-- iOS needs Apple's toolchain; the workload only installs on macOS (Unity's iOS build is the same). -->
     <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('OSX'))">net10.0-android;net10.0-ios</TargetFrameworks>
+    <!-- cs-build narrows the list to the one platform it builds (CsPlatform=android|ios), so a Mac
+         CI runner needs only that platform's workload. A property only this project reads: a
+         global TargetFrameworks would also retarget the referenced net10.0 libraries. -->
+    <TargetFrameworks Condition="'$(CsPlatform)' != ''">net10.0-$(CsPlatform)</TargetFrameworks>
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>disable</Nullable>
