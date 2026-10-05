@@ -22,6 +22,10 @@ at runtime and behaves accordingly, with the reworked touch controls on every to
 
 ### 1.1 It is not a code difference
 
+**Confirmed (2026-10-05): the ~4 FPS Android build was made from
+`claude/eloquent-meitner-9e4u2a`.** None of Garrett's strips were in it, and the strip has not
+yet been measured on this phone.
+
 `claude/eloquent-meitner-9e4u2a` is two commits on top of bleeding-edge, and both are Gradle
 template fixes (`mainTemplate.gradle`, `settingsTemplate.gradle`,
 `AndroidResolverDependencies.xml`). There is no performance change in it. The Android build and
@@ -162,7 +166,7 @@ Each step is its own PR into bleeding-edge, and each leaves Windows unchanged un
 
 | # | Step | Touches | Windows | iOS | Android |
 |---|---|---|---|---|---|
-| 0 | **Measure.** Development builds of bleeding-edge on the Samsung and the iPhone; read `DiagnosticsHUD` (bound verdict, main-thread ms). Record the exact Samsung model. | nothing | — | — | — |
+| 0 | **Measure.** (a) Development build of `claude/eloquent-meitner-9e4u2a` on the Samsung and the iPhone; read `DiagnosticsHUD` (bound verdict, main-thread ms). (b) Build Garrett's branch on the SAME Samsung: what the full strip buys on this hardware decides the minimum-spec question below. Record the exact Samsung model. | nothing | — | — | — |
 | 1 | **Android build plumbing.** Your two Gradle commits (`0f6b38ba5`, `359ad3d1b`; the namespace fix lives OUTSIDE the EDM4U block, the durable version of the same fix Garrett made inside it). Then decide: ARM64-only, R8 minify + Garrett's `proguard-user.txt` keep rules (the WorkManager crash came from Unity Ads, which your branch removes), Vulkan vs GLES3. | ProjectSettings (Android only), `Assets/Plugins/Android/*` | none | none | builds |
 | 2 | **Touch controls into bleeding-edge, ungated.** `TouchInputStrategy` (physical-size stick + dead zone, one-thumb mirror, re-zero on lift, throttle carry, events on lift only, 75/25 curve) + touch-only vessel tuning (`touchNoseResponse`, touch action overrides, binary drift on a thumb lift) + the ability-dispatch hardening. | `Controller/IO`, `VesselTransformer`, Squirrel/Butterfly prefabs | none (touch only) | **new controls** | **new controls** |
 | 3 | **Device tier foundation.** `DeviceTierClassifier`, `PlatformProfileSO` ×3, dev override, a `CSLogChannel` for it, and a mobile branch in `SettingsAutoDetector` that reads the tier. `Desktop` profile = today's behaviour. | `System/`, `Controller/Settings` | identical | correct tier | correct tier |
