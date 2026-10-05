@@ -1,0 +1,123 @@
+<!-- Hierarchy panel + hooks, spliced into the shared 3D viewer (common/viewer.py TPL) in place of its <div id="info">.
+     The run is the packed binary format of hierarchy/viewer.py record(); HOOKS.decode turns it into the shared viewer's
+     frames (agents as id-matched species blocks) and the hooks draw the macro level on top: impostor puffs (matched
+     region by region between keyframes so they glide instead of jumping), hot-region boxes and the flora field. -->
+<style>
+#hpanel{position:fixed;right:12px;top:58px;width:300px;max-height:calc(100vh - 250px);overflow-y:auto;background:var(--panel);border:1px solid var(--line);
+  border-radius:8px;padding:11px 13px;z-index:3;display:flex;flex-direction:column;gap:10px}
+#hpanel h1{font:700 14px/1.2 system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;margin:0}
+#hpanel .sub{color:var(--mute);font-size:12px;margin:3px 0 0}
+#hpanel .lbl{font:600 10.5px ui-monospace,Menlo,monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);margin:0 0 4px}
+#hpanel table{width:100%;border-collapse:collapse;font:12px ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+#hpanel td{padding:2px 0;border-bottom:1px solid var(--line)} #hpanel td:last-child{text-align:right}
+#hpanel b{color:var(--acc);font-weight:600}
+.lod{display:grid;grid-template-columns:14px 1fr;gap:4px 8px;font-size:12px;align-items:start}
+.lod i{display:block;width:11px;height:11px;border-radius:50%;margin-top:3px}
+.bar{height:8px;border-radius:4px;background:#1b2238;overflow:hidden;display:flex}
+.bar span{display:block;height:100%}
+#ui button.tg{opacity:.55} #ui button.tg.on{opacity:1;border-color:var(--acc);color:var(--acc)}
+#htog{display:none;position:fixed;right:12px;z-index:4;background:#151a28;color:var(--fg);border:1px solid #2a3150;border-radius:6px;padding:5px 10px;font:inherit}
+@media (max-width:560px){#htog{display:block;bottom:132px}#hpanel{left:12px;right:12px;width:auto;top:auto;bottom:170px;max-height:46vh}#hpanel.shut{display:none}}
+</style>
+<button id="htog">level ledger</button>
+<aside id="hpanel">
+  <div><h1>Hierarchical ecology</h1><p class="sub">48 000 grazers and predators in one cell. Only the regions a pilot is near are simulated as
+    individuals; everywhere else the population lives as a macro field. Watch regions EXPAND as a pilot arrives (bodies slide out of the
+    puff that stood for them) and COLLAPSE behind it.</p></div>
+  <div><p class="lbl">Levels of detail</p><div class="lod">
+    <i style="background:#5cff7a"></i><span><b>agents</b>: individuals simulated near a pilot (bright bodies; grazers green, predators red)</span>
+    <i style="background:#3f9a55;opacity:.7"></i><span><b>impostors</b>: the macro population, 6 puffs per region and species, each sized so drawn volume = bodies it stands for</span>
+    <i style="background:transparent;border:1px solid #7fd1ff;border-radius:2px"></i><span><b>hot regions</b>: 200 u boxes expanded to agents</span>
+    <i style="background:#2f6a2a"></i><span><b>flora</b>: the shared food field, per region</span></div></div>
+  <div><p class="lbl">Population now</p><div class="bar" title="agents vs macro"><span id="barA" style="background:#7fd1ff"></span><span id="barM" style="background:#3a5a8a"></span></div>
+    <table id="hstat"></table></div>
+  <div><p class="lbl">Toggles</p><p class="sub" style="margin:0">I impostors · G agents · B hot boxes · L flora</p></div>
+</aside>
+<div id="info"></div>
+<script>
+(function(){
+function dec(s,T){if(!s)return new T(0);const b=atob(s),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return new T(u.buffer)}
+const SPN=['grazer','predator'], HC=[[0.36,1.0,0.48],[1.0,0.36,0.3]], IC=[[0.24,0.58,0.32],[0.66,0.24,0.2]];
+const REPS=6;
+let H=null;                     // decoded macro level for the current run
+let impMesh=null, flora=null, boxes=null, show={imp:true,ag:true,hot:true,flo:true};
+const T3=()=>window.THREE;
+function regKey(x,y,z,R,L){const n=Math.round(2*R/L),f=v=>Math.max(0,Math.min(n-1,Math.floor((v+R)/L)));return (f(x)*n+f(y))*n+f(z)}
+// one keyframe's impostors -> {sp:[{P,S,keys:Map(regionKey -> group start)}]}
+function keyframe(raw,q,R,L){return raw.imp.map(([ps,ss])=>{const p=dec(ps,Int16Array),s=dec(ss,Uint16Array),n=s.length,P=new Float32Array(n*3),S=new Float32Array(n),keys=new Map();
+  for(let j=0;j<n*3;j++)P[j]=p[j]/q; for(let j=0;j<n;j++)S[j]=s[j]/4;
+  for(let g=0;g+REPS<=n;g+=REPS){let x=0,y=0,z=0;for(let j=g;j<g+REPS;j++){x+=P[j*3];y+=P[j*3+1];z+=P[j*3+2]}keys.set(regKey(x/REPS,y/REPS,z/REPS,R,L),g)}
+  return {P,S,keys}})}
+// tracks between two keyframes: matched regions glide, a region that empties shrinks away, a newly occupied one grows in
+function tracks(A,B){const P0=[],P1=[],S0=[],S1=[],C=[];
+  for(let sp=0;sp<2;sp++){const a=A[sp],b=B?B[sp]:a;
+    const push=(pa,ia,pb,ib,sa,sb)=>{for(let r=0;r<REPS;r++){const ja=ia+r,jb=ib+r;P0.push(pa.P[ja*3],pa.P[ja*3+1],pa.P[ja*3+2]);P1.push(pb.P[jb*3],pb.P[jb*3+1],pb.P[jb*3+2]);
+      S0.push(sa?pa.S[ja]:0);S1.push(sb?pb.S[jb]:0);C.push(sp)}};
+    for(const [key,ga] of a.keys){const gb=b.keys.get(key);if(gb!==undefined)push(a,ga,b,gb,1,1);else push(a,ga,a,ga,1,0)}
+    for(const [key,gb] of b.keys)if(!a.keys.has(key))push(b,gb,b,gb,0,1)}
+  return {P0:new Float32Array(P0),P1:new Float32Array(P1),S0:new Float32Array(S0),S1:new Float32Array(S1),C:new Uint8Array(C),n:C.length}}
+function ensureScene(M){const THREE=T3();
+  if(!boxes){const e=new THREE.EdgesGeometry(new THREE.BoxGeometry(M.L,M.L,M.L));
+    boxes=M.centers.map(c=>{const l=new THREE.LineSegments(e,new THREE.LineBasicMaterial({color:0x7fd1ff,transparent:true,opacity:0.2}));l.position.set(c[0],c[1],c[2]);l.visible=false;scene.add(l);return l})}
+  if(!flora){const g=new THREE.BufferGeometry(),n=M.centers.length;g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(M.centers.flat()),3));
+    g.setAttribute('col',new THREE.BufferAttribute(new Float32Array(n*3),3));g.setAttribute('size',new THREE.BufferAttribute(new Float32Array(n),1));g.setAttribute('alpha',new THREE.BufferAttribute(new Float32Array(n),1));
+    flora=new THREE.Points(g,new THREE.ShaderMaterial({transparent:true,depthWrite:false,uniforms:{h:{value:innerHeight}},
+      vertexShader:`attribute float size;attribute vec3 col;attribute float alpha;varying vec3 vC;varying float vA;uniform float h;void main(){vC=col;vA=alpha;vec4 mv=modelViewMatrix*vec4(position,1.);gl_PointSize=clamp(size*h*0.9/-mv.z,1.,160.);gl_Position=projectionMatrix*mv;}`,
+      fragmentShader:`varying vec3 vC;varying float vA;void main(){vec2 d=gl_PointCoord-.5;float r=dot(d,d);if(r>.25)discard;gl_FragColor=vec4(vC,vA*(1.-4.*r));}`}));
+    flora.frustumCulled=false;flora.renderOrder=-1;scene.add(flora)}}
+function keyOf(k){const KF=H.KF;let i=0;while(i<KF.length-1&&KF[i+1]<=k)i++;return i}
+function setBtn(id,v){const b=document.getElementById(id);if(b)b.classList.toggle('on',v)}
+function toggle(w){show[w]=!show[w];setBtn('tg_'+w,show[w])}
+window.HOOKS={
+  decode(r){const M=r.meta,q=M.q,R=M.R,L=M.L,frames=[],KF=[],KD=[];
+    for(let i=0;i<r.frames.length;i++){const f=r.frames[i],id=dec(f.aid,Uint32Array),p=dec(f.apos,Int16Array),sp=dec(f.asp,Uint8Array),sz=dec(f.asz,Uint8Array),n=id.length;
+      const blk=SPN.map(()=>({ids:[],P:[],C:[],S:[]}));
+      for(let j=0;j<n;j++){const b=blk[sp[j]]||blk[0];b.ids.push(id[j]);b.P.push(p[j*3]/q,p[j*3+1]/q,p[j*3+2]/q);b.C.push(...HC[sp[j]]||HC[0]);b.S.push(sz[j]/10*0.45)}
+      const species={};SPN.forEach((s,i)=>{const b=blk[i];species[s]={n:b.S.length,id:new Uint32Array(b.ids),pos:new Float32Array(b.P),col:new Float32Array(b.C),size:new Float32Array(b.S)}});
+      frames.push({t:f.t,pilots:f.pil.map(x=>[x[0],x[1],x[2]]),species});
+      if(f.imp){KF.push(i);KD.push(keyframe(f,q,R,L))}}
+    const TR=KD.map((d,i)=>tracks(d,KD[i+1]||null));
+    H={M,KF,TR,raw:r.frames,maxT:Math.max(...TR.map(t=>t.n),1),hot:r.frames.map(f=>dec(f.hot,Uint8Array)),flo:r.frames.map(f=>dec(f.flora,Uint8Array))};
+    return {meta:{label:r.label||'hierarchy run',R:M.R,note:'Hierarchical ecology: '+(M.stats[0].herb+M.stats[0].pred).toLocaleString()+' bodies; agents near pilots, macro impostors elsewhere.'},frames,H};
+  },
+  load(run){H=run.H;const THREE=T3();ensureScene(H.M);
+    if(impMesh){scene.remove(impMesh);impMesh.geometry.dispose()}
+    impMesh=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(0.5,1),new THREE.MeshLambertMaterial({transparent:true,opacity:0.42,depthWrite:false}),H.maxT);
+    impMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);impMesh.frustumCulled=false;
+    for(let j=0;j<H.maxT;j++)impMesh.setColorAt(j,new THREE.Color(0,0,0));scene.add(impMesh);H.lastTr=-1;
+    const bar=document.getElementById('ui');
+    if(!document.getElementById('tg_imp'))[['imp','impostors'],['ag','agents'],['hot','hot regions'],['flo','flora']].forEach(([w,l])=>{const b=document.createElement('button');
+      b.id='tg_'+w;b.className='tg on';b.textContent=l;b.onclick=()=>toggle(w);bar.appendChild(b)});
+    if(typeof placeHud==='function')setTimeout(placeHud,0)},
+  frame(fa,fb,u,k,dt){if(!H||!impMesh)return;const THREE=T3();
+    // impostors: glide along the matched tracks between the bracketing keyframes
+    const i=keyOf(k),tr=H.TR[i],ka=H.KF[i],kb=H.KF[i+1];
+    let w=kb===undefined?0:Math.min(1,Math.max(0,(k+u-ka)/(kb-ka)));w=w*w*(3-2*w);
+    const m=new THREE.Matrix4(),pv=new THREE.Vector3(),qv=new THREE.Quaternion(),sv=new THREE.Vector3(),cc=new THREE.Color();
+    if(H.lastTr!==i){for(let j=0;j<tr.n;j++){const c=IC[tr.C[j]];impMesh.setColorAt(j,cc.setRGB(c[0],c[1],c[2]))}if(impMesh.instanceColor)impMesh.instanceColor.needsUpdate=true;H.lastTr=i}
+    for(let j=0;j<H.maxT;j++){if(j>=tr.n||!show.imp){m.makeScale(0,0,0);impMesh.setMatrixAt(j,m);continue}
+      pv.set(tr.P0[j*3]+(tr.P1[j*3]-tr.P0[j*3])*w,tr.P0[j*3+1]+(tr.P1[j*3+1]-tr.P0[j*3+1])*w,tr.P0[j*3+2]+(tr.P1[j*3+2]-tr.P0[j*3+2])*w);
+      const s=tr.S0[j]+(tr.S1[j]-tr.S0[j])*w;sv.set(s,s,s);m.compose(pv,qv,sv);impMesh.setMatrixAt(j,m)}
+    impMesh.instanceMatrix.needsUpdate=true;
+    agents.visible=show.ag;glow.visible=show.ag;drops.visible=show.ag;
+    // hot boxes + flora field of the current recorded frame
+    const hot=H.hot[k];for(let j=0;j<boxes.length;j++)boxes[j].visible=show.hot&&((hot[j>>3]>>(7-(j&7)))&1)===1;
+    flora.visible=show.flo;if(show.flo){const fl=H.flo[k],g=flora.geometry.attributes,FC=g.col.array,FZ=g.size.array,FA=g.alpha.array;
+      for(let j=0;j<fl.length;j++){const v=fl[j]/255;FC[j*3]=0.12+0.12*v;FC[j*3+1]=0.24+0.4*v;FC[j*3+2]=0.12;FZ[j]=90+150*v;FA[j]=0.05+0.14*v}
+      g.col.needsUpdate=g.size.needsUpdate=g.alpha.needsUpdate=true}
+    if(H.lastK!==k){H.lastK=k;const st=H.M.stats[k],tot=st.herb+st.pred,row=(a,b)=>`<tr><td>${a}</td><td>${b}</td></tr>`;
+      document.getElementById('barA').style.width=(100*st.agents/tot).toFixed(1)+'%';document.getElementById('barM').style.width=(100-100*st.agents/tot).toFixed(1)+'%';
+      document.getElementById('hstat').innerHTML=row('grazers · predators',`${st.herb.toLocaleString()} · ${st.pred.toLocaleString()}`)+row('agents (individuals)',`<b>${st.agents.toLocaleString()}</b>`)+
+        row('macro (in impostors)',(tot-st.agents).toLocaleString())+row('hot regions',`${st.hot} / ${H.M.centers.length}`)+row('expanded · absorbed (total)',`${st.expand.toLocaleString()} · ${st.absorb.toLocaleString()}`)+
+        (H.M.drawn_volume_near_pilot?row('drawn volume near pilot',Math.round(H.M.drawn_volume_near_pilot[k]).toLocaleString()):'')}
+  },
+  hud(){if(!H)return '';const st=H.M.stats[k];return `<br>agents <b>${st.agents}</b> · hot <b>${st.hot}</b>`},
+  mini(mc,c,sc){if(!H)return;const hot=H.hot[k],L=H.M.L;mc.strokeStyle='rgba(127,209,255,.35)';
+    for(let j=0;j<H.M.centers.length;j++)if((hot[j>>3]>>(7-(j&7)))&1){const p=H.M.centers[j];mc.strokeRect(c+(p[0]-L/2)*sc,c+(p[2]-L/2)*sc,L*sc,L*sc)}}
+};
+addEventListener('keydown',e=>{if(e.target.tagName==='SELECT'||e.target.tagName==='INPUT')return;
+  if(e.code==='KeyI')toggle('imp');if(e.code==='KeyG')toggle('ag');if(e.code==='KeyB')toggle('hot');if(e.code==='KeyL')toggle('flo')});
+addEventListener('DOMContentLoaded',()=>{const p=document.getElementById('hpanel');if(innerWidth<=560)p.classList.add('shut');
+  document.getElementById('htog').onclick=()=>p.classList.toggle('shut')});
+})();
+</script>
