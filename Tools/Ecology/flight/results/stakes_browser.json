@@ -9,14 +9,14 @@
   },
   "burned": 4,
   "gained": 0,
-  "contacts": 1,
-  "blocked": 0,
+  "contacts": 2,
+  "blocked": 1,
   "stings": 0,
   "tele": 4,
-  "crystals": 5,
+  "crystals": 4,
   "hostile": true,
   "rule": "tuned",
-  "t": 15.066666666666624,
+  "t": 13.299999999999963,
   "by": {
    "pack": 4
   },
@@ -39,7 +39,7 @@
   "crystals": 4,
   "hostile": false,
   "rule": "tuned",
-  "t": 15.099999999999957,
+  "t": 13.699999999999962,
   "by": {},
   "errors": []
  },
@@ -60,7 +60,7 @@
   "crystals": 0,
   "hostile": true,
   "rule": "tuned",
-  "t": 9.133333333333312,
+  "t": 7.666666666666649,
   "by": {},
   "errors": []
  },
