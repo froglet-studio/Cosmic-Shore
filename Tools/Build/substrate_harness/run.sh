@@ -5,7 +5,7 @@
 # ASSERTED. Exit code is non-zero on any failure. Docs/SUBSTRATE_FAUNA.md §6.
 #
 #   bash Tools/Build/substrate_harness/run.sh            # every asserted test
-#   bash Tools/Build/substrate_harness/run.sh pack       # one group: fidelity | pack | locust | lurker | ledger | job | bench
+#   bash Tools/Build/substrate_harness/run.sh pack       # one group: fidelity | pack | locust | lurker | ledger | job | index | bench
 #   bash Tools/Build/substrate_harness/run.sh export     # rewrite game_params.json (the species assets' source)
 #
 # Needs a dotnet 8 SDK (DOTNET_ROOT, default ~/.dotnet). No .csproj on purpose: the repo gitignores *.csproj.
@@ -22,9 +22,9 @@ mkdir -p "$OUT"
 ls "$REFDIR"/*.dll | sed 's/^/-r:/' > "$OUT/refs.rsp"
 SUB="$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Substrate"
 SW="$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm"
-# the substrate draws through the swarm member shader's own instance contract (SwarmInstance, SwarmJobState)
+# the substrate publishes the swarm's instance contract (SwarmInstance, SwarmJobState) and reuses its index ledger (SwarmEntryLedger)
 CORE=("$SUB/SubstrateSpecies.cs" "$SUB/SubstrateFields.cs" "$SUB/SubstrateCore.cs" "$SUB/SubstrateTickJob.cs"
-      "$SW/ISwarmCore.cs" "$SW/SwarmFieldCore.cs" "$SW/SwarmTickJob.cs" "$SW/SwarmMemberQuery.cs")
+      "$SW/ISwarmCore.cs" "$SW/SwarmFieldCore.cs" "$SW/SwarmTickJob.cs" "$SW/SwarmPrismSync.cs")
 # Unity compiles these against netstandard2.1 + C# 9 - narrower than net8.0. Fail the way Unity would, first.
 "$DOTNET" "$CSC" -nologo -langversion:9.0 -nostdlib -noconfig "-r:$NSREF" -target:library -out:"$OUT/unityprofile.dll" \
   "${CORE[@]}" || { echo "FAIL: the substrate core does not compile against netstandard2.1 (Unity's API profile)" >&2; exit 1; }

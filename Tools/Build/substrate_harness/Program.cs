@@ -34,6 +34,7 @@ static class SubstrateHarness
         if (all || which == "lurker") Lurker();
         if (all || which == "ledger") Ledger();
         if (all || which == "job") Job();
+        if (all || which == "index") IndexLedger();
         if (all || which == "bench") Bench();
         Console.WriteLine(_fail == 0 ? "\nALL SUBSTRATE TESTS PASSED" : $"\n{_fail} SUBSTRATE ASSERTION(S) FAILED");
         return _fail == 0 ? 0 : 1;
@@ -564,6 +565,91 @@ static class SubstrateHarness
         }
         Check(carried && matched && job.PreyRequests.All(r => core.PopOf[r.Predator] == qp && core.PopOf[r.Prey] == ql),
               $"a predation the worker found is published to the main thread ({job.PreyRequests.Count} hunter->locust request(s))");
+    }
+
+    // ───────────────────────────────────────────────────────────── X: the index ledger over a population slice
+
+    /// <summary>A model of PrismSpatialIndex's virtual-entry contract (what the glue's ISwarmEntrySink drives).</summary>
+    sealed class ModelIndex : ISwarmEntrySink
+    {
+        public readonly Dictionary<int, (int Slot, float Volume, bool Suspended)> E = new();
+        int _next;
+        public int Register(int slot, Vector3 point, int domainSlot, float volume, bool shielded, float radius)
+        { E[_next] = (slot, volume, false); return _next++; }
+        public void Release(int id) => E.Remove(id);
+        public void SetSuspended(int id, bool suspended) { var e = E[id]; E[id] = (e.Slot, e.Volume, suspended); }
+        public void SetShape(int id, float volume, float radius) { var e = E[id]; E[id] = (e.Slot, volume, e.Suspended); }
+        public void SetShielded(int id, bool shielded) { }
+        public void SetDomainSlot(int id, int domainSlot) { }
+    }
+
+    static void IndexLedger()
+    {
+        Console.WriteLine("\nX. one prism system: each population's agents as index entries through the swarm's SwarmEntryLedger (count-once, volume = stock)");
+        var core = new SubstrateCore(512, R, Dt, 40, 21);
+        int ql = core.AddPopulation(SubstrateResearch.GameLocust().WithCap(200), 2);
+        int qp = core.AddPopulation(SubstrateResearch.GamePack(), 3);
+        core.Seed(ql, 60, new Vector3(300, 0, 0), 60f);
+        core.Seed(qp, 6, new Vector3(250, 0, 0), 40f);
+        var job = new SubstrateTickJob(core, new SubstrateTickSettings());
+        job.Prime();
+        var rng = new Random(5);
+        var pops = new[] { ql, qp };
+        var sinks = pops.Select(_ => new ModelIndex()).ToArray();
+        var ledgers = pops.Select(q => new SwarmEntryLedger(core.Pops[q].Cap)).ToArray();
+        var drawn = pops.Select(q => new SwarmInstance[core.Pops[q].Cap]).ToArray();
+        var ledInst = pops.Select(q => new SwarmInstance[core.Pops[q].Cap]).ToArray();
+        var pts = pops.Select(q => new Vector3[core.Pops[q].Cap]).ToArray();
+        var real = pops.Select(q => new bool[core.Pops[q].Cap]).ToArray();
+        for (int i = 0; i < job.Food.Length; i++) job.Food[i] = new SubstrateFood { Pos = new Vector3(300 + 40 * (i % 8), 20 * (i / 8), 0), Volume = 1f };
+        job.FoodCount = job.Food.Length;
+        job.Pilots[0] = new SubstratePilot { Pos = new Vector3(300, 0, 0), Vel = new Vector3(40, 0, 0), Radius = 6f, Id = 1 };
+        job.PilotCount = 1;
+        bool once = true, volOk = true, slotsOk = true; int maxReal = 0, deaths = 0;
+        double worst = 0;
+        for (int t = 0; t < 300; t++)
+        {
+            for (int k = 0; k < 6; k++)   // the owner's half: bites of food (births), and deaths through proxies
+            {
+                int i = rng.Next(core.Capacity);
+                if (job.Instances[i].Alive) job.QueueFeed(i, 30f);
+            }
+            if (t % 7 == 3)
+            {
+                int i = rng.Next(core.Capacity);
+                if (job.Instances[i].Alive) { job.QueueKill(i); deaths++; }
+            }
+            job.Kick(true); job.Collect();
+            for (int n = 0; n < pops.Length; n++)
+            {
+                var pop = core.Pops[pops[n]];
+                job.Slice(pop.Start, pop.Cap, drawn[n], ledInst[n], pts[n]);
+                // a proxy with a finished body stands in for ~a third of the living agents, changing every tick
+                int nr = 0;
+                for (int k = 0; k < pop.Cap; k++) { real[n][k] = drawn[n][k].Alive && rng.NextDouble() < 0.33; if (real[n][k]) nr++; }
+                maxReal = Math.Max(maxReal, nr);
+                ledgers[n].Sync(ledInst[n], real[n], pts[n], sinks[n]);
+                int alive = 0; double stock = 0, live = 0, standIn = 0;
+                for (int k = 0; k < pop.Cap; k++)
+                {
+                    if (!drawn[n][k].Alive) continue;
+                    alive++; stock += core.Stock[pop.Start + k];
+                    if (real[n][k]) { var b = job.Body[pop.Start + k]; standIn += b.X * b.Y * b.Z; }
+                }
+                var liveEntries = sinks[n].E.Values.Where(e => !e.Suspended).ToList();
+                foreach (var e in liveEntries) live += e.Volume;
+                once &= liveEntries.Count + nr == alive && sinks[n].E.Count == alive;
+                slotsOk &= sinks[n].E.Values.All(e => e.Slot >= 0 && e.Slot < pop.Cap && drawn[n][e.Slot].Alive)
+                           && sinks[n].E.Values.Select(e => e.Slot).Distinct().Count() == sinks[n].E.Count;
+                double rel = Math.Abs(live + standIn - stock) / Math.Max(1.0, stock);
+                worst = Math.Max(worst, rel);
+                volOk &= rel < 1e-4;
+            }
+        }
+        Check(once, $"every living agent is in the index exactly once (its entry, or its proxy's real body with the entry suspended) - 300 ticks, {deaths} deaths, up to {maxReal} stand-ins");
+        Check(slotsOk, "entries are per population slice: each names a living agent of its own population, one entry per slot");
+        Check(volOk, $"the index's volume for a population = its agents' stock (live entries + stand-in bodies vs held mass, worst relative error {worst:E1})");
+        Check(core.Pops[ql].Births > 0, $"births re-register reused slots as new creatures ({core.Pops[ql].Births} births)");
     }
 
     // ───────────────────────────────────────────────────────────── B: cost per step at 10k agents

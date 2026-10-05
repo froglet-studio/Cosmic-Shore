@@ -2156,3 +2156,24 @@ All runs use `export DOTNET_ROOT=/usr/lib/dotnet` and a private `TMPDIR`. Other 
   - `swarm_glue_typecheck/`: `Stubs.cs`, `run.sh`.
   - `author_swarm_fauna.py` (comment).
 - **QA.** QA-SWARM-ROUND11-1.
+
+## 20. Round 11b: the Living Ecology substrate shares the cell
+
+The Swarm cell now also holds three populations of the research's **agent substrate**: pack hunters, locusts and
+lurkers. One agent model, with the species as data, runs off the main thread. Full write-up:
+**[`Docs/SUBSTRATE_FAUNA.md`](SUBSTRATE_FAUNA.md)**.
+
+What it shares with the swarm, and what it adds:
+
+- **Shared with the swarm** (`Swarm/` files are unchanged):
+  - the tick-job shape (§14) and its `SwarmInstance` and `SwarmJobState`;
+  - the member shader for hearts (§14);
+  - the index ledger `SwarmEntryLedger` and the body pose `SwarmBodyPose` (§19);
+  - `VirtualFauna`, so predators and blasts reach agents through the same front door as members.
+- **The cell's two generators.** `author_swarm_fauna.py` still owns the cell. Two hooks call
+  `author_substrate_fauna.py`:
+  - `profile_entries()` adds the three populations to the spawn profile;
+  - `proxy_colliders()` adds their proxies to the ceiling: +78, 1056 worst case vs 1200.
+- **Stakes.** A striking agent is a danger prism in its domain (§18's petal burn). The pack strikes all at once when
+  its ring closes, then is winded for 3 s.
+- **QA.** QA-SWARM-ROUND11-2.

@@ -293,6 +293,25 @@ namespace CosmicShore.Gameplay
             _bEngCount[q] = n;
         }
 
+        /// <summary>
+        /// One population's slice of the published frame, for the glue's per-population consumers (main thread, after
+        /// Collect): <paramref name="drawn"/> is the slice as drawn (the render entities' poses), <paramref name="ledger"/>
+        /// the same slice wearing each agent's TRUE body as its Scale - so the swarm's index ledger
+        /// (<see cref="SwarmEntryLedger"/>) registers every agent's virtual entry at a volume that IS its stock - and
+        /// <paramref name="points"/> the point the index stores for each (the body centre at the middle of the step,
+        /// <see cref="SwarmBodyPose.IndexAlpha"/>).
+        /// </summary>
+        public void Slice(int start, int cap, SwarmInstance[] drawn, SwarmInstance[] ledger, Vector3[] points)
+        {
+            Array.Copy(Instances, start, drawn, 0, cap);
+            for (int k = 0; k < cap; k++)
+            {
+                ledger[k] = drawn[k];
+                ledger[k].Scale = Body[start + k];
+                points[k] = BodyAt(start + k, SwarmBodyPose.IndexAlpha);
+            }
+        }
+
         /// <summary>The number of hearts (= living agents) published for a population: its heart list is
         /// HeartIdx[pop.Start .. + this], slot indices relative to pop.Start.</summary>
         public int HeartCount(int q) => q >= 0 && q < PopAlive.Length ? PopAlive[q] : 0;

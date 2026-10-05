@@ -1,10 +1,12 @@
 using System.Collections.Generic;
 using CosmicShore.Data;
+using CosmicShore.ECS;
 using CosmicShore.Utility;
 using Unity.Collections;
 using Unity.Mathematics;
 using Unity.Profiling;
 using UnityEngine;
+using SVector3 = System.Numerics.Vector3;
 
 namespace CosmicShore.Gameplay
 {
@@ -17,21 +19,27 @@ namespace CosmicShore.Gameplay
     /// (<see cref="SubstrateAgentFauna"/>: a heart and a body prism) only when a vessel is near, a weapon or predator
     /// reaches one, or one starves.
     ///
+    /// ONE prism system (Docs/SWARM_FAUNA.md §19, round 11a): an agent's BODY is an ordinary
+    /// <see cref="PrismSpatialIndex"/> VIRTUAL entry - kept by the swarm's own ledger (<see cref="SwarmEntryLedger"/>) at
+    /// a volume that IS the agent's stock and bound to the cell's volume sum (<see cref="Cell.BindVirtualMass"/>) - so every
+    /// prism query, weapon, AOE pass, predator (<see cref="VirtualFauna"/>, through <see cref="IVirtualFaunaOwner"/>) and the
+    /// phase ladder see it exactly as they see any fauna body; and, when <see cref="PrismRenderService"/> is on, the body is
+    /// drawn as an ordinary prism entity in its tier's material (the member shader then draws only the hearts).
+    ///
     /// Once per substrate tick (<see cref="OnTickPublished"/>, main thread, called by the cell's
-    /// <see cref="SubstrateCellHost"/>) it: uploads its slice of the frame to the GPU; keeps a VIRTUAL entry per agent
-    /// in <see cref="PrismSpatialIndex"/> (so AOE finds an agent with no GameObject, and materialises it through
-    /// <see cref="IVirtualPrismOwner"/>); gives engaged agents proxies and keeps their tier (a striking agent is a DANGER
-    /// prism - contact burns an opposing pilot's petals); lands the bites the core asked for (flora prisms consumed into
-    /// a mouth, the volume paid into the agent's body 1:1); resolves its predators' catches (the prey dies through its
-    /// own proxy, crystal and all, and its body becomes the predator's); sheds the agents whose stomach ran out (through
-    /// a proxy, leaving the body as a skeleton); and states its body volume to the cell.
+    /// <see cref="SubstrateCellHost"/>) it: takes its slice of the frame; keeps its index entries (registered at birth,
+    /// suspended while a proxy's real body stands in, released at death); gives engaged agents proxies and keeps their
+    /// tier (a striking agent is a DANGER prism - contact burns an opposing pilot's petals); lands the bites the core
+    /// asked for (flora prisms consumed into a mouth, the volume paid into the agent's body 1:1); resolves its predators'
+    /// catches (the prey dies through its own proxy, crystal and all, and its body becomes the predator's); and sheds the
+    /// agents whose stomach ran out (through a proxy, leaving the body as a skeleton).
     ///
     /// Laws (Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md): mass is conserved (an agent's body volume IS its stock; eating
     /// adds, a birth splits, a death leaves it); no imposed death and no timers (starvation is a stomach); nothing pops
     /// (births bloom in the shader, proxies appear and leave under an unchanged picture, deaths wither through the
     /// platform); every agent drops one crystal (only through a proxy - an agent with no proxy cannot die).
     /// </summary>
-    public class SubstrateFauna : Fauna, IVirtualPrismOwner
+    public class SubstrateFauna : Fauna, IVirtualFaunaOwner, IVirtualPrismBudget, ISwarmEntrySink
     {
         [Header("Substrate")]
         [Tooltip("The species this population is (its parameters, drawing, proxy budget and feeding).")]
@@ -53,10 +61,27 @@ namespace CosmicShore.Gameplay
         bool[] _gone, _starving;
         readonly List<int> _proxySlots = new(), _goneSlots = new();
 
-        int[] _vid;
-        NativeArray<int> _vIds;
-        NativeArray<float3> _vPos;
-        bool _reregister;
+        // the population's slice of the frame, and its spatial-index entries (round 11a: one prism system)
+        SwarmInstance[] _local, _ledgerInst;
+        SVector3[] _points;
+        bool[] _realBody;
+        SwarmEntryLedger _entries;
+        PrismSpatialIndex _index;
+        NativeArray<int> _entryIds;
+        NativeArray<float3> _pointsNative;
+        float _heartReach;
+
+        // bodies as PrismRenderService entities (when the service is on) - the swarm's §19.2 path over this slice
+        bool _unified;
+        SwarmEntityLedger _entities;
+        Mesh _bodyMesh;
+        readonly Material[] _looks = new Material[9];
+        byte[] _look;
+        NativeArray<PrismRenderHandle> _handles, _shownHandles, _restyleHandles;
+        NativeArray<byte> _lookScratch;
+        NativeArray<float4x4> _matrices;
+        float[] _matrixScratch;
+        static bool s_warnedLooks;
 
         Transform[] _mouth;
         int[] _mouthSlot;
@@ -64,10 +89,10 @@ namespace CosmicShore.Gameplay
         int _mouthCursor, _biteCursor;
         float _extinctSince = -1f;
 
-        readonly double[] _virtualBySlot = new double[4];
         static int s_spawnFrame = -1, s_spawnsThisFrame, s_hitFrame = -1, s_hitsThisFrame;
 
-        static readonly ProfilerMarker s_mVirtual = new("SubstrateFauna.Tick.Virtual");
+        static readonly ProfilerMarker s_mVirtual = new("SubstrateFauna.Tick.Index");
+        static readonly ProfilerMarker s_mEntities = new("SubstrateFauna.Tick.Entities");
         static readonly ProfilerMarker s_mProxies = new("SubstrateFauna.Tick.Proxies");
         static readonly ProfilerMarker s_mFeed = new("SubstrateFauna.Tick.Feed");
         static readonly ProfilerMarker s_mPose = new("SubstrateFauna.Frame.Pose");
@@ -140,19 +165,26 @@ namespace CosmicShore.Gameplay
             _wantedAt = new float[_cap];
             _gone = new bool[_cap];
             _starving = new bool[_cap];
-            _vid = new int[_cap];
-            for (int k = 0; k < _cap; k++) _vid[k] = -1;
-            _vIds = new NativeArray<int>(_cap, Allocator.Persistent);
-            _vPos = new NativeArray<float3>(_cap, Allocator.Persistent);
+            _local = new SwarmInstance[_cap];
+            _ledgerInst = new SwarmInstance[_cap];
+            _points = new SVector3[_cap];
+            _realBody = new bool[_cap];
+            _entries = new SwarmEntryLedger(_cap);
+            _index = PrismSpatialIndex.EnsureInstance();
+            _entryIds = new NativeArray<int>(_cap, Allocator.Persistent);
+            _pointsNative = new NativeArray<float3>(_cap, Allocator.Persistent);
             Seed(host, pop);
 
             _render = new SubstrateMemberRenderer(species.MemberShader, species.AgentPrefab, _cap, _element, gameObject.layer);
             _gpu = _render.Valid;
             if (_gpu) _render.SetPalette(species.Theme, domain, species.HeartWorldScaleByElement);
+            _unified = BindBodyEntities();
+            if (_render != null) _render.DrawBodies = !_unified;
             BuildMouths();
+            VirtualFauna.Register(this);
             CSDebug.LogVerbose(CSLogChannel.Ecology,
                 $"[Substrate] {name}: {species.SpeciesName} population {pop} seeded ({host.Core.Pops[pop].Alive} agents, slots " +
-                $"{_start}..{_start + _cap - 1}, band {inner:F0}-{outer:F0}, {(_gpu ? "GPU-drawn" : "proxy-drawn")})");
+                $"{_start}..{_start + _cap - 1}, band {inner:F0}-{outer:F0}, bodies {(_unified ? "prism entities" : _gpu ? "instanced" : "proxy-only")})");
             return pop;
         }
 
@@ -204,13 +236,13 @@ namespace CosmicShore.Gameplay
         protected override void OnDestroy()
         {
             _host?.Leave(this);
-            UnregisterAllVirtual();
-            if (_vIds.IsCreated) _vIds.Dispose();
-            if (_vPos.IsCreated) _vPos.Dispose();
+            VirtualFauna.Unregister(this);
+            if (_entries != null && _index != null && _index.IsAvailable) _entries.ReleaseAll(this);
+            if (_entryIds.IsCreated) _entryIds.Dispose();
+            if (_pointsNative.IsCreated) _pointsNative.Dispose();
+            ReleaseBodyEntities();
             _render?.Dispose();
             _render = null;
-            var host = HostCell;
-            if (host) host.ClearVirtualVolume(this);
             base.OnDestroy();
         }
 
@@ -222,7 +254,7 @@ namespace CosmicShore.Gameplay
             _host.Advance();
             if (_pop < 0) return;
             float alpha = _host.Alpha;
-            using (s_mPose.Auto()) PoseProxies(alpha);
+            using (s_mPose.Auto()) { PoseProxies(alpha); if (_unified) PoseBodies(alpha); }
             if (_gpu)
                 using (s_mDraw.Auto())
                 {
@@ -237,12 +269,13 @@ namespace CosmicShore.Gameplay
             if (_pop < 0) return;
             var job = host.Job;
             MaskGone(job);
+            job.Slice(_start, _cap, _local, _ledgerInst, _points);
             if (_gpu) _render.Upload(job, _start, _pop);
             ReadEvents(job);
-            using (s_mVirtual.Auto()) SyncVirtual(job);
             using (s_mProxies.Auto()) { SyncProxies(job); ShedStarving(job); }
+            using (s_mVirtual.Auto()) SyncIndex(job);
+            using (s_mEntities.Auto()) SyncEntities(job);
             using (s_mFeed.Auto()) { Feed(job); Hunt(host); }
-            StateVirtualVolume(job);
             Extinction(job);
         }
 
@@ -270,75 +303,284 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        // ───────────────────────────────────────────────────────────────── virtual entries (PrismSpatialIndex)
+        // ───────────────────────────────────────────────────────────────── the index entries (round 11a, one prism system)
 
         /// <summary>
-        /// One virtual entry per living agent at its BODY centre, so every position query (AOE, occupancy) sees an agent
-        /// that has no GameObject, and a hit materialises it through <see cref="MaterialiseVirtualPrism"/>. An agent with
-        /// a proxy has its entry suspended (its real body prism is registered itself - counted once). The entries are
-        /// unbound (no cell volume filing): the population states its body volume through Cell.SetVirtualVolume.
+        /// Once per tick: every living agent is seen by <see cref="PrismSpatialIndex"/> EXACTLY ONCE - by its virtual
+        /// entry (at its body centre, volume = its stock, bound to the cell's volume sum in this population's domain), or,
+        /// while its proxy's body prism has finished creation, by that real prism with the entry suspended - and a dead
+        /// agent not at all. The swarm's ledger does the bookkeeping (count-once: swarm harness R11b, substrate harness X).
         /// </summary>
-        void SyncVirtual(SubstrateTickJob job)
+        void SyncIndex(SubstrateTickJob job)
         {
-            var index = PrismSpatialIndex.EnsureInstance();
-            if (index == null || !index.IsAvailable) return;
-            if (_reregister) { UnregisterAllVirtual(); _reregister = false; }
-            int n = 0;
+            if (_index == null || !_index.IsAvailable) _index = PrismSpatialIndex.EnsureInstance();
+            if (_index == null || !_index.IsAvailable) return;
+            float reach = 0f;
             for (int k = 0; k < _cap; k++)
             {
-                int i = _start + k;
-                bool alive = job.Instances[i].Alive && !_gone[k];
-                if (!alive)
-                {
-                    if (_vid[k] >= 0) { index.Unregister(_vid[k]); _vid[k] = -1; }
-                    continue;
-                }
-                var b = job.BodyAt(i, 1f);
-                var p = new float3(b.X, b.Y, b.Z);
-                if (_vid[k] < 0)
-                {
-                    var body = job.Body[i];
-                    _vid[k] = index.RegisterVirtual(this, i, p, (int)domain, body.X * body.Y * body.Z);
-                    if (_vid[k] >= 0 && _proxy[k]) index.SetVirtualSuspended(_vid[k], true);
-                    continue;
-                }
-                _vIds[n] = _vid[k]; _vPos[n] = p; n++;
+                var m = _proxy[k];
+                _realBody[k] = m && !m.IsDead && !_gone[k] && m.Body && !m.Body.destroyed && m.Body.IsCreationComplete;
+                if (!_local[k].Alive) continue;
+                // how far the heart can be drawn from its stored body point: the seat plus half a step of travel
+                float r = Mathf.Abs(_local[k].PrismZ) + 0.5f * SVector3.Distance(_local[k].PrevPos, _local[k].CurPos);
+                if (r > reach) reach = r;
             }
-            if (n > 0) index.UpdatePositionsBatch(_vIds, _vPos, n);
+            _heartReach = reach;
+            _entryIds.CopyFrom(_entries.Ids);
+            _pointsNative.Reinterpret<SVector3>().CopyFrom(_points);
+            _index.UpdatePositionsBatch(_entryIds, _pointsNative, _cap);
+            _entries.Sync(_ledgerInst, _realBody, _points, this);
         }
 
-        void UnregisterAllVirtual()
+        void SuspendEntry(int k)
         {
-            if (_vid == null) return;
-            var index = PrismSpatialIndex.Instance;
-            for (int k = 0; k < _vid.Length; k++)
-            {
-                if (_vid[k] < 0) continue;
-                if (index != null && index.IsAvailable) index.Unregister(_vid[k]);
-                _vid[k] = -1;
-            }
+            if (_entries == null || _index == null) return;
+            _realBody[k] = true;
+            int id = _entries.Ids[k];
+            if (id < 0 || _entries.IsSuspended(k)) return;
+            _index.SetVirtualSuspended(id, true);
+            _entries.NoteSuspendedByIndex(k);
         }
 
-        /// <summary>The index reached an agent that has no GameObject (AOE damage): make it real now.</summary>
-        public Prism MaterialiseVirtualPrism(int slot)
+        /// <summary>Agent k's proxy retired without dying: re-file its entry where it is drawn now, live again.</summary>
+        void ResumeEntry(int k)
         {
-            var m = MaterialiseForHit(slot);
+            if (_entries == null || _index == null || _host == null) return;
+            _realBody[k] = false;
+            int id = _entries.Ids[k];
+            if (id < 0) return;
+            var b = _host.Job.BodyAt(_start + k, _host.Alpha);
+            _index.UpdatePosition(id, new Vector3(b.X, b.Y, b.Z));
+            _entries.Resume(k, this);
+        }
+
+        // ISwarmEntrySink - the ledger's calls onto the index's virtual-entry API and the cell's volume binding. The
+        // ledger's slot is the agent's index in THIS population's slice; the index is told the core slot.
+        int ISwarmEntrySink.Register(int slot, SVector3 point, int domainSlot, float volume, bool shielded, float radius)
+        {
+            int id = _index.RegisterVirtual(this, _start + slot, new float3(point.X, point.Y, point.Z), (int)domain, volume,
+                                            shielded, false, radius);
+            var host = HostCell;
+            if (id >= 0 && host) host.BindVirtualMass(id, domain);   // volume-only fauna body mass, the cell's own sum
+            return id;
+        }
+
+        void ISwarmEntrySink.Release(int id) => _index.Unregister(id);
+
+        void ISwarmEntrySink.SetSuspended(int id, bool suspended) => _index.SetVirtualSuspended(id, suspended);
+
+        void ISwarmEntrySink.SetShape(int id, float volume, float radius)
+        {
+            _index.UpdateCellVolume(id, volume);
+            _index.UpdateVolume(id, Mathf.Max(volume, 1f));
+            _index.SetVirtualRadius(id, radius);
+        }
+
+        void ISwarmEntrySink.SetShielded(int id, bool shielded) => _index.UpdateShieldState(id, shielded, false);
+
+        void ISwarmEntrySink.SetDomainSlot(int id, int domainSlot)
+        {
+            _index.UpdateDomain(id, (int)domain);
+            var host = HostCell;
+            if (host) host.BindVirtualMass(id, domain);
+        }
+
+        // IVirtualPrismOwner / IVirtualPrismBudget - how the platform makes an agent real
+
+        /// <summary>The index needs agent <paramref name="slot"/> (a core slot) as a real prism NOW - an AOE hit, a round, a
+        /// projectile, a predator: its proxy, posed where it is drawn, creation complete. The index suspends the entry.</summary>
+        Prism IVirtualPrismOwner.MaterialiseVirtualPrism(int slot)
+        {
+            var m = MaterialiseForHit(slot, force: true);
             return m ? m.Body : null;
         }
 
-        void SuspendVirtual(int k, bool suspended)
+        bool IVirtualPrismBudget.HasMaterialiseBudget(int slot) => HitBudgetLeft();
+
+        static bool HitBudgetLeft()
         {
-            if (_vid == null || _vid[k] < 0) return;
-            var index = PrismSpatialIndex.Instance;
-            if (index == null || !index.IsAvailable) return;
-            if (!suspended && _host != null)
-            {
-                // resume at where the agent is now (the proxy moved it)
-                var b = _host.Job.BodyAt(_start + k, _host.Alpha);
-                index.UpdatePosition(_vid[k], new Vector3(b.X, b.Y, b.Z));
-            }
-            index.SetVirtualSuspended(_vid[k], suspended);
+            int frame = Time.frameCount;
+            if (s_hitFrame != frame) { s_hitFrame = frame; s_hitsThisFrame = 0; }
+            return s_hitsThisFrame < HitBudgetPerFrame;
         }
+
+        // IVirtualFaunaOwner - what only a creature can answer (VirtualFauna's predators and heart-seeking blasts)
+
+        bool IVirtualFaunaOwner.IsVirtualPrey(int slot, Vector3 at, Fauna predator, bool herbivoresOnly)
+        {
+            if (_host == null || !Mine(slot) || !predator || predator == this) return false;
+            int k = slot - _start;
+            if (!_local[k].Alive || _gone[k] || _proxy[k]) return false;
+            var prefab = species.AgentPrefab;
+            if (herbivoresOnly && prefab && prefab.Diet != FaunaDiet.Herbivore) return false;
+            float grace = prefab ? prefab.PredationImmunitySeconds : 0f;
+            if (grace > 0f && (_host.Job.Tick + _host.Alpha - _local[k].BirthTick) * _host.Dt < grace) return false;
+            return predator.IsInsideBand(at);
+        }
+
+        float IVirtualFaunaOwner.HeartReach => _heartReach;
+
+        bool IVirtualFaunaOwner.TryGetVirtualHeart(int slot, out Vector3 heart)
+        {
+            heart = default;
+            if (_host == null || !Mine(slot) || !_local[slot - _start].Alive || _gone[slot - _start]) return false;
+            var p = _host.Job.PoseAt(slot, _host.Alpha);
+            heart = new Vector3(p.X, p.Y, p.Z);
+            return true;
+        }
+
+        void IVirtualFaunaOwner.CollectMaterialisedFauna(Vector3 centre, float radius, List<Fauna> results)
+        {
+            float r2 = radius * radius;
+            for (int q = 0; q < _proxySlots.Count; q++)
+            {
+                var m = _proxy[_proxySlots[q]];
+                if (!m || m.IsDead) continue;
+                if ((m.transform.position - centre).sqrMagnitude <= r2) results.Add(m);
+            }
+        }
+
+        // ───────────────────────────────────────────────────────────────── bodies as prism entities (§19.2's path)
+
+        /// <summary>
+        /// When <see cref="PrismRenderService"/> is on, every living agent's BODY is an ordinary prism entity wearing its
+        /// tier's material in the population's domain - the very materials every live prism of that tier wears (Garrett:
+        /// one unified prism system). The pose is the member shader's, as arithmetic (<see cref="SwarmBodyPose"/>), and
+        /// one Burst transform write a frame moves them all. False (the instanced body draw stays) when the service is off
+        /// or a material is missing.
+        /// </summary>
+        bool BindBodyEntities()
+        {
+            if (!PrismRenderService.Enabled) return false;
+            var bodyPrism = species.AgentPrefab ? species.AgentPrefab.GetComponentInChildren<HealthPrism>(true) : null;
+            _bodyMesh = bodyPrism && bodyPrism.TryGetComponent(out MeshFilter mf) ? mf.sharedMesh : null;
+            if (!_bodyMesh || !BuildLooks()) return false;
+            _entities = new SwarmEntityLedger(_cap);
+            _look = new byte[_cap];
+            _handles = new NativeArray<PrismRenderHandle>(_cap, Allocator.Persistent);
+            _shownHandles = new NativeArray<PrismRenderHandle>(_cap, Allocator.Persistent);
+            _restyleHandles = new NativeArray<PrismRenderHandle>(_cap, Allocator.Persistent);
+            _lookScratch = new NativeArray<byte>(_cap, Allocator.Persistent);
+            _matrices = new NativeArray<float4x4>(_cap, Allocator.Persistent);
+            _matrixScratch = new float[16 * _cap];
+            return true;
+        }
+
+        /// <summary>[tier * 3 + domain slot] = that tier's prism material in this population's domain (one population is
+        /// one colour, so the three slots are the same set).</summary>
+        bool BuildLooks()
+        {
+            var theme = species.Theme;
+            if (!theme) return false;
+            var sets = theme.TeamMaterialSets;
+            CosmicShore.ScriptableObjects.SO_MaterialSet set =
+                sets != null && sets.TryGetValue(domain, out var painted) && painted ? painted : null;
+            if (!set)
+            {
+                set = theme.BaseMaterialSet;
+                if (!s_warnedLooks)
+                {
+                    s_warnedLooks = true;
+                    CSDebug.LogWarning($"[Substrate] {name}: the theme has no painted prism materials for {domain}; agents " +
+                                       "wear the unpainted base set (Docs/SUBSTRATE_FAUNA.md §5).");
+                }
+            }
+            if (!set) return false;
+            for (int slot = 0; slot < 3; slot++)
+            {
+                _looks[0 + slot] = set.BlockMaterial;
+                _looks[3 + slot] = set.DangerousBlockMaterial;
+                _looks[6 + slot] = set.ShieldedBlockMaterial;
+            }
+            for (int l = 0; l < _looks.Length; l++) if (!_looks[l]) return false;
+            return true;
+        }
+
+        void ReleaseBodyEntities()
+        {
+            if (_handles.IsCreated)
+            {
+                for (int k = 0; k < _cap; k++)
+                {
+                    var h = _handles[k];
+                    PrismRenderService.Destroy(ref h);
+                }
+                _handles.Dispose();
+            }
+            if (_shownHandles.IsCreated) _shownHandles.Dispose();
+            if (_restyleHandles.IsCreated) _restyleHandles.Dispose();
+            if (_lookScratch.IsCreated) _lookScratch.Dispose();
+            if (_matrices.IsCreated) _matrices.Dispose();
+            _entities = null;
+            _unified = false;
+        }
+
+        void FallBackToInstancedBodies(string why)
+        {
+            CSDebug.LogWarning($"[Substrate] {name}: agent bodies fall back to the instanced draw - {why}.");
+            ReleaseBodyEntities();
+            if (_render != null) _render.DrawBodies = true;
+        }
+
+        static readonly SVector3 s_up = SVector3.UnitY, s_upAlt = SVector3.UnitZ;
+
+        /// <summary>Once per TICK: entities for slots holding an agent for the first time (one CreateBatch), a restyle where
+        /// the tier changed (one SetLooksBatch - a strike turns the body into a danger prism), shows and hides, and the
+        /// compact handle list the per-frame transform write walks.</summary>
+        void SyncEntities(SubstrateTickJob job)
+        {
+            if (!_unified || _entities == null) return;
+            _entities.Sync(_local);
+            var create = _entities.Create;
+            if (create.Count > 0)
+            {
+                int n = create.Count;
+                var mats = new NativeArray<float4x4>(n, Allocator.TempJob);
+                var outHandles = new NativeArray<PrismRenderHandle>(n, Allocator.TempJob);
+                for (int q = 0; q < n; q++)
+                {
+                    SwarmBodyPose.Matrix(_local[create[q]], 0f, job.Tick, BloomTicks, s_up, s_upAlt, _matrixScratch, 0);
+                    mats[q] = ToFloat4x4(_matrixScratch, 0);
+                }
+                bool ok = PrismRenderService.CreateBatch(_bodyMesh, _looks[0], gameObject.layer, mats, outHandles);
+                if (ok)
+                    for (int q = 0; q < n; q++) { _handles[create[q]] = outHandles[q]; _look[create[q]] = byte.MaxValue; }
+                mats.Dispose();
+                outHandles.Dispose();
+                _entities.Created(ok);
+                if (!ok) { FallBackToInstancedBodies("PrismRenderService.CreateBatch declined"); return; }
+            }
+            int r = 0;
+            for (int q = 0; q < _entities.ShownCount; q++)
+            {
+                int k = _entities.Shown[q];
+                byte look = (byte)(Mathf.Clamp(_local[k].Tier, 0, 2) * 3);
+                if (_look[k] == look) continue;
+                _look[k] = look;
+                _restyleHandles[r] = _handles[k];
+                _lookScratch[r] = look;
+                r++;
+            }
+            if (r > 0) PrismRenderService.SetLooksBatch(_restyleHandles, _lookScratch, r, _looks);
+            for (int q = 0; q < _entities.Show.Count; q++) PrismRenderService.QueueVisible(_handles[_entities.Show[q]], true);
+            for (int q = 0; q < _entities.Hide.Count; q++) PrismRenderService.QueueVisible(_handles[_entities.Hide[q]], false);
+            for (int q = 0; q < _entities.ShownCount; q++) _shownHandles[q] = _handles[_entities.Shown[q]];
+        }
+
+        /// <summary>Once per FRAME: every shown agent's body matrix at this frame's alpha, one memcpy, one Burst write.</summary>
+        void PoseBodies(float alpha)
+        {
+            int n = _entities != null ? _entities.ShownCount : 0;
+            if (n == 0) return;
+            SwarmBodyPose.Matrices(_local, _entities.Shown, n, alpha, _host.Job.Tick + alpha, BloomTicks, s_up, s_upAlt,
+                                   _matrixScratch);
+            NativeArray<float>.Copy(_matrixScratch, 0, _matrices.Reinterpret<float>(64), 0, 16 * n);
+            PrismRenderService.SetTransformsBatch(_shownHandles, _matrices, n);
+        }
+
+        static float4x4 ToFloat4x4(float[] m, int o) => new float4x4(
+            new float4(m[o + 0], m[o + 1], m[o + 2], m[o + 3]), new float4(m[o + 4], m[o + 5], m[o + 6], m[o + 7]),
+            new float4(m[o + 8], m[o + 9], m[o + 10], m[o + 11]), new float4(m[o + 12], m[o + 13], m[o + 14], m[o + 15]));
 
         // ───────────────────────────────────────────────────────────────── proxies
 
@@ -369,7 +611,7 @@ namespace CosmicShore.Gameplay
                     m.Retire();
                     _proxy[k] = null;
                     _proxySlots.RemoveAt(q);
-                    SuspendVirtual(k, false);
+                    ResumeEntry(k);
                     continue;
                 }
                 m.SetShape(BodyScale(job, i), BodyZ(job, i));
@@ -406,7 +648,6 @@ namespace CosmicShore.Gameplay
             FaunaNetworkSync.ServerSpawn(member);
             _proxy[k] = member;
             _proxySlots.Add(k);
-            SuspendVirtual(k, true);
             return true;
         }
 
@@ -421,12 +662,11 @@ namespace CosmicShore.Gameplay
             _proxySlots.Remove(k);
             _starving[k] = false;
             if (!_gone[k]) { _gone[k] = true; _goneSlots.Add(k); }
-            if (_vid[k] >= 0)
-            {
-                var index = PrismSpatialIndex.Instance;
-                if (index != null && index.IsAvailable) index.Unregister(_vid[k]);
-                _vid[k] = -1;
-            }
+            // its entry goes now - the skeleton or the eater holds its mass
+            if (_index != null && _index.IsAvailable) _entries.Release(k, this);
+            _realBody[k] = false;
+            _local[k].Flags = 0u;
+            if (_unified && _entities.HideNow(k)) PrismRenderService.QueueVisible(_handles[k], false);
             if (_gpu) _render.HideSlot(_host.Job, _start, k);
             else _host.Job.Instances[agent.Index].Flags = 0u;
         }
@@ -476,19 +716,22 @@ namespace CosmicShore.Gameplay
             if (existing)
             {
                 _wantedAt[k] = Time.time;
-                return existing.IsDead || !existing.MaterialiseNow() ? null : existing;
+                if (existing.IsDead || !existing.MaterialiseNow()) return null;
+                SuspendEntry(k);
+                return existing;
             }
             if (_gone[k] || !job.Instances[i].Alive) return null;
-            int frame = Time.frameCount;
-            if (s_hitFrame != frame) { s_hitFrame = frame; s_hitsThisFrame = 0; }
-            if (!force && s_hitsThisFrame >= HitBudgetPerFrame) return null;
+            if (!HitBudgetLeft() && !force) return null;
             if (!TrySpawnProxy(k, force: true)) return null;
             s_hitsThisFrame++;
             var m = _proxy[k];
             _wantedAt[k] = Time.time;
+            var p = job.PoseAt(i, _host.Alpha);
+            m.transform.SetPositionAndRotation(new Vector3(p.X, p.Y, p.Z), Face(job.FaceAt(i, _host.Alpha)));
             if (!m.MaterialiseNow()) return null;
             m.SetDanger(job.Instances[i].Tier == 1);
             m.SyncBodyToIndex();
+            SuspendEntry(k);   // its real body is the agent's one entry now
             return m;
         }
 
@@ -602,35 +845,6 @@ namespace CosmicShore.Gameplay
 
         // ───────────────────────────────────────────────────────────────── volume, extinction, colour
 
-        /// <summary>
-        /// The population's fauna BODY volume that has no registered prism (Docs/SWARM_FAUNA.md §16.3's ledger): the
-        /// worker summed every living agent's stock; the main thread removes agents that died since the tick started
-        /// (their skeleton is real mass now) and agents whose proxy body has finished creation (already in the cell's
-        /// own sum). Nothing counts twice and nothing is missed.
-        /// </summary>
-        void StateVirtualVolume(SubstrateTickJob job)
-        {
-            var host = HostCell;
-            if (!host) return;
-            double v = job.PopVolume[_pop];
-            for (int q = 0; q < _goneSlots.Count; q++)
-            {
-                int i = _start + _goneSlots[q];
-                if (job.Instances[i].Alive) { var b = job.Body[i]; v -= b.X * b.Y * b.Z; }
-            }
-            for (int q = 0; q < _proxySlots.Count; q++)
-            {
-                int k = _proxySlots[q], i = _start + k;
-                var m = _proxy[k];
-                if (_gone[k] || !m || !m.Body || !m.Body.IsCreationComplete || !job.Instances[i].Alive) continue;
-                var b = job.Body[i];
-                v -= b.X * b.Y * b.Z;
-            }
-            System.Array.Clear(_virtualBySlot, 0, 4);
-            _virtualBySlot[Cell.VolumeSlotOf(domain)] = System.Math.Max(0.0, v);
-            host.SetVirtualVolume(this, _virtualBySlot);
-        }
-
         void Extinction(SubstrateTickJob job)
         {
             if (job.PopAlive[_pop] > 0 || _proxySlots.Count > 0) { _extinctSince = -1f; return; }
@@ -642,17 +856,18 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>The cell re-coloured its fauna (Cell.SetModeControlOverride): the palette, every proxy and every
-        /// virtual entry take the new domain, and every agent born from now on wears it.</summary>
+        /// index entry (and its cell volume binding) take the new domain, and every agent born from now on wears it.</summary>
         protected override void OnTeamChanged()
         {
             if (_pop < 0) return;
             if (_gpu) _render.SetPalette(species.Theme, domain, species.HeartWorldScaleByElement);
+            if (_unified && BuildLooks()) for (int k = 0; k < _cap; k++) _look[k] = byte.MaxValue;   // restyle all next tick
             for (int q = 0; q < _proxySlots.Count; q++)
             {
                 var m = _proxy[_proxySlots[q]];
                 if (m) m.SetTeam(domain);
             }
-            _reregister = true;
+            if (_entries != null && _index != null && _index.IsAvailable) _entries.RestateDomains(this);
         }
 
         System.Numerics.Vector3 ToSim(Vector3 world)

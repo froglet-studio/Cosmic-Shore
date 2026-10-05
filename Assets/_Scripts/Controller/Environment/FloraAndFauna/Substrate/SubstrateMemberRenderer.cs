@@ -14,11 +14,10 @@ namespace CosmicShore.Gameplay
     /// DANGER tier exactly as it does a tadpole. Per tick: two <c>GraphicsBuffer.SetData</c> of this population's slice
     /// of the cell's frame. Per frame: one body draw and one draw per crystal part of the population's element.
     ///
-    /// Why not PrismRenderService.CreateBatch (the shared prism path): that service is opt-in and OFF by default, draws
-    /// no heart crystal, and has no per-instance interpolation between ticks - an agent drawn through it would need a
-    /// main-thread matrix write per agent per frame. The member shader is the path that already carries hearts, tiers
-    /// and the tick-to-frame interpolation; when the swarm moves onto the shared path, this class is the one seam to
-    /// move with it (the job's frame stays the same).
+    /// The shared prism path (round 11a, Docs/SWARM_FAUNA.md §19.2): when PrismRenderService is on, every agent's BODY
+    /// is an ordinary prism entity (SubstrateFauna.SyncEntities / PoseBodies, the swarm's code over this population's
+    /// slice) and this draws the HEARTS only (<see cref="DrawBodies"/> false) - the render service draws no heart
+    /// crystal. With the service off (its default) this draws both, as the swarm does.
     /// </summary>
     public sealed class SubstrateMemberRenderer : System.IDisposable
     {
@@ -55,6 +54,9 @@ namespace CosmicShore.Gameplay
         static bool s_warned;
 
         public bool Valid { get; }
+
+        /// <summary>False while the bodies are PrismRenderService entities (the unified path): this then draws hearts only.</summary>
+        public bool DrawBodies { get; set; } = true;
 
         public static bool Supported =>
             SystemInfo.supportsComputeShaders && SystemInfo.maxComputeBufferInputsVertex > 0;
@@ -209,7 +211,7 @@ namespace CosmicShore.Gameplay
                 receiveShadows = false,
                 layer = _layer,
             };
-            Graphics.RenderMeshPrimitives(rp, _body.Mesh, _body.Submesh, _cap);
+            if (DrawBodies) Graphics.RenderMeshPrimitives(rp, _body.Mesh, _body.Submesh, _cap);
             if (_heartCount <= 0) return;
             for (int q = 0; q < _hearts.Count; q++)
             {

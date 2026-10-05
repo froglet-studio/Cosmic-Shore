@@ -801,6 +801,70 @@ with no trail · live volume never moves as the swarms grow.
 Round 8's diet colouring (newborns wearing the colour of what they ate) was removed on playtest. See
 `Docs/SWARM_FAUNA.md` §17.
 
+### QA-SWARM-ROUND11-2 ⬜ — the Living Ecology substrate: a pack that surrounds you and dives in at once
+
+**Source:** branch `overnight/substrate`. Proven by the headless harness and Roslyn type-check only; not run in the
+editor. Reference: `Docs/SUBSTRATE_FAUNA.md`.
+
+**Why it matters:** this is the first fauna whose threat is coordinated. Six hunters ring the pilot and strike
+together. If it does not read in the editor, the round's design target is missed: *"being surrounded by them and
+having them all dive in at once will be scary once the stakes are felt."*
+
+1. **Load.** Open `Menu_Main`, pick the **Swarm** cell in the Cell Selector, and start freestyle. In the Console, turn
+   on the **Ecology** channel (FrogletTools > Toolbox > Logging). Within ~10 s you should see three
+   `[Substrate] … population … seeded` lines: pack (6 agents), locust (40) and lurker (8). Each line says its bodies
+   are `prism entities` or `instanced`. You should see NO `[Substrate] GPU agent drawing is OFF` warning.
+2. **Look.**
+   - **Locusts** (outer shell, 910-1080 u): small Space-heart creatures bobbing near the Space flora.
+   - **Pack** (middle shell, 690-1080 u): six long, low Time-heart bodies.
+   - **Lurkers** (inner shell): they should be hard to tell from the Mass flora crystals. Look for a crystal whose
+     sliver of body grows when it moves.
+3. **Pack, careless.** Fly as a domain that does NOT control the cell, with petals on your HUD flower. Cruise in a
+   straight line through the middle shell near the pack. Within ~10-20 s you should see:
+   - the hunters spread onto a ring around your line (about 110 u out);
+   - the ring close: a ~0.6-0.9 s beat where they all turn toward you;
+   - **all of them** light up as danger prisms within ~1 s of each other and dive.
+   Being hit burns petals. Afterwards they fall back, slower and unlit, for ~3 s (winded). Hitting them now is safe.
+4. **Pack, counterplay.** Repeat, but when the ring forms, turn hard toward the widest gap between hunters. You should
+   escape most strikes (headless: 5 bites vs 26 for the straight flyer).
+5. **Pack, own domain.** Repeat once as the cell's controlling domain. Contact only stings; no petal is burned.
+6. **Locusts.** Fly slowly past a sparse cloud: they stay unlit and drift curiously. Then hover in the outer shell
+   until the cloud has grown dense, or herd it with your vessel. A dense, hungry cloud should tighten, align and turn
+   dangerous as a storm.
+7. **Lurkers.** Point your nose AWAY from a lurker-crystal ~300 u off for 3 s, then look back. It should have crept
+   toward your line. While you look straight at it, it must not move. Fly past within ~60 u: it gapes (swells), then
+   snaps (lit, ~0.5 s later), then hangs slack for ~3 s.
+8. **Kills and crystals.** Kill one of each species with a gun, a ram and an AOE weapon. To test the AOE, fire it at a
+   locust cloud more than 160 u away, which tests the virtual entries. Each death drops exactly one crystal. A
+   shot-dead agent leaves its body as a skeleton prism; nothing pops in or out.
+9. **Food web.** Watch the pack for 2-3 min with no vessel near it. It should drift into the locust shell and catch
+   locusts. Each catch is a locust crystal drop plus the body suctioned into the hunter, and the hunter's body grows.
+10. **Mass.** On the cell's phase/aggression readout, live volume should rise as locusts breed and fall as they die.
+    It must not jump when you fly close (proxies forming) or leave (proxies retiring).
+11. **Cost.** Profile 60 s with all three populations alive. Record `SubstrateCellHost.Collect`, `.Publish`, `.Sense`
+    and `SubstrateFauna.Tick.*` / `.Frame.*`. The worker tick itself is not sampled by the Profiler (pool thread).
+
+**PASS:**
+- All three populations seed.
+- The pack rings, closes and strikes together, then is winded.
+- An opposing-domain hit burns petals; an own-domain hit does not.
+- The gap counterplay works.
+- Locusts flip under density + hunger.
+- Lurkers creep only when unwatched.
+- Every death drops one crystal.
+- Far agents are hittable by AOE.
+- No volume jumps.
+- Main-thread substrate cost is under ~0.5 ms per frame.
+
+**FAIL:**
+- A population never appears, or appears with no bodies or no hearts.
+- The pack strikes one at a time, or never strikes.
+- Strike contact burns no petals.
+- A lurker moves while watched.
+- A death with no crystal, or an agent that pops out without dying.
+- The ladder jumps near the pack.
+- A worker error: `[Substrate] the cell's substrate tick threw`.
+
 ### QA-SWARM-ROUND11-1 ⬜ — one prism system: members are index entries and prism entities
 
 **Source:** branch `overnight/prism` (headless gates and type-check only, not run in the editor). Reference:
