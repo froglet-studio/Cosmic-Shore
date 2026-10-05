@@ -7,7 +7,11 @@
 //     (the member shader's own 80-byte contract - the substrate's agents are drawn by the same shader as the swarm's
 //     tadpoles), each agent's TRUE body (volume = its stock, what its proxy's body prism wears), per population the
 //     heart list, the engaged agents (the only ones that get a GameObject), its stated volume, and the events;
-//   * results are double-buffered and swapped on the main thread in Collect, never on the worker.
+//   * results are double-buffered and swapped on the main thread in Collect, never on the worker;
+//   * round 11c: with ExternalAgentPass the worker stops after SubstrateCore.BeginStep and PARKS (AwaitingAgentPass,
+//     the state stays Running); the main thread runs the agent pass as Burst jobs (SubstrateAgentPass - jobs can only
+//     be scheduled from the main thread) and calls ResumeAfterAgentPass, which queues EndStep and the frame build back
+//     on the pool. One step per tick in this mode.
 using System;
 using System.Collections.Generic;
 using System.Numerics;
@@ -54,6 +58,13 @@ namespace CosmicShore.Gameplay
         public SubstrateFood[] Food = new SubstrateFood[64];
         public int FoodCount;
         public int Steps = 1;
+        /// <summary>Round 11c: the agent pass is run by the caller between <see cref="AwaitingAgentPass"/> and
+        /// <see cref="ResumeAfterAgentPass"/> (the game's Burst jobs) instead of on the worker. Set before the first Kick.</summary>
+        public bool ExternalAgentPass;
+        int _awaiting;
+        double _parkedMs;
+        /// <summary>True while the worker is parked after BeginStep, waiting for the caller's agent pass.</summary>
+        public bool AwaitingAgentPass => Volatile.Read(ref _awaiting) == 1;
         readonly object _inLock = new();
         readonly List<int> _kills = new(), _killsRun = new();
         readonly List<SubstrateFeed> _feeds = new(), _feedsRun = new();
@@ -95,6 +106,7 @@ namespace CosmicShore.Gameplay
         readonly int[] _engI;
         long _tick;
         static readonly WaitCallback s_run = RunOnWorker;
+        static readonly WaitCallback s_finish = FinishOnWorker;
 
         public SubstrateTickJob(SubstrateCore core, SubstrateTickSettings settings)
         {
@@ -154,17 +166,46 @@ namespace CosmicShore.Gameplay
         /// <summary>Wall time of the last finished tick, in ms (worker side; the Profiler does not sample pool threads).</summary>
         public double LastTickMs { get; private set; }
 
+        static double Since(long t0) => (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+
         static void RunOnWorker(object o)
         {
             var job = (SubstrateTickJob)o;
             long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
-            try { job.Run(); }
+            bool parked = false;
+            try { parked = job.Run(); }
             catch (Exception e) { job.Error = e; }
-            job.LastTickMs = (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+            if (parked && job.Error == null)
+            {
+                job._parkedMs = Since(t0);
+                Volatile.Write(ref job._awaiting, 1);   // the core is the caller's until ResumeAfterAgentPass
+                return;
+            }
+            job.LastTickMs = Since(t0);
             Volatile.Write(ref job._state, (int)SwarmJobState.Done);
         }
 
-        void Run()
+        static void FinishOnWorker(object o)
+        {
+            var job = (SubstrateTickJob)o;
+            long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+            try { job.Finish(); }
+            catch (Exception e) { job.Error = e; }
+            job.LastTickMs = job._parkedMs + Since(t0);   // the worker's share; the agent pass ran as jobs
+            Volatile.Write(ref job._state, (int)SwarmJobState.Done);
+        }
+
+        /// <summary>Main thread, after the caller's agent pass over the parked core: queue the rest of the tick
+        /// (EndStep and the frame build) back on the pool. Inline = run it here and now.</summary>
+        public void ResumeAfterAgentPass(bool inline)
+        {
+            if (Interlocked.CompareExchange(ref _awaiting, 0, 1) != 1) return;
+            if (inline) FinishOnWorker(this);
+            else ThreadPool.UnsafeQueueUserWorkItem(s_finish, this);
+        }
+
+        /// <returns>True when the tick parked after BeginStep for an external agent pass.</returns>
+        bool Run()
         {
             lock (_inLock)
             {
@@ -176,14 +217,32 @@ namespace CosmicShore.Gameplay
             _bEvents.Clear(); _bEat.Clear(); _bPrey.Clear();
             var pil = new ReadOnlySpan<SubstratePilot>(Pilots, 0, Math.Min(PilotCount, Pilots.Length));
             var food = new ReadOnlySpan<SubstrateFood>(Food, 0, Math.Min(FoodCount, Food.Length));
+            if (ExternalAgentPass)
+            {
+                Core.BeginStep(pil, food);
+                return true;
+            }
             for (int s = 0; s < Math.Max(1, Steps); s++)
             {
                 Core.Step(pil, food);
-                _bEvents.AddRange(Core.Events);
-                _bEat.AddRange(Core.EatRequests);
-                _bPrey.AddRange(Core.PreyRequests);
+                Gather();
             }
             Build();
+            return false;
+        }
+
+        void Finish()
+        {
+            Core.EndStep();
+            Gather();
+            Build();
+        }
+
+        void Gather()
+        {
+            _bEvents.AddRange(Core.Events);
+            _bEat.AddRange(Core.EatRequests);
+            _bPrey.AddRange(Core.PreyRequests);
         }
 
         void Swap()

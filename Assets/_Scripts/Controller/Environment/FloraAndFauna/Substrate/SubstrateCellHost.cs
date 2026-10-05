@@ -17,6 +17,10 @@ namespace CosmicShore.Gameplay
     /// §14): the tick runs on a worker thread; the main thread, once per tick, collects the published frame, hands it to
     /// every population, senses the vessels and the food, applies joins, and kicks the next tick. A plain object, driven
     /// by whichever of its populations updates first each frame - it has no GameObject and nothing to pop.
+    ///
+    /// Round 11c (§7): the tick is SPLIT. The worker runs the fields, the moments and the gather, then parks; the host
+    /// schedules the agent pass as Burst jobs (<see cref="SubstrateAgentPass"/>, jobs are scheduled from the main thread
+    /// only), completes them on its next Advance, and the worker finishes the tick (the world pass and the frame).
     /// </summary>
     public sealed class SubstrateCellHost
     {
@@ -26,10 +30,12 @@ namespace CosmicShore.Gameplay
         static readonly ProfilerMarker s_mCollect = new("SubstrateCellHost.Collect");
         static readonly ProfilerMarker s_mPublish = new("SubstrateCellHost.Publish");
         static readonly ProfilerMarker s_mSense = new("SubstrateCellHost.Sense");
+        static readonly ProfilerMarker s_mAgents = new("SubstrateCellHost.AgentPass");
 
         public readonly Cell Cell;
         public readonly SubstrateCore Core;
         public readonly SubstrateTickJob Job;
+        readonly SubstrateAgentPass _agents;
         public readonly Vector3 Centre;
         public readonly float Dt;
         readonly bool _inline;
@@ -62,13 +68,19 @@ namespace CosmicShore.Gameplay
             var hs = first.HeartWorldScaleByElement;
             Job.S.HeartWorldScale = new[] { hs.x, hs.y, hs.z, hs.w };
             Job.Prime();
+            _agents = new SubstrateAgentPass(Core);
+            Job.ExternalAgentPass = true;   // one step per tick: the agent pass runs as Burst jobs between its halves
             _inline = !first.SimulateOffMainThread || Application.platform == RuntimePlatform.WebGLPlayer;
             _acc = Random.value * Dt;   // stagger cells across frames from the first tick
         }
 
         // Enter Play Mode without a domain reload keeps statics: start every session clean.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void ResetStatics() => s_hosts.Clear();
+        static void ResetStatics()
+        {
+            foreach (var h in s_hosts.Values) h._agents.Dispose();
+            s_hosts.Clear();
+        }
 
         /// <summary>The cell's substrate, made on the first population's arrival.</summary>
         public static SubstrateCellHost For(Cell cell, SubstrateSpeciesSO species)
@@ -95,7 +107,11 @@ namespace CosmicShore.Gameplay
             _members.RemoveAt(q);
             int pop = population.Pop;
             if (pop >= 0 && pop < _byPop.Length && _byPop[pop] == population) { _byPop[pop] = null; _leaving.Add(pop); }
-            if (_members.Count == 0 && _joining.Count == 0) s_hosts.Remove(Cell);
+            if (_members.Count == 0 && _joining.Count == 0)
+            {
+                s_hosts.Remove(Cell);
+                _agents.Dispose();   // completes a scheduled pass first; a parked worker is simply never resumed
+            }
         }
 
         /// <summary>The population that owns core population <paramref name="pop"/> (a predator finds its prey's owner).</summary>
@@ -118,6 +134,7 @@ namespace CosmicShore.Gameplay
                 }
                 return;
             }
+            PumpAgentPass();
             _acc += Time.deltaTime;
             if (_acc >= Dt) Step();
             Alpha = Mathf.Clamp01(_acc / Dt);
@@ -139,6 +156,28 @@ namespace CosmicShore.Gameplay
             ApplyMembership();
             using (s_mSense.Auto()) { SenseVessels(); SenseFood(); }
             Job.Kick(_inline);
+            if (_inline && Job.AwaitingAgentPass)
+                using (s_mAgents.Auto())
+                {
+                    _agents.Schedule();
+                    _agents.Complete();
+                    Job.ResumeAfterAgentPass(true);
+                }
+        }
+
+        /// <summary>Every frame: a pass scheduled last frame is completed and the tick job resumed; a worker that has
+        /// parked since is given its agent pass. So a tick spans a few frames and the main thread pays only the copies.</summary>
+        void PumpAgentPass()
+        {
+            using (s_mAgents.Auto())
+            {
+                if (_agents.Scheduled)
+                {
+                    _agents.Complete();
+                    Job.ResumeAfterAgentPass(_inline);
+                }
+                else if (Job.AwaitingAgentPass) _agents.Schedule();
+            }
         }
 
         /// <summary>Joins and leaves land while the job is Idle (between ticks), so the worker never sees a half-made block.</summary>
