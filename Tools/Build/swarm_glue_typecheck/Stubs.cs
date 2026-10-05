@@ -211,7 +211,7 @@ namespace CosmicShore.Gameplay
         public virtual float CurrentSpeed => 0f;
         public float HeartWorldScale => 0;
         public void ApplyHeartSize(float s) { }
-        protected static bool IsShieldedMass(Prism prism) => false;
+        public static bool IsShieldedMass(Prism prism) => false;          // Fauna.cs (public since round 11c)
         protected static readonly Collider[] OverlapScratch = new Collider[256];
         protected static readonly List<Prism> FeedScratch = new(64);
         protected static int NonPrismOverlapMask => 0;

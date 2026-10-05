@@ -620,8 +620,11 @@ namespace CosmicShore.Gameplay
         /// mass. That is what parked brittlestars on Skim Race's super-shielded track
         /// prisms. Excluding shields from the predicate makes the creature skip straight
         /// to the next normal prism on the same behavior tick.
+        ///
+        /// <para>Public since round 11c: the threat flora (ThreatGrove) eat through the same rule, so a plant that
+        /// eats is held to it exactly as a creature is.</para>
         /// </summary>
-        protected static bool IsShieldedMass(Prism prism)
+        public static bool IsShieldedMass(Prism prism)
         {
             var properties = prism ? prism.prismProperties : null;
             return properties != null && (properties.IsShielded || properties.IsSuperShielded);

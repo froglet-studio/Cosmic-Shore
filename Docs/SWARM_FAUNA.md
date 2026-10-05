@@ -2156,3 +2156,27 @@ All runs use `export DOTNET_ROOT=/usr/lib/dotnet` and a private `TMPDIR`. Other 
   - `swarm_glue_typecheck/`: `Stubs.cs`, `run.sh`.
   - `author_swarm_fauna.py` (comment).
 - **QA.** QA-SWARM-ROUND11-1.
+
+## 21. Round 11c: threat flora in the rim (snap traps and a physarum grove)
+
+Round 11c plants two plants that hurt you in the Swarm cell. Full design, proof and findings:
+**[`Docs/THREAT_FLORA.md`](THREAT_FLORA.md)**. QA: `QA-SWARM-ROUND11-3`.
+
+- **Where.** A sector of the rim shell, radius 1,095-1,192 u and half-angle 18° about `normalize(1, 0.3, 0)` from
+  the cell centre. It lies past the outer swarm band (ends at 1,080) and inside the membrane (1,200), so no swarm
+  is penned through it or grazes it. The colour rule holds: the config says where the grove is, never its domain.
+- **Snap traps** (Time element, `SnapTrapFlora`). Venus flytraps of 27 prisms (stalk, two lobes, danger teeth)
+  with the heart crystal in the jaws. They sense a vessel at 146 u, glow (the telegraph), arm, and snap when your
+  path crosses the mouth; the closing lobes and the teeth are danger prisms, so an opposing-domain hit burns
+  petals. Three clumps share one rhizome reserve; heliotropism turns the mouths toward traffic inside a 60° cone,
+  which keeps the jaws between the swarm band and the membrane.
+- **Physarum grove** (Space element, `PhysarumSclerotium`). A 3D Jones slime mould that cables the sector between
+  food and your trails. The cables carry a Greenberg-Hastings danger pulse at ~65 u/s; the sclerotia (hearts)
+  climb into the cables and beat danger every ~3 s after a 0.8 s glow. A cut cable re-forms.
+- **Ecology.** Mass is conserved per colony (the trap rhizome and the network reserve both audit to 0); no timers
+  or TTLs; prisms are laid from and resorbed to the reserve with flights, never popped; one crystal per lifeform;
+  shielded mass is never food.
+- **Collider budget.** The grove's always-on hearts bring the cell's worst case to 998 of 1,200
+  (`author_swarm_fauna.py` checks it with the grove included).
+- **Gates.** `Tools/Build/threat_flora_harness/run.sh` (the shipped cores, plus the glue type-checked against
+  hand-copied stubs) and `python3 Tools/Build/author_threat_flora.py --check`.
