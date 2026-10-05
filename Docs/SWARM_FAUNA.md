@@ -1,5 +1,8 @@
 # Swarm Fauna — a creature made of creatures
 
+> **Playing the demo cell?** Start with **[`SWARM_CELL_PLAY_GUIDE.md`](SWARM_CELL_PLAY_GUIDE.md)**: the editor checks
+> in priority order, how to get in, and a tour of every creature by radius.
+
 **Status: authored headless, NEVER run in the Unity editor.** Read "Verification status" before
 trusting anything below that describes behaviour on screen. Branch: `cece/swarm-fauna-game`.
 
