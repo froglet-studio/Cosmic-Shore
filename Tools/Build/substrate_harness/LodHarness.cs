@@ -128,11 +128,11 @@ static partial class SubstrateHarness
             stock0[k] = c.Stock[i]; pos0[k] = c.Pos[i]; hunger0[k] = c.Hunger[i]; alive0[k] = c.Alive[i];
         }
         int logFrom = w.Log.Count;
-        var drift = new Vector3(0.25f, 0f, 0f);   // a rigid drift per tick (a frozen body moved as one, between ticks)
+        var drift = new Vector3(0.02f, 0f, 0f);   // a rigid drift per tick (a frozen body moved as one, between ticks; the caller keeps it inside the membrane)
         for (int t = 0; t < 1200; t++)
         {
             if (!(deactivate ? !pop.Active : pop.Frozen)) break;
-            if (!deactivate) c.Translate(q, drift);
+            if (!deactivate) { c.Translate(q, drift); for (int k = 0; k < pop.Cap; k++) pos0[k] += drift; }   // the same float adds
             if (!w.Tick()) break;
             res.FrozenTicks++;
             // LiveVolume while frozen: the population's published volume (what its index entries sum to)
@@ -145,7 +145,7 @@ static partial class SubstrateHarness
                 if (!c.Alive[i] || !job.Instances[i].Alive) { res.StockMaxDev = Math.Max(res.StockMaxDev, stock0[k]); continue; }
                 res.StockMaxDev = Math.Max(res.StockMaxDev, Math.Abs(c.Stock[i] - stock0[k]));
                 // still, except the rigid drift: the frame glides by exactly the drift, and the agent sits where it froze
-                var moved = c.Pos[i] - (pos0[k] + drift * res.FrozenTicks);
+                var moved = c.Pos[i] - pos0[k];
                 if (moved.Length() > 1e-2f) res.MovedFrozen++;
                 if (res.FrozenTicks > 1) glide = MathF.Max(glide, ((job.Instances[i].CurPos - job.Instances[i].PrevPos) - drift).Length());
                 // one rule set: hunger rose by exactly Metabolism * Dt per tick

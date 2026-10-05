@@ -376,6 +376,9 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>The colony went away: every prism in a grip falls loose where it is (nothing pops).</summary>
+        /// <summary>True while a deposited prism is still in its settle flight (round 11f-2: a colony never collapses mid-flight).</summary>
+        public bool Settling => _settling.Count > 0;
+
         public void ReleaseAll()
         {
             for (int i = 0; i < _carried.Count; i++)

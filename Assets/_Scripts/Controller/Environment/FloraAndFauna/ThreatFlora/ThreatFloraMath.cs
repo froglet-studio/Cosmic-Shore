@@ -250,6 +250,17 @@ namespace CosmicShore.Gameplay
             return (a + ab * t - p).Length();
         }
 
+        /// <summary>The far cadence (Docs/ECOLOGY_LOD.md §6.3): the factor a grove's network time runs at - 1 while any
+        /// pilot is within <paramref name="nearRadius"/> of <paramref name="centre"/>, else <paramref name="farScale"/>.</summary>
+        public static float FarTimeScale(Vector3 centre, float nearRadius, float farScale, ReadOnlySpan<Vector3> pilots)
+        {
+            if (farScale >= 1f) return 1f;
+            float r2 = nearRadius * nearRadius;
+            for (int i = 0; i < pilots.Length; i++)
+                if (Vector3.DistanceSquared(pilots[i], centre) <= r2) return 1f;
+            return MathF.Max(0f, farScale);
+        }
+
         public static float Deg2Rad(float d) => d * (MathF.PI / 180f);
 
         /// <summary>Rotate unit vector cur toward unit vector tgt by at most maxRadians (research heliotropism).</summary>

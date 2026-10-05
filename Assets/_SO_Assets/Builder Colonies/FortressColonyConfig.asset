@@ -27,6 +27,8 @@ MonoBehaviour:
   BirthBloomSeconds: 0.8
   VesselRadius: 9
   SettleSeconds: 0.35
+  MacroLod: 1
+  ThawReserveSeconds: 20
   Founders: 48
   MaxWorkers: 48
   WorkerSpeed: 70

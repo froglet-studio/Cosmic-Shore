@@ -305,7 +305,10 @@ namespace CosmicShore.Gameplay
             _npil = Math.Min(pilots.Length, MaxPilots);
             for (int j = 0; j < _npil; j++) _pilots[j] = pilots[j];
             long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
-            Fields.Update(food, pilots.Slice(0, _npil));
+            // round 11f-2: with every population frozen nobody reads or writes the fields - they hold until one thaws
+            bool anyRunning = false;
+            for (int q = 0; q < Pops.Count; q++) anyRunning |= Pops[q].Active && !Pops[q].Frozen;
+            if (anyRunning) Fields.Update(food, pilots.Slice(0, _npil));
             MsFields += Ms(t0);
             Tick++;
             for (int q = 0; q < Pops.Count; q++)

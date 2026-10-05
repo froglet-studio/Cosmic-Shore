@@ -158,6 +158,27 @@ namespace CosmicShore.Gameplay
         public bool IsWorn(int h) => _wornBy.ContainsKey(h);
         /// <summary>A lunging creature's hearts strike (drawn in the danger tier, like a fortress striker).</summary>
         public bool Striking(int k) => Alive[k] && Phase[Leader[k]] == LungePhase;
+
+        // ── the ecology LOD (round 11f-2, Docs/ECOLOGY_LOD.md §6.2) ────────────────────────────────────────
+        public RoostBug RoostBug;
+        float RoostRate => P.Stomach != null ? P.Stomach.Torpor : 0f;
+        /// <summary>The wearers may roost only as THIEVES: no creature approaching, rearing, lunging or recovering (a body in
+        /// a hunt is moving its worn prisms at a pilot). Worn prisms simply hold still on a still body.</summary>
+        public bool CanRoost
+        {
+            get
+            {
+                for (int k = 0; k < Cap; k++) if (Alive[k] && Phase[Leader[k]] != Thief) return false;
+                return true;
+            }
+        }
+        public float RoostSecondsLeft => BuilderRoost.SecondsLeft(Alive, Stomach, Cap, RoostRate);
+        /// <summary>One macro tick of collapsed wearers: torpor only; no body grows, moults, fuses, splits or dies.</summary>
+        public void Roost(float dt)
+        {
+            Time += dt;
+            Metabolised += BuilderRoost.Burn(Alive, Stomach, Cap, RoostRate, dt, RoostBug);
+        }
         public int Creatures { get { int n = 0; for (int k = 0; k < Cap; k++) if (IsLeader(k) && _body[k].Count > 0) n++; return n; } }
         public int Largest { get { int b = 0; for (int k = 0; k < Cap; k++) if (IsLeader(k)) b = Math.Max(b, _body[k].Count); return b; } }
         public float Radius(int k) => P.S * (1f + MathF.Cbrt(_body[k].Count));
@@ -291,7 +312,8 @@ namespace CosmicShore.Gameplay
                 _ptime[k] += dt;
                 bool hunting = n >= P.HuntAt && t >= 0;
                 if (hunting && Phase[k] == Thief) { Phase[k] = Approach; _ptime[k] = 0f; }
-                if (!hunting && (Phase[k] == Approach || Phase[k] == Recover)) Phase[k] = Thief;
+                // a rear whose target left (or whose body fell below HuntAt) stands down - before 11f-2 it held Rear forever
+                if (!hunting && (Phase[k] == Approach || Phase[k] == Recover || Phase[k] == Rear)) Phase[k] = Thief;
                 Vector3 v;
                 switch (Phase[k])
                 {
