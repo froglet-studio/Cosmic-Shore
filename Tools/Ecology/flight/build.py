@@ -34,7 +34,8 @@ def index_html(sim):
     fsum = json.dumps(json.load(open(fid)).get("summary", {})) if os.path.exists(fid) else "{}"
     out = tpl.replace("/*__SIM__*/", sim).replace("/*__PARAMS__*/null", json.dumps(json.loads(params), separators=(",", ":")))
     cr = os.path.join(HERE, "creatures")
-    creatures = "\n".join(open(os.path.join(cr, f)).read() for f in ("swarm_plans.js", "swarm_creature.js", "nca_creature.js"))
+    names = ["swarm_plans.js", "swarm_creature.js", "nca_creature.js"] + [f for f in ("nca_whale.js", "nca_jelly.js") if os.path.exists(os.path.join(cr, f))]
+    creatures = "\n".join(open(os.path.join(cr, f)).read() for f in names)
     out = out.replace("/*__CREATURES__*/", creatures)
     return out.replace("/*__FIDELITY__*/null", fsum)
 

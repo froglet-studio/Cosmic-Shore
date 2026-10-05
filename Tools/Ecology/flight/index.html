@@ -4189,7 +4189,7 @@ const DEG = Math.PI / 180;
 const CAT = {
   showcase:  { label: 'Showcase: everything at once', truth: null },
   cell:      { label: 'The whole cell (vibrancy)', truth: null },
-  creatures: { label: 'Big creatures: tadpole swarm + NCA lizards', truth: null, say: 'Two learned bodies from phase 1, flown among grazers. The tadpole swarm sorts 256 units into the body plan of its majority element (whale, jellyfish, pufferfish, dragonfly) and MORPHS when it eats crystals of another element. The two lizards (time and mass) are trained 3D neural cellular automata: every voxel runs the same small network, the body swims its own learned stroke (its speed and head wiggle follow that beat), and whatever you cut away regrows, the wound glowing as it fills.', counter: 'The swarm glows as it stalks; break line of approach before it lunges. Ram either body: the swarm molts back together, a lizard sheds scales, bolts and regrows, and both shed crystals.' },
+  creatures: { label: 'Big creatures: tadpole swarm + NCA bodies', truth: null, say: 'Two learned bodies from phase 1, flown among grazers. The tadpole swarm sorts 256 units into the body plan of its majority element (whale, jellyfish, pufferfish, dragonfly) and MORPHS when it eats crystals of another element. The two lizards (time and mass), and a whale and a jellyfish when their models are in, are trained 3D neural cellular automata: every voxel runs the same small network, the body swims its own learned stroke (its speed and head wiggle follow that beat), and whatever you cut away regrows, the wound glowing as it fills.', counter: 'The swarm glows as it stalks; break line of approach before it lunges. Ram either body: the swarm molts back together, a lizard sheds scales, bolts and regrows, and both shed crystals.' },
   tadpole:   { label: 'Tadpole swarm', truth: 'menacing', say: 'A morphing swarm body (phase-1 sort rule).', counter: 'Turn away while it glows.' },
   lizard:    { label: 'NCA lizard', truth: 'majestic', say: 'A trained 3D neural cellular automaton that swims its learned stroke, bolts when rammed and regrows.', counter: 'None needed: it is harmless.' },
   pack:      { label: 'Pack hunters', truth: 'menacing', say: 'Long, staring hunters slower than you. They predict your line and fan out AHEAD of it; when the ring closes (they glow red, the ring around you tightens) they strike together, then back off winded.', counter: 'Break through the gap before the ring closes, or change heading so their cut-off is wrong. A winded hunter (grey) is easy to ram.' },
@@ -5028,14 +5028,20 @@ function buildBig(mode) {
   // a pair of NCA lizards of two elements; each swims a weaving path of waypoints, its speed and head wiggle locked
   // to its own NCA swim cycle (NcaCreature.swim), and bolts away from a pilot who closes in or rams it
   const LZ = [{ el: 'time', sc: 4, p: [-0.35, 0.12, -0.2], sd: 0 }, { el: 'mass', sc: 3.3, p: [0.3, -0.1, 0.32], sd: 101 }];
+  // the natives: 3D NCAs trained on the game's own bodies (Tools/NCA nca3d.py --target whale / jelly), when built in.
+  // Head along +W (forward [1, 0]); tint 0 shows their trained palette; they shed crystals of their body's element.
+  if (window.NcaWhale) LZ.push({ ctor: window.NcaWhale, el: 'space', sc: 6, p: [0.05, 0.3, 0.1], sd: 211, forward: [1, 0], tint: 0, kind: 'whale', cruise: 26 });
+  if (window.NcaJelly) LZ.push({ ctor: window.NcaJelly, el: 'space', sc: 4, p: [-0.15, -0.3, 0.35], sd: 307, forward: [1, 0], tint: 0, kind: 'jelly', cruise: 14 });
   const wasmOk = new URLSearchParams(location.search).get('ncawasm') !== '0';
   for (const z of LZ) {
     // without WebAssembly SIMD (e.g. blocked by a CSP) the JS fallback is ~7x slower: one lizard, given more time
     if (BIG.lizards.length && BIG.lizards[0].backend === 'js') break;
-    const L = new NcaCreature({ seed: seed + z.sd, scale: z.sc, position: [z.p[0] * R, z.p[1] * R, z.p[2] * R], element: z.el, budgetMs: 2.5, stepsPerSecond: 20, wasm: wasmOk });
+    const Ctor = z.ctor || NcaCreature, o = { seed: seed + z.sd, scale: z.sc, position: [z.p[0] * R, z.p[1] * R, z.p[2] * R], element: z.el, budgetMs: 2.5, stepsPerSecond: 20, wasm: wasmOk };
+    if (z.forward) o.forward = z.forward; if (z.tint !== undefined) o.tint = z.tint;
+    const L = new Ctor(o); L.kind = z.kind || 'lizard';
     if (L.backend === 'js') L.maxMsPerSecond = 220;
     L.grow(80 + (z.sd % 37));
-    L.ai = { goal: null, bolt: 0, cut: 0, lastHit: -9, cruise: 22 * z.sc / 4 + 4 };
+    L.ai = { goal: null, bolt: 0, cut: 0, lastHit: -9, cruise: z.cruise || 22 * z.sc / 4 + 4 };
     const m = L.mesh(THREE); scene.add(m); BIG.lizards.push(L); BIG.lMeshes.push(m);
   }
   BIG.lizard = BIG.lizards[0]; BIG.lMesh = BIG.lMeshes[0];
@@ -5142,7 +5148,7 @@ window.__bigObj = BIG;
 window.__view = { cam, scene, ship };
 window.__big = () => ({ on: !!BIG.swarm, state: BIG.state, intent: BIG.intent, plan: BIG.plan, morphs: BIG.morphs, eaten: BIG.eaten, bites: BIG.bites,
   lizard: BIG.lizard ? BIG.lizard.count() : 0, lizCut: BIG.lizCut, lizSteps: BIG.lizard ? BIG.lizard.steps : 0, bolts: BIG.bolts,
-  lizards: BIG.lizards.map(L => ({ element: L.element, count: L.count(), steps: L.steps, rate: +L.rate.toFixed(1), speed: +(L.speed || 0).toFixed(1), debris: L.debris.length, backend: L.backend })),
+  lizards: BIG.lizards.map(L => ({ kind: L.kind, element: L.element, count: L.count(), steps: L.steps, rate: +L.rate.toFixed(1), speed: +(L.speed || 0).toFixed(1), debris: L.debris.length, backend: L.backend })),
   swarmPos: BIG.swarm ? Array.from(BIG.swarm.position) : null, lizPos: BIG.lizard ? BIG.lizard.position.slice() : null });
 
 function frame(now) {
