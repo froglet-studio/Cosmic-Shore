@@ -2002,11 +2002,13 @@ sum and the render path see a member exactly as they see any prism.
   time it holds a member, made in a single `CreateBatch` (clones are born hidden). The entity is reused by every
   later member in that slot. Members are shown while they live (`QueueVisible`, flushed as one structural change
   per direction), hidden at death in the same frame (`HideNow`), and destroyed only with the swarm.
-- **Pose per frame.** `PoseBodies` runs once per frame:
-  - `SwarmBodyPose.Matrices` computes every shown member's matrix at this frame's display alpha. This is
+- **Pose per frame.** The pose is computed once per frame:
+  - `SwarmBodyPose.PoseMatrix` computes every shown member's matrix at this frame's display alpha. This is
     `SwarmMemberInstanced.hlsl`'s body pose term for term: interpolated root, `LookRotation(face, BY | BZ)`,
     PrismZ seat, Scale, and the newborn **bloom** about the heart (smoothstep from 0.001 over `bloomTicks`).
-  - Then one `NativeArray.Copy` and ONE `SetTransformsBatch` (a Burst `ComponentLookup` write).
+  - Since round 11a-2 it runs in the Burst `SwarmPoseJob`, scheduled early in `Update`.
+  - ONE `SetTransformsBatch` chained on that job then writes the matrices (a Burst `ComponentLookup` write). §19.4
+    has the details.
   - The bloom is folded into the matrix rather than `StampGrow`. The matrix is rewritten every frame anyway,
     and `StampGrow` scales about the prism's centre, not the heart.
 - **Looks.** The nine looks are tier (plain, danger, shielded) × domain slot. Each is the theme's per-domain
@@ -2041,26 +2043,58 @@ class doc):
 - **Cost.** It would add ~2,200 more matrices to the per-frame CPU pose pass (§19.4) for no visual or rule
   change. The instanced heart draw costs the main thread one `RenderMeshPrimitives` per element.
 
-### 19.4 Costs: honest against the §13/§14 budget
+### 19.4 Costs: honest against the §13/§14 budget (round 11a-2)
 
-Round 7's budget was ~0 main-thread cost at ~3,000 members (0.002 ms per frame: one draw call per element,
-interpolation in the vertex shader). The unified body path does **not** meet that. Its costs:
+Round 7's budget was ~0 main-thread cost at ~3,000 members: 0.002 ms per frame (one draw call per element, with
+interpolation in the vertex shader). Round 11a missed it by about 0.4-0.5 ms per frame, because a managed pose
+loop and a managed handle loop ran on the main thread. Round 11a-2 (`overnight/prism2`) moves that work onto Burst
+jobs.
+
+**What changed:**
+- **The pose is one function.** `SwarmBodyPose.PoseMatrix` is a scalar, Burst-compilable static function: field
+  reads, `MathF`, no `System.Numerics` method, no allocation. Two callers run it:
+  - **The game.** `SwarmPoseJob`, a `[BurstCompile] IJobParallelFor` in batches of 128, writes `float4x4`
+    directly. It reads native copies of the published frame and of the shown-slot list, refreshed once per tick (two
+    memcpys).
+  - **The harness.** R11d runs the same function against round 11a's `System.Numerics` pose, which is kept as the
+    reference (`ReferenceMatrix`). Over 8,118 poses, including the `upAlt` branch and newborns, the largest
+    difference is 6e-5 u, which is float rounding at world coordinates.
+  - **The Burst gate.** `check_burst_pose.py` runs inside `run.sh`. It is a textual check that the function stays
+    inside what Burst compiles. Its negative control is the round-11a pose, which trips 5 rules.
+- **The job runs alongside other work.** `SwarmFauna.Update` schedules the job as soon as the frame's alpha is
+  known and wakes the workers with `ScheduleBatchedJobs`. It then poses the proxies and issues the heart draw while
+  the job runs.
+- **One transform write.** At the end of `Update`, a new
+  `PrismRenderService.SetTransformsBatch(handles, matrices, count, JobHandle dependsOn)` does the following:
+  - resolves handles to entities in a Burst job (`ResolveHandlesJob`), in parallel with the pose;
+  - schedules the existing Burst `LocalToWorld` write on both jobs;
+  - completes once.
+  - If same-frame queued poses exist, it completes the dependency and takes the old overload. That overload drops
+    the queued poses per entity, which is managed work.
+- **The index update is a Burst job.** `PrismSpatialIndex.UpdatePositionsBatch` now runs as `UpdatePositionsJob`, a
+  Burst `IJob` run inline:
+  - An entry that did not move is skipped before anything is written.
+  - An entry that stayed in its 8 u bucket gets one field write.
+  - Only a bucket crossing pays the hash-map remove and add. That is 10.2% of members per tick (R11b).
+  - The job never grows the map. It stops at the first add that could exceed capacity, and the old managed loop
+    finishes from there, growing as before. The result is therefore exactly the managed loop's.
 
 | when | work | estimate at ~3,000 members |
 |---|---|---|
-| per FRAME | `SwarmBodyPose.Matrices` (managed) + copy | **0.33 ms** measured (R11d, CoreCLR, one thread); IL2CPP expected similar |
-| per FRAME | `SetTransformsBatch`: managed handle loop + Burst write, scheduled above 256 and completed | ~0.05-0.1 ms (not measured) |
-| per TICK (10 Hz) | `SyncIndex`: realBody/heart-reach scan, 2 memcpy, `UpdatePositionsBatch` (managed; 10.2% of members cross an 8 u bucket per tick, R11b: ~300 remove+add, the rest a field write) | ~0.1-0.3 ms per tick (not measured) |
-| per TICK | `SyncEntities`: O(cap) ledger, `CreateBatch` only for first-time slots, one `SetLooksBatch` for changes, queued visibility | ~0.02 ms typical |
+| per FRAME | schedule `SwarmPoseJob` + `ScheduleBatchedJobs` | ~0.01 ms |
+| per FRAME | the pose itself, on the job workers | not on the main thread. Upper bound without Burst: 0.13 ms wall (R11d, the job's shape on a 4-core .NET pool); managed single-thread 0.32 ms. Burst should be several times faster |
+| per FRAME | main-thread wait at the transform write | ~0 when proxy posing and the heart draw cover the pose job, otherwise its remaining wall time (~0.01-0.03 ms with Burst, estimated) |
+| per FRAME | `SetTransformsBatch(..., dependsOn)`: one `NativeArray` alloc, two schedules, `CompleteDependencyBeforeRW`, one complete | ~0.02-0.04 ms (not measured) |
+| per TICK (10 Hz) | `SyncIndex`: managed realBody/heart-reach scan over the slots, 2 memcpys, Burst `UpdatePositionsJob` (~300 hash moves + ~2,700 field writes) | ~0.03-0.06 ms per tick (not measured) |
+| per TICK | `SyncEntities`: managed O(cap) ledger + 2 memcpys for the job inputs; `CreateBatch` only for first-time slots; one `SetLooksBatch` for changes | ~0.03 ms typical |
 | per TICK | `SwarmEntryLedger.Sync`: O(cap) compares, index calls only on change | ~0.02 ms |
 
-- **Net.** About **0.4-0.5 ms per frame** on the main thread for 3,000 members, plus ~0.2 ms on tick frames.
-  That is a real regression from round 7's ~0. What it buys: the platform's materials, colours, spread and every
-  prism query, with no swarm-specific weapon code.
-- **The lever, if it matters.** Move the pose pass into a Burst `IJobParallelFor` (`Unity.Mathematics` over a
-  per-tick native copy of `SwarmInstance`, writing `float4x4` directly). That should bring the per-frame line to
-  ~0.02 ms. It was not done this round because the harness cannot run Burst, and the managed pass is the version
-  proven against the shader pose.
+- **Net (estimate, not measured in Unity).** About **0.03-0.07 ms per frame** on the main thread for 3,000
+  members, plus ~0.1 ms on tick frames. Round 11a cost ~0.4-0.5 ms per frame plus ~0.2 ms per tick.
+  - That is close to, but not at, round 7's 0.002 ms. What remains is the fixed cost of handing matrices to ECS:
+    schedule, complete and the `LocalToWorld` sync point. Round 7's shader-side interpolation never paid it.
+  - The managed per-slot loops left (`SyncIndex`'s realBody scan and the two ledgers) are O(cap) once per tick,
+    not per frame.
 - **Turning it off.** `UnifiedPrismBodies` off returns to round 7's draw cost. The index entries, and their
   per-tick cost, remain either way.
 - **Colliders: unchanged.** A virtual entry has no collider, and proxies are as in round 8.
@@ -2109,9 +2143,13 @@ All runs use `export DOTNET_ROOT=/usr/lib/dotnet` and a private `TMPDIR`. Other 
     - **0** count-once violations after every sync and every between-tick event. The volume error is 1e-8.
     - Ids are recycled (highest 115 for 960 slots).
     - Negative control (proxies withheld): 181 members seen twice, volume over by 19%.
-  - **R11d.** The matrix's translation equals `BodyAt` (0 error), the basis is orthogonal, and each column is
-    the body's Scale. The bloom is 0.001 at birth and 0.500 half way. A dead slot gives the zero matrix. The pose
-    plus copy for 3,000 members takes 0.33 ms per frame.
+  - **R11d.** The matrix's translation equals `BodyAt` (within 6e-5 u since round 11a-2's scalar pose), the basis
+    is orthogonal, and each column is the body's Scale. The bloom is 0.001 at birth and 0.500 half way. A dead slot
+    gives the zero matrix.
+    - Round 11a-2: `PoseMatrix`, the function the Burst job runs, matches round 11a's pose within 6e-5 over 8,118
+      poses.
+    - Cost: managed single-thread 0.32 ms for 3,000 members; the job's shape on a .NET pool takes 0.13 ms wall.
+  - **Burst gate.** `check_burst_pose.py` passes, and its negative control trips 5 rules.
   - **R11e.** Over 300 ticks, shown == alive every tick. An entity is made once per slot and reused, a death
     hides at once, and a failed `CreateBatch` is retried.
 - `python3 Tools/Build/author_swarm_fauna.py --check` passes.
@@ -2120,10 +2158,13 @@ All runs use `export DOTNET_ROOT=/usr/lib/dotnet` and a private `TMPDIR`. Other 
 
 - **Nothing ran in Unity.** The ECS entities and their look restyle (`SetLooksBatch`, new) have not run: the
   Burst jobs, the material-id swap, and that a hidden-born clone with a bloom-scaled matrix draws correctly.
+- **Burst compilation is not proven.** `SwarmPoseJob`, `ResolveHandlesJob` and `UpdatePositionsJob` (round 11a-2)
+  have not been Burst-compiled. `check_burst_pose.py` is a textual gate on the pose function only.
+  `UpdatePositionsJob`'s equivalence to the managed loop is by construction and review; no test runs it.
 - **Not type-checked.** The platform files outside the swarm type-check are only syntax-checked:
   `ExplosionImpactor`, `Projectile`, `SniperShotActionExecutor`, `LightFauna`, `WormFauna`,
   `PrismSpatialIndex` and `PrismRenderService`.
-- **Not measured in-engine:** the IL2CPP per-frame cost in §19.4, the AOE behaviour against a moving member at
+- **Not measured in-engine:** every per-frame and per-tick cost in §19.4 (the Burst numbers there are estimates), the AOE behaviour against a moving member at
   a slab boundary, and the visual parity of platform materials against the round-7 shader (spread, palette).
 - **Cost of the larger index.** `UpdatePositionsBatch`'s bucket churn has not been measured with a full
   Atlantis-sized index (69k prisms) sharing buckets with members.
@@ -2136,13 +2177,16 @@ All runs use `export DOTNET_ROOT=/usr/lib/dotnet` and a private `TMPDIR`. Other 
 - **Platform.**
   - `Controller/Managers/PrismSpatialIndex.cs`: `IVirtualPrismBudget`, virtual bounding radius,
     `TryGetVirtualEntry`, `HasMaterialiseBudget`, `Query{Sphere,Segment,Cone}VirtualIds`, the AOE spare rule +
-    budget deferral, and the `DrainBacklog` examinable bound.
-  - `Controller/ECS/Rendering/PrismRenderService.cs`: `SetLooksBatch`.
+    budget deferral, and the `DrainBacklog` examinable bound. Round 11a-2 adds the Burst `UpdatePositionsJob`.
+  - `Controller/ECS/Rendering/PrismRenderService.cs`: `SetLooksBatch`; round 11a-2 adds the
+    `SetTransformsBatch(..., JobHandle)` overload and `ResolveHandlesJob`.
   - `Controller/Environment/Cell.cs`: `BindVirtualMass`; the round-8 virtual-volume aggregate is deleted.
   - `FloraAndFauna/VirtualFauna.cs` (new).
   - `Fauna.cs`: `LivingHeart`.
 - **Swarm.**
-  - `Swarm/SwarmPrismSync.cs` (new): `SwarmBodyPose`, `SwarmEntryLedger`, `SwarmEntityLedger`.
+  - `Swarm/SwarmPrismSync.cs` (new): `SwarmBodyPose` (`PoseMatrix`, the Burst-compilable pose, round 11a-2),
+    `SwarmPoseMatrix`, `SwarmEntryLedger`, `SwarmEntityLedger`.
+  - `Swarm/SwarmPoseJob.cs` (round 11a-2): the per-frame Burst pose job.
   - `Swarm/SwarmFauna.cs`
   - `Swarm/SwarmTickJob.cs`: `IndexPoint`; the grid, `VolumeBySlot` and `Counted` are removed.
   - `Swarm/SwarmMemberRenderer.cs`: `DrawBodies`.

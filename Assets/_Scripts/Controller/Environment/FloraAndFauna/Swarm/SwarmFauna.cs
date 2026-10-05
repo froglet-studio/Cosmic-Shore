@@ -4,6 +4,7 @@ using CosmicShore.Data;
 using CosmicShore.ECS;
 using CosmicShore.Utility;
 using Unity.Collections;
+using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Profiling;
 using UnityEngine;
@@ -106,13 +107,20 @@ namespace CosmicShore.Gameplay
         NativeArray<PrismRenderHandle> _shownHandles;  // per frame, in the ledger's Shown order
         NativeArray<float4x4> _matrices;
         NativeArray<byte> _lookScratch;
-        float[] _matrixScratch;
+        float[] _matrixScratch;                        // one matrix: entity creation's first pose
+        // round 11a-2 (§19.4): the per-frame pose runs as a Burst job (SwarmPoseJob) over native copies of the published
+        // frame and the shown-slot list, refreshed once per tick; its handle is the transform write's dependency
+        NativeArray<SwarmInstance> _instNative;
+        NativeArray<int> _shownNative;
+        JobHandle _poseHandle;
+        int _poseCount;
         byte[] _look;                    // per slot: the look (tier * 3 + domain slot) its entity wears
         readonly Material[] _looks = new Material[9];
         Mesh _bodyMesh;
         static readonly ProfilerMarker s_mIndex = new("SwarmFauna.Tick.Index");
         static readonly ProfilerMarker s_mEntities = new("SwarmFauna.Tick.Entities");
         static readonly ProfilerMarker s_mBodies = new("SwarmFauna.Frame.Bodies");
+        static readonly ProfilerMarker s_mBodiesWrite = new("SwarmFauna.Frame.BodiesWrite");
         // inline ticks (off-thread disabled, or WebGL) share one per-frame budget - the round-6 rule
         static int s_inlineFrame = -1;
         static double s_inlineMs;
@@ -511,8 +519,9 @@ namespace CosmicShore.Gameplay
             float alpha = Mathf.Clamp01(_acc / _dt);
             _alpha = alpha;
 
+            // the body pose job goes first, so it runs on the workers while this frame's proxies and hearts are posed
+            if (_unified) using (s_mBodies.Auto()) SchedulePoseBodies(alpha);
             using (s_mPose.Auto()) PoseProxies(alpha);
-            if (_unified) using (s_mBodies.Auto()) PoseBodies(alpha);
             if (_gpu)
                 using (s_mDraw.Auto())
                 {
@@ -520,6 +529,7 @@ namespace CosmicShore.Gameplay
                     var bounds = new Bounds(Uni(_job.Anchor), Vector3.one * (2f * r));
                     _render.Draw(bounds, alpha, _job.Tick + alpha, _bloomTicks, Uni(_job.BY), Uni(_job.BZ), _cap);
                 }
+            if (_unified) using (s_mBodiesWrite.Auto()) WritePosedBodies();
         }
 
         /// <summary>
@@ -1003,7 +1013,9 @@ namespace CosmicShore.Gameplay
             _restyleHandles = new NativeArray<PrismRenderHandle>(_cap, Allocator.Persistent);
             _lookScratch = new NativeArray<byte>(_cap, Allocator.Persistent);
             _matrices = new NativeArray<float4x4>(_cap, Allocator.Persistent);
-            _matrixScratch = new float[16 * _cap];
+            _instNative = new NativeArray<SwarmInstance>(_cap, Allocator.Persistent);
+            _shownNative = new NativeArray<int>(_cap, Allocator.Persistent);
+            _matrixScratch = new float[16];
             return true;
         }
 
@@ -1054,7 +1066,10 @@ namespace CosmicShore.Gameplay
             if (_shownHandles.IsCreated) _shownHandles.Dispose();
             if (_restyleHandles.IsCreated) _restyleHandles.Dispose();
             if (_lookScratch.IsCreated) _lookScratch.Dispose();
+            CompletePose();
             if (_matrices.IsCreated) _matrices.Dispose();
+            if (_instNative.IsCreated) _instNative.Dispose();
+            if (_shownNative.IsCreated) _shownNative.Dispose();
             _entities = null;
             _unified = false;
         }
@@ -1076,6 +1091,7 @@ namespace CosmicShore.Gameplay
         void SyncEntities()
         {
             if (!_unified || _entities == null) return;
+            CompletePose();   // never in flight here (Update finishes it), but the native inputs are about to change
             var inst = _job.Instances;
             _entities.Sync(inst);
 
@@ -1118,22 +1134,50 @@ namespace CosmicShore.Gameplay
             for (int k = 0; k < _entities.Show.Count; k++) PrismRenderService.QueueVisible(_handles[_entities.Show[k]], true);
             for (int k = 0; k < _entities.Hide.Count; k++) PrismRenderService.QueueVisible(_handles[_entities.Hide[k]], false);
             for (int k = 0; k < _entities.ShownCount; k++) _shownHandles[k] = _handles[_entities.Shown[k]];
+
+            // the pose job's inputs for the frames until the next tick: two memcpys (the published frame, the shown list)
+            _instNative.CopyFrom(inst);
+            _shownNative.CopyFrom(_entities.Shown);
         }
 
         /// <summary>
-        /// Once per FRAME (§19.2): every shown member's body matrix at this frame's display alpha (the shader's pose and
-        /// bloom, as arithmetic - <see cref="SwarmBodyPose.Matrices"/>), one memcpy into native memory, and ONE Burst
-        /// transform write for the swarm (<see cref="PrismRenderService.SetTransformsBatch"/>). Nothing per member
-        /// touches Unity.
+        /// Once per FRAME, first thing after the display alpha is known (§19.2, §19.4): schedules <see cref="SwarmPoseJob"/> -
+        /// every shown member's body matrix at this alpha, Burst-compiled, on the job workers - and kicks the workers. The
+        /// pose is <see cref="SwarmBodyPose.PoseMatrix"/>, the function the harness proves (R11d).
         /// </summary>
-        void PoseBodies(float alpha)
+        void SchedulePoseBodies(float alpha)
         {
+            CompletePose();
             int n = _entities != null ? _entities.ShownCount : 0;
+            _poseCount = n;
             if (n == 0) return;
-            SwarmBodyPose.Matrices(_job.Instances, _entities.Shown, n, alpha, _job.Tick + alpha, _bloomTicks,
-                                   _job.BY, _job.BZ, _matrixScratch);
-            NativeArray<float>.Copy(_matrixScratch, 0, _matrices.Reinterpret<float>(64), 0, 16 * n);
-            PrismRenderService.SetTransformsBatch(_shownHandles, _matrices, n);
+            _poseHandle = new SwarmPoseJob
+            {
+                Instances = _instNative, Shown = _shownNative, Matrices = _matrices,
+                Alpha = alpha, Clock = _job.Tick + alpha, BloomTicks = _bloomTicks, Up = _job.BY, UpAlt = _job.BZ,
+            }.Schedule(n, SwarmPoseJob.BatchSize);
+            JobHandle.ScheduleBatchedJobs();
+        }
+
+        /// <summary>
+        /// Once per FRAME, last thing in Update: ONE Burst transform write for the swarm, chained on the pose job
+        /// (<see cref="PrismRenderService.SetTransformsBatch(NativeArray{PrismRenderHandle}, NativeArray{float4x4}, int, JobHandle)"/>
+        /// resolves the handles in a job too). Nothing per member runs on the main thread.
+        /// </summary>
+        void WritePosedBodies()
+        {
+            int n = _poseCount;
+            _poseCount = 0;
+            if (n == 0 || !_unified) { CompletePose(); return; }
+            var dep = _poseHandle;
+            _poseHandle = default;
+            PrismRenderService.SetTransformsBatch(_shownHandles, _matrices, n, dep);
+        }
+
+        void CompletePose()
+        {
+            _poseHandle.Complete();
+            _poseHandle = default;
         }
 
         static float4x4 ToFloat4x4(float[] m, int o) => new float4x4(

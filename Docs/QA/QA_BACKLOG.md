@@ -803,7 +803,8 @@ Round 8's diet colouring (newborns wearing the colour of what they ate) was remo
 
 ### QA-SWARM-ROUND11-1 ⬜ — one prism system: members are index entries and prism entities
 
-**Source:** branch `overnight/prism` (headless gates and type-check only, not run in the editor). Reference:
+**Source:** branches `overnight/prism` and `overnight/prism2` (round 11a-2: Burst pose and index jobs) - headless
+gates and type-check only, not run in the editor. Reference:
 `Docs/SWARM_FAUNA.md` §19. **Why it matters:** members are now found by the platform's own prism queries and drawn
 as ordinary prism entities. If either half is wrong, swarms become unhittable or invisible, or they double-count
 in the phase ladder.
@@ -828,9 +829,14 @@ in the phase ladder.
 6. Leave a predator (`LightFauna`) and a worm in the cell. They should hunt and eat members from range.
 7. Open the cell's phase/aggression readout. It should be the same as on the round-10 build with the same seed: no
    jump when proxies appear near your vessel.
-8. Profile 60 s in the Swarm cell with all three swarms grown. Record `SwarmFauna.Frame.Bodies`,
-   `SwarmFauna.Tick.Index` and `SwarmFauna.Tick.Entities` against §19.4's estimates (~0.4-0.5 ms per frame,
-   ~0.2 ms per tick).
+8. Profile 60 s in the Swarm cell with all three swarms grown, with Burst compilation ON (Jobs > Burst > Enable
+   Compilation). Record the following against §19.4's round 11a-2 estimates (main thread ~0.03-0.07 ms per frame,
+   ~0.1 ms per tick):
+   - `SwarmFauna.Frame.Bodies` (the pose job schedule);
+   - `SwarmFauna.Frame.BodiesWrite` (the wait and the transform write);
+   - `SwarmFauna.Tick.Index` and `SwarmFauna.Tick.Entities`.
+   In the Timeline view, check that `SwarmPoseJob` runs on the worker threads, and that `ResolveHandlesJob` and
+   `UpdatePositionsJob` are marked Burst.
 9. Turn **Unified Prism Bodies** off and re-enter. The round-7 instanced draw returns, and weapons and predators
    still work.
 
@@ -841,6 +847,7 @@ in the phase ladder.
 - The ladder is unchanged.
 - No fallback warning.
 - Costs are within ~2x of §19.4.
+- The Burst jobs compile with no Burst errors in the Console.
 
 **FAIL:**
 - Invisible members, or members drawn at the wrong place or size (pose mismatch with hearts).

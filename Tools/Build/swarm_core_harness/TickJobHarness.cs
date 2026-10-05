@@ -383,6 +383,30 @@ static class TickJobHarness
             Check(n > 0 && worst < 1e-3, "the matrix's translation is the drawn body centre (the same point the proxy body and the index use) and +z is the face");
             Check(worstOrtho < 1e-3 && worstScale < 1e-3, "the basis is orthogonal and each column is the body's own scale (LookRotation(face, up) x Scale)");
 
+            // round 11a-2: the shipped pose is now SwarmBodyPose.PoseMatrix - scalar, Burst-compilable, called by BOTH the
+            // game's SwarmPoseJob and this harness. Against round 11a's System.Numerics formulation (kept here as the
+            // reference), over every member, many alphas, both basis branches and newborns:
+            double worstRef = 0; int refN = 0; bool sameStruct = true;
+            var mr = new float[16];
+            for (int i = 0; i < j.Instances.Length; i++)
+            {
+                if (!j.Instances[i].Alive) continue;
+                for (int a = 0; a <= 8; a++)
+                {
+                    var s = j.Instances[i];
+                    float alpha = a / 8f, clock = s.BirthTick + a * 0.7f;
+                    var up = a == 8 ? Vector3.Normalize(s.CurFace) : j.BY;   // forces the upAlt branch once per member
+                    SwarmBodyPose.Matrix(s, alpha, clock, 5f, up, j.BZ, m, 0);
+                    ReferenceMatrix(s, alpha, clock, 5f, up, j.BZ, mr);
+                    for (int c = 0; c < 16; c++) worstRef = Math.Max(worstRef, Math.Abs(m[c] - mr[c]));
+                    SwarmBodyPose.PoseMatrix(s, alpha, clock, 5f, up, j.BZ, out var pm);
+                    if (pm.C3X != m[12] || pm.C2Z != m[10] || pm.C0Y != m[1]) sameStruct = false;
+                    refN++;
+                }
+            }
+            Console.WriteLine($"  PoseMatrix vs the round-11a System.Numerics pose: {refN} poses, max |difference| {worstRef:E2}");
+            Check(worstRef < 1e-4 && sameStruct, "the one shared pose function (Burst job + harness) is round 11a's proven pose, to float rounding");
+
             // the newborn's bloom and a dead slot
             int born = Enumerable.Range(0, j.Instances.Length).First(i => j.Instances[i].Alive);
             var sb = j.Instances[born];
@@ -409,8 +433,26 @@ static class TickJobHarness
                 Array.Copy(mats, dst, mats.Length);
             }
             double ms = sw.Elapsed.TotalMilliseconds / F;
-            Console.WriteLine($"  {big.Length} members: pose pass + copy {ms:F3} ms per frame on this CPU (managed CoreCLR, one thread)");
-            Check(ms < 2.0, "the per-frame pose pass for ~3,000 members fits the frame (measured, recorded in §19.4)");
+            Console.WriteLine($"  {big.Length} members: the SAME pose function, managed (CoreCLR, one thread) + copy: {ms:F3} ms per frame - the " +
+                              "game runs it Burst-compiled across the job workers instead (§19.4)");
+            Check(ms < 2.0, "the per-frame pose for ~3,000 members is cheap even unBursted (measured, recorded in §19.4)");
+            // the job's SHAPE (IJobParallelFor, batches of SwarmPoseJob's 128) on the .NET pool - an upper bound on its wall
+            // time without Burst's codegen; what the main thread waits for if nothing overlaps it
+            var poseOut = new SwarmPoseMatrix[big.Length];
+            int batches = (big.Length + 127) / 128;
+            System.Threading.Tasks.Parallel.For(0, batches, bt => { });
+            sw.Restart();
+            for (int f = 0; f < F; f++)
+            {
+                float al = (f % 10) / 10f, ck = 1000f + f;
+                System.Threading.Tasks.Parallel.For(0, batches, bt =>
+                {
+                    int end = Math.Min(big.Length, (bt + 1) * 128);
+                    for (int k = bt * 128; k < end; k++) SwarmBodyPose.PoseMatrix(big[slots[k]], al, ck, 5f, j.BY, j.BZ, out poseOut[k]);
+                });
+            }
+            double pms = sw.Elapsed.TotalMilliseconds / F;
+            Console.WriteLine($"  the job's shape on the .NET pool ({Environment.ProcessorCount} cores, batches of 128, no Burst): {pms:F3} ms wall per frame");
         }
 
         Console.WriteLine("\nR11e. the entity ledger: one entity per slot, shown exactly while the member lives (§19.2)");
@@ -515,6 +557,28 @@ static class TickJobHarness
         }
         volErr = Math.Abs(counted - truth) / Math.Max(1.0, truth);
         return bad;
+    }
+
+    /// <summary>Round 11a's body pose (System.Numerics vector maths), kept as the harness's REFERENCE for the scalar
+    /// SwarmBodyPose.PoseMatrix the game now Burst-compiles (R11d).</summary>
+    static void ReferenceMatrix(in SwarmInstance s, float alpha, float clock, float bloomTicks, Vector3 up, Vector3 upAlt, float[] m)
+    {
+        if ((s.Flags & 1u) == 0u) { Array.Clear(m, 0, 16); return; }
+        var p = Vector3.Lerp(s.PrevPos, s.CurPos, alpha);
+        var face = Vector3.Lerp(s.PrevFace, s.CurFace, alpha);
+        if (face.Length() < 1e-5f) face = s.CurFace;
+        float l = face.Length();
+        var bz = l > 1e-5f ? face / l : new Vector3(0, 0, 1);
+        if (MathF.Abs(Vector3.Dot(bz, up)) > 0.98f) up = upAlt;
+        var bx = Vector3.Cross(up, bz);
+        float lx = bx.Length();
+        bx = lx > 1e-6f ? bx / lx : new Vector3(1, 0, 0);
+        var by = Vector3.Cross(bz, bx);
+        float x = Math.Clamp((clock - s.BirthTick) / Math.Max(bloomTicks, 1e-3f), 0f, 1f);
+        float b = Math.Max(0.001f, x * x * (3f - 2f * x));
+        var c0 = bx * (s.Scale.X * b); var c1 = by * (s.Scale.Y * b); var c2 = bz * (s.Scale.Z * b); var c3 = p + bz * (s.PrismZ * b);
+        m[0] = c0.X; m[1] = c0.Y; m[2] = c0.Z; m[3] = 0f; m[4] = c1.X; m[5] = c1.Y; m[6] = c1.Z; m[7] = 0f;
+        m[8] = c2.X; m[9] = c2.Y; m[10] = c2.Z; m[11] = 0f; m[12] = c3.X; m[13] = c3.Y; m[14] = c3.Z; m[15] = 1f;
     }
 
     sealed class ThrowingCore : ISwarmCore
