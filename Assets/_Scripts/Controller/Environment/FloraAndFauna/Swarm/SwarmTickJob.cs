@@ -143,28 +143,60 @@ namespace CosmicShore.Gameplay
         // ── worker-private state carried tick to tick ──
         readonly Vector3[] _lastPos, _lastFace;
         readonly float[] _lastMolt, _born;
-        readonly bool[] _lastAlive, _danger;
+        readonly bool[] _lastAlive;
+        readonly byte[] _strike;      // StrikeState per slot
+        readonly sbyte[] _strikeEff;  // the species the state belongs to (a molt into another element starts calm)
         readonly float[] _engD;
         readonly int[] _engI;
         readonly int[] _hc = new int[4];
         long _tick;
 
         /// <summary>
-        /// Round 10 bestiary strike for a non-Charge member: a danger plate is a hostile danger prism, so an
-        /// opposing-domain pilot who hits it BURNS petals (ELEMENTAL_ECONOMY.md §4); the swarm's own domain is stung only.
-        /// Mass = lurker (bristles while only half-startled: creep up on it and it bites, rush it and it bolts), Space = locust (a rotating quarter of the cloud),
-        /// Time = pack hunter (turns on a vessel at a lower startle than the pufferfish, with hysteresis).
+        /// The danger state machine of one member, one tick (round 10's strikes, hardened in round 11d - Docs/SWARM_FAUNA.md
+        /// §22). A danger plate is a hostile danger prism, so an opposing-domain pilot who hits it BURNS petals
+        /// (ELEMENTAL_ECONOMY.md §4); the swarm's own domain is only stung. Pure and static so the harness asserts it.
+        /// States: 0 calm, 1 noticed (lurker only), 2 striking (the plate is up), 3 bolted (lurker only: safe until calm).
+        /// <list type="bullet">
+        /// <item>Charge pufferfish: strikes above DangerEnter until below DangerExit (unchanged, hysteresis).</item>
+        /// <item>Mass lurker: bristles while half-startled, but only once it has been so for TWO ticks (a member a rush
+        /// carries straight through the band never flashes), and a lurker that BOLTS (startle reaches DangerEnter) stays
+        /// safe until it is fully calm again (below LurkCalm / 2). Round 10 read the band every tick, so every bolted
+        /// lurker bristled again for ~2 s on the way back down - the rush that should beat it was punished after the
+        /// fact - and a member hovering at a band edge flickered.</item>
+        /// <item>Space locust: a quarter of the cloud at a time, the quarter moving every LocustPhaseTicks (stateless).</item>
+        /// <item>Time pack hunter: strikes above HuntEnter until below min(DangerExit, HuntEnter) - the hysteresis can no
+        /// longer invert if a designer sets the exit above the entry.</item>
+        /// </list>
+        /// A NaN or negative startle reads as calm. Returns the new state; the plate is up iff it is 2.
         /// </summary>
-        bool BestiaryStrike(int eff, int i, float st, bool was)
+        public static byte StrikeState(int eff, int slot, long tick, float st, byte state, SwarmTickSettings s)
         {
+            if (!(st >= 0f)) st = 0f;
             switch (eff)
             {
-                case 1: return st > S.LurkCalm && st < S.DangerEnter;   // bristles when first noticed, safe once it bolts
-                case 2: return ((i * 7919L + _tick / Math.Max(1, S.LocustPhaseTicks)) & 3L) == 0L;
-                case 3: return was ? st >= S.DangerExit : st > S.HuntEnter;
-                default: return false;
+                case 0:
+                    return state == 2 ? (st < MathF.Min(s.DangerExit, s.DangerEnter) ? (byte)0 : (byte)2) : (st > s.DangerEnter ? (byte)2 : (byte)0);
+                case 1 when s.Bestiary:
+                {
+                    float calm = 0.5f * s.LurkCalm;
+                    bool band = st > s.LurkCalm && st < s.DangerEnter;
+                    switch (state)
+                    {
+                        case 0: return st >= s.DangerEnter ? (byte)3 : band ? (byte)1 : (byte)0;
+                        case 1: return st >= s.DangerEnter ? (byte)3 : band ? (byte)2 : (byte)0;
+                        case 2: return st >= s.DangerEnter ? (byte)3 : st < calm ? (byte)0 : (byte)2;
+                        default: return st < calm ? (byte)0 : (byte)3;
+                    }
+                }
+                case 2 when s.Bestiary:
+                    return ((slot * 7919L + tick / Math.Max(1, s.LocustPhaseTicks)) & 3L) == 0L ? (byte)2 : (byte)0;
+                case 3 when s.Bestiary:
+                    return state == 2 ? (st < MathF.Min(s.DangerExit, s.HuntEnter) ? (byte)0 : (byte)2) : (st > s.HuntEnter ? (byte)2 : (byte)0);
+                default:
+                    return 0;
             }
         }
+
         float _toWorldSpeed;
         static readonly WaitCallback s_run = RunOnWorker;
 
@@ -178,7 +210,7 @@ namespace CosmicShore.Gameplay
             Speed = new float[_cap]; _bSpeed = new float[_cap];
             _lastPos = new Vector3[_cap]; _lastFace = new Vector3[_cap];
             _lastMolt = new float[_cap]; _born = new float[_cap];
-            _lastAlive = new bool[_cap]; _danger = new bool[_cap];
+            _lastAlive = new bool[_cap]; _strike = new byte[_cap]; _strikeEff = new sbyte[_cap];
             _engD = new float[_cap]; _engI = new int[_cap];
             IndexPoint = new Vector3[_cap]; _bIndexPoint = new Vector3[_cap];
             _toWorldSpeed = settings.UnitScale * tickHz;
@@ -316,27 +348,21 @@ namespace CosmicShore.Gameplay
                     inst.Flags = 0u;
                     _bSpeed[i] = 0f;
                     _lastAlive[i] = false;
-                    _danger[i] = false;
+                    _strike[i] = 0;
                     continue;
                 }
                 alive++;
                 var cur = c.Pos[i]; var face = c.Facing[i];
                 bool newborn = !_lastAlive[i];
-                if (newborn) { _lastPos[i] = cur; _lastFace[i] = face; _lastMolt[i] = 0f; _born[i] = tickNow; _danger[i] = false; }
+                if (newborn) { _lastPos[i] = cur; _lastFace[i] = face; _lastMolt[i] = 0f; _born[i] = tickNow; _strike[i] = 0; }
 
                 int eff = c.EffectiveElement(i);
                 var h = S.DefaultHalf[eff];
                 int tier = 0;
                 if (c.TryGetLook(i, eff, out var look, out int lt)) { h = look; if (eff == 0 && lt == 2) tier = 2; }
-                if (eff == 0)
-                {
-                    float st = c.Startle[i];
-                    if (_danger[i]) { if (st < S.DangerExit) _danger[i] = false; }
-                    else if (st > S.DangerEnter) _danger[i] = true;
-                    if (_danger[i]) tier = 1;   // danger wins over shield (locked design)
-                }
-                else if (S.Bestiary) { _danger[i] = BestiaryStrike(eff, i, c.Startle[i], _danger[i]); if (_danger[i]) tier = 1; }
-                else _danger[i] = false;
+                if (_strikeEff[i] != eff) { _strikeEff[i] = (sbyte)eff; _strike[i] = 0; }
+                _strike[i] = StrikeState(eff, i, _tick, c.Startle[i], _strike[i], S);
+                if (_strike[i] == 2) tier = 1;   // danger wins over shield (locked design)
 
                 // heart: the element before / after the molt midpoint, and the molt progress at both ends
                 float mc = c.Molt[i], mp = _lastMolt[i];

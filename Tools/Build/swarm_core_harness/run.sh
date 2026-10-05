@@ -54,7 +54,7 @@ python3 "$HERE/extract_burst_predicates.py" "$ROOT/Assets/_Scripts/Controller/Ma
   "$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/SwarmEvoFateCore.cs" \
   "$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/SwarmTickJob.cs" \
   "$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/SwarmPrismSync.cs" \
-  "$HERE/Program.cs" "$HERE/TickJobHarness.cs" "$HERE/GridHarness.cs" "$HERE/SortHarness.cs" "$HERE/SortFeelHarness.cs" "$HERE/EvoHarness.cs" "$HERE/LineageHarness.cs"
+  "$HERE/Program.cs" "$HERE/TickJobHarness.cs" "$HERE/GridHarness.cs" "$HERE/SortHarness.cs" "$HERE/SortFeelHarness.cs" "$HERE/EvoHarness.cs" "$HERE/LineageHarness.cs" "$HERE/Round11dHarness.cs"
 V=$(ls "$DOTNET_ROOT"/shared/Microsoft.NETCore.App | head -1)
 printf '{"runtimeOptions":{"tfm":"net8.0","framework":{"name":"Microsoft.NETCore.App","version":"%s"}}}' "$V" > "$OUT/swarmcore.runtimeconfig.json"
 cp "$OUT/swarmcore.runtimeconfig.json" "$OUT/swarmquery.runtimeconfig.json"

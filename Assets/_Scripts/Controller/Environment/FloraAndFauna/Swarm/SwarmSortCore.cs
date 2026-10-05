@@ -103,9 +103,10 @@ namespace CosmicShore.Gameplay
         public float CrossCost = 2f;
         /// <summary>A wounded swarm holds its eggs this many steps after every kill (the shared rule). 0 = research.</summary>
         public int KillLayHoldSteps = 0;
-        /// <summary>Round 11d, THE POST-CULL JOLT (Docs/SWARM_FAUNA.md §22): after a kill (once its hold ends) or a committed
-        /// switch, the lay cap eases from one egg a step back to LayMax over this many steps (a smoothstep), instead of
-        /// a flood of hatchlings the step the hold lifts. 0 = sort / round 10 (the full cap at once).</summary>
+        /// <summary>Round 11d, THE POST-CULL JOLT (Docs/SWARM_FAUNA.md §22): after a WOUND (losing a third of the body sets it
+        /// all the way back; one member of many, almost not at all) or a committed switch, the lay cap eases from one
+        /// egg a step back to LayMax over this many steps (a smoothstep), instead of a flood of hatchlings the
+        /// step the hold lifts. 0 = sort / round 10 (the full cap at once).</summary>
         public int LayRamp = 0;
         /// <summary>Round 11d, the post-cull jolt: the body regrows from the WOUND. The egg the homeostat chose is budded,
         /// toward a short well of its type (picked in proportion to need), by the member of its lineage standing nearest
@@ -381,7 +382,8 @@ namespace CosmicShore.Gameplay
         public readonly int[] RoleOfDom = { 0, -1, -1 };
 
         readonly Random _rng;
-        int _cand = -1, _candN, _layHoldUntil, _settleUntil = int.MinValue, _woundClock = int.MinValue / 2;
+        int _cand = -1, _candN, _layHoldUntil, _settleUntil = int.MinValue, _nLive;
+        float _layU = 1f;   // round 11d: how far laying has eased back in after the last wound (0..1)
         bool _permSet;
         // per-step scratch (Step allocates nothing)
         readonly bool[] _live;
@@ -475,7 +477,10 @@ namespace CosmicShore.Gameplay
         {
             if (i < 0 || i >= Cap || !Active[i]) return;
             if (C.KillLayHoldSteps > 0) _layHoldUntil = Math.Max(_layHoldUntil, Clock + C.KillLayHoldSteps);
-            _woundClock = Math.Max(_woundClock, Clock + Math.Max(0, C.KillLayHoldSteps));   // round 11d: laying eases back in from here
+            // round 11d: a WOUND sets laying back in proportion to the share of the body lost - a third of it (a strike, a
+            // fair cull) starts the ramp from one egg a step; one member picked off a big body costs almost nothing, so a
+            // swarm under steady grazing still lays at its full rate
+            _layU = MathF.Max(0f, _layU - 3f / Math.Max(1, _nLive));
             Active[i] = false; Hatched[i] = false; Startle[i] = 0; Vel[i] = Vector3.Zero; Wand[i] = Vector3.Zero; Molt[i] = 0; Fate[i] = 0; FKey[i] = 0;
             XferPlan[i] = -1;
         }
@@ -650,6 +655,7 @@ namespace CosmicShore.Gameplay
         {
             int nLive = 0;
             for (int i = 0; i < Cap; i++) if (Active[i] && Hatched[i]) nLive++;
+            _nLive = nLive;
             if (nLive == 0) { Clock++; return; }
 
             // ── 1. plan by majority, with the dwell (sort_model._step)
@@ -919,6 +925,7 @@ namespace CosmicShore.Gameplay
                 if (C.Molt && (C.MoltWindow < 0 || Clock < _settleUntil)) MoltStep(code);
             }
 
+            if (C.LayRamp > 0) _layU = MathF.Min(1f, _layU + 1f / C.LayRamp);   // round 11d: the wound's ease-in is a clock
             ThreatLevel = 0.85f * ThreatLevel + 0.15f * MathF.Min(1f, C.ThreatGain * stSum / Math.Max(1, nl));
         }
 
@@ -1031,7 +1038,7 @@ namespace CosmicShore.Gameplay
             _cand = maj;
             if (_candN < C.Dwell) return true;
             Events.Add(new SwarmEvent { Kind = SwarmEventKind.Switched, Index = cur, Other = maj });
-            PlanIx = maj; _candN = 0; _permSet = false; _woundClock = Math.Max(_woundClock, Clock);
+            PlanIx = maj; _candN = 0; _permSet = false; _layU = 0f;   // round 11d: a new body eases its laying in
             if (C.MoltWindow >= 0) _settleUntil = Clock + C.MoltWindow;
             if (C.Oriented) SetHeading(Heading, snap: true);
             return false;
@@ -1156,6 +1163,9 @@ namespace CosmicShore.Gameplay
         /// <summary>Member i's body region in the current plan (-1: none) - the harness's view of the regions.</summary>
         public int RegionOf(int i) => EffRole(i);
 
+        /// <summary>Round 11d: how far laying has eased back in after the last wound or switch (0..1; 1 = the full LayMax).</summary>
+        public float LayEase => _layU;
+
         int EffRole(int i) => XferPlan[i] == PlanIx && XferPlan[i] >= 0 ? XferRole[i] : RoleOfDom[Math.Clamp(Dom[i], 0, 2)];
 
         void LookOf(int i, int element, out Vector3 half, out int tier, out Vector3 face)
@@ -1249,7 +1259,7 @@ namespace CosmicShore.Gameplay
             if (C.LayRamp > 0)
             {
                 // round 11d: a wounded (or newly switched) body's laying EASES back in, one egg a step to LayMax
-                float u = Math.Clamp((Clock - _woundClock) / (float)C.LayRamp, 0f, 1f);
+                float u = _layU;
                 layMax = Math.Max(1, (int)MathF.Round(C.LayMax * u * u * (3f - 2f * u)));
             }
             int nlay = Math.Min(layMax, Math.Min(nFree, Math.Min(room, Poisson(MathF.Max(C.LayRate * nHat, 0.2f)))));

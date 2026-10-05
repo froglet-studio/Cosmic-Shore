@@ -109,6 +109,9 @@ MonoBehaviour:
   SortWander: 0.05
   SortWanderTau: 12
   SortUpdateFraction: 8
+  SortBudAtWound: 1
+  SortFateNear: 1
+  SortLayRampSeconds: 12
   EvoRule: {fileID: 4900000, guid: 5e7a9fa52ba5247800582378f4795aa7, type: 3}
   EvoPull: 2
   EvoDeadZone: 1.5

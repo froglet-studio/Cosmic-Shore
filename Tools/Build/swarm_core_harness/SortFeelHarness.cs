@@ -8,7 +8,7 @@
 // Mode names: research|game + Sort [+ Feel [+ D0]] [+ N0 (game: no velocity noise)] [+ F<k>] - e.g. researchSort (the published sort, as
 // ported in round 3), researchSortFeel (sortfeel, frac 1), researchSortFeelF8 (the held lite config:
 // well_dead 0.7 everywhere), researchSortFeelD0F8 (sortfeel v2's dragonfly override), gameSortFeelD0F8
-// (what ships = SortHarness.Game), gameSortFeelD0N0F8 (the same with the velocity noise off), gameSort (round 5).
+// (round 6's ship), gameSortFeelWndFnLr120D0F8 (what ships since round 11d = SortHarness.Game), gameSortFeelD0N0F8 (the same with the velocity noise off), gameSort (round 5).
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -27,7 +27,7 @@ static class SortFeelHarness
     public static SwarmSortParams ParamsFor(SwarmPlanData[] plans, string mode)
     {
         // game modes start from the PRE-round-6 game settings so each round-6 piece is its own suffix;
-        // the shipped config is gameSortFeelD0F8 (= SortHarness.Game)
+        // the shipped config is gameSortFeelWndFnLr120D0F8 (= SortHarness.Game; round 6 shipped gameSortFeelD0F8)
         var p = mode.StartsWith("research") ? SortHarness.Override(SortHarness.Research(), "SWARM_SORT_RESEARCH") : SortHarness.Override(SortHarness.GameRound5(plans));
         if (mode.Contains("N0")) p.Noise = 0f;
         if (mode.Contains("Dom3")) p.RolesFromAnyDomain = true;   // round 11d: a region may go to any of the three domains

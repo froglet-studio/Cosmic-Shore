@@ -151,7 +151,9 @@ SORT = [("SortWellsPerType", "12"), ("SortUnitsPerWell", "4"), ("SortWellWidth",
         ("SortFramePeriod", "{x: 8, y: 8, z: 8, w: 16}"),
         # ROUND 6 (research sortfeel + lite_sortfeel frac 8, Docs/SWARM_FAUNA.md §12)
         ("SortWellDead", "0.7"), ("SortWellDeadTime", "0"), ("SortWander", "0.05"), ("SortWanderTau", "12"),
-        ("SortUpdateFraction", "8")]
+        ("SortUpdateFraction", "8"),
+        # ROUND 11d (the post-cull jolt, Docs/SWARM_FAUNA.md §22)
+        ("SortBudAtWound", "1"), ("SortFateNear", "1"), ("SortLayRampSeconds", "12")]
 FLORA_GROWTH_PER_OFFSPRING = 0.8   # x the plant's own budget: a plant seeds a neighbour as it completes
 FLORA_COOLDOWN = 20
 FLORA_SPREAD = 120
@@ -783,7 +785,7 @@ def verify(out, tot, rows):
         if not m:
             problems.append(f"SwarmFaunaConfigSO has no field {k}")
             continue
-        cs = re.sub(r"[f\s]|new\(|\)", "", m.group(1)).split(",")
+        cs = re.sub(r"[f\s]|new\(|\)", "", {"true": "1", "false": "0"}.get(m.group(1), m.group(1))).split(",")
         au = re.findall(r"-?[\d.]+", v)
         if [float(x) for x in cs] != [float(x) for x in au]:
             problems.append(f"SwarmFaunaConfigSO.{k} defaults to {m.group(1)} but the cell authors {v}")
