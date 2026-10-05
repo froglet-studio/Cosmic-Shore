@@ -61,6 +61,7 @@ Confidence scale:
 | 34 | **Run Benchmark is Editor-only (was §5).** Button hidden / unwired in players; `LaunchBenchmark` no-ops outside the Editor. `BenchmarkStressTest` stays out of Build Settings. Shipped on `Bug_Hunt`. | `GameSettingsPanelController`, `BenchmarkSceneLauncher` |
 | 35 | **Hangar Wildlife Blitz training retired (was §5).** Rhino/Sparrow `TrainingGames` cleared; `SO_TrainingGame_WildLifeBlitz` and `ArcadeGameWildlifeBlitz` deleted. Shipped on `Bug_Hunt`. | class SOs, TrainingGames list |
 | 36 | **Wildlife Blitz retired from shipped surfaces (was §5).** Co-op scene out of Build Settings; preview + arcade card deleted; scene/`CoOpWildlifeBlitzMiniGame` kept on disk. Shipped on `Bug_Hunt`. | Build Settings, ModePreviewLibrary |
+| 37 | **Orphans deleted after salvage-before-delete (was §5).** Removed unused `WildlifeBlitzMiniGame`, SlipnStride controller, VolumeTest adapter, `SandboxBenchmarkController`, end-game stats tracker, `WildlifeBlitzStats`; kept Benchmark stack. Shipped on `Bug_Hunt`. | see FIX_LOG BH-5.6 |
 
 ### Playtest items for the shipped fixes
 - **Squirrel ring (#6):** fly Menu_Main freestyle → an arcade game → back, 2-3 round trips, then
@@ -181,6 +182,10 @@ Confidence scale:
 - **Wildlife Blitz retired (5.5):** Arcade / Arena / party lists must not show Wildlife Blitz; Build
   Settings must not list `MinigameWildlifeBlitzMultuplayerCoOp`; mode preview must not offer it.
   Editor Run Benchmark (5.3) must still load `BenchmarkStressTest`.
+- **STILL TO TEST (revisit): 5.6 orphan deletions, kept on Bug_Hunt untested at Yash's call.**
+- **Orphans / Benchmark (5.6):** Editor Run Benchmark must still enter `BenchmarkStressTest` and
+  fly. Console must not miss scripts for deleted orphans. MiniGameHUD Ready must not log a missing
+  `WildlifeBlitzMiniGame` target.
 
 ---
 
@@ -206,11 +211,8 @@ Confidence scale:
 
 ## 5. Follow-ups from the scene cleanup (#5)
 
-- **Orphaned classes** (no scene or prefab references them now): `WildlifeBlitzMiniGame`,
-  `SinglePlayerSlipnStrideController`, `VolumeTestPlayerSpawnerAdapter`, `SandboxBenchmarkController`,
-  the single-player `VesselSelectionPanelController`, `WildlifeBlitzEndGameStatsTracker`,
-  `WildlifeBlitzStats`. Run the `/refactor` skill's salvage-before-delete gate before removing any
-  of them. Some are referenced by `BenchmarkStressTest`.
+_All items from this section are done (BH-5.3–5.6). See §0 rows 34–37._
+
 
 ---
 

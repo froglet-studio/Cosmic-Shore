@@ -8,6 +8,25 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ---
 
+## BH-5.6 — Orphan classes after Wildlife Blitz / hangar retirement (salvage-before-delete)
+
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Decision (handoff §5):** salvage-before-delete; KEEP anything still needed by the Editor
+  `BenchmarkStressTest` path.
+- **Kept (BenchmarkStressTest still references):** `SinglePlayerWildlifeBlitzController`,
+  `SinglePlayerWildlifeBlitzScoreTracker`, `SingleplayerWildlifeBlitzTurnMonitor`,
+  `WildlifeBlitzHUD`, `WildlifeBlitzStatsProvider`. Also kept `CoOpWildlifeBlitzMiniGame` (co-op
+  scene file remains on disk).
+- **Deleted (no scene/prefab/asset refs):** `WildlifeBlitzMiniGame`,
+  `SinglePlayerSlipnStrideController`, `VolumeTestPlayerSpawnerAdapter`,
+  `SandboxBenchmarkController`, `WildlifeBlitzEndGameStatsTracker`, `WildlifeBlitzStats`.
+  Cleared a dead `MiniGameHUD` Ready onClick that still named `WildlifeBlitzMiniGame`.
+- **Already gone:** single-player `VesselSelectionPanelController` (deleted 2026-09-23).
+- **Verification:** GUID scan + gate scripts pass; not run in Unity. Retest is on the handoff list.
+- **PR/commit:** pending.
+
+---
+
 ## BH-5.5 — Wildlife Blitz retired from shipped surfaces
 
 - **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
