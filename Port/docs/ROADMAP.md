@@ -27,7 +27,7 @@ starts by measuring use in `Assets/`, and anything the game doesn't touch stays 
 | Scenes | 36 build scenes load from Unity YAML | `cs-build` player data |
 | Rendering | GL 3.3 / GLES 3.0; MSAA, ACES, bloom, Panini, skybox, skinning, ECS prism mass, LOD-free culling | `docs/ARCHITECTURE.md` §7 |
 | Shaders | **19 of 81** Shader Graph / `.shader` assets have a dedicated translation; the rest render through generic material-family fallbacks. The graphs use 85 node types and 30 custom HLSL functions, so a compiler covers them (C2) | name scan of `Port/src` vs `Assets`; node census in the review response (D10) |
-| Particles / VFX | **Not drawn.** 26 prefabs carry a ParticleSystem; 2 VFX Graphs; 1 Timeline | §13 known gaps |
+| Particles / VFX | **Not drawn.** 26 prefabs carry a ParticleSystem; 2 VFX Graphs; 1 Timeline. The swarm/substrate fauna's member hearts (procedural instancing from GPU buffers) are not drawn either | §13 known gaps |
 | Physics | Triggers and queries only; **no contact solver**. 17 scripts use Rigidbody (velocity, kinematic, gravity, torque; no joints or forces), 1 uses OnCollisionEnter | ARCHITECTURE §13; census in the review response (E13) |
 | Animation | Animator, blend trees, FBX takes; **Animation Rigging is data only** | |
 | Audio | FMOD Studio runtime, real banks, buses, VCAs | |

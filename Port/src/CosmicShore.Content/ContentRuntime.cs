@@ -74,6 +74,7 @@ namespace CosmicShore.Content
             Fonts = new Fonts.TmpFontLibrary(Db);
             Assets.Importers[typeof(CosmicShore.Engine.UI.TMP_FontAsset)] = LoadFontAsset;
             Audio.MixerImporter.Register(Assets, new Audio.MixerImporter(Db));
+            Assets.Importers[typeof(TextAsset)] = LoadTextAsset;
             ChainImporter(typeof(Mesh), r => r.Guid == AssetLoader.BuiltinDefaultGuid ? BuiltinMeshes.ForFileId(r.FileId) : null);
             ChainImporter(typeof(Material), r => r.Guid == AssetLoader.BuiltinExtraGuid ? BuiltinMaterials.ForFileId(r.FileId) : null);
             ShaderProperties = new Shaders.ShaderPropertyCatalog(Db);
@@ -88,6 +89,14 @@ namespace CosmicShore.Content
         {
             Assets.Importers.TryGetValue(type, out var previous);
             Assets.Importers[type] = previous == null ? importer : r => importer(r) ?? previous(r);
+        }
+
+        /// <summary>A text or binary file Unity imports as a TextAsset (.json, .txt, .bytes ...): its bytes as they are.</summary>
+        EngineObject LoadTextAsset(ObjRef r)
+        {
+            var path = Db.PathOf(r.Guid);
+            if (path == null || !TextAsset.IsTextAssetExtension(System.IO.Path.GetExtension(path)) || !System.IO.File.Exists(path)) return null;
+            return TextAsset.FromFile(path);
         }
 
         /// <summary>A TMP font asset reference (only a MonoBehaviour whose script IS TMP_FontAsset).</summary>
