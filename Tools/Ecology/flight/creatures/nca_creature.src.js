@@ -14,12 +14,18 @@
 // Inference is nca3d_core.js (held equal to the PyTorch model by Tools/NCA/verify_js3d.py), made resumable: a step
 // is split into (begin: alive mask + list of alive cells) -> (chunks of per-cell updates, any number per frame) ->
 // (finish: post alive mask, swap). Rendering always reads the last COMPLETE state, so a half-done step never shows.
+// Speed (grown lizard, ~3.5k cells in the alive mask, ~1.6k fire per step): the step is sparse (only alive-mask cells
+// are visited; bit-identical to the dense step) and the per-cell network runs in a 3.6 KB WebAssembly SIMD kernel
+// (nca_kernel.c, embedded; 4 cells per weight load): ~2.6 ms/step vs 33.5 ms for the old dense JS step, so a 4 ms
+// frame budget gives ~90 steps/s. Without WebAssembly SIMD (or with {wasm: false}) a batched JS path runs (~19 ms).
+// c.backend says which ('wasm-simd' | 'js').
 // Plain browser JS, no modules: defines window.NcaCreature (and module.exports under Node).
 // Built by build_nca_creature.py from nca_creature.src.js - edit the .src.js, not the built file.
 // ===================================================================================================================
 (function (root) {
   'use strict';
   const NCA_WEIGHTS = /*__NCA_WEIGHTS__*/null;
+  const NCA_WASM = /*__NCA_WASM__*/null;     // { b64, heapBase }: nca_kernel.c compiled to WebAssembly SIMD
 
   // prism palette (Tools/Ecology/flight/src/60_stakes.js ELEMENT_COLOUR)
   const ELEMENT_COLOUR = { mass: [0.98, 0.42, 0.30], charge: [1.0, 0.84, 0.25], space: [0.42, 0.62, 1.0], time: [0.62, 1.0, 0.55] };
@@ -68,7 +74,7 @@
      * from the NCA's own rgb to the element colour, default 0.65), stepsPerSecond (target NCA step rate, default 30;
      * the swim cycle is ~68 steps), budgetMs (default 4 ms of NCA work per step() call), cellsPerFrame (hard cap on
      * cell updates per call, overrides budgetMs when set), alphaThreshold (voxel shown when alpha > this, default
-     * 0.3), respawn (reseed if every cell dies, default true), weights (a weights.json object; default embedded).
+     * 0.3), respawn (reseed if every cell dies, default true), weights (a weights.json object; default embedded), wasm (default true: use the SIMD kernel when available).
      */
     constructor(opts) {
       opts = opts || {};
@@ -91,11 +97,12 @@
 
       const N = this.D * this.H * this.W, C = this.C;
       this.N = N;
-      this.s = new Float32Array(N * C); this.ns = new Float32Array(N * C);
-      this.pre = new Uint8Array(N); this.post = new Uint8Array(N);
-      this._ta = new Float32Array(N); this._tb = new Float32Array(N);
+      this.post = new Uint8Array(N); this._postList = new Int32Array(N); this._postN = 0;
       this._list = new Int32Array(N); this._listN = 0; this._cursor = 0; this._inStep = false;
-      this._feat = new Float32Array(4 * C); this._hid = new Float32Array(this.HID);
+      // sparse bookkeeping: _keep = cells that may be non-zero in s (sorted), _keepOld = the same for ns (stale)
+      this._keep = new Int32Array(N); this._keepN = 0; this._keepOld = new Int32Array(N); this._keepOldN = 0;
+      this._qn = 0;
+      this._feat = new Float32Array(16 * C); this._hid = new Float32Array(4 * this.HID);
       // [27][4] stencil (identity, sobel x, y, z), neighbour order dz, dy, dx - exactly nca3d_core.js
       const K = new Float32Array(27 * 4), sm = [1, 2, 1], df = [-1, 0, 1], e = [0, 1, 0];
       for (let z = 0, n = 0; z < 3; z++) for (let y = 0; y < 3; y++) for (let x = 0; x < 3; x++, n++) {
@@ -103,6 +110,13 @@
         K[n * 4 + 2] = sm[z] * df[y] * sm[x] / 32; K[n * 4 + 3] = df[z] * sm[y] * sm[x] / 32;
       }
       this._K = K;
+      // backend: WebAssembly SIMD kernel when available (opts.wasm !== false), else the batched JS path
+      this._wasm = (opts.wasm ?? true) && C === 16 && this.HID === 128 ? NcaCreature._wasmModule() : null;
+      if (this._wasm) this._initWasm(); else {
+        this.s = new Float32Array(N * C); this.ns = new Float32Array(N * C); this.pre = new Uint8Array(N);
+        this._q = new Int32Array(4); this._qcap = 4;
+      }
+      this.backend = this._wasm ? 'wasm-simd' : 'js';
       this.steps = 0;          // completed NCA steps
       this.cellUpdates = 0;    // total per-cell network evaluations
       this.lastStepMs = 0;     // wall time spent in the last step() call
@@ -112,73 +126,123 @@
       this.reset();
     }
 
+    _initWasm() {
+      // one WebAssembly.Memory per creature: weights re-laid-out for the SIMD kernel, cell queue, pre mask, s, ns
+      const { C, HID, N } = this, F = 4 * C, w = this._w, mod = this._wasm;
+      let off = (mod.heapBase + 15) & ~15;
+      const take = (bytes) => { const p = off; off = (off + bytes + 15) & ~15; return p; };
+      const pw1 = take(4 * F * HID), pb1 = take(4 * HID), pw2 = take(4 * HID * C), pb2 = take(4 * C), pK = take(4 * 108), pd = take(12),
+        pq = take(4 * N), ppre = take(N), ps = take(4 * N * C), pns = take(4 * N * C);
+      const mem = new WebAssembly.Memory({ initial: Math.ceil(off / 65536) + 1 });
+      const inst = new WebAssembly.Instance(mod.module, { env: { memory: mem } }), buf = mem.buffer;
+      const w1t = new Float32Array(buf, pw1, F * HID), w2t = new Float32Array(buf, pw2, HID * C);
+      for (let h = 0; h < HID; h++) for (let c = 0; c < C; c++) for (let k = 0; k < 4; k++) w1t[(k * C + c) * HID + h] = w.w1[h * F + 4 * c + k];
+      for (let c = 0; c < C; c++) for (let h = 0; h < HID; h++) w2t[h * C + c] = w.w2[c * HID + h];
+      new Float32Array(buf, pb1, HID).set(w.b1); new Float32Array(buf, pb2, C).set(w.b2);
+      new Float32Array(buf, pK, 108).set(this._K); new Int32Array(buf, pd, 3).set([this.D, this.H, this.W]);
+      this._mem = mem; this._kern = inst.exports.nca_cells;
+      Object.assign(this, { _w1tPtr: pw1, _b1Ptr: pb1, _w2tPtr: pw2, _b2Ptr: pb2, _KPtr: pK, _dimsPtr: pd, _qPtr: pq, _prePtr: ppre, _sPtr: ps, _nsPtr: pns });
+      this._q = new Int32Array(buf, pq, N); this._qcap = 32;
+      this.pre = new Uint8Array(buf, ppre, N); this.s = new Float32Array(buf, ps, N * C); this.ns = new Float32Array(buf, pns, N * C);
+    }
+
+    /** back to a single seed cell (alpha + hidden channels = 1 at the grid centre), as nca3d.make_seed */
     /** back to a single seed cell (alpha + hidden channels = 1 at the grid centre), as nca3d.make_seed */
     reset() {
       const { C, D, H, W } = this;
-      this.s.fill(0); this.ns.fill(0); this._inStep = false; this._listN = 0; this._cursor = 0;
+      this.s.fill(0); this.ns.fill(0); this.pre.fill(0); this.post.fill(0);
+      this._inStep = false; this._listN = 0; this._cursor = 0; this._postN = 0; this._qn = 0; this._keepOldN = 0;
       const i = ((D >> 1) * H + (H >> 1)) * W + (W >> 1);
       for (let c = 3; c < C; c++) this.s[i * C + c] = 1;
-      this._aliveMask(this.s, this.pre);
+      this._keep[0] = i; this._keepN = 1;
     }
 
-    _aliveMask(st, out) {   // separable 3x3x3 max of alpha > 0.1
-      const { C, D, H, W, N } = this, A = this._ta, B = this._tb;
-      for (let i = 0; i < N; i++) A[i] = st[i * C + 3];
-      for (let z = 0; z < D; z++) for (let y = 0; y < H; y++) { const r = (z * H + y) * W;
-        for (let x = 0; x < W; x++) { let m = A[r + x]; if (x > 0 && A[r + x - 1] > m) m = A[r + x - 1]; if (x < W - 1 && A[r + x + 1] > m) m = A[r + x + 1]; B[r + x] = m; } }
-      for (let z = 0; z < D; z++) for (let y = 0; y < H; y++) { const r = (z * H + y) * W;
-        for (let x = 0; x < W; x++) { let m = B[r + x]; if (y > 0 && B[r - W + x] > m) m = B[r - W + x]; if (y < H - 1 && B[r + W + x] > m) m = B[r + W + x]; A[r + x] = m; } }
-      const HW = H * W;
-      for (let i = 0; i < N; i++) { const z = (i / HW) | 0; let m = A[i]; if (z > 0 && A[i - HW] > m) m = A[i - HW]; if (z < D - 1 && A[i + HW] > m) m = A[i + HW]; out[i] = m > 0.1 ? 1 : 0; }
+    // Mark the 3x3x3 dilation of {cells of `list` with alpha > 0.1} in `mask`, appending newly marked cells to `out`.
+    // Equals the dense separable 3x3x3 max-pool of nca3d_core.js because every cell outside `list` is exactly zero.
+    _dilate(st, list, n, mask, out) {
+      const { C, D, H, W } = this, HW = H * W;
+      let m = 0;
+      for (let k = 0; k < n; k++) {
+        const i = list[k]; if (!(st[i * C + 3] > 0.1)) continue;
+        const z = (i / HW) | 0, y = ((i - z * HW) / W) | 0, x = i - z * HW - y * W;
+        const z0 = z > 0 ? z - 1 : 0, z1 = z < D - 1 ? z + 1 : z, y0 = y > 0 ? y - 1 : 0, y1 = y < H - 1 ? y + 1 : y, x0 = x > 0 ? x - 1 : 0, x1 = x < W - 1 ? x + 1 : x;
+        for (let zz = z0; zz <= z1; zz++) for (let yy = y0; yy <= y1; yy++) { const r = (zz * H + yy) * W;
+          for (let xx = x0; xx <= x1; xx++) { const j = r + xx; if (!mask[j]) { mask[j] = 1; out[m++] = j; } } }
+      }
+      return m;
     }
 
     _begin() {
-      // pre-mask of s: equal to the post-mask of the previous step unless hit() intervened; recompute to be exact
-      this._aliveMask(this.s, this.pre);
-      this.ns.set(this.s);
-      let n = 0; const pre = this.pre, L = this._list;
-      for (let i = 0; i < this.N; i++) if (pre[i]) L[n++] = i;
+      // Sparse active set: only cells in the alive mask (3x3x3 dilation of alpha > 0.1, ~3.5k of 42.6k for the grown
+      // lizard) are touched. Every other cell is exactly zero before and after the step (alive masking), so this is
+      // the dense step of nca3d_core.js bit for bit, without the dense mask passes and full-grid copies.
+      const C = this.C, s = this.s, ns = this.ns, pre = this.pre, L = this._list;
+      for (let k = 0; k < this._listN; k++) pre[L[k]] = 0;
+      const n = this._dilate(s, this._keep, this._keepN, pre, L);
+      L.subarray(0, n).sort();                               // row-major order: same fire-mask RNG sequence as dense
+      const KO = this._keepOld;                              // ns still holds the state of two steps ago: clear it
+      for (let k = 0, m = this._keepOldN; k < m; k++) { const o = KO[k] * C; for (let c = 0; c < C; c++) ns[o + c] = 0; }
+      for (let k = 0; k < n; k++) { const o = L[k] * C; for (let c = 0; c < C; c++) ns[o + c] = s[o + c]; }
+      this._keepOldN = 0;
       this._listN = n; this._cursor = 0; this._inStep = true;
     }
 
-    _update(i) {   // one cell's residual update from s into ns (nca3d_core.js step(), per cell)
-      const { C, H, W, D, HID } = this, F = 4 * C, s = this.s, pre = this.pre, K = this._K, feat = this._feat, hid = this._hid;
-      const { w1, b1, w2, b2 } = this._w;
-      const HW = H * W, z = (i / HW) | 0, y = ((i - z * HW) / W) | 0, x = i - z * HW - y * W;
-      feat.fill(0);
-      let n = 0;
-      for (let dz = -1; dz <= 1; dz++) for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++, n++) {
-        const zz = z + dz, yy = y + dy, xx = x + dx;
-        if (zz < 0 || zz >= D || yy < 0 || yy >= H || xx < 0 || xx >= W) continue;
-        const j = (zz * H + yy) * W + xx;
-        if (!pre[j]) continue;              // outside the alive mask the state is exactly zero
-        const o = j * C, k0 = K[n * 4], k1 = K[n * 4 + 1], k2 = K[n * 4 + 2], k3 = K[n * 4 + 3];
-        for (let c = 0; c < C; c++) {
-          const v = s[o + c]; if (v === 0) continue;
-          feat[4 * c] += k0 * v; feat[4 * c + 1] += k1 * v; feat[4 * c + 2] += k2 * v; feat[4 * c + 3] += k3 * v;
+    // Cell updates are queued and evaluated 4 at a time: every weight loaded once feeds 4 accumulators (register
+    // blocking), which is ~4x less memory traffic than one cell at a time. Cells in a step are independent (they read
+    // s and write only their own ns row), so batching changes nothing but speed; per-cell accumulation order is the
+    // same as nca3d_core.js, so results are bitwise identical to the unbatched step.
+    _push(i) { this._q[this._qn++] = i; if (this._qn === this._qcap) this._flush(); }
+
+    _flush() {
+      const nb = this._qn; if (nb === 0) return;
+      this._qn = 0;
+      if (this._wasm) { this._kern(this._sPtr, this._nsPtr, this._prePtr, this._qPtr, nb, this._w1tPtr, this._b1Ptr, this._w2tPtr, this._b2Ptr, this._KPtr, this._dimsPtr); this.cellUpdates += nb; return; }
+      const { C, H, W, D, HID } = this, F = 4 * C, s = this.s, pre = this.pre, K = this._K, X = this._feat, Hd = this._hid, q = this._q;
+      const { w1, b1, w2, b2 } = this._w, HW = H * W;
+      X.fill(0);
+      for (let b = 0; b < nb; b++) {           // perception: X[f*4 + b], f = 4*channel + {id, sx, sy, sz}
+        const i = q[b], z = (i / HW) | 0, y = ((i - z * HW) / W) | 0, x = i - z * HW - y * W;
+        let n = 0;
+        for (let dz = -1; dz <= 1; dz++) for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++, n++) {
+          const zz = z + dz, yy = y + dy, xx = x + dx;
+          if (zz < 0 || zz >= D || yy < 0 || yy >= H || xx < 0 || xx >= W) continue;
+          const j = (zz * H + yy) * W + xx;
+          if (!pre[j]) continue;              // outside the alive mask the state is exactly zero
+          const o = j * C, k0 = K[n * 4], k1 = K[n * 4 + 1], k2 = K[n * 4 + 2], k3 = K[n * 4 + 3];
+          for (let c = 0, p = b; c < C; c++, p += 16) {
+            const v = s[o + c]; if (v === 0) continue;
+            X[p] += k0 * v; X[p + 4] += k1 * v; X[p + 8] += k2 * v; X[p + 12] += k3 * v;
+          }
         }
       }
-      for (let h = 0; h < HID; h++) {
-        let a = b1[h]; const o = h * F;
-        for (let f = 0; f < F; f++) a += w1[o + f] * feat[f];
-        hid[h] = a > 0 ? a : 0;
+      for (let h = 0; h < HID; h++) {           // layer 1 (64 -> 128, ReLU), 4 cells per weight load
+        const bh = b1[h], o = h * F; let a0 = bh, a1 = bh, a2 = bh, a3 = bh;
+        for (let f = 0, p = 0; f < F; f++, p += 4) { const w = w1[o + f]; a0 += w * X[p]; a1 += w * X[p + 1]; a2 += w * X[p + 2]; a3 += w * X[p + 3]; }
+        const r = 4 * h; Hd[r] = a0 > 0 ? a0 : 0; Hd[r + 1] = a1 > 0 ? a1 : 0; Hd[r + 2] = a2 > 0 ? a2 : 0; Hd[r + 3] = a3 > 0 ? a3 : 0;
       }
-      const ns = this.ns, base = i * C;
-      for (let c = 0; c < C; c++) {
-        let a = b2[c]; const o = c * HID;
-        for (let h = 0; h < HID; h++) a += w2[o + h] * hid[h];
-        ns[base + c] += a;
+      const ns = this.ns, o0 = q[0] * C, o1 = q[1] * C, o2 = q[2] * C, o3 = q[3] * C;
+      for (let c = 0; c < C; c++) {             // layer 2 (128 -> 16), residual add into ns
+        const bc = b2[c], o = c * HID; let a0 = bc, a1 = bc, a2 = bc, a3 = bc;
+        for (let h = 0, p = 0; h < HID; h++, p += 4) { const w = w2[o + h]; a0 += w * Hd[p]; a1 += w * Hd[p + 1]; a2 += w * Hd[p + 2]; a3 += w * Hd[p + 3]; }
+        ns[o0 + c] += a0; if (nb > 1) ns[o1 + c] += a1; if (nb > 2) ns[o2 + c] += a2; if (nb > 3) ns[o3 + c] += a3;
       }
-      this.cellUpdates++;
+      this.cellUpdates += nb;
     }
 
     _finish() {
-      const C = this.C, ns = this.ns, pre = this.pre, post = this.post;
-      this._aliveMask(ns, post);
-      for (let i = 0; i < this.N; i++) if (!(pre[i] && post[i])) ns.fill(0, i * C, i * C + C);
+      const C = this.C, ns = this.ns, pre = this.pre, post = this.post, L = this._list, n = this._listN, PL = this._postList;
+      for (let k = 0; k < this._postN; k++) post[PL[k]] = 0;
+      this._postN = this._dilate(ns, L, n, post, PL);          // ns is non-zero only on L
+      const KN = this._keepOld; let m = 0;                    // survivors (pre & post) = the new state's keep list
+      for (let k = 0; k < n; k++) {
+        const i = L[k];
+        if (pre[i] && post[i]) KN[m++] = i; else { const o = i * C; for (let c = 0; c < C; c++) ns[o + c] = 0; }
+      }
+      this._keepOld = this._keep; this._keepOldN = this._keepN; this._keep = KN; this._keepN = m;
       const t = this.s; this.s = ns; this.ns = t;
+      if (this._wasm) { const p = this._sPtr; this._sPtr = this._nsPtr; this._nsPtr = p; }
       this._inStep = false; this.steps++;
-      if (this.respawn && this._listN === 0) { this.respawns++; this.reset(); }
+      if (this.respawn && n === 0) { this.respawns++; this.reset(); }
     }
 
     /** Work on the NCA for at most budgetMs (or cellsPerFrame cell updates), resuming wherever the last call stopped.
@@ -190,13 +254,14 @@
       const capCells = this.cellsPerFrame, budget = this.budgetMs;
       let done = 0, cells = 0;
       while (this._debt > 0 || this._inStep) {
-        if (!this._inStep) { if (capCells == null && done > 0 && now() - t0 >= 0.5 * budget) break; this._begin(); }
+        if (!this._inStep) { if (capCells == null && done > 0 && now() - t0 >= budget) break; this._begin(); }
         const L = this._list, rate = this.fireRate, rnd = this.rand;
         while (this._cursor < this._listN) {
           const i = L[this._cursor++];
-          if (rnd() <= rate) { this._update(i); cells++; }
+          if (rnd() <= rate) { this._push(i); cells++; }
           if (capCells != null ? cells >= capCells : ((cells & 7) === 0 && cells && now() - t0 >= budget)) break;
         }
+        this._flush();
         if (this._cursor < this._listN) break;            // out of budget mid-step: resume next call
         this._finish(); done++; this._debt -= 1;
         if (capCells != null ? cells >= capCells : now() - t0 >= budget) break;
@@ -210,7 +275,8 @@
       for (let k = 0; k < n; k++) {
         if (!this._inStep) this._begin();
         const L = this._list, rate = this.fireRate, rnd = this.rand;
-        while (this._cursor < this._listN) { const i = L[this._cursor++]; if (rnd() <= rate) this._update(i); }
+        while (this._cursor < this._listN) { const i = L[this._cursor++]; if (rnd() <= rate) this._push(i); }
+        this._flush();
         this._finish();
       }
       return this;
@@ -253,7 +319,7 @@
     get radius() { return 0.5 * this.scale * Math.hypot(this.W, this.H, this.D); }
 
     /** Count of voxels with alpha > alphaThreshold. */
-    count() { const C = this.C, s = this.s, thr = this.alphaThreshold; let n = 0; for (let i = 0; i < this.N; i++) if (s[i * C + 3] > thr) n++; return n; }
+    count() { const C = this.C, s = this.s, thr = this.alphaThreshold, K = this._keep; let n = 0; for (let k = 0; k < this._keepN; k++) if (s[K[k] * C + 3] > thr) n++; return n; }
 
     _colour(r, g, b, a, out) {
       // NCA rgb is premultiplied: un-premultiply, then lean toward the element colour while keeping the lizard's own
@@ -272,9 +338,10 @@
       const { C, D, H, W } = this, s = this.s, thr = this.alphaThreshold;
       if (!this._vox) this._vox = { n: 0, pos: new Float32Array(this.N * 3), rgba: new Float32Array(this.N * 4) };
       const v = this._vox, tmp = [0, 0, 0], col = [0, 0, 0];
-      let n = 0;
-      for (let z = 0; z < D; z++) for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-        const o = ((z * H + y) * W + x) * C, a = s[o + 3];
+      let n = 0; const K = this._keep, HW = H * W;
+      for (let k = 0; k < this._keepN; k++) {              // keep list is sorted: same order as a z, y, x scan
+        const i = K[k], o = i * C, a = s[o + 3];
+        const z = (i / HW) | 0, y = ((i - z * HW) / W) | 0, x = i - z * HW - y * W;
         if (a <= thr) continue;
         this.gridToWorld(z, y, x, tmp); v.pos[3 * n] = tmp[0]; v.pos[3 * n + 1] = tmp[1]; v.pos[3 * n + 2] = tmp[2];
         this._colour(s[o], s[o + 1], s[o + 2], a, col);
@@ -322,6 +389,18 @@
 
     dispose() { if (this._mesh) { this._mesh.geometry.dispose(); this._mesh.material.dispose && this._mesh.material.dispose(); this._mesh = null; } }
   }
+  let wasmCache;   // undefined: not tried yet; null: unavailable (no WebAssembly, no SIMD, or not embedded)
+  NcaCreature._wasmModule = function () {
+    if (wasmCache !== undefined) return wasmCache;
+    wasmCache = null;
+    try {
+      if (NCA_WASM && typeof WebAssembly === 'object') {
+        const bytes = b64bytes(NCA_WASM.b64);
+        if (WebAssembly.validate(bytes)) wasmCache = { module: new WebAssembly.Module(bytes), heapBase: NCA_WASM.heapBase };
+      }
+    } catch (e) { wasmCache = null; }
+    return wasmCache;
+  };
   NcaCreature.ELEMENT_COLOUR = ELEMENT_COLOUR;
   NcaCreature.loadWeights = loadWeights;
   NcaCreature.hasEmbeddedWeights = !!NCA_WEIGHTS;
