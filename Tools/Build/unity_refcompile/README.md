@@ -3,13 +3,23 @@
 ```
 bash Tools/Build/unity_refcompile/run.sh                       # player config (the shipped IL2CPP release)
 bash Tools/Build/unity_refcompile/run.sh --config player-dev   # + DEVELOPMENT_BUILD / ENABLE_PROFILER / DEBUG
+bash Tools/Build/unity_refcompile/run.sh --config editor       # APPROXIMATE: UNITY_EDITOR branches + changed Editor-folder files
 bash Tools/Build/unity_refcompile/run.sh --quiet-buckets       # count, don't list, the unverifiable buckets
 ```
 
 Exit 0 = **no compile error in project code**; exit 1 = errors, listed, with every one in a file
 changed since `origin/bleeding-edge` tagged `[CHANGED-TONIGHT]`; exit 2 = offline with no cache.
-First run ~10 min (fetch + ~90 assemblies), later runs ~2 min (package assemblies are cached by
-input fingerprint; only Assets assemblies recompile).
+First run ~10 min (fetch + ~90 assemblies), later runs ~3 min (package assemblies are compiled once,
+player-mode, into a shared cache keyed by input fingerprint; only Assets assemblies recompile).
+
+**The `editor` config is approximate.** It compiles the project's runtime code with `UNITY_EDITOR`
+(Mono, collections checks, `UNITY_INCLUDE_TESTS`). It also compiles the `Editor/`-folder files changed
+since `--changed-base`, into the same compilation with NUnit (`com.unity.ext.nunit`). The references
+are the newest **non-publicized `UnityEditor.dll` obtainable, 2021.1**, and the 6000.0 engine DLLs.
+Those engine DLLs are player builds, so their own `#if UNITY_EDITOR` members are missing: for example,
+`UIBehaviour.OnValidate` and `Reset` are reported as "unverified", not as errors. Packages stay
+player-compiled. Use it to catch errors in editor branches. A green editor run is weaker evidence than
+a green player run.
 
 ## What it does
 
@@ -84,8 +94,8 @@ CosmicShore.Data, Obvious.Soap, FMOD, NiceVibrations, ...) type-checks against t
 sources at their locked versions and the real (6000.0.75) engine API — including source generators.
 
 Does not prove:
-- `#if UNITY_EDITOR` blocks and `Editor/` folders (no Unity 6 `UnityEditor` reference is obtainable;
-  the player configs do not define `UNITY_EDITOR`).
+- `#if UNITY_EDITOR` blocks and `Editor/` folders against the real Unity 6 `UnityEditor`: none is
+  obtainable. The `editor` config checks them against 2021.1, and only the changed Editor-folder files.
 - Engine API added between 6000.0.75 and 6000.3.17 (would show as a false error, not a false pass);
   engine members whose accessibility changed in a way neither the 2021.1 oracle nor package code
   reveals (stay public: a possible false pass on use of an engine internal).

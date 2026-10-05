@@ -2422,3 +2422,33 @@ Every other creature's `starvationSeconds` is now a conserved stomach, migrated 
 clock did (ECOLOGY_LOD.md §2).
 
 **QA.** QA-SWARM-ROUND11-6.
+
+## 25. Round 11h: a real compile, and what it caught
+
+Until now every round's Unity glue was type-checked against hand-written stubs (`swarm_glue_typecheck`,
+`substrate_glue_typecheck`), and several platform files were only syntax-parsed. Stubs can only check what
+their author already believed about the API. `Tools/Build/unity_refcompile/run.sh` (README beside it) now
+compiles **all of Assembly-CSharp and every package assembly it references** the way a Unity player build
+would: Entities 1.4.2, Entities.Graphics, Collections, Mathematics, Netcode, InputSystem, Cinemachine, the
+Services packages and the rest come as source at their exact `packages-lock.json` versions. URP/SRP come from the
+Graphics 6000.0 branch. The engine comes as Unity 6000.0.75 reference DLLs, de-publicized against the 2021.1
+engine. The Entities and Reflex source generators run. The `player`, `player-dev` and an approximate `editor`
+configuration are all green.
+
+It found two errors from tonight that the stubs could not see. Each would have stopped the project compiling on
+open:
+
+- **CS0104 `Random` is ambiguous** in `SwarmFauna` (round 11a), `ThreatGrove` (11c) and `BuilderColonyFauna`
+  (11e). These files import both `Unity.Mathematics` and `UnityEngine`, and both namespaces declare `Random`. The
+  stubs had no `Unity.Mathematics.Random`. Fix: `using Random = UnityEngine.Random;`.
+- **CS1061 `EntityManager.GetComponentLookup` is `internal`** in Entities 1.4.2. `PrismRenderService` called it
+  at 12 sites (the batched create/transform jobs from the prism-platform round). Fix: the public route is a
+  system's `ComponentSystemBase.GetComponentLookup`. A `[DisableAutoCreation]` `PrismRenderLookupSystem` is
+  created on demand in the service's world and joins no update group. It exists only to issue those lookups.
+  The cache is cleared whenever the cached world changes.
+
+What it still cannot see is listed in the README. In short: Unity 6000.0 to 6000.3 engine additions (these would
+show as false errors, not false passes), the unfetchable Services.Multiplayer/Friends/Leaderboards/Playmode
+packages (files that use them are bucketed, not gated), real `UnityEditor` 6 API (the `editor` config uses the
+2021.1 UnityEditor), ILPostProcessors, Burst and IL2CPP. QA: `QA-COMPILE-ROUND11H-1`.
+

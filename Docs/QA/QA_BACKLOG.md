@@ -1240,6 +1240,26 @@ cost you petals. If the telegraph is unreadable the danger feels unfair; if it n
   a thief nest sitting inside the grove.
 - A frame-time regression above ~1 ms per frame near the grove, or a warm-up hitch over ~10 ms.
 
+### QA-COMPILE-ROUND11H-1 ⬜ — the project opens clean and Entities prisms still render
+
+**Source:** branch `overnight/compile` (compiled headless against real package sources + Unity 6000.0.75 engine
+references by `Tools/Build/unity_refcompile/run.sh`; not opened in the editor). Reference:
+`Docs/SWARM_FAUNA.md` §25. **Why it matters:** the real-reference compile found two errors from tonight that would
+have stopped the whole project compiling on open (`Random` ambiguous in three fauna/flora files;
+`EntityManager.GetComponentLookup` is internal in Entities 1.4.2). PrismRenderService now takes its lookups from a
+never-updated `PrismRenderLookupSystem`.
+
+1. Open the project; wait for the compile. The Console must show no CS errors.
+2. Enter Play in a scene with many prisms (any arcade mode, or the Swarm cell). Read the PrismRenderService status
+   line (Entities ON, ents > 0).
+3. Let a swarm or a trail grow; watch newly created prisms appear at their positions (batched create path) and move
+   (batched transform path).
+4. Exit Play, enter Play again (world rebuilt): prisms render again.
+
+**PASS:** clean compile; prisms render, appear in place and follow their owners across a Play restart.
+**FAIL:** any compile error · prisms at the origin or frozen · an exception mentioning `PrismRenderLookupSystem` or
+`ComponentLookup` · prisms missing after the second Play.
+
 ### QA-SWARM-ROUND10-1 ⬜ — four creatures, and their strikes burn petals
 
 **Source:** branch `cece/swarm-fauna-game` (type-checked only, not run in the editor). Reference:

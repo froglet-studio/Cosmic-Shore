@@ -86,6 +86,11 @@ CONFIGS = {
     "player": ["ENABLE_IL2CPP"],
     # A development player build: adds the dev-only defines (profiler, asserts, DEBUG/TRACE).
     "player-dev": ["ENABLE_IL2CPP", "DEVELOPMENT_BUILD", "ENABLE_PROFILER", "UNITY_ASSERTIONS", "DEBUG", "TRACE"],
+    # APPROXIMATE editor compile of the project's runtime code: UNITY_EDITOR branches type-checked
+    # against the newest non-publicized UnityEditor obtainable (2021.1 - see README), plus the
+    # Editor-folder files changed since --changed-base (with NUnit). Packages stay player-compiled.
+    "editor": ["ENABLE_MONO", "UNITY_EDITOR", "UNITY_EDITOR_64", "UNITY_EDITOR_WIN", "ENABLE_PROFILER",
+               "UNITY_ASSERTIONS", "DEBUG", "TRACE", "ENABLE_UNITY_COLLECTIONS_CHECKS", "UNITY_INCLUDE_TESTS"],
 }
 PLAYER_PLATFORM = "WindowsStandalone64"
 
@@ -454,6 +459,13 @@ def diagnose_tool():
     return dll
 
 
+def editor_refs():
+    """UnityEditor 2021.1 (non-publicized, nuget Unity3D.SDK) + NUnit (com.unity.ext.nunit)."""
+    ed = os.path.join(CACHE, "nuget", "unity3d.sdk.2021.1.14.1", "lib", "UnityEditor.dll")
+    nunit = glob.glob(os.path.join(CACHE, "packages", "com.unity.ext.nunit@*", "**", "nunit.framework.dll"), recursive=True)
+    return [ed] + nunit[:1]
+
+
 def engine_refs():
     d = depublicize()
     out = [p for p in sorted(glob.glob(os.path.join(d, "UnityEngine*.dll"))) if os.path.basename(p) != "UnityEngine.UI.dll"]
@@ -579,8 +591,18 @@ def run_once():
         return 2
 
     defines = unity_version_defines() + COMMON + CONFIGS[args.config]
-    pkg_defines = unity_version_defines(REFS_UNITY_VERSION) + COMMON + CONFIGS[args.config]
-    out = args.out or os.path.join(os.environ.get("TMPDIR", "/tmp"), "unity_refcompile_out", args.config)
+    # packages are always compiled as the player sees them (shared output, shared cache)
+    pkg_defines = unity_version_defines(REFS_UNITY_VERSION) + COMMON + CONFIGS["player"]
+    out_root = os.path.join(os.environ.get("TMPDIR", "/tmp"), "unity_refcompile_out")
+    out = args.out or os.path.join(out_root, args.config)
+    pkg_out = os.path.join(out_root, "_packages")
+    os.makedirs(pkg_out, exist_ok=True)
+    editor = args.config == "editor"
+    editor_included = []
+    changed_files = set()
+    r = subprocess.run(["git", "diff", "--name-only", args.changed_base + "...HEAD", "--", "*.cs"], cwd=ROOT,
+                       stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+    changed_files = {os.path.join(ROOT, x) for x in r.stdout.split()}
     os.makedirs(out, exist_ok=True)
     apply_source_patches()
     roots, versions = package_roots()
@@ -639,6 +661,10 @@ def run_once():
             continue  # package scripts outside any asmdef are not compiled by Unity
         rel = os.path.relpath(p, assets).split(os.sep)
         if "Editor" in rel[:-1]:
+            if editor and p in changed_files:
+                pre["Assembly-CSharp"].files.append(p)
+                editor_included.append(p)
+                continue
             editor_skipped += 1
             continue
         tgt = "Assembly-CSharp-firstpass" if any(p.startswith(r) for r in firstpass_roots) else "Assembly-CSharp"
@@ -727,6 +753,9 @@ def run_once():
 
     outputs = {}
     results = {}
+    if editor:
+        print("[build] editor config: + %d Editor-folder file(s) changed since %s: %s" % (
+            len(editor_included), args.changed_base, ", ".join(os.path.relpath(x, ROOT) for x in editor_included) or "none"))
     print("[build] config=%s, %d assemblies to compile (of %d discovered), %d Editor-folder scripts skipped"
           % (args.config, len(order), len(allasm), editor_skipped))
 
@@ -773,13 +802,16 @@ def run_once():
             refs += [named_dlls[p] for p in a.precompiled if p in named_dlls]
         else:
             refs += auto_dlls + [named_dlls[p] for p in a.precompiled if p in named_dlls]
+        if editor and not a.origin.startswith("package:"):
+            refs += editor_refs()
         refs = list(dict.fromkeys(refs))
         ana = list(a.analyzers)
         for d in direct:
             ana += live[d].analyzers
         ana = list(dict.fromkeys(ana))
         defs = sorted(set(pkg_defines if a.origin.startswith("package:") else defines) | set(a.defines))
-        dll = os.path.join(out, n + ".dll")
+        odir = pkg_out if a.origin.startswith("package:") else out
+        dll = os.path.join(odir, n + ".dll")
         fp = fingerprint(sorted(a.files) + refs + ana + defs + [str(a.unsafe)])
         stamp = dll + ".stamp"
         if os.path.exists(dll) and os.path.exists(stamp) and open(stamp).read() == fp:
@@ -787,7 +819,7 @@ def run_once():
             results[n] = ("cached", [])
             print("[build] %-55s cached" % n)
             continue
-        rsp = os.path.join(out, n + ".rsp")
+        rsp = os.path.join(odir, n + ".rsp")
         with open(rsp, "w") as f:
             f.write("-nologo -noconfig -nostdlib -target:library -langversion:9.0 -deterministic -debug- -optimize-\n")
             f.write("-nowarn:0169,0649,1701,1702,0108,0114,0414,0618,0612,0067,0168,0219,0162,8321,0436,1591\n")
@@ -855,6 +887,10 @@ def run_once():
             src = open(path, encoding="utf-8-sig", errors="replace").read() if os.path.exists(path) else ""
             if code in UNOBTAINABLE_CASCADE_CODES and any(re.search(r"^\s*using\s+" + re.escape(ns) + r"\b", src, re.M) for ns in UNOBTAINABLE_NAMESPACES):
                 unobtainable.append((k, e))
+            elif editor and code in ("CS0115", "CS0117", "CS1061") and re.search(r"'(OnValidate|Reset)'|\.(OnValidate|Reset)\(\)", m.group(3)):
+                # the uGUI/engine reference DLLs are PLAYER builds: their #if UNITY_EDITOR members
+                # (UIBehaviour.OnValidate/Reset) do not exist in them
+                unverified.append((k, e))
             elif code in MISSING_CODES and pkg_failed:
                 unverified.append((k, e))
             else:
@@ -871,7 +907,7 @@ def run_once():
     show("ERRORS in project code", real, args.max_errors)
     show("missing-type errors in files using a package that cannot be fetched (%s)" % ", ".join(UNOBTAINABLE_NAMESPACES),
          unobtainable, 0 if args.quiet_buckets else args.max_errors)
-    show("missing-type errors while a referenced package failed to compile (unverified)", unverified,
+    show("unverified: missing types while a referenced package failed, or editor-only members absent from the player-build reference DLLs", unverified,
          0 if args.quiet_buckets else args.max_errors)
     n_changed = sum(1 for _, e in real if e.split("(")[0] in changed)
     stubbed = [k for k in need if live[k].origin == "stub"] + engine_stubs

@@ -50,9 +50,10 @@ SKIP = {
     "com.unity.bindings.openimageio", "com.unity.recorder", "com.unity.device-simulator.devices",
     "com.unity.multiplayer.center", "com.unity.multiplayer.center.quickstart", "com.unity.pipeline",
 "com.unity.services.deployment",
-    "com.unity.services.deployment.api", "com.unity.test-framework.performance", "com.unity.ext.nunit",
+    "com.unity.services.deployment.api", "com.unity.test-framework.performance",
     "com.unity.test-framework", "com.unity.dt.app-ui", "com.unity.ai.inference",
     "com.unity.adaptiveperformance.samsung.android", "com.unity.adaptiveperformance",
+    "com.unity.ugui",  # builtin 2.0.0 is not mirrored; its two assemblies come from the 6000.0.75 reference DLLs
 }
 
 # Builtin (editor-bundled) packages served from Unity-Technologies/Graphics instead of a mirror.
@@ -190,7 +191,7 @@ def main():
         for name, info in lock.items():
             if name in SKIP or name.startswith("com.unity.modules.") or name in GRAPHICS_PACKAGES:
                 continue
-            if info["source"] == "registry":
+            if info["source"] in ("registry", "builtin"):
                 jobs.append(ex.submit(fetch_registry, name, info["version"]))
             elif info["source"] == "git":
                 jobs.append(ex.submit(fetch_git, name, info["version"], info["hash"]))
