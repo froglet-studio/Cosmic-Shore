@@ -1036,6 +1036,44 @@ having them all dive in at once will be scary once the stakes are felt."*
 - The ladder jumps near the pack.
 - A worker error: `[Substrate] the cell's substrate tick threw`.
 
+### QA-SWARM-ROUND11-10 ⬜ — the wearer: a creature made of your stolen trail
+
+**Source:** branch `overnight/wearers`. Proven headless (builders harness W1-W7: bodies form from stolen trail, fuse,
+rear 1.00 s and lunge at 2.40 hits/min; moults return mass; audit 0). **Never run in the editor.** Reference:
+`Docs/BUILDERS_AND_THIEVES.md` §10.
+
+**Why it matters:** worn prisms are re-parented under one container per creature. Their render matrices and index
+points move in one batched pass a frame, and their colliders ride the hierarchy. None of that has run in Unity.
+
+1. **Find it.** Open the Swarm cell. Fly a long loop through the inner gap (400-465 u). Within a minute or two,
+   small white hearts should be pulling prisms out of YOUR trail into lumpy bodies behind you.
+2. **Growth.** Keep flying. Bodies should grow from where they fed (a head with a tail, not a ball) and merge when they
+   touch.
+3. **The hunt.** Once a body is big (~60 prisms), it turns. Watch for the rear (the body contracts for one second),
+   then the lunge with its prisms in the danger look. Dodge sideways during the rear and it should miss.
+4. **Strip it.** Fly through a body. Your prisms should come back in your colour and fall loose. Strip a lot quickly:
+   it should moult, dropping a shell of loose prisms that go back to their owners, and flee.
+5. **Kill a heart.** Ram a bare or small heart. It should die and drop one crystal.
+6. **Lair.** Let a creature reach 150 prisms while it is not hunting. It should drop a static clump (the lair) and a
+   new heart should appear there.
+7. **Cost.** Profile 60 s with a 150-prism creature following you. Record:
+   - `BuilderColonyFauna.Frame`;
+   - `Physics.SyncColliderTransform` / `Physics.Simulate` with and without the creature;
+   - `PrismRenderService` batch time.
+
+**PASS:**
+- Steps 1-6 read as described.
+- No prism is left floating where a body was when the creature dies.
+- No `MissingReferenceException` when exiting Play with a creature alive.
+- The Frame marker is under ~0.3 ms at 300 worn prisms.
+
+**FAIL:**
+- Worn prisms drawn at their old place (the render matrix is not following).
+- Weapons or AOE missing a body (the index is not following).
+- Prisms destroyed when the cell unloads mid-hunt.
+- The danger look stuck on after a lunge.
+- Physics sync above ~1 ms a frame. If so, try the kinematic-Rigidbody container in §10.4.
+
 ### QA-SWARM-ROUND11-8 ⬜ — the substrate's agent pass is a Burst job
 
 **Source:** branch `overnight/substrate2`. Proven headless: the kernel is bit-identical to the managed step it
