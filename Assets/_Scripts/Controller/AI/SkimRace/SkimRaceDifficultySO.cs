@@ -27,7 +27,7 @@ namespace CosmicShore.Gameplay
 
         [Tooltip("Chance per crystal that an Easy pilot misjudges the pass, flies over the crystal and " +
                  "has to turn back for it.")]
-        [Range(0f, 1f)] public float EasyMistakeChance = 0.06f;
+        [Range(0f, 1f)] public float EasyMistakeChance = 0.099f;
 
         [Header("Medium")]
         [Tooltip("Seconds before a Medium pilot notices a new crystal.")]

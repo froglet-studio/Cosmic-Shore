@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: SkimRaceDifficulty
   m_EditorClassIdentifier: 
   EasyReactionSeconds: 0.5
-  EasyMistakeChance: 0.06
+  EasyMistakeChance: 0.099
   MediumReactionSeconds: 0.25
   MediumMistakeChance: 0.045

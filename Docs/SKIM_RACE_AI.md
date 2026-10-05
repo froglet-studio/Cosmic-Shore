@@ -764,11 +764,16 @@ median on intensity 2 (40 seeds x 2 seats, common seeds every step, then 40 fres
 |---|---|---|---|---|---|
 | Hard | - | - | 77 s (the shipped I2 policy) | | 0 |
 | **Medium** (target 95 s) | 0.25 s | **0.045** | **95.9 s** (80/80 finished) | 81.0 - 124.4 s | 1.3 |
-| Easy (target 120 s) | 0.5 s | 0.06 (provisional) | search running | | |
+| **Easy** (target 120 s) | 0.5 s | **0.099** | **120.8 s** (160/160 finished; 2 fresh sets pooled) | 96.1 - 157.9 s | 2.9 |
 
 Medium's search (common seeds): 0 -> 83.3 s, 0.031 -> 90.9, 0.039 -> 93.9, 0.043 -> 94.3, 0.047 -> 97.2,
 0.063 -> 102.8, 0.125 -> 120.6, 0.25 -> 153.7, 0.5 -> 213.7, 1.0 -> 292.3 s. Easy's reaction alone gives
 90.5 s on the same 40 seeds (the 6-race sample above read 101 s - small samples of this race are noisy).
+Easy's search (`hi=0.25`, common seeds): 0.063 -> 112.0 s, 0.094 -> 116.7, 0.098 -> 118.6, 0.100 -> 120.7,
+0.102 -> 121.7, 0.109 -> 126.1, 0.125 -> 130.2, 0.25 -> 162.1 s. Easy's spread is wide (a misjudged crystal
+costs ~10 s and the count per race varies), so one 40-seed set moves its median by several seconds: 0.099
+read 114.9 s on its first fresh set, then 123.6 and 120.0 on two more (pooled 120.8 s), against 125.3 s
+pooled for 0.107 on the same two sets - so 0.099 ships.
 
 **On every track** (fresh seeds 50000+, 2 AI seats, each intensity's own policy, I3 the general one):
 
