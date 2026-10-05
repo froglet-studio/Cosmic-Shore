@@ -54,59 +54,89 @@ namespace CosmicShore.Gameplay
         /// <summary>SwarmMemberInstanced.hlsl SwarmSmooth01 over the bloom: a newborn grows from 0.001.</summary>
         public static float Bloom(float clock, float birthTick, float bloomTicks)
         {
-            float x = (clock - birthTick) / Math.Max(bloomTicks, 1e-3f);
-            x = Math.Clamp(x, 0f, 1f);
-            return Math.Max(0.001f, x * x * (3f - 2f * x));
+            // scalar comparisons only (Burst-compiled by SwarmPoseJob through PoseMatrix)
+            float x = (clock - birthTick) / (bloomTicks > 1e-3f ? bloomTicks : 1e-3f);
+            x = x < 0f ? 0f : (x > 1f ? 1f : x);
+            float y = x * x * (3f - 2f * x);
+            return y > 0.001f ? y : 0.001f;
         }
 
         /// <summary>
-        /// The body's world matrix, COLUMN-MAJOR into <paramref name="m"/>[<paramref name="o"/> .. o+15] (the layout of
-        /// Unity.Mathematics.float4x4 and so of the entity's LocalToWorld). The shader's body pose, term for term:
-        /// face = lerp(Prev, Cur) (Cur for a half-turn), basis = SwarmBasis(face, up, upAlt), and a mesh vertex v lands at
-        /// <c>p + (bx·v.x·Sx + by·v.y·Sy + bz·(v.z·Sz + PrismZ))·bloom</c>. A dead slot writes the zero matrix (drawn as a
-        /// point, never as a member).
+        /// THE body pose (Docs/SWARM_FAUNA.md §19.2, round 11a-2): the world matrix of member <paramref name="s"/>'s body at
+        /// display <paramref name="alpha"/>, COLUMN-MAJOR (the layout of Unity.Mathematics.float4x4 and so of the entity's
+        /// LocalToWorld). The shader's body pose, term for term: face = lerp(Prev, Cur) (Cur for a half-turn), basis =
+        /// SwarmBasis(face, up, upAlt), and a mesh vertex v lands at <c>p + (bx·v.x·Sx + by·v.y·Sy + bz·(v.z·Sz + PrismZ))·bloom</c>.
+        /// A dead slot is the zero matrix (drawn as a point, never as a member).
+        ///
+        /// Written ONCE, for two callers: the per-frame Burst job (<c>SwarmPoseJob</c>, the glue) and the managed
+        /// <see cref="Matrix"/>/<see cref="Matrices"/> the harness runs (R11d). So it is Burst-compilable plain C#: scalar
+        /// floats, field reads of the System.Numerics structs (no Vector3 method or operator), <see cref="MathF"/> only,
+        /// no managed reference, no allocation.
         /// </summary>
+        public static void PoseMatrix(in SwarmInstance s, float alpha, float clock, float bloomTicks, Vector3 up, Vector3 upAlt,
+                                      out SwarmPoseMatrix m)
+        {
+            m = default;
+            if ((s.Flags & 1u) == 0u) return;
+            float px = s.PrevPos.X + (s.CurPos.X - s.PrevPos.X) * alpha;
+            float py = s.PrevPos.Y + (s.CurPos.Y - s.PrevPos.Y) * alpha;
+            float pz = s.PrevPos.Z + (s.CurPos.Z - s.PrevPos.Z) * alpha;
+            float fx = s.PrevFace.X + (s.CurFace.X - s.PrevFace.X) * alpha;
+            float fy = s.PrevFace.Y + (s.CurFace.Y - s.PrevFace.Y) * alpha;
+            float fz = s.PrevFace.Z + (s.CurFace.Z - s.PrevFace.Z) * alpha;
+            float fl = MathF.Sqrt(fx * fx + fy * fy + fz * fz);
+            if (fl < 1e-5f) { fx = s.CurFace.X; fy = s.CurFace.Y; fz = s.CurFace.Z; fl = MathF.Sqrt(fx * fx + fy * fy + fz * fz); }
+
+            // SwarmBasis: bz = face, bx = up x bz (upAlt when face ~ up), by = bz x bx
+            float bzx, bzy, bzz;
+            if (fl > 1e-5f) { bzx = fx / fl; bzy = fy / fl; bzz = fz / fl; } else { bzx = 0f; bzy = 0f; bzz = 1f; }
+            float ux = up.X, uy = up.Y, uz = up.Z;
+            if (MathF.Abs(bzx * ux + bzy * uy + bzz * uz) > 0.98f) { ux = upAlt.X; uy = upAlt.Y; uz = upAlt.Z; }
+            float bxx = uy * bzz - uz * bzy, bxy = uz * bzx - ux * bzz, bxz = ux * bzy - uy * bzx;
+            float lx = MathF.Sqrt(bxx * bxx + bxy * bxy + bxz * bxz);
+            if (lx > 1e-6f) { bxx /= lx; bxy /= lx; bxz /= lx; } else { bxx = 1f; bxy = 0f; bxz = 0f; }
+            float byx = bzy * bxz - bzz * bxy, byy = bzz * bxx - bzx * bxz, byz = bzx * bxy - bzy * bxx;
+
+            float b = Bloom(clock, s.BirthTick, bloomTicks);
+            float sx = s.Scale.X * b, sy = s.Scale.Y * b, sz = s.Scale.Z * b, seat = s.PrismZ * b;
+            m.C0X = bxx * sx; m.C0Y = bxy * sx; m.C0Z = bxz * sx;
+            m.C1X = byx * sy; m.C1Y = byy * sy; m.C1Z = byz * sy;
+            m.C2X = bzx * sz; m.C2Y = bzy * sz; m.C2Z = bzz * sz;
+            m.C3X = px + bzx * seat; m.C3Y = py + bzy * seat; m.C3Z = pz + bzz * seat; m.C3W = 1f;
+        }
+
+        /// <summary><see cref="PoseMatrix"/> into <paramref name="m"/>[<paramref name="o"/> .. o+15], column-major - the
+        /// managed caller (harness, entity creation).</summary>
         public static void Matrix(in SwarmInstance s, float alpha, float clock, float bloomTicks, Vector3 up, Vector3 upAlt,
                                   float[] m, int o)
         {
-            if ((s.Flags & 1u) == 0u) { Array.Clear(m, o, 16); return; }
-            var p = Vector3.Lerp(s.PrevPos, s.CurPos, alpha);
-            var face = Vector3.Lerp(s.PrevFace, s.CurFace, alpha);
-            if (face.Length() < 1e-5f) face = s.CurFace;
-            Basis(face, up, upAlt, out var bx, out var by, out var bz);
-            float b = Bloom(clock, s.BirthTick, bloomTicks);
-            var c0 = bx * (s.Scale.X * b);
-            var c1 = by * (s.Scale.Y * b);
-            var c2 = bz * (s.Scale.Z * b);
-            var c3 = p + bz * (s.PrismZ * b);
-            m[o + 0] = c0.X; m[o + 1] = c0.Y; m[o + 2] = c0.Z; m[o + 3] = 0f;
-            m[o + 4] = c1.X; m[o + 5] = c1.Y; m[o + 6] = c1.Z; m[o + 7] = 0f;
-            m[o + 8] = c2.X; m[o + 9] = c2.Y; m[o + 10] = c2.Z; m[o + 11] = 0f;
-            m[o + 12] = c3.X; m[o + 13] = c3.Y; m[o + 14] = c3.Z; m[o + 15] = 1f;
+            PoseMatrix(s, alpha, clock, bloomTicks, up, upAlt, out var r);
+            m[o + 0] = r.C0X; m[o + 1] = r.C0Y; m[o + 2] = r.C0Z; m[o + 3] = r.C0W;
+            m[o + 4] = r.C1X; m[o + 5] = r.C1Y; m[o + 6] = r.C1Z; m[o + 7] = r.C1W;
+            m[o + 8] = r.C2X; m[o + 9] = r.C2Y; m[o + 10] = r.C2Z; m[o + 11] = r.C2W;
+            m[o + 12] = r.C3X; m[o + 13] = r.C3Y; m[o + 14] = r.C3Z; m[o + 15] = r.C3W;
         }
 
         /// <summary>
-        /// The per-frame pass: one matrix per shown slot, in <paramref name="slots"/> order, into <paramref name="m"/> (16 floats
-        /// each). Struct-of-arrays, no allocation, no Unity call - Burst-shaped; the glue copies <paramref name="m"/> into the
-        /// render service's native array with one memcpy.
+        /// The per-frame pass, managed: one <see cref="PoseMatrix"/> per shown slot, in <paramref name="slots"/> order, into
+        /// <paramref name="m"/> (16 floats each). The game runs the SAME function per slot in a Burst job (SwarmPoseJob); this
+        /// is the harness's (R11d) and the inline fallback's.
         /// </summary>
         public static void Matrices(SwarmInstance[] inst, int[] slots, int count, float alpha, float clock, float bloomTicks,
                                     Vector3 up, Vector3 upAlt, float[] m)
         {
             for (int k = 0; k < count; k++) Matrix(inst[slots[k]], alpha, clock, bloomTicks, up, upAlt, m, 16 * k);
         }
+    }
 
-        /// <summary>SwarmMemberInstanced.hlsl SwarmBasis = Quaternion.LookRotation(face, up) as a basis.</summary>
-        public static void Basis(Vector3 face, Vector3 up, Vector3 upAlt, out Vector3 bx, out Vector3 by, out Vector3 bz)
-        {
-            float l = face.Length();
-            bz = l > 1e-5f ? face / l : new Vector3(0, 0, 1);
-            if (MathF.Abs(Vector3.Dot(bz, up)) > 0.98f) up = upAlt;
-            bx = Vector3.Cross(up, bz);
-            float lx = bx.Length();
-            bx = lx > 1e-6f ? bx / lx : new Vector3(1, 0, 0);
-            by = Vector3.Cross(bz, bx);
-        }
+    /// <summary>A body matrix, column-major, 64 bytes - field for field the layout of Unity.Mathematics.float4x4 (c0..c3,
+    /// x..w), so the Burst job converts it with no shuffling. Blittable.</summary>
+    public struct SwarmPoseMatrix
+    {
+        public float C0X, C0Y, C0Z, C0W;
+        public float C1X, C1Y, C1Z, C1W;
+        public float C2X, C2Y, C2Z, C2W;
+        public float C3X, C3Y, C3Z, C3W;
     }
 
     /// <summary>What <see cref="SwarmEntryLedger"/> asks of the spatial index - PrismSpatialIndex's virtual-entry API in the

@@ -27,6 +27,12 @@ recovers at a different speed from the other half.
      the C# initializer alone splits the fleet in half (the rule-4-i trap: a silent prefab is not
      an unset one).
 
+  5. THE PETAL-BURN SWITCH RESOLVES AS DOCUMENTED (Docs/ELEMENTAL_ECONOMY.md §4.1). The sink's size
+     is per CELL: Shipped (the asset's debuffMagnitude, five petals per element) everywhere, Tuned
+     (tunedDebuffMagnitude, one petal) in the Swarm cell only. Both sizes must be WHOLE petals, the
+     own-domain sting must use the same resolved size as the burn, and the effect must be wired to
+     the live cell - an unwired reference silently plays Shipped in the cell meant to be Tuned.
+
 Run it:   python3 Tools/Build/check_elemental_economy.py [--self-test]
 """
 import os, re, sys, glob
@@ -222,6 +228,85 @@ def check_recovery_rate_is_one_number(cs=None, prefabs=None):
               f"serialize it ({1/initializer/10:.0f}s per level)")
 
 
+DANGER_EFFECT_ASSET = "Assets/_SO_Assets/Effects/Vessel Prism Effects/VesselElementalDebuffByDangerPrismEffect.asset"
+DANGER_EFFECT_CS    = "Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Prism Effects/VesselElementalDebuffByDangerPrismEffectSO.cs"
+CELL_CONFIG_SCRIPT  = "01f934d50526431a9392a6ceca1dc33d"   # CellConfigDataSO
+RUNTIME_CELL_DATA   = "8d4e8398eedc76c4dadb8604f89b9e1b"   # Runtime Cell Data.asset
+TUNED_CELLS         = {"Swarm Cell Config"}                 # the demo cell (author_swarm_fauna.py PETAL_BURN_RULE)
+EXPECTED_PETALS     = {"Shipped": 5, "Tuned": 1}           # per element per hostile contact (burn-rules.md)
+
+
+def petals_per_contact(magnitude, held_petals):
+    """Mirror of ResourceSystem.AccrueElementalLoss for one fresh contact on one element: whole petals,
+    clamped to what is held. Integer arithmetic in hundredths of a petal so the mirror cannot drift."""
+    want = round(-magnitude * 1000)          # thousandths of normalized level
+    return min(want // 100, held_petals)
+
+
+def cell_rules(cells=None):
+    """{cell config name: PetalBurnRule int} for every CellConfigDataSO asset (a silent asset is 0)."""
+    if cells is not None:
+        return cells
+    out = {}
+    for path in glob.glob(os.path.join(ROOT, "Assets/**/*.asset"), recursive=True):
+        txt = open(path, errors="ignore").read()
+        if f"guid: {CELL_CONFIG_SCRIPT}" not in txt:
+            continue
+        m = re.search(r"^  PetalBurnRule: (\d+)\s*$", txt, re.M)
+        out[os.path.basename(path)[:-6]] = int(m.group(1)) if m else 0
+    return out
+
+
+def check_petal_burn_switch(asset=None, cs=None, cells=None):
+    print("\n5. the petal-burn switch resolves as documented")
+    asset = asset if asset is not None else read(DANGER_EFFECT_ASSET)
+    cs = cs if cs is not None else read(DANGER_EFFECT_CS)
+
+    mags = {}
+    for rule, key in (("Shipped", "debuffMagnitude"), ("Tuned", "tunedDebuffMagnitude")):
+        m = re.search(rf"^  {key}: (-?[0-9.]+)\s*$", asset, re.M)
+        if not m:
+            fail(f"danger-prism effect asset authors no {key} (run author_petal_burn_rule.py)")
+            return
+        mags[rule] = float(m.group(1))
+    for rule, mag in mags.items():
+        tenths = -mag * 10
+        if abs(tenths - round(tenths)) > 1e-6 or tenths <= 0:
+            fail(f"{rule} magnitude {mag} is not a whole number of petals - a contact would bank a "
+                 f"fraction that settles on a LATER contact")
+            continue
+        per = petals_per_contact(mag, 5)
+        if per != EXPECTED_PETALS[rule]:
+            fail(f"{rule} burns {per} petals per element per contact, documented {EXPECTED_PETALS[rule]} "
+                 f"(Docs/ELEMENTAL_ECONOMY.md §4.1 - retune the doc with the asset)")
+        else:
+            clamp = petals_per_contact(mag, 2)
+            print(f"   ok   {rule:<7} {mag:+.2f} = {per} petal(s) per element, {per * 4} per contact; "
+                  f"a 2-petal element loses {clamp}")
+    if not re.search(rf"^  cellData: \{{fileID: 11400000, guid: {RUNTIME_CELL_DATA}, type: 2\}}", asset, re.M):
+        fail("danger-prism effect asset is not wired to Runtime Cell Data - every cell would play Shipped")
+
+    body = cs[cs.find("public override void Execute"):]
+    if "PetalBurnRules.Magnitude(" not in body:
+        fail("the danger-prism effect no longer resolves its size through PetalBurnRules.Magnitude")
+    if not re.search(r"ElementalTransfer\.Burn\([^;]*-magnitude", body) or \
+       not re.search(r"ApplyElementalEffect\([^;]*\bmagnitude\b", body) or \
+       re.search(r"\bdebuffMagnitude\b(?!\s*,\s*tunedDebuffMagnitude)", body):
+        fail("the hostile burn and the own-domain debuff no longer share ONE resolved size")
+    else:
+        print("   ok   burn and own-domain debuff both use the resolved size")
+
+    rules = cell_rules(cells)
+    tuned = {n for n, v in rules.items() if v == 1}
+    unknown = {n: v for n, v in rules.items() if v not in (0, 1)}
+    if unknown:
+        fail(f"cells author an unknown PetalBurnRule (plays Shipped silently): {unknown}")
+    if tuned != TUNED_CELLS:
+        fail(f"Tuned cells are {sorted(tuned)}, expected exactly {sorted(TUNED_CELLS)}")
+    else:
+        print(f"   ok   {len(rules)} cell configs: Tuned = {sorted(tuned)}, the other {len(rules) - len(tuned)} Shipped")
+
+
 def self_test():
     """Every check must FAIL on a broken input. A gate nobody has watched fail is one nobody
     should trust."""
@@ -255,6 +340,21 @@ def self_test():
     expect_fail("a prefab left on the old recovery rate",
                 lambda: check_recovery_rate_is_one_number(prefabs=[("Sparrow.prefab", 0.05)]))
 
+    good_asset = read(DANGER_EFFECT_ASSET)
+    expect_fail("a tuned size that is not a whole petal",
+                lambda: check_petal_burn_switch(asset=good_asset.replace("tunedDebuffMagnitude: -0.1", "tunedDebuffMagnitude: -0.15")))
+    expect_fail("a tuned size that drifted to two petals",
+                lambda: check_petal_burn_switch(asset=good_asset.replace("tunedDebuffMagnitude: -0.1", "tunedDebuffMagnitude: -0.2")))
+    expect_fail("the effect unwired from the live cell",
+                lambda: check_petal_burn_switch(asset=re.sub(r"^  cellData: .*\n", "", good_asset, flags=re.M)))
+    expect_fail("the own-domain debuff decoupled from the burn",
+                lambda: check_petal_burn_switch(cs=read(DANGER_EFFECT_CS).replace(
+                    "ApplyElementalEffect(AllElements[i], magnitude,", "ApplyElementalEffect(AllElements[i], debuffMagnitude,")))
+    expect_fail("a second cell switched to Tuned",
+                lambda: check_petal_burn_switch(cells=dict(cell_rules(), **{"Arboretum Cell Config": 1})))
+    expect_fail("the demo cell left on Shipped",
+                lambda: check_petal_burn_switch(cells=dict(cell_rules(), **{"Swarm Cell Config": 0})))
+
     _fails = []
     print("\n" + ("SELF-TEST PASS" if ok else "SELF-TEST FAILED"))
     return 0 if ok else 1
@@ -270,6 +370,7 @@ def main():
     check_crystal_is_one_petal()
     check_single_sink()
     check_recovery_rate_is_one_number()
+    check_petal_burn_switch()
 
     print()
     if _fails:

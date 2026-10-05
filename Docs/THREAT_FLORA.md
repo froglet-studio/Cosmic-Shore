@@ -163,6 +163,12 @@ nucleus at 392. The grove is outside every band, so no swarm is penned through i
 physarum network fills the sector (a 20×46×48 grid at 16 u, 9,405 inside voxels, 1,637 agents). The snap traps
 sit in three clumps (radius 57 u) placed 9° either side of the grove axis.
 
+Round 11b's substrate populations (`SUBSTRATE_FAUNA.md`) stop at 1,080 u, but they bite 24 u: a locust or pack
+hunter at its band edge can reach a trap's prisms that lean inward (the closest measured is 1,085 u). That is
+ordinary grazing. `SubstrateFauna.IsFood` accepts only prisms whose `LifeForm` is a `Flora`, so the tubes
+(`LifeForm` null) are never its food, and a trap prism it eats goes through `RemoveHealthBlock` like any other
+loss. Not tested together: the two rounds were built in parallel.
+
 ### 4.2 The rim geometry (harness S9)
 
 The rim gap is 120 u and a trap is ~85 u long. A trap therefore roots **15-25 u inside the grove's outer
@@ -199,10 +205,11 @@ Swarm Cell folder. Run both scripts; both `--check`s must pass.
 | | always-on | at the caps |
 |---|---|---|
 | swarm cell before this round (§14.3) | 978 worst case | |
+| substrate proxies (round 11b, `SWARM_FAUNA.md` §20) | +78 engaged → 1,056 | |
 | snap-trap hearts | **+15** (cap) | 15 × 27 = 405 body prisms |
 | sclerotium hearts | **+5** | 5 × 6 = 30 shell prisms |
 | physarum tubes | 0 hearts | ≤ 400 tube prisms (`MaxTubes`) |
-| **total** | **998 < 1,200** (`COLLIDER_CEILING`, asserted by both author scripts) | ≤ 835 ordinary flora prisms |
+| **total** | **1,076 < 1,200** (`COLLIDER_CEILING`, asserted by both author scripts) | ≤ 835 ordinary flora prisms |
 
 The body prisms are ordinary LOD-culled flora prisms, like every plant's plates. The gate counts always-on
 hearts plus engaged proxies, as §14.3 does. The grove adds ~800 prisms to the cell at its caps: about 5% of the

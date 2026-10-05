@@ -245,6 +245,8 @@ namespace CosmicShore.Gameplay
 // com.unity.mathematics 1.x signatures)
 namespace Unity.Collections
 {
+    public sealed class ReadOnlyAttribute : Attribute { }
+    public sealed class WriteOnlyAttribute : Attribute { }
     public enum Allocator { Invalid = 0, None = 1, Temp = 2, TempJob = 3, Persistent = 4 }
     public enum NativeArrayOptions { UninitializedMemory = 0, ClearMemory = 1 }
     public struct NativeArray<T> : IDisposable where T : struct
@@ -281,8 +283,28 @@ namespace CosmicShore.ECS
             NativeArray<Unity.Mathematics.float4x4> localToWorld, NativeArray<PrismRenderHandle> outHandles,
             PrismRenderOverrideSet overrideSet = PrismRenderOverrideSet.Prism) => false;
         public static void SetTransformsBatch(NativeArray<PrismRenderHandle> handles, NativeArray<Unity.Mathematics.float4x4> localToWorld, int count = -1) { }
+        public static void SetTransformsBatch(NativeArray<PrismRenderHandle> handles, NativeArray<Unity.Mathematics.float4x4> localToWorld, int count, Unity.Jobs.JobHandle dependsOn) { }
         public static void SetLooksBatch(NativeArray<PrismRenderHandle> handles, NativeArray<byte> lookIndex, int count, UnityEngine.Material[] looks) { }
         public static void QueueVisible(in PrismRenderHandle handle, bool visible) { }
         public static void Destroy(ref PrismRenderHandle handle) { }
+    }
+}
+
+// Unity.Jobs / Unity.Burst - the members SwarmPoseJob and its scheduling touch (com.unity.jobs / burst signatures)
+namespace Unity.Burst { public sealed class BurstCompileAttribute : Attribute { } }
+namespace Unity.Jobs
+{
+    public struct JobHandle
+    {
+        public void Complete() { }
+        public bool IsCompleted => true;
+        public static void ScheduleBatchedJobs() { }
+        public static JobHandle CombineDependencies(JobHandle a, JobHandle b) => default;
+    }
+    public interface IJobParallelFor { void Execute(int index); }
+    public static class IJobParallelForExtensions
+    {
+        public static JobHandle Schedule<T>(this T jobData, int arrayLength, int innerloopBatchCount, JobHandle dependsOn = default) where T : struct, IJobParallelFor => default;
+        public static void Run<T>(this T jobData, int arrayLength) where T : struct, IJobParallelFor { }
     }
 }
