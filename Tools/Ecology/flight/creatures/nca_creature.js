@@ -192,12 +192,12 @@
       const capCells = this.cellsPerFrame, budget = this.budgetMs;
       let done = 0, cells = 0;
       while (this._debt > 0 || this._inStep) {
-        if (!this._inStep) this._begin();
+        if (!this._inStep) { if (capCells == null && done > 0 && now() - t0 >= 0.5 * budget) break; this._begin(); }
         const L = this._list, rate = this.fireRate, rnd = this.rand;
         while (this._cursor < this._listN) {
           const i = L[this._cursor++];
           if (rnd() <= rate) { this._update(i); cells++; }
-          if (capCells != null ? cells >= capCells : ((cells & 31) === 0 && cells && now() - t0 >= budget)) break;
+          if (capCells != null ? cells >= capCells : ((cells & 7) === 0 && cells && now() - t0 >= budget)) break;
         }
         if (this._cursor < this._listN) break;            // out of budget mid-step: resume next call
         this._finish(); done++; this._debt -= 1;
@@ -210,7 +210,7 @@
     /** Run n whole NCA steps synchronously (blocking; use before the creature is shown). */
     grow(n) {
       for (let k = 0; k < n; k++) {
-        if (!this._inStep) this._begin();
+        if (!this._inStep) { if (capCells == null && done > 0 && now() - t0 >= 0.5 * budget) break; this._begin(); }
         const L = this._list, rate = this.fireRate, rnd = this.rand;
         while (this._cursor < this._listN) { const i = L[this._cursor++]; if (rnd() <= rate) this._update(i); }
         this._finish();

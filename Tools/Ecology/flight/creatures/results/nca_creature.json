@@ -1,0 +1,172 @@
+{
+ "module": "nca_creature.js",
+ "source": "Tools/NCA/results/lizard3d_swim",
+ "checks": {
+  "growth_from_seed": {
+   "pass": true,
+   "alive_at_step": [
+    [
+     0,
+     1
+    ],
+    [
+     24,
+     341
+    ],
+    [
+     48,
+     1083
+    ],
+    [
+     72,
+     1122
+    ],
+    [
+     96,
+     1146
+    ],
+    [
+     120,
+     1137
+    ],
+    [
+     144,
+     1153
+    ],
+    [
+     168,
+     1152
+    ],
+    [
+     192,
+     1128
+    ],
+    [
+     200,
+     1142
+    ]
+   ],
+   "grown_voxels_at_200": 1142,
+   "ms_per_full_step": 30.82
+  },
+  "keeps_animating": {
+   "pass": true,
+   "steps": 640,
+   "mean_voxel_flips_per_step_last200": 41.5,
+   "min_flips_last200": 26,
+   "alive_range_last200": [
+    1118,
+    1169
+   ],
+   "cycle_period_steps": 68,
+   "expected_cycle_steps": "8 poses x ~8.5 = ~68"
+  },
+  "hit_and_regrow": {
+   "pass": true,
+   "pre_hit_avg_voxels": 1140,
+   "removed": 73,
+   "after_hit": 1095,
+   "removed_pct": 3.9,
+   "steps_to_90pct": 1,
+   "recovery_pct_after_600_steps": 100.2,
+   "curve": [
+    [
+     0,
+     1095
+    ],
+    [
+     60,
+     1160
+    ],
+    [
+     120,
+     1150
+    ],
+    [
+     180,
+     1153
+    ],
+    [
+     240,
+     1119
+    ],
+    [
+     300,
+     1153
+    ],
+    [
+     360,
+     1148
+    ],
+    [
+     420,
+     1130
+    ],
+    [
+     480,
+     1148
+    ],
+    [
+     540,
+     1151
+    ],
+    [
+     600,
+     1149
+    ]
+   ]
+  },
+  "budgeted_step": {
+   "pass": false,
+   "budgetMs": 4,
+   "frames": 300,
+   "nca_steps_done": 36,
+   "nca_steps_per_sec_at_60fps": 7.2,
+   "frames_ending_mid_step": 279,
+   "frame_ms_p50": 4.34,
+   "frame_ms_p95": 5.02,
+   "frame_ms_max": 17.94,
+   "cellsPerFrame_2000": {
+    "frames": 120,
+    "nca_steps": 60,
+    "frame_ms_mean": 16.67
+   }
+  },
+  "element_colours": {
+   "pass": true,
+   "mean_rgb": {
+    "mass": [
+     0.78,
+     0.533,
+     0.311
+    ],
+    "charge": [
+     0.793,
+     0.835,
+     0.275
+    ],
+    "space": [
+     0.377,
+     0.677,
+     0.815
+    ],
+    "time": [
+     0.521,
+     0.948,
+     0.491
+    ]
+   }
+  }
+ },
+ "grid": [
+  22,
+  44,
+  44,
+  16
+ ],
+ "embeddedWeights": true,
+ "pass": false,
+ "failed": [
+  "budgeted_step"
+ ]
+}
