@@ -128,7 +128,20 @@ namespace CosmicShore.Gameplay
         public bool IsBatchProcessing => _useBatchProcessing;
 
         /// <summary>True while budget-deferred damage is still waiting to resolve.</summary>
-        public bool HasPendingBatchWork => _batchPending != null && _batchPending.Count > 0;
+        public bool HasPendingBatchWork =>
+            (_batchPending != null && _batchPending.Count > 0) || (_virtualHeartsPending != null && _virtualHeartsPending.Count > 0);
+
+        // ── round 11a (Docs/SWARM_FAUNA.md §19): the hearts of creatures that are only DATA ──
+        // A virtual-population member's BODY is a PrismSpatialIndex virtual entry, so the Burst prism pass meets it
+        // like any prism (the index materialises it under the owner's budget, sparing first). Its HEART is not a
+        // prism and has no collider until it materialises, so SweepVirtualHearts asks VirtualFauna for the hearts
+        // in the heart sweep's own volume. _virtualHeartsPending holds index ids past the owner's per-frame
+        // materialisation budget, drained on the following frames like _batchPending; _virtualHeartsSeen is the
+        // once-per-blast ledger (a blast grows over frames and re-finds the same member).
+        HashSet<int> _virtualHeartsSeen;
+        Queue<int> _virtualHeartsPending;
+        static readonly List<int> s_virtualHeartIds = new(32);
+        static readonly List<Vector3> s_virtualHeartPoints = new(32);
 
         /// <summary>
         /// When true, BeginBatchProcessing() is a no-op - forces Physics OnTriggerEnter
@@ -159,6 +172,8 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void BeginBatchProcessing()
         {
+            _virtualHeartsSeen?.Clear();
+            _virtualHeartsPending?.Clear();
             if (ForceLegacyPhysics) return;
 
             // A blast that does not touch mass never starts the prism pass at all. ONE gate here
@@ -428,14 +443,17 @@ namespace CosmicShore.Gameplay
             using (s_processBatch.Auto())
             {
                 if (!HasPendingBatchWork) return false;
+                DrainVirtualHearts(force: false);
+                if (_batchPending == null || _batchPending.Count == 0) return HasPendingBatchWork;
                 var registry = PrismSpatialIndex.Instance;
-                if (registry == null) { _batchPending.Clear(); return false; }
+                if (registry == null) { _batchPending.Clear(); return HasPendingBatchWork; }
 
-                return registry.DrainPendingExplosionDamage(
+                registry.DrainPendingExplosionDamage(
                     _batchPending, impulse,
                     explosion.Domain,
                     affectSelf, destructive, devastating, shielding,
                     explosion.AnonymousExplosion, explosion.Vessel);
+                return HasPendingBatchWork;
             }
         }
 
@@ -472,6 +490,9 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void EndBatchProcessing()
         {
+            // A blast that ends with virtual hearts still queued resolves them now - a member's fate is decided by
+            // whether the blast CONTAINED it, never by how long the VFX ran (the _batchPending rule, §16.2 / §19).
+            DrainVirtualHearts(force: true);
             if (_useBatchProcessing && explosion != null && explosion.Vessel != null)
                 OnBlastResolved?.Invoke(explosion.Vessel,
                     new BlastTally(BatchHitCount, VesselHitCount));
@@ -776,14 +797,67 @@ namespace CosmicShore.Gameplay
                 // The sphere is only the broadphase when the caller supplied a real shape.
                 if (narrowphase.IsValid && !narrowphase.Contains(col.transform.position)) continue;
                 if (!_heartsHit.Add(crystal.GetInstanceID())) continue;
+                ApplyLifeformEffects(effects, crystal);
+            }
 
-                for (int e = 0; e < effects.Length; e++)
-                {
-                    if (IsEffectSlotEmpty(effects[e], explosionImpactorDataContainer,
-                            nameof(ExplosionImpactorDataContainerSO.explosionLifeformCrystalEffects), e))
-                        continue;
-                    effects[e].Execute(this, crystal);
-                }
+            SweepVirtualHearts(centre, radius, narrowphase);
+        }
+
+        void ApplyLifeformEffects(ExplosionLifeformCrystalEffectSO[] effects, Crystal crystal)
+        {
+            for (int e = 0; e < effects.Length; e++)
+            {
+                if (IsEffectSlotEmpty(effects[e], explosionImpactorDataContainer,
+                        nameof(ExplosionImpactorDataContainerSO.explosionLifeformCrystalEffects), e))
+                    continue;
+                effects[e].Execute(this, crystal);
+            }
+        }
+
+        /// <summary>
+        /// The heart half of <see cref="SweepLifeformHearts"/> for creatures that are only data (Docs/SWARM_FAUNA.md
+        /// §19): a member's heart is a point where it is drawn, so the sphere is widened by the largest heart radius
+        /// a member carries (<see cref="VirtualHeartAllowance"/>, the over-reach a collider overlap would have) and
+        /// the caller's narrowphase is asked of the point. Each heart found is materialised under its owner's budget
+        /// and handed to the SAME effects; the rest wait in <see cref="_virtualHeartsPending"/>. The effects make
+        /// their own domain decision, so nothing is pre-filtered here. Runs only when the blast authors lifeform
+        /// effects (the early return in the caller), so every other blast pays nothing.
+        /// </summary>
+        void SweepVirtualHearts(Vector3 centre, float radius, in SweptCylinder narrowphase)
+        {
+            if (!VirtualFauna.Any) return;
+            s_virtualHeartIds.Clear();
+            s_virtualHeartPoints.Clear();
+            VirtualFauna.CollectHearts(centre, radius + VirtualHeartAllowance, s_virtualHeartIds, s_virtualHeartPoints);
+            if (s_virtualHeartIds.Count == 0) return;
+            _virtualHeartsSeen ??= new HashSet<int>(32);
+            _virtualHeartsPending ??= new Queue<int>(32);
+            for (int k = 0; k < s_virtualHeartIds.Count; k++)
+            {
+                if (narrowphase.IsValid && !narrowphase.Contains(s_virtualHeartPoints[k])) continue;
+                if (_virtualHeartsSeen.Add(s_virtualHeartIds[k])) _virtualHeartsPending.Enqueue(s_virtualHeartIds[k]);
+            }
+            DrainVirtualHearts(force: false);
+        }
+
+        /// <summary>The largest heart radius a swarm member is drawn with (Charge/Space 2.298 world scale).</summary>
+        const float VirtualHeartAllowance = 2.4f;
+
+        void DrainVirtualHearts(bool force)
+        {
+            if (_virtualHeartsPending == null || _virtualHeartsPending.Count == 0) return;
+            var effects = explosionImpactorDataContainer ? explosionImpactorDataContainer.explosionLifeformCrystalEffects : null;
+            if (!DoesEffectExist(effects)) { _virtualHeartsPending.Clear(); return; }
+            _heartsHit ??= new HashSet<int>(16);
+            while (_virtualHeartsPending.Count > 0)
+            {
+                int id = _virtualHeartsPending.Peek();
+                var crystal = VirtualFauna.MaterialiseHeart(id, force, out bool retry);
+                if (retry) return;   // the owner's budget is spent this frame - the rest next frame
+                _virtualHeartsPending.Dequeue();
+                if (!crystal || crystal.EmbeddedIn is { IsDying: true }) continue;
+                if (!_heartsHit.Add(crystal.GetInstanceID())) continue;   // the collider sweep must not run them twice
+                ApplyLifeformEffects(effects, crystal);
             }
         }
 
