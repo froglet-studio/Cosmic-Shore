@@ -1,0 +1,211 @@
+{
+ "module": "nca_creature.js",
+ "source": "Tools/NCA/results/lizard3d_swim",
+ "checks": {
+  "growth_from_seed": {
+   "pass": true,
+   "alive_at_step": [
+    [
+     0,
+     1
+    ],
+    [
+     24,
+     341
+    ],
+    [
+     48,
+     1083
+    ],
+    [
+     72,
+     1122
+    ],
+    [
+     96,
+     1146
+    ],
+    [
+     120,
+     1137
+    ],
+    [
+     144,
+     1153
+    ],
+    [
+     168,
+     1152
+    ],
+    [
+     192,
+     1128
+    ],
+    [
+     200,
+     1142
+    ]
+   ],
+   "grown_voxels_at_200": 1142,
+   "ms_per_full_step": 30.05
+  },
+  "keeps_animating": {
+   "pass": true,
+   "steps": 640,
+   "mean_voxel_flips_per_step_last200": 41.5,
+   "min_flips_last200": 26,
+   "alive_range_last200": [
+    1118,
+    1169
+   ],
+   "cycle_period_steps": 68,
+   "expected_cycle_steps": "8 poses x ~8.5 = ~68"
+  },
+  "hit_and_regrow": {
+   "pass": true,
+   "pre_hit_avg_voxels": 1140,
+   "hit_radius_voxels": 7,
+   "removed": 255,
+   "after_hit": 913,
+   "removed_pct": 19.9,
+   "steps_to_90pct_windowed": 21,
+   "recovery_pct_after_600_steps": 100.3,
+   "curve": [
+    [
+     0,
+     913
+    ],
+    [
+     30,
+     1086
+    ],
+    [
+     60,
+     1152
+    ],
+    [
+     90,
+     1141
+    ],
+    [
+     120,
+     1139
+    ],
+    [
+     150,
+     1143
+    ],
+    [
+     180,
+     1124
+    ],
+    [
+     210,
+     1155
+    ],
+    [
+     240,
+     1144
+    ],
+    [
+     270,
+     1134
+    ],
+    [
+     300,
+     1120
+    ],
+    [
+     330,
+     1155
+    ],
+    [
+     360,
+     1152
+    ],
+    [
+     390,
+     1151
+    ],
+    [
+     420,
+     1151
+    ],
+    [
+     450,
+     1152
+    ],
+    [
+     480,
+     1142
+    ],
+    [
+     510,
+     1134
+    ],
+    [
+     540,
+     1150
+    ],
+    [
+     570,
+     1129
+    ],
+    [
+     600,
+     1138
+    ]
+   ]
+  },
+  "budgeted_step": {
+   "pass": true,
+   "budgetMs": 4,
+   "frames": 300,
+   "nca_steps_done": 34,
+   "nca_steps_per_sec_at_60fps": 6.8,
+   "frames_ending_mid_step": 268,
+   "frame_ms_p50": 4.07,
+   "frame_ms_p95": 4.55,
+   "frame_ms_max": 11.96,
+   "cellsPerFrame_2000": {
+    "frames": 120,
+    "nca_steps": 60,
+    "frame_ms_mean": 18.35
+   }
+  },
+  "element_colours": {
+   "pass": true,
+   "mean_rgb": {
+    "mass": [
+     0.779,
+     0.533,
+     0.311
+    ],
+    "charge": [
+     0.793,
+     0.835,
+     0.275
+    ],
+    "space": [
+     0.376,
+     0.677,
+     0.815
+    ],
+    "time": [
+     0.52,
+     0.948,
+     0.491
+    ]
+   }
+  }
+ },
+ "grid": [
+  22,
+  44,
+  44,
+  16
+ ],
+ "embeddedWeights": true,
+ "pass": true,
+ "failed": []
+}
