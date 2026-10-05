@@ -23,13 +23,15 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
   which compiles every runtime file under `Assets/_Scripts` with the real C# compiler) went from
   1 error to 0. Not run in Unity (no editor in the session). `Editor/` and `Tests/` folders are
   outside that compile.
-- **PR/commit:** pending.
+- **PR/commit:** `30b85ac17` on `Bug_Hunt` (not yet PR'd to bleeding-edge).
 
 ---
 
 ## BH-5.7 — Delete Wildlife Blitz co-op leftovers (scene + controller)
 
 - **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Purpose / symptom:** co-op Wildlife Blitz scene and controller still on disk after BH-5.5/5.6 retired the shipped surfaces, inviting accidental relaunch or stale GUID refs.
+- **Root cause:** retirement was staged; leftovers were kept on purpose until nothing shipped them.
 - **Decision:** BH-5.5/5.6 had kept `MinigameWildlifeBlitzMultuplayerCoOp.unity` and
   `CoOpWildlifeBlitzMiniGame` on disk on purpose; delete them now that nothing ships them.
 - **Deleted:** `Assets/_Scenes/Multiplayer Scenes/MinigameWildlifeBlitzMultuplayerCoOp.unity` (+
@@ -42,13 +44,15 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
   `SandboxBenchmarkController`; documents the live `BenchmarkStressTest` Wildlife Blitz controller
   stack (`SinglePlayerWildlifeBlitzController` + trackers/HUD). Handoff §0 / revisit updated.
 - **Verification:** gate scripts pass; not run in Unity. Retest is on the handoff list.
-- **PR/commit:** pending.
+- **PR/commit:** `a0aa2b036` (+ docs `a8de4e2ca`) on `Bug_Hunt` only.
 
 ---
 
 ## BH-5.6 — Orphan classes after Wildlife Blitz / hangar retirement (salvage-before-delete)
 
 - **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Purpose / symptom:** after hangar/Build Settings retirement, several Wildlife Blitz / sandbox classes had no scene, prefab, or asset references but still sat in the tree.
+- **Root cause:** mode retirement left code orphans; some types are still required by the Editor `BenchmarkStressTest` path.
 - **Decision (handoff §5):** salvage-before-delete; KEEP anything still needed by the Editor
   `BenchmarkStressTest` path.
 - **Kept (BenchmarkStressTest still references):** `SinglePlayerWildlifeBlitzController`,
@@ -61,13 +65,14 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
   Cleared a dead `MiniGameHUD` Ready onClick that still named `WildlifeBlitzMiniGame`.
 - **Already gone:** single-player `VesselSelectionPanelController` (deleted 2026-09-23).
 - **Verification:** GUID scan + gate scripts pass; not run in Unity. Retest is on the handoff list.
-- **PR/commit:** pending.
+- **PR/commit:** `16f949c2c` on `Bug_Hunt` only.
 
 ---
 
 ## BH-5.5 — Wildlife Blitz retired from shipped surfaces
 
 - **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Root cause:** product decision to RETIRE the mode (handoff §5) after scenes were half-cleaned without clearing Build Settings / previews.
 - **Symptom:** neither Wildlife Blitz mode was in any `SO_GameList`; the co-op scene was still in
   Build Settings and ModePreviewLibrary, so it looked half-alive after the SP scene cleanup.
 - **Decision (handoff §5):** RETIRE (not ship). Do not half-delete scenes without cleaning refs.
@@ -77,13 +82,14 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
   BH-5.7 (enum value kept). SP card already removed with hangar training (BH-5.4).
   `GameModes.WildlifeBlitz` remains for Editor `BenchmarkSceneLauncher`.
 - **Verification:** gate scripts pass; not run in Unity. Retest is on the handoff playtest list.
-- **PR/commit:** pending.
+- **PR/commit:** `be1c838cd` on `Bug_Hunt` only.
 
 ---
 
 ## BH-5.4 — Hangar Wildlife Blitz training entries + card retired
 
 - **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Root cause:** training SOs still pointed at a deleted Wildlife Blitz scene; hangar launch path was already dead (`Arcade.Instance` never placed).
 - **Symptom:** Rhino's and Sparrow's hangar training pointed at `SO_TrainingGame_WildLifeBlitz` →
   `ArcadeGameWildlifeBlitz`, whose scene was deleted in the earlier cleanup. `Arcade.Instance` is
   also never placed, so hangar training could not launch.
@@ -91,20 +97,21 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 - **Fix:** cleared `TrainingGames` on `SO_Class_Rhino` / `SO_Class_Sparrow`; removed the entry from
   `TrainingGames.asset`; deleted `SO_TrainingGame_WildLifeBlitz` and `ArcadeGameWildlifeBlitz`.
 - **Verification:** gate scripts pass; not run in Unity. Retest is on the handoff playtest list.
-- **PR/commit:** pending.
+- **PR/commit:** `f8f73d66b` on `Bug_Hunt` only.
 
 ---
 
 ## BH-5.3 — Run Benchmark is Editor-only (not in player builds)
 
 - **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Root cause:** Settings exposed `BenchmarkSceneLauncher` in player builds while `BenchmarkStressTest` is intentionally not in Build Settings.
 - **Symptom (risk):** Settings ▸ Run Benchmark called `BenchmarkSceneLauncher`, which loads
   `BenchmarkStressTest`, but that scene is not in Build Settings — a player build would fail the load.
 - **Decision (handoff §5):** hide the path in players; do **not** add the scene to Build Settings.
 - **Fix:** `GameSettingsPanelController` hides/unwires the benchmark button outside `UNITY_EDITOR`
   (same idea as the desktop-only quit button); `LaunchBenchmark` early-returns in players.
 - **Verification:** gate scripts pass; not run in Unity. Retest is on the handoff playtest list.
-- **PR/commit:** pending.
+- **PR/commit:** `e36ea1b35` on `Bug_Hunt` only.
 
 ---
 
@@ -122,7 +129,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
   (`SO_Captain_Dolphin_Space`, `SO_Captain_Sparrow_Charge`, `SO_Captain_Sparrow_Space`) hand-fixed
   (also split `PrimaryElement`/`Element` on Sparrow Space).
 - **Verification:** strict YAML parse passes for all 17; gate scripts pass; not run in Unity.
-- **PR/commit:** pending.
+- **PR/commit:** `4798dd04e` on `Bug_Hunt` only.
 
 ---
 
@@ -138,7 +145,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
   (same Unity-null pattern as `DetachHeartToCell`). Enabling as a collectible still runs when the
   scene is live but the cell reference is missing.
 - **Verification:** gate scripts pass; not run in Unity. Retest is on the handoff playtest list.
-- **PR/commit:** pending.
+- **PR/commit:** `f6c699e5e` on `Bug_Hunt` only.
 
 ---
 
@@ -151,7 +158,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 - **Fix:** widened the map to `Dictionary<Prism, int>` (matches `GetBlockIndex`'s return type). No
   assert-and-cap: mass is conserved and trails are not artificially truncated.
 - **Verification:** gate scripts pass; not run in Unity. Retest is on the handoff playtest list.
-- **PR/commit:** pending.
+- **PR/commit:** `874671db4` on `Bug_Hunt` only.
 
 ---
 
@@ -164,7 +171,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 - **Fix:** actions are stored in `Dictionary<owner, List<…>>`. Cancel removes that owner's list in
   one step; Update walks owners via a scratch key list so callbacks can reschedule safely.
 - **Verification:** gate scripts pass; not run in Unity. Retest is on the handoff playtest list.
-- **PR/commit:** pending.
+- **PR/commit:** `a2e0c23ca` on `Bug_Hunt` only.
 
 ---
 
@@ -177,7 +184,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 - **Fix:** both read active touch count from `Touchscreen.current.touches` (same package as
   `InputController` / `InputDeviceActuation`).
 - **Verification:** gate scripts pass; not run in Unity. Retest is on the handoff playtest list.
-- **PR/commit:** pending.
+- **PR/commit:** `373444828` + `b11b37744` on `Bug_Hunt` only.
 
 ---
 
@@ -189,7 +196,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
   the last index was never chosen. Dead for gameplay today if the lists are unused, but wrong when called.
 - **Fix:** `Random.Range(0, list.Length)`.
 - **Verification:** gate scripts pass; not run in Unity. Retest is on the handoff playtest list.
-- **PR/commit:** pending.
+- **PR/commit:** `0707372e1` on `Bug_Hunt` only.
 
 ---
 
@@ -202,7 +209,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
   the upper bound every iteration.
 - **Fix:** roll `trunkCount` once before the loop.
 - **Verification:** gate scripts pass; not run in Unity. Retest is on the handoff playtest list.
-- **PR/commit:** pending.
+- **PR/commit:** `96a588618` on `Bug_Hunt` only.
 
 ---
 
@@ -219,7 +226,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
   players), still iterating ActiveDomains order so Jade → Ruby → Gold remains the last resort
   among those that played. Matches how `ResolvePlacementOrder` already works.
 - **Verification:** gate scripts pass; not run in Unity. Retest is on the handoff playtest list.
-- **PR/commit:** pending.
+- **PR/commit:** `4a6bec37b` on `Bug_Hunt` only.
 
 ---
 
@@ -240,7 +247,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
   intended behaviour, the same as the switch-thread gate.
 - **Verification:** gate scripts pass; not run in Unity (needs a multiplayer match). Retest is on
   the handoff playtest list.
-- **PR/commit:** pending.
+- **PR/commit:** `5933726ab` on `Bug_Hunt` only.
 
 ---
 
@@ -258,7 +265,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
   cannot outlive the scene. The handler still unsubscribes itself on first run.
 - **Verification:** gate scripts pass; not run in Unity (needs a multiplayer replay). Retest is on
   the handoff playtest list.
-- **PR/commit:** pending.
+- **PR/commit:** `09f02be11` on `Bug_Hunt` only.
 
 ---
 
@@ -277,7 +284,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
   `Disconnected` already did.
 - **Verification:** gate scripts pass; the new EditMode test was not run (Unity not available
   here). Retest is on the handoff playtest list.
-- **PR/commit:** pending.
+- **PR/commit:** `9e7f9cc6f` + `50d48ea39` (+ docs `701e0acfa`) on `Bug_Hunt` only.
 
 ---
 
@@ -300,7 +307,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
   its own mutex hold and does not call the clear.
 - **Verification:** all gate scripts pass; not run in Unity (two players needed). Retest is on
   the handoff playtest list.
-- **PR/commit:** pending.
+- **PR/commit:** `f92384eb4` · PR #956 · merge `ac71b471f`.
 
 ---
 
@@ -321,7 +328,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 - **Verification:** all gate scripts pass; not run in Unity (needs two players and a network cut).
   Retest is on the handoff playtest list. The identity republish after rejoin still comes from
   `LivePropertySource` as before.
-- **PR/commit:** pending.
+- **PR/commit:** `93c5df556` · PR #955 · merge `a0346c699`.
 
 ---
 
@@ -348,7 +355,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
   That matches what already happened on the next launch, and is safer than overwriting the record.
 - **Verification:** all gate scripts pass; not run in Unity. No test double implements
   `ICloudSaveProvider`, so no tests needed updating. Retest is on the handoff playtest list.
-- **PR/commit:** pending.
+- **PR/commit:** `cca2959c6` · PR #954 · merge `0f791df4b`.
 
 ---
 
@@ -367,7 +374,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
   there.
 - **Verification:** all gate scripts pass; not run in Unity (needs two devices). Retest is on the
   handoff playtest list.
-- **PR/commit:** pending.
+- **PR/commit:** `89d5b1759` · PR #953 · merge `11065629f`.
 
 ---
 
@@ -387,7 +394,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 - **Verification:** all gate scripts pass; no test asserted the old strings; not run in Unity.
   Retest is on the handoff playtest list. Alternative if the symbols are wanted back: add the
   glyphs to the font asset instead.
-- **PR/commit:** pending.
+- **PR/commit:** `cc29a75a2` · PR #951 · merge `3689e3fcc`.
 
 ---
 
@@ -407,7 +414,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
   `LogControlWindow` (benchmark/diagnostic file names and display text). They are outside the
   handoff list; sweep them if a diagnostic ever needs to be machine-parsed.
 - **Verification:** all gate scripts pass; not run in Unity. Retest is on the handoff playtest list.
-- **PR/commit:** pending.
+- **PR/commit:** `6b7041e9f` · PR #950 · merge `9cef9fc3c`.
 
 ---
 
@@ -427,7 +434,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
   `now - entry.Time >= entry.Window`. `TryAdmit` behaviour is unchanged.
 - **Verification:** all gate scripts pass; not run in Unity. Retest and the Broadside balance
   re-check are on the handoff playtest list.
-- **PR/commit:** pending.
+- **PR/commit:** `b9d1f25c9` · PR #949 · merge `5f64846d9`.
 
 ---
 
@@ -448,7 +455,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
   that a live session must keep.
 - **Verification:** all gate scripts pass; not run in Unity. Retest steps (two peers) are on the
   handoff playtest list.
-- **PR/commit:** pending.
+- **PR/commit:** `1a5b5688e` · PR #948 · merge `462f44927`.
 
 ---
 
@@ -468,7 +475,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 - **Verification:** all gate scripts pass; not run in Unity. Retest steps are on the handoff
   playtest list. Same lesson as BH-1.4 (PLAYBOOK §7): a call that swallows failures is not proof of
   success; check the state after it.
-- **PR/commit:** pending.
+- **PR/commit:** `458eaa78c` · PR #947 · merge `2505f5fd0`.
 
 ---
 
@@ -552,7 +559,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
     menu, matching its existing failure behaviour, instead of waiting out the profile timeout.
 - **Verification:** all gate scripts pass; not run in Unity. Retest steps are in the handoff
   playtest list and PLAYBOOK §7.
-- **PR/commit:** pending.
+- **PR/commit:** `6d1621909` · PR #940 · merge `75d5058b1`.
 
 ---
 
@@ -578,7 +585,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
     the same code path as a real let-go (`ReleaseHeldTriggers` calls it with 0, 0).
 - **Verification:** all gate scripts pass; Yash retested with a pad and it works. Re-verify steps are
   kept in PLAYBOOK §6 and the handoff playtest list in case it recurs.
-- **PR/commit:** pending.
+- **PR/commit:** `b9b636def` · PR #939 · merge `10637f08e`.
 
 ---
 
@@ -594,7 +601,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
   `AITraining` channel), the same as every other training log in that file. Same message text.
 - **Verification:** `python3 Tools/Build/check_console_logging.py` reports no problems (it
   reported 1 before).
-- **PR/commit:** pending.
+- **PR/commit:** `fb47b6528` · PR #938 · merge `b13f7f613`.
 
 ---
 
@@ -638,7 +645,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 - **Verification:** all four gate scripts pass. Needs Yash's retest on `Bug_Hunt`: play the
   Wildlife Blitz co-op scene (or any mode with fauna), let creatures die, and check that nothing
   throws and the creatures count goes down as they die.
-- **PR/commit:** pending.
+- **PR/commit:** `a7b09cc99` · PR #936 · merge `d8f10ebf6`.
 
 ---
 
@@ -666,7 +673,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
   - The handoff doc's §1.10 moved to §0.
 - **Verification:** all four gate scripts pass. Needs Yash's retest on `Bug_Hunt`: the same
   play path should leave the Material count flat and show no `Crystal (Instance)` entries.
-- **PR/commit:** pending.
+- **PR/commit:** `7e0d219da` · PR #935 · merge `9d2f95225`.
 
 ---
 
