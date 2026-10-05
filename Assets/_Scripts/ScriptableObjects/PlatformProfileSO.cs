@@ -1,5 +1,6 @@
 using System;
 using CosmicShore.Data;
+using CosmicShore.Gameplay;
 using UnityEngine;
 
 namespace CosmicShore.ScriptableObjects
@@ -11,8 +12,8 @@ namespace CosmicShore.ScriptableObjects
     /// compile-time <c>PerfStrip</c> flags: a per-platform choice is a field here, read at runtime,
     /// so one build serves every platform (<c>Docs/PLATFORM_UNIFICATION.md</c> §3).
     ///
-    /// It carries the first-run graphics recommendation (Step 3) and the per-tier render choices
-    /// (Step 4); content choices join it in Step 5. Every field's DEFAULT is "no change", and the
+    /// It carries the first-run graphics recommendation (Step 3), the per-tier render choices
+    /// (Step 4) and the per-tier content choices (Step 5). Every field's DEFAULT is "no change", and the
     /// Desktop and MobileHigh assets keep those defaults, so Windows and iOS behave exactly as
     /// bleeding-edge did before the field existed - only an asset that sets a field changes anything.
     /// </summary>
@@ -75,6 +76,52 @@ namespace CosmicShore.ScriptableObjects
                  "1 = no cap beyond the gate's own portalWindowRenderScale.")]
         [SerializeField, Range(0.1f, 1f)] float foldGateWindowMaxRenderScale = 1f;
 
+        [Header("Content: trails (applied at runtime on this tier)")]
+        [Tooltip("The Menu_Main autopilot (the lava lamp behind the menu) lays no trail on this tier. " +
+                 "Creation-side only - the vessel's pen is held up (VesselPrismController." +
+                 "SetSpawnerPaused); nothing already laid is removed. Freestyle lays trail as usual.")]
+        [SerializeField] bool menuAutopilotLaysNoTrail;
+
+        [Tooltip("Freestyle trail WAITS while the pilot's cell holds more than this many live prisms " +
+                 "(the pen lifts), and comes back down at the resume count below once the food web has " +
+                 "grazed room. A spawner that waits - never a cap. 0 = the trail never waits.")]
+        [SerializeField, Min(0)] int freestyleCellPrismBudget;
+
+        [Tooltip("The freestyle pen comes back down when the cell drops to this many live prisms " +
+                 "(hysteresis under the budget above).")]
+        [SerializeField, Min(0)] int freestyleCellPrismResume;
+
+        [Tooltip("Skim Race trail cap on this tier: each vessel keeps its share of a race-wide budget " +
+                 "of trail prisms; past it the OLDEST prism withers away (RaceTrailCap). An owner-" +
+                 "authorized exception to the no-trail-cap law, recorded in Docs/ECOSYSTEM.md §0. " +
+                 "Race budget 0 = no cap.")]
+        [SerializeField] RaceTrailBudget skimRaceTrail;
+
+        [Tooltip("Joust trail cap on this tier - the same mechanism and exception as Skim Race. " +
+                 "Race budget 0 = no cap.")]
+        [SerializeField] RaceTrailBudget joustTrail;
+
+        [Header("Content: menu and HUD (applied at runtime on this tier)")]
+        [Tooltip("While the pilot flies freestyle, the menu's screen roots and nav bar are " +
+                 "DEACTIVATED, not just faded (a CanvasGroup at alpha 0 still runs every Update, " +
+                 "coroutine and canvas rebuild), and restored exactly as they were on exit.")]
+        [SerializeField] bool deactivateMenuWhileFlying;
+
+        [Tooltip("The HUD top bar's domain glow rests at its tint instead of breathing forever (an " +
+                 "endless alpha tween re-batches the HUD canvas every frame). It still punches on a " +
+                 "score change.")]
+        [SerializeField] bool quietScoreGlow;
+
+        [Tooltip("Cells spawn no cytoplasm motes on this tier (~300 transparent mote objects per " +
+                 "cell). Cosmetic only: not mass, not lifeforms.")]
+        [SerializeField] bool disableCytoplasm;
+
+        [Header("Content: Wanderway (applied at runtime on this tier)")]
+        [Tooltip("Overrides on the Wanderway belt's budget, applied to the config WanderToy builds " +
+                 "from its settings asset - the asset itself is untouched, so other tiers keep it. " +
+                 "-1 = keep the asset's value.")]
+        [SerializeField] WanderwayBudget wanderwayBudget = WanderwayBudget.KeepAll;
+
         /// <summary>This profile's first-run graphics recommendation, as plain data.</summary>
         public PlatformAutoDetect AutoDetect => new(useCapabilityHeuristic, preset, pixelBudget,
             minRenderScalePercent, upscalingWhenScaled, antiAliasing, maxTargetFrameRate);
@@ -88,6 +135,26 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>Ceiling on a fold-gate window's render scale on this tier.</summary>
         public float FoldGateWindowMaxRenderScale => foldGateWindowMaxRenderScale;
 
+        /// <summary>True when the menu autopilot lays no trail on this tier.</summary>
+        public bool MenuAutopilotLaysNoTrail => menuAutopilotLaysNoTrail;
+
+        /// <summary>Live cell prisms above which the freestyle trail waits; 0 = never.</summary>
+        public int FreestyleCellPrismBudget => freestyleCellPrismBudget;
+
+        /// <summary>Live cell prisms at which a waiting freestyle trail resumes.</summary>
+        public int FreestyleCellPrismResume => freestyleCellPrismResume;
+
+        /// <summary>Skim Race trail cap on this tier.</summary>
+        public RaceTrailBudget SkimRaceTrail => skimRaceTrail;
+
+        /// <summary>Joust trail cap on this tier.</summary>
+        public RaceTrailBudget JoustTrail => joustTrail;
+
+        public bool DeactivateMenuWhileFlying => deactivateMenuWhileFlying;
+        public bool QuietScoreGlow => quietScoreGlow;
+        public bool DisableCytoplasm => disableCytoplasm;
+        public WanderwayBudget Wanderway => wanderwayBudget;
+
         /// <summary>The skybox this tier draws in place of <paramref name="authored"/>, or null to keep it.</summary>
         public Material SkyboxReplacementFor(Material authored)
         {
@@ -96,6 +163,86 @@ namespace CosmicShore.ScriptableObjects
                 if (entry.Authored == authored && entry.Replacement)
                     return entry.Replacement;
             return null;
+        }
+
+        /// <summary>
+        /// A race-wide trail budget shared by every vessel in a match: each keeps
+        /// <c>budget / vessels</c> prisms, clamped to [floor, ceiling], so the cap does not multiply
+        /// with the seat count (12 seats x a flat 2,000 would be 24,000 live prisms).
+        /// </summary>
+        [Serializable]
+        public struct RaceTrailBudget
+        {
+            [Tooltip("Live trail prisms shared by every vessel in the match. 0 = no cap.")]
+            [SerializeField, Min(0)] int raceBudget;
+
+            [Tooltip("The least a vessel keeps, however many seats there are.")]
+            [SerializeField, Min(1)] int floorPerVessel;
+
+            [Tooltip("The most a vessel keeps, however few seats there are.")]
+            [SerializeField, Min(1)] int ceilingPerVessel;
+
+            public RaceTrailBudget(int raceBudget, int floorPerVessel, int ceilingPerVessel)
+            {
+                this.raceBudget = raceBudget;
+                this.floorPerVessel = floorPerVessel;
+                this.ceilingPerVessel = ceilingPerVessel;
+            }
+
+            /// <summary>True when this tier caps the trail at all.</summary>
+            public bool Active => raceBudget > 0;
+
+            /// <summary>Each vessel's cap in a match of <paramref name="vessels"/>.</summary>
+            public int PerVessel(int vessels)
+            {
+                int share = raceBudget / Math.Max(1, vessels);
+                int floor = Math.Max(1, floorPerVessel);
+                return Math.Clamp(share, floor, Math.Max(floor, ceilingPerVessel));
+            }
+        }
+
+        /// <summary>
+        /// Overrides on the Wanderway belt's <see cref="ConveyorConfig"/>; -1 keeps the settings
+        /// asset's value. Resident belt prisms = pool size x prism budget per scene.
+        /// </summary>
+        [Serializable]
+        public struct WanderwayBudget
+        {
+            [Tooltip("Scenes on the belt (-1 = keep).")]
+            [SerializeField] int poolSize;
+
+            [Tooltip("Prisms per belt scene (-1 = keep).")]
+            [SerializeField] int prismBudgetPerScene;
+
+            [Tooltip("Scenes kept ahead of the pilot (-1 = keep).")]
+            [SerializeField] int aheadTargetScenes;
+
+            [Tooltip("Crystals per belt scene (-1 = keep).")]
+            [SerializeField] int maxCrystalsPerScene;
+
+            [Tooltip("Belt scenes that carry flora/fauna recipes: 0 = off, 1 = on, -1 = keep.")]
+            [SerializeField] int lifeformScenes;
+
+            [Tooltip("Scenes allowed to transition in at once (-1 = keep).")]
+            [SerializeField] int maxConcurrentArrivals;
+
+            public static WanderwayBudget KeepAll => new()
+            {
+                poolSize = -1, prismBudgetPerScene = -1, aheadTargetScenes = -1,
+                maxCrystalsPerScene = -1, lifeformScenes = -1, maxConcurrentArrivals = -1,
+            };
+
+            /// <summary>Write every set override onto <paramref name="cfg"/>.</summary>
+            public void ApplyTo(ConveyorConfig cfg)
+            {
+                if (cfg == null) return;
+                if (poolSize > 0) cfg.PoolSize = poolSize;
+                if (prismBudgetPerScene > 0) cfg.PrismBudget = prismBudgetPerScene;
+                if (aheadTargetScenes > 0) cfg.AheadTargetScenes = aheadTargetScenes;
+                if (maxCrystalsPerScene >= 0) cfg.MaxCrystalsPerScene = maxCrystalsPerScene;
+                if (lifeformScenes >= 0) cfg.LifeformScenes = lifeformScenes > 0;
+                if (maxConcurrentArrivals > 0) cfg.MaxConcurrentArrivals = maxConcurrentArrivals;
+            }
         }
 
         /// <summary>One skybox swap: draw <see cref="Replacement"/> wherever a scene authored

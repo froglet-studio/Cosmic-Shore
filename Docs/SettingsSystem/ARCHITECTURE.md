@@ -107,7 +107,11 @@ unchanged**. MobileLow turns it off and gets its own authored recommendation
 score ranked a budget 8-core Android phone above an iPhone. `DisplayGraphicsSettings` settings v3
 re-seeds a MobileLow device's saved graphics once, only while they still equal the old heuristic's
 output (i.e. the player never touched them). FrogletTools ▸ Performance ▸ **Device Tier** shows the
-tier and why, and simulates another tier from the next Play.
+tier and why, and simulates another tier from the next Play. The same profile carries the tier's
+render choices (HDR, baked sky, membrane and fold-gate caps - §3.5 of the plan) and content choices
+(menu/freestyle trail policy, the Skim Race / Joust trail cap, menu teardown while flying, the HUD
+glow, cytoplasm, the Wanderway budget - §3.6); each is read by the system that owns it, and every
+field's default is "no change".
 
 ## Benchmark scene
 

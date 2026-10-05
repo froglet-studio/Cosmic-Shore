@@ -57,6 +57,65 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Content tier: MobileLow menu/freestyle trail policy, Skim Race / Joust trail cap, menu teardown, glow, cytoplasm, Wanderway budget (`claude/serene-edison-lfv24f`, 2026-10-05)
+
+Step 5 of `Docs/PLATFORM_UNIFICATION.md` (§3.6). No editor and no `unity` CLI in the authoring
+session, so `/verify-unity` did NOT run. Out-of-editor: **the Froglet Engine compiled every runtime
+file under `Assets/_Scripts` with 0 errors and no new warnings** (`dotnet build
+Port/src/CosmicShore.Live`; negative control: a call to a missing member injected into
+`RaceTrailCap` fails with CS1061); `DeviceTierTests` type-checked against the stub harness (with the
+REAL `ConveyorConfig` extracted from source) and its 42 non-asset cases RUN green; two mutations of
+`PlatformProfileSO` (no floor on the per-vessel share; `KeepAll` overwriting crystals) each fail the
+new tests; the three profile assets' YAML parsed and checked against every asset-backed assertion;
+repo C# gates green.
+
+**What landed**
+
+1. `PlatformProfileSO` content fields (all no-change on Desktop/MobileHigh): `menuAutopilotLaysNoTrail`,
+   `freestyleCellPrismBudget` / `Resume`, `skimRaceTrail` / `joustTrail` (`RaceTrailBudget`),
+   `deactivateMenuWhileFlying`, `quietScoreGlow`, `disableCytoplasm`, `wanderwayBudget`. MobileLow
+   carries Garrett's numbers.
+2. `RaceTrailCap` (new), attached by `SkimRaceController` / `JoustController` in `OnNetworkSpawn` on
+   MobileLow only: oldest trail prism withers and returns to its pool past the vessel's share. The
+   owner-authorized exception recorded in `Docs/ECOSYSTEM.md` §0.
+3. `VesselPrismController.SetTierHold` (a creation hold independent of the pen) driven once a second
+   by `MenuCrystalClickHandler`: no trail in the lava lamp, freestyle trail waits above 10,000 cell
+   prisms (resumes at 9,700), never during a Wanderway run (`WanderwayRun.AnyRunning`).
+4. `ScreenSwitcher` deactivates the active screen roots + nav bar once the freestyle blend settles and
+   restores exactly those on exit; `DomainScorePanel` skips the glow breath; `SnowChanger` skips the
+   motes; `WanderToy` applies the belt budget to the built config (`ConveyorConfig.MaxConcurrentArrivals`
+   replaces the conveyor's constant, default 3).
+
+**Verify in editor / on device**
+
+1. Project compiles; `DeviceTierTests` pass (now 53 cases).
+2. Desktop, override Auto: Menu_Main's lava lamp lays trail, freestyle lays trail, the menu fades
+   back exactly as before, cytoplasm motes are there, a Skim Race keeps every vessel's whole trail,
+   the HUD glow breathes, the Wanderway belt is the big one with lifeform scenes.
+3. Device Tier window → **Mobile Low**, Play Menu_Main: the lava-lamp vessel lays NO trail (what was
+   laid stays); enter freestyle and it lays trail again within a second; no motes in the cell.
+4. Still Mobile Low, in freestyle: the Hierarchy shows the menu screen roots and the NavBar INACTIVE
+   once the blend has settled. Exit freestyle: the screen you left (and the nav bar) come back active,
+   the hub row fades in, the current screen re-enters normally; any screen that was inactive before
+   stays inactive. Repeat a few times, and once via a toy/arcade launch that leaves freestyle.
+5. Still Mobile Low: fly a Wanderway run — the belt is the small one (8 scenes, no lifeforms) and the
+   tether + return station still work (the trail is never held during a run).
+6. Still Mobile Low, Skim Race with AI backfill to 4: after about two laps each ribbon stops growing
+   at its tail; the oldest prisms SHRINK away (no pop, no implosion burst), a Squirrel riding a rival's
+   tail detaches cleanly when its prism leaves. Joust: same, at the shorter cap. Scores/finish are
+   unchanged. The HUD top bar's domain glow rests (no breathing) and still flares on a score.
+7. Freestyle on Mobile Low, if a cell can be pushed past 10,000 live prisms: the trail stops at the
+   budget and resumes once grazing brings it under 9,700.
+8. Set the override back to **Auto**.
+9. On the 4 GB Samsung (Development build): Menu_Main, freestyle and a 4-seat Skim Race against the
+   Step 4 build; the iPhone (MobileHigh) is unchanged.
+
+**First-pass tuning** (assets only, `PlatformProfile_MobileLow.asset`): Skim Race 6000 / 800 / 2000,
+Joust 4000 / 400 / 1200, freestyle 10000 / 9700, Wanderway 8 scenes x 150 prisms, 4 ahead, 2
+crystals, 2 arrivals.
+
+---
+
 ### 🔴 Render tier: MobileLow HDR off, baked sky, lighter membrane, fold-gate cap; fold-gate footprint everywhere (`claude/serene-edison-lfv24f`, 2026-10-05)
 
 Step 4 of `Docs/PLATFORM_UNIFICATION.md` (§3.5). No editor and no `unity` CLI in the authoring

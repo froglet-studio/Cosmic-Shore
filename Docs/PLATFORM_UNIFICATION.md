@@ -1,9 +1,9 @@
 # One codebase for Windows, iOS and Android — diagnosis and plan
 
 **Status (2026-10-05): diagnosis (§1) and inventory (§2) done. Steps 2 (touch controls), 3 (device
-tiers) and 4 (render tier) landed on this branch, awaiting editor/device verification
-(`Docs/UNITY_VERIFICATION_CHECKLIST.md`, top three entries). Device measurements are deferred, not
-a gate (owner's call).**
+tiers), 4 (render tier) and 5 (content tier) landed on this branch, awaiting editor/device
+verification (`Docs/UNITY_VERIFICATION_CHECKLIST.md`, top four entries). Device measurements are
+deferred, not a gate (owner's call).**
 
 ### Decisions recorded (2026-10-05, project owner)
 
@@ -14,6 +14,10 @@ These strip changes are **NOT ported**, on any tier:
 | Plants and creatures paused everywhere except the home cell (Garland) | `PerfStrip.CellLifeRuns` in `CellLifeSpawnerBase` and `Flora` |
 | The toybox cut down to the light toys | `PerfStrip.LightToysOnly` in `ToyboxController`, and the Ark gate in `WanderToy` |
 | Vulkan dropped for OpenGL ES only | Android `m_BuildTargetGraphicsAPIs` (Auto [Vulkan, GLES3] stays) |
+
+Ported for phones on the owner's word ("step 5 with Garrett's implementation for phones"): the Skim
+Race / Joust trail cap, as a `MobileLow`-only exception to the no-trail-cap law, recorded in
+`Docs/ECOSYSTEM.md` §0 (decision 4 below, §3.6).
 Owner branch for this work: `claude/serene-edison-lfv24f`.
 
 Today three builds come from three places:
@@ -155,15 +159,15 @@ The vessels' `_touchActionOverrides` are unchanged in net; touch and pad bind th
 
 | Change | Gate |
 |---|---|
-| Vessels lay **no trail**, except freestyle (pen waits while the cell holds > 10,000 prisms), the Wanderway tether, and Skim Race / Joust with a **FIFO cap** (oldest prism consumed past 2,000 / 1,200 per vessel, shared per seat) | `TrailsDisabled`, `CappedTrailActive` |
+| Vessels lay **no trail**, except freestyle (pen waits while the cell holds > 10,000 prisms), the Wanderway tether, and Skim Race / Joust with a **FIFO cap** (oldest prism consumed past 2,000 / 1,200 per vessel, shared per seat) | `TrailsDisabled`, `CappedTrailActive` → **MobileLow, §3.6** (menu + freestyle + the race cap; not "trails off everywhere") |
 | ~~Cell life (flora/fauna spawners, flora growth) paused except in the home world (Garland)~~ **decided: not ported** | `CellLifeRuns` |
-| No cytoplasm motes in any cell | `SnowChanger.Initialize`, `Enabled` (undecided) |
+| No cytoplasm motes in any cell | `SnowChanger.Initialize`, `Enabled` → **MobileLow, §3.6** |
 | ~~Toybox: Wander (no Ark), domain changer, element charger, vessel changer~~ **decided: not ported** | `LightToysOnly` |
-| Vessel changer roster narrowed to Squirrel + Butterfly | `ShipsVessel` (undecided) |
-| Wanderway belt 30,000 → 1,200 resident prisms, no lifeforms | `Wander_WithoutArk.asset` — **shared, ungated** |
-| `MicrosceneConveyor.MaxConcurrentArrivals` 3 → 2 | **ungated** |
-| Non-HOME menu screens deactivated; HOME + NavBar deactivated in freestyle | `MenuUIStripped` |
-| Top-bar glow's endless DOFade dropped | `Enabled` |
+| Vessel changer roster narrowed to Squirrel + Butterfly | `ShipsVessel` → **not ported** (a feature removal, §3.6) |
+| Wanderway belt 30,000 → 1,200 resident prisms, no lifeforms | `Wander_WithoutArk.asset` — **shared, ungated** → **MobileLow override, §3.6** |
+| `MicrosceneConveyor.MaxConcurrentArrivals` 3 → 2 | **ungated** → **MobileLow override, §3.6** |
+| Non-HOME menu screens deactivated; HOME + NavBar deactivated in freestyle | `MenuUIStripped` → **freestyle half on MobileLow, §3.6**; non-HOME screens not ported |
+| Top-bar glow's endless DOFade dropped | `Enabled` → **MobileLow, §3.6** |
 
 ### 2.5 Build content strip and offline bypass (do NOT port)
 
@@ -345,6 +349,40 @@ leave `URP_Asset.asset` with HDR off.
 
 **Build size:** the baked sky (4096x2048, no mips) is referenced from `Resources/PlatformProfiles`,
 so it ships in every platform's build (~4 MB compressed), including Windows where it is unused.
+
+### 3.6 As built (Step 5)
+
+Every content field on `PlatformProfileSO` defaults to "no change", and the Desktop and MobileHigh
+assets keep the defaults (pinned by `DeviceTierTests.DesktopAndMobileHigh_ChangeNothingAboutContent`),
+so Windows and iOS run exactly what bleeding-edge ran. MobileLow carries Garrett's numbers (pinned by
+`MobileLow_RunsTheStripsContentNumbers`).
+
+| MobileLow gets | How | Garrett's version |
+|---|---|---|
+| **Skim Race / Joust trail cap** (Skim Race 6,000 shared, 800–2,000 per vessel; Joust 4,000 shared, 400–1,200) | `skimRaceTrail` / `joustTrail` → `RaceTrailCap`, added by `SkimRaceController` / `JoustController` in `OnNetworkSpawn` only when the tier sets a budget. Every 0.2 s it holds each vessel's two ribbons at its share; the oldest prism withers (0.8 s, the tether's recipe) and returns to its pool. Seats = max(selected players, live vessels), so AI backfill shares the budget too. **An owner-authorized exception to the no-trail-cap law**, recorded in `Docs/ECOSYSTEM.md` §0 | same numbers and share formula; a FIFO inside `VesselPrismController` (a knob on the shared system) that `Prism.Consume`d the oldest: an implosion per prism, the object left destroyed-but-live (no memory back), and a shielded prism only lost its shield. Seats were the HUMAN count only |
+| **Menu lava lamp lays no trail** | `menuAutopilotLaysNoTrail` → `MenuCrystalClickHandler` holds every vessel's trail creation (`VesselPrismController.SetTierHold`, its own bool beside the pen, so it never fights a fold, a painting or a cell swap) whenever the menu is not in freestyle. Creation-side only: nothing laid is removed | `PerfStrip.TrailsDisabled` refused `StartSpawn` everywhere outside freestyle / race / tether (the strip shipped no other mode) |
+| **Freestyle trail waits above 10,000 cell prisms**, resumes at 9,700 | `freestyleCellPrismBudget` / `Resume` → the same handler, once a second, per cell with hysteresis. Never during a Wanderway run (`WanderwayRun.AnyRunning`): the tether needs a trail. A spawner that waits is the sanctioned lever, not an exception | same numbers, checked inside the spawn loop |
+| **Menu screens and nav bar DEACTIVATED while flying** | `deactivateMenuWhileFlying` → `ScreenSwitcher`: on the enter blend's end it switches off every screen root and the nav bar that was active, and switches exactly those back on at the start of the exit, before the fade-in | same, plus every non-HOME screen disabled for the whole session (not ported: those screens are features) |
+| **HUD domain glow rests instead of breathing** | `quietScoreGlow` → `DomainScorePanel.ArmGlow`; the score-change punch still plays | same |
+| **No cytoplasm motes** | `disableCytoplasm` → `SnowChanger.Initialize` | same |
+| **Wanderway belt 30,000 → 1,200 resident prisms, no lifeform scenes, 4 ahead, 2 crystals, 2 arrivals at once** | `wanderwayBudget` → `WanderToy.Configure` writes it onto the BUILT `ConveyorConfig`; the settings asset is untouched. `MaxConcurrentArrivals` moved from a constant onto `ConveyorConfig` (default 3) for it | edited the shared `Wander_WithoutArk.asset` and the constant, so every platform got the small belt |
+
+**Not ported, and why:**
+
+- **Every non-HOME menu screen disabled** (`MenuUIStripped` at `Awake`) and **the vessel changer
+  narrowed to Squirrel + Butterfly** (`ShipsVessel`). Both remove features rather than cost; on
+  this branch every tier keeps every screen and hull. Say so if phones should lose either.
+- **Arcade cards hidden when their scene is not in the build** (`IsLaunchableInThisBuild`). A
+  safety net for a 7-scene build; bleeding-edge ships every scene. Belongs with Step 6 if wanted.
+- **Trails off everywhere else.** The strip shipped only Menu_Main, Skim Race, Joust and Waystation;
+  every other mode is trail gameplay, so "no trail outside the exceptions" does not translate.
+  On this branch the phone tier changes only the menu's trail and the two races'.
+- **`RestoreHomeWorld` after a wander** and **`WanderToy`'s Ark gate**: both existed because the
+  strip cut the Cell Selector toy and the Ark (the toybox decision, not ported).
+
+**Mixed-device matches:** trail prisms are local to each peer, so the race cap is per device. In a
+phone-vs-PC race the phone's ribbons end a lap or two back while the PC still draws (and can skim)
+the whole trail. Accepted with the exception (`Docs/ECOSYSTEM.md` §0).
 ---
 
 ## 4. Step plan
@@ -358,7 +396,7 @@ Each step is its own PR into bleeding-edge, and each leaves Windows unchanged un
 | 2 | ✅ *(landed on this branch, unverified in editor)* **Touch controls into bleeding-edge, ungated.** `TouchInputStrategy` (physical-size stick + dead zone, one-thumb mirror, re-zero on lift, throttle carry, events on lift only, 75/25 curve) + touch-only vessel tuning (`touchNoseResponse`, gated to the local human pilot) + binary drift for any unmeasured trigger + the ability-dispatch hardening (§2.2). Not the Squirrel `boostLoopEvent` clear. | `Controller/IO`, `VesselTransformer`, Squirrel/Butterfly prefabs | none (touch only) | **new controls** | **new controls** |
 | 3 | ✅ *(landed on this branch, unverified in editor; see §3.4)* **Device tier foundation.** `DeviceTierClassifier`, `PlatformProfileSO` ×3, dev override, a `CSLogChannel` for it, and a mobile branch in `SettingsAutoDetector` that reads the tier. `Desktop` profile = today's behaviour. | `System/`, `Controller/Settings` | identical | correct tier | correct tier |
 | 4 | ✅ *(landed on this branch, unverified in editor; see §3.5)* **Render tier.** MobileLow: HDR off, 4x MSAA, baked sky, membrane capped at 642 capsules, fold-gate window capped at 0.5 — each a `PlatformProfileSO` field. Everywhere: the fold-gate window renders only its footprint. | `_Graphics`, profile, `CapsuleMembrane`, `FoldGatePortalView` | fold-gate footprint only | none | per `MobileLow` |
-| 5 | **Content tier.** Every `PerfStrip` gate becomes a profile read: trail policy, ecology, toybox, menu-UI teardown, Wander/conveyor budgets as per-tier overrides (not edits to the shared SO). The race trail cap only with decision 4 below. | gameplay | none | per `MobileHigh` | per `MobileLow` |
+| 5 | ✅ *(landed on this branch, unverified in editor; see §3.6)* **Content tier.** Every `PerfStrip` gate the owner kept becomes a profile read: menu/freestyle trail policy, the Skim Race / Joust trail cap (decision 4: granted), menu-UI teardown while flying, HUD glow, cytoplasm, Wander/conveyor budgets as per-tier overrides (not edits to the shared SO). | gameplay | none | none (`MobileHigh` sets nothing) | per `MobileLow` |
 | 6 | **Platform-agnostic fixes** Garrett found, merged ungated (§2.6). Can go any time. | various | yes (fixes) | yes | yes |
 | 7 | **Retire the branches.** Build all three platforms from bleeding-edge; device verification matrix. | — | — | — | — |
 
@@ -371,7 +409,8 @@ Open decisions (needed before steps 3–5):
    plus only the free wins (none of the content strips).
 3. **Where flagship Android lands.** Recommended: by the same capability test as iOS, so a
    Galaxy S2x is `MobileHigh`.
-4. **The race trail cap on phones.** Skim Race and Joust on the strip cap each vessel's trail and
-   consume the oldest prism, which the LOCKED rule forbids (§2.7.1). Either the design owner signs
-   off a recorded exception in `Docs/ECOSYSTEM.md` §0, or `MobileLow` uses the sanctioned levers
-   (pause the spawner, fauna cleanup) instead.
+4. ~~**The race trail cap on phones.**~~ **Resolved 2026-10-05: granted for `MobileLow`.** Skim
+   Race and Joust on the strip cap each vessel's trail and consume the oldest prism, which the
+   LOCKED rule forbids (§2.7.1). The owner asked for Garrett's implementation on phones; it is
+   recorded as the second authorized exception in `Docs/ECOSYSTEM.md` §0 and fenced to that tier
+   and those two modes (§3.6).

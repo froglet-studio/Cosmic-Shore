@@ -258,6 +258,111 @@ namespace CosmicShore.Tests
         }
 
         #endregion
+
+        #region Content tier (Step 5)
+
+        [TestCase(DeviceTier.Desktop)]
+        [TestCase(DeviceTier.MobileHigh)]
+        public void DesktopAndMobileHigh_ChangeNothingAboutContent(DeviceTier tier)
+        {
+            // The promise of step 5 for Windows and iOS: every content field at its no-change value.
+            var profile = ShippedProfile(tier);
+            Assert.IsFalse(profile.MenuAutopilotLaysNoTrail, $"{tier} menu trail");
+            Assert.AreEqual(0, profile.FreestyleCellPrismBudget, $"{tier} freestyle budget");
+            Assert.IsFalse(profile.SkimRaceTrail.Active, $"{tier} Skim Race trail cap");
+            Assert.IsFalse(profile.JoustTrail.Active, $"{tier} Joust trail cap");
+            Assert.IsFalse(profile.DeactivateMenuWhileFlying, $"{tier} menu teardown");
+            Assert.IsFalse(profile.QuietScoreGlow, $"{tier} glow");
+            Assert.IsFalse(profile.DisableCytoplasm, $"{tier} cytoplasm");
+
+            var authored = new CosmicShore.Gameplay.ConveyorConfig();
+            var applied = new CosmicShore.Gameplay.ConveyorConfig();
+            profile.Wanderway.ApplyTo(applied);
+            AssertSameBelt(authored, applied, tier.ToString());
+        }
+
+        [Test]
+        public void MobileLow_RunsTheStripsContentNumbers()
+        {
+            // Garrett's strip, as a profile: the race caps (PerfStrip.SkimRaceTrail* / JoustTrail*),
+            // the freestyle wait (10,000 / 9,700) and Wander_WithoutArk.asset's belt.
+            var profile = ShippedProfile(DeviceTier.MobileLow);
+            Assert.IsTrue(profile.MenuAutopilotLaysNoTrail, "menu trail");
+            Assert.AreEqual(10000, profile.FreestyleCellPrismBudget, "freestyle budget");
+            Assert.AreEqual(9700, profile.FreestyleCellPrismResume, "freestyle resume");
+            Assert.Less(profile.FreestyleCellPrismResume, profile.FreestyleCellPrismBudget, "hysteresis");
+            Assert.AreEqual(2000, profile.SkimRaceTrail.PerVessel(1), "Skim Race solo");
+            Assert.AreEqual(800, profile.SkimRaceTrail.PerVessel(12), "Skim Race 12 seats");
+            Assert.AreEqual(1200, profile.JoustTrail.PerVessel(2), "Joust 2 seats");
+            Assert.AreEqual(400, profile.JoustTrail.PerVessel(12), "Joust 12 seats");
+            Assert.IsTrue(profile.DeactivateMenuWhileFlying && profile.QuietScoreGlow && profile.DisableCytoplasm);
+
+            var cfg = new CosmicShore.Gameplay.ConveyorConfig();
+            profile.Wanderway.ApplyTo(cfg);
+            Assert.AreEqual(8, cfg.PoolSize, "pool");
+            Assert.AreEqual(150, cfg.PrismBudget, "prisms per scene");
+            Assert.AreEqual(4, cfg.AheadTargetScenes, "ahead");
+            Assert.AreEqual(2, cfg.MaxCrystalsPerScene, "crystals");
+            Assert.IsFalse(cfg.LifeformScenes, "lifeforms");
+            Assert.AreEqual(2, cfg.MaxConcurrentArrivals, "arrivals");
+        }
+
+        // The strip's CappedTrailPrismsPerVessel: a share of the race budget, clamped to
+        // [floor, ceiling], so the cap does not multiply with the seat count.
+        [TestCase(0, 2000)]
+        [TestCase(1, 2000)]
+        [TestCase(3, 2000)]
+        [TestCase(4, 1500)]
+        [TestCase(6, 1000)]
+        [TestCase(8, 800)]
+        [TestCase(12, 800)]
+        public void RaceTrailBudget_SharesTheRaceBudget(int vessels, int expected)
+        {
+            var budget = new PlatformProfileSO.RaceTrailBudget(6000, 800, 2000);
+            Assert.AreEqual(expected, budget.PerVessel(vessels));
+        }
+
+        [Test]
+        public void RaceTrailBudget_ZeroIsOff_AndAFloorAboveTheCeilingWins()
+        {
+            Assert.IsFalse(default(PlatformProfileSO.RaceTrailBudget).Active, "default");
+            Assert.IsFalse(new PlatformProfileSO.RaceTrailBudget(0, 800, 2000).Active, "zero budget");
+            Assert.AreEqual(500, new PlatformProfileSO.RaceTrailBudget(100, 500, 200).PerVessel(1),
+                "a misauthored ceiling under the floor must not drop below the floor");
+            Assert.AreEqual(1, new PlatformProfileSO.RaceTrailBudget(1, 0, 0).PerVessel(5),
+                "never a zero-prism cap");
+        }
+
+        [Test]
+        public void WanderwayBudget_KeepAll_LeavesTheAuthoredBeltAlone()
+        {
+            var authored = new CosmicShore.Gameplay.ConveyorConfig
+            {
+                PoolSize = 13, PrismBudget = 777, AheadTargetScenes = 3, MaxCrystalsPerScene = 0,
+                LifeformScenes = false, MaxConcurrentArrivals = 5,
+            };
+            var applied = new CosmicShore.Gameplay.ConveyorConfig
+            {
+                PoolSize = 13, PrismBudget = 777, AheadTargetScenes = 3, MaxCrystalsPerScene = 0,
+                LifeformScenes = false, MaxConcurrentArrivals = 5,
+            };
+            PlatformProfileSO.WanderwayBudget.KeepAll.ApplyTo(applied);
+            AssertSameBelt(authored, applied, "KeepAll");
+            Assert.DoesNotThrow(() => PlatformProfileSO.WanderwayBudget.KeepAll.ApplyTo(null));
+        }
+
+        static void AssertSameBelt(CosmicShore.Gameplay.ConveyorConfig expected,
+                                   CosmicShore.Gameplay.ConveyorConfig actual, string label)
+        {
+            Assert.AreEqual(expected.PoolSize, actual.PoolSize, $"{label} pool");
+            Assert.AreEqual(expected.PrismBudget, actual.PrismBudget, $"{label} prisms per scene");
+            Assert.AreEqual(expected.AheadTargetScenes, actual.AheadTargetScenes, $"{label} ahead");
+            Assert.AreEqual(expected.MaxCrystalsPerScene, actual.MaxCrystalsPerScene, $"{label} crystals");
+            Assert.AreEqual(expected.LifeformScenes, actual.LifeformScenes, $"{label} lifeforms");
+            Assert.AreEqual(expected.MaxConcurrentArrivals, actual.MaxConcurrentArrivals, $"{label} arrivals");
+        }
+
+        #endregion
     }
 }
 #endif

@@ -3,6 +3,7 @@ using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
+using System.Collections.Generic;
 using System.Threading;
 using Unity.Netcode;
 using UnityEngine;
@@ -69,6 +70,13 @@ namespace CosmicShore.Gameplay
         // (e.g. ArcadeScreen at 0 stays at 0, not forced to 1).
         float[] _savedMenuAlphas;
 
+        // Device-tier trail policy (see ApplyTierTrailPolicy).
+        const float TierTrailPolicySeconds = 1f;
+        float _nextTierTrailPolicyAt;
+        readonly HashSet<VesselPrismController> _tierHeld = new();
+        readonly Dictionary<Cell, bool> _cellTrailWaiting = new();
+        readonly List<Cell> _deadCells = new();
+
         /// <summary>Whether the menu is currently in freestyle state.</summary>
         public bool IsInFreestyle => _isInFreestyle;
 
@@ -102,6 +110,8 @@ namespace CosmicShore.Gameplay
             _cts?.Cancel();
             _cts?.Dispose();
             _cts = null;
+
+            ReleaseTierTrailHolds();
         }
 
         /// <summary>
@@ -121,6 +131,13 @@ namespace CosmicShore.Gameplay
         {
             // Freestyle UI starts hidden
             ApplyCanvasGroupState(freestyleCanvasGroups, 0f);
+        }
+
+        void Update()
+        {
+            if (Time.unscaledTime < _nextTierTrailPolicyAt) return;
+            _nextTierTrailPolicyAt = Time.unscaledTime + TierTrailPolicySeconds;
+            ApplyTierTrailPolicy();
         }
 
         /// <summary>
@@ -174,6 +191,7 @@ namespace CosmicShore.Gameplay
             }
 
             _isInFreestyle = true;
+            ApplyTierTrailPolicy();
 
             // Save current menu alphas so we can restore them exactly when exiting freestyle.
             // This preserves hidden panels (e.g. ArcadeScreen at alpha 0).
@@ -227,6 +245,7 @@ namespace CosmicShore.Gameplay
             // scheduled to recompute it. ToyboxController already treated
             // OnMenuStateTransitionStart as the end of freestyle; this brings the flag into line.
             _isInFreestyle = false;
+            ApplyTierTrailPolicy();
 
             // Raise SOAP event early so the camera blend starts immediately.
             // The camera controller freezes the CM PlayerCam framing in the vessel's local
@@ -263,6 +282,96 @@ namespace CosmicShore.Gameplay
             cameraController ? cameraController.ActiveTransitionDuration : cameraTransitionDuration;
 
         float CurrentTransitionDuration() => TransitionDuration;
+
+        #region Device-tier trail policy
+
+        /// <summary>
+        /// The menu's trail on a device tier that asks for less (MobileLow; Docs/PLATFORM_UNIFICATION.md
+        /// §3.6): the lava lamp behind the menu lays NO trail, and freestyle trail WAITS while the
+        /// pilot's cell holds more than <see cref="PlatformProfileSO.FreestyleCellPrismBudget"/> live
+        /// prisms, resuming at <see cref="PlatformProfileSO.FreestyleCellPrismResume"/> once the food
+        /// web has grazed room. Both are creation-side (<see cref="VesselPrismController.SetTierHold"/>):
+        /// a spawner that waits, never a cap - nothing already laid is touched. A live Wanderway run
+        /// is exempt, because its tether and the way home riding it need the trail.
+        ///
+        /// Applies to every vessel in the scene, not just the local one: a party member's vessel
+        /// lays its trail on this device too. Desktop and MobileHigh set neither field, so there
+        /// this returns before touching anything.
+        /// </summary>
+        void ApplyTierTrailPolicy()
+        {
+            var profile = PlatformProfile.Current;
+            if (!profile || (!profile.MenuAutopilotLaysNoTrail && profile.FreestyleCellPrismBudget <= 0)) return;
+
+            var players = gameData ? gameData.Players : null;
+            if (players == null) return;
+
+            PruneDeadCells();
+
+            foreach (var player in players)
+            {
+                var controller = TrailControllerOf(player);
+                if (!controller) continue;
+
+                bool hold = _isInFreestyle
+                    ? FreestyleTrailWaits(profile, controller.transform.position)
+                    : profile.MenuAutopilotLaysNoTrail;
+
+                controller.SetTierHold(hold);
+                if (hold) _tierHeld.Add(controller);
+                else _tierHeld.Remove(controller);
+            }
+        }
+
+        /// <summary>The cell's freestyle trail budget, with hysteresis: waiting starts at the
+        /// budget and ends at the (lower) resume count, so the pen does not flicker at the line.</summary>
+        bool FreestyleTrailWaits(PlatformProfileSO profile, Vector3 at)
+        {
+            int budget = profile.FreestyleCellPrismBudget;
+            if (budget <= 0 || WanderwayRun.AnyRunning) return false;
+
+            var cell = Cell.FindCellContaining(at) ?? Cell.FindNearestActiveCell(at);
+            if (!cell) return false;
+
+            int live = cell.LiveBlockCount;
+            _cellTrailWaiting.TryGetValue(cell, out bool waiting);
+            waiting = waiting ? live >= profile.FreestyleCellPrismResume : live >= budget;
+            _cellTrailWaiting[cell] = waiting;
+            return waiting;
+        }
+
+        void PruneDeadCells()
+        {
+            foreach (var cell in _cellTrailWaiting.Keys)
+                if (!cell) _deadCells.Add(cell);
+            foreach (var cell in _deadCells)
+                _cellTrailWaiting.Remove(cell);
+            _deadCells.Clear();
+        }
+
+        void ReleaseTierTrailHolds()
+        {
+            foreach (var controller in _tierHeld)
+                if (controller) controller.SetTierHold(false);
+            _tierHeld.Clear();
+            _cellTrailWaiting.Clear();
+        }
+
+        /// <summary>The player's trail controller, or null. Each hop is checked for a destroyed
+        /// object: the accessors resolve lazily (GetComponent / GetOrAdd), which a vessel torn
+        /// down by a vessel swap would throw on.</summary>
+        static VesselPrismController TrailControllerOf(IPlayer player)
+        {
+            if (!Alive(player)) return null;
+            var vessel = player.Vessel;
+            if (!Alive(vessel)) return null;
+            var status = vessel.VesselStatus;
+            return Alive(status) ? status.VesselPrismController : null;
+        }
+
+        static bool Alive(object o) => o is Object unityObject ? (bool)unityObject : o != null;
+
+        #endregion
 
         #region Multiplayer Helpers
 

@@ -23,3 +23,24 @@ MonoBehaviour:
   skyboxReplacements: []
   membraneMaxSubdivisions: -1
   foldGateWindowMaxRenderScale: 1
+  menuAutopilotLaysNoTrail: 0
+  freestyleCellPrismBudget: 0
+  freestyleCellPrismResume: 0
+  skimRaceTrail:
+    raceBudget: 0
+    floorPerVessel: 1
+    ceilingPerVessel: 1
+  joustTrail:
+    raceBudget: 0
+    floorPerVessel: 1
+    ceilingPerVessel: 1
+  deactivateMenuWhileFlying: 0
+  quietScoreGlow: 0
+  disableCytoplasm: 0
+  wanderwayBudget:
+    poolSize: -1
+    prismBudgetPerScene: -1
+    aheadTargetScenes: -1
+    maxCrystalsPerScene: -1
+    lifeformScenes: -1
+    maxConcurrentArrivals: -1

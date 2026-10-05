@@ -25,3 +25,24 @@ MonoBehaviour:
     replacement: {fileID: 2100000, guid: 9852d08c40940fd6ab90ce838bbe2a1c, type: 2}
   membraneMaxSubdivisions: 3
   foldGateWindowMaxRenderScale: 0.5
+  menuAutopilotLaysNoTrail: 1
+  freestyleCellPrismBudget: 10000
+  freestyleCellPrismResume: 9700
+  skimRaceTrail:
+    raceBudget: 6000
+    floorPerVessel: 800
+    ceilingPerVessel: 2000
+  joustTrail:
+    raceBudget: 4000
+    floorPerVessel: 400
+    ceilingPerVessel: 1200
+  deactivateMenuWhileFlying: 1
+  quietScoreGlow: 1
+  disableCytoplasm: 1
+  wanderwayBudget:
+    poolSize: 8
+    prismBudgetPerScene: 150
+    aheadTargetScenes: 4
+    maxCrystalsPerScene: 2
+    lifeformScenes: 0
+    maxConcurrentArrivals: 2
