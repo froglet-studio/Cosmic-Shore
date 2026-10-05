@@ -12,4 +12,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Include="../Shared/FrogletProjectSettings.cs" Link="Shared/FrogletProjectSettings.cs" />
+  </ItemGroup>
 </Project>

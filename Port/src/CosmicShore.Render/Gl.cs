@@ -147,6 +147,7 @@ namespace CosmicShore.Render
                        : (int)TextureMinFilter.Linear;
             _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, min);
             _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, mag);
+            if (mips && filter != EngineFilter.Point) RenderQuality.ApplyAnisotropy(_gl);
             _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)Wrap(wu));
             _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)Wrap(wv));
             _all.Add(tex);
@@ -168,20 +169,30 @@ namespace CosmicShore.Render
         }
     }
 
-    /// <summary>An offscreen render target: RGBA16F color (linear HDR) + depth24/stencil8.</summary>
+    /// <summary>
+    /// An offscreen render target: RGBA16F color (linear HDR) + depth24/stencil8. With samples
+    /// above 1 it renders into multisampled renderbuffers (Unity's MSAA) and <see cref="Resolve"/>
+    /// averages them into the <see cref="Color"/> texture the post stack reads. A context that
+    /// cannot multisample this format falls back to the single-sample target.
+    /// </summary>
     public sealed class FrameTarget : IDisposable
     {
         readonly GL _gl;
         public uint Fbo, Color, DepthStencil;
         public int Width, Height;
+        /// <summary>The sample count actually in use (0 = single-sample).</summary>
+        public int Samples { get; private set; }
+        uint _msFbo, _msColor, _msDepth;
+        int _requested;
 
         public FrameTarget(GL gl) { _gl = gl; }
 
-        public unsafe void Ensure(int w, int h)
+        public unsafe void Ensure(int w, int h, int samples = 0)
         {
-            if (w == Width && h == Height && Fbo != 0) return;
+            if (samples < 2) samples = 0;
+            if (w == Width && h == Height && Fbo != 0 && samples == _requested) return;
             Dispose();
-            Width = w; Height = h;
+            Width = w; Height = h; _requested = samples;
             Fbo = _gl.GenFramebuffer();
             _gl.BindFramebuffer(FramebufferTarget.Framebuffer, Fbo);
             Color = _gl.GenTexture();
@@ -199,16 +210,61 @@ namespace CosmicShore.Render
             _gl.FramebufferRenderbuffer(FramebufferTarget.Framebuffer, FramebufferAttachment.DepthStencilAttachment, RenderbufferTarget.Renderbuffer, DepthStencil);
             var status = _gl.CheckFramebufferStatus(FramebufferTarget.Framebuffer);
             if (status != GLEnum.FramebufferComplete) throw new InvalidOperationException($"framebuffer incomplete: {status}");
+
+            Samples = 0;
+            if (samples > 1) TryMultisample(w, h, samples, fmt);
+        }
+
+        void TryMultisample(int w, int h, int samples, InternalFormat fmt)
+        {
+            _gl.GetInteger((GLEnum)0x8D57 /* GL_MAX_SAMPLES */, out int max);
+            samples = Math.Min(samples, max);
+            if (samples < 2) return;
+            while (_gl.GetError() != GLEnum.NoError) { }
+            _msFbo = _gl.GenFramebuffer();
+            _gl.BindFramebuffer(FramebufferTarget.Framebuffer, _msFbo);
+            _msColor = _gl.GenRenderbuffer();
+            _gl.BindRenderbuffer(RenderbufferTarget.Renderbuffer, _msColor);
+            _gl.RenderbufferStorageMultisample(RenderbufferTarget.Renderbuffer, (uint)samples, fmt, (uint)w, (uint)h);
+            _gl.FramebufferRenderbuffer(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0, RenderbufferTarget.Renderbuffer, _msColor);
+            _msDepth = _gl.GenRenderbuffer();
+            _gl.BindRenderbuffer(RenderbufferTarget.Renderbuffer, _msDepth);
+            _gl.RenderbufferStorageMultisample(RenderbufferTarget.Renderbuffer, (uint)samples, InternalFormat.Depth24Stencil8, (uint)w, (uint)h);
+            _gl.FramebufferRenderbuffer(FramebufferTarget.Framebuffer, FramebufferAttachment.DepthStencilAttachment, RenderbufferTarget.Renderbuffer, _msDepth);
+            bool ok = _gl.CheckFramebufferStatus(FramebufferTarget.Framebuffer) == GLEnum.FramebufferComplete && _gl.GetError() == GLEnum.NoError;
+            if (ok) { Samples = samples; return; }
+            DisposeMultisample();
+            _gl.BindFramebuffer(FramebufferTarget.Framebuffer, Fbo);
         }
 
         public void Bind()
         {
-            _gl.BindFramebuffer(FramebufferTarget.Framebuffer, Fbo);
+            _gl.BindFramebuffer(FramebufferTarget.Framebuffer, Samples > 1 ? _msFbo : Fbo);
             _gl.Viewport(0, 0, (uint)Width, (uint)Height);
+        }
+
+        /// <summary>Averages the multisampled color into <see cref="Color"/> (no-op when single-sample).</summary>
+        public void Resolve()
+        {
+            if (Samples < 2) return;
+            _gl.BindFramebuffer(FramebufferTarget.ReadFramebuffer, _msFbo);
+            _gl.BindFramebuffer(FramebufferTarget.DrawFramebuffer, Fbo);
+            _gl.BlitFramebuffer(0, 0, Width, Height, 0, 0, Width, Height, ClearBufferMask.ColorBufferBit, BlitFramebufferFilter.Nearest);
+            _gl.BindFramebuffer(FramebufferTarget.Framebuffer, Fbo);
+        }
+
+        void DisposeMultisample()
+        {
+            if (_msFbo != 0) _gl.DeleteFramebuffer(_msFbo);
+            if (_msColor != 0) _gl.DeleteRenderbuffer(_msColor);
+            if (_msDepth != 0) _gl.DeleteRenderbuffer(_msDepth);
+            _msFbo = _msColor = _msDepth = 0;
+            Samples = 0;
         }
 
         public void Dispose()
         {
+            DisposeMultisample();
             if (Fbo != 0) _gl.DeleteFramebuffer(Fbo);
             if (Color != 0) _gl.DeleteTexture(Color);
             if (DepthStencil != 0) _gl.DeleteRenderbuffer(DepthStencil);

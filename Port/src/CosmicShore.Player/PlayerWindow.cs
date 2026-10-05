@@ -65,7 +65,8 @@ namespace CosmicShore.Player
             {
                 Size = new Vector2D<int>(_width, _height),
                 Title = "Cosmic Shore",
-                VSync = true,
+                VSync = CosmicShore.Render.RenderQuality.VSync,
+                FramesPerSecond = CosmicShore.Render.RenderQuality.VSync ? 0 : CosmicShore.Render.RenderQuality.TargetFps,
                 PreferredStencilBufferBits = 8,
                 PreferredDepthBufferBits = 24,
             };
@@ -215,7 +216,11 @@ namespace CosmicShore.Player
         /// <summary>The camera's view into the HDR scene target, then the post stack into the UI frame.</summary>
         void Render3D(int w, int h)
         {
-            _scene3d.Ensure(w, h);
+            // Render scale: the 3D view at a multiple of the window (supersampling above 1); the
+            // post stack's composite resamples it to the window. MSAA as Unity's URP asset authors it.
+            int sw = Math.Max(1, (int)MathF.Round(w * RenderQuality.RenderScale));
+            int sh = Math.Max(1, (int)MathF.Round(h * RenderQuality.RenderScale));
+            _scene3d.Ensure(sw, sh, RenderQuality.Msaa);
             _scene3d.Bind();
             var cam = ScreenCamera();
             var c = cam != null ? cam.backgroundColor : Color.black;
@@ -226,12 +231,13 @@ namespace CosmicShore.Player
             {
                 post = PostSettings.For(cam, _volumes);
                 _skybox.Draw(cam);
-                _sceneRenderer.Render(cam, w, h);
+                _sceneRenderer.Render(cam, sw, sh);
                 float tanY = MathF.Tan(cam.fieldOfView * 0.5f * MathF.PI / 180f);
                 post.TanHalfFovY = tanY;
                 post.TanHalfFovX = tanY * cam.aspect;
             }
             else post.Panini = false;
+            _scene3d.Resolve();
             _post.Draw(_scene3d.Color, w, h, _frame.Fbo, post);
         }
 
@@ -256,7 +262,7 @@ namespace CosmicShore.Player
             if (!force && target.Frame == _frameIndex) return;
             target.Frame = _frameIndex;
             int w = rt.width, h = rt.height;
-            target.Scene.Ensure(w, h);
+            target.Scene.Ensure(w, h, RenderQuality.Msaa);
             target.Out.Ensure(w, h);
             if (!_rtPost.TryGetValue((w, h), out var post)) _rtPost[(w, h)] = post = new PostPass(_gl);
 
@@ -273,6 +279,7 @@ namespace CosmicShore.Player
                 float tanY = MathF.Tan(cam.fieldOfView * 0.5f * MathF.PI / 180f);
                 settings.TanHalfFovY = tanY;
                 settings.TanHalfFovX = tanY * cam.aspect;
+                target.Scene.Resolve();
                 post.Draw(target.Scene.Color, w, h, target.Out.Fbo, settings);
                 rt.MarkModified();
             }

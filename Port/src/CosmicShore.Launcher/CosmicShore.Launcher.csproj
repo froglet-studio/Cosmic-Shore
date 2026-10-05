@@ -34,4 +34,7 @@
     </ItemGroup>
     <Copy SourceFiles="@(_SilkNatives)" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true" />
   </Target>
+  <ItemGroup>
+    <Compile Include="../Shared/FrogletProjectSettings.cs" Link="Shared/FrogletProjectSettings.cs" />
+  </ItemGroup>
 </Project>

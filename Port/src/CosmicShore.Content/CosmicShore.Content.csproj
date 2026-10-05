@@ -23,4 +23,7 @@
     <PackageReference Include="StbImageSharp" Version="2.30.16" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="../Shared/FrogletProjectSettings.cs" Link="Shared/FrogletProjectSettings.cs" />
+  </ItemGroup>
 </Project>

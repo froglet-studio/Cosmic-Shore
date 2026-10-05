@@ -29,6 +29,22 @@ namespace CosmicShore.Player
     /// </summary>
     public static class Program
     {
+        /// <summary>
+        /// Quality from the engine's own Project Settings (Port/ProjectSettings/FrogletProject.json),
+        /// before environment variables and arguments, which override it for one run.
+        /// </summary>
+        static void ApplyProjectQuality()
+        {
+            var root = CosmicShore.Content.AssetDatabase.FindProjectRoot();
+            if (root == null) return;
+            var q = CosmicShore.Froglet.FrogletProjectSettings.Load(root).Quality;
+            if (q.Msaa is { } m) CosmicShore.Render.RenderQuality.Msaa = m;
+            if (q.RenderScale is { } s) CosmicShore.Render.RenderQuality.RenderScale = s;
+            if (q.Anisotropy is { } a) CosmicShore.Render.RenderQuality.Anisotropy = a;
+            if (q.VSync is { } v) CosmicShore.Render.RenderQuality.VSync = v;
+            if (q.TargetFps is { } f) CosmicShore.Render.RenderQuality.TargetFps = f;
+        }
+
         public static int Main(string[] args)
         {
             string scene = null, screenshot = null;
@@ -47,6 +63,8 @@ namespace CosmicShore.Player
             var evalGenomes = new System.Collections.Generic.List<string>();
             int flights = 12;
             string trainOut = null, trainScenario = null;
+            ApplyProjectQuality();
+            CosmicShore.Render.RenderQuality.FromEnvironment();
             for (int i = 0; i < args.Length; i++)
             {
                 switch (args[i])
@@ -87,6 +105,13 @@ namespace CosmicShore.Player
                     case "--report-render": reportRender = true; break;
                     case "--dump-ui" when i + 1 < args.Length: dumps.Add(args[++i]); break;
                     case "--fullscreen": PlayerWindow.StartFullscreen = true; break;
+                    case "--msaa" when i + 1 < args.Length: int.TryParse(args[++i], out CosmicShore.Render.RenderQuality.Msaa); break;
+                    case "--render-scale" when i + 1 < args.Length:
+                        float.TryParse(args[++i], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out CosmicShore.Render.RenderQuality.RenderScale); break;
+                    case "--no-vsync": CosmicShore.Render.RenderQuality.VSync = false; break;
+                    case "--fps" when i + 1 < args.Length: int.TryParse(args[++i], out CosmicShore.Render.RenderQuality.TargetFps); break;
+                    case "--aniso" when i + 1 < args.Length:
+                        float.TryParse(args[++i], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out CosmicShore.Render.RenderQuality.Anisotropy); break;
                     case "--verbose": CosmicShore.Utility.CSDebug.VerboseChannels = (CosmicShore.Utility.CSLogChannel)~0; break;
                     case "--do" when i + 1 < args.Length: script.Add(args[++i]); break;
                     case "--shot" when i + 1 < args.Length:
@@ -107,6 +132,8 @@ namespace CosmicShore.Player
                     }
                 }
             }
+
+            CosmicShore.Render.RenderQuality.Clamp();
 
             // A fixed seed makes a run reproducible (UnityEngine.Random otherwise seeds from the clock).
             // A training run always has one: its workers must evolve under the same seed.

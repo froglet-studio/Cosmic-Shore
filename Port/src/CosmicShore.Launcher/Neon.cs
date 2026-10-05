@@ -225,7 +225,7 @@ namespace CosmicShore.Launcher
             s.WindowPadding = new Vector2(0, 0);
             var c = s.Colors;
             c[(int)ImGuiCol.Text] = Ink;
-            c[(int)ImGuiCol.TextDisabled] = Dim;
+            c[(int)ImGuiCol.TextDisabled] = new Vector4(0.34f, 0.38f, 0.52f, 1f);
             c[(int)ImGuiCol.WindowBg] = new Vector4(0, 0, 0, 0);
             c[(int)ImGuiCol.ChildBg] = new Vector4(0, 0, 0, 0);
             c[(int)ImGuiCol.PopupBg] = new Vector4(0.03f, 0.03f, 0.10f, 0.97f);
@@ -248,6 +248,105 @@ namespace CosmicShore.Launcher
             c[(int)ImGuiCol.ScrollbarGrabActive] = Magenta;
             c[(int)ImGuiCol.Separator] = new Vector4(0.20f, 0.92f, 1f, 0.25f);
             c[(int)ImGuiCol.TextSelectedBg] = new Vector4(1f, 0.22f, 0.86f, 0.35f);
+        }
+
+        // ---------------------------------------------------------------- icons (vector, 24px box centred on c)
+
+        public static void IconPlay(ImDrawListPtr dl, Vector2 c, uint col) =>
+            dl.AddTriangleFilled(c + new Vector2(-7, -10), c + new Vector2(10, 0), c + new Vector2(-7, 10), col);
+
+        public static void IconPhone(ImDrawListPtr dl, Vector2 c, uint col)
+        {
+            dl.AddRect(c + new Vector2(-8, -12), c + new Vector2(8, 12), col, 3f, ImDrawFlags.None, 2f);
+            dl.AddLine(c + new Vector2(-3, 8), c + new Vector2(3, 8), col, 2f);
+        }
+
+        public static void IconGear(ImDrawListPtr dl, Vector2 c, uint col)
+        {
+            for (int i = 0; i < 8; i++)
+            {
+                float a = i * MathF.PI / 4f;
+                var d = new Vector2(MathF.Cos(a), MathF.Sin(a));
+                dl.AddLine(c + d * 8, c + d * 12, col, 3f);
+            }
+            dl.AddCircle(c, 8, col, 20, 2f);
+            dl.AddCircle(c, 3, col, 12, 2f);
+        }
+
+        public static void IconTerminal(ImDrawListPtr dl, Vector2 c, uint col)
+        {
+            dl.AddRect(c + new Vector2(-12, -10), c + new Vector2(12, 10), col, 2f, ImDrawFlags.None, 2f);
+            dl.AddLine(c + new Vector2(-7, -4), c + new Vector2(-2, 0), col, 2f);
+            dl.AddLine(c + new Vector2(-2, 0), c + new Vector2(-7, 4), col, 2f);
+            dl.AddLine(c + new Vector2(1, 5), c + new Vector2(7, 5), col, 2f);
+        }
+
+        public static void IconSliders(ImDrawListPtr dl, Vector2 c, uint col)
+        {
+            for (int i = -1; i <= 1; i++)
+            {
+                float y = c.Y + i * 7;
+                dl.AddLine(new Vector2(c.X - 11, y), new Vector2(c.X + 11, y), col, 2f);
+                float k = c.X + (i == 0 ? 5 : i < 0 ? -5 : 1);
+                dl.AddCircleFilled(new Vector2(k, y), 3.5f, col);
+            }
+        }
+
+        public static void IconChat(ImDrawListPtr dl, Vector2 c, uint col)
+        {
+            dl.AddRect(c + new Vector2(-12, -10), c + new Vector2(12, 6), col, 4f, ImDrawFlags.None, 2f);
+            dl.AddTriangleFilled(c + new Vector2(-6, 6), c + new Vector2(0, 6), c + new Vector2(-8, 12), col);
+        }
+
+        public static void IconRefresh(ImDrawListPtr dl, Vector2 c, uint col)
+        {
+            dl.PathArcTo(c, 8, 0.6f, MathF.PI * 1.85f, 18);
+            dl.PathStroke(col, ImDrawFlags.None, 2f);
+            var tip = c + new Vector2(MathF.Cos(0.6f), MathF.Sin(0.6f)) * 8;
+            dl.AddTriangleFilled(tip + new Vector2(-4, -1), tip + new Vector2(4, -3), tip + new Vector2(1, 5), col);
+        }
+
+        public static void IconDownload(ImDrawListPtr dl, Vector2 c, uint col)
+        {
+            dl.AddLine(c + new Vector2(0, -10), c + new Vector2(0, 4), col, 2f);
+            dl.AddTriangleFilled(c + new Vector2(-6, 0), c + new Vector2(6, 0), c + new Vector2(0, 7), col);
+            dl.AddLine(c + new Vector2(-10, 10), c + new Vector2(10, 10), col, 2f);
+        }
+
+        public static void IconFolder(ImDrawListPtr dl, Vector2 c, uint col)
+        {
+            dl.AddRect(c + new Vector2(-11, -6), c + new Vector2(11, 9), col, 2f, ImDrawFlags.None, 2f);
+            dl.AddLine(c + new Vector2(-11, -6), c + new Vector2(-9, -10), col, 2f);
+            dl.AddLine(c + new Vector2(-9, -10), c + new Vector2(-2, -10), col, 2f);
+            dl.AddLine(c + new Vector2(-2, -10), c + new Vector2(0, -6), col, 2f);
+        }
+
+        public static void IconUp(ImDrawListPtr dl, Vector2 c, uint col)
+        { dl.AddLine(c + new Vector2(-6, 3), c + new Vector2(0, -4), col, 2f); dl.AddLine(c + new Vector2(0, -4), c + new Vector2(6, 3), col, 2f); }
+
+        public static void IconDown(ImDrawListPtr dl, Vector2 c, uint col)
+        { dl.AddLine(c + new Vector2(-6, -3), c + new Vector2(0, 4), col, 2f); dl.AddLine(c + new Vector2(0, 4), c + new Vector2(6, -3), col, 2f); }
+
+        public static void Chevron(ImDrawListPtr dl, Vector2 c, bool open, uint col)
+        {
+            if (open) { dl.AddLine(c + new Vector2(-5, -2), c + new Vector2(0, 3), col, 2f); dl.AddLine(c + new Vector2(0, 3), c + new Vector2(5, -2), col, 2f); }
+            else { dl.AddLine(c + new Vector2(-2, -5), c + new Vector2(3, 0), col, 2f); dl.AddLine(c + new Vector2(3, 0), c + new Vector2(-2, 5), col, 2f); }
+        }
+
+        /// <summary>A square ghost button holding one icon.</summary>
+        public static bool IconButton(string id, Action<ImDrawListPtr, Vector2, uint> icon, float size, bool enabled = true)
+        {
+            var dl = ImGui.GetWindowDrawList();
+            var a = ImGui.GetCursorScreenPos();
+            var b = a + new Vector2(size);
+            bool clicked = ImGui.InvisibleButton(id, new Vector2(size)) && enabled;
+            bool hov = enabled && ImGui.IsItemHovered();
+            if (hov) ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
+            ChamferFill(dl, a, b, 6, U(hov ? Cyan : Space0, hov ? 0.18f : 0.7f));
+            ChamferPath(dl, a, b, 6);
+            dl.PathStroke(U(enabled ? Cyan : Dim, hov ? 0.9f : 0.35f), ImDrawFlags.Closed, 1.1f);
+            icon(dl, (a + b) * 0.5f, U(enabled ? (hov ? Ink : Cyan) : Dim, enabled ? 1f : 0.5f));
+            return clicked;
         }
     }
 }

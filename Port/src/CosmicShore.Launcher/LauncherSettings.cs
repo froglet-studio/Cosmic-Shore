@@ -14,6 +14,17 @@ namespace CosmicShore.Launcher
         WorktreeOfMyClone = 1,
     }
 
+    /// <summary>How the BUILD page makes an iPhone build.</summary>
+    public enum IosMode
+    {
+        /// <summary>GitHub's free Mac runner compiles an unsigned .ipa; Sideloadly signs it. No Mac needed.</summary>
+        GitHub = 0,
+        /// <summary>An Xcode project to open on a Mac, like Unity's iOS export.</summary>
+        Xcode = 1,
+        /// <summary>This Mac builds and signs the .ipa itself.</summary>
+        ThisMac = 2,
+    }
+
     /// <summary>
     /// Everything the launcher remembers between runs. Persisted as JSON in the launcher's data
     /// folder; unknown or missing fields fall back to these defaults.
@@ -47,6 +58,7 @@ namespace CosmicShore.Launcher
         public bool DebugBuild { get; set; }
         public string KeystorePath { get; set; } = "";
         public string KeystoreAlias { get; set; } = "";
+        public IosMode Ios { get; set; } = OperatingSystem.IsMacOS() ? IosMode.ThisMac : IosMode.GitHub;
 
         // Toolchain
         public string DotnetPath { get; set; } = "";

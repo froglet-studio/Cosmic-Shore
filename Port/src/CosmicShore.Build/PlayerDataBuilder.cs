@@ -101,13 +101,13 @@ namespace CosmicShore.Build
 
         /// <summary>The enabled build scenes, in build order (scene 0 boots).</summary>
         public List<(string Path, string Guid)> EnabledScenes()
-        {
-            var text = File.ReadAllText(Path.Combine(_project, "ProjectSettings", "EditorBuildSettings.asset"));
-            return Regex.Matches(text, @"- enabled:\s*(\d+)\s*\n\s*path:\s*(.+?)\s*\n\s*guid:\s*([0-9a-f]{32})")
-                .Where(m => m.Groups[1].Value == "1")
-                .Select(m => (m.Groups[2].Value, m.Groups[3].Value))
-                .ToList();
-        }
+            => Froglet.BuildScenes(Unity).Where(s => s.Enabled).Select(s => (s.Path, s.Guid)).ToList();
+
+        /// <summary>The engine's own Project Settings (Port/ProjectSettings/FrogletProject.json); unset fields inherit Unity's.</summary>
+        CosmicShore.Froglet.FrogletProjectSettings Froglet => _froglet ??= CosmicShore.Froglet.FrogletProjectSettings.Load(_project);
+        CosmicShore.Froglet.FrogletProjectSettings? _froglet;
+        CosmicShore.Froglet.FrogletProjectSettings.UnityDefaults Unity => _unity ??= new(_project);
+        CosmicShore.Froglet.FrogletProjectSettings.UnityDefaults? _unity;
 
         /// <summary>Every guid the build ships, from Unity's three roots.</summary>
         public HashSet<string> Reachable(Report report)
@@ -304,13 +304,15 @@ namespace CosmicShore.Build
             return m.Success ? m.Groups[1].Value : "";
         }
 
-        public string ProductName() => Setting("productName") is { Length: > 0 } n ? n : "Cosmic Shore";
-        public string CompanyName() => Setting("companyName") is { Length: > 0 } n ? n : "Froglet";
-        public string BundleVersion() => Setting("bundleVersion") is { Length: > 0 } v ? v : "0.1.0";
+        public string ProductName() => Froglet.ProductName(Unity);
+        public string CompanyName() => Froglet.CompanyName(Unity);
+        public string BundleVersion() => Froglet.Version(Unity);
 
         /// <summary>The application id Player Settings authors for a platform (Unity's applicationIdentifier).</summary>
         public string ApplicationIdentifier(string platform)
         {
+            if (platform == "Android") return Froglet.AndroidBundleId(Unity);
+            if (platform == "iPhone") return Froglet.IosBundleId(Unity);
             var text = File.ReadAllText(Path.Combine(_project, "ProjectSettings", "ProjectSettings.asset"));
             var block = Regex.Match(text, @"applicationIdentifier:\s*\n((?:\s+\w+:.*\n)*)");
             if (block.Success)
@@ -331,16 +333,10 @@ namespace CosmicShore.Build
         }
 
         /// <summary>The iOS build number Player Settings authors (buildNumber.iPhone).</summary>
-        public string IosBuildNumber()
-        {
-            var text = File.ReadAllText(Path.Combine(_project, "ProjectSettings", "ProjectSettings.asset"));
-            var block = Regex.Match(text, @"buildNumber:\s*\n((?:\s+\w+:.*\n)*)");
-            var m = block.Success ? Regex.Match(block.Groups[1].Value, @"(?m)^\s*iPhone:\s*(\S+)") : Match.Empty;
-            return m.Success ? m.Groups[1].Value : "1";
-        }
+        public string IosBuildNumber() => Froglet.IosBuildNumber(Unity);
 
         /// <summary>The Android bundle version code Player Settings authors.</summary>
-        public int AndroidVersionCode() => int.TryParse(Setting("AndroidBundleVersionCode"), out var v) && v > 0 ? v : 1;
+        public int AndroidVersionCode() => Froglet.AndroidVersionCode(Unity);
 
         /// <summary>Packs player data into one archive the app unpacks on first launch (Unity's data.unity3d / obb role).</summary>
         public static void Pack(string dataDir, string archive)

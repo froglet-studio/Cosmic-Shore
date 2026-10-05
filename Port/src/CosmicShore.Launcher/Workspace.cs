@@ -156,20 +156,13 @@ namespace CosmicShore.Launcher
         }
 
         /// <summary>Scenes listed in the project's Build Settings (what a tester can start in).</summary>
+        /// <summary>The enabled build scenes: the engine's own list when authored, else Unity's.</summary>
         public List<string> BuildScenes()
         {
-            var list = new List<string>();
-            var f = Path.Combine(Dir, "ProjectSettings", "EditorBuildSettings.asset");
-            if (!File.Exists(f)) return list;
-            bool enabled = false;
-            foreach (var line in File.ReadLines(f))
-            {
-                var t = line.Trim();
-                if (t.StartsWith("- enabled:")) enabled = t.EndsWith("1");
-                else if (t.StartsWith("path:") && enabled && t.EndsWith(".unity"))
-                    list.Add(Path.GetFileNameWithoutExtension(t));
-            }
-            return list;
+            if (!File.Exists(Path.Combine(Dir, "ProjectSettings", "EditorBuildSettings.asset"))) return new();
+            var p = CosmicShore.Froglet.FrogletProjectSettings.Load(Dir);
+            return p.BuildScenes(new CosmicShore.Froglet.FrogletProjectSettings.UnityDefaults(Dir))
+                .Where(s => s.Enabled).Select(s => Path.GetFileNameWithoutExtension(s.Path)).ToList();
         }
 
         // ---------------------------------------------------------------- FMOD natives (Git LFS)
@@ -248,6 +241,20 @@ namespace CosmicShore.Launcher
                 log.Add(LogKind.Warn, $"Could not fetch the FMOD library ({ex.Message}); the game will run silent.");
                 return false;
             }
+        }
+
+        /// <summary>
+        /// A GitHub token for the API: the one typed in OPTIONS, else the password git's credential
+        /// helper (GitHub Desktop / Git Credential Manager) already stores for github.com.
+        /// </summary>
+        public string? GitHubApiToken()
+        {
+            if (!string.IsNullOrWhiteSpace(_s.GitHubToken)) return _s.GitHubToken.Trim();
+            var basic = CredentialFill(new Uri("https://github.com"));
+            if (basic == null) return null;
+            var pair = Encoding.UTF8.GetString(Convert.FromBase64String(basic));
+            int i = pair.IndexOf(':');
+            return i > 0 ? pair[(i + 1)..] : null;
         }
 
         string? CredentialFill(Uri remote)

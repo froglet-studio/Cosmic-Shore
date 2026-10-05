@@ -24,7 +24,7 @@ namespace CosmicShore.Launcher
     /// </summary>
     public sealed class LauncherApp
     {
-        enum Page { Play, Build, Options, Console }
+        enum Page { Play, Build, Project, Options, Console }
 
         public sealed record Args(string? Screenshot, int Frames, string? Page, bool Offline, string? Auto = null);
 
@@ -61,7 +61,9 @@ namespace CosmicShore.Launcher
             _s = LauncherSettings.Load();
             _ws = new Workspace(_s, _tools);
             _jobs = new LauncherJobs(_s, _tools, _ws);
-            if (args.Page != null && Enum.TryParse<Page>(args.Page, true, out var p)) _page = p;
+            var pageArg = args.Page?.Split(':');
+            if (pageArg != null && Enum.TryParse<Page>(pageArg[0], true, out var p)) _page = p;
+            if (pageArg is { Length: > 1 } && int.TryParse(pageArg[1], out var tab)) _projTab = tab;
             if (LauncherSettings.FirstRun) DetectExistingClone();
             for (int i = 0; i < _stars.Length; i++) _stars[i] = NewStar(randomDepth: true);
         }
@@ -196,12 +198,13 @@ namespace CosmicShore.Launcher
                     case "play": _jobs.Play(); break;
                     case "update": _jobs.Update(); break;
                     case "android": _jobs.BuildPhone(ios: false); break;
-                    case "ios": _jobs.BuildPhone(ios: true); break;
+                    case "ios": _jobs.BuildIos(); break;
                 }
             }
             DrawFrame((float)dt);
             _imgui.Render();
 
+            SaveProjectIfDirty(dt);
             _saveTimer += dt;
             if (_dirty && _saveTimer > 0.75) { _s.Save(); _dirty = false; _saveTimer = 0; }
 
@@ -222,13 +225,14 @@ namespace CosmicShore.Launcher
             ImGui.SetNextWindowSize(size);
             ImGui.Begin("##root", ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoBringToFrontOnFocus |
                 ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoScrollWithMouse);
-            DrawTopBar(size);
-            var contentA = new Vector2(36, 104);
-            var contentB = new Vector2(size.X - 36, size.Y - 96);
+            DrawRail(size);
+            var contentA = new Vector2(RailW + 44, 34);
+            var contentB = new Vector2(size.X - 44, size.Y - 64);
             switch (_page)
             {
                 case Page.Play: DrawPlay(contentA, contentB); break;
                 case Page.Build: DrawBuild(contentA, contentB); break;
+                case Page.Project: DrawProject(contentA, contentB); break;
                 case Page.Options: DrawOptions(contentA, contentB); break;
                 case Page.Console: DrawConsole(contentA, contentB); break;
             }
@@ -281,96 +285,100 @@ namespace CosmicShore.Launcher
             // synthwave floor grid
             float horizon = size.Y * 0.70f;
             dl.AddRectFilledMultiColor(new Vector2(0, horizon - 2), new Vector2(size.X, size.Y),
-                Neon.U(Neon.Magenta, 0.10f), Neon.U(Neon.Magenta, 0.10f), Neon.U(Neon.Space0, 0.9f), Neon.U(Neon.Space0, 0.9f));
-            dl.AddLine(new Vector2(0, horizon), new Vector2(size.X, horizon), Neon.U(Neon.Magenta, 0.65f), 2f);
+                Neon.U(Neon.Magenta, 0.04f), Neon.U(Neon.Magenta, 0.04f), Neon.U(Neon.Space0, 0.9f), Neon.U(Neon.Space0, 0.9f));
+            dl.AddLine(new Vector2(0, horizon), new Vector2(size.X, horizon), Neon.U(Neon.Magenta, 0.28f), 1.5f);
             float scroll = (t * (_jobs.Busy ? 1.4f : 0.45f)) % 1f;
             for (int i = 0; i < 18; i++)
             {
                 float d = (i + 1 - scroll) / 18f;          // 0 = horizon, 1 = bottom
                 float y = horizon + (size.Y - horizon) * d * d;
-                dl.AddLine(new Vector2(0, y), new Vector2(size.X, y), Neon.U(Neon.Magenta, 0.10f + 0.45f * d), 1.2f);
+                dl.AddLine(new Vector2(0, y), new Vector2(size.X, y), Neon.U(Neon.Magenta, 0.03f + 0.16f * d), 1f);
             }
             var gv = new Vector2(size.X * 0.5f, horizon);
             for (int i = -16; i <= 16; i++)
             {
                 float x = size.X * 0.5f + i * size.X * 0.09f;
-                dl.AddLine(gv + new Vector2(i * 8f, 0), new Vector2(x, size.Y), Neon.U(Neon.Magenta, 0.30f), 1.1f);
+                dl.AddLine(gv + new Vector2(i * 8f, 0), new Vector2(x, size.Y), Neon.U(Neon.Magenta, 0.10f), 1f);
             }
         }
 
         void DrawOverlay(Vector2 size)
         {
             var dl = ImGui.GetForegroundDrawList();
-            for (float y = 0; y < size.Y; y += 3) dl.AddLine(new Vector2(0, y), new Vector2(size.X, y), Neon.U(Neon.Space0, 0.10f), 1f);
             float e = 90;
             dl.AddRectFilledMultiColor(Vector2.Zero, new Vector2(e, size.Y), Neon.U(Neon.Space0, 0.55f), 0, 0, Neon.U(Neon.Space0, 0.55f));
             dl.AddRectFilledMultiColor(new Vector2(size.X - e, 0), size, 0, Neon.U(Neon.Space0, 0.55f), Neon.U(Neon.Space0, 0.55f), 0);
         }
 
-        // ---------------------------------------------------------------- top bar
+        // ---------------------------------------------------------------- rail (navigation)
 
-        void DrawTopBar(Vector2 size)
+        const float RailW = 92;
+
+        void DrawRail(Vector2 size)
         {
             var dl = ImGui.GetWindowDrawList();
-            dl.AddRectFilledMultiColor(Vector2.Zero, new Vector2(size.X, 84), Neon.U(Neon.Space0, 0.85f), Neon.U(Neon.Space0, 0.85f), Neon.U(Neon.Space0, 0f), Neon.U(Neon.Space0, 0f));
-            dl.AddLine(new Vector2(0, 78), new Vector2(size.X, 78), Neon.U(Neon.Cyan, 0.25f), 1f);
+            dl.AddRectFilled(Vector2.Zero, new Vector2(RailW, size.Y), Neon.U(Neon.Space0, 0.78f));
+            dl.AddLine(new Vector2(RailW, 0), new Vector2(RailW, size.Y), Neon.U(Neon.Cyan, 0.18f), 1f);
 
             float glow = 0.55f + 0.45f * MathF.Sin(Neon.Time * 1.7f);
-            for (int i = 2; i >= 1; i--)
-                dl.AddImage((IntPtr)_manta, new Vector2(22 - i * 3, 4 - i * 3), new Vector2(90 + i * 3, 72 + i * 3), Vector2.Zero, Vector2.One, Neon.U(Neon.Cyan, 0.25f * glow));
-            dl.AddImage((IntPtr)_manta, new Vector2(22, 4), new Vector2(90, 72), Vector2.Zero, Vector2.One, Neon.U(Neon.Ink));
-            Neon.GlowText(dl, Neon.Title, 30, new Vector2(96, 14), Neon.Cyan, "FROGLET ENGINE", 1f);
-            ImGui.PushFont(Neon.Title);
-            float tw = ImGui.CalcTextSize("FROGLET ENGINE").X;
-            ImGui.PopFont();
-            var chipA = new Vector2(96 + tw + 12, 20);
-            Neon.ChamferFill(dl, chipA, chipA + new Vector2(52, 24), 6, Neon.U(Neon.Magenta, 0.25f));
-            Neon.ChamferGlow(dl, chipA, chipA + new Vector2(52, 24), 6, Neon.Magenta, 0.8f, 1f);
-            dl.AddText(Neon.Small, 15, chipA + new Vector2(11, 3), Neon.U(Neon.Ink), "v0.1");
-            dl.AddText(Neon.Small, 15, new Vector2(98, 50), Neon.U(Neon.Dim), "COSMIC SHORE  //  LAUNCHER");
+            var ma = new Vector2(16, 14); var mb = new Vector2(RailW - 16, 14 + (RailW - 32) * _mantaSize.Y / _mantaSize.X);
+            dl.AddImage((IntPtr)_manta, ma - new Vector2(3), mb + new Vector2(3), Vector2.Zero, Vector2.One, Neon.U(Neon.Cyan, 0.22f * glow));
+            dl.AddImage((IntPtr)_manta, ma, mb, Vector2.Zero, Vector2.One, Neon.U(Neon.Ink));
 
-            // tabs
-            string[] names = { "PLAY", "BUILD", "OPTIONS", "CONSOLE" };
-            float x = Math.Max(size.X * 0.5f - 230, 96 + tw + 90);
-            for (int i = 0; i < names.Length; i++)
+            (Page page, string name, Action<ImDrawListPtr, Vector2, uint> icon)[] items =
             {
-                var pg = (Page)i;
-                ImGui.PushFont(Neon.Heading);
-                var ts = ImGui.CalcTextSize(names[i]);
-                ImGui.PopFont();
-                var a = new Vector2(x, 20);
+                (Page.Play, "PLAY", Neon.IconPlay),
+                (Page.Build, "BUILD", Neon.IconPhone),
+                (Page.Project, "PROJECT", Neon.IconSliders),
+                (Page.Options, "SETTINGS", Neon.IconGear),
+                (Page.Console, "CONSOLE", Neon.IconTerminal),
+            };
+            float y = mb.Y + 34;
+            foreach (var it in items)
+            {
+                var a = new Vector2(8, y); var b = new Vector2(RailW - 8, y + 70);
                 ImGui.SetCursorScreenPos(a);
-                if (ImGui.InvisibleButton("tab" + i, new Vector2(ts.X + 28, 44))) _page = pg;
-                bool hov = ImGui.IsItemHovered();
+                if (ImGui.InvisibleButton("nav" + it.name, b - a)) _page = it.page;
+                bool hov = ImGui.IsItemHovered(), on = _page == it.page;
                 if (hov) ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
-                bool on = _page == pg;
-                var col = on ? Neon.Cyan : hov ? Neon.Mix(Neon.Dim, Neon.Cyan, 0.6f) : Neon.Dim;
-                if (on) Neon.GlowText(dl, Neon.Heading, 24, a + new Vector2(14, 8), Neon.Cyan, names[i], 1.2f);
-                else dl.AddText(Neon.Heading, 24, a + new Vector2(14, 8), Neon.U(col), names[i]);
+                var col = on ? Neon.Cyan : hov ? Neon.Ink : Neon.Dim;
                 if (on)
                 {
-                    dl.AddRectFilled(new Vector2(a.X + 10, 66), new Vector2(a.X + ts.X + 18, 69), Neon.U(Neon.Cyan));
-                    dl.AddRectFilled(new Vector2(a.X + 4, 62), new Vector2(a.X + ts.X + 24, 74), Neon.U(Neon.Cyan, 0.12f));
+                    Neon.ChamferFill(dl, a, b, 8, Neon.U(Neon.Cyan, 0.10f));
+                    dl.AddRectFilled(new Vector2(0, a.Y + 10), new Vector2(3, b.Y - 10), Neon.U(Neon.Cyan));
                 }
-                if (i == 3 && _jobs.LastOk == false && !on)
-                    dl.AddCircleFilled(new Vector2(a.X + ts.X + 26, a.Y + 10), 4, Neon.U(Neon.Red));
-                x += ts.X + 40;
+                it.icon(dl, new Vector2((a.X + b.X) * 0.5f, a.Y + 26), Neon.U(col));
+                ImGui.PushFont(Neon.Small);
+                float tw = ImGui.CalcTextSize(it.name).X;
+                ImGui.PopFont();
+                dl.AddText(Neon.Small, 13, new Vector2((a.X + b.X - tw * 13f / 15f) * 0.5f, a.Y + 48), Neon.U(col), it.name);
+                if (it.page == Page.Console && _jobs.LastOk == false && !on)
+                    dl.AddCircleFilled(new Vector2(b.X - 14, a.Y + 12), 4, Neon.U(Neon.Red));
+                y += 78;
             }
 
-            // tool status pills
-            float px = size.X - 36;
-            void PillRight(string text, Vector4 col)
+            // tools: two dots, details on hover
+            var dp = new Vector2(RailW * 0.5f, size.Y - 30);
+            void Dot(Vector2 p, bool? ok, string tip)
             {
-                ImGui.PushFont(Neon.Small);
-                float w = ImGui.CalcTextSize(text).X + 30;
-                ImGui.PopFont();
-                px -= w;
-                Neon.Pill(dl, new Vector2(px, 28), text, col, out _);
-                px -= 10;
+                var c = ok == null ? Neon.Amber : ok.Value ? Neon.Lime : Neon.Red;
+                dl.AddCircleFilled(p, 5, Neon.U(c, 0.9f));
+                dl.AddCircle(p, 8, Neon.U(c, 0.3f), 16, 1.5f);
+                ImGui.SetCursorScreenPos(p - new Vector2(10));
+                ImGui.InvisibleButton("dot" + tip, new Vector2(20));
+                Neon.Tooltip(tip);
             }
-            if (!_toolsScanned) { PillRight("SCANNING", Neon.Amber); return; }
-            PillRight(_tools.Dotnet != null ? ".NET " + _tools.DotnetSdk : ".NET MISSING", _tools.Dotnet != null ? Neon.Lime : Neon.Amber);
-            PillRight(_tools.Git != null ? "GIT " + (_tools.GitVersion ?? "").Split(' ')[0].Split(".windows")[0] : "GIT MISSING", _tools.Git != null ? Neon.Lime : Neon.Red);
+            Dot(dp - new Vector2(14, 0), _toolsScanned ? _tools.Git != null : null,
+                _tools.Git != null ? "git " + _tools.GitVersion : "git not found - install GitHub Desktop");
+            Dot(dp + new Vector2(14, 0), _toolsScanned ? _tools.Dotnet != null : null,
+                _tools.Dotnet != null ? ".NET " + _tools.DotnetSdk : ".NET is installed automatically on START");
+        }
+
+        void PageHeader(Vector2 a, string title, string? sub = null)
+        {
+            var dl = ImGui.GetWindowDrawList();
+            Neon.GlowText(dl, Neon.Title, 30, a, Neon.Cyan, title, 0.7f);
+            if (sub != null) dl.AddText(Neon.Small, 15, a + new Vector2(2, 40), Neon.U(Neon.Dim), sub);
         }
 
         // ---------------------------------------------------------------- PLAY
@@ -378,146 +386,99 @@ namespace CosmicShore.Launcher
         void DrawPlay(Vector2 a, Vector2 b)
         {
             var dl = ImGui.GetWindowDrawList();
-            float split = a.X + (b.X - a.X) * 0.60f;
+            float cx = (a.X + b.X) * 0.5f;
+            float colW = Math.Min(720, b.X - a.X - 40);
+            float x0 = cx - colW * 0.5f;
 
-            // hero logo with a breathing glow
-            float logoW = Math.Min(560, split - a.X - 40);
+            float logoW = Math.Min(520, colW);
             var logoSize = new Vector2(logoW, logoW * _logoSize.Y / _logoSize.X);
-            var lp = new Vector2(a.X + (split - a.X - logoW) * 0.5f, a.Y + 2);
+            var lp = new Vector2(cx - logoW * 0.5f, a.Y + 10);
             float breathe = 0.5f + 0.5f * MathF.Sin(Neon.Time * 1.3f);
             for (int i = 3; i >= 1; i--)
             {
                 var g = new Vector2(i * 5f);
-                dl.AddImage((IntPtr)_logo, lp - g, lp + logoSize + g, Vector2.Zero, Vector2.One, Neon.U(Neon.Cyan, 0.10f + 0.06f * breathe));
+                dl.AddImage((IntPtr)_logo, lp - g, lp + logoSize + g, Vector2.Zero, Vector2.One, Neon.U(Neon.Cyan, 0.08f + 0.05f * breathe));
             }
             dl.AddImage((IntPtr)_logo, lp, lp + logoSize, Vector2.Zero, Vector2.One, Neon.U(Neon.Ink));
-            float y = lp.Y + logoSize.Y + 6;
-            CenterText(dl, Neon.Small, 15, (a.X + split) * 0.5f, y, Neon.Magenta, "THE  PARTY  GAME  FOR  PILOTS");
+            float y = lp.Y + logoSize.Y + 30;
 
-            // branch card
-            var ca = new Vector2(a.X, y + 34);
-            var cb = new Vector2(split - 20, ca.Y + 118);
-            Neon.PanelFrame(dl, ca, cb, Neon.Cyan, "SOURCE BRANCH");
-            ImGui.SetCursorScreenPos(ca + new Vector2(22, 38));
-            ImGui.PushItemWidth(cb.X - ca.X - 44 - 130);
+            // branch: one line, commit underneath in small type
+            ImGui.SetCursorScreenPos(new Vector2(x0, y));
+            ImGui.PushItemWidth(colW - 52);
             BranchCombo();
             ImGui.PopItemWidth();
-            ImGui.SameLine();
-            if (SmallButton("REFRESH", 120, !_jobs.BranchesLoading && _tools.Git != null)) _jobs.LoadBranches();
-            Neon.Tooltip("Reload the branch list from GitHub");
-            ImGui.SetCursorScreenPos(ca + new Vector2(22, 84));
+            ImGui.SameLine(0, 8);
+            if (Neon.IconButton("refresh", Neon.IconRefresh, 38, !_jobs.BranchesLoading && _tools.Git != null)) _jobs.LoadBranches();
+            Neon.Tooltip("Reload branches from GitHub");
             var c = _jobs.Commit;
-            ImGui.PushFont(Neon.Small);
+            string commit = c != null ? $"#{c.Sha}  {Trim(c.Subject, 64)}" : _ws.Exists ? "workspace ready" : "not downloaded yet";
+            dl.AddText(Neon.Small, 15, new Vector2(x0 + 4, y + 46), Neon.U(Neon.Dim), commit);
             if (c != null)
             {
-                ImGui.TextColored(Neon.Lime, "#" + c.Sha);
-                ImGui.SameLine();
-                ImGui.TextColored(Neon.Ink, Trim(c.Subject, 70));
-                ImGui.SameLine();
-                ImGui.TextColored(Neon.Dim, $"{c.Author} · {c.When}");
+                ImGui.SetCursorScreenPos(new Vector2(x0, y + 44));
+                ImGui.InvisibleButton("commit", new Vector2(colW, 20));
+                Neon.Tooltip($"{c.Author}  ·  {c.When}");
             }
-            else ImGui.TextColored(Neon.Dim, _ws.Exists ? "Workspace present - press START to update it" : "Not downloaded yet - START fetches it");
-            ImGui.PopFont();
+            y += 84;
 
             // START
-            var sa = new Vector2(a.X, cb.Y + 22);
-            ImGui.SetCursorScreenPos(sa);
-            float bw = cb.X - ca.X;
+            ImGui.SetCursorScreenPos(new Vector2(x0, y));
             bool ready = _toolsScanned && _tools.Git != null && !_jobs.Busy;
             if (_jobs.GameRunning)
             {
-                Neon.Button("start", "GAME RUNNING", new Vector2(bw * 0.64f, 96), Neon.Lime, Neon.Hero, 46, enabled: false, sub: "alt-tab back to it");
-                ImGui.SameLine(0, 14);
-                if (Neon.Button("stop", "STOP", new Vector2(bw * 0.36f - 14, 96), Neon.Red, Neon.Title, 30)) _jobs.StopGame();
+                Neon.Button("start", "RUNNING", new Vector2(colW - 150, 96), Neon.Lime, Neon.Hero, 46, enabled: false);
+                ImGui.SameLine(0, 12);
+                if (Neon.Button("stop", "STOP", new Vector2(138, 96), Neon.Red, Neon.Title, 30)) _jobs.StopGame();
             }
             else if (_jobs.Busy && _jobs.JobName == "Start game")
-            {
-                Neon.Button("start", "LAUNCHING", new Vector2(bw, 96), Neon.Magenta, Neon.Hero, 46, enabled: false, sub: _jobs.Stage.ToUpperInvariant());
-            }
-            else if (Neon.Button("start", "START GAME", new Vector2(bw, 96), Neon.Cyan, Neon.Hero, 46, ready, hero: true, playIcon: true,
-                         sub: _s.PullBeforePlay ? "pull  ·  build  ·  launch" : "build  ·  launch"))
+                Neon.Button("start", "LAUNCHING", new Vector2(colW, 96), Neon.Magenta, Neon.Hero, 46, enabled: false);
+            else if (Neon.Button("start", "START", new Vector2(colW, 96), Neon.Cyan, Neon.Hero, 46, ready, hero: true, playIcon: true))
                 _jobs.Play();
+            y += 112;
 
-            // secondary row
-            ImGui.SetCursorScreenPos(new Vector2(a.X, sa.Y + 112));
-            float third = (bw - 28) / 3f;
-            if (Neon.Button("upd", "UPDATE", new Vector2(third, 54), Neon.Violet, Neon.Heading, 22, ready, sub: "fetch branch only")) _jobs.Update();
-            ImGui.SameLine(0, 14);
-            if (Neon.Button("bld", "BUILD PHONE", new Vector2(third, 54), Neon.Magenta, Neon.Heading, 22, true, sub: "android / ios")) _page = Page.Build;
-            ImGui.SameLine(0, 14);
-            if (Neon.Button("ws", "WORKSPACE", new Vector2(third, 54), Neon.Dim, Neon.Heading, 22, _ws.Exists, sub: "open folder")) OpenFolder(_ws.Dir);
+            // quick toggles, one row
+            ImGui.SetCursorScreenPos(new Vector2(x0, y));
+            Toggle("Fullscreen", () => _s.Fullscreen, v => _s.Fullscreen = v);
+            ImGui.SameLine(0, 26);
+            Toggle("Audio", () => _s.Audio, v => _s.Audio = v);
+            ImGui.SameLine(0, 26);
+            Toggle("Online", () => _s.Network, v => _s.Network = v, "Party, Relay and cloud services");
+            ImGui.SameLine(0, 26);
+            Toggle("Pull first", () => _s.PullBeforePlay, v => _s.PullBeforePlay = v, "Fetch the branch's newest commit on every START");
 
-            DrawLaunchProfile(new Vector2(split + 10, a.Y), b);
+            // small ghost actions, bottom-right of the column
+            ImGui.SetCursorScreenPos(new Vector2(x0 + colW - 2 * 44 - 8, y - 4));
+            if (Neon.IconButton("upd", Neon.IconDownload, 40, ready)) _jobs.Update();
+            Neon.Tooltip("Update: fetch the branch without starting");
+            ImGui.SameLine(0, 8);
+            if (Neon.IconButton("ws", Neon.IconFolder, 40, _ws.Exists)) OpenFolder(_ws.Dir);
+            Neon.Tooltip("Open the workspace folder");
+
+            // pipeline, only while launching
+            if (_jobs.Busy && _jobs.JobName == "Start game") DrawPipeline(dl, new Vector2(x0, y + 62), colW);
         }
 
-        void DrawLaunchProfile(Vector2 a, Vector2 b)
+        void DrawPipeline(ImDrawListPtr dl, Vector2 p0, float w)
         {
-            var dl = ImGui.GetWindowDrawList();
-            Neon.PanelFrame(dl, a, b, Neon.Magenta, "LAUNCH PROFILE");
-            float x = a.X + 24, w = b.X - a.X - 48;
-            ImGui.SetCursorScreenPos(new Vector2(x, a.Y + 40));
-            ImGui.BeginGroup();
-            ImGui.PushItemWidth(w - 150);
-
-            Label("Resolution");
-            string[] res = { "1280x720", "1600x900", "1920x1080", "2560x1440" };
-            Combo("##res", res, _s.Resolution, v => _s.Resolution = v);
-            Label("Start in");
-            var scenes = new List<string> { "" };
-            scenes.AddRange(_jobs.Scenes);
-            Combo("##scene", scenes.ToArray(), _s.StartScene, v => _s.StartScene = v, v => v == "" ? "Default (Bootstrap)" : v);
-            ImGui.PopItemWidth();
-            ImGui.Dummy(new Vector2(0, 4));
-            Toggle("Fullscreen", () => _s.Fullscreen, v => _s.Fullscreen = v, "Open full-screen; F11 toggles in game");
-            Toggle("Audio (FMOD)", () => _s.Audio, v => _s.Audio = v, "Fetch FMOD and play sound");
-            Toggle("Online services", () => _s.Network, v => _s.Network = v, "Off = single-player only, no party/Relay");
-            Toggle("Phone render path", () => _s.MobileRenderPath, v => _s.MobileRenderPath = v, "Render with OpenGL ES 3.0, exactly as a phone does");
-            Toggle("Pull before play", () => _s.PullBeforePlay, v => _s.PullBeforePlay = v, "Fetch the branch's newest commit every START");
-            ImGui.EndGroup();
-
-            // in-game controls cheat sheet
-            float cy = ImGui.GetCursorScreenPos().Y + 18;
-            dl.AddLine(new Vector2(x, cy - 8), new Vector2(x + w, cy - 8), Neon.U(Neon.Magenta, 0.25f), 1f);
-            dl.AddText(Neon.Small, 15, new Vector2(x, cy), Neon.U(Neon.Dim), "IN THE GAME");
-            string[,] keys = { { "W A S D", "fly" }, { "SHIFT L / R", "triggers" }, { "SPACE  R  Q", "abilities" }, { "ESC", "menu / leave flight" }, { "F11", "fullscreen" }, { "0", "photo" } };
-            for (int i = 0; i < keys.GetLength(0); i++)
-            {
-                int col2 = i % 2, row = i / 2;
-                var kp = new Vector2(x + col2 * (w * 0.5f), cy + 26 + row * 30);
-                ImGui.PushFont(Neon.Small);
-                var ks = ImGui.CalcTextSize(keys[i, 0]);
-                ImGui.PopFont();
-                Neon.ChamferFill(dl, kp, kp + new Vector2(ks.X + 16, 24), 5, Neon.U(Neon.Cyan, 0.12f));
-                Neon.ChamferPath(dl, kp, kp + new Vector2(ks.X + 16, 24), 5);
-                dl.PathStroke(Neon.U(Neon.Cyan, 0.6f), ImDrawFlags.Closed, 1f);
-                dl.AddText(Neon.Small, 15, kp + new Vector2(8, 3), Neon.U(Neon.Ink), keys[i, 0]);
-                dl.AddText(Neon.Small, 15, kp + new Vector2(ks.X + 24, 3), Neon.U(Neon.Dim), keys[i, 1]);
-            }
-
-            // pipeline diagram: SYNC > AUDIO > BUILD > LAUNCH
-            float py = b.Y - 92;
-            dl.AddText(Neon.Small, 15, new Vector2(x, py - 26), Neon.U(Neon.Dim), "PIPELINE");
             string[] steps = { "SYNC", "AUDIO", "BUILD", "LAUNCH" };
-            int active = !_jobs.Busy || _jobs.JobName != "Start game" ? (_jobs.GameRunning ? 4 : -1)
-                : _jobs.Stage.StartsWith("Compil") ? 2 : _jobs.Stage.StartsWith("Starting the game") ? 3
+            int active = _jobs.Stage.StartsWith("Compil") ? 2 : _jobs.Stage.StartsWith("Starting the game") ? 3
                 : _jobs.Stage.StartsWith("Audio") ? 1 : 0;
             float step = (w - 20) / (steps.Length - 1);
-            x += 10;
             for (int i = 0; i < steps.Length; i++)
             {
-                var p = new Vector2(x + i * step, py + 18);
+                var p = new Vector2(p0.X + 10 + i * step, p0.Y + 10);
                 if (i < steps.Length - 1)
-                    dl.AddLine(p + new Vector2(12, 0), p + new Vector2(step - 12, 0), Neon.U(i < active ? Neon.Cyan : Neon.Dim, i < active ? 0.9f : 0.3f), 2f);
+                    dl.AddLine(p + new Vector2(10, 0), p + new Vector2(step - 10, 0), Neon.U(i < active ? Neon.Cyan : Neon.Dim, i < active ? 0.9f : 0.25f), 2f);
                 bool done = i < active, now = i == active;
                 var col = done ? Neon.Cyan : now ? Neon.Magenta : Neon.Dim;
                 float pulse = now ? 0.5f + 0.5f * MathF.Sin(Neon.Time * 6f) : 0f;
-                dl.AddCircleFilled(p, 9, Neon.U(col, done || now ? 0.9f : 0.25f), 6);
-                dl.AddCircle(p, 13 + pulse * 5, Neon.U(col, 0.35f + pulse * 0.4f), 6, 1.5f);
+                dl.AddCircleFilled(p, 6, Neon.U(col, done || now ? 0.9f : 0.25f), 6);
+                dl.AddCircle(p, 10 + pulse * 4, Neon.U(col, 0.3f + pulse * 0.4f), 6, 1.2f);
                 ImGui.PushFont(Neon.Small);
                 var ts = ImGui.CalcTextSize(steps[i]);
                 ImGui.PopFont();
-                float lx = i == 0 ? p.X - 10 : i == steps.Length - 1 ? p.X - ts.X + 10 : p.X - ts.X * 0.5f;
-                dl.AddText(Neon.Small, 15, new Vector2(lx, p.Y + 20), Neon.U(done || now ? Neon.Ink : Neon.Dim), steps[i]);
+                float lx = i == 0 ? p.X - 8 : i == steps.Length - 1 ? p.X - ts.X + 8 : p.X - ts.X * 0.5f;
+                dl.AddText(Neon.Small, 15, new Vector2(lx, p.Y + 14), Neon.U(done || now ? Neon.Ink : Neon.Dim), steps[i]);
             }
         }
 
@@ -527,8 +488,8 @@ namespace CosmicShore.Launcher
             {
                 ImGui.SetNextItemWidth(-1);
                 if (ImGui.IsWindowAppearing()) ImGui.SetKeyboardFocusHere();
-                ImGui.InputTextWithHint("##filter", "type to filter...", ref _branchFilter, 128);
-                if (_jobs.BranchesLoading) ImGui.TextColored(Neon.Amber, "loading branches...");
+                ImGui.InputTextWithHint("##filter", "filter...", ref _branchFilter, 128);
+                if (_jobs.BranchesLoading) ImGui.TextColored(Neon.Amber, "loading...");
                 foreach (var br in _jobs.Branches)
                 {
                     if (_branchFilter.Length > 0 && !br.Contains(_branchFilter, StringComparison.OrdinalIgnoreCase)) continue;
@@ -542,176 +503,454 @@ namespace CosmicShore.Launcher
 
         // ---------------------------------------------------------------- BUILD
 
+        bool _androidMore, _iosMore;
+
         void DrawBuild(Vector2 a, Vector2 b)
         {
             var dl = ImGui.GetWindowDrawList();
+            PageHeader(a, "BUILD", "Phone builds of " + _s.Branch);
+            float top = a.Y + 86;
             float mid = (a.X + b.X) * 0.5f;
-            float resultH = 120;
-            var aa = a; var ab = new Vector2(mid - 12, b.Y - resultH - 20);
-            var ia = new Vector2(mid + 12, a.Y); var ib = new Vector2(b.X, b.Y - resultH - 20);
+            float cardB = Math.Min(b.Y, top + 440);
+            var aa = new Vector2(a.X, top); var ab = new Vector2(mid - 12, cardB);
+            var ia = new Vector2(mid + 12, top); var ib = new Vector2(b.X, cardB);
+            bool can = _toolsScanned && _tools.Git != null && !_jobs.Busy;
 
             // ANDROID
-            Neon.PanelFrame(dl, aa, ab, Neon.Lime, "ANDROID");
-            Neon.GlowText(dl, Neon.Title, 30, aa + new Vector2(24, 34), Neon.Lime, "APK / AAB");
-            dl.AddText(Neon.Small, 15, aa + new Vector2(24, 72), Neon.U(Neon.Dim), "Installs on any Android phone. First build sets up the Android SDK (once).");
-            ImGui.SetCursorScreenPos(aa + new Vector2(24, 104));
-            ImGui.BeginGroup();
-            ImGui.PushItemWidth(ab.X - aa.X - 220);
-            Label("CPU");
-            string[] abis = { "arm64", "arm64,x64", "arm64,arm,x64,x86" };
-            Combo("##abi", abis, _s.AndroidAbis, v => _s.AndroidAbis = v, v => v switch
-            {
-                "arm64" => "arm64 (every modern phone)",
-                "arm64,x64" => "arm64 + x64 (phones + emulators)",
-                _ => "all four",
-            });
-            Label("Package");
-            int fmt = _s.AndroidBundle ? 1 : 0;
-            if (ImGui.RadioButton("APK  (install directly)", fmt == 0)) { _s.AndroidBundle = false; _dirty = true; }
-            ImGui.SameLine();
-            if (ImGui.RadioButton("AAB  (Play Store)", fmt == 1)) { _s.AndroidBundle = true; _dirty = true; }
-            Label("Signing");
-            Text("##ks", "keystore (.keystore) - empty = debug key", () => _s.KeystorePath, v => _s.KeystorePath = v);
-            if (!string.IsNullOrWhiteSpace(_s.KeystorePath))
-                Text("##alias", "key alias", () => _s.KeystoreAlias, v => _s.KeystoreAlias = v);
-            ImGui.PopItemWidth();
-            Toggle("Debug build", () => _s.DebugBuild, v => _s.DebugBuild = v, "Debuggable, unoptimised");
-            ImGui.EndGroup();
-            ImGui.SetCursorScreenPos(new Vector2(aa.X + 24, ab.Y - 90));
-            bool can = _toolsScanned && _tools.Git != null && !_jobs.Busy;
-            if (Neon.Button("apk", _s.AndroidBundle ? "BUILD AAB" : "BUILD APK", new Vector2(ab.X - aa.X - 48, 66), Neon.Lime, Neon.Title, 30, can,
-                    sub: "> Builds/Android in the workspace"))
-                _jobs.BuildPhone(ios: false);
+            BuildCard(dl, aa, ab, Neon.Lime, "ANDROID", _s.AndroidBundle ? ".aab" : ".apk",
+                () =>
+                {
+                    Segmented("droidfmt", new[] { "APK", "AAB" }, _s.AndroidBundle ? 1 : 0, i => _s.AndroidBundle = i == 1, Neon.Lime);
+                    Neon.Tooltip("APK installs directly. AAB is for the Play Store.");
+                },
+                ref _androidMore,
+                () =>
+                {
+                    ImGui.PushItemWidth(ab.X - aa.X - 60);
+                    Label("CPU");
+                    string[] abis = { "arm64", "arm64,x64", "arm64,arm,x64,x86" };
+                    Combo("##abi", abis, _s.AndroidAbis, v => _s.AndroidAbis = v, v => v switch { "arm64" => "arm64", "arm64,x64" => "arm64 + x64 (emulators)", _ => "all" });
+                    Label("Keystore");
+                    Text("##ks", "empty = debug key", () => _s.KeystorePath, v => _s.KeystorePath = v);
+                    if (!string.IsNullOrWhiteSpace(_s.KeystorePath))
+                        Text("##alias", "alias", () => _s.KeystoreAlias, v => _s.KeystoreAlias = v);
+                    ImGui.PopItemWidth();
+                    Toggle("Debug build", () => _s.DebugBuild, v => _s.DebugBuild = v);
+                },
+                _s.AndroidBundle ? "BUILD AAB" : "BUILD APK", can, () => _jobs.BuildPhone(ios: false),
+                _jobs.JobName == "Build Android");
 
             // iOS
             bool mac = OperatingSystem.IsMacOS();
-            Neon.PanelFrame(dl, ia, ib, Neon.Violet, "iOS");
-            Neon.GlowText(dl, Neon.Title, 30, ia + new Vector2(24, 34), Neon.Violet, mac ? "IPA" : "XCODE EXPORT");
-            var lines = mac
-                ? new[] { "Builds and signs the .ipa with this Mac's Xcode.", "Set CS_IOS_CODESIGN_KEY / CS_IOS_PROVISIONING_PROFILE", "to choose an identity; otherwise Xcode picks one." }
-                : new[] { "Apple only allows iPhone apps to be built on a Mac.", "On Windows this writes the complete iOS project", "(player data + build script), like Unity's Xcode export.", "Open the launcher on a Mac and press BUILD IPA there." };
-            for (int i = 0; i < lines.Length; i++)
-                dl.AddText(Neon.Small, 15, ia + new Vector2(24, 76 + i * 22), Neon.U(i == 0 ? Neon.Ink : Neon.Dim), lines[i]);
-            ImGui.SetCursorScreenPos(new Vector2(ia.X + 24, ib.Y - 90));
-            if (Neon.Button("ipa", mac ? "BUILD IPA" : "EXPORT FOR XCODE", new Vector2(ib.X - ia.X - 48, 66), Neon.Violet, Neon.Title, 30, can,
-                    sub: mac ? "> Builds/iOS/*.ipa" : "> Builds/iOS  ·  finish on a Mac"))
-                _jobs.BuildPhone(ios: true);
+            string[] modes = mac ? new[] { "GITHUB", "XCODE", "THIS MAC" } : new[] { "GITHUB", "XCODE" };
+            if (!mac && _s.Ios == IosMode.ThisMac) _s.Ios = IosMode.GitHub;
+            string action = _s.Ios switch { IosMode.GitHub => "BUILD .IPA", IosMode.Xcode => "EXPORT XCODE", _ => "BUILD .IPA" };
+            BuildCard(dl, ia, ib, Neon.Violet, "iOS", _s.Ios == IosMode.Xcode ? ".xcodeproj" : ".ipa",
+                () =>
+                {
+                    Segmented("iosmode", modes, (int)_s.Ios, i => _s.Ios = (IosMode)i, Neon.Violet);
+                    Neon.Tooltip(_s.Ios switch
+                    {
+                        IosMode.GitHub => "GitHub's free Mac compiles an unsigned .ipa from the branch.\nSign and install it with Sideloadly. No Mac needed.",
+                        IosMode.Xcode => "An Xcode project, like Unity's iOS export.\nOpen it on a Mac, pick a team, Run or Archive.",
+                        _ => "This Mac builds and signs the .ipa.",
+                    });
+                },
+                ref _iosMore,
+                () =>
+                {
+                    Toggle("Debug build", () => _s.DebugBuild, v => _s.DebugBuild = v);
+                    if (_s.Ios == IosMode.GitHub)
+                    {
+                        ImGui.PushFont(Neon.Small);
+                        ImGui.TextColored(Neon.Dim, "Uses your GitHub sign-in (or the token in SETTINGS).");
+                        ImGui.TextColored(Neon.Dim, "Takes ~15-25 min on GitHub's Mac.");
+                        ImGui.PopFont();
+                        if (SmallButton("SIDELOADLY", 160, true)) OpenUrl("https://sideloadly.io");
+                    }
+                },
+                action, can, () => _jobs.BuildIos(), _jobs.JobName.StartsWith("Build iOS"));
 
-            // result
-            var ra = new Vector2(a.X, b.Y - resultH); var rb = b;
-            Neon.PanelFrame(dl, ra, rb, _jobs.LastOk == false ? Neon.Red : Neon.Cyan, "OUTPUT");
-            ImGui.SetCursorScreenPos(ra + new Vector2(24, 40));
-            ImGui.PushFont(Neon.Mono);
-            if (_jobs.LastArtifact != null) ImGui.TextColored(Neon.Lime, _jobs.LastArtifact);
-            else if (_jobs.Busy) ImGui.TextColored(Neon.Amber, _jobs.Stage);
-            else ImGui.TextColored(Neon.Dim, "Nothing built yet in this session.");
-            ImGui.PopFont();
-            if (_jobs.LastArtifact != null)
+            if (_jobs.IosRunUrl != null && _jobs.JobName.StartsWith("Build iOS"))
             {
-                ImGui.SetCursorScreenPos(new Vector2(rb.X - 220, ra.Y + 36));
-                if (Neon.Button("open", "OPEN FOLDER", new Vector2(190, 50), Neon.Cyan, Neon.Heading, 20))
-                    OpenFolder(File.Exists(_jobs.LastArtifact) ? Path.GetDirectoryName(_jobs.LastArtifact)! : _jobs.LastArtifact);
+                ImGui.SetCursorScreenPos(new Vector2(ia.X + 24, ib.Y - 44));
+                if (SmallButton("OPEN RUN", 140, true)) OpenUrl(_jobs.IosRunUrl);
             }
         }
 
-        // ---------------------------------------------------------------- OPTIONS
+        /// <summary>One build target: name, its one choice, a primary button, the rest folded away, the result.</summary>
+        void BuildCard(ImDrawListPtr dl, Vector2 a, Vector2 b, Vector4 accent, string name, string ext,
+            Action choice, ref bool more, Action options, string action, bool can, Action run, bool mine)
+        {
+            Neon.PanelFrame(dl, a, b, accent, null, 0.5f);
+            Neon.GlowText(dl, Neon.Title, 30, a + new Vector2(26, 24), accent, name, 0.8f);
+            ImGui.PushFont(Neon.Title);
+            float nw = ImGui.CalcTextSize(name).X;
+            ImGui.PopFont();
+            dl.AddText(Neon.Mono, 15, a + new Vector2(34 + nw, 36), Neon.U(Neon.Dim), ext);
+
+            ImGui.SetCursorScreenPos(a + new Vector2(26, 80));
+            ImGui.BeginGroup();
+            choice();
+            ImGui.Dummy(new Vector2(0, 4));
+            if (Disclosure("opt" + name, "Options", ref more))
+            {
+                ImGui.Indent(4);
+                options();
+                ImGui.Unindent(4);
+            }
+            ImGui.EndGroup();
+
+            float w = b.X - a.X - 52;
+            float by = b.Y - (mine && _jobs.LastArtifact != null ? 176 : 112);
+            ImGui.SetCursorScreenPos(new Vector2(a.X + 26, by));
+            bool busyHere = mine && _jobs.Busy;
+            if (Neon.Button("go" + name, busyHere ? "WORKING" : action, new Vector2(w, 64), accent, Neon.Title, 28, can && !busyHere))
+                run();
+            if (mine && _jobs.LastArtifact != null && !_jobs.Busy)
+            {
+                var p = new Vector2(a.X + 26, by + 78);
+                dl.AddText(Neon.Mono, 14, p, Neon.U(Neon.Lime), Trim(Path.GetFileName(_jobs.LastArtifact), 46));
+                ImGui.SetCursorScreenPos(new Vector2(b.X - 26 - 140, p.Y - 8));
+                if (SmallButton("SHOW" + "##" + name, 140, true))
+                    OpenFolder(File.Exists(_jobs.LastArtifact) ? Path.GetDirectoryName(_jobs.LastArtifact)! :
+                        Directory.Exists(_jobs.LastArtifact) && _jobs.LastArtifact.EndsWith(".xcodeproj") ? Path.GetDirectoryName(_jobs.LastArtifact)! : _jobs.LastArtifact);
+            }
+        }
+
+        // ---------------------------------------------------------------- PROJECT (the engine's own Project Settings)
+
+        CosmicShore.Froglet.FrogletProjectSettings? _proj;
+        CosmicShore.Froglet.FrogletProjectSettings.UnityDefaults? _unity;
+        string? _projRoot;
+        bool _projDirty;
+        double _projTimer;
+        int _projTab;
+
+        void EnsureProject()
+        {
+            if (_projRoot == _ws.Dir && _proj != null) return;
+            _projRoot = _ws.Dir;
+            _proj = CosmicShore.Froglet.FrogletProjectSettings.Load(_ws.Dir);
+            _unity = new CosmicShore.Froglet.FrogletProjectSettings.UnityDefaults(_ws.Dir);
+        }
+
+        void SaveProjectIfDirty(double dt)
+        {
+            if (!_projDirty) return;
+            _projTimer += dt;
+            if (_projTimer < 0.6) return;
+            _projDirty = false; _projTimer = 0;
+            try { _proj!.Save(_projRoot!); _jobs.RefreshLocalState(); }
+            catch (Exception ex) { _jobs.Log.Add(LogKind.Error, "Could not save project settings: " + ex.Message); }
+        }
+
+        void DrawProject(Vector2 a, Vector2 b)
+        {
+            PageHeader(a, "PROJECT", "Engine settings for this branch  ·  " + CosmicShore.Froglet.FrogletProjectSettings.RelativePath);
+            if (!_ws.Exists || !File.Exists(Path.Combine(_ws.Dir, "ProjectSettings", "ProjectSettings.asset")))
+            {
+                ImGui.GetWindowDrawList().AddText(Neon.Body, 19, a + new Vector2(0, 110), Neon.U(Neon.Dim), "Download the branch first - press START or UPDATE on PLAY.");
+                return;
+            }
+            EnsureProject();
+            var p = _proj!; var u = _unity!;
+
+            ImGui.SetCursorScreenPos(new Vector2(a.X, a.Y + 78));
+            Segmented("ptab", new[] { "PLAYER", "SCENES", "QUALITY" }, _projTab, i => _projTab = i, Neon.Cyan);
+
+            ImGui.SetCursorScreenPos(new Vector2(a.X, a.Y + 132));
+            ImGui.BeginChild("##project", new Vector2(b.X - a.X, b.Y - a.Y - 132));
+            float w = Math.Min(760, b.X - a.X - 30);
+            ImGui.PushItemWidth(w - 260);
+            switch (_projTab)
+            {
+                case 0:
+                    ProjText("Company", p.Player.CompanyName, u.CompanyName, v => p.Player.CompanyName = v);
+                    ProjText("Product name", p.Player.ProductName, u.ProductName, v => p.Player.ProductName = v);
+                    ProjText("Version", p.Player.Version, u.Version, v => p.Player.Version = v);
+                    ImGui.Dummy(new Vector2(0, 8));
+                    ProjText("Android package", p.Player.AndroidBundleId, u.AndroidBundleId, v => p.Player.AndroidBundleId = v);
+                    ProjText("Android version code", p.Player.AndroidVersionCode?.ToString(), u.AndroidVersionCode.ToString(),
+                        v => p.Player.AndroidVersionCode = int.TryParse(v, out var n) && n > 0 ? n : null);
+                    ProjText("iOS bundle id", p.Player.IosBundleId, u.IosBundleId, v => p.Player.IosBundleId = v);
+                    ProjText("iOS build number", p.Player.IosBuildNumber, u.IosBuildNumber, v => p.Player.IosBuildNumber = v);
+                    ImGui.Dummy(new Vector2(0, 12));
+                    Hint("Empty fields use Unity's Player Settings. Commit the file to share it with the branch.");
+                    break;
+
+                case 1:
+                    DrawSceneList(p, u, w);
+                    break;
+
+                case 2:
+                    Row("Anti-aliasing", () => Segmented("qmsaa", new[] { "DEFAULT", "OFF", "2x", "4x", "8x" },
+                        p.Quality.Msaa switch { null => 0, 0 => 1, 2 => 2, 4 => 3, _ => 4 },
+                        i => { p.Quality.Msaa = i switch { 0 => null, 1 => 0, 2 => 2, 3 => 4, _ => 8 }; _projDirty = true; }, Neon.Cyan));
+                    Row("Render scale", () =>
+                    {
+                        float rs = p.Quality.RenderScale ?? 1f;
+                        if (ImGui.SliderFloat("##qrs", ref rs, 0.5f, 2f, p.Quality.RenderScale == null ? "default (1.00x)" : "%.2fx"))
+                        { p.Quality.RenderScale = MathF.Round(rs * 20) / 20; _projDirty = true; }
+                        ImGui.SameLine();
+                        if (Neon.IconButton("qrsreset", Neon.IconRefresh, 34, p.Quality.RenderScale != null)) { p.Quality.RenderScale = null; _projDirty = true; }
+                        Neon.Tooltip("Back to default");
+                    });
+                    Row("Texture filtering", () => Segmented("qaniso", new[] { "DEFAULT", "1x", "4x", "8x", "16x" },
+                        p.Quality.Anisotropy switch { null => 0, 1 => 1, 4 => 2, 8 => 3, _ => 4 },
+                        i => { p.Quality.Anisotropy = i switch { 0 => null, 1 => 1, 2 => 4, 3 => 8, _ => 16 }; _projDirty = true; }, Neon.Cyan));
+                    Row("VSync", () => Segmented("qvs", new[] { "DEFAULT", "ON", "OFF" },
+                        p.Quality.VSync switch { null => 0, true => 1, false => 2 },
+                        i => { p.Quality.VSync = i switch { 0 => null, 1 => true, _ => false }; _projDirty = true; }, Neon.Cyan));
+                    if (p.Quality.VSync == false)
+                        Row("Frame cap", () => Segmented("qfps", new[] { "NONE", "30", "60", "120", "144" },
+                            p.Quality.TargetFps switch { 30 => 1, 60 => 2, 120 => 3, 144 => 4, _ => 0 },
+                            i => { p.Quality.TargetFps = i switch { 1 => 30, 2 => 60, 3 => 120, 4 => 144, _ => null }; _projDirty = true; }, Neon.Cyan));
+                    ImGui.Dummy(new Vector2(0, 12));
+                    Hint("Default matches Unity's URP asset: 4x MSAA, 1.0 scale, 8x filtering, vsync on.");
+                    break;
+            }
+            ImGui.PopItemWidth();
+            ImGui.EndChild();
+        }
+
+        void DrawSceneList(CosmicShore.Froglet.FrogletProjectSettings p, CosmicShore.Froglet.FrogletProjectSettings.UnityDefaults u, float w)
+        {
+            var list = p.BuildScenes(u);
+            bool own = p.Scenes is { Count: > 0 };
+            var dl = ImGui.GetWindowDrawList();
+            ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 28);
+            ImGui.PushFont(Neon.Small);
+            ImGui.TextColored(Neon.Dim, own ? "Engine scene list (overrides Unity's)" : "Unity's Scenes In Build  -  edit to make an engine list");
+            ImGui.PopFont();
+            if (own)
+            {
+                ImGui.SameLine(w - 150);
+                if (SmallButton("USE UNITY'S", 150, true)) { p.Scenes = null; _projDirty = true; }
+            }
+            ImGui.Dummy(new Vector2(0, 4));
+            int enabledIndex = 0;
+            for (int i = 0; i < list.Count; i++)
+            {
+                var s = list[i];
+                var pos = ImGui.GetCursorScreenPos();
+                var rowB = pos + new Vector2(w, 34);
+                if (i % 2 == 0) dl.AddRectFilled(pos, rowB, Neon.U(Neon.Cyan, 0.04f));
+                ImGui.SetCursorScreenPos(pos + new Vector2(28, 5));
+                bool en = s.Enabled;
+                if (ImGui.Checkbox("##en" + i, ref en)) { MakeOwn(p, list)[i].Enabled = en; _projDirty = true; }
+                string idx = s.Enabled ? (enabledIndex++).ToString() : "-";
+                dl.AddText(Neon.Mono, 14, pos + new Vector2(66, 9), Neon.U(Neon.Dim), idx.PadLeft(2));
+                dl.AddText(Neon.Body, 17, pos + new Vector2(96, 7), Neon.U(s.Enabled ? Neon.Ink : Neon.Dim), SceneName(Path.GetFileNameWithoutExtension(s.Path)));
+                ImGui.SetCursorScreenPos(pos + new Vector2(96, 0));
+                ImGui.InvisibleButton("##path" + i, new Vector2(w - 200, 34));
+                Neon.Tooltip(s.Path);
+                ImGui.SetCursorScreenPos(new Vector2(rowB.X - 72, pos.Y + 2));
+                if (Neon.IconButton("up" + i, Neon.IconUp, 30, i > 0)) { var l = MakeOwn(p, list); (l[i - 1], l[i]) = (l[i], l[i - 1]); _projDirty = true; }
+                ImGui.SameLine(0, 4);
+                if (Neon.IconButton("dn" + i, Neon.IconDown, 30, i < list.Count - 1)) { var l = MakeOwn(p, list); (l[i + 1], l[i]) = (l[i], l[i + 1]); _projDirty = true; }
+                ImGui.SetCursorScreenPos(new Vector2(pos.X, rowB.Y + 2));
+            }
+            ImGui.Dummy(new Vector2(0, 8));
+            Hint("Scene 0 boots. The build tool, the player and phone builds all use this list.");
+        }
+
+        static List<CosmicShore.Froglet.FrogletProjectSettings.SceneEntry> MakeOwn(
+            CosmicShore.Froglet.FrogletProjectSettings p, List<CosmicShore.Froglet.FrogletProjectSettings.SceneEntry> current)
+        {
+            if (p.Scenes is not { Count: > 0 })
+                p.Scenes = current.Select(s => new CosmicShore.Froglet.FrogletProjectSettings.SceneEntry { Path = s.Path, Guid = s.Guid, Enabled = s.Enabled }).ToList();
+            return p.Scenes;
+        }
+
+        void ProjText(string label, string? value, string inherited, Action<string?> set)
+        {
+            Row(label, () =>
+            {
+                var v = value ?? "";
+                if (ImGui.InputTextWithHint("##p" + label, inherited, ref v, 256))
+                { set(string.IsNullOrWhiteSpace(v) ? null : v); _projDirty = true; }
+                if (value != null)
+                {
+                    ImGui.SameLine();
+                    var pt = ImGui.GetCursorScreenPos();
+                    ImGui.GetWindowDrawList().AddCircleFilled(pt + new Vector2(6, 17), 4, Neon.U(Neon.Magenta));
+                    ImGui.Dummy(new Vector2(12, 34));
+                    Neon.Tooltip("Overridden here. Unity: " + inherited);
+                }
+            });
+        }
+
+        static void Hint(string text)
+        {
+            ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 28);
+            ImGui.PushFont(Neon.Small);
+            ImGui.TextColored(Neon.Dim, text);
+            ImGui.PopFont();
+        }
+
+        // ---------------------------------------------------------------- SETTINGS
+
+        readonly HashSet<string> _open = new() { "GAME" };
 
         void DrawOptions(Vector2 a, Vector2 b)
         {
-            var dl = ImGui.GetWindowDrawList();
-            float mid = (a.X + b.X) * 0.5f;
-            float colW = mid - a.X - 12;
-            var sa = a; var sb = new Vector2(mid - 12, a.Y + 400);
-            var xa = new Vector2(a.X, sb.Y + 20); var xb = new Vector2(mid - 12, b.Y);
-            var ta = new Vector2(mid + 12, a.Y); var tb = new Vector2(b.X, a.Y + 210);
-            var ga = new Vector2(mid + 12, tb.Y + 20); var gb = b;
+            PageHeader(a, "SETTINGS");
+            ImGui.SetCursorScreenPos(new Vector2(a.X, a.Y + 60));
+            ImGui.BeginChild("##settings", new Vector2(b.X - a.X, b.Y - a.Y - 60));
+            float w = Math.Min(760, b.X - a.X - 30);
+            ImGui.PushItemWidth(w - 260);
 
-            // SOURCE
-            Neon.PanelFrame(dl, sa, sb, Neon.Cyan, "SOURCE");
-            ImGui.SetCursorScreenPos(sa + new Vector2(24, 40));
-            ImGui.BeginGroup();
-            ImGui.PushItemWidth(colW - 48);
-            Label("Repository");
-            Text("##remote", "https://github.com/.../Cosmic-Shore.git", () => _s.RemoteUrl, v => _s.RemoteUrl = v);
-            Label("Branch");
-            BranchCombo();
-            Label("GitHub token (only if git has no sign-in)");
+            if (Section("GAME"))
             {
-                var tok = _s.GitHubToken ?? "";
-                if (ImGui.InputTextWithHint("##token", "github_pat_...  (read access to the repo is enough)", ref tok, 256, ImGuiInputTextFlags.Password))
-                { _s.GitHubToken = tok; _dirty = true; }
-                Neon.Tooltip("Create one at github.com/settings/personal-access-tokens (Contents: read-only). Stored only on this PC.");
+                Row("Start in", () =>
+                {
+                    var scenes = new List<string> { "" };
+                    scenes.AddRange(_jobs.Scenes);
+                    Combo("##scene", scenes.ToArray(), _s.StartScene, v => _s.StartScene = v, SceneName);
+                });
+                Row("Resolution", () => Combo("##res", new[] { "1280x720", "1600x900", "1920x1080", "2560x1440", "3840x2160" },
+                    _s.Resolution, v => _s.Resolution = v));
+                Row("", () => Toggle("Fullscreen", () => _s.Fullscreen, v => _s.Fullscreen = v, "F11 toggles in game"));
+                Row("", () => Toggle("Audio", () => _s.Audio, v => _s.Audio = v));
+                Row("", () => Toggle("Online services", () => _s.Network, v => _s.Network = v, "Party, Relay and cloud saves"));
+                Row("", () => Toggle("Pull before play", () => _s.PullBeforePlay, v => _s.PullBeforePlay = v));
+                Row("", () => Toggle("Phone render path", () => _s.MobileRenderPath, v => _s.MobileRenderPath = v, "OpenGL ES 3.0, exactly as a phone renders"));
             }
-            Label("Workspace");
-            if (ImGui.RadioButton("Launcher's own copy", _s.Workspace == WorkspaceMode.Managed)) { _s.Workspace = WorkspaceMode.Managed; _dirty = true; }
-            Neon.Tooltip(_s.ResolvedManagedPath);
-            ImGui.SameLine();
-            if (ImGui.RadioButton("Beside my clone", _s.Workspace == WorkspaceMode.WorktreeOfMyClone)) { _s.Workspace = WorkspaceMode.WorktreeOfMyClone; _dirty = true; }
-            Neon.Tooltip("Uses a git worktree next to your clone: no second download, your checkout is never touched");
-            if (_s.Workspace == WorkspaceMode.WorktreeOfMyClone)
-                Text("##clone", "your Cosmic-Shore folder, e.g. C:\\Users\\you\\Documents\\GitHub\\Cosmic-Shore", () => _s.MyClonePath, v => _s.MyClonePath = v);
-            ImGui.PopItemWidth();
-            ImGui.PushFont(Neon.Small);
-            ImGui.TextColored(Neon.Dim, "Builds run from: " + Trim(_ws.Dir, 64));
-            ImGui.PopFont();
-            ImGui.EndGroup();
-
-            // GAME
-            Neon.PanelFrame(dl, ga, gb, Neon.Magenta, "GAME");
-            ImGui.SetCursorScreenPos(ga + new Vector2(24, 40));
-            ImGui.BeginGroup();
-            ImGui.PushItemWidth(colW - 48);
-            Label("Extra player arguments");
-            Text("##extra", "e.g. --seed 42", () => _s.ExtraArgs, v => _s.ExtraArgs = v);
-            Label("Profile (a second local player)");
-            Text("##profile", "empty = default", () => _s.Profile, v => _s.Profile = v);
-            ImGui.PopItemWidth();
-            Toggle("Release build (faster game)", () => _s.ReleaseBuild, v => _s.ReleaseBuild = v, "Off = Debug build, slower but easier to debug");
-            Toggle("Verbose logs", () => _s.VerboseLogs, v => _s.VerboseLogs = v, "Turn on every log channel");
-            ImGui.EndGroup();
-
-            // TOOLCHAIN
-            Neon.PanelFrame(dl, ta, tb, Neon.Lime, "TOOLCHAIN");
-            ImGui.SetCursorScreenPos(ta + new Vector2(24, 40));
-            ImGui.BeginGroup();
-            StatusRow("git", _tools.Git != null, _tools.Git != null ? $"{_tools.GitVersion}  ·  {Trim(_tools.Git, 44)}" : "not found - install GitHub Desktop or Git for Windows");
-            StatusRow("git-lfs", _tools.GitLfs, _tools.GitLfs ? "available" : "not needed (the launcher fetches FMOD itself)", soft: true);
-            StatusRow(".NET SDK", _tools.Dotnet != null, _tools.Dotnet != null ? $"{_tools.DotnetSdk}  ·  {Trim(_tools.Dotnet, 40)}" : "missing - installed automatically on START");
-            if (OperatingSystem.IsWindows()) StatusRow("VC++ runtime", _tools.VcRuntime, _tools.VcRuntime ? "present" : "missing - aka.ms/vs/17/release/vc_redist.x64.exe");
-            ImGui.Dummy(new Vector2(0, 6));
-            if (SmallButton("RESCAN", 130, !_jobs.Busy)) Task.Run(() => { _tools.Detect(_s); _jobs.RefreshLocalState(); });
-            ImGui.SameLine();
-            if (SmallButton("INSTALL .NET", 170, !_jobs.Busy && _tools.Dotnet == null)) _jobs.InstallDotnet();
-            ImGui.SameLine();
-            if (SmallButton("DATA FOLDER", 170, true)) OpenFolder(LauncherSettings.DataDir);
-            ImGui.EndGroup();
-
-            // ABOUT
-            Neon.PanelFrame(dl, xa, xb, Neon.Violet, "ABOUT");
-            var fs = new Vector2(170, 170 * _frogletSize.Y / _frogletSize.X);
-            dl.AddImage((IntPtr)_froglet, new Vector2(xb.X - fs.X - 24, xa.Y + 34), new Vector2(xb.X - 24, xa.Y + 34 + fs.Y));
-            string[] about =
+            if (Section("SOURCE"))
             {
-                "Froglet Engine v0.1 - Froglet Inc.",
-                "Runs Cosmic Shore's real C# with no Unity at runtime:",
-                "our own renderer, physics, UI, audio bridge and netcode.",
-                "Unity stays the editor; this launcher is the player.",
-                "Fonts: Chakra Petch, Aldrich (OFL), Roboto Mono (Apache 2.0).",
-                "UI: Dear ImGui (MIT) on Silk.NET (MIT).",
-            };
-            for (int i = 0; i < about.Length; i++)
-                dl.AddText(Neon.Small, 15, xa + new Vector2(24, 40 + i * 22), Neon.U(i == 0 ? Neon.Ink : Neon.Dim), about[i]);
+                Row("Repository", () => Text("##remote", "https://github.com/.../Cosmic-Shore.git", () => _s.RemoteUrl, v => _s.RemoteUrl = v));
+                Row("Branch", BranchCombo);
+                Row("GitHub token", () =>
+                {
+                    var tok = _s.GitHubToken ?? "";
+                    if (ImGui.InputTextWithHint("##token", "optional", ref tok, 256, ImGuiInputTextFlags.Password)) { _s.GitHubToken = tok; _dirty = true; }
+                    Neon.Tooltip("Only if git has no GitHub sign-in. iOS builds need Actions: read & write.\nStored only on this PC.");
+                });
+                Row("Workspace", () =>
+                    Segmented("wsmode", new[] { "OWN COPY", "BESIDE MY CLONE" }, (int)_s.Workspace, i => _s.Workspace = (WorkspaceMode)i, Neon.Cyan));
+                if (_s.Workspace == WorkspaceMode.WorktreeOfMyClone)
+                    Row("My clone", () => Text("##clone", "C:\\...\\Cosmic-Shore", () => _s.MyClonePath, v => _s.MyClonePath = v));
+                Row("", () => { ImGui.PushFont(Neon.Small); ImGui.TextColored(Neon.Dim, Trim(_ws.Dir, 80)); ImGui.PopFont(); });
+            }
+            if (Section("ADVANCED"))
+            {
+                Row("Player arguments", () => Text("##extra", "--seed 42", () => _s.ExtraArgs, v => _s.ExtraArgs = v));
+                Row("Profile", () => Text("##profile", "default", () => _s.Profile, v => _s.Profile = v));
+                Row("", () => Toggle("Release build", () => _s.ReleaseBuild, v => _s.ReleaseBuild = v, "Off = Debug: slower, easier to debug"));
+                Row("", () => Toggle("Verbose logs", () => _s.VerboseLogs, v => _s.VerboseLogs = v));
+            }
+            if (Section("TOOLCHAIN"))
+            {
+                StatusRow("git", _tools.Git != null, _tools.Git != null ? $"{_tools.GitVersion}" : "not found - install GitHub Desktop");
+                StatusRow(".NET SDK", _tools.Dotnet != null, _tools.Dotnet != null ? _tools.DotnetSdk ?? "" : "installed automatically on START");
+                if (OperatingSystem.IsWindows()) StatusRow("VC++ runtime", _tools.VcRuntime, _tools.VcRuntime ? "present" : "missing - aka.ms/vs/17/release/vc_redist.x64.exe");
+                ImGui.Dummy(new Vector2(0, 4));
+                if (SmallButton("RESCAN", 120, !_jobs.Busy)) Task.Run(() => { _tools.Detect(_s); _jobs.RefreshLocalState(); });
+                ImGui.SameLine();
+                if (SmallButton("INSTALL .NET", 160, !_jobs.Busy && _tools.Dotnet == null)) _jobs.InstallDotnet();
+                ImGui.SameLine();
+                if (SmallButton("DATA FOLDER", 160, true)) OpenFolder(LauncherSettings.DataDir);
+            }
+            if (Section("ABOUT"))
+            {
+                ImGui.PushFont(Neon.Small);
+                ImGui.TextColored(Neon.Ink, "Froglet Engine v0.1  -  Froglet Inc.");
+                ImGui.TextColored(Neon.Dim, "Cosmic Shore's own C# on our own renderer, physics, UI, audio and netcode.");
+                ImGui.TextColored(Neon.Dim, "Dear ImGui, Silk.NET (MIT)  ·  Chakra Petch, Aldrich (OFL)  ·  Roboto Mono (Apache 2.0)");
+                ImGui.PopFont();
+            }
+            ImGui.PopItemWidth();
+            ImGui.EndChild();
         }
 
-        void StatusRow(string name, bool ok, string detail, bool soft = false)
+        /// <summary>"MinigameDuelForCellMultiplayer_Gameplay" -> "Duel For Cell Multiplayer".</summary>
+        static string SceneName(string s)
+        {
+            if (s == "") return "Default (Bootstrap)";
+            var n = s.Replace("_Gameplay", "").Replace("Minigame", "").Replace("_", " ");
+            n = System.Text.RegularExpressions.Regex.Replace(n, "(?<=[a-z])(?=[A-Z])", " ").Trim();
+            return n.Length == 0 ? s : n;
+        }
+
+        bool Section(string name)
+        {
+            var dl = ImGui.GetWindowDrawList();
+            ImGui.Dummy(new Vector2(0, 6));
+            var p = ImGui.GetCursorScreenPos();
+            float w = Math.Min(760, ImGui.GetContentRegionAvail().X - 10);
+            bool open = _open.Contains(name);
+            if (ImGui.InvisibleButton("sec" + name, new Vector2(w, 36))) { if (!open) _open.Add(name); else _open.Remove(name); open = !open; }
+            bool hov = ImGui.IsItemHovered();
+            if (hov) ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
+            var col = open ? Neon.Cyan : hov ? Neon.Ink : Neon.Dim;
+            Neon.Chevron(dl, p + new Vector2(10, 18), open, Neon.U(col));
+            dl.AddText(Neon.Heading, 20, p + new Vector2(28, 7), Neon.U(col), name);
+            dl.AddLine(new Vector2(p.X, p.Y + 36), new Vector2(p.X + w, p.Y + 36), Neon.U(Neon.Cyan, open ? 0.35f : 0.12f), 1f);
+            if (open) ImGui.Dummy(new Vector2(0, 8));
+            return open;
+        }
+
+        void Row(string label, Action control)
+        {
+            var p = ImGui.GetCursorScreenPos();
+            if (label.Length > 0)
+            {
+                ImGui.PushFont(Neon.Small);
+                ImGui.GetWindowDrawList().AddText(p + new Vector2(28, 8), Neon.U(Neon.Dim), label);
+                ImGui.PopFont();
+            }
+            ImGui.SetCursorScreenPos(p + new Vector2(220, 0));
+            ImGui.BeginGroup();
+            control();
+            ImGui.EndGroup();
+        }
+
+        bool Disclosure(string id, string label, ref bool open)
         {
             var dl = ImGui.GetWindowDrawList();
             var p = ImGui.GetCursorScreenPos();
-            var col = ok ? Neon.Lime : soft ? Neon.Dim : Neon.Amber;
-            dl.AddCircleFilled(p + new Vector2(7, 12), 5, Neon.U(col));
-            ImGui.SetCursorScreenPos(p + new Vector2(22, 0));
+            ImGui.PushFont(Neon.Small);
+            var ts = ImGui.CalcTextSize(label);
+            ImGui.PopFont();
+            if (ImGui.InvisibleButton(id, new Vector2(ts.X + 26, 24))) open = !open;
+            bool hov = ImGui.IsItemHovered();
+            if (hov) ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
+            var col = hov || open ? Neon.Ink : Neon.Dim;
+            Neon.Chevron(dl, p + new Vector2(6, 12), open, Neon.U(col));
+            dl.AddText(Neon.Small, 15, p + new Vector2(20, 3), Neon.U(col), label);
+            return open;
+        }
+
+        void Segmented(string id, string[] items, int current, Action<int> set, Vector4 accent)
+        {
+            var dl = ImGui.GetWindowDrawList();
+            ImGui.PushFont(Neon.Small);
+            for (int i = 0; i < items.Length; i++)
+            {
+                if (i > 0) ImGui.SameLine(0, 4);
+                var ts = ImGui.CalcTextSize(items[i]);
+                var a = ImGui.GetCursorScreenPos();
+                var sz = new Vector2(ts.X + 28, 34);
+                if (ImGui.InvisibleButton(id + i, sz) && i != current) { set(i); _dirty = true; }
+                bool hov = ImGui.IsItemHovered(), on = i == current;
+                if (hov) ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
+                Neon.ChamferFill(dl, a, a + sz, 6, Neon.U(on ? accent : Neon.Space0, on ? 0.26f : 0.8f));
+                Neon.ChamferPath(dl, a, a + sz, 6);
+                dl.PathStroke(Neon.U(on ? accent : Neon.Dim, on ? 0.9f : hov ? 0.6f : 0.3f), ImDrawFlags.Closed, 1.1f);
+                dl.AddText(a + new Vector2(14, (34 - ts.Y) * 0.5f), Neon.U(on ? Neon.Ink : hov ? Neon.Ink : Neon.Dim), items[i]);
+            }
+            ImGui.PopFont();
+        }
+
+        void StatusRow(string name, bool ok, string detail)
+        {
+            var dl = ImGui.GetWindowDrawList();
+            var p = ImGui.GetCursorScreenPos();
+            dl.AddCircleFilled(p + new Vector2(34, 12), 5, Neon.U(ok ? Neon.Lime : Neon.Amber));
+            ImGui.SetCursorScreenPos(p + new Vector2(48, 0));
             ImGui.TextColored(Neon.Ink, name);
-            ImGui.SameLine(140);
+            ImGui.SameLine(220);
             ImGui.PushFont(Neon.Small);
             ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 2);
             ImGui.TextColored(Neon.Dim, detail);
@@ -722,18 +961,20 @@ namespace CosmicShore.Launcher
 
         void DrawConsole(Vector2 a, Vector2 b)
         {
-            var dl = ImGui.GetWindowDrawList();
-            Neon.PanelFrame(dl, a, b, Neon.Cyan, "CONSOLE");
-            ImGui.SetCursorScreenPos(new Vector2(b.X - 470, a.Y + 10));
-            if (SmallButton("COPY ALL", 130, true)) ImGui.SetClipboardText(_jobs.Log.AllText());
+            PageHeader(a, "CONSOLE");
+            ImGui.SetCursorScreenPos(new Vector2(b.X - 300, a.Y + 4));
+            if (SmallButton("COPY", 90, true)) ImGui.SetClipboardText(_jobs.Log.AllText());
             ImGui.SameLine();
-            if (SmallButton("CLEAR", 100, true)) _jobs.Log.Clear();
+            if (SmallButton("CLEAR", 90, true)) _jobs.Log.Clear();
             ImGui.SameLine();
-            if (ImGui.Checkbox("follow", ref _autoScroll)) { }
+            ImGui.Checkbox("follow", ref _autoScroll);
 
-            ImGui.SetCursorScreenPos(a + new Vector2(18, 52));
+            var la = new Vector2(a.X, a.Y + 60);
+            var dl = ImGui.GetWindowDrawList();
+            Neon.ChamferFill(dl, la, b, 10, Neon.U(Neon.Space0, 0.75f));
+            ImGui.SetCursorScreenPos(la + new Vector2(16, 12));
             ImGui.PushFont(Neon.Mono);
-            ImGui.BeginChild("##log", b - a - new Vector2(36, 70));
+            ImGui.BeginChild("##log", b - la - new Vector2(32, 24));
             _jobs.Log.CopyTo(_logSnapshot);
             unsafe
             {
@@ -752,7 +993,7 @@ namespace CosmicShore.Launcher
                             LogKind.Info => Neon.Magenta,
                             _ => Neon.Mix(Neon.Dim, Neon.Ink, 0.4f),
                         };
-                        ImGui.TextColored(Neon.Dim, l.Time.ToString("HH:mm:ss"));
+                        ImGui.TextColored(Neon.Mix(Neon.Dim, Neon.Space0, 0.3f), l.Time.ToString("HH:mm:ss"));
                         ImGui.SameLine();
                         ImGui.TextColored(col, l.Text);
                     }
@@ -769,34 +1010,35 @@ namespace CosmicShore.Launcher
         void DrawStatusBar(Vector2 size)
         {
             var dl = ImGui.GetWindowDrawList();
-            var a = new Vector2(36, size.Y - 76);
-            var b = new Vector2(size.X - 36, size.Y - 20);
+            var a = new Vector2(RailW, size.Y - 40);
+            var b = new Vector2(size.X, size.Y);
             var col = _jobs.Busy ? Neon.Magenta : _jobs.LastOk == false ? Neon.Red : _jobs.GameRunning ? Neon.Lime : Neon.Cyan;
-            Neon.ChamferFill(dl, a, b, 10, Neon.U(Neon.Space0, 0.85f));
-            Neon.ChamferGlow(dl, a, b, 10, col, 0.6f, 1f);
+            dl.AddRectFilled(a, b, Neon.U(Neon.Space0, 0.85f));
+            dl.AddLine(a, new Vector2(b.X, a.Y), Neon.U(col, 0.35f), 1f);
+            dl.AddCircleFilled(a + new Vector2(22, 20), 4.5f, Neon.U(col, 0.6f + 0.4f * MathF.Sin(Neon.Time * 3f)));
 
-            string state = _jobs.Busy ? _jobs.Stage.ToUpperInvariant()
-                : _jobs.GameRunning ? "GAME RUNNING"
-                : _jobs.LastOk == false ? "STOPPED - SEE CONSOLE"
-                : _jobs.LastOk == true ? "DONE" : "READY";
-            Neon.GlowText(dl, Neon.Heading, 20, a + new Vector2(18, 7), col, Trim(state, 46), 0.8f);
-            var last = _jobs.Log.LastLine;
-            if (string.IsNullOrEmpty(last))
-                last = _ws.Exists ? "workspace: " + _ws.Dir : "press START GAME - the launcher fetches, builds and runs " + _s.Branch;
-            dl.AddText(Neon.Mono, 14, a + new Vector2(20, 33), Neon.U(Neon.Dim), Trim(last, 120));
+            string state = _jobs.Busy ? _jobs.Stage
+                : _jobs.GameRunning ? "Game running"
+                : _jobs.LastOk == false ? "Stopped - see console"
+                : _jobs.LastOk == true ? "Done" : "Ready";
+            dl.AddText(Neon.Small, 15, a + new Vector2(36, 11), Neon.U(Neon.Ink), Trim(state, 60));
+            ImGui.PushFont(Neon.Small);
+            float sw = ImGui.CalcTextSize(Trim(state, 60)).X;
+            ImGui.PopFont();
+            var last = _jobs.Busy ? _jobs.Log.LastLine : "";
+            if (!string.IsNullOrEmpty(last))
+                dl.AddText(Neon.Mono, 13, a + new Vector2(52 + sw, 13), Neon.U(Neon.Dim), Trim(last, 90));
 
-            float barX = b.X - 520;
-            if (_jobs.Busy || _jobs.Progress >= 0)
-                Neon.Progress(dl, new Vector2(barX, a.Y + 14), new Vector2(b.X - (_jobs.Busy ? 140 : 18), b.Y - 14), _jobs.Busy ? _jobs.Progress : 1f, col);
             if (_jobs.Busy)
             {
-                ImGui.SetCursorScreenPos(new Vector2(b.X - 126, a.Y + 10));
-                if (Neon.Button("cancel", "CANCEL", new Vector2(110, 36), Neon.Red, Neon.Small, 15)) _jobs.Cancel();
+                Neon.Progress(dl, new Vector2(b.X - 420, a.Y + 11), new Vector2(b.X - 120, b.Y - 11), _jobs.Progress, col);
+                ImGui.SetCursorScreenPos(new Vector2(b.X - 108, a.Y + 6));
+                if (Neon.Button("cancel", "CANCEL", new Vector2(96, 28), Neon.Red, Neon.Small, 15)) _jobs.Cancel();
             }
             else if (_jobs.LastOk == false && _page != Page.Console)
             {
-                ImGui.SetCursorScreenPos(new Vector2(b.X - 186, a.Y + 10));
-                if (Neon.Button("seelog", "OPEN CONSOLE", new Vector2(170, 36), Neon.Red, Neon.Small, 15)) _page = Page.Console;
+                ImGui.SetCursorScreenPos(new Vector2(b.X - 148, a.Y + 6));
+                if (Neon.Button("seelog", "CONSOLE", new Vector2(136, 28), Neon.Red, Neon.Small, 15)) _page = Page.Console;
             }
         }
 
@@ -854,6 +1096,12 @@ namespace CosmicShore.Launcher
         }
 
         static string Trim(string s, int n) => s.Length <= n ? s : s[..(n - 1)] + "...";
+
+        static void OpenUrl(string url)
+        {
+            try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); }
+            catch (Exception) { /* no browser */ }
+        }
 
         static void OpenFolder(string path)
         {

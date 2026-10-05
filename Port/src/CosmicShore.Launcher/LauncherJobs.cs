@@ -112,13 +112,66 @@ namespace CosmicShore.Launcher
             return LaunchGame(audio);
         });
 
+        /// <summary>The BUILD page's iOS button, in whichever mode SETTINGS chose.</summary>
+        public void BuildIos()
+        {
+            if (_s.Ios == IosMode.GitHub) BuildIosOnGitHub();
+            else BuildPhone(ios: true);
+        }
+
+        public string? IosRunUrl { get; private set; }
+
+        /// <summary>No Mac: GitHub's free macOS runner compiles the .ipa from the branch; we download it.</summary>
+        public void BuildIosOnGitHub() => Start("Build iOS on GitHub", async ct =>
+        {
+            IosRunUrl = null;
+            Step("Signing in to GitHub");
+            if (_tools.Git == null) _tools.Detect(_s);
+            var token = _ws.GitHubApiToken();
+            if (token == null)
+            {
+                Log.Add(LogKind.Error, "No GitHub sign-in found. Sign in with GitHub Desktop, or paste a token in SETTINGS > Source (Actions: read & write).");
+                return false;
+            }
+            var gh = new GitHubActions(_s.RemoteUrl, token);
+            Step("Starting the Mac build for " + _s.Branch);
+            long run = await gh.Start(_s.Branch, _s.DebugBuild, Log, ct);
+            IosRunUrl = gh.RunUrl;
+            Log.Add(LogKind.Command, "GitHub run: " + gh.RunUrl);
+            string last = "";
+            while (true)
+            {
+                await Task.Delay(10000, ct);
+                GitHubActions.RunState st;
+                try { st = await gh.Poll(run, ct); }
+                catch (Exception ex) when (ex is not OperationCanceledException) { Log.Add(LogKind.Warn, "poll: " + ex.Message); continue; }
+                Step("Mac: " + st.Step, st.Total > 0 ? (float)st.Done / st.Total : -1);
+                if (st.Step != last) { Log.Add(LogKind.Output, "mac> " + st.Step); last = st.Step; }
+                if (st.Status != "completed") continue;
+                if (st.Conclusion != "success")
+                {
+                    Log.Add(LogKind.Error, $"The Mac build {st.Conclusion}. Open the run for the log: {gh.RunUrl}");
+                    return false;
+                }
+                break;
+            }
+            Step("Downloading the .ipa");
+            var outDir = Path.Combine(_ws.Exists ? _ws.Dir : LauncherSettings.DataDir, "Builds", "iOS");
+            var ipa = await gh.DownloadIpa(run, outDir, ct);
+            LastArtifact = ipa;
+            Log.Add(LogKind.Success, $"Built {ipa} - open it in Sideloadly to sign and install it on your iPhone.");
+            return true;
+        });
+
         public void BuildPhone(bool ios) => Start(ios ? "Build iOS" : "Build Android", async ct =>
         {
             if (!await EnsureTools(ct)) return false;
             if (_s.PullBeforePlay || !_ws.HasEngine)
                 if (!await SyncStep(ct)) return false;
-            Step(ios ? "Exporting the iOS project" : "Building the Android app (first run installs the Android SDK)");
+            bool xcode = ios && _s.Ios == IosMode.Xcode;
+            Step(xcode ? "Exporting the Xcode project" : ios ? "Building the iOS app" : "Building the Android app (first run installs the Android SDK)");
             var args = new List<string> { "run", "--project", _ws.BuildProject, "-c", "Release", "--", ios ? "ios" : "android" };
+            if (xcode) args.Add("--xcode");
             if (!ios)
             {
                 if (!string.IsNullOrWhiteSpace(_s.AndroidAbis)) { args.Add("--abi"); args.Add(_s.AndroidAbis.Trim()); }
@@ -135,6 +188,7 @@ namespace CosmicShore.Launcher
             var outDir = Path.Combine(_ws.Dir, "Builds", ios ? "iOS" : "Android");
             var artifact = Directory.Exists(outDir)
                 ? Directory.EnumerateFiles(outDir, ios ? "*.ipa" : "*.a?b", SearchOption.TopDirectoryOnly)
+                    .Concat(xcode ? Directory.EnumerateDirectories(outDir, "*.xcodeproj") : Enumerable.Empty<string>())
                     .Concat(Directory.EnumerateFiles(outDir, "*.apk", SearchOption.TopDirectoryOnly))
                     .OrderByDescending(File.GetLastWriteTimeUtc).FirstOrDefault()
                 : null;
@@ -241,6 +295,7 @@ namespace CosmicShore.Launcher
             if (!string.IsNullOrWhiteSpace(_s.Resolution)) { a.Add("--size"); a.Add(_s.Resolution.Trim()); }
             if (_s.Fullscreen) a.Add("--fullscreen");
             if (!string.IsNullOrWhiteSpace(_s.StartScene)) { a.Add("--scene"); a.Add(_s.StartScene); }
+
             if (_s.VerboseLogs) a.Add("--verbose");
             foreach (var x in SplitArgs(_s.ExtraArgs)) a.Add(x);
             return a;

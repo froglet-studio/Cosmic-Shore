@@ -103,6 +103,13 @@ namespace CosmicShore.Content
 
         void ReadBuildSettings()
         {
+            // The engine's own Scenes In Build (Port/ProjectSettings/FrogletProject.json) wins when authored.
+            var froglet = CosmicShore.Froglet.FrogletProjectSettings.Load(Db.ProjectRoot);
+            if (froglet.Scenes is { Count: > 0 } own)
+            {
+                foreach (var s in own) BuildScenes.Add((s.Path, s.Guid, s.Enabled));
+                return;
+            }
             var path = Path.Combine(Db.ProjectRoot, "ProjectSettings", "EditorBuildSettings.asset");
             if (!File.Exists(path)) return;
             var doc = UnityYaml.ParseDocuments(File.ReadAllText(path)).FirstOrDefault();
