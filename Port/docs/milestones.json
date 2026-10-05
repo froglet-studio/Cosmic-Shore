@@ -1,0 +1,256 @@
+{
+  "about": "Prisma's milestone checkpoints (Port/docs/ROADMAP.md). The MILESTONES page in Prisma reads and updates this file; commit it to share progress.",
+  "milestones": {
+    "M1": "Gameplay parity: playing Cosmic Shore in Prisma is indistinguishable from the Unity build.",
+    "M2": "Unity-free development: developers stop opening Unity; Prisma's own tools do every Unity job Cosmic Shore needs."
+  },
+  "checkpoints": [
+    {
+      "id": "C1",
+      "milestone": "M1",
+      "title": "Parity harness",
+      "exit": "(1) An input recorder/replayer in game code (`Assets/_Scripts/Utility`, its own Unity PR) that both engines run. (2) A Unity-side capture command producing golden frames, scores and audio events for a replay. (3) `engine_parity` in the MCP server: replay in the engine and diff against the goldens (image SSIM per frame, exact scores, event sequence). (4) GitHub CI: build the port and run `engine_smoke` for every mode on each bleeding-edge push",
+      "weeks": 4,
+      "dependsOn": [],
+      "status": "todo",
+      "notes": [],
+      "prompt": "Plan checkpoint C1 of Port/docs/ROADMAP.md. Design an input recorder/replayer that lives in the game's own code (a separate Unity PR - list exactly what it adds under Assets/_Scripts/Utility and why it cannot live in Port/), a Unity-side capture step that writes golden frames, scores and FMOD events for a replay, and an `engine_parity` MCP tool that replays in Prisma and diffs against those goldens. Include the GitHub Actions job that builds the port and runs engine_smoke for every build scene on each bleeding-edge push. Measure first: how input reaches the game today (InputScript, Input System devices) and which RNG sources make a match nondeterministic."
+    },
+    {
+      "id": "C2",
+      "milestone": "M1",
+      "title": "Visual completeness",
+      "exit": "81/81 shaders translated; ParticleSystem (the modules the 26 prefabs use) and both VFX Graphs draw; the Timeline plays; SSIM >= 0.97 against goldens in every mode's first 60 s",
+      "weeks": 14,
+      "dependsOn": [
+        "C1"
+      ],
+      "status": "todo",
+      "notes": [],
+      "prompt": "Pick the next untranslated shader (or ParticleSystem module, or VFX Graph) from ROADMAP \u00a7C2, ranked by how many on-screen objects use it in the 19 Steam modes. Read its .shadergraph/.shader/prefab, translate it into CosmicShore.Render following the existing material families, then prove it: game_start in a scene that shows it, game_screenshot before/after, and the parity diff once C1 exists. Do one item per session; record it in this file."
+    },
+    {
+      "id": "C3",
+      "milestone": "M1",
+      "title": "Physics parity",
+      "exit": "Contact resolution for the 17 Rigidbody users; OnCollision* fires; replays end with identical scores",
+      "weeks": 3,
+      "dependsOn": [
+        "C1"
+      ],
+      "status": "todo",
+      "notes": [],
+      "prompt": "Measure every Rigidbody and OnCollision* use in Assets/_Scripts (17 + 1 at last count). For each, say what contact behaviour it needs. Implement only that in CosmicShore.Engine physics, with tests, and verify with replays that scores match Unity."
+    },
+    {
+      "id": "C4",
+      "milestone": "M1",
+      "title": "Audio parity",
+      "exit": "Every replay's FMOD event sequence matches Unity's, including mixer snapshots",
+      "weeks": 1,
+      "dependsOn": [
+        "C1"
+      ],
+      "status": "todo",
+      "notes": [],
+      "prompt": "Plan checkpoint C4 (Audio parity) of Port/docs/ROADMAP.md. Its exit criterion: Every replay's FMOD event sequence matches Unity's, including mixer snapshots Measure what Cosmic Shore actually uses first, then propose the smallest set of engine changes that meets the criterion, how each is proven, and the order."
+    },
+    {
+      "id": "C5",
+      "milestone": "M1",
+      "title": "UI + text parity",
+      "exit": "Every screen at 16:9, 21:9 and 4:3 matches Unity (SSIM >= 0.98). TMP rendering rewritten clean (legal)",
+      "weeks": 4,
+      "dependsOn": [
+        "C1"
+      ],
+      "status": "todo",
+      "notes": [],
+      "prompt": "For every screen in Menu_Main and the in-game HUD, capture the engine at 1920x1080, 2560x1080 and 1024x768, then list layout differences against the Unity goldens with game_ui_at / game_dump_ui evidence. Fix in the engine's RectTransform/layout/TMP code. Separately, plan the clean-room TMP SDF rewrite from docs/LEGAL_REVIEW.md."
+    },
+    {
+      "id": "C6",
+      "milestone": "M1",
+      "title": "Online parity",
+      "exit": "4 players over the internet in each multiplayer mode; Steam auth and achievements; cloud save and leaderboards on the chosen backend",
+      "weeks": 8,
+      "dependsOn": [
+        "C1"
+      ],
+      "status": "todo",
+      "notes": [],
+      "prompt": "Implement the backend chosen at G2: transport over the internet with relay, Steam auth/achievements via Steamworks.NET, cloud save and leaderboards. Prove it with two machines in different networks (or two GitHub runners) completing a Bloomrush match.",
+      "gate": "G2 (online backend decision, 2026-12-15) must be decided first"
+    },
+    {
+      "id": "C7",
+      "milestone": "M1",
+      "title": "Performance parity",
+      "exit": "On the GTX 1060: every mode at every intensity within 10% of Unity's frame time, and load times within the R7 target",
+      "weeks": 8,
+      "dependsOn": [
+        "C2"
+      ],
+      "status": "todo",
+      "notes": [],
+      "prompt": "Profile the heaviest mode at intensity 4 with COSMIC_SHORE_RENDER_TIMING=1 and dotnet-trace. Rank the top 5 costs against the GTX 1060 budget (16.6 ms). Fix the largest one per session, proving each with before/after numbers from the same replay."
+    },
+    {
+      "id": "C8",
+      "milestone": "M1",
+      "title": "Platforms",
+      "exit": "(1) Windows real-machine pass. (2) Android device pass. (3) iOS sideload pass. (4) Metal backend plan approved. (5) Steam Deck native Linux build",
+      "weeks": 6,
+      "dependsOn": [
+        "C2",
+        "C7"
+      ],
+      "status": "todo",
+      "notes": [],
+      "prompt": "Produce the Windows, Android and iOS builds from the launcher, run the platform checklist (boot, a full match, audio, input, suspend/resume) and log every failure as a session report. Write the Metal backend plan: what the renderer's GL calls map to, what changes in shaders, the effort."
+    },
+    {
+      "id": "C9",
+      "milestone": "M1",
+      "title": "Blind test (= M1)",
+      "exit": "10 players play both builds in random order; detection no better than chance (<= 60% correct)",
+      "weeks": 2,
+      "dependsOn": [
+        "C1",
+        "C2",
+        "C3",
+        "C4",
+        "C5",
+        "C6",
+        "C7",
+        "C8"
+      ],
+      "status": "todo",
+      "notes": [],
+      "prompt": "Plan checkpoint C9 (Blind test (= M1)) of Port/docs/ROADMAP.md. Its exit criterion: 10 players play both builds in random order; detection no better than chance (<= 60% correct) Measure what Cosmic Shore actually uses first, then propose the smallest set of engine changes that meets the criterion, how each is proven, and the order."
+    },
+    {
+      "id": "E1",
+      "milestone": "M2",
+      "title": "Editor shell",
+      "exit": "The launcher gains a \"Prisma Editor\" mode: scene hierarchy, inspector (read-only), asset browser, embedded player view",
+      "weeks": 4,
+      "dependsOn": [],
+      "status": "todo",
+      "notes": [],
+      "prompt": "Plan the Prisma Editor mode of the launcher: hierarchy, read-only inspector and asset browser over the engine's loaded scene, and the player embedded in a panel. Reuse ContentRuntime and the control-port model. List what Dear ImGui needs (docking branch?) and flag any new dependency."
+    },
+    {
+      "id": "E2",
+      "milestone": "M2",
+      "title": "Edit and save",
+      "exit": "Inspector edits, create/delete/reparent, prefab overrides and variants, saved through `cs-asset`'s writer; files byte-stable on round trip",
+      "weeks": 6,
+      "dependsOn": [
+        "E1"
+      ],
+      "status": "todo",
+      "notes": [],
+      "prompt": "Plan checkpoint E2 (Edit and save) of Port/docs/ROADMAP.md. Its exit criterion: Inspector edits, create/delete/reparent, prefab overrides and variants, saved through `cs-asset`'s writer; files byte-stable on round trip Measure what Cosmic Shore actually uses first, then propose the smallest set of engine changes that meets the criterion, how each is proven, and the order."
+    },
+    {
+      "id": "E3",
+      "milestone": "M2",
+      "title": "Play mode",
+      "exit": "Play from the editor with an incremental script recompile (< 5 s); edit fields live",
+      "weeks": 4,
+      "dependsOn": [
+        "E2"
+      ],
+      "status": "todo",
+      "notes": [],
+      "prompt": "Plan checkpoint E3 (Play mode) of Port/docs/ROADMAP.md. Its exit criterion: Play from the editor with an incremental script recompile (< 5 s); edit fields live Measure what Cosmic Shore actually uses first, then propose the smallest set of engine changes that meets the criterion, how each is proven, and the order."
+    },
+    {
+      "id": "E4",
+      "milestone": "M2",
+      "title": "Asset pipeline",
+      "exit": "Import FBX, textures and audio with `.meta` generation and the import settings the game uses; GUIDs stable",
+      "weeks": 5,
+      "dependsOn": [
+        "E2"
+      ],
+      "status": "todo",
+      "notes": [],
+      "prompt": "Plan checkpoint E4 (Asset pipeline) of Port/docs/ROADMAP.md. Its exit criterion: Import FBX, textures and audio with `.meta` generation and the import settings the game uses; GUIDs stable Measure what Cosmic Shore actually uses first, then propose the smallest set of engine changes that meets the criterion, how each is proven, and the order."
+    },
+    {
+      "id": "E5",
+      "milestone": "M2",
+      "title": "Shaders",
+      "exit": "Shader Graph JSON edited by a node editor (or by Claude via `asset-surgery`) and translated live; no Unity needed to add a material",
+      "weeks": 6,
+      "dependsOn": [
+        "E4"
+      ],
+      "status": "todo",
+      "notes": [],
+      "prompt": "Plan checkpoint E5 (Shaders) of Port/docs/ROADMAP.md. Its exit criterion: Shader Graph JSON edited by a node editor (or by Claude via `asset-surgery`) and translated live; no Unity needed to add a material Measure what Cosmic Shore actually uses first, then propose the smallest set of engine changes that meets the criterion, how each is proven, and the order."
+    },
+    {
+      "id": "E6",
+      "milestone": "M2",
+      "title": "Froglet tools",
+      "exit": "The 91 FrogletTools tools: the top 20 by use ported first (a FrogletTool attribute host on ImGui); the rest retired or ported on demand",
+      "weeks": 8,
+      "dependsOn": [
+        "E3"
+      ],
+      "status": "todo",
+      "notes": [],
+      "prompt": "Plan checkpoint E6 (Froglet tools) of Port/docs/ROADMAP.md. Its exit criterion: The 91 FrogletTools tools: the top 20 by use ported first (a FrogletTool attribute host on ImGui); the rest retired or ported on demand Measure what Cosmic Shore actually uses first, then propose the smallest set of engine changes that meets the criterion, how each is proven, and the order."
+    },
+    {
+      "id": "E7",
+      "milestone": "M2",
+      "title": "Animation + UI layout",
+      "exit": "Animator controller editing and RectTransform layout editing with anchors and gizmos",
+      "weeks": 5,
+      "dependsOn": [
+        "E3"
+      ],
+      "status": "todo",
+      "notes": [],
+      "prompt": "Plan checkpoint E7 (Animation + UI layout) of Port/docs/ROADMAP.md. Its exit criterion: Animator controller editing and RectTransform layout editing with anchors and gizmos Measure what Cosmic Shore actually uses first, then propose the smallest set of engine changes that meets the criterion, how each is proven, and the order."
+    },
+    {
+      "id": "E8",
+      "milestone": "M2",
+      "title": "Profiler, tests, release",
+      "exit": "Frame profiler, EditMode test runner, Steam upload (steamcmd), Android/iOS from the editor",
+      "weeks": 4,
+      "dependsOn": [
+        "E3"
+      ],
+      "status": "todo",
+      "notes": [],
+      "prompt": "Plan checkpoint E8 (Profiler, tests, release) of Port/docs/ROADMAP.md. Its exit criterion: Frame profiler, EditMode test runner, Steam upload (steamcmd), Android/iOS from the editor Measure what Cosmic Shore actually uses first, then propose the smallest set of engine changes that meets the criterion, how each is proven, and the order."
+    },
+    {
+      "id": "E9",
+      "milestone": "M2",
+      "title": "Cut-over (= M2)",
+      "exit": "One 3-week cycle shipped without opening Unity; Unity kept read-only as the reference until M2 + 1 cycle",
+      "weeks": 3,
+      "dependsOn": [
+        "C9",
+        "E1",
+        "E2",
+        "E3",
+        "E4",
+        "E5",
+        "E6",
+        "E7",
+        "E8"
+      ],
+      "status": "todo",
+      "notes": [],
+      "prompt": "Plan checkpoint E9 (Cut-over (= M2)) of Port/docs/ROADMAP.md. Its exit criterion: One 3-week cycle shipped without opening Unity; Unity kept read-only as the reference until M2 + 1 cycle Measure what Cosmic Shore actually uses first, then propose the smallest set of engine changes that meets the criterion, how each is proven, and the order."
+    }
+  ]
+}

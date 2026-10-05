@@ -1,7 +1,7 @@
-# Port/CLAUDE.md — working on the Froglet Engine
+# Port/CLAUDE.md — working on Prisma
 
 The repository's root `CLAUDE.md` is about the Unity game. **This file is about `Port/`**: the
-Froglet Engine, Froglet's own engine that runs the same game with no Unity. Both apply when you
+Prisma, Froglet's own engine that runs the same game with no Unity. Both apply when you
 edit `Assets/_Scripts`, because the engine compiles those files live.
 
 ## The one rule
@@ -29,22 +29,43 @@ the game uses that the engine lacks) belongs in `Port/src/CosmicShore.Engine` / 
 | `src/CosmicShore.Render` | The OpenGL renderer (GL 3.3 / GL ES 3.0), post stack, uGUI and TMP drawing |
 | `src/CosmicShore.Player` | `CosmicShore.exe`: window, headless mode, scripted input, **control port** |
 | `src/CosmicShore.Mobile` · `src/CosmicShore.Build` | Phone player · `cs-build` (player data, APK/AAB, iOS) |
-| `src/CosmicShore.Launcher` | `FrogletLauncher.exe` (Dear ImGui): play a branch, phone builds, Project Settings, Claude chat |
+| `src/CosmicShore.Launcher` | `Prisma.exe` (Dear ImGui): play a branch, phone builds, Project Settings, Claude chat |
 | `src/CosmicShore.Mcp` | `cs-mcp`: this engine as an MCP server for Claude Code |
-| `ProjectSettings/FrogletProject.json` | The engine's own Player/Scenes/Quality settings; empty fields inherit Unity's |
+| `ProjectSettings/PrismaProject.json` | The engine's own Player/Scenes/Quality settings; empty fields inherit Unity's |
 | `tests/` | `CosmicShore.Tests` (engine, xunit, ~70 s, no GPU) · `CosmicShore.Tests.Ported` (the game's EditMode tests) |
 | `docs/ARCHITECTURE.md` | How it all fits; read the section for the area you touch |
 | `docs/ROADMAP.md` | The milestones (gameplay parity, then Unity-free development), checkpoints, open gaps and ready prompts. Pick work from here |
 
+## Who works where
+
+| Session | Scope | May edit | Started from |
+|---|---|---|---|
+| **Prisma Agent** (powered by Claude) | the game, as it runs in Prisma | `Assets/` and the rest of the repo, **never `Port/`** | Prisma's AGENT page |
+| **Milestone session** | the engine, toward a roadmap checkpoint | `Port/`, **never `Assets/`, `Packages/`, `ProjectSettings/`** | Prisma's MILESTONES page (START) |
+| Engine development in Claude Code | the engine | `Port/` (this file's rules) | the repo root |
+
+Deny rules on the Claude Code CLI enforce the first two in every mode. A milestone session
+records progress in `docs/milestones.json` (status plus a dated note with evidence).
+
+## Prisma's memory: tracks and the board
+
+Every play run writes a session report (`--session-report`); Prisma folds them into **tracks**
+(`%LOCALAPPDATA%/Prisma/tracks/tracks.json`, a brief in `MEMORY.md`): runs, performance per
+scene, features (modes, vessels, scenes), audio (instances, missing events, unwired one-shots)
+and every distinct problem with first/last seen. The **board** (`board.json`, same folder) holds
+bugs and tasks; Prisma and agents add only *suggestions*, which the user accepts. Tools:
+`prisma_tracks` (read this before asking what is wrong), `prisma_board`, `prisma_board_suggest`.
+Code: `src/Shared/PrismaTracks.cs`, `src/Shared/PrismaBoard.cs`.
+
 ## The loop
 
-With the **froglet-engine MCP server** (preferred - see below), the loop is tools:
+With the **prisma MCP server** (preferred - see below), the loop is tools:
 
 1. Edit code.
 2. `engine_build` (target `player`) - fix every error it lists. `engine_smoke` then boots the
    game headless and answers PASS/FAIL with every error, exception and warning it logged.
 3. `game_start` - boots the real game with a control port (under xvfb on a display-less server).
-4. Look and act: `game_screenshot`, `game_state`, `game_input` ("click X,Y", "type pilot",
+4. Look and act (and read `prisma_tracks` first when chasing a reported problem): `game_screenshot`, `game_state`, `game_input` ("click X,Y", "type pilot",
    "key Enter", "hold W 60"), `game_wait`, `game_find`, `game_hierarchy`, `game_get` /
    `game_set`, `game_ui_at`, `game_dump_ui`, `game_logs`, `game_load_scene`.
 5. `game_stop`, then `engine_test` and `unity_isolation_check` before committing.
@@ -92,10 +113,10 @@ An unattended run without a port: `--frames N --shot F:out.png --do "F:click X,Y
 The server is `Port/src/CosmicShore.Mcp` (stdio, no dependencies). From the repository root:
 
 ```bash
-claude mcp add froglet-engine -- dotnet run --project Port/src/CosmicShore.Mcp --
+claude mcp add prisma -- dotnet run --project Port/src/CosmicShore.Mcp --
 # or for one session:
 claude --mcp-config Port/.mcp.json
 ```
 
-The launcher's CLAUDE page wires it in by itself. The `/froglet-engine` skill
-(`.claude/skills/froglet-engine/SKILL.md`) is the short version of this file for an agent.
+The launcher's CLAUDE page wires it in by itself. The `/prisma` skill
+(`.claude/skills/prisma/SKILL.md`) is the short version of this file for an agent.

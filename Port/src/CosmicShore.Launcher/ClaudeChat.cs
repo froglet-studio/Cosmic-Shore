@@ -167,7 +167,7 @@ namespace CosmicShore.Launcher
             try
             {
                 using var http = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromMinutes(30) };
-                http.DefaultRequestHeaders.UserAgent.ParseAdd("FrogletLauncher/0.1");
+                http.DefaultRequestHeaders.UserAgent.ParseAdd("Prisma/0.1");
                 InstallStatus = "Finding the latest version";
                 string version = (await http.GetStringAsync($"{Releases}/latest", ct)).Trim();
                 if (!System.Text.RegularExpressions.Regex.IsMatch(version, @"^\d+\.\d+\.\d+"))
@@ -259,23 +259,58 @@ namespace CosmicShore.Launcher
         }
 
         /// <summary>
-        /// The scope every launcher conversation runs under: this is the Froglet Engine's agent. It
+        /// The scope every launcher conversation runs under: this is Prisma's agent. It
         /// works on Port/, reads Assets/ only as the game's input, and is refused (deny rules, which
         /// hold in every mode) any edit to what Unity reads.
         /// </summary>
-        const string EngineScope =
-            "You are the Froglet Engine agent, running inside the engine's launcher on a checkout of the Cosmic Shore repository. " +
-            "Your job is the engine: Port/ (Froglet Engine source, its tools, tests and docs). Read Port/CLAUDE.md before engine work. " +
-            "Assets/, Packages/ and ProjectSettings/ belong to the Unity project: read them as the game's input, never change them - " +
-            "if a fix belongs there, say so and describe it instead. Prefer proving things with the froglet-engine tools " +
-            "(engine_build, engine_test, engine_smoke, game_start, game_screenshot ...) over guessing. " +
-            "Keep replies short; the user reads them in the launcher's chat panel.";
+        /// <summary>
+        /// Who the conversation is. GAME: the Prisma Agent, powered by Claude - it works on Cosmic
+        /// Shore (the game's code and content in Assets/) as it runs in Prisma, and never edits
+        /// Prisma itself. MILESTONE: a roadmap checkpoint session - engine work on Port/ toward a
+        /// milestone, which never edits the game. Deny rules enforce each side in every mode.
+        /// </summary>
+        public enum Scope { Game = 0, Milestone = 1 }
 
-        static readonly string[] UnityDenies =
+        public Scope CurrentScope { get; private set; } = Scope.Game;
+        public string? Milestone { get; private set; }
+        public string? MilestoneTitle { get; private set; }
+
+        /// <summary>Switches who the conversation is; a different scope starts a fresh conversation.</summary>
+        public void SetScope(Scope scope, string? milestone = null, string? title = null)
         {
-            "Edit(Assets/**)", "Write(Assets/**)", "Edit(Packages/**)", "Write(Packages/**)",
-            "Edit(ProjectSettings/**)", "Write(ProjectSettings/**)", "NotebookEdit(Assets/**)",
-        };
+            if (scope == CurrentScope && milestone == Milestone) return;
+            NewChat();
+            CurrentScope = scope; Milestone = milestone; MilestoneTitle = title;
+            Note(scope == Scope.Game ? "Prisma Agent: working on the game." : $"Milestone {milestone} - {title}: engine work on Prisma.");
+        }
+
+        const string GameScope =
+            "You are the Prisma Agent, powered by Claude, running inside Prisma - Froglet's own engine - on a checkout of the Cosmic Shore repository. " +
+            "You work on the GAME: Cosmic Shore's code and content (Assets/), as it runs in Prisma. You do not change Prisma itself (Port/): " +
+            "engine work happens in Prisma's MILESTONES sessions, so when a problem's cause is in the engine, say which milestone it belongs to and describe it. " +
+            "Follow the repository's root CLAUDE.md for game work. Prisma records every play run as tracks (performance per scene, features, audio, every problem " +
+            "with when it was first and last seen); the brief below is the latest, and prisma_tracks has the rest. Start from it: when asked to fix something, " +
+            "find it in the tracks, reproduce it with the prisma tools (engine_smoke, game_start, game_screenshot, game_logs ...), fix it, and prove the fix the same way. " +
+            "Keep replies short; the user reads them in Prisma's chat panel.";
+
+        string MilestoneScope() =>
+            $"You are running milestone {Milestone} ({MilestoneTitle}) inside Prisma, Froglet's own engine for Cosmic Shore, on a checkout of the Cosmic Shore repository. " +
+            "This session works on the ENGINE: Port/ (Prisma's source, tools, tests and docs). Read Port/CLAUDE.md and Port/docs/ROADMAP.md first; the checkpoint's " +
+            "exit criterion is in Port/docs/milestones.json. Assets/, Packages/ and ProjectSettings/ are the Unity project: read them as the game's input, never change them. " +
+            $"Prove every step with the prisma tools (engine_build, engine_test, engine_smoke, game_* ...). When the work moves the checkpoint, update {Milestone}'s entry in " +
+            "Port/docs/milestones.json: status (todo, in-progress, done) and a dated note with the evidence. Keep replies short.";
+
+        // Edit(path) rules cover every file-editing tool (Edit, Write, NotebookEdit) in every mode.
+        static readonly string[] UnityDenies = { "Edit(Assets/**)", "Edit(Packages/**)", "Edit(ProjectSettings/**)" };
+
+        static readonly string[] EngineDenies = { "Edit(Port/**)" };
+
+        /// <summary>The tracks brief the Prisma Agent starts every prompt with.</summary>
+        static string TracksBrief()
+        {
+            try { return Prisma.PrismaTracks.Load(Path.Combine(LauncherSettings.DataDir, "tracks")).Memory(5000); }
+            catch { return ""; }
+        }
 
         void Run(string text, string workDir, Mode mode, string? extraDir)
         {
@@ -300,12 +335,13 @@ namespace CosmicShore.Launcher
                 var effort = _s.ClaudeEffort?.Trim() ?? "";
                 if (effort.Length > 0 && effort != "default") { psi.ArgumentList.Add("--effort"); psi.ArgumentList.Add(effort); }
                 psi.ArgumentList.Add("--disallowedTools");
-                foreach (var d in UnityDenies) psi.ArgumentList.Add(d);
-                if (extraDir != null && Directory.Exists(extraDir)) { psi.ArgumentList.Add("--add-dir"); psi.ArgumentList.Add(extraDir); }
+                foreach (var d in CurrentScope == Scope.Game ? EngineDenies : UnityDenies) psi.ArgumentList.Add(d);
+                foreach (var dir in new[] { extraDir, Path.Combine(LauncherSettings.DataDir, "tracks") })
+                    if (dir != null && Directory.Exists(dir)) { psi.ArgumentList.Add("--add-dir"); psi.ArgumentList.Add(dir); }
                 WireEngine(psi, psi.WorkingDirectory);
                 psi.ArgumentList.Add("--append-system-prompt");
-                psi.ArgumentList.Add(EngineScope + $" Branch: {_s.Branch}." + (mode == Mode.Plan
-                    ? " You are in PLAN mode: investigate (reading files and using the froglet-engine tools is fine), then make your final message " +
+                psi.ArgumentList.Add((CurrentScope == Scope.Game ? GameScope + "\n\n" + TracksBrief() : MilestoneScope()) + $"\n\nBranch: {_s.Branch}." + (mode == Mode.Plan
+                    ? " You are in PLAN mode: investigate (reading files and using the prisma tools is fine), then make your final message " +
                       "the plan itself - a short title line and numbered steps naming the files to change. The launcher shows that message as the plan " +
                       "with Approve buttons, so do not write plan files and do not ask how to submit it."
                     : ""));
@@ -355,7 +391,7 @@ namespace CosmicShore.Launcher
             {
                 ["mcpServers"] = new Dictionary<string, object>
                 {
-                    ["froglet-engine"] = new Dictionary<string, object>
+                    ["prisma"] = new Dictionary<string, object>
                     {
                         ["command"] = _tools.Dotnet,
                         ["args"] = new[] { "run", "--project", project, "--" },
@@ -369,7 +405,7 @@ namespace CosmicShore.Launcher
             psi.ArgumentList.Add(path);
             // Its tools build and run the game but edit no files, so every mode may use them.
             psi.ArgumentList.Add("--allowedTools");
-            psi.ArgumentList.Add("mcp__froglet-engine");
+            psi.ArgumentList.Add("mcp__prisma");
             return true;
         }
 
@@ -477,7 +513,7 @@ namespace CosmicShore.Launcher
         static string Describe(JsonElement toolUse)
         {
             string name = toolUse.TryGetProperty("name", out var n) ? n.GetString() ?? "tool" : "tool";
-            name = name.StartsWith("mcp__froglet-engine__") ? name["mcp__froglet-engine__".Length..] : name;
+            name = name.StartsWith("mcp__prisma__") ? name["mcp__prisma__".Length..] : name;
             if (!toolUse.TryGetProperty("input", out var input) || input.ValueKind != JsonValueKind.Object) return name;
             foreach (var key in new[] { "file_path", "path", "command", "pattern", "action", "url", "target", "text", "scene", "description" })
                 if (input.TryGetProperty(key, out var v) && v.ValueKind == JsonValueKind.String)

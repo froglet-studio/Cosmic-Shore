@@ -18,7 +18,7 @@ namespace CosmicShore.Mcp
     public sealed class Tools : IDisposable
     {
         public const string Instructions =
-            "Froglet Engine (the Cosmic Shore .NET port). Read Port/CLAUDE.md first. Loop: edit code -> engine_build -> engine_smoke -> " +
+            "Prisma (the Cosmic Shore .NET port). Read Port/CLAUDE.md first. Loop: edit code -> engine_build -> engine_smoke -> " +
             "game_start -> game_state / game_screenshot / game_input / game_get ... -> game_stop. The port must not change " +
             "Assets/, Packages/ or ProjectSettings/ (unity_isolation_check). Coordinates are screenshot pixels, top-left origin.";
 
@@ -67,6 +67,21 @@ namespace CosmicShore.Mcp
                     ["expect"] = P("string", "scene that must be reached for a PASS (default: any)"),
                     ["build"] = P("boolean", "compile first (default true)"),
                 }),
+            Tool("prisma_tracks", "Prisma's memory of play runs: the last runs, open problems (crashes, exceptions, errors, audio, performance) with how often and when they were seen, performance by scene over time. Read this first when asked about a problem in the game.",
+                new JsonObject
+                {
+                    ["section"] = new JsonObject { ["type"] = "string", ["enum"] = new JsonArray("memory", "issues", "runs"), ["description"] = "memory (default): the brief; issues: every problem as JSON; runs: every run as JSON" },
+                }),
+            Tool("prisma_board", "Prisma's task and bug tracker: every bug and task with its state (suggested, todo, doing, done), priority, source and notes.",
+                new JsonObject { ["state"] = P("string", "only this state (suggested, todo, doing, done); default: everything open") }),
+            Tool("prisma_board_suggest", "Suggest a bug or task to the user. It appears on Prisma's BOARD as SUGGESTED until the user accepts it. Use it for problems you find but are not fixing now.",
+                new JsonObject
+                {
+                    ["type"] = new JsonObject { ["type"] = "string", ["enum"] = new JsonArray("bug", "task") },
+                    ["title"] = P("string", "one line"),
+                    ["detail"] = P("string", "what, where (files, scene), evidence, and the suggested fix"),
+                    ["priority"] = P("integer", "1 high, 2 normal, 3 low"),
+                }, "type", "title"),
             Tool("unity_isolation_check", "Fails if the branch changes anything outside Port/ that Unity would see. Run before committing.",
                 new JsonObject { ["base"] = P("string", "branch to diff against (default origin/bleeding-edge)") }),
             Tool("game_start", "Build (unless build=false) and start the player with its control port, then wait until it answers. On a Linux server without a display it runs under xvfb-run. Stops a previous player first.",
@@ -131,6 +146,38 @@ namespace CosmicShore.Mcp
                     if (Str(a, "base").Length > 0) { args.Add("--base"); args.Add(Str(a, "base")); }
                     var r = await Run(OperatingSystem.IsWindows() ? "python" : "python3", args, _repo, TimeSpan.FromMinutes(2));
                     return new JsonArray(Text(r.Output.Trim()));
+                }
+                case "prisma_board":
+                {
+                    var b = Prisma.PrismaBoard.Load();
+                    var want = Str(a, "state").ToLowerInvariant();
+                    var items = b.Items.Where(i => want.Length > 0 ? i.State.ToString().ToLowerInvariant() == want
+                                                                    : i.State is not (Prisma.PrismaBoard.Status.Done or Prisma.PrismaBoard.Status.Dismissed))
+                                       .OrderBy(i => i.State).ThenBy(i => i.Priority);
+                    var text = string.Join("\n", items.Select(i => $"{i.Id} [{i.State}] P{i.Priority} {i.Type} ({i.Source}): {i.Title}" +
+                        (i.Detail.Length > 0 ? "\n    " + i.Detail.Replace("\n", "\n    ") : "") +
+                        (i.Notes.Count > 0 ? "\n    notes: " + string.Join(" | ", i.Notes) : "")));
+                    return new JsonArray(Text(text.Length > 0 ? text : "The board is empty."));
+                }
+                case "prisma_board_suggest":
+                {
+                    var b = Prisma.PrismaBoard.Load();
+                    var type = Str(a, "type") == "bug" ? Prisma.PrismaBoard.Kind.Bug : Prisma.PrismaBoard.Kind.Task;
+                    var item = b.Add(type, Str(a, "title"), Str(a, "detail"), "agent", Prisma.PrismaBoard.Status.Suggested, Int(a, "priority", 2));
+                    b.Save();
+                    return new JsonArray(Text($"Suggested {item.Id}: {item.Title}. The user accepts or dismisses it on Prisma's BOARD."));
+                }
+                case "prisma_tracks":
+                {
+                    var t = Prisma.PrismaTracks.Load();
+                    var section = Str(a, "section", "memory");
+                    var text = section switch
+                    {
+                        "issues" => JsonSerializer.Serialize(t.Issues.Values.OrderByDescending(i => i.LastSeen), new JsonSerializerOptions { WriteIndented = true }),
+                        "runs" => JsonSerializer.Serialize(t.Runs.AsEnumerable().Reverse().Take(60), new JsonSerializerOptions { WriteIndented = true }),
+                        _ => t.Memory(20000),
+                    };
+                    return new JsonArray(Text(text));
                 }
                 case "engine_smoke": return new JsonArray(Text(await Smoke(a)));
                 case "game_start": return new JsonArray(Text(await Start(a)));

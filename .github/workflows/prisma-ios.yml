@@ -1,22 +1,22 @@
-# Froglet Engine - iOS .ipa from source, on a free GitHub-hosted Mac.
+# Prisma - iOS .ipa from source, on a free GitHub-hosted Mac.
 #
 # The engine needs no Unity step: the game's source and data are already in the repository, so a
 # macOS runner can go straight from a branch to an UNSIGNED .ipa. Sign and install that .ipa on
 # Windows with Sideloadly and a free Apple ID (Docs/IOS_BUILD.md section 2, Path A, step 4 - the
 # same Windows step the Unity path uses).
 #
-# This only builds Port/ (the Froglet Engine). It never imports or changes the Unity project. The
+# This only builds Port/ (Prisma). It never imports or changes the Unity project. The
 # Unity build keeps its own workflow, ios-unsigned-ipa.yml.
 #
 # HOW TO RUN
-#   - Froglet Launcher > BUILD > iOS > "BUILD .IPA ON GITHUB" (dispatches this, waits, downloads it), or
-#   - Actions tab > "Froglet Engine iOS ipa" > Run workflow, type the branch, or
+#   - Prisma > BUILD > iOS > "BUILD .IPA ON GITHUB" (dispatches this, waits, downloads it), or
+#   - Actions tab > "Prisma iOS ipa" > Run workflow, type the branch, or
 #   - push any change to Port/ios-build-request.txt on a FEATURE branch.
 #
 # PRIVACY: the repository is public, so the artifact is downloadable by any signed-in GitHub user who
 # finds the run. It is unsigned (runs on no phone until signed) and kept for 3 days.
 
-name: Froglet Engine iOS ipa
+name: Prisma iOS ipa
 
 on:
   workflow_dispatch:
@@ -42,7 +42,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: froglet-engine-ios-${{ github.event.inputs.ref || github.ref }}
+  group: prisma-ios-${{ github.event.inputs.ref || github.ref }}
   cancel-in-progress: true
 
 jobs:

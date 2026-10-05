@@ -1,4 +1,4 @@
-# Froglet Engine v0.1 — Architecture Overview
+# Prisma v0.1 — Architecture Overview
 
 *The Unity-free engine (the "port") that runs Cosmic Shore: how it is put together, how one frame works, and how to drive it.*
 
@@ -38,7 +38,7 @@ players also reference Content, Render and Engine directly.
 | **CosmicShore.Mobile** | The Android/iOS player: the same `PlayerWindow` on an SDL GL ES view, with touch | same as Player |
 | **CosmicShore.AssetTool** | `cs-asset`: edit scenes, prefabs and assets from the command line | Content, Live, Compat |
 | **CosmicShore.Build** | `cs-build`: Unity-style player builds (player data, Android APK/AAB, iOS) | none (reads files only) |
-| **CosmicShore.Launcher** | `FrogletLauncher.exe`: pick a branch, fetch, build and play it; Android/iOS builds. Dear ImGui on Silk.NET | none (drives git, `dotnet`, `cs-build`) |
+| **CosmicShore.Launcher** | `Prisma.exe`: pick a branch, fetch, build and play it; Android/iOS builds. Dear ImGui on Silk.NET | none (drives git, `dotnet`, `cs-build`) |
 | *Data, Game, Cli, Client* | **Legacy.** Early hand-ported gameplay, headless round drivers and "sprint" windows. The player does not use them; the tests still do | Engine |
 | Tests | `CosmicShore.Tests` (xunit, 1,568 tests); `CosmicShore.Tests.Ported` (the project's Unity EditMode tests, 352) | — |
 
@@ -283,7 +283,7 @@ Numbered badges mark what to click.
 
 ### 11.1 The launcher (start here)
 
-`FrogletLauncher.exe` (`Port/dist/FrogletLauncher-Windows.zip`) is the one file to give a tester.
+`Prisma.exe` (`Port/dist/Prisma-Windows.zip`) is the one file to give a tester.
 Full guide: `docs/LAUNCHER.md`.
 
 ![Launcher PLAY](architecture/launcher_play.png)
@@ -301,7 +301,7 @@ or on a Mac builds a signed `.ipa`. Everything else is folded under *Options*.
 
 ![Launcher PROJECT](architecture/launcher_project_1.png)
 
-**Figure 10.** PROJECT: the engine's own Project Settings (`Port/ProjectSettings/FrogletProject.json`),
+**Figure 10.** PROJECT: the engine's own Project Settings (`Port/ProjectSettings/PrismaProject.json`),
 so Unity's `ProjectSettings/` is never edited. PLAYER (names, version, bundle ids, build numbers),
 SCENES (Scenes In Build, shown), QUALITY (MSAA, render scale, filtering, vsync). Empty fields
 inherit Unity's values.
@@ -400,13 +400,18 @@ MCP server, so Claude Code drives the engine with tools: `engine_build`, `engine
 `unity_isolation_check`, `game_start` / `game_stop`, `game_screenshot` (returned as an image),
 `game_input`, `game_wait`, `game_find`, `game_hierarchy`, `game_get` / `game_set`, `game_ui_at`,
 `game_dump_ui`, `game_logs`, `game_load_scene`. On a server without a display it runs the game
-under `xvfb-run`. Connect it with `claude mcp add froglet-engine -- dotnet run --project
+under `xvfb-run`. Connect it with `claude mcp add prisma -- dotnet run --project
 Port/src/CosmicShore.Mcp --` or `claude --mcp-config Port/.mcp.json`; the launcher's CLAUDE page
 connects it on its own. `Port/CLAUDE.md` is the agent's guide.
 
 `--session-report PATH` makes the player write a JSON report when it closes or crashes (scenes,
 frame-time percentiles, distinct errors/warnings/exceptions, crash, branch and commit); the
-launcher passes one for every play session. Where the engine is going: `docs/ROADMAP.md`.
+launcher passes one for every play session. Prisma folds them into **tracks** (`src/Shared/PrismaTracks.cs`:
+runs, per-scene performance, features, audio, problems grouped across runs) and keeps a task and
+bug **board** (`src/Shared/PrismaBoard.cs`) that it and its agents suggest items to. Two agent
+scopes run in the app: the Prisma Agent (the game; `Port/` is denied) and milestone sessions
+(the engine; the Unity project is denied). The MCP server exposes `prisma_tracks`, `prisma_board`
+and `prisma_board_suggest`. Where the engine is going: `docs/ROADMAP.md` and `docs/milestones.json`.
 
 ---
 

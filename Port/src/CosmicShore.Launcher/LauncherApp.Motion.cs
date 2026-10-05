@@ -25,6 +25,8 @@ namespace CosmicShore.Launcher
 
         static string ShortRev(string r) => System.Text.RegularExpressions.Regex.IsMatch(r, "^[0-9a-fA-F]{12,40}$") ? r[..7] : r;
 
+        bool SplashDone => _splashT >= (_args.UpdatedFrom != null ? 4.5f : 1.7f);
+
         static float EaseOut(float t) => 1 - MathF.Pow(1 - Math.Clamp(t, 0, 1), 3);
 
         /// <summary>0..1 as the current page eases in after a switch.</summary>
@@ -70,19 +72,23 @@ namespace CosmicShore.Launcher
             float ring = EaseOut(t / 0.9f);
             dl.AddCircle(c, 40 + ring * size.Y * 0.45f, Neon.U(Neon.Cyan, (1 - ring) * 0.8f * outA), 96, 3f);
 
-            // the logo grows in
+            // the prism grows in and splits the light; the wordmark follows
             float logoIn = EaseOut(t / 0.7f);
-            float w = MathF.Min(size.X * 0.42f, 560) * (0.86f + 0.14f * logoIn), h = w * _logoSize.Y / _logoSize.X;
-            var la = c - new Vector2(w, h) * 0.5f - new Vector2(0, 30);
-            dl.AddImage((IntPtr)_logo, la - new Vector2(6), la + new Vector2(w, h) + new Vector2(6), Vector2.Zero, Vector2.One, Neon.U(Neon.Cyan, 0.25f * logoIn * outA));
-            dl.AddImage((IntPtr)_logo, la, la + new Vector2(w, h), Vector2.Zero, Vector2.One, Neon.U(Neon.Ink, logoIn * outA));
+            float ps = 150 * (0.8f + 0.2f * logoIn);
+            Neon.PrismIcon(dl, c - new Vector2(30, 70), ps, logoIn * outA, t);
+            float h = 0;
+            var la = c + new Vector2(0, 40);
+            ImGui.PushFont(Neon.Hero);
+            var ws = ImGui.CalcTextSize("PRISMA");
+            ImGui.PopFont();
+            Neon.GlowText(dl, Neon.Hero, 46, new Vector2(c.X - ws.X * 0.5f, la.Y), Neon.Mix(Neon.Space0, Neon.Ink, logoIn * outA), "PRISMA", 0.8f * logoIn * outA);
 
             float textIn = Math.Clamp((t - 0.35f) / 0.4f, 0, 1) * outA;
-            string line = _args.UpdatedFrom != null ? $"UPDATED   {_args.UpdatedFrom}  ->  {LauncherUpdater.Short}" : "FROGLET ENGINE";
-            CenterText(dl, Neon.Heading, 24, c.X, la.Y + h + 26, Neon.Mix(Neon.Space0, Neon.Cyan, textIn), line);
+            string line = _args.UpdatedFrom != null ? $"UPDATED   {_args.UpdatedFrom}  ->  {LauncherUpdater.Short}" : "FROGLET'S ENGINE FOR COSMIC SHORE";
+            CenterText(dl, Neon.Small, 15, c.X, la.Y + 70, Neon.Mix(Neon.Space0, Neon.Cyan, textIn), line);
             if (_args.UpdatedFrom != null)
             {
-                float y = la.Y + h + 66;
+                float y = la.Y + 104;
                 foreach (var (note, i) in _updatedNotes.Take(6).Select((n, i) => (n, i)))
                 {
                     float a = Math.Clamp((t - 0.7f - i * 0.12f) / 0.3f, 0, 1) * outA;

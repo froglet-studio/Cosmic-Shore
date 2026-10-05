@@ -288,13 +288,16 @@ namespace CosmicShore.Launcher
             _game = new Process { StartInfo = psi, EnableRaisingEvents = true };
             _game.OutputDataReceived += (_, e) => { if (e.Data != null) Log.Add(LogKind.Output, e.Data); };
             _game.ErrorDataReceived += (_, e) => { if (e.Data != null) Log.Add(LogKind.Output, e.Data); };
-            _game.Exited += (_, _) => Log.Add(LogKind.Info, $"Game closed (exit code {SafeExit(_game)}).");
+            _game.Exited += (_, _) => { Log.Add(LogKind.Info, $"Game closed (exit code {SafeExit(_game)})."); GameExited?.Invoke(); };
             _game.Start();
             _game.BeginOutputReadLine();
             _game.BeginErrorReadLine();
             Log.Add(LogKind.Success, "Game running. Have fun.");
             return true;
         }
+
+        /// <summary>Raised when a game started from PLAY closes (its session report is written by then, or a moment later).</summary>
+        public event Action? GameExited;
 
         public static string SessionsDir => Path.Combine(LauncherSettings.DataDir, "sessions");
         public string? LastSessionReport { get; private set; }

@@ -12,7 +12,7 @@ using StbImageSharp;
 namespace CosmicShore.Launcher
 {
     /// <summary>
-    /// The CLAUDE page: the Froglet Engine's agent, laid out the way Claude Code lays out a session -
+    /// The CLAUDE page: Prisma's agent, laid out the way Claude Code lays out a session -
     /// a bullet per message and tool call, each tool's result folded under it, plans with approve
     /// buttons, to-do lists as checklists, the game's screenshots inline - with model, effort and
     /// permission mode on the bar, one-click test runs, session reports and voice.
@@ -80,7 +80,7 @@ namespace CosmicShore.Launcher
         {
             var last = LauncherJobs.Sessions().FirstOrDefault();
             if (last == null) { _chat.Note("No play session yet: press START, play, close the game, then try again."); return; }
-            SendChat("Analyse my last play session in the Froglet Engine. The report is " + last.FullName +
+            SendChat("Analyse my last play session in Prisma. The report is " + last.FullName +
                      " (scenes, frame-time percentiles, every distinct error/warning/exception with counts, and the crash if any). " +
                      "Rank what needs fixing in the engine, say which Port/ code each item points to, and propose the fixes.",
                 (ClaudeChat.Mode)_s.ChatMode, LauncherJobs.SessionsDir);
@@ -95,13 +95,21 @@ namespace CosmicShore.Launcher
                 Task.Run(() => { _chat.Detect(); _chat.RefreshAuth(); });
                 _chat.ReplyFinished += t => { if (_s.VoiceReplies) _voice?.Speak(t); };
             }
-            PageHeader(a, "CLAUDE", "Froglet Engine agent" + (_ws.Exists ? "  ·  " + _s.Branch : ""));
+            bool milestone = _chat.CurrentScope == ClaudeChat.Scope.Milestone;
+            PageHeader(a, milestone ? "MILESTONE " + _chat.Milestone : "PRISMA AGENT",
+                milestone ? $"{_chat.MilestoneTitle}  ·  engine work on Prisma (Port/)  ·  powered by Claude"
+                          : "Works on Cosmic Shore with the memory of every run  ·  powered by Claude");
+            if (milestone)
+            {
+                ImGui.SetCursorScreenPos(a + new Vector2(0, 64));
+                if (SmallButton("< BACK TO THE GAME AGENT", 230, !_chat.Busy)) _chat.SetScope(ClaudeChat.Scope.Game);
+            }
             if (_chat.Cli == null) { DrawChatInstall(dl, a, b); return; }
 
             DrawChatBar(a, b);
 
             float inputH = 84, chipsH = 38, statusH = 24;
-            var ta = new Vector2(a.X, a.Y + 64);
+            var ta = new Vector2(a.X, a.Y + (milestone ? 106 : 64));
             var tb = new Vector2(b.X, b.Y - inputH - chipsH - statusH - 20);
             Neon.ChamferFill(dl, ta, tb, 10, Neon.U(Neon.Space0, 0.74f));
             ImGui.SetCursorScreenPos(ta + new Vector2(20, 14));
@@ -151,12 +159,14 @@ namespace CosmicShore.Launcher
         void DrawChatWelcome()
         {
             ImGui.Dummy(new Vector2(0, 8));
-            ImGui.PushFont(Neon.Heading); ImGui.TextColored(Neon.Ink, "Froglet Engine agent"); ImGui.PopFont();
+            ImGui.PushFont(Neon.Heading); ImGui.TextColored(Neon.Ink, _chat.CurrentScope == ClaudeChat.Scope.Game ? "Prisma Agent" : "Milestone " + _chat.Milestone); ImGui.PopFont();
             ImGui.PushFont(Neon.Small);
             foreach (var l in new[]
             {
-                "Works on the engine (Port/). Reads the game in Assets/ but never changes it.",
-                "It can build the engine, run the tests, start the game, look at it and drive it.",
+                _chat.CurrentScope == ClaudeChat.Scope.Game
+                    ? "Works on the game (Assets/) and starts from what your last runs recorded in TRACKS."
+                    : "Engine work on Prisma (Port/) for this checkpoint. The game in Assets/ is read-only here.",
+                "It can run the tests, start the game, look at it and drive it, and suggest bugs and tasks for your BOARD.",
                 "PLAN proposes before touching anything; approve the plan to let it build.",
                 "Chips below run tests, a smoke test, or analyse your last play session.",
                 "Commands: /clear  /plan  /edit  /auto  /model NAME  /effort LEVEL  /test  /smoke  /session",

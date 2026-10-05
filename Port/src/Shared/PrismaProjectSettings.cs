@@ -5,19 +5,19 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 
-namespace CosmicShore.Froglet
+namespace Prisma
 {
     /// <summary>
-    /// The Froglet Engine's own Project Settings - Player, Scenes in Build and Quality - kept in
-    /// <c>Port/ProjectSettings/FrogletProject.json</c> so the engine never edits Unity's
+    /// Prisma's own Project Settings - Player, Scenes in Build and Quality - kept in
+    /// <c>Port/ProjectSettings/PrismaProject.json</c> so the engine never edits Unity's
     /// <c>ProjectSettings/</c>. Every field is an OVERRIDE: null (or an absent file) inherits what
     /// Unity authors, so a fresh branch behaves exactly like the Unity project.
     ///
     /// Compiled into the build tool, the player and the launcher (linked source, no dependencies).
     /// </summary>
-    public sealed class FrogletProjectSettings
+    public sealed class PrismaProjectSettings
     {
-        public const string RelativePath = "Port/ProjectSettings/FrogletProject.json";
+        public const string RelativePath = "Port/ProjectSettings/PrismaProject.json";
 
         public PlayerSection Player { get; set; } = new();
         /// <summary>Null = Unity's EditorBuildSettings list. Otherwise the build list, in order (scene 0 boots).</summary>
@@ -64,12 +64,14 @@ namespace CosmicShore.Froglet
 
         public static string PathIn(string projectRoot) => System.IO.Path.Combine(projectRoot, RelativePath);
 
-        public static FrogletProjectSettings Load(string projectRoot)
+        public static PrismaProjectSettings Load(string projectRoot)
         {
             try
             {
                 var p = PathIn(projectRoot);
-                if (File.Exists(p)) return JsonSerializer.Deserialize<FrogletProjectSettings>(File.ReadAllText(p), Json) ?? new();
+                // Before the engine was named Prisma the file was FrogletProject.json: still read it.
+                if (!File.Exists(p)) p = System.IO.Path.Combine(projectRoot, "Port/ProjectSettings/FrogletProject.json");
+                if (File.Exists(p)) return JsonSerializer.Deserialize<PrismaProjectSettings>(File.ReadAllText(p), Json) ?? new();
             }
             catch (Exception) { /* a broken file must not stop a build or the game: inherit Unity's settings */ }
             return new();

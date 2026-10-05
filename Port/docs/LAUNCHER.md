@@ -1,14 +1,16 @@
-# Froglet Engine Launcher
+# Prisma (the app)
 
-One `.exe` for anyone who should test the engine: pick a branch, press **START**. The launcher
-fetches that branch, builds it from its own source and runs it. It also builds phone apps, edits
-the engine's Project Settings, and has Claude Code built in.
+Prisma is Froglet's own engine for Cosmic Shore, and this is its app: one `.exe` for anyone who
+works on or tests the game. Pick a branch, press **START**: Prisma fetches that branch, builds it
+from its own source and runs it - and records the run. It also builds phone apps, keeps the
+engine's Project Settings, tracks every play run, keeps a task and bug board, runs the roadmap's
+milestones, and has the **Prisma Agent, powered by Claude**, built in.
 
 Source: `Port/src/CosmicShore.Launcher` (C#, Dear ImGui on our own Silk.NET window).
 
 ## Getting the .exe
 
-- Ready-made: `Port/dist/FrogletLauncher-Windows.zip` (one file, nothing to install).
+- Ready-made: `Port/dist/Prisma-Windows.zip` (one file, nothing to install).
 - Rebuild it: double-click `Port\build-launcher.bat`.
 
 | Needed | Why | If missing |
@@ -24,14 +26,57 @@ Source: `Port/src/CosmicShore.Launcher` (C#, Dear ImGui on our own Silk.NET wind
 | **PLAY** | Branch, **START**, and four quick toggles (fullscreen, audio, online, pull first). The small buttons beside them update without playing and open the workspace folder. |
 | **BUILD** | One card per phone platform. Each card has one choice and one button; everything else is under *Options*. |
 | **PROJECT** | The engine's own Project Settings (below). |
-| **CLAUDE** | Claude Code, inside the launcher (below). |
+| **AGENT** | The Prisma Agent, powered by Claude (below). |
+| **TRACKS** | Every play run: performance per scene, features used, audio, every problem over time (below). |
+| **BOARD** | Bugs and tasks, with Prisma's suggestions (below). |
+| **MILESTONES** | The roadmap's checkpoints; START opens an engine session for one (below). |
 | **SETTINGS** | Folded sections: Game, Source, Look, Claude, Advanced, Toolchain, About (versions). |
 | **CONSOLE** | Every command the launcher ran and its output. COPY for a bug report. |
 
 ![PLAY](architecture/launcher_play.png)
 
 The two dots at the bottom of the rail are git and .NET (hover for versions). The bar at the
-bottom shows what is happening, a progress bar and CANCEL.
+bottom shows what is happening, a progress bar and CANCEL. The title bar shows the branch, the
+agent's state (green: ready on your Claude plan), the notification bell and **?** (the tour).
+The first start shows a one-minute tour of every page; **?** replays it.
+
+## TRACKS - Prisma's memory of every run
+
+![TRACKS](architecture/prisma_tracks.png)
+
+Every game started from PLAY writes a session report when it closes or crashes. Prisma folds it
+into **tracks** (`%LOCALAPPDATA%\Prisma\tracks`): OVERVIEW (runs, crash-free rate, median
+frame time, open problems), PERFORMANCE (each scene's 95th-percentile frame time per run against
+the 60 fps line), AUDIO (sound events per run, events missing from the banks, unwired one-shots),
+FEATURES (modes, vessels and scenes used) and RUNS. A problem is grouped across runs (numbers and
+ids stripped), with its first and last sighting; one that stays away for three runs through its
+scene goes *quiet*. **FIX** hands a problem to the agent; **TRACK** puts it on the board.
+
+## Notifications and clean-ups
+
+After every run a banner (top right) says what the run found - a crash, new problems, a slower
+scene, or a clean run - with one-click actions. Prisma also watches for things it can clean up:
+a stale git lock blocking updates, a failed build with stale outputs, low disk space. **It always
+asks first**: every clean-up is a button on a notification, never automatic. The bell keeps the
+history.
+
+## BOARD - tasks and bugs
+
+![BOARD](architecture/prisma_board.png)
+
+TO DO / DOING / DONE columns of bugs and tasks; click a card for its detail and to move it, or
+hand it to the agent. Prisma *suggests* items - problems from the tracks, the next milestones
+whose dependencies are done - and so can the agent (`prisma_board_suggest`); a suggestion joins
+the board only when you ACCEPT it.
+
+## MILESTONES - engine work, inside Prisma
+
+![MILESTONES](architecture/prisma_milestones.png)
+
+The roadmap (`docs/ROADMAP.md`) as checkpoints with their exit criteria, weeks and dependencies,
+read from `docs/milestones.json` in the branch (commit it to share progress). **START** opens an
+engine session for that checkpoint in plan mode with its prompt; that session works on `Port/`
+and may not touch the Unity project, and it records progress back into `milestones.json`.
 
 ## BUILD
 
@@ -47,7 +92,7 @@ bottom shows what is happening, a progress bar and CANCEL.
 | **XCODE** | nothing | `Builds/iOS/CosmicShore.xcodeproj` + player data, like Unity's iOS export |
 | **THIS MAC** | a Mac with Xcode | a signed `.ipa` |
 
-GITHUB mode runs `.github/workflows/froglet-engine-ios.yml` for the selected branch, shows each
+GITHUB mode runs `.github/workflows/prisma-ios.yml` for the selected branch, shows each
 step of the Mac build in the status bar (15-25 minutes), then downloads the `.ipa`. Install it with
 **Sideloadly** and a free Apple ID - the same Windows steps as the Unity build
 (`Docs/IOS_BUILD.md` section 2, Path A, step 4). OPEN RUN shows the run on GitHub.
@@ -62,7 +107,7 @@ branch, which needs **Contents: read & write**.
 ![PROJECT](architecture/launcher_project_1.png)
 
 Unity keeps Player Settings and Build Settings in `ProjectSettings/`. The engine keeps its own in
-**`Port/ProjectSettings/FrogletProject.json`**, so it never edits Unity's files. Every field is an
+**`Port/ProjectSettings/PrismaProject.json`**, so it never edits Unity's files. Every field is an
 override: leave it empty and Unity's value applies (shown greyed in the field).
 
 | Tab | Holds | Read by |
@@ -95,15 +140,17 @@ and Mono domain colours), motion speed (down to still), dim, and the intro and p
 
 Every game started from PLAY writes a report when it closes or crashes: scenes and time in each,
 frame-time percentiles, every distinct error, warning and exception with its count, and the
-crash, branch and commit. They are kept in `%LOCALAPPDATA%\FrogletEngine\sessions` (the last
+crash, branch and commit. They are kept in `%LOCALAPPDATA%\Prisma\sessions` (the last
 40). The CLAUDE page's LAST SESSION hands the newest one to Claude to analyse.
 
-## CLAUDE
+## AGENT - the Prisma Agent, powered by Claude
 
-![CLAUDE](architecture/launcher_claude.png)
+![AGENT](architecture/launcher_claude.png)
 
-The page is the **Froglet Engine agent**. It works on `Port/`, reads the game in `Assets/` as
-input, and is refused any edit to `Assets/`, `Packages/` or `ProjectSettings/` in every mode.
+The **Prisma Agent** works on the game (Cosmic Shore's code and content in `Assets/`) as it runs
+in Prisma, and it is refused any edit to Prisma itself (`Port/`) in every mode - engine work is
+what MILESTONES sessions are for. Every prompt starts with the tracks brief (the last runs, open
+problems, performance by scene), so "fix the crash from my last run" needs no explanation.
 The layout follows Claude Code: a bullet per message and tool call, each tool's result folded
 under it, to-do lists as checklists, the game's screenshots inline, and a status line (model,
 mode, context size, cost, and whether it runs on your plan or an API key).
@@ -133,7 +180,7 @@ as dots; SHOW reveals them to check a paste.
 - **EDIT** - may edit files in the workspace.
 - **AUTO** - may also run commands.
 
-It is connected to the engine itself (the `froglet-engine` tools, `Port/CLAUDE.md`): Claude can
+It is connected to the engine itself (the `prisma` tools, `Port/CLAUDE.md`): Claude can
 build the engine, start the game, take screenshots, click and type, and read or change live
 objects - so "start the game and check the score panel updates" is a request it can carry out
 and show you. Those tools never edit files, so ASK may use them too.
@@ -148,12 +195,12 @@ git fetch <branch>  ->  FMOD library from Git LFS  ->  dotnet build Port/src/Cos
                     ->  CosmicShore.exe --size ... [--fullscreen] [--scene ...]
 ```
 
-Settings live in `%LOCALAPPDATA%\FrogletEngine\launcher.json`. The launcher never writes to your
+Settings live in `%LOCALAPPDATA%\Prisma\launcher.json`. The launcher never writes to your
 own clone: *Beside my clone* uses a git worktree next to it.
 
 ## Testing the launcher itself
 
-`FrogletLauncher --page build --screenshot out.png --frames 40` renders a page and exits
+`Prisma --page build --screenshot out.png --frames 40` renders a page and exits
 (`--page project:1` opens a Project tab, `--page options:look` one settings section).
 `--auto launcher-update:REV` / `launcher-use:SHORT` exercise the version flow. `--auto play|update|android|ios` presses the button on
 its own and echoes the log; `--auto "chat:<message>"` sends one chat message.

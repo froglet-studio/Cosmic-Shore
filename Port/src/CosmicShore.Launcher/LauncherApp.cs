@@ -24,9 +24,9 @@ namespace CosmicShore.Launcher
     /// </summary>
     public sealed partial class LauncherApp
     {
-        enum Page { Play, Build, Project, Chat, Options, Console }
+        enum Page { Play, Build, Project, Chat, Options, Console, Tracks, Board, Milestones }
 
-        public sealed record Args(string? Screenshot, int Frames, string? Page, bool Offline, string? Auto = null, string? UpdatedFrom = null);
+        public sealed record Args(string? Screenshot, int Frames, string? Page, bool Offline, string? Auto = null, string? UpdatedFrom = null, int Tour = -1);
 
         readonly Args _args;
         readonly LauncherSettings _s;
@@ -40,6 +40,8 @@ namespace CosmicShore.Launcher
         IInputContext _input = null!;
         ImGuiController _imgui = null!;
         uint _logo, _manta, _froglet;
+        System.Runtime.InteropServices.GCHandle _glyphs;
+        bool _tourOffered;
         Vector2 _logoSize, _mantaSize, _frogletSize;
 
         Page _page = Page.Play;
@@ -64,6 +66,9 @@ namespace CosmicShore.Launcher
             _jobs = new LauncherJobs(_s, _tools, _ws);
             _chat = new ClaudeChat(_s, _tools);
             _updater = new LauncherUpdater(_s, _tools, _ws);
+            // A play session that ends is folded into the tracks, and Prisma says what it found.
+            _jobs.GameExited += () => Task.Run(async () => { await Task.Delay(2000); IngestSessions(notify: true); });
+            if (args.Tour >= 0) _tour = args.Tour;
             var pageArg = args.Page?.Split(':');
             if (pageArg != null && Enum.TryParse<Page>(pageArg[0], true, out var p)) _page = p;
             if (pageArg is { Length: > 1 } && int.TryParse(pageArg[1], out var tab)) _projTab = tab;
@@ -96,7 +101,7 @@ namespace CosmicShore.Launcher
             var options = WindowOptions.Default with
             {
                 Size = new Vector2D<int>(1360, 820),
-                Title = "Froglet Engine Launcher - Cosmic Shore",
+                Title = "Prisma - Cosmic Shore",
                 VSync = true,
                 PreferredStencilBufferBits = 8,
                 Samples = 4,
@@ -129,8 +134,12 @@ namespace CosmicShore.Launcher
                 var io = ImGui.GetIO();
                 io.ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard;
                 unsafe { io.NativePtr->IniFilename = null; }
-                Neon.Body = io.Fonts.AddFontFromFileTTF(Font("ChakraPetch-Regular.ttf"), 19);
-                Neon.Small = io.Fonts.AddFontFromFileTTF(Font("ChakraPetch-Regular.ttf"), 15);
+                // Latin plus the punctuation and arrows Claude's replies use (dashes, bullets, ellipsis, arrows, math).
+                _glyphs = System.Runtime.InteropServices.GCHandle.Alloc(new ushort[] { 0x0020, 0x00FF, 0x2010, 0x2027, 0x2030, 0x205E, 0x2190, 0x21FF, 0x2200, 0x22FF, 0x25A0, 0x25FF, 0 }, System.Runtime.InteropServices.GCHandleType.Pinned);
+                var ranges = _glyphs.AddrOfPinnedObject();
+                Neon.Body = io.Fonts.AddFontFromFileTTF(Font("Inter-Regular.ttf"), 17, null, ranges);
+                Neon.Small = io.Fonts.AddFontFromFileTTF(Font("Inter-Regular.ttf"), 14, null, ranges);
+                Neon.Strong = io.Fonts.AddFontFromFileTTF(Font("Inter-SemiBold.ttf"), 16, null, ranges);
                 Neon.Heading = io.Fonts.AddFontFromFileTTF(Font("Aldrich-Regular.ttf"), 24);
                 Neon.Title = io.Fonts.AddFontFromFileTTF(Font("Aldrich-Regular.ttf"), 30);
                 Neon.Hero = io.Fonts.AddFontFromFileTTF(Font("Aldrich-Regular.ttf"), 46);
@@ -149,6 +158,8 @@ namespace CosmicShore.Launcher
                 _toolsScanned = true;
                 _jobs.RefreshLocalState();
                 if (!_args.Offline) _jobs.LoadBranches();
+                IngestSessions(notify: true); // runs that ended while Prisma was closed are news too
+                RunDoctor();
                 // Only LOOK for a newer launcher; installing it is the user's call (UPDATE).
                 if (!_args.Offline) _ = _updater.Check();
             });
@@ -213,6 +224,7 @@ namespace CosmicShore.Launcher
                         var pick = LauncherUpdater.Installed().FirstOrDefault(v => v.Short == u["launcher-use:".Length..]);
                         if (pick != null) _updater.Use(pick, _jobs.Log);
                         break;
+                    case "ingest": Task.Run(() => IngestSessions(notify: true)); break;
                     case "claude-install":
                         _page = Page.Chat;
                         Task.Run(() => _chat.Install(_jobs.Log));
@@ -249,7 +261,8 @@ namespace CosmicShore.Launcher
             ImGui.Begin("##root", ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoBringToFrontOnFocus |
                 ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoScrollWithMouse);
             DrawRail(size);
-            var contentA = new Vector2(RailW + 44, 34);
+            DrawTitleBar(size);
+            var contentA = new Vector2(RailW + 44, TitleH + 22);
             var contentB = new Vector2(size.X - 44, size.Y - 64);
             float enter = PageEnter(dt);               // pages slide up into place as they open
             contentA.Y += 14 * (1 - enter); contentB.Y += 14 * (1 - enter);
@@ -261,12 +274,19 @@ namespace CosmicShore.Launcher
                 case Page.Chat: DrawChat(contentA, contentB); break;
                 case Page.Options: DrawOptions(contentA, contentB); break;
                 case Page.Console: DrawConsole(contentA, contentB); break;
+                case Page.Tracks: DrawTracks(contentA, contentB); break;
+                case Page.Board: DrawBoard(contentA, contentB); break;
+                case Page.Milestones: DrawMilestones(contentA, contentB); break;
             }
             DrawStatusBar(size);
             ImGui.End();
             DrawOverlay(size);
             if (enter < 1) ImGui.GetForegroundDrawList().AddRectFilled(new Vector2(RailW + 1, 0), new Vector2(size.X, size.Y - 40), Neon.U(Neon.Space0, 0.65f * (1 - enter)));
             DrawUpdateUi(size, dt);
+            DrawNotifications(size, dt);
+            WatchJobs();
+            if (!_s.TourDone && _tour < 0 && !_tourOffered && SplashDone && _args.Screenshot == null && _args.Auto == null) { _tourOffered = true; StartTour(); }
+            DrawTour(size);
             DrawSplash(size, dt);
         }
 
@@ -345,51 +365,63 @@ namespace CosmicShore.Launcher
         void DrawRail(Vector2 size)
         {
             var dl = ImGui.GetWindowDrawList();
-            dl.AddRectFilled(Vector2.Zero, new Vector2(RailW, size.Y), Neon.U(Neon.Space0, 0.78f));
-            dl.AddLine(new Vector2(RailW, 0), new Vector2(RailW, size.Y), Neon.U(Neon.Cyan, 0.18f), 1f);
-
-            float glow = 0.55f + 0.45f * MathF.Sin(Neon.Time * 1.7f);
-            var ma = new Vector2(16, 14); var mb = new Vector2(RailW - 16, 14 + (RailW - 32) * _mantaSize.Y / _mantaSize.X);
-            dl.AddImage((IntPtr)_manta, ma - new Vector2(3), mb + new Vector2(3), Vector2.Zero, Vector2.One, Neon.U(Neon.Cyan, 0.22f * glow));
-            dl.AddImage((IntPtr)_manta, ma, mb, Vector2.Zero, Vector2.One, Neon.U(Neon.Ink));
+            // macOS sidebar: translucent, with the Prisma mark where the traffic lights would be.
+            dl.AddRectFilled(Vector2.Zero, new Vector2(RailW, size.Y), Neon.U(Neon.Space0, 0.62f));
+            dl.AddRectFilledMultiColor(Vector2.Zero, new Vector2(RailW, size.Y), Neon.U(Neon.Ink, 0.035f), Neon.U(Neon.Ink, 0.01f), Neon.U(Neon.Ink, 0.0f), Neon.U(Neon.Ink, 0.02f));
+            dl.AddLine(new Vector2(RailW, 0), new Vector2(RailW, size.Y), Neon.U(Neon.Ink, 0.08f), 1f);
+            Neon.PrismIcon(dl, new Vector2(RailW * 0.5f - 8, 30), 30, 1f, Neon.Time);
+            var mb = new Vector2(RailW - 16, 50);
 
             (Page page, string name, Action<ImDrawListPtr, Vector2, uint> icon)[] items =
             {
                 (Page.Play, "PLAY", Neon.IconPlay),
                 (Page.Build, "BUILD", Neon.IconPhone),
                 (Page.Project, "PROJECT", Neon.IconSliders),
-                (Page.Chat, "CLAUDE", Neon.IconChat),
+                (Page.Chat, "AGENT", Neon.IconChat),
+                (Page.Tracks, "TRACKS", IconTracks),
+                (Page.Board, "BOARD", IconBoard),
+                (Page.Milestones, "MILESTONES", IconFlag),
                 (Page.Options, "SETTINGS", Neon.IconGear),
                 (Page.Console, "CONSOLE", Neon.IconTerminal),
             };
-            float y = mb.Y + 34;
+            const float itemH = 60, step = 63;
+            float y = mb.Y + 18;
             // The selection glides between items rather than jumping.
             if (_railY < 0) _railY = _railTarget;
             _railY += (_railTarget - _railY) * Math.Min(1f, ImGui.GetIO().DeltaTime * 14f);
             if (_railY > 0)
             {
-                var sa = new Vector2(8, _railY); var sb = new Vector2(RailW - 8, _railY + 70);
+                var sa = new Vector2(8, _railY); var sb = new Vector2(RailW - 8, _railY + itemH);
                 Neon.ChamferFill(dl, sa, sb, 8, Neon.U(Neon.Cyan, 0.10f));
                 dl.AddRectFilled(new Vector2(0, sa.Y + 10), new Vector2(3, sb.Y - 10), Neon.U(Neon.Cyan));
             }
             foreach (var it in items)
             {
-                var a = new Vector2(8, y); var b = new Vector2(RailW - 8, y + 70);
+                var a = new Vector2(8, y); var b = new Vector2(RailW - 8, y + itemH);
                 ImGui.SetCursorScreenPos(a);
                 if (ImGui.InvisibleButton("nav" + it.name, b - a)) _page = it.page;
+                _railRects[it.page] = (a, b);
                 bool hov = ImGui.IsItemHovered(), on = _page == it.page;
                 if (hov) ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
                 var col = on ? Neon.Cyan : hov ? Neon.Ink : Neon.Dim;
                 if (on) _railTarget = a.Y;
                 if (hov && !on) Neon.ChamferFill(dl, a, b, 8, Neon.U(Neon.Ink, 0.04f));
-                it.icon(dl, new Vector2((a.X + b.X) * 0.5f, a.Y + 26), Neon.U(col));
+                it.icon(dl, new Vector2((a.X + b.X) * 0.5f, a.Y + 22), Neon.U(col));
                 ImGui.PushFont(Neon.Small);
                 float tw = ImGui.CalcTextSize(it.name).X;
                 ImGui.PopFont();
-                dl.AddText(Neon.Small, 13, new Vector2((a.X + b.X - tw * 13f / 15f) * 0.5f, a.Y + 48), Neon.U(col), it.name);
+                dl.AddText(Neon.Small, 11, new Vector2((a.X + b.X - tw * 11f / 14f) * 0.5f, a.Y + 41), Neon.U(col), it.name);
+                int badge = RailBadge(it.page);
+                if (badge > 0 && !on)
+                {
+                    var bc = new Vector2(b.X - 16, a.Y + 12);
+                    dl.AddCircleFilled(bc, 8, Neon.U(Neon.Red), 16);
+                    var bt = badge > 9 ? "9+" : badge.ToString();
+                    dl.AddText(Neon.Small, 11, bc - new Vector2(bt.Length * 3f, 6.5f), Neon.U(new Vector4(1, 1, 1, 1)), bt);
+                }
                 if (it.page == Page.Console && _jobs.LastOk == false && !on)
                     dl.AddCircleFilled(new Vector2(b.X - 14, a.Y + 12), 4, Neon.U(Neon.Red));
-                y += 78;
+                y += step;
             }
 
             // tools: two dots, details on hover
@@ -655,8 +687,8 @@ namespace CosmicShore.Launcher
 
         // ---------------------------------------------------------------- PROJECT (the engine's own Project Settings)
 
-        CosmicShore.Froglet.FrogletProjectSettings? _proj;
-        CosmicShore.Froglet.FrogletProjectSettings.UnityDefaults? _unity;
+        Prisma.PrismaProjectSettings? _proj;
+        Prisma.PrismaProjectSettings.UnityDefaults? _unity;
         string? _projRoot;
         bool _projDirty;
         double _projTimer;
@@ -666,8 +698,8 @@ namespace CosmicShore.Launcher
         {
             if (_projRoot == _ws.Dir && _proj != null) return;
             _projRoot = _ws.Dir;
-            _proj = CosmicShore.Froglet.FrogletProjectSettings.Load(_ws.Dir);
-            _unity = new CosmicShore.Froglet.FrogletProjectSettings.UnityDefaults(_ws.Dir);
+            _proj = Prisma.PrismaProjectSettings.Load(_ws.Dir);
+            _unity = new Prisma.PrismaProjectSettings.UnityDefaults(_ws.Dir);
         }
 
         void SaveProjectIfDirty(double dt)
@@ -682,7 +714,7 @@ namespace CosmicShore.Launcher
 
         void DrawProject(Vector2 a, Vector2 b)
         {
-            PageHeader(a, "PROJECT", "Engine settings for this branch  ·  " + CosmicShore.Froglet.FrogletProjectSettings.RelativePath);
+            PageHeader(a, "PROJECT", "Engine settings for this branch  ·  " + Prisma.PrismaProjectSettings.RelativePath);
             if (!_ws.Exists || !File.Exists(Path.Combine(_ws.Dir, "ProjectSettings", "ProjectSettings.asset")))
             {
                 ImGui.GetWindowDrawList().AddText(Neon.Body, 19, a + new Vector2(0, 110), Neon.U(Neon.Dim), "Download the branch first - press START or UPDATE on PLAY.");
@@ -749,7 +781,7 @@ namespace CosmicShore.Launcher
             ImGui.EndChild();
         }
 
-        void DrawSceneList(CosmicShore.Froglet.FrogletProjectSettings p, CosmicShore.Froglet.FrogletProjectSettings.UnityDefaults u, float w)
+        void DrawSceneList(Prisma.PrismaProjectSettings p, Prisma.PrismaProjectSettings.UnityDefaults u, float w)
         {
             var list = p.BuildScenes(u);
             bool own = p.Scenes is { Count: > 0 };
@@ -790,11 +822,11 @@ namespace CosmicShore.Launcher
             Hint("Scene 0 boots. The build tool, the player and phone builds all use this list.");
         }
 
-        static List<CosmicShore.Froglet.FrogletProjectSettings.SceneEntry> MakeOwn(
-            CosmicShore.Froglet.FrogletProjectSettings p, List<CosmicShore.Froglet.FrogletProjectSettings.SceneEntry> current)
+        static List<Prisma.PrismaProjectSettings.SceneEntry> MakeOwn(
+            Prisma.PrismaProjectSettings p, List<Prisma.PrismaProjectSettings.SceneEntry> current)
         {
             if (p.Scenes is not { Count: > 0 })
-                p.Scenes = current.Select(s => new CosmicShore.Froglet.FrogletProjectSettings.SceneEntry { Path = s.Path, Guid = s.Guid, Enabled = s.Enabled }).ToList();
+                p.Scenes = current.Select(s => new Prisma.PrismaProjectSettings.SceneEntry { Path = s.Path, Guid = s.Guid, Enabled = s.Enabled }).ToList();
             return p.Scenes;
         }
 
@@ -921,7 +953,7 @@ namespace CosmicShore.Launcher
                 DrawAboutVersions();
                 ImGui.Dummy(new Vector2(0, 8));
                 ImGui.PushFont(Neon.Small);
-                ImGui.TextColored(Neon.Ink, "Froglet Engine v0.1  -  Froglet Inc.");
+                ImGui.TextColored(Neon.Ink, "Prisma v0.1  -  Froglet Inc.");
                 ImGui.TextColored(Neon.Dim, "Cosmic Shore's own C# on our own renderer, physics, UI, audio and netcode.");
                 ImGui.TextColored(Neon.Dim, "Dear ImGui, Silk.NET (MIT)  ·  Chakra Petch, Aldrich (OFL)  ·  Roboto Mono (Apache 2.0)");
                 ImGui.PopFont();
@@ -988,24 +1020,38 @@ namespace CosmicShore.Launcher
             return open;
         }
 
+        /// <summary>A macOS segmented control: one rounded track, the chosen segment raised and tinted.</summary>
         void Segmented(string id, string[] items, int current, Action<int> set, Vector4 accent)
         {
             var dl = ImGui.GetWindowDrawList();
             ImGui.PushFont(Neon.Small);
+            float h = 30, pad = 18;
+            var widths = items.Select(i => ImGui.CalcTextSize(i).X + pad * 2).ToArray();
+            var a0 = ImGui.GetCursorScreenPos();
+            var total = new Vector2(widths.Sum() + 4, h + 4);
+            dl.AddRectFilled(a0, a0 + total, Neon.U(new Vector4(0.10f, 0.11f, 0.17f, 1f), 0.85f), 9);
+            dl.AddRect(a0, a0 + total, Neon.U(Neon.Ink, 0.08f), 9);
+            float x = a0.X + 2;
             for (int i = 0; i < items.Length; i++)
             {
-                if (i > 0) ImGui.SameLine(0, 4);
-                var ts = ImGui.CalcTextSize(items[i]);
-                var a = ImGui.GetCursorScreenPos();
-                var sz = new Vector2(ts.X + 28, 34);
+                var a = new Vector2(x, a0.Y + 2); var sz = new Vector2(widths[i], h);
+                ImGui.SetCursorScreenPos(a);
                 if (ImGui.InvisibleButton(id + i, sz) && i != current) { set(i); _dirty = true; }
                 bool hov = ImGui.IsItemHovered(), on = i == current;
                 if (hov) ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
-                Neon.ChamferFill(dl, a, a + sz, 6, Neon.U(on ? accent : Neon.Space0, on ? 0.26f : 0.8f));
-                Neon.ChamferPath(dl, a, a + sz, 6);
-                dl.PathStroke(Neon.U(on ? accent : Neon.Dim, on ? 0.9f : hov ? 0.6f : 0.3f), ImDrawFlags.Closed, 1.1f);
-                dl.AddText(a + new Vector2(14, (34 - ts.Y) * 0.5f), Neon.U(on ? Neon.Ink : hov ? Neon.Ink : Neon.Dim), items[i]);
+                if (on)
+                {
+                    dl.AddRectFilled(a + new Vector2(0, 1), a + sz + new Vector2(0, 1), Neon.U(new Vector4(0, 0, 0, 1), 0.3f), 7);
+                    dl.AddRectFilled(a, a + sz, Neon.U(Neon.Mix(new Vector4(0.22f, 0.24f, 0.32f, 1f), accent, 0.35f)), 7);
+                }
+                else if (i > 0 && i - 1 != current)
+                    dl.AddLine(new Vector2(a.X, a.Y + 7), new Vector2(a.X, a.Y + h - 7), Neon.U(Neon.Ink, 0.12f));
+                var ts = ImGui.CalcTextSize(items[i]);
+                dl.AddText(a + new Vector2((sz.X - ts.X) * 0.5f, (h - ts.Y) * 0.5f), Neon.U(on || hov ? Neon.Ink : Neon.Dim), items[i]);
+                x += widths[i];
             }
+            ImGui.SetCursorScreenPos(a0);
+            ImGui.Dummy(total);
             ImGui.PopFont();
         }
 
@@ -1126,23 +1172,31 @@ namespace CosmicShore.Launcher
             ImGui.EndCombo();
         }
 
+        /// <summary>A macOS switch: a pill track that fills with the accent, a white knob that glides.</summary>
         void Toggle(string label, Func<bool> get, Action<bool> set, string? tip = null)
         {
             bool v = get();
             var dl = ImGui.GetWindowDrawList();
             var p = ImGui.GetCursorScreenPos();
-            var size = new Vector2(46, 24);
+            var size = new Vector2(40, 22);
             if (ImGui.InvisibleButton("##t" + label, new Vector2(size.X + 12 + ImGui.CalcTextSize(label).X, size.Y))) { v = !v; set(v); _dirty = true; }
             bool hov = ImGui.IsItemHovered();
+            if (hov) ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
             if (tip != null) Neon.Tooltip(tip);
-            var col = v ? Neon.Cyan : Neon.Dim;
-            Neon.ChamferFill(dl, p, p + size, 6, Neon.U(v ? Neon.Cyan : Neon.Space0, v ? 0.28f : 0.9f));
-            Neon.ChamferPath(dl, p, p + size, 6);
-            dl.PathStroke(Neon.U(col, hov ? 1f : 0.7f), ImDrawFlags.Closed, 1.2f);
-            float kx = v ? p.X + size.X - 18 : p.X + 4;
-            dl.AddRectFilled(new Vector2(kx, p.Y + 4), new Vector2(kx + 14, p.Y + size.Y - 4), Neon.U(col));
-            dl.AddText(p + new Vector2(size.X + 12, 1), Neon.U(v ? Neon.Ink : Neon.Dim), label);
+            var id = ImGui.GetID("##t" + label);
+            _switchPos.TryGetValue(id, out float k);
+            k += ((v ? 1f : 0f) - k) * Math.Min(1f, ImGui.GetIO().DeltaTime * 16f);
+            _switchPos[id] = k;
+            var track = Neon.Mix(new Vector4(0.24f, 0.25f, 0.32f, 1f), Neon.Cyan, k);
+            dl.AddRectFilled(p, p + size, Neon.U(track, 0.95f), size.Y * 0.5f);
+            if (k > 0.5f) dl.AddRect(p - new Vector2(1), p + size + new Vector2(1), Neon.U(Neon.Cyan, 0.25f * k), size.Y * 0.5f, ImDrawFlags.None, 2f);
+            var knob = new Vector2(p.X + 11 + k * (size.X - 22), p.Y + size.Y * 0.5f);
+            dl.AddCircleFilled(knob + new Vector2(0, 1), 9, Neon.U(new Vector4(0, 0, 0, 1), 0.25f), 24);
+            dl.AddCircleFilled(knob, 9, Neon.U(new Vector4(1, 1, 1, 1), hov ? 1f : 0.96f), 24);
+            dl.AddText(p + new Vector2(size.X + 12, 2), Neon.U(v ? Neon.Ink : Neon.Dim), label);
         }
+
+        readonly Dictionary<uint, float> _switchPos = new();
 
         void Text(string id, string hint, Func<string> get, Action<string> set)
         {

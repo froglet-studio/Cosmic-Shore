@@ -1,13 +1,13 @@
-# Froglet Engine roadmap: checkpoints, timeline, prompts
+# Prisma roadmap: checkpoints, timeline, prompts
 
 Written 2026-10-05. Owner: Froglet Inc. Read this before planning engine work. Agents: the
-launcher's PARITY CHECK and `/froglet-engine` read the open lists here.
+launcher's PARITY CHECK and `/prisma` read the open lists here.
 
 ## The two milestones
 
 | | Milestone | Done when | Target |
 |---|---|---|---|
-| **M1** | **Gameplay parity.** Playing Cosmic Shore in the Froglet Engine is indistinguishable from the Unity build. | A blind test passes (C9) and every row of the parity matrix is green on Windows, with phones close behind. | **Q2 2027** (~30 weeks) |
+| **M1** | **Gameplay parity.** Playing Cosmic Shore in Prisma is indistinguishable from the Unity build. | A blind test passes (C9) and every row of the parity matrix is green on Windows, with phones close behind. | **Q2 2027** (~30 weeks) |
 | **M2** | **Unity-free development.** Developers stop opening Unity. The engine's own tools do every Unity job Cosmic Shore needs, and nothing more. | One full release cycle (3 weeks) is shipped with Unity never opened (E9). | **Q1 2028** (~22 more weeks) |
 
 M2 depends on M1: nobody gives up the editor for a runtime that still looks different. Some
@@ -125,7 +125,7 @@ transition, and the cut-over is a decision, not a migration.
 
 | # | Checkpoint | Exit criterion | Weeks |
 |---|---|---|---|
-| **E1** | **Editor shell** (groundwork, can start in Dec) | The launcher gains a "Froglet Editor" mode: scene hierarchy, inspector (read-only), asset browser, embedded player view | 4 |
+| **E1** | **Editor shell** (groundwork, can start in Dec) | The launcher gains a "Prisma Editor" mode: scene hierarchy, inspector (read-only), asset browser, embedded player view | 4 |
 | **E2** | **Edit and save** | Inspector edits, create/delete/reparent, prefab overrides and variants, saved through `cs-asset`'s writer; files byte-stable on round trip | 6 |
 | **E3** | **Play mode** | Play from the editor with an incremental script recompile (< 5 s); edit fields live | 4 |
 | **E4** | **Asset pipeline** | Import FBX, textures and audio with `.meta` generation and the import settings the game uses; GUIDs stable | 5 |
@@ -147,13 +147,15 @@ transition, and the cut-over is a decision, not a migration.
 
 ## How to run each checkpoint (prompts)
 
-Paste these into the launcher's CLAUDE page (PLAN mode first, then approve) or into Claude Code
-at the repo root. Each one assumes `Port/CLAUDE.md` and this file. Every checkpoint ends with:
+**In Prisma:** MILESTONES lists every checkpoint from `docs/milestones.json` (status, weeks,
+dependencies, exit criterion, prompt). START opens an engine session for it in plan mode with the
+prompt below; the session updates `milestones.json` as it moves the checkpoint. The prompts also
+work pasted into Claude Code at the repo root. Each one assumes `Port/CLAUDE.md` and this file. Every checkpoint ends with:
 `engine_test` green, `engine_smoke` PASS, `unity_isolation_check` ok, docs updated, and this
 file's row marked done with the date and the measurement.
 
 **C1 - Parity harness**
-> Plan checkpoint C1 of Port/docs/ROADMAP.md. Design an input recorder/replayer that lives in the game's own code (a separate Unity PR - list exactly what it adds under Assets/_Scripts/Utility and why it cannot live in Port/), a Unity-side capture step that writes golden frames, scores and FMOD events for a replay, and an `engine_parity` MCP tool that replays in the Froglet Engine and diffs against those goldens. Include the GitHub Actions job that builds the port and runs engine_smoke for every build scene on each bleeding-edge push. Measure first: how input reaches the game today (InputScript, Input System devices) and which RNG sources make a match nondeterministic.
+> Plan checkpoint C1 of Port/docs/ROADMAP.md. Design an input recorder/replayer that lives in the game's own code (a separate Unity PR - list exactly what it adds under Assets/_Scripts/Utility and why it cannot live in Port/), a Unity-side capture step that writes golden frames, scores and FMOD events for a replay, and an `engine_parity` MCP tool that replays in Prisma and diffs against those goldens. Include the GitHub Actions job that builds the port and runs engine_smoke for every build scene on each bleeding-edge push. Measure first: how input reaches the game today (InputScript, Input System devices) and which RNG sources make a match nondeterministic.
 
 **C2 - Visual completeness (repeat per item)**
 > Pick the next untranslated shader (or ParticleSystem module, or VFX Graph) from ROADMAP §C2, ranked by how many on-screen objects use it in the 19 Steam modes. Read its .shadergraph/.shader/prefab, translate it into CosmicShore.Render following the existing material families, then prove it: game_start in a scene that shows it, game_screenshot before/after, and the parity diff once C1 exists. Do one item per session; record it in this file.
@@ -174,7 +176,7 @@ file's row marked done with the date and the measurement.
 > Produce the Windows, Android and iOS builds from the launcher, run the platform checklist (boot, a full match, audio, input, suspend/resume) and log every failure as a session report. Write the Metal backend plan: what the renderer's GL calls map to, what changes in shaders, the effort.
 
 **E1 - Editor shell**
-> Plan the Froglet Editor mode of the launcher: hierarchy, read-only inspector and asset browser over the engine's loaded scene, and the player embedded in a panel. Reuse ContentRuntime and the control-port model. List what Dear ImGui needs (docking branch?) and flag any new dependency.
+> Plan the Prisma Editor mode of the launcher: hierarchy, read-only inspector and asset browser over the engine's loaded scene, and the player embedded in a panel. Reuse ContentRuntime and the control-port model. List what Dear ImGui needs (docking branch?) and flag any new dependency.
 
 **Session triage (any time)**
 > LAST SESSION (launcher chip) - or: "Read every session report in <sessions folder> from this week, group the problems by engine area, rank them by how often players hit them, and propose the top 5 fixes."
