@@ -1,0 +1,143 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 616507327e6850e772f83e235ef5507f, type: 3}
+  m_Name: Substrate Pack Hunter Species
+  m_EditorClassIdentifier:
+  species:
+    Name: pack
+    N0: 6
+    Capacity: 7
+    Solitary:
+      Speed: 85
+      Burst: 1.25
+      Turn: 2.8
+      Accel: 140
+      WFood: 0.5
+      WCoh: 0.2
+      WAlign: 0.3
+      WSep: 1
+      WWander: 0.15
+      WCurious: 0
+      Comfort: 120
+      WFlee: 0
+      WHunt: 0.25
+      WRing: 1.4
+      RingR: 110
+      WTrail: 0
+      WAlarm: 0
+      WThreat: 0
+      WHome: 0
+      Crowd: 1
+      GaitHz: 0
+      GaitAmp: 0
+      Aspect: 2.6
+      Size: 12
+    Gregarious:
+      Speed: 150
+      Burst: 1.2
+      Turn: 3.6
+      Accel: 260
+      WFood: 0
+      WCoh: 0.2
+      WAlign: 0.3
+      WSep: 0.4
+      WWander: 0.15
+      WCurious: 0
+      Comfort: 120
+      WFlee: 0
+      WHunt: 2
+      WRing: 0.3
+      RingR: 40
+      WTrail: 0
+      WAlarm: 0
+      WThreat: 0
+      WHome: 0
+      Crowd: 1
+      GaitHz: 0
+      GaitAmp: 0
+      Aspect: 2.6
+      Size: 13
+    NbrR: 150
+    DensNorm: 3
+    Metabolism: 0.03
+    EatR: 8
+    EatHunger: 0.4
+    HungerPerVol: 0.01
+    FearGain: 1
+    AggrBase: 0.6
+    FearDecay: 0.5
+    Sense: 900
+    CuriosityRate: 0.3
+    QUp: 0.55
+    QDown: 0.35
+    QWidth: 0.08
+    QRate: 0.8
+    QContagion: 0.5
+    QWDens: 0
+    QWProx: 0
+    QWAlarm: 0
+    QHunger: 0
+    BiteR: 10
+    BiteCool: 2
+    StarveS: 60
+    BirthStock: 300
+    Stock0: 150
+    GrowS: 2
+    DepositThreat: 0.4
+    DepositAlarm: 0
+    NDirs: 26
+    FracK: 2
+    RingRoles: 7
+    SpacingSpring: 1
+    Momentum: 0.15
+    IntentBlend: 0
+    AttnR: 250
+    AttnUrg: 0.6
+    QWClose: 1
+    CloseR: 350
+    StaminaS: 3
+    RestS: 3
+    RestSpeed: 0.5
+    WRestRetreat: 1.5
+    RestTogether: 1
+    WCreep: 0
+    CreepR: 600
+    CreepMin: 120
+    CreepSpeed: 35
+    CreepLeadS: 3
+    GazeCos: 0.6428
+    Freeze: 0
+    MimicBody: 1
+    PreyName: locust
+    WPrey: 1.5
+    PreySense: 150
+    ScentDeposit: 0
+    DangerPhase: 0.5
+  seedCount: 0
+  seedSpread: 40
+  seedAtFlora: 0
+  agentPrefab: {fileID: 5945480239701989318, guid: 793b57ef1f0760e8f2776be94c7905f5, type: 3}
+  memberShader: {fileID: 4800000, guid: 887013231f4a269178623abc40fc1a02, type: 3}
+  theme: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  heartWorldScale: {x: 2.298, y: 1.737, z: 2.298, w: 1.737}
+  heartPrismGap: 0.6
+  bodyThin: 0.6
+  engageRadius: 260
+  maxProxies: 7
+  proxyLingerSeconds: 2
+  maxSpawnsPerFrame: 7
+  vesselRadius: 6
+  biteRadius: 24
+  maxBitesPerTick: 4
+  cellCapacity: 1024
+  simulateOffMainThread: 1
+  extinctLingerSeconds: 8
