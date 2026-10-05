@@ -30,7 +30,7 @@ namespace CosmicShore.Gameplay
     }
 
     // Assets/_Scripts/Controller/Vessel/IVessel.cs
-    public interface IVessel { Transform Transform { get; } }
+    public interface IVessel { Transform Transform { get; } IVesselStatus VesselStatus { get; } }
 
     // Assets/_Scripts/Controller/Vessel/ResourceSystem.cs - the transfer surface under test
     public class ResourceSystem : MonoBehaviour

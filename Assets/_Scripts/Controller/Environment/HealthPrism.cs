@@ -135,6 +135,10 @@ namespace CosmicShore.Gameplay
         {
             if (destroyed) return;
 
+            // A skeleton is ordinary cell mass and is drawn as one, whoever was drawing the living
+            // body before (a swarm member's body is hidden while the swarm draws it, Docs/SWARM_FAUNA.md §14).
+            SetOwnerHidden(false);
+
             spindle ??= transform.parent ? transform.parent.GetComponent<Spindle>() : null;
             if (spindle)
             {
