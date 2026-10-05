@@ -65,6 +65,20 @@ namespace CosmicShore.Utility
                  "temporary debuff alike. Measured outcomes of both: Docs/ELEMENTAL_ECONOMY.md §4.1.")]
         public PetalBurnRule PetalBurnRule = PetalBurnRule.Shipped;
 
+        [Tooltip("Who controls this cell before anybody has claimed it - i.e. the colour its fauna " +
+                 "spawn in while the cell's own prism-count leader (the nucleus claim, or the " +
+                 "whole-cell volume without a nucleus) is still empty. Unset = the legacy fallbacks " +
+                 "(gameData's volume leader, then the local pilot's own domain - a FRIENDLY cell in " +
+                 "solo freestyle). OpposingLocalPilot = a domain other than the authority's pilot, " +
+                 "so the cell starts hostile and the pilot takes it by claiming the nucleus. Read " +
+                 "only until a real leader exists; resolved on the server and replicated by " +
+                 "CellNetworkSync. Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md: a biome's STARTING " +
+                 "state is authored data.")]
+        [SerializeField] InitialControllingDomain initialControllingDomain = InitialControllingDomain.Unset;
+
+        /// <summary>See the field's tooltip and <see cref="CellControlRules"/>.</summary>
+        public InitialControllingDomain InitialControllingDomain => initialControllingDomain;
+
         [Header("Phase Thresholds")]
         [Tooltip("Per-biome up/down prism-count thresholds that drive phase transitions. "
                + "The gap between Up and Down for each phase is the hysteresis band.")]

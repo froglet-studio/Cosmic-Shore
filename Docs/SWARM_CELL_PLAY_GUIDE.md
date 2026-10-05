@@ -39,25 +39,28 @@ Turn on **FrogletTools ▸ Toolbox ▸ Logging ▸ Ecology** first. That channel
    veil.
 4. Wait about 6 s (`InitialFaunaSpawnWaitTime: 6`) while populations seed.
 
-**Hostile or friendly: which domain to fly.** Every creature wears the cell's **controlling domain** at spawn.
-Configs never set a domain. `Cell.ControllingDomain` resolves in this order:
-- the live prism-count leader;
-- then gameData's controlling team;
-- then **the local player's domain** (the Menu_Main case);
-- then Jade.
+**Hostile from the start; claim the nucleus to take it.** Every creature wears the cell's **controlling domain** at
+spawn. `Cell.ControllingDomain` (`CellControlRules.ControllingDomain`) resolves in this order:
+1. the live prism-count leader. For this cell that is whoever has laid the most mass **inside the nucleus** (r 392);
+2. then the config's **authored starting controller**. The Swarm cell authors
+   `initialControllingDomain: OpposingLocalPilot` (`author_swarm_fauna.py`, `INITIAL_CONTROLLING_DOMAIN`). That is
+   the next domain after yours: Jade → **Ruby**, Ruby → **Gold**, Gold → **Jade**;
+3. then gameData's controlling team, then the local pilot's own domain, then Jade. These are the legacy fallbacks,
+   and every cell that authors nothing still uses them.
 
-In solo freestyle the cell therefore most likely seeds in **your** colour, which is **friendly**:
+So in solo freestyle the Swarm cell seeds in a colour that is **not yours**, and it stays that way while you lay trail
+outside the nucleus.
+- **Hostile** (any other domain): every hostile contact burns petals for good. They do not come back as crystals.
 - **Friendly** (own domain): a hit only *stings*. The flower dips by the same size and recovers in about 4 s, and
   nothing is lost.
-- **Hostile** (any other domain): every hostile contact burns petals for good. They do not come back as crystals.
-- **To turn the stakes on** (expected from the code, not verified):
-  1. Let the cell seed.
-  2. Fly to the **Domain Changer** toy (Pilot group, "the world is exactly where you left it").
-  3. Flip to another colour.
-
-  Live creatures keep the colour they were born in.
+- **To make the cell yours**, lay trail inside the nucleus until you lead it. The next waves hatch in your colour.
+  - Live creatures keep the colour they hatched in.
+  - Flipping your domain with the Domain Changer does not help: the start is not latched, so the unclaimed cell
+    opposes your new colour too.
+- **Networked:** the server resolves the start against the **host's** pilot and `CellNetworkSync` replicates it.
+  Every peer then spawns one colour, even if that colour is a client's own.
 - **Collect crystals first.** Get every element on your HUD flower to 5 or more petals so there is something to
-  lose (QA-SWARM-ROUND11-7 step 0).
+  lose (QA-SWARM-ROUND11-7 step 0; the hostile start is QA-SWARM-ROUND11-13).
 
 **What a burn costs here (Tuned):**
 - **1 petal per element per landed hostile contact**, so 4 per contact.
@@ -156,8 +159,9 @@ The middle shell has three substrate pens, each a 55° half-angle cone about the
 - **Nothing here has run in Unity.** Rendering, physics colliders, Burst, the main-thread glue, `CellEcologyLod` and
   the spawners are only type-checked and compiled. Burst has never compiled any job, and the Jobs safety system has
   never run.
-- **Hostility in solo is inferred from code** (§2), not observed. Every QA step's "fly as a domain that does NOT
-  control the cell" depends on it.
+- **The hostile start is proven headless, not observed** (§2). `Tools/Build/cell_control_harness/run.sh` proves
+  the resolver on 1,152 inputs, and its negative control fails on the old ordering. Nobody has watched a wave hatch
+  in the opposing colour in the editor yet (QA-SWARM-ROUND11-13).
 - **The compile is against Unity 6000.0.75 references, not 6000.3.** The Services.Multiplayer, Friends and
   Leaderboards packages could not be fetched. Editor code was checked only against UnityEditor 2021.1
   (`Tools/Build/unity_refcompile/README.md`).
