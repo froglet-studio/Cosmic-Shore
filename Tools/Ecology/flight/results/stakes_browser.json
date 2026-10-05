@@ -1,0 +1,71 @@
+{
+ "pack_hostile": {
+  "total": 16,
+  "base": {
+   "mass": 4,
+   "charge": 4,
+   "space": 4,
+   "time": 4
+  },
+  "burned": 4,
+  "gained": 0,
+  "contacts": 1,
+  "blocked": 0,
+  "stings": 0,
+  "tele": 4,
+  "crystals": 4,
+  "hostile": true,
+  "rule": "tuned",
+  "t": 17.90000000000005,
+  "by": {
+   "pack": 4
+  },
+  "errors": []
+ },
+ "pack_own": {
+  "total": 20,
+  "base": {
+   "mass": 5,
+   "charge": 5,
+   "space": 5,
+   "time": 5
+  },
+  "burned": 0,
+  "gained": 0,
+  "contacts": 1,
+  "blocked": 0,
+  "stings": 1,
+  "tele": 0,
+  "crystals": 3,
+  "hostile": false,
+  "rule": "tuned",
+  "t": 18.000000000000053,
+  "by": {},
+  "errors": []
+ },
+ "cell_hostile": {
+  "total": 12,
+  "base": {
+   "mass": 3,
+   "charge": 3,
+   "space": 3,
+   "time": 3
+  },
+  "burned": 8,
+  "gained": 0,
+  "contacts": 2,
+  "blocked": 0,
+  "stings": 0,
+  "tele": 8,
+  "crystals": 2,
+  "hostile": true,
+  "rule": "tuned",
+  "t": 15.03333333333329,
+  "by": {
+   "pack": 4,
+   "lurker": 4
+  },
+  "errors": []
+ },
+ "fails": []
+}
