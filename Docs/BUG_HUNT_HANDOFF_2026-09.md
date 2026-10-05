@@ -52,6 +52,7 @@ Confidence scale:
 | 25 | **Stat report RPCs reject NaN volumes and out-of-turn reports (was §4).** `ReportEnvironmentPrismDestroyed` and `ReportPrismStolen` now use `!(volume >= 0f)`, and the five owner-reported stat RPCs (fauna kill, combat hit, fuses beaten, environment prism destroyed, prism stolen) ignore reports unless a turn is running. Shipped on `Bug_Hunt`. | `Player` |
 | 26 | **Bloomrush end-of-round only ranks fielded domains (was §4).** `ResolveWinner` no longer lets an unfielded Jade win a 0-0-0 and strand `_finalResultsSent`, which restarted the round. Shipped on `Bug_Hunt`. | `BloomrushScoringRuleSO` |
 | 27 | **BranchingFlora rolls trunk count once before seeding (was §4).** `SeedBranches` no longer re-evaluates `Random.Range` in the for-condition. Shipped on `Bug_Hunt`. | `BranchingFlora` |
+| 28 | **Name generator includes the last word of each list (was §4).** `Random.Range` upper bound is exclusive, so `Length - 1` skipped the final entry. Shipped on `Bug_Hunt`. | `NameGenerationData` |
 
 ### Playtest items for the shipped fixes
 - **Squirrel ring (#6):** fly Menu_Main freestyle → an arcade game → back, 2-3 round trips, then
@@ -140,6 +141,9 @@ Confidence scale:
 - **STILL TO TEST (revisit): 4.4 BranchingFlora trunk roll, kept on Bug_Hunt untested at Yash's call.**
 - **BranchingFlora trunks (§4.4):** in a mode with BranchingFlora (Skim Race / freestyle flora),
   watch a few flora seed: trunk counts should stay between min and max, with no runaway branching.
+- **STILL TO TEST (revisit): 4.5 name generator last word, kept on Bug_Hunt untested at Yash's call.**
+- **Name generator (§4.5):** if anything still calls `NameGenerationData.GenerateName`, confirm the
+  last adjective and noun in the lists can appear. Otherwise this is a correctness fix with no play path.
 
 ---
 
@@ -159,7 +163,6 @@ Confidence scale:
 
 | Item | Where | Fix |
 |---|---|---|
-| Name generator never picks the last word | `NameGenerationData.cs:20-21` | `Random.Range(0, list.Count)` (dead code today) |
 | `PrismTimerManager.CancelScheduledActions` is O(N²) | `PrismTimerManager` | index by prism; only matters on mass cancels |
 | `Input.touches` under the new Input System | `ThumbCursor.cs:75`, `ThumbPerimeter.cs:86` | `Touchscreen.current` / EnhancedTouch |
 | `Trail` ushort index wraps past 65,535 prisms | `Trail` | widen to `int`, or assert; a very long freestyle trail reaches it |

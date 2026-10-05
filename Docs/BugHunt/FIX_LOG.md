@@ -8,6 +8,18 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ---
 
+## BH-4.5 — name generator skipped the last word in each list
+
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Symptom:** the last entry in `FirstWordList` / `SecondWordList` could never appear in a generated name.
+- **Root cause:** `Random.Range(0, list.Length - 1)` — Unity's int overload treats the max as exclusive, so
+  the last index was never chosen. Dead for gameplay today if the lists are unused, but wrong when called.
+- **Fix:** `Random.Range(0, list.Length)`.
+- **Verification:** gate scripts pass; not run in Unity. Retest is on the handoff playtest list.
+- **PR/commit:** pending.
+
+---
+
 ## BH-4.4 — BranchingFlora re-rolled the trunk count every loop iteration
 
 - **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
