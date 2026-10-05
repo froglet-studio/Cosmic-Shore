@@ -74,14 +74,15 @@ namespace CosmicShore.Mcp
                 }),
             Tool("prisma_board", "Prisma's task and bug tracker: every bug and task with its state (suggested, todo, doing, done), priority, source and notes.",
                 new JsonObject { ["state"] = P("string", "only this state (suggested, todo, doing, done); default: everything open") }),
-            Tool("prisma_board_suggest", "Suggest a bug or task to the user. It appears on Prisma's BOARD as SUGGESTED until the user accepts it. Use it for problems you find but are not fixing now.",
+            Tool("prisma_board_suggest", "Suggest a bug or task to the user. It appears on Prisma's BOARD as SUGGESTED until the user accepts it. Use it for problems you find but are not fixing now. Every suggestion needs an acceptance criterion: the check that will prove it done.",
                 new JsonObject
                 {
                     ["type"] = new JsonObject { ["type"] = "string", ["enum"] = new JsonArray("bug", "task") },
                     ["title"] = P("string", "one line"),
                     ["detail"] = P("string", "what, where (files, scene), evidence, and the suggested fix"),
+                    ["criterion"] = P("string", "done when: a check anyone can run - a test that passes, an engine_smoke with no such error, a scene that stays clean for 3 runs, a measured number"),
                     ["priority"] = P("integer", "1 high, 2 normal, 3 low"),
-                }, "type", "title"),
+                }, "type", "title", "criterion"),
             Tool("unity_isolation_check", "Fails if the branch changes anything outside Port/ that Unity would see. Run before committing.",
                 new JsonObject { ["base"] = P("string", "branch to diff against (default origin/bleeding-edge)") }),
             Tool("game_start", "Build (unless build=false) and start the player with its control port, then wait until it answers. On a Linux server without a display it runs under xvfb-run. Stops a previous player first.",
@@ -156,6 +157,7 @@ namespace CosmicShore.Mcp
                                        .OrderBy(i => i.State).ThenBy(i => i.Priority);
                     var text = string.Join("\n", items.Select(i => $"{i.Id} [{i.State}] P{i.Priority} {i.Type} ({i.Source}): {i.Title}" +
                         (i.Detail.Length > 0 ? "\n    " + i.Detail.Replace("\n", "\n    ") : "") +
+                        (i.Criterion.Length > 0 ? $"\n    done when: {i.Criterion}{(i.CriterionMet != null ? $" (MET {i.CriterionMet:yyyy-MM-dd})" : "")}" : "") +
                         (i.Notes.Count > 0 ? "\n    notes: " + string.Join(" | ", i.Notes) : "")));
                     return new JsonArray(Text(text.Length > 0 ? text : "The board is empty."));
                 }
@@ -163,7 +165,9 @@ namespace CosmicShore.Mcp
                 {
                     var b = Prisma.PrismaBoard.Load();
                     var type = Str(a, "type") == "bug" ? Prisma.PrismaBoard.Kind.Bug : Prisma.PrismaBoard.Kind.Task;
-                    var item = b.Add(type, Str(a, "title"), Str(a, "detail"), "agent", Prisma.PrismaBoard.Status.Suggested, Int(a, "priority", 2));
+                    if (Str(a, "criterion").Trim().Length == 0)
+                        return new JsonArray(Text("Not added: give a criterion - the check that will prove this done."));
+                    var item = b.Add(type, Str(a, "title"), Str(a, "detail"), "agent", Prisma.PrismaBoard.Status.Suggested, Int(a, "priority", 2), criterion: Str(a, "criterion"));
                     b.Save();
                     return new JsonArray(Text($"Suggested {item.Id}: {item.Title}. The user accepts or dismisses it on Prisma's BOARD."));
                 }

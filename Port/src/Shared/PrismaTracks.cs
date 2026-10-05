@@ -41,6 +41,11 @@ namespace Prisma
             public int AudioDistinct { get; set; }
             public int AudioMissing { get; set; }
             public int AudioUnwired { get; set; }
+            public double SimP95 { get; set; }
+            public double RenderP95 { get; set; }
+            public double AllocKBPerFrame { get; set; }
+            public double GcPauseMsPerFrame { get; set; }
+            public double Gen2PerMin { get; set; }
             public string Report { get; set; } = "";
         }
 
@@ -117,6 +122,8 @@ namespace Prisma
             var frames = d.TryGetProperty("frames", out var fr) ? fr : default;
             var counts = d.TryGetProperty("counts", out var cn) ? cn : default;
             var audio = d.TryGetProperty("audio", out var au) && au.ValueKind == JsonValueKind.Object ? au : default;
+            var cpu = d.TryGetProperty("cpu", out var cp) && cp.ValueKind == JsonValueKind.Object ? cp : default;
+            var mem = d.TryGetProperty("memory", out var me) && me.ValueKind == JsonValueKind.Object ? me : default;
             DateTime.TryParse(S(d, "startedUtc"), null, System.Globalization.DateTimeStyles.RoundtripKind, out var time);
             var run = new Run
             {
@@ -135,6 +142,11 @@ namespace Prisma
                 AudioDistinct = audio.ValueKind == JsonValueKind.Object ? I(audio, "distinctEvents") : 0,
                 AudioMissing = audio.ValueKind == JsonValueKind.Object ? L(audio, "missingEvents").Count : 0,
                 AudioUnwired = audio.ValueKind == JsonValueKind.Object ? I(audio, "unwiredOneShots") : 0,
+                SimP95 = cpu.ValueKind == JsonValueKind.Object ? D(cpu, "simP95Ms") : 0,
+                RenderP95 = cpu.ValueKind == JsonValueKind.Object ? D(cpu, "renderP95Ms") : 0,
+                AllocKBPerFrame = mem.ValueKind == JsonValueKind.Object ? D(mem, "kbPerFrameP50") : 0,
+                GcPauseMsPerFrame = mem.ValueKind == JsonValueKind.Object ? D(mem, "steadyGcPauseMsPerFrame") : 0,
+                Gen2PerMin = mem.ValueKind == JsonValueKind.Object ? D(mem, "steadyGen2PerMin") : 0,
                 Report = reportPath,
             };
             if (d.TryGetProperty("perScene", out var ps) && ps.ValueKind == JsonValueKind.Array)
@@ -173,8 +185,12 @@ namespace Prisma
                 if (median > 0 && p95 > median * 1.25 && p95 - median > 2)
                     regress.Add(Note("perf", $"{scene}: p95 regressed {median:0.0} -> {p95:0.0} ms", 1, scene));
             }
+            // Garbage collection: a gen0/gen1 collection blocks the game, so its average cost per
+            // frame is frame time the player feels. A millisecond per frame is a visible hitch rate.
+            if (run.GcPauseMsPerFrame > 1)
+                Note("perf", $"GC pauses average {run.GcPauseMsPerFrame:0.0} ms per frame (about {run.AllocKBPerFrame:0} KB allocated per frame; the report's memory.phaseAvgKB names the loop phase)", 1, "gc");
             // Problems that stayed away for three runs through their scene go quiet.
-            foreach (var i in Issues.Values.Where(i => i.State == IssueState.Open && i.LastSeen < run.Time))
+            foreach (var i in Issues.Values.Where(i => i.State is IssueState.Open or IssueState.Fixing && i.LastSeen < run.Time))
             {
                 int since = Runs.Count(r => r.Time > i.LastSeen && (i.LastScene == null || r.Scenes.Contains(i.LastScene))) + (i.LastScene == null || run.Scenes.Contains(i.LastScene) ? 1 : 0);
                 if (since >= 3) i.State = IssueState.Quiet;
@@ -216,6 +232,7 @@ namespace Prisma
                 sb.AppendLine($"- {r.Time:yyyy-MM-dd HH:mm} {r.Branch}@{r.Commit} {r.Seconds:0}s{(r.Crashed ? " CRASHED" : "")}: " +
                               $"{string.Join(" > ", r.Scenes.Take(6))}; p50 {r.P50:0.0} / p95 {r.P95:0.0} ms; {r.Exceptions} exc, {r.Errors} err, {r.Warnings} warn; " +
                               $"audio {r.AudioInstances} instances ({r.AudioDistinct} events, {r.AudioMissing} missing, {r.AudioUnwired} unwired)" +
+                              (r.SimP95 > 0 || r.AllocKBPerFrame > 0 ? $"; cpu p95 sim {r.SimP95:0.0} / render {r.RenderP95:0.0} ms; alloc {r.AllocKBPerFrame:0} KB/frame, GC {r.GcPauseMsPerFrame:0.00} ms/frame, {r.Gen2PerMin:0.0} gen2/min" : "") +
                               (r.Modes.Count > 0 ? "; modes " + string.Join(",", r.Modes) : "") + (r.Vessels.Count > 0 ? "; vessels " + string.Join(",", r.Vessels) : ""));
             sb.AppendLine();
             sb.AppendLine("## Open problems (worst first: kind, area, runs seen, last seen, message)");

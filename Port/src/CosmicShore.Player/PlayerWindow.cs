@@ -152,8 +152,9 @@ namespace CosmicShore.Player
             _script.BeforeTick(_frameIndex);
             Control?.BeforeTick(_frameIndex);
             long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
-            CosmicShore.Engine.GameLoop.PhaseTiming = s_timing;
+            CosmicShore.Engine.GameLoop.PhaseTiming = s_timing || SessionReport.Enabled;
             _boot.Tick(step);
+            SessionReport.SimTime(System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds);
             if (s_timing && _frameIndex % 30 == 0)
                 Console.WriteLine($"[tick] simulation {(System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency:F1} ms (frame {_frameIndex})"
                     + $" | avg/30: {CosmicShore.Engine.GameLoop.Current?.TakePhaseReport(30)} | {GcReport()}");
@@ -195,6 +196,7 @@ namespace CosmicShore.Player
                 }
                 return;
             }
+            long r0 = System.Diagnostics.Stopwatch.GetTimestamp();
             _frame.Ensure(w, h);
             // Enabled cameras aimed at a RenderTexture draw every frame (the preview window, the
             // connecting panel's arena view) before the screen camera, as the original does.
@@ -207,6 +209,8 @@ namespace CosmicShore.Player
 
             _ui.Render(w, h);
             _present.Draw(_frame.Color, w, h);
+            // CPU time spent issuing the frame's GL work (the GPU's own time needs timer queries).
+            SessionReport.RenderTime(System.Diagnostics.Stopwatch.GetElapsedTime(r0).TotalMilliseconds);
 
             _frameIndex++;
             if (_shots.TryGetValue(_frameIndex, out var path))

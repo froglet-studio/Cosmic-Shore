@@ -13,6 +13,11 @@ namespace Prisma
     /// tracks found, regressions, missing audio, the next milestone that is ready) and from the
     /// Prisma Agent (prisma_board_suggest). Anything Prisma or the agent proposes starts as
     /// SUGGESTED and only joins the board when the user accepts it. Kept beside the tracks.
+    ///
+    /// Every item carries an acceptance criterion: the check that proves it done. For a bug Prisma
+    /// found in the tracks, the check is the tracks' own: the problem stays away for three runs
+    /// through its scene. <see cref="Verify"/> applies it after every ingest, so "fixed" is
+    /// evidence, not a claim, and a fixed problem that comes back reopens its card.
     /// </summary>
     public sealed class PrismaBoard
     {
@@ -33,7 +38,15 @@ namespace Prisma
             public string? IssueKey { get; set; }
             public string? Milestone { get; set; }
             public List<string> Notes { get; set; } = new();
+            /// <summary>How anyone can tell it is done: a test, a smoke run, a scene that stays clean.</summary>
+            public string Criterion { get; set; } = "";
+            /// <summary>The run that showed the criterion passing (null until then, and again after a relapse).</summary>
+            public DateTime? CriterionMet { get; set; }
         }
+
+        /// <summary>The criterion of a bug that came from the tracks (the rule that turns an issue Quiet).</summary>
+        public static string TracksCriterion(string? scene) =>
+            $"Not seen again in 3 runs through {(string.IsNullOrEmpty(scene) ? "any scene" : scene)} (Prisma checks this after every run)";
 
         public List<Item> Items { get; set; } = new();
         public int NextBug { get; set; } = 1;
@@ -61,13 +74,13 @@ namespace Prisma
         }
 
         public Item Add(Kind type, string title, string detail = "", string source = "user", Status state = Status.Todo,
-                        int priority = 2, string? issueKey = null, string? milestone = null)
+                        int priority = 2, string? issueKey = null, string? milestone = null, string criterion = "")
         {
             var item = new Item
             {
                 Id = type == Kind.Bug ? $"B-{NextBug++}" : $"T-{NextTask++}",
                 Type = type, Title = title.Trim(), Detail = detail.Trim(), Source = source, State = state,
-                Priority = Math.Clamp(priority, 1, 3), IssueKey = issueKey, Milestone = milestone,
+                Priority = Math.Clamp(priority, 1, 3), IssueKey = issueKey, Milestone = milestone, Criterion = criterion.Trim(),
             };
             Items.Add(item);
             return item;
@@ -85,7 +98,7 @@ namespace Prisma
         /// does not know yet, and a task for each milestone checkpoint whose dependencies are done.
         /// Returns what it added (all SUGGESTED).
         /// </summary>
-        public List<Item> Suggest(PrismaTracks tracks, IEnumerable<(string id, string title, string status, List<string> deps)>? checkpoints = null)
+        public List<Item> Suggest(PrismaTracks tracks, IEnumerable<(string id, string title, string status, List<string> deps, string exit)>? checkpoints = null)
         {
             var added = new List<Item>();
             var known = new HashSet<string>(Items.Where(i => i.IssueKey != null).Select(i => i.IssueKey!));
@@ -103,7 +116,7 @@ namespace Prisma
                 added.Add(Add(Kind.Bug, title,
                     $"{issue.Kind} seen in {issue.Runs} run(s), {issue.Count} time(s); first {issue.FirstSeen:yyyy-MM-dd}, last {issue.LastSeen:yyyy-MM-dd HH:mm}" +
                     (issue.LastScene != null ? $", last in {issue.LastScene}" : "") + ".\n" + issue.Message,
-                    "tracks", Status.Suggested, priority, issueKey: issue.Key));
+                    "tracks", Status.Suggested, priority, issueKey: issue.Key, criterion: TracksCriterion(issue.LastScene)));
             }
             if (checkpoints != null)
             {
@@ -114,9 +127,41 @@ namespace Prisma
                 int open = Items.Count(i => i.Milestone != null && i.State is Status.Suggested or Status.Todo or Status.Doing);
                 foreach (var c in all.Where(c => c.status == "todo" && c.deps.All(done.Contains) && !mentioned.Contains(c.id)).Take(Math.Max(0, 2 - open)))
                     added.Add(Add(Kind.Task, $"Start milestone {c.id}: {c.title}", "Its dependencies are done. START it from MILESTONES.",
-                        "milestones", Status.Suggested, 2, milestone: c.id));
+                        "milestones", Status.Suggested, 2, milestone: c.id, criterion: c.exit));
             }
             return added;
+        }
+
+        /// <summary>
+        /// Applies the tracks' verdict to every card linked to a tracked problem: the criterion is met
+        /// when the problem went quiet, and a met card whose problem came back loses it (a DONE card
+        /// reopens to TO DO). Returns the cards that changed and how. Moving to DONE stays the user's call.
+        /// </summary>
+        public List<(Item item, bool met)> Verify(PrismaTracks tracks)
+        {
+            var changed = new List<(Item, bool)>();
+            foreach (var it in Items.Where(i => i.IssueKey != null && i.State is Status.Todo or Status.Doing or Status.Done))
+            {
+                if (!tracks.Issues.TryGetValue(it.IssueKey!, out var issue)) continue;
+                if (issue.State == PrismaTracks.IssueState.Quiet && it.CriterionMet == null)
+                {
+                    // Stamped with the run that proved it, so "came back" compares run with run.
+                    it.CriterionMet = tracks.Runs.Count > 0 ? tracks.Runs[^1].Time : DateTime.UtcNow;
+                    it.Updated = DateTime.UtcNow;
+                    it.Notes.Add($"{DateTime.Now:yyyy-MM-dd HH:mm} criterion met: not seen since {issue.LastSeen:yyyy-MM-dd HH:mm}" +
+                                 (issue.LastScene != null ? $" across 3 runs through {issue.LastScene}" : ""));
+                    changed.Add((it, true));
+                }
+                else if (issue.State is PrismaTracks.IssueState.Open or PrismaTracks.IssueState.Fixing && it.CriterionMet != null)
+                {
+                    it.CriterionMet = null;
+                    it.Updated = DateTime.UtcNow;
+                    it.Notes.Add($"{DateTime.Now:yyyy-MM-dd HH:mm} came back on {issue.LastSeen:yyyy-MM-dd HH:mm}");
+                    if (it.State == Status.Done) Move(it, Status.Todo, "reopened: the problem came back");
+                    changed.Add((it, false));
+                }
+            }
+            return changed;
         }
 
         static string Short(string m)

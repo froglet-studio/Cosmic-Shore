@@ -213,7 +213,9 @@ namespace CosmicShore.Player
                 long tickStart = System.Diagnostics.Stopwatch.GetTimestamp();
                 if (control is { WantsFrame: true }) control.AfterPresent(_ => throw new InvalidOperationException("a --headless player draws nothing; start it with a window (xvfb-run on a server) to take screenshots"), width, height);
                 boot.Tick(1f / 60f);
-                SessionReport.FrameTime(System.Diagnostics.Stopwatch.GetElapsedTime(tickStart).TotalMilliseconds); // headless: simulation time per tick
+                double tickMs = System.Diagnostics.Stopwatch.GetElapsedTime(tickStart).TotalMilliseconds;
+                SessionReport.FrameTime(tickMs); // headless: a frame is one simulation tick
+                SessionReport.SimTime(tickMs);
                 if (train != null)
                 {
                     train.Poll(f);

@@ -68,6 +68,7 @@ namespace CosmicShore.Launcher
             _updater = new LauncherUpdater(_s, _tools, _ws);
             // A play session that ends is folded into the tracks, and Prisma says what it found.
             _jobs.GameExited += () => Task.Run(async () => { await Task.Delay(2000); IngestSessions(notify: true); });
+            _chat.MilestoneStopped += stop => _ui.Enqueue(() => OnMilestoneStopped(stop));
             if (args.Tour >= 0) _tour = args.Tour;
             var pageArg = args.Page?.Split(':');
             if (pageArg != null && Enum.TryParse<Page>(pageArg[0], true, out var p)) _page = p;
@@ -200,9 +201,13 @@ namespace CosmicShore.Launcher
 
         // ---------------------------------------------------------------- frame
 
+        /// <summary>Work handed to the UI thread by background threads (it touches state the frame reads).</summary>
+        readonly System.Collections.Concurrent.ConcurrentQueue<Action> _ui = new();
+
         void OnRender(double dt)
         {
             _frame++;
+            while (_ui.TryDequeue(out var work)) work();
             _gl.ClearColor(0.01f, 0.01f, 0.04f, 1f);
             _gl.Clear(ClearBufferMask.ColorBufferBit);
             _imgui.Update((float)dt);
@@ -233,6 +238,10 @@ namespace CosmicShore.Launcher
                         _page = Page.Chat;
                         _chat.Detect();
                         SendChat(c[5..], ClaudeChat.Mode.Plan);
+                        break;
+                    case var m when m.StartsWith("milestone:"):
+                        _chat.Detect();
+                        StartMilestone(m["milestone:".Length..]);
                         break;
                 }
             }
@@ -928,6 +937,20 @@ namespace CosmicShore.Launcher
                 });
                 Row("Model", () => Text("##cmodel", "default", () => _s.ClaudeModel, v => _s.ClaudeModel = v));
                 Row("CLI path", () => Text("##cpath", "auto-detect", () => _s.ClaudePath, v => _s.ClaudePath = v));
+                Row("Milestone budget", () =>
+                {
+                    // Each milestone run stops at the first limit it reaches and leaves what it tried on the board.
+                    int turns = _s.MilestoneMaxTurns, minutes = _s.MilestoneMaxMinutes;
+                    float usd = (float)_s.MilestoneMaxUsd;
+                    ImGui.PushItemWidth(110);
+                    if (ImGui.InputInt("turns##mt", ref turns, 10)) { _s.MilestoneMaxTurns = Math.Clamp(turns, 1, 1000); _dirty = true; }
+                    ImGui.SameLine(0, 14);
+                    if (ImGui.InputInt("min##mm", ref minutes, 15)) { _s.MilestoneMaxMinutes = Math.Clamp(minutes, 0, 600); _dirty = true; }
+                    ImGui.SameLine(0, 14);
+                    if (ImGui.InputFloat("$##mu", ref usd, 1, 5, "%.0f")) { _s.MilestoneMaxUsd = Math.Clamp(usd, 0, 500); _dirty = true; }
+                    ImGui.PopItemWidth();
+                    Neon.Tooltip("Per milestone run: agentic turns, wall-clock minutes (0 = no limit) and dollars (0 = no cap;\nwith a Claude plan this is the run's nominal cost). When a run stops at a limit, Prisma puts\nwhat it tried on the BOARD and offers CONTINUE.");
+                });
             }
             if (Section("ADVANCED"))
             {

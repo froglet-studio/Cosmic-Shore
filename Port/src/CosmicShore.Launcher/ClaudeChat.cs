@@ -53,6 +53,17 @@ namespace CosmicShore.Launcher
         /// <summary>Raised on the chat thread when a reply finishes (voice reads it aloud).</summary>
         public event Action<string>? ReplyFinished;
 
+        /// <summary>A milestone run that ended short: it hit its turn, time or cost budget, or failed.</summary>
+        public sealed record SessionStop(string Milestone, string Title, string Reason, string Tried, string LastWords);
+
+        /// <summary>Raised on the chat thread when a milestone run stops short (never for the user's own STOP).</summary>
+        public event Action<SessionStop>? MilestoneStopped;
+
+        // Why a run ended early, as "at the 80-turn limit" (a budget) - set by the result event or the watchdog.
+        volatile string? _stopReason;
+        volatile string? _lastError;
+        volatile bool _userStopped;
+
         readonly LauncherSettings _s;
         readonly Toolchain _tools;
         readonly object _lock = new();
@@ -83,6 +94,7 @@ namespace CosmicShore.Launcher
 
         public void Stop()
         {
+            _userStopped = true;
             try { if (_proc is { HasExited: false }) _proc.Kill(entireProcessTree: true); } catch { }
         }
 
@@ -291,6 +303,7 @@ namespace CosmicShore.Launcher
             "Follow the repository's root CLAUDE.md for game work. Prisma records every play run as tracks (performance per scene, features, audio, every problem " +
             "with when it was first and last seen); the brief below is the latest, and prisma_tracks has the rest. Start from it: when asked to fix something, " +
             "find it in the tracks, reproduce it with the prisma tools (engine_smoke, game_start, game_screenshot, game_logs ...), fix it, and prove the fix the same way. " +
+            "A board item's 'done when' is its acceptance test: run it and show the result before calling the work done. " +
             "Keep replies short; the user reads them in Prisma's chat panel.";
 
         string MilestoneScope() =>
@@ -298,7 +311,9 @@ namespace CosmicShore.Launcher
             "This session works on the ENGINE: Port/ (Prisma's source, tools, tests and docs). Read Port/CLAUDE.md and Port/docs/ROADMAP.md first; the checkpoint's " +
             "exit criterion is in Port/docs/milestones.json. Assets/, Packages/ and ProjectSettings/ are the Unity project: read them as the game's input, never change them. " +
             $"Prove every step with the prisma tools (engine_build, engine_test, engine_smoke, game_* ...). When the work moves the checkpoint, update {Milestone}'s entry in " +
-            "Port/docs/milestones.json: status (todo, in-progress, done) and a dated note with the evidence. Keep replies short.";
+            "Port/docs/milestones.json: status (todo, in-progress, done) and a dated note with the evidence. The exit criterion is the acceptance test: never set a " +
+            "checkpoint to done until you have run that check and it passed, and put the command and its result in the note. Problems you find but do not fix go on " +
+            "the board with prisma_board_suggest, each with its own criterion. Keep replies short.";
 
         // Edit(path) rules cover every file-editing tool (Edit, Write, NotebookEdit) in every mode.
         static readonly string[] UnityDenies = { "Edit(Assets/**)", "Edit(Packages/**)", "Edit(ProjectSettings/**)" };
@@ -315,6 +330,12 @@ namespace CosmicShore.Launcher
         void Run(string text, string workDir, Mode mode, string? extraDir)
         {
             var reply = new System.Text.StringBuilder();
+            bool milestone = CurrentScope == Scope.Milestone;
+            int exit = 0;
+            _stopReason = null;
+            _lastError = null;
+            _userStopped = false;
+            System.Threading.Timer? watchdog = null;
             try
             {
                 var psi = new ProcessStartInfo(Cli!)
@@ -334,6 +355,17 @@ namespace CosmicShore.Launcher
                 if (model.Length > 0 && model != "default") { psi.ArgumentList.Add("--model"); psi.ArgumentList.Add(model); }
                 var effort = _s.ClaudeEffort?.Trim() ?? "";
                 if (effort.Length > 0 && effort != "default") { psi.ArgumentList.Add("--effort"); psi.ArgumentList.Add(effort); }
+                if (milestone)
+                {
+                    // Engine work runs unattended for long stretches: give each run a budget.
+                    psi.ArgumentList.Add("--max-turns");
+                    psi.ArgumentList.Add(Math.Max(1, _s.MilestoneMaxTurns).ToString(System.Globalization.CultureInfo.InvariantCulture));
+                    if (_s.MilestoneMaxUsd > 0)
+                    {
+                        psi.ArgumentList.Add("--max-budget-usd");
+                        psi.ArgumentList.Add(_s.MilestoneMaxUsd.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture));
+                    }
+                }
                 psi.ArgumentList.Add("--disallowedTools");
                 foreach (var d in CurrentScope == Scope.Game ? EngineDenies : UnityDenies) psi.ArgumentList.Add(d);
                 foreach (var dir in new[] { extraDir, Path.Combine(LauncherSettings.DataDir, "tracks") })
@@ -348,22 +380,41 @@ namespace CosmicShore.Launcher
                 if (!string.IsNullOrWhiteSpace(_s.AnthropicApiKey)) psi.Environment["ANTHROPIC_API_KEY"] = _s.AnthropicApiKey.Trim();
 
                 _proc = Process.Start(psi)!;
+                var proc = _proc;
+                if (milestone && _s.MilestoneMaxMinutes > 0)
+                    watchdog = new System.Threading.Timer(_ =>
+                    {
+                        _stopReason = $"at the {_s.MilestoneMaxMinutes}-minute limit";
+                        try { if (!proc.HasExited) proc.Kill(entireProcessTree: true); } catch { }
+                    }, null, TimeSpan.FromMinutes(_s.MilestoneMaxMinutes), System.Threading.Timeout.InfiniteTimeSpan);
                 _proc.StandardInput.Write(text);
                 _proc.StandardInput.Close();
                 var err = _proc.StandardError.ReadToEndAsync();
                 string? line;
                 while ((line = _proc.StandardOutput.ReadLine()) != null) Parse(line, reply);
                 _proc.WaitForExit();
-                if (_proc.ExitCode != 0)
+                exit = _proc.ExitCode;
+                if (exit != 0 && !_userStopped)
                 {
-                    var e = err.Result.Trim();
-                    Add(ChatRole.Error, e.Length > 0 ? e : $"claude exited with {_proc.ExitCode}");
+                    if (_stopReason != null) Add(ChatRole.Error, $"Stopped {_stopReason}.");
+                    else if (_lastError == null)
+                    {
+                        var e = err.Result.Trim();
+                        Add(ChatRole.Error, e.Length > 0 ? e : $"claude exited with {exit}");
+                    }
                     RefreshAuth(); // a sign-in that expired shows up as SIGN IN
                 }
             }
-            catch (Exception ex) { Add(ChatRole.Error, ex.Message); }
+            catch (Exception ex) { Add(ChatRole.Error, ex.Message); exit = -1; }
             finally
             {
+                watchdog?.Dispose();
+                if (milestone && !_userStopped && (_stopReason != null || exit != 0))
+                {
+                    string reason = _stopReason ?? (_lastError is { } le ? "after an error: " + (le.Length > 90 ? le[..89] + "..." : le) : $"after claude exited with {exit}");
+                    var stop = new SessionStop(Milestone ?? "", MilestoneTitle ?? "", reason, Tried(), LastWords());
+                    try { MilestoneStopped?.Invoke(stop); } catch { }
+                }
                 // Headless Claude has no plan-approval tool: a plan-mode turn's final message is the plan.
                 if (mode == Mode.Plan)
                     lock (_lock)
@@ -445,9 +496,41 @@ namespace CosmicShore.Launcher
                 {
                     if (root.TryGetProperty("total_cost_usd", out var c) && c.ValueKind == JsonValueKind.Number) CostUsd += c.GetDouble();
                     if (root.TryGetProperty("num_turns", out var nt) && nt.ValueKind == JsonValueKind.Number) Turns += nt.GetInt32();
-                    if (root.TryGetProperty("is_error", out var ie) && ie.ValueKind == JsonValueKind.True
-                        && root.TryGetProperty("result", out var res)) Add(ChatRole.Error, res.ToString());
+                    string sub = root.TryGetProperty("subtype", out var st) && st.ValueKind == JsonValueKind.String ? st.GetString() ?? "" : "";
+                    // A run that ends on a limit says so in subtype (error_max_turns, error_max_budget_usd ...), with no result text.
+                    if (sub == "error_max_turns") _stopReason = $"at the {_s.MilestoneMaxTurns}-turn limit";
+                    else if (sub.StartsWith("error_max_budget", StringComparison.Ordinal)) _stopReason = $"at the ${_s.MilestoneMaxUsd:0.##} budget";
+                    else if (root.TryGetProperty("is_error", out var ie) && ie.ValueKind == JsonValueKind.True)
+                    {
+                        string? text = root.TryGetProperty("result", out var res) ? res.ToString()
+                            : root.TryGetProperty("errors", out var errs) && errs.ValueKind == JsonValueKind.Array
+                                ? string.Join("\n", errs.EnumerateArray().Select(x => x.ToString())) : null;
+                        if (!string.IsNullOrWhiteSpace(text)) { Add(ChatRole.Error, text!); _lastError = text!.Split('\n')[0]; }
+                    }
                 }
+            }
+        }
+
+        /// <summary>What the current run tried: its tool calls since the last user message, oldest first.</summary>
+        string Tried()
+        {
+            lock (_lock)
+            {
+                int user = _items.FindLastIndex(x => x.Role == ChatRole.User);
+                var tools = _items.Skip(Math.Max(0, user + 1)).Where(x => x.Role == ChatRole.Tool)
+                                  .Select(x => (x.Failed ? "FAILED " : "") + x.Text.Replace('\n', ' ')).ToList();
+                if (tools.Count == 0) return "No tool calls.";
+                var shown = tools.Count > 30 ? tools.Take(10).Append($"... {tools.Count - 20} more ...").Concat(tools.TakeLast(10)) : tools;
+                return string.Join("\n", shown.Select(t => "- " + (t.Length > 160 ? t[..159] + "..." : t)));
+            }
+        }
+
+        string LastWords()
+        {
+            lock (_lock)
+            {
+                var last = _items.LastOrDefault(x => x.Role is ChatRole.Assistant or ChatRole.Plan);
+                return last == null ? "" : last.Text.Length > 1200 ? last.Text[..1200] + "..." : last.Text;
             }
         }
 

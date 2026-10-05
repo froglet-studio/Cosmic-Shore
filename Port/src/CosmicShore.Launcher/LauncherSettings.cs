@@ -76,6 +76,11 @@ namespace CosmicShore.Launcher
         public bool VoiceReplies { get; set; }
         public string ClaudePath { get; set; } = "";
         public int ChatMode { get; set; }
+        // A milestone run's budget (each message is one run): agentic turns, wall-clock minutes,
+        // and an optional dollar cap. A run that hits one stops and leaves what it tried on the board.
+        public int MilestoneMaxTurns { get; set; } = 80;
+        public int MilestoneMaxMinutes { get; set; } = 60;
+        public double MilestoneMaxUsd { get; set; }
 
         // Toolchain
         public string DotnetPath { get; set; } = "";

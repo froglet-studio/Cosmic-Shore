@@ -26,7 +26,7 @@ namespace CosmicShore.Launcher
         PrismaBoard _board = PrismaBoard.Load(TracksDir);
         readonly object _dataLock = new();
         int _tracksTab, _boardTab;
-        string _newItem = "";
+        string _newItem = "", _newCriterion = "";
         int _newItemType;
         string? _openCard;
 
@@ -37,16 +37,31 @@ namespace CosmicShore.Launcher
         {
             var results = new List<PrismaTracks.IngestResult>();
             List<PrismaBoard.Item> suggested;
+            List<(PrismaBoard.Item item, bool met)> verified;
             lock (_dataLock)
             {
                 foreach (var f in LauncherJobs.Sessions().OrderBy(f => f.LastWriteTimeUtc))
                     if (_tracks.Ingest(f.FullName) is { } r) results.Add(r);
                 suggested = _board.Suggest(_tracks, Checkpoints());
+                verified = _board.Verify(_tracks);
                 if (results.Count > 0) _tracks.Save(TracksDir);
-                if (suggested.Count > 0 || results.Count > 0) _board.Save(TracksDir);
+                if (suggested.Count > 0 || results.Count > 0 || verified.Count > 0) _board.Save(TracksDir);
             }
             if (!notify) return;
             foreach (var r in results) NotifyRun(r);
+            foreach (var (it, met) in verified)
+            {
+                var card = it;
+                if (met)
+                    Notify($"{card.Id} looks fixed", $"{Trim(card.Title, 70)}\nIts acceptance check passed: not seen again in 3 runs.", NoteKind.Success,
+                        card.State == PrismaBoard.Status.Done ? Array.Empty<(string, Action)>() : new (string, Action)[]
+                        {
+                            ("MARK DONE", () => { MoveCard(card, PrismaBoard.Status.Done, "done: acceptance check passed"); }),
+                            ("SHOW", () => { _page = Page.Board; _openCard = card.Id; }),
+                        });
+                else
+                    Notify($"{card.Id} came back", Trim(card.Title, 80), NoteKind.Warning, ("SHOW", () => { _page = Page.Board; _openCard = card.Id; }));
+            }
             if (suggested.Count > 0)
                 Notify($"{suggested.Count} new suggestion{(suggested.Count == 1 ? "" : "s")}",
                     string.Join("\n", suggested.Take(3).Select(i => i.Title)), NoteKind.Info,
@@ -54,6 +69,25 @@ namespace CosmicShore.Launcher
         }
 
         void SaveBoard() { lock (_dataLock) _board.Save(TracksDir); }
+
+        /// <summary>
+        /// Moves a card and keeps its tracked problem in step: a bug in DOING marks the problem as
+        /// being fixed (the agent's brief says so); anywhere else it is just open again.
+        /// </summary>
+        void MoveCard(PrismaBoard.Item it, PrismaBoard.Status to, string? note = null)
+        {
+            lock (_dataLock)
+            {
+                _board.Move(it, to, note);
+                if (it.IssueKey != null && _tracks.Issues.TryGetValue(it.IssueKey, out var issue)
+                    && issue.State is PrismaTracks.IssueState.Open or PrismaTracks.IssueState.Fixing)
+                {
+                    issue.State = to == PrismaBoard.Status.Doing ? PrismaTracks.IssueState.Fixing : PrismaTracks.IssueState.Open;
+                    _tracks.Save(TracksDir);
+                }
+                _board.Save(TracksDir);
+            }
+        }
 
         // milestones.json lives in the workspace (Port/docs), so progress is committed with the branch
         string MilestonesFile => Path.Combine(_ws.Dir, "Port", "docs", "milestones.json");
@@ -72,21 +106,80 @@ namespace CosmicShore.Launcher
             return _milestones;
         }
 
-        IEnumerable<(string id, string title, string status, List<string> deps)> Checkpoints()
+        IEnumerable<(string id, string title, string status, List<string> deps, string exit)> Checkpoints()
         {
             var m = Milestones();
             if (m?["checkpoints"] is not JsonArray arr) yield break;
             foreach (var c in arr.OfType<JsonObject>())
                 yield return (c["id"]?.ToString() ?? "", c["title"]?.ToString() ?? "", c["status"]?.ToString() ?? "todo",
-                              (c["dependsOn"] as JsonArray)?.Select(x => x?.ToString() ?? "").ToList() ?? new List<string>());
+                              (c["dependsOn"] as JsonArray)?.Select(x => x?.ToString() ?? "").ToList() ?? new List<string>(),
+                              c["exit"]?.ToString() ?? "");
         }
+
+        // The file is read by people and committed: keep ' ` > and non-ASCII as written, not \u-escaped.
+        static readonly JsonSerializerOptions MilestonesJson = new()
+        {
+            WriteIndented = true,
+            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+        };
 
         void SetMilestoneStatus(JsonObject c, string status)
         {
             c["status"] = status;
             (c["notes"] as JsonArray ?? (JsonArray)(c["notes"] = new JsonArray())).Add($"{DateTime.Now:yyyy-MM-dd} status -> {status} (Prisma)");
-            File.WriteAllText(MilestonesFile, _milestones!.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+            File.WriteAllText(MilestonesFile, _milestones!.ToJsonString(MilestonesJson));
             _milestonesRead = File.GetLastWriteTimeUtc(MilestonesFile);
+        }
+
+        /// <summary>START / CONTINUE (and --auto milestone:ID): an engine session for the checkpoint, in PLAN mode with its prompt.</summary>
+        void StartMilestone(string id)
+        {
+            if (Milestones()?["checkpoints"] is not JsonArray arr) return;
+            if (arr.OfType<JsonObject>().FirstOrDefault(x => x["id"]?.ToString() == id) is not { } c) return;
+            if ((c["status"]?.ToString() ?? "todo") == "todo") SetMilestoneStatus(c, "in-progress");
+            _chat.SetScope(ClaudeChat.Scope.Milestone, id, c["title"]?.ToString() ?? "");
+            _s.ChatMode = 0; _dirty = true;
+            _page = Page.Chat;
+            SendChat(c["prompt"]?.ToString() ?? $"Plan checkpoint {id}.", ClaudeChat.Mode.Plan);
+        }
+
+        void AddMilestoneNote(string id, string note)
+        {
+            if (Milestones()?["checkpoints"] is not JsonArray arr) return;
+            if (arr.OfType<JsonObject>().FirstOrDefault(c => c["id"]?.ToString() == id) is not { } c) return;
+            (c["notes"] as JsonArray ?? (JsonArray)(c["notes"] = new JsonArray())).Add($"{DateTime.Now:yyyy-MM-dd} {note}");
+            File.WriteAllText(MilestonesFile, _milestones!.ToJsonString(MilestonesJson));
+            _milestonesRead = File.GetLastWriteTimeUtc(MilestonesFile);
+        }
+
+        /// <summary>
+        /// A milestone run stopped short (a budget limit or a failure): what it tried goes on the board
+        /// as a suggestion with the checkpoint's exit criterion, the checkpoint gets a dated note, and
+        /// a notification offers to continue the same conversation with a fresh budget.
+        /// </summary>
+        void OnMilestoneStopped(ClaudeChat.SessionStop stop)
+        {
+            var exit = Checkpoints().FirstOrDefault(c => c.id == stop.Milestone).exit ?? "";
+            PrismaBoard.Item item;
+            lock (_dataLock)
+            {
+                item = _board.Add(PrismaBoard.Kind.Task, $"Milestone {stop.Milestone} stopped {stop.Reason}",
+                    $"{stop.Title}\nWhat the run tried:\n{stop.Tried}" + (stop.LastWords.Length > 0 ? $"\nIts last words:\n{stop.LastWords}" : ""),
+                    "milestones", PrismaBoard.Status.Suggested, 1, milestone: stop.Milestone, criterion: exit);
+                _board.Save(TracksDir);
+            }
+            AddMilestoneNote(stop.Milestone, $"run stopped {stop.Reason}; what it tried is board item {item.Id} (Prisma)");
+            Notify($"Milestone {stop.Milestone} stopped", $"Stopped {stop.Reason}. What it tried is on the BOARD as {item.Id}.", NoteKind.Warning,
+                ("CONTINUE", () =>
+                {
+                    // Same conversation when it is still open; otherwise a fresh one told what was tried.
+                    bool same = _chat.CurrentScope == ClaudeChat.Scope.Milestone && _chat.Milestone == stop.Milestone;
+                    if (!same) _chat.SetScope(ClaudeChat.Scope.Milestone, stop.Milestone, stop.Title);
+                    _page = Page.Chat;
+                    SendChat("Continue where the last run stopped. Check what is already done before redoing anything, and keep to the exit criterion." +
+                             (same ? "" : $"\nThe last run stopped {stop.Reason}. What it tried:\n{stop.Tried}"), (ClaudeChat.Mode)_s.ChatMode);
+                }),
+                ("BOARD", () => { _page = Page.Board; _openCard = item.Id; }));
         }
 
         int RailBadge(Page p) => p switch
@@ -256,7 +349,8 @@ namespace CosmicShore.Launcher
                 {
                     var existing = _board.Items.FirstOrDefault(i => i.IssueKey == issue.Key);
                     if (existing != null) _board.Move(existing, PrismaBoard.Status.Todo, "accepted from TRACKS");
-                    else _board.Add(PrismaBoard.Kind.Bug, Trim(issue.Message, 90), issue.Message, "tracks", PrismaBoard.Status.Todo, issue.Kind is "crash" or "exception" ? 1 : 2, issue.Key);
+                    else _board.Add(PrismaBoard.Kind.Bug, Trim(issue.Message, 90), issue.Message, "tracks", PrismaBoard.Status.Todo,
+                                    issue.Kind is "crash" or "exception" ? 1 : 2, issue.Key, criterion: PrismaBoard.TracksCriterion(issue.LastScene));
                 }
                 SaveBoard();
             }
@@ -267,6 +361,20 @@ namespace CosmicShore.Launcher
         void TracksPerf(PrismaTracks t)
         {
             var dl = ImGui.GetWindowDrawList();
+            var timed = t.Runs.Where(r => r.SimP95 > 0 || r.AllocKBPerFrame > 0).TakeLast(40).ToList();
+            if (timed.Count > 0)
+            {
+                // Where a frame goes: simulation vs render CPU, and the garbage collector's share.
+                var p = ImGui.GetCursorScreenPos();
+                float w = ImGui.GetContentRegionAvail().X;
+                var last = timed[^1];
+                Card(dl, p, p + new Vector2(w, 70));
+                dl.AddText(Neon.Strong, 16, p + new Vector2(18, 12), Neon.U(Neon.Ink), "Frame budget");
+                dl.AddText(Neon.Small, 13, p + new Vector2(18, 38), Neon.U(Neon.Dim),
+                    $"p95  sim {last.SimP95:0.0} ms  ·  render {last.RenderP95:0.0} ms  ·  {last.AllocKBPerFrame:0} KB allocated per frame  ·  GC {last.GcPauseMsPerFrame:0.00} ms/frame");
+                Spark(dl, p + new Vector2(w - 420, 12), new Vector2(400, 46), timed.Select(r => r.GcPauseMsPerFrame).ToList(), Neon.Violet, 1);
+                ImGui.SetCursorScreenPos(p + new Vector2(0, 78));
+            }
             foreach (var scene in t.Runs.SelectMany(r => r.SceneP95.Keys).Distinct().OrderBy(s => s))
             {
                 var xs = t.Runs.Where(r => r.SceneP95.ContainsKey(scene)).Select(r => r.SceneP95[scene]).TakeLast(40).ToList();
@@ -280,7 +388,7 @@ namespace CosmicShore.Launcher
                 ImGui.SetCursorScreenPos(p + new Vector2(0, 78));
             }
             ImGui.PushFont(Neon.Small);
-            ImGui.TextColored(Neon.Dim, "Bars are each run's 95th-percentile frame time; the amber line is 60 fps (16.7 ms), red bars are over it.");
+            ImGui.TextColored(Neon.Dim, "Bars are each run's 95th-percentile frame time; the amber line is 60 fps (16.7 ms), red bars are over it. Frame budget bars are GC pause per frame; over 1 ms is a visible hitch rate.");
             ImGui.PopFont();
         }
 
@@ -381,15 +489,20 @@ namespace CosmicShore.Launcher
             ImGui.SetCursorScreenPos(addP);
             Segmented("ntype", new[] { "BUG", "TASK" }, _newItemType, i => _newItemType = i, Neon.Magenta);
             ImGui.SameLine(0, 10);
-            ImGui.PushItemWidth(b.X - a.X - 300);
+            float inputs = b.X - a.X - 300;
+            ImGui.PushItemWidth(inputs * 0.55f);
             bool enter = ImGui.InputTextWithHint("##newitem", "Add a bug or task, then Enter", ref _newItem, 300, ImGuiInputTextFlags.EnterReturnsTrue);
+            ImGui.PopItemWidth();
+            ImGui.SameLine(0, 8);
+            ImGui.PushItemWidth(inputs * 0.45f - 8);
+            enter |= ImGui.InputTextWithHint("##newcrit", "Done when... (how to check it)", ref _newCriterion, 300, ImGuiInputTextFlags.EnterReturnsTrue);
             ImGui.PopItemWidth();
             ImGui.SameLine(0, 8);
             if ((SmallButton("ADD", 80, _newItem.Trim().Length > 0) || enter) && _newItem.Trim().Length > 0)
             {
-                lock (_dataLock) _board.Add(_newItemType == 0 ? PrismaBoard.Kind.Bug : PrismaBoard.Kind.Task, _newItem);
+                lock (_dataLock) _board.Add(_newItemType == 0 ? PrismaBoard.Kind.Bug : PrismaBoard.Kind.Task, _newItem, criterion: _newCriterion);
                 SaveBoard();
-                _newItem = "";
+                _newItem = _newCriterion = "";
             }
 
             var ca = new Vector2(a.X, addP.Y + 52);
@@ -430,6 +543,10 @@ namespace CosmicShore.Launcher
             dl.AddRect(p, p + new Vector2(w, 54), Neon.U(Neon.Magenta, 0.35f), 12);
             dl.AddText(Neon.Small, 12, p + new Vector2(16, 8), Neon.U(Neon.Magenta), $"{it.Id}  ·  {it.Type.ToString().ToUpperInvariant()}  ·  from {it.Source}");
             dl.AddText(Neon.Body, 15, p + new Vector2(16, 26), Neon.U(Neon.Ink), Trim(it.Title, 100));
+            float cx = Math.Min(w * 0.5f, 560);
+            int room = (int)((w - 230 - cx) / 6.6f) - 11; // stop short of ACCEPT / DISMISS
+            if (it.Criterion.Length > 0 && room > 12)
+                dl.AddText(Neon.Small, 12, p + new Vector2(cx, 8), Neon.U(Neon.Dim), "done when: " + Trim(it.Criterion, room));
             ImGui.PushID(it.Id);
             ImGui.SetCursorScreenPos(p + new Vector2(w - 210, 12));
             if (SmallButton("ACCEPT", 100, true)) { lock (_dataLock) _board.Move(it, PrismaBoard.Status.Todo, "accepted"); SaveBoard(); }
@@ -445,6 +562,7 @@ namespace CosmicShore.Launcher
             var dl = ImGui.GetWindowDrawList();
             bool open = _openCard == it.Id;
             var lines = open ? (it.Detail.Length > 0 ? it.Detail.Split('\n').Take(6).ToList() : new List<string>()) : new List<string>();
+            if (open && it.Criterion.Length > 0) lines.Add("DONE WHEN: " + it.Criterion);
             float h = 58 + (open ? 22 * lines.Count + 46 : 0);
             Card(dl, p, p + new Vector2(w, h));
             var pc = it.Priority == 1 ? Neon.Red : it.Priority == 2 ? Neon.Amber : Neon.Dim;
@@ -452,6 +570,13 @@ namespace CosmicShore.Launcher
             dl.AddText(Neon.Small, 12, p + new Vector2(14, 8), Neon.U(it.Type == PrismaBoard.Kind.Bug ? Neon.Red : Neon.Cyan),
                 $"{it.Id}  ·  {(it.Type == PrismaBoard.Kind.Bug ? "BUG" : "TASK")}  ·  P{it.Priority}" + (it.Source != "user" ? "  ·  " + it.Source : ""));
             dl.AddText(Neon.Body, 15, p + new Vector2(14, 28), Neon.U(Neon.Ink), Trim(it.Title, (int)(w / 8.2f)));
+            if (it.CriterionMet != null)
+            {
+                // The acceptance check passed: evidence, not a claim.
+                var pill = p + new Vector2(w - 62, 8);
+                dl.AddRectFilled(pill, pill + new Vector2(50, 18), Neon.U(Neon.Lime, 0.18f), 9);
+                dl.AddText(Neon.Small, 11, pill + new Vector2(12, 2), Neon.U(Neon.Lime), "MET");
+            }
             ImGui.PushID(it.Id);
             ImGui.SetCursorScreenPos(p);
             if (ImGui.InvisibleButton("card", new Vector2(w, 54))) _openCard = open ? null : it.Id;
@@ -459,20 +584,21 @@ namespace CosmicShore.Launcher
             if (open)
             {
                 for (int i = 0; i < lines.Count; i++)
-                    dl.AddText(Neon.Small, 13, p + new Vector2(14, 58 + i * 22), Neon.U(Neon.Dim), Trim(lines[i], (int)(w / 7.2f)));
+                    dl.AddText(Neon.Small, 13, p + new Vector2(14, 58 + i * 22), Neon.U(lines[i].StartsWith("DONE WHEN: ") ? (it.CriterionMet != null ? Neon.Lime : Neon.Cyan) : Neon.Dim), Trim(lines[i], (int)(w / 7.2f)));
                 ImGui.SetCursorScreenPos(p + new Vector2(12, h - 42));
-                if (it.State != PrismaBoard.Status.Todo && SmallButton("< BACK", 80, true)) { lock (_dataLock) _board.Move(it, it.State - 1); SaveBoard(); }
+                if (it.State != PrismaBoard.Status.Todo && SmallButton("< BACK", 80, true)) MoveCard(it, it.State - 1);
                 ImGui.SameLine(0, 6);
                 if (it.State != PrismaBoard.Status.Done && SmallButton(it.State == PrismaBoard.Status.Todo ? "START >" : "DONE >", 86, true))
-                { lock (_dataLock) _board.Move(it, it.State + 1); SaveBoard(); }
+                    MoveCard(it, it.State + 1);
                 ImGui.SameLine(0, 6);
                 if (it.Milestone == null && SmallButton("AGENT", 76, !_chat.Busy))
                 {
-                    lock (_dataLock) { if (it.State == PrismaBoard.Status.Todo) _board.Move(it, PrismaBoard.Status.Doing, "handed to the Prisma Agent"); }
-                    SaveBoard();
+                    if (it.State == PrismaBoard.Status.Todo) MoveCard(it, PrismaBoard.Status.Doing, "handed to the Prisma Agent");
                     _chat.SetScope(ClaudeChat.Scope.Game);
                     _page = Page.Chat;
-                    SendChat($"Work on board item {it.Id} ({it.Type}): {it.Title}\n{it.Detail}\n\nWhen it is done and proven, say so; the user moves the card.", (ClaudeChat.Mode)_s.ChatMode);
+                    SendChat($"Work on board item {it.Id} ({it.Type}): {it.Title}\n{it.Detail}\n\n" +
+                             (it.Criterion.Length > 0 ? $"Acceptance criterion: {it.Criterion}\nRun that check (engine_smoke, game_* or a test) and show its result before saying the work is done. " : "Say how you proved it before saying it is done. ") +
+                             "The user moves the card.", (ClaudeChat.Mode)_s.ChatMode);
                 }
                 if (it.Milestone != null)
                 {
@@ -536,13 +662,7 @@ namespace CosmicShore.Launcher
             ImGui.PushID(id);
             ImGui.SetCursorScreenPos(p + new Vector2(w - 300, 16));
             if (status != "done" && SmallButton(status == "in-progress" ? "CONTINUE" : "START", 110, !_chat.Busy))
-            {
-                if (status == "todo") SetMilestoneStatus(c, "in-progress");
-                _chat.SetScope(ClaudeChat.Scope.Milestone, id, title);
-                _s.ChatMode = 0; _dirty = true;
-                _page = Page.Chat;
-                SendChat(c["prompt"]?.ToString() ?? $"Plan checkpoint {id}.", ClaudeChat.Mode.Plan);
-            }
+                StartMilestone(id);
             Neon.Tooltip(ready ? "Opens an engine session for this checkpoint in PLAN mode with its prompt." : "Its dependencies are not done yet - you can still start it.");
             ImGui.SameLine(0, 6);
             int idx = status switch { "in-progress" => 1, "done" => 2, _ => 0 };
