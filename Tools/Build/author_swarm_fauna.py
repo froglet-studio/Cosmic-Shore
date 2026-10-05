@@ -49,6 +49,7 @@ REPO = os.path.dirname(os.path.dirname(HERE))
 assert os.path.isdir(os.path.join(REPO, "Assets")), REPO
 sys.path.insert(0, HERE)
 import swarm_plans  # noqa: E402
+import author_builders  # noqa: E402  round 11e: the builder colonies live in this cell (their own generator)
 
 A = lambda *p: os.path.join(REPO, "Assets", *p)
 SWARM_DIR = A("_SO_Assets", "Swarm Fauna")
@@ -586,7 +587,10 @@ def model(plans):
     tot["proxy_colliders"] = 2 * MAX_PROXIES * TOTAL_SWARMS        # only near vessels: heart + body each
     # round 11b: the substrate populations' proxies share this cell's ceiling (Tools/Build/author_substrate_fauna.py)
     tot["proxy_colliders"] += substrate().proxy_colliders()
-    tot["colliders_engaged"] = tot["hearts"] + tot["proxy_colliders"]
+    tot["builder_colliders"] = author_builders.proxy_colliders()   # round 11e: the colonies' proxies, near vessels only
+    # round 11b-2: the substrate's bodies are BindVirtualMass volume in LiveVolume, so the ladder sees them
+    tot["substrate_bodies"] = substrate().body_volume()
+    tot["colliders_engaged"] = tot["hearts"] + tot["proxy_colliders"] + tot["builder_colliders"]
     return rows, tot, eggs
 
 
@@ -595,7 +599,8 @@ def ladder(tot):
     # proxies + skeletons are counted in prisms beside the forest (a full engagement of every swarm). A member
     # body is VOLUME-only (like every fauna body), so the count ladder does not move in round 8
     prisms = tot["prisms"] + MAX_PROXIES * TOTAL_SWARMS
-    volume = tot["volume"] + tot["bodies"]
+    # round 11c: plus the substrate populations' bodies (their entries are BindVirtualMass: LiveVolume counts them)
+    volume = tot["volume"] + tot["bodies"] + tot.get("substrate_bodies", 0.0)
     return {
         "RestlessEnter": rt(prisms * RESTLESS_ENTER, 100),
         "RestlessExit": rt(prisms * RESTLESS_EXIT, 100),
@@ -618,6 +623,7 @@ def profile_asset():
     floras = "".join(f"  - {{fileID: 11400000, guid: {guid(rel(cell_path(flora_name(r))))}, type: 2}}\n" for r in REGIONS)
     faunas = "".join(f"  - {{fileID: 11400000, guid: {guid(rel(cell_path(fauna_name(r))))}, type: 2}}\n" for r in REGIONS)
     faunas += substrate().profile_entries()   # round 11b: the substrate populations (author_substrate_fauna.py owns them)
+    faunas += author_builders.profile_entries()   # round 11e: the fortress colony and the thief nest
     return SO_HEADER % (SO_SCRIPT["profile"], f"{PREFIX} Cell Spawn Profile") + (
         "  FloraExcludeLocalDomain: 0\n  FloraSpawnVolumeCeiling: 12000\n  FloraInitialDelaySeconds: 0\n"
         "  FloraSpawnIntervalSeconds: 0\n  FloraPopulationScale: 1\n  FloraPlantBudgetScale: 1\n"
@@ -727,7 +733,7 @@ def emit():
 def float32_ulp_check(tot):
     """(smallest member body volume, the largest total the ladder sees with 4x margin, float32 ulp there)."""
     import struct
-    top = 4.0 * (tot["volume"] + tot["bodies"]) * FRENZY_ENTER
+    top = 4.0 * (tot["volume"] + tot["bodies"] + tot.get("substrate_bodies", 0.0)) * FRENZY_ENTER
     f = struct.unpack("f", struct.pack("f", top))[0]
     ulp = struct.unpack("f", struct.pack("I", struct.unpack("I", struct.pack("f", f))[0] + 1))[0] - f
     return tot["min_member"], top, ulp
@@ -825,19 +831,21 @@ def report(rows, tot, eggs, L, baked):
     print(f"  food: forest {tot['food']:,.0f} at the floor, {tot['forest_at_cap']:,.0f} at the cap, "
           f"against an egg bill of {tot['bill']:,.0f} to grow all three bodies to full")
     print(f"  colliders: BEFORE (round 6) 5,008 always-on at the caps; NOW {tot['hearts']} always-on plant hearts "
-          f"+ up to {tot['proxy_colliders']} proxy colliders only while vessels are near "
+          f"+ up to {tot['proxy_colliders']} swarm + {tot['builder_colliders']} builder proxy colliders only while vessels are near "
           f"({tot['colliders_engaged']} worst case, ceiling {COLLIDER_CEILING}); {tot['tadpoles']} tadpoles GPU-drawn, 0 colliders")
     print(f"  mature forest (model): {tot['prisms']:,} prisms, {tot['volume']:,.0f} volume - Atlantis is {ATLANTIS_PRISMS:,}")
     print(f"  round 8: member bodies grown full {tot['bodies']:,.0f} volume beside the forest's {tot['volume']:,.0f} "
           f"(now in LiveVolume, Docs/SWARM_FAUNA.md §16.3); smallest member body {float32_ulp_check(tot)[0]:.2f} vs float32 ulp "
           f"{float32_ulp_check(tot)[2]:.4f} at {float32_ulp_check(tot)[1]:,.0f}")
+    print(f"  round 11c: substrate agent bodies (full pools, each halfway to its split) {tot['substrate_bodies']:,.0f} volume, "
+          "in LiveVolume through BindVirtualMass - counted by the ladder (Docs/SUBSTRATE_FAUNA.md §7)")
     print("  ladder: " + ", ".join(f"{k} {v:,}" for k, v in L.items()))
     print(f"  plans: {'re-baked from ' + swarm_plans.RESEARCH_REF if baked else 'research ref not reachable - committed plans kept'}")
 
 
 def stale(out):
     """Files in the cell folder this script owns no longer (an earlier round's populations)."""
-    owned = {os.path.abspath(p) for p in out}
+    owned = {os.path.abspath(p) for p in out} | {os.path.abspath(p) for p in author_builders.BUILDER_CELL_FILES}
     return sorted(os.path.join(CELL_DIR, f) for f in os.listdir(CELL_DIR)
                   if os.path.abspath(os.path.join(CELL_DIR, f)) not in owned) if os.path.isdir(CELL_DIR) else []
 

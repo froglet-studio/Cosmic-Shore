@@ -167,25 +167,31 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>Once per TICK: the published frame of the swarm's tick job.</summary>
-        public void Upload(SwarmTickJob job)
+        public void Upload(SwarmTickJob job) => Upload(job.Instances, job.HeartIdx, job.HeartStart, job.HeartCount);
+
+        /// <summary>Once per TICK, for any population that fills its own frame (a builder colony,
+        /// Docs/BUILDERS_AND_THIEVES.md): the instance array and the per-element heart lists.</summary>
+        public void Upload(SwarmInstance[] instances, uint[] heartIdx, int[] heartStart, int[] heartCount)
         {
             if (!Valid) return;
-            _inst.SetData(job.Instances, 0, 0, _cap);
+            _inst.SetData(instances, 0, 0, _cap);
             _heartTotal = 0;
             for (int e = 0; e < 4; e++)
             {
-                _heartStart[e] = job.HeartStart[e]; _heartCount[e] = job.HeartCount[e];
-                _heartTotal = Mathf.Max(_heartTotal, job.HeartStart[e] + job.HeartCount[e]);
+                _heartStart[e] = heartStart[e]; _heartCount[e] = heartCount[e];
+                _heartTotal = Mathf.Max(_heartTotal, heartStart[e] + heartCount[e]);
             }
-            if (_heartTotal > 0) _heart.SetData(job.HeartIdx, 0, 0, _heartTotal);
+            if (_heartTotal > 0) _heart.SetData(heartIdx, 0, 0, _heartTotal);
         }
 
         /// <summary>A member died between uploads: hide its slot NOW (one 80-byte write, event-driven).</summary>
-        public void HideSlot(SwarmTickJob job, int i)
+        public void HideSlot(SwarmTickJob job, int i) => HideSlot(job.Instances, i);
+
+        public void HideSlot(SwarmInstance[] instances, int i)
         {
             if (!Valid || i < 0 || i >= _cap) return;
-            job.Instances[i].Flags = 0u;
-            _inst.SetData(job.Instances, i, i, 1);
+            instances[i].Flags = 0u;
+            _inst.SetData(instances, i, i, 1);
         }
 
         /// <summary>Once per FRAME. Nothing here scales with the member count.</summary>

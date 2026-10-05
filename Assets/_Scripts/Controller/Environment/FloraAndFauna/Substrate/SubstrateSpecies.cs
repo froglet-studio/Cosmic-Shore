@@ -239,7 +239,7 @@ namespace CosmicShore.Gameplay
             ("pack", "eat_hunger", "0.4: eats on the way, not only at the brink"),
             ("pack", "q_w_dens", "0: the strike reads the ring's CLOSURE, not crowding (bestiary quorum)"),
             ("pack", "q_w_close", "1: the bestiary's closure quorum"),
-            ("pack", "q_up", "0.55: the bestiary's closure threshold"),
+            ("pack", "q_up", "0.65, between the bestiary's 0.55 and the research's 0.75: the ring is HELD >= 8 s (one emotion-probe window) before the first strike, so the pack reads its menace->terror arc (DISCOVERIES finding 11: menace only while the ring holds without striking); 0.55 struck after 2.9 s in one seed"),
             ("pack", "q_hunger", "0: a closed ring strikes whether or not the pack is hungry (bestiary)"),
             ("pack", "aggr_base", "0.6: a pack is always a hunter; its aggression is what drives the ring term"),
             ("pack", "stamina_s", "3 s of sprint (bestiary stamina)"),
@@ -276,7 +276,7 @@ namespace CosmicShore.Gameplay
             p.Solitary.Speed = 85f; p.Gregarious.Burst = 1.2f;
             p.Solitary.Size = 12f; p.Gregarious.Size = 13f; p.Solitary.Aspect = 2.6f; p.Gregarious.Aspect = 2.6f;
             p.Solitary.WFood = 0.5f; p.EatHunger = 0.4f;
-            p.QWDens = 0f; p.QWClose = 1f; p.QUp = 0.55f; p.QHunger = 0f; p.AggrBase = 0.6f;
+            p.QWDens = 0f; p.QWClose = 1f; p.QUp = 0.65f; p.QHunger = 0f; p.AggrBase = 0.6f;
             p.StaminaS = 3f; p.RestS = 3f; p.WRestRetreat = 1.5f; p.RestTogether = true;
             p.StarveS = 60f; p.BirthStock = 300f; p.Stock0 = 150f;
             p.PreyName = "locust"; p.WPrey = 1.5f;

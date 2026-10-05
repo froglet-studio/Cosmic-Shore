@@ -44,7 +44,8 @@ SO_DIR = A("_SO_Assets", "Substrate Fauna")
 PREFAB_DIR = swarm.PREFAB_DIR
 GAME_PARAMS = os.path.join(HERE, "substrate_harness", "game_params.json")
 SCRIPTS = ["SubstrateSpecies", "SubstrateFields", "SubstrateCore", "SubstrateTickJob", "SubstrateSpeciesSO",
-           "SubstrateAgentFauna", "SubstrateMemberRenderer", "SubstrateCellHost", "SubstrateFauna"]
+           "SubstrateAgentFauna", "SubstrateMemberRenderer", "SubstrateCellHost", "SubstrateFauna",
+           "SubstrateKernel", "SubstrateAgentJob"]
 
 ROOT_MB_FID = "6630180297114401201"     # SubstrateFauna on each anchor prefab
 ROOT_GO_FID = "6630180297114401202"
@@ -172,6 +173,16 @@ def config_asset(s):
 def profile_entries():
     """The Swarm cell spawn profile's SupportedFaunas lines for the three substrate populations."""
     return "".join(f"  - {{fileID: 11400000, guid: {guid(rel(config_path(s)))}, type: 2}}\n" for s in SPECIES)
+
+
+def body_volume():
+    """Round 11c: the substrate's agent bodies in the MATURE cell, for the phase ladder (author_swarm_fauna.ladder).
+    Every agent's body is a BindVirtualMass entry whose volume is its stock, so LiveVolume counts it. Modelled like the
+    swarm bodies (a mature body, grown): each population (one per species per cell, MaxLivePopulation 1) at its full
+    pool, each body halfway between its seed stock and the stock it splits at (mass is conserved: a split halves)."""
+    params = json.load(open(GAME_PARAMS))
+    return sum(params[s["key"]]["Capacity"] * 0.5 * (params[s["key"]]["Stock0"] + params[s["key"]]["BirthStock"])
+               for s in SPECIES)
 
 
 def proxy_colliders():
