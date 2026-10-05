@@ -4503,6 +4503,7 @@ function writeAgents(alpha) {
     closureRing.material.color.setRGB(1, 0.3 + 0.5 * (1 - ringC), 0.2);
   } else closureRing.material.opacity = 0;
   const sg = layers.siege && layers.siege.sp;
+  if (sg && sg.phase !== siegePhase) { siegePhase = sg.phase; siegeSfx(sg.phase); }
   if (sg && (sg.phase === 'gather' || sg.phase === 'close' || sg.phase === 'hold') && sg.prog < 0.999) {
     const front = 1 - 2 * sg.prog, sinF = Math.sqrt(Math.max(0, 1 - front * front)), C = sg.C, a = sg.axis;
     // the ring sits on the rim of the open cap (the far side from the cloud), radius = the gap's radius
@@ -4513,6 +4514,21 @@ function writeAgents(alpha) {
     irisRing.material.opacity = Math.min(0.9, 0.25 + 0.65 * it);
     irisRing.material.color.setRGB(0.75 + 0.25 * it, 0.35 + 0.4 * Math.max(0, it - 0.6), 1 - 0.4 * it);
   } else irisRing.material.opacity = 0;
+}
+// the siege's sound: a swell as it gathers, a rising whine as the shell closes, a heartbeat on hold, a roar on the dive
+let siegePhase = null;
+function siegeSfx(ph) {
+  if (!soundOn || !AC) return;
+  const t = AC.currentTime, tone = (type, f0, f1, dur, g0, at) => {
+    const o = AC.createOscillator(), g = AC.createGain(); o.type = type; o.connect(g); g.connect(AC.destination);
+    o.frequency.setValueAtTime(f0, t + at); o.frequency.exponentialRampToValueAtTime(f1, t + at + dur);
+    g.gain.setValueAtTime(0.0001, t + at); g.gain.exponentialRampToValueAtTime(g0, t + at + Math.min(0.3, dur / 3)); g.gain.exponentialRampToValueAtTime(0.0001, t + at + dur);
+    o.start(t + at); o.stop(t + at + dur + 0.05);
+  };
+  if (ph === 'gather') { tone('sine', 70, 110, 3.0, 0.10, 0); tone('sine', 105, 165, 3.0, 0.05, 0); }
+  else if (ph === 'close') { tone('sawtooth', 180, 520, 2.6, 0.05, 0); tone('triangle', 90, 260, 2.6, 0.06, 0); }
+  else if (ph === 'hold') { for (let k = 0; k < 3; k++) { tone('sine', 62, 40, 0.18, 0.35, 0.42 * k); tone('sine', 58, 38, 0.16, 0.22, 0.42 * k + 0.16); } }
+  else if (ph === 'dive') { tone('sawtooth', 700, 55, 0.9, 0.22, 0); tone('square', 350, 40, 0.8, 0.08, 0.02); }
 }
 function writeFlora(alpha) {
   heartMesh.count = 0; coreMesh.visible = false;
