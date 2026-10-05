@@ -62,6 +62,9 @@ namespace CosmicShore.Build
                 "build", Toolchain.MobileProject(_project), "-f", "net10.0-ios", "-c", config,
                 // Only the iOS target: on a Mac the project also lists Android, whose workload a CI runner lacks.
                 "-p:CsPlatform=ios",
+                // .NET for iOS pins the exact Xcode it was tested with (26.0); a runner or Mac on a
+                // newer 26.x minor builds fine. Skip the pin rather than fail on a minor version.
+                "-p:ValidateXcodeVersion=false",
                 "-p:RuntimeIdentifier=ios-arm64",
                 "-p:ApplicationId=" + id,
                 "-p:ApplicationTitle=" + product,
