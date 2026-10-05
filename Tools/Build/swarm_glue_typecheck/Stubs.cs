@@ -19,7 +19,7 @@ namespace UnityEngine
     public class TextAsset : Object { public string text; }
     public class GameObject : Object { public GameObject(string n) { } public bool activeInHierarchy; public Scene scene; public int layer; public Transform transform; public T AddComponent<T>() where T : Component => default; }
     public struct Scene { public bool isLoaded; }
-    public class Transform : Component { public Vector3 position, localPosition, localScale; public Quaternion rotation, localRotation; public Matrix4x4 localToWorldMatrix, worldToLocalMatrix; public void SetPositionAndRotation(Vector3 p, Quaternion q) { } public void SetParent(Transform p, bool worldPositionStays) { } }
+    public class Transform : Component { public Vector3 position, localPosition, localScale; public Quaternion rotation, localRotation; public Matrix4x4 localToWorldMatrix, worldToLocalMatrix; public void SetPositionAndRotation(Vector3 p, Quaternion q) { } public Vector3 InverseTransformPoint(Vector3 p) => p; public void SetParent(Transform p, bool worldPositionStays) { } }
     public class Renderer : Component { public bool enabled; }
     public class SkinnedMeshRenderer : Renderer { public Mesh sharedMesh; }
     public class MeshFilter : Component { public Mesh sharedMesh; }
@@ -28,7 +28,8 @@ namespace UnityEngine
     public class Material : Object { public Material(Shader s) { } public bool HasProperty(string n) => false; public bool HasProperty(int n) => false; public Vector4 GetVector(int n) => default; public float GetFloat(int n) => 0; }
     public struct Color { public float r, g, b, a; public Color(float r, float g, float b) { this.r = r; this.g = g; this.b = b; a = 1; } public static implicit operator Vector4(Color c) => default; }
     public struct Matrix4x4 { public static Matrix4x4 identity; public static Matrix4x4 Rotate(Quaternion q) => default; public static Matrix4x4 operator *(Matrix4x4 a, Matrix4x4 b) => a; }
-    public struct Bounds { public Bounds(Vector3 c, Vector3 s) { } }
+    public struct Bounds { public Bounds(Vector3 c, Vector3 s) { } public void SetMinMax(Vector3 min, Vector3 max) { } }
+    public struct Vector3Int { public int x, y, z; public Vector3Int(int a, int b, int c) { x = a; y = b; z = c; } }   // builders (BuilderRegistry)
     public sealed class MaterialPropertyBlock { public void SetFloat(int n, float v) { } public void SetVector(int n, Vector4 v) { } public void SetColor(int n, Color c) { } public void SetMatrix(int n, Matrix4x4 m) { } public void SetBuffer(int n, GraphicsBuffer b) { } public void SetVectorArray(int n, Vector4[] v) { } }
     public sealed class GraphicsBuffer : IDisposable
     {
@@ -46,10 +47,10 @@ namespace UnityEngine
     public enum RuntimeInitializeLoadType { SubsystemRegistration = 4 }
     public class RuntimeInitializeOnLoadMethodAttribute : Attribute { public RuntimeInitializeOnLoadMethodAttribute(RuntimeInitializeLoadType t) { } }
     public class Collider : Component { }
-    public struct Vector3 { public float x, y, z; public Vector3(float a, float b, float c) { x = a; y = b; z = c; } public static Vector3 one, zero, right, forward, up; public float sqrMagnitude => 0; public float magnitude => 0; public Vector3 normalized => this; public static Vector3 operator +(Vector3 a, Vector3 b) => a; public static Vector3 operator -(Vector3 a, Vector3 b) => a; public static Vector3 operator *(Vector3 a, float b) => a; public static Vector3 operator *(float b, Vector3 a) => a; public static Vector3 operator /(Vector3 a, float b) => a; public static Vector3 Cross(Vector3 a, Vector3 b) => a; public static Vector3 Max(Vector3 a, Vector3 b) => a; public static Vector3 Min(Vector3 a, Vector3 b) => a; public static Vector3 Lerp(Vector3 a, Vector3 b, float t) => a; public static float Dot(Vector3 a, Vector3 b) => 0; public static bool operator ==(Vector3 a, Vector3 b) => true; public static bool operator !=(Vector3 a, Vector3 b) => false; public override bool Equals(object o) => true; public override int GetHashCode() => 0; }
+    public struct Vector3 { public float x, y, z; public Vector3(float a, float b, float c) { x = a; y = b; z = c; } public static Vector3 one, zero, right, forward, up; public float sqrMagnitude => 0; public float magnitude => 0; public Vector3 normalized => this; public static Vector3 operator +(Vector3 a, Vector3 b) => a; public static Vector3 operator -(Vector3 a, Vector3 b) => a; public static Vector3 operator *(Vector3 a, float b) => a; public static Vector3 operator *(float b, Vector3 a) => a; public static Vector3 operator /(Vector3 a, float b) => a; public static Vector3 Cross(Vector3 a, Vector3 b) => a; public static Vector3 Max(Vector3 a, Vector3 b) => a; public static Vector3 Min(Vector3 a, Vector3 b) => a; public static Vector3 Lerp(Vector3 a, Vector3 b, float t) => a; public static Vector3 LerpUnclamped(Vector3 a, Vector3 b, float t) => a; public static float Dot(Vector3 a, Vector3 b) => 0; public static bool operator ==(Vector3 a, Vector3 b) => true; public static bool operator !=(Vector3 a, Vector3 b) => false; public override bool Equals(object o) => true; public override int GetHashCode() => 0; }
     public struct Vector4 { public float x, y, z, w; public Vector4(float a, float b, float c, float d) { x = a; y = b; z = c; w = d; } public static implicit operator Vector4(Vector3 v) => default; }
     public struct Quaternion { public static Quaternion LookRotation(Vector3 f, Vector3 u) => default; }
-    public static class Mathf { public static int RoundToInt(float f) => 0; public static float Max(float a, float b) => a; public static int Max(int a, int b) => a; public static float Min(float a, float b) => a; public static float Abs(float a) => a; public static float Clamp01(float a) => a; public static int Clamp(int v, int a, int b) => v; public static float Pow(float a, float b) => a; public static float Sqrt(float a) => a; }
+    public static class Mathf { public const float PI = 3.14159265f; public static int RoundToInt(float f) => 0; public static float Max(float a, float b) => a; public static int Max(int a, int b) => a; public static float Min(float a, float b) => a; public static float Abs(float a) => a; public static float Clamp01(float a) => a; public static int Clamp(int v, int a, int b) => v; public static float Pow(float a, float b) => a; public static float Sqrt(float a) => a; }
     public static class Random { public static int Range(int a, int b) => a; public static Vector3 onUnitSphere; public static float value; }
     public static class Time { public static float time, deltaTime, unscaledTime; public static int frameCount; }
     public static class Physics { public static int OverlapSphereNonAlloc(Vector3 p, float r, Collider[] res, int mask) => 0; }
@@ -66,6 +67,11 @@ namespace UnityEngine.Rendering
 {
     public enum ShadowCastingMode { Off = 0 }
     public enum GraphicsDeviceType { Direct3D11 = 2 }
+}
+
+namespace Unity.Mathematics
+{
+    public struct float3 { public float x, y, z; public float3(float a, float b, float c) { x = a; y = b; z = c; } public static readonly float3 zero; }
 }
 
 namespace Unity.Profiling
@@ -96,6 +102,7 @@ namespace CosmicShore.Data
 namespace CosmicShore.Utility
 {
     public enum CSLogChannel { Ecology = 1 << 20 }
+    public static class PrismClock { public static float Now => 0f; }   // Utility/PrismClock.cs:33
     public static class CSDebug { public static void LogVerbose(CSLogChannel c, object m) { } public static bool IsVerbose(CSLogChannel c) => false; public static void LogWarning(object m) { } public static void LogError(object m) { } }
     public class FaunaConfigurationSO : UnityEngine.ScriptableObject { public float BandInnerRadius, BandOuterRadius; }
 }
@@ -134,7 +141,16 @@ namespace CosmicShore.Gameplay
     using CosmicShore.Data;
     using CosmicShore.Utility;
 
-    public class PrismProperties { public bool IsDangerous, IsShielded, IsSuperShielded; }
+    public class PrismProperties { public bool IsDangerous, IsShielded, IsSuperShielded; public Trail Trail; public float TimeCreated; }
+    public class Trail { }
+    // ECS/Rendering/PrismRenderService.cs:1128, :1143, :1363 (builders' settle flight)
+    public struct PrismRenderHandle { }
+    public static class PrismRenderService
+    {
+        public static bool StampFlight(in PrismRenderHandle handle, float startTime, float duration, in Unity.Mathematics.float3 velocity) => false;
+        public static void ClearFlightStamp(in PrismRenderHandle handle) { }
+        public static void EncapsulateBoundsPoint(in PrismRenderHandle handle, in Unity.Mathematics.float3 objectPoint, float padding) { }
+    }
     // ThemeManagerDataContainerSO.cs:9-12
     public class ThemeManagerDataContainerSO : ScriptableObject { public CosmicShore.ScriptableObjects.SO_ColorSet ColorSet; public CosmicShore.ScriptableObjects.SO_MaterialSet BaseMaterialSet; }
     public class Prism : MonoBehaviour
@@ -151,19 +167,24 @@ namespace CosmicShore.Gameplay
         public void CompleteCreationImmediately() { }   // Prism.cs (round 8)
         public void SetOwnerHidden(bool hidden) { }
         public bool OwnerHidden => false;
+        // Prism.cs:27, :195, :225, :1672 (builders)
+        public Trail Trail; public string PlayerName { get; internal set; } internal PrismRenderHandle RenderHandle;
+        public void Steal(string playerName, Domains domain, bool superSteal = false) { }
     }
     public class HealthPrism : Prism { public LifeForm LifeForm; public Fauna ResolveOwnerFauna() => null; public void LeaveAsSkeleton(Transform t) { } }
     public class Crystal : MonoBehaviour { public bool IsEmbedded => false; public void SetEmbeddedIn(ILifeFormEntity o) { } }
     public static class LifeFormCrystal { public static Crystal EnsureElementalCrystal(Component owner, Element e) => null; }
     public interface ILifeFormEntity { }
-    public interface IVesselStatus { Vector3 Course { get; set; } float Speed { get; set; } }
+    public interface IVesselStatus { Vector3 Course { get; set; } float Speed { get; set; } string PlayerName { get; } Domains Domain { get; } }
     public class LifeForm : MonoBehaviour { public Element Element => default; public Domains Domain => default; public bool IsDying => false; public Transform HeartTransform => null; }
     public class Flora : LifeForm { }
     public static class FloraHeartRegistry { public static Flora NearestToPoint(Vector3 from, Predicate<Flora> reject) => null; }
     public class Cell : MonoBehaviour { public float MembraneRadius => 0; public void RegisterSpawnedObject(GameObject o) { } public bool IsInsideNucleus(Vector3 p) => false;
         // Cell.cs (round 8)
         public static int VolumeSlotOf(Domains d) => 0; public void SetVirtualVolume(Object source, double[] bySlot) { } public void ClearVirtualVolume(Object source) { } }
-    public class PrismSpatialIndex { public static PrismSpatialIndex EnsureInstance() => null; public bool IsAvailable => true; public int QuerySphere(Vector3 c, float r, List<Prism> res) => 0; }
+    public class PrismSpatialIndex { public static PrismSpatialIndex EnsureInstance() => null; public static PrismSpatialIndex Instance => null; public bool IsAvailable => true; public int QuerySphere(Vector3 c, float r, List<Prism> res) => 0;
+        // PrismSpatialIndex.cs:1327, :1346 (builders' claim-before-place)
+        public bool TryReserve(Vector3 position, float clearRadius) => true; public void ReleaseReservation(Vector3 position) { } }
     public class FaunaNetworkSync { public static void ServerSpawn(Fauna f) { } }
 
     // Fauna.cs - only the members the swarm glue touches, with their real accessibility
@@ -211,5 +232,6 @@ namespace CosmicShore.Gameplay
         public FaunaDiet Diet => default;                   // Fauna.cs:168
         public bool IsAlivePrey => true;                    // Fauna.cs:1096
         public bool IsPredationImmune => false;             // Fauna.cs:181
+        public bool Jousted(string killerName) => false;    // Fauna.cs:498 (builders)
     }
 }
