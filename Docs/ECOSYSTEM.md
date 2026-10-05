@@ -2141,7 +2141,7 @@ SpawnableHesperides.BuildEnvironment()
                           │
 Cell.BuildEnvironmentNow() ─ AdoptPlantingSites()   copy, seeded shuffle, bucket by kind
                           │
-RandomLifeSpawner.PlantOne()
+CellLifeSpawnerBase.PlantFlora()
   └─ Cell.TryTakePlantingSite(cfg.PreferredSites, out pos, out up)   per-kind round-robin, WRAPS
         └─ CellLifeSpawnerBase.SpawnFlora(..., pos, up)
               └─ Flora.SetPlantPositionOverride(pos, up)   →  Flora.GrowthUp

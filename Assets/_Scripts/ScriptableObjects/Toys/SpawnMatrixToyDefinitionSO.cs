@@ -64,6 +64,11 @@ namespace CosmicShore.ScriptableObjects
                                           "size, so the row shows the real size difference between " +
                                           "the four before you release any of them).")]
         float stationRadius = 12f;
+        [SerializeField, Min(1), Tooltip("Species stations per row before a kingdom's species " +
+                                         "row wraps into a grid. Every flora and fauna is " +
+                                         "registered here, so a single row would be far wider " +
+                                         "than a pass can take in.")]
+        int speciesPerRow = 6;
 
         // NOTE: elements have SHAPE signatures, not colour signatures (colour belongs to
         // DOMAINS). Stations identify their element with the element's crystal MODEL - the
@@ -74,6 +79,7 @@ namespace CosmicShore.ScriptableObjects
         public VesselClassType[] VesselRoster => vesselRoster;
         public float StationSpacing => stationSpacing;
         public float StationRadius => stationRadius;
+        public int SpeciesPerRow => speciesPerRow;
 
         /// <summary>It leaves POPULATIONS behind - flora, fauna and AI-piloted vessels, every one an
         /// ordinary citizen that feeds, starves, breeds and drops crystals.</summary>

@@ -236,3 +236,4 @@ MonoBehaviour:
   vesselRoster: []
   stationSpacing: 90
   stationRadius: 12
+  speciesPerRow: 6
