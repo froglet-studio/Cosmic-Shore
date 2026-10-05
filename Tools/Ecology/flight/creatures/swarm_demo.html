@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tadpole Swarm Creature</title>
+<style>
+  :root { --bg: #04101c; --ink: #d8e6f2; --dim: #7f95a8; --panel: rgba(6, 20, 34, 0.78); --line: rgba(140, 180, 220, 0.18); }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font: 13px/1.4 system-ui, -apple-system, Segoe UI, sans-serif; overflow: hidden; }
+  canvas { display: block; }
+  #hud { position: fixed; left: 12px; top: 12px; max-width: min(340px, calc(100vw - 24px)); background: var(--panel); border: 1px solid var(--line);
+         border-radius: 10px; padding: 10px 12px; backdrop-filter: blur(4px); }
+  #hud h1 { font-size: 15px; margin: 0 0 4px; font-weight: 600; }
+  #plan { font-size: 20px; font-weight: 600; margin: 2px 0 6px; }
+  .row { display: flex; align-items: center; gap: 6px; margin: 2px 0; }
+  .lab { width: 54px; color: var(--dim); }
+  .bar { flex: 1; height: 8px; background: rgba(255,255,255,0.07); border-radius: 4px; position: relative; overflow: hidden; }
+  .bar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; }
+  .bar b { position: absolute; top: -2px; bottom: -2px; width: 2px; background: #fff; opacity: 0.7; }
+  .num { width: 36px; text-align: right; font-variant-numeric: tabular-nums; color: var(--dim); }
+  #keys { margin-top: 8px; color: var(--dim); font-size: 12px; }
+  #keys kbd { display: inline-block; min-width: 14px; padding: 0 4px; border: 1px solid var(--line); border-radius: 4px; text-align: center; color: var(--ink); font: inherit; }
+  #stat { margin-top: 6px; color: var(--dim); font-size: 12px; font-variant-numeric: tabular-nums; }
+  #btns { position: fixed; right: 12px; bottom: 12px; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; max-width: calc(100vw - 24px); }
+  #btns button { background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: inherit; cursor: pointer; }
+  #btns button:hover { border-color: rgba(200, 220, 255, 0.5); }
+  @media (max-width: 520px) { #hud { font-size: 12px; } #plan { font-size: 17px; } }
+</style>
+</head>
+<body>
+<div id="hud">
+  <h1>Tadpole swarm creature</h1>
+  <div id="plan">Whale</div>
+  <div id="bars"></div>
+  <div id="stat"></div>
+  <div id="keys"><kbd>1</kbd> mass/Whale <kbd>2</kbd> space/Jellyfish <kbd>3</kbd> charge/Pufferfish <kbd>4</kbd> time/Dragonfly
+    <kbd>5</kbd> random mix &middot; click the body to strike it &middot; drag to orbit, wheel to zoom &middot; <kbd>L</kbd> measure shape loss</div>
+</div>
+<div id="btns">
+  <button data-e="mass">Whale</button><button data-e="space">Jellyfish</button><button data-e="charge">Pufferfish</button><button data-e="time">Dragonfly</button><button data-mix="1">Mix</button>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="swarm_plans.js"></script>
+<script src="swarm_loss.js"></script>
+<script src="swarm_creature.js"></script>
+<script>
+(function () {
+  const qs = new URLSearchParams(location.search);
+  const N = +(qs.get('n') || 192), START = qs.get('element') || 'mass';
+  const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+  renderer.setSize(innerWidth, innerHeight);
+  document.body.appendChild(renderer.domElement);
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x04101c);
+  scene.fog = new THREE.FogExp2(0x04101c, 0.0045);
+  const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.5, 2000);
+  scene.add(new THREE.HemisphereLight(0x9cc8ff, 0x0a1a10, 0.75));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.9); sun.position.set(30, 60, 20); scene.add(sun);
+  const rim = new THREE.DirectionalLight(0x6688ff, 0.4); rim.position.set(-40, -10, -30); scene.add(rim);
+
+  // sea floor + drifting motes for a sense of motion
+  const floor = new THREE.GridHelper(1200, 60, 0x1d3b52, 0x0f2536); floor.position.y = -40; scene.add(floor);
+  const motes = new THREE.BufferGeometry(), MP = new Float32Array(3 * 1500);
+  for (let i = 0; i < MP.length; i++) MP[i] = (Math.random() - 0.5) * 400;
+  motes.setAttribute('position', new THREE.BufferAttribute(MP, 3));
+  const moteMesh = new THREE.Points(motes, new THREE.PointsMaterial({ color: 0x5a7d99, size: 0.6, transparent: true, opacity: 0.55 }));
+  scene.add(moteMesh);
+
+  const creature = new SwarmCreature({ n: N, element: START, position: [0, 0, 0], seed: 7, scale: 0.4 });
+  scene.add(creature.mesh(THREE));
+  // goal marker
+  const goalMesh = new THREE.Mesh(new THREE.TorusGeometry(1.2, 0.12, 8, 24), new THREE.MeshBasicMaterial({ color: 0x6fa8d8, transparent: true, opacity: 0.35 }));
+  scene.add(goalMesh);
+  // strike flashes
+  const flashes = [];
+  function flash(p, r) {
+    const m = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5, depthWrite: false }));
+    m.position.set(p[0], p[1], p[2]); m.scale.setScalar(r * 0.3); m.userData = { t: 0, r }; scene.add(m); flashes.push(m);
+  }
+
+  // wandering goal: a lazy loop around the origin
+  let goalT = 0;
+  function goalAt(t) { return [Math.cos(t * 0.11) * 70 + Math.sin(t * 0.27) * 20, 6 * Math.sin(t * 0.19), Math.sin(t * 0.13) * 60]; }
+
+  // camera: orbit around the body's centre
+  const cam = { yaw: 0.8, pitch: 0.28, dist: 45, centre: new THREE.Vector3() };
+  let drag = null;
+  renderer.domElement.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY, moved: 0 }; });
+  addEventListener('pointermove', e => {
+    if (!drag) return;
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y; drag.moved += Math.abs(dx) + Math.abs(dy);
+    drag.x = e.clientX; drag.y = e.clientY;
+    cam.yaw -= dx * 0.006; cam.pitch = Math.max(-1.2, Math.min(1.3, cam.pitch + dy * 0.005));
+  });
+  addEventListener('pointerup', e => { if (drag && drag.moved < 5) strikeAt(e.clientX, e.clientY); drag = null; });
+  renderer.domElement.addEventListener('wheel', e => { cam.dist = Math.max(12, Math.min(160, cam.dist * Math.exp(e.deltaY * 0.001))); e.preventDefault(); }, { passive: false });
+
+  // click: strike the tadpole nearest the cursor on screen
+  const v3 = new THREE.Vector3();
+  function strikeAt(sx, sy) {
+    const U = creature.units();
+    let best = -1, bd = 40 * 40;
+    for (let i = 0; i < U.count; i++) {
+      v3.set(U.pos[3 * i], U.pos[3 * i + 1], U.pos[3 * i + 2]).project(camera);
+      if (v3.z > 1) continue;
+      const px = (v3.x * 0.5 + 0.5) * innerWidth, py = (-v3.y * 0.5 + 0.5) * innerHeight;
+      const d = (px - sx) ** 2 + (py - sy) ** 2;
+      if (d < bd) { bd = d; best = i; }
+    }
+    if (best < 0) return 0;
+    const p = [U.pos[3 * best], U.pos[3 * best + 1], U.pos[3 * best + 2]], r = 4.5;
+    flash(p, r);
+    return creature.hit(p, r);
+  }
+
+  // HUD
+  const NAMES = SwarmCreature.PLANS, ORDER = ['charge', 'mass', 'space', 'time'], COL = SwarmCreature.ELEMENT_COLOUR;
+  const bars = document.getElementById('bars');
+  bars.innerHTML = ORDER.map(k => '<div class="row"><span class="lab">' + k + '</span><span class="bar"><i id="bi_' + k + '" style="background:rgb(' +
+    COL[k].map(c => Math.round(c * 255)).join(',') + ')"></i><b id="bw_' + k + '"></b></span><span class="num" id="bn_' + k + '"></span></div>').join('');
+  const planEl = document.getElementById('plan'), statEl = document.getElementById('stat');
+  let lossText = 'press L for the shape loss', msAvg = 0;
+  function hud() {
+    const c = creature.composition();
+    planEl.textContent = c.name + (creature.cand !== creature.kind ? ' -> ' + NAMES[creature.cand] : '');
+    ORDER.forEach((k, i) => {
+      document.getElementById('bi_' + k).style.width = (c.have[i] * 100).toFixed(1) + '%';
+      document.getElementById('bw_' + k).style.left = (c.want[i] * 100).toFixed(1) + '%';
+      document.getElementById('bn_' + k).textContent = Math.round(c.have[i] * creature.n);
+    });
+    statEl.textContent = creature.n + ' tadpoles · step ' + msAvg.toFixed(2) + ' ms · molts ' + creature.stats.molts + ' · swaps ' + creature.stats.swaps + ' · ' + lossText;
+  }
+  function measure() {
+    const F = 8, k = Math.round(creature.phase) % F;
+    const l = SwarmLoss.loss(creature.lossState(), SwarmPlans[creature.kind], { frames: [(k + 7) % F, k, (k + 1) % F] }).sink;
+    lossText = 'loss to ' + NAMES[creature.kind] + ' ' + l.toFixed(2) + (l < 8 ? ' (< 8 bar)' : '');
+  }
+  function setEl(e) { creature.setElement(e); lossText = 'press L for the shape loss'; }
+  function randomMix() {
+    const v = [0, 1, 2, 3].map(() => Math.random() ** 2 + 0.05);
+    creature.setComposition(v); lossText = 'mixed composition: majority picks the plan';
+  }
+  addEventListener('keydown', e => {
+    const m = { '1': 'mass', '2': 'space', '3': 'charge', '4': 'time' }[e.key];
+    if (m) setEl(m); else if (e.key === '5') randomMix(); else if (e.key === 'l' || e.key === 'L') measure();
+  });
+  document.querySelectorAll('#btns button').forEach(b => b.addEventListener('click', () => b.dataset.mix ? randomMix() : setEl(b.dataset.e)));
+
+  addEventListener('resize', () => { renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); });
+
+  let last = performance.now();
+  function frame(dt) {
+    goalT += dt;
+    const g = goalAt(goalT + 6);
+    creature.steer(g, 7);
+    const t0 = performance.now();
+    creature.step(dt);
+    creature.sync();
+    msAvg = msAvg * 0.95 + (performance.now() - t0) * 0.05;
+    goalMesh.position.set(g[0], g[1], g[2]); goalMesh.rotation.y += dt;
+    const b = creature.bounds();
+    cam.centre.lerp(v3.set(b.centre[0], b.centre[1], b.centre[2]), Math.min(1, dt * 3));
+    camera.position.set(cam.centre.x + cam.dist * Math.cos(cam.pitch) * Math.cos(cam.yaw), cam.centre.y + cam.dist * Math.sin(cam.pitch),
+                        cam.centre.z + cam.dist * Math.cos(cam.pitch) * Math.sin(cam.yaw));
+    camera.lookAt(cam.centre);
+    moteMesh.position.set(Math.round(cam.centre.x / 400) * 400, 0, Math.round(cam.centre.z / 400) * 400);
+    for (let i = flashes.length - 1; i >= 0; i--) {
+      const f = flashes[i]; f.userData.t += dt;
+      const u = f.userData.t / 0.45; f.scale.setScalar(f.userData.r * (0.3 + 0.9 * u)); f.material.opacity = 0.5 * (1 - u);
+      if (u >= 1) { scene.remove(f); flashes.splice(i, 1); }
+    }
+  }
+  function loop(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    frame(dt); hud();
+    renderer.render(scene, camera);
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+  // hooks for headless screenshots
+  window.__demo = { creature, cam, setEl, randomMix, strikeAt, measure, advance(sec) { for (let t = 0; t < sec; t += 1 / 60) frame(1 / 60); hud(); renderer.render(scene, camera); },
+                    strikeCentre() { const b = creature.bounds(); flash(b.centre, 5); return creature.hit(b.centre, 5); } };
+})();
+</script>
+</body>
+</html>

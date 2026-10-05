@@ -1,0 +1,237 @@
+{
+ "bar": 8,
+ "n": 192,
+ "own": {
+  "mass": {
+   "plan": "Whale",
+   "loss": 0.2,
+   "others": {
+    "mass": 0.2,
+    "space": 72.34,
+    "charge": 55.31,
+    "time": 76.59
+   },
+   "closest": true,
+   "pass": true
+  },
+  "space": {
+   "plan": "Jellyfish",
+   "loss": 1.03,
+   "others": {
+    "mass": 73.89,
+    "space": 1.03,
+    "charge": 59.64,
+    "time": 71.41
+   },
+   "closest": true,
+   "pass": true
+  },
+  "charge": {
+   "plan": "Pufferfish",
+   "loss": 0.73,
+   "others": {
+    "mass": 54.8,
+    "space": 59.11,
+    "charge": 0.73,
+    "time": 70.01
+   },
+   "closest": true,
+   "pass": true
+  },
+  "time": {
+   "plan": "Dragonfly",
+   "loss": 4.03,
+   "others": {
+    "mass": 76.1,
+    "space": 73.13,
+    "charge": 71.55,
+    "time": 4.03
+   },
+   "closest": true,
+   "pass": true
+  }
+ },
+ "morph": {
+  "mass->space": {
+   "from": "Whale",
+   "to": "Jellyfish",
+   "seconds": 0.8,
+   "settled": 0.85,
+   "molts": 129
+  },
+  "mass->charge": {
+   "from": "Whale",
+   "to": "Pufferfish",
+   "seconds": 0.7,
+   "settled": 0.67,
+   "molts": 133
+  },
+  "mass->time": {
+   "from": "Whale",
+   "to": "Dragonfly",
+   "seconds": 1.2,
+   "settled": 3.59,
+   "molts": 132
+  },
+  "space->mass": {
+   "from": "Jellyfish",
+   "to": "Whale",
+   "seconds": 0.8,
+   "settled": 0.21,
+   "molts": 129
+  },
+  "space->charge": {
+   "from": "Jellyfish",
+   "to": "Pufferfish",
+   "seconds": 0.8,
+   "settled": 0.79,
+   "molts": 104
+  },
+  "space->time": {
+   "from": "Jellyfish",
+   "to": "Dragonfly",
+   "seconds": 0.9,
+   "settled": 4.01,
+   "molts": 123
+  },
+  "charge->mass": {
+   "from": "Pufferfish",
+   "to": "Whale",
+   "seconds": 0.7,
+   "settled": 0.02,
+   "molts": 133
+  },
+  "charge->space": {
+   "from": "Pufferfish",
+   "to": "Jellyfish",
+   "seconds": 0.8,
+   "settled": 0.85,
+   "molts": 104
+  },
+  "charge->time": {
+   "from": "Pufferfish",
+   "to": "Dragonfly",
+   "seconds": 1.3,
+   "settled": 3.98,
+   "molts": 136
+  },
+  "time->mass": {
+   "from": "Dragonfly",
+   "to": "Whale",
+   "seconds": 0.8,
+   "settled": 0.2,
+   "molts": 132
+  },
+  "time->space": {
+   "from": "Dragonfly",
+   "to": "Jellyfish",
+   "seconds": 0.8,
+   "settled": 0.85,
+   "molts": 123
+  },
+  "time->charge": {
+   "from": "Dragonfly",
+   "to": "Pufferfish",
+   "seconds": 0.8,
+   "settled": 0.79,
+   "molts": 136
+  }
+ },
+ "hit": {
+  "mass": {
+   "knocked": 131,
+   "before": 0.01,
+   "peak": 20.5,
+   "recoverSeconds": 1.8,
+   "moltsBack": 47
+  },
+  "space": {
+   "knocked": 19,
+   "before": 0.65,
+   "peak": 4.55,
+   "recoverSeconds": 1.4,
+   "moltsBack": 8
+  },
+  "charge": {
+   "knocked": 48,
+   "before": 0.65,
+   "peak": 2.98,
+   "recoverSeconds": 0.9,
+   "moltsBack": 6
+  },
+  "time": {
+   "knocked": 95,
+   "before": 2.41,
+   "peak": 17.54,
+   "recoverSeconds": 2.2,
+   "moltsBack": 26
+  }
+ },
+ "steer": {
+  "goal": [
+   -60,
+   10,
+   40
+  ],
+  "finalDistance": 0.5,
+  "lossWhileSwimming": 0.04,
+  "pass": true
+ },
+ "perf": {
+  "n192_frac8": {
+   "msPerFrame": 0.147,
+   "includes": "step + units()",
+   "redealMs": 2.1
+  },
+  "n192_frac1": {
+   "msPerFrame": 0.195,
+   "includes": "step + units()",
+   "redealMs": 0.56
+  },
+  "n256_frac8": {
+   "msPerFrame": 0.128,
+   "includes": "step + units()",
+   "redealMs": 1.19
+  },
+  "n256_frac1": {
+   "msPerFrame": 0.341,
+   "includes": "step + units()",
+   "redealMs": 0.67
+  },
+  "n1024_frac8": {
+   "msPerFrame": 0.688,
+   "includes": "step + units()",
+   "redealMs": 6.4
+  },
+  "n1024_frac1": {
+   "msPerFrame": 2.52,
+   "includes": "step + units()",
+   "redealMs": 6.4
+  },
+  "n1024_loss_mass": 0.55
+ },
+ "composition": {
+  "want": [
+   0.15,
+   0.2,
+   0.5,
+   0.15
+  ],
+  "have": [
+   0.15,
+   0.2,
+   0.5,
+   0.15
+  ],
+  "plan": "space",
+  "name": "Jellyfish",
+  "maxError": 0,
+  "lossToPlan": 18.47,
+  "pass": true
+ },
+ "morphSummary": {
+  "mean": 0.87,
+  "max": 1.3
+ },
+ "pass": true
+}
