@@ -157,6 +157,9 @@ namespace CosmicShore.Gameplay
     public class Singleton<T> : MonoBehaviour where T : Component { public static T Instance { get; private set; } }
     public class PrismSpatialIndex : Singleton<PrismSpatialIndex> { public int QuerySphere(Vector3 center, float radius, List<Prism> results) => 0; }
 
+    // FloraAndFauna/Builders/BuilderRegistry.cs (round 11e)
+    public static class BuilderRegistry { public static bool IsBuilt(Prism prism) => false; public static bool IsCarried(Prism prism) => false; }
+
     // Utility/PoolsAndBuffers/EnvironmentPrismPool.cs:75
     public static class EnvironmentPrismPool
     {

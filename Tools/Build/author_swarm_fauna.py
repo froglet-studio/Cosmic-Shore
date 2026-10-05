@@ -49,6 +49,7 @@ REPO = os.path.dirname(os.path.dirname(HERE))
 assert os.path.isdir(os.path.join(REPO, "Assets")), REPO
 sys.path.insert(0, HERE)
 import swarm_plans  # noqa: E402
+import author_builders  # noqa: E402  round 11e: the builder colonies live in this cell (their own generator)
 
 A = lambda *p: os.path.join(REPO, "Assets", *p)
 SWARM_DIR = A("_SO_Assets", "Swarm Fauna")
@@ -584,7 +585,8 @@ def model(plans):
     tot["proxy_colliders"] = 2 * MAX_PROXIES * TOTAL_SWARMS        # only near vessels: heart + body each
     # round 11b: the substrate populations' proxies share this cell's ceiling (Tools/Build/author_substrate_fauna.py)
     tot["proxy_colliders"] += substrate().proxy_colliders()
-    tot["colliders_engaged"] = tot["hearts"] + tot["proxy_colliders"]
+    tot["builder_colliders"] = author_builders.proxy_colliders()   # round 11e: the colonies' proxies, near vessels only
+    tot["colliders_engaged"] = tot["hearts"] + tot["proxy_colliders"] + tot["builder_colliders"]
     return rows, tot, eggs
 
 
@@ -631,6 +633,7 @@ def profile_asset():
         floras += "".join(f"  - {{fileID: 11400000, guid: {g}, type: 2}}\n" for g in atf.profile_guids())
     faunas = "".join(f"  - {{fileID: 11400000, guid: {guid(rel(cell_path(fauna_name(r))))}, type: 2}}\n" for r in REGIONS)
     faunas += substrate().profile_entries()   # round 11b: the substrate populations (author_substrate_fauna.py owns them)
+    faunas += author_builders.profile_entries()   # round 11e: the fortress colony and the thief nest
     return SO_HEADER % (SO_SCRIPT["profile"], f"{PREFIX} Cell Spawn Profile") + (
         "  FloraExcludeLocalDomain: 0\n  FloraSpawnVolumeCeiling: 12000\n  FloraInitialDelaySeconds: 0\n"
         "  FloraSpawnIntervalSeconds: 0\n  FloraPopulationScale: 1\n  FloraPlantBudgetScale: 1\n"
@@ -841,7 +844,7 @@ def report(rows, tot, eggs, L, baked):
     print(f"  food: forest {tot['food']:,.0f} at the floor, {tot['forest_at_cap']:,.0f} at the cap, "
           f"against an egg bill of {tot['bill']:,.0f} to grow all three bodies to full")
     print(f"  colliders: BEFORE (round 6) 5,008 always-on at the caps; NOW {tot['hearts']} always-on plant hearts "
-          f"+ up to {tot['proxy_colliders']} proxy colliders only while vessels are near "
+          f"+ up to {tot['proxy_colliders']} swarm + {tot['builder_colliders']} builder proxy colliders only while vessels are near "
           f"({tot['colliders_engaged']} worst case, ceiling {COLLIDER_CEILING}); {tot['tadpoles']} tadpoles GPU-drawn, 0 colliders")
     print(f"  mature forest (model): {tot['prisms']:,} prisms, {tot['volume']:,.0f} volume - Atlantis is {ATLANTIS_PRISMS:,}")
     print(f"  round 8: member bodies grown full {tot['bodies']:,.0f} volume beside the forest's {tot['volume']:,.0f} "
@@ -853,7 +856,7 @@ def report(rows, tot, eggs, L, baked):
 
 def stale(out):
     """Files in the cell folder this script owns no longer (an earlier round's populations)."""
-    owned = {os.path.abspath(p) for p in out}
+    owned = {os.path.abspath(p) for p in out} | {os.path.abspath(p) for p in author_builders.BUILDER_CELL_FILES}
     return sorted(os.path.join(CELL_DIR, f) for f in os.listdir(CELL_DIR)
                   if os.path.abspath(os.path.join(CELL_DIR, f)) not in owned) if os.path.isdir(CELL_DIR) else []
 

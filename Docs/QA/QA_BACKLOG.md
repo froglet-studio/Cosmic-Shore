@@ -801,6 +801,60 @@ with no trail · live volume never moves as the swarms grow.
 Round 8's diet colouring (newborns wearing the colour of what they ate) was removed on playtest. See
 `Docs/SWARM_FAUNA.md` §17.
 
+### QA-SWARM-ROUND11-5 ⬜ — creatures that steal and build: the fortress colony and the thief nest
+
+**Source:** branch `overnight/builders` (headless harness, type-check and authoring gates only, not run in the
+editor). Reference: `Docs/BUILDERS_AND_THIEVES.md`. **Why it matters:** these are the first creatures that move
+other prisms. If the mover contract, the registry or the settle flight is wrong, prisms pop, double-count, or are
+stolen from shields.
+
+1. Open the Swarm cell in freestyle. In the Console (with the **Ecology** log channel on), confirm two
+   `[Builders] ... founded` lines: a Fortress colony near r 845-905 and a Thieves nest near r 1085-1140, both in
+   the cell's controlling domain. Each line should say `bodies prism entities`. Member bodies should look like
+   ordinary prisms of their tier in that domain, with crystal hearts in front.
+2. **Fortress build-up.** Fly a long trail loop through the 800-950 u shell, then hold off for 2-3 minutes.
+   Workers (small prism-bodied creatures with hearts) should carry your trail prisms to a hollow shell about 40 u
+   across. Check the details:
+   - each placed prism eases into place (no teleport, no pop);
+   - shielded prisms in the area are never taken.
+3. **Wound knit.** Ram straight through the wall, then back off about 150 u and watch with a stopwatch. Most of the
+   hole (about half the sites) should refill in about 5-10 s, mostly with your own trail prisms re-coloured to the
+   colony's domain. Cut the same line two more times: the wall there should grow visibly thicker.
+4. **Defence.** Hover inside about 110 u of the colony. A screen of workers should gather between you and the core
+   (the telegraph), then some should turn into danger plates. As an opposing domain, touching a striker burns
+   petals that do not come back as crystals.
+5. **Worker deaths.** Ram a worker carrying a prism. The worker drops ONE crystal, and the prism falls loose where
+   it was (it does not vanish).
+6. **Thieves.** Fly at cruise within about 700 u of the nest's plant. A few thieves should fall in behind you and
+   snatch prisms from the last moment of your trail. Watch them fly home slowly to a cluster at the plant (the
+   hoard).
+7. **Turn back.** Turn on a laden thief: you should always catch it. Knock it down, and its prism should change
+   back to YOUR domain and stay where it fell. The thief drops one crystal.
+8. **Raid.** Fly through the hoard: the prisms you touch become yours.
+9. **Opening.** Start a fresh session and stay away from the nest for 5 minutes. When you come back, the nest should
+   still be alive with at least its 6 founders (no opening die-off).
+10. **Profile** 60 s near both colonies. Record `BuilderColonyFauna.Tick` (expect well under 0.2 ms per tick) and
+    `.Frame`, and the physics collider count (proxies at most 24 + 18, two colliders each).
+
+**PASS:**
+- The colonies found in the right bands and colour.
+- The wall rebuilds a cut in seconds from the cutter's trail.
+- No pops: placements ease in, and every death leaves exactly one crystal.
+- Shields are never stolen.
+- Thieves tail, snatch fresh trail, fly slowly when laden, and return the prism on knock-down.
+- The hoard can be raided.
+- No opening die-off.
+
+**FAIL:**
+- A prism vanishes when picked up, carried or placed.
+- A prism snaps into place, or a placed prism is invisible or culled.
+- A shielded prism is carried.
+- A cut never refills, or refills only after a minute or more.
+- A worker or thief death drops no crystal, or more than one.
+- A laden thief outruns a turning ship.
+- The knocked-down prism keeps the thief's colour.
+- The nest dies out with no ship around.
+- A frame-time regression above about 0.5 ms.
 ### QA-SWARM-ROUND11-7 ⬜ — the petal-burn switch: the demo cell burns 1 petal per element, everywhere else 5
 
 **Source:** branch `overnight/burn` (round 11g). It is proven by the elemental transfer harness (T8 and the

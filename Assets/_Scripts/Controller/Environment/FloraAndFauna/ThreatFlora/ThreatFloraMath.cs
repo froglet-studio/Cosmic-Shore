@@ -125,6 +125,29 @@ namespace CosmicShore.Gameplay
             return half > 0f && cos > MathF.Cos(half);
         }
 
+        /// <summary>
+        /// p moved just clear of the grove (grown by clearance on every face), keeping its distance from the cell
+        /// centre: a sector point swings sideways out of the cone, a ball point is pushed out radially. A point already
+        /// clear comes back unchanged. Used to keep another creature's home off the grove (round 11e's thief nest).
+        /// </summary>
+        public Vector3 PushOutside(Vector3 p, float clearance)
+        {
+            if (!Contains(p, -clearance)) return p;
+            if (Kind == Ball)
+            {
+                Vector3 o = p - Centre;
+                Vector3 dir = o.LengthSquared() < 1e-9f ? Vector3.UnitX : Vector3.Normalize(o);
+                return Centre + dir * (OuterRadius + clearance + 1f);
+            }
+            Vector3 d = p - CellCentre;
+            float r = d.Length();
+            Vector3 side = d - Axis * Vector3.Dot(d, Axis);
+            if (side.LengthSquared() < 1e-6f) ThreatFloraMath.Frame(Axis, out side, out _);
+            side = Vector3.Normalize(side);
+            float angle = MathF.Acos(Math.Clamp(CosHalfAngle, -1f, 1f)) + (clearance + 1f) / r;
+            return CellCentre + Vector3.Normalize(Axis * MathF.Cos(angle) + side * MathF.Sin(angle)) * r;
+        }
+
         /// <summary>The axis-aligned box that holds the grove (for the physarum grid).</summary>
         public void Bounds(out Vector3 min, out Vector3 max)
         {

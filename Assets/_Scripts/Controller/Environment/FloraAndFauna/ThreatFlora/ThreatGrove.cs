@@ -21,11 +21,31 @@ namespace CosmicShore.Gameplay
     public sealed class ThreatGrove : MonoBehaviour
     {
         static readonly Dictionary<int, ThreatGrove> s_byCell = new();
+        static readonly HashSet<Transform> s_tubeRoots = new();
         static readonly ProfilerMarker s_snapMarker = new("ThreatGrove.SnapTraps");
         static readonly ProfilerMarker s_physMarker = new("ThreatGrove.Physarum");
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void ResetStatics() => s_byCell.Clear();
+        static void ResetStatics() { s_byCell.Clear(); s_tubeRoots.Clear(); }
+
+        /// <summary>
+        /// A physarum tube: living tissue of a grove although its HealthPrism has no LifeForm (the network is one body
+        /// with many hearts, so no single sclerotium owns a tube). Other species' "never living tissue" rules ask
+        /// this - round 11e's BuilderPrismWorld does - so a tube is never loot, carried off or built into a wall.
+        /// </summary>
+        public static bool IsGroveTissue(Prism prism) =>
+            prism && prism.transform.parent && s_tubeRoots.Contains(prism.transform.parent);
+
+        /// <summary>
+        /// p moved just clear of every grove (grown by clearance), keeping its distance from the cell centre. For a
+        /// creature's home that must not sit on a grove (round 11e's thief nest when it finds no plant to perch on).
+        /// </summary>
+        public static Vector3 OutsideGroves(Vector3 p, float clearance)
+        {
+            foreach (var grove in s_byCell.Values)
+                if (grove) p = ToU(grove._shape.PushOutside(ToN(p), clearance));
+            return p;
+        }
 
         /// <summary>The cell's grove, created on first use. Null when there is no cell or config to build it from.</summary>
         public static ThreatGrove For(Cell cell, ThreatGroveConfigSO config)
@@ -65,11 +85,13 @@ namespace CosmicShore.Gameplay
             _seed = (uint)(cell.ID * 7919 + 17);
             _tubeRoot = new GameObject("PhysarumTubes").transform;
             _tubeRoot.SetParent(transform, false);
+            s_tubeRoots.Add(_tubeRoot);
         }
 
         void OnDestroy()
         {
             if (_cell) s_byCell.Remove(_cell.GetInstanceID());
+            if (_tubeRoot) s_tubeRoots.Remove(_tubeRoot);
         }
 
         // ═════════════════════════════════════════════════════════════════════ shared helpers
@@ -146,15 +168,18 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Food for a threat plant: ordinary cell mass. Never shielded (Fauna.IsShieldedMass - the one canonical
-        /// rule), never a LIVING body (a lifeform's or a creature's prism), never the grove's own tubes, and always
-        /// what the cell lets a herbivore of <paramref name="eater"/> eat there (Cell.IsPreyForHerbivore).
+        /// rule), never a LIVING body (a lifeform's or a creature's prism), never any grove's tubes, never a builder's
+        /// structure or a prism a builder is carrying (BuilderRegistry: a fortress wall or a thief's hoard is another
+        /// creature's held mass, as a shell is), and always what the cell lets a herbivore of
+        /// <paramref name="eater"/> eat there (Cell.IsPreyForHerbivore).
         /// </summary>
         bool IsEdible(Prism prism, Domains eater)
         {
             if (!prism || prism.destroyed) return false;
             if (Fauna.IsShieldedMass(prism)) return false;
             if (prism is HealthPrism hp && (hp.LifeForm || hp.ResolveOwnerFauna() != null)) return false;
-            if (prism.transform.parent == _tubeRoot) return false;
+            if (IsGroveTissue(prism)) return false;
+            if (BuilderRegistry.IsBuilt(prism) || BuilderRegistry.IsCarried(prism)) return false;
             return _cell && _cell.IsPreyForHerbivore(prism.transform.position, eater, prism.Domain);
         }
 

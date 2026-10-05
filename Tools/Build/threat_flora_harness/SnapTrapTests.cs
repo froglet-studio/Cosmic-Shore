@@ -196,7 +196,7 @@ public static class SnapTrapTests
         var c = new SnapTrapCore(p, 1);
         float leafHalf = 0.5f * MathF.Max(ThreatGroveDefaults.LobeLeaf.Length(),
             MathF.Max(ThreatGroveDefaults.ToothLeaf.Length(), ThreatGroveDefaults.StalkLeaf.Length()));
-        float minR = float.MaxValue, maxR = 0f;
+        float minR = float.MaxValue, maxR = 0f, minHeart = float.MaxValue;
         foreach (float depth in new[] { ThreatGroveDefaults.TrapRootDepthMin, ThreatGroveDefaults.TrapRootDepthMax })
         {
             var root = new Vector3(0f, 0f, ThreatGroveDefaults.GroveOuterRadius - depth);   // cell centre at the origin
@@ -206,6 +206,7 @@ public static class SnapTrapTests
                 {
                     float t = tilt * MathF.PI / 180f, phi = az * MathF.PI / 4f;
                     var axis = Vector3.Normalize(MathF.Cos(t) * inward + MathF.Sin(t) * new Vector3(MathF.Cos(phi), MathF.Sin(phi), 0f));
+                    minHeart = MathF.Min(minHeart, (root + axis * (p.HeartInJaws * p.GeometryScale)).Length());
                     foreach (float deg in new[] { p.ShutGape, p.Gape, p.Gape + p.DGape })
                         for (int s = 0; s < SnapTrapCore.SlotCount; s++)
                         {
@@ -219,6 +220,26 @@ public static class SnapTrapTests
                           $"(outer band ends {ThreatGroveDefaults.OuterSwarmBandEdge:F0}, membrane {ThreatGroveDefaults.MembraneRadius:F0})");
         Program.Check(minR >= ThreatGroveDefaults.OuterSwarmBandEdge, $"S9 a rim trap's jaws stay off the outer swarm band ({minR - ThreatGroveDefaults.OuterSwarmBandEdge:F1} u clear)");
         Program.Check(maxR <= ThreatGroveDefaults.MembraneRadius, $"S9 and its back stays inside the membrane ({ThreatGroveDefaults.MembraneRadius - maxR:F1} u clear)");
+        // round 11e's thief nest perches only on a flora heart within 0.9 x membrane (BuilderColonyFauna.FindNestPlant)
+        float perch = 0.9f * ThreatGroveDefaults.MembraneRadius;
+        Console.WriteLine($"   perch: a rim trap's heart crystal sits at radius >= {minHeart:F1} u (a thief nest perches only within {perch:F0})");
+        Program.Check(minHeart > perch, $"S9 no thief nest perches on a snap trap ({minHeart - perch:F1} u beyond the perch limit)");
+
+        // and a nest that found no plant is pushed off the grove (ThreatGroveShape.PushOutside), keeping its radius
+        var shape = ThreatGroveShape.MakeShellSector(Vector3.Zero, Vector3.Normalize(new Vector3(1f, 0.3f, 0f)),
+            ThreatGroveDefaults.GroveInnerRadius, ThreatGroveDefaults.GroveOuterRadius, ThreatGroveDefaults.GroveHalfAngleDegrees);
+        var rng = new ThreatRng(11);
+        int moved = 0, bad = 0;
+        for (int k = 0; k < 4000; k++)
+        {
+            var q0 = rng.OnUnitSphere() * rng.Range(1085f, 1140f);
+            if (k % 4 == 0) q0 = shape.Axis * rng.Range(1085f, 1140f) + rng.GaussianVector() * 30f;   // aim some at the grove
+            var q1 = shape.PushOutside(q0, 40f);
+            if (q1 != q0) moved++;
+            if (shape.Contains(q1, -40f) || MathF.Abs(q1.Length() - q0.Length()) > 0.01f) bad++;
+        }
+        Console.WriteLine($"   nest: {moved} of 4000 rim points pushed off the grove, {bad} still within 40 u of it or off their radius");
+        Program.Check(moved > 0 && bad == 0, "S9 a nest that finds no plant is moved clear of the grove at its own radius");
 
         // and the cone holds in the core: a trap whose traffic sits straight behind it turns only to the cone's edge
         var q = Best(); q.HelioConeDegrees = 60f;

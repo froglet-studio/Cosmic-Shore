@@ -2250,3 +2250,19 @@ Round 11c plants two plants that hurt you in the Swarm cell. Full design, proof 
   (978 + 78 substrate proxies + 20; `author_swarm_fauna.py` and `author_threat_flora.py` both check it).
 - **Gates.** `Tools/Build/threat_flora_harness/run.sh` (the shipped cores, plus the glue type-checked against
   hand-copied stubs) and `python3 Tools/Build/author_threat_flora.py --check`.
+
+## 23. Round 11e: creatures that steal and build
+
+Two new species take prisms that already exist and give them a new owner:
+
+- **The fortress colony.** Workers steal loose mass and wall their core in with it. A cut wall knits shut: with the
+  alarm and gap rules and a 30% defender caste, t50 is 5.5 s, against 23.8 s for ordinary building.
+- **The thief nest.** It sits on a plant. Its thieves tail a ship and snatch its warm wake (trail at most 1.5 s
+  old), then fly it home at half speed to a visible hoard. Knocking a laden thief down returns the prism.
+
+They share the swarm's member machinery: GPU-drawn members, `SwarmTadpoleFauna` proxies near vessels, round 11a's
+virtual index entries through `SwarmEntryLedger`, and `IVirtualFaunaOwner`. Neither species creates or destroys a
+prism, so structures add 0 colliders.
+
+The full write-up, proof and limits are in [`Docs/BUILDERS_AND_THIEVES.md`](BUILDERS_AND_THIEVES.md). QA:
+QA-SWARM-ROUND11-5.
