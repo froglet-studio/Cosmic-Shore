@@ -8,6 +8,22 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ---
 
+## BH-5.5 — Wildlife Blitz retired from shipped surfaces
+
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Symptom:** neither Wildlife Blitz mode was in any `SO_GameList`; the co-op scene was still in
+  Build Settings and ModePreviewLibrary, so it looked half-alive after the SP scene cleanup.
+- **Decision (handoff §5):** RETIRE (not ship). Do not half-delete scenes without cleaning refs.
+- **Fix:** removed `MinigameWildlifeBlitzMultuplayerCoOp` from Build Settings; dropped the co-op
+  preview from `ModePreviewLibrary`; deleted `ArcadeGameCoOpWildlifeBlitz` and
+  `ModePreview_CoOpWildlifeBlitz`. The co-op **scene file** and `CoOpWildlifeBlitzMiniGame` stay on
+  disk (enum value kept). SP card already removed with hangar training (BH-5.4).
+  `GameModes.WildlifeBlitz` remains for Editor `BenchmarkSceneLauncher`.
+- **Verification:** gate scripts pass; not run in Unity. Retest is on the handoff playtest list.
+- **PR/commit:** pending.
+
+---
+
 ## BH-5.4 — Hangar Wildlife Blitz training entries + card retired
 
 - **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.

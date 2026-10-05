@@ -60,6 +60,7 @@ Confidence scale:
 | 33 | **Strict YAML on cell configs / arcade cards / captain SOs (console, was FIX_LOG open).** `arcade_mode_lib.wrap_yaml_scalar` + five `author_*_assets.py` generators; 17 assets re-quoted / hand-fixed. Shipped on `Bug_Hunt`. | generators + captain SOs |
 | 34 | **Run Benchmark is Editor-only (was §5).** Button hidden / unwired in players; `LaunchBenchmark` no-ops outside the Editor. `BenchmarkStressTest` stays out of Build Settings. Shipped on `Bug_Hunt`. | `GameSettingsPanelController`, `BenchmarkSceneLauncher` |
 | 35 | **Hangar Wildlife Blitz training retired (was §5).** Rhino/Sparrow `TrainingGames` cleared; `SO_TrainingGame_WildLifeBlitz` and `ArcadeGameWildlifeBlitz` deleted. Shipped on `Bug_Hunt`. | class SOs, TrainingGames list |
+| 36 | **Wildlife Blitz retired from shipped surfaces (was §5).** Co-op scene out of Build Settings; preview + arcade card deleted; scene/`CoOpWildlifeBlitzMiniGame` kept on disk. Shipped on `Bug_Hunt`. | Build Settings, ModePreviewLibrary |
 
 ### Playtest items for the shipped fixes
 - **Squirrel ring (#6):** fly Menu_Main freestyle → an arcade game → back, 2-3 round trips, then
@@ -176,6 +177,10 @@ Confidence scale:
 - **STILL TO TEST (revisit): 5.4 Hangar Wildlife Blitz training retirement, kept on Bug_Hunt untested at Yash's call.**
 - **Hangar training (5.4):** open the hangar for Rhino and Sparrow — no Wildlife Blitz training
   card/row; remaining training games (if any) still open without NRE.
+- **STILL TO TEST (revisit): 5.5 Wildlife Blitz retirement, kept on Bug_Hunt untested at Yash's call.**
+- **Wildlife Blitz retired (5.5):** Arcade / Arena / party lists must not show Wildlife Blitz; Build
+  Settings must not list `MinigameWildlifeBlitzMultuplayerCoOp`; mode preview must not offer it.
+  Editor Run Benchmark (5.3) must still load `BenchmarkStressTest`.
 
 ---
 
@@ -201,10 +206,6 @@ Confidence scale:
 
 ## 5. Follow-ups from the scene cleanup (#5)
 
-- **Neither Wildlife Blitz exists in the shipped game.** `ArcadeGameCoOpWildlifeBlitz.asset` is in no
-  `SO_GameList`, and `MinigameWildlifeBlitzMultuplayerCoOp.unity` is not in Build Settings. This was
-  already true before the cleanup; it only became visible when the single-player scene was deleted.
-  Decide: ship it (add it to a list and to Build Settings) or retire it.
 - **Orphaned classes** (no scene or prefab references them now): `WildlifeBlitzMiniGame`,
   `SinglePlayerSlipnStrideController`, `VolumeTestPlayerSpawnerAdapter`, `SandboxBenchmarkController`,
   the single-player `VesselSelectionPanelController`, `WildlifeBlitzEndGameStatsTracker`,
