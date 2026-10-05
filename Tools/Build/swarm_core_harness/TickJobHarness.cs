@@ -356,6 +356,66 @@ static class TickJobHarness
             Check(bad2 > 0 && over > 0, "negative control fires: without the proxy suspension the index and the real bodies double-count");
         }
 
+        Console.WriteLine("\nR11c-2. a puffed shield member stays shielded in the index (round 11d-2): the look shows danger, the mass keeps its shield");
+        {
+            var core = SortHarness.GameSwarm(plans, 2, 11, true, SortHarness.Game(plans));   // the Space body: its Charge members wear the shield
+            var j = new SwarmTickJob(core, Settings(), 10f) { SwimTarget = core.SwimTarget };
+            j.Prime();
+            for (int t = 0; t < 300; t++) Tick(j, inline: true);
+            int cap = j.Instances.Length;
+            var idx = new FakeVirtualIndex(); var led = new SwarmEntryLedger(cap);
+            float R = core.Plan.Radius;
+            // aim the charge at the shield members' own centroid (the Space body's Charge members sit on its flank)
+            var c0 = Vector3.Zero; int ns = 0;
+            for (int i = 0; i < cap; i++) if (j.Instances[i].Alive && j.Instances[i].Shielded) { c0 += core.Pos[i]; ns++; }
+            c0 = ns > 0 ? c0 / ns : core.Anchor;
+            float maxSt = 0f;
+            int puffedShield = 0, shieldTicks = 0, ledgerWrong = 0, oldRuleWrong = 0, flips = 0, violations = 0;
+            var lastShield = new bool[cap]; var lastBirth = new float[cap];
+            for (int t = 0; t < 160; t++)
+            {
+                // a vessel charges through the body (ticks 20-59) and leaves: members puff above DangerEnter, then calm
+                // ticks 20-59 a vessel hounds the shield members; then it leaves
+                bool rush = t >= 20 && t < 60;
+                if (rush)
+                {
+                    // it noses at one shield member at a time (the first living one), so the case exists at any density
+                    for (int i = 0; i < cap; i++) if (j.Instances[i].Alive && j.Instances[i].Shielded) { c0 = core.Pos[i] - new Vector3(1f, 0, 0); break; }
+                }
+                Vector3 pc = rush ? c0 : c0 + new Vector3(100f * R, 0, 0);
+                j.Preds[0] = new SwarmPredator { C = pc, V = rush ? new Vector3(1f, 0, 0) : Vector3.Zero, R = 4.5f };
+                j.PredCount = 1;
+                Tick(j, inline: true);
+                for (int i = 0; i < cap; i++) if (led.Ids[i] >= 0) idx.Move(led.Ids[i], j.IndexPoint[i]);
+                led.Sync(j.Instances, null, j.IndexPoint, idx);
+                violations += CountOnce(j, led, idx, new bool[cap], out _);
+                for (int i = 0; i < cap; i++)
+                {
+                    var s = j.Instances[i];
+                    if (!s.Alive) { lastShield[i] = false; continue; }
+                    if (s.Shielded) maxSt = Math.Max(maxSt, core.Startle[i]);
+                    if (t == 0) { lastShield[i] = s.Shielded; lastBirth[i] = s.BirthTick; }
+                    if (s.Shielded) shieldTicks++;
+                    if (s.Shielded && s.Tier == 1) puffedShield++;
+                    if (led.Ids[i] < 0 || idx.E[led.Ids[i]].shield != s.Shielded) ledgerWrong++;
+                    if (s.Shielded && s.Tier != 2) oldRuleWrong++;   // what round 11a's `shield = Tier == 2` would have filed
+                    if (s.BirthTick == lastBirth[i] && s.Shielded != lastShield[i] && s.CurMolt <= 0f) flips++;
+                    lastShield[i] = s.Shielded; lastBirth[i] = s.BirthTick;
+                }
+            }
+            Console.WriteLine($"  {shieldTicks} shielded member-ticks, {puffedShield} of them puffed (showing danger); index entries filed wrong {ledgerWrong}; " +
+                              $"round 11a's rule would have filed {oldRuleWrong} unshielded; shield changes outside a molt {flips}; peak startle on a shield member {maxSt:F2}");
+            Check(puffedShield > 0, "the charge puffs shield members (tier 1 shown) - the case exists");
+            Check(ledgerWrong == 0 && violations == 0, "every index entry's shield bit is the member's mass shield, puffed or not; every member counted once");
+            Check(oldRuleWrong == puffedShield && oldRuleWrong > 0, "negative control: the old Tier == 2 rule files every puffed shield member unshielded");
+            Check(flips == 0, "a member's shield does not blink with its puff");
+            var x = new SwarmInstance { Flags = SwarmInstance.Pack(true, 1, 3, 2, 2, true) };
+            var y = new SwarmInstance { Flags = SwarmInstance.Pack(true, 2, 3, 2, 2) };
+            Check(x.Flags == (y.Flags & ~(3u << 1) | (1u << 1) | (1u << 9)) && x.Shielded && !y.Shielded
+                  && x.Tier == 1 && x.HeartFrom == 3 && x.HeartTo == 2 && x.DomainSlot == 2,
+                  "the shield is bit 9, beside the tier, domain and hearts the shader reads (bits 0-8 unchanged)");
+        }
+
         Console.WriteLine("\nR11d. the render entity's matrix is the shipped body pose, and its per-frame cost (§19.2)");
         {
             var j = Make(plans, 1, 5);
@@ -545,7 +605,7 @@ static class TickJobHarness
             if (e.slot < 0 || e.slot >= cap || !j.Instances[e.slot].Alive) { bad++; continue; }
             seen[e.slot]++; counted += e.vol;
             if (Math.Abs(e.vol - SwarmBodyPose.BodyVolume(j.Instances[e.slot].Scale)) > 1e-3) bad++;
-            if (e.dom != j.Instances[e.slot].DomainSlot || e.shield != (j.Instances[e.slot].Tier == 2)) bad++;
+            if (e.dom != j.Instances[e.slot].DomainSlot || e.shield != j.Instances[e.slot].Shielded) bad++;
         }
         for (int i = 0; i < cap; i++)
         {

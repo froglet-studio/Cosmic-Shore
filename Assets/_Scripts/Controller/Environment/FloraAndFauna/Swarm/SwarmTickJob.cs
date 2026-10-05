@@ -34,7 +34,9 @@ namespace CosmicShore.Gameplay
     /// WORLD space; the shader lerps Prev -> Cur by the swarm's display alpha. Flags: bit 0 alive, bits
     /// 1-2 tier (0 plain, 1 danger, 2 shield), bits 3-4 the heart's element before the molt midpoint,
     /// bits 5-6 after it, bits 7-8 the member's DOMAIN slot (round 8, Docs/SWARM_FAUNA.md §16.4: 0 = the
-    /// swarm's controlling domain; only a MultiDomain swarm uses 1 and 2). Scale is the body prism's local scale (x wide, y thin, z long) and PrismZ its
+    /// swarm's controlling domain; only a MultiDomain swarm uses 1 and 2), bit 9 SHIELDED (round 11d-2: the member's
+    /// mass is shielded - its plan says shield - whatever its tier shows; a puffed shield member shows danger, 1, and
+    /// stays shielded: never food, never a steering target, and weapons see the shield). Scale is the body prism's local scale (x wide, y thin, z long) and PrismZ its
     /// seat behind the heart along -facing. Molt is the core's molt progress (0 = not molting).
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
@@ -52,10 +54,11 @@ namespace CosmicShore.Gameplay
         public int HeartFrom => (int)((Flags >> 3) & 3u);
         public int HeartTo => (int)((Flags >> 5) & 3u);
         public int DomainSlot => (int)((Flags >> 7) & 3u);
+        public bool Shielded => (Flags & (1u << 9)) != 0;
 
-        public static uint Pack(bool alive, int tier, int from, int to, int domainSlot = 0) =>
+        public static uint Pack(bool alive, int tier, int from, int to, int domainSlot = 0, bool shielded = false) =>
             (alive ? 1u : 0u) | ((uint)(tier & 3) << 1) | ((uint)(from & 3) << 3) | ((uint)(to & 3) << 5)
-            | ((uint)(domainSlot & 3) << 7);
+            | ((uint)(domainSlot & 3) << 7) | (shielded ? 1u << 9 : 0u);
     }
 
     /// <summary>The numbers a tick job needs to turn the core's state into the frame. Set once.</summary>
@@ -386,7 +389,8 @@ namespace CosmicShore.Gameplay
                 if (c.TryGetLook(i, eff, out var look, out int lt)) { h = look; if (eff == 0 && lt == 2) tier = 2; }
                 if (_strikeEff[i] != eff) { _strikeEff[i] = (sbyte)eff; _strike[i] = 0; }
                 _strike[i] = StrikeState(eff, i, _tick, c.Startle[i], _strike[i], S);
-                if (_strike[i] == 2) tier = 1;   // danger wins over shield (locked design)
+                bool shielded = tier == 2;   // the mass stays shielded while a puff shows danger (round 11d-2)
+                if (_strike[i] == 2) tier = 1;   // danger wins over shield in the LOOK (locked design)
 
                 // heart: the element before / after the molt midpoint, and the molt progress at both ends
                 float mc = c.Molt[i], mp = _lastMolt[i];
@@ -403,7 +407,7 @@ namespace CosmicShore.Gameplay
                 inst.PrismZ = -(S.HeartWorldScale[eff] + S.HeartPrismGap + 0.5f * scale.Z);
                 inst.BirthTick = _born[i];
                 int ds = dom != null ? Math.Clamp(dom[i], 0, 2) : 0;
-                inst.Flags = SwarmInstance.Pack(true, tier, from, to, ds);
+                inst.Flags = SwarmInstance.Pack(true, tier, from, to, ds, shielded);
                 _bSpeed[i] = c.Vel[i].Length() * _toWorldSpeed;
                 _bIndexPoint[i] = SwarmBodyPose.Body(inst, SwarmBodyPose.IndexAlpha);
 

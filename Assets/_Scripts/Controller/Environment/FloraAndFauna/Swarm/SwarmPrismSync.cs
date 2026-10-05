@@ -205,7 +205,7 @@ namespace CosmicShore.Gameplay
                 if (id >= 0 && _birth[i] != s.BirthTick) { Drop(i, sink); id = -1; }   // a newborn in a reused slot
 
                 float vol = (float)SwarmBodyPose.BodyVolume(s.Scale);
-                bool shield = s.Tier == 2;
+                bool shield = s.Shielded;   // not Tier == 2: a puffed shield member shows danger and stays shielded
                 int dom = Math.Clamp(s.DomainSlot, 0, 2);
                 if (id < 0)
                 {

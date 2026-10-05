@@ -724,7 +724,7 @@ namespace CosmicShore.Gameplay
                 var e = SwarmFaunaConfigSO.ToElement(s.CurMolt >= 0.5f && s.CurMolt < 1f ? s.HeartTo : s.HeartFrom);
                 if (m.HeartElement != e) m.ReformHeart(e, SwarmFaunaConfigSO.Of(config.HeartWorldScale, e));
                 m.SetShape(new Vector3(s.Scale.X, s.Scale.Y, s.Scale.Z), s.PrismZ);
-                m.SetTier(s.Tier == 1, s.Tier == 2);
+                m.SetTier(s.Tier == 1, s.Shielded);
             }
         }
 
@@ -852,7 +852,7 @@ namespace CosmicShore.Gameplay
             m.transform.SetPositionAndRotation(Uni(_job.PoseAt(i, _alpha)), Face(_job.FaceAt(i, _alpha), Uni(_job.BY)));
             if (!m.MaterialiseNow()) return null;
             ref var s = ref _job.Instances[i];
-            m.SetTier(s.Tier == 1, s.Tier == 2);
+            m.SetTier(s.Tier == 1, s.Shielded);
             m.SyncBodyToIndex();
             return m;
         }
@@ -869,7 +869,7 @@ namespace CosmicShore.Gameplay
         bool IsPreyFor(int i, Vector3 at, Fauna predator, bool herbivoresOnly)
         {
             if (!predator || predator == this) return false;
-            if (_job.Instances[i].Tier == 2) return false;   // shielded mass is never food (ECOSYSTEM_DESIGN_PRINCIPLES)
+            if (_job.Instances[i].Shielded) return false;   // shielded mass is never food (ECOSYSTEM_DESIGN_PRINCIPLES)
             if (herbivoresOnly && config.TadpolePrefab && config.TadpolePrefab.Diet != FaunaDiet.Herbivore) return false;
             float grace = config.TadpolePrefab ? config.TadpolePrefab.PredationImmunitySeconds : 0f;
             if (grace > 0f && (_job.Tick + _alpha - _job.Instances[i].BirthTick) / config.TickHz < grace) return false;
