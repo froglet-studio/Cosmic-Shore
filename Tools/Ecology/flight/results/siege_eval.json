@@ -1,0 +1,117 @@
+{
+ "species": "siege",
+ "minutes": 3,
+ "seeds": 6,
+ "K": {},
+ "ablate": null,
+ "rows": {
+  "wander": {
+   "burned_per_min": 26,
+   "burned_per_encounter": 6.5,
+   "encounters_per_min": 4,
+   "escape_share": 0.13,
+   "dive_bites_per_dive": 4.54,
+   "wall_bites_per_min": 0,
+   "breach_share": 0.85,
+   "dive_share": 0.85,
+   "telegraphed_share": 1,
+   "lead_s_median": 2.2,
+   "first_lead_s_median": 1.67,
+   "end_petals": 0,
+   "stripped_runs": 6,
+   "kills_per_min": 0,
+   "conservation_max": 0,
+   "feel": {
+    "size": 3.4,
+    "speed_rel": 1.418,
+    "approach": -1.16,
+    "coherence": 0.949,
+    "burstiness": 1.875,
+    "jerk_rel": 0.117
+   }
+  },
+  "evader": {
+   "burned_per_min": 2.22,
+   "burned_per_encounter": 0.4,
+   "encounters_per_min": 5.56,
+   "escape_share": 0.89,
+   "dive_bites_per_dive": 4.67,
+   "wall_bites_per_min": 0,
+   "breach_share": 0.06,
+   "dive_share": 0.06,
+   "telegraphed_share": 1,
+   "lead_s_median": 1.6,
+   "first_lead_s_median": 1.38,
+   "end_petals": 13.3,
+   "stripped_runs": 0,
+   "kills_per_min": 0,
+   "conservation_max": 0,
+   "feel": {
+    "size": 3.4,
+    "speed_rel": 1.191,
+    "approach": 9.307,
+    "coherence": 0.947,
+    "burstiness": 1.625,
+    "jerk_rel": 0.107
+   }
+  },
+  "hunter": {
+   "burned_per_min": 22.67,
+   "burned_per_encounter": 5.1,
+   "encounters_per_min": 4.44,
+   "escape_share": 0.21,
+   "dive_bites_per_dive": 2.87,
+   "wall_bites_per_min": 0.06,
+   "breach_share": 0.76,
+   "dive_share": 0.76,
+   "telegraphed_share": 1,
+   "lead_s_median": 1.03,
+   "first_lead_s_median": 0.57,
+   "end_petals": 0,
+   "stripped_runs": 6,
+   "kills_per_min": 2.78,
+   "conservation_max": 0,
+   "feel": {
+    "size": 3.4,
+    "speed_rel": 0.971,
+    "approach": -0.84,
+    "coherence": 0.939,
+    "burstiness": 2.11,
+    "jerk_rel": 0.139
+   }
+  },
+  "breaker": {
+   "burned_per_min": 1.78,
+   "burned_per_encounter": 0.32,
+   "encounters_per_min": 5.61,
+   "escape_share": 0.91,
+   "dive_bites_per_dive": 5,
+   "wall_bites_per_min": 0,
+   "breach_share": 0.04,
+   "dive_share": 0.04,
+   "telegraphed_share": 1,
+   "lead_s_median": 1.97,
+   "first_lead_s_median": 1.3,
+   "end_petals": 14.7,
+   "stripped_runs": 0,
+   "kills_per_min": 0,
+   "conservation_max": 0,
+   "feel": {
+    "size": 3.4,
+    "speed_rel": 1.117,
+    "approach": 5.142,
+    "coherence": 0.95,
+    "burstiness": 1.728,
+    "jerk_rel": 0.108
+   }
+  }
+ },
+ "headline": {
+  "careless_per_enc": 6.5,
+  "skilled_per_enc": 0.4,
+  "breaker_per_enc": 0.32,
+  "skilled_over_careless": 0.09,
+  "breaker_over_careless": 0.07
+ },
+ "wall_s": 307
+}

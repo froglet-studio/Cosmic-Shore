@@ -103,13 +103,13 @@ def main():
             ctx.close()
 
         # ---- every mode loads clean ------------------------------------------------------------------------------
-        for mode in ("locust", "lurker", "stampede", "leviathan", "mobber", "grazer", "fortress", "snaptrap"):
+        for mode in ("locust", "lurker", "stampede", "leviathan", "mobber", "grazer", "fortress", "snaptrap", "siege"):
             ctx, pg, errs = page(1024, 700, f"?mode={mode}&go=1&auto=1&seed=11")
             pg.wait_for_timeout(2500)
             n = pg.evaluate("window.__eco.W.species[0].n")
             out[mode] = dict(errors=errs, agents=n)
             if errs: fails.append(f"{mode}: page errors {errs[:3]}")
-            if mode in ("lurker", "snaptrap", "fortress", "leviathan"):
+            if mode in ("lurker", "snaptrap", "fortress", "leviathan", "siege"):
                 pg.screenshot(path=os.path.join(a.shots, f"desktop_{mode}.png"))
             ctx.close()
 

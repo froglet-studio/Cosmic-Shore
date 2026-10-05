@@ -24,9 +24,9 @@
 const SIEGE_DEFAULTS = {
   N: 150, SIZE: 3.4, BODY: 4,
   STALK: 430, DETECT: 640, CRUISE: 120, SPRINT: 270, DIVE: 330,
-  R0: 300, R1: 130, ESC_MARGIN: 45, LUNGE: 45, SEAT_COS: 0.97, CORONA: 1.35,
-  QUORUM: 0.5, T_GATHER: 3.0, T_GATHER_MAX: 5.0, P_GATHER: 0.6, P_CLOSE: 0.86, T_CLOSE: 2.2, T_HOLD: 1.3, T_DIVE: 1.6, T_SCATTER: 1.6, T_COOL: 9.0, T_COOL_ESC: 6.0,
-  FOLLOW_GATHER: 100, LEAD: 1.2, FOLLOW_CLOSE: 25, REGROW_EVERY: 1.0,
+  R0: 300, R1: 130, ESC_MARGIN: 45, LUNGE: 35, SEAT_COS: 0.97, CORONA: 1.35,
+  QUORUM: 0.5, T_GATHER: 3.0, T_GATHER_MAX: 5.0, P_GATHER: 0.6, P_CLOSE: 0.8, T_CLOSE: 2.6, T_HOLD: 1.3, T_DIVE: 1.6, T_SCATTER: 1.6, T_COOL: 10.0, BITE_GAP: 0.25, T_COOL_ESC: 6.0,
+  FOLLOW_GATHER: 100, LEAD: 0.6, FOLLOW_CLOSE: 25, REGROW_EVERY: 1.0,
 };
 const SIEGE_PHASES = ['roam', 'gather', 'close', 'hold', 'dive', 'scatter'];
 
@@ -41,7 +41,7 @@ function Siege(arena, P, o) {
   this.slot = new Float64Array(3 * n);      // unit slot direction on the shell for each member
   this.seated = new Uint8Array(n); this.bit = new Uint8Array(n);
   this.phase = 'roam'; this.tp = 0; this.axis = [0, 0, 1]; this.prog = 0; this.cool = 2.0; this.C = [0, 0, 0]; this.Rs = K.R0; this.fill = 0;
-  this.encounters = 0; this.escapes = 0; this.dives = 0; this.diveBites = 0; this.wallBites = 0; this.strikes = 0; this.breaches = 0;
+  this.encounters = 0; this.escapes = 0; this.dives = 0; this.diveBites = 0; this.wallBites = 0; this.strikes = 0; this.breaches = 0; this._lastBite = -1e9;
   this.events = [];                          // [t, what] - 'gather', 'close', 'hold', 'dive', 'escape', 'scatter'
   this._regrow = 0; this.ablate = o.ablate || null;
   this.buildFib();
@@ -229,14 +229,20 @@ Siege.prototype.act = function (arena, dt) {
       if (!A[i] || this.bit[i]) continue;
       const d = Math.hypot(X[3 * i] - p.pos[0], X[3 * i + 1] - p.pos[1], X[3 * i + 2] - p.pos[2]);
       if (d < r0 + this.size[i] + 4) {
-        this.bit[i] = 1; this.strikes++;
-        if (phase === 'dive') this.diveBites++; else this.wallBites++;
+        this.bit[i] = 1;
+        // one danger contact per BITE_GAP: the members arriving in the same instant are one bite, not fifty
+        if (t - this._lastBite < K.BITE_GAP) continue;
+        this._lastBite = t; this.strikes++;
+        if (this.phase === 'dive') this.diveBites++; else this.wallBites++;
         arena.hit(p, 'bite');
 
       }
     }
   }
-  this.hunterContacts(arena);
+  // committed members (CLOSE..SCATTER) cannot be rammed: a dive must never be a crystal fountain
+  const vuln = this._vuln || (this._vuln = new Uint8Array(n)), committed = this.phase !== 'roam' && this.phase !== 'gather';   // incl. SCATTER: they burst out past you
+  for (let i = 0; i < n; i++) vuln[i] = committed ? 0 : 1;
+  this.hunterContacts(arena, 4, vuln);
   if (phase === 'roam') this.regrow(arena, dt, gx, gy, gz);
   // what a pilot reads as the threat: the WALL (seated members) while a shell stands - the gaps are where it is not;
   // the whole swarm otherwise

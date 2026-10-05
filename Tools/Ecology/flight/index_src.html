@@ -188,6 +188,7 @@ const CAT = {
   mobber:    { label: 'Mobbing flock', truth: 'playful', say: 'Tiny birds roosting on plants. Dawdle (under 100 u/s) or loiter at a roost and they swirl round you; one pulls up (yellow) then dives (orange) for a peck.', counter: 'Keep your speed above 110 u/s; jink when one pulls up.' },
   grazer:    { label: 'Grazers (calm base)', truth: 'cute', say: 'A curious school grazing the scattered flora. A slow ship collects an escort; a fast one scatters them.', counter: 'Nothing to counter - they are the calm the threats are measured against.' },
   fortress:  { label: 'Fortress colony (builders)', truth: 'menacing', say: 'Workers steal loose mass (your trail first) and wall their core in a shell. Cut through the wall and alarm pulls menders to the wound. Fly inside 110 u and the colony screens (orange) then stings (red).', counter: 'Ram through the wall and out before the alarm crosses 0.6; raid the core for its brood crystals.' },
+  siege:     { label: 'Siege swarm (surround + dive)', truth: 'terrifying', say: 'A dim cloud of 150 that stalks you, working round AHEAD of your line. Come within ~640 u and it streams round you into a shell, filling from its own side: the far side stays open as a glowing IRIS (the ring) that shrinks. The shell tightens and glows violet to white-hot (about 4 s of warning), then every member dives at once. Brush the wall once it glows and the dive starts early.', counter: 'Turn and break out through the iris before it closes - it is usually behind you. Never fly into the wall: touching it triggers the dive. After a dive or an escape it scatters, then comes back.' },
   snaptrap:  { label: 'Snap traps (flora)', truth: 'eerie', say: 'A clump of Venus-flytrap plants. A trap senses you, opens WIDE and glows, then sweeps shut on a ship in its mouth. The heart crystal sits in the jaws. Traps turn to face where you fly.', counter: 'Boost through an armed mouth faster than it closes, or pass outside the lobes; break plain lobe prisms by ramming.' },
 };
 const EMO = ['cute', 'playful', 'eerie', 'majestic', 'menacing', 'terrifying'];
@@ -195,6 +196,7 @@ const SPC = { // render style per species: [r,g,b] base, geometry kind, length/w
   grazer: { geo: 'fish', aspect: 1.7 }, locust: { geo: 'dart', aspect: 2.2 }, pack: { geo: 'hunter', aspect: 2.6 },
   thief: { geo: 'dart', aspect: 2.0 }, mobber: { geo: 'bird', aspect: 1.2 }, lurker: { geo: 'gem', aspect: 1.0 },
   stampede: { geo: 'beast', aspect: 1.6 }, leviathan: { geo: 'scale', aspect: 1.3 }, fortress: { geo: 'ant', aspect: 1.4 },
+  siege: { geo: 'hunter', aspect: 1.6 },
 };
 // ------------------------------------------------------------------------------------------------ renderer + scene
 const canvas = document.getElementById('gl');
@@ -357,11 +359,15 @@ const coreMesh = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 1), new THREE.M
 coreMesh.visible = false; scene.add(coreMesh);
 const closureRing = new THREE.Mesh(new THREE.TorusGeometry(1, 0.012, 6, 96), new THREE.MeshBasicMaterial({ color: 0xff4430, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }));
 closureRing.renderOrder = 9; scene.add(closureRing);
+// the siege's IRIS: the open cap of its shell (the way out), drawn as a ring that shrinks to nothing at the dive
+const irisRing = new THREE.Mesh(new THREE.TorusGeometry(1, 0.025, 6, 128), new THREE.MeshBasicMaterial({ color: 0xd070ff, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }));
+irisRing.renderOrder = 9; scene.add(irisRing);
+const _ax = new THREE.Vector3(), _z0 = new THREE.Vector3(0, 0, 1);
 const layers = {};   // species key -> { mesh, sp, prev, cur }
 
 // ------------------------------------------------------------------------------------------------ world
 let W = null, R = 1200;
-const MODES = ['cell', 'grazer', 'pack', 'thief', 'locust', 'lurker', 'stampede', 'leviathan', 'mobber', 'fortress', 'snaptrap'];
+const MODES = ['cell', 'grazer', 'pack', 'thief', 'locust', 'lurker', 'stampede', 'leviathan', 'mobber', 'fortress', 'snaptrap', 'siege'];
 const modeSel = document.getElementById('mode');
 for (const m of MODES) { const o = document.createElement('option'); o.value = m; o.textContent = m === 'cell' ? CAT.cell.label : 'One species: ' + CAT[m].label; modeSel.appendChild(o); }
 let seed = 7;
@@ -763,7 +769,7 @@ function writeAgents(alpha) {
       if (!sp.alive[i]) continue;
       const x = L.prev[3 * i] + (L.cur[3 * i] - L.prev[3 * i]) * alpha, y = L.prev[3 * i + 1] + (L.cur[3 * i + 1] - L.prev[3 * i + 1]) * alpha, z = L.prev[3 * i + 2] + (L.cur[3 * i + 2] - L.prev[3 * i + 2]) * alpha;
       let fx, fy, fz;
-      if (sp.heading && k === 'pack') { fx = sp.heading[3 * i]; fy = sp.heading[3 * i + 1]; fz = sp.heading[3 * i + 2]; }
+      if (sp.heading && (k === 'pack' || k === 'siege')) { fx = sp.heading[3 * i]; fy = sp.heading[3 * i + 1]; fz = sp.heading[3 * i + 2]; }
       else if (k === 'lurker' && !(sp.lunge[i] > 0)) { fx = sp.heading[3 * i]; fy = sp.heading[3 * i + 1]; fz = sp.heading[3 * i + 2]; }
       else { fx = sp.vel[3 * i]; fy = sp.vel[3 * i + 1]; fz = sp.vel[3 * i + 2]; }
       if (fx * fx + fy * fy + fz * fz < 1e-4) { fx = 0; fy = 0; fz = 1; }
@@ -793,6 +799,17 @@ function writeAgents(alpha) {
     closureRing.material.opacity = Math.min(0.85, ringC * 0.9);
     closureRing.material.color.setRGB(1, 0.3 + 0.5 * (1 - ringC), 0.2);
   } else closureRing.material.opacity = 0;
+  const sg = layers.siege && layers.siege.sp;
+  if (sg && (sg.phase === 'gather' || sg.phase === 'close' || sg.phase === 'hold') && sg.prog < 0.999) {
+    const front = 1 - 2 * sg.prog, sinF = Math.sqrt(Math.max(0, 1 - front * front)), C = sg.C, a = sg.axis;
+    // the ring sits on the rim of the open cap (the far side from the cloud), radius = the gap's radius
+    irisRing.position.set(C[0] + a[0] * front * sg.Rs, C[1] + a[1] * front * sg.Rs, C[2] + a[2] * front * sg.Rs);
+    irisRing.scale.setScalar(Math.max(1, sg.Rs * sinF));
+    irisRing.quaternion.setFromUnitVectors(_z0, _ax.set(a[0], a[1], a[2]));
+    const it = sg.phaseIntent();
+    irisRing.material.opacity = Math.min(0.9, 0.25 + 0.65 * it);
+    irisRing.material.color.setRGB(0.75 + 0.25 * it, 0.35 + 0.4 * Math.max(0, it - 0.6), 1 - 0.4 * it);
+  } else irisRing.material.opacity = 0;
 }
 function writeFlora(alpha) {
   heartMesh.count = 0; coreMesh.visible = false;
