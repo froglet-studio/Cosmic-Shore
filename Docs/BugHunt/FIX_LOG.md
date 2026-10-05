@@ -8,6 +8,25 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ---
 
+## BH-4.7 follow-up — PrismTimerManager did not compile (OnDestroy cleared the removed list)
+
+- **Date:** fixed 2026-10-05, found while merging `bleeding-edge` into `Bug_Hunt`.
+- **Symptom:** `CS0103: The name 'scheduledActions' does not exist in the current context` at
+  `PrismTimerManager.cs:264`. From BH-4.7 (`a2e0c23ca`) on, `Bug_Hunt` does not compile in Unity,
+  so no Play mode and none of the BH fixes can be retested.
+- **Root cause:** BH-4.7 replaced the flat `scheduledActions` list with `scheduledByOwner` +
+  `scheduledActionCount` and updated every use except `OnDestroy`. The gate scripts do not compile
+  C#, so BH-4.7's "gate scripts pass" could not catch it.
+- **Fix:** `OnDestroy` clears `scheduledByOwner` and `ownerScratch` and zeroes
+  `scheduledActionCount`: what it cleared before, in the new shape.
+- **Verification:** the Froglet Engine's live compile (`dotnet build Port/src/CosmicShore.Player`,
+  which compiles every runtime file under `Assets/_Scripts` with the real C# compiler) went from
+  1 error to 0. Not run in Unity (no editor in the session). `Editor/` and `Tests/` folders are
+  outside that compile.
+- **PR/commit:** pending.
+
+---
+
 ## BH-5.7 — Delete Wildlife Blitz co-op leftovers (scene + controller)
 
 - **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.

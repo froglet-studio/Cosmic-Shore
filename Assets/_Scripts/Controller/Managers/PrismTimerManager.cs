@@ -261,7 +261,9 @@ namespace CosmicShore.Gameplay
 
             activeTimers.Clear();
             completionTargets.Clear();
-            scheduledActions.Clear();
+            scheduledByOwner.Clear();
+            ownerScratch.Clear();
+            scheduledActionCount = 0;
             dueActions.Clear();
         }
     }

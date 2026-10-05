@@ -57,6 +57,23 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 PrismTimerManager compile fix (BH-4.7 follow-up) (`Bug_Hunt`, 2026-10-05)
+
+**What landed:** `PrismTimerManager.OnDestroy` cleared `scheduledActions`, a field BH-4.7 had
+replaced with `scheduledByOwner` + `scheduledActionCount`, so `Bug_Hunt` did not compile. It now
+clears `scheduledByOwner` and `ownerScratch` and zeroes `scheduledActionCount`
+(`Docs/BugHunt/FIX_LOG.md`, "BH-4.7 follow-up").
+
+**Verified without the editor:** the Froglet Engine's live compile of the runtime
+`Assets/_Scripts` (`dotnet build Port/src/CosmicShore.Player`) went from 1 error to 0.
+
+**Verify in editor:**
+1. The project compiles: the console shows no `CS0103` for `PrismTimerManager.cs`.
+2. Play any arcade mode with prisms, then return to the menu (this unloads the scene and destroys
+   the manager): no `PrismTimerManager` errors or exceptions in the console.
+
+---
+
 ### 🟢 Icon renderer upgrade + authored lamp art (`claude/single-player-offline-fallback-jksga5`, 2026-08-27)
 
 **Landed and verified.** The icon renderer was rebuilt (analytic 0/1 shape + 4×4 supersampling at
