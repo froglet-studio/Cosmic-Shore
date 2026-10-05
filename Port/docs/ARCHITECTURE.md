@@ -277,8 +277,8 @@ toolchain.
 ## 11. Using the engine: screens and controls
 
 The port has **no editor window**. Unity stays the editor; the port is the **player** plus two
-command-line tools. The screens below are the real game running in the port's renderer, captured
-in this environment at 1280×720. Numbered badges mark what to click.
+command-line tools. The screenshots below are the engine's own surfaces: its diagnostics panel and
+its two tools. Numbered badges mark what to click.
 
 ### 11.1 Starting it
 
@@ -290,66 +290,7 @@ in this environment at 1280×720. Numbered badges mark what to click.
 | No window (fast checks) | `CosmicShore --headless --frames 600` |
 | Phone render path on desktop | `COSMIC_SHORE_GLES=1 CosmicShore` |
 
-### 11.2 First launch: three one-time prompts
-
-![Age gate](architecture/ui_age_gate.png)
-
-**Figure 8.** Age gate. **1** Click the field and type a birth year. **2** Click **Continue**.
-
-![Consent](architecture/ui_consent.png)
-
-**Figure 9.** Analytics consent. **1** **No thanks** or **2** **I agree**. In the port, nothing
-leaves the machine either way.
-
-![Username](architecture/ui_username.png)
-
-**Figure 10.** Pilot name. **1** Click the field and type a name. **2** **CONFIRM**.
-
-### 11.3 The main menu (Menu_Main)
-
-![Main menu](architecture/ui_menu.png)
-
-**Figure 11.** Home screen.
-
-| # | Control | What it does |
-|---|---|---|
-| 1 | **Hangar · Ark · Home · Port · Profile** | Top navigation between the menu's screens (gamepad: the shoulder buttons, shown as the L1/R1 hints) |
-| 2 | **R1 / arrow** | Next screen in the top navigation (L1 and a left arrow appear when there is a previous one) |
-| 3 | **Settings (gear)** | Audio, graphics, controls, credits |
-| 4 | **TOYBOX** | The freestyle toys: change vessel, domain or world, paint, spawn life |
-| 5 | **ARCADE** | Pick a game mode, then configure and launch a match |
-| 6 | **ARENA** | Multi-vessel matches |
-| 7 | **MISSION** | Greyed out: not built yet |
-| 8 | **Diagnostics panel** | The game's own performance HUD (section 11.5). It sits on top of your profile chip (pilot name and avatar); press F7 to hide it |
-
-The world behind the menu is live: the cell, its flora and fauna, and your vessel on autopilot.
-The menu's own controls let you take the stick and fly it.
-
-![Arcade](architecture/ui_arcade.png)
-
-**Figure 12.** The Arcade grid. Click a card to open its launch panel.
-
-| # | Control | What it does |
-|---|---|---|
-| 1 | **Weekly challenge** | This week's challenge mode and how long it has left. One attempt per day |
-| 2 | **MAELSTROM** | The tournament mode: random modes back to back, race to 6 points |
-| 3 | **Game card** | Click to open that mode's launch panel (intensity, players, domain, Play) |
-| 4 | **Genre petal** | What kind of game it is: race, making mass, destroying mass, or fighting pilots |
-| 5 | **Star** | Mark the mode as a favourite |
-| 6 | **Party slots** | You plus up to three friends; click a + to invite someone online |
-| 7 | **LEAVE PARTY** | Go back to a party of one |
-
-Scroll down for the rest of the modes. Escape or the Home tab returns to the main menu.
-
-![Toy Box](architecture/ui_toybox.png)
-
-**Figure 13.** The Toy Box. Each card is a toy; the top cards are today's activity and shuffle.
-
-![Settings](architecture/ui_settings.png)
-
-**Figure 14.** Settings.
-
-### 11.4 Flying (keyboard)
+### 11.2 Flying (keyboard)
 
 | Key | Action |
 |---|---|
@@ -367,25 +308,11 @@ Scroll down for the rest of the modes. Escape or the Home tab returns to the mai
 Gamepads work as in the Unity build. On phones, touch replaces all of these and the game uses its
 own touch controls.
 
-![Flying](architecture/ui_flight.png)
-
-**Figure 14b.** Flying in freestyle. Click the crystal in the middle of the home screen to take
-the stick; the menu fades out and this HUD fades in.
-
-| # | Control | What it does |
-|---|---|---|
-| 1 | **Your vessel** | Flies where you steer; its trail is ordinary prisms |
-| 2 | **Drift** | The vessel's core move; the chip under it names the button (here LT / Left Shift) |
-| 3 | **Omni crystal** | What this hull does when it flies through a bright crystal |
-| 4 | **Ability row** | Four abilities, Charge → Mass → Space → Time, each under the element flower that upgrades it. The chips under the cards name their buttons |
-| 5 | **Leave flight** | Back to the menu (same as Escape, or Start on a gamepad) |
-| 6 | **A toy** | Fly through the ring to use it: change vessel, domain or world, paint, spawn life. The same toys are in the Toy Box menu |
-
-### 11.5 The diagnostics panel (top-left)
+### 11.3 The diagnostics panel (top-left)
 
 ![Diagnostics](architecture/ui_diagnostics.png)
 
-**Figure 15.** The game's `DiagnosticsHUD`.
+**Figure 8.** The game's `DiagnosticsHUD`.
 
 | # | Control | What it does |
 |---|---|---|
@@ -397,7 +324,7 @@ the stick; the menu fades out and this HUD fades in.
 | 6 | Command box + **Run** | Type a registered command, e.g. `prisms 50000` (a stress test) or `prisms off` |
 | — | **F7** | Show or hide the panel |
 
-### 11.6 Player command-line options (testing)
+### 11.4 Player command-line options (testing)
 
 | Option | Use |
 |---|---|
@@ -418,16 +345,16 @@ Environment variables:
 - `COSMIC_SHORE_PROJECT=DIR` (use another project or packaged data)
 - `COSMIC_SHORE_GLES=1`
 
-### 11.7 The command-line tools
+### 11.5 The command-line tools
 
 ![cs-asset](architecture/ui_cs_asset.png)
 
-**Figure 16.** `cs-asset`: list a scene's objects, read a field, change it. `--dry-run` shows the
+**Figure 9.** `cs-asset`: list a scene's objects, read a field, change it. `--dry-run` shows the
 change without writing it. Close the scene in Unity before writing to it.
 
 ![cs-build](architecture/ui_cs_build.png)
 
-**Figure 17.** `cs-build android`: player data, then a signed APK. On Windows, double-click
+**Figure 10.** `cs-build android`: player data, then a signed APK. On Windows, double-click
 `Port\build-android.bat`.
 
 ---
