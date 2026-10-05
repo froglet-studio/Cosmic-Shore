@@ -1,7 +1,8 @@
 # One codebase for Windows, iOS and Android — diagnosis and plan
 
-**Status (2026-10-05): diagnosis (§1) and inventory (§2) done; Step 2 (touch controls) in
-progress. Device measurements are deferred, not a gate (owner's call).**
+**Status (2026-10-05): diagnosis (§1) and inventory (§2) done. Step 2 (touch controls) landed on
+this branch, awaiting editor/device verification (`Docs/UNITY_VERIFICATION_CHECKLIST.md`, top
+entry). Device measurements are deferred, not a gate (owner's call).**
 
 ### Decisions recorded (2026-10-05, project owner)
 
@@ -281,7 +282,7 @@ Each step is its own PR into bleeding-edge, and each leaves Windows unchanged un
 |---|---|---|---|---|---|
 | 0 | **Measure** (deferred, not a gate). Development builds on the Samsung and the iPhone; `DiagnosticsHUD` bound verdict + main-thread ms; Garrett's branch on the same Samsung; exact model. | nothing | — | — | — |
 | 1 | **Android build plumbing.** Your two Gradle commits (`0f6b38ba5`, `359ad3d1b`; the namespace fix lives OUTSIDE the EDM4U block, the durable version of the same fix Garrett made inside it). Then decide: ARM64-only, R8 minify + Garrett's `proguard-user.txt` keep rules (the WorkManager crash came from Unity Ads, which your branch removes). Graphics APIs stay Auto (decided). | ProjectSettings (Android only), `Assets/Plugins/Android/*` | none | none | builds |
-| 2 | **Touch controls into bleeding-edge, ungated.** `TouchInputStrategy` (physical-size stick + dead zone, one-thumb mirror, re-zero on lift, throttle carry, events on lift only, 75/25 curve) + touch-only vessel tuning (`touchNoseResponse`, gated to the local human pilot) + binary drift for any unmeasured trigger + the ability-dispatch hardening (§2.2). Not the Squirrel `boostLoopEvent` clear. | `Controller/IO`, `VesselTransformer`, Squirrel/Butterfly prefabs | none (touch only) | **new controls** | **new controls** |
+| 2 | ✅ *(landed on this branch, unverified in editor)* **Touch controls into bleeding-edge, ungated.** `TouchInputStrategy` (physical-size stick + dead zone, one-thumb mirror, re-zero on lift, throttle carry, events on lift only, 75/25 curve) + touch-only vessel tuning (`touchNoseResponse`, gated to the local human pilot) + binary drift for any unmeasured trigger + the ability-dispatch hardening (§2.2). Not the Squirrel `boostLoopEvent` clear. | `Controller/IO`, `VesselTransformer`, Squirrel/Butterfly prefabs | none (touch only) | **new controls** | **new controls** |
 | 3 | **Device tier foundation.** `DeviceTierClassifier`, `PlatformProfileSO` ×3, dev override, a `CSLogChannel` for it, and a mobile branch in `SettingsAutoDetector` that reads the tier. `Desktop` profile = today's behaviour. | `System/`, `Controller/Settings` | identical | correct tier | correct tier |
 | 4 | **Render tier.** `URP_Mobile.asset` + mobile quality level; baked sky (`StaticSkyPanorama`), mesh membrane, post/AA policy, crystal LDR brightness, fold-gate window cap — each selected by the profile. | `_Graphics`, profile | none | per `MobileHigh` | per `MobileLow` |
 | 5 | **Content tier.** Every `PerfStrip` gate becomes a profile read: trail policy, ecology, toybox, menu-UI teardown, Wander/conveyor budgets as per-tier overrides (not edits to the shared SO). The race trail cap only with decision 4 below. | gameplay | none | per `MobileHigh` | per `MobileLow` |

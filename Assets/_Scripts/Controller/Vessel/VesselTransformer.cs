@@ -183,6 +183,20 @@ public class VesselTransformer : MonoBehaviour
                  "not scaled. 1 = no change while stopped.")]
         [SerializeField, Min(0f)] float restrictedTurnMultiplier = 3f;
 
+        [Tooltip("How fast the hull swings onto the rotation the pilot has commanded, per second, " +
+                 "while this machine's HUMAN pilot flies on touch - in a drift as well as out of " +
+                 "one. AI, autopilot and remote hulls always use the fleet's shared response. " +
+                 "0 = the fleet's shared response (1.5/s, a 0.67 s time constant).")]
+        [SerializeField, Min(0f)] float touchNoseResponse = 0f;
+
+        /// <summary>
+        /// The nose closes a LEFTOVER gap - one a discontinuous command left behind (a 180 degree
+        /// flip, a device switch from a lagging pad mid-turn) - no faster than this multiple of the
+        /// vessel's own combined max turn rate. It never binds while flying: chasing a command that
+        /// turns at w, an exponential follower moves at most w, which is under the cap.
+        /// </summary>
+        const float NoseCatchUpTurnRateMultiple = 1.5f;
+
         /// <summary>Pitch/yaw rate scalar for this frame — <c>restrictedTurnMultiplier</c> while
         /// the vessel is translation-restricted, 1 otherwise. Read at use time (the stance is
         /// toggled mid-flight), and applied by both this class's Pitch/Yaw and the overrides in
@@ -287,7 +301,9 @@ public class VesselTransformer : MonoBehaviour
         public Quaternion CommandedRotation => accumulatedRotation;
 
         /// <summary>Per-second fraction with which the hull's rotation and the smoothed cruise
-        /// speed close on their commanded values (the shared <c>LERP_AMOUNT</c>). Read-only.</summary>
+        /// speed close on their commanded values (the shared <c>LERP_AMOUNT</c>). Read-only.
+        /// Exact for every AI and autopilot hull: <see cref="touchNoseResponse"/> only ever
+        /// applies to a local human touch pilot (see <see cref="NoseFollowFraction"/>).</summary>
         public static float RotationFollowRate => LERP_AMOUNT;
 
         /// <summary>The boost ceiling this hull's skim boost saturates at. Read-only.</summary>
@@ -349,6 +365,14 @@ public class VesselTransformer : MonoBehaviour
         private float _frameTriggerSum;
         private bool _driftEaseOutPending;
         private const float DRIFT_EASE_SPEED = 12f; // ~83ms for 0→1 ramp
+
+        /// <summary>Trigger travel below which a RUNNING drift is read as having no analog
+        /// measurement at all (a digital trigger) and falls back to a full pull.</summary>
+        private const float MeasuredTriggerTravel = 0.01f;
+
+        /// <summary>Whether the last <see cref="GetTriggerSum"/> took the binary fallback - no
+        /// measured trigger travel - and so needs the simulated pull/release ease.</summary>
+        private bool _triggerSumBinary;
         public bool IsDriftActive => _singleDriftActive || _sharpDriftActive || _driftEaseOutPending;
 
         private bool _driftSpeedHeld;
@@ -376,8 +400,7 @@ public class VesselTransformer : MonoBehaviour
 
             // Smooth trigger sum for non-analog input to simulate a quick trigger pull
             float rawTriggerSum = GetTriggerSum();
-            bool needsEasing = InputStatus != null
-                            && InputStatus.ActiveInputDevice != InputDeviceType.Gamepad;
+            bool needsEasing = _triggerSumBinary;
             _frameTriggerSum = needsEasing
                 ? Mathf.MoveTowards(_frameTriggerSum, rawTriggerSum, DRIFT_EASE_SPEED * Time.deltaTime)
                 : rawTriggerSum;
@@ -507,20 +530,75 @@ public class VesselTransformer : MonoBehaviour
             Yaw();
             Pitch();
 
-            if (InputStatus != null && InputStatus.IsGyroEnabled)
-            {
-                transform.rotation = Quaternion.Slerp(
-                    transform.rotation,
-                    accumulatedRotation * InputStatus.GetGyroRotation(),
-                    LERP_AMOUNT * Time.deltaTime);
-            }
-            else
-            {
-                transform.rotation = Quaternion.Slerp(
-                    transform.rotation,
-                    accumulatedRotation,
-                    LERP_AMOUNT * Time.deltaTime);
-            }
+            Quaternion target = InputStatus != null && InputStatus.IsGyroEnabled
+                ? accumulatedRotation * InputStatus.GetGyroRotation()
+                : accumulatedRotation;
+
+            transform.rotation = Quaternion.Slerp(
+                transform.rotation, target, NoseFollowFraction(target, Time.deltaTime));
+        }
+
+        /// <summary>
+        /// This frame's slerp fraction from the hull's rotation toward the commanded one.
+        ///
+        /// The fleet value, <c>LERP_AMOUNT * dt</c>, is a first-order lag with a 0.67 s time
+        /// constant: while turning at w the nose trails the command by w / 1.5 - eighty degrees
+        /// at the Squirrel's full 120 deg/s - and keeps swinging for a second after the input
+        /// stops. A stick hides most of that: its spring returns it to centre the moment the
+        /// thumb lets go, and the pad's cosine curve keeps mid-stick rates low. Glass has neither.
+        /// A thumb has to be walked back to an origin it cannot feel, while the hull is still
+        /// coming round from the last input, so the pilot reads the swing as their own and
+        /// counter-steers into it. That is the overcorrection.
+        ///
+        /// A vessel that authors <see cref="touchNoseResponse"/> follows at that rate instead,
+        /// for the local human pilot on touch (<see cref="IsLocalHumanTouchPilot"/>) - in a drift
+        /// too, so the remaining thumb steers the slide as crisply
+        /// as it steers straight flight, and the drift's Mult turns it sharper exactly as it does
+        /// on a pad. The steady turn RATE is unchanged - only the lag behind it shrinks (at a
+        /// full-lock drift's 216 deg/s, 144 degrees behind at the fleet rate, 24 at 9). Never
+        /// slower than the fleet.
+        /// </summary>
+        protected float NoseFollowFraction(Quaternion target, float dt)
+        {
+            float fleet = LERP_AMOUNT * dt;
+            if (touchNoseResponse <= LERP_AMOUNT || !IsLocalHumanTouchPilot)
+                return fleet;
+
+            float t = 1f - Mathf.Exp(-touchNoseResponse * dt);
+
+            float gap = Quaternion.Angle(transform.rotation, target);
+            if (gap > 1e-3f)
+                t = Mathf.Min(t, MaxCombinedTurnRateDegreesPerSecond() * NoseCatchUpTurnRateMultiple * dt / gap);
+
+            return Mathf.Max(t, fleet);
+        }
+
+        /// <summary>
+        /// True only while THIS machine's human flies the hull on glass. A handheld selects the
+        /// touch strategy for every <c>InputController</c> on it (<c>SystemInfo.deviceType</c>),
+        /// so the AI players and the menu's autopilot also report <see cref="InputDeviceType.Touch"/>
+        /// there - and an autopilot steering off a hull it models at <see cref="RotationFollowRate"/>
+        /// (the Skim Race pilot) would mis-lead every corner if its own hull answered faster. A
+        /// remote player's replica is not ours to tune either. Same test as the gun hull's camera
+        /// gate (<c>GunVesselTransformer.IsLocalPilotCamera</c>).
+        /// </summary>
+        bool IsLocalHumanTouchPilot =>
+            InputStatus != null && InputStatus.ActiveInputDevice == InputDeviceType.Touch
+            && VesselStatus != null && !VesselStatus.AutoPilotEnabled
+            && VesselStatus.Player != null && VesselStatus.Player.IsLocalPilot;
+
+        /// <summary>The fastest the command can rotate with every axis at full stick at once -
+        /// pitch, yaw and roll are applied as three rotations per frame, so their rates combine
+        /// as a vector. The catch-up cap is measured against THIS rather than
+        /// <see cref="MaxTurnRateDegreesPerSecond"/> (one axis), or a full pitch+yaw+roll turn
+        /// would hit the cap in steady flight and fall back toward the fleet lag.</summary>
+        float MaxCombinedTurnRateDegreesPerSecond()
+        {
+            float fromSpeed = speed * RotationThrottleScaler;
+            float pitch = (fromSpeed + PitchScaler) * TurnScalar;
+            float yaw = (fromSpeed + YawScaler) * TurnScalar;
+            float roll = (fromSpeed + RollScaler) * RollScalar;
+            return Mathf.Sqrt(pitch * pitch + yaw * yaw + roll * roll);
         }
 
         // ----------------------------- Public Controls -----------------------------
@@ -672,8 +750,9 @@ public class VesselTransformer : MonoBehaviour
 
             if (!_singleDriftActive && !_sharpDriftActive)
             {
-                bool needsEasing = InputStatus != null
-                                && InputStatus.ActiveInputDevice != InputDeviceType.Gamepad;
+                // A binary drift (no measured trigger travel) has no trigger to ease it out, so it
+                // is eased here; an analog one already rode the trigger back down.
+                bool needsEasing = _triggerSumBinary;
                 if (needsEasing)
                     _driftEaseOutPending = true;
                 else
@@ -730,26 +809,42 @@ public class VesselTransformer : MonoBehaviour
         /// <item>TWO stacked tiers (the Scarab: single + sharp on the same trigger) — the 0-1
         /// travel is remapped across 0-2 so one trigger spans no-drift → single → sharp.</item>
         /// </list>
-        /// For non-gamepad input, returns a binary value based on which drift level is active.
+        ///
+        /// <para><b>Analog when measured, BINARY when not.</b> Any input that cannot report trigger
+        /// travel gets the binary fallback: a drift that is on is a FULL pull (1 single, 2 sharp).
+        /// That is every non-gamepad device - a touch thumb LIFT is a full pull, a key is a full
+        /// pull - and a gamepad whose trigger is DIGITAL (or mapped as a plain button), detected as
+        /// a drift that is running while the trigger reports no travel at all. Before this a
+        /// digital pad trigger started the drift and then fed it a depth of zero, i.e. no drift.
+        /// One rule for every device, so a lift on glass and a button on a pad feel like the same
+        /// buried trigger.</para>
         /// </summary>
         private float GetTriggerSum()
         {
             if (InputStatus == null)
                 return 0f;
 
+            bool drifting = _singleDriftActive || _sharpDriftActive;
+
             if (InputStatus.ActiveInputDevice == InputDeviceType.Gamepad)
             {
-                if (!singleTriggerDrift)
-                    return InputStatus.LeftTriggerAnalog + InputStatus.RightTriggerAnalog;
-
                 // A hull that never binds a sharp tier has exactly one drift to scale, so the
                 // trigger's travel maps straight onto it instead of maxing out at half-pull.
-                return _sharpDriftParamsSet
-                    ? InputStatus.LeftTriggerAnalog * 2f
-                    : InputStatus.LeftTriggerAnalog;
+                float analog = !singleTriggerDrift
+                    ? InputStatus.LeftTriggerAnalog + InputStatus.RightTriggerAnalog
+                    : _sharpDriftParamsSet
+                        ? InputStatus.LeftTriggerAnalog * 2f
+                        : InputStatus.LeftTriggerAnalog;
+
+                if (analog > MeasuredTriggerTravel || !drifting)
+                {
+                    _triggerSumBinary = false;
+                    return analog;
+                }
             }
 
-            // Non-gamepad fallback: binary intensity
+            // Binary fallback: a drift that is on is a full pull.
+            _triggerSumBinary = true;
             if (_sharpDriftActive) return 2f;
             if (_singleDriftActive) return 1f;
             return 0f;

@@ -485,9 +485,12 @@ namespace CosmicShore.Gameplay.Audio
 
             if (singleTriggerDepth)
             {
-                // Mirrors VesselTransformer.GetTriggerSum: only a gamepad
-                // measures the pull; every other device drifts at full depth.
+                // Mirrors VesselTransformer.GetTriggerSum: analog when measured, a full pull when
+                // not. Only a gamepad measures the pull, and a DIGITAL pad trigger reads no travel
+                // while the drift runs - that is a full pull too, like every other device.
                 if (input.ActiveInputDevice != InputDeviceType.Gamepad)
+                    return 1f;
+                if (left <= 0.01f)
                     return 1f;
                 return Mathf.Clamp01((left - triggerDeadzone) / Mathf.Max(1f - triggerDeadzone, 0.0001f));
             }

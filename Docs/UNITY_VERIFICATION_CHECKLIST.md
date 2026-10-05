@@ -57,6 +57,52 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Touch controls from the Android strip branch, for every touch device (`claude/serene-edison-lfv24f`, 2026-10-05)
+
+Step 2 of `Docs/PLATFORM_UNIFICATION.md`. Ported from `claude/android-performance-stripped-dap5z2`
+(where it was played on Android), **ungated**: it now runs on iOS too. No editor, no `unity` CLI in
+the authoring session, so `/verify-unity` did NOT run. Out-of-editor: Roslyn pass over the five C#
+files (syntax and duplicate members only; method bodies cannot bind without Unity's assemblies,
+negative-controlled with CS1002 / CS0102 / CS0111), the repo's C# gates, and
+`Tools/Build/touch_drift_slip.py --check` / `--self-test`.
+
+**What landed**
+
+1. `TouchInputStrategy`: stick radius 0.6" and dead zone 0.05" (physical size, 12 px floor);
+   one-thumb flight mirrors the live thumb onto both sticks at full authority (pitch + yaw only);
+   sticks re-zero on every one↔two-thumb change; throttle held through a lift and carried back;
+   Left/RightStickAction fire only on a thumb **lift**, never on the first thumb down (was a
+   strip-only flag).
+2. `VesselTransformer.touchNoseResponse` (Squirrel **9**, Butterfly **5**, fleet 0 = 1.5): the hull
+   follows the thumb faster, **only for this machine's human pilot on touch** — AI, the menu
+   autopilot and remote replicas keep the fleet's 1.5 (new `IsLocalHumanTouchPilot`; the strip
+   applied it to every hull on a handheld, AI included).
+3. Drift with no measured trigger travel is a full pull (`GetTriggerSum`, `DriftAudioController`):
+   a touch thumb lift, a key, and now a **digital-trigger gamepad** (it used to drift at depth 0).
+4. `R_VesselActionHandler` reconciles its button subscription with the pause state every frame
+   (local pilot only) and re-attaches the pause source in `OnEnable`; DiagnosticsHUD "Abilities"
+   rows + the Squirrel's "boost ring" row (Development builds only).
+
+**Verify in editor / on device**
+
+1. Project compiles; no new console errors entering Menu_Main or a race.
+2. iOS or Android, Squirrel, freestyle: thumbs centred = straight flight (no creeping turn);
+   a turn stops when the thumbs return to centre, no swing to correct.
+3. Lift the **left** thumb: boost ring ahead, vessel keeps its line and speed; put it back: no yank.
+4. Lift the **right** thumb: full drift at once, left thumb steers it; put it back: straightens at speed.
+5. Butterfly on touch: right thumb down FIRST toggles nothing; lifting the left thumb toggles
+   Mass/Dust; lifting the right thumb and putting it back performs a Fold.
+6. Menu lava lamp (autopilot) and AI Squirrels in a Skim Race on a phone steer as before (fleet
+   response) — the AI's corner leads should not overshoot.
+7. Windows: pad and keyboard flight unchanged. A pad with a DIGITAL left trigger now drifts.
+8. Pause and un-pause mid-flight on any device: abilities still fire afterwards. In a Development
+   build the DiagnosticsHUD "Abilities" rows read `listening yes` while flying.
+
+**First-pass tuning:** `touchNoseResponse` (prefab, per hull) — raise if the nose still trails the
+thumb, lower toward 1.5 if it feels twitchy. Touch curve `Ease` 75/25 (unchanged on bleeding-edge).
+
+---
+
 ### 🟢 Icon renderer upgrade + authored lamp art (`claude/single-player-offline-fallback-jksga5`, 2026-08-27)
 
 **Landed and verified.** The icon renderer was rebuilt (analytic 0/1 shape + 4×4 supersampling at
