@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- cs-mcp: the Froglet Engine's MCP server. Claude Code (the CLI, the desktop app, the
+       launcher's CLAUDE page) talks to it over stdio to build and test the engine and to start,
+       watch and drive a running player through its control port. No package dependencies:
+       stdout carries only the protocol. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>cs-mcp</AssemblyName>
+    <RootNamespace>CosmicShore.Mcp</RootNamespace>
+    <Nullable>enable</Nullable>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+</Project>

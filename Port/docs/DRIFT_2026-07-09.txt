@@ -1,0 +1,58 @@
+DRIFT-SYNC 2026-07-09 — bleeding-edge 97d4ab29 → f2b8f5aa merged in
+=====================================================================
+
+Upstream change: PR #581 "fly-by-numbers painting toy" rework — the painting toy
+went from a single ShapeDefinition + MenuShapePainter to a multi-stroke,
+multi-domain, resumable, shareable painting system with a default gallery
+(Star → Rainbow → Saturn → Taj Mahal). 19 C# files changed/added upstream.
+
+PORT COUNTERPART — all ported this iteration (build + 1549 tests green both
+configs; 5 CLI modes exit 0; race diag byte-identical `trail 786`):
+
+NEW files ported (verbatim + README substitutions):
+  Controller/Toys/PaintingPresetLibrary.cs   (551L — preset geometry + ShapeDefinition converter)
+  Controller/Toys/PaintingRunner.cs          (726L — the runtime; UniTask→GameTask at 3 async sites + 5 Yields + 2 Delays)
+  Controller/Toys/PaintingShareExporter.cs   (291L — HTML web-share export; System.IO/Text verbatim)
+  Controller/Toys/PaintingPrismStore.cs      (131L — per-painting prism persistence via DataAccessor)
+  Controller/Toys/PaintingProgressStore.cs   (107L — cross-session progress via DataAccessor)
+  Controller/Toys/ToyIdleSpin.cs             (29L)
+  ScriptableObjects/Toys/PaintingDefinitionSO.cs (182L — strokes + presets + PaintingPreset/PaintingStroke)
+  Utility/DataPersistence/DataAccessor.cs    (NEW dependency — Newtonsoft→System.Text.Json; BinaryFormatter dead-code carried)
+
+CHANGED ported files drift-synced:
+  Controller/Toys/PaintingToy.cs             (re-ported — PaintingRunner-based, gates, share/repaint)
+  Controller/Toys/ToyFactory.cs              (re-ported — cone/jack/ring meshes, CreateGate, material cache;
+                                              one carried UI-shell deviation: 3D-TMP label RectTransform)
+  Controller/Toys/DomainChangerToySet.cs     (cone bodies in domain prism material)
+  Controller/Toys/Toy.cs                     (deferred activation: ActivateDeferred + protected virtual Update)
+  Controller/Toys/ToyboxController.cs        (painting default: no shape wiring → default gallery)
+  ScriptableObjects/Toys/PaintingToyDefinitionSO.cs (re-ported — fans a gallery of stations)
+  Controller/Vessel/VesselPrismController.cs (trail pen-up: SetSpawnerPaused + SpawnPrismType/PrismSpawnChannel)
+  DELETED Controller/Toys/MenuShapePainter.cs (retired upstream)
+  SilhouetteView.cs — NO drift-sync needed (port is a #13 shell; upstream change was in un-ported pool teardown)
+
+ENGINE GROWTHS (per the placeholder precedent):
+  Math/Color32.cs                    — byte RGBA + implicit Color conversions (ToyFactory material cache key)
+  Rendering/Renderers.cs             — LineRenderer.loop
+  Compat/EngineCompat.cs             — Application.OpenURL (headless log)
+  Compat/NativeShare.cs              — global-namespace fluent share shim (headless log; #else branch)
+  Object.cs + SceneGraph/Scene.cs    — FindObjectsByType<T>(FindObjectsSortMode) + Scene.FindObjectsOfType<T>
+  SceneGraph/FindObjectsSortMode.cs  — the enum
+  SceneGraph/GameObjectCancellationExtensions.cs — GameObject.GetCancellationTokenOnDestroy()
+
+CLIENT (bespoke port code): FreestyleSim/FreestyleWindow now find PaintingRunner
+(not the deleted MenuShapePainter) for teardown + guide-LineRenderer rendering.
+
+TESTS: rewrote the 2 obsolete PaintingToyTests (MenuShapePainter-based) to the new
+spawn→runner flow; updated 3 ToyboxController placement tests + 1 convergence test
+for the new gallery (MakePaintingDef authors a single painting → one station;
+default toybox fans 4 painting stations → 7 roots for 4 toy types).
+
+DIAG CHANGE (intended, deterministic): freestyle@300 `toys 9` → `toys 12` — the
+painting toy now fans its 4-station default gallery instead of one station
+(4 painting + vessel-changer + domain-changer + conveyor). PNG byte-identical
+across runs. race@1200 unchanged (`trail 786`).
+
+FOLLOW-UP (deferred, noted in PORT_PLAN): port upstream's new
+PaintingPresetLibraryTests.cs (221L NUnit) into CosmicShore.Tests.Ported for
+additive geometry coverage of the new preset system.
