@@ -832,9 +832,14 @@ from cute to terrifying.
 
 1. **Cute.** Fly slowly at a sparse substrate locust swarm. It should feel cute or harmless.
 2. **Terrifying.** Fly at a dense, hungry locust storm. It should feel terrifying.
-3. **The pack.** Approach the substrate pack directly.
-   - The probe says it goes stalk (about 2.5 s), then ring (about 3 s), then strike.
-   - Note whether the ring reads as menace before the strike. The probe saw no menacing window (§27.3).
+3. **The pack (round 11-12 ring hold, `overnight/packhold`; `Docs/SUBSTRATE_FAUNA.md` §7.7).** Approach the
+   substrate pack directly and slowly.
+   - Once the six hunters surround you, the ring should circle slowly and tighten for about 6 s. No one should strike
+     during that time, and nothing should freeze.
+   - Then every hunter should dive in at once.
+   - Repeat, but sprint out through the gap halfway through the hold. Nobody should strike on the way out, and the
+     ring should re-form around you.
+   - Note whether the held ring reads as menace (the probe: eerie at cruise, mostly terror at hover).
 4. **Swarm bodies.** Fly through a whale and a dragonfly body. Expect awe at range and dread inside them.
 5. **Shield.** Hound a pufferfish (Charge) shield member until it puffs.
    - It must still deflect shots.

@@ -2650,6 +2650,7 @@ species where the research has one. Numbers are the ensemble's top probability.
 | Swarm jellyfish locust (Space) | majestic .38 | strike majestic .46 | (no research body) | majestic |
 | Swarm dragonfly hunter (Time) | menacing .34 | plates majestic .37; strike **terrifying .50** | menacing .46 | menacing |
 | Substrate pack | terrifying .42 | strike T .42; winded T .30; ring T (1 window) | substrate playful .84; bestiary menacing .29 | bestiary pack terrifying 4/4 |
+| Substrate pack, demo ring hold (round 11-12) | terrifying .37 | ring T .34, with menacing/eerie windows; winded T .30 (cruise: ring **eerie** .33) | (no research model of the hold) | menace, then terror |
 | Substrate locust, sparse and fed | **cute .72** | solitary cute .70 | cute .73; bestiary cute .58 | cute .86 |
 | Substrate locust, dense and hungry | **terrifying .85** | storm T .80; solitary neutral .62 | terrifying .75 | terrifying .95 |
 | Substrate lurker | terrifying .41 | snap T .37; creep cute | substrate playful .23; bestiary neutral .35 | eerie, terror at the snap |
@@ -2707,11 +2708,15 @@ changed.**
       held ring reads **playful** at hover, not menacing. The research's menacing ring (0.37-0.42) was 4-5 members of
       14-18 u. The game's pack is 6 members of 12 u, and its count and size are in the cell's volume ladder (round
       11b §7.4).
-  - **What would deliver the beat** is a design change outside the research's model, so it was not made:
+  - **What would deliver the beat** is a design change outside the research's model:
     - a ring-hold timer (hold ≥ 6 s after closure saturates, then strike together); or
     - fewer, larger hunters (4-5 at 14-18 u), which re-tunes the volume ladder.
-    The wanderer, telegraph (0.4-0.7 s) and counterplay assertions would have to be re-checked for either. The search
-    log is in this round's report.
+  - **Round 11-12 shipped the first, as an opt-in** (`RingHoldSeconds`: 0 = research; the demo cell's pack 6 s;
+    `Docs/SUBSTRATE_FAUNA.md` §7.7).
+    - The straight-in read now has a menacing or eerie ring window before the strike in 6/6 runs (`pack_hold`,
+      asserted). The ring reads eerie at cruise and mostly terrifying at hover.
+    - The wanderer, telegraph (0.5 s), together, tightening and counterplay checks pass. Breaking out of the ring
+      resets the hold in 5/5 dashes.
 - **Substrate pack in the research model reads playful .84.** This is the research's known finding: its substrate
   pack is a jittery small-agent cloud. The game follows the bestiary's terrifying intent instead.
 - **Lurker.** The research model reads playful at the snap and the bestiary model reads neutral. The game reads

@@ -708,12 +708,15 @@
     "TTpTppTTTTTTppTTTTTTpppppTT",
     "pppJTTTTTTTTTpTTpppppppppTp"
    ],
+   "beats": [
+    false
+   ],
    "peak_threat": 0.781,
    "mean_threat": 0.507,
    "log": [
-    "emotion export: substrate pack seed 7, 6 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/substrate_out.f32",
-    "emotion export: substrate pack seed 23, 6 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/substrate_out.f32",
-    "emotion export: substrate pack seed 41, 6 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/substrate_out.f32"
+    "emotion export: substrate pack seed 7, 6 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32",
+    "emotion export: substrate pack seed 23, 6 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32",
+    "emotion export: substrate pack seed 41, 6 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32"
    ]
   },
   "research/hover": {
@@ -754,6 +757,7 @@
     "ppppppppppppppppppppppppppp",
     "ppppppppppppppppppppppppppp"
    ],
+   "beats": [],
    "peak_threat": 0.234,
    "mean_threat": 0.135
   },
@@ -799,6 +803,7 @@
     "MMMTTTTeeMMMMMMMMMJnnnJJJJJ",
     "MMMTTTTMeMMMMMMMMMMMMMTeeMM"
    ],
+   "beats": [],
    "peak_threat": 0.639,
    "mean_threat": 0.358
   },
@@ -903,12 +908,17 @@
     "pTJMeTTTTTTTppTTMMMMMTTTTep",
     "pJJeTTTTeeeeTTTTeTTTTTTTTTT"
    ],
+   "beats": [
+    false,
+    false,
+    false
+   ],
    "peak_threat": 0.752,
    "mean_threat": 0.477,
    "log": [
-    "emotion export: substrate pack seed 7, 6 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/substrate_out.f32",
-    "emotion export: substrate pack seed 23, 6 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/substrate_out.f32",
-    "emotion export: substrate pack seed 41, 7 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/substrate_out.f32"
+    "emotion export: substrate pack seed 7, 6 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32",
+    "emotion export: substrate pack seed 23, 6 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32",
+    "emotion export: substrate pack seed 41, 7 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32"
    ]
   },
   "research/cruise": {
@@ -949,6 +959,7 @@
     "ppppppppppppppppppppppppppp",
     "ppppppppppppppppppppppppppp"
    ],
+   "beats": [],
    "peak_threat": 0.174,
    "mean_threat": 0.057
   },
@@ -994,6 +1005,7 @@
     "TTnnnJJnMpJJnnnnJJJJJJJJJJJ",
     "pTnnMMMMnnnJJJMMMMMMnnnJnMM"
    ],
+   "beats": [],
    "peak_threat": 0.509,
    "mean_threat": 0.214
   }
@@ -1054,12 +1066,13 @@
     "ccccccccccccccccccccccccccc",
     "ccccccccccccccccccccccccccc"
    ],
+   "beats": [],
    "peak_threat": 0.089,
    "mean_threat": 0.037,
    "log": [
-    "emotion export: substrate locust_sparse seed 7, 48 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/substrate_out.f32",
-    "emotion export: substrate locust_sparse seed 23, 46 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/substrate_out.f32",
-    "emotion export: substrate locust_sparse seed 41, 48 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/substrate_out.f32"
+    "emotion export: substrate locust_sparse seed 7, 48 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32",
+    "emotion export: substrate locust_sparse seed 23, 46 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32",
+    "emotion export: substrate locust_sparse seed 41, 48 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32"
    ]
   },
   "research/hover": {
@@ -1119,6 +1132,7 @@
     "cccccccccccppppcccccccccccc",
     "ccccccccccccccccccccccccccc"
    ],
+   "beats": [],
    "peak_threat": 0.111,
    "mean_threat": 0.038
   },
@@ -1162,6 +1176,7 @@
     "ccccccccccTTTTTTTccTcTTTTTT",
     "cccccccccccccnnccccncccccTT"
    ],
+   "beats": [],
    "peak_threat": 0.803,
    "mean_threat": 0.151
   },
@@ -1204,12 +1219,13 @@
     "ccccccccccccccccccccccccccc",
     "ccccccccccccccccccccccccccc"
    ],
+   "beats": [],
    "peak_threat": 0.021,
    "mean_threat": 0.011,
    "log": [
-    "emotion export: substrate locust_sparse seed 7, 61 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/substrate_out.f32",
-    "emotion export: substrate locust_sparse seed 23, 57 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/substrate_out.f32",
-    "emotion export: substrate locust_sparse seed 41, 55 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/substrate_out.f32"
+    "emotion export: substrate locust_sparse seed 7, 61 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32",
+    "emotion export: substrate locust_sparse seed 23, 57 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32",
+    "emotion export: substrate locust_sparse seed 41, 55 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32"
    ]
   },
   "research/cruise": {
@@ -1251,6 +1267,7 @@
     "ccccccccccccccccnccccccnnnn",
     "ccccccccccccccccnnccccncccc"
    ],
+   "beats": [],
    "peak_threat": 0.024,
    "mean_threat": 0.013
   },
@@ -1294,6 +1311,7 @@
     "cccccccccnccccccTTTcccccccc",
     "ccnccccccccncccccccnnnnnnnn"
    ],
+   "beats": [],
    "peak_threat": 0.67,
    "mean_threat": 0.062
   }
@@ -1355,12 +1373,13 @@
     "TTTTTTTTTTTTTTTTTnnnnnnnnnn",
     "TTTTTTTTTTTTTTTTTnnnnnnnnnn"
    ],
+   "beats": [],
    "peak_threat": 0.907,
    "mean_threat": 0.512,
    "log": [
-    "emotion export: substrate locust_dense seed 7, 0 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/substrate_out.f32",
-    "emotion export: substrate locust_dense seed 23, 0 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/substrate_out.f32",
-    "emotion export: substrate locust_dense seed 41, 0 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/substrate_out.f32"
+    "emotion export: substrate locust_dense seed 7, 0 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32",
+    "emotion export: substrate locust_dense seed 23, 0 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32",
+    "emotion export: substrate locust_dense seed 41, 0 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32"
    ]
   },
   "research/hover": {
@@ -1419,6 +1438,7 @@
     "TTTTTTTTTTTTTTTTppppccccccc",
     "TTTTTTTTTTTTTTTTTpppppppppp"
    ],
+   "beats": [],
    "peak_threat": 0.878,
    "mean_threat": 0.548
   },
@@ -1479,12 +1499,13 @@
     "TTTTTTTTTTTTTTpTTnnnnnnnnnn",
     "TTTTTTTppppTTTTpTnnnnnnnnnn"
    ],
+   "beats": [],
    "peak_threat": 0.892,
    "mean_threat": 0.403,
    "log": [
-    "emotion export: substrate locust_dense seed 7, 0 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/substrate_out.f32",
-    "emotion export: substrate locust_dense seed 23, 0 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/substrate_out.f32",
-    "emotion export: substrate locust_dense seed 41, 0 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/substrate_out.f32"
+    "emotion export: substrate locust_dense seed 7, 0 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32",
+    "emotion export: substrate locust_dense seed 23, 0 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32",
+    "emotion export: substrate locust_dense seed 41, 0 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32"
    ]
   },
   "research/cruise": {
@@ -1527,6 +1548,7 @@
     "TTTTTTTTTTTTTTTpppppppppppn",
     "TTTTTTTpTppTTTTTppppppppppp"
    ],
+   "beats": [],
    "peak_threat": 0.902,
    "mean_threat": 0.456
   }
@@ -1607,12 +1629,13 @@
     "TTTTTTTpppppppTTTTeeTTTTppp",
     "cpTTTTTTpppppeTTTTTppppeeee"
    ],
+   "beats": [],
    "peak_threat": 0.871,
    "mean_threat": 0.426,
    "log": [
-    "emotion export: substrate lurker seed 7, 12 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/substrate_out.f32",
-    "emotion export: substrate lurker seed 23, 12 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/substrate_out.f32",
-    "emotion export: substrate lurker seed 41, 12 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/substrate_out.f32"
+    "emotion export: substrate lurker seed 7, 12 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32",
+    "emotion export: substrate lurker seed 23, 12 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32",
+    "emotion export: substrate lurker seed 41, 12 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32"
    ]
   },
   "research/hover": {
@@ -1689,6 +1712,7 @@
     "pppTppppppppppnnnnnnnnnnnnn",
     "npppppppppnnnnnnnnnnppppppp"
    ],
+   "beats": [],
    "peak_threat": 0.507,
    "mean_threat": 0.164
   },
@@ -1732,6 +1756,7 @@
     "ncccccccncnnnnnnnnnnnnnnnnn",
     "ncccccccnnnnnnnncccccccnnnn"
    ],
+   "beats": [],
    "peak_threat": 0.236,
    "mean_threat": 0.075
   },
@@ -1844,12 +1869,13 @@
     "ppnnnnnnnnnnnnnnnnennnnnnnn",
     "pppnepppnnnnnnnnnnnnnnnnnne"
    ],
+   "beats": [],
    "peak_threat": 0.297,
    "mean_threat": 0.046,
    "log": [
-    "emotion export: substrate lurker seed 7, 12 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/substrate_out.f32",
-    "emotion export: substrate lurker seed 23, 12 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/substrate_out.f32",
-    "emotion export: substrate lurker seed 41, 12 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/substrate_out.f32"
+    "emotion export: substrate lurker seed 7, 12 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32",
+    "emotion export: substrate lurker seed 23, 12 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32",
+    "emotion export: substrate lurker seed 41, 12 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32"
    ]
   },
   "research/cruise": {
@@ -1908,6 +1934,7 @@
     "ppppppppppppnnnppppppnnnnnn",
     "ppppppppppnnnnnnnnnnnnnnnnn"
    ],
+   "beats": [],
    "peak_threat": 0.39,
    "mean_threat": 0.087
   },
@@ -1951,6 +1978,7 @@
     "ccnncnnnnnnnnnnnnnnnnnnnnnn",
     "ccnnnnnnnnnnnnnnnnnnnnnnnnn"
    ],
+   "beats": [],
    "peak_threat": 0.159,
    "mean_threat": 0.038
   }
@@ -2838,6 +2866,193 @@
    ],
    "peak_threat": 0.204,
    "mean_threat": 0.087
+  }
+ },
+ "substrate pack_hold": {
+  "game/hover": {
+   "viewer": "hover",
+   "run": {
+    "top": "terrifying",
+    "p": {
+     "cute": 0.016,
+     "playful": 0.155,
+     "eerie": 0.148,
+     "majestic": 0.089,
+     "menacing": 0.191,
+     "terrifying": 0.367,
+     "neutral": 0.034
+    }
+   },
+   "phases": {
+    "ring": {
+     "n": 42,
+     "top": "terrifying",
+     "p": {
+      "cute": 0.015,
+      "playful": 0.177,
+      "eerie": 0.168,
+      "majestic": 0.084,
+      "menacing": 0.179,
+      "terrifying": 0.344,
+      "neutral": 0.033
+     },
+     "votes": {
+      "terrifying": 29,
+      "eerie": 6,
+      "playful": 6,
+      "menacing": 1
+     },
+     "threat": 0.523
+    },
+    "winded": {
+     "n": 36,
+     "top": "terrifying",
+     "p": {
+      "cute": 0.014,
+      "playful": 0.197,
+      "eerie": 0.145,
+      "majestic": 0.113,
+      "menacing": 0.18,
+      "terrifying": 0.305,
+      "neutral": 0.046
+     },
+     "votes": {
+      "terrifying": 25,
+      "majestic": 3,
+      "playful": 5,
+      "eerie": 1,
+      "menacing": 2
+     },
+     "threat": 0.485
+    },
+    "strike": {
+     "n": 3,
+     "top": "playful",
+     "p": {
+      "cute": 0.014,
+      "playful": 0.274,
+      "eerie": 0.119,
+      "majestic": 0.112,
+      "menacing": 0.206,
+      "terrifying": 0.226,
+      "neutral": 0.049
+     },
+     "votes": {
+      "terrifying": 1,
+      "playful": 2
+     },
+     "threat": 0.432
+    }
+   },
+   "timelines": [
+    "TeTTTTJeeTppTeTTTTTTTppTTTT",
+    "TTTTTpMTppTTTTTTMeTTTTTTTTT",
+    "TTTpTeeJJMTTTTTppppTTTTTTTp"
+   ],
+   "beats": [
+    true,
+    true,
+    true
+   ],
+   "peak_threat": 0.694,
+   "mean_threat": 0.503,
+   "log": [
+    "emotion export: substrate pack_hold seed 7, 6 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32",
+    "emotion export: substrate pack_hold seed 23, 6 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32",
+    "emotion export: substrate pack_hold seed 41, 6 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32"
+   ]
+  },
+  "game/cruise": {
+   "viewer": "cruise",
+   "run": {
+    "top": "terrifying",
+    "p": {
+     "cute": 0.021,
+     "playful": 0.088,
+     "eerie": 0.245,
+     "majestic": 0.103,
+     "menacing": 0.207,
+     "terrifying": 0.299,
+     "neutral": 0.037
+    }
+   },
+   "phases": {
+    "ring": {
+     "n": 48,
+     "top": "eerie",
+     "p": {
+      "cute": 0.023,
+      "playful": 0.1,
+      "eerie": 0.329,
+      "majestic": 0.086,
+      "menacing": 0.182,
+      "terrifying": 0.232,
+      "neutral": 0.048
+     },
+     "votes": {
+      "eerie": 34,
+      "terrifying": 13,
+      "majestic": 1
+     },
+     "threat": 0.414
+    },
+    "winded": {
+     "n": 21,
+     "top": "terrifying",
+     "p": {
+      "cute": 0.017,
+      "playful": 0.161,
+      "eerie": 0.146,
+      "majestic": 0.177,
+      "menacing": 0.162,
+      "terrifying": 0.266,
+      "neutral": 0.071
+     },
+     "votes": {
+      "terrifying": 15,
+      "majestic": 3,
+      "eerie": 2,
+      "playful": 1
+     },
+     "threat": 0.428
+    },
+    "stalk": {
+     "n": 12,
+     "top": "eerie",
+     "p": {
+      "cute": 0.014,
+      "playful": 0.077,
+      "eerie": 0.275,
+      "majestic": 0.225,
+      "menacing": 0.194,
+      "terrifying": 0.065,
+      "neutral": 0.15
+     },
+     "votes": {
+      "majestic": 4,
+      "eerie": 7,
+      "menacing": 1
+     },
+     "threat": 0.259
+    }
+   },
+   "timelines": [
+    "eeTTTeTTTJJeeeeeeeTTTeeeeee",
+    "TeTTTTJeeeeeeTTeTTTTJeeeJMJ",
+    "eeeTTTJeeeeeeeeeeeeTpJeTTTT"
+   ],
+   "beats": [
+    true,
+    true,
+    true
+   ],
+   "peak_threat": 0.683,
+   "mean_threat": 0.395,
+   "log": [
+    "emotion export: substrate pack_hold seed 7, 6 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32",
+    "emotion export: substrate pack_hold seed 23, 6 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32",
+    "emotion export: substrate pack_hold seed 41, 6 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32"
+   ]
   }
  }
 }

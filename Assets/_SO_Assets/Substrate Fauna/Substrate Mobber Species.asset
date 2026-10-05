@@ -171,6 +171,7 @@ MonoBehaviour:
     GulpSpeed: 115
     GulpRestS: 4
     RampTurns: 3
+    RingHoldSeconds: 0
   seedCount: 0
   seedSpread: 30
   seedAtFlora: 0

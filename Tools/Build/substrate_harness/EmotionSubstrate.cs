@@ -4,7 +4,7 @@
 //
 //   bash Tools/Build/substrate_harness/run.sh emotion <jobs.txt>     one job per line: "<track> <out> <condition> <seed>"
 //
-// Conditions: pack | locust_sparse (40, spread 300, fed, hunger 0.1) | locust_dense (300, spread 40, unfed, hunger 0.9)
+// Conditions: pack (the research port) | pack_hold (the demo cell's pack as authored: + RingHoldSeconds) | locust_sparse (40, spread 300, fed, hunger 0.1) | locust_dense (300, spread 40, unfed, hunger 0.9)
 // | lurker (12). Sizes follow the research's convention (regime size lerped by phase x grow; the lurker's calm mimic
 // sliver, SubstrateTickJob's draw rule, on top). Heading is not published (zeros): the research's substrate publishes
 // none, so the probe holds the velocity direction through stops for both.
@@ -46,7 +46,8 @@ static partial class SubstrateHarness
         switch (cond)
         {
             case "pack":
-                P = SubstrateResearch.GamePack(); w = new World(64, seed); q = w.Core.AddPopulation(P, 3);
+            case "pack_hold":
+                P = cond == "pack" ? SubstrateResearch.GamePack() : DemoPack(); w = new World(64, seed); q = w.Core.AddPopulation(P, 3);
                 w.Scatter(rng, 2500, 0.1f * R, 0.8f * R, 24);
                 w.Core.Seed(q, P.N0, home, 50f);
                 break;
@@ -81,7 +82,7 @@ static partial class SubstrateHarness
             w.Step();
             var live = LiveOf(w.Core, q).ToArray();
             int phase = 0;
-            if (cond == "pack")
+            if (cond.StartsWith("pack"))
             {
                 bool striking = live.Any(i => w.Core.Danger[i]), resting = live.Any(i => w.Core.Rest[i] > 0f);
                 int around = live.Count(i => Vector3.Distance(w.Core.Pos[i], pil.Pos) < P.CloseR);

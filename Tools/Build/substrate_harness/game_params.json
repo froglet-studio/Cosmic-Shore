@@ -159,7 +159,8 @@
     "GulpS": 1.6,
     "GulpSpeed": 115,
     "GulpRestS": 4,
-    "RampTurns": 0
+    "RampTurns": 0,
+    "RingHoldSeconds": 0
   },
   "pack": {
     "Name": "pack",
@@ -321,7 +322,8 @@
     "GulpS": 1.6,
     "GulpSpeed": 115,
     "GulpRestS": 4,
-    "RampTurns": 0
+    "RampTurns": 0,
+    "RingHoldSeconds": 0
   },
   "lurker": {
     "Name": "lurker",
@@ -483,7 +485,8 @@
     "GulpS": 1.6,
     "GulpSpeed": 115,
     "GulpRestS": 4,
-    "RampTurns": 0
+    "RampTurns": 0,
+    "RingHoldSeconds": 0
   },
   "stampede": {
     "Name": "stampede",
@@ -645,7 +648,8 @@
     "GulpS": 1.6,
     "GulpSpeed": 115,
     "GulpRestS": 4,
-    "RampTurns": 0
+    "RampTurns": 0,
+    "RingHoldSeconds": 0
   },
   "mobber": {
     "Name": "mobber",
@@ -807,7 +811,8 @@
     "GulpS": 1.6,
     "GulpSpeed": 115,
     "GulpRestS": 4,
-    "RampTurns": 3
+    "RampTurns": 3,
+    "RingHoldSeconds": 0
   },
   "leech": {
     "Name": "leech",
@@ -969,7 +974,8 @@
     "GulpS": 1.6,
     "GulpSpeed": 115,
     "GulpRestS": 4,
-    "RampTurns": 0
+    "RampTurns": 0,
+    "RingHoldSeconds": 0
   },
   "leviathan": {
     "Name": "leviathan",
@@ -1131,6 +1137,7 @@
     "GulpS": 1.6,
     "GulpSpeed": 115,
     "GulpRestS": 4,
-    "RampTurns": 0
+    "RampTurns": 0,
+    "RingHoldSeconds": 0
   }
 }

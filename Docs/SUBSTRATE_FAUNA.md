@@ -377,6 +377,79 @@ Both holds are asserted.
   pack's motion was not re-scored by the research's emotion probe.
 
 
+### 7.7 Round 11-12: the demo cell's opt-in ring hold
+
+**Why it exists.** Garrett's image for the pack is "surrounded, then everything dives in at once". With the research's
+quorum this cannot happen against a pilot who flies straight in:
+- six hunters reach closure 1.0 within 3-7 s;
+- any `q_up` below 1 then fires within about 1 s;
+- no setting inside the research's measured ranges gives a held, menacing ring (`Docs/SWARM_FAUNA.md` §27.3).
+
+So the hold is a **designed** beat, off by default.
+
+**The parameter.** `SubstrateSpeciesParams.RingHoldSeconds`:
+- **0 is the research's behaviour, bit for bit:**
+  - every new branch is guarded on it;
+  - harness group K's kernel bit-match is unchanged;
+  - `game_params.json` (the research port, test F) carries 0 for all three species.
+- **The demo (Swarm) cell's pack is 6 s.** `author_substrate_fauna.py` `DEMO_OVERRIDES` writes it into
+  `Substrate Pack Hunter Species.asset`, and `--check` verifies that it reached the asset.
+- **The harness reads the value back from the asset** (`DemoPack()`), so the tests prove the shipped number.
+
+**How it works:**
+- **The clock.** `SubstrateCore.RingHoldClock` runs at the end of `PilotMoments`, so it runs in both the harness and
+  the game tick. It keeps one clock per pilot, because closure is a per-pilot moment and every hunter around one
+  pilot reads the same clock.
+  - It runs while the closure around that pilot is at or above `q_up`.
+  - It waits while the ring has loosened but not broken (between `q_down` and `q_up`).
+  - It resets to 0 when the pilot breaks out (closure below `q_down`) or a packmate around that pilot is resting. A
+    fresh ring must hold again.
+  - Each agent's `RingGate` is its pilot's clock divided by `RingHoldSeconds`.
+- **The strike gate** is in `World`, the posture clock where danger is decided. Until the gate reaches 1, a hunter
+  that is not yet striking is held at or below `HoldPhase` 0.4 × `DangerPhase`.
+  - Released, every hunter climbs from that same phase at `q_rate`. They all cross the danger phase about 0.5 s
+    later, together, and that 0.5 s is the telegraph.
+- **The look** is in the kernel (`SubstrateKernel.HoldSpeed` / `HoldOrbit` / `HoldTighten`; the job carries
+  `RingGate`; the Burst text gate passes). It applies only while the agent's own closure is saturated:
+  - top speed is 0.55 × stalk speed (47 u/s), or 0.9 × a faster pilot's speed, so the ring keeps station around a
+    moving pilot;
+  - the ring slots orbit the pilot at 0.3 rad/s;
+  - the ring radius tightens by up to 45% as the hold runs out.
+  - The result is a slow, steady, tightening circle: never frozen, never darting. The probe's `advise` named exactly
+    these levers: lower `tau_inv`, `approach_retreat`, `unpredict` and `speed_rel`.
+
+**Proof (harness group H, the asset's 6 s, the same 120 u/s wanderer as group P):**
+
+| check | result |
+|---|---|
+| the ring closes, holds and the pack strikes | 5/5 seeds |
+| strikes begun while the ring still held | **0** over 5 × 90 s |
+| first ring-closed → first strike | 18-36 s (≥ 6 s) |
+| telegraph, release → first strike | **0.5 s** in every seed (research 0.4-0.7) |
+| together within 1 s | 100% in every seed |
+| ring tightens into the strike | 104→64, 109→98, 86→58, 93→84, 94→82 u |
+| held ring before the first strike (menace ≥ 8 s) | 30-48 s; median before any strike 44 s |
+| bites on the careless wanderer / on the gap-flyer | 6 / 1 |
+| **break-out**: a pilot inside a half-held ring sprints out through the gap | the hold resets in 5/5 dashes, no strike during the dash, the ring re-forms in 5/5 |
+| control: the same seed without the hold | strikes 0.7 s after its ring first closes (with it: 36 s) |
+
+**The read (`Tools/Build/emotion_range`, condition `pack_hold`, straight-in hover and cruise replays, `--assert`).**
+A ring window reads menacing or eerie before the strike in **6/6 runs**; the research port does so in 0/4 runs that
+had a ring window.
+- **At cruise** the held ring reads **eerie** (0.33).
+- **At hover** the ring reads mostly terrifying (0.34), with menacing and eerie windows during the hold. Six hunters
+  closing slowly on a nearly still pilot read as terror.
+- **The strike**, almost always bitten at once and so labelled winded, reads terrifying.
+
+**Costs and limits:**
+- **It is far less lethal to a fast wanderer.** It lands 6 bites over 5 × 90 s, where the research port lands 20. The
+  first strike comes later (37-62 s), because a pilot that keeps moving rarely lets a ring saturate for 6 s. This is a
+  balance question for the demo cell.
+- **The hold is a designed beat, not an emergent one.** It reads as organic only because the ring keeps circling and
+  breaking out resets it.
+- **Not run in Unity**, and Burst compiled nothing; as in §7.6, the text gate and the reference compile are the proof.
+
+
 ## 8. Round 11-9: two fixes found by the whole-cell run
 
 The showcase-cell harness (`Tools/Build/showcase_cell_harness`, `Docs/SWARM_FAUNA.md` §25) ran these cores beside

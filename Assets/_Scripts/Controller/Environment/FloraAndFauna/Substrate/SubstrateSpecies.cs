@@ -193,6 +193,12 @@ namespace CosmicShore.Gameplay
         /// the limit WAITS its turn and the longest waiter goes next (bestiary mobber: "each mobbing bird, in turn").
         /// 0 = no limit.</summary>
         public int RampTurns = 0;
+        /// <summary>Opt-in designed beat, NOT in the research (0 = the research's behaviour, bit for bit): once the ring's
+        /// closure around a pilot crosses <see cref="QUp"/>, the pack HOLDS the strike for this many seconds of saturated
+        /// closure while the ring circles slowly and tightens (SubstrateKernel.HoldSpeed / HoldOrbit / HoldTighten; phase held
+        /// at or below SubstrateCore.HoldPhase x <see cref="DangerPhase"/>, so no one strikes), then all strike together. A pilot that breaks the ring (closure
+        /// below <see cref="QDown"/>) resets the hold: the ring re-forms rather than striking. Docs/SUBSTRATE_FAUNA.md §7.7.</summary>
+        public float RingHoldSeconds = 0f;
 
         public SubstrateSpeciesParams Clone()
         {
@@ -246,6 +252,7 @@ namespace CosmicShore.Gameplay
             f("body_curious", BodyCurious); f("body_curious_r", BodyCuriousR); f("gulp_r", GulpR); f("gulp_cos", GulpCos);
             f("gulp_ramp_s", GulpRampS); f("gulp_s", GulpS); f("gulp_speed", GulpSpeed); f("gulp_rest_s", GulpRestS);
             f("ramp_turns", RampTurns);
+            f("ring_hold_s", RingHoldSeconds);
         }
     }
 

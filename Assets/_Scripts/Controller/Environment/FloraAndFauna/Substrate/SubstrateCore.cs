@@ -123,6 +123,8 @@ namespace CosmicShore.Gameplay
         internal readonly double[] Agg;
         internal long M;
         internal readonly Dictionary<int, float> LastHit = new();
+        /// <summary>The ring-hold clock per pilot id (<see cref="SubstrateSpeciesParams.RingHoldSeconds"/>; empty when 0).</summary>
+        internal readonly Dictionary<int, float> RingHold = new();
         /// <summary>The population this one preys on this tick (resolved by name), or -1.</summary>
         internal int PreyPop = -1;
         /// <summary>This tick's kernel numbers (built by SubstrateCore.BeginStep).</summary>
@@ -163,6 +165,9 @@ namespace CosmicShore.Gameplay
         // ── state (one array per field, capacity-sized; DESIGN_BURST.md §1) ──
         public readonly Vector3[] Pos, Vel, IDir, WSeed, Home, GaitV;
         public readonly float[] ISpeed, Hunger, Fear, Curious, Aggr, Phase, QTarget, Stock, Grow, Stamina, Rest, BiteCool, Closure;
+        /// <summary>The ring hold as each agent sees it: its pilot's hold clock / RingHoldSeconds (>= 1 = released; 0 when
+        /// the species has no hold). Written by PilotMoments, read by World's strike gate.</summary>
+        public readonly float[] RingGate;
         public readonly bool[] Alive, Starving, Steered, Watched, Danger, Creeping;
         public readonly int[] PopOf;
         /// <summary>Round 11-11: the ramp clock (s held armed), the body attachment (0..1), a rider's grip and sip clock,
@@ -214,7 +219,7 @@ namespace CosmicShore.Gameplay
             Pos = new Vector3[n]; Vel = new Vector3[n]; IDir = new Vector3[n]; WSeed = new Vector3[n]; Home = new Vector3[n]; GaitV = new Vector3[n];
             ISpeed = new float[n]; Hunger = new float[n]; Fear = new float[n]; Curious = new float[n]; Aggr = new float[n];
             Phase = new float[n]; QTarget = new float[n]; Stock = new float[n]; Grow = new float[n]; Stamina = new float[n];
-            Rest = new float[n]; BiteCool = new float[n]; Closure = new float[n];
+            Rest = new float[n]; BiteCool = new float[n]; Closure = new float[n]; RingGate = new float[n];
             Alive = new bool[n]; Starving = new bool[n]; Steered = new bool[n]; Watched = new bool[n]; Danger = new bool[n]; Creeping = new bool[n];
             PopOf = new int[n]; FreedTick = new long[n]; BornTick = new long[n]; ClaimedTick = new long[n];
             FThreat = new float[n]; FAlarm = new float[n];
@@ -302,7 +307,7 @@ namespace CosmicShore.Gameplay
             Pos[i] = p; IDir[i] = d; Vel[i] = d * (P.Solitary.Speed * 0.5f); ISpeed[i] = P.Solitary.Speed;
             Hunger[i] = 0.1f + 0.3f * (float)_rng.NextDouble();
             Fear[i] = 0f; Curious[i] = 0f; Aggr[i] = 0f; Phase[i] = 0f; QTarget[i] = 0f;
-            Stock[i] = P.Stock0; Grow[i] = 1f; Stamina[i] = P.StaminaS; Rest[i] = 0f; BiteCool[i] = 0f; Closure[i] = 0f;
+            Stock[i] = P.Stock0; Grow[i] = 1f; Stamina[i] = P.StaminaS; Rest[i] = 0f; BiteCool[i] = 0f; Closure[i] = 0f; RingGate[i] = 0f;
             WSeed[i] = new Vector3((float)_rng.NextDouble() * 100f, (float)_rng.NextDouble() * 100f, (float)_rng.NextDouble() * 100f);
             Home[i] = p; GaitV[i] = Vector3.Zero;
             Alive[i] = true; Starving[i] = false; Danger[i] = false; Watched[i] = false; Creeping[i] = false;
@@ -555,7 +560,7 @@ namespace CosmicShore.Gameplay
             Pos = Pos, Vel = Vel, IDir = IDir, Home = Home,
             Hunger = Hunger, Fear = Fear, Curious = Curious, Aggr = Aggr, Phase = Phase, QTarget = QTarget, ISpeed = ISpeed,
             Steered = Steered, Watched = Watched, Creeping = Creeping,
-            WSeed = WSeed, Closure = Closure, Rest = Rest, Alive = Alive, Starving = Starving, ClaimedTick = ClaimedTick,
+            WSeed = WSeed, Closure = Closure, RingGate = RingGate, Rest = Rest, Alive = Alive, Starving = Starving, ClaimedTick = ClaimedTick,
             Pilots = _pilots, Live = pop.Live, Key = pop.Key, Tab = pop.Tab, Agg = pop.Agg, Dirs = pop.Dirs,
             FThreat = FThreat, FAlarm = FAlarm, GFood = GFood, GScent = GScent, GAlarm = GAlarm, GThreat = GThreat,
             Ramp = Ramp, Attach = Attach, Host = Host, SlotGoal = SlotGoal, SlotVel = SlotVel,
@@ -577,7 +582,7 @@ namespace CosmicShore.Gameplay
                 RestSpeed = P.RestSpeed, WRestRetreat = P.WRestRetreat,
                 WCreep = P.WCreep, CreepMin = P.CreepMin, CreepR = P.CreepR, CreepSpeed = P.CreepSpeed,
                 CreepLeadS = P.CreepLeadS, GazeCos = P.GazeCos, Freeze = P.Freeze,
-                BandInner = pop.BandInner, BandOuter = pop.BandOuter,
+                BandInner = pop.BandInner, BandOuter = pop.BandOuter, RingHoldS = P.RingHoldSeconds,
                 SectorX = pop.SectorAxis.X, SectorY = pop.SectorAxis.Y, SectorZ = pop.SectorAxis.Z, SectorCos = pop.SectorCos,
                 HasSector = (byte)(pop.HasSector ? 1 : 0),
                 RampS = P.RampS, RampSpeed = P.RampSpeed, RampOnSight = (byte)(P.RampOnSight ? 1 : 0), WStrike = P.WStrike, StrikeSpeed = P.StrikeSpeed,
@@ -684,6 +689,43 @@ namespace CosmicShore.Gameplay
                 // bestiary pack.py: clip((1 - res) * clip((cnt - 1) / 3, 0, 1) * 1.6, 0, 1)
                 Closure[i] = Math.Clamp((1f - res) * Math.Clamp((cnt - 1) / 3f, 0f, 1f) * 1.6f, 0f, 1f);
             }
+            if (P.RingHoldSeconds > 0f) RingHoldClock(pop);
+        }
+
+        /// <summary>The opt-in ring hold (<see cref="SubstrateSpeciesParams.RingHoldSeconds"/>): one clock per pilot. It
+        /// runs while the closure around that pilot is saturated (>= q_up), waits while the ring loosens (q_down..q_up),
+        /// and resets when the pilot breaks out (below q_down) or a packmate around it is resting (a fresh ring must hold
+        /// again). Closure is a per-pilot moment, so every hunter around one pilot reads the same clock: they release
+        /// together.</summary>
+        /// <summary>During the ring hold a hunter's phase is held at or below this fraction of its danger phase.</summary>
+        public const float HoldPhase = 0.4f;
+
+        void RingHoldClock(SubstratePopulation pop)
+        {
+            var P = pop.P;
+            for (int j = 0; j < _npil; j++)
+            {
+                float c = -1f; bool resting = false;
+                for (int q = 0; q < pop.LiveCount; q++)
+                {
+                    int i = pop.Live[q];
+                    if (NearestPilot(Pos[i], out float d) != j || d >= P.CloseR) continue;
+                    c = MathF.Max(c, Closure[i]);
+                    resting |= Rest[i] > 0f;
+                }
+                int id = _pilots[j].Id;
+                pop.RingHold.TryGetValue(id, out float h);
+                if (c < P.QDown || resting) h = 0f;
+                else if (c >= P.QUp) h = MathF.Min(P.RingHoldSeconds, h + Dt);
+                // q_down..q_up: the ring has loosened but not broken - the clock waits
+                pop.RingHold[id] = h;
+            }
+            for (int q = 0; q < pop.LiveCount; q++)
+            {
+                int i = pop.Live[q];
+                int j = NearestPilot(Pos[i], out float d);
+                RingGate[i] = j >= 0 && d < P.CloseR && pop.RingHold.TryGetValue(_pilots[j].Id, out float h) ? h / P.RingHoldSeconds : 0f;
+            }
         }
 
         // ───────────────────────────────────────────────────────────── world
@@ -733,6 +775,15 @@ namespace CosmicShore.Gameplay
                         }
                     }
                     else Ramp[i] = 0f;
+                }
+
+                // the opt-in ring hold (the strike gate): until it releases, a hunter that is not yet striking stays
+                // near the stalk end (the kernel circles and tightens the ring meanwhile); released, every hunter
+                // around that pilot climbs from the same phase at q_rate, so they cross the danger phase together
+                if (P.RingHoldSeconds > 0f && !Danger[i] && RingGate[i] < 1f)
+                {
+                    float cap = HoldPhase * P.DangerPhase;
+                    if (Phase[i] > cap) Phase[i] = cap;
                 }
 
                 // posture clock: a strike spends stamina; spent (or bitten-with) rests; rested, it recovers
@@ -839,7 +890,7 @@ namespace CosmicShore.Gameplay
                 Pos[c] = Pos[i]; Vel[c] = Vel[i] * 0.5f; Home[c] = Home[i]; IDir[c] = IDir[i]; ISpeed[c] = ISpeed[i];
                 Hunger[c] = Hunger[i]; Fear[c] = Fear[i]; Curious[c] = Curious[i]; Aggr[c] = Aggr[i];
                 Phase[c] = Phase[i]; QTarget[c] = QTarget[i];
-                Stamina[c] = P.StaminaS; Rest[c] = 0f; BiteCool[c] = 0f; Grow[c] = 0f; Closure[c] = 0f; GaitV[c] = Vector3.Zero;
+                Stamina[c] = P.StaminaS; Rest[c] = 0f; BiteCool[c] = 0f; Grow[c] = 0f; Closure[c] = 0f; RingGate[c] = 0f; GaitV[c] = Vector3.Zero;
                 Ramp[c] = 0f; Attach[c] = Attach[i]; Grip[c] = 1f; SipT[c] = 0f; Host[c] = 0; HostOff[c] = Vector3.Zero;
                 WSeed[c] = new Vector3((float)_rng.NextDouble() * 100f, (float)_rng.NextDouble() * 100f, (float)_rng.NextDouble() * 100f);
                 Alive[c] = true; Starving[c] = false; Danger[c] = false; Watched[c] = false; Creeping[c] = false;

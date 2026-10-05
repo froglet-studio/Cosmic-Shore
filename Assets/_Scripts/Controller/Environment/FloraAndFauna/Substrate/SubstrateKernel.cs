@@ -23,6 +23,8 @@ namespace CosmicShore.Gameplay
         public float WPrey, PreySense, Momentum, IntentBlend, RestSpeed, WRestRetreat;
         public float WCreep, CreepMin, CreepR, CreepSpeed, CreepLeadS, GazeCos, Freeze;
         public float BandInner, BandOuter;
+        /// <summary>The opt-in ring hold (SubstrateSpeciesParams.RingHoldSeconds; 0 = off, the research step bit for bit).</summary>
+        public float RingHoldS;
         /// <summary>Round 11-11: the population's SECTOR pen (unit axis; SectorCos = cos of the half-angle); HasSector 0 = none.</summary>
         public float SectorX, SectorY, SectorZ, SectorCos;
         /// <summary>Round 11-11 primitives (SubstrateSpeciesParams; 0 = off): ramp + strike, the alarm climb, provocation,
@@ -56,6 +58,8 @@ namespace CosmicShore.Gameplay
         // read
         public ReadOnlySpan<Vector3> WSeed;
         public ReadOnlySpan<float> Closure, Rest;
+        /// <summary>The ring hold as each agent sees it (SubstrateCore.RingGate): in (0, 1) the ring is holding.</summary>
+        public ReadOnlySpan<float> RingGate;
         public ReadOnlySpan<bool> Alive, Starving;
         public ReadOnlySpan<long> ClaimedTick;
         public ReadOnlySpan<SubstratePilot> Pilots;
@@ -77,6 +81,11 @@ namespace CosmicShore.Gameplay
     {
         /// <summary>Largest direction set the kernel's callers allocate scratch for (stackalloc in the job).</summary>
         public const int MaxDirs = 32;
+
+        /// <summary>The ring hold's look (Docs/SUBSTRATE_FAUNA.md §7.7): while it holds, a hunter's top speed is this
+        /// fraction of its stalk speed (or 0.9 x a faster pilot's, so the ring keeps station), its ring slot orbits the pilot at this many rad/s, and the ring radius tightens by
+        /// up to this fraction as the hold runs out. A slow, steady, tightening circle - never frozen, never darting.</summary>
+        public const float HoldSpeed = 0.55f, HoldOrbit = 0.3f, HoldTighten = 0.45f;
 
         static float Clamp(float v, float lo, float hi) => v < lo ? lo : v > hi ? hi : v;
 
@@ -242,6 +251,10 @@ namespace CosmicShore.Gameplay
                 float wHome = Lerp(k.Rs.WHome, k.Rg.WHome, ph), wAlarm = Lerp(k.Rs.WAlarm, k.Rg.WAlarm, ph);
                 float wThreat = Lerp(k.Rs.WThreat, k.Rg.WThreat, ph), speed0 = Lerp(k.Rs.Speed, k.Rg.Speed, ph);
                 float burst = Lerp(k.Rs.Burst, k.Rg.Burst, ph);
+                // the opt-in ring hold: the ring is saturated and holding (the core's gate is in (0, 1))
+                float hg = k.RingHoldS > 0f ? s.RingGate[i] : 0f;
+                bool holding = hg > 0f && hg < 1f && !resting && s.Closure[i] >= k.QUp;
+                if (holding) ringR *= 1f - HoldTighten * hg;
                 float att = k.HasBody != 0 ? s.Attach[i] : 0f;
                 if (k.WAlarmClimb > 0f && role)
                 {
@@ -320,6 +333,7 @@ namespace CosmicShore.Gameplay
                         if (an > 1e-9f) { ax /= an; ay /= an; az /= an; } else { ax = 0f; ay = 0f; az = 0f; }
                         float bx = fy * az - fz * ay, by = fz * ax - fx * az, bz = fx * ay - fy * ax;
                         float ang = 2f * MathF.PI * ((i - k.Start) % k.RingRoles) / k.RingRoles;
+                        if (holding) ang += HoldOrbit * w.Tick * w.Dt;   // the held ring circles the pilot
                         float ca = MathF.Cos(ang), sa = MathF.Sin(ang);
                         float slx = (ppx + fx * 40f) + ringR * (ca * ax + sa * bx);
                         float sly = (ppy + fy * 40f) + ringR * (ca * ay + sa * by);
@@ -441,6 +455,12 @@ namespace CosmicShore.Gameplay
                 if (ramping) speed *= k.RampSpeed;
                 if (striking && k.StrikeSpeed > 0f) speed = k.StrikeSpeed;
                 if (k.HasBody != 0 && att > 0f) speed = Lerp(speed, vstarN, att);   // assembled: catch the slot, then the body's pace
+                if (holding && pj >= 0)
+                {
+                    // slow against a slow pilot, never slower than one that moves (the ring keeps station around it)
+                    float hps = Len(s.Pilots[pj].Vel.X, s.Pilots[pj].Vel.Y, s.Pilots[pj].Vel.Z);
+                    speed = MathF.Min(speed, MathF.Max(HoldSpeed * k.Rs.Speed, 0.9f * hps));
+                }
                 s.ISpeed[i] = speed;
             }
 
