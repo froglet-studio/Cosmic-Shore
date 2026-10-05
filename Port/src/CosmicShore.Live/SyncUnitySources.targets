@@ -10,6 +10,7 @@
       <SourceDir ParameterType="System.String" Required="true" />
       <IncludeRoots ParameterType="System.String" Required="true" />
       <OutputDir ParameterType="System.String" Required="true" />
+      <RulesFile ParameterType="System.String" Required="true" />
     </ParameterGroup>
     <Task>
       <Using Namespace="System" />
@@ -79,6 +80,12 @@
         // with a call that routes the invocation over the network (NetRpc.Intercept) and returns when
         // the local body must not run. Expression bodies become blocks.
         var rpcAttrRx = new Regex(@"\[\s*(?:[\w.]+\.)?(ServerRpc|ClientRpc)\b[^\]\n]*\]", RegexOptions.Compiled);
+        // Any RPC attribute at all, including shapes the rewrite does not handle (split across lines,
+        // Netcode 2's [Rpc(SendTo...)]): each one it cannot intercept is reported, never skipped silently.
+        var rpcAnyRx = new Regex(@"^[ \t]*\[\s*(?:[\w.]+\.)?(ServerRpc|ClientRpc|Rpc)\b", RegexOptions.Compiled | RegexOptions.Multiline);
+        var rpcSkips = new List<string>();
+        int LineOf(string t, int index) { int n = 1; for (int i = 0; i < index && i < t.Length; i++) if (t[i] == '\n') n++; return n; }
+        void SkipRpc(string t, int index, string why) { rpcSkips.Add(LineOf(t, index) + "|" + why); }
         var rpcSigRx = new Regex(@"\G(?:\s|\[[^\]\n]*\]|//[^\n]*|/\*.*?\*/)*(?:(?:public|private|protected|internal|override|virtual|async|new|unsafe|sealed)\s+)*void\s+(\w+)\s*\(", RegexOptions.Compiled);
         int MatchClose(string t, int open, char o, char c) {
           int depth = 0;
@@ -116,14 +123,25 @@
         }
         string RewriteRpcs(string text) {
           var ms = rpcAttrRx.Matches(text);
+          var handled = new HashSet<int>();
+          foreach (Match am in ms) handled.Add(LineOf(text, am.Index));
+          foreach (Match any in rpcAnyRx.Matches(text)) {
+            int line = LineOf(text, any.Index);
+            if (handled.Contains(line)) continue;
+            SkipRpc(text, any.Index, any.Groups[1].Value == "Rpc"
+              ? "Netcode's [Rpc(SendTo...)] attribute is not intercepted yet"
+              : "the attribute spans several lines");
+          }
           for (int k = ms.Count - 1; k >= 0; k--) {
             var am = ms[k];
+            int lineStart = text.LastIndexOf('\n', Math.Max(0, am.Index - 1)) + 1;
+            if (text.Substring(lineStart, am.Index - lineStart).TrimStart().StartsWith("//")) continue; // a comment mentioning one
             var sig = rpcSigRx.Match(text, am.Index + am.Length);
-            if (!sig.Success) continue;
+            if (!sig.Success) { SkipRpc(text, am.Index, "its method is not a plain 'void Name(...)' declaration (generic, non-void, or split by #if)"); continue; }
             string name = sig.Groups[1].Value;
             int open = sig.Index + sig.Length - 1;
             int close = MatchClose(text, open, '(', ')');
-            if (close < 0) continue;
+            if (close < 0) { SkipRpc(text, am.Index, "its parameter list did not parse"); continue; }
             var names = new List<string>();
             foreach (var part in SplitTop(text.Substring(open + 1, close - open - 1))) {
               var n = ParamName(part);
@@ -143,10 +161,11 @@
                 else if (ch == ')' || ch == '}' || ch == ']') depth--;
                 else if (ch == ';' && depth == 0) { end = j; break; }
               }
-              if (end < 0) continue;
+              if (end < 0) { SkipRpc(text, am.Index, "its expression body did not parse"); continue; }
               string expr = text.Substring(i + 2, end - (i + 2));
               text = text.Substring(0, i) + "{" + prologue + expr.Trim() + "; }" + text.Substring(end + 1);
             }
+            else SkipRpc(text, am.Index, "no method body follows it");
           }
           return text;
         }
@@ -170,7 +189,31 @@
         var src = Path.GetFullPath(SourceDir);
         var dst = Path.GetFullPath(OutputDir);
         var keep = new HashSet<string>(StringComparer.Ordinal);
-        int written = 0, total = 0;
+        int written = 0, total = 0, skipped = 0;
+        // Incremental: a manifest of each source's (size, mtime) at its last transform, stamped with
+        // these rules' own timestamp. An unchanged source is neither re-read nor re-transformed; the
+        // output is never touched unless its text changes, so the compiler's own incrementality holds.
+        var manifestPath = dst + ".manifest";
+        var rulesStamp = File.GetLastWriteTimeUtc(RulesFile).Ticks + "|" + src; // a moved checkout re-maps every #line
+        // Each line: path, signature, then any RPCs this file has that the rewrite could not intercept
+        // (kept so an unchanged file still reports them on every build).
+        var manifest = new Dictionary<string, string[]>(StringComparer.Ordinal);
+        if (File.Exists(manifestPath)) {
+          var lines0 = File.ReadAllLines(manifestPath);
+          if (lines0.Length > 0 && lines0[0] == rulesStamp)
+            foreach (var l in lines0.Skip(1)) { var cols = l.Split('\t'); if (cols.Length >= 2) manifest[cols[0]] = cols; }
+        }
+        int rpcWarnings = 0;
+        void ReportRpcs(string file, IEnumerable<string> skips) {
+          foreach (var w in skips) {
+            var bar = w.IndexOf('|');
+            int line; int.TryParse(w.Substring(0, bar), out line);
+            Log.LogWarning(null, "PRISMA001", null, file, line, 0, 0, 0,
+              "RPC not intercepted - " + w.Substring(bar + 1) + ". It will run locally instead of over the network in Prisma.");
+            rpcWarnings++;
+          }
+        }
+        var next = new List<string> { rulesStamp };
         var files = new List<string>();
         foreach (var root in IncludeRoots.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries)) {
           var full = Path.Combine(src, root.Trim());
@@ -185,7 +228,21 @@
           total++;
           var outPath = Path.Combine(dst, rel);
           keep.Add(outPath);
-          var text = Transform(File.ReadAllText(file));
+          var info = new FileInfo(file);
+          var sig = info.Length + ":" + info.LastWriteTimeUtc.Ticks;
+          string[] prev;
+          if (manifest.TryGetValue(rel, out prev) && prev[1] == sig && File.Exists(outPath)) {
+            skipped++;
+            next.Add(string.Join("\t", prev));
+            ReportRpcs(file, prev.Skip(2));
+            continue;
+          }
+          // #line maps every diagnostic, stack frame, debugger step and [CallerFilePath] back to the
+          // real file under Assets/: the rewrite keeps line numbers, so line 1 here is line 1 there.
+          rpcSkips.Clear();
+          var text = "#line 1 \"" + file + "\"\n" + Transform(File.ReadAllText(file));
+          next.Add(string.Join("\t", new[] { rel, sig }.Concat(rpcSkips.Select(w => w.Replace('\t', ' ')))));
+          ReportRpcs(file, rpcSkips);
           if (File.Exists(outPath) && File.ReadAllText(outPath) == text) continue;
           Directory.CreateDirectory(Path.GetDirectoryName(outPath));
           File.WriteAllText(outPath, text);
@@ -194,7 +251,9 @@
         if (Directory.Exists(dst))
           foreach (var stale in Directory.EnumerateFiles(dst, "*.cs", SearchOption.AllDirectories).Where(f => !keep.Contains(f)).ToList())
             File.Delete(stale);
-        Log.LogMessage(MessageImportance.High, $"SyncUnitySources: {total} scripts, {written} rewritten");
+        Directory.CreateDirectory(Path.GetDirectoryName(manifestPath));
+        File.WriteAllLines(manifestPath, next);
+        Log.LogMessage(MessageImportance.High, $"SyncUnitySources: {total} scripts, {written} rewritten, {skipped} unchanged" + (rpcWarnings > 0 ? $", {rpcWarnings} RPC(s) not intercepted" : ""));
       ]]></Code>
     </Task>
   </UsingTask>
@@ -210,7 +269,7 @@
   </PropertyGroup>
 
   <Target Name="SyncUnitySourcesBeforeBuild" BeforeTargets="BeforeBuild;CoreCompile;CollectPackageReferences">
-    <SyncUnitySources SourceDir="$(LiveAssetsDir)" IncludeRoots="$(LiveScriptRoots)" OutputDir="$(MSBuildThisFileDirectory)$(LiveSrcDir)" />
+    <SyncUnitySources SourceDir="$(LiveAssetsDir)" IncludeRoots="$(LiveScriptRoots)" OutputDir="$(MSBuildThisFileDirectory)$(LiveSrcDir)" RulesFile="$(MSBuildThisFileFullPath)" />
     <ItemGroup>
       <Compile Remove="obj/live-src*/**/*.cs" />
       <Compile Include="$(LiveSrcDir)/**/*.cs" />

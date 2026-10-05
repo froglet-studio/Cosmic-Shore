@@ -48,10 +48,18 @@ namespace CosmicShore.Content
         GameObject _templatesRoot;
         readonly Dictionary<string, (PrefabGraph graph, LoadedScene loaded)> _prefabTemplates = new(StringComparer.Ordinal);
 
+        /// <summary>Unity's Script Execution Order settings, from the script metas, before any scene loads.</summary>
+        void RegisterExecutionOrders()
+        {
+            foreach (var (guid, order) in Db.ScriptExecutionOrders())
+                if (Scripts.Resolve(guid) is { } type) ScriptExecutionOrder.Set(type, order);
+        }
+
         public ContentRuntime(string projectRoot, IEnumerable<Assembly> assemblies, InstantiateOptions options = null)
         {
             Db = new AssetDatabase(projectRoot);
             Scripts = new ScriptTypeMap(Db, assemblies.Append(typeof(GameObject).Assembly));
+            RegisterExecutionOrders();
             Assets = new AssetLoader(Db, Scripts);
             Options = options ?? new InstantiateOptions();
             ReadBuildSettings();
