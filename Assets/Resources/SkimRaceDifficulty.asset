@@ -15,4 +15,4 @@ MonoBehaviour:
   EasyReactionSeconds: 0.5
   EasyMistakeChance: 0.06
   MediumReactionSeconds: 0.25
-  MediumMistakeChance: 0.04
+  MediumMistakeChance: 0.045

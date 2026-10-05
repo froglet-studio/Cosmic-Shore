@@ -179,13 +179,14 @@ POLICIES = {
 # Hard is the unhandicapped pilot and has no row.
 DIFFICULTY = {
     "SkimRaceDifficulty": {
-        # PROVISIONAL (2026-10-05): estimated from single-mistake measurements on I2 (reaction 0.25 s
-        # alone -> 83 s, 0.5 s -> 101 s; ~10-12 s per misjudged crystal). The run.sh handicap search
-        # replaces these with tuned values.
+        # Easy: PROVISIONAL (2026-10-05), estimated from single-mistake measurements on I2; the
+        # run.sh handicap search for 120 s replaces it.
         "EasyReactionSeconds": 0.5,
         "EasyMistakeChance": 0.06,
+        # Medium: TUNED (2026-10-05) - run.sh handicap 2 40 95 ph.HcReaction=0.25, 2 AI seats:
+        # fresh seeds seat median 95.9 s (p10 81.0, p90 124.4), 80/80 finished, 1.3 misjudged/race.
         "MediumReactionSeconds": 0.25,
-        "MediumMistakeChance": 0.04,
+        "MediumMistakeChance": 0.045,
     },
 }
 

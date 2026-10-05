@@ -34,7 +34,7 @@ namespace CosmicShore.Gameplay
         [Min(0f)] public float MediumReactionSeconds = 0.25f;
 
         [Tooltip("Chance per crystal that a Medium pilot misjudges the pass.")]
-        [Range(0f, 1f)] public float MediumMistakeChance = 0.04f;
+        [Range(0f, 1f)] public float MediumMistakeChance = 0.045f;
 
         /// <summary>The handicap for <paramref name="difficulty"/>; none for Hard (and for any value
         /// that is not a difficulty, which resolves to the default first).</summary>

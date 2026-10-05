@@ -739,10 +739,15 @@ seat median 77 s): reaction 0.5 s -> 101 s, 1.0 s -> 123 s; misjudge chance 0.2 
 level at a human-plausible value and `run.sh handicap` bisects the misjudge chance to the target seat
 median on intensity 2 (40 seeds x 2 seats, common seeds every step, then 40 fresh seeds):
 
-**Provisional numbers (this commit):** Easy reaction 0.5 s, misjudge chance 0.06; Medium reaction
-0.25 s, chance 0.04 - estimated from the single-mistake measurements above (Medium's reaction alone
-gives 83 s, Easy's ~101 s; each misjudged crystal costs ~10-12 s). The bisection's tuned values and
-their check on fresh seeds replace this paragraph.
+| Difficulty | Reaction | Misjudge chance | Seat median (fresh seeds) | p10 - p90 | Misjudged / seat / race |
+|---|---|---|---|---|---|
+| Hard | - | - | 77 s (the shipped I2 policy) | | 0 |
+| **Medium** (target 95 s) | 0.25 s | **0.045** | **95.9 s** (80/80 finished) | 81.0 - 124.4 s | 1.3 |
+| Easy (target 120 s) | 0.5 s | 0.06 (provisional) | search running | | |
+
+Medium's search (common seeds): 0 -> 83.3 s, 0.031 -> 90.9, 0.039 -> 93.9, 0.043 -> 94.3, 0.047 -> 97.2,
+0.063 -> 102.8, 0.125 -> 120.6, 0.25 -> 153.7, 0.5 -> 213.7, 1.0 -> 292.3 s. Easy's reaction alone gives
+90.5 s on the same 40 seeds (the 6-race sample above read 101 s - small samples of this race are noisy).
 
 **On every track** (fresh seeds 50000+, 2 AI seats, each intensity's own policy, I3 the general one):
 

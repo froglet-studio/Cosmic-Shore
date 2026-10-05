@@ -935,9 +935,10 @@ static class Program
     }
 
     /// <summary>
-    /// <c>handicap &lt;intensity&gt; &lt;seeds&gt; &lt;targetSeconds&gt; [ph.HcReaction=r] [Field=v ...] [ph.Field=v ...]</c>:
+    /// <c>handicap &lt;intensity&gt; &lt;seeds&gt; &lt;targetSeconds&gt; [ph.HcReaction=r] [hi=h] [steps=n] [Field=v ...] [ph.Field=v ...]</c>:
     /// the lobby difficulty's mistake chance (<c>ph.HcMistake</c>) at which an AI seat's MEDIAN finish
-    /// time is the target, at the given reaction time. Bisection over 0..1 on the same seeds every step
+    /// time is the target, at the given reaction time. Bisection over 0..hi (default 1; a smaller bound
+    /// skips the slow races at a high chance - each misjudged crystal costs ~10 s) on the same seeds every step
     /// (common random numbers, so a step's answer differs from the last only by the chance), then a check
     /// on fresh seeds. Every seat counts - a match is judged by how long each AI takes, not by the
     /// fastest - and races run to 2.5x the target so a slow seat is measured, not cut.
@@ -948,9 +949,13 @@ static class Program
         int seeds = int.Parse(args[3]);
         float target = float.Parse(args[4], CultureInfo.InvariantCulture);
         int steps = 8;
+        float upper = 1f;
         foreach (var a in args.Skip(5))
+        {
             if (a.StartsWith("steps=")) steps = int.Parse(a.Substring(6), CultureInfo.InvariantCulture);
-        var (cfg, ph) = Parse(args.Skip(5).Where(a => !a.StartsWith("steps=")));
+            if (a.StartsWith("hi=")) upper = Mathf.Clamp01(float.Parse(a.Substring(3), CultureInfo.InvariantCulture));
+        }
+        var (cfg, ph) = Parse(args.Skip(5).Where(a => !a.StartsWith("steps=") && !a.StartsWith("hi=")));
         var def = tracks[intensity];
         var prisms = new TrackPrisms(def);
         var course = new SkimRaceCourse(prisms.Points, prisms.Normals, prisms.Rotations, prisms.ShellHalf);
@@ -979,13 +984,15 @@ static class Program
             Console.WriteLine("BEST HcMistake=0");
             return 0;
         }
-        float lo = 0f, hi = 1f;
-        var at1 = Measure(1f, 1000, seeds);
-        Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "  chance 1.000 -> median {0:F1} s", at1.median));
-        if (at1.median <= target)
+        float lo = 0f, hi = upper;
+        var atHi = Measure(hi, 1000, seeds);
+        Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "  chance {0:0.000} -> median {1:F1} s", hi, atHi.median));
+        if (atHi.median <= target)
         {
-            Console.WriteLine("  even misjudging every crystal stays under the target - raise ph.HcReaction");
-            Console.WriteLine("BEST HcMistake=1");
+            Console.WriteLine(hi < 1f
+                ? "  the upper bound stays under the target - raise hi="
+                : "  even misjudging every crystal stays under the target - raise ph.HcReaction");
+            Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "BEST HcMistake={0:0.000}", hi));
             return 0;
         }
         for (int i = 0; i < steps; i++)
