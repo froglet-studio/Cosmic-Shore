@@ -24,7 +24,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 - **Verification:** the Froglet Engine's live compile of runtime `Assets/_Scripts` builds (0
   errors) and its suites pass (1569 engine + 352 ported). Not run in Unity (no editor in the
   session): `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Skim Race pilot cost".
-- **PR/commit:** on `claude/bold-fermi-54nlts`.
+- **PR/commit:** `bbdab6450` on `claude/bold-fermi-54nlts` (not yet PR'd to bleeding-edge).
 
 ---
 
