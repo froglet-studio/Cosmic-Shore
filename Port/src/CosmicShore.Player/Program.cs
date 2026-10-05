@@ -104,6 +104,7 @@ namespace CosmicShore.Player
                     case "--population" when i + 1 < args.Length: evalPopulation = args[++i]; break;
                     case "--report-render": reportRender = true; break;
                     case "--dump-ui" when i + 1 < args.Length: dumps.Add(args[++i]); break;
+                    case "--dump-ui-at" when i + 1 < args.Length: dumps.Add("@" + args[++i]); break;
                     case "--fullscreen": PlayerWindow.StartFullscreen = true; break;
                     case "--msaa" when i + 1 < args.Length: int.TryParse(args[++i], out CosmicShore.Render.RenderQuality.Msaa); break;
                     case "--render-scale" when i + 1 < args.Length:
@@ -207,7 +208,7 @@ namespace CosmicShore.Player
             Console.WriteLine($"[player] {frames} frames, active scene '{lastScene}', {CosmicShore.Engine.Object.FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None).Length} live behaviours");
             boot.Log.PrintSummary();
             if (reportRender) { RenderInventory.PrintNetwork(); RenderInventory.Print(); }
-            foreach (var d in dumps) UiDump.Print(d);
+            foreach (var d in dumps) { if (d.StartsWith("@")) UiDump.PrintAt(d[1..]); else UiDump.Print(d); }
             foreach (var (k, n) in boot.Log.Unique.OrderByDescending(kv => kv.Value).Take(40))
                 Console.WriteLine($"  ×{n,-4} {k.Replace('\n', ' ')}");
             return 0;

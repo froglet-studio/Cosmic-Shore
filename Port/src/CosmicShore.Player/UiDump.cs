@@ -7,6 +7,35 @@ namespace CosmicShore.Player
     /// <summary><c>--dump-ui NAME[:DEPTH]</c>: the subtree under every object named NAME — world rect, activity, components.</summary>
     public static class UiDump
     {
+        /// <summary>
+        /// <c>--dump-ui-at X,Y</c>: every active, visible UI graphic covering that pixel (top-left
+        /// origin, like a screenshot), with its path, sprite/texture, colour and effective alpha -
+        /// the port's "Report On-Screen UI" for "what is that thing on screen?".
+        /// </summary>
+        public static void PrintAt(string spec)
+        {
+            var xy = spec.Split(',');
+            float x = float.Parse(xy[0], System.Globalization.CultureInfo.InvariantCulture);
+            float y = Screen.height - float.Parse(xy[1], System.Globalization.CultureInfo.InvariantCulture);
+            Console.WriteLine($"[dump-ui-at] ({spec}) on {Screen.width}x{Screen.height}");
+            foreach (var g in CosmicShore.Engine.Object.FindObjectsByType<CosmicShore.Engine.UI.Graphic>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+            {
+                if (!g.isActiveAndEnabled || g.transform is not RectTransform rt) continue;
+                var c = new Vector3[4];
+                rt.GetWorldCorners(c);
+                if (x < c[0].x || x > c[2].x || y < c[0].y || y > c[2].y) continue;
+                float alpha = g.color.a * g.canvasRenderer.GetAlpha();
+                for (var t = g.transform; t != null; t = t.parent)
+                    foreach (var cg in t.gameObject.GetComponents<CosmicShore.Engine.CanvasGroup>()) alpha *= cg.alpha;
+                if (alpha < 0.01f) continue;
+                string tex = g is CosmicShore.Engine.UI.Image img ? (img.sprite != null ? "sprite=" + img.sprite.name : "sprite=NULL")
+                    : g is CosmicShore.Engine.UI.RawImage raw ? (raw.texture != null ? "texture=" + raw.texture.name : "texture=NULL") : g.GetType().Name;
+                Console.WriteLine($"  {Path(g.transform)}  [{g.GetType().Name}] {tex} color={g.color} alpha={alpha:0.00} rect=({c[0].x:0},{c[0].y:0})-({c[2].x:0},{c[2].y:0})");
+            }
+        }
+
+        static string Path(Transform t) => t.parent == null ? t.name : Path(t.parent) + "/" + t.name;
+
         public static void Print(string spec)
         {
             int depth = 4;

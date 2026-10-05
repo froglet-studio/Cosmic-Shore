@@ -28,9 +28,8 @@
 
     <!-- The game reflects over its own types (scene loading binds serialized fields and
          components by name), so nothing is trimmed away: what Unity calls "Strip Engine
-         Code: off". -->
-    <PublishTrimmed>false</PublishTrimmed>
-    <TrimMode>partial</TrimMode>
+         Code: off". Android says so with PublishTrimmed=false; iOS requires the trimmer to
+         run and says it with MtouchLink=None (below). -->
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
     <NoWarn>$(NoWarn);CA1416;XA4211;XA1006</NoWarn>
   </PropertyGroup>
@@ -40,6 +39,8 @@
     <AndroidPackageFormat Condition="'$(AndroidPackageFormat)' == ''">apk</AndroidPackageFormat>
     <RuntimeIdentifiers Condition="'$(CsAbis)' != ''">$(CsAbis)</RuntimeIdentifiers>
     <RuntimeIdentifiers Condition="'$(RuntimeIdentifiers)' == '' and '$(RuntimeIdentifier)' == ''">android-arm64</RuntimeIdentifiers>
+    <PublishTrimmed>false</PublishTrimmed>
+    <TrimMode>partial</TrimMode>
     <AndroidLinkMode>None</AndroidLinkMode>
     <!-- AOT needs trimming on Android; the game runs JIT-compiled (Mono) instead. -->
     <RunAOTCompilation>false</RunAOTCompilation>
