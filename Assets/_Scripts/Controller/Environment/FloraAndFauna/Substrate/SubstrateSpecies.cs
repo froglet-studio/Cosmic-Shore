@@ -260,6 +260,7 @@ namespace CosmicShore.Gameplay
             ("lurker", "w_creep", "2: creep while unwatched (bestiary; ablating it took wanderer hits to 0)"),
             ("lurker", "freeze", "1: looked at, it stops dead"),
             ("lurker", "mimic_body", "0.15: while calm its body is a sliver behind its heart - it reads as a crystal"),
+            ("lurker", "solitary.w_food", "0.5 (the pack's port value): every lifeform eats - the research lurker never ate (w_food 0, starve_s 1e9), and with a real starve_s it starved at its seat once the inner swarm had eaten that crystal (showcase cell: extinct by minute 7, 7 bites in 30 min); hunger-weighted, so a fed lurker still sits"),
         };
 
         public static SubstrateSpeciesParams GameLocust()
@@ -288,6 +289,7 @@ namespace CosmicShore.Gameplay
             var p = Lurker();
             p.Capacity = 16; p.StarveS = 120f; p.BirthStock = 100f;
             p.StaminaS = 0.6f; p.RestS = 3f; p.RestSpeed = 0.2f; p.WCreep = 2f; p.Freeze = 1f; p.MimicBody = 0.15f;
+            p.Solitary.WFood = 0.5f;
             return p;
         }
 

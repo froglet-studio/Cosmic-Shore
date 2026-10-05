@@ -275,6 +275,9 @@ namespace CosmicShore.Gameplay
             Stock[i] += volume;
             Hunger[i] = MathF.Max(0f, Hunger[i] - volume * P.HungerPerVol);
             MassIn += volume;
+            // a homing species (the lurker) takes the seat it last fed at: its seeded crystal is eaten in minutes, and
+            // homed to a spent seat a lurker starved beside nothing (round 11-10, Docs/SWARM_FAUNA.md §27)
+            if (P.Solitary.WHome > 0f) Home[i] = Pos[i];
         }
 
         /// <summary>The agent died (always through its proxy in the game). Returns the stock it took with it - the

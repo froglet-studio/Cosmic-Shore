@@ -142,7 +142,7 @@ sealed class SwarmSystem : ICellSystem
         public Vector3 Goal;
         public bool Foraging;
         public Plant? GoalPlant;
-        public float GoalSince, AtPlantSince = -1f, LastGoalBite = -1f, LastFed, LastShed = -1e9f;
+        public float GoalSince, AtPlantSince = -1f, LastGoalBite = -1f, LastFed, LastShed = -1e9f, GoalBest = float.MaxValue, GoalProgressAt;
         public readonly Dictionary<Plant, float> Rested = new();
         public int BiteCursor;
         public readonly bool[] Gone;
@@ -347,6 +347,10 @@ sealed class SwarmSystem : ICellSystem
             one.Goal = ResolveGoal(c, one);
             one.PeakAlive = Math.Max(one.PeakAlive, job.AliveCount);
         }
+        if (s_swarmTrace && _ticks % 100 == 0)
+            foreach (var one in _sw)
+                Console.WriteLine($"   SWARM t={c.T:F0} {Regions[one.Region]} alive {one.Job.AliveCount} fill {Fill(one):F2} foraging {one.Foraging} collapsed {one.Macro.Collapsed} " +
+                                  $"anchor r={one.Job.Anchor.Length():F0} goal {(one.GoalPlant == null ? "-" : $"plant {one.GoalPlant.Id} d={Vector3.Distance(one.GoalPlant.Heart, one.Job.Anchor):F0} plates {one.GoalPlant.Plates} at {(one.AtPlantSince >= 0 ? c.T - one.AtPlantSince : -1):F0}s")} unfed {c.T - one.LastFed:F0}s starved {one.Starved}");
         LastMs = ms;
     }
 
@@ -484,7 +488,7 @@ sealed class SwarmSystem : ICellSystem
         if (one.GoalPlant != null)
         {
             bool bare = one.AtPlantSince >= 0f && now - MathF.Max(one.AtPlantSince, one.LastGoalBite) > giveUp;
-            bool unreached = one.AtPlantSince < 0f && now - one.GoalSince > 6f * giveUp;
+            bool unreached = one.AtPlantSince < 0f && now - one.GoalProgressAt > 6f * giveUp;   // no progress (round 11-10)
             if (!one.Foraging || bare || unreached || !one.GoalPlant.Alive)
             {
                 one.Rested[one.GoalPlant] = now;
@@ -510,9 +514,16 @@ sealed class SwarmSystem : ICellSystem
             }
             if (plant != null)
             {
-                if (plant != one.GoalPlant) { one.GoalPlant = plant; one.GoalSince = now; one.AtPlantSince = -1f; one.LastGoalBite = -1f; }
-                if (one.AtPlantSince < 0f && Vector3.DistanceSquared(plant.Heart, here) < 60f * 60f) one.AtPlantSince = now;
-                return ClampBand(one, plant.Heart);
+                if (plant != one.GoalPlant)
+                {
+                    one.GoalPlant = plant; one.GoalSince = now; one.AtPlantSince = -1f; one.LastGoalBite = -1f;
+                    one.GoalBest = float.MaxValue; one.GoalProgressAt = now;
+                }
+                float d = Vector3.Distance(plant.Heart, here);
+                if (d < one.GoalBest - 1f) { one.GoalBest = d; one.GoalProgressAt = now; }
+                if (one.AtPlantSince < 0f && d < 60f) one.AtPlantSince = now;
+                // SwarmFauna.ResolveGoal: along the shell (SwarmShellPath), the Goal setter clamps into the band
+                return ClampBand(one, SwarmShellPath.Toward(Vector3.Zero, here, plant.Heart, here.Length(), Cell.F(_cfg, "WanderReach")));
             }
         }
         if (Vector3.DistanceSquared(one.Goal, here) > 40f * 40f) return one.Goal;
@@ -532,6 +543,7 @@ sealed class SwarmSystem : ICellSystem
     public int Colliders(Cell c) { int n = 0; foreach (var one in _sw) n += 2 * one.Proxies.Count; return n; }
 
     static readonly string[] Regions = { "inner", "middle", "outer" };
+    static readonly bool s_swarmTrace = Environment.GetEnvironmentVariable("SHOWCASE_SWARM_TRACE") == "1";
 
     public void Census(List<(string, int, int)> into)
     {
@@ -1143,7 +1155,7 @@ sealed class BuilderSystem : ICellSystem
         Founders = (int)Cell.F(k, "WearerFounders"), MaxHearts = (int)Cell.F(k, "MaxWearerHearts"), Speed = Cell.F(k, "WearerSpeed"),
         HuntAt = (int)Cell.F(k, "WearHuntAt"), BodyCap = (int)Cell.F(k, "WearBodyCap"), WornCap = (int)Cell.F(k, "WornCap"),
         Sense = Cell.F(k, "WearSense"), KeepOff = Cell.F(k, "WearKeepOff"), Windup = Cell.F(k, "WearWindup"), Lunge = Cell.F(k, "WearLunge"),
-        RearAt = Cell.F(k, "WearRearAt"), Contact = Cell.F(k, "WearContact"),
+        RearAt = Cell.F(k, "WearRearAt"), Contact = Cell.F(k, "WearContact"), Sight = Cell.F(k, "WearSight"),
         HurtFraction = Cell.F(k, "WearHurtFraction"), HurtShed = Cell.F(k, "WearHurtShed"), HurtWindow = Cell.F(k, "WearHurtWindow"),
         Containment = membrane * 0.95f, CellCentre = Vector3.Zero,
         Stomach = new BuilderStomachParams
@@ -1278,6 +1290,10 @@ sealed class BuilderSystem : ICellSystem
         c.World.Eater = "builders";
         float dt = 1f / _hz;
         bool fortStepped = StepColony(_fortC, c, (v, k) => { Fort.WindDown = k == 0 && c.T < _fortC.WindDownUntil; Fort.Step(dt, v, k); });
+        // thieves and wearers sense vessels within their own sight sphere (BuilderColonyFauna.SenseVessels), not the
+        // whole membrane, so a colony nobody is near can roost (round 11-10 target 5)
+        (_thiefC.SenseFrom, _thiefC.SenseRadius) = Thief.SightSphere();
+        if (Wear != null) (_wearC!.SenseFrom, _wearC.SenseRadius) = Wear.SightSphere();
         c.World.Stealer = "thieves";
         bool thiefStepped = StepColony(_thiefC, c, (v, k) => Thief.Step(dt, v, k));
         c.World.Stealer = "wearers";
@@ -1286,6 +1302,9 @@ sealed class BuilderSystem : ICellSystem
         if (s_deathTrace && thiefStepped)
             foreach (var d in Thief.Deaths)
                 Console.WriteLine($"   DEATH thief t={c.T:F1} by {(d.Vessel >= 0 && d.Vessel < c.Pilots.Count ? c.Pilots[d.Vessel].Kind : d.Vessel.ToString())} at r={d.At.Length():F0} nest {Vector3.Distance(d.At, Thief.Nest):F0}u carry {Thief.Carry[d.Agent]} claim {Thief.Claim[d.Agent]} pilotV {(d.Vessel >= 0 && d.Vessel < c.Pilots.Count ? c.Pilots[d.Vessel].Vel.Length() : 0):F0}");
+        if (s_deathTrace && wearStepped)
+            foreach (var d in Wear!.Deaths)
+                Console.WriteLine($"   DEATH wearer t={c.T:F1} by {(d.Vessel >= 0 && d.Vessel < c.Pilots.Count ? c.Pilots[d.Vessel].Kind : d.Vessel.ToString())} at r={d.At.Length():F0} stomach {d.Stomach:F1} alive {Wear.AliveCount}");
         if (fortStepped) BookDeaths(Fort.Deaths, Fort.Born);
         if (thiefStepped) BookDeaths(Thief.Deaths, Thief.Born);
         if (wearStepped) BookDeaths(Wear!.Deaths, Wear.Born);

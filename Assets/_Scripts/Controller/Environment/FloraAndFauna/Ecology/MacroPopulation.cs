@@ -126,6 +126,10 @@ namespace CosmicShore.Gameplay
                     if (want || p.NeedsIndividuals || SeenByAnyPilot(p)) { p.Expand(); Expands++; continue; }
                     p.MacroTick(dt);
                     MacroTicks++;
+                    // the tick MOVED it (a collapsed swarm drifts toward its goal): if that brought it into a pilot's view or
+                    // prefetch, it expands in this same tick, before a frame can draw it. Before round 11-10 it stayed
+                    // collapsed until the next frame's Guard - the whole-cell run caught one such frame in 30 min.
+                    if (WantsIndividuals(p) || SeenByAnyPilot(p)) { p.Expand(); Expands++; }
                     continue;
                 }
                 if (want || p.NeedsIndividuals || !p.CanCollapse) continue;

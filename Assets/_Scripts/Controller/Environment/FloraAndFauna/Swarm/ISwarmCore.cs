@@ -15,6 +15,51 @@ using System.Numerics;
 
 namespace CosmicShore.Gameplay
 {
+    /// <summary>
+    /// Round 11-10 (Docs/SWARM_FAUNA.md §27): how a banded swarm TRAVELS. Its goal used to be the target itself (a plant
+    /// heart), so it swam the straight chord - a jellyfish crossing its 910-1080 u shell to a plant on the far side dove to
+    /// r ~ 780, through the pufferfish's shell, and its macro body (which drifts rigidly toward the goal) did the same. The
+    /// bands are the cell's layout, so the swarm now follows its shell: the goal is a waypoint on the band at most
+    /// <c>maxArc</c> of arc ahead, toward the target, and the target itself once it is within that arc.
+    /// </summary>
+    public static class SwarmShellPath
+    {
+        /// <summary>The next waypoint from <paramref name="here"/> toward <paramref name="target"/> along the shell of
+        /// radius <paramref name="radius"/> about <paramref name="centre"/> (world units). A target within
+        /// <paramref name="maxArc"/> of arc is returned as it is.</summary>
+        public static Vector3 Toward(Vector3 centre, Vector3 here, Vector3 target, float radius, float maxArc)
+        {
+            var a = here - centre;
+            var b = target - centre;
+            float la = a.Length(), lb = b.Length();
+            if (la < 1e-3f || lb < 1e-3f || radius <= 0f) return target;
+            var ua = a / la; var ub = b / lb;
+            float cos = Math.Clamp(Vector3.Dot(ua, ub), -1f, 1f);
+            float ang = MathF.Acos(cos);
+            float step = maxArc / radius;
+            if (ang <= step) return target;
+            // the great circle from ua toward ub (antipodal: any perpendicular)
+            var perp = ub - ua * cos;
+            if (perp.LengthSquared() < 1e-8f)
+            {
+                perp = Vector3.Cross(ua, MathF.Abs(ua.Y) < 0.9f ? Vector3.UnitY : Vector3.UnitX);
+            }
+            perp = Vector3.Normalize(perp);
+            var dir = ua * MathF.Cos(step) + perp * MathF.Sin(step);
+            return centre + dir * radius;
+        }
+
+        /// <summary>Arc distance along a shell of <paramref name="radius"/> from <paramref name="here"/> to the target's
+        /// direction - what "progress toward a plant" is measured in.</summary>
+        public static float Arc(Vector3 centre, Vector3 here, Vector3 target, float radius)
+        {
+            var a = here - centre; var b = target - centre;
+            float la = a.Length(), lb = b.Length();
+            if (la < 1e-3f || lb < 1e-3f) return 0f;
+            return radius * MathF.Acos(Math.Clamp(Vector3.Dot(a / la, b / lb), -1f, 1f));
+        }
+    }
+
     /// <summary>Which simulation drives a swarm. Explicit values: the enum is serialized.</summary>
     public enum SwarmModel
     {

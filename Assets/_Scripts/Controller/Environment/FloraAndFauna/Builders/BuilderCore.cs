@@ -182,19 +182,45 @@ namespace CosmicShore.Gameplay
     /// the owner expands the colony before its emptiest stomach runs out, so starvation is always an individual's death
     /// (through <c>Kill(k, StarvedBy)</c> and a proxy's crystal). Shared by the three builder cores.
     /// </summary>
+    /// <summary>
+    /// Round 11-10 (Docs/SWARM_FAUNA.md §27): the builder cores' mass ledger is EXACT. A stomach is a float and its
+    /// metabolism is a few ten-thousandths of a volume a tick, so "stomach -= burn; Metabolised += burn" in float lost
+    /// ~1e-4 a tick: once the whole-cell run kept colonies alive for 30 min the builders' books drifted by 4.9 volume
+    /// (1.3e-5 of the cell). Every stomach change now books exactly what the float moved by, into double accumulators.
+    /// </summary>
+    public static class BuilderLedger
+    {
+        /// <summary>Takes <paramref name="amount"/> out of a float stomach and returns exactly how much it went down by.</summary>
+        public static double Take(ref float stomach, float amount)
+        {
+            float before = stomach;
+            stomach = before - amount;
+            return (double)before - stomach;
+        }
+
+        /// <summary>Puts <paramref name="amount"/> into a float stomach and returns exactly how much it went up by.</summary>
+        public static double Put(ref float stomach, float amount)
+        {
+            float before = stomach;
+            stomach = before + amount;
+            return (double)stomach - before;
+        }
+    }
+
     public static class BuilderRoost
     {
         /// <summary>Burns <paramref name="rate"/> x <paramref name="dt"/> from every living member's stomach (never below 0,
-        /// never a death). Returns the volume burned (the core adds it to its Metabolised ledger).</summary>
-        public static float Burn(bool[] alive, float[] stomach, int cap, float rate, float dt, RoostBug bug = RoostBug.None)
+        /// never a death). Returns the volume burned (the core adds it to its Metabolised ledger) - the exact amount each
+        /// float stomach went down by, summed in double (see <see cref="BuilderLedger"/>).</summary>
+        public static double Burn(bool[] alive, float[] stomach, int cap, float rate, float dt, RoostBug bug = RoostBug.None)
         {
-            if (bug == RoostBug.NoBurn) return 0f;
-            float burned = 0f;
+            if (bug == RoostBug.NoBurn) return 0.0;
+            double burned = 0.0;
             for (int k = 0; k < cap; k++)
             {
                 if (!alive[k]) continue;
                 float b = MathF.Min(stomach[k], rate * dt);
-                stomach[k] -= b; burned += b;
+                burned += BuilderLedger.Take(ref stomach[k], b);
                 if (bug == RoostBug.KillOnEmpty && stomach[k] <= 0f) alive[k] = false;
             }
             return burned;

@@ -75,6 +75,7 @@ MonoBehaviour:
   WornCap: 300
   WearSense: 180
   WearKeepOff: 90
+  WearSight: 700
   WearWindup: 1
   WearLunge: 2.2
   WearRearAt: 140

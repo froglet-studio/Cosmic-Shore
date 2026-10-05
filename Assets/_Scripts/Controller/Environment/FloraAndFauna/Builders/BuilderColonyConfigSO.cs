@@ -163,6 +163,9 @@ namespace CosmicShore.Gameplay
         public float WearSense = 180f;
         [Tooltip("A skulking heart never steals closer than this to a ship.")]
         public float WearKeepOff = 90f;
+        [Tooltip("How far a heart SEES a ship (the thief nest's SpotRange). A ship beyond it is not followed or hunted, so a " +
+                 "colony with nobody in sight can roost (round 11-10; before, hearts saw the nearest ship anywhere).")]
+        public float WearSight = 700f;
         [Tooltip("The rear: seconds the body contracts before it lunges (the telegraph).")]
         public float WearWindup = 1f;
         [Tooltip("Lunge speed factor (x 1.8 of the body's speed).")]
@@ -185,7 +188,7 @@ namespace CosmicShore.Gameplay
         public WearerParams ToWearerParams(Vector3 cellCentre, float membrane) => new()
         {
             Founders = WearerFounders, MaxHearts = MaxWearerHearts, Speed = WearerSpeed, HuntAt = WearHuntAt,
-            BodyCap = WearBodyCap, WornCap = WornCap, Sense = WearSense, KeepOff = WearKeepOff,
+            BodyCap = WearBodyCap, WornCap = WornCap, Sense = WearSense, KeepOff = WearKeepOff, Sight = WearSight,
             Windup = WearWindup, Lunge = WearLunge, RearAt = WearRearAt, Contact = WearContact,
             HurtFraction = WearHurtFraction, HurtShed = WearHurtShed, HurtWindow = WearHurtWindow,
             Containment = membrane * 0.95f, CellCentre = new SVector3(cellCentre.x, cellCentre.y, cellCentre.z),

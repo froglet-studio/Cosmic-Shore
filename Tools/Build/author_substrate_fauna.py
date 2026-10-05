@@ -53,10 +53,14 @@ ROOT_TR_FID = "6630180297114401203"
 AGENT_MB_FID = swarm.TADPOLE_MB_FID     # the member MB keeps the tadpole's fileID (the derived body references it)
 
 # species key -> everything the glue and the cell need. Band radii are the cell's (FaunaConfigurationSO.Band*Radius).
+# at_flora (round 11-10, Docs/SWARM_FAUNA.md §27): the GRAZERS hatch at the living flora in their band, as the lurker
+# always did. A random hatch point in a 3-5 plant shell (2e9 u^3) is outside every food field's 240 u reach ~85% of the
+# time, and a 31 u/s solitary locust starves (~80 s stomach + reserve) before it finds a plant: in the whole-cell run
+# the locusts asked 4,063 times for food and found none.
 SPECIES = [
-    dict(key="pack", title="Pack Hunter", element="Time", band=(690, 1080), seed=0, spread=40, at_flora=0,
+    dict(key="pack", title="Pack Hunter", element="Time", band=(690, 1080), seed=0, spread=40, at_flora=1,
          engage=260, proxies=7, bites=4, spawns=7),
-    dict(key="locust", title="Locust", element="Space", band=(910, 1080), seed=0, spread=80, at_flora=0,
+    dict(key="locust", title="Locust", element="Space", band=(910, 1080), seed=0, spread=80, at_flora=1,
          engage=140, proxies=24, bites=16, spawns=8),
     dict(key="lurker", title="Lurker", element="Mass", band=(470, 620), seed=8, spread=30, at_flora=1,
          engage=160, proxies=8, bites=4, spawns=4),

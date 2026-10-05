@@ -88,6 +88,7 @@ namespace CosmicShore.Gameplay
         readonly List<IVesselStatus> _seen = new(8);
         Flora _goalPlant;
         float _atPlantSince = -1f, _lastGoalBite = -1f, _goalSince;
+        float _goalBest = float.MaxValue, _goalProgressAt;   // closest it has come to the goal plant, and when (round 11-10)
         bool _foraging = true;
         readonly Dictionary<Flora, float> _rested = new();
         static int s_spawnFrame = -1, s_spawnsThisFrame;
@@ -1478,7 +1479,11 @@ namespace CosmicShore.Gameplay
             if (_goalPlant)
             {
                 bool bare = _atPlantSince >= 0f && now - Mathf.Max(_atPlantSince, _lastGoalBite) > config.GiveUpSeconds;
-                bool unreached = _atPlantSince < 0f && now - _goalSince > 6f * config.GiveUpSeconds;   // never got there
+                // never got there: no PROGRESS toward it for 6 x GiveUp. Before round 11-10 this was 6 x GiveUp since the
+                // goal was chosen, which a 7 u/s swarm cannot beat to a plant 420+ u away - it gave up, rested the plant,
+                // picked the next, gave that up, and starved commuting between plants it never reached (the outer swarm
+                // in the whole-cell run: 207 of 240 starved in 5 min, never once at a plant).
+                bool unreached = _atPlantSince < 0f && now - _goalProgressAt > 6f * config.GiveUpSeconds;
                 if (!_foraging || bare || unreached || _goalPlant.IsDying)
                 {
                     _rested[_goalPlant] = now;   // leave it to regrow; the next meal is elsewhere
@@ -1497,10 +1502,18 @@ namespace CosmicShore.Gameplay
                     (_rested.TryGetValue(f, out float t) && now - t < config.PlantRestSeconds));
                 if (plant)
                 {
-                    if (plant != _goalPlant) { _goalPlant = plant; _goalSince = now; _atPlantSince = -1f; _lastGoalBite = -1f; }
+                    if (plant != _goalPlant)
+                    {
+                        _goalPlant = plant; _goalSince = now; _atPlantSince = -1f; _lastGoalBite = -1f;
+                        _goalBest = float.MaxValue; _goalProgressAt = now;
+                    }
                     Vector3 target = plant.HeartTransform.position;
-                    if (_atPlantSince < 0f && (target - here).sqrMagnitude < 60f * 60f) _atPlantSince = now;
-                    return target;
+                    float d = (target - here).magnitude;
+                    if (d < _goalBest - 1f) { _goalBest = d; _goalProgressAt = now; }
+                    if (_atPlantSince < 0f && d < 60f) _atPlantSince = now;
+                    // travel along this swarm's shell, never the chord through the cell (SwarmShellPath)
+                    var w = SwarmShellPath.Toward(Sim(_centre), Sim(here), Sim(target), (here - _centre).magnitude, config.WanderReach);
+                    return new Vector3(w.X, w.Y, w.Z);
                 }
             }
 

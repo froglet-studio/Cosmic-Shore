@@ -17,7 +17,8 @@ static partial class Program
         public Action<float, BuilderVessel[], int> Step;
         public Action<float> Roost;
         public Func<bool> CanRoost;
-        public Func<float> SecondsLeft, Metabolised;
+        public Func<float> SecondsLeft;
+        public Func<double> Metabolised;
         public Func<int> Starved;
         public Action<RoostBug> SetBug;
         public bool[] Alive; public float[] Stomach; public Vector3[] Pos;

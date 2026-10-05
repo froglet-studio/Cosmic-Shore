@@ -83,6 +83,10 @@ static class Program
         UnitDeathStomach(layout);
         Console.WriteLine("\nU5 substrate fields: a decaying signal never ends as subnormal float dust (SubstrateFields.Blur)");
         UnitDenormal();
+        Console.WriteLine("\nU6 ecology LOD: a collapsed body its macro tick moves into a pilot's prefetch expands in that same tick (EcologyLodDirector.Tick)");
+        UnitMacroDrift();
+        Console.WriteLine("\nU7 builder ledgers are exact: a 30-min torpor in float stomachs books exactly what they lost (BuilderLedger)");
+        UnitBuilderLedger();
 
         var runs = new List<RunResult>();
         if (mode == "quick") runs.Add(Run(layout, plans, density, 1, 120f, null));
@@ -184,6 +188,65 @@ static class Program
     /// far from the pilot sits forever in float's subnormal range - the showcase cell's 30-min run, where the
     /// substrate's step grew from 2 to 32 ms. Every value must stay normal or 0. Negative control: the same
     /// source-blur-decay without the flush (the pre-fix arithmetic, replayed on one row of cells) holds subnormals.</summary>
+    /// <summary>A fake collapsed population drifting 30 u a macro tick toward a pilot that flies past it sideways.</summary>
+    sealed class DriftPop : IMacroPopulation
+    {
+        public Vector3 C;
+        public bool Col = true;
+        public Vector3 MacroCentre => C;
+        public float MacroExtent => 0f;
+        public bool IsCollapsed => Col;
+        public bool CanCollapse => !Col;
+        public bool NeedsIndividuals => false;
+        public MacroPopulationTotals Totals => default;
+        public bool Collapse() { Col = true; return true; }
+        public void Expand() => Col = false;
+        public void MacroTick(float dt) => C -= new Vector3(30f * dt, 0f, 0f);
+    }
+
+    /// <summary>U6: the pilot sits at the origin flying +Y (the body is abeam, outside its forward cone); the body starts
+    /// 15 u outside the director's expand radius and its macro tick moves it 30 u in. The director must leave it expanded
+    /// after that Tick. Negative control: the pre-fix tick (MacroTick, no re-check) leaves it collapsed inside the radius
+    /// until the next frame's Guard.</summary>
+    static void UnitMacroDrift()
+    {
+        bool After(bool fixedTick)
+        {
+            var dir = new EcologyLodDirector();
+            var pop = new DriftPop { C = new Vector3((float)dir.P.ExpandRadius + 15f, 0f, 0f) };
+            dir.Register(pop);
+            dir.SetPilots(new[] { new EcologyPilot { Vy = 120, Speed = 120 } });
+            if (fixedTick) dir.Tick(1f);
+            else pop.MacroTick(1f);   // what Tick did before round 11-10 for a collapsed body nobody wanted yet
+            bool inside = pop.C.Length() < dir.P.ExpandRadius;
+            return inside && pop.IsCollapsed;
+        }
+        bool fixedLeft = After(true), preLeft = After(false);
+        Console.WriteLine($"   after the tick that moved it inside the expand radius: collapsed {fixedLeft} (pre-fix order: {preLeft})");
+        Check(!fixedLeft, "U6 a body the macro tick moves into prefetch is expanded within that tick");
+        Check(preLeft, "U6 negative control: ticking without the re-check leaves it collapsed inside the radius");
+    }
+
+    /// <summary>U7: 16 roosting members (12-29 volume stomachs) at the wearers' torpor for 30 min of 10 Hz macro-equivalent burns; Metabolised must
+    /// equal exactly what the float stomachs lost. Negative control: the pre-fix float bookkeeping drifts.</summary>
+    static void UnitBuilderLedger()
+    {
+        var alive = Enumerable.Repeat(true, 16).ToArray();
+        var st = Enumerable.Range(0, 16).Select(k => 12f + 1.13f * k).ToArray();   // 12-29 volume stomachs, the cores' range
+        double before = st.Sum(v => (double)v), booked = 0;
+        float preFix = 0f;
+        var st2 = (float[])st.Clone();
+        for (int t = 0; t < 18000; t++)
+        {
+            booked += BuilderRoost.Burn(alive, st, 16, 0.004f, 0.1f);
+            for (int k = 0; k < 16; k++) { float b = MathF.Min(st2[k], 0.004f * 0.1f); st2[k] -= b; preFix += b; }
+        }
+        double lost = before - st.Sum(v => (double)v), lost2 = before - st2.Sum(v => (double)v);
+        Console.WriteLine($"   lost {lost:F4}, booked {booked:F4} (error {Math.Abs(lost - booked):E1}); pre-fix float books {preFix:F4} vs lost {lost2:F4} (error {Math.Abs(lost2 - preFix):E1})");
+        Check(Math.Abs(lost - booked) < 1e-9 * before, "U7 Metabolised books exactly what the stomachs lost");
+        Check(Math.Abs(lost2 - preFix) > 1e-3, "U7 negative control: float bookkeeping drifts measurably");
+    }
+
     static void UnitDenormal()
     {
         var f = new SubstrateFields(1200f, 40);

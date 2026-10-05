@@ -53,6 +53,10 @@ namespace CosmicShore.Gameplay
         public float Windup = 1f, Lunge = 2.2f, RearAt = 140f;
         public bool Intercept = true;
         public float Sense = 180f;
+        /// <summary>Round 11-10: how far a heart SEES a ship (the thief nest's research SpotRange, 700 u). Before, a heart saw
+        /// the nearest ship anywhere in the cell, so the colony sensed membrane-wide and never roosted while any pilot was
+        /// in the cell (Docs/SWARM_FAUNA.md §27).</summary>
+        public float Sight = 700f;
         public float TrailPreference = 0.15f;   // squared-distance multiplier for a pilot's trail (research 0.15)
         public float KeepOff = 90f;             // never steal closer than this to the pilot (a THIEF skulks)
         public float FleeRange = 70f;           // a thief turned on flees
@@ -109,7 +113,8 @@ namespace CosmicShore.Gameplay
         // ledgers
         public int WornSteals, WornTrail, Fusions, Splits, Kills, Starved, Births, Eaten, Stripped, Queries;
         public int SatiationMoults, HurtMoults, Shed, Returned, Lunges, Hits;
-        public float StrippedVolume, EatenVolume, ReturnedVolume, Metabolised, BirthPaid, MaxTelegraph, MinTelegraph = float.MaxValue;
+        public float StrippedVolume, ReturnedVolume, MaxTelegraph, MinTelegraph = float.MaxValue;
+        public double EatenVolume, Metabolised, BirthPaid;
         public int BodyPoses, MaxBody;
         public readonly List<BuilderDeath> Deaths = new();
         public readonly List<int> Born = new();
@@ -149,7 +154,7 @@ namespace CosmicShore.Gameplay
 
         // ── read surface ──────────────────────────────────────────────────────────────────────────
         public int AliveCount { get { int n = 0; for (int k = 0; k < Cap; k++) if (Alive[k]) n++; return n; } }
-        public float StomachTotal { get { float s = 0f; for (int k = 0; k < Cap; k++) if (Alive[k]) s += Stomach[k]; return s; } }
+        public double StomachTotal { get { double s = 0.0; for (int k = 0; k < Cap; k++) if (Alive[k]) s += Stomach[k]; return s; } }
         public bool IsLeader(int k) => Alive[k] && Leader[k] == k;
         public int BodyCount(int k) => _body[k].Count;
         public int WornTotal => _wornBy.Count;
@@ -416,9 +421,23 @@ namespace CosmicShore.Gameplay
             for (int v = 0; v < count; v++)
             {
                 float d = Vector3.Distance(vessels[v].Pos, Pos[k]);
-                if (d < dist) { dist = d; best = v; }
+                if (d < dist && d <= P.Sight) { dist = d; best = v; }
             }
             return best;
+        }
+
+        /// <summary>The sphere every vessel a heart could react to lies in: the living hearts' bounds grown by
+        /// <see cref="WearerParams.Sight"/> (and a body's radius). What the glue senses vessels over.</summary>
+        public (Vector3 centre, float radius) SightSphere()
+        {
+            var c = Vector3.Zero; int n = 0;
+            for (int k = 0; k < Cap; k++) if (Alive[k]) { c += Pos[k]; n++; }
+            if (n == 0) return (P.CellCentre, 0f);
+            c /= n;
+            float r = 0f;
+            for (int k = 0; k < Cap; k++)
+                if (Alive[k]) r = MathF.Max(r, Vector3.Distance(Pos[k], c) + (IsLeader(k) ? Radius(k) : 0f));
+            return (c, r + P.Sight);
         }
 
         Vector3 Thieve(int k, BuilderVessel tgt, bool has, float dist, float sp, float R)
@@ -586,7 +605,7 @@ namespace CosmicShore.Gameplay
             Outermost(k, _body[k].Count - keep);
             var s = P.Stomach;
             int slot = FreeSlot();
-            float paid = 0f;
+            double paid = 0.0;
             var at = Pos[k];
             foreach (int h in _scratch)
             {
@@ -602,7 +621,7 @@ namespace CosmicShore.Gameplay
                 _lair.Add(h); Shed++;
             }
             SatiationMoults++;
-            if (slot >= 0 && paid > 0f) Birth(slot, at, paid);
+            if (slot >= 0 && paid > 0.0) Birth(slot, at, paid);
         }
 
         /// <summary>HURT MOULT (game): a body that lost a sixth of itself inside the window sheds the outer layer of what is
@@ -643,14 +662,14 @@ namespace CosmicShore.Gameplay
             return -1;
         }
 
-        void Birth(int j, Vector3 at, float stomach)
+        void Birth(int j, Vector3 at, double stomach)
         {
             Alive[j] = true; Leader[j] = j; Goal[j] = -1; Phase[j] = Thief; Intent[j] = 0f; Squash[j] = 1f;
             Pos[j] = at + _rng.Normal3(8f); Vel[j] = Vector3.Zero;
             _right[j] = Vector3.UnitX; _up[j] = Vector3.UnitY; _fwd[j] = Vector3.UnitZ;
             _body[j].Clear(); ResetFrontier(j); _hurt[j] = 0f; _danger[j] = false; PlatformBody[j] = false;
-            Stomach[j] = MathF.Min(stomach, P.Stomach.Capacity);
-            Metabolised += MathF.Max(0f, stomach - Stomach[j]);   // a stomach can hold only so much; the rest is spent
+            Stomach[j] = (float)Math.Min(stomach, P.Stomach.Capacity);
+            Metabolised += stomach - Stomach[j];   // a stomach can hold only so much; the rest is spent
             BornAt[j] = Time; Births++; BirthPaid += stomach;
             Born.Add(j);
         }
@@ -672,13 +691,12 @@ namespace CosmicShore.Gameplay
                     Detach(h);
                     float v = _world.Consume(h, at);
                     float room = s.Capacity - Stomach[k];
-                    Stomach[k] += MathF.Min(v, room);
-                    Metabolised += MathF.Max(0f, v - room);
+                    Metabolised += v - BuilderLedger.Put(ref Stomach[k], MathF.Min(v, room));
                     Eaten++; EatenVolume += v;
                 }
             }
             float burn = MathF.Min(Stomach[k], s.Metabolism * dt);
-            Stomach[k] -= burn; Metabolised += burn;
+            Metabolised += BuilderLedger.Take(ref Stomach[k], burn);
             if (Stomach[k] <= 0f) Kill(k, BuilderDeath.StarvedBy);
         }
 
