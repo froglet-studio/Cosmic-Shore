@@ -161,7 +161,7 @@ def grove_asset(d):
         f"  TubeLeaf: {_v(d['TubeLeaf'])}\n  ShellLeaf: {_v(d['ShellLeaf'])}\n  ShellRadius: {_g(d['ShellRadius'])}\n"
         f"  PlantedTubesPerSclerotium: {int(d['PlantedTubesPerSclerotium'])}\n  MaxTubes: {int(d['MaxTubes'])}\n"
         f"  PhysarumHz: {_g(d['SimHz'])}\n  WarmupStepsPerFrame: 3\n  MaxLaysPerFrame: 24\n"
-        "  FoodRefreshSeconds: 1\n  MaxFood: 1024\n"
+        "  FoodRefreshSeconds: 1\n  MaxFood: 1024\n  FarTimeScale: 0.25\n  FarMargin: 400\n"
         f"  Theme: {{fileID: 11400000, guid: {THEME}, type: 2}}\n")
 
 

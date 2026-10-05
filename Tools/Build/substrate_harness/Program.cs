@@ -10,7 +10,7 @@ using System.Numerics;
 using System.Text.Json;
 using CosmicShore.Gameplay;
 
-static class SubstrateHarness
+static partial class SubstrateHarness
 {
     static int _fail;
     const float R = 1200f, Dt = 0.1f;
@@ -36,6 +36,7 @@ static class SubstrateHarness
         if (all || which == "job") Job();
         if (all || which == "index") IndexLedger();
         if (all || which == "kernel") KernelMatch();
+        if (all || which == "lod") Lod();
         if (all || which == "bench") Bench();
         Console.WriteLine(_fail == 0 ? "\nALL SUBSTRATE TESTS PASSED" : $"\n{_fail} SUBSTRATE ASSERTION(S) FAILED");
         return _fail == 0 ? 0 : 1;

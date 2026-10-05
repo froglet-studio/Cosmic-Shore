@@ -119,7 +119,79 @@ public static class PhysarumTests
         Telegraph(quick);
         Reroute(quick);
         GameGrove();
+        FarCadence();
         Cost(quick);
+    }
+
+    /// <summary>The game grove's core, warmed up (P4's set-up).</summary>
+    static PhysarumCore GameCore(int seed)
+    {
+        var p = ThreatGroveDefaults.Physarum().ForElement(ThreatGroveDefaults.PhysarumElement);
+        var shape = ThreatGroveDefaults.SwarmCellGrove(Vector3.Zero);
+        var c = new PhysarumCore(p, shape, (ulong)seed);
+        var rng = new ThreatRng((ulong)seed);
+        for (int k = 0; k < ThreatGroveDefaults.Sclerotia; k++)
+            c.AddHeart(shape.Sample(ref rng, 40f), ThreatGroveDefaults.PlantedVolumePerSclerotium);
+        int nf = 400;
+        c.EnsureFood(nf);
+        var centres = new Vector3[10];
+        for (int i = 0; i < 10; i++) centres[i] = shape.Sample(ref rng, 30f);
+        for (int i = 0; i < nf; i++)
+        {
+            c.FoodPos[i] = shape.Clamp(centres[i % 10] + rng.GaussianVector() * 25f, 8f);
+            c.FoodVol[i] = rng.Range(8f, 40f) * 4f;
+            c.FoodAlive[i] = true;
+        }
+        c.FoodCount = nf;
+        c.RunWarmup();
+        foreach (var e in c.Events) if (e.Kind == PhysarumEventKind.Digest) c.CreditDigest(c.FoodVol[e.Food]);
+        c.Events.Clear();
+        return c;
+    }
+
+    /// <summary>P6 (round 11f-2, Docs/ECOLOGY_LOD.md §6.3): flora is never LOD'd, but with nobody near the grove its
+    /// network runs on slowed time (ThreatGrove.FarScale -> ThreatFloraMath.FarTimeScale). Same steps, fewer a second:
+    /// the ledger closes every frame, the network time is exactly the dilated sum, the cost drops by the factor.</summary>
+    static void FarCadence()
+    {
+        // the rule
+        var centre = new Vector3(0, 0, 1000);
+        Span<Vector3> pilots = stackalloc Vector3[2];
+        pilots[0] = new Vector3(0, 0, 0); pilots[1] = centre + new Vector3(0, 399, 0);
+        Program.Check(ThreatFloraMath.FarTimeScale(centre, 400f, 0.25f, pilots) == 1f
+                      && ThreatFloraMath.FarTimeScale(centre, 400f, 0.25f, pilots.Slice(0, 1)) == 0.25f
+                      && ThreatFloraMath.FarTimeScale(centre, 400f, 0.25f, ReadOnlySpan<Vector3>.Empty) == 0.25f
+                      && ThreatFloraMath.FarTimeScale(centre, 400f, 1f, ReadOnlySpan<Vector3>.Empty) == 1f,
+            "P6 far cadence: full rate while a pilot is within reach + margin, the far scale otherwise, never below 0");
+
+        // the core under a near / far / near schedule (0.1 s frames, 60 s)
+        const float scale = 0.25f, dt = 0.1f;
+        var full = GameCore(5);
+        var far = GameCore(5);
+        double expect = far.Time, worst = 0, m0 = far.Reserve + far.TubeVolumeTotal + far.HeartBodies;
+        long tFull = 0, tFar = 0;
+        var sw = new Stopwatch();
+        int farFrames = 0;
+        for (int k = 0; k < 600; k++)
+        {
+            bool near = k >= 200 && k < 300;
+            float s = near ? 1f : scale;
+            if (!near) farFrames++;
+            sw.Restart(); full.Advance(dt); tFull += near ? 0 : sw.ElapsedTicks;
+            foreach (var e in full.Events) if (e.Kind == PhysarumEventKind.Digest) full.CreditDigest(full.FoodVol[e.Food]);
+            sw.Restart(); far.Advance(dt * s); tFar += near ? 0 : sw.ElapsedTicks;
+            foreach (var e in far.Events) if (e.Kind == PhysarumEventKind.Digest) far.CreditDigest(far.FoodVol[e.Food]);
+            expect += dt * s;
+            worst = Math.Max(worst, Math.Abs(far.Audit()));
+        }
+        double ratio = (double)tFar / Math.Max(1, tFull);
+        Console.WriteLine($"   far cadence x{scale}: network time {far.Time:F2} s (expected {expect:F2}); {far.TubeCount} tubes " +
+                          $"(full rate {full.TubeCount}); ledger worst {worst:E2} (full rate {full.Audit():E2}); " +
+                          $"far-frame cost {ratio:P0} of full rate");
+        Program.Check(Math.Abs(far.Time - expect) < 0.11, "P6 the network time is the dilated sum (to one 0.1 s step)");
+        Program.Check(worst < 1e-6 && Math.Abs(full.Audit()) < 1e-6, $"P6 mass exact every frame on slowed time ({worst:E2})");
+        Program.Check(far.TubeCount > 0 && far.TubeCount <= far.P.MaxTubes, "P6 the network keeps its tubes, under the cap");
+        Program.Check(ratio < 0.45, $"P6 far frames cost {ratio:P0} of full rate (x{scale} expected, < 45%)");
     }
 
     /// <summary>A hand-laid straight cable through the research grove, a pacemaker at one end.</summary>

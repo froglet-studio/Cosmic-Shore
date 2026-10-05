@@ -79,6 +79,16 @@ namespace CosmicShore.Gameplay
         [SerializeField] bool simulateOffMainThread = true;
         [Tooltip("Seconds an empty population lingers before its anchor is despawned (the seeder may hatch a new one).")]
         [SerializeField, Min(0f)] float extinctLingerSeconds = 8f;
+        [Header("Round 11f-2 - ecology LOD (Docs/ECOLOGY_LOD.md §6.1)")]
+        [Tooltip("Far from every pilot and unseen, a population FREEZES: the cell's substrate skips it in every pass " +
+                 "(its agents hold still, keep their stock and index entries, so LiveVolume does not move) except " +
+                 "metabolism - each agent still gets hungry at the species' rate. It thaws on the research prefetch " +
+                 "radii (280 u, 450 u ahead) before a pilot can see it, when hit or hunted, or before its hungriest " +
+                 "agent's reserve runs out (starvation is decided only by individuals).")]
+        [SerializeField] bool macroLod = true;
+        [Tooltip("Seconds of reserve the hungriest agent must have left: below it a frozen population thaws (twice it " +
+                 "is needed to freeze), so an agent always starves - or eats - as an individual.")]
+        [SerializeField, Min(0.5f)] float thawReserveSeconds = 5f;
 
         public SubstrateSpeciesParams Species => species;
         public string SpeciesName => species != null ? species.Name : "";
@@ -101,6 +111,8 @@ namespace CosmicShore.Gameplay
         public int CellCapacity => cellCapacity;
         public bool SimulateOffMainThread => simulateOffMainThread;
         public float ExtinctLingerSeconds => extinctLingerSeconds;
+        public bool MacroLod => macroLod;
+        public float ThawReserveSeconds => thawReserveSeconds;
 
         /// <summary>A private copy for one population (a tuned asset never changes a live core under it).</summary>
         public SubstrateSpeciesParams ToParams() => (species ?? new SubstrateSpeciesParams()).Clone();

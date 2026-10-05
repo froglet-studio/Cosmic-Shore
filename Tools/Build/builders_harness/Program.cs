@@ -13,7 +13,7 @@ using System.Linq;
 using System.Numerics;
 using CosmicShore.Gameplay;
 
-static class Program
+static partial class Program
 {
     static int _fail;
     const float Dt = 0.1f;
@@ -39,6 +39,7 @@ static class Program
         if (only == "" || only == "fortress") Fortress();
         if (only == "" || only == "thieves") Thieves();
         if (only == "" || only == "wearers") Wearers();
+        if (only == "" || only == "lod") Lod();
         Console.WriteLine($"\n{(_fail == 0 ? "OK" : $"FAILED ({_fail})")} - builders harness, {sw.Elapsed.TotalSeconds:F1} s");
         return _fail == 0 ? 0 : 1;
     }

@@ -39,7 +39,7 @@ namespace CosmicShore.Gameplay
     /// (births bloom in the shader, proxies appear and leave under an unchanged picture, deaths wither through the
     /// platform); every agent drops one crystal (only through a proxy - an agent with no proxy cannot die).
     /// </summary>
-    public class SubstrateFauna : Fauna, IVirtualFaunaOwner, IVirtualPrismBudget, ISwarmEntrySink
+    public class SubstrateFauna : Fauna, IVirtualFaunaOwner, IVirtualPrismBudget, ISwarmEntrySink, IMacroPopulation
     {
         [Header("Substrate")]
         [Tooltip("The species this population is (its parameters, drawing, proxy budget and feeding).")]
@@ -88,6 +88,13 @@ namespace CosmicShore.Gameplay
         float[] _mouthUntil;
         int _mouthCursor, _biteCursor;
         float _extinctSince = -1f;
+
+        // round 11f-2 (Docs/ECOLOGY_LOD.md §6.1): the population as an IMacroPopulation - frozen in the shared core
+        CellEcologyLod _lod;
+        bool _collapsed;
+        SVector3 _macroCentre;
+        float _macroExtent, _reserveS = float.PositiveInfinity;
+        double _reserveVol;
 
         static int s_spawnFrame = -1, s_spawnsThisFrame, s_hitFrame = -1, s_hitsThisFrame;
 
@@ -185,6 +192,12 @@ namespace CosmicShore.Gameplay
             if (_render != null) _render.DrawBodies = !_unified;
             BuildMouths();
             VirtualFauna.Register(this);
+            ReadMacroState(host);
+            if (species.MacroLod)
+            {
+                _lod = CellEcologyLod.For(HostCell);
+                _lod?.Register(this);
+            }
             CSDebug.LogVerbose(CSLogChannel.Ecology,
                 $"[Substrate] {name}: {species.SpeciesName} population {pop} seeded ({host.Core.Pops[pop].Alive} agents, slots " +
                 $"{_start}..{_start + _cap - 1}, band {inner:F0}-{outer:F0}, bodies {(_unified ? "prism entities" : _gpu ? "instanced" : "proxy-only")})");
@@ -239,6 +252,8 @@ namespace CosmicShore.Gameplay
         protected override void OnDestroy()
         {
             _host?.Leave(this);
+            _lod?.Unregister(this);
+            _lod = null;
             VirtualFauna.Unregister(this);
             if (_entries != null && _index != null && _index.IsAvailable) _entries.ReleaseAll(this);
             if (_entryIds.IsCreated) _entryIds.Dispose();
@@ -254,6 +269,7 @@ namespace CosmicShore.Gameplay
         void Update()
         {
             if (_host == null) return;
+            _lod?.Advance();   // the cell's ecology LOD: may thaw (a pilot approaches) or freeze this population
             _host.Advance();
             if (_pop < 0) return;
             float alpha = _host.Alpha;
@@ -280,7 +296,74 @@ namespace CosmicShore.Gameplay
             using (s_mEntities.Auto()) SyncEntities(job);
             using (s_mFeed.Auto()) { Feed(job); Hunt(host); }
             Extinction(job);
+            ReadMacroState(host);
         }
+
+        // ───────────────────────────────────────────────────────────────── the ecology LOD (round 11f-2, ECOLOGY_LOD §6.1)
+
+        /// <summary>Between ticks (the core is the main thread's): where the population is, how far it spreads, and how
+        /// long its hungriest agent can wait - what the director and the thaw rule read until the next tick.</summary>
+        void ReadMacroState(SubstrateCellHost host)
+        {
+            var c = SVector3.Zero;
+            int n = 0;
+            for (int k = 0; k < _cap; k++)
+                if (_local[k].Alive) { c += _local[k].CurPos; n++; }
+            c = n > 0 ? c / n : new SVector3(transform.position.x, transform.position.y, transform.position.z);
+            float ext = 0f;
+            for (int k = 0; k < _cap; k++)
+                if (_local[k].Alive) ext = Mathf.Max(ext, SVector3.Distance(c, _local[k].CurPos));
+            _macroCentre = c;
+            _macroExtent = ext + Mathf.Max(0f, species.EngageRadius * 0.25f);
+            _reserveS = host.Core.ReserveSeconds(_pop);
+            _reserveVol = host.Core.ReserveVolume(_pop);
+        }
+
+        bool AnyStarving()
+        {
+            for (int k = 0; k < _cap; k++) if (_starving[k]) return true;
+            return false;
+        }
+
+        SVector3 IMacroPopulation.MacroCentre => _macroCentre;
+        float IMacroPopulation.MacroExtent => _macroExtent;
+        bool IMacroPopulation.IsCollapsed => _collapsed;
+
+        /// <summary>Nothing only individuals can resolve: no proxy, no pending kill, no starving agent, nobody engaged,
+        /// and twice the thaw margin of reserve (the hysteresis that keeps it from freezing just to thaw).</summary>
+        bool IMacroPopulation.CanCollapse =>
+            _host != null && _pop >= 0 && !_collapsed && _host.Job.Error == null && _proxySlots.Count == 0 && _goneSlots.Count == 0
+            && _host.Job.EngagedCount[_pop] == 0 && !AnyStarving() && _reserveS > 2f * species.ThawReserveSeconds;
+
+        bool IMacroPopulation.NeedsIndividuals =>
+            _collapsed && (_proxySlots.Count > 0 || _goneSlots.Count > 0 || AnyStarving() || _reserveS < species.ThawReserveSeconds);
+
+        MacroPopulationTotals IMacroPopulation.Totals => _host == null || _pop < 0 ? default : new MacroPopulationTotals
+        {
+            Individuals = _host.Job.PopAlive[_pop], BodyVolume = _host.Job.PopVolume[_pop], Stomach = _reserveVol,
+        };
+
+        /// <summary>Freezes the population at the next tick boundary (its agents hold still where they are drawn).</summary>
+        bool IMacroPopulation.Collapse()
+        {
+            if (!((IMacroPopulation)this).CanCollapse) return false;
+            _collapsed = true;
+            _host.Freeze(_pop, true);
+            return true;
+        }
+
+        void IMacroPopulation.Expand() => Thaw();
+
+        void Thaw()
+        {
+            if (!_collapsed) return;
+            _collapsed = false;
+            _host?.Freeze(_pop, false);
+        }
+
+        /// <summary>Nothing to do at the macro cadence: the frozen core still burns each agent's metabolism every tick, and
+        /// a band population has no goal to drift toward (the anchor does not move), so it holds where it is.</summary>
+        void IMacroPopulation.MacroTick(float dt) { }
 
         bool Mine(int i) => i >= _start && i < _start + _cap;
 
@@ -713,6 +796,7 @@ namespace CosmicShore.Gameplay
         public SubstrateAgentFauna MaterialiseForHit(int i, bool force = false)
         {
             if (_host == null || !Mine(i)) return null;
+            Thaw();   // a hit or a hunt is resolved by individuals (ECOLOGY_LOD §4 clause 3)
             int k = i - _start;
             var job = _host.Job;
             var existing = _proxy[k];

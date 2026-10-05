@@ -75,6 +75,15 @@ namespace CosmicShore.Gameplay
         /// settings are the FIRST-joined species' (QA-SWARM-ROUND11-9).</summary>
         public float EngageRadius = -1f;
         public int MaxEngaged = -1;
+        /// <summary>
+        /// Round 11f-2 (Docs/ECOLOGY_LOD.md §6.1): the population is COLLAPSED - far from every pilot and unseen. Its
+        /// agents stay where they are, every one alive, with exactly its stock (so its index entries, and the cell's
+        /// LiveVolume, do not change). The tick skips it in every pass - no moments, no agent pass, no world pass, no
+        /// deposits, no births - except its metabolism: each agent's hunger still rises at Metabolism per second, the same
+        /// rule the kernel applies, so freezing is not immortality. Set between ticks only (the host queues it). Starvation
+        /// is never decided frozen: the owner thaws the population before its hungriest agent's reserve runs out.
+        /// </summary>
+        public bool Frozen;
 
         internal readonly Vector3[] Dirs;
         internal readonly int[] Live;
@@ -98,6 +107,14 @@ namespace CosmicShore.Gameplay
             int tc = 1; while (tc < 2 * Cap + 8) tc <<= 1;
             Tab = new long[tc]; Agg = new double[tc * 8];
         }
+    }
+
+    /// <summary>Planted bugs for the substrate LOD gate's negative controls (substrate_harness group lod).</summary>
+    internal enum SubstrateFreezeBug
+    {
+        None = 0,
+        /// <summary>A frozen agent stops getting hungry: freezing becomes immortality (breaks "one rule set").</summary>
+        NoMetabolism = 1,
     }
 
     public sealed class SubstrateCore
@@ -294,7 +311,10 @@ namespace CosmicShore.Gameplay
             _npil = Math.Min(pilots.Length, MaxPilots);
             for (int j = 0; j < _npil; j++) _pilots[j] = pilots[j];
             long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
-            Fields.Update(food, pilots.Slice(0, _npil));
+            // round 11f-2: with every population frozen nobody reads or writes the fields - they hold until one thaws
+            bool anyRunning = false;
+            for (int q = 0; q < Pops.Count; q++) anyRunning |= Pops[q].Active && !Pops[q].Frozen;
+            if (anyRunning) Fields.Update(food, pilots.Slice(0, _npil));
             MsFields += Ms(t0);
             Tick++;
             for (int q = 0; q < Pops.Count; q++)
@@ -308,7 +328,7 @@ namespace CosmicShore.Gameplay
             for (int q = 0; q < Pops.Count; q++)
             {
                 var pop = Pops[q];
-                if (!pop.Active) { pop.LiveCount = 0; continue; }
+                if (!pop.Active || pop.Frozen) { pop.LiveCount = 0; continue; }   // a frozen block is in no pass
                 // live, not-starving agents (research A = alive & ~dying)
                 int n = 0;
                 for (int i = pop.Start; i < pop.Start + pop.Cap; i++)
@@ -391,7 +411,12 @@ namespace CosmicShore.Gameplay
         public void EndStep()
         {
             for (int q = 0; q < Pops.Count; q++)
-                if (Pops[q].Active) EndPopulation(Pops[q]);
+            {
+                var pop = Pops[q];
+                if (!pop.Active) continue;
+                if (pop.Frozen) FrozenPopulation(pop);
+                else EndPopulation(pop);
+            }
             T += Dt;
         }
 
@@ -646,6 +671,81 @@ namespace CosmicShore.Gameplay
             }
             pop.Alive = alive;
         }
+
+        /// <summary>
+        /// A frozen population's whole tick (round 11f-2): metabolism only - hunger += Metabolism * Dt, exactly the kernel's
+        /// rule - so a collapsed population is hungry by the same amount when it thaws. Nothing moves, eats, breeds, strikes
+        /// or is flagged starving here; the owner thaws it first (<see cref="ReserveSeconds"/>).
+        /// </summary>
+        void FrozenPopulation(SubstratePopulation pop)
+        {
+            float rise = FreezeBug == SubstrateFreezeBug.NoMetabolism ? 0f : pop.P.Metabolism * Dt;
+            int alive = 0;
+            for (int i = pop.Start; i < pop.Start + pop.Cap; i++)
+            {
+                if (!Alive[i]) continue;
+                alive++;
+                Danger[i] = false;
+                if (!Starving[i]) Hunger[i] += rise;
+            }
+            pop.Alive = alive;
+            pop.Striking = 0;
+        }
+
+        /// <summary>
+        /// Seconds until the hungriest living, not-yet-starving agent of population <paramref name="q"/> spends its
+        /// reserve (hunger reaches 1 + StarveS * Metabolism) at its metabolism; 0 when one is already starving,
+        /// +infinity when none can starve. Read between ticks.
+        /// </summary>
+        public float ReserveSeconds(int q)
+        {
+            var pop = Pops[q];
+            var P = pop.P;
+            if (!(P.Metabolism > 0f)) return float.PositiveInfinity;
+            float reserve = 1f + P.StarveS * P.Metabolism, left = float.PositiveInfinity;
+            for (int i = pop.Start; i < pop.Start + pop.Cap; i++)
+            {
+                if (!Alive[i]) continue;
+                if (Starving[i]) return 0f;
+                left = MathF.Min(left, (reserve - Hunger[i]) / P.Metabolism);
+            }
+            return MathF.Max(0f, left);
+        }
+
+        /// <summary>
+        /// Population <paramref name="q"/>'s stomachs as VOLUME (round 11f-2: the IMacroPopulation totals): each agent's
+        /// reserve left, (1 + StarveS * Metabolism - hunger) / HungerPerVol - the food volume that would bring it back to
+        /// a full stomach's worth of reserve is what it has left to burn. Read between ticks.
+        /// </summary>
+        public double ReserveVolume(int q)
+        {
+            var pop = Pops[q];
+            var P = pop.P;
+            if (!(P.HungerPerVol > 0f)) return 0;
+            float reserve = 1f + P.StarveS * P.Metabolism;
+            double v = 0;
+            for (int i = pop.Start; i < pop.Start + pop.Cap; i++)
+                if (Alive[i]) v += Math.Max(0f, reserve - Hunger[i]) / P.HungerPerVol;
+            return v;
+        }
+
+        /// <summary>
+        /// Moves every living agent of population <paramref name="q"/> (and its home) rigidly by <paramref name="d"/> - a
+        /// collapsed population drifting as one body. Between ticks only. Stock - the body volume - is untouched. The
+        /// tick job draws the move as a glide (its next frame interpolates from where the agents were drawn).
+        /// </summary>
+        public void Translate(int q, Vector3 d)
+        {
+            var pop = Pops[q];
+            for (int i = pop.Start; i < pop.Start + pop.Cap; i++)
+            {
+                if (!Alive[i]) continue;
+                Pos[i] += d; Home[i] += d;
+            }
+        }
+
+        /// <summary>Planted bugs for the substrate LOD gate (harness only; always None in play).</summary>
+        internal SubstrateFreezeBug FreezeBug;
 
         void SendToRest(SubstratePopulation pop, int i)
         {

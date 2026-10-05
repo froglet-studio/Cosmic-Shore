@@ -120,6 +120,26 @@ namespace CosmicShore.Gameplay
         public bool IsHoarded(int h) => _hoardSet.Contains(h);
         public float StomachTotal { get { float s = 0; for (int i = 0; i < Cap; i++) if (Alive[i]) s += Stomach[i]; return s; } }
 
+        // ── the ecology LOD (round 11f-2, Docs/ECOLOGY_LOD.md §6.2) ────────────────────────────────────────
+        public RoostBug RoostBug;
+        float RoostRate => P.Stomach != null ? P.Stomach.Torpor : 0f;
+        /// <summary>The nest may roost: no thief holds a claim or a stolen prism.</summary>
+        public bool CanRoost
+        {
+            get
+            {
+                for (int i = 0; i < Cap; i++) if (Alive[i] && (Carry[i] >= 0 || Claim[i] >= 0)) return false;
+                return true;
+            }
+        }
+        public float RoostSecondsLeft => BuilderRoost.SecondsLeft(Alive, Stomach, Cap, RoostRate);
+        /// <summary>One macro tick of a collapsed nest: the roost's torpor, exactly the rate an idle thief burns.</summary>
+        public void Roost(float dt)
+        {
+            Time += dt;
+            Metabolised += BuilderRoost.Burn(Alive, Stomach, Cap, RoostRate, dt, RoostBug);
+        }
+
         /// <summary>A prism a thief may claim: live, unshielded, a vessel's trail, warm, loose, not this nest's colour.</summary>
         bool Wanted(int h)
         {

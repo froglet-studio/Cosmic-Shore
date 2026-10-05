@@ -176,6 +176,50 @@ namespace CosmicShore.Gameplay
     }
 
     /// <summary>Shared vector helpers (research bestiary/core.py: unit, clamp_len, steer).</summary>
+    /// <summary>
+    /// Round 11f-2 (Docs/ECOLOGY_LOD.md §6.2): a colony COLLAPSED far from every pilot ROOSTS - its members hold still and
+    /// each burns its stomach at the torpor rate, the rule the cores already apply to a roosting member. A roost never kills:
+    /// the owner expands the colony before its emptiest stomach runs out, so starvation is always an individual's death
+    /// (through <c>Kill(k, StarvedBy)</c> and a proxy's crystal). Shared by the three builder cores.
+    /// </summary>
+    public static class BuilderRoost
+    {
+        /// <summary>Burns <paramref name="rate"/> x <paramref name="dt"/> from every living member's stomach (never below 0,
+        /// never a death). Returns the volume burned (the core adds it to its Metabolised ledger).</summary>
+        public static float Burn(bool[] alive, float[] stomach, int cap, float rate, float dt, RoostBug bug = RoostBug.None)
+        {
+            if (bug == RoostBug.NoBurn) return 0f;
+            float burned = 0f;
+            for (int k = 0; k < cap; k++)
+            {
+                if (!alive[k]) continue;
+                float b = MathF.Min(stomach[k], rate * dt);
+                stomach[k] -= b; burned += b;
+                if (bug == RoostBug.KillOnEmpty && stomach[k] <= 0f) alive[k] = false;
+            }
+            return burned;
+        }
+
+        /// <summary>Seconds until the emptiest living stomach is empty at <paramref name="rate"/> (infinity at rate 0).</summary>
+        public static float SecondsLeft(bool[] alive, float[] stomach, int cap, float rate)
+        {
+            if (!(rate > 0f)) return float.PositiveInfinity;
+            float left = float.PositiveInfinity;
+            for (int k = 0; k < cap; k++) if (alive[k]) left = MathF.Min(left, stomach[k] / rate);
+            return left;
+        }
+    }
+
+    /// <summary>Planted bugs for the builders LOD gate's negative controls (builders_harness group lod).</summary>
+    public enum RoostBug
+    {
+        None = 0,
+        /// <summary>A roosting colony burns nothing (collapsing is immortality: breaks "one rule set").</summary>
+        NoBurn = 1,
+        /// <summary>A roost kills an emptied member in the macro (an imposed death with no body and no crystal).</summary>
+        KillOnEmpty = 2,
+    }
+
     public static class BuilderMath
     {
         public static Vector3 Unit(Vector3 v)

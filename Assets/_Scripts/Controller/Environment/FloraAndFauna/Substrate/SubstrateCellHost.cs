@@ -42,6 +42,9 @@ namespace CosmicShore.Gameplay
         readonly List<SubstrateFauna> _members = new();
         readonly List<SubstrateFauna> _joining = new();
         readonly List<int> _leaving = new();
+        // round 11f-2: freezes / thaws and rigid moves the populations asked for, applied between ticks
+        readonly List<(int pop, bool frozen)> _freezes = new();
+        readonly List<(int pop, SVector3 d)> _moves = new();
         readonly SubstrateFauna[] _byPop = new SubstrateFauna[16];
         float _acc;
         int _frame = -1;
@@ -154,6 +157,7 @@ namespace CosmicShore.Gameplay
                 if (_acc > Dt) _acc = Dt;   // never bank more than one tick
             }
             ApplyMembership();
+            ApplyLod();
             using (s_mSense.Auto()) { SenseVessels(); SenseFood(); }
             Job.Kick(_inline);
             if (_inline && Job.AwaitingAgentPass)
@@ -178,6 +182,35 @@ namespace CosmicShore.Gameplay
                 }
                 else if (Job.AwaitingAgentPass) _agents.Schedule();
             }
+        }
+
+        /// <summary>Round 11f-2 (Docs/ECOLOGY_LOD.md §6.1): freeze (collapse) or thaw (expand) a population. Applied between
+        /// ticks - the worker owns the core while it runs.</summary>
+        public void Freeze(int pop, bool frozen)
+        {
+            if (pop >= 0) _freezes.Add((pop, frozen));
+        }
+
+        /// <summary>Move a population rigidly by <paramref name="d"/> (world units), between ticks.</summary>
+        public void Translate(int pop, SVector3 d)
+        {
+            if (pop >= 0) _moves.Add((pop, d));
+        }
+
+        void ApplyLod()
+        {
+            for (int k = 0; k < _freezes.Count; k++)
+            {
+                var (pop, frozen) = _freezes[k];
+                if (pop < Core.Pops.Count && Core.Pops[pop].Active) Core.Pops[pop].Frozen = frozen;
+            }
+            _freezes.Clear();
+            for (int k = 0; k < _moves.Count; k++)
+            {
+                var (pop, d) = _moves[k];
+                if (pop < Core.Pops.Count && Core.Pops[pop].Active) Core.Translate(pop, d);
+            }
+            _moves.Clear();
         }
 
         /// <summary>Joins and leaves land while the job is Idle (between ticks), so the worker never sees a half-made block.</summary>

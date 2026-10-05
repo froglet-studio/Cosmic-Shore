@@ -62,6 +62,16 @@ namespace CosmicShore.Gameplay
         public float VesselRadius = 9f;
         [Tooltip("Seconds a deposited prism takes to settle from its carrier onto its site (a clock-stamped flight).")]
         public float SettleSeconds = 0.35f;
+        [Header("Round 11f-2 - ecology LOD (Docs/ECOLOGY_LOD.md §6.2)")]
+        [Tooltip("Far from every pilot and unseen, the colony COLLAPSES: its members hold still where they are drawn " +
+                 "(index entries and structure untouched, so LiveVolume does not move) and ROOST - each stomach burns at " +
+                 "the species' torpor once a second, the rate a roosting member already burns. It collapses only with " +
+                 "nothing carried, claimed or settling and no creature hunting, and expands on the research prefetch " +
+                 "radii, when hit, or before its emptiest stomach runs out (a death is always an individual's).")]
+        public bool MacroLod = true;
+        [Tooltip("Seconds of torpor the emptiest stomach must have left: below it a collapsed colony expands (twice it is " +
+                 "needed to collapse).")]
+        [Min(1f)] public float ThawReserveSeconds = 20f;
 
         [Header("Fortress - colony")]
         [Tooltip("Workers the colony is founded with (research 48; 24-48 recommended).")]
