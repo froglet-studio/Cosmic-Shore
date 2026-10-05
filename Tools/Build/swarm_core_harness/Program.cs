@@ -76,6 +76,8 @@ static class Program
         if (args.Length > 0 && args[0] == "export") return GridHarness.Export(args, LoadPlans);
         if (args.Length > 0 && args[0] == "yardstick") return GridHarness.ExportYardstick(args, LoadPlans);
         if (args.Length > 0 && args[0] == "smoothsort") return SortFeelHarness.Smooth(args, LoadPlans);
+        if (args.Length > 0 && args[0] == "switchdiag") return SortFeelHarness.SwitchDiag(args, LoadPlans);
+        if (args.Length > 0 && args[0] == "jolt") return SortFeelHarness.Jolt(args, LoadPlans);
         if (args.Length > 0 && args[0] == "benchsort") return SortFeelHarness.Bench(args, LoadPlans);
         if (args.Length > 0 && args[0] == "evofate") return EvoHarness.Fixture(args[1], args[2]) == 0 ? 0 : 1;
         bool gridOnly = args.Length > 1 && args[1] == "grid", sortOnly = args.Length > 1 && args[1] == "sort";

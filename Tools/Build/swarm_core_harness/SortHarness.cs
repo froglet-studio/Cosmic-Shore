@@ -33,6 +33,7 @@ static class SortHarness
     {
         DomainSlots = true, Funded = false, MoltSteps = 0, MoltWindow = -1, Animate = false, KWellFF = 0f,
         WellLook = false, Oriented = false, Cruise = 0f, Cap = 280,
+        RolesFromAnyDomain = false,   // sort_model._pick_perm exactly; round 11d's fix is the "Dom3" mode token
     };
 
     /// <summary>The game's settings as SHIPPED (SwarmFauna.BuildSortCore builds the same from SwarmFaunaConfigSO):
@@ -52,9 +53,9 @@ static class SortHarness
     public const int GameSeed = GridHarness.GameSeed;
 
     /// <summary>Experiments: SWARM_SORT_GAME="Field=value,..." overrides game-mode params by name.</summary>
-    internal static SwarmSortParams Override(SwarmSortParams p)
+    internal static SwarmSortParams Override(SwarmSortParams p, string var = "SWARM_SORT_GAME")
     {
-        var env = Environment.GetEnvironmentVariable("SWARM_SORT_GAME");
+        var env = Environment.GetEnvironmentVariable(var);
         if (string.IsNullOrEmpty(env)) return p;
         foreach (var kv in env.Split(','))
         {

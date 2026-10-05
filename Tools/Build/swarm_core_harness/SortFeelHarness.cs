@@ -28,8 +28,12 @@ static class SortFeelHarness
     {
         // game modes start from the PRE-round-6 game settings so each round-6 piece is its own suffix;
         // the shipped config is gameSortFeelD0F8 (= SortHarness.Game)
-        var p = mode.StartsWith("research") ? SortHarness.Research() : SortHarness.Override(SortHarness.GameRound5(plans));
+        var p = mode.StartsWith("research") ? SortHarness.Override(SortHarness.Research(), "SWARM_SORT_RESEARCH") : SortHarness.Override(SortHarness.GameRound5(plans));
         if (mode.Contains("N0")) p.Noise = 0f;
+        if (mode.Contains("Dom3")) p.RolesFromAnyDomain = true;   // round 11d: a region may go to any of the three domains
+        if (mode.Contains("Fn")) p.FateNear = true;               // round 11d: a fate is the nearest short well
+        if (mode.Contains("Wnd")) p.BudAtWound = true;
+        var lrm = Regex.Match(mode, @"Lr(\d+)"); if (lrm.Success) p.LayRamp = int.Parse(lrm.Groups[1].Value);   // round 11d: lay ramp
         if (mode.Contains("Feel"))
         {
             var m = Regex.Match(mode, @"F(\d+)$");
@@ -118,7 +122,8 @@ static class SortFeelHarness
                         sb.Append($"{{\"mode\":\"{mode}\",\"tag\":\"switch\",\"kind\":\"{Kinds[k]}\",\"want\":\"{Kinds[e]}\",\"seed\":{seed},\"sample\":{r},\"na\":true}}");
                         continue;
                     }
-                    SortHarness.Run(c2, 240); steps += 240;
+                    int sw = int.TryParse(Environment.GetEnvironmentVariable("SWARM_SWITCH_STEPS"), out int ss) ? ss : 240;   // diagnosis only
+                    SortHarness.Run(c2, sw); steps += sw;
                     Append(sb, ref first, c2, mode, "switch", k, e, seed, r, false);
                 }
             }
@@ -262,6 +267,137 @@ static class SortFeelHarness
             SortHarness.Step(c); c.Events.Clear(); sb.Append(','); Frame(sb, c);
             if ((t + 1) % every == 0) { if (snaps.Length > 0) snaps.Append(','); snaps.Append('['); Units(snaps, c); snaps.Append(']'); }
         }
+    }
+
+    // ─────────────────────────────────────────────────────────────── the jolt (round 11d)
+
+    /// <summary>swarm_smooth._track's LURCH on one event, computed here so it can gate the harness without torch:
+    /// per step the p95 of every member's step length (members alive at both ends, at least 4), and
+    /// lurch = the worst step's p95 over the event's own median p95 (torch.quantile's linear interpolation,
+    /// torch.median's lower middle). Also returns the step index of the worst step and the same lurch on
+    /// motion RELATIVE to the moving centroid (what is left once the whole body's glide is removed).</summary>
+    public static (float lurch, int at, float lurchRel, float med) Lurch(List<Vector3[]> P, List<bool[]> A)
+    {
+        int T = P.Count - 1; var p95 = new float[T]; var p95r = new float[T];
+        var buf = new List<float>(); var bufr = new List<float>();
+        for (int t = 0; t < T; t++)
+        {
+            buf.Clear(); bufr.Clear();
+            Vector3 c0 = Vector3.Zero, c1 = Vector3.Zero; int nb = 0;
+            for (int i = 0; i < P[t].Length; i++) if (A[t][i] && A[t + 1][i]) { c0 += P[t][i]; c1 += P[t + 1][i]; nb++; }
+            if (nb < 4) continue;
+            c0 /= nb; c1 /= nb;
+            for (int i = 0; i < P[t].Length; i++)
+                if (A[t][i] && A[t + 1][i]) { buf.Add((P[t + 1][i] - P[t][i]).Length()); bufr.Add((P[t + 1][i] - c1 - (P[t][i] - c0)).Length()); }
+            p95[t] = Q95(buf); p95r[t] = Q95(bufr);
+        }
+        static float Q95(List<float> v)
+        {
+            v.Sort(); float pos = 0.95f * (v.Count - 1); int lo = (int)pos; int hi = Math.Min(lo + 1, v.Count - 1);
+            return v[lo] + (pos - lo) * (v[hi] - v[lo]);
+        }
+        static float Med(float[] a)
+        {
+            var v = a.Where(x => x > 0).OrderBy(x => x).ToList();
+            return v.Count == 0 ? 1e-4f : v[(v.Count - 1) / 2];
+        }
+        float med = Med(p95), medr = Med(p95r);
+        int at = 0; for (int t = 1; t < T; t++) if (p95[t] > p95[at]) at = t;
+        return (p95.Max() / MathF.Max(med, 1e-4f), at, p95r.Max() / MathF.Max(medr, 1e-4f), med);
+    }
+
+    /// <summary>One smoothsort event (switch k->e, or e &lt; 0: a strike on plan k) on a grown body, its lurch over
+    /// the <paramref name="steps"/> steps after the cull.</summary>
+    public static (float lurch, int at, float lurchRel, float med) JoltEvent(SwarmPlanData[] plans, string mode, int seed, int k, int e, int steps = 240)
+    {
+        var c = Grow(plans, mode, k, seed);
+        bool ok = e < 0 ? Strike(c, new Random(seed * 977 + k)) > 0 : CullTo(c, e, new Random(seed * 31 + e));
+        if (!ok) return (float.NaN, -1, float.NaN, 0f);
+        var P = new List<Vector3[]>(); var A = new List<bool[]>();
+        void Rec() { P.Add((Vector3[])c.Pos.Clone()); var a = new bool[c.Cap]; for (int i = 0; i < c.Cap; i++) a[i] = c.Active[i] && c.Hatched[i]; A.Add(a); }
+        Rec();
+        var hatchM = new List<float>(); var wasLive = new bool[c.Cap]; for (int i = 0; i < c.Cap; i++) wasLive[i] = c.Active[i] && c.Hatched[i];
+        for (int t = 0; t < steps; t++)
+        {
+            SortHarness.Step(c); c.Events.Clear(); Rec();
+            for (int i = 0; i < c.Cap; i++) { bool l = c.Active[i] && c.Hatched[i]; if (l && !wasLive[i] && t < 60) hatchM.Add(MathF.Sqrt(2 * c.Energy[i])); wasLive[i] = l; }
+        }
+        if (Environment.GetEnvironmentVariable("JOLT_HATCH") == "1" && hatchM.Count > 0) { hatchM.Sort(); Console.WriteLine($"   newborns {hatchM.Count}: well distance (sigma) median {hatchM[hatchM.Count / 2]:F2} p90 {hatchM[(int)(0.9 * (hatchM.Count - 1))]:F2}"); }
+        if (Environment.GetEnvironmentVariable("JOLT_SURVIVORS") == "1")   // diagnosis: only the members alive at the cull
+            for (int t = 1; t < A.Count; t++) for (int i = 0; i < c.Cap; i++) A[t][i] &= A[0][i];
+        if (Environment.GetEnvironmentVariable("JOLT_NEWBORN") == "1")   // diagnosis: only the members born after it
+        {
+            var a0 = (bool[])A[0].Clone();
+            for (int t = 0; t < A.Count; t++) for (int i = 0; i < c.Cap; i++) A[t][i] &= !a0[i];
+        }
+        return Lurch(P, A);
+    }
+
+    /// <summary>jolt &lt;plans&gt; &lt;seeds&gt; &lt;modes&gt; - the post-cull jolt per event (swarm_smooth's 4 standard switches and a
+    /// strike on every plan), lurch and where it peaks, for each mode; SWARM_SORT_GAME overrides apply.</summary>
+    public static int Jolt(string[] args, Func<string, SwarmPlanData[]> load)
+    {
+        var plans = load(args[1]);
+        var seeds = args[2].Split(',').Select(int.Parse).ToArray();
+        var modes = args[3].Split(',');
+        var pairs = new[] { (1, 2), (2, 0), (0, 3), (3, 1) };
+        foreach (string mode in modes)
+        {
+            var all = new List<float>(); var allR = new List<float>();
+            foreach (int seed in seeds)
+            {
+                var sb = new StringBuilder($"  {mode,-24} seed {seed,4}:");
+                foreach (var (k, e) in pairs)
+                {
+                    var r = JoltEvent(plans, mode, seed, k, e);
+                    sb.Append($" {Kinds[k][0]}>{Kinds[e][0]} {r.lurch:F2}@{r.at}");
+                    if (!float.IsNaN(r.lurch)) { all.Add(r.lurch); allR.Add(r.lurchRel); }
+                }
+                for (int k = 0; k < 4; k++)
+                {
+                    var r = JoltEvent(plans, mode, seed + 1, k, -1);
+                    sb.Append($" heal {Kinds[k][0]} {r.lurch:F2}@{r.at}");
+                    if (!float.IsNaN(r.lurch)) { all.Add(r.lurch); allR.Add(r.lurchRel); }
+                }
+                Console.WriteLine(sb.ToString());
+            }
+            all.Sort();
+            Console.WriteLine($"JOLT mode={mode} events={all.Count} lurch_mean={all.Average():F3} lurch_p90={all[(int)(0.9 * (all.Count - 1))]:F3} lurch_worst={all.Max():F3} rel_mean={allR.Average():F3} rel_worst={allR.Max():F3} over_2.5={all.Count(x => x > 2.5f)}");
+        }
+        return 0;
+    }
+
+    /// <summary>switchdiag &lt;plans&gt; &lt;mode&gt; &lt;k&gt; &lt;e&gt; &lt;seeds&gt; - the body a k->e switch grows: headcount, (element x domain) and
+    /// (domain -> region) after the cull and after 240 steps; the share of the body in a domain the plan has no region for.</summary>
+    public static int SwitchDiag(string[] args, Func<string, SwarmPlanData[]> load)
+    {
+        var plans = load(args[1]); string mode = args[2]; int k = int.Parse(args[3]), e = int.Parse(args[4]);
+        foreach (int seed in args[5].Split(',').Select(int.Parse))
+            for (int r = 0; r < 3; r++)
+            {
+                int gseed = seed + 101 * r;
+                var c = Grow(plans, mode, k, gseed);
+                if (!CullTo(c, e, new Random(gseed * 31 + e))) { Console.WriteLine($"seed {seed} s{r}: na"); continue; }
+                string Dump()
+                {
+                    var m = new int[4, 3]; int orphan = 0, n = 0;
+                    for (int i = 0; i < c.Cap; i++) if (c.Active[i] && c.Hatched[i]) { m[c.EffectiveElement(i), Math.Clamp(c.Dom[i], 0, 2)]++; n++; if (c.RoleOfDom[Math.Clamp(c.Dom[i], 0, 2)] < 0) orphan++; }
+                    var sb = new StringBuilder($"n={n} plan={c.PlanIx} roleOfDom=[{c.RoleOfDom[0]},{c.RoleOfDom[1]},{c.RoleOfDom[2]}] orphanDomShare={(float)orphan / Math.Max(1, n):F2} elem x dom:");
+                    for (int q = 0; q < 4; q++) sb.Append($" {Kinds[q][0]}[{m[q, 0]},{m[q, 1]},{m[q, 2]}]");
+                    return sb.ToString();
+                }
+                Console.WriteLine($"seed {seed} s{r} after cull: {Dump()}");
+                string last = "";
+                for (int t = 0; t < 240; t++)
+                {
+                    SortHarness.Step(c); c.Events.Clear();
+                    string now = $"{c.PlanIx}:{c.RoleOfDom[0]},{c.RoleOfDom[1]},{c.RoleOfDom[2]}";
+                    if (now != last && Environment.GetEnvironmentVariable("DIAG_TRACE") == "1") Console.WriteLine($"   t={t} {Dump()}");
+                    last = now;
+                }
+                Console.WriteLine($"seed {seed} s{r} +240     : {Dump()}");
+            }
+        return 0;
     }
 
     // ─────────────────────────────────────────────────────────────── bench
