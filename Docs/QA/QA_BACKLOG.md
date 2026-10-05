@@ -824,8 +824,8 @@ regrowing · a lurker plates after bolting · plates flicker on and off at one d
 
 ### QA-SWARM-ROUND11-13 ⬜ — the demo cell starts hostile, and claiming the nucleus takes it
 
-**Source:** branch `overnight/hostile`. Only the headless resolver harness (`Tools/Build/cell_control_harness/run.sh`),
-the reference compile and the authoring gates have run; it has never been opened in the editor. Reference:
+**Source:** branch `overnight/hostile`. Only the headless resolver harness (`Tools/Build/cell_control_harness/run.sh`, with three
+negative-control mutants that must fail), the player + editor reference compiles and the authoring gates have run; it has never been opened in the editor. Reference:
 `Docs/SWARM_CELL_PLAY_GUIDE.md` §2, `CellConfigDataSO.initialControllingDomain`, `CellControlRules`.
 
 **Why it matters:** every creature wears the cell's controlling domain. With the nucleus empty, the old fallback
