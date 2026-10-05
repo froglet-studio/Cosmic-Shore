@@ -381,5 +381,15 @@ apply the enum-order tie-break. `ResolvePlacementOrder` already does this; `Reso
 
 ---
 
+## 18. Never put `Random.Range` in a for-condition
+
+**Shows up as:** a loop that runs the wrong number of times, or never stops (BH-4.4).
+
+**Why:** the condition is re-evaluated every iteration, so the upper bound drifts.
+
+**Fix pattern:** roll once into a local, then loop over that value.
+
+---
+
 Threading errors (`EnsureRunningOnMainThread`, UGS callbacks off the main thread) have their own
 guide: [`../THREADING.md`](../THREADING.md).

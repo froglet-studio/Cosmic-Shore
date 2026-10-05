@@ -147,7 +147,10 @@ namespace CosmicShore.Gameplay
         }
         void SeedBranches()
         {
-            for (int i = 0; i < Random.Range(minTrunks, maxTrunks + 1); i++)
+            // Roll once. Random.Range in the for-condition re-rolls every iteration, so the
+            // loop length drifts (and can run forever when a late roll stays above i).
+            int trunkCount = Random.Range(minTrunks, maxTrunks + 1);
+            for (int i = 0; i < trunkCount; i++)
             {
                 Branch branch = new Branch();
                 branch.gameObject = Instantiate(spindle, transform.position, transform.rotation).gameObject;

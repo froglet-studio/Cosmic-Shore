@@ -8,6 +8,19 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ---
 
+## BH-4.4 — BranchingFlora re-rolled the trunk count every loop iteration
+
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Symptom (risk):** trunk count drifted as `SeedBranches` ran, and a late roll could keep the loop
+  going far past `maxTrunks` (or forever if the rolled value stayed above `i`).
+- **Root cause:** `for (int i = 0; i < Random.Range(minTrunks, maxTrunks + 1); i++)` re-evaluates
+  the upper bound every iteration.
+- **Fix:** roll `trunkCount` once before the loop.
+- **Verification:** gate scripts pass; not run in Unity. Retest is on the handoff playtest list.
+- **PR/commit:** pending.
+
+---
+
 ## BH-4.1 — Bloomrush restarted a 0-0-0 round when Jade was not fielded
 
 - **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
