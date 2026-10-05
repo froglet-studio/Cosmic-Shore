@@ -1092,11 +1092,11 @@ static partial class SubstrateHarness
     /// </summary>
     static readonly (string species, int cap, float engage)[] ProxyCaps =
     {
-        // round 11-14: one lurker proxy moved to the leech - the pen's full pull at its edge (SubstrateKernel.PenWeight)
-        // packs a puddle tighter, and two proxies covered 84% of a ram's passes; a lurker never has more than one agent
-        // in the contact horizon at once
-        ("pack", 7, 260f), ("locust", 12, 140f), ("lurker", 3, 160f), ("stampede", 6, 200f), ("mobber", 4, 120f),
-        ("leech", 3, 140f), ("leviathan", 4, 200f),
+        // round 11-14: a lurker and a stampede proxy moved to the leech - the pen's full pull at its edge
+        // (SubstrateKernel.PenWeight) packs a puddle of 4 tighter, and two proxies covered 84% of a ram's passes (three,
+        // 89.5%); a lurker never has more than one agent in the contact horizon at once, a stampede three
+        ("pack", 7, 260f), ("locust", 12, 140f), ("lurker", 3, 160f), ("stampede", 5, 200f), ("mobber", 4, 120f),
+        ("leech", 4, 140f), ("leviathan", 4, 200f),
     };
 
     /// <summary>

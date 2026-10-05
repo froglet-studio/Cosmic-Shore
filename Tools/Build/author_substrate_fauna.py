@@ -79,11 +79,11 @@ SPECIES = [
     # middle shells is free (the mobbers' roosts); the middle shell 690-840 is split into three 110-degree SECTORS
     # about the cell's Y axis (sector pens, SubstrateCore.SetSector) for the herd, the puddles and the school.
     dict(key="stampede", title="Stampede", element="Mass", band=(690, 840), seed=0, spread=40, at_flora=1,
-         engage=200, proxies=6, bites=4, spawns=6, clusters=4, sector=((1, 0, 0), 55)),
+         engage=200, proxies=5, bites=4, spawns=5, clusters=4, sector=((1, 0, 0), 55)),
     dict(key="mobber", title="Mobber", element="Time", band=(625, 685), seed=0, spread=30, at_flora=1,
          engage=120, proxies=4, bites=4, spawns=4, clusters=5),
     dict(key="leech", title="Leech", element="Charge", band=(690, 840), seed=0, spread=8, at_flora=1,
-         engage=140, proxies=3, bites=4, spawns=3, sector=((-0.5, 0, 0.866), 55)),
+         engage=140, proxies=4, bites=4, spawns=4, sector=((-0.5, 0, 0.866), 55)),
     dict(key="leviathan", title="Leviathan", element="Space", band=(690, 840), seed=0, spread=60, at_flora=0,
          engage=200, proxies=4, bites=4, spawns=4, sector=((-0.5, 0, -0.866), 55)),
 ]

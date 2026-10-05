@@ -1262,6 +1262,7 @@ sealed class SubstrateSystem : ICellSystem, IOccupancy
 
     /// <summary>SubstrateFauna.ShedStarving: a starving agent gets a proxy, withers through it, and its body (the
     /// published body prism) stands as a skeleton.</summary>
+    static readonly bool s_subDeathTrace = Environment.GetEnvironmentVariable("SHOWCASE_DEATH_TRACE") == "1";
     void ShedStarving(Cell c)
     {
         for (int i = 0; i < _starving.Length; i++)
@@ -1273,6 +1274,7 @@ sealed class SubstrateSystem : ICellSystem, IOccupancy
             StarvedLaid += v;
             PopOf(i).Proxies.Want(i, c.T, force: true);
             PopOf(i).Starved++;
+            if (s_subDeathTrace) Console.WriteLine($"   DEATH substrate/{PopOf(i).Key} t={c.T:F1} starved at r={Job.BodyAt(i, 1f).Length():F0}");
             Die(i);
         }
     }
@@ -1292,6 +1294,7 @@ sealed class SubstrateSystem : ICellSystem, IOccupancy
                 if (Cell.SegDist(p.Prev, p.Pos, Job.BodyAt(i, 1f)) > p.Radius + 0.5f * b.X) continue;
                 Rammed += BodyVolume(i);
                 PopOf(i).Rammed++;
+                if (s_subDeathTrace) Console.WriteLine($"   DEATH substrate/{PopOf(i).Key} t={c.T:F1} rammed by {p.Kind} at r={Job.BodyAt(i, 1f).Length():F0}");
                 Die(i, ram: true);
                 break;
             }

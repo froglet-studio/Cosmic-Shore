@@ -924,11 +924,15 @@ namespace CosmicShore.Gameplay
                     }
                 }
 
-            // reproduce: a full body splits; the child grows in at the parent (production gated by free slots)
+            // reproduce: a full body splits; the child grows in at the parent (production gated by free slots). Round 11-14
+            // (Docs/SWARM_FAUNA.md §26.6): only a FED parent (hunger at most EatHunger) - the child inherits its parent's
+            // hunger, and a big hungry hunter split into two that starved together: the showcase pack's survivors bred
+            // 11 young that starved inside 35 s and the pack died out
             for (int q = 0; q < n; q++)
             {
                 int i = pop.Live[q];
                 if (Stock[i] < P.BirthStock || Grow[i] < 1f || Starving[i] || Host[i] != 0) continue;
+                if (Hunger[i] > P.EatHunger) continue;
                 int c = FreeSlot(pop);
                 if (c < 0) break;
                 float half = Stock[i] * 0.5f;
