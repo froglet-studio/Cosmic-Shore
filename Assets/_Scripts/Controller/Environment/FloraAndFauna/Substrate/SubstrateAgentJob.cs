@@ -51,6 +51,12 @@ namespace CosmicShore.Gameplay
         [ReadOnly] public NativeArray<SVector3> GScent;
         [ReadOnly] public NativeArray<SVector3> GAlarm;
         [ReadOnly] public NativeArray<SVector3> GThreat;
+        // round 11-11: the ramp clock, the body attachment, a rider's host, each member's body slot
+        [ReadOnly] public NativeArray<float> Ramp;
+        [ReadOnly] public NativeArray<float> Attach;
+        [ReadOnly] public NativeArray<int> Host;
+        [ReadOnly] public NativeArray<SVector3> SlotGoal;
+        [ReadOnly] public NativeArray<SVector3> SlotVel;
         public SubstrateKernelPop Pop;
         public SubstrateKernelWorld World;
 
@@ -71,6 +77,8 @@ namespace CosmicShore.Gameplay
             s.FThreat = FThreat.AsReadOnlySpan(); s.FAlarm = FAlarm.AsReadOnlySpan();
             s.GFood = GFood.AsReadOnlySpan(); s.GScent = GScent.AsReadOnlySpan();
             s.GAlarm = GAlarm.AsReadOnlySpan(); s.GThreat = GThreat.AsReadOnlySpan();
+            s.Ramp = Ramp.AsReadOnlySpan(); s.Attach = Attach.AsReadOnlySpan(); s.Host = Host.AsReadOnlySpan();
+            s.SlotGoal = SlotGoal.AsReadOnlySpan(); s.SlotVel = SlotVel.AsReadOnlySpan();
             Span<float> I = stackalloc float[SubstrateKernel.MaxDirs];
             Span<float> G = stackalloc float[SubstrateKernel.MaxDirs];
             SubstrateKernel.StepAgent(s, Pop, World, q, I, G);
@@ -107,8 +115,10 @@ namespace CosmicShore.Gameplay
         }
 
         readonly SubstrateCore _c;
-        NativeArray<SVector3> _pos, _vel, _idir, _home, _wseed, _gfood, _gscent, _galarm, _gthreat;
+        NativeArray<SVector3> _pos, _vel, _idir, _home, _wseed, _gfood, _gscent, _galarm, _gthreat, _slotGoal, _slotVel;
         NativeArray<float> _hunger, _fear, _curious, _aggr, _phase, _qtarget, _ispeed, _closure, _rest, _fthreat, _falarm;
+        NativeArray<float> _ramp, _attach;
+        NativeArray<int> _host;
         NativeArray<bool> _steered, _watched, _creeping, _alive, _starving;
         NativeArray<long> _claimed;
         NativeArray<SubstratePilot> _pilots;
@@ -130,6 +140,9 @@ namespace CosmicShore.Gameplay
             _wseed = new NativeArray<SVector3>(n, A, U); _gfood = new NativeArray<SVector3>(n, A, U);
             _gscent = new NativeArray<SVector3>(n, A, U); _galarm = new NativeArray<SVector3>(n, A, U);
             _gthreat = new NativeArray<SVector3>(n, A, U);
+            _slotGoal = new NativeArray<SVector3>(n, A, U); _slotVel = new NativeArray<SVector3>(n, A, U);
+            _ramp = new NativeArray<float>(n, A, U); _attach = new NativeArray<float>(n, A, U);
+            _host = new NativeArray<int>(n, A, U);
             _hunger = new NativeArray<float>(n, A, U); _fear = new NativeArray<float>(n, A, U);
             _curious = new NativeArray<float>(n, A, U); _aggr = new NativeArray<float>(n, A, U);
             _phase = new NativeArray<float>(n, A, U); _qtarget = new NativeArray<float>(n, A, U);
@@ -156,6 +169,8 @@ namespace CosmicShore.Gameplay
             _closure.CopyFrom(c.Closure); _rest.CopyFrom(c.Rest); _fthreat.CopyFrom(c.FThreat); _falarm.CopyFrom(c.FAlarm);
             _steered.CopyFrom(c.Steered); _watched.CopyFrom(c.Watched); _creeping.CopyFrom(c.Creeping);
             _alive.CopyFrom(c.Alive); _starving.CopyFrom(c.Starving); _claimed.CopyFrom(c.ClaimedTick);
+            _ramp.CopyFrom(c.Ramp); _attach.CopyFrom(c.Attach); _host.CopyFrom(c.Host);
+            _slotGoal.CopyFrom(c.SlotGoal); _slotVel.CopyFrom(c.SlotVel);
             var pil = c.TickPilots;
             for (int j = 0; j < pil.Length; j++) _pilots[j] = pil[j];
 
@@ -178,6 +193,7 @@ namespace CosmicShore.Gameplay
                     ClaimedTick = _claimed, Pilots = _pilots,
                     Live = t.Live, Key = t.Key, Tab = t.Tab, Agg = t.Agg, Dirs = t.Dirs,
                     FThreat = _fthreat, FAlarm = _falarm, GFood = _gfood, GScent = _gscent, GAlarm = _galarm, GThreat = _gthreat,
+                    Ramp = _ramp, Attach = _attach, Host = _host, SlotGoal = _slotGoal, SlotVel = _slotVel,
                     Pop = pop.Kernel, World = world,
                 };
                 dep = job.Schedule(pop.LiveCount, SubstrateAgentJob.BatchSize, dep);   // a predator reads its prey's moves
@@ -229,6 +245,7 @@ namespace CosmicShore.Gameplay
             _ispeed.Dispose(); _closure.Dispose(); _rest.Dispose(); _fthreat.Dispose(); _falarm.Dispose();
             _steered.Dispose(); _watched.Dispose(); _creeping.Dispose(); _alive.Dispose(); _starving.Dispose();
             _claimed.Dispose(); _pilots.Dispose();
+            _ramp.Dispose(); _attach.Dispose(); _host.Dispose(); _slotGoal.Dispose(); _slotVel.Dispose();
             for (int q = 0; q < _tables.Length; q++) _tables[q]?.Dispose();
         }
     }

@@ -79,6 +79,9 @@ namespace CosmicShore.Gameplay
         public int[] EngagedCount;
         public int[] PopAlive;
         public double[] PopVolume;
+        /// <summary>Round 11-11: per slot, the agent RIDES a pilot's hull (a latched leech) - it has no proxy (it would sit
+        /// inside the vessel's collider); it is drawn where it rides.</summary>
+        public bool[] Riding;
         public readonly List<SubstrateEvent> Events = new();
         public readonly List<int> EatRequests = new();
         /// <summary>Predations the published ticks asked for (the owner kills the prey through its proxy and feeds its
@@ -93,6 +96,7 @@ namespace CosmicShore.Gameplay
         uint[] _bHeart;
         int[] _bEngaged, _bEngCount, _bPopAlive;
         double[] _bPopVol;
+        bool[] _bRiding;
         readonly List<SubstrateEvent> _bEvents = new();
         readonly List<int> _bEat = new();
         readonly List<SubstratePredation> _bPrey = new();
@@ -116,6 +120,7 @@ namespace CosmicShore.Gameplay
             Speed = new float[_cap]; _bSpeed = new float[_cap];
             HeartIdx = new uint[_cap]; _bHeart = new uint[_cap];
             Engaged = new int[_cap]; _bEngaged = new int[_cap];
+            Riding = new bool[_cap]; _bRiding = new bool[_cap];
             int mp = 16;
             EngagedCount = new int[mp]; _bEngCount = new int[mp];
             PopAlive = new int[mp]; _bPopAlive = new int[mp];
@@ -255,6 +260,7 @@ namespace CosmicShore.Gameplay
             (EngagedCount, _bEngCount) = (_bEngCount, EngagedCount);
             (PopAlive, _bPopAlive) = (_bPopAlive, PopAlive);
             (PopVolume, _bPopVol) = (_bPopVol, PopVolume);
+            (Riding, _bRiding) = (_bRiding, Riding);
             Events.Clear(); Events.AddRange(_bEvents);
             EatRequests.Clear(); EatRequests.AddRange(_bEat);
             PreyRequests.Clear(); PreyRequests.AddRange(_bPrey);
@@ -287,9 +293,10 @@ namespace CosmicShore.Gameplay
                     ref var inst = ref _bInst[i];
                     if (!pop.Active || !c.Alive[i])
                     {
-                        inst.Flags = 0u; _bSpeed[i] = 0f; _lastAlive[i] = false;
+                        inst.Flags = 0u; _bSpeed[i] = 0f; _lastAlive[i] = false; _bRiding[i] = false;
                         continue;
                     }
+                    _bRiding[i] = c.Host[i] != 0;
                     var cur = c.Pos[i];
                     var vel = c.Vel[i];
                     float vs = vel.Length();
@@ -337,17 +344,20 @@ namespace CosmicShore.Gameplay
         void BuildEngaged(SubstratePopulation pop, int q)
         {
             int n = 0;
-            float r2 = S.EngageRadius * S.EngageRadius;
-            if (pop.Active && PilotCount > 0 && r2 > 0f && S.MaxEngaged > 0)
+            // round 11-11: each population's own engage radius and proxy cap (the collider budget is per species)
+            float er = pop.EngageRadius > 0f ? pop.EngageRadius : S.EngageRadius;
+            int cap = pop.MaxEngaged > 0 ? pop.MaxEngaged : S.MaxEngaged;
+            float r2 = er * er;
+            if (pop.Active && PilotCount > 0 && r2 > 0f && cap > 0)
                 for (int i = pop.Start; i < pop.Start + pop.Cap; i++)
                 {
-                    if ((_bInst[i].Flags & 1u) == 0) continue;
+                    if ((_bInst[i].Flags & 1u) == 0 || _bRiding[i]) continue;
                     float best = float.MaxValue;
                     for (int k = 0; k < PilotCount; k++)
                         best = MathF.Min(best, Vector3.DistanceSquared(Core.Pos[i], Pilots[k].Pos));
                     if (best <= r2) { _engD[n] = best; _engI[n] = i; n++; }
                 }
-            if (n > S.MaxEngaged) { Array.Sort(_engD, _engI, 0, n); n = S.MaxEngaged; }
+            if (n > cap) { Array.Sort(_engD, _engI, 0, n); n = cap; }
             Array.Copy(_engI, 0, _bEngaged, pop.Start, n);
             _bEngCount[q] = n;
         }
