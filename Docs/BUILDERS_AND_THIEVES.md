@@ -165,6 +165,8 @@ They live in the Swarm cell, off the swarms' bands (Inner 470-620, Middle 690-84
 - **Fortress colony** in the 845-905 u band, Mass hearts.
 - **Thief nest** in the 1085-1140 u band, Space hearts. It perches on the nearest living plant within its scout
   reach, which is the Outer band's Space flora.
+- **Wearers** (§10) founded in the 400-465 u band, Charge hearts: the inner gap between the nucleus (392) and the
+  Inner swarm band. The hearts roam the whole cell after that.
 
 `author_builders.py` owns these files:
 
@@ -183,7 +185,7 @@ Run with a private `TMPDIR`. Shared `/tmp` races with other workers' harnesses.
 
 ```
 export DOTNET_ROOT=/usr/lib/dotnet TMPDIR=<private dir>
-bash Tools/Build/builders_harness/run.sh            # all; or: fortress | thieves | exp
+bash Tools/Build/builders_harness/run.sh            # all; or: fortress | thieves | wearers | exp
 bash Tools/Build/swarm_glue_typecheck/run.sh        # cores + glue against the stubs (netstandard2.1, C# 9)
 python3 Tools/Build/author_builders.py --check
 python3 Tools/Build/author_swarm_fauna.py --check
@@ -241,8 +243,137 @@ SAME core files the game compiles. Its asserted results:
   `BuilderColonyFauna.cs`, with metas.
 - `Swarm/SwarmMemberRenderer.cs`: additive `Upload` / `HideSlot` overloads over plain arrays.
 - Collider ceiling with round 11b merged: 18 hearts + 960 swarm + 78 substrate + 84 builder proxies = **1140** /
-  1200.
+  1200. With the threat grove (+20) and the wearer's proxies (+32, §10.4): **1,192 / 1,200**.
 - `Tools/Build/builders_harness/`: `Arena.cs`, `Program.cs`, `run.sh`.
 - `Tools/Build/swarm_glue_typecheck/`: the Builders files are added to the list, with stub additions.
 - `Tools/Build/author_builders.py`, plus the hooks in `author_swarm_fauna.py`.
 - Assets: the two prefabs, the two configs, the two cell species configs, and the Swarm cell spawn profile.
+
+## 10. The WEARER: a creature made of what it took (round 11-10)
+
+The showpiece of the research (PORT.md §4, `wearers.py`, DISCOVERIES "Species 4 - wearers" and round 2 "satiation
+moult"). Small HEARTS steal prisms, mostly a pilot's trail, and WEAR them as a body. Each theft makes a body bigger.
+Bodies that touch FUSE into one creature. Past a size, the thing skulking in your wake turns round, REARS (the body
+contracts: the 1 s telegraph) and LUNGES with its body's prisms turned dangerous. Ram it and you strip your prisms back.
+Hurt it fast and it MOULTS, shedding its outer layer back to whoever it was stolen from.
+
+### 10.1 What runs
+
+- `WearerCore.cs` is pure C# (no UnityEngine). It is the research's `Wearers` with the v3 contact rule and body cap.
+  - **Body growth.** A stolen prism attaches to a free lattice site (s = 6 u) touching the body, with weight
+    `nb^-alpha x exp(-(d - dmin) / 0.5)`: it sticks near where it touched. The frontier is kept incrementally.
+  - **Phases.**
+    - Thief: steal, preferring trail (x0.15 on squared distance), never within 90 u of a ship. It flees inside 70 u
+      and skulks in the wake beyond 160 u.
+    - At `HuntAt` (60) worn prisms, it becomes a hunter: approach (intercept), rear (1 s, squash 0.7), lunge
+      (2.2 x 1.8 speed, 0.9 s), recover (2.5 s).
+  - **Contact.** Every sensed vessel rams. A vessel strips each worn prism it touches BACK to its own domain (it falls
+    loose; nothing is destroyed). A heart with fewer than 3 body prisms around it is exposed and dies to a touch;
+    a proxied heart dies on the platform's own contact path instead (`PlatformBody`).
+- **Satiation moult** (research v3). A body over 150 prisms (only while thief or approaching) sheds its outermost down
+  to 90 prisms.
+  - The shed prisms become a static LAIR: a built structure in `BuilderRegistry` that never moves and is never loot.
+  - The first 10 volume of the shed prisms is EATEN and pays for a newborn heart (production gating, not a cull).
+- **Hurt moult** (GAME). Losing a sixth of the body inside a 2 s decaying window (strips, weapons, a pilot's steal)
+  sheds 30% of what is left `GiveBack` to its previous owners. The creature then slinks off as a thief.
+- **Stomach.** A hungry heart eats the outermost prism of its own body (`Consume`). It starves only when its stomach is
+  empty. There is no clock: an unfed heart dies between `0.6 x 30 / 0.01` and `30 / 0.01` s (W6).
+- **One crystal per heart.** Hearts are ordinary colony members (`BuilderColonyFauna`, species `Wearers = 2`): GPU or
+  prism-entity bodies, proxies near a vessel, every death through a proxy's sealed `Die`. The worn body is NOT
+  lifeform tissue: it is stolen mass. When a leader dies, its body falls loose (still the colony's domain) and its
+  riders split off.
+- **The one predicate.** A heart steals a prism only if it is alive, unshielded, not its own domain, unclaimed and
+  `Loose`. `Loose` excludes built, carried and worn prisms, living tissue and grove tissue
+  (`ThreatGrove.IsGroveTissue`, merged from 9261700ee). A worn prism that becomes shielded, changes domain or dies
+  leaves the body that tick.
+
+### 10.2 The body as ONE thing (`BuilderPrismWorld : IWearWorld`)
+
+- `Wear(h, creature, local)`:
+  - the prism leaves the carry list;
+  - `BuilderRegistry.MarkCarried` (no other colony takes it);
+  - it is parented under its creature's container (a root GameObject, never the anchor's child, so tearing the anchor
+    down never takes stolen prisms with it) at the next `PoseBody`, keeping its own rotation and scale.
+- `PoseBody` (once per creature per tick) records the target pose.
+- Per FRAME (`Animate` → `PoseWorn`):
+  - each container gets ONE `SetPositionAndRotation` (interpolated). The worn prisms' colliders ride the hierarchy:
+    no per-prism transform write.
+  - Every worn prism's world matrix is `container x cached local TRS` (no per-prism transform read). They all go out
+    in ONE `PrismRenderService.SetTransformsBatch` and ONE `PrismSpatialIndex.UpdatePositionsBatch` (Burst; only an
+    8 u bucket crossing pays a hash-map remove and add).
+- Per-prism transform writes happen only:
+  - when the body's squash changes by more than 0.01 (rear, lunge, recover: PORT's per-phase notify);
+  - on wear;
+  - on unwear (back to its original parent, `NotifyPositionChanged`).
+- `SetBodyDanger` is event-driven, twice per lunge. It runs `MakeDangerous` on every worn prism, and back again by
+  clearing `IsDangerous`, restoring the speed debuff and calling `DeactivateShields` (the plain look).
+- Fusion moves a prism between bodies with no unwear.
+
+### 10.3 Proof (`bash Tools/Build/builders_harness/run.sh wearers`, `WearArena.cs`)
+
+Setup: the research's run_mixed cell (1,500 prisms; a racer and a wanderer laying trail at 0.25 s / 6 volume; plus a
+ramming hunter in W1b). There are 16 founders, the GAME colony. Each run is 5 min at 10 Hz, over 4 seeds.
+
+| Test | Result | Research |
+|---|---|---|
+| W1 body from stolen mass | every seed past 60 prisms (max 120-180); 69% of worn steals were trail; 59 fusions | trail 0.74-0.86 |
+| W1 hunts | 107 lunges, 48 hits; **2.40 hits/min**; telegraph exactly 1.00 s | wanderer 2.1-2.56/min, 1.15-1.42 s |
+| W1 budget | never more than `WornCap` 300 worn prisms | |
+| W1b ramming hunter | strips 353, 13 hurt moults, kills all 16 hearts in 5 min (3.2/min) | 13.3 kills/min vs 40 hearts |
+| W2 cost (sim, 10 Hz) | prism writes 987/s, rebuckets 901/s, container writes 17/s, queries 1.8/s; core 0.013 ms/step, p95 0.063 ms | 2,085-2,529; 1,700-2,800; 31-44; 12-13 |
+| W3 satiation moult (cap 50) | 3-4 moults a run, lairs of 85-119 prisms, a birth per moult | 1-3 births, lair 106-266 |
+| W4 hurt moult returns mass | body 50 → 9 stripped + 12 shed, all alive, loose and in the pilot's domain; live volume unchanged | |
+| W5 exposed heart | a bare heart touched by a ramming vessel dies (one death) | |
+| W6 starvation | deaths 2027-2939 s against stomachs 1800-3000 s | |
+| W7 shields | 0 shielded prisms worn or moved | |
+| Mass audit | 0 in every run | 0 |
+
+### 10.4 Budget, stated honestly
+
+- **Colliders.** The worn body adds **0**: every worn prism is the platform's own prism with its own collider.
+  - The hearts' proxies add `2 x 16 = 32` (MaxProxies 16).
+  - Engaged worst case: 18 hearts + 1,038 swarm and substrate + 116 builder (48 fortress, 36 thieves, 32 wearer) =
+    **1,172**; with the threat grove's +20, **1,192 / 1,200**.
+  - `author_swarm_fauna.py` gates this sum.
+- **Moving prisms vs PORT.md's 2,085-2,529 prism writes/s.**
+  - The research cost was one managed position write per worn prism per 10 Hz tick. The harness measures 987/s in
+    the GAME colony: 16 founders, bodies capped at 150 and 300 worn per colony, against the research's 40 hearts.
+  - In the game, the per-prism work per FRAME is one matrix multiply, plus one entry in each of two batched Burst
+    writes: at most 300 x 60 fps = **18,000 batched entries/s** in 2 calls a frame.
+  - Managed transform writes are about 1 per creature per frame. Squash writes (≤ 300 per lunge cycle frame) happen
+    only in rear, lunge and recover.
+- **Unmeasured: physics.** Moving a parent of static colliders makes Unity re-sync every moved collider's pose to
+  PhysX each frame the body moves: at most 300 static-collider moves a frame. A kinematic `Rigidbody` on the container
+  would make that one compound actor move. It was NOT taken: it would make every worn prism a kinematic trigger that
+  fires against the cell's static prisms, a gameplay change nobody has measured. QA-SWARM-ROUND11-10 profiles it.
+- **The ladder** (item 1 of this round). Builder member bodies are `BindVirtualMass` entries, so `LiveVolume` counts
+  them. `author_builders.body_volume()` puts every colony's member cap x |1.4 x 0.9 x 2.6| into
+  `author_swarm_fauna.ladder()`, beside the substrate's bodies: 294.8 volume. FrenzyEnterVolume moves from
+  448,000 to 449,000.
+  - Worn prisms, walls, hoards and lairs are the cell's own mass changing hands, so they are not added.
+
+### 10.5 What is NOT proved
+
+- Nothing has run in the editor (QA-SWARM-ROUND11-10).
+- Physics cost of moving static colliders under a container.
+- Whether `MakeDangerous` / `DeactivateShields` on a stolen trail prism reads right in every theme.
+- A pooled prism returned while worn: the pool re-parents it. The core drops it the tick `Alive` reads false. A
+  pooled prism that still reads alive for a tick is posed one extra frame.
+- Every sensed vessel counts as ramming, so a lunge that lands also strips its own body a little (a hit costs the
+  creature). The research's wanderer did not ram.
+- A relentless ramming hunter wipes the 16 founders out inside 5 minutes (W1b). That is the counterplay working;
+  whether it is too easy is a playtest question.
+
+### 10.6 Files
+
+- `Builders/WearerCore.cs` (new, meta owned by `author_builders.py`);
+- `BuilderPrismWorld.cs` (`IWearWorld`);
+- `BuilderColonyFauna.cs` (`Wearers` species);
+- `BuilderColonyConfigSO.cs` (`Wearers = 2`, the wearer fields, `ToWearerParams`);
+- `Tools/Build/builders_harness/{WearArena.cs, Program.cs W1-W7, run.sh}`;
+- `swarm_glue_typecheck` (WearerCore + stubs);
+- `author_builders.py` (the species, `body_volume()`);
+- `author_swarm_fauna.py` (the ladder);
+- assets: `BuilderWearer.prefab`, `WearerConfig.asset`, `Swarm Wearer Builder Fauna Config Data.asset`, the spawn
+  profile entry, and the Swarm Cell Config ladder.
+

@@ -42,6 +42,9 @@ namespace CosmicShore.Gameplay
             public int WornBy;
             public Vector3 Local;         // the unsquashed body-frame site offset
             public Transform Parent;      // where it hung before it was worn (it goes back there when it leaves)
+            public bool Parented;         // hangs under its body's container now
+            public Quaternion LocalRot;   // its own rotation and scale under the container, cached at parenting
+            public Vector3 LocalScale;
             public bool Danger;           // made dangerous by its body's lunge
             public float Debuff;          // its speed debuff before the lunge
         }
@@ -456,6 +459,7 @@ namespace CosmicShore.Gameplay
             if (s.Danger) SetPrismDanger(h, false);
             s = _slots[h];
             s.Worn = false;
+            s.Parented = false;
             _slots[h] = s;
             var p = s.Prism;
             if (p) BuilderRegistry.MarkCarried(p, false);
@@ -482,8 +486,14 @@ namespace CosmicShore.Gameplay
             {
                 int h = body.Pending[i];
                 if (!Live(h, out var p) || !_slots[h].Worn || _slots[h].WornBy != creature) continue;
-                p.transform.SetParent(body.T, true);   // keeps its own rotation and scale: a creature made of what it took
-                p.transform.localPosition = _slots[h].Local * body.Applied;
+                var t = p.transform;
+                t.SetParent(body.T, true);   // keeps its own rotation and scale: a creature made of what it took
+                var s = _slots[h];
+                t.localPosition = s.Local * body.Applied;
+                s.Parented = true;
+                s.LocalRot = t.localRotation;
+                s.LocalScale = t.localScale;
+                _slots[h] = s;
             }
             body.Pending.Clear();
         }
@@ -550,10 +560,12 @@ namespace CosmicShore.Gameplay
                 {
                     int h = body.Handles[i];
                     if (!Live(h, out var p)) continue;
-                    var t = p.transform;
-                    if (t.parent != body.T) continue;   // not parented yet (this tick's PoseBody does it)
-                    if (squash) { t.localPosition = _slots[h].Local * body.Applied; SquashWrites++; }
-                    var m = c * Matrix4x4.TRS(t.localPosition, t.localRotation, t.localScale);
+                    var s = _slots[h];
+                    if (!s.Parented) continue;   // not parented yet (this tick's PoseBody does it)
+                    var local = s.Local * body.Applied;
+                    if (squash) { p.transform.localPosition = local; SquashWrites++; }
+                    // from the cached local pose: no per-prism transform read or write in a steady frame
+                    var m = c * Matrix4x4.TRS(local, s.LocalRot, s.LocalScale);
                     if (PrismRenderService.IsHandleUsable(in p.RenderHandle))
                     {
                         _wornHandles[nr] = p.RenderHandle;

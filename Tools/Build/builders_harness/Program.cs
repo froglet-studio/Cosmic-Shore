@@ -419,7 +419,7 @@ static class Program
     sealed class WearResult
     {
         public int Largest, MaxBody, Steals, Trail, Fusions, Lunges, Hits, Stripped, Kills, Starved, Births, Lair, Alive;
-        public int SatMoults, HurtMoults, Returned, ShieldWorn, Creatures;
+        public int SatMoults, HurtMoults, Returned, ShieldWorn, Creatures, MaxWorn;
         public float MinTel, MaxTel, MsPerStep, MsP95, Minutes;
         public double Audit, Created;
         public long PrismWrites, Rebuckets, ContainerWrites, DangerToggles, Queries;
@@ -461,6 +461,7 @@ static class Program
             ms.Add((Stopwatch.GetTimestamp() - t0) * 1000.0 / Stopwatch.Frequency);
             ar.Step(Dt);
             foreach (int h in shieldedIds) if (core.IsWorn(h) || ar.Dom[h] != 0) res.ShieldWorn++;
+            res.MaxWorn = Math.Max(res.MaxWorn, core.WornTotal);
         }
         res.Largest = core.Largest; res.MaxBody = core.MaxBody; res.Steals = core.WornSteals; res.Trail = core.WornTrail;
         res.Fusions = core.Fusions; res.Lunges = core.Lunges; res.Hits = core.Hits; res.Stripped = core.Stripped;
@@ -494,6 +495,7 @@ static class Program
         float minTel = runs.Where(r => r.Lunges > 0).Min(r => r.MinTel), maxTel = runs.Where(r => r.Lunges > 0).Max(r => r.MaxTel);
         Check(minTel >= wp.Windup - 0.01f && maxTel <= wp.Windup + 0.15f, $"every lunge is telegraphed by a {wp.Windup} s rear ({minTel:F2}-{maxTel:F2} s; research 1.15-1.42)");
         Check(runs.Max(r => Math.Abs(r.Audit) / r.Created) < 1e-9, "mass audit 0 (stealing, wearing, eating, moulting: only eating removes)");
+        Check(runs.Max(r => r.MaxWorn) <= wp.WornCap, $"the colony never wears more than its moving-prism budget ({runs.Max(r => r.MaxWorn)} <= {wp.WornCap})");
         float hpm = runs.Sum(r => r.Hits) / (runs.Count * 5f);
         Console.WriteLine($"    hits on the two pilots {hpm:F2}/min per cell (research: wanderer 2.1-2.56/min against 40 hearts)");
 
@@ -552,7 +554,7 @@ static class Program
             Check(Math.Abs(ar.LiveVolume() - before) < 1e-9 && Math.Abs(ar.Audit()) < 1e-9, "the moult destroys nothing: live volume unchanged, audit 0");
         }
 
-        Console.WriteLine("\nW5. an exposed heart dies to a touch; a body shields it");
+        Console.WriteLine("\nW5. an exposed heart (fewer than 3 body prisms around it) dies to a touch");
         {
             var ar = new WearArena(12);
             var p = new WearerParams { Founders = 1, MaxHearts = 1, Containment = ar.R * 0.95f };
