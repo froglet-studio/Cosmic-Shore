@@ -16,7 +16,7 @@ HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 VIEWERS = [  # (published name, source relative to Tools/Ecology, id of the viewer's top bar)
     ("substrate.html", "substrate/viewer_sample.html", "ui"),
-    ("bestiary.html", "bestiary/bestiary.html", "hud"),
+    ("bestiary.html", "bestiary/bestiary.html", "ui"),
     ("emotion.html", "emotion/results/emotion_viewer.html", "ui"),
     ("builders.html", "builders/viewer.html", "ui"),
     ("hierarchy.html", "hierarchy/results/hierarchy_viewer.html", "ui"),
