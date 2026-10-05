@@ -1835,3 +1835,63 @@ cell; flying through it cuts voxels that the NCA regrows, shedding time crystals
   molting unit may also change body region. 0.69 ms/frame at n = 1024.
 - Lizard: sparse active set + a WebAssembly SIMD kernel took a step from 33.5 ms to ~2.6 ms (max diff 7e-6 vs the
   dense step; JS fallback ~19 ms). A 20% bite regrows to 90% in 21 steps (0.7 s at 30 steps/s).
+
+## Siege (branch `cece/lab-siege`, 2026-10-05) - "surrounded, then they all dive in at once"
+
+The scariest tier the lead named, built as a new flyable species: `flight/src/70_siege.js` (JS-original, no Python
+twin: listed in `JS_ORIGINAL` so `fidelity_js.js` skips it; the ten ported species re-ran bit-identical, gate
+unchanged). Mode `?mode=siege` in the page (not yet in the whole `cell`). Scored by `flight/siege_eval.js` (modelled
+on `stakes_eval.js`, tuned rule 1 petal x 4 per contact, cost measured on a never-empty petal pool so stripping does
+not hide later bites; `results/siege_eval*.json`). Screenshots: `flight/shots/siege_{close,hold_orbit,dive}.png`
+(`siege_shot.py`).
+
+**The shape.** 150 members, one shared phase machine. ROAM: a dim cloud stalks you ~430 u out, working round
+*ahead* of your line (the pack's fan-ahead). GATHER (3 s): within 640 u it streams round you onto a 300 u shell
+centred on a point that trails you (100 u/s); members flow *along the shell surface* to slots assigned near-side
+first, so the shell fills from the cloud's side and the far cap stays open. That open cap is the **iris**: the
+filled share of the sphere is scripted (0.6 at the end of GATHER, 0.8 at the end of CLOSE, 1.0 at the dive), so the
+way out is a visible ring (drawn in the page) that shrinks to nothing. Unreleased members hover outside the rim as a
+corona, not a wall. CLOSE (2.6 s): shell 300 -> 130 u, centre nearly stops, glow 0.55 -> 0.8 (the telegraph starts
+here). HOLD (1.3 s): pulsing 0.8 -> 1. DIVE: every member at once at your predicted position. **The wall is a web**:
+brushing within 35 u of a wall member once the glow is up starts the dive early from all sides. Then SCATTER and a
+10 s cooldown (6 s after an escape): a 11-15 s rhythm, 4-5.6 encounters a minute. Committed members (CLOSE..SCATTER)
+cannot be rammed, and simultaneous arrivals count as one bite per 0.25 s; both were bugs seen in the first page run
+(a dive dropped 58 crystals = +58 petals, and 56 "hits" a dive).
+
+**Numbers (6 seeds x 3 min, bestiary world, `results/siege_eval.json`):**
+
+| pilot | petals / encounter | petals / min | clean escapes | dived | telegraphed | first-strike lead (median) |
+|---|---|---|---|---|---|---|
+| wander (careless) | 6.5 | 26.0 | 13% | 85% | 1.00 | 1.67 s |
+| evader (skilled) | 0.40 | 2.2 | 89% | 6% | 1.00 | 1.38 s |
+| hunter (aggressive) | 5.1 | 22.7 | 21% | 76% | 1.00 | 0.57 s |
+| breaker (gap reader, new) | 0.32 | 1.8 | 91% | 4% | 1.00 | 1.30 s |
+
+Skilled / careless = **0.09** (breaker 0.07). Every burn telegraphed (target > 0.8). Median lead of all burning bites
+1.6-2.2 s. Careless and aggressive pilots are stripped of 20 petals in every run; skilled ones never. Conservation
+residual 0. JS probe feel (wander): size 3.4, speed_rel 1.42, approach -1.2, coherence 0.95, burstiness 1.88,
+jerk_rel 0.12 - very coherent, bursty, but `approach` is near zero because the shell stays at radius until the dive.
+For scale (same tuned rule, 2 min x 3 seeds): pack wander 16/min, evader 0; locust wander 33/min, evader 0.
+
+**Ablations (6 x 3 min) - what each rule buys:**
+- `nobreach` (touching the wall does nothing): careless 1.3 petals/enc, 99% walk straight out through the wall. The
+  web rule is what makes the shell a shell; without it the siege is decoration.
+- `noiris` (every slot released at once, no scripted gap): breaker 2.2 petals/enc (7x worse), evader 3.3 - the
+  counterplay disappears. The iris is what makes it fair.
+- `nosync` (dive speeds spread 0.5-1.5x): careless 7.0 vs 6.5 - no change in petals, because the stakes' 1 s
+  cooldown already merges a synchronized dive into ~1-2 burns. Synchrony is felt, not priced.
+
+**Negatives and what failed on the way:**
+- First version: evader WORSE than careless (3.3 vs 1.7 petals/enc). Fleeing the nearest member keeps you at the
+  centre of a sphere, the one place the dive converges on. Fixed by publishing only the *wall* (seated members) as
+  the threat, so "flee the wall" points at the gap - a design choice, so the evader number partly measures that.
+- The roaming cloud published as a threat drove the evader to the membrane, where the shell clipped (fill 0.43)
+  and it was dived every time. A roaming cloud now publishes nothing.
+- With the cloud stalking behind you, the iris opened straight ahead and the careless pilot escaped 64% by flying
+  straight; stalking ahead (LEAD) fixed that. The way out is now usually behind or beside you, so it costs a turn.
+- Lunges alone (bite on contact while crossing the wall) missed fast pilots: members could not accelerate in time.
+- The hunter (rams) still pays 5.1 petals/enc: ramming is not a counter to a siege.
+- The breaker is an ideal gap reader; a human with 2 rad/s turn may sit between evader and wander. Unflown by a human.
+
+**Open:** add to the whole `cell` (density with 9 other species untested); give the shell its own sound (silence
+then a roar at the dive); a human rating of `terrifying`; whether a 4 s telegraph stays scary once learned.

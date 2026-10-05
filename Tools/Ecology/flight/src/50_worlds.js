@@ -4,9 +4,11 @@
 // page flies: one cell, every species at once (or one alone), the player as the only pilot.
 // ===================================================================================================================
 const SPECIES = { pack: Pack, thief: Thief, locust: Locust, lurker: Lurker, stampede: Stampede, leviathan: Leviathan,
-  mobber: Mobber, grazer: Grazer, fortress: Fortress, snaptrap: SnapTrap };
+  mobber: Mobber, grazer: Grazer, fortress: Fortress, snaptrap: SnapTrap, siege: Siege };
 const WORLD = { pack: 'bestiary', thief: 'bestiary', locust: 'bestiary', lurker: 'bestiary', stampede: 'bestiary',
-  leviathan: 'bestiary', mobber: 'bestiary', grazer: 'bestiary', fortress: 'builders', snaptrap: 'flora' };
+  leviathan: 'bestiary', mobber: 'bestiary', grazer: 'bestiary', fortress: 'builders', snaptrap: 'flora', siege: 'bestiary' };
+/** JS-original species: no Python reference, so the fidelity gate (fidelity_js.js) skips them; siege_eval.js scores them. */
+const JS_ORIGINAL = { siege: true };
 const POLICIES = { bestiary: ['wander', 'evader', 'hunter'], builders: ['wander', 'evader', 'hunter'], flora: ['wander', 'reader', 'cutter'] };
 
 function makePilot(policy) {
@@ -84,6 +86,9 @@ function FlightWorld(PARAMS, mode, seed, scale) {
     add('snaptrap', { placeClump: (a, C, o) => { a.ball(0.3 * R, 0.75 * R, C, o); } });
   } else if (mode === 'snaptrap') {
     add('snaptrap', { placeClump: (a, C, o) => { a.ball(0.15 * R, 0.55 * R, C, o); C[o + 2] -= 0.25 * R; } });
+  } else if (mode === 'siege') {
+    // the siege stalks in from ahead-left; its rules (and every number) are its own (src/70_siege.js)
+    add('siege', { centre: [-0.2 * R, 0.05 * R, -0.35 * R] });
   } else if (mode === 'fortress') {
     add('fortress', { anchor: [0, 0.05 * R, -0.3 * R] });
   } else {

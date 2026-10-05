@@ -38,8 +38,9 @@ with sync_playwright() as pw:
     pg.wait_for_timeout(5000); out["fed"] = big(); pg.screenshot(path=os.path.join(a.shots, "creatures_morph.png"))
     # fly the pilot through the lizard
     n0 = big()["lizard"]
-    pg.evaluate("""() => { const L = window.__big().lizPos, pl = window.__eco.W.player; pl.pos[0] = L[0]; pl.pos[1] = L[1]; pl.pos[2] = L[2]; }""")
-    pg.wait_for_timeout(400); out["cut"] = big()
+    pg.evaluate("""() => { const v = window.__bigObj.lizard.voxels(), pl = window.__eco.W.player, j = 3 * (v.n >> 1);
+      pl.pos[0] = v.pos[j]; pl.pos[1] = v.pos[j + 1]; pl.pos[2] = v.pos[j + 2]; }""")
+    pg.wait_for_timeout(250); out["cut"] = big()
     pg.evaluate("""() => { const pl = window.__eco.W.player; pl.pos[1] += 600; }""")
     pg.wait_for_timeout(8000); out["regrow"] = big()
     out["lizard_before_cut"] = n0

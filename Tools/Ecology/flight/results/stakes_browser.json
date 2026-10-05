@@ -13,10 +13,10 @@
   "blocked": 0,
   "stings": 0,
   "tele": 4,
-  "crystals": 4,
+  "crystals": 5,
   "hostile": true,
   "rule": "tuned",
-  "t": 17.90000000000005,
+  "t": 15.199999999999957,
   "by": {
    "pack": 4
   },
@@ -32,38 +32,37 @@
   },
   "burned": 0,
   "gained": 0,
-  "contacts": 1,
-  "blocked": 0,
+  "contacts": 2,
+  "blocked": 1,
   "stings": 1,
   "tele": 0,
-  "crystals": 3,
+  "crystals": 4,
   "hostile": false,
   "rule": "tuned",
-  "t": 18.000000000000053,
+  "t": 17.36666666666669,
   "by": {},
   "errors": []
  },
  "cell_hostile": {
-  "total": 12,
+  "total": 16,
   "base": {
-   "mass": 3,
-   "charge": 3,
-   "space": 3,
-   "time": 3
+   "mass": 4,
+   "charge": 4,
+   "space": 4,
+   "time": 4
   },
-  "burned": 8,
+  "burned": 4,
   "gained": 0,
-  "contacts": 2,
+  "contacts": 1,
   "blocked": 0,
   "stings": 0,
-  "tele": 8,
+  "tele": 4,
   "crystals": 2,
   "hostile": true,
   "rule": "tuned",
-  "t": 15.03333333333329,
+  "t": 10.166666666666641,
   "by": {
-   "pack": 4,
-   "lurker": 4
+   "pack": 4
   },
   "errors": []
  },
