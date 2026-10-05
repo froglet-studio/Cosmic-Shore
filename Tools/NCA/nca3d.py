@@ -24,6 +24,17 @@ stage 1 exists (phase-free training alone collapses to a still frame).
     python3 Tools/NCA/nca3d.py bench
     python3 Tools/NCA/nca3d.py train
     python3 Tools/NCA/nca3d.py figures --run Tools/NCA/runs/lizard3d_swim
+
+A second target in the game's own vocabulary: --target whale voxelises the prism humpback
+(whale_target.py's prisms.json, its own 8-frame swim) with prism_frames(), D axis = UP. CPU recipe
+(one thread is far faster than four on a shared box), warm-started from the lizard:
+
+    OMP_NUM_THREADS=1 nohup python3 Tools/NCA/nca3d.py train --target whale --out Tools/NCA/runs/whale3d_swim \
+        --voxel-scale 0.5 --pad-xy 3 --init3d Tools/NCA/results/lizard3d_swim/model.pt --threads 1 \
+        --batch-size 4 --damage-n 1 --pool-size 256 --steps 6000 --clock-steps 800 --lr-drop-step 4000 \
+        > Tools/NCA/runs/whale3d_swim.log 2>&1 &
+    python3 Tools/NCA/nca3d.py train --out Tools/NCA/runs/whale3d_swim --resume --threads 1   # after a restart
+    python3 Tools/NCA/export_whale_creature.py     # -> flight/creatures/nca_whale.js (window.NcaWhale)
 """
 from __future__ import annotations
 
@@ -247,6 +258,82 @@ def swim3d_frames(name="lizard", frames=8, size=32, depth=12, pad_xy=6, pad_z=5,
     return np.stack(out).astype(np.float32)
 
 
+# PRISM palette of the flight cell (Tools/Ecology/flight/src/60_stakes.js ELEMENT_COLOUR). The whale
+# designer's three domains are drawn in it: Jade (back, fins, flukes) -> space blue, Ruby (mouth, eye)
+# -> mass coral, Gold (belly, pleats) -> charge gold. Tier only shades: plain 1.0, danger 0.8,
+# shield (octahedron) 1.0 - the octahedron's shape is what tells it apart.
+PRISM_ELEMENT = {"mass": (0.98, 0.42, 0.30), "charge": (1.0, 0.84, 0.25),
+                 "space": (0.42, 0.62, 1.0), "time": (0.62, 1.0, 0.55)}
+PRISM_DOMAIN_ELEMENT = ("space", "mass", "charge")      # dom 0 Jade, 1 Ruby, 2 Gold
+PRISM_TIER_SHADE = (1.0, 0.8, 1.0)
+PRISM_TARGETS = {"whale": "results/whale_target/prisms.json"}   # target name -> prisms.json (relative to HERE)
+PRISM_SHIELD = 3.0                                      # an octahedron reaches 3x its half-extents
+
+
+def _solidify(occ, rgb, r):
+    """Thicken a fine-grid shell by r cells, fill its inside, colour every voxel by its nearest shell voxel."""
+    from scipy import ndimage
+    shell = occ > 0.5
+    rr = max(1, int(round(r)))
+    zz, yy, xx = np.mgrid[-rr:rr + 1, -rr:rr + 1, -rr:rr + 1]
+    ball = zz * zz + yy * yy + xx * xx <= r * r + 1e-6
+    body = ndimage.binary_dilation(shell, ball)
+    body = ndimage.binary_fill_holes(ndimage.binary_closing(body, ball, iterations=2) | body)
+    _, ind = ndimage.distance_transform_edt(~shell, return_indices=True)
+    col = rgb[ind[0], ind[1], ind[2]]
+    return body.astype(np.float32), col * body[..., None]
+
+
+def prism_frames(path, scale=0.6, pad=4, ss=3, solid=True, thicken=0.35):
+    """Voxelise a prism creature (whale_target.py's prisms.json: per frame a list of
+    {p, h, R, dom, tier}, whale frame +x head, +y up, +z right) into premultiplied RGBA volumes
+    [K, D, H, W, 4] with D = whale y (UP: the flight creature maps D to world up), H = whale z,
+    W = whale x. Boxes (tier 0/1) are |local_i| <= h_i, shield octahedra sum |local_i| / (3 h_i)
+    <= 1, local = R^T (q - p) (R's columns are the prism's axes). `scale` is grid voxels per
+    designer voxel; ss x ss x ss supersampling box-filtered down gives fractional edge alpha.
+    The designer's whale is a SHELL of thin plates around a few core prisms; at a training scale
+    of ~0.6 a plate is under a voxel thick, so with `solid` the shell is thickened by `thicken`
+    grid voxels (fins and flukes stay >= ~1 voxel), its gaps closed and its inside filled, and
+    every filled voxel takes the colour of the nearest prism (_solidify)."""
+    d = json.load(open(path))
+    frames = d["frames"]
+    allp = [(np.array(q["p"]), (PRISM_SHIELD if q["tier"] == 2 else 1.0) * np.linalg.norm(q["h"]))
+            for f in frames for q in f]
+    lo = np.min([p - r for p, r in allp], 0)
+    hi = np.max([p + r for p, r in allp], 0)
+    n = np.ceil((hi - lo) * scale).astype(int) + 2 * pad        # x, y, z cells
+    origin = (lo + hi) / 2 - n / (2 * scale)                    # whale units at the grid's corner
+    Wn, Dn, Hn = int(n[0]), int(n[1]), int(n[2])
+    f = 1.0 / (scale * ss)
+    out = []
+    for fr in frames:
+        occ = np.zeros((Dn * ss, Hn * ss, Wn * ss), np.float32)
+        rgb = np.zeros((Dn * ss, Hn * ss, Wn * ss, 3), np.float32)
+        for q in fr:
+            p, h = np.array(q["p"]), np.array(q["h"])
+            M = np.array(q["R"]).reshape(3, 3)
+            reach = PRISM_SHIELD * h.max() if q["tier"] == 2 else np.linalg.norm(h)
+            # fine-grid index range of the bounding sphere, per whale axis
+            a = np.maximum(np.floor((p - reach - origin) / f).astype(int), 0)
+            b = np.minimum(np.ceil((p + reach - origin) / f).astype(int) + 1, [Wn * ss, Dn * ss, Hn * ss])
+            xs = origin[0] + (np.arange(a[0], b[0]) + 0.5) * f
+            ys = origin[1] + (np.arange(a[1], b[1]) + 0.5) * f
+            zs = origin[2] + (np.arange(a[2], b[2]) + 0.5) * f
+            Y, Z, X = np.meshgrid(ys, zs, xs, indexing="ij")          # D(y), H(z), W(x) order
+            dlt = np.stack([X - p[0], Y - p[1], Z - p[2]], -1)
+            loc = dlt @ M                                              # local_i = sum_j d_j R[j, i]
+            inside = (np.abs(loc) / (PRISM_SHIELD * h)).sum(-1) <= 1 if q["tier"] == 2 else (np.abs(loc) <= h).all(-1)
+            col = np.array(PRISM_ELEMENT[PRISM_DOMAIN_ELEMENT[q["dom"]]]) * PRISM_TIER_SHADE[q["tier"]]
+            sl = (slice(a[1], b[1]), slice(a[2], b[2]), slice(a[0], b[0]))
+            occ[sl] = np.maximum(occ[sl], inside)
+            rgb[sl][inside] = col
+        if solid:
+            occ, rgb = _solidify(occ, rgb, thicken * ss)
+        vol = np.concatenate([rgb * occ[..., None], occ[..., None]], -1)
+        out.append(vol.reshape(Dn, ss, Hn, ss, Wn, ss, 4).mean((1, 3, 5)))
+    return np.stack(out).astype(np.float32)
+
+
 # ---------------------------------------------------------------- render ---
 
 def _blur3(a):
@@ -326,6 +413,10 @@ class Config3D:
     clock_min_iter: int = 96
     clock_max_iter: int = 128
     init2d: str = ""            # optional warm start from a 2D model.pt: identity/gx/gy weights copied, gz = 0
+    init3d: str = ""            # optional warm start from a 3D model.pt with the same channel/hidden layout
+    prisms: str = ""            # prism target (whale_target.py prisms.json); default for target "whale"
+    voxel_scale: float = 0.6    # prism target: grid voxels per designer voxel
+    blowup_factor: float = 20.0 # guard: loss > factor x median(last 50) rolls back to the last good snapshot
     channel_n: int = 16
     hidden: int = 128
     batch_size: int = 8
@@ -342,6 +433,9 @@ class Config3D:
 
 
 def build_frames(cfg):
+    if cfg.prisms or cfg.target in PRISM_TARGETS:
+        path = cfg.prisms or os.path.join(HERE, PRISM_TARGETS[cfg.target])
+        return prism_frames(path, cfg.voxel_scale, cfg.pad_xy)
     return swim3d_frames(cfg.target, cfg.frames, cfg.size, cfg.depth, cfg.pad_xy, cfg.pad_z,
                          thickness=cfg.thickness, amp=cfg.amp, wavelength=cfg.wavelength)
 
@@ -402,6 +496,8 @@ def train(cfg: Config3D, out_dir: str, resume: bool = False):
             w1[:, :, :3] = sd["w1"].view(cfg.hidden, cfg.channel_n, 3)   # 2D order 3c+k -> 3D order 4c+k
             ca.w1.copy_(w1.view(cfg.hidden, -1)); ca.b1.copy_(sd["b1"])
             ca.w2.copy_(sd["w2"]); ca.b2.copy_(sd["b2"])
+    elif cfg.init3d:
+        ca.load_state_dict(torch.load(cfg.init3d))       # same 16-ch / 128-hidden layout (e.g. the lizard)
     opt = torch.optim.Adam(ca.parameters(), lr=cfg.lr, eps=1e-7)
     sched = torch.optim.lr_scheduler.MultiStepLR(opt, [cfg.lr_drop_step], 0.1)
     seed = make_seed(1, D, H, W, cfg.channel_n)
@@ -409,6 +505,9 @@ def train(cfg: Config3D, out_dir: str, resume: bool = False):
     J, P = cfg.window, cfg.period
     shift = torch.arange(J)
     log, t0 = [], time.time()
+    rollbacks, good = 0, None
+    if resume and os.path.isfile(os.path.join(out_dir, "state.json")):
+        rollbacks = json.load(open(os.path.join(out_dir, "state.json"))).get("rollbacks", 0)
     if resume:
         if os.path.isfile(os.path.join(out_dir, "opt.pt")):
             opt.load_state_dict(torch.load(os.path.join(out_dir, "opt.pt")))
@@ -458,6 +557,22 @@ def train(cfg: Config3D, out_dir: str, resume: bool = False):
             free = cost[torch.arange(B), cost.detach().argmin(1)]
             loss = torch.cat([seed_cost[:1], free[1:]]).mean()
 
+        L = float(loss)
+        # guard (as particle_nca.py): a non-finite or exploding loss, or a batch that died out,
+        # rolls the model and optimiser back to the last healthy snapshot instead of stepping
+        recent = [v for v in log[-50:] if math.isfinite(v)]
+        med = float(np.median(recent)) if len(recent) >= 10 else float("inf")
+        extinct = not bool((x.detach()[..., 3] > 0.1).any())
+        if not math.isfinite(L) or L > cfg.blowup_factor * med or extinct:
+            rollbacks += 1
+            if good is not None:
+                ca.load_state_dict(good[0]); opt.load_state_dict(good[1])
+            print(f"[3d {cfg.target}] step {step}: loss {L:.4g} (median {med:.4g}), extinct={extinct} -> "
+                  f"rolled back to step {good[2] if good else '-'} (rollback {rollbacks})", flush=True)
+            log.append(med if math.isfinite(med) else (log[-1] if log else 1.0))
+            sched.step()
+            continue
+
         opt.zero_grad(set_to_none=True)
         loss.backward()
         for prm in ca.parameters():
@@ -465,14 +580,29 @@ def train(cfg: Config3D, out_dir: str, resume: bool = False):
                 prm.grad /= prm.grad.norm() + 1e-8
         opt.step()
         sched.step()
+        xd = x.detach()
+        with torch.no_grad():   # one bad sample (non-finite, exploded or extinct) must not poison the pool
+            bad = ~torch.isfinite(xd).flatten(1).all(1) | (xd.abs().flatten(1).amax(1) > 50) | \
+                  ~(xd[..., 3] > 0.1).flatten(1).any(1)
+            if bool(bad.any()):
+                xd = xd.clone(); xd[bad] = seed[0]
         if clock:
             if step == cfg.clock_steps - 1:
-                pool[:] = x.detach()[rng.integers(0, B, cfg.pool_size)]
+                pool[:] = xd[rng.integers(0, B, cfg.pool_size)]
         else:
-            pool[idx] = x.detach()
+            pool[idx] = xd
 
-        L = float(loss)
         log.append(L)
+        if step % 25 == 0:
+            good = ({k: v.clone() for k, v in ca.state_dict().items()},
+                    __import__("copy").deepcopy(opt.state_dict()), step)
+            dt = time.time() - t0
+            spi = dt / (step - start + 1)
+            json.dump({"step": step, "steps": cfg.steps, "phase": "clock" if clock else "pool", "loss": L,
+                       "median50": med if math.isfinite(med) else None, "s_per_it": round(spi, 2),
+                       "eta_h": round((cfg.steps - step) * spi / 3600, 2), "rollbacks": rollbacks,
+                       "pid": os.getpid(), "updated": time.strftime("%Y-%m-%d %H:%M:%S")},
+                      open(os.path.join(out_dir, "status.json"), "w"), indent=1)
         if step % 25 == 0:
             dt = time.time() - t0
             print(f"[3d {cfg.target}] {'clock' if clock else 'pool '} step {step:5d}  loss {L:.5f}  "
@@ -481,7 +611,7 @@ def train(cfg: Config3D, out_dir: str, resume: bool = False):
             torch.save(ca.state_dict(), os.path.join(out_dir, "model.pt"))
             torch.save(opt.state_dict(), os.path.join(out_dir, "opt.pt"))
             np.save(os.path.join(out_dir, "loss.npy"), np.array(log))
-            json.dump({"step": step}, open(os.path.join(out_dir, "state.json"), "w"))
+            json.dump({"step": step, "rollbacks": rollbacks}, open(os.path.join(out_dir, "state.json"), "w"))
         if step % 250 == 0 or step == cfg.steps:
             ims = [render(x.detach()[i], px=96) for i in range(min(B, 8))]
             Image.fromarray((np.concatenate(ims, 1) * 255).astype(np.uint8)).save(
@@ -498,7 +628,9 @@ def export(ca, cfg, fr_np, path):
             "w2": ca.w2.detach().numpy().round(6).tolist(), "b2": ca.b2.detach().numpy().round(6).tolist(),
             "D": D, "H": H, "W": W, "frames": K, "period": cfg.period,
             "perception_order": "per-channel [identity, sobel_x, sobel_y, sobel_z] -> index 4*c+k",
-            "target": f"{cfg.target} helical swim (3D)", "experiment": "animated3d"}
+            "target": f"{cfg.target} {'prism swim' if cfg.prisms or cfg.target in PRISM_TARGETS else 'helical swim'} (3D)",
+            "experiment": "animated3d",
+            "axes": "D=up (world y), H=world z, W=world x" if cfg.prisms or cfg.target in PRISM_TARGETS else "D=depth"}
     with open(path, "w") as f:
         json.dump(data, f)
 
@@ -651,8 +783,14 @@ def main():
     sub.add_parser("selftest")
     tg = sub.add_parser("target")
     tg.add_argument("--out", required=True)
+    tg.add_argument("--target", default="lizard")
     b = sub.add_parser("bench")
     b.add_argument("--threads", type=int, default=0)
+    b.add_argument("--target", default="lizard")
+    b.add_argument("--voxel-scale", type=float, default=0.6)
+    b.add_argument("--pad-xy", type=int, default=6)
+    b.add_argument("--batch-size", type=int, default=8)
+    b.add_argument("--iters", type=int, default=80)
     t = sub.add_parser("train")
     t.add_argument("--out", default=None)
     t.add_argument("--resume", action="store_true", help="continue the run in --out from its last checkpoint")
@@ -665,33 +803,39 @@ def main():
     if args.cmd == "selftest":
         selftest()
     elif args.cmd == "target":
-        cfg = Config3D()
+        cfg = Config3D(target=args.target, **({"pad_xy": 3, "voxel_scale": 0.5} if args.target in PRISM_TARGETS else {}))
         fr = build_frames(cfg)
         K = len(fr)
         diffs = [float(((fr[i] - fr[(i + 1) % K]) ** 2).mean()) for i in range(K)]
         m = fr.mean(0, keepdims=True)
         print(f"grid {fr.shape[1:4]} (D,H,W), {K} frames, occupied voxels {(fr[0, ..., 3] > 0.5).sum()}, "
               f"consecutive MSE {np.mean(diffs):.2e}, still-image floor {((fr - m) ** 2).mean():.2e}")
-        write_gif([np.concatenate([render(f, az=0.9), render(f, az=0.9, tilt=1.45)], 1) for f in fr],
-                  args.out, scale=1, ms=cfg.period * 33)
+        if args.target in PRISM_TARGETS:      # D is UP here: flip it so the render's camera sees the whale upright
+            views = [np.concatenate([render(f[::-1], az=1.2, tilt=0.9), render(f[::-1], az=1.5708, tilt=1.5)], 0)
+                     for f in fr]
+            Image.fromarray((np.concatenate(views, 1) * 255).astype(np.uint8)).save(
+                os.path.splitext(args.out)[0] + ".png")                          # all K frames side by side
+        else:
+            views = [np.concatenate([render(f, az=0.9), render(f, az=0.9, tilt=1.45)], 1) for f in fr]
+        write_gif(views, args.out, scale=1, ms=cfg.period * 33)
     elif args.cmd == "bench":
         if args.threads:
             torch.set_num_threads(args.threads)
-        cfg = Config3D()
+        cfg = Config3D(target=args.target, voxel_scale=args.voxel_scale, pad_xy=args.pad_xy)
         fr = torch.from_numpy(build_frames(cfg))
         ca = CA3D()
         nn.init.normal_(ca.w2, std=0.01)
-        x0 = torch.zeros((8,) + tuple(fr.shape[1:4]) + (16,))
+        x0 = torch.zeros((args.batch_size,) + tuple(fr.shape[1:4]) + (16,))
         x0[..., :4] = fr[0]
         x0[..., 4:] = x0[..., 3:4] * 0.5
         print(f"grid {tuple(fr.shape[1:4])}, alive fraction {float(CA3D.alive(x0).float().mean()):.3f}")
         opt = torch.optim.Adam(ca.parameters(), 2e-3)
         for rep in range(2):
             t0 = time.time()
-            x, snaps = rollout_checkpointed(ca, x0, 80, {80})
+            x, snaps = rollout_checkpointed(ca, x0, args.iters, {args.iters})
             loss = x[..., :4].pow(2).mean()
             opt.zero_grad(); loss.backward(); opt.step()
-            print(f"threads={torch.get_num_threads()} 80 steps fwd+bwd (checkpointed): {time.time()-t0:.2f}s")
+            print(f"threads={torch.get_num_threads()} {args.iters} steps fwd+bwd (checkpointed), batch {args.batch_size}: {time.time()-t0:.2f}s")
     elif args.cmd == "train":
         cfg = Config3D(**{k: getattr(args, k) for k in asdict(Config3D())})
         out = args.out or os.path.join(HERE, "runs", f"{cfg.target}3d_swim")

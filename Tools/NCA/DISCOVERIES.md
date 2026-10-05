@@ -1023,6 +1023,25 @@ then a growth law: seed in, body out, with healing as a by-product of the pool +
   domains are REGION SLOTS scored up to permutation (min over slot→domain assignments). Zero
   intersections on all 8 frames for all four.
 
+#### P7b. The prism whale as a grid NCA (second native creature for the flight cell; CPU, 2026-10-05)
+- Target: P7's humpback (`results/whale_target/prisms.json`, 210 prisms × 8 swim frames) voxelised by
+  `nca3d.py prism_frames` into the lizard's RGBA grid format: boxes |local| ≤ h, shield octahedra
+  Σ|local_i|/3h_i ≤ 1, 3× supersampled. The designer whale is a SHELL of sub-voxel plates, so it is
+  thickened 0.35 voxel, closed and filled, each voxel coloured by its nearest prism in the flight
+  palette (Jade → space blue back/fins/flukes, Gold → charge gold belly/pleats, Ruby → mass coral
+  mouth/eye; danger tier ×0.8). D = whale UP (the axis NcaCreature already maps to world up),
+  H = lateral, W = length. Scale 0.5, pad 3 → grid 16×26×39 (D,H,W), 456 voxels at α>0.5; the
+  swim's per-voxel frame-to-frame change matches the lizard's (0.28 vs 0.26). Figure:
+  `results/whale3d_target/target.png` (8 frames, two views), `target.gif`.
+- CPU fact worth keeping: on this shared 4-core box torch with 4 threads ran 10-20× SLOWER than 1
+  thread (other jobs held the cores; intra-op barriers stall). Train with `--threads 1`.
+  Batch 4: 3.4-6 s/it clock stage (vs ~12 s/it batch 8).
+- Run: `nca3d.py train --target whale --init3d results/lizard3d_swim/model.pt` (same 16/128 layout,
+  warm start), batch 4, pool 256, 800 clock + 5200 pool steps, lr drop at 4000; guard rolls back on
+  non-finite / >20× median / extinct loss and resets bad pool samples. First 100 steps (aborted
+  3600-step trial): loss 0.0221 → 0.0019. Export: `export_whale_creature.py` → `nca_whale.js`
+  (`window.NcaWhale`). Result: see `runs/whale3d_swim/status.json`, promote to `results/` when done.
+
 #### P8. Related work found
 - Kim, Pajouheshgar, Süsstrunk, Jakob, Park, "Neural Particle Automata" (arXiv 2601.16096, SIGGRAPH
   2026) independently built the same base particle model (SPH perception with moment-corrected
