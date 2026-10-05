@@ -57,6 +57,52 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Device tiers: Desktop / MobileHigh / MobileLow + tier-aware first-run graphics (`claude/serene-edison-lfv24f`, 2026-10-05)
+
+Step 3 of `Docs/PLATFORM_UNIFICATION.md` (§3.4 has the full as-built table). No editor and no
+`unity` CLI in the authoring session, so `/verify-unity` did NOT run. Out-of-editor: the pure
+classifier compiled and RUN outside Unity (36 cases, negative-controlled); every new/changed C# file
+type-checked under Roslyn against a stub harness with bodies bound (six injected defects, six hits);
+the edit-mode test file's 33 non-asset cases executed under that harness; asset YAML parsed and every
+referenced guid resolves to exactly one `.meta`; the repo's C# gates.
+
+**What landed**
+
+1. `PlatformProfile` resolves the device's `DeviceTier` once per session (`Resources/PlatformProfiles`
+   + `SystemInfo`), with a PlayerPrefs override, logged on the `Boot` channel and shown on the
+   DiagnosticsHUD "Platform" rows.
+2. `SettingsAutoDetector.RecommendSettings` asks the tier's profile: Desktop and MobileHigh keep the
+   old capability heuristic (no change on Windows or iPhone); MobileLow gets Very Low, a 1.3 M pixel
+   budget, Linear upscaling, FXAA, 60 fps cap.
+3. `DisplayGraphicsSettings` v3 re-seeds a MobileLow device's graphics once, only if they still equal
+   the old auto-detect's output.
+4. FrogletTools ▸ Performance ▸ **Device Tier** window.
+
+**Verify in editor / on device**
+
+1. Project compiles; the edit-mode suite's `DeviceTierTests` pass (all 36, including the three
+   that load `Resources/PlatformProfiles`).
+2. FrogletTools ▸ Performance ▸ Device Tier: "Classifies as Desktop - not a handheld device". The
+   board shows the card under Performance.
+3. Play Menu_Main with the override on Auto: nothing differs from before (Settings ▸ Performance
+   shows the same preset / AA / render scale you had).
+4. Set **Mobile Low**, press Play on a fresh PlayerPrefs (or press "Re-run graphics auto-detect" in
+   the window): Settings shows Very Low, FXAA, Linear upscaling and a render scale fitted to the
+   MONITOR's native resolution (~79% on 1080p, ~59% on 1440p). Set back to **Auto** afterwards.
+5. Device Simulator (Window ▸ General ▸ Device Simulator), override on Auto, enter Play with a
+   budget Android device selected: the window's "This Play session" row reads MobileLow; with an
+   iPhone selected, MobileHigh. (If the simulator does not simulate RAM, the device line shows it.)
+6. On the 4 GB Samsung (Development build): DiagnosticsHUD "Platform" rows read `tier MobileLow` and
+   the device line names its GPU; Settings shows the MobileLow recommendation. On the iPhone: tier
+   MobileHigh and the settings it had before.
+7. `[Platform]` lines appear only with the Boot log channel on (FrogletTools ▸ Toolbox ▸ Logging).
+
+**First-pass tuning** (all on the assets, no code): `PlatformProfiles.asset` — `iosLowMemoryMB` 2500,
+`androidHighMinMemoryMB` 5000, `androidHighEndGpuPatterns`; `PlatformProfile_MobileLow.asset` —
+`pixelBudget` 1,300,000, `upscalingWhenScaled` Linear, `antiAliasing` FXAA, `maxTargetFrameRate` 60.
+
+---
+
 ### 🔴 Touch controls from the Android strip branch, for every touch device (`claude/serene-edison-lfv24f`, 2026-10-05)
 
 Step 2 of `Docs/PLATFORM_UNIFICATION.md`. Ported from `claude/android-performance-stripped-dap5z2`

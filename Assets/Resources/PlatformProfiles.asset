@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b94e786aa81d431cb3c35381b8cfd55e, type: 3}
+  m_Name: PlatformProfiles
+  m_EditorClassIdentifier: 
+  desktop: {fileID: 11400000, guid: a0fb73444a944fd798000280c93c606a, type: 2}
+  mobileHigh: {fileID: 11400000, guid: b77b1e622d594c3aba0733d51a6a4a79, type: 2}
+  mobileLow: {fileID: 11400000, guid: 891487c5d723452ea14a221a8ce4dc30, type: 2}
+  iosLowMemoryMB: 2500
+  androidHighMinMemoryMB: 5000
+  androidHighEndGpuPatterns:
+  - Adreno.*(6[4-9][0-9]|[7-9][0-9][0-9])
+  - Mali-G(7[6-9]|[7-9][0-9][0-9])
+  - Immortalis
+  - Xclipse

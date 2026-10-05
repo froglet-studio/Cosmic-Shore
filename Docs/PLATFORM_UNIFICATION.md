@@ -1,8 +1,9 @@
 # One codebase for Windows, iOS and Android — diagnosis and plan
 
-**Status (2026-10-05): diagnosis (§1) and inventory (§2) done. Step 2 (touch controls) landed on
-this branch, awaiting editor/device verification (`Docs/UNITY_VERIFICATION_CHECKLIST.md`, top
-entry). Device measurements are deferred, not a gate (owner's call).**
+**Status (2026-10-05): diagnosis (§1) and inventory (§2) done. Steps 2 (touch controls) and 3
+(device tiers) landed on this branch, awaiting editor/device verification
+(`Docs/UNITY_VERIFICATION_CHECKLIST.md`, top two entries). Device measurements are deferred, not a
+gate (owner's call).**
 
 ### Decisions recorded (2026-10-05, project owner)
 
@@ -272,6 +273,37 @@ today), and the 4 GB Samsung lands on `MobileLow` (Garrett's strip).
 - **Diagnostics scaffolding** that existed for crash hunting (`BootTrace` etc.) unless we still
   need it.
 
+
+### 3.4 As built (Step 3)
+
+| Piece | Where |
+|---|---|
+| `DeviceTier` enum (Desktop 0, MobileHigh 1, MobileLow 2) | `_Scripts/Data/Enums/DeviceTier.cs` |
+| Pure classifier: `DeviceFacts`, `DeviceTierRules`, `DeviceTierClassifier.Classify` / `OsFromName` (no Unity API; compiled and run outside the editor) | `_Scripts/System/Platform/DeviceTierClassifier.cs` |
+| Resolver: `PlatformProfile.Tier` / `Current` / `Reason` / `TierOverride`, read once per session, reset at `SubsystemRegistration`, logged on `CSLogChannel.Boot`, shown on the DiagnosticsHUD "Platform" rows | `_Scripts/System/Platform/PlatformProfile.cs` |
+| `PlatformProfileSO` (per tier) + `PlatformProfileSetSO` (the three slots + the thresholds) | `_Scripts/ScriptableObjects/`, assets in `_SO_Assets/Platform/` and `Resources/PlatformProfiles.asset` |
+| Tier-aware first-run recommendation; settings v3 re-seed | `SettingsAutoDetector.RecommendSettings` / `RecommendFromProfile`, `DisplayGraphicsSettings.ReseedUntouchedTierGraphics` |
+| Editor: detected tier + facts, simulate a tier, re-run auto-detect in Play | FrogletTools ▸ Performance ▸ Device Tier (`_Scripts/Editor/DeviceTierWindow.cs`) |
+| Tests | `_Scripts/Tests/Editor/DeviceTierTests.cs` |
+
+**Classification** (thresholds and the GPU list are authored on `PlatformProfiles.asset`):
+
+| Device | Tier |
+|---|---|
+| Not a handheld (`SystemInfo.deviceType`, the same signal `InputController` picks touch from) | Desktop |
+| iOS with < 2,500 MB RAM (the 2 GB iPhones iOS 15 still supports) | MobileLow |
+| iOS otherwise | MobileHigh |
+| Android with < 5,000 MB RAM (every 4 GB phone) | MobileLow |
+| Android with ≥ 5,000 MB and a GPU matching a high-end pattern (Adreno 640+, Mali-G76/G77/G78/G7xx+, Immortalis, Xclipse) | MobileHigh |
+| Android otherwise, including an unrecognised GPU name | MobileLow (conservative: add the reported name to the list) |
+
+**What changed on which platform in Step 3:** Windows — nothing (Desktop keeps the heuristic).
+iPhone — nothing (MobileHigh keeps the heuristic). MobileLow devices — first-run graphics become
+Very Low preset, a 1.3 M pixel budget (~71% render scale on a 1080x2400 phone), Linear upscaling
+instead of FSR, FXAA, 60 fps cap; an existing install is re-seeded once if its settings are still
+the old auto-detected ones. Nothing else reads the tier yet; Steps 4–5 add render and content
+fields to `PlatformProfileSO`.
+
 ---
 
 ## 4. Step plan
@@ -283,7 +315,7 @@ Each step is its own PR into bleeding-edge, and each leaves Windows unchanged un
 | 0 | **Measure** (deferred, not a gate). Development builds on the Samsung and the iPhone; `DiagnosticsHUD` bound verdict + main-thread ms; Garrett's branch on the same Samsung; exact model. | nothing | — | — | — |
 | 1 | **Android build plumbing.** Your two Gradle commits (`0f6b38ba5`, `359ad3d1b`; the namespace fix lives OUTSIDE the EDM4U block, the durable version of the same fix Garrett made inside it). Then decide: ARM64-only, R8 minify + Garrett's `proguard-user.txt` keep rules (the WorkManager crash came from Unity Ads, which your branch removes). Graphics APIs stay Auto (decided). | ProjectSettings (Android only), `Assets/Plugins/Android/*` | none | none | builds |
 | 2 | ✅ *(landed on this branch, unverified in editor)* **Touch controls into bleeding-edge, ungated.** `TouchInputStrategy` (physical-size stick + dead zone, one-thumb mirror, re-zero on lift, throttle carry, events on lift only, 75/25 curve) + touch-only vessel tuning (`touchNoseResponse`, gated to the local human pilot) + binary drift for any unmeasured trigger + the ability-dispatch hardening (§2.2). Not the Squirrel `boostLoopEvent` clear. | `Controller/IO`, `VesselTransformer`, Squirrel/Butterfly prefabs | none (touch only) | **new controls** | **new controls** |
-| 3 | **Device tier foundation.** `DeviceTierClassifier`, `PlatformProfileSO` ×3, dev override, a `CSLogChannel` for it, and a mobile branch in `SettingsAutoDetector` that reads the tier. `Desktop` profile = today's behaviour. | `System/`, `Controller/Settings` | identical | correct tier | correct tier |
+| 3 | ✅ *(landed on this branch, unverified in editor; see §3.4)* **Device tier foundation.** `DeviceTierClassifier`, `PlatformProfileSO` ×3, dev override, a `CSLogChannel` for it, and a mobile branch in `SettingsAutoDetector` that reads the tier. `Desktop` profile = today's behaviour. | `System/`, `Controller/Settings` | identical | correct tier | correct tier |
 | 4 | **Render tier.** `URP_Mobile.asset` + mobile quality level; baked sky (`StaticSkyPanorama`), mesh membrane, post/AA policy, crystal LDR brightness, fold-gate window cap — each selected by the profile. | `_Graphics`, profile | none | per `MobileHigh` | per `MobileLow` |
 | 5 | **Content tier.** Every `PerfStrip` gate becomes a profile read: trail policy, ecology, toybox, menu-UI teardown, Wander/conveyor budgets as per-tier overrides (not edits to the shared SO). The race trail cap only with decision 4 below. | gameplay | none | per `MobileHigh` | per `MobileLow` |
 | 6 | **Platform-agnostic fixes** Garrett found, merged ungated (§2.6). Can go any time. | various | yes (fixes) | yes | yes |
