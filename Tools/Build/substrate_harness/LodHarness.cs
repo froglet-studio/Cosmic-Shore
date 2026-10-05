@@ -44,6 +44,9 @@ static partial class SubstrateHarness
             Job.Prime();
         }
 
+        /// <summary>Populations this tick queued a meal for (applied at the next kick - "pending" for the freeze rule).</summary>
+        public readonly HashSet<int> FedPops = new();
+
         /// <summary>One tick through the job (inline) and the owner's half of it. Returns false on a worker error.</summary>
         public bool Tick()
         {
@@ -55,6 +58,7 @@ static partial class SubstrateHarness
                     if (_foodAlive[k]) Job.Food[n++] = new SubstrateFood { Pos = _foodPos[k], Volume = _foodVol[k] };
                 Job.FoodCount = n;
             }
+            FedPops.Clear();
             Job.Kick(true);
             Job.Collect();
             if (Job.Error != null) return false;
@@ -73,6 +77,7 @@ static partial class SubstrateHarness
                 if (best < 0) continue;
                 _foodAlive[best] = false;
                 Job.QueueFeed(i, _foodVol[best]);
+                FedPops.Add(Core.PopOf[i]);
             }
             foreach (var r in Job.PreyRequests)
             {
@@ -80,6 +85,7 @@ static partial class SubstrateHarness
                 var prey = Core.Pops[Core.PopOf[r.Prey]];
                 if (prey.Frozen) { prey.Frozen = false; HuntThaws++; }   // the owner's MaterialiseForHit thaws it
                 Job.QueueFeed(r.Predator, Core.Stock[r.Prey]);
+                FedPops.Add(Core.PopOf[r.Predator]);
                 Job.QueueKill(r.Prey);
             }
             foreach (var e in Job.Events)
@@ -115,7 +121,9 @@ static partial class SubstrateHarness
 
         // the freeze lands between ticks (the host's ApplyLod), when nothing is pending for the population
         int guard = 0;
-        while (c.ReserveSeconds(q) <= 2f * thaw && guard++ < 600) w.Tick();
+        // a meal queued last tick is pending too (it lands at the next kick): round 11-10's food heading brings the pack to
+        // its food, so a freeze on the tick after a bite was the common case and booked that bite as frozen-stock drift
+        while ((c.ReserveSeconds(q) <= 2f * thaw || w.FedPops.Contains(q)) && guard++ < 600) w.Tick();
         if (deactivate) pop.Active = false; else pop.Frozen = true;
         res.Freezes++;
         res.AliveBefore = job.PopAlive[q];

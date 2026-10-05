@@ -88,7 +88,9 @@ namespace CosmicShore.Gameplay
                 var W = SubstrateRegime.Lerp(Rs, Rg, ph);
                 var dirs = pop.Dirs;
                 I.Clear(); G.Clear();
-                Paint(I, dirs, core.Fields.Grad(SubstrateFields.Food, fc), W.WFood * h);
+                // round 11-10: the food heading is the core's per-agent read (its banded field, or the final approach to the
+                // nearest in-band food point - SubstrateCore.FoodHeading), the same input the kernel paints
+                Paint(I, dirs, core.GFood[i], W.WFood * h);
                 if (P.WPrey > 0f && pop.PreyPop >= 0)
                 {
                     // food web: follow the prey's scent; within PreySense make straight for the nearest one

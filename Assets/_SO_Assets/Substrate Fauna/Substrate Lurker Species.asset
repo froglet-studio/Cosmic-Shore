@@ -21,7 +21,7 @@ MonoBehaviour:
       Burst: 1
       Turn: 1
       Accel: 20
-      WFood: 0
+      WFood: 0.5
       WCoh: 0
       WAlign: 0
       WSep: 0.5
