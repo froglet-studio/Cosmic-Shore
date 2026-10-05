@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="NUnit" Version="3.14.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/CosmicShore.Engine/CosmicShore.Engine.csproj" />
+    <ProjectReference Include="../../src/CosmicShore.Data/CosmicShore.Data.csproj" />
+    <ProjectReference Include="../../src/CosmicShore.Game/CosmicShore.Game.csproj" />
+  </ItemGroup>
+
+</Project>
