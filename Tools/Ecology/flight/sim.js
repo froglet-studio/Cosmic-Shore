@@ -887,7 +887,7 @@ Locust.prototype.gregFrac = function () { let a = 0, s = 0; for (let i = 0; i < 
 // ------------------------------------------------------------------------------------------------ LURKER (eerie)
 const Lurker = inherit(function Lurker(arena, P, o) {
   o = o || {}; this.name = 'lurker';
-  for (const kk of ['GAPE', 'REACH_T', 'LUNGE', 'SENSE', 'HOLD', 'STRIKE']) this[kk] = C_(P, kk, o);
+  for (const kk of ['GAPE', 'REACH_T', 'LUNGE', 'SENSE']) this[kk] = C_(P, kk, o);
   const n = o.n || P.init.n;
   mkHerd(this, arena, P, n, o.centre);
   const env = envPrisms(arena, o);
@@ -909,8 +909,8 @@ Lurker.prototype.act = function (arena, dt) {
     const closing = dist[i] < this.prevD[i] - 1e-3; this.prevD[i] = dist[i];
     const idle = A[i] && this.lunge[i] <= 0 && this.spent[i] <= 0;
     const trig = idle && ((dist[i] < this.SENSE && closing) || dist[i] < 80);
-    this.gape[i] = (trig || (idle && this.gape[i] > 0 && dist[i] < this.HOLD)) ? Math.min(1, this.gape[i] + dt / gt) : Math.max(0, this.gape[i] - 2 * dt);
-    go[i] = idle && this.gape[i] >= 1 && dist[i] < this.STRIKE ? 1 : 0;
+    this.gape[i] = (trig || (idle && this.gape[i] > 0 && dist[i] < 230)) ? this.gape[i] + dt / gt : Math.max(0, this.gape[i] - 2 * dt);
+    go[i] = idle && this.gape[i] >= 1 ? 1 : 0;
     if (go[i]) {
       const p = PL[k[i]], s = clamp(dist[i] / this.LUNGE, 0, 0.5);
       const ax = off[3 * i] + p.vel[0] * s, ay = off[3 * i + 1] + p.vel[1] * s, az = off[3 * i + 2] + p.vel[2] * s, an = Math.max(Math.hypot(ax, ay, az), 1e-9);
