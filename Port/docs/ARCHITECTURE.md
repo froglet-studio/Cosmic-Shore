@@ -314,13 +314,13 @@ leaves the machine either way.
 | # | Control | What it does |
 |---|---|---|
 | 1 | **Hangar · Ark · Home · Port · Profile** | Top navigation between the menu's screens (gamepad: the shoulder buttons, shown as the L1/R1 hints) |
-| 2 | **Profile chip** | Your pilot name and avatar |
+| 2 | **R1 / arrow** | Next screen in the top navigation (L1 and a left arrow appear when there is a previous one) |
 | 3 | **Settings (gear)** | Audio, graphics, controls, credits |
 | 4 | **TOYBOX** | The freestyle toys: change vessel, domain or world, paint, spawn life |
 | 5 | **ARCADE** | Pick a game mode, then configure and launch a match |
 | 6 | **ARENA** | Multi-vessel matches |
 | 7 | **MISSION** | Greyed out: not built yet |
-| 8 | **Diagnostics panel** | The game's own performance HUD (section 11.5) |
+| 8 | **Diagnostics panel** | The game's own performance HUD (section 11.5). It sits on top of your profile chip (pilot name and avatar); press F7 to hide it |
 
 The world behind the menu is live: the cell, its flora and fauna, and your vessel on autopilot.
 The menu's own controls let you take the stick and fly it.
