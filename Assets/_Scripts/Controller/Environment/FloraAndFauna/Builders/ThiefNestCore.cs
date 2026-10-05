@@ -74,6 +74,10 @@ namespace CosmicShore.Gameplay
         public readonly bool[] Alive;
         public readonly int[] Claim, Carry;
         public readonly float[] Intent, Stomach, BornAt;
+        /// <summary>GAME: member k has a real proxy body (collider on) - a vessel's contact with that BODY is the platform's
+        /// (its danger plate stings, its body prism breaks), so the core does not also kill it by distance. Set by the glue
+        /// before each step; never set in the harness.</summary>
+        public readonly bool[] PlatformBody;
         /// <summary>The age of the claimed prism when it was claimed (the snatch-window proof).</summary>
         public readonly float[] ClaimAge;
 
@@ -98,7 +102,7 @@ namespace CosmicShore.Gameplay
             Cap = Math.Max(1, Math.Max(p.Founders, p.MaxThieves));
             Pos = new Vector3[Cap]; Vel = new Vector3[Cap]; Alive = new bool[Cap];
             Claim = new int[Cap]; Carry = new int[Cap]; Intent = new float[Cap]; Stomach = new float[Cap];
-            BornAt = new float[Cap]; ClaimAge = new float[Cap]; _des = new Vector3[Cap];
+            BornAt = new float[Cap]; ClaimAge = new float[Cap]; PlatformBody = new bool[Cap]; _des = new Vector3[Cap];
             for (int i = 0; i < Cap; i++) { Claim[i] = -1; Carry[i] = -1; }
             for (int i = 0; i < Math.Min(p.Founders, Cap); i++)
             {
@@ -342,7 +346,7 @@ namespace CosmicShore.Gameplay
                 if (!vessels[v].Rams) continue;
                 float reach = vessels[v].Radius + P.Size + P.KnockExtra;
                 for (int i = 0; i < Cap; i++)
-                    if (Alive[i] && Vector3.DistanceSquared(Pos[i], vessels[v].Pos) < reach * reach) Kill(i, vessels[v].Id);
+                    if (Alive[i] && !PlatformBody[i] && Vector3.DistanceSquared(Pos[i], vessels[v].Pos) < reach * reach) Kill(i, vessels[v].Id);
             }
             for (int i = 0; i < Cap; i++)
                 if (Alive[i]) MaybeBreed(i);

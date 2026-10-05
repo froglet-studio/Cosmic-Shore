@@ -106,6 +106,10 @@ namespace CosmicShore.Gameplay
         public readonly bool[] Alive;
         public readonly int[] Carry, Goal;
         public readonly float[] Intent, Stomach, BornAt;
+        /// <summary>GAME: member k has a real proxy body (collider on) - a vessel's contact with that BODY is the platform's
+        /// (its danger plate stings, its body prism breaks), so the core does not also kill it by distance. Set by the glue
+        /// before each step; never set in the harness.</summary>
+        public readonly bool[] PlatformBody;
         readonly Vector3[] _wander, _dirs;
         readonly float[] _cool, _theta;
 
@@ -148,7 +152,7 @@ namespace CosmicShore.Gameplay
             Cap = Math.Max(1, Math.Max(p.Founders, p.MaxWorkers));
             Pos = new Vector3[Cap]; Vel = new Vector3[Cap]; Alive = new bool[Cap];
             Carry = new int[Cap]; Goal = new int[Cap];
-            Intent = new float[Cap]; Stomach = new float[Cap]; BornAt = new float[Cap];
+            Intent = new float[Cap]; Stomach = new float[Cap]; BornAt = new float[Cap]; PlatformBody = new bool[Cap];
             _wander = new Vector3[Cap]; _dirs = new Vector3[Cap]; _cool = new float[Cap]; _theta = new float[Cap];
             for (int k = 0; k < Cap; k++)
             {
@@ -493,7 +497,7 @@ namespace CosmicShore.Gameplay
                 {
                     if (!Alive[k]) continue;
                     // ramming a CARRIER (its body or the prism it holds) knocks the prism loose and kills it
-                    bool hit = Vector3.DistanceSquared(Pos[k], vessels[v].Pos) < reach * reach;
+                    bool hit = !PlatformBody[k] && Vector3.DistanceSquared(Pos[k], vessels[v].Pos) < reach * reach;
                     if (!hit && Carry[k] >= 0)
                         hit = Vector3.Distance(_world.Position(Carry[k]), vessels[v].Pos) < vessels[v].Radius + 2f;
                     if (hit) Kill(k, vessels[v].Id);

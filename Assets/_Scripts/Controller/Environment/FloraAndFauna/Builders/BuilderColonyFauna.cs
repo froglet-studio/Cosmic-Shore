@@ -55,7 +55,7 @@ namespace CosmicShore.Gameplay
 
         // the cores' read surface (the same shape on both species)
         SVector3[] _pos, _vel;
-        bool[] _alive;
+        bool[] _alive, _platformBody;
         float[] _bornAt;
         List<BuilderDeath> _deaths;
         List<int> _born;
@@ -151,8 +151,10 @@ namespace CosmicShore.Gameplay
             var cfg = SourceConfig;
             if (cfg && cfg.BandOuterRadius > 0f)
             {
-                bandInner = Mathf.Min(cfg.BandInnerRadius, cfg.BandOuterRadius);
-                bandOuter = Mathf.Max(cfg.BandInnerRadius, cfg.BandOuterRadius);
+                // the band is where the colony LIVES; it forages a worker's sense beyond it either side (a creature is
+                // never led to mass it cannot reach - the workers fly the whole reach, the containment is the membrane)
+                bandInner = Mathf.Max(0f, Mathf.Min(cfg.BandInnerRadius, cfg.BandOuterRadius) - config.Sense);
+                bandOuter = Mathf.Max(cfg.BandInnerRadius, cfg.BandOuterRadius) + config.Sense;
             }
 
             const int mouthCount = 4;
@@ -174,14 +176,14 @@ namespace CosmicShore.Gameplay
                                               S(_nest), (int)domain, _colonyId, seed);
                 _world.SiteAddress = site => { _fort.SiteCoords(site, out int x, out int y, out int z); return new Vector3Int(x, y, z); };
                 _cap = _fort.Cap; _pos = _fort.Pos; _vel = _fort.Vel; _alive = _fort.Alive; _bornAt = _fort.BornAt;
-                _deaths = _fort.Deaths; _born = _fort.Born;
+                _deaths = _fort.Deaths; _born = _fort.Born; _platformBody = _fort.PlatformBody;
             }
             else
             {
                 _nest = FindNestPlant(centre, membrane);
                 _thief = new ThiefNestCore(_world, config.ToThiefParams(centre, membrane), S(_nest), (int)domain, _colonyId, seed);
                 _cap = _thief.Cap; _pos = _thief.Pos; _vel = _thief.Vel; _alive = _thief.Alive; _bornAt = _thief.BornAt;
-                _deaths = _thief.Deaths; _born = _thief.Born;
+                _deaths = _thief.Deaths; _born = _thief.Born; _platformBody = _thief.PlatformBody;
             }
 
             _prev = new SVector3[_cap]; _prevFace = new SVector3[_cap]; _face = new SVector3[_cap];
@@ -216,12 +218,15 @@ namespace CosmicShore.Gameplay
                 $"r={(_nest - centre).magnitude:F0}; members {(_gpu ? "GPU-drawn" : "GameObjects")}");
         }
 
-        /// <summary>A thief nest sits ON a plant: the nearest living flora heart inside this species' band (else where the
-        /// cell spawned the anchor). Perched a little outside the heart so the hoard shell wraps the plant's crown.</summary>
+        /// <summary>A thief nest sits ON a plant: the nearest living flora heart within a territory's reach of where the cell
+        /// spawned the anchor (else that spawn point). Perched a little outside the heart so the hoard wraps the crown.</summary>
         Vector3 FindNestPlant(Vector3 centre, float membrane)
         {
-            var plant = FloraHeartRegistry.NearestToPoint(transform.position,
-                f => !f || f.IsDying || !f.HeartTransform || !IsInsideBand(f.HeartTransform.position));
+            var from = transform.position;
+            float reach2 = config.ScoutRange * config.ScoutRange;
+            var plant = FloraHeartRegistry.NearestToPoint(from,
+                f => !f || f.IsDying || !f.HeartTransform || (f.HeartTransform.position - from).sqrMagnitude > reach2
+                     || (f.HeartTransform.position - centre).magnitude > membrane * 0.9f);
             if (!plant || !plant.HeartTransform) return transform.position;
             var at = plant.HeartTransform.position;
             var outward = at - centre;
@@ -301,6 +306,8 @@ namespace CosmicShore.Gameplay
             {
                 _prev[k] = _pos[k];
                 _prevFace[k] = _face[k];
+                var m = _proxy[k];
+                _platformBody[k] = m && !m.IsDead && m.Ready;   // its real body takes the vessel's contact (plate, ram)
             }
             using (s_mStep.Auto())
             {
