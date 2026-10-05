@@ -1,0 +1,26 @@
+{
+ "lizard": {
+  "adult": 1146,
+  "bitten": 703,
+  "after_6s": 1133,
+  "seed_2s": 213,
+  "seed_16s": 1148,
+  "grown_at_s": 5.566399999999997,
+  "swim_moved": 94.8,
+  "backend": "wasm-simd",
+  "steps": 752
+ },
+ "whale": {
+  "adult": 513,
+  "bitten": 407,
+  "after_6s": 494,
+  "seed_2s": 161,
+  "seed_16s": 515,
+  "grown_at_s": 6.316399999999992,
+  "swim_moved": 70.7,
+  "backend": "wasm-simd",
+  "steps": 723
+ },
+ "errors": [],
+ "fails": []
+}

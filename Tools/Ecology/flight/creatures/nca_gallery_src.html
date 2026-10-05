@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NCA Bestiary</title>
+<style>
+  :root { --bg: #05070d; --fg: #d8e2f0; --muted: #8a97ab; --panel: rgba(12, 16, 26, 0.82); --line: rgba(255,255,255,0.14); --acc: #7fd1ff; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); font: 13px/1.45 system-ui, sans-serif; overflow: hidden; }
+  canvas { display: block; touch-action: none; }
+  #hud { position: fixed; left: 16px; top: 16px; max-width: min(430px, calc(100vw - 32px)); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+  #hud h1 { font-size: 15px; margin: 0; }
+  .row { display: flex; flex-wrap: wrap; gap: 6px; }
+  button { background: transparent; color: var(--fg); border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; cursor: pointer; font: inherit; }
+  button.on { border-color: var(--acc); color: var(--acc); }
+  #stats { color: var(--muted); font-variant-numeric: tabular-nums; }
+  #say { color: var(--muted); }
+  #say b { color: var(--fg); font-weight: 600; }
+  #bar { height: 3px; background: var(--line); border-radius: 2px; overflow: hidden; }
+  #bar i { display: block; height: 100%; width: 0; background: var(--acc); }
+</style>
+</head>
+<body>
+<div id="hud">
+  <h1>NCA bestiary</h1>
+  <div class="row" id="species"></div>
+  <div class="row" id="els"></div>
+  <div class="row">
+    <button id="seed">Grow from one cell</button><button id="core">Bite out the middle</button>
+    <button id="swim">Swim</button><button id="spin" class="on">Orbit</button>
+  </div>
+  <div id="bar"><i></i></div>
+  <div id="stats">loading...</div>
+  <div id="say"></div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script>
+/*__NCA__*/
+</script>
+<script>
+(function () {
+  // Every body here is a 3D neural cellular automaton: one small network (16 channels, 128 hidden) runs in every voxel,
+  // reading only its 26 neighbours. Nothing stores the shape; the network regrows it, and its learned swim stroke, from
+  // whatever cells survive. Click (or tap) the body to bite it out.
+  const SPECIES = [
+    { key: 'lizard', ctor: () => window.NcaCreature, label: 'Lizard', scale: 0.5, opts: {},
+      say: '<b>Lizard.</b> Trained to grow from one cell into a lizard and keep swimming a learned stroke. Its tail and legs come back from any cut.' },
+    { key: 'whale', ctor: () => window.NcaWhale, label: 'Whale', scale: 0.45, opts: { forward: [1, 0], tint: 0 },
+      say: '<b>Whale.</b> Trained overnight on CPU: a long body with a tail-fluke beat. The same 10k-parameter network shape as the lizard, a different target.' },
+    { key: 'jelly', ctor: () => window.NcaJelly, label: 'Jellyfish', scale: 0.5, opts: { forward: [1, 0], tint: 0 },
+      say: '<b>Jellyfish.</b> Trained overnight on CPU: a bell that pulses on a clock the network keeps itself, trailing tentacles.' },
+  ].filter(s => s.ctor());
+
+  const W = () => innerWidth, H = () => innerHeight;
+  const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+  renderer.setPixelRatio(Math.min(2, devicePixelRatio || 1)); renderer.setSize(W(), H());
+  document.body.appendChild(renderer.domElement);
+  const scene = new THREE.Scene(); scene.background = new THREE.Color(0x05070d); scene.fog = new THREE.Fog(0x05070d, 40, 110);
+  const cam = new THREE.PerspectiveCamera(45, W() / H(), 0.1, 400);
+  scene.add(new THREE.HemisphereLight(0xbcd0ff, 0x101018, 0.85));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.9); sun.position.set(10, 20, 8); scene.add(sun);
+  const grid = new THREE.GridHelper(120, 40, 0x223048, 0x141c2c); scene.add(grid);
+
+  const q = new URLSearchParams(location.search);
+  let cur = null, creature = null, mesh = null, element = q.get('element') || 'space', swimming = q.get('swim') === '1', orbit = true;
+  let grownAt = null, seedT = null, peak = 0;
+  const wasm = !(q.get('wasm') === '0');
+
+  function pick(key) {
+    const s = SPECIES.find(x => x.key === key) || SPECIES[0];
+    if (mesh) { scene.remove(mesh); creature.dispose && creature.dispose(); }
+    cur = s; const C = s.ctor();
+    creature = new C(Object.assign({ seed: 7, scale: s.scale, position: [0, 0, 0], element, budgetMs: 8, stepsPerSecond: 30, wasm }, s.opts));
+    mesh = creature.mesh(THREE); scene.add(mesh);
+    creature.step(0.05); creature.sync(); peak = Math.max(1, creature.count());
+    grid.position.y = -creature.radius * 0.8;
+    [...speciesRow.children].forEach(b => b.classList.toggle('on', b.dataset.k === s.key));
+    document.getElementById('say').innerHTML = s.say;
+    window.creature = creature; seedT = null; grownAt = null;
+  }
+
+  const speciesRow = document.getElementById('species');
+  for (const s of SPECIES) { const b = document.createElement('button'); b.textContent = s.label; b.dataset.k = s.key; b.onclick = () => pick(s.key); speciesRow.appendChild(b); }
+  if (SPECIES.length < 2) speciesRow.style.display = 'none';
+  const els = document.getElementById('els');
+  for (const el of Object.keys(NcaCreature.ELEMENT_COLOUR)) {
+    const b = document.createElement('button'); b.textContent = el; const c = NcaCreature.ELEMENT_COLOUR[el];
+    b.style.color = `rgb(${c.map(x => Math.round(x * 255)).join(',')})`;
+    b.onclick = () => { element = el; creature.element = el; [...els.children].forEach(x => x.classList.toggle('on', x === b)); };
+    if (el === element) b.classList.add('on');
+    els.appendChild(b);
+  }
+  const seedBtn = document.getElementById('seed');
+  seedBtn.onclick = () => { creature.reset(); creature.stepsPerSecond = 8; seedT = 0; grownAt = null; };   // slow motion while it grows
+  document.getElementById('core').onclick = () => { const r = creature.radius * 0.22; creature.hit(creature.position.slice(), r); creature.sync(); flash(new THREE.Vector3(...creature.position), r); };
+  const swimBtn = document.getElementById('swim'); swimBtn.classList.toggle('on', swimming);
+  swimBtn.onclick = () => { swimming = !swimming; swimBtn.classList.toggle('on', swimming); if (!swimming) { creature.position = [0, 0, 0]; } };
+  const spinBtn = document.getElementById('spin');
+  spinBtn.onclick = () => { orbit = !orbit; spinBtn.classList.toggle('on', orbit); };
+
+  const flashes = [];
+  function flash(p, r) {
+    const m = new THREE.Mesh(new THREE.SphereGeometry(r, 16, 12), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.45, depthWrite: false }));
+    m.position.copy(p); scene.add(m); flashes.push({ m, t: 0 });
+  }
+  const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+  let drag = null, ang = 0.7, el = 0.42;
+  renderer.domElement.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY, a: ang, e: el, moved: false }; });
+  addEventListener('pointermove', e => {
+    if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if (Math.hypot(dx, dy) > 6) drag.moved = true;
+    if (drag.moved) { ang = drag.a - dx * 0.006; el = Math.max(-0.2, Math.min(1.3, drag.e + dy * 0.004)); }
+  });
+  addEventListener('pointerup', e => {
+    const d = drag; drag = null; if (!d || d.moved) return;
+    ndc.set(e.clientX / W() * 2 - 1, -e.clientY / H() * 2 + 1); ray.setFromCamera(ndc, cam);
+    const hit = ray.intersectObject(mesh)[0]; if (!hit) return;
+    const r = 3 * creature.scale; creature.hit(hit.point.toArray(), r); creature.sync(); flash(hit.point, r);
+  });
+  addEventListener('resize', () => { cam.aspect = W() / H(); cam.updateProjectionMatrix(); renderer.setSize(W(), H()); });
+
+  pick(q.get('species') || 'lizard');
+  const stats = document.getElementById('stats'), bar = document.querySelector('#bar i');
+  let last = performance.now(), fps = 60, msA = 0, t = 0;
+  window.__gallery = () => ({ species: cur.key, count: creature.count(), steps: creature.steps, peak, backend: creature.backend, grownAt, swimming, pos: creature.position.slice() });
+  function frame(now) {
+    const dt = Math.min(0.1, (now - last) / 1000); last = now; t += dt;
+    creature.step(dt);
+    if (swimming) { const R = 60, g = [Math.cos(t * 0.12) * R, Math.sin(t * 0.3) * 6, Math.sin(t * 0.12) * R]; creature.swim(dt, g, { cruise: 14 }); }
+    creature.sync();
+    const n = creature.count();
+    if (seedT === null) peak = Math.max(peak, n);
+    else { seedT += dt; if (grownAt === null && n >= 0.9 * peak) { grownAt = seedT; creature.stepsPerSecond = 30; } }
+    bar.style.width = Math.min(100, 100 * n / peak).toFixed(1) + '%';
+    msA = 0.9 * msA + 0.1 * (creature.lastStepMs || 0); fps = 0.95 * fps + 0.05 / Math.max(dt, 1e-3);
+    if (orbit && !drag) ang += dt * 0.12;
+    const P = creature.position, D = creature.radius * 1.9;
+    cam.position.set(P[0] + Math.cos(ang) * Math.cos(el) * D, P[1] + Math.sin(el) * D, P[2] + Math.sin(ang) * Math.cos(el) * D);
+    cam.lookAt(P[0], P[1], P[2]);
+    grid.position.x = Math.round(P[0] / 3) * 3; grid.position.z = Math.round(P[2] / 3) * 3;
+    for (let i = flashes.length - 1; i >= 0; i--) { const f = flashes[i]; f.t += dt; f.m.material.opacity = 0.45 * (1 - f.t / 0.4); f.m.scale.setScalar(1 + f.t * 2); if (f.t > 0.4) { scene.remove(f.m); flashes.splice(i, 1); } }
+    const grow = seedT === null ? '' : grownAt !== null ? ` | grown from one cell in ${grownAt.toFixed(1)} s (8 steps/s)` : ` | growing, slowed to 8 NCA steps/s: ${seedT.toFixed(1)} s`;
+    stats.textContent = `${n} voxels | NCA step ${creature.steps} | ${msA.toFixed(1)} ms/frame (${creature.backend}) | ${fps.toFixed(0)} fps${grow}`;
+    renderer.render(scene, cam);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

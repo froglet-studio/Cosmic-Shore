@@ -23,6 +23,7 @@ VIEWERS = [  # (published name, source relative to Tools/Ecology, id of the view
     ("flora.html", "flora/sandbox.html", "hud"),
     ("flight.html", "flight/index.html", "top"),
     ("living_cell.html", "living_cell/viewer.html", "ui"),
+    ("nca.html", "flight/creatures/nca_gallery.html", "hud"),
 ]
 
 PREFIX = '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
