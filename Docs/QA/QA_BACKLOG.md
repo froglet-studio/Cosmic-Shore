@@ -822,7 +822,7 @@ that raced across it (a jolt Garrett would read as a bug), and a rushed lurker p
 plates; no plate flicker. **FAIL:** members streak across the body after a strike · a swarm under steady grazing stops
 regrowing · a lurker plates after bolting · plates flicker on and off at one distance.
 
-### QA-SWARM-ROUND11-7 ⬜ — the cell's emotional range, and a puffed shield member stays shielded
+### QA-SWARM-ROUND11-12 ⬜ — the cell's emotional range, and a puffed shield member stays shielded
 
 **Source:** branch `overnight/feel2`. Only headless harness exports and the research probe have run. Reference:
 `Docs/SWARM_FAUNA.md` §27.

@@ -2457,6 +2457,8 @@ creature and phase.
   - It takes about 25 min and streams one export at a time, deleting each after scoring.
   - `--rescore` re-charts and re-asserts the saved `emotion_range_results.json`.
   - `--only <group>` runs a single group.
+- **After merging bda147a8f** (the substrate/builder LOD), the substrate, builders and flora groups were re-run.
+  Their reads are identical to the committed results.
 
 ### 27.2 Reads, hover viewer
 
@@ -2495,17 +2497,43 @@ species where the research has one. Numbers are the ensemble's top probability.
 Each reading that differs from the research was traced to its cause. **None was a port error, so no parameter was
 changed.**
 
-- **Pack: no menacing window.** The research's bestiary pack goes stalk, then a held ring (menacing), then strike
-  (terrifying).
+- **Pack: no menacing window on a direct approach.** The research's design arc is stalk, then a held ring (menacing),
+  then strike (terrifying).
   - The game pack's arc was measured: stalk about 2.5 s; ring held about 3 s at hover (1-2 s at cruise) before the
     first strike; a re-strike after about 0.8 s of ring.
   - A pilot that flies straight in never sees the ring held for a whole 8 s window. So the read is terrifying
     throughout, with eerie ring windows at cruise.
-  - Tested: the research's own `q_up` 0.75, inside its measured range of 0.55-0.75. The ring hold stays at 3.2-3.5 s.
   - It is not a port error. The port's ≥ 8 s hold is asserted against the round's own scenario: a 120 u/s wanderer
     starting 600 u away.
-  - Flagged for design: if Garrett wants the menace beat on a direct approach, the knob is the ring's hold timer, not
-    an emotion parameter.
+  - **A menace beat on a direct approach cannot be reached inside the research's measured ranges, so the pack is
+    unchanged.** Garrett's image is "surrounded, then everything dives in at once", so this was searched directly.
+    - **The ranges.** The research's own pack search (`substrate/pack_search.py`, results in
+      `substrate/results/emotion_pack.json`) sampled:
+      - `q_up` 0.5-1.2;
+      - ring radius 60-300 u;
+      - stalk speed 30-140 u/s;
+      - `w_ring` 0.3-2.0;
+      - turn 0.8-3.5.
+    - **The search.** Each candidate was replayed against the same straight-in hover and cruise tracks (3 seeds each).
+      The grid crossed `q_up` {0.65, 0.75, 0.85, 0.95}, ring radius {110, 220, 300} and stalk speed {50, 85, 120},
+      plus `w_ring` 0.5 and turn 1.2 at `q_up` 0.9.
+    - **The metric.** A run counts when a ring or stalk window reads menacing or eerie before the first strike window.
+    - **The result.** No candidate reached more than 1 of 6 runs. The first strike always came 1.6-7.6 s after the
+      pilot entered, apart from three isolated runs (10-17 s).
+    - **Why.** Closure is the bestiary formula `(1 - res) · clip((n-1)/3) · 1.6`, clipped to 1. Against a pilot that
+      comes to the pack, six hunters reach closure 1.0 within 3-7 s whatever their speed or ring radius. Any `q_up`
+      below 1 then fires within about 1 s (`q_rate` 0.8). `q_up` 0.97-0.99 behaves the same as 0.95, because closure
+      is pinned at 1. `q_up` ≥ 1.0 never fires.
+    - **What breaks.** At `q_up` 0.95 the round-11b-2 wanderer gate fails: only 3 of 5 seeds ever strike.
+    - **A long hold would not read as menace either.** With `q_up` 1.0 the ring is held for the whole 60 s, and the
+      held ring reads **playful** at hover, not menacing. The research's menacing ring (0.37-0.42) was 4-5 members of
+      14-18 u. The game's pack is 6 members of 12 u, and its count and size are in the cell's volume ladder (round
+      11b §7.4).
+  - **What would deliver the beat** is a design change outside the research's model, so it was not made:
+    - a ring-hold timer (hold ≥ 6 s after closure saturates, then strike together); or
+    - fewer, larger hunters (4-5 at 14-18 u), which re-tunes the volume ladder.
+    The wanderer, telegraph (0.4-0.7 s) and counterplay assertions would have to be re-checked for either. The search
+    log is in this round's report.
 - **Substrate pack in the research model reads playful .84.** This is the research's known finding: its substrate
   pack is a jittery small-agent cloud. The game follows the bestiary's terrifying intent instead.
 - **Lurker.** The research model reads playful at the snap and the bestiary model reads neutral. The game reads
@@ -2555,4 +2583,4 @@ invisible to weapons as a shield.
 - The R11e entity-ledger test fails at density 1 at every base back to 9e34f0b9b. It is a known pre-existing issue:
   the documented gate is density 5, where it passes.
 
-**QA.** QA-SWARM-ROUND11-7.
+**QA.** QA-SWARM-ROUND11-12.
