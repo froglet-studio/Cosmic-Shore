@@ -101,10 +101,34 @@ def record(key):
                 mdeath=b64(mdeath), tpos=b64(tpos), tborn=b64(tb), tdeath=b64(td), hits=hits)
 
 
-TPL = open(os.path.join(HERE, "viewer.html.tpl")).read() if os.path.exists(os.path.join(HERE, "viewer.html.tpl")) else None
+from common.viewer import TPL as VTPL  # noqa: E402
+
+PANEL = open(os.path.join(HERE, "viewer.html.tpl")).read()
+OUT = os.path.join(HERE, "bestiary.html")
+
+
+def render(runs):
+    """Shared 3D viewer (common/viewer.py) + the bestiary ledger; runs stay in the compact binary format."""
+    for r in runs:
+        r["fmt"] = "bestiary"
+        r["label"] = f"{r['key']} vs {r['pilot']}"
+    return (VTPL.replace('<div id="info"></div>', PANEL, 1).replace("__TITLE__", "Hypersea Bestiary")
+            .replace("__DATA__", json.dumps(runs, separators=(",", ":"))))
+
+
+def extract(path=OUT):
+    import re
+    s = open(path).read()
+    m = re.search(r"const (?:RUNS|D) = (\[.*?\]);\n", s, re.S)
+    return json.loads(m.group(1))
 
 
 if __name__ == "__main__":
+    if "--retemplate" in sys.argv:          # regenerate the page from the runs already recorded in bestiary.html
+        runs = extract()
+        open(OUT, "w").write(render(runs))
+        print(OUT, len(runs), "runs", round(os.path.getsize(OUT) / 1e6, 2), "MB")
+        sys.exit(0)
     cards = json.load(open(os.path.join(HERE, "scorecards.json")))
     emo = json.load(open(os.path.join(HERE, "emotion.json"))) if os.path.exists(os.path.join(HERE, "emotion.json")) else {}
     runs = []
@@ -117,7 +141,5 @@ if __name__ == "__main__":
         r["probe"] = emo.get(key, {})
         runs.append(r)
         print(key, r["nf"], "frames")
-    html = TPL.replace("__DATA__", json.dumps(runs, separators=(",", ":")))
-    out = os.path.join(HERE, "bestiary.html")
-    open(out, "w").write(html)
-    print(out, round(os.path.getsize(out) / 1e6, 2), "MB")
+    open(OUT, "w").write(render(runs))
+    print(OUT, round(os.path.getsize(OUT) / 1e6, 2), "MB")
