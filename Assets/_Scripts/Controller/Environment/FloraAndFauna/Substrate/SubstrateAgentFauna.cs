@@ -162,9 +162,13 @@ namespace CosmicShore.Gameplay
         /// DANGER while the agent strikes: the body prism is a hostile danger prism in its domain (the existing danger
         /// tier), so contact burns an opposing pilot's petals. Calm, resting or winded, it is a plain prism again.
         /// </summary>
-        public void SetDanger(bool danger)
+        public void SetDanger(bool danger, float weight = 1f)
         {
             if (_dead || !_body || _body.destroyed || !_body.IsCreationComplete) return;
+            // round 11-11: the species' contact weight (burn rules: a mobber's peck is a 0.25 drain); a plate that never
+            // burns (a leech, weight 0) is never made dangerous at all
+            if (!(weight > 0f)) danger = false;
+            _body.prismProperties.DangerWeight = weight > 0f ? weight : 1f;
             if (danger == _danger) return;
             if (danger) _body.MakeDangerous();
             else

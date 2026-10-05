@@ -600,7 +600,7 @@ sealed class SwarmSystem : ICellSystem
 
 // ══════════════════════════════════════════════════════════════════════════════════════════════ substrate
 
-/// <summary>The cell's substrate (SubstrateCellHost + SubstrateFauna): one SubstrateCore, three populations, one
+/// <summary>The cell's substrate (SubstrateCellHost + SubstrateFauna): one SubstrateCore, seven populations, one
 /// SubstrateTickJob run inline. Feed / Hunt / ShedStarving mirror SubstrateFauna; vessels are sensed cell-wide.</summary>
 sealed class SubstrateSystem : ICellSystem
 {
@@ -713,6 +713,17 @@ sealed class SubstrateSystem : ICellSystem
             if (q < 0) throw new Exception($"substrate: no room for {key}");
             var block = Core.Pops[q];
             ApplyEngage(block, Cell.F(a, "engageRadius"), (int)Cell.F(a, "maxProxies"));
+            // round 11-11 (SubstrateFauna.ClaimBlock): the species' sector pen inside its band
+            float half = a.TryGetProperty("sectorHalfAngle", out var ha) ? (float)ha.GetDouble() : 0f;
+            var axis = Vector3.UnitX;
+            if (a.TryGetProperty("sectorAxis", out var ax))
+                axis = new Vector3((float)ax[0].GetDouble(), (float)ax[1].GetDouble(), (float)ax[2].GetDouble());
+            bool sector = half > 0f && axis.LengthSquared() > 1e-6f;
+            if (sector) Core.SetSector(q, axis, half);
+            float sectorCos = sector ? MathF.Cos(half * MathF.PI / 180f) : -2f;
+            var axisU = sector ? Vector3.Normalize(axis) : Vector3.UnitX;
+            bool InSector(Vector3 p) => !sector || p.LengthSquared() < 1e-6f || Vector3.Dot(Vector3.Normalize(p), axisU) >= sectorCos;
+            int clusters = a.TryGetProperty("seedClusters", out var sc) ? (int)sc.GetDouble() : 0;
             var pop = new Pop
             {
                 Key = key, Index = q, Start = block.Start, Cap = block.Cap, Inner = inner, Outer = outer,
@@ -734,10 +745,27 @@ sealed class SubstrateSystem : ICellSystem
                 {
                     if (!f.Alive || at.Count >= n) continue;
                     float rr = f.Heart.Length();
-                    if (rr >= inner && rr <= outer) at.Add(f.Heart);
+                    if (rr >= inner && rr <= outer && InSector(f.Heart)) at.Add(f.Heart);
                 }
                 for (int k = 0; at.Count > 0 && at.Count < n; k++) at.Add(at[k % at.Count]);
                 if (at.Count > 0) Core.SeedAt(q, at.ToArray(), 12f);
+            }
+            if (Core.MassIn == before && (clusters > 1 || sector))
+            {
+                // SubstrateFauna.Seed (round 11-11): herds, roosts, a school - clusters at points of the band and sector,
+                // a little inside the band's walls
+                float spread = Cell.F(a, "seedSpread"), pad = MathF.Min(spread, 0.25f * (outer - inner));
+                var centres = new Vector3[Math.Max(1, clusters)];
+                for (int k = 0; k < centres.Length; k++)
+                {
+                    var pt = c.RandomInShell(inner + pad, outer - pad);
+                    for (int t = 0; t < 64 && !InSector(pt); t++) pt = c.RandomInShell(inner + pad, outer - pad);
+                    if (!InSector(pt)) pt = axisU * (0.5f * (inner + outer));
+                    centres[k] = pt;
+                }
+                var seats = new Vector3[n];
+                for (int k = 0; k < n; k++) seats[k] = centres[k % centres.Length];
+                Core.SeedAt(q, seats, spread);
             }
             if (Core.MassIn == before)
             {
@@ -825,6 +853,7 @@ sealed class SubstrateSystem : ICellSystem
         if (Job.Error != null) throw new Exception($"substrate tick threw: {Job.Error}");
         foreach (var k in Job.Killed)
         {
+            _pendingKill -= _booked[k.Index];   // the kill landed: the core no longer holds what was booked for it
             float late = k.Volume - _booked[k.Index];
             if (late <= 1e-5f) continue;
             LateMeals += late; LateMealCount++;
@@ -868,7 +897,7 @@ sealed class SubstrateSystem : ICellSystem
 
     void Die(int i, bool ram = false)
     {
-        if (!_gone[i]) { _booked[i] = BodyVolume(i); _bookedRam[i] = ram; }
+        if (!_gone[i]) { _booked[i] = BodyVolume(i); _bookedRam[i] = ram; _pendingKill += _booked[i]; }
         Job.QueueKill(i);
         PopOf(i).Proxies.Forget(i);
         _starving[i] = false;
@@ -884,7 +913,15 @@ sealed class SubstrateSystem : ICellSystem
             if (e.Kind == SubstrateEventKind.Starving) _starving[e.Index] = true;
             else if (e.Kind == SubstrateEventKind.Born) _starving[e.Index] = false;
             else if (e.Kind == SubstrateEventKind.Bite && e.Other >= 0 && e.Other < c.Pilots.Count)
-                c.AddContact(e.Other, PopOf(e.Index).Key, Job.Instances[e.Index].CurPos);
+            {
+                // a contact with the danger plate at the species' weight (round 11-11: a mobber's peck is a 0.25 drain;
+                // a weight-0 plate - the leech - is never dangerous, SubstrateAgentFauna.SetDanger)
+                float w = Core.Pops[PopOf(e.Index).Index].P.ContactWeight;
+                if (w > 0f) c.AddContact(e.Other, PopOf(e.Index).Key, Job.Instances[e.Index].CurPos, weight: w);
+            }
+            else if (e.Kind == SubstrateEventKind.Sip && e.Other >= 0 && e.Other < c.Pilots.Count)
+                // SubstrateFauna.Sip: a rider drains its host through the danger effect's ApplyContact, no collision
+                c.AddContact(e.Other, PopOf(e.Index).Key, Job.Instances[e.Index].CurPos, weight: e.Value);
         }
     }
 
@@ -997,7 +1034,11 @@ sealed class SubstrateSystem : ICellSystem
 
     /// <summary>The substrate's account: the stock its living agents hold (SubstrateCore.MassHeld) plus the bodies rammed
     /// out of the cell. MassIn - MassOut == MassHeld is the core's own law.</summary>
-    public double Held() => Core.MassHeld() + Rammed + _inFlight;
+    /// A death is booked (rammed out, laid as a skeleton, fed to a hunter) the moment the glue decides it, but the core
+    /// keeps the agent's stock until the queued kill lands next tick: that stock is not counted twice (a ledger read
+    /// between the two - a ram on a minute boundary - otherwise sees the body in both places).
+    public double Held() => Core.MassHeld() - _pendingKill + Rammed + _inFlight;
+    double _pendingKill;
 
     public void Ledger(List<(string, double)> into)
     {

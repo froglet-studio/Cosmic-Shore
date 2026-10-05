@@ -435,7 +435,7 @@ static class Program
         foreach (var (line, v) in r.LedgerLines) Console.WriteLine($"     {line,-62} {v,14:F1}");
         foreach (var p in c.Pilots)
             Console.WriteLine($"   {p.Kind,-8}: {p.Landed / r.Minutes:F2} burns/min ({p.Landed} landed of {p.Contacts} contacts), " +
-                              $"telegraphed {Pct(p.Telegraphed, p.Landed)}, petals {p.Petals.Sum()}/20 left; by class " +
+                              $"telegraphed {Pct(p.Telegraphed, p.Landed)}, petals {p.Petals.Sum():0.##}/20 left; by class " +
                               string.Join(" ", p.ByClass.OrderByDescending(kv => kv.Value).Select(kv => $"{kv.Key}:{kv.Value}")));
         return r;
     }
@@ -520,7 +520,8 @@ static class Program
             p.ByClass[x.Cls] = n + 1;
             bool tele = x.Telegraphed ?? c.Telegraphed(x.Cls, p.Pos);
             if (tele) p.Telegraphed++;
-            for (int e = 0; e < 4; e++) p.Petals[e] = Math.Max(0, p.Petals[e] - perElement);
+            float w = x.Weight > 0f ? x.Weight : 1f;   // the danger effect scales its size by the contact's weight
+            for (int e = 0; e < 4; e++) p.Petals[e] = MathF.Max(0f, p.Petals[e] - perElement * w);
         }
     }
 

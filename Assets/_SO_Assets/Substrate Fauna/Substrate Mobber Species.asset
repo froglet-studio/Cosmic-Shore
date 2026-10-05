@@ -10,22 +10,22 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 616507327e6850e772f83e235ef5507f, type: 3}
-  m_Name: Substrate Lurker Species
+  m_Name: Substrate Mobber Species
   m_EditorClassIdentifier:
   species:
-    Name: lurker
-    N0: 12
-    Capacity: 16
+    Name: mobber
+    N0: 40
+    Capacity: 50
     Solitary:
-      Speed: 4
+      Speed: 30
       Burst: 1
-      Turn: 1
-      Accel: 20
-      WFood: 0
-      WCoh: 0
-      WAlign: 0
-      WSep: 0.5
-      WWander: 0.05
+      Turn: 3
+      Accel: 120
+      WFood: 1
+      WCoh: 0.3
+      WAlign: 0.3
+      WSep: 0.6
+      WWander: 0.3
       WCurious: 0
       Comfort: 120
       WFlee: 0
@@ -40,24 +40,24 @@ MonoBehaviour:
       GaitHz: 0
       GaitAmp: 0
       Aspect: 1.5
-      Size: 2.5
+      Size: 1.5
       Trample: 0
     Gregarious:
-      Speed: 230
+      Speed: 110
       Burst: 1
-      Turn: 5
-      Accel: 900
+      Turn: 6
+      Accel: 500
       WFood: 0
-      WCoh: 0
+      WCoh: 0.1
       WAlign: 0
-      WSep: 0.2
+      WSep: 0.6
       WWander: 0.05
       WCurious: 0
       Comfort: 120
       WFlee: 0
-      WHunt: 3
-      WRing: 0
-      RingR: 90
+      WHunt: 0
+      WRing: 2
+      RingR: 30
       WTrail: 0
       WAlarm: 0
       WThreat: 0
@@ -66,39 +66,39 @@ MonoBehaviour:
       GaitHz: 0
       GaitAmp: 0
       Aspect: 1.5
-      Size: 7
+      Size: 1.8
       Trample: 0
-    NbrR: 40
+    NbrR: 120
     DensNorm: 6
-    Metabolism: 0.004
-    EatR: 10
-    EatHunger: 0.2
+    Metabolism: 0.01
+    EatR: 8
+    EatHunger: 0.25
     HungerPerVol: 0.02
     FearGain: 1
     AggrBase: 1
     FearDecay: 0.5
     Sense: 300
     CuriosityRate: 0.3
-    QUp: 0.5
-    QDown: 0.25
-    QWidth: 0.04
-    QRate: 1.6
-    QContagion: 0
+    QUp: 0.4
+    QDown: 0.4
+    QWidth: 0.05
+    QRate: 2
+    QContagion: 0.9
     QWDens: 0
-    QWProx: 1
+    QWProx: 0
     QWAlarm: 0
     QHunger: 0
-    BiteR: 12
-    BiteCool: 2.5
-    StarveS: 120
-    BirthStock: 100
+    BiteR: 6
+    BiteCool: 1
+    StarveS: 30
+    BirthStock: 60
     Stock0: 25
     GrowS: 2
     DepositThreat: 0
     DepositAlarm: 0
     NDirs: 18
-    FracK: 1
-    RingRoles: 0
+    FracK: 4
+    RingRoles: 50
     SpacingSpring: 1
     Momentum: 0.15
     IntentBlend: 0
@@ -107,18 +107,18 @@ MonoBehaviour:
     QWClose: 0
     CloseR: 350
     StaminaS: 0.6
-    RestS: 3
-    RestSpeed: 0.2
+    RestS: 1.9
+    RestSpeed: 1
     WRestRetreat: 0
     RestTogether: 0
-    WCreep: 2
+    WCreep: 0
     CreepR: 600
     CreepMin: 120
     CreepSpeed: 35
     CreepLeadS: 3
     GazeCos: 0.6428
-    Freeze: 1
-    MimicBody: 0.15
+    Freeze: 0
+    MimicBody: 1
     PreyName: ''
     WPrey: 0
     PreySense: 150
@@ -133,22 +133,22 @@ MonoBehaviour:
     BodyWell: 4
     BodySpeed: 50
     ChargeEvery: 0
-    RampS: 0
-    RampSpeed: 1
-    RampR: 0
+    RampS: 0.8
+    RampSpeed: 0.45
+    RampR: 80
     RampOnSight: 0
-    WStrike: 0
-    StrikeSpeed: 0
-    StrikeAccel: 0
+    WStrike: 4
+    StrikeSpeed: 160
+    StrikeAccel: 500
     StrikeTurn: 0
-    HuntLeadMax: 2
+    HuntLeadMax: 0.5
     WAlarmClimb: 0
     TrampleClose: 0
-    QWProvoke: 0
+    QWProvoke: 1
     SlowBelow: 100
     RoostR: 260
-    RestHoldsPhase: 0
-    WJink: 0
+    RestHoldsPhase: 1
+    WJink: 8
     JinkR: 60
     JinkCos: 0.9
     ClingMax: 0
@@ -160,7 +160,7 @@ MonoBehaviour:
     FlingSpeed: 90
     SipS: 1.5
     SipWeight: 0.25
-    ContactWeight: 1
+    ContactWeight: 0.25
     DangerAttached: 0
     BodyCurious: 0
     BodyCuriousR: 700
@@ -170,12 +170,12 @@ MonoBehaviour:
     GulpS: 1.6
     GulpSpeed: 115
     GulpRestS: 4
-    RampTurns: 0
+    RampTurns: 3
     RingHoldSeconds: 0
-  seedCount: 8
+  seedCount: 0
   seedSpread: 30
-  seedAtFlora: 1
-  seedClusters: 0
+  seedAtFlora: 0
+  seedClusters: 5
   sectorAxis: {x: 1, y: 0, z: 0}
   sectorHalfAngle: 0
   contactEffect: {fileID: 11400000, guid: c7ccaca885824b24b716b12148d77ce1, type: 2}
@@ -185,7 +185,7 @@ MonoBehaviour:
   heartWorldScale: {x: 2.298, y: 1.737, z: 2.298, w: 1.737}
   heartPrismGap: 0.6
   bodyThin: 0.6
-  engageRadius: 160
+  engageRadius: 120
   maxProxies: 4
   proxyLingerSeconds: 2
   maxSpawnsPerFrame: 4

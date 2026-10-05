@@ -8,26 +8,35 @@ What it owns:
   * the .meta of every script in Assets/.../FloraAndFauna/Substrate/ and of that folder (stable guids, one owner each);
   * SubstrateAgent.prefab - a substrate agent's PROXY: author_swarm_fauna.tadpole_prefab()'s body (TadPoleFauna's
     spindle + body prism, network layer and authored crystal stripped) with SubstrateAgentFauna in the member's place;
-  * SubstratePackFauna / SubstrateLocustFauna / SubstrateLurkerFauna.prefab - the heartless, bodiless population
+  * Substrate{Pack,Locust,Lurker,Stampede,Mobber,Leech,Leviathan}Fauna.prefab - the heartless, bodiless population
     anchors (SubstrateFauna), one per species;
-  * Assets/_SO_Assets/Substrate Fauna/: the three SubstrateSpeciesSO assets - every species number is copied from
+  * Assets/_SO_Assets/Substrate Fauna/: the seven SubstrateSpeciesSO assets - every species number is copied from
     Tools/Build/substrate_harness/game_params.json, which the substrate harness asserts IS the research parameter set
-    plus the documented game deltas (test F) - and the three FaunaConfigurationSO configs the Swarm cell's spawner
+    plus the documented game deltas (test F) - and the seven FaunaConfigurationSO configs the Swarm cell's spawner
     seeds them from (one population each, in its band, its heart element).
 
-The Swarm cell's spawn profile lists the three configs through ONE hook in author_swarm_fauna.py (profile_entries()),
+The Swarm cell's spawn profile lists the seven configs through ONE hook in author_swarm_fauna.py (profile_entries()),
 and its collider ceiling counts this script's proxies through another (proxy_colliders()) - the swarm generator owns
 the cell, this script owns the substrate.
 
 THE POPULATIONS (radii from the cell centre; the swarm's own shells are 470-620 / 690-840 / 910-1080):
 
-    lurker  Mass   470-620u   seeded AT the Mass flora's crystals it mimics; creeps while unwatched
-    pack    Time   690-1080u  6 long hunters over the middle and outer shells: they hunt the locusts (scent) and pilots
-    locust  Space  910-1080u  a sparse cute cloud over the Space flora; dense + hungry -> a gregarious storm
+    lurker    Mass   470-620u   seeded AT the Mass flora's crystals it mimics; creeps while unwatched
+    pack      Time   690-1080u  6 long hunters over the middle and outer shells: they hunt the locusts and pilots
+    locust    Space  910-1080u  a sparse cute cloud over the Space flora; dense + hungry -> a gregarious storm
+  round 11-11 (Docs/SUBSTRATE_FAUNA.md §9) - the middle shell split into three 110-degree sector pens:
+    mobber    Time   625-685u   5 roosts in the free gap; mobs a slow pilot, dives in turn, pecks a 0.25 drain
+    stampede  Mass   690-840u   sector +X: 4 herds; the alarm flips them, the bulls climb it and charge
+    leech     Charge 690-840u   sector +120 deg: puddles at the flora; pounce, latch, ride, sip a 0.25 drain
+    leviathan Space  690-840u   sector -120 deg: a grazer school that assembles into a manta and gulps
+
+The proxies are the substrate harness's measured ProxyCaps (test Q) and sum to the pre-11-11 39 (78 colliders): the
+four new species were fitted by re-dividing the substrate's share, never by raising the cell's 1,200 ceiling.
 """
 import argparse
 import hashlib
 import json
+import math
 import os
 import re
 import subprocess
@@ -57,10 +66,25 @@ SPECIES = [
     dict(key="pack", title="Pack Hunter", element="Time", band=(690, 1080), seed=0, spread=40, at_flora=0,
          engage=260, proxies=7, bites=4, spawns=7),
     dict(key="locust", title="Locust", element="Space", band=(910, 1080), seed=0, spread=80, at_flora=0,
-         engage=140, proxies=24, bites=16, spawns=8),
+         engage=140, proxies=12, bites=16, spawns=8),
     dict(key="lurker", title="Lurker", element="Mass", band=(470, 620), seed=8, spread=30, at_flora=1,
-         engage=160, proxies=8, bites=4, spawns=4),
+         engage=160, proxies=4, bites=4, spawns=4),
+    # round 11-11: the rest of the bestiary (Docs/SUBSTRATE_FAUNA.md §9). The 620-690 gap between the swarm's inner and
+    # middle shells is free (the mobbers' roosts); the middle shell 690-840 is split into three 110-degree SECTORS
+    # about the cell's Y axis (sector pens, SubstrateCore.SetSector) for the herd, the puddles and the school.
+    dict(key="stampede", title="Stampede", element="Mass", band=(690, 840), seed=0, spread=40, at_flora=0,
+         engage=200, proxies=6, bites=4, spawns=6, clusters=4, sector=((1, 0, 0), 55)),
+    dict(key="mobber", title="Mobber", element="Time", band=(625, 685), seed=0, spread=30, at_flora=0,
+         engage=120, proxies=4, bites=4, spawns=4, clusters=5),
+    dict(key="leech", title="Leech", element="Charge", band=(690, 840), seed=0, spread=8, at_flora=1,
+         engage=140, proxies=2, bites=4, spawns=2, sector=((-0.5, 0, 0.866), 55)),
+    dict(key="leviathan", title="Leviathan", element="Space", band=(690, 840), seed=0, spread=60, at_flora=0,
+         engage=200, proxies=4, bites=4, spawns=4, sector=((-0.5, 0, -0.866), 55)),
 ]
+NEW_SPECIES = ("stampede", "mobber", "leech", "leviathan")
+# the danger-prism effect a collision-free contact (a leech's sip) is applied through
+DANGER_EFFECT_GUID = "c7ccaca885824b24b716b12148d77ce1"   # VesselElementalDebuffByDangerPrismEffect.asset
+HARNESS = os.path.join(HERE, "substrate_harness", "Program.cs")
 CELL_CAPACITY = 1024
 
 # Round 11-12 (Docs/SUBSTRATE_FAUNA.md §7.7): the demo (Swarm) cell's pack plays the opt-in RING HOLD - "surrounded, then
@@ -139,6 +163,9 @@ def yaml_obj(d, ind):
     for k, v in d.items():
         if isinstance(v, dict):
             out += f"{ind}{k}:\n" + yaml_obj(v, ind + "  ")
+        elif isinstance(v, list):
+            # a float[] (the leviathan's body plan): Unity writes an empty array inline, a full one as a block
+            out += f"{ind}{k}: []\n" if not v else f"{ind}{k}:\n" + "".join(f"{ind}- {yaml_value(x)}\n" for x in v)
         else:
             out += f"{ind}{k}: {yaml_value(v)}\n"
     return out
@@ -147,9 +174,13 @@ def yaml_obj(d, ind):
 def species_asset(s, params):
     p = dict(params[s["key"]], **DEMO_OVERRIDES.get(s["key"], {}))
     h = swarm.HEARTS
+    ax, half = s.get("sector", ((1, 0, 0), 0))
     return swarm.SO_HEADER % (script_guid("SubstrateSpeciesSO"), f"Substrate {s['title']} Species") + (
         "  species:\n" + yaml_obj(p, "    ") +
         f"  seedCount: {s['seed']}\n  seedSpread: {s['spread']}\n  seedAtFlora: {s['at_flora']}\n"
+        f"  seedClusters: {s.get('clusters', 0)}\n"
+        f"  sectorAxis: {{x: {ax[0]}, y: {ax[1]}, z: {ax[2]}}}\n  sectorHalfAngle: {half}\n"
+        f"  contactEffect: {{fileID: 11400000, guid: {DANGER_EFFECT_GUID}, type: 2}}\n"
         f"  agentPrefab: {{fileID: {AGENT_MB_FID}, guid: {guid(rel(AGENT_PREFAB))}, type: 3}}\n"
         f"  memberShader: {{fileID: 4800000, guid: {swarm.guid(rel(swarm.MEMBER_SHADER))}, type: 3}}\n"
         f"  theme: {{fileID: 11400000, guid: {swarm.THEME}, type: 2}}\n"
@@ -178,7 +209,7 @@ def config_asset(s):
 # ── the hooks author_swarm_fauna.py calls ──────────────────────────────────────────────────
 
 def profile_entries():
-    """The Swarm cell spawn profile's SupportedFaunas lines for the three substrate populations."""
+    """The Swarm cell spawn profile's SupportedFaunas lines for the substrate populations."""
     return "".join(f"  - {{fileID: 11400000, guid: {guid(rel(config_path(s)))}, type: 2}}\n" for s in SPECIES)
 
 
@@ -239,7 +270,7 @@ def verify(out, params):
     sp = re.search(r"public sealed class SubstrateSpeciesParams\s*\{(.*?)public SubstrateSpeciesParams Clone", cs, re.S).group(1)
     sp = re.sub(r"///.*", "", sp)
     sp_fields = []
-    for decl in re.findall(r"public\s+(?:float|int|bool|string|SubstrateRegime)\s+([^;]+);", sp):
+    for decl in re.findall(r"public\s+(?:float\[\]|float|int|bool|string|SubstrateRegime)\s+([^;]+);", sp):
         sp_fields += [re.match(r"\s*(\w+)", part).group(1) for part in decl.split(",")]
     for k, p in params.items():
         if list(p.keys()) != sp_fields:
@@ -284,6 +315,50 @@ def verify(out, params):
         problems.append("the pack's band must cover the locusts' (a creature must never be led to food it cannot reach)")
     if pack["proxies"] < params["pack"]["Capacity"]:
         problems.append("every pack hunter must be able to be real at once (the all-at-once strike lands on proxies)")
+    # round 11-11: the collider budget is RE-DIVIDED, never raised - the proxies are the harness's measured caps
+    # (substrate_harness ProxyCaps, test Q: each cap still engages) and they sum to the pre-11-11 share (39 = 78 colliders)
+    caps = {k: (int(c), float(e)) for k, c, e in
+            re.findall(r'\("(\w+)", (\d+), ([\d.]+)f\)', open(HARNESS).read().split("ProxyCaps =", 1)[1].split("};", 1)[0])}
+    for sp_ in SPECIES:
+        if caps.get(sp_["key"]) != (sp_["proxies"], float(sp_["engage"])):
+            problems.append(f"{sp_['key']}: proxies {sp_['proxies']} within {sp_['engage']} u != the harness's measured cap "
+                            f"{caps.get(sp_['key'])} (substrate_harness/Program.cs ProxyCaps)")
+    if sum(sp_["proxies"] for sp_ in SPECIES) != 39:
+        problems.append(f"substrate proxies sum to {sum(sp_['proxies'] for sp_ in SPECIES)}, not the pre-11-11 share of 39 "
+                        "(the four new species are fitted by re-dividing it - the 1,200 ceiling is never raised)")
+    # placement: the new four sit off the builders' and the wearer's bands, inside the swarm's outer shell (so off the
+    # threat grove's rim, which author_threat_flora.py keeps beyond it), and never share a (shell, sector) pen
+    import author_builders as builders
+    new = [sp_ for sp_ in SPECIES if sp_["key"] in NEW_SPECIES]
+    for sp_ in new:
+        lo, hi = sp_["band"]
+        for b in builders.SPECIES:
+            if lo < b["band"][1] and hi > b["band"][0]:
+                problems.append(f"{sp_['key']}: band {sp_['band']} overlaps the {b['key']} band {b['band']}")
+        if hi > 1080:
+            problems.append(f"{sp_['key']}: band {sp_['band']} reaches past the swarm's outer shell toward the grove rim")
+        if sp_["key"] not in params or params[sp_["key"]]["Name"] != sp_["key"]:
+            problems.append(f"{sp_['key']}: no game set in game_params.json (run substrate_harness/run.sh export)")
+    for i, a in enumerate(new):
+        for b in new[i + 1:]:
+            if not (a["band"][0] < b["band"][1] and b["band"][0] < a["band"][1]):
+                continue
+            if "sector" not in a or "sector" not in b:
+                problems.append(f"{a['key']} and {b['key']} share a shell and one of them has no sector pen")
+                continue
+            (va, ha), (vb, hb) = a["sector"], b["sector"]
+            na, nb = sum(x * x for x in va) ** 0.5, sum(x * x for x in vb) ** 0.5
+            ang = math.degrees(math.acos(max(-1.0, min(1.0, sum(x * y for x, y in zip(va, vb)) / (na * nb)))))
+            if ang < ha + hb:
+                problems.append(f"{a['key']} and {b['key']}: sectors overlap ({ang:.0f} deg apart < {ha} + {hb})")
+    # every population at its full pool fits the cell's one core (SubstrateCore capacity: AddPopulation refuses past it)
+    total = sum(params[sp_["key"]]["Capacity"] for sp_ in SPECIES)
+    if total > CELL_CAPACITY:
+        problems.append(f"the populations' capacities sum to {total} > the cell substrate's {CELL_CAPACITY}")
+    # the burn rules (burn-rules.md): a mobber's peck is a drain, 0.25; a leech's plate never burns, it sips 0.25
+    if abs(params["mobber"]["ContactWeight"] - 0.25) > 1e-6 or params["leech"]["ContactWeight"] != 0 or \
+       abs(params["leech"]["SipWeight"] - 0.25) > 1e-6:
+        problems.append("burn rules: the mobber's peck and the leech's sip are drains (0.25), the leech's plate never burns")
     return problems
 
 
@@ -299,11 +374,12 @@ def main():
     args = ap.parse_args()
     out, params = emit()
     problems = verify(out, params)
-    print("Substrate fauna - three populations on the Living Ecology substrate (round 11b)\n")
+    print("Substrate fauna - seven populations on the Living Ecology substrate (rounds 11b, 11-11)\n")
     for s in SPECIES:
         p = params[s["key"]]
-        print(f"  {s['key']:<7} {s['element']:<6} {s['band'][0]}-{s['band'][1]}u  seed {s['seed'] or p['N0']:>3} "
-              f"(cap {p['Capacity']}), proxies <= {s['proxies']} within {s['engage']}u")
+        sec = f", sector {s['sector'][1]} deg about {s['sector'][0]}" if "sector" in s else ""
+        print(f"  {s['key']:<9} {s['element']:<6} {s['band'][0]}-{s['band'][1]}u  seed {s['seed'] or p['N0']:>3} "
+              f"(cap {p['Capacity']}), proxies <= {s['proxies']} within {s['engage']}u{sec}")
     print(f"  proxy colliders, every population engaged: {proxy_colliders()}")
     if args.check:
         drift = [rel(p) for p, t in out.items() if not os.path.exists(p) or swarm.read(p) != t]

@@ -26,7 +26,7 @@ namespace CosmicShore.Gameplay
     public class VesselImpactor : MonoBehaviour { public IVessel Vessel => null; }
     public class PrismImpactor : MonoBehaviour { public Prism Prism => null; }
     public class Prism : MonoBehaviour { public PrismProperties prismProperties; public Domains Domain => default; }
-    public class PrismProperties { public bool IsDangerous; }
+    public class PrismProperties { public bool IsDangerous; public float DangerWeight = 1f; }
     public class SnowChanger : MonoBehaviour { }
     public class CellModifier : ScriptableObject { }
     public class SpawnableBase : MonoBehaviour { }

@@ -27,6 +27,7 @@ namespace CosmicShore.Gameplay
         static readonly Dictionary<Cell, SubstrateCellHost> s_hosts = new();
         static readonly Collider[] s_overlap = new Collider[4096];
         static readonly List<IVesselStatus> s_seen = new(SubstrateCore.MaxPilots);
+        readonly Dictionary<int, IVesselStatus> _vesselById = new(SubstrateCore.MaxPilots);
         static readonly ProfilerMarker s_mCollect = new("SubstrateCellHost.Collect");
         static readonly ProfilerMarker s_mPublish = new("SubstrateCellHost.Publish");
         static readonly ProfilerMarker s_mSense = new("SubstrateCellHost.Sense");
@@ -240,6 +241,7 @@ namespace CosmicShore.Gameplay
         {
             int n = 0;
             s_seen.Clear();
+            _vesselById.Clear();
             int mask = SubstrateFauna.VesselOverlapMask;
             int hits = Physics.OverlapSphereNonAlloc(Centre, Core.R, s_overlap, mask);
             if (hits >= s_overlap.Length && !_warnedSense)
@@ -264,9 +266,14 @@ namespace CosmicShore.Gameplay
                     Pos = new SVector3(p.x, p.y, p.z), Vel = new SVector3(v.x, v.y, v.z), Radius = radius,
                     Id = c.GetInstanceID(),
                 };
+                _vesselById[c.GetInstanceID()] = status;
             }
             Job.PilotCount = n;
         }
+
+        /// <summary>The vessel a tick's pilot Id (SubstratePilot.Id) named at the last sense, or null when it has left
+        /// (round 11-11: a contact the core decides without a collision - a leech's sip - is applied to it).</summary>
+        public IVesselStatus VesselById(int id) => _vesselById.TryGetValue(id, out var v) && v is Component c && c ? v : null;
 
         /// <summary>The cell's living FLORA, one unit of food per plant heart - the food field is a READ of mass. A Charge
         /// plant is no food at all (its leaves are armoured: shielded mass is never food).</summary>

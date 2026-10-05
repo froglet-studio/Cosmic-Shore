@@ -170,6 +170,12 @@ namespace CosmicShore.Gameplay
             // this species' own engagement: the host's tick settings are the FIRST-joined species' (QA-SWARM-ROUND11-9)
             block.EngageRadius = species.EngageRadius;
             block.MaxEngaged = species.MaxProxies;
+            // round 11-11: the species' sector pen inside its band (Docs/SUBSTRATE_FAUNA.md §9.5)
+            if (species.HasSector)
+            {
+                var ax = species.SectorAxis;
+                host.Core.SetSector(pop, new System.Numerics.Vector3(ax.x, ax.y, ax.z), species.SectorHalfAngle);
+            }
             _pop = pop; _start = block.Start; _cap = block.Cap;
             _proxy = new SubstrateAgentFauna[_cap];
             _wantedAt = new float[_cap];
@@ -209,7 +215,7 @@ namespace CosmicShore.Gameplay
             int n = Mathf.Min(species.SeedCount, _cap);
             if (species.SeedAtFlora)
             {
-                // an ambusher is seeded AMONG the crystals it mimics: at living flora hearts in its band
+                // an ambusher is seeded AMONG the crystals it mimics: at living flora hearts in its band (and sector)
                 var at = new List<System.Numerics.Vector3>(n);
                 var live = FloraHeartRegistry.Live;
                 for (int k = 0; k < live.Count && at.Count < n; k++)
@@ -217,14 +223,62 @@ namespace CosmicShore.Gameplay
                     var f = live[k];
                     if (!f || f.IsDying) continue;
                     var p = f.HeartTransform.position;
-                    if (!IsInsideBand(p) || (p - host.Centre).magnitude > host.Core.R) continue;
+                    if (!IsInsideBand(p) || (p - host.Centre).magnitude > host.Core.R || !InSector(p - host.Centre)) continue;
                     at.Add(ToSim(p));
                 }
                 for (int k = 0; at.Count > 0 && at.Count < n; k++) at.Add(at[k % at.Count]);
                 if (at.Count > 0) { host.Core.SeedAt(pop, at.ToArray(), 12f); return; }
             }
+            int clusters = Mathf.Max(1, species.SeedClusters);
+            if (clusters > 1 || species.HasSector)
+            {
+                // round 11-11: herds, roosts and puddles - clusters at points of the band, inside the sector pen
+                var rng = new System.Random(pop * 7919 + n);
+                var at = new System.Numerics.Vector3[n];
+                var centres = new System.Numerics.Vector3[clusters];
+                for (int c = 0; c < clusters; c++) centres[c] = PenPoint(host, rng);
+                for (int k = 0; k < n; k++) at[k] = centres[k % clusters];
+                host.Core.SeedAt(pop, at, species.SeedSpread);
+                return;
+            }
             host.Core.Seed(pop, n, ToSim(transform.position), species.SeedSpread);
         }
+
+        /// <summary>Inside the species' sector pen (cell-local offset <paramref name="local"/>); true without a sector.</summary>
+        bool InSector(Vector3 local)
+        {
+            if (!species.HasSector || local.sqrMagnitude < 1e-6f) return true;
+            return Vector3.Dot(local.normalized, species.SectorAxis.normalized) >= Mathf.Cos(species.SectorHalfAngle * Mathf.Deg2Rad);
+        }
+
+        /// <summary>A random sim point in the population's band and sector pen (the anchor's radius when there is no band).</summary>
+        System.Numerics.Vector3 PenPoint(SubstrateCellHost host, System.Random rng)
+        {
+            var cfg = SourceConfig;
+            float r0 = (transform.position - host.Centre).magnitude, r1 = r0;
+            if (cfg && cfg.BandOuterRadius > 0f)
+            {
+                r0 = Mathf.Min(cfg.BandInnerRadius, cfg.BandOuterRadius);
+                r1 = Mathf.Max(cfg.BandInnerRadius, cfg.BandOuterRadius);
+            }
+            // a little inside the band's walls, so the seed cloud starts in the pen
+            float pad = Mathf.Min(species.SeedSpread, 0.25f * (r1 - r0));
+            Vector3 d = Vector3.forward;
+            for (int t = 0; t < 64; t++)
+            {
+                d = new Vector3((float)Gauss(rng), (float)Gauss(rng), (float)Gauss(rng));
+                if (d.sqrMagnitude < 1e-6f) continue;
+                d.Normalize();
+                if (InSector(d)) break;
+                if (t == 63) d = species.SectorAxis.normalized;
+            }
+            float r = Mathf.Lerp(r0 + pad, r1 - pad, (float)rng.NextDouble());
+            r = Mathf.Min(r, host.Core.R * 0.95f);
+            return new System.Numerics.Vector3(d.x * r, d.y * r, d.z * r);
+        }
+
+        static double Gauss(System.Random rng) =>
+            System.Math.Sqrt(-2.0 * System.Math.Log(1.0 - rng.NextDouble())) * System.Math.Cos(2.0 * System.Math.PI * rng.NextDouble());
 
         /// <summary>The cell's substrate had no room: this anchor leaves (it holds no agent, so nothing pops).</summary>
         public void OnRefused()
@@ -330,10 +384,19 @@ namespace CosmicShore.Gameplay
         bool IMacroPopulation.IsCollapsed => _collapsed;
 
         /// <summary>Nothing only individuals can resolve: no proxy, no pending kill, no starving agent, nobody engaged,
-        /// and twice the thaw margin of reserve (the hysteresis that keeps it from freezing just to thaw).</summary>
+        /// nobody riding a hull (round 11-11: a rider is on a pilot), and twice the thaw margin of reserve (the
+        /// hysteresis that keeps it from freezing just to thaw).</summary>
         bool IMacroPopulation.CanCollapse =>
             _host != null && _pop >= 0 && !_collapsed && _host.Job.Error == null && _proxySlots.Count == 0 && _goneSlots.Count == 0
-            && _host.Job.EngagedCount[_pop] == 0 && !AnyStarving() && _reserveS > 2f * species.ThawReserveSeconds;
+            && _host.Job.EngagedCount[_pop] == 0 && !AnyStarving() && !AnyRider() && _reserveS > 2f * species.ThawReserveSeconds;
+
+        bool AnyRider()
+        {
+            var r = _host?.Job.Riding;
+            if (r == null || species.Species.ClingMax <= 0) return false;
+            for (int k = 0; k < _cap; k++) if (r[_start + k]) return true;
+            return false;
+        }
 
         bool IMacroPopulation.NeedsIndividuals =>
             _collapsed && (_proxySlots.Count > 0 || _goneSlots.Count > 0 || AnyStarving() || _reserveS < species.ThawReserveSeconds);
@@ -386,8 +449,33 @@ namespace CosmicShore.Gameplay
                 if (!Mine(e.Index)) continue;
                 if (e.Kind == SubstrateEventKind.Starving) _starving[e.Index - _start] = true;
                 else if (e.Kind == SubstrateEventKind.Born) _starving[e.Index - _start] = false;
+                else if (e.Kind == SubstrateEventKind.Sip) Sip(e);
             }
         }
+
+        /// <summary>
+        /// Round 11-11: a rider's SIP - a danger contact the core decides with no collision (the leech sits on the hull,
+        /// it has no proxy) - lands on the vessel through the species' contact effect at the sip's weight, sharing the
+        /// effect's per-vessel cooldown and its domain rule (this population's domain is the prism's).
+        /// </summary>
+        void Sip(SubstrateEvent e)
+        {
+            var fx = species.ContactEffect;
+            if (!fx)
+            {
+                if (!_warnedSip)
+                {
+                    _warnedSip = true;
+                    CSDebug.LogWarning($"[Substrate] {species.name}: a {species.SpeciesName} sipped but the asset has no " +
+                                       "contactEffect - re-run Tools/Build/author_substrate_fauna.py.");
+                }
+                return;
+            }
+            var victim = _host?.VesselById(e.Other);
+            if (victim != null) fx.ApplyContact(victim, domain, e.Value);
+        }
+
+        bool _warnedSip;
 
         // ───────────────────────────────────────────────────────────────── the index entries (round 11a, one prism system)
 
@@ -692,7 +780,9 @@ namespace CosmicShore.Gameplay
                     m.Starve();
                     continue;
                 }
-                if (!_starving[k] && now - _wantedAt[k] > species.ProxyLingerSeconds)
+                // a RIDER sits inside the hull's collider: its proxy goes at once (the tick job never engages one)
+                bool rider = job.Riding != null && job.Riding[i];
+                if (!_starving[k] && (rider || now - _wantedAt[k] > species.ProxyLingerSeconds))
                 {
                     m.Retire();
                     _proxy[k] = null;
@@ -701,7 +791,7 @@ namespace CosmicShore.Gameplay
                     continue;
                 }
                 m.SetShape(BodyScale(job, i), BodyZ(job, i));
-                m.SetDanger(job.Instances[i].Tier == 1);
+                m.SetDanger(job.Instances[i].Tier == 1, species.Species.ContactWeight);
             }
         }
 
@@ -816,7 +906,7 @@ namespace CosmicShore.Gameplay
             var p = job.PoseAt(i, _host.Alpha);
             m.transform.SetPositionAndRotation(new Vector3(p.X, p.Y, p.Z), Face(job.FaceAt(i, _host.Alpha)));
             if (!m.MaterialiseNow()) return null;
-            m.SetDanger(job.Instances[i].Tier == 1);
+            m.SetDanger(job.Instances[i].Tier == 1, species.Species.ContactWeight);
             m.SyncBodyToIndex();
             SuspendEntry(k);   // its real body is the agent's one entry now
             return m;

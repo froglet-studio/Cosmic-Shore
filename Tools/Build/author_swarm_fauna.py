@@ -349,6 +349,11 @@ def tadpole_prefab():
                 "  goalOrbitRadius: 0\n  diet: 0\n  predationImmunitySeconds: 2\n  starvationSeconds: 0\n"
                 "  bodyPrism: {fileID: 6449687985229987934}\n")
         elif fid == "4754995950771878307":        # the spindle instance: drop its per-tadpole loop
+            # ...and TadPoleFauna's dead overrides of HealthPrism.TargetScale, a field the prism
+            # animation rework retired (Unity keeps unresolvable modifications forever; a fresh copy
+            # should not inherit them - check_generated_assets.py `override`)
+            d = re.sub(r"    - target: \{[^}]*\}\n      propertyPath: TargetScale\.[xyz]\n      value: [^\n]*\n"
+                       r"      objectReference: \{fileID: 0\}\n", "", d)
             d = d.replace("    m_RemovedComponents: []\n",
                           "    m_RemovedComponents:\n    - {fileID: -6330896111675949634, guid: 32182c0d19e344b4c9a9b332052037e6,\n"
                           "        type: 3}\n")
