@@ -400,6 +400,15 @@ namespace CosmicShore.Gameplay
                 if (d < bestSqr && d <= maxSqr) { bestSqr = d; best = f; }
             }
 
+            // Virtual-population creatures (swarm members) are herbivores too, but most of them are DATA with no
+            // GameObject (Docs/SWARM_FAUNA.md §16.3, §19): ask for one nearer than the registry's best. The winner
+            // comes back as a real creature (materialised), held alive while this predator hunts it.
+            if (VirtualFauna.Any)
+            {
+                var member = VirtualFauna.NearestPrey(origin, Mathf.Min(bestSqr, maxSqr), this, true);
+                if (member) best = member;
+            }
+
             return best;
         }
 
@@ -870,8 +879,9 @@ namespace CosmicShore.Gameplay
             int bites = 0;
             if (IsEdibleForHerbivore(target))
             {
+                float meal = Mathf.Max(0f, target.Volume);   // read before the consume (round 11f: the stomach is conserved)
                 target.Consume(transform, domain, PLAYER_NAME, true, true);
-                NotifyFed();
+                NotifyFed(meal);
                 bites++;
             }
 
@@ -883,8 +893,9 @@ namespace CosmicShore.Gameplay
             {
                 var prism = FeedScratch[i];
                 if (prism == target || !IsEdibleForHerbivore(prism)) continue;
+                float meal = Mathf.Max(0f, prism.Volume);
                 prism.Consume(transform, domain, PLAYER_NAME, true, true);
-                NotifyFed();
+                NotifyFed(meal);
                 bites++;
             }
 
@@ -954,6 +965,7 @@ namespace CosmicShore.Gameplay
             var prey = _targetPrey;
             if (prey)
             {
+                prey.NotifyHunted();   // a swarm member's proxy must not be retired mid-chase (§16.3)
                 Goal = prey.transform.position;
                 Vector3 toPrey = Goal - transform.position;
                 float speed = currentVelocity.magnitude;
@@ -997,9 +1009,25 @@ namespace CosmicShore.Gameplay
                 // Predated() respects the prey's post-spawn immunity window and returns
                 // false if the prey couldn't be eaten — only feed on a real kill.
                 if (f.Predated(PLAYER_NAME, _mouth))
-                    NotifyFed();
+                    NotifyFed(f.SurrenderedMeal);
+            }
+
+            // A school of swarm members swimming into the mouth: most are DATA, so the registry cannot see them
+            // (Docs/SWARM_FAUNA.md §16.3, §19). The ones in reach come back as real creatures.
+            if (VirtualFauna.Any)
+            {
+                s_swarmPrey.Clear();
+                VirtualFauna.PreyInReach(mouthPos, data.attackRange, this, true, s_swarmPrey);
+                for (int i = 0; i < s_swarmPrey.Count; i++)
+                {
+                    var f = s_swarmPrey[i];
+                    if (f && f.Predated(PLAYER_NAME, _mouth))
+                        NotifyFed(f.SurrenderedMeal);
+                }
             }
         }
+
+        static readonly List<Fauna> s_swarmPrey = new(16);
 
         void Update()
         {

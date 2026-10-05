@@ -510,8 +510,9 @@ namespace CosmicShore.Gameplay
                 // shader), matching how LightFauna grazes. devastate:false so a
                 // shielded prism that somehow reaches here only loses its shield,
                 // never gets eaten.
+                float meal = Mathf.Max(0f, prism.Volume);   // read before the consume (round 11f: the stomach is conserved)
                 prism.Consume(transform, embeddedHealthPrism.Domain, _consumerName, false, true);
-                NotifyFed();
+                NotifyFed(meal);
             }
             else
             {
@@ -781,8 +782,9 @@ namespace CosmicShore.Gameplay
             int bites = 0;
             if (IsEdibleForForager(feedTarget))
             {
+                float meal = Mathf.Max(0f, feedTarget.Volume);
                 feedTarget.Consume(transform, eaterDomain, eaterName, false, true);
-                NotifyFed();
+                NotifyFed(meal);
                 bites++;
             }
 
@@ -794,8 +796,9 @@ namespace CosmicShore.Gameplay
             {
                 var prism = FeedScratch[i];
                 if (prism == feedTarget || !IsEdibleForForager(prism)) continue;
+                float bite = Mathf.Max(0f, prism.Volume);
                 prism.Consume(transform, eaterDomain, eaterName, false, true);
-                NotifyFed();
+                NotifyFed(bite);
                 bites++;
             }
 

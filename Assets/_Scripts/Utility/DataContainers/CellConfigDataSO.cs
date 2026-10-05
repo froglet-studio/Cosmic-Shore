@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 namespace CosmicShore.Utility
 {
@@ -56,6 +57,40 @@ namespace CosmicShore.Utility
                  "across the whole space instead of just the central membrane bubble. " +
                  "See Docs/ECOSYSTEM.md §7.2.")]
         [Min(0f)] public float SenseRadiusOverride = 0f;
+
+        [Header("Stakes")]
+        [Tooltip("How big a danger-prism contact bites in this cell (VesselElementalDebuffByDangerPrismEffectSO). " +
+                 "Shipped = the effect asset's debuffMagnitude (-0.5 = 5 petals per element); Tuned = its " +
+                 "tunedDebuffMagnitude (-0.1 = 1 petal). Applies to the hostile burn and the own-domain " +
+                 "temporary debuff alike. Measured outcomes of both: Docs/ELEMENTAL_ECONOMY.md §4.1.")]
+        public PetalBurnRule PetalBurnRule = PetalBurnRule.Shipped;
+
+        [Tooltip("Who controls this cell before anybody has claimed it - i.e. the colour its fauna " +
+                 "spawn in while the cell's own prism-count leader (the nucleus claim, or the " +
+                 "whole-cell volume without a nucleus) is still empty. Unset = the legacy fallbacks " +
+                 "(gameData's volume leader, then the local pilot's own domain - a FRIENDLY cell in " +
+                 "solo freestyle). OpposingLocalPilot = a domain other than the authority's pilot, " +
+                 "so the cell starts hostile and the pilot takes it by claiming the nucleus. Read " +
+                 "only until a real leader exists; resolved on the server and replicated by " +
+                 "CellNetworkSync. Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md: a biome's STARTING " +
+                 "state is authored data.")]
+        [SerializeField] InitialControllingDomain initialControllingDomain = InitialControllingDomain.Unset;
+
+        /// <summary>See the field's tooltip and <see cref="CellControlRules"/>.</summary>
+        public InitialControllingDomain InitialControllingDomain => initialControllingDomain;
+
+        [Header("Metabolism")]
+        [Tooltip("Whether fauna in this cell run the CONSERVED stomach (Docs/ECOLOGY_LOD.md §2): a feed fills the " +
+                 "stomach by the volume actually eaten, so a thin trail prism buys proportionally less time than a " +
+                 "nominal one. Off (the default, every cell but the Swarm cell) = the shipped rule: ANY feed refills " +
+                 "the stomach completely, exactly as the old starvation clock reset. Predation and Nourish are full " +
+                 "refills under both rules. Opt-in per cell because it changes how fast every grazer starves on a " +
+                 "trail diet (about 3-5x faster on Rhino/Squirrel trail prisms) and has not been play-tested outside " +
+                 "the Swarm cell.")]
+        [SerializeField] bool conservedFaunaStomach = false;
+
+        /// <summary>See the field's tooltip. Read by <c>Fauna.NotifyFed(float)</c>.</summary>
+        public bool ConservedFaunaStomach => conservedFaunaStomach;
 
         [Header("Phase Thresholds")]
         [Tooltip("Per-biome up/down prism-count thresholds that drive phase transitions. "

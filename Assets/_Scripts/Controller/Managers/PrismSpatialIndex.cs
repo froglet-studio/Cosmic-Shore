@@ -32,6 +32,14 @@ namespace CosmicShore.Gameplay
         // free when Register writes fresh flags into a reused slot.
         public const byte LodNear        = 1 << 4; // bit 4
 
+        // Virtual entry: a data-driven prism with no GameObject Prism yet (its managed
+        // _prisms slot is null). Informational for jobs/debug - the managed owner record
+        // (PrismSpatialIndex._virtualOwners) is the source of truth. A virtual slot that
+        // is SUSPENDED (its member currently has a materialised GameObject proxy that is
+        // registered in its own slot) also carries Destroyed, so the member is never
+        // seen - or summed into cell mass - twice.
+        public const byte Virtual        = 1 << 5; // bit 5
+
         // Mask for the Burst job's early-exit check:
         // Active (bit 0 set) AND not destroyed (bit 1 clear) → value == 0x01
         public const byte JobSkipMask    = IsActive | Destroyed;
@@ -656,6 +664,36 @@ namespace CosmicShore.Gameplay
     ///                                steering, fauna body prisms swimming) must
     ///                                keep the stored position honest
     /// </summary>
+    /// <summary>
+    /// Owner of "virtual" spatial-index entries: data-driven prisms (e.g. swarm members
+    /// simulated in a job) that have no GameObject <see cref="Prism"/> until something
+    /// actually needs one. Queries that only DETECT see the entry by slot id
+    /// (<see cref="PrismSpatialIndex.QuerySphereIds"/>); anything that must APPLY gameplay
+    /// to it (AOE damage) calls <see cref="MaterialiseVirtualPrism"/>, which returns a
+    /// real, registered Prism (or null when the member is gone / cannot materialise).
+    /// The index suspends the virtual slot as soon as a materialisation succeeds, so a
+    /// member is counted exactly once; the owner calls
+    /// <see cref="PrismSpatialIndex.SetVirtualSuspended"/>(id, false) when its proxy retires.
+    /// </summary>
+    public interface IVirtualPrismOwner
+    {
+        Prism MaterialiseVirtualPrism(int slot);
+    }
+
+    /// <summary>
+    /// Optional companion of <see cref="IVirtualPrismOwner"/>: a per-frame budget on how many of the
+    /// owner's entries BULK paths may materialise (each materialisation is an Instantiate). Asked by
+    /// the AOE resolve (an over-budget virtual hit is deferred into the blast's backlog, never lost)
+    /// and by <see cref="VirtualFauna"/>'s prey searches. A single targeted hit (a hitscan round, a
+    /// projectile's own contact) resolves through <see cref="PrismSpatialIndex.ResolvePrism"/> and is
+    /// never refused - the shot must land on the frame it is fired. Owners without a budget are
+    /// always materialised. Docs/SWARM_FAUNA.md §19.
+    /// </summary>
+    public interface IVirtualPrismBudget
+    {
+        bool HasMaterialiseBudget(int slot);
+    }
+
     public class PrismSpatialIndex : Singleton<PrismSpatialIndex>
     {
         private const int INITIAL_CAPACITY = 4096;
@@ -785,6 +823,15 @@ namespace CosmicShore.Gameplay
         // Managed: Prism references for applying damage callbacks
         private Prism[] _prisms;
 
+        // Virtual-entry cold record (parallel to _prisms): owner + the owner's own slot
+        // key. Non-null owner ⇔ the slot is a virtual entry (its _prisms slot is null).
+        private IVirtualPrismOwner[] _virtualOwners;
+        private int[] _virtualSlots;
+        // Bounding radius of a virtual entry (a real prism's is 0.5 * lossyScale.magnitude, which a
+        // swept weapon adds for contact) - cold, read only by the virtual-entry queries' callers.
+        private float[] _virtualRadius;
+        public int VirtualCount { get; private set; }
+
         // Per-slot occupancy stamp, incremented on every Register. A slot index is
         // only a valid handle while its generation is unchanged, so anything that
         // holds an index across frames (the explosion backlog) can detect BOTH a
@@ -856,6 +903,9 @@ namespace CosmicShore.Gameplay
             _cellVolumeScratch = new NativeArray<float>(CellVolumeResultCount, Allocator.Persistent);
             _shell = new NativeArray<PrismShellData>(INITIAL_CAPACITY, Allocator.Persistent);
             _prisms = new Prism[INITIAL_CAPACITY];
+            _virtualOwners = new IVirtualPrismOwner[INITIAL_CAPACITY];
+            _virtualSlots = new int[INITIAL_CAPACITY];
+            _virtualRadius = new float[INITIAL_CAPACITY];
             _slotGeneration = new int[INITIAL_CAPACITY];
             _cells = new Cell[INITIAL_CAPACITY];
             _aoeHits = new NativeList<AOEHit>(512, Allocator.Persistent);
@@ -1800,6 +1850,7 @@ namespace CosmicShore.Gameplay
             }
 
             _prisms[index] = prism;
+            ClearVirtualRecord(index);
             unchecked { _slotGeneration[index]++; }
             // Never let a live slot carry the "no check" sentinel (only reachable
             // after a full 2^32 wrap on one slot, but the guard is one comparison).
@@ -1877,6 +1928,7 @@ namespace CosmicShore.Gameplay
             s.Flags = 0; // clear all flags including IsActive
             _spatial[index] = s;
             _prisms[index] = null;
+            ClearVirtualRecord(index);
             // Shell view hygiene: a freed slot must not present a shell through the
             // free-list window (slot reuse would alias a stale shell onto a new prism).
             if (_shell.IsCreated) _shell[index] = default;
@@ -2214,6 +2266,435 @@ namespace CosmicShore.Gameplay
 
         #endregion
 
+        #region Virtual entries
+
+        /// <summary>
+        /// Registers a data-driven prism that has no GameObject <see cref="Prism"/> yet.
+        /// The entry is fully visible to every POSITION query (AOE jobs, occupancy,
+        /// <see cref="IsAnyPrismWithin"/>, <see cref="QuerySphereIds"/>, LOD
+        /// classification) and is resolved to a real prism through
+        /// <paramref name="owner"/> only when something must apply gameplay to it
+        /// (<see cref="ResolvePrism"/>, AOE damage). The managed <c>_prisms</c> slot is
+        /// null, so the <see cref="List{Prism}"/> queries (QuerySphere / QuerySegment /
+        /// QueryCone / CopyLivePrisms) skip it - sensing never forces a materialisation.
+        ///
+        /// Mass: the entry starts UNBOUND (CellId -1, no cell density-grid filing), so
+        /// it contributes nothing to Cell volume until the owner opts in with
+        /// <see cref="SetCellBinding"/> + <see cref="UpdateCellVolume"/>. Suspension
+        /// (see <see cref="SetVirtualSuspended"/>) drops it out of the sums, which is
+        /// what keeps a materialised member from counting twice.
+        /// Returns the slot id (or -1 when the index is not allocated / owner is null).
+        /// Release with <see cref="Unregister"/>.
+        /// </summary>
+        public int RegisterVirtual(IVirtualPrismOwner owner, int slot, float3 position, int domain,
+            float volume = 1f, bool shielded = false, bool superShielded = false, float boundingRadius = 0f)
+        {
+            if (!_spatial.IsCreated || owner == null) return -1;
+            int index;
+            if (_freeList.Count > 0)
+                index = _freeList.Pop();
+            else
+            {
+                index = _highWaterMark++;
+                EnsureCapacity(index);
+            }
+
+            _prisms[index] = null;
+            _cells[index] = null;
+            _virtualOwners[index] = owner;
+            _virtualSlots[index] = slot;
+            _virtualRadius[index] = math.max(boundingRadius, 0f);
+            VirtualCount++;
+            unchecked { _slotGeneration[index]++; }
+            if (_slotGeneration[index] == AnyGeneration) _slotGeneration[index] = 1;
+
+            byte flags = (byte)(PrismFlags.IsActive | PrismFlags.Virtual);
+            if (shielded) flags |= PrismFlags.IsShielded;
+            if (superShielded) flags |= PrismFlags.IsSuperShielded;
+            _spatial[index] = new PrismSpatialData { Position = position, Flags = flags };
+            _damage[index] = new PrismDamageData { Volume = math.max(volume, 1f), Domain = domain };
+            _cellData[index] = new PrismCellData
+            {
+                Volume = volume,
+                CellId = -1,
+                DomainSlot = DomainToSlot((Domains)domain),
+                EnvMass = 0,
+            };
+            // No Prism to derive a shell from: virtual entries never present a
+            // shell to the shell-contact tier (contact is PhysX on the proxy).
+            if (_shell.IsCreated) _shell[index] = default;
+
+            AddToBucket(index, position);
+            LiveCount++;
+            return index;
+        }
+
+        /// <summary>True when <paramref name="index"/> is a registered virtual entry
+        /// (suspended or not).</summary>
+        public bool IsVirtual(int index) =>
+            index >= 0 && index < _highWaterMark && _virtualOwners[index] != null;
+
+        /// <summary>True when the slot is a virtual entry that is live (active, not
+        /// suspended) - i.e. it is what queries currently see for that member.</summary>
+        public bool IsLiveVirtual(int index) =>
+            IsVirtual(index) &&
+            (_spatial[index].Flags & PrismFlags.JobSkipMask) == PrismFlags.JobPassValue;
+
+        /// <summary>The owner and the owner's slot key of a virtual entry.</summary>
+        public bool TryGetVirtual(int index, out IVirtualPrismOwner owner, out int slot)
+        {
+            owner = null;
+            slot = -1;
+            if (!IsVirtual(index)) return false;
+            owner = _virtualOwners[index];
+            slot = _virtualSlots[index];
+            return true;
+        }
+
+        /// <summary>
+        /// Suspends (true) or resumes (false) a virtual entry. Suspended = the member
+        /// currently has a materialised GameObject proxy registered in its own slot, so
+        /// the virtual slot leaves every query view and the cell sums (it rides the
+        /// Destroyed bit, exactly like <see cref="MarkDestroyed"/>, but keeps its owner
+        /// record and slot id). Resuming re-files it at its stored position - push a
+        /// fresh position first if the proxy moved. No-op for non-virtual slots.
+        /// </summary>
+        public void SetVirtualSuspended(int index, bool suspended)
+        {
+            if (!_spatial.IsCreated || !IsVirtual(index)) return;
+            if (suspended) MarkDestroyed(index);
+            else MarkRestored(index);
+        }
+
+        /// <summary>
+        /// Main-thread bulk position push for virtual (or any) entries, e.g. after a
+        /// swarm tick job publishes. Same bucket maintenance as <see cref="UpdatePosition"/>,
+        /// without a managed call per member at the caller.
+        /// </summary>
+        public void UpdatePositionsBatch(NativeArray<int> indices, NativeArray<float3> positions, int count = -1)
+        {
+            if (!_spatial.IsCreated) return;
+            int n = count < 0 ? math.min(indices.Length, positions.Length) : count;
+            if (n <= 0) return;
+
+            // Burst, inline (Docs/SWARM_FAUNA.md §19.4): an entry whose point did not move is skipped before anything is
+            // touched, one that stayed in its 8 u bucket gets a field write, and only a bucket CROSSING (~10% of swarm
+            // members per tick, R11b) pays a hash-map remove + add. The job never grows the map: it stops at the first
+            // add that could exceed the capacity and the managed loop below finishes from there, growing as it goes
+            // (AddToBucket's own rule), so the outcome is exactly the managed loop's.
+            var result = new NativeArray<int>(2, Allocator.TempJob);
+            new UpdatePositionsJob
+            {
+                Indices = indices,
+                Positions = positions,
+                Count = n,
+                HighWaterMark = _highWaterMark,
+                Spatial = _spatial,
+                Buckets = _buckets,
+                EntryCount = _bucketEntryCount,
+                Capacity = _buckets.Capacity,
+                Result = result,
+            }.Run();
+            int processed = result[0];
+            _bucketEntryCount += result[1];
+            result.Dispose();
+
+            for (int i = processed; i < n; i++)
+            {
+                int index = indices[i];
+                if (index < 0 || index >= _highWaterMark) continue;
+                var s = _spatial[index];
+                float3 p = positions[i];
+                if ((s.Flags & PrismFlags.JobSkipMask) == PrismFlags.JobPassValue)
+                {
+                    int3 oldKey = BucketKey(s.Position);
+                    int3 newKey = BucketKey(p);
+                    if (!oldKey.Equals(newKey))
+                    {
+                        RemoveFromBucket(index, s.Position);
+                        AddToBucket(index, p);
+                    }
+                }
+                s.Position = p;
+                _spatial[index] = s;
+            }
+        }
+
+        /// <summary><see cref="UpdatePositionsBatch"/>'s loop, Burst-compiled and run inline. Result[0] = entries processed
+        /// (all of them unless an add could have grown the map), Result[1] = the net change in bucket entries.</summary>
+        [BurstCompile]
+        struct UpdatePositionsJob : IJob
+        {
+            [ReadOnly] public NativeArray<int> Indices;
+            [ReadOnly] public NativeArray<float3> Positions;
+            public int Count, HighWaterMark, EntryCount, Capacity;
+            public NativeArray<PrismSpatialData> Spatial;
+            public NativeParallelMultiHashMap<int3, int> Buckets;
+            public NativeArray<int> Result;
+
+            public void Execute()
+            {
+                int delta = 0, i = 0;
+                for (; i < Count; i++)
+                {
+                    int index = Indices[i];
+                    if (index < 0 || index >= HighWaterMark) continue;
+                    var s = Spatial[index];
+                    float3 p = Positions[i];
+                    if (math.all(p == s.Position)) continue;   // did not move: nothing to write
+                    if ((s.Flags & PrismFlags.JobSkipMask) == PrismFlags.JobPassValue)
+                    {
+                        int3 oldKey = BucketKey(s.Position);
+                        int3 newKey = BucketKey(p);
+                        if (!oldKey.Equals(newKey))
+                        {
+                            if (EntryCount + delta >= Capacity) break;   // AddToBucket would grow the map: managed from here
+                            if (Buckets.TryGetFirstValue(oldKey, out int value, out var it))
+                            {
+                                do
+                                {
+                                    if (value != index) continue;
+                                    Buckets.Remove(it);
+                                    delta--;
+                                    break;
+                                } while (Buckets.TryGetNextValue(out value, ref it));
+                            }
+                            Buckets.Add(newKey, index);
+                            delta++;
+                        }
+                    }
+                    s.Position = p;
+                    Spatial[index] = s;
+                }
+                Result[0] = i;
+                Result[1] = delta;
+            }
+        }
+
+        /// <summary>
+        /// Resolves a slot id from <see cref="QuerySphereIds"/> (or any held id) to a
+        /// Prism. Real slots return their prism. Live virtual slots return null unless
+        /// <paramref name="materialise"/> is true, in which case the owner materialises
+        /// the member and the virtual slot is suspended (count-once). Destroyed/freed
+        /// slots return null.
+        /// </summary>
+        public Prism ResolvePrism(int index, bool materialise)
+        {
+            if (index < 0 || index >= _highWaterMark) return null;
+            var prism = _prisms[index];
+            if (prism) return prism;
+            if (!materialise || !IsLiveVirtual(index)) return null;
+            return MaterialiseVirtual(index);
+        }
+
+        private Prism MaterialiseVirtual(int index)
+        {
+            var owner = _virtualOwners[index];
+            if (owner == null) return null;
+            Prism prism;
+            try { prism = owner.MaterialiseVirtualPrism(_virtualSlots[index]); }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+                return null;
+            }
+            if (prism == null) return null;
+            // The owner may have released the slot inside the callback (member gone);
+            // only suspend if it is still the same virtual entry.
+            if (_virtualOwners[index] == owner) SetVirtualSuspended(index, true);
+            return prism;
+        }
+
+        private void ClearVirtualRecord(int index)
+        {
+            if (_virtualOwners[index] == null) return;
+            _virtualOwners[index] = null;
+            _virtualSlots[index] = -1;
+            VirtualCount--;
+        }
+
+        /// <summary>
+        /// Id-returning sphere query: every LIVE entry (real AND virtual) whose stored
+        /// centre is within <paramref name="radius"/>. Each member appears once - a
+        /// materialised member's virtual slot is suspended, so only its proxy's slot is
+        /// returned. Resolve with <see cref="ResolvePrism"/>. Main-thread only.
+        /// </summary>
+        public int QuerySphereIds(Vector3 center, float radius, List<int> results)
+        {
+            results.Clear();
+            if (!_buckets.IsCreated || _highWaterMark == 0) return 0;
+            float3 c = center;
+            float radiusSq = radius * radius;
+            int3 min = (int3)math.floor((c - radius) / BucketSizeMeters);
+            int3 max = (int3)math.floor((c + radius) / BucketSizeMeters);
+
+            if (BucketWalkCostsMoreThanLinearScan(min, max))
+            {
+                for (int i = 0; i < _highWaterMark; i++)
+                {
+                    var s = _spatial[i];
+                    if ((s.Flags & PrismFlags.JobSkipMask) != PrismFlags.JobPassValue) continue;
+                    if (math.distancesq(s.Position, c) > radiusSq) continue;
+                    if (_prisms[i] || _virtualOwners[i] != null) results.Add(i);
+                }
+                return results.Count;
+            }
+
+            for (int x = min.x; x <= max.x; x++)
+            for (int y = min.y; y <= max.y; y++)
+            for (int z = min.z; z <= max.z; z++)
+            {
+                if (!_buckets.TryGetFirstValue(new int3(x, y, z), out int idx, out var it))
+                    continue;
+                do
+                {
+                    var s = _spatial[idx];
+                    if ((s.Flags & PrismFlags.JobSkipMask) != PrismFlags.JobPassValue) continue;
+                    if (math.distancesq(s.Position, c) > radiusSq) continue;
+                    if (_prisms[idx] || _virtualOwners[idx] != null) results.Add(idx);
+                } while (_buckets.TryGetNextValue(out idx, ref it));
+            }
+            return results.Count;
+        }
+
+        /// <summary>Sets a virtual entry's bounding radius (its body's half scale-diagonal) - what a swept
+        /// weapon adds for contact, exactly as it adds <c>0.5 * lossyScale.magnitude</c> for a real prism.</summary>
+        public void SetVirtualRadius(int index, float radius)
+        {
+            if (IsVirtual(index)) _virtualRadius[index] = math.max(radius, 0f);
+        }
+
+        /// <summary>
+        /// A virtual entry as the index stores it: its centre, its domain (the AOE / friend-or-foe
+        /// view's) and its bounding radius. What a weapon reads to order, spare or contact-test a
+        /// virtual hit BEFORE it pays for a materialisation. False for a non-virtual slot.
+        /// </summary>
+        public bool TryGetVirtualEntry(int index, out Vector3 position, out Domains domain, out float boundingRadius)
+        {
+            position = default;
+            domain = Domains.Blue;
+            boundingRadius = 0f;
+            if (!IsVirtual(index)) return false;
+            position = (Vector3)_spatial[index].Position;
+            domain = (Domains)_damage[index].Domain;
+            boundingRadius = _virtualRadius[index];
+            return true;
+        }
+
+        /// <summary>True when the entry's owner has room in its per-frame materialisation budget
+        /// (<see cref="IVirtualPrismBudget"/>); owners without one always do.</summary>
+        public bool HasMaterialiseBudget(int index)
+        {
+            if (!IsVirtual(index)) return true;
+            return _virtualOwners[index] is not IVirtualPrismBudget budget || budget.HasMaterialiseBudget(_virtualSlots[index]);
+        }
+
+        // The three managed query shapes, so the virtual-entry queries below run the SAME predicate the
+        // List<Prism> queries run (QuerySphere's distance, DistanceToSegmentSq, ConeContains) - a virtual
+        // entry and a prism standing at one point always get one answer.
+        struct VirtualQueryShape
+        {
+            public byte Kind;          // 0 sphere, 1 capsule (QuerySegment), 2 cone (QueryCone)
+            public float3 A, Ab, Dir;
+            public float RadiusSq, AbLenSq, Length, TanHalf, MinRadius;
+
+            public bool Contains(float3 p) => Kind switch
+            {
+                0 => math.distancesq(p, A) <= RadiusSq,
+                1 => DistanceToSegmentSq(p, A, Ab, AbLenSq) <= RadiusSq,
+                _ => ConeContains(p, A, Dir, Length, TanHalf, MinRadius),
+            };
+        }
+
+        int CollectVirtual(in VirtualQueryShape shape, float3 lo, float3 hi, List<int> results)
+        {
+            if (!_buckets.IsCreated || _highWaterMark == 0 || VirtualCount == 0) return 0;
+            int3 min = (int3)math.floor(lo / BucketSizeMeters);
+            int3 max = (int3)math.floor(hi / BucketSizeMeters);
+
+            if (BucketWalkCostsMoreThanLinearScan(min, max))
+            {
+                for (int i = 0; i < _highWaterMark; i++)
+                {
+                    if (_virtualOwners[i] == null) continue;
+                    var s = _spatial[i];
+                    if ((s.Flags & PrismFlags.JobSkipMask) != PrismFlags.JobPassValue) continue;
+                    if (shape.Contains(s.Position)) results.Add(i);
+                }
+                return results.Count;
+            }
+
+            for (int x = min.x; x <= max.x; x++)
+            for (int y = min.y; y <= max.y; y++)
+            for (int z = min.z; z <= max.z; z++)
+            {
+                if (!_buckets.TryGetFirstValue(new int3(x, y, z), out int idx, out var it))
+                    continue;
+                do
+                {
+                    if (_virtualOwners[idx] == null) continue;
+                    var s = _spatial[idx];
+                    if ((s.Flags & PrismFlags.JobSkipMask) != PrismFlags.JobPassValue) continue;
+                    if (shape.Contains(s.Position)) results.Add(idx);
+                } while (_buckets.TryGetNextValue(out idx, ref it));
+            }
+            return results.Count;
+        }
+
+        /// <summary>
+        /// <see cref="QuerySphere"/> for the entries it cannot return: every LIVE virtual entry whose
+        /// stored centre is within <paramref name="radius"/>, by slot id (cleared first). A suspended
+        /// entry is not returned - its materialised prism is, by <see cref="QuerySphere"/>. Resolve
+        /// with <see cref="ResolvePrism"/>. Main-thread only; no allocation given a reused list.
+        /// </summary>
+        public int QuerySphereVirtualIds(Vector3 center, float radius, List<int> results)
+        {
+            results.Clear();
+            float3 c = center;
+            var shape = new VirtualQueryShape { Kind = 0, A = c, RadiusSq = radius * radius };
+            return CollectVirtual(shape, c - radius, c + radius, results);
+        }
+
+        /// <summary><see cref="QuerySegment"/>'s capsule (same <see cref="DistanceToSegmentSq"/>, same
+        /// centre test) over the live VIRTUAL entries only, by slot id. A round that relies on PhysX
+        /// triggers for prisms still sweeps these, because a virtual entry has no collider.</summary>
+        public int QuerySegmentVirtualIds(Vector3 a, Vector3 b, float radius, List<int> results)
+        {
+            results.Clear();
+            float3 p0 = a;
+            float3 ab = (float3)b - p0;
+            var shape = new VirtualQueryShape
+            {
+                Kind = 1, A = p0, Ab = ab, AbLenSq = math.lengthsq(ab), RadiusSq = radius * radius,
+            };
+            return CollectVirtual(shape, math.min(p0, (float3)b) - radius, math.max(p0, (float3)b) + radius, results);
+        }
+
+        /// <summary><see cref="QueryCone"/>'s cone (same preprocessing, same <see cref="ConeContains"/>)
+        /// over the live VIRTUAL entries only, by slot id. Unordered, like QueryCone.</summary>
+        public int QueryConeVirtualIds(Vector3 apex, Vector3 direction, float length, float halfAngleDegrees,
+            float minRadius, List<int> results)
+        {
+            results.Clear();
+            if (length <= 0f) return 0;
+            float3 dir = direction;
+            float dirLenSq = math.lengthsq(dir);
+            if (dirLenSq < 1e-8f) return 0;
+            dir *= math.rsqrt(dirLenSq);
+            float3 p0 = apex;
+            float tanHalf = math.tan(math.radians(math.clamp(halfAngleDegrees, 0f, 89f)));
+            minRadius = math.max(minRadius, 0f);
+            float endRadius = math.max(minRadius, length * tanHalf);
+            float3 end = p0 + dir * length;
+            var shape = new VirtualQueryShape
+            {
+                Kind = 2, A = p0, Dir = dir, Length = length, TanHalf = tanHalf, MinRadius = minRadius,
+            };
+            return CollectVirtual(shape, math.min(p0, end) - endRadius, math.max(p0, end) + endRadius, results);
+        }
+
+        #endregion
+
         #region Benchmark Support
 
         /// <summary>
@@ -2238,6 +2719,7 @@ namespace CosmicShore.Gameplay
             }
 
             _prisms[index] = null;
+            ClearVirtualRecord(index);
             _cells[index] = null;
             _spatial[index] = new PrismSpatialData { Position = position, Flags = flags };
             _damage[index] = new PrismDamageData { Volume = volume, Domain = domain };
@@ -2272,6 +2754,7 @@ namespace CosmicShore.Gameplay
                 // doesn't keep counting mass the index dropped.
                 UnbindCell(i, _prisms[i]);
                 _prisms[i] = null;
+                ClearVirtualRecord(i);
                 var s = _spatial[i];
                 s.Flags = 0;
                 _spatial[i] = s;
@@ -2285,6 +2768,8 @@ namespace CosmicShore.Gameplay
             if (_buckets.IsCreated) _buckets.Clear();
             _bucketEntryCount = 0;
             _reservations.Clear();
+            LiveCount = 0;
+            VirtualCount = 0;
         }
 
         #endregion
@@ -2566,7 +3051,7 @@ namespace CosmicShore.Gameplay
             budgetSpent += DrainBacklog(
                 pending, budgetSpent, impulse, expDomain, affectSelf, destructive,
                 devastating, shielding, anonymous, vesselDomain, vesselPlayerName,
-                ref shouldContinue);
+                ref shouldContinue, alreadyHit);
 
             for (int i = 0; i < _aoeHits.Length; i++)
             {
@@ -2586,7 +3071,9 @@ namespace CosmicShore.Gameplay
                     if (pending == null) continue;
 
                     var live = _prisms[idx];
-                    if (live == null || live.destroyed) { alreadyHit.Add(idx); continue; }
+                    // A live virtual entry has no Prism yet - defer it un-materialised;
+                    // the drain materialises it at resolve time.
+                    if (!IsLiveVirtual(idx) && (live == null || live.destroyed)) { alreadyHit.Add(idx); continue; }
 
                     alreadyHit.Add(idx);
                     pending.Enqueue(new PendingExplosionHit
@@ -2602,7 +3089,8 @@ namespace CosmicShore.Gameplay
 
                 if (ResolveExplosionHit(idx, AnyGeneration, _aoeHits[i].ImpactDir,
                         impulse, expDomain, affectSelf, destructive, devastating,
-                        shielding, anonymous, vesselDomain, vesselPlayerName, ref shouldContinue))
+                        shielding, anonymous, vesselDomain, vesselPlayerName, ref shouldContinue,
+                        alreadyHit, pending))
                     budgetSpent++;
             }
 
@@ -2641,7 +3129,9 @@ namespace CosmicShore.Gameplay
             bool anonymous,
             Domains vesselDomain,
             string vesselPlayerName,
-            ref bool shouldContinue)
+            ref bool shouldContinue,
+            HashSet<int> alreadyHit = null,
+            Queue<PendingExplosionHit> deferInto = null)
         {
             // Slot-recycling guard - see the summary. Checked BEFORE the prism is
             // touched: a stale entry must not resolve against whatever now owns the slot.
@@ -2649,6 +3139,52 @@ namespace CosmicShore.Gameplay
                 return false;
 
             var prism = _prisms[idx];
+            if (prism == null && IsLiveVirtual(idx))
+            {
+                // The spare rule below, asked of the entry's own domain BEFORE paying for a
+                // materialisation (an Instantiate): a spared prism is only LIT, which needs no
+                // GameObject - unless the blast authors a shield, which does (Docs/SWARM_FAUNA.md §19).
+                int virtualDomain = _damage[idx].Domain;
+                bool spared = (virtualDomain == expDomain && !affectSelf) || !destructive;
+                if (spared && !(shielding && virtualDomain == expDomain)) return false;
+
+                // The owner's per-frame materialisation budget: over it, the hit waits in this
+                // blast's backlog (generation-guarded like every deferred hit) - never lost. With
+                // no backlog, the claim is released so a NESTED query re-finds it next frame.
+                if (!HasMaterialiseBudget(idx))
+                {
+                    if (deferInto != null)
+                        deferInto.Enqueue(new PendingExplosionHit
+                        {
+                            Index = idx,
+                            Generation = _slotGeneration[idx],
+                            ImpactDir = impactDir
+                        });
+                    else
+                        alreadyHit?.Remove(idx);
+                    return false;
+                }
+
+                // Virtual entry hit: materialise the member (suspends this virtual
+                // slot) and continue against the real prism - re-keyed onto the real
+                // prism's own slot so every registry sync below lands there, and that
+                // slot is claimed so the same blast cannot hit the member twice.
+                prism = MaterialiseVirtual(idx);
+                if (prism == null) return false;
+                int realIdx = prism.SpatialIndexId;
+                if (!(realIdx >= 0 && realIdx < _highWaterMark && _prisms[realIdx] == prism))
+                {
+                    // Every shipped owner finishes the proxy's creation (which registers it) before handing it
+                    // back; one that did not is finished here. If the proxy STILL has no slot of its own, stop:
+                    // everything below syncs _damage/_cellData by idx, and idx is the virtual slot that was just
+                    // suspended - writing the hit there would book it against the wrong entry.
+                    prism.CompleteCreationImmediately();
+                    realIdx = prism.SpatialIndexId;
+                    if (!(realIdx >= 0 && realIdx < _highWaterMark && _prisms[realIdx] == prism)) return false;
+                }
+                if (alreadyHit != null && !alreadyHit.Add(realIdx)) return false;
+                idx = realIdx;
+            }
             if (prism == null || prism.destroyed) return false;
 
             // Read cold data - only for hit prisms, never pollutes the Burst job's cache
@@ -2742,21 +3278,27 @@ namespace CosmicShore.Gameplay
             bool anonymous,
             Domains vesselDomain,
             string vesselPlayerName,
-            ref bool shouldContinue)
+            ref bool shouldContinue,
+            HashSet<int> alreadyHit = null)
         {
             if (pending == null || pending.Count == 0) return 0;
 
             int spent = 0;
             int examined = 0;
             int cap = EffectiveDamageBudget - alreadySpent;
+            // Only the entries queued BEFORE this drain: a virtual hit re-deferred by its owner's
+            // materialisation budget goes to the back and must wait for the next frame, not be
+            // re-examined (and re-refused) in this loop.
+            int examinable = Math.Min(pending.Count, EffectiveDrainExamined);
 
-            while (pending.Count > 0 && spent < cap && examined < EffectiveDrainExamined)
+            while (pending.Count > 0 && spent < cap && examined < examinable)
             {
                 examined++;
                 var deferred = pending.Dequeue();
                 if (ResolveExplosionHit(deferred.Index, deferred.Generation, deferred.ImpactDir,
                         impulse, expDomain, affectSelf, destructive, devastating,
-                        shielding, anonymous, vesselDomain, vesselPlayerName, ref shouldContinue))
+                        shielding, anonymous, vesselDomain, vesselPlayerName, ref shouldContinue,
+                        alreadyHit, pending))
                     spent++;
             }
 
@@ -2842,6 +3384,16 @@ namespace CosmicShore.Gameplay
             var newPrisms = new Prism[newSize];
             System.Array.Copy(_prisms, newPrisms, _prisms.Length);
             _prisms = newPrisms;
+
+            var newOwners = new IVirtualPrismOwner[newSize];
+            System.Array.Copy(_virtualOwners, newOwners, _virtualOwners.Length);
+            _virtualOwners = newOwners;
+            var newVirtualSlots = new int[newSize];
+            System.Array.Copy(_virtualSlots, newVirtualSlots, _virtualSlots.Length);
+            _virtualSlots = newVirtualSlots;
+            var newVirtualRadius = new float[newSize];
+            System.Array.Copy(_virtualRadius, newVirtualRadius, _virtualRadius.Length);
+            _virtualRadius = newVirtualRadius;
 
             var newGenerations = new int[newSize];
             System.Array.Copy(_slotGeneration, newGenerations, _slotGeneration.Length);

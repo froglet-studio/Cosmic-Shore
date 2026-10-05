@@ -137,9 +137,13 @@ namespace CosmicShore.Gameplay
         /// mass it cannot reach or eat" is ONE rule, and a per-subclass copy is a rule you can
         /// forget to apply in the next grazer.
         /// </summary>
-        protected bool IsPreyForMe(Vector3 position, Domains preyDomain) =>
+        protected bool IsPreyForMe(Vector3 position, Domains preyDomain) => IsPreyForMe(position, preyDomain, domain);
+
+        /// <summary>The same rule for an eater that is not this creature's own domain - a MultiDomain swarm's
+        /// member eats as ITS domain (Docs/SWARM_FAUNA.md §16.4). One predicate, two callers.</summary>
+        protected bool IsPreyForMe(Vector3 position, Domains preyDomain, Domains eaterDomain) =>
             cell != null && IsInsideBand(position) &&
-            cell.IsPreyForHerbivore(position, domain, preyDomain);
+            cell.IsPreyForHerbivore(position, eaterDomain, preyDomain);
 
         // Stable per-instance offset so each fauna orbits its resolved goal at a
         // different point. Seeded once at Start so the spread is deterministic per
@@ -177,36 +181,116 @@ namespace CosmicShore.Gameplay
         // freshly-spawned creature is immune from frame zero, not only after its Start runs.
         float _spawnTime = -1f;
 
+        /// <summary>
+        /// Moves this creature's birth time back by <paramref name="ageSeconds"/>. For a creature whose GameObject is
+        /// younger than the creature itself - a swarm member's proxy, materialised for a member that has lived in the
+        /// simulation for minutes (Docs/SWARM_FAUNA.md §16.3) - so the post-spawn predation grace is measured from the
+        /// member's birth, not from the proxy's. A newborn member keeps its full grace.
+        /// </summary>
+        protected void BackdateSpawn(float ageSeconds)
+        {
+            if (ageSeconds > 0f) _spawnTime = Time.time - ageSeconds;
+        }
+
+        /// <summary>
+        /// A predator has this creature as its CURRENT target this frame. Nothing by default; a creature whose
+        /// GameObject would otherwise be retired (a swarm member's proxy) keeps itself alive while it is hunted.
+        /// </summary>
+        public virtual void NotifyHunted() { }
+
+        /// <summary>The authored post-spawn predation grace, in seconds (what <see cref="IsPredationImmune"/> measures).</summary>
+        public float PredationImmunitySeconds => predationImmunitySeconds;
+
         /// <summary>True during the post-spawn grace window when this fauna can't be predated.</summary>
         public bool IsPredationImmune =>
             predationImmunitySeconds > 0f && _spawnTime >= 0f && (Time.time - _spawnTime) < predationImmunitySeconds;
 
         [Header("Population control (prey-linked)")]
-        [Tooltip("Seconds this fauna can go without feeding before it starves and despawns. " +
-                 "Feeding (consuming any prism, or - for predators - eating a herbivore) resets " +
-                 "the clock; 0 = never starve. Concrete creature fauna (e.g. LightFauna) call " +
-                 "NotifyFed() on consume and despawn when IsStarving; manager-type Fauna " +
-                 "subclasses ignore it. See Docs/ECOSYSTEM.md §6.")]
+        [Tooltip("Seconds of upkeep ONE nominal meal buys (the authored starvation clock, migrated - round 11f, " +
+                 "Docs/ECOLOGY_LOD.md §2). The creature now has a conserved STOMACH: metabolism drains it " +
+                 "(Capacity / starvationSeconds per second, paid to the cell's soil), every feed fills it with the " +
+                 "volume actually eaten, and it starves when it is empty. A meal of at least one nominal prism (16) " +
+                 "refills it, so it starves exactly starvationSeconds after its last such meal - as the clock did; " +
+                 "smaller meals buy proportionally less. 0 = never starve. Concrete creature fauna (e.g. LightFauna) " +
+                 "call NotifyFed(volume) on consume and despawn when IsStarving; manager-type Fauna ignore it. " +
+                 "See Docs/ECOSYSTEM.md §6.")]
         [SerializeField] protected float starvationSeconds = 30f;
 
-        // -1 until the first Start tick so a fauna spawned when Time.time already exceeds
-        // starvationSeconds isn't reported starving before its clock begins.
-        float _lastFedTime = -1f;
+        [Tooltip("What the stomach holds, in prism volume. <= 0 (the default every existing asset carries) = one " +
+                 "nominal prism (16), which is what makes the migrated starvationSeconds behave as the clock did. " +
+                 "Raise it to let a creature bank several meals; its upkeep stays Capacity / starvationSeconds.")]
+        [SerializeField] protected float stomachCapacity = -1f;
 
-        /// <summary>True once this fauna has gone longer than starvationSeconds without feeding.</summary>
-        protected bool IsStarving =>
-            starvationSeconds > 0f && _lastFedTime >= 0f && (Time.time - _lastFedTime) > starvationSeconds;
+        // The conserved stomach (lazy: a level at a timestamp + a constant drain - nothing runs per frame).
+        FaunaStomach _stomach;
+        bool _stomachLive;
+        // What a predator took when it ate this creature (stomach + body), read by the eater right after Predated.
+        float _surrenderedMeal;
+
+        /// <summary>True once metabolism has burned this creature's stomach to zero (never with starvationSeconds 0).</summary>
+        protected bool IsStarving => _stomachLive && _stomach.IsEmpty(Time.time);
+
+        /// <summary>The stomach's current contents in prism volume (0 before the creature comes alive).</summary>
+        public float StomachVolume => _stomachLive ? _stomach.Level(Time.time) : 0f;
 
         /// <summary>
-        /// Reset the starvation clock - a subclass calls this whenever it consumes prey.
-        /// Feeding is also the reproduction trigger: prey converts to population
-        /// (Docs/ECOSYSTEM.md §6), so every feed advances the birth counter and may
-        /// birth offspring when the species' lineage config allows it.
+        /// The meal a predator took from this creature in its last successful <see cref="Predated"/>: its stomach plus
+        /// its body (<see cref="BodyMealVolume"/>). The eater passes it to <see cref="NotifyFed(float)"/> - predation
+        /// moves the prey's mass into the predator, exactly (Docs/ECOLOGY_LOD.md §2).
         /// </summary>
-        protected void NotifyFed()
+        public float SurrenderedMeal => _surrenderedMeal;
+
+        /// <summary>The body volume a devouring predator gains. One nominal prism unless a species says otherwise.</summary>
+        protected virtual float BodyMealVolume => CellPhaseThresholds.NominalPrismVolume;
+
+        void StartStomach()
         {
-            _lastFedTime = Time.time;
+            float cap = stomachCapacity > 0f ? stomachCapacity : CellPhaseThresholds.NominalPrismVolume;
+            _stomach = FaunaStomach.FromStarvationClock(starvationSeconds, cap);
+            _stomach.Fill(Time.time);   // born fed: the clock started at birth
+            _stomachLive = true;
+        }
+
+        void PayToSoil(float volume)
+        {
+            if (volume > 0f && cell) cell.DepositSoilNutrient(volume);
+        }
+
+        /// <summary>
+        /// A feed of one nominal meal - for feeds that are not a measured volume (an own-domain pilot's Nourish).
+        /// Feeding is also the reproduction trigger: prey converts to population (Docs/ECOSYSTEM.md §6), so every
+        /// feed advances the birth counter and may birth offspring when the species' lineage config allows it.
+        /// </summary>
+        protected void NotifyFed() => NotifyFed(CellPhaseThresholds.NominalPrismVolume);
+
+        /// <summary>
+        /// This creature ate <paramref name="volume"/> of prism mass (a consumed prism's volume, or a prey's
+        /// <see cref="SurrenderedMeal"/>): it fills the stomach, and the upkeep burned since the last feed plus any
+        /// overflow goes to the cell's soil - conserved, never a clock reset.
+        /// </summary>
+        protected void NotifyFed(float volume)
+        {
+            if (!_stomachLive) StartStomach();
+            if (UsesConservedStomach)
+                PayToSoil(_stomach.Feed(volume, Time.time));
+            else
+                _stomach.Fill(Time.time);   // the shipped rule: any feed is a full refill, as the clock reset did
             TryReproduce();
+        }
+
+        /// <summary>
+        /// True when this creature's cell opts into the conserved stomach (<see cref="CellConfigDataSO.ConservedFaunaStomach"/>,
+        /// the Swarm cell only). Everywhere else a feed refills the stomach completely - the shipped starvation-clock rule -
+        /// so the volume-paid metabolism stays contained to the cell that was tuned for it.
+        /// </summary>
+        bool UsesConservedStomach
+        {
+            get
+            {
+                var c = cell;
+                var cfg = c ? c.Config : null;
+                return cfg && cfg.ConservedFaunaStomach;
+            }
         }
 
         // -------------------------------------------------------------------
@@ -523,7 +607,10 @@ namespace CosmicShore.Gameplay
                 transform.localScale = Vector3.one * tuning.BaseBodyScale;
 
             if (tuning.StarvationSeconds >= 0f)
+            {
                 starvationSeconds = tuning.StarvationSeconds;
+                if (_stomachLive) StartStomach();   // re-derive the upkeep (spawn-time: nothing has been eaten yet)
+            }
 
             // The element states the size of this creature's heart, like everything else it
             // states (Docs/ECOSYSTEM.md §40.2). 0 is the sentinel every un-sized config carries,
@@ -596,8 +683,11 @@ namespace CosmicShore.Gameplay
         /// mass. That is what parked brittlestars on Skim Race's super-shielded track
         /// prisms. Excluding shields from the predicate makes the creature skip straight
         /// to the next normal prism on the same behavior tick.
+        ///
+        /// <para>Public since round 11c: the threat flora (ThreatGrove) eat through the same rule, so a plant that
+        /// eats is held to it exactly as a creature is.</para>
         /// </summary>
-        protected static bool IsShieldedMass(Prism prism)
+        public static bool IsShieldedMass(Prism prism)
         {
             var properties = prism ? prism.prismProperties : null;
             return properties != null && (properties.IsShielded || properties.IsSuperShielded);
@@ -646,6 +736,9 @@ namespace CosmicShore.Gameplay
             s_nonPrismOverlapMask != 0
                 ? s_nonPrismOverlapMask
                 : s_nonPrismOverlapMask = ~LayerMask.GetMask("TrailBlocks", "Mound");
+
+        /// <summary>The same mask for a cell-wide vessel sense outside a creature (CellEcologyLod, round 11f).</summary>
+        public static int VesselSenseMask => NonPrismOverlapMask;
 
         // --- Body prisms (the movers contract with PrismSpatialIndex) -------
         // Fauna bodies are HealthPrisms - registered prism mass that MOVES every
@@ -793,7 +886,7 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogWarning($"{name}: Population domain is Blue (sentinel). Assign a real domain before spawning, or set it on the prefab.");
 
             _goalOrbitOffset = Random.onUnitSphere * Mathf.Max(0f, goalOrbitRadius);
-            _lastFedTime = Time.time; // start the starvation clock when the creature comes alive
+            StartStomach(); // the stomach starts full when the creature comes alive (the clock started here)
 
             // A replicated puppet resolves no goals: where it swims is the server's decision,
             // arriving through its NetworkTransform. (The client-side CPU this saves is the
@@ -956,6 +1049,11 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected Crystal crystal;
 
+        /// <summary>The heart while this creature LIVES with it embedded (null once released). What a
+        /// blast's lifeform-crystal effects act on when they reach a creature through its body rather
+        /// than through a collider overlap (<see cref="VirtualFauna"/>, Docs/SWARM_FAUNA.md §19).</summary>
+        public Crystal LivingHeart => crystal && crystal.IsEmbedded ? crystal : null;
+
         // How this creature came apart - see LifeformDeathStyle. Written by the force that
         // killed it (Jousted / the devour overload of Predated); starvation and every other
         // death leave the default.
@@ -998,6 +1096,14 @@ namespace CosmicShore.Gameplay
         protected void Die(string killerName = "")
         {
             _diedThisLife = true;
+            // the stomach closes its books: what is left (0 after a predator took it) and the upkeep burned since the
+            // last settle go to the soil - the stomach never holds mass past its creature (round 11f)
+            if (_stomachLive)
+            {
+                float left = _stomach.SurrenderAll(Time.time, out float burned);
+                PayToSoil(left + burned);
+                _stomachLive = false;
+            }
 
             // Replicate the DECISION before running it, so every peer starts its own wither at
             // roughly the same moment rather than RTT after this one has finished. No-op when
@@ -1162,14 +1268,30 @@ namespace CosmicShore.Gameplay
             // A mouth to suction into IS the consumed style: the body transfers to the
             // eater, so there is no skeleton and no wither ordering to pick.
             if (devourTarget) _deathStyle = LifeformDeathStyle.Consumed;
+            // the eater takes the stomach and the body (conserved; the upkeep burned until now goes to the soil)
+            float burned = 0f;
+            float meal = _stomachLive ? _stomach.SurrenderAll(Time.time, out burned) : 0f;
+            PayToSoil(burned);
+            _surrenderedMeal = meal + BodyMealVolume;
             Die(predatorName);
             return true;
         }
 
         public void SetTeam(Domains domain)
         {
+            if (!AcceptsTeamRecolour) return;
             this.domain = domain;
+            OnTeamChanged();
         }
+
+        /// <summary>False for a creature whose colours are its own history rather than its cell's controller
+        /// (a MultiDomain swarm, Docs/SWARM_FAUNA.md §16.4): <see cref="Cell.SetModeControlOverride"/>'s
+        /// one-colour re-colour does not apply to it.</summary>
+        protected virtual bool AcceptsTeamRecolour => true;
+
+        /// <summary>After <see cref="SetTeam"/> changed <see cref="domain"/> - a subclass that draws or caches
+        /// its colour re-reads it here.</summary>
+        protected virtual void OnTeamChanged() { }
 
         IEnumerator UpdateGoalCoroutine()
         {
