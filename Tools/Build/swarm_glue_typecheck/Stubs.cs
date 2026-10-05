@@ -136,7 +136,8 @@ namespace CosmicShore.Gameplay
 
     public class PrismProperties { public bool IsDangerous, IsShielded, IsSuperShielded; }
     // ThemeManagerDataContainerSO.cs:9-12
-    public class ThemeManagerDataContainerSO : ScriptableObject { public CosmicShore.ScriptableObjects.SO_ColorSet ColorSet; public CosmicShore.ScriptableObjects.SO_MaterialSet BaseMaterialSet; }
+    public class ThemeManagerDataContainerSO : ScriptableObject { public CosmicShore.ScriptableObjects.SO_ColorSet ColorSet; public CosmicShore.ScriptableObjects.SO_MaterialSet BaseMaterialSet;
+        public Dictionary<Domains, CosmicShore.ScriptableObjects.SO_MaterialSet> TeamMaterialSets; }
     public class Prism : MonoBehaviour
     {
         public PrismProperties prismProperties; public bool destroyed;
@@ -161,9 +162,34 @@ namespace CosmicShore.Gameplay
     public class Flora : LifeForm { }
     public static class FloraHeartRegistry { public static Flora NearestToPoint(Vector3 from, Predicate<Flora> reject) => null; }
     public class Cell : MonoBehaviour { public float MembraneRadius => 0; public void RegisterSpawnedObject(GameObject o) { } public bool IsInsideNucleus(Vector3 p) => false;
-        // Cell.cs (round 8)
-        public static int VolumeSlotOf(Domains d) => 0; public void SetVirtualVolume(Object source, double[] bySlot) { } public void ClearVirtualVolume(Object source) { } }
-    public class PrismSpatialIndex { public static PrismSpatialIndex EnsureInstance() => null; public bool IsAvailable => true; public int QuerySphere(Vector3 c, float r, List<Prism> res) => 0; }
+        public void BindVirtualMass(int spatialIndexId, Domains domain) { } }   // Cell.cs (round 11a)
+    // PrismSpatialIndex.cs:678-700 - the virtual-entry contract (PR #944 + round 11a)
+    public interface IVirtualPrismOwner { Prism MaterialiseVirtualPrism(int slot); }
+    public interface IVirtualPrismBudget { bool HasMaterialiseBudget(int slot); }
+    public class PrismSpatialIndex
+    {
+        public static PrismSpatialIndex Instance => null;
+        public static PrismSpatialIndex EnsureInstance() => null; public bool IsAvailable => true; public int QuerySphere(Vector3 c, float r, List<Prism> res) => 0;
+        public int VirtualCount { get; private set; }
+        // PrismSpatialIndex.cs RegisterVirtual (round 11a adds boundingRadius)
+        public int RegisterVirtual(IVirtualPrismOwner owner, int slot, Unity.Mathematics.float3 position, int domain,
+            float volume = 1f, bool shielded = false, bool superShielded = false, float boundingRadius = 0f) => -1;
+        public void Unregister(int index) { }
+        public void SetVirtualSuspended(int index, bool suspended) { }
+        public void UpdatePositionsBatch(Unity.Collections.NativeArray<int> indices, Unity.Collections.NativeArray<Unity.Mathematics.float3> positions, int count) { }
+        public void UpdatePosition(int index, Vector3 position) { }
+        public void UpdateCellVolume(int index, float volume) { }
+        public void UpdateVolume(int index, float volume) { }
+        public void SetVirtualRadius(int index, float radius) { }
+        public void UpdateShieldState(int index, bool shielded, bool superShielded) { }
+        public void UpdateDomain(int index, int domain) { }
+        public Prism ResolvePrism(int index, bool materialise) => null;
+        public bool IsLiveVirtual(int index) => false;
+        public bool TryGetVirtual(int index, out IVirtualPrismOwner owner, out int slot) { owner = null; slot = -1; return false; }
+        public bool TryGetVirtualEntry(int index, out Vector3 position, out Domains domain, out float boundingRadius) { position = default; domain = default; boundingRadius = 0; return false; }
+        public bool HasMaterialiseBudget(int index) => true;
+        public int QuerySphereVirtualIds(Vector3 center, float radius, List<int> results) => 0;
+    }
     public class FaunaNetworkSync { public static void ServerSpawn(Fauna f) { } }
 
     // Fauna.cs - only the members the swarm glue touches, with their real accessibility
@@ -198,6 +224,7 @@ namespace CosmicShore.Gameplay
         public virtual void Initialize(Cell cell) { }
         protected bool DespawnOrDestroy() => false;
         protected Crystal crystal;
+        public Crystal LivingHeart => null;                 // Fauna.cs (round 11a)
         protected void Die(string killerName = "") { }
         protected void LeaveSkeleton() { }
         public const string StarvationKiller = "starvation";
@@ -211,5 +238,73 @@ namespace CosmicShore.Gameplay
         public FaunaDiet Diet => default;                   // Fauna.cs:168
         public bool IsAlivePrey => true;                    // Fauna.cs:1096
         public bool IsPredationImmune => false;             // Fauna.cs:181
+    }
+}
+
+// Unity.Collections / Unity.Mathematics - only the members the glue touches (com.unity.collections 2.x,
+// com.unity.mathematics 1.x signatures)
+namespace Unity.Collections
+{
+    public sealed class ReadOnlyAttribute : Attribute { }
+    public sealed class WriteOnlyAttribute : Attribute { }
+    public enum Allocator { Invalid = 0, None = 1, Temp = 2, TempJob = 3, Persistent = 4 }
+    public enum NativeArrayOptions { UninitializedMemory = 0, ClearMemory = 1 }
+    public struct NativeArray<T> : IDisposable where T : struct
+    {
+        public NativeArray(int length, Allocator allocator, NativeArrayOptions options = NativeArrayOptions.ClearMemory) { Length = length; }
+        public int Length { get; }
+        public bool IsCreated => false;
+        public T this[int index] { get => default; set { } }
+        public void Dispose() { }
+        public void CopyFrom(T[] array) { }
+        public NativeArray<U> Reinterpret<U>() where U : struct => default;
+        public NativeArray<U> Reinterpret<U>(int expectedTypeSize) where U : struct => default;
+        public static void Copy(T[] src, int srcIndex, NativeArray<T> dst, int dstIndex, int length) { }
+    }
+}
+
+namespace Unity.Mathematics
+{
+    public struct float3 { public float x, y, z; public float3(float x, float y, float z) { this.x = x; this.y = y; this.z = z; } public static implicit operator float3(UnityEngine.Vector3 v) => default; }
+    public struct float4 { public float x, y, z, w; public float4(float x, float y, float z, float w) { this.x = x; this.y = y; this.z = z; this.w = w; } }
+    public struct float4x4 { public float4 c0, c1, c2, c3; public float4x4(float4 c0, float4 c1, float4 c2, float4 c3) { this.c0 = c0; this.c1 = c1; this.c2 = c2; this.c3 = c3; } }
+}
+
+// PrismRenderService.cs / PrismRenderHandle.cs (PR #944 + round 11a SetLooksBatch) - the entity render API
+namespace CosmicShore.ECS
+{
+    using Unity.Collections;
+    public enum PrismRenderOverrideSet { Prism = 0, Explosion = 1, Implosion = 2, Slice = 3 }
+    public struct PrismRenderHandle { public static readonly PrismRenderHandle Invalid = default; }
+    public static class PrismRenderService
+    {
+        public static bool Enabled => false;
+        public static bool CreateBatch(UnityEngine.Mesh mesh, UnityEngine.Material material, int layer,
+            NativeArray<Unity.Mathematics.float4x4> localToWorld, NativeArray<PrismRenderHandle> outHandles,
+            PrismRenderOverrideSet overrideSet = PrismRenderOverrideSet.Prism) => false;
+        public static void SetTransformsBatch(NativeArray<PrismRenderHandle> handles, NativeArray<Unity.Mathematics.float4x4> localToWorld, int count = -1) { }
+        public static void SetTransformsBatch(NativeArray<PrismRenderHandle> handles, NativeArray<Unity.Mathematics.float4x4> localToWorld, int count, Unity.Jobs.JobHandle dependsOn) { }
+        public static void SetLooksBatch(NativeArray<PrismRenderHandle> handles, NativeArray<byte> lookIndex, int count, UnityEngine.Material[] looks) { }
+        public static void QueueVisible(in PrismRenderHandle handle, bool visible) { }
+        public static void Destroy(ref PrismRenderHandle handle) { }
+    }
+}
+
+// Unity.Jobs / Unity.Burst - the members SwarmPoseJob and its scheduling touch (com.unity.jobs / burst signatures)
+namespace Unity.Burst { public sealed class BurstCompileAttribute : Attribute { } }
+namespace Unity.Jobs
+{
+    public struct JobHandle
+    {
+        public void Complete() { }
+        public bool IsCompleted => true;
+        public static void ScheduleBatchedJobs() { }
+        public static JobHandle CombineDependencies(JobHandle a, JobHandle b) => default;
+    }
+    public interface IJobParallelFor { void Execute(int index); }
+    public static class IJobParallelForExtensions
+    {
+        public static JobHandle Schedule<T>(this T jobData, int arrayLength, int innerloopBatchCount, JobHandle dependsOn = default) where T : struct, IJobParallelFor => default;
+        public static void Run<T>(this T jobData, int arrayLength) where T : struct, IJobParallelFor { }
     }
 }

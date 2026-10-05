@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 namespace CosmicShore.Utility
 {
@@ -56,6 +57,13 @@ namespace CosmicShore.Utility
                  "across the whole space instead of just the central membrane bubble. " +
                  "See Docs/ECOSYSTEM.md §7.2.")]
         [Min(0f)] public float SenseRadiusOverride = 0f;
+
+        [Header("Stakes")]
+        [Tooltip("How big a danger-prism contact bites in this cell (VesselElementalDebuffByDangerPrismEffectSO). " +
+                 "Shipped = the effect asset's debuffMagnitude (-0.5 = 5 petals per element); Tuned = its " +
+                 "tunedDebuffMagnitude (-0.1 = 1 petal). Applies to the hostile burn and the own-domain " +
+                 "temporary debuff alike. Measured outcomes of both: Docs/ELEMENTAL_ECONOMY.md §4.1.")]
+        public PetalBurnRule PetalBurnRule = PetalBurnRule.Shipped;
 
         [Header("Phase Thresholds")]
         [Tooltip("Per-biome up/down prism-count thresholds that drive phase transitions. "

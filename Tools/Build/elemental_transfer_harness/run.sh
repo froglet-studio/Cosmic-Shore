@@ -27,6 +27,7 @@ SRCS=("$ROOT/Assets/_Scripts/Data/Enums/Element.cs" \
       "$ROOT/Assets/_Scripts/Data/Enums/CombatHitClass.cs" \
       "$ROOT/Assets/_Scripts/Data/Enums/ElementalDebuffSources.cs" \
       "$ROOT/Assets/_Scripts/Data/Enums/ElementalTransferForm.cs" \
+      "$ROOT/Assets/_Scripts/Data/Enums/PetalBurnRule.cs" \
       "$ROOT/Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Helpers/ElementalTransfer.cs" \
       "$ROOT/Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Helpers/CombatHitDrain.cs" \
       "$ROOT/Assets/_Scripts/Controller/Environment/FlowField/ElementalCrystalEjector.cs" \
@@ -49,8 +50,20 @@ printf '%s\n' "$HERE/Stubs.cs" "$HERE/ProjectStubs.cs" "$HERE/Driver.cs" "${SRCS
   -nowarn:CS1591,CS1574,CS1573,CS8632,CS0169,CS0649,CS0414,CS0067 \
   -target:exe -main:Driver -out:"$OUT/xfer.exe" "@$OUT/files.rsp" 1>&2
 
+# The petal-burn switch's two shipped files (Docs/ELEMENTAL_ECONOMY.md §4.1) type-checked against
+# SwitchStubs.cs: the effect SO's base type is stubbed there, so unlike the other effect SOs it binds.
+printf '%s\n' "$HERE/Stubs.cs" "$HERE/ProjectStubs.cs" "$HERE/SwitchStubs.cs" "${SRCS[@]}" \
+  "$ROOT/Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Prism Effects/VesselElementalDebuffByDangerPrismEffectSO.cs" \
+  "$ROOT/Assets/_Scripts/Utility/DataContainers/CellConfigDataSO.cs" \
+  | sed 's/^/"/;s/$/"/' > "$OUT/switch.rsp"
+"$DOTNET" "$CSC" -nologo -langversion:9.0 -nostdlib -noconfig "@$OUT/refs.rsp" \
+  -nowarn:CS1591,CS1574,CS1573,CS8632,CS0169,CS0649,CS0414,CS0067 \
+  -target:library -out:"$OUT/switch.dll" "@$OUT/switch.rsp" 1>&2
+
 V=$(ls "$DOTNET_ROOT"/shared/Microsoft.NETCore.App | head -1)
 printf '{"runtimeOptions":{"tfm":"net8.0","framework":{"name":"Microsoft.NETCore.App","version":"%s"}}}' "$V" \
   > "$OUT/xfer.runtimeconfig.json"
 
-"$DOTNET" "$OUT/xfer.exe" "$@"
+# T8 reads the danger-prism effect ASSET, so the petal-burn switch is proven on the shipped numbers.
+PETAL_BURN_ASSET="$ROOT/Assets/_SO_Assets/Effects/Vessel Prism Effects/VesselElementalDebuffByDangerPrismEffect.asset" \
+  "$DOTNET" "$OUT/xfer.exe" "$@"

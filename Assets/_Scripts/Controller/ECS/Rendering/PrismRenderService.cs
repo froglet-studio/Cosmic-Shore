@@ -933,6 +933,62 @@ namespace CosmicShore.ECS
             entities.Dispose();
         }
 
+        /// <summary>
+        /// <see cref="SetTransformsBatch(Unity.Collections.NativeArray{PrismRenderHandle}, Unity.Collections.NativeArray{float4x4}, int)"/>
+        /// for matrices a JOB is still writing (Docs/SWARM_FAUNA.md §19.4): the handle-to-entity resolve runs as a Burst
+        /// job alongside <paramref name="dependsOn"/>, and the LocalToWorld write is scheduled on both, so the main thread
+        /// pays the scheduling and one wait instead of a managed loop over the handles. Completes before returning.
+        /// When same-frame queued poses exist (<see cref="PendingTransformCount"/> &gt; 0) the bulk write must drop them per
+        /// entity, which is managed work, so it completes <paramref name="dependsOn"/> and takes the plain overload.
+        /// </summary>
+        public static void SetTransformsBatch(Unity.Collections.NativeArray<PrismRenderHandle> handles,
+            Unity.Collections.NativeArray<float4x4> localToWorld, int count, JobHandle dependsOn)
+        {
+            if (!handles.IsCreated || !localToWorld.IsCreated || _world == null || !_world.IsCreated)
+            {
+                dependsOn.Complete();
+                return;
+            }
+            int n = count < 0 ? math.min(handles.Length, localToWorld.Length) : math.min(count, math.min(handles.Length, localToWorld.Length));
+            if (n <= 0) { dependsOn.Complete(); return; }
+            if (s_pendingTransformCount > 0)
+            {
+                dependsOn.Complete();
+                SetTransformsBatch(handles, localToWorld, n);
+                return;
+            }
+
+            var entities = new Unity.Collections.NativeArray<Entity>(n, Unity.Collections.Allocator.TempJob,
+                Unity.Collections.NativeArrayOptions.UninitializedMemory);
+            var resolve = new ResolveHandlesJob { Handles = handles, Epoch = _epoch, Entities = entities }
+                .Schedule(n, TransformJobBatch);
+            var em = _world.EntityManager;
+            // Any in-flight system job touching LocalToWorld must finish before we write.
+            em.CompleteDependencyBeforeRW<LocalToWorld>();
+            var write = new WriteLocalToWorldJob
+            {
+                Entities = entities,
+                Matrices = localToWorld.GetSubArray(0, n),
+                LocalToWorldLookup = em.GetComponentLookup<LocalToWorld>(false),
+            }.Schedule(n, TransformJobBatch, JobHandle.CombineDependencies(resolve, dependsOn));
+            write.Complete();
+            entities.Dispose();
+        }
+
+        [BurstCompile]
+        struct ResolveHandlesJob : IJobParallelFor
+        {
+            [Unity.Collections.ReadOnly] public Unity.Collections.NativeArray<PrismRenderHandle> Handles;
+            public int Epoch;
+            [Unity.Collections.WriteOnly] public Unity.Collections.NativeArray<Entity> Entities;
+
+            public void Execute(int i)
+            {
+                var h = Handles[i];
+                Entities[i] = h.Epoch == Epoch ? h.Entity : Entity.Null;
+            }
+        }
+
         const int TransformJobInlineThreshold = 256;
         const int TransformJobBatch = 64;
 
@@ -968,6 +1024,106 @@ namespace CosmicShore.ECS
                 var e = Entities[i];
                 if (e == Entity.Null || !LocalToWorldLookup.HasComponent(e)) return;
                 LocalToWorldLookup[e] = new LocalToWorld { Value = Matrices[i] };
+            }
+        }
+
+        /// <summary>
+        /// Bulk restyle for data-driven callers (a swarm's members changing tier or domain, Docs/SWARM_FAUNA.md §19.2):
+        /// entity <c>k</c> takes look <c>lookIndex[k]</c> - that look's MATERIAL and its authored colour trio
+        /// (bright, dark, spread), exactly what <see cref="SetMaterial"/>(handle, look, refreshColors: true) writes,
+        /// in one Burst pass over component lookups instead of four managed EntityManager writes per entity.
+        /// Looks are resolved (material id, colours) once per call. Handles with a stale epoch or a dead entity, and
+        /// out-of-range or null looks, are skipped. Completes before returning (main thread).
+        /// </summary>
+        public static void SetLooksBatch(Unity.Collections.NativeArray<PrismRenderHandle> handles,
+            Unity.Collections.NativeArray<byte> lookIndex, int count, Material[] looks)
+        {
+            if (!handles.IsCreated || !lookIndex.IsCreated || looks == null || looks.Length == 0) return;
+            if (_world == null || !_world.IsCreated) return;
+            int n = math.min(count, math.min(handles.Length, lookIndex.Length));
+            if (n <= 0) return;
+
+            int lookCount = looks.Length;
+            var materialIds = new Unity.Collections.NativeArray<BatchMaterialID>(lookCount, Unity.Collections.Allocator.TempJob);
+            var valid = new Unity.Collections.NativeArray<bool>(lookCount, Unity.Collections.Allocator.TempJob);
+            var bright = new Unity.Collections.NativeArray<float4>(lookCount, Unity.Collections.Allocator.TempJob);
+            var dark = new Unity.Collections.NativeArray<float4>(lookCount, Unity.Collections.Allocator.TempJob);
+            var spread = new Unity.Collections.NativeArray<float3>(lookCount, Unity.Collections.Allocator.TempJob);
+            for (int l = 0; l < lookCount; l++)
+            {
+                var m = looks[l];
+                if (m == null) continue;
+                valid[l] = true;
+                materialIds[l] = GetMaterialID(m);
+                bright[l] = ReadColor(m, BrightColorId);
+                dark[l] = ReadColor(m, DarkColorId);
+                spread[l] = ReadVector3(m, SpreadId);
+            }
+
+            var entities = new Unity.Collections.NativeArray<Entity>(n, Unity.Collections.Allocator.TempJob);
+            for (int i = 0; i < n; i++)
+            {
+                var h = handles[i];
+                entities[i] = h.Epoch == _epoch ? h.Entity : Entity.Null;
+            }
+
+            var em = _world.EntityManager;
+            em.CompleteDependencyBeforeRW<MaterialMeshInfo>();
+            em.CompleteDependencyBeforeRW<PrismBrightColorOverride>();
+            em.CompleteDependencyBeforeRW<PrismDarkColorOverride>();
+            em.CompleteDependencyBeforeRW<PrismSpreadOverride>();
+            var job = new SetLookJob
+            {
+                Entities = entities,
+                LookIndex = lookIndex,
+                Valid = valid,
+                MaterialIds = materialIds,
+                Bright = bright,
+                Dark = dark,
+                Spread = spread,
+                MmiLookup = em.GetComponentLookup<MaterialMeshInfo>(false),
+                BrightLookup = em.GetComponentLookup<PrismBrightColorOverride>(false),
+                DarkLookup = em.GetComponentLookup<PrismDarkColorOverride>(false),
+                SpreadLookup = em.GetComponentLookup<PrismSpreadOverride>(false),
+            };
+            if (n < TransformJobInlineThreshold) job.Run(n);
+            else job.Schedule(n, TransformJobBatch).Complete();
+
+            entities.Dispose();
+            materialIds.Dispose();
+            valid.Dispose();
+            bright.Dispose();
+            dark.Dispose();
+            spread.Dispose();
+        }
+
+        [BurstCompile]
+        struct SetLookJob : IJobParallelFor
+        {
+            [Unity.Collections.ReadOnly] public Unity.Collections.NativeArray<Entity> Entities;
+            [Unity.Collections.ReadOnly] public Unity.Collections.NativeArray<byte> LookIndex;
+            [Unity.Collections.ReadOnly] public Unity.Collections.NativeArray<bool> Valid;
+            [Unity.Collections.ReadOnly] public Unity.Collections.NativeArray<BatchMaterialID> MaterialIds;
+            [Unity.Collections.ReadOnly] public Unity.Collections.NativeArray<float4> Bright;
+            [Unity.Collections.ReadOnly] public Unity.Collections.NativeArray<float4> Dark;
+            [Unity.Collections.ReadOnly] public Unity.Collections.NativeArray<float3> Spread;
+            // Entities are unique per batch (one per member slot), so parallel writes never alias.
+            [Unity.Collections.NativeDisableParallelForRestriction] public ComponentLookup<MaterialMeshInfo> MmiLookup;
+            [Unity.Collections.NativeDisableParallelForRestriction] public ComponentLookup<PrismBrightColorOverride> BrightLookup;
+            [Unity.Collections.NativeDisableParallelForRestriction] public ComponentLookup<PrismDarkColorOverride> DarkLookup;
+            [Unity.Collections.NativeDisableParallelForRestriction] public ComponentLookup<PrismSpreadOverride> SpreadLookup;
+
+            public void Execute(int i)
+            {
+                var e = Entities[i];
+                int look = LookIndex[i];
+                if (e == Entity.Null || look >= Valid.Length || !Valid[look] || !MmiLookup.HasComponent(e)) return;
+                var mmi = MmiLookup[e];
+                mmi.MaterialID = MaterialIds[look];
+                MmiLookup[e] = mmi;
+                BrightLookup[e] = new PrismBrightColorOverride { Value = Bright[look] };
+                DarkLookup[e] = new PrismDarkColorOverride { Value = Dark[look] };
+                SpreadLookup[e] = new PrismSpreadOverride { Value = Spread[look] };
             }
         }
 

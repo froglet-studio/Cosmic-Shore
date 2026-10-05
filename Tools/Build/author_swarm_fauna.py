@@ -157,8 +157,9 @@ FLORA_COOLDOWN = 20
 FLORA_SPREAD = 120
 
 # ladder ratios (against the modelled mature CELL; see ladder()). Round 7 left the GPU-drawn bodies out of
-# LiveVolume; round 8 (Docs/SWARM_FAUNA.md §16.3) puts them back - every swarm states its member body volume to
-# the cell (Cell.SetVirtualVolume), exactly where a fauna body prism lands. So the ladder is the forest PLUS
+# LiveVolume; round 8 (Docs/SWARM_FAUNA.md §16.3) puts them back, and round 11a (§19) makes every member body a
+# PrismSpatialIndex virtual entry bound to the cell (Cell.BindVirtualMass), summed exactly where a fauna body
+# prism lands. So the ladder is the forest PLUS
 # the three bodies grown full, and the ratios are unchanged.
 RESTLESS_ENTER, RESTLESS_EXIT, FRENZY_ENTER, FRENZY_EXIT = 0.35, 0.26, 2.5, 2.2
 LATTICE_HEART_COLLIDERS = 1080
@@ -581,6 +582,8 @@ def model(plans):
     tot["plans"] = plans
     tot["hearts"] = tot["plants_max"]                              # always on: one heart per live plant
     tot["proxy_colliders"] = 2 * MAX_PROXIES * TOTAL_SWARMS        # only near vessels: heart + body each
+    # round 11b: the substrate populations' proxies share this cell's ceiling (Tools/Build/author_substrate_fauna.py)
+    tot["proxy_colliders"] += substrate().proxy_colliders()
     tot["colliders_engaged"] = tot["hearts"] + tot["proxy_colliders"]
     return rows, tot, eggs
 
@@ -603,9 +606,16 @@ def ladder(tot):
     }
 
 
+def substrate():
+    """Round 11b (Docs/SUBSTRATE_FAUNA.md): the substrate populations live in this cell; their own generator owns them."""
+    import author_substrate_fauna
+    return author_substrate_fauna
+
+
 def profile_asset():
     floras = "".join(f"  - {{fileID: 11400000, guid: {guid(rel(cell_path(flora_name(r))))}, type: 2}}\n" for r in REGIONS)
     faunas = "".join(f"  - {{fileID: 11400000, guid: {guid(rel(cell_path(fauna_name(r))))}, type: 2}}\n" for r in REGIONS)
+    faunas += substrate().profile_entries()   # round 11b: the substrate populations (author_substrate_fauna.py owns them)
     return SO_HEADER % (SO_SCRIPT["profile"], f"{PREFIX} Cell Spawn Profile") + (
         "  FloraExcludeLocalDomain: 0\n  FloraSpawnVolumeCeiling: 12000\n  FloraInitialDelaySeconds: 0\n"
         "  FloraSpawnIntervalSeconds: 0\n  FloraPopulationScale: 1\n  FloraPlantBudgetScale: 1\n"
@@ -616,6 +626,12 @@ def profile_asset():
         "  HerbivoreSpawnPointCount: 3\n  HerbivoreSpawnRadius: 800\n  PredatorSpawnPointCount: 0\n"
         "  PredatorSpawnRadius: 900\n"
         "  SupportedFaunas:\n" + faunas)
+
+
+# Round 11g (Docs/ELEMENTAL_ECONOMY.md §4.1): the demo cell plays the TUNED petal burn - one petal
+# per element per danger contact instead of five - while every other cell keeps what shipped
+# (CellConfigDataSO.PetalBurnRule defaults to Shipped = 0). Flip it here: 0 = Shipped, 1 = Tuned.
+PETAL_BURN_RULE = 1
 
 
 def cell_asset(L):
@@ -632,6 +648,7 @@ def cell_asset(L):
         "  CellModifiers:\n"
         f"  - {{fileID: {MODIFIER[0]}, guid: {MODIFIER[1]}, type: 3}}\n"
         f"  SpawnProfile: {{fileID: 11400000, guid: {guid(rel(cell_path(PREFIX + ' Cell Spawn Profile')))}, type: 2}}\n"
+        f"  PetalBurnRule: {PETAL_BURN_RULE}\n"
         "  PhaseThresholds:\n" + "".join(f"    {k}: {v}\n" for k, v in L.items()))
 
 

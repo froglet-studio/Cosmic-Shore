@@ -1554,6 +1554,11 @@ contact range a member should read as one box.
 
 ## 16. Round 8: a member that is only data is still a creature (weapons, predators, the ladder, colours)
 
+> **Partly superseded by §19 (round 11a):** the member grid, `SwarmVolume`, `SwarmTargets` and the cell's
+> virtual-volume aggregate (§16.1, the round-8 halves of §16.2/§16.3) are retired. Members are found through the
+> spatial index's own virtual entries, and their bodies are drawn as ordinary prism render entities. Every
+> behaviour this section promises still holds; §19.5 restates the table.
+
 Round 7 (§14) bought three ~1,000-tadpole swarms at near-zero main-thread cost by drawing every member from
 one GPU buffer and giving a GameObject only to the members near a vessel (the proxies, `EngageRadius` 160).
 Its own invariant table (§14.4) listed what that cost: past 160 u a member had no collider, so long-range
@@ -1905,3 +1910,319 @@ on the proxy via the existing `SetTier` path.
 
 Verified by `Tools/Build/swarm_glue_typecheck/run.sh` (netstandard2.1). Not run in the editor; see
 QA-SWARM-ROUND10-1.
+
+**Round 11g: the burn size is a per-cell switch.** The Swarm cell plays the **Tuned** burn, so a strike costs 1 petal
+per element (4 per contact). Every other cell keeps the **Shipped** 5 petals per element (20 per contact). The
+switch is `CellConfigDataSO.PetalBurnRule`, authored here by `author_swarm_fauna.py` (`PETAL_BURN_RULE`). See
+`Docs/ELEMENTAL_ECONOMY.md` §4.1 for both measured outcomes; QA-SWARM-ROUND11-7.
+
+## 19. Round 11a: one prism system
+
+Until this round a swarm member's body was a prism only in name. Weapons and predators found it through a member
+grid that the swarm kept itself (`SwarmMemberQuery.cs`, a hand transcription of the index's predicates). A
+dedicated shader drew it (`SwarmMemberInstanced`). The cell counted it through a separate per-swarm volume
+aggregate. PR #944 gave the platform virtual prism entries and a batched ECS render service. Round 11a moves the
+members onto both, so the game has **one** prism system again: the AOE pass, every prism query, the cell's volume
+sum and the render path see a member exactly as they see any prism.
+
+### 19.1 Detection: every living member is a `PrismSpatialIndex` virtual entry
+
+- **One entry per living member.** The owner is the swarm and the slot is the member index. `SwarmEntryLedger`
+  (`Swarm/SwarmPrismSync.cs`, pure C#) decides what the index must hold from each published frame:
+  - **Birth.** A member registers when it first appears: `RegisterVirtual` with volume |x·y·z| of its body, the
+    shield flag for the shielded tier, and its domain from its slot. Its bounding radius is
+    `0.5·|Scale|`, the same allowance a swept weapon adds for a real prism.
+  - **Slot reuse.** A newborn in a reused slot (a different `BirthTick`) gets a fresh entry.
+  - **Changes.** A tier or domain change is pushed (`UpdateShieldState`, `UpdateDomain`, `UpdateCellVolume`).
+  - **Death.** `HandleMemberDeath` releases the entry at once (`Unregister`). Its skeleton or its eater holds the
+    mass from then on.
+- **One bulk position push per tick.** The worker computes each member's stored point while it builds the frame
+  (`SwarmTickJob.IndexPoint`). The point is the body prism's centre at the middle of the published step
+  (`SwarmBodyPose.Body(alpha 0.5)`). The glue copies ids and points into two persistent native arrays and calls
+  `UpdatePositionsBatch` once.
+  - **Bound.** The stored point is never further from where the body is drawn than
+    **0.5·|step| + |PrismZ|·(the face's half-tick turn)**.
+  - **Measured** (R11b, 902 whale members × 11 display alphas): mean 0.18 u, p99 1.2 u, max 5.6 u (at a sharp
+    turn). 0.10% of (member, alpha) pairs fall outside the drawn body's bounding sphere. A stored heart (round
+    7's `CurPos`) would be off by 4.8 u on average.
+- **Count once.** While a member has a real body prism (a proxy whose body has finished creation), its virtual
+  entry is **suspended**, and that prism is the member's one entry.
+  - `PoseProxies` suspends in the frame the proxy body completes.
+  - A proxy that retires without dying resumes the entry, re-filed where the member is drawn now.
+  - When the index materialises a member itself (an AOE hit, a `ResolvePrism`), it suspends first. The swarm is
+    told through `IVirtualPrismOwner.MaterialiseVirtualPrism`.
+- **Volume is the cell's own sum.** `Cell.BindVirtualMass` binds each entry to the host cell's volume id
+  (`SetCellBinding(id, cell, false, domain)`). `CellVolumeSumJob` then counts it as volume-only fauna body mass,
+  exactly where a fauna body prism lands. The round-8 `SetVirtualVolume` aggregate and its ledger are deleted.
+  `LiveVolume` and the phase ladder are unchanged in value (R11c: live entries plus real bodies equal every body,
+  error 1e-8).
+  - **Edge.** `Cell.ClearAllCellBindings` (cell reset, world retire) drops the bindings. Both paths also destroy
+    the swarm, so nothing re-binds.
+- **Weapons and predators ask the platform.**
+  - **AOE.** The Burst AOE pass walks `_spatial`, so the three blast shapes already meet virtual entries.
+    `ResolveExplosionHit` gained two steps for a live virtual entry:
+    - **(a) The spare rule first.** A same-domain blast without `affectSelf`, or a non-destructive blast, returns
+      before paying for an Instantiate. The exception is a shielding blast on its own domain, which needs the
+      real prism.
+    - **(b) The owner's budget.** `IVirtualPrismBudget.HasMaterialiseBudget` is checked next (the swarm's
+      `MaxHitMaterialisationsPerFrame`, 48). Over it, the hit is deferred into the blast's backlog,
+      generation-guarded like every deferred hit, and never lost. `DrainBacklog` now examines only the entries
+      queued before it started, so a re-deferred hit waits for the next frame.
+  - **Projectiles.** A projectile's swept path now uses `QuerySegmentVirtualIds` + `TryGetVirtualEntry`. The
+    contact radius is the round's radius plus the entry's bounding radius, ordered nearest-first with the prisms.
+    A virtual hit is materialised at its turn with `ResolvePrism(id, true)`.
+    - A trigger round (prisms through PhysX) sweeps only the virtual entries, and only while
+      `VirtualCount > 0`.
+  - **Sniper.** The sniper's cone uses `QueryConeVirtualIds`. The own-domain skip is read from the entry
+    before materialising.
+  - **Predators.** `LightFauna` and `WormFauna` call `VirtualFauna.NearestPrey` / `PreyInReach`.
+    - **Contract.** `VirtualFauna` (new, owner-agnostic) holds the creature side: `IVirtualFaunaOwner` answers
+      diet, grace and band (`IsVirtualPrey`), the heart position, and the proxies the registry does not hold.
+    - **Search.** Nearest prey grows a sphere from 64 u, doubling to 2,048 u, then takes the remaining reach in one
+      query. A predator with no territory is clamped to 100,000 u.
+  - **Hearts.** `ExplosionImpactor`'s lifeform-crystal sweep calls `VirtualFauna.CollectHearts`. The walk is
+    widened by the owners' `HeartReach`, the furthest a heart is drawn from its stored point, computed each tick.
+    - **Test.** Each heart is then tested where it is drawn, with the 2.4 u heart allowance and the blast's
+      narrowphase.
+    - **Budget.** Materialisation goes through the same budget. The rest are deferred and forced when the blast
+      ends (the round-8 `_batchPending` rule).
+  - **No weapon or predator names a swarm any more.** `SwarmMemberQuery.cs`, `SwarmTargets.cs`,
+    `SwarmFauna.MemberHit`/`NearestPrey`/`PreyAtMouth`/`CollectMembers` and `ExplosionImpactor`'s
+    `ResolveSwarmMembers` are deleted.
+- **Platform queries the members are now part of.**
+  - The `List<Prism>` queries skip virtual entries (PR #944's contract), so consumers that want them use the
+    `*VirtualIds` twins. The twins are built on the SAME predicate code (R11a).
+  - Flora growth reservations (`IsOccupied`-style checks over `_spatial`) now see members, which occupy space.
+    This is intended: a plant no longer grows through a swarm.
+- **Changes from round 8 worth knowing.**
+  - Round 8 tested members against a cone/cylinder blast's swept-SO-FAR slab. The platform tests each frame's
+    slab against the stored point, like any prism. A member is ~1 u per frame against a front that moves tens of
+    units, so a slip between slabs needs a member to outrun the blast's front. Not measured in-engine.
+  - A blast with `ForceLegacyPhysics` on (the AOE benchmark's A/B switch) cannot hit virtual members. Nothing
+    is ever hit by a virtual entry's collider, because it has none.
+
+### 19.2 Rendering: member bodies are `PrismRenderService` entities
+
+- **Entities, not a shader.** `SwarmEntityLedger` (pure C#) plans each tick. Each slot gets ONE entity the first
+  time it holds a member, made in a single `CreateBatch` (clones are born hidden). The entity is reused by every
+  later member in that slot. Members are shown while they live (`QueueVisible`, flushed as one structural change
+  per direction), hidden at death in the same frame (`HideNow`), and destroyed only with the swarm.
+- **Pose per frame.** The pose is computed once per frame:
+  - `SwarmBodyPose.PoseMatrix` computes every shown member's matrix at this frame's display alpha. This is
+    `SwarmMemberInstanced.hlsl`'s body pose term for term: interpolated root, `LookRotation(face, BY | BZ)`,
+    PrismZ seat, Scale, and the newborn **bloom** about the heart (smoothstep from 0.001 over `bloomTicks`).
+  - Since round 11a-2 it runs in the Burst `SwarmPoseJob`, scheduled early in `Update`.
+  - ONE `SetTransformsBatch` chained on that job then writes the matrices (a Burst `ComponentLookup` write). §19.4
+    has the details.
+  - The bloom is folded into the matrix rather than `StampGrow`. The matrix is rewritten every frame anyway,
+    and `StampGrow` scales about the prism's centre, not the heart.
+- **Looks.** The nine looks are tier (plain, danger, shielded) × domain slot. Each is the theme's per-domain
+  material (`ThemeManagerDataContainerSO.TeamMaterialSets[domain]`: `BlockMaterial`, `DangerousBlockMaterial`,
+  `ShieldedBlockMaterial`), so members wear exactly what a prism of that tier and domain wears.
+  - A domain the theme has not painted falls back to `BaseMaterialSet`, warned once.
+  - The tick diffs every shown member's look and restyles all changes with ONE new
+    `PrismRenderService.SetLooksBatch`. It writes the material id and the look's colour trio in a Burst pass.
+  - **MultiDomain colours** (Flags bits 7-8), **tiers** and **round-10 strikes** (the danger tier) are all looks.
+  - A team recolour rebuilds the looks and restyles everything.
+  - The shielded tier is the shielded material only. A far member shows no octahedron morph; its proxy shows the
+    real shield.
+- **Open-with-distance (§15)** comes from the platform material's own spread, so it is identical to a prism's
+  by construction. One side effect: a member that is blooming far away shows its (world-size) spread on a tiny
+  body for its few bloom ticks.
+- **Fallback.** `SwarmFaunaConfigSO.UnifiedPrismBodies` (default **on**). Off, or when `PrismRenderService` is
+  disabled or `CreateBatch` declines (no ECS world), the round-7 instanced body draw takes over automatically
+  (`SwarmMemberRenderer.DrawBodies`), with a warning. Detection is the index's in both cases.
+
+### 19.3 Hearts stay on the instanced crystal draw
+
+The evidence says moving hearts is not a clear win, so they stay (the reasons are also in `SwarmMemberRenderer`'s
+class doc):
+
+- **Not prisms.** A heart is not a prism, and no platform prism effect applies to it: no spread, no shield, no
+  danger look.
+- **Mesh.** It draws one of several crystal meshes per element. That would mean several entity batches per swarm
+  and a re-mesh on every element change.
+- **Molt.** Its **molt** (`HeartFrom`/`HeartTo` with the molt clock) re-forms the crystal between meshes in the
+  shader. An entity would need a structural mesh swap twice per molt.
+- **Tint.** Its neutral tint is per element, not per domain.
+- **Cost.** It would add ~2,200 more matrices to the per-frame CPU pose pass (§19.4) for no visual or rule
+  change. The instanced heart draw costs the main thread one `RenderMeshPrimitives` per element.
+
+### 19.4 Costs: honest against the §13/§14 budget (round 11a-2)
+
+Round 7's budget was ~0 main-thread cost at ~3,000 members: 0.002 ms per frame (one draw call per element, with
+interpolation in the vertex shader). Round 11a missed it by about 0.4-0.5 ms per frame, because a managed pose
+loop and a managed handle loop ran on the main thread. Round 11a-2 (`overnight/prism2`) moves that work onto Burst
+jobs.
+
+**What changed:**
+- **The pose is one function.** `SwarmBodyPose.PoseMatrix` is a scalar, Burst-compilable static function: field
+  reads, `MathF`, no `System.Numerics` method, no allocation. Two callers run it:
+  - **The game.** `SwarmPoseJob`, a `[BurstCompile] IJobParallelFor` in batches of 128, writes `float4x4`
+    directly. It reads native copies of the published frame and of the shown-slot list, refreshed once per tick (two
+    memcpys).
+  - **The harness.** R11d runs the same function against round 11a's `System.Numerics` pose, which is kept as the
+    reference (`ReferenceMatrix`). Over 8,118 poses, including the `upAlt` branch and newborns, the largest
+    difference is 6e-5 u, which is float rounding at world coordinates.
+  - **The Burst gate.** `check_burst_pose.py` runs inside `run.sh`. It is a textual check that the function stays
+    inside what Burst compiles. Its negative control is the round-11a pose, which trips 5 rules.
+- **The job runs alongside other work.** `SwarmFauna.Update` schedules the job as soon as the frame's alpha is
+  known and wakes the workers with `ScheduleBatchedJobs`. It then poses the proxies and issues the heart draw while
+  the job runs.
+- **One transform write.** At the end of `Update`, a new
+  `PrismRenderService.SetTransformsBatch(handles, matrices, count, JobHandle dependsOn)` does the following:
+  - resolves handles to entities in a Burst job (`ResolveHandlesJob`), in parallel with the pose;
+  - schedules the existing Burst `LocalToWorld` write on both jobs;
+  - completes once.
+  - If same-frame queued poses exist, it completes the dependency and takes the old overload. That overload drops
+    the queued poses per entity, which is managed work.
+- **The index update is a Burst job.** `PrismSpatialIndex.UpdatePositionsBatch` now runs as `UpdatePositionsJob`, a
+  Burst `IJob` run inline:
+  - An entry that did not move is skipped before anything is written.
+  - An entry that stayed in its 8 u bucket gets one field write.
+  - Only a bucket crossing pays the hash-map remove and add. That is 10.2% of members per tick (R11b).
+  - The job never grows the map. It stops at the first add that could exceed capacity, and the old managed loop
+    finishes from there, growing as before. The result is therefore exactly the managed loop's.
+
+| when | work | estimate at ~3,000 members |
+|---|---|---|
+| per FRAME | schedule `SwarmPoseJob` + `ScheduleBatchedJobs` | ~0.01 ms |
+| per FRAME | the pose itself, on the job workers | not on the main thread. Upper bound without Burst: 0.13 ms wall (R11d, the job's shape on a 4-core .NET pool); managed single-thread 0.32 ms. Burst should be several times faster |
+| per FRAME | main-thread wait at the transform write | ~0 when proxy posing and the heart draw cover the pose job, otherwise its remaining wall time (~0.01-0.03 ms with Burst, estimated) |
+| per FRAME | `SetTransformsBatch(..., dependsOn)`: one `NativeArray` alloc, two schedules, `CompleteDependencyBeforeRW`, one complete | ~0.02-0.04 ms (not measured) |
+| per TICK (10 Hz) | `SyncIndex`: managed realBody/heart-reach scan over the slots, 2 memcpys, Burst `UpdatePositionsJob` (~300 hash moves + ~2,700 field writes) | ~0.03-0.06 ms per tick (not measured) |
+| per TICK | `SyncEntities`: managed O(cap) ledger + 2 memcpys for the job inputs; `CreateBatch` only for first-time slots; one `SetLooksBatch` for changes | ~0.03 ms typical |
+| per TICK | `SwarmEntryLedger.Sync`: O(cap) compares, index calls only on change | ~0.02 ms |
+
+- **Net (estimate, not measured in Unity).** About **0.03-0.07 ms per frame** on the main thread for 3,000
+  members, plus ~0.1 ms on tick frames. Round 11a cost ~0.4-0.5 ms per frame plus ~0.2 ms per tick.
+  - That is close to, but not at, round 7's 0.002 ms. What remains is the fixed cost of handing matrices to ECS:
+    schedule, complete and the `LocalToWorld` sync point. Round 7's shader-side interpolation never paid it.
+  - The managed per-slot loops left (`SyncIndex`'s realBody scan and the two ledgers) are O(cap) once per tick,
+    not per frame.
+- **Turning it off.** `UnifiedPrismBodies` off returns to round 7's draw cost. The index entries, and their
+  per-tick cost, remain either way.
+- **Colliders: unchanged.** A virtual entry has no collider, and proxies are as in round 8.
+
+### 19.5 Invariants (§16.5 restated)
+
+| law | holds? | how |
+|---|---|---|
+| hittable at range | yes | AOE (platform resolve), projectile, sniper: §19.1 |
+| predatable | yes | `VirtualFauna.NearestPrey`/`PreyInReach`: same diet, grace, band; budgeted materialisation |
+| counted in `LiveVolume` / the phase ladder | yes | bound virtual entries in `CellVolumeSumJob`; R11c count-once |
+| never counted twice | yes | suspended while a real body exists; R11c (and its negative control) |
+| shielded mass never food | yes | the shielded tier registers shielded, and `IsVirtualPrey` now refuses it outright (new this round: round 8 relied on the proxy) |
+| mass conserved / no imposed death | yes | unchanged: a death is still only a proxy's sealed `Fauna.Die` |
+| continuity of existence | yes | the entity's matrix is the shader pose (R11d); a proxy appears under an unchanged picture |
+| MultiDomain colours, tiers, round-10 strikes | yes | looks (§19.2) |
+| molting hearts | yes | hearts unchanged (§19.3) |
+| newborn bloom | yes | folded into the matrix (R11d) |
+| open with distance (§15) | yes | platform material spread |
+
+### 19.6 Proof (headless)
+
+All runs use `export DOTNET_ROOT=/usr/lib/dotnet` and a private `TMPDIR`. Other workers share the default
+`/tmp/swarm_core_harness`.
+
+- `bash Tools/Build/swarm_glue_typecheck/run.sh` passes with `type-check OK`. It now covers
+  `SwarmPrismSync.cs`, `VirtualFauna.cs` and stubs for every new API: the virtual-entry API,
+  `IVirtualPrismBudget`, `PrismRenderService.CreateBatch`/`SetTransformsBatch`/`SetLooksBatch`/`QueueVisible`/`Destroy`,
+  `NativeArray`, `float3`/`float4x4`, `TeamMaterialSets`, `Cell.BindVirtualMass` and `Fauna.LivingHeart`.
+- `bash Tools/Build/swarm_core_harness/run.sh` exits with rc 0.
+  - **R11a** is the query executable. It replaces R8a/R8b. `extract_burst_predicates.py` now also lifts
+    `VirtualQueryShape` and the three `*VirtualIds` queries' shape construction, and fails if
+    `QueryConeVirtualIds`' preprocessing drifts textually from `QueryCone`'s.
+    - Sphere vs `AOESpatialQueryJob`, segment vs `QuerySegment`, and cone vs `QueryCone`: 1,000,000 points each,
+      **0 disagreements**.
+    - Three mutants are all caught: strict `<`, unclamped segment, and dropped minimum radius.
+- `SWARM_DENSITY=5 bash Tools/Build/swarm_core_harness/run.sh "Assets/_SO_Assets/Swarm Fauna/Plans" tickjob`
+  ends with `tick job: OK` (R7a-g unchanged, then R11b-e):
+  - **R11b.** `IndexPoint` is exactly `Body(0.5)`. Every displacement is within the stated bound (§19.1 numbers).
+    Fewer than 1% of pairs fall outside the bounding sphere. The negative control (a stored heart) is ~27× worse
+    on average.
+  - **R11c.** The ledger runs against a model of the index's virtual-entry contract: ids recycled, live or
+    suspended, misuse counted.
+    - The run is 400 ticks with 72 kills, 55 reused slots, 720 proxies made and 766 retired, and 84 hits
+      materialised by the index.
+    - **0** count-once violations after every sync and every between-tick event. The volume error is 1e-8.
+    - Ids are recycled (highest 115 for 960 slots).
+    - Negative control (proxies withheld): 181 members seen twice, volume over by 19%.
+  - **R11d.** The matrix's translation equals `BodyAt` (within 6e-5 u since round 11a-2's scalar pose), the basis
+    is orthogonal, and each column is the body's Scale. The bloom is 0.001 at birth and 0.500 half way. A dead slot
+    gives the zero matrix.
+    - Round 11a-2: `PoseMatrix`, the function the Burst job runs, matches round 11a's pose within 6e-5 over 8,118
+      poses.
+    - Cost: managed single-thread 0.32 ms for 3,000 members; the job's shape on a .NET pool takes 0.13 ms wall.
+  - **Burst gate.** `check_burst_pose.py` passes, and its negative control trips 5 rules.
+  - **R11e.** Over 300 ticks, shown == alive every tick. An entity is made once per slot and reused, a death
+    hides at once, and a failed `CreateBatch` is retried.
+- `python3 Tools/Build/author_swarm_fauna.py --check` passes.
+
+### 19.7 What is NOT proved
+
+- **Nothing ran in Unity.** The ECS entities and their look restyle (`SetLooksBatch`, new) have not run: the
+  Burst jobs, the material-id swap, and that a hidden-born clone with a bloom-scaled matrix draws correctly.
+- **Burst compilation is not proven.** `SwarmPoseJob`, `ResolveHandlesJob` and `UpdatePositionsJob` (round 11a-2)
+  have not been Burst-compiled. `check_burst_pose.py` is a textual gate on the pose function only.
+  `UpdatePositionsJob`'s equivalence to the managed loop is by construction and review; no test runs it.
+- **Not type-checked.** The platform files outside the swarm type-check are only syntax-checked:
+  `ExplosionImpactor`, `Projectile`, `SniperShotActionExecutor`, `LightFauna`, `WormFauna`,
+  `PrismSpatialIndex` and `PrismRenderService`.
+- **Not measured in-engine:** every per-frame and per-tick cost in §19.4 (the Burst numbers there are estimates), the AOE behaviour against a moving member at
+  a slab boundary, and the visual parity of platform materials against the round-7 shader (spread, palette).
+- **Cost of the larger index.** `UpdatePositionsBatch`'s bucket churn has not been measured with a full
+  Atlantis-sized index (69k prisms) sharing buckets with members.
+- **Bucket-walk heuristic.** A virtual-id query wider than the index's linear-scan threshold scans
+  `_highWaterMark` entries. That is cheap per call, but a predator with no territory pays it once per behaviour
+  tick when no member is near.
+
+### 19.8 Files
+
+- **Platform.**
+  - `Controller/Managers/PrismSpatialIndex.cs`: `IVirtualPrismBudget`, virtual bounding radius,
+    `TryGetVirtualEntry`, `HasMaterialiseBudget`, `Query{Sphere,Segment,Cone}VirtualIds`, the AOE spare rule +
+    budget deferral, and the `DrainBacklog` examinable bound. Round 11a-2 adds the Burst `UpdatePositionsJob`.
+  - `Controller/ECS/Rendering/PrismRenderService.cs`: `SetLooksBatch`; round 11a-2 adds the
+    `SetTransformsBatch(..., JobHandle)` overload and `ResolveHandlesJob`.
+  - `Controller/Environment/Cell.cs`: `BindVirtualMass`; the round-8 virtual-volume aggregate is deleted.
+  - `FloraAndFauna/VirtualFauna.cs` (new).
+  - `Fauna.cs`: `LivingHeart`.
+- **Swarm.**
+  - `Swarm/SwarmPrismSync.cs` (new): `SwarmBodyPose` (`PoseMatrix`, the Burst-compilable pose, round 11a-2),
+    `SwarmPoseMatrix`, `SwarmEntryLedger`, `SwarmEntityLedger`.
+  - `Swarm/SwarmPoseJob.cs` (round 11a-2): the per-frame Burst pose job.
+  - `Swarm/SwarmFauna.cs`
+  - `Swarm/SwarmTickJob.cs`: `IndexPoint`; the grid, `VolumeBySlot` and `Counted` are removed.
+  - `Swarm/SwarmMemberRenderer.cs`: `DrawBodies`.
+  - `Swarm/SwarmFaunaConfigSO.cs`: `UnifiedPrismBodies`.
+  - Deleted: `Swarm/SwarmMemberQuery.cs`, `Swarm/SwarmTargets.cs`.
+- **Consumers.** `ExplosionImpactor.cs`, `Projectile.cs`, `SniperShotActionExecutor.cs`, `LightFauna.cs`,
+  `WormFauna.cs`.
+- **Tools.**
+  - `swarm_core_harness/`: `QueryHarness.cs` (R11a), `TickJobHarness.cs` (R11b-e), `extract_burst_predicates.py`,
+    `BurstShim.cs`, `run.sh`.
+  - `swarm_glue_typecheck/`: `Stubs.cs`, `run.sh`.
+  - `author_swarm_fauna.py` (comment).
+- **QA.** QA-SWARM-ROUND11-1.
+
+## 20. Round 11b: the Living Ecology substrate shares the cell
+
+The Swarm cell now also holds three populations of the research's **agent substrate**: pack hunters, locusts and
+lurkers. One agent model, with the species as data, runs off the main thread. Full write-up:
+**[`Docs/SUBSTRATE_FAUNA.md`](SUBSTRATE_FAUNA.md)**.
+
+What it shares with the swarm, and what it adds:
+
+- **Shared with the swarm** (`Swarm/` files are unchanged):
+  - the tick-job shape (§14) and its `SwarmInstance` and `SwarmJobState`;
+  - the member shader for hearts (§14);
+  - the index ledger `SwarmEntryLedger` and the body pose `SwarmBodyPose` (§19);
+  - `VirtualFauna`, so predators and blasts reach agents through the same front door as members.
+- **The cell's two generators.** `author_swarm_fauna.py` still owns the cell. Two hooks call
+  `author_substrate_fauna.py`:
+  - `profile_entries()` adds the three populations to the spawn profile;
+  - `proxy_colliders()` adds their proxies to the ceiling: +78, 1056 worst case vs 1200.
+- **Stakes.** A striking agent is a danger prism in its domain (§18's petal burn). The pack strikes all at once when
+  its ring closes, then is winded for 3 s.
+- **QA.** QA-SWARM-ROUND11-2.

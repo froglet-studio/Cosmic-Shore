@@ -801,6 +801,170 @@ with no trail · live volume never moves as the swarms grow.
 Round 8's diet colouring (newborns wearing the colour of what they ate) was removed on playtest. See
 `Docs/SWARM_FAUNA.md` §17.
 
+### QA-SWARM-ROUND11-7 ⬜ — the petal-burn switch: the demo cell burns 1 petal per element, everywhere else 5
+
+**Source:** branch `overnight/burn` (round 11g). It is proven by the elemental transfer harness (T8 and the
+switch type-check) and by `check_elemental_economy.py` §5. Not run in the editor. Reference:
+`Docs/ELEMENTAL_ECONOMY.md` §4.1.
+
+**Why it matters:** the shipped burn strips a careless pilot in 5-37 s. The lab's tuned rule costs a skilled pilot
+0.22 petals/min. Garrett has not chosen yet. The demo cell plays Tuned so the two can be felt side by side.
+
+**Step 0: give yourself petals to lose.** Collect crystals until every element on your HUD flower holds at least 5
+petals (ELEMENTAL_ECONOMY.md §8 step 0).
+
+1. **Inspect.** Select `Assets/_SO_Assets/Effects/Vessel Prism Effects/VesselElementalDebuffByDangerPrismEffect.asset`.
+   It should show Debuff Magnitude **-0.5** and Tuned Debuff Magnitude **-0.1**, and Stakes Switch ▸ Cell Data =
+   **Runtime Cell Data**. Then select `Assets/_SO_Assets/Cell Configs/Swarm Cell/Swarm Cell Config.asset`: Stakes ▸
+   Petal Burn Rule = **Tuned**. Any other Cell Config should read **Shipped**.
+2. **Tuned, hostile.** Open `Menu_Main`, pick the **Swarm** cell and start freestyle. Fly as a domain that does NOT
+   control the cell. Fly into one striking creature: a lit pufferfish plate, a pack hunter mid-dive, or a lurker's
+   snap. Each of the four flowers should step down **exactly one** petal and stay down. Wait 1 s, the per-vessel
+   cooldown, and touch again: one more petal each.
+3. **Tuned, own domain.** Repeat as the cell's controlling domain. Each flower dips by one petal and recovers over
+   ~4 s. Nothing is lost.
+4. **Shipped, for contrast.** Pick any other cell with danger prisms (an opposing pilot's danger trail works in any
+   mode), then repeat step 2. Each flower should drop **five** petals per contact, so a full element is gone in two.
+5. **Last petal.** In the Swarm cell, take repeated hostile contacts until an element shows 1 petal. The next
+   contact must take it to **0**. Further contacts take nothing and never go negative.
+6. **Flip it.** Set the Swarm Cell Config's Petal Burn Rule to **Shipped**. For the permanent version, set
+   `PETAL_BURN_RULE = 0` in `Tools/Build/author_swarm_fauna.py`, run it, and update `TUNED_CELLS` in
+   `check_elemental_economy.py`. Replay step 2: five petals per contact. Then set it back to Tuned.
+
+**PASS:**
+- The Swarm cell burns 1 petal per element per hostile contact.
+- Other cells burn 5.
+- The own-domain sting matches the burn's size and recovers.
+- The last petal can be burned.
+- Flipping the field changes the size with no code change.
+
+**FAIL:**
+- The Swarm cell burns 5. Likely cause: Cell Data is unwired on the effect asset, or the cell config reads Shipped.
+- Another cell burns 1.
+- A contact burns a fraction or an uneven count across the four elements.
+- An element sticks at 1 petal under repeated hostile contact.
+- The own-domain dip is a different size from the burn.
+
+### QA-SWARM-ROUND11-2 ⬜ — the Living Ecology substrate: a pack that surrounds you and dives in at once
+
+**Source:** branch `overnight/substrate`. Proven by the headless harness and Roslyn type-check only; not run in the
+editor. Reference: `Docs/SUBSTRATE_FAUNA.md`.
+
+**Why it matters:** this is the first fauna whose threat is coordinated. Six hunters ring the pilot and strike
+together. If it does not read in the editor, the round's design target is missed: *"being surrounded by them and
+having them all dive in at once will be scary once the stakes are felt."*
+
+1. **Load.** Open `Menu_Main`, pick the **Swarm** cell in the Cell Selector, and start freestyle. In the Console, turn
+   on the **Ecology** channel (FrogletTools > Toolbox > Logging). Within ~10 s you should see three
+   `[Substrate] … population … seeded` lines: pack (6 agents), locust (40) and lurker (8). Each line says its bodies
+   are `prism entities` or `instanced`. You should see NO `[Substrate] GPU agent drawing is OFF` warning.
+2. **Look.**
+   - **Locusts** (outer shell, 910-1080 u): small Space-heart creatures bobbing near the Space flora.
+   - **Pack** (middle shell, 690-1080 u): six long, low Time-heart bodies.
+   - **Lurkers** (inner shell): they should be hard to tell from the Mass flora crystals. Look for a crystal whose
+     sliver of body grows when it moves.
+3. **Pack, careless.** Fly as a domain that does NOT control the cell, with petals on your HUD flower. Cruise in a
+   straight line through the middle shell near the pack. Within ~10-20 s you should see:
+   - the hunters spread onto a ring around your line (about 110 u out);
+   - the ring close: a ~0.6-0.9 s beat where they all turn toward you;
+   - **all of them** light up as danger prisms within ~1 s of each other and dive.
+   Being hit burns petals. Afterwards they fall back, slower and unlit, for ~3 s (winded). Hitting them now is safe.
+4. **Pack, counterplay.** Repeat, but when the ring forms, turn hard toward the widest gap between hunters. You should
+   escape most strikes (headless: 5 bites vs 26 for the straight flyer).
+5. **Pack, own domain.** Repeat once as the cell's controlling domain. Contact only stings; no petal is burned.
+6. **Locusts.** Fly slowly past a sparse cloud: they stay unlit and drift curiously. Then hover in the outer shell
+   until the cloud has grown dense, or herd it with your vessel. A dense, hungry cloud should tighten, align and turn
+   dangerous as a storm.
+7. **Lurkers.** Point your nose AWAY from a lurker-crystal ~300 u off for 3 s, then look back. It should have crept
+   toward your line. While you look straight at it, it must not move. Fly past within ~60 u: it gapes (swells), then
+   snaps (lit, ~0.5 s later), then hangs slack for ~3 s.
+8. **Kills and crystals.** Kill one of each species with a gun, a ram and an AOE weapon. To test the AOE, fire it at a
+   locust cloud more than 160 u away, which tests the virtual entries. Each death drops exactly one crystal. A
+   shot-dead agent leaves its body as a skeleton prism; nothing pops in or out.
+9. **Food web.** Watch the pack for 2-3 min with no vessel near it. It should drift into the locust shell and catch
+   locusts. Each catch is a locust crystal drop plus the body suctioned into the hunter, and the hunter's body grows.
+10. **Mass.** On the cell's phase/aggression readout, live volume should rise as locusts breed and fall as they die.
+    It must not jump when you fly close (proxies forming) or leave (proxies retiring).
+11. **Cost.** Profile 60 s with all three populations alive. Record `SubstrateCellHost.Collect`, `.Publish`, `.Sense`
+    and `SubstrateFauna.Tick.*` / `.Frame.*`. The worker tick itself is not sampled by the Profiler (pool thread).
+
+**PASS:**
+- All three populations seed.
+- The pack rings, closes and strikes together, then is winded.
+- An opposing-domain hit burns petals; an own-domain hit does not.
+- The gap counterplay works.
+- Locusts flip under density + hunger.
+- Lurkers creep only when unwatched.
+- Every death drops one crystal.
+- Far agents are hittable by AOE.
+- No volume jumps.
+- Main-thread substrate cost is under ~0.5 ms per frame.
+
+**FAIL:**
+- A population never appears, or appears with no bodies or no hearts.
+- The pack strikes one at a time, or never strikes.
+- Strike contact burns no petals.
+- A lurker moves while watched.
+- A death with no crystal, or an agent that pops out without dying.
+- The ladder jumps near the pack.
+- A worker error: `[Substrate] the cell's substrate tick threw`.
+
+### QA-SWARM-ROUND11-1 ⬜ — one prism system: members are index entries and prism entities
+
+**Source:** branches `overnight/prism` and `overnight/prism2` (round 11a-2: Burst pose and index jobs) - headless
+gates and type-check only, not run in the editor. Reference:
+`Docs/SWARM_FAUNA.md` §19. **Why it matters:** members are now found by the platform's own prism queries and drawn
+as ordinary prism entities. If either half is wrong, swarms become unhittable or invisible, or they double-count
+in the phase ladder.
+
+1. Open the Swarm cell in freestyle. Confirm `SwarmFaunaConfigSO` **Unified Prism Bodies** is on (default). Play
+   and watch the Console: there should be NO `[Swarm] ... fall back to the instanced draw` warning.
+2. From a distance, check the members:
+   - **Looks.** Every member body looks like a prism of its tier in its domain: plain, a danger plate (round-10
+     strike), or shielded.
+   - **Spread.** The body opens with distance like any prism (§15).
+   - **Hearts.** Hearts still sit at the front and re-form while molting.
+   - **Newborns.** Newborns grow from a point at the heart.
+3. With **Multi Domain** on (`SwarmSortFaunaConfig.asset`), the back and belly regions show their own domain's
+   prism material.
+4. Fire at members **more than 160 u away**, once with each:
+   - a rocket or other AOE: members inside the blast die, and kills roll over a few frames for a dense hit;
+   - a projectile vessel: the shot stops at, or pierces, members as it does prisms;
+   - the sniper: own-domain members are passed through.
+   Each dead member drops one crystal.
+5. Fire a Sparrow missile into a far swarm. Members whose hearts are in the blast should be jousted (lifeform-crystal
+   effects).
+6. Leave a predator (`LightFauna`) and a worm in the cell. They should hunt and eat members from range.
+7. Open the cell's phase/aggression readout. It should be the same as on the round-10 build with the same seed: no
+   jump when proxies appear near your vessel.
+8. Profile 60 s in the Swarm cell with all three swarms grown, with Burst compilation ON (Jobs > Burst > Enable
+   Compilation). Record the following against §19.4's round 11a-2 estimates (main thread ~0.03-0.07 ms per frame,
+   ~0.1 ms per tick):
+   - `SwarmFauna.Frame.Bodies` (the pose job schedule);
+   - `SwarmFauna.Frame.BodiesWrite` (the wait and the transform write);
+   - `SwarmFauna.Tick.Index` and `SwarmFauna.Tick.Entities`.
+   In the Timeline view, check that `SwarmPoseJob` runs on the worker threads, and that `ResolveHandlesJob` and
+   `UpdatePositionsJob` are marked Burst.
+9. Turn **Unified Prism Bodies** off and re-enter. The round-7 instanced draw returns, and weapons and predators
+   still work.
+
+**PASS:**
+- Members look like platform prisms.
+- Members are hittable at range by all three weapon types.
+- Predators eat them.
+- The ladder is unchanged.
+- No fallback warning.
+- Costs are within ~2x of §19.4.
+- The Burst jobs compile with no Burst errors in the Console.
+
+**FAIL:**
+- Invisible members, or members drawn at the wrong place or size (pose mismatch with hearts).
+- Members flicker at death or respawn, or a dead member stays visible.
+- A far member cannot be hit.
+- The ladder jumps when proxies appear (double-count).
+- An own-domain sniper kill.
+- A frame-time regression above ~1 ms per frame.
+
 ### QA-SWARM-ROUND10-1 ⬜ — four creatures, and their strikes burn petals
 
 **Source:** branch `cece/swarm-fauna-game` (type-checked only, not run in the editor). Reference:
