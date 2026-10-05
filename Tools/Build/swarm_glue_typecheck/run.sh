@@ -14,10 +14,13 @@ echo "-r:$NSREF" > "$OUT/refs.rsp"
 S="$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm"
 # round 11e: the builder colonies' glue rides the same stubs (Docs/BUILDERS_AND_THIEVES.md)
 B="$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Builders"
+# round 11f: the ecology LOD (pure cores + the CellEcologyLod host the swarm registers with; Docs/ECOLOGY_LOD.md)
+E="$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Ecology"
 "$DOTNET_ROOT/dotnet" "$CSC" -nologo -langversion:9.0 -nostdlib -noconfig "@$OUT/refs.rsp" -target:library \
   -nowarn:CS0108,CS0114 -out:"$OUT/glue.dll" "$HERE/Stubs.cs" \
   "$S/ISwarmCore.cs" "$S/SwarmFieldCore.cs" "$S/SwarmGridCore.cs" "$S/SwarmSortCore.cs" "$S/SwarmEvoFateCore.cs" "$S/SwarmFaunaConfigSO.cs" "$S/SwarmPlanLibrary.cs" "$S/SwarmFauna.cs" "$S/SwarmTadpoleFauna.cs" \
   "$S/SwarmTickJob.cs" "$S/SwarmPrismSync.cs" "$S/SwarmPoseJob.cs" "$S/SwarmMemberRenderer.cs" "$S/../VirtualFauna.cs" \
   "$B/BuilderCore.cs" "$B/BuilderColonyCore.cs" "$B/ThiefNestCore.cs" "$B/BuilderRegistry.cs" \
-  "$B/BuilderColonyConfigSO.cs" "$B/BuilderPrismWorld.cs" "$B/BuilderColonyFauna.cs"
+  "$B/BuilderColonyConfigSO.cs" "$B/BuilderPrismWorld.cs" "$B/BuilderColonyFauna.cs" \
+  "$E"/*.cs
 echo "type-check OK"

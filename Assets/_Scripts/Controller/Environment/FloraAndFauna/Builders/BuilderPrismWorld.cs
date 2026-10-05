@@ -105,9 +105,11 @@ namespace CosmicShore.Gameplay
             _quarantine.Add((h, Time.time));
         }
 
-        /// <summary>Living tissue is never loot: a flora's or a creature's body prism belongs to a lifeform.</summary>
+        /// <summary>Living tissue is never loot: a flora's or a creature's body prism belongs to a lifeform, and a
+        /// physarum tube belongs to its grove's network although no single LifeForm owns it (ThreatGrove.IsGroveTissue,
+        /// round 11c).</summary>
         static bool IsLivingTissue(Prism p) =>
-            p is HealthPrism hp && (hp.LifeForm || hp.ResolveOwnerFauna());
+            p is HealthPrism hp && (hp.LifeForm || hp.ResolveOwnerFauna() || ThreatGrove.IsGroveTissue(hp));
 
         // ── IBuilderWorld ────────────────────────────────────────────────────────────────────────
 

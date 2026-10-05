@@ -9,6 +9,7 @@
 #   bash Tools/Build/swarm_core_harness/run.sh <plans> evo     # the evofate core's only
 #   SWARM_DENSITY=5 bash Tools/Build/swarm_core_harness/run.sh <plans> tickjob   # round 7: the off-thread tick (R7a-g); round 11a: R11b-e
 #   SWARM_DENSITY=5 bash Tools/Build/swarm_core_harness/run.sh <plans> lineage [out.json]   # round 9: regional lineages (R9a-d)
+#   SWARM_DENSITY=5 bash Tools/Build/swarm_core_harness/run.sh <plans> lod      # round 11f: the swarm as an IMacroPopulation
 #   bash Tools/Build/swarm_core_harness/run.sh evofate <plans> <fixture.json>   # exactness vs Python (evofate_fixture.py)
 #   bash Tools/Build/swarm_core_harness/run.sh export <plans> <out.json> 7,23,41   # states for score_grid.py / score_sort.py
 #   bash Tools/Build/swarm_core_harness/run.sh smoothsort <plans> <out.json> 7 researchSortFeelF8 0:1,...  # swarm_smooth events (score_sortfeel.py)
@@ -45,6 +46,9 @@ python3 "$HERE/extract_burst_predicates.py" "$ROOT/Assets/_Scripts/Controller/Ma
 "$DOTNET" "$CSC" -nologo -langversion:9.0 -nostdlib -noconfig -optimize+ "@$OUT/refs.rsp" -nowarn:CS0649 \
   -target:exe -main:QueryHarness -out:"$OUT/swarmquery.exe" \
   "$HERE/BurstShim.cs" "$OUT/ShippedPrismQuery.g.cs" "$HERE/QueryHarness.cs"
+# round 11f: the pure ecology cores (CellEcologyLod.cs is Unity glue - swarm_glue_typecheck covers it)
+ECO=(); for f in "$ROOT"/Assets/_Scripts/Controller/Environment/FloraAndFauna/Ecology/*.cs; do
+  [[ "$(basename "$f")" == CellEcologyLod.cs ]] || ECO+=("$f"); done
 "$DOTNET" "$CSC" -nologo -langversion:9.0 -nostdlib -noconfig -optimize+ "@$OUT/refs.rsp" \
   -target:exe -main:Program -out:"$OUT/swarmcore.exe" \
   "$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/ISwarmCore.cs" \
@@ -54,7 +58,9 @@ python3 "$HERE/extract_burst_predicates.py" "$ROOT/Assets/_Scripts/Controller/Ma
   "$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/SwarmEvoFateCore.cs" \
   "$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/SwarmTickJob.cs" \
   "$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/SwarmPrismSync.cs" \
-  "$HERE/Program.cs" "$HERE/TickJobHarness.cs" "$HERE/GridHarness.cs" "$HERE/SortHarness.cs" "$HERE/SortFeelHarness.cs" "$HERE/EvoHarness.cs" "$HERE/LineageHarness.cs" "$HERE/Round11dHarness.cs"
+  "${ECO[@]}" \
+  "$HERE/Program.cs" "$HERE/TickJobHarness.cs" "$HERE/GridHarness.cs" "$HERE/SortHarness.cs" "$HERE/SortFeelHarness.cs" "$HERE/EvoHarness.cs" "$HERE/LineageHarness.cs" \
+  "$HERE/SwarmLodHarness.cs" "$HERE/Round11dHarness.cs"
 V=$(ls "$DOTNET_ROOT"/shared/Microsoft.NETCore.App | head -1)
 printf '{"runtimeOptions":{"tfm":"net8.0","framework":{"name":"Microsoft.NETCore.App","version":"%s"}}}' "$V" > "$OUT/swarmcore.runtimeconfig.json"
 cp "$OUT/swarmcore.runtimeconfig.json" "$OUT/swarmquery.runtimeconfig.json"

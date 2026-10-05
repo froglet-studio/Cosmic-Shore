@@ -822,6 +822,57 @@ that raced across it (a jolt Garrett would read as a bug), and a rushed lurker p
 plates; no plate flicker. **FAIL:** members streak across the body after a strike · a swarm under steady grazing stops
 regrowing · a lurker plates after bolting · plates flicker on and off at one distance.
 
+### QA-SWARM-ROUND11-6 ⬜ — a far swarm collapses and comes back without a pop; creatures starve on a stomach
+
+**Source:** branch `overnight/lod`. Only headless gates, type-checks and authoring gates have run; it has never been
+opened in the editor. Reference: `Docs/ECOLOGY_LOD.md`.
+
+**Why it matters:** the swarm now stops simulating when no one is near.
+- If the collapse or expansion is wrong, a swarm teleports, pops, loses members, or changes the cell's phase.
+- If the stomach migration is wrong, every Boid, LightFauna and Worm starves early or never.
+
+1. **Set up.** Open the Swarm cell in freestyle. Turn on the **Ecology** log channel. Open the Profiler and find:
+   - `CellEcologyLod.Guard`
+   - `CellEcologyLod.MacroTick`
+   - `SwarmFauna.MacroTick`
+2. **Collapse.** Fly about 600 u away from a swarm and look away from it for 5 s.
+   - `SwarmFauna.Tick.*` markers for that swarm should stop.
+   - `SwarmFauna.MacroTick` should appear once per second.
+   - The cell's phase readout and live volume must not move when the swarm collapses.
+3. **Distant view.** From about 400-500 u, turn the camera toward a collapsed swarm.
+   - It should already be drawn. It may move in small once-per-second steps at that distance.
+   - It must never vanish, and never re-form from a knot.
+4. **Approach.** Fly straight at a collapsed swarm at boost speed. Before you are within about 300 u it must already
+   be swimming and morphing again: smooth motion, no jump, no member popping in or out.
+5. **Hit it from range.** Fire at a collapsed swarm from as far as your weapon reaches. The hit member must react like
+   any member (proxy, death, one crystal), and the swarm must resume swimming.
+6. **Long absence.** Leave a swarm for 3+ minutes, then come back. Check that:
+   - its member count (`MemberCount` in the inspector) is the same or grew;
+   - if it was grazing, it has laid eggs on expansion;
+   - it is roughly where its goal led it, not where you left it.
+7. **Stomachs** (Boid, LightFauna, Worm cells). Play 5 minutes as before.
+   - Starvation should look the same as before: creatures that find food survive, and creatures in a stripped area
+     thin out after about their `starvationSeconds`.
+   - A creature eaten by a predator keeps the predator alive for the same time as before.
+8. **Profile** 60 s with all swarms far. Record `CellEcologyLod.*` and `SwarmFauna.MacroTick`: expect well under
+   0.1 ms per frame together.
+
+**PASS:**
+- A far swarm stops its tick and costs only the macro tick.
+- LiveVolume and the phase readout are unchanged across collapse and expansion.
+- No pop, jump or knot on approach or on a long-range hit.
+- Counts are conserved over a long absence.
+- Starvation timing in the classic fauna cells is unchanged on leaf-sized meals.
+
+**FAIL:**
+- A swarm teleports or re-forms on approach.
+- Members vanish or appear when it collapses.
+- The phase readout steps when a swarm collapses or expands.
+- A collapsed swarm cannot be hit.
+- A swarm keeps its 10 Hz tick while far and unseen.
+- Boids, lights or worms starve noticeably faster or never starve.
+- Any `[EcologyLod]` warning about a full sense buffer.
+
 ### QA-SWARM-ROUND11-5 ⬜ — creatures that steal and build: the fortress colony and the thief nest
 
 **Source:** branch `overnight/builders` (headless harness, type-check and authoring gates only, not run in the
@@ -1075,6 +1126,61 @@ in the phase ladder.
 - The ladder jumps when proxies appear (double-count).
 - An own-domain sniper kill.
 - A frame-time regression above ~1 ms per frame.
+
+### QA-SWARM-ROUND11-3 ⬜ — threat flora: bait a snap trap, read a physarum pulse
+
+**Source:** branch `overnight/flora` (headless harness and glue type-check only, not run in the editor). Reference:
+`Docs/THREAT_FLORA.md` and `Docs/SWARM_FAUNA.md` §21. **Why it matters:** these are the first plants that can
+cost you petals. If the telegraph is unreadable the danger feels unfair; if it never fires the grove is scenery.
+
+1. **Find the grove.** Open the Swarm cell in freestyle and fly as a domain that does NOT control the cell, with a
+   few petals on your HUD flower. From the cell centre, head along (1, 0.3, 0): +X, tilted slightly up. Fly out past
+   the outer swarm band (ends ~1,080 u) toward the membrane (1,200 u). The grove sits at radius 1,095-1,192 u in an
+   18° cone: three clumps of snap traps (stalk, two plate lobes, teeth, a crystal in the jaws) and five sclerotia
+   (crystals in a six-prism shell) joined by cables of tube prisms.
+2. **Bait a snap trap.** Approach one trap's mouth (it faces the cell centre). Within ~146 u its lobes should glow
+   in its domain's danger colour and gape wider for ~0.7 s (PRIMING), then hold open (ARMED).
+   - Back off before it arms: the glow goes out and it never fires.
+   - Fly a path straight across the open mouth: the lobes snap shut in ~0.5 s. Be between them and you are hit;
+     the closing lobes and the teeth burn petals. Dodge sideways the moment you see the glow.
+   - Touch a tooth on a resting trap: it is always a danger prism.
+   - Shoot or ram the lobes and teeth until 13 or more of the 24 are gone: the trap glows no more and cannot fire.
+   - Joust the crystal in the jaws while the trap is shut (~7-9 s): the trap dies and leaves a skeleton.
+   - Fly loops past a clump for ~1 min: the mouths turn toward your path (slowly, 7°/s, at most 60°).
+3. **Read a physarum pulse.** Hover ~100 u from a long cable and watch it:
+   - A band of danger-coloured tubes runs along the cable at ~65 u/s (about 1.2 s per 80 u). Each tube is lit for
+     ~0.5 s, then dark and refractory for ~1 s; cross a cable just behind a passing pulse.
+   - A sclerotium's shell glows for 0.8 s, then beats danger for 0.6 s, about every 3 s. Dive for its crystal
+     right after a beat ends.
+   - Cut a cable by ramming or shooting through it. Within ~1 minute the cables re-find the gap. Leaving a trail
+     near the grove should NOT attract the cables (wake repels).
+4. Repeat one trap hit and one cable hit as the cell's controlling domain: it should only sting, with no petal
+   loss.
+   As an opposing domain, a hit should take ONE petal per element (the Swarm cell plays the Tuned burn,
+   QA-SWARM-ROUND11-7), not five.
+5. Profile 60 s near the grove and record `ThreatGrove.SnapTraps` and `ThreatGrove.Physarum` (headless estimate:
+   well under 0.1 ms for the traps, ~1.4 ms per physarum step at 10 Hz under Mono). Note any hitch in the first
+   ~1.5 s while the network warms up.
+
+**PASS:**
+- The grove is where step 1 says, outside every swarm band, and no swarm grazes it.
+- Every snap is preceded by a visible glow; a trap whose vessel leaves relaxes without firing.
+- An opposing-domain hit by a closing lobe, tooth, pulse or beat takes petals.
+- A trap missing 13+ lobe/tooth prisms never fires.
+- Pulses visibly travel along cables; a cut cable re-forms.
+- Nothing pops in or out: prisms fly in from and back to the plant.
+- Over a 10 min session, the fortress colony and thief nest (QA-SWARM-ROUND11-5) never carry off a tube, and the
+  thief nest is not inside the grove's sector.
+
+**FAIL:**
+- A snap with no glow first, or a glow that never resolves.
+- Danger with no petal loss, or burned petals that come back as crystals.
+- A trap whose jaws reach into the swarm band or through the membrane.
+- Cables that never pulse, never re-form, or that chase your trail.
+- Tubes or trap prisms appearing or vanishing without a flight.
+- A fortress wall or thief hoard containing a physarum tube; a hoard shrinking because a trap or cable ate it;
+  a thief nest sitting inside the grove.
+- A frame-time regression above ~1 ms per frame near the grove, or a warm-up hitch over ~10 ms.
 
 ### QA-SWARM-ROUND10-1 ⬜ — four creatures, and their strikes burn petals
 

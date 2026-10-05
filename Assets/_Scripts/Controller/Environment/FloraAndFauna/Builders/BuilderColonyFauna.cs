@@ -235,7 +235,10 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>A thief nest sits ON a plant: the nearest living flora heart within a territory's reach of where the cell
-        /// spawned the anchor (else that spawn point). Perched a little outside the heart so the hoard wraps the crown.</summary>
+        /// spawned the anchor (else that spawn point, moved off any threat-flora grove - Docs/THREAT_FLORA.md §4.1). Perched
+        /// a little outside the heart so the hoard wraps the crown.</summary>
+        const float NestGroveClearance = 40f;   // the hoard shell plus a thief's turning room, off a grove's prisms
+
         Vector3 FindNestPlant(Vector3 centre, float membrane)
         {
             var from = transform.position;
@@ -243,7 +246,7 @@ namespace CosmicShore.Gameplay
             var plant = FloraHeartRegistry.NearestToPoint(from,
                 f => !f || f.IsDying || !f.HeartTransform || (f.HeartTransform.position - from).sqrMagnitude > reach2
                      || (f.HeartTransform.position - centre).magnitude > membrane * 0.9f);
-            if (!plant || !plant.HeartTransform) return transform.position;
+            if (!plant || !plant.HeartTransform) return ThreatGrove.OutsideGroves(transform.position, NestGroveClearance);
             var at = plant.HeartTransform.position;
             var outward = at - centre;
             outward = outward.sqrMagnitude > 1f ? outward.normalized : Vector3.up;

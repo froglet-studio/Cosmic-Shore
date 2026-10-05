@@ -611,5 +611,6 @@ static class TickJobHarness
         public int[] Counts(bool eff) => new int[4];
         public bool TryGetLook(int i, int element, out Vector3 half, out int tier) { half = default; tier = 0; return false; }
         public int StarvationVictim() => -1;
+        public void Translate(Vector3 d) { }
     }
 }

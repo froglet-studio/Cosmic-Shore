@@ -19,7 +19,7 @@ namespace UnityEngine
     public class TextAsset : Object { public string text; }
     public class GameObject : Object { public GameObject(string n) { } public bool activeInHierarchy; public Scene scene; public int layer; public Transform transform; public T AddComponent<T>() where T : Component => default; }
     public struct Scene { public bool isLoaded; }
-    public class Transform : Component { public Vector3 position, localPosition, localScale; public Quaternion rotation, localRotation; public Matrix4x4 localToWorldMatrix, worldToLocalMatrix; public void SetPositionAndRotation(Vector3 p, Quaternion q) { } public Vector3 InverseTransformPoint(Vector3 p) => p; public void SetParent(Transform p, bool worldPositionStays) { } }
+    public class Transform : Component { public Vector3 position, localPosition, localScale; public Vector3 forward => default; public Quaternion rotation, localRotation; public Matrix4x4 localToWorldMatrix, worldToLocalMatrix; public void SetPositionAndRotation(Vector3 p, Quaternion q) { } public Vector3 InverseTransformPoint(Vector3 p) => p; public void SetParent(Transform p, bool worldPositionStays) { } }
     public class Renderer : Component { public bool enabled; }
     public class SkinnedMeshRenderer : Renderer { public Mesh sharedMesh; }
     public class MeshFilter : Component { public Mesh sharedMesh; }
@@ -221,10 +221,11 @@ namespace CosmicShore.Gameplay
         public virtual float CurrentSpeed => 0f;
         public float HeartWorldScale => 0;
         public void ApplyHeartSize(float s) { }
-        protected static bool IsShieldedMass(Prism prism) => false;
+        public static bool IsShieldedMass(Prism prism) => false;          // Fauna.cs (public since round 11c)
         protected static readonly Collider[] OverlapScratch = new Collider[256];
         protected static readonly List<Prism> FeedScratch = new(64);
         protected static int NonPrismOverlapMask => 0;
+        public static int VesselSenseMask => NonPrismOverlapMask;   // Fauna.cs (round 11f)
         protected HealthPrism[] CacheBodyPrisms() => null;
         protected HealthPrism[] BodyPrisms => null;
         public virtual void OnBodyPrismExploded(HealthPrism prism, string killerName) { }
@@ -249,6 +250,13 @@ namespace CosmicShore.Gameplay
         public bool IsAlivePrey => true;                    // Fauna.cs:1096
         public bool IsPredationImmune => false;             // Fauna.cs:181
         public bool Jousted(string killerName) => false;    // Fauna.cs:498 (builders)
+    }
+
+    // ThreatFlora/ThreatGrove.cs (round 11c) - the two statics the builders' glue asks
+    public sealed class ThreatGrove : MonoBehaviour
+    {
+        public static bool IsGroveTissue(Prism prism) => false;
+        public static Vector3 OutsideGroves(Vector3 p, float clearance) => p;
     }
 }
 
