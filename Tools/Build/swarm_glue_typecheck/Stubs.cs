@@ -209,6 +209,7 @@ namespace CosmicShore.Gameplay
         Vector3 _goal;
         public Vector3 Goal { get => _goal; set => _goal = value; }
         public bool IsInsideBand(Vector3 p) => true;
+        protected bool HasBand => false;
         protected bool IsPreyForMe(Vector3 position, Domains preyDomain) => true;
         protected bool IsPreyForMe(Vector3 position, Domains preyDomain, Domains eaterDomain) => true;   // Fauna.cs (round 8)
         public void SetTeam(Domains domain) { }                                                       // Fauna.cs

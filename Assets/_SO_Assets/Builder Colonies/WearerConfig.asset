@@ -29,6 +29,7 @@ MonoBehaviour:
   SettleSeconds: 0.35
   MacroLod: 1
   ThawReserveSeconds: 20
+  ExtinctLingerSeconds: 8
   Founders: 48
   MaxWorkers: 48
   WorkerSpeed: 70

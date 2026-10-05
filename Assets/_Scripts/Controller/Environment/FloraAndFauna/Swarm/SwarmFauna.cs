@@ -213,6 +213,15 @@ namespace CosmicShore.Gameplay
             _gone = new bool[_cap];
             _starving = new bool[_cap];
 
+            // Round 11-10 (Docs/SWARM_FAUNA.md §27): a BANDED swarm hatches at the living plant of its band nearest the
+            // spawner's point, as the substrate's grazers do (SubstrateSpeciesSO.SeedAtFlora). A swarm hatches EMPTY, its
+            // starvation clock runs from the hatch, and it crosses its shell at ~4 u/s: hatched at a random point of a
+            // 3-5 plant shell (plants ~1,600 u apart) the outer swarm starved 207 of 240 on the way to its first plant.
+            if (HasBand)
+            {
+                var plant = FloraHeartRegistry.NearestToPoint(transform.position, NotFoodForMe);
+                if (plant) transform.position = plant.HeartTransform.position;
+            }
             var anchor = ToSim(transform.position);
             var radial = transform.position - _centre;
             var tangent = Vector3.Cross(radial.sqrMagnitude > 1f ? radial.normalized : Vector3.forward, Random.onUnitSphere);
@@ -1495,11 +1504,7 @@ namespace CosmicShore.Gameplay
             if (_foraging)
             {
                 var plant = _goalPlant ? _goalPlant : FloraHeartRegistry.NearestToPoint(here, f =>
-                    f.IsDying || !IsInsideBand(f.HeartTransform.position) ||
-                    HostCell.IsInsideNucleus(f.HeartTransform.position) ||
-                    !IsPreyForMe(f.HeartTransform.position, f.Domain) ||       // never led to food it cannot eat
-                    SwarmFaunaConfigSO.ToIndex(f.Element) < 0 ||
-                    (_rested.TryGetValue(f, out float t) && now - t < config.PlantRestSeconds));
+                    NotFoodForMe(f) || (_rested.TryGetValue(f, out float t) && now - t < config.PlantRestSeconds));
                 if (plant)
                 {
                     if (plant != _goalPlant)
@@ -1543,6 +1548,13 @@ namespace CosmicShore.Gameplay
             // shed the member the body needs least - the core decides who, on the worker, next tick
             _job.WantStarvationVictim = true;
         }
+
+        /// <summary>A plant this swarm may not be led to: dying, outside its band, in the nucleus, not its prey, or of no element.</summary>
+        bool NotFoodForMe(Flora f) =>
+            f.IsDying || !IsInsideBand(f.HeartTransform.position) ||
+            HostCell.IsInsideNucleus(f.HeartTransform.position) ||
+            !IsPreyForMe(f.HeartTransform.position, f.Domain) ||       // never led to food it cannot eat
+            SwarmFaunaConfigSO.ToIndex(f.Element) < 0;
 
         void Extinction()
         {

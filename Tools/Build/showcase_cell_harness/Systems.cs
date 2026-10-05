@@ -24,7 +24,7 @@ static class Ms
 /// <summary>The Swarm cell's Borromean feeding grounds: per region, plants at the floor, one plate per growPeriod up to
 /// the region's canonical budget, an offspring per GrowthPerOffspring plates (cooldown) up to the region's cap. Plates
 /// are the shared food every grazer eats from. Not modelled: the element time-law on the grow period, plant death.</summary>
-sealed class FloraSystem : ICellSystem
+sealed class FloraSystem : ICellSystem, IOccupancy
 {
     public string Name => "flora";
     public double StepHz => 10;
@@ -32,6 +32,8 @@ sealed class FloraSystem : ICellSystem
     readonly float _growPeriod;
     readonly List<(int floor, int cap, float inner, float outer, int food, float leaf, int budget, float perOffspring, float cooldown)> _reg = new();
     readonly List<int> _sinceBirth = new();
+    /// <summary>Per region: its planting pens (axis, cos of the half-angle, inner, outer) - FloraConfigurationSO.PlantingPens.</summary>
+    readonly List<List<(Vector3 axis, float cos, float inner, float outer)>> _pens = new();
 
     public FloraSystem(Cell c)
     {
@@ -39,15 +41,79 @@ sealed class FloraSystem : ICellSystem
         int ri = 0;
         foreach (var r in c.L.GetProperty("regions").EnumerateArray())
         {
-            var band = r.GetProperty("band");
+            var band = r.GetProperty("flora_band");   // where the flora is planted (author_swarm_fauna.flora_band)
             var leaf = r.GetProperty("leaf");
             float lv = (float)(leaf[0].GetDouble() * leaf[1].GetDouble() * leaf[2].GetDouble());
             _reg.Add((r.GetProperty("floor").GetInt32(), r.GetProperty("cap").GetInt32(), (float)band[0].GetDouble(),
                       (float)band[1].GetDouble(), r.GetProperty("food").GetInt32(), lv, r.GetProperty("budget").GetInt32(),
                       Cell.F(r, "growth_per_offspring"), Cell.F(r, "reproduction_cooldown")));
-            for (int k = 0; k < _reg[ri].floor; k++) Plant(c, ri, c.RandomInShell(_reg[ri].inner + 15f, _reg[ri].outer - 15f), 0.5f);
+            var pens = new List<(Vector3, float, float, float)>();
+            foreach (var pen in r.GetProperty("pens").EnumerateArray())
+            {
+                var a = pen.GetProperty("axis");
+                var ax = new Vector3((float)a[0].GetDouble(), (float)a[1].GetDouble(), (float)a[2].GetDouble());
+                pens.Add((ax == Vector3.Zero ? ax : Vector3.Normalize(ax), MathF.Cos(Cell.F(pen, "half") * MathF.PI / 180f),
+                          Cell.F(pen, "inner"), Cell.F(pen, "outer")));
+            }
+            _pens.Add(pens);
+            for (int k = 0; k < _reg[ri].floor; k++) Plant(c, ri, DispersalPoint(c, ri), 0.5f);
             ri++;
         }
+    }
+
+    /// <summary>Flora.ResolveDispersalPoint with SpreadPlanting on (the Swarm cell's flora, author_swarm_fauna): the best
+    /// of 8 random points - the farthest in direction from every living plant of the region - of the band, or, when the
+    /// region has planting pens, of the pen holding the fewest of its living plants (ties at random).</summary>
+    Vector3 DispersalPoint(Cell c, int ri)
+    {
+        var g = _reg[ri];
+        int pen = EmptiestPen(c, ri);
+        Vector3 best = default; float bestGap = -1f;
+        for (int k = 0; k < 8; k++)
+        {
+            var p = pen >= 0 ? PenPoint(c, _pens[ri][pen]) : c.RandomInShell(g.inner + 15f, g.outer - 15f);
+            float gap = float.MaxValue;
+            var u = Vector3.Normalize(p);
+            foreach (var pl in c.World.Plants) if (pl.Alive && pl.Region == ri) gap = MathF.Min(gap, Vector3.DistanceSquared(Vector3.Normalize(pl.Heart), u));
+            if (gap > bestGap) { bestGap = gap; best = p; }
+        }
+        return best;
+    }
+
+    int EmptiestPen(Cell c, int ri)
+    {
+        var pens = _pens[ri];
+        if (pens.Count == 0) return -1;
+        int start = c.Rng.Range(0, pens.Count), best = -1, bestCount = int.MaxValue;
+        for (int k = 0; k < pens.Count; k++)
+        {
+            int j = (start + k) % pens.Count, n = 0;
+            foreach (var pl in c.World.Plants) if (pl.Alive && pl.Region == ri && InPen(pens[j], pl.Heart)) n++;
+            if (n < bestCount) { bestCount = n; best = j; }
+        }
+        return best;
+    }
+
+    static bool InPen((Vector3 axis, float cos, float inner, float outer) pen, Vector3 p)
+    {
+        float r = p.Length();
+        if (r < pen.inner || r > pen.outer) return false;
+        return pen.axis == Vector3.Zero || r <= 0f || Vector3.Dot(p / r, pen.axis) >= pen.cos;
+    }
+
+    /// <summary>Flora.PenPoint: volume-uniform between the pen's radii (the harness's 15 u rim margin, as the band draw),
+    /// uniform over its cone of directions.</summary>
+    static Vector3 PenPoint(Cell c, (Vector3 axis, float cos, float inner, float outer) pen)
+    {
+        var p = c.RandomInShell(pen.inner + 15f, pen.outer - 15f);
+        if (pen.axis == Vector3.Zero) return p;
+        float r = p.Length();
+        float cosT = 1f + (pen.cos - 1f) * c.Rng.NextFloat();
+        float sinT = MathF.Sqrt(MathF.Max(0f, 1f - cosT * cosT));
+        float phi = c.Rng.NextFloat() * 2f * MathF.PI;
+        var u = Vector3.Normalize(Vector3.Cross(pen.axis, MathF.Abs(pen.axis.Y) < 0.9f ? Vector3.UnitY : Vector3.UnitX));
+        var v = Vector3.Cross(pen.axis, u);
+        return r * (cosT * pen.axis + sinT * (MathF.Cos(phi) * u + MathF.Sin(phi) * v));
     }
 
     void Plant(Cell c, int region, Vector3 at, float startFill)
@@ -95,7 +161,7 @@ sealed class FloraSystem : ICellSystem
             }
         }
         for (int ri = 0; ri < _reg.Count; ri++)
-            while (_count(ri) < _reg[ri].floor) Plant(c, ri, c.RandomInShell(_reg[ri].inner + 15f, _reg[ri].outer - 15f), 0f);
+            while (_count(ri) < _reg[ri].floor) Plant(c, ri, DispersalPoint(c, ri), 0f);
         LastMs = Ms.Since(t0);
     }
 
@@ -108,6 +174,18 @@ sealed class FloraSystem : ICellSystem
     }
 
     static string RegionName(int ri) => ri switch { 0 => "inner", 1 => "middle", _ => "outer" };
+
+    /// <summary>C8: each planting pen, 1 when it holds a living plant of its region.</summary>
+    public void Occupancy(Cell c, List<(string, int, int)> into)
+    {
+        for (int ri = 0; ri < _pens.Count; ri++)
+            for (int k = 0; k < _pens[ri].Count; k++)
+            {
+                var pen = _pens[ri][k];
+                bool any = c.World.Plants.Any(pl => pl.Alive && pl.Region == ri && InPen(pen, pl.Heart));
+                into.Add(($"plant pen {RegionName(ri)}/{k}", any ? 1 : 0, 1));
+            }
+    }
     public void Strikers(Cell c, List<Striker> into) { }
     public double Held() => 0;
     public void Ledger(List<(string, double)> into) { }
@@ -131,7 +209,7 @@ sealed class FloraSystem : ICellSystem
 
 /// <summary>The three Sort swarms (SwarmFauna.cs: BuildSortCore, BuildTickSettings, SenseVessels, Feed, ResolveGoal,
 /// Starvation), each a SwarmTickJob run inline.</summary>
-sealed class SwarmSystem : ICellSystem
+sealed class SwarmSystem : ICellSystem, IOccupancy
 {
     sealed class One
     {
@@ -153,6 +231,10 @@ sealed class SwarmSystem : ICellSystem
         public SwarmMacroBody Macro = null!;
         public MacroSwarm Pop = null!;
         public long CollapsedTicks;
+        // round 11-10: the spawner's extinction recovery (SwarmFauna.Extinction + RandomLifeSpawner)
+        public int Start;
+        public float ExtinctSince = -1f;
+        public bool AnchorGone;
         public One(int cap) { Gone = new bool[cap]; Hits = new int[cap]; }
     }
 
@@ -208,37 +290,64 @@ sealed class SwarmSystem : ICellSystem
         _linger = Cell.F(_cfg, "ProxyLingerSeconds");
         // SwarmFaunaConfigSO.MacroLod (field default true when the asset has no key); SHOWCASE_LOD=0 runs the cell without it
         _lodOn = !_cfg.TryGetProperty("MacroLod", out _) || Cell.F(_cfg, "MacroLod") > 0.5f;
-        int planCap = plans.Max(p => p.N);
-        float membrane = c.Membrane * 0.97f / _us;
+        _planCap = plans.Max(p => p.N);
+        _membraneSim = c.Membrane * 0.97f / _us;
         int ri = 0;
         foreach (var r in c.L.GetProperty("regions").EnumerateArray())
         {
             var band = r.GetProperty("band");
             for (int s = 0; s < r.GetProperty("swarms").GetInt32(); s++)
             {
-                float inner = (float)band[0].GetDouble(), outer = (float)band[1].GetDouble();
-                var core = BuildSortCore(planCap, membrane, inner / _us, outer / _us, c.Seed * 101 + ri * 7 + s);
-                var one = new One(core.Cap) { Region = ri, Inner = inner, Outer = outer };
-                // SwarmFauna.StomachCapacity: StomachEggs x Density x mean(EggVolume)
-                float meanEgg = 0f; for (int e = 0; e < 4; e++) meanEgg += V4(_cfg, "EggVolume", e) * 0.25f;
-                one.StomachCap = Cell.F(_cfg, "StomachEggs") * density * meanEgg;
-                var anchorW = c.RandomInShell(inner + 20f, outer - 20f);
-                var tangent = Vector3.Cross(Vector3.Normalize(anchorW), c.Rng.OnUnitSphere());
-                if (tangent.LengthSquared() < 1e-4f) tangent = Vector3.UnitX;
-                core.Seed(r.GetProperty("start").GetInt32(), (int)Cell.F(_cfg, "SeedMembers") * density, anchorW / _us, Vector3.Normalize(tangent));
-                core.SwimTarget = anchorW / _us;
-                one.Job = new SwarmTickJob(core, TickSettings(), _hz) { SwimTarget = anchorW / _us };
-                one.Job.Prime();
-                one.Proxies = new ProxyPool((int)Cell.F(_cfg, "MaxProxies"), _linger);
-                one.Goal = anchorW;
-                one.LastFed = c.T;
-                one.Macro = new SwarmMacroBody(one.Job);
-                one.Pop = new MacroSwarm(this, one, c);
+                var one = Hatch(c, ri, r.GetProperty("start").GetInt32(), (float)band[0].GetDouble(), (float)band[1].GetDouble(), c.Seed * 101 + ri * 7 + s);
                 c.RegisterLod($"swarm/{Regions[ri]}", one.Pop, _lodOn);
                 _sw.Add(one);
             }
             ri++;
         }
+    }
+
+    readonly int _planCap;
+    readonly float _membraneSim;
+
+    /// <summary>SwarmFauna.Seed: one swarm hatched in region <paramref name="ri"/>'s band (the constructor, and the
+    /// spawner's re-hatch after an extinction).</summary>
+    One Hatch(Cell c, int ri, int start, float inner, float outer, int seed)
+    {
+        var core = BuildSortCore(_planCap, _membraneSim, inner / _us, outer / _us, seed);
+        var one = new One(core.Cap) { Region = ri, Inner = inner, Outer = outer, Start = start };
+        // SwarmFauna.StomachCapacity: StomachEggs x Density x mean(EggVolume)
+        float meanEgg = 0f; for (int e = 0; e < 4; e++) meanEgg += V4(_cfg, "EggVolume", e) * 0.25f;
+        one.StomachCap = Cell.F(_cfg, "StomachEggs") * Density * meanEgg;
+        var anchorW = HatchPoint(c, inner, outer);
+        var tangent = Vector3.Cross(Vector3.Normalize(anchorW), c.Rng.OnUnitSphere());
+        if (tangent.LengthSquared() < 1e-4f) tangent = Vector3.UnitX;
+        core.Seed(start, (int)Cell.F(_cfg, "SeedMembers") * Density, anchorW / _us, Vector3.Normalize(tangent));
+        core.SwimTarget = anchorW / _us;
+        one.Job = new SwarmTickJob(core, TickSettings(), _hz) { SwimTarget = anchorW / _us };
+        one.Job.Prime();
+        one.Proxies = new ProxyPool((int)Cell.F(_cfg, "MaxProxies"), _linger);
+        one.Goal = anchorW;
+        one.LastFed = c.T;
+        one.Macro = new SwarmMacroBody(one.Job);
+        one.Pop = new MacroSwarm(this, one, c);
+        return one;
+    }
+
+    /// <summary>SwarmFauna.Seed (round 11-10): the spawner's random point in the band (RandomPointInBand), moved to the
+    /// living plant of the band nearest it when there is one.</summary>
+    static Vector3 HatchPoint(Cell c, float inner, float outer)
+    {
+        var at = c.RandomInShell(inner + 20f, outer - 20f);
+        Plant? best = null; float bd = float.MaxValue;
+        foreach (var f in c.World.Plants)
+        {
+            if (!f.Alive) continue;
+            float r = f.Heart.Length();
+            if (r < inner || r > outer) continue;
+            float d = Vector3.DistanceSquared(f.Heart, at);
+            if (d < bd) { bd = d; best = f; }
+        }
+        return best != null ? best.Heart : at;
     }
 
     /// <summary>SwarmFauna.BuildSortCore, field for field.</summary>
@@ -318,6 +427,37 @@ sealed class SwarmSystem : ICellSystem
     static float Med(List<float> v) { v.Sort(); return v[v.Count / 2]; }
 
     public int Cap(int k) => _sw[k].Job.Core.Cap;
+
+    public int Reseeds;
+
+    /// <summary>SwarmFauna.Extinction, every tick: no member and no proxy for ExtinctLingerSeconds and the anchor leaves.</summary>
+    public void TrackExtinction(Cell c)
+    {
+        foreach (var one in _sw)
+        {
+            if (one.AnchorGone) continue;
+            if (one.Job.AliveCount > 0 || one.Proxies.Count > 0) { one.ExtinctSince = -1f; continue; }
+            if (one.ExtinctSince < 0f) { one.ExtinctSince = c.T; continue; }
+            if (c.T - one.ExtinctSince >= Cell.F(_cfg, "ExtinctLingerSeconds")) one.AnchorGone = true;
+        }
+    }
+
+    /// <summary>RandomLifeSpawner.SpawnFaunaTypeLoop_Random's tick for each region's swarm config: a region whose anchor
+    /// has left is below its PopulationSize, so the seeder hatches a fresh swarm (SwarmFauna.Seed: at the band's plant
+    /// nearest a random point of the band). Its counters carry on so the run's report is the region's.</summary>
+    public void SpawnerTick(Cell c)
+    {
+        for (int k = 0; k < _sw.Count; k++)
+        {
+            var old = _sw[k];
+            if (!old.AnchorGone) continue;
+            Reseeds++;
+            var one = Hatch(c, old.Region, old.Start, old.Inner, old.Outer, c.Seed * 101 + old.Region * 7 + 1000 * Reseeds);
+            one.Rammed = old.Rammed; one.Starved = old.Starved; one.PeakAlive = old.PeakAlive; one.CollapsedTicks = old.CollapsedTicks;
+            c.ReplaceLod($"swarm/{Regions[old.Region]}", old.Pop, one.Pop);
+            _sw[k] = one;
+        }
+    }
 
     public void Tick(Cell c)
     {
@@ -550,6 +690,25 @@ sealed class SwarmSystem : ICellSystem
         foreach (var one in _sw) into.Add(($"swarm/{Regions[one.Region]}", one.Job.AliveCount, one.Job.Core.Cap));
     }
 
+    /// <summary>C8: members inside the swarm's band (a collapsed swarm's members are its macro state - not counted).</summary>
+    public void Occupancy(Cell c, List<(string, int, int)> into)
+    {
+        foreach (var one in _sw)
+        {
+            if (one.Macro is { Collapsed: true }) continue;
+            int n = 0, inPen = 0;
+            var inst = one.Job.Instances;
+            for (int i = 0; i < inst.Length; i++)
+            {
+                if (!inst[i].Alive) continue;
+                n++;
+                float r = inst[i].CurPos.Length();
+                if (r >= one.Inner && r <= one.Outer) inPen++;
+            }
+            into.Add(($"swarm/{Regions[one.Region]}", inPen, n));
+        }
+    }
+
     public void Strikers(Cell c, List<Striker> into)
     {
         for (int s = 0; s < _sw.Count; s++)
@@ -615,7 +774,7 @@ sealed class SwarmSystem : ICellSystem
 
 /// <summary>The cell's substrate (SubstrateCellHost + SubstrateFauna): one SubstrateCore, seven populations, one
 /// SubstrateTickJob run inline. Feed / Hunt / ShedStarving mirror SubstrateFauna; vessels are sensed cell-wide.</summary>
-sealed class SubstrateSystem : ICellSystem
+sealed class SubstrateSystem : ICellSystem, IOccupancy
 {
     sealed class Pop
     {
@@ -630,6 +789,11 @@ sealed class SubstrateSystem : ICellSystem
         public Vector3 Centre;
         public float Extent;
         public bool Collapsed;
+        // round 11-10: the spawner's extinction recovery (SubstrateFauna.Extinction + RandomLifeSpawner)
+        public Action SeedNow = null!;
+        public float Linger, ExtinctSince = -1f;
+        public bool AnchorGone;
+        public int Reseeds;
     }
 
     /// <summary>SubstrateFauna's IMacroPopulation, minus Unity: freeze the block (SubstratePopulation.Frozen, set between
@@ -720,7 +884,9 @@ sealed class SubstrateSystem : ICellSystem
             if (!string.IsNullOrEmpty(only) && !only.Split(',').Contains(key)) continue;
             var a = r.GetProperty("asset");
             var band = r.GetProperty("band");
-            var P = SubstrateResearch.ByName(key, game: true);
+            // the SHIPPED species asset's params (what SubstrateFauna reads), not the C# port: a demo override such as the
+            // pack's RingHoldSeconds 6 lives only in the asset (author_substrate_fauna.DEMO_OVERRIDES)
+            var P = ShippedSpecies(key, r.GetProperty("species"));
             float inner = (float)band[0].GetDouble(), outer = (float)band[1].GetDouble();
             int q = Core.AddPopulation(P, r.GetProperty("element").GetInt32(), inner, outer);
             if (q < 0) throw new Exception($"substrate: no room for {key}");
@@ -748,7 +914,10 @@ sealed class SubstrateSystem : ICellSystem
             pop.Lod = new MacroSub(this, pop);
             _pops.Add(pop);
             c.RegisterLod($"substrate/{key}", pop.Lod, Cell.F(a, "macroLod") > 0.5f);
-            // SubstrateFauna.Seed: an ambusher among the flora hearts in its band, else around the anchor
+            // SubstrateFauna.Seed: an ambusher among the flora hearts in its band, else around the anchor. A local
+            // function: the spawner's re-hatch after an extinction (SpawnerTick) seeds a population exactly this way.
+            void SeedNow()
+            {
             int n = Math.Min(r.GetProperty("seed").GetInt32(), pop.Cap);
             double before = Core.MassIn;
             if (r.GetProperty("at_flora").GetInt32() != 0)
@@ -798,12 +967,95 @@ sealed class SubstrateSystem : ICellSystem
                 Core.Seed(q, n, anchor, Cell.F(a, "seedSpread"));
             }
             Seeded += Core.MassIn - before;
+            }
+            pop.SeedNow = SeedNow;
+            pop.Linger = Cell.F(a, "extinctLingerSeconds");
+            SeedNow();
         }
         _gone = new bool[Core.Capacity];
         _starving = new bool[Core.Capacity];
         _booked = new float[Core.Capacity];
         _bookedRam = new bool[Core.Capacity];
         Job.Prime();
+    }
+
+    public int Reseeds;
+
+    /// <summary>SubstrateFauna.Extinction, every tick: no agent and no proxy for the species' ExtinctLingerSeconds and the
+    /// anchor leaves (its block is freed).</summary>
+    public void TrackExtinction(Cell c)
+    {
+        foreach (var p in _pops)
+        {
+            if (p.AnchorGone) continue;
+            if (Job.PopAlive[p.Index] > 0 || p.Proxies.Count > 0) { p.ExtinctSince = -1f; continue; }
+            if (p.ExtinctSince < 0f) { p.ExtinctSince = c.T; continue; }
+            if (c.T - p.ExtinctSince >= p.Linger) p.AnchorGone = true;
+        }
+    }
+
+    /// <summary>RandomLifeSpawner's tick for each substrate species config: a species whose anchor left is below its
+    /// PopulationSize (1), so the seeder hatches a fresh anchor, which seeds its population by SubstrateFauna.Seed's
+    /// rules (at the band's flora, in clusters, or at a random point of the band).</summary>
+    public void SpawnerTick(Cell c)
+    {
+        foreach (var p in _pops)
+        {
+            if (!p.AnchorGone) continue;
+            if (p.Collapsed) p.Lod.Expand();
+            p.SeedNow();
+            p.AnchorGone = false; p.ExtinctSince = -1f; p.Reseeds++; Reseeds++;
+        }
+    }
+
+    /// <summary>Fields whose shipped value differs from <see cref="SubstrateResearch.ByName"/>'s game port, per species
+    /// (reported, so a demo override is visible in the run).</summary>
+    public readonly List<string> AssetOverrides = new();
+
+    /// <summary>A SubstrateSpeciesParams filled from the species asset's serialized `species:` block (layout.py
+    /// yaml_species): every serialized field must name a field of the class (an unknown one fails the run - the asset
+    /// and the class have drifted), and every field of the class must be serialized.</summary>
+    SubstrateSpeciesParams ShippedSpecies(string key, JsonElement sp)
+    {
+        var port = SubstrateResearch.ByName(key, game: true);
+        var P = port.Clone();
+        foreach (var f in typeof(SubstrateSpeciesParams).GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance))
+        {
+            if (f.IsInitOnly || f.IsLiteral) continue;
+            if (!sp.TryGetProperty(f.Name, out var v)) throw new Exception($"substrate {key}: the species asset has no {f.Name}");
+            if (f.FieldType == typeof(SubstrateRegime))
+            {
+                object reg = f.GetValue(P)!;
+                foreach (var g in typeof(SubstrateRegime).GetFields())
+                {
+                    if (!v.TryGetProperty(g.Name, out var gv)) throw new Exception($"substrate {key}: {f.Name}.{g.Name} missing");
+                    g.SetValue(reg, ToField(g.FieldType, gv));
+                }
+                f.SetValue(P, reg);
+                continue;
+            }
+            f.SetValue(P, ToField(f.FieldType, v));
+        }
+        foreach (var prop in sp.EnumerateObject())
+            if (typeof(SubstrateSpeciesParams).GetField(prop.Name) == null)
+                throw new Exception($"substrate {key}: the species asset's {prop.Name} is not a SubstrateSpeciesParams field");
+        // what the asset changes from the port (a demo override, or drift author_substrate_fauna --check would catch)
+        var a = new Dictionary<string, float>(); var b = new Dictionary<string, float>();
+        port.Visit((n, x) => a[n] = x); port.VisitPrimitives((n, x) => a[n] = x);
+        P.Visit((n, x) => b[n] = x); P.VisitPrimitives((n, x) => b[n] = x);
+        foreach (var kv in b) if (a.TryGetValue(kv.Key, out float pv) && pv != kv.Value) AssetOverrides.Add($"{key}.{kv.Key} {pv:G4}->{kv.Value:G4}");
+        return P;
+    }
+
+    static object? ToField(Type t, JsonElement v)
+    {
+        if (t == typeof(float)) return (float)v.GetDouble();
+        if (t == typeof(int)) return (int)v.GetDouble();
+        if (t == typeof(bool)) return v.GetDouble() != 0;
+        if (t == typeof(string)) return v.ValueKind == JsonValueKind.String ? (v.GetString() == "''" ? "" : v.GetString()) : v.GetRawText();
+        if (t == typeof(float[]))
+            return v.ValueKind == JsonValueKind.Array ? v.EnumerateArray().Select(x => (float)x.GetDouble()).ToArray() : Array.Empty<float>();
+        throw new Exception("species field of unsupported type " + t);
     }
 
     /// <summary>The food a plant heart stands for in the field: SubstrateCellHost.SenseFood's one unit per heart. Env
@@ -930,7 +1182,10 @@ sealed class SubstrateSystem : ICellSystem
                 // a contact with the danger plate at the species' weight (round 11-11: a mobber's peck is a 0.25 drain;
                 // a weight-0 plate - the leech - is never dangerous, SubstrateAgentFauna.SetDanger)
                 float w = Core.Pops[PopOf(e.Index).Index].P.ContactWeight;
-                if (w > 0f) c.AddContact(e.Other, PopOf(e.Index).Key, Job.Instances[e.Index].CurPos, weight: w);
+                // rated on the agent that BIT (the event's first biter), not on whichever of its class is nearest the pilot:
+                // a herd member grazing beside you is not the bull that charged you
+                if (w > 0f) c.AddContact(e.Other, PopOf(e.Index).Key, Job.Instances[e.Index].CurPos,
+                                         telegraphed: c.ArmedFor(PopOf(e.Index).Key, e.Index), weight: w);
             }
             else if (e.Kind == SubstrateEventKind.Sip && e.Other >= 0 && e.Other < c.Pilots.Count)
                 // SubstrateFauna.Sip: a rider drains its host through the danger effect's ApplyContact, no collision
@@ -1040,6 +1295,27 @@ sealed class SubstrateSystem : ICellSystem
         foreach (var p in _pops) into.Add(($"substrate/{p.Key}", Job.PopAlive[p.Index], p.Cap));
     }
 
+    /// <summary>C8: members inside the population's pen - its band, and its sector when it has one (SubstrateCore.SetSector).</summary>
+    public void Occupancy(Cell c, List<(string, int, int)> into)
+    {
+        foreach (var p in _pops)
+        {
+            var pop = Core.Pops[p.Index];
+            int n = 0, inPen = 0;
+            for (int i = pop.Start; i < pop.Start + pop.Cap; i++)
+            {
+                if (!Core.Alive[i]) continue;
+                n++;
+                var at = Core.Pos[i];
+                float r = at.Length();
+                if (r < pop.BandInner || r > pop.BandOuter) continue;
+                if (pop.HasSector && Vector3.Dot(at, pop.SectorAxis) < pop.SectorCos * r) continue;
+                inPen++;
+            }
+            into.Add(($"substrate/{p.Key}", inPen, n));
+        }
+    }
+
     public void Strikers(Cell c, List<Striker> into)
     {
         foreach (var pop in _pops)
@@ -1048,7 +1324,11 @@ sealed class SubstrateSystem : ICellSystem
                 if (!Core.Alive[i]) continue;
                 var at = Core.Pos[i];
                 if (!c.NearAnyPilot(at, 400f)) continue;
-                into.Add(new Striker { Cls = pop.Key, Key = i, Pos = at, Intent = Core.Phase[i] });
+                // intent: the gregarious phase - and, for a RAMPED role (a bull's head-down, a mobber's pull-up), the
+                // windup itself, which is that species' telegraph (Docs/SUBSTRATE_FAUNA.md §9: RampS "the telegraph"); a
+                // bull arms on sight, before its herd's phase has flipped, so its phase alone read its charge as unwarned
+                float intent = Core.Ramp[i] > 0f ? 1f : Core.Phase[i];
+                into.Add(new Striker { Cls = pop.Key, Key = i, Pos = at, Intent = intent });
             }
     }
 
@@ -1071,7 +1351,8 @@ sealed class SubstrateSystem : ICellSystem
     }
 
     public string Report() => string.Join(", ", _pops.Select(p =>
-        $"{p.Key} {Job.PopAlive[p.Index]}/{p.Cap} (peak {p.Peak}, bites {p.Bitten} of {p.Asked} asked, births {Core.Pops[p.Index].Births}, rammed {p.Rammed}, starved {p.Starved}, preyed {p.Preyed}, proxies peak {p.Proxies.Peak})"));
+        $"{p.Key} {Job.PopAlive[p.Index]}/{p.Cap} (peak {p.Peak}, bites {p.Bitten} of {p.Asked} asked, births {Core.Pops[p.Index].Births}, rammed {p.Rammed}, starved {p.Starved}, preyed {p.Preyed}, proxies peak {p.Proxies.Peak})")) +
+        (AssetOverrides.Count > 0 ? "; shipped assets differ from the C# ports in " + string.Join(", ", AssetOverrides) : "");
 
     public void Snapshot(Utf8JsonWriter w)
     {
@@ -1092,16 +1373,19 @@ sealed class SubstrateSystem : ICellSystem
 // ══════════════════════════════════════════════════════════════════════════════════════════════ builders
 
 /// <summary>The fortress colony and the thief nest (BuilderColonyFauna) on the shared world.</summary>
-sealed class BuilderSystem : ICellSystem
+sealed class BuilderSystem : ICellSystem, IOccupancy
 {
     public string Name => "builders";
     public double StepHz => _hz;
     public double LastMs { get; private set; }
     public readonly BuilderColonyCore Fort;
-    public readonly ThiefNestCore Thief;
+    // round 11-10: the thief nest and the wearer colony are re-founded by the spawner after an extinction (SpawnerTick),
+    // so these are replaced, not readonly
+    public ThiefNestCore Thief;
     /// <summary>Round 11-10's WEARER colony (BuilderColonyFauna species Wearers = 2): founded in its band, roams the cell.</summary>
-    public readonly WearerCore? Wear;
-    public readonly Vector3 FortAnchor, Nest, WearAnchor;
+    public WearerCore? Wear;
+    public readonly Vector3 FortAnchor;
+    public Vector3 Nest, WearAnchor;
     readonly ProxyPool? _wearProxies;
     readonly float _wearEngage;
     readonly int _maxHearts;
@@ -1111,6 +1395,7 @@ sealed class BuilderSystem : ICellSystem
     public double Founders, DeadStomachs;
     public int ReuseSameStep, Rammed;
     readonly int _maxWorkers;
+    readonly (float lo, float hi) _fortBand;
     const int ColonyDomain = 2;
 
     public BuilderSystem(Cell c, Func<Vector3, float, Vector3> outsideGroves)
@@ -1126,18 +1411,21 @@ sealed class BuilderSystem : ICellSystem
         float sense = Cell.F(fc, "Sense");
         // BuilderColonyFauna: the band is where the colony LIVES; it forages a worker's sense beyond it either side
         float bandInner = MathF.Max(0f, (float)fb[0].GetDouble() - sense), bandOuter = (float)fb[1].GetDouble() + sense;
+        _fortBand = (bandInner, bandOuter);
         FortAnchor = c.RandomInShell((float)fb[0].GetDouble(), (float)fb[1].GetDouble());
         _maxWorkers = (int)Cell.F(fc, "MaxWorkers");
         Fort = new BuilderColonyCore(c.World, ColonyParams(fc, c.Membrane, bandInner, bandOuter), FortAnchor, ColonyDomain, 1, c.Seed * 13 + 1);
         var tb = thief.GetProperty("band");
         var spawn = c.RandomInShell((float)tb[0].GetDouble(), (float)tb[1].GetDouble());
         Nest = FindNestPlant(c, spawn, Cell.F(tc, "ScoutRange"), outsideGroves);
+        _tc = tc; _tb = tb; _outside = outsideGroves;
         Thief = new ThiefNestCore(c.World, ThiefParams(tc, c.Membrane), Nest, ColonyDomain, 2, c.Seed * 13 + 2);
         var wear = rows.FirstOrDefault(r => r.GetProperty("species").GetInt32() == 2);
         if (wear.ValueKind == JsonValueKind.Object)
         {
             var wc = wear.GetProperty("config");
             var wb = wear.GetProperty("band");
+            _wc = wc; _wb = wb;
             WearAnchor = c.RandomInShell((float)wb[0].GetDouble(), (float)wb[1].GetDouble());
             _maxHearts = (int)Cell.F(wc, "MaxWearerHearts");
             Wear = new WearerCore(c.World, WearerParams(wc, c.Membrane), WearAnchor, ColonyDomain, 3, c.Seed * 13 + 3);
@@ -1156,6 +1444,74 @@ sealed class BuilderSystem : ICellSystem
             _wearC = MakeColony(c, "wearers", wear.GetProperty("config"), Vector3.Zero, c.Membrane, _wearProxies!,
                                 () => Wear.CanRoost, () => Wear.RoostSecondsLeft, Wear.Roost, Wear.Pos, Wear.Alive);
         _fortEngage = Cell.F(fc, "EngageRadius"); _thiefEngage = Cell.F(tc, "EngageRadius");
+    }
+
+    // ── round 11-10: extinction recovery (BuilderColonyFauna.Extinction + RandomLifeSpawner) ─────────────────────────
+    readonly JsonElement _tc, _tb, _wc, _wb;
+    readonly Func<Vector3, float, Vector3> _outside;
+    float _thiefSince = -1f, _wearSince = -1f;
+    bool _thiefGone, _wearGone;
+    public int ThiefReseeds, WearReseeds;
+    double _retiredHeld, _retiredEaten, _retiredMetab;
+    int _retiredThiefKills, _retiredThiefBirths, _retiredWearKills, _retiredWearBirths;
+
+    static float Linger(JsonElement cfg) => cfg.TryGetProperty("ExtinctLingerSeconds", out var v) ? (float)v.GetDouble() : 8f;
+
+    /// <summary>BuilderColonyFauna.Extinction, every tick: no member, no proxy for ExtinctLingerSeconds and the anchor
+    /// leaves. (The fortress has never gone extinct in a run; it is reported by C4 if it does.)</summary>
+    public void TrackExtinction(Cell c)
+    {
+        static void Track(Cell c, bool empty, float linger, ref float since, ref bool gone)
+        {
+            if (gone) return;
+            if (!empty) { since = -1f; return; }
+            if (since < 0f) { since = c.T; return; }
+            if (c.T - since >= linger) gone = true;
+        }
+        Track(c, Thief.AliveCount == 0 && _thiefProxies.Count == 0, Linger(_tc), ref _thiefSince, ref _thiefGone);
+        if (Wear != null) Track(c, Wear.AliveCount == 0 && _wearProxies!.Count == 0, Linger(_wc), ref _wearSince, ref _wearGone);
+    }
+
+    /// <summary>RandomLifeSpawner's tick for each builder config: a colony whose anchor left is re-founded at a random
+    /// point of its band (the nest perched on the nearest plant, BuilderColonyFauna.Seed). The old anchor's OnDestroy
+    /// released its structure (hoard, lair) as loose prisms, and its books (metabolised, birth bills, eaten) stay in the
+    /// ledger; the founders' stomachs are a new source.</summary>
+    public void SpawnerTick(Cell c)
+    {
+        if (_thiefGone)
+        {
+            foreach (int h in Thief.Hoard) c.World.SetBuilt(h, Thief.ColonyId, -(h + 1), false);
+            _retiredHeld += Thief.StomachTotal + Thief.Metabolised + 0.5 * Thief.BirthPaid;
+            _retiredEaten += Thief.EatenVolume; _retiredMetab += Thief.Metabolised;
+            _retiredThiefKills += Thief.Kills; _retiredThiefBirths += Thief.Births;
+            ThiefReseeds++;
+            var spawn = c.RandomInShell((float)_tb[0].GetDouble(), (float)_tb[1].GetDouble());
+            Nest = FindNestPlant(c, spawn, Cell.F(_tc, "ScoutRange"), _outside);
+            Thief = new ThiefNestCore(c.World, ThiefParams(_tc, c.Membrane), Nest, ColonyDomain, 2, c.Seed * 13 + 2 + 100 * ThiefReseeds);
+            Founders += Thief.StomachTotal;
+            var old = _thiefC;
+            _thiefC = MakeColony(c, "thieves", _tc, Nest, Cell.F(_tc, "Territory") + Cell.F(_tc, "ScoutRange"), _thiefProxies,
+                                 () => Thief.CanRoost, () => Thief.RoostSecondsLeft, Thief.Roost, Thief.Pos, Thief.Alive, register: false);
+            c.ReplaceLod("thieves", old, _thiefC);
+            _thiefGone = false; _thiefSince = -1f;
+        }
+        if (_wearGone && Wear != null)
+        {
+            foreach (int h in Wear.Lair) c.World.SetBuilt(h, Wear.ColonyId, -(h + 1), false);
+            _retiredHeld += Wear.StomachTotal + Wear.Metabolised;
+            _retiredEaten += Wear.EatenVolume; _retiredMetab += Wear.Metabolised;
+            _retiredWearKills += Wear.Kills; _retiredWearBirths += Wear.Births;
+            WearReseeds++;
+            WearAnchor = c.RandomInShell((float)_wb[0].GetDouble(), (float)_wb[1].GetDouble());
+            Wear = new WearerCore(c.World, WearerParams(_wc, c.Membrane), WearAnchor, ColonyDomain, 3, c.Seed * 13 + 3 + 100 * WearReseeds);
+            Founders += Wear.StomachTotal;
+            var old = _wearC!;
+            var w = Wear;
+            _wearC = MakeColony(c, "wearers", _wc, Vector3.Zero, c.Membrane, _wearProxies!,
+                                () => w.CanRoost, () => w.RoostSecondsLeft, w.Roost, w.Pos, w.Alive, register: false);
+            c.ReplaceLod("wearers", old, _wearC);
+            _wearGone = false; _wearSince = -1f;
+        }
     }
 
     /// <summary>BuilderColonyConfigSO.ToColonyParams.</summary>
@@ -1285,11 +1641,12 @@ sealed class BuilderSystem : ICellSystem
         public void MacroTick(float dt) { if (Collapsed) Roost(dt); }
     }
 
-    readonly Colony _fortC, _thiefC;
-    readonly Colony? _wearC;
+    readonly Colony _fortC;
+    Colony _thiefC;
+    Colony? _wearC;
 
     Colony MakeColony(Cell c, string name, JsonElement cfg, Vector3 senseFrom, float senseRadius, ProxyPool pool,
-                      Func<bool> canRoost, Func<float> left, Action<float> roost, Vector3[] pos, bool[] alive)
+                      Func<bool> canRoost, Func<float> left, Action<float> roost, Vector3[] pos, bool[] alive, bool register = true)
     {
         var bs = cfg.GetProperty("BodyScale");
         var col = new Colony
@@ -1300,7 +1657,7 @@ sealed class BuilderSystem : ICellSystem
             Pad = 20f + (float)bs[2].GetDouble() + 2f,
         };
         bool on = !cfg.TryGetProperty("MacroLod", out _) || Cell.F(cfg, "MacroLod") > 0.5f;
-        c.RegisterLod(name, col, on);
+        if (register) c.RegisterLod(name, col, on);
         return col;
     }
 
@@ -1384,6 +1741,28 @@ sealed class BuilderSystem : ICellSystem
 
     public int Colliders(Cell c) => 2 * (_fortProxies.Count + _thiefProxies.Count + (_wearProxies?.Count ?? 0));
 
+    /// <summary>C8: members inside the band each colony lives in, widened by a worker's forage sense either side (the
+    /// band the core is given - BuilderColonyFauna). Thieves and wearers range the cell by design (a raid, a hunt): their
+    /// pen is reported, not asserted (Program.Summary).</summary>
+    public void Occupancy(Cell c, List<(string, int, int)> into)
+    {
+        void Count(string cls, int cap, Func<int, bool> alive, Func<int, Vector3> pos, float lo, float hi)
+        {
+            int n = 0, inPen = 0;
+            for (int k = 0; k < cap; k++)
+            {
+                if (!alive(k)) continue;
+                n++;
+                float r = pos(k).Length();
+                if (r >= lo && r <= hi) inPen++;
+            }
+            into.Add((cls, inPen, n));
+        }
+        Count("fortress/workers", Fort.Cap, k => Fort.Alive[k], k => Fort.Pos[k], _fortBand.lo, _fortBand.hi);
+        Count("thieves", Thief.Cap, k => Thief.Alive[k], k => Thief.Pos[k], (float)_tb[0].GetDouble(), (float)_tb[1].GetDouble());
+        if (Wear != null) Count("wearers/hearts", Wear.Cap, k => Wear.Alive[k], k => Wear.Pos[k], (float)_wb[0].GetDouble(), (float)_wb[1].GetDouble());
+    }
+
     public void Census(List<(string, int, int)> into)
     {
         into.Add(("fortress/workers", Fort.AliveCount, _maxWorkers));
@@ -1408,13 +1787,14 @@ sealed class BuilderSystem : ICellSystem
     /// A wearer's birth is paid from EATEN moult volume straight into the newborn's stomach (the overflow is metabolised),
     /// so its account is stomachs + metabolised, with no body half.</summary>
     public double Held() => Fort.StomachTotal + Thief.StomachTotal + DeadStomachs + Fort.Metabolised + Thief.Metabolised
-                            + 0.5 * (Fort.BirthPaid + Thief.BirthPaid) + (Wear != null ? Wear.StomachTotal + Wear.Metabolised : 0.0);
+                            + 0.5 * (Fort.BirthPaid + Thief.BirthPaid) + (Wear != null ? Wear.StomachTotal + Wear.Metabolised : 0.0)
+                            + _retiredHeld;
 
     public void Ledger(List<(string, double)> into)
     {
         into.Add(("builders: founders' stomachs (source)", Founders));
-        into.Add(("builders: eaten (fortress + thieves + wearers)", Fort.EatenVolume + Thief.EatenVolume + (Wear?.EatenVolume ?? 0f)));
-        into.Add(("builders: metabolised (declared exit)", Fort.Metabolised + Thief.Metabolised + (Wear?.Metabolised ?? 0f)));
+        into.Add(("builders: eaten (fortress + thieves + wearers, + re-founded colonies' predecessors)", Fort.EatenVolume + Thief.EatenVolume + (Wear?.EatenVolume ?? 0f) + _retiredEaten));
+        into.Add(("builders: metabolised (declared exit)", Fort.Metabolised + Thief.Metabolised + (Wear?.Metabolised ?? 0f) + _retiredMetab));
         into.Add(("builders: stomachs dead with their owners", DeadStomachs));
         into.Add(("builders: same-step slot re-uses (booked from BuilderDeath.Stomach)", ReuseSameStep));
     }
@@ -1422,11 +1802,13 @@ sealed class BuilderSystem : ICellSystem
     public string Report() =>
         $"fortress {Fort.AliveCount}/{_maxWorkers} built {Fort.Built} placed {Fort.Placed} repairs {Fort.Repairs} kills {Fort.Kills} starved {Fort.Starved} " +
         $"stings {Fort.StingCount} walls rammed {Rammed}; thieves {Thief.AliveCount}/{Thief.Cap} hoard {Thief.HoardCount} steals {Thief.Steals} " +
-        $"raided {Thief.Raided} recaptured {Thief.Recaptured} kills {Thief.Kills} starved {Thief.Starved}; " +
+        $"raided {Thief.Raided} recaptured {Thief.Recaptured} kills {Thief.Kills} starved {Thief.Starved} births {Thief.Births}" +
+        (ThiefReseeds > 0 ? $" (nest re-founded {ThiefReseeds}x; earlier nests: kills {_retiredThiefKills}, births {_retiredThiefBirths})" : "") + "; " +
         (Wear == null ? "" :
         $"wearers {Wear.AliveCount}/{_maxHearts} creatures {Wear.Creatures} largest {Wear.Largest} (max {Wear.MaxBody}) worn steals {Wear.WornSteals} " +
         $"(trail {Wear.WornTrail}) fusions {Wear.Fusions} lunges {Wear.Lunges} hits {Wear.Hits} stripped {Wear.Stripped} moults {Wear.SatiationMoults}+{Wear.HurtMoults} " +
-        $"lair {Wear.LairCount} births {Wear.Births} kills {Wear.Kills} starved {Wear.Starved}; ") +
+        $"lair {Wear.LairCount} births {Wear.Births} kills {Wear.Kills} starved {Wear.Starved}" +
+        (WearReseeds > 0 ? $" (re-founded {WearReseeds}x; earlier colonies: kills {_retiredWearKills}, births {_retiredWearBirths})" : "") + "; ") +
         $"proxies peak {_fortProxies.Peak}+{_thiefProxies.Peak}+{_wearProxies?.Peak ?? 0}";
 
     public void Snapshot(Utf8JsonWriter w)

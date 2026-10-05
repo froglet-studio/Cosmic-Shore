@@ -155,6 +155,23 @@ namespace CosmicShore.Utility
                  "must be able to do that without forking the species' element assets.")]
         [Min(-1)] public int MaxTotalSpawnedObjectsOverride = -1;
 
+        [Tooltip("Round 11-10 (Docs/SWARM_FAUNA.md §27): a dispersed plant of this species roots at the best of several " +
+                 "random points of its planting band - the one farthest from every living plant of the same species in " +
+                 "the cell (Mitchell's best candidate) - so a forest of a few plants covers its band instead of clumping. " +
+                 "The Swarm cell pens grazers to sectors of a 6-10 plant shell: drawn at random, one sector in two held no " +
+                 "plant at all, and its herd starved. Off = one random point, as before. An offspring is unaffected (it " +
+                 "roots beside its parent).")]
+        public bool SpreadPlanting = false;
+
+        [Tooltip("Round 11-10 (Docs/SWARM_FAUNA.md §27): the PENS a dispersed plant of this species may root in. Empty = " +
+                 "anywhere in its planting band, as before. Non-empty: each new plant goes to the pen holding the FEWEST " +
+                 "living plants of the species (ties at random) and roots in it (best of several points when " +
+                 "SpreadPlanting is set), so every pen keeps a plant once the forest has as many plants as it has pens. " +
+                 "The Swarm cell pens the Middle forest to the three grazer sectors and the mobbers' roost gap: drawn over " +
+                 "the whole band, a sector or the gap still came up empty in one seed in four, and its population starved. " +
+                 "An offspring is unaffected (it roots beside its parent).")]
+        public List<FloraPlantingPen> PlantingPens = new();
+
         /// <summary>
         /// The cell-level override block, expressed as an ordinary <see cref="FloraVariantTuning"/>
         /// so it applies through the one existing path (<see cref="Flora.ApplyVariantTuning"/>) with
@@ -274,6 +291,28 @@ namespace CosmicShore.Utility
     /// 20x1x1 / 9x3.4x1.5), grow period (0.5 / 0.3 / 0.8 / 0.15), shield period
     /// (1 / 0 / 0 / 0), live-prism budget (1000 / 1500 / 800 / 1000), plant radius fraction.
     /// </summary>
+    /// <summary>
+    /// One planting PEN of a <see cref="FloraConfigurationSO.PlantingPens"/> list: a shell about the cell centre between two
+    /// fractions of the membrane radius, optionally narrowed to a cone about an axis (a SECTOR, as a substrate species'
+    /// sector pen - SubstrateCore.SetSector).
+    /// </summary>
+    [System.Serializable]
+    public struct FloraPlantingPen
+    {
+        [Tooltip("Sector axis in the cell's frame (need not be normalised). Zero = the whole shell, no sector.")]
+        public Vector3 Axis;
+
+        [Tooltip("Sector half-angle in degrees about Axis. Ignored when Axis is zero.")]
+        [Range(0f, 180f)] public float HalfAngle;
+
+        [Tooltip("INNER edge of the pen, as a fraction of the cell's membrane radius (clamped outside a control-zone " +
+                 "nucleus, as the planting band is).")]
+        [Min(0f)] public float InnerFraction;
+
+        [Tooltip("OUTER edge of the pen, as a fraction of the cell's membrane radius.")]
+        [Min(0f)] public float OuterFraction;
+    }
+
     [System.Serializable]
     public class FloraVariantTuning
     {

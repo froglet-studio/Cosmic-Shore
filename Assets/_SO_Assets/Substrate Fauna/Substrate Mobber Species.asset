@@ -174,7 +174,7 @@ MonoBehaviour:
     RingHoldSeconds: 0
   seedCount: 0
   seedSpread: 30
-  seedAtFlora: 0
+  seedAtFlora: 1
   seedClusters: 5
   sectorAxis: {x: 1, y: 0, z: 0}
   sectorHalfAngle: 0

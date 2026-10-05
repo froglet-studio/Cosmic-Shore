@@ -43,3 +43,5 @@ MonoBehaviour:
     PlantRadiusCellFractionMin: -1
   PlantRadiusCellFractionMaxOverride: 0.9
   PlantRadiusCellFractionMinOverride: 0.758
+  SpreadPlanting: 1
+  PlantingPens: []

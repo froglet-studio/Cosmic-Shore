@@ -66,19 +66,26 @@ namespace CosmicShore.Gameplay
         // plants at r ~ 840 and starved outside its band. A banded population reads a food field built only from the food
         // inside ITS band (Fields.FoodGroup); populations that share a band share the field, and an unbanded population
         // reads the cell-wide channel exactly as before.
-        readonly List<(float inner, float outer, float[] f, Vector3[] grad)> _bands = new();
+        // round 11-11 sectors: a population penned to a SECTOR of its band (the stampede, the leech, the leviathan) reads
+        // the food of its band INSIDE its sector - a field built from the whole shell led a herd to plants outside its
+        // pen, where the sector pull turned it back
+        readonly List<(float inner, float outer, Vector3 axis, float cos, float[] f, Vector3[] grad)> _bands = new();
         readonly List<bool> _bandUsed = new();
         bool _allUsed = true;
 
         /// <summary>The food field for a population penned to [<paramref name="inner"/>, <paramref name="outer"/>] (sim
         /// units from the centre): 0 = the cell-wide field (no band), otherwise one shared per distinct band.</summary>
-        public int FoodGroup(float inner, float outer)
+        public int FoodGroup(float inner, float outer) => FoodGroup(inner, outer, Vector3.Zero, 0f);
+
+        /// <summary>The food field for a population penned to a band and, with a non-zero <paramref name="axis"/>, to the
+        /// sector of directions within acos(<paramref name="sectorCos"/>) of it.</summary>
+        public int FoodGroup(float inner, float outer, Vector3 axis, float sectorCos)
         {
-            if (outer <= 0f) return 0;
+            if (outer <= 0f && axis == Vector3.Zero) return 0;
             for (int b = 0; b < _bands.Count; b++)
-                if (_bands[b].inner == inner && _bands[b].outer == outer) return b + 1;
+                if (_bands[b].inner == inner && _bands[b].outer == outer && _bands[b].axis == axis && _bands[b].cos == sectorCos) return b + 1;
             int n = G * G * G;
-            _bands.Add((inner, outer, new float[n], new Vector3[n]));
+            _bands.Add((inner, outer, axis, sectorCos, new float[n], new Vector3[n]));
             _bandUsed.Add(false);
             return _bands.Count;
         }
@@ -96,13 +103,14 @@ namespace CosmicShore.Gameplay
         /// <summary>The band of a food group (inner, outer); (0, 0) for the cell-wide field.</summary>
         public (float inner, float outer) FoodBand(int group) => group == 0 ? (0f, 0f) : (_bands[group - 1].inner, _bands[group - 1].outer);
 
-        /// <summary>Is a food point inside a food group's band?</summary>
+        /// <summary>Is a food point inside a food group's band (and its sector, if it has one)?</summary>
         public bool InFoodBand(int group, Vector3 p)
         {
             if (group == 0) return true;
             float r = p.Length();
             var b = _bands[group - 1];
-            return r >= b.inner && r <= b.outer;
+            if (b.outer > 0f && (r < b.inner || r > b.outer)) return false;
+            return b.axis == Vector3.Zero || r < 1e-6f || Vector3.Dot(p, b.axis) >= b.cos * r;
         }
 
         void BuildFood(float[] f, Vector3[] grad, ReadOnlySpan<SubstrateFood> food, int group)

@@ -90,6 +90,7 @@ namespace CosmicShore.Gameplay
 
         Transform[] _mouths;
         float _alpha;
+        float _extinctSince = -1f;
 
         // bodies as PrismRenderService entities (round 11a §19.2, the substrate's path): the instanced draw keeps the hearts
         bool _unified;
@@ -330,6 +331,7 @@ namespace CosmicShore.Gameplay
             {
                 // roosting: no tick, no pose - members are drawn where they froze (Prev = Cur), the structure is real prisms
                 if (_gpu) _render.Draw(_bounds, 1f, _tick + 1f, _bloomTicks, Vector3.up, Vector3.forward, _cap);
+                Extinction();
                 return;
             }
             using (s_mFrame.Auto())
@@ -391,6 +393,20 @@ namespace CosmicShore.Gameplay
             using (s_mUpload.Auto()) { if (_gpu) Upload(); SyncEntities(); }
             using (s_mProxies.Auto()) UpdateProxies();
             SyncIndex();
+            Extinction();
+        }
+
+        /// <summary>Round 11-10: a colony with no member, no proxy and nothing dying leaves after ExtinctLingerSeconds, so
+        /// the seeder can hatch a fresh one (SubstrateFauna and SwarmFauna leave the same way). Before, a dead colony's
+        /// anchor stayed forever and counted as the species' one live population, so the seeder never re-seeded it.</summary>
+        void Extinction()
+        {
+            if (MemberCount > 0 || _proxySlots.Count > 0 || _dying.Count > 0) { _extinctSince = -1f; return; }
+            if (_extinctSince < 0f) { _extinctSince = Time.time; return; }
+            if (Time.time - _extinctSince < config.ExtinctLingerSeconds) return;
+            // memberless: removing the anchor pops nothing; OnDestroy releases its structure as loose prisms
+            if (DespawnOrDestroy()) return;
+            Destroy(gameObject);
         }
 
         void BuildFrame()

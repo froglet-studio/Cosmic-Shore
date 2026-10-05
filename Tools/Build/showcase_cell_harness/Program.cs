@@ -331,6 +331,13 @@ static class Program
         /// <summary>The first census minute a class read zero (the cores alone: the cell's spawner, which re-hatches an
         /// emptied fauna slot after BaseFaunaSpawnTime, is not modelled).</summary>
         public readonly Dictionary<string, float> ExtinctAt = new();
+        /// <summary>Round 11-10: per class, when it first had no member (s), its longest stretch with none (s), and since when it
+        /// has none now.</summary>
+        public readonly Dictionary<string, float> FirstGone = new(), LongestAbsence = new(), AbsentSince = new();
+        public int Reseeds;
+        /// <summary>C8 (round 11-10): per class, member-seconds inside its pen and member-seconds counted (a plant pen:
+        /// seconds holding a plant, seconds).</summary>
+        public readonly Dictionary<string, (long inPen, long counted)> Occupancy = new();
         public Pilot[] Pilots = Array.Empty<Pilot>();
         public List<Dictionary<string, int>[]> Met = new();
         public readonly List<string> Reports = new();
@@ -379,7 +386,9 @@ static class Program
         var frameMs = new List<double>();
         long colliderSum = 0, ticks = 0;
         var census = new List<(string cls, int alive, int cap)>();
+        var occ = new List<(string cls, int inPen, int counted)>();
         int steps = (int)MathF.Round(seconds / Cell.Dt);
+        float spawnPeriod = Cell.F(layout, "fauna_spawn_period"), nextSpawn = Cell.F(layout, "fauna_spawn_wait");
         for (int step = 0; step < steps; step++)
         {
             foreach (var p in c.Pilots) Fly(c, p, builders, grove);
@@ -398,6 +407,33 @@ static class Program
                 r.MsBySystem[s.Name] = acc + s.LastMs;
             }
             frameMs.Add(ms * 10.0 / 60.0);   // every core steps at 10 Hz (the grove's 20 Hz traps are inside its LastMs)
+            // round 11-10: the anchors' extinction lingers and the cell's seeder (SpawnFaunaTypeLoop_Random: the Swarm
+            // cell's InitialFaunaSpawnWaitTime 6 s, then every BaseFaunaSpawnTime 30 s) - extinction recovery
+            swarm.TrackExtinction(c); sub.TrackExtinction(c); builders.TrackExtinction(c);
+            if (c.T + 0.5f * Cell.Dt >= nextSpawn)
+            {
+                swarm.SpawnerTick(c); sub.SpawnerTick(c); builders.SpawnerTick(c);
+                nextSpawn += spawnPeriod;
+            }
+            if (step % 10 == 9)   // once a second: each class's presence (the longest absence, the first extinction)
+            {
+                census.Clear();
+                foreach (var s in systems) s.Census(census);
+                foreach (var (cls, alive, _) in census)
+                {
+                    if (alive > 0) { r.AbsentSince.Remove(cls); continue; }
+                    if (!r.AbsentSince.ContainsKey(cls)) r.AbsentSince[cls] = c.T;
+                    r.FirstGone.TryAdd(cls, c.T);
+                    r.LongestAbsence[cls] = Math.Max(r.LongestAbsence.GetValueOrDefault(cls), c.T - r.AbsentSince[cls]);
+                }
+                occ.Clear();
+                foreach (var s in systems) if (s is IOccupancy o) o.Occupancy(c, occ);
+                foreach (var (cls, inPen, counted) in occ)
+                {
+                    var (a, b) = r.Occupancy.GetValueOrDefault(cls);
+                    r.Occupancy[cls] = (a + inPen, b + counted);
+                }
+            }
             c.StrikersNow.Clear();
             foreach (var s in systems) s.Strikers(c, c.StrikersNow);
             c.TrackIntent();
@@ -463,6 +499,7 @@ static class Program
             }
             if (snapOut != null && snapOut.Length > 0 && MathF.Abs(c.T - 300f) < Cell.Dt * 0.5f) Snapshot(c, systems, builders, snapOut);
         }
+        r.Reseeds = swarm.Reseeds + sub.Reseeds + builders.ThiefReseeds + builders.WearReseeds;
         swarm.SyncBook(c.World);
         Ledger(c, swarm, sub, builders, grove, out _, r.LedgerLines);
         r.CollidersMean = colliderSum / (double)Math.Max(1, ticks);
@@ -522,7 +559,15 @@ static class Program
             d.Sort();
             parts.Add($"{pop.P.Name} median {d[d.Count / 2]:F0} u, <250 u {100f * d.Count(x => x < 250f) / d.Count:F0}%");
         }
-        return "; nearest plant: " + string.Join(", ", parts);
+        var pens = new List<string>();
+        foreach (var pop in sub.Core.Pops)
+        {
+            if (!pop.HasSector) continue;
+            int n = c.World.Plants.Count(pl => pl.Alive && pl.Heart.Length() >= pop.BandInner && pl.Heart.Length() <= pop.BandOuter &&
+                                                Vector3.Dot(pl.Heart, pop.SectorAxis) >= pop.SectorCos * pl.Heart.Length());
+            pens.Add($"{pop.P.Name} {n}");
+        }
+        return "; nearest plant: " + string.Join(", ", parts) + "; plants in each sector pen: " + string.Join(", ", pens);
     }
 
     /// <summary>SHOWCASE_LOD_TRACE=1: every 10 s, each LOD'd population's state and what holds it expanded.</summary>
@@ -751,7 +796,29 @@ static class Program
         var longRun = runs.OrderByDescending(r => r.Minutes).First();
         Console.WriteLine($"C4 populations over the {longRun.Minutes:F0}-min run (min..max / cap):");
         foreach (var kv in longRun.Pop) Console.WriteLine($"     {kv.Key,-22} {kv.Value.min,5} .. {kv.Value.max,5} / {kv.Value.cap}");
-        Finding(longRun.Extinct.Count == 0, $"C4 no class went extinct over {longRun.Minutes:F0} min" + (longRun.Extinct.Count > 0 ? ": " + string.Join(", ", longRun.Extinct) : ""));
+        // round 11-10: persistence is judged WITH the cell's seeder (extinction recovery is its sanctioned job) and WITHOUT
+        // leaning on it - a class must hold up on its own (no extinction in any 5-min run; at most one re-hatch in the long
+        // run) and, when it does die out, be back within one linger + one spawner period (+2 s)
+        float recover = (float)layout.GetProperty("fauna_spawn_period").GetDouble() + 12f;
+        foreach (var run in runs)
+        {
+            var gone = run.FirstGone.OrderBy(kv => kv.Value).Select(kv =>
+                $"{kv.Key} first at {kv.Value / 60f:F1} min, longest absence {run.LongestAbsence.GetValueOrDefault(kv.Key):F0} s, gone now {(run.AbsentSince.ContainsKey(kv.Key) ? "yes" : "no")}");
+            Console.WriteLine($"     s{run.Seed} ({run.Minutes:F0} min): {(run.FirstGone.Count == 0 ? "every class present every second" : string.Join("; ", gone))}" +
+                              $"; seeder re-hatches {run.Reseeds}");
+        }
+        var shortRuns = runs.Where(r => r.Minutes <= 5.01f).ToList();
+        var earlyGone = shortRuns.SelectMany(r => r.FirstGone.Keys.Select(k => $"s{r.Seed} {k}")).ToList();
+        Finding(earlyGone.Count == 0, "C4 every class holds up on its own: none dies out in a 5-min run" +
+                (earlyGone.Count > 0 ? ": " + string.Join(", ", earlyGone) : ""));
+        var longGone = longRun.FirstGone.Where(kv => kv.Value < 300f).Select(kv => kv.Key).ToList();
+        Finding(longGone.Count == 0, $"C4 no class dies out inside the long run's first 5 min" + (longGone.Count > 0 ? ": " + string.Join(", ", longGone) : ""));
+        var slow = runs.SelectMany(r => r.LongestAbsence.Where(kv => kv.Value > recover || r.AbsentSince.TryGetValue(kv.Key, out float t0) && r.Minutes * 60f - t0 > recover)
+                                                         .Select(kv => $"s{r.Seed} {kv.Key} {kv.Value:F0} s")).ToList();
+        Finding(slow.Count == 0, $"C4 with the seeder, every class that dies out is back within {recover:F0} s (one linger + one spawner period)" +
+                (slow.Count > 0 ? ": " + string.Join(", ", slow) : ""));
+        Finding(longRun.Reseeds <= longRun.FirstGone.Count && longRun.FirstGone.Count <= 3,
+                $"C4 the long run leans on the seeder for at most 3 classes ({longRun.FirstGone.Count} died out, {longRun.Reseeds} re-hatches)");
         Check(longRun.Over.Count == 0, "C4 no class exceeded its cap" + (longRun.Over.Count > 0 ? ": " + string.Join(", ", longRun.Over) : ""));
         foreach (var run in runs.Where(r => r.Seed != longRun.Seed || r.Minutes == longRun.Minutes))
             if (run.Extinct.Count > 0) Console.WriteLine($"     (seed {run.Seed}: extinct {string.Join(", ", run.Extinct)})");

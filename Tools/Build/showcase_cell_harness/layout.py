@@ -55,6 +55,43 @@ def yaml_flat(path):
     return out
 
 
+def yaml_species(path):
+    """The `species:` block of a SubstrateSpeciesSO asset (the SubstrateSpeciesParams the game reads), as nested dicts:
+    scalars at 4 spaces, the two regimes (Solitary, Gregarious) at 6, a float[] as a list. Numbers as floats, the rest as
+    strings."""
+    out, cur, inside, last = {}, None, False, None
+    for line in open(path, encoding="utf-8"):
+        line = line.rstrip("\n")
+        if line == "  species:":
+            inside = True
+            continue
+        if not inside:
+            continue
+        item = re.match(r"^    - (.*)$", line)
+        if item and last is not None:   # a float[] (the leviathan's BodySlots)
+            if not isinstance(out[last], list):
+                out[last] = []
+            out[last].append(float(item.group(1)))
+            continue
+        m = re.match(r"^( {4,6})(\w+):(?: (.*))?$", line)
+        if not m:
+            break
+        ind, k, v = m.groups()
+        if v is None:
+            cur = out[k] = {}
+            last = k
+            continue
+        last = None
+        try:
+            val = float(v)
+        except ValueError:
+            val = v.strip()
+        (cur if len(ind) == 6 else out)[k] = val
+        if len(ind) == 4:
+            cur = None
+    return out
+
+
 def main():
     out_path = sys.argv[1]
     plans = swarm.committed_plans()
@@ -66,7 +103,8 @@ def main():
         c = swarm.canon(r)
         flora = yaml_flat(os.path.join(cell_dir, swarm.flora_name(r) + ".asset"))
         regions.append(dict(
-            key=r["key"], band=list(r["band"]), start=swarm.ELEMENT_ID[r["start"]] - 1, plan=r["plan"],
+            key=r["key"], band=list(r["band"]), flora_band=list(swarm.flora_band(r)),
+            pens=[dict(axis=list(a or (0, 0, 0)), half=h, inner=lo, outer=hi) for a, h, lo, hi in r.get("pens", [])], start=swarm.ELEMENT_ID[r["start"]] - 1, plan=r["plan"],
             food=swarm.ELEMENT_ID[r["food"]] - 1, floor=r["floor"], cap=r["cap"], swarms=r["swarms"],
             leaf=list(c["leaf"]), budget=c["budget"],
             growth_per_offspring=flora.get("GrowthPerOffspring", 0.0),
@@ -76,9 +114,10 @@ def main():
     substrate = []
     for s in sp.SPECIES:
         asset = yaml_flat(os.path.join(sp.SO_DIR, f"Substrate {s['title']} Species.asset"))
+        species = yaml_species(os.path.join(sp.SO_DIR, f"Substrate {s['title']} Species.asset"))
         substrate.append(dict(key=s["key"], band=list(s["band"]), element=swarm.ELEMENT_ID[s["element"]] - 1,
                               seed=s["seed"] or params[s["key"]]["N0"], spread=s["spread"], at_flora=s["at_flora"],
-                              engage=s["engage"], proxies=s["proxies"], asset=asset))
+                              engage=s["engage"], proxies=s["proxies"], asset=asset, species=species))
     builders = []
     for s in author_builders.SPECIES:
         cfg = yaml_flat(author_builders.config_path(s))
@@ -86,6 +125,8 @@ def main():
         builders.append(dict(key=s["key"], species=s["species"], band=list(s["band"]),
                              element=swarm.ELEMENT_ID[s["element"]] - 1, count=s["count"], config=cfg))
     cell = yaml_flat(os.path.join(cell_dir, "Swarm Cell Config.asset"))
+    # round 11-10: the cell's seeder clock (RandomLifeSpawner.SpawnFaunaTypeLoop_Random) - extinction recovery
+    profile = yaml_flat(os.path.join(cell_dir, "Swarm Cell Spawn Profile.asset"))
     grove = None
     if atf is not None:
         d = atf.defaults()
@@ -95,6 +136,7 @@ def main():
     layout = dict(
         membrane=swarm.MEMBRANE_RADIUS, nucleus=swarm.NUCLEUS_RADIUS, grow_period=grow_period,
         petal_burn_rule=int(cell.get("PetalBurnRule", 0)),
+        fauna_spawn_wait=profile["InitialFaunaSpawnWaitTime"], fauna_spawn_period=profile["BaseFaunaSpawnTime"],
         regions=regions,
         swarm_config=yaml_flat(A("_SO_Assets", "Swarm Fauna", "SwarmSortFaunaConfig.asset")),
         substrate=substrate, substrate_capacity=sp.CELL_CAPACITY,

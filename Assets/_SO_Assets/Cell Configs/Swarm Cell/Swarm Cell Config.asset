@@ -27,11 +27,11 @@ MonoBehaviour:
   SpawnProfile: {fileID: 11400000, guid: 02633d3f53225652894dc5c3b785ce53, type: 2}
   PetalBurnRule: 1
   PhaseThresholds:
-    RestlessEnter: 2200
-    RestlessExit: 1700
-    FrenzyEnter: 15500
-    FrenzyExit: 13600
-    RestlessEnterVolume: 69000
-    RestlessExitVolume: 51000
-    FrenzyEnterVolume: 491000
-    FrenzyExitVolume: 432000
+    RestlessEnter: 2500
+    RestlessExit: 1800
+    FrenzyEnter: 17300
+    FrenzyExit: 15200
+    RestlessEnterVolume: 71000
+    RestlessExitVolume: 53000
+    FrenzyEnterVolume: 507000
+    FrenzyExitVolume: 446000

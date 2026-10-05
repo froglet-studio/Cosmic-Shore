@@ -268,6 +268,9 @@ namespace CosmicShore.Gameplay
             pop.HasSector = halfAngleDeg > 0f && axis.LengthSquared() > 1e-9f;
             pop.SectorAxis = pop.HasSector ? Unit(axis) : Vector3.Zero;
             pop.SectorCos = pop.HasSector ? MathF.Cos(halfAngleDeg * MathF.PI / 180f) : 0f;
+            // its food field is the food of its band inside the sector (SubstrateFields.FoodGroup)
+            pop.FoodGroup = pop.HasSector ? Fields.FoodGroup(pop.BandInner, pop.BandOuter, pop.SectorAxis, pop.SectorCos)
+                                          : Fields.FoodGroup(pop.BandInner, pop.BandOuter);
         }
 
         /// <summary>Retires a population whose last agent is gone (its block is free for the next species).</summary>
@@ -366,7 +369,8 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// The way to food for an agent at <paramref name="p"/> (grid cell <paramref name="fc"/>): the gradient of its
-        /// population's food field - and, within two grid cells of a food point inside its band, the point itself.
+        /// population's food field - and, within two grid cells of a food point inside its band, the point itself; where the
+        /// field is flat (no food within its reach), the nearest such point.
         /// <para>Round 11-10 (Docs/SWARM_FAUNA.md §27): the field is a 60 u grid, and the game's food is one point per
         /// flora HEART whose leaves sit 6-30 u around it - so the field's peak is one cell wide and its gradient there is
         /// ~0. Agents homed to within a cell (54-110 u) of a heart and circled there, out of their 24 u bite, and
@@ -377,7 +381,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         Vector3 FoodHeading(int group, Vector3 p, int fc, ReadOnlySpan<SubstrateFood> food)
         {
-            float best = 4f * Fields.H * Fields.H;   // within two grid cells
+            float best = float.MaxValue;
             int bi = -1;
             for (int j = 0; j < food.Length; j++)
             {
@@ -385,7 +389,14 @@ namespace CosmicShore.Gameplay
                 float d = Vector3.DistanceSquared(food[j].Pos, p);
                 if (d < best) { best = d; bi = j; }
             }
-            return bi >= 0 ? food[bi].Pos - p : Fields.FoodGrad(group, fc);
+            if (bi < 0) return Fields.FoodGrad(group, fc);
+            if (best <= 4f * Fields.H * Fields.H) return food[bi].Pos - p;   // within two grid cells: the final approach
+            var g = Fields.FoodGrad(group, fc);
+            // Beyond the field's reach (4 blur passes: ~4 cells, 240 u) the field is exactly flat, and a hungry agent there
+            // only wandered: a stampede herd seeded across a 55-degree sector of a 6-10 plant shell asked 5,448 times for
+            // food and never found any. It heads for the nearest food it may eat instead - the way a herd walks to a
+            // pasture it knows. Still hunger-weighted (w_food x hunger), so a fed agent does not leave its ground.
+            return g == Vector3.Zero ? food[bi].Pos - p : g;
         }
 
         public void Step(ReadOnlySpan<SubstratePilot> pilots, ReadOnlySpan<SubstrateFood> food)

@@ -48,6 +48,13 @@ interface ICellSystem
     void Snapshot(Utf8JsonWriter w);
 }
 
+/// <summary>Round 11-10 (C8, spatial spread): a system that can say how many of its living members stand inside their
+/// authored pen (band, and sector when there is one) right now. A plant pen reports (1 if it holds a plant, 1).</summary>
+interface IOccupancy
+{
+    void Occupancy(Cell c, List<(string cls, int inPen, int counted)> into);
+}
+
 /// <summary>A proxy pool: members wanted (engaged) get a proxy up to the cap; one not wanted for Linger seconds retires.
 /// The game's per-system SyncProxies, reduced to the count (two colliders each: heart + body prism).</summary>
 sealed class ProxyPool
@@ -142,6 +149,17 @@ sealed class Cell
         Lod.Register(p);
         _lodPops.Add((name, p));
         LodCollapsedTicks[name] = 0;
+    }
+
+    /// <summary>A population re-hatched by the spawner takes its predecessor's place in the director (same name, so the
+    /// contract's counters carry on).</summary>
+    public void ReplaceLod(string name, IMacroPopulation old, IMacroPopulation now)
+    {
+        int k = _lodPops.FindIndex(x => ReferenceEquals(x.pop, old));
+        if (k < 0) return;
+        Lod.Unregister(old);
+        Lod.Register(now);
+        _lodPops[k] = (name, now);
     }
 
     /// <summary>CellEcologyLod.Advance, once per 0.1 s tick before any population steps: the pilots, the guard (every
@@ -252,6 +270,9 @@ sealed class Cell
         if (best == long.MinValue) return false;
         return _armed.TryGetValue((cls, best), out float since) && T - since >= 0.25f;
     }
+
+    /// <summary>burn-rules.md's test on ONE agent: it had intent > 0.5 for at least 0.25 s.</summary>
+    public bool ArmedFor(string cls, long key) => _armed.TryGetValue((cls, key), out float since) && T - since >= 0.25f;
 
     public void AddContact(int pilot, string cls, Vector3 at, bool? telegraphed = null, float weight = 1f) =>
         Contacts.Add(new Contact { Pilot = pilot, Cls = cls, At = at, Telegraphed = telegraphed, Weight = weight });

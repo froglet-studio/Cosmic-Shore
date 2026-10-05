@@ -72,6 +72,12 @@ namespace CosmicShore.Gameplay
         [Tooltip("Seconds of torpor the emptiest stomach must have left: below it a collapsed colony expands (twice it is " +
                  "needed to collapse).")]
         [Min(1f)] public float ThawReserveSeconds = 20f;
+        [Header("Round 11-10 - extinction (Docs/SWARM_FAUNA.md §27)")]
+        [Tooltip("Seconds a colony with no living member, no proxy and nothing dying lingers before its anchor leaves, so " +
+                 "the cell's seeder can hatch a fresh colony (extinction recovery, the seeder's sanctioned job - the swarm " +
+                 "and the substrate anchors already leave this way). The structure stays: walls, hoard and lair are released " +
+                 "as loose prisms (nothing pops).")]
+        [Min(0f)] public float ExtinctLingerSeconds = 8f;
 
         [Header("Fortress - colony")]
         [Tooltip("Workers the colony is founded with (research 48; 24-48 recommended).")]

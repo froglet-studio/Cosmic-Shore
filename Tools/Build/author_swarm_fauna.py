@@ -117,11 +117,24 @@ ELEMENT_ID = {"Charge": 1, "Mass": 2, "Space": 3, "Time": 4}
 # that closes and stops: a finished plant's grow tick is one compare. Few plants, sized against the egg bill
 # of the three bodies (report() prints both). Charge is never food (armoured leaves), so the pufferfish band
 # grows Time plants and its Charge majority is paid at the cross-element price - the feeding-ground lever.
+# flora_band (round 11-10, Docs/SWARM_FAUNA.md §27): where a region's flora is PLANTED, when it is not the swarm's band.
+# The Middle forest reaches into the 625-690 gap, the mobbers' shell: the bestiary's mobbers roost ON a plant
+# (mobber.py: roost = the arena's plants), and penned to a plant-free gap the cell's 40 starved by minute 3 with 0 bites
+# in 4,524 asks. Same plant count (no collider moves); about a quarter of the Middle plants stand in the gap, where the
+# Middle swarm (penned to 690-840) does not graze. The Middle forest is also 9-12 plants (was 6-10, +2 always-on hearts,
+# 1,194 of the 1,200 colliders): three sector pens (stampede, leech, leviathan) each cover a fifth of the shell, and at 6
+# plants one pen in six held none even with SpreadPlanting. pens (FloraConfigurationSO.PlantingPens): each new Middle plant
+# roots in whichever of those four pens holds the fewest - spread over the whole 625-840 shell, a sector or the gap still
+# came up empty in one seed in four (12-seed sweep), and the population penned there starved.
 REGIONS = [
     dict(key="Inner", band=(470, 620), start="Mass", plan="whale", model="Sort", swarms=1,
          flora="Borromean", food="Mass", floor=2, cap=3),
     dict(key="Middle", band=(690, 840), start="Charge", plan="pufferfish", model="Sort", swarms=1,
-         flora="Borromean", food="Time", floor=6, cap=10),
+         flora="Borromean", food="Time", floor=9, cap=12, flora_band=(625, 840),
+         # (axis about the cell centre or None, half-angle deg, inner u, outer u): the three grazer sector pens of
+         # author_substrate_fauna (stampede +X, leech +120, leviathan -120) and the mobbers' roost gap
+         pens=[((1, 0, 0), 55, 690, 840), ((-0.5, 0, 0.866), 55, 690, 840), ((-0.5, 0, -0.866), 55, 690, 840),
+               (None, 0, 625, 685)]),
     dict(key="Outer", band=(910, 1080), start="Space", plan="jellyfish", model="Sort", swarms=1,
          flora="Borromean", food="Space", floor=3, cap=5),
 ]
@@ -445,6 +458,10 @@ def _g(x):
     return ("%.3f" % x).rstrip("0").rstrip(".")
 
 
+def _g5(x):
+    return ("%.5f" % x).rstrip("0").rstrip(".")
+
+
 def config_asset(eggs, model="Field"):
     egg = {"Charge": eggs[0], "Mass": eggs[1], "Space": eggs[2], "Time": eggs[3]}
     pg = lambda k: guid(rel(plan_path(k)))
@@ -531,22 +548,48 @@ def fauna_asset(r):
         "  SpreadElements: 0\n  ElementPalette: []\n")
 
 
+def flora_band(r):
+    """Where a region's flora is planted: its flora_band, else the swarm's band."""
+    return r.get("flora_band", r["band"])
+
+
 def flora_asset(r, c):
     """A FORK of the canonical species config: the species' own plate, budget, quota, heart and shield
     (byte for byte), with only what a CELL owns rewritten - the name, how many (seed floor, live cap) and
     where (the planting band, as the cell-level override pair)."""
-    lo, hi = r["band"]
+    lo, hi = flora_band(r)
     t = c["text"]
     t = re.sub(r"(?m)^  m_Name: .*$", f"  m_Name: {flora_name(r)}", t, count=1)
     t = re.sub(r"(?m)^  InitialSpawnCount: \d+$", f"  InitialSpawnCount: {r['floor']}", t, count=1)
     t = re.sub(r"(?m)^  PopulationSize: \d+$", f"  PopulationSize: {r['floor']}", t, count=1)
     t = re.sub(r"(?m)^  MaxLivePopulation: \d+$", f"  MaxLivePopulation: {r['cap']}", t, count=1)
     t = re.sub(r"(?m)^  PlantRadiusCellFraction(Max|Min)Override: .*\n", "", t)
+    t = re.sub(r"(?m)^  SpreadPlanting: .*\n", "", t)
+    t = re.sub(r"(?m)^  PlantingPens:.*\n(?:  - .*\n|    .*\n)*", "", t)
     if not t.endswith("\n"):
         t += "\n"
     t += (f"  PlantRadiusCellFractionMaxOverride: {_g(hi / MEMBRANE_RADIUS)}\n"
-          f"  PlantRadiusCellFractionMinOverride: {_g(lo / MEMBRANE_RADIUS)}\n")
+          f"  PlantRadiusCellFractionMinOverride: {_g(lo / MEMBRANE_RADIUS)}\n"
+          # round 11-10: a band's few plants spread over it (Mitchell's best candidate) - one sector pen in two of
+          # the Middle shell held no plant drawn at random (FloraConfigurationSO.SpreadPlanting)
+          "  SpreadPlanting: 1\n")
+    t += pens_yaml(r)
     return t
+
+
+def pens_yaml(r):
+    """The region's planting pens as FloraConfigurationSO.PlantingPens YAML (empty = the whole planting band)."""
+    pens = r.get("pens", [])
+    if not pens:
+        return "  PlantingPens: []\n"
+    out = "  PlantingPens:\n"
+    for axis, half, lo, hi in pens:
+        ax = axis or (0, 0, 0)
+        out += (f"  - Axis: {{x: {_g(ax[0])}, y: {_g(ax[1])}, z: {_g(ax[2])}}}\n"
+                f"    HalfAngle: {_g(half)}\n"
+                f"    InnerFraction: {_g5(lo / MEMBRANE_RADIUS)}\n"
+                f"    OuterFraction: {_g5(hi / MEMBRANE_RADIUS)}\n")
+    return out
 
 
 def model(plans):
