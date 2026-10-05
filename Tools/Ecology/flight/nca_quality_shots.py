@@ -14,7 +14,7 @@ from PIL import Image
 HERE = os.path.dirname(os.path.abspath(__file__))
 CHROME = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome"
 ap = argparse.ArgumentParser(); ap.add_argument("--three", required=True); ap.add_argument("--tag", required=True)
-ap.add_argument("--mode", default="creatures"); ap.add_argument("--shots", default=os.path.join(HERE, "shots"))
+ap.add_argument("--mode", default="creatures"); ap.add_argument("--query", default=""); ap.add_argument("--which", type=int, default=0); ap.add_argument("--shots", default=os.path.join(HERE, "shots"))
 a = ap.parse_args(); os.makedirs(a.shots, exist_ok=True)
 three = open(a.three, "rb").read(); url = "file://" + os.path.join(HERE, "index.html")
 shot = lambda name: os.path.join(a.shots, f"nca_quality_{a.tag}_{name}.png")
@@ -23,9 +23,9 @@ shot = lambda name: os.path.join(a.shots, f"nca_quality_{a.tag}_{name}.png")
 # cam follow; the pilot is otherwise kept well away so it never cuts the lizard by accident.
 RIG = """() => {
   const B = window.__bigObj, E = window.__eco, T = window.THREE;
-  window.__rig = { mode: 'orbit', az: 0.6, el: 0.45, dist: 210, spin: 0, head: [1, 0, 0], prev: null, path: [] };
+  window.__rig = { which: WHICH, mode: 'orbit', az: 0.6, el: 0.45, dist: 210, spin: 0, head: [1, 0, 0], prev: null, path: [] };
   window.__camHook = (cam, dt) => {
-    const r = window.__rig, L = B.lizard; if (!L) return;
+    const r = window.__rig, L = (B.lizards && B.lizards[r.which]) || B.lizard; if (!L) return;
     const P = L.position, pl = E.W.player;
     if (r.prev && dt > 0) { const v = [P[0] - r.prev[0], P[1] - r.prev[1], P[2] - r.prev[2]], n = Math.hypot(...v);
       if (n > 1e-6) { const k = 1 - Math.exp(-dt * 3); for (let i = 0; i < 3; i++) r.head[i] += (v[i] / n - r.head[i]) * k; } }
@@ -54,8 +54,8 @@ with sync_playwright() as pw:
     pg = ctx.new_page(); errs = []
     pg.on("pageerror", lambda e: errs.append("pageerror: " + str(e)))
     pg.on("console", lambda m: errs.append("console: " + m.text) if m.type == "error" else None)
-    pg.goto(url + f"?mode={a.mode}&go=1&seed=7"); pg.wait_for_function("window.__eco && window.__eco.W && window.__perf.frame.length > 12", timeout=90000)
-    pg.evaluate(RIG)
+    pg.goto(url + f"?mode={a.mode}&go=1&seed=7" + a.query); pg.wait_for_function("window.__eco && window.__eco.W && window.__perf.frame.length > 12", timeout=90000)
+    pg.evaluate(RIG.replace('WHICH', str(a.which)))
     rig = lambda **kw: pg.evaluate("(kw) => Object.assign(window.__rig, kw)", kw)
     pg.wait_for_timeout(3000)
     rig(mode="orbit", az=1.2, el=0.55, dist=200); pg.wait_for_timeout(700); pg.screenshot(path=shot("orbit_top"))

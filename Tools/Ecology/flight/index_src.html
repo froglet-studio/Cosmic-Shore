@@ -1022,8 +1022,12 @@ function buildBig(mode) {
   // a pair of NCA lizards of two elements; each swims a weaving path of waypoints, its speed and head wiggle locked
   // to its own NCA swim cycle (NcaCreature.swim), and bolts away from a pilot who closes in or rams it
   const LZ = [{ el: 'time', sc: 4, p: [-0.35, 0.12, -0.2], sd: 0 }, { el: 'mass', sc: 3.3, p: [0.3, -0.1, 0.32], sd: 101 }];
+  const wasmOk = new URLSearchParams(location.search).get('ncawasm') !== '0';
   for (const z of LZ) {
-    const L = new NcaCreature({ seed: seed + z.sd, scale: z.sc, position: [z.p[0] * R, z.p[1] * R, z.p[2] * R], element: z.el, budgetMs: 2.5, stepsPerSecond: 20 });
+    // without WebAssembly SIMD (e.g. blocked by a CSP) the JS fallback is ~7x slower: one lizard, given more time
+    if (BIG.lizards.length && BIG.lizards[0].backend === 'js') break;
+    const L = new NcaCreature({ seed: seed + z.sd, scale: z.sc, position: [z.p[0] * R, z.p[1] * R, z.p[2] * R], element: z.el, budgetMs: 2.5, stepsPerSecond: 20, wasm: wasmOk });
+    if (L.backend === 'js') L.maxMsPerSecond = 220;
     L.grow(80 + (z.sd % 37));
     L.ai = { goal: null, bolt: 0, cut: 0, lastHit: -9, cruise: 22 * z.sc / 4 + 4 };
     const m = L.mesh(THREE); scene.add(m); BIG.lizards.push(L); BIG.lMeshes.push(m);

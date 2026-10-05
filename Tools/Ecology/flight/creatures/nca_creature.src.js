@@ -10,6 +10,11 @@
 //   per frame:  c.step(dt);  c.sync();  // step() spends at most budgetMs / cellsPerFrame, then RESUMES next frame
 //   c.hit(worldPoint, worldRadius);     // erase voxels -> the NCA regrows them over the next ~100-300 steps
 //   const mesh = c.mesh(THREE); scene.add(mesh);   // InstancedMesh of small triangular prisms, refreshed by sync()
+//   c.swim(dt, goalXYZ, { cruise: 22 });            // optional locomotion phase-locked to the NCA's own tail beat
+//
+// Rendering (sync): only surface voxels, as triangular scale prisms lying along the skin (normal = -grad alpha), sized by
+// alpha interpolated between the last two COMPLETE states (no popping between steps); a cut sheds debris prisms and
+// leaves a glowing wound that fades as it regrows. A slow backend lowers its own step rate (rate, maxMsPerSecond).
 //
 // Inference is nca3d_core.js (held equal to the PyTorch model by Tools/NCA/verify_js3d.py), made resumable: a step
 // is split into (begin: alive mask + list of alive cells) -> (chunks of per-cell updates, any number per frame) ->
@@ -405,7 +410,8 @@
      *  the step rate actually achieved (cruise u/s at refRate steps/s, so a slow or boosted NCA swims slower or faster)
      *  and surges with each tail beat (|stroke|); the head recoils against the tail's bend (yaw wiggle); it banks into
      *  turns and pitches toward the goal. opts: cruise (default 22), refRate (20), turnRate (rad/s, 0.6), wiggle (rad
-     *  per voxel of bend, 0.09), bank (0.9), maxPitch (0.45). Moves position and sets yaw, pitch and roll. */
+     *  per voxel of bend, 0.09), bank (0.9), maxPitch (0.45), minRate (floor on the
+     *  rate factor, 0.45). Moves position and sets yaw, pitch and roll. */
     swim(dt, goal, opts) {
       if (!(dt > 0)) return this;
       opts = opts || {};
@@ -424,7 +430,7 @@
       // tail beat -> thrust: |stroke| relative to its running mean; speed scales with the achieved NCA step rate
       const st = Math.abs(this.stroke); this._strokeAvg += (st - this._strokeAvg) * (1 - Math.exp(-dt * 0.3));
       const surge = this._strokeAvg > 1e-3 ? Math.min(2, st / this._strokeAvg) : 1;
-      const rateK = Math.min(2.5, (this.achievedRate || this.rate) / ref);
+      const rateK = Math.max(opts.minRate ?? 0.45, Math.min(2.5, (this.achievedRate || this.rate) / ref));   // floor: a slow (JS) NCA still travels
       const spdW = cruise * rateK * (0.72 + 0.28 * surge);
       this._spd += (spdW - this._spd) * (1 - Math.exp(-dt * 3));
       const ch = Math.cos(this._hP), v = this._spd;
@@ -444,7 +450,7 @@
      *  step in flight). The surviving cells regrow the hole. Returns the number of VISIBLE voxels removed. */
     hit(point, radius, opts) {
       const [gz, gy, gx] = this.worldToGrid(point), r = radius / this.scale, r2 = r * r, { C, D, H, W } = this, thr = this.alphaThreshold;
-      const P = Array.isArray(point) ? point : [point.x, point.y, point.z], kick = (opts && opts.velocity) || null, maxDebris = (opts && opts.maxDebris) ?? 220;
+      const P = Array.isArray(point) ? point : [point.x, point.y, point.z], kick = (opts && opts.velocity) || null, maxDebris = (opts && opts.maxDebris) ?? 160;
       const rc = this._rc, rp = this._rp, wp = [0, 0, 0];
       let removed = 0;
       for (let z = Math.max(0, Math.floor(gz - r)); z <= Math.min(D - 1, Math.ceil(gz + r)); z++)
@@ -621,7 +627,7 @@
       // debris: shrinking, tumbling, glowing prisms
       const D2 = this.debris;
       for (let k = 0; k < D2.length && n < cap; k++) {
-        const d = D2[k], lf = d.life / d.max, sz = sc * 1.1 * Math.min(1, lf * 1.8);
+        const d = D2[k], lf = d.life / d.max, sz = sc * 0.85 * Math.min(1, lf * 1.8);
         let ux = d.ax[0], uy = d.ax[1], uz = d.ax[2]; const un = Math.sqrt(ux * ux + uy * uy + uz * uz) || 1; ux /= un; uy /= un; uz /= un;
         const c = Math.cos(d.ang), s = Math.sin(d.ang), t = 1 - c, o = 16 * n;     // Rodrigues rotation about ax
         M[o] = (t * ux * ux + c) * sz; M[o + 1] = (t * ux * uy + s * uz) * sz; M[o + 2] = (t * ux * uz - s * uy) * sz; M[o + 3] = 0;

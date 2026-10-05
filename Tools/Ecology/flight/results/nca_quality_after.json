@@ -1,65 +1,65 @@
 {
  "tag": "after",
  "path": {
-  "samples": 35,
-  "speed_med": 5.2,
-  "speed_p10": 3.0,
-  "speed_p90": 20.8,
-  "turn_rate_absmean": 0.006,
+  "samples": 27,
+  "speed_med": 18.9,
+  "speed_p10": 16.2,
+  "speed_p90": 23.6,
+  "turn_rate_absmean": 0.001,
   "turn_rate_sign_changes": 1,
   "extent_xyz": [
-   38,
-   21,
-   42
+   51,
+   14,
+   5
   ]
  },
  "cut": {
   "on": true,
   "state": "stalk",
-  "intent": 0.07142857142857144,
+  "intent": 0,
   "plan": "space",
   "morphs": 0,
   "eaten": 0,
   "bites": 0,
-  "lizard": 994,
-  "lizCut": 151,
-  "lizSteps": 221,
+  "lizard": 959,
+  "lizCut": 164,
+  "lizSteps": 224,
   "bolts": 1,
   "lizards": [
    {
     "element": "time",
-    "count": 994,
-    "steps": 221,
-    "rate": 33.4,
-    "speed": 18.8,
-    "debris": 151,
+    "count": 959,
+    "steps": 224,
+    "rate": 34,
+    "speed": 18.1,
+    "debris": 160,
     "backend": "wasm-simd"
    },
    {
     "element": "mass",
-    "count": 1140,
-    "steps": 274,
+    "count": 1150,
+    "steps": 272,
     "rate": 20,
-    "speed": 15.5,
+    "speed": 15.6,
     "debris": 0,
     "backend": "wasm-simd"
    }
   ],
   "swarmPos": [
-   -200.76053035985495,
-   209.61897755941305,
-   -158.20189789470658
+   -187.59966029025617,
+   204.985606137745,
+   -166.70991656332004
   ],
   "lizPos": [
-   -407.9494011794546,
-   82.38935353968925,
-   -135.35432872378135
+   -280.8230557947838,
+   100.10519318090795,
+   -298.5639139643769
   ]
  },
  "ram": {
-  "dist_from_ram_point_before": 32.6,
-  "after_2p4s": 52.9,
-  "heading_change_deg": 38.6
+  "dist_from_ram_point_before": 47.4,
+  "after_2p4s": 71.9,
+  "heading_change_deg": 22.4
  },
  "regrow": {
   "on": true,
@@ -69,61 +69,61 @@
   "morphs": 0,
   "eaten": 0,
   "bites": 0,
-  "lizard": 1130,
-  "lizCut": 187,
-  "lizSteps": 259,
+  "lizard": 1126,
+  "lizCut": 184,
+  "lizSteps": 268,
   "bolts": 1,
   "lizards": [
    {
     "element": "time",
-    "count": 1130,
-    "steps": 259,
+    "count": 1126,
+    "steps": 268,
     "rate": 34,
-    "speed": 16.7,
+    "speed": 18.6,
     "debris": 0,
     "backend": "wasm-simd"
    },
    {
     "element": "mass",
-    "count": 1135,
-    "steps": 317,
+    "count": 1132,
+    "steps": 318,
     "rate": 20,
-    "speed": 15.6,
+    "speed": 17,
     "debris": 0,
     "backend": "wasm-simd"
    }
   ],
   "swarmPos": [
-   -348.134048240782,
-   147.53234940400213,
-   -162.90032826558482
+   -285.1268331225909,
+   169.7862924955065,
+   -230.82530067412338
   ],
   "lizPos": [
-   -399.34583793478515,
-   65.94826602855284,
-   -93.86952302303885
+   -230.49650659824886,
+   82.55194501580989,
+   -306.2617979922193
   ]
  },
- "lizard_before_cut": 1131,
+ "lizard_before_cut": 1126,
  "perf": {
   "frame_ms": 100,
-  "cpu_ms": 17.100000000558794,
-  "sim_ms": 2.1000000005587935,
-  "render_ms": 13.699999999254942
+  "cpu_ms": 17.299999999813735,
+  "sim_ms": 2.099999999627471,
+  "render_ms": 13.900000000372529
  },
  "lizards": [
   {
    "element": "time",
    "backend": "wasm-simd",
-   "count": 1149,
-   "steps": 266,
-   "rate": 34
+   "count": 1123,
+   "steps": 273,
+   "rate": 32.99359875083198
   },
   {
    "element": "mass",
    "backend": "wasm-simd",
-   "count": 1135,
-   "steps": 326,
+   "count": 1131,
+   "steps": 324,
    "rate": 20
   }
  ],

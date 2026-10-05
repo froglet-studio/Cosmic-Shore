@@ -1,0 +1,131 @@
+{
+ "tag": "after_js",
+ "path": {
+  "samples": 29,
+  "speed_med": 2.3,
+  "speed_p10": 1.9,
+  "speed_p90": 2.8,
+  "turn_rate_absmean": 0.0,
+  "turn_rate_sign_changes": 1,
+  "extent_xyz": [
+   5,
+   1,
+   5
+  ]
+ },
+ "cut": {
+  "on": true,
+  "state": "stalk",
+  "intent": 0,
+  "plan": "space",
+  "morphs": 0,
+  "eaten": 0,
+  "bites": 0,
+  "lizard": 1077,
+  "lizCut": 74,
+  "lizSteps": 98,
+  "bolts": 1,
+  "lizards": [
+   {
+    "element": "time",
+    "count": 1077,
+    "steps": 98,
+    "rate": 4.9,
+    "speed": 2.1,
+    "debris": 74,
+    "backend": "js"
+   },
+   {
+    "element": "mass",
+    "count": 1141,
+    "steps": 127,
+    "rate": 5.4,
+    "speed": 2.1,
+    "debris": 0,
+    "backend": "js"
+   }
+  ],
+  "swarmPos": [
+   -183.42346133654794,
+   203.42542652529784,
+   -169.47695395617524
+  ],
+  "lizPos": [
+   -411.7552635912795,
+   147.66037526025008,
+   -268.4422837910391
+  ]
+ },
+ "ram": {
+  "dist_from_ram_point_before": 75.8,
+  "after_2p4s": 78.5,
+  "heading_change_deg": 9.3
+ },
+ "regrow": {
+  "on": true,
+  "state": "roam",
+  "intent": 0,
+  "plan": "space",
+  "morphs": 0,
+  "eaten": 0,
+  "bites": 0,
+  "lizard": 1087,
+  "lizCut": 74,
+  "lizSteps": 103,
+  "bolts": 1,
+  "lizards": [
+   {
+    "element": "time",
+    "count": 1087,
+    "steps": 103,
+    "rate": 5,
+    "speed": 2.1,
+    "debris": 0,
+    "backend": "js"
+   },
+   {
+    "element": "mass",
+    "count": 1136,
+    "steps": 132,
+    "rate": 5,
+    "speed": 1.8,
+    "debris": 0,
+    "backend": "js"
+   }
+  ],
+  "swarmPos": [
+   -335.2268454889931,
+   184.87024223811707,
+   -186.1132244394395
+  ],
+  "lizPos": [
+   -407.74397244226896,
+   146.79209314233162,
+   -272.52803463961374
+  ]
+ },
+ "lizard_before_cut": 1151,
+ "perf": {
+  "frame_ms": 100,
+  "cpu_ms": 17.699999999254942,
+  "sim_ms": 2.2000000001862645,
+  "render_ms": 14.300000000745058
+ },
+ "lizards": [
+  {
+   "element": "time",
+   "backend": "js",
+   "count": 1097,
+   "steps": 104,
+   "rate": 5.137249800445142
+  },
+  {
+   "element": "mass",
+   "backend": "js",
+   "count": 1138,
+   "steps": 134,
+   "rate": 5.153993227531174
+  }
+ ],
+ "errors": []
+}
