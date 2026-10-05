@@ -912,15 +912,19 @@ simulator is byte-identical with and without them.
 
 **Measured in the simulator** (2026-10-05; a 4-core Intel Xeon 2.8 GHz cloud machine, .NET 8.0.31,
 nothing else running; each track's shipped policy - I3 flies the general one - with 2 AI seats, 28 ms
-frames +-50%, 20 races per track, seedbase 50000, `eval <I> 20 ... limit=300`):
+frames +-50%, 20 races per track, seedbase 50000, `eval <I> 20 ... limit=300`), with the track-lookup
+speed-up below (commit `f0d56df55`):
 
 | Track (policy) | One AI, average per frame | Both AIs in one frame: typical / worst 10% / worst 1% | Intensity 2's planner | Biggest part (per AI per frame) | Memory allocated |
 |---|---|---|---|---|---|
-| I1 (`skimrace-v4-i1`) | 0.08 ms | 0.03 / 0.58 / 1.28 ms | - | laid-mass guard, 0.08 ms | 0 bytes |
-| I2 (`skimrace-v2-i2`) | **0.82 ms** | 0.78 / **3.68** / **5.61** ms | **1.50 ms** per AI per re-plan, on 43% of frames | planner, 0.64 ms | 0 bytes |
-| I3 (`skimrace-v2-general`) | 0.37 ms | 0.36 / 2.14 / 4.62 ms | - | laid-mass guard, 0.26 ms | 0 bytes |
-| I4 (`skimrace-v1-i4`) | 0.23 ms | 0.14 / 1.18 / 3.83 ms | - | laid-mass guard, 0.19 ms | 0 bytes |
-| I2 on Easy | 0.74 ms | 0.64 / 3.35 / 5.30 ms | 1.40 ms | planner, 0.58 ms | 0 bytes |
+| I1 (`skimrace-v4-i1`) | 0.08 ms | 0.03 / 0.60 / 1.29 ms | - | laid-mass guard, 0.08 ms | 0 bytes |
+| I2 (`skimrace-v2-i2`) | **0.68 ms** | 0.74 / **3.05** / **4.76** ms | **1.20 ms** per AI per re-plan, on 43% of frames | planner, 0.52 ms | 0 bytes |
+| I3 (`skimrace-v2-general`) | 0.30 ms | 0.27 / 1.75 / 3.85 ms | - | laid-mass guard, 0.22 ms | 0 bytes |
+| I4 (`skimrace-v1-i4`) | 0.20 ms | 0.12 / 1.06 / 3.38 ms | - | laid-mass guard, 0.18 ms | 0 bytes |
+| I2 on Easy | 0.67 ms | 0.58 / 3.11 / 4.72 ms | 1.25 ms | planner, 0.52 ms | 0 bytes |
+
+Before that speed-up (same runs, same races): I2 0.82 ms average, 1.50 ms per re-plan, worst 1% 5.61 ms;
+I3 0.37 ms (4.62 ms); I4 0.23 ms (3.83 ms); I1 unchanged.
 
 A frame at 60 fps is 16.7 ms. Easy and Medium cost no more than Hard (an Easy pilot has a little less to
 think about while a crystal is still unnoticed). The thinking allocates nothing, so it never feeds the
@@ -936,7 +940,8 @@ spike: it lands on about 2 of every 5 frames at 36 fps (1 in 3 at 60 fps), and B
 same frames, because both count from the same race start (in a 3-race count: 3,406 frames had two
 re-plans, 354 had one, 4,972 none). Inside a what-if flight the time goes to checking the hull against
 the ribbon's contact shell (~44%), finding the nearest point on the track (~24%), sampling the racing line
-(~12%) and the flight model and steering (~20%) - measured with temporary finer timers in a scratch build.
+(~12%) and the flight model and steering (~20%) - measured with temporary finer timers in a scratch build,
+before the track-lookup speed-up below roughly halved the nearest-point share.
 
 **What the simulator cannot say.** Unity runs this C# on Mono in the editor and IL2CPP in a build, not on
 .NET 8, so the game's numbers will differ - not measured here, but the editor is likely slower (much slower
@@ -944,12 +949,15 @@ with the editor's Code Optimization set to Debug) and an IL2CPP build likely clo
 (`SkimRacePilot.Sense`, `.Obstacles`) only runs in the game. The Profiler reading in
 `Docs/UNITY_VERIFICATION_CHECKLIST.md` is the real number.
 
-**Speed-ups, if they are ever wanted** (none made: the user's call was "no limit, just report", and only
-speed-ups that leave every race identical are allowed without asking):
+**Speed-ups** (the user's rules: no fixed budget; only speed-ups that leave every race identical, anything
+that changes flying is the user's decision):
 
-- *Identical races, measured in a scratch build:* the track lookups wrap their indices with integer
-  remainders (~150 `%` per lookup); a plain wrap-around gives the same indices and made the lookup about
-  2x faster - the whole decision ~14% cheaper on intensity 2, every race byte-identical.
+- *Identical races - APPLIED (commit `f0d56df55`, the user's call):* the track lookups wrapped their
+  indices with an integer remainder per segment (~150 `%` per lookup); the window's first index is now
+  computed once and stepped with a wrap-around. Old and new agree bit for bit on 2.4 million random
+  queries (tiny courses, wrapped windows, out-of-range hints, exact ties; a shifted window is caught), all
+  100 races of the table above are identical, and the thinking is 11-20% cheaper where the track is
+  searched most (I2, I3, I4).
 - *Identical races, tried and dropped:* skipping the far half of the star-shaped shell with a safe bound
   saved nothing measurable (the bound costs about what it saves).
 - *Would change how the AI flies (needs a decision):* stagger the AIs' re-plans so they do not share a

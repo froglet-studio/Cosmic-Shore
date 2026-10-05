@@ -63,8 +63,9 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 and its thinking (`SkimRaceDriver.Decide` and its parts; `SkimRaceDriver.TrackMpc` only on the frames
 intensity 2's planner re-plans). No behaviour change: every simulator race is byte-identical with and
 without them. The simulator's numbers are in `Docs/SKIM_RACE_AI.md` §12; this is the in-game reading the
-simulator cannot give (the editor runs C# on Mono, a build on IL2CPP). Simulator, intensity 2, two AI:
-0.78 ms in a typical frame, 3.7 / 5.6 ms in the worst 10% / 1% (the planner's re-plan frames).
+simulator cannot give (the editor runs C# on Mono, a build on IL2CPP). Simulator, intensity 2, two AI
+(after the identical-races track-lookup speed-up, `f0d56df55`): 0.74 ms in a typical frame, 3.05 / 4.76 ms
+in the worst 10% / 1% (the planner's re-plan frames).
 
 **Verify in editor (about 5 minutes)**
 - [ ] Compiles.
