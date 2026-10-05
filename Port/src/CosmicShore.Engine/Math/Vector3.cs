@@ -192,6 +192,8 @@ namespace CosmicShore.Engine
         public override bool Equals(object obj) => obj is Vector3 other && Equals(other);
         public override int GetHashCode() => HashCode.Combine(x, y, z);
         public override string ToString() => $"({x:F2}, {y:F2}, {z:F2})";
+        public string ToString(string format) => ToString(format, System.Globalization.CultureInfo.InvariantCulture);
+        public string ToString(string format, System.IFormatProvider provider) => $"({x.ToString(format, provider)}, {y.ToString(format, provider)}, {z.ToString(format, provider)})";
 
         public static implicit operator System.Numerics.Vector3(Vector3 v) => new(v.x, v.y, v.z);
         public static implicit operator Vector3(System.Numerics.Vector3 v) => new(v.X, v.Y, v.Z);

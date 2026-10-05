@@ -128,5 +128,7 @@ namespace CosmicShore.Engine
         public override bool Equals(object obj) => obj is Vector2 other && Equals(other);
         public override int GetHashCode() => HashCode.Combine(x, y);
         public override string ToString() => $"({x:F2}, {y:F2})";
+        public string ToString(string format) => ToString(format, System.Globalization.CultureInfo.InvariantCulture);
+        public string ToString(string format, System.IFormatProvider provider) => $"({x.ToString(format, provider)}, {y.ToString(format, provider)})";
     }
 }

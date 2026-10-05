@@ -246,6 +246,8 @@ namespace CosmicShore.Engine
         public override bool Equals(object obj) => obj is Quaternion other && Equals(other);
         public override int GetHashCode() => HashCode.Combine(x, y, z, w);
         public override string ToString() => $"({x:F5}, {y:F5}, {z:F5}, {w:F5})";
+        public string ToString(string format) => ToString(format, System.Globalization.CultureInfo.InvariantCulture);
+        public string ToString(string format, System.IFormatProvider provider) => $"({x.ToString(format, provider)}, {y.ToString(format, provider)}, {z.ToString(format, provider)}, {w.ToString(format, provider)})";
 
         public static implicit operator System.Numerics.Quaternion(Quaternion q) => new(q.x, q.y, q.z, q.w);
         public static implicit operator Quaternion(System.Numerics.Quaternion q) => new(q.X, q.Y, q.Z, q.W);

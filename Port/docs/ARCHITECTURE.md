@@ -320,7 +320,6 @@ install .NET, data folder, (6) player arguments, profile, Release/Debug, verbose
 
 | How | Command |
 |---|---|
-| Windows, one click (prebuilt zip) | `Port\play-player.bat` (pulls the latest build and runs it) |
 | From source | `cd Port && dotnet run --project src/CosmicShore.Player` |
 | Open one scene directly | `CosmicShore --scene Menu_Main` |
 | No window (fast checks) | `CosmicShore --headless --frames 600` |

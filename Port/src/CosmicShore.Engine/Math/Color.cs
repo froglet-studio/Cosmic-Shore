@@ -53,5 +53,7 @@ namespace CosmicShore.Engine
         public override bool Equals(object obj) => obj is Color other && Equals(other);
         public override int GetHashCode() => HashCode.Combine(r, g, b, a);
         public override string ToString() => $"RGBA({r:F3}, {g:F3}, {b:F3}, {a:F3})";
+        public string ToString(string format) => ToString(format, System.Globalization.CultureInfo.InvariantCulture);
+        public string ToString(string format, System.IFormatProvider provider) => $"RGBA({r.ToString(format, provider)}, {g.ToString(format, provider)}, {b.ToString(format, provider)}, {a.ToString(format, provider)})";
     }
 }

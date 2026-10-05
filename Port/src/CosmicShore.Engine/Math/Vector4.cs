@@ -54,5 +54,7 @@ namespace CosmicShore.Engine
         public override bool Equals(object obj) => obj is Vector4 other && Equals(other);
         public override int GetHashCode() => HashCode.Combine(x, y, z, w);
         public override string ToString() => $"({x:F2}, {y:F2}, {z:F2}, {w:F2})";
+        public string ToString(string format) => ToString(format, System.Globalization.CultureInfo.InvariantCulture);
+        public string ToString(string format, System.IFormatProvider provider) => $"({x.ToString(format, provider)}, {y.ToString(format, provider)}, {z.ToString(format, provider)}, {w.ToString(format, provider)})";
     }
 }

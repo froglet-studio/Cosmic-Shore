@@ -28,17 +28,11 @@ dotnet build
 dotnet test
 ```
 
-## Try it (Windows, from any branch)
+## Try it (Windows)
 
-From an existing Cosmic Shore clone, on any branch, paste into PowerShell:
-
-```powershell
-git fetch origin cece/focused-planck-cj46y3; & ([scriptblock]::Create((git show FETCH_HEAD:Port/try.ps1) -join "`n"))
-```
-
-`Port/try.ps1` checks this branch out into a sibling worktree (`..\CosmicShore-unityless`), unpacks
-the self-contained build from `dist/`, and launches it. Your own checkout is never touched; running
-it again updates in about a second.
+Run `FrogletLauncher.exe` (unzip `dist/FrogletLauncher-Windows.zip`): pick a branch, press
+START GAME. It fetches that branch into its own workspace (or a worktree beside your clone),
+builds it from source and starts the game. Your own checkout is never touched. `docs/LAUNCHER.md`.
 
 ## Run the real game
 
@@ -105,7 +99,7 @@ Port/
 │   ├── CosmicShore.Mobile/      # the phone player (Android activity / iOS app around PlayerWindow)
 │   ├── CosmicShore.Cli/         # headless smoke/sim harness (engine boot, SOAP, sims)
 │   └── CosmicShore.Client/      # playable SkimRace window (Silk.NET, sprint builds)
-├── dist/                        # playable progress-build zips (see play-latest.bat)
+├── dist/                        # FrogletLauncher-Windows.zip (the one file to give a tester)
 ├── artifacts/                   # curated headless render verifications
 └── tests/
     ├── CosmicShore.Tests/        # xunit suite (engine, vessel layer, enum freezes)
