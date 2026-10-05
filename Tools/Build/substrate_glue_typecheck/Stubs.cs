@@ -22,7 +22,7 @@ namespace UnityEngine
     public class TextAsset : Object { public string text; }
     public class GameObject : Object { public GameObject(string n) { } public bool activeInHierarchy; public Scene scene; public int layer; public Transform transform; public T AddComponent<T>() where T : Component => default; }
     public struct Scene { public bool isLoaded; }
-    public class Transform : Component { public Vector3 position, localPosition, localScale; public Quaternion rotation, localRotation; public Matrix4x4 localToWorldMatrix, worldToLocalMatrix; public void SetPositionAndRotation(Vector3 p, Quaternion q) { } public void SetParent(Transform p, bool worldPositionStays) { } }
+    public class Transform : Component { public Vector3 position, localPosition, localScale; public Vector3 forward => default; public Quaternion rotation, localRotation; public Matrix4x4 localToWorldMatrix, worldToLocalMatrix; public void SetPositionAndRotation(Vector3 p, Quaternion q) { } public void SetParent(Transform p, bool worldPositionStays) { } }
     public class Renderer : Component { public bool enabled; }
     public class SkinnedMeshRenderer : Renderer { public Mesh sharedMesh; }
     public class MeshFilter : Component { public Mesh sharedMesh; }
@@ -218,6 +218,7 @@ namespace CosmicShore.Gameplay
         protected static readonly Collider[] OverlapScratch = new Collider[256];
         protected static readonly List<Prism> FeedScratch = new(64);
         protected static int NonPrismOverlapMask => 0;
+        public static int VesselSenseMask => NonPrismOverlapMask;   // Fauna.cs (round 11f)
         protected HealthPrism[] CacheBodyPrisms() => null;
         protected HealthPrism[] BodyPrisms => null;
         public virtual void OnBodyPrismExploded(HealthPrism prism, string killerName) { }
