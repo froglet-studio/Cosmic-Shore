@@ -36,6 +36,17 @@ namespace CosmicShore.Gameplay
 
             RearmGameStartStatsReset();   // fresh scene = fresh game
 
+            // On a replay scene reload the overlay is opaque until the player vessel is ready.
+            // Arm the fade NOW, not after the InitDelayMs wait: a peer's vessel can finish
+            // initialising (OnClientReady) inside that delay, and a subscription made after it
+            // would miss the event and leave the screen black.
+            if (gameData.IsReplayReload)
+            {
+                gameData.IsReplayReload = false;
+                gameData.OnClientReady.OnRaised -= FadeFromBlackOnReplay; // never double-subscribe
+                gameData.OnClientReady.OnRaised += FadeFromBlackOnReplay;
+            }
+
             LoadInsights.Mark($"Game controller spawned ({GetType().Name}, IsServer={IsServer})");
 
             if (IsServer)
@@ -112,6 +123,11 @@ namespace CosmicShore.Gameplay
 
         public override void OnNetworkDespawn()
         {
+            // If the scene went away before OnClientReady ever fired, drop the armed fade so
+            // it cannot run against the next scene's overlay.
+            if (gameData != null && gameData.OnClientReady != null)
+                gameData.OnClientReady.OnRaised -= FadeFromBlackOnReplay;
+
             if (IsServer)
             {
                 gameData.OnMiniGameTurnEnd.OnRaised -= HandleTurnEnd;
@@ -178,13 +194,8 @@ namespace CosmicShore.Gameplay
                     gameData.InitializeGame();
                 }
 
-                // On replay scene reload, fade in once the player vessel is ready.
-                // Runs on ALL machines (server + clients) since each needs to fade their own overlay.
-                if (gameData.IsReplayReload)
-                {
-                    gameData.IsReplayReload = false;
-                    gameData.OnClientReady.OnRaised += FadeFromBlackOnReplay;
-                }
+                // The replay fade-in is armed in OnNetworkSpawn (before this delay) so an early
+                // OnClientReady is not missed - see FadeFromBlackOnReplay.
 
                 if (!IsServer)
                 {
@@ -520,7 +531,7 @@ namespace CosmicShore.Gameplay
         ///
         /// <para>
         /// This lives on the BASE because it was written twice - once in
-        /// <c>MultiplayerDomainGamesController</c>, once in <c>CoOpWildlifeBlitzMiniGame</c> - and
+        /// <c>MultiplayerDomainGamesController</c>, once in the retired <c>CoOpWildlifeBlitzMiniGame</c> - and
         /// both copies carried the same two defects. Two copies of a rule is how the second one
         /// gets forgotten, and a third mode would have written a third.
         /// </para>

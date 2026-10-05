@@ -52,7 +52,7 @@ cloud-sync (a phone and a PC must not share a resolution). They live in `Display
 | Auto-detect heuristic (SystemInfo, CPU-weighted) | `_Scripts/Controller/Settings/SettingsAutoDetector.cs` |
 | Accessibility store | `_Scripts/Controller/Settings/AccessibilitySettings.cs` |
 | Benchmark scene launcher (Settings button) | `_Scripts/Controller/Settings/BenchmarkSceneLauncher.cs` |
-| Endless sandbox controller | `_Scripts/Controller/Arcade/SandboxBenchmarkController.cs` |
+| Benchmark scene controller (Editor-only path) | `_Scripts/Controller/Arcade/SinglePlayerWildlifeBlitzController.cs` (plus ScoreTracker / TurnMonitor / `WildlifeBlitzHUD` / `WildlifeBlitzStatsProvider`) |
 | Settings panel controller (binds canvas → backend) | `_Scripts/UI/Modals/GameSettingsPanelController.cs` |
 | Tab navigation (content + underline + scale) | `_Scripts/UI/Modals/SettingsTabBar.cs` |
 | In-scene benchmark HUD controller | `_Scripts/UI/BenchmarkSceneHud.cs` |
@@ -108,9 +108,13 @@ the in-scene **Benchmark**, which measures real frame cost via the author's
 - **Launch:** Settings → Run Benchmark calls `BenchmarkSceneLauncher.LaunchBenchmark()` → sets
   `GameDataSO` (Squirrel, single-player, WildlifeBlitz mode) → `InvokeGameLaunch()` → the always-on
   host loads it via Netcode scene management (the Relay just idles for a single-player scene).
-- **Endless + flyable:** `SandboxBenchmarkController` (`HasEndGame=false`) auto-activates players;
-  the human flies a Squirrel, AI Squirrels fly via the same `StartPlayer→ToggleAIPilot` path
-  WildlifeBlitz uses. No win condition (no TurnMonitor).
+- **Controller stack:** the scene keeps the cloned single-player Wildlife Blitz stack —
+  `SinglePlayerWildlifeBlitzController` with `SinglePlayerWildlifeBlitzScoreTracker`,
+  `SingleplayerWildlifeBlitzTurnMonitor` / `TimeBasedTurnMonitor`, `WildlifeBlitzHUD`, and
+  `WildlifeBlitzStatsProvider`. (`SandboxBenchmarkController` was deleted as an unused orphan in
+  BH-5.6; it was never what this scene referenced.) Launch configures a Squirrel human + AI
+  backfill via `GameDataSO.ConfigurePlayerCounts`; the scene's `PlayerSpawner` / adapter path
+  starts them. Editor-only — not in Build Settings (BH-5.3).
 - **Gradual spawn (no single-frame spike):** the existing `RandomLifeSpawner` already frame-spreads
   spawns via `yield return null` / `WaitForSeconds` (it has a comment about fixing a ~48% spike that
   way). A high-density benchmark `SpawnProfileSO` raises counts/lowers intervals — **production only,
@@ -190,8 +194,9 @@ hook (each is its own follow-up, some are ecology-sensitive — use the `/ecolog
    so the panel shows/hides with the modal.
 2. **Benchmark button:** add `BenchmarkSceneLauncher` and hook the button → `LaunchBenchmark()`.
 3. **Benchmark scene:** `BenchmarkStressTest.unity` already exists in the repo (one only — never
-   re-create it). Wiring changes (Squirrel vessel on the spawner's AI entries, endless controller,
-   spawn profile, `BenchmarkSceneHud`, the Exit event) are edited directly in that scene.
+   re-create it). Wiring changes (Squirrel vessel on the spawner's AI entries, the Wildlife Blitz
+   controller stack above, spawn profile, optional `BenchmarkSceneHud`, the Exit event) are edited
+   directly in that scene.
 4. **If you map dropdown indices to enums**, match the order in `GraphicsSettingsEnums.cs`: Display
    mode = Fullscreen/Borderless/Windowed; Quality = Very Low..Ultra; AA =
    Off/FXAA/SMAA/MSAA2x/4x/8x/TAA; frame cap your own list (pass the int to `SetTargetFrameRate`).
