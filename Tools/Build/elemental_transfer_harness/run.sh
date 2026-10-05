@@ -28,6 +28,7 @@ SRCS=("$ROOT/Assets/_Scripts/Data/Enums/Element.cs" \
       "$ROOT/Assets/_Scripts/Data/Enums/ElementalDebuffSources.cs" \
       "$ROOT/Assets/_Scripts/Data/Enums/ElementalTransferForm.cs" \
       "$ROOT/Assets/_Scripts/Data/Enums/PetalBurnRule.cs" \
+      "$ROOT/Assets/_Scripts/Data/Enums/InitialControllingDomain.cs" \
       "$ROOT/Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Helpers/ElementalTransfer.cs" \
       "$ROOT/Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Helpers/CombatHitDrain.cs" \
       "$ROOT/Assets/_Scripts/Controller/Environment/FlowField/ElementalCrystalEjector.cs" \

@@ -79,6 +79,19 @@ namespace CosmicShore.Utility
         /// <summary>See the field's tooltip and <see cref="CellControlRules"/>.</summary>
         public InitialControllingDomain InitialControllingDomain => initialControllingDomain;
 
+        [Header("Metabolism")]
+        [Tooltip("Whether fauna in this cell run the CONSERVED stomach (Docs/ECOLOGY_LOD.md §2): a feed fills the " +
+                 "stomach by the volume actually eaten, so a thin trail prism buys proportionally less time than a " +
+                 "nominal one. Off (the default, every cell but the Swarm cell) = the shipped rule: ANY feed refills " +
+                 "the stomach completely, exactly as the old starvation clock reset. Predation and Nourish are full " +
+                 "refills under both rules. Opt-in per cell because it changes how fast every grazer starves on a " +
+                 "trail diet (about 3-5x faster on Rhino/Squirrel trail prisms) and has not been play-tested outside " +
+                 "the Swarm cell.")]
+        [SerializeField] bool conservedFaunaStomach = false;
+
+        /// <summary>See the field's tooltip. Read by <c>Fauna.NotifyFed(float)</c>.</summary>
+        public bool ConservedFaunaStomach => conservedFaunaStomach;
+
         [Header("Phase Thresholds")]
         [Tooltip("Per-biome up/down prism-count thresholds that drive phase transitions. "
                + "The gap between Up and Down for each phase is the hysteresis band.")]

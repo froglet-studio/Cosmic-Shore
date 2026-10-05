@@ -560,8 +560,8 @@ namespace CosmicShore.Tests
             int a = AddVirtual(owner, 0, Vector3.zero);
             int b = AddVirtual(owner, 1, new Vector3(1f, 0f, 0f));
 
-            var ids = new NativeArray<int>(new[] { a, b }, Allocator.Temp);
-            var pos = new NativeArray<Unity.Mathematics.float3>(2, Allocator.Temp);
+            var ids = new NativeArray<int>(new[] { a, b }, Allocator.TempJob);
+            var pos = new NativeArray<Unity.Mathematics.float3>(2, Allocator.TempJob);
             pos[0] = new Unity.Mathematics.float3(300f, 0f, 0f);
             pos[1] = new Unity.Mathematics.float3(301f, 0f, 0f);
             _index.UpdatePositionsBatch(ids, pos);

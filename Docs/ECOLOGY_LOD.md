@@ -28,12 +28,27 @@ The research recommends six things. This round does these:
 |---|---|---|
 | 1 | Regions live inside `Cell`; only fauna are LOD'd | **Pure core, not wired to a Cell.** `EcologyWorld` partitions the 1200-u membrane into 200-u regions (912 inside) with 4-u flora/nutrient voxels. It runs in the harness. The game's flora stays real prisms. No game species is a cohort population yet (§6). |
 | 2 | The volume spine reads both levels | **Done.** `Cell.LiveVolume` adds `MacroFaunaLedger` for populations that release entries. The swarm keeps its entries, so it is exact by construction (§4.3). |
-| 3 | One stomach replaces the starvation clock | **Done for `Fauna`** (Boid, LightFauna, WormFauna and every subclass) (§2). The swarm's starvation is round 9's pooled egg budget. It is unchanged (§2.4). |
+| 3 | One stomach replaces the starvation clock | **Done for `Fauna`, OPT-IN PER CELL** (Boid, LightFauna, WormFauna and every subclass; §2, §2.0). The swarm's starvation is round 9's pooled egg budget. It is unchanged (§2.4). |
 | 4 | Spawn profiles become initial conditions | Not this round. |
 | 5 | Macro 1 Hz job / micro 10 Hz job / impostors | The macro and micro cores are pure, Burst-shaped C# (flat arrays, no allocation in the step). They are not yet Burst jobs. |
 | 6 | Replicate the macro state | Not this round. The macro core is deterministic per seed, so it is ready for it. |
 
 ## 2. The stomach (recommendation 3)
+
+### 2.0 Opt-in per cell (the ship-deep containment)
+
+The volume-paid feed is **opt-in per cell**: `CellConfigDataSO.ConservedFaunaStomach` (serialized
+`conservedFaunaStomach`), **default off**. Off, `Fauna.NotifyFed(volume)` refills the stomach completely on any feed
+(`FaunaStomach.Fill`), which is exactly the shipped starvation-clock reset, and pays nothing to the soil. On, it runs
+everything below. Only the Swarm Cell Config sets it (`author_swarm_fauna.py`, `CONSERVED_FAUNA_STOMACH`).
+
+Why it is gated: §2.1 item 5 is a real gameplay change for every grazer in the game. A Rhino trail prism (≈ 4.5) buys
+about 8 s of a 30 s clock instead of the whole clock, and a Squirrel trail prism (≈ 3.1) about 6 s. That is roughly 3-5x
+faster starvation on a trail diet in every existing cell, never play-tested outside the Swarm cell. Turning it on for
+another cell is a balance decision for that cell, with its own playtest.
+
+Unchanged by the gate, under both rules: the stomach still drains at `Capacity / starvationSeconds`, predation and
+`Nourish` are full refills, and death still closes the books to the soil (the soil is written and nothing reads it).
 
 `FaunaStomach` is a struct with a level at a timestamp and a constant drain. It costs nothing per frame. The level is
 read when a behaviour tick asks for it and settled on each feed.

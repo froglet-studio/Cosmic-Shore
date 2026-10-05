@@ -723,6 +723,11 @@ PETAL_BURN_RULE = 1
 # a fixed Jade/Ruby/Gold.
 INITIAL_CONTROLLING_DOMAIN = 1
 
+# Ship-deep containment: the CONSERVED fauna stomach (round 11f, Docs/ECOLOGY_LOD.md §2) is opt-in per cell
+# (CellConfigDataSO.conservedFaunaStomach, default off = any feed is a full refill, the shipped rule). The demo
+# cell opts in; every other cell keeps the shipped starvation behaviour.
+CONSERVED_FAUNA_STOMACH = 1
+
 
 def cell_asset(L):
     return SO_HEADER % (SO_SCRIPT["cell"], f"{PREFIX} Cell Config") + (
@@ -740,6 +745,7 @@ def cell_asset(L):
         f"  SpawnProfile: {{fileID: 11400000, guid: {guid(rel(cell_path(PREFIX + ' Cell Spawn Profile')))}, type: 2}}\n"
         f"  PetalBurnRule: {PETAL_BURN_RULE}\n"
         f"  initialControllingDomain: {INITIAL_CONTROLLING_DOMAIN}\n"
+        f"  conservedFaunaStomach: {CONSERVED_FAUNA_STOMACH}\n"
         "  PhaseThresholds:\n" + "".join(f"    {k}: {v}\n" for k, v in L.items()))
 
 
@@ -839,6 +845,8 @@ def starting_controller_problems(value=None):
     so_src = read(os.path.join(A(), "_Scripts", "Utility", "DataContainers", "CellConfigDataSO.cs"))
     if not re.search(r"\[SerializeField\]\s*InitialControllingDomain\s+initialControllingDomain\b", so_src):
         problems.append("CellConfigDataSO no longer serializes 'initialControllingDomain' - the key this script authors")
+    if not re.search(r"\[SerializeField\]\s*bool\s+conservedFaunaStomach\b", so_src):
+        problems.append("CellConfigDataSO no longer serializes 'conservedFaunaStomach' - the key this script authors")
     return problems
 
 

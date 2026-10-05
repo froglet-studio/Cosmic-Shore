@@ -30,11 +30,12 @@ namespace CosmicShore.Gameplay
     public class SnowChanger : MonoBehaviour { }
     public class CellModifier : ScriptableObject { }
     public class SpawnableBase : MonoBehaviour { }
+    public class Cell : MonoBehaviour { public CosmicShore.Utility.CellConfigDataSO Config; }
 }
 
 namespace CosmicShore.Utility
 {
     public class SpawnProfileSO : ScriptableObject { }
     public struct CellPhaseThresholds { public static CellPhaseThresholds Default => default; }
-    public class CellRuntimeDataSO : ScriptableObject { public CellConfigDataSO Config; }
+    public class CellRuntimeDataSO : ScriptableObject { public CellConfigDataSO Config; public CosmicShore.Gameplay.Cell Cell; }
 }

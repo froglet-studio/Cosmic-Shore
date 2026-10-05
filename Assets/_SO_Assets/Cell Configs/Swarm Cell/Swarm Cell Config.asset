@@ -27,6 +27,7 @@ MonoBehaviour:
   SpawnProfile: {fileID: 11400000, guid: 02633d3f53225652894dc5c3b785ce53, type: 2}
   PetalBurnRule: 1
   initialControllingDomain: 1
+  conservedFaunaStomach: 1
   PhaseThresholds:
     RestlessEnter: 2500
     RestlessExit: 1800

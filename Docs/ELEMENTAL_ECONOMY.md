@@ -176,9 +176,11 @@ overwriting what shipped. Nothing about *who* is punished changes; only *how muc
 | **Tuned** = 1 | the same asset, `tunedDebuffMagnitude: -0.1` | **1 petal** | 4 petals |
 
 - **The switch is `CellConfigDataSO.PetalBurnRule`** (enum `PetalBurnRule`, `Assets/_Scripts/Data/Enums/PetalBurnRule.cs`).
-  The effect reads the live cell through its `cellData` reference (Runtime Cell Data) and picks
-  the size with the pure resolver `PetalBurnRules.Magnitude`. If no cell is loaded or the reference is
-  unwired, it plays Shipped.
+  The effect reads the live cell through its `cellData` reference (Runtime Cell Data): `cellData.Cell.Config`,
+  never `cellData.Config` alone. That field survives a scene load and is cleared only when a Cell enables, so after
+  the Swarm cell had been picked, a scene with no Cell would otherwise have kept playing Tuned. It picks the size
+  with the pure resolver `PetalBurnRules.Magnitude`. If no cell is live or the reference is unwired, it plays
+  Shipped.
 - **The Swarm cell (the demo cell) is Tuned.** It is authored by `Tools/Build/author_swarm_fauna.py`
   (`PETAL_BURN_RULE = 1`). The other 61 cell configs author nothing, so they play Shipped.
 - **Flip it in one place.** Set `PETAL_BURN_RULE` and re-run the generator, or set the field on

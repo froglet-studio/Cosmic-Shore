@@ -271,8 +271,26 @@ namespace CosmicShore.Gameplay
         protected void NotifyFed(float volume)
         {
             if (!_stomachLive) StartStomach();
-            PayToSoil(_stomach.Feed(volume, Time.time));
+            if (UsesConservedStomach)
+                PayToSoil(_stomach.Feed(volume, Time.time));
+            else
+                _stomach.Fill(Time.time);   // the shipped rule: any feed is a full refill, as the clock reset did
             TryReproduce();
+        }
+
+        /// <summary>
+        /// True when this creature's cell opts into the conserved stomach (<see cref="CellConfigDataSO.ConservedFaunaStomach"/>,
+        /// the Swarm cell only). Everywhere else a feed refills the stomach completely - the shipped starvation-clock rule -
+        /// so the volume-paid metabolism stays contained to the cell that was tuned for it.
+        /// </summary>
+        bool UsesConservedStomach
+        {
+            get
+            {
+                var c = cell;
+                var cfg = c ? c.Config : null;
+                return cfg && cfg.ConservedFaunaStomach;
+            }
         }
 
         // -------------------------------------------------------------------

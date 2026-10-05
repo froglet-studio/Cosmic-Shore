@@ -3172,11 +3172,18 @@ namespace CosmicShore.Gameplay
                 prism = MaterialiseVirtual(idx);
                 if (prism == null) return false;
                 int realIdx = prism.SpatialIndexId;
-                if (realIdx >= 0 && realIdx < _highWaterMark && _prisms[realIdx] == prism)
+                if (!(realIdx >= 0 && realIdx < _highWaterMark && _prisms[realIdx] == prism))
                 {
-                    if (alreadyHit != null && !alreadyHit.Add(realIdx)) return false;
-                    idx = realIdx;
+                    // Every shipped owner finishes the proxy's creation (which registers it) before handing it
+                    // back; one that did not is finished here. If the proxy STILL has no slot of its own, stop:
+                    // everything below syncs _damage/_cellData by idx, and idx is the virtual slot that was just
+                    // suspended - writing the hit there would book it against the wrong entry.
+                    prism.CompleteCreationImmediately();
+                    realIdx = prism.SpatialIndexId;
+                    if (!(realIdx >= 0 && realIdx < _highWaterMark && _prisms[realIdx] == prism)) return false;
                 }
+                if (alreadyHit != null && !alreadyHit.Add(realIdx)) return false;
+                idx = realIdx;
             }
             if (prism == null || prism.destroyed) return false;
 

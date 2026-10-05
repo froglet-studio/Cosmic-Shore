@@ -940,6 +940,12 @@ type-checks and authoring gates have run; it has never been opened in the editor
 7. **Stomachs** (Boid, LightFauna, Worm cells). Play 5 minutes as before.
    - Starvation should look the same as before: creatures that find food survive, and creatures in a stripped area
      thin out after about their `starvationSeconds`.
+   - **Outside the Swarm cell the rule is the SHIPPED one** (the volume-paid feed is opt-in,
+     `CellConfigDataSO.ConservedFaunaStomach`, Swarm cell only - ECOLOGY_LOD.md §2.0). In Skim Race or Scarab
+     Scramble, a tadpole grazing a thin trail must survive as long as it did before this branch. FAIL if grazers on a
+     trail diet thin out noticeably faster there than on bleeding-edge.
+   - **Inside the Swarm cell** (the flag is on) a grazer living only on thin trail prisms starves sooner than one
+     on full-size leaves. That is intended.
    - A creature eaten by a predator keeps the predator alive for the same time as before.
 8. **Profile** 60 s with all swarms far. Record `CellEcologyLod.*` and `SwarmFauna.MacroTick`: expect well under
    0.1 ms per frame together.

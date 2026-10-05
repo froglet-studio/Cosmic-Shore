@@ -2422,7 +2422,8 @@ What changes for the swarm:
   and the threat flora's network runs on slowed time when nobody is near; see ECOLOGY_LOD.md §6.
 
 Every other creature's `starvationSeconds` is now a conserved stomach, migrated so a standard leaf meal behaves as the
-clock did (ECOLOGY_LOD.md §2).
+clock did (ECOLOGY_LOD.md §2). The volume-paid feed is opt-in per cell (`CellConfigDataSO.ConservedFaunaStomach`,
+ECOLOGY_LOD.md §2.0) and only the Swarm cell sets it; everywhere else any feed is still a full refill.
 
 **QA.** QA-SWARM-ROUND11-6.
 
