@@ -284,14 +284,6 @@ namespace CosmicShore.Utility
     }
 
     /// <summary>
-    /// The data that differs between per-element prefab VARIANTS of the same flora species,
-    /// hoisted into config so ONE base prefab serves all of them. Sentinels keep the prefab's
-    /// authored value: floats/ints -1, vectors zero. Captured from the real
-    /// Charge/Mass/Space/Time GyroidFlora diff: leaf PRISM size (9x3.4x1.5 / 7x4.5x3.5 /
-    /// 20x1x1 / 9x3.4x1.5), grow period (0.5 / 0.3 / 0.8 / 0.15), shield period
-    /// (1 / 0 / 0 / 0), live-prism budget (1000 / 1500 / 800 / 1000), plant radius fraction.
-    /// </summary>
-    /// <summary>
     /// One planting PEN of a <see cref="FloraConfigurationSO.PlantingPens"/> list: a shell about the cell centre between two
     /// fractions of the membrane radius, optionally narrowed to a cone about an axis (a SECTOR, as a substrate species'
     /// sector pen - SubstrateCore.SetSector).
@@ -313,6 +305,14 @@ namespace CosmicShore.Utility
         [Min(0f)] public float OuterFraction;
     }
 
+    /// <summary>
+    /// The data that differs between per-element prefab VARIANTS of the same flora species,
+    /// hoisted into config so ONE base prefab serves all of them. Sentinels keep the prefab's
+    /// authored value: floats/ints -1, vectors zero. Captured from the real
+    /// Charge/Mass/Space/Time GyroidFlora diff: leaf PRISM size (9x3.4x1.5 / 7x4.5x3.5 /
+    /// 20x1x1 / 9x3.4x1.5), grow period (0.5 / 0.3 / 0.8 / 0.15), shield period
+    /// (1 / 0 / 0 / 0), live-prism budget (1000 / 1500 / 800 / 1000), plant radius fraction.
+    /// </summary>
     [System.Serializable]
     public class FloraVariantTuning
     {
