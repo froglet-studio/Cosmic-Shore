@@ -1911,6 +1911,11 @@ on the proxy via the existing `SetTier` path.
 Verified by `Tools/Build/swarm_glue_typecheck/run.sh` (netstandard2.1). Not run in the editor; see
 QA-SWARM-ROUND10-1.
 
+**Round 11g: the burn size is a per-cell switch.** The Swarm cell plays the **Tuned** burn, so a strike costs 1 petal
+per element (4 per contact). Every other cell keeps the **Shipped** 5 petals per element (20 per contact). The
+switch is `CellConfigDataSO.PetalBurnRule`, authored here by `author_swarm_fauna.py` (`PETAL_BURN_RULE`). See
+`Docs/ELEMENTAL_ECONOMY.md` §4.1 for both measured outcomes; QA-SWARM-ROUND11-7.
+
 ## 19. Round 11a: one prism system
 
 Until this round a swarm member's body was a prism only in name. Weapons and predators found it through a member

@@ -628,6 +628,12 @@ def profile_asset():
         "  SupportedFaunas:\n" + faunas)
 
 
+# Round 11g (Docs/ELEMENTAL_ECONOMY.md §4.1): the demo cell plays the TUNED petal burn - one petal
+# per element per danger contact instead of five - while every other cell keeps what shipped
+# (CellConfigDataSO.PetalBurnRule defaults to Shipped = 0). Flip it here: 0 = Shipped, 1 = Tuned.
+PETAL_BURN_RULE = 1
+
+
 def cell_asset(L):
     return SO_HEADER % (SO_SCRIPT["cell"], f"{PREFIX} Cell Config") + (
         "  CellName: Swarm\n"
@@ -642,6 +648,7 @@ def cell_asset(L):
         "  CellModifiers:\n"
         f"  - {{fileID: {MODIFIER[0]}, guid: {MODIFIER[1]}, type: 3}}\n"
         f"  SpawnProfile: {{fileID: 11400000, guid: {guid(rel(cell_path(PREFIX + ' Cell Spawn Profile')))}, type: 2}}\n"
+        f"  PetalBurnRule: {PETAL_BURN_RULE}\n"
         "  PhaseThresholds:\n" + "".join(f"    {k}: {v}\n" for k, v in L.items()))
 
 

@@ -801,6 +801,50 @@ with no trail · live volume never moves as the swarms grow.
 Round 8's diet colouring (newborns wearing the colour of what they ate) was removed on playtest. See
 `Docs/SWARM_FAUNA.md` §17.
 
+### QA-SWARM-ROUND11-7 ⬜ — the petal-burn switch: the demo cell burns 1 petal per element, everywhere else 5
+
+**Source:** branch `overnight/burn` (round 11g). It is proven by the elemental transfer harness (T8 and the
+switch type-check) and by `check_elemental_economy.py` §5. Not run in the editor. Reference:
+`Docs/ELEMENTAL_ECONOMY.md` §4.1.
+
+**Why it matters:** the shipped burn strips a careless pilot in 5-37 s. The lab's tuned rule costs a skilled pilot
+0.22 petals/min. Garrett has not chosen yet. The demo cell plays Tuned so the two can be felt side by side.
+
+**Step 0: give yourself petals to lose.** Collect crystals until every element on your HUD flower holds at least 5
+petals (ELEMENTAL_ECONOMY.md §8 step 0).
+
+1. **Inspect.** Select `Assets/_SO_Assets/Effects/Vessel Prism Effects/VesselElementalDebuffByDangerPrismEffect.asset`.
+   It should show Debuff Magnitude **-0.5** and Tuned Debuff Magnitude **-0.1**, and Stakes Switch ▸ Cell Data =
+   **Runtime Cell Data**. Then select `Assets/_SO_Assets/Cell Configs/Swarm Cell/Swarm Cell Config.asset`: Stakes ▸
+   Petal Burn Rule = **Tuned**. Any other Cell Config should read **Shipped**.
+2. **Tuned, hostile.** Open `Menu_Main`, pick the **Swarm** cell and start freestyle. Fly as a domain that does NOT
+   control the cell. Fly into one striking creature: a lit pufferfish plate, a pack hunter mid-dive, or a lurker's
+   snap. Each of the four flowers should step down **exactly one** petal and stay down. Wait 1 s, the per-vessel
+   cooldown, and touch again: one more petal each.
+3. **Tuned, own domain.** Repeat as the cell's controlling domain. Each flower dips by one petal and recovers over
+   ~4 s. Nothing is lost.
+4. **Shipped, for contrast.** Pick any other cell with danger prisms (an opposing pilot's danger trail works in any
+   mode), then repeat step 2. Each flower should drop **five** petals per contact, so a full element is gone in two.
+5. **Last petal.** In the Swarm cell, take repeated hostile contacts until an element shows 1 petal. The next
+   contact must take it to **0**. Further contacts take nothing and never go negative.
+6. **Flip it.** Set the Swarm Cell Config's Petal Burn Rule to **Shipped**. For the permanent version, set
+   `PETAL_BURN_RULE = 0` in `Tools/Build/author_swarm_fauna.py`, run it, and update `TUNED_CELLS` in
+   `check_elemental_economy.py`. Replay step 2: five petals per contact. Then set it back to Tuned.
+
+**PASS:**
+- The Swarm cell burns 1 petal per element per hostile contact.
+- Other cells burn 5.
+- The own-domain sting matches the burn's size and recovers.
+- The last petal can be burned.
+- Flipping the field changes the size with no code change.
+
+**FAIL:**
+- The Swarm cell burns 5. Likely cause: Cell Data is unwired on the effect asset, or the cell config reads Shipped.
+- Another cell burns 1.
+- A contact burns a fraction or an uneven count across the four elements.
+- An element sticks at 1 petal under repeated hostile contact.
+- The own-domain dip is a different size from the burn.
+
 ### QA-SWARM-ROUND11-2 ⬜ — the Living Ecology substrate: a pack that surrounds you and dives in at once
 
 **Source:** branch `overnight/substrate`. Proven by the headless harness and Roslyn type-check only; not run in the
