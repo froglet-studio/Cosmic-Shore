@@ -28,7 +28,7 @@ namespace UnityEngine
     public class Material : Object { public Material(Shader s) { } public bool HasProperty(string n) => false; public bool HasProperty(int n) => false; public Vector4 GetVector(int n) => default; public float GetFloat(int n) => 0; }
     public struct Color { public float r, g, b, a; public Color(float r, float g, float b) { this.r = r; this.g = g; this.b = b; a = 1; } public static implicit operator Vector4(Color c) => default; }
     public struct Matrix4x4 { public float m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23, m30, m31, m32, m33; public static Matrix4x4 TRS(Vector3 p, Quaternion q, Vector3 s) => default; public Vector4 GetColumn(int i) => default; public static Matrix4x4 identity; public static Matrix4x4 Rotate(Quaternion q) => default; public static Matrix4x4 operator *(Matrix4x4 a, Matrix4x4 b) => a; }
-    public struct Bounds { public Bounds(Vector3 c, Vector3 s) { } public void SetMinMax(Vector3 min, Vector3 max) { } }
+    public struct Bounds { public Bounds(Vector3 c, Vector3 s) { } public void SetMinMax(Vector3 min, Vector3 max) { } public Vector3 center => default; public Vector3 extents => default; }
     public struct Vector3Int { public int x, y, z; public Vector3Int(int a, int b, int c) { x = a; y = b; z = c; } }   // builders (BuilderRegistry)
     public sealed class MaterialPropertyBlock { public void SetFloat(int n, float v) { } public void SetVector(int n, Vector4 v) { } public void SetColor(int n, Color c) { } public void SetMatrix(int n, Matrix4x4 m) { } public void SetBuffer(int n, GraphicsBuffer b) { } public void SetVectorArray(int n, Vector4[] v) { } }
     public sealed class GraphicsBuffer : IDisposable

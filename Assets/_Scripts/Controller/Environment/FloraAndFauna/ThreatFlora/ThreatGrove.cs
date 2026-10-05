@@ -576,11 +576,43 @@ namespace CosmicShore.Gameplay
                 }
                 SenseVessels(0f);
                 _phys.SetVessels(_vessels, _vesselCount);
-                _phys.Advance(dt);
+                _phys.Advance(dt * FarScale());
                 ProcessPhysarumEvents(warm: false);
                 DrainLayQueue();
                 if (Time.time >= _pollAt) { _pollAt = Time.time + _phys.P.MaterializeEvery; PollTubes(); }
             }
+        }
+
+        // ── the far cadence (round 11f-2, Docs/ECOLOGY_LOD.md §6.3) ─────────────────────────────────────
+        // Flora is never collapsed; with nobody near, its network just runs on slowed time (the same mass-exact steps,
+        // fewer a second). A vessel in the grove's own sense keeps it at full rate at once; the wider check (reach +
+        // FarMargin, vessels and the main camera) runs at 4 Hz.
+        const float FarCheckSeconds = 0.25f;
+        static readonly Collider[] s_farOverlap = new Collider[256];
+        readonly NVec[] _farPilots = new NVec[17];
+        float _farCheckAt, _farScale = 1f;
+
+        float FarScale()
+        {
+            if (_cfg.FarTimeScale >= 1f || _vesselCount > 0) { _farScale = 1f; return 1f; }
+            if (Time.time < _farCheckAt) return _farScale;
+            _farCheckAt = Time.time + FarCheckSeconds;
+            int n = 0;
+            var cam = Camera.main;
+            if (cam) _farPilots[n++] = ToN(cam.transform.position);
+            int hits = Physics.OverlapSphereNonAlloc(_centre, _reach + _cfg.FarMargin, s_farOverlap, _vesselMask);
+            for (int h = 0; h < hits && n < _farPilots.Length; h++)
+            {
+                var col = s_farOverlap[h];
+                if (!col) continue;
+                if (!col.TryGetComponent(out IVesselStatus status)) status = col.GetComponentInParent<IVesselStatus>();
+                if (status is Component c && c) _farPilots[n++] = ToN(c.transform.position);
+            }
+            if (hits >= s_farOverlap.Length) n = _farPilots.Length;   // a full buffer may hide a vessel: stay at full rate
+            _farScale = n >= _farPilots.Length ? 1f
+                : ThreatFloraMath.FarTimeScale(ToN(_centre), _reach + _cfg.FarMargin, _cfg.FarTimeScale,
+                                               new System.ReadOnlySpan<NVec>(_farPilots, 0, n));
+            return _farScale;
         }
 
         void Enqueue(int v)

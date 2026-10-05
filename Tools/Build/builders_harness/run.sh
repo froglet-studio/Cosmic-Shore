@@ -26,7 +26,7 @@ CORES=("$B/BuilderCore.cs" "$B/BuilderColonyCore.cs" "$B/ThiefNestCore.cs" "$B/W
   "${CORES[@]}" || { echo "FAIL: the builder cores do not compile against netstandard2.1 (Unity's API profile)" >&2; exit 1; }
 ls "$REFDIR"/*.dll | sed 's/^/-r:/' > "$OUT/refs.rsp"
 "$DOTNET" "$CSC" -nologo -langversion:9.0 -nostdlib -noconfig -optimize+ "@$OUT/refs.rsp" \
-  -target:exe -main:Program -out:"$OUT/builders.exe" "${CORES[@]}" "$HERE/Arena.cs" "$HERE/WearArena.cs" "$HERE/Program.cs"
+  -target:exe -main:Program -out:"$OUT/builders.exe" "${CORES[@]}" "$HERE/Arena.cs" "$HERE/WearArena.cs" "$HERE/Program.cs" "$HERE/LodHarness.cs"
 V=$(ls "$DOTNET_ROOT"/shared/Microsoft.NETCore.App | head -1)
 printf '{"runtimeOptions":{"tfm":"net8.0","framework":{"name":"Microsoft.NETCore.App","version":"%s"}}}' "$V" > "$OUT/builders.runtimeconfig.json"
 exec "$DOTNET" "$OUT/builders.exe" "$@"

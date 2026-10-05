@@ -30,7 +30,7 @@ namespace CosmicShore.Gameplay
     /// Its colour is the domain the cell spawned it in (the controlling domain) and stays its own - the colony's
     /// stolen walls and hoard are its history, so a cell's one-colour re-colour does not repaint it.
     /// </summary>
-    public class BuilderColonyFauna : Fauna, IVirtualFaunaOwner, IVirtualPrismBudget, ISwarmEntrySink
+    public class BuilderColonyFauna : Fauna, IVirtualFaunaOwner, IVirtualPrismBudget, ISwarmEntrySink, IMacroPopulation
     {
         [Header("Builder Colony")]
         [Tooltip("Species, numbers and look (Docs/BUILDERS_AND_THIEVES.md). Authored by Tools/Build/author_builders.py.")]
@@ -247,6 +247,11 @@ namespace CosmicShore.Gameplay
             BindIndexEntries();
             SyncIndex();
             VirtualFauna.Register(this);
+            if (config.MacroLod)
+            {
+                _lod = CellEcologyLod.For(host);
+                _lod?.Register(this);
+            }
             _acc = Random.value * _dt;   // stagger colonies across frames from the first tick
 
             CSDebug.LogVerbose(CSLogChannel.Ecology,
@@ -318,6 +323,13 @@ namespace CosmicShore.Gameplay
         void Update()
         {
             if (!_seeded) return;
+            _lod?.Advance();   // the cell's ecology LOD: may expand (a pilot approaches) or roost this colony
+            if (_collapsed)
+            {
+                // roosting: no tick, no pose - members are drawn where they froze (Prev = Cur), the structure is real prisms
+                if (_gpu) _render.Draw(_bounds, 1f, _tick + 1f, _bloomTicks, Vector3.up, Vector3.forward, _cap);
+                return;
+            }
             using (s_mFrame.Auto())
             {
                 _acc += Time.deltaTime;
@@ -351,7 +363,11 @@ namespace CosmicShore.Gameplay
             }
             using (s_mStep.Auto())
             {
-                if (_fort != null) _fort.Step(_dt, _vessels, _vesselCount);
+                if (_fort != null)
+                {
+                    _fort.WindDown = _vesselCount == 0 && Time.time < _windDownUntil;
+                    _fort.Step(_dt, _vessels, _vesselCount);
+                }
                 else if (_wear != null) _wear.Step(_dt, _vessels, _vesselCount);
                 else _thief.Step(_dt, _vessels, _vesselCount);
             }
@@ -827,6 +843,7 @@ namespace CosmicShore.Gameplay
         Prism IVirtualPrismOwner.MaterialiseVirtualPrism(int slot)
         {
             if (!_seeded || slot < 0 || slot >= _cap || !_alive[slot]) return null;
+            ExpandColony();   // a hit is resolved by individuals (ECOLOGY_LOD §4 clause 3)
             var m = _proxy[slot];
             if (!m || m.IsDead)
             {
@@ -897,6 +914,92 @@ namespace CosmicShore.Gameplay
 
         // ───────────────────────────────────────────────────────────────── teardown
 
+        // ───────────────────────────────────────────────────────────────── the ecology LOD (round 11f-2, ECOLOGY_LOD §6.2)
+
+        CellEcologyLod _lod;
+        bool _collapsed;
+        static readonly ProfilerMarker s_mRoost = new("BuilderColonyFauna.Roost");
+
+        bool CoreCanRoost => _fort != null ? _fort.CanRoost : _thief != null ? _thief.CanRoost : _wear != null && _wear.CanRoost;
+        float RoostSecondsLeft => _fort != null ? _fort.RoostSecondsLeft : _thief != null ? _thief.RoostSecondsLeft
+                                : _wear != null ? _wear.RoostSecondsLeft : float.PositiveInfinity;
+        float StomachTotal => _fort != null ? _fort.StomachTotal : _thief != null ? _thief.StomachTotal : _wear != null ? _wear.StomachTotal : 0f;
+
+        SVector3 IMacroPopulation.MacroCentre => new(_bounds.center.x, _bounds.center.y, _bounds.center.z);
+        float IMacroPopulation.MacroExtent => _bounds.extents.magnitude;
+        bool IMacroPopulation.IsCollapsed => _collapsed;
+
+        /// <summary>
+        /// Nothing only individuals resolve: no proxy, no member dying, no prism carried / claimed / settling, no
+        /// creature hunting, and twice the thaw margin of torpor in the emptiest stomach. The director asks this only of a
+        /// population it would collapse (far, not wanted), so a fortress that is ready except for its carriers starts a
+        /// short wind-down here (<see cref="BuilderColonyCore.WindDown"/>: sated workers take no new prism, carriers finish
+        /// depositing) and is ready a tick or two later.
+        /// </summary>
+        bool IMacroPopulation.CanCollapse
+        {
+            get
+            {
+                if (!_seeded || _collapsed || _proxySlots.Count > 0 || _dying.Count > 0 || _vesselCount > 0) return false;
+                if (_world.Settling || !CoreCanRoost)
+                {
+                    _windDownUntil = Time.time + WindDownSeconds;
+                    return false;
+                }
+                return RoostSecondsLeft > 2f * config.ThawReserveSeconds;
+            }
+        }
+
+        const float WindDownSeconds = 2.5f;
+        float _windDownUntil = float.NegativeInfinity;
+
+        bool IMacroPopulation.NeedsIndividuals =>
+            _collapsed && (_proxySlots.Count > 0 || RoostSecondsLeft < config.ThawReserveSeconds);
+
+        MacroPopulationTotals IMacroPopulation.Totals => new()
+        {
+            Individuals = MemberCount,
+            BodyVolume = MemberCount * (double)Mathf.Abs(config.BodyScale.x * config.BodyScale.y * config.BodyScale.z),
+            Stomach = StomachTotal,
+        };
+
+        /// <summary>Freezes the colony where it is drawn: one last frame with Prev = Cur, so nothing moves on screen.</summary>
+        bool IMacroPopulation.Collapse()
+        {
+            if (!((IMacroPopulation)this).CanCollapse) return false;
+            for (int k = 0; k < _cap; k++) { _prev[k] = _pos[k]; _prevFace[k] = _face[k]; }
+            BuildFrame();
+            if (_gpu) Upload();
+            SyncEntities();
+            if (_unified) PoseBodies(1f);
+            SyncIndex();
+            _collapsed = true;
+            return true;
+        }
+
+        void IMacroPopulation.Expand() => ExpandColony();
+
+        /// <summary>Resumes the tick from the frozen frame (the next tick interpolates from where the members are drawn).</summary>
+        void ExpandColony()
+        {
+            if (!_collapsed) return;
+            _collapsed = false;
+            _acc = _dt;   // the next frame ticks: Prev = Cur = where they were drawn, then on
+        }
+
+        /// <summary>One macro tick (1 Hz): the roost's torpor, exactly the rate a roosting member burns. Nothing moves, builds,
+        /// steals, breeds or dies; an emptying stomach expands the colony first (NeedsIndividuals).</summary>
+        void IMacroPopulation.MacroTick(float dt)
+        {
+            if (!_collapsed) return;
+            using (s_mRoost.Auto())
+            {
+                if (_fort != null) _fort.Roost(dt);
+                else if (_thief != null) _thief.Roost(dt);
+                else _wear?.Roost(dt);
+            }
+        }
+
         protected override void OnDestroy()
         {
             _render?.Dispose();
@@ -904,6 +1007,8 @@ namespace CosmicShore.Gameplay
             _world?.ReleaseAll();
             if (_seeded) BuilderRegistry.ReleaseColony(_colonyId);
             VirtualFauna.Unregister(this);
+            _lod?.Unregister(this);
+            _lod = null;
             ReleaseIndexEntries();
             ReleaseBodyEntities();
             base.OnDestroy();

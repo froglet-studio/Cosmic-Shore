@@ -44,6 +44,7 @@ namespace UnityEngine
     public static class Mathf { public const float PI = 3.14159265f; public static float Max(float a, float b) => a; public static int Max(int a, int b) => a; public static float Abs(float a) => a; public static float Sqrt(float a) => a; public static float Cos(float a) => a; public static float Sin(float a) => a; public static float Tan(float a) => a; }
     public static class Random { public static Vector3 insideUnitSphere; public static float Range(float a, float b) => a; }
     public static class Time { public static float time, deltaTime; public static int frameCount; }
+    public class Camera : Behaviour { public static Camera main; }
     public static class Physics { public static int OverlapSphereNonAlloc(Vector3 p, float r, Collider[] res, int mask) => 0; }
     public struct LayerMask { public static int GetMask(params string[] names) => 0; }
     public enum RuntimeInitializeLoadType { SubsystemRegistration = 4 }

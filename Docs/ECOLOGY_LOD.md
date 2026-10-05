@@ -2,7 +2,8 @@
 
 **Status:** headless-proven port of the research's *Recommended game architecture*
 (`Tools/Ecology/DISCOVERIES.md` § "Hierarchical ecology" › "Recommended game architecture", research repo). The pure
-C# cores and the swarm's macro body run in two harnesses. The Unity glue (`CellEcologyLod`, the `SwarmFauna` side,
+C# cores and the swarm's macro body run in two harnesses; round 11f-2 adds the substrate's frozen blocks, the builder
+colonies' roost and the threat flora's far cadence (§6), each in its own harness. The Unity glue (`CellEcologyLod`, the `SwarmFauna` side,
 the `Fauna` stomach) is type-checked only: **it has not run in the editor.** QA: **QA-SWARM-ROUND11-6**. Linked from
 `Docs/SWARM_FAUNA.md` §24.
 
@@ -94,7 +95,7 @@ count of the prey's body prisms.
 `ShedIntervalSeconds`.
 
 The follow-up is to drain the egg budget by a per-member metabolism and shed when it is empty. That changes swarm
-balance, so it is left for its own round.
+balance, so it is left for its own round. Round 11f-2 looked again and kept that decision (§6.4).
 
 ## 3. Regions and the macro cohort ledger (recommendation 1, as a pure core)
 
@@ -268,70 +269,160 @@ The run: collapse, then 120 macro ticks (2 min) drifting 274 u along the swarm's
 
 ## 6. How the other populations adopt it
 
-### 6.1 Substrate fauna (round 11b, `Substrate/`)
+Round 11f-2 (`overnight/lod2`) implements both, plus a far cadence for the threat flora's network. The swarm
+(§5) remains the reference.
 
-**Reuse `SubstrateCore`'s stomach. Do not duplicate it.**
+### 6.1 Substrate fauna (round 11b, `Substrate/`): implemented, freeze route
 
-Per agent the core already holds:
-- `Stock`: body volume, food → stock 1:1, births split stock;
-- `Hunger`: dimensionless, rises at `Metabolism`/s, a feed lowers it by `volume × HungerPerVol`; starving when
-  `Hunger ≥ 1 + StarveS × Metabolism`;
+A `SubstratePopulation` is a block of slots in **one shared core per cell**, so a collapsed population is a
+**frozen block**. The stomach is the one the core already has. No second stomach was added:
+- `Stock` is body volume;
+- `Hunger` rises at `Metabolism`/s;
+- starving at `Hunger ≥ 1 + StarveS × Metabolism`;
 - the `MassIn` / `MassOut` ledger.
 
-A `SubstratePopulation` is a block of slots in **one shared core per cell**, so it can be collapsed by either of two
-routes.
+**Core** (`SubstrateCore.cs`):
+- `SubstratePopulation.Frozen` makes `BeginStep` publish `LiveCount = 0` for that block. The moments, the gather, the
+  agent pass and the Burst job then skip it. `SubstrateKernel` / `SubstrateAgentJob` are **unchanged**, so
+  `check_burst_substrate.py` and group K's bit-match still apply to every unfrozen population.
+- `EndStep` runs `FrozenPopulation` for a frozen block. It applies the kernel's own hunger rule
+  (`Hunger += Metabolism × Dt`), clears danger and counts the alive. It never flags `Starving`: a death needs a body,
+  so the owner expands first.
+- `Fields.Update` is skipped when every population is frozen. That is where the cost was.
+- `ReserveSeconds(q)` is the time until the hungriest agent starves. `ReserveVolume(q)` is Σ(starving line − Hunger)
+  / HungerPerVol, the reserve expressed as volume.
+- `Translate(q, d)` moves a block's `Pos` / `Home`. The job's next `Build` draws the move as a glide. **The caller
+  keeps the block inside the membrane**, otherwise the clamp jumps it on the next step.
+- `FreezeBug` holds planted bugs for the harness only.
 
-**Route A: freeze (recommended first; it is what the swarm does).**
-1. Add `bool Frozen` to `SubstratePopulation`.
-2. Skip frozen populations in the kernel's agent pass and in `SubstrateCore.Step`'s other passes. One `if
-   (!pop.Active || pop.Frozen) continue` per pass. `SubstrateTickJob` is shared, so this is the only core change.
-3. Add `SubstrateCore.Translate(pop, d)`, which moves that block's positions and their published Prev/Cur. Then
-   `SubstrateFauna.MacroTick` drifts the block toward its anchor's goal once per second and re-syncs its entries
-   (`ISwarmEntrySink`, already bound with `Cell.BindVirtualMass`). LiveVolume is exact by construction.
-4. Macro feeding: a per-second `Feed(i, volume)` on a few agents, through the existing `SenseFood` path, at the
-   macro cadence.
-5. `NeedsIndividuals` is true when any agent's `Hunger` crosses the starving reserve (the core's own `Starving`
-   test). The block expands and the agent dies through the existing shed path.
-6. `Totals`:
-   - individuals = the block's alive count;
-   - Σbody = Σ`Stock`;
-   - Σstomach = Σ(1 + StarveS·Metabolism − Hunger) / HungerPerVol, the reserve expressed as volume.
+**Host** (`SubstrateCellHost`): `Freeze(pop, bool)` and `Translate(pop, d)` are queued and applied in `ApplyLod()`
+between ticks, while the job is idle.
 
-**Route B: cohorts.** Use this once a population must be cheaper than a frozen block. Run it through
-`EcologyMacroCore`:
-- count per element = cohort `N[e]`;
-- body = `Stock` (the cohort's body is per-individual, so carry Σstock beside S, Q);
-- the stomach variable is the reserve above. A cohort's S and Q are Σ and Σ² of it.
-- Hunger rises linearly, so the cohort law is a pure shift: `S −= n·Metabolism·dt / HungerPerVol`, `Lo`/`Hi` shift
-  too.
-- Starvation is the tail below 0 → `NeedsIndividuals`. Births come from the stomach tail at the species' birth
-  threshold.
-- Release the block's entries and book Σstock with `Cell.BookMacroFaunaVolume` in the same call.
+**Glue** (`SubstrateFauna` implements `IMacroPopulation`; per species `macroLod` defaults on and
+`thawReserveSeconds` is 5):
+- `CanCollapse` requires all of:
+  - no proxies;
+  - no slot gone;
+  - nothing engaged;
+  - no agent starving;
+  - reserve > 2 × thaw.
+- `NeedsIndividuals` is any of: a proxy, a gone slot, a starving agent, or reserve < thaw.
+- `Totals`: alive count, Σ stock, reserve volume.
+- `MacroTick` is a **no-op**. A band population has no goal to drift toward. Its hunger advances in the frozen pass
+  every step, at the micro rate, so the macro tick adds nothing. `Translate` is in place for a species that later
+  gets a goal.
+- **A hunt thaws its prey.** `MaterialiseForHit` calls `Thaw()` first, so a pack hunting a frozen locust block wakes
+  it (harness: thawed after 7 ticks).
 
-### 6.2 Builders (round 11e, `Builders/`)
+**Proof** (`substrate_harness` group `lod`; the core is run inline with the job; 900 slots, locust / pack / lurker
+blocks, 900 food points; drift 0.02 u/tick through `Translate`):
+- **Pack, frozen:** 735 frozen ticks.
+  - Alive 7 → 7.
+  - Stock / volume deviation 0, so mass is exact.
+  - 0 agents moved except by `Translate`.
+  - Glide error 2e-5.
+  - Hunger error against the kernel rule 5.6e-6.
+  - Minimum reserve 4.9 s, then 1 reserve thaw.
+  - First step after thaw 10.63 u (bound 25.5, the species' own max).
+  - Ledger 1.6e-9.
+- **Lurkers** pass. First step 0.40 u.
+- **Locusts** are thawed by the pack's hunt.
+- **Director:** a `SubstratePopModel` behind the real `EcologyLodDirector` collapses 10 times, with 0 frames seen
+  while frozen.
+- **Cost:** 1.958 ms per tick running vs **0.006 ms** with all frozen.
+- **Negative controls:**
+  - Deactivating instead of freezing: volume deviation 1614, fails.
+  - `NoMetabolism`: hunger error 0.96, fails.
+- Group K (bit-match) and the Burst gate stay green.
 
-`BuilderColonyCore` and `ThiefNestCore` hold a per-member `Stomach[]` (`BuilderStomachParams`):
-- Capacity 40;
-- burn `Metabolism` 0.02/s active, `Torpor` 0.02/s roosting;
-- starvation only at empty;
-- births paid from the parent at `BirthAbove` 0.9 × Capacity, cost 16, half to the newborn's stomach.
+### 6.2 Builders: fortress, thief nest and wearers (`Builders/`): implemented, roost route
 
-That is already the conserved stomach this round asks for, so builders adopt `IMacroPopulation` with **no new
-stomach**.
+A collapsed colony **roosts**:
+- Members hold still where they are drawn.
+- Every alive stomach burns at the species' `Torpor` once a second (`BuilderRoost.Burn`, booked as `Metabolised`).
+- Structure, carried and worn prisms stay exactly where they are.
+- Nobody is born, builds, steals or dies.
 
-- **A colony is anchored** (its core or plant does not move), so its collapsed form needs no drift.
-  `BuilderColonyFauna` implements:
-  - `Collapse`: when no proxies are out and no prism is mid-flight (`BuilderPrismWorld` has no settle in flight) and
-    no member is carrying. A carried prism is real mass with a position, so it must be placed or dropped first.
-  - Freeze the members' tick. Keep their index entries (they are already `SwarmEntryLedger` entries).
-  - `MacroTick(dt)`, per member: `Stomach[k] −= Torpor × dt`, roosting rate, because a collapsed colony is
-    unwatched. If any stomach would reach 0, set `NeedsIndividuals` and expand, so the death runs through `Kill(k,
-    StarvedBy)` with its crystal.
-  - Building, stealing and births wait for expansion. They move or create real prisms and need individuals.
-  - `Totals`: alive count, Σbody (the member bodies' entry volumes), `StomachTotal` (already a property on both
-    cores).
-- **Thieves** steal from vessels' trails, so they only act near a pilot. Collapsing a nest far from every pilot loses
-  no behaviour.
+**Core** (`BuilderCore.cs` `BuilderRoost`; each core has `CanRoost`, `RoostSecondsLeft` and `Roost(dt)`):
+- **Fortress (`BuilderColonyCore`):** `CanRoost` = nothing carried and no striker. `WindDown` (set by the glue while
+  the director asks to collapse) makes a sated idle worker drop its forage goal and take no new one. A hungry worker
+  still eats. Carriers finish depositing, so the colony reaches `CanRoost`. Without it, the fortress could roost on
+  only ~0% of ticks; with it, 59%.
+- **Thief nest:** `CanRoost` = nothing carried and nothing claimed.
+- **Wearers (`WearerCore`):** a wearer is a builder colony whose body is worn prisms, so it is covered. `CanRoost` =
+  every alive member's leader is in `Thief` phase: no body is approaching, rearing, lunging or recovering. The worn
+  body is posed once at collapse and then left alone.
+  - **Core fix:** a wearer in `Rear` whose target left (or whose body fell below `HuntAt`) used to hold `Rear`
+    forever. It now stands down to `Thief` like `Approach` / `Recover`. The `wearers` group is unchanged and green.
+
+**Glue** (`BuilderColonyFauna` implements `IMacroPopulation`; config `MacroLod` defaults on and `ThawReserveSeconds`
+is 20):
+- `CanCollapse` requires all of:
+  - seeded;
+  - no proxies;
+  - nobody dying;
+  - no vessel sensed;
+  - no prism settling (`BuilderPrismWorld.Settling`);
+  - core `CanRoost`;
+  - torpor left > 2 × thaw.
+- When only the carriers, the settles or a hunt block it, the query starts a 2.5 s wind-down. The director only asks
+  a population it would collapse.
+- `NeedsIndividuals` is a proxy, or torpor left < thaw. **The colony expands before a stomach empties**, so
+  starvation stays an individual's death with its crystal.
+- `Collapse` publishes one frame with Prev = Cur (`BuildFrame`, `Upload`, `SyncEntities`, `PoseBodies(1)`,
+  `SyncIndex`). While collapsed, `Update` only draws.
+- `MacroTick` = `Roost(1)` under the `BuilderColonyFauna.Roost` marker.
+- `MaterialiseVirtualPrism` (a hit on a virtual member) expands first.
+- `Totals`: members, members × |BodyScale| volume, `StomachTotal`.
+
+**Proof** (`builders_harness` group `lod`):
+- **The run:** 2 min with a pilot, the pilot leaves, the colony winds down to `CanRoost`, then 900 roost ticks at
+  1 Hz, then it steps on.
+- **Per species:**
+
+  | | may roost | alive | members moved | world prisms changed | burn err | min torpor left | first step after (own max) |
+  |---|---|---|---|---|---|---|---|
+  | fortress | 59% of ticks | 48 → 48 | 0 | 0 | 0 | 152 s | 6.01 u (7.35) |
+  | thieves | 72% | 8 → 8 | 0 | 0 | 0 | 1366 s | 4.07 u (17.91) |
+  | wearers | 100% | 17 → 17 | 0 | 0 | 0 | 780 s | 8.11 u (85.89) |
+
+- **World audit** drift 0. **Ledger** ≤ 3.1e-5 (float stomachs).
+- **Quarter-full stomachs:** every species expands before empty (min torpor left 19-20 s) and starves 0 while
+  roosting.
+- **Negative controls:**
+  - `NoBurn`: burn error 2e-2, fails.
+  - `KillOnEmpty` with no thaw rule: wearers alive 17 → 0, fails.
+
+### 6.3 Threat flora: never collapsed; a far cadence for the network
+
+Flora is never LOD'd. A grove's mass is the world's, and its bodies are prisms.
+- **Snap traps** step at `SnapTrapHz` 20, at 0.0084 ms per step for 60 traps. Cheap, so unchanged.
+- **The physarum network** stepped at full rate wherever it was: 1.09 ms per 10 Hz step for the Swarm-cell grove,
+  ≈ 11 ms CPU/s. It now runs on **slowed time** when nobody is near. `ThreatGrove.FarScale` passes
+  `Advance(dt × FarTimeScale)`:
+  - `FarTimeScale` is 0.25 in the config.
+  - Full rate applies while any vessel is in the grove's own sense, or any vessel or the main camera is within
+    reach + `FarMargin` (400 u, the LOD collapse radius). That wider check runs at 4 Hz.
+  - The steps are the same mass-exact 10 Hz steps, with fewer of them per second. The grove grows, eats and beats a
+    quarter as fast, so nothing pops.
+- **Proof** (`threat_flora_harness` P6):
+  - The `ThreatFloraMath.FarTimeScale` rule.
+  - A near/far/near schedule over 60 s: network time 22.50 s vs 22.50 expected.
+  - Ledger 0 every frame.
+  - 178 tubes vs 183 at full rate, under the cap.
+  - Far frames cost 25% of full rate.
+
+### 6.4 The swarm's starvation stays on the round-9 clock (decision)
+
+Moving it onto `FaunaStomach` is **not small and safe**:
+- The swarm's food already goes to the per-element egg budget (`SwarmTickJob.Stomach`), which laying pays out.
+- A stomach that also pays upkeep has to withdraw from that budget inside the tick job. That is a new job API, and
+  the egg rate changes, so swarm balance changes.
+- A sated swarm used to reset its clock on every bite. Under a burn it would starve unless the upkeep is balanced
+  against its intake. That needs a tuning pass, not a mechanical migration.
+- The swarm glue is in no headless run, only a type-check, so the change could not be proved tonight.
+
+It stays a follow-up round with its own balance gate (§2.4).
 
 ## 7. Proof: every gate and its result
 
@@ -346,6 +437,9 @@ against netstandard2.1 with `-warnaserror` first, the way Unity would.
 | **cycles persist** (macro only, full cell, cap 240, 45k + 3k, 8 h) | grazers 18591–163267 (cv 0.68), predators 3736–34073 (cv 0.43). Research: 18.8k–163k, 3.7k–34k, cv 0.69/0.43. 4 predator reversals ≥ 10% after 2 h (swings 188%, 33%, 45%, 26%), period ≈ 2.25 h (macro 14.8 ms per tick averaged over the run, with grazers up to 163k); last-half cv 0.32/0.11; no extinction; drift 5.6e-14 | none (this is a dynamics check, not a law) |
 | **cost** | macro 8.3 ms per 1 Hz tick (912 regions × 10 cohorts × 2 species) = **0.14 ms per 60 fps frame**; flora + soil 0.35 ms per tick; micro 1.2 ms per 10 Hz tick for ~1600 expanded agents. Managed and single-threaded: the research's C kernel did 2.1 ms. | n/a |
 | **stomach** | §2.3 | clock reset: 119% conjured |
+| **substrate freeze** (`substrate_harness lod`, round 11f-2) | §6.1: pack frozen 735 ticks, alive 7 → 7, volume / stock deviation 0, hunger error 5.6e-6, first step 10.63 u (bound 25.5); hunt thaws prey; 0.006 ms per tick all frozen vs 1.958 | Deactivate: volume deviation 1614 · NoMetabolism: hunger error 0.96 |
+| **builder roost** (`builders_harness lod`, round 11f-2) | §6.2: fortress / thieves / wearers, 900 roost ticks each: alive unchanged, 0 moved, 0 world prisms changed, burn error 0; expand before empty | NoBurn: 2e-2 · KillOnEmpty: 17 → 0 |
+| **flora far cadence** (`threat_flora_harness` P6, round 11f-2) | §6.3: network time = dilated sum, ledger 0 every frame, far frames 25% of the cost | n/a (the core is unchanged; the gate is the ledger) |
 
 Separately: `SWARM_DENSITY=5 bash Tools/Build/swarm_core_harness/run.sh "Assets/_SO_Assets/Swarm Fauna/Plans" lod`
 (§5.3). Every earlier gate stays green: the swarm default modes, tickjob, lineage, substrate harness and type-check,
@@ -377,9 +471,42 @@ half still to breathe.
 - **Pilot visibility** is the research's cone test plus the main camera's forward axis. A wide-FOV or zoomed-out
   camera can see further than 330 u. For a swarm that is safe (it is drawn while collapsed and only moves at the 1 Hz
   tick), but the gate cannot see a real frustum.
-- **Swarm micro starvation** remains the round-9 clock (§2.4).
+- **Swarm micro starvation** remains the round-9 clock (§2.4, §6.4).
+- **Round 11f-2 glue is not run either.** That covers `SubstrateFauna`'s `IMacroPopulation` (it is type-checked by
+  `substrate_glue_typecheck`), `BuilderColonyFauna`'s roost and wind-down (type-checked by `swarm_glue_typecheck`),
+  and `ThreatGrove.FarScale` (type-checked by `threat_flora_harness`'s stubs). The harnesses model the glue's rules
+  around the real cores:
+  - the substrate's queued freeze;
+  - the builders' wind-down while waiting;
+  - the director's collapse test.
+
+  The real frame order, frozen-alpha draw and `Physics` sense are not exercised.
+- **The substrate's macro tick does not move a block.** `Translate` is proved, but nothing calls it, because the band
+  species have no goal. A frozen block's hunger also runs at the micro step rate, so the frozen pass still costs a
+  loop over its slots (cheap: 0.006 ms for the whole core).
+- **Builder wind-down feel.** For up to ~2.5 s after the director asks, a fortress's sated workers stop fetching.
+  Nobody is near, but a camera far away could notice idle wandering.
 
 ## 9. Merging
+
+**Round 11f-2 (`overnight/lod2`, from c6cd3d251, with `cece/swarm-fauna-game` c401af618 merged):**
+- Shared core edits, all additive:
+  - `SubstrateCore`: `Frozen`, `FrozenPopulation`, `ReserveSeconds`, `ReserveVolume`, `Translate`, `FreezeBug`.
+  - `BuilderColonyCore.WindDown`, plus each builder core's `CanRoost` / `RoostSecondsLeft` / `Roost` / `RoostBug`.
+  - `BuilderPrismWorld.Settling`.
+  - `ThreatFloraMath.FarTimeScale`.
+- **Behaviour change:** `WearerCore` stands a target-less `Rear` down to `Thief`.
+- **New serialized fields:**
+  - `SubstrateSpeciesSO`: `macroLod`, `thawReserveSeconds`.
+  - `BuilderColonyConfigSO`: `MacroLod`, `ThawReserveSeconds`.
+  - `ThreatGroveConfigSO`: `FarTimeScale`, `FarMargin`.
+
+  The three author scripts write them; re-run them after merging.
+- **Stubs:** `swarm_glue_typecheck` `Bounds.center` / `extents`; `substrate_glue_typecheck` compiles the swarm cores
+  and `Ecology/*.cs` and gains `Transform.forward` / `Fauna.VesselSenseMask`; the threat-flora `GlueStubs` gains
+  `Camera.main`.
+
+**Round 11f:**
 
 - **Branch.** `overnight/lod` has `cece/swarm-fauna-game` merged at 307a983f2 (round 11b, 11b-2 and 11e included).
 - **Shared edits:**

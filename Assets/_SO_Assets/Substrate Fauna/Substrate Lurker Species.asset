@@ -141,3 +141,5 @@ MonoBehaviour:
   cellCapacity: 1024
   simulateOffMainThread: 1
   extinctLingerSeconds: 8
+  macroLod: 1
+  thawReserveSeconds: 5

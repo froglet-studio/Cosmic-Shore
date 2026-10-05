@@ -2414,8 +2414,9 @@ What changes for the swarm:
   a per-frame guard for fast pilots. It also expands at once when hit, or when a starving member is due to be shed.
 - **`SwarmTickJob.Translate` / `ISwarmCore.Translate`** move the core, the published frames, the index points and the
   anchor together, so expansion never jumps.
-- **The host.** `CellEcologyLod` is the per-cell host. Substrate populations and builder colonies adopt the same
-  `IMacroPopulation` contract; ECOLOGY_LOD.md §6 says exactly how.
+- **The host.** `CellEcologyLod` is the per-cell host. Since round 11f-2, substrate populations (frozen blocks) and
+  builder colonies (fortress, thief nest, wearers roosting at torpor) implement the same `IMacroPopulation` contract,
+  and the threat flora's network runs on slowed time when nobody is near; see ECOLOGY_LOD.md §6.
 
 Every other creature's `starvationSeconds` is now a conserved stomach, migrated so a standard leaf meal behaves as the
 clock did (ECOLOGY_LOD.md §2).
