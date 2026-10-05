@@ -185,7 +185,7 @@ namespace CosmicShore.UI
             // A branch opens another layer rather than acting, and the chevron is how a flat list
             // says so without a second sprite to author. Appended here rather than baked into the
             // toy's own Label, which is the station's name and is read by the world too.
-            if (nameText) nameText.text = option.IsBranch ? $"{option.Label}  ›" : option.Label;
+            if (nameText) nameText.text = option.IsBranch ? $"{option.Label}  >" : option.Label;
             if (detailText) detailText.text = option.Detail;
 
             var accent = option.Accent;

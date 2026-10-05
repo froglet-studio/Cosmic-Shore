@@ -576,7 +576,7 @@ namespace CosmicShore.UI
         {
             return new ToyShellOption
             {
-                Label = "◀  Back",
+                Label = "<  Back",
                 Accent = _boundDefinition ? _boundDefinition.AccentColor : Color.white,
                 AppliesOnSelect = true,
                 Apply = GoBackLayer,
@@ -615,8 +615,8 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// A layer with exactly ONE row that can be committed - the Wanderway's single "Wander",
-        /// the Arkway's "Set sail" - is selected on arrival, so the window opens with its Start
+        /// A layer with exactly ONE row that can be committed - a Wander card while the other one
+        /// is under way, say - is selected on arrival, so the window opens with its Start
         /// button lit rather than asking the player to pick the only thing there is to pick. A
         /// layer with two or more leaves stays unselected: the choice is the player's.
         /// </summary>

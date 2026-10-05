@@ -31,6 +31,58 @@ namespace CosmicShore.Gameplay
             inputStatus.ActiveInputDevice = InputDeviceType.Gamepad;
         }
 
+        // A trigger or speed gesture held at the moment the pad stops being the live strategy (the
+        // player touches the keyboard or mouse) or the game pauses never sees its release edge:
+        // ProcessInput stops running, so the vessel keeps the ability held. Mirrors
+        // KeyboardInputStrategy, which releases the same state in the same two places.
+        public override void OnStrategyDeactivated()
+        {
+            ReleaseHeldTriggers();
+            ReleaseSpeedEffects();
+            ResetInput();
+            ResetStrategyState();
+        }
+
+        public override void OnPaused()
+        {
+            ReleaseHeldTriggers();
+            leftStickRaw = Vector2.zero;
+            rightStickRaw = Vector2.zero;
+            inputStatus.LeftTriggerAnalog = 0f;
+            inputStatus.RightTriggerAnalog = 0f;
+        }
+
+        // Raises the same release events a real let-go would, then forgets the held state.
+        private void ReleaseHeldTriggers()
+        {
+            if (prevLeftTriggerActive || prevRightTriggerActive)
+                DispatchTriggers(0f, 0f);
+        }
+
+        private void ReleaseSpeedEffects()
+        {
+            if (fullSpeedStraightEffectsStarted)
+            {
+                fullSpeedStraightEffectsStarted = false;
+                inputStatus.OnButtonReleased.Raise(InputEvents.FullSpeedStraightAction);
+            }
+            if (minimumSpeedStraightEffectsStarted)
+            {
+                minimumSpeedStraightEffectsStarted = false;
+                inputStatus.OnButtonReleased.Raise(InputEvents.MinimumSpeedStraightAction);
+            }
+        }
+
+        private void ResetStrategyState()
+        {
+            leftStickRaw = Vector2.zero;
+            rightStickRaw = Vector2.zero;
+            prevLeftTriggerActive = false;
+            prevRightTriggerActive = false;
+            fullSpeedStraightEffectsStarted = false;
+            minimumSpeedStraightEffectsStarted = false;
+        }
+
         public override void ProcessInput()
         {
             if (Gamepad.current == null) return;
@@ -102,7 +154,11 @@ namespace CosmicShore.Gameplay
             // binary event compatibility for button-style triggers (which snap 0/1).
             float leftTriggerValue = Gamepad.current.leftTrigger.ReadValue();
             float rightTriggerValue = Gamepad.current.rightTrigger.ReadValue();
+            DispatchTriggers(leftTriggerValue, rightTriggerValue);
+        }
 
+        private void DispatchTriggers(float leftTriggerValue, float rightTriggerValue)
+        {
             inputStatus.LeftTriggerAnalog = leftTriggerValue;
             inputStatus.RightTriggerAnalog = rightTriggerValue;
 

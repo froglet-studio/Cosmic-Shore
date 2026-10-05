@@ -327,6 +327,13 @@ namespace CosmicShore.Gameplay
                 PrismSway.TryStamp(prism, this);
         }
 
+        /// <summary>Drops a prism from this limb's list with NO life check - the prism is
+        /// leaving for the pool (<see cref="HealthPrism.DetachForPool"/>), not dying.</summary>
+        public void ForgetHealthBlock(HealthPrism healthPrism)
+        {
+            if (healthPrism) healthBlocks.Remove(healthPrism);
+        }
+
         public void RemoveHealthBlock(HealthPrism healthPrism)
         {
             if (!healthPrism) return;

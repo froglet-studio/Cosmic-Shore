@@ -238,7 +238,17 @@ namespace CosmicShore.Gameplay
             try
             {
                 await friendsService.InitializeAsync();
-                _initialized = true;
+
+                // FriendsServiceFacade.InitializeAsync swallows its own failures (it logs and
+                // returns), so reaching here is not proof the service is up. Latching
+                // _initialized anyway made the guard at the top of this method and in
+                // HandleSignedInEvent refuse every retry for the rest of the session (BH-1.5).
+                _initialized = friendsService.IsInitialized;
+                if (!_initialized)
+                {
+                    CSDebug.LogWarning("[FriendsInitializer] Friends service did not come up; will retry on the next sign-in event.");
+                    return;
+                }
 
                 // Set initial presence to "In Menu"
                 await friendsService.SetPresenceAsync(

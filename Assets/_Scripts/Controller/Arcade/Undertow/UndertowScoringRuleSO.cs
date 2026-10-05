@@ -125,7 +125,7 @@ namespace CosmicShore.Gameplay
                     : $"{Remaining(gameData, s.Domain)} Points Left",
                 // The breakdown, not the points: at the shipped weights "2 bends · 3 kills"
                 // says what happened where "9 pts" says only how much it was worth.
-                $"{s.DebuffHitsLanded} bends · {s.LifeformsKilled} kills")).ToList();
+                $"{s.DebuffHitsLanded} bends, {s.LifeformsKilled} kills")).ToList();
 
             return ScoreResultBuilder.BuildRanked(rows);
         }

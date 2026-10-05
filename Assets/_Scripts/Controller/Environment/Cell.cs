@@ -418,12 +418,16 @@ namespace CosmicShore.Gameplay
         /// or null when the position is in open space. O(cells-in-scene) - call
         /// at object lifecycle points (spawn/destroy), not per frame.
         /// </summary>
-        public static Cell FindCellContaining(Vector3 position)
+        /// <param name="sceneCellsOnly">Skip satellites (preview arenas, Arkway traversal
+        /// cells). A caller that wants the SCENE'S cell — the one to revert, swap or return
+        /// home to — must not be handed a satellite that happens to be closer.</param>
+        public static Cell FindCellContaining(Vector3 position, bool sceneCellsOnly = false)
         {
             for (int i = 0; i < ActiveCells.Count; i++)
             {
                 var c = ActiveCells[i];
-                if (c && c.ContainsPosition(position))
+                if (!c || (sceneCellsOnly && c.IsSatellite)) continue;
+                if (c.ContainsPosition(position))
                     return c;
             }
             return null;
@@ -436,14 +440,14 @@ namespace CosmicShore.Gameplay
         /// read state from when the player isn't inside any (e.g. Menu_Main's
         /// orbital camera, between-cell transit).
         /// </summary>
-        public static Cell FindNearestActiveCell(Vector3 position)
+        public static Cell FindNearestActiveCell(Vector3 position, bool sceneCellsOnly = false)
         {
             Cell best = null;
             float bestSqr = float.PositiveInfinity;
             for (int i = 0; i < ActiveCells.Count; i++)
             {
                 var c = ActiveCells[i];
-                if (!c) continue;
+                if (!c || (sceneCellsOnly && c.IsSatellite)) continue;
                 float d = (c.transform.position - position).sqrMagnitude;
                 if (d < bestSqr) { bestSqr = d; best = c; }
             }
@@ -928,6 +932,32 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// ENVIRONMENT volume laid under <paramref name="domain"/> INSIDE the nucleus - the
+        /// territorial claim itself. 0 when this cell has no nucleus control zone.
+        /// </summary>
+        public float GetNucleusDomainVolume(Domains domain)
+        {
+            if (!HasNucleusControlZone) return 0f;
+            EnsureVolumeFresh();
+            return nucleusEnvVolumeByDomain.GetValueOrDefault(domain, 0f);
+        }
+
+        /// <summary>
+        /// The volume that DECIDES this cell - exactly the source <see cref="DominantDomain"/>
+        /// reads: the nucleus environment volume in a cell with a control zone, the whole-cell
+        /// live volume in one without.
+        ///
+        /// It exists so a HUD cannot disagree with the control it is drawing. A gauge fed from
+        /// <see cref="GetDomainVolume"/> in a nucleus cell reports whole-cell mass while
+        /// <see cref="DominantDomain"/> is deciding on the nucleus alone - so it can show one
+        /// domain leading while the cell is held by another, with nothing wrong on either side.
+        /// Ask this when the question is "who holds this cell"; ask
+        /// <see cref="GetDomainVolume"/> when it is "how full is this cell".
+        /// </summary>
+        public float GetControlVolume(Domains domain) =>
+            HasNucleusControlZone ? GetNucleusDomainVolume(domain) : GetDomainVolume(domain);
+
+        /// <summary>
         /// The herbivore PREY signal in volume units (fauna bodies excluded - not
         /// edible, counting them would seed fauna against phantom food). With a
         /// nucleus control zone this is ALL environment volume outside the nucleus
@@ -1232,7 +1262,11 @@ namespace CosmicShore.Gameplay
         {
             // [Inject] fields aren't available in OnEnable. Retry subscription
             // here with deduplicate guard so Initialize() fires on OnInitializeGame.
-            if (gameData != null)
+            // Never for a satellite: InitializeSatellite unsubscribes deliberately, and a
+            // satellite activated and initialised in the same frame reaches Start AFTER that
+            // — re-subscribing here would let a later OnInitializeGame raise re-run a
+            // traversal cell's whole bootstrap under a player flying in it.
+            if (gameData != null && !IsSatellite)
             {
                 gameData.OnInitializeGame.OnRaised -= Initialize;
                 gameData.OnInitializeGame.OnRaised += Initialize;
@@ -3157,6 +3191,36 @@ namespace CosmicShore.Gameplay
             if (runtime != null && runtime.CrystalTransform)
                 return runtime.CrystalTransform.position;
             return transform.position;
+        }
+
+        /// <summary>
+        /// True when <paramref name="position"/> is inside this cell's VISIBLE MEMBRANE — the
+        /// boundary the player can see, as distinct from <see cref="ContainsPosition"/>'s
+        /// SENSING radius, which a large arena widens past the membrane
+        /// (<see cref="CellConfigDataSO.SenseRadiusOverride"/>) so fauna can find mass across a
+        /// whole track. Anything answering "which cell am I in" for the PLAYER wants this one:
+        /// the sensing radius can legitimately swallow a neighbouring world, which is a correct
+        /// answer for prism registration and a wrong one for a HUD. False before the membrane
+        /// has spawned.
+        /// </summary>
+        public bool IsInsideMembrane(Vector3 position)
+        {
+            float radius = MembraneRadius;
+            if (radius <= 0f) return false;
+            return (position - transform.position).sqrMagnitude < radius * radius;
+        }
+
+        /// <summary>The enabled cell whose visible MEMBRANE contains <paramref name="position"/>,
+        /// or null. See <see cref="IsInsideMembrane"/> for why this is not
+        /// <see cref="FindCellContaining"/>.</summary>
+        public static Cell FindCellByMembrane(Vector3 position)
+        {
+            for (int i = 0; i < ActiveCells.Count; i++)
+            {
+                var c = ActiveCells[i];
+                if (c && c.IsInsideMembrane(position)) return c;
+            }
+            return null;
         }
 
         public bool ContainsPosition(Vector3 position)

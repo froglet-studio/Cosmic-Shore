@@ -84,7 +84,7 @@ gain).
 
 Themed separately from geometry so the recipes stay pure shape (`MicroscenePlan` now carries a
 geometry layer + a themed `Prisms`/`Crystals` layer; `MicroscenePatterns.ApplyTheming` applies theming
-from a `MicroscenePalette`, config-authored on `ConveyorToyDefinitionSO`):
+from a `MicroscenePalette`, config-authored on `WanderwaySettingsSO`):
 
 - **Bigger recipe library** — 16 → **28 recipes** (archway, vortex with an open convergence +
   inviting crystal, slot corridor to roll through, cube field, torus gate, pillar hall, turbine,
@@ -126,7 +126,7 @@ Cell owns the environment (lifeforms via the cell's own `SpawnProfile` + canonic
 ## In-editor verification (I cannot run Unity)
 
 1. Run **FrogletTools > Scene Setup > Setup Freestyle Toybox** (wires the omni prefab + palette on
-   `Toy_Conveyor.asset`), enter freestyle in Menu_Main, fly the Wanderway toy.
+   `Wander_WithoutArk.asset`), enter freestyle in Menu_Main, fly the Wander toy and choose Without Ark.
 2. Confirm: most scenes read one coherent colour with occasional accent/Blue-vein/banded scenes;
    the new recipes appear (arches, vortices with a crystal at the open mouth, roll-through slot
    corridors, torus gates, pillar halls, turbines, asteroid fields, living plains/groves/aviaries);
@@ -165,7 +165,7 @@ Cell owns the environment (lifeforms via the cell's own `SpawnProfile` + canonic
 | Recipes + theming | `_Scripts/Controller/Toys/MicroscenePatterns.cs` |
 | Scene lay / transport | `_Scripts/Controller/Toys/Microscene.cs` |
 | Belt runner | `_Scripts/Controller/Toys/MicrosceneConveyor.cs` |
-| Toy config | `_Scripts/ScriptableObjects/Toys/ConveyorToyDefinitionSO.cs` |
+| Toy config | `_Scripts/ScriptableObjects/Toys/WanderwaySettingsSO.cs` |
 | Prey gate (shared) | `_Scripts/Utility/DataContainers/FaunaReproductionRules.cs` |
 | Canonical spawn helpers (public static) | `_Scripts/Controller/Environment/CellLifeSpawnerBase.cs` |
 | Omni manager-less guards | `_Scripts/Controller/Environment/FlowField/Crystal.cs`, `_Scripts/Controller/ImpactEffects/Impactors/OmniCrystalImpactor.cs` |

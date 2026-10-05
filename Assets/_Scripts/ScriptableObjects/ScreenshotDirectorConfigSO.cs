@@ -520,7 +520,10 @@ namespace CosmicShore.ScriptableObjects
         public string BuildFileName(string conceptName, DateTime timestamp)
         {
             string concept = Sanitize(string.IsNullOrWhiteSpace(conceptName) ? "Shot" : conceptName);
-            return $"{concept}_{timestamp:yyyy-MM-dd}_{timestamp:HH-mm}.png";
+            // InvariantCulture: on ar-SA / th-TH / fa-IR the device culture renders a non-Gregorian year
+            // or non-Latin digits in the file name (BH-1.9).
+            var inv = System.Globalization.CultureInfo.InvariantCulture;
+            return $"{concept}_{timestamp.ToString("yyyy-MM-dd", inv)}_{timestamp.ToString("HH-mm", inv)}.png";
         }
 
         /// <summary>

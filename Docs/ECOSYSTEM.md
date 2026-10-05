@@ -7239,9 +7239,10 @@ cell selector's own rotation, thinned by `Cell.SatellitePrismStride` — and sen
 through it. The Ark is a new **fundamental** (added at the prompter's explicit request, per
 the CLAUDE.md curation process): a prism-bodied mothership that wears a domain, travels the
 hypersea, and lives or dies by the food web. It is the platform's stepping stone toward
-faction missions. Code: `Ark` (`_Scripts/Controller/Environment/`), `ArkwayToy` /
-`CellConveyor` / `ArkwayRun` / `ArkwayVoyageHud` (`_Scripts/Controller/Toys/`),
-`ArkwayToyDefinitionSO`.
+faction missions. Code: `Ark` (`_Scripts/Controller/Environment/`), `WanderToy` (its **With Ark**
+choice) / `CellConveyor` / `ArkwayRun` / `ArkwayVoyageHud` (`_Scripts/Controller/Toys/`),
+`ArkwaySettingsSO`. The Arkway was its own toy until it merged with the Wanderway into **Wander**
+(`Docs/ToySystem/ARCHITECTURE.md` § "Wander").
 
 ### 41.1 The mechanic is composition, not construction
 
@@ -7315,6 +7316,322 @@ entity), plus the cell re-bind on a 2.5 s cadence.
 - **The player's own trail** laid in a struck cell retires with it (`clearLooseTrailMass`
   inside the strike), exactly as trail laid in a mode-preview arena does. Trail laid near
   the Ark is bound to the CURRENT cell and untouched.
+- **The trail laid BETWEEN cells is bound to no cell, so the strike cannot see it** — and
+  the corridor is mostly open water (3200 u spacing against 1200 u membranes, plus 2800 u
+  from home to the first cell), with a leash of 3600 u that deliberately lets a pilot range
+  outside every membrane. Left alone, an indefinite voyage accumulates an unbounded ribbon
+  in the gaps. `CellConveyor.CellRetired` → `ArkwayRun.OnCellRetired` closes it: each struck
+  cell also takes the ribbon the player laid **up to the point the Ark entered that cell**,
+  wherever it was laid. Same event class, same authority — a struck world takes its loose
+  trail mass with it — just measured in voyage time rather than in cell binding, which is
+  the only way to reach mass that is bound to nothing. No timer, no length cap: a cell
+  retiring is what removes it, and a cell retires only when the Ark has sailed two cells on
+  and the world is off screen. A mark is the head PRISM, never a count (`RemoveOldest`
+  re-indexes the ribbon), the roll is budgeted 64/tick (`RemoveOldest` is O(n), so an
+  unbounded drain is quadratic), and a slot whose prism the strike already pooled is dropped
+  rather than withered — a strike returns loose trail prisms to the pool without removing
+  them from the vessel's ribbon, so the slot can outlive the prism.
+
+### 41.3.1 A traversal cell is an ORDINARY cell (Sep 2026)
+
+The corridor originally stood each traversal cell with `NucleusIsControlZone = false` — the
+Astro-League declaration "this nucleus is a wall, not a claim" — so control was whole-cell
+volume and the herbivore diet was the legacy opposing-domain rule. The stated mechanic was
+*out-lay a cell and its fauna spawn in your colour and cannot eat the Ark*. What it produced was
+an Ark that **no swarm wearing its own colour could touch**, which is most of them, since the
+Ark wears the pilot's domain and the pilot is the one taking cells.
+
+Each cell now keeps its authored nucleus AND its control zone (the shipped default), and is
+handed one omni crystal at its core:
+
+- **Control is the NUCLEUS CLAIM.** `DominantDomain` reads the environment volume laid inside
+  the nucleus, which is what decides the swarm's colour. Nothing bespoke — this is §13/§25.1 as
+  shipped.
+- **The diet is SPATIAL.** `IsPreyForHerbivore` returns `!IsInsideNucleus`, so the nucleus is
+  sanctuary and everything outside it is voraciously grazed **by any domain**. The Ark's hull is
+  ordinary environment mass crossing that exterior, so it is food for the whole crossing and safe
+  only under the core it is making for. **This is the whole answer to "fauna should attack the
+  Ark"** — no aggro system, no threat script, no per-mode diet: the shipped nucleus-cell rule,
+  applied to a ship that happens to be sailing through.
+- **The crystal.** A satellite has no `CrystalManager` feeding it (`Cell.InitializeSatellite`
+  says so explicitly), so a traversal cell had none. `CellConveyor.SpawnCoreCrystal` seats one at
+  the centre — inside the nucleus, the canonical omni volume (§27), blooming in through the
+  crystal's own fade, registered in the satellite's OWN runtime and never the scene asset's list.
+  Manager-less, so it is collected once (the Wanderway conveyor's own case). +1 always-on trigger
+  per standing cell, three in steady state.
+
+**What it costs, stated plainly:** taking a cell no longer protects the Ark, because outside the
+nucleus colour does not gate the diet. Control now buys the swarm's COLOUR and the gauge reading;
+the threat is spatial. That is what makes the arrival profile (§41.5) load-bearing rather than
+cosmetic — the slow run in to the core is the run through the feeding ground, and the core is the
+only sanctuary in the cell.
+
+### 41.3.2 The volume gauge reads the cell you are IN, and the volume that DECIDES it
+
+Two defects in `DomainVolumeIndicator`, one Arkway-specific and one general.
+
+**It latched its cell forever.** `ResolveCell` cached the first answer, which is exactly right
+while a scene has one cell and the player never leaves it — true of every arcade mode, and false
+of the one toy whose subject is flying from one cell into the next. For a whole voyage the gauge
+stayed pinned to the home cell: three wedges at zero and a fauna-spawn ring that never moved,
+because the home cell had been handed its bare canvas and was spawning nothing. **That reads as a
+broken gauge, not as a gauge reading somewhere else.** It now re-resolves on every sample (4 Hz,
+a walk over a handful of live cells — the latch was buying almost nothing), holding the last good
+answer as the fallback so a frame where nothing resolves does not blank it. General rule: *a cache
+whose invalidation condition is "the player moved to another cell" is a latch until the day
+something moves the player between cells.*
+
+**It read whole-cell volume in a cell whose control is the nucleus.** `Cell.GetControlVolume` is
+the new accessor and it is exactly the source `DominantDomain` reads: nucleus environment volume
+where there is a control zone, whole-cell live volume where there is not. Fed the whole-cell read,
+the gauge could show one domain leading while `DominantDomain` held the cell for another, with
+nothing wrong on either side — a HUD that can disagree with the thing it is drawing. In a
+control-zone cell the wedges are now each domain's SHARE of the claim and the phase ring is
+hidden, because the ladder is a whole-cell measure and says nothing about the claim; an almost
+empty nucleus reading as one full wedge is honest, since one prism in there really does hold the
+cell. Cells with no control zone (every arcade arena today) are byte-for-byte unchanged.
+
+The fauna-spawn ring needed no fix beyond the cell: `RecordFaunaSpawn` is called by **both**
+spawners already, so the cadence telemetry was correct all along and only the cell it was being
+read from was wrong.
+
+### 41.3.3 The wake — why nothing was eating the Ark (Sep 2026)
+
+Reported after §41.3.1 shipped: *I never saw any fauna consume any Ark health prisms.* Every
+gate was correct. `IsEdibleForHerbivore` → `Fauna.IsPreyForMe` → `Cell.IsPreyForHerbivore`
+returns true for the hull anywhere outside the nucleus; the hull is plain (unshielded) mass; it
+is grid-tracked and re-filed every 2.5 s as the Ark moves. The problem is arithmetic:
+
+- **The hull is ~150 prisms in a ~10,000-prism cell.** Herbivores steer at
+  `Cell.GetDensestRegionAnyDomain`, and that grid is a **`BlockCountDensityGrid` — it counts
+  PRISMS, not volume**. So a bigger hull would not have helped at all, and the swarm has no
+  reason to prefer the Ark over the forest it is standing in.
+- **The Ark's slowest phase is spent in SANCTUARY.** Its destination is the cell centre, and the
+  nucleus interior is both inedible and excluded from the targeting grids. So the one window in
+  which a slow-moving ship is easiest to catch is the one window nothing may touch it.
+
+Left there, a bite is a chance encounter. The fix is not to weight the Ark (that is a scripted
+threat, §0) — it is to give the Ark **mass the food web meets on its own terms**: a WAKE. One
+prism per 45 units of TRAVEL, at 6×6×12, in the Ark's domain, laid through the canonical path
+into its own `Trail` on a stationary root. Three properties do the work, and all three are
+emergent:
+
+1. It is a **dense line through the feeding ground**, where the forest is spread over a sphere —
+   a count grid can name a line.
+2. Its freshest prism is always **about one ship-length astern**, so a creature that comes for
+   the wake arrives at the hull.
+3. It is laid on **distance, not time**, so it is densest exactly where the Ark is slowest —
+   the approach — and sparsest across the open water it crosses under way.
+
+It is bounded without a lifespan: the wake is struck with the cell it was laid in
+(`ArkwayRun.OnCellRetired` → `Ark.RetireWakeBefore`, the same mark-by-PRISM mechanism the
+player's ribbon uses), with `arkWakeBudget` as a backstop for a voyage that outruns its own
+corridor — reaching it retires the OLDEST, never the nearest. A wake prism the food web ate is
+skipped rather than withered (`destroyed` is true while the GameObject stays ACTIVE — the
+devoured-prism trap), because whoever consumed it owns it.
+
+Whether this is ENOUGH is a play-test question. The honest ceiling: a wake competes with the
+forest on count, and at 45-unit spacing one cell crossing lays ~70 prisms against ~10,000. If the
+swarm still ignores the Ark, the lever is the SPACING (more prisms per unit of travel), never a
+weight on the Ark.
+
+### 41.3.3.1 The wake hung the load gate — a CONTINUOUS source must never enter the reveal watch
+
+Reported on the first play of the wake: the veil reached *"GROWING ARKWAY (6 settling)"* and then
+jittered 6 → 5 → 4 → 6 forever, appeared to restart, and did it again.
+
+`PrismTrailBuilder.LayOne` unconditionally calls `WatchForReveal`, which puts the prism in the
+arena-ready gate's "has everything materialized yet" set. Every historical caller of `LayOne` lays
+a FINITE cohort that a build is waiting on — which is exactly why the flag never existed. The
+Ark's wake is the first CONTINUOUS caller in the project: it lays for as long as the voyage runs,
+so at 72 u/s and 45-unit spacing it was adding ~1.6 prisms/s to a set the gate was waiting to see
+empty. The set drains to 4, two more arrive, it is 6 again. **The gate can never all-clear, so the
+veil holds forever** — a hang, not a slow load, and no amount of waiting fixes it. (The apparent
+"restart" is the SECOND traversal cell's deferred environment build beginning after the first
+finished and resetting the readout's counters; it is real, and it is only visible because the
+veil was never going to come down.)
+
+Three fixes, in the order they matter:
+
+1. **`LayOne` gains `watchForReveal` (default true)** and the wake passes false. The wake is
+   gameplay mass a live game keeps producing; it is not part of anybody's build.
+2. **The wake is armed AFTER the arena-build bracket**, never inside it — so the Ark also does
+   not spend the load laying a ribbon nobody will ever see. And `Ark.RetireAsync` disarms the
+   wake on its FIRST line, before any await: a retire is followed by the next voyage's veiled
+   build, and that method waits out a lay and then a 0.8 s wither, so a wake left armed keeps
+   laying into its successor's hold.
+3. **The stall detector had to count PROGRESS, not CHANGE.** `PollArenaReady` treated
+   `GrowRemainingCount != last` as progress — but that is a LEVEL, which goes up when work is
+   added and down when it is finished, so churn is indistinguishable from progress and the
+   180 s hard cap never fired. Only a FALLING remaining count (or an advance in the monotone
+   `s_layDoneTotal`) counts now, so this whole class degrades to a loud release with a named
+   diagnostic instead of an unbounded hang with an animated readout.
+
+General rule worth carrying past this bug: **a readout that keeps moving is not evidence of
+progress, and a watchdog that watches a level will believe it is.** Compare monotone totals.
+
+### 41.3.3.2 The Ark sailed away behind the veil — a veiled build is not a pause
+
+Reported on the next play: *no Ark at all.* The load completed; there was simply no ship anywhere.
+
+`Ark.Update` runs for the whole veiled build, because **a build behind a veil is not a pause** —
+every `Update` in the scene keeps running through it. The Ark was given its course the moment its
+hull finished laying, which is inside the arena-build bracket, so it set sail with the screen
+covered. At the cruise speed the arrival profile gives it (`arkSpeed × arkCruiseSpeedFactor` =
+72 u/s), a 40-second build carries it 2,880 units — past the first traversal cell, where it parks
+at that cell's core (the corridor cannot advance it: `TickCorridor` needs `_running`, which the
+veil has not set yet). The voyage then opens with the Ark somewhere the player has never been.
+
+It was survivable at the old flat 18 u/s and is not at 4× that, which is why it surfaced only
+after §41.3.3's pacing change: the same latent ordering, four times further.
+
+Fixed with an explicit gate rather than a convention about call order: `Ark.SetUnderway(bool)`,
+false until `ArkwayRun` sets `_running`, gating the MOVEMENT itself. `RetireAsync` clears it too.
+`AimArk()` moved out of the bracket to the same moment, so the course and the wake are armed
+together at the instant the voyage actually begins — beside the player, where it was built.
+
+`ArkwayRun.LogVoyageStart` reports the Ark's hull count and its distance from the vessel at that
+one frame, on `CSLogChannel.ToyBox`, because *"no Ark at all"* and *"the Ark is 2,800 units
+ahead"* are indistinguishable on screen and the difference is the whole bug.
+
+### 41.3.3.3 The bracket is not the build — the voyage opened behind the veil (Sep 2026)
+
+Reported on the next two plays, after §41.3.3.2 *and* a dock repose at voyage start: *still no
+Ark and no objective marker.* A multi-lens investigation of the start sequence converged on one
+ordering defect that both fixes had only moved, not closed.
+
+`ArkwayRun.BeginVoyageAsync` armed the voyage — `_running`, the entrance, the arrow, the dock
+repose, `SetUnderway(true)` — the moment its own `EndArenaBuild` bracket closed, ~2 s after the
+hull laid. The **bracket says the run has queued its work; it says nothing about the veil**,
+which stays up until every traversal cell's ~10k-prism lay has drained and settled (30–90 s), and
+a veiled build is not a pause. So the whole opening ran behind an opaque screen: the pilot was
+docked beside the Ark and then flew blind for a minute, the Ark sailed at cruise, the hull
+crossed the first cell's feeding ground as any-domain prey where the food web could strip it
+unseen (a hull-lost `End` that showed its banner under the veil and sent the player home), the
+DISEMBARK station stood 240 u dead ahead on the very axis the docked pilot flies, and the arrow
+hid itself because a receding Ark is *on screen*. Every one of those paths ends with a voyage
+that opens on empty water, and every one was silent or on a verbose channel.
+
+Three things closed it, all in `ArkwayRun`:
+
+- **Open on the veil, not the bracket.** After `EndArenaBuild` the run waits on
+  `PrismTrailBuilder.IsLoadGateHolding` (bounded by the gate's own 180 s stall cap plus a 200 s
+  guard). Only then: wake armed, entrance planted, arrow stood, banner, dock repose, `_running`,
+  `AimArk`, `SetUnderway`. While waiting it ends loudly if freestyle drops (an Escape at the
+  veil) and warns once if the hull loses a plate — the home cell is on its bare canvas, so
+  nothing should be feeding there.
+- **One departure point.** `origin`/`course` are read from `_home` (the pose the toy fired at)
+  instead of the live transform 5–30 s later, so the corridor, the Ark and the entrance are
+  stood relative to one point; and the entrance stands 180 u abeam on the port side — the pilot
+  docks starboard — so holding course from the dock cannot thread the way home.
+- **A pass during the build is ignored, not toggled** (`ArkwayRun.IsBuilding`, read by
+  `ArkwayToy.OnActivated`, now `WanderToy.OnActivated`): the pilot is standing on the toy, blind, and "try again" had been
+  ending the unseen voyage.
+- **Only the FIRST cell stands behind the veil.** `CellConveyor.Begin` stands one cell; the
+  second is `CellConveyor.StandAhead`, called as the voyage opens, so it streams in unveiled
+  beside live play exactly as the third and every later cell always did. The veil's duration
+  was itself the player-experience defect — the blind opening — and halving the work behind it
+  halves the opening without touching the gate.
+
+Two platform corrections came with it. `ObjectiveIndicator.HideOnScreenWithin` bounds the
+on-screen hide rule by distance (default unbounded — the legacy rule; the Arkway sets 900 u),
+because a 110-unit hull two thousand units away is on screen and unreadable. And
+`Cell.FindCellContaining` / `FindNearestActiveCell` take `sceneCellsOnly`: the previous voyage's
+traversal satellites persist until they leave view, and the nearest of them is a world the
+corridor is about to strike, not the host to revert. `Cell.Start` also no longer re-subscribes a
+satellite to `OnInitializeGame` — `InitializeSatellite` unsubscribes deliberately, and a satellite
+activated and initialised in one frame reaches `Start` afterwards.
+
+`LogVoyageStart` is now a plain, always-on `CSDebug.Log` — one line per voyage — until three
+consecutive play tests open on a visible Ark, then it returns to the channel.
+
+General rule: **a build bracket and a load veil are different promises.** The bracket is the
+producer saying "I have queued work"; the veil is the consumer saying "the world is settled".
+Anything that must happen *beside a player who can see* keys on the second, never the first.
+
+### 41.3.4 A traversal cell starts EMPTY (Sep 2026)
+
+Reported with the above: *the cells got sparser as time went on, but the performance got worse.*
+Sparser is the food web working (§41.3.1 made the whole exterior edible by every domain). Worse
+is a cell CLONE that grows with the session.
+
+The corridor clones the **live scene cell** — there is no prefab to instantiate at runtime, and
+the mode preview's satellite path has the same fallback. But a live cell ACCUMULATES: `Cell`
+parents its authored environment to itself, and every lifeform heart the food web drops is
+re-homed onto it (`Crystal.ActivateCrystal`, `Crystal.DetachHeartToCell`). Cloned verbatim, all
+of it lands in every traversal cell, three standing at a time, forever — so each new cell is more
+expensive than the last, and the cost is invisible in every population number because none of it
+was spawned.
+
+`CellConveyor.StripAccumulatedContent` re-parents every `Prism` / `Crystal` / `LifeForm` / `Toy` /
+`NetworkObject` branch of the clone into an INACTIVE scrap root and destroys it with that root.
+Inactive is load-bearing: `Destroy` defers to end of frame and `root.SetActive(true)` runs a few
+lines later, so a plain destroy would wake every doomed object first (a cloned Prism registering
+with the spatial index, a cloned Crystal joining `Crystal.Active`). It is a DENYLIST of content
+types rather than an allowlist of components — the cell's own structure is whatever the prefab
+author put there and must survive untouched, while the things that accumulate are a short,
+knowable list.
+
+Two more sweeps came with it:
+
+- **Orphaned strike roots.** `Cell.StrikeSatelliteWorld` hands back a new world-space root that
+  is deliberately parented to nothing, so the cell can die immediately while its mass drains a
+  slice per frame — which also means nothing else can collect it if the drain is cancelled.
+  `_retiringRoots` tracks them and teardown sweeps them. General shape: *an object deliberately
+  orphaned for the duration of an async is an object whose async no longer owns its cleanup.*
+- **Teardown telemetry on a loop.** `CellRuntimeDataSO.ResetRuntimeData` logged **one line per
+  crystal it destroyed**, plus a reset banner; `Cell` logged spawner start/stop; the conveyor
+  logged one line per cell stood. All correct for a world built once at scene load, all running on a loop
+  here. They moved to `CSLogChannel.Ecology` (the cell's own channel) and the Arkway's to `ToyBox`; the per-crystal one is DELETED outright rather than guarded on
+  `IsVerbose` BEFORE the interpolation — `LogVerbose` is `[Conditional]`, which removes the call
+  in a release build but not the argument evaluation in the Editor, so an interpolated string
+  inside a per-object loop is still built every time.
+
+`CellConveyor.Census()` + `ArkwayRun.LogCensus` print everything the voyage holds once per
+crossing on that channel — standing cells, tracked prisms, drains, orphaned roots, hull, wake,
+both trail ribbons, marks, withering. **An infinite toy needs a way to answer "what is growing?"
+from a play test**; the fixes above are the ones that could be found by reading, and the census is
+how the next one gets found by measuring.
+
+### 41.3.5 Later cells had spindles and crystals but no prisms (Sep 2026)
+
+Reported across several play tests: *the first four or so cells loaded fine, the fifth had
+lifeforms with crystals and spindles in the right places but not a single prism*, and later
+*the next cell was missing a lot of prisms and the one after had none*. Two unrelated defects
+presented as that one symptom, and the one that turned out to be the cause was the last one
+looked for.
+
+**The cause: every laid prism waits, INVISIBLE, for a global creation budget.**
+`Prism.CreateBlockCoroutine` keeps a prism's renderer and collider off until it wins one of
+`MaxCreationCompletionsPerFrame` (**6**) completions in that frame — a de-spike for bursts that
+land on one frame. A spindle needs no such budget, so it appears the moment it is created. The
+corridor grows two whole worlds at once while the player watches, so within a few cells the queue
+of initialized-but-hidden prisms ran to thousands; the plants had grown, their prisms existed, and
+none of them had been SHOWN. The same queue held back every trail prism, which is why neither the
+pilot nor the Ark left a trail and the wake arrived in batches.
+
+- `ArkwayRun` holds `Prism.BeginBulkTransport` (64 completions/frame — the tier the Wanderway
+  conveyor already uses) for the whole voyage, released exactly once on every exit
+  (`HoldCreationTier`).
+- **Environment mass and everything else now spend SEPARATE per-frame budgets**, platform-wide:
+  a prism the `EnvironmentPrismPool` issued counts against one, a pilot's trail against the other,
+  so a growing world can never starve a trail again. The Ark's wake is environment-pool mass but a
+  ribbon behind a mover, so it opts into the trail side (`Prism.CompletesAsLiveRibbon`). Worst
+  frame is 2× the tier's cap; the order within each class is unchanged.
+- The per-crossing census reports `awaiting creation N/M`, and a backlog over 3,000 warns once per
+  voyage — the one number that separates "never grew" from "grew and is not yet visible".
+
+**Found on the way, fixed, and NOT the cause:** struck cells used to `Destroy` their environment
+prisms, so the pool minted fresh ones forever (now released through
+`EnvironmentPrismPool.TryRelease`, `Docs/PRISM_ANIMATION.md` C13b); and a pooled `HealthPrism` kept its dead plant, limb and
+fauna back-references into its next life, so an old owner's teardown could reach a re-issued prism.
+`HealthPrism.DetachForPool` severs all three (and the owners' tracker entries) on release, and a
+struck cell's lifeforms are quiesced (`LifeForm.RetireWithWorld`) before the drain so their death
+cascade cannot run against mass that is already in the pool.
+
+General rule: **when something the player can see is present and a sibling is not, ask what the
+missing one has to WAIT for before it is drawn** — a hidden-until-ready gate reads exactly like
+mass that was never made.
 
 ### 41.4 Collider budget (stated per the gate)
 
@@ -7324,13 +7641,44 @@ collider LOD (the host cell is handed its bare canvas at voyage start, the Wande
 opening move, so the corridor is not additive to a heavy home world). Fauna at
 `RuntimePopulationScale 0.5` ≈ one-and-a-half freestyle cells' worth of creatures across
 three cells. The Ark itself is ~150 prisms and ~150 always-on nothing — its label is one
-TMP text. Satellite cells run no cytoplasm (4k shard motes each stays preview-suppressed).
-(They also used to be barred from `DomainFaunaBuffSystem.EnsureExists`, whose runtime rebinding
-a satellite strike could leave holding a dead SO; that system is removed — §15 — so the hazard
-and its guard are both gone.)
+TMP text — plus its WAKE, one prism per 45 units of travel bounded by `arkWakeBudget` (400) and
+ordinarily retired with the cell it was laid in, so ~150 standing in steady state. One crystal
+(one always-on trigger) per traversal cell, three standing. Satellite cells run no cytoplasm
+(4k shard motes each stays preview-suppressed). (They also used to be barred from
+`DomainFaunaBuffSystem.EnsureExists`, whose runtime rebinding a satellite strike could leave
+holding a dead SO; that system is removed — §15 — so the hazard and its guard are both gone.)
 
 ### 41.5 Known limitations (deliberate, recorded)
 
+- **The way home does not follow you** (changed Sep 2026). The disembark station was a
+  `WanderwayReturnToy` gliding behind the Ark's stern — motion inherited from the Wanderway,
+  where the return station rides the tail of the ROLLING TETHER and following *is* the trail
+  cleanup. The Arkway has no tether, so it inherited the motion without the mechanism that
+  gave it meaning, and a landmark that chases the ship you are escorting is never anywhere.
+  It now stands at the ENTRANCE you sailed from (offset 240 u down the departure heading so
+  it does not draw a second ring inside the Arkway toy's own) and stays there. General shape:
+  *a behaviour copied from a sibling system carries that system's mechanism as an unstated
+  premise — check the premise still holds before copying the behaviour.*
+- **The objective arrow points at the Ark** (added Sep 2026): `ArkwayRun` is its own
+  `IObjectiveProvider` and stands one `ObjectiveIndicator` per live voyage at the canvas ROOT
+  (a mid-hierarchy parent pins the arrow in a corner — the note `PaintingRunner` already
+  carries). One arrow per voyage, destroyed with it; a painting run standing its own at the same
+  time would draw two, the same bounded degenerate class as the Arkway and the Wanderway both
+  running. When the Ark is on screen but farther than 900u it is MARKED in place rather than
+  hidden (`ObjectiveIndicator.HideOnScreenWithin`); edge placement there aimed along a
+  near-zero centre-to-target vector and swung around the pilot's own hull.
+- **Frame rate degrades after many cells** (open, reported Sep 2026 after the creation-budget
+  fix). The census (§41.3.4) is the instrument; the first reading to take is whether
+  `tracked prisms`, `env pool issued` or `awaiting creation` climbs cell over cell. Not yet
+  measured, so no cause is claimed.
+- **The Ark's pace is an arrival profile** (added Sep 2026): `arkSpeed × arkCruiseSpeedFactor`
+  (18 × 4) in open water, easing to `arkSpeed` across the destination cell's own membrane
+  radius, so the deceleration IS entering the cell and the acceleration IS leaving the last
+  one. Both halves fall out of one quantity — range to destination — so there is one
+  smoothstep and no acceleration state to unwind when the corridor advances. The radius is
+  re-read every tick, because a freshly stood cell reports `MembraneRadius` 0 until its
+  membrane spawns (the `ModePreviewArena.FramingRadius` bug class) and a once-at-departure
+  read would run the whole leg on the fallback.
 - **The Ark wears the local player's domain at departure** and keeps it for the voyage. A
   mid-voyage domain change (not reachable in practice — the domain toys are at home) would
   not repaint the hull.

@@ -151,9 +151,12 @@ namespace CosmicShore.Gameplay
         //   _propertyWriter.LobbyMutex           serialises lobby reads/writes
         //   _propertyWriter.SessionCreationMutex  deduplicates session creation
         //
-        // _insideRefreshCycle makes the re-entrant case explicit: helpers called
-        // from inside RefreshAsync (which holds LobbyMutex) skip re-acquiring;
-        // helpers called from outside acquire normally.
+        // Re-entrancy is explicit, per call: a helper that can run both inside and outside a
+        // mutex-holding cycle takes a `callerHoldsLobbyMutex` argument. There used to be a single
+        // shared "inside a refresh cycle" flag instead, but it said "some refresh is running",
+        // not "THIS caller holds the lock", so an unrelated caller (user cancel, a session
+        // callback, a fire-and-forget continuation that outlived the refresh) skipped the lock
+        // whenever any refresh happened to be running (BH-2.3).
         // ─────────────────────────────────────────────────────────────────────
 
         /// <summary>Owns both mutexes and the mutex+refresh+save-with-retry write pattern.</summary>
@@ -193,8 +196,6 @@ namespace CosmicShore.Gameplay
         private SemaphoreSlim _lobbyMutex           => _propertyWriter.LobbyMutex;
         private SemaphoreSlim _sessionCreationMutex => _propertyWriter.SessionCreationMutex;
 
-        private bool _insideRefreshCycle;
-
         // ─────────────────────────────────────────────────────────────────────
         // Lifecycle / state
         // ─────────────────────────────────────────────────────────────────────
@@ -216,6 +217,18 @@ namespace CosmicShore.Gameplay
         private float  _nextForcedRefreshAllowed;
         private float  _nextConvergeAllowed;
         private int    _consecutiveRefreshErrors;
+
+        // Presence-lobby REJOIN after a failed reconnect. The refresh watchdog clears the lobby
+        // reference and tries to rejoin once; if that single attempt fails (still offline, rate
+        // limited, UGS hiccup) the lobby stays null and Update's IsInPresenceLobby gate stays
+        // closed for good - the online list empties and invites stop until the app restarts.
+        // These drive a retry with exponential backoff from Update instead.
+        private const float PRESENCE_REJOIN_BASE_DELAY_SECONDS = 3f;
+        private const float PRESENCE_REJOIN_MAX_DELAY_SECONDS  = 60f;
+        private bool   _presenceRejoinPending;
+        private bool   _presenceRejoinInFlight;
+        private int    _presenceRejoinAttempts;
+        private float  _nextPresenceRejoinAllowed;
         private int    _publishedPartyCount = -1;
         private string _publishedMatchName  = "<UNSET>";
         private string _publishedPartySessionId = "<UNSET>";
@@ -415,6 +428,12 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
+            if (_presenceRejoinPending)
+            {
+                TryPresenceRejoin();
+                return;
+            }
+
             if (!IsInPresenceLobby) return;
             if (_lobbyMutex.CurrentCount == 0) return;                   // someone is already inside the mutex
             if (Time.unscaledTime < _rateLimitBackoffUntil) return;
@@ -536,8 +555,11 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private async UniTask EnsureInitializedAsync()
         {
-            if (IsInPresenceLobby || _joining) return;
+            if (IsInPresenceLobby || _joining || _presenceRejoinInFlight) return;
             _joining = true;
+            // The front-door init supersedes any pending background rejoin.
+            _presenceRejoinPending = false;
+            _presenceRejoinAttempts = 0;
             try
             {
                 SubscribeToProfileChanges();
@@ -1101,7 +1123,6 @@ namespace CosmicShore.Gameplay
             // mid-refresh and will observe the departure itself - one authoritative
             // pass is enough, so we skip rather than queue.
             if (!await _lobbyMutex.WaitAsync(0)) return;
-            _insideRefreshCycle = true;
             try
             {
                 int before = connectionData.PartyMembers?.Count ?? 0;
@@ -1119,7 +1140,6 @@ namespace CosmicShore.Gameplay
             }
             finally
             {
-                _insideRefreshCycle = false;
                 _lobbyMutex.Release();
             }
         }
@@ -1354,7 +1374,6 @@ namespace CosmicShore.Gameplay
             if (!await _lobbyMutex.WaitAsync(0))
                 return;
 
-            _insideRefreshCycle = true;
             bool shouldReconnect = false;
             try
             {
@@ -1484,7 +1503,7 @@ namespace CosmicShore.Gameplay
                     // window on invite-receive, so the counter can already be at 1-2) and
                     // falsely escalate to ForceReset + Reconnecting + a throwaway lobby on a
                     // *successful* join. Reset wipes any stale accumulation too.  The finally
-                    // block below still releases _lobbyMutex / clears _insideRefreshCycle.
+                    // block below still releases _lobbyMutex.
                     if (PartyInviteController.Instance != null && PartyInviteController.Instance.IsTransitioning)
                     {
                         _consecutiveRefreshErrors = 0;
@@ -1507,7 +1526,6 @@ namespace CosmicShore.Gameplay
             }
             finally
             {
-                _insideRefreshCycle = false;
                 _lobbyMutex.Release();
             }
 
@@ -1523,9 +1541,75 @@ namespace CosmicShore.Gameplay
                 // which keeps the user-visible recovery in one place.
                 _eventBus.RaiseHostConnectionLost();
 
-                await _lobbyService.JoinOrCreateAsync(presenceLobbyMaxPlayers);
-                ApplyPostLobbyJoinState();
+                try { await _lobbyService.JoinOrCreateAsync(presenceLobbyMaxPlayers); }
+                catch (Exception e)
+                {
+                    CSDebug.LogWarning($"[HostConnectionService] Presence lobby rejoin threw ({e.GetType().Name}): {e.Message}");
+                }
+
+                if (_lobbyService.ActiveLobby == null)
+                    SchedulePresenceRejoin();
+                else
+                    ApplyPostLobbyJoinState();
             }
+        }
+
+        /// <summary>
+        /// Queues the next presence-lobby rejoin attempt, backing off 3s, 6s, 12s ... up to 60s.
+        /// </summary>
+        private void SchedulePresenceRejoin()
+        {
+            float delay = Mathf.Min(PRESENCE_REJOIN_MAX_DELAY_SECONDS,
+                PRESENCE_REJOIN_BASE_DELAY_SECONDS * Mathf.Pow(2f, Mathf.Min(_presenceRejoinAttempts, 10)));
+            _presenceRejoinAttempts++;
+            _presenceRejoinPending = true;
+            _nextPresenceRejoinAllowed = Time.unscaledTime + delay;
+            CSDebug.LogWarning($"[HostConnectionService] Presence lobby not rejoined - retrying in {delay:0}s (attempt {_presenceRejoinAttempts}).");
+        }
+
+        private void TryPresenceRejoin()
+        {
+            // Stand down if the service was shut down, went offline, or something else (the
+            // front-door init) already restored the lobby.
+            if (!IsInitialized || _lobbyService.ActiveLobby != null ||
+                (_gameData != null && _gameData.IsOfflineSession))
+            {
+                _presenceRejoinPending = false;
+                _presenceRejoinAttempts = 0;
+                return;
+            }
+
+            if (_joining || _presenceRejoinInFlight) return;
+            if (Time.unscaledTime < _nextPresenceRejoinAllowed) return;
+
+            RejoinPresenceLobbyAsync().Forget();
+        }
+
+        private async UniTaskVoid RejoinPresenceLobbyAsync()
+        {
+            _presenceRejoinInFlight = true;
+            try
+            {
+                await _lobbyService.JoinOrCreateAsync(presenceLobbyMaxPlayers);
+
+                if (_lobbyService.ActiveLobby == null)
+                {
+                    SchedulePresenceRejoin();
+                    return;
+                }
+
+                _presenceRejoinPending = false;
+                _presenceRejoinAttempts = 0;
+                ApplyPostLobbyJoinState();
+                CSDebug.LogVerbose(CSLogChannel.Party,
+                    $"[HostConnectionService] Presence lobby rejoined - lobby: {_lobbyService.ActiveLobby.Id}");
+            }
+            catch (Exception e)
+            {
+                CSDebug.LogWarning($"[HostConnectionService] Presence lobby rejoin threw ({e.GetType().Name}): {e.Message}");
+                SchedulePresenceRejoin();
+            }
+            finally { _presenceRejoinInFlight = false; }
         }
 
         private bool TryFindIncomingInvite(IReadOnlyPlayer sender, out PartyInviteData invite)
@@ -1805,7 +1889,9 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            // Already inside RefreshAsync (mutex held) → fire-and-forget.
+            // Fire-and-forget from inside RefreshAsync. NOT marked as holding the mutex: this
+            // continuation outlives the refresh, so it waits for the refresh to release the mutex
+            // and then writes under it (the refresh does not await it, so there is no deadlock).
             foreach (var joinedId in joinedPlayerIds)
                 _ = ClearOutgoingInviteIfPresentAsync(joinedId, "presence-join");
         }
@@ -1912,7 +1998,7 @@ namespace CosmicShore.Gameplay
                 _partySessionService.ActiveSession, localId);
 
             foreach (var joinedId in joinedPlayerIds)
-                await ClearOutgoingInviteIfPresentAsync(joinedId, "party-join");
+                await ClearOutgoingInviteIfPresentAsync(joinedId, "party-join", callerHoldsLobbyMutex: true);   // RefreshPartyMembersAsync always runs under the lobby mutex
 
             // A new party member appeared in the Relay session.
             // If we're Inviting (sent an invite and they connected), transition to InParty.
@@ -2003,16 +2089,17 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Clears an outgoing invite from the tracker, fires the UI-cleared event,
         /// and republishes the composite property to the lobby.
-        /// Reentrant: callers from inside <see cref="RefreshAsync"/> (mutex already
-        /// held) skip re-acquiring; external callers acquire normally.
+        /// Pass <paramref name="callerHoldsLobbyMutex"/> = true only when the caller awaits this
+        /// while itself holding the lobby mutex; everyone else (including fire-and-forget calls
+        /// made from inside a refresh) takes the mutex.
         /// </summary>
-        private async UniTask ClearOutgoingInviteIfPresentAsync(string playerId, string reason)
+        private async UniTask ClearOutgoingInviteIfPresentAsync(string playerId, string reason, bool callerHoldsLobbyMutex = false)
         {
             if (_lobbyService.ActiveLobby == null || string.IsNullOrEmpty(playerId)) return;
             if (!_inviteService.Contains(playerId)) return;
 
             _inviteService.Remove(playerId);
-            await HandleInviteClearedAsync(playerId, reason);
+            await HandleInviteClearedAsync(playerId, reason, callerHoldsLobbyMutex);
         }
 
         /// <summary>
@@ -2024,14 +2111,20 @@ namespace CosmicShore.Gameplay
         /// presence-leave path (<see cref="ClearOutgoingInviteIfPresentAsync"/>, after
         /// <see cref="InviteService.Remove"/>).
         /// </summary>
-        private async UniTask HandleInviteClearedAsync(string playerId, string reason)
+        /// <param name="callerHoldsLobbyMutex">
+        /// True ONLY when the caller itself is awaiting this inside a section that holds the lobby
+        /// mutex (it must not re-acquire, the mutex is not re-entrant). Every other caller,
+        /// including fire-and-forget calls made from inside a refresh, passes false and waits for
+        /// the mutex: the write then cannot interleave with a send or a refresh.
+        /// </param>
+        private async UniTask HandleInviteClearedAsync(string playerId, string reason, bool callerHoldsLobbyMutex = false)
         {
             CSDebug.LogVerbose(CSLogChannel.Party,
                 $"[INVITE-SEND] Clearing invite for '{playerId}' (reason: {reason})");
             OutgoingInviteCleared?.Invoke(playerId);
 
             if (_lobbyService.ActiveLobby == null) return;
-            bool needsLock = !_insideRefreshCycle;
+            bool needsLock = !callerHoldsLobbyMutex;
             if (needsLock) await _lobbyMutex.WaitAsync();
             try
             {
@@ -2265,6 +2358,10 @@ namespace CosmicShore.Gameplay
             }
             catch (OperationCanceledException)
             {
+                // The timeout comes from `cts`'s timer thread and AttachExternalCancellation does
+                // not marshal, so this catch - and the caller's SyncLocalIdentity / lobby join
+                // after it - would otherwise run off the main thread (BH-1.3).
+                await MainThreadDispatcher.SwitchToMainThreadAsync();
                 CSDebug.LogWarning(
                     $"[HostConnectionService] PlayerDataService.IsInitialized still false after {timeoutMs}ms - " +
                     "proceeding with local default identity; profile-change republish will correct it.");

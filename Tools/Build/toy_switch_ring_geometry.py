@@ -106,12 +106,14 @@ def main() -> int:
     vessel = asset("Toy_VesselChanger")
     life = asset("Toy_SpawnMatrix")
     paint = asset("Toy_Painting")
+    wander = asset("Toy_Wander")
 
     cell_r = serialized_float(cell, "stationRadius", 18)
     cell_sp = serialized_float(cell, "stationSpacing", 110)
     vessel_sp = serialized_float(vessel, "stationSpacing", 60)
     life_r = serialized_float(life, "stationRadius", 12)
     life_sp = serialized_float(life, "stationSpacing", 90)
+    wander_sp = serialized_float(wander, "stationSpacing", 90)
     paint_icon = serialized_float(paint, "iconScaleBodies", 2)
     paint_cluster = serialized_float(paint, "clusterSpacingBodies", 3.2)
 
@@ -139,6 +141,8 @@ def main() -> int:
         ("Domain Changer slot", domain_hub, trigger_r, domain_sp),
         ("Cell Selector station", cell_r, cell_r * STATION_TRIGGER_FACTOR, cell_sp),
         ("Vessel Changer station", body_r, body_r * STATION_TRIGGER_FACTOR, vessel_sp),
+        # Wander's two stations (With Ark / Without Ark): a model fitted to the toy body radius.
+        ("Wander station", body_r, body_r * STATION_TRIGGER_FACTOR, wander_sp),
         ("Lifeform kingdom station",
          life_r * LIFEFORM_KINGDOM_FACTOR,
          life_r * LIFEFORM_KINGDOM_FACTOR * STATION_TRIGGER_FACTOR, life_sp),
