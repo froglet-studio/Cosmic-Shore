@@ -101,6 +101,9 @@ namespace CosmicShore.Gameplay
         // Indexed by owner so CancelScheduledActions is O(owner's entries), not a full
         // list scan with RemoveAt (which was O(N²) on mass pool returns).
         private readonly Dictionary<UnityEngine.Object, List<ScheduledAction>> scheduledByOwner = new(64);
+        // An owner's list is retired when its last action fires or is cancelled, and every trail
+        // prism's settle schedules one, so the lists are recycled rather than allocated per schedule.
+        private readonly Stack<List<ScheduledAction>> ownerListPool = new(64);
         private readonly List<UnityEngine.Object> ownerScratch = new(32);
         private readonly List<Action> dueActions = new(16);
         int scheduledActionCount;
@@ -119,7 +122,7 @@ namespace CosmicShore.Gameplay
             if (owner == null || callback == null) return;
             if (!scheduledByOwner.TryGetValue(owner, out var list))
             {
-                list = new List<ScheduledAction>(4);
+                list = ownerListPool.Count > 0 ? ownerListPool.Pop() : new List<ScheduledAction>(4);
                 scheduledByOwner[owner] = list;
             }
             list.Add(new ScheduledAction
@@ -138,8 +141,14 @@ namespace CosmicShore.Gameplay
             if (owner == null) return;
             if (!scheduledByOwner.TryGetValue(owner, out var list)) return;
             scheduledActionCount -= list.Count;
+            RetireOwner(owner, list);
+        }
+
+        void RetireOwner(UnityEngine.Object owner, List<ScheduledAction> list)
+        {
             list.Clear();
             scheduledByOwner.Remove(owner);
+            ownerListPool.Push(list);
         }
 
         /// <summary>
@@ -195,8 +204,7 @@ namespace CosmicShore.Gameplay
                     if (owner == null)
                     {
                         scheduledActionCount -= list.Count;
-                        list.Clear();
-                        scheduledByOwner.Remove(owner);
+                        RetireOwner(owner, list);
                         continue;
                     }
                     for (int i = list.Count - 1; i >= 0; i--)
@@ -210,7 +218,7 @@ namespace CosmicShore.Gameplay
                         }
                     }
                     if (list.Count == 0)
-                        scheduledByOwner.Remove(owner);
+                        RetireOwner(owner, list);
                 }
                 // Run after iteration — callbacks may schedule/cancel actions.
                 for (int i = 0; i < dueActions.Count; i++)
@@ -262,6 +270,7 @@ namespace CosmicShore.Gameplay
             activeTimers.Clear();
             completionTargets.Clear();
             scheduledByOwner.Clear();
+            ownerListPool.Clear();
             ownerScratch.Clear();
             scheduledActionCount = 0;
             dueActions.Clear();

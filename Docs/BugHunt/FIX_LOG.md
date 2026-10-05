@@ -8,6 +8,26 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ---
 
+## BH-4.7 follow-up 2 — PrismTimerManager allocated a list per scheduled owner
+
+- **Date:** fixed 2026-10-05, found in the Skim Race frame-rate pass after merging `Bug_Hunt` into
+  `claude/bold-fermi-54nlts`.
+- **Symptom (cost):** a managed allocation (a `List<ScheduledAction>` and its backing array) every
+  time an owner with nothing pending schedules a settle - every prism material animation, prism
+  explosion/implosion and crystal tint does - and every one becomes garbage when it fires.
+  BH-4.7 introduced it; the flat list it replaced allocated nothing per schedule.
+- **Root cause:** `ScheduleAction` built a fresh list for each new owner, and every removal path
+  dropped the owner's list.
+- **Fix:** retired lists go to a pool (`ownerListPool`) through one `RetireOwner` used by all three
+  removal paths (cancel, destroyed owner, last action fired) and are reused by the next new owner.
+  Cleared on retire so no owner or callback is kept alive. Behaviour unchanged.
+- **Verification:** the Froglet Engine's live compile of runtime `Assets/_Scripts` builds (0
+  errors) and its suites pass (1569 engine + 352 ported). Not run in Unity (no editor in the
+  session): `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Skim Race pilot cost".
+- **PR/commit:** on `claude/bold-fermi-54nlts`.
+
+---
+
 ## BH-4.7 follow-up — PrismTimerManager did not compile (OnDestroy cleared the removed list)
 
 - **Date:** fixed 2026-10-05, found while merging `bleeding-edge` into `Bug_Hunt`.
