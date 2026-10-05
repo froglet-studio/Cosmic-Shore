@@ -1,0 +1,131 @@
+{
+ "tag": "after",
+ "path": {
+  "samples": 35,
+  "speed_med": 5.2,
+  "speed_p10": 3.0,
+  "speed_p90": 20.8,
+  "turn_rate_absmean": 0.006,
+  "turn_rate_sign_changes": 1,
+  "extent_xyz": [
+   38,
+   21,
+   42
+  ]
+ },
+ "cut": {
+  "on": true,
+  "state": "stalk",
+  "intent": 0.07142857142857144,
+  "plan": "space",
+  "morphs": 0,
+  "eaten": 0,
+  "bites": 0,
+  "lizard": 994,
+  "lizCut": 151,
+  "lizSteps": 221,
+  "bolts": 1,
+  "lizards": [
+   {
+    "element": "time",
+    "count": 994,
+    "steps": 221,
+    "rate": 33.4,
+    "speed": 18.8,
+    "debris": 151,
+    "backend": "wasm-simd"
+   },
+   {
+    "element": "mass",
+    "count": 1140,
+    "steps": 274,
+    "rate": 20,
+    "speed": 15.5,
+    "debris": 0,
+    "backend": "wasm-simd"
+   }
+  ],
+  "swarmPos": [
+   -200.76053035985495,
+   209.61897755941305,
+   -158.20189789470658
+  ],
+  "lizPos": [
+   -407.9494011794546,
+   82.38935353968925,
+   -135.35432872378135
+  ]
+ },
+ "ram": {
+  "dist_from_ram_point_before": 32.6,
+  "after_2p4s": 52.9,
+  "heading_change_deg": 38.6
+ },
+ "regrow": {
+  "on": true,
+  "state": "roam",
+  "intent": 0,
+  "plan": "space",
+  "morphs": 0,
+  "eaten": 0,
+  "bites": 0,
+  "lizard": 1130,
+  "lizCut": 187,
+  "lizSteps": 259,
+  "bolts": 1,
+  "lizards": [
+   {
+    "element": "time",
+    "count": 1130,
+    "steps": 259,
+    "rate": 34,
+    "speed": 16.7,
+    "debris": 0,
+    "backend": "wasm-simd"
+   },
+   {
+    "element": "mass",
+    "count": 1135,
+    "steps": 317,
+    "rate": 20,
+    "speed": 15.6,
+    "debris": 0,
+    "backend": "wasm-simd"
+   }
+  ],
+  "swarmPos": [
+   -348.134048240782,
+   147.53234940400213,
+   -162.90032826558482
+  ],
+  "lizPos": [
+   -399.34583793478515,
+   65.94826602855284,
+   -93.86952302303885
+  ]
+ },
+ "lizard_before_cut": 1131,
+ "perf": {
+  "frame_ms": 100,
+  "cpu_ms": 17.100000000558794,
+  "sim_ms": 2.1000000005587935,
+  "render_ms": 13.699999999254942
+ },
+ "lizards": [
+  {
+   "element": "time",
+   "backend": "wasm-simd",
+   "count": 1149,
+   "steps": 266,
+   "rate": 34
+  },
+  {
+   "element": "mass",
+   "backend": "wasm-simd",
+   "count": 1135,
+   "steps": 326,
+   "rate": 20
+  }
+ ],
+ "errors": []
+}

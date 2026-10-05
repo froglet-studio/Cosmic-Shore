@@ -1,0 +1,82 @@
+{
+ "tag": "before",
+ "path": {
+  "samples": 56,
+  "speed_med": 22.5,
+  "speed_p10": 22.4,
+  "speed_p90": 22.5,
+  "turn_rate_absmean": 0.044,
+  "turn_rate_sign_changes": 0,
+  "extent_xyz": [
+   101,
+   26,
+   72
+  ]
+ },
+ "cut": {
+  "on": true,
+  "state": "roam",
+  "intent": 0,
+  "plan": "space",
+  "morphs": 0,
+  "eaten": 0,
+  "bites": 0,
+  "lizard": 1153,
+  "lizCut": 0,
+  "lizSteps": 230,
+  "swarmPos": [
+   -317.70182390746675,
+   253.6144679128168,
+   -80.46479591817136
+  ],
+  "lizPos": [
+   -258.5809275651856,
+   146.90748344289022,
+   -474.0631855560272
+  ]
+ },
+ "ram": {
+  "dist_from_ram_point_before": 65.1,
+  "after_2p4s": 48.3,
+  "heading_change_deg": 17.8
+ },
+ "regrow": {
+  "on": true,
+  "state": "roam",
+  "intent": 0,
+  "plan": "space",
+  "morphs": 0,
+  "eaten": 0,
+  "bites": 0,
+  "lizard": 1157,
+  "lizCut": 0,
+  "lizSteps": 259,
+  "swarmPos": [
+   -418.7572312504572,
+   290.3987882690324,
+   -11.716253966165594
+  ],
+  "lizPos": [
+   -198.51546573926285,
+   161.0899205502787,
+   -502.18682764716516
+  ]
+ },
+ "lizard_before_cut": 1145,
+ "perf": {
+  "frame_ms": 100,
+  "cpu_ms": 8.099999999627471,
+  "sim_ms": 2,
+  "render_ms": 5.5
+ },
+ "lizards": [
+  {
+   "element": "time",
+   "backend": "wasm-simd",
+   "count": 1151,
+   "steps": 262,
+   "rate": 20
+  }
+ ],
+ "errors": []
+}

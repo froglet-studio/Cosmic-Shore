@@ -183,9 +183,9 @@ const DEG = Math.PI / 180;
 const CAT = {
   showcase:  { label: 'Showcase: everything at once', truth: null },
   cell:      { label: 'The whole cell (vibrancy)', truth: null },
-  creatures: { label: 'Big creatures: tadpole swarm + NCA lizard', truth: null, say: 'Two learned bodies from phase 1, flown among grazers. The tadpole swarm sorts 256 units into the body plan of its majority element (whale, jellyfish, pufferfish, dragonfly) and MORPHS when it eats crystals of another element. The lizard is a trained 3D neural cellular automaton: every voxel runs the same small network, and whatever you cut away regrows.', counter: 'The swarm glows as it stalks; break line of approach before it lunges. Ram either body: the swarm molts back together, the lizard regrows, and both shed crystals.' },
+  creatures: { label: 'Big creatures: tadpole swarm + NCA lizards', truth: null, say: 'Two learned bodies from phase 1, flown among grazers. The tadpole swarm sorts 256 units into the body plan of its majority element (whale, jellyfish, pufferfish, dragonfly) and MORPHS when it eats crystals of another element. The two lizards (time and mass) are trained 3D neural cellular automata: every voxel runs the same small network, the body swims its own learned stroke (its speed and head wiggle follow that beat), and whatever you cut away regrows, the wound glowing as it fills.', counter: 'The swarm glows as it stalks; break line of approach before it lunges. Ram either body: the swarm molts back together, a lizard sheds scales, bolts and regrows, and both shed crystals.' },
   tadpole:   { label: 'Tadpole swarm', truth: 'menacing', say: 'A morphing swarm body (phase-1 sort rule).', counter: 'Turn away while it glows.' },
-  lizard:    { label: 'NCA lizard', truth: 'majestic', say: 'A trained 3D neural cellular automaton that regrows.', counter: 'None needed: it is harmless.' },
+  lizard:    { label: 'NCA lizard', truth: 'majestic', say: 'A trained 3D neural cellular automaton that swims its learned stroke, bolts when rammed and regrows.', counter: 'None needed: it is harmless.' },
   pack:      { label: 'Pack hunters', truth: 'menacing', say: 'Long, staring hunters slower than you. They predict your line and fan out AHEAD of it; when the ring closes (they glow red, the ring around you tightens) they strike together, then back off winded.', counter: 'Break through the gap before the ring closes, or change heading so their cut-off is wrong. A winded hunter (grey) is easy to ram.' },
   thief:     { label: 'Thieves', truth: 'playful', say: 'Magpies that tail your wake and snatch the freshest trail prisms, carrying them home (gold) to a hoard.', counter: 'Turn back on a laden thief: it is slow, and ramming it returns your prism. Weave so your wake is not where they expect.' },
   locust:    { label: 'Locusts (two phases)', truth: 'terrifying', say: 'Green, shy and harmless sparse. Fed and crowded they tip to a yellow storm that marches and nips.', counter: 'Leave before the cloud tips, outrun the march, or thin it early - every locust is frail.' },
@@ -1006,9 +1006,12 @@ addEventListener('keydown', (ev) => { if (ev.code === 'KeyO' && !ev.repeat && !(
 // Page-only bodies from phase 1, not part of the fidelity-gated sim: the morphing tadpole swarm (SwarmCreature) and the
 // trained 3D NCA lizard (NcaCreature). They live in the whole cell and in the 'creatures' mode.
 const BIG = { swarm: null, lizard: null, sMesh: null, lMesh: null, tele: [], state: 'roam', stT: 0, intent: 0, goal: null,
-  lastRam: -9, lizHit: -9, lizAng: 0, eaten: 0, morphs: 0, plan: null, bites: 0, lizCut: 0 };
+  lastRam: -9, lizHit: -9, lizAng: 0, eaten: 0, morphs: 0, plan: null, bites: 0, lizCut: 0, lizards: [], lMeshes: [], bolts: 0 };
 function buildBig(mode) {
   for (const k of ['sMesh', 'lMesh']) if (BIG[k]) { scene.remove(BIG[k]); BIG[k] = null; }
+  for (const L of BIG.lizards) L.dispose();
+  for (const m of BIG.lMeshes) scene.remove(m);
+  BIG.lizards = []; BIG.lMeshes = []; BIG.bolts = 0;
   BIG.swarm = BIG.lizard = null; BIG.tele = []; BIG.state = 'roam'; BIG.intent = 0; BIG.eaten = 0; BIG.morphs = 0; BIG.bites = 0; BIG.lizCut = 0;
   if (!(mode === 'cell' || mode === 'showcase' || mode === 'creatures') || !window.SwarmCreature || !window.NcaCreature) return;
   const R = W.arena.R;
@@ -1016,10 +1019,16 @@ function buildBig(mode) {
   BIG.swarm.cruise = 45; BIG.swarm.turnRate = 1.2;
   BIG.plan = BIG.swarm.composition().plan;
   BIG.sMesh = BIG.swarm.mesh(THREE); scene.add(BIG.sMesh);
-  BIG.lizard = new NcaCreature({ seed, scale: 4, position: [-0.35 * R, 0.12 * R, -0.2 * R], element: 'time', budgetMs: 3, stepsPerSecond: 20 });
-  BIG.lizard.grow(80);
-  BIG.lMesh = BIG.lizard.mesh(THREE); scene.add(BIG.lMesh);
-  BIG.lizAng = Math.atan2(-0.2, -0.35);
+  // a pair of NCA lizards of two elements; each swims a weaving path of waypoints, its speed and head wiggle locked
+  // to its own NCA swim cycle (NcaCreature.swim), and bolts away from a pilot who closes in or rams it
+  const LZ = [{ el: 'time', sc: 4, p: [-0.35, 0.12, -0.2], sd: 0 }, { el: 'mass', sc: 3.3, p: [0.3, -0.1, 0.32], sd: 101 }];
+  for (const z of LZ) {
+    const L = new NcaCreature({ seed: seed + z.sd, scale: z.sc, position: [z.p[0] * R, z.p[1] * R, z.p[2] * R], element: z.el, budgetMs: 2.5, stepsPerSecond: 20 });
+    L.grow(80 + (z.sd % 37));
+    L.ai = { goal: null, bolt: 0, cut: 0, lastHit: -9, cruise: 22 * z.sc / 4 + 4 };
+    const m = L.mesh(THREE); scene.add(m); BIG.lizards.push(L); BIG.lMeshes.push(m);
+  }
+  BIG.lizard = BIG.lizards[0]; BIG.lMesh = BIG.lMeshes[0];
   // the swarm as a TeleTrack species: one 'agent' whose intent is the stalk glow
   BIG.tele = [{ key: 'tadpole', view: (v) => { v.m = 1; v.P = BIG.swarm.position; v.I = [BIG.intent]; return v; } }];
 }
@@ -1072,17 +1081,47 @@ function bigStep(dt) {
   sw.step(dt); sw.sync();
   const plan = sw.composition().plan; if (plan !== BIG.plan) { BIG.plan = plan; BIG.morphs++; toast('THE SWARM BECOMES A ' + sw.composition().name.toUpperCase(), '#7fd6ff'); }
   if (BIG.intent > 0.4) encNote('tadpole', 'tele');
-  // ---- the lizard: a slow circuit; flying through it cuts voxels away (it regrows) and sheds a time crystal
-  const L = BIG.lizard, rr = 0.45 * R;
-  BIG.lizAng += dt * 22 / rr;
-  L.position[0] = rr * Math.cos(BIG.lizAng); L.position[2] = rr * Math.sin(BIG.lizAng); L.position[1] = 0.12 * R + 40 * Math.sin(BIG.lizAng * 3);
-  L.yaw = -BIG.lizAng - Math.PI / 2;
-  const dL = Math.hypot(pl.pos[0] - L.position[0], pl.pos[1] - L.position[1], pl.pos[2] - L.position[2]);
-  if (dL < L.radius) {
-    const cut = L.hit(pl.pos, 22);
-    if (cut > 0) { BIG.lizCut += cut; if (t - BIG.lizHit > 0.8) { BIG.lizHit = t; crystals.push({ x: pl.pos[0], y: pl.pos[1] + 25, z: pl.pos[2], e: 'time', t }); encNote('lizard', 'kill'); } }
+  // ---- the lizards: weave between waypoints; flying through one cuts voxels away (debris, a glowing wound that
+  // regrows) and sheds a crystal of its element; a pilot closing fast, or a ram, makes it bolt (faster NCA = faster swim)
+  for (const L of BIG.lizards) lizardStep(L, dt, pl, t, R);
+}
+// next waypoint: somewhere 250-700 u away, inside 0.15-0.6 R, preferring points ahead-ish so the path weaves rather
+// than doubling back (page RNG, not the sim's: the fidelity-gated arena stream stays untouched)
+function lizGoal(P, R) {
+  let best = null, bs = -1e9;
+  for (let k = 0; k < 6; k++) {
+    let x = Math.random() * 2 - 1, y = (Math.random() * 2 - 1) * 0.6, z = Math.random() * 2 - 1; const n = Math.hypot(x, y, z) || 1, r = (0.15 + 0.45 * Math.random()) * R;
+    const g = [x / n * r, y / n * r, z / n * r], d = Math.hypot(g[0] - P[0], g[1] - P[1], g[2] - P[2]), sc = -Math.abs(d - 450);
+    if (sc > bs) { bs = sc; best = g; }
   }
-  L.step(dt); L.sync();
+  return best;
+}
+function lizardStep(L, dt, pl, t, R) {
+  const ai = L.ai, P = L.position;
+  const dx = pl.pos[0] - P[0], dy = pl.pos[1] - P[1], dz = pl.pos[2] - P[2], dL = Math.hypot(dx, dy, dz);
+  const closing = -(dx * pl.vel[0] + dy * pl.vel[1] + dz * pl.vel[2]) / Math.max(1, dL);
+  if (dL < L.radius) {
+    const cut = L.hit(pl.pos, 22, { velocity: pl.vel });
+    if (cut > 0) {
+      BIG.lizCut += cut; ai.cut += cut;
+      if (t - ai.lastHit > 0.8) { ai.lastHit = t; BIG.lizHit = t; crystals.push({ x: pl.pos[0], y: pl.pos[1] + 25, z: pl.pos[2], e: L.element, t }); encNote('lizard', 'kill'); sfx('strike'); }
+      ai.bolt = 3.5;
+    }
+  } else if (dL < 2.2 * L.radius && closing > 60 && ai.bolt <= 0) ai.bolt = 2.5;
+  if (ai.bolt > 0) {
+    if (!ai.fleeing) { ai.fleeing = true; BIG.bolts++; }
+    // away from the pilot, bent back toward the middle of the cell so it never pins itself on the membrane
+    const n = Math.max(1, dL), away = [P[0] - dx / n * 420, P[1] - dy / n * 200, P[2] - dz / n * 420], ar = Math.hypot(...away), lim = 0.62 * R;
+    if (ar > lim) for (let a = 0; a < 3; a++) away[a] *= lim / ar;
+    ai.goal = away; ai.bolt -= dt; L.stepsPerSecond = 34;
+  } else {
+    if (ai.fleeing) { ai.fleeing = false; ai.goal = null; }
+    L.stepsPerSecond = 20;
+    if (!ai.goal || Math.hypot(ai.goal[0] - P[0], ai.goal[1] - P[1], ai.goal[2] - P[2]) < 90) ai.goal = lizGoal(P, R);
+  }
+  L.step(dt);
+  L.swim(dt, ai.goal, { cruise: ai.cruise, turnRate: ai.bolt > 0 ? 1.3 : 0.55 });
+  L.sync();
 }
 function bigDraw() {
   if (!BIG.swarm) return;
@@ -1090,8 +1129,10 @@ function bigDraw() {
   if (k > 0.05) { const f = 0.5 + 0.5 * Math.sin(W.arena.t * (6 + 10 * k)); halo(P[0], P[1], P[2], 1.0 * k, 0.25 * k * f, 0.15 * k, 160 + 140 * k); }
 }
 window.__bigObj = BIG;
+window.__view = { cam, scene, ship };
 window.__big = () => ({ on: !!BIG.swarm, state: BIG.state, intent: BIG.intent, plan: BIG.plan, morphs: BIG.morphs, eaten: BIG.eaten, bites: BIG.bites,
-  lizard: BIG.lizard ? BIG.lizard.count() : 0, lizCut: BIG.lizCut, lizSteps: BIG.lizard ? BIG.lizard.steps : 0,
+  lizard: BIG.lizard ? BIG.lizard.count() : 0, lizCut: BIG.lizCut, lizSteps: BIG.lizard ? BIG.lizard.steps : 0, bolts: BIG.bolts,
+  lizards: BIG.lizards.map(L => ({ element: L.element, count: L.count(), steps: L.steps, rate: +L.rate.toFixed(1), speed: +(L.speed || 0).toFixed(1), debris: L.debris.length, backend: L.backend })),
   swarmPos: BIG.swarm ? Array.from(BIG.swarm.position) : null, lizPos: BIG.lizard ? BIG.lizard.position.slice() : null });
 
 function frame(now) {
@@ -1109,6 +1150,7 @@ function frame(now) {
   const r0 = performance.now();
   nHalo = 0;
   updateCamera(dtF, alpha);
+  if (window.__camHook) window.__camHook(cam, dtF);     // headless shots: take the camera over after the page placed it
   if (W) { if (!paused) bigStep(dtF); writePrisms(alpha); writeAgents(alpha); writeFlora(alpha); writeCrystals(dtF); bigDraw(); }
   for (let i = dying.length - 1; i >= 0; i--) { const d = dying[i]; d.t += dtF; const k = 1 - d.t / 0.6; if (k <= 0) { dying.splice(i, 1); continue; } halo(d.x, d.y, d.z, d.c[0] * k, d.c[1] * k, d.c[2] * k, d.s * (0.6 + 0.6 * k)); }
   haloG.setDrawRange(0, nHalo); haloG.attributes.position.needsUpdate = true; haloG.attributes.color.needsUpdate = true; haloG.attributes.size.needsUpdate = true;

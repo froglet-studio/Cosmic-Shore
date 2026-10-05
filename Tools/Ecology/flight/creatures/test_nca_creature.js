@@ -3,7 +3,8 @@
 //   node test_nca_creature.js            -> prints a summary, writes results/nca_creature.json, exits 1 on failure
 // Checks: growth from a single seed cell; keeps animating (swim cycle: frame-to-frame change > 0, for 600+ steps);
 // hit() erases voxels and the body regrows to >= 90 % of its pre-hit count; step(dt) with a budget never stalls a frame
-// and resumes mid-step; voxels() colours lean to the element palette.
+// and resumes mid-step; voxels() colours lean to the element palette; the body frame (yaw/pitch/roll) round-trips;
+// swim() is phase-locked to the NCA tail beat and its speed follows the step rate; cuts shed debris; JS adapts its rate.
 'use strict';
 const fs = require('fs'), path = require('path');
 const NcaCreature = require('./nca_creature.js');
@@ -116,6 +117,45 @@ ok('speed_and_parity', pw.backend === 'wasm-simd' ? (pmax < 1e-3 && pcnt <= 2 &&
     nca_steps_per_sec_at_4ms_per_60fps_frame_uncapped: stepsPerSecAt4ms, swim_cycle_s_at_that_rate: +(68 / stepsPerSecAt4ms).toFixed(2),
     regrow_90pct_s_at_default_30_steps_per_s: recStep && +(recStep / sps).toFixed(1),
     regrow_90pct_s_uncapped: recStep && +(recStep / stepsPerSecAt4ms).toFixed(1) });
+
+// ---- 7. body frame: world <-> grid round trip under yaw + pitch + roll; heading() agrees with yawFor() -------------
+{
+  const b = new NcaCreature({ seed: 3, scale: 2, position: [10, -5, 7] });
+  let worst = 0;
+  for (let k = 0; k < 40; k++) {
+    b.yaw = 6 * Math.random() - 3; b.pitch = Math.random() - 0.5; b.roll = 1.4 * Math.random() - 0.7;
+    const g = [22 * Math.random(), 44 * Math.random(), 44 * Math.random()], w = b.gridToWorld(g[0] - 0.5, g[1] - 0.5, g[2] - 0.5), r = b.worldToGrid(w);
+    worst = Math.max(worst, Math.abs(r[0] - g[0] + 0.5), Math.abs(r[1] - g[1] + 0.5), Math.abs(r[2] - g[2] + 0.5));
+  }
+  b.pitch = b.roll = 0; b.yaw = b.yawFor(0.6, -0.8); const h = b.heading();
+  ok('body_frame', worst < 1e-6 && Math.abs(h[0] - 0.6) < 1e-6 && Math.abs(h[2] + 0.8) < 1e-6, { roundtrip_max_err_voxels: +worst.toExponential(2), heading: h.map(v => +v.toFixed(4)) });
+}
+
+// ---- 8. swim(): phase-locked to the NCA's tail beat, speed follows the achieved step rate, turns to the goal ---------
+{
+  const run = (sps) => {
+    const L = new NcaCreature({ seed: 9, scale: 4, element: 'mass', stepsPerSecond: sps, budgetMs: 50 }); L.grow(110);
+    const goal = [3000, 0, 1500], bends = [], sp = [];
+    for (let f = 0; f < 600; f++) { L.step(1 / 60); L.swim(1 / 60, goal, { cruise: 22 }); if (f > 240) { bends.push(L.bend); sp.push(L.speed); } }
+    const mb = bends.reduce((a, b) => a + b, 0) / bends.length; let cross = 0; for (let k = 1; k < bends.length; k++) if ((bends[k] - mb) * (bends[k - 1] - mb) < 0) cross++;
+    const h = L.heading(), want = Math.atan2(1500 - L.position[2], 3000 - L.position[0]), err = Math.abs(Math.atan2(Math.sin(Math.atan2(h[2], h[0]) - want), Math.cos(Math.atan2(h[2], h[0]) - want)));
+    return { speed: sp.reduce((a, b) => a + b, 0) / sp.length, speedMin: Math.min(...sp), speedMax: Math.max(...sp), bendAmp: Math.max(...bends) - Math.min(...bends), crossings: cross, headingErrDeg: err * 180 / Math.PI, steps: L.steps };
+  };
+  const slow = run(10), fast = run(30);
+  ok('swim_phase_locked', fast.speed > 2 * slow.speed && fast.bendAmp > 1 && fast.crossings >= 4 && fast.speedMax > 1.1 * fast.speedMin && fast.headingErrDeg < 25,
+    { at_10_steps_per_s: Object.fromEntries(Object.entries(slow).map(([k, v]) => [k, +v.toFixed(2)])), at_30_steps_per_s: Object.fromEntries(Object.entries(fast).map(([k, v]) => [k, +v.toFixed(2)])) });
+}
+
+// ---- 9. a cut sheds debris and leaves a glowing wound, both short-lived; the JS fallback lowers its step rate --------
+{
+  const L = new NcaCreature({ seed: 5, scale: 4 }); L.grow(100);
+  const v = L.voxels(), j = 3 * (v.n >> 1), removed = L.hit([v.pos[j], v.pos[j + 1], v.pos[j + 2]], 22, { velocity: [100, 0, 0] });
+  const d0 = L.debris.length, w0 = L.wounds.length; for (let f = 0; f < 360; f++) L.step(1 / 60);
+  const J = new NcaCreature({ seed: 5, scale: 4, wasm: false, stepsPerSecond: 20, budgetMs: 4 }); J.grow(100);
+  for (let f = 0; f < 120; f++) J.step(1 / 60);
+  ok('cut_debris_and_adaptive_rate', removed > 0 && d0 > 0 && w0 === 1 && L.debris.length === 0 && L.wounds.length === 0 && J.backend === 'js' && J.rate < J.stepsPerSecond,
+    { removed, debris_after_cut: d0, wounds: w0, debris_after_6s: L.debris.length, wounds_after_6s: L.wounds.length, js_ms_per_step: +J.msPerStep.toFixed(1), js_rate: +J.rate.toFixed(1) });
+}
 
 out.pass = fail.length === 0; out.failed = fail;
 fs.mkdirSync(path.join(__dirname, 'results'), { recursive: true });

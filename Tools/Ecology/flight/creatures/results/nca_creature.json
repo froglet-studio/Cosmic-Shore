@@ -47,7 +47,7 @@
     ]
    ],
    "grown_voxels_at_200": 1142,
-   "ms_per_full_step": 2.29
+   "ms_per_full_step": 2.85
   },
   "keeps_animating": {
    "pass": true,
@@ -65,95 +65,95 @@
    "pass": true,
    "pre_hit_avg_voxels": 1140,
    "hit_radius_voxels": 7,
-   "removed": 255,
-   "after_hit": 913,
-   "removed_pct": 19.9,
-   "steps_to_90pct_windowed": 21,
-   "recovery_pct_after_600_steps": 100.3,
+   "removed": 277,
+   "after_hit": 891,
+   "removed_pct": 21.8,
+   "steps_to_90pct_windowed": 27,
+   "recovery_pct_after_600_steps": 100.1,
    "curve": [
     [
      0,
-     913
+     891
     ],
     [
      30,
-     1086
+     1061
     ],
     [
      60,
-     1152
+     1134
     ],
     [
      90,
-     1141
-    ],
-    [
-     120,
-     1139
-    ],
-    [
-     150,
-     1143
-    ],
-    [
-     180,
      1124
     ],
     [
+     120,
+     1137
+    ],
+    [
+     150,
+     1153
+    ],
+    [
+     180,
+     1135
+    ],
+    [
      210,
-     1155
+     1157
     ],
     [
      240,
-     1144
+     1149
     ],
     [
      270,
-     1134
+     1149
     ],
     [
      300,
-     1120
-    ],
-    [
-     330,
-     1155
-    ],
-    [
-     360,
-     1152
-    ],
-    [
-     390,
-     1151
-    ],
-    [
-     420,
-     1151
-    ],
-    [
-     450,
-     1152
-    ],
-    [
-     480,
-     1142
-    ],
-    [
-     510,
-     1134
-    ],
-    [
-     540,
-     1150
-    ],
-    [
-     570,
      1129
     ],
     [
-     600,
+     330,
+     1150
+    ],
+    [
+     360,
+     1154
+    ],
+    [
+     390,
+     1163
+    ],
+    [
+     420,
      1138
+    ],
+    [
+     450,
+     1156
+    ],
+    [
+     480,
+     1151
+    ],
+    [
+     510,
+     1149
+    ],
+    [
+     540,
+     1138
+    ],
+    [
+     570,
+     1133
+    ],
+    [
+     600,
+     1141
     ]
    ]
   },
@@ -163,27 +163,27 @@
    "frames": 300,
    "nca_steps_done": 150,
    "nca_steps_per_sec_at_60fps": 30,
-   "frames_ending_mid_step": 0,
+   "frames_ending_mid_step": 9,
    "resume_check_0p5ms_budget": {
-    "frames_ending_mid_step": 51,
+    "frames_ending_mid_step": 50,
     "steps": 10,
     "max_abs_diff_vs_unsplit": 0
    },
-   "frame_ms_p50": 2.46,
-   "frame_ms_p95": 3.47,
-   "frame_ms_p99": 3.82,
-   "frame_ms_max": 3.95,
+   "frame_ms_p50": 2.43,
+   "frame_ms_p95": 3.88,
+   "frame_ms_p99": 4.32,
+   "frame_ms_max": 4.92,
    "cellsPerFrame_2000": {
     "frames": 120,
     "nca_steps": 60,
-    "frame_ms_mean": 1.33
+    "frame_ms_mean": 1.37
    }
   },
   "element_colours": {
    "pass": true,
    "mean_rgb": {
     "mass": [
-     0.778,
+     0.777,
      0.532,
      0.309
     ],
@@ -193,12 +193,12 @@
      0.273
     ],
     "space": [
-     0.375,
+     0.374,
      0.676,
      0.812
     ],
     "time": [
-     0.519,
+     0.518,
      0.946,
      0.489
     ]
@@ -211,14 +211,54 @@
    "wasm_vs_js_max_count_diff": 0,
    "ms_per_step": {
     "dense_baseline": 33.5,
-    "js_sparse": 18.55,
-    "wasm_simd": 2.33
+    "js_sparse": 22.41,
+    "wasm_simd": 3.04
    },
-   "speedup_vs_dense": 14.4,
-   "nca_steps_per_sec_at_4ms_per_60fps_frame_uncapped": 94,
-   "swim_cycle_s_at_that_rate": 0.72,
-   "regrow_90pct_s_at_default_30_steps_per_s": 0.7,
-   "regrow_90pct_s_uncapped": 0.2
+   "speedup_vs_dense": 11,
+   "nca_steps_per_sec_at_4ms_per_60fps_frame_uncapped": 51.5,
+   "swim_cycle_s_at_that_rate": 1.32,
+   "regrow_90pct_s_at_default_30_steps_per_s": 0.9,
+   "regrow_90pct_s_uncapped": 0.5
+  },
+  "body_frame": {
+   "pass": true,
+   "roundtrip_max_err_voxels": 1.44e-14,
+   "heading": [
+    0.6,
+    0,
+    -0.8
+   ]
+  },
+  "swim_phase_locked": {
+   "pass": true,
+   "at_10_steps_per_s": {
+    "speed": 11.41,
+    "speedMin": 9.46,
+    "speedMax": 13.69,
+    "bendAmp": 2.31,
+    "crossings": 2,
+    "headingErrDeg": 5.86,
+    "steps": 210
+   },
+   "at_30_steps_per_s": {
+    "speed": 33.98,
+    "speedMin": 30.34,
+    "speedMax": 37.81,
+    "bendAmp": 2.28,
+    "crossings": 5,
+    "headingErrDeg": 4.36,
+    "steps": 410
+   }
+  },
+  "cut_debris_and_adaptive_rate": {
+   "pass": true,
+   "removed": 292,
+   "debris_after_cut": 220,
+   "wounds": 1,
+   "debris_after_6s": 0,
+   "wounds_after_6s": 0,
+   "js_ms_per_step": 22.1,
+   "js_rate": 6.8
   }
  },
  "grid": [

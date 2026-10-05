@@ -4,7 +4,7 @@
 
 Checks: no page errors; the NCA lizard grows and keeps stepping; the tadpole swarm stalks a nearby pilot, glows,
 lunges and its bite goes through the stakes (telegraphed); ramming the swarm sheds a crystal; flying through the lizard
-cuts voxels that regrow; the swarm morphs after eating crystals of another element. Frame time. Screenshots.
+cuts voxels that regrow (debris, the lizard bolts); there is a lizard pair, both swimming; the swarm morphs after eating crystals of another element. Frame time. Screenshots.
 Writes results/creatures_browser.json.
 """
 import argparse, json, os, sys
@@ -40,7 +40,7 @@ with sync_playwright() as pw:
     n0 = big()["lizard"]
     pg.evaluate("""() => { const v = window.__bigObj.lizard.voxels(), pl = window.__eco.W.player, j = 3 * (v.n >> 1);
       pl.pos[0] = v.pos[j]; pl.pos[1] = v.pos[j + 1]; pl.pos[2] = v.pos[j + 2]; }""")
-    pg.wait_for_timeout(250); out["cut"] = big()
+    pg.wait_for_timeout(450); out["cut"] = big()
     pg.evaluate("""() => { const pl = window.__eco.W.player; pl.pos[1] += 600; }""")
     pg.wait_for_timeout(8000); out["regrow"] = big()
     out["lizard_before_cut"] = n0
@@ -57,7 +57,12 @@ if out["after_lunge"]["bites"] and not out["stakes"]["burned"]: fails.append("bi
 if out["fed"]["morphs"] < 1: fails.append("swarm did not morph after eating")
 if out["cut"]["lizCut"] <= 0: fails.append("lizard was not cut")
 if out["regrow"]["lizard"] < 0.9 * out["lizard_before_cut"]: fails.append("lizard did not regrow to 90%")
+if len(out["start"].get("lizards", [])) < 2: fails.append("no lizard pair")
+if out["cut"]["lizCut"] > 0 and not (out["cut"]["lizards"][0]["debris"] > 0 or out["cut"]["bolts"] > 0): fails.append("cut shed no debris and caused no bolt")
+if out["regrow"]["bolts"] < 1: fails.append("rammed lizard never bolted")
+if min(L["speed"] for L in out["regrow"]["lizards"]) <= 0: fails.append("a lizard is not swimming")
 out["fails"] = fails
 json.dump(out, open(os.path.join(HERE, "results", "creatures_browser.json"), "w"), indent=1)
-for k in ("start", "stalk", "after_lunge", "fed", "cut", "regrow"): print(k, {x: out[k][x] for x in ("state", "intent", "plan", "morphs", "eaten", "bites", "lizard", "lizCut", "lizSteps")})
+for k in ("start", "stalk", "after_lunge", "fed", "cut", "regrow"): print(k, {x: out[k].get(x) for x in ("state", "intent", "plan", "morphs", "eaten", "bites", "lizard", "lizCut", "lizSteps", "bolts")})
+print("lizards", out["regrow"].get("lizards"))
 print("stakes", out["stakes"], "perf", out["perf"], "errors", errs[:3]); print("fails:", fails); sys.exit(1 if fails else 0)
