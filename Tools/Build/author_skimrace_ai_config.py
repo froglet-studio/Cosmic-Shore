@@ -29,27 +29,53 @@ OUT_DIR = os.path.join(ROOT, "Assets/Resources")
 BASE = {}
 
 POLICIES = {
-    # Base policy (intensities without their own tuning).
+    # Base policy - flown by every intensity WITHOUT its own file: intensity 3 today, and any intensity a
+    # designer adds. v2-general (2026-10-05): ONE policy tuned on all four tracks at once
+    # (run.sh tuneall 1,2,3,4 4 16 sigma=0.15 final=20, started from the I1 policy; 2 AI seats, 28 ms
+    # frames +-50%), every race scored against its own track's ideal time so no track dominates
+    # (Docs/SKIM_RACE_AI.md 6.12). Fresh seeds, 20 per track, races to 3x ideal: finished 20/20 on EVERY
+    # track; winner median I1 62.0 s, I2 105.7 s, I3 176.7 s, I4 157.1 s. The per-intensity files stay the
+    # faster specialists on their own tracks. Replaces skimrace-v1, which finished 2 of 20 on I3.
     "SkimRaceAIConfig": {
-        "PolicyVersion": "skimrace-v1",
-        "LookaheadSeconds": 1.091,
-        "LookaheadMin": 50.064,
-        "LookaheadMax": 338.445,
-        "SkimHeight": 5.447,
-        "CrystalBumpHalfWidth": 423.02,
-        "CrystalDirectDistance": 230.067,
-        "LeadGain": 1.796,
-        "MaxLeadDegrees": 66.396,
-        "StickGainPerDegree": 0.1,
-        "MinThrottle": 0.338,
-        "ReachabilityMargin": 0.582,
-        "PassMargin": 0.733,
-        "CrossingHeightFraction": 0.305,
-        "SlabGuardSeconds": 0.0,
-        "RibbonClearHeight": 3.427,
-        "HullGuardSeconds": 0.0,
+        "PolicyVersion": "skimrace-v2-general",
+        "LookaheadSeconds": 0.793,
+        "LookaheadMin": 35.596,
+        "LookaheadMax": 422.444,
+        "SkimHeight": 5.284,
+        "CrystalBumpHalfWidth": 353.842,
+        "CrystalDirectDistance": 239.53,
+        "LeadGain": 2.792,
+        "MaxLeadDegrees": 18.94,
+        "StickGainPerDegree": 0.054,
+        "MinThrottle": 0.127,
+        "ReachabilityMargin": 0.917,
+        "PassMargin": 1.172,
+        "CrossingHeightFraction": 0.332,
+        "RibbonClearHeight": 4.5,
+        "RibbonClearLateral": 29.411,
         "TerminalCentreBias": 0.0,
+        "StallSeconds": 4.608,
+        "RecoveryThrottle": 0.171,
+        "MassGuardSeconds": 0.681,
+        "MassGuardMargin": 1.046,
+        "MassGuardSegment": 0.257,
+        "LowBoostApproachScale": 0.907,
+        "LowBoostFull": 2.433,
+        "HullGuardSeconds": 0.0,
         "UsePlanner": False,
+        "TrackGuardMargin": 1.553,
+        "DirectBoost": 2.848,
+        "DirectBoostHysteresis": 1.055,
+        "DirectViaClearance": 2.392,
+        "DirectViaLift": 16.589,
+        "DirectViaLateral": 21.528,
+        "TerminalChordClearance": 2.183,
+        "ChordClearance": 0.469,
+        "CrossingLeadSeconds": 0.093,
+        "CrossingLookaheadScale": 1.0,
+        "CrossingThrottle": 0.98,
+        "CrossingSlowDistance": 145.75,
+        "LaneHeightStep": 3.0,
     },
     # Intensity 1 (flat octagon): v4, tuned (CEM, Tools/Build/skimrace_sim_harness) against the
     # model calibrated on in-editor races (Docs/SKIM_RACE_AI.md 6.1): hull BOX contact, the

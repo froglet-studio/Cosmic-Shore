@@ -408,7 +408,22 @@ a specialist:
 
 Ideal times on the shipped scene: I1 43.1 s, I2 55.7 s, I3 65.6 s, I4 54.7 s. The per-intensity
 files stay the fast versions for the tracks they were tuned on; the general policy is what a
-new or untuned track gets. Results: pending the first run (2026-10-05).
+new or untuned track gets.
+
+**Result: `skimrace-v2-general`** (2026-10-05; `tuneall 1,2,3,4 4 16 sigma=0.15 final=20` from the I1
+policy, 2 AI seats, 28 ms frames +-50%, ~95 min). Tuner score 4.141 -> 3.666 over 16 iterations. Its
+own check on 20 fresh seeds per track (seedbase 99000, races to 3x ideal):
+
+| Track | Finished | Race median (slowest seat) | Worst | Winner median |
+|---|---|---|---|---|
+| I1 | 20/20 | 69.7 s | 86.7 s | 62.0 s |
+| I2 | 20/20 | 112.0 s | 144.8 s | 105.7 s |
+| I3 | 20/20 | 189.8 s | 219.4 s | 176.7 s |
+| I4 | 20/20 | 188.3 s | 205.9 s | 157.1 s |
+
+It is the compromise it was tuned to be: slower than each specialist on that specialist's own track
+(the I2 file's winner median is ~75 s), and the only policy that finishes every track. I3 - the
+one shipped track that flies it - is where it replaces `skimrace-v1`.
 
 ## 7. Running the benchmark
 
