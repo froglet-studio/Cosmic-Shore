@@ -801,6 +801,55 @@ with no trail · live volume never moves as the swarms grow.
 Round 8's diet colouring (newborns wearing the colour of what they ate) was removed on playtest. See
 `Docs/SWARM_FAUNA.md` §17.
 
+### QA-SWARM-ROUND11-1 ⬜ — one prism system: members are index entries and prism entities
+
+**Source:** branch `overnight/prism` (headless gates and type-check only, not run in the editor). Reference:
+`Docs/SWARM_FAUNA.md` §19. **Why it matters:** members are now found by the platform's own prism queries and drawn
+as ordinary prism entities. If either half is wrong, swarms become unhittable or invisible, or they double-count
+in the phase ladder.
+
+1. Open the Swarm cell in freestyle. Confirm `SwarmFaunaConfigSO` **Unified Prism Bodies** is on (default). Play
+   and watch the Console: there should be NO `[Swarm] ... fall back to the instanced draw` warning.
+2. From a distance, check the members:
+   - **Looks.** Every member body looks like a prism of its tier in its domain: plain, a danger plate (round-10
+     strike), or shielded.
+   - **Spread.** The body opens with distance like any prism (§15).
+   - **Hearts.** Hearts still sit at the front and re-form while molting.
+   - **Newborns.** Newborns grow from a point at the heart.
+3. With **Multi Domain** on (`SwarmSortFaunaConfig.asset`), the back and belly regions show their own domain's
+   prism material.
+4. Fire at members **more than 160 u away**, once with each:
+   - a rocket or other AOE: members inside the blast die, and kills roll over a few frames for a dense hit;
+   - a projectile vessel: the shot stops at, or pierces, members as it does prisms;
+   - the sniper: own-domain members are passed through.
+   Each dead member drops one crystal.
+5. Fire a Sparrow missile into a far swarm. Members whose hearts are in the blast should be jousted (lifeform-crystal
+   effects).
+6. Leave a predator (`LightFauna`) and a worm in the cell. They should hunt and eat members from range.
+7. Open the cell's phase/aggression readout. It should be the same as on the round-10 build with the same seed: no
+   jump when proxies appear near your vessel.
+8. Profile 60 s in the Swarm cell with all three swarms grown. Record `SwarmFauna.Frame.Bodies`,
+   `SwarmFauna.Tick.Index` and `SwarmFauna.Tick.Entities` against §19.4's estimates (~0.4-0.5 ms per frame,
+   ~0.2 ms per tick).
+9. Turn **Unified Prism Bodies** off and re-enter. The round-7 instanced draw returns, and weapons and predators
+   still work.
+
+**PASS:**
+- Members look like platform prisms.
+- Members are hittable at range by all three weapon types.
+- Predators eat them.
+- The ladder is unchanged.
+- No fallback warning.
+- Costs are within ~2x of §19.4.
+
+**FAIL:**
+- Invisible members, or members drawn at the wrong place or size (pose mismatch with hearts).
+- Members flicker at death or respawn, or a dead member stays visible.
+- A far member cannot be hit.
+- The ladder jumps when proxies appear (double-count).
+- An own-domain sniper kill.
+- A frame-time regression above ~1 ms per frame.
+
 ### QA-SWARM-ROUND10-1 ⬜ — four creatures, and their strikes burn petals
 
 **Source:** branch `cece/swarm-fauna-game` (type-checked only, not run in the editor). Reference:

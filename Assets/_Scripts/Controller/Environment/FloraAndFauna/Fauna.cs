@@ -972,6 +972,11 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected Crystal crystal;
 
+        /// <summary>The heart while this creature LIVES with it embedded (null once released). What a
+        /// blast's lifeform-crystal effects act on when they reach a creature through its body rather
+        /// than through a collider overlap (<see cref="VirtualFauna"/>, Docs/SWARM_FAUNA.md §19).</summary>
+        public Crystal LivingHeart => crystal && crystal.IsEmbedded ? crystal : null;
+
         // How this creature came apart - see LifeformDeathStyle. Written by the force that
         // killed it (Jousted / the devour overload of Predated); starvation and every other
         // death leave the default.

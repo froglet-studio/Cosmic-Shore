@@ -157,8 +157,9 @@ FLORA_COOLDOWN = 20
 FLORA_SPREAD = 120
 
 # ladder ratios (against the modelled mature CELL; see ladder()). Round 7 left the GPU-drawn bodies out of
-# LiveVolume; round 8 (Docs/SWARM_FAUNA.md §16.3) puts them back - every swarm states its member body volume to
-# the cell (Cell.SetVirtualVolume), exactly where a fauna body prism lands. So the ladder is the forest PLUS
+# LiveVolume; round 8 (Docs/SWARM_FAUNA.md §16.3) puts them back, and round 11a (§19) makes every member body a
+# PrismSpatialIndex virtual entry bound to the cell (Cell.BindVirtualMass), summed exactly where a fauna body
+# prism lands. So the ladder is the forest PLUS
 # the three bodies grown full, and the ratios are unchanged.
 RESTLESS_ENTER, RESTLESS_EXIT, FRENZY_ENTER, FRENZY_EXIT = 0.35, 0.26, 2.5, 2.2
 LATTICE_HEART_COLLIDERS = 1080

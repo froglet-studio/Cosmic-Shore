@@ -765,11 +765,11 @@ namespace CosmicShore.Gameplay
             }
 
             // Swarm members in reach of the jaws (most are DATA the registry cannot see, Docs/SWARM_FAUNA.md
-            // §16.3) - handed back as real creatures and eaten the same way.
-            if (SwarmTargets.Any)
+            // §16.3, §19) - handed back as real creatures and eaten the same way.
+            if (VirtualFauna.Any)
             {
                 s_swarmPrey.Clear();
-                SwarmFauna.PreyAtMouth(mouthPos, config.FaunaBiteRange, this, false, s_swarmPrey);
+                VirtualFauna.PreyInReach(mouthPos, config.FaunaBiteRange, this, false, s_swarmPrey);
                 for (int i = 0; i < s_swarmPrey.Count; i++)
                 {
                     var f = s_swarmPrey[i];

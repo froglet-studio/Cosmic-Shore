@@ -122,14 +122,10 @@ namespace CosmicShore.Gameplay
         public int PlanIx, AliveCount, StarvationVictim = -1;
         public long Tick;                           // index of the PAIR in Instances: Prev = tick, Cur = tick + 1
         public Vector3 Anchor, BX, BY, BZ;
-        /// <summary>Round 8: the published members, spatially hashed (SwarmMemberGrid) - what every member query walks.</summary>
-        public SwarmMemberGrid Grid;
-        /// <summary>Round 8: total BODY prism volume of the published living members, by domain slot (0..2; 3 unused).
-        /// Double: the cell adds it to a float sum, and this is where precision is cheap to keep.</summary>
-        public readonly double[] VolumeBySlot = new double[4];
-        /// <summary>Per slot, the domain slot it was counted under in <see cref="VolumeBySlot"/>, or -1 if it was not
-        /// (dead in this frame). Survives the main thread masking a slot's Flags, so a death can be un-counted.</summary>
-        public sbyte[] Counted;
+        /// <summary>Round 11a (Docs/SWARM_FAUNA.md §19.1): per slot, the point the spatial index stores for the member this
+        /// tick - its body prism's centre at the middle of the published step (<see cref="SwarmBodyPose.IndexAlpha"/>).
+        /// Built on the worker, so the main thread only copies it into the index's bulk position push.</summary>
+        public Vector3[] IndexPoint;
 
         // ── back buffers (worker writes) ──
         SwarmInstance[] _bInst;
@@ -142,9 +138,7 @@ namespace CosmicShore.Gameplay
         readonly float[] _bStomach = new float[4];
         int _bPlanIx, _bAlive, _bVictim = -1;
         Vector3 _bAnchor, _bBX, _bBY, _bBZ;
-        SwarmMemberGrid _bGrid;
-        sbyte[] _bCounted;
-        readonly double[] _bVol = new double[4];
+        Vector3[] _bIndexPoint;
 
         // ── worker-private state carried tick to tick ──
         readonly Vector3[] _lastPos, _lastFace;
@@ -186,8 +180,7 @@ namespace CosmicShore.Gameplay
             _lastMolt = new float[_cap]; _born = new float[_cap];
             _lastAlive = new bool[_cap]; _danger = new bool[_cap];
             _engD = new float[_cap]; _engI = new int[_cap];
-            Grid = new SwarmMemberGrid(_cap); _bGrid = new SwarmMemberGrid(_cap);
-            Counted = new sbyte[_cap]; _bCounted = new sbyte[_cap];
+            IndexPoint = new Vector3[_cap]; _bIndexPoint = new Vector3[_cap];
             _toWorldSpeed = settings.UnitScale * tickHz;
         }
 
@@ -300,9 +293,7 @@ namespace CosmicShore.Gameplay
             for (int e = 0; e < 4; e++) Stomach[e] = _bStomach[e];
             PlanIx = _bPlanIx; AliveCount = _bAlive; StarvationVictim = _bVictim;
             Anchor = _bAnchor; BX = _bBX; BY = _bBY; BZ = _bBZ;
-            (Grid, _bGrid) = (_bGrid, Grid);
-            (Counted, _bCounted) = (_bCounted, Counted);
-            for (int d = 0; d < 4; d++) VolumeBySlot[d] = _bVol[d];
+            (IndexPoint, _bIndexPoint) = (_bIndexPoint, IndexPoint);
             Tick = _tick - 1;
         }
 
@@ -313,9 +304,7 @@ namespace CosmicShore.Gameplay
             float m = 2f * S.UnitScale * S.PrismScale;
             int alive = 0;
             Array.Clear(_hc, 0, 4);
-            Array.Clear(_bVol, 0, 4);
             var dom = S.MultiDomain ? c.Dom : null;
-            float maxStepSq = 0f, maxSeat = 0f;
             float tickNow = _tick;   // members born now bloom from the pair's start
 
             for (int i = 0; i < _cap; i++)
@@ -325,7 +314,6 @@ namespace CosmicShore.Gameplay
                 if (!a)
                 {
                     inst.Flags = 0u;
-                    _bCounted[i] = -1;
                     _bSpeed[i] = 0f;
                     _lastAlive[i] = false;
                     _danger[i] = false;
@@ -367,10 +355,7 @@ namespace CosmicShore.Gameplay
                 int ds = dom != null ? Math.Clamp(dom[i], 0, 2) : 0;
                 inst.Flags = SwarmInstance.Pack(true, tier, from, to, ds);
                 _bSpeed[i] = c.Vel[i].Length() * _toWorldSpeed;
-                _bVol[ds] += SwarmVolumeLedger.BodyVolume(scale);   // a plan half-extent can be signed (whale)
-                _bCounted[i] = (sbyte)ds;
-                maxStepSq = MathF.Max(maxStepSq, Vector3.DistanceSquared(inst.PrevPos, inst.CurPos));
-                maxSeat = MathF.Max(maxSeat, MathF.Abs(inst.PrismZ));
+                _bIndexPoint[i] = SwarmBodyPose.Body(inst, SwarmBodyPose.IndexAlpha);
 
                 _hc[from]++;
                 if (to != from) _hc[to]++;
@@ -392,8 +377,6 @@ namespace CosmicShore.Gameplay
             }
 
             BuildEngaged();
-            // the member grid: a member is drawn anywhere on its Prev->Cur step, its body seated PrismZ behind it
-            _bGrid.Build(_bInst, MathF.Sqrt(maxStepSq) + maxSeat + 1f);
             for (int e = 0; e < 4; e++) _bStomach[e] = c.Stomach[e];
             _bPlanIx = c.PlanIx; _bAlive = alive;
             _bAnchor = S.Centre + c.Anchor * S.UnitScale; _bBX = c.BX; _bBY = c.BY; _bBZ = c.BZ;
@@ -439,27 +422,6 @@ namespace CosmicShore.Gameplay
 
         /// <summary>World centre of slot i's BODY PRISM at display alpha - the point a weapon tests, exactly as the
         /// proxy's own body sits (local z = PrismZ under a pose facing FaceAt). Main thread, front buffers.</summary>
-        public Vector3 BodyAt(int i, float alpha) => PoseAt(i, alpha) + FaceAt(i, alpha) * Instances[i].PrismZ;
-
-        /// <summary>
-        /// Round 8 (Docs/SWARM_FAUNA.md §16.1): every published LIVING member whose BODY centre (or heart, with
-        /// <paramref name="heart"/>) is inside <paramref name="v"/> at display <paramref name="alpha"/>, appended to
-        /// <paramref name="results"/>. O(members filed under the volume's box). <paramref name="scratch"/> is a
-        /// caller-owned list the candidate walk uses. Main thread, front buffers.
-        /// </summary>
-        public int QueryMembers(in SwarmVolume v, float alpha, bool heart, List<int> scratch, List<int> results)
-        {
-            int before = results.Count;
-            if (v.IsEmpty) return 0;
-            scratch.Clear();
-            Grid.Candidates(v.Lo, v.Hi, scratch);
-            for (int q = 0; q < scratch.Count; q++)
-            {
-                int i = scratch[q];
-                if (!Instances[i].Alive) continue;
-                if (v.Contains(heart ? PoseAt(i, alpha) : BodyAt(i, alpha))) results.Add(i);
-            }
-            return results.Count - before;
-        }
+        public Vector3 BodyAt(int i, float alpha) => SwarmBodyPose.Body(Instances[i], alpha);
     }
 }

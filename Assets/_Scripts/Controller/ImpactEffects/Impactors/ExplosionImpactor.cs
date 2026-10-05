@@ -129,18 +129,19 @@ namespace CosmicShore.Gameplay
 
         /// <summary>True while budget-deferred damage is still waiting to resolve.</summary>
         public bool HasPendingBatchWork =>
-            (_batchPending != null && _batchPending.Count > 0) || (_memberPending != null && _memberPending.Count > 0);
+            (_batchPending != null && _batchPending.Count > 0) || (_virtualHeartsPending != null && _virtualHeartsPending.Count > 0);
 
-        // ── round 8 (Docs/SWARM_FAUNA.md §16.2): swarm members that are only DATA ──
-        // A GPU-drawn member has no collider and no index entry until it becomes a proxy, so neither the Burst
-        // prism pass nor the heart sweep can see it. ResolveSwarmMembers asks the swarm's own grid the SAME
-        // volume question, turns each member it finds into its proxy (SwarmFauna.MaterialiseForHit) and runs
-        // this blast's OWN per-prism / per-heart code on the real body and heart. _membersHit is the
-        // once-per-member ledger (a blast grows over frames); _memberPending holds hits past the cell-wide
-        // per-frame materialisation budget, drained on the following frames like _batchPending.
-        HashSet<long> _membersHit;
-        Queue<(SwarmFauna.MemberHit hit, bool heart)> _memberPending;
-        static readonly List<SwarmFauna.MemberHit> s_memberScratch = new(64);
+        // ── round 11a (Docs/SWARM_FAUNA.md §19): the hearts of creatures that are only DATA ──
+        // A virtual-population member's BODY is a PrismSpatialIndex virtual entry, so the Burst prism pass meets it
+        // like any prism (the index materialises it under the owner's budget, sparing first). Its HEART is not a
+        // prism and has no collider until it materialises, so SweepVirtualHearts asks VirtualFauna for the hearts
+        // in the heart sweep's own volume. _virtualHeartsPending holds index ids past the owner's per-frame
+        // materialisation budget, drained on the following frames like _batchPending; _virtualHeartsSeen is the
+        // once-per-blast ledger (a blast grows over frames and re-finds the same member).
+        HashSet<int> _virtualHeartsSeen;
+        Queue<int> _virtualHeartsPending;
+        static readonly List<int> s_virtualHeartIds = new(32);
+        static readonly List<Vector3> s_virtualHeartPoints = new(32);
 
         /// <summary>
         /// When true, BeginBatchProcessing() is a no-op - forces Physics OnTriggerEnter
@@ -171,8 +172,8 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void BeginBatchProcessing()
         {
-            _membersHit?.Clear();
-            _memberPending?.Clear();
+            _virtualHeartsSeen?.Clear();
+            _virtualHeartsPending?.Clear();
             if (ForceLegacyPhysics) return;
 
             // A blast that does not touch mass never starts the prism pass at all. ONE gate here
@@ -275,7 +276,6 @@ namespace CosmicShore.Gameplay
                 // also what makes a NON-PRISM blast (AffectsPrisms off, so batch never began)
                 // still able to act on crystals and creatures.
                 SweepCrystals(center, radius);
-                ResolveSwarmMembers(SwarmTargets.Sphere(center, radius), center, radius, default);
                 SweepLifeformHearts(center, radius);
 
                 // The blast's own volume, this frame. A sphere needs no direction, which is why
@@ -330,11 +330,6 @@ namespace CosmicShore.Gameplay
                 // front runs on.
                 PublishLit(LitVolume.Cone(apex, axis, gapeAxis, sliceMax,
                                           tanCoreHalfAngle, tanGapePerUnit));
-                // Members are tested against the swept-SO-FAR slab [0, sliceMax], not this frame's [sliceMin,
-                // sliceMax]: a prism stands still between frames, a member SWIMS, so per-frame slabs could let one
-                // slip between two of them. The ledger makes the larger volume free of double hits.
-                ResolveSwarmMembers(SwarmTargets.ConeSlab(apex, axis, gapeAxis, 0f, sliceMax, tanCoreHalfAngle, tanGapePerUnit),
-                                    coneSweepCentre, coneSweepRadius, default);
                 SweepLifeformHearts(coneSweepCentre, coneSweepRadius);
 
                 if (!_useBatchProcessing) return true;
@@ -403,8 +398,6 @@ namespace CosmicShore.Gameplay
                 Vector3 cylinderSweepCentre = mirrored ? origin : origin + axis * half;
                 var cylinderNarrowphase = new SweptCylinder(origin, axis, depth, radius, mirrored);
                 SweepCrystals(cylinderSweepCentre, cylinderSweepRadius, cylinderNarrowphase);
-                ResolveSwarmMembers(SwarmTargets.CylinderSlab(origin, axis, 0f, depth, radius, mirrored),
-                                    cylinderSweepCentre, cylinderSweepRadius, cylinderNarrowphase);
                 SweepLifeformHearts(cylinderSweepCentre, cylinderSweepRadius, cylinderNarrowphase);
 
                 if (!_useBatchProcessing) return true;
@@ -450,7 +443,7 @@ namespace CosmicShore.Gameplay
             using (s_processBatch.Auto())
             {
                 if (!HasPendingBatchWork) return false;
-                DrainSwarmMembers(force: false);
+                DrainVirtualHearts(force: false);
                 if (_batchPending == null || _batchPending.Count == 0) return HasPendingBatchWork;
                 var registry = PrismSpatialIndex.Instance;
                 if (registry == null) { _batchPending.Clear(); return HasPendingBatchWork; }
@@ -497,9 +490,9 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void EndBatchProcessing()
         {
-            // A blast that ends with members still queued resolves them now - a member's fate is decided by
-            // whether the blast CONTAINED it, never by how long the VFX ran (the _batchPending rule, §16.2).
-            DrainSwarmMembers(force: true);
+            // A blast that ends with virtual hearts still queued resolves them now - a member's fate is decided by
+            // whether the blast CONTAINED it, never by how long the VFX ran (the _batchPending rule, §16.2 / §19).
+            DrainVirtualHearts(force: true);
             if (_useBatchProcessing && explosion != null && explosion.Vessel != null)
                 OnBlastResolved?.Invoke(explosion.Vessel,
                     new BlastTally(BatchHitCount, VesselHitCount));
@@ -687,104 +680,6 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>
-        /// Round 8 (Docs/SWARM_FAUNA.md §16.2): this blast against the swarm members that are only data. Two
-        /// channels, the same two a creature with a GameObject meets in this class:
-        ///  • BODY - members whose body prism centre is in <paramref name="bodyVolume"/> (the shipped prism test).
-        ///    Pre-filtered by the SAME domain rule <see cref="ExecuteCommonPrismCommands"/> applies, so a member the
-        ///    blast would spare is never materialised; the rest become their proxy and that method runs on the real
-        ///    body prism - shields shed, the prism destroyed, <see cref="Fauna.OnBodyPrismExploded"/> and the sealed
-        ///    death, the kill credited to this blast's pilot. Skipped for a blast that does not touch mass.
-        ///  • HEART - only when this blast authors lifeform-crystal effects (the Sparrow warhead): members whose heart
-        ///    is in the heart sweep's own sphere (+ the cylinder narrowphase), whose proxy's heart is then handed to
-        ///    those effects exactly as <see cref="SweepLifeformHearts"/> does. The effects make their own domain
-        ///    decision, so nothing is pre-filtered here.
-        /// Heart first, as for a creature: a member killed through its heart leaves its body as a skeleton the
-        /// blast's prism pass then meets like any other.
-        /// </summary>
-        void ResolveSwarmMembers(in SwarmVolume bodyVolume, Vector3 heartCentre, float heartRadius, in SweptCylinder heartNarrowphase)
-        {
-            if (!SwarmTargets.Any || explosion == null) return;
-            _membersHit ??= new HashSet<long>(64);
-            _memberPending ??= new Queue<(SwarmFauna.MemberHit, bool)>(64);
-
-            var lifeformEffects = explosionImpactorDataContainer ? explosionImpactorDataContainer.explosionLifeformCrystalEffects : null;
-            if (DoesEffectExist(lifeformEffects) && heartRadius > 0f)
-            {
-                s_memberScratch.Clear();
-                // the heart sweep tests a crystal COLLIDER against its sphere; a member's heart is a point, so the
-                // sphere is widened by the largest heart radius a member carries (an over-reach of < 2.4 u)
-                SwarmTargets.Hearts(SwarmTargets.Sphere(heartCentre, heartRadius + MemberHeartAllowance), s_memberScratch);
-                for (int k = 0; k < s_memberScratch.Count; k++)
-                {
-                    var h = s_memberScratch[k];
-                    if (heartNarrowphase.IsValid && !heartNarrowphase.Contains(h.Point)) continue;
-                    if (!_membersHit.Add(h.Key)) continue;
-                    _memberPending.Enqueue((h, true));
-                }
-            }
-
-            if (explosion.AffectsPrisms && !ForceLegacyPhysics)
-            {
-                s_memberScratch.Clear();
-                SwarmTargets.Bodies(bodyVolume, s_memberScratch);
-                for (int k = 0; k < s_memberScratch.Count; k++)
-                {
-                    var h = s_memberScratch[k];
-                    // ExecuteCommonPrismCommands' own spare rule, asked BEFORE paying for a proxy
-                    if ((h.Domain == explosion.Domain && !affectSelf) || !destructive) continue;
-                    if (!_membersHit.Add(h.Key)) continue;
-                    _memberPending.Enqueue((h, false));
-                }
-            }
-
-            DrainSwarmMembers(force: false);
-        }
-
-        /// <summary>The largest heart radius a swarm member is drawn with (Charge/Space 2.298 world scale).</summary>
-        const float MemberHeartAllowance = 2.4f;
-
-        void DrainSwarmMembers(bool force)
-        {
-            if (_memberPending == null) return;
-            while (_memberPending.Count > 0)
-            {
-                var (h, heart) = _memberPending.Peek();
-                if (!h.Swarm) { _memberPending.Dequeue(); continue; }
-                if (!force && !SwarmFauna.HitBudgetLeft(h.Swarm.Config)) return;   // the rest next frame
-                _memberPending.Dequeue();
-                var proxy = h.Swarm.MaterialiseForHit(h.Slot, force);
-                if (!proxy) continue;
-                if (heart) ApplyLifeformEffects(proxy);
-                else ApplyToMemberBody(proxy);
-            }
-        }
-
-        void ApplyLifeformEffects(SwarmTadpoleFauna proxy)
-        {
-            var crystal = proxy.Heart;
-            var effects = explosionImpactorDataContainer ? explosionImpactorDataContainer.explosionLifeformCrystalEffects : null;
-            if (!crystal || !DoesEffectExist(effects)) return;
-            _heartsHit ??= new HashSet<int>(16);
-            if (!_heartsHit.Add(crystal.GetInstanceID())) return;   // SweepLifeformHearts must not run them twice
-            for (int e = 0; e < effects.Length; e++)
-            {
-                if (IsEffectSlotEmpty(effects[e], explosionImpactorDataContainer,
-                        nameof(ExplosionImpactorDataContainerSO.explosionLifeformCrystalEffects), e))
-                    continue;
-                effects[e].Execute(this, crystal);
-            }
-        }
-
-        void ApplyToMemberBody(SwarmTadpoleFauna proxy)
-        {
-            var body = proxy.Body;
-            if (!body || body.destroyed) return;
-            // the Burst pass would meet this freshly registered body in its next query: claim its slot first
-            if (_batchHitTracker != null && body.SpatialIndexId >= 0) _batchHitTracker.Add(body.SpatialIndexId);
-            ExecuteCommonPrismCommands(body, explosion.CalculateImpactVector(body.transform.position));
-        }
-
         void SweepCrystals(Vector3 centre, float radius) =>
             SweepCrystals(centre, radius, default);
 
@@ -902,14 +797,67 @@ namespace CosmicShore.Gameplay
                 // The sphere is only the broadphase when the caller supplied a real shape.
                 if (narrowphase.IsValid && !narrowphase.Contains(col.transform.position)) continue;
                 if (!_heartsHit.Add(crystal.GetInstanceID())) continue;
+                ApplyLifeformEffects(effects, crystal);
+            }
 
-                for (int e = 0; e < effects.Length; e++)
-                {
-                    if (IsEffectSlotEmpty(effects[e], explosionImpactorDataContainer,
-                            nameof(ExplosionImpactorDataContainerSO.explosionLifeformCrystalEffects), e))
-                        continue;
-                    effects[e].Execute(this, crystal);
-                }
+            SweepVirtualHearts(centre, radius, narrowphase);
+        }
+
+        void ApplyLifeformEffects(ExplosionLifeformCrystalEffectSO[] effects, Crystal crystal)
+        {
+            for (int e = 0; e < effects.Length; e++)
+            {
+                if (IsEffectSlotEmpty(effects[e], explosionImpactorDataContainer,
+                        nameof(ExplosionImpactorDataContainerSO.explosionLifeformCrystalEffects), e))
+                    continue;
+                effects[e].Execute(this, crystal);
+            }
+        }
+
+        /// <summary>
+        /// The heart half of <see cref="SweepLifeformHearts"/> for creatures that are only data (Docs/SWARM_FAUNA.md
+        /// §19): a member's heart is a point where it is drawn, so the sphere is widened by the largest heart radius
+        /// a member carries (<see cref="VirtualHeartAllowance"/>, the over-reach a collider overlap would have) and
+        /// the caller's narrowphase is asked of the point. Each heart found is materialised under its owner's budget
+        /// and handed to the SAME effects; the rest wait in <see cref="_virtualHeartsPending"/>. The effects make
+        /// their own domain decision, so nothing is pre-filtered here. Runs only when the blast authors lifeform
+        /// effects (the early return in the caller), so every other blast pays nothing.
+        /// </summary>
+        void SweepVirtualHearts(Vector3 centre, float radius, in SweptCylinder narrowphase)
+        {
+            if (!VirtualFauna.Any) return;
+            s_virtualHeartIds.Clear();
+            s_virtualHeartPoints.Clear();
+            VirtualFauna.CollectHearts(centre, radius + VirtualHeartAllowance, s_virtualHeartIds, s_virtualHeartPoints);
+            if (s_virtualHeartIds.Count == 0) return;
+            _virtualHeartsSeen ??= new HashSet<int>(32);
+            _virtualHeartsPending ??= new Queue<int>(32);
+            for (int k = 0; k < s_virtualHeartIds.Count; k++)
+            {
+                if (narrowphase.IsValid && !narrowphase.Contains(s_virtualHeartPoints[k])) continue;
+                if (_virtualHeartsSeen.Add(s_virtualHeartIds[k])) _virtualHeartsPending.Enqueue(s_virtualHeartIds[k]);
+            }
+            DrainVirtualHearts(force: false);
+        }
+
+        /// <summary>The largest heart radius a swarm member is drawn with (Charge/Space 2.298 world scale).</summary>
+        const float VirtualHeartAllowance = 2.4f;
+
+        void DrainVirtualHearts(bool force)
+        {
+            if (_virtualHeartsPending == null || _virtualHeartsPending.Count == 0) return;
+            var effects = explosionImpactorDataContainer ? explosionImpactorDataContainer.explosionLifeformCrystalEffects : null;
+            if (!DoesEffectExist(effects)) { _virtualHeartsPending.Clear(); return; }
+            _heartsHit ??= new HashSet<int>(16);
+            while (_virtualHeartsPending.Count > 0)
+            {
+                int id = _virtualHeartsPending.Peek();
+                var crystal = VirtualFauna.MaterialiseHeart(id, force, out bool retry);
+                if (retry) return;   // the owner's budget is spent this frame - the rest next frame
+                _virtualHeartsPending.Dequeue();
+                if (!crystal || crystal.EmbeddedIn is { IsDying: true }) continue;
+                if (!_heartsHit.Add(crystal.GetInstanceID())) continue;   // the collider sweep must not run them twice
+                ApplyLifeformEffects(effects, crystal);
             }
         }
 
