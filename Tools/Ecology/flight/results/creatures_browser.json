@@ -1,0 +1,151 @@
+{
+ "start": {
+  "on": true,
+  "state": "stalk",
+  "intent": 0,
+  "plan": "space",
+  "morphs": 0,
+  "eaten": 0,
+  "bites": 0,
+  "lizard": 1143,
+  "lizCut": 0,
+  "lizSteps": 80,
+  "swarmPos": [
+   65.20024414400791,
+   96.70758770915289,
+   -358.745066507516
+  ],
+  "lizPos": [
+   -459.73335887667605,
+   104.14743901633005,
+   -283.275905674961
+  ]
+ },
+ "stalk": {
+  "on": true,
+  "state": "stalk",
+  "intent": 0.35714285714285715,
+  "plan": "space",
+  "morphs": 0,
+  "eaten": 0,
+  "bites": 0,
+  "lizard": 1145,
+  "lizCut": 0,
+  "lizSteps": 81,
+  "swarmPos": [
+   69.93845499467047,
+   97.84118141635602,
+   -357.67707517181327
+  ],
+  "lizPos": [
+   -453.86794249079634,
+   104.43138808413124,
+   -292.5814258957174
+  ]
+ },
+ "after_lunge": {
+  "on": true,
+  "state": "retreat",
+  "intent": 0.2334000000000015,
+  "plan": "space",
+  "morphs": 0,
+  "eaten": 1,
+  "bites": 1,
+  "lizard": 1143,
+  "lizCut": 0,
+  "lizSteps": 82,
+  "swarmPos": [
+   86.44056961184229,
+   101.78923140297806,
+   -369.0769256084617
+  ],
+  "lizPos": [
+   -433.40894525478205,
+   106.3789889192135,
+   -322.1128469545065
+  ]
+ },
+ "stakes": {
+  "burned": 4,
+  "contacts": 1,
+  "tele": 4,
+  "by": {
+   "tadpole": 4
+  }
+ },
+ "fed": {
+  "on": true,
+  "state": "retreat",
+  "intent": 0,
+  "plan": "mass",
+  "morphs": 1,
+  "eaten": 7,
+  "bites": 1,
+  "lizard": 1143,
+  "lizCut": 0,
+  "lizSteps": 82,
+  "swarmPos": [
+   93.55063875532554,
+   103.49028057382802,
+   -410.02901372761
+  ],
+  "lizPos": [
+   -419.9298212157126,
+   108.31637523087923,
+   -339.49807842422274
+  ]
+ },
+ "cut": {
+  "on": true,
+  "state": "retreat",
+  "intent": 0,
+  "plan": "mass",
+  "morphs": 1,
+  "eaten": 7,
+  "bites": 1,
+  "lizard": 801,
+  "lizCut": 342,
+  "lizSteps": 82,
+  "swarmPos": [
+   96.5835703430975,
+   104.13006637440682,
+   -433.685722109609
+  ],
+  "lizPos": [
+   -414.10745238190157,
+   109.2825258883368,
+   -346.5761357649587
+  ]
+ },
+ "regrow": {
+  "on": true,
+  "state": "retreat",
+  "intent": 0,
+  "plan": "mass",
+  "morphs": 1,
+  "eaten": 7,
+  "bites": 1,
+  "lizard": 831,
+  "lizCut": 342,
+  "lizSteps": 84,
+  "swarmPos": [
+   155.80048370567556,
+   42.91514429939464,
+   -491.7017306516707
+  ],
+  "lizPos": [
+   -384.52523587128053,
+   115.1227633223794,
+   -379.13103668538673
+  ]
+ },
+ "lizard_before_cut": 1143,
+ "perf": {
+  "frame_ms": 100,
+  "cpu_ms": 12.5,
+  "sim_ms": 1.8999999999068677,
+  "render_ms": 9.100000000093132
+ },
+ "errors": [],
+ "fails": []
+}

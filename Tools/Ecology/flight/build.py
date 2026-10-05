@@ -33,6 +33,9 @@ def index_html(sim):
     fid = os.path.join(HERE, "results", "fidelity.json")
     fsum = json.dumps(json.load(open(fid)).get("summary", {})) if os.path.exists(fid) else "{}"
     out = tpl.replace("/*__SIM__*/", sim).replace("/*__PARAMS__*/null", json.dumps(json.loads(params), separators=(",", ":")))
+    cr = os.path.join(HERE, "creatures")
+    creatures = "\n".join(open(os.path.join(cr, f)).read() for f in ("swarm_plans.js", "swarm_creature.js", "nca_creature.js"))
+    out = out.replace("/*__CREATURES__*/", creatures)
     return out.replace("/*__FIDELITY__*/null", fsum)
 
 
