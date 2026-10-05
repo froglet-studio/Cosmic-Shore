@@ -24,7 +24,7 @@ sealed class Pilot
     public int Index;
 }
 
-sealed class Arena : IBuilderWorld
+class Arena : IBuilderWorld
 {
     public readonly BuilderRng Rng;
     public readonly float R;

@@ -329,6 +329,17 @@ namespace CosmicShore.Gameplay
                  "work falls by this factor) AND smoother - coasting eases every change in. A member a " +
                  "vessel startles re-steers every step. 1 = every member every step (sort).")]
         [Range(1, 16)] public int SortUpdateFraction = 8;
+        [Tooltip("ROUND 11d (the post-cull jolt): the body regrows from the WOUND - an egg is budded toward the short " +
+                 "well it will fill by the nearest member of its lineage, so hatchlings are born at the hole instead " +
+                 "of crossing the body to it and shoving everyone on the way. Off = sort (any parent, any direction).")]
+        public bool SortBudAtWound = true;
+        [Tooltip("ROUND 11d: a member choosing where in its tissue to go joins the NEAREST well its type is short of " +
+                 "(sort: the most-short well, wherever it is).")]
+        public bool SortFateNear = true;
+        [Tooltip("ROUND 11d: after a kill (once the lay hold ends) or a body switch, laying eases from one egg a step " +
+                 "back to the full rate over this many seconds, instead of a flood of hatchlings the moment the hold " +
+                 "lifts. 0 = the full rate at once (round 10).")]
+        [Min(0f)] public float SortLayRampSeconds = 12f;
 
         [Header("EvoFate model (Model = EvoFate; research evofate C2 - the trained G2 rule given a fate)")]
         [Tooltip("The trained G2 network (Tools/Build/author_swarm_fauna.py writes it from the research's " +

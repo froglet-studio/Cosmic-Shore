@@ -2252,6 +2252,135 @@ Round 11c plants two plants that hurt you in the Swarm cell. Full design, proof 
 - **Gates.** `Tools/Build/threat_flora_harness/run.sh` (the shipped cores, plus the glue type-checked against
   hand-copied stubs) and `python3 Tools/Build/author_threat_flora.py --check`.
 
+## 22. Round 11d: the jolt, the time→space switch, round 10 hardened
+
+Three loose ends from the research (`Tools/NCA/DISCOVERIES.md`, "open problems") and from round 10, closed in the
+sort core (`SwarmSortCore`), the tick job's strike rule (`SwarmTickJob.StrikeState`) and the harness. Every new core
+option defaults OFF in `SwarmSortParams` except the region-map fix, so the harness's research modes still reproduce
+the Python models; the game turns them on through `SwarmFaunaConfigSO` (authored by `author_swarm_fauna.py`, `--check`
+green).
+
+### 22.1 The post-cull jolt (research open problem 2)
+
+**What the research saw.** Right after a cull or a strike, combo / sortfeel / posinfo2 pace spikes to 4-7x the
+change's own median (swarm_smooth's `lurch`: the worst step's p95 speed over the event's median p95); evo eases in at
+~1.7. `run.sh jolt <plans> <seeds> <modes>` computes the same lurch in C# (no torch) on the research's own events (the
+4 standard switches by `cull_to` + a strike on every plan): research sortfeel (frac 1) reproduces it at **mean 5.7,
+worst 7.3**.
+
+**The cause, measured** (`jolt` with `SWARM_SORT_RESEARCH` overrides and the `JOLT_SURVIVORS` / `JOLT_NEWBORN` /
+`JOLT_HATCH` diagnostics):
+
+- It is the **regrowth**, not the cut. With laying off (`LayRate=0`) the same events score lurch 1.8. With the
+  newborns' fate pull switched off, every strike scores 1.2.
+- Newborns hatch **~10 well-sigmas from their fated well** (median 6.6-12.8 at seed 7): the homeostat's parent is any
+  random member, budding in a random direction, and the hatchling's fate is the most-short well (the wound) wherever
+  it is. It then crosses the body at the clipped pull (`WellClip` 0.52), and every neighbour it would trade places with
+  adds a Potts-swap spring (`Swap` x half the offset, 0.8-2.3 voxels/step at the peak, 2-4x the well pull), shoving
+  survivors the other way. ~5% of the body moving at VMax against a median of 0.12 is the 4-7x.
+- The game's round-6 ship hides most of it: the 1-in-8 coasting is a low-pass, and the 0.1 velocity noise raises the
+  median (finding 40). At its own dials it comes back: `SortUpdateFraction 4` (QA-SWARM-ROUND6's dial) worst 2.94,
+  5/24 events over swarm_smooth's `LURCH_OK` 2.5; `SortNoise 0` worst 3.87; every member every step worst 3.62.
+  Its heals peak ~30 steps after the strike = the 20-step kill hold + hatch + travel: **the flood of eggs the step the
+  hold lifts**.
+
+**The fix: the body regrows from the wound, and its laying eases back in.** Three local rules, no clamp on motion:
+
+| `SwarmSortParams` | config | rule |
+|---|---|---|
+| `BudAtWound` | `SortBudAtWound` (on) | the egg the homeostat chose is budded, toward a short well of its type (picked in proportion to need), by the member of its lineage standing nearest that well. The parent is still a real member next to the egg (continuity holds). |
+| `FateNear` | `SortFateNear` (on) | a member choosing a fate joins the NEAREST of the wells its type is short of by a whole member (lateral inhibition still decides which wells are open). |
+| `LayRamp` | `SortLayRampSeconds` 12 (120 steps at 10 Hz) | after a WOUND the lay cap eases from 1 egg a step back to LayMax (smoothstep). A wound sets it back by 3x the share of the body lost (a third: all the way; one member of 800: 0.4%), and it recovers on the clock, so steady grazing is never throttled (R9d at density 5 is unchanged: 818 members). A committed switch also restarts it. |
+
+Tried and dropped (all measured in `jolt`, numbers in this session's log): a sensed body centre that lags the
+centroid (cures the first 5 steps of a strike, nothing after), a ramped fate gain / juvenile speed (only delays the
+sprint: the peak moves from step 12 to step 30-90), one swap partner per step, a swap clip, budding into free room,
+wound-edge parents first, and diluting an orphan team (§22.2: hurt).
+
+**Proof** (`Round11dHarness` R11d-J, asserted in `run.sh <plans> sort`; seeds 7/23/41, 24 events a config):
+
+| config | round 6 lurch mean / worst / events over 2.5 | round 11d |
+|---|---|---|
+| shipped (1-in-8, noise 0.1) | 1.59 / 2.55 / 1 | **1.46 / 1.89 / 0** |
+| dial `SortUpdateFraction 4` | 2.17 / 2.94 / 5 | **1.90 / 2.41 / 0** |
+| dial `SortNoise 0` | 2.04 / 3.87 / 5 | **1.81 / 2.50 / 0** |
+| every member every step | 2.57 / 3.62 / 15 | 2.05 / 2.94 / 5 |
+
+The research's own scorer (`score_sortfeel.py --smooth`, swarm_smooth's formulas, seeds 7/23/41; raw:
+`score_sortfeel_round11d_results.txt`): **shipped smoothness 0.917 → 0.954, worst lurch 3.20 → 2.02, birth burst
+0.173 → 0.110**; at the `SortUpdateFraction 4` dial 0.861 → 0.927 (worst lurch 3.34 → 2.48). Accuracy holds: game
+yardstick **65/65** at seeds 7/23/41/101/1000 (round 6: 65/65), organic band unchanged (planar excess 0.015, osc
+0.041), 0 self-inflicted deaths. The dragonfly's own-plan loss moves within noise (5.34-6.21 vs 5.49-5.71).
+
+**Not fixed:** the research's frac-1, noise-free sortfeel (no game features) still lurches ~4: its settled median is
+0.12 voxels/step, and any regrowth faster than ~0.3 reads as a jolt by this metric. The game never runs that config.
+
+### 22.2 dragonfly → jellyfish (time→space; research open problem 1)
+
+**Cause: the region map orphaned the jellyfish's own tissue by its id.** `PickPerm` is `sort_model._pick_perm`: an
+n-region plan's slots map only onto domain ids 0..n-1 (`swarm_nca.PERMS`), and the cost never counts who it leaves
+out. The dragonfly is the only three-region plan; after `cull_to(space)` its Space body often wears domain 2, and the
+two-region jellyfish can then only be worn by domains 0 and 1, so ~60% of the survivors were orphaned at the switch and
+~25% of the regrown body stayed orphaned (`switchdiag`). That is the research's "orphan third team" floor (~25 f):
+loss 8.6-9.6. The research fixed the same id bug in its scorer (`LOSS_PERMS`) but not in its models.
+
+**Fix** (`RolesFromAnyDomain`, on; `RoleOrphanWeight` 3): the map ranges over every injective slot → domain map, and
+each member of a domain left without a region costs 3 misplaced crystals (a domain is a lineage and never changes; a
+crystal molts). With every domain given a region (any three-region plan, any body grown from two domains) the cost is
+sort's exactly: every own-plan body grows **bit-identical** (asserted, R11d-T). Diluting an orphan team instead
+(stop counting it as tissue so the owners lay past it) made the switch WORSE (loss ~10): the orphans already sit in the
+regions, and the extra owners crowd them.
+
+**Proof** (research modes = the research model + this fix, scored by the UNCHANGED `swarm_loss` + `_passes`, 3 samples,
+loss-8 bar, `score_sortfeel.py --assert-pass researchSortFeelDom3D0F8,researchSortDom3,gameSortFeelWndFnLr120D0F8`
+exits 0):
+
+| mode | time→space loss at 7 / 23 / 41 / 101 / 1000 | yardstick |
+|---|---|---|
+| research sortfeel frac 8 (round 6) | 9.49 / 8.59 / 6.97 / 9.41 / 9.62 | 61/65 (time→space x4) |
+| **+ round 11d's map** | **4.00 / 4.39 / 4.14 / 3.55 / 4.84** | **65/65** |
+| research sort (round 3) + the map | 3.45 / 3.25 / 3.45 / 3.21 / 3.86 | 65/65 |
+
+The held-out seeds 101 and 1000 pass like the others; time→space now lands within ~1.5 of the jellyfish's own-plan loss.
+R11d-T asserts the mechanism without torch: orphan share after the switch, 9 samples, sort's map mean 0.21 vs 0.03
+(max 0.05). The game's lineage mode (`PickOwners`, round 9) never used this path; the lineage harness stays green.
+
+### 22.3 Round 10 hardened (`SwarmTickJob.StrikeState`)
+
+Round 10 had only a type-check. Reviewed adversarially and rewritten as one pure, static state machine (calm / noticed /
+striking / bolted) that the harness drives directly (R11d-B):
+
+- **Bug: the lurker bit the pilot who rushed it.** Round 10 read the band (`LurkCalm < startle < DangerEnter`) every
+  tick, so a bolted lurker (startle 0.95) bristled again for **20 ticks** on the way back down (decay 0.9/tick). Now a
+  lurker that bolts stays safe until it is calm (startle < LurkCalm / 2): 0 ticks.
+- **Bug: lurker flicker at either band edge.** With startle jittering ±0.012 around LurkCalm or DangerEnter, round 10
+  toggled the plate 189 and 211 times in 400 ticks. Now the plate rises after two ticks in the band (a rush carries a
+  member straight through without a flash) and drops with hysteresis: 1 and 0 toggles.
+- **Latent bug: inverted hysteresis.** A designer setting `DangerExit` above `HuntEnter` made the hunter toggle every
+  tick (400 in 400). Exit is now `min(DangerExit, entry)` for the hunter and the pufferfish.
+- **Species change mid-strike.** A molt into another element now starts that species' rules from calm.
+- **NaN / negative startle** reads as calm (no plate can stick on).
+- Verified correct and unchanged: the locust's phase arithmetic (each member one phase in four, a quarter of the cloud
+  at a time, switching only on phase boundaries), the hunter's and pufferfish's thresholds, Bestiary off.
+- **GPU colour vs proxy tier agree by construction:** both read `Instances[i].Tier` from the same front buffer
+  (`SwarmFauna` proxy `SetTier`, the entity restyle). A live job (a vessel creeping along a grown whale's flank, then
+  charging through) raises plates, publishes no NaN, and no member's plate changes more than 5 times in 160 ticks.
+- **For the lead (not changed here, round 11a's file):** `SwarmPrismSync` registers `shield = Tier == 2`, and a
+  pufferfish's danger plate wins over its shield in the tier, so a puffed shield member is registered UNshielded
+  (food, a steering target, one-hit) for as long as it is puffed.
+
+### 22.4 Files and commands
+
+- `Swarm/SwarmSortCore.cs`: `RolesFromAnyDomain`, `RoleOrphanWeight`, `PERMS_ANY`; `BudAtWound` + `WoundBud`,
+  `FateNear`, `LayRamp` + `LayEase`.
+- `Swarm/SwarmTickJob.cs`: `StrikeState` (replaces `BestiaryStrike`), per-slot state + species.
+- `Swarm/SwarmFaunaConfigSO.cs`, `SwarmFauna.cs` (`BuildSortCore`, 3 lines), `author_swarm_fauna.py` (+ bool defaults
+  in `--check`), the four Swarm configs re-authored.
+- Harness: `Round11dHarness.cs` (R11d-J/T/B, run by the sort suite); `SortFeelHarness.cs` (`jolt`, `switchdiag`, mode
+  tokens `Dom3` / `Wnd` / `Fn` / `Lr<k>`); `SortHarness.Game` = the shipped config (= `gameSortFeelWndFnLr120D0F8`);
+  `score_sortfeel.py --assert-pass`; raw results `score_sortfeel_round11d_results.txt`.
+- QA: QA-SWARM-ROUND11-4.
+
 ## 23. Round 11e: creatures that steal and build
 
 Two new species take prisms that already exist and give them a new owner:

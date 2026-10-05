@@ -440,6 +440,9 @@ namespace CosmicShore.Gameplay
                 WellDead = config.SortWellDead, WellDeadTime = config.SortWellDeadTime,
                 Wander = config.SortWander, WanderTau = config.SortWanderTau,
                 Frac = Mathf.Max(1, config.SortUpdateFraction),
+                // round 11d (§22): regrow from the wound, at a pace that eases back in
+                BudAtWound = config.SortBudAtWound, FateNear = config.SortFateNear,
+                LayRamp = Mathf.RoundToInt(config.SortLayRampSeconds * config.TickHz),
                 // round 7: a fixed-size ship startles density^(-2/3) of an upsampled body (SwarmSortParams.ThreatGain)
                 ThreatGain = 3f * Mathf.Pow(Density, 2f / 3f),
             };

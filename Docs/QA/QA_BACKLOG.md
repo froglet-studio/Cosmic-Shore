@@ -802,6 +802,26 @@ with no trail · live volume never moves as the swarms grow.
 Round 8's diet colouring (newborns wearing the colour of what they ate) was removed on playtest. See
 `Docs/SWARM_FAUNA.md` §17.
 
+### QA-SWARM-ROUND11-4 ⬜ — the sort swarm heals without a jolt; lurkers never bite a rush
+
+**Source:** branch `overnight/feel` (headless only: harness R11d-J/T/B, the research's yardstick and smoothness).
+Reference: `Docs/SWARM_FAUNA.md` §22. **Why it matters:** right after a strike the body used to flood with hatchlings
+that raced across it (a jolt Garrett would read as a bug), and a rushed lurker plated up after it had bolted.
+
+1. Select `SwarmSortFaunaConfig.asset`: **Sort Bud At Wound on**, **Sort Fate Near on**, **Sort Lay Ramp Seconds 12**.
+2. Enter the Swarm cell and carve a third out of one sort swarm in one pass (a blast or a fast fly-through).
+   Watch the next ~15 s: the hole should fill from its own edge, gradually; nothing should streak across the body.
+3. Set **Sort Update Fraction 4** and repeat step 2 (the dial QA-SWARM-ROUND6 offers); then set it back to 8.
+4. Mass lurkers: rush one at full speed. It must bolt with no danger plates, then or as it settles. Then creep up on
+   another slowly: plates rise once and stay up while you hover, with no flicker at the edge of its notice.
+5. Time pack hunters: hover at the distance where they first turn on you. Plates must not flicker.
+6. Profiler: the swarm tick marker for a sort swarm should be within ~5% of round 10 (the wound bud scans the body
+   per egg, at most LayMax eggs a step).
+
+**PASS:** heals ease in from the wound; no flood of newborns the moment the 2 s kill hold lifts; a rushed lurker never
+plates; no plate flicker. **FAIL:** members streak across the body after a strike · a swarm under steady grazing stops
+regrowing · a lurker plates after bolting · plates flicker on and off at one distance.
+
 ### QA-SWARM-ROUND11-6 ⬜ — a far swarm collapses and comes back without a pop; creatures starve on a stomach
 
 **Source:** branch `overnight/lod`. Only headless gates, type-checks and authoring gates have run; it has never been
@@ -1015,6 +1035,44 @@ having them all dive in at once will be scary once the stakes are felt."*
 - A death with no crystal, or an agent that pops out without dying.
 - The ladder jumps near the pack.
 - A worker error: `[Substrate] the cell's substrate tick threw`.
+
+### QA-SWARM-ROUND11-10 ⬜ — the wearer: a creature made of your stolen trail
+
+**Source:** branch `overnight/wearers`. Proven headless (builders harness W1-W7: bodies form from stolen trail, fuse,
+rear 1.00 s and lunge at 2.40 hits/min; moults return mass; audit 0). **Never run in the editor.** Reference:
+`Docs/BUILDERS_AND_THIEVES.md` §10.
+
+**Why it matters:** worn prisms are re-parented under one container per creature. Their render matrices and index
+points move in one batched pass a frame, and their colliders ride the hierarchy. None of that has run in Unity.
+
+1. **Find it.** Open the Swarm cell. Fly a long loop through the inner gap (400-465 u). Within a minute or two,
+   small white hearts should be pulling prisms out of YOUR trail into lumpy bodies behind you.
+2. **Growth.** Keep flying. Bodies should grow from where they fed (a head with a tail, not a ball) and merge when they
+   touch.
+3. **The hunt.** Once a body is big (~60 prisms), it turns. Watch for the rear (the body contracts for one second),
+   then the lunge with its prisms in the danger look. Dodge sideways during the rear and it should miss.
+4. **Strip it.** Fly through a body. Your prisms should come back in your colour and fall loose. Strip a lot quickly:
+   it should moult, dropping a shell of loose prisms that go back to their owners, and flee.
+5. **Kill a heart.** Ram a bare or small heart. It should die and drop one crystal.
+6. **Lair.** Let a creature reach 150 prisms while it is not hunting. It should drop a static clump (the lair) and a
+   new heart should appear there.
+7. **Cost.** Profile 60 s with a 150-prism creature following you. Record:
+   - `BuilderColonyFauna.Frame`;
+   - `Physics.SyncColliderTransform` / `Physics.Simulate` with and without the creature;
+   - `PrismRenderService` batch time.
+
+**PASS:**
+- Steps 1-6 read as described.
+- No prism is left floating where a body was when the creature dies.
+- No `MissingReferenceException` when exiting Play with a creature alive.
+- The Frame marker is under ~0.3 ms at 300 worn prisms.
+
+**FAIL:**
+- Worn prisms drawn at their old place (the render matrix is not following).
+- Weapons or AOE missing a body (the index is not following).
+- Prisms destroyed when the cell unloads mid-hunt.
+- The danger look stuck on after a lunge.
+- Physics sync above ~1 ms a frame. If so, try the kinematic-Rigidbody container in §10.4.
 
 ### QA-SWARM-ROUND11-8 ⬜ — the substrate's agent pass is a Burst job
 

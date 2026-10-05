@@ -84,12 +84,39 @@ namespace CosmicShore.Gameplay
         public bool Lineages = false;
         /// <summary>Chance a child laid into unowned tissue founds a new lineage (round 9).</summary>
         public float Drift = 0.01f;
+        /// <summary>Round 11d, THE TIME -> SPACE SWITCH (Docs/SWARM_FAUNA.md §22): with DomainSlots (and not Lineages) the
+        /// slot -> domain map may give a region to ANY of the three domains, and a domain left without a region costs the
+        /// choice <see cref="RoleOrphanWeight"/> per member. Sort (sort_model._pick_perm over swarm_nca.PERMS) maps an
+        /// n-region plan only onto domain ids 0..n-1 and never counts who it leaves out, so after dragonfly -> jellyfish
+        /// (the one switch out of a three-region plan into a small two-region one) the team wearing domain 2 - often the
+        /// dragonfly's Space body, the very tissue the jellyfish is made of - was orphaned by its id alone: ~60% of the
+        /// survivors, ~25% of the regrown body, loss 8.6-9.6. False reproduces the research (the harness's research
+        /// modes). The game's lineage mode picks owners from held tissue (PickOwners) and never used this path.</summary>
+        public bool RolesFromAnyDomain = true;
+        /// <summary>Round 11d: what one member of a domain left without a region costs the slot -> domain choice, in units
+        /// of one misplaced crystal (sort's cost). An orphan is wrong for good; a crystal can molt. 3 (2 fixes the switch
+        /// too; 3 lands a little lower, §22).</summary>
+        public float RoleOrphanWeight = 3f;
         /// <summary>Laying pays out of the stomach (game). False = free (research).</summary>
         public bool Funded = true;
         public float[] EggCost = { 1f, 1f, 1f, 1f };
         public float CrossCost = 2f;
         /// <summary>A wounded swarm holds its eggs this many steps after every kill (the shared rule). 0 = research.</summary>
         public int KillLayHoldSteps = 0;
+        /// <summary>Round 11d, THE POST-CULL JOLT (Docs/SWARM_FAUNA.md §22): after a WOUND (losing a third of the body sets it
+        /// all the way back; one member of many, almost not at all) or a committed switch, the lay cap eases from one
+        /// egg a step back to LayMax over this many steps (a smoothstep), instead of a flood of hatchlings the
+        /// step the hold lifts. 0 = sort / round 10 (the full cap at once).</summary>
+        public int LayRamp = 0;
+        /// <summary>Round 11d, the post-cull jolt: the body regrows from the WOUND. The egg the homeostat chose is budded,
+        /// toward a short well of its type (picked in proportion to need), by the member of its lineage standing nearest
+        /// that well - so the hatchling is born at the hole it fills instead of crossing the body at full pull and
+        /// sliding past (shoving) everyone on the way. False = sort (any parent, any direction).</summary>
+        public bool BudAtWound = false;
+        /// <summary>Round 11d, the post-cull jolt: a member choosing a fate joins the NEAREST of the wells its type is short
+        /// of by a whole member (sort: the most-short well, wherever it is). Lateral inhibition still decides which wells
+        /// are open.</summary>
+        public bool FateNear = false;
         /// <summary>Steps a molt takes (the glue animates it). 0 = instant (research).</summary>
         public int MoltSteps = 0;
         /// <summary>Molting runs only this many steps after a committed plan switch. NEGATIVE = always
@@ -355,7 +382,8 @@ namespace CosmicShore.Gameplay
         public readonly int[] RoleOfDom = { 0, -1, -1 };
 
         readonly Random _rng;
-        int _cand = -1, _candN, _layHoldUntil, _settleUntil = int.MinValue;
+        int _cand = -1, _candN, _layHoldUntil, _settleUntil = int.MinValue, _nLive;
+        float _layU = 1f;   // round 11d: how far laying has eased back in after the last wound (0..1)
         bool _permSet;
         // per-step scratch (Step allocates nothing)
         readonly bool[] _live;
@@ -367,6 +395,10 @@ namespace CosmicShore.Gameplay
         readonly int[] _cnt = new int[4], _members, _occ, _cen = new int[16], _cenM = new int[16], _ec = new int[4];
         readonly float[] _need, _want = new float[16], _fill = new float[16], _deficit = new float[16], _fl = new float[4];
         readonly int[,] _dcen = new int[4, 3];
+        readonly bool[] _domUsed = new bool[3];
+        // this step's body frame, kept for the wound bud (round 11d)
+        Vector3[] _stepMuA = Array.Empty<Vector3>(), _stepMuB = Array.Empty<Vector3>();
+        float _stepFa, _stepSwell = 1f; Vector3 _stepCen;
         readonly int[] _hold = new int[9];
         readonly bool[] _dpresent = new bool[3];
         // neighbour hash
@@ -445,6 +477,10 @@ namespace CosmicShore.Gameplay
         {
             if (i < 0 || i >= Cap || !Active[i]) return;
             if (C.KillLayHoldSteps > 0) _layHoldUntil = Math.Max(_layHoldUntil, Clock + C.KillLayHoldSteps);
+            // round 11d: a WOUND sets laying back in proportion to the share of the body lost - a third of it (a strike, a
+            // fair cull) starts the ramp from one egg a step; one member picked off a big body costs almost nothing, so a
+            // swarm under steady grazing still lays at its full rate
+            _layU = MathF.Max(0f, _layU - 3f / Math.Max(1, _nLive));
             Active[i] = false; Hatched[i] = false; Startle[i] = 0; Vel[i] = Vector3.Zero; Wand[i] = Vector3.Zero; Molt[i] = 0; Fate[i] = 0; FKey[i] = 0;
             XferPlan[i] = -1;
         }
@@ -627,6 +663,7 @@ namespace CosmicShore.Gameplay
         {
             int nLive = 0;
             for (int i = 0; i < Cap; i++) if (Active[i] && Hatched[i]) nLive++;
+            _nLive = nLive;
             if (nLive == 0) { Clock++; return; }
 
             // ── 1. plan by majority, with the dwell (sort_model._step)
@@ -667,6 +704,7 @@ namespace CosmicShore.Gameplay
                 fA = plan.Order[slot % L]; fB = plan.Order[(slot + 1) % L]; fa = (Clock % per) / per;
             }
             var muA = code.Mu[fA]; var muB = code.Mu[fB];
+            _stepMuA = muA; _stepMuB = muB; _stepFa = fa; _stepCen = cen; _stepSwell = swell;
 
             // ── 3. types and body coordinates
             for (int a = 0; a < nl; a++)
@@ -699,6 +737,18 @@ namespace CosmicShore.Gameplay
                     if (Fate[i] >= 1 && FKey[i] == key && Fate[i] <= nw) continue;
                     int f = 0; float bn = float.MinValue;
                     for (int q = 0; q < nw; q++) { float v = _need[q] + 1e-3f * (float)_rng.NextDouble(); if (v > bn) { bn = v; f = q; } }
+                    if (C.FateNear && bn >= 1f)
+                    {
+                        // round 11d: of the wells short by at least a whole member, join the NEAREST (Mahalanobis)
+                        float bd = float.MaxValue;
+                        for (int q = 0; q < nw; q++)
+                        {
+                            if (_need[q] < 1f) continue;
+                            var d = _xb[i] - (muA[w0 + q] + fa * (muB[w0 + q] - muA[w0 + q]));
+                            float e2 = Vector3.Dot(d, Mul(code.Inv, w0 + q, d));
+                            if (e2 < bd) { bd = e2; f = q; }
+                        }
+                    }
                     Fate[i] = f + 1; FKey[i] = key; _need[f] -= 1f;
                 }
             }
@@ -883,6 +933,7 @@ namespace CosmicShore.Gameplay
                 if (C.Molt && (C.MoltWindow < 0 || Clock < _settleUntil)) MoltStep(code);
             }
 
+            if (C.LayRamp > 0) _layU = MathF.Min(1f, _layU + 1f / C.LayRamp);   // round 11d: the wound's ease-in is a clock
             ThreatLevel = 0.85f * ThreatLevel + 0.15f * MathF.Min(1f, C.ThreatGain * stSum / Math.Max(1, nl));
         }
 
@@ -995,7 +1046,7 @@ namespace CosmicShore.Gameplay
             _cand = maj;
             if (_candN < C.Dwell) return true;
             Events.Add(new SwarmEvent { Kind = SwarmEventKind.Switched, Index = cur, Other = maj });
-            PlanIx = maj; _candN = 0; _permSet = false;
+            PlanIx = maj; _candN = 0; _permSet = false; _layU = 0f;   // round 11d: a new body eases its laying in
             if (C.MoltWindow >= 0) _settleUntil = Clock + C.MoltWindow;
             if (C.Oriented) SetHeading(Heading, snap: true);
             return false;
@@ -1006,6 +1057,15 @@ namespace CosmicShore.Gameplay
             null,
             new[] { new[] { 0 } },
             new[] { new[] { 0, 1 }, new[] { 1, 0 } },
+            new[] { new[] { 0, 1, 2 }, new[] { 0, 2, 1 }, new[] { 1, 0, 2 }, new[] { 1, 2, 0 }, new[] { 2, 0, 1 }, new[] { 2, 1, 0 } },
+        };
+
+        /// <summary>Round 11d: every INJECTIVE slot -> domain map into the three domains (sort's PERMS first, in its order).</summary>
+        static readonly int[][][] PERMS_ANY =
+        {
+            null,
+            new[] { new[] { 0 }, new[] { 1 }, new[] { 2 } },
+            new[] { new[] { 0, 1 }, new[] { 1, 0 }, new[] { 0, 2 }, new[] { 2, 0 }, new[] { 1, 2 }, new[] { 2, 1 } },
             new[] { new[] { 0, 1, 2 }, new[] { 0, 2, 1 }, new[] { 1, 0, 2 }, new[] { 1, 2, 0 }, new[] { 2, 0, 1 }, new[] { 2, 1, 0 } },
         };
 
@@ -1025,11 +1085,21 @@ namespace CosmicShore.Gameplay
             Array.Clear(_dcen, 0, _dcen.Length); int tot = 0;
             for (int i = 0; i < Cap; i++) if (Active[i] && Hatched[i]) { _dcen[Elem[i], Dom[i]]++; tot++; }
             float scale = Math.Max(1, tot) / (float)Math.Max(1, code.N);
-            float best = float.MaxValue; int[] arg = PERMS[ns][0];
-            foreach (var p in PERMS[ns])
+            var table = C.RolesFromAnyDomain ? PERMS_ANY[ns] : PERMS[ns];
+            float best = float.MaxValue; int[] arg = table[0];
+            foreach (var p in table)
             {
                 float cost = 0;
                 for (int e = 0; e < 4; e++) for (int s = 0; s < ns; s++) cost += MathF.Abs(_dcen[e, p[s]] - code.Counts[e * 3 + s] * scale);
+                if (C.RolesFromAnyDomain)
+                {
+                    // round 11d: a DOMAIN is a lineage and never changes, while a misplaced ELEMENT molts - every member
+                    // of a domain this map leaves without a region is wrong for good. With every domain given a region
+                    // (a three-region plan, or a two-region plan grown from two domains) this is sort's cost exactly.
+                    _domUsed[0] = _domUsed[1] = _domUsed[2] = false;
+                    for (int s = 0; s < ns; s++) _domUsed[p[s]] = true;
+                    for (int d = 0; d < 3; d++) if (!_domUsed[d]) for (int e = 0; e < 4; e++) cost += C.RoleOrphanWeight * _dcen[e, d];
+                }
                 bool same = true; for (int s = 0; s < ns; s++) same &= Perm[s] == p[s];
                 if (same) cost -= 2f;
                 if (cost < best) { best = cost; arg = p; }
@@ -1100,6 +1170,9 @@ namespace CosmicShore.Gameplay
         /// current plan (-1: no region in this plan).</summary>
         /// <summary>Member i's body region in the current plan (-1: none) - the harness's view of the regions.</summary>
         public int RegionOf(int i) => EffRole(i);
+
+        /// <summary>Round 11d: how far laying has eased back in after the last wound or switch (0..1; 1 = the full LayMax).</summary>
+        public float LayEase => _layU;
 
         int EffRole(int i) => XferPlan[i] == PlanIx && XferPlan[i] >= 0 ? XferRole[i] : RoleOfDom[Math.Clamp(Dom[i], 0, 2)];
 
@@ -1190,7 +1263,14 @@ namespace CosmicShore.Gameplay
             int nAct = 0, nHat = 0, nFree = 0;
             for (int i = 0; i < Cap; i++) { if (Active[i]) { nAct++; if (Hatched[i]) nHat++; } else nFree++; }
             int room = (int)MathF.Ceiling(code.N * C.Over) - nAct;
-            int nlay = Math.Min(C.LayMax, Math.Min(nFree, Math.Min(room, Poisson(MathF.Max(C.LayRate * nHat, 0.2f)))));
+            int layMax = C.LayMax;
+            if (C.LayRamp > 0)
+            {
+                // round 11d: a wounded (or newly switched) body's laying EASES back in, one egg a step to LayMax
+                float u = _layU;
+                layMax = Math.Max(1, (int)MathF.Round(C.LayMax * u * u * (3f - 2f * u)));
+            }
+            int nlay = Math.Min(layMax, Math.Min(nFree, Math.Min(room, Poisson(MathF.Max(C.LayRate * nHat, 0.2f)))));
             if (nlay <= 0) return;
             Array.Clear(_ec, 0, 4);
             for (int i = 0; i < Cap; i++) if (Active[i]) _ec[EffectiveElement(i)]++;
@@ -1227,6 +1307,7 @@ namespace CosmicShore.Gameplay
                 freeFrom = j2 + 1;
                 _ec[ce]++;
                 var dir = Gauss3(); dir /= MathF.Max(dir.Length(), 1e-6f);
+                if (C.BudAtWound && into >= 0) WoundBud(code, ce * 3 + into, cd, ref par, ref dir);
                 Pos[j2] = Pos[par] + C.RBud * dir; Vel[j2] = Vector3.Zero; Wand[j2] = Vector3.Zero;
                 Elem[j2] = ce; Dom[j2] = cd; Active[j2] = true; Hatched[j2] = false; Age[j2] = 0;
                 Startle[j2] = 0; Molt[j2] = 0; Fate[j2] = 0; FKey[j2] = 0; XferPlan[j2] = -1; Facing[j2] = Facing[par];
@@ -1333,6 +1414,47 @@ namespace CosmicShore.Gameplay
             int s = 0; for (int g = 0; g < HG; g++) { _cellStart[g] = s; s += _cellCount[g]; }
             Array.Clear(_fill2, 0, HG);
             for (int i = 0; i < Cap; i++) if (member[i]) { int g = _cellOf[i]; _sorted[_cellStart[g] + _fill2[g]++] = i; }
+        }
+
+        /// <summary>Round 11d, the post-cull jolt: the body regrows from the WOUND. The egg the homeostat chose (type t, domain
+        /// cd) is budded by the member of its lineage standing nearest a well of t that is short (picked in proportion to
+        /// its need), toward that well - so a hatchling is born at the hole it fills instead of crossing the body to it
+        /// at full pull, sliding past (and shoving) everyone on the way. The parent is still a real member of the swarm
+        /// next to the egg: nothing appears out of place.</summary>
+        void WoundBud(SwarmSortCode code, int t, int cd, ref int par, ref Vector3 dir)
+        {
+            int w0 = code.WStart[t], nw = code.WStart[t + 1] - w0;
+            if (nw == 0) return;
+            int key = 1 + PlanIx * 16 + (t / 3) * 4 + t % 3, nm = 0;
+            for (int q = 0; q < nw; q++) _occ[q] = 0;
+            for (int i = 0; i < Cap; i++)
+            {
+                if (!Active[i]) continue;
+                int r = EffRole(i);
+                if (r < 0) continue;
+                if (!Hatched[i]) { if (Elem[i] * 3 + r == t) nm++; continue; }   // eggs in flight count toward the type
+                if (EffectiveElement(i) * 3 + r != t) continue;
+                nm++;
+                if (Fate[i] >= 1 && FKey[i] == key && Fate[i] <= nw) _occ[Fate[i] - 1]++;
+            }
+            float tot = 0f;
+            for (int q = 0; q < nw; q++) { _need[q] = MathF.Max(0f, code.W[w0 + q] * (nm + 1) - _occ[q]); tot += _need[q]; }
+            if (tot <= 0f) return;
+            float pick = (float)_rng.NextDouble() * tot; int f = nw - 1;
+            for (int q = 0; q < nw; q++) { pick -= _need[q]; if (pick <= 0f) { f = q; break; } }
+            var mu = _stepMuA[w0 + f] + _stepFa * (_stepMuB[w0 + f] - _stepMuA[w0 + f]);
+            var well = _stepCen + Rotate(mu) * _stepSwell;
+            int best = -1; float bd = float.MaxValue;
+            for (int i = 0; i < Cap; i++)
+            {
+                if (!Active[i] || !Hatched[i] || Dom[i] != cd) continue;
+                float d2 = Vector3.DistanceSquared(Pos[i], well);
+                if (d2 < bd) { bd = d2; best = i; }
+            }
+            if (best < 0) return;
+            par = best;
+            var to = well - Pos[par]; float tl = to.Length();
+            if (tl > 1e-4f) { dir = to / tl + 0.3f * dir; dir /= MathF.Max(dir.Length(), 1e-6f); }
         }
 
         /// <summary>The largest startle among live members within r of x (the startle relay).</summary>

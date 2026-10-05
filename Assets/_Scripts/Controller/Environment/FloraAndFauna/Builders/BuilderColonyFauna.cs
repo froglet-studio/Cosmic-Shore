@@ -12,8 +12,9 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// The anchor of a colony that STEALS prisms (Docs/BUILDERS_AND_THIEVES.md): a FORTRESS that walls its core in with
-    /// stolen mass and knits every cut shut, or a THIEF NEST on a plant whose magpies tail a ship and hoard its warm
-    /// wake. Thin Unity glue over the pure cores (<see cref="BuilderColonyCore"/>, <see cref="ThiefNestCore"/>), in the
+    /// stolen mass and knits every cut shut, a THIEF NEST on a plant whose magpies tail a ship and hoard its warm
+    /// wake, or WEARERS - hearts that wear what they steal as a moving body (§10). Thin Unity glue over the pure cores
+    /// (<see cref="BuilderColonyCore"/>, <see cref="ThiefNestCore"/>, <see cref="WearerCore"/>), in the
     /// swarm's round-7 shape (Docs/SWARM_FAUNA.md §14):
     ///  • members are DATA, drawn from one GPU buffer (<see cref="SwarmMemberRenderer"/>, the swarm's member draw);
     ///  • a member within <see cref="BuilderColonyConfigSO.EngageRadius"/> of a vessel is given a real proxy
@@ -47,6 +48,7 @@ namespace CosmicShore.Gameplay
 
         BuilderColonyCore _fort;
         ThiefNestCore _thief;
+        WearerCore _wear;
         BuilderPrismWorld _world;
         int _colonyId, _cap, _tick;
         float _dt, _acc, _bloomTicks;
@@ -118,16 +120,21 @@ namespace CosmicShore.Gameplay
 
         public BuilderColonyConfigSO Config => config;
         public BuilderSpecies Species => config ? config.Species : BuilderSpecies.Fortress;
-        public int MemberCount => _fort != null ? _fort.AliveCount : _thief != null ? _thief.AliveCount : 0;
+        public int MemberCount => _fort != null ? _fort.AliveCount : _thief != null ? _thief.AliveCount : _wear != null ? _wear.AliveCount : 0;
         public int ProxyCount => _proxySlots.Count;
-        /// <summary>Prisms in this colony's structure (a fortress's wall, a nest's hoard).</summary>
-        public int StructureCount => _fort != null ? _fort.Built : _thief != null ? _thief.HoardCount : 0;
+        /// <summary>Prisms in this colony's structure (a fortress's wall, a nest's hoard, a wearer's lair).</summary>
+        public int StructureCount => _fort != null ? _fort.Built : _thief != null ? _thief.HoardCount : _wear != null ? _wear.LairCount : 0;
+        /// <summary>A wearer colony's core (null for the other species): bodies, moults, ledgers.</summary>
+        public WearerCore Wearers => _wear;
+        /// <summary>Worn prisms posed in the last frame's batched pass (a wearer colony).</summary>
+        public int WornPosedLastFrame => _world != null ? _world.WornPosedLastFrame : 0;
         public int OpenWounds => _fort != null ? _fort.OpenWounds : 0;
         public Vector3 NestPosition => _nest;
 
         /// <summary>A member's speed in world units/s (what a jouster has to outrun).</summary>
         public override float CurrentSpeed =>
-            !config ? 0f : config.Species == BuilderSpecies.Thieves ? config.ThiefSpeed : config.WorkerSpeed;
+            !config ? 0f : config.Species == BuilderSpecies.Thieves ? config.ThiefSpeed
+                : config.Species == BuilderSpecies.Wearers ? config.WearerSpeed : config.WorkerSpeed;
 
         /// <summary>The anchor is a population, not an animal: nothing eats a colony whole.</summary>
         public override bool Predated(string predatorName, Transform devourTarget) => false;
@@ -179,7 +186,12 @@ namespace CosmicShore.Gameplay
                 go.transform.SetParent(transform, false);
                 _mouths[q] = go.transform;
             }
-            string colonyName = config.Species == BuilderSpecies.Fortress ? "fortress colony" : "thief nest";
+            string colonyName = config.Species switch
+            {
+                BuilderSpecies.Fortress => "fortress colony",
+                BuilderSpecies.Wearers => "wearer",
+                _ => "thief nest",
+            };
             _world = new BuilderPrismWorld(colonyName, _colonyId, domain, _mouths);
             int seed = Random.Range(1, int.MaxValue);
 
@@ -191,6 +203,14 @@ namespace CosmicShore.Gameplay
                 _world.SiteAddress = site => { _fort.SiteCoords(site, out int x, out int y, out int z); return new Vector3Int(x, y, z); };
                 _cap = _fort.Cap; _pos = _fort.Pos; _vel = _fort.Vel; _alive = _fort.Alive; _bornAt = _fort.BornAt;
                 _deaths = _fort.Deaths; _born = _fort.Born; _platformBody = _fort.PlatformBody;
+            }
+            else if (config.Species == BuilderSpecies.Wearers)
+            {
+                // the hearts are founded where the cell spawned the anchor (its band); they roam the whole cell after a trail
+                _nest = transform.position;
+                _wear = new WearerCore(_world, config.ToWearerParams(centre, membrane), S(_nest), (int)domain, _colonyId, seed);
+                _cap = _wear.Cap; _pos = _wear.Pos; _vel = _wear.Vel; _alive = _wear.Alive; _bornAt = _wear.BornAt;
+                _deaths = _wear.Deaths; _born = _wear.Born; _platformBody = _wear.PlatformBody;
             }
             else
             {
@@ -332,6 +352,7 @@ namespace CosmicShore.Gameplay
             using (s_mStep.Auto())
             {
                 if (_fort != null) _fort.Step(_dt, _vessels, _vesselCount);
+                else if (_wear != null) _wear.Step(_dt, _vessels, _vesselCount);
                 else _thief.Step(_dt, _vessels, _vesselCount);
             }
             _tick++;
@@ -367,7 +388,7 @@ namespace CosmicShore.Gameplay
             {
                 ref var s = ref _inst[k];
                 if (!_alive[k]) { s.Flags = 0u; continue; }
-                int tier = _fort != null && _fort.Striking(k) ? 1 : 0;
+                int tier = Striking(k) ? 1 : 0;
                 s.PrevPos = _prev[k]; s.CurPos = _pos[k];
                 s.PrevFace = _prevFace[k]; s.CurFace = _face[k];
                 s.PrevMolt = 0f; s.CurMolt = 0f;
@@ -396,10 +417,14 @@ namespace CosmicShore.Gameplay
             _seen.Clear();
             _vesselPos.Clear();
             _world.Vessels.Clear();
+            // a wearer roams the whole cell after whoever is nearest: it senses from the cell centre, membrane-wide
+            var host = _wear != null ? HostCell : null;
+            var from = host ? host.transform.position : _nest;
             float radius = _fort != null
                 ? config.ShellRadius * 2f + Mathf.Max(config.AlarmRadius, config.EngageRadius) + config.Sense
+                : _wear != null ? (host && host.MembraneRadius > 1f ? host.MembraneRadius : 1200f)
                 : config.Territory + config.ScoutRange;
-            int hits = Physics.OverlapSphereNonAlloc(_nest, radius, OverlapScratch, NonPrismOverlapMask);
+            int hits = Physics.OverlapSphereNonAlloc(from, radius, OverlapScratch, NonPrismOverlapMask);
             for (int h = 0; h < hits && _vesselCount < MaxVessels; h++)
             {
                 var col = OverlapScratch[h];
@@ -469,6 +494,7 @@ namespace CosmicShore.Gameplay
                 if (!_alive[k]) continue;
                 _entries?.Release(k, this);
                 if (_fort != null) _fort.Kill(k, BuilderDeath.PlatformKill);
+                else if (_wear != null) _wear.Kill(k, BuilderDeath.PlatformKill);
                 else _thief.Kill(k, BuilderDeath.PlatformKill);
                 HideSlot(k);
             }
@@ -520,7 +546,7 @@ namespace CosmicShore.Gameplay
             {
                 int k = _proxySlots[q];
                 var m = _proxy[k];
-                if (m && !m.IsDead) m.SetTier(_fort != null && _fort.Striking(k), false);
+                if (m && !m.IsDead) m.SetTier(Striking(k), false);
             }
         }
 
@@ -812,7 +838,7 @@ namespace CosmicShore.Gameplay
             _wantedAt[slot] = Time.time;
             m.transform.SetPositionAndRotation(U(SVector3.Lerp(_prev[slot], _pos[slot], _alpha)),
                                                Face(SVector3.Lerp(_prevFace[slot], _face[slot], _alpha)));
-            m.SetTier(_fort != null && _fort.Striking(slot), false);
+            m.SetTier(Striking(slot), false);
             m.SyncBodyToIndex();
             _realBody[slot] = true;
             _entries?.NoteSuspendedByIndex(slot);
@@ -854,6 +880,9 @@ namespace CosmicShore.Gameplay
                 if ((m.transform.position - centre).sqrMagnitude <= r2) results.Add(m);
             }
         }
+
+        /// <summary>Member k is striking (a fortress sting, a wearer's lunge): drawn in the danger tier.</summary>
+        bool Striking(int k) => _fort != null ? _fort.Striking(k) : _wear != null && _wear.Striking(k);
 
         static Quaternion Face(SVector3 f)
         {

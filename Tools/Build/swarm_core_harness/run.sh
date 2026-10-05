@@ -60,11 +60,11 @@ ECO=(); for f in "$ROOT"/Assets/_Scripts/Controller/Environment/FloraAndFauna/Ec
   "$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/SwarmPrismSync.cs" \
   "${ECO[@]}" \
   "$HERE/Program.cs" "$HERE/TickJobHarness.cs" "$HERE/GridHarness.cs" "$HERE/SortHarness.cs" "$HERE/SortFeelHarness.cs" "$HERE/EvoHarness.cs" "$HERE/LineageHarness.cs" \
-  "$HERE/SwarmLodHarness.cs"
+  "$HERE/SwarmLodHarness.cs" "$HERE/Round11dHarness.cs"
 V=$(ls "$DOTNET_ROOT"/shared/Microsoft.NETCore.App | head -1)
 printf '{"runtimeOptions":{"tfm":"net8.0","framework":{"name":"Microsoft.NETCore.App","version":"%s"}}}' "$V" > "$OUT/swarmcore.runtimeconfig.json"
 cp "$OUT/swarmcore.runtimeconfig.json" "$OUT/swarmquery.runtimeconfig.json"
 if [ "${1:-}" = "query" ]; then exec "$DOTNET" "$OUT/swarmquery.exe"; fi
-case "${1:-}" in export|yardstick|evofate|smoothsort|benchsort) ;; *) "$DOTNET" "$OUT/swarmquery.exe" || exit 1;; esac
-case "${1:-}" in export|yardstick|evofate|smoothsort|benchsort) exec "$DOTNET" "$OUT/swarmcore.exe" "$@";; esac
+case "${1:-}" in export|yardstick|evofate|smoothsort|benchsort|jolt|switchdiag) ;; *) "$DOTNET" "$OUT/swarmquery.exe" || exit 1;; esac
+case "${1:-}" in export|yardstick|evofate|smoothsort|benchsort|jolt|switchdiag) exec "$DOTNET" "$OUT/swarmcore.exe" "$@";; esac
 "$DOTNET" "$OUT/swarmcore.exe" "${1:-$ROOT/Assets/_SO_Assets/Swarm Fauna/Plans}" "${2:-}" ${3:+"$3"}

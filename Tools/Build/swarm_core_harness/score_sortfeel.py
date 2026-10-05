@@ -325,6 +325,8 @@ def main():
     ap.add_argument("--out", default="")
     ap.add_argument("--jobs", type=int, default=4)
     ap.add_argument("--density", type=int, default=1, help="round 7: run on m-times-upsampled plans (SWARM_DENSITY)")
+    ap.add_argument("--assert-pass", default="", help="round 11d: comma list of MODE or MODE:TEST (e.g. "
+                    "researchSortFeelDom3D0F8:time->space) that must pass the loss-8 bar at EVERY seed; exit 1 otherwise")
     a = ap.parse_args()
     nca = sg.research_dir(a.nca)
     sys.path.insert(0, nca)
@@ -353,6 +355,21 @@ def main():
     if a.out:
         json.dump(res, open(a.out, "w"), indent=1)
         print(f"\nwrote {a.out}")
+    bad = []
+    for want in [w for w in a.assert_pass.split(",") if w]:
+        mode, _, test = want.partition(":")
+        seeds = res["csharp"].get(mode)
+        if not seeds:
+            bad.append(f"{mode}: not scored")
+            continue
+        for sd, d in seeds.items():
+            for name, t in d["tests"].items():
+                if (not test or name == test) and not t.get("na") and not t["ok"]:
+                    bad.append(f"{mode} seed {sd} {name} (loss {t['loss']}, pass rate {t['rate']})")
+    if a.assert_pass:
+        print("\nASSERT " + ("OK: " + a.assert_pass if not bad else "FAILED:\n  " + "\n  ".join(bad)))
+        if bad:
+            sys.exit(1)
 
 
 if __name__ == "__main__":

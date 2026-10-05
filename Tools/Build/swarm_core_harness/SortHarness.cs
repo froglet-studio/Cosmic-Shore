@@ -33,12 +33,17 @@ static class SortHarness
     {
         DomainSlots = true, Funded = false, MoltSteps = 0, MoltWindow = -1, Animate = false, KWellFF = 0f,
         WellLook = false, Oriented = false, Cruise = 0f, Cap = 280,
+        RolesFromAnyDomain = false,   // sort_model._pick_perm exactly; round 11d's fix is the "Dom3" mode token
     };
 
     /// <summary>The game's settings as SHIPPED (SwarmFauna.BuildSortCore builds the same from SwarmFaunaConfigSO):
     /// round 3's game settings + round 6's sortfeel (flat wells 0.7, 0 on the dragonfly; wander 0.05) on the
     /// 1-in-8 update; the velocity noise stays at 0.1 (smoother than 0 on every seed measured). Docs/SWARM_FAUNA.md §12.</summary>
-    public static SwarmSortParams Game(SwarmPlanData[] plans) => Override(GameRound5(plans).WithSortFeel(8, 0f));
+    public static SwarmSortParams Game(SwarmPlanData[] plans) => Override(Round11d(GameRound5(plans).WithSortFeel(8, 0f)));
+
+    /// <summary>Round 11d's post-cull-jolt settings (SwarmFaunaConfigSO SortBudAtWound / SortFateNear / SortLayRampSeconds 12
+    /// at 10 Hz) - the yardstick mode tokens Wnd, Fn, Lr120.</summary>
+    public static SwarmSortParams Round11d(SwarmSortParams p) { p.BudAtWound = true; p.FateNear = true; p.LayRamp = 120; return p; }
 
     /// <summary>The game's settings before round 6 (velocity noise 0.1, plain wells, every member every step).</summary>
     public static SwarmSortParams GameRound5(SwarmPlanData[] plans) => new SwarmSortParams
@@ -52,9 +57,9 @@ static class SortHarness
     public const int GameSeed = GridHarness.GameSeed;
 
     /// <summary>Experiments: SWARM_SORT_GAME="Field=value,..." overrides game-mode params by name.</summary>
-    internal static SwarmSortParams Override(SwarmSortParams p)
+    internal static SwarmSortParams Override(SwarmSortParams p, string var = "SWARM_SORT_GAME")
     {
-        var env = Environment.GetEnvironmentVariable("SWARM_SORT_GAME");
+        var env = Environment.GetEnvironmentVariable(var);
         if (string.IsNullOrEmpty(env)) return p;
         foreach (var kv in env.Split(','))
         {
@@ -387,6 +392,7 @@ static class SortHarness
             Check(m8 < 0.7 * m1, "the 1-in-8 update is substantially cheaper");
         }
 
+        _fail += Round11dHarness.Run(plans);   // round 11d (Docs/SWARM_FAUNA.md §22): the jolt, time -> space, the strikes
         Console.WriteLine($"\nsort core: {(_fail == 0 ? "OK" : $"FAIL ({_fail})")}");
         return _fail;
     }
