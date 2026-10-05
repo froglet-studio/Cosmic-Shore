@@ -58,6 +58,13 @@ ExportedObj/
 *.unitypackage.meta
 *.csproj.meta
 
+# The .NET port under Port/ is NOT Unity-generated — its project/solution files
+# are hand-authored and must be tracked (the wildcards above otherwise eat them,
+# which shipped a branch whose source couldn't build: no csproj on clone).
+!Port/**/*.csproj
+!Port/**/*.sln
+!Port/**/*.slnx
+
 # Unity3D generated meta files
 *.pidb.meta
 *.pdb.meta

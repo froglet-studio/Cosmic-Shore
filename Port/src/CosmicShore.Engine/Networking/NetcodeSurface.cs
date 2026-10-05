@@ -1,0 +1,309 @@
+using System;
+using System.Collections.Generic;
+
+namespace CosmicShore.Engine.Networking
+{
+    /// <summary>
+    /// Original-contract NetworkConfig, laid out with Netcode's serialized field names so the
+    /// NetworkManager prefab deserializes whole (player prefab, transport, prefab lists, tick
+    /// rate, approval). <see cref="ConnectionData"/> is the payload the local client presents
+    /// to connection approval.
+    /// </summary>
+    [Serializable]
+    public sealed class NetworkConfig
+    {
+        public ushort ProtocolVersion;
+        public NetworkTransport NetworkTransport;
+        public GameObject PlayerPrefab;
+        public NetworkPrefabs Prefabs = new();
+        public uint TickRate = 30;
+        public int ClientConnectionBufferTimeout = 10;
+        public bool ConnectionApproval = true;
+        [NonSerialized] public byte[] ConnectionData = Array.Empty<byte>();
+        public bool EnableTimeResync;
+        public int TimeResyncInterval = 30;
+        public bool EnsureNetworkVariableLengthSafety;
+        public bool EnableSceneManagement = true;
+        public bool ForceSamePrefabs = true;
+        public bool RecycleNetworkIds = true;
+        public float NetworkIdRecycleDelay = 120f;
+        public int LoadSceneTimeOut = 120;
+        public float SpawnTimeout = 10f;
+        public bool EnableNetworkLogs = true;
+        public NetworkTopologyTypes NetworkTopology = NetworkTopologyTypes.ClientServer;
+        public bool UseCMBService;
+        public bool AutoSpawnPlayerPrefabClientSide = true;
+    }
+
+    public enum NetworkTopologyTypes { ClientServer = 0, DistributedAuthority = 1 }
+
+    public enum NetworkPrefabOverride { None = 0, Prefab = 1, Hash = 2 }
+
+    /// <summary>One registered network prefab (original: <c>NetworkPrefab</c>, serialized field names).</summary>
+    [Serializable]
+    public sealed class NetworkPrefab
+    {
+        public NetworkPrefabOverride Override;
+        public GameObject Prefab;
+        public GameObject SourcePrefabToOverride;
+        public uint SourceHashToOverride;
+        public GameObject OverridingTargetPrefab;
+    }
+
+    /// <summary>
+    /// A prefab list asset (original: <c>NetworkPrefabsList</c> ScriptableObject — the
+    /// "DefaultNetworkPrefabs" asset the NetworkManager references).
+    /// </summary>
+    public class NetworkPrefabsList : ScriptableObject
+    {
+        [SerializeField] internal bool IsDefault;
+        [SerializeField] internal List<NetworkPrefab> List = new();
+
+        public IReadOnlyList<NetworkPrefab> PrefabList => List;
+
+        public void Add(NetworkPrefab prefab) { if (prefab != null && !List.Contains(prefab)) List.Add(prefab); }
+        public void Remove(NetworkPrefab prefab) => List.Remove(prefab);
+        public bool Contains(GameObject prefab) { foreach (var p in List) if (p.Prefab == prefab) return true; return false; }
+    }
+
+    /// <summary>
+    /// The prefab registry (original: <c>NetworkPrefabs</c>): prefabs added at runtime plus
+    /// every entry of the referenced <see cref="NetworkPrefabsLists"/>.
+    /// </summary>
+    [Serializable]
+    public sealed class NetworkPrefabs
+    {
+        public List<NetworkPrefabsList> NetworkPrefabsLists = new();
+        [NonSerialized] readonly List<NetworkPrefab> _prefabs = new();
+
+        public IReadOnlyList<NetworkPrefab> Prefabs
+        {
+            get
+            {
+                if (NetworkPrefabsLists == null || NetworkPrefabsLists.Count == 0) return _prefabs;
+                var all = new List<NetworkPrefab>(_prefabs);
+                foreach (var list in NetworkPrefabsLists)
+                    if (list != null)
+                        foreach (var p in list.PrefabList)
+                            if (p?.Prefab != null && !all.Exists(e => e.Prefab == p.Prefab)) all.Add(p);
+                return all;
+            }
+        }
+
+        public bool Add(NetworkPrefab prefab)
+        {
+            if (prefab?.Prefab == null || Contains(prefab.Prefab)) return false;
+            _prefabs.Add(prefab);
+            return true;
+        }
+
+        public bool Contains(GameObject prefab)
+        {
+            foreach (var p in Prefabs)
+                if (p.Prefab == prefab) return true;
+            return false;
+        }
+
+        public void Remove(GameObject prefab) => _prefabs.RemoveAll(p => p.Prefab == prefab);
+        public void Remove(NetworkPrefab prefab) => _prefabs.Remove(prefab);
+    }
+
+    /// <summary>Custom prefab spawn handler hook (original: <c>INetworkPrefabInstanceHandler</c>).</summary>
+    public interface INetworkPrefabInstanceHandler
+    {
+        NetworkObject Instantiate(ulong ownerClientId, Vector3 position, Quaternion rotation);
+        void Destroy(NetworkObject networkObject);
+    }
+
+    /// <summary>Prefab handler registry. Offline nothing is spawned remotely, so it is a recorder.</summary>
+    public sealed class NetworkPrefabHandler
+    {
+        readonly Dictionary<GameObject, INetworkPrefabInstanceHandler> _handlers = new();
+
+        public bool AddHandler(GameObject prefab, INetworkPrefabInstanceHandler handler)
+        {
+            if (prefab == null || handler == null) return false;
+            _handlers[prefab] = handler;
+            return true;
+        }
+
+        public bool AddHandler(NetworkObject prefab, INetworkPrefabInstanceHandler handler)
+            => prefab != null && AddHandler(prefab.gameObject, handler);
+
+        /// <summary>Client spawn: a registered handler instantiates the prefab (null = no handler).</summary>
+        internal GameObject Instantiate(GameObject prefab, ulong owner, Vector3 position, Quaternion rotation)
+            => _handlers.TryGetValue(prefab, out var h) && h.Instantiate(owner, position, rotation) is { } no ? no.gameObject : null;
+
+        public bool RemoveHandler(GameObject prefab) => prefab != null && _handlers.Remove(prefab);
+        public bool RemoveHandler(NetworkObject prefab) => prefab != null && RemoveHandler(prefab.gameObject);
+        public bool ContainsHandler(GameObject prefab) => prefab != null && _handlers.ContainsKey(prefab);
+    }
+
+    /// <summary>Named-message surface. Offline a message sent to the server is delivered locally.</summary>
+    public sealed class CustomMessagingManager
+    {
+        public delegate void HandleNamedMessageDelegate(ulong senderClientId, FastBufferReader messagePayload);
+
+        readonly Dictionary<string, HandleNamedMessageDelegate> _named = new();
+
+        public void RegisterNamedMessageHandler(string name, HandleNamedMessageDelegate callback) => _named[name] = callback;
+        public void UnregisterNamedMessageHandler(string name) => _named.Remove(name);
+
+        public void SendNamedMessage(string name, ulong clientId, FastBufferWriter writer,
+            NetworkDelivery delivery = NetworkDelivery.ReliableSequenced)
+        {
+            var nm = NetworkManager.Singleton;
+            ulong local = nm != null ? nm.LocalClientId : 0;
+            if (clientId != local && NetDriver.SendNamed(name, clientId, writer.ToArray(), toAll: false)) return;
+            if (_named.TryGetValue(name, out var handler))
+                handler(local, new FastBufferReader(writer.ToArray()));
+        }
+
+        public void SendNamedMessageToAll(string name, FastBufferWriter writer,
+            NetworkDelivery delivery = NetworkDelivery.ReliableSequenced)
+        {
+            if (NetDriver.IsServer) NetDriver.SendNamed(name, 0, writer.ToArray(), toAll: true);
+            var nm = NetworkManager.Singleton;
+            if ((nm == null || nm.IsClient) && _named.TryGetValue(name, out var handler))
+                handler(0, new FastBufferReader(writer.ToArray()));
+        }
+
+        /// <summary>A named message arrived from <paramref name="sender"/>.</summary>
+        internal void Deliver(string name, ulong sender, byte[] body)
+        {
+            if (_named.TryGetValue(name, out var handler)) handler(sender, new FastBufferReader(body));
+        }
+    }
+
+    public enum NetworkDelivery { Unreliable, UnreliableSequenced, Reliable, ReliableSequenced, ReliableFragmentedSequenced }
+
+    /// <summary>Minimal byte writer (original: FastBufferWriter). Offline payloads never leave the process.</summary>
+    public struct FastBufferWriter : IDisposable
+    {
+        List<byte> _bytes;
+        public FastBufferWriter(int size, CosmicShore.Engine.Collections.Allocator allocator, int maxSize = -1) { _bytes = new List<byte>(Math.Max(0, size)); }
+        public int Length => _bytes?.Count ?? 0;
+        public void WriteValueSafe(in byte value) => (_bytes ??= new()).Add(value);
+        public void WriteValueSafe(in int value) => (_bytes ??= new()).AddRange(BitConverter.GetBytes(value));
+        public void WriteValueSafe(in ulong value) => (_bytes ??= new()).AddRange(BitConverter.GetBytes(value));
+        public void WriteValueSafe(in float value) => (_bytes ??= new()).AddRange(BitConverter.GetBytes(value));
+        public void WriteValueSafe(in bool value) => (_bytes ??= new()).Add(value ? (byte)1 : (byte)0);
+        public void WriteValueSafe(string value, bool oneByteChars = false)
+        {
+            var b = System.Text.Encoding.UTF8.GetBytes(value ?? string.Empty);
+            WriteValueSafe(b.Length);
+            (_bytes ??= new()).AddRange(b);
+        }
+        public byte[] ToArray() => _bytes?.ToArray() ?? Array.Empty<byte>();
+        public void Dispose() { }
+    }
+
+    /// <summary>Minimal byte reader matching <see cref="FastBufferWriter"/>.</summary>
+    public struct FastBufferReader : IDisposable
+    {
+        readonly byte[] _bytes;
+        int _pos;
+        public FastBufferReader(byte[] bytes) { _bytes = bytes ?? Array.Empty<byte>(); _pos = 0; }
+        public int Length => _bytes?.Length ?? 0;
+        public int Position => _pos;
+        public void ReadValueSafe(out byte value) { value = _bytes[_pos]; _pos += 1; }
+        public void ReadValueSafe(out int value) { value = BitConverter.ToInt32(_bytes, _pos); _pos += 4; }
+        public void ReadValueSafe(out ulong value) { value = BitConverter.ToUInt64(_bytes, _pos); _pos += 8; }
+        public void ReadValueSafe(out float value) { value = BitConverter.ToSingle(_bytes, _pos); _pos += 4; }
+        public void ReadValueSafe(out bool value) { value = _bytes[_pos] != 0; _pos += 1; }
+        public void ReadValueSafe(out string value, bool oneByteChars = false)
+        {
+            ReadValueSafe(out int len);
+            value = System.Text.Encoding.UTF8.GetString(_bytes, _pos, len);
+            _pos += len;
+        }
+        public void Dispose() { }
+    }
+
+    public enum ConnectionEvent
+    {
+        ClientConnected,
+        PeerConnected,
+        ClientDisconnected,
+        PeerDisconnected,
+    }
+
+    public struct ConnectionEventData
+    {
+        public ConnectionEvent EventType;
+        public ulong ClientId;
+        public IReadOnlyList<ulong> PeerClientIds;
+    }
+
+    /// <summary>Tick system (original: <c>NetworkTickSystem</c>). Offline the tick rate is a record.</summary>
+    public sealed class NetworkTickSystem
+    {
+        readonly NetworkManager _nm;
+        public NetworkTickSystem(NetworkManager nm) { _nm = nm; }
+        public uint TickRate => _nm?.NetworkConfig?.TickRate ?? 30;
+        public event Action Tick;
+        internal void RaiseTick() => Tick?.Invoke();
+    }
+
+    /// <summary>Transport base (original: <c>NetworkTransport</c>). Offline no transport runs.</summary>
+    public abstract class NetworkTransport : MonoBehaviour
+    {
+        public virtual ulong ServerClientId => 0;
+        public virtual bool IsSupported => true;
+        public event Action<NetworkEvent, ulong, ArraySegment<byte>, float> OnTransportEvent;
+        protected void InvokeOnTransportEvent(NetworkEvent evt, ulong clientId, ArraySegment<byte> payload, float time)
+            => OnTransportEvent?.Invoke(evt, clientId, payload, time);
+        public virtual bool StartClient() => true;
+        public virtual bool StartServer() => true;
+        public virtual void Shutdown() { }
+        public virtual void DisconnectRemoteClient(ulong clientId) { }
+        public virtual void DisconnectLocalClient() { }
+        public virtual ulong GetCurrentRtt(ulong clientId) => 0;
+    }
+
+    public enum NetworkEvent { Data, Connect, Disconnect, TransportFailure, Nothing }
+
+    /// <summary>Universal RPC target set (original: <c>RpcTarget</c>). Offline every target is local.</summary>
+    public sealed class RpcTarget
+    {
+        public BaseRpcTarget Everyone { get; } = new BaseRpcTarget(RpcTargetUse.Everyone);
+        public BaseRpcTarget Server { get; } = new BaseRpcTarget(RpcTargetUse.Server);
+        public BaseRpcTarget NotServer { get; } = new BaseRpcTarget(RpcTargetUse.NotServer);
+        public BaseRpcTarget Owner { get; } = new BaseRpcTarget(RpcTargetUse.Owner);
+        public BaseRpcTarget NotOwner { get; } = new BaseRpcTarget(RpcTargetUse.NotOwner);
+        public BaseRpcTarget Me { get; } = new BaseRpcTarget(RpcTargetUse.Me);
+        public BaseRpcTarget NotMe { get; } = new BaseRpcTarget(RpcTargetUse.NotMe);
+        public BaseRpcTarget ClientsAndHost { get; } = new BaseRpcTarget(RpcTargetUse.ClientsAndHost);
+        public BaseRpcTarget SpecifiedInParams { get; } = new BaseRpcTarget(RpcTargetUse.SpecifiedInParams);
+
+        public BaseRpcTarget Single(ulong clientId, RpcTargetUse use) => new BaseRpcTarget(use, clientId);
+        public BaseRpcTarget Group(IEnumerable<ulong> clientIds, RpcTargetUse use) => new BaseRpcTarget(use);
+        public BaseRpcTarget Not(ulong excludedClientId, RpcTargetUse use) => new BaseRpcTarget(use);
+    }
+
+    public class BaseRpcTarget
+    {
+        public RpcTargetUse Use { get; }
+        public ulong ClientId { get; }
+        public BaseRpcTarget(RpcTargetUse use, ulong clientId = 0) { Use = use; ClientId = clientId; }
+    }
+
+    public enum RpcTargetUse
+    {
+        Temp,
+        Persistent,
+        Everyone,
+        Server,
+        NotServer,
+        Owner,
+        NotOwner,
+        Me,
+        NotMe,
+        ClientsAndHost,
+        SpecifiedInParams,
+    }
+
+    public enum RpcDelivery { Unreliable, Reliable }
+    public enum RpcInvokePermission { Everyone, Owner, Server }
+
+}
