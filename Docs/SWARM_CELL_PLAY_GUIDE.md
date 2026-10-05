@@ -6,7 +6,7 @@ headless harnesses and the docs they back. Each fact is quoted from `Docs/SWARM_
 the `QA-SWARM-ROUND11-*` entries or the `author_*.py` models. **Map:** `/mnt/project-files/overnight/cell-map.png`
 (redraw with `Tools/Build/showcase_cell_harness/cell_map.py`).
 
-**‡ = a number the balance pass (food and survival) may still change.** Grep `BALANCE` to find each one.
+Numbers are the shipped values after the round-11-14 balance pass (SWARM_FAUNA.md §26.6).
 
 ---
 
@@ -81,9 +81,9 @@ predator or starvation). That crystal is what it pays.
 |---|---|---|---|---|---|---|
 | r < 392 | **Nucleus** | the cell's core | — | — | — | — |
 | 400-465, all round; then roams the whole cell | **Wearers** (Charge hearts) | small white hearts pulling prisms out of YOUR trail into lumpy bodies, head-and-tail, that fuse when they touch | at ~60 worn prisms a body turns, then **rears**: it contracts for 1 s | dodge sideways during the rear. Fly through a body to strip your prisms back in your colour; strip fast and it **moults** and flees. A bare or small heart dies to a ram | the lunge, with the body's prisms in danger | your prisms back, and the heart's crystal. At 150 prisms it drops a static **lair** and a new heart |
-| 470-620, whole shell | **Whale swarm** (Mass-majority start, up to 960 members ‡ `BALANCE`) | a whale of tadpoles, nose-first. With **Multi Domain**, back and belly show different domains' prisms (round 9 lineage regions) | its Mass members are **lurkers**: they plate while half-startled (`LurkCalm` 0.05 < startle < `DangerEnter` 0.45) | **rush it** so it bolts; a bolted lurker stays safe until calm. Never creep up on it | a plate contact = a burn | crystal per member. Kill its majority quickly to **morph** it |
-| 470-620, at the Mass flora | **Lurkers** (substrate, Mass; 8 seeded, cap 16 ‡ `BALANCE`) | indistinguishable from the Mass flora crystals: the calm body is drawn at 15% behind its heart. It creeps while unwatched and freezes when looked at | a **gape** (the body swells), then a 0.6 s snap at 230 u/s | keep it in your forward 50° cone and it freezes. After a snap it is spent for 3 s | the snap = a bite | crystal |
-| 625-685, 5 roosts | **Mobbers** (substrate, Time; 40 on 5 roosts, cap 50 ‡ `BALANCE`) | a colony that orbits your hull at 30 u | provoked when you are slower than 100 u/s or near a roost. A bird pulls up for 0.8 s before its dive (at most 3 diving at once) | go faster than about 140 u/s and they fall behind. Point your nose at one inside 60 u and it **jinks** aside | a **peck** = 0.25 of a burn, at most 1/s | crystal |
+| 470-620, whole shell | **Whale swarm** (Mass-majority start, up to 960 members) | a whale of tadpoles, nose-first. With **Multi Domain**, back and belly show different domains' prisms (round 9 lineage regions) | its Mass members are **lurkers**: they plate while half-startled (`LurkCalm` 0.05 < startle < `DangerEnter` 0.45) | **rush it** so it bolts; a bolted lurker stays safe until calm. Never creep up on it | a plate contact = a burn | crystal per member. Kill its majority quickly to **morph** it |
+| 470-620, at the Mass flora | **Lurkers** (substrate, Mass; 8 seeded, cap 16) | indistinguishable from the Mass flora crystals: the calm body is drawn at 15% behind its heart. It creeps while unwatched and freezes when looked at | a **gape** (the body swells), then a 0.6 s snap at 230 u/s | keep it in your forward 50° cone and it freezes. After a snap it is spent for 3 s | the snap = a bite | crystal |
+| 625-685, 5 roosts | **Mobbers** (substrate, Time; 40 on 5 roosts, cap 50) | a colony that orbits your hull at 30 u | provoked when you are slower than 100 u/s or near a roost. A bird pulls up for 0.8 s before its dive (at most 3 diving at once) | go faster than about 140 u/s and they fall behind. Point your nose at one inside 60 u and it **jinks** aside | a **peck** = 0.25 of a burn, at most 1/s | crystal |
 
 ### 3.2 The middle shell (690-905 u): three sectors, and the creatures that roam
 
@@ -95,21 +95,21 @@ The middle shell has three substrate pens, each a 55° half-angle cone about the
 
 | Where | Creature | Looks like | Telegraph | Beat it | It costs you | It pays |
 |---|---|---|---|---|---|---|
-| 690-840, whole shell | **Pufferfish swarm** (Charge-majority start, up to 960 ‡) | a pufferfish of tadpoles. It grazes the **Time** flora | Charge members **puff**: plates rise above startle `DangerEnter` 0.45 and stay until `DangerExit` 0.15 | stay calm near it, or hit it before it puffs. *The harness found most burns come from these plates, even for the dodging pilot (SWARM_FAUNA.md §26, findings)* | a plate = a burn | crystal per member |
-| 690-1080, roams | **Pack hunters** (substrate, Time; 6 seeded, cap 7 ‡ `BALANCE`) | six long, low 12 u bodies stalking at about 98 u/s, slower than you | they fan onto a **~110 u ring around your line and HOLD it for 6 s**: slow, circling, tightening by up to 45%. Then **all of them** light up within about 1 s of each other (a 0.5 s telegraph) and dive at about 168 u/s | **break out through a gap**: the hold resets. After 3 s of strike they are **winded for 3 s**: slow, harmless, falling back. That is the window to ram them | each dive contact = a bite | crystal. They eat locusts by scent |
-| 690-840, **+X** | **Stampede** (substrate, Mass; 48 in 4 herds, cap 72 ‡ `BALANCE`) | herds that spook as one. The cows run away; every 4th animal is a **bull** | the bull lowers its head for 0.9 s (slows to 0.2×, faces you) | dodge sideways during the head-down | a landed charge (170 u/s, 1.5 s) = a bite. It then rests 4 s | crystal |
-| 690-840, **+Z side** (120°) | **Leeches** (substrate, Charge; 48 at flora, cap 64 ‡ `BALANCE`) | puddles drifting at 12 u/s | within 140 u they **pounce** at 150 u/s and latch onto the hull (at most 6) | **turn hard** (more than 1 rad/s) and they are flung off and dazed for 2.5 s. Ram a free one | a **sip** every 1.5 s per rider = 0.25 of a burn. Its plate never burns | crystal (its proxy exists to be rammed) |
-| 690-840, **-Z side** (240°) | **Leviathan** (substrate, Space; 96-member school, cap 128 ‡ `BALANCE`) | sated, the school assembles into one **120 u manta**. Hungry again (mean hunger above 0.55), it dissolves into a harmless shoal | it turns toward you within 700 u. With you inside 220 u ahead of its mouth, the **jaws open for 1.2 s** | get out of the cone in front of the mouth during the jaws. A loose shoal is harmless | touching the assembled body burns. The **gulp** surges at 115 u/s for 1.6 s, then it rests 4 s | crystal per member |
-| 845-905 | **Fortress colony** (Mass; 48 founders ‡ `BALANCE`) | workers carry YOUR trail prisms into a hollow shell about 40 u across | hover within about 110 u: a **screen of workers forms** between you and the core, then strikers plate | **cut the wall.** It knits shut (half the sites in about 5-10 s) mostly from your own trail. Cut the same line again and the scar grows thicker there. Kill workers to slow it | a striking worker = a burn | worker crystals. A rammed worker drops its prism loose |
+| 690-840, whole shell | **Pufferfish swarm** (Charge-majority start, 895 members at full size) | a pufferfish of tadpoles. It grazes the **Time** flora | Charge members **puff**: plates rise above startle `DangerEnter` 0.45 and stay until `DangerExit` 0.15 | stay calm near it, or hit it before it puffs. *Before the balance pass most harness burns came from these plates (SWARM_FAUNA.md §26, findings)* | a plate = a burn | crystal per member |
+| 690-1080, roams | **Pack hunters** (substrate, Time; 6 seeded, cap 7) | six long, low 12 u bodies stalking at about 98 u/s, slower than you | they fan onto a **~110 u ring around your line and HOLD it for 6 s**: slow, circling, tightening by up to 45%. Then **all of them** light up within about 1 s of each other (a 0.5 s telegraph) and dive at about 168 u/s | **break out through a gap**: the hold resets. After 3 s of strike they are **winded for 3 s**: slow, harmless, falling back. That is the window to ram them | each dive contact = a bite | crystal. They eat locusts by scent, and breed only when fed |
+| 690-840, **+X** | **Stampede** (substrate, Mass; 48 in 4 herds, cap 72) | herds that spook as one. The cows run away; every 4th animal is a **bull** | the bull lowers its head for 0.9 s (slows to 0.2×, faces you) | dodge sideways during the head-down | a landed charge (170 u/s, 1.5 s) = a bite. It then rests 4 s | crystal |
+| 690-840, **+Z side** (120°) | **Leeches** (substrate, Charge; 48 at flora, cap 64) | puddles drifting at 12 u/s | within 140 u they **pounce** at 150 u/s and latch onto the hull (at most 6) | **turn hard** (more than 1 rad/s) and they are flung off and dazed for 2.5 s. Ram a free one | a **sip** every 1.5 s per rider = 0.25 of a burn. Its plate never burns | crystal (its proxy exists to be rammed) |
+| 690-840, **-Z side** (240°) | **Leviathan** (substrate, Space; 96-member school, cap 128) | sated, the school assembles into one **120 u manta**. Hungry again (mean hunger above 0.55), it dissolves into a harmless shoal | it turns toward you within 700 u. With you inside 220 u ahead of its mouth, the **jaws open for 1.2 s** | get out of the cone in front of the mouth during the jaws. A loose shoal is harmless | touching the assembled body burns. The **gulp** surges at 115 u/s for 1.6 s, then it rests 4 s | crystal per member |
+| 845-905 | **Fortress colony** (Mass; 48 founders) | workers carry YOUR trail prisms into a hollow shell about 40 u across | hover within about 110 u: a **screen of workers forms** between you and the core, then strikers plate | **cut the wall.** It knits shut (half the sites in about 5-10 s) mostly from your own trail. Cut the same line again and the scar grows thicker there. Kill workers to slow it | a striking worker = a burn | worker crystals. A rammed worker drops its prism loose |
 
 ### 3.3 The outer shell and the rim (910-1200 u)
 
 | Where | Creature | Looks like | Telegraph | Beat it | It costs you | It pays |
 |---|---|---|---|---|---|---|
-| 910-1080, whole shell | **Jellyfish swarm** (Space-majority start, up to 960 ‡). Its Charge bell members wear shields | a jellyfish of tadpoles | its Space members are **locusts**: a quarter of the body plates at a time, and the lit quarter moves every 2 s (`LocustPhaseSeconds`) | read the shimmer and **thread the gaps**. Shielded members are never food | a lit member = a burn | crystal per member |
-| 910-1080, near the Space flora | **Locusts** (substrate, Space; 40 seeded, cap 360 ‡ `BALANCE`) | sparse and fed, they are **cute**: slow, curious, bobbing | **phase flip**: dense and hungry, they turn gregarious (aligned, 95 u/s, biting). The probe reads cute .72, then terrifying .85 | keep them fed and sparse, or leave. The cloud's size is the food it finds | bites | crystals. *The harness says they starve by about minute 2 (SWARM_FAUNA.md §26, findings)* |
-| 1085-1140, on an outer Space plant | **Thief nest** (Space; 6 founders, cap 18 ‡ `BALANCE`) | a few thieves fall in behind you within about 700 u and snatch your wake (trail at most 1.5 s old). They fly it home at half speed to a visible **hoard** at the plant | they tail you | **turn back**: a laden thief flies at 75 u/s and you always catch it. Knocking it down returns its prism to you. **Weave**, or **raid the hoard**: touching a hoarded prism takes it | your trail | your prisms back, plus a thief crystal |
-| 1095-1192, 18° cone along (1, 0.3, 0): **+X, tilted up**, past the stampede side | **Snap traps** (Time; 3 clumps, 9 seeded, cap 15 ‡ `BALANCE`) | Venus flytraps of 27 prisms with a crystal in the jaws. Their mouths turn toward traffic (7°/s, within a 60° cone) | within 146 u the lobes **glow and gape** for 0.73 s, then hold open (armed). A path across the mouth fires them | back off before it arms and it never fires. Dodge sideways at the glow. Break 13 or more of its 24 lobe and tooth prisms and it can never fire | the closing lobes (0.52 s) and the always-dangerous teeth burn | joust the crystal while it is shut (about 7-9 s) for the crystal and a skeleton |
+| 910-1080, whole shell | **Jellyfish swarm** (Space-majority start, 440 members at full size). Its Charge bell members wear shields | a jellyfish of tadpoles | its Space members are **locusts**: a quarter of the body plates at a time, and the lit quarter moves every 2 s (`LocustPhaseSeconds`) | read the shimmer and **thread the gaps**. Shielded members are never food | a lit member = a burn | crystal per member |
+| 910-1080, near the Space flora | **Locusts** (substrate, Space; 40 seeded, cap 360) | sparse and fed, they are **cute**: slow, curious, bobbing | **phase flip**: dense and hungry, they turn gregarious (aligned, 95 u/s, biting). The probe reads cute .72, then terrifying .85 | keep them fed and sparse, or leave. The cloud's size is the food it finds | bites | crystals. *They persist, but turn over heavily: the outer food holds 28-88 of the 360 (SWARM_FAUNA.md §26.6)* |
+| 1085-1140, on an outer Space plant | **Thief nest** (Space; 6 founders, cap 18) | a few thieves fall in behind you within about 400 u and snatch your wake (trail at most 1.5 s old). They fly it home at half speed to a visible **hoard** at the plant | they tail you | **turn back**: a laden thief flies at 75 u/s and you always catch it. Knocking it down returns its prism to you. **Weave**, or **raid the hoard**: touching a hoarded prism takes it | your trail | your prisms back, plus a thief crystal |
+| 1095-1192, 18° cone along (1, 0.3, 0): **+X, tilted up**, past the stampede side | **Snap traps** (Time; 3 clumps, 9 seeded, cap 15) | Venus flytraps of 27 prisms with a crystal in the jaws. Their mouths turn toward traffic (7°/s, within a 60° cone) | within 146 u the lobes **glow and gape** for 0.73 s, then hold open (armed). A path across the mouth fires them | back off before it arms and it never fires. Dodge sideways at the glow. Break 13 or more of its 24 lobe and tooth prisms and it can never fire | the closing lobes (0.52 s) and the always-dangerous teeth burn | joust the crystal while it is shut (about 7-9 s) for the crystal and a skeleton |
 | same grove | **Physarum** (Space; 5 sclerotia, cables of tube prisms) | a slime-mould network cabling the sector between food and trails. Your wake **repels** it | a danger **pulse** runs along the cables at about 65 u/s (lit 0.5 s, then dark for 1 s). A sclerotium glows 0.8 s, then beats 0.6 s, about every 3 s | cross a cable just **behind** a pulse. Dive for a sclerotium's crystal right after a beat. A cut cable re-forms within about a minute | pulse or beat contact = a burn | the sclerotium crystal |
 | 1200 | **Membrane** | — | — | — | — | — |
 
@@ -126,12 +126,13 @@ The middle shell has three substrate pens, each a 55° half-angle cone about the
   after a cull.
 - **Lineage colour regions** (round 9, **Multi Domain** on). A member's domain is its lineage and never changes.
   Two regions of one body (back vs belly) can wear different domains. Diet no longer colours anything.
-- **Grazing.** Each band's Borromean flora feeds its swarm (`BALANCE` ‡):
+- **Grazing.** Each band's Borromean flora feeds its swarm:
   - inner: Mass, 2-3 plants;
-  - middle: Time, 6-10;
+  - middle: Time, 9-12 (about a quarter stand in the 625-690 mobber gap);
   - outer: Space, 3-5.
 
-  A swarm grazes a plant, then moves on (round 9). Starving members are shed.
+  A swarm grazes a plant, then moves on (round 9), riding with its whole body inside its band. It sheds
+  starving members only while hungry (stomach below `ForageBelow` 0.5), never while sated.
 
 ## 4. What is new tonight (one line each)
 
@@ -165,18 +166,17 @@ The middle shell has three substrate pens, each a 55° half-angle cone about the
 - **The compile is against Unity 6000.0.75 references, not 6000.3.** The Services.Multiplayer, Friends and
   Leaderboards packages could not be fetched. Editor code was checked only against UnityEditor 2021.1
   (`Tools/Build/unity_refcompile/README.md`).
-- **Extinctions in the whole-cell harness are an upper bound,** because the spawner re-seed is not modelled. The
-  thieves died by minute 1 (pilots rammed them), packs by minutes 3-4, and locusts by minute 2 (42-93 bites out of
-  7-8k asks). In 30 min, lurkers died by about 9, fortress workers by 17, and wearers by 15 (SWARM_FAUNA.md §26, findings). ‡ `BALANCE`:
-  this is what the balance pass is retuning.
-- **The skilled harness pilot burns more than the careless one** (3.29 vs 1.76 burns/min), mostly on the pufferfish
-  plates. Is that true for a human?
-- **LOD rarely engages with pilots in the cell.** Swarms were collapsed ≤ 1% of the time. Thieves and wearers sense
-  membrane-wide and never roost while you are in.
+- **Over 30 min every class persists except the lurker** (whole-cell harness, SWARM_FAUNA.md §26.6). Pilots ram
+  it out (minute 23.8); the seeder has it back in about 19 s. One 30-min seed is a single sample.
+  - Locusts still turn over heavily (hundreds starve per 30 min).
+  - Fortress workers dip to about 15 of 48 under a raider cutting the walls, then recover by births.
+- **Burns/min: careless 1.71, skilled 0.24.** 97% of burns were telegraphed. Is that true for a human?
+- **LOD engages more now.** Thieves roost 11-31% of the time and wearers 0-13%, after their sight was cut to 400 u.
+  Swarms were collapsed ≤ 1% of the time (measured before the pass).
 - **The held ring makes the pack far less lethal to a moving pilot.** It landed 6 bites over 5 × 90 s, against 20
   for the research port (SUBSTRATE_FAUNA.md §7.7).
 - **Not proved:**
   - The stampede's head-down is a 1.9 s median before a trample (the bestiary's telegraph is 0.7 s).
   - The grove and the substrate were built in parallel and never tested together near the 1,080-1,095 u seam.
   - The emotion reads (§27) see motion and size only; colour, glow and sound are invisible to the probe.
-- **The collider worst case is 1,192 of 1,200.** Any extra always-on collider breaks the ceiling.
+- **The collider worst case is 1,194 of 1,200.** Any extra always-on collider breaks the ceiling.
