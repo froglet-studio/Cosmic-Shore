@@ -225,9 +225,9 @@ Arena.prototype.addPilot = function (p) {
   return p;
 };
 Arena.prototype.hit = function (p, kind, amount) {
-  this.log.push([this.t, p.name, kind, amount === undefined ? 1 : amount]); p.hitsN++;
+  this.log.push([this.t, p.name, kind, amount === undefined ? 1 : amount, this._src]); p.hitsN++;
   if (this.slowAllHits || kind === 'burn' || kind === 'snap') this.fl.slow_t[p.name] = this.t;   // a danger contact slows
-  if (this.onHit) this.onHit(p, kind, amount);
+  if (this.onHit) this.onHit(p, kind, amount, this._src);
 };
 /** flora/harness.py speed_factor: a burn stops you (1.5 x clamped) and you recover linearly over 3 s. */
 Arena.prototype.speedFactor = function (p) {

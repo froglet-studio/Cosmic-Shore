@@ -38,7 +38,7 @@ function runOne(PARAMS, key, policy, seed, minutes, dt, observeEvery, overrides)
   const led0 = ar.liveVolume() + sp.ledger();
   let drift = 0; const t0 = now();
   for (let s = 0; s < steps; s++) {
-    sp.step(ar, dt);
+    ar._src = sp.key || sp.name; sp.step(ar, dt);
     if (world === 'builders') sp.ram(ar);
     if (world === 'flora' && policy === 'cutter') { const p = ar.pilots[0]; sp.cut(ar, p, p.prev, p.pos); }
     ar.step(dt);
@@ -96,7 +96,7 @@ function FlightWorld(PARAMS, mode, seed, scale) {
 FlightWorld.prototype.speciesHeld = function () { let s = 0; for (const sp of this.species) s += sp.ledger ? sp.ledger() : 0; return s; };
 FlightWorld.prototype.step = function (dt) {
   const ar = this.arena;
-  for (const sp of this.species) { sp.step(ar, dt); if (sp.ram) sp.ram(ar); }
+  for (const sp of this.species) { ar._src = sp.key || sp.name; sp.step(ar, dt); if (sp.ram) sp.ram(ar); }
   ar.step(dt);
 };
 /** the conservation ledger the debug overlay shows: live + held + actively removed = start + the player's wake. */
