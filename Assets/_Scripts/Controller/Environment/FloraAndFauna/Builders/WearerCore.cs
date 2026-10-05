@@ -470,7 +470,9 @@ namespace CosmicShore.Gameplay
                 var d = _world.Position(g) - Pos[k];
                 if (d.Length() < R + 3f)
                 {
-                    if (_world.Steal(g, Domain))
+                    // the budget is checked again AT the steal: several hearts claim goals under the cap at once, and
+                    // each landed - 301 worn of a 300 budget (builders harness W1, round 11-14)
+                    if (_wornBy.Count < P.WornCap && _world.Steal(g, Domain))
                     {
                         bool trail = _world.IsTrail(g);
                         Attach(k, g); WornSteals++; if (trail) WornTrail++;
