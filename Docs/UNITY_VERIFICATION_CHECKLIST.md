@@ -57,6 +57,53 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Render tier: MobileLow HDR off, baked sky, lighter membrane, fold-gate cap; fold-gate footprint everywhere (`claude/serene-edison-lfv24f`, 2026-10-05)
+
+Step 4 of `Docs/PLATFORM_UNIFICATION.md` (§3.5). No editor and no `unity` CLI in the authoring
+session, so `/verify-unity` did NOT run. Out-of-editor: **the Froglet Engine compiled every runtime
+file under `Assets/_Scripts` with 0 errors** (`dotnet build Port/src/CosmicShore.Live`; covers Steps
+2-4; negative control: an injected `PlatformProfile.Curent` fails with CS0117); editor/test files
+type-checked against the stub harness (negative-controlled); the REAL icosphere generator run
+outside Unity proves levels 0-3 are exact prefixes of level 4; `bake_static_skybox.py --check` OK
+against bleeding-edge's sky; repo C# gates green.
+
+**What landed**
+
+1. `PlatformProfileSO` render fields (all no-change on Desktop/MobileHigh): `disableHdr`,
+   `skyboxReplacements`, `membraneMaxSubdivisions`, `foldGateWindowMaxRenderScale`. MobileLow: HDR
+   off, `HyperSeaSkybox.mat` → `StaticHyperSeaSkybox.mat`, membrane level 3 (642 capsules), fold-gate
+   cap 0.5, and its first-run AA is now 4x MSAA.
+2. `PlatformRenderApplier` swaps the skybox on every scene load; `GraphicsSettingsApplier` turns
+   HDR off; `CapsuleMembrane` draws the capped prefix; `FoldGatePortalView` caps the window.
+3. **All platforms:** the fold-gate window renders only its on-screen footprint (shader remap
+   `_FoldGatePortalUV`) and no longer reallocates its target every frame.
+4. Editor: `UrpAssetPlayModeRestore` restores the URP asset's HDR / render scale / MSAA / upscaler
+   after Play.
+
+**Verify in editor / on device**
+
+1. Project compiles; `DeviceTierTests` pass (now 41 cases, including the render-tier ones that load
+   the shipped assets and the icosphere prefix test).
+2. Desktop, override Auto: Menu_Main and a race look exactly as before - procedural sky (animated
+   star twinkle), full capsule membrane, HDR bloom on crystals.
+3. Butterfly (any platform): fold a gate far away, then fly into it. The window shows the far side
+   correctly at every distance, with no seam against the ring, no flicker, and no hitch as it grows
+   to fill the screen during the carry. This is the one change Windows sees.
+4. Device Tier window → **Mobile Low**, Play Menu_Main: the sky is the baked panorama (galactic
+   band, nebulae; no twinkle animation), the membrane lattice is visibly sparser (same radius),
+   bloom still glows, the Panini curve is still there. Fly a Wanderway run outside the cell: the
+   baked sky, not black.
+5. Exit Play: the URP asset (`Assets/_Graphics/URP_Asset.asset`) shows HDR ON again in the
+   inspector, and `git status` does not list it.
+6. Set the override back to **Auto**.
+7. On the 4 GB Samsung (Development build): compare frame time against the Step 3 build in Menu_Main
+   and freestyle; the Samsung should be MobileLow automatically. On the iPhone: unchanged.
+
+**First-pass tuning** (assets only): `PlatformProfile_MobileLow.asset` — `membraneMaxSubdivisions`
+3 (2 = 162 capsules if still heavy), `foldGateWindowMaxRenderScale` 0.5, `antiAliasing` 4 (MSAA4x).
+
+---
+
 ### 🔴 Device tiers: Desktop / MobileHigh / MobileLow + tier-aware first-run graphics (`claude/serene-edison-lfv24f`, 2026-10-05)
 
 Step 3 of `Docs/PLATFORM_UNIFICATION.md` (§3.4 has the full as-built table). No editor and no

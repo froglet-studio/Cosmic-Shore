@@ -1,8 +1,12 @@
 #if UNITY_EDITOR
+using System.Collections.Generic;
+using System.Reflection;
 using CosmicShore.Core;
 using CosmicShore.Data;
+using CosmicShore.Game;
 using CosmicShore.ScriptableObjects;
 using NUnit.Framework;
+using UnityEditor;
 using UnityEngine;
 
 namespace CosmicShore.Tests
@@ -187,6 +191,70 @@ namespace CosmicShore.Tests
             if (nativePixels <= budget) return 100;
             int percent = Mathf.RoundToInt(Mathf.Sqrt((float)budget / nativePixels) * 100f);
             return Mathf.Clamp(percent, 50, 100);
+        }
+
+        #endregion
+
+        #region Render tier (Step 4)
+
+        const string ProceduralSkyPath = "Assets/_Graphics/Skyboxes/HyperSeaSkybox.mat";
+        const string BakedSkyPath = "Assets/_Graphics/Skyboxes/StaticHyperSeaSkybox.mat";
+
+        static PlatformProfileSO ShippedProfile(DeviceTier tier) =>
+            Resources.Load<PlatformProfileSetSO>(PlatformProfileSetSO.ResourcePath).For(tier);
+
+        [TestCase(DeviceTier.Desktop)]
+        [TestCase(DeviceTier.MobileHigh)]
+        public void DesktopAndMobileHigh_ChangeNothingAboutRendering(DeviceTier tier)
+        {
+            // The promise of step 4 for Windows and iOS: every render field at its no-change value.
+            var profile = ShippedProfile(tier);
+            var proceduralSky = AssetDatabase.LoadAssetAtPath<Material>(ProceduralSkyPath);
+            Assert.IsFalse(profile.DisableHdr, $"{tier} HDR");
+            Assert.AreEqual(-1, profile.MembraneMaxSubdivisions, $"{tier} membrane cap");
+            Assert.AreEqual(1f, profile.FoldGateWindowMaxRenderScale, $"{tier} fold-gate cap");
+            Assert.IsNull(profile.SkyboxReplacementFor(proceduralSky), $"{tier} skybox swap");
+        }
+
+        [Test]
+        public void MobileLow_SwapsTheProceduralSkyForItsBake()
+        {
+            var proceduralSky = AssetDatabase.LoadAssetAtPath<Material>(ProceduralSkyPath);
+            var bakedSky = AssetDatabase.LoadAssetAtPath<Material>(BakedSkyPath);
+            Assert.IsNotNull(proceduralSky, ProceduralSkyPath);
+            Assert.IsNotNull(bakedSky, BakedSkyPath);
+            var profile = ShippedProfile(DeviceTier.MobileLow);
+            Assert.AreEqual(bakedSky, profile.SkyboxReplacementFor(proceduralSky));
+            Assert.IsNull(profile.SkyboxReplacementFor(bakedSky), "a replacement is not itself replaced");
+            Assert.IsTrue(profile.DisableHdr, "MobileLow HDR");
+            Assert.AreEqual(3, profile.MembraneMaxSubdivisions, "MobileLow membrane cap");
+        }
+
+        [Test]
+        public void IcosphereVertexCount_PerLevel()
+        {
+            int[] expected = { 12, 42, 162, 642, 2562 };
+            for (int level = 0; level < expected.Length; level++)
+                Assert.AreEqual(expected[level], CapsuleMembrane.IcosphereVertexCount(level), $"level {level}");
+        }
+
+        [Test]
+        public void Icosphere_LowerLevelIsAPrefixOfHigherLevel()
+        {
+            // The membrane cap draws the first N baked capsules and calls that a lower-level
+            // membrane. That is only true while the generator APPENDS midpoints and never reorders:
+            // pin it, so a generator rewrite cannot silently turn the cap into a scattered subset.
+            var generate = typeof(CapsuleMembrane).GetMethod("GenerateIcosphereVertices",
+                BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.IsNotNull(generate, "CapsuleMembrane.GenerateIcosphereVertices");
+            var full = (List<Vector3>)generate.Invoke(null, new object[] { 4 });
+            for (int level = 0; level < 4; level++)
+            {
+                var lower = (List<Vector3>)generate.Invoke(null, new object[] { level });
+                Assert.AreEqual(CapsuleMembrane.IcosphereVertexCount(level), lower.Count, $"level {level} count");
+                for (int i = 0; i < lower.Count; i++)
+                    Assert.IsTrue((full[i] - lower[i]).sqrMagnitude < 1e-12f, $"level {level} vertex {i}");
+            }
         }
 
         #endregion

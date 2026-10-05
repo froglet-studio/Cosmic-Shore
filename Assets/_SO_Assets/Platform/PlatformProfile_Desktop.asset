@@ -19,3 +19,7 @@ MonoBehaviour:
   upscalingWhenScaled: 1
   antiAliasing: 1
   maxTargetFrameRate: 60
+  disableHdr: 0
+  skyboxReplacements: []
+  membraneMaxSubdivisions: -1
+  foldGateWindowMaxRenderScale: 1

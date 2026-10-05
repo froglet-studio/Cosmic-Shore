@@ -1,9 +1,9 @@
 # One codebase for Windows, iOS and Android — diagnosis and plan
 
-**Status (2026-10-05): diagnosis (§1) and inventory (§2) done. Steps 2 (touch controls) and 3
-(device tiers) landed on this branch, awaiting editor/device verification
-(`Docs/UNITY_VERIFICATION_CHECKLIST.md`, top two entries). Device measurements are deferred, not a
-gate (owner's call).**
+**Status (2026-10-05): diagnosis (§1) and inventory (§2) done. Steps 2 (touch controls), 3 (device
+tiers) and 4 (render tier) landed on this branch, awaiting editor/device verification
+(`Docs/UNITY_VERIFICATION_CHECKLIST.md`, top three entries). Device measurements are deferred, not
+a gate (owner's call).**
 
 ### Decisions recorded (2026-10-05, project owner)
 
@@ -300,10 +300,51 @@ today), and the 4 GB Samsung lands on `MobileLow` (Garrett's strip).
 **What changed on which platform in Step 3:** Windows — nothing (Desktop keeps the heuristic).
 iPhone — nothing (MobileHigh keeps the heuristic). MobileLow devices — first-run graphics become
 Very Low preset, a 1.3 M pixel budget (~71% render scale on a 1080x2400 phone), Linear upscaling
-instead of FSR, FXAA, 60 fps cap; an existing install is re-seeded once if its settings are still
+instead of FSR, FXAA (4x MSAA since Step 4), 60 fps cap; an existing install is re-seeded once if its settings are still
 the old auto-detected ones. Nothing else reads the tier yet; Steps 4–5 add render and content
 fields to `PlatformProfileSO`.
 
+
+### 3.5 As built (Step 4)
+
+Every render field on `PlatformProfileSO` defaults to "no change", and the Desktop and MobileHigh
+assets keep the defaults (pinned by `DeviceTierTests.DesktopAndMobileHigh_ChangeNothingAboutRendering`).
+
+| MobileLow gets | How | Garrett's version (not taken) |
+|---|---|---|
+| **HDR off** | `disableHdr` → `GraphicsSettingsApplier.ApplyQuality` sets `urp.supportsHDR = false` (it never turns HDR on) | edited the shared `URP_Asset.asset`, which would have switched HDR off on every platform |
+| **4x MSAA** (was FXAA in Step 3) | first-run recommendation on `PlatformProfile_MobileLow.asset` | 4x MSAA + FXAA on the shared asset / per camera. With HDR off, 4x MSAA fits a tile GPU's on-chip memory (Garrett's Round 8) |
+| **Baked HyperSea sky** (one texture sample per pixel instead of the 767-line procedural shader) | `skyboxReplacements`: `HyperSeaSkybox.mat` → `StaticHyperSeaSkybox.mat`, applied on every scene load by `PlatformRenderApplier`. Assets and `Tools/Build/bake_static_skybox.py` (`--check` is OK against bleeding-edge's sky) taken as-is; the material moved out of `Resources/` | `PerfStripRuntime` replaced every scene's sky and every camera's clear |
+| **Membrane at 642 capsules instead of 2,562** | `membraneMaxSubdivisions: 3` → `CapsuleMembrane` draws the first 642 baked capsules. The icosphere generator only appends, so that prefix IS a level-3 membrane (same seed, same jitter, same bake): proven by running the real generator, pinned by `Icosphere_LowerLevelIsAPrefixOfHigherLevel` | swapped 13 shared cell configs to an opaque inward-facing `MeshMembrane`. Opaque hides everything past the radius from inside (it needed a special larger membrane for Skim Race intensity 3) and would have changed those 10+ modes on every platform. Still available as a design choice if the lattice look is not wanted on phones |
+| **Fold-gate window render capped at 0.5** | `foldGateWindowMaxRenderScale` → `FoldGatePortalView` | `PerfStrip.FoldGateWindowMaxRenderScale` |
+
+**Changed on every platform (platform-agnostic, ported with the cap):** the Butterfly's fold-gate
+window now renders only its own on-screen FOOTPRINT (projection cropped to the window's rectangle,
+target sized to it, `_FoldGatePortalUV` remap in `FoldGatePortal.shader`), and its render target is no
+longer reallocated every frame (the format check compared the requested format against what
+`DefaultHDR` resolved to). Visually identical by construction: the crop maps viewport u to
+(u - xMin) / width, which is exactly the shader's `uv * (1/w) - xMin/w`. One operand order was
+changed from Garrett's code (`row3 * cx` for `cx * row3`) so the Froglet Engine compiles it too.
+
+**Editor hygiene:** `UrpAssetPlayModeRestore` (Editor) snapshots the URP asset's HDR, render scale,
+MSAA and upscaler when Play starts and restores them when it ends, so simulating MobileLow cannot
+leave `URP_Asset.asset` with HDR off.
+
+**Not ported, and why:**
+
+- **Crystal LDR brightening (22 shared materials).** It was made while post-processing was OFF on
+  the strip; Garrett restored post (bloom threshold 0.2 / clamp 0.5, which needs no HDR) later. With
+  post on, an LDR crystal colour looks the same with HDR on or off; only values above 1 clamp. Revisit
+  only if crystals read dim on the phone.
+- **Post-processing policy.** The strip's win was taking post off cameras that render into textures;
+  on bleeding-edge the picture-in-picture camera is retired and the fold-gate camera forces post off
+  itself (ported above). Bloom and the Panini half of the speed tunnel stay on every tier.
+- **Renderer intermediate texture Always → Auto.** At MobileLow's ~71% render scale URP needs the
+  intermediate texture anyway, so it buys nothing there.
+- **Render scale 0.8 on the asset.** Replaced by the tier's pixel budget (Step 3).
+
+**Build size:** the baked sky (4096x2048, no mips) is referenced from `Resources/PlatformProfiles`,
+so it ships in every platform's build (~4 MB compressed), including Windows where it is unused.
 ---
 
 ## 4. Step plan
@@ -316,7 +357,7 @@ Each step is its own PR into bleeding-edge, and each leaves Windows unchanged un
 | 1 | **Android build plumbing.** Your two Gradle commits (`0f6b38ba5`, `359ad3d1b`; the namespace fix lives OUTSIDE the EDM4U block, the durable version of the same fix Garrett made inside it). Then decide: ARM64-only, R8 minify + Garrett's `proguard-user.txt` keep rules (the WorkManager crash came from Unity Ads, which your branch removes). Graphics APIs stay Auto (decided). | ProjectSettings (Android only), `Assets/Plugins/Android/*` | none | none | builds |
 | 2 | ✅ *(landed on this branch, unverified in editor)* **Touch controls into bleeding-edge, ungated.** `TouchInputStrategy` (physical-size stick + dead zone, one-thumb mirror, re-zero on lift, throttle carry, events on lift only, 75/25 curve) + touch-only vessel tuning (`touchNoseResponse`, gated to the local human pilot) + binary drift for any unmeasured trigger + the ability-dispatch hardening (§2.2). Not the Squirrel `boostLoopEvent` clear. | `Controller/IO`, `VesselTransformer`, Squirrel/Butterfly prefabs | none (touch only) | **new controls** | **new controls** |
 | 3 | ✅ *(landed on this branch, unverified in editor; see §3.4)* **Device tier foundation.** `DeviceTierClassifier`, `PlatformProfileSO` ×3, dev override, a `CSLogChannel` for it, and a mobile branch in `SettingsAutoDetector` that reads the tier. `Desktop` profile = today's behaviour. | `System/`, `Controller/Settings` | identical | correct tier | correct tier |
-| 4 | **Render tier.** `URP_Mobile.asset` + mobile quality level; baked sky (`StaticSkyPanorama`), mesh membrane, post/AA policy, crystal LDR brightness, fold-gate window cap — each selected by the profile. | `_Graphics`, profile | none | per `MobileHigh` | per `MobileLow` |
+| 4 | ✅ *(landed on this branch, unverified in editor; see §3.5)* **Render tier.** MobileLow: HDR off, 4x MSAA, baked sky, membrane capped at 642 capsules, fold-gate window capped at 0.5 — each a `PlatformProfileSO` field. Everywhere: the fold-gate window renders only its footprint. | `_Graphics`, profile, `CapsuleMembrane`, `FoldGatePortalView` | fold-gate footprint only | none | per `MobileLow` |
 | 5 | **Content tier.** Every `PerfStrip` gate becomes a profile read: trail policy, ecology, toybox, menu-UI teardown, Wander/conveyor budgets as per-tier overrides (not edits to the shared SO). The race trail cap only with decision 4 below. | gameplay | none | per `MobileHigh` | per `MobileLow` |
 | 6 | **Platform-agnostic fixes** Garrett found, merged ungated (§2.6). Can go any time. | various | yes (fixes) | yes | yes |
 | 7 | **Retire the branches.** Build all three platforms from bleeding-edge; device verification matrix. | — | — | — | — |

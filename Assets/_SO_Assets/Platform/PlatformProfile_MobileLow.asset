@@ -17,5 +17,11 @@ MonoBehaviour:
   pixelBudget: 1300000
   minRenderScalePercent: 50
   upscalingWhenScaled: 1
-  antiAliasing: 1
+  antiAliasing: 4
   maxTargetFrameRate: 60
+  disableHdr: 1
+  skyboxReplacements:
+  - authored: {fileID: 2100000, guid: b9e5d3c7f0a2468135792bde4c6a8f01, type: 2}
+    replacement: {fileID: 2100000, guid: 9852d08c40940fd6ab90ce838bbe2a1c, type: 2}
+  membraneMaxSubdivisions: 3
+  foldGateWindowMaxRenderScale: 0.5
