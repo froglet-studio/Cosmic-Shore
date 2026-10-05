@@ -1,25 +1,25 @@
 {
  "lizard": {
-  "adult": 1146,
-  "bitten": 703,
-  "after_6s": 1133,
-  "seed_2s": 213,
-  "seed_16s": 1148,
-  "grown_at_s": 5.566399999999997,
-  "swim_moved": 94.8,
+  "adult": 1141,
+  "bitten": 751,
+  "after_6s": 1148,
+  "seed_2s": 249,
+  "seed_16s": 1150,
+  "grown_at_s": 5.3997999999999955,
+  "swim_moved": 95.3,
   "backend": "wasm-simd",
-  "steps": 752
+  "steps": 755
  },
  "whale": {
-  "adult": 513,
-  "bitten": 407,
-  "after_6s": 494,
-  "seed_2s": 161,
-  "seed_16s": 515,
-  "grown_at_s": 6.316399999999992,
-  "swim_moved": 70.7,
+  "adult": 542,
+  "bitten": 486,
+  "after_6s": 556,
+  "seed_2s": 210,
+  "seed_16s": 545,
+  "grown_at_s": 5.116499999999996,
+  "swim_moved": 76.5,
   "backend": "wasm-simd",
-  "steps": 723
+  "steps": 745
  },
  "errors": [],
  "fails": []

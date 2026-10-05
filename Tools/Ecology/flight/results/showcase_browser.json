@@ -2,7 +2,7 @@
  "mode": "showcase",
  "trace": [
   {
-   "t": 2.833333333333333,
+   "t": 2.7333333333333334,
    "species": [
     "grazer",
     "locust",
@@ -25,12 +25,12 @@
    "swarm": "space",
    "swarmState": "lunge",
    "morphs": 0,
-   "lizard": 1145,
+   "lizard": 1144,
    "siege": "roam",
    "siegeEvents": 0
   },
   {
-   "t": 4.499999999999994,
+   "t": 4.533333333333327,
    "species": [
     "grazer",
     "locust",
@@ -55,12 +55,12 @@
    "swarm": "space",
    "swarmState": "retreat",
    "morphs": 0,
-   "lizard": 1133,
+   "lizard": 1120,
    "siege": "roam",
    "siegeEvents": 0
   },
   {
-   "t": 6.666666666666653,
+   "t": 6.733333333333319,
    "species": [
     "grazer",
     "locust",
@@ -85,12 +85,12 @@
    "swarm": "space",
    "swarmState": "retreat",
    "morphs": 0,
-   "lizard": 1156,
+   "lizard": 1155,
    "siege": "roam",
    "siegeEvents": 0
   },
   {
-   "t": 8.466666666666647,
+   "t": 8.533333333333314,
    "species": [
     "grazer",
     "locust",
@@ -115,12 +115,12 @@
    "swarm": "space",
    "swarmState": "retreat",
    "morphs": 0,
-   "lizard": 1148,
+   "lizard": 1137,
    "siege": "roam",
    "siegeEvents": 0
   },
   {
-   "t": 10.066666666666642,
+   "t": 10.199999999999974,
    "species": [
     "grazer",
     "locust",
@@ -145,12 +145,12 @@
    "swarm": "space",
    "swarmState": "roam",
    "morphs": 0,
-   "lizard": 1124,
+   "lizard": 1128,
    "siege": "roam",
    "siegeEvents": 0
   },
   {
-   "t": 11.766666666666636,
+   "t": 11.999999999999968,
    "species": [
     "grazer",
     "locust",
@@ -175,13 +175,13 @@
    "swarm": "space",
    "swarmState": "roam",
    "morphs": 0,
-   "lizard": 1143,
+   "lizard": 1160,
    "siege": "roam",
    "siegeEvents": 0
   }
  ],
  "siege_near": {
-  "t": 12.633333333333299,
+  "t": 12.799999999999965,
   "species": [
    "grazer",
    "locust",
@@ -206,15 +206,15 @@
   "swarm": "space",
   "swarmState": "roam",
   "morphs": 0,
-  "lizard": 1134,
+  "lizard": 1131,
   "siege": "roam",
   "siegeEvents": 0
  },
  "perf": {
   "frame_ms": 100,
-  "cpu_ms": 59.40000000037253,
-  "sim_ms": 37.80000000074506,
-  "render_ms": 20.09999999962747
+  "cpu_ms": 61.19999999998254,
+  "sim_ms": 39,
+  "render_ms": 20.10000000000582
  },
  "errors": [],
  "fails": []

@@ -13,10 +13,10 @@
   "blocked": 0,
   "stings": 0,
   "tele": 4,
-  "crystals": 4,
+  "crystals": 5,
   "hostile": true,
   "rule": "tuned",
-  "t": 14.366666666666626,
+  "t": 15.066666666666624,
   "by": {
    "pack": 4
   },
@@ -39,7 +39,7 @@
   "crystals": 4,
   "hostile": false,
   "rule": "tuned",
-  "t": 14.799999999999958,
+  "t": 15.099999999999957,
   "by": {},
   "errors": []
  },
@@ -60,7 +60,7 @@
   "crystals": 0,
   "hostile": true,
   "rule": "tuned",
-  "t": 8.233333333333315,
+  "t": 9.133333333333312,
   "by": {},
   "errors": []
  },
