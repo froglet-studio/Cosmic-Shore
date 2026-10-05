@@ -162,13 +162,19 @@ namespace CosmicShore.Gameplay
 
             if (_config.DecisionHz <= 0f || Time.time >= _nextDecision)
             {
-                FillObstacles(obs);
-                _held = _driver.Decide(obs, _course, now, Time.deltaTime);
+                using (s_FillObstaclesMarker.Auto()) FillObstacles(obs);
+                using (s_DecideMarker.Auto()) _held = _driver.Decide(obs, _course, now, Time.deltaTime);
                 if (_config.DecisionHz > 0f) _nextDecision = Time.time + 1f / _config.DecisionHz;
             }
 
             Apply(_held);
         }
+
+        // Every AI seat pays these on every frame it decides (each frame, at DecisionHz 0): the
+        // planner's rollouts, and the prism gather that feeds its laid-mass guard. Default diag
+        // markers (MarkerBudget.DefaultMarkers).
+        static readonly Unity.Profiling.ProfilerMarker s_DecideMarker = new("SkimRace.Pilot.Decide");
+        static readonly Unity.Profiling.ProfilerMarker s_FillObstaclesMarker = new("SkimRace.Pilot.FillObstacles");
 
         static string s_manualSession;
         static int s_manualRace;

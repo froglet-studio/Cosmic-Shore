@@ -57,6 +57,36 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Skim Race pilot cost, PrismTimerManager list pool, diag markers (`claude/bold-fermi-54nlts`, 2026-10-05)
+
+**What landed:**
+- The Skim Race AI pilot's per-frame planning cost, halved with identical decisions: a hash-grid
+  broadphase for the laid-mass guard (`SkimRaceDriver.BuildObstacleGrid`), a nearest-first,
+  box-bounded `SkimRaceCourse.ShellClearance`, and precomputed segment vectors in
+  `SkimRaceCourse.Project` (`Docs/SKIM_RACE_AI.md` §8.0e).
+- `SkimRace.Pilot.Decide` and `SkimRace.Pilot.FillObstacles` profiler markers, timed by `diag` by
+  default (`MarkerBudget.DefaultMarkers`).
+- `PrismTimerManager` recycles its per-owner lists (`Docs/BugHunt/FIX_LOG.md`, "BH-4.7 follow-up 2").
+- New EditMode tests: `SkimRaceCourseQueryTests` (3).
+
+**Verified without the editor:** the offline simulator's race output is byte-identical to the
+previous code (I1/I2/I4 x 6 seeds and I2/I4 x 20 seeds, 3 AI seats); `SkimRaceCourseQueryTests`
+pass in .NET against the simulator's Unity shim and fail on three deliberate breaks; the Froglet
+Engine's live compile of runtime `Assets/_Scripts` builds with 0 errors and its suites pass.
+
+**Verify in editor:**
+1. The project compiles.
+2. Test Runner > EditMode: `SkimRaceCourseQueryTests`, `SkimRaceShellTests` and `SkimRaceAITests`
+   pass.
+3. Play Skim Race at I2 with 2 AI seats; the AI finishes the course as before (no new hull strikes
+   or orbits).
+4. During that race, F7 > console: `diag S_SkimRace_I2 15`. The report lists
+   `SkimRace.Pilot.Decide` and `SkimRace.Pilot.FillObstacles` with `found: true` and non-zero ms.
+5. Play any arcade mode with prisms for a minute and return to the menu: no `PrismTimerManager`
+   errors or exceptions in the console.
+
+---
+
 ### 🔴 PrismTimerManager compile fix (BH-4.7 follow-up) (`Bug_Hunt`, 2026-10-05)
 
 **What landed:** `PrismTimerManager.OnDestroy` cleared `scheduledActions`, a field BH-4.7 had

@@ -202,6 +202,7 @@ bond), which is why the scenario set gains an S6.
 | 09-25 | S1–S6 `diag`s and the spindle `ab` in S2 + S6; `prof` console command (the Profiler Hierarchy as JSON) | Spindles cost ~+5.3 ms CPU in a grown Lattice; S5 Wildlife Liberation is the worst scenario (50.5 ms) and is not yet attributed — `prof` is how |
 | 09-26 | **Measurement moved to the industry-standard method (§4.7).** `diag` gained per-system marker timings via `ProfilerRecorder` (works in a Development build, no Profiler attached), p50/p95 frame time, the run environment, and the label in its file name. The **Profiler → JSON exporter** covers a connected build or a `.data` file. `diag`/`ab` timestamps are now culture-invariant. **Rampage intensity 1 spawns no flora or fauna**, a game bug, open | Every number from here on says whether it came from the Editor or a build |
 | 09-26 | `prof` on S2, S4, S5 (and an invalid S3 i1). §1.0 recorded, §3.3 re-ranked. Markers inside S5's three script blocks (`aaa1517fe`); `prof` counts `GfxTask_ReadValue` as a wait (`ded51b6ad`) | **Only S5 misses the target.** It is main-thread script: gunfight continuations 20.2 ms (the p99), creature `Update` 13.1, behaviour tick 12.7. Pick: **L8**, gated on one more `prof S5` |
+| 10-05 | Merged `Bug_Hunt`. Skim Race AI pilot: exact laid-mass broadphase, bounded track-shell search, precomputed course segments (`SKIM_RACE_AI.md` §8.0e); `SkimRace.Pilot.*` markers in `diag`; `PrismTimerManager` per-owner lists pooled | Simulator decide cost per AI seat per frame I1 0.108 -> 0.049 ms, I2 0.563 -> 0.303, I4 0.184 -> 0.079, race output byte-identical. Does **not** explain the ~127 ms hand-played Skim Race frame (`SKIM_RACE_AI.md` §8.0c) - that needs a `diag` in the editor |
 
 ### 2.1 How the picture changed
 
@@ -516,7 +517,8 @@ Three ways to satisfy the rule, simplest first:
   - **What is timed.** Unity's frame phases (`PlayerLoop`, `BehaviourUpdate`,
     `CoroutinesDelayedCalls`, `LateBehaviourUpdate`, UniTask `PreLateUpdate`, physics, animators,
     UI, the URP render total) and this project's hot-path markers (creatures, gunfight,
-    collider LOD, debris).
+    collider LOD, debris, and the Skim Race AI pilot: `SkimRace.Pilot.Decide`,
+    `SkimRace.Pilot.FillObstacles`, both paid by every AI seat every frame).
   - **What each row says.** Main-thread ms per frame: average, median, p95 and max, over EVERY
     frame of the run (absent = 0), plus how often the marker ran and its calls per frame.
   - **It needs no Profiler, so it works in a Development build.** That is the point: it is how a

@@ -29,7 +29,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         /// <c>Update</c>, coroutines, physics, animation, UI, rendering) without a Profiler.</item>
         /// <item>This project's markers inside the systems the scenarios found expensive: the
         /// creature and gunfight paths of Wildlife Liberation, the collider-LOD tick, prism
-        /// debris. <c>PERFORMANCE_OPTIMIZATION.md</c> §1.0 names why each is here.</item>
+        /// debris, the Skim Race AI pilot. <c>PERFORMANCE_OPTIMIZATION.md</c> §1.0 names why each
+        /// is here.</item>
         /// </list>
         /// A marker that does not exist in the running build is reported as <c>found: false</c>
         /// rather than dropped, so a renamed marker cannot silently fall out of every report.
@@ -66,6 +67,10 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             "LOD.Sweep",
             "LOD.Drain",
             "PrismDebris.RefreshConvergence",
+
+            // Skim Race AI (every AI seat, every frame).
+            "SkimRace.Pilot.Decide",
+            "SkimRace.Pilot.FillObstacles",
         };
 
         /// <summary>The <c>diag</c> argument prefix that adds markers: <c>m=Name1,Name2</c>.</summary>
