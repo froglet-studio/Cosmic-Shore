@@ -1,0 +1,683 @@
+// Headless proof of the SHIPPED substrate (Assets/.../FloraAndFauna/Substrate). Every test prints its numbers and
+// asserts them; the run exits non-zero if any assertion fails. What this does NOT prove: anything about Unity
+// (rendering, proxies, colliders, the burn itself) - see Docs/SUBSTRATE_FAUNA.md §6.
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Numerics;
+using System.Text.Json;
+using CosmicShore.Gameplay;
+
+static class SubstrateHarness
+{
+    static int _fail;
+    const float R = 1200f, Dt = 0.1f;
+
+    static void Check(bool ok, string what)
+    {
+        Console.WriteLine($"  [{(ok ? "ok" : "FAIL")}] {what}");
+        if (!ok) _fail++;
+    }
+
+    static int Main(string[] args)
+    {
+        string fixture = args.Length > 0 ? args[0] : "research_params.json";
+        string which = args.Length > 1 ? args[1] : "all";
+        bool all = which == "all";
+        string gameJson = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(fixture)) ?? ".", "game_params.json");
+        if (which == "export") { File.WriteAllText(gameJson, ExportGame()); Console.WriteLine($"wrote {gameJson}"); return 0; }
+        if (all || which == "fidelity") { Fidelity(fixture); GameExportCurrent(gameJson); }
+        if (all || which == "pack") Pack();
+        if (all || which == "locust") Locust();
+        if (all || which == "lurker") Lurker();
+        if (all || which == "ledger") Ledger();
+        if (all || which == "job") Job();
+        if (all || which == "index") IndexLedger();
+        if (all || which == "bench") Bench();
+        Console.WriteLine(_fail == 0 ? "\nALL SUBSTRATE TESTS PASSED" : $"\n{_fail} SUBSTRATE ASSERTION(S) FAILED");
+        return _fail == 0 ? 0 : 1;
+    }
+
+    // ───────────────────────────────────────────────────────────── a little world: pilots and real food
+
+    sealed class Pilot
+    {
+        public Vector3 Pos, Vel, Goal;
+        public float Speed = 120f, Turn = 1.5f;
+        public string Mode = "wander";
+        public int Id;
+        readonly Random _rng;
+        public Pilot(int seed, Vector3 pos, Vector3 dir) { _rng = new Random(seed); Pos = pos; Vel = SubstrateCore.Unit(dir) * Speed; Goal = pos + dir * 500f; }
+
+        public void Step(float dt)
+        {
+            if (Mode == "still") { Vel = Vector3.Zero; return; }
+            if (Mode == "wander" && (Vector3.Distance(Pos, Goal) < 60f || Goal.Length() > 0.9f * R))
+                Goal = Ball(_rng, 0.2f * R, 0.8f * R);
+            var want = Mode == "straight" ? SubstrateCore.Unit(Vel) : SubstrateCore.Unit(Goal - Pos);
+            var h = SubstrateCore.Unit(Vel.LengthSquared() > 1e-6f ? Vel : want);
+            float c = Math.Clamp(Vector3.Dot(h, want), -1f, 1f), ang = MathF.Acos(c);
+            float k = MathF.Min(1f, Turn * dt / MathF.Max(ang, 1e-6f));
+            Vel = SubstrateCore.Unit(h + (want - h) * k) * Speed;
+            Pos += Vel * dt;
+            float r = Pos.Length();
+            if (r > 0.97f * R) Pos *= 0.97f * R / r;
+        }
+
+        public SubstratePilot Sense => new SubstratePilot { Pos = Pos, Vel = Vel, Radius = 6f, Id = Id };
+    }
+
+    static Vector3 Ball(Random rng, float lo, float hi)
+    {
+        var d = SubstrateCore.Unit(new Vector3((float)Gauss(rng), (float)Gauss(rng), (float)Gauss(rng)));
+        float r = MathF.Pow((float)(lo * lo * lo + (hi * hi * hi - lo * lo * lo) * rng.NextDouble()), 1f / 3f);
+        return d * r;
+    }
+
+    static double Gauss(Random r) => Math.Sqrt(-2.0 * Math.Log(1.0 - r.NextDouble())) * Math.Cos(2.0 * Math.PI * r.NextDouble());
+
+    sealed class World
+    {
+        public readonly SubstrateCore Core;
+        public readonly List<Pilot> Pilots = new();
+        public readonly List<Vector3> MassPos = new();
+        public readonly List<float> MassVol = new();
+        public readonly List<bool> MassAlive = new();
+        public double Eaten, Laid, Seeded;
+        public readonly List<SubstrateEvent> Log = new();
+        SubstrateFood[] _food = new SubstrateFood[0];
+        SubstratePilot[] _sense = new SubstratePilot[8];
+        public float MaxStep;   // largest per-step displacement any agent made (continuity)
+        Vector3[] _prev;
+
+        public World(int capacity, int seed = 1) { Core = new SubstrateCore(capacity, R, Dt, 40, seed); _prev = new Vector3[capacity]; }
+
+        public void Scatter(Random rng, int n, float lo, float hi, int clumps, float vlo = 8f, float vhi = 40f)
+        {
+            var centres = Enumerable.Range(0, clumps).Select(_ => Ball(rng, lo, hi)).ToArray();
+            for (int k = 0; k < n; k++)
+            {
+                var c = centres[rng.Next(clumps)];
+                MassPos.Add(c + new Vector3((float)Gauss(rng), (float)Gauss(rng), (float)Gauss(rng)) * 25f);
+                MassVol.Add(vlo + (vhi - vlo) * (float)rng.NextDouble());
+                MassAlive.Add(true);
+            }
+        }
+
+        public double LiveMass() { double m = 0; for (int k = 0; k < MassVol.Count; k++) if (MassAlive[k]) m += MassVol[k]; return m; }
+
+        public void Step()
+        {
+            for (int j = 0; j < Pilots.Count; j++) { Pilots[j].Step(Dt); _sense[j] = Pilots[j].Sense; }
+            if (Core.Tick % 10 == 0)
+            {
+                int live = 0;
+                for (int k = 0; k < MassAlive.Count; k++) if (MassAlive[k]) live++;
+                if (_food.Length < live) _food = new SubstrateFood[live * 2];
+                int f = 0;
+                for (int k = 0; k < MassAlive.Count; k++) if (MassAlive[k]) _food[f++] = new SubstrateFood { Pos = MassPos[k], Volume = MassVol[k] };
+                _foodCount = f;
+            }
+            for (int i = 0; i < Core.Capacity; i++) _prev[i] = Core.Pos[i];
+            var aliveBefore = (bool[])Core.Alive.Clone();
+            Core.Step(new ReadOnlySpan<SubstratePilot>(_sense, 0, Pilots.Count), new ReadOnlySpan<SubstrateFood>(_food, 0, _foodCount));
+            for (int i = 0; i < Core.Capacity; i++)
+                if (aliveBefore[i] && Core.Alive[i] && Core.FreedTick[i] != Core.Tick && Core.BornTick[i] != Core.Tick)
+                    MaxStep = MathF.Max(MaxStep, Vector3.Distance(_prev[i], Core.Pos[i]));
+            Log.AddRange(Core.Events);
+            // the owner's half: real food for the hungry slice, and a starving agent dies (its body stays as mass)
+            foreach (int i in Core.EatRequests)
+            {
+                var P = Core.Pops[Core.PopOf[i]].P;
+                int best = -1; float bd = P.EatR;
+                for (int k = 0; k < MassPos.Count; k++)
+                {
+                    if (!MassAlive[k]) continue;
+                    float d = Vector3.Distance(MassPos[k], Core.Pos[i]);
+                    if (d < bd) { bd = d; best = k; }
+                }
+                if (best < 0) continue;
+                MassAlive[best] = false;
+                Eaten += MassVol[best];
+                Core.Feed(i, MassVol[best]);
+            }
+            // the food web: a caught prey dies (its crystal would drop through its proxy) and its body is the predator's
+            foreach (var pr in Core.PreyRequests)
+            {
+                if (!Core.Alive[pr.Prey] || !Core.Alive[pr.Predator]) continue;
+                float body = Core.Kill(pr.Prey);
+                Core.Feed(pr.Predator, body);
+                Preyed++;
+            }
+            foreach (var e in Core.Events)
+                if (e.Kind == SubstrateEventKind.Starving) KillAndLay(e.Index);
+        }
+        public int Preyed;
+        int _foodCount;
+
+        /// <summary>A death: the body (its stock) stays where it fell as ordinary mass the food web grazes.</summary>
+        public void KillAndLay(int i)
+        {
+            var p = Core.Pos[i];
+            float s = Core.Kill(i);
+            if (s <= 0f) return;
+            MassPos.Add(p); MassVol.Add(s); MassAlive.Add(true);
+            Laid += s;
+        }
+    }
+
+    static IEnumerable<int> LiveOf(SubstrateCore c, int q)
+    {
+        var pop = c.Pops[q];
+        for (int i = pop.Start; i < pop.Start + pop.Cap; i++) if (c.Alive[i]) yield return i;
+    }
+
+    static float Mean(IEnumerable<float> xs) { var a = xs.ToArray(); return a.Length == 0 ? 0f : a.Average(); }
+
+    // ───────────────────────────────────────────────────────────── F: the research numbers, number for number
+
+    /// <summary>
+    /// The GAME parameter sets (research + the documented deltas) as JSON keyed by species, every field under its C#
+    /// name - exactly what Unity serializes into SubstrateSpeciesSO.species, so Tools/Build/author_substrate_fauna.py
+    /// writes the species assets from this file and nothing is typed twice.
+    /// </summary>
+    static string ExportGame()
+    {
+        var o = new System.Text.StringBuilder("{\n");
+        string[] names = { "locust", "pack", "lurker" };
+        for (int k = 0; k < names.Length; k++)
+        {
+            var p = SubstrateResearch.ByName(names[k], game: true);
+            o.Append($"  \"{names[k]}\": {Obj(p, "    ")}{(k < names.Length - 1 ? "," : "")}\n");
+        }
+        return o.Append("}\n").ToString();
+    }
+
+    static string Obj(object v, string ind)
+    {
+        var fs = v.GetType().GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+        var parts = new List<string>();
+        foreach (var f in fs)
+        {
+            object x = f.GetValue(v);
+            string val = x switch
+            {
+                float fl => fl.ToString("R", System.Globalization.CultureInfo.InvariantCulture),
+                int i => i.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                bool b => b ? "true" : "false",
+                string s => JsonSerializer.Serialize(s),
+                SubstrateRegime r => Obj(r, ind + "  "),
+                _ => throw new InvalidOperationException($"export: unhandled field {f.Name} ({f.FieldType})"),
+            };
+            parts.Add($"{ind}\"{f.Name}\": {val}");
+        }
+        return "{\n" + string.Join(",\n", parts) + "\n" + ind.Substring(2) + "}";
+    }
+
+    static void GameExportCurrent(string gameJson)
+    {
+        bool same = File.Exists(gameJson) && File.ReadAllText(gameJson) == ExportGame();
+        Check(same, $"game_params.json (what author_substrate_fauna.py writes the species assets from) matches the shipped " +
+                    "game sets - regenerate with `run.sh export` after changing SubstrateResearch");
+    }
+
+    static void Fidelity(string fixture)
+    {
+        Console.WriteLine("\nF. species parameter fidelity vs the Python (research_params.json, research_fixture.py)");
+        var doc = JsonDocument.Parse(File.ReadAllText(fixture)).RootElement;
+        foreach (var name in new[] { "locust", "pack", "lurker" })
+        {
+            var py = doc.GetProperty(name);
+            var cs = SubstrateResearch.ByName(name, game: false);
+            int checkedN = 0; var bad = new List<string>();
+            void Cmp(string field, float v, JsonElement src)
+            {
+                if (!src.TryGetProperty(field, out var e)) { bad.Add($"{field}: not in the research"); return; }
+                double want = e.ValueKind == JsonValueKind.True ? 1 : e.ValueKind == JsonValueKind.False ? 0 : e.GetDouble();
+                checkedN++;
+                if (Math.Abs(want - v) > 1e-6 * Math.Max(1.0, Math.Abs(want))) bad.Add($"{field}: C# {v} vs research {want}");
+            }
+            cs.Visit((f, v) => Cmp(f, v, py));
+            cs.Solitary.Visit((f, v) => Cmp(f, v, py.GetProperty("solitary")));
+            cs.Gregarious.Visit((f, v) => Cmp(f, v, py.GetProperty("gregarious")));
+            Check(bad.Count == 0, $"{name}: {checkedN} research numbers match (e.g. q_up {cs.QUp}, gregarious speed {cs.Gregarious.Speed}, " +
+                                  $"solitary gait {cs.Solitary.GaitHz} Hz x {cs.Solitary.GaitAmp} u/s)" + (bad.Count > 0 ? " - " + string.Join("; ", bad.Take(4)) : ""));
+
+            // the port differs from the research in EXACTLY its listed fields
+            var game = SubstrateResearch.ByName(name, game: true);
+            var diff = new HashSet<string>();
+            var rv = new Dictionary<string, float>();
+            cs.Visit((f, v) => rv[f] = v); cs.VisitPrimitives((f, v) => rv[f] = v);
+            cs.Solitary.Visit((f, v) => rv["solitary." + f] = v); cs.Gregarious.Visit((f, v) => rv["gregarious." + f] = v);
+            void D(string f, float v) { if (Math.Abs(rv[f] - v) > 1e-6f) diff.Add(f); }
+            game.Visit(D); game.VisitPrimitives(D);
+            game.Solitary.Visit((f, v) => D("solitary." + f, v)); game.Gregarious.Visit((f, v) => D("gregarious." + f, v));
+            var listed = SubstrateResearch.GameDeltas.Where(d => d.species == name).Select(d => d.field).ToHashSet();
+            Check(diff.SetEquals(listed), $"{name}: the game port changes exactly its {listed.Count} documented fields" +
+                  (diff.SetEquals(listed) ? "" : $" - undocumented: {string.Join(",", diff.Except(listed))}; listed but unchanged: {string.Join(",", listed.Except(diff))}"));
+        }
+    }
+
+    // ───────────────────────────────────────────────────────────── P: the pack closes its ring, then strikes together
+
+    sealed class PackRun
+    {
+        public float RingClosedAt = -1, FirstStrikeAt = -1, SpreadS = -1, FracWithin = 0, RingAtClose, RingAtStrike;
+        public int Bites, Rests, Hunters, StrikersInWindow;
+        public float WindedSpeed, StalkSpeed, WindedDangerFrac = -1;
+        public float ClosureMax;
+    }
+
+    static PackRun RunPack(int seed, SubstrateSpeciesParams P, string pilotMode, float seconds, float window = 1.0f)
+    {
+        bool gap = pilotMode == "gap";
+        if (gap) pilotMode = "wander";
+        var w = new World(64, seed);
+        int q = w.Core.AddPopulation(P, 3);
+        var rng = new Random(seed);
+        var pil = new Pilot(seed, Ball(rng, 100f, 300f), new Vector3((float)Gauss(rng), (float)Gauss(rng), (float)Gauss(rng))) { Mode = pilotMode, Id = 1 };
+        w.Pilots.Add(pil);
+        w.Core.Seed(q, P.N0, pil.Pos + SubstrateCore.Unit(new Vector3(1, 0.3f, 0.2f)) * 600f, 50f);
+        var res = new PackRun { Hunters = P.N0 };
+        var strikeAt = new Dictionary<int, float>();
+        bool wasClosed = false;
+        float windedSum = 0, stalkSum = 0; int windedN = 0, stalkN = 0, windedDanger = 0;
+        for (int t = 0; t < (int)(seconds / Dt); t++)
+        {
+            if (gap)
+            {
+                // the counterplay pilot: it SEES hunters inside 350 u and flies at the gap - away from the resultant of
+                // their bearings, i.e. through the side of the ring that has not closed (same 120 u/s as the careless one)
+                var sum = Vector3.Zero; int seen = 0;
+                foreach (int i in LiveOf(w.Core, q))
+                    if (Vector3.Distance(w.Core.Pos[i], pil.Pos) < 350f) { sum += SubstrateCore.Unit(w.Core.Pos[i] - pil.Pos); seen++; }
+                if (seen > 0 && sum.Length() > 1e-3f) pil.Goal = pil.Pos - SubstrateCore.Unit(sum) * 400f;
+            }
+            w.Step();
+            float now = w.Core.T;
+            var live = LiveOf(w.Core, q).ToArray();
+            int closed = live.Count(i => w.Core.Closure[i] >= P.QUp);
+            res.ClosureMax = MathF.Max(res.ClosureMax, live.Length > 0 ? live.Max(i => w.Core.Closure[i]) : 0f);
+            // the ring-closed ONSET that precedes the first strike (a ring can close and break before one holds)
+            bool isClosed = closed >= Math.Min(4, live.Length);
+            if (res.FirstStrikeAt < 0 && isClosed && !wasClosed)
+            {
+                res.RingClosedAt = now;
+                res.RingAtClose = Mean(live.Select(i => Vector3.Distance(w.Core.Pos[i], pil.Pos)));
+            }
+            wasClosed = isClosed;
+            foreach (var e in w.Core.Events)
+            {
+                if (e.Kind == SubstrateEventKind.Strike && res.FirstStrikeAt < 0) { res.FirstStrikeAt = now; res.RingAtStrike = Mean(live.Select(i => Vector3.Distance(w.Core.Pos[i], pil.Pos))); }
+                if (e.Kind == SubstrateEventKind.Strike && res.FirstStrikeAt >= 0 && now - res.FirstStrikeAt <= window && !strikeAt.ContainsKey(e.Index)) strikeAt[e.Index] = now;
+                if (e.Kind == SubstrateEventKind.Bite) res.Bites++;
+                if (e.Kind == SubstrateEventKind.Rest) res.Rests++;
+            }
+            foreach (int i in live)
+            {
+                float s = w.Core.Vel[i].Length();
+                if (w.Core.Rest[i] > 0f) { windedSum += s; windedN++; if (w.Core.Danger[i]) windedDanger++; }
+                else if (w.Core.Phase[i] < 0.3f && Vector3.Distance(w.Core.Pos[i], pil.Pos) < 600f) { stalkSum += s; stalkN++; }
+            }
+        }
+        res.StrikersInWindow = strikeAt.Count;
+        res.FracWithin = strikeAt.Count / (float)Math.Max(1, res.Hunters);
+        res.SpreadS = strikeAt.Count > 0 ? strikeAt.Values.Max() - strikeAt.Values.Min() : -1;
+        res.WindedSpeed = windedN > 0 ? windedSum / windedN : -1;
+        res.StalkSpeed = stalkN > 0 ? stalkSum / stalkN : -1;
+        res.WindedDangerFrac = windedN > 0 ? windedDanger / (float)windedN : -1;
+        return res;
+    }
+
+    static void Pack()
+    {
+        Console.WriteLine("\nP. pack hunters: predict the line, fan out on a ring, close it, strike together, then winded");
+        var P = SubstrateResearch.GamePack();
+        var runs = new List<PackRun>();
+        foreach (int seed in new[] { 7, 23, 41, 5, 1000 })
+        {
+            var r = RunPack(seed, P, "wander", 90f);
+            runs.Add(r);
+            Console.WriteLine($"    seed {seed,4}: ring closed {r.RingClosedAt,6:F1} s (mean ring {r.RingAtClose,5:F0} u) -> first strike {r.FirstStrikeAt,6:F1} s (ring {r.RingAtStrike,5:F0} u); " +
+                              $"{r.StrikersInWindow}/{r.Hunters} strike within 1 s (spread {r.SpreadS:F1} s); bites {r.Bites}, rests {r.Rests}; " +
+                              $"winded {r.WindedSpeed:F0} u/s vs stalking {r.StalkSpeed:F0}, winded danger {r.WindedDangerFrac:P0}; max closure {r.ClosureMax:F2}");
+        }
+        var eng = runs.Where(r => r.RingClosedAt >= 0 && r.FirstStrikeAt >= 0).ToList();
+        Check(eng.Count >= 4, $"the ring closes and the pack strikes in {eng.Count}/5 seeds (90 s each, a 120 u/s wandering pilot; the hunters stalk at {P.Solitary.Speed} u/s)");
+        var lead = eng.Select(r => r.FirstStrikeAt - r.RingClosedAt).ToList();
+        Check(eng.Count > 0 && lead.All(x => x >= 0f && x <= 4f),
+              $"the strike follows the ring closing - the telegraph: {string.Join(", ", lead.Select(x => x.ToString("F1")))} s from ring-closed to first strike (bestiary telegraph 0.9 s)");
+        Check(eng.Count > 0 && eng.All(r => r.FracWithin >= 0.66f),
+              $"they strike TOGETHER: {string.Join(", ", eng.Select(r => r.FracWithin.ToString("P0")))} of the pack turns dangerous within 1 s of the first");
+        Check(eng.Count > 0 && eng.All(r => r.RingAtStrike < r.RingAtClose + 1f),
+              $"the ring TIGHTENS into the strike: mean hunter distance {string.Join(", ", eng.Select(r => $"{r.RingAtClose:F0}->{r.RingAtStrike:F0}"))} u");
+        var winded = eng.Where(r => r.WindedSpeed >= 0f).ToList();
+        Check(winded.Count > 0 && winded.All(r => r.WindedDangerFrac == 0f && r.WindedSpeed < r.StalkSpeed),
+              $"winded = the payoff window: never dangerous, slower ({string.Join(", ", winded.Select(r => $"{r.WindedSpeed:F0} vs {r.StalkSpeed:F0}"))} u/s)");
+        Check(runs.Sum(r => r.Bites) > 0, $"the strike lands on a careless pilot: {runs.Sum(r => r.Bites)} bites over 5 x 90 s (research pack 9.7/min on a wanderer)");
+
+        // counterplay: the same pilot speed, but it breaks the gap before the ring closes
+        var aware = new[] { 7, 23, 41, 5, 1000 }.Select(sd => RunPack(sd, P, "gap", 90f)).ToList();
+        int careless = runs.Sum(r => r.Bites), dodged = aware.Sum(r => r.Bites);
+        Console.WriteLine($"    counterplay (flies at the gap): {dodged} bites vs {careless} careless; rings closed {aware.Count(r => r.RingClosedAt >= 0)}/5");
+        Check(dodged * 2 <= careless, $"counterplay: breaking the gap before it closes halves the bites at least ({dodged} vs {careless}; bestiary aware pilot 0.0)");
+
+        // negative control: without the closure quorum the pack never strikes at all (the quorum IS the strike)
+        var nq = P.Clone(); nq.QWClose = 0f;
+        var n = RunPack(7, nq, "wander", 90f);
+        Check(n.FirstStrikeAt < 0, $"ablation q_w_close=0: no strike in 90 s (first strike {n.FirstStrikeAt:F1})");
+    }
+
+    // ───────────────────────────────────────────────────────────── L: one locust parameter set, two animals
+
+    static (float phase, int bites, int births, int alive, float firstFlip) RunLocust(int seed, int n, float spread, float hunger0, bool food, float seconds, int cap = 400)
+    {
+        var P = SubstrateResearch.GameLocust(); P.Capacity = cap; P.N0 = n;
+        var w = new World(cap, seed);
+        int q = w.Core.AddPopulation(P, 2);
+        var rng = new Random(seed);
+        if (food) w.Scatter(rng, 900, 0.1f, 0.5f, 6);
+        var pil = new Pilot(seed, new Vector3(0, 0, 250), new Vector3(1, 0, 0)) { Id = 1 };
+        w.Pilots.Add(pil);
+        w.Core.Seed(q, n, Vector3.Zero, spread);
+        foreach (int i in LiveOf(w.Core, q)) w.Core.Hunger[i] = hunger0;
+        float flip = -1;
+        for (int t = 0; t < (int)(seconds / Dt); t++)
+        {
+            w.Step();
+            if (flip < 0 && LiveOf(w.Core, q).Count(i => w.Core.Phase[i] > 0.5f) > 0.2f * Math.Max(1, LiveOf(w.Core, q).Count())) flip = w.Core.T;
+        }
+        var live = LiveOf(w.Core, q).ToArray();
+        var pop = w.Core.Pops[q];
+        return (Mean(live.Select(i => w.Core.Phase[i])), (int)pop.Bites, (int)pop.Births, live.Length, flip);
+    }
+
+    static void Locust()
+    {
+        Console.WriteLine("\nL. locust: solitary and cute sparse + fed, a gregarious storm dense + hungry - one parameter set");
+        var sparse = RunLocust(7, 40, 300f, 0.1f, true, 60f);
+        var dense = RunLocust(7, 300, 40f, 0.9f, false, 30f);
+        Console.WriteLine($"    sparse+fed  (40, spread 300 u, hunger 0.1, food): mean phase {sparse.phase:F2}, bites {sparse.bites}, births {sparse.births}, alive {sparse.alive}");
+        Console.WriteLine($"    dense+hungry (300, spread 40 u, hunger 0.9, no food): mean phase {dense.phase:F2} (20% gregarious at {dense.firstFlip:F1} s), bites {dense.bites}");
+        Check(sparse.phase < 0.1f && sparse.bites == 0, $"sparse + fed stays solitary and harmless (phase {sparse.phase:F2}, {sparse.bites} bites; research: 0 hits sparse)");
+        Check(dense.phase > 0.6f && dense.firstFlip >= 0f && dense.firstFlip < 15f, $"dense + hungry tips gregarious (phase {dense.phase:F2}, a fifth flipped by {dense.firstFlip:F1} s)");
+        Check(dense.bites > 0, $"the storm bites ({dense.bites} bite events in 30 s; research 46-47 hits/min dense+hungry)");
+        var hungrySparse = RunLocust(7, 40, 300f, 0.9f, false, 30f);
+        Check(hungrySparse.phase < 0.3f, $"hunger alone does not tip a SPARSE cloud (phase {hungrySparse.phase:F2}): the quorum is density x hunger");
+        var fedDense = RunLocust(7, 300, 40f, 0.0f, true, 20f);
+        Console.WriteLine($"    dense+fed: mean phase {fedDense.phase:F2}");
+
+        // the swarm's size is the food it found: fed, it breeds; unfed, it does not
+        var grow = RunLocust(11, 40, 120f, 0.5f, true, 120f, 360);
+        var starve = RunLocust(11, 40, 120f, 0.5f, false, 120f, 360);
+        Console.WriteLine($"    2 min with food: {grow.births} births, {grow.alive} alive; without: {starve.births} births, {starve.alive} alive");
+        Check(grow.births > 0 && starve.births == 0 && grow.alive > starve.alive, $"swarm size = food found: {grow.births} births fed vs {starve.births} unfed");
+    }
+
+    // ───────────────────────────────────────────────────────────── U: the lurker creeps only while unwatched
+
+    static void Lurker()
+    {
+        Console.WriteLine("\nU. lurker: still on its seat, creeps while unwatched, freezes when looked at, gapes, snaps, is spent");
+        var P = SubstrateResearch.GameLurker();
+        // one lurker, a pilot 300 u away. AWAY: the pilot flies away from it (it is behind, unwatched).
+        // TOWARD: the pilot flies at it, slowly (it is in the forward cone, watched).
+        float Moved(string how, out bool watchedAll)
+        {
+            var w = new World(32, 3);
+            int q = w.Core.AddPopulation(P, 1);
+            w.Core.SeedAt(q, new[] { Vector3.Zero }, 0f);
+            var dir = how == "away" ? new Vector3(1, 0, 0) : new Vector3(-1, 0, 0);
+            var pil = new Pilot(3, new Vector3(300, 0, 0), dir) { Mode = "straight", Speed = how == "away" ? 20f : 15f, Id = 1 };
+            w.Pilots.Add(pil);
+            int i = LiveOf(w.Core, q).First();
+            var start = w.Core.Pos[i];
+            watchedAll = true;
+            for (int t = 0; t < 30; t++) { w.Step(); watchedAll &= w.Core.Watched[i]; }
+            return Vector3.Distance(start, w.Core.Pos[i]);
+        }
+        float away = Moved("away", out bool wa), toward = Moved("toward", out bool wt);
+        Console.WriteLine($"    3 s with a pilot 300 u off: unwatched it moved {away:F1} u, watched {toward:F2} u (creep {P.CreepSpeed} u/s)");
+        Check(away > 30f && !wa, $"unwatched it creeps toward the pilot's line ({away:F1} u in 3 s)");
+        Check(toward < 0.5f && wt, $"watched it stays dead still ({toward:F2} u in 3 s, watched every tick)");
+
+        // the ambush: a pilot passing close triggers the gape (phase), the snap (danger), then spent (rest)
+        var w2 = new World(32, 5);
+        int q2 = w2.Core.AddPopulation(P, 1);
+        w2.Core.SeedAt(q2, new[] { new Vector3(0, 0, 0) }, 0f);
+        var pass = new Pilot(5, new Vector3(-400, 60, 0), new Vector3(1, 0, 0)) { Mode = "straight", Speed = 120f, Id = 1 };
+        w2.Pilots.Add(pass);
+        int a = LiveOf(w2.Core, q2).First();
+        float gapeAt = -1, strikeAt = -1, restAt = -1, maxPhase = 0;
+        for (int t = 0; t < 80; t++)
+        {
+            w2.Step();
+            maxPhase = MathF.Max(maxPhase, w2.Core.Phase[a]);
+            if (gapeAt < 0 && w2.Core.Phase[a] > 0.05f) gapeAt = w2.Core.T;
+            foreach (var e in w2.Core.Events)
+            {
+                if (e.Kind == SubstrateEventKind.Strike && strikeAt < 0) strikeAt = w2.Core.T;
+                if (e.Kind == SubstrateEventKind.Rest && restAt < 0) restAt = w2.Core.T;
+            }
+        }
+        Console.WriteLine($"    a pilot passing 60 u off: gape begins {gapeAt:F1} s, snap (danger) {strikeAt:F1} s, spent {restAt:F1} s; peak phase {maxPhase:F2}; bites {w2.Core.Pops[q2].Bites}");
+        Check(gapeAt >= 0 && strikeAt > gapeAt && strikeAt - gapeAt >= 0.3f, $"the gape telegraphs the snap ({strikeAt - gapeAt:F1} s between them; bestiary gape 0.9 s)");
+        Check(restAt > strikeAt, $"after the snap it is spent (rest at {restAt:F1} s) - the payoff window");
+    }
+
+    // ───────────────────────────────────────────────────────────── M: the mass ledger and the laws
+
+    static void Ledger()
+    {
+        Console.WriteLine("\nM. mass ledger and continuity: three species, real food, a pilot, 3 minutes");
+        var w = new World(640, 13);
+        var rng = new Random(13);
+        w.Scatter(rng, 1500, 0.3f, 0.9f, 24);
+        double food0 = w.LiveMass();
+        int ql = w.Core.AddPopulation(SubstrateResearch.GameLocust(), 2);
+        int qp = w.Core.AddPopulation(SubstrateResearch.GamePack(), 3);
+        int qu = w.Core.AddPopulation(SubstrateResearch.GameLurker(), 1);
+        w.Core.Seed(ql, 40, Ball(rng, 400f, 600f), 120f);
+        w.Core.Seed(qp, 6, Ball(rng, 400f, 600f), 50f);
+        var seats = Enumerable.Range(0, 12).Select(_ => w.MassPos[rng.Next(w.MassPos.Count)]).ToArray();
+        w.Core.SeedAt(qu, seats);
+        double seeded = w.Core.MassIn;
+        w.Pilots.Add(new Pilot(13, Ball(rng, 200f, 500f), new Vector3(0, 0, 1)) { Id = 1 });
+        double maxDrift = 0;
+        for (int t = 0; t < 1800; t++)
+        {
+            w.Step();
+            // world ledger: live food + agent bodies = what was scattered + what the spawner seeded
+            double total = w.LiveMass() + w.Core.MassHeld();
+            maxDrift = Math.Max(maxDrift, Math.Abs(total - (food0 + seeded)) / (food0 + seeded));
+        }
+        var c = w.Core;
+        double held = c.MassHeld();
+        double coreDrift = Math.Abs(c.MassIn - c.MassOut - held) / Math.Max(1, c.MassIn);
+        int births = c.Pops.Sum(p => (int)p.Births), starved = c.Pops.Sum(p => (int)p.Starvations);
+        Console.WriteLine($"    eaten {w.Eaten:F0}, laid back {w.Laid:F0}, held {held:F0}; births {births}, starvations {starved}, preyed {w.Preyed}; " +
+                          $"alive locust {c.Pops[ql].Alive} pack {c.Pops[qp].Alive} lurker {c.Pops[qu].Alive}");
+        Check(coreDrift < 1e-6, $"agent ledger: in {c.MassIn:F1} - out {c.MassOut:F1} = held {held:F1} (relative drift {coreDrift:E1})");
+        Check(maxDrift < 1e-5, $"world ledger: live food + agent bodies constant every tick (max relative drift {maxDrift:E1}; research <= 4e-16 in float64)");
+        Check(w.Log.Where(e => e.Kind == SubstrateEventKind.Starving).All(e => true) && starved == w.Log.Count(e => e.Kind == SubstrateEventKind.Starving),
+              $"every death has a cause: {starved} starvations, each reported (no imposed death, no lifespan)");
+        float vmax = 230f * 1.0f + 27.6f;   // the fastest regime (lurker lunge) plus the locust hop
+        Check(w.MaxStep <= vmax * Dt + 1e-3f, $"no teleport: the largest per-step move is {w.MaxStep:F1} u (bound {vmax * Dt:F1} u at 10 Hz)");
+        Check(births > 0, $"lifeforms breed from food ({births} births)");
+        Check(w.Preyed > 0 && c.Pops[qp].Alive > 0, $"the food web: the pack lives on what it catches ({w.Preyed} locusts eaten, {c.Pops[qp].Alive} hunters alive after 3 min)");
+    }
+
+    // ───────────────────────────────────────────────────────────── J: the off-thread tick job
+
+    static void Job()
+    {
+        Console.WriteLine("\nJ. the tick job: worker thread, double-buffered frame, true bodies, hearts, engaged agents, volume");
+        var core = new SubstrateCore(256, R, Dt, 40, 3);
+        int ql = core.AddPopulation(SubstrateResearch.GameLocust().WithCap(200), 2);
+        int qp = core.AddPopulation(SubstrateResearch.GamePack(), 3);
+        core.Seed(ql, 40, new Vector3(300, 0, 0), 60f);
+        core.Seed(qp, 6, new Vector3(-300, 0, 0), 40f);
+        var job = new SubstrateTickJob(core, new SubstrateTickSettings { Centre = new Vector3(1000, 0, 0), EngageRadius = 160f, MaxEngaged = 24 });
+        job.Prime();
+        Check(job.Instances.Where(x => x.Alive).All(x => x.PrevPos == x.CurPos), "primed: every seeded agent is a newborn (Prev = Cur, it blooms)");
+        job.Pilots[0] = new SubstratePilot { Pos = new Vector3(300, 0, 0), Vel = new Vector3(100, 0, 0), Radius = 6f, Id = 1 };
+        job.PilotCount = 1;
+        for (int t = 0; t < 20; t++)
+        {
+            job.Kick(false);
+            var sw = Stopwatch.StartNew();
+            while (!job.Collect()) { if (sw.ElapsedMilliseconds > 5000) break; System.Threading.Thread.Sleep(0); }
+        }
+        Check(job.Error == null && job.State == SwarmJobState.Idle, "20 ticks off-thread, no worker error");
+        double vol = 0; int alive = 0;
+        for (int i = 0; i < core.Capacity; i++)
+            if (job.Instances[i].Alive) { alive++; var b = job.Body[i]; vol += b.X * b.Y * b.Z; }
+        double stock = core.MassHeld();
+        Check(Math.Abs(vol - stock) / stock < 1e-4, $"every agent's true body volume IS its stock: {vol:F1} vs {stock:F1}");
+        Check(Math.Abs(job.PopVolume[ql] + job.PopVolume[qp] - stock) / stock < 1e-6, $"stated volume per population sums to the held mass ({job.PopVolume[ql]:F0} + {job.PopVolume[qp]:F0})");
+        int eng = job.EngagedCount[ql];
+        bool engOk = true;
+        for (int k = 0; k < eng; k++) engOk &= Vector3.Distance(core.Pos[job.Engaged[core.Pops[ql].Start + k]], job.Pilots[0].Pos) <= 160f;
+        Check(engOk && eng <= 24, $"engaged = within 160 u of the vessel, capped at 24 ({eng} locusts engaged)");
+        Check(job.HeartCount(ql) == core.Pops[ql].Alive && Enumerable.Range(0, job.HeartCount(ql)).All(k => job.Instances[core.Pops[ql].Start + (int)job.HeartIdx[core.Pops[ql].Start + k]].Alive),
+              $"heart list = the living agents ({job.HeartCount(ql)})");
+        int victim = LiveOf(core, ql).First();
+        float vs = core.Stock[victim];
+        job.QueueKill(victim);
+        job.QueueFeed(LiveOf(core, ql).Skip(1).First(), 10f);
+        double before = core.MassIn - core.MassOut;
+        job.Kick(true); job.Collect();
+        Check(!core.Alive[victim] && !job.Instances[victim].Alive && Math.Abs((core.MassIn - core.MassOut) - (before + 10.0 - vs)) < 1e-3,
+              "a queued kill and a queued feed land next tick (the dead slot is dark, the ledger moved by exactly both)");
+        // the food web crosses the thread boundary too: a hungry hunter among locusts asks for one, the frame carries it
+        job.PilotCount = 0;
+        foreach (int h in LiveOf(core, qp)) { core.Hunger[h] = 1.2f; }
+        var hunters = LiveOf(core, qp).ToArray(); var prey = LiveOf(core, ql).ToArray();
+        for (int k = 0; k < prey.Length; k++) core.Pos[prey[k]] = core.Pos[hunters[k % hunters.Length]] + new Vector3(3f + k % 5, 0, 0);
+        bool carried = false, matched = true;
+        for (int t = 0; t < 40 && !carried; t++)
+        {
+            job.Kick(true); job.Collect();
+            matched &= job.PreyRequests.Count == core.PreyRequests.Count;
+            carried = job.PreyRequests.Count > 0;
+        }
+        Check(carried && matched && job.PreyRequests.All(r => core.PopOf[r.Predator] == qp && core.PopOf[r.Prey] == ql),
+              $"a predation the worker found is published to the main thread ({job.PreyRequests.Count} hunter->locust request(s))");
+    }
+
+    // ───────────────────────────────────────────────────────────── X: the index ledger over a population slice
+
+    /// <summary>A model of PrismSpatialIndex's virtual-entry contract (what the glue's ISwarmEntrySink drives).</summary>
+    sealed class ModelIndex : ISwarmEntrySink
+    {
+        public readonly Dictionary<int, (int Slot, float Volume, bool Suspended)> E = new();
+        int _next;
+        public int Register(int slot, Vector3 point, int domainSlot, float volume, bool shielded, float radius)
+        { E[_next] = (slot, volume, false); return _next++; }
+        public void Release(int id) => E.Remove(id);
+        public void SetSuspended(int id, bool suspended) { var e = E[id]; E[id] = (e.Slot, e.Volume, suspended); }
+        public void SetShape(int id, float volume, float radius) { var e = E[id]; E[id] = (e.Slot, volume, e.Suspended); }
+        public void SetShielded(int id, bool shielded) { }
+        public void SetDomainSlot(int id, int domainSlot) { }
+    }
+
+    static void IndexLedger()
+    {
+        Console.WriteLine("\nX. one prism system: each population's agents as index entries through the swarm's SwarmEntryLedger (count-once, volume = stock)");
+        var core = new SubstrateCore(512, R, Dt, 40, 21);
+        int ql = core.AddPopulation(SubstrateResearch.GameLocust().WithCap(200), 2);
+        int qp = core.AddPopulation(SubstrateResearch.GamePack(), 3);
+        core.Seed(ql, 60, new Vector3(300, 0, 0), 60f);
+        core.Seed(qp, 6, new Vector3(250, 0, 0), 40f);
+        var job = new SubstrateTickJob(core, new SubstrateTickSettings());
+        job.Prime();
+        var rng = new Random(5);
+        var pops = new[] { ql, qp };
+        var sinks = pops.Select(_ => new ModelIndex()).ToArray();
+        var ledgers = pops.Select(q => new SwarmEntryLedger(core.Pops[q].Cap)).ToArray();
+        var drawn = pops.Select(q => new SwarmInstance[core.Pops[q].Cap]).ToArray();
+        var ledInst = pops.Select(q => new SwarmInstance[core.Pops[q].Cap]).ToArray();
+        var pts = pops.Select(q => new Vector3[core.Pops[q].Cap]).ToArray();
+        var real = pops.Select(q => new bool[core.Pops[q].Cap]).ToArray();
+        for (int i = 0; i < job.Food.Length; i++) job.Food[i] = new SubstrateFood { Pos = new Vector3(300 + 40 * (i % 8), 20 * (i / 8), 0), Volume = 1f };
+        job.FoodCount = job.Food.Length;
+        job.Pilots[0] = new SubstratePilot { Pos = new Vector3(300, 0, 0), Vel = new Vector3(40, 0, 0), Radius = 6f, Id = 1 };
+        job.PilotCount = 1;
+        bool once = true, volOk = true, slotsOk = true; int maxReal = 0, deaths = 0;
+        double worst = 0;
+        for (int t = 0; t < 300; t++)
+        {
+            for (int k = 0; k < 6; k++)   // the owner's half: bites of food (births), and deaths through proxies
+            {
+                int i = rng.Next(core.Capacity);
+                if (job.Instances[i].Alive) job.QueueFeed(i, 30f);
+            }
+            if (t % 7 == 3)
+            {
+                int i = rng.Next(core.Capacity);
+                if (job.Instances[i].Alive) { job.QueueKill(i); deaths++; }
+            }
+            job.Kick(true); job.Collect();
+            for (int n = 0; n < pops.Length; n++)
+            {
+                var pop = core.Pops[pops[n]];
+                job.Slice(pop.Start, pop.Cap, drawn[n], ledInst[n], pts[n]);
+                // a proxy with a finished body stands in for ~a third of the living agents, changing every tick
+                int nr = 0;
+                for (int k = 0; k < pop.Cap; k++) { real[n][k] = drawn[n][k].Alive && rng.NextDouble() < 0.33; if (real[n][k]) nr++; }
+                maxReal = Math.Max(maxReal, nr);
+                ledgers[n].Sync(ledInst[n], real[n], pts[n], sinks[n]);
+                int alive = 0; double stock = 0, live = 0, standIn = 0;
+                for (int k = 0; k < pop.Cap; k++)
+                {
+                    if (!drawn[n][k].Alive) continue;
+                    alive++; stock += core.Stock[pop.Start + k];
+                    if (real[n][k]) { var b = job.Body[pop.Start + k]; standIn += b.X * b.Y * b.Z; }
+                }
+                var liveEntries = sinks[n].E.Values.Where(e => !e.Suspended).ToList();
+                foreach (var e in liveEntries) live += e.Volume;
+                once &= liveEntries.Count + nr == alive && sinks[n].E.Count == alive;
+                slotsOk &= sinks[n].E.Values.All(e => e.Slot >= 0 && e.Slot < pop.Cap && drawn[n][e.Slot].Alive)
+                           && sinks[n].E.Values.Select(e => e.Slot).Distinct().Count() == sinks[n].E.Count;
+                double rel = Math.Abs(live + standIn - stock) / Math.Max(1.0, stock);
+                worst = Math.Max(worst, rel);
+                volOk &= rel < 1e-4;
+            }
+        }
+        Check(once, $"every living agent is in the index exactly once (its entry, or its proxy's real body with the entry suspended) - 300 ticks, {deaths} deaths, up to {maxReal} stand-ins");
+        Check(slotsOk, "entries are per population slice: each names a living agent of its own population, one entry per slot");
+        Check(volOk, $"the index's volume for a population = its agents' stock (live entries + stand-in bodies vs held mass, worst relative error {worst:E1})");
+        Check(core.Pops[ql].Births > 0, $"births re-register reused slots as new creatures ({core.Pops[ql].Births} births)");
+    }
+
+    // ───────────────────────────────────────────────────────────── B: cost per step at 10k agents
+
+    static void Bench()
+    {
+        Console.WriteLine("\nB. cost per step at 10k agents (locust params - every term active; research fused kernel 0.12 us/agent-step = 1.2 ms/10k at k=8, 4 numba threads)");
+        double single8 = 0;
+        foreach (var (k, workers) in new[] { (8, 1), (4, 1), (8, 4), (1, 1) })
+        {
+            var P = SubstrateResearch.GameLocust().WithCap(10000); P.FracK = k; P.N0 = 10000;
+            var core = new SubstrateCore(10000, R, Dt, 40, 9) { Workers = workers };
+            int q = core.AddPopulation(P, 2);
+            core.Seed(q, 10000, Vector3.Zero, 350f);
+            var pil = new[] { new SubstratePilot { Pos = new Vector3(0, 0, 500), Vel = new Vector3(120, 0, 0), Radius = 6, Id = 1 } };
+            var food = new[] { new SubstrateFood { Pos = new Vector3(200, 0, 0), Volume = 30 } };
+            for (int t = 0; t < 10; t++) core.Step(pil, food);
+            int steps = 40;
+            core.MsFields = core.MsHash = core.MsAgents = core.MsWorld = 0;
+            var sw = Stopwatch.StartNew();
+            for (int t = 0; t < steps; t++) core.Step(pil, food);
+            double ms = sw.Elapsed.TotalMilliseconds / steps;
+            Console.WriteLine($"      stages: fields {core.MsFields / steps:F2}, hash {core.MsHash / steps:F2}, agents {core.MsAgents / steps:F2}, world {core.MsWorld / steps:F2} ms");
+            if (k == 8 && workers == 1) single8 = ms;
+            Console.WriteLine($"    k={k} workers={workers}: {ms:F2} ms/step ({ms * 1000.0 / 10000:F3} us/agent-step), steered {core.Steered.Count(x => x) / 100.0:F1}%");
+        }
+        Check(single8 > 0 && single8 < 20.0, $"10k agents at k=8 on ONE worker thread: {single8:F2} ms/step - at a 10 Hz tick that is {single8 / 6.0:F2} ms per 60 fps frame, off the main thread");
+    }
+
+    static SubstrateSpeciesParams WithCap(this SubstrateSpeciesParams p, int cap) { var c = p.Clone(); c.Capacity = cap; return c; }
+}

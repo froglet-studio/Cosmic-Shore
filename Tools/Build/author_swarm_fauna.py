@@ -583,6 +583,8 @@ def model(plans):
     tot["plans"] = plans
     tot["hearts"] = tot["plants_max"]                              # always on: one heart per live plant
     tot["proxy_colliders"] = 2 * MAX_PROXIES * TOTAL_SWARMS        # only near vessels: heart + body each
+    # round 11b: the substrate populations' proxies share this cell's ceiling (Tools/Build/author_substrate_fauna.py)
+    tot["proxy_colliders"] += substrate().proxy_colliders()
     tot["builder_colliders"] = author_builders.proxy_colliders()   # round 11e: the colonies' proxies, near vessels only
     tot["colliders_engaged"] = tot["hearts"] + tot["proxy_colliders"] + tot["builder_colliders"]
     return rows, tot, eggs
@@ -606,9 +608,16 @@ def ladder(tot):
     }
 
 
+def substrate():
+    """Round 11b (Docs/SUBSTRATE_FAUNA.md): the substrate populations live in this cell; their own generator owns them."""
+    import author_substrate_fauna
+    return author_substrate_fauna
+
+
 def profile_asset():
     floras = "".join(f"  - {{fileID: 11400000, guid: {guid(rel(cell_path(flora_name(r))))}, type: 2}}\n" for r in REGIONS)
     faunas = "".join(f"  - {{fileID: 11400000, guid: {guid(rel(cell_path(fauna_name(r))))}, type: 2}}\n" for r in REGIONS)
+    faunas += substrate().profile_entries()   # round 11b: the substrate populations (author_substrate_fauna.py owns them)
     faunas += author_builders.profile_entries()   # round 11e: the fortress colony and the thief nest
     return SO_HEADER % (SO_SCRIPT["profile"], f"{PREFIX} Cell Spawn Profile") + (
         "  FloraExcludeLocalDomain: 0\n  FloraSpawnVolumeCeiling: 12000\n  FloraInitialDelaySeconds: 0\n"

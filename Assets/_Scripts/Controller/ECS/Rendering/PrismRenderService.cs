@@ -933,6 +933,62 @@ namespace CosmicShore.ECS
             entities.Dispose();
         }
 
+        /// <summary>
+        /// <see cref="SetTransformsBatch(Unity.Collections.NativeArray{PrismRenderHandle}, Unity.Collections.NativeArray{float4x4}, int)"/>
+        /// for matrices a JOB is still writing (Docs/SWARM_FAUNA.md §19.4): the handle-to-entity resolve runs as a Burst
+        /// job alongside <paramref name="dependsOn"/>, and the LocalToWorld write is scheduled on both, so the main thread
+        /// pays the scheduling and one wait instead of a managed loop over the handles. Completes before returning.
+        /// When same-frame queued poses exist (<see cref="PendingTransformCount"/> &gt; 0) the bulk write must drop them per
+        /// entity, which is managed work, so it completes <paramref name="dependsOn"/> and takes the plain overload.
+        /// </summary>
+        public static void SetTransformsBatch(Unity.Collections.NativeArray<PrismRenderHandle> handles,
+            Unity.Collections.NativeArray<float4x4> localToWorld, int count, JobHandle dependsOn)
+        {
+            if (!handles.IsCreated || !localToWorld.IsCreated || _world == null || !_world.IsCreated)
+            {
+                dependsOn.Complete();
+                return;
+            }
+            int n = count < 0 ? math.min(handles.Length, localToWorld.Length) : math.min(count, math.min(handles.Length, localToWorld.Length));
+            if (n <= 0) { dependsOn.Complete(); return; }
+            if (s_pendingTransformCount > 0)
+            {
+                dependsOn.Complete();
+                SetTransformsBatch(handles, localToWorld, n);
+                return;
+            }
+
+            var entities = new Unity.Collections.NativeArray<Entity>(n, Unity.Collections.Allocator.TempJob,
+                Unity.Collections.NativeArrayOptions.UninitializedMemory);
+            var resolve = new ResolveHandlesJob { Handles = handles, Epoch = _epoch, Entities = entities }
+                .Schedule(n, TransformJobBatch);
+            var em = _world.EntityManager;
+            // Any in-flight system job touching LocalToWorld must finish before we write.
+            em.CompleteDependencyBeforeRW<LocalToWorld>();
+            var write = new WriteLocalToWorldJob
+            {
+                Entities = entities,
+                Matrices = localToWorld.GetSubArray(0, n),
+                LocalToWorldLookup = em.GetComponentLookup<LocalToWorld>(false),
+            }.Schedule(n, TransformJobBatch, JobHandle.CombineDependencies(resolve, dependsOn));
+            write.Complete();
+            entities.Dispose();
+        }
+
+        [BurstCompile]
+        struct ResolveHandlesJob : IJobParallelFor
+        {
+            [Unity.Collections.ReadOnly] public Unity.Collections.NativeArray<PrismRenderHandle> Handles;
+            public int Epoch;
+            [Unity.Collections.WriteOnly] public Unity.Collections.NativeArray<Entity> Entities;
+
+            public void Execute(int i)
+            {
+                var h = Handles[i];
+                Entities[i] = h.Epoch == Epoch ? h.Entity : Entity.Null;
+            }
+        }
+
         const int TransformJobInlineThreshold = 256;
         const int TransformJobBatch = 64;
 

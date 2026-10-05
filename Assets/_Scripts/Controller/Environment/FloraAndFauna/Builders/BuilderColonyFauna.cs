@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CosmicShore.Data;
+using CosmicShore.ECS;
 using CosmicShore.Utility;
 using Unity.Collections;
 using Unity.Mathematics;
@@ -85,6 +86,19 @@ namespace CosmicShore.Gameplay
 
         Transform[] _mouths;
         float _alpha;
+
+        // bodies as PrismRenderService entities (round 11a §19.2, the substrate's path): the instanced draw keeps the hearts
+        bool _unified;
+        SwarmEntityLedger _entities;
+        Mesh _bodyMesh;
+        readonly Material[] _looks = new Material[9];
+        byte[] _look;
+        NativeArray<PrismRenderHandle> _handles, _shownHandles, _restyleHandles;
+        NativeArray<byte> _lookScratch;
+        NativeArray<float4x4> _matrices;
+        float[] _matrixScratch;
+        static bool s_warnedLooks;
+        static readonly SVector3 s_up = SVector3.UnitY, s_upAlt = SVector3.UnitZ;
 
         // the spatial index (round 11a): one virtual entry per data-only member's body
         PrismSpatialIndex _index;
@@ -206,6 +220,8 @@ namespace CosmicShore.Gameplay
                 _gpu = _render.Valid;
                 if (_gpu) ApplyPalette();
             }
+            _unified = BindBodyEntities();
+            if (_render != null) _render.DrawBodies = !_unified;
             BuildFrame();
             if (_gpu) Upload();
             BindIndexEntries();
@@ -215,7 +231,7 @@ namespace CosmicShore.Gameplay
 
             CSDebug.LogVerbose(CSLogChannel.Ecology,
                 $"[Builders] {name} founded a {config.Species} colony of {MemberCount} ({_element}, {domain}) at " +
-                $"r={(_nest - centre).magnitude:F0}; members {(_gpu ? "GPU-drawn" : "GameObjects")}");
+                $"r={(_nest - centre).magnitude:F0}; bodies {(_unified ? "prism entities" : _gpu ? "instanced" : "proxy-only")}");
         }
 
         /// <summary>A thief nest sits ON a plant: the nearest living flora heart within a territory's reach of where the cell
@@ -293,6 +309,7 @@ namespace CosmicShore.Gameplay
                 PollProxyDeaths();   // per frame: a member the platform killed stops being drawn in the same frame
                 _world.Animate(alpha);
                 PoseProxies(alpha);
+                if (_unified) PoseBodies(alpha);
                 ShedDying();
                 if (_gpu)
                     _render.Draw(_bounds, alpha, _tick + alpha, _bloomTicks, Vector3.up, Vector3.forward, _cap);
@@ -329,7 +346,7 @@ namespace CosmicShore.Gameplay
             }
             for (int q = 0; q < _deaths.Count; q++) HandleCoreDeath(_deaths[q]);
             BuildFrame();
-            using (s_mUpload.Auto()) if (_gpu) Upload();
+            using (s_mUpload.Auto()) { if (_gpu) Upload(); SyncEntities(); }
             using (s_mProxies.Auto()) UpdateProxies();
             SyncIndex();
         }
@@ -458,6 +475,7 @@ namespace CosmicShore.Gameplay
         {
             _inst[k].Flags = 0u;
             if (_gpu) _render.HideSlot(_inst, k);
+            if (_unified && _entities.HideNow(k)) PrismRenderService.QueueVisible(_handles[k], false);
         }
 
         void DetachProxy(int k)
@@ -540,6 +558,140 @@ namespace CosmicShore.Gameplay
                 m.SyncBodyToIndex();
             }
         }
+
+        // ───────────────────────────────────────────────────────────────── bodies as prism entities (round 11a §19.2)
+
+        /// <summary>When <see cref="PrismRenderService"/> is on, every living member's BODY is an ordinary prism entity in its
+        /// tier's material and the colony's domain - one prism system with every swarm and substrate creature. The pose is the
+        /// member shader's as arithmetic (<see cref="SwarmBodyPose"/>). False (the instanced body draw stays) when the
+        /// service is off or a material is missing.</summary>
+        bool BindBodyEntities()
+        {
+            if (!PrismRenderService.Enabled) return false;
+            var bodyPrism = config.MemberPrefab ? config.MemberPrefab.GetComponentInChildren<HealthPrism>(true) : null;
+            _bodyMesh = bodyPrism && bodyPrism.TryGetComponent(out MeshFilter mf) ? mf.sharedMesh : null;
+            if (!_bodyMesh || !BuildLooks()) return false;
+            _entities = new SwarmEntityLedger(_cap);
+            _look = new byte[_cap];
+            _handles = new NativeArray<PrismRenderHandle>(_cap, Allocator.Persistent);
+            _shownHandles = new NativeArray<PrismRenderHandle>(_cap, Allocator.Persistent);
+            _restyleHandles = new NativeArray<PrismRenderHandle>(_cap, Allocator.Persistent);
+            _lookScratch = new NativeArray<byte>(_cap, Allocator.Persistent);
+            _matrices = new NativeArray<float4x4>(_cap, Allocator.Persistent);
+            _matrixScratch = new float[16 * _cap];
+            return true;
+        }
+
+        /// <summary>[tier * 3 + slot] = that tier's prism material in the colony's domain (one colony, one colour).</summary>
+        bool BuildLooks()
+        {
+            var theme = config.Theme;
+            if (!theme) return false;
+            var sets = theme.TeamMaterialSets;
+            CosmicShore.ScriptableObjects.SO_MaterialSet set =
+                sets != null && sets.TryGetValue(domain, out var painted) && painted ? painted : null;
+            if (!set)
+            {
+                set = theme.BaseMaterialSet;
+                if (!s_warnedLooks)
+                {
+                    s_warnedLooks = true;
+                    CSDebug.LogWarning($"[Builders] {name}: the theme has no painted prism materials for {domain}; members " +
+                                       "wear the unpainted base set.");
+                }
+            }
+            if (!set) return false;
+            for (int slot = 0; slot < 3; slot++)
+            {
+                _looks[0 + slot] = set.BlockMaterial;
+                _looks[3 + slot] = set.DangerousBlockMaterial;
+                _looks[6 + slot] = set.ShieldedBlockMaterial;
+            }
+            for (int l = 0; l < _looks.Length; l++) if (!_looks[l]) return false;
+            return true;
+        }
+
+        void ReleaseBodyEntities()
+        {
+            if (_handles.IsCreated)
+            {
+                for (int k = 0; k < _cap; k++)
+                {
+                    var h = _handles[k];
+                    PrismRenderService.Destroy(ref h);
+                }
+                _handles.Dispose();
+            }
+            if (_shownHandles.IsCreated) _shownHandles.Dispose();
+            if (_restyleHandles.IsCreated) _restyleHandles.Dispose();
+            if (_lookScratch.IsCreated) _lookScratch.Dispose();
+            if (_matrices.IsCreated) _matrices.Dispose();
+            _entities = null;
+            _unified = false;
+        }
+
+        void FallBackToInstancedBodies(string why)
+        {
+            CSDebug.LogWarning($"[Builders] {name}: member bodies fall back to the instanced draw - {why}.");
+            ReleaseBodyEntities();
+            if (_render != null) _render.DrawBodies = true;
+        }
+
+        /// <summary>Once per TICK: entities for slots holding a member for the first time (one CreateBatch), a restyle where
+        /// the tier changed (a striker becomes a danger prism), shows and hides, and the compact list the frame walks.</summary>
+        void SyncEntities()
+        {
+            if (!_unified || _entities == null) return;
+            _entities.Sync(_inst);
+            var create = _entities.Create;
+            if (create.Count > 0)
+            {
+                int n = create.Count;
+                var mats = new NativeArray<float4x4>(n, Allocator.TempJob);
+                var outHandles = new NativeArray<PrismRenderHandle>(n, Allocator.TempJob);
+                for (int q = 0; q < n; q++)
+                {
+                    SwarmBodyPose.Matrix(_inst[create[q]], 0f, _tick, _bloomTicks, s_up, s_upAlt, _matrixScratch, 0);
+                    mats[q] = ToFloat4x4(_matrixScratch, 0);
+                }
+                bool ok = PrismRenderService.CreateBatch(_bodyMesh, _looks[0], gameObject.layer, mats, outHandles);
+                if (ok)
+                    for (int q = 0; q < n; q++) { _handles[create[q]] = outHandles[q]; _look[create[q]] = byte.MaxValue; }
+                mats.Dispose();
+                outHandles.Dispose();
+                _entities.Created(ok);
+                if (!ok) { FallBackToInstancedBodies("PrismRenderService.CreateBatch declined"); return; }
+            }
+            int r = 0;
+            for (int q = 0; q < _entities.ShownCount; q++)
+            {
+                int k = _entities.Shown[q];
+                byte look = (byte)(Mathf.Clamp(_inst[k].Tier, 0, 2) * 3);
+                if (_look[k] == look) continue;
+                _look[k] = look;
+                _restyleHandles[r] = _handles[k];
+                _lookScratch[r] = look;
+                r++;
+            }
+            if (r > 0) PrismRenderService.SetLooksBatch(_restyleHandles, _lookScratch, r, _looks);
+            for (int q = 0; q < _entities.Show.Count; q++) PrismRenderService.QueueVisible(_handles[_entities.Show[q]], true);
+            for (int q = 0; q < _entities.Hide.Count; q++) PrismRenderService.QueueVisible(_handles[_entities.Hide[q]], false);
+            for (int q = 0; q < _entities.ShownCount; q++) _shownHandles[q] = _handles[_entities.Shown[q]];
+        }
+
+        /// <summary>Once per FRAME: every shown member's body matrix at this frame's alpha, one memcpy, one Burst write.</summary>
+        void PoseBodies(float alpha)
+        {
+            int n = _entities != null ? _entities.ShownCount : 0;
+            if (n == 0) return;
+            SwarmBodyPose.Matrices(_inst, _entities.Shown, n, alpha, _tick + alpha, _bloomTicks, s_up, s_upAlt, _matrixScratch);
+            NativeArray<float>.Copy(_matrixScratch, 0, _matrices.Reinterpret<float>(64), 0, 16 * n);
+            PrismRenderService.SetTransformsBatch(_shownHandles, _matrices, n);
+        }
+
+        static float4x4 ToFloat4x4(float[] m, int o) => new float4x4(
+            new float4(m[o + 0], m[o + 1], m[o + 2], m[o + 3]), new float4(m[o + 4], m[o + 5], m[o + 6], m[o + 7]),
+            new float4(m[o + 8], m[o + 9], m[o + 10], m[o + 11]), new float4(m[o + 12], m[o + 13], m[o + 14], m[o + 15]));
 
         // ───────────────────────────────────────────────────────────────── the spatial index (round 11a)
 
@@ -721,6 +873,7 @@ namespace CosmicShore.Gameplay
             if (_seeded) BuilderRegistry.ReleaseColony(_colonyId);
             VirtualFauna.Unregister(this);
             ReleaseIndexEntries();
+            ReleaseBodyEntities();
             base.OnDestroy();
         }
     }

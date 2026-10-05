@@ -17,7 +17,7 @@ B="$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Builders"
 "$DOTNET_ROOT/dotnet" "$CSC" -nologo -langversion:9.0 -nostdlib -noconfig "@$OUT/refs.rsp" -target:library \
   -nowarn:CS0108,CS0114 -out:"$OUT/glue.dll" "$HERE/Stubs.cs" \
   "$S/ISwarmCore.cs" "$S/SwarmFieldCore.cs" "$S/SwarmGridCore.cs" "$S/SwarmSortCore.cs" "$S/SwarmEvoFateCore.cs" "$S/SwarmFaunaConfigSO.cs" "$S/SwarmPlanLibrary.cs" "$S/SwarmFauna.cs" "$S/SwarmTadpoleFauna.cs" \
-  "$S/SwarmTickJob.cs" "$S/SwarmPrismSync.cs" "$S/SwarmMemberRenderer.cs" "$S/../VirtualFauna.cs" \
+  "$S/SwarmTickJob.cs" "$S/SwarmPrismSync.cs" "$S/SwarmPoseJob.cs" "$S/SwarmMemberRenderer.cs" "$S/../VirtualFauna.cs" \
   "$B/BuilderCore.cs" "$B/BuilderColonyCore.cs" "$B/ThiefNestCore.cs" "$B/BuilderRegistry.cs" \
   "$B/BuilderColonyConfigSO.cs" "$B/BuilderPrismWorld.cs" "$B/BuilderColonyFauna.cs"
 echo "type-check OK"

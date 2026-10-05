@@ -2375,7 +2375,31 @@ namespace CosmicShore.Gameplay
         {
             if (!_spatial.IsCreated) return;
             int n = count < 0 ? math.min(indices.Length, positions.Length) : count;
-            for (int i = 0; i < n; i++)
+            if (n <= 0) return;
+
+            // Burst, inline (Docs/SWARM_FAUNA.md §19.4): an entry whose point did not move is skipped before anything is
+            // touched, one that stayed in its 8 u bucket gets a field write, and only a bucket CROSSING (~10% of swarm
+            // members per tick, R11b) pays a hash-map remove + add. The job never grows the map: it stops at the first
+            // add that could exceed the capacity and the managed loop below finishes from there, growing as it goes
+            // (AddToBucket's own rule), so the outcome is exactly the managed loop's.
+            var result = new NativeArray<int>(2, Allocator.TempJob);
+            new UpdatePositionsJob
+            {
+                Indices = indices,
+                Positions = positions,
+                Count = n,
+                HighWaterMark = _highWaterMark,
+                Spatial = _spatial,
+                Buckets = _buckets,
+                EntryCount = _bucketEntryCount,
+                Capacity = _buckets.Capacity,
+                Result = result,
+            }.Run();
+            int processed = result[0];
+            _bucketEntryCount += result[1];
+            result.Dispose();
+
+            for (int i = processed; i < n; i++)
             {
                 int index = indices[i];
                 if (index < 0 || index >= _highWaterMark) continue;
@@ -2393,6 +2417,57 @@ namespace CosmicShore.Gameplay
                 }
                 s.Position = p;
                 _spatial[index] = s;
+            }
+        }
+
+        /// <summary><see cref="UpdatePositionsBatch"/>'s loop, Burst-compiled and run inline. Result[0] = entries processed
+        /// (all of them unless an add could have grown the map), Result[1] = the net change in bucket entries.</summary>
+        [BurstCompile]
+        struct UpdatePositionsJob : IJob
+        {
+            [ReadOnly] public NativeArray<int> Indices;
+            [ReadOnly] public NativeArray<float3> Positions;
+            public int Count, HighWaterMark, EntryCount, Capacity;
+            public NativeArray<PrismSpatialData> Spatial;
+            public NativeParallelMultiHashMap<int3, int> Buckets;
+            public NativeArray<int> Result;
+
+            public void Execute()
+            {
+                int delta = 0, i = 0;
+                for (; i < Count; i++)
+                {
+                    int index = Indices[i];
+                    if (index < 0 || index >= HighWaterMark) continue;
+                    var s = Spatial[index];
+                    float3 p = Positions[i];
+                    if (math.all(p == s.Position)) continue;   // did not move: nothing to write
+                    if ((s.Flags & PrismFlags.JobSkipMask) == PrismFlags.JobPassValue)
+                    {
+                        int3 oldKey = BucketKey(s.Position);
+                        int3 newKey = BucketKey(p);
+                        if (!oldKey.Equals(newKey))
+                        {
+                            if (EntryCount + delta >= Capacity) break;   // AddToBucket would grow the map: managed from here
+                            if (Buckets.TryGetFirstValue(oldKey, out int value, out var it))
+                            {
+                                do
+                                {
+                                    if (value != index) continue;
+                                    Buckets.Remove(it);
+                                    delta--;
+                                    break;
+                                } while (Buckets.TryGetNextValue(out value, ref it));
+                            }
+                            Buckets.Add(newKey, index);
+                            delta++;
+                        }
+                    }
+                    s.Position = p;
+                    Spatial[index] = s;
+                }
+                Result[0] = i;
+                Result[1] = delta;
             }
         }
 

@@ -94,9 +94,13 @@ and hoard standing as ordinary loose mass (nothing pops).
 The anchor is heartless. Like the swarm, it is a population, not an animal, so `Predated` returns false. The
 species config's element names the members' hearts. Each colony ticks at 10 Hz in `Update`. Its parts:
 
-- **Members are data, drawn on the GPU.** It uses the swarm's `SwarmMemberRenderer`, through a new additive
-  `Upload(instances, heartIdx, heartStart, heartCount)` overload. It has the same body mesh, crystal hearts,
-  palette and spread as a swarm member. Strikers draw in the danger tier.
+- **Member bodies are prism render entities (round 11a §19.2).** This is the substrate's path, through the swarm's
+  `SwarmEntityLedger`. The body is created in one `CreateBatch`, wears its tier's material in the colony's domain
+  (from the theme's painted set), and is restyled with `SetLooksBatch` when a striker turns danger. Each frame,
+  `SwarmBodyPose` computes the matrices and one `SetTransformsBatch` writes them.
+  - Hearts stay on the swarm's instanced `SwarmMemberRenderer` (`DrawBodies` off), through a new additive
+    `Upload(instances, heartIdx, heartStart, heartCount)` overload.
+  - When the service is off or a material is missing, the instanced body draw returns.
 - **Members are index entries (round 11a).** While a member is only data, its body is a `PrismSpatialIndex`
   virtual entry, kept by the swarm's own `SwarmEntryLedger`. The entry is registered at birth, pushed in bulk
   each tick, suspended while a proxy body is real, and released at death. It is bound to the cell's volume sum
@@ -129,7 +133,7 @@ species config's element names the members' hearts. Each colony ticks at 10 Hz i
 | One crystal per lifeform | Each member carries its own heart, released by the sealed `Fauna.Die` on its proxy. |
 | Controlling-domain spawn | The anchor's `domain` comes from the cell spawner. Nothing here prescribes a colour. |
 | Shielded mass is never food or a target | The predicate, plus a second guard in `BuilderPrismWorld.Steal`. B3 and T5 assert 0, and a negative control (a world that hides shields) is caught. |
-| Collider budget | Structures add 0. Proxies are 2 colliders each, only near vessels: 24 + 18 → **84**. The Swarm cell's ceiling check (`author_swarm_fauna.py`) now counts them: 1062 worst case against a ceiling of 1200. |
+| Collider budget | Structures add 0. Proxies are 2 colliders each, only near vessels: 24 + 18 → **84**. The Swarm cell's ceiling check (`author_swarm_fauna.py`) now counts them: 1140 worst case (with round 11b's substrate) against a ceiling of 1200. |
 | Stakes | A striking fortress worker is a danger-tier body prism. An opposing-domain pilot who hits it burns petals (round 10's rule). The telegraph is the guard screen forming between the colony and the vessel before the strike. |
 
 **Worker heart budget.** The colony is heartless. A fortress holds at most 48 hearts and a nest 18. They are
@@ -229,8 +233,6 @@ SAME core files the game compiles. Its asserted results:
   where it is.
 - **Unstated volume.** Food in a member's stomach (eaten volume not yet spent) is not stated to the cell's volume
   sum. Round 11a retired `SetVirtualVolume`, and the swarm does not state its stomach either.
-- **Member bodies** are drawn by the instanced shader (`DrawBodies` on), not as round-11a prism render entities.
-  Their index entries are the round-11a path.
 
 ## 9. Files
 
@@ -238,6 +240,8 @@ SAME core files the game compiles. Its asserted results:
   `ThiefNestCore.cs`, `BuilderRegistry.cs`, `BuilderPrismWorld.cs`, `BuilderColonyConfigSO.cs`,
   `BuilderColonyFauna.cs`, with metas.
 - `Swarm/SwarmMemberRenderer.cs`: additive `Upload` / `HideSlot` overloads over plain arrays.
+- Collider ceiling with round 11b merged: 18 hearts + 960 swarm + 78 substrate + 84 builder proxies = **1140** /
+  1200.
 - `Tools/Build/builders_harness/`: `Arena.cs`, `Program.cs`, `run.sh`.
 - `Tools/Build/swarm_glue_typecheck/`: the Builders files are added to the list, with stub additions.
 - `Tools/Build/author_builders.py`, plus the hooks in `author_swarm_fauna.py`.
