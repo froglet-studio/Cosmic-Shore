@@ -1,6 +1,7 @@
 # One codebase for Windows, iOS and Android — diagnosis and plan
 
-**Status (2026-10-05): Step 0 (diagnosis + inventory) done. Nothing ported yet.**
+**Status (2026-10-05): diagnosis (§1) and inventory (§2) done. Nothing ported yet; Step 0
+measurements pending.**
 Owner branch for this work: `claude/serene-edison-lfv24f`.
 
 Today three builds come from three places:
@@ -90,9 +91,109 @@ two A76 cores) are a 3x apart in single-core speed.
 
 ## 2. What Garrett's branch changed (inventory)
 
-*Pending: the file-by-file classification of
-`origin/bleeding-edge...origin/claude/android-performance-stripped-dap5z2` (129 files) lands
-here next.* The branch's own 18-round changelog is `Docs/MOBILE_STRIPPED.md` on that branch.
+Net diff `origin/bleeding-edge...origin/claude/android-performance-stripped-dap5z2`: 129 files,
++4,905 / −229, merge-base `06b6772fc`. The strip is 44 commits ahead and 59 behind. Its own
+changelog (`Docs/MOBILE_STRIPPED.md` on that branch) records 18 rounds, and several states it
+describes were later reverted (MSAA 4→1→4, `BootTrace`, the JNI haptics, the FMOD bank strip,
+the overdrive drift, `touchDriftDepth`). **The net diff below is the source of truth.**
+
+Almost everything is gated on `PerfStrip` (`Assets/_Scripts/Utility/PerfStrip.cs`), a
+`static class` whose `Enabled = true` is fixed at compile time. Every other flag in it derives
+from `Enabled`. That flag is why the strip cannot live in bleeding-edge as-is: it would strip
+Windows too.
+
+### 2.1 Android build / player settings (Android-only, safe)
+
+| Setting | bleeding-edge → strip | Note |
+|---|---|---|
+| `AndroidTargetArchitectures` | 3 (ARMv7 + ARM64) → 2 (ARM64) | Smaller APK. Drops 32-bit-userland phones (some Android Go Samsungs). |
+| `AndroidMinifyRelease` | 1 → 0 | The real launch-crash fix: R8 stripped `androidx.work.WorkDatabase_Impl`, pulled in by **Unity Ads**. Your branch removes Unity Ads, which removes the cause. |
+| `useCustomProguardFile` + `proguard-user.txt` | 0 → 1, keep rules for androidx.work/room/startup/lifecycle | Defense-in-depth if R8 comes back on. |
+| Android graphics APIs | Auto [Vulkan, GLES3] → manual [GLES3] | Made to test a Vulkan-crash theory that the R8 finding replaced. **Revisit with a measurement**, don't inherit. |
+| `mainTemplate.gradle` | namespace / ndk lines **inside** the EDM4U-managed block | Your branch's `0f6b38ba5` puts them outside, where a re-resolve can't wipe them. Take yours. |
+| `Assets/Editor/BuildAndroid.cs` | new FrogletTools APK build | Its Development path blanks the keystore settings, which persist into `ProjectSettings.asset` (production keystore path). Fix before merging. |
+
+### 2.2 Touch controls / mobile feel (what iOS should get)
+
+| Change | Gate on the strip | Port as |
+|---|---|---|
+| `TouchInputStrategy`: stick radius 0.6" and dead zone 0.05" (physical size, 12 px floor), one-thumb mirror at full authority, re-zero on every 1↔2-thumb change, throttle held through a lift and carried back, 75% linear + 25% cubic curve | ungated (Touch strategy only) | as-is → every touch device |
+| Left/RightStickAction only on a thumb **lift**, never on first touch (the Butterfly's mode toggled / Fold started on whichever thumb landed first) | `PerfStrip.TouchStickEventsOnLiftOnly` | **ungated**: it's a touch bug fix, and iOS has the same bug |
+| `VesselTransformer.touchNoseResponse` (Squirrel 9, Butterfly 5; fleet stays 1.5): the hull follows the thumb with ~14° lag instead of ~80° | `ActiveInputDevice == Touch` | **gate to the local human pilot.** On a handheld, AI players also read Touch, so AI hulls would get it too, and bleeding-edge's Skim Race AI models its own hull at the fleet's 1.5 (`VesselTransformer.RotationFollowRate`) |
+| `GetTriggerSum` / `DriftAudioController`: a drift with no measured trigger travel is a full pull (touch lift, key, digital-trigger pad) | **ungated, all devices** | as-is; it also fixes digital-trigger pads on PC (they drifted at depth 0) |
+| `R_VesselActionHandler`: the ability subscription is reconciled to the pause state every frame (a missed NetworkVariable edge left the vessel flying with every ability dead) + DiagnosticsHUD "Abilities" rows | ungated, fleet-wide | as-is (it's a fix) |
+| `Squirrel.prefab` | `touchNoseResponse: 9`, **and `boostLoopEvent` cleared** | port the nose field; **do NOT port the audio clear**: it is a merge loss that silently reverts bleeding-edge's "new skim move" wiring (`fb564b517`) |
+
+The vessels' `_touchActionOverrides` are unchanged in net; touch and pad bind the same drift assets.
+
+### 2.3 GPU / render cuts (all edit SHARED assets: merged as-is they change Windows and iOS)
+
+| Change | Where | Note |
+|---|---|---|
+| HDR off, render scale 0.8 (MSAA stays 4x) | `URP_Asset.asset`, the ONLY pipeline asset | the runtime applier overwrites scale/MSAA on other builds, but **not HDR**, so HDR would go off everywhere |
+| Intermediate texture Always → Auto | `URP_Asset_Renderer.asset` | shared |
+| 22 crystal materials brightened for LDR | `_Graphics/Materials/CrystalMaterials/*.mat` etc. | shared; with HDR on they'd over-bloom on PC |
+| Skybox → baked 4096×2048 panorama (`StaticSkyPanorama.shader`, `Resources/StaticHyperSeaSkybox.mat`), post-processing only on the presenting camera, FXAA Low | `PerfStripRuntime.cs` (stomps every camera's clear/post/AA) | in `Resources`, so it ships on every platform even unused; second writer of camera AA beside `GraphicsSettingsApplier` |
+| `CapsuleMembrane` (2,562 instanced capsules) → `MeshMembrane` (one 642-vertex icosphere) | 13 cell configs | Barren and Skim Race configs are shared by ~10 modes the strip doesn't ship |
+| Skim Race intensity 3 → own larger membrane + `IntensityWise` | `MinigameSkimRace.unity` | also changes Skim Race's life spawner on every platform (a food-web change) |
+| Butterfly fold-gate window renders only its footprint (crop + RT quantize) | `FoldGatePortalView.cs` + `FoldGatePortal.shader` | crop is platform-agnostic; must merge with the shader. Resolution cap 0.5 is `PerfStrip`-gated |
+| Graphics settings menu disabled; target fps −1 → 240 | `GraphicsSettingsApplier.cs`, `BootstrapConfig.asset` | the strip turns OFF the very hook bleeding-edge already has for per-tier render settings |
+
+### 2.4 CPU / content cuts
+
+| Change | Gate |
+|---|---|
+| Vessels lay **no trail**, except freestyle (pen waits while the cell holds > 10,000 prisms), the Wanderway tether, and Skim Race / Joust with a **FIFO cap** (oldest prism consumed past 2,000 / 1,200 per vessel, shared per seat) | `TrailsDisabled`, `CappedTrailActive` |
+| Cell life (flora/fauna spawners, flora growth) paused except in the home world (Garland); no cytoplasm motes | `CellLifeRuns`, `Enabled` |
+| Toybox: Wander (no Ark), domain changer, element charger, vessel changer (Squirrel + Butterfly only) | `LightToysOnly`, `ShipsVessel` |
+| Wanderway belt 30,000 → 1,200 resident prisms, no lifeforms | `Wander_WithoutArk.asset` — **shared, ungated** |
+| `MicrosceneConveyor.MaxConcurrentArrivals` 3 → 2 | **ungated** |
+| Non-HOME menu screens deactivated; HOME + NavBar deactivated in freestyle | `MenuUIStripped` |
+| Top-bar glow's endless DOFade dropped | `Enabled` |
+
+### 2.5 Build content strip and offline bypass (do NOT port)
+
+- `EditorBuildSettings`: 7 of 38 scenes (Bootstrap, Authentication, Menu_Main, Skim Race, Joust,
+  Waystation, plus WildlifeBlitz co-op left on with no card). The arcade grid hides cards whose
+  scene isn't in the build (`ArcadeExploreView.IsLaunchableInThisBuild`). That filter is worth
+  keeping ungated as a safety net.
+- `PerfStrip.OfflineMode` / `DisableSocialNetworking`: local sign-in, no Relay / CloudSave /
+  Analytics / Friends / presence (8 files). Garrett's builds had no UGS project; the real build
+  does, and bleeding-edge's `OfflineModeService` already handles "no network".
+- FMOD banks committed under `StreamingAssets/` (stale; bleeding-edge targets `FMODBanks`),
+  `mainTemplate.gradle.backup`, and platform-switch editor churn (QualitySettings v5 keys, URP
+  global-settings lists, a TMP font serializedVersion).
+
+### 2.6 Platform-agnostic fixes worth merging on their own
+
+- `SquirrelSkimmerImpactorDataContainer`: drop the obsolete `SkimmerFXPrismEffect` beam (closes
+  the open item in `Docs/claude/IMPACT_EFFECTS_AND_AUDIO.md`; the crackle becomes the sole skim
+  visual, as on the Dolphin).
+- `ProximityBoostAudioController`: `minTickInterval` 0.07 s stops the skim one-shot firing at frame
+  rate. (Its second change, silence above 90% boost, is a tuning call for audio sign-off.)
+- `VesselTransformer.DecayBoost`: raise `boostChanged` only when the value changes (it fired every
+  frame at rest, fanning out to HUD + audio).
+- `FoldGatePortalView`: the render target was reallocated **every frame** (requested format never
+  equals the resolved `DefaultHDR`).
+- `SkimRaceController.OnDestroy` hid `NetworkBehaviour.OnDestroy` (CS0114) on the strip; bleeding-edge
+  doesn't have that method, so this only matters if the strip's trail-cap code is ported.
+
+### 2.7 Things to know before porting
+
+1. **The FIFO trail cap breaks a LOCKED rule.** `Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md`:
+   *"there is no context in which trail caps, prism TTLs, or idle cullers are acceptable."* The
+   only exception is the Wanderway tether, recorded in `Docs/ECOSYSTEM.md` §0. The strip relied
+   on a branch-only OK (2026-07-07). Bringing the Skim Race / Joust cap to bleeding-edge, even
+   behind a mobile tier, needs that sign-off recorded there; the sanctioned alternatives are
+   fauna cleanup and pausing the spawner. A phone-only life pause raises the same Universality
+   question.
+2. **Merge conflicts are small.** Only `HostConnectionService.cs` (offline gate vs bleeding-edge's
+   presence-rejoin, so it disappears if §2.5 isn't ported) and `AndroidResolverDependencies.xml`
+   (take both lines) conflict textually. No strip reference dangles on current bleeding-edge.
+3. **Dead code in the strip:** `Skimmer.cs`'s forcefield kill finds no renderer; `Toy.Tick()` has
+   no overrides.
+4. **Editor play mode:** `m_EnterPlayModeOptions: 3` (no domain reload), and `PerfStrip`'s mutable
+   statics have no `SubsystemRegistration` reset. A runtime profile must reset them.
 
 ---
 
@@ -168,11 +269,11 @@ Each step is its own PR into bleeding-edge, and each leaves Windows unchanged un
 |---|---|---|---|---|---|
 | 0 | **Measure.** (a) Development build of `claude/eloquent-meitner-9e4u2a` on the Samsung and the iPhone; read `DiagnosticsHUD` (bound verdict, main-thread ms). (b) Build Garrett's branch on the SAME Samsung: what the full strip buys on this hardware decides the minimum-spec question below. Record the exact Samsung model. | nothing | — | — | — |
 | 1 | **Android build plumbing.** Your two Gradle commits (`0f6b38ba5`, `359ad3d1b`; the namespace fix lives OUTSIDE the EDM4U block, the durable version of the same fix Garrett made inside it). Then decide: ARM64-only, R8 minify + Garrett's `proguard-user.txt` keep rules (the WorkManager crash came from Unity Ads, which your branch removes), Vulkan vs GLES3. | ProjectSettings (Android only), `Assets/Plugins/Android/*` | none | none | builds |
-| 2 | **Touch controls into bleeding-edge, ungated.** `TouchInputStrategy` (physical-size stick + dead zone, one-thumb mirror, re-zero on lift, throttle carry, events on lift only, 75/25 curve) + touch-only vessel tuning (`touchNoseResponse`, touch action overrides, binary drift on a thumb lift) + the ability-dispatch hardening. | `Controller/IO`, `VesselTransformer`, Squirrel/Butterfly prefabs | none (touch only) | **new controls** | **new controls** |
+| 2 | **Touch controls into bleeding-edge, ungated.** `TouchInputStrategy` (physical-size stick + dead zone, one-thumb mirror, re-zero on lift, throttle carry, events on lift only, 75/25 curve) + touch-only vessel tuning (`touchNoseResponse`, gated to the local human pilot) + binary drift for any unmeasured trigger + the ability-dispatch hardening (§2.2). Not the Squirrel `boostLoopEvent` clear. | `Controller/IO`, `VesselTransformer`, Squirrel/Butterfly prefabs | none (touch only) | **new controls** | **new controls** |
 | 3 | **Device tier foundation.** `DeviceTierClassifier`, `PlatformProfileSO` ×3, dev override, a `CSLogChannel` for it, and a mobile branch in `SettingsAutoDetector` that reads the tier. `Desktop` profile = today's behaviour. | `System/`, `Controller/Settings` | identical | correct tier | correct tier |
 | 4 | **Render tier.** `URP_Mobile.asset` + mobile quality level; baked sky (`StaticSkyPanorama`), mesh membrane, post/AA policy, crystal LDR brightness, fold-gate window cap — each selected by the profile. | `_Graphics`, profile | none | per `MobileHigh` | per `MobileLow` |
-| 5 | **Content tier.** Every `PerfStrip` gate becomes a profile read: trail policy, ecology, toybox, menu-UI teardown, Wander/conveyor budgets as per-tier overrides (not edits to the shared SO). | gameplay | none | per `MobileHigh` | per `MobileLow` |
-| 6 | **Platform-agnostic fixes** Garrett found, merged ungated (see §2, category G). | various | yes (fixes) | yes | yes |
+| 5 | **Content tier.** Every `PerfStrip` gate becomes a profile read: trail policy, ecology, toybox, menu-UI teardown, Wander/conveyor budgets as per-tier overrides (not edits to the shared SO). The race trail cap only with decision 4 below. | gameplay | none | per `MobileHigh` | per `MobileLow` |
+| 6 | **Platform-agnostic fixes** Garrett found, merged ungated (§2.6). Can go any time. | various | yes (fixes) | yes | yes |
 | 7 | **Retire the branches.** Build all three platforms from bleeding-edge; device verification matrix. | — | — | — | — |
 
 Open decisions (needed before steps 3–5):
@@ -183,3 +284,7 @@ Open decisions (needed before steps 3–5):
    plus only the free wins (none of the content strips).
 3. **Where flagship Android lands.** Recommended: by the same capability test as iOS, so a
    Galaxy S2x is `MobileHigh`.
+4. **The race trail cap on phones.** Skim Race and Joust on the strip cap each vessel's trail and
+   consume the oldest prism, which the LOCKED rule forbids (§2.7.1). Either the design owner signs
+   off a recorded exception in `Docs/ECOSYSTEM.md` §0, or `MobileLow` uses the sanctioned levers
+   (pause the spawner, fauna cleanup) instead.
