@@ -74,7 +74,7 @@ SPECIES = [
     dict(key="locust", title="Locust", element="Space", band=(910, 1080), seed=0, spread=80, at_flora=1,
          engage=140, proxies=12, bites=16, spawns=8),
     dict(key="lurker", title="Lurker", element="Mass", band=(470, 620), seed=8, spread=30, at_flora=1,
-         engage=160, proxies=4, bites=4, spawns=4),
+         engage=160, proxies=3, bites=4, spawns=4),
     # round 11-11: the rest of the bestiary (Docs/SUBSTRATE_FAUNA.md §9). The 620-690 gap between the swarm's inner and
     # middle shells is free (the mobbers' roosts); the middle shell 690-840 is split into three 110-degree SECTORS
     # about the cell's Y axis (sector pens, SubstrateCore.SetSector) for the herd, the puddles and the school.
@@ -83,7 +83,7 @@ SPECIES = [
     dict(key="mobber", title="Mobber", element="Time", band=(625, 685), seed=0, spread=30, at_flora=1,
          engage=120, proxies=4, bites=4, spawns=4, clusters=5),
     dict(key="leech", title="Leech", element="Charge", band=(690, 840), seed=0, spread=8, at_flora=1,
-         engage=140, proxies=2, bites=4, spawns=2, sector=((-0.5, 0, 0.866), 55)),
+         engage=140, proxies=3, bites=4, spawns=3, sector=((-0.5, 0, 0.866), 55)),
     dict(key="leviathan", title="Leviathan", element="Space", band=(690, 840), seed=0, spread=60, at_flora=0,
          engage=200, proxies=4, bites=4, spawns=4, sector=((-0.5, 0, -0.866), 55)),
 ]
