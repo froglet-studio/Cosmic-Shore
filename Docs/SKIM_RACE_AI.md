@@ -762,7 +762,7 @@ median on intensity 2 (40 seeds x 2 seats, common seeds every step, then 40 fres
 
 | Difficulty | Reaction | Misjudge chance | Seat median (fresh seeds) | p10 - p90 | Misjudged / seat / race |
 |---|---|---|---|---|---|
-| Hard | - | - | 77 s (the shipped I2 policy) | | 0 |
+| Hard | - | - | 80.2 s (winner median 74.4 s; the shipped I2 policy, fresh seeds 50000+) | 70.9 - 95.7 s | 0 |
 | **Medium** (target 95 s) | 0.25 s | **0.045** | **95.9 s** (80/80 finished) | 81.0 - 124.4 s | 1.3 |
 | **Easy** (target 120 s) | 0.5 s | **0.099** | **120.8 s** (160/160 finished; 2 fresh sets pooled) | 96.1 - 157.9 s | 2.9 |
 
@@ -775,9 +775,30 @@ costs ~10 s and the count per race varies), so one 40-seed set moves its median 
 read 114.9 s on its first fresh set, then 123.6 and 120.0 on two more (pooled 120.8 s), against 125.3 s
 pooled for 0.107 on the same two sets - so 0.099 ships.
 
-**On every track** (fresh seeds 50000+, 2 AI seats, each intensity's own policy, I3 the general one):
+**On every track** (`eval <I> 20 limit=300 seedbase=50000`, 2 AI seats, 28 ms frames +-50%, each
+intensity's own policy - I3 flies `skimrace-v2-general` - and the SAME difficulty numbers everywhere):
 
-(pending the tuned values)
+| Track | Difficulty | Seat median | p10 - p90 | Seats finished | Winner median | Misjudged / seat / race |
+|---|---|---|---|---|---|---|
+| I1 | Hard | 68.2 s | 61.0 - 88.0 s | 40/40 | 64.3 s | 0.00 |
+| I1 | Medium | 80.1 s | 71.2 - 109.6 s | 40/40 | 75.3 s | 1.25 |
+| I1 | Easy | 92.8 s | 80.8 - 123.3 s | 40/40 | 86.2 s | 2.45 |
+| I2 | Hard | 80.2 s | 70.9 - 95.7 s | 40/40 | 74.4 s | 0.00 |
+| I2 | Medium | 95.8 s | 77.2 - 122.0 s | 40/40 | 92.0 s | 1.45 |
+| I2 | Easy | 123.7 s | 102.9 - 176.4 s | 40/40 | 112.0 s | 3.08 |
+| I3 | Hard | 188.2 s | 171.2 - 205.9 s | 40/40 | 179.7 s | 0.00 |
+| I3 | Medium | 215.0 s | 193.1 - 239.5 s | 40/40 | 203.5 s | 2.62 |
+| I3 | Easy | 231.6 s | 216.4 - 258.9 s | 40/40 | 226.6 s | 5.70 |
+| I4 | Hard | 150.5 s | 135.4 - 174.5 s | 40/40 | 145.9 s | 0.00 |
+| I4 | Medium | 172.4 s | 146.5 - 188.4 s | 40/40 | 160.7 s | 2.60 |
+| I4 | Easy | 187.5 s | 170.3 - 218.6 s | 40/40 | 180.1 s | 5.60 |
+
+Every one of the 480 seats finished, and the three levels are distinct and in order on every track.
+Measured against Hard on the same track, Medium is 14-19% slower everywhere; Easy is 36-54% slower on
+the short tracks and 23-25% on the long ones. The mistakes cost time per CRYSTAL, while the long tracks'
+Hard times are already long, so the gap narrows as a share - a fixed-setting design trades exact targets
+on every track for one number a new track inherits untouched (the user's choice, 2026-10-05). Intensity 2
+lands on its targets: Medium 95.8 s (95), Easy 123.7 s (120).
 
 The editor benchmark (`FrogletTools > AI > Skim Race AI Benchmark`) now has an AI difficulty setting
 (default Hard, which is what every earlier benchmark measured), and each race record names the
