@@ -309,7 +309,16 @@ Arena.prototype.pilotGoal = function (p, out) {
   if (p.policy === 'hunter' && this.nTargets) return this._nearestOf(this.targets, this.nTargets, p.pos, out);
   if (p.policy === 'evader' && this.nThreats) {
     this._nearestOf(this.threats, this.nThreats, p.pos, out);
-    const ax = p.pos[0] - out[0], ay = p.pos[1] - out[1], az = p.pos[2] - out[2], n = Math.max(Math.hypot(ax, ay, az), 1e-6);
+    let ax = p.pos[0] - out[0], ay = p.pos[1] - out[1], az = p.pos[2] - out[2];
+    // SWERVE (DISCOVERIES "Lurker counterplay"): a threat AHEAD (away points behind) is fled sideways first - aiming
+    // straight back makes the shared lerp turn crawl (~0.2 rad/s near 180 deg), so the pilot flew into the ambush
+    const vn = Math.max(Math.hypot(p.vel[0], p.vel[1], p.vel[2]), 1e-6), vx = p.vel[0] / vn, vy = p.vel[1] / vn, vz = p.vel[2] / vn;
+    const dot = ax * vx + ay * vy + az * vz;
+    if (dot < 0) {
+      ax -= dot * vx; ay -= dot * vy; az -= dot * vz;
+      if (Math.hypot(ax, ay, az) < 1e-3 * Math.abs(dot)) { ax = -vz; ay = 0; az = vx; if (Math.hypot(ax, az) < 1e-6) { ax = 1; az = 0; } }
+    }
+    const n = Math.max(Math.hypot(ax, ay, az), 1e-6);
     out[0] = p.pos[0] + ax / n * 300; out[1] = p.pos[1] + ay / n * 300; out[2] = p.pos[2] + az / n * 300; return out;
   }
   if (Math.hypot(p.goal[0] - p.pos[0], p.goal[1] - p.pos[1], p.goal[2] - p.pos[2]) < 60) this.ball(0.2 * this.R, 0.9 * this.R, p.goal);

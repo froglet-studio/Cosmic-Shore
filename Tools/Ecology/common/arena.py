@@ -288,6 +288,16 @@ class Arena:
         if p.policy == "evader" and len(self.threats):
             T = np.asarray(self.threats); d = T[np.argmin(np.linalg.norm(T - p.pos, axis=1))]
             away = p.pos - d
+            # SWERVE (DISCOVERIES "Lurker counterplay"): a threat AHEAD (away points behind) is fled sideways first.
+            # Aiming straight back makes the lerp turn in `step` crawl (~0.2 rad/s near 180 deg), so the evader flew
+            # into every ambush laid on its line. Mirrored in flight/src/00_core.js pilotGoal.
+            v = p.vel / max(np.linalg.norm(p.vel), 1e-6)
+            dot = float(away @ v)
+            if dot < 0:
+                away = away - dot * v
+                if np.linalg.norm(away) < 1e-3 * abs(dot):
+                    away = np.array([-v[2], 0.0, v[0]])
+                    if math.hypot(away[0], away[2]) < 1e-6: away = np.array([1.0, 0.0, 0.0])
             return p.pos + away / max(np.linalg.norm(away), 1e-6) * 300.0
         if p.policy == "circuit" and p.waypoints:
             if np.linalg.norm(p.waypoints[p._wp] - p.pos) < 60.0:

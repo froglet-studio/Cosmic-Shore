@@ -1942,3 +1942,46 @@ in the second before (`/home/claude/scratch/tele/diag.js`-style trace; `stakes_e
   burns are all telegraphed (the gape is a real 0.7 s+ wind-up); the evader just cannot outrun an ambush it flies
   into. 100% read is also the ceiling of this metric, not proof of readability: it says the striker's own intent was
   up for 0.25 s, not that a human could see that agent among the others.
+
+### Lurker counterplay (2026-10-05)
+The lurker taxed the skilled evader almost like the careless wanderer (shipped 5.56 vs 6.67 petals/min, evader
+stripped 5/6; tuned 1.55 vs 5.78). Traced bite by bite (`stakes_eval` world, seeds 100-105): the evader DID read every
+gape (it fled the striker in 96% of the gape's frames; all 8 bites telegraphed, gape 1.1-1.2 s), the gape started
+170 u **dead ahead** (cos 0.93; the lurker creeps onto the point you will pass in 3 s, by design), and by the snap the
+pilot was still 60-90 u away, now broadside. Frame trace: while "fleeing", the evader kept flying straight in at
+140 u/s - its angle to its own goal went 166 -> 123 deg in a second.
+- **Cause: the pilot, not the creature's tell.** The shared pilot turn (`Arena.step` / `00_core.js`) is a chord lerp
+  `v + (w - v) * turn*dt/ang`; its real rate is ~`turn * sin(ang)/ang`, so 2 rad/s at small angles, ~1.3 at 90 deg
+  and **~0.2 rad/s near 180 deg**. The evader aimed straight AWAY, i.e. straight behind for a threat ahead: a U-turn
+  that would take ~10 s. Against threats that come from the side or behind (pack, stampede, siege) the lerp is fine;
+  the ambush on your line is the one case it cannot answer. A human would bank sideways - the lurker card's own
+  counter reads "swerve off your line".
+- **Fix (evader policy, Python `common/arena.py` `_pilot_goal` and JS `pilotGoal`, identical):** a threat AHEAD
+  (away . v < 0) is fled along the component of `away` perpendicular to the velocity (dead-on: `cross(v, up)`), so the
+  pilot turns at its real rate; once the threat is abeam it flees straight away as before. The turn function itself
+  is untouched (changing it would move every policy and every scorecard).
+- **Creature-side fixes tried first and REJECTED (negatives kept):** with the old evader, giving the lurker an earlier,
+  held gape and a commit range (snap only once the gape is full AND the pilot is inside `STRIKE`) made the evader
+  WORSE: SENSE 170/HOLD 230/STRIKE 120 -> 0.61 bites/min (was 0.39), SENSE 240/HOLD 300/STRIKE 120 -> 1.56, 260/320/110
+  -> 1.11. An earlier tell only starts a doomed reversal earlier, and a held mouth keeps the pilot "fleeing" straight
+  into it. With the swerve the same variants all gave the evader 0-0.11 bites/min, so the lurker needs no change: it
+  stays exactly as scored (Python and JS lurker untouched).
+- **Numbers (`stakes_eval.js`, 6 seeds x 3 min, `results/stakes_eval.json`):**
+
+| lurker | wander (careless) | evader before | evader after | hunter | evader / wander |
+|---|---|---|---|---|---|
+| shipped (petals/min, stripped) | 6.67, 6/6 | 5.56, 5/6 | **1.11, 1/6** | 11.39 | 0.83 -> **0.17** |
+| tuned | 5.78, 4/6 | 1.55, 0/6 | **0.22, 0/6** | 8.89 | 0.27 -> **0.04** |
+
+  Wander and hunter rows are bit-identical (the change touches only the evader). Every burn still telegraphed (1.00).
+  Elsewhere: mobber evader shipped 0.22 -> 0; nothing else moved. Pooled skilled: shipped 0.80 -> 0.30, tuned 0.20 ->
+  0.06 (pooled careless rose 3.89 -> 4.14 only because siege now joins the pool).
+- Gates: fidelity re-run on both sides for all species (dt 0.1 and 1/30): verdicts identical to before (port row: all
+  10 PASS; both-at-1/30 row: lurker PASS, leviathan passes at 24 seeds; cross-step row fails as before). Bestiary
+  scorecards re-run for all 8: lurker unchanged (telegraph 0.95 s, counterplay 0.0, variety 2.0, payoff 6.22/min, all
+  four verdicts pass; in that world the evader was already never bitten), thief evader hits 10.67 -> 10.44, the rest
+  identical. `browser_test.py`: no fails.
+- Still open: the lerp turn makes every scripted pilot slow to reverse (a wanderer re-targeting behind itself, a hunter
+  overshooting); a constant-rate slerp would be truer to a ship but re-baselines every scorecard. The evader also flees
+  only the NEAREST published threat, and a spent (harmless, grey) lurker is published as one: once (seed 104) the
+  evader fled a spent lurker into a gaping one.
