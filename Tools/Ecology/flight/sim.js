@@ -226,10 +226,12 @@ Arena.prototype.addPilot = function (p) {
   this.pilots.push(p);
   return p;
 };
-Arena.prototype.hit = function (p, kind, amount) {
+/** who = the striking agent's index in its species (instrumentation only: TeleTrack reads that agent's own intent);
+ *  standing = the contact was a standing danger prism (always shown hot), not a strike. Neither changes behaviour. */
+Arena.prototype.hit = function (p, kind, amount, who, standing) {
   this.log.push([this.t, p.name, kind, amount === undefined ? 1 : amount, this._src]); p.hitsN++;
   if (this.slowAllHits || kind === 'burn' || kind === 'snap') this.fl.slow_t[p.name] = this.t;   // a danger contact slows
-  if (this.onHit) this.onHit(p, kind, amount, this._src);
+  if (this.onHit) this.onHit(p, kind, amount, this._src, who, standing);
 };
 /** flora/harness.py speed_factor: a burn stops you (1.5 x clamped) and you recover linearly over 3 s. */
 Arena.prototype.speedFactor = function (p) {
@@ -523,7 +525,7 @@ function C_(P, k, o) { return (o && o[k] !== undefined) ? o[k] : P.const[k]; }
 // ------------------------------------------------------------------------------------------------ PACK (dread)
 const Pack = inherit(function Pack(arena, P, o) {
   o = o || {}; this.name = 'pack';
-  this.CRUISE = C_(P, 'CRUISE', o); this.SPRINT = C_(P, 'SPRINT', o); this.RANGE = C_(P, 'RANGE', o);
+  this.CRUISE = C_(P, 'CRUISE', o); this.SPRINT = C_(P, 'SPRINT', o); this.RANGE = C_(P, 'RANGE', o); this.WINDUP = C_(P, 'WINDUP', o);
   const n = o.n || P.init.n;
   mkHerd(this, arena, P, n, o.centre);
   this.aspect = 2.6;
@@ -531,6 +533,7 @@ const Pack = inherit(function Pack(arena, P, o) {
   for (let i = 0; i < n; i++) this.weave[i] = this.rng.uniform(0, 6.28);
   for (let i = 0; i < n; i++) this.gait[i] = this.rng.uniform(0.92, 1.08);
   this.stamina = new Float64Array(n).fill(3); this.cool = new Float64Array(n); this.closure = new Float64Array(n);
+  this.wind = new Float64Array(n);   // seconds this hunter's own telegraph has shown (fair burns: bites need WINDUP)
   this.strikes = 0; this.ablate = o.ablate || null;
   this.b = new Float64Array(3 * n); this.pred = new Float64Array(3 * n); this.same = new Uint8Array(n * n);
   this.heading = new Float64Array(3 * n);
@@ -616,6 +619,7 @@ Pack.prototype.act = function (arena, dt) {
     this.stamina[i] = striking[i] ? this.stamina[i] - dt : Math.min(3, this.stamina[i] + 0.5 * dt);
     this.cool[i] = Math.max(0, this.cool[i] - dt);
     this.intent[i] = this.cool[i] > 0 ? 0 : this.closure[i];
+    this.wind[i] = this.intent[i] > 0.5 ? this.wind[i] + dt : this.intent[i] < 0.2 ? 0 : this.wind[i];
     // they WATCH you: heading = toward the predicted pilot while in range
     let hx, hy, hz;
     if (dist[i] < RANGE) { hx = pred[3 * i] - X[3 * i]; hy = pred[3 * i + 1] - X[3 * i + 1]; hz = pred[3 * i + 2] - X[3 * i + 2]; }
@@ -624,9 +628,9 @@ Pack.prototype.act = function (arena, dt) {
     this.heading[3 * i] = hx / hn; this.heading[3 * i + 1] = hy / hn; this.heading[3 * i + 2] = hz / hn;
   }
   const r0 = PL[0].radius, bite = [];
-  for (let i = 0; i < n; i++) if (A[i] && dist[i] < r0 + this.size[i] + 4 && this.cool[i] <= 0) bite.push(i);
+  for (let i = 0; i < n; i++) if (A[i] && dist[i] < r0 + this.size[i] + 4 && this.cool[i] <= 0 && this.wind[i] >= this.WINDUP - 1e-9) bite.push(i);
   for (const i of bite) {
-    arena.hit(PL[k[i]], 'bite'); this.strikes++;
+    arena.hit(PL[k[i]], 'bite', undefined, i); this.strikes++;
     for (let j = 0; j < n; j++) if (same[i * n + j] || j === i) this.cool[j] = 3.0;
   }
   this.hunterContacts(arena);
@@ -847,7 +851,7 @@ Locust.prototype.act = function (arena, dt) {
   for (let i = 0; i < n; i++) { this.bitecd[i] = Math.max(0, this.bitecd[i] - dt); this.chew[i] = Math.max(0, this.chew[i] - dt); }
   for (let i = 0; i < n; i++) {
     if (!A[i] || !(dist[i] < 250 && g[i] >= 0.5) || !(dist[i] < 10)) continue;
-    if (this.bitecd[i] <= 0) { arena.hit(PL[k[i]], 'bite', 0.05); this.bitecd[i] = 2.0; }
+    if (this.bitecd[i] <= 0) { arena.hit(PL[k[i]], 'bite', 0.05, i); this.bitecd[i] = 2.0; }
   }
   // breed: a full gut buds a newborn whose body is paid from the gut
   for (let i = 0; i < n; i++) { this.breed[i] = Math.max(0, this.breed[i] - dt); this.age[i] += dt; }
@@ -955,7 +959,7 @@ Lurker.prototype.act = function (arena, dt) {
   }
   const r0 = PL[0].radius;
   for (let i = 0; i < n; i++) if (A[i] && this.lunge[i] > 0 && dist[i] < r0 + this.size[i] + 4) {
-    arena.hit(PL[k[i]], 'bite', 0.3); this.hits++; this.lunge[i] = 0; this.spent[i] = 3;
+    arena.hit(PL[k[i]], 'bite', 0.3, i); this.hits++; this.lunge[i] = 0; this.spent[i] = 3;
     V[3 * i] *= 0.1; V[3 * i + 1] *= 0.1; V[3 * i + 2] *= 0.1;
   }
   this.hunterContacts(arena);
@@ -973,7 +977,7 @@ Lurker.prototype.colour = function (i, c) {
 // ------------------------------------------------------------------------------------------------ STAMPEDE (majestic)
 const Stampede = inherit(function Stampede(arena, P, o) {
   o = o || {}; this.name = 'stampede';
-  for (const kk of ['SENSE', 'BULL_R', 'HEAD_DOWN', 'SCENT']) this[kk] = C_(P, kk, o);
+  for (const kk of ['SENSE', 'BULL_R', 'HEAD_DOWN', 'SCENT', 'WINDUP']) this[kk] = C_(P, kk, o);
   const n = o.n || P.init.n, herds = o.herds || P.init.herds;
   mkHerd(this, arena, P, n, o.centre);
   const env = envPrisms(arena, o);
@@ -986,6 +990,7 @@ const Stampede = inherit(function Stampede(arena, P, o) {
   for (let i = 0; i < n; i++) this.f.set(vunit(this.rng.normal(), this.rng.normal(), this.rng.normal(), [0, 0, 0]), 3 * i);
   this.chew = new Float64Array(n); for (let i = 0; i < n; i++) this.chew[i] = this.rng.uniform(0, 6);
   this.prep = new Float64Array(n); this.charge = new Float64Array(n); this.rest = new Float64Array(n); this.cd = new Float64Array(n);
+  this.wind = new Float64Array(n);   // seconds this animal's own telegraph has shown (fair burns: tramples need WINDUP)
   this.charges = 0; this.trailEaten = 0; this.ablate = o.ablate || null;
   this.a2 = new Float64Array(n); this.f2 = new Float64Array(3 * n); this.cen = new Float64Array(3 * n); this.alv = new Float64Array(3 * n);
   this.lure = new Float64Array(3 * n);
@@ -1111,7 +1116,7 @@ Stampede.prototype.act = function (arena, dt) {
       this.intent[i] = Math.max(it0[i], it0[bsel]);
     }
   }
-  for (let i = 0; i < n; i++) { this.intent[i] = clamp(this.intent[i], 0, 1); this.chew[i] = Math.max(0, this.chew[i] - dt); this.cd[i] = Math.max(0, this.cd[i] - dt); }
+  for (let i = 0; i < n; i++) { this.intent[i] = clamp(this.intent[i], 0, 1); this.wind[i] = this.intent[i] > 0.5 ? this.wind[i] + dt : this.intent[i] < 0.2 ? 0 : this.wind[i]; this.chew[i] = Math.max(0, this.chew[i] - dt); this.cd[i] = Math.max(0, this.cd[i] - dt); }
   // trample mass in the path, graze otherwise
   for (let i = 0; i < n; i++) {
     if (!A[i] || !(spd[i] > 60 || this.chew[i] <= 0)) continue;
@@ -1125,10 +1130,10 @@ Stampede.prototype.act = function (arena, dt) {
   }
   // trample / gore a pilot (a body running INTO you)
   for (let i = 0; i < n; i++) {
-    if (!A[i] || !(dist[i] < this.size[i] + 8) || this.cd[i] > 0) continue;
+    if (!A[i] || !(dist[i] < this.size[i] + 8) || this.cd[i] > 0 || !(this.wind[i] >= this.WINDUP - 1e-9)) continue;
     const on = Math.max(dist[i], 1e-9);
     const closing = (V[3 * i] * off[3 * i] + V[3 * i + 1] * off[3 * i + 1] + V[3 * i + 2] * off[3 * i + 2]) / on > 0.3 * Math.max(spd[i], 1e-6);
-    if ((spd[i] > 60 && closing) || ch[i]) { arena.hit(PL[k[i]], 'bite', this.bull[i] ? 0.2 : 0.1); this.cd[i] = 2.0; }
+    if ((spd[i] > 60 && closing) || ch[i]) { arena.hit(PL[k[i]], 'bite', this.bull[i] ? 0.2 : 0.1, i); this.cd[i] = 2.0; }
   }
   // a calf alone is prey
   const alone = this._alone || (this._alone = new Uint8Array(n));
@@ -1290,7 +1295,7 @@ Leviathan.prototype.act = function (arena, dt) {
   this.containAll();
   this.burncd = Math.max(0, this.burncd - dt);
   if (this.assembled && this.burncd <= 0) {
-    for (let i = 0; i < N; i++) if (A[i] && this.slot[i] >= 0 && dist[i] < PL[0].radius + this.size[i] + 2) { arena.hit(PL[k[i]], 'burn', 0.2); this.burncd = 0.5; break; }
+    for (let i = 0; i < N; i++) if (A[i] && this.slot[i] >= 0 && dist[i] < PL[0].radius + this.size[i] + 2) { arena.hit(PL[k[i]], 'burn', 0.2, i); this.burncd = 0.5; break; }
   }
   this.hunterContacts(arena);
   this.publish(arena);
@@ -1373,7 +1378,7 @@ Mobber.prototype.act = function (arena, dt) {
   this.containAll();
   for (let i = 0; i < n; i++) if (A[i] && this.dive[i] > 0 && dist[i] < PL[0].radius + 6) {
     const p = PL[k[i]], on = Math.max(dist[i], 1e-9);
-    arena.hit(p, 'drain', 0.02); this.pecks++; this.dive[i] = 0;
+    arena.hit(p, 'drain', 0.02, i); this.pecks++; this.dive[i] = 0;
     V[3 * i] = p.vel[0] - off[3 * i] / on * 60; V[3 * i + 1] = p.vel[1] - off[3 * i + 1] / on * 60; V[3 * i + 2] = p.vel[2] - off[3 * i + 2] / on * 60;
   }
   this.hunterContacts(arena, 1.0, this._pt);
@@ -1707,7 +1712,7 @@ Fortress.prototype.defend = function (arena, dt) {
       this.steerK(k, p.pos[0] + p.vel[0] * 0.25, p.pos[1] + p.vel[1] * 0.25, p.pos[2] + p.vel[2] * 0.25, dt, this.speed * 1.8);
       this.intent[k] = 1;
       const d = Math.hypot(this.pos[3 * k] - p.pos[0], this.pos[3 * k + 1] - p.pos[1], this.pos[3 * k + 2] - p.pos[2]);
-      if (d < p.radius + 4 && this.cool[k] <= 0) { arena.hit(p, 'sting'); this.cool[k] = cooldown; }
+      if (d < p.radius + 4 && this.cool[k] <= 0) { arena.hit(p, 'sting', undefined, k); this.cool[k] = cooldown; }
     }
   }
 };
@@ -1916,7 +1921,7 @@ SnapTrap.prototype.step = function (arena, dt) {
       const inslab = z > 0 && z < p.mouth_len + 6 && w < p.mouth_w + 6;
       const swept = inslab && y < z * Math.tan(thPrev) + 6 && y > z * Math.tan(th) - 6;
       const caught = done && inslab && y < z * Math.tan(th) + 8;
-      if ((swept || caught) && !this.caught[i]) { this.caught[i] = 1; this.snaps++; arena.hit(pi, 'snap'); }
+      if ((swept || caught) && !this.caught[i]) { this.caught[i] = 1; this.snaps++; arena.hit(pi, 'snap', undefined, i); }
     }
     if (done) { st = SHUT; tm = 0; }
     if (st === SHUT) {
@@ -1953,7 +1958,7 @@ SnapTrap.prototype.step = function (arena, dt) {
       if ((B.burnCd.get(key) || -1e9) > arena.t) continue;
       B.burnCd.set(key, arena.t + 1.0);
       const o = B.owner[j]; if (o >= 0 && this.caught[o]) continue;
-      arena.hit(pi, 'burn');
+      arena.hit(pi, 'burn', undefined, o, true);
     }
   }
   if (p.ram) for (const pi of PL) {                          // a pilot flying through PLAIN plant prisms breaks them
@@ -2320,14 +2325,36 @@ Stakes.prototype.summary = function (minutes) {
     stripped_at: this.strippedAt === null ? null : +this.strippedAt.toFixed(1), by_species: this.bySpecies };
 };
 
-/** TELEGRAPH TRACKER: per species, when did its agent nearest the player last start showing intent > 0.5?
- *  A strike from that species counts as telegraphed when the intent had been showing for >= 0.25 s (the bestiary's
- *  first-strike rule). Cheap enough for every step: one nearest-agent scan per species. */
-function TeleTrack() { this.on = {}; this.view = {}; }
+/** TELEGRAPH TRACKER. A strike counts as telegraphed when THE STRIKING AGENT'S OWN intent had been above 0.5 for
+ *  >= 0.25 s before the contact (the bestiary's first-strike rule), with hysteresis (it resets below 0.2).
+ *  The striker is named by Arena.hit's `who`. Per agent, from the species' raw intent array (sp.intent / sp.itn).
+ *  A STANDING danger prism (a snap trap's rim teeth: always drawn hot, never a strike) counts as telegraphed once it
+ *  has been in the world for >= 0.25 s (a trap that sprouts onto you, or a pilot spawned inside one, is unread).
+ *  Fallback when no striker is named (the page's tadpole swarm, a leviathan gulp): the species' agent NEAREST the
+ *  player. That fallback was the only rule until 2026-10-05 and it misattributes: with many agents near, a strike by
+ *  agent B is judged by agent A's intent (see DISCOVERIES "Fair burns"). O(agents) per species per step. */
+function TeleTrack() { this.on = {}; this.view = {}; this.ag = {}; this.t0 = null; }
 TeleTrack.prototype.observe = function (t, player, species) {
+  if (this.t0 === null) this.t0 = t;
   for (const sp of species) {
     const key = sp.key || sp.name;
-    if (!sp.view) continue;
+    const RI = sp.intent || sp.itn, n = sp.n;
+    if (RI && n) {                                                    // per agent, by raw index
+      let g = this.ag[key];
+      if (!g || g.on.length < n) {
+        const on = new Float64Array(n + 16).fill(NaN), seen = new Float64Array(n + 16).fill(NaN);
+        if (g) { on.set(g.on); seen.set(g.seen); }
+        g = this.ag[key] = { on, seen };
+      }
+      const A = sp.alive;
+      for (let j = 0; j < n; j++) {
+        if (A && !A[j]) { g.on[j] = NaN; g.seen[j] = NaN; continue; }
+        if (g.seen[j] !== g.seen[j]) g.seen[j] = t;
+        if (RI[j] > 0.5) { if (g.on[j] !== g.on[j]) g.on[j] = t; }
+        else if (RI[j] < 0.2) g.on[j] = NaN;
+      }
+    }
+    if (!sp.view) continue;                                           // nearest-agent fallback
     const v = sp.view(this.view[key] || (this.view[key] = {}));
     const m = v.m, P = v.P, I = v.I; if (!m || !I) { delete this.on[key]; continue; }
     let bd = Infinity, bj = 0;
@@ -2336,7 +2363,16 @@ TeleTrack.prototype.observe = function (t, player, species) {
     else if (I[bj] < 0.2) delete this.on[key];
   }
 };
-TeleTrack.prototype.lead = function (t, key) { return key in this.on ? t - this.on[key] : 0; };
+/** seconds the telegraph had been showing before a contact at t. who / standing: as passed to Arena.hit. */
+TeleTrack.prototype.lead = function (t, key, who, standing) {
+  const g = this.ag[key];
+  if (standing) {
+    if (g && who >= 0 && who < g.seen.length) return g.seen[who] === g.seen[who] ? t - g.seen[who] : 0;
+    return this.t0 === null ? 0 : t - this.t0;
+  }
+  if (g && typeof who === 'number' && who >= 0 && who < g.on.length) return g.on[who] === g.on[who] ? t - g.on[who] : 0;
+  return key in this.on ? t - this.on[key] : 0;
+};
 
 const EcoSim = { Rng, SpatialHash, Arena, Pilot, Herd, Pack, Thief, Locust, Lurker, Stampede, Leviathan, Mobber, Grazer, Fortress, SnapTrap, PlantBody, Probe, runOne, FlightWorld, SPECIES, WORLD, POLICIES, makePilot, median, mean, percentile, clamp, Stakes, TeleTrack, ELEMENTS, ELEMENT_COLOUR, STAKES_RULES, DANGER_KINDS, SPECIES_ELEMENT, PETAL, LEVEL_MAX };
 if (typeof module !== 'undefined' && module.exports) module.exports = EcoSim; else root.EcoSim = EcoSim;

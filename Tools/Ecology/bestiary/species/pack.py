@@ -20,6 +20,7 @@ from core import Herd, unit, steer, contain, pairwise, separation
 EMOTION = "dread (menacing, coordinated)"
 COUNTER = "break through the gap before the ring closes; change heading so the cut-off is wrong"
 CRUISE, SPRINT, RANGE = 95.0, 175.0, 900.0
+WINDUP = 0.4       # fair burns: a strike lands only after THIS hunter's own intent has shown (> 0.5) for 0.4 s
 
 
 class Pack(Herd):
@@ -33,6 +34,7 @@ class Pack(Herd):
         self.stamina = np.full(n, 3.0)
         self.cool = np.zeros(n)
         self.closure = np.zeros(n)
+        self.wind = np.zeros(n)                               # seconds this hunter's telegraph has shown
         self.bear = unit(arena.rng.normal(size=(n, 3)))
         self.strikes = 0
 
@@ -86,10 +88,11 @@ class Pack(Herd):
         self.stamina = np.where(striking, self.stamina - dt, np.minimum(3.0, self.stamina + 0.5 * dt))
         self.cool = np.maximum(0, self.cool - dt)
         self.intent = np.where(back, 0.0, closure)
+        self.wind = np.where(self.intent > 0.5, self.wind + dt, np.where(self.intent < 0.2, 0.0, self.wind))
         # they WATCH you: a hunter in range faces the predicted pilot whatever its feet are doing (wolfpack effect)
         self.heading = np.where((dist < RANGE)[:, None], unit(pred - self.pos), unit(self.vel))
         # bite
-        for i in np.flatnonzero(a & (dist < arena.pilots[0].radius + self.size + 4) & (self.cool <= 0)):
+        for i in np.flatnonzero(a & (dist < arena.pilots[0].radius + self.size + 4) & (self.cool <= 0) & (self.wind >= WINDUP - 1e-9)):
             p = arena.pilots[k[i]]
             arena.hit(p, "bite"); self.strikes += 1
             self.cool[same[i] | (np.arange(n) == i)] = 3.0       # the pack backs off together after a bite

@@ -493,11 +493,11 @@ function autoPilot(pl) {
 let autoGoal = null;
 
 // ------------------------------------------------------------------------------------------------ events
-function onHit(p, kind, amt, src) {
+function onHit(p, kind, amt, src, who, standing) {
   if (p !== W.player) return;
   stats.nHits++; stats.hits[kind] = (stats.hits[kind] || 0) + 1;
   if (stakes && stakeRule !== 'off') {
-    const t = W.arena.t, ev = stakes.contact(t, kind, src, tele.lead(t, src) >= 0.25);
+    const t = W.arena.t, ev = stakes.contact(t, kind, src, tele.lead(t, src, who, standing) >= 0.25);
     if (ev && ev.total) {
       for (const e in ev.petals) petBurn[e] = 0.7;
       const s = enc.active[src]; if (s) s.burned = (s.burned || 0) + ev.total;

@@ -20,6 +20,7 @@ import numpy as np
 from core import Herd, unit, steer, contain, pairwise, separation
 
 SENSE, BULL_R, HEAD_DOWN, SCENT = 250.0, 260.0, 0.9, 900.0
+WINDUP = 0.4       # fair burns: a strike lands only after THIS animal's own intent has shown (> 0.5) for 0.4 s
 EMOTION = "majestic (awe, then danger in its panic)"
 COUNTER = "approach from outside the alarm radius; never sit in a bolting herd's path; sidestep a bull; split off a calf"
 
@@ -39,6 +40,7 @@ class Stampede(Herd):
         self.chew = arena.rng.uniform(0, 6, n)
         self.prep = np.zeros(n); self.charge = np.zeros(n); self.rest = np.zeros(n)
         self.cd = np.zeros(n)
+        self.wind = np.zeros(n)                               # seconds this animal's telegraph has shown
         self.trail_eaten = 0.0; self.env_trampled = 0.0; self.charges = 0; self.stampede_s = 0.0
 
     def act(self, arena, dt):
@@ -118,6 +120,7 @@ class Stampede(Herd):
                 self.vel[m] += side[m] * 60.0 * dt * 10
                 self.intent[m] = np.maximum(self.intent[m], self.intent[b[m]])
         self.intent = np.clip(self.intent, 0, 1)
+        self.wind = np.where(self.intent > 0.5, self.wind + dt, np.where(self.intent < 0.2, 0.0, self.wind))
         self.stampede_s += dt * float((self.a[al] > 0.5).mean()) if al.any() else 0
         # trample mass in the path, graze otherwise
         self.chew = np.maximum(0, self.chew - dt)
@@ -134,7 +137,8 @@ class Stampede(Herd):
         # trample / gore a pilot
         # a trample is a body running INTO you (not you rear-ending a fleeing animal - that is your ram)
         closing = np.sum(self.vel * unit(off), axis=1) > 0.3 * np.maximum(sp, 1e-6)
-        for i in np.flatnonzero(al & (dist < self.size + 6 + 2) & (self.cd <= 0) & (((sp > 60) & closing) | ch)):
+        for i in np.flatnonzero(al & (dist < self.size + 6 + 2) & (self.cd <= 0) & (((sp > 60) & closing) | ch)
+                                     & (self.wind >= WINDUP - 1e-9)):
             arena.hit(arena.pilots[k[i]], "bite", 0.2 if self.bull[i] else 0.1); self.cd[i] = 2.0
         # a calf alone is prey
         alone = np.min(np.where(al[None, :], d, np.inf), axis=1) > 45

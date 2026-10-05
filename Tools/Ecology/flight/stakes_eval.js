@@ -32,7 +32,7 @@ function world(key, policy, seed) {
 function run(key, policy, seed, rule) {
   const { ar, sp, w } = world(key, policy, seed), pl = ar.pilots[0];
   const st = new E.Stakes({ rule, hostile: true }), tt = new E.TeleTrack(), cry = [];
-  ar.onHit = (p, kind, amt, src) => { if (p === pl) st.contact(ar.t, kind, src || key, tt.lead(ar.t, src || key) >= 0.25); };
+  ar.onHit = (p, kind, amt, src, who, standing) => { if (p === pl) st.contact(ar.t, kind, src || key, tt.lead(ar.t, src || key, who, standing) >= 0.25); };
   ar.onKill = (s, i) => { const X = s.pos || s.h; if (X) cry.push([X[3 * i], X[3 * i + 1], X[3 * i + 2], ar.t, E.SPECIES_ELEMENT[key]]); };
   const steps = Math.round(MIN * 60 / DT);
   for (let s = 0; s < steps; s++) {

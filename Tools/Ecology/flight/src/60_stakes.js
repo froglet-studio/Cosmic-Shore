@@ -90,14 +90,36 @@ Stakes.prototype.summary = function (minutes) {
     stripped_at: this.strippedAt === null ? null : +this.strippedAt.toFixed(1), by_species: this.bySpecies };
 };
 
-/** TELEGRAPH TRACKER: per species, when did its agent nearest the player last start showing intent > 0.5?
- *  A strike from that species counts as telegraphed when the intent had been showing for >= 0.25 s (the bestiary's
- *  first-strike rule). Cheap enough for every step: one nearest-agent scan per species. */
-function TeleTrack() { this.on = {}; this.view = {}; }
+/** TELEGRAPH TRACKER. A strike counts as telegraphed when THE STRIKING AGENT'S OWN intent had been above 0.5 for
+ *  >= 0.25 s before the contact (the bestiary's first-strike rule), with hysteresis (it resets below 0.2).
+ *  The striker is named by Arena.hit's `who`. Per agent, from the species' raw intent array (sp.intent / sp.itn).
+ *  A STANDING danger prism (a snap trap's rim teeth: always drawn hot, never a strike) counts as telegraphed once it
+ *  has been in the world for >= 0.25 s (a trap that sprouts onto you, or a pilot spawned inside one, is unread).
+ *  Fallback when no striker is named (the page's tadpole swarm, a leviathan gulp): the species' agent NEAREST the
+ *  player. That fallback was the only rule until 2026-10-05 and it misattributes: with many agents near, a strike by
+ *  agent B is judged by agent A's intent (see DISCOVERIES "Fair burns"). O(agents) per species per step. */
+function TeleTrack() { this.on = {}; this.view = {}; this.ag = {}; this.t0 = null; }
 TeleTrack.prototype.observe = function (t, player, species) {
+  if (this.t0 === null) this.t0 = t;
   for (const sp of species) {
     const key = sp.key || sp.name;
-    if (!sp.view) continue;
+    const RI = sp.intent || sp.itn, n = sp.n;
+    if (RI && n) {                                                    // per agent, by raw index
+      let g = this.ag[key];
+      if (!g || g.on.length < n) {
+        const on = new Float64Array(n + 16).fill(NaN), seen = new Float64Array(n + 16).fill(NaN);
+        if (g) { on.set(g.on); seen.set(g.seen); }
+        g = this.ag[key] = { on, seen };
+      }
+      const A = sp.alive;
+      for (let j = 0; j < n; j++) {
+        if (A && !A[j]) { g.on[j] = NaN; g.seen[j] = NaN; continue; }
+        if (g.seen[j] !== g.seen[j]) g.seen[j] = t;
+        if (RI[j] > 0.5) { if (g.on[j] !== g.on[j]) g.on[j] = t; }
+        else if (RI[j] < 0.2) g.on[j] = NaN;
+      }
+    }
+    if (!sp.view) continue;                                           // nearest-agent fallback
     const v = sp.view(this.view[key] || (this.view[key] = {}));
     const m = v.m, P = v.P, I = v.I; if (!m || !I) { delete this.on[key]; continue; }
     let bd = Infinity, bj = 0;
@@ -106,4 +128,13 @@ TeleTrack.prototype.observe = function (t, player, species) {
     else if (I[bj] < 0.2) delete this.on[key];
   }
 };
-TeleTrack.prototype.lead = function (t, key) { return key in this.on ? t - this.on[key] : 0; };
+/** seconds the telegraph had been showing before a contact at t. who / standing: as passed to Arena.hit. */
+TeleTrack.prototype.lead = function (t, key, who, standing) {
+  const g = this.ag[key];
+  if (standing) {
+    if (g && who >= 0 && who < g.seen.length) return g.seen[who] === g.seen[who] ? t - g.seen[who] : 0;
+    return this.t0 === null ? 0 : t - this.t0;
+  }
+  if (g && typeof who === 'number' && who >= 0 && who < g.on.length) return g.on[who] === g.on[who] ? t - g.on[who] : 0;
+  return key in this.on ? t - this.on[key] : 0;
+};

@@ -178,7 +178,7 @@ SnapTrap.prototype.step = function (arena, dt) {
       const inslab = z > 0 && z < p.mouth_len + 6 && w < p.mouth_w + 6;
       const swept = inslab && y < z * Math.tan(thPrev) + 6 && y > z * Math.tan(th) - 6;
       const caught = done && inslab && y < z * Math.tan(th) + 8;
-      if ((swept || caught) && !this.caught[i]) { this.caught[i] = 1; this.snaps++; arena.hit(pi, 'snap'); }
+      if ((swept || caught) && !this.caught[i]) { this.caught[i] = 1; this.snaps++; arena.hit(pi, 'snap', undefined, i); }
     }
     if (done) { st = SHUT; tm = 0; }
     if (st === SHUT) {
@@ -215,7 +215,7 @@ SnapTrap.prototype.step = function (arena, dt) {
       if ((B.burnCd.get(key) || -1e9) > arena.t) continue;
       B.burnCd.set(key, arena.t + 1.0);
       const o = B.owner[j]; if (o >= 0 && this.caught[o]) continue;
-      arena.hit(pi, 'burn');
+      arena.hit(pi, 'burn', undefined, o, true);
     }
   }
   if (p.ram) for (const pi of PL) {                          // a pilot flying through PLAIN plant prisms breaks them

@@ -224,10 +224,12 @@ Arena.prototype.addPilot = function (p) {
   this.pilots.push(p);
   return p;
 };
-Arena.prototype.hit = function (p, kind, amount) {
+/** who = the striking agent's index in its species (instrumentation only: TeleTrack reads that agent's own intent);
+ *  standing = the contact was a standing danger prism (always shown hot), not a strike. Neither changes behaviour. */
+Arena.prototype.hit = function (p, kind, amount, who, standing) {
   this.log.push([this.t, p.name, kind, amount === undefined ? 1 : amount, this._src]); p.hitsN++;
   if (this.slowAllHits || kind === 'burn' || kind === 'snap') this.fl.slow_t[p.name] = this.t;   // a danger contact slows
-  if (this.onHit) this.onHit(p, kind, amount, this._src);
+  if (this.onHit) this.onHit(p, kind, amount, this._src, who, standing);
 };
 /** flora/harness.py speed_factor: a burn stops you (1.5 x clamped) and you recover linearly over 3 s. */
 Arena.prototype.speedFactor = function (p) {
