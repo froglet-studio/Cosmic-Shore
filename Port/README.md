@@ -4,6 +4,9 @@ A ground-up replication of Cosmic Shore onto a stack wholly owned by Froglet Inc
 no Unity, no editor-bound tooling, no dependency that blocks a fully autonomous,
 headless develop/build/test loop.
 
+**Just want to play a branch?** Unzip `dist/FrogletLauncher-Windows.zip` and run
+`FrogletLauncher.exe`: pick a branch, press START GAME. See `docs/LAUNCHER.md`.
+
 **Start here:** `docs/ARCHITECTURE.md` — how the whole port fits together, with
 diagrams and annotated screenshots of every screen and control.
 
@@ -98,6 +101,7 @@ Port/
 │   ├── CosmicShore.Game/        # ported game code (mirrors Assets/_Scripts structure)
 │   ├── CosmicShore.AssetTool/   # cs-asset: edit/create/delete in scenes & prefabs (docs/AUTHORING.md)
 │   ├── CosmicShore.Build/       # cs-build: Android/iOS player builds (docs/MOBILE_BUILDS.md)
+│   ├── CosmicShore.Launcher/    # FrogletLauncher.exe: branch > fetch > build > play, phone builds (docs/LAUNCHER.md)
 │   ├── CosmicShore.Mobile/      # the phone player (Android activity / iOS app around PlayerWindow)
 │   ├── CosmicShore.Cli/         # headless smoke/sim harness (engine boot, SOAP, sims)
 │   └── CosmicShore.Client/      # playable SkimRace window (Silk.NET, sprint builds)

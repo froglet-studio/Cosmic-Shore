@@ -56,6 +56,9 @@ namespace CosmicShore.Player
         /// <summary>--render-from N: skip drawing before frame N (a test run ticks through menus fast, then renders).</summary>
         public static int RenderFrom;
 
+        /// <summary>--fullscreen: open full-screen at the desktop's resolution (F11 still toggles).</summary>
+        public static bool StartFullscreen;
+
         public void Run()
         {
             var options = WindowOptions.Default with
@@ -66,6 +69,7 @@ namespace CosmicShore.Player
                 PreferredStencilBufferBits = 8,
                 PreferredDepthBufferBits = 24,
             };
+            if (StartFullscreen) options = options with { WindowState = WindowState.Fullscreen };
             // COSMIC_SHORE_GLES=1 runs the desktop player on an OpenGL ES 3.0 context — the exact
             // render path a phone takes, so the mobile build can be checked without one.
             if (Environment.GetEnvironmentVariable("COSMIC_SHORE_GLES") == "1")

@@ -139,35 +139,34 @@ namespace CosmicShore.Engine
         }
 
         /// <summary>
-        /// Critically damped spring smoothing (Game Programming Gems 4, ch. 1.10) —
-        /// matches the reference engine implementation including overshoot clamping.
+        /// Moves <paramref name="current"/> toward <paramref name="target"/> as a critically damped
+        /// spring whose time constant is <paramref name="smoothTime"/>, integrated exactly over the
+        /// step: displacement x(t) = (x0 + (v0 + w x0) t) e^(-w t) with w = 2 / smoothTime.
+        /// The displacement is limited to maxSpeed * smoothTime, and a step that would carry the
+        /// value past the target lands on it at rest instead (a critically damped spring never
+        /// crosses its rest point, so a crossing can only come from a moving target or a big step).
         /// </summary>
         public static float SmoothDamp(float current, float target, ref float currentVelocity,
             float smoothTime, float maxSpeed, float deltaTime)
         {
-            smoothTime = Max(0.0001f, smoothTime);
-            float omega = 2f / smoothTime;
+            if (deltaTime <= 0f) return current;
+            float w = 2f / Max(0.0001f, smoothTime);
+            float limit = maxSpeed * Max(0.0001f, smoothTime);
+            float x0 = Clamp(current - target, -limit, limit);
+            float v0 = currentVelocity;
 
-            float x = omega * deltaTime;
-            float exp = 1f / (1f + x + 0.48f * x * x + 0.235f * x * x * x);
-            float change = current - target;
-            float originalTo = target;
+            float decay = (float)System.Math.Exp(-w * deltaTime);
+            float k = (v0 + w * x0) * deltaTime;
+            float x1 = (x0 + k) * decay;
+            float v1 = (v0 - w * k) * decay;
 
-            float maxChange = maxSpeed * smoothTime;
-            change = Clamp(change, -maxChange, maxChange);
-            target = current - change;
-
-            float temp = (currentVelocity + omega * change) * deltaTime;
-            currentVelocity = (currentVelocity - omega * temp) * exp;
-            float output = target + (change + temp) * exp;
-
-            if (originalTo - current > 0f == output > originalTo)
+            if (x0 != 0f && x1 * x0 < 0f)
             {
-                output = originalTo;
-                currentVelocity = (output - originalTo) / deltaTime;
+                currentVelocity = 0f;
+                return target;
             }
-
-            return output;
+            currentVelocity = v1;
+            return target + x1;
         }
 
         public static float SmoothDamp(float current, float target, ref float currentVelocity, float smoothTime)

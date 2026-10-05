@@ -1,0 +1,101 @@
+using System;
+using System.IO;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
+namespace CosmicShore.Launcher
+{
+    /// <summary>Where the launcher keeps its workspace when the user has no clone of their own.</summary>
+    public enum WorkspaceMode
+    {
+        /// <summary>A shallow clone the launcher owns under its data folder. Nothing of the user's is touched.</summary>
+        Managed = 0,
+        /// <summary>A git worktree beside the user's existing clone: shares its objects, never touches its checkout.</summary>
+        WorktreeOfMyClone = 1,
+    }
+
+    /// <summary>
+    /// Everything the launcher remembers between runs. Persisted as JSON in the launcher's data
+    /// folder; unknown or missing fields fall back to these defaults.
+    /// </summary>
+    public sealed class LauncherSettings
+    {
+        public string RemoteUrl { get; set; } = "https://github.com/froglet-studio/Cosmic-Shore.git";
+        public string Branch { get; set; } = "cece/focused-planck-cj46y3";
+        public WorkspaceMode Workspace { get; set; } = WorkspaceMode.Managed;
+        public string MyClonePath { get; set; } = "";
+        /// <summary>Optional GitHub token (read-only is enough) for testers whose git has no stored sign-in.</summary>
+        public string GitHubToken { get; set; } = "";
+        public string ManagedPath { get; set; } = "";
+
+        // Play
+        public bool PullBeforePlay { get; set; } = true;
+        public string Resolution { get; set; } = "1600x900";
+        public bool Fullscreen { get; set; }
+        public string StartScene { get; set; } = "";
+        public bool Audio { get; set; } = true;
+        public bool Network { get; set; } = true;
+        public bool MobileRenderPath { get; set; }
+        public bool VerboseLogs { get; set; }
+        public string Profile { get; set; } = "";
+        public string ExtraArgs { get; set; } = "";
+        public bool ReleaseBuild { get; set; } = true;
+
+        // Build
+        public string AndroidAbis { get; set; } = "arm64";
+        public bool AndroidBundle { get; set; }
+        public bool DebugBuild { get; set; }
+        public string KeystorePath { get; set; } = "";
+        public string KeystoreAlias { get; set; } = "";
+
+        // Toolchain
+        public string DotnetPath { get; set; } = "";
+        public string GitPath { get; set; } = "";
+
+        [JsonIgnore] public static string DataDir { get; } = ResolveDataDir();
+        [JsonIgnore] static string FilePath => Path.Combine(DataDir, "launcher.json");
+
+        public string ResolvedManagedPath =>
+            string.IsNullOrWhiteSpace(ManagedPath) ? Path.Combine(DataDir, "workspace") : ManagedPath;
+
+        static string ResolveDataDir()
+        {
+            var baseDir = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            if (string.IsNullOrEmpty(baseDir))
+                baseDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".local", "share");
+            var dir = Path.Combine(baseDir, "FrogletEngine");
+            Directory.CreateDirectory(dir);
+            return dir;
+        }
+
+        static readonly JsonSerializerOptions Json = new()
+        {
+            WriteIndented = true,
+            Converters = { new JsonStringEnumConverter() },
+        };
+
+        /// <summary>True when no settings file existed yet (first launch on this machine).</summary>
+        [JsonIgnore] public static bool FirstRun { get; private set; }
+
+        public static LauncherSettings Load()
+        {
+            FirstRun = !File.Exists(FilePath);
+            try
+            {
+                if (File.Exists(FilePath))
+                    return JsonSerializer.Deserialize<LauncherSettings>(File.ReadAllText(FilePath), Json) ?? new();
+            }
+            catch (Exception)
+            {
+                // A corrupt settings file must never stop the launcher opening; start from defaults.
+            }
+            return new LauncherSettings();
+        }
+
+        public void Save()
+        {
+            try { File.WriteAllText(FilePath, JsonSerializer.Serialize(this, Json)); }
+            catch (Exception) { /* read-only profile: settings simply do not persist */ }
+        }
+    }
+}

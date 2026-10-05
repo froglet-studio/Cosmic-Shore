@@ -86,6 +86,7 @@ namespace CosmicShore.Player
                     case "--population" when i + 1 < args.Length: evalPopulation = args[++i]; break;
                     case "--report-render": reportRender = true; break;
                     case "--dump-ui" when i + 1 < args.Length: dumps.Add(args[++i]); break;
+                    case "--fullscreen": PlayerWindow.StartFullscreen = true; break;
                     case "--verbose": CosmicShore.Utility.CSDebug.VerboseChannels = (CosmicShore.Utility.CSLogChannel)~0; break;
                     case "--do" when i + 1 < args.Length: script.Add(args[++i]); break;
                     case "--shot" when i + 1 < args.Length:

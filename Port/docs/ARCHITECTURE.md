@@ -1,6 +1,6 @@
-# Cosmic Shore Port — Architecture Overview
+# Froglet Engine v0.1 — Architecture Overview
 
-*The Unity-free engine that runs Cosmic Shore: how it is put together, how one frame works, and how to drive it.*
+*The Unity-free engine (the "port") that runs Cosmic Shore: how it is put together, how one frame works, and how to drive it.*
 
 This is the map. Each section ends with where to read more. The deeper documents are
 `PORT_PLAN.md` (roadmap and status), `docs/ENGINE_CORE.md`, `docs/AUTHORING.md` (`cs-asset`),
@@ -38,6 +38,7 @@ players also reference Content, Render and Engine directly.
 | **CosmicShore.Mobile** | The Android/iOS player: the same `PlayerWindow` on an SDL GL ES view, with touch | same as Player |
 | **CosmicShore.AssetTool** | `cs-asset`: edit scenes, prefabs and assets from the command line | Content, Live, Compat |
 | **CosmicShore.Build** | `cs-build`: Unity-style player builds (player data, Android APK/AAB, iOS) | none (reads files only) |
+| **CosmicShore.Launcher** | `FrogletLauncher.exe`: pick a branch, fetch, build and play it; Android/iOS builds. Dear ImGui on Silk.NET | none (drives git, `dotnet`, `cs-build`) |
 | *Data, Game, Cli, Client* | **Legacy.** Early hand-ported gameplay, headless round drivers and "sprint" windows. The player does not use them; the tests still do | Engine |
 | Tests | `CosmicShore.Tests` (xunit, 1,568 tests); `CosmicShore.Tests.Ported` (the project's Unity EditMode tests, 352) | — |
 
@@ -276,15 +277,50 @@ toolchain.
 
 ## 11. Using the engine: screens and controls
 
-The port has **no editor window**. Unity stays the editor; the port is the **player** plus two
-command-line tools. The screenshots below are the engine's own surfaces: its diagnostics panel and
-its two tools. Numbered badges mark what to click.
+The port has **no editor window**. Unity stays the editor; the port is the **launcher**, the
+**player** and two command-line tools. The screenshots below are the engine's own surfaces.
+Numbered badges mark what to click.
 
-### 11.1 Starting it
+### 11.1 The launcher (start here)
+
+`FrogletLauncher.exe` (`Port/dist/FrogletLauncher-Windows.zip`) is the one file to give a tester.
+Full guide: `docs/LAUNCHER.md`.
+
+![Launcher PLAY](architecture/launcher_play.png)
+
+**Figure 8.** The PLAY page.
+
+| # | Control | What it does |
+|---|---|---|
+| 1 | **Source branch** | The branch to run; type to filter |
+| 2 | **REFRESH** | Reload branches from GitHub |
+| 3 | **START GAME** | Fetch the branch, fetch FMOD, compile that branch's source, launch |
+| 4 | **UPDATE** | Fetch only |
+| 5 | **BUILD PHONE** | The BUILD page |
+| 6 | **WORKSPACE** | Open the build folder |
+| 7 | **Launch profile** | Resolution, start scene, fullscreen, audio, online, phone render path, pull-before-play |
+| 8 | **In the game** | Flight keys |
+| 9 | **Pipeline** | SYNC > AUDIO > BUILD > LAUNCH, lit as START runs |
+| 10 | **Pages** | PLAY · BUILD · OPTIONS · CONSOLE |
+| 11 | **Tool status** | git and .NET detected |
+| 12 | **Status bar** | Current step, last log line, progress, CANCEL |
+
+![Launcher BUILD](architecture/launcher_build.png)
+
+**Figure 9.** The BUILD page: (1) CPU, (2) APK or AAB, (3) signing key, (4) **BUILD APK**,
+(5) iOS: export for Xcode on Windows, **BUILD IPA** on a Mac, (6) the output file.
+
+![Launcher OPTIONS](architecture/launcher_options.png)
+
+**Figure 10.** OPTIONS: (1) repository, (2) branch, (3) GitHub token for private access,
+(4) workspace: the launcher's own clone or a worktree beside yours, (5) toolchain: rescan,
+install .NET, data folder, (6) player arguments, profile, Release/Debug, verbose logs.
+
+### 11.1b Other ways to start it
 
 | How | Command |
 |---|---|
-| Windows, one click | `Port\play-player.bat` (pulls the latest build and runs it) |
+| Windows, one click (prebuilt zip) | `Port\play-player.bat` (pulls the latest build and runs it) |
 | From source | `cd Port && dotnet run --project src/CosmicShore.Player` |
 | Open one scene directly | `CosmicShore --scene Menu_Main` |
 | No window (fast checks) | `CosmicShore --headless --frames 600` |
@@ -312,7 +348,7 @@ own touch controls.
 
 ![Diagnostics](architecture/ui_diagnostics.png)
 
-**Figure 8.** The game's `DiagnosticsHUD`.
+**Figure 11.** The game's `DiagnosticsHUD`.
 
 | # | Control | What it does |
 |---|---|---|
@@ -349,12 +385,12 @@ Environment variables:
 
 ![cs-asset](architecture/ui_cs_asset.png)
 
-**Figure 9.** `cs-asset`: list a scene's objects, read a field, change it. `--dry-run` shows the
+**Figure 12.** `cs-asset`: list a scene's objects, read a field, change it. `--dry-run` shows the
 change without writing it. Close the scene in Unity before writing to it.
 
 ![cs-build](architecture/ui_cs_build.png)
 
-**Figure 10.** `cs-build android`: player data, then a signed APK. On Windows, double-click
+**Figure 13.** `cs-build android`: player data, then a signed APK. On Windows, double-click
 `Port\build-android.bat`.
 
 ---
@@ -379,6 +415,7 @@ change without writing it. Close the scene in Unity before writing to it.
 | Physics | Triggers and queries only. Boxes and meshes are axis-aligned bounds, and there is no contact solver, so `OnCollision*` never fires |
 | Shaders | Material families are reproduced, not Unity's compiled shaders. A new Shader Graph needs a translation in `SceneRenderer` |
 | Online services | Local stand-ins: no real UGS accounts, cloud or leaderboards |
+| Provenance | No Unity binary is used. Two spots still follow Unity source too closely (TMP SDF text-shader terms, a Voronoi hash from Unity's docs) and are queued for clean rewrites: `docs/LEGAL_REVIEW.md`. Third-party notices: `THIRD_PARTY_NOTICES.md` |
 | Animation Rigging, Timeline, VFX Graph | Data only; they do not animate or emit |
 | Phones | Android APK builds, but has not been run on a device yet. iOS needs a Mac. Android audio needs `git lfs pull` |
 | Branches | `CosmicShore.Live` compiles whatever `Assets/` is checked out. Run the port on the branch it was built for |
