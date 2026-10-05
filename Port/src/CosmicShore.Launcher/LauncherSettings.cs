@@ -60,6 +60,12 @@ namespace CosmicShore.Launcher
         public string KeystoreAlias { get; set; } = "";
         public IosMode Ios { get; set; } = OperatingSystem.IsMacOS() ? IosMode.ThisMac : IosMode.GitHub;
 
+        // Claude
+        public string AnthropicApiKey { get; set; } = "";
+        public string ClaudeModel { get; set; } = "";
+        public string ClaudePath { get; set; } = "";
+        public int ChatMode { get; set; }
+
         // Toolchain
         public string DotnetPath { get; set; } = "";
         public string GitPath { get; set; } = "";

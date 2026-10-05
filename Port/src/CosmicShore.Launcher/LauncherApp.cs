@@ -24,7 +24,7 @@ namespace CosmicShore.Launcher
     /// </summary>
     public sealed class LauncherApp
     {
-        enum Page { Play, Build, Project, Options, Console }
+        enum Page { Play, Build, Project, Chat, Options, Console }
 
         public sealed record Args(string? Screenshot, int Frames, string? Page, bool Offline, string? Auto = null);
 
@@ -33,6 +33,7 @@ namespace CosmicShore.Launcher
         readonly Toolchain _tools = new();
         readonly Workspace _ws;
         readonly LauncherJobs _jobs;
+        readonly ClaudeChat _chat;
 
         IWindow _window = null!;
         GL _gl = null!;
@@ -61,6 +62,7 @@ namespace CosmicShore.Launcher
             _s = LauncherSettings.Load();
             _ws = new Workspace(_s, _tools);
             _jobs = new LauncherJobs(_s, _tools, _ws);
+            _chat = new ClaudeChat(_s);
             var pageArg = args.Page?.Split(':');
             if (pageArg != null && Enum.TryParse<Page>(pageArg[0], true, out var p)) _page = p;
             if (pageArg is { Length: > 1 } && int.TryParse(pageArg[1], out var tab)) _projTab = tab;
@@ -101,7 +103,7 @@ namespace CosmicShore.Launcher
             _window.Load += OnLoad;
             _window.Render += OnRender;
             _window.FramebufferResize += s => _gl?.Viewport(s);
-            _window.Closing += () => { _s.Save(); _imgui?.Dispose(); };
+            _window.Closing += () => { _chat.Stop(); _s.Save(); _imgui?.Dispose(); };
             _window.Run();
             _window.Dispose();
         }
@@ -199,6 +201,11 @@ namespace CosmicShore.Launcher
                     case "update": _jobs.Update(); break;
                     case "android": _jobs.BuildPhone(ios: false); break;
                     case "ios": _jobs.BuildIos(); break;
+                    case var c when c.StartsWith("chat:"):
+                        _page = Page.Chat;
+                        _chat.Detect();
+                        _chat.Send(c[5..], _ws.Exists ? _ws.Dir : LauncherSettings.DataDir, ClaudeChat.Mode.Ask);
+                        break;
                 }
             }
             DrawFrame((float)dt);
@@ -233,6 +240,7 @@ namespace CosmicShore.Launcher
                 case Page.Play: DrawPlay(contentA, contentB); break;
                 case Page.Build: DrawBuild(contentA, contentB); break;
                 case Page.Project: DrawProject(contentA, contentB); break;
+                case Page.Chat: DrawChat(contentA, contentB); break;
                 case Page.Options: DrawOptions(contentA, contentB); break;
                 case Page.Console: DrawConsole(contentA, contentB); break;
             }
@@ -330,6 +338,7 @@ namespace CosmicShore.Launcher
                 (Page.Play, "PLAY", Neon.IconPlay),
                 (Page.Build, "BUILD", Neon.IconPhone),
                 (Page.Project, "PROJECT", Neon.IconSliders),
+                (Page.Chat, "CLAUDE", Neon.IconChat),
                 (Page.Options, "SETTINGS", Neon.IconGear),
                 (Page.Console, "CONSOLE", Neon.IconTerminal),
             };
@@ -789,6 +798,118 @@ namespace CosmicShore.Launcher
             ImGui.PopFont();
         }
 
+        // ---------------------------------------------------------------- CHAT (Claude Code)
+
+        readonly List<ChatItem> _chatSnap = new();
+        string _chatInput = "";
+        int _chatSeen;
+        bool _chatDetected;
+
+        void DrawChat(Vector2 a, Vector2 b)
+        {
+            var dl = ImGui.GetWindowDrawList();
+            if (!_chatDetected) { _chatDetected = true; Task.Run(() => _chat.Detect()); }
+            PageHeader(a, "CLAUDE", _chat.Cli != null ? "Claude Code in " + Trim(_ws.Exists ? _ws.Dir : "(no workspace yet)", 70) : null);
+
+            // header controls
+            ImGui.SetCursorScreenPos(new Vector2(b.X - 420, a.Y + 4));
+            Segmented("cmode", new[] { "ASK", "EDIT", "AUTO" }, _s.ChatMode, i => _s.ChatMode = i, Neon.Magenta);
+            Neon.Tooltip("ASK: reads and plans, changes nothing.\nEDIT: may edit files in the workspace.\nAUTO: may also run commands.");
+            ImGui.SameLine(0, 12);
+            if (SmallButton("NEW", 80, !_chat.Busy)) _chat.NewChat();
+
+            if (_chat.Cli == null)
+            {
+                var c = new Vector2((a.X + b.X) * 0.5f, (a.Y + b.Y) * 0.5f - 60);
+                CenterText(dl, Neon.Heading, 22, c.X, c.Y, Neon.Ink, "Claude Code is not installed");
+                ImGui.SetCursorScreenPos(new Vector2(c.X - 110, c.Y + 50));
+                if (Neon.Button("instclaude", _chat.Installing ? "INSTALLING" : "INSTALL", new Vector2(220, 56), Neon.Magenta, Neon.Heading, 22, !_chat.Installing))
+                    Task.Run(() => _chat.Install(_jobs.Log));
+                ImGui.SetCursorScreenPos(new Vector2(c.X - 220, c.Y + 130));
+                ImGui.PushItemWidth(440);
+                var key = _s.AnthropicApiKey ?? "";
+                if (ImGui.InputTextWithHint("##akey0", "Anthropic API key (optional)", ref key, 256, ImGuiInputTextFlags.Password)) { _s.AnthropicApiKey = key; _dirty = true; }
+                ImGui.PopItemWidth();
+                Neon.Tooltip("Optional. Without a key Claude Code asks you to sign in once. Stored only on this PC.");
+                return;
+            }
+
+            // transcript
+            float inputH = 92;
+            var ta = new Vector2(a.X, a.Y + 60); var tb = new Vector2(b.X, b.Y - inputH - 14);
+            Neon.ChamferFill(dl, ta, tb, 10, Neon.U(Neon.Space0, 0.72f));
+            ImGui.SetCursorScreenPos(ta + new Vector2(18, 14));
+            ImGui.BeginChild("##chat", tb - ta - new Vector2(36, 28));
+            _chat.Snapshot(_chatSnap);
+            float wrap = tb.X - ta.X - 80;
+            if (_chatSnap.Count == 0)
+            {
+                ImGui.PushFont(Neon.Small);
+                ImGui.TextColored(Neon.Dim, "Ask about the engine, the game or this branch. Claude reads the workspace;");
+                ImGui.TextColored(Neon.Dim, "in EDIT or AUTO it can change files there. Rebuild with START to try them.");
+                ImGui.PopFont();
+            }
+            foreach (var it in _chatSnap)
+            {
+                switch (it.Role)
+                {
+                    case ChatRole.User:
+                        ImGui.Dummy(new Vector2(0, 6));
+                        ImGui.TextColored(Neon.Cyan, "YOU");
+                        ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + wrap);
+                        ImGui.TextWrapped(it.Text);
+                        ImGui.PopTextWrapPos();
+                        break;
+                    case ChatRole.Assistant:
+                        ImGui.Dummy(new Vector2(0, 6));
+                        ImGui.TextColored(Neon.Magenta, "CLAUDE");
+                        ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + wrap);
+                        ImGui.TextWrapped(it.Text);
+                        ImGui.PopTextWrapPos();
+                        break;
+                    case ChatRole.Tool:
+                        ImGui.PushFont(Neon.Mono);
+                        ImGui.TextColored(Neon.Mix(Neon.Dim, Neon.Space0, 0.15f), "  > " + it.Text);
+                        ImGui.PopFont();
+                        break;
+                    case ChatRole.System:
+                        ImGui.PushFont(Neon.Small); ImGui.TextColored(Neon.Dim, it.Text); ImGui.PopFont();
+                        break;
+                    case ChatRole.Error:
+                        ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + wrap);
+                        ImGui.TextColored(Neon.Red, it.Text);
+                        ImGui.PopTextWrapPos();
+                        break;
+                }
+            }
+            if (_chat.Busy)
+            {
+                int dots = (int)(Neon.Time * 3) % 4;
+                ImGui.TextColored(Neon.Magenta, "thinking" + new string('.', dots));
+            }
+            if (_chatSnap.Count != _chatSeen || _chat.Busy) { if (_chatSnap.Count != _chatSeen) ImGui.SetScrollHereY(1f); _chatSeen = _chatSnap.Count; }
+            ImGui.EndChild();
+
+            // input
+            var ia = new Vector2(a.X, b.Y - inputH); 
+            ImGui.SetCursorScreenPos(ia);
+            bool send = ImGui.InputTextMultiline("##chatin", ref _chatInput, 8000, new Vector2(b.X - a.X - 140, inputH),
+                ImGuiInputTextFlags.CtrlEnterForNewLine | ImGuiInputTextFlags.EnterReturnsTrue);
+            ImGui.SameLine(0, 12);
+            bool can = !_chat.Busy && _chatInput.Trim().Length > 0;
+            if (_chat.Busy)
+            {
+                if (Neon.Button("chatstop", "STOP", new Vector2(128, inputH), Neon.Red, Neon.Heading, 22)) _chat.Stop();
+            }
+            else if (Neon.Button("chatsend", "SEND", new Vector2(128, inputH), Neon.Magenta, Neon.Heading, 22, can) || (send && can))
+            {
+                _chat.Send(_chatInput, _ws.Exists ? _ws.Dir : LauncherSettings.DataDir, (ClaudeChat.Mode)_s.ChatMode);
+                _chatInput = "";
+            }
+            if (_chat.CostUsd > 0)
+                dl.AddText(Neon.Small, 13, new Vector2(b.X - 128, ia.Y - 20), Neon.U(Neon.Dim), $"${_chat.CostUsd:0.000}");
+        }
+
         // ---------------------------------------------------------------- SETTINGS
 
         readonly HashSet<string> _open = new() { "GAME" };
@@ -832,6 +953,17 @@ namespace CosmicShore.Launcher
                 if (_s.Workspace == WorkspaceMode.WorktreeOfMyClone)
                     Row("My clone", () => Text("##clone", "C:\\...\\Cosmic-Shore", () => _s.MyClonePath, v => _s.MyClonePath = v));
                 Row("", () => { ImGui.PushFont(Neon.Small); ImGui.TextColored(Neon.Dim, Trim(_ws.Dir, 80)); ImGui.PopFont(); });
+            }
+            if (Section("CLAUDE"))
+            {
+                Row("API key", () =>
+                {
+                    var key = _s.AnthropicApiKey ?? "";
+                    if (ImGui.InputTextWithHint("##akey", "optional - else Claude Code's own sign-in", ref key, 256, ImGuiInputTextFlags.Password)) { _s.AnthropicApiKey = key; _dirty = true; }
+                    Neon.Tooltip("Passed only to the claude process. Stored only on this PC.");
+                });
+                Row("Model", () => Text("##cmodel", "default", () => _s.ClaudeModel, v => _s.ClaudeModel = v));
+                Row("CLI path", () => Text("##cpath", "auto-detect", () => _s.ClaudePath, v => _s.ClaudePath = v));
             }
             if (Section("ADVANCED"))
             {

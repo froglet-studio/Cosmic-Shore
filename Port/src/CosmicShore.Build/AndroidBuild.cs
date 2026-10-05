@@ -51,7 +51,7 @@ namespace CosmicShore.Build
 
             var args = new List<string>
             {
-                "build", mobile, "-f", "net10.0-android", "-c", config,
+                "build", mobile, "-f", "net10.0-android", "-c", config, "-p:TargetFrameworks=net10.0-android",
                 "-p:CsAbis=" + string.Join("%3B", abis),   // not RuntimeIdentifiers: a global one would reach the class libraries too
                 "-p:AndroidPackageFormat=" + (aab ? "aab" : "apk"),
                 "-p:ApplicationId=" + id,
