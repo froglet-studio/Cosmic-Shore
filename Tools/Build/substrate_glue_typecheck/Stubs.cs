@@ -258,9 +258,40 @@ namespace Unity.Collections
         public T this[int index] { get => default; set { } }
         public void Dispose() { }
         public void CopyFrom(T[] array) { }
+        // substrate (round 11c SubstrateAgentPass / SubstrateAgentJob): NativeArray<T>.CopyTo / AsSpan / AsReadOnlySpan
+        // (UnityEngine.CoreModule NativeArray.cs, Unity 6000.x)
+        public void CopyTo(T[] array) { }
+        public Span<T> AsSpan() => default;
+        public ReadOnlySpan<T> AsReadOnlySpan() => default;
         public NativeArray<U> Reinterpret<U>() where U : struct => default;
         public NativeArray<U> Reinterpret<U>(int expectedTypeSize) where U : struct => default;
         public static void Copy(T[] src, int srcIndex, NativeArray<T> dst, int dstIndex, int length) { }
+    }
+}
+
+namespace Unity.Collections
+{
+    // substrate (round 11c SubstrateAgentJob): the job-safety attributes (UnityEngine.CoreModule)
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Parameter)] public sealed class ReadOnlyAttribute : Attribute { }
+    [AttributeUsage(AttributeTargets.Field)] public sealed class NativeDisableParallelForRestrictionAttribute : Attribute { }
+}
+
+// substrate (round 11c): Unity.Jobs / Unity.Burst as Tools/Build/swarm_glue_typecheck/Stubs.cs has them (SwarmPoseJob)
+namespace Unity.Burst { public sealed class BurstCompileAttribute : Attribute { } }
+namespace Unity.Jobs
+{
+    public struct JobHandle
+    {
+        public void Complete() { }
+        public bool IsCompleted => true;
+        public static void ScheduleBatchedJobs() { }
+        public static JobHandle CombineDependencies(JobHandle a, JobHandle b) => default;
+    }
+    public interface IJobParallelFor { void Execute(int index); }
+    public static class IJobParallelForExtensions
+    {
+        public static JobHandle Schedule<T>(this T jobData, int arrayLength, int innerloopBatchCount, JobHandle dependsOn = default) where T : struct, IJobParallelFor => default;
+        public static void Run<T>(this T jobData, int arrayLength) where T : struct, IJobParallelFor { }
     }
 }
 

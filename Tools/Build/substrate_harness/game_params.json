@@ -179,7 +179,7 @@
     "FearDecay": 0.5,
     "Sense": 900,
     "CuriosityRate": 0.3,
-    "QUp": 0.55,
+    "QUp": 0.65,
     "QDown": 0.35,
     "QWidth": 0.08,
     "QRate": 0.8,

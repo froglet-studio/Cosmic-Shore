@@ -35,6 +35,7 @@ static class SubstrateHarness
         if (all || which == "ledger") Ledger();
         if (all || which == "job") Job();
         if (all || which == "index") IndexLedger();
+        if (all || which == "kernel") KernelMatch();
         if (all || which == "bench") Bench();
         Console.WriteLine(_fail == 0 ? "\nALL SUBSTRATE TESTS PASSED" : $"\n{_fail} SUBSTRATE ASSERTION(S) FAILED");
         return _fail == 0 ? 0 : 1;
@@ -268,6 +269,11 @@ static class SubstrateHarness
         public int Bites, Rests, Hunters, StrikersInWindow;
         public float WindedSpeed, StalkSpeed, WindedDangerFrac = -1;
         public float ClosureMax;
+        /// <summary>The STALK before the first strike: how long the ring was HELD - at least min(4, n) hunters around
+        /// the pilot inside CloseR, none of them dangerous - in the unbroken stretch that ends at the strike.</summary>
+        public float HoldBeforeStrike = -1;
+        /// <summary>Every stalk that ended in a strike (the hold before each strike onset of the pack).</summary>
+        public readonly List<float> Holds = new();
     }
 
     static PackRun RunPack(int seed, SubstrateSpeciesParams P, string pilotMode, float seconds, float window = 1.0f)
@@ -283,6 +289,8 @@ static class SubstrateHarness
         var res = new PackRun { Hunters = P.N0 };
         var strikeAt = new Dictionary<int, float>();
         bool wasClosed = false;
+        float holdFrom = -1;
+        bool wasStriking = false;
         float windedSum = 0, stalkSum = 0; int windedN = 0, stalkN = 0, windedDanger = 0;
         for (int t = 0; t < (int)(seconds / Dt); t++)
         {
@@ -308,6 +316,20 @@ static class SubstrateHarness
                 res.RingAtClose = Mean(live.Select(i => Vector3.Distance(w.Core.Pos[i], pil.Pos)));
             }
             wasClosed = isClosed;
+            // the ring HELD: enough hunters around the pilot, none striking (the research's menace configuration)
+            int around = live.Count(i => Vector3.Distance(w.Core.Pos[i], pil.Pos) < P.CloseR);
+            bool striking = live.Any(i => w.Core.Danger[i]);
+            bool resting = live.Any(i => w.Core.Rest[i] > 0f);
+            bool holding = around >= Math.Min(4, live.Length) && live.Length > 0 && !striking && !resting;
+            bool strikeNow = w.Core.Events.Any(e => e.Kind == SubstrateEventKind.Strike);
+            if (strikeNow && holdFrom >= 0 && !wasStriking)
+            {
+                res.Holds.Add(now - holdFrom);
+                if (res.HoldBeforeStrike < 0) res.HoldBeforeStrike = now - holdFrom;
+            }
+            wasStriking = striking || resting;
+            if (holding) { if (holdFrom < 0) holdFrom = now - Dt; }
+            else holdFrom = -1;
             foreach (var e in w.Core.Events)
             {
                 if (e.Kind == SubstrateEventKind.Strike && res.FirstStrikeAt < 0) { res.FirstStrikeAt = now; res.RingAtStrike = Mean(live.Select(i => Vector3.Distance(w.Core.Pos[i], pil.Pos))); }
@@ -343,6 +365,7 @@ static class SubstrateHarness
             Console.WriteLine($"    seed {seed,4}: ring closed {r.RingClosedAt,6:F1} s (mean ring {r.RingAtClose,5:F0} u) -> first strike {r.FirstStrikeAt,6:F1} s (ring {r.RingAtStrike,5:F0} u); " +
                               $"{r.StrikersInWindow}/{r.Hunters} strike within 1 s (spread {r.SpreadS:F1} s); bites {r.Bites}, rests {r.Rests}; " +
                               $"winded {r.WindedSpeed:F0} u/s vs stalking {r.StalkSpeed:F0}, winded danger {r.WindedDangerFrac:P0}; max closure {r.ClosureMax:F2}");
+            Console.WriteLine($"              ring held before each strike: {string.Join(", ", r.Holds.Select(x => x.ToString("F1")))} s");
         }
         var eng = runs.Where(r => r.RingClosedAt >= 0 && r.FirstStrikeAt >= 0).ToList();
         Check(eng.Count >= 4, $"the ring closes and the pack strikes in {eng.Count}/5 seeds (90 s each, a 120 u/s wandering pilot; the hunters stalk at {P.Solitary.Speed} u/s)");
@@ -356,6 +379,18 @@ static class SubstrateHarness
         var winded = eng.Where(r => r.WindedSpeed >= 0f).ToList();
         Check(winded.Count > 0 && winded.All(r => r.WindedDangerFrac == 0f && r.WindedSpeed < r.StalkSpeed),
               $"winded = the payoff window: never dangerous, slower ({string.Join(", ", winded.Select(r => $"{r.WindedSpeed:F0} vs {r.StalkSpeed:F0}"))} u/s)");
+        // the menace->terror ARC (research DISCOVERIES finding 11): menace is read only while the ring HOLDS without
+        // striking (4-5 big members holding the ring read menacing 0.37-0.42), and the emotion timeline reads 8 s
+        // windows (emotion/timeline.py) - so the stalk before the first strike must fill at least one whole window
+        const float probeWindow = 8f;
+        var firstHolds = runs.Select(r => r.HoldBeforeStrike).ToList();
+        var allHolds = runs.SelectMany(r => r.Holds).OrderBy(x => x).ToList();
+        float medianHold = allHolds.Count > 0 ? allHolds[allHolds.Count / 2] : -1f;
+        Check(firstHolds.All(x => x >= probeWindow),
+              $"MENACE before terror: the ring is held (>= 4 hunters inside {P.CloseR:F0} u, none striking) {string.Join(", ", firstHolds.Select(x => x.ToString("F1")))} s " +
+              $"before the first strike - every seed >= one {probeWindow:F0} s emotion-probe window (finding 11: menace only while the ring holds)");
+        Check(medianHold >= probeWindow,
+              $"and it stays an arc after a rest: the median stalk before ANY strike is {medianHold:F1} s over {allHolds.Count} strikes (>= {probeWindow:F0} s)");
         Check(runs.Sum(r => r.Bites) > 0, $"the strike lands on a careless pilot: {runs.Sum(r => r.Bites)} bites over 5 x 90 s (research pack 9.7/min on a wanderer)");
 
         // counterplay: the same pilot speed, but it breaks the gap before the ring closes
@@ -509,6 +544,98 @@ static class SubstrateHarness
         Check(w.Preyed > 0 && c.Pops[qp].Alive > 0, $"the food web: the pack lives on what it catches ({w.Preyed} locusts eaten, {c.Pops[qp].Alive} hunters alive after 3 min)");
     }
 
+    // ───────────────────────────────────────────────────────────── K: the Burst-shaped kernel vs the managed step
+
+    /// <summary>What one agent's step writes (its own slot only), saved and restored so the reference and the kernel
+    /// step the SAME input.</summary>
+    struct AgentState
+    {
+        public Vector3 Pos, Vel, IDir, Home;
+        public float Hunger, Fear, Curious, Aggr, Phase, QTarget, ISpeed;
+        public bool Steered, Watched, Creeping;
+
+        public static AgentState Of(SubstrateCore c, int i) => new AgentState
+        {
+            Pos = c.Pos[i], Vel = c.Vel[i], IDir = c.IDir[i], Home = c.Home[i], Hunger = c.Hunger[i], Fear = c.Fear[i],
+            Curious = c.Curious[i], Aggr = c.Aggr[i], Phase = c.Phase[i], QTarget = c.QTarget[i], ISpeed = c.ISpeed[i],
+            Steered = c.Steered[i], Watched = c.Watched[i], Creeping = c.Creeping[i],
+        };
+
+        public void To(SubstrateCore c, int i)
+        {
+            c.Pos[i] = Pos; c.Vel[i] = Vel; c.IDir[i] = IDir; c.Home[i] = Home; c.Hunger[i] = Hunger; c.Fear[i] = Fear;
+            c.Curious[i] = Curious; c.Aggr[i] = Aggr; c.Phase[i] = Phase; c.QTarget[i] = QTarget; c.ISpeed[i] = ISpeed;
+            c.Steered[i] = Steered; c.Watched[i] = Watched; c.Creeping[i] = Creeping;
+        }
+
+        static float D(Vector3 a, Vector3 b) => MathF.Max(MathF.Abs(a.X - b.X), MathF.Max(MathF.Abs(a.Y - b.Y), MathF.Abs(a.Z - b.Z)));
+
+        /// <summary>Largest difference in each written quantity: position, velocity, intent direction, the scalars.</summary>
+        public static (float pos, float vel, float dir, float scalar, bool flags) Diff(in AgentState a, in AgentState b) =>
+            (MathF.Max(D(a.Pos, b.Pos), D(a.Home, b.Home)), D(a.Vel, b.Vel), D(a.IDir, b.IDir),
+             new[] { a.Hunger - b.Hunger, a.Fear - b.Fear, a.Curious - b.Curious, a.Aggr - b.Aggr, a.Phase - b.Phase,
+                     a.QTarget - b.QTarget, (a.ISpeed - b.ISpeed) / MathF.Max(1f, MathF.Abs(a.ISpeed)) }.Max(x => MathF.Abs(x)),
+             a.Steered == b.Steered && a.Watched == b.Watched && a.Creeping == b.Creeping);
+
+        public bool Bits(in AgentState o) =>
+            Eq(Pos, o.Pos) && Eq(Vel, o.Vel) && Eq(IDir, o.IDir) && Eq(Home, o.Home) && B(Hunger, o.Hunger) && B(Fear, o.Fear) &&
+            B(Curious, o.Curious) && B(Aggr, o.Aggr) && B(Phase, o.Phase) && B(QTarget, o.QTarget) && B(ISpeed, o.ISpeed) &&
+            Steered == o.Steered && Watched == o.Watched && Creeping == o.Creeping;
+
+        static bool B(float a, float b) => BitConverter.SingleToInt32Bits(a) == BitConverter.SingleToInt32Bits(b);
+        static bool Eq(Vector3 a, Vector3 b) => B(a.X, b.X) && B(a.Y, b.Y) && B(a.Z, b.Z);
+    }
+
+    static void KernelMatch()
+    {
+        Console.WriteLine("\nK. the Burst-shaped kernel (SubstrateKernel.StepAgent) vs the pre-11c managed step, agent by agent");
+        // the M world - three species, the food web, real food, a wandering pilot - plus a lurker pass, so every
+        // branch runs: the ring, the prey pounce, the spring, gaze/creep/freeze, rest, the band
+        var w = new World(640, 17);
+        var rng = new Random(17);
+        w.Scatter(rng, 1500, 0.3f, 0.9f, 24);
+        int ql = w.Core.AddPopulation(SubstrateResearch.GameLocust(), 2);
+        int qp = w.Core.AddPopulation(SubstrateResearch.GamePack(), 3);
+        int qu = w.Core.AddPopulation(SubstrateResearch.GameLurker(), 1, 100f, 900f);
+        w.Core.Seed(ql, 120, Ball(rng, 300f, 500f), 120f);
+        w.Core.Seed(qp, 6, Ball(rng, 300f, 500f), 50f);
+        w.Core.SeedAt(qu, Enumerable.Range(0, 12).Select(_ => w.MassPos[rng.Next(w.MassPos.Count)]).ToArray());
+        w.Pilots.Add(new Pilot(17, Ball(rng, 200f, 500f), new Vector3(0, 0, 1)) { Id = 1 });
+        w.Pilots.Add(new Pilot(18, Ball(rng, 200f, 500f), new Vector3(1, 0, 0)) { Id = 2, Speed = 40f });
+
+        long steps = 0, bits = 0, flagMiss = 0, steered = 0, watched = 0, creeping = 0, ringed = 0;
+        float mPos = 0, mVel = 0, mDir = 0, mSc = 0;
+        w.Core.Stepper = (core, pop, k, I, G) =>
+        {
+            int i = pop.Live[k];
+            var before = AgentState.Of(core, i);
+            SubstrateReference.StepAgent(core, pop, k, I, G);
+            var refOut = AgentState.Of(core, i);
+            before.To(core, i);
+            core.KernelStep(pop, k, I, G);
+            var kerOut = AgentState.Of(core, i);
+            steps++;
+            if (refOut.Bits(kerOut)) bits++;
+            var d = AgentState.Diff(refOut, kerOut);
+            mPos = MathF.Max(mPos, d.pos); mVel = MathF.Max(mVel, d.vel); mDir = MathF.Max(mDir, d.dir); mSc = MathF.Max(mSc, d.scalar);
+            if (!d.flags) flagMiss++;
+            if (kerOut.Steered) steered++;
+            if (kerOut.Watched) watched++;
+            if (kerOut.Creeping) creeping++;
+            if (pop.P.RingRoles > 0 && kerOut.Steered && kerOut.Aggr > 0f) ringed++;
+        };
+        for (int t = 0; t < 1200; t++) w.Step();
+        w.Core.Stepper = null;
+        double frac = (double)bits / Math.Max(1, steps);
+        Console.WriteLine($"    {steps} agent-steps over 120 s ({steered} steered, {ringed} pack ring/hunt, {watched} watched, {creeping} creeping, {w.Preyed} preyed): " +
+                          $"{frac:P3} bit-identical; max |diff| pos {mPos:E1} u, vel {mVel:E1} u/s, dir {mDir:E1}, scalars {mSc:E1}; flag mismatches {flagMiss}");
+        Check(steps > 100000 && steered > 10000 && ringed > 100 && watched + creeping > 0,
+              $"every branch exercised ({steps} agent-steps, {ringed} pack ring/hunt steps, {watched} watched + {creeping} creeping lurker steps)");
+        Check(flagMiss == 0, $"the decisions match exactly: steered / watched / creeping agree on all {steps} agent-steps");
+        Check(bits == steps, $"BIT-identical: {bits}/{steps} agent-steps write exactly the same bits through the kernel as through the " +
+              $"managed step (max |diff| pos {mPos:E1}, vel {mVel:E1}, dir {mDir:E1}, scalars {mSc:E1}) - on .NET; Burst's own float codegen is not proved here");
+    }
+
     // ───────────────────────────────────────────────────────────── J: the off-thread tick job
 
     static void Job()
@@ -565,6 +692,46 @@ static class SubstrateHarness
         }
         Check(carried && matched && job.PreyRequests.All(r => core.PopOf[r.Predator] == qp && core.PopOf[r.Prey] == ql),
               $"a predation the worker found is published to the main thread ({job.PreyRequests.Count} hunter->locust request(s))");
+
+        // round 11b-2: the game's split tick - the worker parks after BeginStep, the main thread runs the agent pass (the
+        // Burst jobs there; RunAgentPass, the same kernel, here), the pool finishes - publishes exactly the plain tick
+        SubstrateTickJob Twin(out SubstrateCore c)
+        {
+            c = new SubstrateCore(256, R, Dt, 40, 21);
+            int a = c.AddPopulation(SubstrateResearch.GameLocust().WithCap(200), 2);
+            int b = c.AddPopulation(SubstrateResearch.GamePack(), 3);
+            c.Seed(a, 60, new Vector3(200, 0, 0), 60f);
+            c.Seed(b, 6, new Vector3(-100, 0, 0), 40f);
+            var j = new SubstrateTickJob(c, new SubstrateTickSettings { EngageRadius = 160f, MaxEngaged = 24 });
+            j.Prime();
+            j.Pilots[0] = new SubstratePilot { Pos = new Vector3(100, 0, 0), Vel = new Vector3(80, 0, 0), Radius = 6f, Id = 1 };
+            j.PilotCount = 1;
+            return j;
+        }
+        var plain = Twin(out var cPlain);
+        var split = Twin(out var cSplit);
+        split.ExternalAgentPass = true;
+        bool same = true, parkedEvery = true;
+        int evPlain = 0, evSplit = 0;
+        for (int t = 0; t < 60; t++)
+        {
+            plain.Kick(false);
+            var sw = Stopwatch.StartNew();
+            while (!plain.Collect()) { if (sw.ElapsedMilliseconds > 5000) break; System.Threading.Thread.Sleep(0); }
+            split.Kick(false);
+            sw.Restart();
+            while (!split.AwaitingAgentPass) { if (sw.ElapsedMilliseconds > 5000) { parkedEvery = false; break; } System.Threading.Thread.Sleep(0); }
+            parkedEvery &= split.State == SwarmJobState.Running;
+            cSplit.RunAgentPass();   // the main thread's agent pass over the parked core
+            split.ResumeAfterAgentPass(false);
+            sw.Restart();
+            while (!split.Collect()) { if (sw.ElapsedMilliseconds > 5000) break; System.Threading.Thread.Sleep(0); }
+            evPlain += plain.Events.Count; evSplit += split.Events.Count;
+            for (int i = 0; i < 256 && same; i++)
+                same &= plain.Instances[i].Alive == split.Instances[i].Alive && plain.Instances[i].CurPos == split.Instances[i].CurPos && cPlain.Pos[i] == cSplit.Pos[i];
+        }
+        Check(split.Error == null && parkedEvery && same && evPlain == evSplit,
+              $"the split tick (worker parks after BeginStep, main-thread agent pass, pool finishes) publishes exactly the plain tick: 60 ticks, identical positions and frames, {evSplit} events each");
     }
 
     // ───────────────────────────────────────────────────────────── X: the index ledger over a population slice
@@ -657,8 +824,9 @@ static class SubstrateHarness
     static void Bench()
     {
         Console.WriteLine("\nB. cost per step at 10k agents (locust params - every term active; research fused kernel 0.12 us/agent-step = 1.2 ms/10k at k=8, 4 numba threads)");
-        double single8 = 0;
-        foreach (var (k, workers) in new[] { (8, 1), (4, 1), (8, 4), (1, 1) })
+        double single8 = 0, multi8 = 0;
+        int cores = Math.Max(2, Environment.ProcessorCount);
+        foreach (var (k, workers) in new[] { (8, 1), (4, 1), (8, 4), (8, cores), (1, 1), (1, cores) }.Distinct())
         {
             var P = SubstrateResearch.GameLocust().WithCap(10000); P.FracK = k; P.N0 = 10000;
             var core = new SubstrateCore(10000, R, Dt, 40, 9) { Workers = workers };
@@ -668,15 +836,19 @@ static class SubstrateHarness
             var food = new[] { new SubstrateFood { Pos = new Vector3(200, 0, 0), Volume = 30 } };
             for (int t = 0; t < 10; t++) core.Step(pil, food);
             int steps = 40;
-            core.MsFields = core.MsHash = core.MsAgents = core.MsWorld = 0;
+            core.MsFields = core.MsHash = core.MsAgents = core.MsWorld = core.MsKernel = 0;
             var sw = Stopwatch.StartNew();
             for (int t = 0; t < steps; t++) core.Step(pil, food);
             double ms = sw.Elapsed.TotalMilliseconds / steps;
-            Console.WriteLine($"      stages: fields {core.MsFields / steps:F2}, hash {core.MsHash / steps:F2}, agents {core.MsAgents / steps:F2}, world {core.MsWorld / steps:F2} ms");
+            Console.WriteLine($"      stages: fields {core.MsFields / steps:F2}, hash {core.MsHash / steps:F2}, agents {core.MsAgents / steps:F2} (kernel pass {core.MsKernel / steps:F2}), world {core.MsWorld / steps:F2} ms");
             if (k == 8 && workers == 1) single8 = ms;
+            if (k == 8 && workers == cores) multi8 = ms;
             Console.WriteLine($"    k={k} workers={workers}: {ms:F2} ms/step ({ms * 1000.0 / 10000:F3} us/agent-step), steered {core.Steered.Count(x => x) / 100.0:F1}%");
         }
         Check(single8 > 0 && single8 < 20.0, $"10k agents at k=8 on ONE worker thread: {single8:F2} ms/step - at a 10 Hz tick that is {single8 / 6.0:F2} ms per 60 fps frame, off the main thread");
+        Console.WriteLine($"    the agent pass through SubstrateKernel.StepAgent over {cores} threads (Parallel.For, contiguous chunks): {multi8:F2} ms/step at k=8 - " +
+                          "the multi-threaded .NET upper bound for the Burst job (Burst's SIMD/float codegen is not measured here)");
+        Check(multi8 > 0 && multi8 < 20.0, $"10k agents at k=8 with the kernel pass over {cores} threads: {multi8:F2} ms/step (one thread {single8:F2}; the scaling depends on the host's free cores)");
     }
 
     static SubstrateSpeciesParams WithCap(this SubstrateSpeciesParams p, int cap) { var c = p.Clone(); c.Capacity = cap; return c; }
