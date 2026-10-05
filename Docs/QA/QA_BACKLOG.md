@@ -1056,6 +1056,51 @@ having them all dive in at once will be scary once the stakes are felt."*
 - The ladder jumps near the pack.
 - A worker error: `[Substrate] the cell's substrate tick threw`.
 
+### QA-SWARM-ROUND11-9 ⬜ — the whole Swarm cell at once: whales at full size, lean frames, wearers steal at the rim
+
+**Source:** branch `overnight/cell`. The showcase-cell harness (`Tools/Build/showcase_cell_harness/run.sh all`) runs
+every creature core together in the authored layout with three scripted pilots. Results:
+- 1,192/1,200 collider worst case;
+- 0.84-0.97 ms per frame combined;
+- the mass ledger closes to 4e-7;
+- the LOD is never seen collapsed.
+
+It fixed six cross-system bugs in the cores. **Never run in the editor.** Reference: `Docs/SWARM_FAUNA.md` §25.
+
+**Why it matters:** two of the fixes change what a player sees.
+- The swarm's plan library now upsamples to `PlanDensity`, so whales hold up to 960 members, not 192.
+- Wearers now steal the trail pilots lay along the membrane.
+
+A third fix (a subnormal flush in the substrate fields) removes a frame-time cliff that appears after minutes of
+hovering.
+
+1. **Whale size.** Open the Swarm cell and find the biggest swarm body. In the inspector or debug overlay, its member
+   count should climb past 192. A full whale reads clearly denser than before.
+2. **Hover cost.** Hover near a substrate population for 5+ minutes and profile. The substrate tick's fields stage
+   should stay flat, about 2 ms per tick off-thread, and must not creep up over time.
+3. **Wearers at the rim.** Fly through the inner gap (400-465 u) so the wearers find your trail, then fly loops near
+   the membrane (r ~ 1,150). Within a minute or two, white hearts should be pulling YOUR rim trail into bodies. They must not hover motionless
+   at the wall.
+4. **Substrate engagement.** Near the locust cloud, many locusts should engage you at once, up to the authored
+   per-population cap, not just 2.
+5. **A long session.** Fly 30 minutes with friends or bots. Note which creature classes die out and when; the harness
+   predicts thieves by minute 1 and packs and locusts by minutes 2-4. Note whether the game's spawner re-seeds them.
+
+**PASS:**
+- Steps 1-4 read as described.
+- No frame-time growth over the session.
+- No crystal missing at a death.
+
+**FAIL:**
+- Whale capped at 192.
+- Substrate fields stage creeping past 10 ms.
+- Wearer hearts stuck at the membrane holding still.
+- Only 2 locusts ever engage.
+- A creature that pops out without dying.
+
+**Report also:** the burn rate per pilot style. The harness found that the skilled pilot burns MORE than the careless
+one (3.3 vs 1.8/min), mostly on the charge swarm's danger plates. Is that true for a human dodging?
+
 ### QA-SWARM-ROUND11-10 ⬜ — the wearer: a creature made of your stolen trail
 
 **Source:** branch `overnight/wearers`. Proven headless (builders harness W1-W7: bodies form from stolen trail, fuse,

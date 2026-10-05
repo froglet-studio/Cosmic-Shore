@@ -364,3 +364,33 @@ Both holds are asserted.
 - **The menace read is inferred, not scored.** The hold time is measured against the research's window, but the game
   pack's motion was not re-scored by the research's emotion probe.
 
+
+## 8. Round 11-9: two fixes found by the whole-cell run
+
+The showcase-cell harness (`Tools/Build/showcase_cell_harness`, `Docs/SWARM_FAUNA.md` §25) ran these cores beside
+every other creature in the Swarm cell for the first time. It found two cross-system bugs in this folder. Each fix has a
+unit group with a negative control in that harness.
+
+- **Engagement was the first population's, for every population (U1).** `SubstrateTickJob.BuildEngaged` used the
+  job's ONE `EngageRadius` / `MaxEngaged` for all three populations of the cell's shared core. The cell host builds
+  the job from whichever `SubstrateFauna` registers first, so the pack's 260 u / 7 proxies, the locusts' 140 u / 24
+  and the lurkers' 160 u / 8 (§5, Proxies) were never what ran: every population used the first one's.
+  - `SubstratePopulation` gains `EngageRadius` and `MaxEngaged` (default −1 = the job's settings, so a
+    single-population caller is unchanged). `SubstrateFauna.ClaimBlock` sets them from its species asset.
+  - U1: two populations in one core, radii 100 u / 300 u, caps 2 / 10. The second engages 10 agents out to 169 u. The
+    pre-fix job clips it to 2 within 44 u.
+- **A meal queued in the pass that killed its eater vanished (U3).** `SubstrateTickJob.Run` applied the queued kills
+  before the queued feeds, and `SubstrateCore.Feed` ignores a dead agent. The prism the bite consumed was already
+  gone, so the meal left the cell's books. In the glue's order (`Feed` → `Hunt` → `ShedStarving`, and a vessel's ram
+  at any frame) this happens whenever a biting locust is caught by the pack, or a hunter that just fed is shed or
+  rammed.
+  - The job now applies feeds first, then kills. The meal reaches the body and leaves with it (`MassIn` and `MassOut`
+    both count it).
+  - `SubstrateTickJob.Killed` publishes each killed agent with the stock it died holding (`SubstrateCore.Kill`'s
+    return).
+  - U3: a 25-volume locust bites 7.5 and is killed in the same pass: `Killed` = 32.5, `MassIn` +7.5, self-audit 0.
+    Negative control: kill-then-feed against the core drops the 7.5.
+  - **Still unstated in the game:** the proxy's skeleton is the PUBLISHED body (25 here), so the 7.5 leaves with the
+    creature, as a builder's stomach does (`BUILDERS_AND_THIEVES.md` "Unstated volume"). The showcase harness lays
+    the difference as a skeleton from `Killed` and its ledger closes. The game glue does not yet: one such meal in a
+    5-minute showcase run (9.1 volume).

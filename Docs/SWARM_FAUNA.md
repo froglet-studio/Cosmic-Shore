@@ -2452,3 +2452,151 @@ show as false errors, not false passes), the unfetchable Services.Multiplayer/Fr
 packages (files that use them are bucketed, not gated), real `UnityEditor` 6 API (the `editor` config uses the
 2021.1 UnityEditor), ILPostProcessors, Burst and IL2CPP. QA: `QA-COMPILE-ROUND11H-1`.
 
+
+## 26. The showcase cell, all together (round 11-9)
+
+Each creature family had its own harness, but none had run with the others: one world, one prism store, one collider
+budget and one mass ledger. **`Tools/Build/showcase_cell_harness/`** compiles every pure core that ships into one
+program. It lays them out exactly as the Swarm cell's authored assets place them, and flies three scripted pilots
+through the cell.
+
+```
+export DOTNET_ROOT=/usr/lib/dotnet TMPDIR=<private dir>
+bash Tools/Build/showcase_cell_harness/run.sh quick                  # U1-U5 + seed 1 x 2 min (~40 s)
+bash Tools/Build/showcase_cell_harness/run.sh all <snap.json>        # U1-U5 + seeds 1,2,3 x 5 min + seed 7 x 30 min (~3.5 min)
+python3 Tools/Build/showcase_cell_harness/render.py <snap.json> <out.png>   # the minute-5 picture (matplotlib, headless)
+```
+
+### 25.1 What runs
+
+**The layout.** `layout.py` reads every number from the generators and the assets they wrote; none is re-typed:
+- `author_swarm_fauna.py`: the bands, plates, budgets and collider model;
+- `author_substrate_fauna.py`;
+- `author_builders.py`;
+- `author_threat_flora.py`;
+- `SwarmSortFaunaConfig.asset`, the BuilderColonyConfigSO assets, and the Swarm Cell Config's `PetalBurnRule`.
+
+**The cores, one line each in `run.sh`.** They are compiled first against netstandard2.1 / C# 9, the way Unity compiles
+them.
+
+| System | Cores | Cadence |
+|---|---|---|
+| Swarm | `SwarmSortCore` via `SwarmTickJob`, `SwarmEvoFateCore`, one per region (inner/middle/outer) | 10 Hz |
+| Substrate | `SubstrateCore` via `SubstrateTickJob` (pack, locust, lurker) | 10 Hz |
+| Builders | `BuilderColonyCore` (fortress), `ThiefNestCore`, `WearerCore` (400-465 u) | 10 Hz |
+| Threat grove | `SnapTrapCore` + `PhysarumCore` | 10 Hz, ×0.25 when far |
+| Ecology LOD | `EcologyLodDirector` over every population above | Guard per frame, Tick at 1 Hz |
+
+**Shared state.** The flora is shared food: every eater bites the same plant-heart prisms. The world is one prism
+store (`CellWorld`) with one audit.
+
+**The pilots** each lay the game's trail at 0.25 s / 6 volume:
+- careless: a straight-line cruiser that never dodges;
+- skilled: dodges anything whose intent is rising;
+- raider: targets the thief hoard and cuts through the fortress walls.
+
+**Burns** follow the Tuned rule: 1 petal per element per landed hostile contact, with a 1 s cooldown per vessel. A burn
+is *telegraphed* when the striker's intent was above 0.5 for at least 0.25 s before contact (overnight burn-rules.md).
+
+**The ecology LOD** is the game's: swarms collapse into `SwarmMacroBody`, substrate populations freeze, and builder
+colonies roost. The grove's network runs at quarter time when no pilot is within its reach + 400 u.
+
+### 25.2 Results (`run.sh all`, after the fixes in §25.3)
+
+| Check | Result | Gate |
+|---|---|---|
+| C1 colliders | authored worst case **1,192 / 1,200**; observed max 1,048 / 1,076 / 1,121 / 1,115 (means 544-600) | law |
+| C2 CPU, sum of every core's step at its rate | **0.84-0.97 ms per 60 Hz frame** mean (worst p99 3.5 ms) vs the 3 ms inline budget. Split: swarm 0.27-0.37, substrate 0.38-0.49, builders 0.04-0.08, grove 0.05-0.18, LOD 0.001 | law |
+| C3 global mass ledger | closes to **3.8e-7** of the booked volume (worst residual 0.05 of 3.6e5) | law |
+| C4 populations | no class exceeds its cap. **Extinctions:** see §25.4 | finding |
+| C5 burns/min (petals/min ×4) | careless **1.76**, skilled **3.29**, raider **5.96**; 76% of 495 burns telegraphed (stakes_eval: 92-93%) | finding |
+| C6 encounter diversity | distinct threat classes met per minute: careless 4.5, skilled 4.9, raider 5.2. All three pilots meet all 11 classes over 30 min. Minute-by-minute table in the run log | report |
+| C7 LOD contract | **0** ticks seen while collapsed; **0** pilots inside a collapsed extent | law |
+
+**Collapse share of the 30-min run (C7):**
+- substrate lurker 22%;
+- swarm inner 1%;
+- everything else about 0%.
+
+There were 145 collapse/expand pairs. With three pilots in a 1,200 u cell, LOD rarely engages; see §25.4.
+
+**Wearers after the fix:** 605 / 599 / 252 / 1,206 worn steals per run. Before the fix: 0, 111, 428 and 948.
+
+**Burns by class.** Most land from the charge swarm's danger plates (careless 32, skilled 129, raider 94). The raider
+also takes space-swarm (73), locust (38), fortress (24) and wearer (22) burns.
+
+**The picture** is `/mnt/project-files/overnight/cell-snapshot.png`: seed 1 at t = 300 s, drawn from the run's
+snapshot. It has a top view, a side view and a 600 u close-up. They show:
+- the swarm bodies by colour region, including danger plates;
+- substrate agents;
+- fortress walls and workers;
+- the thief nest and hoard;
+- wearer hearts and worn prisms;
+- snap traps and physarum tubes;
+- each pilot with its wake and path.
+
+### 25.3 Cross-system bugs the cell found, fixed in the cores
+
+Every fix has a unit in the harness (U1-U5) or the builders harness (W8), each with a negative control that fails on
+the pre-fix code.
+
+1. **Plan density: the game ran 192-member whales.** `SwarmPlanLibrary.Load` never upsampled a baked plan to
+   `config.PlanDensity`. A swarm's `Cap` was therefore the raw baked N (192), not the authored 960, and seeds past it
+   never hatched. Now `Load` upsamples. Tests: U2 (a 240-seed whale: all hatch; the baked plan drops 48) and
+   `check_plan_density.py` (a textual gate on the Unity-only file, with `--self-test`).
+2. **Substrate engagement belonged to the first population.** `SubstrateTickJob` engaged every population to one
+   radius and cap. `SubstratePopulation.EngageRadius` / `MaxEngaged` now make it per-population, set by
+   `SubstrateFauna.ClaimBlock`. Test: U1 (the second population engages 10 to 169 u; pre-fix it was clipped to 2 within
+   44 u).
+3. **A meal queued in the pass that kills its eater vanished.** It left a 9.1-volume ledger residual. The job now
+   applies feeds before kills and publishes `Killed` (the body's stock including the meal). Test: U3. See
+   SUBSTRATE_FAUNA.md §8.
+4. **Subnormal float dust made the substrate fields 16× slower.** The 30-min run measured 5.8 ms per frame, with fields
+   going from 2 to 32 ms per tick. A hovering pilot's wake blurs and decays into subnormal floats, whose arithmetic is
+   about 100× slower. `SubstrateFields.Blur` now flushes values below `MinNormal` to 0, and the cell runs at
+   ~1 ms per frame. Test: U5.
+5. **A death recorded the wrong stomach.** When a builder slot was reused in the same step, the death was booked with
+   the newborn's stomach, leaving a 231.8 ledger residual. `BuilderDeath.Stomach` now carries the stomach the member
+   died with, in all three builder cores. Test: U4.
+6. **Wearers chased prisms they could never reach.** Pilots trail along the membrane beyond the wearer's containment.
+   A heart claimed such a prism and held it forever, so a whole colony could steal nothing. `WearerCore.Reachable` now
+   rejects these prisms. Test: W8 (BUILDERS_AND_THIEVES.md §10.3).
+
+### 25.4 Findings: reported, not fixed (they are design and tuning; `SHOWCASE_STRICT=1` fails them)
+
+- **Extinctions.** Every population that dies out is killed by pilots or starvation. No core imposes a death.
+  - Thieves die by minute 1 in every seed: pilots ram all of them (6-7 kills; the raider flies at the hoard).
+  - Substrate packs die by minute 3-4.
+  - Locusts die by minute 2. They cannot feed: 42-93 bites out of 7-8k asks. Their food field and the shared flora
+    disagree, and the shared food field also draws populations out of their bands.
+  - In seed 7 (30 min), lurkers die by minute 9, fortress workers by minute 17 (59 rammed or stung kills, 728 wall
+    prisms rammed), and wearers by minute 15 (16 kills, 0 starved).
+  - The game's spawner re-seed (an anchor despawns after 8 s, and the seeder may re-hatch) is not modelled here.
+    Extinction in the harness is therefore an upper bound on what a player sees.
+- **The inner swarm cycles hard over 30 min:** it peaks at 902/960, with 734 starved and 239 rammed. This is turnover,
+  not a crash. No class exceeds its cap.
+- **The skilled pilot burns more than the careless one** (3.29 vs 1.76 burns/min). Its dodge heuristic flies it into
+  the charge swarm's danger plates (129 of its burns). That is partly a harness-pilot artefact, but the plates are hard
+  to avoid. The telegraphed share is 76%, against the flight sim's 92-93%.
+- **The LOD rarely engages with three pilots.** Swarms are collapsed ≤ 1% of the time.
+  - Thieves and wearers sense membrane-wide: territory + scout range is 1,300 u, and a wearer reads from the cell
+    centre. So they never roost while a pilot is in the cell.
+  - The fortress roosts only when nobody is within 440 u.
+  - The grove ran at quarter time for 75-1,730 s of each run.
+- **Unstated volume in the game glue.** A late meal (one queued in the pass that kills its eater) is now booked with
+  the body in the core, but `SubstrateFauna` still does not state it (SUBSTRATE_FAUNA.md §8).
+- **The builder newborn's body volume** is 0.5 × BirthCost, while a founder's entry volume is 3.276. These may be
+  intended to differ; not checked.
+- **`PhysarumCore` and `SwarmGridCore` also blur and decay fields.** Subnormal dust is possible there too but was not
+  observed.
+
+### 25.5 What is NOT proved
+
+- **Nothing here ran in Unity.** Rendering, physics colliders, Burst, main-thread glue, `CellEcologyLod` (the Unity host)
+  and the game's spawners are stubbed or absent.
+- **C2 is the cores' summed step cost on this machine, single-threaded.** It excludes prism render sync, physics and
+  the glue.
+- **The pilots are heuristics,** not players or the AI. The burn rates are comparative only.
+- **One cell.** The other cells' creatures and multiplayer are not exercised.
+
+**QA:** QA-SWARM-ROUND11-9.

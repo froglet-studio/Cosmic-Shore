@@ -586,6 +586,23 @@ static partial class Program
                   $"deaths from {first:F0} s to {last:F0} s (stomachs {expect:F0}-{full:F0} s), {core.Starved} starved");
         }
 
+        Console.WriteLine("\nW8. a heart never claims a prism beyond its containment (pilots trail along the membrane; round 11-9)");
+        {
+            var ar = new WearArena(14);
+            var p = new WearerParams { Founders = 1, MaxHearts = 1, Containment = ar.R * 0.95f };
+            var core = new WearerCore(ar, p, new Vector3(p.Containment - 20f, 0, 0), 4, 3, 14);
+            core.Pos[0] = new Vector3(p.Containment - 5f, 0, 0);   // pressed to the clamp: the out-of-reach prisms are the nearest
+            var outside = new List<int>(); var inside = new List<int>();
+            for (int i = 0; i < 12; i++) outside.Add(ar.Lay(new Vector3(p.Containment + 30f, 0, -30f + 5f * i), 6f, 1, true));
+            for (int i = 0; i < 12; i++) inside.Add(ar.Lay(new Vector3(p.Containment - 140f, 0, -30f + 5f * i), 6f, 1, true));
+            ar.Rebuild();
+            var vs = new BuilderVessel[1];
+            for (int s = 0; s < (int)(20f / Dt); s++) { core.Step(Dt, vs, 0); ar.Step(Dt); }
+            int wornIn = inside.Count(core.IsWorn), wornOut = outside.Count(core.IsWorn);
+            Console.WriteLine($"    steals {core.WornSteals}: inside {wornIn}/12, beyond containment {wornOut}/12, goal {core.Goal[0]}");
+            Check(wornIn >= 6 && wornOut == 0, "the heart skips the out-of-reach prisms (12 nearer, beyond the clamp) and wears the reachable ones");
+        }
+
         Console.WriteLine("\nW7. shielded mass is never food or a target");
         var sh = seeds.Take(2).Select(s => WearRun(s, minutes: 3f, shielded: 0.3f)).ToList();
         Check(sh.Sum(r => r.ShieldWorn) == 0, "0 shielded prisms worn or changed hands");
