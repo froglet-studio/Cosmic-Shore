@@ -122,7 +122,7 @@ namespace CosmicShore.UI
             layout.childForceExpandWidth = false;
             layout.childForceExpandHeight = true;
 
-            MakeButton(bar, "◀", 56f, ButtonColor, () => _onPrevious?.Invoke());
+            MakeButton(bar, "<", 56f, ButtonColor, () => _onPrevious?.Invoke());
 
             var caption = MakeText(bar, "SPECTATING", 18f, CaptionColor, 150f);
             caption.alignment = TextAlignmentOptions.MidlineRight;
@@ -135,7 +135,7 @@ namespace CosmicShore.UI
             _rosterText = MakeText(bar, "", 18f, CaptionColor, 70f);
             _rosterText.alignment = TextAlignmentOptions.MidlineLeft;
 
-            MakeButton(bar, "▶", 56f, ButtonColor, () => _onNext?.Invoke());
+            MakeButton(bar, ">", 56f, ButtonColor, () => _onNext?.Invoke());
 
             var camButton = MakeButton(bar, "CAM: PLAYER", 150f, ButtonColor, () => _onToggleCamera?.Invoke());
             _cameraText = camButton.GetComponentInChildren<TMP_Text>();
@@ -147,10 +147,10 @@ namespace CosmicShore.UI
             leave.pivot = new Vector2(1f, 1f);
             leave.anchoredPosition = new Vector2(-24f, -24f);
             leave.sizeDelta = new Vector2(150f, 52f);
-            BuildButton(leave, "✕  LEAVE", LeaveColor, () => _onLeave?.Invoke());
+            BuildButton(leave, "X  LEAVE", LeaveColor, () => _onLeave?.Invoke());
 
             // ── Hint line ──────────────────────────────────────────────────
-            var hint = MakeText(transform, "◀ ▶ / Q E  switch pilot     C  camera     Esc  leave", 16f, CaptionColor, 900f);
+            var hint = MakeText(transform, "< > / Q E  switch pilot     C  camera     Esc  leave", 16f, CaptionColor, 900f);
             var hintRect = hint.rectTransform;
             hintRect.anchorMin = new Vector2(0.5f, 1f);
             hintRect.anchorMax = new Vector2(0.5f, 1f);

@@ -57,7 +57,7 @@ change the option assessments, so they lead the report:
    Steamworks.NET, no Facepunch.Steamworks, no Unity Steam package — the only "Steam" hits in
    `Assets/` are inside the inert PlayFab SDK). There is no Steam build target configuration;
    the only build profile on disk is a Linux one, and `ProjectSettings.asset` carries mobile
-   bundle IDs (`com.FrogletGames.TailGlider` for Android/iPhone/Standalone — *the Standalone id became `com.FrogletGames.CosmicShore` on 2026-09-11; Android and iPhone are unchanged*). Current public
+   bundle IDs (`com.FrogletGames.TailGlider` for Android/iPhone/Standalone — *the Standalone id became `com.FrogletGames.CosmicShore` on 2026-09-11; on 2026-10-02 Android followed and iPhone moved to the test id `com.FrogletGames.CosmicShore.dev` — `Docs/IOS_BUILD.md` §1*). Current public
    distribution per `README.md` is **itch.io + TestFlight**. Steam/PC is aspirational — it
    appears in `Docs/Legal/PRIVACY_POLICY_TEMPLATE.md` and `Docs/MENU_PROGRESSION_AND_IAP.md`
    as a planned platform. Consequence: there is no Steam acquisition data to bridge *yet*;
