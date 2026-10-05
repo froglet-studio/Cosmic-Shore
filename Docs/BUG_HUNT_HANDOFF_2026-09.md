@@ -25,6 +25,7 @@ Confidence scale:
 
 | # | Fix | Where |
 |---|---|---|
+| 39 | **PrismTimerManager.OnDestroy clears the owner-indexed schedule (BH-4.7 follow-up).** Left-over `scheduledActions.Clear()` after the rename caused CS0103. | `PrismTimerManager.OnDestroy` |
 | 1 | **Comeback now reads the mode's own score.** `ElementalComebackSystem` had a per-scene `ScoreDifferenceSource` that eight cloned scenes set to their donor's stat. The comeback now reads `ScoringRuleSO.DomainValue` through `ElementalComebackSystem.DomainScore`, the same function the HUD, the end condition and the placement order use. The per-scene field is deleted, so the bug class cannot recur. | `ElementalComebackSystem.cs`, `MultiplayerMiniGameControllerBase.OnNetworkSpawn`, 22 scenes, 9 generators |
 | 2 | `Flora.RemoveHealthBlock` now calls `base`. It had skipped the lifeform's death bookkeeping. | `Flora.cs` |
 | 3 | Stats zero when the countdown ends, not only at the turn start. | `MultiplayerDomainGamesController.OnCountdownTimerEnded_ClientRpc` |
@@ -157,6 +158,7 @@ Confidence scale:
 - **STILL TO TEST (revisit): 4.6 thumb touch input, kept on Bug_Hunt untested at Yash's call.**
 - **Thumb touch (§4.6):** only matters if the thumb cursor/perimeter scripts are re-enabled. On a
   touch device, a finger down should light the active sprite / perimeter; lifting should clear it.
+- **STILL TO TEST (revisit): 4.7 follow-up OnDestroy clear (compile fix).**
 - **STILL TO TEST (revisit): 4.7 PrismTimerManager cancel, kept on Bug_Hunt untested at Yash's call.**
 - **Prism timers (§4.7):** play a mode that shields/settles many prisms, then leave the scene or
   destroy a large patch. No hitch spike unique to that teardown; shield settle still fires on time.
