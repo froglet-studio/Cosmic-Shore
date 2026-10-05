@@ -288,33 +288,28 @@ Full guide: `docs/LAUNCHER.md`.
 
 ![Launcher PLAY](architecture/launcher_play.png)
 
-**Figure 8.** The PLAY page.
-
-| # | Control | What it does |
-|---|---|---|
-| 1 | **Source branch** | The branch to run; type to filter |
-| 2 | **REFRESH** | Reload branches from GitHub |
-| 3 | **START GAME** | Fetch the branch, fetch FMOD, compile that branch's source, launch |
-| 4 | **UPDATE** | Fetch only |
-| 5 | **BUILD PHONE** | The BUILD page |
-| 6 | **WORKSPACE** | Open the build folder |
-| 7 | **Launch profile** | Resolution, start scene, fullscreen, audio, online, phone render path, pull-before-play |
-| 8 | **In the game** | Flight keys |
-| 9 | **Pipeline** | SYNC > AUDIO > BUILD > LAUNCH, lit as START runs |
-| 10 | **Pages** | PLAY · BUILD · OPTIONS · CONSOLE |
-| 11 | **Tool status** | git and .NET detected |
-| 12 | **Status bar** | Current step, last log line, progress, CANCEL |
+**Figure 8.** PLAY: the branch, **START** (fetch, compile that branch, launch), four quick
+toggles, and small buttons to update without playing or open the workspace. The left rail holds
+the pages; the two dots under it are git and .NET; the bottom bar shows the current step,
+progress and CANCEL.
 
 ![Launcher BUILD](architecture/launcher_build.png)
 
-**Figure 9.** The BUILD page: (1) CPU, (2) APK or AAB, (3) signing key, (4) **BUILD APK**,
-(5) iOS: export for Xcode on Windows, **BUILD IPA** on a Mac, (6) the output file.
+**Figure 9.** BUILD: one card per phone. Android builds an APK or AAB. iOS builds an unsigned
+`.ipa` on GitHub's free Mac (no Mac needed; install with Sideloadly), exports an Xcode project,
+or on a Mac builds a signed `.ipa`. Everything else is folded under *Options*.
 
-![Launcher OPTIONS](architecture/launcher_options.png)
+![Launcher PROJECT](architecture/launcher_project_1.png)
 
-**Figure 10.** OPTIONS: (1) repository, (2) branch, (3) GitHub token for private access,
-(4) workspace: the launcher's own clone or a worktree beside yours, (5) toolchain: rescan,
-install .NET, data folder, (6) player arguments, profile, Release/Debug, verbose logs.
+**Figure 10.** PROJECT: the engine's own Project Settings (`Port/ProjectSettings/FrogletProject.json`),
+so Unity's `ProjectSettings/` is never edited. PLAYER (names, version, bundle ids, build numbers),
+SCENES (Scenes In Build, shown), QUALITY (MSAA, render scale, filtering, vsync). Empty fields
+inherit Unity's values.
+
+![Launcher CLAUDE](architecture/launcher_claude.png)
+
+**Figure 11.** CLAUDE: Claude Code inside the launcher, working in the branch's workspace.
+ASK reads only, EDIT may change files, AUTO may also run commands.
 
 ### 11.1b Other ways to start it
 
@@ -347,7 +342,7 @@ own touch controls.
 
 ![Diagnostics](architecture/ui_diagnostics.png)
 
-**Figure 11.** The game's `DiagnosticsHUD`.
+**Figure 12.** The game's `DiagnosticsHUD`.
 
 | # | Control | What it does |
 |---|---|---|
@@ -384,12 +379,12 @@ Environment variables:
 
 ![cs-asset](architecture/ui_cs_asset.png)
 
-**Figure 12.** `cs-asset`: list a scene's objects, read a field, change it. `--dry-run` shows the
+**Figure 13.** `cs-asset`: list a scene's objects, read a field, change it. `--dry-run` shows the
 change without writing it. Close the scene in Unity before writing to it.
 
 ![cs-build](architecture/ui_cs_build.png)
 
-**Figure 13.** `cs-build android`: player data, then a signed APK. On Windows, double-click
+**Figure 14.** `cs-build android`: player data, then a signed APK. On Windows, double-click
 `Port\build-android.bat`.
 
 ---
