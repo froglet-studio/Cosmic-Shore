@@ -77,7 +77,10 @@ outside the nucleus.
    this guide is on the bench (most Swarm-cell species have one element, so one station).
 3. It lands where it lives in the Swarm cell: banded fauna through their own band, threat flora in
    their grove, Borromean in its band. An unbanded creature lands at a random point in open water.
-4. Barren has no food. Add it from the same bench: flora for the swarms and grazers, locusts for the
+4. Press **Spawn** again for more: it adds to the population while it has room and starts a new one
+   when it is full (every swarm, builder colony and substrate pack press is a new population).
+   **Navigate** takes you to the newest one you released, not to the toy.
+5. Barren has no food. Add it from the same bench: flora for the swarms and grazers, locusts for the
    pack hunter, a trail of your own for the thief nest and the fortress/wearer builders.
 
 ## 3. The guided tour, from the nucleus outward

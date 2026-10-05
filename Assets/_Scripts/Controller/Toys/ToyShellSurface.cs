@@ -59,6 +59,14 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public bool AppliesOnSelect;
 
+        /// <summary>
+        /// True when the commit stays armed after it fires, so pressing it again does it again - a
+        /// Spawn, where each press releases more of the same variant. False (the default) spends
+        /// the button: the row is deselected after a commit that made something, because a second
+        /// press of Switch or Start on the same row would only redo what just happened.
+        /// </summary>
+        public bool Repeatable;
+
         /// <summary>Do the thing. Null on a branch.</summary>
         public Action Apply;
 

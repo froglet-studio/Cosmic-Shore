@@ -182,6 +182,21 @@ where the species lives, never at the toy**, through the cell spawner's own plac
   through its planting band — threat flora pick their grove site, the Swarm Borromean bands honour
   their pens. Flora used to be pinned around the station, which clumped them at the toy.
 
+**Repeat presses grow a population, then found a new one.** The cell counts, caps and breeds
+lifeforms per config INSTANCE, so each variant keeps ONE runtime clone as its current lineage
+(`SpawnMatrixToy.LineageFor`). A press joins it while it can take the whole release (no
+`MaxLivePopulation`, or live + incoming within the cap) - an unbanded group hatches beside a live
+member so it reads as one group - and otherwise starts a fresh clone, a new population with its
+own count and cap. One-anchor species (swarms, builder colonies, substrate packs; cap 1) cannot
+grow an anchor after it seeds, so each press founds a new population. In the Toy Box window the
+Spawn button stays armed after a press (`ToyShellOption.Repeatable`).
+
+**Navigate goes to what you spawned.** A variant row's `WorldAnchor` is the newest still-living
+thing it released, and the window's Navigate takes the player to the SELECTED row's live anchor
+before falling back to the toy (`ToyConfigureModal.ResolveDestination`; the arrow is
+`ToyNavigationBeacon.PointAt(Transform, …)`). That rule is generic: any toy row with a live
+`WorldAnchor` is where Navigate goes while that row is selected.
+
 Every spawn logs on the ToyBox channel, including the cell's Frenzy growth-freeze state.
 
 **The roster** (`faunaSpecies` / `floraSpecies`) holds every spawnable species: the original

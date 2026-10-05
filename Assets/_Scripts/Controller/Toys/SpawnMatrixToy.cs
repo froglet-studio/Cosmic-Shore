@@ -370,6 +370,14 @@ namespace CosmicShore.Gameplay
                     // the toy, so the picture follows the first one released and frames it.
                     WatchAfterApply = () => _lastShellRelease,
                     WatchRadius = _def ? _def.StationRadius * 3f : 0f,
+                    // Spawn stays armed: each press releases more of this variant, into the
+                    // population it already has when that can take them (see LineageFor).
+                    Repeatable = true,
+                    // Where this variant LIVES once released - Navigate takes the player there
+                    // rather than back to the bench.
+                    WorldAnchor = () => LatestRelease(capturedFauna ? capturedFauna : capturedFlora),
+                    WorldAnchorRadius = _def ? _def.StationRadius * 3f : 0f,
+                    Payload = capturedFauna ? capturedFauna : capturedFlora,
                 });
             }
 
@@ -849,21 +857,20 @@ namespace CosmicShore.Gameplay
                 return null;
             }
 
-            // Runtime clone so the authored asset is never mutated; the clone IS the lineage
-            // config, so reproduction inherits the variant identity too.
-            var clone = Instantiate(config);
-            clone.name = config.name;
-            // The matrix is the tuning BENCH: a station spawns the EXACT variant it shows, so
-            // the cell's element spread must not re-roll it here.
-            clone.SpreadElements = false;
+            // A POPULATION, not an individual - the same seed-floor count the cell spawner uses.
+            int count = Mathf.Max(1, config.PopulationSize);
+            var clone = (FaunaConfigurationSO)LineageFor(config, count,
+                c => cell.GetLiveFaunaCount((FaunaConfigurationSO)c),
+                c => cell.ResolveFaunaCap((FaunaConfigurationSO)c),
+                out bool joined);
 
-            Vector3 goal = cell.TryGetDensestRegionAnyDomain(out var densest)
-                ? densest
+            // Joining a live population: hatch beside it (an unbanded group should read as ONE
+            // group, not two). A new one goes to the densest mass, or open water in an empty cell.
+            Vector3 goal = joined && TryFindLineageMember(cell, clone, out var member) ? member
+                : cell.TryGetDensestRegionAnyDomain(out var densest) ? densest
                 : CellLifeSpawnerBase.RandomPointInCytoplasm(cell);
 
-            // A POPULATION, not an individual - the same seed-floor count the cell spawner uses.
             Domains domain = Context?.GameData?.LocalPlayer?.Vessel?.VesselStatus?.Domain ?? cell.ControllingDomain;
-            int count = Mathf.Max(1, clone.PopulationSize);
             int spawned = 0;
             Transform first = null;
             for (int i = 0; i < count; i++)
@@ -873,11 +880,13 @@ namespace CosmicShore.Gameplay
                     goal + Random.insideUnitSphere * UnbandedReleaseJitter);
                 if (!fauna) continue;
                 if (!first) first = fauna.transform;
+                RecordRelease(config, fauna.transform);
                 spawned++;
             }
             if (CSDebug.IsVerbose(CSLogChannel.ToyBox))
                 CSDebug.LogVerbose(CSLogChannel.ToyBox,
-                    $"[SpawnMatrix] Spawned {spawned}/{count} x {clone.name} ({domain}); " +
+                    $"[SpawnMatrix] Spawned {spawned}/{count} x {clone.name} ({domain}) into " +
+                    (joined ? "its live population; " : "a new population; ") +
                     (clone.BandOuterRadius > 0f
                         ? $"scattered through its band {clone.BandInnerRadius:0}-{clone.BandOuterRadius:0}"
                         : $"around {goal}"));
@@ -902,12 +911,11 @@ namespace CosmicShore.Gameplay
                 return null;
             }
 
-            var clone = Instantiate(config);
-            clone.name = config.name;
-            // Bench semantics - see SpawnFaunaVariant.
-            clone.SpreadElements = false;
-
-            int count = Mathf.Max(1, clone.InitialSpawnCount);
+            int count = Mathf.Max(1, config.InitialSpawnCount);
+            var clone = (FloraConfigurationSO)LineageFor(config, count,
+                c => cell.GetLiveFloraCount((FloraConfigurationSO)c),
+                c => cell.ResolveFloraCap((FloraConfigurationSO)c),
+                out bool joined);
             int spawned = 0;
             Transform first = null;
             for (int i = 0; i < count; i++)
@@ -915,6 +923,7 @@ namespace CosmicShore.Gameplay
                 var flora = CellLifeSpawnerBase.PlantFlora(cell, clone, null);
                 if (!flora) continue;
                 if (!first) first = flora.transform;
+                RecordRelease(config, flora.transform);
                 spawned++;
             }
 
@@ -926,8 +935,90 @@ namespace CosmicShore.Gameplay
                 : "FROZEN - cell is at Frenzy; clear prism mass (graze/joust/ability) and growth resumes";
             if (CSDebug.IsVerbose(CSLogChannel.ToyBox))
                 CSDebug.LogVerbose(CSLogChannel.ToyBox,
-                    $"[SpawnMatrix] Planted {spawned}/{count} x {clone.name} in its own band; growth: {growth}");
+                    $"[SpawnMatrix] Planted {spawned}/{count} x {clone.name} in its own band, into " +
+                    (joined ? "its live population" : "a new population") + $"; growth: {growth}");
             return first;
+        }
+
+        // ── Populations ──────────────────────────────────────────────────────
+
+        // The runtime lineage config each variant is releasing into, keyed by the AUTHORED asset.
+        // A population IS a config instance: the cell counts, caps and breeds live lifeforms per
+        // SourceConfig reference (Cell.RegisterLiveFauna / liveFloraCounts), so reusing one clone
+        // is what makes a second press join the first press's population.
+        readonly Dictionary<ScriptableObject, ScriptableObject> _lineages = new();
+
+        // What each variant has released, newest last - for Navigate and the window's watch.
+        readonly Dictionary<ScriptableObject, List<Transform>> _releases = new();
+
+        /// <summary>
+        /// The lineage a release of <paramref name="incoming"/> more should join: the variant's
+        /// current one when it can take them all (no cap, or live + incoming within the cap),
+        /// otherwise a NEW population - a fresh runtime clone, so the authored asset is never
+        /// mutated and the clone's own count and cap start empty. One-anchor species (swarms,
+        /// builder colonies, substrate packs: cap 1) therefore found a new population on every
+        /// press, which is the only honest answer: none of them can grow an anchor after it seeds.
+        /// </summary>
+        ScriptableObject LineageFor(ScriptableObject authored, int incoming,
+            System.Func<ScriptableObject, int> liveCount, System.Func<ScriptableObject, int> cap,
+            out bool joined)
+        {
+            if (_lineages.TryGetValue(authored, out var current) && current)
+            {
+                int live = liveCount(current);
+                int limit = cap(current);
+                if (limit <= 0 || live + incoming <= limit)
+                {
+                    joined = live > 0;
+                    return current;
+                }
+            }
+
+            var clone = Instantiate(authored);
+            clone.name = authored.name;
+            // The matrix is the tuning BENCH: a station spawns the EXACT variant it shows, so
+            // the cell's element spread must not re-roll it here.
+            switch (clone)
+            {
+                case FaunaConfigurationSO f: f.SpreadElements = false; break;
+                case FloraConfigurationSO fl: fl.SpreadElements = false; break;
+            }
+            _lineages[authored] = clone;
+            joined = false;
+            return clone;
+        }
+
+        static bool TryFindLineageMember(Cell cell, FaunaConfigurationSO lineage, out Vector3 position)
+        {
+            var live = cell.LiveFauna;
+            for (int i = live.Count - 1; i >= 0; i--)
+            {
+                var f = live[i];
+                if (f && f.SourceConfig == lineage)
+                {
+                    position = f.transform.position;
+                    return true;
+                }
+            }
+            position = default;
+            return false;
+        }
+
+        void RecordRelease(ScriptableObject authored, Transform made)
+        {
+            if (!authored || !made) return;
+            if (!_releases.TryGetValue(authored, out var list)) _releases[authored] = list = new List<Transform>();
+            list.RemoveAll(t => !t);
+            list.Add(made);
+        }
+
+        /// <summary>The newest still-living thing this variant released, or null.</summary>
+        Transform LatestRelease(ScriptableObject authored)
+        {
+            if (!authored || !_releases.TryGetValue(authored, out var list)) return null;
+            for (int i = list.Count - 1; i >= 0; i--)
+                if (list[i]) return list[i];
+            return null;
         }
 
         /// <summary>
