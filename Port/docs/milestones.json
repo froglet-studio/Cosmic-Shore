@@ -6,41 +6,69 @@
   },
   "checkpoints": [
     {
+      "id": "C0",
+      "milestone": "M1",
+      "title": "Foundations",
+      "exit": "#line maps errors to Assets/; incremental sync; RPCs the sync cannot intercept are warned (PRISMA001); execution order from .meta and the attribute in every phase; Unity's serialization rules with cs-asset serialization-audit at 0 dropped / 0 extra; CPU, allocation and GC per phase in session reports; acceptance criteria on the board; budgets and fallback for milestone sessions; GL kept behind the render boundary (test)",
+      "weeks": 0,
+      "dependsOn": [],
+      "status": "done",
+      "notes": [
+        "2026-10-06 done: the architecture review's foundation items (A1, A2, A3, C7, C8, G15, G16 fixes, H17, H19). Evidence: Port/docs/ARCHITECTURE_REVIEW_2026-10-06.md"
+      ],
+      "prompt": "Done. See Port/docs/ARCHITECTURE_REVIEW_2026-10-06.md for what was checked, decided and measured."
+    },
+    {
       "id": "C1",
       "milestone": "M1",
       "title": "Parity harness",
-      "exit": "(1) An input recorder/replayer in game code (`Assets/_Scripts/Utility`, its own Unity PR) that both engines run. (2) A Unity-side capture command producing golden frames, scores and audio events for a replay. (3) `engine_parity` in the MCP server: replay in the engine and diff against the goldens (image SSIM per frame, exact scores, event sequence). (4) GitHub CI: build the port and run `engine_smoke` for every mode on each bleeding-edge push",
+      "exit": "(1) An input recorder/replayer in game code (`Assets/_Scripts/Utility`, its own Unity PR) that both engines run. (2) A Unity-side capture command producing golden frames, scores and audio events for a replay, plus `Random` sequences for a set of seeds. (3) `engine_parity` in the MCP server: replay in the engine and diff against the goldens using the per-channel tolerances in docs/ARCHITECTURE_REVIEW_2026-10-06.md (C9): exact state, RNG and event order; transforms within 1e-4 relative for 10 s; SSIM per frame. (4) GitHub CI: build the port and run `engine_smoke` for every mode on each bleeding-edge push. (5) A generated parity scoreboard (`docs/PARITY.md` + JSON for MILESTONES): every subsystem and shader Faithful / Approximate / Missing with its covering test",
       "weeks": 4,
-      "dependsOn": [],
+      "dependsOn": [
+        "C0"
+      ],
       "status": "todo",
       "notes": [],
-      "prompt": "Plan checkpoint C1 of Port/docs/ROADMAP.md. Design an input recorder/replayer that lives in the game's own code (a separate Unity PR - list exactly what it adds under Assets/_Scripts/Utility and why it cannot live in Port/), a Unity-side capture step that writes golden frames, scores and FMOD events for a replay, and an `engine_parity` MCP tool that replays in Prisma and diffs against those goldens. Include the GitHub Actions job that builds the port and runs engine_smoke for every build scene on each bleeding-edge push. Measure first: how input reaches the game today (InputScript, Input System devices) and which RNG sources make a match nondeterministic."
+      "prompt": "Plan checkpoint C1 of Port/docs/ROADMAP.md. Design an input recorder/replayer that lives in the game's own code (a separate Unity PR - list exactly what it adds under Assets/_Scripts/Utility and why it cannot live in Port/), a Unity-side capture step that writes golden frames, scores, FMOD events and `Random` sequences for a set of seeds, and an `engine_parity` MCP tool that replays in Prisma and diffs against those goldens with the per-channel tolerances in docs/ARCHITECTURE_REVIEW_2026-10-06.md (C9). Include the GitHub Actions job that builds the port and runs engine_smoke for every build scene on each bleeding-edge push, and a generator for the parity scoreboard (docs/PARITY.md + JSON). Measure first: how input reaches the game today (InputScript, Input System devices) and which RNG sources make a match nondeterministic."
+    },
+    {
+      "id": "C1b",
+      "milestone": "M1",
+      "title": "Bisect",
+      "exit": "`prisma_bisect(good, bad, check)` in the MCP server: `git bisect run` over commits touching `Port/`, each built in a scratch worktree and checked by a replay diff or an `engine_smoke` error signature; finds a planted regression in under 15 steps",
+      "weeks": 1,
+      "dependsOn": [
+        "C1"
+      ],
+      "status": "todo",
+      "notes": [],
+      "prompt": "Add `prisma_bisect(good, bad, check)` to the MCP server: run `git bisect run` over commits that touch Port/ only, build each candidate in a scratch git worktree, and judge it with a replay diff (engine_parity) or an engine_smoke error signature. Prove it by planting a regression three commits back and finding it."
     },
     {
       "id": "C2",
       "milestone": "M1",
       "title": "Visual completeness",
-      "exit": "81/81 shaders translated; ParticleSystem (the modules the 26 prefabs use) and both VFX Graphs draw; the Timeline plays; SSIM >= 0.97 against goldens in every mode's first 60 s",
+      "exit": "A Shader Graph compiler (the 85 node types the project uses) with the 30 custom functions ported once and families keyed by guid; the 38 `.shader` files hand-translated by on-screen use; an unknown shader warns once; ParticleSystem (the modules the 26 prefabs use) and both VFX Graphs draw (VFX Graph as Approximate); the Timeline plays; SSIM >= 0.97 against goldens in every mode's first 60 s",
       "weeks": 14,
       "dependsOn": [
         "C1"
       ],
       "status": "todo",
       "notes": [],
-      "prompt": "Pick the next untranslated shader (or ParticleSystem module, or VFX Graph) from ROADMAP \u00a7C2, ranked by how many on-screen objects use it in the 19 Steam modes. Read its .shadergraph/.shader/prefab, translate it into CosmicShore.Render following the existing material families, then prove it: game_start in a scene that shows it, game_screenshot before/after, and the parity diff once C1 exists. Do one item per session; record it in this file."
+      "prompt": "First session: plan the Shader Graph compiler for CosmicShore.Render - parse the .shadergraph/.shadersubgraph JSON, emit GLSL for the node types the project uses (census in docs/ARCHITECTURE_REVIEW_2026-10-06.md, D10), port the 30 custom HLSL functions once as a GLSL library, key material families by shader guid, and warn once for an unknown shader. Later sessions (repeat per item): the next hand-written .shader, ParticleSystem module or VFX Graph, ranked by how many on-screen objects use it in the 19 Steam modes; prove each with game_screenshot before/after and the parity diff. Record each item in ROADMAP.md."
     },
     {
       "id": "C3",
       "milestone": "M1",
       "title": "Physics parity",
-      "exit": "Contact resolution for the 17 Rigidbody users; OnCollision* fires; replays end with identical scores",
+      "exit": "Contact resolution for the 17 Rigidbody users, plus oriented boxes; OnCollision* fires; replays end with identical scores. Rule: never a general solver in-house; bind BepuPhysics v2 for contacts only if the census needs mesh contacts or PhysX-like friction",
       "weeks": 3,
       "dependsOn": [
         "C1"
       ],
       "status": "todo",
       "notes": [],
-      "prompt": "Measure every Rigidbody and OnCollision* use in Assets/_Scripts (17 + 1 at last count). For each, say what contact behaviour it needs. Implement only that in CosmicShore.Engine physics, with tests, and verify with replays that scores match Unity."
+      "prompt": "Measure every Rigidbody and OnCollision* use in Assets/_Scripts (17 + 1 at last count). For each, say what contact behaviour it needs. Implement only that in CosmicShore.Engine physics, plus oriented boxes, with tests, and verify with replays that scores match Unity. Never write a general solver: if AstroLeague's ball needs mesh contacts or PhysX-like friction, propose binding BepuPhysics v2 for contacts only behind the trigger/query API, and flag the dependency before adding it."
     },
     {
       "id": "C4",
@@ -72,34 +100,34 @@
       "id": "C6",
       "milestone": "M1",
       "title": "Online parity",
-      "exit": "4 players over the internet in each multiplayer mode; Steam auth and achievements; cloud save and leaderboards on the chosen backend",
+      "exit": "An `INetTransport` seam with TCP as its first transport (can start before G2); then 4 players over the internet in each multiplayer mode; Steam auth and achievements; cloud save and leaderboards on the chosen backend",
       "weeks": 8,
       "dependsOn": [
         "C1"
       ],
       "status": "todo",
       "notes": [],
-      "prompt": "Implement the backend chosen at G2: transport over the internet with relay, Steam auth/achievements via Steamworks.NET, cloud save and leaderboards. Prove it with two machines in different networks (or two GitHub runners) completing a Bloomrush match.",
+      "prompt": "Before G2: put an `INetTransport` seam between NetDriver and NetSocket (TCP stays the first implementation) with tests. After G2: implement the chosen backend from the boundary table in docs/ARCHITECTURE_REVIEW_2026-10-06.md (F14): transport over the internet with relay, Steam auth/achievements via Steamworks.NET, cloud save and leaderboards. Prove it with two machines in different networks (or two GitHub runners) completing a Bloomrush match.",
       "gate": "G2 (online backend decision, 2026-12-15) must be decided first"
     },
     {
       "id": "C7",
       "milestone": "M1",
       "title": "Performance parity",
-      "exit": "On the GTX 1060: every mode at every intensity within 10% of Unity's frame time, and load times within the R7 target",
+      "exit": "On the GTX 1060: every mode at every intensity within 10% of Unity's frame time, and load times within the R7 target. Includes GPU timer queries in the session report, the `tasks` phase's allocations (279-728 KB/frame in Menu_Main, steady GC up to 1.9 ms/frame), jobs moved to `Parallel.For` only where a profile shows them, and a `SustainedLowLatency` A/B",
       "weeks": 8,
       "dependsOn": [
         "C2"
       ],
       "status": "todo",
       "notes": [],
-      "prompt": "Profile the heaviest mode at intensity 4 with COSMIC_SHORE_RENDER_TIMING=1 and dotnet-trace. Rank the top 5 costs against the GTX 1060 budget (16.6 ms). Fix the largest one per session, proving each with before/after numbers from the same replay."
+      "prompt": "Profile the heaviest mode at intensity 4 from its session report (cpu.phaseAvgMs, memory.phaseAvgKB, steady GC) and dotnet-trace; add GPU timer queries to the report on desktop GL. Rank the top 5 costs against the GTX 1060 budget (16.6 ms). Fix the largest one per session, proving each with before/after numbers from the same replay. Known leads: the async `tasks` phase allocates 279-728 KB/frame in Menu_Main (steady GC up to 1.9 ms/frame); loading allocates ~2.5 GB."
     },
     {
       "id": "C8",
       "milestone": "M1",
       "title": "Platforms",
-      "exit": "(1) Windows real-machine pass. (2) Android device pass. (3) iOS sideload pass. (4) Metal backend plan approved. (5) Steam Deck native Linux build",
+      "exit": "(1) Windows real-machine pass. (2) Android device pass. (3) iOS sideload pass. (4) The backend plan for gate G6 (thin RHI with Metal, or wgpu-native) approved. (5) Steam Deck native Linux build",
       "weeks": 6,
       "dependsOn": [
         "C2",
@@ -107,7 +135,7 @@
       ],
       "status": "todo",
       "notes": [],
-      "prompt": "Produce the Windows, Android and iOS builds from the launcher, run the platform checklist (boot, a full match, audio, input, suspend/resume) and log every failure as a session report. Write the Metal backend plan: what the renderer's GL calls map to, what changes in shaders, the effort."
+      "prompt": "Produce the Windows, Android and iOS builds from the launcher, run the platform checklist (boot, a full match, audio, input, suspend/resume) and log every failure as a session report. For gate G6, compare a thin RHI with a Metal backend against wgpu-native: what the renderer's GL calls map to, what changes in shaders, the effort, and the new dependency."
     },
     {
       "id": "C9",

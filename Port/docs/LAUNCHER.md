@@ -46,11 +46,13 @@ The first start shows a one-minute tour of every page; **?** replays it.
 
 Every game started from PLAY writes a session report when it closes or crashes. Prisma folds it
 into **tracks** (`%LOCALAPPDATA%\Prisma\tracks`): OVERVIEW (runs, crash-free rate, median
-frame time, open problems), PERFORMANCE (each scene's 95th-percentile frame time per run against
-the 60 fps line), AUDIO (sound events per run, events missing from the banks, unwired one-shots),
+frame time, open problems), PERFORMANCE (a *Frame budget* card with simulation and render CPU,
+allocations per frame and GC pause per frame, then each scene's 95th-percentile frame time per run
+against the 60 fps line), AUDIO (sound events per run, events missing from the banks, unwired one-shots),
 FEATURES (modes, vessels and scenes used) and RUNS. A problem is grouped across runs (numbers and
 ids stripped), with its first and last sighting; one that stays away for three runs through its
-scene goes *quiet*. **FIX** hands a problem to the agent; **TRACK** puts it on the board.
+scene goes *quiet*. A run whose steady GC pause tops 1 ms per frame is a performance problem too.
+**FIX** hands a problem to the agent; **TRACK** puts it on the board.
 
 ## Notifications and clean-ups
 
@@ -69,6 +71,14 @@ hand it to the agent. Prisma *suggests* items - problems from the tracks, the ne
 whose dependencies are done - and so can the agent (`prisma_board_suggest`); a suggestion joins
 the board only when you ACCEPT it.
 
+Every card has a **done when** line: the check that proves it. Type one next to a new item's
+title; the agent must give one with every suggestion; a milestone task carries its checkpoint's
+exit criterion. A bug that came from the tracks is checked by Prisma itself after every run: when
+the problem has stayed away for three runs through its scene, the card gets a green **MET** pill
+and a notification offers MARK DONE (moving it stays your call). If the problem comes back, the
+card loses MET, and a DONE card reopens to TO DO. A card in DOING tells the agent's brief that a
+fix is in progress.
+
 ## MILESTONES - engine work, inside Prisma
 
 ![MILESTONES](architecture/prisma_milestones.png)
@@ -76,7 +86,16 @@ the board only when you ACCEPT it.
 The roadmap (`docs/ROADMAP.md`) as checkpoints with their exit criteria, weeks and dependencies,
 read from `docs/milestones.json` in the branch (commit it to share progress). **START** opens an
 engine session for that checkpoint in plan mode with its prompt; that session works on `Port/`
-and may not touch the Unity project, and it records progress back into `milestones.json`.
+and may not touch the Unity project, and it records progress back into `milestones.json`. It
+marks a checkpoint done only after running its exit criterion.
+
+Each milestone run has a **budget**: agentic turns (default 80), wall-clock minutes (default 60)
+and optionally dollars, set in SETTINGS > CLAUDE > Milestone budget. A run that reaches a limit,
+or fails, stops and leaves a record instead of half-done work: a suggested board task listing every
+tool call it made and its last message, a dated note on the checkpoint, and a notification with
+**CONTINUE** (the same conversation, a fresh budget) and **BOARD**. Your own STOP leaves none.
+
+![A milestone run that stopped at its budget](architecture/prisma_milestone_stopped.png)
 
 ## BUILD
 
@@ -139,8 +158,9 @@ and Mono domain colours), motion speed (down to still), dim, and the intro and p
 ## Play-session reports
 
 Every game started from PLAY writes a report when it closes or crashes: scenes and time in each,
-frame-time percentiles, every distinct error, warning and exception with its count, and the
-crash, branch and commit. They are kept in `%LOCALAPPDATA%\Prisma\sessions` (the last
+frame-time percentiles (overall and per scene), simulation and render CPU, the average cost and
+allocations of each loop phase, GC collections and pauses, audio use, every distinct error,
+warning and exception with its count, and the crash, branch and commit. They are kept in `%LOCALAPPDATA%\Prisma\sessions` (the last
 40). The CLAUDE page's LAST SESSION hands the newest one to Claude to analyse.
 
 ## AGENT - the Prisma Agent, powered by Claude
@@ -203,4 +223,5 @@ own clone: *Beside my clone* uses a git worktree next to it.
 `Prisma --page build --screenshot out.png --frames 40` renders a page and exits
 (`--page project:1` opens a Project tab, `--page options:look` one settings section).
 `--auto launcher-update:REV` / `launcher-use:SHORT` exercise the version flow. `--auto play|update|android|ios` presses the button on
-its own and echoes the log; `--auto "chat:<message>"` sends one chat message.
+its own and echoes the log; `--auto "chat:<message>"` sends one chat message;
+`--auto milestone:C1` presses a checkpoint's START.

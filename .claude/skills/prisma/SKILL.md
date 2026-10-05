@@ -19,12 +19,15 @@ checklist.
    (`game_wait`) a few frames after input; under xvfb the game runs at a few frames per second.
 4. **Start from Prisma's memory.** `prisma_tracks` has every recorded run's problems, performance
    and audio; `prisma_board` the open bugs and tasks. Suggest what you find but won't fix now with
-   `prisma_board_suggest`.
+   `prisma_board_suggest`, always with a `criterion`: the check that will prove it done. A card's
+   "done when" is its acceptance test: run it and show the result before calling the work done.
 5. **Inspect, don't guess.** `game_find` / `game_hierarchy` to locate objects, `game_get` to read
    live fields, `game_ui_at X,Y` for "what is that on screen", `game_dump_ui` for layout and
    anchors, `game_logs` for errors.
 6. **Fix in the right place.** Engine gaps in `Port/src`; gameplay bugs in `Assets/_Scripts` on a
-   separate Unity PR. Never edit `obj/live-src` (it is regenerated).
+   separate Unity PR. Never edit `obj/live-src` (it is regenerated); errors there already name the
+   original `Assets/` file and line. Treat a `PRISMA001` warning (an RPC Prisma cannot intercept)
+   as a bug.
 7. **Before committing**: `engine_test`, then `unity_isolation_check` - the port must not change
    anything Unity reads. `game_stop` when done.
 

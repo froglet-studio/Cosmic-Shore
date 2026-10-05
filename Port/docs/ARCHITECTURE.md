@@ -68,9 +68,17 @@ Everything targets .NET 10 (`Directory.Build.props`). The solution is `Port/Cosm
    Fully-qualified names are rewritten as well as `using` lines.
 3. **Stands in for Netcode's IL weaver.** Every `[ServerRpc]` / `[ClientRpc]` method gets a
    first line, `if (NetRpc.Intercept(this, "Name", args)) return;`. That one line routes the call
-   over the network, or lets it run locally.
-4. **Writes** the result to `obj/live-src`. Only files whose text changed are rewritten, and the
-   task never writes back into `Assets/`.
+   over the network, or lets it run locally. An RPC it cannot intercept (a generic method, an
+   attribute split over lines, Netcode 2's `[Rpc(SendTo...)]`) is reported as warning
+   **`PRISMA001`** at its file and line, never skipped silently: it would run locally instead of
+   over the network.
+4. **Maps back to the original file.** Each output starts with `#line 1 "<path under Assets/>"`
+   and the rewrite keeps line numbers, so compiler errors, stack traces, debugger steps and
+   `[CallerFilePath]` name the real `Assets/_Scripts` file and line.
+5. **Writes** the result to `obj/live-src`, incrementally. A manifest (`obj/live-src.manifest`)
+   records each source's size and timestamp, stamped with the rules file and the source path; an
+   unchanged source is neither read nor transformed (~70 ms per sync instead of ~1 s), and an
+   output is written only when its text changes. The task never writes back into `Assets/`.
 
 Packages that keep their own namespace (`DG.Tweening`, `Cysharp.Threading.Tasks`,
 `Unity.Entities`, `Unity.Mathematics`…) are not rewritten. Compat implements them under those
@@ -89,7 +97,7 @@ sits behind those names is first-party code.
 | Area | What it does | Key files |
 |---|---|---|
 | Object model | `Object` (a destroyed object compares equal to `null`), `GameObject`, `Component`, `Transform` (local TRS is authoritative; world pose is cached), `RectTransform`, scenes | `Object.cs`, `SceneGraph/` |
-| Lifecycle | Unity messages (`Awake` … `OnDestroy`, `OnTrigger*`) are found by reflection once, compiled to delegates and run in `[DefaultExecutionOrder]` order | `SceneGraph/MonoBehaviour.cs`, `LifecycleMethodCache.cs` |
+| Lifecycle | Unity messages (`Awake` … `OnDestroy`, `OnTrigger*`) are found by reflection once per type and bound as open-instance delegates (no `Expression.Compile`, which is slow on iOS's interpreter). They run in Script Execution Order: the `.meta` `executionOrder` (read by Content at boot) overrides `[DefaultExecutionOrder]`, and it orders Awake/OnEnable at a scene load, Start, and every per-frame phase | `SceneGraph/MonoBehaviour.cs`, `LifecycleMethodCache.cs`, `ScriptExecutionOrder.cs` |
 | Frame loop | `GameLoop.Tick` (Figure 4). Headless by design: tests tick it directly | `SceneGraph/GameLoop.cs` |
 | Time | Frame clock, fixed-step accumulator (the project's 0.04 s), unscaled clock | `Time.cs` |
 | Physics | Custom trigger physics. Overlap pairs fire `OnTriggerEnter/Stay/Exit`, sweep-sorted, deterministic. Raycast, SphereCast and OverlapSphere are supported, and Rigidbodies integrate ballistically. Spheres are exact; boxes and meshes are world-space AABBs. There is no contact solver (the game is trigger-driven) | `SceneGraph/TriggerPass*.cs`, `Compat/EngineCompat.cs` |
@@ -128,7 +136,7 @@ That way `Awake` sees a complete tree, as in Unity.
 |---|---|
 | `PrefabGraph` | Expands nested prefab instances into one id space. Applies overrides, removed objects and added objects, honouring stripped stand-ins |
 | `ScriptTypeMap` | Maps a script's guid to its C# type: the `.cs` path gives the class, the source gives the namespace. Package scripts come from a fixed table |
-| `SerializedReader` | Binds YAML onto fields by reflection: `m_Foo` → `foo`, `[FormerlySerializedAs]`, nested `[Serializable]` types, and references by fileID/guid |
+| `SerializedReader` | Binds YAML onto fields by reflection, nested `[Serializable]` types and references by fileID/guid. Script types follow Unity's serializer exactly (`UnitySerializationRules`): public or `[SerializeField]` fields of a serializable type, `[field: SerializeField]` backing fields, `[FormerlySerializedAs]`, then `OnAfterDeserialize`; properties and private unmarked fields never load. Engine built-ins keep `m_Foo` → `foo` aliases. `cs-asset serialization-audit` measures the difference against Unity (0 dropped, 0 extra) |
 | `AssetLoader` | Loads referenced assets: YAML assets, materials, prefabs, animators, and meshes and clips inside FBX files |
 | Importers | **FBX** (binary/ASCII, following Unity's axis, scale and winding rules), **textures** (PNG/JPG/TGA/PSD; sprites and 9-slice), **TMP fonts** (Unity's baked SDF atlases), **shaders** (declared properties, so `Material.HasProperty` answers as in Unity), **animators**, **mixers** |
 
@@ -419,9 +427,12 @@ and `prisma_board_suggest`. Where the engine is going: `docs/ROADMAP.md` and `do
 
 | Layer | How |
 |---|---|
-| Engine, content, networking, services, gameplay | `dotnet test tests/CosmicShore.Tests`: 1,568 tests in about 70 s, no GPU |
+| Engine, content, networking, services, gameplay | `dotnet test tests/CosmicShore.Tests`: ~1,590 tests in about 70 s, no GPU. Includes execution order, Unity's serialization rules, the tracks/board criteria, and `RenderBoundaryTests` (GL only inside `CosmicShore.Render`) |
 | The project's own Unity tests | `dotnet test tests/CosmicShore.Tests.Ported`: 352 tests, verbatim |
 | File round-trip | `cs-asset roundtrip`: every YAML file parses and writes back byte-identical |
+| Loader vs Unity's serializer | `cs-asset serialization-audit`: every YAML key Unity reads, Prisma reads too, and nothing more (exit 1 otherwise) |
+| RPC coverage | The source sync warns `PRISMA001` for any RPC it cannot intercept (0 today) |
+| Run data | Every launcher play writes a session report (frame, CPU-per-phase, allocation, GC, audio, problems); Prisma's tracks compare it with earlier runs |
 | Rendering | Scripted windowed runs with screenshots, under xvfb on Linux |
 | Shaders on phones | Every shader is translated and compiled by the Khronos GLSL ES reference compiler (`GlslEsTranslationTests`) |
 | Fidelity | `--train replay` re-scores a generation Unity already scored and reports the difference |

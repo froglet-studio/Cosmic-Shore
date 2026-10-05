@@ -8,8 +8,8 @@ edit `Assets/_Scripts`, because the engine compiles those files live.
 
 **The port never changes the Unity project.** Nothing under `Port/` is read by Unity, and the
 port only *reads* `Assets/`. A port branch may change, outside `Port/`, only `.gitignore`
-`Port/**` rules, `.github/workflows/froglet-*` and `.claude/skills/froglet-*`. Check before every
-commit:
+`Port/**` rules, `.github/workflows/prisma-*` and `.claude/skills/prisma*` (the legacy `froglet-*`
+names are still accepted). Check before every commit:
 
 ```bash
 python3 Port/tools/check_unity_isolation.py        # or the MCP tool unity_isolation_check
@@ -30,11 +30,12 @@ the game uses that the engine lacks) belongs in `Port/src/CosmicShore.Engine` / 
 | `src/CosmicShore.Player` | `CosmicShore.exe`: window, headless mode, scripted input, **control port** |
 | `src/CosmicShore.Mobile` · `src/CosmicShore.Build` | Phone player · `cs-build` (player data, APK/AAB, iOS) |
 | `src/CosmicShore.Launcher` | `Prisma.exe` (Dear ImGui): play a branch, phone builds, Project Settings, Claude chat |
-| `src/CosmicShore.Mcp` | `cs-mcp`: this engine as an MCP server for Claude Code |
+| `src/CosmicShore.Mcp` | `prisma-mcp`: this engine as an MCP server for Claude Code |
 | `ProjectSettings/PrismaProject.json` | The engine's own Player/Scenes/Quality settings; empty fields inherit Unity's |
 | `tests/` | `CosmicShore.Tests` (engine, xunit, ~70 s, no GPU) · `CosmicShore.Tests.Ported` (the game's EditMode tests) |
 | `docs/ARCHITECTURE.md` | How it all fits; read the section for the area you touch |
 | `docs/ROADMAP.md` | The milestones (gameplay parity, then Unity-free development), checkpoints, open gaps and ready prompts. Pick work from here |
+| `docs/ARCHITECTURE_REVIEW_2026-10-06.md` | The architecture review's 20 items: what was checked, decided (with reasons) and measured. Read it before reopening one of those questions |
 
 ## Who works where
 
@@ -45,7 +46,10 @@ the game uses that the engine lacks) belongs in `Port/src/CosmicShore.Engine` / 
 | Engine development in Claude Code | the engine | `Port/` (this file's rules) | the repo root |
 
 Deny rules on the Claude Code CLI enforce the first two in every mode. A milestone session
-records progress in `docs/milestones.json` (status plus a dated note with evidence).
+records progress in `docs/milestones.json` (status plus a dated note with evidence), and marks a
+checkpoint done only after running its exit criterion. Each milestone run has a budget (turns,
+minutes, optional dollars; Prisma's Settings > CLAUDE); a run that stops short leaves a board item
+listing what it tried, a note on the checkpoint, and a CONTINUE button.
 
 ## Prisma's memory: tracks and the board
 
@@ -53,9 +57,11 @@ Every play run writes a session report (`--session-report`); Prisma folds them i
 (`%LOCALAPPDATA%/Prisma/tracks/tracks.json`, a brief in `MEMORY.md`): runs, performance per
 scene, features (modes, vessels, scenes), audio (instances, missing events, unwired one-shots)
 and every distinct problem with first/last seen. The **board** (`board.json`, same folder) holds
-bugs and tasks; Prisma and agents add only *suggestions*, which the user accepts. Tools:
-`prisma_tracks` (read this before asking what is wrong), `prisma_board`, `prisma_board_suggest`.
-Code: `src/Shared/PrismaTracks.cs`, `src/Shared/PrismaBoard.cs`.
+bugs and tasks; Prisma and agents add only *suggestions*, which the user accepts. Every item has
+a **done when** criterion, the check that proves it: `prisma_board_suggest` requires one, and a bug
+that came from the tracks is verified by them (not seen in 3 runs through its scene marks it MET; a
+relapse reopens it). Tools: `prisma_tracks` (read this before asking what is wrong), `prisma_board`,
+`prisma_board_suggest`. Code: `src/Shared/PrismaTracks.cs`, `src/Shared/PrismaBoard.cs`.
 
 ## The loop
 
@@ -98,15 +104,29 @@ An unattended run without a port: `--frames N --shot F:out.png --do "F:click X,Y
   Use `headless: true` when you need no pictures - it ticks as fast as the CPU allows.
 - **Unity injects Reflex before Awake/OnEnable**, with the scene active. Bugs where a value
   "never updates" are often an injection-order gap in the engine, not the game.
-- **The live compile takes whatever `Assets/` is checked out.** A compile error in
-  `obj/live-src/...` names the original `Assets/_Scripts` file; fix the engine's missing API, not
-  the synced copy (it is regenerated every build).
+- **The live compile takes whatever `Assets/` is checked out.** Errors, warnings and stack traces
+  name the original `Assets/_Scripts` file and line (the sync writes `#line`); fix the engine's
+  missing API, not the synced copy in `obj/live-src` (regenerated as needed). Warning
+  **`PRISMA001`** marks an RPC the sync cannot intercept (a generic method, an attribute split over
+  lines, `[Rpc(SendTo...)]`): in Prisma it would run locally instead of over the network.
+- **Serialization follows Unity's rules for script types**: public or `[SerializeField]` fields
+  of a serializable type, `[field: SerializeField]` backing fields, `[FormerlySerializedAs]`, then
+  `OnAfterDeserialize`. Properties and private unmarked fields never load. `cs-asset
+  serialization-audit` lists every key Unity and Prisma read differently; keep it at 0 DROPPED and
+  0 EXTRA (`src/CosmicShore.Content/Serialization/UnitySerializationRules.cs`).
+- **GL stays behind the render boundary**: only `CosmicShore.Render` (and the player window's
+  present/read-back) may use the GL binding. `RenderBoundaryTests` fails otherwise, so a Metal or
+  WebGPU backend later replaces one project.
 - **Debug vs Release**: Debug is a Unity development build (diagnostics overlay, logs); Release
   is the customer build. The MCP server runs Debug.
 - `--verbose` opens every `CSDebug` log channel; `game_logs grep` filters them.
 - **Session reports**: `--session-report PATH` (the launcher always passes one) writes JSON at
-  exit - scenes, frame-time percentiles, distinct errors/warnings/exceptions with counts, crash.
-  A user's "LAST SESSION" message points at one; read it before guessing.
+  exit - scenes, frame-time percentiles, CPU per loop phase (`cpu.phaseAvgMs`), allocations per
+  phase and steady-state GC (`memory`), audio, distinct errors/warnings/exceptions with counts,
+  crash. A user's "LAST SESSION" message points at one; read it before guessing. A `--headless`
+  run has no GPU: its render figures are zero and the prism render service is off, so
+  `[PrismClock]`/`[PrismFactory]` errors in a headless report are expected (xvfb renders in
+  software and has neither caveat).
 
 ## Connecting Claude Code to the engine
 
