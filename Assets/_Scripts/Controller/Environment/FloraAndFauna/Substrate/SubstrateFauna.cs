@@ -160,6 +160,9 @@ namespace CosmicShore.Gameplay
             int pop = host.Core.AddPopulation(P, _element, inner, outer);
             if (pop < 0) return -1;
             var block = host.Core.Pops[pop];
+            // this species' own engagement: the host's tick settings are the FIRST-joined species' (QA-SWARM-ROUND11-9)
+            block.EngageRadius = species.EngageRadius;
+            block.MaxEngaged = species.MaxProxies;
             _pop = pop; _start = block.Start; _cap = block.Cap;
             _proxy = new SubstrateAgentFauna[_cap];
             _wantedAt = new float[_cap];

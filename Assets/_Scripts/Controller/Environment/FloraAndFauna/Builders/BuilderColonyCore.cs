@@ -484,7 +484,7 @@ namespace CosmicShore.Gameplay
             if (vessel != BuilderDeath.StarvedBy) Kills++; else Starved++;
             if (Carry[k] >= 0) { _taken.Remove(Carry[k]); _world.Drop(Carry[k]); Carry[k] = -1; }
             if (Goal[k] >= 0) { _claimed.Remove(Goal[k]); Goal[k] = -1; }
-            Deaths.Add(new BuilderDeath { Agent = k, Vessel = vessel, At = Pos[k] });
+            Deaths.Add(new BuilderDeath { Agent = k, Vessel = vessel, At = Pos[k], Stomach = Stomach[k] });
         }
 
         void Contacts(BuilderVessel[] vessels, int vesselCount)

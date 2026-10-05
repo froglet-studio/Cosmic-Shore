@@ -235,6 +235,11 @@ SAME core files the game compiles. Its asserted results:
   where it is.
 - **Unstated volume.** Food in a member's stomach (eaten volume not yet spent) is not stated to the cell's volume
   sum. Round 11a retired `SetVirtualVolume`, and the swarm does not state its stomach either.
+  - **`BuilderDeath.Stomach`** (round 11-9, `Docs/SWARM_FAUNA.md` §25) records that stomach at the moment of death, in
+    all three cores. A birth in the SAME step can re-use the dead slot and overwrite `Stomach[slot]`; a ledger that read
+    the array after the step booked the newborn's stomach instead. The showcase cell's first run had 9 such re-uses in
+    2 minutes and a 231.8-volume builder residual; booking from the record closes it to 0 (showcase harness U4, with a
+    negative control).
 
 ## 9. Files
 

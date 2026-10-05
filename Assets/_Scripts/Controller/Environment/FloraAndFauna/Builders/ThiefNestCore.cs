@@ -159,7 +159,7 @@ namespace CosmicShore.Gameplay
                 _book.Remove(Carry[i]);
                 Carry[i] = -1;
             }
-            Deaths.Add(new BuilderDeath { Agent = i, Vessel = vessel, At = Pos[i] });
+            Deaths.Add(new BuilderDeath { Agent = i, Vessel = vessel, At = Pos[i], Stomach = Stomach[i] });
         }
 
         void DropOnHoard(int i)

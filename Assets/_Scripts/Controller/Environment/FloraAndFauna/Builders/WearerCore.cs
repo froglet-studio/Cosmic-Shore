@@ -677,7 +677,7 @@ namespace CosmicShore.Gameplay
                     Vel[j] = _rng.Normal3(40f);
                 }
             }
-            Deaths.Add(new BuilderDeath { Agent = k, Vessel = vessel, At = Pos[k] });
+            Deaths.Add(new BuilderDeath { Agent = k, Vessel = vessel, At = Pos[k], Stomach = Stomach[k] });
         }
     }
 }

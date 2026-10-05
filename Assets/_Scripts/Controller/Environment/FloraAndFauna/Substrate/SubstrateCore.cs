@@ -69,6 +69,12 @@ namespace CosmicShore.Gameplay
         public float BandInner, BandOuter;
         public int Alive, Striking;
         public long Births, Starvations, Bites, Strikes;
+        /// <summary>World radius around a vessel inside which THIS population's agents engage (get a proxy), and the most it
+        /// may engage at once. Below 0 = the tick job's <see cref="SubstrateTickSettings"/> numbers. The owner sets its own
+        /// species' numbers when it claims the block (SubstrateFauna.ClaimBlock): one host serves every population, and its
+        /// settings are the FIRST-joined species' (QA-SWARM-ROUND11-9).</summary>
+        public float EngageRadius = -1f;
+        public int MaxEngaged = -1;
 
         internal readonly Vector3[] Dirs;
         internal readonly int[] Live;
