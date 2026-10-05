@@ -272,7 +272,10 @@ sealed class SwarmSystem : ICellSystem, IOccupancy
     long _ticks;
     float BodyRadius(One o) => (_plans[Math.Clamp(o.Job.PlanIx, 0, 3)].Radius * 3f + 20f) * _us;
     float CruiseWorld => Cell.F(_cfg, "Cruise") * _us * _hz;
-    bool StarvationDue(Cell c, One o) => c.T - o.LastFed >= Cell.F(_cfg, "StarvationSeconds") && c.T - o.LastShed >= Cell.F(_cfg, "ShedIntervalSeconds");
+    bool StarvationDue(Cell c, One o) => Starving(c, o) && c.T - o.LastShed >= Cell.F(_cfg, "ShedIntervalSeconds");
+    /// <summary>SwarmFauna.Starving (round 11-14): hungry (below ForageBelow) AND unfed StarvationSeconds - a sated swarm
+    /// takes no bite, and on the clock alone it starved with a full stomach.</summary>
+    bool Starving(Cell c, One o) => c.T - o.LastFed >= Cell.F(_cfg, "StarvationSeconds") && Fill(o) < Cell.F(_cfg, "ForageBelow");
     readonly SwarmPlanData[] _plans;
     readonly string[] _elemName = { "charge", "mass", "space", "time" };
     public readonly int Density;
@@ -429,6 +432,9 @@ sealed class SwarmSystem : ICellSystem, IOccupancy
     public int Cap(int k) => _sw[k].Job.Core.Cap;
 
     public int Reseeds;
+    /// <summary>The fullest stomach (0..1) any swarm held when its starvation shed was asked for (round 11-14: must be
+    /// below ForageBelow - a sated swarm never starves).</summary>
+    public float ShedFillMax;
 
     /// <summary>SwarmFauna.Extinction, every tick: no member and no proxy for ExtinctLingerSeconds and the anchor leaves.</summary>
     public void TrackExtinction(Cell c)
@@ -583,9 +589,10 @@ sealed class SwarmSystem : ICellSystem, IOccupancy
             Die(one, v);
             one.Starved++;
         }
-        if (c.T - one.LastFed < Cell.F(_cfg, "StarvationSeconds")) return;
+        if (!Starving(c, one)) return;
         if (c.T - one.LastShed < Cell.F(_cfg, "ShedIntervalSeconds")) return;
         one.LastShed = c.T;
+        ShedFillMax = MathF.Max(ShedFillMax, Fill(one));
         job.WantStarvationVictim = true;
     }
 

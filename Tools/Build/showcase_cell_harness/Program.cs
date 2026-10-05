@@ -341,6 +341,8 @@ static class Program
         /// has none now.</summary>
         public readonly Dictionary<string, float> FirstGone = new(), LongestAbsence = new(), AbsentSince = new();
         public int Reseeds;
+        /// <summary>SwarmSystem.ShedFillMax: the fullest stomach a swarm starved with.</summary>
+        public float ShedFillMax;
         /// <summary>C8 (round 11-10): per class, member-seconds inside its pen and member-seconds counted (a plant pen:
         /// seconds holding a plant, seconds).</summary>
         public readonly Dictionary<string, (long inPen, long counted)> Occupancy = new();
@@ -521,6 +523,7 @@ static class Program
         foreach (var (key, (below, above, sector, n, beyond)) in sub.OccWhy)
             Console.WriteLine($"   occupancy {key}: below band {100.0 * below / n:F0}%, above {100.0 * above / n:F0}%, outside sector {100.0 * sector / n:F0}%, mean distance outside the band when out {beyond / Math.Max(1, below + above):F0} u");
         r.Reseeds = swarm.Reseeds + sub.Reseeds + builders.ThiefReseeds + builders.WearReseeds;
+        r.ShedFillMax = swarm.ShedFillMax;
         swarm.SyncBook(c.World);
         Ledger(c, swarm, sub, builders, grove, out _, r.LedgerLines);
         r.CollidersMean = colliderSum / (double)Math.Max(1, ticks);
@@ -849,6 +852,10 @@ static class Program
                 (slow.Count > 0 ? ": " + string.Join(", ", slow) : ""));
         Finding(longRun.Reseeds <= longRun.FirstGone.Count && longRun.FirstGone.Count <= 3,
                 $"C4 the long run leans on the seeder for at most 3 classes ({longRun.FirstGone.Count} died out, {longRun.Reseeds} re-hatches)");
+        float forageBelow = (float)layout.GetProperty("swarm_config").GetProperty("ForageBelow").GetDouble();
+        float shedFill = runs.Max(r => r.ShedFillMax);
+        Check(shedFill < forageBelow, $"C4 a swarm starves only HUNGRY: the fullest stomach any swarm shed a member with is {shedFill:P0} " +
+              $"(< ForageBelow {forageBelow:P0}; round 11-14 - a sated swarm shed 899 members holding 96%)");
         Check(longRun.Over.Count == 0, "C4 no class exceeded its cap" + (longRun.Over.Count > 0 ? ": " + string.Join(", ", longRun.Over) : ""));
         foreach (var run in runs.Where(r => r.Seed != longRun.Seed || r.Minutes == longRun.Minutes))
             if (run.Extinct.Count > 0) Console.WriteLine($"     (seed {run.Seed}: extinct {string.Join(", ", run.Extinct)})");

@@ -157,8 +157,9 @@ namespace CosmicShore.Gameplay
         [Min(0f)] public float KillLayHoldSeconds = 2f;
 
         [Header("Starvation - the only death the swarm deals itself")]
-        [Tooltip("Seconds without a meal before the swarm starts shedding members (each withers to " +
-                 "its crystal, leaving its body prism as a skeleton). Feeding resets the clock.")]
+        [Tooltip("Seconds without a meal before a HUNGRY swarm (stomach below ForageBelow) starts shedding members " +
+                 "(each withers to its crystal, leaving its body prism as a skeleton). Feeding resets the clock; a sated " +
+                 "swarm never starves.")]
         [Min(1f)] public float StarvationSeconds = 90f;
         [Tooltip("Seconds between starvation sheds once starving.")]
         [Min(0.1f)] public float ShedIntervalSeconds = 4f;

@@ -1048,9 +1048,18 @@ namespace CosmicShore.Gameplay
             get
             {
                 float now = Time.time;
-                return now - _lastFedTime >= config.StarvationSeconds && now - _lastShedTime >= config.ShedIntervalSeconds;
+                return Starving(now) && now - _lastShedTime >= config.ShedIntervalSeconds;
             }
         }
+
+        /// <summary>
+        /// Starving: HUNGRY (stomach below <see cref="SwarmFaunaConfigSO.ForageBelow"/>) and unfed for
+        /// <see cref="SwarmFaunaConfigSO.StarvationSeconds"/>. Round 11-14 (Docs/SWARM_FAUNA.md §26.6): the clock alone
+        /// starved a SATED swarm - a full body stops foraging, takes no bite, and its stomach (which only pays for eggs)
+        /// never drains, so 90 s after it was sated it shed a member a second; each shed held laying (KillLayHoldSeconds),
+        /// and the inner swarm of the showcase cell starved 899 members to extinction holding a 96%-full stomach.
+        /// </summary>
+        bool Starving(float now) => now - _lastFedTime >= config.StarvationSeconds && StomachFill < config.ForageBelow;
 
         /// <summary>Nothing pending that only individuals resolve: no proxy (a hit, a shed, a predator's bite), no kill
         /// waiting for its tick, no starvation shed due.</summary>
@@ -1542,7 +1551,7 @@ namespace CosmicShore.Gameplay
             }
 
             float now = Time.time;
-            if (now - _lastFedTime < config.StarvationSeconds) return;
+            if (!Starving(now)) return;
             if (now - _lastShedTime < config.ShedIntervalSeconds) return;
             _lastShedTime = now;
             // shed the member the body needs least - the core decides who, on the worker, next tick
