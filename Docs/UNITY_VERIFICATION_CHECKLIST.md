@@ -57,6 +57,29 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Skim Race AI Profiler timers - read the AI's real per-frame cost (`claude/confident-pascal-w76l2o`, 2026-10-05)
+
+**What landed.** `ProfilerMarker`s on the Skim Race pilot (`SkimRacePilot.Update` / `.Sense` / `.Obstacles`)
+and its thinking (`SkimRaceDriver.Decide` and its parts; `SkimRaceDriver.TrackMpc` only on the frames
+intensity 2's planner re-plans). No behaviour change: every simulator race is byte-identical with and
+without them. The simulator's numbers are in `Docs/SKIM_RACE_AI.md` §12; this is the in-game reading the
+simulator cannot give (the editor runs C# on Mono, a build on IL2CPP). Simulator, intensity 2, two AI:
+0.78 ms in a typical frame, 3.7 / 5.6 ms in the worst 10% / 1% (the planner's re-plan frames).
+
+**Verify in editor (about 5 minutes)**
+- [ ] Compiles.
+- [ ] First check the bug icon at the bottom right of the editor: **Release** code optimization gives
+      representative numbers (Debug runs all C# much slower and would overstate the AI's cost).
+- [ ] Window > Analysis > Profiler (Ctrl+7), CPU Usage module, recording on. Play Skim Race at
+      **intensity 2** with **two AI**, Hard, and let it race for 20-30 seconds.
+- [ ] Click a frame in the CPU chart, switch the bottom pane to **Hierarchy**, type `SkimRace` in its search
+      box. Note the **Total ms** of `SkimRacePilot.Update` (its Calls column should read 2 - one per AI;
+      Unity's own `SkimRacePilot.Update() [Invoke]` sample sits just above it and reads about the same).
+- [ ] Click through 5-10 frames: on some, `SkimRaceDriver.TrackMpc` appears (the planner re-plans 20 times
+      a second, both AIs on the same frames). Note `SkimRacePilot.Update` on a frame WITH it and on one
+      WITHOUT it - those two numbers are the result.
+- [ ] Optional: the same on intensity 1 (no planner - expect a much smaller number).
+
 ### 🔴 Skim Race AI tuning files know their map (`claude/confident-pascal-w76l2o`, 2026-10-05)
 
 **What landed.** Each per-intensity AI tuning file records the fingerprint of the map it was tuned on

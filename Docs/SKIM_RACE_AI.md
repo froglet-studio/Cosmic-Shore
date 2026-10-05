@@ -890,3 +890,67 @@ score 4.377 -> 4.070). On the same 20 fresh races the result finished 20/20 with
 **173.9 s**, against the general policy's 20/20 and **179.4 s** - so a real run would have written it. It
 was a dry run: intensity 3 still flies the general policy, and whether it should get a specialist of its
 own (about 3% faster in the simulator) is a separate decision.
+
+## 12. Per-frame cost (what the AI costs the game each frame)
+
+The pilot thinks every frame (`DecisionHz` 0). Its cost is visible in the Unity Profiler under these
+markers (Window > Analysis > Profiler, CPU Usage, Hierarchy view, search `SkimRace`):
+
+| Marker | What it times |
+|---|---|
+| `SkimRacePilot.Update` | everything one AI pilot does in a frame - one call per AI |
+| `SkimRacePilot.Sense` / `SkimRacePilot.Obstacles` | reading the vessel and crystals / looking up nearby prisms for the laid-mass guard |
+| `SkimRaceDriver.Decide` | the thinking |
+| `SkimRaceDriver.TrackMpc` | intensity 2's look-ahead planner: ~26 short what-if flights, only on the frames it re-plans (20 a second) |
+| `SkimRaceDriver.GuardMass` | the laid-mass guard's what-if flights |
+| `SkimRaceDriver.PlanPass` / `.Guards` / `.Planner` / `.LevelApproach` / `.Mpc` | smaller parts; a part a policy switches off never appears |
+
+The simulator times the SAME markers by name (`UnityShim`'s `ProfilerMarker` stand-in) and `eval`
+prints them, with the bytes allocated per decision and the AI's thinking per frame for all seats
+together. Markers wrap whole steps at most once per decision, so they change nothing: every race in the
+simulator is byte-identical with and without them.
+
+**Measured in the simulator** (2026-10-05; a 4-core Intel Xeon 2.8 GHz cloud machine, .NET 8.0.31,
+nothing else running; each track's shipped policy - I3 flies the general one - with 2 AI seats, 28 ms
+frames +-50%, 20 races per track, seedbase 50000, `eval <I> 20 ... limit=300`):
+
+| Track (policy) | One AI, average per frame | Both AIs in one frame: typical / worst 10% / worst 1% | Intensity 2's planner | Biggest part (per AI per frame) | Memory allocated |
+|---|---|---|---|---|---|
+| I1 (`skimrace-v4-i1`) | 0.08 ms | 0.03 / 0.58 / 1.28 ms | - | laid-mass guard, 0.08 ms | 0 bytes |
+| I2 (`skimrace-v2-i2`) | **0.82 ms** | 0.78 / **3.68** / **5.61** ms | **1.50 ms** per AI per re-plan, on 43% of frames | planner, 0.64 ms | 0 bytes |
+| I3 (`skimrace-v2-general`) | 0.37 ms | 0.36 / 2.14 / 4.62 ms | - | laid-mass guard, 0.26 ms | 0 bytes |
+| I4 (`skimrace-v1-i4`) | 0.23 ms | 0.14 / 1.18 / 3.83 ms | - | laid-mass guard, 0.19 ms | 0 bytes |
+| I2 on Easy | 0.74 ms | 0.64 / 3.35 / 5.30 ms | 1.40 ms | planner, 0.58 ms | 0 bytes |
+
+A frame at 60 fps is 16.7 ms. Easy and Medium cost no more than Hard (an Easy pilot has a little less to
+think about while a crystal is still unnoticed). The thinking allocates nothing, so it never feeds the
+garbage collector. At 60 fps the planner lands on fewer frames (20 a second is 1 frame in 3), so the
+average falls; the spike does not. The single slowest frame of each run (15-17 ms) is left out of the
+table: it cannot be told apart from the .NET runtime's one-off start-up work, which the game does
+differently. The 0.37 ms in section 8 (commit `02da300fe`, 2026-10-04) was measured on a different machine
+under settings that record does not give; compare the rows of this table with each other, not with it.
+
+**Why intensity 2 is different.** Its policy flies the tracking MPC (`UseTrackMpc`): 20 times a second it
+flies ~26 short what-if flights (one per candidate stick, 1.1 s each) and keeps the best. That is the
+spike: it lands on about 2 of every 5 frames at 36 fps (1 in 3 at 60 fps), and BOTH AIs re-plan on the
+same frames, because both count from the same race start (in a 3-race count: 3,406 frames had two
+re-plans, 354 had one, 4,972 none). Inside a what-if flight the time goes to checking the hull against
+the ribbon's contact shell (~44%), finding the nearest point on the track (~24%), sampling the racing line
+(~12%) and the flight model and steering (~20%) - measured with temporary finer timers in a scratch build.
+
+**What the simulator cannot say.** Unity runs this C# on Mono in the editor and IL2CPP in a build, not on
+.NET 8, so the game's numbers will differ - not measured here, but the editor is likely slower (much slower
+with the editor's Code Optimization set to Debug) and an IL2CPP build likely closer. The pilot's own sensing
+(`SkimRacePilot.Sense`, `.Obstacles`) only runs in the game. The Profiler reading in
+`Docs/UNITY_VERIFICATION_CHECKLIST.md` is the real number.
+
+**Speed-ups, if they are ever wanted** (none made: the user's call was "no limit, just report", and only
+speed-ups that leave every race identical are allowed without asking):
+
+- *Identical races, measured in a scratch build:* the track lookups wrap their indices with integer
+  remainders (~150 `%` per lookup); a plain wrap-around gives the same indices and made the lookup about
+  2x faster - the whole decision ~14% cheaper on intensity 2, every race byte-identical.
+- *Identical races, tried and dropped:* skipping the far half of the star-shaped shell with a safe bound
+  saved nothing measurable (the bound costs about what it saves).
+- *Would change how the AI flies (needs a decision):* stagger the AIs' re-plans so they do not share a
+  frame (halves the spike with two AI); re-plan less often (`TrackMpcHz`); fewer candidate sticks.
