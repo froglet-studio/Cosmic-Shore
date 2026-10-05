@@ -152,7 +152,7 @@ for f in files:
 
 **Shows up as:** an NRE or `MissingReferenceException` from a coroutine, scheduled callback or
 event handler, usually right before a scene switch or play-mode exit. Example: `Crystal.ActivateCrystal`
-reading `cellData.Cell.transform` from `LightFauna.WitherCoroutine` (open, see FIX_LOG).
+reading `cellData.Cell.transform` from `LightFauna.WitherCoroutine` (fixed as BH-5.1).
 
 **Why it happens:** the object the callback uses (a cell, a player, a manager) was destroyed
 first. Coroutines on a still-active object and timer callbacks keep running during teardown, and

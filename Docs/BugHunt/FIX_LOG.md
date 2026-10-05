@@ -8,6 +8,22 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ---
 
+## BH-5.1 — Crystal.ActivateCrystal NRE when the cell is already gone
+
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Symptom:** `NullReferenceException` in `Crystal.ActivateCrystal` at `transform.parent = cellData.Cell.transform`,
+  from `Fauna.ReleaseHeart` ← `LightFauna.WitherCoroutine` (3× in the 0447 Editor log, near scene cleanup).
+- **Root cause:** teardown order — the wither coroutine can still release the heart after the cell is
+  destroyed (or the scene is unloading). `DetachHeartToCell` already Unity-null-checked the cell;
+  `ActivateCrystal` did not.
+- **Fix:** return when `!gameObject.scene.isLoaded`; reparent only when `cellData && cellData.Cell`
+  (same Unity-null pattern as `DetachHeartToCell`). Enabling as a collectible still runs when the
+  scene is live but the cell reference is missing.
+- **Verification:** gate scripts pass; not run in Unity. Retest is on the handoff playtest list.
+- **PR/commit:** pending.
+
+---
+
 ## BH-4.8 — Trail block indices wrapped past 65,535 prisms
 
 - **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
@@ -663,7 +679,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ## Known open console issues
 
-Checked against `Bug_Hunt` @ `546bda3` on 2026-09-29.
+Checked against `Bug_Hunt` @ `546bda3` on 2026-09-29; Crystal NRE closed as BH-5.1 on 2026-10-05.
 
 - **17 assets fail a strict YAML parse.** Unity has not reported these (it tolerates a mid-line
   `: `), but they are invalid YAML, and the next edit that wraps a line ending in `:` will break
@@ -678,8 +694,3 @@ Checked against `Bug_Hunt` @ `546bda3` on 2026-09-29.
   - `SO_Captain_Sparrow_Charge`: tab-indented `Space:`/`Time:` lines
   - `SO_Captain_Sparrow_Space`: `IconActive:` is on the same line as `HeadshotImage: {fileID: 0}`,
     so the value is probably lost
-- **`NullReferenceException` in `Crystal.ActivateCrystal`** (Crystal.cs:699,
-  `transform.parent = cellData.Cell.transform;`), called from `Fauna.ReleaseHeart ←
-  LightFauna.WitherCoroutine`. It appears 3 times in the 0447 log, e.g. line 44274, about 100
-  lines before a scene-cleanup error. It is likely a teardown-order problem: the cell is gone
-  before the wither coroutine reaches the heart (PLAYBOOK §4). Not fixed.

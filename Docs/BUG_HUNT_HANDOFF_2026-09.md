@@ -56,6 +56,7 @@ Confidence scale:
 | 29 | **Thumb UI reads touches from the new Input System (was §4).** `ThumbCursor` and `ThumbPerimeter` use `Touchscreen.current` instead of legacy `Input.touches`. Shipped on `Bug_Hunt`. | `ThumbCursor`, `ThumbPerimeter` |
 | 30 | **PrismTimerManager cancels by owner index (was §4).** Scheduled settle actions are keyed by owner, so mass pool returns no longer scan-and-`RemoveAt` the full list. Shipped on `Bug_Hunt`. | `PrismTimerManager` |
 | 31 | **Trail block indices are int, not ushort (was §4).** A freestyle trail past 65,535 prisms no longer wraps the index map. Shipped on `Bug_Hunt`. | `Trail` |
+| 32 | **Crystal.ActivateCrystal no longer NREs when the cell is gone (console).** `ActivateCrystal` returns if the scene is unloading and only reparents when `cellData.Cell` is still alive (same Unity-null pattern as `DetachHeartToCell`). Was an open console issue from `Fauna.ReleaseHeart` ← `LightFauna.WitherCoroutine`. Shipped on `Bug_Hunt`. | `Crystal.ActivateCrystal` |
 
 ### Playtest items for the shipped fixes
 - **Squirrel ring (#6):** fly Menu_Main freestyle → an arcade game → back, 2-3 round trips, then
@@ -156,6 +157,11 @@ Confidence scale:
 - **STILL TO TEST (revisit): 4.8 Trail ushort wrap, kept on Bug_Hunt untested at Yash's call.**
 - **Trail indices (§4.8):** only reachable on a very long freestyle trail. Normal play is enough to
   confirm nothing regressed; a wrap repro needs 65k+ prisms.
+- **STILL TO TEST (revisit): 5.1 Crystal.ActivateCrystal teardown guard, kept on Bug_Hunt untested at Yash's call.**
+- **Crystal heart drop (5.1):** in any mode with fauna (Rampage / freestyle), kill or starve a few
+  creatures, then leave the scene / stop play. Console must not show `NullReferenceException` in
+  `Crystal.ActivateCrystal`. Hearts that drop while the cell is still live must still become
+  collectible.
 
 ---
 
