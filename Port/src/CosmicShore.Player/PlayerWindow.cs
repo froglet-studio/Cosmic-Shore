@@ -89,6 +89,7 @@ namespace CosmicShore.Player
             _window.Update += OnUpdate;
             _window.Render += OnRender;
             _window.Run();
+            SessionReport.Write("window closed");
             _boot?.Dispose();
             _inputBridge?.Dispose();
             Control?.Dispose();
@@ -137,6 +138,8 @@ namespace CosmicShore.Player
             SystemInfo.supportsComputeShaders = true;
             if (Control != null) { Control.Quit = () => _window.Close(); Control.FrameMs = () => _lastFrameMs; }
             _boot = new PlayerBoot();
+            SessionReport.Log = _boot.Log;
+            SessionReport.Frame = () => _frameIndex;
             _boot.Start(_scene);
             _tmp.Fonts = _boot.Runtime.Fonts;
         }
@@ -176,6 +179,7 @@ namespace CosmicShore.Player
         void OnRender(double dt)
         {
             _lastFrameMs = _frameClock.Elapsed.TotalMilliseconds;
+            SessionReport.FrameTime(_lastFrameMs);
             _frameClock.Restart();
             int w = _window.FramebufferSize.X, h = _window.FramebufferSize.Y;
             if (w <= 0 || h <= 0) return;
