@@ -312,7 +312,7 @@ namespace CosmicShore.Gameplay
             Fear[i] = 0f; Curious[i] = 0f; Aggr[i] = 0f; Phase[i] = 0f; QTarget[i] = 0f;
             Stock[i] = P.Stock0; Grow[i] = 1f; Stamina[i] = P.StaminaS; Rest[i] = 0f; BiteCool[i] = 0f; Closure[i] = 0f; RingGate[i] = 0f;
             WSeed[i] = new Vector3((float)_rng.NextDouble() * 100f, (float)_rng.NextDouble() * 100f, (float)_rng.NextDouble() * 100f);
-            Home[i] = p; GaitV[i] = Vector3.Zero;
+            Home[i] = InPen(pop, p); GaitV[i] = Vector3.Zero;
             Alive[i] = true; Starving[i] = false; Danger[i] = false; Watched[i] = false; Creeping[i] = false;
             Ramp[i] = 0f; Attach[i] = 0f; Grip[i] = 1f; SipT[i] = 0f; Host[i] = 0; HostOff[i] = Vector3.Zero;
             BornTick[i] = Tick;
@@ -340,7 +340,42 @@ namespace CosmicShore.Gameplay
             MassIn += volume;
             // a homing species (the lurker) takes the seat it last fed at: its seeded crystal is eaten in minutes, and
             // homed to a spent seat a lurker starved beside nothing (round 11-10, Docs/SWARM_FAUNA.md §27)
-            if (P.Solitary.WHome > 0f) Home[i] = Pos[i];
+            if (P.Solitary.WHome > 0f) Home[i] = InPen(Pops[PopOf[i]], Pos[i]);
+        }
+
+        /// <summary>
+        /// The nearest point of the population's pen (band, then sector) to <paramref name="p"/> - <paramref name="p"/>
+        /// itself for an unpenned population or a point already inside. Round 11-14: a SEAT (an agent's home) is always
+        /// inside its pen. Seeded 30 u about a plant near the band's edge, or re-seated where it last fed (a leaf on the
+        /// far side of the heart), a lurker's home stood outside its band, and the home drive held it there against the
+        /// pen's pull - 63% of its member-seconds inside its pen (showcase C8).
+        /// </summary>
+        public static Vector3 InPen(SubstratePopulation pop, Vector3 p)
+        {
+            float r = p.Length();
+            if (r < 1e-3f) return p;
+            var u = p / r;
+            if (pop.HasSector)
+            {
+                float cs = Vector3.Dot(u, pop.SectorAxis);
+                if (cs < pop.SectorCos)
+                {
+                    // onto the cone's edge, in the plane of the axis and the point
+                    var perp = u - pop.SectorAxis * cs;
+                    float pl = perp.Length();
+                    var side = pl > 1e-6f ? perp / pl : Unit(Vector3.Cross(pop.SectorAxis, Vector3.UnitY + new Vector3(1e-3f, 0f, 1e-3f)));
+                    float sn = MathF.Sqrt(MathF.Max(0f, 1f - pop.SectorCos * pop.SectorCos));
+                    u = pop.SectorAxis * pop.SectorCos + side * sn;
+                }
+            }
+            if (pop.BandOuter > 0f)
+            {
+                // a seat stands a margin inside the edge - two soft widths (the pen's ramp), at most a quarter of the
+                // band: a seat ON the edge left a seated agent, drifting ~30 u about it, outside its pen half the time
+                float m = SubstrateKernel.SeatMargin(pop.BandInner, pop.BandOuter);
+                r = Math.Clamp(r, pop.BandInner + m, pop.BandOuter - m);
+            }
+            return u * r;
         }
 
         /// <summary>The agent died (always through its proxy in the game). Returns the stock it took with it - the
@@ -1206,8 +1241,8 @@ namespace CosmicShore.Gameplay
             {
                 float soft = 0.1f * MathF.Max(pop.BandOuter - pop.BandInner, 50f);
                 // ramped inside the edge, full at it (as SubstrateKernel's pen)
-                pull -= radial * (Math.Clamp((r - pop.BandOuter + soft) / soft, 0f, 1f) * 2f);
-                pull += radial * (Math.Clamp((pop.BandInner + soft - r) / soft, 0f, 1f) * 2f);
+                pull -= radial * SubstrateKernel.PenWeight(r - pop.BandOuter, soft);
+                pull += radial * SubstrateKernel.PenWeight(pop.BandInner - r, soft);
             }
             if (pop.HasSector)
             {

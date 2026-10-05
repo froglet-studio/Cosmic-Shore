@@ -126,17 +126,25 @@ ELEMENT_ID = {"Charge": 1, "Mass": 2, "Space": 3, "Time": 4}
 # plants one pen in six held none even with SpreadPlanting. pens (FloraConfigurationSO.PlantingPens): each new Middle plant
 # roots in whichever of those four pens holds the fewest - spread over the whole 625-840 shell, a sector or the gap still
 # came up empty in one seed in four (12-seed sweep), and the population penned there starved.
+# FLORA_INSET (round 11-14, Docs/SWARM_FAUNA.md §26.6): a plant roots this far INSIDE the pen it feeds (radially, and
+# FLORA_INSET_DEG inside a sector's half-angle). A grazer seats at its plant (seed spread 30-40 u) and its food points are
+# the plant's leaves (6-30 u about the heart): planted out to the band's edge, a seated lurker or mobber stood half outside
+# its pen - 51% / 70% of member-seconds inside it (showcase C8) - and the pen pulled it back only once it had left.
+FLORA_INSET, FLORA_INSET_DEG = 25, 10
 REGIONS = [
     dict(key="Inner", band=(470, 620), start="Mass", plan="whale", model="Sort", swarms=1,
-         flora="Borromean", food="Mass", floor=2, cap=3),
+         flora="Borromean", food="Mass", floor=2, cap=3, flora_band=(470 + FLORA_INSET, 620 - FLORA_INSET)),
     dict(key="Middle", band=(690, 840), start="Charge", plan="pufferfish", model="Sort", swarms=1,
-         flora="Borromean", food="Time", floor=9, cap=12, flora_band=(625, 840),
+         flora="Borromean", food="Time", floor=9, cap=12, flora_band=(625 + FLORA_INSET // 2, 840 - FLORA_INSET),
          # (axis about the cell centre or None, half-angle deg, inner u, outer u): the three grazer sector pens of
-         # author_substrate_fauna (stampede +X, leech +120, leviathan -120) and the mobbers' roost gap
-         pens=[((1, 0, 0), 55, 690, 840), ((-0.5, 0, 0.866), 55, 690, 840), ((-0.5, 0, -0.866), 55, 690, 840),
-               (None, 0, 625, 685)]),
+         # author_substrate_fauna (stampede +X, leech +120, leviathan -120) and the mobbers' roost gap - each inset by
+         # FLORA_INSET inside the population's pen (the gap is 60 u deep, so half that)
+         pens=[((1, 0, 0), 55 - FLORA_INSET_DEG, 690 + FLORA_INSET, 840 - FLORA_INSET),
+               ((-0.5, 0, 0.866), 55 - FLORA_INSET_DEG, 690 + FLORA_INSET, 840 - FLORA_INSET),
+               ((-0.5, 0, -0.866), 55 - FLORA_INSET_DEG, 690 + FLORA_INSET, 840 - FLORA_INSET),
+               (None, 0, 625 + FLORA_INSET // 2, 685 - FLORA_INSET // 2)]),
     dict(key="Outer", band=(910, 1080), start="Space", plan="jellyfish", model="Sort", swarms=1,
-         flora="Borromean", food="Space", floor=3, cap=5),
+         flora="Borromean", food="Space", floor=3, cap=5, flora_band=(910 + FLORA_INSET, 1080 - FLORA_INSET)),
 ]
 MODEL_ID = {"Field": 0, "Grid": 1, "Sort": 2, "EvoFate": 3}
 # the grid model's game settings (SwarmGridCore; research combo = hgrid2 made lossless, unless noted).

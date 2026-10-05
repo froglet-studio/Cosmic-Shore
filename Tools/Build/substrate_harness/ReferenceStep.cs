@@ -143,7 +143,8 @@ namespace CosmicShore.Gameplay
                     // GAZE: a calm agent within creep range slides toward where the pilot will be - only while it is
                     // OUTSIDE the pilot's forward cone; inside it, it freezes (bestiary lurker)
                     float rc = p.Length();   // round 11-14: the lurker creeps only inside its pen (SubstrateKernel)
-                    bool inBand = pop.BandOuter <= 0f || (rc >= pop.BandInner && rc <= pop.BandOuter);
+                    float sm = pop.BandOuter > 0f ? SubstrateKernel.SeatMargin(pop.BandInner, pop.BandOuter) : 0f;
+                    bool inBand = pop.BandOuter <= 0f || (rc >= pop.BandInner + sm && rc <= pop.BandOuter - sm);
                     if (P.WCreep > 0f && !resting && ph < 0.2f && pd > P.CreepMin && pd < P.CreepR && inBand)
                     {
                         bool looked = pil.Vel.LengthSquared() > 1f && Vector3.Dot(SubstrateCore.Unit(pil.Vel), SubstrateCore.Unit(p - pil.Pos)) > P.GazeCos;
@@ -168,8 +169,8 @@ namespace CosmicShore.Gameplay
                 {
                     // the species' pen (FaunaConfigurationSO band): steered back in, never walled
                     float soft = 0.1f * MathF.Max(pop.BandOuter - pop.BandInner, 50f);
-                    Paint(I, dirs, -p, Math.Clamp((r - pop.BandOuter + soft) / soft, 0f, 1f) * 2f);   // full at the edge (round 11-14)
-                    Paint(I, dirs, p, Math.Clamp((pop.BandInner + soft - r) / soft, 0f, 1f) * 2f);
+                    Paint(I, dirs, -p, SubstrateKernel.PenWeight(r - pop.BandOuter, soft));   // round 11-14
+                    Paint(I, dirs, p, SubstrateKernel.PenWeight(pop.BandInner - r, soft));
                 }
                 if (cnt > 0f && !P.SpacingSpring)
                 {

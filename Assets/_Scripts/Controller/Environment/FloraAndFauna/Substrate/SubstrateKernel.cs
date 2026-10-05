@@ -90,6 +90,23 @@ namespace CosmicShore.Gameplay
         /// <summary>The sector pen's soft width, in cosine: the pull ramps from 0 at SectorCos + this to full at the edge.</summary>
         public const float PenSectorSoft = 0.1f;
 
+        /// <summary>
+        /// The pen's pull at <paramref name="beyond"/> u past its edge (negative = inside): ramps 0 -> 2 over the soft width
+        /// inside the edge, then on to 6 over two soft widths past it (round 11-14). Capped at 2, a lurker's flee or a
+        /// mobber's dive outweighed it and carried them 20-60 u out of their band; past the edge the pen now outweighs any
+        /// one drive, so it bends a chase back rather than walling it.
+        /// </summary>
+        /// <summary>How far inside its band's edges an agent's SEAT (home) stands: two soft widths (the pen's ramp), at most a
+        /// quarter of the band (round 11-14, SubstrateCore.InPen).</summary>
+        public static float SeatMargin(float inner, float outer)
+        {
+            float w = outer - inner;
+            return MathF.Min(2f * 0.1f * MathF.Max(w, 50f), 0.25f * w);
+        }
+
+        public static float PenWeight(float beyond, float soft) =>
+            Clamp((beyond + soft) / soft, 0f, 1f) * 2f + Clamp(beyond / soft, 0f, 2f) * 2f;
+
         static float Clamp(float v, float lo, float hi) => v < lo ? lo : v > hi ? hi : v;
 
         static float Lerp(float a, float b, float t) => a + (b - a) * t;
@@ -350,7 +367,8 @@ namespace CosmicShore.Gameplay
                     // (round 11-14: only inside its pen - a lurker that crept out of its band re-seated there, and spent a
                     // third of its life outside it; at the pen's edge the creep ends and it holds the last seat in the band)
                     float rc = Len(px, py, pz);
-                    bool inBand = k.BandOuter <= 0f || (rc >= k.BandInner && rc <= k.BandOuter);
+                    float sm = k.BandOuter > 0f ? SeatMargin(k.BandInner, k.BandOuter) : 0f;   // a creep's seat is a seat
+                    bool inBand = k.BandOuter <= 0f || (rc >= k.BandInner + sm && rc <= k.BandOuter - sm);
                     if (k.WCreep > 0f && !resting && ph < 0.2f && pd > k.CreepMin && pd < k.CreepR && inBand)
                     {
                         bool looked = false;
@@ -397,8 +415,8 @@ namespace CosmicShore.Gameplay
                     // pen let a seated or chasing agent stand ~20 u beyond the edge, and only 51-89% of member-seconds were
                     // inside their pen in the showcase cell (Docs/SWARM_FAUNA.md §26.6)
                     float soft = 0.1f * MathF.Max(k.BandOuter - k.BandInner, 50f);
-                    Paint(I, s.Dirs, nd, -px, -py, -pz, Clamp((r - k.BandOuter + soft) / soft, 0f, 1f) * 2f);
-                    Paint(I, s.Dirs, nd, px, py, pz, Clamp((k.BandInner + soft - r) / soft, 0f, 1f) * 2f);
+                    Paint(I, s.Dirs, nd, -px, -py, -pz, PenWeight(r - k.BandOuter, soft));
+                    Paint(I, s.Dirs, nd, px, py, pz, PenWeight(k.BandInner - r, soft));
                 }
                 if (k.HasSector != 0 && r > 1e-3f)
                 {

@@ -41,23 +41,23 @@ MonoBehaviour:
     MaxSpawnsPerFrame: -1
     PlantRadiusCellFraction: -1
     PlantRadiusCellFractionMin: -1
-  PlantRadiusCellFractionMaxOverride: 0.7
-  PlantRadiusCellFractionMinOverride: 0.521
+  PlantRadiusCellFractionMaxOverride: 0.679
+  PlantRadiusCellFractionMinOverride: 0.531
   SpreadPlanting: 1
   PlantingPens:
   - Axis: {x: 1, y: 0, z: 0}
-    HalfAngle: 55
-    InnerFraction: 0.575
-    OuterFraction: 0.7
+    HalfAngle: 45
+    InnerFraction: 0.59583
+    OuterFraction: 0.67917
   - Axis: {x: -0.5, y: 0, z: 0.866}
-    HalfAngle: 55
-    InnerFraction: 0.575
-    OuterFraction: 0.7
+    HalfAngle: 45
+    InnerFraction: 0.59583
+    OuterFraction: 0.67917
   - Axis: {x: -0.5, y: 0, z: -0.866}
-    HalfAngle: 55
-    InnerFraction: 0.575
-    OuterFraction: 0.7
+    HalfAngle: 45
+    InnerFraction: 0.59583
+    OuterFraction: 0.67917
   - Axis: {x: 0, y: 0, z: 0}
     HalfAngle: 0
-    InnerFraction: 0.52083
-    OuterFraction: 0.57083
+    InnerFraction: 0.53083
+    OuterFraction: 0.56083
