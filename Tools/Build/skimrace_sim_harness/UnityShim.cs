@@ -518,3 +518,20 @@ namespace Unity.Profiling
         }
     }
 }
+
+// ── the two game types SkimRaceTargetTracker.cs names (the team race flies its selection rule) ──
+namespace CosmicShore.Data
+{
+    public enum Domains { Jade = 1, Ruby = 2, Blue = 3, Gold = 4 }
+}
+namespace CosmicShore.Gameplay
+{
+    // Only SkimRaceTargetTracker.Select reads it, and the simulator calls SelectIndex instead.
+    public class Crystal : UnityEngine.MonoBehaviour
+    {
+        public static readonly System.Collections.Generic.List<Crystal> Active = new();
+        public bool IsEmbedded, IsExploding;
+        public CosmicShore.Data.Domains ownDomain;
+        public bool isActiveAndEnabled => enabled;
+    }
+}

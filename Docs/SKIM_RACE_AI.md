@@ -1019,3 +1019,75 @@ that changes flying is the user's decision):
 - *Would change how the AI flies (needs a decision):* stagger the AIs' re-plans so they do not share a
   frame (halves the spike with two AI); re-plan less often (`TrackMpcHz`); fewer candidate sticks. The user
 chose to decide on these after reading the real numbers in the Unity Profiler.
+
+## 13. Team races (teammates share their crystals)
+
+**Why this section exists.** On 2026-10-05 the user raced Skim Race in co-op: two humans against two AI. The
+humans won almost every race "even though we were doing a lot of mistakes". The pilot itself is not the main
+reason. The team rules are.
+
+**What the game does with teams** (read from the code, not assumed):
+
+- The finish line is per TEAM. `SkimRaceScoringRuleSO.IsObjectiveReached` ends the race when one domain's
+  SUMMED crystals reach the target, and the target does not grow with the team.
+- Every player brings one crystal of their own domain. `NetworkCrystalManager` sizes its slots to the
+  roster, and slot i takes `Players[i].Domain`. Each crystal walks the anchors on its own
+  (`CrystalManager.CalculateNewSpawnPos` keeps a per-crystal anchor index). So a team of two has two live
+  crystals and needs the same total as a pilot racing alone: about half each.
+- AI seats fill the domain with the fewest pilots (`ServerPlayerVesselInitializerWithAI.GetBalancedDomain`).
+  With the default three domains, two humans on Jade plus two AI puts the AI on Ruby and Gold, ONE EACH.
+  Each AI must collect the whole target alone while the human pair shares it, so an AI wins only if it
+  is about twice as fast as each human. Today's way to seat both AI on one team is in the launch panel:
+  remove the placed AI (✕ on their chips), then arm **Add AI** and tap the same team's tile twice.
+  Changing the team count alone does not move AI that are already placed: a placement is fixed once
+  made (`ArcadeGameConfigureModal.ReconcileAiPlacements`).
+
+**What the AI does on a team.** The pilot flies at the nearest crystal of its domain, with hysteresis
+(`SkimRaceTargetTracker`). Two AI on one team therefore start on the SAME crystal. The one that gets
+there second is left aiming at a crystal that has just jumped to the next anchor, and swings round for
+the other one. One AI ends up doing most of the work. The pickups in 10 I1 races were 16/8, 5/19, 19/5,
+15/9, 6/18, 12/12, 16/8, 8/16, 17/7 and 17/7. Meanwhile the two fly through each other's trails.
+
+**Measured** (the simulator's team race, `ph.Team=1`; Hard, each track's shipped policy, with I3 on the
+general one; 2 AI, 28 ms frames ±50%, 20 races per row, `limit=240` on I3 and I4). Times are the median
+finish in seconds. "Hull hits" counts both AI together, per race.
+
+| Track | 1 AI alone | 2 AI, separate teams (each AI's own finish) | 2-AI team, today's rule | 2-AI team, split rule | Split vs today |
+|---|---|---|---|---|---|
+| I1 | 61.9 | 69.2 | 65.0 (hull hits 34.8) | **36.5** (15.3) | −44% |
+| I2 | 75.5 | 77.8 | 80.3 (11.3) | **39.6** (4.1) | −51% |
+| I3 | 180.4 | 183.2 | 149.7 (40.4) | **97.2** (18.9) | −35% |
+| I4 | 148.5 | 156.2 | 115.2 (45.8) | **83.1** (24.2) | −28% |
+
+- Today's rule makes a 2-AI team SLOWER than one AI alone on I1 and I2. On I1 its cross-track error at the
+  90th percentile is 155 u against 44 u for the split rule: the AI chase crystals that have moved.
+- The **split rule** (`ph.TeamRule=1`) gives each AI a different crystal. It picks the assignment of AI to
+  crystals with the least total straight-line distance, and keeps it until another assignment is 15%
+  cheaper (`ph.SplitHyst`). A team that splits finishes in 52-59% of a lone AI's time: the two really do
+  share the work. Each AI's hull hits drop back to a lone AI's level.
+- Tried and dropped: a heading-aware cost (a crystal behind the hull costs up to twice its distance). It
+  changed nothing: I1, I3 and I4 were identical, and I2 was 0.1 s slower.
+- "Separate teams" is the old two-seat model (each seat its own domain, every race in §8 to §12). The
+  other AI's trails and pickup rings cost each AI 3-8% against flying alone.
+
+**Status: simulator only.** No game code flies the split rule yet. Shipping it would mean the pilot reads
+its teammates' positions (which a human teammate sees on screen) and every AI on the team computes the
+same assignment from them; a human teammate is counted like any other. Whether to ship it is the user's
+decision, and so is the team-size question above (whether AI should fill as one team, or the target
+should grow with team size).
+
+**Run it:**
+
+```bash
+bash -c 'bash Tools/Build/skimrace_sim_harness/run.sh eval 1 20 $(python3 Tools/Build/skimrace_sim_harness/policy_args.py SkimRaceAIConfig_I1) ph.Dt=0.028 ph.DtJitter=0.5 ph.Seats=2 ph.Team=1 ph.TeamRule=1'
+```
+
+Use `ph.TeamRule=0` for today's rule (it calls the shipped `SkimRaceTargetTracker.SelectIndex`). I3 and I4
+need `limit=240`: the default 70 s limit cuts every race at 130 s. With `ph.Team=0` (the default) the
+simulator is unchanged: 6 races each on I1 and I2 matched the pre-change build line for line.
+
+**What the model leaves out.** The simulator's seats spawn 10 u apart, and the game's spawn points are
+further apart. A respawned crystal's "move away from where it last was" rule is not modelled (neither is
+it for a lone AI). Human teammates are not modelled at all. A hand-played editor race records itself
+(`BenchmarkResults/SkimRaceAI/manual_I<n>_*.jsonl`, §1), and that record is how a human pair's time
+gets compared.

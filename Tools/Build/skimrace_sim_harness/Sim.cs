@@ -99,6 +99,17 @@ class Physics
     public int RingGeometry = 1;
     public int TrackHits = 1, MassHits = 1;
     public int Seats = 1;           // AI seats racing at once (each its own crystal stream)
+    // TEAM RACE (Docs/SKIM_RACE_AI.md section 13). Team=1 puts every seat on ONE domain, as the game
+    // does for teammates: one crystal per seat, each walking the anchors on its own
+    // (CrystalManager.CalculateNewSpawnPos), any teammate may take any of them, and the team's SUM
+    // races the target (SkimRaceScoringRuleSO.IsObjectiveReached; the pilot observes the sum).
+    // TeamRule picks each seat's crystal: 0 = the shipped SkimRaceTargetTracker (nearest, with
+    // hysteresis), 1 = SPLIT - the seats share out the crystals by the cheapest assignment of seats to
+    // crystals (straight-line distance), kept until a new one is SplitHyst cheaper. Rule 1 is a
+    // simulator experiment: no game code flies it yet.
+    public int Team = 0;
+    public int TeamRule = 0;
+    public float SplitHyst = 0.85f;
     public int TargetHintFix = 1;   // 0 = project the crystal from the VESSEL's hint (the pre-fix behaviour), for A/B only
     public int LineDiag = 0;
     public float ExtraTime = 60f;   // a race is cut at limit + this
@@ -314,6 +325,7 @@ static class Race
         public float Speed, Boost = 1f; public bool Boosting;
         public float SlowUntil = -1f;
         public int Anchor; public Vector3 Crystal; public int Collected;
+        public int TeamTarget = -1; public Vector3 TeamTargetAt;   // team race: the crystal flown at, and where it was
         public readonly HashSet<int> Inside = new(), Hull = new(), ObsInside = new(), ObsHull = new();
         public int Hint = -1, TargetHint = -1, HullHits;
         public float SpeedSum, BoostSum; public int Frames, FarFrames;
@@ -372,6 +384,55 @@ static class Race
         }
         float t = 0f, maxT = limit + ph.ExtraTime;
 
+        // Team race: the team's crystals (one per seat, all starting round anchor 0 like the game's
+        // first batch) and the team's summed count. Unused when Team=0.
+        var teamCrystals = new List<Vector3>();
+        var teamAnchor = new List<int>();
+        int teamCollected = 0;
+        var teamRng = new System.Random(seed * 131 + 7);
+        var candidates = new List<SkimRaceTargetTracker.Candidate>();
+        if (ph.Team != 0)
+            for (int k = 0; k < agents.Count; k++)
+            {
+                teamCrystals.Add(def.Anchors[0] + OnUnitSphere(teamRng) * ph.Jitter);
+                teamAnchor.Add(0);
+            }
+
+        // TeamRule 1: the assignment of seats to distinct crystals with the least total distance
+        // (every permutation - a team is at most a handful of seats), adopted when the seats have
+        // none yet or it is SplitHyst cheaper than the one they fly.
+        void SplitTeam()
+        {
+            int n = agents.Count;
+            var perm = new int[n];
+            var used = new bool[teamCrystals.Count];
+            int[] best = null;
+            float bestCost = float.MaxValue;
+            void Search(int k, float cost)
+            {
+                if (cost >= bestCost) return;
+                if (k == n) { bestCost = cost; best = (int[])perm.Clone(); return; }
+                for (int j = 0; j < teamCrystals.Count; j++)
+                {
+                    if (used[j]) continue;
+                    used[j] = true; perm[k] = j;
+                    Search(k + 1, cost + (teamCrystals[j] - agents[k].Pos).magnitude);
+                    used[j] = false;
+                }
+            }
+            Search(0, 0f);
+            if (best == null) return;
+            float current = 0f;
+            var taken = new HashSet<int>();
+            foreach (var a in agents)
+            {
+                if (a.TeamTarget < 0 || !taken.Add(a.TeamTarget)) { current = float.MaxValue; break; }
+                current += (teamCrystals[a.TeamTarget] - a.Pos).magnitude;
+            }
+            if (current == float.MaxValue || bestCost < current * ph.SplitHyst)
+                for (int k = 0; k < n; k++) agents[k].TeamTarget = best[k];
+        }
+
         float Mult(Agent ag, float now)
         {
             float m = 1f;
@@ -382,6 +443,19 @@ static class Race
                 m *= Mathf.Lerp(ag.Mods[i].init, 1f, e / ph.HullSlowSeconds);
             }
             return m;
+        }
+        // SquirrelVesselExplosionByCrystalEffect -> AOEShieldedRingSpawner: 8 prisms, radius 8.2,
+        // 8 u ahead of the hull that took the crystal; colliders live from frame 0 for everyone.
+        void AddPickupRing(Agent ag, float now)
+        {
+            Vector3 rc = ag.Pos + (ag.Rot * Vector3.forward) * 8f;
+            for (int k = 0; k < 8; k++)
+            {
+                float ang = k * Mathf.PI * 2f / 8f;
+                Vector3 radial = new Vector3(Mathf.Cos(ang), Mathf.Sin(ang), 0f);
+                obs.Add(rc + ag.Rot * (radial * 8.2f), ag.Rot * Quaternion.LookRotation(Vector3.forward, radial),
+                    new Vector3(0.9f, 0.9f, 3.75f), now);
+            }
         }
         void Slow(Agent ag, float volume, float now)
         {
@@ -394,10 +468,28 @@ static class Race
             float dt = ph.DtJitter > 0f ? ph.Dt * (1f + ph.DtJitter * (float)(rng.NextDouble() * 2.0 - 1.0)) : ph.Dt;
             long frameTicks = 0;
             int frameDecides = 0;
+            if (ph.Team != 0 && ph.TeamRule == 1) SplitTeam();
             foreach (var ag in agents)
             {
                 if (ag.Done) continue;
                 var driver = ag.Driver;
+                if (ph.Team != 0)
+                {
+                    int pick = ag.TeamTarget;
+                    if (ph.TeamRule == 0)
+                    {
+                        // The game's own rule over the team's crystals (SkimRacePilot -> SkimRaceTargetTracker.Select).
+                        candidates.Clear();
+                        foreach (var c in teamCrystals)
+                            candidates.Add(new SkimRaceTargetTracker.Candidate { Alive = true, Domain = CosmicShore.Data.Domains.Jade, Position = c });
+                        pick = SkimRaceTargetTracker.SelectIndex(candidates, CosmicShore.Data.Domains.Jade, ag.Pos, ag.TeamTarget);
+                    }
+                    // A new crystal, or this one moved (a teammate took it): the target hint searches afresh.
+                    if (pick != ag.TeamTarget || (teamCrystals[pick] - ag.TeamTargetAt).sqrMagnitude > 1f) ag.TargetHint = -1;
+                    ag.TeamTarget = pick;
+                    ag.TeamTargetAt = ag.Crystal = teamCrystals[pick];
+                }
+
                 // ── observe ──
                 Vector3 fwd = ag.Rot * Vector3.forward, up = ag.Rot * Vector3.up, right = ag.Rot * Vector3.right;
                 var o = new SkimRaceObservation
@@ -408,7 +500,8 @@ static class Race
                     Speed = ag.Speed * (ph.StackedSlow != 0 ? Mult(ag, t) : 1f), Velocity = fwd * (ag.Speed * (ph.StackedSlow != 0 ? Mult(ag, t) : 1f)),
                     BoostMultiplier = ag.Boosting ? ag.Boost : 1f, MaxBoost = ph.MaxBoost,
                     TurnRateDegrees = ph.TurnRate, FollowRate = ph.Follow, ThrottleScaler = ph.ThrottleScaler,
-                    RaceTime = t, Collected = ag.Collected, Remaining = required - ag.Collected,
+                    RaceTime = t, Collected = ph.Team != 0 ? teamCollected : ag.Collected,
+                    Remaining = required - (ph.Team != 0 ? teamCollected : ag.Collected),
                     HasTarget = true, TargetPosition = ag.Crystal, ToTarget = ag.Crystal - ag.Pos,
                 };
                 o.TargetDistance = o.ToTarget.magnitude;
@@ -567,23 +660,36 @@ static class Race
                 ag.Hull.IntersectWith(hnow);
 
                 // ── crystal ──
-                if ((ag.Crystal - ag.Pos).sqrMagnitude <= ph.CaptureReach * ph.CaptureReach)
+                if (ph.Team != 0)
+                {
+                    // Any of the team's crystals in reach is taken (TeamCrystalImpactor admits any crystal of
+                    // the vessel's domain); it moves to ITS next anchor; the team's sum finishes everyone.
+                    for (int j = 0; j < teamCrystals.Count && !ag.Done; j++)
+                    {
+                        if ((teamCrystals[j] - ag.Pos).sqrMagnitude > ph.CaptureReach * ph.CaptureReach) continue;
+                        teamCollected++;
+                        ag.Collected++;
+                        ag.LastPickupAt = tn;
+                        if (ph.RingGeometry != 0) AddPickupRing(ag, tn);
+                        else
+                        {
+                            ag.Boosting = true;
+                            ag.Boost = Mathf.Clamp(ag.Boost + ph.SkimAdd * ph.PickupRingPrisms, 1f, ph.MaxBoost);
+                        }
+                        if (teamCollected >= required)
+                        {
+                            foreach (var x in agents) if (!x.Done) { x.Done = true; x.DoneAt = tn; }
+                            break;
+                        }
+                        teamAnchor[j] = (teamAnchor[j] + 1) % def.Anchors.Count;
+                        teamCrystals[j] = def.Anchors[teamAnchor[j]] + OnUnitSphere(teamRng) * ph.Jitter;
+                    }
+                }
+                else if ((ag.Crystal - ag.Pos).sqrMagnitude <= ph.CaptureReach * ph.CaptureReach)
                 {
                     ag.Collected++;
                     ag.LastPickupAt = tn;
-                    if (ph.RingGeometry != 0)
-                    {
-                        // SquirrelVesselExplosionByCrystalEffect -> AOEShieldedRingSpawner: 8 prisms,
-                        // radius 8.2, 8 u ahead; colliders live from frame 0 for everyone.
-                        Vector3 rc = ag.Pos + (ag.Rot * Vector3.forward) * 8f;
-                        for (int k = 0; k < 8; k++)
-                        {
-                            float ang = k * Mathf.PI * 2f / 8f;
-                            Vector3 radial = new Vector3(Mathf.Cos(ang), Mathf.Sin(ang), 0f);
-                            obs.Add(rc + ag.Rot * (radial * 8.2f), ag.Rot * Quaternion.LookRotation(Vector3.forward, radial),
-                                new Vector3(0.9f, 0.9f, 3.75f), tn);
-                        }
-                    }
+                    if (ph.RingGeometry != 0) AddPickupRing(ag, tn);
                     else
                     {
                         ag.Boosting = true;
@@ -622,7 +728,7 @@ static class Race
         return new RaceResult
         {
             Finished = allDone, Time = allDone ? agents.Max(x => x.DoneAt) : t,
-            Collected = agents.Min(x => x.Collected), Required = required,
+            Collected = ph.Team != 0 ? teamCollected : agents.Min(x => x.Collected), Required = required,
             Recoveries = agents.Sum(x => x.Driver.Recoveries), HullHits = agents.Sum(x => x.HullHits),
             Mistakes = agents.Sum(x => x.Driver.Handicap != null ? x.Driver.Handicap.Mistakes : 0),
             MeanSpeed = worst.SpeedSum / frames, FarFrac = worst.FarFrames / (float)frames, MeanBoost = worst.BoostSum / frames,
