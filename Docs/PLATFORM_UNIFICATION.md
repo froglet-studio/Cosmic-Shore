@@ -1,7 +1,17 @@
 # One codebase for Windows, iOS and Android — diagnosis and plan
 
-**Status (2026-10-05): diagnosis (§1) and inventory (§2) done. Nothing ported yet; Step 0
-measurements pending.**
+**Status (2026-10-05): diagnosis (§1) and inventory (§2) done; Step 2 (touch controls) in
+progress. Device measurements are deferred, not a gate (owner's call).**
+
+### Decisions recorded (2026-10-05, project owner)
+
+These strip changes are **NOT ported**, on any tier:
+
+| Not ported | Strip mechanism |
+|---|---|
+| Plants and creatures paused everywhere except the home cell (Garland) | `PerfStrip.CellLifeRuns` in `CellLifeSpawnerBase` and `Flora` |
+| The toybox cut down to the light toys | `PerfStrip.LightToysOnly` in `ToyboxController`, and the Ark gate in `WanderToy` |
+| Vulkan dropped for OpenGL ES only | Android `m_BuildTargetGraphicsAPIs` (Auto [Vulkan, GLES3] stays) |
 Owner branch for this work: `claude/serene-edison-lfv24f`.
 
 Today three builds come from three places:
@@ -109,7 +119,7 @@ Windows too.
 | `AndroidTargetArchitectures` | 3 (ARMv7 + ARM64) → 2 (ARM64) | Smaller APK. Drops 32-bit-userland phones (some Android Go Samsungs). |
 | `AndroidMinifyRelease` | 1 → 0 | The real launch-crash fix: R8 stripped `androidx.work.WorkDatabase_Impl`, pulled in by **Unity Ads**. Your branch removes Unity Ads, which removes the cause. |
 | `useCustomProguardFile` + `proguard-user.txt` | 0 → 1, keep rules for androidx.work/room/startup/lifecycle | Defense-in-depth if R8 comes back on. |
-| Android graphics APIs | Auto [Vulkan, GLES3] → manual [GLES3] | Made to test a Vulkan-crash theory that the R8 finding replaced. **Revisit with a measurement**, don't inherit. |
+| Android graphics APIs | Auto [Vulkan, GLES3] → manual [GLES3] | Made to test a Vulkan-crash theory that the R8 finding replaced. **Decided: not ported**; Auto stays. |
 | `mainTemplate.gradle` | namespace / ndk lines **inside** the EDM4U-managed block | Your branch's `0f6b38ba5` puts them outside, where a re-resolve can't wipe them. Take yours. |
 | `Assets/Editor/BuildAndroid.cs` | new FrogletTools APK build | Its Development path blanks the keystore settings, which persist into `ProjectSettings.asset` (production keystore path). Fix before merging. |
 
@@ -144,8 +154,10 @@ The vessels' `_touchActionOverrides` are unchanged in net; touch and pad bind th
 | Change | Gate |
 |---|---|
 | Vessels lay **no trail**, except freestyle (pen waits while the cell holds > 10,000 prisms), the Wanderway tether, and Skim Race / Joust with a **FIFO cap** (oldest prism consumed past 2,000 / 1,200 per vessel, shared per seat) | `TrailsDisabled`, `CappedTrailActive` |
-| Cell life (flora/fauna spawners, flora growth) paused except in the home world (Garland); no cytoplasm motes | `CellLifeRuns`, `Enabled` |
-| Toybox: Wander (no Ark), domain changer, element charger, vessel changer (Squirrel + Butterfly only) | `LightToysOnly`, `ShipsVessel` |
+| ~~Cell life (flora/fauna spawners, flora growth) paused except in the home world (Garland)~~ **decided: not ported** | `CellLifeRuns` |
+| No cytoplasm motes in any cell | `SnowChanger.Initialize`, `Enabled` (undecided) |
+| ~~Toybox: Wander (no Ark), domain changer, element charger, vessel changer~~ **decided: not ported** | `LightToysOnly` |
+| Vessel changer roster narrowed to Squirrel + Butterfly | `ShipsVessel` (undecided) |
 | Wanderway belt 30,000 → 1,200 resident prisms, no lifeforms | `Wander_WithoutArk.asset` — **shared, ungated** |
 | `MicrosceneConveyor.MaxConcurrentArrivals` 3 → 2 | **ungated** |
 | Non-HOME menu screens deactivated; HOME + NavBar deactivated in freestyle | `MenuUIStripped` |
@@ -267,8 +279,8 @@ Each step is its own PR into bleeding-edge, and each leaves Windows unchanged un
 
 | # | Step | Touches | Windows | iOS | Android |
 |---|---|---|---|---|---|
-| 0 | **Measure.** (a) Development build of `claude/eloquent-meitner-9e4u2a` on the Samsung and the iPhone; read `DiagnosticsHUD` (bound verdict, main-thread ms). (b) Build Garrett's branch on the SAME Samsung: what the full strip buys on this hardware decides the minimum-spec question below. Record the exact Samsung model. | nothing | — | — | — |
-| 1 | **Android build plumbing.** Your two Gradle commits (`0f6b38ba5`, `359ad3d1b`; the namespace fix lives OUTSIDE the EDM4U block, the durable version of the same fix Garrett made inside it). Then decide: ARM64-only, R8 minify + Garrett's `proguard-user.txt` keep rules (the WorkManager crash came from Unity Ads, which your branch removes), Vulkan vs GLES3. | ProjectSettings (Android only), `Assets/Plugins/Android/*` | none | none | builds |
+| 0 | **Measure** (deferred, not a gate). Development builds on the Samsung and the iPhone; `DiagnosticsHUD` bound verdict + main-thread ms; Garrett's branch on the same Samsung; exact model. | nothing | — | — | — |
+| 1 | **Android build plumbing.** Your two Gradle commits (`0f6b38ba5`, `359ad3d1b`; the namespace fix lives OUTSIDE the EDM4U block, the durable version of the same fix Garrett made inside it). Then decide: ARM64-only, R8 minify + Garrett's `proguard-user.txt` keep rules (the WorkManager crash came from Unity Ads, which your branch removes). Graphics APIs stay Auto (decided). | ProjectSettings (Android only), `Assets/Plugins/Android/*` | none | none | builds |
 | 2 | **Touch controls into bleeding-edge, ungated.** `TouchInputStrategy` (physical-size stick + dead zone, one-thumb mirror, re-zero on lift, throttle carry, events on lift only, 75/25 curve) + touch-only vessel tuning (`touchNoseResponse`, gated to the local human pilot) + binary drift for any unmeasured trigger + the ability-dispatch hardening (§2.2). Not the Squirrel `boostLoopEvent` clear. | `Controller/IO`, `VesselTransformer`, Squirrel/Butterfly prefabs | none (touch only) | **new controls** | **new controls** |
 | 3 | **Device tier foundation.** `DeviceTierClassifier`, `PlatformProfileSO` ×3, dev override, a `CSLogChannel` for it, and a mobile branch in `SettingsAutoDetector` that reads the tier. `Desktop` profile = today's behaviour. | `System/`, `Controller/Settings` | identical | correct tier | correct tier |
 | 4 | **Render tier.** `URP_Mobile.asset` + mobile quality level; baked sky (`StaticSkyPanorama`), mesh membrane, post/AA policy, crystal LDR brightness, fold-gate window cap — each selected by the profile. | `_Graphics`, profile | none | per `MobileHigh` | per `MobileLow` |
@@ -279,7 +291,8 @@ Each step is its own PR into bleeding-edge, and each leaves Windows unchanged un
 Open decisions (needed before steps 3–5):
 
 1. **Minimum Android spec.** A phone with only Cortex-A55 cores may not reach 30 fps even fully
-   stripped (Garrett targeted "mid-tier, years-old"). Pick a floor, or accept 20–30 fps there.
+   stripped (Garrett targeted "mid-tier, years-old"), and that is truer now that cell life and the
+   full toybox stay on every tier. Pick a floor, or accept 20–30 fps there.
 2. **What `MobileHigh` gets.** Recommended: full content + touch controls (= what iOS runs today)
    plus only the free wins (none of the content strips).
 3. **Where flagship Android lands.** Recommended: by the same capability test as iOS, so a
