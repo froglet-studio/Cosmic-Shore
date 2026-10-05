@@ -28,7 +28,10 @@ static class Program
     static int s_fail;
     /// <summary>C8: the share of a banded population's member-seconds that must lie inside its pen (worst run), and the
     /// share of seconds every planting pen must hold a living plant.</summary>
-    const double OccupancyFloor = 0.0, PenFloor = 0.0;
+    /// <remarks>Round 11-14: 0.75 / 0.95 - the worst observed over `run.sh all` was 80% (the middle swarm, seed 1) and every
+    /// plant pen held a plant 100% of the time; the floors leave a seed's worth of margin and fail a pen that leaks (before
+    /// the round-11-14 pen fixes a seated grazer sat as low as 51% of its member-seconds in its pen).</remarks>
+    const double OccupancyFloor = 0.75, PenFloor = 0.95;
 
     static void Check(bool ok, string what)
     {
