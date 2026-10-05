@@ -528,7 +528,9 @@ its own old gate is the only plausible way to do that); the cost would be one ca
 - No HUD marker for a standing gate. The Butterfly has no way to see where its own pair is once it
   has flown away from both ends; `FoldGate.Live` is the roster an objective-arrow-style marker
   would read.
-- No sound. Both the bloom and the transit want one, and per the FMOD convention each gets its own
-  `EventReference` field rather than a borrowed category.
+- No sound AUTHORED. The slots exist (2026-10-05) and ship empty: `FoldActionExecutor`'s
+  `foldEngageEvent` / `foldDepartEvent` / `foldArriveEvent` / `gatesOpenEvent` / `gateThreadEvent`
+  — the last handed to each `FoldGate.ThreadEvent` at build and played on the threading pilot's
+  machine at the exit (only the owner decides a transit).
 - An AI never uses a gate. `AIPilot` steers at objectives and knows nothing about `FoldGate.Live`,
   so a bot teammate walks past a shortcut its Butterfly left for it.
