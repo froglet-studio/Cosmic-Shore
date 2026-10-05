@@ -781,8 +781,9 @@ volume grown full) now count toward `Cell.LiveVolume` per domain, never twice fo
 proxy. The cell's ladder was re-derived for it: Restless 55,000 / 41,000, Frenzy 390,000 / 343,000
 (volume; counts unchanged).
 
-1. Select `Swarm Cell Config.asset`. **Restless Enter/Exit Volume 55000/41000, Frenzy Enter/Exit Volume
-   390000/343000.** If not, reimport.
+1. Select `Swarm Cell Config.asset`. **Restless Enter/Exit Volume 63000/47000, Frenzy Enter/Exit Volume
+   448000/394000** (round 11c added the substrate agents' bodies, ~23,300 volume at full pools, to the ladder:
+   `Docs/SUBSTRATE_FAUNA.md` §7; round 8 alone was 55000/41000 and 390000/343000). If not, reimport.
 2. Enter the Swarm cell with a debug readout of `Cell.LiveVolume` (or the cell phase HUD). With the swarms
    seeded, live volume must exceed the forest alone. Let them grow for 5 minutes: it should climb as they
    grow.
@@ -919,12 +920,13 @@ having them all dive in at once will be scary once the stakes are felt."*
      sliver of body grows when it moves.
 3. **Pack, careless.** Fly as a domain that does NOT control the cell, with petals on your HUD flower. Cruise in a
    straight line through the middle shell near the pack. Within ~10-20 s you should see:
-   - the hunters spread onto a ring around your line (about 110 u out);
-   - the ring close: a ~0.6-0.9 s beat where they all turn toward you;
+   - the hunters spread onto a ring around your line (about 110 u out) and HOLD it, stalking, for ~10 s or more
+     without striking (round 11c: the menace before the terror);
+   - the ring close: a ~0.4-0.9 s beat where they all turn toward you;
    - **all of them** light up as danger prisms within ~1 s of each other and dive.
    Being hit burns petals. Afterwards they fall back, slower and unlit, for ~3 s (winded). Hitting them now is safe.
 4. **Pack, counterplay.** Repeat, but when the ring forms, turn hard toward the widest gap between hunters. You should
-   escape most strikes (headless: 5 bites vs 26 for the straight flyer).
+   escape most strikes (headless: 1 bite vs 20 for the straight flyer).
 5. **Pack, own domain.** Repeat once as the cell's controlling domain. Contact only stings; no petal is burned.
 6. **Locusts.** Fly slowly past a sparse cloud: they stay unlit and drift curiously. Then hover in the outer shell
    until the cloud has grown dense, or herd it with your vessel. A dense, hungry cloud should tighten, align and turn
@@ -962,6 +964,41 @@ having them all dive in at once will be scary once the stakes are felt."*
 - A death with no crystal, or an agent that pops out without dying.
 - The ladder jumps near the pack.
 - A worker error: `[Substrate] the cell's substrate tick threw`.
+
+### QA-SWARM-ROUND11-8 ⬜ — the substrate's agent pass is a Burst job
+
+**Source:** branch `overnight/substrate2`. Proven headless: the kernel is bit-identical to the managed step it
+replaced, it passes a textual Burst gate, and the split tick publishes exactly the plain tick. **Burst itself has never
+compiled it.** Reference: `Docs/SUBSTRATE_FAUNA.md` §7.
+
+**Why it matters:** the agent step now runs as `SubstrateAgentJob` (`[BurstCompile] IJobParallelFor`) scheduled by
+`SubstrateCellHost` between the worker's two halves of a tick. If Burst rejects it, the job runs as slow managed
+code, or the safety system throws.
+
+1. **Compile.** Open `Jobs > Burst > Open Inspector`, find `SubstrateAgentJob`, and compile it. There should be no
+   Burst error and no "managed code" fallback warning in the Console on entering Play.
+2. **Safety.** With `Jobs > Burst > Safety Checks` ON and the Jobs Debugger on, play QA-SWARM-ROUND11-2 steps 1-3.
+   There should be no `InvalidOperationException` about the parallel-for range, a missing dependency, or
+   `[ReadOnly]` writes.
+3. **Behaviour.** QA-SWARM-ROUND11-2 steps 3, 6 and 7 read the same as before: the pack rings and holds, then strikes
+   together; locusts flip; lurkers creep only unwatched.
+4. **Lifetime.** Exit Play mode. The Console must not show "A Native Collection has not been disposed".
+5. **Cost.** Profile 60 s. Record `SubstrateCellHost.AgentPass` (main-thread copies and scheduling) and the
+   `SubstrateAgentJob` worker bars in the Timeline view.
+
+**PASS:**
+- Burst compiles the job.
+- No safety exceptions.
+- No leak on exit.
+- Behaviour unchanged.
+- `SubstrateCellHost.AgentPass` is under ~0.2 ms per frame at the Swarm cell's population.
+
+**FAIL:**
+- A Burst compile error, or the job running managed.
+- Any safety exception.
+- A leak warning.
+- Agents frozen in place: the worker stayed parked.
+- `[Substrate] the cell's substrate tick threw`.
 
 ### QA-SWARM-ROUND11-1 ⬜ — one prism system: members are index entries and prism entities
 

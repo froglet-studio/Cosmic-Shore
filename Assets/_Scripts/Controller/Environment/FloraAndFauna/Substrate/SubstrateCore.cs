@@ -4,8 +4,9 @@
 // Burst-shaped and pure C#: struct-of-arrays sized once (never resized in play), a fixed tick, one neighbour hash per
 // population per tick (per-cell MOMENTS read over 27 cells, O(1) per agent), a rotating 1/k re-steer slice plus the
 // attention LOD, context steering over D directions, a quorum that flips phase with hysteresis, and a world pass that
-// only ever touches the agent it is about. StepAgent is research kernels_nb.fused_step, one agent per call, with no
-// allocation and no cross-agent write - what an IJobParallelFor would run.
+// only ever touches the agent it is about. The per-agent step is SubstrateKernel.StepAgent (round 11b-2): research
+// kernels_nb.fused_step, one agent per call, no allocation, no cross-agent write - the game runs it as a Burst
+// IJobParallelFor between BeginStep and EndStep (SubstrateAgentJob), the harness through RunAgentPass.
 //
 // The world rules (Docs/SUBSTRATE_FAUNA.md §4) keep every lifeform law: mass is CONSERVED (an agent's body IS its
 // stock: it grows by eating, halves to breed, and leaves exactly its stock behind as a skeleton when it dies), there
@@ -80,11 +81,13 @@ namespace CosmicShore.Gameplay
         internal readonly Dictionary<int, float> LastHit = new();
         /// <summary>The population this one preys on this tick (resolved by name), or -1.</summary>
         internal int PreyPop = -1;
+        /// <summary>This tick's kernel numbers (built by SubstrateCore.BeginStep).</summary>
+        internal SubstrateKernelPop Kernel;
 
         internal SubstratePopulation(int index, int start, SubstrateSpeciesParams p)
         {
             Index = index; Start = start; Cap = Math.Max(1, p.Capacity); P = p; Active = true;
-            Dirs = SubstrateCore.FibDirs(Math.Max(6, p.NDirs));
+            Dirs = SubstrateCore.FibDirs(Math.Clamp(p.NDirs, 6, SubstrateKernel.MaxDirs));   // the job's scratch is MaxDirs
             Live = new int[Cap]; Key = new long[Cap]; Slot = new int[Cap];
             int tc = 1; while (tc < 2 * Cap + 8) tc <<= 1;
             Tab = new long[tc]; Agg = new double[tc * 8];
@@ -108,6 +111,10 @@ namespace CosmicShore.Gameplay
         public readonly bool[] Alive, Starving, Steered, Watched, Danger, Creeping;
         public readonly int[] PopOf;
         public readonly long[] FreedTick, BornTick, ClaimedTick;
+        /// <summary>The fields at each live agent's cell, gathered by <see cref="BeginStep"/> (round 11b-2: the agent pass
+        /// reads these, never the G^3 grids, so a Burst job needs no field arrays).</summary>
+        public readonly float[] FThreat, FAlarm;
+        public readonly Vector3[] GFood, GScent, GAlarm, GThreat;
 
         public readonly List<SubstratePopulation> Pops = new();
         public readonly List<SubstrateEvent> Events = new();
@@ -120,15 +127,16 @@ namespace CosmicShore.Gameplay
         public double MassIn, MassOut;
         /// <summary>Worker threads for the agent kernel (1 = this thread; the harness benches more).</summary>
         public int Workers = 1;
-        /// <summary>Accumulated stage costs in ms (fields, hash + moments, agent kernel, world) - the cost readout.</summary>
-        public double MsFields, MsHash, MsAgents, MsWorld;
+        /// <summary>Accumulated stage costs in ms (fields + the per-agent gather, hash + moments, the agent pass - the
+        /// kernel, drift/gait/deposits - and world) - the cost readout. MsKernel is the agent pass alone.</summary>
+        public double MsFields, MsHash, MsAgents, MsWorld, MsKernel;
         static double Ms(long t0) => (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
 
         readonly Random _rng;
         readonly Vector3[] _pilotSum = new Vector3[MaxPilots];
         readonly int[] _pilotCnt = new int[MaxPilots];
-        SubstratePilot[] _pilots = new SubstratePilot[MaxPilots];
-        int _npil;
+        internal readonly SubstratePilot[] _pilots = new SubstratePilot[MaxPilots];
+        internal int _npil;
 
         public SubstrateCore(int capacity, float radius, float dt = 0.1f, int fieldGrid = 40, int seed = 1)
         {
@@ -142,6 +150,8 @@ namespace CosmicShore.Gameplay
             Rest = new float[n]; BiteCool = new float[n]; Closure = new float[n];
             Alive = new bool[n]; Starving = new bool[n]; Steered = new bool[n]; Watched = new bool[n]; Danger = new bool[n]; Creeping = new bool[n];
             PopOf = new int[n]; FreedTick = new long[n]; BornTick = new long[n]; ClaimedTick = new long[n];
+            FThreat = new float[n]; FAlarm = new float[n];
+            GFood = new Vector3[n]; GScent = new Vector3[n]; GAlarm = new Vector3[n]; GThreat = new Vector3[n];
             for (int i = 0; i < n; i++) { PopOf[i] = -1; FreedTick[i] = -1; ClaimedTick[i] = -1; }
         }
 
@@ -260,6 +270,18 @@ namespace CosmicShore.Gameplay
 
         public void Step(ReadOnlySpan<SubstratePilot> pilots, ReadOnlySpan<SubstrateFood> food)
         {
+            BeginStep(pilots, food);
+            RunAgentPass();
+            EndStep();
+        }
+
+        /// <summary>
+        /// The tick's first third (round 11b-2): inputs, the fields, and per active population its live list, its moments,
+        /// its closure, its kernel numbers (<see cref="SubstratePopulation.Kernel"/>) and the field samples every live
+        /// agent reads - so the agent pass that follows needs nothing but arrays (the game runs it as a Burst job).
+        /// </summary>
+        public void BeginStep(ReadOnlySpan<SubstratePilot> pilots, ReadOnlySpan<SubstrateFood> food)
+        {
             Events.Clear();
             EatRequests.Clear();
             PreyRequests.Clear();
@@ -278,38 +300,143 @@ namespace CosmicShore.Gameplay
                     if (o != q && Pops[o].Active && Pops[o].P.Name == pop.P.PreyName) { pop.PreyPop = o; break; }
             }
             for (int q = 0; q < Pops.Count; q++)
-                if (Pops[q].Active) StepPopulation(Pops[q]);
-            T += Dt;
+            {
+                var pop = Pops[q];
+                if (!pop.Active) { pop.LiveCount = 0; continue; }
+                // live, not-starving agents (research A = alive & ~dying)
+                int n = 0;
+                for (int i = pop.Start; i < pop.Start + pop.Cap; i++)
+                    if (Alive[i] && !Starving[i]) pop.Live[n++] = i;
+                pop.LiveCount = n;
+                t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+                BuildMoments(pop);
+                PilotMoments(pop);
+                MsHash += Ms(t0);
+                t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+                for (int k = 0; k < n; k++)
+                {
+                    int i = pop.Live[k];
+                    int fc = Fields.Cell(Pos[i]);
+                    FThreat[i] = Fields.Sample(SubstrateFields.Threat, fc);
+                    FAlarm[i] = Fields.Sample(SubstrateFields.Alarm, fc);
+                    GFood[i] = Fields.Grad(SubstrateFields.Food, fc);
+                    GScent[i] = Fields.Grad(SubstrateFields.Scent, fc);
+                    GAlarm[i] = Fields.Grad(SubstrateFields.Alarm, fc);
+                    GThreat[i] = Fields.Grad(SubstrateFields.Threat, fc);
+                }
+                MsFields += Ms(t0);
+                pop.Kernel = KernelPop(pop);
+            }
         }
 
-        void StepPopulation(SubstratePopulation pop)
+        /// <summary>The tick's agent pass, managed: <see cref="SubstrateKernel.StepAgent"/> for every live agent of every
+        /// active population, in population order (a predator reads its prey's moved positions), split over
+        /// <see cref="Workers"/> threads in contiguous chunks. The game runs the SAME kernel as SubstrateAgentJob.</summary>
+        public void RunAgentPass()
         {
-            var P = pop.P;
-            float dt = Dt;
-            // live, not-starving agents (research A = alive & ~dying)
-            int n = 0;
-            for (int i = pop.Start; i < pop.Start + pop.Cap; i++)
-                if (Alive[i] && !Starving[i]) pop.Live[n++] = i;
-            pop.LiveCount = n;
             long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
-            BuildMoments(pop);
-            PilotMoments(pop);
-            MsHash += Ms(t0);
-            t0 = System.Diagnostics.Stopwatch.GetTimestamp();
-
-            if (Workers > 1 && n > 256)
-                System.Threading.Tasks.Parallel.For(0, Workers, w =>
+            for (int q = 0; q < Pops.Count; q++)
+            {
+                var pop = Pops[q];
+                int n = pop.LiveCount;
+                if (!pop.Active || n == 0) continue;
+                if (Stepper != null)
                 {
                     Span<float> I = stackalloc float[pop.Dirs.Length];
                     Span<float> G = stackalloc float[pop.Dirs.Length];
-                    for (int q = w; q < pop.LiveCount; q += Workers) StepAgent(pop, q, I, G);
-                });
-            else
-            {
-                Span<float> I = stackalloc float[pop.Dirs.Length];
-                Span<float> G = stackalloc float[pop.Dirs.Length];
-                for (int q = 0; q < n; q++) StepAgent(pop, q, I, G);
+                    for (int k = 0; k < n; k++) Stepper(this, pop, k, I, G);
+                }
+                else if (Workers > 1 && n > 256)
+                {
+                    int chunk = (n + Workers - 1) / Workers;
+                    System.Threading.Tasks.Parallel.For(0, Workers, w => StepRange(pop, w * chunk, Math.Min(n, (w + 1) * chunk)));
+                }
+                else StepRange(pop, 0, n);
             }
+            double ms = Ms(t0);
+            MsKernel += ms;
+            MsAgents += ms;
+        }
+
+        void StepRange(SubstratePopulation pop, int from, int to)
+        {
+            if (from >= to) return;
+            var soa = SoA(pop);
+            var world = KernelWorld;
+            Span<float> I = stackalloc float[pop.Dirs.Length];
+            Span<float> G = stackalloc float[pop.Dirs.Length];
+            for (int k = from; k < to; k++) SubstrateKernel.StepAgent(soa, pop.Kernel, world, k, I, G);
+        }
+
+        /// <summary>One agent through the kernel (the harness's bit-match test calls it agent by agent).</summary>
+        internal void KernelStep(SubstratePopulation pop, int k, Span<float> I, Span<float> G)
+        {
+            var soa = SoA(pop);
+            SubstrateKernel.StepAgent(soa, pop.Kernel, KernelWorld, k, I, G);
+        }
+
+        /// <summary>Replaces the agent pass's kernel call, agent by agent and on this thread (harness group K: run the
+        /// pre-11c managed step and the kernel side by side). Null in play.</summary>
+        internal AgentStepper Stepper;
+        internal delegate void AgentStepper(SubstrateCore core, SubstratePopulation pop, int k, Span<float> I, Span<float> G);
+
+        /// <summary>The tick's last third: per active population the starving drift, the gait, the field deposits and
+        /// the world pass (posture, danger, food, starvation, bites, births); then the clock.</summary>
+        public void EndStep()
+        {
+            for (int q = 0; q < Pops.Count; q++)
+                if (Pops[q].Active) EndPopulation(Pops[q]);
+            T += Dt;
+        }
+
+        /// <summary>This tick's world numbers as the kernel reads them.</summary>
+        public SubstrateKernelWorld KernelWorld => new SubstrateKernelWorld { Dt = Dt, R = R, Tick = Tick, NPil = _npil };
+
+        /// <summary>The pilots this tick sees (the first <see cref="PilotCount"/>).</summary>
+        public ReadOnlySpan<SubstratePilot> TickPilots => new ReadOnlySpan<SubstratePilot>(_pilots, 0, _npil);
+        public int PilotCount => _npil;
+
+        /// <summary>The core's arrays as the kernel's struct-of-arrays, with population <paramref name="pop"/>'s tables.</summary>
+        internal SubstrateAgentSoA SoA(SubstratePopulation pop) => new SubstrateAgentSoA
+        {
+            Pos = Pos, Vel = Vel, IDir = IDir, Home = Home,
+            Hunger = Hunger, Fear = Fear, Curious = Curious, Aggr = Aggr, Phase = Phase, QTarget = QTarget, ISpeed = ISpeed,
+            Steered = Steered, Watched = Watched, Creeping = Creeping,
+            WSeed = WSeed, Closure = Closure, Rest = Rest, Alive = Alive, Starving = Starving, ClaimedTick = ClaimedTick,
+            Pilots = _pilots, Live = pop.Live, Key = pop.Key, Tab = pop.Tab, Agg = pop.Agg, Dirs = pop.Dirs,
+            FThreat = FThreat, FAlarm = FAlarm, GFood = GFood, GScent = GScent, GAlarm = GAlarm, GThreat = GThreat,
+        };
+
+        SubstrateKernelPop KernelPop(SubstratePopulation pop)
+        {
+            var P = pop.P;
+            var prey = pop.PreyPop >= 0 ? Pops[pop.PreyPop] : null;
+            return new SubstrateKernelPop
+            {
+                Rs = P.Solitary, Rg = P.Gregarious,
+                Metabolism = P.Metabolism, Sense = P.Sense, FearGain = P.FearGain, FearDecay = P.FearDecay,
+                CuriosityRate = P.CuriosityRate, AggrBase = P.AggrBase, AttnR = P.AttnR, AttnUrg = P.AttnUrg,
+                QUp = P.QUp, QDown = P.QDown, QRate = P.QRate, QWidth = P.QWidth, QContagion = P.QContagion,
+                QWDens = P.QWDens, QWProx = P.QWProx, QWAlarm = P.QWAlarm, QWClose = P.QWClose, QHunger = P.QHunger,
+                DensNorm = P.DensNorm, NbrR = P.NbrR,
+                WPrey = P.WPrey, PreySense = P.PreySense, Momentum = P.Momentum, IntentBlend = P.IntentBlend,
+                RestSpeed = P.RestSpeed, WRestRetreat = P.WRestRetreat,
+                WCreep = P.WCreep, CreepMin = P.CreepMin, CreepR = P.CreepR, CreepSpeed = P.CreepSpeed,
+                CreepLeadS = P.CreepLeadS, GazeCos = P.GazeCos, Freeze = P.Freeze,
+                BandInner = pop.BandInner, BandOuter = pop.BandOuter,
+                FracK = P.FracK, RingRoles = P.RingRoles, NDirs = pop.Dirs.Length, Start = pop.Start,
+                PreyStart = prey != null ? prey.Start : 0, PreyCap = prey != null ? prey.Cap : 0, LiveCount = pop.LiveCount,
+                SpacingSpring = (byte)(P.SpacingSpring ? 1 : 0), HasPrey = (byte)(prey != null ? 1 : 0),
+                M = pop.M, TabMask = pop.Tab.Length - 1,
+            };
+        }
+
+        void EndPopulation(SubstratePopulation pop)
+        {
+            var P = pop.P;
+            float dt = Dt;
+            int n = pop.LiveCount;
+            long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
 
             // a starving agent is not steered: it slows to a stop where it is, waiting for its death (owner's)
             for (int i = pop.Start; i < pop.Start + pop.Cap; i++)
@@ -327,7 +454,7 @@ namespace CosmicShore.Gameplay
                     ClampMembrane(i);
                 }
 
-            // deposits into the shared fields
+            // deposits into the shared fields (pending until the next Fields.Update: no agent reads them this tick)
             for (int q = 0; q < n; q++)
             {
                 int i = pop.Live[q];
@@ -395,233 +522,6 @@ namespace CosmicShore.Gameplay
                 // bestiary pack.py: clip((1 - res) * clip((cnt - 1) / 3, 0, 1) * 1.6, 0, 1)
                 Closure[i] = Math.Clamp((1f - res) * Math.Clamp((cnt - 1) / 3f, 0f, 1f) * 1.6f, 0f, 1f);
             }
-        }
-
-        /// <summary>
-        /// ONE agent's step (research kernels_nb.fused_step): drives for everyone; if in the re-steer slice (or engaged,
-        /// the attention LOD) the 27-cell moment read, the quorum target and the context map; then integrate. Plus the
-        /// bestiary primitives: closure is a quorum input, the posture clock, the gaze sensor.
-        /// </summary>
-        void StepAgent(SubstratePopulation pop, int q, Span<float> I, Span<float> G)
-        {
-            var P = pop.P;
-            ref readonly var Rs = ref P.Solitary;
-            ref readonly var Rg = ref P.Gregarious;
-            float dt = Dt;
-            int i = pop.Live[q];
-            var p = Pos[i];
-            float ph = Phase[i];
-            int fc = Fields.Cell(p);
-
-            // ── drives ──
-            float hu = Hunger[i] + P.Metabolism * dt;   // above 1 = the stomach is empty and the reserve is burning
-            Hunger[i] = hu;
-            float h = MathF.Min(1f, hu);
-            int pj = NearestPilot(p, out float pd);
-            float prox = Math.Clamp(1f - pd / P.Sense, 0f, 1f);
-            float threat = Fields.Sample(SubstrateFields.Threat, fc), alarm = Fields.Sample(SubstrateFields.Alarm, fc);
-            float fe = Fear[i];
-            fe += dt * (P.FearGain * (prox * prox + 0.5f * MathF.Min(threat, 2f) + MathF.Min(alarm, 2f))) - dt * P.FearDecay * fe;
-            fe = Math.Clamp(fe, 0f, 1f); Fear[i] = fe;
-            float calm = (1f - fe) * (1f - h);
-            float cu = Curious[i] + dt * P.CuriosityRate * (calm * (1f - ph) - Curious[i]); Curious[i] = cu;
-            float capw = MathF.Min(1f, (Rs.WHunt + Rs.WRing) + ((Rg.WHunt + Rg.WRing) - (Rs.WHunt + Rs.WRing)) * ph);
-            float ag = Math.Clamp(MathF.Max(h * 1.4f - 0.3f, P.AggrBase), 0f, 1f) * capw; Aggr[i] = ag;
-            bool resting = Rest[i] > 0f;
-
-            // ── re-steer the 1/k slice, plus the attention LOD (finding 4) ──
-            int k = Math.Max(1, P.FracK);
-            bool st = ((i + Tick) % k == 0) || pd < P.AttnR || MathF.Max(fe, ag) > P.AttnUrg;
-            Steered[i] = st;
-            bool freeze = false;
-            if (st)
-            {
-                // 27-cell moment read
-                double c0 = 0, c1 = 0, c2 = 0, c3 = 0, c4 = 0, c5 = 0, c6 = 0, c7 = 0;
-                long k0 = pop.Key[q], M = pop.M, mask = pop.Tab.Length - 1;
-                for (int dx = -1; dx <= 1; dx++)
-                    for (int dy = -1; dy <= 1; dy++)
-                        for (int dz = -1; dz <= 1; dz++)
-                        {
-                            long kk = k0 + (dx * M + dy) * M + dz;
-                            long j = Hash(kk) & mask;
-                            while (pop.Tab[j] != -1L)
-                            {
-                                if (pop.Tab[j] == kk)
-                                {
-                                    int o = (int)j * 8; var a = pop.Agg;
-                                    c0 += a[o]; c1 += a[o + 1]; c2 += a[o + 2]; c3 += a[o + 3];
-                                    c4 += a[o + 4]; c5 += a[o + 5]; c6 += a[o + 6]; c7 += a[o + 7];
-                                    break;
-                                }
-                                j = (j + 1) & mask;
-                            }
-                        }
-                float cnt = (float)(c0 - 1.0);
-                float inv = 1f / MathF.Max(cnt, 1f);
-                var cen = new Vector3((float)(c1 - p.X) * inv, (float)(c2 - p.Y) * inv, (float)(c3 - p.Z) * inv);
-                var ali = new Vector3((float)(c4 - Vel[i].X) * inv, (float)(c5 - Vel[i].Y) * inv, (float)(c6 - Vel[i].Z) * inv);
-                float mph = cnt > 0f ? (float)(c7 - ph) * inv : ph;
-
-                // quorum target (one signal for every species) - a resting agent's target is the solitary end
-                if (P.QUp < 9f)
-                {
-                    float sig = P.QWDens * cnt / P.DensNorm + P.QWProx * prox + P.QWAlarm * MathF.Min(alarm, 2f) + P.QWClose * Closure[i];
-                    float s = sig * MathF.Pow(h, P.QHunger);
-                    float th = QTarget[i] > 0.5f ? P.QDown : P.QUp;
-                    float tg = 1f / (1f + MathF.Exp(-(s - th) / P.QWidth));
-                    float c = P.QContagion;
-                    if (cnt > 0f) tg = (1f - c) * tg + c * MathF.Max(tg, mph);
-                    QTarget[i] = resting ? 0f : tg;
-                }
-
-                var W = SubstrateRegime.Lerp(Rs, Rg, ph);
-                var dirs = pop.Dirs;
-                I.Clear(); G.Clear();
-                Paint(I, dirs, Fields.Grad(SubstrateFields.Food, fc), W.WFood * h);
-                if (P.WPrey > 0f && pop.PreyPop >= 0)
-                {
-                    // food web: follow the prey's scent; within PreySense make straight for the nearest one
-                    Paint(I, dirs, Fields.Grad(SubstrateFields.Scent, fc), P.WPrey * h);
-                    int prey = NearestPrey(Pops[pop.PreyPop], p, P.PreySense, out _);
-                    if (prey >= 0) Paint(I, dirs, Pos[prey] - p, 2f * P.WPrey * h);
-                }
-                if (cnt > 0f)
-                {
-                    if (P.SpacingSpring)
-                    {
-                        // ONE signed spring along the neighbour-centroid axis (finding 2): toward when sparse, away when
-                        // crowded, crossing zero at the regime's target crowding
-                        float sg = Math.Clamp(1f - cnt / P.DensNorm / MathF.Max(W.Crowd, 1e-3f), -1.5f, 1f);
-                        float wsp = sg > 0f ? W.WCoh : W.WSep;
-                        Paint(I, dirs, (cen - p) * sg, MathF.Abs(sg) * wsp);
-                    }
-                    else Paint(I, dirs, cen - p, W.WCoh);
-                    Paint(I, dirs, ali, W.WAlign);
-                }
-                float tt = Tick * 0.05f;
-                var ws = WSeed[i];
-                var wv = new Vector3(
-                    MathF.Sin(ws.X + tt) + 0.6f * MathF.Sin(1.7f * ws.Z + tt * 2.1f),
-                    MathF.Sin(ws.Y + tt * 1.3f) + 0.6f * MathF.Sin(1.7f * ws.Y + tt * 2.1f),
-                    MathF.Sin(ws.Z + tt * 0.7f) + 0.6f * MathF.Sin(1.7f * ws.X + tt * 2.1f));
-                Paint(I, dirs, wv, W.WWander);
-                bool creeping = false;
-                if (pj >= 0)
-                {
-                    var pil = _pilots[pj];
-                    var tp = pil.Pos - p;
-                    float near = pd < P.Sense * 1.5f ? 1f : 0f;
-                    float sp = Math.Clamp((pd - W.Comfort) / MathF.Max(W.Comfort, 1f), -1f, 1f);
-                    Paint(I, dirs, tp * sp, W.WCurious * cu * MathF.Abs(sp) * near);
-                    float ld = Math.Clamp(pd / 150f, 0f, 2f);
-                    Paint(I, dirs, tp + pil.Vel * ld, W.WHunt * ag * near);
-                    if (P.RingRoles > 0)
-                    {
-                        // ring slots around the pilot in the plane normal to its velocity, slightly AHEAD (a cut-off)
-                        var f = Unit(pil.Vel + new Vector3(1e-9f, 0f, 0f));
-                        var a = Unit(new Vector3(-f.Z + 1e-6f, 1e-6f, f.X + 1e-6f));   // cross(f, up)
-                        var b = Vector3.Cross(f, a);
-                        float an = 2f * MathF.PI * ((i - pop.Start) % P.RingRoles) / P.RingRoles;
-                        var slot = pil.Pos + f * 40f + W.RingR * (MathF.Cos(an) * a + MathF.Sin(an) * b);
-                        Paint(I, dirs, slot - p, W.WRing * ag * near);
-                    }
-                    PaintD(G, dirs, -tp, W.WFlee * fe * prox);
-                    if (resting && P.WRestRetreat > 0f) Paint(I, dirs, -tp, P.WRestRetreat);   // winded: fall back, widen
-                    // GAZE: a calm agent within creep range slides toward where the pilot will be - only while it is
-                    // OUTSIDE the pilot's forward cone; inside it, it freezes (bestiary lurker)
-                    if (P.WCreep > 0f && !resting && ph < 0.2f && pd > P.CreepMin && pd < P.CreepR)
-                    {
-                        bool looked = pil.Vel.LengthSquared() > 1f && Vector3.Dot(Unit(pil.Vel), Unit(p - pil.Pos)) > P.GazeCos;
-                        Watched[i] = looked;
-                        if (!looked)
-                        {
-                            Paint(I, dirs, pil.Pos + pil.Vel * P.CreepLeadS - p, P.WCreep);
-                            creeping = true;
-                            Home[i] = p;   // it leaves its seat: home is wherever it is now
-                        }
-                        else freeze = P.Freeze > 0f;
-                    }
-                    else Watched[i] = false;
-                }
-                else Watched[i] = false;
-                Creeping[i] = creeping;
-                Paint(I, dirs, Home[i] - p, W.WHome * (1f - h) * (creeping ? 0f : 1f));
-                float r = p.Length();
-                Paint(I, dirs, -p, Math.Clamp((r - 0.8f * R) / (0.15f * R), 0f, 1f) * 3f);
-                PaintD(G, dirs, p, Math.Clamp((r - 0.85f * R) / (0.1f * R), 0f, 1f) * 3f);
-                if (pop.BandOuter > 0f)
-                {
-                    // the species' pen (FaunaConfigurationSO band): steered back in, never walled
-                    float soft = 0.1f * MathF.Max(pop.BandOuter - pop.BandInner, 50f);
-                    Paint(I, dirs, -p, Math.Clamp((r - pop.BandOuter) / soft, 0f, 1f) * 2f);
-                    Paint(I, dirs, p, Math.Clamp((pop.BandInner - r) / soft, 0f, 1f) * 2f);
-                }
-                if (cnt > 0f && !P.SpacingSpring)
-                {
-                    float sc = cnt / P.DensNorm / P.NbrR;
-                    var sv = (p - cen) * sc;
-                    PaintD(G, dirs, sv, W.WSep * MathF.Min(sv.Length(), 2f));
-                }
-                PaintD(G, dirs, -Fields.Grad(SubstrateFields.Alarm, fc), W.WAlarm * (0.3f + fe));
-                PaintD(G, dirs, -Fields.Grad(SubstrateFields.Threat, fc), W.WThreat * (0.3f + fe));
-
-                // context choice: momentum, soft danger mask, soft-argmax around the best direction
-                var cur = IDir[i];
-                float mx = -1e30f;
-                for (int d = 0; d < dirs.Length; d++)
-                {
-                    float c = Vector3.Dot(cur, dirs[d]);
-                    if (c > 0f) I[d] += P.Momentum * c;
-                    float e = I[d] * (1f - Math.Clamp(G[d], 0f, 1f)) - 0.25f * MathF.Max(G[d] - 1f, 0f);
-                    I[d] = e;
-                    if (e > mx) mx = e;
-                }
-                var v = Vector3.Zero;
-                if (mx > 1e-6f)
-                    for (int d = 0; d < dirs.Length; d++)
-                    {
-                        float w = I[d] - 0.75f * mx;
-                        if (w > 0f) v += w * w * dirs[d];
-                    }
-                float nn = v.Length();
-                if (nn > 1e-9f)
-                {
-                    float bl = P.IntentBlend;
-                    var o = bl * cur + (1f - bl) * (v / nn);
-                    IDir[i] = o / MathF.Max(o.Length(), 1e-9f);
-                }
-                float urg = MathF.Max(W.WFlee > 0f ? fe : 0f, ag);
-                float speed = W.Speed * (1f + (W.Burst - 1f) * urg);
-                if (creeping) speed = P.CreepSpeed;
-                if (resting) speed *= P.RestSpeed;
-                ISpeed[i] = speed;
-            }
-
-            // ── integrate (bounded turn and acceleration: smooth by construction) ──
-            if (freeze)
-            {
-                Vel[i] = Vector3.Zero;   // looked at: dead still
-            }
-            else
-            {
-                float turn = Rs.Turn + (Rg.Turn - Rs.Turn) * ph;
-                float acl = Rs.Accel + (Rg.Accel - Rs.Accel) * ph;
-                var vel = Vel[i];
-                float vs = vel.Length();
-                var hd = vs > 1e-6f ? vel / vs : IDir[i];
-                var t = IDir[i];
-                float c = Math.Clamp(Vector3.Dot(hd, t), -1f, 1f);
-                float ang = MathF.Acos(c);
-                float kk = MathF.Min(1f, turn * dt / MathF.Max(ang, 1e-6f));
-                var nd = hd + (t - hd) * kk;
-                nd /= MathF.Max(nd.Length(), 1e-9f);
-                float ns = vs + Math.Clamp(ISpeed[i] - vs, -acl * dt, acl * dt);
-                Vel[i] = nd * ns;
-                Pos[i] = p + Vel[i] * dt;
-                ClampMembrane(i);
-            }
-            Phase[i] = ph + dt * P.QRate * (QTarget[i] - ph);
         }
 
         // ───────────────────────────────────────────────────────────── world
@@ -758,7 +658,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>The nearest living, unclaimed prey agent within <paramref name="radius"/> (prey pools are small: a scan).</summary>
-        int NearestPrey(SubstratePopulation prey, Vector3 p, float radius, out float dist)
+        internal int NearestPrey(SubstratePopulation prey, Vector3 p, float radius, out float dist)
         {
             dist = radius;
             int best = -1;
@@ -771,7 +671,7 @@ namespace CosmicShore.Gameplay
             return best;
         }
 
-        int NearestPilot(Vector3 p, out float dist)
+        internal int NearestPilot(Vector3 p, out float dist)
         {
             dist = 1e9f;
             int best = -1;
@@ -793,31 +693,7 @@ namespace CosmicShore.Gameplay
 
         long KeyOf(Vector3 p, float h, long M) => KeyOf(p, h, M, R);
 
-        static long Hash(long k) => unchecked(k * (long)0x9E3779B97F4A7C15) & 0x7FFFFFFFFFFFFFFF;
-
-        static void Paint(Span<float> I, Vector3[] dirs, Vector3 v, float w)
-        {
-            float n = v.Length();
-            if (n <= 1e-9f || w == 0f) return;
-            v /= n;
-            for (int d = 0; d < dirs.Length; d++)
-            {
-                float c = Vector3.Dot(v, dirs[d]);
-                if (c > 0f) I[d] += c * w;
-            }
-        }
-
-        static void PaintD(Span<float> G, Vector3[] dirs, Vector3 v, float w)
-        {
-            float n = v.Length();
-            if (n <= 1e-9f || w == 0f) return;
-            v /= n;
-            for (int d = 0; d < dirs.Length; d++)
-            {
-                float c = Vector3.Dot(v, dirs[d]);
-                if (c > 0f) G[d] += c * c * w;
-            }
-        }
+        internal static long Hash(long k) => unchecked(k * (long)0x9E3779B97F4A7C15) & 0x7FFFFFFFFFFFFFFF;
 
         public static Vector3 Unit(Vector3 v)
         {
