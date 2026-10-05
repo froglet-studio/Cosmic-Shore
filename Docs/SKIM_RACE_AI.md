@@ -67,6 +67,7 @@ Read from the prefab and from an in-editor probe (`SkimRaceRaceRecorder.WritePro
 | `SkimRacePlanner` | Optional model-predictive layer (rolls the Squirrel's own dynamics forward over a stick grid) |
 | `SkimRaceShell` | The EXACT stella-octangula contact distance (the game's `ShieldShellMath` construction, cross-checked by `SkimRaceShellTests`), shared by the pilot and the simulator (§6.4) |
 | `SkimRaceAIConfigSO` | The policy: every tunable. Ships as `Resources/SkimRaceAIConfig[_I<n>].asset`, authored by `Tools/Build/author_skimrace_ai_config.py` |
+| `SkimRaceHandicap` / `SkimRaceDifficultySO` | The lobby AI difficulty's deliberate mistakes (slow reaction, misjudged crystal) and their per-difficulty numbers, one setting for every intensity (§10). Edits only the driver's BELIEF; null for Hard |
 | `SkimRaceRaceRecorder` / `SkimRaceBenchmarkRunner` | The benchmark referee and driver (§7) |
 
 ### Input-only contract (enforced)
@@ -713,10 +714,40 @@ lobby side: host-only, replicated to guests, remembered per card). It is indepen
 on purpose: intensity picks the TRACK, difficulty picks the OPPONENT, so the hardest AI can race
 intensity 1.
 
-The value reaches the match as `GameDataSO.RequestedAIDifficulty` and `SkimRaceAIDeployment`
-reads it when it installs each seat (the verbose `[SkimRaceAI]` line now names it). **It does not
-change how the pilot flies yet.** That is the next step: Hard is the shipped per-intensity policy
-as it is, and Easy and Medium are the same pilot with deliberate, human-looking mistakes on top
-(late reactions, the odd wrong decision, a throttle that does not always commit) - mistakes in its
-DECISIONS rather than jitter on the stick, tuned in the simulator to intensity-2 race times of about
-**120 s (Easy), 95 s (Medium) and 72 s (Hard)**.
+**Hard is the shipped pilot, unchanged.** Easy and Medium are the SAME pilot with deliberate,
+human-shaped mistakes (`SkimRaceHandicap`), chosen by the user from four candidates (2026-10-05):
+
+- **Slow reaction.** For a moment after a new crystal appears the pilot has not noticed it, keeps
+  flying the racing line, and turns in late. The moment varies per crystal (0.5x to 1.5x the level's
+  `ReactionSeconds`).
+- **Misjudged crystal.** With the level's `MistakeChance` per crystal the pilot believes the crystal
+  sits further off the ribbon than it does - on the crystal's own side, so the mistake can never steer
+  it into the track - flies over it, and turns back for it once it is past (or after 6 s).
+
+Both are mistakes in DECISIONS, never jitter on the stick: the handicap edits only what the driver
+believes (its observation's target), and the driver steers, guards and recovers exactly as Hard does.
+Progress, and so recovery, is still judged against the real crystal. With no handicap the driver is
+byte-for-byte the shipped pilot (6 simulator races identical before and after the change). Mistakes are
+random every race (`System.Random` seeded per bind, never `UnityEngine.Random`, whose global state the
+track generator seeds). ONE setting per difficulty serves every intensity (`SkimRaceDifficultySO`,
+`Resources/SkimRaceDifficulty.asset`, authored by `Tools/Build/author_skimrace_ai_config.py`'s
+DIFFICULTY table), so a new track gets the same mistakes and its times scale with its length.
+
+**Tuning.** Each mistake measured alone first (I2 policy, 2 AI seats, 6 races, races to 300 s; Hard
+seat median 77 s): reaction 0.5 s -> 101 s, 1.0 s -> 123 s; misjudge chance 0.2 -> 144 s, 0.5 -> 215 s
+(about 10-12 s lost per misjudged crystal, every race still finished). The reaction time is fixed per
+level at a human-plausible value and `run.sh handicap` bisects the misjudge chance to the target seat
+median on intensity 2 (40 seeds x 2 seats, common seeds every step, then 40 fresh seeds):
+
+**Provisional numbers (this commit):** Easy reaction 0.5 s, misjudge chance 0.06; Medium reaction
+0.25 s, chance 0.04 - estimated from the single-mistake measurements above (Medium's reaction alone
+gives 83 s, Easy's ~101 s; each misjudged crystal costs ~10-12 s). The bisection's tuned values and
+their check on fresh seeds replace this paragraph.
+
+**On every track** (fresh seeds 50000+, 2 AI seats, each intensity's own policy, I3 the general one):
+
+(pending the tuned values)
+
+The editor benchmark (`FrogletTools > AI > Skim Race AI Benchmark`) now has an AI difficulty setting
+(default Hard, which is what every earlier benchmark measured), and each race record names the
+difficulty and the number of misjudged crystals per AI seat.

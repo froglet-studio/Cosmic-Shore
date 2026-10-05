@@ -37,13 +37,15 @@ namespace CosmicShore.Gameplay
             int intensity = gameData.SelectedIntensity != null ? Mathf.Clamp(gameData.SelectedIntensity.Value, 1, 4) : 1;
             var config = SkimRaceAIConfigSO.LoadFor(intensity);
             // The host's lobby pick, independent of intensity (intensity is the map, difficulty is
-            // the opponent). Read here so every seat - backfill and adopted hull alike - reports
-            // the difficulty it was installed under.
+            // the opponent): the same per-intensity policy, plus the difficulty's deliberate mistakes
+            // (none for Hard). Every seat - backfill and adopted hull alike - is installed under it.
             var difficulty = AIDifficultyRules.Resolve(gameData.RequestedAIDifficulty);
-            pilot.Bind(vessel, gameData, config);
+            var handicap = SkimRaceDifficultySO.Load().For(difficulty);
+            pilot.Bind(vessel, gameData, config, handicap);
             CSDebug.LogVerbose(CSLogChannel.AITraining,
                 $"[SkimRaceAI] {vessel.VesselStatus.PlayerName} flies the Skim Race pilot " +
-                $"({config.PolicyVersion}, I{intensity}, {difficulty}).");
+                $"({config.PolicyVersion}, I{intensity}, {difficulty}" +
+                (handicap.IsNone ? ")." : $": reaction {handicap.ReactionSeconds:0.##} s, mistake chance {handicap.MistakeChance:0.##})."));
             return pilot;
         }
     }

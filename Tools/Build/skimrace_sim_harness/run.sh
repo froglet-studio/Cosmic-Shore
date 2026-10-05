@@ -7,6 +7,8 @@
 #   bash Tools/Build/skimrace_sim_harness/run.sh eval  4 20 [Field=value ...] [ph.Field=value ...]
 #   bash Tools/Build/skimrace_sim_harness/run.sh trace 4 3  [...]
 #   bash Tools/Build/skimrace_sim_harness/run.sh tune  4 8 30 [...]
+#   bash Tools/Build/skimrace_sim_harness/run.sh handicap 2 40 120 ph.HcReaction=0.5 [...]
+#        the lobby difficulty's mistake chance that puts an AI seat's median at 120 s (section 10).
 #   bash Tools/Build/skimrace_sim_harness/run.sh tuneall 1,2,3,4 4 16 [sigma=s] [final=n] [...]
 #        ONE policy tuned on several tracks at once - the general SkimRaceAIConfig that any
 #        intensity without its own file falls back to (Docs/SKIM_RACE_AI.md section 6.12).
@@ -56,7 +58,7 @@ PY
 
 ls "$REFDIR"/*.dll | sed 's/^/-r:/' > "$OUT/refs.rsp"
 printf '"%s"\n' "$HERE/UnityShim.cs" "$HERE/Sim.cs" \
-  "$SR/SkimRaceAIConfigSO.cs" "$SR/SkimRaceCourse.cs" "$SR/SkimRaceObservation.cs" "$SR/SkimRaceDriver.cs" "${SKIMRACE_SHELL_FILE:-$SR/SkimRaceShell.cs}" "$SR/SkimRacePlanner.cs" "$SR/SkimRaceObstacle.cs" > "$OUT/files.rsp"
+  "$SR/SkimRaceAIConfigSO.cs" "$SR/SkimRaceCourse.cs" "$SR/SkimRaceObservation.cs" "$SR/SkimRaceDriver.cs" "${SKIMRACE_SHELL_FILE:-$SR/SkimRaceShell.cs}" "$SR/SkimRacePlanner.cs" "$SR/SkimRaceObstacle.cs" "$SR/SkimRaceHandicap.cs" > "$OUT/files.rsp"
 "$DOTNET" "$CSC" -nologo -langversion:latest -nostdlib -noconfig -optimize+ "@$OUT/refs.rsp" \
   -nowarn:CS1591,CS0067,CS0649,CS0414,CS1574,CS0169,CS8632,CS0108,CS1587 \
   -target:exe -main:Program -out:"$OUT/sim.dll" "@$OUT/files.rsp" >&2

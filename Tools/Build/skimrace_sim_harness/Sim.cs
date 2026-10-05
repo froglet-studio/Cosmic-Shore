@@ -118,6 +118,14 @@ class Physics
     public Vector3 SpawnFwd = new(0, 0, 1);
     public float Dt = 1f / 60f;
     public float DtJitter = 0f;          // frame-time noise as a fraction of Dt (editor frames are uneven)
+    // The lobby AI difficulty's deliberate mistakes (SkimRaceHandicap, Docs/SKIM_RACE_AI.md section 10):
+    // seconds before a new crystal is noticed, and the chance per crystal of misjudging its pass.
+    // Both 0 = no handicap (Hard). The `handicap` mode searches HcMistake for a target time.
+    public float HcReaction = 0f;
+    public float HcMistake = 0f;
+
+    /// <summary>A copy to vary one setting on while other races read this one (parallel evaluation).</summary>
+    public Physics Clone() => (Physics)MemberwiseClone();
 }
 
 class TrackPrisms
@@ -229,6 +237,7 @@ class RaceResult
     public int Required;
     public int Recoveries;
     public int HullHits;
+    public int Mistakes;      // deliberate misjudged crystals, all seats (SkimRaceHandicap)
     public float MeanSpeed;
 }
 
@@ -330,6 +339,14 @@ static class Race
         return r;
     }
 
+    /// <summary>The seat's difficulty handicap (null = Hard), seeded per race and seat like the game
+    /// seeds per bind: every race errs differently, and a seed always errs the same way.</summary>
+    static SkimRaceHandicap HandicapFor(Physics ph, int seed, int seat)
+    {
+        var level = new SkimRaceHandicapLevel(ph.HcReaction, ph.HcMistake);
+        return level.IsNone ? null : new SkimRaceHandicap(level, unchecked(seed * 7919 + seat * 104729 + 17));
+    }
+
     public static RaceResult Run(TrackDef def, TrackPrisms prisms, SkimRaceCourse course, SkimRaceAIConfigSO cfg,
         Physics ph, int seed, float limit, bool trace = false)
     {
@@ -341,7 +358,7 @@ static class Race
         var agents = new List<Agent>();
         for (int k = 0; k < Math.Max(1, ph.Seats); k++)
         {
-            var ag = new Agent { Id = k, Driver = new SkimRaceDriver(cfg) { Lane = k }, Rng = new System.Random(seed * 31 + k * 977) };
+            var ag = new Agent { Id = k, Driver = new SkimRaceDriver(cfg) { Lane = k, Handicap = HandicapFor(ph, seed, k) }, Rng = new System.Random(seed * 31 + k * 977) };
             ag.Driver.Reset();
             ag.Pos = ph.SpawnPos + Vector3.up * (10f * k);
             ag.Rot = ag.Acc = Quaternion.LookRotation(ph.SpawnFwd, Vector3.up);
@@ -595,6 +612,7 @@ static class Race
             Finished = allDone, Time = allDone ? agents.Max(x => x.DoneAt) : t,
             Collected = agents.Min(x => x.Collected), Required = required,
             Recoveries = agents.Sum(x => x.Driver.Recoveries), HullHits = agents.Sum(x => x.HullHits),
+            Mistakes = agents.Sum(x => x.Driver.Handicap != null ? x.Driver.Handicap.Mistakes : 0),
             MeanSpeed = worst.SpeedSum / frames, FarFrac = worst.FarFrames / (float)frames, MeanBoost = worst.BoostSum / frames,
             AgentTimes = agents.Select(x => x.Done ? x.DoneAt : 999f).ToArray(),
             PhaseTime = Sum(agents.Select(x => x.PhaseTime)), PhaseBoostT = Sum(agents.Select(x => x.PhaseBoostT)),
@@ -916,11 +934,82 @@ static class Program
         return 0;
     }
 
+    /// <summary>
+    /// <c>handicap &lt;intensity&gt; &lt;seeds&gt; &lt;targetSeconds&gt; [ph.HcReaction=r] [Field=v ...] [ph.Field=v ...]</c>:
+    /// the lobby difficulty's mistake chance (<c>ph.HcMistake</c>) at which an AI seat's MEDIAN finish
+    /// time is the target, at the given reaction time. Bisection over 0..1 on the same seeds every step
+    /// (common random numbers, so a step's answer differs from the last only by the chance), then a check
+    /// on fresh seeds. Every seat counts - a match is judged by how long each AI takes, not by the
+    /// fastest - and races run to 2.5x the target so a slow seat is measured, not cut.
+    /// </summary>
+    static int TuneHandicap(Dictionary<int, TrackDef> tracks, string[] args)
+    {
+        int intensity = int.Parse(args[2]);
+        int seeds = int.Parse(args[3]);
+        float target = float.Parse(args[4], CultureInfo.InvariantCulture);
+        int steps = 8;
+        foreach (var a in args.Skip(5))
+            if (a.StartsWith("steps=")) steps = int.Parse(a.Substring(6), CultureInfo.InvariantCulture);
+        var (cfg, ph) = Parse(args.Skip(5).Where(a => !a.StartsWith("steps=")));
+        var def = tracks[intensity];
+        var prisms = new TrackPrisms(def);
+        var course = new SkimRaceCourse(prisms.Points, prisms.Normals, prisms.Rotations, prisms.ShellHalf);
+        float lim = Math.Max(DefaultLimit(intensity), 2.5f * target);
+
+        (float median, float p10, float p90, int fin, int total, float mistakes) Measure(float chance, int seedBase, int n)
+        {
+            var local = ph.Clone();
+            local.HcMistake = chance;
+            var runs = new RaceResult[n];
+            System.Threading.Tasks.Parallel.For(0, n, s => runs[s] = Race.Run(def, prisms, course, cfg, local, seedBase + s, lim));
+            var times = runs.SelectMany(r => r.AgentTimes).OrderBy(x => x).ToList();
+            int fin = times.Count(x => x < 999f);
+            return (times[times.Count / 2], times[times.Count / 10], times[times.Count * 9 / 10], fin, times.Count,
+                runs.Sum(r => r.Mistakes) / (float)times.Count);
+        }
+
+        Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
+            "I{0}: target seat median {1:F1} s at reaction {2:0.###} s ({3} seeds x {4} seats, races to {5:F0} s)",
+            intensity, target, ph.HcReaction, seeds, Math.Max(1, ph.Seats), lim));
+        var at0 = Measure(0f, 1000, seeds);
+        Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "  chance 0.000 -> median {0:F1} s", at0.median));
+        if (at0.median >= target)
+        {
+            Console.WriteLine("  the reaction time alone already reaches the target - lower ph.HcReaction");
+            Console.WriteLine("BEST HcMistake=0");
+            return 0;
+        }
+        float lo = 0f, hi = 1f;
+        var at1 = Measure(1f, 1000, seeds);
+        Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "  chance 1.000 -> median {0:F1} s", at1.median));
+        if (at1.median <= target)
+        {
+            Console.WriteLine("  even misjudging every crystal stays under the target - raise ph.HcReaction");
+            Console.WriteLine("BEST HcMistake=1");
+            return 0;
+        }
+        for (int i = 0; i < steps; i++)
+        {
+            float mid = 0.5f * (lo + hi);
+            var m = Measure(mid, 1000, seeds);
+            Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "  chance {0:0.000} -> median {1:F1} s (misjudged {2:F2}/seat/race)", mid, m.median, m.mistakes));
+            if (m.median < target) lo = mid; else hi = mid;
+        }
+        float best = 0.5f * (lo + hi);
+        var check = Measure(best, 99000, seeds);
+        Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
+            "FINAL fresh seeds: chance {0:0.000} -> seat median {1:F1} s, p10 {2:F1}, p90 {3:F1}, finished {4}/{5}, misjudged {6:F2}/seat/race",
+            best, check.median, check.p10, check.p90, check.fin, check.total, check.mistakes));
+        Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "BEST HcMistake={0:0.000}", best));
+        return 0;
+    }
+
     static int Main(string[] args)
     {
         var tracks = Json.Load(args[0]);
         string mode = args[1];
         if (mode == "tuneall") return TuneAll(tracks, args);
+        if (mode == "handicap") return TuneHandicap(tracks, args);
         int intensity = int.Parse(args[2]);
         var def = tracks[intensity];
         var prisms = new TrackPrisms(def);
@@ -1016,6 +1105,10 @@ static class Program
             var lost = e.runs.SelectMany(r => r.ResetBoostLost).GroupBy(k => k.Key).ToDictionary(g => g.Key, g => g.Sum(k => k.Value));
             Console.WriteLine("  boost resets per race by cause: " + string.Join(", ", causes.Select(c =>
                 string.Format(CultureInfo.InvariantCulture, "{0} {1:F1} (boost lost {2:F1})", c.Key, c.n / (float)seeds, lost[c.Key] / seeds))));
+            if (ph.HcReaction > 0f || ph.HcMistake > 0f)
+                Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
+                    "  handicap: reaction {0:0.###} s, mistake chance {1:0.###}; misjudged crystals {2:F2} per seat per race",
+                    ph.HcReaction, ph.HcMistake, e.runs.Sum(r => r.Mistakes) / (float)seeds / Math.Max(1, ph.Seats)));
             if (args.Contains("diag=1"))
             {
                 float seatsN = Math.Max(1, ph.Seats);
@@ -1059,7 +1152,7 @@ static class Program
                     "  planned line (next 300 u) min shell clearance: <0.6 in {0:P0}, <1.5 in {1:P0}, <3 in {2:P0} of decisions",
                     lc.Count(x => x < 0.6f) / (float)lc.Count, lc.Count(x => x < 1.5f) / (float)lc.Count, lc.Count(x => x < 3f) / (float)lc.Count));
             foreach (var r in e.runs)
-                Console.WriteLine($"  {(r.Finished ? "FIN" : "DNF")} t={r.Time:F2} {r.Collected}/{r.Required} recov={r.Recoveries} hull={r.HullHits} mean={r.MeanSpeed:F0} boost={r.MeanBoost:F2} far={r.FarFrac:F2} seats=[{string.Join(" ", r.AgentTimes.Select(x => x.ToString("F1", CultureInfo.InvariantCulture)))}]");
+                Console.WriteLine($"  {(r.Finished ? "FIN" : "DNF")} t={r.Time:F2} {r.Collected}/{r.Required} recov={r.Recoveries} mist={r.Mistakes} hull={r.HullHits} mean={r.MeanSpeed:F0} boost={r.MeanBoost:F2} far={r.FarFrac:F2} seats=[{string.Join(" ", r.AgentTimes.Select(x => x.ToString("F1", CultureInfo.InvariantCulture)))}]");
             return 0;
         }
 

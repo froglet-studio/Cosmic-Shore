@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
-"""Author the Skim Race AI policy assets (Assets/Resources/SkimRaceAIConfig*.asset).
+"""Author the Skim Race AI policy assets (Assets/Resources/SkimRaceAIConfig*.asset) and the lobby
+AI difficulty settings (Assets/Resources/SkimRaceDifficulty.asset).
 
 The policy is the SkimRaceAIConfigSO field set. Values come from POLICIES below, which is where the
 tuning loop's winners are recorded (see Docs/SKIM_RACE_AI.md for how each was found and validated).
 `SkimRaceAIConfigSO.LoadFor(intensity)` reads `SkimRaceAIConfig_I<n>` first and falls back to the
 base `SkimRaceAIConfig`.
+
+DIFFICULTY holds each lobby difficulty's deliberate mistakes (SkimRaceDifficultySO; section 10 of
+the doc). --check also holds that class's field DEFAULTS equal to the table, so a build missing the
+asset flies the same numbers.
 
     python3 Tools/Build/author_skimrace_ai_config.py          # write the assets
     python3 Tools/Build/author_skimrace_ai_config.py --check  # fail if an asset drifted from this file
@@ -17,6 +22,7 @@ import uuid
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 assert os.path.isdir(os.path.join(ROOT, "Assets")), "ROOT must contain Assets/"
 SCRIPT = os.path.join(ROOT, "Assets/_Scripts/Controller/AI/SkimRace/SkimRaceAIConfigSO.cs")
+DIFFICULTY_SCRIPT = os.path.join(ROOT, "Assets/_Scripts/Controller/AI/SkimRace/SkimRaceDifficultySO.cs")
 OUT_DIR = os.path.join(ROOT, "Assets/Resources")
 
 # Field defaults are read from the C# class so this file only states what differs.
@@ -168,8 +174,24 @@ POLICIES = {
 }
 
 
-def class_fields():
-    src = open(SCRIPT, encoding="utf-8").read()
+# The lobby AI difficulty's deliberate mistakes (SkimRaceHandicap), ONE setting per difficulty for
+# every intensity: tuned once on intensity 2 with `run.sh handicap` (Docs/SKIM_RACE_AI.md section 10).
+# Hard is the unhandicapped pilot and has no row.
+DIFFICULTY = {
+    "SkimRaceDifficulty": {
+        # PROVISIONAL (2026-10-05): estimated from single-mistake measurements on I2 (reaction 0.25 s
+        # alone -> 83 s, 0.5 s -> 101 s; ~10-12 s per misjudged crystal). The run.sh handicap search
+        # replaces these with tuned values.
+        "EasyReactionSeconds": 0.5,
+        "EasyMistakeChance": 0.06,
+        "MediumReactionSeconds": 0.25,
+        "MediumMistakeChance": 0.04,
+    },
+}
+
+
+def class_fields(script=SCRIPT):
+    src = open(script, encoding="utf-8").read()
     fields = []
     for m in re.finditer(r"public (float|bool|string|int) (\w+) = ([^;]+);", src):
         typ, name, val = m.groups()
@@ -187,22 +209,22 @@ def fmt(typ, val):
     return ("%d" % f) if f == int(f) and abs(f) < 1e9 else repr(f)
 
 
-def script_guid():
-    meta = open(SCRIPT + ".meta", encoding="utf-8").read()
+def script_guid(script=SCRIPT):
+    meta = open(script + ".meta", encoding="utf-8").read()
     return re.search(r"guid: ([0-9a-f]{32})", meta).group(1)
 
 
-def render(name, overrides):
+def render(name, overrides, script=SCRIPT):
     lines = [
         "%YAML 1.1", "%TAG !u! tag:unity3d.com,2011:", "--- !u!114 &11400000", "MonoBehaviour:",
         "  m_ObjectHideFlags: 0", "  m_CorrespondingSourceObject: {fileID: 0}", "  m_PrefabInstance: {fileID: 0}",
         "  m_PrefabAsset: {fileID: 0}", "  m_GameObject: {fileID: 0}", "  m_Enabled: 1", "  m_EditorHideFlags: 0",
-        f"  m_Script: {{fileID: 11500000, guid: {script_guid()}, type: 3}}", f"  m_Name: {name}",
+        f"  m_Script: {{fileID: 11500000, guid: {script_guid(script)}, type: 3}}", f"  m_Name: {name}",
         "  m_EditorClassIdentifier: ",
     ]
     merged = dict(BASE)
     merged.update(overrides)
-    for typ, field, default in class_fields():
+    for typ, field, default in class_fields(script):
         val = merged.get(field, default)
         lines.append(f"  {field}: {fmt(typ, val)}")
     return "\n".join(lines) + "\n"
@@ -219,9 +241,23 @@ def main(argv):
         if unknown:
             print(f"ERROR: {name}: not SkimRaceAIConfigSO fields: {unknown}")
             return 1
-    for name, ov in POLICIES.items():
+    difficulty_fields = {name: default for _, name, default in class_fields(DIFFICULTY_SCRIPT)}
+    for name, ov in DIFFICULTY.items():
+        if set(ov) != set(difficulty_fields):
+            print(f"ERROR: {name}: DIFFICULTY must state every SkimRaceDifficultySO field "
+                  f"{sorted(difficulty_fields)}, has {sorted(ov)}")
+            return 1
+        # The class defaults ARE the fallback when the asset is missing - they must fly the same numbers.
+        drift = [f for f, v in ov.items() if abs(float(difficulty_fields[f].rstrip("f")) - float(v)) > 1e-6]
+        if drift:
+            print(f"ERROR: SkimRaceDifficultySO field defaults differ from DIFFICULTY for {drift} - "
+                  "update the initializers in SkimRaceDifficultySO.cs to match")
+            return 1
+    jobs = [(name, ov, SCRIPT) for name, ov in POLICIES.items()] + \
+           [(name, ov, DIFFICULTY_SCRIPT) for name, ov in DIFFICULTY.items()]
+    for name, ov, script in jobs:
         path = os.path.join(OUT_DIR, name + ".asset")
-        text = render(name, ov)
+        text = render(name, ov, script)
         if check:
             if not os.path.exists(path) or open(path, encoding="utf-8").read() != text:
                 print(f"DRIFT: {os.path.relpath(path, ROOT)}")

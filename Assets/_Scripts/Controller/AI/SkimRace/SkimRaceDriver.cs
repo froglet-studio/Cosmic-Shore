@@ -49,6 +49,14 @@ namespace CosmicShore.Gameplay
 
         readonly SkimRaceAIConfigSO _cfg;
 
+        /// <summary>
+        /// The lobby difficulty's deliberate mistakes, or null for none (Hard). When set, every
+        /// decision is made on <see cref="SkimRaceHandicap.View"/> of the observation - what the pilot
+        /// BELIEVES - while progress is still judged against the real crystal. Null leaves the driver
+        /// exactly the unhandicapped pilot.
+        /// </summary>
+        public SkimRaceHandicap Handicap { get; set; }
+
         Mode _mode = Mode.Idle;
         float _recoveryUntil;
         int _recoveries;
@@ -1058,6 +1066,7 @@ namespace CosmicShore.Gameplay
             ViaPoints = 0;
             Obstacles.Clear();
             _ringReadyAt = 0f;
+            Handicap?.Reset();
             _ringHoldUntil = 0f;
             _nextPlan = 0f;
             _plan = default;
@@ -1080,13 +1089,16 @@ namespace CosmicShore.Gameplay
         /// One decision. <paramref name="course"/> may be null (track not laid yet): the pilot
         /// then flies straight at the crystal. <paramref name="now"/> is race time in seconds.
         /// </summary>
-        public SkimRaceAction Decide(in SkimRaceObservation o, SkimRaceCourse course, float now, float dt)
+        public SkimRaceAction Decide(in SkimRaceObservation observed, SkimRaceCourse course, float now, float dt)
         {
             if (_mode == Mode.Idle) _mode = Mode.Racing;
             dt = Mathf.Max(dt, 1e-4f);
-            _speed = o.Speed;
+            _speed = observed.Speed;
 
-            UpdateProgress(o, now, dt);
+            // Progress (and so recovery) is judged against the REAL crystal; everything below decides on
+            // what the pilot believes, which differs only for a handicapped (Easy / Medium) pilot.
+            UpdateProgress(observed, now, dt);
+            var o = Handicap != null ? Handicap.View(observed, course) : observed;
 
             // ── 1. Aim point ────────────────────────────────────────────────
             bool haveCourse = course != null && o.HasCourse;

@@ -57,6 +57,21 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Easy / Medium Skim Race AI make deliberate mistakes (`claude/confident-pascal-w76l2o`, 2026-10-05)
+
+**What landed.** `SkimRaceHandicap` (slow reaction + misjudged crystal, per crystal, random every race)
+installed by `SkimRaceAIDeployment` from `Resources/SkimRaceDifficulty.asset` for Easy and Medium; Hard
+has none. Proven in the offline simulator (Hard byte-identical to before; tests compiled and run outside
+Unity). Design: `Docs/SKIM_RACE_AI.md` §10.
+
+**Verify in editor**
+- [ ] Compiles; `SkimRaceHandicapTests` pass (including `Difficulty_ShippedAssetLoadsFromResources`).
+- [ ] Skim Race on Easy with one AI: the verbose `[SkimRaceAI]` line (AITraining channel) names Easy with its
+      reaction and mistake chance; the AI visibly turns in late and now and then flies over a crystal and comes
+      back for it. On Hard it flies exactly as before.
+- [ ] `FrogletTools > AI > Skim Race AI Benchmark` has an AI difficulty field (default Hard); a run's records
+      carry `difficulty` and `mistakes` per AI seat.
+
 ### 🔴 AI difficulty picker on the Skim Race launch panel (`claude/confident-pascal-w76l2o`, 2026-10-05)
 
 **What landed.** An Easy / Medium / Hard row under the intensity buttons (Skim Race card only),

@@ -79,13 +79,21 @@ namespace CosmicShore.Gameplay
         /// <summary>Raised on the frame the race starts for this pilot (race time 0).</summary>
         public event System.Action<SkimRacePilot> RaceStarted;
 
-        public void Bind(IVessel vessel, GameDataSO gameData, SkimRaceAIConfigSO config)
+        /// <param name="handicap">The lobby difficulty's deliberate mistakes
+        /// (<see cref="SkimRaceDifficultySO.For"/>); none for Hard.</param>
+        public void Bind(IVessel vessel, GameDataSO gameData, SkimRaceAIConfigSO config, SkimRaceHandicapLevel handicap)
         {
             _vessel = vessel;
             _status = vessel?.VesselStatus;
             _gameData = gameData;
             _config = config != null ? config : SkimRaceAIConfigSO.LoadDefault();
             _driver = new SkimRaceDriver(_config);
+            // Seeded off the clock and this component, so every race - and every seat in it - errs
+            // differently. Never UnityEngine.Random: the track generator seeds its global state, and
+            // drawing from it would both repeat the same mistakes per track and shift the track's own
+            // sequence.
+            if (!handicap.IsNone)
+                _driver.Handicap = new SkimRaceHandicap(handicap, unchecked(System.Environment.TickCount * 31 + GetInstanceID()));
             _aiPilot = _status?.AIPilot;
             _bound = _vessel != null && _status != null && _gameData != null;
             SuppressOtherPilots();
