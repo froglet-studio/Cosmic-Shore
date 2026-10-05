@@ -1,88 +1,92 @@
 {
  "start": {
   "on": true,
-  "state": "roam",
-  "intent": 0,
+  "state": "stalk",
+  "intent": 0.07142857142857144,
   "plan": "space",
   "morphs": 0,
   "eaten": 0,
   "bites": 0,
   "lizard": 1159,
   "lizCut": 0,
-  "lizSteps": 90,
+  "lizSteps": 89,
   "bolts": 0,
   "lizards": [
    {
+    "kind": "lizard",
     "element": "time",
     "count": 1159,
-    "steps": 90,
-    "rate": 19.1,
-    "speed": 14,
+    "steps": 89,
+    "rate": 20,
+    "speed": 14.2,
     "debris": 0,
     "backend": "wasm-simd"
    },
    {
+    "kind": "lizard",
     "element": "mass",
-    "count": 1135,
-    "steps": 118,
-    "rate": 20,
-    "speed": 12.3,
+    "count": 1146,
+    "steps": 114,
+    "rate": 13.7,
+    "speed": 10.6,
     "debris": 0,
     "backend": "wasm-simd"
    }
   ],
   "swarmPos": [
-   65.69857001392806,
-   96.83552323302719,
-   -358.51816803018
+   65.74909396690721,
+   96.82146758505168,
+   -358.55491206935716
   ],
   "lizPos": [
-   -424.81407227220905,
-   141.8036962697164,
-   -250.57256599830964
+   -425.63022757840963,
+   142.36428420949926,
+   -251.97928133721885
   ]
  },
  "stalk": {
   "on": true,
   "state": "stalk",
-  "intent": 0.14285714285714288,
+  "intent": 0.21428571428571433,
   "plan": "space",
   "morphs": 0,
   "eaten": 0,
   "bites": 0,
   "lizard": 1156,
   "lizCut": 0,
-  "lizSteps": 93,
+  "lizSteps": 91,
   "bolts": 0,
   "lizards": [
    {
+    "kind": "lizard",
     "element": "time",
     "count": 1156,
-    "steps": 93,
-    "rate": 20,
+    "steps": 91,
+    "rate": 19.2,
     "speed": 14.5,
     "debris": 0,
     "backend": "wasm-simd"
    },
    {
+    "kind": "lizard",
     "element": "mass",
-    "count": 1155,
-    "steps": 122,
-    "rate": 20,
-    "speed": 12.8,
+    "count": 1141,
+    "steps": 116,
+    "rate": 17,
+    "speed": 11.6,
     "debris": 0,
     "backend": "wasm-simd"
    }
   ],
   "swarmPos": [
-   68.12990120306121,
-   97.5576957602847,
-   -357.3781556859697
+   67.57855506184143,
+   97.20892442957705,
+   -358.061293293059
   ],
   "lizPos": [
-   -425.28494900911545,
-   140.55822097250086,
-   -254.6415574832905
+   -426.03280509670185,
+   141.80217569028548,
+   -254.79076130736487
   ]
  },
  "after_lunge": {
@@ -93,39 +97,41 @@
   "morphs": 0,
   "eaten": 1,
   "bites": 0,
-  "lizard": 1159,
+  "lizard": 1151,
   "lizCut": 0,
-  "lizSteps": 115,
+  "lizSteps": 106,
   "bolts": 0,
   "lizards": [
    {
+    "kind": "lizard",
     "element": "time",
-    "count": 1159,
-    "steps": 115,
+    "count": 1151,
+    "steps": 106,
     "rate": 20,
-    "speed": 18.5,
+    "speed": 14.4,
     "debris": 0,
     "backend": "wasm-simd"
    },
    {
+    "kind": "lizard",
     "element": "mass",
-    "count": 1144,
-    "steps": 143,
+    "count": 1138,
+    "steps": 134,
     "rate": 20,
-    "speed": 14.3,
+    "speed": 16.6,
     "debris": 0,
     "backend": "wasm-simd"
    }
   ],
   "swarmPos": [
-   83.07334285259502,
-   102.02378684233031,
-   -359.0623867748505
+   83.65847677045024,
+   100.61444955535529,
+   -364.6211179461413
   ],
   "lizPos": [
-   -417.3146255493673,
-   131.8081160769973,
-   -275.1086821504012
+   -420.86006973676314,
+   137.00780891513799,
+   -273.4466156459472
   ]
  },
  "stakes": {
@@ -142,39 +148,41 @@
   "morphs": 1,
   "eaten": 7,
   "bites": 1,
-  "lizard": 1147,
+  "lizard": 1149,
   "lizCut": 0,
-  "lizSteps": 127,
+  "lizSteps": 116,
   "bolts": 0,
   "lizards": [
    {
+    "kind": "lizard",
     "element": "time",
-    "count": 1147,
-    "steps": 127,
-    "rate": 20,
-    "speed": 15.3,
+    "count": 1149,
+    "steps": 116,
+    "rate": 17.2,
+    "speed": 14.1,
     "debris": 0,
     "backend": "wasm-simd"
    },
    {
+    "kind": "lizard",
     "element": "mass",
-    "count": 1147,
-    "steps": 162,
+    "count": 1142,
+    "steps": 147,
     "rate": 20,
-    "speed": 18.2,
+    "speed": 13.8,
     "debris": 0,
     "backend": "wasm-simd"
    }
   ],
   "swarmPos": [
-   102.98875124090628,
-   106.95563433732083,
-   -375.78388432212375
+   94.88419644028929,
+   102.87201687893685,
+   -387.03197634970746
   ],
   "lizPos": [
-   -401.914691483383,
-   123.27693029767052,
-   -286.0833364718816
+   -409.6896650823489,
+   133.1075429605771,
+   -281.859637419541
   ]
  },
  "cut": {
@@ -185,39 +193,41 @@
   "morphs": 1,
   "eaten": 7,
   "bites": 1,
-  "lizard": 975,
-  "lizCut": 163,
-  "lizSteps": 130,
+  "lizard": 986,
+  "lizCut": 151,
+  "lizSteps": 120,
   "bolts": 1,
   "lizards": [
    {
+    "kind": "lizard",
     "element": "time",
-    "count": 975,
-    "steps": 130,
-    "rate": 20.6,
-    "speed": 15.6,
-    "debris": 160,
+    "count": 986,
+    "steps": 120,
+    "rate": 20.8,
+    "speed": 14.3,
+    "debris": 151,
     "backend": "wasm-simd"
    },
    {
+    "kind": "lizard",
     "element": "mass",
-    "count": 1148,
-    "steps": 166,
+    "count": 1142,
+    "steps": 152,
     "rate": 20,
-    "speed": 15.5,
+    "speed": 15.9,
     "debris": 0,
     "backend": "wasm-simd"
    }
   ],
   "swarmPos": [
-   107.61135792432937,
-   108.1130116462762,
-   -395.2353806376602
+   99.59984787659562,
+   103.76348229885812,
+   -411.42836640931586
   ],
   "lizPos": [
-   -396.8084126480245,
-   120.6019452597912,
-   -289.07395889100457
+   -403.2370111906134,
+   131.27988091964988,
+   -283.26952713632744
   ]
  },
  "regrow": {
@@ -228,47 +238,49 @@
   "morphs": 1,
   "eaten": 7,
   "bites": 1,
-  "lizard": 1146,
-  "lizCut": 163,
-  "lizSteps": 159,
+  "lizard": 1105,
+  "lizCut": 151,
+  "lizSteps": 152,
   "bolts": 1,
   "lizards": [
    {
+    "kind": "lizard",
     "element": "time",
-    "count": 1146,
-    "steps": 159,
-    "rate": 30.8,
-    "speed": 14.5,
+    "count": 1105,
+    "steps": 152,
+    "rate": 31.2,
+    "speed": 15.5,
     "debris": 0,
     "backend": "wasm-simd"
    },
    {
+    "kind": "lizard",
     "element": "mass",
-    "count": 1140,
-    "steps": 200,
+    "count": 1150,
+    "steps": 185,
     "rate": 20,
-    "speed": 14.8,
+    "speed": 15.2,
     "debris": 0,
     "backend": "wasm-simd"
    }
   ],
   "swarmPos": [
-   189.0024564703895,
-   16.64113047432973,
-   -470.2312594060356
+   179.28940840146544,
+   11.198829338632066,
+   -491.75604571763813
   ],
   "lizPos": [
-   -396.2569437807297,
-   106.7575422282978,
-   -316.72108531248665
+   -392.96843044409087,
+   118.32636083079971,
+   -309.5485377863106
   ]
  },
- "lizard_before_cut": 1139,
+ "lizard_before_cut": 1137,
  "perf": {
   "frame_ms": 100,
-  "cpu_ms": 19.59999999962747,
-  "sim_ms": 1.799999998882413,
-  "render_ms": 16.299999998882413
+  "cpu_ms": 20.09999999962747,
+  "sim_ms": 2.5,
+  "render_ms": 15.900000000372529
  },
  "errors": [],
  "fails": []

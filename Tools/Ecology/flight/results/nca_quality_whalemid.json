@@ -1,0 +1,162 @@
+{
+ "tag": "whalemid",
+ "path": {
+  "samples": 28,
+  "speed_med": 25.8,
+  "speed_p10": 21.3,
+  "speed_p90": 35.2,
+  "turn_rate_absmean": 0.007,
+  "turn_rate_sign_changes": 1,
+  "extent_xyz": [
+   59,
+   32,
+   29
+  ]
+ },
+ "cut": {
+  "on": true,
+  "state": "stalk",
+  "intent": 0,
+  "plan": "space",
+  "morphs": 0,
+  "eaten": 0,
+  "bites": 0,
+  "lizard": 916,
+  "lizCut": 239,
+  "lizSteps": 208,
+  "bolts": 1,
+  "lizards": [
+   {
+    "kind": "lizard",
+    "element": "time",
+    "count": 916,
+    "steps": 208,
+    "rate": 33,
+    "speed": 18.4,
+    "debris": 160,
+    "backend": "wasm-simd"
+   },
+   {
+    "kind": "lizard",
+    "element": "mass",
+    "count": 1141,
+    "steps": 249,
+    "rate": 20,
+    "speed": 13.5,
+    "debris": 0,
+    "backend": "wasm-simd"
+   },
+   {
+    "kind": "whale",
+    "element": "space",
+    "count": 510,
+    "steps": 299,
+    "rate": 20,
+    "speed": 27.2,
+    "debris": 0,
+    "backend": "wasm-simd"
+   }
+  ],
+  "swarmPos": [
+   -169.6760305233547,
+   198.28879973719245,
+   -178.58695531911755
+  ],
+  "lizPos": [
+   -315.9351429503547,
+   76.23133863967523,
+   -236.04886164440583
+  ]
+ },
+ "ram": {
+  "dist_from_ram_point_before": 31.8,
+  "after_2p4s": 53.9,
+  "heading_change_deg": 35.8
+ },
+ "regrow": {
+  "on": true,
+  "state": "roam",
+  "intent": 0,
+  "plan": "space",
+  "morphs": 0,
+  "eaten": 0,
+  "bites": 0,
+  "lizard": 1154,
+  "lizCut": 261,
+  "lizSteps": 246,
+  "bolts": 1,
+  "lizards": [
+   {
+    "kind": "lizard",
+    "element": "time",
+    "count": 1154,
+    "steps": 246,
+    "rate": 33.9,
+    "speed": 15.9,
+    "debris": 0,
+    "backend": "wasm-simd"
+   },
+   {
+    "kind": "lizard",
+    "element": "mass",
+    "count": 1138,
+    "steps": 288,
+    "rate": 20,
+    "speed": 16.2,
+    "debris": 0,
+    "backend": "wasm-simd"
+   },
+   {
+    "kind": "whale",
+    "element": "space",
+    "count": 510,
+    "steps": 358,
+    "rate": 20,
+    "speed": 23.3,
+    "debris": 0,
+    "backend": "wasm-simd"
+   }
+  ],
+  "swarmPos": [
+   -305.3229996420182,
+   141.24566477609605,
+   -223.45201482955127
+  ],
+  "lizPos": [
+   -277.14645934272494,
+   57.69990010883223,
+   -219.02338561308733
+  ]
+ },
+ "lizard_before_cut": 1145,
+ "perf": {
+  "frame_ms": 100,
+  "cpu_ms": 22.199999999254942,
+  "sim_ms": 2.199999999254942,
+  "render_ms": 18.800000000745058
+ },
+ "lizards": [
+  {
+   "element": "time",
+   "backend": "wasm-simd",
+   "count": 1159,
+   "steps": 251,
+   "rate": 31.413637183423532
+  },
+  {
+   "element": "mass",
+   "backend": "wasm-simd",
+   "count": 1156,
+   "steps": 294,
+   "rate": 20
+  },
+  {
+   "element": "space",
+   "backend": "wasm-simd",
+   "count": 511,
+   "steps": 368,
+   "rate": 20
+  }
+ ],
+ "errors": []
+}
