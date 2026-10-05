@@ -8,6 +8,19 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ---
 
+## BH-5.3 — Run Benchmark is Editor-only (not in player builds)
+
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Symptom (risk):** Settings ▸ Run Benchmark called `BenchmarkSceneLauncher`, which loads
+  `BenchmarkStressTest`, but that scene is not in Build Settings — a player build would fail the load.
+- **Decision (handoff §5):** hide the path in players; do **not** add the scene to Build Settings.
+- **Fix:** `GameSettingsPanelController` hides/unwires the benchmark button outside `UNITY_EDITOR`
+  (same idea as the desktop-only quit button); `LaunchBenchmark` early-returns in players.
+- **Verification:** gate scripts pass; not run in Unity. Retest is on the handoff playtest list.
+- **PR/commit:** pending.
+
+---
+
 ## BH-5.2 — Strict-YAML failures on cell configs, arcade cards, and captain SOs
 
 - **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.

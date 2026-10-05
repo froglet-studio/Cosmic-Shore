@@ -58,6 +58,7 @@ Confidence scale:
 | 31 | **Trail block indices are int, not ushort (was §4).** A freestyle trail past 65,535 prisms no longer wraps the index map. Shipped on `Bug_Hunt`. | `Trail` |
 | 32 | **Crystal.ActivateCrystal no longer NREs when the cell is gone (console).** `ActivateCrystal` returns if the scene is unloading and only reparents when `cellData.Cell` is still alive (same Unity-null pattern as `DetachHeartToCell`). Was an open console issue from `Fauna.ReleaseHeart` ← `LightFauna.WitherCoroutine`. Shipped on `Bug_Hunt`. | `Crystal.ActivateCrystal` |
 | 33 | **Strict YAML on cell configs / arcade cards / captain SOs (console, was FIX_LOG open).** `arcade_mode_lib.wrap_yaml_scalar` + five `author_*_assets.py` generators; 17 assets re-quoted / hand-fixed. Shipped on `Bug_Hunt`. | generators + captain SOs |
+| 34 | **Run Benchmark is Editor-only (was §5).** Button hidden / unwired in players; `LaunchBenchmark` no-ops outside the Editor. `BenchmarkStressTest` stays out of Build Settings. Shipped on `Bug_Hunt`. | `GameSettingsPanelController`, `BenchmarkSceneLauncher` |
 
 ### Playtest items for the shipped fixes
 - **Squirrel ring (#6):** fly Menu_Main freestyle → an arcade game → back, 2-3 round trips, then
@@ -167,6 +168,10 @@ Confidence scale:
 - **Strict YAML (5.2):** reimport the touched cell configs / Broadside / Waystation / three captain
   SOs in the Editor; console must show no `Unable to parse file`. Spot-check Description / Flavor /
   IconActive still display on those cards.
+- **STILL TO TEST (revisit): 5.3 Run Benchmark Editor-only, kept on Bug_Hunt untested at Yash's call.**
+- **Run Benchmark (5.3):** in the Editor, Settings ▸ Run Benchmark from Menu_Main still loads
+  `BenchmarkStressTest`. In a player build the button must be absent/hidden and must not appear in
+  the settings panel.
 
 ---
 
@@ -196,9 +201,6 @@ Confidence scale:
   `SO_GameList`, and `MinigameWildlifeBlitzMultuplayerCoOp.unity` is not in Build Settings. This was
   already true before the cleanup; it only became visible when the single-player scene was deleted.
   Decide: ship it (add it to a list and to Build Settings) or retire it.
-- **`BenchmarkStressTest.unity` is not in Build Settings**, but Settings ▸ Run Benchmark loads it, so
-  Run Benchmark probably fails in a player build. Either add it to Build Settings or hide the
-  button in players.
 - **Hangar training is dead:** `Arcade.Instance` is never placed. Rhino's and Sparrow's
   `SO_TrainingGame_WildLifeBlitz` still point at `ArcadeGameWildlifeBlitz`, whose scene is deleted.
   The card was KEPT so those references do not NRE. Retire the training entries and the card

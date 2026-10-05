@@ -416,3 +416,16 @@ Update iterates a copied key list so callbacks can schedule again.
 
 Threading errors (`EnsureRunningOnMainThread`, UGS callbacks off the main thread) have their own
 guide: [`../THREADING.md`](../THREADING.md).
+
+## 13. Settings actions that need a scene not in player builds
+
+**Shows up as:** a Settings button (e.g. Run Benchmark) that loads a scene missing from
+`EditorBuildSettings`, so a player build fails the load while the Editor works.
+
+**Fix pattern (BH-5.3):** hide and unwire the button outside `#if UNITY_EDITOR` (same shape as
+the desktop-only quit button in `GameSettingsPanelController.BindQuitButton`), and guard the
+launcher method the same way. Do **not** add the scene to Build Settings unless product wants it
+shipped.
+
+**Verify:** Editor still launches the scene from Settings; a player build has no visible button.
+
