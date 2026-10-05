@@ -205,6 +205,20 @@ namespace CosmicShore.ECS
 
         static World _world;
         static EntitiesGraphicsSystem _graphics;
+        static PrismRenderLookupSystem _lookups;
+
+        /// <summary>
+        /// A fresh <see cref="ComponentLookup{T}"/> on the cached world. <c>EntityManager.GetComponentLookup</c>
+        /// is <c>internal</c> in Entities 1.x, so the public route is a system's
+        /// <see cref="ComponentSystemBase.GetComponentLookup{T}"/>; <see cref="PrismRenderLookupSystem"/> exists
+        /// only to hand these out (never updated). Callers still complete the component's dependency first.
+        /// </summary>
+        static ComponentLookup<T> Lookup<T>(bool isReadOnly) where T : unmanaged, IComponentData
+        {
+            if (_lookups == null)
+                _lookups = _world.GetOrCreateSystemManaged<PrismRenderLookupSystem>();
+            return _lookups.GetComponentLookup<T>(isReadOnly);
+        }
         static int _epoch; // bumped whenever the cached world goes away — invalidates all outstanding handles
         static readonly Dictionary<Mesh, BatchMeshID> _meshIds = new();
         static readonly Dictionary<Material, BatchMaterialID> _materialIds = new();
@@ -234,6 +248,7 @@ namespace CosmicShore.ECS
             {
                 _world = null;
                 _graphics = null;
+                _lookups = null;
                 _meshIds.Clear();
                 _materialIds.Clear();
                 // Pending keys are raw Entity ids with no epoch — a fresh world
@@ -298,6 +313,7 @@ namespace CosmicShore.ECS
 
             _world = world;
             _graphics = graphics;
+            _lookups = null;
             _epoch++;
             return true;
         }
@@ -607,12 +623,12 @@ namespace CosmicShore.ECS
                 Bright = ReadColor(material, BrightColorId),
                 Dark = ReadColor(material, DarkColorId),
                 Spread = ReadVector3(material, SpreadId),
-                MmiLookup = em.GetComponentLookup<MaterialMeshInfo>(false),
-                L2wLookup = em.GetComponentLookup<LocalToWorld>(false),
-                BoundsLookup = em.GetComponentLookup<RenderBounds>(false),
-                BrightLookup = em.GetComponentLookup<PrismBrightColorOverride>(false),
-                DarkLookup = em.GetComponentLookup<PrismDarkColorOverride>(false),
-                SpreadLookup = em.GetComponentLookup<PrismSpreadOverride>(false),
+                MmiLookup = Lookup<MaterialMeshInfo>(false),
+                L2wLookup = Lookup<LocalToWorld>(false),
+                BoundsLookup = Lookup<RenderBounds>(false),
+                BrightLookup = Lookup<PrismBrightColorOverride>(false),
+                DarkLookup = Lookup<PrismDarkColorOverride>(false),
+                SpreadLookup = Lookup<PrismSpreadOverride>(false),
             };
             if (n < TransformJobInlineThreshold) job.Run(n);
             else job.Schedule(n, TransformJobBatch).Complete();
@@ -969,7 +985,7 @@ namespace CosmicShore.ECS
             {
                 Entities = entities,
                 Matrices = localToWorld.GetSubArray(0, n),
-                LocalToWorldLookup = em.GetComponentLookup<LocalToWorld>(false),
+                LocalToWorldLookup = Lookup<LocalToWorld>(false),
             }.Schedule(n, TransformJobBatch, JobHandle.CombineDependencies(resolve, dependsOn));
             write.Complete();
             entities.Dispose();
@@ -1002,7 +1018,7 @@ namespace CosmicShore.ECS
             {
                 Entities = entities,
                 Matrices = matrices,
-                LocalToWorldLookup = em.GetComponentLookup<LocalToWorld>(false),
+                LocalToWorldLookup = Lookup<LocalToWorld>(false),
             };
             // Small batches: Burst on the main thread (no scheduling overhead).
             if (n < TransformJobInlineThreshold) job.Run(n);
@@ -1081,10 +1097,10 @@ namespace CosmicShore.ECS
                 Bright = bright,
                 Dark = dark,
                 Spread = spread,
-                MmiLookup = em.GetComponentLookup<MaterialMeshInfo>(false),
-                BrightLookup = em.GetComponentLookup<PrismBrightColorOverride>(false),
-                DarkLookup = em.GetComponentLookup<PrismDarkColorOverride>(false),
-                SpreadLookup = em.GetComponentLookup<PrismSpreadOverride>(false),
+                MmiLookup = Lookup<MaterialMeshInfo>(false),
+                BrightLookup = Lookup<PrismBrightColorOverride>(false),
+                DarkLookup = Lookup<PrismDarkColorOverride>(false),
+                SpreadLookup = Lookup<PrismSpreadOverride>(false),
             };
             if (n < TransformJobInlineThreshold) job.Run(n);
             else job.Schedule(n, TransformJobBatch).Complete();
@@ -2001,5 +2017,16 @@ namespace CosmicShore.ECS
             }
             return float3.zero;
         }
+    }
+
+    /// <summary>
+    /// Never-updated system whose only job is to issue <see cref="ComponentLookup{T}"/>s to the static
+    /// <see cref="PrismRenderService"/> (Entities keeps <c>EntityManager.GetComponentLookup</c> internal).
+    /// <see cref="DisableAutoCreationAttribute"/>: created on demand by the service, joins no update group.
+    /// </summary>
+    [DisableAutoCreation]
+    internal sealed partial class PrismRenderLookupSystem : SystemBase
+    {
+        protected override void OnUpdate() { }
     }
 }

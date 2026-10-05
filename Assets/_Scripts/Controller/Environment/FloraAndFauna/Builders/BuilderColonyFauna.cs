@@ -6,6 +6,8 @@ using Unity.Collections;
 using Unity.Mathematics;
 using Unity.Profiling;
 using UnityEngine;
+// Unity.Mathematics also declares Random; the UnityEngine one is meant here (CS0104 otherwise).
+using Random = UnityEngine.Random;
 using SVector3 = System.Numerics.Vector3;
 
 namespace CosmicShore.Gameplay

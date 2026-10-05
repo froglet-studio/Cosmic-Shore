@@ -14,6 +14,8 @@ using CosmicShore.Utility;
 using Unity.Mathematics;
 using Unity.Profiling;
 using UnityEngine;
+// Unity.Mathematics also declares Random; the UnityEngine one is meant here (CS0104 otherwise).
+using Random = UnityEngine.Random;
 using NVec = System.Numerics.Vector3;
 
 namespace CosmicShore.Gameplay

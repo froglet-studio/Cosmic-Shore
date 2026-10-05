@@ -1,0 +1,95 @@
+# unity_refcompile — compile the game's C# against real Unity references, headless
+
+```
+bash Tools/Build/unity_refcompile/run.sh                       # player config (the shipped IL2CPP release)
+bash Tools/Build/unity_refcompile/run.sh --config player-dev   # + DEVELOPMENT_BUILD / ENABLE_PROFILER / DEBUG
+bash Tools/Build/unity_refcompile/run.sh --quiet-buckets       # count, don't list, the unverifiable buckets
+```
+
+Exit 0 = **no compile error in project code**; exit 1 = errors, listed, with every one in a file
+changed since `origin/bleeding-edge` tagged `[CHANGED-TONIGHT]`; exit 2 = offline with no cache.
+First run ~10 min (fetch + ~90 assemblies), later runs ~2 min (package assemblies are cached by
+input fingerprint; only Assets assemblies recompile).
+
+## What it does
+
+A small re-implementation of Unity's script pipeline (`build.py`):
+
+1. **Discovers every `.asmdef`/`.asmref`** in the fetched package sources and `Assets/`, evaluates
+   `includePlatforms`/`excludePlatforms` (WindowsStandalone64), `defineConstraints`,
+   `versionDefines`, `overrideReferences`/`precompiledReferences`/`autoReferenced`, name and GUID
+   references.
+2. **Assigns loose scripts** to `Assembly-CSharp-firstpass` (`Assets/Plugins`, `Standard Assets`)
+   and `Assembly-CSharp`; `Editor/` folders are skipped in the player configs.
+3. **Precompiled DLLs** (DOTween, FMOD, ILSupport, ...): managed-only, platform and
+   `isExplicitlyReferenced` read from each `.meta`'s PluginImporter block.
+4. **Source generators** labelled `RoslynAnalyzer` run for the owning asmdef and every assembly that
+   references it (Unity's rule) — Entities' `SystemBase`/`ISystem`/`IJobEntity` generators and Reflex's
+   injector generator really run.
+5. Compiles in dependency order with Roslyn `csc`: `-langversion:9.0`, netstandard 2.1 (+ the
+   NETStandard 2.0 facades, as Unity's API profile), the project's scripting defines
+   (`ProjectSettings.asset` Standalone: `DOTWEEN;SENTIS_ANALYTICS_ENABLED;APP_UI_EDITOR_ONLY`, IL2CPP,
+   `ENABLE_INPUT_SYSTEM` only — `activeInputHandler: 1`) and `UNITY_6000_3_17` version defines.
+6. For project assemblies it re-runs the compile through `Diagnose/` (the Roslyn API): **csc stops
+   after declaration errors**, so one file naming an unfetchable package would otherwise hide every
+   method-body error in every other file. `Diagnose` binds all bodies regardless.
+7. Buckets the errors: **project errors** (the gate), **missing-type errors in files that `using` a
+   package that cannot be fetched**, and **missing-type errors while a referenced package failed**.
+
+## Where the references come from (fetched by `fetch.py`, cached, never committed)
+
+Cache: `${UNITY_REFCOMPILE_CACHE:-$TMPDIR/unity_refcompile_cache}` (~550 MB; files a compile does
+not read are pruned on fetch). Network needed once: `api.nuget.org` and `github.com` (read-only git
+clones). Offline with no cache → exit 2 with a message; offline with a cache → reuses it.
+
+| What | Source | Real or not |
+|---|---|---|
+| UnityEngine modules, UnityEngine.UI, TextMeshPro | nuget `Digitalroot.References.Unity` **6000.0.75** (no 6000.3 build is published anywhere reachable) | real engine metadata, **publicized** by the re-packer — see below |
+| Accessibility oracle | nuget `Unity3D.SDK` 2021.1.14.1 `UnityEngine.dll` (non-publicized) | real |
+| netstandard facades | nuget `NETStandard.Library` 2.0.3 + the SDK's `NETStandard.Library.Ref` 2.1 | real |
+| Every registry package in `packages-lock.json` (Entities 1.4.2, Entities.Graphics 1.4.15, Collections 2.6.6, Mathematics 1.3.3, Netcode 2.5.0, Transport 2.6.0, InputSystem 1.14.2, Cinemachine 3.1.2, Services.Core/Auth/CloudSave/Analytics, Purchasing, Splines, Timeline, ...) | source at the **exact locked tag** from the `needle-mirror` GitHub mirrors | real source |
+| UniTask, Reflex, ParrelSync | source at the locked commit | real source |
+| SRP Core / URP / URP-config / ShaderGraph / VFX | `Unity-Technologies/Graphics` branch `6000.0/staging` | real source, **17.0.x not the locked 17.3.0** (17.3 needs 6000.3-only engine API the references lack) |
+| Burst | needle-mirror `1.6.0-pre.2` | **substitute** for locked 1.8.29 (newest mirrored tag) |
+| `UnityEngine.UnityConsentModule` | `stubs/UnityEngine.UnityConsentModule.cs` (3 members Analytics uses) | **stub** — 6000.0.75 only type-forwards to it |
+| Services.Multiplayer / Friends / Leaderboards, Multiplayer.Playmode / Widgets | not mirrored anywhere reachable | **absent** — files that `using` them are bucketed, not gated |
+
+### Making the engine references honest (`Depublicize/`)
+
+The 6000.0 DLLs are "publicized" (every member public). Left alone that would (a) accept project
+code touching Unity internals and (b) reject every legal `protected override` (CS0507). Depublicize
+rewrites a copy with Mono.Cecil: accessibility is copied from the non-publicized 2021.1 engine for
+every type/member that existed then, and `depublicize_overrides.txt` corrects the rest. That file is
+**learned automatically from package code only** (packages compile in Unity, so a package's
+`protected override` proves the member is protected, and a package's use of a member the 2021
+oracle calls internal proves it became public) — never from Assets code — plus a short manual
+section for documented uGUI API no package overrides (`Graphic.OnPopulateMesh`).
+
+### Two Unity versions on purpose
+
+Assets code is compiled with the project's real defines (`UNITY_6000_3_OR_NEWER`, ...). Package code
+is compiled with the **6000.0.75** defines/versionDefines, matching the references, so packages pick
+code paths whose engine API the DLLs actually contain. A 6000.0→6000.3 engine gap can therefore only
+surface in Assets code, where a human judges it.
+
+### Source patches (`source_patches.json`)
+
+Body-local edits to fetched package sources where a package head needs engine API newer than the
+references (one today: `GPUDrivenPackedMaterialData.hasTessellation`). Never applied to Assets.
+
+## What a green run proves, and what it does not
+
+Proves: every project `.cs` compiled into the player assemblies (Assembly-CSharp, -firstpass,
+CosmicShore.Data, Obvious.Soap, FMOD, NiceVibrations, ...) type-checks against the real package
+sources at their locked versions and the real (6000.0.75) engine API — including source generators.
+
+Does not prove:
+- `#if UNITY_EDITOR` blocks and `Editor/` folders (no Unity 6 `UnityEditor` reference is obtainable;
+  the player configs do not define `UNITY_EDITOR`).
+- Engine API added between 6000.0.75 and 6000.3.17 (would show as a false error, not a false pass);
+  engine members whose accessibility changed in a way neither the 2021.1 oracle nor package code
+  reveals (stay public: a possible false pass on use of an engine internal).
+- Code in files that `using` an unfetchable package, for errors that involve those types.
+- ILPostProcessors (Netcode/Burst/Entities codegen after compile), Burst compilation, IL2CPP.
+- Package assemblies listed as "did not compile" (Purchasing.Stores/Codeless, InputSystem.ForUI) —
+  dependents were compiled without them; any project use of their types would surface as an error.
