@@ -53,6 +53,7 @@ Confidence scale:
 | 26 | **Bloomrush end-of-round only ranks fielded domains (was §4).** `ResolveWinner` no longer lets an unfielded Jade win a 0-0-0 and strand `_finalResultsSent`, which restarted the round. Shipped on `Bug_Hunt`. | `BloomrushScoringRuleSO` |
 | 27 | **BranchingFlora rolls trunk count once before seeding (was §4).** `SeedBranches` no longer re-evaluates `Random.Range` in the for-condition. Shipped on `Bug_Hunt`. | `BranchingFlora` |
 | 28 | **Name generator includes the last word of each list (was §4).** `Random.Range` upper bound is exclusive, so `Length - 1` skipped the final entry. Shipped on `Bug_Hunt`. | `NameGenerationData` |
+| 29 | **Thumb UI reads touches from the new Input System (was §4).** `ThumbCursor` and `ThumbPerimeter` use `Touchscreen.current` instead of legacy `Input.touches`. Shipped on `Bug_Hunt`. | `ThumbCursor`, `ThumbPerimeter` |
 
 ### Playtest items for the shipped fixes
 - **Squirrel ring (#6):** fly Menu_Main freestyle → an arcade game → back, 2-3 round trips, then
@@ -144,6 +145,9 @@ Confidence scale:
 - **STILL TO TEST (revisit): 4.5 name generator last word, kept on Bug_Hunt untested at Yash's call.**
 - **Name generator (§4.5):** if anything still calls `NameGenerationData.GenerateName`, confirm the
   last adjective and noun in the lists can appear. Otherwise this is a correctness fix with no play path.
+- **STILL TO TEST (revisit): 4.6 thumb touch input, kept on Bug_Hunt untested at Yash's call.**
+- **Thumb touch (§4.6):** only matters if the thumb cursor/perimeter scripts are re-enabled. On a
+  touch device, a finger down should light the active sprite / perimeter; lifting should clear it.
 
 ---
 
@@ -164,7 +168,6 @@ Confidence scale:
 | Item | Where | Fix |
 |---|---|---|
 | `PrismTimerManager.CancelScheduledActions` is O(N²) | `PrismTimerManager` | index by prism; only matters on mass cancels |
-| `Input.touches` under the new Input System | `ThumbCursor.cs:75`, `ThumbPerimeter.cs:86` | `Touchscreen.current` / EnhancedTouch |
 | `Trail` ushort index wraps past 65,535 prisms | `Trail` | widen to `int`, or assert; a very long freestyle trail reaches it |
 | AI objective distance: `sqr` vs linear | `AIPilot.cs:~755` | **Deliberately NOT fixed** — the behaviour is tuned around it. Change only with a playtest. |
 

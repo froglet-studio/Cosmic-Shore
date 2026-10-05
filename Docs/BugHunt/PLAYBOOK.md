@@ -391,5 +391,16 @@ apply the enum-order tie-break. `ResolvePlacementOrder` already does this; `Reso
 
 ---
 
+## 19. Prefer `Touchscreen.current` over `Input.touches`
+
+**Shows up as:** touch UI that never responds under the new Input System (BH-4.6).
+
+**Why:** with the Input System package active, the legacy `Input.touches` array stays empty.
+
+**Fix pattern:** count in-progress touches on `Touchscreen.current.touches`, matching
+`InputDeviceActuation` and `InputController`.
+
+---
+
 Threading errors (`EnsureRunningOnMainThread`, UGS callbacks off the main thread) have their own
 guide: [`../THREADING.md`](../THREADING.md).

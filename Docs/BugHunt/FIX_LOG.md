@@ -8,6 +8,19 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ---
 
+## BH-4.6 — ThumbCursor / ThumbPerimeter used legacy Input.touches
+
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Symptom (risk):** under the new Input System, `Input.touches` is empty, so the thumb cursor and
+  perimeter never saw a finger down (both scripts are currently TEMP-disabled, so this was latent).
+- **Root cause:** legacy Input Manager API.
+- **Fix:** both read active touch count from `Touchscreen.current.touches` (same package as
+  `InputController` / `InputDeviceActuation`).
+- **Verification:** gate scripts pass; not run in Unity. Retest is on the handoff playtest list.
+- **PR/commit:** pending.
+
+---
+
 ## BH-4.5 — name generator skipped the last word in each list
 
 - **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
