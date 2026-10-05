@@ -858,7 +858,8 @@ scene (`--scene`): a waypoint moved 5 units, I4's laps 2 -> 3, I1's curve switch
 jitter flag nothing; a fifth waypoint set appears as `I5: no tuned file`.
 
 **One command to retune:** `python3 Tools/Build/skimrace_retune.py <intensity>` (about half an hour to an
-hour; `--dry-run` writes nothing; `--iters/--seeds/--final` trade time for quality). It:
+hour - a full run on intensity 3, one of the long tracks, took 43 minutes on a 4-core machine; `--dry-run`
+writes nothing; `--iters/--seeds/--final` trade time for quality). It:
 
 1. reads the intensity's fingerprint and refuses to go on unless the game's C# reads the same value;
 2. starts from the intensity's own file (or the general policy for a new intensity) and tunes it on that
@@ -880,5 +881,12 @@ both sides); the deployment's choice and its warn-once rule run outside Unity ag
 and the shipped assets (three seats warn once, the next scene load warns again, a sub-unit nudge does not;
 negative controls - no de-duplication, no anchor clamp - fail as they should); the retune end to end on a
 one-step search (`--dry-run`), and its file writer replacing I2's block and inserting new I3 and I5 blocks
-in order without touching the others. Not proven here: a full one-hour retune, and the warning in the
-editor (`Docs/UNITY_VERIFICATION_CHECKLIST.md`).
+in order without touching the others. Not proven here: the warning in the editor
+(`Docs/UNITY_VERIFICATION_CHECKLIST.md`).
+
+**A full run, end to end** (2026-10-05, `skimrace_retune.py 3 --dry-run`, 43 min): intensity 3 has no file
+of its own, so it started from the general policy and searched its 36 stated numbers over 16 steps (tuner
+score 4.377 -> 4.070). On the same 20 fresh races the result finished 20/20 with a winner median of
+**173.9 s**, against the general policy's 20/20 and **179.4 s** - so a real run would have written it. It
+was a dry run: intensity 3 still flies the general policy, and whether it should get a specialist of its
+own (about 3% faster in the simulator) is a separate decision.
