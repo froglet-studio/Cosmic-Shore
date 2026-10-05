@@ -4,6 +4,9 @@ A ground-up replication of Cosmic Shore onto a stack wholly owned by Froglet Inc
 no Unity, no editor-bound tooling, no dependency that blocks a fully autonomous,
 headless develop/build/test loop.
 
+**Start here:** `docs/ARCHITECTURE.md` — how the whole port fits together, with
+diagrams and annotated screenshots of every screen and control.
+
 ## Stack
 
 | Concern | Choice | Why |
@@ -88,7 +91,7 @@ dotnet run --project Port/src/CosmicShore.Build -- ios       # on a Mac: builds 
 Port/
 ├── PORT_PLAN.md                 # master inventory, phase roadmap, live status — START HERE
 ├── CosmicShore.slnx
-├── docs/                        # ENGINE_CORE.md, VESSEL_LAYER.md (arc survey + sequence)
+├── docs/                        # ARCHITECTURE.md (start here), ENGINE_CORE.md, VESSEL_LAYER.md
 ├── src/
 │   ├── CosmicShore.Engine/      # first-party engine layer (Unity replacement)
 │   ├── CosmicShore.Data/        # ported Data layer (verbatim from Assets/_Scripts/Data)

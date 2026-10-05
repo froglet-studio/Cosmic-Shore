@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- EXPERIMENT: the REAL Assets/_Scripts, mechanically namespace-substituted by
-       tools/sync_unity_sources.py into obj/live-src, compiled against the port engine. -->
+       the SyncUnitySources task (SyncUnitySources.targets) into obj/live-src, compiled against the port engine. -->
   <PropertyGroup>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <Nullable>disable</Nullable>
