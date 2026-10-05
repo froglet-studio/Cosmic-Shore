@@ -9,15 +9,15 @@
   "bites": 0,
   "lizard": 1159,
   "lizCut": 0,
-  "lizSteps": 89,
+  "lizSteps": 90,
   "bolts": 0,
   "lizards": [
    {
     "element": "time",
     "count": 1159,
-    "steps": 89,
-    "rate": 14.5,
-    "speed": 14.3,
+    "steps": 90,
+    "rate": 19.1,
+    "speed": 14,
     "debris": 0,
     "backend": "wasm-simd"
    },
@@ -25,27 +25,27 @@
     "element": "mass",
     "count": 1135,
     "steps": 118,
-    "rate": 13.3,
-    "speed": 12.2,
+    "rate": 20,
+    "speed": 12.3,
     "debris": 0,
     "backend": "wasm-simd"
    }
   ],
   "swarmPos": [
-   65.57327926914893,
-   96.80218655269773,
-   -358.5772918902083
+   65.69857001392806,
+   96.83552323302719,
+   -358.51816803018
   ],
   "lizPos": [
-   -425.5228998769498,
-   141.67544684631113,
-   -251.63017853351985
+   -424.81407227220905,
+   141.8036962697164,
+   -250.57256599830964
   ]
  },
  "stalk": {
   "on": true,
   "state": "stalk",
-  "intent": 0.16664285714285665,
+  "intent": 0.14285714285714288,
   "plan": "space",
   "morphs": 0,
   "eaten": 0,
@@ -59,73 +59,73 @@
     "element": "time",
     "count": 1156,
     "steps": 93,
-    "rate": 19.3,
-    "speed": 15,
+    "rate": 20,
+    "speed": 14.5,
     "debris": 0,
     "backend": "wasm-simd"
    },
    {
     "element": "mass",
-    "count": 1147,
-    "steps": 123,
-    "rate": 18.8,
-    "speed": 12.9,
+    "count": 1155,
+    "steps": 122,
+    "rate": 20,
+    "speed": 12.8,
     "debris": 0,
     "backend": "wasm-simd"
    }
   ],
   "swarmPos": [
-   68.31629347631981,
-   97.59981899634788,
-   -357.3539199161954
+   68.12990120306121,
+   97.5576957602847,
+   -357.3781556859697
   ],
   "lizPos": [
-   -426.0695112691635,
-   140.2522721550293,
-   -256.2850161681599
+   -425.28494900911545,
+   140.55822097250086,
+   -254.6415574832905
   ]
  },
  "after_lunge": {
   "on": true,
-  "state": "stalk",
+  "state": "lunge",
   "intent": 1,
   "plan": "space",
   "morphs": 0,
   "eaten": 1,
   "bites": 0,
-  "lizard": 1158,
+  "lizard": 1159,
   "lizCut": 0,
-  "lizSteps": 109,
+  "lizSteps": 115,
   "bolts": 0,
   "lizards": [
    {
     "element": "time",
-    "count": 1158,
-    "steps": 109,
+    "count": 1159,
+    "steps": 115,
     "rate": 20,
-    "speed": 15.3,
+    "speed": 18.5,
     "debris": 0,
     "backend": "wasm-simd"
    },
    {
     "element": "mass",
-    "count": 1138,
-    "steps": 142,
+    "count": 1144,
+    "steps": 143,
     "rate": 20,
-    "speed": 15.9,
+    "speed": 14.3,
     "debris": 0,
     "backend": "wasm-simd"
    }
   ],
   "swarmPos": [
-   82.34453922581484,
-   101.72907944727164,
-   -359.27979784902044
+   83.07334285259502,
+   102.02378684233031,
+   -359.0623867748505
   ],
   "lizPos": [
-   -420.42984459671356,
-   133.17383180908848,
-   -273.5207183828079
+   -417.3146255493673,
+   131.8081160769973,
+   -275.1086821504012
   ]
  },
  "stakes": {
@@ -142,39 +142,39 @@
   "morphs": 1,
   "eaten": 7,
   "bites": 1,
-  "lizard": 1136,
+  "lizard": 1147,
   "lizCut": 0,
-  "lizSteps": 121,
+  "lizSteps": 127,
   "bolts": 0,
   "lizards": [
    {
     "element": "time",
-    "count": 1136,
-    "steps": 121,
+    "count": 1147,
+    "steps": 127,
     "rate": 20,
-    "speed": 20.2,
+    "speed": 15.3,
     "debris": 0,
     "backend": "wasm-simd"
    },
    {
     "element": "mass",
-    "count": 1136,
-    "steps": 153,
+    "count": 1147,
+    "steps": 162,
     "rate": 20,
-    "speed": 17.4,
+    "speed": 18.2,
     "debris": 0,
     "backend": "wasm-simd"
    }
   ],
   "swarmPos": [
-   91.50478297666122,
-   103.87173954347769,
-   -362.082823916777
+   102.98875124090628,
+   106.95563433732083,
+   -375.78388432212375
   ],
   "lizPos": [
-   -412.34872317688064,
-   127.51585681404806,
-   -283.4877018953998
+   -401.914691483383,
+   123.27693029767052,
+   -286.0833364718816
   ]
  },
  "cut": {
@@ -185,39 +185,39 @@
   "morphs": 1,
   "eaten": 7,
   "bites": 1,
-  "lizard": 1084,
-  "lizCut": 54,
-  "lizSteps": 124,
+  "lizard": 975,
+  "lizCut": 163,
+  "lizSteps": 130,
   "bolts": 1,
   "lizards": [
    {
     "element": "time",
-    "count": 1084,
-    "steps": 124,
-    "rate": 18.7,
-    "speed": 18,
-    "debris": 54,
+    "count": 975,
+    "steps": 130,
+    "rate": 20.6,
+    "speed": 15.6,
+    "debris": 160,
     "backend": "wasm-simd"
    },
    {
     "element": "mass",
-    "count": 1137,
-    "steps": 158,
+    "count": 1148,
+    "steps": 166,
     "rate": 20,
-    "speed": 18.6,
+    "speed": 15.5,
     "debris": 0,
     "backend": "wasm-simd"
    }
   ],
   "swarmPos": [
-   100.46547569325368,
-   105.94479109260574,
-   -371.4808493879877
+   107.61135792432937,
+   108.1130116462762,
+   -395.2353806376602
   ],
   "lizPos": [
-   -407.68535959767524,
-   124.30228666443652,
-   -288.98983719390327
+   -396.8084126480245,
+   120.6019452597912,
+   -289.07395889100457
   ]
  },
  "regrow": {
@@ -228,47 +228,47 @@
   "morphs": 1,
   "eaten": 7,
   "bites": 1,
-  "lizard": 1149,
-  "lizCut": 54,
-  "lizSteps": 156,
+  "lizard": 1146,
+  "lizCut": 163,
+  "lizSteps": 159,
   "bolts": 1,
   "lizards": [
    {
     "element": "time",
-    "count": 1149,
-    "steps": 156,
-    "rate": 27.7,
-    "speed": 16.6,
+    "count": 1146,
+    "steps": 159,
+    "rate": 30.8,
+    "speed": 14.5,
     "debris": 0,
     "backend": "wasm-simd"
    },
    {
     "element": "mass",
     "count": 1140,
-    "steps": 195,
+    "steps": 200,
     "rate": 20,
-    "speed": 17.5,
+    "speed": 14.8,
     "debris": 0,
     "backend": "wasm-simd"
    }
   ],
   "swarmPos": [
-   186.19475189523,
-   21.056412782776377,
-   -428.91720435473866
+   189.0024564703895,
+   16.64113047432973,
+   -470.2312594060356
   ],
   "lizPos": [
-   -408.85247934576745,
-   107.9971979668343,
-   -323.5694802574634
+   -396.2569437807297,
+   106.7575422282978,
+   -316.72108531248665
   ]
  },
- "lizard_before_cut": 1138,
+ "lizard_before_cut": 1139,
  "perf": {
   "frame_ms": 100,
-  "cpu_ms": 20,
-  "sim_ms": 2.199999999254942,
-  "render_ms": 16.199999999254942
+  "cpu_ms": 19.59999999962747,
+  "sim_ms": 1.799999998882413,
+  "render_ms": 16.299999998882413
  },
  "errors": [],
  "fails": []

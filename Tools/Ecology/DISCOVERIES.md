@@ -1985,3 +1985,8 @@ pilot was still 60-90 u away, now broadside. Frame trace: while "fleeing", the e
   overshooting); a constant-rate slerp would be truer to a ship but re-baselines every scorecard. The evader also flees
   only the NEAREST published threat, and a spent (harmless, grey) lurker is published as one: once (seed 104) the
   evader fled a spent lurker into a gaping one.
+
+**Siege re-measured after the evader's sideways-flee fix (Lurker counterplay):** wander 6.5 / evader **0.0** / hunter
+5.1 / breaker 0.32 petals per encounter; the evader escapes 99% of shells (was 89%). The siege now costs a pilot who
+turns off-line nothing at all, so it is purely a test of noticing. If playtest says it is too easy for a skilled
+human, the lever is the iris (narrower, or it drifts toward the pilot's escape side), not the dive.
