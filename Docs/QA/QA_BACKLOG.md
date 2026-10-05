@@ -822,6 +822,42 @@ that raced across it (a jolt Garrett would read as a bug), and a rushed lurker p
 plates; no plate flicker. **FAIL:** members streak across the body after a strike · a swarm under steady grazing stops
 regrowing · a lurker plates after bolting · plates flicker on and off at one distance.
 
+### QA-SWARM-ROUND11-14 ⬜ — the balance pass: sated swarms live, swarms keep to their bands, packs survive a ram
+
+**Source:** branch `overnight/balance`. Only the headless showcase harness (`Tools/Build/showcase_cell_harness/run.sh all`,
+with a clock-only negative-control mutant that fails the new starvation check), the substrate / swarm / builders /
+threat-flora harnesses, the authoring `--check`s and the player reference compile have run; it has never been opened in
+the editor. Reference: `Docs/SWARM_FAUNA.md` §26.6.
+
+**Why it matters:** in a 30-minute session the inner (Mass) swarm grew to full size, stopped feeding because it was
+full, and then starved to nothing while still full; the wearers and the pack died out too. Swarms also drifted half
+out of their shells while roaming.
+
+1. **A full swarm lives.** Open the Swarm cell and leave the inner (whale, Mass) swarm alone for 15 minutes, watching its
+   member count (SwarmFauna inspector). It should reach full size
+   and stay there. It must NOT shed a member a second after ~10 minutes while its stomach reads full.
+2. **A hungry swarm still starves.** Remove the inner shell's plants (or fly through and eat them) and wait. Once its
+   stomach falls below half and 90 s pass without a bite, members wither one at a time, each leaving a skeleton and a
+   crystal.
+3. **Swarms keep to their shells.** Watch each swarm for a few minutes from outside its band (inner 470-620, middle
+   690-840, outer 910-1080 u from the cell centre). The whole body should stay in its shell while it roams, not ride
+   half outside along the edge.
+4. **The pack survives a ram.** Find the Time pack hunters (690-1080 u) and ram through them repeatedly until only one
+   or two are left. Survivors must not breed young that wither within seconds; the pack recovers by breeding only once
+   fed.
+5. **Leeches give a proxy to each of a puddle.** Fly straight through a puddle of 4 leeches at full speed: each one you
+   pass through is rammable (a body to hit), not a ghost.
+6. **Thieves and wearers roost.** Fly to the far side of the cell from the thief nest (rim, 1,085-1,140 u) and stay
+   away from the wearers (400-465 u) for a minute. In the Profiler the thief and wearer colony ticks should stop
+   (roosting); flying back within ~400 u of them wakes them.
+7. **Colliders.** With all three pilots' worth of activity (or a busy solo run), the physics debugger's collider count
+   stays under 1,200.
+
+**PASS:** no full swarm starves; swarms stay inside their shells; the pack and wearers are still present after 30
+minutes; leech rams always register; thieves and wearers roost when nobody is near. **FAIL:** a full-stomach swarm
+loses members steadily · a swarm rides the edge of its shell · a pack dies out after a ram · a leech pass hits nothing
+· thieves or wearers never stop ticking with nobody within 400 u.
+
 ### QA-SWARM-ROUND11-13 ⬜ — the demo cell starts hostile, and claiming the nucleus takes it
 
 **Source:** branch `overnight/hostile`. Only the headless resolver harness (`Tools/Build/cell_control_harness/run.sh`, with three

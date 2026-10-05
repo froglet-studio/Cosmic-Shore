@@ -2604,6 +2604,68 @@ the pre-fix code.
 
 **QA:** QA-SWARM-ROUND11-9.
 
+### 26.6 Round 11-14: the balance pass (before / after)
+
+The showcase cell after rounds 11-10 to 11-13 still lost classes over 30 minutes, the skilled pilot's comparison was
+noise, and the band-occupancy report (C8) had no floor. This pass fixed what the cell measured; every fix is in the
+shipped code or the shipped assets, and the harness reads the SHIPPED species/config assets (`ShippedSpecies`, so a
+demo override such as the pack's `RingHoldSeconds` 6 is what runs).
+
+**Fixes:**
+1. **A sated swarm starved with a full stomach** (`SwarmFauna.Starving`). Starvation was the clock alone (unfed
+   `StarvationSeconds`). A full body stops foraging and takes no bite, and its stomach only pays for eggs, so at its
+   plan size it never drains: 90 s after it was sated it shed a member a second, each shed held laying
+   (`KillLayHoldSeconds`), and the inner swarm starved 899 members to extinction holding a 96%-full stomach. Starving
+   now also needs a hungry stomach (`StomachFill < ForageBelow`). Gate: C4 "a swarm starves only HUNGRY" (the fullest
+   stomach any swarm shed with); the clock-only mutant fails it at 96%.
+2. **A swarm rides its band with its whole body inside it** (`SwarmShellPath.Ride`, `SwarmFauna.RideRadius`). A
+   sated swarm wanders at its current radius; one whose anchor sat at the band's edge kept half its body outside the
+   band (C8 inner 70%, outer 63% once fix 1 stopped culling sated swarms). The wander and the shell path to a plant
+   ride at the radius pulled inside the band by the body's radius (at most half the band).
+3. **A parent breeds only when fed** (`SubstrateCore`, reproduction: `Hunger <= EatHunger`). The child inherits its
+   parent's hunger; after a ram wiped the pack, a big hungry survivor split into young that starved together (11
+   starved inside 35 s, the pack died out at minute 28).
+4. **The leech's proxies** (`author_substrate_fauna.py`, `substrate_harness` ProxyCaps): the round-11-14 pen
+   (`SubstrateKernel.PenWeight`) packs a puddle of 4 tighter, and 2 proxies covered 84% of a ram's passes. The 39
+   substrate proxies are re-divided (lurker 4 → 3, stampede 6 → 5, leech 2 → 4); the collider worst case is unchanged
+   at 1,194 / 1,200.
+5. **Thief and wearer sight narrowed so they can roost** (`author_builders.py` overrides): the thief nest's
+   `SpotRange` 700 → 400 (its `ScoutRange`) and the wearer's `WearSight` 700 → 400. From a nest on the 1,085-1,140
+   shell or hearts in the 400-465 gap, 700 u put every pilot in a 1,200 u cell inside the sight sphere.
+6. **Harness fairness, not tuning:** the skilled pilot flies the careless pilot's itinerary mirrored through the cell
+   centre (same radii in the same order, only the dodge differs); a wearer's burn is rated on the heart that lunged
+   (`ArmedFor`), not the nearest heart of a 100-prism creature. C8 now has floors: 75% of member-seconds in the pen per
+   banded population, 95% of seconds a plant in every planting pen.
+
+**Results (`run.sh all`: seeds 1-3 × 5 min + seed 7 × 30 min):**
+
+| Check | Before (head 081344e9a) | After |
+|---|---|---|
+| Extinctions, 30-min run | swarm/inner (min 27), wearers (min 14); 3 seeder re-hatches | **none**, 0 re-hatches |
+| Inner swarm starved, 30 min | 899 | 0 (no sated swarm sheds; fullest stomach at a shed 37%) |
+| Min population over 30 min | swarm inner 0, wearers 0, pack 4, locust 27, lurker 7, leviathan 34, fortress 23, thieves 10 | swarm inner 582 / middle 330 / outer 279, pack 7, locust 28, lurker 4, stampede 47, mobber 50, leech 64, leviathan 28, fortress 14, thieves 8, wearers 2 |
+| C8 worst occupancy (asserted ≥ 75%) | (no floor) swarm/middle 80.1%, swarm/inner 82.5% | leviathan 79.6%, mobber 82.5%, fortress 85.4%, swarm/outer 88.5%, swarm/middle 89.2%, swarm/inner 99.8%; plant pens 100% |
+| C8 thieves / wearers (reported) | 34% / 7% | 58% / 8% |
+| C5 burns/min careless / skilled / raider | 2.42 / 0.51 / 2.04 | **2.22 / 0.40** / 0.91 |
+| C5 telegraphed share | 90% of 224 | **96%** of 159 |
+| C7 collapsed (roosting) share, thieves / wearers, per run | 1-4% / 0-16% (30-min: 1% / 5%, wearers extinct) | 11-31% / 0-13% |
+| C1 colliders, worst case / observed max | 1,194 / 704 | 1,194 / 708 |
+| C2 mean step cost per 60 Hz frame | 1.77 ms | 1.57 ms |
+
+**Not fixed, measured:**
+- **Thieves and wearers range outside their nominal shells by design** (a raid, a hunt): 58% and 8% of their
+  member-seconds lie in the 1,085-1,140 / 400-465 bands. Reported, not asserted.
+- **Fortress workers** fall to 14 / 48 in the 30-min run (rammed by the raider cutting its walls), recovering by births;
+  not extinct.
+- **Locust starvation turnover** remains high (hundreds starved per 30 min, populations 28-88 of 360): the outer
+  shell's food supports far fewer than the cap; the pack (its predator) holds at 7.
+- **Swarm turnover** after the 5× plan density: the remaining swarm deaths are rams and hungry-swarm sheds; none
+  starved while sated.
+
+**What is NOT proved:** nothing ran in Unity; the pilots are heuristics; the burn rates are comparative. The fix-1 and
+fix-2 changes to `SwarmFauna` are type-checked (swarm_glue_typecheck) and reference-compiled, and mirrored in the
+harness; the Unity component itself was not run. **QA:** QA-SWARM-ROUND11-14.
+
 ## 27. The cell's emotional range
 
 **The question.** Does the Swarm cell span cute to terrifying? **Yes.** Every creature the cell ships was scored with
