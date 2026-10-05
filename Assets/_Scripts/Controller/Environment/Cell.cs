@@ -346,6 +346,12 @@ namespace CosmicShore.Gameplay
         // networked clients the replicated value overrides the locally-computed
         // one (client-local trail reconstruction can drift near the boundary).
         Domains? _replicatedDominantDomain;
+
+        // Server-replicated authored starting controller (CellNetworkSync, client side only) - see
+        // StartingController. Unlike the dominant pin it survives a config swap: the server's
+        // mirror re-sends it within one interval, and a stale value can only be read while the
+        // swapped-in cell has no leader yet.
+        Domains? _replicatedStartingController;
         float _nextVolumeRecomputeAt = float.NegativeInfinity;
         const float VolumeRecomputeIntervalSeconds = 0.25f;
 
@@ -1189,12 +1195,12 @@ namespace CosmicShore.Gameplay
         };
 
         /// <summary>
-        /// "Controlling color" for fauna spawns. Prefers the cell's live
-        /// <see cref="DominantDomain"/> (per-domain prism count leader), then falls
-        /// back to gameData's controlling team by remaining volume, then to the local
-        /// player's domain (useful in Menu_Main where there is no scored controlling
-        /// team), then to Jade as a last resort. Never returns Blue (the "no team"
-        /// sentinel) - callers can use it directly without further branching.
+        /// "Controlling color" for fauna spawns - resolved by <see cref="CellControlRules.ControllingDomain"/>:
+        /// the cell's live <see cref="DominantDomain"/> (per-domain prism-count leader), then the
+        /// config's authored <see cref="StartingController"/>, then gameData's controlling team by
+        /// remaining volume, then the local pilot's domain (Menu_Main has no scored controlling
+        /// team), then Jade. Never returns Blue (the "no team" sentinel) - callers can use it
+        /// directly without further branching.
         /// </summary>
         public Domains ControllingDomain
         {
@@ -1204,21 +1210,43 @@ namespace CosmicShore.Gameplay
                 if (dominant != Domains.Blue)
                     return dominant;
 
-                if (gameData != null)
-                {
-                    var top = gameData.GetControllingTeamStatsBasedOnVolumeRemaining();
-                    if (top.Team != Domains.Blue && top.Volume > 0f)
-                        return top.Team;
-
-                    var local = gameData.LocalRoundStats?.Domain
-                                ?? gameData.LocalPlayer?.Domain
-                                ?? Domains.Blue;
-                    if (local != Domains.Blue)
-                        return local;
-                }
-                return Domains.Jade;
+                var top = gameData != null
+                    ? gameData.GetControllingTeamStatsBasedOnVolumeRemaining()
+                    : (Team: Domains.Blue, Volume: 0f);
+                return CellControlRules.ControllingDomain(
+                    dominant, StartingController, top.Team, top.Volume, LocalPilotDomain);
             }
         }
+
+        /// <summary>
+        /// The config's authored starting controller (<see cref="CellConfigDataSO.InitialControllingDomain"/>),
+        /// resolved against this machine's local pilot; Blue when the config authors none. On a
+        /// networked CLIENT the server's answer (<see cref="CellNetworkSync"/>) overrides the local
+        /// resolve, so "opposing the local pilot" means opposing the HOST's pilot on every peer and
+        /// all peers spawn one colour. Not latched: a pilot who changes domain still faces an
+        /// opposing cell until they claim it.
+        /// </summary>
+        public Domains StartingController
+        {
+            get
+            {
+                if (_replicatedStartingController.HasValue)
+                    return _replicatedStartingController.Value;
+                var rule = cellConfigData ? cellConfigData.InitialControllingDomain : InitialControllingDomain.Unset;
+                return CellControlRules.StartingController(rule, LocalPilotDomain);
+            }
+        }
+
+        /// <summary>
+        /// Client-side hook for <see cref="CellNetworkSync"/>: pins <see cref="StartingController"/>
+        /// to the server's replicated answer. Pass null (server / single-player / despawn) to clear.
+        /// </summary>
+        public void SetReplicatedStartingController(Domains? domain) => _replicatedStartingController = domain;
+
+        Domains LocalPilotDomain =>
+            gameData != null
+                ? gameData.LocalRoundStats?.Domain ?? gameData.LocalPlayer?.Domain ?? Domains.Blue
+                : Domains.Blue;
 
         /// <summary>
         /// Sole entry point for phase mutation. Updates the local field and the

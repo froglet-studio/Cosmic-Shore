@@ -706,6 +706,15 @@ def profile_asset():
 # (CellConfigDataSO.PetalBurnRule defaults to Shipped = 0). Flip it here: 0 = Shipped, 1 = Tuned.
 PETAL_BURN_RULE = 1
 
+# Round 11h (QA-SWARM-ROUND11-13): the demo cell STARTS HOSTILE. Every creature wears the cell's
+# controlling domain (Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md - one colour, the controller's), and
+# with nobody in the nucleus the legacy fallback handed control to the local pilot, so solo freestyle
+# seeded a friendly cell with no stakes. CellConfigDataSO.initialControllingDomain makes the STARTING
+# controller authored data (the InitialFaunaReleaseTier precedent); the nucleus claim still overrides
+# it the moment the pilot lays mass there. 0 = Unset (legacy), 1 = OpposingLocalPilot, 101/102/104 =
+# a fixed Jade/Ruby/Gold.
+INITIAL_CONTROLLING_DOMAIN = 1
+
 
 def cell_asset(L):
     return SO_HEADER % (SO_SCRIPT["cell"], f"{PREFIX} Cell Config") + (
@@ -722,6 +731,7 @@ def cell_asset(L):
         f"  - {{fileID: {MODIFIER[0]}, guid: {MODIFIER[1]}, type: 3}}\n"
         f"  SpawnProfile: {{fileID: 11400000, guid: {guid(rel(cell_path(PREFIX + ' Cell Spawn Profile')))}, type: 2}}\n"
         f"  PetalBurnRule: {PETAL_BURN_RULE}\n"
+        f"  initialControllingDomain: {INITIAL_CONTROLLING_DOMAIN}\n"
         "  PhaseThresholds:\n" + "".join(f"    {k}: {v}\n" for k, v in L.items()))
 
 
@@ -804,6 +814,26 @@ def float32_ulp_check(tot):
     return tot["min_member"], top, ulp
 
 
+def starting_controller_problems(value=None):
+    """The authored INITIAL_CONTROLLING_DOMAIN must be a member of the C# enum, and the YAML key this
+    script writes must be the field CellConfigDataSO serializes - a renamed field or a dropped member
+    would otherwise ship a cell that silently starts friendly again (Unity drops an unknown key and
+    reads an unknown enum value as Unset)."""
+    value = INITIAL_CONTROLLING_DOMAIN if value is None else value
+    problems = []
+    enum_src = read(os.path.join(A(), "_Scripts", "Data", "Enums", "InitialControllingDomain.cs"))
+    body = re.search(r"enum InitialControllingDomain\s*\{(.*?)\}", enum_src, re.S)
+    members = {int(v): k for k, v in re.findall(r"^\s*(\w+)\s*=\s*(\d+)\s*,", body.group(1), re.M)} if body else {}
+    if value not in members:
+        problems.append(f"INITIAL_CONTROLLING_DOMAIN = {value} is not a member of InitialControllingDomain {sorted(members)}")
+    elif members[value] == "Unset":
+        problems.append("INITIAL_CONTROLLING_DOMAIN is Unset - the demo cell would seed in the solo pilot's own colour (friendly)")
+    so_src = read(os.path.join(A(), "_Scripts", "Utility", "DataContainers", "CellConfigDataSO.cs"))
+    if not re.search(r"\[SerializeField\]\s*InitialControllingDomain\s+initialControllingDomain\b", so_src):
+        problems.append("CellConfigDataSO no longer serializes 'initialControllingDomain' - the key this script authors")
+    return problems
+
+
 def verify(out, tot, rows):
     problems = []
     # every guid this script mints has exactly one owner in the tree (or will, once written)
@@ -814,6 +844,7 @@ def verify(out, tot, rows):
         owners = [o for o in owners if os.path.abspath(o) != os.path.abspath(p)]
         if owners:
             problems.append(f"guid {g} of {rel(p)} is already owned by {rel(owners[0])}")
+    problems += starting_controller_problems()
     # the populations are separated: bands disjoint, outside the nucleus, inside the membrane
     for a, b in zip(REGIONS, REGIONS[1:]):
         if a["band"][1] >= b["band"][0]:

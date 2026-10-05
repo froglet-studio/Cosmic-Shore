@@ -822,6 +822,34 @@ that raced across it (a jolt Garrett would read as a bug), and a rushed lurker p
 plates; no plate flicker. **FAIL:** members streak across the body after a strike · a swarm under steady grazing stops
 regrowing · a lurker plates after bolting · plates flicker on and off at one distance.
 
+### QA-SWARM-ROUND11-13 ⬜ — the demo cell starts hostile, and claiming the nucleus takes it
+
+**Source:** branch `overnight/hostile`. Only the headless resolver harness (`Tools/Build/cell_control_harness/run.sh`, with three
+negative-control mutants that must fail), the player + editor reference compiles and the authoring gates have run; it has never been opened in the editor. Reference:
+`Docs/SWARM_CELL_PLAY_GUIDE.md` §2, `CellConfigDataSO.initialControllingDomain`, `CellControlRules`.
+
+**Why it matters:** every creature wears the cell's controlling domain. With the nucleus empty, the old fallback
+handed control to the local pilot, so solo freestyle seeded the Swarm cell in **your** colour: every hit was a
+friendly sting and the demo had no stakes. The Swarm cell now authors `OpposingLocalPilot`: until somebody holds
+the nucleus, it is controlled by the next domain after yours (Jade → Ruby → Gold → Jade).
+
+1. **Hostile start.** Collect crystals to 5+ petals per element. Then enter the Swarm cell through the Cell Selector
+   as Jade, and wait for the seed (about 6 s).
+   - Creatures should wear **Ruby**.
+   - A landed contact should burn 1 petal per element for good (QA-SWARM-ROUND11-7), not dip and recover.
+2. **Trail outside the nucleus does not flip it.** Lay trail freely outside the nucleus (r 392) for a minute. The next
+   waves must still hatch Ruby.
+3. **Claiming the nucleus takes the cell.** Lay trail inside the nucleus until you lead it. The next wave should
+   hatch in **Jade** (yours, friendly). Live creatures keep the colour they hatched in.
+4. **Other domains.** Repeat step 1 as Ruby (expect Gold) and as Gold (expect Jade).
+5. **Domain Changer.** Inside the unclaimed cell, flip your domain with the Domain Changer. The next wave should
+   again be a colour that is not yours: the start is not latched.
+6. **Every other cell is unchanged.** Pick another Cell Selector station (e.g. Yggdra) and confirm the old behaviour:
+   its fauna seed in your colour.
+7. **Multiplayer (host + one client), if a networked cell is available.** Use a cell that authors a start.
+   - Both peers must see the same hatch colour: the next domain after the **host's**.
+   - Note it if that colour is the client's own. That is the stated trade-off: the server decides.
+
 ### QA-SWARM-ROUND11-12 ⬜ — the cell's emotional range, and a puffed shield member stays shielded
 
 **Source:** branch `overnight/feel2`. Only headless harness exports and the research probe have run. Reference:
