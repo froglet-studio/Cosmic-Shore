@@ -35,7 +35,8 @@ POLICIES = {
     # frames +-50%), every race scored against its own track's ideal time so no track dominates
     # (Docs/SKIM_RACE_AI.md 6.12). Fresh seeds, 20 per track, races to 3x ideal: finished 20/20 on EVERY
     # track; winner median I1 62.0 s, I2 105.7 s, I3 176.7 s, I4 157.1 s. The per-intensity files stay the
-    # faster specialists on their own tracks. Replaces skimrace-v1, which finished 2 of 20 on I3.
+    # faster specialists on their own tracks. Replaces skimrace-v1: on the same 20 I3 seeds and limit, v1
+    # finished 5/20 races (winner median 244.8 s) against v2's 20/20 (176.7 s).
     "SkimRaceAIConfig": {
         "PolicyVersion": "skimrace-v2-general",
         "LookaheadSeconds": 0.793,

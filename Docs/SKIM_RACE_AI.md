@@ -423,7 +423,13 @@ own check on 20 fresh seeds per track (seedbase 99000, races to 3x ideal):
 
 It is the compromise it was tuned to be: slower than each specialist on that specialist's own track
 (the I2 file's winner median is ~75 s), and the only policy that finishes every track. I3 - the
-one shipped track that flies it - is where it replaces `skimrace-v1`.
+one shipped track that flies it - is where it replaces `skimrace-v1`, raced on the SAME 20 seeds and
+limit (`eval 3 20 limit=197 seedbase=99000`, 2 AI seats):
+
+| I3, general policy | Races with every seat finished | Winner median | Seat median | Hull strikes / race |
+|---|---|---|---|---|
+| `skimrace-v1` | 5/20 | 244.8 s | 256.8 s | ~330 |
+| **`skimrace-v2-general`** | **20/20** | **176.7 s** | **189.8 s** (race median) | |
 
 ## 7. Running the benchmark
 
