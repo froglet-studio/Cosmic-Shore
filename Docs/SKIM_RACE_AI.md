@@ -414,6 +414,51 @@ These are environment results, not AI results (the simulator at 115 ms frames al
 same policy from 53 s to 77 s). **The in-editor matrix for the current code is still owed** - run it
 on an idle machine with the editor focused (§7), 2 launches x 5 races per cell, players 3 and 4.
 
+### 8.0e The pilot's frame cost halved, every decision unchanged (2026-10-05)
+
+Every AI seat runs `SkimRaceDriver.Decide` on every frame (`DecisionHz` is 0 in all four configs),
+inside the game's own frame time. Simulator, 3 AI seats, 6 seeds, decide cost per seat per frame in
+optimized .NET (the editor runs Mono, which has not been measured against it), the old and the new
+code run one after the other (an interleaved re-run - old, new, old, new - gave I1 0.105 -> 0.049 and
+I2 0.532 -> 0.298):
+
+| Cell | Before (ms) | After (ms) | Where the time was |
+|---|---|---|---|
+| I1 | 0.108 | 0.049 | the laid-mass guard tested every gathered prism at every rollout step (0.085 of 0.114) |
+| I2 | 0.563 | 0.303 | the tracking MPC's track-shell queries (`ShellClearance` 0.23, `Project` 0.11), then the guard's prism tests (0.12) |
+| I4 | 0.184 | 0.079 | the guard's track-shell queries (0.09) and prism tests (0.04) |
+
+Three changes, each exact by construction:
+
+- **Laid-mass broadphase** (`SkimRaceDriver.BuildObstacleGrid`). Each guard decision snapshots the
+  gathered boxes once (inverse rotation and reach precomputed with the same expressions) into a hash
+  grid whose cell is 5% wider than the largest reach, and a rollout step walks only the 27 cells
+  round it. That is a superset of every box that can pass the reach test, the test still runs on
+  each, and a minimum does not depend on order. A step or box the grid cannot place exactly
+  (non-finite, or beyond 65,536 cells) drops to the old scan: a NaN position measures 0 clearance
+  to every box (`Mathf.Max(NaN, 0)` is 0), so it must veto from any cell, as it did.
+- **`SkimRaceCourse.ShellClearance`**: starts at the hint prism and works outward, and rules a prism
+  out by the sphere through its box's corners, then by the box itself (the stella is inscribed in
+  it), before the exact 8-triangle test. Exact stella tests fell 3.7x (I2: 106.5 M -> 28.7 M). A
+  prism is skipped only when a bound loses by 0.01 u, far beyond the float rounding of either side,
+  and ties are broken by offset as the old -window..+window scan broke them.
+- **`SkimRaceCourse.Project`** reads each segment's vector and squared length from a table built at
+  construction with the same expressions, and walks its window without two integer modulos per
+  segment.
+
+**Proof.** Every line of the simulator's race output (finish times to 0.01 s, hull and recovery
+counts, boost resets by cause, cross-track percentiles) is byte-identical to the old code at I1, I2
+and I4 over 6 seeds and at I2 and I4 over 20 seeds, 3 seats each; only the cost line differs. A
+single changed decision would move a whole race. `SkimRaceCourseQueryTests` pins both course queries
+to their plain definitions bit for bit over thousands of seeded points (inside overlapping shells,
+on spike tips, on a course short enough for the window to wrap) and fails on each of three
+deliberate breaks: a flipped tie-break, an unsafe bound, a window shifted by one.
+
+**What this does not explain.** §8.0c's ~127 ms hand-played frame. The AI's whole planning cost was
+about 0.5 ms per seat per frame in .NET before this; even several times that in Mono is a small part
+of 127 ms. The editor number needs measuring, not estimating: `diag` now times
+`SkimRace.Pilot.Decide` and `SkimRace.Pilot.FillObstacles` by default.
+
 ### 8.0d Hand-played I2 at a normal frame rate: under 80 s (2026-10-04)
 
 Same recorder file (`manual_I2_20261004-181400.jsonl`), races 4-9, after the editor's frame time came

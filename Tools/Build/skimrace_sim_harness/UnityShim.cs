@@ -369,6 +369,13 @@ namespace UnityEngine
         public static float Round(float f) => (float)Math.Round((double)f, MidpointRounding.ToEven);
         public static int FloorToInt(float f) => (int)Math.Floor((double)f);
         public static int CeilToInt(float f) => (int)Math.Ceiling((double)f);
+        // Unity's native bit-smear: the smallest power of two >= value, and 0 for 0.
+        public static int NextPowerOfTwo(int value)
+        {
+            uint v = (uint)value - 1u;
+            v |= v >> 16; v |= v >> 8; v |= v >> 4; v |= v >> 2; v |= v >> 1;
+            return (int)(v + 1u);
+        }
         public static float Floor(float f) => (float)Math.Floor(f);
         public static float Ceil(float f) => (float)Math.Ceiling(f);
         public static bool Approximately(float a, float b) =>
