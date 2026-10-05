@@ -1295,6 +1295,10 @@ sealed class SubstrateSystem : ICellSystem, IOccupancy
         foreach (var p in _pops) into.Add(($"substrate/{p.Key}", Job.PopAlive[p.Index], p.Cap));
     }
 
+    /// <summary>SHOWCASE_OCC_TRACE=1 (diagnostic): per population, member-seconds below its band, above it, outside its
+    /// sector, counted, and the summed distance outside the band (printed at the end of the run).</summary>
+    static readonly bool s_occTrace = Environment.GetEnvironmentVariable("SHOWCASE_OCC_TRACE") == "1";
+    public readonly Dictionary<string, (long below, long above, long sector, long n, double beyond)> OccWhy = new();
     /// <summary>C8: members inside the population's pen - its band, and its sector when it has one (SubstrateCore.SetSector).</summary>
     public void Occupancy(Cell c, List<(string, int, int)> into)
     {
@@ -1308,8 +1312,15 @@ sealed class SubstrateSystem : ICellSystem, IOccupancy
                 n++;
                 var at = Core.Pos[i];
                 float r = at.Length();
-                if (r < pop.BandInner || r > pop.BandOuter) continue;
-                if (pop.HasSector && Vector3.Dot(at, pop.SectorAxis) < pop.SectorCos * r) continue;
+                bool below = r < pop.BandInner, above = r > pop.BandOuter;
+                bool outSector = pop.HasSector && Vector3.Dot(at, pop.SectorAxis) < pop.SectorCos * r;
+                if (s_occTrace)
+                {
+                    var (b0, a0, s0, n0, d0) = OccWhy.GetValueOrDefault(p.Key);
+                    float beyond = below ? pop.BandInner - r : above ? r - pop.BandOuter : 0f;
+                    OccWhy[p.Key] = (b0 + (below ? 1 : 0), a0 + (above ? 1 : 0), s0 + (outSector ? 1 : 0), n0 + 1, d0 + beyond);
+                }
+                if (below || above || outSector) continue;
                 inPen++;
             }
             into.Add(($"substrate/{p.Key}", inPen, n));

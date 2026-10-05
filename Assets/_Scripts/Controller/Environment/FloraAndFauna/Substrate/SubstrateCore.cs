@@ -1118,7 +1118,9 @@ namespace CosmicShore.Gameplay
             var c = pop.BodyC;
 
             // the heading: the school's drives at the body centre
-            var want = Fields.Grad(SubstrateFields.Food, Fields.Cell(c)) * (50f * gh);
+            // (a banded school reads its own band's food field, as its members do - round 11-14: the cell-wide field led
+            // the leviathan's body to the inner forest, out of its pen)
+            var want = Fields.FoodGrad(pop.FoodGroup, Fields.Cell(c)) * (50f * gh);   // group 0 = the cell-wide field, as before
             int pj = NearestPilot(c, out float pd);
             if (pj >= 0)
             {
@@ -1126,7 +1128,9 @@ namespace CosmicShore.Gameplay
                 if (P.BodyCurious > 0f && pd < P.BodyCuriousR) want += Unit(_pilots[pj].Pos - c) * P.BodyCurious;
             }
             float r = c.Length();
-            want -= c / MathF.Max(r, 1f) * Math.Clamp((r - 0.6f * R) / (0.2f * R), 0f, 2f);
+            // the research school's own containment (inside 0.6 R) - unless it is penned: then its pen alone keeps it (the
+            // 0.6 R term sits INSIDE the Swarm cell's 690-840 middle shell and held the body below its band)
+            if (pop.BandOuter <= 0f) want -= c / MathF.Max(r, 1f) * Math.Clamp((r - 0.6f * R) / (0.2f * R), 0f, 2f);
             want += PenPull(pop, c);
             float tt = Tick * 0.02f;
             want += 0.3f * new Vector3(MathF.Sin(tt), MathF.Sin(1.3f * tt + 1f), MathF.Sin(0.7f * tt + 2f));
@@ -1201,13 +1205,14 @@ namespace CosmicShore.Gameplay
             if (pop.BandOuter > 0f)
             {
                 float soft = 0.1f * MathF.Max(pop.BandOuter - pop.BandInner, 50f);
-                pull -= radial * (Math.Clamp((r - pop.BandOuter) / soft, 0f, 1f) * 2f);
-                pull += radial * (Math.Clamp((pop.BandInner - r) / soft, 0f, 1f) * 2f);
+                // ramped inside the edge, full at it (as SubstrateKernel's pen)
+                pull -= radial * (Math.Clamp((r - pop.BandOuter + soft) / soft, 0f, 1f) * 2f);
+                pull += radial * (Math.Clamp((pop.BandInner + soft - r) / soft, 0f, 1f) * 2f);
             }
             if (pop.HasSector)
             {
                 float cs = Vector3.Dot(radial, pop.SectorAxis);
-                float w = Math.Clamp((pop.SectorCos - cs) / 0.1f, 0f, 1f) * 2f;
+                float w = Math.Clamp((pop.SectorCos + SubstrateKernel.PenSectorSoft - cs) / SubstrateKernel.PenSectorSoft, 0f, 1f) * 2f;
                 if (w > 0f) pull += Unit(pop.SectorAxis * r - p) * w;
             }
             return pull;

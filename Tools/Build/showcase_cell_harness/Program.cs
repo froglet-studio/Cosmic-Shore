@@ -509,6 +509,8 @@ static class Program
             float snapAt = seconds > 600f ? 1500f : 300f;
             if (snapOut != null && snapOut.Length > 0 && MathF.Abs(c.T - snapAt) < Cell.Dt * 0.5f) Snapshot(c, systems, builders, snapOut);
         }
+        foreach (var (key, (below, above, sector, n, beyond)) in sub.OccWhy)
+            Console.WriteLine($"   occupancy {key}: below band {100.0 * below / n:F0}%, above {100.0 * above / n:F0}%, outside sector {100.0 * sector / n:F0}%, mean distance outside the band when out {beyond / Math.Max(1, below + above):F0} u");
         r.Reseeds = swarm.Reseeds + sub.Reseeds + builders.ThiefReseeds + builders.WearReseeds;
         swarm.SyncBook(c.World);
         Ledger(c, swarm, sub, builders, grove, out _, r.LedgerLines);
