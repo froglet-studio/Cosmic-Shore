@@ -69,6 +69,17 @@ outside the nucleus.
 - **Pecks and sips are drains of weight 0.25** (a quarter-bite). A leech's own plate weighs 0, so it never burns.
 - Every other cell plays Shipped, at 5 petals per element.
 
+### 2.1 Inspecting one life form on its own (the barren cell)
+
+1. In freestyle, fly the **Cell Selector** and pick **Barren** ("no environment"). Its spawn profile is
+   empty, so nothing seeds itself.
+2. Fly the **Spawn Matrix** toy ▸ **Fauna** or **Flora** ▸ a species ▸ an element. Every life form in
+   this guide is on the bench (most Swarm-cell species have one element, so one station).
+3. It lands where it lives in the Swarm cell: banded fauna through their own band, threat flora in
+   their grove, Borromean in its band. An unbanded creature lands at a random point in open water.
+4. Barren has no food. Add it from the same bench: flora for the swarms and grazers, locusts for the
+   pack hunter, a trail of your own for the thief nest and the fortress/wearer builders.
+
 ## 3. The guided tour, from the nucleus outward
 
 The map uses top-down axes: **+X** is "east", **+Z** is "north", about the cell's Y axis. All radii are from the

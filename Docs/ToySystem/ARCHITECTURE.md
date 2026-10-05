@@ -142,7 +142,7 @@ them toward the next layer, never back through the last.
 | pass | layer | what blooms |
 |---|---|---|
 | the toy | 1.5 | the **KINGDOM** row — Fauna, Flora, Vessels (station radius ×1.5, so the first row you meet is the biggest thing in the corridor) |
-| Fauna / Flora | 3.5 | that kingdom's **SPECIES** row, one station per registered species |
+| Fauna / Flora | 3.5 | that kingdom's **SPECIES** grid, one station per registered species, `speciesPerRow` wide |
 | Vessels | 3.5 | the **HANGAR** row, one mini hull per class |
 | a species | 5.5 | its **VARIANT** row — one station per ELEMENT, four of them |
 | a variant | — | that exact lifeform spawns live into the cell |
@@ -166,12 +166,37 @@ shark row reads big, a SchwarzP row small). A lifeform is its species and its el
 else — there is no level, so there are no level rows (`Docs/ECOSYSTEM.md` §40).
 
 **Lifeform release.** A variant spawns a POPULATION (fauna `PopulationSize` / flora
-`InitialSpawnCount`) through the canonical cell spawn paths, on a runtime CLONE of its per-element
-config (`_SO_Assets/Lifeforms/`) with `SpreadElements` off — the station spawns the EXACT variant
-it shows, and the authored assets are never mutated. Fauna hatch on the cell's densest mass (a
-creature released into empty space beyond the membrane has nothing to graze); flora root AT the
-station via `Flora.SetPlantPositionOverride`. Every spawn logs, including the cell's Frenzy
-growth-freeze state.
+`InitialSpawnCount`) on a runtime CLONE of its per-element config with `SpreadElements` off — the
+station spawns the EXACT variant it shows, and the authored assets are never mutated. **It lands
+where the species lives, never at the toy**, through the cell spawner's own placement calls:
+
+- **Fauna** go through `CellLifeSpawnerBase.SpawnFaunaBanded`. A banded species (the Swarm
+  swarms, the seven substrate species, the builders) is scattered one point per creature through
+  its own band and inside the cell's pens. An unbanded one hatches as a group (±150 u, the spawner
+  wave jitter) on the cell's densest mass; when the cell holds no mass at all
+  (`Cell.TryGetDensestRegionAnyDomain` is false — the Barren cell), on a fresh random point in open
+  water (`CellLifeSpawnerBase.RandomPointInCytoplasm`) rather than on the crystal, which is where
+  every release used to pile up.
+- **Flora** go through `CellLifeSpawnerBase.PlantFlora` (the call `RandomLifeSpawner` plants with):
+  a prepared planting site when the cell has one, otherwise the species' own `Plant()` dispersal
+  through its planting band — threat flora pick their grove site, the Swarm Borromean bands honour
+  their pens. Flora used to be pinned around the station, which clumped them at the toy.
+
+Every spawn logs on the ToyBox channel, including the cell's Frenzy growth-freeze state.
+
+**The roster** (`faunaSpecies` / `floraSpecies`) holds every spawnable species: the original
+Lifeforms set, the generator-owned rows (Borromean, Mandelbulb family), and the rows
+`Tools/Build/author_spawn_matrix_roster.py` owns — piranha, the Swarm cell's life forms (swarm,
+pack hunter, locust, lurker, stampede, mobber, leech, leviathan, fortress builders, thief nest,
+wearer builders, Swarm Borromean, physarum, snap trap) and the Arbor/Coral/Frond/Lantern/Reed/
+Rosette/Spire/Tendril flora sets. Most Swarm-cell species express one element, so their variant
+row has one station. Run the generator with `--check` after touching any of those configs. With
+42 species a kingdom's species row wraps into a grid of `speciesPerRow` (6) columns.
+
+**Inspecting one species on its own:** Cell Selector ▸ **Barren** (no environment, empty spawn
+profile, so nothing seeds itself), then Spawn Matrix ▸ kingdom ▸ species ▸ element. Barren has no
+food until you add it: grazers and swarms need flora, the pack hunter needs locusts, fortress and
+wearer builders need loose prisms, the thief nest needs fresh vessel trail.
 
 **Vessel release.** A hangar station calls
 `MenuServerPlayerVesselInitializer.RequestSpawnAiCompanion(class, domain, pose)` — the menu's
