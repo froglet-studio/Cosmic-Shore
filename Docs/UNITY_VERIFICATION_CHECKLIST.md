@@ -65,6 +65,12 @@ that field reads a host's lobby bytes out of step: a party invite then "does not
 silently. With the bump Netcode refuses a mismatched build at the connection request. The rule for every
 future wire change: `Docs/claude/MULTIPLAYER_AND_SOCIAL.md` (Multiplayer / Netcode).
 
+**Compiled without the editor (the whole branch, this and the entries below):** against real Unity
+references with `Tools/Build/unity_refcompile` - player config: 0 errors in project code (91 assemblies;
+the only unverifiable files are those using the unfetchable services packages, none of them on this
+branch's lines); editor config: 0 errors in the 14 changed Editor-folder files (this branch's tests and the
+benchmark window). The Froglet Engine's live compile of the runtime scripts: 0 errors.
+
 **Verify in editor (two players)**
 - [ ] Both on THIS branch, the same commit: invite, accept - the guest joins the host's party, and a lobby the
       host opens (any arcade card) opens on the guest. Skim Race: the guest's AI difficulty row shows the host's pick.
