@@ -6,6 +6,7 @@
 #   bash Tools/Build/builders_harness/run.sh             # everything
 #   bash Tools/Build/builders_harness/run.sh fortress    # the fortress block only
 #   bash Tools/Build/builders_harness/run.sh thieves     # the thieves block only
+#   bash Tools/Build/builders_harness/run.sh wearers     # the wearers block only
 #
 # Needs a dotnet 8 SDK (DOTNET_ROOT). No .csproj on purpose (the repo gitignores *.csproj); builds into $TMPDIR.
 set -euo pipefail
@@ -19,13 +20,13 @@ NSREF=$(ls "$DOTNET_ROOT"/packs/NETStandard.Library.Ref/*/ref/netstandard2.1/net
 OUT="${TMPDIR:-/tmp}/builders_harness"
 mkdir -p "$OUT"
 B="$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Builders"
-CORES=("$B/BuilderCore.cs" "$B/BuilderColonyCore.cs" "$B/ThiefNestCore.cs")
+CORES=("$B/BuilderCore.cs" "$B/BuilderColonyCore.cs" "$B/ThiefNestCore.cs" "$B/WearerCore.cs")
 # Unity compiles these against netstandard2.1 + C# 9 - narrower than net8.0; fail the way Unity would
 "$DOTNET" "$CSC" -nologo -langversion:9.0 -nostdlib -noconfig "-r:$NSREF" -target:library -out:"$OUT/unityprofile.dll" \
   "${CORES[@]}" || { echo "FAIL: the builder cores do not compile against netstandard2.1 (Unity's API profile)" >&2; exit 1; }
 ls "$REFDIR"/*.dll | sed 's/^/-r:/' > "$OUT/refs.rsp"
 "$DOTNET" "$CSC" -nologo -langversion:9.0 -nostdlib -noconfig -optimize+ "@$OUT/refs.rsp" \
-  -target:exe -main:Program -out:"$OUT/builders.exe" "${CORES[@]}" "$HERE/Arena.cs" "$HERE/Program.cs"
+  -target:exe -main:Program -out:"$OUT/builders.exe" "${CORES[@]}" "$HERE/Arena.cs" "$HERE/WearArena.cs" "$HERE/Program.cs"
 V=$(ls "$DOTNET_ROOT"/shared/Microsoft.NETCore.App | head -1)
 printf '{"runtimeOptions":{"tfm":"net8.0","framework":{"name":"Microsoft.NETCore.App","version":"%s"}}}' "$V" > "$OUT/builders.runtimeconfig.json"
 exec "$DOTNET" "$OUT/builders.exe" "$@"

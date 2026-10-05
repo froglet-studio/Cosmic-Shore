@@ -4,6 +4,7 @@
 //   bash Tools/Build/builders_harness/run.sh            # everything (~1-2 min)
 //   bash Tools/Build/builders_harness/run.sh fortress   # just the fortress block
 //   bash Tools/Build/builders_harness/run.sh thieves    # just the thieves block
+//   bash Tools/Build/builders_harness/run.sh wearers    # just the wearers block
 // What this does NOT prove: anything about Unity - prisms, colliders, crystals, the GPU draw (Docs/BUILDERS_AND_THIEVES.md §7).
 using System;
 using System.Collections.Generic;
@@ -37,6 +38,7 @@ static class Program
         if (only == "exp") { Experiment(); return 0; }
         if (only == "" || only == "fortress") Fortress();
         if (only == "" || only == "thieves") Thieves();
+        if (only == "" || only == "wearers") Wearers();
         Console.WriteLine($"\n{(_fail == 0 ? "OK" : $"FAILED ({_fail})")} - builders harness, {sw.Elapsed.TotalSeconds:F1} s");
         return _fail == 0 ? 0 : 1;
     }
@@ -410,5 +412,179 @@ static class Program
         Console.WriteLine("\nT5. shielded trail is never snatched");
         var shl = seeds.Take(3).Select(s => ThiefRun(s, "wander", game: true, minutes: 3f, shielded: 0.3f)).ToList();
         Check(shl.Sum(r => r.ShieldTaken) == 0, "0 shielded prisms changed hands");
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════════════ WEARERS
+
+    sealed class WearResult
+    {
+        public int Largest, MaxBody, Steals, Trail, Fusions, Lunges, Hits, Stripped, Kills, Starved, Births, Lair, Alive;
+        public int SatMoults, HurtMoults, Returned, ShieldWorn, Creatures;
+        public float MinTel, MaxTel, MsPerStep, MsP95, Minutes;
+        public double Audit, Created;
+        public long PrismWrites, Rebuckets, ContainerWrites, DangerToggles, Queries;
+        public float PerMin(long v) => v / (Minutes * 60f);
+    }
+
+    /// <summary>run_mixed.py's wearer (contact 0.5, cap 150): a 1500-prism cell, a circuit racer, a wanderer and a hunter
+    /// that all lay trail (0.25 s, 6 vol); the hunter rams. The GAME colony: 16 founders, stomachs.</summary>
+    static WearResult WearRun(int seed, float minutes = 5f, float shielded = 0f, Action<WearerParams> tweak = null, bool hunter = true)
+    {
+        var ar = new WearArena(seed);
+        ar.Scatter(1500, shieldedFrac: shielded);
+        var p = new WearerParams { Containment = ar.R * 0.95f };
+        tweak?.Invoke(p);
+        var anchor = ar.Ball(0.3f * ar.R, 0.6f * ar.R);
+        var core = new WearerCore(ar, p, anchor, 4, 3, seed);
+        var circuit = ar.AddPilot(new Pilot { Policy = "circuit", Name = "circuit", TrailEvery = 0.25f, TrailVol = 6f });
+        for (int i = 0; i < 6; i++)
+        {
+            float a = i * MathF.PI / 3f;
+            circuit.Waypoints.Add(new Vector3(600f * MathF.Cos(a), 120f * MathF.Sin(2f * a), 600f * MathF.Sin(a)));
+        }
+        circuit.Pos = circuit.Waypoints[0] + new Vector3(0, 0, -80);
+        ar.AddPilot(new Pilot { Policy = "wander", Name = "wander", TrailEvery = 0.25f, TrailVol = 6f });
+        if (hunter) ar.AddPilot(new Pilot { Policy = "hunter", Name = "hunter", Speed = 160f, TrailEvery = 0.25f, TrailVol = 6f, Ram = true });
+        var vessels = new BuilderVessel[4];
+        int steps = (int)(minutes * 60f / Dt);
+        var ms = new List<double>(steps);
+        var res = new WearResult { Minutes = minutes };
+        var shieldedIds = new HashSet<int>();
+        for (int i = 0; i < ar.Count; i++) if (ar.ShieldedL[i]) shieldedIds.Add(i);
+        for (int s = 0; s < steps; s++)
+        {
+            ar.Targets.Clear();
+            for (int k = 0; k < core.Cap; k++) if (core.IsLeader(k)) ar.Targets.Add(core.Pos[k]);
+            int nv = ar.Vessels(vessels);
+            long t0 = Stopwatch.GetTimestamp();
+            core.Step(Dt, vessels, nv);
+            ms.Add((Stopwatch.GetTimestamp() - t0) * 1000.0 / Stopwatch.Frequency);
+            ar.Step(Dt);
+            foreach (int h in shieldedIds) if (core.IsWorn(h) || ar.Dom[h] != 0) res.ShieldWorn++;
+        }
+        res.Largest = core.Largest; res.MaxBody = core.MaxBody; res.Steals = core.WornSteals; res.Trail = core.WornTrail;
+        res.Fusions = core.Fusions; res.Lunges = core.Lunges; res.Hits = core.Hits; res.Stripped = core.Stripped;
+        res.Kills = core.Kills; res.Starved = core.Starved; res.Births = core.Births; res.Lair = core.LairCount;
+        res.Alive = core.AliveCount; res.SatMoults = core.SatiationMoults; res.HurtMoults = core.HurtMoults;
+        res.Returned = core.Returned; res.Creatures = core.Creatures;
+        res.MinTel = core.MinTelegraph; res.MaxTel = core.MaxTelegraph;
+        ms.Sort();
+        res.MsPerStep = (float)(ms.Sum() / steps); res.MsP95 = (float)ms[(int)(0.95 * (ms.Count - 1))];
+        res.Audit = ar.Audit(); res.Created = ar.Scattered + ar.LaidVol;
+        res.PrismWrites = ar.PrismWrites; res.Rebuckets = ar.Rebuckets; res.ContainerWrites = ar.ContainerWrites;
+        res.DangerToggles = ar.DangerToggles; res.Queries = core.Queries;
+        return res;
+    }
+
+    static void Wearers()
+    {
+        int[] seeds = { 7, 23, 41, 101 };
+        var wp = new WearerParams();
+        Console.WriteLine("\nW1. a body forms from stolen mass (run_mixed wearers v3: contact 0.5, cap 150; 5 min, a racer + a wanderer laying trail)");
+        var runs = seeds.Select(s => WearRun(s, hunter: false)).ToList();
+        foreach (var r in runs)
+            Console.WriteLine($"    largest {r.Largest} (max ever {r.MaxBody})  creatures {r.Creatures}  worn steals {r.Steals} ({(float)r.Trail / Math.Max(1, r.Steals):P0} trail)"
+                              + $"  fusions {r.Fusions}  lunges {r.Lunges} hits {r.Hits}  stripped {r.Stripped}  hurt moults {r.HurtMoults} (returned {r.Returned})"
+                              + $"  satiation moults {r.SatMoults} lair {r.Lair} births {r.Births}  alive {r.Alive}  kills {r.Kills} starved {r.Starved}");
+        Check(runs.All(r => r.MaxBody >= wp.HuntAt), $"every seed grows a body past the hunt threshold ({wp.HuntAt} prisms): max bodies {string.Join(", ", runs.Select(r => r.MaxBody))}");
+        float trailFrac = runs.Sum(r => r.Trail) / (float)Math.Max(1, runs.Sum(r => r.Steals));
+        Check(trailFrac >= 0.5f, $"it is made of what it took from YOU: {trailFrac:P0} of worn steals were a pilot's trail (research trail_frac ~0.8-0.9)");
+        Check(runs.Sum(r => r.Fusions) > 0, $"bodies that touch fuse ({runs.Sum(r => r.Fusions)} fusions)");
+        Check(runs.Sum(r => r.Lunges) > 0 && runs.Sum(r => r.Hits) > 0, $"a grown body hunts: {runs.Sum(r => r.Lunges)} lunges, {runs.Sum(r => r.Hits)} hits");
+        float minTel = runs.Where(r => r.Lunges > 0).Min(r => r.MinTel), maxTel = runs.Where(r => r.Lunges > 0).Max(r => r.MaxTel);
+        Check(minTel >= wp.Windup - 0.01f && maxTel <= wp.Windup + 0.15f, $"every lunge is telegraphed by a {wp.Windup} s rear ({minTel:F2}-{maxTel:F2} s; research 1.15-1.42)");
+        Check(runs.Max(r => Math.Abs(r.Audit) / r.Created) < 1e-9, "mass audit 0 (stealing, wearing, eating, moulting: only eating removes)");
+        float hpm = runs.Sum(r => r.Hits) / (runs.Count * 5f);
+        Console.WriteLine($"    hits on the two pilots {hpm:F2}/min per cell (research: wanderer 2.1-2.56/min against 40 hearts)");
+
+        Console.WriteLine("\nW1b. counterplay: add a hunter that rams - it strips its prisms back and kills exposed hearts");
+        var hr = seeds.Select(s => WearRun(s)).ToList();
+        foreach (var r in hr)
+            Console.WriteLine($"    max body {r.MaxBody}  stripped {r.Stripped}  hurt moults {r.HurtMoults} (returned {r.Returned})  kills {r.Kills}  alive {r.Alive}  lunges {r.Lunges} hits {r.Hits}");
+        Check(hr.Sum(r => r.Stripped) > 0 && hr.Sum(r => r.HurtMoults) > 0, $"ramming strips worn prisms back ({hr.Sum(r => r.Stripped)}) and makes bodies moult ({hr.Sum(r => r.HurtMoults)})");
+        Check(hr.Sum(r => r.Kills) > 0, $"a pilot who turns on it kills hearts ({hr.Average(r => r.Kills / 5f):F1}/min; research hunter 13.3/min against 40)");
+        Check(hr.Max(r => Math.Abs(r.Audit) / r.Created) < 1e-9, "stripping and hurt moults change hands: mass audit 0");
+        runs.AddRange(hr);
+
+        Console.WriteLine("\nW2. cost: ONE pose per creature per tick; the glue moves every worn prism in one batched pass");
+        float pw = (float)runs.Average(r => r.PerMin(r.PrismWrites)), rb = (float)runs.Average(r => r.PerMin(r.Rebuckets));
+        float cw = (float)runs.Average(r => r.PerMin(r.ContainerWrites)), q = (float)runs.Average(r => r.PerMin(r.Queries));
+        float dg = (float)runs.Average(r => r.PerMin(r.DangerToggles));
+        Console.WriteLine($"    per second of sim (10 Hz): prism writes {pw:F0} (PORT.md 2,085-2,529), rebuckets {rb:F0} (1,700-2,800),"
+                          + $" container writes {cw:F1} (31-44), queries {q:F1} (12-13), danger toggles {dg:F2}");
+        Console.WriteLine($"    core cost {runs.Average(r => r.MsPerStep):F3} ms/step, p95 {runs.Max(r => r.MsP95):F3} ms");
+        Check(pw <= 2529f * 1.5f, $"prism writes/s {pw:F0} within 1.5x of the research's 2,085-2,529 (the cap holds the body at <= {wp.BodyCap})");
+        Check(cw <= 60f, $"container writes/s {cw:F1}: one per moving creature per tick");
+        Check(runs.Max(r => r.MsP95) < 2f, $"the core is cheap: p95 {runs.Max(r => r.MsP95):F3} ms/step");
+
+        Console.WriteLine("\nW3. satiation moult: over the cap the body sheds into a static lair and the shed mass pays for a birth");
+        var sat = seeds.Take(3).Select(s => WearRun(s, minutes: 5f, tweak: p => { p.BodyCap = 50; p.HuntAt = 30; }, hunter: false)).ToList();
+        Console.WriteLine($"    cap 50: moults {string.Join(", ", sat.Select(r => r.SatMoults))}  lair {string.Join(", ", sat.Select(r => r.Lair))}  births {string.Join(", ", sat.Select(r => r.Births))}");
+        Check(sat.Sum(r => r.SatMoults) > 0 && sat.Sum(r => r.Lair) > 0 && sat.Sum(r => r.Births) > 0, "a satiated body moults a lair and a newborn heart (paid in volume)");
+        Check(sat.Max(r => Math.Abs(r.Audit) / r.Created) < 1e-9, "moulting conserves mass: audit 0");
+
+        Console.WriteLine("\nW4. hurt moult returns mass: ram a body and it sheds its outer layer BACK to whoever it stole it from");
+        {
+            var ar = new WearArena(11);
+            var p = new WearerParams { Founders = 1, MaxHearts = 1, Containment = ar.R * 0.95f };
+            var core = new WearerCore(ar, p, new Vector3(300, 0, 0), 4, 3, 11);
+            var trail = new List<int>();
+            for (int i = 0; i < 60; i++) trail.Add(ar.Lay(core.Pos[0] + ar.Rng.Normal3(25f), 6f, 1, true));
+            ar.Rebuild();
+            var vs = new BuilderVessel[2];
+            for (int s = 0; s < 1200 && core.BodyCount(0) < 50; s++) { core.Step(Dt, vs, 0); ar.Step(Dt); }
+            int body = core.BodyCount(0);
+            var wornAtStart = core.BodyOf(0).ToList();
+            bool allWorn = wornAtStart.All(h => ar.Dom[h] == 4 && !ar.Loose(h));
+            double before = ar.LiveVolume();
+            int strippedBefore = core.Stripped;
+            // a ramming pilot drives through the body's edge
+            var pilot = ar.AddPilot(new Pilot { Policy = "wander", Domain = 1, Ram = true, Radius = 16f, Speed = 0f });
+            var edge = core.BodyOf(0).Select(h => ar.Pos[h]).OrderByDescending(x => Vector3.Distance(x, core.Pos[0])).First();
+            pilot.Pos = edge; pilot.Vel = Vector3.Zero;
+            for (int s = 0; s < 3 && core.HurtMoults == 0; s++) { int n = ar.Vessels(vs); core.Step(Dt, vs, n); }
+            var stripped = wornAtStart.Where(h => !core.IsWorn(h) && ar.Dom[h] == 1).ToList();
+            Console.WriteLine($"    body {body} -> stripped {core.Stripped - strippedBefore}, hurt moults {core.HurtMoults}, returned {core.Returned} ({core.ReturnedVolume:F0} vol), body now {core.BodyCount(0)}");
+            Check(body >= 50 && allWorn, $"the heart wore 50+ stolen trail prisms ({body}), all in its domain and not loose");
+            Check(core.HurtMoults == 1 && core.Returned > 0, $"losing a sixth of its body in a moment makes it moult: {core.Returned} prisms shed");
+            Check(stripped.Count == (core.Stripped - strippedBefore) + core.Returned && stripped.All(h => ar.AliveL[h] && ar.Loose(h)),
+                  $"every stripped and shed prism is alive, loose and back in the pilot's domain ({stripped.Count})");
+            Check(Math.Abs(ar.LiveVolume() - before) < 1e-9 && Math.Abs(ar.Audit()) < 1e-9, "the moult destroys nothing: live volume unchanged, audit 0");
+        }
+
+        Console.WriteLine("\nW5. an exposed heart dies to a touch; a body shields it");
+        {
+            var ar = new WearArena(12);
+            var p = new WearerParams { Founders = 1, MaxHearts = 1, Containment = ar.R * 0.95f };
+            var core = new WearerCore(ar, p, new Vector3(300, 0, 0), 4, 3, 12);
+            var pilot = ar.AddPilot(new Pilot { Policy = "wander", Domain = 1, Ram = true, Speed = 0f });
+            pilot.Pos = core.Pos[0]; pilot.Vel = Vector3.Zero;
+            var vs = new BuilderVessel[2];
+            int n = ar.Vessels(vs);
+            core.Step(Dt, vs, n);
+            Check(!core.Alive[0] && core.Kills == 1 && core.Deaths.Count == 1, "a bare heart touched by a ramming vessel dies (one crystal)");
+        }
+
+        Console.WriteLine("\nW6. starvation is an EMPTY stomach (no mass at all: the hearts eat nothing and die when their stomachs empty)");
+        {
+            var ar = new WearArena(13);
+            var p = new WearerParams { Containment = ar.R * 0.95f };
+            var core = new WearerCore(ar, p, new Vector3(300, 0, 0), 4, 3, 13);
+            var vs = new BuilderVessel[1];
+            float expect = p.Stomach.Capacity * p.Stomach.FounderFill / p.Stomach.Metabolism, full = p.Stomach.Capacity / p.Stomach.Metabolism;
+            float first = -1f, last = -1f;
+            for (int s = 0; s < (int)(full * 1.05f / Dt); s++)
+            {
+                int before = core.Starved;
+                core.Step(Dt, vs, 0);
+                if (core.Starved > before) { if (first < 0) first = core.Time; last = core.Time; }
+            }
+            Check(first >= expect - 1f && last <= full + 1f && core.AliveCount == 0,
+                  $"deaths from {first:F0} s to {last:F0} s (stomachs {expect:F0}-{full:F0} s), {core.Starved} starved");
+        }
+
+        Console.WriteLine("\nW7. shielded mass is never food or a target");
+        var sh = seeds.Take(2).Select(s => WearRun(s, minutes: 3f, shielded: 0.3f)).ToList();
+        Check(sh.Sum(r => r.ShieldWorn) == 0, "0 shielded prisms worn or changed hands");
     }
 }
