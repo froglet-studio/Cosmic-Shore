@@ -2762,3 +2762,32 @@ invisible to weapons as a shield.
   the documented gate is density 5, where it passes.
 
 **QA.** QA-SWARM-ROUND11-12.
+## 28. Round 11i: the generated assets, audited against the compiled code
+
+Tonight's `author_*.py` scripts wrote prefabs, ScriptableObjects, spawn profiles and a Menu_Main override as YAML
+that Unity never opened. `python3 Tools/Build/check_generated_assets.py` (`--self-test`: 15 negative controls)
+audits every asset added or changed since `origin/bleeding-edge`. The field, enum and script facts come from
+Roslyn binding Assembly-CSharp exactly as `unity_refcompile` builds it, so run that tool first. The audit covers:
+
+- the YAML structure (`%YAML 1.1`, `%TAG !u!`, `--- !u!<class> &<fileID>`);
+- `.meta` presence, and guid uniqueness across `Assets/`;
+- every guid and every cross-file or in-file fileID;
+- `m_Script` resolves to a file whose same-named class derives MonoBehaviour or ScriptableObject;
+- every serialized key and nested `[Serializable]` key names a real field, since Unity drops a typo silently;
+- enum values, and reference types (a type mismatch loads as null);
+- prefab-override property paths, and references to deleted files;
+- the Swarm wiring: the Cell Selector lists the cell, the cell points at its profile, and the profile lists
+  every new fauna and flora config.
+
+A modified file is judged only on the documents the change touched, and only for findings its base did not
+already have.
+
+It found one real defect. `SwarmTadpole.prefab` (and `SubstrateAgent.prefab`, which is built from it) inherited
+TadPoleFauna's three overrides of `HealthPrism.TargetScale`, a field the prism-animation rework retired. Unity
+keeps unresolvable modifications forever, so they did nothing. `author_swarm_fauna.tadpole_prefab()` now drops
+them, and both prefabs were regenerated. Everything else checks out: 48 added and 2 modified assets, 0 duplicate
+guids, 0 dangling references, every script, field and enum value resolves, and the Swarm cell is reachable with
+all 9 fauna and 5 flora configs listed. Two things are counted but not judged: the flora prefabs' `domain: 0` (the
+spawner assigns it at runtime, the same as every shipped flora prefab), and override targets inside nested
+prefabs.
+

@@ -416,6 +416,11 @@ def depublicize():
     return out
 
 
+def tree_key():
+    import hashlib
+    return os.path.basename(ROOT) + "-" + hashlib.sha1(ROOT.encode()).hexdigest()[:8]
+
+
 def apply_source_patches():
     """source_patches.json: minimal edits to FETCHED package sources (never to Assets) where the
     package head needs engine API newer than the reference DLLs. Idempotent; each entry says why."""
@@ -594,7 +599,9 @@ def run_once():
     # packages are always compiled as the player sees them (shared output, shared cache)
     pkg_defines = unity_version_defines(REFS_UNITY_VERSION) + COMMON + CONFIGS["player"]
     out_root = os.path.join(os.environ.get("TMPDIR", "/tmp"), "unity_refcompile_out")
-    out = args.out or os.path.join(out_root, args.config)
+    # per working tree: several worktrees share one TMPDIR, and Assets outputs (and the .rsp files
+    # check_generated_assets.py reads) must never be another tree's
+    out = args.out or os.path.join(out_root, tree_key(), args.config)
     pkg_out = os.path.join(out_root, "_packages")
     os.makedirs(pkg_out, exist_ok=True)
     editor = args.config == "editor"
