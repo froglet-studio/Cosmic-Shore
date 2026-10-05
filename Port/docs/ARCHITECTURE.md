@@ -396,12 +396,17 @@ main thread between frames, where a `--do` step runs (`src/CosmicShore.Player/Co
 
 `cs-mcp` (`src/CosmicShore.Mcp`) wraps it, plus build, test and the Unity isolation check, as an
 MCP server, so Claude Code drives the engine with tools: `engine_build`, `engine_test`,
+`engine_smoke` (a headless boot that answers PASS/FAIL with every logged problem),
 `unity_isolation_check`, `game_start` / `game_stop`, `game_screenshot` (returned as an image),
 `game_input`, `game_wait`, `game_find`, `game_hierarchy`, `game_get` / `game_set`, `game_ui_at`,
 `game_dump_ui`, `game_logs`, `game_load_scene`. On a server without a display it runs the game
 under `xvfb-run`. Connect it with `claude mcp add froglet-engine -- dotnet run --project
 Port/src/CosmicShore.Mcp --` or `claude --mcp-config Port/.mcp.json`; the launcher's CLAUDE page
 connects it on its own. `Port/CLAUDE.md` is the agent's guide.
+
+`--session-report PATH` makes the player write a JSON report when it closes or crashes (scenes,
+frame-time percentiles, distinct errors/warnings/exceptions, crash, branch and commit); the
+launcher passes one for every play session. Where the engine is going: `docs/ROADMAP.md`.
 
 ---
 

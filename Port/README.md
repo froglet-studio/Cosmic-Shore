@@ -10,6 +10,8 @@ headless develop/build/test loop.
 **Working with Claude Code?** `CLAUDE.md` in this folder: the engine's MCP server lets an agent
 build, run, see and drive the game.
 
+**Where it is going:** `docs/ROADMAP.md` (gameplay parity, then Unity-free development).
+
 **Start here:** `docs/ARCHITECTURE.md` — how the whole port fits together, with
 diagrams and annotated screenshots of every screen and control.
 

@@ -34,13 +34,15 @@ the game uses that the engine lacks) belongs in `Port/src/CosmicShore.Engine` / 
 | `ProjectSettings/FrogletProject.json` | The engine's own Player/Scenes/Quality settings; empty fields inherit Unity's |
 | `tests/` | `CosmicShore.Tests` (engine, xunit, ~70 s, no GPU) · `CosmicShore.Tests.Ported` (the game's EditMode tests) |
 | `docs/ARCHITECTURE.md` | How it all fits; read the section for the area you touch |
+| `docs/ROADMAP.md` | The milestones (gameplay parity, then Unity-free development), checkpoints, open gaps and ready prompts. Pick work from here |
 
 ## The loop
 
 With the **froglet-engine MCP server** (preferred - see below), the loop is tools:
 
 1. Edit code.
-2. `engine_build` (target `player`) - fix every error it lists.
+2. `engine_build` (target `player`) - fix every error it lists. `engine_smoke` then boots the
+   game headless and answers PASS/FAIL with every error, exception and warning it logged.
 3. `game_start` - boots the real game with a control port (under xvfb on a display-less server).
 4. Look and act: `game_screenshot`, `game_state`, `game_input` ("click X,Y", "type pilot",
    "key Enter", "hold W 60"), `game_wait`, `game_find`, `game_hierarchy`, `game_get` /
@@ -81,6 +83,9 @@ An unattended run without a port: `--frames N --shot F:out.png --do "F:click X,Y
 - **Debug vs Release**: Debug is a Unity development build (diagnostics overlay, logs); Release
   is the customer build. The MCP server runs Debug.
 - `--verbose` opens every `CSDebug` log channel; `game_logs grep` filters them.
+- **Session reports**: `--session-report PATH` (the launcher always passes one) writes JSON at
+  exit - scenes, frame-time percentiles, distinct errors/warnings/exceptions with counts, crash.
+  A user's "LAST SESSION" message points at one; read it before guessing.
 
 ## Connecting Claude Code to the engine
 
