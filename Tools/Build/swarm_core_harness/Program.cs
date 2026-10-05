@@ -83,6 +83,7 @@ static class Program
         if (gridOnly) return GridHarness.Run(plans) == 0 ? 0 : 1;
         if (sortOnly) return SortHarness.Run(plans) == 0 ? 0 : 1;
         if (args.Length > 1 && args[1] == "tickjob") return TickJobHarness.Run(plans) == 0 ? 0 : 1;
+        if (args.Length > 1 && args[1] == "lod") return SwarmLodHarness.Run(plans) == 0 ? 0 : 1;   // round 11f (Docs/ECOLOGY_LOD.md §5)
         if (args.Length > 1 && args[1] == "lineage") return LineageHarness.RunAll(plans, args.Length > 2 ? args[2] : null) == 0 ? 0 : 1;
         string plansDir = args.Length > 0 ? args[0] : "../../../Assets/_SO_Assets/Swarm Fauna/Plans";
         if (args.Length > 1 && args[1] == "evo") return EvoHarness.Run(plans, plansDir) == 0 ? 0 : 1;

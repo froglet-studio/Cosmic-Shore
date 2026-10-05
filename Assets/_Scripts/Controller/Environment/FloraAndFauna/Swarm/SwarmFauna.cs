@@ -48,7 +48,7 @@ namespace CosmicShore.Gameplay
     /// shader, molts re-form in the shader, a proxy appears and leaves under an unchanged picture, deaths
     /// wither through the platform).
     /// </summary>
-    public class SwarmFauna : Fauna, IVirtualFaunaOwner, IVirtualPrismBudget, ISwarmEntrySink
+    public class SwarmFauna : Fauna, IVirtualFaunaOwner, IVirtualPrismBudget, ISwarmEntrySink, IMacroPopulation
     {
         [Header("Swarm")]
         [SerializeField] SwarmFaunaConfigSO config;
@@ -117,6 +117,11 @@ namespace CosmicShore.Gameplay
         byte[] _look;                    // per slot: the look (tier * 3 + domain slot) its entity wears
         readonly Material[] _looks = new Material[9];
         Mesh _bodyMesh;
+        // round 11f (Docs/ECOLOGY_LOD.md §5): the macro LOD - a collapsed swarm's 10 Hz tick stops, its formation drifts
+        SwarmMacroBody _macro;
+        CellEcologyLod _lod;
+        bool _wantCollapse;
+        static readonly ProfilerMarker s_mMacro = new("SwarmFauna.MacroTick");
         static readonly ProfilerMarker s_mIndex = new("SwarmFauna.Tick.Index");
         static readonly ProfilerMarker s_mEntities = new("SwarmFauna.Tick.Entities");
         static readonly ProfilerMarker s_mBodies = new("SwarmFauna.Frame.Bodies");
@@ -238,6 +243,12 @@ namespace CosmicShore.Gameplay
             BuildMouths();
             VirtualFauna.Register(this);
             _lastFedTime = Time.time;
+            if (config.MacroLod && _gpu)
+            {
+                _macro = new SwarmMacroBody(_job);
+                _lod = CellEcologyLod.For(host);
+                _lod?.Register(this);
+            }
             _acc = Random.value * _dt;   // stagger the cell's swarms across frames from the first tick
             StartLoop();
             CSDebug.LogVerbose(CSLogChannel.Ecology,
@@ -504,6 +515,8 @@ namespace CosmicShore.Gameplay
             _render?.Dispose();
             _render = null;
             VirtualFauna.Unregister(this);
+            _lod?.Unregister(this);
+            _lod = null;
             ReleaseIndexEntries();
             ReleaseBodyEntities();
             base.OnDestroy();
@@ -513,6 +526,14 @@ namespace CosmicShore.Gameplay
         {
             if (_job == null) return;
             if (_job.Error != null) { ReportWorkerError(); return; }
+            _lod?.Advance();   // the cell's LOD: may expand this swarm (a pilot approaches) or tick it (collapsed)
+            if (_macro is { Collapsed: true })
+            {
+                // collapsed: no tick, no pose - the hearts are drawn where the last macro tick put them (the bodies are
+                // prism entities, posed by that tick), so whatever a distant camera shows does not move between ticks
+                if (_gpu) DrawMembers(_alpha);
+                return;
+            }
 
             _acc += Time.deltaTime;
             if (_acc >= _dt) AdvanceTick();
@@ -522,14 +543,20 @@ namespace CosmicShore.Gameplay
             // the body pose job goes first, so it runs on the workers while this frame's proxies and hearts are posed
             if (_unified) using (s_mBodies.Auto()) SchedulePoseBodies(alpha);
             using (s_mPose.Auto()) PoseProxies(alpha);
-            if (_gpu)
-                using (s_mDraw.Auto())
-                {
-                    float r = (_plans[Mathf.Clamp(_job.PlanIx, 0, 3)].Radius * 3f + 20f) * config.UnitScale + 40f;
-                    var bounds = new Bounds(Uni(_job.Anchor), Vector3.one * (2f * r));
-                    _render.Draw(bounds, alpha, _job.Tick + alpha, _bloomTicks, Uni(_job.BY), Uni(_job.BZ), _cap);
-                }
+            if (_gpu) DrawMembers(alpha);
             if (_unified) using (s_mBodiesWrite.Auto()) WritePosedBodies();
+        }
+
+        /// <summary>The swarm's world radius as drawn (the draw bounds' half extent, less the margin).</summary>
+        float BodyRadius => (_plans[Mathf.Clamp(_job.PlanIx, 0, 3)].Radius * 3f + 20f) * config.UnitScale;
+
+        void DrawMembers(float alpha)
+        {
+            using (s_mDraw.Auto())
+            {
+                var bounds = new Bounds(Uni(_job.Anchor), Vector3.one * (2f * (BodyRadius + 40f)));
+                _render.Draw(bounds, alpha, _job.Tick + alpha, _bloomTicks, Uni(_job.BY), Uni(_job.BZ), _cap);
+            }
         }
 
         /// <summary>
@@ -547,6 +574,13 @@ namespace CosmicShore.Gameplay
                 OnTickPublished();
                 _acc -= _dt;
                 if (_acc > _dt) _acc = _dt;   // never bank more than one tick (the round-6 rule)
+            }
+            // round 11f: the director asked for a collapse while a tick was in flight - the published tick is the
+            // formation the swarm freezes into, and no next tick is started
+            if (_wantCollapse)
+            {
+                _wantCollapse = false;
+                if (CollapseReady && _macro.TryCollapse()) { _alpha = Mathf.Clamp01(_acc / _dt); return; }
             }
             Kick();
         }
@@ -797,6 +831,7 @@ namespace CosmicShore.Gameplay
         SwarmTadpoleFauna MaterialiseForHit(int i, bool force = false)
         {
             if (_job == null || i < 0 || i >= _cap) return null;
+            if (_macro is { Collapsed: true }) ExpandMacro();   // a hit is resolved by individuals (ECOLOGY_LOD §4 clause 3)
             var existing = _proxy[i];
             if (existing)
             {
@@ -987,6 +1022,78 @@ namespace CosmicShore.Gameplay
                 var m = _proxy[_proxySlots[q]];
                 if (!m || m.IsDead) continue;
                 if ((m.transform.position - centre).sqrMagnitude <= r2) results.Add(m);
+            }
+        }
+
+        // ───────────────────────────────────────────────────────────────── the macro LOD (round 11f, Docs/ECOLOGY_LOD.md §5)
+
+        /// <summary>Due to shed a starving member: only individuals can die (a body withers, a crystal drops).</summary>
+        bool StarvationDue
+        {
+            get
+            {
+                float now = Time.time;
+                return now - _lastFedTime >= config.StarvationSeconds && now - _lastShedTime >= config.ShedIntervalSeconds;
+            }
+        }
+
+        /// <summary>Nothing pending that only individuals resolve: no proxy (a hit, a shed, a predator's bite), no kill
+        /// waiting for its tick, no starvation shed due.</summary>
+        bool CollapseReady =>
+            _macro != null && !_macro.Collapsed && _gpu && _job.Error == null && _proxySlots.Count == 0 && _goneSlots.Count == 0
+            && !StarvationDue;
+
+        SVector3 IMacroPopulation.MacroCentre => _job != null ? _job.Anchor : Sim(transform.position);
+        float IMacroPopulation.MacroExtent => _job != null && _plans != null ? BodyRadius : 0f;
+        bool IMacroPopulation.IsCollapsed => _macro is { Collapsed: true };
+        bool IMacroPopulation.CanCollapse => CollapseReady;
+        bool IMacroPopulation.NeedsIndividuals =>
+            _macro is { Collapsed: true } && (_proxySlots.Count > 0 || _goneSlots.Count > 0 || StarvationDue);
+        MacroPopulationTotals IMacroPopulation.Totals => _macro != null ? _macro.Totals : default;
+
+        /// <summary>Collapses now if no tick is in flight; otherwise asks for it at the next published tick (the formation
+        /// it freezes into) and returns false - the director sees it collapsed on its next tick.</summary>
+        bool IMacroPopulation.Collapse()
+        {
+            if (!CollapseReady) return false;
+            if (_job.State == SwarmJobState.Idle && _macro.TryCollapse()) return true;
+            _wantCollapse = true;
+            return false;
+        }
+
+        void IMacroPopulation.Expand() => ExpandMacro();
+
+        /// <summary>Resumes the 10 Hz tick from the frozen formation, at the display alpha it froze at - nothing jumps.</summary>
+        void ExpandMacro()
+        {
+            _wantCollapse = false;
+            if (_macro is not { Collapsed: true }) return;
+            _macro.Expand();
+            _acc = _alpha * _dt;
+        }
+
+        /// <summary>
+        /// One macro tick (1 Hz, ECOLOGY_LOD §5): the formation drifts rigidly toward the goal at cruise (core, published
+        /// frames, index points and anchor together), the index entries and body entities follow once, and the swarm
+        /// grazes what is under it at the macro cadence (BitersPerStep x TickHz x dt bites, banked into the same stomach).
+        /// Counts never change here: births are laid on expansion from the banked stomach, and a starvation shed expands it.
+        /// </summary>
+        void IMacroPopulation.MacroTick(float dt)
+        {
+            if (_macro is not { Collapsed: true }) return;
+            using (s_mMacro.Auto())
+            {
+                _macro.MacroTick(dt, Sim(Goal), CurrentSpeed, config.UnitScale);
+                transform.position = Uni(_job.Anchor);
+                using (s_mUpload.Auto()) _render.Upload(_job);
+                using (s_mIndex.Auto()) SyncIndex();
+                if (_unified)
+                {
+                    using (s_mEntities.Auto()) SyncEntities();
+                    SchedulePoseBodies(_alpha);
+                    WritePosedBodies();
+                }
+                using (s_mFeed.Auto()) Feed(Mathf.Max(1, Mathf.RoundToInt(config.BitersPerStep * config.TickHz * dt)));
             }
         }
 
@@ -1268,7 +1375,8 @@ namespace CosmicShore.Gameplay
             get
             {
                 var st = _job.Stomach;
-                return (st[0] + st[1] + st[2] + st[3]) / Mathf.Max(1e-3f, StomachCapacity);
+                float held = _macro is { Collapsed: true } ? (float)_macro.State.StomachTotal : st[0] + st[1] + st[2] + st[3];
+                return held / Mathf.Max(1e-3f, StomachCapacity);
             }
         }
 
@@ -1279,7 +1387,9 @@ namespace CosmicShore.Gameplay
         /// into the stomach under the PLANT's element, which is what later pays for eggs. A full stomach
         /// stops grazing: a grown body does not strip its feeding ground for nothing.
         /// </summary>
-        void Feed()
+        void Feed() => Feed(config.BitersPerStep);
+
+        void Feed(int biters)
         {
             if (StomachFill >= 1f) { _lastFedTime = Time.time; return; }
 
@@ -1287,7 +1397,7 @@ namespace CosmicShore.Gameplay
             if (index == null || !index.IsAvailable) return;
 
             var inst = _job.Instances;
-            int bitten = 0, biters = config.BitersPerStep;   // round 7: NOT x Density - bites are the one main-thread cost that scales with appetite
+            int bitten = 0;   // round 7: biters NOT x Density - bites are the one main-thread cost that scales with appetite
             for (int tries = 0; tries < _cap && bitten < biters; tries++)
             {
                 _biteCursor = (_biteCursor + 1) % _cap;
@@ -1304,7 +1414,9 @@ namespace CosmicShore.Gameplay
                     float volume = Mathf.Max(0.001f, prism.Volume);
                     bool fromGoal = _goalPlant && (prism as HealthPrism).LifeForm == _goalPlant;
                     prism.Consume(MouthFor(i, at), eater, _eaterName, false, true);
-                    _job.QueueDeposit(e, volume);   // round 9: food pays for eggs; it never decides a colour
+                    // round 9: food pays for eggs; it never decides a colour. Collapsed, the macro body banks it (same queue)
+                    if (_macro is { Collapsed: true }) _macro.Bank(e, volume);
+                    else _job.QueueDeposit(e, volume);
                     _lastFedTime = Time.time;
                     if (fromGoal) _lastGoalBite = Time.time;
                     break;

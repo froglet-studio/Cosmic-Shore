@@ -2242,3 +2242,28 @@ prism, so structures add 0 colliders.
 
 The full write-up, proof and limits are in [`Docs/BUILDERS_AND_THIEVES.md`](BUILDERS_AND_THIEVES.md). QA:
 QA-SWARM-ROUND11-5.
+
+## 24. Round 11f: a far swarm costs nothing, and every creature has a stomach
+
+This round ports the research's hierarchical-ecology architecture (regions, a 1 Hz macro cohort ledger, one conserved
+stomach). The full write-up, every gate's number and the limits are in
+**[`Docs/ECOLOGY_LOD.md`](ECOLOGY_LOD.md)**.
+
+What changes for the swarm:
+
+- **It collapses when far and unseen** (`SwarmFaunaConfigSO.MacroLod`, on by default):
+  - its 10 Hz worker tick stops;
+  - its frozen formation drifts rigidly toward its goal once per second;
+  - its index entries stay, so LiveVolume and the phase ladder read the same mass;
+  - it keeps grazing at the macro cadence.
+- **It expands before a pilot can see it.** This happens on the research prefetch radii (280 u, or 450 u ahead), with
+  a per-frame guard for fast pilots. It also expands at once when hit, or when a starving member is due to be shed.
+- **`SwarmTickJob.Translate` / `ISwarmCore.Translate`** move the core, the published frames, the index points and the
+  anchor together, so expansion never jumps.
+- **The host.** `CellEcologyLod` is the per-cell host. Substrate populations and builder colonies adopt the same
+  `IMacroPopulation` contract; ECOLOGY_LOD.md §6 says exactly how.
+
+Every other creature's `starvationSeconds` is now a conserved stomach, migrated so a standard leaf meal behaves as the
+clock did (ECOLOGY_LOD.md §2).
+
+**QA.** QA-SWARM-ROUND11-6.

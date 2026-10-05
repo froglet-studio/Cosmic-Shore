@@ -354,6 +354,14 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
+        /// <summary>Round 11f (Docs/ECOLOGY_LOD.md §5): the whole body moves rigidly by <paramref name="d"/> (sim units) -
+        /// a collapsed swarm's macro drift. Nothing else changes: the formation is the state it re-expands into.</summary>
+        public void Translate(Vector3 d)
+        {
+            for (int i = 0; i < Cap; i++) Pos[i] += d;
+            Anchor += d; SwimTarget += d;
+        }
+
         /// <summary>Starvation (the HOST's decision) sheds a member of the element furthest over its plan count,
         /// the one furthest from its well; else the most misplaced member. Never on a clock.</summary>
         public int StarvationVictim()
