@@ -1056,6 +1056,61 @@ in the phase ladder.
 - An own-domain sniper kill.
 - A frame-time regression above ~1 ms per frame.
 
+### QA-SWARM-ROUND11-3 ⬜ — threat flora: bait a snap trap, read a physarum pulse
+
+**Source:** branch `overnight/flora` (headless harness and glue type-check only, not run in the editor). Reference:
+`Docs/THREAT_FLORA.md` and `Docs/SWARM_FAUNA.md` §21. **Why it matters:** these are the first plants that can
+cost you petals. If the telegraph is unreadable the danger feels unfair; if it never fires the grove is scenery.
+
+1. **Find the grove.** Open the Swarm cell in freestyle and fly as a domain that does NOT control the cell, with a
+   few petals on your HUD flower. From the cell centre, head along (1, 0.3, 0): +X, tilted slightly up. Fly out past
+   the outer swarm band (ends ~1,080 u) toward the membrane (1,200 u). The grove sits at radius 1,095-1,192 u in an
+   18° cone: three clumps of snap traps (stalk, two plate lobes, teeth, a crystal in the jaws) and five sclerotia
+   (crystals in a six-prism shell) joined by cables of tube prisms.
+2. **Bait a snap trap.** Approach one trap's mouth (it faces the cell centre). Within ~146 u its lobes should glow
+   in its domain's danger colour and gape wider for ~0.7 s (PRIMING), then hold open (ARMED).
+   - Back off before it arms: the glow goes out and it never fires.
+   - Fly a path straight across the open mouth: the lobes snap shut in ~0.5 s. Be between them and you are hit;
+     the closing lobes and the teeth burn petals. Dodge sideways the moment you see the glow.
+   - Touch a tooth on a resting trap: it is always a danger prism.
+   - Shoot or ram the lobes and teeth until 13 or more of the 24 are gone: the trap glows no more and cannot fire.
+   - Joust the crystal in the jaws while the trap is shut (~7-9 s): the trap dies and leaves a skeleton.
+   - Fly loops past a clump for ~1 min: the mouths turn toward your path (slowly, 7°/s, at most 60°).
+3. **Read a physarum pulse.** Hover ~100 u from a long cable and watch it:
+   - A band of danger-coloured tubes runs along the cable at ~65 u/s (about 1.2 s per 80 u). Each tube is lit for
+     ~0.5 s, then dark and refractory for ~1 s; cross a cable just behind a passing pulse.
+   - A sclerotium's shell glows for 0.8 s, then beats danger for 0.6 s, about every 3 s. Dive for its crystal
+     right after a beat ends.
+   - Cut a cable by ramming or shooting through it. Within ~1 minute the cables re-find the gap. Leaving a trail
+     near the grove should NOT attract the cables (wake repels).
+4. Repeat one trap hit and one cable hit as the cell's controlling domain: it should only sting, with no petal
+   loss.
+   As an opposing domain, a hit should take ONE petal per element (the Swarm cell plays the Tuned burn,
+   QA-SWARM-ROUND11-7), not five.
+5. Profile 60 s near the grove and record `ThreatGrove.SnapTraps` and `ThreatGrove.Physarum` (headless estimate:
+   well under 0.1 ms for the traps, ~1.4 ms per physarum step at 10 Hz under Mono). Note any hitch in the first
+   ~1.5 s while the network warms up.
+
+**PASS:**
+- The grove is where step 1 says, outside every swarm band, and no swarm grazes it.
+- Every snap is preceded by a visible glow; a trap whose vessel leaves relaxes without firing.
+- An opposing-domain hit by a closing lobe, tooth, pulse or beat takes petals.
+- A trap missing 13+ lobe/tooth prisms never fires.
+- Pulses visibly travel along cables; a cut cable re-forms.
+- Nothing pops in or out: prisms fly in from and back to the plant.
+- Over a 10 min session, the fortress colony and thief nest (QA-SWARM-ROUND11-5) never carry off a tube, and the
+  thief nest is not inside the grove's sector.
+
+**FAIL:**
+- A snap with no glow first, or a glow that never resolves.
+- Danger with no petal loss, or burned petals that come back as crystals.
+- A trap whose jaws reach into the swarm band or through the membrane.
+- Cables that never pulse, never re-form, or that chase your trail.
+- Tubes or trap prisms appearing or vanishing without a flight.
+- A fortress wall or thief hoard containing a physarum tube; a hoard shrinking because a trap or cable ate it;
+  a thief nest sitting inside the grove.
+- A frame-time regression above ~1 ms per frame near the grove, or a warm-up hitch over ~10 ms.
+
 ### QA-SWARM-ROUND10-1 ⬜ — four creatures, and their strikes burn petals
 
 **Source:** branch `cece/swarm-fauna-game` (type-checked only, not run in the editor). Reference:

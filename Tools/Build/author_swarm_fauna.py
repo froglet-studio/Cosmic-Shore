@@ -611,6 +611,18 @@ def ladder(tot):
     }
 
 
+def threat_flora():
+    """Round 11c (Docs/THREAT_FLORA.md): the threat-flora grove's two species ride this cell's profile, and its
+    hearts ride the collider gate. author_threat_flora.py owns those assets (in their own folder - stale() would
+    delete them here); this script only lists them. None when that script is absent."""
+    try:
+        sys.path.insert(0, HERE)
+        import author_threat_flora as atf
+    except ImportError:
+        return None
+    return atf
+
+
 def substrate():
     """Round 11b (Docs/SUBSTRATE_FAUNA.md): the substrate populations live in this cell; their own generator owns them."""
     import author_substrate_fauna
@@ -619,6 +631,9 @@ def substrate():
 
 def profile_asset():
     floras = "".join(f"  - {{fileID: 11400000, guid: {guid(rel(cell_path(flora_name(r))))}, type: 2}}\n" for r in REGIONS)
+    atf = threat_flora()
+    if atf:
+        floras += "".join(f"  - {{fileID: 11400000, guid: {g}, type: 2}}\n" for g in atf.profile_guids())
     faunas = "".join(f"  - {{fileID: 11400000, guid: {guid(rel(cell_path(fauna_name(r))))}, type: 2}}\n" for r in REGIONS)
     faunas += substrate().profile_entries()   # round 11b: the substrate populations (author_substrate_fauna.py owns them)
     faunas += author_builders.profile_entries()   # round 11e: the fortress colony and the thief nest
@@ -774,8 +789,11 @@ def verify(out, tot, rows):
     smallest, top, ulp = float32_ulp_check(tot)
     if smallest < 16 * ulp:
         problems.append(f"the smallest member body ({smallest:.3f}) is under 16 ulps of float32 at {top:,.0f} ({ulp:.4f})")
-    if tot["colliders_engaged"] >= COLLIDER_CEILING:
-        problems.append(f"{tot['colliders_engaged']} colliders with every swarm fully engaged >= the ceiling {COLLIDER_CEILING}")
+    atf = threat_flora()
+    grove = atf.always_on_hearts() if atf else 0
+    if tot["colliders_engaged"] + grove >= COLLIDER_CEILING:
+        problems.append(f"{tot['colliders_engaged']} colliders with every swarm fully engaged + {grove} threat-flora hearts "
+                        f">= the ceiling {COLLIDER_CEILING}")
     # food, PER BAND (the swarms are penned apart): the band's forest at its CAP must be able to pay for
     # its body grown to full once (a grazed plant regrows, so this is a floor on the economy, not its ceiling)
     for row in rows:

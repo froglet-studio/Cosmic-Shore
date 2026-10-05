@@ -221,7 +221,7 @@ namespace CosmicShore.Gameplay
         public virtual float CurrentSpeed => 0f;
         public float HeartWorldScale => 0;
         public void ApplyHeartSize(float s) { }
-        protected static bool IsShieldedMass(Prism prism) => false;
+        public static bool IsShieldedMass(Prism prism) => false;          // Fauna.cs (public since round 11c)
         protected static readonly Collider[] OverlapScratch = new Collider[256];
         protected static readonly List<Prism> FeedScratch = new(64);
         protected static int NonPrismOverlapMask => 0;
@@ -249,6 +249,13 @@ namespace CosmicShore.Gameplay
         public bool IsAlivePrey => true;                    // Fauna.cs:1096
         public bool IsPredationImmune => false;             // Fauna.cs:181
         public bool Jousted(string killerName) => false;    // Fauna.cs:498 (builders)
+    }
+
+    // ThreatFlora/ThreatGrove.cs (round 11c) - the two statics the builders' glue asks
+    public sealed class ThreatGrove : MonoBehaviour
+    {
+        public static bool IsGroveTissue(Prism prism) => false;
+        public static Vector3 OutsideGroves(Vector3 p, float clearance) => p;
     }
 }
 

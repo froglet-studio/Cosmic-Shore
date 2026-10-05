@@ -2227,6 +2227,31 @@ What it shares with the swarm, and what it adds:
   its ring closes, then is winded for 3 s.
 - **QA.** QA-SWARM-ROUND11-2.
 
+## 21. Round 11c: threat flora in the rim (snap traps and a physarum grove)
+
+Round 11c plants two plants that hurt you in the Swarm cell. Full design, proof and findings:
+**[`Docs/THREAT_FLORA.md`](THREAT_FLORA.md)**. QA: `QA-SWARM-ROUND11-3`.
+
+- **Where.** A sector of the rim shell, radius 1,095-1,192 u and half-angle 18° about `normalize(1, 0.3, 0)` from
+  the cell centre. It lies past the outer swarm band (ends at 1,080) and inside the membrane (1,200), so no swarm
+  is penned through it or grazes it. The colour rule holds: the config says where the grove is, never its domain.
+- **Snap traps** (Time element, `SnapTrapFlora`). Venus flytraps of 27 prisms (stalk, two lobes, danger teeth)
+  with the heart crystal in the jaws. They sense a vessel at 146 u, glow (the telegraph), arm, and snap when your
+  path crosses the mouth; the closing lobes and the teeth are danger prisms, so an opposing-domain hit burns
+  petals. Three clumps share one rhizome reserve; heliotropism turns the mouths toward traffic inside a 60° cone,
+  which keeps the jaws between the swarm band and the membrane.
+- **Physarum grove** (Space element, `PhysarumSclerotium`). A 3D Jones slime mould that cables the sector between
+  food and your trails. The cables carry a Greenberg-Hastings danger pulse at ~65 u/s; the sclerotia (hearts)
+  climb into the cables and beat danger every ~3 s after a 0.8 s glow. A cut cable re-forms.
+- **Ecology.** Mass is conserved per colony (the trap rhizome and the network reserve both audit to 0); no timers
+  or TTLs; prisms are laid from and resorbed to the reserve with flights, never popped; one crystal per lifeform;
+  shielded mass is never food.
+- **Collider budget.** The grove's 20 always-on hearts bring the cell's worst case to 1,160 of 1,200
+  (978 + 78 substrate proxies + 84 builder proxies + 20; `author_swarm_fauna.py` and `author_threat_flora.py`
+  both check it). The grove and round 11e's builders never take each other's mass (`THREAT_FLORA.md` §4.1).
+- **Gates.** `Tools/Build/threat_flora_harness/run.sh` (the shipped cores, plus the glue type-checked against
+  hand-copied stubs) and `python3 Tools/Build/author_threat_flora.py --check`.
+
 ## 23. Round 11e: creatures that steal and build
 
 Two new species take prisms that already exist and give them a new owner:
