@@ -26,7 +26,7 @@ const STAKES_RULES = {
 const DANGER_KINDS = { bite: 1, burn: 1, snap: 1, sting: 1, drain: 0.25 };
 /** the crystal a lifeform drops (one per lifeform, CLAUDE.md). Assigned so every element can be re-earned in the cell. */
 const SPECIES_ELEMENT = { grazer: 'mass', stampede: 'mass', fortress: 'mass', locust: 'time', mobber: 'time',
-  pack: 'charge', thief: 'charge', lurker: 'space', leviathan: 'space', snaptrap: 'space' };
+  pack: 'charge', thief: 'charge', lurker: 'space', leviathan: 'space', snaptrap: 'space', siege: 'time' };
 const PETAL = 0.1, LEVEL_MAX = 10;
 
 function Stakes(opt) {

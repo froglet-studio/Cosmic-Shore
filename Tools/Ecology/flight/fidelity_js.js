@@ -23,7 +23,7 @@ for (let i = 0; i < args.length; i++) {
 // --break species.CONST=value : a deliberately broken parameter (the gate's negative control)
 const P = JSON.parse(JSON.stringify(PARAMS));
 for (const b of opt.brk) { const [lhs, v] = b.split('='); const [sp, k] = lhs.split('.'); P.species[sp].const[k] = +v; }
-const keys = opt.keys.length ? opt.keys : Object.keys(E.WORLD);
+const keys = opt.keys.length ? opt.keys : Object.keys(E.WORLD).filter(k => !(E.JS_ORIGINAL || {})[k]);   // JS-original species have no Python twin
 const runs = [];
 const t0 = Date.now();
 for (const k of keys) for (const pol of E.POLICIES[E.WORLD[k]]) for (const s of opt.seeds) {
