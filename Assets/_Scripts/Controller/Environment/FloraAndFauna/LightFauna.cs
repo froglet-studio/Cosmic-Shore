@@ -392,12 +392,12 @@ namespace CosmicShore.Gameplay
                 if (d < bestSqr && d <= maxSqr) { bestSqr = d; best = f; }
             }
 
-            // Swarm members are herbivores too, but most of them are DATA with no GameObject (Docs/SWARM_FAUNA.md
-            // §16.3): ask the swarms for one nearer than the registry's best. The winner comes back as a real
-            // creature (its proxy), held alive while this predator hunts it.
-            if (SwarmTargets.Any)
+            // Virtual-population creatures (swarm members) are herbivores too, but most of them are DATA with no
+            // GameObject (Docs/SWARM_FAUNA.md §16.3, §19): ask for one nearer than the registry's best. The winner
+            // comes back as a real creature (materialised), held alive while this predator hunts it.
+            if (VirtualFauna.Any)
             {
-                var member = SwarmFauna.NearestPrey(origin, Mathf.Min(bestSqr, maxSqr), this, true, out _);
+                var member = VirtualFauna.NearestPrey(origin, Mathf.Min(bestSqr, maxSqr), this, true);
                 if (member) best = member;
             }
 
@@ -994,11 +994,11 @@ namespace CosmicShore.Gameplay
             }
 
             // A school of swarm members swimming into the mouth: most are DATA, so the registry cannot see them
-            // (Docs/SWARM_FAUNA.md §16.3). The swarm hands back the ones in reach as real creatures.
-            if (SwarmTargets.Any)
+            // (Docs/SWARM_FAUNA.md §16.3, §19). The ones in reach come back as real creatures.
+            if (VirtualFauna.Any)
             {
                 s_swarmPrey.Clear();
-                SwarmFauna.PreyAtMouth(mouthPos, data.attackRange, this, true, s_swarmPrey);
+                VirtualFauna.PreyInReach(mouthPos, data.attackRange, this, true, s_swarmPrey);
                 for (int i = 0; i < s_swarmPrey.Count; i++)
                 {
                     var f = s_swarmPrey[i];

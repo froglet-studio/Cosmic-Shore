@@ -90,11 +90,21 @@ namespace CosmicShore.Gameplay
         [Min(0)] public int MaxProxies = 160;
         [Tooltip("Seconds a proxy outlives its vessel leaving before it is given back to the simulation.")]
         [Min(0f)] public float ProxyLingerSeconds = 2f;
-        [Tooltip("Round 8 (Docs/SWARM_FAUNA.md §16.2): most members a WEAPON may turn into proxies per frame, cell-wide " +
-                 "(a rocket into a 960-tadpole whale). Hits past it wait in the weapon's backlog for the next frame - the " +
-                 "member keeps swimming until its turn, so the deaths roll through the body instead of hitching one frame. " +
-                 "A sniper round and a projectile are never deferred (a handful of members each).")]
+        [Tooltip("Round 8 (Docs/SWARM_FAUNA.md §16.2), round 11a (§19.1): most members the BULK paths may turn into " +
+                 "proxies per frame, cell-wide - a blast's AOE resolve (a rocket into a 960-tadpole whale), a predator's " +
+                 "prey search, a lifeform-crystal warhead's heart sweep. The spatial index asks it through " +
+                 "IVirtualPrismBudget; hits past it wait in the blast's backlog for the next frame - the member keeps " +
+                 "swimming until its turn, so the deaths roll through the body instead of hitching one frame. A sniper " +
+                 "round and a projectile are never deferred (a handful of members each).")]
         [Min(1)] public int MaxHitMaterialisationsPerFrame = 48;
+        [Header("Round 11a - one prism system (Docs/SWARM_FAUNA.md §19)")]
+        [Tooltip("Draw member BODIES as ordinary prism render entities (PrismRenderService) - the platform's own " +
+                 "per-domain tier materials, colours and open-with-distance spread, one Burst transform write per " +
+                 "frame. Hearts stay on the instanced crystal draw either way. Off - or when the ECS render path is " +
+                 "unavailable (PrismRenderService.CreateBatch declines) - the round-7 instanced body draw " +
+                 "(SwarmMemberInstanced) is used instead, with no code change. Detection is the spatial index's in " +
+                 "both cases.")]
+        public bool UnifiedPrismBodies = true;
 
         [Header("Seed")]
         [Tooltip("Tadpoles a new swarm hatches with, at its plan's element mix, each on a slot of its " +

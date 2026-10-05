@@ -1,10 +1,10 @@
-// Round 8 (Docs/SWARM_FAUNA.md §16.1): the smallest stand-in for Unity.Mathematics / Collections / Jobs /
+// Round 8 (Docs/SWARM_FAUNA.md §16.1), kept for round 11a (§19.1, R11a): the smallest stand-in for Unity.Mathematics / Collections / Jobs /
 // Burst that the EXTRACTED shipped prism predicates (extract_burst_predicates.py) compile against. Every
 // math function below is Unity.Mathematics' own definition (float, the same operation order), so the
 // extracted code computes what the shipped code computes on a CPU without Burst's fast-math. What this does
 // NOT model: Burst's own codegen (FMA contraction, approximate rsqrt under FloatMode.Fast). The jobs ship with
 // the default FloatMode.Default, so the observable difference is at most a contracted multiply-add on a
-// boundary sample - which is why R8a reports boundary disagreements separately rather than demanding zero.
+// boundary sample - which is why R8a reported boundary disagreements separately; R11a (the virtual-entry shapes) demands zero, since both sides run the same extracted arithmetic.
 using System;
 using System.Collections.Generic;
 

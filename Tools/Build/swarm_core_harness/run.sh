@@ -7,7 +7,7 @@
 #   bash Tools/Build/swarm_core_harness/run.sh <plans> grid    # the grid core's only
 #   bash Tools/Build/swarm_core_harness/run.sh <plans> sort    # the sort core's only
 #   bash Tools/Build/swarm_core_harness/run.sh <plans> evo     # the evofate core's only
-#   SWARM_DENSITY=5 bash Tools/Build/swarm_core_harness/run.sh <plans> tickjob   # round 7: the off-thread tick (R7a-g)
+#   SWARM_DENSITY=5 bash Tools/Build/swarm_core_harness/run.sh <plans> tickjob   # round 7: the off-thread tick (R7a-g); round 11a: R11b-e
 #   SWARM_DENSITY=5 bash Tools/Build/swarm_core_harness/run.sh <plans> lineage [out.json]   # round 9: regional lineages (R9a-d)
 #   bash Tools/Build/swarm_core_harness/run.sh evofate <plans> <fixture.json>   # exactness vs Python (evofate_fixture.py)
 #   bash Tools/Build/swarm_core_harness/run.sh export <plans> <out.json> 7,23,41   # states for score_grid.py / score_sort.py
@@ -34,13 +34,13 @@ NSREF=$(ls "$DOTNET_ROOT"/packs/NETStandard.Library.Ref/*/ref/netstandard2.1/net
 SW="$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm"
 "$DOTNET" "$CSC" -nologo -langversion:9.0 -nostdlib -noconfig "-r:$NSREF" -target:library -out:"$OUT/unityprofile.dll" \
   "$SW/ISwarmCore.cs" "$SW/SwarmFieldCore.cs" "$SW/SwarmGridCore.cs" "$SW/SwarmSortCore.cs" "$SW/SwarmEvoFateCore.cs" \
-  "$SW/SwarmTickJob.cs" "$SW/SwarmMemberQuery.cs" || { echo "FAIL: the sim cores do not compile against netstandard2.1 (Unity's API profile)" >&2; exit 1; }
-# Round 8 (Docs/SWARM_FAUNA.md §16.1): the member query vs the SHIPPED prism predicates, extracted verbatim from
-# PrismSpatialIndex.cs (R8a/R8b). Its own small executable; runs first because it takes about a second.
+  "$SW/SwarmTickJob.cs" "$SW/SwarmPrismSync.cs" || { echo "FAIL: the sim cores do not compile against netstandard2.1 (Unity's API profile)" >&2; exit 1; }
+# Round 11a (Docs/SWARM_FAUNA.md §19.1): the virtual-entry queries a member is found through vs the SHIPPED prism
+# predicates, both extracted verbatim from PrismSpatialIndex.cs (R11a). Its own small executable; runs first because
+# it takes about a second.
 python3 "$HERE/extract_burst_predicates.py" "$ROOT/Assets/_Scripts/Controller/Managers/PrismSpatialIndex.cs" "$OUT/ShippedPrismQuery.g.cs"
 "$DOTNET" "$CSC" -nologo -langversion:9.0 -nostdlib -noconfig -optimize+ "@$OUT/refs.rsp" -nowarn:CS0649 \
   -target:exe -main:QueryHarness -out:"$OUT/swarmquery.exe" \
-  "$SW/SwarmMemberQuery.cs" "$SW/SwarmTickJob.cs" "$SW/ISwarmCore.cs" "$SW/SwarmFieldCore.cs" \
   "$HERE/BurstShim.cs" "$OUT/ShippedPrismQuery.g.cs" "$HERE/QueryHarness.cs"
 "$DOTNET" "$CSC" -nologo -langversion:9.0 -nostdlib -noconfig -optimize+ "@$OUT/refs.rsp" \
   -target:exe -main:Program -out:"$OUT/swarmcore.exe" \
@@ -50,7 +50,7 @@ python3 "$HERE/extract_burst_predicates.py" "$ROOT/Assets/_Scripts/Controller/Ma
   "$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/SwarmSortCore.cs" \
   "$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/SwarmEvoFateCore.cs" \
   "$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/SwarmTickJob.cs" \
-  "$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/SwarmMemberQuery.cs" \
+  "$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/SwarmPrismSync.cs" \
   "$HERE/Program.cs" "$HERE/TickJobHarness.cs" "$HERE/GridHarness.cs" "$HERE/SortHarness.cs" "$HERE/SortFeelHarness.cs" "$HERE/EvoHarness.cs" "$HERE/LineageHarness.cs"
 V=$(ls "$DOTNET_ROOT"/shared/Microsoft.NETCore.App | head -1)
 printf '{"runtimeOptions":{"tfm":"net8.0","framework":{"name":"Microsoft.NETCore.App","version":"%s"}}}' "$V" > "$OUT/swarmcore.runtimeconfig.json"

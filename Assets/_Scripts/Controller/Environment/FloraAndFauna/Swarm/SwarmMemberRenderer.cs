@@ -8,6 +8,12 @@ using UnityEngine.Rendering;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
+    /// Round 11a (§19.2): with the unified prism path on, this draws only the HEARTS - the bodies are prism render
+    /// entities. Hearts stay here because a heart is not a prism: several crystal meshes per element, a molt that
+    /// shrinks one element away and re-forms another between ticks, the neutral living tint - none of which the
+    /// prism entity path has, and none of the platform's prism effects (grow, explode, suction, shield morph,
+    /// spread) apply to a crystal. Moving them would add ~2,200 more matrices a frame for no gain.
+    ///
     /// Draws every LIVING member of one swarm from one GPU buffer (Docs/SWARM_FAUNA.md §14). Per TICK the
     /// swarm hands it the tick job's instance array and heart lists (two <c>GraphicsBuffer.SetData</c>);
     /// per FRAME it sets ~a dozen per-swarm values and issues one body draw plus one draw per crystal
@@ -57,6 +63,13 @@ namespace CosmicShore.Gameplay
         static bool s_warned;
 
         public bool Valid { get; }
+
+        /// <summary>
+        /// Round 11a (Docs/SWARM_FAUNA.md §19.2): false while the member BODIES are drawn as ordinary prism render
+        /// entities (PrismRenderService) - this renderer then draws only the hearts. True is the round-7 body draw, the
+        /// automatic fallback when the ECS render path is unavailable and the <c>UnifiedPrismBodies</c> off switch.
+        /// </summary>
+        public bool DrawBodies { get; set; } = true;
 
         /// <summary>Instanced drawing needs structured buffers in the VERTEX stage (SM 4.5).</summary>
         public static bool Supported =>
@@ -205,7 +218,7 @@ namespace CosmicShore.Gameplay
                 receiveShadows = false,
                 layer = _layer,
             };
-            Graphics.RenderMeshPrimitives(rp, _body.Mesh, _body.Submesh, count);
+            if (DrawBodies) Graphics.RenderMeshPrimitives(rp, _body.Mesh, _body.Submesh, count);
 
             for (int q = 0; q < _hearts.Count; q++)
             {

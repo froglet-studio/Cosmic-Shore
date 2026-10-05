@@ -889,86 +889,30 @@ namespace CosmicShore.Gameplay
             liveVolumeTotal = _volumeSumNative[PrismSpatialIndex.CellVolumeTotal];
             liveEnvVolumeTotal = _volumeSumNative[PrismSpatialIndex.CellEnvVolumeTotal];
             liveExteriorEnvVolumeTotal = _volumeSumNative[PrismSpatialIndex.CellExteriorEnvVolumeTotal];
-            ApplyVirtualVolume(1);
         }
 
         // ------------------------------------------------------------------
-        //  VIRTUAL fauna body volume (round 8, Docs/SWARM_FAUNA.md §16.3).
-        //  A GPU-drawn swarm member has no registered body prism, so the Burst
-        //  pass above cannot see its mass - but volume is the spine, and a fauna
-        //  body counts. Each source (a swarm) states its ABSOLUTE per-domain body
-        //  volume here once per tick, and only when it changed; the cell adds the
-        //  sum EXACTLY where a fauna body prism lands - the all-source per-domain
-        //  volume and the total, never the environment / nucleus / exterior sums
-        //  (fauna bodies are volume-only: no targeting, no control in a nucleus
-        //  cell, no prey signal). Absolute-per-source rather than a running delta:
-        //  nothing accumulates, so neither float drift nor a missed delta can
-        //  leave phantom mass, and a cleared source is exactly gone. Accumulated in
-        //  double, then added to the published float sums at publish time - the
-        //  float running total is re-derived every pass, never carried.
+        //  VIRTUAL fauna body mass (round 11a, Docs/SWARM_FAUNA.md §19.1).
+        //  A swarm member that is only data is a PrismSpatialIndex VIRTUAL entry,
+        //  so the Burst pass above sums its body exactly where a fauna body prism
+        //  lands - volume-only (EnvMass 0): the all-source per-domain volume and
+        //  the total, never the environment / nucleus / exterior sums. Round 8's
+        //  per-source aggregate (SetVirtualVolume) is retired with it: a member
+        //  whose proxy body is a registered prism has its virtual entry
+        //  SUSPENDED, which the sum job skips, so nothing counts twice.
         // ------------------------------------------------------------------
-        readonly Dictionary<UnityEngine.Object, double[]> _virtualVolumeBySource = new();
-        readonly double[] _virtualVolumeBySlot = new double[4];
-
-        /// <summary>Slot of <paramref name="d"/> in this cell's volume order (Jade, Ruby, Gold, Blue).</summary>
-        public static int VolumeSlotOf(Domains d) => d switch
-        {
-            Domains.Jade => 0, Domains.Ruby => 1, Domains.Gold => 2, _ => 3,
-        };
 
         /// <summary>
-        /// <paramref name="source"/>'s fauna body volume that has no registered prism, by volume slot
-        /// (<see cref="VolumeSlotOf"/>) - replaces whatever that source stated before. A source that becomes a
-        /// real body prism (a swarm member's proxy) must drop that member from what it states, or it counts twice.
+        /// Binds a VIRTUAL index entry (a data-only fauna body) to this cell's summation view as volume-only fauna
+        /// mass in <paramref name="domain"/>. The virtual-entry counterpart of the binding <see cref="AddBlock"/>
+        /// writes for a registered fauna body prism - this cell stays the single writer of its own bindings. Re-call
+        /// to re-attribute the domain; <see cref="PrismSpatialIndex.Unregister"/> releases it.
         /// </summary>
-        public void SetVirtualVolume(UnityEngine.Object source, double[] bySlot)
+        public void BindVirtualMass(int spatialIndexId, Domains domain)
         {
-            if (source is null || bySlot == null) return;
-            if (!_virtualVolumeBySource.TryGetValue(source, out var held))
-                _virtualVolumeBySource[source] = held = new double[4];
-            bool same = true;
-            for (int i = 0; i < 4; i++) same &= held[i] == bySlot[i];
-            if (same) return;
-            ApplyVirtualVolume(-1);
-            for (int i = 0; i < 4; i++) held[i] = System.Math.Max(0.0, bySlot[i]);
-            RecomputeVirtualVolume();
-            ApplyVirtualVolume(1);
-        }
-
-        /// <summary>Forget everything <paramref name="source"/> stated (it was destroyed).</summary>
-        public void ClearVirtualVolume(UnityEngine.Object source)
-        {
-            if (source is null || !_virtualVolumeBySource.Remove(source)) return;
-            ApplyVirtualVolume(-1);
-            RecomputeVirtualVolume();
-            ApplyVirtualVolume(1);
-        }
-
-        /// <summary>The virtual body volume currently counted, all domains.</summary>
-        public double VirtualVolumeTotal =>
-            _virtualVolumeBySlot[0] + _virtualVolumeBySlot[1] + _virtualVolumeBySlot[2] + _virtualVolumeBySlot[3];
-
-        void RecomputeVirtualVolume()
-        {
-            System.Array.Clear(_virtualVolumeBySlot, 0, 4);
-            foreach (var kv in _virtualVolumeBySource)
-                for (int i = 0; i < 4; i++) _virtualVolumeBySlot[i] += kv.Value[i];
-        }
-
-        /// <summary>Adds (sign 1) or removes (sign -1) the virtual volume from the PUBLISHED all-source sums,
-        /// so a change between Burst passes is visible at once and the next pass re-derives everything.</summary>
-        void ApplyVirtualVolume(int sign)
-        {
-            double total = 0;
-            for (int i = 0; i < 4; i++)
-            {
-                double v = _virtualVolumeBySlot[i];
-                if (v == 0) continue;
-                var d = s_volumeDomainSlots[i];
-                liveVolumeByDomain[d] = Mathf.Max(0f, liveVolumeByDomain.GetValueOrDefault(d, 0f) + (float)(sign * v));
-                total += v;
-            }
-            if (total != 0) liveVolumeTotal = Mathf.Max(0f, liveVolumeTotal + (float)(sign * total));
+            if (spatialIndexId < 0) return;
+            if (_volumeCellId == 0) _volumeCellId = s_nextVolumeCellId++;
+            PrismSpatialIndex.Instance?.SetCellBinding(spatialIndexId, _volumeCellId, false, domain);
         }
 
         /// <summary>
@@ -993,7 +937,6 @@ namespace CosmicShore.Gameplay
             liveVolumeTotal = 0f;
             liveEnvVolumeTotal = 0f;
             liveExteriorEnvVolumeTotal = 0f;
-            ApplyVirtualVolume(1);   // the swarms that stated it are still alive (each clears its own on destroy)
         }
 
         /// <summary>

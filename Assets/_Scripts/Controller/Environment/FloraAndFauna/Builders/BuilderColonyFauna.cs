@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.Utility;
+using Unity.Collections;
+using Unity.Mathematics;
 using Unity.Profiling;
 using UnityEngine;
 using SVector3 = System.Numerics.Vector3;
@@ -17,13 +19,16 @@ namespace CosmicShore.Gameplay
     ///    (<see cref="SwarmTadpoleFauna"/>: a heart + one body prism), so every weapon, ram and joust finds a body;
     ///  • every death - a ram, a weapon, an empty stomach - goes through a proxy's sealed Die, so each member drops
     ///    exactly one crystal (its own heart) and nothing pops;
-    ///  • the prisms it steals are the platform's own (<see cref="BuilderPrismWorld"/>): no structure adds a collider.
+    ///  • the prisms it steals are the platform's own (<see cref="BuilderPrismWorld"/>): no structure adds a collider;
+    ///  • a member's BODY is an ordinary PrismSpatialIndex VIRTUAL entry while it is only data (round 11a's one prism
+    ///    system, Docs/SWARM_FAUNA.md §19.1, through the swarm's own <see cref="SwarmEntryLedger"/>), so every prism
+    ///    query, AOE pass, predator (<see cref="VirtualFauna"/>) and the cell's volume sum sees it exactly once.
     ///
     /// The anchor is heartless (a population, like the swarm): the species config's element names the members' hearts.
     /// Its colour is the domain the cell spawned it in (the controlling domain) and stays its own - the colony's
     /// stolen walls and hoard are its history, so a cell's one-colour re-colour does not repaint it.
     /// </summary>
-    public class BuilderColonyFauna : Fauna
+    public class BuilderColonyFauna : Fauna, IVirtualFaunaOwner, IVirtualPrismBudget, ISwarmEntrySink
     {
         [Header("Builder Colony")]
         [Tooltip("Species, numbers and look (Docs/BUILDERS_AND_THIEVES.md). Authored by Tools/Build/author_builders.py.")]
@@ -79,7 +84,23 @@ namespace CosmicShore.Gameplay
         int _vesselCount;
 
         Transform[] _mouths;
-        readonly double[] _virtual = new double[4];
+        float _alpha;
+
+        // the spatial index (round 11a): one virtual entry per data-only member's body
+        PrismSpatialIndex _index;
+        SwarmEntryLedger _entries;
+        bool[] _realBody;
+        SVector3[] _points;
+        NativeArray<int> _entryIdsNative;
+        NativeArray<float3> _pointsNative;
+        float _heartReach;
+        // a weapon or predator reaching a data-only member makes it real - budgeted per frame across every colony
+        const int MaxHitMaterialisationsPerFrame = 16;
+        static int s_hitFrame = -1, s_hitsThisFrame;
+
+        // Enter Play Mode without a domain reload keeps statics: start every session clean.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() { s_hitFrame = -1; s_hitsThisFrame = 0; }
 
         public BuilderColonyConfigSO Config => config;
         public BuilderSpecies Species => config ? config.Species : BuilderSpecies.Fortress;
@@ -185,6 +206,9 @@ namespace CosmicShore.Gameplay
             }
             BuildFrame();
             if (_gpu) Upload();
+            BindIndexEntries();
+            SyncIndex();
+            VirtualFauna.Register(this);
             _acc = Random.value * _dt;   // stagger colonies across frames from the first tick
 
             CSDebug.LogVerbose(CSLogChannel.Ecology,
@@ -260,6 +284,7 @@ namespace CosmicShore.Gameplay
                     using (s_mTick.Auto()) Tick();
                 }
                 float alpha = Mathf.Clamp01(_acc / _dt);
+                _alpha = alpha;
                 PollProxyDeaths();   // per frame: a member the platform killed stops being drawn in the same frame
                 _world.Animate(alpha);
                 PoseProxies(alpha);
@@ -298,8 +323,8 @@ namespace CosmicShore.Gameplay
             for (int q = 0; q < _deaths.Count; q++) HandleCoreDeath(_deaths[q]);
             BuildFrame();
             using (s_mUpload.Auto()) if (_gpu) Upload();
-            StateVirtualVolume();
             using (s_mProxies.Auto()) UpdateProxies();
+            SyncIndex();
         }
 
         void BuildFrame()
@@ -335,26 +360,6 @@ namespace CosmicShore.Gameplay
         }
 
         void Upload() => _render.Upload(_inst, _heartIdx, _heartStart, _heartCount);
-
-        /// <summary>The members' bodies and stomachs that have no registered prism, stated to the cell as fauna volume
-        /// (Cell.SetVirtualVolume) - a member with a finished proxy is counted by its own body prism.</summary>
-        void StateVirtualVolume()
-        {
-            var host = HostCell;
-            if (!host) return;
-            System.Array.Clear(_virtual, 0, 4);
-            double body = SwarmVolumeLedger.BodyVolume(new SVector3(config.BodyScale.x, config.BodyScale.y, config.BodyScale.z));
-            double sum = _fort != null ? _fort.StomachTotal : _thief.StomachTotal;
-            for (int k = 0; k < _cap; k++)
-            {
-                if (!_alive[k]) continue;
-                var m = _proxy[k];
-                if (m && !m.IsDead && m.Body && m.Body.IsCreationComplete) continue;
-                sum += body;
-            }
-            _virtual[Cell.VolumeSlotOf(domain)] = sum;
-            host.SetVirtualVolume(this, _virtual);
-        }
 
         // ───────────────────────────────────────────────────────────────── vessels
 
@@ -399,6 +404,7 @@ namespace CosmicShore.Gameplay
             if (k < 0 || k >= _cap) return;
             if (d.Vessel == BuilderDeath.PlatformKill) return;   // the platform already ran this death on the proxy
             HideSlot(k);
+            _entries?.Release(k, this);   // the proxy's real body (then its skeleton or its eater) holds the mass now
             var m = _proxy[k];
             if (!m || m.IsDead) m = SpawnProxy(k, force: true);
             DetachProxy(k);
@@ -434,6 +440,7 @@ namespace CosmicShore.Gameplay
                 if (m && !m.IsDead) continue;
                 DetachProxy(k);
                 if (!_alive[k]) continue;
+                _entries?.Release(k, this);
                 if (_fort != null) _fort.Kill(k, BuilderDeath.PlatformKill);
                 else _thief.Kill(k, BuilderDeath.PlatformKill);
                 HideSlot(k);
@@ -473,6 +480,7 @@ namespace CosmicShore.Gameplay
                 var m = _proxy[k];
                 DetachProxy(k);
                 if (m) m.Retire();
+                ResumeEntry(k);
             }
             // nearest first is not needed for correctness: a member a vessel is about to reach was wanted last tick too
             for (int k = 0; k < _cap && _proxySlots.Count < config.MaxProxies; k++)
@@ -508,6 +516,7 @@ namespace CosmicShore.Gameplay
             member.MaterialiseNow();
             _proxy[k] = member;
             _proxySlots.Add(k);
+            SuspendEntry(k);   // its body prism is registered now - the virtual entry steps aside (count once)
             return member;
         }
 
@@ -522,6 +531,165 @@ namespace CosmicShore.Gameplay
                 var f = SVector3.Lerp(_prevFace[k], _face[k], alpha);
                 m.transform.SetPositionAndRotation(U(at), Face(f));
                 m.SyncBodyToIndex();
+            }
+        }
+
+        // ───────────────────────────────────────────────────────────────── the spatial index (round 11a)
+
+        void BindIndexEntries()
+        {
+            _index = PrismSpatialIndex.EnsureInstance();
+            _entries = new SwarmEntryLedger(_cap);
+            _realBody = new bool[_cap];
+            _points = new SVector3[_cap];
+            _entryIdsNative = new NativeArray<int>(_cap, Allocator.Persistent);
+            _pointsNative = new NativeArray<float3>(_cap, Allocator.Persistent);
+        }
+
+        void ReleaseIndexEntries()
+        {
+            if (_entries != null && _index != null && _index.IsAvailable) _entries.ReleaseAll(this);
+            _entries = null;
+            if (_entryIdsNative.IsCreated) _entryIdsNative.Dispose();
+            if (_pointsNative.IsCreated) _pointsNative.Dispose();
+        }
+
+        /// <summary>Once per TICK: every existing entry's stored point in one bulk push (the body centre at mid-step, as the
+        /// swarm stores it), then the ledger registers newborns, releases the dead and suspends members with a real body.</summary>
+        void SyncIndex()
+        {
+            if (_entries == null || _index == null || !_index.IsAvailable) return;
+            float reach = 0f;
+            for (int k = 0; k < _cap; k++)
+            {
+                var m = _proxy[k];
+                _realBody[k] = m && !m.IsDead && m.Body && !m.Body.destroyed && m.Body.IsCreationComplete;
+                if (!_inst[k].Alive) continue;
+                _points[k] = SwarmBodyPose.Body(_inst[k], SwarmBodyPose.IndexAlpha);
+                float r = Mathf.Abs(_inst[k].PrismZ) + 0.5f * SVector3.Distance(_inst[k].PrevPos, _inst[k].CurPos);
+                if (r > reach) reach = r;
+            }
+            _heartReach = reach;
+            _entryIdsNative.CopyFrom(_entries.Ids);
+            _pointsNative.Reinterpret<SVector3>().CopyFrom(_points);
+            _index.UpdatePositionsBatch(_entryIdsNative, _pointsNative, _cap);
+            _entries.Sync(_inst, _realBody, _points, this);
+        }
+
+        void SuspendEntry(int k)
+        {
+            if (_entries == null || _index == null) return;
+            _realBody[k] = true;
+            int id = _entries.Ids[k];
+            if (id < 0 || _entries.IsSuspended(k)) return;
+            _index.SetVirtualSuspended(id, true);
+            _entries.NoteSuspendedByIndex(k);
+        }
+
+        /// <summary>Member k's proxy retired without dying: its entry is re-filed where it is drawn now, live again.</summary>
+        void ResumeEntry(int k)
+        {
+            if (_entries == null || _index == null) return;
+            _realBody[k] = false;
+            int id = _entries.Ids[k];
+            if (id < 0) return;
+            _index.UpdatePosition(id, U(SwarmBodyPose.Body(_inst[k], _alpha)));
+            _entries.Resume(k, this);
+        }
+
+        static bool HitBudgetLeft()
+        {
+            int frame = Time.frameCount;
+            if (s_hitFrame != frame) { s_hitFrame = frame; s_hitsThisFrame = 0; }
+            return s_hitsThisFrame < MaxHitMaterialisationsPerFrame;
+        }
+
+        // ISwarmEntrySink - the ledger's calls onto the index's virtual-entry API and the host cell's volume binding
+        int ISwarmEntrySink.Register(int slot, SVector3 point, int domainSlot, float volume, bool shielded, float radius)
+        {
+            int id = _index.RegisterVirtual(this, slot, new float3(point.X, point.Y, point.Z), (int)domain, volume, shielded,
+                                            false, radius);
+            var host = HostCell;
+            if (id >= 0 && host) host.BindVirtualMass(id, domain);
+            return id;
+        }
+
+        void ISwarmEntrySink.Release(int id) => _index.Unregister(id);
+
+        void ISwarmEntrySink.SetSuspended(int id, bool suspended) => _index.SetVirtualSuspended(id, suspended);
+
+        void ISwarmEntrySink.SetShape(int id, float volume, float radius)
+        {
+            _index.UpdateCellVolume(id, volume);
+            _index.UpdateVolume(id, Mathf.Max(volume, 1f));
+            _index.SetVirtualRadius(id, radius);
+        }
+
+        void ISwarmEntrySink.SetShielded(int id, bool shielded) => _index.UpdateShieldState(id, shielded, false);
+
+        void ISwarmEntrySink.SetDomainSlot(int id, int domainSlot)
+        {
+            _index.UpdateDomain(id, (int)domain);
+            var host = HostCell;
+            if (host) host.BindVirtualMass(id, domain);
+        }
+
+        // IVirtualPrismOwner / IVirtualPrismBudget - how the platform makes a data-only member real (an AOE hit, a round,
+        // a predator): its proxy, posed where it is drawn, creation complete. The index suspends the entry itself.
+        Prism IVirtualPrismOwner.MaterialiseVirtualPrism(int slot)
+        {
+            if (!_seeded || slot < 0 || slot >= _cap || !_alive[slot]) return null;
+            var m = _proxy[slot];
+            if (!m || m.IsDead)
+            {
+                HitBudgetLeft();
+                s_hitsThisFrame++;
+                m = SpawnProxy(slot, force: true);
+            }
+            if (!m || !m.MaterialiseNow()) return null;
+            _wantedAt[slot] = Time.time;
+            m.transform.SetPositionAndRotation(U(SVector3.Lerp(_prev[slot], _pos[slot], _alpha)),
+                                               Face(SVector3.Lerp(_prevFace[slot], _face[slot], _alpha)));
+            m.SetTier(_fort != null && _fort.Striking(slot), false);
+            m.SyncBodyToIndex();
+            _realBody[slot] = true;
+            _entries?.NoteSuspendedByIndex(slot);
+            return m.Body;
+        }
+
+        bool IVirtualPrismBudget.HasMaterialiseBudget(int slot) => HitBudgetLeft();
+
+        // IVirtualFaunaOwner - what only a creature can answer
+
+        bool IVirtualFaunaOwner.IsVirtualPrey(int slot, Vector3 at, Fauna predator, bool herbivoresOnly)
+        {
+            if (!_seeded || slot < 0 || slot >= _cap || !_alive[slot] || _proxy[slot]) return false;
+            if (!predator || predator == this) return false;
+            var prefab = config.MemberPrefab;
+            if (herbivoresOnly && prefab && prefab.Diet != FaunaDiet.Herbivore) return false;
+            float grace = prefab ? prefab.PredationImmunitySeconds : 0f;
+            if (grace > 0f && (_tick + _alpha - _birthTick[slot]) / config.TickHz < grace) return false;
+            return predator.IsInsideBand(at);
+        }
+
+        float IVirtualFaunaOwner.HeartReach => _heartReach;
+
+        bool IVirtualFaunaOwner.TryGetVirtualHeart(int slot, out Vector3 heart)
+        {
+            heart = default;
+            if (!_seeded || slot < 0 || slot >= _cap || !_alive[slot]) return false;
+            heart = U(SVector3.Lerp(_prev[slot], _pos[slot], _alpha));
+            return true;
+        }
+
+        void IVirtualFaunaOwner.CollectMaterialisedFauna(Vector3 centre, float radius, List<Fauna> results)
+        {
+            float r2 = radius * radius;
+            for (int q = 0; q < _proxySlots.Count; q++)
+            {
+                var m = _proxy[_proxySlots[q]];
+                if (!m || m.IsDead) continue;
+                if ((m.transform.position - centre).sqrMagnitude <= r2) results.Add(m);
             }
         }
 
@@ -544,8 +712,8 @@ namespace CosmicShore.Gameplay
             _render = null;
             _world?.ReleaseAll();
             if (_seeded) BuilderRegistry.ReleaseColony(_colonyId);
-            var host = HostCell;
-            if (host) host.ClearVirtualVolume(this);
+            VirtualFauna.Unregister(this);
+            ReleaseIndexEntries();
             base.OnDestroy();
         }
     }
