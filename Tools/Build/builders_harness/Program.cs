@@ -5,6 +5,7 @@
 //   bash Tools/Build/builders_harness/run.sh fortress   # just the fortress block
 //   bash Tools/Build/builders_harness/run.sh thieves    # just the thieves block
 //   bash Tools/Build/builders_harness/run.sh wearers    # just the wearers block
+//   bash Tools/Build/builders_harness/run.sh emotion <jobs.txt>   # the emotion-probe export (EmotionBuilders.cs, SWARM_FAUNA.md §27)
 // What this does NOT prove: anything about Unity - prisms, colliders, crystals, the GPU draw (Docs/BUILDERS_AND_THIEVES.md §7).
 using System;
 using System.Collections.Generic;
@@ -36,6 +37,7 @@ static partial class Program
         string only = args.Length > 0 ? args[0] : "";
         var sw = Stopwatch.StartNew();
         if (only == "exp") { Experiment(); return 0; }
+        if (only == "emotion") return Emotion(args[1]);   // round 11d-2 (SWARM_FAUNA.md §27): the emotion-probe export
         if (only == "" || only == "fortress") Fortress();
         if (only == "" || only == "thieves") Thieves();
         if (only == "" || only == "wearers") Wearers();

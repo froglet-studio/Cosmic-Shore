@@ -2600,3 +2600,165 @@ the pre-fix code.
 - **One cell.** The other cells' creatures and multiplayer are not exercised.
 
 **QA:** QA-SWARM-ROUND11-9.
+
+## 27. The cell's emotional range
+
+**The question.** Does the Swarm cell span cute to terrifying? **Yes.** Every creature the cell ships was scored with
+the research's emotion probe (`research/Tools/Ecology/emotion/`, DISCOVERIES.md "Emotion probe"). The probe reads only
+motion and size. The game's reads cover all seven classes: cute, playful, neutral, eerie, majestic, menacing and
+terrifying. The scorer asserts this.
+
+The chart is `/mnt/project-files/overnight/emotion-range.png`. Rows are creature·phase and columns are the seven
+classes. Blue shading is the game's probability. An orange box marks the research model's own top read for the same
+creature and phase.
+
+### 27.1 Protocol
+
+- **Exports come from the shipped pure cores, not from re-implementations.** Each harness gained an `emotion` command
+  that reads a pilot track and writes a float32 frame stream (`EmotionWriter`):
+  - `swarm_core_harness/EmotionExport.cs`: `SortHarness.Game`, the off-thread `SwarmTickJob` with the round 10/11d
+    strike states, and the pilot sensed as a `SwarmPredator`, as `SenseVessels` builds it. Density 5, one body.
+  - `substrate_harness/EmotionSubstrate.cs`: `SubstrateResearch.GamePack` / `GameLocust` / `GameLurker`.
+  - `builders_harness/EmotionBuilders.cs`: `BuilderColonyCore` (120 s of building first) and `ThiefNestCore`.
+  - `threat_flora_harness/EmotionFlora.cs`: `SnapTrapSpecies` / `PhysarumSpecies` in the harness grove.
+- **One pilot for both sides.** The pilot is a bestiary-style encounter. It starts 350 u from the creature's centre,
+  heading at it, with a goal 400 u beyond; after that it wanders between goals at 0.2-0.9 R. There are two viewers:
+  hover (25 u/s) and cruise (90 u/s). Each runs seeds 7, 23 and 41 for 60 s. The same track is replayed into the
+  game core and into the research's Python model of the same species, so differences come from the creature and not
+  the flight.
+- **The probe.** The research's ensemble scores 8 s windows every 2 s. Each window takes a phase label: the most
+  urgent label present in at least 25% of its frames.
+- **What is published.** Sizes and headings follow each research module's convention: substrate and builders publish
+  no heading, and flora publishes static hearts.
+- **Command:**
+  `TMPDIR=<private> python3 Tools/Build/emotion_range/emotion_range.py --png <out.png> --assert`
+  - It takes about 25 min and streams one export at a time, deleting each after scoring.
+  - `--rescore` re-charts and re-asserts the saved `emotion_range_results.json`.
+  - `--only <group>` runs a single group.
+- **After merging bda147a8f** (the substrate/builder LOD), the substrate, builders and flora groups were re-run.
+  Their reads are identical to the committed results.
+
+### 27.2 Reads, hover viewer
+
+The game is the shipped core. "Research" is the research's model under the same tracks; "bestiary" is the bestiary
+species where the research has one. Numbers are the ensemble's top probability.
+
+| Creature | Game, run | Game, per phase | Research / bestiary, same protocol | Research's published intent |
+|---|---|---|---|---|
+| Swarm pufferfish (Charge) | majestic .40 | plates majestic .48 | (no research body) | majestic |
+| Swarm whale lurker (Mass) | terrifying .34 | plates majestic .43; strike **terrifying .53** | SwarmBody whale majestic .40 | majestic, dread up close |
+| Swarm jellyfish locust (Space) | majestic .38 | strike majestic .46 | (no research body) | majestic |
+| Swarm dragonfly hunter (Time) | menacing .34 | plates majestic .37; strike **terrifying .50** | menacing .46 | menacing |
+| Substrate pack | terrifying .42 | strike T .42; winded T .30; ring T (1 window) | substrate playful .84; bestiary menacing .29 | bestiary pack terrifying 4/4 |
+| Substrate locust, sparse and fed | **cute .72** | solitary cute .70 | cute .73; bestiary cute .58 | cute .86 |
+| Substrate locust, dense and hungry | **terrifying .85** | storm T .80; solitary neutral .62 | terrifying .75 | terrifying .95 |
+| Substrate lurker | terrifying .41 | snap T .37; creep cute | substrate playful .23; bestiary neutral .35 | eerie, terror at the snap |
+| Builder fortress | terrifying .24 | build neutral .35; strike **terrifying .51** | build neutral .37; strike T .63 | neutral, then the sting |
+| Thief nest | playful .64 | laden playful .60 | bestiary cute .49 | playful 4/4 |
+| Snap-trap grove | majestic .40 | rest majestic .59; snap majestic .34 | terrifying .41 (rest majestic .58) | threat at the snap |
+| Physarum grove | neutral .35 | pulse neutral .42 | neutral .38 | neutral |
+
+**Cruise viewer.** At 90 u/s everything reads one notch calmer, as the research found:
+- The swarm bodies read majestic.
+- The pack reads terrifying .37, with **eerie** stalk and ring windows.
+- The lurker reads neutral.
+- The thief reads neutral, with cute foraging.
+- The dense locust is still terrifying .74.
+
+**Timelines** (hover; one letter per window: J majestic, T terrifying, M menacing):
+- The swarm bodies read T while the pilot passes through them, then J: awe, with dread up close, like the bestiary
+  leviathan.
+- The pufferfish reads `JJTTTTTTJJJ…`.
+
+### 27.3 Drift review
+
+Each reading that differs from the research was traced to its cause. **None was a port error, so no parameter was
+changed.**
+
+- **Pack: no menacing window on a direct approach.** The research's design arc is stalk, then a held ring (menacing),
+  then strike (terrifying).
+  - The game pack's arc was measured: stalk about 2.5 s; ring held about 3 s at hover (1-2 s at cruise) before the
+    first strike; a re-strike after about 0.8 s of ring.
+  - A pilot that flies straight in never sees the ring held for a whole 8 s window. So the read is terrifying
+    throughout, with eerie ring windows at cruise.
+  - It is not a port error. The port's ≥ 8 s hold is asserted against the round's own scenario: a 120 u/s wanderer
+    starting 600 u away.
+  - **A menace beat on a direct approach cannot be reached inside the research's measured ranges, so the pack is
+    unchanged.** Garrett's image is "surrounded, then everything dives in at once", so this was searched directly.
+    - **The ranges.** The research's own pack search (`substrate/pack_search.py`, results in
+      `substrate/results/emotion_pack.json`) sampled:
+      - `q_up` 0.5-1.2;
+      - ring radius 60-300 u;
+      - stalk speed 30-140 u/s;
+      - `w_ring` 0.3-2.0;
+      - turn 0.8-3.5.
+    - **The search.** Each candidate was replayed against the same straight-in hover and cruise tracks (3 seeds each).
+      The grid crossed `q_up` {0.65, 0.75, 0.85, 0.95}, ring radius {110, 220, 300} and stalk speed {50, 85, 120},
+      plus `w_ring` 0.5 and turn 1.2 at `q_up` 0.9.
+    - **The metric.** A run counts when a ring or stalk window reads menacing or eerie before the first strike window.
+    - **The result.** No candidate reached more than 1 of 6 runs. The first strike always came 1.6-7.6 s after the
+      pilot entered, apart from three isolated runs (10-17 s).
+    - **Why.** Closure is the bestiary formula `(1 - res) · clip((n-1)/3) · 1.6`, clipped to 1. Against a pilot that
+      comes to the pack, six hunters reach closure 1.0 within 3-7 s whatever their speed or ring radius. Any `q_up`
+      below 1 then fires within about 1 s (`q_rate` 0.8). `q_up` 0.97-0.99 behaves the same as 0.95, because closure
+      is pinned at 1. `q_up` ≥ 1.0 never fires.
+    - **What breaks.** At `q_up` 0.95 the round-11b-2 wanderer gate fails: only 3 of 5 seeds ever strike.
+    - **A long hold would not read as menace either.** With `q_up` 1.0 the ring is held for the whole 60 s, and the
+      held ring reads **playful** at hover, not menacing. The research's menacing ring (0.37-0.42) was 4-5 members of
+      14-18 u. The game's pack is 6 members of 12 u, and its count and size are in the cell's volume ladder (round
+      11b §7.4).
+  - **What would deliver the beat** is a design change outside the research's model, so it was not made:
+    - a ring-hold timer (hold ≥ 6 s after closure saturates, then strike together); or
+    - fewer, larger hunters (4-5 at 14-18 u), which re-tunes the volume ladder.
+    The wanderer, telegraph (0.4-0.7 s) and counterplay assertions would have to be re-checked for either. The search
+    log is in this round's report.
+- **Substrate pack in the research model reads playful .84.** This is the research's known finding: its substrate
+  pack is a jittery small-agent cloud. The game follows the bestiary's terrifying intent instead.
+- **Lurker.** The research model reads playful at the snap and the bestiary model reads neutral. The game reads
+  terrifying at the snap, with eerie windows between snaps. That is closest to the bestiary design note ("neutral,
+  eerie, terror at the snap"), so it is not a drift.
+- **Snap-trap grove.** The research run reads terrifying because its pilot passed 25 u from a heart; the game layout
+  put the nearest heart 80 u away (different RNG). The probe cannot see the snap itself, because flora publishes
+  static hearts with no velocity. This is a limit of the probe, not a drift.
+- **Swarm Space locust (jellyfish).** It reads majestic. Only the locust's strike rhythm was ported, never the
+  research's locust cloud, so it moves as a body. It is plated about 25% of the time, so every window is labelled
+  strike. Plate colour is what tells the player, and the probe cannot see colour.
+
+### 27.4 Asserted (`--assert`; all pass)
+
+1. The sparse fed locust reads cute to both viewers.
+2. The dense hungry locust reads terrifying, and its storm reads terrifying.
+3. The pack reads as a threat at hover, and its strike reads terrifying.
+4. The lurker's snap reads terrifying.
+5. The thief nest reads playful or cute.
+6. Every swarm body reads majestic, menacing or terrifying, never cute (four checks, one per body).
+7. For the whale and the dragonfly, the game's threat mass (menacing + terrifying) is within 0.25 of the research
+   model's: .66 vs .50, and .68 vs .69.
+8. The game's reads span cute to terrifying, with at least six of the seven classes; all seven appear.
+
+### 27.5 Also this round: a puffed shield member stays shielded
+
+**The bug.** `SwarmPrismSync` registered a member as shielded only when `Tier == 2`. A puffed pufferfish shield member
+shows the danger tier (1), so the index read it as unshielded. That made shielded mass edible and steerable, and
+invisible to weapons as a shield.
+
+**The fix.**
+- The shield is now its own bit on `SwarmInstance` (bit 9, `Shielded`). The tier stays the look, and danger wins.
+- The ledger, `IsPreyFor` and the proxy's `SetTier` read the bit.
+- `SwarmTadpoleFauna.SetTier` keeps `IsShielded` alongside `MakeDangerous`.
+
+**Test R11c-2** in the tick-job harness: a vessel hounds a Space-plan shield member.
+- At density 5 there are 379 puffed shield member-ticks, with 0 mis-filed and 0 count-once violations.
+- The negative control shows the old rule would mis-file every one.
+
+### 27.6 Not proved
+
+- Nothing here ran in Unity.
+- The probe sees motion and size only. Plate colour, the danger glow and sound are invisible to it, and these carry
+  much of the swarm's threat in play.
+- The class labels are the research's archetypes, not human ratings.
+- Flora is read as static hearts.
+- The R11e entity-ledger test fails at density 1 at every base back to 9e34f0b9b. It is a known pre-existing issue:
+  the documented gate is density 5, where it passes.
+
+**QA.** QA-SWARM-ROUND11-12.

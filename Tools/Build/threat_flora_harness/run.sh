@@ -36,7 +36,7 @@ echo "glue type-check OK"
 # 2. the asserted harness
 ls "$REFDIR"/*.dll | sed 's/^/-r:/' > "$OUT/refs.rsp"
 "$DOTNET" "$CSC" -nologo -langversion:9.0 -nostdlib -noconfig -optimize+ "@$OUT/refs.rsp" -target:exe -main:Program \
-  -out:"$OUT/threatflora.exe" "${CORES[@]}" "$HERE/FloraArena.cs" "$HERE/SnapTrapTests.cs" "$HERE/PhysarumTests.cs" "$HERE/Program.cs"
+  -out:"$OUT/threatflora.exe" "${CORES[@]}" "$HERE/FloraArena.cs" "$HERE/SnapTrapTests.cs" "$HERE/PhysarumTests.cs" "$HERE/Program.cs" "$HERE/EmotionFlora.cs"
 V=$(ls "$DOTNET_ROOT"/shared/Microsoft.NETCore.App | head -1)
 printf '{"runtimeOptions":{"tfm":"net8.0","framework":{"name":"Microsoft.NETCore.App","version":"%s"}}}' "$V" > "$OUT/threatflora.runtimeconfig.json"
 exec "$DOTNET" "$OUT/threatflora.exe" "$@"
