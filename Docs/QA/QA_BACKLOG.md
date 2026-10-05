@@ -802,6 +802,26 @@ with no trail · live volume never moves as the swarms grow.
 Round 8's diet colouring (newborns wearing the colour of what they ate) was removed on playtest. See
 `Docs/SWARM_FAUNA.md` §17.
 
+### QA-SWARM-ROUND11-4 ⬜ — the sort swarm heals without a jolt; lurkers never bite a rush
+
+**Source:** branch `overnight/feel` (headless only: harness R11d-J/T/B, the research's yardstick and smoothness).
+Reference: `Docs/SWARM_FAUNA.md` §22. **Why it matters:** right after a strike the body used to flood with hatchlings
+that raced across it (a jolt Garrett would read as a bug), and a rushed lurker plated up after it had bolted.
+
+1. Select `SwarmSortFaunaConfig.asset`: **Sort Bud At Wound on**, **Sort Fate Near on**, **Sort Lay Ramp Seconds 12**.
+2. Enter the Swarm cell and carve a third out of one sort swarm in one pass (a blast or a fast fly-through).
+   Watch the next ~15 s: the hole should fill from its own edge, gradually; nothing should streak across the body.
+3. Set **Sort Update Fraction 4** and repeat step 2 (the dial QA-SWARM-ROUND6 offers); then set it back to 8.
+4. Mass lurkers: rush one at full speed. It must bolt with no danger plates, then or as it settles. Then creep up on
+   another slowly: plates rise once and stay up while you hover, with no flicker at the edge of its notice.
+5. Time pack hunters: hover at the distance where they first turn on you. Plates must not flicker.
+6. Profiler: the swarm tick marker for a sort swarm should be within ~5% of round 10 (the wound bud scans the body
+   per egg, at most LayMax eggs a step).
+
+**PASS:** heals ease in from the wound; no flood of newborns the moment the 2 s kill hold lifts; a rushed lurker never
+plates; no plate flicker. **FAIL:** members streak across the body after a strike · a swarm under steady grazing stops
+regrowing · a lurker plates after bolting · plates flicker on and off at one distance.
+
 ### QA-SWARM-ROUND11-5 ⬜ — creatures that steal and build: the fortress colony and the thief nest
 
 **Source:** branch `overnight/builders` (headless harness, type-check and authoring gates only, not run in the
