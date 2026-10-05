@@ -1042,6 +1042,26 @@ then a growth law: seed in, body out, with healing as a by-product of the pool +
   3600-step trial): loss 0.0221 → 0.0019. Export: `export_whale_creature.py` → `nca_whale.js`
   (`window.NcaWhale`). Result: see `runs/whale3d_swim/status.json`, promote to `results/` when done.
 
+#### P7c. The jellyfish as a grid NCA (third native creature; pulsing bell; CPU, 2026-10-05)
+- Target `--target jelly` is PROCEDURAL (`nca3d.py jelly_frames`), not splatted from the phase-1
+  space plan: a bell of revolution gives a cleaner silhouette at this size than unit splats. D = UP,
+  H = lateral, W = swim axis (bell apex at +W, tentacles trailing to -W), grid 22×22×30, ~810
+  voxels at α>0.5. Bell: thick dome (2.6 voxels at the apex → 1.2 at the rim), space blue with a
+  pale rim band; 8 rim tentacles (pale blue → time-green tips, r 0.95 → 0.65) with a travelling
+  wave whose amplitude grows root → tip; a gold manubrium on the axis (it covers the grid centre,
+  where the seed sits, in every frame) and 4 frilled gold oral arms rippling out of phase.
+  Swim: fast contraction / slow relaxation (phase warped by +0.55 sin), bell radius −10 %, height
+  +6 %, rim curls in, tentacles flare mid-length on the stroke. Figure `results/jelly3d_target/`.
+- Amplitude (the P5/P6 SNR argument): measured as Σ consecutive-frame squared change per occupied
+  voxel, lizard 0.26, whale 0.21, jelly 0.42 (consecutive MSE 5.9e-3 ≥ still floor 5.5e-3). The
+  first draft (pulse 24 %, tentacle wave 2.6) was 0.91, 3.5× the lizard, and was cut. Thin tubes
+  inflate this metric (a 1-voxel shift of a 1.8-voxel tentacle rewrites it); the pulse alone at 10 %
+  is 0.31, tentacles alone 0.19, so the bell pulse is the dominant learnable signal, as intended.
+- Run: lizard warm start, batch 4, pool 256, 800 clock + 4800 pool steps (5600), lr drop 4000,
+  `--threads 1`; bench 4.7 s / 80 fwd+bwd steps alongside the whale run. Export:
+  `export_nca3d_creature.py --name jelly` → `creatures/nca_jelly.js` (`window.NcaJelly`);
+  `export_whale_creature.py` is now that script with `--name whale`. Result: `runs/jelly3d_swim/`.
+
 #### P8. Related work found
 - Kim, Pajouheshgar, Süsstrunk, Jakob, Park, "Neural Particle Automata" (arXiv 2601.16096, SIGGRAPH
   2026) independently built the same base particle model (SPH perception with moment-corrected

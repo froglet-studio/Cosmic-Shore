@@ -35,6 +35,15 @@ A second target in the game's own vocabulary: --target whale voxelises the prism
         > Tools/NCA/runs/whale3d_swim.log 2>&1 &
     python3 Tools/NCA/nca3d.py train --out Tools/NCA/runs/whale3d_swim --resume --threads 1   # after a restart
     python3 Tools/NCA/export_whale_creature.py     # -> flight/creatures/nca_whale.js (window.NcaWhale)
+
+A third, --target jelly, is procedural (jelly_frames): the space element's jellyfish, a bell of
+revolution that PULSES (quick contraction, slow relaxation) with 8 rim tentacles carrying a
+travelling wave and 4 gold oral arms, D = UP, W = swim axis, grid 22x22x30. Same CPU recipe:
+
+    OMP_NUM_THREADS=1 nohup python3 Tools/NCA/nca3d.py train --target jelly --out Tools/NCA/runs/jelly3d_swim \
+        --init3d Tools/NCA/results/lizard3d_swim/model.pt --threads 1 --batch-size 4 --damage-n 1 \
+        --pool-size 256 --steps 5600 --clock-steps 800 --lr-drop-step 4000 > Tools/NCA/runs/jelly3d_swim.log 2>&1 &
+    python3 Tools/NCA/export_nca3d_creature.py --name jelly   # -> flight/creatures/nca_jelly.js (window.NcaJelly)
 """
 from __future__ import annotations
 
@@ -269,6 +278,91 @@ PRISM_TIER_SHADE = (1.0, 0.8, 1.0)
 PRISM_TARGETS = {"whale": "results/whale_target/prisms.json"}   # target name -> prisms.json (relative to HERE)
 PRISM_SHIELD = 3.0                                      # an octahedron reaches 3x its half-extents
 
+UP_TARGETS = set(PRISM_TARGETS) | {"jelly"}                # targets whose D axis is world UP
+
+
+def _tube(occ, rgb, pts, rad, cols, ss):
+    """Stamp a tapered tube (polyline samples pts [N,3] in coarse D,H,W voxels, radii rad [N],
+    colours cols [N,3]) into the fine (ss x) occupancy / colour grids."""
+    n = np.array(occ.shape)
+    for p, r, c in zip(pts * ss, rad * ss, cols):
+        a = np.maximum(np.floor(p - r).astype(int), 0)
+        b = np.minimum(np.ceil(p + r).astype(int) + 1, n)
+        if (b <= a).any():
+            continue
+        g = np.meshgrid(*[np.arange(a[i], b[i]) + 0.5 for i in range(3)], indexing="ij")
+        inside = sum((g[i] - p[i]) ** 2 for i in range(3)) <= r * r
+        sl = tuple(slice(a[i], b[i]) for i in range(3))
+        occ[sl] = np.maximum(occ[sl], inside)
+        rgb[sl][inside] = c
+
+
+def jelly_frames(frames=8, D=22, H=22, W=30, ss=3, bell_r=7.2, bell_h=7.0, pulse=0.10,
+                 n_tent=8, tent_len=16.0, tent_amp=1.2, n_arms=4, arm_len=10.0, arm_amp=0.4):
+    """Procedural jellyfish (the space element's body plan) with a pulsing-bell swim, as
+    premultiplied RGBA volumes [K, D, H, W, 4]. D = world UP, H = lateral, W = the swim axis
+    (apex of the bell at +W, tentacles trailing toward -W), the whale's axis convention.
+    Bell: a thick dome of revolution (thick at the apex, thin at the rim), space blue with a
+    lighter rim band. Swim cycle: fast contraction / slow relaxation (warped phase) - the bell
+    narrows by `pulse`, lengthens and curls its rim in; 8 rim tentacles (light blue -> time green
+    tips) ride the rim and carry a travelling wave from root to tip whose amplitude grows along
+    the tentacle; a gold manubrium on the axis (it holds the grid centre, where the seed sits)
+    branches into `n_arms` frilled gold oral arms that ripple out of phase with the tentacles."""
+    blue = np.array(PRISM_ELEMENT["space"])
+    rim_c = np.array((0.72, 0.86, 1.0))
+    gold = np.array(PRISM_ELEMENT["charge"])
+    green = np.array(PRISM_ELEMENT["time"])
+    cD, cH = D / 2, H / 2
+    apex = W - 2.5
+    gz, gy, gx = np.meshgrid(*[(np.arange(n * ss) + 0.5) / ss for n in (D, H, W)], indexing="ij")
+    rr = np.hypot(gz - cD, gy - cH)
+    out = []
+    for t in range(frames):
+        ph = 2 * np.pi * t / frames
+        ph = ph + 0.55 * np.sin(ph)                  # contraction quick, relaxation slow
+        c = 0.5 - 0.5 * np.cos(ph)                   # 0 relaxed .. 1 contracted
+        R, A = bell_r * (1 - pulse * c), bell_h * (1 + 0.6 * pulse * c)
+        occ = np.zeros((D * ss, H * ss, W * ss), np.float32)
+        rgb = np.zeros(occ.shape + (3,), np.float32)
+        # bell: s = 0 at the apex .. 1 at the rim; outer radius an ellipse profile, rim curls in when contracted
+        s = (apex - gx) / A
+        Ro = R * np.sqrt(np.clip(1 - (1 - s) ** 2, 0, 1)) * (1 - 0.18 * c * np.clip(s, 0, 1) ** 3)
+        th = 2.6 * (1 - s) + 1.15
+        bell = (s >= 0) & (s <= 1) & (rr <= Ro) & (rr >= Ro - th)
+        occ[bell] = 1
+        k = np.clip((s - 0.72) / 0.2, 0, 1)[..., None]
+        rgb[bell] = (blue * (1 - k) + rim_c * k)[bell]
+        rim_u, rim_r = apex - A, R * (1 - 0.18 * c) - 0.5
+        # rim tentacles
+        L = np.linspace(0, 1, int(tent_len * 5))
+        for i in range(n_tent):
+            a0 = 2 * np.pi * (i + 0.5) / n_tent
+            wave = tent_amp * L ** 1.3 * np.sin(2 * np.pi * 1.1 * L - ph + 0.9 * i)
+            wav2 = 0.5 * tent_amp * L ** 1.3 * np.cos(2 * np.pi * 1.1 * L - ph + 0.9 * i)
+            u = rim_u + 0.3 - tent_len * L * (1 - 0.06 * c)
+            r = rim_r - 1.6 * L + 0.8 * c * L * (1 - L) * 2 + wav2      # contraction flares them out mid-length
+            ang = a0 + wave / np.maximum(r, 2.0)
+            pts = np.stack([cD + r * np.sin(ang), cH + r * np.cos(ang), u], -1)
+            cols = blue * 0 + rim_c[None] * (1 - L[:, None] ** 2) + green[None] * L[:, None] ** 2
+            _tube(occ, rgb, pts, 0.95 - 0.3 * L, cols, ss)
+        # manubrium + oral arms
+        base = apex - 0.55 * A
+        stalk = np.linspace(0, 1, 20)
+        pts = np.stack([np.full_like(stalk, cD), np.full_like(stalk, cH), base + (W / 2 - 1.5 - base) * stalk], -1)
+        _tube(occ, rgb, pts, np.full_like(stalk, 1.4), np.repeat(gold[None], len(stalk), 0), ss)
+        L = np.linspace(0, 1, int(arm_len * 5))
+        for j in range(n_arms):
+            a0 = 2 * np.pi * j / n_arms
+            u = base - 3.0 - arm_len * L
+            r = 1.0 + 2.2 * L + arm_amp * L * np.sin(2 * np.pi * 1.4 * L - ph + np.pi + 1.6 * j)
+            ang = a0 + 0.5 * arm_amp * L * np.cos(2 * np.pi * L - ph + 1.6 * j)
+            pts = np.stack([cD + r * np.sin(ang), cH + r * np.cos(ang), u], -1)
+            cols = gold[None] * (1 - 0.6 * L[:, None] ** 3) + green[None] * 0.6 * L[:, None] ** 3
+            _tube(occ, rgb, pts, 1.35 - 0.55 * L, cols, ss)
+        vol = np.concatenate([rgb * occ[..., None], occ[..., None]], -1)
+        out.append(vol.reshape(D, ss, H, ss, W, ss, 4).mean((1, 3, 5)))
+    return np.stack(out).astype(np.float32)
+
 
 def _solidify(occ, rgb, r):
     """Thicken a fine-grid shell by r cells, fill its inside, colour every voxel by its nearest shell voxel."""
@@ -433,6 +527,8 @@ class Config3D:
 
 
 def build_frames(cfg):
+    if cfg.target == "jelly" and not cfg.prisms:
+        return jelly_frames(cfg.frames)
     if cfg.prisms or cfg.target in PRISM_TARGETS:
         path = cfg.prisms or os.path.join(HERE, PRISM_TARGETS[cfg.target])
         return prism_frames(path, cfg.voxel_scale, cfg.pad_xy)
@@ -628,9 +724,9 @@ def export(ca, cfg, fr_np, path):
             "w2": ca.w2.detach().numpy().round(6).tolist(), "b2": ca.b2.detach().numpy().round(6).tolist(),
             "D": D, "H": H, "W": W, "frames": K, "period": cfg.period,
             "perception_order": "per-channel [identity, sobel_x, sobel_y, sobel_z] -> index 4*c+k",
-            "target": f"{cfg.target} {'prism swim' if cfg.prisms or cfg.target in PRISM_TARGETS else 'helical swim'} (3D)",
+            "target": f"{cfg.target} {'pulse swim' if cfg.target == 'jelly' else 'prism swim' if cfg.prisms or cfg.target in PRISM_TARGETS else 'helical swim'} (3D)",
             "experiment": "animated3d",
-            "axes": "D=up (world y), H=world z, W=world x" if cfg.prisms or cfg.target in PRISM_TARGETS else "D=depth"}
+            "axes": "D=up (world y), H=world z, W=world x" if cfg.prisms or cfg.target in UP_TARGETS else "D=depth"}
     with open(path, "w") as f:
         json.dump(data, f)
 
@@ -810,7 +906,7 @@ def main():
         m = fr.mean(0, keepdims=True)
         print(f"grid {fr.shape[1:4]} (D,H,W), {K} frames, occupied voxels {(fr[0, ..., 3] > 0.5).sum()}, "
               f"consecutive MSE {np.mean(diffs):.2e}, still-image floor {((fr - m) ** 2).mean():.2e}")
-        if args.target in PRISM_TARGETS:      # D is UP here: flip it so the render's camera sees the whale upright
+        if args.target in UP_TARGETS:         # D is UP here: flip it so the render's camera sees the whale upright
             views = [np.concatenate([render(f[::-1], az=1.2, tilt=0.9), render(f[::-1], az=1.5708, tilt=1.5)], 0)
                      for f in fr]
             Image.fromarray((np.concatenate(views, 1) * 255).astype(np.uint8)).save(
