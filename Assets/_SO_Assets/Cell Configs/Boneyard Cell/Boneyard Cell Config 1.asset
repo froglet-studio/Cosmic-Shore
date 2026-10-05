@@ -13,13 +13,12 @@ MonoBehaviour:
   m_Name: Boneyard Cell Config 1
   m_EditorClassIdentifier:
   CellName: Boneyard
-  Description: The Dog Fight arena at intensity 1 - 9043 prisms of wreckage
-    inside r=520: 4 hollow hulks to hide in, 6 leaning spires,
-    3 girder cages, 2 broken overpasses, and 43 danger traps on the torn
-    ends and around the reactor, scattered into debris fields with an open centre.
-    Cover, never an objective - shooting it scores nothing. NO NUCLEUS by design.
-    PhaseThresholds ride THIS intensity's own baseline; regenerate with
-    Tools/Build/author_dogfight_assets.py after any change rather than hand-editing.
+  Description: 'The Dog Fight arena at intensity 1 - 9043 prisms of wreckage inside r=520: 4 hollow
+    hulks to hide in, 6 leaning spires, 3 girder cages, 2 broken overpasses, and 43 danger
+    traps on the torn ends and around the reactor, scattered into debris fields with an open
+    centre. Cover, never an objective - shooting it scores nothing. NO NUCLEUS by design.
+    PhaseThresholds ride THIS intensity''s own baseline; regenerate with
+    Tools/Build/author_dogfight_assets.py after any change rather than hand-editing.'
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
   Difficulty: 1
   CellEndGameScore: 0

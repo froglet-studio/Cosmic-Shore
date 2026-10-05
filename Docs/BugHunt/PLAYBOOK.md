@@ -122,7 +122,8 @@ has one.
 
 **Fix:** emit or rewrite the string as a single-quoted scalar (`'` … `'`, with `''` for an
 apostrophe), the way Unity serializes long strings. Keep the line breaks; folding makes the
-loaded text identical.
+loaded text identical. Mode generators should call `arcade_mode_lib.wrap_yaml_scalar` (same
+helper as `rampage_intensity.py::_wrap_yaml_scalar`).
 
 **Strict-parse every asset.** There is no checker in `Tools/` yet. This snippet (`pip install
 pyyaml`) strips Unity's headers and parses each file:

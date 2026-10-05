@@ -15,7 +15,11 @@ MonoBehaviour:
   Mode: 58
   IsMultiplayer: 1
   DisplayName: Waystation
-  Description: Butterflies only. The rings come in clusters - weave the coil, line up on the gate at the far end, then FOLD across the gap to the next one. The fold has one degree of freedom, the heading you leave on, so the exit gate is the aiming device: thread it on the right line and the jump is free. First team to put a pilot through the last ring takes it.
+  Description: 'Butterflies only. The rings come in clusters - weave the coil, line up on the gate at
+    the far end, then FOLD across the gap to the next one. The fold has one degree of
+    freedom, the heading you leave on, so the exit gate is the aiming device: thread it on
+    the right line and the jump is free. First team to put a pilot through the last ring
+    takes it.'
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 5f369710bf604859820aa9aeb3301a12, type: 3}

@@ -8,6 +8,24 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ---
 
+## BH-5.2 — Strict-YAML failures on cell configs, arcade cards, and captain SOs
+
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Symptom (risk):** 17 assets failed a strict YAML parse (Unity tolerates mid-line `: ` today, but a
+  wrap that ends a line on `:` would make the asset unload as nothing — same class as the Rampage
+  Config 1 parse error fixed in PR #905).
+- **Root cause:** multi-line plain (unquoted) `Description` scalars containing `: `; captain SOs had
+  an unquoted `Flavor` with `Death: `, tab indentation, and two keys on one line.
+- **Fix:** `arcade_mode_lib.wrap_yaml_scalar` (same single-quoted fold as `rampage_intensity.py`);
+  generators `author_{dogfight,regatta,tollway,broadside,waystation}_assets.py` emit quoted
+  Descriptions; the 14 cell/card assets were re-quoted to match; captain SOs
+  (`SO_Captain_Dolphin_Space`, `SO_Captain_Sparrow_Charge`, `SO_Captain_Sparrow_Space`) hand-fixed
+  (also split `PrimaryElement`/`Element` on Sparrow Space).
+- **Verification:** strict YAML parse passes for all 17; gate scripts pass; not run in Unity.
+- **PR/commit:** pending.
+
+---
+
 ## BH-5.1 — Crystal.ActivateCrystal NRE when the cell is already gone
 
 - **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
@@ -679,18 +697,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ## Known open console issues
 
-Checked against `Bug_Hunt` @ `546bda3` on 2026-09-29; Crystal NRE closed as BH-5.1 on 2026-10-05.
+Checked against `Bug_Hunt` @ `546bda3` on 2026-09-29; Crystal NRE closed as BH-5.1 and the 17
+strict-YAML assets closed as BH-5.2 on 2026-10-05.
 
-- **17 assets fail a strict YAML parse.** Unity has not reported these (it tolerates a mid-line
-  `: `), but they are invalid YAML, and the next edit that wraps a line ending in `:` will break
-  them. Fix the generator where there is one (PLAYBOOK §3).
-  - `Boneyard Cell Config 1-4`: `author_dogfight_assets.py`
-  - `Regatta Cell Config 1-4`: `author_regatta_assets.py`
-  - `Tollway Cell Config 1-4`: `author_tollway_assets.py`
-  - `ArcadeGameBroadside`: `author_broadside_assets.py`
-  - `ArcadeGameWaystation`: `author_waystation_assets.py` (**new since PR #905**, added by
-    `de3a4c8`)
-  - `SO_Captain_Dolphin_Space`: `Flavor: “…Death: The…”` is unquoted
-  - `SO_Captain_Sparrow_Charge`: tab-indented `Space:`/`Time:` lines
-  - `SO_Captain_Sparrow_Space`: `IconActive:` is on the same line as `HeadshotImage: {fileID: 0}`,
-    so the value is probably lost
+- *(none listed — last open console items from this section are closed.)*

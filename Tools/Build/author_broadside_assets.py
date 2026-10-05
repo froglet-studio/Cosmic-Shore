@@ -248,15 +248,17 @@ def starting_elements():
                      f"      Mass: 0\n      Charge: 0\n      Space: 0\n      Time: {lib.num(lvl)}\n")
     return rows
 
+_BROADSIDE_DESC = lib.wrap_yaml_scalar(
+    "Every hull that can fight, loose in the Boneyard, each with the weapon it "
+    "actually has - a Sparrow's guns and rockets, an Urchin's spikes, a Rhino's sword, a "
+    "Squirrel's joust, a Dolphin's cone, a Scarab's plate, a Manta's bloom. A hit is worth "
+    "what it cost you to land, not what you flew: a round is 1, a contact strike 8, a debuff "
+    "12, a rocket up to 30. First team to the target wins. Pick the hull you fight best.")
 g.emit_asset("Assets/_SO_Assets/Games/ArcadeGameBroadside.asset", G_ASSET["ArcadeGameBroadside"],
              lib.header_for(EXISTING["SO_ArcadeGame"], "ArcadeGameBroadside") + f"""  Mode: {MODE_ID}
   IsMultiplayer: 1
   DisplayName: Broadside
-  Description: Every hull that can fight, loose in the Boneyard, each with the weapon it
-    actually has - a Sparrow's guns and rockets, an Urchin's spikes, a Rhino's sword, a
-    Squirrel's joust, a Dolphin's cone, a Scarab's plate, a Manta's bloom. A hit is worth
-    what it cost you to land, not what you flew: a round is 1, a contact strike 8, a debuff
-    12, a rocket up to 30. First team to the target wins. Pick the hull you fight best.
+  Description: {_BROADSIDE_DESC}
   IconActive: {{fileID: 21300000, guid: {EXISTING['IconActive']}, type: 3}}
   IconInactive: {{fileID: 21300000, guid: {EXISTING['IconInactive']}, type: 3}}
   CardBackground: {{fileID: 21300000, guid: {EXISTING['CardBackground']}, type: 3}}

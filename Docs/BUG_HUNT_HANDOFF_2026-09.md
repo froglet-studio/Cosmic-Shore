@@ -57,6 +57,7 @@ Confidence scale:
 | 30 | **PrismTimerManager cancels by owner index (was §4).** Scheduled settle actions are keyed by owner, so mass pool returns no longer scan-and-`RemoveAt` the full list. Shipped on `Bug_Hunt`. | `PrismTimerManager` |
 | 31 | **Trail block indices are int, not ushort (was §4).** A freestyle trail past 65,535 prisms no longer wraps the index map. Shipped on `Bug_Hunt`. | `Trail` |
 | 32 | **Crystal.ActivateCrystal no longer NREs when the cell is gone (console).** `ActivateCrystal` returns if the scene is unloading and only reparents when `cellData.Cell` is still alive (same Unity-null pattern as `DetachHeartToCell`). Was an open console issue from `Fauna.ReleaseHeart` ← `LightFauna.WitherCoroutine`. Shipped on `Bug_Hunt`. | `Crystal.ActivateCrystal` |
+| 33 | **Strict YAML on cell configs / arcade cards / captain SOs (console, was FIX_LOG open).** `arcade_mode_lib.wrap_yaml_scalar` + five `author_*_assets.py` generators; 17 assets re-quoted / hand-fixed. Shipped on `Bug_Hunt`. | generators + captain SOs |
 
 ### Playtest items for the shipped fixes
 - **Squirrel ring (#6):** fly Menu_Main freestyle → an arcade game → back, 2-3 round trips, then
@@ -162,6 +163,10 @@ Confidence scale:
   creatures, then leave the scene / stop play. Console must not show `NullReferenceException` in
   `Crystal.ActivateCrystal`. Hearts that drop while the cell is still live must still become
   collectible.
+- **STILL TO TEST (revisit): 5.2 strict YAML assets, kept on Bug_Hunt untested at Yash's call.**
+- **Strict YAML (5.2):** reimport the touched cell configs / Broadside / Waystation / three captain
+  SOs in the Editor; console must show no `Unable to parse file`. Spot-check Description / Flavor /
+  IconActive still display on those cards.
 
 ---
 
