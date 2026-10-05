@@ -375,6 +375,10 @@ Walk every changed file against these gates:
   split the hits against the merge base so you only own the new ones. When it fires, decide per
   site whether the orphaned doc should move DOWN onto its method or be deleted as superseded —
   the new member usually has its own.
+  **Do the scan in Python, not `awk`.** macOS ships BSD awk, and a one-liner using `prev ~ /…/`
+  over a `/// ...</summary>` line followed by `/// <summary>` silently matched NOTHING on a branch
+  that had two such hits — a scan that cannot fire reads exactly like a clean branch. A five-line
+  `re.search` loop over `git diff --name-only <merge-base>..HEAD -- '*.cs'` found both.
 - **A rename sweep must split its hits by which THING the name means.** One identifier is
   routinely three: a C# class, an HLSL function, a shadergraph node's `m_FunctionName`. Renaming
   the class leaves the other two correct, so a blanket search-and-replace is as wrong as no sweep

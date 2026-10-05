@@ -65,7 +65,11 @@ namespace CosmicShore.Gameplay
         {
             public readonly float Time;
             public readonly int Rank;
-            public Entry(float time, int rank) { Time = time; Rank = rank; }
+            // The window THIS entry was admitted under. Windows are authored per weapon asset
+            // (the Rhino sword 1.4 s, the Urchin spike 0.12 s), so the prune pass must judge
+            // each entry by its own window, not by whichever call happens to trigger the sweep.
+            public readonly float Window;
+            public Entry(float time, int rank, float window) { Time = time; Rank = rank; Window = window; }
         }
 
         static readonly Dictionary<Key, Entry> _lastHit = new();
@@ -126,23 +130,23 @@ namespace CosmicShore.Gameplay
                 supersededRank = last.Rank;
             }
 
-            _lastHit[key] = new Entry(now, rank);
+            _lastHit[key] = new Entry(now, rank, cooldownSeconds);
 
             if (++_sincePrune >= PruneEvery)
             {
                 _sincePrune = 0;
-                Prune(now, cooldownSeconds);
+                Prune(now);
             }
             return true;
         }
 
-        static void Prune(float now, float cooldownSeconds)
+        static void Prune(float now)
         {
             // Iterating to a scratch list rather than mutating during enumeration; the map is
             // small by construction (one entry per live shooter/victim/class triple).
             var stale = new List<Key>();
             foreach (var kvp in _lastHit)
-                if (now - kvp.Value.Time >= cooldownSeconds) stale.Add(kvp.Key);
+                if (now - kvp.Value.Time >= kvp.Value.Window) stale.Add(kvp.Key);
 
             for (int i = 0; i < stale.Count; i++)
                 _lastHit.Remove(stale[i]);
