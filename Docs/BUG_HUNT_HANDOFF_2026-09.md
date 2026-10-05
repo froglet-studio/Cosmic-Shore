@@ -60,8 +60,9 @@ Confidence scale:
 | 33 | **Strict YAML on cell configs / arcade cards / captain SOs (console, was FIX_LOG open).** `arcade_mode_lib.wrap_yaml_scalar` + five `author_*_assets.py` generators; 17 assets re-quoted / hand-fixed. Shipped on `Bug_Hunt`. | generators + captain SOs |
 | 34 | **Run Benchmark is Editor-only (was §5).** Button hidden / unwired in players; `LaunchBenchmark` no-ops outside the Editor. `BenchmarkStressTest` stays out of Build Settings. Shipped on `Bug_Hunt`. | `GameSettingsPanelController`, `BenchmarkSceneLauncher` |
 | 35 | **Hangar Wildlife Blitz training retired (was §5).** Rhino/Sparrow `TrainingGames` cleared; `SO_TrainingGame_WildLifeBlitz` and `ArcadeGameWildlifeBlitz` deleted. Shipped on `Bug_Hunt`. | class SOs, TrainingGames list |
-| 36 | **Wildlife Blitz retired from shipped surfaces (was §5).** Co-op scene out of Build Settings; preview + arcade card deleted; scene/`CoOpWildlifeBlitzMiniGame` kept on disk. Shipped on `Bug_Hunt`. | Build Settings, ModePreviewLibrary |
+| 36 | **Wildlife Blitz retired from shipped surfaces (was §5).** Co-op scene out of Build Settings; preview + arcade card deleted. Shipped on `Bug_Hunt`. | Build Settings, ModePreviewLibrary |
 | 37 | **Orphans deleted after salvage-before-delete (was §5).** Removed unused `WildlifeBlitzMiniGame`, SlipnStride controller, VolumeTest adapter, `SandboxBenchmarkController`, end-game stats tracker, `WildlifeBlitzStats`; kept Benchmark stack. Shipped on `Bug_Hunt`. | see FIX_LOG BH-5.6 |
+| 38 | **Wildlife Blitz co-op leftovers deleted (follow-up to 5.5/5.6).** Removed `MinigameWildlifeBlitzMultuplayerCoOp` scene + `CoOpWildlifeBlitzMiniGame`; cleaned training launcher refs; Settings ARCHITECTURE aligned to BenchmarkStressTest stack. Shipped on `Bug_Hunt`. | see FIX_LOG BH-5.7 |
 
 ### Playtest items for the shipped fixes
 - **Squirrel ring (#6):** fly Menu_Main freestyle → an arcade game → back, 2-3 round trips, then
@@ -186,6 +187,10 @@ Confidence scale:
 - **Orphans / Benchmark (5.6):** Editor Run Benchmark must still enter `BenchmarkStressTest` and
   fly. Console must not miss scripts for deleted orphans. MiniGameHUD Ready must not log a missing
   `WildlifeBlitzMiniGame` target.
+- **STILL TO TEST (revisit): 5.7 co-op leftover deletion, kept on Bug_Hunt untested at Yash's call.**
+- **Co-op leftovers gone (5.7):** project must not contain
+  `MinigameWildlifeBlitzMultuplayerCoOp` or `CoOpWildlifeBlitzMiniGame`; Editor Run Benchmark (5.3)
+  must still load `BenchmarkStressTest` and find `SinglePlayerWildlifeBlitzController`.
 
 ---
 
@@ -211,7 +216,7 @@ Confidence scale:
 
 ## 5. Follow-ups from the scene cleanup (#5)
 
-_All items from this section are done (BH-5.3–5.6). See §0 rows 34–37._
+_All items from this section are done (BH-5.3–5.7). See §0 rows 34–38._
 
 
 ---

@@ -531,7 +531,7 @@ namespace CosmicShore.Gameplay
         ///
         /// <para>
         /// This lives on the BASE because it was written twice - once in
-        /// <c>MultiplayerDomainGamesController</c>, once in <c>CoOpWildlifeBlitzMiniGame</c> - and
+        /// <c>MultiplayerDomainGamesController</c>, once in the retired <c>CoOpWildlifeBlitzMiniGame</c> - and
         /// both copies carried the same two defects. Two copies of a rule is how the second one
         /// gets forgotten, and a third mode would have written a third.
         /// </para>

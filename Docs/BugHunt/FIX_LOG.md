@@ -8,6 +8,25 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ---
 
+## BH-5.7 — Delete Wildlife Blitz co-op leftovers (scene + controller)
+
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Decision:** BH-5.5/5.6 had kept `MinigameWildlifeBlitzMultuplayerCoOp.unity` and
+  `CoOpWildlifeBlitzMiniGame` on disk on purpose; delete them now that nothing ships them.
+- **Deleted:** `Assets/_Scenes/Multiplayer Scenes/MinigameWildlifeBlitzMultuplayerCoOp.unity` (+
+  `.meta`), `Assets/_Scripts/Controller/Arcade/CoOpWildlifeBlitzMiniGame.cs` (+ `.meta`).
+- **Refs cleaned:** dropped `GameModes.CoOpWildlifeBlitz` scene/host cases from
+  `TrainingAutoLauncher`; enum value kept (integrity tests / rename migration). Comment on
+  `MultiplayerMiniGameControllerBase` ready-gate history updated. No GUID refs remained outside the
+  deleted assets.
+- **Docs:** `Docs/SettingsSystem/ARCHITECTURE.md` no longer lists deleted
+  `SandboxBenchmarkController`; documents the live `BenchmarkStressTest` Wildlife Blitz controller
+  stack (`SinglePlayerWildlifeBlitzController` + trackers/HUD). Handoff §0 / revisit updated.
+- **Verification:** gate scripts pass; not run in Unity. Retest is on the handoff list.
+- **PR/commit:** pending.
+
+---
+
 ## BH-5.6 — Orphan classes after Wildlife Blitz / hangar retirement (salvage-before-delete)
 
 - **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
@@ -15,8 +34,8 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
   `BenchmarkStressTest` path.
 - **Kept (BenchmarkStressTest still references):** `SinglePlayerWildlifeBlitzController`,
   `SinglePlayerWildlifeBlitzScoreTracker`, `SingleplayerWildlifeBlitzTurnMonitor`,
-  `WildlifeBlitzHUD`, `WildlifeBlitzStatsProvider`. Also kept `CoOpWildlifeBlitzMiniGame` (co-op
-  scene file remains on disk).
+  `WildlifeBlitzHUD`, `WildlifeBlitzStatsProvider`. Co-op leftovers
+  (`CoOpWildlifeBlitzMiniGame` + scene) deleted later in BH-5.7.
 - **Deleted (no scene/prefab/asset refs):** `WildlifeBlitzMiniGame`,
   `SinglePlayerSlipnStrideController`, `VolumeTestPlayerSpawnerAdapter`,
   `SandboxBenchmarkController`, `WildlifeBlitzEndGameStatsTracker`, `WildlifeBlitzStats`.
@@ -35,8 +54,8 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 - **Decision (handoff §5):** RETIRE (not ship). Do not half-delete scenes without cleaning refs.
 - **Fix:** removed `MinigameWildlifeBlitzMultuplayerCoOp` from Build Settings; dropped the co-op
   preview from `ModePreviewLibrary`; deleted `ArcadeGameCoOpWildlifeBlitz` and
-  `ModePreview_CoOpWildlifeBlitz`. The co-op **scene file** and `CoOpWildlifeBlitzMiniGame` stay on
-  disk (enum value kept). SP card already removed with hangar training (BH-5.4).
+  `ModePreview_CoOpWildlifeBlitz`. Co-op scene/`CoOpWildlifeBlitzMiniGame` later deleted in
+  BH-5.7 (enum value kept). SP card already removed with hangar training (BH-5.4).
   `GameModes.WildlifeBlitz` remains for Editor `BenchmarkSceneLauncher`.
 - **Verification:** gate scripts pass; not run in Unity. Retest is on the handoff playtest list.
 - **PR/commit:** pending.
