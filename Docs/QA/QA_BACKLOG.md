@@ -1,10 +1,19 @@
 # QA Backlog — untested development on `bleeding-edge`
 
-**Generated:** 2026-08-13 · **Scan covers:** merges up to `50b563f7` (PRs #583–#710
-plus the direct branch merges: Dog Fight, Wildlife Liberation, Astro League
-improvements, Cleave scoring, game-data JSON schema, profile/ads, quit button,
-menu camera, pause-menu perf, display-name validation, Windows build failures)
+**Generated:** 2026-10-05 · **Scan covers:** merges up to `3ba8ea1d2` (PRs #583–#956).
+The 2026-08-13 base (PRs #583–#710) was partially carried forward; the 2026-10-05 pass
+re-scanned the ~110 PRs since that self-report "verify in editor" and added the new game
+modes (Tollway 48, Headlong 49, Skein 51, Wrecking Ball, Undertow, the Butterfly games),
+the new **Butterfly** vessel, the **Arena** screen + Regatta + pilot-swap, the new toys
+(Element Charger, the merged Wander, the Arkway voyage), the new flora families
+(Borromean, Mandelbulb/Arboretum), the Sparrow heat-gun rework, the Rhino sword combos,
+the Serpent reticle/pellets, LIT, card backgrounds, the toybox activity pass, the
+multiplayer session-lifecycle rework, the Skim Race AI, offline fallback, and the iOS
+build gate. Small vessel/HUD tweaks were folded into existing items.
 · **Owner of this file:** the `/qa-backlog` skill — do not hand-edit.
+· **Scan method / limitation:** this pass keyed on the "verify in editor" PR template;
+a handful of merges that did not use that phrase, and the in-repo doc BUGS/TODOS sweeps,
+were not exhaustively re-walked — a follow-up `/qa-backlog scan` can catch any stragglers.
 
 Every item below landed on a shared branch **without ever being opened in Unity**
 by its author (or was play-tested only in part). Work top-down: P0 first.
@@ -461,6 +470,192 @@ morphs; `SkyboxModel` entries listed under OK in the cell-visual audit.
 **FAIL:** any tool that throws, or any *new* failure beyond the known exceptions above
 — especially "SCENE-PLACED DUPLICATES" or "DEAD CELL OVERRIDES" being non-empty, or a
 corridor radius that is not ship-sized.
+
+### QA-TOLLWAY-MODE ⬜ — "Tollway" (GameModes 48) has never been opened
+**Source:** PR #848. New Scarab-only ring race, authored headless (compiled by Roslyn,
+never opened in Unity). Reference: `_Scripts/Controller/Arcade/TOLLWAY.md` § In-editor
+verification.
+1. Open `MinigameTollway.unity`. Confirm no `Missing (Mono Script)` row on the controller.
+2. Launch at intensity 1. Confirm a **Scarab** spawns (not any other vessel) and the ring
+   course builds.
+3. Fly the course: the rings should be threadable and the race should progress toward a
+   finish.
+4. Launch intensity 1 and intensity 4 back to back and confirm they are visibly different.
+5. Play a full round and watch the scoreboard reach a winner.
+
+**PASS:** the scene opens clean; a Scarab is forced; the ring course builds and is
+flyable at every intensity; the round ends and the scoreboard shows a domain winner.
+**FAIL:** a non-Scarab vessel spawning · missing scripts · a course that does not build
+or cannot be finished · every intensity identical · the round never ending.
+
+### QA-HEADLONG-MODE ⬜ — "Headlong" (GameModes 49) has never been opened
+**Source:** PR #852. New Rhino-only circuit built around the Rhino's graded ramp boost,
+authored headless. Reference: `_Scripts/Controller/Arcade/HEADLONG.md` § In-editor
+verification.
+1. Open `MinigameHeadlong.unity`. Confirm no `Missing (Mono Script)`.
+2. Launch at each intensity 1–4. Confirm a **Rhino** spawns and the circuit builds.
+3. Fly several laps holding the ramp boost down the straights — a clean lap should be
+   faster than a ragged one (the lap is meant to reward holding the boost line).
+4. Play a round to its target and watch the scoreboard.
+
+**PASS:** Rhino forced; the circuit builds at every intensity; holding the ramp boost
+through the course shortens lap time; the round ends on a domain winner.
+**FAIL:** a non-Rhino vessel · missing scripts · a circuit that does not build · laps
+that ignore the boost entirely · the round never ending.
+
+### QA-SKEIN-MODE ⬜ — "Skein" (GameModes 51) has never been opened
+**Source:** PR #855. New Urchin-only cable race, authored headless — **and CI never
+compiled it** (the Unity job is skipped on this repo), so a symbol-table error would
+first surface here. Reference: `_Scripts/Controller/Arcade/SKEIN.md` § In-editor
+verification.
+1. Let the project compile; watch the Console on first load for errors naming Skein.
+2. Open `MinigameSkein.unity`; confirm no `Missing (Mono Script)`.
+3. Launch at each intensity 1–4. Confirm an **Urchin** spawns and the cable course builds.
+4. Grind the cables the way the Urchin rides a rail; confirm you progress along the course.
+5. Play a round to its target.
+
+**PASS:** compiles clean; Urchin forced; the cable course builds at every intensity and
+is rideable; the round ends on a domain winner.
+**FAIL:** a compile error naming Skein · a non-Urchin vessel · a course that does not
+build or cannot be ridden · the round never ending.
+
+### QA-WRECKING-BALL-MODE ⬜ — "Wrecking Ball" has never been played to measure
+**Source:** PR #879. New Scarab party game; **compiled and played once by the author**,
+but its volume ladder (Rampage's, scaled) was never measured. Reference the mode doc's
+Verification section.
+1. Open the Wrecking Ball scene; confirm no `Missing (Mono Script)`.
+2. Launch at intensity 1. Confirm a **Scarab** spawns and the arena builds.
+3. Run **FrogletTools ▸ Ecology ▸ Measure Cell Environment Baselines** on its cell;
+   the intensity-1 forest should measure near **~396k** volume.
+4. Play a round; confirm scoring moves and the round ends.
+
+**PASS:** Scarab forced; arena builds at every intensity; the intensity-1 baseline is
+near ~396k (not an order of magnitude off); the round scores and ends.
+**FAIL:** a non-Scarab vessel · a baseline far from ~396k (the ladder needs re-deriving —
+report the number) · the round not scoring or not ending.
+**Report the feel:** Wrecking Ball's plant density at intensity 1 is unplayed — say
+whether the stands read as too sparse or too dense.
+
+### QA-UNDERTOW-MODE ⬜ — "Undertow" has never been played to measure
+**Source:** PR #879. New Scarab party game; compiled and played once by the author, not
+measured. Reference the mode doc's Verification section.
+1. Open the Undertow scene; confirm no `Missing (Mono Script)`.
+2. Launch at each intensity 1–4. Confirm a **Scarab** spawns and the arena builds.
+3. Play a round; confirm scoring moves and the round ends on a winner.
+
+**PASS:** Scarab forced; arena builds at every intensity; the round scores and ends.
+**FAIL:** a non-Scarab vessel · missing scripts · an arena that does not build · the
+round not scoring or not ending.
+
+### QA-BUTTERFLY-VESSEL ⬜ — the Butterfly, a whole new vessel, has never been flown
+**Source:** PR #916 (+ #925 fold-gate transit). A brand-new hull with a two-mode right
+trigger, a fold ability, and the Waystation race. Authored headless — **never compiled or
+flown**. Reference: `_Scripts/Controller/Vessel/R_VesselActions/` Butterfly docs.
+1. Let the project compile; watch the Console on first load of `Menu_Main`.
+2. Freestyle as the **Butterfly**. Pull the right trigger once: exactly **one** mode flip.
+   Mass mode lays a **wide wake**; Dust mode shows **falling motes in your domain's
+   shielded colour**.
+3. Change your domain with the Domain Changer toy — the motes must recolour.
+4. In Dust mode, pass over **your own** mass vs **opposing** mass: own = grow/danger/shield,
+   opposing = destroy/shrink/steal.
+5. Press the fold (left trigger): the fold lands and **leaves two gates**. A same-domain
+   pilot threads one gate and comes out the other.
+6. Play **Waystation**: the race reaches a finish; a fold *across* a ring does **not**
+   count that ring; AI Butterflies fold on their own.
+7. With a party guest (MPPM 2 players), a fold/gate transit must teleport correctly on the
+   client, not just the host.
+
+**PASS:** compiles; one trigger pull = one mode flip; Mass lays a wide wake and Dust
+shows domain-shielded-colour motes that recolour on a domain change; Dust treats own vs
+opposing mass correctly; a fold leaves two linked gates that teleport the threader; AI
+fold; Waystation finishes and counts rings correctly; a guest's transit replicates.
+**FAIL:** a compile error · more than one flip per pull · motes in the wrong colour or
+not recolouring · Dust doing the same thing to own and opposing mass · a fold that leaves
+no gates or does not teleport · AI never folding · Waystation never finishing · a guest
+not teleporting on a transit.
+**Known, do not fail on:** pressing **A** on the gamepad in menu freestyle makes the
+camera stop following the vessel (logged, unresolved — a separate bug).
+
+### QA-BUTTERFLY-GAMES ⬜ — Dustup, Tapestry and Sirocco have never been opened
+**Source:** PR #927. Three Butterfly modes (Charge/Mass/Space), authored headless and
+**never compiled**. Targets are reasoned, not measured.
+1. Compile, then run the edit-mode suite (watch for Butterfly-named failures).
+2. Launch each of **Dustup**, **Tapestry** and **Sirocco** solo with AI backfill at
+   intensity 2.
+3. Confirm **AI Butterflies switch into Dust mode** on their own.
+4. **Dustup:** a Dust pass over an opponent scores points.
+5. **Tapestry:** your stock **rises while you paint** and **falls when raided**.
+6. Play each toward its target and confirm it ends.
+
+**PASS:** all three compile and open; AI switch to Dust mode; Dustup scores on a Dust
+pass; Tapestry's stock rises and falls as described; each round ends on a winner.
+**FAIL:** a compile error · AI that never enter Dust mode · Dustup not scoring · Tapestry
+stock that does not move · a round that never ends.
+**Known, do not fail on:** an AI that spawns stopped does not switch modes until it moves;
+Tapestry ties resolve in domain order.
+
+### QA-REGATTA-ARENA ⬜ — Regatta, the first ARENA mode, has never been opened
+**Source:** PR #880 (+ the `/arenagame` surface). An **arena** race any hull can enter —
+a new launch screen and a new roster. Authored headless, never compiled. Reference:
+`_Scripts/Controller/Arcade/REGATTA.md` § In-editor verification.
+1. Compile; run the edit-mode suite (`RegattaCourseTests`, `VesselStartingElementsTests`,
+   `ArenaRosterTests`).
+2. Open the **Arena** screen (not the Arcade screen) and pick **Regatta**. The vessel
+   carousel should offer **all eight hulls** with correct icons (check Scarab and Urchin
+   in particular); SELECT VESSEL sits under the vessel icon; Start stays disabled until
+   pressed.
+3. Launch at each intensity: **three domain-coloured rails braided through eight rings**.
+   An Urchin grinds its own colour's rail; a Squirrel skims it.
+4. Look at the HUD elemental flowers: a handicapped hull shows **fire** petals, a helped
+   hull shows **white** — the seeded starting elements.
+5. With a party guest, confirm the guest's own hull carries the **same** element levels as
+   the host's replica of it.
+6. Return to `Menu_Main` after a round and confirm the lava-lamp vessel starts at rest.
+
+**PASS:** compiles; the Arena carousel offers all eight hulls correctly; the braided rail
+course builds at every intensity and each hull uses it as designed; the HUD flowers show
+the per-hull seeded starting elements; a guest's levels match the host's; the round ends.
+**FAIL:** a compile error · a hull missing or mis-iconed in the carousel · Start live
+before it is pressed · a course that does not build · flowers that do not show the seeded
+handicap/help · host and guest disagreeing on a hull's levels.
+
+### QA-ARENA-PILOT-SWAP ⬜ — six arena seats and the D-pad swap into an AI teammate's hull
+**Source:** PR #915. Arena seats up to six (2v2v2), one pilot per hull, with a live D-pad
+swap into an AI teammate's hull. Playtested by the author but reported "has issues" with
+no specifics — treat as playtest-pending.
+1. Launch **Regatta 2v2v2** as the **Urchin** with a **Serpent** AI ally.
+2. Press **D-pad right**: you should now fly the **Serpent** — camera on it, your input
+   live — while the AI takes over the Urchin. Press again to swap back.
+3. Watch the Console for `[PilotSwap]` warnings; a failed takeover names what did not land.
+4. Repeat the swap in **Broadside** and **Astro League**, and with a remote guest doing
+   the swapping.
+5. Build a 3v3 by hand in the lobby: no AI should change team on its own.
+6. Two guests press SELECT VESSEL on the **same** hull: exactly one gets it.
+
+**PASS:** D-pad swaps you into the ally hull with camera + input following, and back; no
+`[PilotSwap]` warnings; the swap works in every listed mode and for a guest; no AI
+self-reassigns team; a contested hull pick resolves to exactly one player.
+**FAIL:** a swap that moves the camera but not input (or vice versa) · a `[PilotSwap]`
+warning · an AI changing team on its own · both guests getting the same hull · a swap
+that throws.
+**Known, do not fail on:** swapping **into the Urchin** shows no ability row (it has no
+HUD prefab yet); a swap gives no toast — the camera move is the only feedback.
+
+### QA-IOS-BUILD ⬜ — an iOS build compiles and reaches the main menu
+**Source:** PR #946 (Cosmic Shore bundle ids, a free unsigned-ipa build, the first iOS
+compile fix). **Why a gate, and why separate from the Windows build:** iOS is a fresh
+IL2CPP target that has never produced a running build; a platform-only compile error is
+invisible in the Editor and on the Windows player.
+1. Produce an **iOS build** (or take the unsigned ipa this branch's CI produced). Record
+   whether the build itself completes.
+2. Install and launch on an iOS device. Sign in and reach `Menu_Main`.
+3. Read the device log afterwards.
+
+**PASS:** the build completes; the app launches, signs in and reaches `Menu_Main`; no
+managed exception in the device log that does not also appear in the Editor.
+**FAIL:** a build that fails to compile or link for iOS · an app that closes before the
+menu · an iOS-only managed exception. Attach the build log / device log for any failure.
+**BLOCKED is fine** if no iOS device or signing path is available — say so.
 
 ---
 
@@ -2383,6 +2578,239 @@ fault rates are no worse than the last measurement.
 rates rising. Note B2/B3/B4/B5/B6 outcomes as data — they are known-open, so they do
 not fail this item, but their current behaviour is what we need recorded.
 
+### QA-TOY-ELEMENT-CHARGER ⬜ — the Element Charger toy grants elements to your vessel
+**Source:** PR #913. New freestyle toy, authored headless and never compiled. Reference:
+`Docs/ToySystem/` Element Charger entry.
+1. Compile, then run `ElementChargerToyTests`.
+2. In `Menu_Main` freestyle, fly the **Element Charger** (about 150° around the cell ring).
+   The choice row should bloom with **Charge** on your left.
+3. Fly each crystal in turn. Its elemental flower should step up by **5**, a level-5
+   ability upgrade should light on that element's ability icon, and the **hull should
+   morph**.
+4. Keep charging one element past 10: the overcharge must **drain back to 10** at about
+   one level every five seconds.
+5. Swap vessels (Vessel Changer toy): the new hull starts at **its own** levels, not the
+   charged ones.
+
+**PASS:** the row blooms with the four elements; each crystal raises its flower by 5,
+lights the L5 upgrade and morphs the hull; overcharge drains back to 10; a vessel swap
+resets to the new hull's own levels.
+**FAIL:** a crystal that does nothing · no upgrade light at level 5 · a hull that never
+morphs · overcharge that stays above 10 · charged levels carrying across a vessel swap.
+
+### QA-TOY-WANDER-MERGE ⬜ — Wanderway and Arkway merged into one Wander toy
+**Source:** PR #930 (merge) + #929 (the Arkway voyage). The two wander toys are now **one
+Wander toy with two choices**; authored headless, never compiled. Reference:
+`Docs/ToySystem/ARCHITECTURE.md`.
+1. Compile and watch the Console for errors.
+2. `Menu_Main` freestyle → fly the **Wander** toy. Two stations should bloom: a **mini
+   Ark** (With Ark) and an **archway microscene** (Without Ark).
+3. Thread **Without Ark**: the microscene belt primes behind the load veil the first time,
+   and resumes with no second veiled build after that.
+4. Thread **With Ark**: the Ark voyage starts behind the veil — real cells stream past and
+   the Ark itself is present.
+5. With a run live, fly the Wander toy again: it should bring you **home**.
+6. From the Toy Box menu, open Wander: with nothing running both cards **Start**; with one
+   running, that card reads **"Come home"** and the other is not committable.
+7. Change your domain: the emblem's mini Ark and the With Ark station recolour.
+
+**PASS:** compiles; both stations bloom; each choice starts its run behind one veil; a
+live run's toy brings you home; the Toy Box cards read Start / Come home correctly;
+the Ark elements recolour on a domain change.
+**FAIL:** a compile error · only one station · a second veiled rebuild on resume · a run
+that cannot be ended from the toy · both Toy Box cards committable while a run is live ·
+the emblem not recolouring.
+**Known, do not fail on:** the Wander codex portrait still shows the old Wanderway image
+(re-bake pending).
+
+### QA-ARKWAY-VOYAGE ⬜ — the Arkway is a real playable voyage now
+**Source:** PR #929. The Arkway streams **real cells** past a **fed-upon Ark** and its
+corridor prisms now actually render. Authored headless. Reference:
+`Docs/ECOSYSTEM.md §41` and `Docs/ToySystem/ARCHITECTURE.md` § Arkway.
+1. Start an Arkway voyage (via the Wander toy, With Ark).
+2. Watch the cells stream past — confirm they are real built cells, not empty space.
+3. Watch the **Ark** hull: fauna should be able to feed on it (its mass is ordinary
+   conserved prism mass in its domain).
+4. Confirm the **corridor prisms** along the route are visible (the fix this PR made).
+5. End the voyage and confirm you return home cleanly.
+
+**PASS:** real cells stream past; the Ark is present and its mass is grazeable; corridor
+prisms render; the voyage ends and returns you home.
+**FAIL:** empty space instead of cells · an Ark nothing can touch · invisible corridor
+prisms · a voyage that cannot be ended.
+
+### QA-ECOLOGY-BORROMEAN-FLORA ⬜ — the Borromean-rings flora and its four cells
+**Source:** PR #894. A new flora grown on the Borromean rings' minimal surface, plus four
+cells that grow it (the Garland cell family). Authored headless, **never compiled** (CI's
+Unity job is skipped). Reference: `Docs/ECOSYSTEM.md`.
+1. Compile; watch the Console for errors on first load.
+2. Freestyle → Cell Selector toy → each of the **four** Borromean/Garland cells. Confirm
+   each imports and builds with no `None` references.
+3. Run **FrogletTools ▸ Ecology ▸ Validate Lifeform Crystals** — the new flora must pass.
+4. Stay in a cell and let the flora grow several waves; confirm it grows on the surface
+   (connected, not disconnected lumps) and the phase readout does not boot to Frenzy.
+
+**PASS:** compiles; all four cells build cleanly; the crystal validator is green; the
+flora grows coherently on its surface; no cell sits in Frenzy at rest.
+**FAIL:** a compile error · a cell that builds zero prisms or has `None` refs · a crystal
+validator failure · flora growing in disconnected lumps or not at all · a cell stuck in
+Frenzy.
+
+### QA-ECOLOGY-MANDELBULB-FLORA ⬜ — the Mandelbulb flora family and the Arboretum
+**Source:** PR #896. A new flora family plus the **elemental form law** (an element
+changes a plant's FORM, not just colour) and the **Arboretum** cell. Authored headless,
+never compiled. Reference: `Docs/ECOSYSTEM.md`.
+1. Compile; watch the Console.
+2. Freestyle → Cell Selector → **Arboretum**. Confirm it builds.
+3. Let the Mandelbulb flora grow; spawn or find all four elements of it and confirm each
+   element reads as a **different form**, not the same shape recoloured.
+4. Run **Validate Lifeform Crystals** — the family must pass.
+
+**PASS:** compiles; the Arboretum builds; the four elements of the flora are visibly
+different forms; the crystal validator is green.
+**FAIL:** a compile error · an Arboretum that does not build · four elements that are the
+same shape in different colours · a crystal validator failure.
+**Known, do not fail on:** the Cell Selector shows a grown world as a bare station with
+no scale model (a separate, logged gap).
+
+### QA-SPARROW-HEAT-GUNS ⬜ — the Sparrow's guns now run on heat
+**Source:** PR #924. The Sparrow's guns were **re-worked to a heat model**: fixed range,
+even 5-second phases, 5× cooling, and range that **falls as spread rises**. This replaces
+a shipped weapon, so it is a regression re-verify as much as a new feature.
+1. Freestyle as the **Sparrow**. Fire the guns continuously and watch for a heat gauge
+   building.
+2. Hold the trigger through a full heat cycle: confirm the ~5-second phase behaviour and
+   that cooling is quick (~5×) once you release.
+3. Fire in short taps vs. a long spray and compare **range** — a hot/spread weapon should
+   reach **less far** than a cool one.
+4. Confirm the guns still **hit and score** on an opponent in a gun mode (e.g. Dog Fight).
+
+**PASS:** a heat gauge builds and cools; the 5-second phases read; range visibly shortens
+as spread/heat rises and recovers when cool; guns still register hits.
+**FAIL:** no heat behaviour · a weapon that never cools or never overheats · range that
+does not change with spread · guns that stop hitting at all.
+**Report the feel:** say whether the heat phases make the weapon fun or frustrating.
+
+### QA-RHINO-SWORD-COMBOS ⬜ — trigger-tap sword combos, prism slicing, and the supershield bind
+**Source:** PRs #921 (trigger-tap combos + energized set), #914 (the sword SLICES prisms
+it destroys), #904 (the sword binds in super-shielded mass with no recoil, + a speed/turn
+retune). Reference: `_Scripts/Controller/Vessel/R_VesselActions/RHINO_SHIELD_SWIPE.md`.
+1. Freestyle as the **Rhino**. Tap the sword trigger in sequence and confirm a **combo**
+   plays through (not just a single repeated swipe), and that the energized set reads.
+2. Swipe through ordinary prisms and watch them **slice** as they are destroyed.
+3. Swipe into a **super-shielded** prism (e.g. the Skim Race track lining): the sword
+   should **bind** in it with **no recoil** kicking you off.
+4. Fly the Rhino normally and judge the retuned speed/turn — it should feel controllable.
+
+**PASS:** trigger taps chain into combos with the energized set; destroyed prisms slice;
+the sword binds in super-shielded mass without recoil; the speed/turn retune is flyable.
+**FAIL:** combos that never chain · no slice on destruction · a sword that bounces off
+super-shielded mass instead of binding · a retune that makes the Rhino uncontrollable.
+**Report the feel:** say whether the combo timing and the new speed/turn read well.
+
+### QA-SERPENT-RETICLE-PELLETS ⬜ — a visible reticle, a piercing sniper round, and Solid Fuel Pellets
+**Source:** PRs #900 (a reticle the pilot can see + a sniper round that pierces) and #903
+(Solid Fuel Pellets restored as the Serpent's Time ability, with its icon).
+1. Freestyle as the **Serpent**. Confirm a **reticle** is drawn where the pilot is aiming.
+2. Fire the sniper round at a line of prisms: it should **pierce** through more than one
+   rather than stopping on the first.
+3. Raise **Time** to level 5 and confirm the **Solid Fuel Pellets** ability is available
+   and its **icon** appears in the ability row.
+
+**PASS:** a visible aiming reticle; the sniper round pierces multiple prisms; Solid Fuel
+Pellets is present at Time 5 with its icon on the row.
+**FAIL:** no reticle · a round that stops on the first prism · a missing or icon-less
+Time ability.
+
+### QA-LIT-FUNDAMENTAL ⬜ — LIT promoted to a fundamental, explosion temp shield retired
+**Source:** PR #891. "LIT" became a platform fundamental and the old explosion
+temporary-shield hack was retired. Touches how own-domain mass reacts to a blast, so a
+defect is broad.
+1. Fire an own-domain explosion (e.g. a Dolphin crystal blast) into **your own** mass and
+   confirm it reads as **accepted** (lights/shields) rather than clipping or being
+   destroyed.
+2. Fire the same blast into **opposing** mass and confirm it is destroyed as before.
+3. Watch the Console for any LIT-related exception during a blast.
+
+**PASS:** own-domain mass reacts to a blast as LIT (no destruction, no clipping);
+opposing mass is destroyed; no exceptions.
+**FAIL:** own mass destroyed by your own blast · a visible clip/pop where a shield used to
+read · any LIT exception.
+
+### QA-ARCADE-CARD-BACKGROUNDS ⬜ — genre petals and rendered card backgrounds on every card
+**Source:** PR #911. Every arcade/arena card gained a **genre petal** marker and a
+**rendered intensity-2 background** image of its own arena.
+1. Open the **Arcade** screen and scroll every card. Each should show a background image
+   that looks like **that mode's own arena**, not a placeholder or a shared image.
+2. Open the **Arena** screen and do the same.
+3. Confirm each card shows its **genre petals** and that no card is blank or broken.
+
+**PASS:** every arcade and arena card shows a distinct, mode-appropriate background and
+its genre petals; none is blank, stretched or sharing another card's image.
+**FAIL:** a blank/placeholder background · a card wearing the wrong mode's image · missing
+genre petals · a stretched or broken image.
+
+### QA-TOYBOX-ACTIVITY ⬜ — daily activity, shuffle, pole switches, and text-free toys
+**Source:** PR #910. The toybox gained a **daily activity** button and a **shuffle**
+button, **pole switches**, and the toys lost their text labels.
+1. `Menu_Main` freestyle: open the Toy Box and confirm a **daily activity** and a
+   **shuffle** control are present and do something when used.
+2. Fly the toy ring and confirm the toys read **without text labels** — each still
+   identifiable by its shape/switch ring.
+3. Use a **pole switch** and confirm it activates as a switch should.
+
+**PASS:** daily activity and shuffle both work; toys are identifiable with no text; pole
+switches activate.
+**FAIL:** a dead daily-activity or shuffle control · a toy that is unidentifiable without
+its old label · a pole switch that does nothing.
+*(Toy legibility without labels is partly a taste call — report a genuinely
+unidentifiable toy as a note unless it is completely unreadable.)*
+
+### QA-MP-SESSION-LIFECYCLE ⬜ — a client can always leave, and a departed pilot's ship keeps flying
+**Source:** PR #865. Multiplayer session lifecycle rework: a client can always leave and
+is never stranded, and a pilot who leaves mid-game leaves a ship that keeps flying. Needs
+**MPPM with at least 2 virtual players**.
+1. Host + one client. Start a multiplayer game.
+2. Have the client **leave mid-game** (in-game leave button). Confirm the client returns
+   cleanly to the menu — not stranded on a black screen or a dead scene.
+3. On the host, confirm the departed pilot's **ship keeps flying** (as AI or drift) rather
+   than freezing or vanishing abruptly.
+4. Repeat with the client leaving from the scoreboard/end screen.
+
+**PASS:** the leaving client always reaches the menu cleanly; the host never sees the
+departed ship freeze or pop out; no exceptions on either machine.
+**FAIL:** a client stranded after leaving · a departed ship that freezes or vanishes
+instantly (breaking continuity) · an exception on either machine on a leave.
+
+### QA-AI-SKIMRACE ⬜ — the Squirrel Skim Race AI actually races and wins
+**Source:** PR #945. A trained Skim Race AI for the Squirrel that should win intensity 2
+inside the 80-second limit.
+1. Launch **Skim Race** solo with AI backfill at intensity 2 on the **Squirrel**.
+2. Watch an AI racer: it should fly the track, collect crystals, and make real progress —
+   not orbit or stall.
+3. Let the race run and confirm an AI can **finish** within the time limit.
+
+**PASS:** the AI races the track competently and can complete intensity 2 within ~80 s.
+**FAIL:** an AI that orbits, stalls, flies off-track, or never finishes.
+
+### QA-OFFLINE-FALLBACK ⬜ — single-player offline fallback and the online/offline toggle
+**Source:** PR #812. When UGS/Relay is unreachable the game falls back to a local host,
+caches player data, and offers a player-facing online/offline toggle. Reference:
+`Docs/OFFLINE_MODE.md`.
+1. Launch with **networking cut** (no internet, or block UGS) and confirm the game still
+   reaches `Menu_Main` instead of hanging at boot.
+2. Confirm your **name, vessel unlocks and progression** still show (served from the disk
+   cache), and that matchmaking / party creation are stood down.
+3. Launch and play a single-player arcade game offline — it should run on the local host.
+4. Restore networking and use the **reconnect / online toggle**; confirm it comes back
+   online without an app restart.
+
+**PASS:** boot reaches the menu offline; cached name/unlocks/progression show; online-only
+UI (invites, leaderboards, purchases) is gated; a single-player game runs offline; the
+reconnect toggle restores online play in place.
+**FAIL:** a boot that hangs with no network · lost name/unlocks offline · an offline game
+that will not start · a reconnect that needs an app restart or throws.
+
 ---
 
 ## Priority 2 — lower risk, cosmetic, or data-gathering
@@ -2436,12 +2864,6 @@ cytoplasm prefabs and three scenes (including `Menu_Main`) still point at a
 `CellRuntimeDataSO` GUID that does not exist. Spawn each of those fauna and check for a
 throw from `LifeForm.Start()` / `Flora.Plant()`. **PASS = enumerate which ones actually
 throw** — that list scopes the fix branch.
-
-### QA-P2-SPAWN-MATRIX-MOONS ⬜ — element-crystal "moons" swallowed by the toy body
-Suspected pre-existing: the Spawn Matrix's four crystal moons sit ~2.2 world units out
-while toys place at `toyBodyRadius = 22`. Look at the bench. **PASS = the four moons are
-visible and distinct.** **FAIL = they are inside the sphere** (then the fix is a placement
-value, not code).
 
 ### QA-P1-RHINO-RAMP-CEILING ⬜ — Rhino's ramp no longer gets faster with Time
 The element-scaling unification removed a **fleet-wide** `Multiplier(Element.Time)` read from

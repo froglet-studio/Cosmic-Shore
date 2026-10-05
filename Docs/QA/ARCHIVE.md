@@ -13,5 +13,6 @@ the record of when it last passed and on what build.
 | ID | Passed on (commit) | Date | Tester | Notes |
 |---|---|---|---|---|
 | QA-BUILD-COMPILE | `5144ad269` | 2026-08-14 | Caleb |  |
+| QA-P2-SPAWN-MATRIX-MOONS | `3ba8ea1d2` | 2026-10-05 | akouroshm | The four element-crystal moons on the Spawn Matrix bench are visible and distinct, sitting clear of the toy body sphere. |
 
 <!-- /qa-archive -->
