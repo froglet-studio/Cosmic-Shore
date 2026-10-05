@@ -388,6 +388,7 @@ sealed class SwarmSystem : ICellSystem
     }
 
     readonly List<int> _q = new();
+    static readonly bool s_biteTrace = Environment.GetEnvironmentVariable("SHOWCASE_BITE_TRACE") == "1";
 
     /// <summary>SwarmFauna.Feed + IsFood: BitersPerStep members a tick, the nearest... first edible FLORA prism within
     /// BiteRadius (flora tissue, not shielded, inside this swarm's band), volume banked under the plant's element.</summary>
@@ -892,6 +893,7 @@ sealed class SubstrateSystem : ICellSystem
 
     /// <summary>SubstrateFauna.Feed + IsFood: per population up to MaxBitesPerTick of the agents the core asked for, the
     /// first edible flora prism within BiteRadius (flora tissue, not shielded, inside the species' band), paid 1:1.</summary>
+    static readonly bool s_biteTrace = Environment.GetEnvironmentVariable("SHOWCASE_BITE_TRACE") == "1";
     void Feed(Cell c)
     {
         var reqs = Job.EatRequests;
@@ -907,6 +909,12 @@ sealed class SubstrateSystem : ICellSystem
                 bitten++;
                 pop.Asked++;
                 int found = c.World.QuerySphere(Job.Instances[i].CurPos, pop.BiteRadius, _q);
+                if (s_biteTrace && pop.Asked % 500 == 1)
+                {
+                    var me = Job.Instances[i].CurPos; float bd = 1e9f; int bh = -1;
+                    for (int h = 0; h < c.World.Count; h++) { if (!c.World.AliveL[h] || !c.World.IsFloraTissue(h)) continue; float d = Vector3.Distance(c.World.Pos[h], me); if (d < bd) { bd = d; bh = h; } }
+                    Console.WriteLine($"   BITE {pop.Key} t={c.T:F0} r={me.Length():F0} found {found} nearest leaf {bd:F0}u r={(bh>=0?c.World.Pos[bh].Length():0):F0} shield {(bh>=0&&c.World.ShieldedL[bh])} hunger {Core.Hunger[i]:F2}");
+                }
                 for (int k = 0; k < found; k++)
                 {
                     int h = _q[k];
@@ -1275,6 +1283,9 @@ sealed class BuilderSystem : ICellSystem
         c.World.Stealer = "wearers";
         bool wearStepped = Wear != null && StepColony(_wearC!, c, (v, k) => Wear.Step(dt, v, k));
         LastMs = Ms.Since(t0);
+        if (s_deathTrace && thiefStepped)
+            foreach (var d in Thief.Deaths)
+                Console.WriteLine($"   DEATH thief t={c.T:F1} by {(d.Vessel >= 0 && d.Vessel < c.Pilots.Count ? c.Pilots[d.Vessel].Kind : d.Vessel.ToString())} at r={d.At.Length():F0} nest {Vector3.Distance(d.At, Thief.Nest):F0}u carry {Thief.Carry[d.Agent]} claim {Thief.Claim[d.Agent]} pilotV {(d.Vessel >= 0 && d.Vessel < c.Pilots.Count ? c.Pilots[d.Vessel].Vel.Length() : 0):F0}");
         if (fortStepped) BookDeaths(Fort.Deaths, Fort.Born);
         if (thiefStepped) BookDeaths(Thief.Deaths, Thief.Born);
         if (wearStepped) BookDeaths(Wear!.Deaths, Wear.Born);
@@ -1295,6 +1306,7 @@ sealed class BuilderSystem : ICellSystem
     /// <summary>A member's stomach at death leaves with it (Docs/BUILDERS_AND_THIEVES.md "unstated volume"); it is booked
     /// here from <see cref="BuilderDeath.Stomach"/>, recorded at the death - a birth in the SAME step can re-use the slot
     /// and overwrite the array (QA-SWARM-ROUND11-9). Those re-uses are counted to show the case is exercised.</summary>
+    static readonly bool s_deathTrace = Environment.GetEnvironmentVariable("SHOWCASE_DEATH_TRACE") == "1";
     void BookDeaths(List<BuilderDeath> deaths, List<int> born)
     {
         foreach (var d in deaths)

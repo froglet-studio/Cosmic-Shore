@@ -84,6 +84,9 @@ namespace CosmicShore.Gameplay
         /// is never decided frozen: the owner thaws the population before its hungriest agent's reserve runs out.
         /// </summary>
         public bool Frozen;
+        /// <summary>The food field this population reads (<see cref="SubstrateFields.FoodGroup"/>): the field of the food
+        /// inside its band, or 0 = the cell-wide field when it has no band. Set by <see cref="SubstrateCore.AddPopulation"/>.</summary>
+        public int FoodGroup;
 
         internal readonly Vector3[] Dirs;
         internal readonly int[] Live;
@@ -188,7 +191,10 @@ namespace CosmicShore.Gameplay
             {
                 var old = Pops[q];
                 if (old.Active || old.Cap < cap) continue;
-                var re = new SubstratePopulation(q, old.Start, p) { Element = element, BandInner = bandInner, BandOuter = bandOuter };
+                var re = new SubstratePopulation(q, old.Start, p)
+                {
+                    Element = element, BandInner = bandInner, BandOuter = bandOuter, FoodGroup = Fields.FoodGroup(bandInner, bandOuter),
+                };
                 Pops[q] = re;
                 for (int i = re.Start; i < re.Start + re.Cap; i++) PopOf[i] = q;
                 return q;
@@ -196,7 +202,10 @@ namespace CosmicShore.Gameplay
             int start = 0;
             for (int q = 0; q < Pops.Count; q++) start = Math.Max(start, Pops[q].Start + Pops[q].Cap);
             if (start + cap > Capacity) return -1;
-            var pop = new SubstratePopulation(Pops.Count, start, p) { Element = element, BandInner = bandInner, BandOuter = bandOuter };
+            var pop = new SubstratePopulation(Pops.Count, start, p)
+            {
+                Element = element, BandInner = bandInner, BandOuter = bandOuter, FoodGroup = Fields.FoodGroup(bandInner, bandOuter),
+            };
             Pops.Add(pop);
             for (int i = start; i < start + cap; i++) PopOf[i] = pop.Index;
             return pop.Index;
@@ -291,6 +300,30 @@ namespace CosmicShore.Gameplay
 
         // ───────────────────────────────────────────────────────────── the tick
 
+        /// <summary>
+        /// The way to food for an agent at <paramref name="p"/> (grid cell <paramref name="fc"/>): the gradient of its
+        /// population's food field - and, within two grid cells of a food point inside its band, the point itself.
+        /// <para>Round 11-10 (Docs/SWARM_FAUNA.md §27): the field is a 60 u grid, and the game's food is one point per
+        /// flora HEART whose leaves sit 6-30 u around it - so the field's peak is one cell wide and its gradient there is
+        /// ~0. Agents homed to within a cell (54-110 u) of a heart and circled there, out of their 24 u bite, and
+        /// starved beside the food (the showcase cell: 2 bites in 645 asks). The research fed on DENSE food (every leaf
+        /// prism scattered over the world), where any cell's peak is a bite away; the final approach restores that at the
+        /// game's sparse hearts. It reads only food the agent may eat (inside its band), and the kernel normalises the
+        /// heading, so only its direction matters.</para>
+        /// </summary>
+        Vector3 FoodHeading(int group, Vector3 p, int fc, ReadOnlySpan<SubstrateFood> food)
+        {
+            float best = 4f * Fields.H * Fields.H;   // within two grid cells
+            int bi = -1;
+            for (int j = 0; j < food.Length; j++)
+            {
+                if (food[j].Volume <= 0f || !Fields.InFoodBand(group, food[j].Pos)) continue;
+                float d = Vector3.DistanceSquared(food[j].Pos, p);
+                if (d < best) { best = d; bi = j; }
+            }
+            return bi >= 0 ? food[bi].Pos - p : Fields.FoodGrad(group, fc);
+        }
+
         public void Step(ReadOnlySpan<SubstratePilot> pilots, ReadOnlySpan<SubstrateFood> food)
         {
             BeginStep(pilots, food);
@@ -314,7 +347,15 @@ namespace CosmicShore.Gameplay
             // round 11f-2: with every population frozen nobody reads or writes the fields - they hold until one thaws
             bool anyRunning = false;
             for (int q = 0; q < Pops.Count; q++) anyRunning |= Pops[q].Active && !Pops[q].Frozen;
-            if (anyRunning) Fields.Update(food, pilots.Slice(0, _npil));
+            if (anyRunning)
+            {
+                // only the food fields a running population reads are rebuilt
+                Fields.MarkFoodUsed(0, false);
+                for (int q = 0; q < Pops.Count; q++) Fields.MarkFoodUsed(Pops[q].FoodGroup, false);
+                for (int q = 0; q < Pops.Count; q++)
+                    if (Pops[q].Active && !Pops[q].Frozen) Fields.MarkFoodUsed(Pops[q].FoodGroup, true);
+                Fields.Update(food, pilots.Slice(0, _npil));
+            }
             MsFields += Ms(t0);
             Tick++;
             for (int q = 0; q < Pops.Count; q++)
@@ -339,13 +380,14 @@ namespace CosmicShore.Gameplay
                 PilotMoments(pop);
                 MsHash += Ms(t0);
                 t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+                bool seeksFood = pop.P.Solitary.WFood != 0f || pop.P.Gregarious.WFood != 0f;
                 for (int k = 0; k < n; k++)
                 {
                     int i = pop.Live[k];
                     int fc = Fields.Cell(Pos[i]);
                     FThreat[i] = Fields.Sample(SubstrateFields.Threat, fc);
                     FAlarm[i] = Fields.Sample(SubstrateFields.Alarm, fc);
-                    GFood[i] = Fields.Grad(SubstrateFields.Food, fc);
+                    GFood[i] = seeksFood ? FoodHeading(pop.FoodGroup, Pos[i], fc, food) : Vector3.Zero;
                     GScent[i] = Fields.Grad(SubstrateFields.Scent, fc);
                     GAlarm[i] = Fields.Grad(SubstrateFields.Alarm, fc);
                     GThreat[i] = Fields.Grad(SubstrateFields.Threat, fc);

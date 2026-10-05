@@ -100,7 +100,9 @@ sealed class Cell
     public readonly JsonElement L;
     public readonly CellWorld World;
     public readonly List<Pilot> Pilots = new();
-    public readonly ThreatRng Rng;
+    // NOT readonly: ThreatRng is a struct, and a method called through a readonly struct field runs on a defensive copy -
+    // before round 11-10 every draw returned the same value, so every random placement in the cell landed on one spot
+    public ThreatRng Rng;
     public readonly int Seed;
     public float T;
     public const float Dt = 0.1f;

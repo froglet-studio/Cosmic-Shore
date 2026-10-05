@@ -6,6 +6,7 @@
 //
 // Pure C#: compiled and run by Tools/Build/substrate_harness.
 using System;
+using System.Collections.Generic;
 using System.Numerics;
 
 namespace CosmicShore.Gameplay
@@ -59,6 +60,64 @@ namespace CosmicShore.Gameplay
         public float Sample(int channel, int cell) => _ch[channel][cell];
         public Vector3 Grad(int channel, int cell) => _grad[channel][cell];
 
+        // ── banded food (round 11-10, Docs/SWARM_FAUNA.md §27) ─────────────────────────────────────────────────────
+        // One FOOD field for the whole cell led a penned species to food it may not eat: the field is built from every
+        // flora heart in the cell, so a locust at the inner wall of its 910-1080 u shell climbed the gradient of the Time
+        // plants at r ~ 840 and starved outside its band. A banded population reads a food field built only from the food
+        // inside ITS band (Fields.FoodGroup); populations that share a band share the field, and an unbanded population
+        // reads the cell-wide channel exactly as before.
+        readonly List<(float inner, float outer, float[] f, Vector3[] grad)> _bands = new();
+        readonly List<bool> _bandUsed = new();
+        bool _allUsed = true;
+
+        /// <summary>The food field for a population penned to [<paramref name="inner"/>, <paramref name="outer"/>] (sim
+        /// units from the centre): 0 = the cell-wide field (no band), otherwise one shared per distinct band.</summary>
+        public int FoodGroup(float inner, float outer)
+        {
+            if (outer <= 0f) return 0;
+            for (int b = 0; b < _bands.Count; b++)
+                if (_bands[b].inner == inner && _bands[b].outer == outer) return b + 1;
+            int n = G * G * G;
+            _bands.Add((inner, outer, new float[n], new Vector3[n]));
+            _bandUsed.Add(false);
+            return _bands.Count;
+        }
+
+        /// <summary>Which food fields the next rebuild must make (the core marks the groups its running populations read).</summary>
+        public void MarkFoodUsed(int group, bool used)
+        {
+            if (group == 0) _allUsed = used;
+            else if (group - 1 < _bandUsed.Count) _bandUsed[group - 1] = used;
+        }
+
+        /// <summary>The food gradient of a food group at a grid cell.</summary>
+        public Vector3 FoodGrad(int group, int cell) => group == 0 ? _grad[Food][cell] : _bands[group - 1].grad[cell];
+
+        /// <summary>The band of a food group (inner, outer); (0, 0) for the cell-wide field.</summary>
+        public (float inner, float outer) FoodBand(int group) => group == 0 ? (0f, 0f) : (_bands[group - 1].inner, _bands[group - 1].outer);
+
+        /// <summary>Is a food point inside a food group's band?</summary>
+        public bool InFoodBand(int group, Vector3 p)
+        {
+            if (group == 0) return true;
+            float r = p.Length();
+            var b = _bands[group - 1];
+            return r >= b.inner && r <= b.outer;
+        }
+
+        void BuildFood(float[] f, Vector3[] grad, ReadOnlySpan<SubstrateFood> food, int group)
+        {
+            Array.Clear(f, 0, f.Length);
+            for (int i = 0; i < food.Length; i++)
+                if (InFoodBand(group, food[i].Pos)) f[Cell(food[i].Pos)] += food[i].Volume;
+            for (int pass = 0; pass < 4; pass++) Blur(f, s_blur[Food], 1f);
+            float mx = 1e-6f;
+            for (int i = 0; i < f.Length; i++) if (f[i] > mx) mx = f[i];
+            float inv = 1f / mx;
+            for (int i = 0; i < f.Length; i++) f[i] *= inv;
+            Gradient(f, grad);
+        }
+
         public void Deposit(int channel, Vector3 p, float amount)
         {
             if (channel == Food) return;   // food is a READ of mass, never a deposit
@@ -75,15 +134,9 @@ namespace CosmicShore.Gameplay
             _k++;
             if (_k % FoodEvery == 1 || FoodEvery == 1)
             {
-                var f = _ch[Food];
-                Array.Clear(f, 0, f.Length);
-                for (int i = 0; i < food.Length; i++) f[Cell(food[i].Pos)] += food[i].Volume;
-                for (int pass = 0; pass < 4; pass++) Blur(f, s_blur[Food], 1f);
-                float mx = 1e-6f;
-                for (int i = 0; i < f.Length; i++) if (f[i] > mx) mx = f[i];
-                float inv = 1f / mx;
-                for (int i = 0; i < f.Length; i++) f[i] *= inv;
-                Gradient(Food);
+                if (_allUsed) BuildFood(_ch[Food], _grad[Food], food, 0);
+                for (int b = 0; b < _bands.Count; b++)
+                    if (_bandUsed[b]) BuildFood(_bands[b].f, _bands[b].grad, food, b + 1);
             }
             for (int j = 0; j < pilots.Length; j++) _pending[SubstrateFields.Threat][Cell(pilots[j].Pos)] += 1f;
             for (int c = 1; c < Channels; c++)
@@ -138,9 +191,10 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>numpy.gradient over the grid, in cell units: central differences inside, one-sided at the faces.</summary>
-        void Gradient(int channel)
+        void Gradient(int channel) => Gradient(_ch[channel], _grad[channel]);
+
+        void Gradient(float[] f, Vector3[] d)
         {
-            var f = _ch[channel]; var d = _grad[channel];
             int g = G, gg = G * G;
             for (int x = 0; x < g; x++)
                 for (int y = 0; y < g; y++)

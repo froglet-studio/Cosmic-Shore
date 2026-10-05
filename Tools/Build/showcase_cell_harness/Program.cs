@@ -300,9 +300,9 @@ static class Program
         for (int k = 0; k < 3; k++)
         {
             var p = new Pilot { Id = k, Kind = kinds[k] };
-            if (k >= pilots) p.Speed = 0f;   // diagnostics: a parked pilot far outside the cell's life (SHOWCASE_PILOTS)
+            if (k >= pilots) p.Speed = 0f;   // diagnostics: a parked pilot far outside the membrane (SHOWCASE_PILOTS)
             p.Pos = p.Prev = c.RandomInShell(600f, 1000f);
-            if (k >= pilots) p.Pos = p.Prev = new Vector3(0f, 0f, 400f);
+            if (k >= pilots) p.Pos = p.Prev = new Vector3(0f, 0f, 6000f);
             p.Vel = c.Rng.OnUnitSphere() * p.Speed;
             p.Goal = c.RandomInShell(450f, 1150f);
             c.Pilots.Add(p);
@@ -560,9 +560,17 @@ static class Program
             p.Vel = nd / MathF.Max(nd.Length(), 1e-6f) * p.Speed;
         }
         p.Pos += p.Vel * Cell.Dt;
+        // the membrane and the nucleus: a vessel that meets either BOUNCES (its radial velocity reflects). Before round
+        // 11-10 the pilot was only projected back, so a pilot flying straight out sat pinned at the rim, motionless, laying
+        // a pile of fresh wake under itself - and every thief that dived for that warm wake touched it and died.
         float r = p.Pos.Length();
-        if (r > c.Membrane * 0.97f) p.Pos *= c.Membrane * 0.97f / r;
-        if (r < 420f && r > 1e-3f) p.Pos *= 420f / r;   // the nucleus is not flown through
+        if (r > 1e-3f && (r > c.Membrane * 0.97f || r < 420f))
+        {
+            var nrm = p.Pos / r;
+            p.Pos = nrm * Math.Clamp(r, 420f, c.Membrane * 0.97f);
+            float vr = Vector3.Dot(p.Vel, nrm);
+            if ((r > 420f && vr > 0f) || (r <= 420f && vr < 0f)) p.Vel -= 2f * vr * nrm;
+        }
         // the wake: a 6-volume trail prism every 0.25 s (the builders harness's pilot, Tools/Build/builders_harness/Arena.cs)
         p.TrailT += Cell.Dt;
         while (p.TrailT >= 0.25f)
