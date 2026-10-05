@@ -186,9 +186,9 @@ MonoBehaviour:
   heartPrismGap: 0.6
   bodyThin: 0.6
   engageRadius: 140
-  maxProxies: 2
+  maxProxies: 4
   proxyLingerSeconds: 2
-  maxSpawnsPerFrame: 2
+  maxSpawnsPerFrame: 4
   vesselRadius: 6
   biteRadius: 24
   maxBitesPerTick: 4

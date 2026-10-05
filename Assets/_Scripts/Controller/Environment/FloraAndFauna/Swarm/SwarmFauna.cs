@@ -88,6 +88,7 @@ namespace CosmicShore.Gameplay
         readonly List<IVesselStatus> _seen = new(8);
         Flora _goalPlant;
         float _atPlantSince = -1f, _lastGoalBite = -1f, _goalSince;
+        float _goalBest = float.MaxValue, _goalProgressAt;   // closest it has come to the goal plant, and when (round 11-10)
         bool _foraging = true;
         readonly Dictionary<Flora, float> _rested = new();
         static int s_spawnFrame = -1, s_spawnsThisFrame;
@@ -212,6 +213,15 @@ namespace CosmicShore.Gameplay
             _gone = new bool[_cap];
             _starving = new bool[_cap];
 
+            // Round 11-10 (Docs/SWARM_FAUNA.md §27): a BANDED swarm hatches at the living plant of its band nearest the
+            // spawner's point, as the substrate's grazers do (SubstrateSpeciesSO.SeedAtFlora). A swarm hatches EMPTY, its
+            // starvation clock runs from the hatch, and it crosses its shell at ~4 u/s: hatched at a random point of a
+            // 3-5 plant shell (plants ~1,600 u apart) the outer swarm starved 207 of 240 on the way to its first plant.
+            if (HasBand)
+            {
+                var plant = FloraHeartRegistry.NearestToPoint(transform.position, NotFoodForMe);
+                if (plant) transform.position = plant.HeartTransform.position;
+            }
             var anchor = ToSim(transform.position);
             var radial = transform.position - _centre;
             var tangent = Vector3.Cross(radial.sqrMagnitude > 1f ? radial.normalized : Vector3.forward, Random.onUnitSphere);
@@ -1038,9 +1048,18 @@ namespace CosmicShore.Gameplay
             get
             {
                 float now = Time.time;
-                return now - _lastFedTime >= config.StarvationSeconds && now - _lastShedTime >= config.ShedIntervalSeconds;
+                return Starving(now) && now - _lastShedTime >= config.ShedIntervalSeconds;
             }
         }
+
+        /// <summary>
+        /// Starving: HUNGRY (stomach below <see cref="SwarmFaunaConfigSO.ForageBelow"/>) and unfed for
+        /// <see cref="SwarmFaunaConfigSO.StarvationSeconds"/>. Round 11-14 (Docs/SWARM_FAUNA.md §26.6): the clock alone
+        /// starved a SATED swarm - a full body stops foraging, takes no bite, and its stomach (which only pays for eggs)
+        /// never drains, so 90 s after it was sated it shed a member a second; each shed held laying (KillLayHoldSeconds),
+        /// and the inner swarm of the showcase cell starved 899 members to extinction holding a 96%-full stomach.
+        /// </summary>
+        bool Starving(float now) => now - _lastFedTime >= config.StarvationSeconds && StomachFill < config.ForageBelow;
 
         /// <summary>Nothing pending that only individuals resolve: no proxy (a hit, a shed, a predator's bite), no kill
         /// waiting for its tick, no starvation shed due.</summary>
@@ -1478,7 +1497,11 @@ namespace CosmicShore.Gameplay
             if (_goalPlant)
             {
                 bool bare = _atPlantSince >= 0f && now - Mathf.Max(_atPlantSince, _lastGoalBite) > config.GiveUpSeconds;
-                bool unreached = _atPlantSince < 0f && now - _goalSince > 6f * config.GiveUpSeconds;   // never got there
+                // never got there: no PROGRESS toward it for 6 x GiveUp. Before round 11-10 this was 6 x GiveUp since the
+                // goal was chosen, which a 7 u/s swarm cannot beat to a plant 420+ u away - it gave up, rested the plant,
+                // picked the next, gave that up, and starved commuting between plants it never reached (the outer swarm
+                // in the whole-cell run: 207 of 240 starved in 5 min, never once at a plant).
+                bool unreached = _atPlantSince < 0f && now - _goalProgressAt > 6f * config.GiveUpSeconds;
                 if (!_foraging || bare || unreached || _goalPlant.IsDying)
                 {
                     _rested[_goalPlant] = now;   // leave it to regrow; the next meal is elsewhere
@@ -1490,27 +1513,37 @@ namespace CosmicShore.Gameplay
             if (_foraging)
             {
                 var plant = _goalPlant ? _goalPlant : FloraHeartRegistry.NearestToPoint(here, f =>
-                    f.IsDying || !IsInsideBand(f.HeartTransform.position) ||
-                    HostCell.IsInsideNucleus(f.HeartTransform.position) ||
-                    !IsPreyForMe(f.HeartTransform.position, f.Domain) ||       // never led to food it cannot eat
-                    SwarmFaunaConfigSO.ToIndex(f.Element) < 0 ||
-                    (_rested.TryGetValue(f, out float t) && now - t < config.PlantRestSeconds));
+                    NotFoodForMe(f) || (_rested.TryGetValue(f, out float t) && now - t < config.PlantRestSeconds));
                 if (plant)
                 {
-                    if (plant != _goalPlant) { _goalPlant = plant; _goalSince = now; _atPlantSince = -1f; _lastGoalBite = -1f; }
+                    if (plant != _goalPlant)
+                    {
+                        _goalPlant = plant; _goalSince = now; _atPlantSince = -1f; _lastGoalBite = -1f;
+                        _goalBest = float.MaxValue; _goalProgressAt = now;
+                    }
                     Vector3 target = plant.HeartTransform.position;
-                    if (_atPlantSince < 0f && (target - here).sqrMagnitude < 60f * 60f) _atPlantSince = now;
-                    return target;
+                    float d = (target - here).magnitude;
+                    if (d < _goalBest - 1f) { _goalBest = d; _goalProgressAt = now; }
+                    if (_atPlantSince < 0f && d < 60f) _atPlantSince = now;
+                    // travel along this swarm's shell, never the chord through the cell (SwarmShellPath)
+                    var w = SwarmShellPath.Toward(Sim(_centre), Sim(here), Sim(target), RideRadius((here - _centre).magnitude), config.WanderReach);
+                    return new Vector3(w.X, w.Y, w.Z);
                 }
             }
 
             if ((Goal - here).sqrMagnitude > 40f * 40f) return Goal;   // still travelling to the last point
             Vector3 radial = here - _centre;
             Vector3 wander = here + Random.onUnitSphere * config.WanderReach;
-            // keep the wander on this swarm's shell; the Goal setter clamps it into the band
-            if (radial.sqrMagnitude > 1f) wander = _centre + (wander - _centre).normalized * radial.magnitude;
+            // keep the wander on this swarm's shell, the whole body inside the band (round 11-14); the Goal setter clamps
+            // it into the band
+            if (radial.sqrMagnitude > 1f) wander = _centre + (wander - _centre).normalized * RideRadius(radial.magnitude);
             return wander;
         }
+
+        /// <summary>The shell radius (world) this swarm rides at from <paramref name="r"/>: inside its band by its body's
+        /// radius (<see cref="SwarmShellPath.Ride"/>); <paramref name="r"/> itself with no band.</summary>
+        float RideRadius(float r) =>
+            TryBand(out float lo, out float hi) ? SwarmShellPath.Ride(r, lo * config.UnitScale, hi * config.UnitScale, BodyRadius) : r;
 
         // ───────────────────────────────────────────────────────────────── starvation
 
@@ -1524,12 +1557,19 @@ namespace CosmicShore.Gameplay
             }
 
             float now = Time.time;
-            if (now - _lastFedTime < config.StarvationSeconds) return;
+            if (!Starving(now)) return;
             if (now - _lastShedTime < config.ShedIntervalSeconds) return;
             _lastShedTime = now;
             // shed the member the body needs least - the core decides who, on the worker, next tick
             _job.WantStarvationVictim = true;
         }
+
+        /// <summary>A plant this swarm may not be led to: dying, outside its band, in the nucleus, not its prey, or of no element.</summary>
+        bool NotFoodForMe(Flora f) =>
+            f.IsDying || !IsInsideBand(f.HeartTransform.position) ||
+            HostCell.IsInsideNucleus(f.HeartTransform.position) ||
+            !IsPreyForMe(f.HeartTransform.position, f.Domain) ||       // never led to food it cannot eat
+            SwarmFaunaConfigSO.ToIndex(f.Element) < 0;
 
         void Extinction()
         {

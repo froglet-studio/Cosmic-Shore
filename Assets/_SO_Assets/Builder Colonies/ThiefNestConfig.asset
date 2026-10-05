@@ -29,6 +29,7 @@ MonoBehaviour:
   SettleSeconds: 0.35
   MacroLod: 1
   ThawReserveSeconds: 20
+  ExtinctLingerSeconds: 8
   Founders: 48
   MaxWorkers: 48
   WorkerSpeed: 70
@@ -57,7 +58,7 @@ MonoBehaviour:
   ThiefSpeed: 150
   LadenSpeed: 75
   WarmSeconds: 1.5
-  SpotRange: 700
+  SpotRange: 400
   ScoutRange: 400
   Territory: 900
   TimidRange: 120
@@ -75,6 +76,7 @@ MonoBehaviour:
   WornCap: 300
   WearSense: 180
   WearKeepOff: 90
+  WearSight: 700
   WearWindup: 1
   WearLunge: 2.2
   WearRearAt: 140

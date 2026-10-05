@@ -41,5 +41,7 @@ MonoBehaviour:
     MaxSpawnsPerFrame: -1
     PlantRadiusCellFraction: -1
     PlantRadiusCellFractionMin: -1
-  PlantRadiusCellFractionMaxOverride: 0.517
-  PlantRadiusCellFractionMinOverride: 0.392
+  PlantRadiusCellFractionMaxOverride: 0.496
+  PlantRadiusCellFractionMinOverride: 0.412
+  SpreadPlanting: 1
+  PlantingPens: []

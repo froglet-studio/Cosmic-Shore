@@ -90,6 +90,7 @@ namespace CosmicShore.Gameplay
 
         Transform[] _mouths;
         float _alpha;
+        float _extinctSince = -1f;
 
         // bodies as PrismRenderService entities (round 11a §19.2, the substrate's path): the instanced draw keeps the hearts
         bool _unified;
@@ -330,6 +331,7 @@ namespace CosmicShore.Gameplay
             {
                 // roosting: no tick, no pose - members are drawn where they froze (Prev = Cur), the structure is real prisms
                 if (_gpu) _render.Draw(_bounds, 1f, _tick + 1f, _bloomTicks, Vector3.up, Vector3.forward, _cap);
+                Extinction();
                 return;
             }
             using (s_mFrame.Auto())
@@ -391,6 +393,20 @@ namespace CosmicShore.Gameplay
             using (s_mUpload.Auto()) { if (_gpu) Upload(); SyncEntities(); }
             using (s_mProxies.Auto()) UpdateProxies();
             SyncIndex();
+            Extinction();
+        }
+
+        /// <summary>Round 11-10: a colony with no member, no proxy and nothing dying leaves after ExtinctLingerSeconds, so
+        /// the seeder can hatch a fresh one (SubstrateFauna and SwarmFauna leave the same way). Before, a dead colony's
+        /// anchor stayed forever and counted as the species' one live population, so the seeder never re-seeded it.</summary>
+        void Extinction()
+        {
+            if (MemberCount > 0 || _proxySlots.Count > 0 || _dying.Count > 0) { _extinctSince = -1f; return; }
+            if (_extinctSince < 0f) { _extinctSince = Time.time; return; }
+            if (Time.time - _extinctSince < config.ExtinctLingerSeconds) return;
+            // memberless: removing the anchor pops nothing; OnDestroy releases its structure as loose prisms
+            if (DespawnOrDestroy()) return;
+            Destroy(gameObject);
         }
 
         void BuildFrame()
@@ -435,13 +451,17 @@ namespace CosmicShore.Gameplay
             _seen.Clear();
             _vesselPos.Clear();
             _world.Vessels.Clear();
-            // a wearer roams the whole cell after whoever is nearest: it senses from the cell centre, membrane-wide
-            var host = _wear != null ? HostCell : null;
-            var from = host ? host.transform.position : _nest;
-            float radius = _fort != null
-                ? config.ShellRadius * 2f + Mathf.Max(config.AlarmRadius, config.EngageRadius) + config.Sense
-                : _wear != null ? (host && host.MembraneRadius > 1f ? host.MembraneRadius : 1200f)
-                : config.Territory + config.ScoutRange;
+            // the fortress senses around its anchor; thieves and wearers sense the sphere every vessel a member could
+            // react to (their bounds + sight, BuilderColonyFauna round 11-10, Docs/SWARM_FAUNA.md §27) - not the whole
+            // territory / membrane, so a colony with no ship in sight can roost
+            var from = _nest;
+            float radius;
+            if (_fort != null) radius = config.ShellRadius * 2f + Mathf.Max(config.AlarmRadius, config.EngageRadius) + config.Sense;
+            else
+            {
+                var (c, r) = _wear != null ? _wear.SightSphere() : _thief.SightSphere();
+                from = new Vector3(c.X, c.Y, c.Z); radius = r;
+            }
             int hits = Physics.OverlapSphereNonAlloc(from, radius, OverlapScratch, NonPrismOverlapMask);
             for (int h = 0; h < hits && _vesselCount < MaxVessels; h++)
             {
@@ -925,7 +945,7 @@ namespace CosmicShore.Gameplay
         bool CoreCanRoost => _fort != null ? _fort.CanRoost : _thief != null ? _thief.CanRoost : _wear != null && _wear.CanRoost;
         float RoostSecondsLeft => _fort != null ? _fort.RoostSecondsLeft : _thief != null ? _thief.RoostSecondsLeft
                                 : _wear != null ? _wear.RoostSecondsLeft : float.PositiveInfinity;
-        float StomachTotal => _fort != null ? _fort.StomachTotal : _thief != null ? _thief.StomachTotal : _wear != null ? _wear.StomachTotal : 0f;
+        double StomachTotal => _fort != null ? _fort.StomachTotal : _thief != null ? _thief.StomachTotal : _wear != null ? _wear.StomachTotal : 0.0;
 
         SVector3 IMacroPopulation.MacroCentre => new(_bounds.center.x, _bounds.center.y, _bounds.center.z);
         float IMacroPopulation.MacroExtent => _bounds.extents.magnitude;

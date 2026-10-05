@@ -3,7 +3,7 @@
 
     python3 render.py <snapshot.json> <out.png>
 
-The snapshot is what `showcase.exe ... all <snap.json>` writes at t = 300 s for seed 1: swarm members (element, tier,
+The snapshot is what `showcase.exe ... all <snap.json>` writes at t = 300 s for seed 1 (and, beside it as <snap>-25min.json, at t = 1500 s for the 30-min seed 7): swarm members (element, tier,
 lineage), substrate agents, plant hearts, the threat grove (traps, slots, tubes, sclerotia), the fortress (workers,
 walls), the thief nest and its hoard, the wearers (hearts and the prisms they wear), each pilot's wake and path.
 Headless (matplotlib Agg). A reader tool: it writes one image and nothing else.
@@ -152,7 +152,7 @@ def main():
     n_sw = len(s.get("swarm", []))
     n_sub = len(s.get("substrate", []))
     b = s.get("builders", {})
-    fig.suptitle(f"The Swarm cell, all together - t = {s['t']:.0f} s (seed 1): {n_sw} swarm members, {n_sub} substrate agents, "
+    fig.suptitle(f"The Swarm cell, all together - t = {s['t']:.0f} s (seed {s.get('seed', 1)}): {n_sw} swarm members, {n_sub} substrate agents, "
                  f"{len(b.get('walls', []))} wall prisms, {len(b.get('wearer_hearts', []))} wearer heart(s) wearing {len(b.get('worn', []))} prisms",
                  color=INK, fontsize=14, y=0.97)
     fig.savefig(out, dpi=110, facecolor=BG, bbox_inches="tight")

@@ -26,6 +26,12 @@ using CosmicShore.Gameplay;
 static class Program
 {
     static int s_fail;
+    /// <summary>C8: the share of a banded population's member-seconds that must lie inside its pen (worst run), and the
+    /// share of seconds every planting pen must hold a living plant.</summary>
+    /// <remarks>Round 11-14: 0.75 / 0.95 - the worst observed over `run.sh all` was 80% (the middle swarm, seed 1) and every
+    /// plant pen held a plant 100% of the time; the floors leave a seed's worth of margin and fail a pen that leaks (before
+    /// the round-11-14 pen fixes a seated grazer sat as low as 51% of its member-seconds in its pen).</remarks>
+    const double OccupancyFloor = 0.75, PenFloor = 0.95;
 
     static void Check(bool ok, string what)
     {
@@ -83,6 +89,10 @@ static class Program
         UnitDeathStomach(layout);
         Console.WriteLine("\nU5 substrate fields: a decaying signal never ends as subnormal float dust (SubstrateFields.Blur)");
         UnitDenormal();
+        Console.WriteLine("\nU6 ecology LOD: a collapsed body its macro tick moves into a pilot's prefetch expands in that same tick (EcologyLodDirector.Tick)");
+        UnitMacroDrift();
+        Console.WriteLine("\nU7 builder ledgers are exact: a 30-min torpor in float stomachs books exactly what they lost (BuilderLedger)");
+        UnitBuilderLedger();
 
         var runs = new List<RunResult>();
         if (mode == "quick") runs.Add(Run(layout, plans, density, 1, 120f, null));
@@ -94,7 +104,7 @@ static class Program
         else if (mode != "unit")
         {
             for (int seed = 1; seed <= 3; seed++) runs.Add(Run(layout, plans, density, seed, 300f, seed == 1 ? snapOut : null));
-            runs.Add(Run(layout, plans, density, 7, 1800f, null));
+            runs.Add(Run(layout, plans, density, 7, 1800f, LateSnapPath(snapOut)));
         }
         if (runs.Count > 0) Summary(layout, runs);
         if (s_findings > 0) Console.WriteLine($"\n{s_findings} FINDING(S) - ecology / game-feel outcomes, reported (SHOWCASE_STRICT=1 makes them fail)");
@@ -184,6 +194,65 @@ static class Program
     /// far from the pilot sits forever in float's subnormal range - the showcase cell's 30-min run, where the
     /// substrate's step grew from 2 to 32 ms. Every value must stay normal or 0. Negative control: the same
     /// source-blur-decay without the flush (the pre-fix arithmetic, replayed on one row of cells) holds subnormals.</summary>
+    /// <summary>A fake collapsed population drifting 30 u a macro tick toward a pilot that flies past it sideways.</summary>
+    sealed class DriftPop : IMacroPopulation
+    {
+        public Vector3 C;
+        public bool Col = true;
+        public Vector3 MacroCentre => C;
+        public float MacroExtent => 0f;
+        public bool IsCollapsed => Col;
+        public bool CanCollapse => !Col;
+        public bool NeedsIndividuals => false;
+        public MacroPopulationTotals Totals => default;
+        public bool Collapse() { Col = true; return true; }
+        public void Expand() => Col = false;
+        public void MacroTick(float dt) => C -= new Vector3(30f * dt, 0f, 0f);
+    }
+
+    /// <summary>U6: the pilot sits at the origin flying +Y (the body is abeam, outside its forward cone); the body starts
+    /// 15 u outside the director's expand radius and its macro tick moves it 30 u in. The director must leave it expanded
+    /// after that Tick. Negative control: the pre-fix tick (MacroTick, no re-check) leaves it collapsed inside the radius
+    /// until the next frame's Guard.</summary>
+    static void UnitMacroDrift()
+    {
+        bool After(bool fixedTick)
+        {
+            var dir = new EcologyLodDirector();
+            var pop = new DriftPop { C = new Vector3((float)dir.P.ExpandRadius + 15f, 0f, 0f) };
+            dir.Register(pop);
+            dir.SetPilots(new[] { new EcologyPilot { Vy = 120, Speed = 120 } });
+            if (fixedTick) dir.Tick(1f);
+            else pop.MacroTick(1f);   // what Tick did before round 11-10 for a collapsed body nobody wanted yet
+            bool inside = pop.C.Length() < dir.P.ExpandRadius;
+            return inside && pop.IsCollapsed;
+        }
+        bool fixedLeft = After(true), preLeft = After(false);
+        Console.WriteLine($"   after the tick that moved it inside the expand radius: collapsed {fixedLeft} (pre-fix order: {preLeft})");
+        Check(!fixedLeft, "U6 a body the macro tick moves into prefetch is expanded within that tick");
+        Check(preLeft, "U6 negative control: ticking without the re-check leaves it collapsed inside the radius");
+    }
+
+    /// <summary>U7: 16 roosting members (12-29 volume stomachs) at the wearers' torpor for 30 min of 10 Hz macro-equivalent burns; Metabolised must
+    /// equal exactly what the float stomachs lost. Negative control: the pre-fix float bookkeeping drifts.</summary>
+    static void UnitBuilderLedger()
+    {
+        var alive = Enumerable.Repeat(true, 16).ToArray();
+        var st = Enumerable.Range(0, 16).Select(k => 12f + 1.13f * k).ToArray();   // 12-29 volume stomachs, the cores' range
+        double before = st.Sum(v => (double)v), booked = 0;
+        float preFix = 0f;
+        var st2 = (float[])st.Clone();
+        for (int t = 0; t < 18000; t++)
+        {
+            booked += BuilderRoost.Burn(alive, st, 16, 0.004f, 0.1f);
+            for (int k = 0; k < 16; k++) { float b = MathF.Min(st2[k], 0.004f * 0.1f); st2[k] -= b; preFix += b; }
+        }
+        double lost = before - st.Sum(v => (double)v), lost2 = before - st2.Sum(v => (double)v);
+        Console.WriteLine($"   lost {lost:F4}, booked {booked:F4} (error {Math.Abs(lost - booked):E1}); pre-fix float books {preFix:F4} vs lost {lost2:F4} (error {Math.Abs(lost2 - preFix):E1})");
+        Check(Math.Abs(lost - booked) < 1e-9 * before, "U7 Metabolised books exactly what the stomachs lost");
+        Check(Math.Abs(lost2 - preFix) > 1e-3, "U7 negative control: float bookkeeping drifts measurably");
+    }
+
     static void UnitDenormal()
     {
         var f = new SubstrateFields(1200f, 40);
@@ -268,6 +337,15 @@ static class Program
         /// <summary>The first census minute a class read zero (the cores alone: the cell's spawner, which re-hatches an
         /// emptied fauna slot after BaseFaunaSpawnTime, is not modelled).</summary>
         public readonly Dictionary<string, float> ExtinctAt = new();
+        /// <summary>Round 11-10: per class, when it first had no member (s), its longest stretch with none (s), and since when it
+        /// has none now.</summary>
+        public readonly Dictionary<string, float> FirstGone = new(), LongestAbsence = new(), AbsentSince = new();
+        public int Reseeds;
+        /// <summary>SwarmSystem.ShedFillMax: the fullest stomach a swarm starved with.</summary>
+        public float ShedFillMax;
+        /// <summary>C8 (round 11-10): per class, member-seconds inside its pen and member-seconds counted (a plant pen:
+        /// seconds holding a plant, seconds).</summary>
+        public readonly Dictionary<string, (long inPen, long counted)> Occupancy = new();
         public Pilot[] Pilots = Array.Empty<Pilot>();
         public List<Dictionary<string, int>[]> Met = new();
         public readonly List<string> Reports = new();
@@ -275,6 +353,11 @@ static class Program
         public long LodSeen, LodTouched, LodCollapses;
         public readonly Dictionary<string, double> LodShare = new();
     }
+
+    /// <summary>The long run's minute-25 snapshot sits beside the minute-5 one: snap.json -> snap-25min.json.</summary>
+    static string? LateSnapPath(string snapOut) =>
+        string.IsNullOrEmpty(snapOut) ? null : Path.Combine(Path.GetDirectoryName(Path.GetFullPath(snapOut)) ?? ".",
+                                                             Path.GetFileNameWithoutExtension(snapOut) + "-25min" + Path.GetExtension(snapOut));
 
     static RunResult Run(JsonElement layout, SwarmPlanData[] plans, int density, int seed, float seconds, string? snapOut)
     {
@@ -300,11 +383,17 @@ static class Program
         for (int k = 0; k < 3; k++)
         {
             var p = new Pilot { Id = k, Kind = kinds[k] };
-            if (k >= pilots) p.Speed = 0f;   // diagnostics: a parked pilot far outside the cell's life (SHOWCASE_PILOTS)
-            p.Pos = p.Prev = c.RandomInShell(600f, 1000f);
-            if (k >= pilots) p.Pos = p.Prev = new Vector3(0f, 0f, 400f);
-            p.Vel = c.Rng.OnUnitSphere() * p.Speed;
-            p.Goal = c.RandomInShell(450f, 1150f);
+            if (k >= pilots) p.Speed = 0f;   // diagnostics: a parked pilot far outside the membrane (SHOWCASE_PILOTS)
+            // the careless and skilled pilots fly ONE itinerary, the skilled one mirrored through the cell centre (round
+            // 11-14): the same start radius, the same goal radii in the same order, so they spend the same time in each
+            // band and meet the same mix of residents - only the dodge differs. Drawn apart, the two pilots' burns were
+            // two different tours of the cell, and the C5 comparison was noise at 2-7 burns per run.
+            p.GoalRng = new ThreatRng((ulong)(seed * 7919 + (k == 2 ? 2 : 0)));
+            p.Mirror = k == 1 ? -1f : 1f;
+            p.Pos = p.Prev = p.Mirror * ShellPoint(ref p.GoalRng, 600f, 1000f);
+            if (k >= pilots) p.Pos = p.Prev = new Vector3(0f, 0f, 6000f);
+            p.Vel = p.Mirror * p.GoalRng.OnUnitSphere() * p.Speed;
+            p.Goal = p.Mirror * ShellPoint(ref p.GoalRng, 450f, 1150f);
             c.Pilots.Add(p);
         }
 
@@ -316,7 +405,9 @@ static class Program
         var frameMs = new List<double>();
         long colliderSum = 0, ticks = 0;
         var census = new List<(string cls, int alive, int cap)>();
+        var occ = new List<(string cls, int inPen, int counted)>();
         int steps = (int)MathF.Round(seconds / Cell.Dt);
+        float spawnPeriod = Cell.F(layout, "fauna_spawn_period"), nextSpawn = Cell.F(layout, "fauna_spawn_wait");
         for (int step = 0; step < steps; step++)
         {
             foreach (var p in c.Pilots) Fly(c, p, builders, grove);
@@ -335,6 +426,33 @@ static class Program
                 r.MsBySystem[s.Name] = acc + s.LastMs;
             }
             frameMs.Add(ms * 10.0 / 60.0);   // every core steps at 10 Hz (the grove's 20 Hz traps are inside its LastMs)
+            // round 11-10: the anchors' extinction lingers and the cell's seeder (SpawnFaunaTypeLoop_Random: the Swarm
+            // cell's InitialFaunaSpawnWaitTime 6 s, then every BaseFaunaSpawnTime 30 s) - extinction recovery
+            swarm.TrackExtinction(c); sub.TrackExtinction(c); builders.TrackExtinction(c);
+            if (c.T + 0.5f * Cell.Dt >= nextSpawn)
+            {
+                swarm.SpawnerTick(c); sub.SpawnerTick(c); builders.SpawnerTick(c);
+                nextSpawn += spawnPeriod;
+            }
+            if (step % 10 == 9)   // once a second: each class's presence (the longest absence, the first extinction)
+            {
+                census.Clear();
+                foreach (var s in systems) s.Census(census);
+                foreach (var (cls, alive, _) in census)
+                {
+                    if (alive > 0) { r.AbsentSince.Remove(cls); continue; }
+                    if (!r.AbsentSince.ContainsKey(cls)) r.AbsentSince[cls] = c.T;
+                    r.FirstGone.TryAdd(cls, c.T);
+                    r.LongestAbsence[cls] = Math.Max(r.LongestAbsence.GetValueOrDefault(cls), c.T - r.AbsentSince[cls]);
+                }
+                occ.Clear();
+                foreach (var s in systems) if (s is IOccupancy o) o.Occupancy(c, occ);
+                foreach (var (cls, inPen, counted) in occ)
+                {
+                    var (a, b) = r.Occupancy.GetValueOrDefault(cls);
+                    r.Occupancy[cls] = (a + inPen, b + counted);
+                }
+            }
             c.StrikersNow.Clear();
             foreach (var s in systems) s.Strikers(c, c.StrikersNow);
             c.TrackIntent();
@@ -398,8 +516,14 @@ static class Program
                 r.LedgerWorst = Math.Max(r.LedgerWorst, Math.Abs(res));
                 r.LedgerScale = Math.Max(r.LedgerScale, scale);
             }
-            if (snapOut != null && snapOut.Length > 0 && MathF.Abs(c.T - 300f) < Cell.Dt * 0.5f) Snapshot(c, systems, builders, snapOut);
+            // the minute-5 picture of a 5-min run; the long run's picture is minute 25 (the cell after the seeder's re-hatches)
+            float snapAt = seconds > 600f ? 1500f : 300f;
+            if (snapOut != null && snapOut.Length > 0 && MathF.Abs(c.T - snapAt) < Cell.Dt * 0.5f) Snapshot(c, systems, builders, snapOut);
         }
+        foreach (var (key, (below, above, sector, n, beyond)) in sub.OccWhy)
+            Console.WriteLine($"   occupancy {key}: below band {100.0 * below / n:F0}%, above {100.0 * above / n:F0}%, outside sector {100.0 * sector / n:F0}%, mean distance outside the band when out {beyond / Math.Max(1, below + above):F0} u");
+        r.Reseeds = swarm.Reseeds + sub.Reseeds + builders.ThiefReseeds + builders.WearReseeds;
+        r.ShedFillMax = swarm.ShedFillMax;
         swarm.SyncBook(c.World);
         Ledger(c, swarm, sub, builders, grove, out _, r.LedgerLines);
         r.CollidersMean = colliderSum / (double)Math.Max(1, ticks);
@@ -459,7 +583,15 @@ static class Program
             d.Sort();
             parts.Add($"{pop.P.Name} median {d[d.Count / 2]:F0} u, <250 u {100f * d.Count(x => x < 250f) / d.Count:F0}%");
         }
-        return "; nearest plant: " + string.Join(", ", parts);
+        var pens = new List<string>();
+        foreach (var pop in sub.Core.Pops)
+        {
+            if (!pop.HasSector) continue;
+            int n = c.World.Plants.Count(pl => pl.Alive && pl.Heart.Length() >= pop.BandInner && pl.Heart.Length() <= pop.BandOuter &&
+                                                Vector3.Dot(pl.Heart, pop.SectorAxis) >= pop.SectorCos * pl.Heart.Length());
+            pens.Add($"{pop.P.Name} {n}");
+        }
+        return "; nearest plant: " + string.Join(", ", parts) + "; plants in each sector pen: " + string.Join(", ", pens);
     }
 
     /// <summary>SHOWCASE_LOD_TRACE=1: every 10 s, each LOD'd population's state and what holds it expanded.</summary>
@@ -561,9 +693,17 @@ static class Program
             p.Vel = nd / MathF.Max(nd.Length(), 1e-6f) * p.Speed;
         }
         p.Pos += p.Vel * Cell.Dt;
+        // the membrane and the nucleus: a vessel that meets either BOUNCES (its radial velocity reflects). Before round
+        // 11-10 the pilot was only projected back, so a pilot flying straight out sat pinned at the rim, motionless, laying
+        // a pile of fresh wake under itself - and every thief that dived for that warm wake touched it and died.
         float r = p.Pos.Length();
-        if (r > c.Membrane * 0.97f) p.Pos *= c.Membrane * 0.97f / r;
-        if (r < 420f && r > 1e-3f) p.Pos *= 420f / r;   // the nucleus is not flown through
+        if (r > 1e-3f && (r > c.Membrane * 0.97f || r < 420f))
+        {
+            var nrm = p.Pos / r;
+            p.Pos = nrm * Math.Clamp(r, 420f, c.Membrane * 0.97f);
+            float vr = Vector3.Dot(p.Vel, nrm);
+            if ((r > 420f && vr > 0f) || (r <= 420f && vr < 0f)) p.Vel -= 2f * vr * nrm;
+        }
         // the wake: a 6-volume trail prism every 0.25 s (the builders harness's pilot, Tools/Build/builders_harness/Arena.cs)
         p.TrailT += Cell.Dt;
         while (p.TrailT >= 0.25f)
@@ -577,8 +717,16 @@ static class Program
 
     static Vector3 WanderGoal(Cell c, Pilot p)
     {
-        if (Vector3.Distance(p.Goal, p.Pos) < 40f || c.T - p.GoalT > 20f) { p.Goal = c.RandomInShell(450f, 1150f); p.GoalT = c.T; }
+        if (Vector3.Distance(p.Goal, p.Pos) < 40f || c.T - p.GoalT > 20f) { p.Goal = p.Mirror * ShellPoint(ref p.GoalRng, 450f, 1150f); p.GoalT = c.T; }
         return p.Goal;
+    }
+
+    /// <summary>Cell.RandomInShell on the pilot's own itinerary stream.</summary>
+    static Vector3 ShellPoint(ref ThreatRng rng, float inner, float outer)
+    {
+        var d = rng.OnUnitSphere();
+        float a = inner * inner * inner, b = outer * outer * outer;
+        return d * MathF.Cbrt(a + (b - a) * rng.NextFloat());
     }
 
     /// <summary>The raider: to the hoard, weave through it for 8 s taking prisms back, then a straight cut through the
@@ -617,6 +765,7 @@ static class Program
         using var w = new Utf8JsonWriter(fs);
         w.WriteStartObject();
         w.WriteNumber("t", c.T);
+        w.WriteNumber("seed", c.Seed);
         w.WriteNumber("membrane", c.Membrane);
         w.WriteNumber("nucleus", c.L.GetProperty("nucleus").GetDouble());
         w.WriteStartArray("bands");
@@ -680,10 +829,56 @@ static class Program
         var longRun = runs.OrderByDescending(r => r.Minutes).First();
         Console.WriteLine($"C4 populations over the {longRun.Minutes:F0}-min run (min..max / cap):");
         foreach (var kv in longRun.Pop) Console.WriteLine($"     {kv.Key,-22} {kv.Value.min,5} .. {kv.Value.max,5} / {kv.Value.cap}");
-        Finding(longRun.Extinct.Count == 0, $"C4 no class went extinct over {longRun.Minutes:F0} min" + (longRun.Extinct.Count > 0 ? ": " + string.Join(", ", longRun.Extinct) : ""));
+        // round 11-10: persistence is judged WITH the cell's seeder (extinction recovery is its sanctioned job) and WITHOUT
+        // leaning on it - a class must hold up on its own (no extinction in any 5-min run; at most one re-hatch in the long
+        // run) and, when it does die out, be back within one linger + one spawner period (+2 s)
+        float recover = (float)layout.GetProperty("fauna_spawn_period").GetDouble() + 12f;
+        foreach (var run in runs)
+        {
+            var gone = run.FirstGone.OrderBy(kv => kv.Value).Select(kv =>
+                $"{kv.Key} first at {kv.Value / 60f:F1} min, longest absence {run.LongestAbsence.GetValueOrDefault(kv.Key):F0} s, gone now {(run.AbsentSince.ContainsKey(kv.Key) ? "yes" : "no")}");
+            Console.WriteLine($"     s{run.Seed} ({run.Minutes:F0} min): {(run.FirstGone.Count == 0 ? "every class present every second" : string.Join("; ", gone))}" +
+                              $"; seeder re-hatches {run.Reseeds}");
+        }
+        var shortRuns = runs.Where(r => r.Minutes <= 5.01f).ToList();
+        var earlyGone = shortRuns.SelectMany(r => r.FirstGone.Keys.Select(k => $"s{r.Seed} {k}")).ToList();
+        Finding(earlyGone.Count == 0, "C4 every class holds up on its own: none dies out in a 5-min run" +
+                (earlyGone.Count > 0 ? ": " + string.Join(", ", earlyGone) : ""));
+        var longGone = longRun.FirstGone.Where(kv => kv.Value < 300f).Select(kv => kv.Key).ToList();
+        Finding(longGone.Count == 0, $"C4 no class dies out inside the long run's first 5 min" + (longGone.Count > 0 ? ": " + string.Join(", ", longGone) : ""));
+        var slow = runs.SelectMany(r => r.LongestAbsence.Where(kv => kv.Value > recover || r.AbsentSince.TryGetValue(kv.Key, out float t0) && r.Minutes * 60f - t0 > recover)
+                                                         .Select(kv => $"s{r.Seed} {kv.Key} {kv.Value:F0} s")).ToList();
+        Finding(slow.Count == 0, $"C4 with the seeder, every class that dies out is back within {recover:F0} s (one linger + one spawner period)" +
+                (slow.Count > 0 ? ": " + string.Join(", ", slow) : ""));
+        Finding(longRun.Reseeds <= longRun.FirstGone.Count && longRun.FirstGone.Count <= 3,
+                $"C4 the long run leans on the seeder for at most 3 classes ({longRun.FirstGone.Count} died out, {longRun.Reseeds} re-hatches)");
+        float forageBelow = (float)layout.GetProperty("swarm_config").GetProperty("ForageBelow").GetDouble();
+        float shedFill = runs.Max(r => r.ShedFillMax);
+        Check(shedFill < forageBelow, $"C4 a swarm starves only HUNGRY: the fullest stomach any swarm shed a member with is {shedFill:P0} " +
+              $"(< ForageBelow {forageBelow:P0}; round 11-14 - a sated swarm shed 899 members holding 96%)");
         Check(longRun.Over.Count == 0, "C4 no class exceeded its cap" + (longRun.Over.Count > 0 ? ": " + string.Join(", ", longRun.Over) : ""));
         foreach (var run in runs.Where(r => r.Seed != longRun.Seed || r.Minutes == longRun.Minutes))
             if (run.Extinct.Count > 0) Console.WriteLine($"     (seed {run.Seed}: extinct {string.Join(", ", run.Extinct)})");
+
+        // C8 (round 11-14): every population holds its radial band (and its sector, when it has one) - sampled once a second,
+        // member-seconds inside the pen over member-seconds counted; a plant pen counts the seconds it holds a plant. Thieves
+        // and wearers range the cell by design (a raid on a pilot's wake, a hunt): reported, not asserted.
+        Console.WriteLine($"C8 band occupancy (share of member-seconds inside the pen; a plant pen: share of seconds it holds a plant; worst run, floor {OccupancyFloor:P0} / plant pens {PenFloor:P0}):");
+        var classes = runs.SelectMany(r => r.Occupancy.Keys).Distinct().OrderBy(k => k).ToList();
+        var lowOcc = new List<string>();
+        foreach (var cls in classes)
+        {
+            var per = runs.Where(r => r.Occupancy.TryGetValue(cls, out var o) && o.counted > 0)
+                          .Select(r => (r.Seed, share: r.Occupancy[cls].inPen / (double)r.Occupancy[cls].counted)).ToList();
+            if (per.Count == 0) continue;
+            var low = per.OrderBy(x => x.share).First();
+            bool asserted = cls != "thieves" && cls != "wearers/hearts";
+            double floor = cls.StartsWith("plant pen") ? PenFloor : OccupancyFloor;
+            Console.WriteLine($"     {cls,-22} worst {low.share,6:P1} (s{low.Seed})  runs {string.Join(" ", per.Select(x => $"s{x.Seed}:{x.share:P0}"))}{(asserted ? "" : "  (reported)")}");
+            if (asserted && low.share < floor) lowOcc.Add($"{cls} {low.share:P1} in s{low.Seed}");
+        }
+        Check(lowOcc.Count == 0, $"C8 every banded population spends >= {OccupancyFloor:P0} of its member-seconds in its pen and every plant pen holds a plant >= {PenFloor:P0} of the time" +
+              (lowOcc.Count > 0 ? ": " + string.Join(", ", lowOcc) : ""));
 
         Console.WriteLine("C7 ecology LOD (rounds 11f, 11f-2), share of ticks each population spent collapsed:");
         foreach (var run in runs)

@@ -88,7 +88,9 @@ namespace CosmicShore.Gameplay
                 var W = SubstrateRegime.Lerp(Rs, Rg, ph);
                 var dirs = pop.Dirs;
                 I.Clear(); G.Clear();
-                Paint(I, dirs, core.Fields.Grad(SubstrateFields.Food, fc), W.WFood * h);
+                // round 11-10: the food heading is the core's per-agent read (its banded field, or the final approach to the
+                // nearest in-band food point - SubstrateCore.FoodHeading), the same input the kernel paints
+                Paint(I, dirs, core.GFood[i], W.WFood * h);
                 if (P.WPrey > 0f && pop.PreyPop >= 0)
                 {
                     // food web: follow the prey's scent; within PreySense make straight for the nearest one
@@ -140,7 +142,10 @@ namespace CosmicShore.Gameplay
                     if (resting && P.WRestRetreat > 0f) Paint(I, dirs, -tp, P.WRestRetreat);   // winded: fall back, widen
                     // GAZE: a calm agent within creep range slides toward where the pilot will be - only while it is
                     // OUTSIDE the pilot's forward cone; inside it, it freezes (bestiary lurker)
-                    if (P.WCreep > 0f && !resting && ph < 0.2f && pd > P.CreepMin && pd < P.CreepR)
+                    float rc = p.Length();   // round 11-14: the lurker creeps only inside its pen (SubstrateKernel)
+                    float sm = pop.BandOuter > 0f ? SubstrateKernel.SeatMargin(pop.BandInner, pop.BandOuter) : 0f;
+                    bool inBand = pop.BandOuter <= 0f || (rc >= pop.BandInner + sm && rc <= pop.BandOuter - sm);
+                    if (P.WCreep > 0f && !resting && ph < 0.2f && pd > P.CreepMin && pd < P.CreepR && inBand)
                     {
                         bool looked = pil.Vel.LengthSquared() > 1f && Vector3.Dot(SubstrateCore.Unit(pil.Vel), SubstrateCore.Unit(p - pil.Pos)) > P.GazeCos;
                         Watched[i] = looked;
@@ -164,8 +169,8 @@ namespace CosmicShore.Gameplay
                 {
                     // the species' pen (FaunaConfigurationSO band): steered back in, never walled
                     float soft = 0.1f * MathF.Max(pop.BandOuter - pop.BandInner, 50f);
-                    Paint(I, dirs, -p, Math.Clamp((r - pop.BandOuter) / soft, 0f, 1f) * 2f);
-                    Paint(I, dirs, p, Math.Clamp((pop.BandInner - r) / soft, 0f, 1f) * 2f);
+                    Paint(I, dirs, -p, SubstrateKernel.PenWeight(r - pop.BandOuter, soft));   // round 11-14
+                    Paint(I, dirs, p, SubstrateKernel.PenWeight(pop.BandInner - r, soft));
                 }
                 if (cnt > 0f && !P.SpacingSpring)
                 {

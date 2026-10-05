@@ -131,7 +131,7 @@ namespace CosmicShore.Gameplay
         public int Tick { get; private set; }
         public float Time { get; private set; }
         public int Placed, PlacedTrail, Pickups, CarryMoves, Queries, Repairs, RepairTrail, Kills, Starved, Births, Eaten;
-        public float EatenVolume, Metabolised, BirthPaid;
+        public double EatenVolume, Metabolised, BirthPaid;
         public float AlarmLevel { get; private set; }
         public int StingCount;
         /// <summary>(time, site) of every breach and every re-fill of a breached site (repair_stats).</summary>
@@ -233,7 +233,7 @@ namespace CosmicShore.Gameplay
         public int OpenWounds => _openBreach.Count;
         public bool IsBuilt(int h) => _siteOf.ContainsKey(h);
         public bool IsCarried(int h) => _taken.Contains(h) && !_siteOf.ContainsKey(h);
-        public float StomachTotal { get { float s = 0; for (int k = 0; k < Cap; k++) if (Alive[k]) s += Stomach[k]; return s; } }
+        public double StomachTotal { get { double s = 0; for (int k = 0; k < Cap; k++) if (Alive[k]) s += Stomach[k]; return s; } }
         public IEnumerable<int> BuiltHandles => _siteOf.Keys;
         public bool Striking(int k) => Alive[k] && Intent[k] >= 1f;
 
@@ -536,7 +536,7 @@ namespace CosmicShore.Gameplay
             var s = P.Stomach;
             if (s == null) return;
             float burn = MathF.Min(Stomach[k], s.Metabolism * dt);
-            Stomach[k] -= burn; Metabolised += burn;
+            Metabolised += BuilderLedger.Take(ref Stomach[k], burn);
             if (Stomach[k] <= 0f) Kill(k, BuilderDeath.StarvedBy);   // starvation: only an EMPTY stomach kills, never a clock
         }
 
@@ -549,7 +549,7 @@ namespace CosmicShore.Gameplay
             int slot = -1, alive = 0;
             for (int j = 0; j < Cap; j++) { if (Alive[j]) alive++; else if (slot < 0) slot = j; }
             if (slot < 0 || alive >= P.MaxWorkers) return;   // production gating at the cap (not a cull)
-            Stomach[k] -= s.BirthCost; BirthPaid += s.BirthCost;
+            BirthPaid += BuilderLedger.Take(ref Stomach[k], s.BirthCost);
             Alive[slot] = true; Pos[slot] = Pos[k] + _rng.Normal3(2f); Vel[slot] = Vector3.Zero;
             Carry[slot] = -1; Goal[slot] = -1; Intent[slot] = 0f; _cool[slot] = 0f;
             Stomach[slot] = s.BirthCost * 0.5f;   // half the bill is the newborn's stomach, half its body
@@ -600,7 +600,7 @@ namespace CosmicShore.Gameplay
                             {
                                 // a hungry worker EATS what it would have carried (the food web's one down-force)
                                 float v = _world.Consume(g, Pos[k]);
-                                if (v > 0f) { Stomach[k] += v; EatenVolume += v; Eaten++; }
+                                if (v > 0f) { Metabolised += v - BuilderLedger.Put(ref Stomach[k], v); EatenVolume += v; Eaten++; }
                             }
                             else if (!WindDown && _world.Steal(g, Domain))   // changes hands (refused if shielded)
                             {

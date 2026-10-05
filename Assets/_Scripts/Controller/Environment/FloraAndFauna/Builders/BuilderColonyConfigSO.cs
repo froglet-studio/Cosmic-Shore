@@ -72,6 +72,12 @@ namespace CosmicShore.Gameplay
         [Tooltip("Seconds of torpor the emptiest stomach must have left: below it a collapsed colony expands (twice it is " +
                  "needed to collapse).")]
         [Min(1f)] public float ThawReserveSeconds = 20f;
+        [Header("Round 11-10 - extinction (Docs/SWARM_FAUNA.md §27)")]
+        [Tooltip("Seconds a colony with no living member, no proxy and nothing dying lingers before its anchor leaves, so " +
+                 "the cell's seeder can hatch a fresh colony (extinction recovery, the seeder's sanctioned job - the swarm " +
+                 "and the substrate anchors already leave this way). The structure stays: walls, hoard and lair are released " +
+                 "as loose prisms (nothing pops).")]
+        [Min(0f)] public float ExtinctLingerSeconds = 8f;
 
         [Header("Fortress - colony")]
         [Tooltip("Workers the colony is founded with (research 48; 24-48 recommended).")]
@@ -163,6 +169,9 @@ namespace CosmicShore.Gameplay
         public float WearSense = 180f;
         [Tooltip("A skulking heart never steals closer than this to a ship.")]
         public float WearKeepOff = 90f;
+        [Tooltip("How far a heart SEES a ship (the thief nest's SpotRange). A ship beyond it is not followed or hunted, so a " +
+                 "colony with nobody in sight can roost (round 11-10; before, hearts saw the nearest ship anywhere).")]
+        public float WearSight = 700f;
         [Tooltip("The rear: seconds the body contracts before it lunges (the telegraph).")]
         public float WearWindup = 1f;
         [Tooltip("Lunge speed factor (x 1.8 of the body's speed).")]
@@ -185,7 +194,7 @@ namespace CosmicShore.Gameplay
         public WearerParams ToWearerParams(Vector3 cellCentre, float membrane) => new()
         {
             Founders = WearerFounders, MaxHearts = MaxWearerHearts, Speed = WearerSpeed, HuntAt = WearHuntAt,
-            BodyCap = WearBodyCap, WornCap = WornCap, Sense = WearSense, KeepOff = WearKeepOff,
+            BodyCap = WearBodyCap, WornCap = WornCap, Sense = WearSense, KeepOff = WearKeepOff, Sight = WearSight,
             Windup = WearWindup, Lunge = WearLunge, RearAt = WearRearAt, Contact = WearContact,
             HurtFraction = WearHurtFraction, HurtShed = WearHurtShed, HurtWindow = WearHurtWindow,
             Containment = membrane * 0.95f, CellCentre = new SVector3(cellCentre.x, cellCentre.y, cellCentre.z),

@@ -89,7 +89,8 @@ namespace CosmicShore.Gameplay
         public int Tick { get; private set; }
         public float Time { get; private set; }
         public int Steals, Recaptured, Raided, Kills, Starved, Births, Eaten, Queries, CarryMoves;
-        public float StolenVolume, EatenVolume, Metabolised, BirthPaid, MaxClaimAge, MaxLadenSpeed;
+        public float StolenVolume, MaxClaimAge, MaxLadenSpeed;
+        public double EatenVolume, Metabolised, BirthPaid;
         public readonly List<BuilderDeath> Deaths = new();
         public readonly List<int> Born = new();
         /// <summary>Every snatch this tick: (thief, handle, vessel nearest when it happened).</summary>
@@ -118,7 +119,21 @@ namespace CosmicShore.Gameplay
         public int HoardCount => _hoard.Count;
         public IReadOnlyList<int> Hoard => _hoard;
         public bool IsHoarded(int h) => _hoardSet.Contains(h);
-        public float StomachTotal { get { float s = 0; for (int i = 0; i < Cap; i++) if (Alive[i]) s += Stomach[i]; return s; } }
+        /// <summary>Round 11-10: the sphere every vessel a thief could react to lies in - the living thieves' bounds grown by
+        /// the farther of SpotRange (a ship it tails) and ScoutRange (warm wake it snatches). Before, the glue sensed
+        /// Territory + Scout (1,300 u) around the nest, so the nest never roosted while a pilot was in the cell.
+        /// The NEST is in the set too: a vessel at the hoard takes prisms back with every thief away.</summary>
+        public (Vector3 centre, float radius) SightSphere()
+        {
+            var c = Nest; int n = 1;
+            for (int i = 0; i < Cap; i++) if (Alive[i]) { c += Pos[i]; n++; }
+            c /= n;
+            float r = Vector3.Distance(Nest, c);
+            for (int i = 0; i < Cap; i++) if (Alive[i]) r = MathF.Max(r, Vector3.Distance(Pos[i], c));
+            return (c, r + MathF.Max(P.Spot, P.Scout) + P.Size + P.KnockExtra);
+        }
+
+        public double StomachTotal { get { double s = 0; for (int i = 0; i < Cap; i++) if (Alive[i]) s += Stomach[i]; return s; } }
 
         // ── the ecology LOD (round 11f-2, Docs/ECOLOGY_LOD.md §6.2) ────────────────────────────────────────
         public RoostBug RoostBug;
@@ -192,6 +207,23 @@ namespace CosmicShore.Gameplay
             Carry[i] = -1;
         }
 
+        /// <summary>
+        /// Does thief <paramref name="i"/>, at the nest, take a prism from the larder? A HUNGRY thief always does. A fed
+        /// one does too while the hoard holds more than one prism per living thief and its stomach is under the birth
+        /// mark: the larder's SURPLUS is what a birth is paid from. Round 11-10 (Docs/SWARM_FAUNA.md §27): eating only
+        /// when hungry, a thief never held more than HungryBelow x Capacity plus one prism (8 + 6 of 20), short of
+        /// BirthAbove's 18, so only a founder born above the mark ever bred - the nest could not bloom, and in the
+        /// showcase cell it went extinct by minute 30 with 0 starved and 1 birth. The reserve (one prism a thief) keeps a
+        /// visible hoard to raid and food for the next lean spell; it is the nest's own head count, not a dial.
+        /// </summary>
+        bool WantsLarder(int i)
+        {
+            var s = P.Stomach;
+            if (s == null) return false;
+            if (Stomach[i] < s.Capacity * s.HungryBelow) return true;
+            return Stomach[i] < s.Capacity * s.BirthAbove && _hoard.Count > AliveCount;
+        }
+
         void EatFromLarder(int i)
         {
             for (int j = _hoard.Count - 1; j >= 0; j--)
@@ -201,7 +233,7 @@ namespace CosmicShore.Gameplay
                 _world.SetBuilt(h, ColonyId, -(h + 1), false);
                 if (!_world.Alive(h)) continue;
                 float v = _world.Consume(h, Pos[i]);
-                if (v > 0f) { Stomach[i] += v; EatenVolume += v; Eaten++; return; }
+                if (v > 0f) { Metabolised += v - BuilderLedger.Put(ref Stomach[i], v); EatenVolume += v; Eaten++; return; }
             }
         }
 
@@ -235,7 +267,6 @@ namespace CosmicShore.Gameplay
             Deaths.Clear(); Born.Clear(); Snatched.Clear();
             UpkeepHoard(vessels, count);
             GatherWarm(vessels, count);
-            var s = P.Stomach;
             for (int i = 0; i < Cap; i++)
             {
                 if (!Alive[i]) continue;
@@ -256,7 +287,7 @@ namespace CosmicShore.Gameplay
                         active = true;
                         _des[i] = BuilderMath.Unit(Nest - Pos[i]) * P.LadenSpeed;
                         if (Vector3.Distance(Nest, Pos[i]) < P.HomeReach) DropOnHoard(i);
-                        if (s != null && Stomach[i] < s.Capacity * s.HungryBelow && Carry[i] < 0) EatFromLarder(i);
+                        if (Carry[i] < 0 && WantsLarder(i)) EatFromLarder(i);
                         Intent[i] = 0.3f;
                         Metabolise(i, dt, active);
                         continue;
@@ -308,7 +339,7 @@ namespace CosmicShore.Gameplay
                 else
                 {
                     _des[i] = BuilderMath.Unit(Nest - Pos[i] + _rng.Normal3(P.RoostJitter)) * P.RoostSpeed;
-                    if (s != null && Stomach[i] < s.Capacity * s.HungryBelow && Vector3.Distance(Pos[i], Nest) < P.HomeReach * 2f)
+                    if (WantsLarder(i) && Vector3.Distance(Pos[i], Nest) < P.HomeReach * 2f)
                         EatFromLarder(i);
                 }
                 // timid: a pilot pointing at a free thief inside 120 u
@@ -377,7 +408,7 @@ namespace CosmicShore.Gameplay
             var s = P.Stomach;
             if (s == null) return;
             float burn = MathF.Min(Stomach[i], (active ? s.Metabolism : s.Torpor) * dt);
-            Stomach[i] -= burn; Metabolised += burn;
+            Metabolised += BuilderLedger.Take(ref Stomach[i], burn);
             if (Stomach[i] <= 0f) Kill(i, BuilderDeath.StarvedBy);
         }
 
@@ -389,7 +420,7 @@ namespace CosmicShore.Gameplay
             int slot = -1, alive = 0;
             for (int j = 0; j < Cap; j++) { if (Alive[j]) alive++; else if (slot < 0) slot = j; }
             if (slot < 0 || alive >= P.MaxThieves) return;
-            Stomach[i] -= s.BirthCost; BirthPaid += s.BirthCost;
+            BirthPaid += BuilderLedger.Take(ref Stomach[i], s.BirthCost);
             Alive[slot] = true; Pos[slot] = Pos[i] + _rng.Normal3(2f); Vel[slot] = Vector3.Zero;
             Claim[slot] = -1; Carry[slot] = -1; Intent[slot] = 0f;
             Stomach[slot] = s.BirthCost * 0.5f; BornAt[slot] = Time;

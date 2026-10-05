@@ -110,6 +110,9 @@ namespace CosmicShore.Gameplay
         /// is never decided frozen: the owner thaws the population before its hungriest agent's reserve runs out.
         /// </summary>
         public bool Frozen;
+        /// <summary>The food field this population reads (<see cref="SubstrateFields.FoodGroup"/>): the field of the food
+        /// inside its band, or 0 = the cell-wide field when it has no band. Set by <see cref="SubstrateCore.AddPopulation"/>.</summary>
+        public int FoodGroup;
 
         internal readonly Vector3[] Dirs;
         internal readonly int[] Live;
@@ -236,7 +239,10 @@ namespace CosmicShore.Gameplay
             {
                 var old = Pops[q];
                 if (old.Active || old.Cap < cap) continue;
-                var re = new SubstratePopulation(q, old.Start, p) { Element = element, BandInner = bandInner, BandOuter = bandOuter };
+                var re = new SubstratePopulation(q, old.Start, p)
+                {
+                    Element = element, BandInner = bandInner, BandOuter = bandOuter, FoodGroup = Fields.FoodGroup(bandInner, bandOuter),
+                };
                 Pops[q] = re;
                 for (int i = re.Start; i < re.Start + re.Cap; i++) PopOf[i] = q;
                 return q;
@@ -244,7 +250,10 @@ namespace CosmicShore.Gameplay
             int start = 0;
             for (int q = 0; q < Pops.Count; q++) start = Math.Max(start, Pops[q].Start + Pops[q].Cap);
             if (start + cap > Capacity) return -1;
-            var pop = new SubstratePopulation(Pops.Count, start, p) { Element = element, BandInner = bandInner, BandOuter = bandOuter };
+            var pop = new SubstratePopulation(Pops.Count, start, p)
+            {
+                Element = element, BandInner = bandInner, BandOuter = bandOuter, FoodGroup = Fields.FoodGroup(bandInner, bandOuter),
+            };
             Pops.Add(pop);
             for (int i = start; i < start + cap; i++) PopOf[i] = pop.Index;
             return pop.Index;
@@ -259,6 +268,9 @@ namespace CosmicShore.Gameplay
             pop.HasSector = halfAngleDeg > 0f && axis.LengthSquared() > 1e-9f;
             pop.SectorAxis = pop.HasSector ? Unit(axis) : Vector3.Zero;
             pop.SectorCos = pop.HasSector ? MathF.Cos(halfAngleDeg * MathF.PI / 180f) : 0f;
+            // its food field is the food of its band inside the sector (SubstrateFields.FoodGroup)
+            pop.FoodGroup = pop.HasSector ? Fields.FoodGroup(pop.BandInner, pop.BandOuter, pop.SectorAxis, pop.SectorCos)
+                                          : Fields.FoodGroup(pop.BandInner, pop.BandOuter);
         }
 
         /// <summary>Retires a population whose last agent is gone (its block is free for the next species).</summary>
@@ -300,7 +312,7 @@ namespace CosmicShore.Gameplay
             Fear[i] = 0f; Curious[i] = 0f; Aggr[i] = 0f; Phase[i] = 0f; QTarget[i] = 0f;
             Stock[i] = P.Stock0; Grow[i] = 1f; Stamina[i] = P.StaminaS; Rest[i] = 0f; BiteCool[i] = 0f; Closure[i] = 0f; RingGate[i] = 0f;
             WSeed[i] = new Vector3((float)_rng.NextDouble() * 100f, (float)_rng.NextDouble() * 100f, (float)_rng.NextDouble() * 100f);
-            Home[i] = p; GaitV[i] = Vector3.Zero;
+            Home[i] = InPen(pop, p); GaitV[i] = Vector3.Zero;
             Alive[i] = true; Starving[i] = false; Danger[i] = false; Watched[i] = false; Creeping[i] = false;
             Ramp[i] = 0f; Attach[i] = 0f; Grip[i] = 1f; SipT[i] = 0f; Host[i] = 0; HostOff[i] = Vector3.Zero;
             BornTick[i] = Tick;
@@ -326,6 +338,44 @@ namespace CosmicShore.Gameplay
             Stock[i] += volume;
             Hunger[i] = MathF.Max(0f, Hunger[i] - volume * P.HungerPerVol);
             MassIn += volume;
+            // a homing species (the lurker) takes the seat it last fed at: its seeded crystal is eaten in minutes, and
+            // homed to a spent seat a lurker starved beside nothing (round 11-10, Docs/SWARM_FAUNA.md §27)
+            if (P.Solitary.WHome > 0f) Home[i] = InPen(Pops[PopOf[i]], Pos[i]);
+        }
+
+        /// <summary>
+        /// The nearest point of the population's pen (band, then sector) to <paramref name="p"/> - <paramref name="p"/>
+        /// itself for an unpenned population or a point already inside. Round 11-14: a SEAT (an agent's home) is always
+        /// inside its pen. Seeded 30 u about a plant near the band's edge, or re-seated where it last fed (a leaf on the
+        /// far side of the heart), a lurker's home stood outside its band, and the home drive held it there against the
+        /// pen's pull - 63% of its member-seconds inside its pen (showcase C8).
+        /// </summary>
+        public static Vector3 InPen(SubstratePopulation pop, Vector3 p)
+        {
+            float r = p.Length();
+            if (r < 1e-3f) return p;
+            var u = p / r;
+            if (pop.HasSector)
+            {
+                float cs = Vector3.Dot(u, pop.SectorAxis);
+                if (cs < pop.SectorCos)
+                {
+                    // onto the cone's edge, in the plane of the axis and the point
+                    var perp = u - pop.SectorAxis * cs;
+                    float pl = perp.Length();
+                    var side = pl > 1e-6f ? perp / pl : Unit(Vector3.Cross(pop.SectorAxis, Vector3.UnitY + new Vector3(1e-3f, 0f, 1e-3f)));
+                    float sn = MathF.Sqrt(MathF.Max(0f, 1f - pop.SectorCos * pop.SectorCos));
+                    u = pop.SectorAxis * pop.SectorCos + side * sn;
+                }
+            }
+            if (pop.BandOuter > 0f)
+            {
+                // a seat stands a margin inside the edge - two soft widths (the pen's ramp), at most a quarter of the
+                // band: a seat ON the edge left a seated agent, drifting ~30 u about it, outside its pen half the time
+                float m = SubstrateKernel.SeatMargin(pop.BandInner, pop.BandOuter);
+                r = Math.Clamp(r, pop.BandInner + m, pop.BandOuter - m);
+            }
+            return u * r;
         }
 
         /// <summary>The agent died (always through its proxy in the game). Returns the stock it took with it - the
@@ -351,6 +401,38 @@ namespace CosmicShore.Gameplay
         }
 
         // ───────────────────────────────────────────────────────────── the tick
+
+        /// <summary>
+        /// The way to food for an agent at <paramref name="p"/> (grid cell <paramref name="fc"/>): the gradient of its
+        /// population's food field - and, within two grid cells of a food point inside its band, the point itself; where the
+        /// field is flat (no food within its reach), the nearest such point.
+        /// <para>Round 11-10 (Docs/SWARM_FAUNA.md §27): the field is a 60 u grid, and the game's food is one point per
+        /// flora HEART whose leaves sit 6-30 u around it - so the field's peak is one cell wide and its gradient there is
+        /// ~0. Agents homed to within a cell (54-110 u) of a heart and circled there, out of their 24 u bite, and
+        /// starved beside the food (the showcase cell: 2 bites in 645 asks). The research fed on DENSE food (every leaf
+        /// prism scattered over the world), where any cell's peak is a bite away; the final approach restores that at the
+        /// game's sparse hearts. It reads only food the agent may eat (inside its band), and the kernel normalises the
+        /// heading, so only its direction matters.</para>
+        /// </summary>
+        Vector3 FoodHeading(int group, Vector3 p, int fc, ReadOnlySpan<SubstrateFood> food)
+        {
+            float best = float.MaxValue;
+            int bi = -1;
+            for (int j = 0; j < food.Length; j++)
+            {
+                if (food[j].Volume <= 0f || !Fields.InFoodBand(group, food[j].Pos)) continue;
+                float d = Vector3.DistanceSquared(food[j].Pos, p);
+                if (d < best) { best = d; bi = j; }
+            }
+            if (bi < 0) return Fields.FoodGrad(group, fc);
+            if (best <= 4f * Fields.H * Fields.H) return food[bi].Pos - p;   // within two grid cells: the final approach
+            var g = Fields.FoodGrad(group, fc);
+            // Beyond the field's reach (4 blur passes: ~4 cells, 240 u) the field is exactly flat, and a hungry agent there
+            // only wandered: a stampede herd seeded across a 55-degree sector of a 6-10 plant shell asked 5,448 times for
+            // food and never found any. It heads for the nearest food it may eat instead - the way a herd walks to a
+            // pasture it knows. Still hunger-weighted (w_food x hunger), so a fed agent does not leave its ground.
+            return g == Vector3.Zero ? food[bi].Pos - p : g;
+        }
 
         public void Step(ReadOnlySpan<SubstratePilot> pilots, ReadOnlySpan<SubstrateFood> food)
         {
@@ -385,7 +467,15 @@ namespace CosmicShore.Gameplay
             // round 11f-2: with every population frozen nobody reads or writes the fields - they hold until one thaws
             bool anyRunning = false;
             for (int q = 0; q < Pops.Count; q++) anyRunning |= Pops[q].Active && !Pops[q].Frozen;
-            if (anyRunning) Fields.Update(food, pilots.Slice(0, _npil));
+            if (anyRunning)
+            {
+                // only the food fields a running population reads are rebuilt
+                Fields.MarkFoodUsed(0, false);
+                for (int q = 0; q < Pops.Count; q++) Fields.MarkFoodUsed(Pops[q].FoodGroup, false);
+                for (int q = 0; q < Pops.Count; q++)
+                    if (Pops[q].Active && !Pops[q].Frozen) Fields.MarkFoodUsed(Pops[q].FoodGroup, true);
+                Fields.Update(food, pilots.Slice(0, _npil));
+            }
             MsFields += Ms(t0);
             Tick++;
             for (int q = 0; q < Pops.Count; q++)
@@ -410,13 +500,14 @@ namespace CosmicShore.Gameplay
                 PilotMoments(pop);
                 MsHash += Ms(t0);
                 t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+                bool seeksFood = pop.P.Solitary.WFood != 0f || pop.P.Gregarious.WFood != 0f;
                 for (int k = 0; k < n; k++)
                 {
                     int i = pop.Live[k];
                     int fc = Fields.Cell(Pos[i]);
                     FThreat[i] = Fields.Sample(SubstrateFields.Threat, fc);
                     FAlarm[i] = Fields.Sample(SubstrateFields.Alarm, fc);
-                    GFood[i] = Fields.Grad(SubstrateFields.Food, fc);
+                    GFood[i] = seeksFood ? FoodHeading(pop.FoodGroup, Pos[i], fc, food) : Vector3.Zero;
                     GScent[i] = Fields.Grad(SubstrateFields.Scent, fc);
                     GAlarm[i] = Fields.Grad(SubstrateFields.Alarm, fc);
                     GThreat[i] = Fields.Grad(SubstrateFields.Threat, fc);
@@ -833,11 +924,15 @@ namespace CosmicShore.Gameplay
                     }
                 }
 
-            // reproduce: a full body splits; the child grows in at the parent (production gated by free slots)
+            // reproduce: a full body splits; the child grows in at the parent (production gated by free slots). Round 11-14
+            // (Docs/SWARM_FAUNA.md §26.6): only a FED parent (hunger at most EatHunger) - the child inherits its parent's
+            // hunger, and a big hungry hunter split into two that starved together: the showcase pack's survivors bred
+            // 11 young that starved inside 35 s and the pack died out
             for (int q = 0; q < n; q++)
             {
                 int i = pop.Live[q];
                 if (Stock[i] < P.BirthStock || Grow[i] < 1f || Starving[i] || Host[i] != 0) continue;
+                if (Hunger[i] > P.EatHunger) continue;
                 int c = FreeSlot(pop);
                 if (c < 0) break;
                 float half = Stock[i] * 0.5f;
@@ -1062,7 +1157,9 @@ namespace CosmicShore.Gameplay
             var c = pop.BodyC;
 
             // the heading: the school's drives at the body centre
-            var want = Fields.Grad(SubstrateFields.Food, Fields.Cell(c)) * (50f * gh);
+            // (a banded school reads its own band's food field, as its members do - round 11-14: the cell-wide field led
+            // the leviathan's body to the inner forest, out of its pen)
+            var want = Fields.FoodGrad(pop.FoodGroup, Fields.Cell(c)) * (50f * gh);   // group 0 = the cell-wide field, as before
             int pj = NearestPilot(c, out float pd);
             if (pj >= 0)
             {
@@ -1070,7 +1167,9 @@ namespace CosmicShore.Gameplay
                 if (P.BodyCurious > 0f && pd < P.BodyCuriousR) want += Unit(_pilots[pj].Pos - c) * P.BodyCurious;
             }
             float r = c.Length();
-            want -= c / MathF.Max(r, 1f) * Math.Clamp((r - 0.6f * R) / (0.2f * R), 0f, 2f);
+            // the research school's own containment (inside 0.6 R) - unless it is penned: then its pen alone keeps it (the
+            // 0.6 R term sits INSIDE the Swarm cell's 690-840 middle shell and held the body below its band)
+            if (pop.BandOuter <= 0f) want -= c / MathF.Max(r, 1f) * Math.Clamp((r - 0.6f * R) / (0.2f * R), 0f, 2f);
             want += PenPull(pop, c);
             float tt = Tick * 0.02f;
             want += 0.3f * new Vector3(MathF.Sin(tt), MathF.Sin(1.3f * tt + 1f), MathF.Sin(0.7f * tt + 2f));
@@ -1145,13 +1244,14 @@ namespace CosmicShore.Gameplay
             if (pop.BandOuter > 0f)
             {
                 float soft = 0.1f * MathF.Max(pop.BandOuter - pop.BandInner, 50f);
-                pull -= radial * (Math.Clamp((r - pop.BandOuter) / soft, 0f, 1f) * 2f);
-                pull += radial * (Math.Clamp((pop.BandInner - r) / soft, 0f, 1f) * 2f);
+                // ramped inside the edge, full at it (as SubstrateKernel's pen)
+                pull -= radial * SubstrateKernel.PenWeight(r - pop.BandOuter, soft);
+                pull += radial * SubstrateKernel.PenWeight(pop.BandInner - r, soft);
             }
             if (pop.HasSector)
             {
                 float cs = Vector3.Dot(radial, pop.SectorAxis);
-                float w = Math.Clamp((pop.SectorCos - cs) / 0.1f, 0f, 1f) * 2f;
+                float w = Math.Clamp((pop.SectorCos + SubstrateKernel.PenSectorSoft - cs) / SubstrateKernel.PenSectorSoft, 0f, 1f) * 2f;
                 if (w > 0f) pull += Unit(pop.SectorAxis * r - p) * w;
             }
             return pull;

@@ -87,6 +87,26 @@ namespace CosmicShore.Gameplay
         /// up to this fraction as the hold runs out. A slow, steady, tightening circle - never frozen, never darting.</summary>
         public const float HoldSpeed = 0.55f, HoldOrbit = 0.3f, HoldTighten = 0.45f;
 
+        /// <summary>The sector pen's soft width, in cosine: the pull ramps from 0 at SectorCos + this to full at the edge.</summary>
+        public const float PenSectorSoft = 0.1f;
+
+        /// <summary>
+        /// The pen's pull at <paramref name="beyond"/> u past its edge (negative = inside): ramps 0 -> 2 over the soft width
+        /// inside the edge, then on to 6 over two soft widths past it (round 11-14). Capped at 2, a lurker's flee or a
+        /// mobber's dive outweighed it and carried them 20-60 u out of their band; past the edge the pen now outweighs any
+        /// one drive, so it bends a chase back rather than walling it.
+        /// </summary>
+        /// <summary>How far inside its band's edges an agent's SEAT (home) stands: two soft widths (the pen's ramp), at most a
+        /// quarter of the band (round 11-14, SubstrateCore.InPen).</summary>
+        public static float SeatMargin(float inner, float outer)
+        {
+            float w = outer - inner;
+            return MathF.Min(2f * 0.1f * MathF.Max(w, 50f), 0.25f * w);
+        }
+
+        public static float PenWeight(float beyond, float soft) =>
+            Clamp((beyond + soft) / soft, 0f, 1f) * 2f + Clamp(beyond / soft, 0f, 2f) * 2f;
+
         static float Clamp(float v, float lo, float hi) => v < lo ? lo : v > hi ? hi : v;
 
         static float Lerp(float a, float b, float t) => a + (b - a) * t;
@@ -344,7 +364,12 @@ namespace CosmicShore.Gameplay
                     if (resting && k.WRestRetreat > 0f) Paint(I, s.Dirs, nd, -tpx, -tpy, -tpz, k.WRestRetreat);   // winded: fall back
                     // GAZE: a calm agent within creep range slides toward where the pilot will be - only while it is
                     // OUTSIDE the pilot's forward cone; inside it, it freezes (bestiary lurker)
-                    if (k.WCreep > 0f && !resting && ph < 0.2f && pd > k.CreepMin && pd < k.CreepR)
+                    // (round 11-14: only inside its pen - a lurker that crept out of its band re-seated there, and spent a
+                    // third of its life outside it; at the pen's edge the creep ends and it holds the last seat in the band)
+                    float rc = Len(px, py, pz);
+                    float sm = k.BandOuter > 0f ? SeatMargin(k.BandInner, k.BandOuter) : 0f;   // a creep's seat is a seat
+                    bool inBand = k.BandOuter <= 0f || (rc >= k.BandInner + sm && rc <= k.BandOuter - sm);
+                    if (k.WCreep > 0f && !resting && ph < 0.2f && pd > k.CreepMin && pd < k.CreepR && inBand)
                     {
                         bool looked = false;
                         if (pvx * pvx + pvy * pvy + pvz * pvz > 1f)
@@ -385,16 +410,19 @@ namespace CosmicShore.Gameplay
                 PaintD(G, s.Dirs, nd, px, py, pz, Clamp((r - 0.85f * R) / (0.1f * R), 0f, 1f) * 3f);
                 if (k.BandOuter > 0f)
                 {
-                    // the species' pen (FaunaConfigurationSO band): steered back in, never walled
+                    // the species' pen (FaunaConfigurationSO band): steered back in, never walled. Round 11-14: the pull
+                    // ramps over the soft width INSIDE the edge and is full AT it (PenSoftInside) - ramped outside it, the
+                    // pen let a seated or chasing agent stand ~20 u beyond the edge, and only 51-89% of member-seconds were
+                    // inside their pen in the showcase cell (Docs/SWARM_FAUNA.md §26.6)
                     float soft = 0.1f * MathF.Max(k.BandOuter - k.BandInner, 50f);
-                    Paint(I, s.Dirs, nd, -px, -py, -pz, Clamp((r - k.BandOuter) / soft, 0f, 1f) * 2f);
-                    Paint(I, s.Dirs, nd, px, py, pz, Clamp((k.BandInner - r) / soft, 0f, 1f) * 2f);
+                    Paint(I, s.Dirs, nd, -px, -py, -pz, PenWeight(r - k.BandOuter, soft));
+                    Paint(I, s.Dirs, nd, px, py, pz, PenWeight(k.BandInner - r, soft));
                 }
                 if (k.HasSector != 0 && r > 1e-3f)
                 {
                     // the SECTOR pen (round 11-11): outside the cone, steered back toward the axis at this radius
                     float cs = (px * k.SectorX + py * k.SectorY + pz * k.SectorZ) / r;
-                    float wsec = Clamp((k.SectorCos - cs) / 0.1f, 0f, 1f) * 2f;
+                    float wsec = Clamp((k.SectorCos + PenSectorSoft - cs) / PenSectorSoft, 0f, 1f) * 2f;   // full at the edge
                     if (wsec > 0f) Paint(I, s.Dirs, nd, k.SectorX * r - px, k.SectorY * r - py, k.SectorZ * r - pz, wsec);
                 }
                 if (cnt > 0f && k.SpacingSpring == 0)

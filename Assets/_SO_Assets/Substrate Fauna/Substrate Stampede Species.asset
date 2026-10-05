@@ -174,7 +174,7 @@ MonoBehaviour:
     RingHoldSeconds: 0
   seedCount: 0
   seedSpread: 40
-  seedAtFlora: 0
+  seedAtFlora: 1
   seedClusters: 4
   sectorAxis: {x: 1, y: 0, z: 0}
   sectorHalfAngle: 55
@@ -186,9 +186,9 @@ MonoBehaviour:
   heartPrismGap: 0.6
   bodyThin: 0.6
   engageRadius: 200
-  maxProxies: 6
+  maxProxies: 5
   proxyLingerSeconds: 2
-  maxSpawnsPerFrame: 6
+  maxSpawnsPerFrame: 5
   vesselRadius: 6
   biteRadius: 24
   maxBitesPerTick: 4

@@ -202,6 +202,108 @@ namespace CosmicShore.Gameplay
             return Mathf.Pow(Mathf.Lerp(innerCubed, outerCubed, t), 1f / 3f);
         }
 
+        /// <summary>Candidates a SPREAD planting draws (<see cref="FloraConfigurationSO.SpreadPlanting"/>).</summary>
+        const int SpreadCandidates = 8;
+
+        /// <summary>
+        /// Where a dispersed plant roots: <see cref="ResolvePlantCenter"/> plus a radius from
+        /// <see cref="ResolvePlantRadius"/> in a random direction - or, when the config lists
+        /// <see cref="FloraConfigurationSO.PlantingPens"/>, a point inside the pen that holds the fewest living plants of
+        /// this species - and, for a species whose config spreads its planting, the best of <see cref="SpreadCandidates"/>
+        /// such points: the one farthest from every living plant of the same species in direction (Mitchell's best
+        /// candidate, a blue-noise draw over the band's directions).
+        /// </summary>
+        protected Vector3 ResolveDispersalPoint(float legacyRadius)
+        {
+            var centre = ResolvePlantCenter();
+            int pen = EmptiestPen(centre);
+            var best = pen >= 0 ? PenPoint(centre, pen) : centre + ResolvePlantRadius(legacyRadius) * Random.onUnitSphere;
+            if (!sourceConfig || !sourceConfig.SpreadPlanting) return best;
+            float bestGap = NearestKinSqr(best);
+            for (int k = 1; k < SpreadCandidates; k++)
+            {
+                var p = pen >= 0 ? PenPoint(centre, pen) : centre + ResolvePlantRadius(legacyRadius) * Random.onUnitSphere;
+                float gap = NearestKinSqr(p);
+                if (gap > bestGap) { bestGap = gap; best = p; }
+            }
+            return best;
+        }
+
+        /// <summary>The config's planting pen holding the fewest living plants of this species (ties broken at random), or
+        /// -1 when the config lists none or there is no cell to measure the pens against.</summary>
+        int EmptiestPen(Vector3 centre)
+        {
+            var pens = sourceConfig ? sourceConfig.PlantingPens : null;
+            if (pens is not { Count: > 0 } || !cell || cell.MembraneRadius <= 0f) return -1;
+            int start = Random.Range(0, pens.Count), best = -1, bestCount = int.MaxValue;
+            var live = FloraHeartRegistry.Live;
+            for (int k = 0; k < pens.Count; k++)
+            {
+                int j = (start + k) % pens.Count, count = 0;
+                for (int i = 0; i < live.Count; i++)
+                {
+                    var f = live[i];
+                    if (!f || f == this || f.IsDying || f.sourceConfig != sourceConfig || !f.HeartTransform) continue;
+                    if (InPen(pens[j], f.HeartTransform.position - centre)) count++;
+                }
+                if (count < bestCount) { bestCount = count; best = j; }
+            }
+            return best;
+        }
+
+        bool InPen(FloraPlantingPen pen, Vector3 offset)
+        {
+            float m = cell.MembraneRadius, r = offset.magnitude;
+            if (r < pen.InnerFraction * m || r > pen.OuterFraction * m) return false;
+            if (pen.Axis.sqrMagnitude <= 0f || r <= 0f) return true;
+            return Vector3.Dot(offset / r, pen.Axis.normalized) >= Mathf.Cos(pen.HalfAngle * Mathf.Deg2Rad);
+        }
+
+        /// <summary>A random point of pen <paramref name="index"/>: uniform by volume between its two radii (as
+        /// <see cref="ResolvePlantRadius"/> draws, inner edge clamped outside a control-zone nucleus) and uniform over its
+        /// cone of directions.</summary>
+        Vector3 PenPoint(Vector3 centre, int index)
+        {
+            var pen = sourceConfig.PlantingPens[index];
+            float m = cell.MembraneRadius;
+            float outer = pen.OuterFraction * m;
+            float inner = Mathf.Min(outer, Mathf.Max(pen.InnerFraction * m,
+                cell.NucleusIsControlZone ? cell.ExpectedNucleusWorldRadius : 0f));
+            float r = Mathf.Pow(Mathf.Lerp(inner * inner * inner, outer * outer * outer, Random.value), 1f / 3f);
+            Vector3 dir;
+            if (pen.Axis.sqrMagnitude <= 0f) dir = Random.onUnitSphere;
+            else
+            {
+                var axis = pen.Axis.normalized;
+                float cosT = Mathf.Lerp(1f, Mathf.Cos(pen.HalfAngle * Mathf.Deg2Rad), Random.value);
+                float sinT = Mathf.Sqrt(Mathf.Max(0f, 1f - cosT * cosT));
+                float phi = Random.value * 2f * Mathf.PI;
+                var u = Vector3.Cross(axis, Mathf.Abs(axis.y) < 0.9f ? Vector3.up : Vector3.right).normalized;
+                var v = Vector3.Cross(axis, u);
+                dir = cosT * axis + sinT * (Mathf.Cos(phi) * u + Mathf.Sin(phi) * v);
+            }
+            return centre + r * dir;
+        }
+
+        /// <summary>How far <paramref name="p"/> is, in DIRECTION from the planting centre, from the nearest living heart of
+        /// this plant's species (squared chord between unit directions): a band's pens and a pilot's view are angular, so
+        /// two plants on one radial a shell apart are as clumped as two side by side.</summary>
+        float NearestKinSqr(Vector3 p)
+        {
+            var centre = ResolvePlantCenter();
+            var u = (p - centre).normalized;
+            float best = float.MaxValue;
+            var live = FloraHeartRegistry.Live;
+            for (int i = 0; i < live.Count; i++)
+            {
+                var f = live[i];
+                if (!f || f == this || f.IsDying || f.sourceConfig != sourceConfig || !f.HeartTransform) continue;
+                float d = ((f.HeartTransform.position - centre).normalized - u).sqrMagnitude;
+                if (d < best) best = d;
+            }
+            return best;
+        }
+
         /// <summary>
         /// The point <see cref="ResolvePlantRadius"/>'s shell is measured FROM: the owning
         /// cell's centre, which is what "a fraction of the cell's membrane radius" has always

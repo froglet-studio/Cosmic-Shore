@@ -14,11 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   FloraPrefab: {fileID: 8186157953239024492, guid: 421bf59ddd3f6def5e0ad21fb5cbbcf1, type: 3}
   SpawnProbability: 1
-  InitialSpawnCount: 6
+  InitialSpawnCount: 9
   OverrideDefaultPlantPeriod: 0
   NewPlantPeriod: 9999999
-  PopulationSize: 6
-  MaxLivePopulation: 10
+  PopulationSize: 9
+  MaxLivePopulation: 12
   GrowthPerOffspring: 126
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 5
@@ -41,5 +41,23 @@ MonoBehaviour:
     MaxSpawnsPerFrame: -1
     PlantRadiusCellFraction: -1
     PlantRadiusCellFractionMin: -1
-  PlantRadiusCellFractionMaxOverride: 0.7
-  PlantRadiusCellFractionMinOverride: 0.575
+  PlantRadiusCellFractionMaxOverride: 0.679
+  PlantRadiusCellFractionMinOverride: 0.531
+  SpreadPlanting: 1
+  PlantingPens:
+  - Axis: {x: 1, y: 0, z: 0}
+    HalfAngle: 45
+    InnerFraction: 0.59583
+    OuterFraction: 0.67917
+  - Axis: {x: -0.5, y: 0, z: 0.866}
+    HalfAngle: 45
+    InnerFraction: 0.59583
+    OuterFraction: 0.67917
+  - Axis: {x: -0.5, y: 0, z: -0.866}
+    HalfAngle: 45
+    InnerFraction: 0.59583
+    OuterFraction: 0.67917
+  - Axis: {x: 0, y: 0, z: 0}
+    HalfAngle: 0
+    InnerFraction: 0.53083
+    OuterFraction: 0.56083

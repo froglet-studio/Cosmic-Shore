@@ -62,22 +62,28 @@ ROOT_TR_FID = "6630180297114401203"
 AGENT_MB_FID = swarm.TADPOLE_MB_FID     # the member MB keeps the tadpole's fileID (the derived body references it)
 
 # species key -> everything the glue and the cell need. Band radii are the cell's (FaunaConfigurationSO.Band*Radius).
+# The stampede's herds and the mobbers' roosts hatch at flora too (a mobber roosts ON a plant - bestiary mobber.py); the
+# leviathan does not: it is ONE assembled body, and its members cycled over several plants would hatch it in pieces.
+# at_flora (round 11-10, Docs/SWARM_FAUNA.md §27): the GRAZERS hatch at the living flora in their band, as the lurker
+# always did. A random hatch point in a 3-5 plant shell (2e9 u^3) is outside every food field's 240 u reach ~85% of the
+# time, and a 31 u/s solitary locust starves (~80 s stomach + reserve) before it finds a plant: in the whole-cell run
+# the locusts asked 4,063 times for food and found none.
 SPECIES = [
-    dict(key="pack", title="Pack Hunter", element="Time", band=(690, 1080), seed=0, spread=40, at_flora=0,
+    dict(key="pack", title="Pack Hunter", element="Time", band=(690, 1080), seed=0, spread=40, at_flora=1,
          engage=260, proxies=7, bites=4, spawns=7),
-    dict(key="locust", title="Locust", element="Space", band=(910, 1080), seed=0, spread=80, at_flora=0,
+    dict(key="locust", title="Locust", element="Space", band=(910, 1080), seed=0, spread=80, at_flora=1,
          engage=140, proxies=12, bites=16, spawns=8),
     dict(key="lurker", title="Lurker", element="Mass", band=(470, 620), seed=8, spread=30, at_flora=1,
-         engage=160, proxies=4, bites=4, spawns=4),
+         engage=160, proxies=3, bites=4, spawns=4),
     # round 11-11: the rest of the bestiary (Docs/SUBSTRATE_FAUNA.md §9). The 620-690 gap between the swarm's inner and
     # middle shells is free (the mobbers' roosts); the middle shell 690-840 is split into three 110-degree SECTORS
     # about the cell's Y axis (sector pens, SubstrateCore.SetSector) for the herd, the puddles and the school.
-    dict(key="stampede", title="Stampede", element="Mass", band=(690, 840), seed=0, spread=40, at_flora=0,
-         engage=200, proxies=6, bites=4, spawns=6, clusters=4, sector=((1, 0, 0), 55)),
-    dict(key="mobber", title="Mobber", element="Time", band=(625, 685), seed=0, spread=30, at_flora=0,
+    dict(key="stampede", title="Stampede", element="Mass", band=(690, 840), seed=0, spread=40, at_flora=1,
+         engage=200, proxies=5, bites=4, spawns=5, clusters=4, sector=((1, 0, 0), 55)),
+    dict(key="mobber", title="Mobber", element="Time", band=(625, 685), seed=0, spread=30, at_flora=1,
          engage=120, proxies=4, bites=4, spawns=4, clusters=5),
     dict(key="leech", title="Leech", element="Charge", band=(690, 840), seed=0, spread=8, at_flora=1,
-         engage=140, proxies=2, bites=4, spawns=2, sector=((-0.5, 0, 0.866), 55)),
+         engage=140, proxies=4, bites=4, spawns=4, sector=((-0.5, 0, 0.866), 55)),
     dict(key="leviathan", title="Leviathan", element="Space", band=(690, 840), seed=0, spread=60, at_flora=0,
          engage=200, proxies=4, bites=4, spawns=4, sector=((-0.5, 0, -0.866), 55)),
 ]
@@ -248,6 +254,32 @@ def emit():
     return out, params
 
 
+def flora_reaches(sp_):
+    """Does some region's flora always stand inside this population's pen? A region with no planting pens plants over its
+    whole flora_band (an overlap is enough, as before pens); a region with pens needs one pen inside the band - and inside
+    the sector, when the population has one."""
+    lo, hi = sp_["band"]
+    for r in swarm.REGIONS:
+        pens = r.get("pens")
+        if not pens:
+            if "sector" not in sp_ and lo < swarm.flora_band(r)[1] and hi > swarm.flora_band(r)[0]:
+                return True
+            continue
+        for axis, half, plo, phi in pens:
+            if plo < lo - 1e-6 or phi > hi + 1e-6:
+                continue
+            if "sector" not in sp_:
+                return True
+            if axis is None:
+                continue
+            (sa, sh) = sp_["sector"]
+            na, ns = math.sqrt(sum(x * x for x in axis)), math.sqrt(sum(x * x for x in sa))
+            ang = math.degrees(math.acos(max(-1.0, min(1.0, sum(a * b for a, b in zip(axis, sa)) / (na * ns)))))
+            if ang + half <= sh + 0.5:
+                return True
+    return False
+
+
 def verify(out, params):
     problems = []
     minted = {re.search(r"^guid: (\w+)", t, re.M).group(1): p for p, t in out.items() if p.endswith(".meta")}
@@ -313,6 +345,16 @@ def verify(out, params):
     pack, locust = next(s for s in SPECIES if s["key"] == "pack"), next(s for s in SPECIES if s["key"] == "locust")
     if not (pack["band"][0] <= locust["band"][0] and pack["band"][1] >= locust["band"][1]):
         problems.append("the pack's band must cover the locusts' (a creature must never be led to food it cannot reach)")
+    # round 11-10: every population is penned where flora GROWS - eating needs flora tissue inside the band, so a band no
+    # region plants in starves its population however it steers (the mobbers' plant-free 625-690 gap starved all 40)
+    # - and where a region PENS its planting (author_swarm_fauna pens, FloraConfigurationSO.PlantingPens), one of its pens
+    # must lie wholly inside the population's own pen (band, and sector if it has one): the flora fills its emptiest pen
+    # first, so only a contained pen guarantees a plant there (spread over the whole shell, a sector or the gap still came up
+    # empty in one seed in four)
+    for sp_ in SPECIES:
+        if not flora_reaches(sp_):
+            problems.append(f"{sp_['key']}: its pen (band {sp_['band']}{', sector ' + str(sp_['sector']) if 'sector' in sp_ else ''}) "
+                            "holds no region's flora (author_swarm_fauna flora_band / pens) - it has nothing it may eat")
     if pack["proxies"] < params["pack"]["Capacity"]:
         problems.append("every pack hunter must be able to be real at once (the all-at-once strike lands on proxies)")
     # round 11-11: the collider budget is RE-DIVIDED, never raised - the proxies are the harness's measured caps

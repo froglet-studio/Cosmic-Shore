@@ -67,12 +67,16 @@ SPECIES = [
     dict(key="Thief Nest", species=1, prefab="BuilderThiefNest.prefab", config="ThiefNestConfig.asset",
          band=(1085, 1140), element="Space", count=1,
          # thieves fly at 150 u/s: the proxy ring is wider so a ship meets a real body, and no wider than the hoard raid
-         overrides={"MaxProxies": 18, "EngageRadius": 200}),
+         # SpotRange 400 (round 11-14, Docs/SWARM_FAUNA.md §26.6): the research's 700 u sight, from a nest on the
+         # 1085-1140 shell, put every pilot anywhere in a 1,200 u cell inside the nest's sight sphere, so the nest never
+         # roosted; at ScoutRange it sees the ships whose wake it can reach
+         overrides={"MaxProxies": 18, "EngageRadius": 200, "SpotRange": 400}),
     dict(key="Wearer", species=2, prefab="BuilderWearer.prefab", config="WearerConfig.asset",
          band=(400, 465), element="Charge", count=1,
          # 16 proxies (+32 colliders) keeps the engaged worst case at 1,192 / 1,200 with the threat grove; a creature's
          # worn prisms are the platform's own (0 new colliders) - Docs/BUILDERS_AND_THIEVES.md §10.4
-         overrides={"MaxProxies": 16, "EngageRadius": 160}),
+         # WearSight 400 (round 11-14): 700 u from hearts in the 400-465 gap is the whole cell - the colony never roosted
+         overrides={"MaxProxies": 16, "EngageRadius": 160, "WearSight": 400}),
 ]
 # the member cap field of each species (its bodies' worst case in the phase ladder)
 MEMBER_CAP = {0: "MaxWorkers", 1: "MaxThieves", 2: "MaxWearerHearts"}
