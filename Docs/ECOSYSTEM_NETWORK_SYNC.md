@@ -89,8 +89,8 @@ heart for a frame, and a late joiner reads it straight out of the sync pass.
 
 This is not cosmetic. A lifeform is its species and its ELEMENT and nothing else
 (`ECOSYSTEM.md` §40), and the element decides the body scale, the variant tuning and the
-**heart's world scale** — which IS the collect reward and the live domain fauna buff. A client
-that re-rolled its own element would pay a different price for the same kill.
+**heart's world scale** — which IS the collect reward. A client that re-rolled its own element
+would pay a different price for the same kill.
 
 The species travels as an **index into the host cell's own spawn profile**, because a
 ScriptableObject reference does not cross the wire and both peers resolve the same cell config
@@ -257,7 +257,7 @@ place to try it.
 - **Flora sync is wired but no species opts in.** Nothing has been measured; Rampage is the
   place to try it.
 - **Fauna spawned outside a cell's spawn profile stay peer-local** — the freestyle conveyor and
-  the Lifeform Matrix toy release creatures that no profile lists, so there is no species index
+  the Spawn Matrix toy release creatures that no profile lists, so there is no species index
   to name them by.
 - **Crystal collection stays local per peer**, as it is for every crystal outside
   `NetworkCrystalManager`'s modes. An authoritative collect channel is a separate slice.

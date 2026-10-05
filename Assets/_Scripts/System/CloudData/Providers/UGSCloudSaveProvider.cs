@@ -70,10 +70,16 @@ namespace CosmicShore.Core
 
         public async Task<T> LoadAsync<T>(string key, CancellationToken ct = default) where T : class, new()
         {
+            var result = await TryLoadAsync<T>(key, ct);
+            return result.Data;
+        }
+
+        public async Task<CloudLoadResult<T>> TryLoadAsync<T>(string key, CancellationToken ct = default) where T : class, new()
+        {
             if (!IsAvailable)
             {
                 Debug.LogWarning($"[UGSCloudSaveProvider] Cannot load '{key}' - not available.");
-                return null;
+                return new CloudLoadResult<T>(CloudLoadStatus.Failed);
             }
 
             try
@@ -90,31 +96,43 @@ namespace CosmicShore.Core
                 // cached data, which is exactly "I cleared PlayerPrefs and now it hangs".
                 var result = await CloudSaveService.Instance.Data.Player.LoadAsync(keys).AsMainThread();
 
-                if (result.TryGetValue(key, out var item))
+                if (!result.TryGetValue(key, out var item))
+                    return new CloudLoadResult<T>(CloudLoadStatus.Missing);   // the cloud answered: no such key
+
+                // Primary path: the UGS SDK deserializes via Newtonsoft, so
+                // Dictionary<,> fields round-trip correctly.
+                try
                 {
-                    // Primary path: the UGS SDK deserializes via Newtonsoft, so
-                    // Dictionary<,> fields round-trip correctly.
-                    try
-                    {
-                        return item.Value.GetAs<T>();
-                    }
-                    catch
-                    {
-                        // Fallback: a value stored as a JSON string (legacy JsonUtility writes).
-                        // Use Newtonsoft, NOT JsonUtility - JsonUtility silently drops
-                        // Dictionary<,> fields, which would wipe stats/progression on re-save.
-                        var json = item.Value.GetAs<string>();
-                        if (!string.IsNullOrEmpty(json))
-                            return JsonConvert.DeserializeObject<T>(json);
-                    }
+                    var data = item.Value.GetAs<T>();
+                    if (data != null)
+                        return new CloudLoadResult<T>(CloudLoadStatus.Loaded, data);
                 }
+                catch
+                {
+                    // Fallback below.
+                }
+
+                // Fallback: a value stored as a JSON string (legacy JsonUtility writes).
+                // Use Newtonsoft, NOT JsonUtility - JsonUtility silently drops
+                // Dictionary<,> fields, which would wipe stats/progression on re-save.
+                var json = item.Value.GetAs<string>();
+                if (!string.IsNullOrEmpty(json))
+                {
+                    var data = JsonConvert.DeserializeObject<T>(json);
+                    if (data != null)
+                        return new CloudLoadResult<T>(CloudLoadStatus.Loaded, data);
+                }
+
+                // The key EXISTS but nothing in it could be read. That is not "no data": reporting
+                // Missing would let the caller seed defaults and save them over the real record.
+                Debug.LogWarning($"[UGSCloudSaveProvider] '{key}' exists but could not be read.");
+                return new CloudLoadResult<T>(CloudLoadStatus.Failed);
             }
             catch (Exception e)
             {
                 Debug.LogWarning($"[UGSCloudSaveProvider] Load '{key}' failed: {e.Message}");
+                return new CloudLoadResult<T>(CloudLoadStatus.Failed);
             }
-
-            return null;
         }
 
         /// <summary>

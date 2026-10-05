@@ -4,7 +4,7 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// A single fly-through station of a toy MATRIX - the shared "a toy expands into a wall of
-    /// choices you fly at" pattern (the Lifeform Matrix's species/variant grids, the Cell
+    /// choices you fly at" pattern (the Spawn Matrix's species/variant grids, the Cell
     /// Selector's mini-cell grid).
     ///
     /// Same local-vessel + freestyle gating as <see cref="Toy"/>, with a short per-station

@@ -118,7 +118,7 @@ namespace CosmicShore.Gameplay
         /// Registers a freshly planted flora for replication. Safe from ANY caller: no-ops on
         /// clients, offline, on cells without this component, on species that are not rolled out
         /// (<see cref="FloraConfigurationSO.NetworkSynced"/>), and on flora planted outside the
-        /// cell's own profile (the freestyle conveyor, the Lifeform Matrix toy) — those stay
+        /// cell's own profile (the freestyle conveyor, the Spawn Matrix toy) — those stay
         /// peer-local, which is the documented v1 divergence.
         /// </summary>
         public static void ServerOnPlanted(Cell host, FloraConfigurationSO config, Flora instance)

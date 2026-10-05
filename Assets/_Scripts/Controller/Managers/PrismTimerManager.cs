@@ -1,5 +1,7 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using System.Collections.Generic;
+using CosmicShore.Core;
 using CosmicShore.Utility;
 using System;
 
@@ -19,13 +21,45 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public class PrismTimerManager : Singleton<PrismTimerManager>
     {
+        // Teardown guard. Death cascades that run from OnDisable/OnDestroy while a scene is
+        // closing (a Spindle evaporating, a prism exploding) reach EnsureInstance after this
+        // manager is already gone; auto-creating one then leaks a [PrismTimerManager] into the
+        // closing scene ("Some objects were not cleaned up when closing the scene"). So no
+        // auto-create from play-mode exit / quit, nor between this manager being destroyed with
+        // its scene and that scene finishing its unload. Same shape as PrismEffectsManager's.
+        private static bool _isQuitting;
+        private static bool _sceneClosing;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            _isQuitting = false;
+            _sceneClosing = false;
+            // Application.quitting also fires on editor play-mode exit, and needs no live
+            // instance (unlike OnApplicationQuit).
+            Application.quitting -= HandleQuitting;
+            Application.quitting += HandleQuitting;
+            SceneManager.sceneUnloaded -= HandleSceneUnloaded;
+            SceneManager.sceneUnloaded += HandleSceneUnloaded;
+        }
+
+        static void HandleQuitting() => _isQuitting = true;
+        static void HandleSceneUnloaded(Scene _) => _sceneClosing = false;
+
+        static bool IsTearingDown =>
+            _isQuitting || _sceneClosing || ApplicationLifecycleManager.IsQuitting;
+
         /// <summary>
         /// Ensures a PrismTimerManager instance exists. If none was placed in the scene,
         /// creates one automatically so timed shield operations don't silently fail.
+        /// Returns null during teardown (play-mode exit / quit / the manager's scene
+        /// unloading) instead of spawning a GameObject into a closing scene - callers
+        /// must null-check (<c>EnsureInstance()?.ScheduleAction(...)</c>).
         /// </summary>
         public static PrismTimerManager EnsureInstance()
         {
             if (Instance != null) return Instance;
+            if (IsTearingDown) return null;
 
             var go = new GameObject("[PrismTimerManager]");
             go.AddComponent<PrismTimerManager>();
@@ -199,6 +233,10 @@ namespace CosmicShore.Gameplay
 
         private void OnDestroy()
         {
+            // Destroyed because its scene is unloading: hold off auto-create until the unload
+            // completes, so the rest of the scene's teardown can't spawn a replacement.
+            if (Instance == this && !gameObject.scene.isLoaded) _sceneClosing = true;
+
             activeTimers.Clear();
             completionTargets.Clear();
             scheduledActions.Clear();

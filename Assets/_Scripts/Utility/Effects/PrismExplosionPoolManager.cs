@@ -34,10 +34,20 @@ namespace CosmicShore.Utility
             // (GenericPoolManager.Get_). Factory death spawn no longer calls Get
             // (D4); editor/debug callers still treat null as skip.
             if (explosion != null)
+                // -= first: exactly one handler per life, whatever a previous life left behind.
+                explosion.OnReturnToPool -= Release;
                 explosion.OnReturnToPool += Release;
             return explosion;
         }
         
+        // Runs on EVERY path back into the pool, including the bulk scene-change releases that
+        // bypass Release() - which is where the per-Get handler used to survive and double up
+        // (GenericPoolManager.Release_ has the full story).
+        protected override void OnReturnedToPool(PrismExplosion instance)
+        {
+            if (instance) instance.OnReturnToPool -= Release;
+        }
+
         public override void Release(PrismExplosion instance)
         {
             instance.OnReturnToPool -= Release;

@@ -57,6 +57,17 @@ That is the standing setting for every mode (`/ship`, `/ship-quick`, `/ship-deep
   ABORTS looks exactly like a gate that passes". **Read the first line of any non-zero exit before
   reporting it**; `usage:` means you called it wrong, not that the tree is dirty.
 
+**And read the exit code of the SCRIPT, not of the pager you piped it into.** `python3
+check.py --check | tail -5; echo $?` reports **`tail`'s** status, which is 0 whatever the
+script did — so a gate printing `FAIL` in the very output you are reading comes back "exit
+0". That is this file's own *"a gate that ABORTS looks exactly like a gate that passes"*,
+produced by the measurement rather than by the gate, and it is worse than the original
+because you have the failure text on screen and a number telling you to ignore it. Run the
+script bare (`script >/dev/null 2>&1; echo $?`), or read `${PIPESTATUS[0]}`. Do this on the
+negative control too: a `--check` you have only ever watched SUCCEED is a `--check` you have
+not tested — mutate one authored value, confirm it exits non-zero AND names the file, then
+restore and confirm the tree is clean (`git status --short` on the asset path).
+
 **§2.5 is NOT one of these.** The tool-output gate is a git and filesystem question — did the
 WRITER tool's assets land in a commit — and it needs no compiler, no editor and no CI. It
 runs in full, in every mode.
@@ -175,6 +186,15 @@ run the `/reorient` skill first and act on its verdict before shipping.
   and deciding, for that entry specifically, which variant it is — then run the consumer over
   every entry, theirs included. *Whenever a merge touches a container you retyped, the entries you
   did not write are the ones that are still the old type.*
+- **A clean auto-merge can leave TWO bookkeepers for one subscription.** When your branch and the
+  base both fix the same binding from different directions, the edits often land in different
+  methods and git merges them without a marker. This branch recorded the pause-event source in a
+  new `_pauseSource` field (so `Initialize` detaches from the right `InputStatus`); the base added
+  `DetachInputPause`/`AttachInputPause` for a mid-match pilot swap that re-read
+  `vesselStatus.InputStatus` instead. Both compile; they disagree about WHICH status holds the
+  handler the moment the pointer moves. After any merge, grep the auto-merged files for fields and
+  methods that touch the same event/flag and make them share ONE record — `git diff HEAD -- <file>`
+  on every auto-merged file you also edited is the cheap way to see what arrived beside your code.
 - **"Keep both sides" is right for list entries and WRONG inside a chain.** Resolving conflicts by
   concatenating HEAD and theirs works for independent fields, list items and doc paragraphs. It
   produces invalid code when both sides are links in one expression: two halves of a `&&` chain
@@ -355,6 +375,10 @@ Walk every changed file against these gates:
   split the hits against the merge base so you only own the new ones. When it fires, decide per
   site whether the orphaned doc should move DOWN onto its method or be deleted as superseded —
   the new member usually has its own.
+  **Do the scan in Python, not `awk`.** macOS ships BSD awk, and a one-liner using `prev ~ /…/`
+  over a `/// ...</summary>` line followed by `/// <summary>` silently matched NOTHING on a branch
+  that had two such hits — a scan that cannot fire reads exactly like a clean branch. A five-line
+  `re.search` loop over `git diff --name-only <merge-base>..HEAD -- '*.cs'` found both.
 - **A rename sweep must split its hits by which THING the name means.** One identifier is
   routinely three: a C# class, an HLSL function, a shadergraph node's `m_FunctionName`. Renaming
   the class leaves the other two correct, so a blanket search-and-replace is as wrong as no sweep

@@ -214,8 +214,8 @@ fixed:
   Cleave, Wildlife Liberation, Dog Fight, The Bends, Scarab Scramble, …) — solo + AI
 - Menu_Main lava-lamp / freestyle, all toys (cell selector, painting, Wanderway, vessel/domain changers)
 - Maelstrom / Maelstrom — sequential `Single` scene loads, all local
-- The two genuine single-player scenes (`MinigameDuelForTheCell`, `MinigameWildlifeBlitz`) use the
-  non-networked `PlayerSpawner` path and would work even without a host
+- The two genuine single-player scenes (`MinigameDuelForTheCell`, `MinigameWildlifeBlitz`) used the
+  non-networked `PlayerSpawner` path and would have worked even without a host *(both retired 2026-09)*
 
 **Not playable offline:** party play with real humans. That is inherent, not a defect.
 
@@ -537,7 +537,7 @@ Proven by executing the shipped latch logic (`ResetForReconnect` → re-announce
 once, re-entry does not double-raise, a reconnect raises again, and the pre-fix path is kept as a
 negative control showing the trunk staying silent.
 
-### 9.2 `.AsMainThread()` marshals the SUCCESS path only
+### 9.2 `.AsMainThread()` marshals the SUCCESS path only *(fixed 2026-09 — it now marshals in a `finally`; see `Docs/THREADING.md`)*
 
 `await WaitForRelayReadyAsync(linkedCts.Token).AsMainThread()` — when the wait **times out**, the
 `OperationCanceledException` is raised from `linkedCts`'s timer, so it propagates out of the

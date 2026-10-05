@@ -59,7 +59,6 @@ G_ASSET = {
     "VesselCombatHitBySword":     guid("asset/VesselCombatHitBySword"),
     "VesselCombatHitByJoust":     guid("asset/VesselCombatHitByJoust"),
     "VesselCombatHitBySpike":     guid("asset/VesselCombatHitBySpike"),
-    "VesselSpinByUrchinSpikeProjectileEffect": guid("asset/VesselSpinByUrchinSpikeProjectileEffect"),
     "GameToastConfigBroadside":   guid("asset/GameToastConfigBroadside"),
     "ModePreviewBroadside":       guid("asset/ModePreviewBroadside"),
     "MinigameBroadside.unity":    guid("asset/MinigameBroadside.unity"),
@@ -84,9 +83,6 @@ EXISTING["DogFightScoringRule"] = lib.existing_guid(
 EXISTING["VesselCombatHitByProjectileEffectSO"] = lib.existing_guid(
     "Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Projectile Effects/"
     "VesselCombatHitByProjectileEffectSO.cs")
-EXISTING["VesselSpinByProjectileEffectSO"] = lib.existing_guid(
-    "Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Projectile Effects/"
-    "VesselSpinByProjectileEffectSO.cs")
 
 # The SOAP channel a landed vessel-vs-vessel hit travels on.
 EXISTING["Event_CombatHitStats"] = lib.existing_guid(
@@ -173,17 +169,13 @@ g.emit_asset("Assets/_SO_Assets/Effects/Vessel Projectile Effects/VesselCombatHi
   sameVictimCooldownSeconds: {lib.num(W['spike'])}
 """)
 
-# ...and a FELT effect to go with the score. A spike that pays a point and does nothing visible
-# is a score with no cause on screen, which is the complaint every unwired weapon in this family
-# has produced. The Sparrow's bullet spins its victim; so does a spike.
-g.emit_asset("Assets/_SO_Assets/Effects/Vessel Projectile Effects/"
-             "VesselSpinByUrchinSpikeProjectileEffect.asset",
-             G_ASSET["VesselSpinByUrchinSpikeProjectileEffect"],
-             lib.header_for(EXISTING["VesselSpinByProjectileEffectSO"],
-                            "VesselSpinByUrchinSpikeProjectileEffect") +
-             """  vesselTypesToImpact: []
-  spinAmount: 30
-""")
+# A FELT effect used to ride along with the score: the spike SPUN its victim, on the reasoning
+# that "a spike that pays a point and does nothing visible is a score with no cause on screen".
+# That effect is REMOVED (Sep 2026) and must not come back from here — **A VESSEL MAY NOT MOVE AN
+# OPPOSING VESSEL**: being shoved and re-aimed by somebody else's weapon is the one hit a pilot
+# cannot answer with flying. What a hit may take is the victim's ELEMENTAL CRYSTALS, which the
+# Urchin's spike does through `Docs/ELEMENTAL_ECONOMY.md`'s ejector — so the score still has a
+# cause on screen, and it is crystals leaving the hull rather than the hull being thrown.
 
 # ── 2. Wire the three containers - THE load-bearing edits ───────────────────
 def add_to_list(path, list_key, next_key, new_guids, label):
@@ -201,7 +193,7 @@ def add_to_list(path, list_key, next_key, new_guids, label):
 
 # The Urchin: projectileShipEffects was EMPTY - a spike did nothing to a pilot at all.
 add_to_list(CONTAINERS["urchin"], "projectileShipEffects", "projectilePrismEffects",
-            [G_ASSET["VesselSpinByUrchinSpikeProjectileEffect"], G_ASSET["VesselCombatHitBySpike"]],
+            [G_ASSET["VesselCombatHitBySpike"]],
             "urchin spike container")
 # The Rhino: already haptics + damage + spin + danger-block. Gains only the report.
 add_to_list(CONTAINERS["rhino"], "vesselSkimmerEffectsSO", "skimmerPrismEffectsSO",
@@ -272,11 +264,12 @@ g.emit_asset("Assets/_SO_Assets/Games/ArcadeGameBroadside.asset", G_ASSET["Arcad
   SceneName: MinigameBroadside
   Vessels:
 {VESSEL_ROWS}  MinPlayersAllowed: 2
-  MaxPlayersAllowed: 4
+  MaxPlayersAllowed: 6
   MinDomainsAllowed: 2
   MaxDomainsAllowed: 3
   MinIntensity: 1
   MaxIntensity: 4
+  ArenaRules: 1
   Tips:
   - Your hull already has a weapon. The card does not hand you one - it pays for the one you brought.
   - A contact strike is worth eight rounds. Closing is the expensive part, so it pays like it.
@@ -436,14 +429,15 @@ urchin = g.files[CONTAINERS["urchin"]]
 if "projectileShipEffects: []" in urchin:
     errors.append("urchin spike container still has an EMPTY projectileShipEffects - a spike "
                   "would still pass through a pilot doing nothing")
-for name, gd in (("spike combat-hit report", G_ASSET["VesselCombatHitBySpike"]),
-                 ("spike spin", G_ASSET["VesselSpinByUrchinSpikeProjectileEffect"])):
-    if gd not in urchin:
-        errors.append(f"urchin spike container missing the {name}")
+if G_ASSET["VesselCombatHitBySpike"] not in urchin:
+    errors.append("urchin spike container missing the spike combat-hit report")
 rhino = g.files[CONTAINERS["rhino"]]
 if G_ASSET["VesselCombatHitBySword"] not in rhino:
     errors.append("rhino sword container missing the combat-hit report")
-for keep in ("02cd4a20ea91bbc4591c9ccbf9db91af", "c57e976ae0b3f0749895f17697cac036"):
+# The haptics effect. `VesselDamageBySkimmerEffect` used to be checked here too and was
+# REMOVED in Sep 2026 with the control-theft tier - it muted the victim's right stick for 5s
+# (Docs/ELEMENTAL_ECONOMY.md §9), which a pilot cannot answer with flying.
+for keep in ("02cd4a20ea91bbc4591c9ccbf9db91af",):
     if keep not in rhino:
         errors.append("rhino sword container LOST an effect it already carried")
 squirrel = g.files[CONTAINERS["squirrel"]]

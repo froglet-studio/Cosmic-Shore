@@ -152,6 +152,39 @@ never enters a player build, and no guard is needed at all.
 
 ---
 
+## The platform-player variant — `#if UNITY_IOS && !UNITY_EDITOR`
+
+**Selecting a platform in the editor does NOT compile that platform's player code.** With iOS
+selected, the editor defines `UNITY_IOS` *and* `UNITY_EDITOR`, so a region guarded
+`UNITY_IOS && !UNITY_EDITOR` is compiled by nothing until somebody builds an iOS player. The
+same goes for Android. A Windows player build does not compile it either.
+
+This shipped. The project's first iOS build in 2026-10 failed with 31 × `CS0246`
+(`DllImport`, `In` not found) in Nice Vibrations' `LofeltHaptics.cs`. Its iOS branch used
+P/Invoke attributes but imported only `UnityEngine.iOS`; the Android branch beside it had the
+`System.Runtime.InteropServices` using and the iOS branch did not. It is the rule at the top of
+this file, *a guard must cover a self-consistent unit*, failing on a platform symbol instead of
+`UNITY_EDITOR`.
+
+What to do:
+
+- When you edit inside a platform-player guard, **check that region's usings yourself**. Every
+  type it names (`DllImport`, `[In]`, `Marshal`, `MonoPInvokeCallback`, `UnityEngine.iOS.Device`)
+  needs a using active under the *same* guard, or a fully qualified name.
+- **To list every region that compiles ONLY in an iOS player**, evaluate the preprocessor three
+  ways and keep the lines active in the first and in neither of the others:
+  1. iOS player: `UNITY_IOS` and `DEVELOPMENT_BUILD` defined, `UNITY_EDITOR` not.
+  2. iOS editor: `UNITY_IOS` and `UNITY_EDITOR` defined.
+  3. Windows player: `UNITY_STANDALONE` defined.
+
+  The 2026-10 measurement found Nice Vibrations' iOS bindings, NativeShare's `__Internal`
+  import, FMOD's interrupt callback and `PlatformIOS.cs`, and `PaintingShareExporter`'s share
+  path (`Docs/IOS_BUILD.md`, "Code that compiles ONLY in an iOS player build").
+- `check_conditional_compilation.py` does **not** cover this: it reasons only about editor
+  guards (see *Known limits* below). An iOS player build is the only real proof.
+
+---
+
 ## Checklist before committing a guarded script
 
 1. Is every `using` that an **unguarded** declaration needs also unguarded?

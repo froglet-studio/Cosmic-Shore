@@ -51,6 +51,17 @@ namespace CosmicShore.Gameplay
         enum RideMode { None = 0, Trail = 1, Surface = 2 }
         RideMode _rideMode;
 
+        /// <summary>
+        /// True while the vessel is RIDING a prismscape: attached, with a live ride kernel under
+        /// it. False in free flight, and false the moment a launch off a ribbon's end or a Slip
+        /// clears the attach flags — the next <see cref="MoveShip"/> ends the ride, so this reads
+        /// "attached and not flying" with no extra state. Read by <see cref="PrismCradleSource"/>
+        /// (Docs/PRISM_ANIMATION.md §4.7.2), which is why it is a property and not a peek at the
+        /// attach flag: <c>VesselStatus.IsAttached</c> is set on CONTACT, before the ride is
+        /// admitted, and a refused attach clears it again on the same frame.
+        /// </summary>
+        public bool IsRiding => attached && _rideMode != RideMode.None;
+
         [Tooltip("Ammo gained per second while riding a prismscape. Doubled on a shielded prism.")]
         [SerializeField] float rechargeRate = .1f;
 
@@ -222,6 +233,13 @@ namespace CosmicShore.Gameplay
                 surfaceFollower.OnPrismCrossed -= ApplyPrismscapePayoff;
                 surfaceFollower.OnPrismCrossed += ApplyPrismscapePayoff;
             }
+
+            // The cradle (Docs/PRISM_ANIMATION.md §4.7.2) is ENSURED here rather than authored on
+            // the prefab, so an Urchin cannot be wired without it — the same reasoning as the
+            // lockup on every HUD. The component only ever reports while IsRiding, so on a remote
+            // replica (transformer inactive, never attaches) it is inert.
+            if (!TryGetComponent<PrismCradleSource>(out _))
+                gameObject.AddComponent<PrismCradleSource>();
         }
 
         void OnDisable()

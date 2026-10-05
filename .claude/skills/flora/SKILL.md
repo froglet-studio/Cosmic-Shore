@@ -467,8 +467,9 @@ author_<cell>_cell.py           # a cell built FROM a species; grows it to size 
   undo each other forever with both `--check`s green.
   **Resizing a plant therefore RE-PRICES its heart**, because that tool sizes every heart as
   `K · bodyDiameter^0.5` — growing the Borromean Space membrane 2× took its heart 2.661 →
-  3.379 — and a heart's world scale is read twice AS GAMEPLAY (the collect reward and the
-  live domain fauna buff), so a body-size change is a balance change. Its **monotonicity**
+  3.379 — and a heart's world scale is read AS GAMEPLAY by the collect reward (a second
+  reader, the live domain fauna buff, was removed — `Docs/ECOSYSTEM.md` §15), so a body-size
+  change is a balance change. Its **monotonicity**
   check (a bigger lifeform may never carry a smaller heart) is the one place a body-size bug
   surfaces; re-run it after any geometry change, not just after a heart edit.
 * **Register the species in `author_flora_populations.py`'s `OWNED_ELSEWHERE`** if its own

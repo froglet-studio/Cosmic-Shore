@@ -40,6 +40,18 @@ namespace CosmicShore.Gameplay
         /// <see cref="Domains.Blue"/> is the neutral sentinel and stays hostile to everyone.
         /// </summary>
         public Domains OwnDomain;
+
+        /// <summary>
+        /// True when DIRECT GUNFIRE destroyed this prism - a round that struck the prism itself.
+        /// False for a blast, a ram, a creature, a sword or an arena teardown.
+        ///
+        /// <para>It rides the channel rather than being derived at the listener because the
+        /// listener cannot see WHAT killed a prism from anywhere else: <c>Prism</c> raises this
+        /// event from ONE place on every route, and the weapon identity is only known at the
+        /// call that damaged it. <c>VesselRearmOnPrismDestruction</c> is the reader - the
+        /// Sparrow's tank fills from its guns and from nothing its rockets do.</para>
+        /// </summary>
+        public bool DestroyedByGunfire;
     }
 
     /// <summary>

@@ -196,7 +196,7 @@ namespace CosmicShore.Core
             {
                 @event = eventName,
                 properties = properties,
-                timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
+                timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ", System.Globalization.CultureInfo.InvariantCulture)
             });
 
             // Bound the queue so a long offline session cannot grow unbounded on disk.

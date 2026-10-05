@@ -5,6 +5,7 @@ using CosmicShore.Data;
 using CosmicShore.Utility;
 using CosmicShore.UI;
 using System.Linq;
+using UnityEngine.Serialization;
 namespace CosmicShore.Gameplay
 {
     [CreateAssetMenu(fileName = "SkimmerBoostPrismEffect",
@@ -14,11 +15,20 @@ namespace CosmicShore.Gameplay
         [SerializeField] private float addPerHit = 0.1f;
 
         [Tooltip("Multiplies the energy gained per hit when the skimmed prism is dangerous. " +
-                 "LOCKED behind the vessel's CHARGE level-5 elemental upgrade (map-gated via " +
-                 "IsUpgradeActive) - below the unlock, danger prisms grant only the base energy.")]
+                 "LOCKED behind the level-5 elemental upgrade named by dangerBonusElement " +
+                 "(map-gated via IsUpgradeActive) - below the unlock, danger prisms grant only " +
+                 "the base energy.")]
         [SerializeField] private float dangerEnergyMultiplier = 10f;
 
-        /// <summary>CHARGE -> skim energy per hit: x1 at the resting level, x2 at level 10, floored at x0.25.
+        [Tooltip("Which element's level-5 upgrade unlocks the danger bonus. AUTHORED rather than " +
+                 "hardcoded, because the element that owns skimming is a per-vessel map decision: " +
+                 "the Squirrel moved it Charge -> Time when Time took its speed abilities. The " +
+                 "sibling SkimmerChangeResourceByPrismEffectSO._dangerBonusElement is the same " +
+                 "shape. Charge is the historical default so an unauthored asset is unchanged.")]
+        [SerializeField] private Element dangerBonusElement = Element.Charge;
+
+        /// <summary>Skim energy per hit: x1 at the resting level, x2 at level 10, floored at x0.25.
+        /// The ELEMENT is authored on this field, not fixed in code - the Squirrel maps it to Time.
         /// Migrated verbatim from the retired ElementalAbilityMapSO generic
         /// multiplier (atFull 2, minMultiplier 0.25) — see
         /// Docs/ElementalAbilitySystem/ELEMENT_SCALING_UNIFICATION.md. Lives here, on the
@@ -26,7 +36,8 @@ namespace CosmicShore.Gameplay
         /// Never bound (this is a ScriptableObject, and BindElementalFloats reflects only
         /// over ElementalShipComponent MonoBehaviours), so it holds no per-vessel state.
         /// </summary>
-        [SerializeField] ElementalFloat chargeEnergyMultiplier =
+        [FormerlySerializedAs("chargeEnergyMultiplier")]
+        [SerializeField] ElementalFloat energyMultiplier =
             ElementalFloat.Multiplier(1f, 2f, Element.Charge, 0.25f);
 
         [Header("Shared Config (single source of truth)")]
@@ -49,16 +60,16 @@ namespace CosmicShore.Gameplay
 
             status.IsBoosting = true;
 
-            // CHARGE -> skim energy: the energy gained per prism-skimmer collision scales with
-            // the vessel's live Charge level via its ElementalAbilityMapSO (1x at resting level,
-            // 1x for vessels without a map or Charge entry). Per-hit snapshot; stateless SO.
-            float add = addPerHit * chargeEnergyMultiplier.EvaluateLive(status);
+            // Skim energy: the energy gained per prism-skimmer collision scales with the vessel's
+            // live level in whichever element this asset's ElementalFloat names (1x at the resting
+            // level, 1x for a vessel with no map entry for it). Per-hit snapshot; stateless SO.
+            float add = addPerHit * energyMultiplier.EvaluateLive(status);
 
-            // CHARGE level-5 'Live Wire': danger prisms grant the bonus energy multiplier only
-            // once the skimming vessel's Charge upgrade is active (below it, danger prisms pay
+            // Level-5 'Live Wire': danger prisms grant the bonus energy multiplier only once the
+            // skimming vessel's dangerBonusElement upgrade is active (below it, danger prisms pay
             // base energy - the risk stays, the 10x reward is earned).
             if (prismImpactee.Prism.prismProperties.IsDangerous
-                && status?.ElementalAbilityHandler?.IsUpgradeActive(Element.Charge) == true)
+                && status?.ElementalAbilityHandler?.IsUpgradeActive(dangerBonusElement) == true)
                 add *= dangerEnergyMultiplier;
 
             float next = status.BoostMultiplier + add;

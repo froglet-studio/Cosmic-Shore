@@ -19,6 +19,14 @@ namespace CosmicShore.Core
         bool _dirty;
         bool _saveInFlight;
 
+        /// <summary>
+        /// True when the last cloud load FAILED (as opposed to the key being missing). While set,
+        /// <see cref="_data"/> is a local snapshot or fresh defaults, never the player's real cloud
+        /// record, so uploading it could overwrite that record. Cloud writes are blocked until a
+        /// load gets a definite answer.
+        /// </summary>
+        bool _cloudLoadFailed;
+
         protected T _data;
 
         public T Data => _data;
@@ -44,7 +52,9 @@ namespace CosmicShore.Core
 
         public async Task LoadAsync(CancellationToken ct = default)
         {
-            var cloudData = await _provider.LoadAsync<T>(CloudKey, ct);
+            var loadResult = await _provider.TryLoadAsync<T>(CloudKey, ct);
+            _cloudLoadFailed = loadResult.Status == CloudLoadStatus.Failed;
+            var cloudData = loadResult.Data;
             if (cloudData != null)
             {
                 _data = cloudData;
@@ -57,7 +67,7 @@ namespace CosmicShore.Core
             }
             else
             {
-                // Cloud unavailable (offline / not signed in) or key missing - fall back
+                // Cloud failed (offline / not signed in / error) or key missing - fall back
                 // to the last-known-good local snapshot so the player still gets their
                 // profile, unlocks, episodes and settings. Cloud always wins when it
                 // answers; this branch only runs when it did not.
@@ -89,7 +99,59 @@ namespace CosmicShore.Core
             LocalCloudDataCache.Save(CloudKey, _data);
             HasPersistedData = true;
 
+            // The load failed, so _data is a local stand-in, not the cloud record. Uploading it
+            // could overwrite the real record with defaults or stale progress. Settle the question
+            // first; stay dirty (return false) until the cloud gives a definite answer.
+            if (_cloudLoadFailed)
+            {
+                switch (await TryResolveFailedLoadAsync(ct))
+                {
+                    case FailedLoadOutcome.StillBlocked: return false;
+                    case FailedLoadOutcome.AdoptedCloud: return true;   // nothing left to upload
+                }
+            }
+
             return await _provider.SaveAsync(CloudKey, _data, ct);
+        }
+
+        enum FailedLoadOutcome { StillBlocked, SafeToWrite, AdoptedCloud }
+
+        /// <summary>
+        /// Retries a load that failed earlier: <see cref="FailedLoadOutcome.SafeToWrite"/> when the
+        /// cloud confirmed there is no record, <see cref="FailedLoadOutcome.AdoptedCloud"/> when the
+        /// real record turned up and replaced the local stand-in, otherwise
+        /// <see cref="FailedLoadOutcome.StillBlocked"/>.
+        /// </summary>
+        async Task<FailedLoadOutcome> TryResolveFailedLoadAsync(CancellationToken ct)
+        {
+            // Offline: nothing to ask. Stay quiet - the debounce loop calls this every few seconds.
+            if (!_provider.IsAvailable) return FailedLoadOutcome.StillBlocked;
+
+            var retry = await _provider.TryLoadAsync<T>(CloudKey, ct);
+            switch (retry.Status)
+            {
+                case CloudLoadStatus.Missing:
+                    // The cloud answered: there is no record to protect. Writing is safe.
+                    _cloudLoadFailed = false;
+                    return FailedLoadOutcome.SafeToWrite;
+
+                case CloudLoadStatus.Loaded:
+                    // The real record exists. Cloud wins, exactly as on a normal load; the pending
+                    // local changes were made on top of a stand-in and are dropped rather than
+                    // written over it.
+                    Debug.LogWarning($"[{GetType().Name}] Cloud record for '{CloudKey}' loaded after an earlier failure - adopting it instead of uploading local data.");
+                    _cloudLoadFailed = false;
+                    _dirty = false;
+                    _data = retry.Data;
+                    HasPersistedData = true;
+                    OnAfterLoad(_data);
+                    LocalCloudDataCache.Save(CloudKey, _data);
+                    RaiseDataChanged();
+                    return FailedLoadOutcome.AdoptedCloud;
+
+                default:
+                    return FailedLoadOutcome.StillBlocked;   // still failing
+            }
         }
 
         /// <summary>
@@ -99,6 +161,9 @@ namespace CosmicShore.Core
         {
             _data = new T();
             OnAfterLoad(_data);
+            // A deliberate wipe: the caller WANTS the cloud record replaced, so a failed earlier
+            // load must not turn it into "adopt the old record".
+            _cloudLoadFailed = false;
             await SaveAsync(ct);
             RaiseDataChanged();
         }

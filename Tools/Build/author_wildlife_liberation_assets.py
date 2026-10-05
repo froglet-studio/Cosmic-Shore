@@ -264,8 +264,8 @@ RUNTIME_CELL_PATH = "Assets/_SO_Assets/Cell Data/Runtime Cell Data.asset"
 with open(os.path.join(ROOT, RUNTIME_CELL_PATH), encoding="utf-8") as fh:
     runtime_cell = fh.read()
 if "OnFaunaKilled:" not in runtime_cell:
-    anchor = re.search(r"^  OnFaunaHeartsChanged: \{[^}]*\}\n", runtime_cell, re.M)
-    assert anchor, "OnFaunaHeartsChanged not found in the cell runtime SO"
+    anchor = re.search(r"^  OnFaunaWaveSpawned: \{[^}]*\}\n", runtime_cell, re.M)
+    assert anchor, "OnFaunaWaveSpawned not found in the cell runtime SO"
     runtime_cell = runtime_cell.replace(
         anchor.group(0),
         anchor.group(0) +

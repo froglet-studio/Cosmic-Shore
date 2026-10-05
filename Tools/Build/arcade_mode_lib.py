@@ -78,6 +78,7 @@ VESSELS = {
     "Serpent":  "8a288448ab55edc46ac841a5f2e53d83",
     "Sparrow":  "7b7053dd065edb54baa3b831b90f4985",
     "Scarab":   "b136d82d275e0f8ea1feef29f0d416a4",
+    "Butterfly": "fe4abf38579d7f84baf16a532ed4a015",
 }
 
 # VesselClassType enum ids (Assets/_Scripts/Data/Enums/VesselClassType.cs) - a card's
@@ -85,6 +86,7 @@ VESSELS = {
 VESSEL_CLASS_ID = {
     "Manta": 1, "Dolphin": 2, "Rhino": 3, "Urchin": 4, "Grizzly": 5, "Squirrel": 6,
     "Serpent": 7, "Termite": 8, "Falcon": 9, "Shrike": 10, "Sparrow": 11, "Scarab": 12,
+    "Butterfly": 13,
 }
 
 # ── Arcade card art shared by the pure-aggression party games (Rampage, Dog Fight, Bends) ──
@@ -283,6 +285,19 @@ class Generator:
         self.emit(PROGRESSION, prog)
 
     def register_build_scene(self, after_scene: str, scene: str, scene_guid: str):
+        """Add the mode's scene to `ProjectSettings/EditorBuildSettings.asset`.
+
+        ⚠ THAT FILE IS NOT IN THE ASSETDATABASE, so a Unity Editor that is already open
+        will never re-read it. The registration is correct on disk, `check_gamelist_scenes.py`
+        passes, the card renders — and pressing it fails with *"has not been added to the build
+        settings scenes in build list"*, about a list that on disk contains it. Worse, the next
+        project-settings save writes the Editor's stale in-memory list back over this file and
+        silently deletes the entry.
+
+        `BuildSceneListReconciler` repairs this on every domain reload, so pulling the branch
+        or touching a script is enough; **FrogletTools > Game Modes > Reconcile Build Scene
+        List** is the same check run deliberately, with a report.
+        """
         build = self.read_current(BUILD_SETTINGS)
         if f"{scene}.unity" not in build:
             anchor = re.search(

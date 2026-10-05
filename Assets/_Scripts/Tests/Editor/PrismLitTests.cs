@@ -232,6 +232,59 @@ namespace CosmicShore.Tests
             }
         }
 
+        /// <summary>
+        /// The Echo Sight paints a super-shield inside the own cone in the danger colour, because a
+        /// crystal blast that reaches one ENDS there. The bit that says "super-shielded" travels
+        /// per PRISM (a super-shielded prism wears the plain team material, so no material stamp
+        /// can carry it), and four links have to hold for it to reach the pixel. Each one fails
+        /// silently on its own — the prism simply stops glowing red — so each is asserted.
+        /// </summary>
+        [Test]
+        public void TheSuperShieldMarkReachesTheSightFromTheShieldToTheGraph()
+        {
+            const string PropertiesPath = "Assets/_Scripts/Controller/ECS/Rendering/PrismRenderProperties.cs";
+            const string ShieldPath = "Assets/_Scripts/Controller/Vessel/PrismStellatedOctahedronShield.cs";
+
+            // 1. the ECS override targets the exact property name the graphs declare.
+            Assert.IsTrue(ReadText(PropertiesPath).Contains("[MaterialProperty(\"_PrismSuperShielded\")]"),
+                "PrismSuperShieldedOverride no longer targets _PrismSuperShielded, so the per-prism bit " +
+                "never reaches the shader and no super-shield in the Echo Sight reads as a blocker.");
+
+            // 2. the shield writes it in BOTH directions — a bit set and never cleared would paint a
+            //    prism whose shield is gone as a blocker it no longer is.
+            string shield = ReadText(ShieldPath);
+            Assert.IsTrue(shield.Contains("SetSuperShieldMark(true)") && shield.Contains("SetSuperShieldMark(false)"),
+                ShieldPath + " must set the super-shield mark when the stellation engages AND clear it " +
+                "when it drops.");
+
+            foreach (var path in PrismGraphs)
+            {
+                string graph = ReadText(path);
+
+                // 3. the property is HYBRID PER INSTANCE. Per-material or a global, no ECS override
+                //    can reach it and every prism reads 0.
+                string prop = GraphBlock(graph, "\"_PrismSuperShielded\"");
+                Assert.IsNotNull(prop, $"{path} declares no _PrismSuperShielded property — run " +
+                    "Tools/Shaders/wire_prism_destruction_sight.py.");
+                Assert.IsTrue(prop.Contains("\"hlslDeclarationOverride\": 3"),
+                    $"{path}'s _PrismSuperShielded is not Hybrid Per Instance, so the per-prism bit " +
+                    "cannot reach it.");
+
+                // 4. the sight node has a SuperShielded input and something is WIRED to it. An
+                //    unwired Custom Function slot reads its default 0 — "nothing is super-shielded".
+                string node = GraphBlock(graph, "\"m_FunctionName\": \"PrismDestructionSight\"");
+                Assert.IsNotNull(node, $"{path} no longer carries the PrismDestructionSight node.");
+                string nodeId = Regex.Match(node, @"""m_ObjectId"": ""([0-9a-f]{32})""").Groups[1].Value;
+                string slot = GraphBlock(graph, "\"m_ShaderOutputName\": \"SuperShielded\"");
+                Assert.IsNotNull(slot, $"{path}'s sight node has no SuperShielded input slot.");
+                string slotId = Regex.Match(slot, @"""m_Id"": (\d+)").Groups[1].Value;
+                Assert.IsTrue(Regex.IsMatch(graph,
+                        @"""m_InputSlot"":\s*\{\s*""m_Node"":\s*\{\s*""m_Id"":\s*""" + nodeId +
+                        @"""\s*\},\s*""m_SlotId"":\s*" + slotId + @"\s*\}"),
+                    $"{path} has a SuperShielded slot on the sight node with nothing wired into it.");
+            }
+        }
+
         [Test]
         public void ThemeManagerStampsEveryPrismTierWithItsDomain()
         {

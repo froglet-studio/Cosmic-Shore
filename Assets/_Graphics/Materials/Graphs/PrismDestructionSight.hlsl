@@ -176,6 +176,51 @@
 #endif
 
 // -----------------------------------------------------------------------------
+// BLOCKERS — a super-shield inside YOUR cone glows in the danger colour.
+// -----------------------------------------------------------------------------
+//
+// A crystal blast that reaches a SUPER-SHIELDED prism ends there: PrismSpatialIndex
+// .ResolveExplosionHit sets shouldContinue = false and AOEConicExplosion destroys the blast on
+// the frame it gets the answer, whatever domain the shield wears. So the aim has two things to
+// say, not one — "this is what you will take" and "this is where you will be STOPPED" — and the
+// second is the one a pilot pays for missing. It speaks in the platform's danger colour (the
+// palette's EnvironmentColors.Danger, published by PrismLit as _PrismSightBlockerColor)
+// because that is the one colour this game already uses to mean "touching this costs you".
+//
+// Borrowing a tier's colour is deliberate HERE and nowhere else in this file: the own sight
+// stays out of the palette's language so it can never be read as mass state, and this is the
+// single case where the mark IS a statement about mass state — the prism is a hazard to the
+// weapon you are aiming. So it TINTS toward the danger colour (a super-shield's own hue would
+// otherwise mix with the red into a purple that means nothing) and then adds a glow on top.
+//
+// The fill is FLAT (Strength, not the edge-weighted curve): the edge weighting draws the cone's
+// silhouette onto the mass, and a blocker deep in the core is exactly as blocking as one on the
+// rim. The bit arrives as the per-instance _PrismSuperShielded (Prism.SetSuperShieldMark, a
+// state write at the shield's engage/drop, never per frame).
+//
+// OWN SIGHT ONLY. A rival's cone does not flag blockers: a red mark in someone else's aim tells
+// you about their problem in the colour that means yours.
+#ifndef PRISM_SIGHT_BLOCKER_COLOR
+#define PRISM_SIGHT_BLOCKER_COLOR float3(1.0, 0.06, 0.05)
+#endif
+
+// How far the prism's own colour is pulled toward the danger colour (0 = additive only).
+#ifndef PRISM_SIGHT_BLOCKER_TINT
+#define PRISM_SIGHT_BLOCKER_TINT 0.75
+#endif
+
+// How hard the danger glow drives on top of the tint. Above the own sight's gain on purpose:
+// a blocker has to out-shout the mass around it, not sit level with it.
+#ifndef PRISM_SIGHT_BLOCKER_GAIN
+#define PRISM_SIGHT_BLOCKER_GAIN 0.9
+#endif
+
+// (danger rgb, published) — PrismLit writes it while the sight is held, from the palette's own
+// danger colour so the mark cannot drift from the danger tier. w = 0 means "never published"
+// (a tool scene with no theme), and the #define above is used instead.
+float4 _PrismSightBlockerColor;
+
+// -----------------------------------------------------------------------------
 // PEER SIGHTS — the other pilots' cones, tinted by their domain.
 // -----------------------------------------------------------------------------
 
@@ -382,6 +427,7 @@ void PrismDestructionSight_float(
     float  Strength,    // OWN sight: highlight fade, 0-1
     float3 BaseColor,
     float  Domain,      // THIS PRISM's domain (a Domains value; 0 = it has none). Per-material.
+    float  SuperShielded, // 1 while THIS prism wears the super-shield. Per-instance (_PrismSuperShielded).
     out float3 Color)
 {
     // Composes rather than overwrites: a fragment outside every volume, with no sight held
@@ -416,6 +462,17 @@ void PrismDestructionSight_float(
         float own = PrismSightFill(samplePos, Apex, Axis, Gape, Params) * Strength;
         if (own > 0.0)
         {
+            // A blocker: the blast ends here. Flat fill, danger colour — see BLOCKERS above.
+            // Everything else takes the unchanged expression below, bit for bit.
+            if (SuperShielded > 0.5)
+            {
+                float3 blocker = _PrismSightBlockerColor.w > 0.0
+                    ? _PrismSightBlockerColor.xyz : PRISM_SIGHT_BLOCKER_COLOR;
+                Color = lerp(BaseColor, blocker, PRISM_SIGHT_BLOCKER_TINT * Strength)
+                        + blocker * (Strength * PRISM_SIGHT_BLOCKER_GAIN);
+                return;
+            }
+
             Color = BaseColor + PRISM_SIGHT_COLOR * (own * PRISM_SIGHT_GAIN);
             return;
         }

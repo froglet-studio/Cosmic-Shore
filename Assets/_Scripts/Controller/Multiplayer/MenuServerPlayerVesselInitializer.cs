@@ -36,7 +36,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] Domains menuVesselDomain = Domains.Jade;
 
         [Header("Freestyle AI Companions")]
-        [Tooltip("Pilot skill (0..1) for AI companions released by the freestyle Lifeform Matrix " +
+        [Tooltip("Pilot skill (0..1) for AI companions released by the freestyle Spawn Matrix " +
                  "toy. The menu has no intensity to derive one from, so it is authored here.")]
         [SerializeField, Range(0f, 1f)] float companionSkill = 0.5f;
 
@@ -210,6 +210,22 @@ namespace CosmicShore.Gameplay
                     return;
                 }
 
+                // ASK BEFORE DESTROYING. Step 2 despawns the pilot's current ship and step 3
+                // builds the next one — and step 3 can fail (an unregistered class, a prefab
+                // whose VesselStatus claims a different type, no NetworkObject), at which point
+                // the pilot has NO vessel: no hull, no camera target, input still paused by the
+                // swap. The player reads that as the game having FROZEN, and the console says
+                // only "No prefab for vessel type X" — a sentence about an asset, in a session
+                // that was about pressing a button. Refusing here costs the pilot nothing: they
+                // keep the ship they were flying and the changer is free to try another.
+                if (!CanSpawnVesselType(targetClass))
+                {
+                    CSDebug.LogError(
+                        $"[MenuServerVesselInit] Refusing the swap to {targetClass}: no spawnable " +
+                        "prefab. The pilot keeps their current vessel.");
+                    return;
+                }
+
                 // Inherit the outgoing ship's velocity so the swap is seamless - the new vessel
                 // continues at the same speed instead of the post-init dead stop (position + orientation
                 // are inherited via SetPose below). Captured before despawn while the old vessel is valid.
@@ -287,7 +303,7 @@ namespace CosmicShore.Gameplay
         int _aiCompanionCount;
 
         /// <summary>
-        /// Release an AI-piloted vessel into the menu cell - the freestyle Lifeform Matrix's
+        /// Release an AI-piloted vessel into the menu cell - the freestyle Spawn Matrix's
         /// VESSELS branch. Host does it directly; a party client asks the host over the same
         /// request/handler shape as <see cref="RequestSwap"/>, so the bot exists once, on the
         /// server, and replicates to everyone (a locally-spawned one would be invisible to the
@@ -330,7 +346,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            if (!vesselPrefabContainer.TryGetShipPrefab(vesselClass, out _))
+            if (!vesselPrefabContainer.TryGetShipPrefab(vesselClass, out _, reportMissing: false))
             {
                 CSDebug.LogError($"[MenuServerVesselInit] No prefab for vessel type {vesselClass} - companion not released.");
                 return;

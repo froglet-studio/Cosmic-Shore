@@ -151,6 +151,10 @@ namespace CosmicShore.Utility
                 return Refuse("the shield mesh or its host was null");
             if (!PrismRenderService.Enabled)
                 return Refuse($"PrismRenderService is off [{PrismRenderService.StatusLine()}]");
+            // Play-mode exit / quit: a shield broken by the teardown cascade must not re-create
+            // the DontDestroyOnLoad host (it would leak as [PrismShieldShatter]).
+            if (PrismRenderService.IsQuitting)
+                return Refuse("the session is shutting down (play-mode exit / quit)");
             if (Time.unscaledTime < s_suspendedUntil)
                 return Refuse($"a batch spawn failed within the last {SuspendSeconds:F0}s, so " +
                               "shatter overlays are on a cooling-off hold");
@@ -236,6 +240,7 @@ namespace CosmicShore.Utility
         static void EnsureHost()
         {
             if (s_host != null) return;
+            if (PrismRenderService.IsQuitting || !Application.isPlaying) return;
             // HideInHierarchy, NOT HideAndDontSave — same reasoning as the render
             // service's visibility flush host (play-mode-exit cleanup applies).
             var go = new GameObject("[PrismShieldShatter]") { hideFlags = HideFlags.HideInHierarchy };

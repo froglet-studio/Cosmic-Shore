@@ -39,6 +39,10 @@ namespace CosmicShore.Gameplay
         private CancellationTokenSource _seedPollCts;
         private readonly NetworkVariable<int> _netTrackSeed = new(0);
 
+        /// <summary>The replicated track seed (0 until the server has drawn one). Read-only; the
+        /// Skim Race AI benchmark stamps it into every race record.</summary>
+        public int TrackSeed => _netTrackSeed.Value;
+
         protected override bool UseGolfRules => true;
         protected override bool UseSceneReloadForReplay => true;
 

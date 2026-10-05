@@ -12,8 +12,7 @@ namespace CosmicShore.Tests
 {
     /// <summary>
     /// ElementalComebackSystem wiring tests — validates that a system reaches its SUBSCRIBED
-    /// state however it was created, and that every mode gets a score source that is actually
-    /// live during play.
+    /// state however it was created, and that its deficit is read from the mode's own score.
     ///
     /// WHY THIS MATTERS:
     /// Both failure modes here are silent. (1) AddComponent runs OnEnable synchronously, so the
@@ -153,47 +152,99 @@ namespace CosmicShore.Tests
 
         #endregion
 
-        #region Per-mode score sources
+        #region The deficit IS the score
 
-        // Every mode whose Score is written only at game end needs the stat it accumulates
-        // DURING play, or the deficit reads a flat zero for the whole match.
-        static readonly object[] LiveSourceCases =
+        /// <summary>
+        /// A rule whose domain values are set directly, so the tests can prove the comeback reads
+        /// <see cref="ScoringRuleSO.DomainValue"/> without building IRoundStats fixtures.
+        /// </summary>
+        class FixedDomainValueRule : ScoringRuleSO
         {
-            new object[] { GameModes.Joust, ElementalComebackSystem.ScoreDifferenceSource.Jousts },
-            new object[] { GameModes.BroodRush, ElementalComebackSystem.ScoreDifferenceSource.Goals },
-            new object[] { GameModes.SkimRace, ElementalComebackSystem.ScoreDifferenceSource.CrystalsCollected },
-            new object[] { GameModes.Scurry, ElementalComebackSystem.ScoreDifferenceSource.CrystalsCollected },
-            new object[] { GameModes.AstroLeague, ElementalComebackSystem.ScoreDifferenceSource.Goals },
-            new object[] { GameModes.Rampage, ElementalComebackSystem.ScoreDifferenceSource.PrismsDestroyed },
-            new object[] { GameModes.Cleave, ElementalComebackSystem.ScoreDifferenceSource.PrismsDestroyed },
-            new object[] { GameModes.WildlifeLiberation, ElementalComebackSystem.ScoreDifferenceSource.LifeformsKilled },
-            new object[] { GameModes.DogFight, ElementalComebackSystem.ScoreDifferenceSource.CombatPoints },
-            new object[] { GameModes.ScarabScramble, ElementalComebackSystem.ScoreDifferenceSource.Goals },
-            new object[] { GameModes.Tollway, ElementalComebackSystem.ScoreDifferenceSource.Goals },
-        };
-
-        [TestCaseSource(nameof(LiveSourceCases))]
-        public void DefaultSourceFor_UsesTheModesLiveStat(
-            GameModes mode, ElementalComebackSystem.ScoreDifferenceSource expected)
-        {
-            Assert.AreEqual(expected, ElementalComebackSystem.DefaultSourceFor(MakeGameData(mode)),
-                $"{mode} assigns Score only at game end, so the comeback deficit must read its live stat.");
+            public readonly Dictionary<Domains, int> Values = new();
+            public override int DomainValue(GameDataSO gameData, Domains domain) =>
+                Values.TryGetValue(domain, out var v) ? v : 0;
+            public override bool IsObjectiveReached(GameDataSO gameData, out Domains winner)
+            {
+                winner = Domains.Blue;
+                return false;
+            }
+            public override void AssignScores(GameDataSO gameData, Domains winner, float finishTime) { }
+            public override List<ScoreResult> BuildResults(GameDataSO gameData) => new();
+            public override ScoreReveal BuildReveal(GameDataSO gameData, IRoundStats localStats, bool didWin) => default;
         }
 
         [Test]
-        public void DefaultSourceFor_LegacyTimeScoredModesKeepScore()
+        public void DomainScore_IsTheRulesDomainValue()
         {
-            // Cellular Duel / Wildlife Blitz co-op / Freestyle accumulate Score live through
-            // TimePlayedScoring, so Score is the honest source there.
-            Assert.AreEqual(ElementalComebackSystem.ScoreDifferenceSource.Score,
-                ElementalComebackSystem.DefaultSourceFor(MakeGameData(GameModes.OnlineDuelForTheCell)));
+            // The regression this replaces: the comeback read an AUTHORED stat selector that a
+            // cloned scene carried over from its donor, so eight modes caught up on a stat they
+            // did not score. It now reads the one function the score itself is read through.
+            var gameData = MakeGameData(GameModes.Bends);
+            var rule = Track(ScriptableObject.CreateInstance<FixedDomainValueRule>());
+            rule.Values[Domains.Jade] = 9;
+            rule.Values[Domains.Ruby] = 3;
+            gameData.ScoringRule = rule;
+
+            Assert.AreEqual(9f, ElementalComebackSystem.DomainScore(gameData, Domains.Jade));
+            Assert.AreEqual(3f, ElementalComebackSystem.DomainScore(gameData, Domains.Ruby));
         }
 
         [Test]
-        public void DefaultSourceFor_NullGameDataFallsBackToScore()
+        public void IsHigherBetter_IgnoresTheRulesGolfFlag()
         {
-            Assert.AreEqual(ElementalComebackSystem.ScoreDifferenceSource.Score,
-                ElementalComebackSystem.DefaultSourceFor(null));
+            // A rule's GolfRules is about the FINAL Score (finish time / sentinel). Its
+            // DomainValue is what ResolveWinner MAXIMIZES, so it is higher-is-better during play
+            // even in golf-scored races (SkimRace, Joust, every gate race).
+            var gameData = MakeGameData(GameModes.SkimRace);
+            gameData.ScoringRule = Track(ScriptableObject.CreateInstance<FixedDomainValueRule>());
+
+            Assert.IsTrue(ElementalComebackSystem.IsHigherBetter(gameData, legacyGolfRules: true));
+        }
+
+        [Test]
+        public void IsHigherBetter_LegacyFallbackHonoursGolf()
+        {
+            var gameData = MakeGameData(GameModes.OnlineDuelForTheCell);
+            Assert.IsFalse(ElementalComebackSystem.IsHigherBetter(gameData, legacyGolfRules: true));
+            Assert.IsTrue(ElementalComebackSystem.IsHigherBetter(gameData, legacyGolfRules: false));
+        }
+
+        [Test]
+        public void DomainScore_NullGameDataIsZero()
+        {
+            Assert.AreEqual(0f, ElementalComebackSystem.DomainScore(null, Domains.Jade));
+        }
+
+        /// <summary>
+        /// The structural half of the fix: the component must carry NO serialized setting that
+        /// could choose a stat. Every scene serializes this component, and a scene cloned from a
+        /// donor keeps the donor's values - so any authorable selector here is the same bug
+        /// waiting for its next clone. If a genuinely per-mode comeback knob is ever needed, it
+        /// belongs on the mode's ScoringRuleSO (or its SO_ArcadeGame card), where the score lives.
+        /// </summary>
+        [Test]
+        public void Component_SerializesNoStatSelector()
+        {
+            var allowed = new HashSet<string>
+            {
+                "comebackProfile", "updateInterval", "comebackAudioCooldown", "debugLogging",
+            };
+
+            const System.Reflection.BindingFlags flags = System.Reflection.BindingFlags.Instance
+                | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic;
+
+            foreach (var field in typeof(ElementalComebackSystem).GetFields(flags))
+            {
+                bool serialized = field.IsPublic
+                    ? !field.IsNotSerialized
+                    : field.IsDefined(typeof(SerializeField), false);
+                if (!serialized) continue;
+
+                Assert.IsTrue(allowed.Contains(field.Name),
+                    $"ElementalComebackSystem serializes '{field.Name}'. A scene-authored comeback " +
+                    "setting is how eight modes shipped catching up on another mode's stat - the " +
+                    "deficit must come from the mode's ScoringRuleSO.DomainValue, not from the scene.");
+            }
         }
 
         #endregion

@@ -1374,7 +1374,7 @@ namespace CosmicShore.Gameplay
                 // A discovered (not inherited) centre marks a FOUNDER - it takes on the colony
                 // heartbeat. Invoke (not a coroutine) so Die's StopAllCoroutines can't silence
                 // the report while the husk lingers. lineage=False names a TOY planting (the
-                // Lifeform Matrix stations spawn AssembledFlora clones with no species config)
+                // Spawn Matrix stations spawn AssembledFlora clones with no species config)
                 // - every founder is an independent lattice FRAME, and frames that were never
                 // projected from one another cannot mate, so knowing where each frame came
                 // from is the first question of any "colonies don't match up" report.
@@ -2004,7 +2004,7 @@ namespace CosmicShore.Gameplay
             // instead of the old hard-coded 200m huddle around the crystal. Dispersed,
             // domain-coherent flora clusters are what give fauna schools of different
             // domains genuinely different anti-domain density targets. A pinned position
-            // (the Lifeform Matrix toy's spawn-here stations) wins over dispersal.
+            // (the Spawn Matrix toy's spawn-here stations) wins over dispersal.
             if (TryGetPlantPositionOverride(out var pinned))
             {
                 transform.position = pinned;
@@ -2054,7 +2054,7 @@ namespace CosmicShore.Gameplay
             // without the reset the prism lands at spindle.pos + spindle.rot * worldPos. The
             // legacy code only worked because a spawner flora ran this while still parked at
             // the cell centre (world ~zero, stale local ~zero); any plant created at a real
-            // position - an octagon daughter at her centre, a Lifeform Matrix station - had
+            // position - an octagon daughter at her centre, a Spawn Matrix station - had
             // its seed prism thrown ~2x its own distance from the origin, where the octagon
             // ownership gate then declined every site and the plant never grew.
             // (ExecuteGrowOrder always did this correctly; this path just never copied it.)

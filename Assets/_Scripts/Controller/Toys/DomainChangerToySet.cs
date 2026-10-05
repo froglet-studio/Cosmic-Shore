@@ -70,12 +70,6 @@ namespace CosmicShore.Gameplay
             // than as a thin hoop. Deliberately a sphere: it makes no claim about direction.
             ToyFactory.AddSphereBody(slot.BodyHolder, BodyRadius * HubBodyFraction, c,
                 ToyFactory.SwitchMaterial(ToyFactory.Theme(Context), ToySwitchSignal.Domain, slot.Option));
-
-            if (slot.Label)
-            {
-                slot.Label.text = LabelFor(slot.Option);
-                slot.Label.color = c;
-            }
         }
 
         Color DomainColor(Domains d) => ToyFactory.DomainAccentColor(Context, d);

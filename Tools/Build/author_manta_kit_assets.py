@@ -124,13 +124,19 @@ FILES = {}
 def build_bloom_prefab() -> str:
     src = open(os.path.join(ROOT, "Assets/_Prefabs/Projectile/AOEExplosion.prefab")).read()
     out = src.replace("m_Name: AOEExplosion", "m_Name: AOEMantaBloom")
-    stale = ("  explosionShipEffectsSO: []\n"
-             "  explosionPrismEffectsSO: []\n")
-    assert stale in out, "AOEExplosion.prefab ExplosionImpactor stale keys moved - re-derive"
-    out = out.replace(
-        stale,
+    # The bloom is the destructive sphere wearing a different effect container. The donor now
+    # authors one of its own (the skyburst's 20-point blast report), and Unity wraps a long
+    # reference over two lines, so the swap is a REGEX over the whole key rather than a literal
+    # match on what the donor happened to say the day this was written.
+    pattern = re.compile(
+        r"^  explosionImpactorDataContainer: \{fileID: \d+, guid: [0-9a-f]+,?\s*\n?\s*type: 2\}\n",
+        re.M)
+    assert pattern.search(out), (
+        "AOEExplosion.prefab no longer authors an explosionImpactorDataContainer - the bloom "
+        "is a copy of that prefab and cannot re-point what is not there. Re-derive.")
+    out = pattern.sub(
         "  explosionImpactorDataContainer: {fileID: 11400000, guid: %s, type: 2}\n"
-        % BLOOM_CONTAINER_GUID)
+        % BLOOM_CONTAINER_GUID, out, count=1)
     assert out.count("explosionImpactorDataContainer") == 1
     return out
 
@@ -140,8 +146,9 @@ FILES["Assets/_Prefabs/Projectile/AOEMantaBloom.prefab"] = (build_bloom_prefab()
 # ── Effect + container assets ────────────────────────────────────────────────
 # OWNED ELSEWHERE: `debuffMagnitude` belongs to the fleet's combat drain table
 # (Tools/Build/author_combat_debuff_magnitudes.py), which derives every drain from the price
-# Broadside puts on its verb - a bloom is a 12-point Debuff over TWO elements, so it is -1.0 per
-# element where the four-element cone is -0.5. This generator authors the whole file, so it must
+# Broadside puts on its verb at TEN POINTS TO THE PETAL, per element - a bloom is a 12-point
+# Debuff, so -0.12 on each of the two elements it touches (the four-element cone takes the same
+# -0.12 on each of four). This generator authors the whole file, so it must
 # READ that value back rather than restating it: two generators owning one field means whichever
 # ran last wins, and the loser's --check reports a drift belonging to nobody's change. The
 # consequence, stated: this generator's --check can no longer catch a hand-edit of that one

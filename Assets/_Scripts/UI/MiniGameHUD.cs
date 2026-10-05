@@ -330,7 +330,11 @@ namespace CosmicShore.UI
             // OnClickMultiplayerPauseButton pauses only the local player's input, so PauseSystem
             // alone would let a second Escape re-invoke the button on an already-open panel.
             if (CosmicShore.Core.PauseSystem.Paused) return;
-            if (gameData?.LocalPlayer?.InputStatus?.Paused == true) return;
+            // `?.` on an interface reference skips Unity's destroyed-object check, so a Player torn
+            // down by a replay's scene reload passed it and threw every frame. Test it as an Object.
+            var localPlayer = gameData != null ? gameData.LocalPlayer : null;
+            if (localPlayer is UnityEngine.Object lpo && !lpo) return;
+            if (localPlayer?.InputStatus?.Paused == true) return;
             if (!OverviewGesture.RequestedThisFrame()) return;
 
             // The cached field, never ResolveVolumePauseButton(): that falls back to a
@@ -421,6 +425,12 @@ namespace CosmicShore.UI
                     // is mine next" - the gates are deliberately all neutral, so nothing in the
                     // shared world says whose turn a ring is.
                     return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_Switchback");
+                case GameModes.Waystation:
+                    // Same provider, and it matters MORE here than in any other gate race: a
+                    // cluster is a knot of identical rings a few hundred units across, and the
+                    // one you owe is the only thing telling you which way out of the knot your
+                    // next FOLD is aimed from.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_Waystation");
                 case GameModes.Headlong:
                     // Same provider: it asks whichever GateRaceController is in the scene, and on
                     // a lapped circuit "your next gate" is the only thing that distinguishes two
@@ -463,6 +473,19 @@ namespace CosmicShore.UI
                     // crystal is the Kabloom trigger — the "cash in now?" half of the mode's
                     // one decision, and exactly what the arrow should point at.
                     return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Bloomrush");
+                case GameModes.Dustup:
+                    // The Bends' provider: the nearest pilot this player may dust. The domain
+                    // check is the whole point - the dust spares teammates - and a duel between
+                    // the fleet's two slowest-turning hulls is won by whoever FINDS the other.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Dustup");
+                case GameModes.Tapestry:
+                    // The same provider, answering the RAID half of the mode: the nearest
+                    // opposing pilot is where the freshest opposing paint is, because a pilot's
+                    // wake is laid behind them. The PAINT half needs no arrow - you paint where
+                    // you are.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Tapestry");
+                // Sirocco deliberately has NO arrow, like Cleave: the forest rings the whole
+                // cell, so "where is the thing to erode" has no single answer worth pointing at.
                 default:
                     return null;
             }

@@ -254,29 +254,27 @@ namespace CosmicShore.Gameplay
         {
             if (settings == null) return;
 
+            // EVERY bot gets a trigger finger, whatever it spawned in: the arena pilot swap
+            // (PilotSwap) can hand a bot a Scarab or an Urchin mid-match, so which trigger to pull
+            // is resolved per sample from the hull the bot is flying NOW (below), never latched here.
             foreach (var p in gameData.Players)
             {
                 if (p == null || !p.IsInitializedAsAI) continue;
-                var vesselTf = p.Vessel?.Transform;
-                if (vesselTf == null) continue;
-
-                var captured = p;
-                var juke = vesselTf.GetComponent<ScarabJukeController>();
-                var handler = vesselTf.GetComponent<R_VesselActionHandler>();
-                if (juke == null && handler == null) continue;
-
-                bool isUrchin = captured.Vessel?.VesselStatus?.VesselType == VesselClassType.Urchin;
-                if (juke == null && !isUrchin) continue;
-
-                _triggerRoutines.Add(StartCoroutine(TriggerRoutine(captured, juke, isUrchin ? handler : null)));
+                _triggerRoutines.Add(StartCoroutine(TriggerRoutine(p)));
             }
         }
 
         /// <summary>
         /// One bot's trigger finger. Sampled on a slow clock rather than per frame, and it exits
         /// the moment the match is decided or the vessel is gone.
+        ///
+        /// <para>The hull is read LIVE every sample. It used to be captured once at arm time, and
+        /// after a pilot swap that captured hull was the one a HUMAN now flew - so an Urchin a
+        /// player had just taken kept firing its spikes on the bot's clock. A sample also does
+        /// nothing unless the autopilot is flying the hull, which is the same rule stated a
+        /// second way.</para>
         /// </summary>
-        IEnumerator TriggerRoutine(IPlayer self, ScarabJukeController juke, R_VesselActionHandler spikes)
+        IEnumerator TriggerRoutine(IPlayer self)
         {
             var wait = new WaitForSeconds(Mathf.Max(0.05f, settings.aiFireSampleSeconds));
             IPlayer rival = null;
@@ -286,8 +284,18 @@ namespace CosmicShore.Gameplay
             {
                 yield return wait;
 
-                var selfTf = self.Vessel?.Transform;
+                var vessel = self.Vessel;
+                var selfTf = vessel?.Transform;
                 if (selfTf == null) yield break;
+
+                var status = vessel.VesselStatus;
+                if (status == null || !status.AutoPilotEnabled) continue;
+
+                var juke = selfTf.GetComponent<ScarabJukeController>();
+                var spikes = status.VesselType == VesselClassType.Urchin
+                    ? selfTf.GetComponent<R_VesselActionHandler>()
+                    : null;
+                if (juke == null && spikes == null) continue;
 
                 if (Time.time >= nextRetarget || !IsLiveOpponent(rival, self))
                 {

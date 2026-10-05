@@ -119,6 +119,10 @@ namespace CosmicShore.Gameplay
         // climb every frame a target loiters in the cone. Only vessels that passed the domain /
         // friendly-fire gate are recorded, so the count is "pilots this blast actually debuffed",
         // not "pilots it overlapped".
+        //
+        // It is also the GATE on vessel-effect dispatch, not only the tally - see AcceptImpactee.
+        // A blast lives far longer than the combat-hit latch's window, so nothing else can stop
+        // one detonation paying a re-entering pilot twice.
         private HashSet<int> _vesselsHit;
 
         public bool IsBatchProcessing => _useBatchProcessing;
@@ -526,8 +530,19 @@ namespace CosmicShore.Gameplay
                     // friendly-fire gate has been caught by this blast whether or not the firing
                     // vessel happens to author any vessel effects, and the tally is a report of the
                     // blast's reach, not of one container's wiring.
+                    //
+                    // ONE BLAST PAYS A VICTIM ONCE, and the ledger is the GATE rather than only the
+                    // tally. A blast is a trigger that GROWS for its whole duration - three seconds
+                    // on the skyburst's destructive sphere - so a pilot who is swept up, flies out
+                    // and turns back in re-enters the same detonation and raises OnTriggerEnter
+                    // again. VesselCombatHitLatch cannot answer that: its window is half a second,
+                    // which is the anti-spam floor between two DIFFERENT rockets and is deliberately
+                    // much shorter than a blast's life, so past it the second entry would land the
+                    // debuff and the points a second time for one shot. The three missile TIERS are
+                    // the other question and are a separate blast instance each; the latch folds
+                    // those onto one window and pays only the closest.
                     _vesselsHit ??= new HashSet<int>(4);
-                    _vesselsHit.Add(vesselImpactee.Vessel.Transform.GetInstanceID());
+                    if (!_vesselsHit.Add(vesselImpactee.Vessel.Transform.GetInstanceID())) break;
 
                     if (!explosionImpactorDataContainer) return;
                     var vesselExplosionEffects = explosionImpactorDataContainer.vesselExplosionEffects;

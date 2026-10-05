@@ -14,15 +14,15 @@ the vector flight model that fixes it, and the numbers.
 
 | | |
 |---|---|
-| Input (gamepad) | **Left trigger**, analog. `singleTriggerDrift: 1` on the prefab, so LT's 0→1 travel is remapped across the whole 0→2 range: no-drift → single → sharp on one trigger |
-| Input (touch) | `OnlyLeftStickAction (12)` → binary, smoothed by `DRIFT_EASE_SPEED` (12/s ≈ 83 ms ramp) so a tap still reads as an analog pull |
-| Tier 1 | `SquirrelDriftAction` — rotation ×**1.4**, grip **0.5** |
-| Tier 2 | `SquirrelSharpDriftAction` — rotation ×**1.8**, grip **0.25** |
+| Input (gamepad) | **Left trigger**, analog. `singleTriggerDrift: 1` on the prefab and ONE drift action bound, so **the drift amount is how far LT is pulled**: 0 = no drift, full pull = the action's full authored drift, linear in between (`GetTriggerSum` returns raw `LeftTriggerAnalog` when no sharp tier is bound) |
+| Drift sound | `DriftAudioController.singleTriggerDepth: 1` on the prefab — the FMOD `Drift Amount` parameter follows the same LT pull (0 feathered → 1 buried), so the sound gets harder as the drift does; keyboard/touch read 1 |
+| Input (touch) | `OnlyLeftStickAction (12)` → binary (full drift), smoothed by `DRIFT_EASE_SPEED` (12/s ≈ 83 ms ramp) so a tap still reads as an analog pull |
+| Drift action | `SquirrelDriftAction` — at full pull rotation ×**1.8**, grip **0.25** (the old sharp tier's values; the old ×1.4 / 0.5 single tier now sits at ≈ half pull). `SquirrelSharpDriftAction` is no longer bound (2026-09-23) |
 | Right trigger | **NOT free** — `RightStickAction (1)` is `SquirrelTubeAction` (touch: `OnlyRightStickAction (11)`). The Squirrel keeps its two-stick scissor throttle; do not propose a Scarab-style RT accelerator here |
 
 Drift does two things at once: it **multiplies the rotation scalers** (you turn harder) and it
 **lowers grip** (your momentum stops following your nose). Both ramp continuously with trigger
-depth — there is no discrete "drift mode", which is why the tiers interpolate rather than switch.
+depth — there is no discrete "drift mode" and, since 2026-09-23, no tiers either: one action, scaled by the pull.
 
 **Throttle is the two-stick scissor**: `XDiff = (rightStick.x − leftStick.x + 2) / 4`, linear, no
 deadzone, **resting at 0.5** (`GamepadInputStrategy.cs`). Note `BaseInputStrategy.ResetInput` zeroes
@@ -228,8 +228,8 @@ a terminal approach that lands on it.**
 | `Controller/Vessel/MinimumThrottleBrake.cs` | §3.5 — the terminal approach that makes a zero throttle target land on an actual stop (`MinimumThrottleBrakeTests`) |
 | `Controller/Vessel/ScarabVesselTransformer.cs` | Acceleration policy only (integrator + ceiling + Snap Dash) — no flight model of its own |
 | `_Prefabs/Spacevessels/Squirrel.prefab` | `vectorFlightModel: 1`, `driftOvershootCeiling: 1.25`, `driftThrottlePolicy: 0` (Live) |
-| `_SO_Assets/VesselActions/Squirrel/SquirrelDriftAction.asset` | tier 1 — ×1.4 / grip 0.5 |
-| `_SO_Assets/VesselActions/Squirrel/SquirrelSharpDriftAction.asset` | tier 2 — ×1.8 / grip 0.25 |
+| `_SO_Assets/VesselActions/Squirrel/SquirrelDriftAction.asset` | the one drift action — ×1.8 / grip 0.25 at full pull |
+| `_SO_Assets/VesselActions/Squirrel/SquirrelSharpDriftAction.asset` | unbound since 2026-09-23 (safe to delete) |
 
 `DriftDamping` was renamed to **`Grip`** (`[FormerlySerializedAs]` migrates the prefabs). It is what
 the field has always meant: the rate at which momentum rotates back onto the nose. It is a
@@ -255,7 +255,7 @@ serialized values are stale garbage, exactly like `ThrottleScaler`.
 |---|---|---|---|
 | `driftOvershootCeiling` | Squirrel.prefab | 1.25 | Max \|v\| during a drift, × the throttle target. 1 = no overshoot |
 | `driftThrottlePolicy` | Squirrel.prefab | Live (0) | Whether thrust acts during a drift. `Locked` (the Dolphin) = no acceleration for the drift's duration |
-| `Mult` / `driftDamping` | drift action SOs | 1.4/0.5, 1.8/0.25 | Rotation multiplier and grip per tier |
+| `Mult` / `driftDamping` | `SquirrelDriftAction` | 1.8/0.25 | Rotation multiplier and grip at full trigger pull |
 | `DefaultThrottleScaler` | Squirrel.prefab | 60 | Scissor throttle's speed scale |
 | `RotationThrottleScaler` | Squirrel.prefab | 0 | Turn rate vs speed — **deliberately 0** |
 | `minimumThrottleBrakeSeconds` | every vessel | 2 | §3.5. Seconds to shed one cruise once the target is ZERO. 0 restores the legacy exponential tail |
@@ -271,7 +271,7 @@ serialized values are stale garbage, exactly like `ThrottleScaler`.
 2. **The identity (the one that must be seen).** Fly with no drift at all — accelerate, brake, turn
    hard, take a danger-prism slow, ride the tube. It must feel *exactly* as it does on `main`. This
    is the claim the whole change rests on; §3.2 proves it in arithmetic, but it has to be seen.
-3. **Analog depth.** Feather LT: convergence should loosen continuously, not snap between tiers.
+3. **Analog depth.** Feather LT: convergence should loosen continuously with pull depth, from none at rest to full at a buried trigger.
 4. **Overshoot binds, but never brakes.** (a) From cruise, hold a long clean drift at full
    throttle: speed may rise above the straight-line cruise and must plateau at 1.25×; drop
    `driftOvershootCeiling` to 1 and confirm the plateau disappears. (b) **The regression that

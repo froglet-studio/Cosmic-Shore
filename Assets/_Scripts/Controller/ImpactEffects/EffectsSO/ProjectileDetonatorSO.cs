@@ -99,6 +99,14 @@ namespace CosmicShore.Gameplay
                 foreach (var prefab in req.Prefabs)
                 {
                     if (!prefab) continue;
+
+                    // A flight may decline the mass-CREATING half of its own detonation and keep
+                    // the destructive half — the Sparrow's base rocket blows a hole without
+                    // laying the prism cairn its heavy sibling does. Asked of the BLAST's class
+                    // (AOEExplosion.CreatesMass) rather than of a list position, because an
+                    // effect asset reordering its aoePrefabs would silently re-point an index.
+                    if (!proj.Payload.CreateMassOnDetonation && prefab.CreatesMass) continue;
+
                     var spawned = Instantiate(prefab, pos, rot);
                     if (req.DIContainer != null)
                         GameObjectInjector.InjectRecursive(spawned.gameObject, req.DIContainer);

@@ -13,6 +13,9 @@ namespace CosmicShore.Gameplay
 {
     public class AOERadialBlocks : AOEConicExplosion
     {
+        /// <summary>This blast LAYS prisms - see <see cref="AOEExplosion.CreatesMass"/>.</summary>
+        public override bool CreatesMass => true;
+
         [SerializeField] private float growthRate = .05f;
 
         [Header("Events")]

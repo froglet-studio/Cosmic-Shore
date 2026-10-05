@@ -18,7 +18,7 @@ namespace CosmicShore.Editor.Codex
     /// PNGs of four crystals would be 123 copies of four pictures.</item>
     /// <item>A <b>domain</b> variant is a colour, and a PNG of a flat colour is silly — it draws
     /// its <see cref="CodexVariant.AccentColor"/>.</item>
-    /// <item>A <b>kingdom</b> variant (the Lifeform Matrix's Fauna / Flora / Vessels) is a
+    /// <item>A <b>kingdom</b> variant (the Spawn Matrix's Fauna / Flora / Vessels) is a
     /// heading, not a thing. It falls back to the entry's own portrait.</item>
     /// </list>
     ///
