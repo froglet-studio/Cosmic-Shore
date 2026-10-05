@@ -84,6 +84,10 @@ namespace CosmicShore.Gameplay
         public int Agent;
         public int Vessel;
         public Vector3 At;
+        /// <summary>The member's stomach at the moment it died (volume eaten and not yet spent). Recorded here because a
+        /// birth in the SAME step can re-use the slot and overwrite <c>Stomach[Agent]</c> - a ledger that read the array
+        /// after the step lost that volume (QA-SWARM-ROUND11-9, the showcase cell's builder residual).</summary>
+        public float Stomach;
     }
 
     /// <summary>xorshift128+ with a cached Box-Muller normal. Deterministic per seed; no System.Random allocation churn.</summary>

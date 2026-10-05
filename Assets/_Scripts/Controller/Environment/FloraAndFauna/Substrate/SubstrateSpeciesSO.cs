@@ -38,14 +38,14 @@ namespace CosmicShore.Gameplay
                  "around the anchor (or, with a sector, at the sector's centre).")]
         [SerializeField, Min(0)] int seedClusters;
 
-        [Header("Placement - round 11-11 sector pen (Docs/SUBSTRATE_FAUNA.md §8.5)")]
+        [Header("Placement - round 11-11 sector pen (Docs/SUBSTRATE_FAUNA.md §9.5)")]
         [Tooltip("The axis (cell-local direction from the cell centre) of the SECTOR this population is penned in, " +
                  "inside its radial band - so species sharing a band hold apart. Ignored when sectorHalfAngle is 0.")]
         [SerializeField] Vector3 sectorAxis = Vector3.right;
         [Tooltip("Half-angle (degrees) of the sector pen around sectorAxis. 0 = no sector (the whole band shell).")]
         [SerializeField, Range(0f, 180f)] float sectorHalfAngle;
 
-        [Header("Contact - round 11-11 (Docs/SUBSTRATE_FAUNA.md §8)")]
+        [Header("Contact - round 11-11 (Docs/SUBSTRATE_FAUNA.md §9)")]
         [Tooltip("The danger-prism effect a contact WITHOUT a collision is applied through - a leech's sip from the hull " +
                  "it rides lands as one danger contact of the species' SipWeight (burn rules: a drain is 0.25), sharing " +
                  "the effect's per-vessel cooldown. Unassigned: such contacts are not applied (the warning names the asset).")]

@@ -6,13 +6,17 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Loads the four baked body plans (Tools/Build/swarm_plans.py) once per TextAsset and shares
-    /// them between every swarm - a plan is immutable data, so three swarms need one copy.
+    /// them between every swarm - a plan is immutable data, so three swarms need one copy. Each is
+    /// UPSAMPLED to the config's <see cref="SwarmFaunaConfigSO.PlanDensity"/> (cached per density): the
+    /// rest of the swarm (the seed count, LayMax, the stomach, ThreatGain) is already scaled by that
+    /// density, and a raw plan would cap a density-5 whale at 192 members (QA-SWARM-ROUND11-9).
     /// Indexed by RESEARCH element: 0 Charge (pufferfish), 1 Mass (whale), 2 Space (jellyfish),
     /// 3 Time (dragonfly).
     /// </summary>
     public static class SwarmPlanLibrary
     {
         static readonly Dictionary<TextAsset, SwarmPlanData> s_cache = new();
+        static readonly Dictionary<(TextAsset, int), SwarmPlanData> s_dense = new();
 
         public static SwarmPlanData[] Load(SwarmFaunaConfigSO config)
         {
@@ -31,6 +35,7 @@ namespace CosmicShore.Gameplay
                     plan = JsonUtility.FromJson<SwarmPlanJson>(asset.text).ToPlanData();
                     s_cache[asset] = plan;
                 }
+                plan = Dense(asset, plan, config.PlanDensity);
                 if (plan.MajorElement != e)
                 {
                     CSDebug.LogError($"[Swarm] {config.name}: {asset.name} is the {plan.Kind} plan, assigned to the {SwarmFaunaConfigSO.ToElement(e)} slot.");
@@ -39,6 +44,19 @@ namespace CosmicShore.Gameplay
                 plans[e] = plan;
             }
             return plans;
+        }
+
+        /// <summary>The plan at <paramref name="density"/> members per plan unit (SwarmPlanData.Upsample; 1 = as baked).</summary>
+        static SwarmPlanData Dense(TextAsset asset, SwarmPlanData plan, int density)
+        {
+            int m = Mathf.Max(1, density);
+            if (m == 1) return plan;
+            if (!s_dense.TryGetValue((asset, m), out var dense))
+            {
+                dense = plan.Upsample(m);
+                s_dense[(asset, m)] = dense;
+            }
+            return dense;
         }
 
         /// <summary>A typical prism (median half-extents) of each element across all four plans -

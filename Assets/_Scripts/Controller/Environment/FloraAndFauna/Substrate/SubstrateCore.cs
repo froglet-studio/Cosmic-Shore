@@ -88,17 +88,19 @@ namespace CosmicShore.Gameplay
         public Vector3 SectorAxis;
         public float SectorCos;
         public bool HasSector;
-        /// <summary>The glue's per-population proxy rule (SubstrateSpeciesSO.EngageRadius / MaxProxies); 0 = the tick
-        /// job's shared setting.</summary>
-        public float EngageRadius;
-        public int MaxEngaged;
 
-        // ── the body (research BodyPlan; Docs/SUBSTRATE_FAUNA.md §8.4) - one per population ──
+        // ── the body (research BodyPlan; Docs/SUBSTRATE_FAUNA.md §9.4) - one per population ──
         public bool Assembling, BodyActive;
         public Vector3 BodyC, BodyF = new Vector3(0f, 0f, 1f), BodyV;
         public float GulpPrep, Gulp, GulpRest;
         internal readonly Vector3[] SlotW, SlotV;
         internal float MouthZ;
+        /// <summary>World radius around a vessel inside which THIS population's agents engage (get a proxy), and the most it
+        /// may engage at once. Below 0 = the tick job's <see cref="SubstrateTickSettings"/> numbers. The owner sets its own
+        /// species' numbers when it claims the block (SubstrateFauna.ClaimBlock): one host serves every population, and its
+        /// settings are the FIRST-joined species' (QA-SWARM-ROUND11-9).</summary>
+        public float EngageRadius = -1f;
+        public int MaxEngaged = -1;
         /// <summary>
         /// Round 11f-2 (Docs/ECOLOGY_LOD.md §6.1): the population is COLLAPSED - far from every pilot and unseen. Its
         /// agents stay where they are, every one alive, with exactly its stock (so its index entries, and the cell's

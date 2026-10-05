@@ -822,6 +822,24 @@ that raced across it (a jolt Garrett would read as a bug), and a rushed lurker p
 plates; no plate flicker. **FAIL:** members streak across the body after a strike · a swarm under steady grazing stops
 regrowing · a lurker plates after bolting · plates flicker on and off at one distance.
 
+### QA-SWARM-ROUND11-12 ⬜ — the cell's emotional range, and a puffed shield member stays shielded
+
+**Source:** branch `overnight/feel2`. Only headless harness exports and the research probe have run. Reference:
+`Docs/SWARM_FAUNA.md` §27.
+
+**Why it matters:** the probe reads motion and size only. A human has to confirm that the cell feels like its reads,
+from cute to terrifying.
+
+1. **Cute.** Fly slowly at a sparse substrate locust swarm. It should feel cute or harmless.
+2. **Terrifying.** Fly at a dense, hungry locust storm. It should feel terrifying.
+3. **The pack.** Approach the substrate pack directly.
+   - The probe says it goes stalk (about 2.5 s), then ring (about 3 s), then strike.
+   - Note whether the ring reads as menace before the strike. The probe saw no menacing window (§27.3).
+4. **Swarm bodies.** Fly through a whale and a dragonfly body. Expect awe at range and dread inside them.
+5. **Shield.** Hound a pufferfish (Charge) shield member until it puffs.
+   - It must still deflect shots.
+   - Grazers and hunters must not eat it or steer at it while it is puffed.
+
 ### QA-SWARM-ROUND11-6 ⬜ — a far swarm collapses and comes back without a pop; creatures starve on a stomach
 
 **Source:** branch `overnight/lod`; steps 9-11 come from `overnight/lod2` (round 11f-2). Only headless gates,
@@ -1056,6 +1074,51 @@ having them all dive in at once will be scary once the stakes are felt."*
 - The ladder jumps near the pack.
 - A worker error: `[Substrate] the cell's substrate tick threw`.
 
+### QA-SWARM-ROUND11-9 ⬜ — the whole Swarm cell at once: whales at full size, lean frames, wearers steal at the rim
+
+**Source:** branch `overnight/cell`. The showcase-cell harness (`Tools/Build/showcase_cell_harness/run.sh all`) runs
+every creature core together in the authored layout with three scripted pilots. Results:
+- 1,192/1,200 collider worst case;
+- 0.84-0.97 ms per frame combined;
+- the mass ledger closes to 4e-7;
+- the LOD is never seen collapsed.
+
+It fixed six cross-system bugs in the cores. **Never run in the editor.** Reference: `Docs/SWARM_FAUNA.md` §25.
+
+**Why it matters:** two of the fixes change what a player sees.
+- The swarm's plan library now upsamples to `PlanDensity`, so whales hold up to 960 members, not 192.
+- Wearers now steal the trail pilots lay along the membrane.
+
+A third fix (a subnormal flush in the substrate fields) removes a frame-time cliff that appears after minutes of
+hovering.
+
+1. **Whale size.** Open the Swarm cell and find the biggest swarm body. In the inspector or debug overlay, its member
+   count should climb past 192. A full whale reads clearly denser than before.
+2. **Hover cost.** Hover near a substrate population for 5+ minutes and profile. The substrate tick's fields stage
+   should stay flat, about 2 ms per tick off-thread, and must not creep up over time.
+3. **Wearers at the rim.** Fly through the inner gap (400-465 u) so the wearers find your trail, then fly loops near
+   the membrane (r ~ 1,150). Within a minute or two, white hearts should be pulling YOUR rim trail into bodies. They must not hover motionless
+   at the wall.
+4. **Substrate engagement.** Near the locust cloud, many locusts should engage you at once, up to the authored
+   per-population cap, not just 2.
+5. **A long session.** Fly 30 minutes with friends or bots. Note which creature classes die out and when; the harness
+   predicts thieves by minute 1 and packs and locusts by minutes 2-4. Note whether the game's spawner re-seeds them.
+
+**PASS:**
+- Steps 1-4 read as described.
+- No frame-time growth over the session.
+- No crystal missing at a death.
+
+**FAIL:**
+- Whale capped at 192.
+- Substrate fields stage creeping past 10 ms.
+- Wearer hearts stuck at the membrane holding still.
+- Only 2 locusts ever engage.
+- A creature that pops out without dying.
+
+**Report also:** the burn rate per pilot style. The harness found that the skilled pilot burns MORE than the careless
+one (3.3 vs 1.8/min), mostly on the charge swarm's danger plates. Is that true for a human dodging?
+
 ### QA-SWARM-ROUND11-11 ⬜ — the rest of the bestiary: stampede, mobber, leech, leviathan
 
 **Source:** branch `overnight/more-species`. Proven headless (substrate harness S, T, C, V, Q, M2):
@@ -1065,7 +1128,7 @@ having them all dive in at once will be scary once the stakes are felt."*
 - the leviathan assembles, holds its manta and gulps a pilot ahead of its mouth;
 - the 39 substrate proxies are re-divided with each cap still engaging, and the ledger closes with all seven species.
 
-**Never run in the editor.** Reference: `Docs/SUBSTRATE_FAUNA.md` §8.
+**Never run in the editor.** Reference: `Docs/SUBSTRATE_FAUNA.md` §9.
 
 **Why it matters:** this is new glue that has only been type-checked:
 - the danger weight on `PrismProperties`;
@@ -1294,6 +1357,26 @@ cost you petals. If the telegraph is unreadable the danger feels unfair; if it n
 - A fortress wall or thief hoard containing a physarum tube; a hoard shrinking because a trap or cable ate it;
   a thief nest sitting inside the grove.
 - A frame-time regression above ~1 ms per frame near the grove, or a warm-up hitch over ~10 ms.
+
+### QA-COMPILE-ROUND11H-1 ⬜ — the project opens clean and Entities prisms still render
+
+**Source:** branch `overnight/compile` (compiled headless against real package sources + Unity 6000.0.75 engine
+references by `Tools/Build/unity_refcompile/run.sh`; not opened in the editor). Reference:
+`Docs/SWARM_FAUNA.md` §25. **Why it matters:** the real-reference compile found two errors from tonight that would
+have stopped the whole project compiling on open (`Random` ambiguous in three fauna/flora files;
+`EntityManager.GetComponentLookup` is internal in Entities 1.4.2). PrismRenderService now takes its lookups from a
+never-updated `PrismRenderLookupSystem`.
+
+1. Open the project; wait for the compile. The Console must show no CS errors.
+2. Enter Play in a scene with many prisms (any arcade mode, or the Swarm cell). Read the PrismRenderService status
+   line (Entities ON, ents > 0).
+3. Let a swarm or a trail grow; watch newly created prisms appear at their positions (batched create path) and move
+   (batched transform path).
+4. Exit Play, enter Play again (world rebuilt): prisms render again.
+
+**PASS:** clean compile; prisms render, appear in place and follow their owners across a Play restart.
+**FAIL:** any compile error · prisms at the origin or frozen · an exception mentioning `PrismRenderLookupSystem` or
+`ComponentLookup` · prisms missing after the second Play.
 
 ### QA-SWARM-ROUND10-1 ⬜ — four creatures, and their strikes burn petals
 

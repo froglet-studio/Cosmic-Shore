@@ -7,6 +7,7 @@
 #   bash Tools/Build/substrate_harness/run.sh            # every asserted test
 #   bash Tools/Build/substrate_harness/run.sh pack       # one group: fidelity | pack | locust | lurker | ledger | job | index | kernel | bench
 #   bash Tools/Build/substrate_harness/run.sh export     # rewrite game_params.json (the species assets' source)
+#   bash Tools/Build/substrate_harness/run.sh emotion <jobs.txt>   # the emotion-probe export (Tools/Build/emotion_range, SWARM_FAUNA.md §27)
 #
 # Needs a dotnet 8 SDK (DOTNET_ROOT, default ~/.dotnet). No .csproj on purpose: the repo gitignores *.csproj.
 set -euo pipefail
@@ -37,7 +38,7 @@ python3 "$HERE/check_burst_substrate.py" "$SUB/SubstrateKernel.cs" "$SUB/Substra
   "${CORE[@]}" || { echo "FAIL: the substrate core does not compile against netstandard2.1 (Unity's API profile)" >&2; exit 1; }
 "$DOTNET" "$CSC" -nologo -langversion:9.0 -nostdlib -noconfig -optimize+ "@$OUT/refs.rsp" -nowarn:CS0649 \
   -target:exe -main:SubstrateHarness -out:"$OUT/substrate.exe" "${CORE[@]}" "$HERE/ReferenceStep.cs" "$HERE/Program.cs" \
-  "$HERE/LodHarness.cs" "${LOD[@]}"
+  "$HERE/LodHarness.cs" "${LOD[@]}" "$HERE/EmotionSubstrate.cs"
 V=$(ls "$DOTNET_ROOT"/shared/Microsoft.NETCore.App | head -1)
 printf '{"runtimeOptions":{"tfm":"net8.0","framework":{"name":"Microsoft.NETCore.App","version":"%s"}}}' "$V" > "$OUT/substrate.runtimeconfig.json"
-exec "$DOTNET" "$OUT/substrate.exe" "$HERE/research_params.json" "${1:-all}"
+exec "$DOTNET" "$OUT/substrate.exe" "$HERE/research_params.json" "${1:-all}" "${@:2}"

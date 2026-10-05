@@ -27,6 +27,7 @@ static partial class SubstrateHarness
         string which = args.Length > 1 ? args[1] : "all";
         bool all = which == "all";
         string gameJson = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(fixture)) ?? ".", "game_params.json");
+        if (which == "emotion") return Emotion(args[2]);   // round 11d-2 (SWARM_FAUNA.md §27): the emotion-probe export
         if (which == "export") { File.WriteAllText(gameJson, ExportGame()); Console.WriteLine($"wrote {gameJson}"); return 0; }
         if (all || which == "fidelity") { Fidelity(fixture); GameExportCurrent(gameJson); }
         if (all || which == "pack") Pack();
@@ -61,6 +62,7 @@ static partial class SubstrateHarness
         public void Step(float dt)
         {
             if (Mode == "still") { Vel = Vector3.Zero; return; }
+            if (Mode == "replay") return;   // the emotion export places it from a recorded track each step
             if (Mode == "spin")
             {
                 // a hard, constant turn about the vertical (the leech's counterplay: shake them off)

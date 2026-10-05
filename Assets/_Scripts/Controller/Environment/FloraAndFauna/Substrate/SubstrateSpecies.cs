@@ -123,7 +123,7 @@ namespace CosmicShore.Gameplay
         /// <summary>The phase above which an aggressive agent is DANGEROUS (a danger prism; research harm = aggression above 0.5).</summary>
         public float DangerPhase = 0.5f;
 
-        // ── the research's BODY layer (core.py SpeciesParams attach_* + BodyPlan; Docs/SUBSTRATE_FAUNA.md §8.4) ──
+        // ── the research's BODY layer (core.py SpeciesParams attach_* + BodyPlan; Docs/SUBSTRATE_FAUNA.md §9.4) ──
         /// <summary>Per second, how fast each agent's attachment relaxes toward the group's assembling target.</summary>
         public float AttachRate = 0.5f;
         /// <summary>The body quorum: assemble when the group's mean hunger falls below AttachOnH (or its mean fear rises
@@ -135,7 +135,7 @@ namespace CosmicShore.Gameplay
         /// <summary>Body plan: slot scale, the flat-bottom well a member stops pulling inside (u), the body's cruise (u/s).</summary>
         public float BodyScale = 1f, BodyWell = 4f, BodySpeed = 50f;
 
-        // ── round 11-11 primitives (0 / off by default; Docs/SUBSTRATE_FAUNA.md §8) ──
+        // ── round 11-11 primitives (0 / off by default; Docs/SUBSTRATE_FAUNA.md §9) ──
         /// <summary>Strike ROLE: only every Nth agent of the block arms a ramp and climbs the alarm gradient (the
         /// stampede's bulls, every 4th). 0 = every agent.</summary>
         public int ChargeEvery = 0;

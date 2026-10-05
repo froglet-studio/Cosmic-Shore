@@ -2422,3 +2422,372 @@ Every other creature's `starvationSeconds` is now a conserved stomach, migrated 
 clock did (ECOLOGY_LOD.md §2).
 
 **QA.** QA-SWARM-ROUND11-6.
+
+## 25. Round 11h: a real compile, and what it caught
+
+Until now every round's Unity glue was type-checked against hand-written stubs (`swarm_glue_typecheck`,
+`substrate_glue_typecheck`), and several platform files were only syntax-parsed. Stubs can only check what
+their author already believed about the API. `Tools/Build/unity_refcompile/run.sh` (README beside it) now
+compiles **all of Assembly-CSharp and every package assembly it references** the way a Unity player build
+would: Entities 1.4.2, Entities.Graphics, Collections, Mathematics, Netcode, InputSystem, Cinemachine, the
+Services packages and the rest come as source at their exact `packages-lock.json` versions. URP/SRP come from the
+Graphics 6000.0 branch. The engine comes as Unity 6000.0.75 reference DLLs, de-publicized against the 2021.1
+engine. The Entities and Reflex source generators run. The `player`, `player-dev` and an approximate `editor`
+configuration are all green.
+
+It found two errors from tonight that the stubs could not see. Each would have stopped the project compiling on
+open:
+
+- **CS0104 `Random` is ambiguous** in `SwarmFauna` (round 11a), `ThreatGrove` (11c) and `BuilderColonyFauna`
+  (11e). These files import both `Unity.Mathematics` and `UnityEngine`, and both namespaces declare `Random`. The
+  stubs had no `Unity.Mathematics.Random`. Fix: `using Random = UnityEngine.Random;`.
+- **CS1061 `EntityManager.GetComponentLookup` is `internal`** in Entities 1.4.2. `PrismRenderService` called it
+  at 12 sites (the batched create/transform jobs from the prism-platform round). Fix: the public route is a
+  system's `ComponentSystemBase.GetComponentLookup`. A `[DisableAutoCreation]` `PrismRenderLookupSystem` is
+  created on demand in the service's world and joins no update group. It exists only to issue those lookups.
+  The cache is cleared whenever the cached world changes.
+
+What it still cannot see is listed in the README. In short: Unity 6000.0 to 6000.3 engine additions (these would
+show as false errors, not false passes), the unfetchable Services.Multiplayer/Friends/Leaderboards/Playmode
+packages (files that use them are bucketed, not gated), real `UnityEditor` 6 API (the `editor` config uses the
+2021.1 UnityEditor), ILPostProcessors, Burst and IL2CPP. QA: `QA-COMPILE-ROUND11H-1`.
+
+
+## 26. The showcase cell, all together (round 11-9)
+
+Each creature family had its own harness, but none had run with the others: one world, one prism store, one collider
+budget and one mass ledger. **`Tools/Build/showcase_cell_harness/`** compiles every pure core that ships into one
+program. It lays them out exactly as the Swarm cell's authored assets place them, and flies three scripted pilots
+through the cell.
+
+```
+export DOTNET_ROOT=/usr/lib/dotnet TMPDIR=<private dir>
+bash Tools/Build/showcase_cell_harness/run.sh quick                  # U1-U5 + seed 1 x 2 min (~40 s)
+bash Tools/Build/showcase_cell_harness/run.sh all <snap.json>        # U1-U5 + seeds 1,2,3 x 5 min + seed 7 x 30 min (~3.5 min)
+python3 Tools/Build/showcase_cell_harness/render.py <snap.json> <out.png>   # the minute-5 picture (matplotlib, headless)
+```
+
+### 25.1 What runs
+
+**The layout.** `layout.py` reads every number from the generators and the assets they wrote; none is re-typed:
+- `author_swarm_fauna.py`: the bands, plates, budgets and collider model;
+- `author_substrate_fauna.py`;
+- `author_builders.py`;
+- `author_threat_flora.py`;
+- `SwarmSortFaunaConfig.asset`, the BuilderColonyConfigSO assets, and the Swarm Cell Config's `PetalBurnRule`.
+
+**The cores, one line each in `run.sh`.** They are compiled first against netstandard2.1 / C# 9, the way Unity compiles
+them.
+
+| System | Cores | Cadence |
+|---|---|---|
+| Swarm | `SwarmSortCore` via `SwarmTickJob`, `SwarmEvoFateCore`, one per region (inner/middle/outer) | 10 Hz |
+| Substrate | `SubstrateCore` via `SubstrateTickJob` (pack, locust, lurker) | 10 Hz |
+| Builders | `BuilderColonyCore` (fortress), `ThiefNestCore`, `WearerCore` (400-465 u) | 10 Hz |
+| Threat grove | `SnapTrapCore` + `PhysarumCore` | 10 Hz, ×0.25 when far |
+| Ecology LOD | `EcologyLodDirector` over every population above | Guard per frame, Tick at 1 Hz |
+
+**Shared state.** The flora is shared food: every eater bites the same plant-heart prisms. The world is one prism
+store (`CellWorld`) with one audit.
+
+**The pilots** each lay the game's trail at 0.25 s / 6 volume:
+- careless: a straight-line cruiser that never dodges;
+- skilled: dodges anything whose intent is rising;
+- raider: targets the thief hoard and cuts through the fortress walls.
+
+**Burns** follow the Tuned rule: 1 petal per element per landed hostile contact, with a 1 s cooldown per vessel. A burn
+is *telegraphed* when the striker's intent was above 0.5 for at least 0.25 s before contact (overnight burn-rules.md).
+
+**The ecology LOD** is the game's: swarms collapse into `SwarmMacroBody`, substrate populations freeze, and builder
+colonies roost. The grove's network runs at quarter time when no pilot is within its reach + 400 u.
+
+### 25.2 Results (`run.sh all`, after the fixes in §25.3)
+
+| Check | Result | Gate |
+|---|---|---|
+| C1 colliders | authored worst case **1,192 / 1,200**; observed max 1,048 / 1,076 / 1,121 / 1,115 (means 544-600) | law |
+| C2 CPU, sum of every core's step at its rate | **0.84-0.97 ms per 60 Hz frame** mean (worst p99 3.5 ms) vs the 3 ms inline budget. Split: swarm 0.27-0.37, substrate 0.38-0.49, builders 0.04-0.08, grove 0.05-0.18, LOD 0.001 | law |
+| C3 global mass ledger | closes to **3.8e-7** of the booked volume (worst residual 0.05 of 3.6e5) | law |
+| C4 populations | no class exceeds its cap. **Extinctions:** see §25.4 | finding |
+| C5 burns/min (petals/min ×4) | careless **1.76**, skilled **3.29**, raider **5.96**; 76% of 495 burns telegraphed (stakes_eval: 92-93%) | finding |
+| C6 encounter diversity | distinct threat classes met per minute: careless 4.5, skilled 4.9, raider 5.2. All three pilots meet all 11 classes over 30 min. Minute-by-minute table in the run log | report |
+| C7 LOD contract | **0** ticks seen while collapsed; **0** pilots inside a collapsed extent | law |
+
+**Collapse share of the 30-min run (C7):**
+- substrate lurker 22%;
+- swarm inner 1%;
+- everything else about 0%.
+
+There were 145 collapse/expand pairs. With three pilots in a 1,200 u cell, LOD rarely engages; see §25.4.
+
+**Wearers after the fix:** 605 / 599 / 252 / 1,206 worn steals per run. Before the fix: 0, 111, 428 and 948.
+
+**Burns by class.** Most land from the charge swarm's danger plates (careless 32, skilled 129, raider 94). The raider
+also takes space-swarm (73), locust (38), fortress (24) and wearer (22) burns.
+
+**The picture** is `/mnt/project-files/overnight/cell-snapshot.png`: seed 1 at t = 300 s, drawn from the run's
+snapshot. It has a top view, a side view and a 600 u close-up. They show:
+- the swarm bodies by colour region, including danger plates;
+- substrate agents;
+- fortress walls and workers;
+- the thief nest and hoard;
+- wearer hearts and worn prisms;
+- snap traps and physarum tubes;
+- each pilot with its wake and path.
+
+### 25.3 Cross-system bugs the cell found, fixed in the cores
+
+Every fix has a unit in the harness (U1-U5) or the builders harness (W8), each with a negative control that fails on
+the pre-fix code.
+
+1. **Plan density: the game ran 192-member whales.** `SwarmPlanLibrary.Load` never upsampled a baked plan to
+   `config.PlanDensity`. A swarm's `Cap` was therefore the raw baked N (192), not the authored 960, and seeds past it
+   never hatched. Now `Load` upsamples. Tests: U2 (a 240-seed whale: all hatch; the baked plan drops 48) and
+   `check_plan_density.py` (a textual gate on the Unity-only file, with `--self-test`).
+2. **Substrate engagement belonged to the first population.** `SubstrateTickJob` engaged every population to one
+   radius and cap. `SubstratePopulation.EngageRadius` / `MaxEngaged` now make it per-population, set by
+   `SubstrateFauna.ClaimBlock`. Test: U1 (the second population engages 10 to 169 u; pre-fix it was clipped to 2 within
+   44 u).
+3. **A meal queued in the pass that kills its eater vanished.** It left a 9.1-volume ledger residual. The job now
+   applies feeds before kills and publishes `Killed` (the body's stock including the meal). Test: U3. See
+   SUBSTRATE_FAUNA.md §8.
+4. **Subnormal float dust made the substrate fields 16× slower.** The 30-min run measured 5.8 ms per frame, with fields
+   going from 2 to 32 ms per tick. A hovering pilot's wake blurs and decays into subnormal floats, whose arithmetic is
+   about 100× slower. `SubstrateFields.Blur` now flushes values below `MinNormal` to 0, and the cell runs at
+   ~1 ms per frame. Test: U5.
+5. **A death recorded the wrong stomach.** When a builder slot was reused in the same step, the death was booked with
+   the newborn's stomach, leaving a 231.8 ledger residual. `BuilderDeath.Stomach` now carries the stomach the member
+   died with, in all three builder cores. Test: U4.
+6. **Wearers chased prisms they could never reach.** Pilots trail along the membrane beyond the wearer's containment.
+   A heart claimed such a prism and held it forever, so a whole colony could steal nothing. `WearerCore.Reachable` now
+   rejects these prisms. Test: W8 (BUILDERS_AND_THIEVES.md §10.3).
+
+### 25.4 Findings: reported, not fixed (they are design and tuning; `SHOWCASE_STRICT=1` fails them)
+
+- **Extinctions.** Every population that dies out is killed by pilots or starvation. No core imposes a death.
+  - Thieves die by minute 1 in every seed: pilots ram all of them (6-7 kills; the raider flies at the hoard).
+  - Substrate packs die by minute 3-4.
+  - Locusts die by minute 2. They cannot feed: 42-93 bites out of 7-8k asks. Their food field and the shared flora
+    disagree, and the shared food field also draws populations out of their bands.
+  - In seed 7 (30 min), lurkers die by minute 9, fortress workers by minute 17 (59 rammed or stung kills, 728 wall
+    prisms rammed), and wearers by minute 15 (16 kills, 0 starved).
+  - The game's spawner re-seed (an anchor despawns after 8 s, and the seeder may re-hatch) is not modelled here.
+    Extinction in the harness is therefore an upper bound on what a player sees.
+- **The inner swarm cycles hard over 30 min:** it peaks at 902/960, with 734 starved and 239 rammed. This is turnover,
+  not a crash. No class exceeds its cap.
+- **The skilled pilot burns more than the careless one** (3.29 vs 1.76 burns/min). Its dodge heuristic flies it into
+  the charge swarm's danger plates (129 of its burns). That is partly a harness-pilot artefact, but the plates are hard
+  to avoid. The telegraphed share is 76%, against the flight sim's 92-93%.
+- **The LOD rarely engages with three pilots.** Swarms are collapsed ≤ 1% of the time.
+  - Thieves and wearers sense membrane-wide: territory + scout range is 1,300 u, and a wearer reads from the cell
+    centre. So they never roost while a pilot is in the cell.
+  - The fortress roosts only when nobody is within 440 u.
+  - The grove ran at quarter time for 75-1,730 s of each run.
+- **Unstated volume in the game glue.** A late meal (one queued in the pass that kills its eater) is now booked with
+  the body in the core, but `SubstrateFauna` still does not state it (SUBSTRATE_FAUNA.md §8).
+- **The builder newborn's body volume** is 0.5 × BirthCost, while a founder's entry volume is 3.276. These may be
+  intended to differ; not checked.
+- **`PhysarumCore` and `SwarmGridCore` also blur and decay fields.** Subnormal dust is possible there too but was not
+  observed.
+
+### 25.5 What is NOT proved
+
+- **Nothing here ran in Unity.** Rendering, physics colliders, Burst, main-thread glue, `CellEcologyLod` (the Unity host)
+  and the game's spawners are stubbed or absent.
+- **C2 is the cores' summed step cost on this machine, single-threaded.** It excludes prism render sync, physics and
+  the glue.
+- **The pilots are heuristics,** not players or the AI. The burn rates are comparative only.
+- **One cell.** The other cells' creatures and multiplayer are not exercised.
+
+**QA:** QA-SWARM-ROUND11-9.
+
+## 27. The cell's emotional range
+
+**The question.** Does the Swarm cell span cute to terrifying? **Yes.** Every creature the cell ships was scored with
+the research's emotion probe (`research/Tools/Ecology/emotion/`, DISCOVERIES.md "Emotion probe"). The probe reads only
+motion and size. The game's reads cover all seven classes: cute, playful, neutral, eerie, majestic, menacing and
+terrifying. The scorer asserts this.
+
+The chart is `/mnt/project-files/overnight/emotion-range.png`. Rows are creature·phase and columns are the seven
+classes. Blue shading is the game's probability. An orange box marks the research model's own top read for the same
+creature and phase.
+
+### 27.1 Protocol
+
+- **Exports come from the shipped pure cores, not from re-implementations.** Each harness gained an `emotion` command
+  that reads a pilot track and writes a float32 frame stream (`EmotionWriter`):
+  - `swarm_core_harness/EmotionExport.cs`: `SortHarness.Game`, the off-thread `SwarmTickJob` with the round 10/11d
+    strike states, and the pilot sensed as a `SwarmPredator`, as `SenseVessels` builds it. Density 5, one body.
+  - `substrate_harness/EmotionSubstrate.cs`: `SubstrateResearch.GamePack` / `GameLocust` / `GameLurker`.
+  - `builders_harness/EmotionBuilders.cs`: `BuilderColonyCore` (120 s of building first) and `ThiefNestCore`.
+  - `threat_flora_harness/EmotionFlora.cs`: `SnapTrapSpecies` / `PhysarumSpecies` in the harness grove.
+- **One pilot for both sides.** The pilot is a bestiary-style encounter. It starts 350 u from the creature's centre,
+  heading at it, with a goal 400 u beyond; after that it wanders between goals at 0.2-0.9 R. There are two viewers:
+  hover (25 u/s) and cruise (90 u/s). Each runs seeds 7, 23 and 41 for 60 s. The same track is replayed into the
+  game core and into the research's Python model of the same species, so differences come from the creature and not
+  the flight.
+- **The probe.** The research's ensemble scores 8 s windows every 2 s. Each window takes a phase label: the most
+  urgent label present in at least 25% of its frames.
+- **What is published.** Sizes and headings follow each research module's convention: substrate and builders publish
+  no heading, and flora publishes static hearts.
+- **Command:**
+  `TMPDIR=<private> python3 Tools/Build/emotion_range/emotion_range.py --png <out.png> --assert`
+  - It takes about 25 min and streams one export at a time, deleting each after scoring.
+  - `--rescore` re-charts and re-asserts the saved `emotion_range_results.json`.
+  - `--only <group>` runs a single group.
+- **After merging bda147a8f** (the substrate/builder LOD), the substrate, builders and flora groups were re-run.
+  Their reads are identical to the committed results.
+
+### 27.2 Reads, hover viewer
+
+The game is the shipped core. "Research" is the research's model under the same tracks; "bestiary" is the bestiary
+species where the research has one. Numbers are the ensemble's top probability.
+
+| Creature | Game, run | Game, per phase | Research / bestiary, same protocol | Research's published intent |
+|---|---|---|---|---|
+| Swarm pufferfish (Charge) | majestic .40 | plates majestic .48 | (no research body) | majestic |
+| Swarm whale lurker (Mass) | terrifying .34 | plates majestic .43; strike **terrifying .53** | SwarmBody whale majestic .40 | majestic, dread up close |
+| Swarm jellyfish locust (Space) | majestic .38 | strike majestic .46 | (no research body) | majestic |
+| Swarm dragonfly hunter (Time) | menacing .34 | plates majestic .37; strike **terrifying .50** | menacing .46 | menacing |
+| Substrate pack | terrifying .42 | strike T .42; winded T .30; ring T (1 window) | substrate playful .84; bestiary menacing .29 | bestiary pack terrifying 4/4 |
+| Substrate locust, sparse and fed | **cute .72** | solitary cute .70 | cute .73; bestiary cute .58 | cute .86 |
+| Substrate locust, dense and hungry | **terrifying .85** | storm T .80; solitary neutral .62 | terrifying .75 | terrifying .95 |
+| Substrate lurker | terrifying .41 | snap T .37; creep cute | substrate playful .23; bestiary neutral .35 | eerie, terror at the snap |
+| Builder fortress | terrifying .24 | build neutral .35; strike **terrifying .51** | build neutral .37; strike T .63 | neutral, then the sting |
+| Thief nest | playful .64 | laden playful .60 | bestiary cute .49 | playful 4/4 |
+| Snap-trap grove | majestic .40 | rest majestic .59; snap majestic .34 | terrifying .41 (rest majestic .58) | threat at the snap |
+| Physarum grove | neutral .35 | pulse neutral .42 | neutral .38 | neutral |
+
+**Cruise viewer.** At 90 u/s everything reads one notch calmer, as the research found:
+- The swarm bodies read majestic.
+- The pack reads terrifying .37, with **eerie** stalk and ring windows.
+- The lurker reads neutral.
+- The thief reads neutral, with cute foraging.
+- The dense locust is still terrifying .74.
+
+**Timelines** (hover; one letter per window: J majestic, T terrifying, M menacing):
+- The swarm bodies read T while the pilot passes through them, then J: awe, with dread up close, like the bestiary
+  leviathan.
+- The pufferfish reads `JJTTTTTTJJJ…`.
+
+### 27.3 Drift review
+
+Each reading that differs from the research was traced to its cause. **None was a port error, so no parameter was
+changed.**
+
+- **Pack: no menacing window on a direct approach.** The research's design arc is stalk, then a held ring (menacing),
+  then strike (terrifying).
+  - The game pack's arc was measured: stalk about 2.5 s; ring held about 3 s at hover (1-2 s at cruise) before the
+    first strike; a re-strike after about 0.8 s of ring.
+  - A pilot that flies straight in never sees the ring held for a whole 8 s window. So the read is terrifying
+    throughout, with eerie ring windows at cruise.
+  - It is not a port error. The port's ≥ 8 s hold is asserted against the round's own scenario: a 120 u/s wanderer
+    starting 600 u away.
+  - **A menace beat on a direct approach cannot be reached inside the research's measured ranges, so the pack is
+    unchanged.** Garrett's image is "surrounded, then everything dives in at once", so this was searched directly.
+    - **The ranges.** The research's own pack search (`substrate/pack_search.py`, results in
+      `substrate/results/emotion_pack.json`) sampled:
+      - `q_up` 0.5-1.2;
+      - ring radius 60-300 u;
+      - stalk speed 30-140 u/s;
+      - `w_ring` 0.3-2.0;
+      - turn 0.8-3.5.
+    - **The search.** Each candidate was replayed against the same straight-in hover and cruise tracks (3 seeds each).
+      The grid crossed `q_up` {0.65, 0.75, 0.85, 0.95}, ring radius {110, 220, 300} and stalk speed {50, 85, 120},
+      plus `w_ring` 0.5 and turn 1.2 at `q_up` 0.9.
+    - **The metric.** A run counts when a ring or stalk window reads menacing or eerie before the first strike window.
+    - **The result.** No candidate reached more than 1 of 6 runs. The first strike always came 1.6-7.6 s after the
+      pilot entered, apart from three isolated runs (10-17 s).
+    - **Why.** Closure is the bestiary formula `(1 - res) · clip((n-1)/3) · 1.6`, clipped to 1. Against a pilot that
+      comes to the pack, six hunters reach closure 1.0 within 3-7 s whatever their speed or ring radius. Any `q_up`
+      below 1 then fires within about 1 s (`q_rate` 0.8). `q_up` 0.97-0.99 behaves the same as 0.95, because closure
+      is pinned at 1. `q_up` ≥ 1.0 never fires.
+    - **What breaks.** At `q_up` 0.95 the round-11b-2 wanderer gate fails: only 3 of 5 seeds ever strike.
+    - **A long hold would not read as menace either.** With `q_up` 1.0 the ring is held for the whole 60 s, and the
+      held ring reads **playful** at hover, not menacing. The research's menacing ring (0.37-0.42) was 4-5 members of
+      14-18 u. The game's pack is 6 members of 12 u, and its count and size are in the cell's volume ladder (round
+      11b §7.4).
+  - **What would deliver the beat** is a design change outside the research's model, so it was not made:
+    - a ring-hold timer (hold ≥ 6 s after closure saturates, then strike together); or
+    - fewer, larger hunters (4-5 at 14-18 u), which re-tunes the volume ladder.
+    The wanderer, telegraph (0.4-0.7 s) and counterplay assertions would have to be re-checked for either. The search
+    log is in this round's report.
+- **Substrate pack in the research model reads playful .84.** This is the research's known finding: its substrate
+  pack is a jittery small-agent cloud. The game follows the bestiary's terrifying intent instead.
+- **Lurker.** The research model reads playful at the snap and the bestiary model reads neutral. The game reads
+  terrifying at the snap, with eerie windows between snaps. That is closest to the bestiary design note ("neutral,
+  eerie, terror at the snap"), so it is not a drift.
+- **Snap-trap grove.** The research run reads terrifying because its pilot passed 25 u from a heart; the game layout
+  put the nearest heart 80 u away (different RNG). The probe cannot see the snap itself, because flora publishes
+  static hearts with no velocity. This is a limit of the probe, not a drift.
+- **Swarm Space locust (jellyfish).** It reads majestic. Only the locust's strike rhythm was ported, never the
+  research's locust cloud, so it moves as a body. It is plated about 25% of the time, so every window is labelled
+  strike. Plate colour is what tells the player, and the probe cannot see colour.
+
+### 27.4 Asserted (`--assert`; all pass)
+
+1. The sparse fed locust reads cute to both viewers.
+2. The dense hungry locust reads terrifying, and its storm reads terrifying.
+3. The pack reads as a threat at hover, and its strike reads terrifying.
+4. The lurker's snap reads terrifying.
+5. The thief nest reads playful or cute.
+6. Every swarm body reads majestic, menacing or terrifying, never cute (four checks, one per body).
+7. For the whale and the dragonfly, the game's threat mass (menacing + terrifying) is within 0.25 of the research
+   model's: .66 vs .50, and .68 vs .69.
+8. The game's reads span cute to terrifying, with at least six of the seven classes; all seven appear.
+
+### 27.5 Also this round: a puffed shield member stays shielded
+
+**The bug.** `SwarmPrismSync` registered a member as shielded only when `Tier == 2`. A puffed pufferfish shield member
+shows the danger tier (1), so the index read it as unshielded. That made shielded mass edible and steerable, and
+invisible to weapons as a shield.
+
+**The fix.**
+- The shield is now its own bit on `SwarmInstance` (bit 9, `Shielded`). The tier stays the look, and danger wins.
+- The ledger, `IsPreyFor` and the proxy's `SetTier` read the bit.
+- `SwarmTadpoleFauna.SetTier` keeps `IsShielded` alongside `MakeDangerous`.
+
+**Test R11c-2** in the tick-job harness: a vessel hounds a Space-plan shield member.
+- At density 5 there are 379 puffed shield member-ticks, with 0 mis-filed and 0 count-once violations.
+- The negative control shows the old rule would mis-file every one.
+
+### 27.6 Not proved
+
+- Nothing here ran in Unity.
+- The probe sees motion and size only. Plate colour, the danger glow and sound are invisible to it, and these carry
+  much of the swarm's threat in play.
+- The class labels are the research's archetypes, not human ratings.
+- Flora is read as static hearts.
+- The R11e entity-ledger test fails at density 1 at every base back to 9e34f0b9b. It is a known pre-existing issue:
+  the documented gate is density 5, where it passes.
+
+**QA.** QA-SWARM-ROUND11-12.
+## 28. Round 11i: the generated assets, audited against the compiled code
+
+Tonight's `author_*.py` scripts wrote prefabs, ScriptableObjects, spawn profiles and a Menu_Main override as YAML
+that Unity never opened. `python3 Tools/Build/check_generated_assets.py` (`--self-test`: 15 negative controls)
+audits every asset added or changed since `origin/bleeding-edge`. The field, enum and script facts come from
+Roslyn binding Assembly-CSharp exactly as `unity_refcompile` builds it, so run that tool first. The audit covers:
+
+- the YAML structure (`%YAML 1.1`, `%TAG !u!`, `--- !u!<class> &<fileID>`);
+- `.meta` presence, and guid uniqueness across `Assets/`;
+- every guid and every cross-file or in-file fileID;
+- `m_Script` resolves to a file whose same-named class derives MonoBehaviour or ScriptableObject;
+- every serialized key and nested `[Serializable]` key names a real field, since Unity drops a typo silently;
+- enum values, and reference types (a type mismatch loads as null);
+- prefab-override property paths, and references to deleted files;
+- the Swarm wiring: the Cell Selector lists the cell, the cell points at its profile, and the profile lists
+  every new fauna and flora config.
+
+A modified file is judged only on the documents the change touched, and only for findings its base did not
+already have.
+
+It found one real defect. `SwarmTadpole.prefab` (and `SubstrateAgent.prefab`, which is built from it) inherited
+TadPoleFauna's three overrides of `HealthPrism.TargetScale`, a field the prism-animation rework retired. Unity
+keeps unresolvable modifications forever, so they did nothing. `author_swarm_fauna.tadpole_prefab()` now drops
+them, and both prefabs were regenerated. Everything else checks out: 48 added and 2 modified assets, 0 duplicate
+guids, 0 dangling references, every script, field and enum value resolves, and the Swarm cell is reachable with
+all 9 fauna and 5 flora configs listed. Two things are counted but not judged: the flora prefabs' `domain: 0` (the
+spawner assigns it at runtime, the same as every shipped flora prefab), and override targets inside nested
+prefabs.
+

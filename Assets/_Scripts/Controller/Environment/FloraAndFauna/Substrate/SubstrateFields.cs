@@ -28,6 +28,8 @@ namespace CosmicShore.Gameplay
         // pack follows the locusts' scent the way the locusts follow the food's) - same blur as food, signal decay.
         static readonly float[] s_blur = { 0.25f, 0.2f, 0.2f, 0.25f };
         static readonly float[] s_decay = { 1.0f, 0.85f, 0.9f, 0.8f };
+        /// <summary>float's smallest normal value (2^-126); a field value below it is flushed to 0 (see Blur).</summary>
+        internal const float MinNormal = 1.17549435e-38f;
 
         public readonly int G;
         public readonly float R, H;
@@ -127,7 +129,11 @@ namespace CosmicShore.Gameplay
                         float v = c * u[i];
                         if (z > 0) v += a * u[i - 1];
                         if (z < g - 1) v += a * u[i + 1];
-                        f[i] = v * decay;
+                        v *= decay;
+                        // a decaying signal ends as float dust: below float's smallest NORMAL it is subnormal, and
+                        // subnormal arithmetic runs ~100x slower on x86 - a cell whose agents have died spent 30 ms a
+                        // tick blurring zeros (QA-SWARM-ROUND11-9). Flushed to 0; every normal value is untouched.
+                        f[i] = MathF.Abs(v) < MinNormal ? 0f : v;
                     }
         }
 

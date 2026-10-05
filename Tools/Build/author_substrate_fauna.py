@@ -24,7 +24,7 @@ THE POPULATIONS (radii from the cell centre; the swarm's own shells are 470-620 
     lurker    Mass   470-620u   seeded AT the Mass flora's crystals it mimics; creeps while unwatched
     pack      Time   690-1080u  6 long hunters over the middle and outer shells: they hunt the locusts and pilots
     locust    Space  910-1080u  a sparse cute cloud over the Space flora; dense + hungry -> a gregarious storm
-  round 11-11 (Docs/SUBSTRATE_FAUNA.md §8) - the middle shell split into three 110-degree sector pens:
+  round 11-11 (Docs/SUBSTRATE_FAUNA.md §9) - the middle shell split into three 110-degree sector pens:
     mobber    Time   625-685u   5 roosts in the free gap; mobs a slow pilot, dives in turn, pecks a 0.25 drain
     stampede  Mass   690-840u   sector +X: 4 herds; the alarm flips them, the bulls climb it and charge
     leech     Charge 690-840u   sector +120 deg: puddles at the flora; pounce, latch, ride, sip a 0.25 drain
@@ -69,7 +69,7 @@ SPECIES = [
          engage=140, proxies=12, bites=16, spawns=8),
     dict(key="lurker", title="Lurker", element="Mass", band=(470, 620), seed=8, spread=30, at_flora=1,
          engage=160, proxies=4, bites=4, spawns=4),
-    # round 11-11: the rest of the bestiary (Docs/SUBSTRATE_FAUNA.md §8). The 620-690 gap between the swarm's inner and
+    # round 11-11: the rest of the bestiary (Docs/SUBSTRATE_FAUNA.md §9). The 620-690 gap between the swarm's inner and
     # middle shells is free (the mobbers' roosts); the middle shell 690-840 is split into three 110-degree SECTORS
     # about the cell's Y axis (sector pens, SubstrateCore.SetSector) for the herd, the puddles and the school.
     dict(key="stampede", title="Stampede", element="Mass", band=(690, 840), seed=0, spread=40, at_flora=0,

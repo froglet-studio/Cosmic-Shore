@@ -253,12 +253,14 @@ namespace CosmicShore.Gameplay
         public void SetTier(bool danger, bool shield)
         {
             if (_dead || !_body || _body.destroyed || !_body.IsCreationComplete) return;
-            if (danger) shield = false;
             if (danger == _danger && shield == _shield) return;
 
             if (danger)
             {
+                // A puffed shield member (round 11d-2): the danger look wins, the mass stays shielded. MakeDangerous
+                // clears IsShielded, so it is set back - danger + shield coexist as on AOEDangerHemisphereBlocks.
                 _body.MakeDangerous();
+                if (shield) _body.prismProperties.IsShielded = true;
             }
             else if (shield)
             {

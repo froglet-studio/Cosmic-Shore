@@ -167,9 +167,10 @@ namespace CosmicShore.Gameplay
             int pop = host.Core.AddPopulation(P, _element, inner, outer);
             if (pop < 0) return -1;
             var block = host.Core.Pops[pop];
-            // round 11-11: this species' own proxy rule (the collider budget is divided per species - Docs/SUBSTRATE_FAUNA.md §8.6) and pen
+            // this species' own engagement: the host's tick settings are the FIRST-joined species' (QA-SWARM-ROUND11-9)
             block.EngageRadius = species.EngageRadius;
             block.MaxEngaged = species.MaxProxies;
+            // round 11-11: the species' sector pen inside its band (Docs/SUBSTRATE_FAUNA.md §9.5)
             if (species.HasSector)
             {
                 var ax = species.SectorAxis;

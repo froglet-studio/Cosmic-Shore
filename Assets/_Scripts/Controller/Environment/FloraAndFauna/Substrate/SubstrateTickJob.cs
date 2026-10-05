@@ -29,9 +29,11 @@ namespace CosmicShore.Gameplay
         public float HeartPrismGap = 0.6f;
         /// <summary>A body prism is w wide, Thin*w tall and aspect*w long; its volume is the agent's stock.</summary>
         public float Thin = 0.6f;
-        /// <summary>World radius around a vessel inside which an agent becomes a real proxy.</summary>
+        /// <summary>World radius around a vessel inside which an agent becomes a real proxy - the default for a population
+        /// that states none of its own (<see cref="SubstratePopulation.EngageRadius"/>).</summary>
         public float EngageRadius = 160f;
-        /// <summary>Most proxies one population may hold (nearest first) - the collider budget's per-population share.</summary>
+        /// <summary>Most proxies one population may hold (nearest first) - the collider budget's per-population share; the
+        /// default for a population that states none of its own (<see cref="SubstratePopulation.MaxEngaged"/>).</summary>
         public int MaxEngaged = 24;
     }
 
@@ -87,9 +89,16 @@ namespace CosmicShore.Gameplay
         /// <summary>Predations the published ticks asked for (the owner kills the prey through its proxy and feeds its
         /// body to the predator).</summary>
         public readonly List<SubstratePredation> PreyRequests = new();
+        /// <summary>
+        /// Every agent the published tick killed, with the stock it died holding (<see cref="SubstrateCore.Kill"/>'s
+        /// return). It can exceed the body published before the kill was queued: a meal queued in the same pass (a bite,
+        /// or a prey paid to a hunter that then dies) lands in the body FIRST and leaves with it (QA-SWARM-ROUND11-9).
+        /// </summary>
+        public readonly List<SubstrateFeed> Killed = new();
         public long Tick;
 
         // ── back buffers (worker writes) ──
+        readonly List<SubstrateFeed> _bKilled = new();
         SwarmInstance[] _bInst;
         Vector3[] _bBody;
         float[] _bSpeed;
@@ -217,8 +226,18 @@ namespace CosmicShore.Gameplay
                 _killsRun.Clear(); _killsRun.AddRange(_kills); _kills.Clear();
                 _feedsRun.Clear(); _feedsRun.AddRange(_feeds); _feeds.Clear();
             }
-            for (int q = 0; q < _killsRun.Count; q++) Core.Kill(_killsRun[q]);
+            // feeds BEFORE kills (QA-SWARM-ROUND11-9): the prism a bite consumed is already gone from the world, so a meal
+            // queued for an agent that dies in the same pass must reach its body and leave with it. Applied the other way
+            // round, Core.Feed met a dead agent and the volume vanished.
             for (int q = 0; q < _feedsRun.Count; q++) Core.Feed(_feedsRun[q].Index, _feedsRun[q].Volume);
+            _bKilled.Clear();
+            for (int q = 0; q < _killsRun.Count; q++)
+            {
+                int k = _killsRun[q];
+                bool was = k >= 0 && k < _cap && Core.Alive[k];
+                float stock = Core.Kill(k);
+                if (was) _bKilled.Add(new SubstrateFeed { Index = k, Volume = stock });
+            }
             _bEvents.Clear(); _bEat.Clear(); _bPrey.Clear();
             var pil = new ReadOnlySpan<SubstratePilot>(Pilots, 0, Math.Min(PilotCount, Pilots.Length));
             var food = new ReadOnlySpan<SubstrateFood>(Food, 0, Math.Min(FoodCount, Food.Length));
@@ -264,6 +283,7 @@ namespace CosmicShore.Gameplay
             Events.Clear(); Events.AddRange(_bEvents);
             EatRequests.Clear(); EatRequests.AddRange(_bEat);
             PreyRequests.Clear(); PreyRequests.AddRange(_bPrey);
+            Killed.Clear(); Killed.AddRange(_bKilled);
             Tick = _tick - 1;
         }
 
@@ -346,11 +366,10 @@ namespace CosmicShore.Gameplay
         void BuildEngaged(SubstratePopulation pop, int q)
         {
             int n = 0;
-            // round 11-11: each population's own engage radius and proxy cap (the collider budget is per species)
-            float er = pop.EngageRadius > 0f ? pop.EngageRadius : S.EngageRadius;
-            int cap = pop.MaxEngaged > 0 ? pop.MaxEngaged : S.MaxEngaged;
+            float er = pop.EngageRadius >= 0f ? pop.EngageRadius : S.EngageRadius;
+            int max = pop.MaxEngaged >= 0 ? pop.MaxEngaged : S.MaxEngaged;
             float r2 = er * er;
-            if (pop.Active && PilotCount > 0 && r2 > 0f && cap > 0)
+            if (pop.Active && PilotCount > 0 && r2 > 0f && max > 0)
                 for (int i = pop.Start; i < pop.Start + pop.Cap; i++)
                 {
                     if ((_bInst[i].Flags & 1u) == 0 || _bRiding[i]) continue;
@@ -360,7 +379,7 @@ namespace CosmicShore.Gameplay
                     // the sort key: a dangerous agent ranks below every harmless one (-1 + d^2 / 1e6 < 0 <= d^2)
                     if (best <= r2) { _engD[n] = Core.Danger[i] ? -1f + best * 1e-6f : best; _engI[n] = i; n++; }
                 }
-            if (n > cap) { Array.Sort(_engD, _engI, 0, n); n = cap; }
+            if (n > max) { Array.Sort(_engD, _engI, 0, n); n = max; }
             Array.Copy(_engI, 0, _bEngaged, pop.Start, n);
             _bEngCount[q] = n;
         }
