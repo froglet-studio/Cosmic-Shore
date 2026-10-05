@@ -1526,7 +1526,7 @@ namespace CosmicShore.Gameplay
                     if (d < _goalBest - 1f) { _goalBest = d; _goalProgressAt = now; }
                     if (_atPlantSince < 0f && d < 60f) _atPlantSince = now;
                     // travel along this swarm's shell, never the chord through the cell (SwarmShellPath)
-                    var w = SwarmShellPath.Toward(Sim(_centre), Sim(here), Sim(target), (here - _centre).magnitude, config.WanderReach);
+                    var w = SwarmShellPath.Toward(Sim(_centre), Sim(here), Sim(target), RideRadius((here - _centre).magnitude), config.WanderReach);
                     return new Vector3(w.X, w.Y, w.Z);
                 }
             }
@@ -1534,10 +1534,16 @@ namespace CosmicShore.Gameplay
             if ((Goal - here).sqrMagnitude > 40f * 40f) return Goal;   // still travelling to the last point
             Vector3 radial = here - _centre;
             Vector3 wander = here + Random.onUnitSphere * config.WanderReach;
-            // keep the wander on this swarm's shell; the Goal setter clamps it into the band
-            if (radial.sqrMagnitude > 1f) wander = _centre + (wander - _centre).normalized * radial.magnitude;
+            // keep the wander on this swarm's shell, the whole body inside the band (round 11-14); the Goal setter clamps
+            // it into the band
+            if (radial.sqrMagnitude > 1f) wander = _centre + (wander - _centre).normalized * RideRadius(radial.magnitude);
             return wander;
         }
+
+        /// <summary>The shell radius (world) this swarm rides at from <paramref name="r"/>: inside its band by its body's
+        /// radius (<see cref="SwarmShellPath.Ride"/>); <paramref name="r"/> itself with no band.</summary>
+        float RideRadius(float r) =>
+            TryBand(out float lo, out float hi) ? SwarmShellPath.Ride(r, lo * config.UnitScale, hi * config.UnitScale, BodyRadius) : r;
 
         // ───────────────────────────────────────────────────────────────── starvation
 

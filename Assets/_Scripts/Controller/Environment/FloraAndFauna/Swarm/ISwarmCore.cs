@@ -49,6 +49,21 @@ namespace CosmicShore.Gameplay
             return centre + dir * radius;
         }
 
+        /// <summary>
+        /// The shell radius a swarm of <paramref name="bodyRadius"/> rides in its band [<paramref name="inner"/>,
+        /// <paramref name="outer"/>]: <paramref name="r"/> pulled inside the band by the body's radius (at most half the
+        /// band, so a body wider than its band rides the middle). Round 11-14 (Docs/SWARM_FAUNA.md §26.6): a sated swarm
+        /// wanders at its CURRENT radius, and one whose anchor sat at the band's edge kept half its body outside the band
+        /// for as long as it roamed - 63-70% of member-seconds inside the band once starvation stopped culling the sated
+        /// swarms. No band (outer &lt;= 0): <paramref name="r"/> unchanged.
+        /// </summary>
+        public static float Ride(float r, float inner, float outer, float bodyRadius)
+        {
+            if (outer <= 0f || outer <= inner) return r;
+            float m = MathF.Min(MathF.Max(0f, bodyRadius), 0.5f * (outer - inner));
+            return Math.Clamp(r, inner + m, outer - m);
+        }
+
         /// <summary>Arc distance along a shell of <paramref name="radius"/> from <paramref name="here"/> to the target's
         /// direction - what "progress toward a plant" is measured in.</summary>
         public static float Arc(Vector3 centre, Vector3 here, Vector3 target, float radius)

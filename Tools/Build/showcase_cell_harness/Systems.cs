@@ -670,15 +670,18 @@ sealed class SwarmSystem : ICellSystem, IOccupancy
                 if (d < one.GoalBest - 1f) { one.GoalBest = d; one.GoalProgressAt = now; }
                 if (one.AtPlantSince < 0f && d < 60f) one.AtPlantSince = now;
                 // SwarmFauna.ResolveGoal: along the shell (SwarmShellPath), the Goal setter clamps into the band
-                return ClampBand(one, SwarmShellPath.Toward(Vector3.Zero, here, plant.Heart, here.Length(), Cell.F(_cfg, "WanderReach")));
+                return ClampBand(one, SwarmShellPath.Toward(Vector3.Zero, here, plant.Heart, Ride(one, here.Length()), Cell.F(_cfg, "WanderReach")));
             }
         }
         if (Vector3.DistanceSquared(one.Goal, here) > 40f * 40f) return one.Goal;
         var wander = here + c.Rng.OnUnitSphere() * Cell.F(_cfg, "WanderReach");
         float rr = here.Length();
-        if (rr > 1f) wander = Vector3.Normalize(wander) * rr;
+        if (rr > 1f) wander = Vector3.Normalize(wander) * Ride(one, rr);
         return ClampBand(one, wander);
     }
+
+    /// <summary>SwarmFauna.RideRadius: the whole body inside the band (SwarmShellPath.Ride, round 11-14).</summary>
+    float Ride(One one, float r) => SwarmShellPath.Ride(r, one.Inner, one.Outer, BodyRadius(one));
 
     static Vector3 ClampBand(One one, Vector3 p)
     {
