@@ -94,6 +94,10 @@
     <Compile Include="../CosmicShore.Player/FrameRecorder.cs" Link="Player/FrameRecorder.cs" />
     <Compile Include="../CosmicShore.Player/Inspector.cs" Link="Player/Inspector.cs" />
     <Compile Include="../CosmicShore.Player/ScriptTicker.cs" Link="Player/ScriptTicker.cs" />
+    <!-- PlayerWindow's control port and run report: on phones nothing starts them, so they stay inert. -->
+    <Compile Include="../CosmicShore.Player/ControlServer.cs" Link="Player/ControlServer.cs" />
+    <Compile Include="../CosmicShore.Player/SessionReport.cs" Link="Player/SessionReport.cs" />
+    <Compile Include="../CosmicShore.Player/UiDump.cs" Link="Player/UiDump.cs" />
     <Compile Include="../CosmicShore.Client/MiniPng.cs" Link="Player/MiniPng.cs" />
   </ItemGroup>
 

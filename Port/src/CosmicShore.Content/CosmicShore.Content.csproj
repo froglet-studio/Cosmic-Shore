@@ -24,6 +24,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="../Shared/FrogletProjectSettings.cs" Link="Shared/FrogletProjectSettings.cs" />
+    <Compile Include="../Shared/PrismaProjectSettings.cs" Link="Shared/PrismaProjectSettings.cs" />
   </ItemGroup>
 </Project>

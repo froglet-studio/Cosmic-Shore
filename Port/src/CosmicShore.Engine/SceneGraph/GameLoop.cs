@@ -159,6 +159,7 @@ namespace CosmicShore.Engine
             try
             {
                 long mark = PhaseTiming ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
+                if (PhaseTiming) _allocMark = GC.GetAllocatedBytesForCurrentThread();
                 Time.Advance(deltaTime);
                 InputSystem.InputSystem.Update(); // commit device state + evaluate actions before any script runs
                 SyncContext.Pump();
@@ -182,7 +183,7 @@ namespace CosmicShore.Engine
                 UI.LayoutRebuilder.FlushQueuedRebuilds(); // canvas-update slot: queued UI layout solves after LateUpdate
                 Scheduler.RunEndOfFrame();
                 FlushDestroyQueue();
-                if (PhaseTiming) Lap(ref mark, "destroy");
+                if (PhaseTiming) { Lap(ref mark, "destroy"); TimedFrames++; }
             }
             finally
             {
@@ -197,6 +198,19 @@ namespace CosmicShore.Engine
         /// </summary>
         public static bool PhaseTiming;
         readonly Dictionary<string, long> _phaseTicks = new();
+        readonly Dictionary<string, long> _phaseTotals = new();
+
+        readonly Dictionary<string, long> _phaseAlloc = new();
+        long _allocMark;
+
+        /// <summary>Every phase's accumulated ticks since the loop started timing (never drained; the session report reads it).</summary>
+        public IReadOnlyDictionary<string, long> PhaseTotals => _phaseTotals;
+
+        /// <summary>Bytes the loop thread allocated in each top-level phase while timing was on (the session report reads it).</summary>
+        public IReadOnlyDictionary<string, long> PhaseAllocations => _phaseAlloc;
+
+        /// <summary>Frames ticked while <see cref="PhaseTiming"/> was on.</summary>
+        public int TimedFrames { get; private set; }
 
         /// <summary>Diagnostics: add a sub-phase's wall time to the current report (no-op unless <see cref="PhaseTiming"/>).</summary>
         internal static void AddPhase(string phase, long ticks)
@@ -204,6 +218,8 @@ namespace CosmicShore.Engine
             if (!PhaseTiming || Current is not { } loop) return;
             loop._phaseTicks.TryGetValue(phase, out long sum);
             loop._phaseTicks[phase] = sum + ticks;
+            loop._phaseTotals.TryGetValue(phase, out long total);
+            loop._phaseTotals[phase] = total + ticks;
         }
 
         void Lap(ref long mark, string phase)
@@ -211,7 +227,13 @@ namespace CosmicShore.Engine
             long now = System.Diagnostics.Stopwatch.GetTimestamp();
             _phaseTicks.TryGetValue(phase, out long sum);
             _phaseTicks[phase] = sum + (now - mark);
+            _phaseTotals.TryGetValue(phase, out long total);
+            _phaseTotals[phase] = total + (now - mark);
             mark = now;
+            long allocated = GC.GetAllocatedBytesForCurrentThread();
+            _phaseAlloc.TryGetValue(phase, out long bytes);
+            _phaseAlloc[phase] = bytes + (allocated - _allocMark);
+            _allocMark = allocated;
         }
 
         /// <summary>Per-phase milliseconds since the last call, averaged over <paramref name="frames"/>.</summary>
@@ -233,11 +255,32 @@ namespace CosmicShore.Engine
             for (int i = 0; i < frames; i++) Tick(deltaTime);
         }
 
+        readonly List<MonoBehaviour> _startBatch = new();
+
         void DrainStartQueue()
         {
-            // Behaviours enabled during Start callbacks queue for the same drain.
+            // Start runs in script execution order (enable order within one order), as the
+            // per-frame phases do. Behaviours enabled during Start callbacks form the next batch
+            // of the same drain.
             while (_startQueue.Count > 0)
-                _startQueue.Dequeue().RunStart();
+            {
+                _startBatch.Clear();
+                bool ordered = false;
+                while (_startQueue.Count > 0)
+                {
+                    var mb = _startQueue.Dequeue();
+                    ordered |= mb.ExecutionOrder != 0;
+                    _startBatch.Add(mb);
+                }
+                if (ordered)
+                {
+                    var indexed = new List<(MonoBehaviour mb, int i)>(_startBatch.Count);
+                    for (int i = 0; i < _startBatch.Count; i++) indexed.Add((_startBatch[i], i));
+                    indexed.Sort((a, b) => a.mb.ExecutionOrder != b.mb.ExecutionOrder ? a.mb.ExecutionOrder.CompareTo(b.mb.ExecutionOrder) : a.i.CompareTo(b.i));
+                    for (int i = 0; i < indexed.Count; i++) _startBatch[i] = indexed[i].mb;
+                }
+                foreach (var mb in _startBatch) mb.RunStart();
+            }
         }
 
         void RunFixedSteps()

@@ -30,14 +30,14 @@ namespace CosmicShore.Player
     public static class Program
     {
         /// <summary>
-        /// Quality from the engine's own Project Settings (Port/ProjectSettings/FrogletProject.json),
+        /// Quality from the engine's own Project Settings (Port/ProjectSettings/PrismaProject.json),
         /// before environment variables and arguments, which override it for one run.
         /// </summary>
         static void ApplyProjectQuality()
         {
             var root = CosmicShore.Content.AssetDatabase.FindProjectRoot();
             if (root == null) return;
-            var q = CosmicShore.Froglet.FrogletProjectSettings.Load(root).Quality;
+            var q = Prisma.PrismaProjectSettings.Load(root).Quality;
             if (q.Msaa is { } m) CosmicShore.Render.RenderQuality.Msaa = m;
             if (q.RenderScale is { } s) CosmicShore.Render.RenderQuality.RenderScale = s;
             if (q.Anisotropy is { } a) CosmicShore.Render.RenderQuality.Anisotropy = a;
@@ -60,6 +60,7 @@ namespace CosmicShore.Player
             int workers = 1, worker = -1, evals = 1, generations = 0;
             string trainDir = null, resume = null, evalPopulation = null;
             int recycleMb = 2500, controlPort = 0;
+            string sessionReport = null;
             var evalGenomes = new System.Collections.Generic.List<string>();
             int flights = 12;
             string trainOut = null, trainScenario = null;
@@ -107,6 +108,7 @@ namespace CosmicShore.Player
                     case "--dump-ui-at" when i + 1 < args.Length: dumps.Add("@" + args[++i]); break;
                     case "--fullscreen": PlayerWindow.StartFullscreen = true; break;
                     case "--control-port" when i + 1 < args.Length: int.TryParse(args[++i], out controlPort); break;
+                    case "--session-report" when i + 1 < args.Length: sessionReport = args[++i]; break;
                     case "--msaa" when i + 1 < args.Length: int.TryParse(args[++i], out CosmicShore.Render.RenderQuality.Msaa); break;
                     case "--render-scale" when i + 1 < args.Length:
                         float.TryParse(args[++i], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out CosmicShore.Render.RenderQuality.RenderScale); break;
@@ -136,6 +138,7 @@ namespace CosmicShore.Player
             }
 
             CosmicShore.Render.RenderQuality.Clamp();
+            if (!wantTrain) SessionReport.Begin(sessionReport);
 
             // A fixed seed makes a run reproducible (UnityEngine.Random otherwise seeds from the clock).
             // A training run always has one: its workers must evolve under the same seed.
@@ -181,6 +184,7 @@ namespace CosmicShore.Player
             {
                 Console.WriteLine();
                 Console.WriteLine("CRASH — " + e);
+                SessionReport.Write("crash", e);
                 return 2;
             }
         }
@@ -190,6 +194,7 @@ namespace CosmicShore.Player
             Screen.width = width;
             Screen.height = height;
             using var boot = new PlayerBoot();
+            SessionReport.Log = boot.Log;
             boot.Log.Quiet = quiet;
             boot.Headless = true;
             if (!script.IsEmpty || control != null) script.EnsureDevices();
@@ -198,12 +203,19 @@ namespace CosmicShore.Player
             boot.Start(scene);
             train?.Install(boot.Runtime);
             string lastScene = SceneManager.GetActiveScene().name;
+            int frameNow = 0;
+            SessionReport.Frame = () => frameNow;
             for (int f = 0; f < frames && !quit; f++)
             {
+                frameNow = f;
                 script.BeforeTick(f);
                 control?.BeforeTick(f);
+                long tickStart = System.Diagnostics.Stopwatch.GetTimestamp();
                 if (control is { WantsFrame: true }) control.AfterPresent(_ => throw new InvalidOperationException("a --headless player draws nothing; start it with a window (xvfb-run on a server) to take screenshots"), width, height);
                 boot.Tick(1f / 60f);
+                double tickMs = System.Diagnostics.Stopwatch.GetElapsedTime(tickStart).TotalMilliseconds;
+                SessionReport.FrameTime(tickMs); // headless: a frame is one simulation tick
+                SessionReport.SimTime(tickMs);
                 if (train != null)
                 {
                     train.Poll(f);
@@ -217,6 +229,7 @@ namespace CosmicShore.Player
                 }
             }
             Console.WriteLine($"[player] {frames} frames, active scene '{lastScene}', {CosmicShore.Engine.Object.FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None).Length} live behaviours");
+            if (train == null) SessionReport.Write(quit ? "quit" : "frames done");
             boot.Log.PrintSummary();
             if (reportRender) { RenderInventory.PrintNetwork(); RenderInventory.Print(); }
             foreach (var d in dumps) { if (d.StartsWith("@")) UiDump.PrintAt(d[1..]); else UiDump.Print(d); }

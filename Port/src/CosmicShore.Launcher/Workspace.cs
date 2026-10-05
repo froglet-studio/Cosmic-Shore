@@ -31,7 +31,7 @@ namespace CosmicShore.Launcher
 
         public string Dir => _s.Workspace == WorkspaceMode.WorktreeOfMyClone && !string.IsNullOrWhiteSpace(_s.MyClonePath)
             ? Path.Combine(Path.GetDirectoryName(Path.GetFullPath(_s.MyClonePath).TrimEnd('\\', '/'))!,
-                Path.GetFileName(Path.GetFullPath(_s.MyClonePath).TrimEnd('\\', '/')) + "-froglet-engine")
+                Path.GetFileName(Path.GetFullPath(_s.MyClonePath).TrimEnd('\\', '/')) + "-prisma")
             : _s.ResolvedManagedPath;
 
         public bool Exists => Directory.Exists(Path.Combine(Dir, ".git")) || File.Exists(Path.Combine(Dir, ".git"));
@@ -160,8 +160,8 @@ namespace CosmicShore.Launcher
         public List<string> BuildScenes()
         {
             if (!File.Exists(Path.Combine(Dir, "ProjectSettings", "EditorBuildSettings.asset"))) return new();
-            var p = CosmicShore.Froglet.FrogletProjectSettings.Load(Dir);
-            return p.BuildScenes(new CosmicShore.Froglet.FrogletProjectSettings.UnityDefaults(Dir))
+            var p = Prisma.PrismaProjectSettings.Load(Dir);
+            return p.BuildScenes(new Prisma.PrismaProjectSettings.UnityDefaults(Dir))
                 .Where(s => s.Enabled).Select(s => Path.GetFileNameWithoutExtension(s.Path)).ToList();
         }
 
