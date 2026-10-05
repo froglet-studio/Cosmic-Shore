@@ -684,10 +684,16 @@ namespace CosmicShore.UI
 
             if (Gamepad.current == null) return;
 
+            // A guided path (MenuGuide) leaves the pad exactly one way forward - the spotlit
+            // control, pressed with A through the EventSystem - plus Settings. Freestyle and
+            // screen paging are other places to go, so they stand down; X-for-Settings and
+            // A-for-the-Arcade below are the path's own controls and stay.
+            bool guided = MenuGuide.IsActive;
+
             // Y (buttonNorth) toggles freestyle from any state - checked before
             // the freestyle early-return so it works as both enter and exit.
             // A cooldown prevents accidental rapid toggling after each transition.
-            if (crystalClickHandler
+            if (crystalClickHandler && !guided
                 && Gamepad.current.buttonNorth.wasPressedThisFrame
                 && Time.unscaledTime >= _freestyleToggleCooldownUntil
                 && !HasActiveModal
@@ -714,6 +720,8 @@ namespace CosmicShore.UI
                     return;
                 }
             }
+
+            if (guided) return;
 
             if (Gamepad.current.leftTrigger.wasPressedThisFrame)
                 NavigateLeft();

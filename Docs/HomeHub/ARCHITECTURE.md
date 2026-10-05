@@ -1727,3 +1727,62 @@ it drift on every one. So "better" cannot quietly become "a different colour".
 > a sprited one freezes its slant into the art and is exact only at the size it was exported at.
 > This pass stayed a sprite because eight elements draw it at four aspects and a swap is a scene
 > change; the resolution and the crop were the reported problem, and both are asset-side.
+
+---
+
+## 8. Guiding a player: SHOW the path, never walk it (LOCKED rule)
+
+**When the app wants a player to go to one place - the microgame on first login, the Hangar or
+Profile early on - it SIGNALS that one place and lets the player go there themselves.** It never
+navigates, opens, selects or flies anything on the player's behalf.
+
+In practice, for every step of the path:
+
+1. **The one control to press next has a call to action on it** - a spotlight cut-out with a
+   pulsing frame in the palette's CTA colour, and an optional authored caption beside it.
+2. **Everything else is under a semi-transparent dim, and dimmed means dead.** A press anywhere
+   off the path lands on the dim and does nothing. The pad's own shortcuts that lead elsewhere
+   (Y for freestyle, the triggers for screen paging, B to back out of a window on the path) stand
+   down, and a pad selection that wanders off the path is put back on it.
+3. **Settings is never taken away** (and the credits it opens). It is cut out of the dim on every
+   step, and while it is open the spotlight stands aside entirely. A player who cannot turn the
+   volume down while being guided has been trapped, not guided.
+4. **The player presses the real control.** The cut-out is a hole, not a button: a press inside
+   it falls through to the actual Arcade entry, card or window underneath.
+
+**Why.** A player who was carried somewhere has no idea how they got there and cannot get back. A
+player who walked a locked path by hand - even one with only one door open at each step - has
+learned where the thing lives. The guide is a lesson in the app's geography as much as a route.
+
+**Three properties the implementation keeps, and a new guide must too:**
+
+- **The step is re-derived from where the player IS, every frame**, never advanced through a
+  sequence. A resumed quest, a window that closed, a detour into Settings - each lands on the
+  right step with no counter to drift.
+- **It fails open.** If no step can be found for more than a moment the spotlight fades away
+  rather than dimming a screen with no way forward. Trapping a new player is the one outcome worse
+  than not guiding them.
+- **A guide may open the one door it points at** (`MenuGuide.ExemptsMode`) - a progression-locked
+  card at the end of the path is pressable while the path leads to it - and it never closes one
+  permanently. That is why a guide is not an `AppliesLock` node and runs under the master
+  developer unlock: it takes nothing away beyond the length of its own beat.
+
+**The pieces.** `MenuGuide` (`_Scripts/UI/Guide/`) is the shared state the menu reads - whether a
+guide is on, which card it leads to, which windows are always available, and the derived list of
+controls that open them (any Button whose inspector-wired onClick opens an always-available
+`ModalWindowManager`, any `MenuHubButton` targeting one, anything carrying
+`MenuGuideAlwaysAvailable`). `MenuSpotlight` draws it on its own screen-space overlay canvas,
+built in code so no scene can be missing it: `SpotlightDimGraphic` is the dim, drawn as the cells
+of the grid its cut-outs make and an `ICanvasRaycastFilter` that refuses every press except inside
+a cut-out; `SpotlightFrameGraphic` is the CTA frame. It fades in and out, and the cut-out glides
+between steps - continuity of existence applies to UI too. The first driver is the Quest Graph's
+`QuestGuideToMicrogameNode` (Home → Arcade entry → this week's card → the preview window).
+
+**What the rule retires.** The first-login "railroad" shipped in phase 4 of the training plan
+opened the Arcade itself, pressed the card itself (`ArcadeExploreView.TrySelectMode`) and flew the
+vessel into the preview by itself (`ModePreviewSession.ArmForcedEntry`). All three are deleted,
+not merely unused, so nothing can reach for them again. The Quest Graph's `Navigate` and
+`EnterFreestyle` nodes still exist for the older phases 1-5 and break this rule; those phases
+stand down under the developer unlock today, and converting them to guides is part of
+re-deciding them (`Docs/ModePreview/TRAINING_PLAN.md` §11). `author_first_login_guide.py --check`
+fails if a carrying node ever appears in the first-login phase.

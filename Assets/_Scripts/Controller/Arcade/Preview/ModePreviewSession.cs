@@ -146,6 +146,10 @@ namespace CosmicShore.Gameplay
         // the first is still landing must not run the whole entry twice.
         bool _enteringFlight;
 
+        /// <summary>The window this session draws into (null while detached) - what a guided path
+        /// spotlights for the player to tap. Nothing outside the window may tap it for them.</summary>
+        public ModePreviewWindow Window => _window;
+
         /// <summary>The mode being previewed, or <see cref="GameModes.Random"/> when idle.</summary>
         public GameModes ActiveMode { get; private set; } = GameModes.Random;
 
@@ -363,13 +367,6 @@ namespace CosmicShore.Gameplay
 
                 _state = State.Showing;
                 _window?.GoLive();      // the surface now has a camera drawing into it
-
-                // A first-login walk-in armed this card: fly straight in, as if the player tapped.
-                if (_armedForcedEntry == definition.Mode)
-                {
-                    _armedForcedEntry = null;
-                    HandleFocusRequested();
-                }
             }
             catch (OperationCanceledException)
             {
@@ -390,24 +387,6 @@ namespace CosmicShore.Gameplay
                 _window?.ShowUnavailable();
             }
         }
-
-        // ── Forced entry (the first-login railroad) ──────────────────────────
-
-        static GameModes? _armedForcedEntry;
-
-        /// <summary>
-        /// The next time a preview of <paramref name="mode"/> goes live, take focus by itself - the
-        /// window flies the vessel in exactly as a tap would (TRAINING_PLAN §5). One-shot. It does
-        /// NOT force the Lesson: that is the drill's own account keys, so a player who has already
-        /// learned to fly is walked in and still gets Skip.
-        /// </summary>
-        public static void ArmForcedEntry(GameModes mode) => _armedForcedEntry = mode;
-
-        /// <summary>Cancel an arm that has not fired (the walk-in was abandoned).</summary>
-        public static void DisarmForcedEntry() => _armedForcedEntry = null;
-
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void ResetStatics() => _armedForcedEntry = null;
 
         // ── Focus (who holds the stick) ──────────────────────────────────────
 

@@ -7,7 +7,7 @@ namespace CosmicShore.Editor
 {
     /// <summary>
     /// Make this account a first-timer for the microgame drill again: the Lesson keys and the
-    /// seen tips are forgotten, so the next Lesson is forced and the first-login railroad
+    /// seen tips are forgotten, so the next Lesson is forced and the first-login guide
     /// (Docs/ModePreview/TRAINING_PLAN.md §10.5) has a Lesson to wait for.
     ///
     /// <para>Run it in PLAY MODE for a full reset. The store merges this machine's copy with the

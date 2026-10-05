@@ -26,7 +26,7 @@ namespace CosmicShore.Core
         [Tooltip("Run this PHASE even while the master developer unlock is on. The phase-level twin of " +
                  "QuestSO.runsUnderDeveloperUnlock: lock-applying nodes still pass straight through, and " +
                  "when the quest reaches a phase that has not opted in, the runner stands down there " +
-                 "(nothing is marked complete). Lets a routing phase - the first-login railroad - run " +
+                 "(nothing is marked complete). Lets a routing phase - the first-login guide - run " +
                  "while the lock-funnel phases after it keep waiting for the gate to be turned off.")]
         public bool runsUnderDeveloperUnlock;
 

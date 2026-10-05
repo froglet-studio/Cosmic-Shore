@@ -31,6 +31,9 @@ namespace CosmicShore.UI
                                  "in the ScreenSwitcher's Modals list - that is how it is found.")]
         ScreenSwitcher.ModalWindows target = ScreenSwitcher.ModalWindows.ARCADE;
 
+        /// <summary>Which modal this entry opens - read by a guided path to find the Arcade entry.</summary>
+        public ScreenSwitcher.ModalWindows Target => target;
+
         [SerializeField, Tooltip("Leave empty to find the one in the scene at Start.")]
         ScreenSwitcher screenSwitcher;
 

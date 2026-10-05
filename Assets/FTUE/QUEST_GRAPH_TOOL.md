@@ -17,6 +17,11 @@ quest-track UI stays in sync.
 > `HighlightCTA` went with it, along with the progression service's frontier breadcrumb.
 > A quest still *advances* on the same player actions; it just does not light a badge saying
 > "go here". A replacement breadcrumb wants designing against the roster that exists.
+>
+> **The replacement for "go here" is the GUIDED PATH** (`Docs/HomeHub/ARCHITECTURE.md` §8):
+> a spotlight on the one control to press next, everything else dimmed and dead except Settings,
+> and the player presses it themselves. A node never navigates FOR the player - `Navigate` and
+> `EnterFreestyle` predate the rule and live only in the older phases.
 
 ---
 
@@ -96,7 +101,9 @@ already arranged.
 | Presentation | **ShowInstruction** | Typewriter text; wait-for-Next or show-and-continue |
 | Presentation | **Dialogue** | Shows the dialogue panel with lines authored ON the node (speaker, optional portrait override) — self-contained, no DialogueSet/DialogueManager |
 | Gameplay | **EnterFreestyle** | Forces the menu vessel into player control |
-| Gameplay | **Navigate** | Force-navigates a screen / the arcade modal |
+| Gameplay | **GuideToMicrogame** | Spotlights the way to an arcade card's microgame (Game of the Week or a named mode): Arcade entry → card → preview window, for the player to press; holds until the Lesson ends. The guided-path rule's first node |
+| Gate | **WaitForLesson** | Waits until a microgame Lesson is completed or skipped |
+| Gameplay | **Navigate** | Force-navigates a screen / the arcade modal. **Breaks the guided-path rule** - do not use in new graphs; use a guide |
 | Gameplay | **LockModes** | Locks all game cards except the tutorial game (one-shot; prefer SetArcadeConstraints — it survives card-grid repopulation and scene reloads) |
 | Gameplay | **SetArcadeConstraints** | Funnels the arcade: one clickable game card, one selectable intensity, player count defaulted to max, domain count defaulted (e.g. 3). Static — survives the Menu→game→Menu round-trip; author a Clear node when the funnel ends |
 | Gameplay | **LockNavigation** | Disables every footer nav button except the Arcade button (or unlocks all). Buttons auto-wired by the Phase 0 wirer; always restored on quest teardown |
@@ -173,7 +180,7 @@ runner stands down unless the quest sets `QuestSO.runsUnderDeveloperUnlock`, or 
 about to run sets `QuestPhaseGraphSO.runsUnderDeveloperUnlock`. A phase-level opt-in runs that phase
 and the runner stands down at the first later phase that has not opted in (nothing is marked
 complete, so it resumes there once the gate is off) - which is how MainQuest's Phase 0, the
-first-login railroad, runs in a default checkout while the lock-funnel phases after it wait. An
+first-login guide, runs in a default checkout while the lock-funnel phases after it wait. An
 opted-in quest or phase runs, but every node whose `QuestNodeSO.AppliesLock` is true (LockModes; the locking direction of
 LockNavigation, SetButtonInteractable and SetArcadeConstraints) passes straight through, so the
 gate keeps meaning "nothing is locked". A new node type that locks anything must override

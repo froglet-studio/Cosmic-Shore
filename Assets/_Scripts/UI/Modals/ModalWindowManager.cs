@@ -183,6 +183,10 @@ namespace CosmicShore.UI
             // poll that sails straight past it.
             if (ModePreviewWindow.AnyHasFocus) return;
 
+            // A guided path (MenuGuide) takes B away from every window on the path - backing out
+            // is a way off it. Settings keeps B: it is never part of a path and always closable.
+            if (MenuGuide.IsActive && !MenuGuide.IsAlwaysAvailable(ModalType)) return;
+
             if (Gamepad.current != null && Gamepad.current.buttonEast.wasPressedThisFrame)
             {
                 if (screenSwitcher != null && !screenSwitcher.ModalIsActive(ModalType))

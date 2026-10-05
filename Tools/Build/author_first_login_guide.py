@@ -1,30 +1,34 @@
 #!/usr/bin/env python3
-"""Author the first-login railroad (Docs/ModePreview/TRAINING_PLAN.md §5).
+"""Author the first-login guide (Docs/ModePreview/TRAINING_PLAN.md §5).
 
 Writes:
   Assets/Resources/GameOfTheWeek.asset                          the rotation (GameOfTheWeekSO)
-  Assets/FTUE/DataContainer/Phases/MainQuest_Phase0_Railroad.asset  the new Phase 0
+  Assets/FTUE/DataContainer/Phases/MainQuest_Phase0_FirstLogin.asset  the new Phase 0
   Assets/FTUE/DataContainer/Quests/MainQuest.asset              phases[0] re-pointed at it
 
-The railroad is one phase: lock navigation to the Arcade, open the Game of the Week's microgame
-with the vessel flown in and HOLD there until the Lesson ends, unlock, end the phase. The open node
-holds rather than handing to a separate wait node because a quest resumes at its saved node: a
-player who quits mid-Lesson must resume where the microgame is opened again.
-The phase opts in to running under the master developer unlock (its lock nodes pass through), so
-the walk-in works in a default checkout; the phases after it do not, and the runner stands down
+The guide is one phase: a QuestGuideToMicrogameNode that SPOTLIGHTS the way to the Game of the
+Week's microgame - the Arcade entry, the card, the preview - for the player to press themselves
+(the guided-path rule, Docs/HomeHub/ARCHITECTURE.md §8), and holds until the Lesson ends; then the
+phase ends. The guide node holds rather than handing to a separate wait node because a quest
+resumes at its saved node: a player who quits mid-Lesson must resume where the path is lit again.
+The phase opts in to running under the master developer unlock, so the guide works in a default
+checkout; the phases after it do not, and the runner stands down
 when it reaches them.
 
 The two new assets are SEED content a designer then edits (the rotation in the inspector, the
-phase in the Quest Graph editor), so they are authored only while they do not exist. The
-MainQuest re-point is enforced every run. The old Phase 0 (flight school in freestyle) is left on
+phase in the Quest Graph editor), so they are authored only while they do not exist - except a
+phase written by an OLDER version of this tool (the railroad, which carried the player in), which
+is replaced. The MainQuest re-point is enforced every run. The old Phase 0 (flight school in freestyle) is left on
 disk, unreferenced, for reference.
 
-`--check` verifies what is on disk: files + metas exist; MainQuest's first phase is the railroad;
-the railroad opts in, its entry node exists, every edge resolves, every node's script is the class
-it claims to be; and every mode in the rotation has an arcade card AND a flyable preview.
+`--check` verifies what is on disk: files + metas exist; MainQuest's first phase is the guide;
+the guide opts in, its entry node exists, every edge resolves, every node's script is the class
+it claims to be; it GUIDES (carries a QuestGuideToMicrogameNode) and never carries the player
+(no Navigate / EnterFreestyle node - the guided-path rule); and every mode in the rotation has an
+arcade card AND a flyable preview.
 `--self-test` proves the checks fire.
 
-Usage: author_first_login_railroad.py [--check | --force | --self-test]
+Usage: author_first_login_guide.py [--check | --force | --self-test]
 """
 import hashlib
 import os
@@ -36,7 +40,7 @@ ASSETS = os.path.join(ROOT, "Assets")
 assert os.path.isdir(ASSETS), f"Assets/ not under {ROOT}"
 
 GOTW = "Assets/Resources/GameOfTheWeek.asset"
-PHASE = "Assets/FTUE/DataContainer/Phases/MainQuest_Phase0_Railroad.asset"
+PHASE = "Assets/FTUE/DataContainer/Phases/MainQuest_Phase0_FirstLogin.asset"
 QUEST = "Assets/FTUE/DataContainer/Quests/MainQuest.asset"
 ARCADE_LIST = "Assets/_SO_Assets/Games/GameLists/ArcadeGames.asset"
 PREVIEWS = "Assets/_SO_Assets/Mode Previews"
@@ -44,8 +48,7 @@ PREVIEWS = "Assets/_SO_Assets/Mode Previews"
 SCRIPTS = {
     "GameOfTheWeekSO": "Assets/_Scripts/ScriptableObjects/GameOfTheWeekSO.cs",
     "QuestPhaseGraphSO": "Assets/FTUE/Scripts/Graph/QuestPhaseGraphSO.cs",
-    "QuestLockNavigationNode": "Assets/FTUE/Scripts/Graph/Nodes/QuestLockNavigationNode.cs",
-    "QuestOpenMicrogameNode": "Assets/FTUE/Scripts/Graph/Nodes/QuestOpenMicrogameNode.cs",
+    "QuestGuideToMicrogameNode": "Assets/FTUE/Scripts/Graph/Nodes/QuestGuideToMicrogameNode.cs",
     "QuestWaitForLessonNode": "Assets/FTUE/Scripts/Graph/Nodes/QuestWaitForLessonNode.cs",
     "QuestPhaseEndNode": "Assets/FTUE/Scripts/Graph/Nodes/QuestPhaseEndNode.cs",
 }
@@ -58,18 +61,28 @@ ROTATION = ["SkimRace", "Switchback", "Headlong", "Redline", "Breakwater", "Skei
 FALLBACK = "SkimRace"
 
 # (key, class, display name, extra fields, next key or None)
+# Captions are the guide's player-facing text: authored here as the SEED and owned by the asset
+# afterwards (edit them in the Quest Graph editor). ASCII only - the UI font has 97 glyphs.
+CAPTIONS = {
+    "arcadeCaption": "Your first race is waiting. Open the Arcade.",
+    "cardCaption": "This week's game. Open it.",
+    "previewCaption": "Tap the window to fly.",
+}
 NODES = [
-    ("lock", "QuestLockNavigationNode", "Lock Nav - Arcade Only", "  unlock: 0\n", "open"),
-    ("open", "QuestOpenMicrogameNode", "Open Game of the Week - until the Lesson ends",
-     "  source: 0\n  mode: 33\n  forceEntry: 1\n  holdUntilLessonEnds: 1\n  settleSeconds: 0.6\n", "unlock"),
-    ("unlock", "QuestLockNavigationNode", "Unlock Nav Buttons", "  unlock: 1\n", "end"),
+    ("guide", "QuestGuideToMicrogameNode", "Guide to the Game of the Week - until the Lesson ends",
+     "  source: 0\n  mode: 33\n"
+     + "".join(f"  {k}: {v}\n" for k, v in CAPTIONS.items())
+     + "  dimAlpha: 0.7\n  lostStepGraceSeconds: 1.5\n", "end"),
     ("end", "QuestPhaseEndNode", "Phase 0 Complete", "", None),
 ]
-POSITIONS = {"lock": (60, 40), "open": (380, 40), "unlock": (700, 40), "end": (1020, 40)}
+POSITIONS = {"guide": (60, 40), "end": (380, 40)}
+# Node types that CARRY the player somewhere. A first-login path must show the way and let the
+# player walk it (Docs/HomeHub/ARCHITECTURE.md §8), so none of these may appear in it.
+CARRYING_NODES = ("QuestNavigateNode", "QuestEnterFreestyleNode", "QuestOpenMicrogameNode")
 
 
 def h(text):
-    return hashlib.md5(("cosmic-shore-railroad:" + text).encode()).hexdigest()
+    return hashlib.md5(("cosmic-shore-railroad:" + text).encode()).hexdigest()   # salt kept: ids stay stable
 
 
 def file_id(key):
@@ -113,11 +126,11 @@ def phase_asset():
                    + f"  nodeId: {node_id(key)}\n  displayName: {name}\n  nodeEnabled: 1\n"
                    + f"  graphPosition: {{x: {x}, y: {y}}}\n" + edges + extra)
     nodes = "".join(f"  - {{fileID: {file_id(k)}}}\n" for k, *_ in NODES)
-    out.append(header(11400000, "QuestPhaseGraphSO", "MainQuest_Phase0_Railroad", "CosmicShore.Core")
-               + "  graphId: MainQuest_Phase0_Railroad\n  phaseName: First Login - Game of the Week\n"
+    out.append(header(11400000, "QuestPhaseGraphSO", "MainQuest_Phase0_FirstLogin", "CosmicShore.Core")
+               + "  graphId: MainQuest_Phase0_FirstLogin\n  phaseName: First Login - Game of the Week\n"
                + "  phaseEnabled: 1\n  runsUnderDeveloperUnlock: 1\n"
-               + "  designerNotes: Walks a new player into the Game of the Week microgame and holds\n"
-               + "    navigation until their first Lesson is done. TRAINING_PLAN section 5.\n"
+               + "  designerNotes: Spotlights the way to the Game of the Week microgame for a new player\n"
+               + "    to walk themselves, until their first Lesson is done. TRAINING_PLAN section 5.\n"
                + f"  entryNode: {{fileID: {file_id(NODES[0][0])}}}\n  nodes:\n{nodes}"
                + "  canvasScroll: {x: 0, y: 0}\n  canvasZoom: 1\n")
     return "".join(out)
@@ -151,7 +164,7 @@ def check(read):
     phase_guid = re.search(r"^guid: (\w+)", read(PHASE + ".meta"), re.M).group(1)
     first = re.search(r"^  phases:\n  - \{fileID: 11400000, guid: (\w+)", read(QUEST), re.M)
     if not first or first.group(1) != phase_guid:
-        errors.append(f"{QUEST}: phases[0] is not the railroad")
+        errors.append(f"{QUEST}: phases[0] is not the first-login guide")
 
     phase = read(PHASE)
     if not re.search(r"^  runsUnderDeveloperUnlock: 1$", phase, re.M):
@@ -174,9 +187,17 @@ def check(read):
     entry = re.search(r"^  entryNode: \{fileID: (-?\d+)\}", phase, re.M)
     if not entry or entry.group(1) not in docs:
         errors.append(f"{PHASE}: entry node missing")
-    if not re.search(r"^  holdUntilLessonEnds: 1$", phase, re.M):
-        errors.append(f"{PHASE}: the open node does not hold until the Lesson ends - navigation "
-                      "would unlock before the Lesson, and a resume would not re-open the microgame")
+    classes = re.findall(r"m_EditorClassIdentifier: Assembly-CSharp::[\w.]+\.(\w+)", phase)
+    if "QuestGuideToMicrogameNode" not in classes:
+        errors.append(f"{PHASE}: no QuestGuideToMicrogameNode - nothing spotlights the way to the microgame")
+    for carrier in CARRYING_NODES:
+        if carrier in classes:
+            errors.append(f"{PHASE}: carries a {carrier} - a first-login path must SHOW the way and "
+                          "let the player walk it (guided-path rule, Docs/HomeHub/ARCHITECTURE.md §8)")
+    for key in CAPTIONS:
+        line = re.search(rf"^  {key}: (.*)$", phase, re.M)
+        if line and any(ord(ch) > 126 for ch in line.group(1)):
+            errors.append(f"{PHASE}: {key} has a non-ASCII character - it renders as an empty box")
 
     # Every mode in the rotation needs a card on the arcade roster and a flyable preview.
     gotw = read(GOTW)
@@ -254,20 +275,24 @@ def self_test():
     clean = check(read)
     assert not clean, f"seed fails its own checks: {clean}"
 
-    def fires(path, a, b, what):
+    def fires(path, a, b, what, expect=None):
         saved = store[path]
         assert a in saved, f"negative control '{what}' has nothing to mutate"
         store[path] = saved.replace(a, b, 1)
-        assert check(read), f"negative control did not fire: {what}"
+        errors = check(read)
+        assert errors, f"negative control did not fire: {what}"
+        assert expect is None or any(expect in e for e in errors), \
+            f"negative control '{what}' fired for the wrong reason: {errors}"
         store[path] = saved
 
     fires(QUEST, h("guid:" + PHASE), "0" * 32, "quest not re-pointed")
     fires(PHASE, "runsUnderDeveloperUnlock: 1", "runsUnderDeveloperUnlock: 0", "no gate opt-in")
     fires(PHASE, f"targetNodeId: {node_id('end')}", "targetNodeId: deadbeef", "dangling edge")
-    fires(PHASE, "CosmicShore.Core.QuestOpenMicrogameNode", "CosmicShore.Core.QuestPhaseEndNode", "class/guid mismatch")
-    fires(PHASE, "holdUntilLessonEnds: 1", "holdUntilLessonEnds: 0", "no hold")
+    fires(PHASE, "CosmicShore.Core.QuestGuideToMicrogameNode", "CosmicShore.Core.QuestPhaseEndNode", "class/guid mismatch")
+    fires(PHASE, "::CosmicShore.Core.QuestPhaseEndNode", "::CosmicShore.Core.QuestNavigateNode", "a node that carries the player", "carries a QuestNavigateNode")
+    fires(PHASE, "Open the Arcade.", "Open the Arcade \u2192", "non-ASCII caption", "non-ASCII")
     fires(GOTW, f"  - {MODES['Skein']}\n", "  - 31\n", "mode with no card")
-    print("self-test: clean seed passes; 6 negative controls fire")
+    print("self-test: clean seed passes; 7 negative controls fire")
     return 0
 
 
@@ -278,7 +303,8 @@ def main(argv):
         force = "--force" in argv
         for path, text in ((GOTW, gotw_asset()), (PHASE, phase_asset())):
             full = os.path.join(ROOT, path)
-            if os.path.exists(full) and not force:
+            stale = path == PHASE and os.path.exists(full) and "QuestGuideToMicrogameNode" not in open(full).read()
+            if os.path.exists(full) and not force and not stale:
                 print(f"kept (human-owned once authored): {path}")
                 continue
             open(full, "w").write(text)
@@ -291,11 +317,11 @@ def main(argv):
         new = repoint_quest(old, phase_guid)
         if new != old:
             open(quest_full, "w").write(new)
-            print(f"re-pointed {QUEST} phases[0] at the railroad")
+            print(f"re-pointed {QUEST} phases[0] at the first-login guide")
     errors = check(disk)
     for e in errors:
         print("ERROR: " + e)
-    print("first-login railroad: " + ("FAIL" if errors else "ok"))
+    print("first-login guide: " + ("FAIL" if errors else "ok"))
     return 1 if errors else 0
 
 

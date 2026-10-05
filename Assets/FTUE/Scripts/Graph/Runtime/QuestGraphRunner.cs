@@ -129,7 +129,7 @@ namespace CosmicShore.Core
             // is something that gate exists to open, and a lock-funnel quest that still ran would
             // spend the session re-applying them behind a switch that says nothing is locked.
             //
-            // A quest that ROUTES and TEACHES rather than locks (the first-login railroad into
+            // A quest that ROUTES and TEACHES rather than locks (the first-login guide into
             // the Game of the Week microgame) sets runsUnderDeveloperUnlock - on the QuestSO, or on
             // just its routing PHASE (QuestPhaseGraphSO) - and runs;
             // its lock-applying nodes pass straight through in RunNode (QuestNodeSO.AppliesLock),

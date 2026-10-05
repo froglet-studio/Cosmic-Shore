@@ -42,10 +42,11 @@ separate thread; this plan only assumes it names one `GameModes` value, whose ca
 ```
 first login
   └─ Menu_Main ready
-      └─ FIRST-RUN RAILROAD (Quest Graph Phase 0, re-cut — §5)
-          ├─ navigation locked to Arcade
-          ├─ Navigate → Arcade → Game of the Week card (auto-selected)
-          ├─ preview armed FORCED: window takes focus by itself on arrival
+      └─ FIRST-LOGIN GUIDE (Quest Graph Phase 0, re-cut — §5)
+          ├─ spotlight on the Arcade entry; everything else dimmed and dead except Settings
+          ├─ the player opens the Arcade → spotlight on the Game of the Week card
+          ├─ the player opens the card → spotlight on the preview window
+          ├─ the player taps the window and flies in (nothing is opened FOR them)
           │
           │   ┌──────────── inside the microgame ─────────────────────────────┐
           │   │ SECTION 1 — THE LESSON                                         │
@@ -59,10 +60,10 @@ first login
           │   │   ends at the last tip, or whenever the player leaves          │
           │   └────────────────────────────────────────────────────────────────┘
           │
-          └─ WaitForLesson(complete) → navigation unlocked → railroad ends
+          └─ the Lesson ends → the spotlight fades → the guide ends
 ```
 
-The railroad is first-login only. Every later preview entry, on any card, runs the same two
+The guide is first-login only. Every later preview entry, on any card, runs the same two
 sections through the same runner, just not forced into by navigation.
 
 **"First time" is per ACCOUNT, with one extra key for two-thumb flight (D7).** Every ship is
@@ -244,20 +245,25 @@ the preview arena the window is already running.
 
 ---
 
-## 5. The first-login railroad
+## 5. The first-login guide
 
-Flight school is retired from freestyle (D1), so the Quest Graph's Phase 0 shrinks to a router:
+Flight school is retired from freestyle (D1), so the Quest Graph's Phase 0 shrinks to a guide:
 
 ```
-P0 (new):  WaitMenuReady → LockNavigation(Arcade only)
-           → OpenMicrogame(source: GameOfTheWeek, forced: true)
-           → WaitForLesson(hull of that card)
-           → LockNavigation(unlock) → PhaseEnd
+P0:  WaitMenuReady → GuideToMicrogame(source: GameOfTheWeek)   holds until the Lesson ends
+     → PhaseEnd
 ```
 
-Two new nodes: `QuestOpenMicrogameNode` (navigate → select the card → arm the preview forced) and
-`QuestWaitForLessonNode` (completes when a Lesson ends). As shipped (§10.5) the open node carries
-the wait itself, because a quest resumes at its saved node. The
+**It shows the way and the player walks it** - the guided-path rule,
+`Docs/HomeHub/ARCHITECTURE.md` §8. Each step spotlights the one control to press next (the Arcade
+entry, this week's card, the preview window) with a call to action on it, dims everything else
+and makes it dead, and never takes Settings away. Phase 4 first shipped this as a RAILROAD that
+opened the Arcade, pressed the card and flew the vessel in by itself; that was the wrong shape - a
+player carried somewhere cannot find the way back - and was replaced (§10.6).
+
+Two nodes: `QuestGuideToMicrogameNode` (the spotlight, holding until the Lesson ends) and
+`QuestWaitForLessonNode` (completes when a Lesson ends). The guide carries the wait itself,
+because a quest resumes at its saved node. The
 existing flight-school nodes (`EnterFreestyle`, `WaitForInput`, `WaitForDrift`, `WaitForSkim`,
 `ExitFreestyle`) stay in the codebase for other uses but leave the Main Quest. The later phases
 (the Crystal Capture funnel, the unlocks) need re-deciding against the Game of the Week, which is
@@ -265,15 +271,16 @@ the separate thread.
 
 **The master developer unlock (D11) — SHIPPED, the least disruptive version.**
 `DeveloperUnlockGate.AllUnlocked` (default ON) used to stop the whole quest graph, so in a default
-checkout the railroad would never fire. Now:
+checkout the first-login phase would never fire. Now:
 
 - `QuestSO.runsUnderDeveloperUnlock` (default **off**) lets one quest opt in to running under the
   gate. Every quest that exists today keeps standing down exactly as before, so nothing changes
-  until the railroad quest sets the flag.
+  until the first-login quest sets the flag.
 - While the gate is on, the runner passes straight through any node whose
   `QuestNodeSO.AppliesLock` is true: `LockModes`, and the LOCKING direction of `LockNavigation`,
   `SetButtonInteractable` and `SetArcadeConstraints`. The unlock directions still run. So the gate
-  still means "nothing is locked", and the railroad can still navigate, speak and wait.
+  still means "nothing is locked", and a guiding phase can still speak, spotlight and wait (a
+  guide is not a lock - §10.6).
 - `QuestArcadeConstraints.Active` already reads the gate, so a funnel persisted by an earlier
   session stays inert as before.
 
@@ -447,7 +454,7 @@ schema rows are permanent and capped (`Docs/Analytics/DATA_ARCHITECTURE.md`).
 | 1a **(landed)** | The data layer (§10.1): beats, conditions, tokens, composer, hull facts, progress store + `DRILL_PROGRESS` cloud key, the library and both Lesson templates | the Lesson composes for any hull, offline |
 | 2 **(landed)** | §7 gate course in previews; start lines, Breakwater's stations, Notes (§10.3) | the race is in the window |
 | 3 **(landed)** | The Mentor: TipListSOs for the gate-race family, race Moment conditions, resume (§10.4) | the curated tutor |
-| 4 **(landed)** | Quest Graph P0 railroad; the Game of the Week source (§10.5) | first login → Lesson, end to end |
+| 4 **(landed, re-cut)** | Quest Graph P0 first-login guide; the Game of the Week source (§10.5, §10.6) | first login → Lesson, end to end |
 | 5 | Remaining races; tip lists for non-racing families; relevance-gated leaderboards (§6); practice-lap result | coverage |
 | 6 | Authoring window, coverage test, analytics (genre already read from `ModeGenre`, §8) | the "every vessel ever" guarantee |
 | later | `GhostDemo` cue (the preview's own autopilot flies a step once before handing over) | show, don't tell |
@@ -498,8 +505,8 @@ it (hold, skip gate, unsubscribe, seen-marking, party guest).
   is a scene-wired SOAP asset shared by every vessel), so a Skims condition would hold a forced
   Lesson forever; the runner skips it with a warning. None of the seeded steps uses it.
 - ~~**No resume.**~~ Landed in phase 3 (§10.4).
-- **Not reached by a first login.** Forcing the player INTO the window is the Quest Graph railroad
-  (phase 4); today the Lesson starts when a player taps into any preview.
+- ~~**Not reached by a first login.**~~ Phase 4 guides a new player to the window (§10.6); the
+  Lesson starts when they tap in, as on any preview.
 
 ### 10.3 Phase 2 - the race in the window
 
@@ -550,7 +557,11 @@ Stated: every tip line was checked against the mode docs, not against play. The 
 Redline lines describe how the Rhino's ramp boost and the Manta's Soar trade speed for turn; if a
 playtest finds them wrong, they are fields in their `Tips_<Mode>` asset.
 
-### 10.5 Phase 4 - the first-login railroad
+### 10.5 Phase 4 - the first-login railroad (superseded by §10.6)
+
+> **Kept as a record.** The open node, `TrySelectMode` and `ArmForcedEntry` below are DELETED; the
+> phase asset is renamed `MainQuest_Phase0_FirstLogin.asset` and the generator
+> `author_first_login_guide.py`. See §10.6.
 
 | Piece | File | Note |
 |---|---|---|
@@ -586,6 +597,38 @@ Menu_Main. Stated gaps:
   flight school again.
 - **Phases 1-5 are unchanged** (§11, item 1). With the gate off they still follow the railroad
   and still assume a Crystal Capture funnel.
+
+### 10.6 Phase 4, re-cut - guide, don't carry
+
+The railroad carried the player: it opened the Arcade, pressed the card and flew the vessel in by
+itself. The product rule (`Docs/HomeHub/ARCHITECTURE.md` §8, also in CLAUDE.md) is the opposite:
+signal the one thing, dim and disable everything else except Settings, and let the player press
+each step themselves, so they learn where the thing lives.
+
+| Piece | File | Note |
+|---|---|---|
+| Guide state | `UI/Guide/MenuGuide.cs` | Static: on/off, the card it leads to, the always-available windows (SETTINGS, CREDITS) and the controls that open them - DERIVED from each Button's inspector-wired onClick, plus `MenuGuideAlwaysAvailable` for anything else |
+| Spotlight | `UI/Guide/MenuSpotlight.cs`, `SpotlightDimGraphic.cs`, `SpotlightFrameGraphic.cs` | Own overlay canvas built in code (sort order 32000). The dim is an `ICanvasRaycastFilter` that refuses every press except inside a cut-out, so the real control underneath is what gets pressed. CTA frame in the palette's CTA colour, pulsing; caption from the node. Fades in/out; the cut-out glides between steps. Holds a pad selection on the path |
+| The node | `FTUE/.../Nodes/QuestGuideToMicrogameNode.cs` (the old open node's file and guid) | Re-derives the step every frame: flying or Settings open → stand aside; the target card's preview open → the window; Arcade open → the card (scrolled into view, `ArcadeExploreView.TryRevealCard`); home → the Arcade hub entry, else the footer Arcade button. Fails open after `lostStepGraceSeconds`. Not `AppliesLock` |
+| Menu hooks | `ScreenSwitcher`, `ModalWindowManager`, `ArcadeExploreView`, `MenuHubButton` | While a guide is on: pad Y (freestyle) and the triggers (paging) stand down; B closes only Settings; the card the guide leads to is pressable even if progression locks it (`MenuGuide.ExemptsMode`); `MenuHubButton.Target` is readable |
+| Removed | `ModePreviewSession.ArmForcedEntry`, `ArcadeExploreView.TrySelectMode` | Deleted, so nothing can carry a player again by reaching for them. `ModePreviewSession.Window` is exposed instead, for the spotlight to point at |
+| The phase | `MainQuest_Phase0_FirstLogin.asset` (renamed, guid kept) | Guide → phase end. The two nav-lock nodes are gone: the dim does that job, and does it for every button rather than a wired list |
+
+`author_first_login_guide.py` replaces a phase written by its older version (one without a guide
+node), and `--check` now FAILS if the first-login phase carries a `Navigate`, `EnterFreestyle` or
+open-microgame node. `--self-test` has 7 negative controls.
+
+Stated, and only the editor can settle them:
+- **Nothing here has been run in the editor.** The spotlight crosses the home screen, the Arcade
+  modal and the launch panel, which no harness reaches.
+- **The cut-out is the target's bounding rectangle**, inflated a little, not its shape. A
+  trapezoid hub button reads inside a rectangle; if that looks wrong, the frame graphic is where a
+  shaped cut-out would go.
+- **Settings is found from its onClick.** Menu_Main's `SettingsButton` wires
+  `SettingsModal.ModalWindowIn` directly, so it is found; a Settings control that opens the window
+  some other way needs `MenuGuideAlwaysAvailable`.
+- **A wandering pad selection is put back** only while a gamepad is connected, so a mouse player
+  never sees a selection highlight appear on the target.
 
 ---
 

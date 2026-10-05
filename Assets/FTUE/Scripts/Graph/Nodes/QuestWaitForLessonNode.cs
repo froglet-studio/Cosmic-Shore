@@ -4,9 +4,7 @@ using CosmicShore.Gameplay;
 namespace CosmicShore.Core
 {
     /// <summary>
-    /// Waits until a microgame Lesson has ended (Docs/ModePreview/TRAINING_PLAN.md §5): the beat
-    /// that holds the first-login railroad's navigation lock until the new player has learned to
-    /// fly.
+    /// Waits until a microgame Lesson has ended (Docs/ModePreview/TRAINING_PLAN.md §5).
     ///
     /// <para>Two ways to end, both needed. <see cref="DrillProgressStore.CompletedAnyLesson"/> is
     /// the same key that makes the account's first Lesson unskippable, so "the quest may move on"
@@ -15,10 +13,10 @@ namespace CosmicShore.Core
     /// party guest's, which is never forced - and which sets no key, so waiting on the key alone
     /// would hold that guest forever.</para>
     ///
-    /// <para><see cref="QuestOpenMicrogameNode"/> carries the same wait (its
-    /// <c>holdUntilLessonEnds</c>), which is what the railroad uses: a quest RESUMES at its saved
-    /// node, so a wait that lived on its own node would resume on a home screen with nothing
-    /// open. This node is for a graph that opened the microgame some other way.</para>
+    /// <para><see cref="QuestGuideToMicrogameNode"/> carries the same wait, which is what the
+    /// first-login guide uses: a quest RESUMES at its saved node, so a wait that lived on its own
+    /// node would resume on a home screen with nothing spotlit. This node is for a graph that got
+    /// the player into the microgame some other way.</para>
     /// </summary>
     public class QuestWaitForLessonNode : QuestNodeSO
     {
