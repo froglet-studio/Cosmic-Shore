@@ -55,6 +55,7 @@ Confidence scale:
 | 28 | **Name generator includes the last word of each list (was §4).** `Random.Range` upper bound is exclusive, so `Length - 1` skipped the final entry. Shipped on `Bug_Hunt`. | `NameGenerationData` |
 | 29 | **Thumb UI reads touches from the new Input System (was §4).** `ThumbCursor` and `ThumbPerimeter` use `Touchscreen.current` instead of legacy `Input.touches`. Shipped on `Bug_Hunt`. | `ThumbCursor`, `ThumbPerimeter` |
 | 30 | **PrismTimerManager cancels by owner index (was §4).** Scheduled settle actions are keyed by owner, so mass pool returns no longer scan-and-`RemoveAt` the full list. Shipped on `Bug_Hunt`. | `PrismTimerManager` |
+| 31 | **Trail block indices are int, not ushort (was §4).** A freestyle trail past 65,535 prisms no longer wraps the index map. Shipped on `Bug_Hunt`. | `Trail` |
 
 ### Playtest items for the shipped fixes
 - **Squirrel ring (#6):** fly Menu_Main freestyle → an arcade game → back, 2-3 round trips, then
@@ -152,6 +153,9 @@ Confidence scale:
 - **STILL TO TEST (revisit): 4.7 PrismTimerManager cancel, kept on Bug_Hunt untested at Yash's call.**
 - **Prism timers (§4.7):** play a mode that shields/settles many prisms, then leave the scene or
   destroy a large patch. No hitch spike unique to that teardown; shield settle still fires on time.
+- **STILL TO TEST (revisit): 4.8 Trail ushort wrap, kept on Bug_Hunt untested at Yash's call.**
+- **Trail indices (§4.8):** only reachable on a very long freestyle trail. Normal play is enough to
+  confirm nothing regressed; a wrap repro needs 65k+ prisms.
 
 ---
 
@@ -171,7 +175,6 @@ Confidence scale:
 
 | Item | Where | Fix |
 |---|---|---|
-| `Trail` ushort index wraps past 65,535 prisms | `Trail` | widen to `int`, or assert; a very long freestyle trail reaches it |
 | AI objective distance: `sqr` vs linear | `AIPilot.cs:~755` | **Deliberately NOT fixed** — the behaviour is tuned around it. Change only with a playtest. |
 
 ---

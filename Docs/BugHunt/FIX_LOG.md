@@ -8,6 +8,19 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ---
 
+## BH-4.8 — Trail block indices wrapped past 65,535 prisms
+
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Symptom (risk):** a very long freestyle trail that passes 65,535 prisms silently wraps the stored
+  index (`ushort`), so `GetBlockIndex` / ride stepping point at the wrong block.
+- **Root cause:** `Dictionary<Prism, ushort>` and casts to `ushort` on add and reindex.
+- **Fix:** widened the map to `Dictionary<Prism, int>` (matches `GetBlockIndex`'s return type). No
+  assert-and-cap: mass is conserved and trails are not artificially truncated.
+- **Verification:** gate scripts pass; not run in Unity. Retest is on the handoff playtest list.
+- **PR/commit:** pending.
+
+---
+
 ## BH-4.7 — PrismTimerManager.CancelScheduledActions was O(N²)
 
 - **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
