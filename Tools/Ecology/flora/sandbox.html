@@ -7,21 +7,27 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);font:13px/1.
 #hud{position:fixed;left:12px;top:12px;right:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;z-index:3}
 #hud select,#hud button{background:#141a2a;color:var(--fg);border:1px solid #2a3150;border-radius:6px;padding:5px 9px;font:inherit}
 .stat{background:#0f1420cc;border:1px solid #232b45;border-radius:6px;padding:4px 9px;font-variant-numeric:tabular-nums}
-#help{position:fixed;left:12px;bottom:12px;right:12px;max-width:72ch;color:var(--mute);z-index:3}
+#help{position:fixed;left:12px;bottom:12px;right:190px;max-width:72ch;color:var(--mute);z-index:3}
+#hudbox{position:fixed;left:12px;top:58px;z-index:3;background:#0f1420e6;border:1px solid #26304c;border-radius:8px;padding:6px 8px;font:12px/1.35 ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums;pointer-events:none}
+#hudbox b{color:var(--acc);font-weight:600}
+#att{display:block;margin-top:4px}
+#mini{position:fixed;right:12px;bottom:12px;z-index:3;border-radius:50%;background:#0a0f1ccc;border:1px solid #26304c}
 #flash{position:fixed;inset:0;pointer-events:none;background:radial-gradient(transparent 45%,#ff2a1a 140%);opacity:0;transition:opacity .25s;z-index:2}
 #desc{position:fixed;right:12px;top:56px;max-width:min(42ch,90vw);background:#0f1420cc;border:1px solid #232b45;border-radius:8px;padding:8px 10px;z-index:3}
 canvas{display:block}
-@media (max-width:640px){#desc{display:none}}
+@media (max-width:640px){#desc{display:none}#mini{width:110px;height:110px}#help{right:130px;max-height:5.8em;overflow:hidden;font-size:11px}#hudbox{font-size:11px}#att{display:none}}
 </style>
 <div id="flash"></div>
 <div id="hud">
   <select id="sp"><option value="snaptrap">Snap trap</option><option value="spores">Spore burster</option><option value="physarum">Physarum network</option><option value="coral">Reaction-diffusion coral</option><option value="walker">Walking mimic</option></select>
-  <button id="reset">reset</button><button id="autobtn">autopilot: off</button>
+  <button id="reset">reset</button><button id="autobtn">autopilot: off</button><select id="cammode" title="camera (1-4)"><option value="pilot">pilot view</option><option value="chase">chase cam</option><option value="orbit">orbit cam</option><option value="fly">free fly</option></select>
   <span class="stat" id="s_burn">burns 0</span><span class="stat" id="s_cry">crystals 0</span><span class="stat" id="s_heart">hearts 0</span><span class="stat" id="s_spd">0 u/s</span><span class="stat" id="s_boost">boost ready</span>
 </div>
 <div id="desc"></div>
-<div id="help">Fly: mouse steers (click canvas to capture) or W/S pitch, A/D yaw · Shift = boost (1 s, 4 s cooldown) · Space = light touch (45 u/s) · fly into a blue heart to take its crystal, cyan diamonds are real crystals. Your trail (pale) is food: the flora grow toward where you fly. Rules are JS ports of Tools/Ecology/flora/*.py with the tuned parameters; scoring lives in the Python harness.</div>
+<div id="hudbox"><div id="hudtxt"></div><canvas id="att" width="120" height="60"></canvas></div><canvas id="mini" width="160" height="160"></canvas>
+<div id="help">Cameras: 1 pilot view · 2 chase · 3 orbit (drag) · 4 free fly (WASD, drag to look, R/F, autopilot flies the ship) · click a plant to follow it, Esc lets go. Fly: mouse steers (click empty space to capture) or W/S pitch, A/D yaw · Shift = boost (1 s, 4 s cooldown) · Space = light touch (45 u/s) · fly into a blue heart to take its crystal, cyan diamonds are real crystals. Your trail (pale) is food: the flora grow toward where you fly. Rules are JS ports of Tools/Ecology/flora/*.py with the tuned parameters; scoring lives in the Python harness.</div>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
 const PARAMS = {"snaptrap": {"ram": true, "heart_in_jaws": true, "armour": 0.0, "n_traps": 40, "clumps": 9, "clump_r": 57.0011, "sense": 145.9975, "t_prime": 0.7308, "t_close": 0.5245, "t_reset": 6.6876, "t_digest": 9.0, "gape": 35.0, "dgape": 9.8316, "mouth_len": 36.3478, "mouth_w": 15.7119, "turn_deg": 6.9547, "bud_bias": 0.3049, "root": 90.0, "absorb_every": 4.0, "prism_vol": 12.0, "tooth_vol": 8.0, "fire_on": "mouth"}, "spores": {"ram": true, "n_pods": 80, "clumps": 10, "clump_r": 60.0, "charge_cap": 60.0, "spore_vol": 4.0, "shell_vol": 10.0, "touch": 23.5501, "wake": 70.0, "v_soft": 70.0, "kick_hard": 1.2, "kick_soft": 0.25, "kick_wake": 0.15, "alarm_r": 90.0, "alarm_speed": 102.4362, "alarm_gain": 0.75, "relax": 0.35, "t_swell": 0.8, "launch": 45.0, "drag": 0.8929, "wind": 11.5861, "wind_k": 0.006, "root": 80.0, "absorb_every": 3.0, "settle_v": 12.0, "spore_cd": 0.6, "spore_r": 4.0, "armour": 0.0}, "physarum": {"G": 56, "n_agents": 16000, "n_hearts": 5, "so": 28.0, "sa": 30.0, "ra": 40.4291, "ss": 44.3024, "dep": 1.0, "diffuse": 0.5, "evap": 0.08, "food_dep": 1.5, "on": 6.0, "off": 4.1165, "ema": 0.05, "prism_vol": 15.2827, "plant_vol": 12000.0, "digest": 0.3, "period": 3.0, "wave_speed": 64.711, "ex_ticks": 2, "refr": 4, "wake_dep": -0.2435, "warmup": 250, "jitter": 0.15, "spread_init": 1, "heart_speed": 7.7737, "ram": true, "armour": 0.0, "heart_guard": 50, "beat_on": 0.6, "beat_glow": 0.8}, "coral": {"G": 48, "n_hearts": 6, "c0": 6.0, "plant_vol": 12000.0, "Du": 0.3, "Dv": 0.0209, "rate": 120.0, "k": 0.01, "vth": 0.35, "sting": 0.04, "reach": 2, "eat_per_s": 2.0829, "substeps": 2, "ram": true, "label_every": 10, "seed_r": 1, "armour": 0.0, "sting_mode": "dense", "v_danger": 1.804, "warmup": 600}, "walker": {"n_walkers": 16, "shell": 24, "r_body": 26.0861, "prism_vol": 14.0, "thorns": 10, "thorn_vol": 6.0, "speed": 10.3666, "hunger_boost": 2.0, "sense": 160.0, "root": 60.0, "absorb_every": 2.0, "tell": 82.4097, "prime": 220.0, "t_prime": 0.6, "strike": 55.9014, "thorn": 57.8965, "t_erupt": 0.5773, "t_hold": 0.6, "t_retract": 1.2, "bud": 1, "ram": true, "armour": 0.0, "guard": 0.4}};
 const DESC = {
@@ -40,18 +46,72 @@ function rball(r){const d=new V3(gauss(),gauss(),gauss()).normalize();return d.m
 
 // ---------------- three.js scene ----------------
 const scene=new THREE.Scene(); scene.fog=new THREE.FogExp2(0x070a12,0.0011);
-const cam=new THREE.PerspectiveCamera(70,innerWidth/innerHeight,1,6000);
+const cam=new THREE.PerspectiveCamera(70,innerWidth/innerHeight,1,20000);
 const ren=new THREE.WebGLRenderer({antialias:true}); ren.setPixelRatio(Math.min(2,devicePixelRatio)); ren.setSize(innerWidth,innerHeight); document.body.appendChild(ren.domElement);
 addEventListener('resize',()=>{cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();ren.setSize(innerWidth,innerHeight)});
 scene.add(new THREE.HemisphereLight(0x9fb4ff,0x221a10,0.9)); const dl=new THREE.DirectionalLight(0xffffff,0.7); dl.position.set(300,500,200); scene.add(dl);
-scene.add(new THREE.Mesh(new THREE.SphereGeometry(R+40,48,24),new THREE.MeshBasicMaterial({color:0x2a3a6a,wireframe:true,transparent:true,opacity:0.07})));
 function layer(n,geo,emissive){const m=new THREE.MeshStandardMaterial({color:0xffffff,roughness:.6,metalness:.1,emissive:emissive?0x222222:0});const im=new THREE.InstancedMesh(geo,m,n);im.setColorAt(0,new THREE.Color());im.count=0;im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);im.frustumCulled=false;scene.add(im);return im}
 const BOX=new THREE.BoxGeometry(1,1,1), OCT=new THREE.OctahedronGeometry(1), SPH=new THREE.IcosahedronGeometry(1,1);
 const L_food=layer(4000,BOX), L_trail=layer(3000,BOX), L_body=layer(9000,BOX,true), L_hot=layer(4000,OCT,true), L_heart=layer(400,OCT,true), L_cry=layer(64,OCT,true), L_pts=layer(6000,SPH);
 const M=new THREE.Matrix4(), Q=new THREE.Quaternion(), S=new V3(), C=new THREE.Color();
 function put(L,i,p,s,col,q){S.set(s,s,s);M.compose(p,q||Q,S);L.setMatrixAt(i,M);C.setRGB(col[0],col[1],col[2]);L.setColorAt(i,C)}
 function done(L,n){L.count=n;L.instanceMatrix.needsUpdate=true;if(L.instanceColor)L.instanceColor.needsUpdate=true}
-const ship=new THREE.Mesh(new THREE.ConeGeometry(4,14,6),new THREE.MeshStandardMaterial({color:0xdde6ff,emissive:0x334466}));ship.geometry.rotateX(Math.PI/2);scene.add(ship);
+// ---- shared 3D viewer kit (common/viewer.py KIT): starfield, glow sprite, the vessel, its ribbon trail, banking, attitude
+function kitStars(){const n=2600,g=new THREE.BufferGeometry(),p=new Float32Array(n*3),c=new Float32Array(n*3);
+  for(let i=0;i<n;i++){let x=Math.random()*2-1,y=Math.random()*2-1,z=Math.random()*2-1,l=Math.hypot(x,y,z)||1,r=9000+Math.random()*6000;
+    p.set([x/l*r,y/l*r,z/l*r],i*3);const b=0.4+Math.random()*0.6;c.set([b*0.85,b*0.9,b],i*3)}
+  g.setAttribute('position',new THREE.BufferAttribute(p,3));g.setAttribute('color',new THREE.BufferAttribute(c,3));
+  const m=new THREE.PointsMaterial({size:1.6,sizeAttenuation:false,vertexColors:true,fog:false});scene.add(new THREE.Points(g,m))}
+const GLOW=(function(){const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d'),r=g.createRadialGradient(32,32,0,32,32,32);
+  r.addColorStop(0,'rgba(255,255,255,1)');r.addColorStop(0.25,'rgba(255,255,255,.55)');r.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=r;g.fillRect(0,0,64,64);
+  return new THREE.CanvasTexture(c)})();
+// vessel: a dart with swept wings, a fin and a glowing engine; faces +Z
+function makeVessel(){const g=new THREE.Group();
+  const hull=new THREE.Mesh(new THREE.ConeGeometry(2.2,13,4),new THREE.MeshLambertMaterial({color:0xe8eefc}));hull.rotation.x=Math.PI/2;hull.rotation.y=Math.PI/4;g.add(hull);
+  const wing=new THREE.Mesh(new THREE.BoxGeometry(14,0.5,4.5),new THREE.MeshLambertMaterial({color:0xb9c7e8}));wing.position.set(0,0,-2.5);g.add(wing);
+  const fin=new THREE.Mesh(new THREE.BoxGeometry(0.5,4,3.5),new THREE.MeshLambertMaterial({color:0xb9c7e8}));fin.position.set(0,2,-4);g.add(fin);
+  const eng=new THREE.Mesh(new THREE.SphereGeometry(1.4,10,8),new THREE.MeshBasicMaterial({color:0x7fd1ff}));eng.position.set(0,0,-6.6);g.add(eng);
+  const halo=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:0x7fd1ff,transparent:true,opacity:0.55,depthWrite:false,blending:THREE.AdditiveBlending}));halo.scale.set(26,26,1);g.add(halo);
+  g.scale.setScalar(1.6);scene.add(g);return g}
+const TRAILN=140; function makeTrail(){const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(TRAILN*3),3));
+  g.setAttribute('color',new THREE.BufferAttribute(new Float32Array(TRAILN*3),3));const l=new THREE.Line(g,new THREE.LineBasicMaterial({vertexColors:true,transparent:true,opacity:0.9}));l.frustumCulled=false;scene.add(l);return l}
+function trailPush(tr,buf,p){   // append p to a ribbon trail (fades tail-ward); a jump > 250 u restarts it
+  if(buf.length&&buf[buf.length-1].distanceTo(p)>250)buf.length=0;
+  if(!buf.length||buf[buf.length-1].distanceTo(p)>2.5){buf.push(p.clone());if(buf.length>TRAILN)buf.shift()}
+  const P=tr.geometry.attributes.position.array,C=tr.geometry.attributes.color.array;
+  for(let i=0;i<TRAILN;i++){const e=buf[Math.max(0,buf.length-1-i)]||p;P[i*3]=e.x;P[i*3+1]=e.y;P[i*3+2]=e.z;const a=(1-i/TRAILN)*(buf.length>i?1:0);C[i*3]=0.5*a;C[i*3+1]=0.82*a;C[i*3+2]=a}
+  tr.geometry.attributes.position.needsUpdate=true;tr.geometry.attributes.color.needsUpdate=true}
+function vesselState(){return {q:new THREE.Quaternion(),fwd:new THREE.Vector3(0,0,1),roll:0,speed:0,prev:null}}
+function vesselPose(v,st,p,vel,dt){   // face the eased velocity, bank into turns, place at p
+  const sp=vel.length(); st.speed=sp;
+  if(sp>1e-3){const f=vel.clone().normalize();
+    const yawRate=(dt>0&&st.fwd)?Math.atan2(new THREE.Vector3().crossVectors(st.fwd,f).y,st.fwd.dot(f))/Math.max(dt,1e-3):0;
+    st.roll+=(THREE.MathUtils.clamp(-yawRate*0.55,-1.1,1.1)-st.roll)*(1-Math.exp(-dt*4)); st.fwd.lerp(f,1-Math.exp(-dt*8)).normalize()}
+  const m=new THREE.Matrix4().lookAt(new THREE.Vector3(0,0,0),st.fwd.clone().negate(),new THREE.Vector3(0,1,0));
+  st.q.setFromRotationMatrix(m).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,0,1),st.roll));
+  v.position.copy(p);v.quaternion.copy(st.q);st.prev=p.clone()}
+function drawAtt(att,pitch,roll){const W=att.canvas.width,H=att.canvas.height;att.clearRect(0,0,W,H);att.save();att.translate(W/2,H/2);att.rotate(roll);
+  const py=THREE.MathUtils.clamp(pitch,-60,60)*0.6;att.fillStyle='#16304e';att.fillRect(-W,-H*2+py,W*2,H*2);att.fillStyle='#3a2a1a';att.fillRect(-W,py,W*2,H*2);
+  att.strokeStyle='#9fc4ff';att.lineWidth=1;att.beginPath();att.moveTo(-W,py);att.lineTo(W,py);att.stroke();att.restore();
+  att.strokeStyle='#ffd27f';att.lineWidth=2;att.beginPath();att.moveTo(W/2-22,H/2);att.lineTo(W/2-7,H/2);att.lineTo(W/2,H/2+5);att.lineTo(W/2+7,H/2);att.lineTo(W/2+22,H/2);att.stroke()}
+function miniVessel(mc,x,y,ang){mc.save();mc.translate(x,y);mc.rotate(ang);mc.fillStyle='#fff';mc.beginPath();mc.moveTo(7,0);mc.lineTo(-4,4);mc.lineTo(-2,0);mc.lineTo(-4,-4);mc.closePath();mc.fill();mc.restore()}
+
+// ---- 3D viewer standard (common/viewer.py): stars, membrane + graticule, equator disc + drop lines, vessel + trail ----
+scene.background=new THREE.Color(0x070a12); kitStars();
+const RM=R+40;
+scene.add(new THREE.Mesh(new THREE.SphereGeometry(RM,64,32),new THREE.ShaderMaterial({transparent:true,depthWrite:false,side:THREE.DoubleSide,uniforms:{c:{value:new THREE.Color(0x3d6bd6)}},
+  vertexShader:`varying vec3 vN;varying vec3 vV;void main(){vec4 mv=modelViewMatrix*vec4(position,1.);vN=normalize(normalMatrix*normal);vV=normalize(-mv.xyz);gl_Position=projectionMatrix*mv;}`,
+  fragmentShader:`uniform vec3 c;varying vec3 vN;varying vec3 vV;void main(){float f=pow(1.-abs(dot(vN,vV)),3.);gl_FragColor=vec4(c,0.02+0.3*f);}`})));
+{const g=new THREE.Group(),lm=o=>new THREE.LineBasicMaterial({color:0x34508f,transparent:true,opacity:o});
+ for(let i=1;i<6;i++){const la=-Math.PI/2+i*Math.PI/6,r=RM*Math.cos(la),y=RM*Math.sin(la),p=[];for(let a=0;a<=96;a++)p.push(new V3(r*Math.cos(a/96*6.2832),y,r*Math.sin(a/96*6.2832)));g.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(p),lm(i===3?.32:.12)))}
+ for(let j=0;j<12;j++){const p=[],ph=j/12*6.2832;for(let a=0;a<=64;a++){const t=-Math.PI/2+a/64*Math.PI;p.push(new V3(RM*Math.cos(t)*Math.cos(ph),RM*Math.sin(t),RM*Math.cos(t)*Math.sin(ph)))}g.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(p),lm(.08)))}
+ const dm=o=>new THREE.LineBasicMaterial({color:0x2c5a7a,transparent:true,opacity:o});
+ for(let r=90;r<=RM;r+=90){const p=[];for(let a=0;a<=128;a++)p.push(new V3(r*Math.cos(a/128*6.2832),0,r*Math.sin(a/128*6.2832)));g.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(p),dm(.22)))}
+ for(let j=0;j<16;j++){const a=j/16*6.2832;g.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new V3(),new V3(RM*Math.cos(a),0,RM*Math.sin(a))]),dm(.1)))}
+ scene.add(g)}
+const DROPMAX=24, drops=new THREE.LineSegments(new THREE.BufferGeometry(),new THREE.LineBasicMaterial({vertexColors:true,transparent:true,opacity:.45}));
+drops.geometry.setAttribute('position',new THREE.BufferAttribute(new Float32Array(DROPMAX*6),3));drops.geometry.setAttribute('color',new THREE.BufferAttribute(new Float32Array(DROPMAX*6),3));drops.frustumCulled=false;scene.add(drops);
+const ship=makeVessel(); ship.scale.setScalar(0.6); const shipTrail=makeTrail(), shipBuf=[], vst=vesselState();
 
 // ---------------- world: food, trails, crystals, pilot ----------------
 let food, trail, crys, pilot, keys={}, mouse={x:0,y:0,lock:false}, stats, species, auto=false;
@@ -219,16 +279,17 @@ function Walker(P){
 
 // ---------------- loop ----------------
 const MAKE={snaptrap:SnapTrap,spores:Spores,physarum:Physarum,coral:Coral,walker:Walker};
-function reset(){makeWorld();const name=document.getElementById('sp').value;species=MAKE[name](PARAMS[name]);document.getElementById('desc').innerHTML=DESC[name]}
+function reset(){makeWorld();const name=document.getElementById('sp').value;species=MAKE[name](PARAMS[name]);document.getElementById('desc').innerHTML=DESC[name];resetView()}
 document.getElementById('sp').onchange=reset;document.getElementById('reset').onclick=reset;
 document.getElementById('autobtn').onclick=()=>{auto=!auto;document.getElementById('autobtn').textContent='autopilot: '+(auto?'on':'off')};
-addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='Space')e.preventDefault()});addEventListener('keyup',e=>keys[e.code]=false);
-ren.domElement.addEventListener('click',()=>ren.domElement.requestPointerLock&&ren.domElement.requestPointerLock());
+addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='Space')e.preventDefault();if(e.target.tagName==='SELECT')return;
+  if(e.code==='Digit1')setMode('pilot');if(e.code==='Digit2')setMode('chase');if(e.code==='Digit3')setMode('orbit');if(e.code==='Digit4')setMode('fly');if(e.code==='Escape')follow=null});addEventListener('keyup',e=>keys[e.code]=false);
+
 document.addEventListener('pointerlockchange',()=>mouse.lock=document.pointerLockElement===ren.domElement);
 addEventListener('mousemove',e=>{if(mouse.lock){mouse.x+=e.movementX;mouse.y+=e.movementY}});
 let goal=rball(R*.8);
 function steer(dt){const f=pilot.v.clone().normalize();const [n,b]=perp(f);let yaw=0,pitch=0;
-  if(auto){if(pilot.p.distanceTo(goal)<60)goal=rball(R*.8);let tgt=goal;for(const c of crys)if(c.distanceTo(pilot.p)<300)tgt=c;const w=tgt.clone().sub(pilot.p).normalize();yaw=w.dot(b)*2;pitch=w.dot(n)*2}
+  if(auto||mode==='fly'){if(pilot.p.distanceTo(goal)<60)goal=rball(R*.8);let tgt=goal;for(const c of crys)if(c.distanceTo(pilot.p)<300)tgt=c;const w=tgt.clone().sub(pilot.p).normalize();yaw=w.dot(b)*2;pitch=w.dot(n)*2}
   else{yaw=(keys.KeyD?1:0)-(keys.KeyA?1:0)+mouse.x*.01;pitch=(keys.KeyW?1:0)-(keys.KeyS?1:0)-mouse.y*.01;mouse.x*=.85;mouse.y*=.85}
   const turn=2*dt;f.addScaledVector(b,Math.max(-1,Math.min(1,yaw))*turn).addScaledVector(n,Math.max(-1,Math.min(1,pitch))*turn).normalize();
   if(keys.ShiftLeft&&pilot.cool<=0&&pilot.boost<=0){pilot.boost=1;pilot.cool=4}pilot.boost=Math.max(0,pilot.boost-dt);pilot.cool=Math.max(0,pilot.cool-dt);
@@ -236,14 +297,72 @@ function steer(dt){const f=pilot.v.clone().normalize();const [n,b]=perp(f);let y
   pilot.prev.copy(pilot.p);pilot.p.addScaledVector(pilot.v,dt);if(pilot.p.length()>R+60){pilot.p.setLength(R+60);pilot.v.reflect(pilot.p.clone().normalize())}
   pilot.burnCd=Math.max(0,pilot.burnCd-dt);pilot.acc+=pilot.spd*dt;if(pilot.acc>24){pilot.acc=0;trail.push({p:pilot.prev.clone().addScaledVector(pilot.v.clone().normalize(),-14),v:6,alive:true});if(trail.length>2500)trail.shift()}
   for(let i=0;i<crys.length;i++)if(crys[i].distanceTo(pilot.p)<14){stats.crystals++;crys[i]=rball(R-30)}}
-reset();let last=performance.now();
-(function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-last)/1000);last=now;
-  steer(dt);species.step(dt);
+// ---- cameras: 1 pilot view (over the shoulder) · 2 chase (wider; a followed plant is watched from the pilot's side)
+//      3 orbit (drag) · 4 free fly. All eased with exp(-k dt) so the view never jitters with frame time.
+const ctl=new THREE.OrbitControls(cam,ren.domElement); ctl.enableDamping=true; ctl.dampingFactor=.08; ctl.enabled=false;
+let mode='pilot', follow=null, flyYaw=0, flyPitch=0; const camSel=document.getElementById('cammode'), chase={pos:null,look:null};
+function setMode(m){mode=m;camSel.value=m;ctl.enabled=m==='orbit';if(document.pointerLockElement)document.exitPointerLock();
+  if(m==='orbit'){ctl.target.copy(follow?follow.pos:shipPos)}
+  if(m==='fly'){const f=new V3(0,0,-1).applyQuaternion(cam.quaternion);flyYaw=Math.atan2(-f.x,-f.z);flyPitch=Math.asin(Math.max(-1,Math.min(1,f.y)))}}
+camSel.onchange=()=>setMode(camSel.value);
+const PICK=[[L_hot,'danger'],[L_heart,'heart'],[L_body,'body'],[L_pts,'spores']];
+function instPos(L,j,o){const e=L.instanceMatrix.array;return o.set(e[j*16+12],e[j*16+13],e[j*16+14])}
+function nearestInst(p,maxd,only){let best=null,bd=maxd*maxd;const o=new V3();for(const [L,nm] of PICK){if(only&&L!==only)continue;for(let j=0;j<L.count;j++){const d=instPos(L,j,o).distanceToSquared(p);if(d<bd){bd=d;best={L,nm,j,pos:o.clone()}}}}return best}
+const ray=new THREE.Raycaster(); let drag=null;
+ren.domElement.addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY,moved:false}});
+addEventListener('pointermove',e=>{if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.abs(dx)+Math.abs(dy)>3)drag.moved=true;
+  if(mode==='fly'&&drag.moved){flyYaw-=dx*.004;flyPitch=Math.max(-1.5,Math.min(1.5,flyPitch-dy*.004));drag.x=e.clientX;drag.y=e.clientY}});
+addEventListener('pointerup',e=>{const d=drag;drag=null;if(!d||d.moved||e.target!==ren.domElement||mouse.lock)return;
+  const r=ren.domElement.getBoundingClientRect();ray.setFromCamera({x:(e.clientX-r.left)/r.width*2-1,y:-(e.clientY-r.top)/r.height*2+1},cam);
+  let best=null,bt=1e18;const o=ray.ray.origin,dv=ray.ray.direction,q=new V3();
+  for(const [L,nm] of PICK)for(let j=0;j<L.count;j++){instPos(L,j,q).sub(o);const t=q.dot(dv);if(t<0)continue;const tol=Math.max(8,t*.02);if(q.lengthSq()-t*t<tol*tol&&t<bt){bt=t;best={L,nm,pos:instPos(L,j,new V3())}}}
+  if(best){follow={L:best.L,nm:best.nm,pos:best.pos};if(mode==='pilot'||mode==='fly')setMode('chase');if(mode==='orbit')ctl.target.copy(follow.pos)}
+  else if((mode==='pilot'||mode==='chase')&&ren.domElement.requestPointerLock)ren.domElement.requestPointerLock()});
+function trackFollow(){if(!follow)return;const n=nearestInst(follow.pos,40,follow.L)||nearestInst(follow.pos,80);if(!n){follow=null;return}follow.L=n.L;follow.nm=n.nm;follow.pos.lerp(n.pos,.5)}
+const shipPos=new V3(), pPrev=new V3(), STEP=1/60; let accT=0;
+function updateCamera(dt){const fw=vst.fwd,k=a=>1-Math.exp(-dt*a);
+  if(mode==='pilot'||mode==='chase'){let want,look;
+    if(mode==='chase'&&follow){const dir=shipPos.clone().sub(follow.pos);dir.y=0;if(dir.lengthSq()<1)dir.set(1,0,0);dir.normalize();
+      want=follow.pos.clone().addScaledVector(dir,95).add(new V3(0,40,0));look=follow.pos.clone().lerp(shipPos,.2)}
+    else{const back=mode==='pilot'?55:130,up=mode==='pilot'?14:45;want=shipPos.clone().addScaledVector(fw,-back).add(new V3(0,up,0));look=shipPos.clone().addScaledVector(fw,mode==='pilot'?40:60)}
+    if(!chase.pos||chase.pos.distanceTo(want)>400){chase.pos=want.clone();chase.look=look.clone()}
+    chase.pos.lerp(want,k(mode==='pilot'?6:3.2));chase.look.lerp(look,k(8));cam.position.copy(chase.pos);cam.lookAt(chase.look)}
+  else if(mode==='orbit'){const t=follow?follow.pos:shipPos,d=t.clone().sub(ctl.target).multiplyScalar(k(4));ctl.target.add(d);cam.position.add(d);ctl.update()}
+  else{const f=new V3(-Math.sin(flyYaw)*Math.cos(flyPitch),Math.sin(flyPitch),-Math.cos(flyYaw)*Math.cos(flyPitch)),rt=new V3().crossVectors(f,new V3(0,1,0)).normalize(),mv=new V3();
+    if(keys.KeyW)mv.add(f);if(keys.KeyS)mv.sub(f);if(keys.KeyD)mv.add(rt);if(keys.KeyA)mv.sub(rt);if(keys.KeyR)mv.y+=1;if(keys.KeyF)mv.y-=1;
+    cam.position.addScaledVector(mv,(keys.ShiftLeft||keys.ShiftRight?420:150)*dt);cam.lookAt(cam.position.clone().add(f))}}
+// ---- HUD readout + attitude + minimap (top-down: plants, danger, hearts, crystals, the ship, the camera) ----
+const hudtxt=document.getElementById('hudtxt'),att=document.getElementById('att').getContext('2d'),mini=document.getElementById('mini'),mc=mini.getContext('2d');
+function hud(){const fw=vst.fwd,head=(Math.atan2(fw.x,fw.z)*180/Math.PI+360)%360,pitch=Math.asin(Math.max(-1,Math.min(1,fw.y)))*180/Math.PI;
+  const who=follow?('following '+document.getElementById('sp').selectedOptions[0].textContent.toLowerCase()+' '+follow.nm+' '+follow.pos.distanceTo(shipPos).toFixed(0)+' u away'):(mode==='fly'?'free fly (autopilot)':'pilot'+(auto?' (autopilot)':''));
+  hudtxt.innerHTML=`<b>${who}</b><br>speed ${pilot.spd.toFixed(0)} u/s<br>heading ${head.toFixed(0)}&deg; pitch ${pitch>=0?'+':''}${pitch.toFixed(0)}&deg;<br>height ${shipPos.y>=0?'+':''}${shipPos.y.toFixed(0)} r ${shipPos.length().toFixed(0)} / ${R}`;
+  drawAtt(att,pitch,vst.roll)}
+function minimap(){const W=mini.width,c=W/2,sc=(W/2-6)/RM,o=new V3();mc.clearRect(0,0,W,W);mc.strokeStyle='#34508f';mc.beginPath();mc.arc(c,c,RM*sc,0,6.2832);mc.stroke();
+  const dot=(L,col,sz,st)=>{mc.fillStyle=col;for(let j=0;j<L.count;j+=st){instPos(L,j,o);mc.fillRect(c+o.x*sc-sz/2,c+o.z*sc-sz/2,sz,sz)}};
+  dot(L_trail,'rgba(140,140,170,.35)',1,2);dot(L_body,'rgba(150,200,140,.6)',1.5,Math.max(1,L_body.count/1500|0));dot(L_pts,'rgba(255,170,90,.5)',1,Math.max(1,L_pts.count/800|0));
+  dot(L_hot,'#ff5a4a',2,Math.max(1,L_hot.count/800|0));dot(L_heart,'#ff6fd0',3,1);for(const cy of crys){mc.fillStyle='#4ff0ff';mc.fillRect(c+cy.x*sc-2,c+cy.z*sc-2,4,4)}
+  if(follow){mc.strokeStyle='#ffd27f';mc.beginPath();mc.arc(c+follow.pos.x*sc,c+follow.pos.z*sc,5,0,6.2832);mc.stroke()}
+  miniVessel(mc,c+shipPos.x*sc,c+shipPos.z*sc,Math.atan2(vst.fwd.z,vst.fwd.x));
+  const cf=new V3(0,0,-1).applyQuaternion(cam.quaternion);mc.strokeStyle='#ffd27f';mc.beginPath();mc.moveTo(c+cam.position.x*sc,c+cam.position.z*sc);mc.lineTo(c+(cam.position.x+cf.x*60)*sc,c+(cam.position.z+cf.z*60)*sc);mc.stroke()}
+function dropLines(){const DP=drops.geometry.attributes.position.array,DC=drops.geometry.attributes.color.array;let d=0;
+  const add=(p,r,g,b)=>{if(d>=DROPMAX)return;DP.set([p.x,p.y,p.z,p.x,0,p.z],d*6);DC.set([r,g,b,r*.3,g*.3,b*.3],d*6);d++};
+  add(shipPos,.6,.85,1);if(follow)add(follow.pos,1,.82,.5);for(const cy of crys)add(cy,.3,.9,1);
+  const o=new V3(),near=[];for(let j=0;j<L_hot.count;j++){const dd=instPos(L_hot,j,o).distanceToSquared(shipPos);if(dd<200*200)near.push([dd,o.clone()])}
+  near.sort((a,b)=>a[0]-b[0]);for(const [,p] of near.slice(0,10))add(p,1,.35,.3);
+  for(let j=d;j<DROPMAX;j++)DP.fill(0,j*6,j*6+6);drops.geometry.attributes.position.needsUpdate=drops.geometry.attributes.color.needsUpdate=true}
+const uiBar=document.getElementById('hud'),hudBox=document.getElementById('hudbox');function placeHud(){hudBox.style.top=(uiBar.getBoundingClientRect().bottom+8)+'px'}addEventListener('resize',placeHud);
+function resetView(){follow=null;shipBuf.length=0;chase.pos=null;pPrev.copy(pilot.p);shipPos.copy(pilot.p);vst.fwd.copy(pilot.v).normalize()}
+reset();placeHud();let last=performance.now(),hudT=0;window.__frames=0;
+(function loop(now){requestAnimationFrame(loop);const dt=Math.min(.1,(now-last)/1000);last=now;window.__frames++;
+  // fixed-step sim (1/60 s, at most 4 steps a frame); the ship is drawn interpolated between the last two steps
+  accT=Math.min(accT+dt,4*STEP);while(accT>=STEP){accT-=STEP;pPrev.copy(pilot.p);steer(STEP);species.step(STEP)}
+  shipPos.copy(pPrev).lerp(pilot.p,accT/STEP);
   const [nb,nh,nk,np,nl]=species.draw();done(L_body,nb);done(L_hot,nh);done(L_heart,nk);done(L_pts,np);
   let fi=0;for(const f of food)if(f.alive)put(L_food,fi++,f.p,3.5,[.18,.22,.3]);done(L_food,fi);let ti=0;for(const f of trail)if(f.alive)put(L_trail,ti++,f.p,2,[.5,.5,.65]);done(L_trail,ti);
   const rq=new THREE.Quaternion().setFromAxisAngle(new V3(0,1,0),now/700);crys.forEach((c,i)=>put(L_cry,i,c,7,[.3,.95,1],rq));done(L_cry,(nl?6+nl:crys.length));
-  ship.position.copy(pilot.p);ship.lookAt(pilot.p.clone().add(pilot.v));const back=pilot.v.clone().normalize().multiplyScalar(-55).add(new V3(0,14,0));cam.position.lerp(pilot.p.clone().add(back),.15);cam.lookAt(pilot.p.clone().addScaledVector(pilot.v.clone().normalize(),40));
+  vesselPose(ship,vst,shipPos,pilot.v,dt);trailPush(shipTrail,shipBuf,shipPos);trackFollow();updateCamera(dt);dropLines();
+  hudT+=dt;if(hudT>.1){hudT=0;hud();minimap();
   document.getElementById('s_burn').textContent='burns '+stats.burns;document.getElementById('s_cry').textContent='crystals '+stats.crystals;document.getElementById('s_heart').textContent='hearts '+stats.hearts;
-  document.getElementById('s_spd').textContent=Math.round(pilot.spd)+' u/s';document.getElementById('s_boost').textContent=pilot.boost>0?'BOOST':pilot.cool>0?'boost '+pilot.cool.toFixed(1)+'s':'boost ready';
+  document.getElementById('s_spd').textContent=Math.round(pilot.spd)+' u/s';document.getElementById('s_boost').textContent=pilot.boost>0?'BOOST':pilot.cool>0?'boost '+pilot.cool.toFixed(1)+'s':'boost ready'}
   ren.render(scene,cam)})(performance.now());
 </script>
