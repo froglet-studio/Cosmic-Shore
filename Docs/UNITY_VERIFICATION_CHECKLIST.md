@@ -57,6 +57,27 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Skim Race AI tuning files know their map (`claude/confident-pascal-w76l2o`, 2026-10-05)
+
+**What landed.** Each per-intensity AI tuning file records the fingerprint of the map it was tuned on
+(`SkimRaceAIConfigSO.TrackFingerprint`; `SkimRaceTrackFingerprint`). `SkimRaceAIDeployment.PolicyFor` reads
+the live map (`SkimRaceCourseSource.TryFingerprintFromScene`, through new read-only accessors on
+`SpawnableWaypointTrack`, `CrystalCollisionTurnMonitor` and `CrystalManager`) and flies the general policy,
+with ONE console warning per race, when they differ. The 1..4 intensity clamp is gone: a new intensity flies
+the general policy. Proven outside Unity: the game's C# and the Python script agree on every shipped track and
+on edited ones; the deployment's choice and warn-once rule ran against the real scene data and shipped assets
+in a stub harness (with negative controls). Design: `Docs/SKIM_RACE_AI.md` §11.
+
+**Verify in editor**
+- [ ] Compiles; `SkimRaceTrackFingerprintTests` pass (and `SkimRaceAITests` / `SkimRaceHandicapTests` still do).
+- [ ] Skim Race at intensity 2 with AI seats: NO `[SkimRaceAI] ... tuned on a different map` warning, and the
+      verbose `[SkimRaceAI]` line (AITraining channel) names `skimrace-v2-i2`.
+- [ ] Move one intensity-2 waypoint of the `SpawnableWaypointTrack` in `MinigameSkimRace` by 10 units (do NOT
+      save) and race intensity 2 with two AI seats: exactly one warning naming `SkimRaceAIConfig_I2` and
+      `python3 Tools/Build/skimrace_retune.py 2`, and the verbose line names `skimrace-v2-general`.
+- [ ] Crystal spawning and the lap count are unchanged in Skim Race and in another `CrystalManager` mode
+      (the anchor-set lookup was folded into a shared helper; same clamp, same set).
+
 ### 🔴 Easy / Medium Skim Race AI make deliberate mistakes (`claude/confident-pascal-w76l2o`, 2026-10-05)
 
 **What landed.** `SkimRaceHandicap` (slow reaction + misjudged crystal, per crystal, random every race)

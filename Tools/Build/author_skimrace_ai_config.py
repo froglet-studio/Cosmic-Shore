@@ -11,6 +11,11 @@ DIFFICULTY holds each lobby difficulty's deliberate mistakes (SkimRaceDifficulty
 the doc). --check also holds that class's field DEFAULTS equal to the table, so a build missing the
 asset flies the same numbers.
 
+Every per-intensity policy records the map it was tuned on - "TrackFingerprint", from
+Tools/Build/skimrace_track_fingerprint.py - and the general policy records none (it is for any map).
+--check holds that rule; skimrace_track_fingerprint.py --check says whether each map is still the one
+its policy was tuned on, and Tools/Build/skimrace_retune.py <I> retunes one that is not (section 11).
+
     python3 Tools/Build/author_skimrace_ai_config.py          # write the assets
     python3 Tools/Build/author_skimrace_ai_config.py --check  # fail if an asset drifted from this file
 """
@@ -27,6 +32,11 @@ OUT_DIR = os.path.join(ROOT, "Assets/Resources")
 
 # Field defaults are read from the C# class so this file only states what differs.
 BASE = {}
+
+# TrackFingerprint (2026-10-05): the I1, I2 and I4 policies were tuned 2026-10-02..04 on the scene's
+# race data as it still is today - the fingerprints are identical at every revision of
+# MinigameSkimRace.unity back to 2026-09-12 - so each records today's fingerprint of its intensity.
+# skimrace_retune.py writes a new one with every retune.
 
 POLICIES = {
     # Base policy - flown by every intensity WITHOUT its own file: intensity 3 today, and any intensity a
@@ -85,6 +95,7 @@ POLICIES = {
     # ~58 s. In-editor results: Docs/SKIM_RACE_AI.md section 8.
     "SkimRaceAIConfig_I1": {
         "PolicyVersion": "skimrace-v4-i1",
+        "TrackFingerprint": "ed6cd993",
         "LookaheadSeconds": 0.637,
         "LookaheadMin": 65.451,
         "LookaheadMax": 406.453,
@@ -120,6 +131,7 @@ POLICIES = {
     # TerminalChordClearance, TrackGuardMargin) are deliberately left at their defaults.
     "SkimRaceAIConfig_I2": {
         "PolicyVersion": "skimrace-v2-i2",
+        "TrackFingerprint": "19fadf77",
         "LookaheadSeconds": 0.672,
         "LookaheadMin": 79.499,
         "LookaheadMax": 396.132,
@@ -166,6 +178,7 @@ POLICIES = {
     # median ~152 s) - it does NOT meet the 70 s benchmark. Docs/SKIM_RACE_AI.md 6.2.
     "SkimRaceAIConfig_I4": {
         "PolicyVersion": "skimrace-v1-i4",
+        "TrackFingerprint": "227b9055",
         "LookaheadSeconds": 0.562,
         "LookaheadMin": 38.148,
         "LookaheadMax": 435.887,
@@ -269,6 +282,16 @@ def main(argv):
         unknown = sorted(set(ov) - known)
         if unknown:
             print(f"ERROR: {name}: not SkimRaceAIConfigSO fields: {unknown}")
+            return 1
+        # A per-intensity policy is only good on the map it was tuned on, so it must say which one; the
+        # general policy is for every map and must not (the game would stop flying it on the others).
+        fp = ov.get("TrackFingerprint", "")
+        if re.fullmatch(r"SkimRaceAIConfig_I\d+", name) and not re.fullmatch(r"[0-9a-f]{8}", fp):
+            print(f"ERROR: {name}: TrackFingerprint must be the 8-hex-digit map fingerprint it was tuned on "
+                  f"(python3 Tools/Build/skimrace_track_fingerprint.py), has {fp!r}")
+            return 1
+        if name == "SkimRaceAIConfig" and fp:
+            print("ERROR: SkimRaceAIConfig is the general policy for every map - it must not record a TrackFingerprint")
             return 1
     difficulty_fields = {name: default for _, name, default in class_fields(DIFFICULTY_SCRIPT)}
     for name, ov in DIFFICULTY.items():

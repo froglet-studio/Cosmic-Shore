@@ -18,6 +18,7 @@
 // Usage: sim <track.json> <mode> [args]
 //   eval  <intensity> <seeds> [key=value ...]          evaluate one config, print stats
 //   tune  <intensity> <seeds> <iters> [key=value ...]  cross-entropy search, print best config
+//   fingerprint                                         each track's map fingerprint (SkimRaceTrackFingerprint)
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -827,6 +828,13 @@ static class Program
     /// fraction of crystals it missed, so a DNF always scores worse than any finish. Each track adds its
     /// mean plus half its worst race, and the tracks are averaged. Every track is raced to a generous
     /// limit (three times its ideal time) because finishing is the thing being tuned for.</para>
+    ///
+    /// <para><c>set=winner</c> searches the tracking-MPC set instead of the pursuit set (as in <c>tune</c>).
+    /// <c>final=0</c> skips the fresh-seed check (<c>skimrace_retune.py</c> races its own, against the general policy).
+    /// <c>only=stated</c> narrows the search to the fields the command line states AND whose stated value
+    /// lies inside the search range: a value outside it (0 for a control whose range starts above 0) is a
+    /// control the policy keeps OFF, and searching it would switch it on. <c>Tools/Build/skimrace_retune.py</c>
+    /// uses it so a retune re-fits the numbers a policy already uses and never changes which controls it uses.</para>
     /// </summary>
     static int TuneAll(Dictionary<int, TrackDef> tracks, string[] args)
     {
@@ -835,13 +843,23 @@ static class Program
         int iters = int.Parse(args[4]);
         float sigmaScale = 0.25f;
         int finalSeeds = 20;
+        bool onlyStated = false;
+        Tunables = PursuitTunables;
         foreach (var a in args.Skip(5))
         {
             if (a.StartsWith("sigma=")) sigmaScale = float.Parse(a.Substring(6), CultureInfo.InvariantCulture);
             if (a.StartsWith("final=")) finalSeeds = int.Parse(a.Substring(6), CultureInfo.InvariantCulture);
+            if (a == "set=winner") Tunables = WinnerTunables;
+            if (a == "only=stated") onlyStated = true;
         }
-        var (baseCfg, ph) = Parse(args.Skip(5).Where(a => !a.StartsWith("sigma=") && !a.StartsWith("final=")));
-        Tunables = PursuitTunables;
+        var policyArgs = args.Skip(5).Where(a => !a.StartsWith("sigma=") && !a.StartsWith("final=") && !a.StartsWith("set=") && !a.StartsWith("only=")).ToArray();
+        var (baseCfg, ph) = Parse(policyArgs);
+        if (onlyStated)
+        {
+            var stated = new HashSet<string>(policyArgs.Where(a => a.Contains('=') && !a.StartsWith("ph.")).Select(a => a.Substring(0, a.IndexOf('='))));
+            Tunables = Tunables.Where(k => stated.Contains(k) && GetNum(baseCfg, k) >= Ranges[k].lo && GetNum(baseCfg, k) <= Ranges[k].hi).ToArray();
+            Console.WriteLine($"  tuning {Tunables.Length} stated fields: {string.Join(" ", Tunables)}");
+        }
 
         var sets = ints.Select(i =>
         {
@@ -922,7 +940,7 @@ static class Program
 
         var fc = CloneConfig(baseCfg);
         for (int d = 0; d < dim; d++) SetNum(fc, Tunables[d], best[d]);
-        foreach (var s in sets)
+        foreach (var s in finalSeeds > 0 ? sets : sets.Take(0)) // final=0: the caller runs its own check
         {
             var fe = Evaluate(s.d, s.pr, s.co, fc, ph, finalSeeds, s.lim, 99000);
             var w = fe.runs.Select(r => r.AgentTimes.Min()).OrderBy(x => x).ToList();
@@ -1015,6 +1033,14 @@ static class Program
     {
         var tracks = Json.Load(args[0]);
         string mode = args[1];
+        if (mode == "fingerprint")
+        {
+            // The C# SkimRaceTrackFingerprint of every track the scene file gave us - the value the game
+            // computes in the scene. skimrace_retune.py checks it equals the Python script's before stamping.
+            foreach (var kv in tracks.OrderBy(k => k.Key))
+                Console.WriteLine($"I{kv.Key}: {SkimRaceTrackFingerprint.Compute(kv.Value.Waypoints, kv.Value.Spline, kv.Value.Laps, kv.Value.Anchors)}");
+            return 0;
+        }
         if (mode == "tuneall") return TuneAll(tracks, args);
         if (mode == "handicap") return TuneHandicap(tracks, args);
         int intensity = int.Parse(args[2]);

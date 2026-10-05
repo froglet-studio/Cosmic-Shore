@@ -13,9 +13,17 @@ namespace CosmicShore.Gameplay
     /// Skipped while <c>GameDataSO.IsTraining</c> is set (the genetic trainer owns the seats then)
     /// and when <see cref="SkimRaceAIConfigSO.DeployInNormalPlay"/> is off, in which case the seat
     /// keeps the platform <see cref="AIPilot"/>.
+    ///
+    /// <para>The policy is the intensity's own tuning file when one exists AND it was tuned on the map
+    /// in the scene (<see cref="PolicyFor"/>); otherwise the general policy, which is tuned for every
+    /// track - so a new intensity, or a map edited since its tuning, still gets an AI that finishes.</para>
     /// </summary>
     public static class SkimRaceAIDeployment
     {
+        /// <summary>The scene load and intensity last warned about, so a stale tuning file warns once
+        /// per race rather than once per AI seat.</summary>
+        static (int scene, int intensity) _warnedFor;
+
         /// <summary>True when Skim Race AI seats in this match belong to <see cref="SkimRacePilot"/>.</summary>
         public static bool Claims(GameDataSO gameData)
         {
@@ -34,8 +42,9 @@ namespace CosmicShore.Gameplay
 
             var pilot = vesselObject.GetComponent<SkimRacePilot>();
             if (pilot == null) pilot = vesselObject.AddComponent<SkimRacePilot>();
-            int intensity = gameData.SelectedIntensity != null ? Mathf.Clamp(gameData.SelectedIntensity.Value, 1, 4) : 1;
-            var config = SkimRaceAIConfigSO.LoadFor(intensity);
+            // No upper clamp: an intensity with no tuning file of its own flies the general policy.
+            int intensity = gameData.SelectedIntensity != null ? Mathf.Max(1, gameData.SelectedIntensity.Value) : 1;
+            var config = PolicyFor(intensity);
             // The host's lobby pick, independent of intensity (intensity is the map, difficulty is
             // the opponent): the same per-intensity policy, plus the difficulty's deliberate mistakes
             // (none for Hard). Every seat - backfill and adopted hull alike - is installed under it.
@@ -47,6 +56,33 @@ namespace CosmicShore.Gameplay
                 $"({config.PolicyVersion}, I{intensity}, {difficulty}" +
                 (handicap.IsNone ? ")." : $": reaction {handicap.ReactionSeconds:0.##} s, mistake chance {handicap.MistakeChance:0.##})."));
             return pilot;
+        }
+
+        /// <summary>
+        /// The policy for <paramref name="intensity"/>: its own tuning file (<see cref="SkimRaceAIConfigSO.LoadFor"/>)
+        /// when that file fits the map in the scene (<see cref="SkimRaceAIConfigSO.FitsTrack"/>), otherwise
+        /// the general policy - with one console warning per race naming the file and the command that
+        /// retunes it. A file tuned on another map is not trusted: its numbers were found for corners and
+        /// crystals that are no longer there, while the general policy is tuned to finish any track.
+        /// </summary>
+        public static SkimRaceAIConfigSO PolicyFor(int intensity)
+        {
+            var tuned = SkimRaceAIConfigSO.LoadFor(intensity);
+            if (string.IsNullOrEmpty(tuned.TrackFingerprint)) return tuned; // the general policy: any map
+            if (!SkimRaceCourseSource.TryFingerprintFromScene(intensity, out string live, out int scene) || tuned.FitsTrack(live))
+                return tuned;
+
+            var general = SkimRaceAIConfigSO.LoadDefault();
+            if (_warnedFor != (scene, intensity))
+            {
+                _warnedFor = (scene, intensity);
+                CSDebug.LogWarning(
+                    $"[SkimRaceAI] Intensity {intensity}: the AI tuning file {tuned.name} ({tuned.PolicyVersion}) " +
+                    $"was tuned on a different map (fingerprint {tuned.TrackFingerprint}; this scene is {live}), so " +
+                    $"the AI flies the general settings ({general.PolicyVersion}) instead. To retune it for this map: " +
+                    $"python3 Tools/Build/skimrace_retune.py {intensity}");
+            }
+            return general;
         }
     }
 }

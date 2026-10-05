@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: SkimRaceAIConfig
   m_EditorClassIdentifier: 
   PolicyVersion: skimrace-v2-general
+  TrackFingerprint: 
   DeployInNormalPlay: 1
   DecisionHz: 0
   LookaheadSeconds: 0.793

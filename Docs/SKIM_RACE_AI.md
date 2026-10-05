@@ -59,14 +59,15 @@ Read from the prefab and from an in-editor probe (`SkimRaceRaceRecorder.WritePro
 | File | Role |
 |---|---|
 | `SkimRacePilot` | MonoBehaviour on the AI vessel: lifecycle, sensing, actuation. Inactive (neutral input) until `GameDataSO.IsTurnRunning` rises; neutral again when the turn ends; stops and disables `AIPilot` while it owns the vessel |
-| `SkimRaceAIDeployment` | Installs the pilot from `ServerPlayerVesselInitializerWithAI.ConfigureAIPilot` — every Skim Race backfill seat in normal play, no scene wiring. Skipped while `IsTraining`; `TrainingDeploymentService` defers to it. Reads the host's lobby AI difficulty (`GameDataSO.RequestedAIDifficulty`, §10) |
+| `SkimRaceAIDeployment` | Installs the pilot from `ServerPlayerVesselInitializerWithAI.ConfigureAIPilot` — every Skim Race backfill seat in normal play, no scene wiring. Skipped while `IsTraining`; `TrainingDeploymentService` defers to it. Reads the host's lobby AI difficulty (`GameDataSO.RequestedAIDifficulty`, §10). Picks the policy (`PolicyFor`): the intensity's own file only while it fits the map in the scene, else the general one (§11) |
 | `SkimRaceTargetTracker` | The authoritative target: a live, non-embedded crystal of this domain from `Crystal.Active` (mid-collection crystals are valid only once moved away from the pilot); nearest wins with hysteresis |
 | `SkimRaceCourse` / `SkimRaceCourseSource` | The racing line: the track prisms the game actually laid, in lay order, with each prism's pose and contact shell |
 | `SkimRaceObservation` / `SkimRaceAction` | The observation and action schema (feature vector, schema version, NaN sanitising, clamping) |
 | `SkimRaceDriver` | The decision core (pure C#): racing line, crystal pass planning, lag-compensated steering, throttle, recovery |
 | `SkimRacePlanner` | Optional model-predictive layer (rolls the Squirrel's own dynamics forward over a stick grid) |
 | `SkimRaceShell` | The EXACT stella-octangula contact distance (the game's `ShieldShellMath` construction, cross-checked by `SkimRaceShellTests`), shared by the pilot and the simulator (§6.4) |
-| `SkimRaceAIConfigSO` | The policy: every tunable. Ships as `Resources/SkimRaceAIConfig[_I<n>].asset`, authored by `Tools/Build/author_skimrace_ai_config.py` |
+| `SkimRaceAIConfigSO` | The policy: every tunable. Ships as `Resources/SkimRaceAIConfig[_I<n>].asset`, authored by `Tools/Build/author_skimrace_ai_config.py`. A per-intensity file records the map it was tuned on (`TrackFingerprint`, §11) |
+| `SkimRaceTrackFingerprint` | The map fingerprint: 8 hex digits over a track's path, curve setting, laps and crystal positions (whole units). Pure C#, shared with the simulator and `Tools/Build/skimrace_track_fingerprint.py` (§11) |
 | `SkimRaceHandicap` / `SkimRaceDifficultySO` | The lobby AI difficulty's deliberate mistakes (slow reaction, misjudged crystal) and their per-difficulty numbers, one setting for every intensity (§10). Edits only the driver's BELIEF; null for Hard |
 | `SkimRaceRaceRecorder` / `SkimRaceBenchmarkRunner` | The benchmark referee and driver (§7) |
 
@@ -140,6 +141,9 @@ bash Tools/Build/skimrace_sim_harness/run.sh tune 2 8 20 set=mpc over=1 ...   # 
 bash Tools/Build/skimrace_sim_harness/run.sh geo 2     # anchor arc gaps; shell 1 = contact-distance landmarks
 # ONE policy tuned on several tracks at once (the general SkimRaceAIConfig, §6.12)
 bash -c 'bash Tools/Build/skimrace_sim_harness/run.sh tuneall 1,2,3,4 4 16 sigma=0.15 final=20 $(python3 Tools/Build/skimrace_sim_harness/policy_args.py SkimRaceAIConfig_I1) ph.Seats=2 ph.Dt=0.028 ph.DtJitter=0.5'
+# has a map changed since its tuning? and the one command that retunes one intensity (§11)
+python3 Tools/Build/skimrace_track_fingerprint.py --check
+python3 Tools/Build/skimrace_retune.py 2
 ```
 
 ### 6.1 What calibration taught (in order)
@@ -389,7 +393,8 @@ gain is. Tuned values the code does not read under these switches (`Level*`, `Ca
 ### 6.12 One general policy for every track (`tuneall`)
 
 `SkimRaceAIConfigSO.LoadFor(intensity)` falls back to the general `SkimRaceAIConfig` for every
-intensity with no file of its own - intensity 3 today, and any intensity a designer adds. That
+intensity with no file of its own - intensity 3 today, and any intensity a designer adds - and the
+deployment also flies it on an intensity whose own file was tuned on a map that has since changed (§11). That
 policy was tuned on no track in particular, so it was the weakest one shipped (I3: 2 of 20 races
 finished in the simulator). `run.sh tuneall <i,j,...> <seeds> <iters>` tunes ONE policy on several
 tracks together with the same cross-entropy loop as `tune` (population 24, elite 6, the same
@@ -803,3 +808,77 @@ lands on its targets: Medium 95.8 s (95), Easy 123.7 s (120).
 The editor benchmark (`FrogletTools > AI > Skim Race AI Benchmark`) now has an AI difficulty setting
 (default Hard, which is what every earlier benchmark measured), and each race record names the
 difficulty and the number of misjudged crystals per AI seat.
+
+## 11. When a map changes: fingerprints and retuning
+
+A tuned policy is only as good as the map it was tuned on: its numbers were found for those corners and
+those crystals. So every per-intensity file records WHICH map that was, and the game, a check script and
+one retune command all use that record (the user's choices, 2026-10-05).
+
+**What counts as "the map changed"** - only what changes the race: an intensity's path points
+(`SpawnableWaypointTrack.waypoints`), its curve setting (`useSplinePerIntensity`), its laps
+(`CrystalCollisionTurnMonitor.ResolveLaps`) and where its crystals sit (`CrystalManager`'s anchor set for
+that intensity, clamped into the list exactly as the spawner does). Colours, prism looks, prism spacing and
+the crystal spawn jitter do not count. Positions count in whole units, so a nudge under half a unit is the
+same map. `SkimRaceTrackFingerprint` hashes those four facts into 8 hex digits (32-bit FNV-1a over
+`[version, #points, x, y, z ..., spline, laps, #crystals, x, y, z ...]`, rounded half to even). The same
+value comes from the game's C# (`SkimRaceCourseSource.TryFingerprintFromScene`, read from the loaded scene)
+and from `Tools/Build/skimrace_track_fingerprint.py` (read straight from `MinigameSkimRace.unity`): both
+assert one golden value (`SkimRaceTrackFingerprintTests`, `--self-test`), and the simulator's
+`run.sh fingerprint` prints the C# value for the shipped tracks - they match on all four (I1 `ed6cd993`,
+I2 `19fadf77`, I3 `183f4bf3`, I4 `227b9055`). The script is also the simulator's one track reader
+(`--emit-track`), byte-identical to the extraction it replaced, so the simulator races every intensity
+the scene has - a fifth set of waypoints included.
+
+**Where it is recorded.** `SkimRaceAIConfigSO.TrackFingerprint`. Each `SkimRaceAIConfig_I<n>` must carry
+one and the general `SkimRaceAIConfig` must not - it is for every map (`author_skimrace_ai_config.py
+--check` holds both rules). The I1, I2 and I4 files record today's maps: they were tuned 2026-10-02..04, and
+the race data in the scene is identical at every revision back to 2026-09-12.
+
+**What the game does** (`SkimRaceAIDeployment.PolicyFor`): an intensity with no file of its own - I3, or
+any new intensity, since the old 1..4 clamp is gone - flies the general policy. An intensity whose file
+matches the live map flies its file. One whose file was tuned on a different map flies the general policy
+instead, and the console says so once per race (not once per AI seat):
+
+```
+[SkimRaceAI] Intensity 2: the AI tuning file SkimRaceAIConfig_I2 (skimrace-v2-i2) was tuned on a different
+map (fingerprint 19fadf77; this scene is b8aa5b7c), so the AI flies the general settings
+(skimrace-v2-general) instead. To retune it for this map: python3 Tools/Build/skimrace_retune.py 2
+```
+
+When the scene cannot be read (no track, monitor or crystal manager), nothing says the map changed and the
+file is trusted. Why the general policy rather than the stale file: the general policy was tuned to finish
+EVERY track (§6.12), while a stale specialist's numbers belong to corners that are no longer there.
+
+**Before anyone presses Play:** `python3 Tools/Build/skimrace_track_fingerprint.py --check` prints one line
+per intensity - `OK`, `no tuned file - flies the general policy (fine)`, or `RETUNE NEEDED` with the command
+- and exits 1 when a tuned file's map changed (or a tuned file records none). Proven on edited copies of the
+scene (`--scene`): a waypoint moved 5 units, I4's laps 2 -> 3, I1's curve switched on and a crystal moved
+10 units each flag only their own intensity; a 0.3-unit nudge, a new track domain, prism spacing and spawn
+jitter flag nothing; a fifth waypoint set appears as `I5: no tuned file`.
+
+**One command to retune:** `python3 Tools/Build/skimrace_retune.py <intensity>` (about half an hour to an
+hour; `--dry-run` writes nothing; `--iters/--seeds/--final` trade time for quality). It:
+
+1. reads the intensity's fingerprint and refuses to go on unless the game's C# reads the same value;
+2. starts from the intensity's own file (or the general policy for a new intensity) and tunes it on that
+   track with the general policy's search (`tuneall <n> 4 16 sigma=0.15`, 2 AI seats, 28 ms frames
+   +-50%), restricted to the numbers the policy already uses (`only=stated`, plus `set=winner` for a
+   tracking-MPC policy): a retune re-fits numbers and never switches a control on or off;
+3. races the result and the general policy on the same fresh races (seedbase 99000) and keeps it only if
+   it finishes at least as many and, on a tie, has the faster median winner - otherwise it writes nothing
+   and exits 2 (the game keeps flying the general policy there, which it already does);
+4. writes the `SkimRaceAIConfig_I<n>` block - new numbers, bumped `PolicyVersion`, new `TrackFingerprint`
+   and a comment with the head-to-head numbers - regenerates the assets and runs both `--check`s. Nothing
+   is committed; review the diff and commit it.
+
+If the general policy keeps winning on a changed map, the honest result is that the track does not need a
+specialist: delete its `SkimRaceAIConfig_I<n>` block and asset, and the `SkimRaceAITests` that name it.
+
+Proven here (2026-10-05): the C#/Python agreement on all shipped tracks and on an edited one (`b8aa5b7c`
+both sides); the deployment's choice and its warn-once rule run outside Unity against the real scene data
+and the shipped assets (three seats warn once, the next scene load warns again, a sub-unit nudge does not;
+negative controls - no de-duplication, no anchor clamp - fail as they should); the retune end to end on a
+one-step search (`--dry-run`), and its file writer replacing I2's block and inserting new I3 and I5 blocks
+in order without touching the others. Not proven here: a full one-hour retune, and the warning in the
+editor (`Docs/UNITY_VERIFICATION_CHECKLIST.md`).
