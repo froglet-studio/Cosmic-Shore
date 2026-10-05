@@ -103,3 +103,13 @@ Does not prove:
 - ILPostProcessors (Netcode/Burst/Entities codegen after compile), Burst compilation, IL2CPP.
 - Package assemblies listed as "did not compile" (Purchasing.Stores/Codeless, InputSystem.ForUI) —
   dependents were compiled without them; any project use of their types would surface as an error.
+
+## Outputs, and the asset audit that reads them
+
+Assets assemblies and their `.rsp` files land in `$TMPDIR/unity_refcompile_out/<tree>-<hash>/<config>/`, one
+directory per working tree, so several worktrees can share a TMPDIR without reading each other's compile.
+Package assemblies are shared in `$TMPDIR/unity_refcompile_out/_packages/`. `Schema/` binds the same
+compilation, once with the player defines and once adding `UNITY_EDITOR`, and writes every type's serialized
+fields, bases and enum members. `Tools/Build/check_generated_assets.py` audits YAML assets against that output,
+so run this tool before it.
+

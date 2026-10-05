@@ -4,10 +4,11 @@
 //   bash Tools/Build/threat_flora_harness/run.sh snap       # the snap trap only
 //   bash Tools/Build/threat_flora_harness/run.sh physarum   # the physarum network only
 //   bash Tools/Build/threat_flora_harness/run.sh quick      # one seed where the research used three
+//   bash Tools/Build/threat_flora_harness/run.sh emotion <jobs.txt>   # the emotion-probe export (EmotionFlora.cs, SWARM_FAUNA.md §27)
 using System;
 using System.Linq;
 
-public static class Program
+public static partial class Program
 {
     static int _fails, _passes;
 
@@ -22,6 +23,7 @@ public static class Program
 
     public static int Main(string[] args)
     {
+        if (args.Length > 1 && args[0] == "emotion") return Emotion(args[1]);   // round 11d-2 (SWARM_FAUNA.md §27): the emotion-probe export
         bool quick = args.Contains("quick");
         bool snap = args.Contains("snap") || !args.Contains("physarum");
         bool phys = args.Contains("physarum") || !args.Contains("snap");
