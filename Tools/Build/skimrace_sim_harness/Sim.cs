@@ -775,17 +775,157 @@ static class Program
     static string Describe(SkimRaceAIConfigSO cfg) =>
         string.Join(" ", Tunables.Select(k => k + "=" + GetNum(cfg, k).ToString("0.###", CultureInfo.InvariantCulture)));
 
+    // The benchmark limit per intensity: a COPY of SkimRaceRaceRecorder.DefaultLimitSeconds (keep the
+    // two in step). I2 was re-baselined to 80 s by product decision; `limit=` overrides.
+    static float DefaultLimit(int intensity) => intensity == 2 ? 80f : 70f;
+
+    /// <summary>
+    /// The race flown ALONG the ribbon at the Squirrel's top speed (300 u/s): each anchor to the next,
+    /// measured forward along the course, every lap. A straight line between anchors is not the race -
+    /// on a winding track it is half the distance the pilot actually flies. Dividing by this puts a
+    /// short track and a long one on one scale.
+    /// </summary>
+    static float IdealSeconds(TrackDef d, SkimRaceCourse course)
+    {
+        float loop = 0f;
+        for (int i = 0; i < d.Anchors.Count; i++)
+        {
+            int h0 = -1, h1 = -1;
+            float s0 = course.Project(d.Anchors[i], ref h0, out _, out _);
+            float s1 = course.Project(d.Anchors[(i + 1) % d.Anchors.Count], ref h1, out _, out _);
+            loop += course.Ahead(s0, s1);
+        }
+        return Math.Max(1f, loop * Math.Max(1, d.Laps) / 300f);
+    }
+
+    /// <summary>
+    /// <c>tuneall &lt;i,j,...&gt; &lt;seeds&gt; &lt;iters&gt; [sigma=s] [final=n] [Field=v ...] [ph.Field=v ...]</c>: ONE policy
+    /// tuned on several tracks at once. This is the GENERAL policy - the one every intensity without its
+    /// own tuning file flies (<c>SkimRaceAIConfigSO.LoadFor</c> falls back to it) - so it is judged on
+    /// finishing EVERY track, not on being the fastest on one. Same cross-entropy loop as <c>tune</c>.
+    ///
+    /// <para>Scoring, per track, in units of that track's ideal time (<see cref="IdealSeconds"/>): a
+    /// finished race is its time; a race that does not finish is the time it was cut at plus twice the
+    /// fraction of crystals it missed, so a DNF always scores worse than any finish. Each track adds its
+    /// mean plus half its worst race, and the tracks are averaged. Every track is raced to a generous
+    /// limit (three times its ideal time) because finishing is the thing being tuned for.</para>
+    /// </summary>
+    static int TuneAll(Dictionary<int, TrackDef> tracks, string[] args)
+    {
+        var ints = args[2].Split(',').Select(s => int.Parse(s, CultureInfo.InvariantCulture)).ToArray();
+        int seeds = int.Parse(args[3]);
+        int iters = int.Parse(args[4]);
+        float sigmaScale = 0.25f;
+        int finalSeeds = 20;
+        foreach (var a in args.Skip(5))
+        {
+            if (a.StartsWith("sigma=")) sigmaScale = float.Parse(a.Substring(6), CultureInfo.InvariantCulture);
+            if (a.StartsWith("final=")) finalSeeds = int.Parse(a.Substring(6), CultureInfo.InvariantCulture);
+        }
+        var (baseCfg, ph) = Parse(args.Skip(5).Where(a => !a.StartsWith("sigma=") && !a.StartsWith("final=")));
+        Tunables = PursuitTunables;
+
+        var sets = ints.Select(i =>
+        {
+            var d = tracks[i];
+            var pr = new TrackPrisms(d);
+            var co = new SkimRaceCourse(pr.Points, pr.Normals, pr.Rotations, pr.ShellHalf);
+            float ideal = IdealSeconds(d, co);
+            return (i, d, pr, co, ideal, lim: Math.Max(DefaultLimit(i), 3f * ideal));
+        }).ToArray();
+        foreach (var s in sets)
+            Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
+                "  I{0}: ideal {1:F1} s, raced to {2:F0} s (+{3:F0} s cut)", s.i, s.ideal, s.lim, ph.ExtraTime));
+
+        float Score(SkimRaceAIConfigSO cfg, int seedBase)
+        {
+            float total = 0f;
+            foreach (var s in sets)
+            {
+                var e = Evaluate(s.d, s.pr, s.co, cfg, ph, seeds, s.lim, seedBase);
+                float cut = s.lim + ph.ExtraTime, sum = 0f, worst = 0f;
+                foreach (var r in e.runs)
+                {
+                    float v = r.Finished
+                        ? r.Time / s.ideal
+                        : cut / s.ideal + 2f * (r.Required - r.Collected) / Math.Max(1, r.Required);
+                    sum += v;
+                    worst = Math.Max(worst, v);
+                }
+                total += sum / Math.Max(1, e.runs.Count) + 0.5f * worst;
+            }
+            return total / sets.Length;
+        }
+
+        var rng = new System.Random(7);
+        int dim = Tunables.Length;
+        var mu = Tunables.Select(k => GetNum(baseCfg, k)).ToArray();
+        var sigma = Tunables.Select(k => (Ranges[k].hi - Ranges[k].lo) * sigmaScale).ToArray();
+        for (int d = 0; d < dim; d++) mu[d] = Mathf.Clamp(mu[d], Ranges[Tunables[d]].lo, Ranges[Tunables[d]].hi);
+        float bestScore = float.MaxValue; float[] best = (float[])mu.Clone();
+        int pop = 24, elite = 6;
+        for (int it = 0; it < iters; it++)
+        {
+            var xs = new List<float[]>();
+            for (int p = 0; p < pop; p++)
+            {
+                var x = new float[dim];
+                for (int d = 0; d < dim; d++)
+                {
+                    double u1 = 1 - rng.NextDouble(), u2 = rng.NextDouble();
+                    float g = (float)(Math.Sqrt(-2 * Math.Log(u1)) * Math.Cos(2 * Math.PI * u2));
+                    x[d] = Mathf.Clamp(mu[d] + g * sigma[d], Ranges[Tunables[d]].lo, Ranges[Tunables[d]].hi);
+                }
+                if (p == 0) x = (float[])best.Clone();
+                xs.Add(x);
+            }
+            var scores = new float[pop];
+            int iterSeed = 1000 + it * 7919;
+            System.Threading.Tasks.Parallel.For(0, pop, p =>
+            {
+                var cfg = CloneConfig(baseCfg);
+                for (int d = 0; d < dim; d++) SetNum(cfg, Tunables[d], xs[p][d]);
+                scores[p] = Score(cfg, iterSeed);
+            });
+            var samples = new List<(float score, float[] x)>();
+            for (int p = 0; p < pop; p++) samples.Add((scores[p], xs[p]));
+            samples.Sort((a, b) => a.score.CompareTo(b.score));
+            if (samples[0].score < bestScore) { bestScore = samples[0].score; best = (float[])samples[0].x.Clone(); }
+            for (int d = 0; d < dim; d++)
+            {
+                float m = 0; for (int e = 0; e < elite; e++) m += samples[e].x[d]; m /= elite;
+                float v = 0; for (int e = 0; e < elite; e++) v += (samples[e].x[d] - m) * (samples[e].x[d] - m); v /= elite;
+                mu[d] = m; sigma[d] = Math.Max((float)Math.Sqrt(v), (Ranges[Tunables[d]].hi - Ranges[Tunables[d]].lo) * 0.02f);
+            }
+            var bc = CloneConfig(baseCfg);
+            for (int d = 0; d < dim; d++) SetNum(bc, Tunables[d], best[d]);
+            Console.WriteLine($"iter {it} gen-best={samples[0].score:F3} best={bestScore:F3} :: {Describe(bc)}");
+        }
+
+        var fc = CloneConfig(baseCfg);
+        for (int d = 0; d < dim; d++) SetNum(fc, Tunables[d], best[d]);
+        foreach (var s in sets)
+        {
+            var fe = Evaluate(s.d, s.pr, s.co, fc, ph, finalSeeds, s.lim, 99000);
+            var w = fe.runs.Select(r => r.AgentTimes.Min()).OrderBy(x => x).ToList();
+            Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
+                "FINAL I{0} ({1} fresh seeds): finished {2}/{1}, median {3:F1} s, worst {4:F1} s, winner median {5:F1} s",
+                s.i, finalSeeds, fe.fin, fe.median, fe.worst, w[w.Count / 2]));
+        }
+        Console.WriteLine("BEST " + Describe(fc));
+        return 0;
+    }
+
     static int Main(string[] args)
     {
         var tracks = Json.Load(args[0]);
         string mode = args[1];
+        if (mode == "tuneall") return TuneAll(tracks, args);
         int intensity = int.Parse(args[2]);
         var def = tracks[intensity];
         var prisms = new TrackPrisms(def);
         var course = new SkimRaceCourse(prisms.Points, prisms.Normals, prisms.Rotations, prisms.ShellHalf);
-        // The benchmark limit per intensity: a COPY of SkimRaceRaceRecorder.DefaultLimitSeconds (keep the
-        // two in step). I2 was re-baselined to 80 s by product decision; `limit=` overrides.
-        float limit = intensity == 2 ? 80f : 70f;
+        float limit = DefaultLimit(intensity);
         foreach (var a in args)
             if (a.StartsWith("limit=")) limit = float.Parse(a.Substring(6), CultureInfo.InvariantCulture);
         if (mode == "eval" || mode == "tune") Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "  benchmark limit: {0:F0} s (I{1})", limit, intensity));

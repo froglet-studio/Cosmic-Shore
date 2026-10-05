@@ -7,6 +7,9 @@
 #   bash Tools/Build/skimrace_sim_harness/run.sh eval  4 20 [Field=value ...] [ph.Field=value ...]
 #   bash Tools/Build/skimrace_sim_harness/run.sh trace 4 3  [...]
 #   bash Tools/Build/skimrace_sim_harness/run.sh tune  4 8 30 [...]
+#   bash Tools/Build/skimrace_sim_harness/run.sh tuneall 1,2,3,4 4 16 [sigma=s] [final=n] [...]
+#        ONE policy tuned on several tracks at once - the general SkimRaceAIConfig that any
+#        intensity without its own file falls back to (Docs/SKIM_RACE_AI.md section 6.12).
 #
 # Needs a dotnet 8+ SDK (a per-user install in ~/.dotnet is fine). No .csproj on purpose: the
 # repo gitignores *.csproj, so everything builds into $TMPDIR.

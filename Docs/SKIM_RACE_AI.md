@@ -137,6 +137,8 @@ bash Tools/Build/skimrace_sim_harness/run.sh tune 1 10 25 sigma=0.08 Field=v...
 bash -c 'bash Tools/Build/skimrace_sim_harness/run.sh eval 2 40 $(python3 Tools/Build/skimrace_sim_harness/policy_args.py SkimRaceAIConfig_I2) ph.Seats=2 ph.Dt=0.026 ph.DtJitter=0.5'
 bash Tools/Build/skimrace_sim_harness/run.sh tune 2 8 20 set=mpc over=1 ...   # over= scores seats above 70 s
 bash Tools/Build/skimrace_sim_harness/run.sh geo 2     # anchor arc gaps; shell 1 = contact-distance landmarks
+# ONE policy tuned on several tracks at once (the general SkimRaceAIConfig, §6.12)
+bash -c 'bash Tools/Build/skimrace_sim_harness/run.sh tuneall 1,2,3,4 4 16 sigma=0.15 final=20 $(python3 Tools/Build/skimrace_sim_harness/policy_args.py SkimRaceAIConfig_I1) ph.Seats=2 ph.Dt=0.028 ph.DtJitter=0.5'
 ```
 
 ### 6.1 What calibration taught (in order)
@@ -382,6 +384,30 @@ anyway because it beats v1-i2 by ~21 s and 0/40 -> 30-31/40. The remaining reset
 (pickup rings 3.6/race at 2 AI, 8.5 at 3 AI; other seats' rails 1.9 / 7.1), which is where the next
 gain is. Tuned values the code does not read under these switches (`Level*`, `CaptureMargin`,
 `TerminalChordClearance`, `TrackGuardMargin`) are left at their defaults in the asset.
+
+### 6.12 One general policy for every track (`tuneall`)
+
+`SkimRaceAIConfigSO.LoadFor(intensity)` falls back to the general `SkimRaceAIConfig` for every
+intensity with no file of its own - intensity 3 today, and any intensity a designer adds. That
+policy was tuned on no track in particular, so it was the weakest one shipped (I3: 2 of 20 races
+finished in the simulator). `run.sh tuneall <i,j,...> <seeds> <iters>` tunes ONE policy on several
+tracks together with the same cross-entropy loop as `tune` (population 24, elite 6, the same
+`PursuitTunables`), so the result is the best compromise for a track it has never seen rather than
+a specialist:
+
+- **Each track is scored against its own length.** A race scores `time / ideal`, where ideal is the
+  track's course length (measured along the racing line through every crystal anchor, times laps)
+  at 300 u/s - so a long track cannot dominate the average. An unfinished race scores
+  `(limit + 60 s) / ideal` plus twice the fraction of crystals missed, so finishing always beats not
+  finishing and nearly finishing beats stalling.
+- **Each track races to 3 x its ideal time** (at least the intensity's own limit), so a slow but
+  finishing race is still measured instead of cut off.
+- **A track scores its mean plus half its worst race; the policy scores the mean over tracks.**
+- `final=N` re-checks the winner on N fresh seeds per track (seedbase 99000) and prints its table.
+
+Ideal times on the shipped scene: I1 43.1 s, I2 55.7 s, I3 65.6 s, I4 54.7 s. The per-intensity
+files stay the fast versions for the tracks they were tuned on; the general policy is what a
+new or untuned track gets. Results: pending the first run (2026-10-05).
 
 ## 7. Running the benchmark
 
