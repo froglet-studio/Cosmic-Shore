@@ -1085,6 +1085,8 @@ cost you petals. If the telegraph is unreadable the danger feels unfair; if it n
      near the grove should NOT attract the cables (wake repels).
 4. Repeat one trap hit and one cable hit as the cell's controlling domain: it should only sting, with no petal
    loss.
+   As an opposing domain, a hit should take ONE petal per element (the Swarm cell plays the Tuned burn,
+   QA-SWARM-ROUND11-7), not five.
 5. Profile 60 s near the grove and record `ThreatGrove.SnapTraps` and `ThreatGrove.Physarum` (headless estimate:
    well under 0.1 ms for the traps, ~1.4 ms per physarum step at 10 Hz under Mono). Note any hitch in the first
    ~1.5 s while the network warms up.
@@ -1096,6 +1098,8 @@ cost you petals. If the telegraph is unreadable the danger feels unfair; if it n
 - A trap missing 13+ lobe/tooth prisms never fires.
 - Pulses visibly travel along cables; a cut cable re-forms.
 - Nothing pops in or out: prisms fly in from and back to the plant.
+- Over a 10 min session, the fortress colony and thief nest (QA-SWARM-ROUND11-5) never carry off a tube, and the
+  thief nest is not inside the grove's sector.
 
 **FAIL:**
 - A snap with no glow first, or a glow that never resolves.
@@ -1103,6 +1107,8 @@ cost you petals. If the telegraph is unreadable the danger feels unfair; if it n
 - A trap whose jaws reach into the swarm band or through the membrane.
 - Cables that never pulse, never re-form, or that chase your trail.
 - Tubes or trap prisms appearing or vanishing without a flight.
+- A fortress wall or thief hoard containing a physarum tube; a hoard shrinking because a trap or cable ate it;
+  a thief nest sitting inside the grove.
 - A frame-time regression above ~1 ms per frame near the grove, or a warm-up hitch over ~10 ms.
 
 ### QA-SWARM-ROUND10-1 ⬜ — four creatures, and their strikes burn petals

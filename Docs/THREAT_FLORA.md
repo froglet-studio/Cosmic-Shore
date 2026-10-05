@@ -169,6 +169,32 @@ ordinary grazing. `SubstrateFauna.IsFood` accepts only prisms whose `LifeForm` i
 (`LifeForm` null) are never its food, and a trap prism it eats goes through `RemoveHealthBlock` like any other
 loss. Not tested together: the two rounds were built in parallel.
 
+**Round 11e's builders and thieves** (`BUILDERS_AND_THIEVES.md`) share the rim: the thief nest's band is
+1,085-1,140 u, inside the grove's radii, and a fortress worker forages its 845-905 u band ± 220 u, so up to 1,125 u.
+Neither may take the grove's mass, and the grove may not take theirs:
+
+- **Tubes are living tissue.** `BuilderPrismWorld.IsLivingTissue` asks `ThreatGrove.IsGroveTissue`. Before this a
+  tube (a HealthPrism with no LifeForm) read as loose mass: a fortress worker could have stolen one into a wall
+  while the grove's ledger still held it. Trap and sclerotium prisms were already safe through their LifeForm.
+  Thieves only take a vessel's warm trail (`IsTrail`), so they never wanted grove prisms anyway.
+- **Built and carried mass is not food.** `ThreatGrove.IsEdible` refuses `BuilderRegistry.IsBuilt` and
+  `IsCarried`: a fortress wall, a thief's hoard, a prism in a thief's grip. It is another creature's held mass, as
+  a shell is. Without this, a trap's roots or a tube could have eaten a hoard from under its nest.
+- **The nest never sits on the grove.**
+  - A nest perches on the nearest living flora heart within 400 u, and only on a heart within 0.9 × membrane
+    (1,080 u). A trap's heart crystal sits at ≥ 1,137 u (harness S9) and a sclerotium stays inside the sector
+    (≥ 1,095 u), so no grove plant is ever a perch.
+  - A nest that finds no plant stays where the cell spawned it. That point is now moved sideways out of the grove
+    at its own radius, 40 u clear: `ThreatGrove.OutsideGroves`, which uses `ThreatGroveShape.PushOutside` (S9).
+  - A nest perched on an Outer Space plant just below the grove (heart ≤ 1,080, hoard ≤ ~17 u) may sit next to the
+    grove's lowest trap prisms (≥ 1,085 u). This is allowed. Neither can take the other's mass, and a snap trap
+    senses only vessels, so it never snaps a thief.
+- **Stakes are the cell's rule.** Every grove danger prism is a pooled `HealthBlock` variant carrying a
+  `PrismImpactor`, so a vessel's hit runs its `VesselPrismEffects`, which hold
+  `VesselElementalDebuffByDangerPrismEffect`. That effect's only gate is `IsDangerous`. It reads the live cell's
+  `PetalBurnRule` (round 11g), and the Swarm Cell Config authors Tuned. So grove hits burn 1 petal per element in
+  the Swarm cell, the same as every other danger prism there. This was read from the code, not played.
+
 ### 4.2 The rim geometry (harness S9)
 
 The rim gap is 120 u and a trap is ~85 u long. A trap therefore roots **15-25 u inside the grove's outer
@@ -206,10 +232,11 @@ Swarm Cell folder. Run both scripts; both `--check`s must pass.
 |---|---|---|
 | swarm cell before this round (§14.3) | 978 worst case | |
 | substrate proxies (round 11b, `SWARM_FAUNA.md` §20) | +78 engaged → 1,056 | |
+| builder proxies (round 11e, `BUILDERS_AND_THIEVES.md`) | +84 engaged → 1,140 | structures add 0 |
 | snap-trap hearts | **+15** (cap) | 15 × 27 = 405 body prisms |
 | sclerotium hearts | **+5** | 5 × 6 = 30 shell prisms |
 | physarum tubes | 0 hearts | ≤ 400 tube prisms (`MaxTubes`) |
-| **total** | **1,076 < 1,200** (`COLLIDER_CEILING`, asserted by both author scripts) | ≤ 835 ordinary flora prisms |
+| **total** | **1,160 < 1,200** (`COLLIDER_CEILING`, asserted by both author scripts) | ≤ 835 ordinary flora prisms |
 
 The body prisms are ordinary LOD-culled flora prisms, like every plant's plates. The gate counts always-on
 hearts plus engaged proxies, as §14.3 does. The grove adds ~800 prisms to the cell at its caps: about 5% of the
@@ -308,10 +335,12 @@ S7 route bias:
   `SnapTrapCore.cs`, `PhysarumCore.cs`, `ThreatGroveDefaults.cs`.
 - **Glue:** `ThreatGroveConfigSO.cs`, `ThreatGrove.cs`, `SnapTrapFlora.cs`, `PhysarumSclerotium.cs`, plus
   `FloraAndFauna/Fauna.cs` (`IsShieldedMass` is now public).
+- **Round 11e seams:** `Builders/BuilderPrismWorld.cs` (`IsLivingTissue` asks `ThreatGrove.IsGroveTissue`) and
+  `Builders/BuilderColonyFauna.cs` (a nest with no plant is moved off the grove by `ThreatGrove.OutsideGroves`).
 - **Assets, authored:**
   - `Assets/_Prefabs/FloraAndFauna/Threat Flora/{SnapTrapFlora,PhysarumSclerotium}.prefab`;
   - `Assets/_SO_Assets/Threat Flora/{Swarm Threat Grove Config, Swarm Snap Trap Flora Time Config Data, Swarm Physarum Flora Space Config Data}.asset`;
   - `Swarm Cell Spawn Profile.asset`, now listing both species.
 - **Tools:** `Tools/Build/author_threat_flora.py`, and `author_swarm_fauna.py` (`threat_flora()` hook).
   `Tools/Build/threat_flora_harness/` holds `run.sh`, `Program.cs`, `FloraArena.cs`, `SnapTrapTests.cs`,
-  `PhysarumTests.cs` and `GlueStubs.cs`. `swarm_glue_typecheck/Stubs.cs` now declares `IsShieldedMass` public.
+  `PhysarumTests.cs` and `GlueStubs.cs`. `swarm_glue_typecheck/Stubs.cs` now declares `IsShieldedMass` public and stubs the two `ThreatGrove` statics.

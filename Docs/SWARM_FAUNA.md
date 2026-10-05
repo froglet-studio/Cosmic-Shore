@@ -2246,8 +2246,9 @@ Round 11c plants two plants that hurt you in the Swarm cell. Full design, proof 
 - **Ecology.** Mass is conserved per colony (the trap rhizome and the network reserve both audit to 0); no timers
   or TTLs; prisms are laid from and resorbed to the reserve with flights, never popped; one crystal per lifeform;
   shielded mass is never food.
-- **Collider budget.** The grove's 20 always-on hearts bring the cell's worst case to 1,076 of 1,200
-  (978 + 78 substrate proxies + 20; `author_swarm_fauna.py` and `author_threat_flora.py` both check it).
+- **Collider budget.** The grove's 20 always-on hearts bring the cell's worst case to 1,160 of 1,200
+  (978 + 78 substrate proxies + 84 builder proxies + 20; `author_swarm_fauna.py` and `author_threat_flora.py`
+  both check it). The grove and round 11e's builders never take each other's mass (`THREAT_FLORA.md` §4.1).
 - **Gates.** `Tools/Build/threat_flora_harness/run.sh` (the shipped cores, plus the glue type-checked against
   hand-copied stubs) and `python3 Tools/Build/author_threat_flora.py --check`.
 
