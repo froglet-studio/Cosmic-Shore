@@ -48,21 +48,58 @@ regression becomes un-bisectable.
 | **B1 · B4 · B6** — LobbyPatcher spam, second invite not delivered, `WrappedLobbyService` NRE | all 🟡 | `../PresenceSystem/BUGS.md` |
 | **Join + Spectate** (the whole no-invite entry path, `partySession` publication, the spectator approval token, `CountHumanClients` subtraction in four systems) | *"Not yet verified in the Editor"* — authored out-of-editor, syntax-gated only | `../PartySystem/SPECTATOR.md` §6 |
 | **Offline mode** (loopback host, `ResetPartyLayerAsync`, the reconnect re-boot) | shipped, no editor pass recorded | `../OFFLINE_MODE.md` |
-| **The multiplayer SDK upgrade** — NGO 2.5.0→2.13.3, UGS Multiplayer 1.1.8→2.3.3, Transport 2.6.0→2.7.4, MPPM 1.6.1→2.0.2, Friends 1.1.1→1.3.0 | package-only, **zero C# changes against ~180 UGS call sites**, no editor compile | `Packages/manifest.json` |
+| **The multiplayer SDK upgrade** — NGO 2.5.0→2.13.3, UGS Multiplayer 1.1.8→2.3.3, Transport 2.6.0→2.7.4, MPPM 1.6.1→2.0.2, Friends 1.1.1→1.3.0 | package-only, zero C# changes — but **API-resolved offline 2026-10-05: 145 files, 0 missing members** (see step 1); no editor compile | `Packages/manifest.json` |
 
 **Do these in this order, because each one invalidates the next if it fails.**
 
 1. **Open the Editor once and read the console.** The SDK bump is the whole multiplayer
-   surface changing underneath the code at once. Two known deprecation surfaces will appear
-   as warnings: **29** `[ServerRpc(RequireOwnership = …)]` (NGO 2.7.0 → `RpcInvokePermission`)
-   and one `NetworkObject.IsSceneObject` (2.13.0 → `InScenePlaced`). The one thing that
-   cannot be checked outside the Editor is that the **engine** module backing MPPM 2.0's
-   `CurrentPlayer` exists in this build — MPPM 2.0.2 ships **zero** C# files, so
-   `CurrentPlayer.IsMainEditor` / `ReadOnlyTags()` (4 call sites, 2 files, both inside
-   `#if UNITY_EDITOR`) now resolve from the engine. If they do not, it is 4 compile errors
-   and reverting one manifest line.
+   surface changing underneath the code at once.
+
+   **The offline half of this step is now DONE (2026-10-05) and came back clean.** Every
+   symbol our code reaches into those packages was resolved against the packages' own
+   published API surface — the generated `.api` dumps the UGS packages ship
+   (`Unity.Services.Multiplayer.api` alone is 2,025 lines) plus a brace-aware parse of
+   NGO's and Transport's sources, which ship none. **145 of our files use the SDK
+   namespaces; 0 members are missing.** A "method not found" error is now unlikely rather
+   than unknown. Three corrections the measurement produced:
+
+   - **The deprecation count was 29; it is 19.** `grep RequireOwnership` returns 29 lines,
+     but **10 are comments** explaining why ownership is required. There are exactly **19**
+     `[ServerRpc(RequireOwnership = false)]` attributes, plus the **1**
+     `NetworkObject.IsSceneObject` at `AstroLeagueBall.cs:1496` — expect **~20**
+     deprecation warnings, not ~30.
+   - **Both are warnings and stay warnings.** `ServerRpcAttribute` itself is *not* obsolete
+     (only its `RequireOwnership` property is), `IsSceneObject` is `[Obsolete]`-with-warning,
+     and the Unity project carries **no `csc.rsp` and no warnings-as-errors** — the only
+     `TreatWarningsAsErrors` in the tree is `Port/`, the .NET port, which does not build
+     this code.
+   - **`IsSceneObject` is behaviourally unchanged — do not "fix" it blind.** It is *not* a
+     forward to `InScenePlaced`: it is an independent, **non-serialized** `bool?`
+     auto-property, while `InScenePlaced` is `[field: SerializeField] bool`. They are not
+     interchangeable. Our one use still works because NGO keeps maintaining the obsolete
+     property from `SpawnNetworkObjectLocallyCommon` — which runs on **both** the authority
+     and non-authority local-spawn paths — and says so in a comment (*"Obsolete with
+     warning means we need the underlying behaviour to keep existing"*). Declaration and
+     maintenance are identical in 2.5.0 and 2.13.3, compared side by side. A rename to
+     `InScenePlaced` would read a *different, serialized* field: a behaviour change, not a
+     cleanup.
+
+   **What remains Editor-only:** whether the **engine** module backing MPPM 2.0's
+   `CurrentPlayer` exists in this build. MPPM 2.0.2 ships **zero** C# files — confirmed,
+   the tarball is documentation and a `package.json` — so `CurrentPlayer.IsMainEditor` /
+   `ReadOnlyTags()` (4 sites: `MultiplayerSetup.cs:271,276` and
+   `AuthenticationServiceFacade.cs:400,403`, all inside `#if UNITY_EDITOR`) now resolve
+   from the engine. Two things say they will: MPPM 2.0.2's own docs still document
+   `Unity.Multiplayer.Playmode.CurrentPlayer.IsMainEditor` and `ReadOnlyTags()` as the 2.0
+   API under that same `using`, and the package requires engine **6000.3.0b10+** while we
+   run **6000.3.17f1**. If they do not resolve it is 4 compile errors and reverting one
+   manifest line. **This is the only compile risk left in the bump.**
+
+   QA item: **QA-NET-SDK-UPGRADE** (`../QA/QA_BACKLOG.md`, P0).
+
 2. **Run the 3-VP MPPM smoke** (`../PartySystem/TESTS.md` S-series + `../PresenceSystem/TESTS.md`
    P-series). This is exit criterion 6 and it gates everything below.
+   QA item: **QA-NET-PRESENCE-PARTY**.
 3. **Run B5's acceptance with its precondition** — 4-VP concurrent invite **with an arcade
    card selected before the second guest joins**. Without that precondition the pre-fix build
    passes too, so a green run that skipped it proves nothing. **NGO 2.13.2 fixes this class
@@ -71,10 +108,20 @@ regression becomes un-bisectable.
    `NetworkSceneObjectGuard` plus six producer seams exist to work around. So this run is
    also the test of whether that workaround can eventually be retired — **do not retire it on
    the strength of the changelog alone.**
+   QA item: **QA-NET-PARTY-4P-JOIN** — whose steps carry the precondition, so it cannot be
+   skipped by accident.
 4. **Run SPECTATOR.md §6's six steps.** It is the newest and least-exercised path, and it is
    the one the roadmap has no bug entries for *because nobody has played it yet* — absence of
    bugs here is absence of testing, not evidence of health.
-5. **Only then** take B18–B23 off 🟡, and only the ones a run actually covered.
+   QA item: **QA-NET-JOIN-SPECTATE**.
+5. **Only then** take B18–B23 off 🟡, and only the ones a run actually covered. Each has
+   its own QA item so a run maps to exactly one bug: **QA-NET-CLIENT-CAN-LEAVE** (B18+B22),
+   **QA-NET-SCENE-TRANSITION-TIMEOUT** (B19), **QA-NET-READY-GATE-LEAVER** (B20),
+   **QA-NET-MIDMATCH-LEAVER** (B21), **QA-NET-ARCADE-LOBBY-FOLLOW** (B23).
+   ⚠ **B23's item needs three real machines, not MPPM** — virtual players share one process
+   and one `GameDataSO`, which is precisely the failure class B23 is about, so an MPPM run
+   cannot clear it. The tracker says so; the plan now does too.
+   Offline mode has one as well: **QA-NET-OFFLINE-MODE**.
 
 *Acceptance for this whole block:* every 🟡 above is either 🟢-with-a-dated-run or back to 🔴
 with a reproduction. A bug that is neither was not tested.
