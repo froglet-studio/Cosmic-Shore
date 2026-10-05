@@ -22,11 +22,11 @@ namespace CosmicShore.Launcher
     /// The launcher window: a Silk.NET GL window running Dear ImGui, with four pages -
     /// PLAY, BUILD, OPTIONS, CONSOLE - over an animated warp-field background.
     /// </summary>
-    public sealed class LauncherApp
+    public sealed partial class LauncherApp
     {
         enum Page { Play, Build, Project, Chat, Options, Console }
 
-        public sealed record Args(string? Screenshot, int Frames, string? Page, bool Offline, string? Auto = null);
+        public sealed record Args(string? Screenshot, int Frames, string? Page, bool Offline, string? Auto = null, string? UpdatedFrom = null);
 
         readonly Args _args;
         readonly LauncherSettings _s;
@@ -63,10 +63,11 @@ namespace CosmicShore.Launcher
             _ws = new Workspace(_s, _tools);
             _jobs = new LauncherJobs(_s, _tools, _ws);
             _chat = new ClaudeChat(_s, _tools);
+            _updater = new LauncherUpdater(_s, _tools, _ws);
             var pageArg = args.Page?.Split(':');
             if (pageArg != null && Enum.TryParse<Page>(pageArg[0], true, out var p)) _page = p;
             if (pageArg is { Length: > 1 } && int.TryParse(pageArg[1], out var tab)) _projTab = tab;
-            else if (pageArg is { Length: > 1 }) _open.Add(pageArg[1].ToUpperInvariant()); // --page settings:claude
+            else if (pageArg is { Length: > 1 }) { _open.Clear(); _open.Add(pageArg[1].ToUpperInvariant()); } // --page options:claude
             if (LauncherSettings.FirstRun) DetectExistingClone();
             for (int i = 0; i < _stars.Length; i++) _stars[i] = NewStar(randomDepth: true);
         }
@@ -148,6 +149,8 @@ namespace CosmicShore.Launcher
                 _toolsScanned = true;
                 _jobs.RefreshLocalState();
                 if (!_args.Offline) _jobs.LoadBranches();
+                // Only LOOK for a newer launcher; installing it is the user's call (UPDATE).
+                if (!_args.Offline) _ = _updater.Check();
             });
         }
 
@@ -202,6 +205,14 @@ namespace CosmicShore.Launcher
                     case "update": _jobs.Update(); break;
                     case "android": _jobs.BuildPhone(ios: false); break;
                     case "ios": _jobs.BuildIos(); break;
+                    case var u when u.StartsWith("launcher-update:"):
+                        _installRev = u["launcher-update:".Length..];
+                        Task.Run(() => _updater.Install(_installRev, _jobs.Log));
+                        break;
+                    case var u when u.StartsWith("launcher-use:"):
+                        var pick = LauncherUpdater.Installed().FirstOrDefault(v => v.Short == u["launcher-use:".Length..]);
+                        if (pick != null) _updater.Use(pick, _jobs.Log);
+                        break;
                     case "claude-install":
                         _page = Page.Chat;
                         Task.Run(() => _chat.Install(_jobs.Log));
@@ -209,7 +220,7 @@ namespace CosmicShore.Launcher
                     case var c when c.StartsWith("chat:"):
                         _page = Page.Chat;
                         _chat.Detect();
-                        _chat.Send(c[5..], _ws.Exists ? _ws.Dir : LauncherSettings.DataDir, ClaudeChat.Mode.Ask);
+                        SendChat(c[5..], ClaudeChat.Mode.Plan);
                         break;
                 }
             }
@@ -240,6 +251,8 @@ namespace CosmicShore.Launcher
             DrawRail(size);
             var contentA = new Vector2(RailW + 44, 34);
             var contentB = new Vector2(size.X - 44, size.Y - 64);
+            float enter = PageEnter(dt);               // pages slide up into place as they open
+            contentA.Y += 14 * (1 - enter); contentB.Y += 14 * (1 - enter);
             switch (_page)
             {
                 case Page.Play: DrawPlay(contentA, contentB); break;
@@ -252,6 +265,9 @@ namespace CosmicShore.Launcher
             DrawStatusBar(size);
             ImGui.End();
             DrawOverlay(size);
+            if (enter < 1) ImGui.GetForegroundDrawList().AddRectFilled(new Vector2(RailW + 1, 0), new Vector2(size.X, size.Y - 40), Neon.U(Neon.Space0, 0.65f * (1 - enter)));
+            DrawUpdateUi(size, dt);
+            DrawSplash(size, dt);
         }
 
         // ---------------------------------------------------------------- background
@@ -263,24 +279,22 @@ namespace CosmicShore.Launcher
             Hue = (float)_rng.NextDouble(),
         };
 
-        void DrawBackground(Vector2 size, float dt)
+        /// <summary>The original look: nebula, warp starfield and the synthwave floor (each part optional).</summary>
+        void DrawSynthwave(ImDrawListPtr dl, Vector2 size, float dt, float t, bool nebula, bool warp, bool grid)
         {
-            var dl = ImGui.GetBackgroundDrawList();
-            float t = Neon.Time;
-            dl.AddRectFilledMultiColor(Vector2.Zero, size, Neon.U(Neon.Space1), Neon.U(Neon.Space1), Neon.U(Neon.Space0), Neon.U(Neon.Space0));
 
             // nebula: big soft discs drifting slowly
             void Blob(Vector2 c, float r, Vector4 col, float a)
             {
                 for (int i = 10; i >= 1; i--) dl.AddCircleFilled(c, r * i / 10f, Neon.U(col, a * 0.05f), 48);
             }
-            Blob(new Vector2(size.X * (0.78f + 0.03f * MathF.Sin(t * 0.07f)), size.Y * 0.30f), size.X * 0.30f, Neon.Magenta, 0.55f);
-            Blob(new Vector2(size.X * (0.18f + 0.03f * MathF.Cos(t * 0.05f)), size.Y * 0.62f), size.X * 0.33f, Neon.Violet, 0.6f);
-            Blob(new Vector2(size.X * 0.50f, size.Y * 0.05f), size.X * 0.22f, Neon.Cyan, 0.30f);
+            if (nebula) Blob(new Vector2(size.X * (0.78f + 0.03f * MathF.Sin(t * 0.07f)), size.Y * 0.30f), size.X * 0.30f, Neon.Magenta, 0.55f);
+            if (nebula) Blob(new Vector2(size.X * (0.18f + 0.03f * MathF.Cos(t * 0.05f)), size.Y * 0.62f), size.X * 0.33f, Neon.Violet, 0.6f);
+            if (nebula) Blob(new Vector2(size.X * 0.50f, size.Y * 0.05f), size.X * 0.22f, Neon.Cyan, 0.30f);
 
             // warp starfield toward a vanishing point slightly above centre
             var vp = new Vector2(size.X * 0.5f, size.Y * 0.44f);
-            float speed = _jobs.Busy ? 1.6f : 0.35f;
+            float speed = warp ? (_jobs.Busy ? 1.6f : 0.35f) : 0.06f;
             for (int i = 0; i < _stars.Length; i++)
             {
                 ref var s = ref _stars[i];
@@ -296,6 +310,7 @@ namespace CosmicShore.Launcher
             }
 
             // synthwave floor grid
+            if (!grid) return;
             float horizon = size.Y * 0.70f;
             dl.AddRectFilledMultiColor(new Vector2(0, horizon - 2), new Vector2(size.X, size.Y),
                 Neon.U(Neon.Magenta, 0.04f), Neon.U(Neon.Magenta, 0.04f), Neon.U(Neon.Space0, 0.9f), Neon.U(Neon.Space0, 0.9f));
@@ -348,6 +363,15 @@ namespace CosmicShore.Launcher
                 (Page.Console, "CONSOLE", Neon.IconTerminal),
             };
             float y = mb.Y + 34;
+            // The selection glides between items rather than jumping.
+            if (_railY < 0) _railY = _railTarget;
+            _railY += (_railTarget - _railY) * Math.Min(1f, ImGui.GetIO().DeltaTime * 14f);
+            if (_railY > 0)
+            {
+                var sa = new Vector2(8, _railY); var sb = new Vector2(RailW - 8, _railY + 70);
+                Neon.ChamferFill(dl, sa, sb, 8, Neon.U(Neon.Cyan, 0.10f));
+                dl.AddRectFilled(new Vector2(0, sa.Y + 10), new Vector2(3, sb.Y - 10), Neon.U(Neon.Cyan));
+            }
             foreach (var it in items)
             {
                 var a = new Vector2(8, y); var b = new Vector2(RailW - 8, y + 70);
@@ -356,11 +380,8 @@ namespace CosmicShore.Launcher
                 bool hov = ImGui.IsItemHovered(), on = _page == it.page;
                 if (hov) ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
                 var col = on ? Neon.Cyan : hov ? Neon.Ink : Neon.Dim;
-                if (on)
-                {
-                    Neon.ChamferFill(dl, a, b, 8, Neon.U(Neon.Cyan, 0.10f));
-                    dl.AddRectFilled(new Vector2(0, a.Y + 10), new Vector2(3, b.Y - 10), Neon.U(Neon.Cyan));
-                }
+                if (on) _railTarget = a.Y;
+                if (hov && !on) Neon.ChamferFill(dl, a, b, 8, Neon.U(Neon.Ink, 0.04f));
                 it.icon(dl, new Vector2((a.X + b.X) * 0.5f, a.Y + 26), Neon.U(col));
                 ImGui.PushFont(Neon.Small);
                 float tw = ImGui.CalcTextSize(it.name).X;
@@ -810,132 +831,6 @@ namespace CosmicShore.Launcher
         int _chatSeen;
         bool _chatDetected, _authChecked;
 
-        void DrawChat(Vector2 a, Vector2 b)
-        {
-            var dl = ImGui.GetWindowDrawList();
-            if (!_chatDetected) { _chatDetected = true; Task.Run(() => { _chat.Detect(); _chat.RefreshAuth(); }); }
-            PageHeader(a, "CLAUDE", _chat.Cli != null ? "Claude Code in " + Trim(_ws.Exists ? _ws.Dir : "(no workspace yet)", 70) : null);
-
-            // header controls
-            ImGui.SetCursorScreenPos(new Vector2(b.X - 420, a.Y + 4));
-            Segmented("cmode", new[] { "ASK", "EDIT", "AUTO" }, _s.ChatMode, i => _s.ChatMode = i, Neon.Magenta);
-            Neon.Tooltip("ASK: reads and plans, changes nothing.\nEDIT: may edit files in the workspace.\nAUTO: may also run commands.");
-            ImGui.SameLine(0, 12);
-            if (SmallButton("NEW", 80, !_chat.Busy)) _chat.NewChat();
-            if (_chat.Cli != null && _chat.SignedIn == false && string.IsNullOrWhiteSpace(_s.AnthropicApiKey))
-            {
-                // Not signed in and no key: every message would fail. One click to the plan sign-in.
-                ImGui.SetCursorScreenPos(new Vector2(b.X - 420 - 150, a.Y + 4));
-                if (SmallButton("SIGN IN", 130, true)) _chat.SignIn();
-                Neon.Tooltip("Sign in with your Claude account (Pro/Max plan). Then press CHECK in SETTINGS > Claude,\nor just send a message.");
-            }
-
-            if (_chat.Cli == null)
-            {
-                var c = new Vector2((a.X + b.X) * 0.5f, (a.Y + b.Y) * 0.5f - 60);
-                CenterText(dl, Neon.Heading, 22, c.X, c.Y, Neon.Ink, "Claude Code is not installed");
-                ImGui.SetCursorScreenPos(new Vector2(c.X - 110, c.Y + 50));
-                if (!_chat.Installing)
-                {
-                    if (Neon.Button("instclaude", "INSTALL", new Vector2(220, 56), Neon.Magenta, Neon.Heading, 22, true))
-                        Task.Run(() => _chat.Install(_jobs.Log));
-                }
-                else
-                {
-                    // The download is ~250 MB: show it moving.
-                    var pa = new Vector2(c.X - 220, c.Y + 50); var pb = new Vector2(c.X + 220, c.Y + 62);
-                    dl.AddRectFilled(pa, pb, ImGui.GetColorU32(Neon.U(Neon.Space0, 0.9f)), 6);
-                    float f = _chat.InstallProgress >= 0 ? _chat.InstallProgress : (float)(0.5 + 0.5 * Math.Sin(ImGui.GetTime() * 3));
-                    var fa = _chat.InstallProgress >= 0 ? pa : new Vector2(pa.X + (pb.X - pa.X) * f * 0.75f, pa.Y);
-                    var fb = _chat.InstallProgress >= 0 ? new Vector2(pa.X + (pb.X - pa.X) * f, pb.Y) : new Vector2(fa.X + (pb.X - pa.X) * 0.25f, pb.Y);
-                    dl.AddRectFilled(fa, fb, ImGui.GetColorU32(Neon.Magenta), 6);
-                    ImGui.SetCursorScreenPos(new Vector2(pa.X, pb.Y + 10));
-                    ImGui.PushFont(Neon.Small); ImGui.TextColored(Neon.Dim, _chat.InstallStatus); ImGui.PopFont();
-                    ImGui.SetCursorScreenPos(new Vector2(pb.X - 80, pb.Y + 6));
-                    if (SmallButton("CANCEL", 80, true)) _chat.CancelInstall();
-                }
-                ImGui.SetCursorScreenPos(new Vector2(c.X - 220, c.Y + 130));
-                SecretField("##akey0", "Anthropic API key (optional)", () => _s.AnthropicApiKey, v => _s.AnthropicApiKey = v, 362);
-                Neon.Tooltip("Only for pay-as-you-go API billing (console.anthropic.com).\nOn a Claude Pro/Max plan leave it empty and SIGN IN instead. Stored only on this PC.");
-                return;
-            }
-
-            // transcript
-            float inputH = 92;
-            var ta = new Vector2(a.X, a.Y + 60); var tb = new Vector2(b.X, b.Y - inputH - 14);
-            Neon.ChamferFill(dl, ta, tb, 10, Neon.U(Neon.Space0, 0.72f));
-            ImGui.SetCursorScreenPos(ta + new Vector2(18, 14));
-            ImGui.BeginChild("##chat", tb - ta - new Vector2(36, 28));
-            _chat.Snapshot(_chatSnap);
-            float wrap = tb.X - ta.X - 80;
-            if (_chatSnap.Count == 0)
-            {
-                ImGui.PushFont(Neon.Small);
-                ImGui.TextColored(Neon.Dim, "Ask about the engine, the game or this branch. Claude reads the workspace;");
-                ImGui.TextColored(Neon.Dim, "in EDIT or AUTO it can change files there. Rebuild with START to try them.");
-                ImGui.PopFont();
-            }
-            foreach (var it in _chatSnap)
-            {
-                switch (it.Role)
-                {
-                    case ChatRole.User:
-                        ImGui.Dummy(new Vector2(0, 6));
-                        ImGui.TextColored(Neon.Cyan, "YOU");
-                        ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + wrap);
-                        ImGui.TextWrapped(it.Text);
-                        ImGui.PopTextWrapPos();
-                        break;
-                    case ChatRole.Assistant:
-                        ImGui.Dummy(new Vector2(0, 6));
-                        ImGui.TextColored(Neon.Magenta, "CLAUDE");
-                        ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + wrap);
-                        ImGui.TextWrapped(it.Text);
-                        ImGui.PopTextWrapPos();
-                        break;
-                    case ChatRole.Tool:
-                        ImGui.PushFont(Neon.Mono);
-                        ImGui.TextColored(Neon.Mix(Neon.Dim, Neon.Space0, 0.15f), "  > " + it.Text);
-                        ImGui.PopFont();
-                        break;
-                    case ChatRole.System:
-                        ImGui.PushFont(Neon.Small); ImGui.TextColored(Neon.Dim, it.Text); ImGui.PopFont();
-                        break;
-                    case ChatRole.Error:
-                        ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + wrap);
-                        ImGui.TextColored(Neon.Red, it.Text);
-                        ImGui.PopTextWrapPos();
-                        break;
-                }
-            }
-            if (_chat.Busy)
-            {
-                int dots = (int)(Neon.Time * 3) % 4;
-                ImGui.TextColored(Neon.Magenta, "thinking" + new string('.', dots));
-            }
-            if (_chatSnap.Count != _chatSeen || _chat.Busy) { if (_chatSnap.Count != _chatSeen) ImGui.SetScrollHereY(1f); _chatSeen = _chatSnap.Count; }
-            ImGui.EndChild();
-
-            // input
-            var ia = new Vector2(a.X, b.Y - inputH); 
-            ImGui.SetCursorScreenPos(ia);
-            bool send = ImGui.InputTextMultiline("##chatin", ref _chatInput, 8000, new Vector2(b.X - a.X - 140, inputH),
-                ImGuiInputTextFlags.CtrlEnterForNewLine | ImGuiInputTextFlags.EnterReturnsTrue);
-            ImGui.SameLine(0, 12);
-            bool can = !_chat.Busy && _chatInput.Trim().Length > 0;
-            if (_chat.Busy)
-            {
-                if (Neon.Button("chatstop", "STOP", new Vector2(128, inputH), Neon.Red, Neon.Heading, 22)) _chat.Stop();
-            }
-            else if (Neon.Button("chatsend", "SEND", new Vector2(128, inputH), Neon.Magenta, Neon.Heading, 22, can) || (send && can))
-            {
-                _chat.Send(_chatInput, _ws.Exists ? _ws.Dir : LauncherSettings.DataDir, (ClaudeChat.Mode)_s.ChatMode);
-                _chatInput = "";
-            }
-            if (_chat.CostUsd > 0)
-                dl.AddText(Neon.Small, 13, new Vector2(b.X - 128, ia.Y - 20), Neon.U(Neon.Dim), $"${_chat.CostUsd:0.000}");
-        }
-
         // ---------------------------------------------------------------- SETTINGS
 
         readonly HashSet<string> _open = new() { "GAME" };
@@ -979,6 +874,7 @@ namespace CosmicShore.Launcher
                     Row("My clone", () => Text("##clone", "C:\\...\\Cosmic-Shore", () => _s.MyClonePath, v => _s.MyClonePath = v));
                 Row("", () => { ImGui.PushFont(Neon.Small); ImGui.TextColored(Neon.Dim, Trim(_ws.Dir, 80)); ImGui.PopFont(); });
             }
+            if (Section("LOOK")) DrawLookSettings();
             if (Section("CLAUDE"))
             {
                 Row("Account", () =>
@@ -1022,6 +918,8 @@ namespace CosmicShore.Launcher
             }
             if (Section("ABOUT"))
             {
+                DrawAboutVersions();
+                ImGui.Dummy(new Vector2(0, 8));
                 ImGui.PushFont(Neon.Small);
                 ImGui.TextColored(Neon.Ink, "Froglet Engine v0.1  -  Froglet Inc.");
                 ImGui.TextColored(Neon.Dim, "Cosmic Shore's own C# on our own renderer, physics, UI, audio and netcode.");

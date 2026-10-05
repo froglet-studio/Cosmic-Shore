@@ -21,6 +21,9 @@
     <PackageReference Include="Silk.NET.OpenGL" Version="2.22.0" />
     <PackageReference Include="Silk.NET.OpenGL.Extensions.ImGui" Version="2.22.0" />
     <PackageReference Include="StbImageSharp" Version="2.30.16" />
+    <!-- Voice in the CLAUDE page: Windows' built-in speech recognition and synthesis (Microsoft's
+         package; it compiles everywhere and is only called on Windows). -->
+    <PackageReference Include="System.Speech" Version="10.0.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -37,4 +40,28 @@
   <ItemGroup>
     <Compile Include="../Shared/FrogletProjectSettings.cs" Link="Shared/FrogletProjectSettings.cs" />
   </ItemGroup>
+
+  <!-- The launcher's identity: the last commit that changed its source, and that commit's date.
+       The UPDATE button compares it with the branch to say whether a newer launcher exists. A
+       build from an exported source tree (the updater's own) passes both as properties. -->
+  <Target Name="StampLauncherVersion" BeforeTargets="GetAssemblyAttributes;CoreGenerateAssemblyInfo">
+    <Exec Condition="'$(LauncherCommit)' == ''" Command="git log -1 --format=%H -- ../CosmicShore.Launcher ../Shared"
+          ConsoleToMSBuild="true" ContinueOnError="true" StandardOutputImportance="low" IgnoreExitCode="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="LauncherCommit" />
+    </Exec>
+    <Exec Condition="'$(LauncherDate)' == ''" Command="git log -1 --format=%cs -- ../CosmicShore.Launcher ../Shared"
+          ConsoleToMSBuild="true" ContinueOnError="true" StandardOutputImportance="low" IgnoreExitCode="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="LauncherDate" />
+    </Exec>
+    <ItemGroup>
+      <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+        <_Parameter1>LauncherCommit</_Parameter1>
+        <_Parameter2>$(LauncherCommit)</_Parameter2>
+      </AssemblyAttribute>
+      <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+        <_Parameter1>LauncherDate</_Parameter1>
+        <_Parameter2>$(LauncherDate)</_Parameter2>
+      </AssemblyAttribute>
+    </ItemGroup>
+  </Target>
 </Project>

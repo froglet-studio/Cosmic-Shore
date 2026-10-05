@@ -61,8 +61,18 @@ namespace CosmicShore.Launcher
         public IosMode Ios { get; set; } = OperatingSystem.IsMacOS() ? IosMode.ThisMac : IosMode.GitHub;
 
         // Claude
+        // Look (SETTINGS > LOOK)
+        public int Background { get; set; }
+        public int Theme { get; set; }
+        public string BackgroundImage { get; set; } = "";
+        public float BackgroundMotion { get; set; } = 1f;
+        public float BackgroundDim { get; set; } = 0.25f;
+        public bool Animations { get; set; } = true;
+
         public string AnthropicApiKey { get; set; } = "";
         public string ClaudeModel { get; set; } = "";
+        public string ClaudeEffort { get; set; } = "";
+        public bool VoiceReplies { get; set; }
         public string ClaudePath { get; set; } = "";
         public int ChatMode { get; set; }
 

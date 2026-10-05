@@ -11,16 +11,35 @@ namespace CosmicShore.Launcher
     /// </summary>
     public static class Neon
     {
-        public static readonly Vector4 Cyan = new(0.20f, 0.92f, 1.00f, 1f);
-        public static readonly Vector4 Magenta = new(1.00f, 0.22f, 0.86f, 1f);
-        public static readonly Vector4 Violet = new(0.55f, 0.36f, 1.00f, 1f);
+        // The accent and space colours are a theme (SETTINGS > LOOK); everything reads them live.
+        public static Vector4 Cyan = new(0.20f, 0.92f, 1.00f, 1f);
+        public static Vector4 Magenta = new(1.00f, 0.22f, 0.86f, 1f);
+        public static Vector4 Violet = new(0.55f, 0.36f, 1.00f, 1f);
         public static readonly Vector4 Lime = new(0.62f, 1.00f, 0.30f, 1f);
         public static readonly Vector4 Amber = new(1.00f, 0.72f, 0.18f, 1f);
         public static readonly Vector4 Red = new(1.00f, 0.30f, 0.38f, 1f);
         public static readonly Vector4 Ink = new(0.86f, 0.93f, 1.00f, 1f);
         public static readonly Vector4 Dim = new(0.52f, 0.60f, 0.78f, 1f);
-        public static readonly Vector4 Space0 = new(0.012f, 0.010f, 0.045f, 1f);
-        public static readonly Vector4 Space1 = new(0.045f, 0.030f, 0.140f, 1f);
+        public static Vector4 Space0 = new(0.012f, 0.010f, 0.045f, 1f);
+        public static Vector4 Space1 = new(0.045f, 0.030f, 0.140f, 1f);
+
+        /// <summary>Accent themes: the game's own look, its four domain colours, and a quiet grey.</summary>
+        public static readonly string[] Themes = { "COSMIC", "JADE", "RUBY", "GOLD", "ICE", "MONO" };
+
+        public static void ApplyTheme(int theme)
+        {
+            (Cyan, Magenta, Violet, Space0, Space1) = theme switch
+            {
+                1 => (V(0.25f, 1.00f, 0.70f), V(0.10f, 0.75f, 0.55f), V(0.20f, 0.55f, 0.65f), V(0.005f, 0.030f, 0.030f), V(0.020f, 0.090f, 0.080f)),
+                2 => (V(1.00f, 0.42f, 0.52f), V(0.95f, 0.15f, 0.35f), V(0.65f, 0.15f, 0.45f), V(0.035f, 0.008f, 0.020f), V(0.120f, 0.020f, 0.060f)),
+                3 => (V(1.00f, 0.82f, 0.30f), V(1.00f, 0.52f, 0.15f), V(0.85f, 0.40f, 0.25f), V(0.030f, 0.020f, 0.008f), V(0.110f, 0.070f, 0.020f)),
+                4 => (V(0.70f, 0.90f, 1.00f), V(0.35f, 0.55f, 1.00f), V(0.45f, 0.50f, 0.95f), V(0.010f, 0.020f, 0.045f), V(0.030f, 0.070f, 0.150f)),
+                5 => (V(0.92f, 0.94f, 0.98f), V(0.62f, 0.66f, 0.74f), V(0.45f, 0.48f, 0.56f), V(0.015f, 0.016f, 0.020f), V(0.060f, 0.064f, 0.075f)),
+                _ => (V(0.20f, 0.92f, 1.00f), V(1.00f, 0.22f, 0.86f), V(0.55f, 0.36f, 1.00f), V(0.012f, 0.010f, 0.045f), V(0.045f, 0.030f, 0.140f)),
+            };
+        }
+
+        static Vector4 V(float r, float g, float b) => new(r, g, b, 1f);
         public static readonly Vector4 Panel = new(0.035f, 0.045f, 0.120f, 0.82f);
 
         public static ImFontPtr Body, Small, Heading, Hero, Mono, Title;
