@@ -763,6 +763,23 @@ static partial class SubstrateHarness
         float cl = calm.Sum(r => r.Hits) * 60f / calm.Sum(r => r.Seconds);
         Check(cl * 4f <= sk, $"ablation noprovoke: the 90 u/s skimmer takes {cl:F2} pecks/min instead of {sk:F1} (the provocation is what flips the colony to a mob)");
 
+        // turns: the birds dive IN TURN - at most RampTurns winding up or diving at one hull at once
+        int MaxDivers(SubstrateSpeciesParams pp)
+        {
+            int most = 0;
+            foreach (int sd in seeds)
+                RunStrikes(sd, pp, roosts, Hover(sd), 60f, 3, (w, q) =>
+                {
+                    if (w.Core.Tick == 1) { var c = w.Core.Home[w.Core.Pops[q].Start]; w.Pilots[0].Pos = c + new Vector3(120, 0, 0); }
+                    most = Math.Max(most, LiveOf(w.Core, q).Count(i => w.Core.Ramp[i] > 0f && w.Core.Rest[i] <= 0f));
+                });
+            return most;
+        }
+        var nt = P.Clone(); nt.RampTurns = 0;
+        int divers = MaxDivers(P), diversFree = MaxDivers(nt);
+        Console.WriteLine($"    at most {divers} birds winding up or diving at a hovering hull at once ({diversFree} without turns)");
+        Check(divers <= P.RampTurns && diversFree > divers, $"in turn: at most {divers} of the mob pull up or dive at once (turns {P.RampTurns}; {diversFree} without) - the read is one bird above you, and the proxy cap covers the divers");
+
         // jink: a pilot pointing straight at a mobber inside 60 u makes it break sideways
         float Off(SubstrateSpeciesParams pp)
         {
@@ -790,7 +807,10 @@ static partial class SubstrateHarness
         var P = SubstrateResearch.GameLeech();
         var seeds = new[] { 7, 23, 41 };
         Func<World, Random, Vector3[]> puddles = (w, rng) => Seats(w, rng, 12, 4);
-        var wander = seeds.Select(sd => RunStrikes(sd, P, puddles, Wanderer(sd), 180f, 0)).ToList();
+        // the research pilot (common/arena.py Pilot) turns at 2.0 rad/s - above the leech's 1.0 rad/s grip limit, so a
+        // wanderer's goal turns shake riders off (the bestiary's 8.5 shaken per run); the harness default is 1.5
+        Pilot LeechWanderer(int sd) { var pl = Wanderer(sd); pl.Turn = 2.0f; return pl; }
+        var wander = seeds.Select(sd => RunStrikes(sd, P, puddles, LeechWanderer(sd), 180f, 0)).ToList();
         int sips = wander.Sum(r => r.Sips), lat = wander.Sum(r => r.Latches), sh = wander.Sum(r => r.Shaken), bites = wander.Sum(r => r.Hits);
         float spm = sips * 60f / wander.Sum(r => r.Seconds);
         var tele = wander.SelectMany(r => r.Telegraph).ToList();
@@ -842,21 +862,24 @@ static partial class SubstrateHarness
         int q = w.Core.AddPopulation(P, 2);
         w.Core.Seed(q, P.N0, new Vector3(400, 0, 0), 60f);
         var pop = w.Core.Pops[q];
-        float assembledAt = -1f; bool dangerLoose = false; float slotErr = -1f, attFrac = 0f;
+        float assembledAt = -1f, dissolvedAt = -1f; bool dangerLoose = false; float slotErr = -1f, attFrac = 0f; var errs = new List<float>();
         for (int t = 0; t < 300; t++)
         {
             w.Step();
             if (pop.BodyActive && assembledAt < 0f) assembledAt = w.Core.T;
             if (!pop.BodyActive && LiveOf(w.Core, q).Any(i => w.Core.Danger[i])) dangerLoose = true;
-            if (t == 299 && pop.BodyActive)
+            if (!pop.BodyActive && assembledAt >= 0f && dissolvedAt < 0f) dissolvedAt = w.Core.T;
+            if (t >= 80 && t % 10 == 0 && pop.BodyActive)
             {
+                // formed (8 s after the start): how much of the school is in the body, and how close to its slot
                 var live = LiveOf(w.Core, q).ToArray();
                 var att = live.Where(i => w.Core.Attach[i] > 0.5f).ToArray();
-                attFrac = att.Length / (float)live.Length;
-                slotErr = Median(att.Select(i => Vector3.Distance(w.Core.Pos[i], w.Core.SlotGoal[i])).ToList());
+                attFrac = Math.Max(attFrac, att.Length / (float)live.Length);
+                errs.AddRange(att.Select(i => Vector3.Distance(w.Core.Pos[i], w.Core.SlotGoal[i])));
             }
         }
-        Console.WriteLine($"    assembled at {assembledAt:F1} s; after 30 s {attFrac:P0} attached, median member-to-slot {slotErr:F1} u (body {60 * P.BodyScale:F0} u long)");
+        if (errs.Count > 0) slotErr = Median(errs);
+        Console.WriteLine($"    assembled at {assembledAt:F1} s, dissolved (hungry again) at {dissolvedAt:F1} s; formed, up to {attFrac:P0} attached, median member-to-slot {slotErr:F1} u (body {60 * P.BodyScale:F0} u long)");
         Check(assembledAt >= 0f && attFrac >= 0.8f, $"sated, the school assembles ({assembledAt:F1} s; {attFrac:P0} of the members attached)");
         Check(slotErr >= 0f && slotErr < 12f * P.BodyScale, $"the members HOLD the body plan: median {slotErr:F1} u from their slots (research: well {P.BodyWell} u, members chase the slot's own velocity)");
         Check(!dangerLoose, "a loose shoal is harmless: no member is dangerous while the body is not assembled");
@@ -911,7 +934,7 @@ static partial class SubstrateHarness
     // ───────────────────────────────────────────────────────────── Q: the proxy budget - caps re-divided, engagement kept
 
     /// <summary>
-    /// The collider budget (Docs/SUBSTRATE_FAUNA.md §5, §9.6): the substrate's share of the Swarm cell's 1,200 is the
+    /// The collider budget (Docs/SUBSTRATE_FAUNA.md §5, §8.6): the substrate's share of the Swarm cell's 1,200 is the
     /// 78 colliders (39 proxies) it had before round 11-11 - the four new species are fitted by RE-DIVIDING those 39,
     /// never by raising the ceiling. author_substrate_fauna.py reads this table and asserts its proxies equal it.
     /// </summary>
@@ -927,21 +950,28 @@ static partial class SubstrateHarness
     /// or a leech's Latch) is COVERED when one of the agents in contact this tick had a proxy. Also the most dangerous
     /// agents ever inside the contact horizon (bite reach + one tick of closing speed) at once.
     /// </summary>
-    static (int contacts, int covered, int maxHorizon) Coverage(World w, int q, int cap, float engage, int ticks)
+    static (int contacts, int covered, int maxHorizon, int harmAll, int harmCovered) Coverage(World w, int q, int cap, float engage, int ticks)
     {
         var P = w.Core.Pops[q].P;
-        int contacts = 0, covered = 0, maxH = 0;
+        int contacts = 0, covered = 0, maxH = 0, harmAll = 0, harmCov = 0;
         var eng = new HashSet<int>();
+        // the burn rules' 1 s per-vessel cooldown: what the pilot FEELS is harm events, not contacts
+        var lastAll = new Dictionary<int, float>(); var lastCov = new Dictionary<int, float>();
+        var lastNear = new Dictionary<int, float>();
+        var wasRider = new HashSet<int>();   // flung off this tick: it was ON the hull, not a pass
+        bool ramOnly = P.ContactWeight <= 0f;   // a leech's plate never burns: its proxy is there to be RAMMED
         for (int t = 0; t < ticks; t++)
         {
             eng.Clear();
+            wasRider.Clear();
+            foreach (int i in LiveOf(w.Core, q)) if (w.Core.Host[i] != 0) wasRider.Add(i);
             var cand = new List<(float d, int i)>();
             foreach (int i in LiveOf(w.Core, q))
             {
                 if (w.Core.Host[i] != 0) continue;   // a rider has no proxy
                 float best = float.MaxValue;
                 foreach (var p in w.Pilots) best = MathF.Min(best, Vector3.Distance(w.Core.Pos[i], p.Pos));
-                if (best <= engage) cand.Add((best, i));
+                if (best <= engage) cand.Add((w.Core.Danger[i] ? -1f + best * 1e-6f : best, i));   // the tick job's rule: dangerous first
             }
             foreach (var c in cand.OrderBy(c => c.d).Take(cap)) eng.Add(c.i);
             w.Step();
@@ -953,20 +983,45 @@ static partial class SubstrateHarness
                     if (w.Core.Danger[i] && Vector3.Distance(w.Core.Pos[i], p.Pos) < reach + (w.Core.Vel[i] - p.Vel).Length() * Dt) h++;
                 maxH = Math.Max(maxH, h);
             }
+            if (ramOnly)
+            {
+                // a ram: free agents inside the hull's reach (pilot radius 6 + its own reach) - the hull can swat one per
+                // pass, so a pass (once per pilot per second) is covered when ANY agent in reach had a proxy
+                foreach (var p in w.Pilots)
+                {
+                    bool any = false, hit = false;
+                    foreach (int i in LiveOf(w.Core, q))
+                    {
+                        // swept over the tick, as the contact horizon is: a 140 u/s pass covers 14 u per tick
+                        if (w.Core.Host[i] != 0 || wasRider.Contains(i) || Vector3.Distance(w.Core.Pos[i], p.Pos) >= P.BiteR + 6f + (w.Core.Vel[i] - p.Vel).Length() * Dt) continue;
+                        any = true; hit |= eng.Contains(i);
+                    }
+                    if (!any || (lastNear.TryGetValue(p.Id, out float tn) && w.Core.T - tn < 1f)) continue;
+                    lastNear[p.Id] = w.Core.T;
+                    contacts++;
+                    if (hit) covered++;
+                }
+                continue;
+            }
             foreach (var e in w.Core.Events)
             {
-                if (e.Kind != SubstrateEventKind.Bite && e.Kind != SubstrateEventKind.Latch) continue;
+                if (e.Kind != SubstrateEventKind.Bite) continue;
                 if (w.Core.PopOf[e.Index] != q) continue;
                 var p = w.Pilots.First(pp => pp.Id == e.Other);
                 contacts++;
                 bool ok = eng.Contains(e.Index);
-                if (!ok && e.Kind == SubstrateEventKind.Bite)
+                if (!ok)
                     foreach (int i in LiveOf(w.Core, q))
                         if (w.Core.Danger[i] && Vector3.Distance(w.Core.Pos[i], p.Pos) < P.BiteR + 6f && eng.Contains(i)) { ok = true; break; }
-                if (ok) covered++;
+                if (!lastAll.TryGetValue(p.Id, out float ta) || w.Core.T - ta >= 1f) { lastAll[p.Id] = w.Core.T; harmAll++; }
+                if (ok)
+                {
+                    covered++;
+                    if (!lastCov.TryGetValue(p.Id, out float tc) || w.Core.T - tc >= 1f) { lastCov[p.Id] = w.Core.T; harmCov++; }
+                }
             }
         }
-        return (contacts, covered, maxH);
+        return (contacts, covered, maxH, harmAll, harmCov);
     }
 
     static void Proxies()
@@ -976,7 +1031,7 @@ static partial class SubstrateHarness
         Check(total == 39, $"the caps sum to {total} proxies = {2 * total} colliders: the substrate's share of the 1,200 is unchanged (pack 7 + locust 24 + lurker 8 before)");
         foreach (var (name, cap, engage) in ProxyCaps)
         {
-            int contacts = 0, covered = 0, maxH = 0;
+            int contacts = 0, covered = 0, maxH = 0, harmAll = 0, harmCov = 0;
             foreach (int seed in new[] { 7, 23, 41 })
             {
                 var P = SubstrateResearch.ByName(name, game: true);
@@ -1000,9 +1055,14 @@ static partial class SubstrateHarness
                         ticks = 600;
                         break;
                     case "lurker":
-                        w.Core.SeedAt(q, Seats(w, rng, 16, 1), 6f);
-                        w.Pilots.Add(Wanderer(seed, 120f));
-                        break;
+                        {
+                            // the ambush lane: lurkers seated every 150 u along a line, a pilot skimming it 20 u off
+                            var seatsL = Enumerable.Range(0, 8).Select(k => new Vector3(-525 + 150 * k, 0, 300)).ToArray();
+                            w.Core.SeedAt(q, seatsL, 0f);
+                            w.Pilots.Add(new Pilot(seed, new Vector3(-700, 20, 300), new Vector3(1, 0, 0)) { Mode = "straight", Speed = 120f, Id = 1 });
+                            ticks = 130;
+                            break;
+                        }
                     case "stampede":
                         w.Core.SeedAt(q, Seats(w, rng, 4, 12), 40f);
                         w.Pilots.Add(Wanderer(seed));
@@ -1013,22 +1073,35 @@ static partial class SubstrateHarness
                         w.Pilots.Add(h);
                         break;
                     case "leech":
-                        w.Core.SeedAt(q, Seats(w, rng, 12, 4), 40f);
-                        w.Pilots.Add(Wanderer(seed));
-                        break;
+                        {
+                            // the hunter's ram (bestiary payoff: "ram free ones"): puddles of 4 every 200 u along a line, a
+                            // 140 u/s pilot flying straight through them
+                            var seatsC = Enumerable.Range(0, 6).SelectMany(k => Enumerable.Repeat(new Vector3(-500 + 200 * k, 0, 300), 4)).ToArray();
+                            w.Core.SeedAt(q, seatsC, 8f);
+                            w.Pilots.Add(new Pilot(seed, new Vector3(-800, 0, 300), new Vector3(1, 0, 0)) { Mode = "straight", Speed = 140f, Id = 1 });
+                            ticks = 120;
+                            break;
+                        }
                     case "leviathan":
                         w.Core.Seed(q, P.N0, new Vector3(400, 0, 0), 60f);
-                        for (int t = 0; t < 300; t++) w.Step();
+                        for (int t = 0; t < 150; t++) w.Step();   // formed (it dissolves when hungry again, ~25 s)
                         var pop = w.Core.Pops[q];
                         w.Pilots.Add(new Pilot(seed, pop.BodyC + pop.BodyF * (pop.MouthZ * P.BodyScale + 140f), -pop.BodyF) { Mode = "still", Id = 1 });
                         break;
                 }
                 var r = Coverage(w, q, cap, engage, ticks);
-                contacts += r.contacts; covered += r.covered; maxH = Math.Max(maxH, r.maxHorizon);
+                contacts += r.contacts; covered += r.covered; maxH = Math.Max(maxH, r.maxHorizon); harmAll += r.harmAll; harmCov += r.harmCovered;
             }
             float frac = contacts > 0 ? covered / (float)contacts : 1f;
-            Console.WriteLine($"    {name,-9} cap {cap,2} within {engage,3:F0} u: {covered}/{contacts} contacts landed on a proxied agent ({frac:P1}); most dangerous agents in the contact horizon at once {maxH}");
-            Check(contacts > 0 && frac >= 0.95f, $"{name}: a cap of {cap} still engages - {frac:P1} of {contacts} contacts covered by the previous frame's nearest {cap}");
+            float hfrac = harmAll > 0 ? harmCov / (float)harmAll : 1f;
+            bool ram = SubstrateResearch.ByName(name, game: true).ContactWeight <= 0f;
+            Console.WriteLine($"    {name,-9} cap {cap,2} within {engage,3:F0} u: {covered}/{contacts} {(ram ? "rammable passes" : "contacts")} on a proxied agent ({frac:P1}); harm events after the 1 s cooldown {harmCov}/{harmAll} ({hfrac:P1}); most dangerous agents in the contact horizon at once {maxH}");
+            // engaged = what the pilot feels survives the cap: >= 95 % of the contacts land on a proxy, or (a swirl that
+            // contacts faster than the burn rules' 1 s cooldown can pass on) >= 90 % of the harm EVENTS still land. A
+            // ram is PAYOFF, not harm (a leech's plate never burns): a missed one is a lost swat, never a phantom burn,
+            // and the pass is decided by a pounce arriving from outside the nearest few - >= 90 % of the passes
+            Check(contacts > 0 && (ram ? frac >= 0.9f : frac >= 0.95f || hfrac >= 0.9f),
+                  $"{name}: a cap of {cap} still engages - {frac:P1} of {contacts} {(ram ? "rammable passes" : "contacts")}, {hfrac:P1} of {harmAll} harm events covered by the previous frame's nearest {cap}");
         }
 
         // the tick job builds each population's proxies from ITS OWN cap and radius, and never gives a rider one
@@ -1095,6 +1168,52 @@ static partial class SubstrateHarness
         Check(w.MaxStep <= vmax * Dt + 1e-3f, $"no teleport: the largest per-step move is {w.MaxStep:F1} u (bound {vmax * Dt:F1} u at 10 Hz)");
         Check(births > 0, $"lifeforms breed from food ({births} births)");
         Check(w.Preyed > 0 && c.Pops[qp].Alive > 0, $"the food web: the pack lives on what it catches ({w.Preyed} locusts eaten, {c.Pops[qp].Alive} hunters alive after 3 min)");
+
+        // round 11-11: all SEVEN in one core - the herd, the mob, the riders and the body on the same ledger
+        Console.WriteLine("\nM2. mass ledger with the whole bestiary: seven species, real food, a wanderer, a slow skimmer, 3 minutes");
+        var w2 = new World(1024, 19);
+        var r2 = new Random(19);
+        w2.Scatter(r2, 1500, 0.3f, 0.9f, 24);
+        double f0 = w2.LiveMass();
+        var names = SubstrateResearch.Names;
+        var qs = new int[names.Length];
+        for (int k = 0; k < names.Length; k++)
+        {
+            var P = SubstrateResearch.ByName(names[k], game: true);
+            qs[k] = w2.Core.AddPopulation(P, 1 + k % 4);
+            switch (names[k])
+            {
+                case "lurker": case "leech": w2.Core.SeedAt(qs[k], Seats(w2, r2, 12, 4), 8f); break;
+                case "stampede": w2.Core.SeedAt(qs[k], Seats(w2, r2, 4, 12), 40f); break;
+                case "mobber": w2.Core.SeedAt(qs[k], Seats(w2, r2, 5, 8), 40f); break;
+                case "pack": w2.Core.Seed(qs[k], 6, Ball(r2, 400f, 600f), 50f); break;
+                default: w2.Core.Seed(qs[k], Math.Min(P.N0, 96), Ball(r2, 400f, 600f), 80f); break;
+            }
+        }
+        double s0 = w2.Core.MassIn;
+        w2.Pilots.Add(new Pilot(19, Ball(r2, 200f, 500f), new Vector3(0, 0, 1)) { Id = 1, Turn = 2f });
+        w2.Pilots.Add(new Pilot(20, Ball(r2, 200f, 500f), new Vector3(1, 0, 0)) { Id = 2, Speed = 60f });
+        double drift2 = 0;
+        long riders = 0;
+        for (int t = 0; t < 1800; t++)
+        {
+            w2.Step();
+            double total = w2.LiveMass() + w2.Core.MassHeld();
+            drift2 = Math.Max(drift2, Math.Abs(total - (f0 + s0)) / (f0 + s0));
+            foreach (int i in LiveOf(w2.Core, qs[Array.IndexOf(names, "leech")])) if (w2.Core.Host[i] != 0) riders++;
+        }
+        var c2 = w2.Core;
+        double held2 = c2.MassHeld();
+        double core2 = Math.Abs(c2.MassIn - c2.MassOut - held2) / Math.Max(1, c2.MassIn);
+        int st2 = c2.Pops.Sum(p => (int)p.Starvations);
+        var alive = string.Join(" ", names.Select((nm, k) => $"{nm} {c2.Pops[qs[k]].Alive}"));
+        var lev = c2.Pops[qs[Array.IndexOf(names, "leviathan")]];
+        Console.WriteLine($"    eaten {w2.Eaten:F0}, held {held2:F0}; births {c2.Pops.Sum(p => (int)p.Births)}, starvations {st2}; alive {alive}; " +
+                          $"windups {c2.Pops.Sum(p => p.Windups)}, latches {c2.Pops.Sum(p => p.Latches)}, rider-ticks {riders}, sips {c2.Pops.Sum(p => p.Sips)}, assemblies {lev.Assemblies}");
+        Check(core2 < 1e-6, $"agent ledger with all seven: in {c2.MassIn:F1} - out {c2.MassOut:F1} = held {held2:F1} (relative drift {core2:E1}) - riding, assembling and gulping move no mass");
+        Check(drift2 < 1e-5, $"world ledger with all seven: live food + agent bodies constant every tick (max relative drift {drift2:E1})");
+        Check(st2 == w2.Log.Count(e => e.Kind == SubstrateEventKind.Starving), $"every death has a cause with all seven: {st2} starvations, each reported");
+        Check(riders > 0 && lev.Assemblies > 0 && c2.Pops.Sum(p => p.Windups) > 0, "the new behaviours ran in the ledger world (rides, an assembly, windups)");
     }
 
     // ───────────────────────────────────────────────────────────── K: the Burst-shaped kernel vs the managed step

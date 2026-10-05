@@ -92,26 +92,39 @@ namespace CosmicShore.Gameplay
             if (!prismImpactee.Prism.prismProperties.IsDangerous)
                 return;
 
-            var victim = vesselImpactor.Vessel.VesselStatus;
+            ApplyContact(vesselImpactor.Vessel.VesselStatus, prismImpactee.Prism.Domain,
+                         prismImpactee.Prism.prismProperties.DangerWeight);
+        }
+
+        /// <summary>
+        /// One danger CONTACT on <paramref name="victim"/> from a prism of <paramref name="prismDomain"/>, at the
+        /// burn rules' <paramref name="weight"/> (a bite 1, a drain 0.25; 0 or less does nothing). The prism collision
+        /// path (<see cref="Execute"/>) and contacts that have no collision - a leech sipping from the hull it rides
+        /// (SubstrateFauna) - share this, the per-vessel cooldown included. Returns whether it landed.
+        /// </summary>
+        public bool ApplyContact(IVesselStatus victim, Domains prismDomain, float weight)
+        {
+            if (!(weight > 0f)) return false;
             var rs = victim?.ResourceSystem;
-            if (rs == null) return;
+            if (rs == null) return false;
 
             // Cooldown check - anti-spam per debuffed vessel
             var now = Time.time;
             if (_lastEffectTime.TryGetValue(rs, out var lastTime) && now - lastTime < cooldown)
-                return;
+                return false;
             _lastEffectTime[rs] = now;
 
             // NOT A GATE. Both branches run for every vessel that touches the prism - the locked
             // friendly-fire rule is intact - and the prism's domain only chooses HOW the loss
             // lands. Domains.Blue (unrostered environment mass) is hostile to everyone, exactly as
             // PrismStats treats it, so a neutral danger rod burns.
-            bool hostile = prismImpactee.Prism.Domain != victim.Domain;
+            bool hostile = prismDomain != victim.Domain;
 
             // THE STAKES SWITCH. The cell picks the size; both branches below use it, so the
-            // own-domain sting stays the same size as the hostile burn under either rule.
+            // own-domain sting stays the same size as the hostile burn under either rule. The
+            // contact's weight scales it (burn rules: a drain is a quarter of a bite).
             var rule = cellData && cellData.Config ? cellData.Config.PetalBurnRule : PetalBurnRule.Shipped;
-            float magnitude = PetalBurnRules.Magnitude(rule, debuffMagnitude, tunedDebuffMagnitude);
+            float magnitude = PetalBurnRules.Magnitude(rule, debuffMagnitude, tunedDebuffMagnitude) * weight;
 
             // Classed DangerPrism either way, which is what a narrow ward can be held against: the
             // Dolphin's Time-5 Drift Ward wards THIS and nothing else (ElementalDebuffSources).
@@ -127,6 +140,7 @@ namespace CosmicShore.Gameplay
                     rs.ApplyElementalEffect(AllElements[i], magnitude, debuffDuration,
                                             ElementalDebuffSources.DangerPrism);
             }
+            return true;
         }
     }
 }

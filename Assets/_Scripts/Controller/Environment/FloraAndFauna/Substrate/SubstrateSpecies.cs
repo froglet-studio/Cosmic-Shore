@@ -123,7 +123,7 @@ namespace CosmicShore.Gameplay
         /// <summary>The phase above which an aggressive agent is DANGEROUS (a danger prism; research harm = aggression above 0.5).</summary>
         public float DangerPhase = 0.5f;
 
-        // ── the research's BODY layer (core.py SpeciesParams attach_* + BodyPlan; Docs/SUBSTRATE_FAUNA.md §9.4) ──
+        // ── the research's BODY layer (core.py SpeciesParams attach_* + BodyPlan; Docs/SUBSTRATE_FAUNA.md §8.4) ──
         /// <summary>Per second, how fast each agent's attachment relaxes toward the group's assembling target.</summary>
         public float AttachRate = 0.5f;
         /// <summary>The body quorum: assemble when the group's mean hunger falls below AttachOnH (or its mean fear rises
@@ -135,7 +135,7 @@ namespace CosmicShore.Gameplay
         /// <summary>Body plan: slot scale, the flat-bottom well a member stops pulling inside (u), the body's cruise (u/s).</summary>
         public float BodyScale = 1f, BodyWell = 4f, BodySpeed = 50f;
 
-        // ── round 11-11 primitives (0 / off by default; Docs/SUBSTRATE_FAUNA.md §9) ──
+        // ── round 11-11 primitives (0 / off by default; Docs/SUBSTRATE_FAUNA.md §8) ──
         /// <summary>Strike ROLE: only every Nth agent of the block arms a ramp and climbs the alarm gradient (the
         /// stampede's bulls, every 4th). 0 = every agent.</summary>
         public int ChargeEvery = 0;
@@ -189,6 +189,10 @@ namespace CosmicShore.Gameplay
         /// <summary>GULP: a pilot inside GulpR ahead of the mouth (cos > GulpCos) holds GulpRampS seconds (the jaws flare),
         /// then the body surges at GulpSpeed for GulpS seconds and rests GulpRestS. GulpR 0 = no gulp.</summary>
         public float GulpR = 0f, GulpCos = 0.7f, GulpRampS = 1.2f, GulpS = 1.6f, GulpSpeed = 115f, GulpRestS = 4f;
+        /// <summary>TURNS: at most this many of the block wind up or strike at one pilot at once; an armed agent past
+        /// the limit WAITS its turn and the longest waiter goes next (bestiary mobber: "each mobbing bird, in turn").
+        /// 0 = no limit.</summary>
+        public int RampTurns = 0;
 
         public SubstrateSpeciesParams Clone()
         {
@@ -241,6 +245,7 @@ namespace CosmicShore.Gameplay
             f("sip_weight", SipWeight); f("contact_weight", ContactWeight); f("danger_attached", DangerAttached ? 1f : 0f);
             f("body_curious", BodyCurious); f("body_curious_r", BodyCuriousR); f("gulp_r", GulpR); f("gulp_cos", GulpCos);
             f("gulp_ramp_s", GulpRampS); f("gulp_s", GulpS); f("gulp_speed", GulpSpeed); f("gulp_rest_s", GulpRestS);
+            f("ramp_turns", RampTurns);
         }
     }
 
@@ -507,6 +512,7 @@ namespace CosmicShore.Gameplay
             ("mobber", "bite_r", "6: a peck lands inside radius + 6 (bestiary)"),
             ("mobber", "bite_cool", "1: one contact per second per vessel (burn rules)"),
             ("mobber", "contact_weight", "0.25: a peck is a DRAIN, a quarter of a bite (burn rules)"),
+            ("mobber", "ramp_turns", "3: the birds dive IN TURN (bestiary: a staggered rhythm, one pulling up above you at a time) - at most three wind up or dive at one hull at once, so the swirl reads and its few divers are the ones the proxy cap must cover"),
             ("mobber", "w_jink", "8: a pilot pointing at it inside 60 u makes it break sideways (bestiary jink: +140 u/s aside, over a 110 u/s cap - it must outvote the mob's hunt and dive)"),
 
             // ── the leech (bestiary leech.py; no research substrate set) ──
@@ -621,7 +627,7 @@ namespace CosmicShore.Gameplay
             p.QRate = 2f; p.QContagion = 0.9f; p.NbrR = 120f; p.RingRoles = 50; p.DepositAlarm = 0f;
             p.RampR = 80f; p.RampS = 0.8f; p.RampSpeed = 0.45f; p.WStrike = 4f; p.StrikeSpeed = 160f; p.StrikeAccel = 500f;
             p.HuntLeadMax = 0.5f; p.StaminaS = 0.6f; p.RestS = 1.9f; p.RestSpeed = 1f; p.RestHoldsPhase = true;
-            p.BiteR = 6f; p.BiteCool = 1f; p.ContactWeight = 0.25f; p.WJink = 8f;
+            p.BiteR = 6f; p.BiteCool = 1f; p.ContactWeight = 0.25f; p.WJink = 8f; p.RampTurns = 3;
             return p;
         }
 

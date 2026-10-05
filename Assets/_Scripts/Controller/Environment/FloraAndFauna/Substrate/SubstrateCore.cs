@@ -93,7 +93,7 @@ namespace CosmicShore.Gameplay
         public float EngageRadius;
         public int MaxEngaged;
 
-        // ── the body (research BodyPlan; Docs/SUBSTRATE_FAUNA.md §9.4) - one per population ──
+        // ── the body (research BodyPlan; Docs/SUBSTRATE_FAUNA.md §8.4) - one per population ──
         public bool Assembling, BodyActive;
         public Vector3 BodyC, BodyF = new Vector3(0f, 0f, 1f), BodyV;
         public float GulpPrep, Gulp, GulpRest;
@@ -197,6 +197,8 @@ namespace CosmicShore.Gameplay
         readonly Vector3[] _pilotPrevDir = new Vector3[MaxPilots];
         readonly Dictionary<int, Vector3> _prevVel = new();
         readonly int[] _load = new int[MaxPilots];
+        readonly int[] _turns = new int[MaxPilots];
+        bool[] _mayRamp = new bool[0];
 
         public SubstrateCore(int capacity, float radius, float dt = 0.1f, int fieldGrid = 40, int seed = 1)
         {
@@ -650,6 +652,7 @@ namespace CosmicShore.Gameplay
             bool cling = P.ClingMax > 0;
             if (cling) Ride(pop);
             if (P.BodyK > 0) Body(pop);
+            if (P.RampTurns > 0) PickTurns(pop);
 
             for (int q = 0; q < n; q++)
             {
@@ -674,8 +677,13 @@ namespace CosmicShore.Gameplay
                     if (ramped) Ramp[i] += dt;
                     else if (armed)
                     {
-                        if (Ramp[i] <= 0f) { pop.Windups++; Events.Add(new SubstrateEvent { Kind = SubstrateEventKind.Windup, Index = i }); }
-                        Ramp[i] += dt;
+                        if (Ramp[i] > 0f) Ramp[i] += dt;                                       // mid-windup
+                        else if (P.RampTurns > 0 && !_mayRamp[i - pop.Start]) Ramp[i] -= dt;   // waiting its turn (Ramp < 0)
+                        else
+                        {
+                            pop.Windups++; Events.Add(new SubstrateEvent { Kind = SubstrateEventKind.Windup, Index = i });
+                            Ramp[i] = dt;
+                        }
                     }
                     else Ramp[i] = 0f;
                 }
@@ -793,6 +801,52 @@ namespace CosmicShore.Gameplay
                 Events.Add(new SubstrateEvent { Kind = SubstrateEventKind.Born, Index = c, Other = i });
             }
             pop.Alive = alive;
+        }
+
+        /// <summary>
+        /// TURNS (round 11-11, SubstrateSpeciesParams.RampTurns): per pilot, the agents already winding up or striking at
+        /// it are counted; the free turns go to the agents that have WAITED longest (most negative Ramp). Marks
+        /// _mayRamp[i - pop.Start]; read by the world pass's ramp.
+        /// </summary>
+        void PickTurns(SubstratePopulation pop)
+        {
+            var P = pop.P;
+            if (_mayRamp.Length < pop.Cap) _mayRamp = new bool[pop.Cap];
+            Array.Clear(_mayRamp, 0, pop.Cap);
+            for (int j = 0; j < _npil; j++) _turns[j] = 0;
+            int n = pop.LiveCount;
+            for (int q = 0; q < n; q++)
+            {
+                int i = pop.Live[q];
+                if (Ramp[i] <= 0f || Rest[i] > 0f) continue;
+                int j = NearestPilot(Pos[i], out _);
+                if (j >= 0) _turns[j]++;
+            }
+            for (int j = 0; j < _npil; j++)
+                for (int free = P.RampTurns - _turns[j]; free > 0; free--)
+                {
+                    int pick = -1;
+                    for (int q = 0; q < n; q++)
+                    {
+                        int i = pop.Live[q];
+                        if (Ramp[i] >= 0f || _mayRamp[i - pop.Start] || NearestPilot(Pos[i], out _) != j) continue;
+                        if (pick < 0 || Ramp[i] < Ramp[pick]) pick = i;
+                    }
+                    if (pick < 0) break;
+                    _mayRamp[pick - pop.Start] = true;
+                }
+            // a newcomer (Ramp 0) with turns still free starts at once - it has waited no less than nobody
+            for (int j = 0; j < _npil; j++)
+            {
+                int used = _turns[j];
+                for (int q = 0; q < n; q++) { int i = pop.Live[q]; if (_mayRamp[i - pop.Start] && NearestPilot(Pos[i], out _) == j) used++; }
+                for (int q = 0; q < n && used < P.RampTurns; q++)
+                {
+                    int i = pop.Live[q];
+                    if (Ramp[i] != 0f || Rest[i] > 0f || _mayRamp[i - pop.Start] || NearestPilot(Pos[i], out _) != j) continue;
+                    _mayRamp[i - pop.Start] = true; used++;
+                }
+            }
         }
 
         /// <summary>A trample: the agent is fast (research: above 60 u/s) and - when <paramref name="close"/> is above 0 -

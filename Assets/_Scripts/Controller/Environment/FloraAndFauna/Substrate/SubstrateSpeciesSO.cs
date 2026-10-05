@@ -9,7 +9,7 @@ namespace CosmicShore.Gameplay
     /// the bestiary primitives); nothing in the core branches on which species it is stepping. The rest of this asset is
     /// the glue's: how agents are seeded, drawn, made real near a vessel and fed.
     ///
-    /// The shipped assets (Pack Hunter, Locust, Lurker) are written by <c>Tools/Build/author_substrate_fauna.py</c> from
+    /// The shipped assets (Pack Hunter, Locust, Lurker; round 11-11 Stampede, Mobber, Leech, Leviathan) are written by <c>Tools/Build/author_substrate_fauna.py</c> from
     /// <c>Tools/Build/substrate_harness/game_params.json</c>, which the harness asserts is the research parameter set plus
     /// the documented game deltas (harness test F). Edit a number in the inspector to tune; re-run the author script to
     /// return to the proven set.
@@ -33,6 +33,23 @@ namespace CosmicShore.Gameplay
         [Tooltip("Seed each agent AT a living flora heart in the population's band instead of around the anchor - an " +
                  "ambusher that mimics crystals is seeded among them (research anchor=\"mass\").")]
         [SerializeField] bool seedAtFlora;
+        [Tooltip("Round 11-11: seed the population as this many CLUSTERS at random points of its band (and sector) - " +
+                 "a herd's six groups, a mobber colony's five roosts - each cluster seedSpread wide. 0 or 1 = one cloud " +
+                 "around the anchor (or, with a sector, at the sector's centre).")]
+        [SerializeField, Min(0)] int seedClusters;
+
+        [Header("Placement - round 11-11 sector pen (Docs/SUBSTRATE_FAUNA.md §8.5)")]
+        [Tooltip("The axis (cell-local direction from the cell centre) of the SECTOR this population is penned in, " +
+                 "inside its radial band - so species sharing a band hold apart. Ignored when sectorHalfAngle is 0.")]
+        [SerializeField] Vector3 sectorAxis = Vector3.right;
+        [Tooltip("Half-angle (degrees) of the sector pen around sectorAxis. 0 = no sector (the whole band shell).")]
+        [SerializeField, Range(0f, 180f)] float sectorHalfAngle;
+
+        [Header("Contact - round 11-11 (Docs/SUBSTRATE_FAUNA.md §8)")]
+        [Tooltip("The danger-prism effect a contact WITHOUT a collision is applied through - a leech's sip from the hull " +
+                 "it rides lands as one danger contact of the species' SipWeight (burn rules: a drain is 0.25), sharing " +
+                 "the effect's per-vessel cooldown. Unassigned: such contacts are not applied (the warning names the asset).")]
+        [SerializeField] VesselElementalDebuffByDangerPrismEffectSO contactEffect;
 
         [Header("Drawing")]
         [Tooltip("The agent's proxy prefab (a SubstrateAgentFauna: one body prism and a heart). Its body prism's mesh is " +
@@ -95,6 +112,11 @@ namespace CosmicShore.Gameplay
         public int SeedCount => seedCount > 0 ? seedCount : (species != null ? species.N0 : 0);
         public float SeedSpread => seedSpread;
         public bool SeedAtFlora => seedAtFlora;
+        public int SeedClusters => seedClusters;
+        public bool HasSector => sectorHalfAngle > 0f && sectorAxis.sqrMagnitude > 1e-6f;
+        public Vector3 SectorAxis => sectorAxis;
+        public float SectorHalfAngle => sectorHalfAngle;
+        public VesselElementalDebuffByDangerPrismEffectSO ContactEffect => contactEffect;
         public SubstrateAgentFauna AgentPrefab => agentPrefab;
         public Shader MemberShader => memberShader;
         public ThemeManagerDataContainerSO Theme => theme;

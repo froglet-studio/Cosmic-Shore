@@ -339,8 +339,10 @@ namespace CosmicShore.Gameplay
             _tick++;
         }
 
-        /// <summary>A population's agents within EngageRadius of a vessel, nearest first, at most MaxEngaged - written
-        /// into Engaged[pop.Start ..] (each population owns the same slice it owns in the core).</summary>
+        /// <summary>A population's agents within EngageRadius of a vessel, DANGEROUS ones first then nearest first, at
+        /// most MaxEngaged - written into Engaged[pop.Start ..] (each population owns the same slice it owns in the core).
+        /// Round 11-11: a cap below the swirl's size (a mob of 14 mobbers round a hull, cap 4) must still hand its
+        /// proxies to the birds that are diving - the pulled-up diver is not the nearest one.</summary>
         void BuildEngaged(SubstratePopulation pop, int q)
         {
             int n = 0;
@@ -355,7 +357,8 @@ namespace CosmicShore.Gameplay
                     float best = float.MaxValue;
                     for (int k = 0; k < PilotCount; k++)
                         best = MathF.Min(best, Vector3.DistanceSquared(Core.Pos[i], Pilots[k].Pos));
-                    if (best <= r2) { _engD[n] = best; _engI[n] = i; n++; }
+                    // the sort key: a dangerous agent ranks below every harmless one (-1 + d^2 / 1e6 < 0 <= d^2)
+                    if (best <= r2) { _engD[n] = Core.Danger[i] ? -1f + best * 1e-6f : best; _engI[n] = i; n++; }
                 }
             if (n > cap) { Array.Sort(_engD, _engI, 0, n); n = cap; }
             Array.Copy(_engI, 0, _bEngaged, pop.Start, n);

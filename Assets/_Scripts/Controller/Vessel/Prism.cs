@@ -928,6 +928,7 @@ namespace CosmicShore.Gameplay
                 Debug.LogWarning($"[Prism] '{name}' has an invalid PrismProperties.DefaultLayerName '{prismProperties.DefaultLayerName}' — keeping layer '{LayerMask.LayerToName(gameObject.layer)}'.", this);
 
             prismProperties.volume = 1f;
+            prismProperties.DangerWeight = 1f;
         }
 
         // Creation-completion budget. Simultaneous spawns (a pooled ring detonation,
