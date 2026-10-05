@@ -47,7 +47,7 @@
     ]
    ],
    "grown_voxels_at_200": 1142,
-   "ms_per_full_step": 30.05
+   "ms_per_full_step": 2.6
   },
   "keeps_animating": {
    "pass": true,
@@ -161,42 +161,64 @@
    "pass": true,
    "budgetMs": 4,
    "frames": 300,
-   "nca_steps_done": 34,
-   "nca_steps_per_sec_at_60fps": 6.8,
-   "frames_ending_mid_step": 268,
-   "frame_ms_p50": 4.07,
-   "frame_ms_p95": 4.55,
-   "frame_ms_max": 11.96,
+   "nca_steps_done": 150,
+   "nca_steps_per_sec_at_60fps": 30,
+   "frames_ending_mid_step": 0,
+   "resume_check_0p5ms_budget": {
+    "frames_ending_mid_step": 55,
+    "steps": 10,
+    "max_abs_diff_vs_unsplit": 0
+   },
+   "frame_ms_p50": 2.3,
+   "frame_ms_p95": 2.54,
+   "frame_ms_p99": 3.36,
+   "frame_ms_max": 3.69,
    "cellsPerFrame_2000": {
     "frames": 120,
     "nca_steps": 60,
-    "frame_ms_mean": 18.35
+    "frame_ms_mean": 1.69
    }
   },
   "element_colours": {
    "pass": true,
    "mean_rgb": {
     "mass": [
-     0.779,
-     0.533,
-     0.311
+     0.778,
+     0.532,
+     0.309
     ],
     "charge": [
-     0.793,
-     0.835,
-     0.275
+     0.791,
+     0.834,
+     0.273
     ],
     "space": [
-     0.376,
-     0.677,
-     0.815
+     0.375,
+     0.676,
+     0.812
     ],
     "time": [
-     0.52,
-     0.948,
-     0.491
+     0.519,
+     0.946,
+     0.489
     ]
    }
+  },
+  "speed_and_parity": {
+   "pass": true,
+   "backend": "wasm-simd",
+   "wasm_vs_js_max_abs_diff_300_steps": 0.00000244,
+   "wasm_vs_js_max_count_diff": 0,
+   "ms_per_step": {
+    "dense_baseline": 33.5,
+    "js_sparse": 20.62,
+    "wasm_simd": 2.64
+   },
+   "speedup_vs_dense": 12.7,
+   "nca_steps_per_sec_at_4ms_per_60fps_frame_uncapped": 97,
+   "swim_cycle_s_at_that_rate": 0.7,
+   "regrow_90pct_s_at_default_30_steps_per_s": 0.7,
+   "regrow_90pct_s_uncapped": 0.2
   }
  },
  "grid": [
