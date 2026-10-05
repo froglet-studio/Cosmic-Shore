@@ -402,5 +402,16 @@ apply the enum-order tie-break. `ResolvePlacementOrder` already does this; `Reso
 
 ---
 
+## 20. Index cancelable work by owner, don't scan a flat list
+
+**Shows up as:** a hitch when many objects die or return to pool in one frame (BH-4.7).
+
+**Why:** `RemoveAt` in a reverse scan is O(N) per cancel; mass cancels become O(N²).
+
+**Fix pattern:** `Dictionary<owner, List<entry>>` (or similar). Cancel drops the owner's bucket;
+Update iterates a copied key list so callbacks can schedule again.
+
+---
+
 Threading errors (`EnsureRunningOnMainThread`, UGS callbacks off the main thread) have their own
 guide: [`../THREADING.md`](../THREADING.md).

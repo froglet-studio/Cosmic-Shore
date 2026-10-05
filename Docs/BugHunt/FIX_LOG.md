@@ -8,6 +8,19 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ---
 
+## BH-4.7 — PrismTimerManager.CancelScheduledActions was O(N²)
+
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Symptom (risk):** mass pool returns (many prisms cancelled in one frame) hitch while cancel walks the
+  whole scheduled list and `RemoveAt`-shifts for each match.
+- **Root cause:** a single flat `List<ScheduledAction>` scanned on every cancel.
+- **Fix:** actions are stored in `Dictionary<owner, List<…>>`. Cancel removes that owner's list in
+  one step; Update walks owners via a scratch key list so callbacks can reschedule safely.
+- **Verification:** gate scripts pass; not run in Unity. Retest is on the handoff playtest list.
+- **PR/commit:** pending.
+
+---
+
 ## BH-4.6 — ThumbCursor / ThumbPerimeter used legacy Input.touches
 
 - **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.

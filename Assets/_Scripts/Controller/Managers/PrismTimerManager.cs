@@ -98,8 +98,12 @@ namespace CosmicShore.Gameplay
             public Action Callback;
         }
 
-        private readonly List<ScheduledAction> scheduledActions = new(64);
+        // Indexed by owner so CancelScheduledActions is O(owner's entries), not a full
+        // list scan with RemoveAt (which was O(N²) on mass pool returns).
+        private readonly Dictionary<UnityEngine.Object, List<ScheduledAction>> scheduledByOwner = new(64);
+        private readonly List<UnityEngine.Object> ownerScratch = new(32);
         private readonly List<Action> dueActions = new(16);
+        int scheduledActionCount;
 
         /// <summary>
         /// Schedule <paramref name="callback"/> to run once at Time.time + delay —
@@ -113,23 +117,29 @@ namespace CosmicShore.Gameplay
         public void ScheduleAction(UnityEngine.Object owner, float delay, Action callback)
         {
             if (owner == null || callback == null) return;
-            scheduledActions.Add(new ScheduledAction
+            if (!scheduledByOwner.TryGetValue(owner, out var list))
+            {
+                list = new List<ScheduledAction>(4);
+                scheduledByOwner[owner] = list;
+            }
+            list.Add(new ScheduledAction
             {
                 Owner = owner,
                 EndTime = Time.time + delay,
                 Callback = callback
             });
+            scheduledActionCount++;
         }
 
         /// <summary>Cancel every scheduled action for this owner (pool return /
         /// destruction / animation re-stamp superseding the old settle).</summary>
         public void CancelScheduledActions(UnityEngine.Object owner)
         {
-            for (int i = scheduledActions.Count - 1; i >= 0; i--)
-            {
-                if (scheduledActions[i].Owner == owner)
-                    scheduledActions.RemoveAt(i);
-            }
+            if (owner == null) return;
+            if (!scheduledByOwner.TryGetValue(owner, out var list)) return;
+            scheduledActionCount -= list.Count;
+            list.Clear();
+            scheduledByOwner.Remove(owner);
         }
 
         /// <summary>
@@ -168,27 +178,39 @@ namespace CosmicShore.Gameplay
 
         private void Update()
         {
-            if (activeTimers.Count == 0 && scheduledActions.Count == 0) return;
+            if (activeTimers.Count == 0 && scheduledActionCount == 0) return;
 
             float currentTime = Time.time;
 
             // Generalized settle swaps first (the law's touchpoint 3).
-            if (scheduledActions.Count > 0)
+            if (scheduledActionCount > 0)
             {
                 dueActions.Clear();
-                for (int i = scheduledActions.Count - 1; i >= 0; i--)
+                ownerScratch.Clear();
+                ownerScratch.AddRange(scheduledByOwner.Keys);
+                for (int o = 0; o < ownerScratch.Count; o++)
                 {
-                    var entry = scheduledActions[i];
-                    if (entry.Owner == null)
+                    var owner = ownerScratch[o];
+                    if (!scheduledByOwner.TryGetValue(owner, out var list)) continue;
+                    if (owner == null)
                     {
-                        scheduledActions.RemoveAt(i); // owner destroyed — swap moot
+                        scheduledActionCount -= list.Count;
+                        list.Clear();
+                        scheduledByOwner.Remove(owner);
                         continue;
                     }
-                    if (currentTime >= entry.EndTime)
+                    for (int i = list.Count - 1; i >= 0; i--)
                     {
-                        scheduledActions.RemoveAt(i);
-                        dueActions.Add(entry.Callback);
+                        var entry = list[i];
+                        if (currentTime >= entry.EndTime)
+                        {
+                            list.RemoveAt(i);
+                            scheduledActionCount--;
+                            dueActions.Add(entry.Callback);
+                        }
                     }
+                    if (list.Count == 0)
+                        scheduledByOwner.Remove(owner);
                 }
                 // Run after iteration — callbacks may schedule/cancel actions.
                 for (int i = 0; i < dueActions.Count; i++)
