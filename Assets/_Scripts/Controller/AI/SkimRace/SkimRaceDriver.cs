@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Unity.Profiling;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -33,6 +34,19 @@ namespace CosmicShore.Gameplay
     public sealed class SkimRaceDriver
     {
         public enum Mode { Idle = 0, Racing = 1, Recovering = 2 }
+
+        // The thinking's cost, by part, in the Unity Profiler (and tallied by the offline simulator under
+        // the same names). Each wraps a whole step - at most once per decision, and TrackMpc / Planner
+        // only on the decisions that re-plan - so the markers cost nothing that shows; the parts a policy
+        // switches off never appear.
+        static readonly ProfilerMarker s_DecideMarker = new("SkimRaceDriver.Decide");
+        static readonly ProfilerMarker s_PlanPassMarker = new("SkimRaceDriver.PlanPass");
+        static readonly ProfilerMarker s_GuardsMarker = new("SkimRaceDriver.Guards");
+        static readonly ProfilerMarker s_PlannerMarker = new("SkimRaceDriver.Planner");
+        static readonly ProfilerMarker s_TrackMpcMarker = new("SkimRaceDriver.TrackMpc");
+        static readonly ProfilerMarker s_LevelApproachMarker = new("SkimRaceDriver.LevelApproach");
+        static readonly ProfilerMarker s_MpcMarker = new("SkimRaceDriver.Mpc");
+        static readonly ProfilerMarker s_GuardMassMarker = new("SkimRaceDriver.GuardMass");
 
         public struct Diagnostics
         {
@@ -843,6 +857,8 @@ namespace CosmicShore.Gameplay
         {
             if (now >= _nextTrack)
             {
+                // Timed only when it re-plans (TrackMpcHz), so the Profiler shows the frames it lands on.
+                using var replanScope = s_TrackMpcMarker.Auto();
                 _nextTrack = now + 1f / Mathf.Max(1f, _cfg.TrackMpcHz);
                 course.Project(o.Position, ref _trackHint, out _, out _);
                 float best = TrackCost(o, course, yaw, pitch, throttle, aim, lineMode) * (1f - _cfg.TrackMpcNominalBias);
@@ -1091,6 +1107,12 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public SkimRaceAction Decide(in SkimRaceObservation observed, SkimRaceCourse course, float now, float dt)
         {
+            using (s_DecideMarker.Auto())
+                return DecideCore(observed, course, now, dt);
+        }
+
+        SkimRaceAction DecideCore(in SkimRaceObservation observed, SkimRaceCourse course, float now, float dt)
+        {
             if (_mode == Mode.Idle) _mode = Mode.Racing;
             dt = Mathf.Max(dt, 1e-4f);
             _speed = observed.Speed;
@@ -1115,7 +1137,8 @@ namespace CosmicShore.Gameplay
             float directDistance = _cfg.CrystalDirectDistance * approach;
 
             if (haveCourse && o.HasTarget)
-                PlanPass(o, course);
+                using (s_PlanPassMarker.Auto())
+                    PlanPass(o, course);
 
             bool behind = haveCourse && o.HasTarget && o.TargetAheadOnCourse > o.CourseLength * 0.5f;
             bool inFront = o.HasTarget && o.TargetAlignment > 0.35f;
@@ -1179,10 +1202,13 @@ namespace CosmicShore.Gameplay
 
             // ── 1b. Slab guard: never let the hull approach the ribbon plane inside its edge ─
             bool guarded = false;
-            if (haveCourse && _cfg.SlabGuardSeconds > 0f)
-                guarded = GuardSlab(o, course, ref aim);
-            if (haveCourse && _cfg.HullGuardSeconds > 0f && GuardHull(o, course, ref aim))
-                guarded = true;
+            using (s_GuardsMarker.Auto())
+            {
+                if (haveCourse && _cfg.SlabGuardSeconds > 0f)
+                    guarded = GuardSlab(o, course, ref aim);
+                if (haveCourse && _cfg.HullGuardSeconds > 0f && GuardHull(o, course, ref aim))
+                    guarded = true;
+            }
 
             Vector3 toAim = aim - o.Position;
             Vector3 desired = toAim.sqrMagnitude > 1e-4f ? toAim.normalized : o.Forward;
@@ -1248,7 +1274,8 @@ namespace CosmicShore.Gameplay
                     _nextPlan = now + 1f / Mathf.Max(1f, _cfg.PlannerHz);
                     _planner ??= new SkimRacePlanner(_cfg);
                     course.Project(o.Position, ref _planHint, out _, out _);
-                    _plan = _planner.Plan(o, course, passPoint, _planHint, yaw, pitch, throttle);
+                    using (s_PlannerMarker.Auto())
+                        _plan = _planner.Plan(o, course, passPoint, _planHint, yaw, pitch, throttle);
                 }
                 yaw = _plan.Yaw;
                 pitch = _plan.Pitch;
@@ -1273,17 +1300,24 @@ namespace CosmicShore.Gameplay
                 TrackMpc(o, course, aim, linePursuit, now, ref yaw, ref pitch, throttle);
             if (_cfg.UseLevelApproach && haveCourse && course.HasShells && o.HasTarget && _mode != Mode.Recovering
                 && !behind && passDist <= Mathf.Max(o.Speed, 60f) * _cfg.LevelApproachSeconds)
-                LevelApproach(o, course, passPoint, now, throttle, ref yaw, ref pitch);
+            {
+                using (s_LevelApproachMarker.Auto())
+                    LevelApproach(o, course, passPoint, now, throttle, ref yaw, ref pitch);
+            }
             else _levelValid = false;
 
             if (_cfg.UseMpc && o.HasTarget)
             {
                 if (_rollCourse == null && _cfg.RolloutFollowsLine && haveCourse) { _rollCourse = course; _rollHint = -1; }
                 if (haveCourse) course.Project(o.Position, ref _rollHint, out _, out _);
-                Mpc(o, haveCourse ? course : null, aim, now, ref yaw, ref pitch, ref throttle);
+                using (s_MpcMarker.Auto())
+                    Mpc(o, haveCourse ? course : null, aim, now, ref yaw, ref pitch, ref throttle);
             }
-            else if (_cfg.MassGuardSeconds > 0f && (Obstacles.Count > 0 || trackGuard) && GuardMass(o, aim, ref yaw, ref pitch, throttle))
-                guarded = true;
+            else if (_cfg.MassGuardSeconds > 0f && (Obstacles.Count > 0 || trackGuard))
+            {
+                using (s_GuardMassMarker.Auto())
+                    if (GuardMass(o, aim, ref yaw, ref pitch, throttle)) guarded = true;
+            }
 
             // ── Pickup hold: fly straight through the pickup ring's hollow centre ──
             // A pickup lays 8 prisms on radius 8.2, centred 8 u ahead along the hull's heading

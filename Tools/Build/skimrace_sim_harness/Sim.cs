@@ -289,7 +289,11 @@ sealed class Obstacles
 static class Race
 {
     // Wall-clock cost of the shipped decision core (the sim's own dt never sees it; the game's frame does).
-    public static long DecideTicks, DecideCalls;
+    public static long DecideTicks, DecideCalls, DecideBytes;
+    // eval only (races run one at a time): every seat's decision time added up per frame - what one
+    // frame of the game pays for all its AI together. Off in the parallel tuners.
+    public static bool RecordFrames;
+    public static readonly List<float> FrameMs = new();
     // Unity's Random.onUnitSphere stand-in (the shape matters, not the stream).
     static Vector3 OnUnitSphere(System.Random r)
     {
@@ -388,6 +392,8 @@ static class Race
         while (t < maxT && agents.Exists(x => !x.Done))
         {
             float dt = ph.DtJitter > 0f ? ph.Dt * (1f + ph.DtJitter * (float)(rng.NextDouble() * 2.0 - 1.0)) : ph.Dt;
+            long frameTicks = 0;
+            int frameDecides = 0;
             foreach (var ag in agents)
             {
                 if (ag.Done) continue;
@@ -434,9 +440,13 @@ static class Race
                         driver.Obstacles.Add(new SkimRaceObstacle { Center = it.c, Rotation = it.r, Half = it.half });
                     }
                 }
+                long b0 = GC.GetAllocatedBytesForCurrentThread();
                 long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
                 var a = driver.Decide(o, course, t, dt);
-                DecideTicks += System.Diagnostics.Stopwatch.GetTimestamp() - t0; DecideCalls++;
+                long spent = System.Diagnostics.Stopwatch.GetTimestamp() - t0;
+                DecideTicks += spent; DecideCalls++;
+                frameTicks += spent; frameDecides++;
+                DecideBytes += GC.GetAllocatedBytesForCurrentThread() - b0;
                 if (driver.LastTrackError >= 0f && ag.Frames % 4 == 0) ag.TrackErrors.Add(driver.LastTrackError);
                 if (ph.LineDiag != 0 && ag.Frames % 20 == 0)
                 {
@@ -600,6 +610,7 @@ static class Race
                         driver.LastDiagnostics.CrystalPull ? 1 : 0, ag.Id));
                 }
             }
+            if (RecordFrames && frameDecides > 0) FrameMs.Add((float)(1000.0 * frameTicks / System.Diagnostics.Stopwatch.Frequency));
             t += dt;
         }
 
@@ -1115,10 +1126,30 @@ static class Program
             foreach (var a in args.Skip(4))
                 if (a.StartsWith("seedbase=")) seedBase = int.Parse(a.Substring(9), CultureInfo.InvariantCulture);
             var (cfg, ph) = Parse(args.Skip(4).Where(a => !a.StartsWith("seedbase=") && !a.StartsWith("diag=") && !a.StartsWith("limit=")));
+            Race.RecordFrames = true;
             if (mode == "trace") { var r = Race.Run(def, prisms, course, cfg, ph, 1000 + seeds, limit, true); Console.WriteLine($"finished={r.Finished} t={r.Time:F2} {r.Collected}/{r.Required}"); return 0; }
             var e = Evaluate(def, prisms, course, cfg, ph, seeds, limit, seedBase);
-            Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "  decide cost: {0:F3} ms per seat per frame (sim runtime, {1} calls)",
-                1000.0 * Race.DecideTicks / System.Diagnostics.Stopwatch.Frequency / Math.Max(1, Race.DecideCalls), Race.DecideCalls));
+            Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "  decide cost: {0:F3} ms per seat per frame (sim runtime, {1} calls), {2:F0} bytes allocated per decision",
+                1000.0 * Race.DecideTicks / System.Diagnostics.Stopwatch.Frequency / Math.Max(1, Race.DecideCalls), Race.DecideCalls,
+                Race.DecideBytes / (double)Math.Max(1, Race.DecideCalls)));
+            if (Race.FrameMs.Count > 0)
+            {
+                var fm = Race.FrameMs.OrderBy(x => x).ToList();
+                Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
+                    "  AI thinking per frame, all {0} seats together: median {1:F3} ms, p90 {2:F3} ms, p99 {3:F3} ms, max {4:F3} ms ({5} frames)",
+                    ph.Seats, fm[fm.Count / 2], fm[fm.Count * 9 / 10], fm[fm.Count * 99 / 100], fm[fm.Count - 1], fm.Count));
+            }
+            // Where it goes: the pilot's own Profiler markers (the names the Unity Profiler shows), per decision.
+            var tally = Unity.Profiling.ProfilerTally.Names.Select((n, k) => (n, k)).Where(x => Unity.Profiling.ProfilerTally.Calls[x.k] > 0).ToList();
+            if (tally.Count > 0)
+                foreach (var x in tally)
+                {
+                    double ms = 1000.0 * Unity.Profiling.ProfilerTally.Ticks[x.k] / System.Diagnostics.Stopwatch.Frequency;
+                    long calls = Unity.Profiling.ProfilerTally.Calls[x.k];
+                    Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
+                        "  marker {0,-28} {1,7:F3} ms per decision  {2,5:F2} calls per decision  {3,7:F3} ms per call",
+                        x.n, ms / Math.Max(1, Race.DecideCalls), calls / (double)Math.Max(1, Race.DecideCalls), ms / Math.Max(1, calls)));
+                }
             Console.WriteLine($"I{intensity} track={course.Length:F0}u prisms={prisms.Points.Count} finished {e.fin}/{seeds} " +
                               $"median={e.median:F2} mean={e.mean:F2} worst={e.worst:F2} score={e.score:F2}");
             {
