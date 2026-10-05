@@ -122,6 +122,7 @@ MonoBehaviour:
     PreySense: 150
     ScentDeposit: 0
     DangerPhase: 0.5
+    RingHoldSeconds: 0
   seedCount: 8
   seedSpread: 30
   seedAtFlora: 1

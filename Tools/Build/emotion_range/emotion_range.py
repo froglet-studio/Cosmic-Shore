@@ -247,7 +247,15 @@ def summarise(per_seed_scores, viewer):
         by_phase[ph] = dict(n=len(ws), top=max(pm, key=pm.get), p=pm, votes=dict(tops),
                             threat=round(pm["menacing"] + pm["terrifying"], 3))
     pk = [w["p"]["menacing"] + w["p"]["terrifying"] for sc in per_seed_scores for w in sc["windows"]]
-    return dict(viewer=viewer, run=dict(top=run_top, p=run_p), phases=by_phase, timelines=letters,
+    # the pack's menace BEAT (SUBSTRATE_FAUNA.md §7.7): per seed, does a ring or stalk window read menacing or eerie
+    # before the first strike (or winded - a strike that bites at once is winded in the same frame) window?
+    beats = []
+    for sc in per_seed_scores:
+        ws = sc["windows"]
+        if not any(w["phase"] == "ring" for w in ws): continue
+        k1 = next((i for i, w in enumerate(ws) if w["phase"] in ("strike", "winded")), len(ws))
+        beats.append(any(w["phase"] in ("ring", "stalk") and w["top"] in ("menacing", "eerie") for w in ws[:k1]))
+    return dict(viewer=viewer, run=dict(top=run_top, p=run_p), phases=by_phase, timelines=letters, beats=beats,
                 peak_threat=round(float(max(pk)) if pk else 0.0, 3), mean_threat=round(float(np.mean(pk)) if pk else 0.0, 3))
 
 
@@ -302,11 +310,11 @@ def substrate_label(cond):
     return f
 
 
-SUB_LABELS = dict(pack=("stalk", "ring", "strike", "winded"), locust_sparse=("solitary", "storm"),
+SUB_LABELS = dict(pack=("stalk", "ring", "strike", "winded"), pack_hold=("stalk", "ring", "strike", "winded"), locust_sparse=("solitary", "storm"),
                   locust_dense=("solitary", "storm"), lurker=("still", "creep", "gape", "snap", "spent"))
-SUB_PRIORITY = dict(pack=("strike", "winded", "ring", "stalk"), locust_sparse=("storm", "solitary"),
+SUB_PRIORITY = dict(pack=("strike", "winded", "ring", "stalk"), pack_hold=("strike", "winded", "ring", "stalk"), locust_sparse=("storm", "solitary"),
                     locust_dense=("storm", "solitary"), lurker=("snap", "spent", "gape", "creep", "still"))
-SUB_BESTIARY = dict(pack="pack", locust_sparse="locust", locust_dense=None, lurker="lurker")
+SUB_BESTIARY = dict(pack="pack", pack_hold=None, locust_sparse="locust", locust_dense=None, lurker="lurker")
 
 
 def research_substrate(cond, track, seed):
@@ -329,13 +337,14 @@ def run_substrate(trk, research=True):
     h = Harness("substrate", "Tools/Build/substrate_harness/run.sh", "substrate_harness/substrate.exe",
                 "Tools/Build/substrate_harness/research_params.json")
     res = {}
-    for cond in ("pack", "locust_sparse", "locust_dense", "lurker"):
+    # pack_hold: the demo cell's pack as authored (the opt-in ring hold); the research has no model of it
+    for cond in ("pack", "pack_hold", "locust_sparse", "locust_dense", "lurker"):
         entry = {}
         g = game_scores(h, lambda tp, o, s: f"{tp} {o} {cond} {s}", SUB_LABELS[cond], False, SUB_PRIORITY[cond])
         for v in VIEWERS:
             entry[f"game/{v}"] = summarise(g[v], v)
             entry[f"game/{v}"]["log"] = [x["log"] for x in g[v]]
-            if research:
+            if research and cond != "pack_hold":
                 r = [score_frames(research_substrate(cond, pilot_track(v, s), s), False, SUB_PRIORITY[cond]) for s in SEEDS]
                 entry[f"research/{v}"] = summarise(r, v)
                 if SUB_BESTIARY[cond]:
@@ -424,7 +433,8 @@ ROWS = [   # (result key, phases shown in this order, short name) - game reads, 
     ("swarm time - pack hunter (dragonfly)", ("startled", "plates", "strike"), "swarm dragonfly (Time)"),
     ("builders fortress", ("build", "strike"), "fortress colony"),
     ("substrate lurker", ("creep", "gape", "snap", "spent"), "lurker"),
-    ("substrate pack", ("stalk", "ring", "strike", "winded"), "pack hunters"),
+    ("substrate pack", ("stalk", "ring", "strike", "winded"), "pack hunters (research port)"),
+    ("substrate pack_hold", ("ring", "winded"), "pack hunters, demo ring hold"),
     ("substrate locust_dense", ("solitary", "storm"), "locust, dense + hungry"),
 ]
 COLS = ("neutral", "cute", "playful", "majestic", "eerie", "menacing", "terrifying")
@@ -494,6 +504,15 @@ def asserts(res):
           "the pack reads as a threat to a hovering pilot and its strike reads terrifying (bestiary pack: terrifying 4/4)")
     check(ph("substrate lurker", "snap") == "terrifying", "the lurker's snap reads terrifying (bestiary timeline: terror at the snap)")
     check(top("builders thief") in ("playful", "cute"), "the thief nest reads playful/cute - mischief, not threat (bestiary thief: playful)")
+    if "substrate pack_hold" in res:
+        hb = sum(sum(res["substrate pack_hold"][f"game/{v}"].get("beats", [])) for v in VIEWERS)
+        hn = sum(len(res["substrate pack_hold"][f"game/{v}"].get("beats", [])) for v in VIEWERS)
+        pb = sum(sum(res["substrate pack"][f"game/{v}"].get("beats", [])) for v in VIEWERS)
+        pn = sum(len(res["substrate pack"][f"game/{v}"].get("beats", [])) for v in VIEWERS)
+        check(hn > 0 and 2 * hb > hn,
+              f"the demo pack's ring hold READS: a menacing/eerie ring window before the strike in {hb}/{hn} straight-in runs (a majority; research port {pb}/{pn})")
+        check(ph("substrate pack_hold", "strike") == "terrifying" or ph("substrate pack_hold", "winded") == "terrifying",
+              "and then everything dives in at once: the demo pack's strike reads terrifying")
     for k in [k for k in res if k.startswith("swarm ")]:
         check(all(top(k, v) in ("majestic", "menacing", "terrifying") for v in VIEWERS),
               f"{k}: a swarm body reads big (majestic..terrifying), never cute (research: swarm bodies majestic)")

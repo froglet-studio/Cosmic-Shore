@@ -35,6 +35,7 @@ namespace CosmicShore.Gameplay
         // read
         [ReadOnly] public NativeArray<SVector3> WSeed;
         [ReadOnly] public NativeArray<float> Closure;
+        [ReadOnly] public NativeArray<float> RingGate;
         [ReadOnly] public NativeArray<float> Rest;
         [ReadOnly] public NativeArray<bool> Alive;
         [ReadOnly] public NativeArray<bool> Starving;
@@ -64,7 +65,7 @@ namespace CosmicShore.Gameplay
             s.Hunger = Hunger.AsSpan(); s.Fear = Fear.AsSpan(); s.Curious = Curious.AsSpan(); s.Aggr = Aggr.AsSpan();
             s.Phase = Phase.AsSpan(); s.QTarget = QTarget.AsSpan(); s.ISpeed = ISpeed.AsSpan();
             s.Steered = Steered.AsSpan(); s.Watched = Watched.AsSpan(); s.Creeping = Creeping.AsSpan();
-            s.WSeed = WSeed.AsReadOnlySpan(); s.Closure = Closure.AsReadOnlySpan(); s.Rest = Rest.AsReadOnlySpan();
+            s.WSeed = WSeed.AsReadOnlySpan(); s.Closure = Closure.AsReadOnlySpan(); s.RingGate = RingGate.AsReadOnlySpan(); s.Rest = Rest.AsReadOnlySpan();
             s.Alive = Alive.AsReadOnlySpan(); s.Starving = Starving.AsReadOnlySpan(); s.ClaimedTick = ClaimedTick.AsReadOnlySpan();
             s.Pilots = Pilots.AsReadOnlySpan(); s.Live = Live.AsReadOnlySpan(); s.Key = Key.AsReadOnlySpan();
             s.Tab = Tab.AsReadOnlySpan(); s.Agg = Agg.AsReadOnlySpan(); s.Dirs = Dirs.AsReadOnlySpan();
@@ -108,7 +109,7 @@ namespace CosmicShore.Gameplay
 
         readonly SubstrateCore _c;
         NativeArray<SVector3> _pos, _vel, _idir, _home, _wseed, _gfood, _gscent, _galarm, _gthreat;
-        NativeArray<float> _hunger, _fear, _curious, _aggr, _phase, _qtarget, _ispeed, _closure, _rest, _fthreat, _falarm;
+        NativeArray<float> _hunger, _fear, _curious, _aggr, _phase, _qtarget, _ispeed, _closure, _ringgate, _rest, _fthreat, _falarm;
         NativeArray<bool> _steered, _watched, _creeping, _alive, _starving;
         NativeArray<long> _claimed;
         NativeArray<SubstratePilot> _pilots;
@@ -133,7 +134,7 @@ namespace CosmicShore.Gameplay
             _hunger = new NativeArray<float>(n, A, U); _fear = new NativeArray<float>(n, A, U);
             _curious = new NativeArray<float>(n, A, U); _aggr = new NativeArray<float>(n, A, U);
             _phase = new NativeArray<float>(n, A, U); _qtarget = new NativeArray<float>(n, A, U);
-            _ispeed = new NativeArray<float>(n, A, U); _closure = new NativeArray<float>(n, A, U);
+            _ispeed = new NativeArray<float>(n, A, U); _closure = new NativeArray<float>(n, A, U); _ringgate = new NativeArray<float>(n, A, U);
             _rest = new NativeArray<float>(n, A, U); _fthreat = new NativeArray<float>(n, A, U);
             _falarm = new NativeArray<float>(n, A, U);
             _steered = new NativeArray<bool>(n, A, U); _watched = new NativeArray<bool>(n, A, U);
@@ -153,7 +154,7 @@ namespace CosmicShore.Gameplay
             _galarm.CopyFrom(c.GAlarm); _gthreat.CopyFrom(c.GThreat);
             _hunger.CopyFrom(c.Hunger); _fear.CopyFrom(c.Fear); _curious.CopyFrom(c.Curious); _aggr.CopyFrom(c.Aggr);
             _phase.CopyFrom(c.Phase); _qtarget.CopyFrom(c.QTarget); _ispeed.CopyFrom(c.ISpeed);
-            _closure.CopyFrom(c.Closure); _rest.CopyFrom(c.Rest); _fthreat.CopyFrom(c.FThreat); _falarm.CopyFrom(c.FAlarm);
+            _closure.CopyFrom(c.Closure); _ringgate.CopyFrom(c.RingGate); _rest.CopyFrom(c.Rest); _fthreat.CopyFrom(c.FThreat); _falarm.CopyFrom(c.FAlarm);
             _steered.CopyFrom(c.Steered); _watched.CopyFrom(c.Watched); _creeping.CopyFrom(c.Creeping);
             _alive.CopyFrom(c.Alive); _starving.CopyFrom(c.Starving); _claimed.CopyFrom(c.ClaimedTick);
             var pil = c.TickPilots;
@@ -174,7 +175,7 @@ namespace CosmicShore.Gameplay
                     Pos = _pos, Vel = _vel, IDir = _idir, Home = _home,
                     Hunger = _hunger, Fear = _fear, Curious = _curious, Aggr = _aggr, Phase = _phase, QTarget = _qtarget,
                     ISpeed = _ispeed, Steered = _steered, Watched = _watched, Creeping = _creeping,
-                    WSeed = _wseed, Closure = _closure, Rest = _rest, Alive = _alive, Starving = _starving,
+                    WSeed = _wseed, Closure = _closure, RingGate = _ringgate, Rest = _rest, Alive = _alive, Starving = _starving,
                     ClaimedTick = _claimed, Pilots = _pilots,
                     Live = t.Live, Key = t.Key, Tab = t.Tab, Agg = t.Agg, Dirs = t.Dirs,
                     FThreat = _fthreat, FAlarm = _falarm, GFood = _gfood, GScent = _gscent, GAlarm = _galarm, GThreat = _gthreat,
@@ -226,7 +227,7 @@ namespace CosmicShore.Gameplay
             _pos.Dispose(); _vel.Dispose(); _idir.Dispose(); _home.Dispose(); _wseed.Dispose();
             _gfood.Dispose(); _gscent.Dispose(); _galarm.Dispose(); _gthreat.Dispose();
             _hunger.Dispose(); _fear.Dispose(); _curious.Dispose(); _aggr.Dispose(); _phase.Dispose(); _qtarget.Dispose();
-            _ispeed.Dispose(); _closure.Dispose(); _rest.Dispose(); _fthreat.Dispose(); _falarm.Dispose();
+            _ispeed.Dispose(); _closure.Dispose(); _ringgate.Dispose(); _rest.Dispose(); _fthreat.Dispose(); _falarm.Dispose();
             _steered.Dispose(); _watched.Dispose(); _creeping.Dispose(); _alive.Dispose(); _starving.Dispose();
             _claimed.Dispose(); _pilots.Dispose();
             for (int q = 0; q < _tables.Length; q++) _tables[q]?.Dispose();

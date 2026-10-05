@@ -110,7 +110,8 @@
     "WPrey": 0,
     "PreySense": 150,
     "ScentDeposit": 0.2,
-    "DangerPhase": 0.5
+    "DangerPhase": 0.5,
+    "RingHoldSeconds": 0
   },
   "pack": {
     "Name": "pack",
@@ -223,7 +224,8 @@
     "WPrey": 1.5,
     "PreySense": 150,
     "ScentDeposit": 0,
-    "DangerPhase": 0.5
+    "DangerPhase": 0.5,
+    "RingHoldSeconds": 0
   },
   "lurker": {
     "Name": "lurker",
@@ -336,6 +338,7 @@
     "WPrey": 0,
     "PreySense": 150,
     "ScentDeposit": 0,
-    "DangerPhase": 0.5
+    "DangerPhase": 0.5,
+    "RingHoldSeconds": 0
   }
 }

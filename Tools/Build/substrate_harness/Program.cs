@@ -27,10 +27,12 @@ static partial class SubstrateHarness
         string which = args.Length > 1 ? args[1] : "all";
         bool all = which == "all";
         string gameJson = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(fixture)) ?? ".", "game_params.json");
+        _repo = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Path.GetFullPath(fixture)) ?? ".", "..", "..", ".."));
         if (which == "emotion") return Emotion(args[2]);   // round 11d-2 (SWARM_FAUNA.md §27): the emotion-probe export
         if (which == "export") { File.WriteAllText(gameJson, ExportGame()); Console.WriteLine($"wrote {gameJson}"); return 0; }
         if (all || which == "fidelity") { Fidelity(fixture); GameExportCurrent(gameJson); }
         if (all || which == "pack") Pack();
+        if (all || which == "packhold") PackHold();
         if (all || which == "locust") Locust();
         if (all || which == "lurker") Lurker();
         if (all || which == "ledger") Ledger();
@@ -277,6 +279,11 @@ static partial class SubstrateHarness
         public float HoldBeforeStrike = -1;
         /// <summary>Every stalk that ended in a strike (the hold before each strike onset of the pack).</summary>
         public readonly List<float> Holds = new();
+        /// <summary>The opt-in ring hold (RingHoldSeconds > 0): when the pilot's hold clock first released before the
+        /// first strike; strikes that began while that clock was still holding (must be 0); and ring breaks - the clock
+        /// reset to 0 after it had started, with no strike in between (the pilot broke the gap; the ring re-forms).</summary>
+        public float ReleaseAt = -1, FirstClosedAt = -1;
+        public int HeldStrikes, Breaks;
     }
 
     static PackRun RunPack(int seed, SubstrateSpeciesParams P, string pilotMode, float seconds, float window = 1.0f)
@@ -293,7 +300,8 @@ static partial class SubstrateHarness
         var strikeAt = new Dictionary<int, float>();
         bool wasClosed = false;
         float holdFrom = -1;
-        bool wasStriking = false;
+        bool wasStriking = false, striking0 = false, clockRan = false;
+        float prevClock = 0f, lastRelease = -1f;
         float windedSum = 0, stalkSum = 0; int windedN = 0, stalkN = 0, windedDanger = 0;
         for (int t = 0; t < (int)(seconds / Dt); t++)
         {
@@ -313,6 +321,7 @@ static partial class SubstrateHarness
             res.ClosureMax = MathF.Max(res.ClosureMax, live.Length > 0 ? live.Max(i => w.Core.Closure[i]) : 0f);
             // the ring-closed ONSET that precedes the first strike (a ring can close and break before one holds)
             bool isClosed = closed >= Math.Min(4, live.Length);
+            if (res.FirstClosedAt < 0 && isClosed) res.FirstClosedAt = now;
             if (res.FirstStrikeAt < 0 && isClosed && !wasClosed)
             {
                 res.RingClosedAt = now;
@@ -325,6 +334,23 @@ static partial class SubstrateHarness
             bool resting = live.Any(i => w.Core.Rest[i] > 0f);
             bool holding = around >= Math.Min(4, live.Length) && live.Length > 0 && !striking && !resting;
             bool strikeNow = w.Core.Events.Any(e => e.Kind == SubstrateEventKind.Strike);
+            if (P.RingHoldSeconds > 0f)
+            {
+                w.Core.Pops[q].RingHold.TryGetValue(pil.Id, out float clock);
+                // the release that led to the first strike: the last time the clock reached the hold before it
+                if (clock >= P.RingHoldSeconds && prevClock < P.RingHoldSeconds && res.FirstStrikeAt < 0) lastRelease = now;
+                if (res.FirstStrikeAt < 0 && strikeNow && res.ReleaseAt < 0) res.ReleaseAt = lastRelease;
+                prevClock = clock;
+                // a strike onset near this pilot must come from a released ring (the clock is read after the step that
+                // struck, so a just-released clock reads >= hold; a strike with the clock below it broke the gate)
+                foreach (var e in w.Core.Events)
+                    if (e.Kind == SubstrateEventKind.Strike && Vector3.Distance(w.Core.Pos[e.Index], pil.Pos) < P.CloseR
+                        && clock < P.RingHoldSeconds && !striking0) res.HeldStrikes++;
+                if (clock > 0f) clockRan = true;
+                else if (clockRan && !striking && !resting) { res.Breaks++; clockRan = false; }
+                if (striking || resting) clockRan = false;
+            }
+            striking0 = striking;
             if (strikeNow && holdFrom >= 0 && !wasStriking)
             {
                 res.Holds.Add(now - holdFrom);
@@ -354,6 +380,20 @@ static partial class SubstrateHarness
         res.StalkSpeed = stalkN > 0 ? stalkSum / stalkN : -1;
         res.WindedDangerFrac = windedN > 0 ? windedDanger / (float)windedN : -1;
         return res;
+    }
+
+    static string _repo = ".";
+
+    /// <summary>The demo (Swarm) cell's pack AS AUTHORED: the game port plus the asset's opt-in ring hold
+    /// (author_substrate_fauna.py DEMO_OVERRIDES writes it; game_params.json stays the research port).</summary>
+    static SubstrateSpeciesParams DemoPack()
+    {
+        var P = SubstrateResearch.GamePack();
+        string asset = Path.Combine(_repo, "Assets", "_SO_Assets", "Substrate Fauna", "Substrate Pack Hunter Species.asset");
+        var m = System.Text.RegularExpressions.Regex.Match(File.ReadAllText(asset), @"(?m)^    RingHoldSeconds: ([0-9.]+)\s*$");
+        if (!m.Success) throw new InvalidOperationException("no RingHoldSeconds in " + asset);
+        P.RingHoldSeconds = float.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture);
+        return P;
     }
 
     static void Pack()
@@ -406,6 +446,116 @@ static partial class SubstrateHarness
         var nq = P.Clone(); nq.QWClose = 0f;
         var n = RunPack(7, nq, "wander", 90f);
         Check(n.FirstStrikeAt < 0, $"ablation q_w_close=0: no strike in 90 s (first strike {n.FirstStrikeAt:F1})");
+    }
+
+    // ───────────────────────────────────────────────────────────── H: the demo cell's opt-in ring hold
+
+    /// <summary>Group H (round 11-12, Docs/SUBSTRATE_FAUNA.md §7.7): the demo cell's pack AS AUTHORED (DemoPack: the
+    /// game port + the asset's RingHoldSeconds) against the same wandering pilot as group P, plus the gate's own laws.
+    /// The straight-in emotion read is asserted by Tools/Build/emotion_range (--assert).</summary>
+    static void PackHold()
+    {
+        var P = DemoPack();
+        float hold = P.RingHoldSeconds;
+        Console.WriteLine($"\nH. the demo cell's pack: the ring HOLDS {hold:F1} s once saturated, circling and tightening, then all strike together");
+        Check(hold > 0f, $"the demo cell's pack asset carries the opt-in ring hold ({hold:F1} s; author_substrate_fauna.py DEMO_OVERRIDES)");
+        var seeds = new[] { 7, 23, 41, 5, 1000 };
+        var runs = new List<PackRun>();
+        foreach (int seed in seeds)
+        {
+            var r = RunPack(seed, P, "wander", 90f);
+            runs.Add(r);
+            Console.WriteLine($"    seed {seed,4}: ring closed {r.RingClosedAt,6:F1} s -> released {r.ReleaseAt,6:F1} s -> first strike {r.FirstStrikeAt,6:F1} s; " +
+                              $"{r.StrikersInWindow}/{r.Hunters} within 1 s; bites {r.Bites}; ring breaks {r.Breaks}; strikes while held {r.HeldStrikes}; " +
+                              $"ring {r.RingAtClose:F0}->{r.RingAtStrike:F0} u; holds {string.Join(", ", r.Holds.Select(x => x.ToString("F1")))} s");
+        }
+        var eng = runs.Where(r => r.RingClosedAt >= 0 && r.FirstStrikeAt >= 0 && r.ReleaseAt >= 0).ToList();
+        Check(eng.Count >= 4, $"the ring closes, holds and the pack strikes in {eng.Count}/5 seeds (90 s, a 120 u/s wandering pilot)");
+        Check(runs.Sum(r => r.HeldStrikes) == 0, $"the gate: no strike begins while the ring is still holding ({runs.Sum(r => r.HeldStrikes)} over 5 x 90 s)");
+        var lead = eng.Select(r => r.FirstStrikeAt - r.FirstClosedAt).ToList();
+        Check(eng.Count > 0 && lead.All(x => x >= hold - 0.05f),
+              $"the ring holds before it strikes: first ring-closed -> first strike {string.Join(", ", lead.Select(x => x.ToString("F1")))} s (>= the {hold:F1} s hold)");
+        var tele = eng.Select(r => r.FirstStrikeAt - r.ReleaseAt).ToList();
+        Check(eng.Count > 0 && tele.All(x => x >= 0.3f && x <= 1.0f),
+              $"the telegraph after the release: {string.Join(", ", tele.Select(x => x.ToString("F1")))} s from the release that led to it to the first strike (research 0.4-0.7 s; every hunter climbs from the held phase at q_rate)");
+        Check(eng.Count > 0 && eng.All(r => r.FracWithin >= 0.66f),
+              $"they strike TOGETHER: {string.Join(", ", eng.Select(r => r.FracWithin.ToString("P0")))} of the pack turns dangerous within 1 s of the first");
+        Check(eng.Count > 0 && eng.All(r => r.RingAtStrike < r.RingAtClose + 1f),
+              $"the ring TIGHTENS into the strike: mean hunter distance {string.Join(", ", eng.Select(r => $"{r.RingAtClose:F0}->{r.RingAtStrike:F0}"))} u");
+        var firstHolds = runs.Select(r => r.HoldBeforeStrike).ToList();
+        var allHolds = runs.SelectMany(r => r.Holds).OrderBy(x => x).ToList();
+        float medianHold = allHolds.Count > 0 ? allHolds[allHolds.Count / 2] : -1f;
+        Check(firstHolds.Where(x => x >= 0f).All(x => x >= 8f) && firstHolds.Count(x => x >= 0f) >= 4,
+              $"MENACE before terror still holds for the wanderer: ring held {string.Join(", ", firstHolds.Select(x => x.ToString("F1")))} s before the first strike (>= 8 s)");
+        Check(medianHold >= 8f, $"and after a rest: the median stalk before ANY strike is {medianHold:F1} s over {allHolds.Count} strikes (>= 8 s)");
+        int careless = runs.Sum(r => r.Bites);
+        Check(careless > 0, $"the strike lands on a careless pilot: {careless} bites over 5 x 90 s");
+        var aware = seeds.Select(sd => RunPack(sd, P, "gap", 90f)).ToList();
+        int dodged = aware.Sum(r => r.Bites);
+        Console.WriteLine($"    counterplay (flies at the gap): {dodged} bites vs {careless} careless; rings closed {aware.Count(r => r.RingClosedAt >= 0)}/5");
+        Check(dodged * 2 <= careless, $"counterplay: breaking the gap halves the bites at least ({dodged} vs {careless})");
+        BreakOut(P);
+        // negative control: the same run with the hold off is the research port's - it strikes sooner
+        var off = P.Clone(); off.RingHoldSeconds = 0f;
+        var o = RunPack(7, off, "wander", 90f);
+        var h7 = runs[0];
+        Check(o.FirstStrikeAt >= 0 && (h7.FirstStrikeAt < 0 || h7.FirstStrikeAt - h7.FirstClosedAt > o.FirstStrikeAt - o.FirstClosedAt + 1f),
+              $"control: without the hold the same seed strikes {o.FirstStrikeAt - o.FirstClosedAt:F1} s after its ring first closes (with it: {h7.FirstStrikeAt - h7.FirstClosedAt:F1} s)");
+    }
+
+    /// <summary>Counterplay inside a held ring: a pilot comes in slow (25 u/s, the emotion probe's hover viewer), and
+    /// once the ring has held half its time it sprints out through the gap (150 u/s, away from the hunters' resultant)
+    /// for 4 s, then slows again. The hold must RESET (no strike on the way out) and the ring must re-form.</summary>
+    static void BreakOut(SubstrateSpeciesParams P)
+    {
+        int resets = 0, outStrikes = 0, reformed = 0, struck = 0;
+        foreach (int seed in new[] { 7, 23, 41, 5, 1000 })
+        {
+            var w = new World(64, seed);
+            int q = w.Core.AddPopulation(P, 3);
+            var home = new Vector3(0f, 0f, 300f);
+            w.Core.Seed(q, P.N0, home, 50f);
+            for (int t = 0; t < 20; t++) w.Step();
+            var pil = new Pilot(seed, home + new Vector3(350f, 0f, 0f), new Vector3(-25f, 0f, 0f)) { Mode = "replay", Id = 1 };
+            w.Pilots.Add(pil);
+            var vel = new Vector3(-25f, 0f, 0f);
+            float dashUntil = -1f, peak = 0f; bool reset = false, re = false, hit = false;
+            for (int t = 0; t < 600; t++)
+            {
+                float now = w.Core.T;
+                pil.Vel = vel; pil.Pos += vel * Dt;
+                w.Step();
+                var pop = w.Core.Pops[q];
+                pop.RingHold.TryGetValue(pil.Id, out float clock);
+                var live = LiveOf(w.Core, q).ToArray();
+                bool danger = live.Any(i => w.Core.Danger[i]);
+                if (dashUntil < 0f && clock >= 0.5f * P.RingHoldSeconds && !danger)
+                {
+                    var sum = Vector3.Zero;
+                    foreach (int i in live) if (Vector3.Distance(w.Core.Pos[i], pil.Pos) < P.CloseR) sum += SubstrateCore.Unit(w.Core.Pos[i] - pil.Pos);
+                    vel = -SubstrateCore.Unit(sum.Length() > 1e-3f ? sum : new Vector3(1, 0, 0)) * 150f;
+                    dashUntil = now + 4f; peak = clock;
+                }
+                else if (dashUntil > 0f && now < dashUntil)
+                {
+                    if (clock == 0f) reset = true;
+                    if (danger) hit = true;
+                }
+                else if (dashUntil > 0f && now >= dashUntil)
+                {
+                    vel = SubstrateCore.Unit(vel) * 25f;
+                    if (reset && clock > 0f) re = true;
+                }
+            }
+            if (reset) resets++;
+            if (hit) outStrikes++;
+            if (re) reformed++;
+            if (w.Core.Pops[q].Strikes > 0) struck++;
+            Console.WriteLine($"    break-out seed {seed,4}: dashed at clock {peak:F1} s; reset {reset}; struck during the dash {hit}; ring re-formed {re}; strikes in 60 s {w.Core.Pops[q].Strikes}");
+        }
+        Check(resets >= 4 && outStrikes <= 1,
+              $"breaking out of a held ring RESETS the hold: reset in {resets}/5 dashes, a strike during the dash in {outStrikes}/5");
+        Check(reformed >= 4, $"and the ring RE-FORMS after it (its hold clock runs again) in {reformed}/5");
     }
 
     // ───────────────────────────────────────────────────────────── L: one locust parameter set, two animals

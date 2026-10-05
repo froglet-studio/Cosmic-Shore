@@ -116,6 +116,12 @@ namespace CosmicShore.Gameplay
         public float ScentDeposit = 0f;
         /// <summary>The phase above which an aggressive agent is DANGEROUS (a danger prism; research harm = aggression above 0.5).</summary>
         public float DangerPhase = 0.5f;
+        /// <summary>Opt-in designed beat, NOT in the research (0 = the research's behaviour, bit for bit): once the ring's
+        /// closure around a pilot crosses <see cref="QUp"/>, the pack HOLDS the strike for this many seconds of saturated
+        /// closure while the ring circles slowly and tightens (SubstrateKernel.HoldSpeed / HoldOrbit / HoldTighten; phase held
+        /// at or below SubstrateCore.HoldPhase x <see cref="DangerPhase"/>, so no one strikes), then all strike together. A pilot that breaks the ring (closure
+        /// below <see cref="QDown"/>) resets the hold: the ring re-forms rather than striking. Docs/SUBSTRATE_FAUNA.md §7.7.</summary>
+        public float RingHoldSeconds = 0f;
 
         public SubstrateSpeciesParams Clone()
         {
@@ -146,6 +152,7 @@ namespace CosmicShore.Gameplay
             f("w_creep", WCreep); f("creep_r", CreepR); f("creep_min", CreepMin); f("creep_speed", CreepSpeed);
             f("creep_lead_s", CreepLeadS); f("gaze_cos", GazeCos); f("freeze", Freeze); f("mimic_body", MimicBody);
             f("danger_phase", DangerPhase); f("w_prey", WPrey); f("prey_sense", PreySense); f("scent_deposit", ScentDeposit);
+            f("ring_hold_s", RingHoldSeconds);
         }
     }
 

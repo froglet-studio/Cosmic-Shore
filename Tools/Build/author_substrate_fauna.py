@@ -63,6 +63,12 @@ SPECIES = [
 ]
 CELL_CAPACITY = 1024
 
+# Round 11-12 (Docs/SUBSTRATE_FAUNA.md §7.7): the demo (Swarm) cell's pack plays the opt-in RING HOLD - "surrounded, then
+# everything dives in at once": once its ring saturates around a pilot it coils for this long, then all strike together.
+# game_params.json stays the research port (RingHoldSeconds 0, harness test F); this overlay is the cell's designed beat.
+# The substrate harness reads the value back from the authored asset (groups P and the emotion export's pack_hold).
+DEMO_OVERRIDES = {"pack": {"RingHoldSeconds": 6.0}}
+
 
 def guid(name):
     return hashlib.md5(("cosmicshore-substrate-fauna:" + name).encode()).hexdigest()
@@ -139,7 +145,7 @@ def yaml_obj(d, ind):
 
 
 def species_asset(s, params):
-    p = params[s["key"]]
+    p = dict(params[s["key"]], **DEMO_OVERRIDES.get(s["key"], {}))
     h = swarm.HEARTS
     return swarm.SO_HEADER % (script_guid("SubstrateSpeciesSO"), f"Substrate {s['title']} Species") + (
         "  species:\n" + yaml_obj(p, "    ") +
@@ -264,6 +270,13 @@ def verify(out, params):
         lo, hi = s["band"]
         if lo <= swarm.NUCLEUS_RADIUS or hi >= swarm.MEMBRANE_RADIUS:
             problems.append(f"{s['key']}: band {s['band']} leaves the cytoplasm")
+    for key, over in DEMO_OVERRIDES.items():
+        sp_out = out[species_path(next(x for x in SPECIES if x["key"] == key))]
+        for f, v in over.items():
+            if f not in params[key]:
+                problems.append(f"demo override {key}.{f} is not a SubstrateSpeciesParams field")
+            elif not re.search(rf"(?m)^    {f}: {re.escape(yaml_value(v))}$", sp_out):
+                problems.append(f"demo override {key}.{f} = {v} did not reach the species asset")
     if params["pack"]["PreyName"] != "locust":
         problems.append("the pack's prey is the locust (the food web the harness proves)")
     pack, locust = next(s for s in SPECIES if s["key"] == "pack"), next(s for s in SPECIES if s["key"] == "locust")
