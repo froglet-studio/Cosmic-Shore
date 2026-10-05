@@ -25,12 +25,13 @@ namespace CosmicShore.Launcher
         public enum Mode { Ask = 0, Edit = 1, Auto = 2 }
 
         readonly LauncherSettings _s;
+        readonly Toolchain _tools;
         readonly object _lock = new();
         readonly List<ChatItem> _items = new();
         Process? _proc;
         string? _session;
 
-        public ClaudeChat(LauncherSettings s) { _s = s; }
+        public ClaudeChat(LauncherSettings s, Toolchain tools) { _s = s; _tools = tools; }
 
         public bool Busy { get; private set; }
         public double CostUsd { get; private set; }
@@ -115,9 +116,11 @@ namespace CosmicShore.Launcher
                     psi.ArgumentList.Add(a);
                 if (_session != null) { psi.ArgumentList.Add("--resume"); psi.ArgumentList.Add(_session); }
                 if (!string.IsNullOrWhiteSpace(_s.ClaudeModel)) { psi.ArgumentList.Add("--model"); psi.ArgumentList.Add(_s.ClaudeModel.Trim()); }
+                bool engine = WireEngine(psi, psi.WorkingDirectory);
                 psi.ArgumentList.Add("--append-system-prompt");
                 psi.ArgumentList.Add("You are running inside the Froglet Engine Launcher, in a checkout of the Cosmic Shore repository " +
-                                     $"(branch {_s.Branch}). Keep replies short; the user reads them in a small chat panel.");
+                                     $"(branch {_s.Branch}). Keep replies short; the user reads them in a small chat panel." +
+                                     (engine ? " The froglet-engine MCP tools build the engine and start, see and drive the running game; read Port/CLAUDE.md before engine work." : ""));
                 if (!string.IsNullOrWhiteSpace(_s.AnthropicApiKey)) psi.Environment["ANTHROPIC_API_KEY"] = _s.AnthropicApiKey.Trim();
 
                 _proc = Process.Start(psi)!;
@@ -135,6 +138,38 @@ namespace CosmicShore.Launcher
             }
             catch (Exception ex) { Add(ChatRole.Error, ex.Message); }
             finally { Busy = false; }
+        }
+
+        /// <summary>
+        /// Connects the engine's MCP server (Port/src/CosmicShore.Mcp) when the workspace has it:
+        /// Claude can then build the engine and start, see and drive the game. The config is written
+        /// per run with the launcher's own dotnet, which may be a private SDK not on PATH.
+        /// </summary>
+        bool WireEngine(ProcessStartInfo psi, string workDir)
+        {
+            var project = Path.Combine(workDir, "Port", "src", "CosmicShore.Mcp");
+            if (_tools.Dotnet == null || !Directory.Exists(project)) return false;
+            var env = new Dictionary<string, string>(_tools.DotnetEnv()) { ["COSMIC_SHORE_REPO"] = workDir };
+            var config = new Dictionary<string, object>
+            {
+                ["mcpServers"] = new Dictionary<string, object>
+                {
+                    ["froglet-engine"] = new Dictionary<string, object>
+                    {
+                        ["command"] = _tools.Dotnet,
+                        ["args"] = new[] { "run", "--project", project, "--" },
+                        ["env"] = env,
+                    },
+                },
+            };
+            var path = Path.Combine(LauncherSettings.DataDir, "engine-mcp.json");
+            File.WriteAllText(path, JsonSerializer.Serialize(config));
+            psi.ArgumentList.Add("--mcp-config");
+            psi.ArgumentList.Add(path);
+            // Its tools build and run the game but edit no files, so every mode may use them.
+            psi.ArgumentList.Add("--allowedTools");
+            psi.ArgumentList.Add("mcp__froglet-engine");
+            return true;
         }
 
         void Parse(string line)

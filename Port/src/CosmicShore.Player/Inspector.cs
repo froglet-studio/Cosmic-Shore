@@ -583,12 +583,12 @@ namespace CosmicShore.Player
             Console.WriteLine($"[eval] {chain}: no such type");
         }
 
-        static object Safe(Func<object> get)
+        internal static object Safe(Func<object> get)
         {
             try { return get(); } catch (Exception e) { return "<" + (e.InnerException ?? e).GetType().Name + ">"; }
         }
 
-        static string Describe(object v) => v switch
+        internal static string Describe(object v) => v switch
         {
             null => "null",
             string s => '"' + s + '"',

@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "froglet-engine": {
+      "command": "dotnet",
+      "args": ["run", "--project", "Port/src/CosmicShore.Mcp", "--"]
+    }
+  }
+}

@@ -67,6 +67,14 @@ namespace CosmicShore.Player
             foreach (var step in due)
             {
                 Console.WriteLine($"[input] frame {frame}: {step}");
+                Run(step, frame);
+            }
+        }
+
+        /// <summary>Runs one action now (the control port's path; a script runs it when its frame is due).</summary>
+        public void Run(string step, int frame)
+        {
+            {
                 int sp = step.IndexOf(' ');
                 string verb = sp < 0 ? step : step[..sp];
                 string arg = sp < 0 ? string.Empty : step[(sp + 1)..];

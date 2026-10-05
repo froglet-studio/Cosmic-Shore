@@ -7,6 +7,9 @@ headless develop/build/test loop.
 **Just want to play a branch?** Unzip `dist/FrogletLauncher-Windows.zip` and run
 `FrogletLauncher.exe`: pick a branch, press START GAME. See `docs/LAUNCHER.md`.
 
+**Working with Claude Code?** `CLAUDE.md` in this folder: the engine's MCP server lets an agent
+build, run, see and drive the game.
+
 **Start here:** `docs/ARCHITECTURE.md` — how the whole port fits together, with
 diagrams and annotated screenshots of every screen and control.
 

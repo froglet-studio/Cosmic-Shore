@@ -62,7 +62,7 @@ namespace CosmicShore.Launcher
             _s = LauncherSettings.Load();
             _ws = new Workspace(_s, _tools);
             _jobs = new LauncherJobs(_s, _tools, _ws);
-            _chat = new ClaudeChat(_s);
+            _chat = new ClaudeChat(_s, _tools);
             var pageArg = args.Page?.Split(':');
             if (pageArg != null && Enum.TryParse<Page>(pageArg[0], true, out var p)) _page = p;
             if (pageArg is { Length: > 1 } && int.TryParse(pageArg[1], out var tab)) _projTab = tab;

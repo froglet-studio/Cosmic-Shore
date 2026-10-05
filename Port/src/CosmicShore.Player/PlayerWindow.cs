@@ -91,6 +91,7 @@ namespace CosmicShore.Player
             _window.Run();
             _boot?.Dispose();
             _inputBridge?.Dispose();
+            Control?.Dispose();
         }
 
         /// <summary>Called after GL is up, before the game boots — a mobile host adds its touch backend here.</summary>
@@ -98,6 +99,9 @@ namespace CosmicShore.Player
 
         /// <summary>Called every frame just before the engine ticks, with the step — a host's extra input backend samples here.</summary>
         public Action<float> BeforeTick;
+
+        /// <summary>The control port (--control-port): commands from tools run here between frames.</summary>
+        public ControlServer Control;
 
         void OnLoad()
         {
@@ -131,6 +135,7 @@ namespace CosmicShore.Player
             // game's Entities Graphics support probe passes as it does on a desktop GPU. A
             // headless run never gets here and stays on the MeshRenderer path, like -nographics.
             SystemInfo.supportsComputeShaders = true;
+            if (Control != null) { Control.Quit = () => _window.Close(); Control.FrameMs = () => _lastFrameMs; }
             _boot = new PlayerBoot();
             _boot.Start(_scene);
             _tmp.Fonts = _boot.Runtime.Fonts;
@@ -142,6 +147,7 @@ namespace CosmicShore.Player
             _inputBridge.BeforeTick();
             BeforeTick?.Invoke(step);
             _script.BeforeTick(_frameIndex);
+            Control?.BeforeTick(_frameIndex);
             long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
             CosmicShore.Engine.GameLoop.PhaseTiming = s_timing;
             _boot.Tick(step);
@@ -175,7 +181,7 @@ namespace CosmicShore.Player
             if (w <= 0 || h <= 0) return;
             Screen.width = w;
             Screen.height = h;
-            if (_frameIndex + 1 < RenderFrom && !_shots.ContainsKey(_frameIndex + 1) && !FrameRecorder.Wants(_frameIndex + 1))
+            if (_frameIndex + 1 < RenderFrom && !_shots.ContainsKey(_frameIndex + 1) && !FrameRecorder.Wants(_frameIndex + 1) && Control is not { WantsFrame: true })
             {
                 _frameIndex++;
                 if (Scripted && _frameIndex >= _lastFrame)
@@ -206,6 +212,7 @@ namespace CosmicShore.Player
             }
             if (FrameRecorder.TryPath(_frameIndex, out var recPath))
                 Capture(recPath, w, h);
+            Control?.AfterPresent(p => Capture(p, w, h), w, h);
             if (Scripted && _frameIndex >= _lastFrame)
             {
                 _boot.Log.PrintSummary();

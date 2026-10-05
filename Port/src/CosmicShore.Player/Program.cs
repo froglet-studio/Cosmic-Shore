@@ -59,7 +59,7 @@ namespace CosmicShore.Player
             int trainEpisodes = 0, trainRepeats = 1, seed = int.MinValue;
             int workers = 1, worker = -1, evals = 1, generations = 0;
             string trainDir = null, resume = null, evalPopulation = null;
-            int recycleMb = 2500;
+            int recycleMb = 2500, controlPort = 0;
             var evalGenomes = new System.Collections.Generic.List<string>();
             int flights = 12;
             string trainOut = null, trainScenario = null;
@@ -106,6 +106,7 @@ namespace CosmicShore.Player
                     case "--dump-ui" when i + 1 < args.Length: dumps.Add(args[++i]); break;
                     case "--dump-ui-at" when i + 1 < args.Length: dumps.Add("@" + args[++i]); break;
                     case "--fullscreen": PlayerWindow.StartFullscreen = true; break;
+                    case "--control-port" when i + 1 < args.Length: int.TryParse(args[++i], out controlPort); break;
                     case "--msaa" when i + 1 < args.Length: int.TryParse(args[++i], out CosmicShore.Render.RenderQuality.Msaa); break;
                     case "--render-scale" when i + 1 < args.Length:
                         float.TryParse(args[++i], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out CosmicShore.Render.RenderQuality.RenderScale); break;
@@ -164,10 +165,16 @@ namespace CosmicShore.Player
                     int result = RunHeadless(scene, frames < 0 ? int.MaxValue : frames, quiet, width, height, script, reportRender, dumps, train);
                     return train.Recycle ? TrainingWorkers.RecycleExitCode : result;
                 }
-                if (headless) return RunHeadless(scene, Math.Max(frames < 0 ? 600 : frames, script.LastFrame), quiet, width, height, script, reportRender, dumps);
+                var control = ControlServer.StartIfRequested(controlPort, script);
+                if (headless)
+                {
+                    // Under a control port a headless run lasts until told to quit (or --frames).
+                    int count = control != null && frames < 0 ? int.MaxValue : Math.Max(frames < 0 ? 600 : frames, script.LastFrame);
+                    using (control) return RunHeadless(scene, count, quiet, width, height, script, reportRender, dumps, control: control);
+                }
                 int last = Math.Max(shots.Count > 0 ? shots.Keys.Max() : -1, frames);
                 last = Math.Max(last, FrameRecorder.LastFrame);
-                new PlayerWindow(scene, width, height, shots, last, script).Run();
+                new PlayerWindow(scene, width, height, shots, last, script) { Control = control }.Run();
                 return 0;
             }
             catch (Exception e)
@@ -178,20 +185,24 @@ namespace CosmicShore.Player
             }
         }
 
-        static int RunHeadless(string scene, int frames, bool quiet, int width, int height, InputScript script, bool reportRender, System.Collections.Generic.List<string> dumps, TrainingHost train = null)
+        static int RunHeadless(string scene, int frames, bool quiet, int width, int height, InputScript script, bool reportRender, System.Collections.Generic.List<string> dumps, TrainingHost train = null, ControlServer control = null)
         {
             Screen.width = width;
             Screen.height = height;
             using var boot = new PlayerBoot();
             boot.Log.Quiet = quiet;
             boot.Headless = true;
-            if (!script.IsEmpty) script.EnsureDevices();
+            if (!script.IsEmpty || control != null) script.EnsureDevices();
+            bool quit = false;
+            if (control != null) control.Quit = () => quit = true;
             boot.Start(scene);
             train?.Install(boot.Runtime);
             string lastScene = SceneManager.GetActiveScene().name;
-            for (int f = 0; f < frames; f++)
+            for (int f = 0; f < frames && !quit; f++)
             {
                 script.BeforeTick(f);
+                control?.BeforeTick(f);
+                if (control is { WantsFrame: true }) control.AfterPresent(_ => throw new InvalidOperationException("a --headless player draws nothing; start it with a window (xvfb-run on a server) to take screenshots"), width, height);
                 boot.Tick(1f / 60f);
                 if (train != null)
                 {

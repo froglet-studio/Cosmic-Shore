@@ -85,6 +85,11 @@ no Node needed).
 - **EDIT** - may edit files in the workspace.
 - **AUTO** - may also run commands.
 
+It is connected to the engine itself (the `froglet-engine` tools, `Port/CLAUDE.md`): Claude can
+build the engine, start the game, take screenshots, click and type, and read or change live
+objects - so "start the game and check the score panel updates" is a request it can carry out
+and show you. Those tools never edit files, so ASK may use them too.
+
 NEW starts a fresh conversation; otherwise each message continues the same session. The API key
 (SETTINGS > Claude) is optional: without one, Claude Code uses its own sign-in. A key is stored
 only on this PC and passed only to the `claude` process. Rebuild with START to try what it changed.
