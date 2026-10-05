@@ -57,6 +57,21 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Network protocol version 8 -> 9 (`claude/confident-pascal-w76l2o`, 2026-10-05)
+
+**What landed.** `NetworkConfig.ProtocolVersion` in `Assets/_Prefabs/CORE/NetworkManager.prefab` went from
+8 to 9, because `LobbySnapshot` gained `AIDifficulty` (the lobby AI difficulty row) and a build without
+that field reads a host's lobby bytes out of step: a party invite then "does not get you into the lobby",
+silently. With the bump Netcode refuses a mismatched build at the connection request. The rule for every
+future wire change: `Docs/claude/MULTIPLAYER_AND_SOCIAL.md` (Multiplayer / Netcode).
+
+**Verify in editor (two players)**
+- [ ] Both on THIS branch, the same commit: invite, accept - the guest joins the host's party, and a lobby the
+      host opens (any arcade card) opens on the guest. Skim Race: the guest's AI difficulty row shows the host's pick.
+- [ ] One player on this branch, the other on a build WITHOUT the bump (e.g. `bleeding-edge`): the join is
+      refused at once and the HOST's console shows `NetworkConfig mismatch`; the guest falls back to its own
+      lobby without hanging.
+
 ### 🔴 Skim Race AI Profiler timers - read the AI's real per-frame cost (`claude/confident-pascal-w76l2o`, 2026-10-05)
 
 **What landed.** `ProfilerMarker`s on the Skim Race pilot - `SkimRace.Pilot.Update` (the whole pilot),

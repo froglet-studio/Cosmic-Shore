@@ -296,7 +296,10 @@ It follows intensity's path exactly, because it is the same kind of fact:
 - **It is lobby STATE.** `LobbySnapshot.AIDifficulty` (an int, so the reflection test can mutate
   it) rides the commit and every change (`NotifyAIDifficultyChanged` -> `OnAIDifficultyChangedOnClient`);
   a guest's open reads it straight off `CurrentLobby`, so a late joiner sees the host's pick on
-  its first frame.
+  its first frame. The field changed the snapshot's wire layout, so the network protocol version went
+  8 -> 9 with it: a build without the field cannot join a build with it, and is now refused with
+  `NetworkConfig mismatch` in the host's console instead of failing the join silently
+  (`Docs/claude/MULTIPLAYER_AND_SOCIAL.md`, the protocol-version rule).
 - **It is a host term.** Remembered on launch with the intensity (§3.2), restored on the next open.
 - **It reaches the match through `GameDataSO.RequestedAIDifficulty`**, written by
   `SyncAllGameDataForLaunch` beside the AI domains and read on the server where the AI is
