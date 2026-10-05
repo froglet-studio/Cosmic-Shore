@@ -103,12 +103,13 @@ class Physics
     // does for teammates: one crystal per seat, each walking the anchors on its own
     // (CrystalManager.CalculateNewSpawnPos), any teammate may take any of them, and the team's SUM
     // races the target (SkimRaceScoringRuleSO.IsObjectiveReached; the pilot observes the sum).
-    // TeamRule picks each seat's crystal: 0 = the shipped SkimRaceTargetTracker (nearest, with
-    // hysteresis), 1 = SPLIT - the seats share out the crystals by the cheapest assignment of seats to
-    // crystals (straight-line distance), kept until a new one is SplitHyst cheaper. Rule 1 is a
-    // simulator experiment: no game code flies it yet.
+    // TeamRule picks each seat's crystal: 1 = the game's team plan (SkimRaceTeamPlan): the shipped
+    // SkimRaceTeamAssignment gives every seat a different crystal, the least total distance, kept until
+    // another plan is SplitHyst cheaper (SkimRaceTargetTracker.Hysteresis in the game); 0 = the rule
+    // before team play, every seat on the nearest crystal (SkimRaceTargetTracker.SelectIndex) - for A/B.
+    // A lone seat flies the nearest crystal under either rule, as a lone AI does in the game.
     public int Team = 0;
-    public int TeamRule = 0;
+    public int TeamRule = 1;
     public float SplitHyst = 0.85f;
     public int TargetHintFix = 1;   // 0 = project the crystal from the VESSEL's hint (the pre-fix behaviour), for A/B only
     public int LineDiag = 0;
@@ -398,39 +399,22 @@ static class Race
                 teamAnchor.Add(0);
             }
 
-        // TeamRule 1: the assignment of seats to distinct crystals with the least total distance
-        // (every permutation - a team is at most a handful of seats), adopted when the seats have
-        // none yet or it is SplitHyst cheaper than the one they fly.
-        void SplitTeam()
+        // TeamRule 1: the game's team plan - once a frame, every seat a different crystal
+        // (SkimRaceTeamAssignment, the shipped code), the last plan kept until another is SplitHyst cheaper.
+        var teamPilots = new List<Vector3>();
+        var teamPrevious = new List<int>();
+        var teamResult = new int[Math.Max(1, ph.Seats)];
+        void PlanTeam()
         {
-            int n = agents.Count;
-            var perm = new int[n];
-            var used = new bool[teamCrystals.Count];
-            int[] best = null;
-            float bestCost = float.MaxValue;
-            void Search(int k, float cost)
-            {
-                if (cost >= bestCost) return;
-                if (k == n) { bestCost = cost; best = (int[])perm.Clone(); return; }
-                for (int j = 0; j < teamCrystals.Count; j++)
-                {
-                    if (used[j]) continue;
-                    used[j] = true; perm[k] = j;
-                    Search(k + 1, cost + (teamCrystals[j] - agents[k].Pos).magnitude);
-                    used[j] = false;
-                }
-            }
-            Search(0, 0f);
-            if (best == null) return;
-            float current = 0f;
-            var taken = new HashSet<int>();
+            teamPilots.Clear();
+            teamPrevious.Clear();
             foreach (var a in agents)
             {
-                if (a.TeamTarget < 0 || !taken.Add(a.TeamTarget)) { current = float.MaxValue; break; }
-                current += (teamCrystals[a.TeamTarget] - a.Pos).magnitude;
+                teamPilots.Add(a.Pos);
+                teamPrevious.Add(a.TeamTarget);
             }
-            if (current == float.MaxValue || bestCost < current * ph.SplitHyst)
-                for (int k = 0; k < n; k++) agents[k].TeamTarget = best[k];
+            SkimRaceTeamAssignment.Assign(teamPilots, teamCrystals, teamPrevious, teamResult, ph.SplitHyst);
+            for (int k = 0; k < agents.Count; k++) agents[k].TeamTarget = teamResult[k];
         }
 
         float Mult(Agent ag, float now)
@@ -468,7 +452,7 @@ static class Race
             float dt = ph.DtJitter > 0f ? ph.Dt * (1f + ph.DtJitter * (float)(rng.NextDouble() * 2.0 - 1.0)) : ph.Dt;
             long frameTicks = 0;
             int frameDecides = 0;
-            if (ph.Team != 0 && ph.TeamRule == 1) SplitTeam();
+            if (ph.Team != 0 && ph.TeamRule == 1 && agents.Count >= 2) PlanTeam();
             foreach (var ag in agents)
             {
                 if (ag.Done) continue;
@@ -476,9 +460,10 @@ static class Race
                 if (ph.Team != 0)
                 {
                     int pick = ag.TeamTarget;
-                    if (ph.TeamRule == 0)
+                    if (ph.TeamRule == 0 || agents.Count < 2 || pick < 0)
                     {
-                        // The game's own rule over the team's crystals (SkimRacePilot -> SkimRaceTargetTracker.Select).
+                        // The nearest crystal (SkimRaceTargetTracker.Select): the rule before team play, and
+                        // what a lone AI - or one the plan has nothing for - still flies.
                         candidates.Clear();
                         foreach (var c in teamCrystals)
                             candidates.Add(new SkimRaceTargetTracker.Candidate { Alive = true, Domain = CosmicShore.Data.Domains.Jade, Position = c });

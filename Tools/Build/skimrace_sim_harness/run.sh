@@ -14,9 +14,9 @@
 #        intensity without its own file falls back to (Docs/SKIM_RACE_AI.md section 6.12).
 #   bash Tools/Build/skimrace_sim_harness/run.sh fingerprint
 #        each track's map fingerprint as the game computes it (Docs/SKIM_RACE_AI.md section 11).
-#   bash Tools/Build/skimrace_sim_harness/run.sh eval 1 20 [...] ph.Seats=2 ph.Team=1 [ph.TeamRule=1]
-#        a TEAM race: the seats share one domain and its crystals (section 13). TeamRule 0 is the
-#        shipped crystal choice, 1 the split experiment.
+#   bash Tools/Build/skimrace_sim_harness/run.sh eval 1 20 [...] ph.Seats=2 ph.Team=1 [ph.TeamRule=0]
+#        a TEAM race: the seats share one domain and its crystals (section 13), flying the game's team
+#        plan; ph.TeamRule=0 flies the rule from before team play (every seat on the nearest crystal).
 #
 # Needs a dotnet 8+ SDK (a per-user install in ~/.dotnet is fine). No .csproj on purpose: the
 # repo gitignores *.csproj, so everything builds into $TMPDIR.
@@ -45,7 +45,7 @@ python3 "$ROOT/Tools/Build/skimrace_track_fingerprint.py" --emit-track "$OUT/tra
 
 ls "$REFDIR"/*.dll | sed 's/^/-r:/' > "$OUT/refs.rsp"
 printf '"%s"\n' "$HERE/UnityShim.cs" "$HERE/Sim.cs" \
-  "$SR/SkimRaceAIConfigSO.cs" "$SR/SkimRaceCourse.cs" "$SR/SkimRaceObservation.cs" "$SR/SkimRaceDriver.cs" "${SKIMRACE_SHELL_FILE:-$SR/SkimRaceShell.cs}" "$SR/SkimRacePlanner.cs" "$SR/SkimRaceObstacle.cs" "$SR/SkimRaceHandicap.cs" "$SR/SkimRaceTrackFingerprint.cs" "$SR/SkimRaceTargetTracker.cs" > "$OUT/files.rsp"
+  "$SR/SkimRaceAIConfigSO.cs" "$SR/SkimRaceCourse.cs" "$SR/SkimRaceObservation.cs" "$SR/SkimRaceDriver.cs" "${SKIMRACE_SHELL_FILE:-$SR/SkimRaceShell.cs}" "$SR/SkimRacePlanner.cs" "$SR/SkimRaceObstacle.cs" "$SR/SkimRaceHandicap.cs" "$SR/SkimRaceTrackFingerprint.cs" "$SR/SkimRaceTargetTracker.cs" "$SR/SkimRaceTeamAssignment.cs" > "$OUT/files.rsp"
 "$DOTNET" "$CSC" -nologo -langversion:latest -nostdlib -noconfig -optimize+ "@$OUT/refs.rsp" \
   -nowarn:CS1591,CS0067,CS0649,CS0414,CS1574,CS0169,CS8632,CS0108,CS1587 \
   -target:exe -main:Program -out:"$OUT/sim.dll" "@$OUT/files.rsp" >&2

@@ -57,6 +57,35 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Skim Race AI teammates split the crystals (`claude/confident-pascal-w76l2o`, 2026-10-05)
+
+**What landed.** When two or more AI fly for one Skim Race team, `SkimRaceTeamPlan` gives each a DIFFERENT
+crystal: one plan per team per frame (`SkimRaceTeamAssignment`, least total distance, kept until another plan
+is 15% cheaper), read by every AI on that team. AI only: a human teammate is never planned for. A team with one
+AI gets no plan, so solo races fly exactly as before. Every difficulty (the user's call); Easy and Medium keep
+their mistakes. Before this, two AI on a team both chased the nearest crystal: in the simulator that team was
+slower than ONE AI alone on I1 and I2. With the plan it is 28-51% faster than before
+(`Docs/SKIM_RACE_AI.md` §13). Proven outside Unity: the simulator runs the same `SkimRaceTeamAssignment`
+(identical races to the experiment); `SkimRaceTeamAssignmentTests` run offline (8/8, three deliberate breaks
+each caught); real-Unity-reference compile: player 0 errors in project code; editor 0 errors in changed files.
+
+**Verify in editor**
+- [ ] Compiles; `SkimRaceTeamAssignmentTests` pass (and `SkimRaceAITests`, `SkimRaceHandicapTests`,
+      `SkimRaceTrackFingerprintTests` still do).
+- [ ] **Two AI on one team.** Skim Race, Hard, any intensity. In the launch panel remove the placed AI (✕ on
+      their chips), arm **Add AI** and tap the same other-team tile (e.g. Ruby) twice: you alone vs a 2-AI team.
+      From the first crystal on, the two AI fly at DIFFERENT crystals: no "both chase one, one swings back".
+      Their team's count climbs about twice as fast as one AI's. The race records itself
+      (`BenchmarkResults/SkimRaceAI/manual_I<n>_*.jsonl`); the simulator's 2-AI team on I1 Hard finishes in about
+      36.5 s.
+- [ ] **A lone AI is unchanged.** You + one AI on separate teams: the AI flies as before.
+- [ ] **An AI on YOUR team never waits for you.** Place one AI on your own tile and idle: it keeps collecting at
+      its normal pace (it flies the nearest crystal and takes yours too).
+- [ ] Profiler (as in the Profiler-timers entry below): with two AI on one team, `SkimRace.Pilot.Sense` stays
+      small - the plan is built once a frame per team.
+- [ ] **The real test (the user's plan):** you and a friend vs a 2-AI team on Hard (set up as above, both AI
+      on one team). Note who wins and both teams' times; the AI's next speed step is decided from that.
+
 ### 🔴 Network protocol version 8 -> 9 (`claude/confident-pascal-w76l2o`, 2026-10-05)
 
 **What landed.** `NetworkConfig.ProtocolVersion` in `Assets/_Prefabs/CORE/NetworkManager.prefab` went from

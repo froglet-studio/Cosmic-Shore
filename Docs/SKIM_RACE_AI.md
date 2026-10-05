@@ -60,7 +60,8 @@ Read from the prefab and from an in-editor probe (`SkimRaceRaceRecorder.WritePro
 |---|---|
 | `SkimRacePilot` | MonoBehaviour on the AI vessel: lifecycle, sensing, actuation. Inactive (neutral input) until `GameDataSO.IsTurnRunning` rises; neutral again when the turn ends; stops and disables `AIPilot` while it owns the vessel |
 | `SkimRaceAIDeployment` | Installs the pilot from `ServerPlayerVesselInitializerWithAI.ConfigureAIPilot` — every Skim Race backfill seat in normal play, no scene wiring. Skipped while `IsTraining`; `TrainingDeploymentService` defers to it. Reads the host's lobby AI difficulty (`GameDataSO.RequestedAIDifficulty`, §10). Picks the policy (`PolicyFor`): the intensity's own file only while it fits the map in the scene, else the general one (§11) |
-| `SkimRaceTargetTracker` | The authoritative target: a live, non-embedded crystal of this domain from `Crystal.Active` (mid-collection crystals are valid only once moved away from the pilot); nearest wins with hysteresis |
+| `SkimRaceTargetTracker` | The authoritative target: a live, non-embedded crystal of this domain from `Crystal.Active` (mid-collection crystals are valid only once moved away from the pilot); nearest wins with hysteresis. The whole rule for a lone AI on its team, and the fallback for AI teammates |
+| `SkimRaceTeamPlan` / `SkimRaceTeamAssignment` | Team play (§13): when two or more AI fly for one team, one plan per team per frame gives each a DIFFERENT crystal (least total distance, kept until another plan is 15% cheaper). AI only - a human teammate is never planned for. The assignment is pure C#, shared with the simulator |
 | `SkimRaceCourse` / `SkimRaceCourseSource` | The racing line: the track prisms the game actually laid, in lay order, with each prism's pose and contact shell |
 | `SkimRaceObservation` / `SkimRaceAction` | The observation and action schema (feature vector, schema version, NaN sanitising, clamping) |
 | `SkimRaceDriver` | The decision core (pure C#): racing line, crystal pass planning, lag-compensated steering, throttle, recovery |
@@ -1042,47 +1043,68 @@ reason. The team rules are.
   Changing the team count alone does not move AI that are already placed: a placement is fixed once
   made (`ArcadeGameConfigureModal.ReconcileAiPlacements`).
 
-**What the AI does on a team.** The pilot flies at the nearest crystal of its domain, with hysteresis
-(`SkimRaceTargetTracker`). Two AI on one team therefore start on the SAME crystal. The one that gets
-there second is left aiming at a crystal that has just jumped to the next anchor, and swings round for
-the other one. One AI ends up doing most of the work. The pickups in 10 I1 races were 16/8, 5/19, 19/5,
-15/9, 6/18, 12/12, 16/8, 8/16, 17/7 and 17/7. Meanwhile the two fly through each other's trails.
+**What the AI did on a team before team play.** The pilot flew at the nearest crystal of its domain, with
+hysteresis (`SkimRaceTargetTracker`). Two AI on one team therefore started on the SAME crystal. The one that got
+there second was left aiming at a crystal that had just jumped to the next anchor, and swung round for
+the other one. One AI ended up doing most of the work. The pickups in 10 I1 races were 16/8, 5/19, 19/5,
+15/9, 6/18, 12/12, 16/8, 8/16, 17/7 and 17/7. Meanwhile the two flew through each other's trails.
 
 **Measured** (the simulator's team race, `ph.Team=1`; Hard, each track's shipped policy, with I3 on the
 general one; 2 AI, 28 ms frames ±50%, 20 races per row, `limit=240` on I3 and I4). Times are the median
 finish in seconds. "Hull hits" counts both AI together, per race.
 
-| Track | 1 AI alone | 2 AI, separate teams (each AI's own finish) | 2-AI team, today's rule | 2-AI team, split rule | Split vs today |
+| Track | 1 AI alone | 2 AI, separate teams (each AI's own finish) | 2-AI team, nearest rule (before) | 2-AI team, team plan (shipped) | Plan vs before |
 |---|---|---|---|---|---|
 | I1 | 61.9 | 69.2 | 65.0 (hull hits 34.8) | **36.5** (15.3) | −44% |
 | I2 | 75.5 | 77.8 | 80.3 (11.3) | **39.6** (4.1) | −51% |
 | I3 | 180.4 | 183.2 | 149.7 (40.4) | **97.2** (18.9) | −35% |
 | I4 | 148.5 | 156.2 | 115.2 (45.8) | **83.1** (24.2) | −28% |
 
-- Today's rule makes a 2-AI team SLOWER than one AI alone on I1 and I2. On I1 its cross-track error at the
-  90th percentile is 155 u against 44 u for the split rule: the AI chase crystals that have moved.
-- The **split rule** (`ph.TeamRule=1`) gives each AI a different crystal. It picks the assignment of AI to
-  crystals with the least total straight-line distance, and keeps it until another assignment is 15%
-  cheaper (`ph.SplitHyst`). A team that splits finishes in 52-59% of a lone AI's time: the two really do
-  share the work. Each AI's hull hits drop back to a lone AI's level.
+- The nearest rule made a 2-AI team SLOWER than one AI alone on I1 and I2. On I1 its cross-track error at
+  the 90th percentile is 155 u against 44 u for the team plan: the AI chased crystals that had moved.
+- The **team plan** gives each AI a different crystal. It picks the assignment of AI to crystals with the
+  least total straight-line distance, and keeps it until another assignment is 15% cheaper. A team that
+  plans finishes in 52-59% of a lone AI's time: the two really do share the work. Each AI's hull hits
+  drop back to a lone AI's level.
 - Tried and dropped: a heading-aware cost (a crystal behind the hull costs up to twice its distance). It
   changed nothing: I1, I3 and I4 were identical, and I2 was 0.1 s slower.
 - "Separate teams" is the old two-seat model (each seat its own domain, every race in §8 to §12). The
   other AI's trails and pickup rings cost each AI 3-8% against flying alone.
 
-**Status: simulator only.** No game code flies the split rule yet. Shipping it would mean the pilot reads
-its teammates' positions (which a human teammate sees on screen) and every AI on the team computes the
-same assignment from them; a human teammate is counted like any other. Whether to ship it is the user's
-decision, and so is the team-size question above (whether AI should fill as one team, or the target
-should grow with team size).
+**Shipped: team play** (the user's call, 2026-10-05: every difficulty). How it works in the game:
+
+- `SkimRacePilot` joins `SkimRaceTeamPlan` when its race starts and leaves when it ends. Each frame the
+  first AI of a team to sense builds that team's plan (`SkimRaceTeamAssignment`: positions in, one
+  crystal per AI out). Every other AI on the team reads the same plan, so two AI cannot pick one
+  crystal from two slightly different snapshots. The plan remembers its last answer per team: that is
+  the 15% hysteresis (`SkimRaceTargetTracker.Hysteresis`).
+- **AI only.** A human teammate is never planned for. An AI does not leave a crystal "for" a human,
+  because an idle or slow human would strand it and the team would lose it. The AI just stop doubling up
+  on each other.
+- **A lone AI is unchanged.** A team with one AI gets no plan and flies the nearest-crystal rule exactly
+  as before, so every solo race in §8 to §12 is unaffected. An AI the plan has no crystal for (more AI
+  than crystals, which one-crystal-per-player rules out) falls back to the same rule.
+- It reads what any pilot can see (where the team's vessels and crystals are) and writes nothing.
+  `check_ai_no_state_writes.py` covers it.
+- Easy and Medium keep their deliberate mistakes on top. A plan switch is a new crystal, so their
+  reaction delay applies to it as to any other.
+
+The simulator's `ph.TeamRule=1` (now the default with `ph.Team=1`) calls the same
+`SkimRaceTeamAssignment`. With it, every race in the table above came out identical to the experiment
+that preceded it. `SkimRaceTeamAssignmentTests` covers the plan: two AI never share a crystal, the
+cheapest plan beats "nearest pair first", a near-tie keeps the last plan, a plan that cannot be kept is
+replaced, and the edge cases (more AI than crystals, a team past the exact search, no AI or no crystal).
+Three deliberate breaks of the code (greedy only, never keep, allow a crystal twice) are each caught by
+the test written for them. Team SIZE (whether backfilled AI should form one team like a human party)
+is a separate, open step.
 
 **Run it:**
 
 ```bash
-bash -c 'bash Tools/Build/skimrace_sim_harness/run.sh eval 1 20 $(python3 Tools/Build/skimrace_sim_harness/policy_args.py SkimRaceAIConfig_I1) ph.Dt=0.028 ph.DtJitter=0.5 ph.Seats=2 ph.Team=1 ph.TeamRule=1'
+bash -c 'bash Tools/Build/skimrace_sim_harness/run.sh eval 1 20 $(python3 Tools/Build/skimrace_sim_harness/policy_args.py SkimRaceAIConfig_I1) ph.Dt=0.028 ph.DtJitter=0.5 ph.Seats=2 ph.Team=1'
 ```
 
-Use `ph.TeamRule=0` for today's rule (it calls the shipped `SkimRaceTargetTracker.SelectIndex`). I3 and I4
+Add `ph.TeamRule=0` for the rule from before team play (it calls `SkimRaceTargetTracker.SelectIndex`). I3 and I4
 need `limit=240`: the default 70 s limit cuts every race at 130 s. With `ph.Team=0` (the default) the
 simulator is unchanged: 6 races each on I1 and I2 matched the pre-change build line for line.
 

@@ -86,6 +86,10 @@ namespace CosmicShore.Gameplay
         public SkimRaceObservation LastObservation { get; private set; }
         public SkimRaceAction LastAction => _held;
         public IVessel Vessel => _vessel;
+        /// <summary>This pilot's team - the domain its crystals and teammates belong to.</summary>
+        public Domains Domain => _status != null ? _status.Domain : Domains.Blue;
+        /// <summary>Where this pilot's vessel is (what its teammates see).</summary>
+        public Vector3 Position => _vessel != null ? _vessel.Transform.position : Vector3.zero;
 
         /// <summary>Raised on the frame the race starts for this pilot (race time 0).</summary>
         public event System.Action<SkimRacePilot> RaceStarted;
@@ -134,6 +138,7 @@ namespace CosmicShore.Gameplay
         public void ResetRace()
         {
             _raceActive = false;
+            SkimRaceTeamPlan.Leave(this);
             _driver?.Reset();
             _courseHint = -1;
             _targetHint = -1;
@@ -165,6 +170,7 @@ namespace CosmicShore.Gameplay
                 ResetRace();
                 if (_driver != null) _driver.Lane = ResolveLane();
                 _raceActive = true;
+                SkimRaceTeamPlan.Join(this);
                 _raceStart = Time.time;
                 _lastForward = _vessel.Transform.forward;
                 EnsureEditorRaceRecorder();
@@ -258,8 +264,14 @@ namespace CosmicShore.Gameplay
             if (_bound) SuppressOtherPilots();
         }
 
+        void OnEnable()
+        {
+            if (_raceActive) SkimRaceTeamPlan.Join(this);
+        }
+
         void OnDisable()
         {
+            SkimRaceTeamPlan.Leave(this);
             ReleaseDrift();
             if (_ringPressed) ReleaseRing();
             WriteNeutral();
@@ -311,8 +323,11 @@ namespace CosmicShore.Gameplay
             o.TimeSinceCollection = now - _lastCollectionTime;
             o.TimeSinceProgress = _driver.TimeSinceProgress;
 
-            // Target: the authoritative active crystal for this domain.
-            _target = SkimRaceTargetTracker.Select(_status.Domain, o.Position, _target);
+            // Target: the authoritative active crystal for this domain. When other AI fly for the same
+            // team, the team plan shares the crystals out so no two chase the same one
+            // (SkimRaceTeamPlan); a lone AI - or one the plan has no crystal for - flies the nearest.
+            var planned = SkimRaceTeamPlan.TargetFor(this, _status.Domain);
+            _target = planned != null ? planned : SkimRaceTargetTracker.Select(_status.Domain, o.Position, _target);
             if (_target != null)
             {
                 o.HasTarget = true;
