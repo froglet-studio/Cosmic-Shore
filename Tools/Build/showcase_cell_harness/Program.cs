@@ -379,10 +379,16 @@ static class Program
         {
             var p = new Pilot { Id = k, Kind = kinds[k] };
             if (k >= pilots) p.Speed = 0f;   // diagnostics: a parked pilot far outside the membrane (SHOWCASE_PILOTS)
-            p.Pos = p.Prev = c.RandomInShell(600f, 1000f);
+            // the careless and skilled pilots fly ONE itinerary, the skilled one mirrored through the cell centre (round
+            // 11-14): the same start radius, the same goal radii in the same order, so they spend the same time in each
+            // band and meet the same mix of residents - only the dodge differs. Drawn apart, the two pilots' burns were
+            // two different tours of the cell, and the C5 comparison was noise at 2-7 burns per run.
+            p.GoalRng = new ThreatRng((ulong)(seed * 7919 + (k == 2 ? 2 : 0)));
+            p.Mirror = k == 1 ? -1f : 1f;
+            p.Pos = p.Prev = p.Mirror * ShellPoint(ref p.GoalRng, 600f, 1000f);
             if (k >= pilots) p.Pos = p.Prev = new Vector3(0f, 0f, 6000f);
-            p.Vel = c.Rng.OnUnitSphere() * p.Speed;
-            p.Goal = c.RandomInShell(450f, 1150f);
+            p.Vel = p.Mirror * p.GoalRng.OnUnitSphere() * p.Speed;
+            p.Goal = p.Mirror * ShellPoint(ref p.GoalRng, 450f, 1150f);
             c.Pilots.Add(p);
         }
 
@@ -705,8 +711,16 @@ static class Program
 
     static Vector3 WanderGoal(Cell c, Pilot p)
     {
-        if (Vector3.Distance(p.Goal, p.Pos) < 40f || c.T - p.GoalT > 20f) { p.Goal = c.RandomInShell(450f, 1150f); p.GoalT = c.T; }
+        if (Vector3.Distance(p.Goal, p.Pos) < 40f || c.T - p.GoalT > 20f) { p.Goal = p.Mirror * ShellPoint(ref p.GoalRng, 450f, 1150f); p.GoalT = c.T; }
         return p.Goal;
+    }
+
+    /// <summary>Cell.RandomInShell on the pilot's own itinerary stream.</summary>
+    static Vector3 ShellPoint(ref ThreatRng rng, float inner, float outer)
+    {
+        var d = rng.OnUnitSphere();
+        float a = inner * inner * inner, b = outer * outer * outer;
+        return d * MathF.Cbrt(a + (b - a) * rng.NextFloat());
     }
 
     /// <summary>The raider: to the hoard, weave through it for 8 s taking prisms back, then a straight cut through the

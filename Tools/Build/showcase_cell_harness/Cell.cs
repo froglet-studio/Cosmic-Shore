@@ -95,6 +95,10 @@ sealed class Pilot
     public float Speed = 120f, Radius = 9f, Turn = 2.2f;
     public int Domain = 1;
     public float TrailT, Cool = -1f, GoalT;
+    /// <summary>The pilot's own itinerary stream and its mirror (-1: the skilled pilot flies the careless one's tour
+    /// reflected through the cell centre, Program.Run).</summary>
+    public ThreatRng GoalRng;
+    public float Mirror = 1f;
     // raider script
     public int Phase;
     public float PhaseT;

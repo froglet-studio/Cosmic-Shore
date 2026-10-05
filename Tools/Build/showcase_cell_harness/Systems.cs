@@ -1723,7 +1723,9 @@ sealed class BuilderSystem : ICellSystem, IOccupancy
         // a lunge that touched its pilot: the body's prisms are danger-tier for the lunge - a hostile contact (a burn)
         if (wearStepped)
             foreach (var (heart, v) in Wear!.Struck)
-                if (v >= 0 && v < n) c.AddContact(v, "wearer", Wear.Pos[heart]);
+                // rated on the heart that LUNGED (its striker key), not the nearest heart: a creature 100 prisms wide puts another
+                // colony member's heart nearer the pilot than the one whose rear and lunge it watched
+                if (v >= 0 && v < n) c.AddContact(v, "wearer", Wear.Pos[heart], telegraphed: c.ArmedFor("wearer", 1_000_000 + heart));
         foreach (var (owner, by) in c.World.StolenFrom) c.Meet(owner, by, false);
         c.World.StolenFrom.Clear();
         Engage(c, Fort.Pos, Fort.Alive, _fortProxies, _fortEngage);
