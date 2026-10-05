@@ -822,6 +822,24 @@ that raced across it (a jolt Garrett would read as a bug), and a rushed lurker p
 plates; no plate flicker. **FAIL:** members streak across the body after a strike · a swarm under steady grazing stops
 regrowing · a lurker plates after bolting · plates flicker on and off at one distance.
 
+### QA-SWARM-ROUND11-7 ⬜ — the cell's emotional range, and a puffed shield member stays shielded
+
+**Source:** branch `overnight/feel2`. Only headless harness exports and the research probe have run. Reference:
+`Docs/SWARM_FAUNA.md` §27.
+
+**Why it matters:** the probe reads motion and size only. A human has to confirm that the cell feels like its reads,
+from cute to terrifying.
+
+1. **Cute.** Fly slowly at a sparse substrate locust swarm. It should feel cute or harmless.
+2. **Terrifying.** Fly at a dense, hungry locust storm. It should feel terrifying.
+3. **The pack.** Approach the substrate pack directly.
+   - The probe says it goes stalk (about 2.5 s), then ring (about 3 s), then strike.
+   - Note whether the ring reads as menace before the strike. The probe saw no menacing window (§27.3).
+4. **Swarm bodies.** Fly through a whale and a dragonfly body. Expect awe at range and dread inside them.
+5. **Shield.** Hound a pufferfish (Charge) shield member until it puffs.
+   - It must still deflect shots.
+   - Grazers and hunters must not eat it or steer at it while it is puffed.
+
 ### QA-SWARM-ROUND11-6 ⬜ — a far swarm collapses and comes back without a pop; creatures starve on a stomach
 
 **Source:** branch `overnight/lod`. Only headless gates, type-checks and authoring gates have run; it has never been

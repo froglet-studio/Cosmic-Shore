@@ -10,7 +10,7 @@ using System.Numerics;
 using System.Text.Json;
 using CosmicShore.Gameplay;
 
-static class SubstrateHarness
+static partial class SubstrateHarness
 {
     static int _fail;
     const float R = 1200f, Dt = 0.1f;
@@ -27,6 +27,7 @@ static class SubstrateHarness
         string which = args.Length > 1 ? args[1] : "all";
         bool all = which == "all";
         string gameJson = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(fixture)) ?? ".", "game_params.json");
+        if (which == "emotion") return Emotion(args[2]);   // round 11d-2 (SWARM_FAUNA.md §27): the emotion-probe export
         if (which == "export") { File.WriteAllText(gameJson, ExportGame()); Console.WriteLine($"wrote {gameJson}"); return 0; }
         if (all || which == "fidelity") { Fidelity(fixture); GameExportCurrent(gameJson); }
         if (all || which == "pack") Pack();
@@ -55,6 +56,7 @@ static class SubstrateHarness
         public void Step(float dt)
         {
             if (Mode == "still") { Vel = Vector3.Zero; return; }
+            if (Mode == "replay") return;   // the emotion export places it from a recorded track each step
             if (Mode == "wander" && (Vector3.Distance(Pos, Goal) < 60f || Goal.Length() > 0.9f * R))
                 Goal = Ball(_rng, 0.2f * R, 0.8f * R);
             var want = Mode == "straight" ? SubstrateCore.Unit(Vel) : SubstrateCore.Unit(Goal - Pos);
