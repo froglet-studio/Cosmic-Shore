@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- cs-build: makes a player build of the project the way Unity's Build Settings does —
+       ships only what the build reaches (enabled build scenes + Resources + preloaded
+       assets, followed through every guid reference), then hands that player data to the
+       platform toolchain: a signed APK/AAB for Android, an Xcode-ready project for iOS.
+       It reads files only — it does not compile the game, so a project whose scripts are
+       mid-edit can still be packaged. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>cs-build</AssemblyName>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

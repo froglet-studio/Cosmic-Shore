@@ -38,6 +38,8 @@ namespace CosmicShore.Render
             // makes the driver read that many bytes and cut the tail off ("unexpected end of file").
             for (int i = 0; i < src.Length; i++)
                 if (src[i] > 127) throw new InvalidOperationException($"{name}: shader source must be ASCII (U+{(int)src[i]:X4} at char {i}).");
+            src = GlCaps.Translate(src, type == ShaderType.FragmentShader);
+            DumpSource?.Invoke(name, src);
             uint s = _gl.CreateShader(type);
             _gl.ShaderSource(s, src);
             _gl.CompileShader(s);
@@ -45,6 +47,9 @@ namespace CosmicShore.Render
             if (ok == 0) throw new InvalidOperationException($"{name}: {_gl.GetShaderInfoLog(s)}");
             return s;
         }
+
+        /// <summary>Receives every stage's final source (what the driver compiles) — for offline validation.</summary>
+        public static Action<string, string> DumpSource;
 
         public int Loc(string uniform)
         {
@@ -181,7 +186,8 @@ namespace CosmicShore.Render
             _gl.BindFramebuffer(FramebufferTarget.Framebuffer, Fbo);
             Color = _gl.GenTexture();
             _gl.BindTexture(TextureTarget.Texture2D, Color);
-            _gl.TexImage2D(TextureTarget.Texture2D, 0, InternalFormat.Rgba16f, (uint)w, (uint)h, 0, PixelFormat.Rgba, PixelType.HalfFloat, null);
+            var (fmt, layout, type) = GlCaps.HdrTarget(InternalFormat.Rgba16f);
+            _gl.TexImage2D(TextureTarget.Texture2D, 0, fmt, (uint)w, (uint)h, 0, layout, type, null);
             _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
             _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
             _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)GlWrap.ClampToEdge);

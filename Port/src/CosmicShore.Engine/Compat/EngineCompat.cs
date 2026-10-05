@@ -132,10 +132,18 @@ namespace CosmicShore.Engine
             OperatingSystem.IsMacOS() ? RuntimePlatform.OSXPlayer : RuntimePlatform.LinuxPlayer;
         public static int targetFrameRate = -1;
         public static string version = "0.2.0-port";
+        /// <summary>A platform host's own writable data folder (a phone's app sandbox); null = the desktop default.</summary>
+        public static string persistentDataPathOverride;
+
         public static string persistentDataPath
         {
             get
             {
+                if (!string.IsNullOrEmpty(persistentDataPathOverride))
+                {
+                    Directory.CreateDirectory(persistentDataPathOverride);
+                    return persistentDataPathOverride;
+                }
                 // COSMIC_SHORE_PROFILE runs a second install side by side (a second player on one machine).
                 string profile = Environment.GetEnvironmentVariable("COSMIC_SHORE_PROFILE");
                 string folder = string.IsNullOrWhiteSpace(profile) ? "CosmicShore" : "CosmicShore-" + profile.Trim();

@@ -125,16 +125,21 @@ namespace CosmicShore.Content.Scenes
             else
             {
                 var path = _db.PathOf(guid);
-                if (path != null && path.EndsWith(".cs", StringComparison.OrdinalIgnoreCase) && File.Exists(path))
+                if (path != null && path.EndsWith(".cs", StringComparison.OrdinalIgnoreCase)
+                    && (_db.BakedScript(guid) != null || File.Exists(path)))
                 {
                     string className = Path.GetFileNameWithoutExtension(path);
                     string ns = null;
-                    try
-                    {
-                        var m = NamespaceRx.Match(File.ReadAllText(path));
-                        if (m.Success) ns = m.Groups[1].Value;
-                    }
-                    catch (IOException) { }
+                    // A packaged build ships no source (as a Unity player ships none): the
+                    // namespace was read at build time into the player data's script table.
+                    if (_db.BakedScript(guid) is { } baked) ns = baked.Namespace;
+                    else
+                        try
+                        {
+                            var m = NamespaceRx.Match(File.ReadAllText(path));
+                            if (m.Success) ns = m.Groups[1].Value;
+                        }
+                        catch (IOException) { }
                     if (ns != null && _byFullName.TryGetValue(ns + "." + className, out var exact)) result = exact;
                     else result = PickComponent(className, ns);
                     // Unity pairs a script with its class ignoring case (MinigameHUDView.cs holds

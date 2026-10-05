@@ -300,7 +300,8 @@ void main(){
         {
             var rt = new Rt { W = w, H = h, Fbo = _gl.GenFramebuffer(), Tex = _gl.GenTexture() };
             _gl.BindTexture(TextureTarget.Texture2D, rt.Tex);
-            _gl.TexImage2D(TextureTarget.Texture2D, 0, InternalFormat.R11fG11fB10f, (uint)w, (uint)h, 0, PixelFormat.Rgb, PixelType.Float, null);
+            var (fmt, layout, type) = GlCaps.HdrTarget(InternalFormat.R11fG11fB10f);
+            _gl.TexImage2D(TextureTarget.Texture2D, 0, fmt, (uint)w, (uint)h, 0, layout, type, null);
             _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
             _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
             _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)GlWrap.ClampToEdge);

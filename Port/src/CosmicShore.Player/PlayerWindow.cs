@@ -17,7 +17,7 @@ namespace CosmicShore.Player
         readonly InputScript _script;
         readonly int _width, _height;
 
-        IWindow _window;
+        IView _window;
         GL _gl;
         PlayerBoot _boot;
         TextureCache _textures;
@@ -66,7 +66,20 @@ namespace CosmicShore.Player
                 PreferredStencilBufferBits = 8,
                 PreferredDepthBufferBits = 24,
             };
-            _window = Window.Create(options);
+            // COSMIC_SHORE_GLES=1 runs the desktop player on an OpenGL ES 3.0 context — the exact
+            // render path a phone takes, so the mobile build can be checked without one.
+            if (Environment.GetEnvironmentVariable("COSMIC_SHORE_GLES") == "1")
+                options = options with { API = new GraphicsAPI(ContextAPI.OpenGLES, ContextProfile.Core, ContextFlags.Default, new APIVersion(3, 0)) };
+            RunOn(Window.Create(options));
+        }
+
+        /// <summary>
+        /// Runs the player on a view someone else created — a phone's full-screen GL ES surface
+        /// (SDL's activity on Android, its UIKit app on iOS) instead of a desktop window.
+        /// </summary>
+        public void RunOn(IView view)
+        {
+            _window = view;
             _window.Load += OnLoad;
             _window.Update += OnUpdate;
             _window.Render += OnRender;
@@ -75,9 +88,22 @@ namespace CosmicShore.Player
             _inputBridge?.Dispose();
         }
 
+        /// <summary>Called after GL is up, before the game boots — a mobile host adds its touch backend here.</summary>
+        public Action<IView> OnInput;
+
+        /// <summary>Called every frame just before the engine ticks, with the step — a host's extra input backend samples here.</summary>
+        public Action<float> BeforeTick;
+
         void OnLoad()
         {
             _gl = GL.GetApi(_window);
+            GlCaps.Detect(_gl);
+            var dump = Environment.GetEnvironmentVariable("COSMIC_SHORE_DUMP_SHADERS");
+            if (!string.IsNullOrEmpty(dump))
+            {
+                System.IO.Directory.CreateDirectory(dump);
+                GlProgram.DumpSource = (name, src) => System.IO.File.WriteAllText(System.IO.Path.Combine(dump, name), src);
+            }
             Screen.width = _window.FramebufferSize.X;
             Screen.height = _window.FramebufferSize.Y;
             _textures = new TextureCache(_gl);
@@ -94,6 +120,7 @@ namespace CosmicShore.Player
             Camera.RenderRequested = cam => { if (cam != null && cam.targetTexture != null) RenderToTexture(cam, force: true); };
 
             _inputBridge = new SilkInputBridge(_window);
+            OnInput?.Invoke(_window);
             _script.EnsureDevices();
             // This device draws Entities Graphics entities (SceneRenderer's entity pass), so the
             // game's Entities Graphics support probe passes as it does on a desktop GPU. A
@@ -108,6 +135,7 @@ namespace CosmicShore.Player
         {
             float step = Scripted ? 1f / 60f : (float)Math.Min(dt, 0.1);
             _inputBridge.BeforeTick();
+            BeforeTick?.Invoke(step);
             _script.BeforeTick(_frameIndex);
             long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
             CosmicShore.Engine.GameLoop.PhaseTiming = s_timing;

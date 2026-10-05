@@ -53,7 +53,11 @@ layout(location=13) in vec4 aBoneW;
 layout(location=14) in vec4 aTangent;
 layout(location=15) in vec4 aUv1;       // TEXCOORD1: the shield meshes' per-face centroid
 uniform mat4 uViewProj;
+#ifdef CS_EXT_2D
+uniform highp sampler2D uExt;    // ES 3.0: the extended block in a 2D texture, texel i at (i % 1024, i / 1024)
+#else
 uniform samplerBuffer uExt;      // per-instance extended clock block (15 vec4), see SceneRenderer.ExtLayout
+#endif
 uniform int uPrismGraph;         // 0 none, 1 BlockGraph, 2 ExplodingBlockGraph
 uniform vec2 uExplosive;         // _ExplosiveRotation, _ExplosiveSpead
 uniform float uMaxSqrDist;
@@ -137,7 +141,11 @@ flat out vec2 vPhase;            // slice: (dissolve progress, heat)            
 // -- The prism graphs' vertex chain (BlockGraph / ExplodingBlockGraph), translated from the
 // project's own PrismClockAnimation.hlsl, PrismSway.hlsl and the Prism Sub Graph / Distance
 // Spread And Colors / Spread Sub Graph / Tangent Slider / Rotate Faces Along Axis subgraphs.
+#ifdef CS_EXT_2D
+vec4 X(int k){ int i = gl_InstanceID * 15 + k; return texelFetch(uExt, ivec2(i % 1024, i / 1024), 0); }
+#else
 vec4 X(int k){ return texelFetch(uExt, gl_InstanceID * 15 + k); }
+#endif
 vec3 rotAxis(vec3 v, vec3 axis, float ang){
   float l = length(axis);
   if (!(l > 1e-8)) return v;               // Rotate About Axis normalizes; a zero axis has no rotation
@@ -869,6 +877,7 @@ void main(){
         /// <summary>Uploads this batch's extended blocks to the texture buffer the vertex stage fetches by instance id.</summary>
         unsafe void UploadExt(int n)
         {
+            if (!GlCaps.TextureBuffer) { UploadExt2D(n); return; }
             if (_extBuffer == 0) { _extBuffer = _gl.GenBuffer(); _extTex = _gl.GenTexture(); }
             _gl.BindBuffer(BufferTargetARB.TextureBuffer, _extBuffer);
             int bytes = n * ExtFloats * sizeof(float);
@@ -883,6 +892,35 @@ void main(){
             _gl.TexBuffer(TextureTarget.TextureBuffer, SizedInternalFormat.Rgba32f, _extBuffer);
             _gl.ActiveTexture(TextureUnit.Texture0);
             _gl.BindBuffer(BufferTargetARB.TextureBuffer, 0);
+        }
+
+        int _extRows;
+
+        /// <summary>
+        /// The ES 3.0 stand-in for the texture buffer: the same vec4 stream laid row-major into a
+        /// 1024-wide RGBA32F texture the vertex stage reads with texelFetch (unfiltered float
+        /// textures are core in ES 3.0). Rows grow by doubling, like the buffer's capacity.
+        /// </summary>
+        unsafe void UploadExt2D(int n)
+        {
+            const int W = GlCaps.ExtTextureWidth;
+            int texels = n * (ExtFloats / 4);
+            int rows = Math.Max(1, (texels + W - 1) / W);
+            if (_extTex == 0) _extTex = _gl.GenTexture();
+            _gl.ActiveTexture(TextureUnit.Texture1);
+            _gl.BindTexture(TextureTarget.Texture2D, _extTex);
+            if (rows > _extRows)
+            {
+                _extRows = Math.Max(rows, _extRows * 2);
+                _gl.TexImage2D(TextureTarget.Texture2D, 0, InternalFormat.Rgba32f, W, (uint)_extRows, 0, PixelFormat.Rgba, PixelType.Float, null);
+                _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
+                _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
+            }
+            int needFloats = rows * W * 4;
+            if (_extData.Length < needFloats) Array.Resize(ref _extData, needFloats);
+            fixed (float* p = _extData)
+                _gl.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, W, (uint)rows, PixelFormat.Rgba, PixelType.Float, p);
+            _gl.ActiveTexture(TextureUnit.Texture0);
         }
         int _frame;
 
@@ -1692,8 +1730,9 @@ void main(){
             _gl.DepthMask(st.ZWrite);
             if (st.Transparent) _gl.BlendFunc(st.Src, st.Dst);
 
-            _gl.DrawElementsInstancedBaseVertex(GlPrimitive.Triangles, (uint)entry.SubmeshCount[first.Submesh], DrawElementsType.UnsignedInt,
-                (void*)(entry.SubmeshStart[first.Submesh] * sizeof(uint)), (uint)n, 0);
+            // Base vertex is always 0 here, so the core ES 3.0 / GL 3.1 call draws the same thing.
+            _gl.DrawElementsInstanced(GlPrimitive.Triangles, (uint)entry.SubmeshCount[first.Submesh], DrawElementsType.UnsignedInt,
+                (void*)(entry.SubmeshStart[first.Submesh] * sizeof(uint)), (uint)n);
             DrawCalls++;
             Instances += n;
         }

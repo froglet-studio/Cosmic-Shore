@@ -23,7 +23,7 @@ namespace CosmicShore.Player
     /// </summary>
     public sealed class SilkInputBridge : IDisposable
     {
-        readonly IWindow _window;
+        readonly IView _window;
         readonly IInputContext _input;
         readonly Keyboard _keyboard;
         readonly Mouse _mouse;
@@ -33,7 +33,7 @@ namespace CosmicShore.Player
         readonly HashSet<ButtonControl> _pressedSinceTick = new();
         System.Numerics.Vector2 _delta, _scroll;
 
-        public SilkInputBridge(IWindow window)
+        public SilkInputBridge(IView window)
         {
             _window = window;
             _input = window.CreateInput();

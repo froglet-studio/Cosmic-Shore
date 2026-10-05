@@ -90,6 +90,37 @@ namespace CosmicShore.Content
             }
         }
 
+        // ── Packaged player data ───────────────────────────────────────────
+
+        /// <summary>The file a packaged build writes beside Assets/: one line per script, guid, namespace, class.</summary>
+        public const string ScriptTableFile = "ScriptTypes.tsv";
+
+        /// <summary>A script's identity as the build read it from source (the source is not shipped).</summary>
+        public sealed record ScriptIdentity(string Namespace, string ClassName);
+
+        Dictionary<string, ScriptIdentity> _bakedScripts;
+
+        /// <summary>True when this project is packaged player data rather than an editable project.</summary>
+        public bool IsPlayerData => File.Exists(System.IO.Path.Combine(ProjectRoot, ScriptTableFile));
+
+        /// <summary>The build-time identity of the script behind <paramref name="guid"/>, or null in an editable project.</summary>
+        public ScriptIdentity BakedScript(string guid)
+        {
+            if (_bakedScripts == null)
+            {
+                var table = new Dictionary<string, ScriptIdentity>(StringComparer.Ordinal);
+                var path = System.IO.Path.Combine(ProjectRoot, ScriptTableFile);
+                if (File.Exists(path))
+                    foreach (var line in File.ReadLines(path))
+                    {
+                        var parts = line.Split('\t');
+                        if (parts.Length >= 3) table[parts[0]] = new ScriptIdentity(parts[1].Length > 0 ? parts[1] : null, parts[2]);
+                    }
+                _bakedScripts = table;
+            }
+            return guid != null && _bakedScripts.TryGetValue(guid, out var id) ? id : null;
+        }
+
         static string ReadGuid(string metaPath)
         {
             using var reader = new StreamReader(metaPath);
@@ -105,6 +136,9 @@ namespace CosmicShore.Content
         /// <summary>Walks up from <paramref name="start"/> to find the Unity project root (the folder holding Assets/ and ProjectSettings/).</summary>
         public static string FindProjectRoot(string start = null)
         {
+            // An explicit project (or packaged player data) wins over the folder the binary sits in.
+            var explicitRoot = Environment.GetEnvironmentVariable("COSMIC_SHORE_PROJECT");
+            if (!string.IsNullOrEmpty(explicitRoot) && Directory.Exists(System.IO.Path.Combine(explicitRoot, "Assets"))) return explicitRoot;
             var dir = new DirectoryInfo(start ?? AppContext.BaseDirectory);
             while (dir != null)
             {

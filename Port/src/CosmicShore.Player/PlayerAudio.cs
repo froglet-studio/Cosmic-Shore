@@ -68,11 +68,24 @@ namespace CosmicShore.Player
             backend.Dispose();
         }
 
+        /// <summary>The FMOD runtime is linked INTO the app (iOS: static libraries, as Unity links them).</summary>
+        const string MainProgram = "<main program>";
+
         static IntPtr Resolve(string name, Assembly assembly, DllImportSearchPath? path)
-            => name == FmodNativeBackend.LibraryName && s_libraryPath != null ? NativeLibrary.Load(s_libraryPath) : IntPtr.Zero;
+        {
+            if (name != FmodNativeBackend.LibraryName || s_libraryPath == null) return IntPtr.Zero;
+            if (s_libraryPath == MainProgram) return NativeLibrary.GetMainProgramHandle();
+            return NativeLibrary.Load(s_libraryPath);
+        }
 
         static string FindLibrary(string projectRoot)
         {
+            // Mobile: the platform build packs the runtime with the app (Android: lib/<abi>/ in the
+            // APK, which the loader finds by file name; iOS: linked into the executable).
+            if (OperatingSystem.IsIOS() || OperatingSystem.IsTvOS()) return MainProgram;
+            if (OperatingSystem.IsAndroid())
+                return NativeLibrary.TryLoad("libfmodstudio.so", out var handle) && handle != IntPtr.Zero ? "libfmodstudio.so" : null;
+
             bool win = OperatingSystem.IsWindows();
             string file = win ? "fmodstudio.dll" : "libfmodstudio.so";
             string rid = win ? "win-x64" : "linux-x64";
@@ -92,6 +105,16 @@ namespace CosmicShore.Player
         /// <summary>The FMOD header version the project's integration declares (FMOD.VERSION.number).</summary>
         static uint HeaderVersion(string projectRoot)
         {
+            // Packaged player data carries no source: the build recorded the version.
+            var manifest = Path.Combine(projectRoot, "PlayerData.json");
+            if (File.Exists(manifest))
+                try
+                {
+                    using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(manifest));
+                    if (doc.RootElement.TryGetProperty("fmodHeaderVersion", out var v) && v.TryGetUInt32(out var n) && n != 0) return n;
+                }
+                catch (System.Text.Json.JsonException) { }
+
             var src = Path.Combine(projectRoot, "Assets", "Plugins", "FMOD", "src", "fmod.cs");
             if (File.Exists(src))
             {

@@ -69,6 +69,19 @@ cd Port && dotnet build src/CosmicShore.AssetTool
 src/CosmicShore.AssetTool/bin/Debug/net10.0/cs-asset list ../Assets/_Scenes/Authentication.unity
 ```
 
+## Build for Android and iOS
+
+`cs-build` makes a player build the way Unity's Build Settings does: only what the game ships
+(enabled build scenes + `Resources/` + preloaded assets, followed through every reference;
+nothing under `Editor/`, no script source), named and versioned from Player Settings, then
+handed to the platform toolchain. Details and what is verified: `docs/MOBILE_BUILDS.md`.
+
+```bash
+Port/build-android.bat                         # Windows: double-click → Builds/Android/CosmicShore.apk
+dotnet run --project Port/src/CosmicShore.Build -- android   # any OS
+dotnet run --project Port/src/CosmicShore.Build -- ios       # on a Mac: builds the .ipa; elsewhere: exports Builds/iOS
+```
+
 ## Layout
 
 ```
@@ -81,6 +94,8 @@ Port/
 │   ├── CosmicShore.Data/        # ported Data layer (verbatim from Assets/_Scripts/Data)
 │   ├── CosmicShore.Game/        # ported game code (mirrors Assets/_Scripts structure)
 │   ├── CosmicShore.AssetTool/   # cs-asset: edit/create/delete in scenes & prefabs (docs/AUTHORING.md)
+│   ├── CosmicShore.Build/       # cs-build: Android/iOS player builds (docs/MOBILE_BUILDS.md)
+│   ├── CosmicShore.Mobile/      # the phone player (Android activity / iOS app around PlayerWindow)
 │   ├── CosmicShore.Cli/         # headless smoke/sim harness (engine boot, SOAP, sims)
 │   └── CosmicShore.Client/      # playable SkimRace window (Silk.NET, sprint builds)
 ├── dist/                        # playable progress-build zips (see play-latest.bat)
