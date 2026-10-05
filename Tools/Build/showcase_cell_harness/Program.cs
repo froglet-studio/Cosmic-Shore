@@ -272,7 +272,8 @@ static class Program
         public List<Dictionary<string, int>[]> Met = new();
         public readonly List<string> Reports = new();
         public readonly List<(string, double)> LedgerLines = new();
-        public long LodSeen, LodTouched, LodCollapsedTicks, LodCollapses;
+        public long LodSeen, LodTouched, LodCollapses;
+        public readonly Dictionary<string, double> LodShare = new();
     }
 
     static RunResult Run(JsonElement layout, SwarmPlanData[] plans, int density, int seed, float seconds, string? snapOut)
@@ -307,6 +308,7 @@ static class Program
             c.Pilots.Add(p);
         }
 
+        c.World.VesselDomain = k => k >= 0 && k < c.Pilots.Count ? c.Pilots[k].Domain : -1;
         var r = new RunResult { Seed = seed, Minutes = seconds / 60f };
         int worst = layout.GetProperty("colliders").GetProperty("worst").GetInt32();
         int burnRule = layout.GetProperty("petal_burn_rule").GetInt32();
@@ -321,7 +323,10 @@ static class Program
             c.World.T = c.T;
             c.World.Rebuild();
             c.Contacts.Clear();
-            double ms = 0;
+            c.AdvanceLod(LodTrace ? Console.WriteLine : null);
+            double ms = c.LodMs;
+            r.MsBySystem.TryGetValue("lod", out double lodAcc);
+            r.MsBySystem["lod"] = lodAcc + c.LodMs;
             foreach (var s in systems)
             {
                 s.Tick(c);
@@ -411,8 +416,12 @@ static class Program
         r.Pilots = c.Pilots.ToArray();
         r.Met = c.Met;
         r.Reports.Add("swarm: " + swarm.Report());
-        r.Reports.Add(swarm.LodReport());
-        r.LodSeen = swarm.SeenCollapsed; r.LodTouched = swarm.TouchedCollapsed; r.LodCollapsedTicks = swarm.CollapsedTicksTotal; r.LodCollapses = swarm.Lod.Collapses;
+        r.Reports.Add(!c.LodOn ? "ecology LOD off" :
+            $"ecology LOD: {c.Lod.Collapses} collapses, {c.Lod.Expands} expands, {c.Lod.MacroTicks} macro ticks, refused while seen {c.Lod.RefusedVisible}; " +
+            "share of ticks collapsed: " + string.Join(", ", c.LodCollapsedTicks.Select(kv => $"{kv.Key} {Pct((int)kv.Value, (int)c.LodTicks)}")) +
+            $"; seen while collapsed {c.LodSeen}, pilot inside a collapsed extent {c.LodTouched}");
+        r.LodSeen = c.LodSeen; r.LodTouched = c.LodTouched; r.LodCollapses = c.Lod.Collapses;
+        foreach (var kv in c.LodCollapsedTicks) r.LodShare[kv.Key] = kv.Value / (double)Math.Max(1, c.LodTicks);
         r.Reports.Add("substrate: " + sub.Report());
         r.Reports.Add("builders: " + builders.Report());
         if (grove != null) r.Reports.Add("grove: " + grove.Report());
@@ -453,6 +462,8 @@ static class Program
         return "; nearest plant: " + string.Join(", ", parts);
     }
 
+    /// <summary>SHOWCASE_LOD_TRACE=1: every 10 s, each LOD'd population's state and what holds it expanded.</summary>
+    static readonly bool LodTrace = Environment.GetEnvironmentVariable("SHOWCASE_LOD_TRACE") == "1";
     static readonly int TraceEvery = int.TryParse(Environment.GetEnvironmentVariable("SHOWCASE_TRACE_EVERY"), out int te) ? te : 0;
 
     static string Pct(int a, int b) => b == 0 ? "-" : $"{100.0 * a / b:F0}%";
@@ -467,7 +478,7 @@ static class Program
         double La(string k) => w.LaidBy.TryGetValue(k, out var v) ? v : 0;
         double src = w.Grown + w.Trail + sub.Seeded + b.Founders + (grove?.Planted ?? 0);
         double live = w.LiveVolume();
-        double acct = live + w.Destroyed + w.Reclaimed + swarm.Held() + sub.Held() + b.Held() + (grove?.Held() ?? 0);
+        double acct = live + w.Destroyed + swarm.Held() + sub.Held() + b.Held() + (grove?.Held() ?? 0);
         scale = src;
         if (lines != null)
         {
@@ -476,12 +487,12 @@ static class Program
             lines.Add(("SOURCES substrate seed + builder founders + grove planted", sub.Seeded + b.Founders + (grove?.Planted ?? 0)));
             lines.Add(("ACCOUNT world prisms live", live));
             lines.Add(("ACCOUNT destroyed by vessels", w.Destroyed));
-            lines.Add(("ACCOUNT reclaimed from the hoard by vessels", w.Reclaimed));
+            lines.Add(("(info) taken back by vessels from a hoard or a wearer - changed hands, still live", w.Reclaimed));
             lines.Add(("ACCOUNT swarm (bites - skeletons)", swarm.Held()));
             lines.Add(("ACCOUNT substrate (living stock + rammed bodies)", sub.Held()));
             lines.Add(("ACCOUNT builders (stomachs, dead stomachs, metabolised, bodies)", b.Held()));
             if (grove != null) lines.Add(("ACCOUNT grove reserves", grove.Held()));
-            lines.Add(("residual: world store (in - live - eaten - destroyed - reclaimed)", w.Audit()));
+            lines.Add(("residual: world store (in - live - eaten - destroyed)", w.Audit()));
             lines.Add(("residual: substrate (seed + eaten - laid - held)", sub.Seeded + E("substrate") - La("substrate") - sub.Held()));
             lines.Add(("residual: builders (founders + eaten - held)", b.Founders + E("builders") - b.Held()));
             if (grove != null) lines.Add(("residual: grove (planted + eaten - laid - held)", grove.Planted + E("grove") - La("grove") - grove.Held()));
@@ -673,10 +684,12 @@ static class Program
         foreach (var run in runs.Where(r => r.Seed != longRun.Seed || r.Minutes == longRun.Minutes))
             if (run.Extinct.Count > 0) Console.WriteLine($"     (seed {run.Seed}: extinct {string.Join(", ", run.Extinct)})");
 
-        Console.WriteLine("C7 ecology LOD (round 11f): " + string.Join("; ", runs.Select(r =>
-            $"s{r.Seed}: {r.LodCollapses} collapses, {r.LodCollapsedTicks} swarm-ticks collapsed")));
+        Console.WriteLine("C7 ecology LOD (rounds 11f, 11f-2), share of ticks each population spent collapsed:");
+        foreach (var run in runs)
+            Console.WriteLine($"     s{run.Seed} ({run.Minutes:F0} min, {run.LodCollapses} collapses): " +
+                              string.Join(", ", run.LodShare.Select(kv => $"{kv.Key} {100 * kv.Value:F0}%")));
         Check(runs.All(r => r.LodSeen == 0 && r.LodTouched == 0),
-              "C7 no collapsed swarm was ever visible to a pilot or touched by one (ECOLOGY_LOD §4.1 clause 2)");
+              "C7 no collapsed population was ever visible to a pilot or had a pilot inside it (ECOLOGY_LOD §4.1 clause 2)");
         Console.WriteLine("C5 burns (Tuned rule: 1 petal x 4 elements per landed contact, 1 s cooldown per vessel), pooled over runs:");
         string[] kinds = { "careless", "skilled", "raider" };
         var rate = new Dictionary<string, double>();

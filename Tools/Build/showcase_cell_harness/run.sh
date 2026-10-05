@@ -8,7 +8,7 @@
 #   bash Tools/Build/showcase_cell_harness/run.sh all <snap.json> # also write the minute-5 snapshot (render.py draws it)
 #
 # Findings (an ecology or game-feel outcome: a class goes extinct, the skilled pilot burns more) are reported, not
-# failed; SHOWCASE_STRICT=1 fails them too. The laws (colliders, CPU, ledger, caps, the LOD contract, U1-U4) always fail.
+# failed; SHOWCASE_STRICT=1 fails them too. The laws (colliders, CPU, ledger, caps, the LOD contract, U1-U5) always fail.
 # Draw the snapshot: python3 Tools/Build/showcase_cell_harness/render.py <snap.json> <out.png>
 #
 # Diagnostic knobs (none changes a default run): SHOWCASE_TRACE=1 (per-minute census, plates, bites),

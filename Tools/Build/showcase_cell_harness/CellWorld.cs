@@ -43,7 +43,9 @@ sealed class CellWorld : IWearWorld
     public readonly List<Plant> Plants = new();
 
     // ── the book ──
-    public double Grown, Trail, Laid, Destroyed, Reclaimed;
+    public double Grown, Trail, Laid, Destroyed;
+    /// <summary>Volume vessels took back from a hoard or stripped off a wearer (it changed hands; still in the cell).</summary>
+    public double Reclaimed;
     public readonly Dictionary<string, double> EatenBy = new(), LaidBy = new(), DestroyedBy = new();
     public string Eater = "builders";   // who the IBuilderWorld.Consume calls are booked to (set before each colony step)
     public int Steals, Recaptures, Raids;
@@ -90,7 +92,7 @@ sealed class CellWorld : IWearWorld
     public double EatenTotal() { double s = 0; foreach (var v in EatenBy.Values) s += v; return s; }
 
     /// <summary>Everything ever put in the world minus everything in it or taken out of it. 0 = the store conserves.</summary>
-    public double Audit() => Grown + Trail + Laid - (LiveVolume() + EatenTotal() + Destroyed + Reclaimed);
+    public double Audit() => Grown + Trail + Laid - (LiveVolume() + EatenTotal() + Destroyed);
 
     /// <summary>Eat prism <paramref name="h"/> for <paramref name="who"/> (Prism.Consume): its volume leaves the world.</summary>
     public float Eat(int h, string who)
@@ -275,12 +277,16 @@ sealed class CellWorld : IWearWorld
     public float Consume(int h, Vector3 mouth) => Eat(h, Eater);
     public void GiveBack(int h) { Dom[h] = PrevDom[h]; Carried.Remove(h); Recaptures++; }
 
-    /// <summary>A raiding vessel took a hoarded prism back: it changes hands to the vessel (it leaves the cell's mass,
-    /// booked as Reclaimed - the vessel carries it as wake).</summary>
+    /// <summary>BuilderPrismWorld.Reclaim: a raiding vessel takes a hoarded prism back, or strips a worn one off a
+    /// wearer - it is unregistered as built and Prism.Steal'd into the VESSEL's domain, where it is (it stays in the
+    /// cell: nothing is destroyed). <see cref="VesselDomain"/> maps the core's vessel id (a pilot index) to its domain.</summary>
     public void Reclaim(int h, int vesselId)
     {
         if (!AliveL[h]) return;
-        AliveL[h] = false; Carried.Remove(h); Built.Remove(h);
+        Carried.Remove(h); Built.Remove(h);
+        int d = VesselDomain != null ? VesselDomain(vesselId) : Dom[h];
+        if (Dom[h] != d) { PrevDom[h] = Dom[h]; Dom[h] = d; }
         Reclaimed += Vol[h]; Raids++;
     }
+    public Func<int, int>? VesselDomain;
 }

@@ -296,6 +296,13 @@ namespace CosmicShore.Gameplay
         bool Stealable(int h) =>
             _world.Alive(h) && !_world.Shielded(h) && _world.Domain(h) != Domain && !_claimed.Contains(h) && _world.Loose(h);
 
+        /// <summary>Can a heart of radius <paramref name="R"/> ever touch prism <paramref name="h"/>? The integrator clamps a leader
+        /// to the containment sphere, so a prism farther out than Containment + the steal reach (R + 3) is out of reach for good -
+        /// pilots trail prisms along the membrane at r ~ 1150. Before round 11-9 a heart claimed such a prism, pressed against the
+        /// clamp 16 u short of it and held the goal forever (the goal only cleared on death, domain, shield or capture): a whole
+        /// cell of wearers stole nothing (Docs/SWARM_FAUNA.md §25).</summary>
+        bool Reachable(int h, float R) => (_world.Position(h) - P.CellCentre).Length() < P.Containment + R + 2f;
+
         // ── step ──────────────────────────────────────────────────────────────────────────────────
         public void Step(float dt, BuilderVessel[] vessels, int count)
         {
@@ -419,7 +426,7 @@ namespace CosmicShore.Gameplay
             Intent[k] = 0f;
             if (has && dist < P.FleeRange) return BuilderMath.Unit(Pos[k] - tgt.Pos) * sp * 1.2f;   // turned on: flee
             int g = Goal[k];
-            if (g >= 0 && (!_world.Alive(g) || _world.Domain(g) == Domain || _world.Shielded(g) || !_world.Loose(g)))
+            if (g >= 0 && (!_world.Alive(g) || _world.Domain(g) == Domain || _world.Shielded(g) || !_world.Loose(g) || !Reachable(g, R)))
             {
                 _claimed.Remove(g); Goal[k] = g = -1;
             }
@@ -431,7 +438,7 @@ namespace CosmicShore.Gameplay
                 for (int j = 0; j < n; j++)
                 {
                     int i = _q[j];
-                    if (!Stealable(i)) continue;
+                    if (!Stealable(i) || !Reachable(i, R)) continue;
                     var ip = _world.Position(i);
                     if (has && Vector3.Distance(ip, tgt.Pos) < P.KeepOff) continue;   // never closer than ~90 u to the pilot
                     float d = Vector3.DistanceSquared(ip, Pos[k]) * (_world.IsTrail(i) ? P.TrailPreference : 1f);

@@ -31,6 +31,33 @@ sealed class GroveSystem : ICellSystem
     readonly Dictionary<int, Vector3> _lastPos = new();
     readonly Dictionary<(int wave, int pilot), float> _waveSeen = new();
     public double Planted;
+    /// <summary>Network seconds run vs cell seconds (the far cadence's effect over the run).</summary>
+    public double NetworkSeconds, CellSeconds;
+    float _farScale = 1f, _farCheckAt;
+    Vector3[] _farPilots = Array.Empty<Vector3>();
+
+    /// <summary>ThreatGrove.FarScale (Docs/ECOLOGY_LOD.md §6.3): full rate while a vessel is in the grove's own sense
+    /// (its bounds' half-diagonal round the bounds' centre); otherwise, checked at 4 Hz, FarTimeScale unless a pilot is
+    /// within reach + FarMargin. The pilots stand in for the main camera.</summary>
+    float FarScale(Cell c)
+    {
+        float scale = Cell.F(_cfg, "FarTimeScale");
+        Shape.Bounds(out var lo, out var hi);
+        var centre = (lo + hi) * 0.5f; float reach = (hi - lo).Length() * 0.5f;
+        CellSeconds += Cell.Dt;
+        bool sensed = false;
+        foreach (var p in c.Pilots) if (Vector3.Distance(p.Pos, centre) <= reach) sensed = true;
+        if (scale >= 1f || sensed) _farScale = 1f;
+        else if (c.T >= _farCheckAt)
+        {
+            _farCheckAt = c.T + 0.25f;
+            if (_farPilots.Length != c.Pilots.Count) _farPilots = new Vector3[c.Pilots.Count];
+            for (int k = 0; k < c.Pilots.Count; k++) _farPilots[k] = c.Pilots[k].Pos;
+            _farScale = ThreatFloraMath.FarTimeScale(centre, reach + Cell.F(_cfg, "FarMargin"), scale, _farPilots);
+        }
+        NetworkSeconds += Cell.Dt * _farScale;
+        return _farScale;
+    }
     public int Snaps, ToothBurns, TubeBurns, BeatBurns, SlotsRammed, TubesRammed, Buds;
     readonly Cell _c;
 
@@ -273,7 +300,7 @@ sealed class GroveSystem : ICellSystem
         // physarum at 10 Hz
         if (c.T >= _foodAt) { _foodAt = c.T + _foodRefresh; RefreshFood(); }
         Phys.SetVessels(_vessels, n);
-        Phys.Advance(Cell.Dt);
+        Phys.Advance(Cell.Dt * FarScale(c));
         ProcessPhysarumEvents(warm: false);
         LastMs = Ms.Since(t0);
         Contacts(c);
@@ -396,7 +423,7 @@ sealed class GroveSystem : ICellSystem
 
     public string Report() =>
         $"snap traps {Snap.LiveCount}/{_snapCap} (buds {Buds}, snaps {Snaps}, tooth burns {ToothBurns}, slots rammed {SlotsRammed}); " +
-        $"physarum {Phys.TubeCount} tubes / {Phys.LiveHearts} hearts (tube burns {TubeBurns}, beat burns {BeatBurns}, tubes rammed {TubesRammed})";
+        $"physarum {Phys.TubeCount} tubes / {Phys.LiveHearts} hearts (tube burns {TubeBurns}, beat burns {BeatBurns}, tubes rammed {TubesRammed}); network time {NetworkSeconds:F0} s of {CellSeconds:F0} (far cadence)";
 
     public void Snapshot(Utf8JsonWriter w)
     {

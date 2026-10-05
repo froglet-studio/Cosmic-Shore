@@ -28,7 +28,7 @@ def pts(rows, i, j):
     return [r[i] for r in rows], [r[j] for r in rows]
 
 
-def view(ax, s, i, j, title):
+def view(ax, s, i, j, title, centre=None, half=None):
     ax.set_facecolor(BG)
     R = s["membrane"]
     ax.add_patch(Circle((0, 0), R, fill=False, ec="#58a6ff", lw=1.2, alpha=0.6))
@@ -90,9 +90,10 @@ def view(ax, s, i, j, title):
         if path:
             ax.plot(*pts(path[-60:], i, j), c=col, lw=0.8, alpha=0.7)
         ax.scatter([p["at"][i]], [p["at"][j]], s=70, marker="P", c=col, edgecolors=INK, lw=0.6, zorder=5)
-    lim = R * 1.04
-    ax.set_xlim(-lim, lim)
-    ax.set_ylim(-lim, lim)
+    lim = R * 1.04 if half is None else half
+    cx, cy = (0.0, 0.0) if centre is None else centre
+    ax.set_xlim(cx - lim, cx + lim)
+    ax.set_ylim(cy - lim, cy + lim)
     ax.set_aspect("equal")
     axes = "xyz"
     ax.set_xlabel(f"{axes[i]} (u)", color=INK)
@@ -134,11 +135,16 @@ def legend_handles():
 def main():
     s = json.load(open(sys.argv[1]))
     out = sys.argv[2]
-    fig = plt.figure(figsize=(21, 9.6), facecolor=BG)
-    gs = fig.add_gridspec(1, 3, width_ratios=[1, 1, 0.42], wspace=0.12)
+    fig = plt.figure(figsize=(28, 9.6), facecolor=BG)
+    gs = fig.add_gridspec(1, 4, width_ratios=[1, 1, 1, 0.42], wspace=0.14)
     view(fig.add_subplot(gs[0]), s, 0, 2, "top view (x-z)")
     view(fig.add_subplot(gs[1]), s, 0, 1, "side view (x-y)")
-    lax = fig.add_subplot(gs[2])
+    # close-up (top view) on the busiest place: the centroid of the swarm members, else of everything drawn
+    sw = s.get("swarm", []) or [[0, 0, 0]]
+    cx = sum(r[0] for r in sw) / len(sw)
+    cz = sum(r[2] for r in sw) / len(sw)
+    view(fig.add_subplot(gs[2]), s, 0, 2, f"close-up, top view, 600 u across at ({cx:.0f}, {cz:.0f})", (cx, cz), 300.0)
+    lax = fig.add_subplot(gs[3])
     lax.axis("off")
     leg = lax.legend(handles=legend_handles(), loc="center left", frameon=False, fontsize=9.5, labelcolor=INK)
     for t in leg.get_texts():
@@ -147,7 +153,7 @@ def main():
     n_sub = len(s.get("substrate", []))
     b = s.get("builders", {})
     fig.suptitle(f"The Swarm cell, all together - t = {s['t']:.0f} s (seed 1): {n_sw} swarm members, {n_sub} substrate agents, "
-                 f"{len(b.get('walls', []))} wall prisms, {len(b.get('wearer_hearts', []))} wearer hearts wearing {len(b.get('worn', []))} prisms",
+                 f"{len(b.get('walls', []))} wall prisms, {len(b.get('wearer_hearts', []))} wearer heart(s) wearing {len(b.get('worn', []))} prisms",
                  color=INK, fontsize=14, y=0.97)
     fig.savefig(out, dpi=110, facecolor=BG, bbox_inches="tight")
     print(f"rendered {out}")

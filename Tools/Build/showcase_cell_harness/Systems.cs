@@ -186,17 +186,8 @@ sealed class SwarmSystem : ICellSystem
     readonly JsonElement _cfg;
     readonly float _us, _hz, _bite, _vesselR, _senseMargin, _engage, _linger;
     readonly int _biters;
-    /// <summary>The cell's LOD director (CellEcologyLod): pilots set and guarded every tick, Tick(1) once a second.</summary>
-    public readonly EcologyLodDirector Lod = new();
     readonly bool _lodOn;
-    float _lodAcc;
-    EcologyPilot[] _lodPilots = Array.Empty<EcologyPilot>();
-    /// <summary>LOD contract, counted: ticks a collapsed swarm was visible to a pilot; vessel contacts with a collapsed body.</summary>
-    public long SeenCollapsed, TouchedCollapsed;
     long _ticks;
-    /// <summary>SHOWCASE_LOD_TRACE=1: every 10 s, each swarm's LOD state and what holds it expanded.</summary>
-    static readonly bool LodTrace = Environment.GetEnvironmentVariable("SHOWCASE_LOD_TRACE") == "1";
-    public double LodMs;
     float BodyRadius(One o) => (_plans[Math.Clamp(o.Job.PlanIx, 0, 3)].Radius * 3f + 20f) * _us;
     float CruiseWorld => Cell.F(_cfg, "Cruise") * _us * _hz;
     bool StarvationDue(Cell c, One o) => c.T - o.LastFed >= Cell.F(_cfg, "StarvationSeconds") && c.T - o.LastShed >= Cell.F(_cfg, "ShedIntervalSeconds");
@@ -216,7 +207,7 @@ sealed class SwarmSystem : ICellSystem
         _vesselR = Cell.F(_cfg, "VesselRadius"); _senseMargin = Cell.F(_cfg, "SenseMargin"); _engage = Cell.F(_cfg, "EngageRadius");
         _linger = Cell.F(_cfg, "ProxyLingerSeconds");
         // SwarmFaunaConfigSO.MacroLod (field default true when the asset has no key); SHOWCASE_LOD=0 runs the cell without it
-        _lodOn = (!_cfg.TryGetProperty("MacroLod", out _) || Cell.F(_cfg, "MacroLod") > 0.5f) && Environment.GetEnvironmentVariable("SHOWCASE_LOD") != "0";
+        _lodOn = !_cfg.TryGetProperty("MacroLod", out _) || Cell.F(_cfg, "MacroLod") > 0.5f;
         int planCap = plans.Max(p => p.N);
         float membrane = c.Membrane * 0.97f / _us;
         int ri = 0;
@@ -243,7 +234,7 @@ sealed class SwarmSystem : ICellSystem
                 one.LastFed = c.T;
                 one.Macro = new SwarmMacroBody(one.Job);
                 one.Pop = new MacroSwarm(this, one, c);
-                if (_lodOn) Lod.Register(one.Pop);
+                c.RegisterLod($"swarm/{Regions[ri]}", one.Pop, _lodOn);
                 _sw.Add(one);
             }
             ri++;
@@ -331,33 +322,6 @@ sealed class SwarmSystem : ICellSystem
     public void Tick(Cell c)
     {
         double ms = 0;
-        long t0 = Stopwatch.GetTimestamp();
-        if (_lodOn)
-        {
-            // CellEcologyLod.Advance: the pilots, the guard (every frame in the game - every 0.1 s tick here), Tick(1) at 1 Hz
-            if (_lodPilots.Length != c.Pilots.Count) _lodPilots = new EcologyPilot[c.Pilots.Count];
-            for (int k = 0; k < c.Pilots.Count; k++)
-            {
-                var p = c.Pilots[k];
-                _lodPilots[k] = new EcologyPilot { X = p.Pos.X, Y = p.Pos.Y, Z = p.Pos.Z, Vx = p.Vel.X, Vy = p.Vel.Y, Vz = p.Vel.Z, Speed = p.Vel.Length() };
-            }
-            Lod.SetPilots(_lodPilots);
-            Lod.Guard();
-            _lodAcc += Cell.Dt;
-            if (_lodAcc >= 1f - 1e-4f)
-            {
-                _lodAcc -= 1f;
-                if (LodTrace && ((int)c.T) % 10 == 0)
-                    foreach (var o in _sw)
-                    {
-                        float near = c.Pilots.Count == 0 ? 0 : c.Pilots.Min(p => Vector3.Distance(p.Pos, o.Job.Anchor));
-                        Console.WriteLine($"   lod t={c.T:F0} {Regions[o.Region]}: extent {BodyRadius(o):F0} nearest pilot {near:F0} want {Lod.WantsIndividuals(o.Pop)} seen {Lod.SeenByAnyPilot(o.Pop)} " +
-                                          $"proxies {o.Proxies.Count} gone {o.GoneSlots.Count} starvDue {StarvationDue(c, o)} collapsed {o.Macro.Collapsed}");
-                    }
-                Lod.Tick(1f);
-            }
-        }
-        LodMs = Ms.Since(t0);
         _ticks++;
         foreach (var one in _sw)
         {
@@ -365,9 +329,6 @@ sealed class SwarmSystem : ICellSystem
             if (one.Macro.Collapsed)
             {
                 one.CollapsedTicks++;
-                if (Lod.SeenByAnyPilot(one.Pop)) SeenCollapsed++;
-                foreach (var p in c.Pilots)
-                    if (Vector3.Distance(p.Pos, job.Anchor) < BodyRadius(one) + p.Radius) TouchedCollapsed++;
                 one.Goal = ResolveGoal(c, one);
                 continue;
             }
@@ -386,7 +347,7 @@ sealed class SwarmSystem : ICellSystem
             one.Goal = ResolveGoal(c, one);
             one.PeakAlive = Math.Max(one.PeakAlive, job.AliveCount);
         }
-        LastMs = ms + LodMs;
+        LastMs = ms;
     }
 
     /// <summary>SwarmFauna.SenseVessels: every vessel within the body's reach + max(SenseMargin, EngageRadius) of the anchor.</summary>
@@ -616,11 +577,6 @@ sealed class SwarmSystem : ICellSystem
         $"{Regions[o.Region]} {o.Job.AliveCount}/{o.Job.Core.Cap} (peak {o.PeakAlive}, rammed {o.Rammed}, starved {o.Starved}, proxies peak {o.Proxies.Peak}, " +
         $"collapsed {o.CollapsedTicks}/{_ticks} ticks)"));
 
-    /// <summary>The LOD's run: the director's counters and its contract (never seen or touched while collapsed).</summary>
-    public string LodReport() => !_lodOn ? "ecology LOD off" :
-        $"ecology LOD: {Lod.Collapses} collapses, {Lod.Expands} expands, {Lod.MacroTicks} macro ticks, refused while seen {Lod.RefusedVisible}; " +
-        $"swarm-ticks collapsed {_sw.Sum(o => o.CollapsedTicks)}/{_ticks * _sw.Count}; seen while collapsed {SeenCollapsed}, touched while collapsed {TouchedCollapsed}";
-    public long CollapsedTicksTotal => _sw.Sum(o => o.CollapsedTicks);
 
     public void Snapshot(Utf8JsonWriter w)
     {
@@ -655,6 +611,55 @@ sealed class SubstrateSystem : ICellSystem
         public float Inner, Outer, BiteRadius, Engage;
         public ProxyPool Proxies = null!;
         public int BiteCursor, Rammed, Starved, Preyed, Peak, Asked, Bitten;
+        // round 11f-2 (Docs/ECOLOGY_LOD.md §6.1): the freeze route, as SubstrateFauna implements IMacroPopulation
+        public MacroSub Lod = null!;
+        public float Thaw, ExtentPad, ReserveS = float.PositiveInfinity;
+        public Vector3 Centre;
+        public float Extent;
+        public bool Collapsed;
+    }
+
+    /// <summary>SubstrateFauna's IMacroPopulation, minus Unity: freeze the block (SubstratePopulation.Frozen, set between
+    /// ticks) when nothing only individuals resolve is pending and the hungriest agent has twice the thaw margin of
+    /// reserve; thaw on approach, on a hunt, or before the reserve runs out. MacroTick is a no-op (the frozen pass burns
+    /// metabolism every tick; a band population has no goal to drift to).</summary>
+    sealed class MacroSub : IMacroPopulation
+    {
+        readonly SubstrateSystem _s; readonly Pop _p;
+        public MacroSub(SubstrateSystem s, Pop p) { _s = s; _p = p; }
+        public Vector3 MacroCentre => _p.Centre;
+        public float MacroExtent => _p.Extent;
+        public bool IsCollapsed => _p.Collapsed;
+        public bool CanCollapse => !_p.Collapsed && _s.Job.Error == null && _p.Proxies.Count == 0 && !_s.AnyGone(_p)
+                                   && _s.Job.EngagedCount[_p.Index] == 0 && !_s.AnyStarving(_p) && _p.ReserveS > 2f * _p.Thaw;
+        public bool NeedsIndividuals => _p.Collapsed && (_p.Proxies.Count > 0 || _s.AnyGone(_p) || _s.AnyStarving(_p) || _p.ReserveS < _p.Thaw);
+        public MacroPopulationTotals Totals => new() { Individuals = _s.Job.PopAlive[_p.Index], BodyVolume = _s.Job.PopVolume[_p.Index], Stomach = _s.Core.ReserveVolume(_p.Index) };
+        public bool Collapse()
+        {
+            if (!CanCollapse) return false;
+            _p.Collapsed = true;
+            _s.Core.Pops[_p.Index].Frozen = true;   // SubstrateCellHost.Freeze, applied between ticks (the harness ticks inline)
+            return true;
+        }
+        public void Expand() { if (!_p.Collapsed) return; _p.Collapsed = false; _s.Core.Pops[_p.Index].Frozen = false; }
+        public void MacroTick(float dt) { }
+    }
+
+    bool AnyGone(Pop p) { foreach (int i in _goneSlots) if (i >= p.Start && i < p.Start + p.Cap) return true; return false; }
+    bool AnyStarving(Pop p) { for (int i = p.Start; i < p.Start + p.Cap; i++) if (_starving[i]) return true; return false; }
+
+    /// <summary>SubstrateFauna.ReadMacroState: centroid, spread (+ a quarter of the engage radius) and reserve, read
+    /// between ticks for the director and the thaw rule.</summary>
+    void ReadMacroState(Pop p)
+    {
+        var cen = Vector3.Zero; int n = 0;
+        for (int i = p.Start; i < p.Start + p.Cap; i++) if (Job.Instances[i].Alive) { cen += Job.Instances[i].CurPos; n++; }
+        if (n > 0) cen /= n;
+        float ext = 0f;
+        for (int i = p.Start; i < p.Start + p.Cap; i++) if (Job.Instances[i].Alive) ext = MathF.Max(ext, Vector3.Distance(cen, Job.Instances[i].CurPos));
+        if (n > 0) p.Centre = cen;
+        p.Extent = ext + p.ExtentPad;
+        p.ReserveS = Core.ReserveSeconds(p.Index);
     }
 
     public string Name => "substrate";
@@ -714,8 +719,11 @@ sealed class SubstrateSystem : ICellSystem
                 MaxBites = (int)Cell.F(a, "maxBitesPerTick"), BiteRadius = Cell.F(a, "biteRadius"),
                 Engage = Cell.F(a, "engageRadius"), MaxProxies = (int)Cell.F(a, "maxProxies"),
                 Proxies = new ProxyPool((int)Cell.F(a, "maxProxies"), Cell.F(a, "proxyLingerSeconds")),
+                Thaw = Cell.F(a, "thawReserveSeconds"), ExtentPad = MathF.Max(0f, Cell.F(a, "engageRadius") * 0.25f),
             };
+            pop.Lod = new MacroSub(this, pop);
             _pops.Add(pop);
+            c.RegisterLod($"substrate/{key}", pop.Lod, Cell.F(a, "macroLod") > 0.5f);
             // SubstrateFauna.Seed: an ambusher among the flora hearts in its band, else around the anchor
             int n = Math.Min(r.GetProperty("seed").GetInt32(), pop.Cap);
             double before = Core.MassIn;
@@ -836,6 +844,7 @@ sealed class SubstrateSystem : ICellSystem
             for (int q = 0; q < eng; q++) pop.Proxies.Want(Job.Engaged[pop.Start + q], c.T);
             pop.Proxies.Retire(c.T);
             pop.Peak = Math.Max(pop.Peak, Job.PopAlive[pop.Index]);
+            ReadMacroState(pop);
         }
     }
 
@@ -920,6 +929,7 @@ sealed class SubstrateSystem : ICellSystem
         {
             if (_gone[r.Predator] || !Job.Instances[r.Predator].Alive) continue;
             if (_gone[r.Prey] || !Job.Instances[r.Prey].Alive) continue;
+            PopOf(r.Prey).Lod.Expand();   // MaterialiseForHit thaws first: a hunt is resolved by individuals
             float stock = BodyVolume(r.Prey);
             Die(r.Prey);
             PopOf(r.Prey).Preyed++;
@@ -1037,7 +1047,6 @@ sealed class BuilderSystem : ICellSystem
     readonly float _hz, _vesselR;
     readonly ProxyPool _fortProxies, _thiefProxies;
     readonly float _fortEngage, _thiefEngage;
-    BuilderVessel[] _vessels = new BuilderVessel[8];
     public double Founders, DeadStomachs;
     public int ReuseSameStep, Rammed;
     readonly int _maxWorkers;
@@ -1075,8 +1084,16 @@ sealed class BuilderSystem : ICellSystem
             _wearEngage = Cell.F(wc, "EngageRadius");
         }
         Founders = Fort.StomachTotal + Thief.StomachTotal + (Wear?.StomachTotal ?? 0f);
+        // BuilderColonyFauna.SenseVessels: the radius each species senses vessels over, and from where
+        float fortSense = Cell.F(fc, "ShellRadius") * 2f + MathF.Max(Cell.F(fc, "AlarmRadius"), Cell.F(fc, "EngageRadius")) + Cell.F(fc, "Sense");
         _fortProxies = new ProxyPool((int)Cell.F(fc, "MaxProxies"), Cell.F(fc, "ProxyLingerSeconds"));
         _thiefProxies = new ProxyPool((int)Cell.F(tc, "MaxProxies"), Cell.F(tc, "ProxyLingerSeconds"));
+        _fortC = MakeColony(c, "fortress", fc, FortAnchor, fortSense, _fortProxies, () => Fort.CanRoost, () => Fort.RoostSecondsLeft, Fort.Roost, Fort.Pos, Fort.Alive);
+        _thiefC = MakeColony(c, "thieves", tc, Nest, Cell.F(tc, "Territory") + Cell.F(tc, "ScoutRange"), _thiefProxies,
+                             () => Thief.CanRoost, () => Thief.RoostSecondsLeft, Thief.Roost, Thief.Pos, Thief.Alive);
+        if (Wear != null)
+            _wearC = MakeColony(c, "wearers", wear.GetProperty("config"), Vector3.Zero, c.Membrane, _wearProxies!,
+                                () => Wear.CanRoost, () => Wear.RoostSecondsLeft, Wear.Roost, Wear.Pos, Wear.Alive);
         _fortEngage = Cell.F(fc, "EngageRadius"); _thiefEngage = Cell.F(tc, "EngageRadius");
     }
 
@@ -1145,15 +1162,102 @@ sealed class BuilderSystem : ICellSystem
         return best.Heart + outward * 6f;
     }
 
+    /// <summary>
+    /// One colony as BuilderColonyFauna hosts it: the vessels it SENSES (the glue's overlap - a fortress around its
+    /// anchor, a thief nest over its territory + scout range, a wearer membrane-wide from the cell centre), and its
+    /// IMacroPopulation (round 11f-2, Docs/ECOLOGY_LOD.md §6.2, the roost route): collapse only with no proxy, no vessel
+    /// sensed, the core able to roost and twice the thaw margin of torpor left; a colony that is ready except for its
+    /// carriers starts a 2.5 s wind-down; MacroTick = Roost(1); expand before a stomach empties.
+    /// </summary>
+    sealed class Colony : IMacroPopulation
+    {
+        public string Name = "";
+        public Vector3 SenseFrom; public float SenseRadius;
+        public BuilderVessel[] Vessels = new BuilderVessel[8];
+        public int VesselCount;
+        public ProxyPool Proxies = null!;
+        public Func<bool> CoreCanRoost = null!; public Func<float> RoostLeft = null!; public Action<float> Roost = null!;
+        public Vector3[] Pos = null!; public bool[] Alive = null!;
+        public float Thaw, Pad, WindDownUntil = float.NegativeInfinity, Now;
+        public bool Collapsed;
+        public Vector3 Centre; public float Extent;
+        public const float WindDownSeconds = 2.5f;
+
+        public void Sense(Cell c, float vesselR)
+        {
+            VesselCount = 0;
+            if (Vessels.Length < c.Pilots.Count) Vessels = new BuilderVessel[c.Pilots.Count];
+            for (int k = 0; k < c.Pilots.Count; k++)
+            {
+                var p = c.Pilots[k];
+                if (Vector3.Distance(p.Pos, SenseFrom) > SenseRadius) continue;
+                Vessels[VesselCount++] = new BuilderVessel { Pos = p.Pos, Vel = p.Vel, Radius = vesselR, Id = k, Domain = p.Domain, Rams = true };
+            }
+        }
+
+        /// <summary>BuildFrame's bounds: the alive members' box, padded (20 + body length + heart).</summary>
+        public void Bounds()
+        {
+            var lo = new Vector3(float.MaxValue); var hi = new Vector3(float.MinValue); int n = 0;
+            for (int k = 0; k < Pos.Length; k++) if (Alive[k]) { lo = Vector3.Min(lo, Pos[k]); hi = Vector3.Max(hi, Pos[k]); n++; }
+            if (n == 0) { Extent = 1f; return; }
+            lo -= new Vector3(Pad); hi += new Vector3(Pad);
+            Centre = (lo + hi) * 0.5f; Extent = ((hi - lo) * 0.5f).Length();
+        }
+
+        public Vector3 MacroCentre => Centre;
+        public float MacroExtent => Extent;
+        public bool IsCollapsed => Collapsed;
+        public bool CanCollapse
+        {
+            get
+            {
+                if (Collapsed || Proxies.Count > 0 || VesselCount > 0) return false;
+                if (!CoreCanRoost()) { WindDownUntil = Now + WindDownSeconds; return false; }
+                return RoostLeft() > 2f * Thaw;
+            }
+        }
+        public bool NeedsIndividuals => Collapsed && (Proxies.Count > 0 || RoostLeft() < Thaw);
+        public MacroPopulationTotals Totals => default;
+        public bool Collapse() { if (!CanCollapse) return false; Collapsed = true; return true; }
+        public void Expand() => Collapsed = false;
+        public void MacroTick(float dt) { if (Collapsed) Roost(dt); }
+    }
+
+    readonly Colony _fortC, _thiefC;
+    readonly Colony? _wearC;
+
+    Colony MakeColony(Cell c, string name, JsonElement cfg, Vector3 senseFrom, float senseRadius, ProxyPool pool,
+                      Func<bool> canRoost, Func<float> left, Action<float> roost, Vector3[] pos, bool[] alive)
+    {
+        var bs = cfg.GetProperty("BodyScale");
+        var col = new Colony
+        {
+            Name = name, SenseFrom = senseFrom, SenseRadius = senseRadius, Proxies = pool, CoreCanRoost = canRoost, RoostLeft = left,
+            Roost = roost, Pos = pos, Alive = alive,
+            Thaw = cfg.TryGetProperty("ThawReserveSeconds", out _) ? Cell.F(cfg, "ThawReserveSeconds") : 20f,
+            Pad = 20f + (float)bs[2].GetDouble() + 2f,
+        };
+        bool on = !cfg.TryGetProperty("MacroLod", out _) || Cell.F(cfg, "MacroLod") > 0.5f;
+        c.RegisterLod(name, col, on);
+        return col;
+    }
+
+    /// <summary>False when the colony roosts this tick: it only draws (BuilderColonyFauna.Update), so its core's
+    /// per-step lists (deaths, births, stings, strikes) still hold the LAST step's and must not be read again.</summary>
+    bool StepColony(Colony col, Cell c, Action<BuilderVessel[], int> step)
+    {
+        col.Now = c.T;
+        col.Sense(c, _vesselR);
+        if (col.Collapsed) return false;
+        step(col.Vessels, col.VesselCount);
+        col.Bounds();
+        return true;
+    }
+
     public void Tick(Cell c)
     {
         int n = c.Pilots.Count;
-        if (_vessels.Length < n) _vessels = new BuilderVessel[n];
-        for (int k = 0; k < n; k++)
-        {
-            var p = c.Pilots[k];
-            _vessels[k] = new BuilderVessel { Pos = p.Pos, Vel = p.Vel, Radius = _vesselR, Id = k, Domain = p.Domain, Rams = true };
-        }
         // a vessel flying through the fortress wall explodes the prisms it hits (the raider's cut)
         var q = new List<int>();
         foreach (var p in c.Pilots)
@@ -1164,20 +1268,22 @@ sealed class BuilderSystem : ICellSystem
         }
         long t0 = Stopwatch.GetTimestamp();
         c.World.Eater = "builders";
-        Fort.Step(1f / _hz, _vessels, n);
+        float dt = 1f / _hz;
+        bool fortStepped = StepColony(_fortC, c, (v, k) => { Fort.WindDown = k == 0 && c.T < _fortC.WindDownUntil; Fort.Step(dt, v, k); });
         c.World.Stealer = "thieves";
-        Thief.Step(1f / _hz, _vessels, n);
+        bool thiefStepped = StepColony(_thiefC, c, (v, k) => Thief.Step(dt, v, k));
         c.World.Stealer = "wearers";
-        Wear?.Step(1f / _hz, _vessels, n);
+        bool wearStepped = Wear != null && StepColony(_wearC!, c, (v, k) => Wear.Step(dt, v, k));
         LastMs = Ms.Since(t0);
-        BookDeaths(Fort.Deaths, Fort.Born);
-        BookDeaths(Thief.Deaths, Thief.Born);
-        if (Wear != null) BookDeaths(Wear.Deaths, Wear.Born);
-        foreach (int v in Fort.Stings)
-            if (v >= 0 && v < n) c.AddContact(v, "fortress", c.Pilots[v].Pos);
+        if (fortStepped) BookDeaths(Fort.Deaths, Fort.Born);
+        if (thiefStepped) BookDeaths(Thief.Deaths, Thief.Born);
+        if (wearStepped) BookDeaths(Wear!.Deaths, Wear.Born);
+        if (fortStepped)
+            foreach (int v in Fort.Stings)
+                if (v >= 0 && v < n) c.AddContact(v, "fortress", c.Pilots[v].Pos);
         // a lunge that touched its pilot: the body's prisms are danger-tier for the lunge - a hostile contact (a burn)
-        if (Wear != null)
-            foreach (var (heart, v) in Wear.Struck)
+        if (wearStepped)
+            foreach (var (heart, v) in Wear!.Struck)
                 if (v >= 0 && v < n) c.AddContact(v, "wearer", Wear.Pos[heart]);
         foreach (var (owner, by) in c.World.StolenFrom) c.Meet(owner, by, false);
         c.World.StolenFrom.Clear();

@@ -116,6 +116,65 @@ sealed class Cell
     readonly Dictionary<(string, long), float> _armed = new();
     readonly Dictionary<(string, long), float> _lastSeen = new();
 
+    // ── the cell's ecology LOD (CellEcologyLod, Docs/ECOLOGY_LOD.md §4.2): ONE director for every population ──
+    public readonly EcologyLodDirector Lod = new();
+    /// <summary>SHOWCASE_LOD=0 runs the cell with every population expanded (the round-11 cell before the LOD).</summary>
+    public readonly bool LodOn = Environment.GetEnvironmentVariable("SHOWCASE_LOD") != "0";
+    readonly List<(string name, IMacroPopulation pop)> _lodPops = new();
+    EcologyPilot[] _lodPilots = Array.Empty<EcologyPilot>();
+    float _lodAcc;
+    public long LodTicks;
+    /// <summary>Per population: ticks spent collapsed; and the contract, counted - ticks a collapsed population was
+    /// visible to a pilot, and ticks a pilot was inside its extent.</summary>
+    public readonly Dictionary<string, long> LodCollapsedTicks = new();
+    public long LodSeen, LodTouched;
+    public double LodMs;
+    public IEnumerable<(string name, IMacroPopulation pop)> LodPopulations => _lodPops;
+
+    public void RegisterLod(string name, IMacroPopulation p, bool enabled)
+    {
+        if (!LodOn || !enabled) return;
+        Lod.Register(p);
+        _lodPops.Add((name, p));
+        LodCollapsedTicks[name] = 0;
+    }
+
+    /// <summary>CellEcologyLod.Advance, once per 0.1 s tick before any population steps: the pilots, the guard (every
+    /// frame in the game), Tick(1) at 1 Hz; then the contract's counters for whatever is collapsed now.</summary>
+    public void AdvanceLod(Action<string>? trace = null)
+    {
+        if (_lodPops.Count == 0) return;
+        long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+        if (_lodPilots.Length != Pilots.Count) _lodPilots = new EcologyPilot[Pilots.Count];
+        for (int k = 0; k < Pilots.Count; k++)
+        {
+            var p = Pilots[k];
+            _lodPilots[k] = new EcologyPilot { X = p.Pos.X, Y = p.Pos.Y, Z = p.Pos.Z, Vx = p.Vel.X, Vy = p.Vel.Y, Vz = p.Vel.Z, Speed = p.Vel.Length() };
+        }
+        Lod.SetPilots(_lodPilots);
+        Lod.Guard();
+        _lodAcc += Dt;
+        if (_lodAcc >= 1f - 1e-4f)
+        {
+            _lodAcc -= 1f;
+            if (trace != null && ((int)T) % 10 == 0)
+                foreach (var (name, pop) in _lodPops)
+                    trace($"   lod t={T:F0} {name}: extent {pop.MacroExtent:F0} want {Lod.WantsIndividuals(pop)} seen {Lod.SeenByAnyPilot(pop)} " +
+                          $"can {pop.CanCollapse} needs {pop.NeedsIndividuals} collapsed {pop.IsCollapsed}");
+            Lod.Tick(1f);
+        }
+        LodTicks++;
+        foreach (var (name, pop) in _lodPops)
+        {
+            if (!pop.IsCollapsed) continue;
+            LodCollapsedTicks[name]++;
+            if (Lod.SeenByAnyPilot(pop)) LodSeen++;
+            foreach (var p in Pilots)
+                if (Vector3.Distance(p.Pos, pop.MacroCentre) < pop.MacroExtent + p.Radius) LodTouched++;
+        }
+        LodMs = (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+    }
+
     public Cell(JsonElement layout, int seed)
     {
         L = layout;
