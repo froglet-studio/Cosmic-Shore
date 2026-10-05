@@ -4,7 +4,7 @@ generators that author the cell and from the assets they wrote:
 
   * author_swarm_fauna.py   - the three swarm regions (bands, start creature, food, plant floor / cap), the canonical
                               Borromean plate and budget per region, the collider model and ceiling;
-  * author_substrate_fauna.py - the three substrate populations (band, element, seeding, proxies), the cell capacity;
+  * author_substrate_fauna.py - the seven substrate populations (band, element, seeding, sector, proxies), the cell capacity;
   * author_builders.py      - the fortress colony and the thief nest (band, element, proxies);
   * the assets              - SwarmSortFaunaConfig.asset (every number SwarmFauna.BuildSortCore reads),
                               FortressColonyConfig.asset / ThiefNestConfig.asset (BuilderColonyConfigSO), the

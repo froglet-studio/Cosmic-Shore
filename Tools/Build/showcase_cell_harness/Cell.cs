@@ -24,6 +24,9 @@ struct Contact
     public Vector3 At;
     /// <summary>null = rate it by the shared rule (the nearest agent of the class); set = the system rated it itself.</summary>
     public bool? Telegraphed;
+    /// <summary>The burn rules' weight of the contact (PrismProperties.DangerWeight): a bite 1, a drain - a mobber's peck,
+    /// a leech's sip - 0.25 (round 11-11). 0 is read as 1, so a system that never sets it keeps the old burn.</summary>
+    public float Weight;
 }
 
 /// <summary>A creature system living in the cell. Ticked at 10 Hz in a fixed order (Program.Systems).</summary>
@@ -90,7 +93,7 @@ sealed class Pilot
     public float PhaseT;
     // stakes
     public int Contacts, Telegraphed, Landed;
-    public int[] Petals = { 5, 5, 5, 5 };
+    public float[] Petals = { 5f, 5f, 5f, 5f };   // float: a drain burns a quarter of a bite (round 11-11)
     public readonly Dictionary<string, int> ByClass = new();
     public readonly List<Vector3> Path = new();
 }
@@ -250,8 +253,8 @@ sealed class Cell
         return _armed.TryGetValue((cls, best), out float since) && T - since >= 0.25f;
     }
 
-    public void AddContact(int pilot, string cls, Vector3 at, bool? telegraphed = null) =>
-        Contacts.Add(new Contact { Pilot = pilot, Cls = cls, At = at, Telegraphed = telegraphed });
+    public void AddContact(int pilot, string cls, Vector3 at, bool? telegraphed = null, float weight = 1f) =>
+        Contacts.Add(new Contact { Pilot = pilot, Cls = cls, At = at, Telegraphed = telegraphed, Weight = weight });
 
     public static float SegDist(Vector3 a, Vector3 b, Vector3 p) => ThreatFloraMath.SegmentPointDistance(a, b, p);
 

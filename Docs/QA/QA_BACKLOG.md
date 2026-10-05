@@ -1119,6 +1119,61 @@ hovering.
 **Report also:** the burn rate per pilot style. The harness found that the skilled pilot burns MORE than the careless
 one (3.3 vs 1.8/min), mostly on the charge swarm's danger plates. Is that true for a human dodging?
 
+### QA-SWARM-ROUND11-11 ⬜ — the rest of the bestiary: stampede, mobber, leech, leviathan
+
+**Source:** branch `overnight/more-species`. Proven headless (substrate harness S, T, C, V, Q, M2):
+- the bulls trample a wanderer 10.9/min (research range 5.3-10.9) after a 1.9 s head-down;
+- the mobbers peck a hovering pilot 44.7/min, in turn (≤ 3 diving), and leave a 140 u/s flyer alone;
+- the leeches latch, sip 15.8/min and are shaken off by a hard turn;
+- the leviathan assembles, holds its manta and gulps a pilot ahead of its mouth;
+- the 39 substrate proxies are re-divided with each cap still engaging, and the ledger closes with all seven species.
+
+**Never run in the editor.** Reference: `Docs/SUBSTRATE_FAUNA.md` §9.
+
+**Why it matters:** this is new glue that has only been type-checked:
+- the danger weight on `PrismProperties`;
+- the danger effect's collision-free `ApplyContact` (a sip);
+- sector pens and cluster seeding;
+- per-species proxy caps;
+- riders retired off their proxies.
+
+1. **Find them.** Open the Swarm cell.
+   - **Mobbers:** roosts in the 625-685 u gap.
+   - **Stampede:** herds in the middle shell, 690-840 u, on the +X side.
+   - **Leeches:** puddles at the flora, 690-840 u, 120° round from the herds.
+   - **Leviathan:** a school, 690-840 u, 120° the other way.
+2. **Stampede.** Fly past a herd at ~120 u/s. It should spook as one. The cows run away, and every 4th animal (a bull)
+   lowers its head (slows, faces you) for about a second, then charges. A charge that lands burns like a bite. Dodge
+   sideways during the head-down and it should miss.
+3. **Mobber.** Hover by a roost, or fly slower than ~100 u/s near one. The birds should swirl round the hull, and
+   one at a time pulls up and dives. Each peck is a SMALL burn: about a quarter of a bite, at most one per second.
+   Speed up past ~140 u/s: they should fall behind. Point your nose at one close in: it should jink aside.
+4. **Leech.** Fly within ~140 u of a puddle.
+   - Leeches should leap onto the hull and ride it: visible on the ship, at most six.
+   - Every 1.5 s, each one drains a quarter-bite (same 1 s cooldown).
+   - Fly straight and they stay. Turn hard and they are flung off.
+   - Ram a free one: it should die and drop one crystal.
+5. **Leviathan.** Watch the school. Fed, it should pull into one 120 u manta shape and cruise. Touching the body
+   burns. Sit ~150 u in front of its mouth: the jaws flare for about a second, then it surges at you. Hungry later, it
+   should fall apart into a harmless shoal.
+6. **Budget.** With all four engaged at once, record:
+   - the live collider count, which must stay ≤ 1,200;
+   - `SubstrateFauna` proxy counts: stampede ≤ 6, mobber ≤ 4, leech ≤ 2, leviathan ≤ 4, locust ≤ 12, lurker ≤ 4.
+
+**PASS:**
+- Steps 2-5 read as described.
+- No rider keeps a proxy, so nothing collides inside your own hull.
+- Pecks and sips burn less than bites (`PrismProperties.DangerWeight` 0.25).
+- No `MissingReferenceException` when a vessel carrying riders is destroyed or the cell unloads.
+- The demo cell's ladder still steps (its volume thresholds rose with the new bodies: RestlessEnterVolume 69,000).
+
+**FAIL:**
+- Leeches seeded outside their sector, or herds overlapping the leviathan's school.
+- A peck or a sip that burns a full bite.
+- A sip with no `contactEffect` (one warning naming the asset).
+- A collider count over 1,200.
+- The manta drawn as a loose cloud while its members burn.
+
 ### QA-SWARM-ROUND11-10 ⬜ — the wearer: a creature made of your stolen trail
 
 **Source:** branch `overnight/wearers`. Proven headless (builders harness W1-W7: bodies form from stolen trail, fuse,

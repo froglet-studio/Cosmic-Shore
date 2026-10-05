@@ -23,8 +23,14 @@ namespace CosmicShore.Gameplay
         public float WPrey, PreySense, Momentum, IntentBlend, RestSpeed, WRestRetreat;
         public float WCreep, CreepMin, CreepR, CreepSpeed, CreepLeadS, GazeCos, Freeze;
         public float BandInner, BandOuter;
-        public int FracK, RingRoles, NDirs, Start, PreyStart, PreyCap, LiveCount;
-        public byte SpacingSpring, HasPrey;
+        /// <summary>Round 11-11: the population's SECTOR pen (unit axis; SectorCos = cos of the half-angle); HasSector 0 = none.</summary>
+        public float SectorX, SectorY, SectorZ, SectorCos;
+        /// <summary>Round 11-11 primitives (SubstrateSpeciesParams; 0 = off): ramp + strike, the alarm climb, provocation,
+        /// jink, the hunt lead's clip, the body plan's well.</summary>
+        public float RampS, RampSpeed, WStrike, StrikeSpeed, StrikeAccel, StrikeTurn, HuntLeadMax, WAlarmClimb;
+        public float QWProvoke, SlowBelow, RoostR, WJink, JinkR, JinkCos, BodyWell;
+        public int FracK, RingRoles, NDirs, Start, PreyStart, PreyCap, LiveCount, ChargeEvery;
+        public byte SpacingSpring, HasPrey, HasSector, RestHoldsPhase, Cling, HasBody, RampOnSight;
         public long M, TabMask;
     }
 
@@ -60,6 +66,11 @@ namespace CosmicShore.Gameplay
         // the fields, gathered per agent at the step's start (SubstrateCore.BeginStep): no G^3 grid crosses to a job
         public ReadOnlySpan<float> FThreat, FAlarm;
         public ReadOnlySpan<Vector3> GFood, GScent, GAlarm, GThreat;
+        // round 11-11 (read; written by the world pass): the ramp clock, the attachment, the host a rider clings to, and
+        // each member's body-plan slot (its world position and velocity, gathered in BeginStep)
+        public ReadOnlySpan<float> Ramp, Attach;
+        public ReadOnlySpan<int> Host;
+        public ReadOnlySpan<Vector3> SlotGoal, SlotVel;
     }
 
     public static class SubstrateKernel
@@ -157,10 +168,20 @@ namespace CosmicShore.Gameplay
             float capw = MathF.Min(1f, (k.Rs.WHunt + k.Rs.WRing) + ((k.Rg.WHunt + k.Rg.WRing) - (k.Rs.WHunt + k.Rs.WRing)) * ph);
             float ag = Clamp(MathF.Max(h * 1.4f - 0.3f, k.AggrBase), 0f, 1f) * capw; s.Aggr[i] = ag;
             bool resting = s.Rest[i] > 0f;
+            if (k.Cling != 0 && s.Host[i] != 0)
+            {
+                // a RIDER is the world pass's: it sits on its host's hull (no steering, no integrate, no phase)
+                s.Steered[i] = false; s.Watched[i] = false; s.Creeping[i] = false;
+                return;
+            }
+            // the strike role (a bull), its ramp (head-down) and its strike (the charge, the dive)
+            bool role = k.ChargeEvery <= 1 || ((i - k.Start) % k.ChargeEvery) == 0;
+            bool ramping = k.RampS > 0f && role && s.Ramp[i] > 0f && s.Ramp[i] < k.RampS && !resting;
+            bool striking = k.RampS > 0f && role && s.Ramp[i] >= k.RampS && !resting;
 
             // ── re-steer the 1/k slice, plus the attention LOD ──
             int fk = k.FracK > 1 ? k.FracK : 1;
-            bool st = ((i + w.Tick) % fk == 0) || pd < k.AttnR || MathF.Max(fe, ag) > k.AttnUrg;
+            bool st = ((i + w.Tick) % fk == 0) || pd < k.AttnR || MathF.Max(fe, ag) > k.AttnUrg || ramping || striking;
             s.Steered[i] = st;
             bool freeze = false;
             if (st)
@@ -196,12 +217,19 @@ namespace CosmicShore.Gameplay
                 if (k.QUp < 9f)
                 {
                     float sig = k.QWDens * cnt / k.DensNorm + k.QWProx * prox + k.QWAlarm * MathF.Min(alarm, 2f) + k.QWClose * s.Closure[i];
+                    if (k.QWProvoke > 0f && pj >= 0 && pd < k.Sense)
+                    {
+                        // PROVOCATION (bestiary mobber): a slow pilot, or one at the roost
+                        float pspd = Len(s.Pilots[pj].Vel.X, s.Pilots[pj].Vel.Y, s.Pilots[pj].Vel.Z);
+                        float rd = Len(s.Pilots[pj].Pos.X - s.Home[i].X, s.Pilots[pj].Pos.Y - s.Home[i].Y, s.Pilots[pj].Pos.Z - s.Home[i].Z);
+                        if (pspd < k.SlowBelow || rd < k.RoostR) sig += k.QWProvoke;
+                    }
                     float sq = sig * MathF.Pow(h, k.QHunger);
                     float th = s.QTarget[i] > 0.5f ? k.QDown : k.QUp;
                     float tg = 1f / (1f + MathF.Exp(-(sq - th) / k.QWidth));
                     float qc = k.QContagion;
                     if (cnt > 0f) tg = (1f - qc) * tg + qc * MathF.Max(tg, mph);
-                    s.QTarget[i] = resting ? 0f : tg;
+                    s.QTarget[i] = resting && k.RestHoldsPhase == 0 ? 0f : tg;
                 }
 
                 // the regime at this phase (SubstrateRegime.Lerp, field by field)
@@ -214,6 +242,13 @@ namespace CosmicShore.Gameplay
                 float wHome = Lerp(k.Rs.WHome, k.Rg.WHome, ph), wAlarm = Lerp(k.Rs.WAlarm, k.Rg.WAlarm, ph);
                 float wThreat = Lerp(k.Rs.WThreat, k.Rg.WThreat, ph), speed0 = Lerp(k.Rs.Speed, k.Rg.Speed, ph);
                 float burst = Lerp(k.Rs.Burst, k.Rg.Burst, ph);
+                float att = k.HasBody != 0 ? s.Attach[i] : 0f;
+                if (k.WAlarmClimb > 0f && role)
+                {
+                    // the BULL: the herd's panic leads it UP the alarm gradient, to what spooked it - it does not flee
+                    float bm = 1f - (k.RampOnSight != 0 ? MathF.Max(ph, fe) : ph);
+                    wFlee *= bm; wAlarm *= bm; wThreat *= bm;
+                }
 
                 for (int d = 0; d < nd; d++) { I[d] = 0f; G[d] = 0f; }
                 Paint(I, s.Dirs, nd, s.GFood[i].X, s.GFood[i].Y, s.GFood[i].Z, wFood * h);
@@ -231,9 +266,11 @@ namespace CosmicShore.Gameplay
                         // ONE signed spring along the neighbour-centroid axis: toward when sparse, away when crowded
                         float sg = Clamp(1f - cnt / k.DensNorm / MathF.Max(crowd, 1e-3f), -1.5f, 1f);
                         float wsp = sg > 0f ? wCoh : wSep;
-                        Paint(I, s.Dirs, nd, (cenx - px) * sg, (ceny - py) * sg, (cenz - pz) * sg, MathF.Abs(sg) * wsp);
+                        float wspr = MathF.Abs(sg) * wsp;
+                        if (k.HasBody != 0) wspr *= 1f + att;   // research: an assembling member holds its school
+                        Paint(I, s.Dirs, nd, (cenx - px) * sg, (ceny - py) * sg, (cenz - pz) * sg, wspr);
                     }
-                    else Paint(I, s.Dirs, nd, cenx - px, ceny - py, cenz - pz, wCoh);
+                    else Paint(I, s.Dirs, nd, cenx - px, ceny - py, cenz - pz, k.HasBody != 0 ? wCoh * (1f + att) : wCoh);
                     Paint(I, s.Dirs, nd, alix, aliy, aliz, wAlign);
                 }
                 float tt = w.Tick * 0.05f;
@@ -252,8 +289,26 @@ namespace CosmicShore.Gameplay
                     float near = pd < k.Sense * 1.5f ? 1f : 0f;
                     float sp = Clamp((pd - comfort) / MathF.Max(comfort, 1f), -1f, 1f);
                     Paint(I, s.Dirs, nd, tpx * sp, tpy * sp, tpz * sp, wCurious * cu * MathF.Abs(sp) * near);
-                    float ld = Clamp(pd / 150f, 0f, 2f);
+                    float ld = Clamp(pd / 150f, 0f, k.HuntLeadMax);
                     Paint(I, s.Dirs, nd, tpx + pvx * ld, tpy + pvy * ld, tpz + pvz * ld, wHunt * ag * near);
+                    // the ramp turns it to face your lead point, the strike drives at it (a bull's charge, a dive)
+                    if (k.WStrike > 0f && (ramping || striking))
+                        Paint(I, s.Dirs, nd, tpx + pvx * ld, tpy + pvy * ld, tpz + pvz * ld, k.WStrike);
+                    if (k.WJink > 0f && pd < k.JinkR && pvx * pvx + pvy * pvy + pvz * pvz > 1f)
+                    {
+                        // JINK: the pilot points straight at it - break sideways off the pilot's line
+                        float vn = Len(pvx, pvy, pvz);
+                        float ux = pvx / vn, uy = pvy / vn, uz = pvz / vn;
+                        float on = MathF.Max(pd, 1e-6f);
+                        float ox = -tpx / on, oy = -tpy / on, oz = -tpz / on;
+                        float cj = ux * ox + uy * oy + uz * oz;
+                        if (cj > k.JinkCos)
+                        {
+                            float sx = ox - ux * cj, sy = oy - uy * cj, sz = oz - uz * cj;
+                            if (Len(sx, sy, sz) < 1e-3f) { sx = -uz; sy = 0f; sz = ux; }   // dead on the line: cross(u, up)
+                            Paint(I, s.Dirs, nd, sx, sy, sz, k.WJink);
+                        }
+                    }
                     if (k.RingRoles > 0)
                     {
                         // ring slots around the pilot in the plane normal to its velocity, slightly AHEAD (a cut-off)
@@ -301,6 +356,15 @@ namespace CosmicShore.Gameplay
                 s.Watched[i] = watched;
                 s.Creeping[i] = creeping;
                 Paint(I, s.Dirs, nd, s.Home[i].X - px, s.Home[i].Y - py, s.Home[i].Z - pz, wHome * (1f - h) * (creeping ? 0f : 1f));
+                if (k.WAlarmClimb > 0f && role)
+                    Paint(I, s.Dirs, nd, s.GAlarm[i].X, s.GAlarm[i].Y, s.GAlarm[i].Z, k.WAlarmClimb * (k.RampOnSight != 0 ? MathF.Max(ph, fe) : ph));
+                float mute = 1f;
+                if (k.HasBody != 0 && att > 0f)
+                {
+                    // research: an assembled member hands its own drives to the body - every term but body/inward muted
+                    mute = 1f - 0.9f * att;
+                    for (int d = 0; d < nd; d++) { I[d] *= mute; G[d] *= mute; }
+                }
                 float r = Len(px, py, pz);
                 float R = w.R;
                 Paint(I, s.Dirs, nd, -px, -py, -pz, Clamp((r - 0.8f * R) / (0.15f * R), 0f, 1f) * 3f);
@@ -312,14 +376,35 @@ namespace CosmicShore.Gameplay
                     Paint(I, s.Dirs, nd, -px, -py, -pz, Clamp((r - k.BandOuter) / soft, 0f, 1f) * 2f);
                     Paint(I, s.Dirs, nd, px, py, pz, Clamp((k.BandInner - r) / soft, 0f, 1f) * 2f);
                 }
+                if (k.HasSector != 0 && r > 1e-3f)
+                {
+                    // the SECTOR pen (round 11-11): outside the cone, steered back toward the axis at this radius
+                    float cs = (px * k.SectorX + py * k.SectorY + pz * k.SectorZ) / r;
+                    float wsec = Clamp((k.SectorCos - cs) / 0.1f, 0f, 1f) * 2f;
+                    if (wsec > 0f) Paint(I, s.Dirs, nd, k.SectorX * r - px, k.SectorY * r - py, k.SectorZ * r - pz, wsec);
+                }
                 if (cnt > 0f && k.SpacingSpring == 0)
                 {
                     float sc = cnt / k.DensNorm / k.NbrR;
                     float svx = (px - cenx) * sc, svy = (py - ceny) * sc, svz = (pz - cenz) * sc;
-                    PaintD(G, s.Dirs, nd, svx, svy, svz, wSep * MathF.Min(Len(svx, svy, svz), 2f));
+                    PaintD(G, s.Dirs, nd, svx, svy, svz, wSep * MathF.Min(Len(svx, svy, svz), 2f) * (1f - att));
                 }
-                PaintD(G, s.Dirs, nd, -s.GAlarm[i].X, -s.GAlarm[i].Y, -s.GAlarm[i].Z, wAlarm * (0.3f + fe));
-                PaintD(G, s.Dirs, nd, -s.GThreat[i].X, -s.GThreat[i].Y, -s.GThreat[i].Z, wThreat * (0.3f + fe));
+                PaintD(G, s.Dirs, nd, -s.GAlarm[i].X, -s.GAlarm[i].Y, -s.GAlarm[i].Z, wAlarm * (0.3f + fe) * mute);
+                PaintD(G, s.Dirs, nd, -s.GThreat[i].X, -s.GThreat[i].Y, -s.GThreat[i].Z, wThreat * (0.3f + fe) * mute);
+                float vstarN = 0f;
+                if (k.HasBody != 0 && att > 0f)
+                {
+                    // the BODY term (research core.py): the slot's own velocity plus a closing speed along the displacement
+                    // (flat-bottom well, bounded by the turn radius so members do not orbit their slot)
+                    float dx = s.SlotGoal[i].X - px, dy = s.SlotGoal[i].Y - py, dz = s.SlotGoal[i].Z - pz;
+                    float dn = Len(dx, dy, dz);
+                    float turnB = Lerp(k.Rs.Turn, k.Rg.Turn, ph);
+                    float close = MathF.Min(MathF.Min(MathF.Max(dn - k.BodyWell, 0f) * 2f, 0.5f * turnB * dn), 150f);
+                    float idn = 1f / MathF.Max(dn, 1e-6f);
+                    float vsx = s.SlotVel[i].X + dx * idn * close, vsy = s.SlotVel[i].Y + dy * idn * close, vsz = s.SlotVel[i].Z + dz * idn * close;
+                    vstarN = Len(vsx, vsy, vsz);
+                    Paint(I, s.Dirs, nd, vsx, vsy, vsz, 4f * att);
+                }
 
                 // context choice: momentum, soft danger mask, soft-argmax around the best direction
                 float curx = s.IDir[i].X, cury = s.IDir[i].Y, curz = s.IDir[i].Z;
@@ -353,6 +438,9 @@ namespace CosmicShore.Gameplay
                 float speed = speed0 * (1f + (burst - 1f) * urg);
                 if (creeping) speed = k.CreepSpeed;
                 if (resting) speed *= k.RestSpeed;
+                if (ramping) speed *= k.RampSpeed;
+                if (striking && k.StrikeSpeed > 0f) speed = k.StrikeSpeed;
+                if (k.HasBody != 0 && att > 0f) speed = Lerp(speed, vstarN, att);   // assembled: catch the slot, then the body's pace
                 s.ISpeed[i] = speed;
             }
 
@@ -365,6 +453,8 @@ namespace CosmicShore.Gameplay
             {
                 float turn = k.Rs.Turn + (k.Rg.Turn - k.Rs.Turn) * ph;
                 float acl = k.Rs.Accel + (k.Rg.Accel - k.Rs.Accel) * ph;
+                if (striking && k.StrikeAccel > 0f) acl = k.StrikeAccel;
+                if (striking && k.StrikeTurn > 0f) turn = k.StrikeTurn;
                 float wx = s.Vel[i].X, wy = s.Vel[i].Y, wz = s.Vel[i].Z;
                 float vs = Len(wx, wy, wz);
                 float hx, hy, hz;

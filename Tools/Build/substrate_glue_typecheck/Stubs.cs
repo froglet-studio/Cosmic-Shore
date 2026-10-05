@@ -49,10 +49,10 @@ namespace UnityEngine
     public enum RuntimeInitializeLoadType { SubsystemRegistration = 4 }
     public class RuntimeInitializeOnLoadMethodAttribute : Attribute { public RuntimeInitializeOnLoadMethodAttribute(RuntimeInitializeLoadType t) { } }
     public class Collider : Component { }
-    public struct Vector3 { public float x, y, z; public Vector3(float a, float b, float c) { x = a; y = b; z = c; } public static Vector3 one, zero, right, forward, up; public float sqrMagnitude => 0; public float magnitude => 0; public Vector3 normalized => this; public static Vector3 operator +(Vector3 a, Vector3 b) => a; public static Vector3 operator -(Vector3 a, Vector3 b) => a; public static Vector3 operator *(Vector3 a, float b) => a; public static Vector3 operator *(float b, Vector3 a) => a; public static Vector3 operator /(Vector3 a, float b) => a; public static Vector3 Cross(Vector3 a, Vector3 b) => a; public static Vector3 Max(Vector3 a, Vector3 b) => a; public static Vector3 Min(Vector3 a, Vector3 b) => a; public static Vector3 Lerp(Vector3 a, Vector3 b, float t) => a; public static float Dot(Vector3 a, Vector3 b) => 0; public static bool operator ==(Vector3 a, Vector3 b) => true; public static bool operator !=(Vector3 a, Vector3 b) => false; public override bool Equals(object o) => true; public override int GetHashCode() => 0; }
+    public struct Vector3 { public float x, y, z; public Vector3(float a, float b, float c) { x = a; y = b; z = c; } public static Vector3 one, zero, right, forward, up; public float sqrMagnitude => 0; public float magnitude => 0; public Vector3 normalized => this; public void Normalize() { } public static Vector3 operator +(Vector3 a, Vector3 b) => a; public static Vector3 operator -(Vector3 a, Vector3 b) => a; public static Vector3 operator *(Vector3 a, float b) => a; public static Vector3 operator *(float b, Vector3 a) => a; public static Vector3 operator /(Vector3 a, float b) => a; public static Vector3 Cross(Vector3 a, Vector3 b) => a; public static Vector3 Max(Vector3 a, Vector3 b) => a; public static Vector3 Min(Vector3 a, Vector3 b) => a; public static Vector3 Lerp(Vector3 a, Vector3 b, float t) => a; public static float Dot(Vector3 a, Vector3 b) => 0; public static bool operator ==(Vector3 a, Vector3 b) => true; public static bool operator !=(Vector3 a, Vector3 b) => false; public override bool Equals(object o) => true; public override int GetHashCode() => 0; }
     public struct Vector4 { public float x, y, z, w; public Vector4(float a, float b, float c, float d) { x = a; y = b; z = c; w = d; } public static implicit operator Vector4(Vector3 v) => default; }
     public struct Quaternion { public static Quaternion LookRotation(Vector3 f, Vector3 u) => default; }
-    public static class Mathf { public static int RoundToInt(float f) => 0; public static float Max(float a, float b) => a; public static int Max(int a, int b) => a; public static float Min(float a, float b) => a; public static int Min(int a, int b) => a; /* UnityEngine.Mathf.Min(int, int) */ public static float Abs(float a) => a; public static float Clamp01(float a) => a; public static int Clamp(int v, int a, int b) => v; public static float Pow(float a, float b) => a; public static float Sqrt(float a) => a; }
+    public static class Mathf { public static int RoundToInt(float f) => 0; public static float Max(float a, float b) => a; public static int Max(int a, int b) => a; public static float Min(float a, float b) => a; public static int Min(int a, int b) => a; /* UnityEngine.Mathf.Min(int, int) */ public static float Abs(float a) => a; public static float Clamp01(float a) => a; public static int Clamp(int v, int a, int b) => v; public static float Pow(float a, float b) => a; public static float Sqrt(float a) => a; public static float Cos(float a) => a; public const float Deg2Rad = 0.0174532924f; public static float Lerp(float a, float b, float t) => a; }
     public static class Random { public static int Range(int a, int b) => a; public static Vector3 onUnitSphere; public static float value; }
     public static class Time { public static float time, deltaTime, unscaledTime; public static int frameCount; }
     public static class Physics { public static int OverlapSphereNonAlloc(Vector3 p, float r, Collider[] res, int mask) => 0; }
@@ -137,7 +137,7 @@ namespace CosmicShore.Gameplay
     using CosmicShore.Data;
     using CosmicShore.Utility;
 
-    public class PrismProperties { public bool IsDangerous, IsShielded, IsSuperShielded; }
+    public class PrismProperties { public bool IsDangerous, IsShielded, IsSuperShielded; public float DangerWeight = 1f; }
     // ThemeManagerDataContainerSO.cs:9-12
     public class ThemeManagerDataContainerSO : ScriptableObject { public CosmicShore.ScriptableObjects.SO_ColorSet ColorSet; public CosmicShore.ScriptableObjects.SO_MaterialSet BaseMaterialSet;
         public Dictionary<Domains, CosmicShore.ScriptableObjects.SO_MaterialSet> TeamMaterialSets; }
@@ -161,6 +161,11 @@ namespace CosmicShore.Gameplay
     public static class LifeFormCrystal { public static Crystal EnsureElementalCrystal(Component owner, Element e) => null; }
     public interface ILifeFormEntity { }
     public interface IVesselStatus { Vector3 Course { get; set; } float Speed { get; set; } }
+    // round 11-11: the danger-prism effect's collision-free contact (a leech's sip) - signature copied from the asset
+    public class VesselElementalDebuffByDangerPrismEffectSO : ScriptableObject
+    {
+        public bool ApplyContact(IVesselStatus victim, Domains prismDomain, float weight) => weight > 0f && victim != null;
+    }
     public class LifeForm : MonoBehaviour { public Element Element => default; public Domains Domain => default; public bool IsDying => false; public Transform HeartTransform => null; }
     public class Flora : LifeForm { }
     public static class FloraHeartRegistry { public static Flora NearestToPoint(Vector3 from, Predicate<Flora> reject) => null; public static IReadOnlyList<Flora> Live => null; }   // FloraHeartRegistry.cs:42
