@@ -237,6 +237,32 @@ namespace CosmicShore.Gameplay
         public IEnumerable<int> BuiltHandles => _siteOf.Keys;
         public bool Striking(int k) => Alive[k] && Intent[k] >= 1f;
 
+        // ── the ecology LOD (round 11f-2, Docs/ECOLOGY_LOD.md §6.2) ────────────────────────────────────────
+        public RoostBug RoostBug;
+        /// <summary>
+        /// Set by the glue while it asks to collapse: a sated idle worker drops its forage goal and takes no new one (a hungry
+        /// one still eats), so the carriers finish depositing and the colony reaches <see cref="CanRoost"/>. Nothing dies.
+        /// </summary>
+        public bool WindDown;
+        float RoostRate => P.Stomach != null ? P.Stomach.Torpor : 0f;
+        /// <summary>The colony may roost: nothing carried (a carried prism is real mass in a worker's jaws), no striker.</summary>
+        public bool CanRoost
+        {
+            get
+            {
+                for (int k = 0; k < Cap; k++) if (Alive[k] && (Carry[k] >= 0 || Intent[k] >= 1f)) return false;
+                return true;
+            }
+        }
+        /// <summary>Seconds until the emptiest stomach is empty while roosting.</summary>
+        public float RoostSecondsLeft => BuilderRoost.SecondsLeft(Alive, Stomach, Cap, RoostRate);
+        /// <summary>One macro tick of a collapsed colony: torpor only; nothing moves, builds, breeds or dies.</summary>
+        public void Roost(float dt)
+        {
+            Time += dt;
+            Metabolised += BuilderRoost.Burn(Alive, Stomach, Cap, RoostRate, dt, RoostBug);
+        }
+
         /// <summary>A site index as lattice coordinates relative to the anchor (BuilderRegistry's integer address).</summary>
         public void SiteCoords(int site, out int x, out int y, out int z)
         {
@@ -554,11 +580,11 @@ namespace CosmicShore.Gameplay
                 else
                 {
                     int g = Goal[k];
-                    if (g >= 0 && (!_world.Alive(g) || _taken.Contains(g)))
+                    if (g >= 0 && (!_world.Alive(g) || _taken.Contains(g) || (WindDown && !Hungry(k))))
                     {
                         _claimed.Remove(g); Goal[k] = g = -1;
                     }
-                    if (g < 0 && refresh)
+                    if (g < 0 && refresh && (!WindDown || Hungry(k)))
                     {
                         g = ForageTarget(k);
                         if (g >= 0) { Goal[k] = g; _claimed.Add(g); }
@@ -576,7 +602,7 @@ namespace CosmicShore.Gameplay
                                 float v = _world.Consume(g, Pos[k]);
                                 if (v > 0f) { Stomach[k] += v; EatenVolume += v; Eaten++; }
                             }
-                            else if (_world.Steal(g, Domain))   // changes hands (refused if shielded)
+                            else if (!WindDown && _world.Steal(g, Domain))   // changes hands (refused if shielded)
                             {
                                 Carry[k] = g; _taken.Add(g); Pickups++;
                             }

@@ -94,6 +94,16 @@ namespace CosmicShore.Gameplay
         [Tooltip("Food prisms the network tracks at most (nearest the grove centre first).")]
         [Min(16)] public int MaxFood = 1024;
 
+        [Header("Far cadence (round 11f-2, Docs/ECOLOGY_LOD.md §6.3)")]
+        [Tooltip("Flora is never LOD'd, but with no pilot near the network runs on slowed time: Advance gets dt x this. " +
+                 "Every step is the same mass-exact step at the same 10 Hz rule, there are just fewer of them a second " +
+                 "(0.25 -> a quarter of the cost; the grove grows, eats and beats a quarter as fast). 1 = always full rate.")]
+        [Range(0.05f, 1f)] public float FarTimeScale = 0.25f;
+
+        [Tooltip("A pilot (any vessel, or the main camera) within the grove's reach plus this margin keeps the network " +
+                 "at full rate. 400 = the ecology LOD's collapse radius.")]
+        [Min(0f)] public float FarMargin = 400f;
+
         [Header("Look")]
         [Tooltip("The palette the lobes glow in (TryGetPrismKindColors, Danger / Plain per domain).")]
         public ThemeManagerDataContainerSO Theme;

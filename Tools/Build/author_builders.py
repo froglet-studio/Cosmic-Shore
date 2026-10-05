@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Author the BUILDER COLONIES - the fortress colony and the thief nest - and their place in the Swarm cell.
+"""Author the BUILDER COLONIES - the fortress colony, the thief nest and the wearers - and their place in the Swarm cell.
 (Docs/BUILDERS_AND_THIEVES.md)
 
     python3 Tools/Build/author_builders.py            # write
@@ -19,6 +19,8 @@ WHERE they live - off the swarms' bands (Inner 470-620, Middle 690-840, Outer 91
 
     fortress  845-905u   in the gap between the pufferfish and the jellyfish shells
     thieves  1085-1140u  the rim gap; the nest PERCHES on the nearest living plant (Outer Space flora)
+    wearers   400-465u   the inner gap between the nucleus (392) and the inner swarm band; the hearts are FOUNDED
+                         there and roam the whole cell after a trail (§10: no band filter on what they steal)
 
 Their colour is the cell's controlling domain at spawn (the spawner's rule) - never prescribed here.
 """
@@ -43,7 +45,7 @@ MEMBER_SHADER = A("_Graphics", "Materials", "Graphs", "SwarmMemberInstanced.shad
 CONFIG_SO_CS = os.path.join(SCRIPT_DIR, "BuilderColonyConfigSO.cs")
 
 SCRIPTS = ["BuilderCore", "BuilderColonyCore", "ThiefNestCore", "BuilderRegistry", "BuilderColonyConfigSO",
-           "BuilderPrismWorld", "BuilderColonyFauna"]
+           "BuilderPrismWorld", "BuilderColonyFauna", "WearerCore"]
 THEME = "d45a23e6bd2da304988606fba6c97628"            # Assets/_SO_Assets/ThemeManagerDataContainer.asset
 RUNTIME_CELL_DATA = "8d4e8398eedc76c4dadb8604f89b9e1b"
 FAUNA_SO_SCRIPT = "c778cfbe4dfc4c5c8401e40c17802311"  # FaunaConfigurationSO
@@ -66,7 +68,14 @@ SPECIES = [
          band=(1085, 1140), element="Space", count=1,
          # thieves fly at 150 u/s: the proxy ring is wider so a ship meets a real body, and no wider than the hoard raid
          overrides={"MaxProxies": 18, "EngageRadius": 200}),
+    dict(key="Wearer", species=2, prefab="BuilderWearer.prefab", config="WearerConfig.asset",
+         band=(400, 465), element="Charge", count=1,
+         # 16 proxies (+32 colliders) keeps the engaged worst case at 1,192 / 1,200 with the threat grove; a creature's
+         # worn prisms are the platform's own (0 new colliders) - Docs/BUILDERS_AND_THIEVES.md §10.4
+         overrides={"MaxProxies": 16, "EngageRadius": 160}),
 ]
+# the member cap field of each species (its bodies' worst case in the phase ladder)
+MEMBER_CAP = {0: "MaxWorkers", 1: "MaxThieves", 2: "MaxWearerHearts"}
 
 
 def guid(name):
@@ -151,7 +160,7 @@ def cs_fields():
     for m in re.finditer(r"^\s*(?:\[[^\]]*\]\s*)*public (\w+) (\w+)(?: = ([^;]+))?;", body, re.M):
         typ, name, init = m.group(1), m.group(2), (m.group(3) or "").strip()
         if typ in ("BuilderSpecies", "BuilderMendRule"):
-            enum = {"BuilderSpecies": {"Fortress": 0, "Thieves": 1},
+            enum = {"BuilderSpecies": {"Fortress": 0, "Thieves": 1, "Wearers": 2},
                     "BuilderMendRule": {"None": 0, "Gap": 1, "Alarm": 2, "Both": 3}}[typ]
             fields.append((name, str(enum[init.split(".")[-1]])))
         elif typ == "bool":
@@ -274,6 +283,22 @@ def profile_entries():
     return "".join(f"  - {{fileID: 11400000, guid: {guid(rel(cell_path(s)))}, type: 2}}\n" for s in SPECIES)
 
 
+def body_volume():
+    """The colonies' member BODIES for the phase ladder (author_swarm_fauna.ladder). A data-only member's body is a
+    PrismSpatialIndex virtual entry bound with BindVirtualMass (SwarmEntryLedger: volume |x*y*z| of BodyScale), so the
+    cell's LiveVolume counts it; a proxy's real body prism replaces it one for one. Worst case: every colony at its
+    member cap. What they STEAL (walls, hoards, a wearer's worn body and lair) is the cell's own mass already counted -
+    it changes hands, it is not added."""
+    f = dict(cs_fields())
+    total = 0.0
+    for s in SPECIES:
+        def val(k):
+            return float(s["overrides"].get(k, f[k]))
+        scale = [float(x.split(":")[1]) for x in f["BodyScale"].strip("{}").split(",")]
+        total += s["count"] * val(MEMBER_CAP[s["species"]]) * abs(scale[0] * scale[1] * scale[2])
+    return total
+
+
 def proxy_colliders():
     """Worst case: every colony's proxies engaged at once, two colliders each (heart + body prism)."""
     return sum(2 * s["count"] * s["overrides"]["MaxProxies"] for s in SPECIES)
@@ -349,6 +374,7 @@ def report():
     for s in SPECIES:
         print(f"  {s['key']:<10} {s['band'][0]:>4}-{s['band'][1]:<4}u  x{s['count']}  hearts {s['element']:<6} "
               f"proxies <= {s['overrides']['MaxProxies']} within {s['overrides']['EngageRadius']} u of a vessel")
+    print(f"  member bodies at every cap: {body_volume():,.1f} volume (BindVirtualMass - in author_swarm_fauna's ladder)")
     print(f"  colliders: 0 for every structure (stolen prisms keep their own); up to {proxy_colliders()} proxy colliders "
           f"only while vessels are near (counted in author_swarm_fauna.py's ceiling)")
 

@@ -27,6 +27,8 @@ MonoBehaviour:
   BirthBloomSeconds: 0.8
   VesselRadius: 9
   SettleSeconds: 0.35
+  MacroLod: 1
+  ThawReserveSeconds: 20
   Founders: 48
   MaxWorkers: 48
   WorkerSpeed: 70
@@ -65,3 +67,22 @@ MonoBehaviour:
   ThiefHungryBelow: 0.4
   ThiefBirthAbove: 0.9
   ThiefBirthCost: 8
+  WearerFounders: 16
+  MaxWearerHearts: 24
+  WearerSpeed: 95
+  WearHuntAt: 60
+  WearBodyCap: 150
+  WornCap: 300
+  WearSense: 180
+  WearKeepOff: 90
+  WearWindup: 1
+  WearLunge: 2.2
+  WearRearAt: 140
+  WearContact: 0.5
+  WearHurtFraction: 0.1667
+  WearHurtShed: 0.3
+  WearHurtWindow: 2
+  WearerStomach: 30
+  WearerMetabolism: 0.01
+  WearerHungryBelow: 0.3
+  WearerBirthCost: 10

@@ -11,6 +11,9 @@ namespace CosmicShore.Gameplay
         Fortress = 0,
         /// <summary>Magpies that nest on a plant, tail ships and hoard their warm wake.</summary>
         Thieves = 1,
+        /// <summary>Hearts that steal prisms - mostly a ship's trail - and WEAR them as a moving body that grows, fuses,
+        /// rears and lunges (Docs/BUILDERS_AND_THIEVES.md §10).</summary>
+        Wearers = 2,
     }
 
     /// <summary>
@@ -24,7 +27,8 @@ namespace CosmicShore.Gameplay
     {
         [Header("Species")]
         [Tooltip("FORTRESS: workers steal loose mass and wall their core in; a cut wall knits shut (alarm + gap rules). " +
-                 "THIEVES: a nest on a plant whose magpies tail a ship and snatch its warm wake to a hoard.")]
+                 "THIEVES: a nest on a plant whose magpies tail a ship and snatch its warm wake to a hoard. " +
+                 "WEARERS: hearts that wear what they steal as a moving body, and hunt with it once it is big.")]
         public BuilderSpecies Species = BuilderSpecies.Fortress;
 
         [Header("Members (drawn on the GPU, real only near a vessel)")]
@@ -58,6 +62,16 @@ namespace CosmicShore.Gameplay
         public float VesselRadius = 9f;
         [Tooltip("Seconds a deposited prism takes to settle from its carrier onto its site (a clock-stamped flight).")]
         public float SettleSeconds = 0.35f;
+        [Header("Round 11f-2 - ecology LOD (Docs/ECOLOGY_LOD.md §6.2)")]
+        [Tooltip("Far from every pilot and unseen, the colony COLLAPSES: its members hold still where they are drawn " +
+                 "(index entries and structure untouched, so LiveVolume does not move) and ROOST - each stomach burns at " +
+                 "the species' torpor once a second, the rate a roosting member already burns. It collapses only with " +
+                 "nothing carried, claimed or settling and no creature hunting, and expands on the research prefetch " +
+                 "radii, when hit, or before its emptiest stomach runs out (a death is always an individual's).")]
+        public bool MacroLod = true;
+        [Tooltip("Seconds of torpor the emptiest stomach must have left: below it a collapsed colony expands (twice it is " +
+                 "needed to collapse).")]
+        [Min(1f)] public float ThawReserveSeconds = 20f;
 
         [Header("Fortress - colony")]
         [Tooltip("Workers the colony is founded with (research 48; 24-48 recommended).")]
@@ -131,6 +145,56 @@ namespace CosmicShore.Gameplay
         [Range(0f, 1f)] public float ThiefHungryBelow = 0.4f;
         [Range(0f, 1f)] public float ThiefBirthAbove = 0.9f;
         public float ThiefBirthCost = 8f;
+
+        [Header("Wearers (Docs/BUILDERS_AND_THIEVES.md §10)")]
+        [Tooltip("Hearts the colony is founded with (GAME: the research seeded 40; one creature's worth for the demo cell).")]
+        public int WearerFounders = 16;
+        [Tooltip("Most hearts alive at once - a backstop (births stop at it; nothing is culled).")]
+        public int MaxWearerHearts = 24;
+        [Tooltip("A bare heart's speed; a body slows it: speed * (1 + n / HuntAt)^-0.15.")]
+        public float WearerSpeed = 95f;
+        [Tooltip("Body prisms at which a skulking thief turns hunter (research V_hunt 600 volume / ~10 per worn prism).")]
+        public int WearHuntAt = 60;
+        [Tooltip("A body over this many prisms sheds its outermost into a static lair and a newborn heart (research v3).")]
+        public int WearBodyCap = 150;
+        [Tooltip("Worn prisms across the whole colony - the moving-prism budget; thieves stop stealing at it.")]
+        public int WornCap = 300;
+        [Tooltip("How far a heart looks for loose mass to steal.")]
+        public float WearSense = 180f;
+        [Tooltip("A skulking heart never steals closer than this to a ship.")]
+        public float WearKeepOff = 90f;
+        [Tooltip("The rear: seconds the body contracts before it lunges (the telegraph).")]
+        public float WearWindup = 1f;
+        [Tooltip("Lunge speed factor (x 1.8 of the body's speed).")]
+        public float WearLunge = 2.2f;
+        [Tooltip("A hunter rears when its target is inside its radius + this.")]
+        public float WearRearAt = 140f;
+        [Tooltip("Contact attachment temperature: a stolen prism sticks near where it touched (0 = an isotropic blob).")]
+        public float WearContact = 0.5f;
+        [Tooltip("Losing this share of the body inside HurtWindow seconds makes it moult (GAME).")]
+        public float WearHurtFraction = 0.1667f;
+        [Tooltip("The hurt moult sheds this share of what is left BACK to whoever it was stolen from.")]
+        public float WearHurtShed = 0.3f;
+        public float WearHurtWindow = 2f;
+        public float WearerStomach = 30f;
+        public float WearerMetabolism = 0.01f;
+        [Range(0f, 1f)] public float WearerHungryBelow = 0.3f;
+        public float WearerBirthCost = 10f;
+
+        /// <summary>The wearer core's parameters.</summary>
+        public WearerParams ToWearerParams(Vector3 cellCentre, float membrane) => new()
+        {
+            Founders = WearerFounders, MaxHearts = MaxWearerHearts, Speed = WearerSpeed, HuntAt = WearHuntAt,
+            BodyCap = WearBodyCap, WornCap = WornCap, Sense = WearSense, KeepOff = WearKeepOff,
+            Windup = WearWindup, Lunge = WearLunge, RearAt = WearRearAt, Contact = WearContact,
+            HurtFraction = WearHurtFraction, HurtShed = WearHurtShed, HurtWindow = WearHurtWindow,
+            Containment = membrane * 0.95f, CellCentre = new SVector3(cellCentre.x, cellCentre.y, cellCentre.z),
+            Stomach = new BuilderStomachParams
+            {
+                Capacity = WearerStomach, FounderFill = 0.6f, Metabolism = WearerMetabolism, Torpor = WearerMetabolism,
+                HungryBelow = WearerHungryBelow, BirthAbove = 0.9f, BirthCost = WearerBirthCost,
+            },
+        };
 
         /// <summary>The colony core's parameters, in world units around <paramref name="cellCentre"/>.</summary>
         public BuilderColonyParams ToColonyParams(Vector3 cellCentre, float membrane, float bandInner, float bandOuter) => new()

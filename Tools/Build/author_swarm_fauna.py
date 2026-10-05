@@ -590,6 +590,7 @@ def model(plans):
     tot["builder_colliders"] = author_builders.proxy_colliders()   # round 11e: the colonies' proxies, near vessels only
     # round 11b-2: the substrate's bodies are BindVirtualMass volume in LiveVolume, so the ladder sees them
     tot["substrate_bodies"] = substrate().body_volume()
+    tot["builder_bodies"] = author_builders.body_volume()
     tot["colliders_engaged"] = tot["hearts"] + tot["proxy_colliders"] + tot["builder_colliders"]
     return rows, tot, eggs
 
@@ -599,8 +600,9 @@ def ladder(tot):
     # proxies + skeletons are counted in prisms beside the forest (a full engagement of every swarm). A member
     # body is VOLUME-only (like every fauna body), so the count ladder does not move in round 8
     prisms = tot["prisms"] + MAX_PROXIES * TOTAL_SWARMS
-    # round 11c: plus the substrate populations' bodies (their entries are BindVirtualMass: LiveVolume counts them)
-    volume = tot["volume"] + tot["bodies"] + tot.get("substrate_bodies", 0.0)
+    # round 11c: plus the substrate populations' bodies (their entries are BindVirtualMass: LiveVolume counts them);
+    # round 11-10: plus the builder colonies' member bodies (the same BindVirtualMass entries, author_builders.body_volume)
+    volume = tot["volume"] + tot["bodies"] + tot.get("substrate_bodies", 0.0) + tot.get("builder_bodies", 0.0)
     return {
         "RestlessEnter": rt(prisms * RESTLESS_ENTER, 100),
         "RestlessExit": rt(prisms * RESTLESS_EXIT, 100),
@@ -748,7 +750,7 @@ def emit():
 def float32_ulp_check(tot):
     """(smallest member body volume, the largest total the ladder sees with 4x margin, float32 ulp there)."""
     import struct
-    top = 4.0 * (tot["volume"] + tot["bodies"] + tot.get("substrate_bodies", 0.0)) * FRENZY_ENTER
+    top = 4.0 * (tot["volume"] + tot["bodies"] + tot.get("substrate_bodies", 0.0) + tot.get("builder_bodies", 0.0)) * FRENZY_ENTER
     f = struct.unpack("f", struct.pack("f", top))[0]
     ulp = struct.unpack("f", struct.pack("I", struct.unpack("I", struct.pack("f", f))[0] + 1))[0] - f
     return tot["min_member"], top, ulp
@@ -857,6 +859,8 @@ def report(rows, tot, eggs, L, baked):
           f"{float32_ulp_check(tot)[2]:.4f} at {float32_ulp_check(tot)[1]:,.0f}")
     print(f"  round 11c: substrate agent bodies (full pools, each halfway to its split) {tot['substrate_bodies']:,.0f} volume, "
           "in LiveVolume through BindVirtualMass - counted by the ladder (Docs/SUBSTRATE_FAUNA.md §7)")
+    print(f"  round 11-10: builder colony member bodies (fortress, thieves, wearer hearts at their caps) "
+          f"{tot['builder_bodies']:,.1f} volume, BindVirtualMass - counted by the ladder (Docs/BUILDERS_AND_THIEVES.md §10.4)")
     print("  ladder: " + ", ".join(f"{k} {v:,}" for k, v in L.items()))
     print(f"  plans: {'re-baked from ' + swarm_plans.RESEARCH_REF if baked else 'research ref not reachable - committed plans kept'}")
 

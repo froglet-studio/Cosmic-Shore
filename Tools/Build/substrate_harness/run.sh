@@ -28,12 +28,17 @@ CORE=("$SUB/SubstrateSpecies.cs" "$SUB/SubstrateFields.cs" "$SUB/SubstrateKernel
       "$SW/ISwarmCore.cs" "$SW/SwarmFieldCore.cs" "$SW/SwarmTickJob.cs" "$SW/SwarmPrismSync.cs")
 # the kernel the game Burst-compiles stays inside what Burst compiles (Burst cannot run here: a textual gate, with a
 # negative control - the pre-11c managed step in ReferenceStep.cs must fail it)
+# round 11f-2 (group lod): the shared ecology LOD director and its rules (pure; CellEcologyLod.cs is Unity glue)
+EF="$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Ecology"
+LOD=("$SW/SwarmSortCore.cs" "$SW/SwarmGridCore.cs" "$SW/SwarmEvoFateCore.cs")
+for f in "$EF"/*.cs; do [[ "$(basename "$f")" == CellEcologyLod.cs ]] || LOD+=("$f"); done
 python3 "$HERE/check_burst_substrate.py" "$SUB/SubstrateKernel.cs" "$SUB/SubstrateAgentJob.cs" "$HERE/ReferenceStep.cs" || exit 1
 # Unity compiles these against netstandard2.1 + C# 9 - narrower than net8.0. Fail the way Unity would, first.
 "$DOTNET" "$CSC" -nologo -langversion:9.0 -nostdlib -noconfig "-r:$NSREF" -target:library -out:"$OUT/unityprofile.dll" \
   "${CORE[@]}" || { echo "FAIL: the substrate core does not compile against netstandard2.1 (Unity's API profile)" >&2; exit 1; }
 "$DOTNET" "$CSC" -nologo -langversion:9.0 -nostdlib -noconfig -optimize+ "@$OUT/refs.rsp" -nowarn:CS0649 \
-  -target:exe -main:SubstrateHarness -out:"$OUT/substrate.exe" "${CORE[@]}" "$HERE/ReferenceStep.cs" "$HERE/Program.cs" "$HERE/EmotionSubstrate.cs"
+  -target:exe -main:SubstrateHarness -out:"$OUT/substrate.exe" "${CORE[@]}" "$HERE/ReferenceStep.cs" "$HERE/Program.cs" \
+  "$HERE/LodHarness.cs" "${LOD[@]}" "$HERE/EmotionSubstrate.cs"
 V=$(ls "$DOTNET_ROOT"/shared/Microsoft.NETCore.App | head -1)
 printf '{"runtimeOptions":{"tfm":"net8.0","framework":{"name":"Microsoft.NETCore.App","version":"%s"}}}' "$V" > "$OUT/substrate.runtimeconfig.json"
 exec "$DOTNET" "$OUT/substrate.exe" "$HERE/research_params.json" "${1:-all}" "${@:2}"

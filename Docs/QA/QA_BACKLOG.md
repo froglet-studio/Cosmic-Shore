@@ -842,8 +842,8 @@ from cute to terrifying.
 
 ### QA-SWARM-ROUND11-6 ⬜ — a far swarm collapses and comes back without a pop; creatures starve on a stomach
 
-**Source:** branch `overnight/lod`. Only headless gates, type-checks and authoring gates have run; it has never been
-opened in the editor. Reference: `Docs/ECOLOGY_LOD.md`.
+**Source:** branch `overnight/lod`; steps 9-11 come from `overnight/lod2` (round 11f-2). Only headless gates,
+type-checks and authoring gates have run; it has never been opened in the editor. Reference: `Docs/ECOLOGY_LOD.md`.
 
 **Why it matters:** the swarm now stops simulating when no one is near.
 - If the collapse or expansion is wrong, a swarm teleports, pops, loses members, or changes the cell's phase.
@@ -874,12 +874,29 @@ opened in the editor. Reference: `Docs/ECOLOGY_LOD.md`.
    - A creature eaten by a predator keeps the predator alive for the same time as before.
 8. **Profile** 60 s with all swarms far. Record `CellEcologyLod.*` and `SwarmFauna.MacroTick`: expect well under
    0.1 ms per frame together.
+9. **Substrate bands** (round 11f-2, `overnight/lod2`). In a cell with locusts, pack hunters and lurkers, fly
+   600 u away and look away for 10 s.
+   - `SubstrateCellHost.*` cost should drop to almost nothing once every band is frozen.
+   - Come back: the bands are where you left them and swim on with no jump.
+   - Fire at a far band: it wakes and the hit member reacts normally.
+   - Watch a pack near a frozen locust band: the hunt wakes the locusts.
+10. **Builder colonies** (fortress, thief nest, wearers). Leave each for 2+ minutes, then return.
+    - Within a few seconds of leaving, the fortress's workers stop fetching and the carriers finish their deposits;
+      then `BuilderColonyFauna.Tick` stops and `BuilderColonyFauna.Roost` appears once per second.
+    - On return: the structure is unchanged, member counts are unchanged, nothing pops, and every carried or worn
+      prism is exactly where it was.
+    - A wearer that was rearing when you left should not stay frozen mid-rear.
+    - Shoot a roosting colony's member from range: it wakes and resolves the hit normally.
+11. **Threat grove far cadence.** Fly 800+ u from the grove for 30 s. `ThreatGrove.Physarum` should cost about a
+    quarter of what it did up close. Fly back: the network is continuous, no tube pops, beats resume at full rate.
 
 **PASS:**
 - A far swarm stops its tick and costs only the macro tick.
 - LiveVolume and the phase readout are unchanged across collapse and expansion.
 - No pop, jump or knot on approach or on a long-range hit.
 - Counts are conserved over a long absence.
+- Substrate bands, builder colonies and wearers come back exactly as left (count, structure, carried and worn
+  prisms), and the grove's network is continuous across the far cadence.
 - Starvation timing in the classic fauna cells is unchanged on leaf-sized meals.
 
 **FAIL:**
@@ -890,6 +907,9 @@ opened in the editor. Reference: `Docs/ECOLOGY_LOD.md`.
 - A swarm keeps its 10 Hz tick while far and unseen.
 - Boids, lights or worms starve noticeably faster or never starve.
 - Any `[EcologyLod]` warning about a full sense buffer.
+- A substrate band, builder colony or wearer jumps, loses or gains members, or moves a prism while far.
+- A builder member starves while its colony roosts, instead of the colony waking first.
+- The grove's network pops tubes when you return.
 
 ### QA-SWARM-ROUND11-5 ⬜ — creatures that steal and build: the fortress colony and the thief nest
 
@@ -1053,6 +1073,44 @@ having them all dive in at once will be scary once the stakes are felt."*
 - A death with no crystal, or an agent that pops out without dying.
 - The ladder jumps near the pack.
 - A worker error: `[Substrate] the cell's substrate tick threw`.
+
+### QA-SWARM-ROUND11-10 ⬜ — the wearer: a creature made of your stolen trail
+
+**Source:** branch `overnight/wearers`. Proven headless (builders harness W1-W7: bodies form from stolen trail, fuse,
+rear 1.00 s and lunge at 2.40 hits/min; moults return mass; audit 0). **Never run in the editor.** Reference:
+`Docs/BUILDERS_AND_THIEVES.md` §10.
+
+**Why it matters:** worn prisms are re-parented under one container per creature. Their render matrices and index
+points move in one batched pass a frame, and their colliders ride the hierarchy. None of that has run in Unity.
+
+1. **Find it.** Open the Swarm cell. Fly a long loop through the inner gap (400-465 u). Within a minute or two,
+   small white hearts should be pulling prisms out of YOUR trail into lumpy bodies behind you.
+2. **Growth.** Keep flying. Bodies should grow from where they fed (a head with a tail, not a ball) and merge when they
+   touch.
+3. **The hunt.** Once a body is big (~60 prisms), it turns. Watch for the rear (the body contracts for one second),
+   then the lunge with its prisms in the danger look. Dodge sideways during the rear and it should miss.
+4. **Strip it.** Fly through a body. Your prisms should come back in your colour and fall loose. Strip a lot quickly:
+   it should moult, dropping a shell of loose prisms that go back to their owners, and flee.
+5. **Kill a heart.** Ram a bare or small heart. It should die and drop one crystal.
+6. **Lair.** Let a creature reach 150 prisms while it is not hunting. It should drop a static clump (the lair) and a
+   new heart should appear there.
+7. **Cost.** Profile 60 s with a 150-prism creature following you. Record:
+   - `BuilderColonyFauna.Frame`;
+   - `Physics.SyncColliderTransform` / `Physics.Simulate` with and without the creature;
+   - `PrismRenderService` batch time.
+
+**PASS:**
+- Steps 1-6 read as described.
+- No prism is left floating where a body was when the creature dies.
+- No `MissingReferenceException` when exiting Play with a creature alive.
+- The Frame marker is under ~0.3 ms at 300 worn prisms.
+
+**FAIL:**
+- Worn prisms drawn at their old place (the render matrix is not following).
+- Weapons or AOE missing a body (the index is not following).
+- Prisms destroyed when the cell unloads mid-hunt.
+- The danger look stuck on after a lunge.
+- Physics sync above ~1 ms a frame. If so, try the kinematic-Rigidbody container in §10.4.
 
 ### QA-SWARM-ROUND11-8 ⬜ — the substrate's agent pass is a Burst job
 

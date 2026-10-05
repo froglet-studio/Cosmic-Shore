@@ -152,7 +152,8 @@ def species_asset(s, params):
         f"  engageRadius: {s['engage']}\n  maxProxies: {s['proxies']}\n  proxyLingerSeconds: 2\n"
         f"  maxSpawnsPerFrame: {s['spawns']}\n  vesselRadius: 6\n"
         f"  biteRadius: 24\n  maxBitesPerTick: {s['bites']}\n"
-        f"  cellCapacity: {CELL_CAPACITY}\n  simulateOffMainThread: 1\n  extinctLingerSeconds: 8\n")
+        f"  cellCapacity: {CELL_CAPACITY}\n  simulateOffMainThread: 1\n  extinctLingerSeconds: 8\n"
+        "  macroLod: 1\n  thawReserveSeconds: 5\n")
 
 
 def config_asset(s):

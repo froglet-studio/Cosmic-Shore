@@ -10,15 +10,15 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 59f530038a65bd16ab586027ff1f34ae, type: 3}
-  m_Name: FortressColonyConfig
+  m_Name: WearerConfig
   m_EditorClassIdentifier:
-  Species: 0
+  Species: 2
   MemberPrefab: {fileID: 5945480239701989318, guid: 66504f098e300c8a60c29e3d931eaa0a, type: 3}
   MemberShader: {fileID: 4800000, guid: 887013231f4a269178623abc40fc1a02, type: 3}
   Theme: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
   DrawMembersOnGpu: 1
-  EngageRadius: 140
-  MaxProxies: 24
+  EngageRadius: 160
+  MaxProxies: 16
   ProxyLingerSeconds: 2
   TickHz: 10
   BodyScale: {x: 1.4, y: 0.9, z: 2.6}

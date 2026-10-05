@@ -19,7 +19,7 @@ namespace UnityEngine
     public class TextAsset : Object { public string text; }
     public class GameObject : Object { public GameObject(string n) { } public bool activeInHierarchy; public Scene scene; public int layer; public Transform transform; public T AddComponent<T>() where T : Component => default; }
     public struct Scene { public bool isLoaded; }
-    public class Transform : Component { public Vector3 position, localPosition, localScale; public Vector3 forward => default; public Quaternion rotation, localRotation; public Matrix4x4 localToWorldMatrix, worldToLocalMatrix; public void SetPositionAndRotation(Vector3 p, Quaternion q) { } public Vector3 InverseTransformPoint(Vector3 p) => p; public void SetParent(Transform p, bool worldPositionStays) { } }
+    public class Transform : Component { public Vector3 position, localPosition, localScale; public Vector3 forward => default; public Quaternion rotation, localRotation; public Matrix4x4 localToWorldMatrix, worldToLocalMatrix; public void SetPositionAndRotation(Vector3 p, Quaternion q) { } public Vector3 InverseTransformPoint(Vector3 p) => p; public void SetParent(Transform p, bool worldPositionStays) { } public Transform parent; }
     public class Renderer : Component { public bool enabled; }
     public class SkinnedMeshRenderer : Renderer { public Mesh sharedMesh; }
     public class MeshFilter : Component { public Mesh sharedMesh; }
@@ -27,8 +27,8 @@ namespace UnityEngine
     public class Shader : Object { public static int PropertyToID(string n) => 0; }
     public class Material : Object { public Material(Shader s) { } public bool HasProperty(string n) => false; public bool HasProperty(int n) => false; public Vector4 GetVector(int n) => default; public float GetFloat(int n) => 0; }
     public struct Color { public float r, g, b, a; public Color(float r, float g, float b) { this.r = r; this.g = g; this.b = b; a = 1; } public static implicit operator Vector4(Color c) => default; }
-    public struct Matrix4x4 { public static Matrix4x4 identity; public static Matrix4x4 Rotate(Quaternion q) => default; public static Matrix4x4 operator *(Matrix4x4 a, Matrix4x4 b) => a; }
-    public struct Bounds { public Bounds(Vector3 c, Vector3 s) { } public void SetMinMax(Vector3 min, Vector3 max) { } }
+    public struct Matrix4x4 { public float m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23, m30, m31, m32, m33; public static Matrix4x4 TRS(Vector3 p, Quaternion q, Vector3 s) => default; public Vector4 GetColumn(int i) => default; public static Matrix4x4 identity; public static Matrix4x4 Rotate(Quaternion q) => default; public static Matrix4x4 operator *(Matrix4x4 a, Matrix4x4 b) => a; }
+    public struct Bounds { public Bounds(Vector3 c, Vector3 s) { } public void SetMinMax(Vector3 min, Vector3 max) { } public Vector3 center => default; public Vector3 extents => default; }
     public struct Vector3Int { public int x, y, z; public Vector3Int(int a, int b, int c) { x = a; y = b; z = c; } }   // builders (BuilderRegistry)
     public sealed class MaterialPropertyBlock { public void SetFloat(int n, float v) { } public void SetVector(int n, Vector4 v) { } public void SetColor(int n, Color c) { } public void SetMatrix(int n, Matrix4x4 m) { } public void SetBuffer(int n, GraphicsBuffer b) { } public void SetVectorArray(int n, Vector4[] v) { } }
     public sealed class GraphicsBuffer : IDisposable
@@ -49,8 +49,8 @@ namespace UnityEngine
     public class Collider : Component { }
     public struct Vector3 { public float x, y, z; public Vector3(float a, float b, float c) { x = a; y = b; z = c; } public static Vector3 one, zero, right, forward, up; public float sqrMagnitude => 0; public float magnitude => 0; public Vector3 normalized => this; public static Vector3 operator +(Vector3 a, Vector3 b) => a; public static Vector3 operator -(Vector3 a, Vector3 b) => a; public static Vector3 operator *(Vector3 a, float b) => a; public static Vector3 operator *(float b, Vector3 a) => a; public static Vector3 operator /(Vector3 a, float b) => a; public static Vector3 Cross(Vector3 a, Vector3 b) => a; public static Vector3 Max(Vector3 a, Vector3 b) => a; public static Vector3 Min(Vector3 a, Vector3 b) => a; public static Vector3 Lerp(Vector3 a, Vector3 b, float t) => a; public static Vector3 LerpUnclamped(Vector3 a, Vector3 b, float t) => a; public static float Dot(Vector3 a, Vector3 b) => 0; public static bool operator ==(Vector3 a, Vector3 b) => true; public static bool operator !=(Vector3 a, Vector3 b) => false; public override bool Equals(object o) => true; public override int GetHashCode() => 0; }
     public struct Vector4 { public float x, y, z, w; public Vector4(float a, float b, float c, float d) { x = a; y = b; z = c; w = d; } public static implicit operator Vector4(Vector3 v) => default; }
-    public struct Quaternion { public static Quaternion LookRotation(Vector3 f, Vector3 u) => default; }
-    public static class Mathf { public const float PI = 3.14159265f; public static int RoundToInt(float f) => 0; public static float Max(float a, float b) => a; public static int Max(int a, int b) => a; public static float Min(float a, float b) => a; public static float Abs(float a) => a; public static float Clamp01(float a) => a; public static int Clamp(int v, int a, int b) => v; public static float Pow(float a, float b) => a; public static float Sqrt(float a) => a; }
+    public struct Quaternion { public static Quaternion LookRotation(Vector3 f, Vector3 u) => default; public static Quaternion identity; public static Quaternion SlerpUnclamped(Quaternion a, Quaternion b, float t) => a; }   // + identity / SlerpUnclamped (wearer bodies)
+    public static class Mathf { public const float PI = 3.14159265f; public static int RoundToInt(float f) => 0; public static float Max(float a, float b) => a; public static int Max(int a, int b) => a; public static float Min(float a, float b) => a; public static float Abs(float a) => a; public static float Clamp01(float a) => a; public static int Clamp(int v, int a, int b) => v; public static float Pow(float a, float b) => a; public static float Sqrt(float a) => a; public static int NextPowerOfTwo(int v) => v; }
     public static class Random { public static int Range(int a, int b) => a; public static Vector3 onUnitSphere; public static float value; }
     public static class Time { public static float time, deltaTime, unscaledTime; public static int frameCount; }
     public static class Physics { public static int OverlapSphereNonAlloc(Vector3 p, float r, Collider[] res, int mask) => 0; }
@@ -136,7 +136,7 @@ namespace CosmicShore.Gameplay
     using CosmicShore.Data;
     using CosmicShore.Utility;
 
-    public class PrismProperties { public bool IsDangerous, IsShielded, IsSuperShielded; public Trail Trail; public float TimeCreated; }
+    public class PrismProperties { public bool IsDangerous, IsShielded, IsSuperShielded; public float speedDebuffAmount; public Trail Trail; public float TimeCreated; }
     public class Trail { }
     // ThemeManagerDataContainerSO.cs:9-12
     public class ThemeManagerDataContainerSO : ScriptableObject { public CosmicShore.ScriptableObjects.SO_ColorSet ColorSet; public CosmicShore.ScriptableObjects.SO_MaterialSet BaseMaterialSet;
@@ -156,7 +156,7 @@ namespace CosmicShore.Gameplay
         public void SetOwnerHidden(bool hidden) { }
         public bool OwnerHidden => false;
         // Prism.cs:27, :195, :225, :1672 (builders)
-        public Trail Trail; public string PlayerName { get; internal set; } internal CosmicShore.ECS.PrismRenderHandle RenderHandle;
+        public Trail Trail; public string PlayerName { get; internal set; } internal CosmicShore.ECS.PrismRenderHandle RenderHandle; internal int SpatialIndexId = -1;   // Prism.cs:100 (wearer bodies)
         public void Steal(string playerName, Domains domain, bool superSteal = false) { }
     }
     public class HealthPrism : Prism { public LifeForm LifeForm; public Fauna ResolveOwnerFauna() => null; public void LeaveAsSkeleton(Transform t) { } }
@@ -286,7 +286,8 @@ namespace Unity.Mathematics
 {
     public struct float3 { public float x, y, z; public float3(float x, float y, float z) { this.x = x; this.y = y; this.z = z; } public static implicit operator float3(UnityEngine.Vector3 v) => default; }
     public struct float4 { public float x, y, z, w; public float4(float x, float y, float z, float w) { this.x = x; this.y = y; this.z = z; this.w = w; } }
-    public struct float4x4 { public float4 c0, c1, c2, c3; public float4x4(float4 c0, float4 c1, float4 c2, float4 c3) { this.c0 = c0; this.c1 = c1; this.c2 = c2; this.c3 = c3; } }
+    public struct float4x4 { public float4 c0, c1, c2, c3; public float4x4(float4 c0, float4 c1, float4 c2, float4 c3) { this.c0 = c0; this.c1 = c1; this.c2 = c2; this.c3 = c3; }
+        public float4x4(float m00, float m01, float m02, float m03, float m10, float m11, float m12, float m13, float m20, float m21, float m22, float m23, float m30, float m31, float m32, float m33) { c0 = c1 = c2 = c3 = default; } }
 }
 
 // PrismRenderService.cs / PrismRenderHandle.cs (PR #944 + round 11a SetLooksBatch) - the entity render API
@@ -305,6 +306,7 @@ namespace CosmicShore.ECS
         public static void SetTransformsBatch(NativeArray<PrismRenderHandle> handles, NativeArray<Unity.Mathematics.float4x4> localToWorld, int count, Unity.Jobs.JobHandle dependsOn) { }
         public static void SetLooksBatch(NativeArray<PrismRenderHandle> handles, NativeArray<byte> lookIndex, int count, UnityEngine.Material[] looks) { }
         public static void QueueVisible(in PrismRenderHandle handle, bool visible) { }
+        public static bool IsHandleUsable(in PrismRenderHandle handle) => false;   // PrismRenderService.cs:312 (wearer bodies)
         public static void Destroy(ref PrismRenderHandle handle) { }
         // PrismRenderService.cs StampFlight / ClearFlightStamp / EncapsulateBoundsPoint (builders' settle flight)
         public static bool StampFlight(in PrismRenderHandle handle, float startTime, float duration, in Unity.Mathematics.float3 velocity) => false;
