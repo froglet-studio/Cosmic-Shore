@@ -89,8 +89,12 @@ namespace CosmicShore.Gameplay
             if (hint >= 0 && hint < n)
             {
                 const int window = 24;
-                for (int k = -window; k <= window; k++)
-                    TestSegment(((hint + k) % n + n) % n, position, ref bestSeg, ref bestSqr, ref bestT);
+                // The window is walked with a wrap-around index, not a remainder per segment: the same
+                // segments in the same order (so the same answer, ties included) without ~100 integer
+                // divisions per call - this runs at every MPC rollout step.
+                int i = ((hint - window) % n + n) % n;
+                for (int k = -window; k <= window; k++, i = i + 1 == n ? 0 : i + 1)
+                    TestSegment(i, i + 1 == n ? 0 : i + 1, position, ref bestSeg, ref bestSqr, ref bestT);
                 // Accept the windowed answer only if it is genuinely close to the course.
                 if (bestSqr > 150f * 150f) bestSeg = -1;
             }
@@ -99,7 +103,7 @@ namespace CosmicShore.Gameplay
             {
                 bestSqr = float.MaxValue;
                 for (int i = 0; i < n; i++)
-                    TestSegment(i, position, ref bestSeg, ref bestSqr, ref bestT);
+                    TestSegment(i, i + 1 == n ? 0 : i + 1, position, ref bestSeg, ref bestSqr, ref bestT);
             }
 
             hint = bestSeg;
@@ -110,10 +114,10 @@ namespace CosmicShore.Gameplay
             return _cumulative[bestSeg] + bestT * (_cumulative[bestSeg + 1] - _cumulative[bestSeg]);
         }
 
-        void TestSegment(int i, Vector3 p, ref int bestSeg, ref float bestSqr, ref float bestT)
+        void TestSegment(int i, int next, Vector3 p, ref int bestSeg, ref float bestSqr, ref float bestT)
         {
             Vector3 a = _points[i];
-            Vector3 b = _points[(i + 1) % _points.Length];
+            Vector3 b = _points[next];
             Vector3 ab = b - a;
             float len2 = ab.sqrMagnitude;
             float t = len2 > 1e-6f ? Mathf.Clamp01(Vector3.Dot(p - a, ab) / len2) : 0f;
@@ -153,9 +157,10 @@ namespace CosmicShore.Gameplay
             if (!HasShells || hint < 0) return float.PositiveInfinity;
             int n = _points.Length;
             float best = float.PositiveInfinity;
-            for (int k = -window; k <= window; k++)
+            // Wrap-around index, as in Project (the same prisms in the same order).
+            int i = ((hint - window) % n + n) % n;
+            for (int k = -window; k <= window; k++, i = i + 1 == n ? 0 : i + 1)
             {
-                int i = ((hint + k) % n + n) % n;
                 Vector3 d = position - _points[i];
                 float d2 = d.sqrMagnitude;
                 if (d2 > 60f * 60f) continue;
