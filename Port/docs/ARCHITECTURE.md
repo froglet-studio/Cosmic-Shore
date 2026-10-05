@@ -367,6 +367,20 @@ Scroll down for the rest of the modes. Escape or the Home tab returns to the mai
 Gamepads work as in the Unity build. On phones, touch replaces all of these and the game uses its
 own touch controls.
 
+![Flying](architecture/ui_flight.png)
+
+**Figure 14b.** Flying in freestyle. Click the crystal in the middle of the home screen to take
+the stick; the menu fades out and this HUD fades in.
+
+| # | Control | What it does |
+|---|---|---|
+| 1 | **Your vessel** | Flies where you steer; its trail is ordinary prisms |
+| 2 | **Drift** | The vessel's core move; the chip under it names the button (here LT / Left Shift) |
+| 3 | **Omni crystal** | What this hull does when it flies through a bright crystal |
+| 4 | **Ability row** | Four abilities, Charge → Mass → Space → Time, each under the element flower that upgrades it. The chips under the cards name their buttons |
+| 5 | **Leave flight** | Back to the menu (same as Escape, or Start on a gamepad) |
+| 6 | **A toy** | Fly through the ring to use it: change vessel, domain or world, paint, spawn life. The same toys are in the Toy Box menu |
+
 ### 11.5 The diagnostics panel (top-left)
 
 ![Diagnostics](architecture/ui_diagnostics.png)
