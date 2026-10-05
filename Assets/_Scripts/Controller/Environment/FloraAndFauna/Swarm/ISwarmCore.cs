@@ -82,6 +82,13 @@ namespace CosmicShore.Gameplay
         /// member does it shed? -1 when there is nobody to shed. A core never kills on its own clock.
         /// </summary>
         int StarvationVictim();
+
+        /// <summary>
+        /// Round 11f (Docs/ECOLOGY_LOD.md §5): move the whole body rigidly by <paramref name="d"/> (sim units) - every
+        /// member, the anchor and the swim target. A collapsed swarm's macro tick drifts it this way; the formation is
+        /// kept intact so it re-expands into exactly the body (counts, shapes, lineages) it collapsed from.
+        /// </summary>
+        void Translate(Vector3 d);
     }
 
     /// <summary>

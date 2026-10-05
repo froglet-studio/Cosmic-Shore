@@ -802,6 +802,57 @@ with no trail · live volume never moves as the swarms grow.
 Round 8's diet colouring (newborns wearing the colour of what they ate) was removed on playtest. See
 `Docs/SWARM_FAUNA.md` §17.
 
+### QA-SWARM-ROUND11-6 ⬜ — a far swarm collapses and comes back without a pop; creatures starve on a stomach
+
+**Source:** branch `overnight/lod`. Only headless gates, type-checks and authoring gates have run; it has never been
+opened in the editor. Reference: `Docs/ECOLOGY_LOD.md`.
+
+**Why it matters:** the swarm now stops simulating when no one is near.
+- If the collapse or expansion is wrong, a swarm teleports, pops, loses members, or changes the cell's phase.
+- If the stomach migration is wrong, every Boid, LightFauna and Worm starves early or never.
+
+1. **Set up.** Open the Swarm cell in freestyle. Turn on the **Ecology** log channel. Open the Profiler and find:
+   - `CellEcologyLod.Guard`
+   - `CellEcologyLod.MacroTick`
+   - `SwarmFauna.MacroTick`
+2. **Collapse.** Fly about 600 u away from a swarm and look away from it for 5 s.
+   - `SwarmFauna.Tick.*` markers for that swarm should stop.
+   - `SwarmFauna.MacroTick` should appear once per second.
+   - The cell's phase readout and live volume must not move when the swarm collapses.
+3. **Distant view.** From about 400-500 u, turn the camera toward a collapsed swarm.
+   - It should already be drawn. It may move in small once-per-second steps at that distance.
+   - It must never vanish, and never re-form from a knot.
+4. **Approach.** Fly straight at a collapsed swarm at boost speed. Before you are within about 300 u it must already
+   be swimming and morphing again: smooth motion, no jump, no member popping in or out.
+5. **Hit it from range.** Fire at a collapsed swarm from as far as your weapon reaches. The hit member must react like
+   any member (proxy, death, one crystal), and the swarm must resume swimming.
+6. **Long absence.** Leave a swarm for 3+ minutes, then come back. Check that:
+   - its member count (`MemberCount` in the inspector) is the same or grew;
+   - if it was grazing, it has laid eggs on expansion;
+   - it is roughly where its goal led it, not where you left it.
+7. **Stomachs** (Boid, LightFauna, Worm cells). Play 5 minutes as before.
+   - Starvation should look the same as before: creatures that find food survive, and creatures in a stripped area
+     thin out after about their `starvationSeconds`.
+   - A creature eaten by a predator keeps the predator alive for the same time as before.
+8. **Profile** 60 s with all swarms far. Record `CellEcologyLod.*` and `SwarmFauna.MacroTick`: expect well under
+   0.1 ms per frame together.
+
+**PASS:**
+- A far swarm stops its tick and costs only the macro tick.
+- LiveVolume and the phase readout are unchanged across collapse and expansion.
+- No pop, jump or knot on approach or on a long-range hit.
+- Counts are conserved over a long absence.
+- Starvation timing in the classic fauna cells is unchanged on leaf-sized meals.
+
+**FAIL:**
+- A swarm teleports or re-forms on approach.
+- Members vanish or appear when it collapses.
+- The phase readout steps when a swarm collapses or expands.
+- A collapsed swarm cannot be hit.
+- A swarm keeps its 10 Hz tick while far and unseen.
+- Boids, lights or worms starve noticeably faster or never starve.
+- Any `[EcologyLod]` warning about a full sense buffer.
+
 ### QA-SWARM-ROUND11-5 ⬜ — creatures that steal and build: the fortress colony and the thief nest
 
 **Source:** branch `overnight/builders` (headless harness, type-check and authoring gates only, not run in the

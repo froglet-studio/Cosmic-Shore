@@ -867,6 +867,7 @@ namespace CosmicShore.Gameplay
                 if (!index.TryScheduleCellVolumeSum(_volumeCellId, transform.position, _nucleusControlRadiusSqr,
                         _volumeSumNative, out _volumeSumHandle))
                     return;
+                _macroFauna.Latch();   // round 11f: the macro ledger as of THIS index snapshot (counted once, never twice)
                 _volumeSumPending = true;
                 _nextVolumeRecomputeAt = Time.time + VolumeRecomputeIntervalSeconds;
             }
@@ -882,11 +883,12 @@ namespace CosmicShore.Gameplay
         {
             for (int i = 0; i < PrismSpatialIndex.CellDomainSlotCount; i++)
             {
-                liveVolumeByDomain[s_volumeDomainSlots[i]] = _volumeSumNative[PrismSpatialIndex.CellVolumeBySlot + i];
+                liveVolumeByDomain[s_volumeDomainSlots[i]] = _volumeSumNative[PrismSpatialIndex.CellVolumeBySlot + i]
+                                                             + (float)_macroFauna.Latched(i);
                 liveEnvVolumeByDomain[s_volumeDomainSlots[i]] = _volumeSumNative[PrismSpatialIndex.CellEnvVolumeBySlot + i];
                 nucleusEnvVolumeByDomain[s_volumeDomainSlots[i]] = _volumeSumNative[PrismSpatialIndex.CellNucleusEnvVolumeBySlot + i];
             }
-            liveVolumeTotal = _volumeSumNative[PrismSpatialIndex.CellVolumeTotal];
+            liveVolumeTotal = _volumeSumNative[PrismSpatialIndex.CellVolumeTotal] + (float)_macroFauna.LatchedTotal;
             liveEnvVolumeTotal = _volumeSumNative[PrismSpatialIndex.CellEnvVolumeTotal];
             liveExteriorEnvVolumeTotal = _volumeSumNative[PrismSpatialIndex.CellExteriorEnvVolumeTotal];
         }
@@ -915,6 +917,42 @@ namespace CosmicShore.Gameplay
             PrismSpatialIndex.Instance?.SetCellBinding(spatialIndexId, _volumeCellId, false, domain);
         }
 
+        // ------------------------------------------------------------------
+        //  MACRO fauna mass + the soil (round 11f, Docs/ECOLOGY_LOD.md §4).
+        //  A population collapsed to a macro state either keeps its virtual
+        //  entries (the swarm: its frozen formation is still in the index) or
+        //  releases them and books the same body volume here, in the same call.
+        //  The ledger is latched with each index snapshot (see EnsureVolumeFresh)
+        //  so LiveVolume and the phase ladder read one number either way.
+        // ------------------------------------------------------------------
+
+        readonly MacroFaunaLedger _macroFauna = new();
+
+        /// <summary>
+        /// Books (+) or releases (-) fauna body volume held by a MACRO population in <paramref name="domain"/>. Call it in
+        /// the same frame the population releases (or re-registers) the matching index entries.
+        /// </summary>
+        public void BookMacroFaunaVolume(Domains domain, double volume)
+        {
+            int slot = System.Array.IndexOf(s_volumeDomainSlots, domain);
+            if (slot >= 0) _macroFauna.Book(slot, volume);
+        }
+
+        /// <summary>Body volume currently held by macro populations (all domains), as booked now (not latched).</summary>
+        public double MacroFaunaVolume => _macroFauna.LiveTotal;
+
+        /// <summary>
+        /// The soil: volume fauna metabolism burned and stomach overflow returned (Fauna's conserved stomach, round 11f).
+        /// A ledger bucket - the seam nutrient-limited flora growth would draw from (research N -> F); nothing in the
+        /// game draws from it yet, because flora growth here is phase-driven, not nutrient-driven.
+        /// </summary>
+        public double SoilNutrientVolume { get; private set; }
+
+        public void DepositSoilNutrient(float volume)
+        {
+            if (volume > 0f) SoilNutrientVolume += volume;
+        }
+
         /// <summary>
         /// Drops all volume accounting - published sums and the recompute timer -
         /// so a cleared cell reads as empty immediately instead of serving a
@@ -937,6 +975,7 @@ namespace CosmicShore.Gameplay
             liveVolumeTotal = 0f;
             liveEnvVolumeTotal = 0f;
             liveExteriorEnvVolumeTotal = 0f;
+            _macroFauna.Clear();   // the reset also destroys every population that booked into it
         }
 
         /// <summary>

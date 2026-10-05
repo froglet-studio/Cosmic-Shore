@@ -105,6 +105,13 @@ namespace CosmicShore.Gameplay
                  "(SwarmMemberInstanced) is used instead, with no code change. Detection is the spatial index's in " +
                  "both cases.")]
         public bool UnifiedPrismBodies = true;
+        [Header("Round 11f - ecology LOD (Docs/ECOLOGY_LOD.md §5)")]
+        [Tooltip("Far from every pilot and unseen, the swarm COLLAPSES to its macro state: its 10 Hz worker tick " +
+                 "stops, its frozen formation drifts rigidly toward its goal at cruise once per second, it keeps its " +
+                 "index entries (LiveVolume and the phase ladder read the same mass) and keeps grazing at the macro " +
+                 "cadence. It re-expands on the research prefetch radii (280 u, 450 u ahead) before a pilot can see " +
+                 "it, or at once when hit or due to shed a starving member. Needs the GPU member draw.")]
+        public bool MacroLod = true;
 
         [Header("Seed")]
         [Tooltip("Tadpoles a new swarm hatches with, at its plan's element mix, each on a slot of its " +

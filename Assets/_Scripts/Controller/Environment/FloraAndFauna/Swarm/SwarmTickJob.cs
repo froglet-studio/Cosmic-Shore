@@ -208,6 +208,30 @@ namespace CosmicShore.Gameplay
             lock (_inLock) _deposit[element] += volume;
         }
 
+        /// <summary>
+        /// Round 11f (Docs/ECOLOGY_LOD.md §5): a collapsed swarm drifts rigidly by <paramref name="dSim"/> (sim units).
+        /// Main thread, only while <see cref="State"/> is Idle (the worker owns the core while Running, and a Done
+        /// tick's back buffers would publish the old position): the core, the published frame (both ends of the pair),
+        /// the index points, the anchor and the next tick's "previous" positions all move together, so nothing is
+        /// interpolated across the jump. Returns false (nothing moved) when a tick is in flight.
+        /// </summary>
+        public bool Translate(Vector3 dSim)
+        {
+            if (State != SwarmJobState.Idle) return false;
+            Core.Translate(dSim);
+            var dW = dSim * S.UnitScale;
+            for (int i = 0; i < _cap; i++)
+            {
+                _lastPos[i] += dSim;
+                if (!Instances[i].Alive) continue;
+                Instances[i].PrevPos += dW; Instances[i].CurPos += dW;
+                IndexPoint[i] += dW;
+            }
+            Anchor += dW;
+            SwimTarget += dSim;
+            return true;
+        }
+
         /// <summary>True when slot i's member in the FRONT buffers was born in the published pair - i.e.
         /// the slot holds a NEW member, not the one a pending kill was about.</summary>
         public bool BornThisTick(int i) => Instances[i].Alive && Instances[i].BirthTick >= Tick;
