@@ -1060,7 +1060,7 @@ then a growth law: seed in, body out, with healing as a by-product of the pool +
 - Run: lizard warm start, batch 4, pool 256, 800 clock + 4800 pool steps (5600), lr drop 4000,
   `--threads 1`; bench 4.7 s / 80 fwd+bwd steps alongside the whale run. Export:
   `export_nca3d_creature.py --name jelly` → `creatures/nca_jelly.js` (`window.NcaJelly`);
-  `export_whale_creature.py` is now that script with `--name whale`. Result: `runs/jelly3d_swim/`.
+  `export_whale_creature.py` is now that script with `--name whale`. First 100 clock steps (5.6-6.8 s/it, beside the whale): loss 0.0367 → 0.0138 (step 50) → 0.0093 (step 100), no rollbacks; the export path was checked on the step-100 checkpoint (80.6 KB module, `new NcaJelly({seed})` steps in node). Result: `runs/jelly3d_swim/`.
 
 #### P8. Related work found
 - Kim, Pajouheshgar, Süsstrunk, Jakob, Park, "Neural Particle Automata" (arXiv 2601.16096, SIGGRAPH
