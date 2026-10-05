@@ -50,7 +50,7 @@ function run(policy, seed, key) {
   const deep = new E.Stakes({ rule: 'tuned', hostile: true, start: 1000 });   // never empties: the true cost per encounter
   const st = new E.Stakes({ rule: 'tuned', hostile: true }), tt = new E.TeleTrack(), pr = new E.Probe(DT * 3), view = {};
   const leads = []; let cryN = 0;
-  ar.onHit = (p, kind, amt, src) => { if (p !== pl) return; const L = tt.lead(ar.t, src || key); const ev = deep.contact(ar.t, kind, src || key, L >= 0.25); st.contact(ar.t, kind, src || key, L >= 0.25); if (ev && ev.total) leads.push(L); };
+  ar.onHit = (p, kind, amt, src, who, standing) => { if (p !== pl) return; const L = tt.lead(ar.t, src || key, who, standing); const ev = deep.contact(ar.t, kind, src || key, L >= 0.25); st.contact(ar.t, kind, src || key, L >= 0.25); if (ev && ev.total) leads.push(L); };
   ar.onKill = () => { cryN++; };
   const led0 = ar.liveVolume() + sp.ledger(); let drift = 0;
   const steps = Math.round(MIN * 60 / DT);

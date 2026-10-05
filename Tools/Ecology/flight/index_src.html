@@ -181,6 +181,7 @@ const E = window.EcoSim;
 const DEG = Math.PI / 180;
 // ------------------------------------------------------------------------------------------------ species catalogue
 const CAT = {
+  showcase:  { label: 'Showcase: everything at once', truth: null },
   cell:      { label: 'The whole cell (vibrancy)', truth: null },
   creatures: { label: 'Big creatures: tadpole swarm + NCA lizard', truth: null, say: 'Two learned bodies from phase 1, flown among grazers. The tadpole swarm sorts 256 units into the body plan of its majority element (whale, jellyfish, pufferfish, dragonfly) and MORPHS when it eats crystals of another element. The lizard is a trained 3D neural cellular automaton: every voxel runs the same small network, and whatever you cut away regrows.', counter: 'The swarm glows as it stalks; break line of approach before it lunges. Ram either body: the swarm molts back together, the lizard regrows, and both shed crystals.' },
   tadpole:   { label: 'Tadpole swarm', truth: 'menacing', say: 'A morphing swarm body (phase-1 sort rule).', counter: 'Turn away while it glows.' },
@@ -373,9 +374,9 @@ const layers = {};   // species key -> { mesh, sp, prev, cur }
 
 // ------------------------------------------------------------------------------------------------ world
 let W = null, R = 1200;
-const MODES = ['cell', 'creatures', 'siege', 'grazer', 'pack', 'thief', 'locust', 'lurker', 'stampede', 'leviathan', 'mobber', 'fortress', 'snaptrap'];
+const MODES = ['showcase', 'cell', 'creatures', 'siege', 'grazer', 'pack', 'thief', 'locust', 'lurker', 'stampede', 'leviathan', 'mobber', 'fortress', 'snaptrap'];
 const modeSel = document.getElementById('mode');
-for (const m of MODES) { const o = document.createElement('option'); o.value = m; o.textContent = m === 'cell' || m === 'creatures' ? CAT[m].label : 'One species: ' + CAT[m].label; modeSel.appendChild(o); }
+for (const m of MODES) { const o = document.createElement('option'); o.value = m; o.textContent = m === 'showcase' || m === 'cell' || m === 'creatures' ? CAT[m].label : 'One species: ' + CAT[m].label; modeSel.appendChild(o); }
 let seed = 7;
 const stats = { hits: {}, nHits: 0, crystals: 0, lost: 0 };
 // ------------------------------------------------------------------------------------------------ stakes (src/60_stakes.js)
@@ -383,7 +384,7 @@ let stakes = null, tele = null, stakeRule = 'tuned', hostile = true;
 const crystals = [];    // { x, y, z, e, t } dropped by every killed lifeform; flying through one pays a petal of its element
 const CRYSTAL_R = 16, CRYSTAL_LIFE = 60, CRYSTAL_CAP = 400;
 const petBurn = { mass: 0, charge: 0, space: 0, time: 0 }; // flash timers per element
-function newStakes() { stakes = new E.Stakes({ rule: stakeRule === 'off' ? 'tuned' : stakeRule, hostile }); tele = new E.TeleTrack(); crystals.length = 0; document.getElementById('strip').style.display = 'none'; }
+function newStakes(spawn) { stakes = new E.Stakes({ rule: stakeRule === 'off' ? 'tuned' : stakeRule, hostile, spawn: spawn || 0 }); tele = new E.TeleTrack(); crystals.length = 0; document.getElementById('strip').style.display = 'none'; }
 window.__crystals = crystals;
 window.__stakes = () => ({ stakes, crystals: crystals.length, rule: stakeRule, hostile });
 const dying = [];       // continuity of existence: removed things shrink out instead of vanishing
@@ -411,7 +412,7 @@ function buildWorld(mode) {
   }
   ensurePrisms(ar.n);
   lastN = ar.n; if (trailDir.length < 3 * ar.cap) trailDir = new Float32Array(3 * ar.cap * 2);
-  stats.hits = {}; stats.nHits = 0; stats.crystals = 0; stats.lost = 0; newStakes();
+  stats.hits = {}; stats.nHits = 0; stats.crystals = 0; stats.lost = 0; newStakes(W ? W.arena.t : 0);
   flight.speed = 120; flight.throttle = 0.75; flight.boost = 1;
   const pl = W.player;
   flight.q.setFromUnitVectors(new THREE.Vector3(0, 0, 1), new THREE.Vector3(...pl.vel).normalize());
@@ -499,11 +500,11 @@ function autoPilot(pl) {
 let autoGoal = null;
 
 // ------------------------------------------------------------------------------------------------ events
-function onHit(p, kind, amt, src) {
+function onHit(p, kind, amt, src, who, standing) {
   if (p !== W.player) return;
   stats.nHits++; stats.hits[kind] = (stats.hits[kind] || 0) + 1;
   if (stakes && stakeRule !== 'off') {
-    const t = W.arena.t, ev = stakes.contact(t, kind, src, tele.lead(t, src) >= 0.25);
+    const t = W.arena.t, ev = stakes.contact(t, kind, src, tele.lead(t, src, who, standing) >= 0.25);
     if (ev && ev.total) {
       for (const e in ev.petals) petBurn[e] = 0.7;
       const s = enc.active[src]; if (s) s.burned = (s.burned || 0) + ev.total;
@@ -595,7 +596,7 @@ let rating = null;
 })();
 function openRate(e) {
   if (!e) {
-    const key = W.mode === 'cell' ? (curSpeciesNear() || 'grazer') : W.mode;
+    const key = W.mode === 'cell' || W.mode === 'showcase' ? (curSpeciesNear() || 'grazer') : W.mode;
     e = { species: key, t0: Math.max(0, +(W.arena.t - 20).toFixed(1)), t1: +W.arena.t.toFixed(1), hits: {}, kills: 0, manual: true };
   }
   rating = { encounter: e, emotion: null, threat: null, readability: null, fun: null };
@@ -634,7 +635,9 @@ document.getElementById('copyBtn').onclick = () => {
 // ------------------------------------------------------------------------------------------------ HUD + info
 const infoEl = document.getElementById('info');
 function updateInfo(mode) {
-  if (mode === 'cell') {
+  if (mode === 'showcase') {
+    infoEl.innerHTML = `<h3>Showcase: everything at once</h3><p>The whole week in one cell: every scored species on one conserved mass, the morphing tadpole swarm (it becomes what it eats), the neural-automaton lizard (it regrows what you cut), and the siege, waiting on the far side. Your petals are at stake: danger strikes in this hostile cell burn them, crystals from kills grow them back.</p><p><span class="k">Survive:</span> read the glow, break out of the siege through its shrinking gap, ram for crystals. O makes it your own cell (strikes only sting).</p>`;
+  } else if (mode === 'cell') {
     infoEl.innerHTML = `<h3>The whole cell</h3><p>Every species at once, each running its own rules on the same conserved mass. Fly near anything that glows: the glow is its telegraph. Arrows at the screen edge point at whatever is about to strike you.</p><p class="k">Rate encounters with <b>R</b>; ratings export as JSON for <code>emotion/ratings.py</code>.</p>`;
   } else {
     const c = CAT[mode];
@@ -986,10 +989,12 @@ function drawPetals(dtF) {
   });
   petX.fillStyle = stakes.total() ? '#dfe6fb' : '#ff5a3c'; petX.font = '700 24px system-ui'; petX.textAlign = 'center'; petX.textBaseline = 'middle';
   petX.fillText(String(stakes.total()), cx, cy + 1);
-  if ((perf.k || 0) % 6 === 0) {
+  {
     const s = stakes;
-    petTxt.innerHTML = stakeRule === 'off' ? 'stakes off' : `<b>${s.total()}</b>/40 petals · ${hostile ? '<span style="color:var(--hot)">hostile</span>' : '<span style="color:var(--ok)">your cell</span>'}`;
-    petTxt2.innerHTML = `burned <b>${s.burned}</b> · regrown <b>${s.gained}</b>${s.burned ? ` · read ${Math.round(100 * s.telegraphedBurns / s.burned)}%` : ''}<br>crystals near: <b>${crystals.length}</b>`;
+    const h1 = stakeRule === 'off' ? 'stakes off' : `<b>${s.total()}</b>/40 petals · ${hostile ? '<span style="color:var(--hot)">hostile</span>' : '<span style="color:var(--ok)">your cell</span>'}`;
+    if (h1 !== petTxt._h) petTxt.innerHTML = petTxt._h = h1;
+    const h2 = `burned <b>${s.burned}</b> · regrown <b>${s.gained}</b>${s.burned ? ` · read ${Math.round(100 * s.telegraphedBurns / s.burned)}%` : ''}<br>crystals near: <b>${crystals.length}</b>`;
+    if (h2 !== petTxt2._h) petTxt2.innerHTML = petTxt2._h = h2;
   }
 }
 document.getElementById('rule').onchange = (ev) => { stakeRule = ev.target.value; newStakes(); toast(ev.target.selectedOptions[0].textContent, '#7fd6ff'); };
@@ -1005,7 +1010,7 @@ const BIG = { swarm: null, lizard: null, sMesh: null, lMesh: null, tele: [], sta
 function buildBig(mode) {
   for (const k of ['sMesh', 'lMesh']) if (BIG[k]) { scene.remove(BIG[k]); BIG[k] = null; }
   BIG.swarm = BIG.lizard = null; BIG.tele = []; BIG.state = 'roam'; BIG.intent = 0; BIG.eaten = 0; BIG.morphs = 0; BIG.bites = 0; BIG.lizCut = 0;
-  if (!(mode === 'cell' || mode === 'creatures') || !window.SwarmCreature || !window.NcaCreature) return;
+  if (!(mode === 'cell' || mode === 'showcase' || mode === 'creatures') || !window.SwarmCreature || !window.NcaCreature) return;
   const R = W.arena.R;
   BIG.swarm = new SwarmCreature({ n: 256, element: 'space', position: [0.05 * R, 0.08 * R, -0.3 * R], seed, scale: 3 });
   BIG.swarm.cruise = 45; BIG.swarm.turnRate = 1.2;

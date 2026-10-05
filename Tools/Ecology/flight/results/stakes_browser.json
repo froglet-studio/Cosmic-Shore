@@ -16,7 +16,7 @@
   "crystals": 5,
   "hostile": true,
   "rule": "tuned",
-  "t": 15.199999999999957,
+  "t": 25.300000000000416,
   "by": {
    "pack": 4
   },
@@ -32,37 +32,38 @@
   },
   "burned": 0,
   "gained": 0,
-  "contacts": 2,
+  "contacts": 3,
   "blocked": 1,
-  "stings": 1,
+  "stings": 2,
   "tele": 0,
   "crystals": 4,
   "hostile": false,
   "rule": "tuned",
-  "t": 17.36666666666669,
+  "t": 27.100000000000506,
   "by": {},
   "errors": []
  },
  "cell_hostile": {
-  "total": 16,
+  "total": 12,
   "base": {
-   "mass": 4,
-   "charge": 4,
-   "space": 4,
-   "time": 4
+   "mass": 3,
+   "charge": 3,
+   "space": 3,
+   "time": 3
   },
-  "burned": 4,
+  "burned": 8,
   "gained": 0,
-  "contacts": 1,
+  "contacts": 2,
   "blocked": 0,
   "stings": 0,
-  "tele": 4,
+  "tele": 8,
   "crystals": 2,
   "hostile": true,
   "rule": "tuned",
-  "t": 10.166666666666641,
+  "t": 14.899999999999958,
   "by": {
-   "pack": 4
+   "pack": 4,
+   "leviathan": 4
   },
   "errors": []
  },

@@ -167,7 +167,8 @@
     "CRUISE": 95.0,
     "EMOTION": "dread (menacing, coordinated)",
     "RANGE": 900.0,
-    "SPRINT": 175.0
+    "SPRINT": 175.0,
+    "WINDUP": 0.4
    },
    "herd": {
     "body": 48.0,
@@ -405,7 +406,8 @@
     "EMOTION": "majestic (awe, then danger in its panic)",
     "HEAD_DOWN": 0.9,
     "SCENT": 900.0,
-    "SENSE": 250.0
+    "SENSE": 250.0,
+    "WINDUP": 0.4
    },
    "herd": {
     "body": 40.0,

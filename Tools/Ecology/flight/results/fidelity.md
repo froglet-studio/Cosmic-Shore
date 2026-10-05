@@ -4,18 +4,18 @@
 
 | species | metric | JS | Python | tolerance | agree |
 |---|---|---|---|---|---|
-| pack | hits/min wander | 4.67 | 5.66 | 1.83 | yes |
+| pack | hits/min wander | 4.83 | 5.44 | 2.17 | yes |
 | pack | hits/min evader | 0.00 | 0.00 | 1.00 | yes |
-| pack | hits/min hunter | 2.50 | 2.56 | 1.00 | yes |
+| pack | hits/min hunter | 1.75 | 1.78 | 1.00 | yes |
 | pack | payoff/min (hunter) | 4.67 | 4.67 | 1.40 | yes |
 | pack | counterplay (evader/wander) | 0.00 | 0.00 | 0.15 | yes |
-| pack | telegraphed share of first strikes | 0.69 | 0.81 | 0.24 | yes |
+| pack | telegraphed share of first strikes | 0.84 | 0.90 | 0.27 | yes |
 | pack | telegraph first strike s (telegraphed) | 0.90 | 0.90 | 0.27 | yes |
-| pack | telegraph (shared) s | 1.50 | 1.20 | 0.45 | yes |
+| pack | telegraph (shared) s | 1.50 | 1.23 | 0.45 | yes |
 | pack | feel speed_rel | 0.52 | 0.61 | 0.15 | yes |
-| pack | feel approach | -12.76 | -13.38 | 7.16 | yes |
-| pack | feel coherence | 0.64 | 0.73 | 0.15 | yes |
-| pack | feel burstiness | 1.38 | 1.28 | 0.50 | yes |
+| pack | feel approach | -12.70 | -13.01 | 7.15 | yes |
+| pack | feel coherence | 0.65 | 0.75 | 0.15 | yes |
+| pack | feel burstiness | 1.38 | 1.26 | 0.50 | yes |
 | pack | feel jerk_rel | 0.58 | 0.31 | 0.30 | yes |
 | pack | feel size | 12.00 | 12.00 | 1.80 | yes |
 | thief | hits/min wander | 24.50 | 29.45 | 20.00 | yes |
@@ -62,12 +62,12 @@
 | lurker | feel size | 4.00 | 4.00 | 0.60 | yes |
 | stampede | hits/min wander | 7.92 | 10.44 | 7.95 | yes |
 | stampede | hits/min evader | 0.00 | 0.00 | 1.00 | yes |
-| stampede | hits/min hunter | 18.08 | 13.33 | 7.92 | yes |
+| stampede | hits/min hunter | 16.58 | 11.89 | 8.00 | yes |
 | stampede | payoff/min (hunter) | 3.58 | 3.56 | 2.18 | yes |
 | stampede | counterplay (evader/wander) | 0.00 | 0.00 | 0.15 | yes |
-| stampede | telegraphed share of first strikes | 0.57 | 0.44 | 0.18 | yes |
+| stampede | telegraphed share of first strikes | 0.62 | 0.52 | 0.22 | yes |
 | stampede | telegraph first strike s (telegraphed) | 0.70 | 1.00 | 0.40 | yes |
-| stampede | telegraph (shared) s | 0.10 | 0.10 | 0.25 | yes |
+| stampede | telegraph (shared) s | 0.15 | 0.15 | 0.25 | yes |
 | stampede | feel speed_rel | 0.17 | 0.17 | 0.05 | yes |
 | stampede | feel approach | 9.45 | 14.22 | 17.05 | yes |
 | stampede | feel coherence | 0.83 | 0.82 | 0.17 | yes |
@@ -151,18 +151,18 @@ Verdict: pack PASS, thief PASS, locust PASS, lurker PASS, stampede PASS, leviath
 
 | species | metric | JS | Python | tolerance | agree |
 |---|---|---|---|---|---|
-| pack | hits/min wander | 4.50 | 5.66 | 2.23 | yes |
+| pack | hits/min wander | 4.33 | 5.44 | 2.23 | yes |
 | pack | hits/min evader | 0.00 | 0.00 | 1.00 | yes |
-| pack | hits/min hunter | 3.00 | 2.56 | 1.00 | yes |
+| pack | hits/min hunter | 1.58 | 1.78 | 1.00 | yes |
 | pack | payoff/min (hunter) | 4.67 | 4.67 | 1.40 | yes |
 | pack | counterplay (evader/wander) | 0.00 | 0.00 | 0.15 | yes |
-| pack | telegraphed share of first strikes | 0.64 | 0.81 | 0.24 | yes |
-| pack | telegraph first strike s (telegraphed) | 0.90 | 0.90 | 0.27 | yes |
-| pack | telegraph (shared) s | 1.17 | 1.20 | 0.36 | yes |
-| pack | feel speed_rel | 0.50 | 0.61 | 0.15 | yes |
-| pack | feel approach | -14.72 | -13.38 | 6.62 | yes |
-| pack | feel coherence | 0.63 | 0.73 | 0.15 | yes |
-| pack | feel burstiness | 1.43 | 1.28 | 0.50 | yes |
+| pack | telegraphed share of first strikes | 0.79 | 0.90 | 0.27 | yes |
+| pack | telegraph first strike s (telegraphed) | 0.89 | 0.90 | 0.27 | yes |
+| pack | telegraph (shared) s | 1.23 | 1.23 | 0.38 | yes |
+| pack | feel speed_rel | 0.51 | 0.61 | 0.15 | yes |
+| pack | feel approach | -15.53 | -13.01 | 6.44 | yes |
+| pack | feel coherence | 0.63 | 0.75 | 0.15 | yes |
+| pack | feel burstiness | 1.43 | 1.26 | 0.50 | yes |
 | pack | feel jerk_rel | 0.42 | 0.31 | 0.29 | yes |
 | pack | feel size | 12.00 | 12.00 | 1.80 | yes |
 | thief | hits/min wander | 32.50 | 29.45 | 21.52 | yes |
@@ -209,12 +209,12 @@ Verdict: pack PASS, thief PASS, locust PASS, lurker PASS, stampede PASS, leviath
 | lurker | feel size | 4.00 | 4.00 | 0.60 | yes |
 | stampede | hits/min wander | 8.50 | 10.44 | 8.97 | yes |
 | stampede | hits/min evader | 0.00 | 0.00 | 1.00 | yes |
-| stampede | hits/min hunter | 13.00 | 13.33 | 7.91 | yes |
+| stampede | hits/min hunter | 11.92 | 11.89 | 8.38 | yes |
 | stampede | payoff/min (hunter) | 3.58 | 3.56 | 2.58 | yes |
 | stampede | counterplay (evader/wander) | 0.00 | 0.00 | 0.15 | yes |
-| stampede | telegraphed share of first strikes | 0.45 | 0.44 | 0.24 | yes |
-| stampede | telegraph first strike s (telegraphed) | 0.79 | 1.00 | 0.44 | yes |
-| stampede | telegraph (shared) s | 0.13 | 0.10 | 0.25 | yes |
+| stampede | telegraphed share of first strikes | 0.81 | 0.52 | 0.24 | **NO** |
+| stampede | telegraph first strike s (telegraphed) | 0.70 | 1.00 | 0.47 | yes |
+| stampede | telegraph (shared) s | 0.27 | 0.15 | 0.25 | yes |
 | stampede | feel speed_rel | 0.17 | 0.17 | 0.05 | yes |
 | stampede | feel approach | 9.64 | 14.22 | 15.97 | yes |
 | stampede | feel coherence | 0.90 | 0.82 | 0.18 | yes |
@@ -298,7 +298,21 @@ Verdict: pack PASS, thief PASS, locust PASS, lurker **FAIL**, stampede **FAIL**,
 
 | species | metric | JS | Python | tolerance | agree |
 |---|---|---|---|---|---|
-| lurker | hits/min wander | 2.00 | 0.89 | 1.30 | yes |
+| pack | hits/min wander | 4.33 | 5.11 | 2.11 | yes |
+| pack | hits/min evader | 0.00 | 0.00 | 1.00 | yes |
+| pack | hits/min hunter | 1.58 | 1.89 | 1.00 | yes |
+| pack | payoff/min (hunter) | 4.67 | 4.67 | 1.40 | yes |
+| pack | counterplay (evader/wander) | 0.00 | 0.00 | 0.15 | yes |
+| pack | telegraphed share of first strikes | 0.79 | 0.87 | 0.26 | yes |
+| pack | telegraph first strike s (telegraphed) | 0.89 | 0.95 | 0.28 | yes |
+| pack | telegraph (shared) s | 1.23 | 0.99 | 0.37 | yes |
+| pack | feel speed_rel | 0.51 | 0.60 | 0.15 | yes |
+| pack | feel approach | -15.53 | -14.56 | 6.56 | yes |
+| pack | feel coherence | 0.63 | 0.74 | 0.15 | yes |
+| pack | feel burstiness | 1.43 | 1.29 | 0.50 | yes |
+| pack | feel jerk_rel | 0.42 | 0.23 | 0.23 | yes |
+| pack | feel size | 12.00 | 12.00 | 1.80 | yes |
+| lurker | hits/min wander | 2.00 | 0.89 | 1.31 | yes |
 | lurker | hits/min evader | 0.67 | 0.33 | 1.00 | yes |
 | lurker | hits/min hunter | 10.58 | 10.67 | 3.20 | yes |
 | lurker | payoff/min (hunter) | 10.67 | 10.67 | 3.20 | yes |
@@ -310,46 +324,46 @@ Verdict: pack PASS, thief PASS, locust PASS, lurker **FAIL**, stampede **FAIL**,
 | lurker | feel approach | -52.52 | -50.86 | 15.76 | yes |
 | lurker | feel coherence | 0.17 | 0.16 | 0.05 | yes |
 | lurker | feel burstiness | 30772522.43 | 29382877.22 | 9231756.73 | yes |
-| lurker | feel jerk_rel | 2881.09 | 1805.46 | 2215.46 | yes |
+| lurker | feel jerk_rel | 2881.09 | 1805.46 | 2321.05 | yes |
 | lurker | feel size | 4.00 | 4.00 | 0.60 | yes |
-| stampede | hits/min wander | 8.50 | 8.33 | 6.83 | yes |
+| stampede | hits/min wander | 8.50 | 8.33 | 6.64 | yes |
 | stampede | hits/min evader | 0.00 | 0.00 | 1.00 | yes |
-| stampede | hits/min hunter | 13.00 | 16.34 | 7.28 | yes |
-| stampede | payoff/min (hunter) | 3.58 | 2.89 | 2.15 | yes |
+| stampede | hits/min hunter | 11.92 | 15.56 | 7.13 | yes |
+| stampede | payoff/min (hunter) | 3.58 | 2.89 | 2.10 | yes |
 | stampede | counterplay (evader/wander) | 0.00 | 0.00 | 0.15 | yes |
-| stampede | telegraphed share of first strikes | 0.45 | 0.47 | 0.25 | yes |
-| stampede | telegraph first strike s (telegraphed) | 0.79 | 0.93 | 0.48 | yes |
-| stampede | telegraph (shared) s | 0.13 | 0.08 | 0.25 | yes |
+| stampede | telegraphed share of first strikes | 0.81 | 0.78 | 0.24 | yes |
+| stampede | telegraph first strike s (telegraphed) | 0.70 | 0.70 | 0.40 | yes |
+| stampede | telegraph (shared) s | 0.27 | 0.12 | 0.25 | yes |
 | stampede | feel speed_rel | 0.17 | 0.16 | 0.05 | yes |
-| stampede | feel approach | 9.64 | 20.46 | 22.11 | yes |
+| stampede | feel approach | 9.64 | 20.46 | 23.13 | yes |
 | stampede | feel coherence | 0.90 | 0.89 | 0.18 | yes |
 | stampede | feel burstiness | 3.18 | 3.27 | 0.98 | yes |
 | stampede | feel jerk_rel | 0.15 | 0.16 | 0.05 | yes |
 | stampede | feel size | 10.00 | 10.00 | 1.50 | yes |
 | leviathan | hits/min wander | 0.33 | 0.67 | 1.00 | yes |
 | leviathan | hits/min evader | 0.00 | 0.00 | 1.00 | yes |
-| leviathan | hits/min hunter | 9.42 | 7.78 | 3.06 | yes |
-| leviathan | payoff/min (hunter) | 40.00 | 34.00 | 16.50 | yes |
+| leviathan | hits/min hunter | 9.42 | 7.78 | 2.90 | yes |
+| leviathan | payoff/min (hunter) | 40.00 | 34.00 | 16.97 | yes |
 | leviathan | counterplay (evader/wander) | 0.00 | 0.00 | - | yes (wanderer hit < 1/min on a side: not resolvable) |
 | leviathan | telegraphed share of first strikes | 1.00 | 1.00 | 0.30 | yes |
 | leviathan | telegraph first strike s (telegraphed) | 1.07 | 0.93 | 0.32 | yes |
 | leviathan | telegraph (shared) s | 0.85 | 0.92 | 0.28 | yes |
 | leviathan | feel speed_rel | 0.28 | 0.29 | 0.07 | yes |
-| leviathan | feel approach | 12.34 | -8.56 | 18.92 | **NO** |
+| leviathan | feel approach | 12.34 | -8.56 | 18.77 | **NO** |
 | leviathan | feel coherence | 0.96 | 0.96 | 0.19 | yes |
 | leviathan | feel burstiness | 2.25 | 2.11 | 0.67 | yes |
 | leviathan | feel jerk_rel | 0.04 | 0.04 | 0.05 | yes |
 | leviathan | feel size | 5.00 | 5.00 | 0.75 | yes |
-| mobber | hits/min wander | 1.75 | 1.78 | 4.79 | yes |
+| mobber | hits/min wander | 1.75 | 1.78 | 4.52 | yes |
 | mobber | hits/min evader | 0.00 | 0.00 | 1.00 | yes |
-| mobber | hits/min hunter | 23.58 | 24.33 | 9.39 | yes |
-| mobber | payoff/min (hunter) | 18.33 | 17.67 | 8.55 | yes |
+| mobber | hits/min hunter | 23.58 | 24.33 | 9.25 | yes |
+| mobber | payoff/min (hunter) | 18.33 | 17.67 | 8.65 | yes |
 | mobber | counterplay (evader/wander) | 0.00 | 0.00 | 0.15 | yes |
 | mobber | telegraphed share of first strikes | 1.00 | 0.94 | 0.30 | yes |
 | mobber | telegraph first strike s (telegraphed) | 0.97 | 0.97 | 0.29 | yes |
-| mobber | telegraph (shared) s | 0.24 | 0.34 | 0.39 | yes |
+| mobber | telegraph (shared) s | 0.24 | 0.34 | 0.36 | yes |
 | mobber | feel speed_rel | 0.13 | 0.13 | 0.05 | yes |
-| mobber | feel approach | 2.35 | 1.90 | 6.27 | yes |
+| mobber | feel approach | 2.35 | 1.90 | 6.20 | yes |
 | mobber | feel coherence | 0.31 | 0.30 | 0.06 | yes |
 | mobber | feel burstiness | 2.63 | 2.57 | 0.79 | yes |
 | mobber | feel jerk_rel | 1.54 | 1.58 | 0.47 | yes |
@@ -357,7 +371,7 @@ Verdict: pack PASS, thief PASS, locust PASS, lurker **FAIL**, stampede **FAIL**,
 | grazer | hits/min wander | 0.00 | 0.00 | 1.00 | yes |
 | grazer | hits/min evader | 0.00 | 0.00 | 1.00 | yes |
 | grazer | hits/min hunter | 0.00 | 0.00 | 1.00 | yes |
-| grazer | payoff/min (hunter) | 34.42 | 27.67 | 12.32 | yes |
+| grazer | payoff/min (hunter) | 34.42 | 27.67 | 11.90 | yes |
 | grazer | counterplay (evader/wander) | - | - | - | yes (wanderer hit < 1/min on a side: not resolvable) |
 | grazer | telegraphed share of first strikes | - | - | - | yes (undefined both) |
 | grazer | telegraph first strike s (telegraphed) | - | - | - | yes (undefined both) |
@@ -370,12 +384,12 @@ Verdict: pack PASS, thief PASS, locust PASS, lurker **FAIL**, stampede **FAIL**,
 | grazer | feel size | 2.50 | 2.50 | 0.50 | yes |
 | fortress | hits/min wander | 0.00 | 0.22 | 1.00 | yes |
 | fortress | hits/min evader | 0.00 | 0.00 | 1.00 | yes |
-| fortress | hits/min hunter | 0.75 | 1.22 | 1.17 | yes |
-| fortress | payoff/min (hunter) | 7.08 | 9.56 | 3.68 | yes |
+| fortress | hits/min hunter | 0.75 | 1.22 | 1.19 | yes |
+| fortress | payoff/min (hunter) | 7.08 | 9.56 | 3.70 | yes |
 | fortress | counterplay (evader/wander) | - | 0.00 | - | yes (wanderer hit < 1/min on a side: not resolvable) |
-| fortress | telegraphed share of first strikes | 0.88 | 0.73 | 0.45 | yes |
+| fortress | telegraphed share of first strikes | 0.88 | 0.73 | 0.42 | yes |
 | fortress | telegraph first strike s (telegraphed) | 0.47 | 0.72 | 0.43 | yes |
-| fortress | telegraph (shared) s | 0.57 | 0.67 | 0.55 | yes |
+| fortress | telegraph (shared) s | 0.57 | 0.67 | 0.54 | yes |
 | fortress | feel speed_rel | 0.29 | 0.29 | 0.07 | yes |
 | fortress | feel approach | -2.21 | 0.04 | 6.00 | yes |
 | fortress | feel coherence | 0.31 | 0.32 | 0.07 | yes |
@@ -383,7 +397,7 @@ Verdict: pack PASS, thief PASS, locust PASS, lurker **FAIL**, stampede **FAIL**,
 | fortress | feel jerk_rel | 0.28 | 0.27 | 0.08 | yes |
 | fortress | feel size | 3.00 | 3.00 | 0.50 | yes |
 
-Verdict: lurker PASS, stampede PASS, leviathan **FAIL**, mobber PASS, grazer PASS, fortress PASS
+Verdict: pack PASS, lurker PASS, stampede PASS, leviathan **FAIL**, mobber PASS, grazer PASS, fortress PASS
 
 ### leviathan: 24 seeds per side (the 6-8 seed run disagreed on one feel axis)
 
@@ -398,7 +412,7 @@ Verdict: lurker PASS, stampede PASS, leviathan **FAIL**, mobber PASS, grazer PAS
 | leviathan | telegraph first strike s (telegraphed) | 0.90 | 0.90 | 0.27 | yes |
 | leviathan | telegraph (shared) s | 0.90 | 0.90 | 0.27 | yes |
 | leviathan | feel speed_rel | 0.29 | 0.29 | 0.07 | yes |
-| leviathan | feel approach | 4.29 | 7.39 | 9.93 | yes |
+| leviathan | feel approach | 4.29 | 7.39 | 10.17 | yes |
 | leviathan | feel coherence | 0.97 | 0.96 | 0.19 | yes |
 | leviathan | feel burstiness | 2.25 | 2.27 | 0.68 | yes |
 | leviathan | feel jerk_rel | 0.04 | 0.04 | 0.05 | yes |

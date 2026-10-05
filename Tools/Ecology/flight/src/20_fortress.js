@@ -233,7 +233,7 @@ Fortress.prototype.defend = function (arena, dt) {
       this.steerK(k, p.pos[0] + p.vel[0] * 0.25, p.pos[1] + p.vel[1] * 0.25, p.pos[2] + p.vel[2] * 0.25, dt, this.speed * 1.8);
       this.intent[k] = 1;
       const d = Math.hypot(this.pos[3 * k] - p.pos[0], this.pos[3 * k + 1] - p.pos[1], this.pos[3 * k + 2] - p.pos[2]);
-      if (d < p.radius + 4 && this.cool[k] <= 0) { arena.hit(p, 'sting'); this.cool[k] = cooldown; }
+      if (d < p.radius + 4 && this.cool[k] <= 0) { arena.hit(p, 'sting', undefined, k); this.cool[k] = cooldown; }
     }
   }
 };

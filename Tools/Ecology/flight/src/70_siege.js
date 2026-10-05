@@ -234,7 +234,7 @@ Siege.prototype.act = function (arena, dt) {
         if (t - this._lastBite < K.BITE_GAP) continue;
         this._lastBite = t; this.strikes++;
         if (this.phase === 'dive') this.diveBites++; else this.wallBites++;
-        arena.hit(p, 'bite');
+        arena.hit(p, 'bite', 1, i);
 
       }
     }

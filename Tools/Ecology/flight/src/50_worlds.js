@@ -64,7 +64,7 @@ function now() { return (typeof performance !== 'undefined' ? performance.now() 
 function FlightWorld(PARAMS, mode, seed, scale) {
   this.P = PARAMS; this.mode = mode; scale = scale || 1;
   const ar = this.arena = new Arena(seed || 7, { world: 'flight' });
-  ar.scatterMass(mode === 'cell' ? 4200 : 3000);
+  ar.scatterMass(mode === 'cell' || mode === 'showcase' ? 4200 : 3000);
   ar.enableTrails(15, 10); ar.trailDom = 1; ar.trailFlag = 1;   // the player's wake: conserved mass, theirs to lose
   const pl = this.player = new Pilot('player', 120, 'you'); pl.rams = true; pl.turn = 0;
   ar.addPilot(pl);
@@ -72,7 +72,7 @@ function FlightWorld(PARAMS, mode, seed, scale) {
   this.species = [];
   const add = (key, o) => { const sp = new SPECIES[key](ar, PARAMS.species[key], Object.assign({ seed: seed || 7 }, o || {})); sp.key = key; this.species.push(sp); return sp; };
   const R = ar.R;
-  if (mode === 'cell') {
+  if (mode === 'cell' || mode === 'showcase') {
     // near the player's start, the rest spread round the cell; positions only - every rule is the species' own
     add('grazer', { n: Math.round(900 * scale), cap: Math.round(1600 * scale), clusters: 10 });
     add('locust', { cap: Math.round(360 * scale) });
@@ -84,6 +84,9 @@ function FlightWorld(PARAMS, mode, seed, scale) {
     add('leviathan');
     add('fortress', { anchor: [0.38 * R, 0.1 * R, -0.25 * R] });
     add('snaptrap', { placeClump: (a, C, o) => { a.ball(0.3 * R, 0.75 * R, C, o); } });
+    // the showcase: the whole cell plus the siege, starting on the far side so the first minute is the calm cell
+    // first siege after ~40 s, then one every ~40 s, so the cell gets to be a cell between them
+    if (mode === 'showcase') { const sg = add('siege', { centre: [0.25 * R, 0.15 * R, 0.45 * R], K: { T_COOL: 30, T_COOL_ESC: 25 } }); sg.cool = 40; }
   } else if (mode === 'snaptrap') {
     add('snaptrap', { placeClump: (a, C, o) => { a.ball(0.15 * R, 0.55 * R, C, o); C[o + 2] -= 0.25 * R; } });
   } else if (mode === 'siege') {

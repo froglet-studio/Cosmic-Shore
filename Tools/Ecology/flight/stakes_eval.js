@@ -1,6 +1,6 @@
 // stakes_eval.js - what the petal stakes (src/60_stakes.js) do to a pilot, per species, per rule.
 //
-//   node Tools/Ecology/flight/stakes_eval.js [--minutes 3] [--seeds 6]
+//   node Tools/Ecology/flight/stakes_eval.js [--minutes 3] [--seeds 6] [--species pack,stampede] [--out file]
 //
 // Each species runs in its own fidelity world (the scored Python harness, mirrored in 50_worlds.js) against the three
 // scripted pilots: WANDER (careless: flies its own route, reads nothing), EVADER (skilled: turns away from what
@@ -32,7 +32,7 @@ function world(key, policy, seed) {
 function run(key, policy, seed, rule) {
   const { ar, sp, w } = world(key, policy, seed), pl = ar.pilots[0];
   const st = new E.Stakes({ rule, hostile: true }), tt = new E.TeleTrack(), cry = [];
-  ar.onHit = (p, kind, amt, src) => { if (p === pl) st.contact(ar.t, kind, src || key, tt.lead(ar.t, src || key) >= 0.25); };
+  ar.onHit = (p, kind, amt, src, who, standing) => { if (p === pl) st.contact(ar.t, kind, src || key, tt.lead(ar.t, src || key, who, standing) >= 0.25); };
   ar.onKill = (s, i) => { const X = s.pos || s.h; if (X) cry.push([X[3 * i], X[3 * i + 1], X[3 * i + 2], ar.t, E.SPECIES_ELEMENT[key]]); };
   const steps = Math.round(MIN * 60 / DT);
   for (let s = 0; s < steps; s++) {
@@ -50,7 +50,8 @@ function run(key, policy, seed, rule) {
   return st.summary(MIN);
 }
 
-const keys = Object.keys(E.SPECIES), out = { minutes: MIN, seeds: SEEDS, dt: DT, rows: [] };
+const ONLY = (() => { const i = process.argv.indexOf('--species'); return i > 0 ? process.argv[i + 1].split(',') : null; })();
+const keys = Object.keys(E.SPECIES).filter(k => !ONLY || ONLY.includes(k)), out = { minutes: MIN, seeds: SEEDS, dt: DT, rows: [] };
 const t0 = Date.now();
 for (const key of keys) for (const policy of POL[E.WORLD[key]]) for (const rule of ['shipped', 'tuned']) {
   const R = []; for (let s = 0; s < SEEDS; s++) R.push(run(key, policy, 100 + s, rule));
@@ -73,7 +74,8 @@ for (const rule of ['shipped', 'tuned']) {
     telegraphed_share: (() => { const r = rows.filter(x => x.telegraphed_share !== null); const w = r.reduce((a, x) => a + x.burned_per_min, 0); return w ? +(r.reduce((a, x) => a + x.telegraphed_share * x.burned_per_min, 0) / w).toFixed(2) : null; })() };
 }
 fs.mkdirSync(path.join(__dirname, 'results'), { recursive: true });
-fs.writeFileSync(path.join(__dirname, 'results', 'stakes_eval.json'), JSON.stringify(out, null, 1));
+const OUT = (() => { const i = process.argv.indexOf('--out'); return i > 0 ? process.argv[i + 1] : path.join(__dirname, 'results', 'stakes_eval.json'); })();
+fs.writeFileSync(OUT, JSON.stringify(out, null, 1));
 const pad = (s, n) => String(s).padEnd(n);
 console.log(pad('species', 11) + pad('pilot', 8) + pad('rule', 8) + pad('burn/min', 9) + pad('gain/min', 9) + pad('end', 6) + pad('stripped', 9) + pad('strip_s', 8) + 'read');
 for (const r of out.rows) console.log(pad(r.species, 11) + pad(r.policy, 8) + pad(r.rule, 8) + pad(r.burned_per_min, 9) + pad(r.gained_per_min, 9) + pad(r.end_petals, 6) + pad(r.stripped_runs + '/' + SEEDS, 9) + pad(r.strip_s_median ?? '-', 8) + (r.telegraphed_share ?? '-'));

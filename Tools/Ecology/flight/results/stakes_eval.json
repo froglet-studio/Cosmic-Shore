@@ -9,11 +9,11 @@
    "rule": "shipped",
    "burned_per_min": 6.67,
    "gained_per_min": 0,
-   "contacts_per_min": 4.56,
+   "contacts_per_min": 4.28,
    "end_petals": 0,
    "stripped_runs": 6,
    "strip_s_median": 16,
-   "telegraphed_share": 0.83
+   "telegraphed_share": 1
   },
   {
    "species": "pack",
@@ -21,11 +21,11 @@
    "rule": "tuned",
    "burned_per_min": 6.67,
    "gained_per_min": 0,
-   "contacts_per_min": 4.56,
+   "contacts_per_min": 4.28,
    "end_petals": 0,
    "stripped_runs": 6,
-   "strip_s_median": 74,
-   "telegraphed_share": 0.97
+   "strip_s_median": 75,
+   "telegraphed_share": 1
   },
   {
    "species": "pack",
@@ -55,25 +55,25 @@
    "species": "pack",
    "policy": "hunter",
    "rule": "shipped",
-   "burned_per_min": 8.39,
+   "burned_per_min": 7.89,
    "gained_per_min": 2.28,
-   "contacts_per_min": 1.17,
-   "end_petals": 1.7,
+   "contacts_per_min": 0.89,
+   "end_petals": 3.2,
    "stripped_runs": 6,
    "strip_s_median": 9,
-   "telegraphed_share": 0.91
+   "telegraphed_share": 1
   },
   {
    "species": "pack",
    "policy": "hunter",
    "rule": "tuned",
-   "burned_per_min": 4.67,
+   "burned_per_min": 3.56,
    "gained_per_min": 2.28,
-   "contacts_per_min": 1.17,
-   "end_petals": 12.8,
+   "contacts_per_min": 0.89,
+   "end_petals": 16.2,
    "stripped_runs": 0,
    "strip_s_median": null,
-   "telegraphed_share": 0.71
+   "telegraphed_share": 1
   },
   {
    "species": "thief",
@@ -205,7 +205,7 @@
    "end_petals": 10,
    "stripped_runs": 0,
    "strip_s_median": null,
-   "telegraphed_share": 0.9
+   "telegraphed_share": 1
   },
   {
    "species": "locust",
@@ -217,7 +217,7 @@
    "end_petals": 12.5,
    "stripped_runs": 0,
    "strip_s_median": null,
-   "telegraphed_share": 0.93
+   "telegraphed_share": 1
   },
   {
    "species": "lurker",
@@ -229,7 +229,7 @@
    "end_petals": 0,
    "stripped_runs": 6,
    "strip_s_median": 20,
-   "telegraphed_share": 0.83
+   "telegraphed_share": 1
   },
   {
    "species": "lurker",
@@ -241,7 +241,7 @@
    "end_petals": 2.7,
    "stripped_runs": 4,
    "strip_s_median": 136,
-   "telegraphed_share": 0.96
+   "telegraphed_share": 1
   },
   {
    "species": "lurker",
@@ -343,25 +343,25 @@
    "species": "stampede",
    "policy": "hunter",
    "rule": "shipped",
-   "burned_per_min": 9.72,
+   "burned_per_min": 9.39,
    "gained_per_min": 3.22,
-   "contacts_per_min": 20.33,
-   "end_petals": 0.5,
+   "contacts_per_min": 18.61,
+   "end_petals": 1.5,
    "stripped_runs": 6,
    "strip_s_median": 3,
-   "telegraphed_share": 0.82
+   "telegraphed_share": 1
   },
   {
    "species": "stampede",
    "policy": "hunter",
    "rule": "tuned",
-   "burned_per_min": 9.44,
+   "burned_per_min": 9.05,
    "gained_per_min": 3.22,
-   "contacts_per_min": 20.33,
-   "end_petals": 1.3,
+   "contacts_per_min": 18.61,
+   "end_petals": 2.5,
    "stripped_runs": 6,
-   "strip_s_median": 57,
-   "telegraphed_share": 0.63
+   "strip_s_median": 64,
+   "telegraphed_share": 1
   },
   {
    "species": "leviathan",
@@ -493,7 +493,7 @@
    "end_petals": 9.2,
    "stripped_runs": 0,
    "strip_s_median": null,
-   "telegraphed_share": 0.99
+   "telegraphed_share": 1
   },
   {
    "species": "mobber",
@@ -505,7 +505,7 @@
    "end_petals": 13.5,
    "stripped_runs": 0,
    "strip_s_median": null,
-   "telegraphed_share": 0.96
+   "telegraphed_share": 1
   },
   {
    "species": "grazer",
@@ -637,7 +637,7 @@
    "end_petals": 6.2,
    "stripped_runs": 4,
    "strip_s_median": 109,
-   "telegraphed_share": 0.86
+   "telegraphed_share": 1
   },
   {
    "species": "fortress",
@@ -649,7 +649,7 @@
    "end_petals": 17.5,
    "stripped_runs": 0,
    "strip_s_median": null,
-   "telegraphed_share": 0.93
+   "telegraphed_share": 1
   },
   {
    "species": "snaptrap",
@@ -660,8 +660,8 @@
    "contacts_per_min": 7.61,
    "end_petals": 0,
    "stripped_runs": 6,
-   "strip_s_median": 5,
-   "telegraphed_share": 0.83
+   "strip_s_median": 16,
+   "telegraphed_share": 1
   },
   {
    "species": "snaptrap",
@@ -672,32 +672,32 @@
    "contacts_per_min": 7.61,
    "end_petals": 0,
    "stripped_runs": 6,
-   "strip_s_median": 57,
-   "telegraphed_share": 0.87
+   "strip_s_median": 60,
+   "telegraphed_share": 1
   },
   {
    "species": "snaptrap",
    "policy": "reader",
    "rule": "shipped",
-   "burned_per_min": 3.33,
+   "burned_per_min": 2.22,
    "gained_per_min": 0,
    "contacts_per_min": 0.22,
-   "end_petals": 10,
-   "stripped_runs": 3,
-   "strip_s_median": 117,
-   "telegraphed_share": 0.67
+   "end_petals": 13.3,
+   "stripped_runs": 2,
+   "strip_s_median": 119,
+   "telegraphed_share": 1
   },
   {
    "species": "snaptrap",
    "policy": "reader",
    "rule": "tuned",
-   "burned_per_min": 0.67,
+   "burned_per_min": 0.44,
    "gained_per_min": 0,
    "contacts_per_min": 0.22,
-   "end_petals": 18,
+   "end_petals": 18.7,
    "stripped_runs": 0,
    "strip_s_median": null,
-   "telegraphed_share": 0.67
+   "telegraphed_share": 1
   },
   {
    "species": "snaptrap",
@@ -709,7 +709,7 @@
    "end_petals": 0.3,
    "stripped_runs": 6,
    "strip_s_median": 2,
-   "telegraphed_share": 0.89
+   "telegraphed_share": 1
   },
   {
    "species": "snaptrap",
@@ -721,24 +721,24 @@
    "end_petals": 0.8,
    "stripped_runs": 6,
    "strip_s_median": 32,
-   "telegraphed_share": 0.93
+   "telegraphed_share": 1
   }
  ],
- "wall_s": 817.388,
+ "wall_s": 789.407,
  "headline": {
   "shipped": {
    "careless_burn_per_min": 3.89,
-   "skilled_burn_per_min": 0.91,
-   "aggressive_burn_per_min": 10.67,
+   "skilled_burn_per_min": 0.8,
+   "aggressive_burn_per_min": 10.59,
    "stripped_share": 0.42,
-   "telegraphed_share": 0.93
+   "telegraphed_share": 1
   },
   "tuned": {
    "careless_burn_per_min": 3.25,
-   "skilled_burn_per_min": 0.22,
-   "aggressive_burn_per_min": 6.04,
+   "skilled_burn_per_min": 0.2,
+   "aggressive_burn_per_min": 5.89,
    "stripped_share": 0.21,
-   "telegraphed_share": 0.92
+   "telegraphed_share": 1
   }
  }
 }
