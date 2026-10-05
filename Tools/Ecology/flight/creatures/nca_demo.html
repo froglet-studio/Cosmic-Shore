@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NCA Lizard Creature</title>
+<style>
+  :root { --bg: #05070d; --fg: #d8e2f0; --muted: #8a97ab; --panel: rgba(12, 16, 26, 0.78); --line: rgba(255,255,255,0.12); }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); font: 13px/1.4 system-ui, sans-serif; overflow: hidden; }
+  canvas { display: block; }
+  #hud { position: fixed; left: 16px; top: 16px; max-width: calc(100vw - 32px); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+  #hud h1 { font-size: 14px; margin: 0 0 4px; }
+  #hud .row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  #hud button { background: transparent; color: var(--fg); border: 1px solid var(--line); border-radius: 6px; padding: 4px 9px; cursor: pointer; font: inherit; }
+  #hud button.on { border-color: currentColor; }
+  #stats { color: var(--muted); font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+<div id="hud">
+  <h1>NCA lizard (lizard3d_swim)</h1>
+  <div id="stats">loading...</div>
+  <div class="row" id="els"></div>
+  <div class="row"><button id="reseed">Regrow from seed</button><button id="spin" class="on">Orbit</button></div>
+  <div style="color:var(--muted);margin-top:6px">Click the body to bite it out. It grows back.</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="nca_creature.js"></script>
+<script>
+(function () {
+  const W = () => innerWidth, H = () => innerHeight;
+  const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+  renderer.setPixelRatio(Math.min(2, devicePixelRatio || 1)); renderer.setSize(W(), H());
+  document.body.appendChild(renderer.domElement);
+  const scene = new THREE.Scene(); scene.background = new THREE.Color(0x05070d); scene.fog = new THREE.Fog(0x05070d, 30, 70);
+  const cam = new THREE.PerspectiveCamera(45, W() / H(), 0.1, 200);
+  scene.add(new THREE.HemisphereLight(0xbcd0ff, 0x101018, 0.8));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.9); sun.position.set(10, 20, 8); scene.add(sun);
+  const grid = new THREE.GridHelper(40, 20, 0x223048, 0x141c2c); grid.position.y = -6; scene.add(grid);
+
+  const params = new URLSearchParams(location.search);
+  const creature = new NcaCreature({ seed: 7, scale: 0.5, position: [0, 0, 0], element: params.get('element') || 'space', budgetMs: 6, stepsPerSecond: 30 });
+  const pre = +(params.get('grow') || 0); if (pre > 0) creature.grow(pre);
+  const mesh = creature.mesh(THREE); scene.add(mesh);
+  window.creature = creature;
+
+  // hit flashes
+  const flashes = [];
+  function flash(p, r) {
+    const m = new THREE.Mesh(new THREE.SphereGeometry(r, 16, 12), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5, depthWrite: false }));
+    m.position.copy(p); scene.add(m); flashes.push({ m, t: 0 });
+  }
+
+  const els = document.getElementById('els');
+  for (const el of Object.keys(NcaCreature.ELEMENT_COLOUR)) {
+    const b = document.createElement('button'); b.textContent = el; const c = NcaCreature.ELEMENT_COLOUR[el];
+    b.style.color = `rgb(${c.map(x => Math.round(x * 255)).join(',')})`;
+    b.onclick = () => { creature.element = el; [...els.children].forEach(x => x.classList.toggle('on', x === b)); };
+    if (el === creature.element) b.classList.add('on');
+    els.appendChild(b);
+  }
+  document.getElementById('reseed').onclick = () => creature.reset();
+  let orbit = true; const spinBtn = document.getElementById('spin');
+  spinBtn.onclick = () => { orbit = !orbit; spinBtn.classList.toggle('on', orbit); };
+
+  const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+  renderer.domElement.addEventListener('pointerdown', (e) => {
+    ndc.set(e.clientX / W() * 2 - 1, -e.clientY / H() * 2 + 1); ray.setFromCamera(ndc, cam);
+    const hit = ray.intersectObject(mesh)[0];
+    if (!hit) return;
+    const r = 3 * creature.scale; creature.hit(hit.point.toArray(), r); creature.sync(); flash(hit.point, r);
+  });
+  window.biteAt = (p, r) => creature.hit(p, r);   // for headless capture
+
+  addEventListener('resize', () => { cam.aspect = W() / H(); cam.updateProjectionMatrix(); renderer.setSize(W(), H()); });
+  const stats = document.getElementById('stats');
+  let ang = 0.6, last = performance.now(), fps = 60, frameMs = 0;
+  function frame(t) {
+    const dt = Math.min(0.1, (t - last) / 1000); last = t;
+    creature.step(dt); creature.sync();
+    frameMs = 0.9 * frameMs + 0.1 * creature.lastStepMs; fps = 0.95 * fps + 0.05 / Math.max(dt, 1e-3);
+    if (orbit) ang += dt * 0.15;
+    cam.position.set(Math.cos(ang) * 22, 13, Math.sin(ang) * 22); cam.lookAt(0, -1, 0);
+    for (let i = flashes.length - 1; i >= 0; i--) { const f = flashes[i]; f.t += dt; f.m.material.opacity = 0.5 * (1 - f.t / 0.4); f.m.scale.setScalar(1 + f.t * 2); if (f.t > 0.4) { scene.remove(f.m); flashes.splice(i, 1); } }
+    stats.textContent = `${creature.count()} voxels | NCA step ${creature.steps} | ${frameMs.toFixed(1)} ms/frame NCA | ${fps.toFixed(0)} fps`;
+    renderer.render(scene, cam);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

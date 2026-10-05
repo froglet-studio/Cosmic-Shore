@@ -38,24 +38,25 @@ const late = counts.slice(-200), lateMin = Math.min(...late), lateMax = Math.max
 ok('keeps_animating', meanFlips > 1 && lateMin > 0.5 * grown, { steps: 640, mean_voxel_flips_per_step_last200: +meanFlips.toFixed(1), min_flips_last200: minFlips, alive_range_last200: [lateMin, lateMax], cycle_period_steps: bestLag, expected_cycle_steps: '8 poses x ~8.5 = ~68' });
 
 // ---- 3. hit() and regrowth --------------------------------------------------------------------------------------
-// hit a chunk of the body: a voxel ~1/4 along the body from the centre, radius 4 voxels
+// a big bite: centred halfway between the body centre and the farthest voxel (a chunk of tail/torso), radius 7 voxels
 function avgCount(cr, n) { let t = 0; for (let k = 0; k < n; k++) { cr.grow(1); t += cr.count(); } return t / n; }
 const before = avgCount(c, 68);                  // average over one swim cycle (count varies with the pose)
 const v = c.voxels(); let far = 0, fd = -1;
 for (let i = 0; i < v.n; i++) { const d = Math.hypot(v.pos[3 * i] - c.position[0], v.pos[3 * i + 2] - c.position[2]); if (d > fd) { fd = d; far = i; } }
 const hp = [0.5 * (v.pos[3 * far] + c.position[0]), v.pos[3 * far + 1], 0.5 * (v.pos[3 * far + 2] + c.position[2])];
-const removed = c.hit(hp, 4 * c.scale);
+const removed = c.hit(hp, 7 * c.scale);
 const afterHit = c.count();
-const rec = [[0, afterHit]]; let recStep = null;
+const rec = [[0, afterHit]], win = []; let recStep = null;
 for (let s = 1; s <= 600; s++) {
   c.grow(1); const n = c.count(); if (s % 10 === 0) rec.push([s, n]);
-  if (recStep === null && s >= 10) { /* windowed: mean of the next cycle is checked below */ }
-  if (recStep === null && n >= 0.9 * before) recStep = s;
+  win.push(n); if (win.length > 17) win.shift();         // 17-step window (1/4 swim cycle) so one lucky pose does not count
+  const wm = win.reduce((x, y) => x + y, 0) / win.length;
+  if (recStep === null && win.length === 17 && wm >= 0.9 * before) recStep = s;
 }
 const finalAvg = avgCount(c, 68);
-ok('hit_and_regrow', removed > 20 && recStep !== null && finalAvg >= 0.9 * before,
-  { pre_hit_avg_voxels: Math.round(before), removed, after_hit: afterHit, removed_pct: +(100 * (before - afterHit) / before).toFixed(1),
-    steps_to_90pct: recStep, recovery_pct_after_600_steps: +(100 * finalAvg / before).toFixed(1), curve: rec.filter((_, i) => i % 6 === 0) });
+ok('hit_and_regrow', removed > 0.15 * before && recStep !== null && finalAvg >= 0.9 * before,
+  { pre_hit_avg_voxels: Math.round(before), hit_radius_voxels: 7, removed, after_hit: afterHit, removed_pct: +(100 * (before - afterHit) / before).toFixed(1),
+    steps_to_90pct_windowed: recStep, recovery_pct_after_600_steps: +(100 * finalAvg / before).toFixed(1), curve: rec.filter((_, i) => i % 3 === 0) });
 
 // ---- 4. budgeted, resumable step(dt) ----------------------------------------------------------------------------
 const b = new NcaCreature({ seed: 3, scale: 0.5, element: 'mass', budgetMs: 4 });

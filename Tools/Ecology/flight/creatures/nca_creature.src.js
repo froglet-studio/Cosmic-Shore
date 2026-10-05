@@ -208,7 +208,7 @@
     /** Run n whole NCA steps synchronously (blocking; use before the creature is shown). */
     grow(n) {
       for (let k = 0; k < n; k++) {
-        if (!this._inStep) { if (capCells == null && done > 0 && now() - t0 >= 0.5 * budget) break; this._begin(); }
+        if (!this._inStep) this._begin();
         const L = this._list, rate = this.fireRate, rnd = this.rand;
         while (this._cursor < this._listN) { const i = L[this._cursor++]; if (rnd() <= rate) this._update(i); }
         this._finish();

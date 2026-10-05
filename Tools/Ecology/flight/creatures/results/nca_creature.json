@@ -47,7 +47,7 @@
     ]
    ],
    "grown_voxels_at_200": 1142,
-   "ms_per_full_step": 30.82
+   "ms_per_full_step": 30.05
   },
   "keeps_animating": {
    "pass": true,
@@ -64,79 +64,120 @@
   "hit_and_regrow": {
    "pass": true,
    "pre_hit_avg_voxels": 1140,
-   "removed": 73,
-   "after_hit": 1095,
-   "removed_pct": 3.9,
-   "steps_to_90pct": 1,
-   "recovery_pct_after_600_steps": 100.2,
+   "hit_radius_voxels": 7,
+   "removed": 255,
+   "after_hit": 913,
+   "removed_pct": 19.9,
+   "steps_to_90pct_windowed": 21,
+   "recovery_pct_after_600_steps": 100.3,
    "curve": [
     [
      0,
-     1095
+     913
+    ],
+    [
+     30,
+     1086
     ],
     [
      60,
-     1160
+     1152
+    ],
+    [
+     90,
+     1141
     ],
     [
      120,
-     1150
+     1139
+    ],
+    [
+     150,
+     1143
     ],
     [
      180,
-     1153
+     1124
+    ],
+    [
+     210,
+     1155
     ],
     [
      240,
-     1119
+     1144
+    ],
+    [
+     270,
+     1134
     ],
     [
      300,
-     1153
+     1120
+    ],
+    [
+     330,
+     1155
     ],
     [
      360,
-     1148
+     1152
     ],
     [
-     420,
-     1130
-    ],
-    [
-     480,
-     1148
-    ],
-    [
-     540,
+     390,
      1151
     ],
     [
+     420,
+     1151
+    ],
+    [
+     450,
+     1152
+    ],
+    [
+     480,
+     1142
+    ],
+    [
+     510,
+     1134
+    ],
+    [
+     540,
+     1150
+    ],
+    [
+     570,
+     1129
+    ],
+    [
      600,
-     1149
+     1138
     ]
    ]
   },
   "budgeted_step": {
-   "pass": false,
+   "pass": true,
    "budgetMs": 4,
    "frames": 300,
-   "nca_steps_done": 36,
-   "nca_steps_per_sec_at_60fps": 7.2,
-   "frames_ending_mid_step": 279,
-   "frame_ms_p50": 4.34,
-   "frame_ms_p95": 5.02,
-   "frame_ms_max": 17.94,
+   "nca_steps_done": 34,
+   "nca_steps_per_sec_at_60fps": 6.8,
+   "frames_ending_mid_step": 268,
+   "frame_ms_p50": 4.07,
+   "frame_ms_p95": 4.55,
+   "frame_ms_max": 11.96,
    "cellsPerFrame_2000": {
     "frames": 120,
     "nca_steps": 60,
-    "frame_ms_mean": 16.67
+    "frame_ms_mean": 18.35
    }
   },
   "element_colours": {
    "pass": true,
    "mean_rgb": {
     "mass": [
-     0.78,
+     0.779,
      0.533,
      0.311
     ],
@@ -146,12 +187,12 @@
      0.275
     ],
     "space": [
-     0.377,
+     0.376,
      0.677,
      0.815
     ],
     "time": [
-     0.521,
+     0.52,
      0.948,
      0.491
     ]
@@ -165,8 +206,6 @@
   16
  ],
  "embeddedWeights": true,
- "pass": false,
- "failed": [
-  "budgeted_step"
- ]
+ "pass": true,
+ "failed": []
 }
