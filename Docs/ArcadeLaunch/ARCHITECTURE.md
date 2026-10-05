@@ -115,8 +115,8 @@ joined AFTER the host opened a card was never told at all. The client sat on the
 while the host looked at a lobby, and re-opening the card was the only way to reach them.
 
 `ArcadeConfigSyncManager` now holds the lobby in one server-written
-`NetworkVariable<LobbySnapshot>`: the card, the intensity, the seat count, the domain
-count, the placed AI domains (four fixed slots — a match seats `MaxMatchSeats` = 4 and one
+`NetworkVariable<LobbySnapshot>`: the card, the intensity, the AI difficulty (§3.3), the seat
+count, the domain count, the placed AI domains (four fixed slots — a match seats `MaxMatchSeats` = 4 and one
 of them is always the host — so the struct stays unmanaged), and a **generation** that
 climbs on every open, so a close-and-reopen of the same card is a new open even on a peer
 that never saw the close land. A late joiner receives the value with the spawn and applies
@@ -243,7 +243,7 @@ modal pointed at a different roster, so the one key serves both.
 before it resets the config - a pilot who readied and whose party then dismissed the card has
 not launched anything, and remembering that would restore a setup that never flew. The record
 has two halves written by two authorities: the **host terms** (intensity, domain count, the
-placed AI in placement order) are written only by the launch authority (`SaveHostTerms`), and
+placed AI in placement order, the AI difficulty) are written only by the launch authority (`SaveHostTerms`), and
 the **pilot choice** (own domain, own hull) by every instance, host and guest alike
 (`SavePilotChoice`) - so a guest readying on a card this machine once hosted cannot clobber
 the host terms it last launched with. The weekly challenge writes nothing: pinned terms are
@@ -255,6 +255,7 @@ not a preference.
 | field | restored where | clamped against |
 |---|---|---|
 | intensity | `InitializeConfigFromGameDefaults`, so the row, the preview and the commit all see it | the card's range AND the player's unlocks - a saved 4 on a mode whose 3 and 4 are still locked opens on 2, never on a dimmed button drawn selected |
+| AI difficulty | `InitializeConfigFromGameDefaults`, beside the intensity, so the commit replicates it | `AIDifficultyRules.Resolve` - a record saved before difficulty existed reads 0 and opens on Medium; the weekly challenge pins Medium; a card that does not offer the row (§3.3) launches on Medium whatever it remembered |
 | placed AI + domain count | `RestoreRememberedRoster`, AFTER `CommitConfiguration` | Blue dropped; cut to the seats free above the humans present (a party that grew gets fewer bots back); the domain count covers every placement's prefix and stays inside the card's window, through the same `HandlePlayerCountSelected` clamp a live placement takes |
 | own domain | `RestoreRememberedDomain`, AFTER the commit on the host, and on a guest's first draw of a NEW lobby generation | only inside `ActiveDomains[0..DC-1]` - a Gold pick on a two-domain lobby falls back to Jade, because lighting a dimmed tile is a promise the spawn would break; routed through `HandleDomainSelected` so it is a real server request, never a lit tile the server never heard about |
 | own hull | `InitializeDefaultShipFromAvailable`, step 0 (ahead of the session's last hull and the legacy loadout file) | must be one the card lists; the arena's per-session confirmation gate is untouched - the carousel opens ON the hull, the pilot still presses SELECT VESSEL |
@@ -273,6 +274,50 @@ setup is a convenience of THIS machine, made with the party and the unlocks it h
 legacy `LoadoutSystem.SaveGameLoadOut` "last game play configuration" is superseded for the
 hull; its only writer was the retired two-screen path's `PlaySelectedGame`, and its read is
 kept as a fallback below this store.
+
+### 3.3 The AI difficulty row: the opponent, not the map
+
+Three buttons under the intensity row - **Easy, Medium, Hard** - set how well the AI flies.
+They are deliberately not intensity: intensity is the MAP (track length, crystals, laps), the
+difficulty is the OPPONENT, so a Hard AI can race intensity 1 and an Easy one intensity 4.
+`AIDifficulty` (`_Scripts/Data/Enums/`, `Easy = 1, Medium = 2, Hard = 3`) carries it, and
+`AIDifficultyRules` holds the four rules every reader shares: the default is **Medium**, any
+other number (0 from an old save or a default struct, a member a later build added) resolves to
+that default, `IsOfferedFor` names the modes whose AI actually reads it, and `Step` is the pad's
+left/right.
+
+It follows intensity's path exactly, because it is the same kind of fact:
+
+- **The host decides, the panel only draws.** `AIDifficultyPicker` raises a press;
+  `ArcadeLaunchPanel` re-raises it as `OnAIDifficultyPicked`; `ArcadeGameConfigureModal
+  .HandleAIDifficultySelected` refuses it in client mode and on the weekly challenge, writes
+  `ArcadeGameConfigSO.AIDifficulty`, and replicates it. `SetHostControlsInteractable` greys the row
+  on a guest, like the intensity buttons.
+- **It is lobby STATE.** `LobbySnapshot.AIDifficulty` (an int, so the reflection test can mutate
+  it) rides the commit and every change (`NotifyAIDifficultyChanged` -> `OnAIDifficultyChangedOnClient`);
+  a guest's open reads it straight off `CurrentLobby`, so a late joiner sees the host's pick on
+  its first frame.
+- **It is a host term.** Remembered on launch with the intensity (§3.2), restored on the next open.
+- **It reaches the match through `GameDataSO.RequestedAIDifficulty`**, written by
+  `SyncAllGameDataForLaunch` beside the AI domains and read on the server where the AI is
+  installed. `[NonSerialized]`, survives `ResetRuntimeData` (and so the replay reload), reset by
+  `ResetAllData` - the same lifetime as `RequestedAIDomains`.
+- **It is offered only where the AI reads it** - Skim Race today (`Docs/SKIM_RACE_AI.md` §10). A
+  row that changed nothing would be a promise the match breaks, so a mode is added to
+  `AIDifficultyRules.IsOfferedFor` in the same change that teaches its pilot to read the value.
+  Everywhere else the row is hidden, the pad steps over it, and the launch writes Medium.
+
+**Layout.** The row is authored INACTIVE in the prefab, directly under the intensity row, by
+`Tools/Build/author_ai_difficulty_row.py`: the same 141 x 75 plates and 19.2 px spacing as the
+intensity buttons, so EASY sits under 1, MEDIUM under 2 and HARD under 3, and every serialized
+object cloned from a same-file donor. Its `--check` re-authors the row from the prefab with the
+row removed and compares byte for byte, proves the row clears the intensity row, the ADD AI toggle
+and the domain tiles in canvas pixels, and measures every label against the UI font's glyph table.
+The controls block already starts under the intensity row, so while the row shows
+`MinigameLaunchPanel.SetAIDifficultyAvailable` moves the block's top edge to just under the row
+(measured from the row's own rect, so moving the row needs no second edit) and puts it back on
+the next card; the block is a scroll view and only its viewport shrinks (375 -> 249 px at the
+reference resolution).
 
 ## 4. The controls block: the mode's abilities — and the icon animates like the game
 
@@ -733,6 +778,8 @@ instead of splitting it across two files.
 | `ModeControlsLibrarySO` | `_Scripts/UI/View/ArcadeLaunch/` | Per-mode authored rows for the controls block; `Resources/ModeControlsLibrary`, default empty |
 | `LobbySlotRow` / `LobbySlotView` | same | Seats, ready lights, the AI kick, the fill toggle |
 | `GameBriefingView` | same | Description + rotating tips |
+| `AIDifficultyPicker` | `_Scripts/UI/Elements/` | The Easy / Medium / Hard row (§3.3) - draws and raises, never decides |
+| `author_ai_difficulty_row.py` | `Tools/Build/` | Writes that row into `ArcadeGameConfigureModal.prefab` (`--check`) |
 | `MaelstromPoolListView` / `MaelstromPoolEntry` | same | What this intensity can draw |
 | `ModeVideoView` | same | The Maelstrom's clip |
 | `ArcadeGameConfigureModal` | `_Scripts/UI/Modals/` | Still the one authority on config, commit, ready-up and launch |
@@ -778,6 +825,10 @@ Authored data: `SO_ArcadeGame.Tips` (per-card play tips) and `SO_ArcadeGame.Prev
   mode and a local close is undone by the reconcile. If a guest ever needs a legitimate way out —
   "leave this lobby" as distinct from "close this window" — it has to be a real request to the
   host, not a window close, or it is the stuck-guest bug again.
+- **The AI difficulty row (§3.3) has not been seen in the Editor.** The prefab objects were
+  authored as YAML by a script and the C# type-checked against stubs; the first look in play mode
+  is owed - the row's position under the intensity row, the plates' lit/unlit swap, the controls
+  block moving down on Skim Race and back on the next card, and a guest seeing the host's pick.
 - **The in-Maelstrom pre-game panel is not built.** The design calls for the same panel between
   rounds *without* the domain row (domain cannot change mid-tournament); that lives in the
   Maelstrom scene and is deliberately left for its own pass.

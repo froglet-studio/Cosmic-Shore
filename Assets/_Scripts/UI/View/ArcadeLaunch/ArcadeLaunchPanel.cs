@@ -50,6 +50,12 @@ namespace CosmicShore.UI
         [SerializeField, Tooltip("This panel's domain tiles (Jade, Ruby, Gold).")]
         protected List<DomainInfoData> domainTiles = new(3);
 
+        [SerializeField, Tooltip("This panel's AI difficulty row (Easy / Medium / Hard). Optional: a " +
+                                 "panel without one never offers the setting. Shown only on cards " +
+                                 "whose AI reads it (AIDifficultyRules.IsOfferedFor); the modal " +
+                                 "decides, the row only draws.")]
+        protected AIDifficultyPicker aiDifficultyPicker;
+
         [SerializeField, Tooltip("Start / ready-up button.")]
         protected Button startButton;
 
@@ -111,6 +117,10 @@ namespace CosmicShore.UI
         /// <summary>The Add AI mode toggle moved. True = domain taps now place AI.</summary>
         public event Action<bool> OnAddAIModeChanged;
 
+        /// <summary>A button on the AI difficulty row was pressed. The modal decides whether it
+        /// counts (host only) and replicates it.</summary>
+        public event Action<CosmicShore.Data.AIDifficulty> OnAIDifficultyPicked;
+
         /// <summary>The leaderboard button was pressed. The modal opens the window; the panel does
         /// not know one exists.</summary>
         public event Action OnLeaderboardRequested;
@@ -153,6 +163,8 @@ namespace CosmicShore.UI
 
             if (fillWithAIToggle) fillWithAIToggle.onValueChanged.AddListener(HandleFillToggle);
 
+            if (aiDifficultyPicker) aiDifficultyPicker.OnPicked += RaiseAIDifficultyPicked;
+
             if (hostModal) hostModal.OnModalClosed += RaiseHostModalClosed;
         }
 
@@ -165,6 +177,8 @@ namespace CosmicShore.UI
             }
 
             if (fillWithAIToggle) fillWithAIToggle.onValueChanged.RemoveListener(HandleFillToggle);
+
+            if (aiDifficultyPicker) aiDifficultyPicker.OnPicked -= RaiseAIDifficultyPicked;
 
             if (hostModal) hostModal.OnModalClosed -= RaiseHostModalClosed;
         }
@@ -315,6 +329,27 @@ namespace CosmicShore.UI
             if (leaderboardButton) leaderboardButton.gameObject.SetActive(available);
         }
 
+        /// <summary>Whether this panel shows an AI difficulty row at all.</summary>
+        public bool HasAIDifficultyRow => aiDifficultyPicker;
+
+        /// <summary>
+        /// Show or hide the AI difficulty row. Passed either way, never only switched ON - the
+        /// panel is a shared scene object, so a row shown for Skim Race has to be taken back when
+        /// the next card opens (the rule <see cref="SetAddAIAvailable"/> records). A subclass that
+        /// lays something out under the row moves it here.
+        /// </summary>
+        public virtual void SetAIDifficultyAvailable(bool available)
+        {
+            if (aiDifficultyPicker) aiDifficultyPicker.gameObject.SetActive(available);
+        }
+
+        /// <summary>Light <paramref name="difficulty"/> on the row. Draws only; raises nothing, so
+        /// the modal can mirror the host's pick on a guest without it echoing back.</summary>
+        public virtual void ShowAIDifficulty(CosmicShore.Data.AIDifficulty difficulty)
+        {
+            if (aiDifficultyPicker) aiDifficultyPicker.SetSelected(difficulty);
+        }
+
         /// <summary>Wired by the modal, so a panel prefab needs no onClick of its own.</summary>
         public Button LeaderboardButton => leaderboardButton;
 
@@ -323,8 +358,8 @@ namespace CosmicShore.UI
         public void RequestLeaderboard() => OnLeaderboardRequested?.Invoke();
 
         /// <summary>
-        /// Grey out the controls only the host owns (intensity, the fill toggle). Domain and Start
-        /// stay live for every player — those are each player's own choices.
+        /// Grey out the controls only the host owns (intensity, AI difficulty, the fill toggle).
+        /// Domain and Start stay live for every player — those are each player's own choices.
         /// </summary>
         public virtual void SetHostControlsInteractable(bool interactable)
         {
@@ -337,6 +372,8 @@ namespace CosmicShore.UI
                 var uiButton = button.GetComponent<Button>();
                 if (uiButton) uiButton.interactable = interactable;
             }
+
+            if (aiDifficultyPicker) aiDifficultyPicker.SetInteractable(interactable);
         }
 
         /// <summary>Bring this panel up, opening its own window when it has one.</summary>
@@ -364,6 +401,8 @@ namespace CosmicShore.UI
 
         void RaiseKickAI(int aiOrdinal) => OnKickAIRequested?.Invoke(aiOrdinal);
         void RaiseAddAIMode(bool on) => OnAddAIModeChanged?.Invoke(on);
+        void RaiseAIDifficultyPicked(CosmicShore.Data.AIDifficulty difficulty) =>
+            OnAIDifficultyPicked?.Invoke(difficulty);
 
         void HandleFillToggle(bool on)
         {

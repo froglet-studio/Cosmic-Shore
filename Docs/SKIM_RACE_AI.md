@@ -59,7 +59,7 @@ Read from the prefab and from an in-editor probe (`SkimRaceRaceRecorder.WritePro
 | File | Role |
 |---|---|
 | `SkimRacePilot` | MonoBehaviour on the AI vessel: lifecycle, sensing, actuation. Inactive (neutral input) until `GameDataSO.IsTurnRunning` rises; neutral again when the turn ends; stops and disables `AIPilot` while it owns the vessel |
-| `SkimRaceAIDeployment` | Installs the pilot from `ServerPlayerVesselInitializerWithAI.ConfigureAIPilot` — every Skim Race backfill seat in normal play, no scene wiring. Skipped while `IsTraining`; `TrainingDeploymentService` defers to it |
+| `SkimRaceAIDeployment` | Installs the pilot from `ServerPlayerVesselInitializerWithAI.ConfigureAIPilot` — every Skim Race backfill seat in normal play, no scene wiring. Skipped while `IsTraining`; `TrainingDeploymentService` defers to it. Reads the host's lobby AI difficulty (`GameDataSO.RequestedAIDifficulty`, §10) |
 | `SkimRaceTargetTracker` | The authoritative target: a live, non-embedded crystal of this domain from `Crystal.Active` (mid-collection crystals are valid only once moved away from the pilot); nearest wins with hysteresis |
 | `SkimRaceCourse` / `SkimRaceCourseSource` | The racing line: the track prisms the game actually laid, in lay order, with each prism's pose and contact shell |
 | `SkimRaceObservation` / `SkimRaceAction` | The observation and action schema (feature vector, schema version, NaN sanitising, clamping) |
@@ -704,3 +704,19 @@ Other limits:
 - `MiniGameHUD`'s destroyed-`Player` exception (fixed here) is a game bug that a 3-seat replay hits;
   it is outside the AI and worth a separate look at why `GameDataSO.LocalPlayer` holds a destroyed
   Player after the reload.
+
+## 10. AI difficulty (the host's lobby setting)
+
+The host picks how well the Skim Race AI flies on the launch panel - **Easy, Medium (the default)
+or Hard** - in a row under the intensity buttons (`Docs/ArcadeLaunch/ARCHITECTURE.md` §3.3 has the
+lobby side: host-only, replicated to guests, remembered per card). It is independent of intensity
+on purpose: intensity picks the TRACK, difficulty picks the OPPONENT, so the hardest AI can race
+intensity 1.
+
+The value reaches the match as `GameDataSO.RequestedAIDifficulty` and `SkimRaceAIDeployment`
+reads it when it installs each seat (the verbose `[SkimRaceAI]` line now names it). **It does not
+change how the pilot flies yet.** That is the next step: Hard is the shipped per-intensity policy
+as it is, and Easy and Medium are the same pilot with deliberate, human-looking mistakes on top
+(late reactions, the odd wrong decision, a throttle that does not always commit) - mistakes in its
+DECISIONS rather than jitter on the stick, tuned in the simulator to intensity-2 race times of about
+**120 s (Easy), 95 s (Medium) and 72 s (Hard)**.

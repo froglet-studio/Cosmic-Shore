@@ -57,6 +57,30 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 AI difficulty picker on the Skim Race launch panel (`claude/confident-pascal-w76l2o`, 2026-10-05)
+
+**What landed.** An Easy / Medium / Hard row under the intensity buttons (Skim Race card only),
+host-only, replicated to guests through `LobbySnapshot.AIDifficulty`, remembered with the host
+terms, and carried to the match as `GameDataSO.RequestedAIDifficulty`. The row's objects were
+written into `ArcadeGameConfigureModal.prefab` as YAML by `Tools/Build/author_ai_difficulty_row.py`
+(`--check` passes); the C# was type-checked against stubs and the pure rules + lobby snapshot
+tests were compiled and RUN outside Unity (31 passing, negative controls failing as expected). No
+editor compile, no play mode. Design: `Docs/ArcadeLaunch/ARCHITECTURE.md` §3.3.
+
+**Verify in editor**
+- [ ] The project compiles; `AIDifficultyRulesTests`, `HomeHubPreferenceTests`, `ArcadeLobbySnapshotTests` pass.
+- [ ] Open `ArcadeGameConfigureModal.prefab`: `ConfigurationDetailView/AIDifficulty` exists (inactive), its
+      `AIDifficultyPicker` shows three options wired to Easy/Medium/Hard, and `MinigameLaunchPanel` ->
+      `Ai Difficulty Picker` points at it. No "Missing" components.
+- [ ] Open the Skim Race card: the row shows under the intensity row with MEDIUM lit (first time), EASY under 1,
+      MEDIUM under 2, HARD under 3; the controls block starts just below the row. Open any other card: no row,
+      the controls block is back at its full height.
+- [ ] Press each button: the lit plate moves, the click sound plays. Gamepad: D-pad down from intensity reaches
+      the row on Skim Race (left/right steps Easy..Hard) and skips it on other cards.
+- [ ] Launch Skim Race on Hard with an AI seat: the verbose `[SkimRaceAI]` line (AITraining channel) reads
+      `..., Hard)`. Re-open the card: Hard is still lit.
+- [ ] Party of two: the guest sees the host's pick, its row is greyed, and it follows a change live.
+
 ### 🟢 Icon renderer upgrade + authored lamp art (`claude/single-player-offline-fallback-jksga5`, 2026-08-27)
 
 **Landed and verified.** The icon renderer was rebuilt (analytic 0/1 shape + 4×4 supersampling at
