@@ -326,6 +326,49 @@ namespace CosmicShore.Player
         /// party guest's modal follows the host's pick through the lobby sync, so the guest only
         /// needs "arcade start".
         /// </summary>
+        /// <summary>
+        /// "score" prints the in-game score chain as this process sees it, end to end: each
+        /// RoundStats (Score / crystals / prisms), the server-synced per-domain sums in GameDataSO,
+        /// and what every top-bar DomainScorePanel and the centre score text actually show.
+        /// "score collect" first moves the local vessel onto the nearest live crystal, so a real
+        /// collision drives the chain.
+        /// </summary>
+        public static void Score(string arg)
+        {
+            var ctrl = CosmicShore.Engine.Object.FindObjectsByType<CosmicShore.Gameplay.MiniGameControllerBase>(FindObjectsSortMode.None).FirstOrDefault();
+            var gd = ctrl == null ? null : typeof(CosmicShore.Gameplay.MiniGameControllerBase)
+                .GetField("gameData", Any)?.GetValue(ctrl) as CosmicShore.Utility.GameDataSO;
+            if (gd == null) { Console.WriteLine("[score] no controller / gameData"); return; }
+
+            if (arg == "collect")
+            {
+                var vessel = gd.LocalPlayer?.Vessel?.Transform;
+                var crystal = CosmicShore.Engine.Object.FindObjectsByType<CosmicShore.Gameplay.Crystal>(FindObjectsSortMode.None)
+                    .Where(c => c.isActiveAndEnabled)
+                    .OrderBy(c => vessel == null ? 0f : (c.transform.position - vessel.position).sqrMagnitude).FirstOrDefault();
+                if (vessel == null || crystal == null) Console.WriteLine($"[score] collect: vessel={vessel != null} crystal={crystal != null}");
+                else
+                {
+                    Console.WriteLine($"[score] collect: vessel {vessel.position} -> crystal '{crystal.name}' {crystal.transform.position}");
+                    vessel.position = crystal.transform.position;
+                }
+                return;
+            }
+
+            foreach (var s in gd.RoundStatsList)
+                if (s != null)
+                    Console.WriteLine($"[score] stats '{s.Name}' domain={s.Domain} Score={s.Score} crystals={s.CrystalsCollected}");
+            foreach (var d in CosmicShore.Utility.GameDataSO.ActiveDomains)
+                Console.WriteLine($"[score] gameData sum {d} = {gd.GetDomainMetricSum(d)}");
+            foreach (var p in CosmicShore.Engine.Object.FindObjectsByType<CosmicShore.UI.DomainScorePanel>(FindObjectsSortMode.None))
+            {
+                var t = typeof(CosmicShore.UI.DomainScorePanel).GetField("domainSumText", Any)?.GetValue(p) as CosmicShore.Engine.UI.TMP_Text;
+                Console.WriteLine($"[score] panel {p.Domain} text='{t?.text}'");
+            }
+            var sumsEvent = typeof(CosmicShore.Utility.GameDataSO).GetField("OnDomainMetricSumsChanged", Any)?.GetValue(gd) as Delegate;
+            Console.WriteLine($"[score] OnDomainMetricSumsChanged subscribers={sumsEvent?.GetInvocationList().Length ?? 0}");
+        }
+
         public static void Arcade(string arg)
         {
             if (arg == "start")

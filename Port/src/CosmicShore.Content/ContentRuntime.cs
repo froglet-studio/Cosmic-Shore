@@ -285,7 +285,19 @@ namespace CosmicShore.Content
             var sw = System.Diagnostics.Stopwatch.StartNew();
             var file = Db.LoadPath(path);
             if (mode == LoadSceneMode.Single) ApplyRenderSettings(file);
-            var loaded = Instantiate(PrefabGraph.Build(Db, file), activate: Options.Activate);
+            // Reflex scene scope: a child of the root container injects every scene object BEFORE
+            // the scene activates. The original ContainerScope injects the scene from its own
+            // Awake at execution order -1,000,000,000, so [Inject] fields are already populated in
+            // every other script's Awake/OnEnable - and code relies on it (MultiplayerHUD hooks
+            // GameDataSO.OnDomainMetricSumsChanged in OnEnable; without it the in-game domain
+            // score never updates).
+            Action<IReadOnlyList<GameObject>> inject = null;
+            if (RootContainer != null)
+            {
+                var sceneContainer = RootContainer.CreateChild();
+                inject = roots => { foreach (var root in roots) Inject(sceneContainer, root); };
+            }
+            var loaded = Instantiate(PrefabGraph.Build(Db, file), activate: Options.Activate, beforeActivate: inject);
             Loads.Add((scene.name, loaded));
             if (Loads.Count > LoadHistory) Loads.RemoveRange(0, Loads.Count - LoadHistory);
             if (Environment.GetEnvironmentVariable("CS_PORT_VERBOSE") == "1")
@@ -296,14 +308,6 @@ namespace CosmicShore.Content
                     Console.WriteLine($"[content]   warning: {w}");
             }
             Console.WriteLine($"[content] {mode} load '{Path.GetFileNameWithoutExtension(path)}' — {loaded.GameObjects} GameObjects, {loaded.Components} components, {sw.ElapsedMilliseconds} ms");
-
-            // Reflex scene scope: a child of the root container injects every scene object
-            // (after Awake/OnEnable, before Start — the timing the codebase documents).
-            if (RootContainer != null)
-            {
-                var sceneContainer = RootContainer.CreateChild();
-                foreach (var root in loaded.Roots) Inject(sceneContainer, root);
-            }
         }
 
         /// <summary>A Single load adopts that scene's lighting environment (document class 104).</summary>
@@ -328,7 +332,8 @@ namespace CosmicShore.Content
             RenderSettings.reflectionIntensity = b.Float("m_ReflectionIntensity", 1f);
         }
 
-        LoadedScene Instantiate(PrefabGraph graph, bool activate, Transform parent = null)
+        LoadedScene Instantiate(PrefabGraph graph, bool activate, Transform parent = null,
+            Action<IReadOnlyList<GameObject>> beforeActivate = null)
         {
             var opts = new InstantiateOptions
             {
@@ -336,6 +341,7 @@ namespace CosmicShore.Content
                 WirePersistentCalls = Options.WirePersistentCalls,
                 Activate = activate,
                 Parent = parent,
+                BeforeActivate = beforeActivate,
             };
             return new SceneInstantiator(Assets, opts).Instantiate(graph);
         }

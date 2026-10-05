@@ -31,6 +31,18 @@ namespace CosmicShore.Content.Scenes
         /// holder to the inactive template root, so no Awake/OnEnable ever runs on an asset.
         /// </summary>
         public Transform Parent;
+
+        /// <summary>
+        /// Runs on the fully wired roots after they reach their final place and are active in
+        /// hierarchy (findable), but BEFORE any Awake/OnEnable is delivered (see
+        /// GameObject.ActivateSceneRoots). The scene load uses it for Reflex
+        /// scene injection: the original's <c>ContainerScope</c> injects the whole scene from its
+        /// own Awake at execution order -1,000,000,000, i.e. ahead of every other Awake/OnEnable
+        /// in the scene, and game code relies on that (e.g. MultiplayerHUD subscribes to
+        /// GameDataSO.OnDomainMetricSumsChanged in OnEnable, GameSetting reads its injected
+        /// UGSDataService in Awake).
+        /// </summary>
+        public Action<IReadOnlyList<GameObject>> BeforeActivate;
     }
 
     /// <summary>What a load produced, for diagnostics and lookups.</summary>
@@ -199,9 +211,24 @@ namespace CosmicShore.Content.Scenes
                 root.SetParent(_options.Parent, false);
             }
             Destroy(holder);
-            if (_options.Activate)
+            var rootObjects = roots.Select(r => r.gameObject).ToList();
+            if (!_options.Activate)
+                _options.BeforeActivate?.Invoke(rootObjects);
+            else if (_options.BeforeActivate != null && _options.Parent == null)
+            {
+                // Two-phase, like Unity's scene load: the scene is active (and findable) when the
+                // hook runs, but no Awake/OnEnable has been delivered yet.
+                var toActivate = new List<GameObject>();
+                for (int i = 0; i < roots.Count; i++)
+                    if (authoredActive[i]) toActivate.Add(rootObjects[i]);
+                GameObject.ActivateSceneRoots(toActivate, () => _options.BeforeActivate(rootObjects));
+            }
+            else
+            {
+                _options.BeforeActivate?.Invoke(rootObjects);
                 for (int i = 0; i < roots.Count; i++)
                     if (authoredActive[i]) roots[i].gameObject.SetActive(true);
+            }
 
             _result.Roots.AddRange(roots.Select(r => r.gameObject));
             return _result;

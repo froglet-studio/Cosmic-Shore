@@ -53,6 +53,39 @@ public class SceneModelTests : IDisposable
         LifecycleProbe.Log = null;
     }
 
+    /// <summary>
+    /// Scene activation runs its hook (Reflex scene injection) with the scene active and findable
+    /// but before ANY Awake/OnEnable - the slot Reflex's ContainerScope.Awake holds in Unity. Game
+    /// code subscribes to injected services in OnEnable (MultiplayerHUD → the in-game score).
+    /// </summary>
+    [Fact]
+    public void ActivateSceneRoots_HookRunsWhileFindable_BeforeAwakeAndOnEnable()
+    {
+        using var loop = new GameLoop();
+        LifecycleProbe.Log = new List<string>();
+
+        var root = new GameObject("sceneRoot");
+        root.SetActive(false);
+        var child = new GameObject("child");
+        child.transform.SetParent(root.transform, false);
+        child.AddComponent<LifecycleProbe>();
+        Assert.Empty(LifecycleProbe.Log);
+
+        int foundInHook = -1;
+        bool activeInHook = false;
+        GameObject.ActivateSceneRoots(new[] { root }, () =>
+        {
+            LifecycleProbe.Log.Add("hook");
+            activeInHook = child.activeInHierarchy;
+            foundInHook = Object.FindObjectsByType<LifecycleProbe>(FindObjectsSortMode.None).Length;
+        });
+
+        Assert.Equal(new[] { "hook", "Awake", "OnEnable" }, LifecycleProbe.Log);
+        Assert.True(activeInHook);
+        Assert.Equal(1, foundInHook);
+        LifecycleProbe.Log = null;
+    }
+
     [Fact]
     public void DestroyedObject_ComparesEqualToNull_AfterFrameEnd()
     {

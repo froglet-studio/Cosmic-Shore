@@ -151,6 +151,34 @@ namespace CosmicShore.Engine
             if (parentActive) NotifyHierarchyActiveChanged(value);
         }
 
+        /// <summary>
+        /// Port surface: activate a freshly loaded scene's roots the way Unity's scene load does,
+        /// in two phases. Phase 1 marks every root active (so the whole scene is active in
+        /// hierarchy and findable by FindObjectsByType / FindAnyObjectByType) WITHOUT running
+        /// any lifecycle; <paramref name="beforeLifecycle"/> runs at that point. Phase 2 then
+        /// delivers Awake/OnEnable over each root. This is the slot Reflex's ContainerScope
+        /// occupies in the original (its Awake, at execution order -1,000,000,000, injects the
+        /// whole scene ahead of every other Awake/OnEnable, and its installers can still find
+        /// the scene's not-yet-awake managers). Roots must be parentless and inactive.
+        /// </summary>
+        public static void ActivateSceneRoots(IReadOnlyList<GameObject> roots, Action beforeLifecycle)
+        {
+            var activated = new List<GameObject>(roots.Count);
+            foreach (var root in roots)
+            {
+                if (root is null || root.destroyedFlag || root.activeSelf || root.transform.parent is not null) continue;
+                root.activeSelf = true;
+                activated.Add(root);
+            }
+            BumpHierarchyEpoch();
+
+            beforeLifecycle?.Invoke();
+
+            foreach (var root in activated)
+                if (!root.destroyedFlag && root.activeSelf)
+                    root.NotifyHierarchyActiveChanged(true);
+        }
+
         /// <summary>Propagate an effective-activation change to this subtree's behaviours.</summary>
         internal void NotifyHierarchyActiveChanged(bool active)
         {

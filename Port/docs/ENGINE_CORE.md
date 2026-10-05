@@ -102,9 +102,9 @@ loud), `CreateChild()` (Bootstrap root → per-scene scopes), `Inject(target)`
 plans), `InjectGameObject(go, recursive)` (the GameObjectInjector.InjectRecursive
 replacement), and `IInstaller`.
 
-Injection timing in ported scenes will follow the original contract (inject after
-Awake, before Start) once scene loading exists; until then call sites inject
-explicitly after construction.
+Injection timing in ported scenes follows the original contract: the scene load injects
+every scene object BEFORE the scene activates, as Reflex's ContainerScope does from its
+Awake at execution order -1e9 (so `[Inject]` fields are set in Awake/OnEnable).
 
 ## Logging
 

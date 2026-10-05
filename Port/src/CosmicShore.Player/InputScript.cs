@@ -136,6 +136,7 @@ namespace CosmicShore.Player
                     case "party": Inspector.Party(arg.Trim()); break;
                     case "domain": Inspector.Domain(arg.Trim()); break;
                     case "arcade": Inspector.Arcade(arg.Trim()); break;
+                    case "score": Inspector.Score(arg.Trim()); break;
                     case "stage": Inspector.Stage(float.Parse(arg.Trim(), CultureInfo.InvariantCulture)); break;
                     case "animators":
                         foreach (var an in CosmicShore.Engine.Object.FindObjectsByType<CosmicShore.Engine.Animator>(CosmicShore.Engine.FindObjectsSortMode.None))
