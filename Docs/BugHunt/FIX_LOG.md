@@ -620,7 +620,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
   calls `StopAIPilot` first. Sending input from a teardown path risks null references.
 - **Verification:** Yash tested the Menu_Main freestyle takeover on `Bug_Hunt` and the ship flew
   normally, with no stuck drift.
-- **PR/commit:** docs only.
+- **PR/commit:** docs only · PR #937 · merge `94544d417`.
 
 ---
 
