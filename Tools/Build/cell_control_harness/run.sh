@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Compile the SHIPPED controlling-domain resolver (Domains.cs + InitialControllingDomain.cs - pure, no
+# Unity) with Program.cs and RUN it (QA-SWARM-ROUND11-13). Exit code is non-zero on any failure.
 # First runs three NEGATIVE CONTROLS (mutants that ignore the authored rule) and fails unless each
 # mutant makes the harness fail.
-# Unity) with Program.cs and RUN it (QA-SWARM-ROUND11-13). Exit code is non-zero on any failure.
 #
 #   bash Tools/Build/cell_control_harness/run.sh
 #
