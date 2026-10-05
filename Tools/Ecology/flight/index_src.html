@@ -21,6 +21,11 @@ canvas#gl{display:block;position:fixed;inset:0;width:100%;height:100%}
 #mini canvas{width:100%;height:100%;display:block}
 #flight{position:fixed;left:12px;bottom:12px;display:flex;gap:10px;align-items:flex-end;z-index:5}
 #att{width:120px;height:120px}
+#petals{padding:6px 8px;font-variant-numeric:tabular-nums;min-width:150px}
+#petals canvas{display:block;width:120px;height:120px;margin:0 auto}
+#petals .row{color:var(--mute);font-size:12px;line-height:1.35}
+#petals .row b{color:var(--fg)}
+#strip{position:fixed;left:50%;top:34%;transform:translateX(-50%);padding:10px 16px;z-index:6;display:none;text-align:center}
 #readout{padding:8px 11px;min-width:150px;font-variant-numeric:tabular-nums}
 #readout .big{font-size:22px;font-weight:600;letter-spacing:.5px}
 .bar{height:6px;background:#1a2440;border-radius:3px;overflow:hidden;margin-top:4px}
@@ -68,6 +73,9 @@ textarea{width:100%;background:#0a1020;color:var(--fg);border:1px solid var(--li
   #readout{min-width:110px;padding:6px 8px}
   #readout .big{font-size:17px}
   #enc{bottom:auto;top:92px;left:8px;right:auto}
+  #petals canvas{width:84px;height:84px}
+  #petals{min-width:96px}
+  #petals .row.wide{display:none}
 }
 </style>
 </head>
@@ -82,16 +90,20 @@ textarea{width:100%;background:#0a1020;color:var(--fg);border:1px solid var(--li
   <button id="steer" class="wide" title="M: steer with the mouse position">mouse steer: off</button>
   <button id="snd" class="wide" title="sound stingers on telegraph and strike">sound: off</button>
   <button id="auto" class="wide" title="P: let a scripted wanderer fly">autopilot: off</button>
+  <select id="rule" class="wide" title="stakes: how much a danger contact burns"><option value="tuned">burn 1/elem</option><option value="shipped">burn 5/elem (shipped)</option><option value="off">stakes off</option></select>
+  <button id="dom" class="wide" title="O: whose cell is this? hostile cells burn petals for good, your own only stings for 4 s">cell: hostile</button>
   <button id="rateBtn" title="R: rate the last encounter">rate</button>
   <button id="helpBtn" title="H or ?">?</button>
   <span class="chip" id="cHits">hits 0</span>
   <span class="chip" id="cCry">crystals 0</span>
+  <span class="chip" id="cPet">petals 20</span>
   <span class="chip wide" id="cLost">wake stolen 0</span>
 </div>
 <div id="mini" class="panel"><canvas id="miniC" width="340" height="340"></canvas></div>
 <div id="info" class="panel"></div>
 <div id="flight">
   <div class="panel" style="padding:6px"><canvas id="att" width="240" height="240"></canvas></div>
+  <div id="petals" class="panel"><canvas id="petC" width="240" height="240"></canvas><div class="row" id="petTxt"></div><div class="row wide" id="petTxt2"></div></div>
   <div id="readout" class="panel">
     <div class="big" id="spd">0 u/s</div>
     <div class="bar" id="thrbar"><i style="width:0%"></i></div>
@@ -101,6 +113,7 @@ textarea{width:100%;background:#0a1020;color:var(--fg);border:1px solid var(--li
   </div>
 </div>
 <div id="enc" class="panel" style="display:none"></div>
+<div id="strip" class="panel"><b style="color:var(--hot);font-size:18px">STRIPPED</b><div style="color:var(--mute)">every petal burned. Kill something and fly through its crystal to grow back.</div></div>
 <div id="dbg" class="panel"></div>
 <div class="stick" id="stickL"><i></i></div>
 <div class="stick" id="stickR"><i></i></div>
@@ -116,12 +129,13 @@ textarea{width:100%;background:#0a1020;color:var(--fg);border:1px solid var(--li
     <tr><td>M</td><td>mouse steer: the cursor's offset from centre is the stick</td></tr>
     <tr><td>C</td><td>chase / free orbit camera (drag, wheel)</td></tr>
     <tr><td>R</td><td>rate the last encounter</td></tr>
+    <tr><td>O</td><td>cell owner: hostile (strikes BURN petals for good) or yours (strikes only sting for 4 s)</td></tr>
     <tr><td>P</td><td>autopilot (a scripted wanderer flies)</td></tr>
     <tr><td>` (backquote)</td><td>debug: frame time, agents, mass audit</td></tr>
     <tr><td>Gamepad</td><td>left stick pitch/yaw, right stick roll/throttle, A or RB boost</td></tr>
     <tr><td>Touch</td><td>left stick pitch/yaw, right stick roll/throttle, BOOST</td></tr>
   </table>
-  <p style="color:var(--mute)">Ram a creature to kill it (a crystal). Your trail is conserved mass: thieves steal it, grazers and herds eat it. Every rule is a JS port of the scored Python species, gated against it headless (flight/fidelity.py).</p>
+  <p style="color:var(--mute)">Ram a creature to kill it: it drops a crystal of its element; fly through it for +1 petal. <b>Stakes:</b> your flower holds 4 elements of up to 10 petals. In a hostile cell every danger strike (bite, burn, snap, sting; a peck is a quarter) BURNS petals from all four, for good, with a 1 s cooldown. Crystals are the only way back. Your trail is conserved mass: thieves steal it, grazers and herds eat it. Every rule is a JS port of the scored Python species, gated against it headless (flight/fidelity.py).</p>
   <button class="btn" id="helpClose">close</button>
 </div>
 <div id="rate">
@@ -352,6 +366,13 @@ const modeSel = document.getElementById('mode');
 for (const m of MODES) { const o = document.createElement('option'); o.value = m; o.textContent = m === 'cell' ? CAT.cell.label : 'One species: ' + CAT[m].label; modeSel.appendChild(o); }
 let seed = 7;
 const stats = { hits: {}, nHits: 0, crystals: 0, lost: 0 };
+// ------------------------------------------------------------------------------------------------ stakes (src/60_stakes.js)
+let stakes = null, tele = null, stakeRule = 'tuned', hostile = true;
+const crystals = [];    // { x, y, z, e, t } dropped by every killed lifeform; flying through one pays a petal of its element
+const CRYSTAL_R = 16, CRYSTAL_LIFE = 60, CRYSTAL_CAP = 400;
+const petBurn = { mass: 0, charge: 0, space: 0, time: 0 }; // flash timers per element
+function newStakes() { stakes = new E.Stakes({ rule: stakeRule === 'off' ? 'tuned' : stakeRule, hostile }); tele = new E.TeleTrack(); crystals.length = 0; document.getElementById('strip').style.display = 'none'; }
+window.__stakes = () => ({ stakes, crystals: crystals.length, rule: stakeRule, hostile });
 const dying = [];       // continuity of existence: removed things shrink out instead of vanishing
 const born = new Map(); // key -> Float32Array of birth time per agent (scale-in)
 let trailDir = new Float32Array(3 * 16384);
@@ -377,7 +398,7 @@ function buildWorld(mode) {
   }
   ensurePrisms(ar.n);
   lastN = ar.n; if (trailDir.length < 3 * ar.cap) trailDir = new Float32Array(3 * ar.cap * 2);
-  stats.hits = {}; stats.nHits = 0; stats.crystals = 0; stats.lost = 0;
+  stats.hits = {}; stats.nHits = 0; stats.crystals = 0; stats.lost = 0; newStakes();
   flight.speed = 120; flight.throttle = 0.75; flight.boost = 1;
   const pl = W.player;
   flight.q.setFromUnitVectors(new THREE.Vector3(0, 0, 1), new THREE.Vector3(...pl.vel).normalize());
@@ -465,16 +486,28 @@ function autoPilot(pl) {
 let autoGoal = null;
 
 // ------------------------------------------------------------------------------------------------ events
-function onHit(p, kind, amt) {
+function onHit(p, kind, amt, src) {
   if (p !== W.player) return;
   stats.nHits++; stats.hits[kind] = (stats.hits[kind] || 0) + 1;
+  if (stakes && stakeRule !== 'off') {
+    const t = W.arena.t, ev = stakes.contact(t, kind, src, tele.lead(t, src) >= 0.25);
+    if (ev && ev.total) {
+      for (const e in ev.petals) petBurn[e] = 0.7;
+      const s = enc.active[src]; if (s) s.burned = (s.burned || 0) + ev.total;
+      toast(`${kind.toUpperCase()}  -${ev.total} PETAL${ev.total > 1 ? 'S' : ''}${ev.telegraphed ? '' : '  (unread)'}`, '#ff6a4a'); flash('rgba(255,40,20,0.75)'); sfx('strike');
+      if (stakes.total() === 0) document.getElementById('strip').style.display = 'block';
+      if (src) encNote(src, 'hit', kind); return;
+    }
+    if (ev && ev.form === 'sting') { for (const e of E.ELEMENTS) petBurn[e] = 0.4; toast(`${kind.toUpperCase()}  (own cell: -${(ev.total || stakes.rule.burn * 10 * E.DANGER_KINDS[kind]).toFixed(0)} for 4 s)`, '#ffc94d'); flash('rgba(255,200,70,0.4)'); sfx('strike'); if (src) encNote(src, 'hit', kind); return; }
+  }
   if (kind === 'steal') { stats.lost++; flash('rgba(255,200,70,0.45)'); toast('WAKE STOLEN', '#ffc94d'); sfx('steal'); }
   else { flash(kind === 'drain' ? 'rgba(255,90,200,0.35)' : 'rgba(255,50,30,0.6)'); toast(kind.toUpperCase(), '#ff6a4a'); sfx('strike'); }
-  const s = curSpeciesNear(); if (s) encNote(s, 'hit', kind);
+  const s = src || curSpeciesNear(); if (s) encNote(s, 'hit', kind);
 }
 function onKill(sp, i) {
-  stats.crystals++;
   const x = sp.pos ? sp.pos[3 * i] : sp.h[3 * i], y = sp.pos ? sp.pos[3 * i + 1] : sp.h[3 * i + 1], z = sp.pos ? sp.pos[3 * i + 2] : sp.h[3 * i + 2];
+  const el = E.SPECIES_ELEMENT[sp.key || sp.name] || 'mass';
+  crystals.push({ x, y, z, e: el, t: W.arena.t }); if (crystals.length > CRYSTAL_CAP) crystals.shift();
   dying.push({ x, y, z, t: 0, c: [0.4, 0.9, 1.0], s: 30 });
   sfx('crystal');
   encNote(sp.key || sp.name, 'kill');
@@ -598,6 +631,7 @@ function updateInfo(mode) {
 }
 const spdEl = document.getElementById('spd'), hdgEl = document.getElementById('hdg'), posEl = document.getElementById('pos');
 const thrBar = document.querySelector('#thrbar i'), boostBar = document.querySelector('#boostbar i');
+const cPet = document.getElementById('cPet');
 const cHits = document.getElementById('cHits'), cCry = document.getElementById('cCry'), cLost = document.getElementById('cLost');
 const att = document.getElementById('att').getContext('2d');
 function drawAttitude() {
@@ -859,6 +893,70 @@ function updateCamera(dt, alpha) {
   membrane.material.uniforms.cp.value.copy(cam.position);
 }
 function snapshot() { for (const k in layers) { const L = layers[k]; L.prev.set(L.cur); L.cur.set(L.sp.pos); } prevPos.copy(curPos); curPos.set(...W.player.pos); }
+// ------------------------------------------------------------------------------------------------ stakes HUD: the petal flower + crystals
+const crystalMesh = (() => {
+  const m = new THREE.InstancedMesh(gemGeo(), new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x222222, metalness: 0.1, roughness: 0.2, transparent: true, opacity: 0.92 }), CRYSTAL_CAP);
+  m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); m.setColorAt(0, new THREE.Color()); m.frustumCulled = false; m.count = 0; scene.add(m); return m;
+})();
+const _cm = new THREE.Matrix4(), _cq = new THREE.Quaternion(), _cs = new THREE.Vector3(), _cp = new THREE.Vector3(), _cc = new THREE.Color(), _cy = new THREE.Vector3(0, 1, 0);
+function collectCrystals() {
+  const pl = W.player, t = W.arena.t;
+  for (let i = crystals.length - 1; i >= 0; i--) {
+    const c = crystals[i];
+    if (t - c.t > CRYSTAL_LIFE) { crystals.splice(i, 1); continue; }
+    if (t - c.t < 0.4) continue; // a beat to see it drop
+    if ((c.x - pl.pos[0]) ** 2 + (c.y - pl.pos[1]) ** 2 + (c.z - pl.pos[2]) ** 2 < CRYSTAL_R * CRYSTAL_R) {
+      crystals.splice(i, 1);
+      const got = stakes.collect(c.e, t); stats.crystals++;
+      if (got) { petBurn[c.e] = -0.6; toast(`+1 ${c.e.toUpperCase()} PETAL`, '#' + new THREE.Color(...E.ELEMENT_COLOUR[c.e]).getHexString()); document.getElementById('strip').style.display = 'none'; }
+      else toast(`${c.e} full`, '#8d98bd');
+      sfx('crystal');
+    }
+  }
+}
+function writeCrystals(dtF) {
+  const t = W.arena.t; let n = 0;
+  for (const c of crystals) {
+    const age = t - c.t, life = Math.min(1, age / 0.4) * Math.min(1, (CRYSTAL_LIFE - age) / 5);
+    const blink = CRYSTAL_LIFE - age < 10 ? 0.6 + 0.4 * Math.sin(age * 12) : 1;
+    _cq.setFromAxisAngle(_cy, age * 2.2); _cs.setScalar(7 * Math.max(0.05, life)); _cp.set(c.x, c.y + 2 * Math.sin(age * 3), c.z);
+    _cm.compose(_cp, _cq, _cs); crystalMesh.setMatrixAt(n, _cm);
+    const k = E.ELEMENT_COLOUR[c.e]; _cc.setRGB(k[0] * 1.4 * blink, k[1] * 1.4 * blink, k[2] * 1.4 * blink); crystalMesh.setColorAt(n, _cc);
+    if (n < 120) halo(c.x, c.y, c.z, k[0] * 0.5 * life, k[1] * 0.5 * life, k[2] * 0.5 * life, 26);
+    n++;
+  }
+  crystalMesh.count = n; crystalMesh.instanceMatrix.needsUpdate = true; if (crystalMesh.instanceColor) crystalMesh.instanceColor.needsUpdate = true;
+}
+const petC = document.getElementById('petC'), petX = petC.getContext('2d'), petTxt = document.getElementById('petTxt'), petTxt2 = document.getElementById('petTxt2');
+function drawPetals(dtF) {
+  // four petals (mass up, charge right, space down, time left); each petal is 10 stacked segments = the base band
+  const W2 = petC.width, cx = W2 / 2, cy = W2 / 2, t = W.arena.t; petX.clearRect(0, 0, W2, W2);
+  E.ELEMENTS.forEach((e, k) => {
+    const ang = -Math.PI / 2 + k * Math.PI / 2, col = E.ELEMENT_COLOUR[e], base = stakes.base[e], eff = stakes.effective(e, t);
+    if (petBurn[e] > 0) petBurn[e] = Math.max(0, petBurn[e] - dtF); else if (petBurn[e] < 0) petBurn[e] = Math.min(0, petBurn[e] + dtF);
+    for (let j = 0; j < E.LEVEL_MAX; j++) {
+      const r0 = 24 + j * 9.4, r1 = r0 + 7.6, half = (0.16 + 0.34 * Math.sin(Math.PI * (j + 0.5) / E.LEVEL_MAX)) * 0.9;
+      petX.beginPath(); petX.arc(cx, cy, r1, ang - half, ang + half); petX.arc(cx, cy, r0, ang + half, ang - half, true); petX.closePath();
+      let a;
+      if (j < Math.floor(eff + 1e-6)) a = 1; else if (j < base) a = 0.35; else a = 0.07;
+      const hot = petBurn[e] > 0 && j >= base && j < base + 6 ? petBurn[e] : 0, gain = petBurn[e] < 0 && j === base - 1 ? -petBurn[e] : 0;
+      const r = Math.min(255, 255 * col[0] + 255 * hot), g = Math.min(255, 255 * col[1] * (1 - hot) + 255 * gain), b = Math.min(255, 255 * col[2] * (1 - hot) + 255 * gain);
+      petX.fillStyle = `rgba(${r | 0},${g | 0},${b | 0},${Math.max(a, hot * 0.9, gain)})`; petX.fill();
+    }
+  });
+  petX.fillStyle = stakes.total() ? '#dfe6fb' : '#ff5a3c'; petX.font = '700 24px system-ui'; petX.textAlign = 'center'; petX.textBaseline = 'middle';
+  petX.fillText(String(stakes.total()), cx, cy + 1);
+  if ((perf.k || 0) % 6 === 0) {
+    const s = stakes;
+    petTxt.innerHTML = stakeRule === 'off' ? 'stakes off' : `<b>${s.total()}</b>/40 petals · ${hostile ? '<span style="color:var(--hot)">hostile</span>' : '<span style="color:var(--ok)">your cell</span>'}`;
+    petTxt2.innerHTML = `burned <b>${s.burned}</b> · regrown <b>${s.gained}</b>${s.burned ? ` · read ${Math.round(100 * s.telegraphedBurns / s.burned)}%` : ''}<br>crystals near: <b>${crystals.length}</b>`;
+  }
+}
+document.getElementById('rule').onchange = (ev) => { stakeRule = ev.target.value; newStakes(); toast(ev.target.selectedOptions[0].textContent, '#7fd6ff'); };
+function toggleDomain() { hostile = !hostile; const b = document.getElementById('dom'); b.textContent = hostile ? 'cell: hostile' : 'cell: yours'; b.classList.toggle('on', !hostile); newStakes(); toast(hostile ? 'HOSTILE CELL: strikes burn' : 'YOUR CELL: strikes sting', hostile ? '#ff6a4a' : '#6fe3a0'); }
+document.getElementById('dom').onclick = toggleDomain;
+addEventListener('keydown', (ev) => { if (ev.code === 'KeyO' && !ev.repeat && !(ev.target && /INPUT|TEXTAREA|SELECT/.test(ev.target.tagName))) toggleDomain(); });
+
 function frame(now) {
   requestAnimationFrame(frame);
   const dtF = Math.min(0.1, (now - perf.last) / 1000); perf.last = now;
@@ -866,7 +964,7 @@ function frame(now) {
   let simMs = 0;
   if (!paused && W) {
     simAcc += dtF; let n = 0;
-    while (simAcc >= SIM_DT && n < 3) { const s0 = performance.now(); flyStep(SIM_DT); W.step(SIM_DT); snapshot(); simMs += performance.now() - s0; simAcc -= SIM_DT; n++; perf.steps = (perf.steps || 0) + 1; }
+    while (simAcc >= SIM_DT && n < 3) { const s0 = performance.now(); flyStep(SIM_DT); W.step(SIM_DT); tele.observe(W.arena.t, W.player, W.species); collectCrystals(); snapshot(); simMs += performance.now() - s0; simAcc -= SIM_DT; n++; perf.steps = (perf.steps || 0) + 1; }
     if (n === 3) simAcc = 0;
     encTick();
   }
@@ -874,7 +972,7 @@ function frame(now) {
   const r0 = performance.now();
   nHalo = 0;
   updateCamera(dtF, alpha);
-  if (W) { writePrisms(alpha); writeAgents(alpha); writeFlora(alpha); }
+  if (W) { writePrisms(alpha); writeAgents(alpha); writeFlora(alpha); writeCrystals(dtF); }
   for (let i = dying.length - 1; i >= 0; i--) { const d = dying[i]; d.t += dtF; const k = 1 - d.t / 0.6; if (k <= 0) { dying.splice(i, 1); continue; } halo(d.x, d.y, d.z, d.c[0] * k, d.c[1] * k, d.c[2] * k, d.s * (0.6 + 0.6 * k)); }
   haloG.setDrawRange(0, nHalo); haloG.attributes.position.needsUpdate = true; haloG.attributes.color.needsUpdate = true; haloG.attributes.size.needsUpdate = true;
   haloM.uniforms.scale.value = window.innerHeight / (2 * Math.tan(cam.fov * DEG / 2));
@@ -888,6 +986,7 @@ function frame(now) {
     thrBar.style.width = (flight.throttle * 100).toFixed(0) + '%'; boostBar.style.width = (flight.boost * 100).toFixed(0) + '%';
     hdgEl.textContent = `hdg ${a.hdg.toFixed(0)}° · pitch ${a.pitch.toFixed(0)}° · roll ${a.roll.toFixed(0)}°`;
     const rr = Math.hypot(...W.player.pos) / R; posEl.textContent = `r ${(rr * 100).toFixed(0)}% of membrane${rr > 0.9 ? '  (membrane)' : ''}`;
+    drawPetals(dtF); cPet.textContent = `petals ${stakes.total()}`;
     cHits.textContent = `hits ${stats.nHits}`; cCry.textContent = `crystals ${stats.crystals}`; cLost.textContent = `wake stolen ${stats.lost}`;
     if ((perf.k = (perf.k || 0) + 1) % 6 === 0) drawMini();
   }
