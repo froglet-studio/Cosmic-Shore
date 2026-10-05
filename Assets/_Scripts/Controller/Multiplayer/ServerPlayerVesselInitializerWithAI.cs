@@ -552,6 +552,10 @@ namespace CosmicShore.Gameplay
             var aiPilot = aiVesselNO.GetComponentInChildren<AIPilot>();
             if (aiPilot == null) return;
             ConfigureAIPilotForMode(aiPilot, gameData);
+
+            // Skim Race seats fly the dedicated racing pilot (input-only; it stands AIPilot down).
+            if (aiVesselNO.TryGetComponent(out IVessel vessel))
+                SkimRaceAIDeployment.TryInstall(aiVesselNO.gameObject, vessel, gameData);
         }
 
         /// <summary>

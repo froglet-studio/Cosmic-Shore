@@ -330,7 +330,11 @@ namespace CosmicShore.UI
             // OnClickMultiplayerPauseButton pauses only the local player's input, so PauseSystem
             // alone would let a second Escape re-invoke the button on an already-open panel.
             if (CosmicShore.Core.PauseSystem.Paused) return;
-            if (gameData?.LocalPlayer?.InputStatus?.Paused == true) return;
+            // `?.` on an interface reference skips Unity's destroyed-object check, so a Player torn
+            // down by a replay's scene reload passed it and threw every frame. Test it as an Object.
+            var localPlayer = gameData != null ? gameData.LocalPlayer : null;
+            if (localPlayer is UnityEngine.Object lpo && !lpo) return;
+            if (localPlayer?.InputStatus?.Paused == true) return;
             if (!OverviewGesture.RequestedThisFrame()) return;
 
             // The cached field, never ResolveVolumePauseButton(): that falls back to a

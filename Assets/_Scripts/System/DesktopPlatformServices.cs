@@ -133,6 +133,6 @@ namespace CosmicShore.Core
         /// Callers pass their own prefix, e.g. "cosmic-shore-score".
         /// </summary>
         public static string TimestampedName(string prefix, string extension) =>
-            $"{prefix}-{DateTime.Now:yyyyMMdd-HHmmss}.{extension.TrimStart('.')}";
+            $"{prefix}-{DateTime.Now.ToString("yyyyMMdd-HHmmss", System.Globalization.CultureInfo.InvariantCulture)}.{extension.TrimStart('.')}";
     }
 }

@@ -312,21 +312,30 @@ namespace CosmicShore.Utility.AITraining
 
         void ApplyToInputStatus(DecisionOutput d)
         {
+            // The genome's ONLY authority over the vessel is these channels, and only inside the
+            // ranges a human's stick and trigger can produce. Clamped HERE, at the actuation point,
+            // so no policy - evolved or hand-written - can buy a turn rate or throttle a human
+            // pilot cannot (a stick of 5 would be five times the vessel's turn rate).
+            float sx = Mathf.Clamp(Safe(d.SteerLocal.x), -1f, 1f);
+            float sy = Mathf.Clamp(Safe(d.SteerLocal.y), -1f, 1f);
+            float thr = Mathf.Clamp01(Safe(d.Throttle));
             // IsSingleStickControls lives on the vessel status, not the input status.
             // Single-stick vessels expect a normalized 2D joystick; dual-stick vessels
             // expect symmetric XSum/YSum + asymmetric XDiff/YDiff like the existing AIPilot writes.
             if (_status.IsSingleStickControls)
             {
-                _input.EasedLeftJoystickPosition = new Vector2(d.SteerLocal.x, -d.SteerLocal.y);
+                _input.EasedLeftJoystickPosition = Vector2.ClampMagnitude(new Vector2(sx, -sy), 1f);
             }
             else
             {
-                _input.XSum = d.SteerLocal.x;
-                _input.YSum = d.SteerLocal.y;
-                _input.YDiff = d.SteerLocal.x;
-                _input.XDiff = d.RequestRam ? 1f : d.Throttle;
+                _input.XSum = sx;
+                _input.YSum = sy;
+                _input.YDiff = sx;
+                _input.XDiff = d.RequestRam ? 1f : thr;
             }
         }
+
+        static float Safe(float v) => float.IsNaN(v) || float.IsInfinity(v) ? 0f : v;
 
         readonly HashSet<InputEvents> _heldThisFrame = new();
 

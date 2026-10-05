@@ -170,7 +170,7 @@ namespace CosmicShore.Gameplay
             if (s.StrikeHitsLanded > 0)  parts.Add($"{s.StrikeHitsLanded} strikes");
             if (s.DebuffHitsLanded > 0)  parts.Add($"{s.DebuffHitsLanded} debuffs");
             if (s.MissileHitsLanded > 0) parts.Add($"{s.MissileHitsLanded} rockets");
-            return parts.Count == 0 ? "no hits" : string.Join(" · ", parts);
+            return parts.Count == 0 ? "no hits" : string.Join(", ", parts);
         }
 
         public override ScoreReveal BuildReveal(GameDataSO gameData, IRoundStats localStats, bool didWin) =>

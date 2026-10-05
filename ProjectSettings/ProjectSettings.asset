@@ -172,9 +172,9 @@ PlayerSettings:
   androidMaxAspectRatio: 2.1
   androidMinAspectRatio: 1
   applicationIdentifier:
-    Android: com.FrogletGames.TailGlider
+    Android: com.FrogletGames.CosmicShore
     Standalone: com.FrogletGames.CosmicShore
-    iPhone: com.FrogletGames.Tail-Glider
+    iPhone: com.FrogletGames.CosmicShore.dev
   buildNumber:
     Standalone: 0
     VisionOS: 0

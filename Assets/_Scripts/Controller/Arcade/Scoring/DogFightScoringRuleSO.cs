@@ -138,7 +138,7 @@ namespace CosmicShore.Gameplay
                 // The secondary line is the BREAKDOWN, not the metric: two pilots on the same
                 // points got there very differently, and in a gun duel that is the interesting
                 // half of the story.
-                $"{LiveMetric(s)} pts · {s.BulletHitsLanded}×● {s.MissileHitsLanded}×◆")).ToList();
+                $"{LiveMetric(s)} pts - {s.BulletHitsLanded} rounds, {s.MissileHitsLanded} rockets")).ToList();
 
             return ScoreResultBuilder.BuildRanked(rows);
         }
