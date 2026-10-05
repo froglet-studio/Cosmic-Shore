@@ -1795,3 +1795,43 @@ keeping (c).**
 Note for the game session implementing (a) (`cece/swarm-fauna-game`, `Docs/SWARM_FAUNA.md` §16): the stomach-weighted
 pick (a) beat the largest-donor pick (a1) on balance; and the legibility numbers above are per 100-u cluster, so a
 DomainSlots row per 10% of the swarm is about the finest granularity a player can follow.
+
+## Stakes in the flight sim (2026-10-05, overnight)
+
+Gate (e) "it has stakes", made playable. `flight/src/60_stakes.js` mirrors `Docs/ELEMENTAL_ECONOMY.md` section 4 and
+`VesselElementalDebuffByDangerPrismEffect.asset` (rules in `/mnt/project-files/overnight/burn-rules.md`): 4 elements x
+10 petals, a hostile danger contact BURNS petals from all four for good (1 s cooldown), an own-cell contact is a 4 s
+sting, every kill drops a crystal of its species' element worth +1 petal. The page has a petal flower, a rule picker
+(tuned / shipped / off) and an owner toggle (O). `flight/stakes_eval.js`: every species in its fidelity world, 3
+pilots x 6 seeds x 3 min, start 20 petals, both rules (`results/stakes_eval.json`).
+
+| pooled over species (petals / min) | careless (wander) | skilled (evader, reader) | aggressive (hunter, cutter) | runs stripped | burns telegraphed |
+|---|---|---|---|---|---|
+| shipped (5 petals x 4) | 3.89 | 0.91 | 10.67 | 42% | 93% |
+| tuned (1 petal x 4) | 3.25 | **0.22** | 6.04 | 21% | 92% |
+
+- **Skill matters a lot**: under the tuned rule a skilled pilot loses 15x less than a careless one. Evaders take zero
+  burns from pack, locust, stampede, leviathan, mobber; the lurker (ambush) is the one threat that still taxes them.
+- **The shipped rule strips a careless pilot in seconds**: snap traps 5 s, pack 16 s, lurker 20 s, stampede 37 s
+  (median time to 0 petals). Even a skilled pilot is stripped by the lurker in 5/6 runs (79 s). Tuned stretches the
+  same to 57-139 s and never strips an evader. Careless burn/min looks similar under both rules only because a
+  20-petal pilot runs dry; the strip time is the real difference. **Recommendation: tuned (0.1 per element).**
+- **Fair**: 92-93% of burned petals were telegraphed (intent > 0.5 for >= 0.25 s before contact). Weak spots: snap
+  trap vs the `reader` pilot 0.67, stampede vs hunter (tuned) 0.63.
+- **Crystals pay back aggressive play**: hunters regain 2-27 petals/min from kills (leviathan hunter, shipped: burns
+  32, regains 27). Pilots here never steer for crystals, so this is a floor.
+- **Negatives**: thief, grazer, fortress (non-hunter) and mobber (tuned) burn nothing. The thief is by design (it
+  steals wake, not petals); the others are decoration as threats unless the pilot attacks.
+
+### Big creatures in the cell
+The morphing tadpole swarm (`flight/creatures/swarm_creature.js`, phase-1 sort rule, frac 8) and the trained 3D NCA
+lizard (`flight/creatures/nca_creature.js`, lizard3d_swim) now live in the flight cell (mode "creatures" and the whole
+cell). The swarm grazes crystals and its body plan follows its diet (eat mass crystals, become a whale); it stalks a
+nearby pilot with a building glow (>= 1.4 s), lunges, and its bite goes through the stakes (telegraphed in the
+headless check). Ramming it knocks units loose (molting back in 1-2 s) and sheds a crystal. The lizard circles the
+cell; flying through it cuts voxels that the NCA regrows, shedding time crystals.
+- Swarm: own-plan loss 0.20 / 1.03 / 0.73 / 4.03 (whale, jellyfish, pufferfish, dragonfly; bar < 8), all 12 morphs
+  under 8 in 0.7-1.3 s, **including dragonfly -> jellyfish, the switch phase 1 never solved**: it works because a
+  molting unit may also change body region. 0.69 ms/frame at n = 1024.
+- Lizard: sparse active set + a WebAssembly SIMD kernel took a step from 33.5 ms to ~2.6 ms (max diff 7e-6 vs the
+  dense step; JS fallback ~19 ms). A 20% bite regrows to 90% in 21 steps (0.7 s at 30 steps/s).

@@ -47,7 +47,7 @@
     ]
    ],
    "grown_voxels_at_200": 1142,
-   "ms_per_full_step": 2.6
+   "ms_per_full_step": 2.29
   },
   "keeps_animating": {
    "pass": true,
@@ -165,18 +165,18 @@
    "nca_steps_per_sec_at_60fps": 30,
    "frames_ending_mid_step": 0,
    "resume_check_0p5ms_budget": {
-    "frames_ending_mid_step": 55,
+    "frames_ending_mid_step": 51,
     "steps": 10,
     "max_abs_diff_vs_unsplit": 0
    },
-   "frame_ms_p50": 2.3,
-   "frame_ms_p95": 2.54,
-   "frame_ms_p99": 3.36,
-   "frame_ms_max": 3.69,
+   "frame_ms_p50": 2.46,
+   "frame_ms_p95": 3.47,
+   "frame_ms_p99": 3.82,
+   "frame_ms_max": 3.95,
    "cellsPerFrame_2000": {
     "frames": 120,
     "nca_steps": 60,
-    "frame_ms_mean": 1.69
+    "frame_ms_mean": 1.33
    }
   },
   "element_colours": {
@@ -211,12 +211,12 @@
    "wasm_vs_js_max_count_diff": 0,
    "ms_per_step": {
     "dense_baseline": 33.5,
-    "js_sparse": 20.62,
-    "wasm_simd": 2.64
+    "js_sparse": 18.55,
+    "wasm_simd": 2.33
    },
-   "speedup_vs_dense": 12.7,
-   "nca_steps_per_sec_at_4ms_per_60fps_frame_uncapped": 97,
-   "swim_cycle_s_at_that_rate": 0.7,
+   "speedup_vs_dense": 14.4,
+   "nca_steps_per_sec_at_4ms_per_60fps_frame_uncapped": 94,
+   "swim_cycle_s_at_that_rate": 0.72,
    "regrow_90pct_s_at_default_30_steps_per_s": 0.7,
    "regrow_90pct_s_uncapped": 0.2
   }

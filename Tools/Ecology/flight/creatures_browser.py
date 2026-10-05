@@ -55,6 +55,7 @@ if out["stalk"]["intent"] <= 0 and out["after_lunge"]["bites"] == 0: fails.appen
 if out["after_lunge"]["bites"] and not out["stakes"]["burned"]: fails.append("bite burned nothing")
 if out["fed"]["morphs"] < 1: fails.append("swarm did not morph after eating")
 if out["cut"]["lizCut"] <= 0: fails.append("lizard was not cut")
+if out["regrow"]["lizard"] < 0.9 * out["lizard_before_cut"]: fails.append("lizard did not regrow to 90%")
 out["fails"] = fails
 json.dump(out, open(os.path.join(HERE, "results", "creatures_browser.json"), "w"), indent=1)
 for k in ("start", "stalk", "after_lunge", "fed", "cut", "regrow"): print(k, {x: out[k][x] for x in ("state", "intent", "plan", "morphs", "eaten", "bites", "lizard", "lizCut", "lizSteps")})

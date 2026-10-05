@@ -366,8 +366,8 @@
       m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       m.setColorAt(0, new THREE.Color(1, 1, 1));
       m.frustumCulled = false; m.count = 0; m.name = 'NcaCreature';
-      this._mesh = m; this._THREE = THREE; this._m4 = new THREE.Matrix4(); this._q = new THREE.Quaternion(); this._v3 = new THREE.Vector3(); this._s3 = new THREE.Vector3(); this._c = new THREE.Color();
-      this._q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), this.yaw);
+      this._mesh = m; this._THREE = THREE; this._m4 = new THREE.Matrix4(); this._rq = new THREE.Quaternion(); this._v3 = new THREE.Vector3(); this._s3 = new THREE.Vector3(); this._c = new THREE.Color();
+      this._rq.setFromAxisAngle(new THREE.Vector3(0, 1, 0), this.yaw);
       this.sync();
       return m;
     }
@@ -377,11 +377,11 @@
     sync() {
       const m = this._mesh; if (!m) return 0;
       const v = this.voxels(), n = Math.min(v.n, m.instanceMatrix.count), M = this._m4, P = this._v3, S = this._s3, col = this._c;
-      this._q.setFromAxisAngle(this._v3.set(0, 1, 0), this.yaw);
+      this._rq.setFromAxisAngle(this._v3.set(0, 1, 0), this.yaw);
       for (let i = 0; i < n; i++) {
         const a = v.rgba[4 * i + 3], k = 0.55 + 0.45 * Math.min(1, a);
         P.set(v.pos[3 * i], v.pos[3 * i + 1], v.pos[3 * i + 2]); S.set(k, k, k);
-        M.compose(P, this._q, S); m.setMatrixAt(i, M);
+        M.compose(P, this._rq, S); m.setMatrixAt(i, M);
         col.setRGB(v.rgba[4 * i], v.rgba[4 * i + 1], v.rgba[4 * i + 2]); m.setColorAt(i, col);
       }
       m.count = n;

@@ -27,13 +27,13 @@ li{margin:4px 0}
 <div class="wrap">
   <div class="k">Cosmic Shore · Living Ecology program · rounds 1–2</div>
   <h1>Living Ecology Lab</h1>
-  <p class="lede"><b>New: fly it yourself.</b> The flight sim below puts you at the stick among every species. Round 1 was six research directions on fauna and flora that behave without behaviour trees: local rules, shared fields, quorum switches and swarms that assemble into bodies. Each is scored against scripted pilots on telegraph, counterplay, variety and payoff, and every run audits conserved mass. Open any viewer to fly the camera among the results. The recorded viewers open in <b>pilot view</b>, over the pilot's shoulder at whatever it is facing; 1–4 switch between pilot, chase, orbit and fly cameras, and clicking a creature follows it.</p>
+  <p class="lede"><b>New overnight: the flight sim has stakes.</b> Danger strikes in a hostile cell burn your petals for good, kills drop crystals that grow them back, and two learned bodies from phase 1 now live in the cell: a tadpole swarm that morphs with its diet and a 3D neural-automaton lizard that regrows what you cut. Round 1 was six research directions on fauna and flora that behave without behaviour trees: local rules, shared fields, quorum switches and swarms that assemble into bodies. Each is scored against scripted pilots on telegraph, counterplay, variety and payoff, and every run audits conserved mass. Open any viewer to fly the camera among the results. The recorded viewers open in <b>pilot view</b>, over the pilot's shoulder at whatever it is facing; 1–4 switch between pilot, chase, orbit and fly cameras, and clicking a creature follows it.</p>
 
   <div class="grid" style="margin-bottom:16px">
     <div class="card"><div class="k">H · flight · round 2</div><h2>Fly the ecology</h2>
-      <p>Pilot a vessel through the cell, one species at a time or all ten together, on a JS port of the exact code that was scored. Your wake is food: thieves tail it, fortress workers carry it off. Press R after an encounter to rate it.</p>
-      <div class="num">all 10 species pass the fidelity gate vs Python · ~1,400 agents · ~7 ms/step · mass residual 0</div>
-      <div class="pick">Next: <b>stakes</b>, so danger prisms burn your petals</div>
+      <p>Pilot a vessel through the cell, one species at a time or all ten together, on a JS port of the exact code that was scored. <b>Stakes:</b> your four-element petal flower burns on every danger strike in a hostile cell (O switches to your own cell, where strikes only sting); fly through crystals to regrow. Pick "Big creatures" to meet the morphing tadpole swarm and the NCA lizard.</p>
+      <div class="num">skilled pilot loses 0.22 petals/min vs careless 3.25 · 92% of burns telegraphed · NCA step 2.6 ms (WASM SIMD)</div>
+      <div class="pick">Recommended burn: <b>1 petal per element</b>; the shipped 5 strips a careless pilot in 5–37 s</div>
       <a class="go" href="flight.html">Fly it</a></div>
 
     <div class="card"><div class="k">G · living cell · round 2</div><h2>Everything in one cell</h2>
@@ -50,7 +50,7 @@ li{margin:4px 0}
       <div class="pick">Port pick: <b>Burst layer every species runs on</b></div>
       <a class="go" href="substrate.html">Open viewer</a></div>
 
-    <div class="card"><div class="k">B · bestiary</div><h2>Threat fauna</h2>
+    <div class="card"><div class="k">B · bestiary</div><h2>Threat fauna</h2><div class="num">now in the 3D viewer standard</div>
       <p>Eight species, cute to terrifying: thieves that tail your trail, pack hunters that ring and strike, locusts that flip from shy to storm.</p>
       <div class="num">all 8 pass telegraph ≥ 0.7 s · counterplay · variety · payoff</div>
       <div class="pick">Port picks: <b>thieves, pack hunters, locusts</b></div>
@@ -68,13 +68,13 @@ li{margin:4px 0}
       <div class="pick">Port pick: <b>the fortress</b></div>
       <a class="go" href="builders.html">Open viewer</a></div>
 
-    <div class="card"><div class="k">E · hierarchy</div><h2>Macro to individual</h2>
+    <div class="card"><div class="k">E · hierarchy</div><h2>Macro to individual</h2><div class="num">now in the 3D viewer standard</div>
       <p>Far from players a population is a set of cohorts; near them it expands into individuals. It conserves mass exactly, nothing pops in, and the predator–prey cycles never die out.</p>
       <div class="num">8 h cycles · 18.8k–163k grazers · drift 5.3e-15</div>
       <div class="pick">Port pick: <b>regions in the Cell, a stomach for the starvation clock</b></div>
       <a class="go" href="hierarchy.html">Open viewer</a></div>
 
-    <div class="card"><div class="k">F · threat flora</div><h2>Plants that hunt</h2>
+    <div class="card"><div class="k">F · threat flora</div><h2>Plants that hunt</h2><div class="num">now in the 3D viewer standard</div>
       <p>A snap-trap clump that slowly turns to face your routes, and a slime-mould network whose danger pulses run down cables it grew from what it ate.</p>
       <div class="num">snap trap R 0.97 · physarum telegraph 3.6 s</div>
       <div class="pick">Port picks: <b>snap trap, then physarum</b></div>
@@ -84,7 +84,7 @@ li{margin:4px 0}
   <section>
     <h3>In progress now</h3>
     <ul>
-      <li><b>Stakes in the flight sim:</b> a petal HUD, and opposing-domain danger prisms that burn petals for good, so a threat costs something you earned.</li>
+      <li><b>The siege:</b> the scariest tier you described, a swarm that surrounds you and dives in at once, with gaps to break out through.</li>
     </ul>
   </section>
 
