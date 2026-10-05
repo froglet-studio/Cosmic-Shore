@@ -329,6 +329,18 @@ The menu's own controls let you take the stick and fly it.
 
 **Figure 12.** The Arcade grid. Click a card to open its launch panel.
 
+| # | Control | What it does |
+|---|---|---|
+| 1 | **Weekly challenge** | This week's challenge mode and how long it has left. One attempt per day |
+| 2 | **MAELSTROM** | The tournament mode: random modes back to back, race to 6 points |
+| 3 | **Game card** | Click to open that mode's launch panel (intensity, players, domain, Play) |
+| 4 | **Genre petal** | What kind of game it is: race, making mass, destroying mass, or fighting pilots |
+| 5 | **Star** | Mark the mode as a favourite |
+| 6 | **Party slots** | You plus up to three friends; click a + to invite someone online |
+| 7 | **LEAVE PARTY** | Go back to a party of one |
+
+Scroll down for the rest of the modes. Escape or the Home tab returns to the main menu.
+
 ![Toy Box](architecture/ui_toybox.png)
 
 **Figure 13.** The Toy Box. Each card is a toy; the top cards are today's activity and shuffle.
