@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CosmicShore.Data;
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -53,6 +54,13 @@ namespace CosmicShore.Gameplay
                  "trail it is a temporary debuff of the same size.")]
         [SerializeField] private float debuffMagnitude = -0.5f;
 
+        [Tooltip("The TUNED size (PetalBurnRule.Tuned), used instead of debuffMagnitude in any cell " +
+                 "whose CellConfigDataSO.PetalBurnRule is Tuned. -0.1 = one petal per element per " +
+                 "contact - the Living Ecology lab's recommendation (Docs/ELEMENTAL_ECONOMY.md §4.1). " +
+                 "Same coupling as the shipped size: it is both the hostile burn and the own-domain " +
+                 "temporary debuff.")]
+        [SerializeField] private float tunedDebuffMagnitude = -0.1f;
+
         [Tooltip("Seconds over which the OWN-DOMAIN temporary debuff decays back to baseline. " +
                  "The opposing-domain burn is permanent and has nothing to decay.")]
         [SerializeField] private float debuffDuration = 4f;
@@ -60,6 +68,11 @@ namespace CosmicShore.Gameplay
         [Header("Anti-Spam")]
         [Tooltip("Minimum seconds between danger prism debuffs on the same vessel")]
         [SerializeField] private float cooldown = 1f;
+
+        [Header("Stakes Switch")]
+        [Tooltip("The live cell. Its Config.PetalBurnRule picks debuffMagnitude (Shipped) or " +
+                 "tunedDebuffMagnitude (Tuned). Unassigned, or no cell loaded, plays Shipped.")]
+        [SerializeField] private CellRuntimeDataSO cellData;
 
         static readonly Element[] AllElements =
             { Element.Charge, Element.Mass, Element.Space, Element.Time };
@@ -95,6 +108,11 @@ namespace CosmicShore.Gameplay
             // PrismStats treats it, so a neutral danger rod burns.
             bool hostile = prismImpactee.Prism.Domain != victim.Domain;
 
+            // THE STAKES SWITCH. The cell picks the size; both branches below use it, so the
+            // own-domain sting stays the same size as the hostile burn under either rule.
+            var rule = cellData && cellData.Config ? cellData.Config.PetalBurnRule : PetalBurnRule.Shipped;
+            float magnitude = PetalBurnRules.Magnitude(rule, debuffMagnitude, tunedDebuffMagnitude);
+
             // Classed DangerPrism either way, which is what a narrow ward can be held against: the
             // Dolphin's Time-5 Drift Ward wards THIS and nothing else (ElementalDebuffSources).
             for (int i = 0; i < AllElements.Length; i++)
@@ -103,10 +121,10 @@ namespace CosmicShore.Gameplay
                     // THE SINK. The only call in the game that destroys a petal instead of
                     // moving it. Authored negative because it reads as a debuff; a transfer
                     // takes a positive amount.
-                    ElementalTransfer.Burn(victim, AllElements[i], -debuffMagnitude,
+                    ElementalTransfer.Burn(victim, AllElements[i], -magnitude,
                                            ElementalDebuffSources.DangerPrism);
                 else
-                    rs.ApplyElementalEffect(AllElements[i], debuffMagnitude, debuffDuration,
+                    rs.ApplyElementalEffect(AllElements[i], magnitude, debuffDuration,
                                             ElementalDebuffSources.DangerPrism);
             }
         }
