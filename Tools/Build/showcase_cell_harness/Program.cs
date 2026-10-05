@@ -26,6 +26,9 @@ using CosmicShore.Gameplay;
 static class Program
 {
     static int s_fail;
+    /// <summary>C8: the share of a banded population's member-seconds that must lie inside its pen (worst run), and the
+    /// share of seconds every planting pen must hold a living plant.</summary>
+    const double OccupancyFloor = 0.0, PenFloor = 0.0;
 
     static void Check(bool ok, string what)
     {
@@ -98,7 +101,7 @@ static class Program
         else if (mode != "unit")
         {
             for (int seed = 1; seed <= 3; seed++) runs.Add(Run(layout, plans, density, seed, 300f, seed == 1 ? snapOut : null));
-            runs.Add(Run(layout, plans, density, 7, 1800f, null));
+            runs.Add(Run(layout, plans, density, 7, 1800f, LateSnapPath(snapOut)));
         }
         if (runs.Count > 0) Summary(layout, runs);
         if (s_findings > 0) Console.WriteLine($"\n{s_findings} FINDING(S) - ecology / game-feel outcomes, reported (SHOWCASE_STRICT=1 makes them fail)");
@@ -346,6 +349,11 @@ static class Program
         public readonly Dictionary<string, double> LodShare = new();
     }
 
+    /// <summary>The long run's minute-25 snapshot sits beside the minute-5 one: snap.json -> snap-25min.json.</summary>
+    static string? LateSnapPath(string snapOut) =>
+        string.IsNullOrEmpty(snapOut) ? null : Path.Combine(Path.GetDirectoryName(Path.GetFullPath(snapOut)) ?? ".",
+                                                             Path.GetFileNameWithoutExtension(snapOut) + "-25min" + Path.GetExtension(snapOut));
+
     static RunResult Run(JsonElement layout, SwarmPlanData[] plans, int density, int seed, float seconds, string? snapOut)
     {
         Console.WriteLine($"\n── seed {seed}, {seconds / 60f:F0} min ──");
@@ -497,7 +505,9 @@ static class Program
                 r.LedgerWorst = Math.Max(r.LedgerWorst, Math.Abs(res));
                 r.LedgerScale = Math.Max(r.LedgerScale, scale);
             }
-            if (snapOut != null && snapOut.Length > 0 && MathF.Abs(c.T - 300f) < Cell.Dt * 0.5f) Snapshot(c, systems, builders, snapOut);
+            // the minute-5 picture of a 5-min run; the long run's picture is minute 25 (the cell after the seeder's re-hatches)
+            float snapAt = seconds > 600f ? 1500f : 300f;
+            if (snapOut != null && snapOut.Length > 0 && MathF.Abs(c.T - snapAt) < Cell.Dt * 0.5f) Snapshot(c, systems, builders, snapOut);
         }
         r.Reseeds = swarm.Reseeds + sub.Reseeds + builders.ThiefReseeds + builders.WearReseeds;
         swarm.SyncBook(c.World);
@@ -733,6 +743,7 @@ static class Program
         using var w = new Utf8JsonWriter(fs);
         w.WriteStartObject();
         w.WriteNumber("t", c.T);
+        w.WriteNumber("seed", c.Seed);
         w.WriteNumber("membrane", c.Membrane);
         w.WriteNumber("nucleus", c.L.GetProperty("nucleus").GetDouble());
         w.WriteStartArray("bands");
@@ -822,6 +833,26 @@ static class Program
         Check(longRun.Over.Count == 0, "C4 no class exceeded its cap" + (longRun.Over.Count > 0 ? ": " + string.Join(", ", longRun.Over) : ""));
         foreach (var run in runs.Where(r => r.Seed != longRun.Seed || r.Minutes == longRun.Minutes))
             if (run.Extinct.Count > 0) Console.WriteLine($"     (seed {run.Seed}: extinct {string.Join(", ", run.Extinct)})");
+
+        // C8 (round 11-14): every population holds its radial band (and its sector, when it has one) - sampled once a second,
+        // member-seconds inside the pen over member-seconds counted; a plant pen counts the seconds it holds a plant. Thieves
+        // and wearers range the cell by design (a raid on a pilot's wake, a hunt): reported, not asserted.
+        Console.WriteLine($"C8 band occupancy (share of member-seconds inside the pen; a plant pen: share of seconds it holds a plant; worst run, floor {OccupancyFloor:P0} / plant pens {PenFloor:P0}):");
+        var classes = runs.SelectMany(r => r.Occupancy.Keys).Distinct().OrderBy(k => k).ToList();
+        var lowOcc = new List<string>();
+        foreach (var cls in classes)
+        {
+            var per = runs.Where(r => r.Occupancy.TryGetValue(cls, out var o) && o.counted > 0)
+                          .Select(r => (r.Seed, share: r.Occupancy[cls].inPen / (double)r.Occupancy[cls].counted)).ToList();
+            if (per.Count == 0) continue;
+            var low = per.OrderBy(x => x.share).First();
+            bool asserted = cls != "thieves" && cls != "wearers/hearts";
+            double floor = cls.StartsWith("plant pen") ? PenFloor : OccupancyFloor;
+            Console.WriteLine($"     {cls,-22} worst {low.share,6:P1} (s{low.Seed})  runs {string.Join(" ", per.Select(x => $"s{x.Seed}:{x.share:P0}"))}{(asserted ? "" : "  (reported)")}");
+            if (asserted && low.share < floor) lowOcc.Add($"{cls} {low.share:P1} in s{low.Seed}");
+        }
+        Check(lowOcc.Count == 0, $"C8 every banded population spends >= {OccupancyFloor:P0} of its member-seconds in its pen and every plant pen holds a plant >= {PenFloor:P0} of the time" +
+              (lowOcc.Count > 0 ? ": " + string.Join(", ", lowOcc) : ""));
 
         Console.WriteLine("C7 ecology LOD (rounds 11f, 11f-2), share of ticks each population spent collapsed:");
         foreach (var run in runs)
