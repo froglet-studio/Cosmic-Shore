@@ -9,7 +9,8 @@ through the opposing goal portal inside a wireframe arena suspended in the Hyper
 1-6 players (2v2/3v3 with AI backfill) through the same single unified Netcode scene as
 SkimRace / Joust / Crystal Capture — solo play is just a party of one plus AI backfill.
 
-**It is Rhino-only.** The Rhino's ForceFieldSkimmer capsule is a real, analog-trigger-
+**The card seats three hulls: Rhino, Scarab and Squirrel** (`ArcadeGameAstroLeague.asset`
+`Vessels`). The Rhino is the one with a blade: its ForceFieldSkimmer capsule is a real, analog-trigger-
 puppeteered sword (`R_VesselActions/RHINO_SHIELD_SWIPE.md`), and the ball resolves a
 contact through it ON THE BLADE: the bounce normal comes off the point of the sword that
 touched, and the strike speed is that point's TRUE velocity from `SkimmerSwingKinematics`
@@ -32,8 +33,9 @@ any vessel without a swinging skimmer.
 - **Domains**: exactly two. `SO_ArcadeGame.MinDomainsAllowed = MaxDomainsAllowed = 2`
   pins the configure modal's DC stepper, so the standard pipeline (DomainAssigner →
   `ServerPlayerVesselInitializerWithAI` balancing) always produces Jade vs Ruby
-- **Vessels**: **Rhino only** (`SO_ArcadeGame.Vessels` = [Rhino]). Restricting the arcade
-  card's list is the whole mechanism — `GameDataSO.ClampVesselToGame` is applied on BOTH
+- **Vessels**: **Rhino, Scarab, Squirrel** (`SO_ArcadeGame.Vessels` = [Rhino, Scarab,
+  Squirrel]). The Rhino strikes on the blade; the Scarab and Squirrel play through the
+  hull-ram path. Restricting the arcade card's list is the whole mechanism — `GameDataSO.ClampVesselToGame` is applied on BOTH
   the human path (`ResolveSpawnVesselType`) and the AI path
   (`ServerPlayerVesselInitializerWithAI`), so AI can never field an illegal hull. Same
   pattern as Cleave. Do not add a mode-local vessel check.
@@ -93,7 +95,9 @@ FinishMatch             winner banner (real time) → matchMonitor.ForceEnd()
   `GameDataSO.GetDomainMetricSum`), so it can never diverge from the host. Astro League adds
   no bespoke score UI.
 - **Goal target**: `GameDataSO.GoalTargetCount` (mercy rule), published by the
-  controller from `AstroLeagueSettingsSO.goalLimit` and synced by ClientRpc.
+  controller from `EndConditionOverridesSO.GetAstroLeagueGoalLimit()` (FrogletTools ▸ Game
+  Modes ▸ End Game Conditions, default 5) and synced by NetworkVariable.
+  `AstroLeagueSettingsSO.goalLimit` is only the fallback when the overrides asset is missing.
 - **Final scores**: every player's `Score` = personal `GoalsScored`; the winning
   DOMAIN is the highest goal sum (golden goal guarantees no tie when enabled; with
   overtime disabled, full-time ties break by `ActiveDomains` order).
