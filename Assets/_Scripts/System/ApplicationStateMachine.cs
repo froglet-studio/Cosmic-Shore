@@ -18,6 +18,7 @@ namespace CosmicShore.Core
     ///   Bootstrapping → Authenticating : AppManager.RunBootstrapAsync() after OnBootstrapComplete
     ///   Authenticating → MainMenu    : AuthenticationSceneController on successful auth + scene load
     ///   MainMenu → LoadingGame       : SceneLoader.LaunchGame()
+    ///   MainMenu / LoadingGame / InGame / GameOver → Authenticating : ReconnectService (re-runs the boot chain in place)
     ///   LoadingGame → InGame         : MiniGame controller (via GameDataSO.OnSessionStarted)
     ///   InGame → GameOver            : Scoring / turn system (via GameDataSO.OnMiniGameEnd)
     ///   GameOver → MainMenu          : SceneLoader.ReturnToMainMenu()
@@ -57,22 +58,26 @@ namespace CosmicShore.Core
             [ApplicationState.MainMenu] = new HashSet<ApplicationState>
             {
                 ApplicationState.LoadingGame,
+                ApplicationState.Authenticating, // reconnect re-runs the boot chain from the menu
             },
             [ApplicationState.LoadingGame] = new HashSet<ApplicationState>
             {
                 ApplicationState.InGame,
                 ApplicationState.MainMenu, // cancelled / failed load returns to menu
+                ApplicationState.Authenticating, // reconnect re-runs the boot chain
             },
             [ApplicationState.InGame] = new HashSet<ApplicationState>
             {
                 ApplicationState.GameOver,
                 ApplicationState.MainMenu, // early exit
+                ApplicationState.Authenticating, // reconnect re-runs the boot chain
             },
             [ApplicationState.GameOver] = new HashSet<ApplicationState>
             {
                 ApplicationState.MainMenu,
                 ApplicationState.LoadingGame, // replay
                 ApplicationState.InGame,      // restart (same scene)
+                ApplicationState.Authenticating, // reconnect re-runs the boot chain
             },
             [ApplicationState.Paused] = new HashSet<ApplicationState>
             {

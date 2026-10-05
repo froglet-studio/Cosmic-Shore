@@ -33,11 +33,15 @@ namespace CosmicShore.Gameplay
     [DisallowMultipleComponent]
     public class SkimRacePilot : MonoBehaviour
     {
-        // Per-frame cost, readable in the Unity Profiler (search "SkimRace"): Update is the whole pilot,
-        // Sense / Obstacles its reading of the game, SkimRaceDriver.Decide (and its parts) the thinking.
-        static readonly ProfilerMarker s_UpdateMarker = new("SkimRacePilot.Update");
-        static readonly ProfilerMarker s_SenseMarker = new("SkimRacePilot.Sense");
-        static readonly ProfilerMarker s_ObstaclesMarker = new("SkimRacePilot.Obstacles");
+        // Per-frame cost, readable in the Unity Profiler (search "SkimRace"): SkimRace.Pilot.Update is the
+        // whole pilot, .Sense its reading of the game, .FillObstacles the prism gather that feeds the
+        // laid-mass guard and .Decide the thinking (SkimRace.Driver.* its parts). Every AI seat pays them on
+        // every frame it decides (each frame, at DecisionHz 0); Decide and FillObstacles are also default
+        // diag markers (MarkerBudget.DefaultMarkers).
+        static readonly ProfilerMarker s_UpdateMarker = new("SkimRace.Pilot.Update");
+        static readonly ProfilerMarker s_SenseMarker = new("SkimRace.Pilot.Sense");
+        static readonly ProfilerMarker s_FillObstaclesMarker = new("SkimRace.Pilot.FillObstacles");
+        static readonly ProfilerMarker s_DecideMarker = new("SkimRace.Pilot.Decide");
 
         IVessel _vessel;
         IVesselStatus _status;
@@ -181,9 +185,8 @@ namespace CosmicShore.Gameplay
 
                 if (_config.DecisionHz <= 0f || Time.time >= _nextDecision)
                 {
-                    using (s_ObstaclesMarker.Auto())
-                        FillObstacles(obs);
-                    _held = _driver.Decide(obs, _course, now, Time.deltaTime);
+                    using (s_FillObstaclesMarker.Auto()) FillObstacles(obs);
+                    using (s_DecideMarker.Auto()) _held = _driver.Decide(obs, _course, now, Time.deltaTime);
                     if (_config.DecisionHz > 0f) _nextDecision = Time.time + 1f / _config.DecisionHz;
                 }
 

@@ -346,7 +346,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 if (FrameTimingManager.GetLatestTimings(1, _frameTimings) > 0)
                 {
                     snapshot.cpuFrameTimeMs = (float)_frameTimings[0].cpuFrameTime;
-                    snapshot.gpuFrameTimeMs = (float)_frameTimings[0].gpuFrameTime;
+                    // A recorded garbage value would survive into the run's averages,
+                    // its max, its spike records and its saved report.
+                    snapshot.gpuFrameTimeMs = FrameBoundness.SanitizeGpuMs((float)_frameTimings[0].gpuFrameTime);
                 }
 
                 if (cachedCaptureRendering)

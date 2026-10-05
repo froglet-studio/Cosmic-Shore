@@ -41,7 +41,7 @@ namespace CosmicShore.Data
         MultiplayerFreestyle = 28,
         OnlineDuelForTheCell = 29,
         Multiplayer2v2CoOpVsAI = 30,
-        CoOpWildlifeBlitz = 32,
+        CoOpWildlifeBlitz = 32,     // retired 2026-10 (Bug_Hunt BH-5.5/5.7); scene + controller deleted; enum kept
         SkimRace = 33,
         Joust = 34,
         Scurry = 35,

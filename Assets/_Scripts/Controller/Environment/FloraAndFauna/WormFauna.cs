@@ -829,6 +829,10 @@ namespace CosmicShore.Gameplay
             // shot-off head on the next behavior tick (~1.5 s) instead of the next wave.
             _lastProductionTime = Time.time;
 
+            // A diagnostic production hold skips the cycle it lands on - AFTER the stamp above,
+            // so a held colony banks nothing and grows at its ordinary rate once released.
+            if (Cell.DiagnosticProductionHold) return;
+
             if (segments.Count >= config.MaxSegmentsPerWorm) return;
 
             if (segments[0].Role != WormSegmentRole.Head)

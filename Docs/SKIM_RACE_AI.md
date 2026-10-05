@@ -467,6 +467,51 @@ These are environment results, not AI results (the simulator at 115 ms frames al
 same policy from 53 s to 77 s). **The in-editor matrix for the current code is still owed** - run it
 on an idle machine with the editor focused (§7), 2 launches x 5 races per cell, players 3 and 4.
 
+### 8.0e The pilot's frame cost halved, every decision unchanged (2026-10-05)
+
+Every AI seat runs `SkimRaceDriver.Decide` on every frame (`DecisionHz` is 0 in all four configs),
+inside the game's own frame time. Simulator, 3 AI seats, 6 seeds, decide cost per seat per frame in
+optimized .NET (the editor runs Mono, which has not been measured against it), the old and the new
+code run one after the other (an interleaved re-run - old, new, old, new - gave I1 0.105 -> 0.049 and
+I2 0.532 -> 0.298):
+
+| Cell | Before (ms) | After (ms) | Where the time was |
+|---|---|---|---|
+| I1 | 0.108 | 0.049 | the laid-mass guard tested every gathered prism at every rollout step (0.085 of 0.114) |
+| I2 | 0.563 | 0.303 | the tracking MPC's track-shell queries (`ShellClearance` 0.23, `Project` 0.11), then the guard's prism tests (0.12) |
+| I4 | 0.184 | 0.079 | the guard's track-shell queries (0.09) and prism tests (0.04) |
+
+Three changes, each exact by construction:
+
+- **Laid-mass broadphase** (`SkimRaceDriver.BuildObstacleGrid`). Each guard decision snapshots the
+  gathered boxes once (inverse rotation and reach precomputed with the same expressions) into a hash
+  grid whose cell is 5% wider than the largest reach, and a rollout step walks only the 27 cells
+  round it. That is a superset of every box that can pass the reach test, the test still runs on
+  each, and a minimum does not depend on order. A step or box the grid cannot place exactly
+  (non-finite, or beyond 65,536 cells) drops to the old scan: a NaN position measures 0 clearance
+  to every box (`Mathf.Max(NaN, 0)` is 0), so it must veto from any cell, as it did.
+- **`SkimRaceCourse.ShellClearance`**: starts at the hint prism and works outward, and rules a prism
+  out by the sphere through its box's corners, then by the box itself (the stella is inscribed in
+  it), before the exact 8-triangle test. Exact stella tests fell 3.7x (I2: 106.5 M -> 28.7 M). A
+  prism is skipped only when a bound loses by 0.01 u, far beyond the float rounding of either side,
+  and ties are broken by offset as the old -window..+window scan broke them.
+- **`SkimRaceCourse.Project`** reads each segment's vector and squared length from a table built at
+  construction with the same expressions, and walks its window without two integer modulos per
+  segment.
+
+**Proof.** Every line of the simulator's race output (finish times to 0.01 s, hull and recovery
+counts, boost resets by cause, cross-track percentiles) is byte-identical to the old code at I1, I2
+and I4 over 6 seeds and at I2 and I4 over 20 seeds, 3 seats each; only the cost line differs. A
+single changed decision would move a whole race. `SkimRaceCourseQueryTests` pins both course queries
+to their plain definitions bit for bit over thousands of seeded points (inside overlapping shells,
+on spike tips, on a course short enough for the window to wrap) and fails on each of three
+deliberate breaks: a flipped tie-break, an unsafe bound, a window shifted by one.
+
+**What this does not explain.** §8.0c's ~127 ms hand-played frame. The AI's whole planning cost was
+about 0.5 ms per seat per frame in .NET before this; even several times that in Mono is a small part
+of 127 ms. The editor number needs measuring, not estimating: `diag` now times
+`SkimRace.Pilot.Decide` and `SkimRace.Pilot.FillObstacles` by default.
+
 ### 8.0d Hand-played I2 at a normal frame rate: under 80 s (2026-10-04)
 
 Same recorder file (`manual_I2_20261004-181400.jsonl`), races 4-9, after the editor's frame time came
@@ -898,38 +943,48 @@ markers (Window > Analysis > Profiler, CPU Usage, Hierarchy view, search `SkimRa
 
 | Marker | What it times |
 |---|---|
-| `SkimRacePilot.Update` | everything one AI pilot does in a frame - one call per AI |
-| `SkimRacePilot.Sense` / `SkimRacePilot.Obstacles` | reading the vessel and crystals / looking up nearby prisms for the laid-mass guard |
-| `SkimRaceDriver.Decide` | the thinking |
-| `SkimRaceDriver.TrackMpc` | intensity 2's look-ahead planner: ~26 short what-if flights, only on the frames it re-plans (20 a second) |
-| `SkimRaceDriver.GuardMass` | the laid-mass guard's what-if flights |
-| `SkimRaceDriver.PlanPass` / `.Guards` / `.Planner` / `.LevelApproach` / `.Mpc` | smaller parts; a part a policy switches off never appears |
+| `SkimRace.Pilot.Update` | everything one AI pilot does in a frame - one call per AI |
+| `SkimRace.Pilot.Sense` | reading the vessel and crystals |
+| `SkimRace.Pilot.FillObstacles` | gathering nearby prisms for the laid-mass guard (a default `diag` marker) |
+| `SkimRace.Pilot.Decide` | the thinking (a default `diag` marker, `MarkerBudget.DefaultMarkers`) |
+| `SkimRace.Driver.TrackMpc` | intensity 2's look-ahead planner: ~26 short what-if flights, only on the frames it re-plans (20 a second) |
+| `SkimRace.Driver.GuardMass` | the laid-mass guard's what-if flights |
+| `SkimRace.Driver.PlanPass` / `.Guards` / `.Planner` / `.LevelApproach` / `.Mpc` | smaller parts; a part a policy switches off never appears |
 
-The simulator times the SAME markers by name (`UnityShim`'s `ProfilerMarker` stand-in) and `eval`
-prints them, with the bytes allocated per decision and the AI's thinking per frame for all seats
-together. Markers wrap whole steps at most once per decision, so they change nothing: every race in the
-simulator is byte-identical with and without them.
+The `SkimRace.Pilot.*` markers came from two sessions on the same day (`claude/bold-fermi-54nlts`'s
+`Decide` / `FillObstacles`, this branch's `Update` / `Sense`) and were merged into one set, so each piece of
+work is timed once. The simulator compiles the driver, not the pilot: it tallies the `SkimRace.Driver.*`
+markers by name (`UnityShim`'s `ProfilerMarker` stand-in) and times the whole decision itself, and `eval`
+prints them with the bytes allocated per decision and the AI's thinking per frame for all seats together.
+Markers wrap whole steps at most once per decision, so they change nothing: every race in the simulator is
+byte-identical with and without them.
 
 **Measured in the simulator** (2026-10-05; a 4-core Intel Xeon 2.8 GHz cloud machine, .NET 8.0.31,
 nothing else running; each track's shipped policy - I3 flies the general one - with 2 AI seats, 28 ms
-frames +-50%, 20 races per track, seedbase 50000, `eval <I> 20 ... limit=300`), with the track-lookup
-speed-up below (commit `f0d56df55`):
+frames +-50%, 20 races per track, seedbase 50000, `eval <I> 20 ... limit=300`), on the merged code:
+`claude/bold-fermi-54nlts`'s exact speed-ups (§8.0e) with this branch's work:
 
 | Track (policy) | One AI, average per frame | Both AIs in one frame: typical / worst 10% / worst 1% | Intensity 2's planner | Biggest part (per AI per frame) | Memory allocated |
 |---|---|---|---|---|---|
-| I1 (`skimrace-v4-i1`) | 0.08 ms | 0.03 / 0.60 / 1.29 ms | - | laid-mass guard, 0.08 ms | 0 bytes |
-| I2 (`skimrace-v2-i2`) | **0.68 ms** | 0.74 / **3.05** / **4.76** ms | **1.20 ms** per AI per re-plan, on 43% of frames | planner, 0.52 ms | 0 bytes |
-| I3 (`skimrace-v2-general`) | 0.30 ms | 0.27 / 1.75 / 3.85 ms | - | laid-mass guard, 0.22 ms | 0 bytes |
-| I4 (`skimrace-v1-i4`) | 0.20 ms | 0.12 / 1.06 / 3.38 ms | - | laid-mass guard, 0.18 ms | 0 bytes |
-| I2 on Easy | 0.67 ms | 0.58 / 3.11 / 4.72 ms | 1.25 ms | planner, 0.52 ms | 0 bytes |
+| I1 (`skimrace-v4-i1`) | 0.04 ms | 0.02 / 0.26 / 0.57 ms | - | laid-mass guard, 0.04 ms | ~23 bytes per decision* |
+| I2 (`skimrace-v2-i2`) | **0.43 ms** | 0.34 / **1.93** / **2.95** ms | **0.81 ms** per AI per re-plan, on 43% of frames | planner, 0.35 ms | ~22 bytes* |
+| I3 (`skimrace-v2-general`) | 0.15 ms | 0.16 / 0.87 / 1.60 ms | - | laid-mass guard, 0.10 ms | ~18 bytes* |
+| I4 (`skimrace-v1-i4`) | 0.12 ms | 0.08 / 0.65 / 1.91 ms | - | laid-mass guard, 0.10 ms | ~11 bytes* |
+| I2 on Easy | 0.39 ms | 0.30 / 1.78 / 2.88 ms | 0.78 ms | planner, 0.33 ms | ~20 bytes* |
 
-Before that speed-up (same runs, same races): I2 0.82 ms average, 1.50 ms per re-plan, worst 1% 5.61 ms;
-I3 0.37 ms (4.62 ms); I4 0.23 ms (3.83 ms); I1 unchanged.
+\* The laid-mass guard's grid (§8.0e) grows its arrays to the most nearby prisms a pilot has met - about
+64 KB per AI per race, all while its trail builds up; averaged over every decision that reads as ~20
+bytes. Once the arrays are big enough nothing more is allocated (before the grid: 0 bytes).
+
+Every one of those 100 races is byte-identical to the ORIGINAL code's, before any speed-up, whose numbers
+were: I1 0.083 ms, I2 0.82 ms (1.50 ms per re-plan, worst 1% 5.61 ms), I3 0.37 ms (worst 1% 4.62 ms), I4
+0.23 ms (3.83 ms). This branch's own track-lookup change (`f0d56df55`, 11-20% on its own) is part of §8.0e's,
+which was kept on merge.
 
 A frame at 60 fps is 16.7 ms. Easy and Medium cost no more than Hard (an Easy pilot has a little less to
-think about while a crystal is still unnoticed). The thinking allocates nothing, so it never feeds the
-garbage collector. At 60 fps the planner lands on fewer frames (20 a second is 1 frame in 3), so the
-average falls; the spike does not. The single slowest frame of each run (15-17 ms) is left out of the
+think about while a crystal is still unnoticed). Past the guard grid's growth (the footnote) the thinking
+allocates nothing, so it does not feed the garbage collector during a race. At 60 fps the planner lands on fewer frames (20 a second is 1 frame in 3), so the
+average falls; the spike does not. The single slowest frame of each run (12-29 ms) is left out of the
 table: it cannot be told apart from the .NET runtime's one-off start-up work, which the game does
 differently. The 0.37 ms in section 8 (commit `02da300fe`, 2026-10-04) was measured on a different machine
 under settings that record does not give; compare the rows of this table with each other, not with it.
@@ -941,24 +996,26 @@ same frames, because both count from the same race start (in a 3-race count: 3,4
 re-plans, 354 had one, 4,972 none). Inside a what-if flight the time goes to checking the hull against
 the ribbon's contact shell (~44%), finding the nearest point on the track (~24%), sampling the racing line
 (~12%) and the flight model and steering (~20%) - measured with temporary finer timers in a scratch build,
-before the track-lookup speed-up below roughly halved the nearest-point share.
+before §8.0e's speed-ups cut the first two.
 
 **What the simulator cannot say.** Unity runs this C# on Mono in the editor and IL2CPP in a build, not on
 .NET 8, so the game's numbers will differ - not measured here, but the editor is likely slower (much slower
 with the editor's Code Optimization set to Debug) and an IL2CPP build likely closer. The pilot's own sensing
-(`SkimRacePilot.Sense`, `.Obstacles`) only runs in the game. The Profiler reading in
+(`SkimRace.Pilot.Sense`, `.FillObstacles`) only runs in the game. The Profiler reading in
 `Docs/UNITY_VERIFICATION_CHECKLIST.md` is the real number.
 
 **Speed-ups** (the user's rules: no fixed budget; only speed-ups that leave every race identical, anything
 that changes flying is the user's decision):
 
-- *Identical races - APPLIED (commit `f0d56df55`, the user's call):* the track lookups wrapped their
-  indices with an integer remainder per segment (~150 `%` per lookup); the window's first index is now
-  computed once and stepped with a wrap-around. Old and new agree bit for bit on 2.4 million random
-  queries (tiny courses, wrapped windows, out-of-range hints, exact ties; a shifted window is caught), all
-  100 races of the table above are identical, and the thinking is 11-20% cheaper where the track is
-  searched most (I2, I3, I4).
+- *Identical races - applied (the user's call), then superseded on merge:* this branch's `f0d56df55`
+  stepped the track lookups' windows with a wrap-around instead of an integer remainder per segment;
+  `claude/bold-fermi-54nlts` made the same change and more the same day (§8.0e: precomputed segments, a
+  nearest-first shell search, a grid for the laid-mass guard), and its version was kept. The merged track
+  code agrees with the original bit for bit on 2.4 million random queries (tiny courses, wrapped windows,
+  out-of-range hints, exact ties; a window shifted by one is caught), and its races are identical.
 - *Identical races, tried and dropped:* skipping the far half of the star-shaped shell with a safe bound
-  saved nothing measurable (the bound costs about what it saves).
+  saved nothing measurable (the bound costs about what it saves); §8.0e's box bound before the exact test
+  is the version that pays.
 - *Would change how the AI flies (needs a decision):* stagger the AIs' re-plans so they do not share a
-  frame (halves the spike with two AI); re-plan less often (`TrackMpcHz`); fewer candidate sticks.
+  frame (halves the spike with two AI); re-plan less often (`TrackMpcHz`); fewer candidate sticks. The user
+chose to decide on these after reading the real numbers in the Unity Profiler.

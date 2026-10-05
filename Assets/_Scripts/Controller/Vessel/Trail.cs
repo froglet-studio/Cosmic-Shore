@@ -44,13 +44,13 @@ namespace CosmicShore.Gameplay
 
         bool isLoop;
         public List<Prism> TrailList { get; }
-        Dictionary<Prism, ushort> trailBlockIndices;
+        Dictionary<Prism, int> trailBlockIndices;
 
         public Trail(bool isLoop = false)
         {
             this.isLoop = isLoop;
             TrailList = new List<Prism>();
-            trailBlockIndices = new Dictionary<Prism, ushort>();
+            trailBlockIndices = new Dictionary<Prism, int>();
         }
 
         public void Add(Prism block)
@@ -60,7 +60,7 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogWarning($"[Trail] Attempted to add duplicate block {block.name}. Ignoring.");
                 return;
             }
-            trailBlockIndices.Add(block, (ushort)TrailList.Count);
+            trailBlockIndices.Add(block, TrailList.Count);
             TrailList.Add(block);
             
             // Note: If you need to access prismProperties, ensure it's initialized on the block
@@ -101,7 +101,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < TrailList.Count; i++)
             {
                 var block = TrailList[i];
-                if (block) trailBlockIndices[block] = (ushort)i;
+                if (block) trailBlockIndices[block] = i;
             }
 
             OnOldestRemoved?.Invoke();

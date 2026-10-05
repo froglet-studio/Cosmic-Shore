@@ -59,13 +59,14 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ### 🔴 Skim Race AI Profiler timers - read the AI's real per-frame cost (`claude/confident-pascal-w76l2o`, 2026-10-05)
 
-**What landed.** `ProfilerMarker`s on the Skim Race pilot (`SkimRacePilot.Update` / `.Sense` / `.Obstacles`)
-and its thinking (`SkimRaceDriver.Decide` and its parts; `SkimRaceDriver.TrackMpc` only on the frames
-intensity 2's planner re-plans). No behaviour change: every simulator race is byte-identical with and
-without them. The simulator's numbers are in `Docs/SKIM_RACE_AI.md` §12; this is the in-game reading the
-simulator cannot give (the editor runs C# on Mono, a build on IL2CPP). Simulator, intensity 2, two AI
-(after the identical-races track-lookup speed-up, `f0d56df55`): 0.74 ms in a typical frame, 3.05 / 4.76 ms
-in the worst 10% / 1% (the planner's re-plan frames).
+**What landed.** `ProfilerMarker`s on the Skim Race pilot - `SkimRace.Pilot.Update` (the whole pilot),
+`.Sense`, `.FillObstacles`, `.Decide` - and on the parts of its thinking (`SkimRace.Driver.*`;
+`SkimRace.Driver.TrackMpc` only on the frames intensity 2's planner re-plans). `.Decide` and `.FillObstacles`
+are also `diag`'s default markers (the `claude/bold-fermi-54nlts` entry below). No behaviour change: every
+simulator race is byte-identical with and without them. The simulator's numbers are in
+`Docs/SKIM_RACE_AI.md` §12; this is the in-game reading the simulator cannot give (the editor runs C# on Mono,
+a build on IL2CPP). Simulator, intensity 2, two AI, merged code: 0.34 ms in a typical
+frame, 1.93 / 2.95 ms in the worst 10% / 1% (the planner's re-plan frames).
 
 **Verify in editor (about 5 minutes)**
 - [ ] Compiles.
@@ -74,10 +75,10 @@ in the worst 10% / 1% (the planner's re-plan frames).
 - [ ] Window > Analysis > Profiler (Ctrl+7), CPU Usage module, recording on. Play Skim Race at
       **intensity 2** with **two AI**, Hard, and let it race for 20-30 seconds.
 - [ ] Click a frame in the CPU chart, switch the bottom pane to **Hierarchy**, type `SkimRace` in its search
-      box. Note the **Total ms** of `SkimRacePilot.Update` (its Calls column should read 2 - one per AI;
+      box. Note the **Total ms** of `SkimRace.Pilot.Update` (its Calls column should read 2 - one per AI;
       Unity's own `SkimRacePilot.Update() [Invoke]` sample sits just above it and reads about the same).
-- [ ] Click through 5-10 frames: on some, `SkimRaceDriver.TrackMpc` appears (the planner re-plans 20 times
-      a second, both AIs on the same frames). Note `SkimRacePilot.Update` on a frame WITH it and on one
+- [ ] Click through 5-10 frames: on some, `SkimRace.Driver.TrackMpc` appears (the planner re-plans 20 times
+      a second, both AIs on the same frames). Note `SkimRace.Pilot.Update` on a frame WITH it and on one
       WITHOUT it - those two numbers are the result.
 - [ ] Optional: the same on intensity 1 (no planner - expect a much smaller number).
 
@@ -140,6 +141,55 @@ editor compile, no play mode. Design: `Docs/ArcadeLaunch/ARCHITECTURE.md` §3.3.
 - [ ] Launch Skim Race on Hard with an AI seat: the verbose `[SkimRaceAI]` line (AITraining channel) reads
       `..., Hard)`. Re-open the card: Hard is still lit.
 - [ ] Party of two: the guest sees the host's pick, its row is greyed, and it follows a change live.
+
+---
+
+### 🔴 Skim Race pilot cost, PrismTimerManager list pool, diag markers (`claude/bold-fermi-54nlts`, 2026-10-05)
+
+**What landed:**
+- The Skim Race AI pilot's per-frame planning cost, halved with identical decisions: a hash-grid
+  broadphase for the laid-mass guard (`SkimRaceDriver.BuildObstacleGrid`), a nearest-first,
+  box-bounded `SkimRaceCourse.ShellClearance`, and precomputed segment vectors in
+  `SkimRaceCourse.Project` (`Docs/SKIM_RACE_AI.md` §8.0e).
+- `SkimRace.Pilot.Decide` and `SkimRace.Pilot.FillObstacles` profiler markers, timed by `diag` by
+  default (`MarkerBudget.DefaultMarkers`).
+- `PrismTimerManager` recycles its per-owner lists (`Docs/BugHunt/FIX_LOG.md`, "BH-4.7 follow-up 2").
+- New EditMode tests: `SkimRaceCourseQueryTests` (3).
+
+**Verified without the editor:** the offline simulator's race output is byte-identical to the
+previous code (I1/I2/I4 x 6 seeds and I2/I4 x 20 seeds, 3 AI seats); `SkimRaceCourseQueryTests`
+pass in .NET against the simulator's Unity shim and fail on three deliberate breaks; the Froglet
+Engine's live compile of runtime `Assets/_Scripts` builds with 0 errors and its suites pass.
+
+**Verify in editor:**
+1. The project compiles.
+2. Test Runner > EditMode: `SkimRaceCourseQueryTests`, `SkimRaceShellTests` and `SkimRaceAITests`
+   pass.
+3. Play Skim Race at I2 with 2 AI seats; the AI finishes the course as before (no new hull strikes
+   or orbits).
+4. During that race, F7 > console: `diag S_SkimRace_I2 15`. The report lists
+   `SkimRace.Pilot.Decide` and `SkimRace.Pilot.FillObstacles` with `found: true` and non-zero ms.
+5. Play any arcade mode with prisms for a minute and return to the menu: no `PrismTimerManager`
+   errors or exceptions in the console.
+
+---
+
+### 🔴 PrismTimerManager compile fix (BH-4.7 follow-up) (`Bug_Hunt`, 2026-10-05)
+
+**What landed:** `PrismTimerManager.OnDestroy` cleared `scheduledActions`, a field BH-4.7 had
+replaced with `scheduledByOwner` + `scheduledActionCount`, so `Bug_Hunt` did not compile. It now
+clears `scheduledByOwner` and `ownerScratch` and zeroes `scheduledActionCount`
+(`Docs/BugHunt/FIX_LOG.md`, "BH-4.7 follow-up").
+
+**Verified without the editor:** the Froglet Engine's live compile of the runtime
+`Assets/_Scripts` (`dotnet build Port/src/CosmicShore.Player`) went from 1 error to 0.
+
+**Verify in editor:**
+1. The project compiles: the console shows no `CS0103` for `PrismTimerManager.cs`.
+2. Play any arcade mode with prisms, then return to the menu (this unloads the scene and destroys
+   the manager): no `PrismTimerManager` errors or exceptions in the console.
+
+---
 
 ### 🟢 Icon renderer upgrade + authored lamp art (`claude/single-player-offline-fallback-jksga5`, 2026-08-27)
 
@@ -490,7 +540,7 @@ Authored without a Unity compile. `/verify-unity` did not run. Human: Menu_Main 
 **Verify in editor**
 1. Compile clean. No missing-script on Menu_Main (or any other scene) for the five deleted GUIDs.
 2. Painting toy still paints from `ShapeDefinition` / `PaintingDefinitionSO.sourceShape`. SkimRace still uses `SegmentSpawner`.
-3. Do **not** Raise `EventOnShapeGameModeStarted` or `EventOnShapePrismReturnToPool` as a "cleanup" — that would dump every listening prism to the pool.
+3. ~~Do not Raise the two shape events~~ — moot since 2026-09: their prism-prefab listeners were stripped (`Docs/archive/PERFORMANCE_LOG_2026.md` §0.11.6), so nothing listens.
 
 ---
 

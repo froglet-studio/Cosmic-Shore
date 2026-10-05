@@ -50,16 +50,30 @@ namespace CosmicShore.Gameplay
 
         public override Domains ResolveWinner(GameDataSO gameData)
         {
+            // Only domains that fielded players. Iterating ActiveDomains[0..RequestedDomainCount)
+            // would pick Jade on a 0-0-0 when Jade was never fielded; BloomrushController then
+            // finds no winnerRep and never sets _finalResultsSent, so SetupNewRound restarts.
             Domains best = Domains.Blue;
             int bestVolume = -1, bestFuses = -1;
-            int dc = Mathf.Clamp(gameData.RequestedDomainCount, 1, GameDataSO.ActiveDomains.Length);
+            var list = gameData != null ? gameData.RoundStatsList : null;
+            if (list == null) return best;
+
+            int dc = GameDataSO.ActiveDomains.Length;
             for (int i = 0; i < dc; i++)
             {
                 var d = GameDataSO.ActiveDomains[i];
+                bool fielded = false;
+                for (int j = 0, n = list.Count; j < n; j++)
+                {
+                    var stats = list[j];
+                    if (stats != null && stats.Domain == d) { fielded = true; break; }
+                }
+                if (!fielded) continue;
+
                 int volume = ScoringMetrics.SumByDomain(gameData, metric, d);
                 int fuses = SumFusesBeaten(gameData, d);
-                // Strict > with enum-order iteration = the documented Jade → Ruby → Gold last
-                // resort, identical on every machine.
+                // Strict > with ActiveDomains enum-order iteration = Jade → Ruby → Gold last
+                // resort among fielded domains only, identical on every machine.
                 if (volume > bestVolume || (volume == bestVolume && fuses > bestFuses))
                 {
                     best = d;

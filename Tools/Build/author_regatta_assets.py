@@ -238,16 +238,17 @@ for _i in range(1, 5):
 for _i in range(1, 5):
     c = COURSE["intensities"][str(_i)]
     t = phase_thresholds(prisms_at(_i))
-    desc = (f"Regatta at intensity {_i} of 4 (CellTypeChoiceOptions.IntensityWise, list order = "
-            f"intensity): a closed circuit of {c['rings']} rings with three super-shielded rails - one "
-            f"per playable domain - braided along it, {c['prismCount']} (6,6,8) prisms on a "
-            f"{c['spineLength']:.0f}u spine, mouths {c['ringRadius']:.0f}u, no corner under "
-            f"{c['cornerFloor']:.0f}u. The standard nucleus is the crystal respawn volume and the "
-            f"inner shell; the spawn profile is the Barren cell's (no flora, no fauna - shielded mass "
-            f"is never food, and a race whose obstacles differ per peer is not a race). "
-            f"PhaseThresholds ride the rails' MEASURED volume (Tools/Build/regatta_course_measurements.json) "
-            f"plus a trail band - regenerate with Tools/Build/author_regatta_assets.py, never by hand; "
-            f"the count x 16 derivation is 18x low here because a (6,6,8) prism is 288 volume.")
+    desc = lib.wrap_yaml_scalar(
+        f"Regatta at intensity {_i} of 4 (CellTypeChoiceOptions.IntensityWise, list order = "
+        f"intensity): a closed circuit of {c['rings']} rings with three super-shielded rails - one "
+        f"per playable domain - braided along it, {c['prismCount']} (6,6,8) prisms on a "
+        f"{c['spineLength']:.0f}u spine, mouths {c['ringRadius']:.0f}u, no corner under "
+        f"{c['cornerFloor']:.0f}u. The standard nucleus is the crystal respawn volume and the "
+        f"inner shell; the spawn profile is the Barren cell's (no flora, no fauna - shielded mass "
+        f"is never food, and a race whose obstacles differ per peer is not a race). "
+        f"PhaseThresholds ride the rails' MEASURED volume (Tools/Build/regatta_course_measurements.json) "
+        f"plus a trail band - regenerate with Tools/Build/author_regatta_assets.py, never by hand; "
+        f"the count x 16 derivation is 18x low here because a (6,6,8) prism is 288 volume.")
     g.emit_asset(f"{CELL_DIR}/Regatta Cell Config {_i}.asset", G_ASSET[f"CellConfig{_i}"],
                  lib.header_for(EXISTING["CellConfigDataSO"], f"Regatta Cell Config {_i}") + f"""  CellName: Regatta
   Description: {desc}
