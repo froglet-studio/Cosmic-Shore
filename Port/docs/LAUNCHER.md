@@ -78,8 +78,15 @@ Edits save as you make them. Commit the file to share them with the branch.
 ![CLAUDE](architecture/launcher_claude.png)
 
 Runs the official **Claude Code** CLI in the workspace, so it reads (and, if allowed, edits) the
-branch you are building. If it is not installed, the page offers INSTALL (Anthropic's installer,
-no Node needed).
+branch you are building. If it is not installed, the page offers INSTALL: it downloads Claude Code
+(~250 MB, with progress), checks it against Anthropic's published checksum and sets it up. No Node
+needed.
+
+**Which account pays.** With a Claude Pro or Max plan, leave the API key empty and press
+**SIGN IN** (SETTINGS > Claude, or on the CLAUDE page): a window opens for the browser sign-in,
+and chat then runs on your plan. An **API key** is only for pay-as-you-go billing from
+console.anthropic.com; when one is set it is used *instead of* the plan. Keys and tokens are shown
+as dots; SHOW reveals them to check a paste.
 
 - **ASK** - reads and plans, changes nothing.
 - **EDIT** - may edit files in the workspace.
@@ -90,9 +97,8 @@ build the engine, start the game, take screenshots, click and type, and read or 
 objects - so "start the game and check the score panel updates" is a request it can carry out
 and show you. Those tools never edit files, so ASK may use them too.
 
-NEW starts a fresh conversation; otherwise each message continues the same session. The API key
-(SETTINGS > Claude) is optional: without one, Claude Code uses its own sign-in. A key is stored
-only on this PC and passed only to the `claude` process. Rebuild with START to try what it changed.
+NEW starts a fresh conversation; otherwise each message continues the same session. A key is
+stored only on this PC and passed only to the `claude` process. Rebuild with START to try what it changed.
 
 ## How START works
 

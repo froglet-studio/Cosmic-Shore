@@ -66,6 +66,7 @@ namespace CosmicShore.Launcher
             var pageArg = args.Page?.Split(':');
             if (pageArg != null && Enum.TryParse<Page>(pageArg[0], true, out var p)) _page = p;
             if (pageArg is { Length: > 1 } && int.TryParse(pageArg[1], out var tab)) _projTab = tab;
+            else if (pageArg is { Length: > 1 }) _open.Add(pageArg[1].ToUpperInvariant()); // --page settings:claude
             if (LauncherSettings.FirstRun) DetectExistingClone();
             for (int i = 0; i < _stars.Length; i++) _stars[i] = NewStar(randomDepth: true);
         }
@@ -201,6 +202,10 @@ namespace CosmicShore.Launcher
                     case "update": _jobs.Update(); break;
                     case "android": _jobs.BuildPhone(ios: false); break;
                     case "ios": _jobs.BuildIos(); break;
+                    case "claude-install":
+                        _page = Page.Chat;
+                        Task.Run(() => _chat.Install(_jobs.Log));
+                        break;
                     case var c when c.StartsWith("chat:"):
                         _page = Page.Chat;
                         _chat.Detect();
@@ -803,12 +808,12 @@ namespace CosmicShore.Launcher
         readonly List<ChatItem> _chatSnap = new();
         string _chatInput = "";
         int _chatSeen;
-        bool _chatDetected;
+        bool _chatDetected, _authChecked;
 
         void DrawChat(Vector2 a, Vector2 b)
         {
             var dl = ImGui.GetWindowDrawList();
-            if (!_chatDetected) { _chatDetected = true; Task.Run(() => _chat.Detect()); }
+            if (!_chatDetected) { _chatDetected = true; Task.Run(() => { _chat.Detect(); _chat.RefreshAuth(); }); }
             PageHeader(a, "CLAUDE", _chat.Cli != null ? "Claude Code in " + Trim(_ws.Exists ? _ws.Dir : "(no workspace yet)", 70) : null);
 
             // header controls
@@ -817,20 +822,41 @@ namespace CosmicShore.Launcher
             Neon.Tooltip("ASK: reads and plans, changes nothing.\nEDIT: may edit files in the workspace.\nAUTO: may also run commands.");
             ImGui.SameLine(0, 12);
             if (SmallButton("NEW", 80, !_chat.Busy)) _chat.NewChat();
+            if (_chat.Cli != null && _chat.SignedIn == false && string.IsNullOrWhiteSpace(_s.AnthropicApiKey))
+            {
+                // Not signed in and no key: every message would fail. One click to the plan sign-in.
+                ImGui.SetCursorScreenPos(new Vector2(b.X - 420 - 150, a.Y + 4));
+                if (SmallButton("SIGN IN", 130, true)) _chat.SignIn();
+                Neon.Tooltip("Sign in with your Claude account (Pro/Max plan). Then press CHECK in SETTINGS > Claude,\nor just send a message.");
+            }
 
             if (_chat.Cli == null)
             {
                 var c = new Vector2((a.X + b.X) * 0.5f, (a.Y + b.Y) * 0.5f - 60);
                 CenterText(dl, Neon.Heading, 22, c.X, c.Y, Neon.Ink, "Claude Code is not installed");
                 ImGui.SetCursorScreenPos(new Vector2(c.X - 110, c.Y + 50));
-                if (Neon.Button("instclaude", _chat.Installing ? "INSTALLING" : "INSTALL", new Vector2(220, 56), Neon.Magenta, Neon.Heading, 22, !_chat.Installing))
-                    Task.Run(() => _chat.Install(_jobs.Log));
+                if (!_chat.Installing)
+                {
+                    if (Neon.Button("instclaude", "INSTALL", new Vector2(220, 56), Neon.Magenta, Neon.Heading, 22, true))
+                        Task.Run(() => _chat.Install(_jobs.Log));
+                }
+                else
+                {
+                    // The download is ~250 MB: show it moving.
+                    var pa = new Vector2(c.X - 220, c.Y + 50); var pb = new Vector2(c.X + 220, c.Y + 62);
+                    dl.AddRectFilled(pa, pb, ImGui.GetColorU32(Neon.U(Neon.Space0, 0.9f)), 6);
+                    float f = _chat.InstallProgress >= 0 ? _chat.InstallProgress : (float)(0.5 + 0.5 * Math.Sin(ImGui.GetTime() * 3));
+                    var fa = _chat.InstallProgress >= 0 ? pa : new Vector2(pa.X + (pb.X - pa.X) * f * 0.75f, pa.Y);
+                    var fb = _chat.InstallProgress >= 0 ? new Vector2(pa.X + (pb.X - pa.X) * f, pb.Y) : new Vector2(fa.X + (pb.X - pa.X) * 0.25f, pb.Y);
+                    dl.AddRectFilled(fa, fb, ImGui.GetColorU32(Neon.Magenta), 6);
+                    ImGui.SetCursorScreenPos(new Vector2(pa.X, pb.Y + 10));
+                    ImGui.PushFont(Neon.Small); ImGui.TextColored(Neon.Dim, _chat.InstallStatus); ImGui.PopFont();
+                    ImGui.SetCursorScreenPos(new Vector2(pb.X - 80, pb.Y + 6));
+                    if (SmallButton("CANCEL", 80, true)) _chat.CancelInstall();
+                }
                 ImGui.SetCursorScreenPos(new Vector2(c.X - 220, c.Y + 130));
-                ImGui.PushItemWidth(440);
-                var key = _s.AnthropicApiKey ?? "";
-                if (ImGui.InputTextWithHint("##akey0", "Anthropic API key (optional)", ref key, 256, ImGuiInputTextFlags.Password)) { _s.AnthropicApiKey = key; _dirty = true; }
-                ImGui.PopItemWidth();
-                Neon.Tooltip("Optional. Without a key Claude Code asks you to sign in once. Stored only on this PC.");
+                SecretField("##akey0", "Anthropic API key (optional)", () => _s.AnthropicApiKey, v => _s.AnthropicApiKey = v, 362);
+                Neon.Tooltip("Only for pay-as-you-go API billing (console.anthropic.com).\nOn a Claude Pro/Max plan leave it empty and SIGN IN instead. Stored only on this PC.");
                 return;
             }
 
@@ -944,8 +970,7 @@ namespace CosmicShore.Launcher
                 Row("Branch", BranchCombo);
                 Row("GitHub token", () =>
                 {
-                    var tok = _s.GitHubToken ?? "";
-                    if (ImGui.InputTextWithHint("##token", "optional", ref tok, 256, ImGuiInputTextFlags.Password)) { _s.GitHubToken = tok; _dirty = true; }
+                    SecretField("##token", "optional", () => _s.GitHubToken, v => _s.GitHubToken = v);
                     Neon.Tooltip("Only if git has no GitHub sign-in. iOS builds need Actions: read & write.\nStored only on this PC.");
                 });
                 Row("Workspace", () =>
@@ -956,11 +981,22 @@ namespace CosmicShore.Launcher
             }
             if (Section("CLAUDE"))
             {
+                Row("Account", () =>
+                {
+                    if (_chat.SignedIn == null && !_authChecked) { _authChecked = true; Task.Run(_chat.RefreshAuth); }
+                    if (SmallButton("SIGN IN", 110, _chat.Cli != null)) _chat.SignIn();
+                    Neon.Tooltip("Sign in with your Claude account to use your Pro/Max plan.");
+                    ImGui.SameLine(0, 8);
+                    if (SmallButton("CHECK", 90, _chat.Cli != null)) Task.Run(_chat.RefreshAuth);
+                    ImGui.SameLine(0, 12);
+                    ImGui.PushFont(Neon.Small);
+                    ImGui.TextColored(Neon.Dim, _chat.Cli == null ? "Claude Code not installed" : _chat.SignedIn switch { true => "signed in", false => "not signed in", _ => "" });
+                    ImGui.PopFont();
+                });
                 Row("API key", () =>
                 {
-                    var key = _s.AnthropicApiKey ?? "";
-                    if (ImGui.InputTextWithHint("##akey", "optional - else Claude Code's own sign-in", ref key, 256, ImGuiInputTextFlags.Password)) { _s.AnthropicApiKey = key; _dirty = true; }
-                    Neon.Tooltip("Passed only to the claude process. Stored only on this PC.");
+                    SecretField("##akey", "empty = use your Claude plan", () => _s.AnthropicApiKey, v => _s.AnthropicApiKey = v);
+                    Neon.Tooltip("Only for pay-as-you-go API billing. When set it is used INSTEAD of your\nClaude Pro/Max plan. Passed only to the claude process; stored only on this PC.");
                 });
                 Row("Model", () => Text("##cmodel", "default", () => _s.ClaudeModel, v => _s.ClaudeModel = v));
                 Row("CLI path", () => Text("##cpath", "auto-detect", () => _s.ClaudePath, v => _s.ClaudePath = v));
@@ -1214,6 +1250,22 @@ namespace CosmicShore.Launcher
         {
             var v = get() ?? "";
             if (ImGui.InputTextWithHint(id, hint, ref v, 512)) { set(v); _dirty = true; }
+        }
+
+        readonly HashSet<string> _revealed = new();
+
+        /// <summary>A key/token field shown as dots, with SHOW / HIDE to check what was pasted.</summary>
+        void SecretField(string id, string hint, Func<string?> get, Action<string> set, float width = 360)
+        {
+            bool shown = _revealed.Contains(id);
+            var v = get() ?? "";
+            ImGui.PushItemWidth(width);
+            if (ImGui.InputTextWithHint(id, hint, ref v, 256, shown ? ImGuiInputTextFlags.None : ImGuiInputTextFlags.Password)) { set(v); _dirty = true; }
+            ImGui.PopItemWidth();
+            ImGui.SameLine(0, 8);
+            ImGui.PushID(id);
+            if (SmallButton(shown ? "HIDE" : "SHOW", 70, v.Length > 0)) { if (shown) _revealed.Remove(id); else _revealed.Add(id); }
+            ImGui.PopID();
         }
 
         static bool SmallButton(string label, float w, bool enabled) =>

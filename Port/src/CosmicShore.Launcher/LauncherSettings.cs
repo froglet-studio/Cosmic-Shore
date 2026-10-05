@@ -32,7 +32,7 @@ namespace CosmicShore.Launcher
     public sealed class LauncherSettings
     {
         public string RemoteUrl { get; set; } = "https://github.com/froglet-studio/Cosmic-Shore.git";
-        public string Branch { get; set; } = "cece/focused-planck-cj46y3";
+        public string Branch { get; set; } = "bleeding-edge";
         public WorkspaceMode Workspace { get; set; } = WorkspaceMode.Managed;
         public string MyClonePath { get; set; } = "";
         /// <summary>Optional GitHub token (read-only is enough) for testers whose git has no stored sign-in.</summary>

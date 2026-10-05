@@ -73,10 +73,11 @@ namespace CosmicShore.Launcher
         public sealed record Result(int ExitCode, string StdOut, string StdErr);
 
         public static async Task<Result> Run(string file, IEnumerable<string> args, string? workDir, LogBuffer? log,
-            CancellationToken ct, IDictionary<string, string>? env = null, Action<string>? onLine = null, bool quiet = false)
+            CancellationToken ct, IDictionary<string, string>? env = null, Action<string>? onLine = null, bool quiet = false, bool closeStdin = false)
         {
             var psi = new ProcessStartInfo(file)
             {
+                RedirectStandardInput = closeStdin,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
@@ -116,6 +117,7 @@ namespace CosmicShore.Launcher
                 if (!quiet) log?.Add(LogKind.Error, $"could not start {file}: {ex.Message}");
                 return new Result(-1, "", ex.Message);
             }
+            if (closeStdin) p.StandardInput.Close(); // nothing to read: a prompt fails instead of waiting forever
             p.BeginOutputReadLine();
             p.BeginErrorReadLine();
             try { await p.WaitForExitAsync(ct).ConfigureAwait(false); }
