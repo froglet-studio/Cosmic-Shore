@@ -377,7 +377,7 @@ let stakes = null, tele = null, stakeRule = 'tuned', hostile = true;
 const crystals = [];    // { x, y, z, e, t } dropped by every killed lifeform; flying through one pays a petal of its element
 const CRYSTAL_R = 16, CRYSTAL_LIFE = 60, CRYSTAL_CAP = 400;
 const petBurn = { mass: 0, charge: 0, space: 0, time: 0 }; // flash timers per element
-function newStakes() { stakes = new E.Stakes({ rule: stakeRule === 'off' ? 'tuned' : stakeRule, hostile }); tele = new E.TeleTrack(); crystals.length = 0; document.getElementById('strip').style.display = 'none'; }
+function newStakes(spawn) { stakes = new E.Stakes({ rule: stakeRule === 'off' ? 'tuned' : stakeRule, hostile, spawn: spawn || 0 }); tele = new E.TeleTrack(); crystals.length = 0; document.getElementById('strip').style.display = 'none'; }
 window.__crystals = crystals;
 window.__stakes = () => ({ stakes, crystals: crystals.length, rule: stakeRule, hostile });
 const dying = [];       // continuity of existence: removed things shrink out instead of vanishing
@@ -405,7 +405,7 @@ function buildWorld(mode) {
   }
   ensurePrisms(ar.n);
   lastN = ar.n; if (trailDir.length < 3 * ar.cap) trailDir = new Float32Array(3 * ar.cap * 2);
-  stats.hits = {}; stats.nHits = 0; stats.crystals = 0; stats.lost = 0; newStakes();
+  stats.hits = {}; stats.nHits = 0; stats.crystals = 0; stats.lost = 0; newStakes(W ? W.arena.t : 0);
   flight.speed = 120; flight.throttle = 0.75; flight.boost = 1;
   const pl = W.player;
   flight.q.setFromUnitVectors(new THREE.Vector3(0, 0, 1), new THREE.Vector3(...pl.vel).normalize());

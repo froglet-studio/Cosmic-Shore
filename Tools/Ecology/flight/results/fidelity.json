@@ -75,6 +75,7 @@
    "snaptrap": true
   },
   "dt30": {
+   "pack": true,
    "lurker": true,
    "stampede": true,
    "leviathan": false,
@@ -104,11 +105,11 @@
    "pack": [
     {
      "metric": "hits/min wander",
-     "js": 4.667,
-     "py": 5.663,
-     "se_js": 0.543,
-     "se_py": 0.49,
-     "tol": 1.829,
+     "js": 4.833,
+     "py": 5.443,
+     "se_js": 0.704,
+     "se_py": 0.507,
+     "tol": 2.169,
      "agree": true
     },
     {
@@ -122,10 +123,10 @@
     },
     {
      "metric": "hits/min hunter",
-     "js": 2.5,
-     "py": 2.558,
-     "se_js": 0.193,
-     "se_py": 0.109,
+     "js": 1.75,
+     "py": 1.777,
+     "se_js": 0.161,
+     "se_py": 0.133,
      "tol": 1.0,
      "agree": true
     },
@@ -149,27 +150,27 @@
     },
     {
      "metric": "telegraphed share of first strikes",
-     "js": 0.689,
-     "py": 0.81,
-     "se_js": 0.032,
-     "se_py": 0.037,
-     "tol": 0.243,
+     "js": 0.841,
+     "py": 0.896,
+     "se_js": 0.043,
+     "se_py": 0.054,
+     "tol": 0.269,
      "agree": true
     },
     {
      "metric": "telegraph first strike s (telegraphed)",
      "js": 0.9,
      "py": 0.9,
-     "se_js": 0.039,
-     "se_py": 0.046,
+     "se_js": 0.042,
+     "se_py": 0.041,
      "tol": 0.27,
      "agree": true
     },
     {
      "metric": "telegraph (shared) s",
      "js": 1.5,
-     "py": 1.2,
-     "se_js": 0.098,
+     "py": 1.225,
+     "se_js": 0.132,
      "se_py": 0.105,
      "tol": 0.45,
      "agree": true
@@ -177,7 +178,7 @@
     {
      "metric": "feel speed_rel",
      "js": 0.522,
-     "py": 0.612,
+     "py": 0.613,
      "se_js": 0.006,
      "se_py": 0.036,
      "tol": 0.153,
@@ -185,35 +186,35 @@
     },
     {
      "metric": "feel approach",
-     "js": -12.757,
-     "py": -13.376,
-     "se_js": 0.859,
-     "se_py": 2.733,
-     "tol": 7.162,
+     "js": -12.7,
+     "py": -13.011,
+     "se_js": 0.891,
+     "se_py": 2.717,
+     "tol": 7.147,
      "agree": true
     },
     {
      "metric": "feel coherence",
-     "js": 0.644,
-     "py": 0.735,
+     "js": 0.645,
+     "py": 0.748,
      "se_js": 0.022,
-     "se_py": 0.042,
-     "tol": 0.147,
+     "se_py": 0.043,
+     "tol": 0.15,
      "agree": true
     },
     {
      "metric": "feel burstiness",
      "js": 1.378,
-     "py": 1.276,
+     "py": 1.263,
      "se_js": 0.039,
-     "se_py": 0.043,
+     "se_py": 0.042,
      "tol": 0.5,
      "agree": true
     },
     {
      "metric": "feel jerk_rel",
      "js": 0.582,
-     "py": 0.311,
+     "py": 0.312,
      "se_js": 0.056,
      "se_py": 0.105,
      "tol": 0.297,
@@ -633,11 +634,11 @@
     },
     {
      "metric": "hits/min hunter",
-     "js": 18.083,
-     "py": 13.333,
-     "se_js": 2.048,
-     "se_py": 2.419,
-     "tol": 7.923,
+     "js": 16.583,
+     "py": 11.888,
+     "se_js": 1.984,
+     "se_py": 2.509,
+     "tol": 7.997,
      "agree": true
     },
     {
@@ -660,28 +661,28 @@
     },
     {
      "metric": "telegraphed share of first strikes",
-     "js": 0.575,
-     "py": 0.444,
-     "se_js": 0.03,
-     "se_py": 0.066,
-     "tol": 0.18,
+     "js": 0.622,
+     "py": 0.519,
+     "se_js": 0.041,
+     "se_py": 0.079,
+     "tol": 0.223,
      "agree": true
     },
     {
      "metric": "telegraph first strike s (telegraphed)",
      "js": 0.7,
      "py": 1.0,
-     "se_js": 0.076,
+     "se_js": 0.074,
      "se_py": 0.14,
-     "tol": 0.399,
+     "tol": 0.397,
      "agree": true
     },
     {
      "metric": "telegraph (shared) s",
-     "js": 0.1,
-     "py": 0.1,
-     "se_js": 0.039,
-     "se_py": 0.038,
+     "js": 0.15,
+     "py": 0.15,
+     "se_js": 0.041,
+     "se_py": 0.039,
      "tol": 0.25,
      "agree": true
     },
@@ -1403,11 +1404,11 @@
    "pack": [
     {
      "metric": "hits/min wander",
-     "js": 4.5,
-     "py": 5.663,
-     "se_js": 0.702,
-     "se_py": 0.552,
-     "tol": 2.234,
+     "js": 4.333,
+     "py": 5.443,
+     "se_js": 0.735,
+     "se_py": 0.509,
+     "tol": 2.235,
      "agree": true
     },
     {
@@ -1421,10 +1422,10 @@
     },
     {
      "metric": "hits/min hunter",
-     "js": 3.0,
-     "py": 2.558,
-     "se_js": 0.169,
-     "se_py": 0.1,
+     "js": 1.583,
+     "py": 1.777,
+     "se_js": 0.164,
+     "se_py": 0.126,
      "tol": 1.0,
      "agree": true
     },
@@ -1448,35 +1449,35 @@
     },
     {
      "metric": "telegraphed share of first strikes",
-     "js": 0.641,
-     "py": 0.81,
-     "se_js": 0.043,
-     "se_py": 0.038,
-     "tol": 0.243,
+     "js": 0.787,
+     "py": 0.896,
+     "se_js": 0.046,
+     "se_py": 0.057,
+     "tol": 0.269,
      "agree": true
     },
     {
      "metric": "telegraph first strike s (telegraphed)",
-     "js": 0.9,
+     "js": 0.885,
      "py": 0.9,
-     "se_js": 0.047,
-     "se_py": 0.047,
+     "se_js": 0.052,
+     "se_py": 0.04,
      "tol": 0.27,
      "agree": true
     },
     {
      "metric": "telegraph (shared) s",
-     "js": 1.17,
-     "py": 1.2,
-     "se_js": 0.085,
-     "se_py": 0.108,
-     "tol": 0.36,
+     "js": 1.225,
+     "py": 1.225,
+     "se_js": 0.098,
+     "se_py": 0.116,
+     "tol": 0.381,
      "agree": true
     },
     {
      "metric": "feel speed_rel",
-     "js": 0.504,
-     "py": 0.612,
+     "js": 0.505,
+     "py": 0.613,
      "se_js": 0.007,
      "se_py": 0.035,
      "tol": 0.153,
@@ -1484,35 +1485,35 @@
     },
     {
      "metric": "feel approach",
-     "js": -14.72,
-     "py": -13.376,
-     "se_js": 0.798,
-     "se_py": 2.523,
-     "tol": 6.616,
+     "js": -15.534,
+     "py": -13.011,
+     "se_js": 0.722,
+     "se_py": 2.473,
+     "tol": 6.44,
      "agree": true
     },
     {
      "metric": "feel coherence",
-     "js": 0.628,
-     "py": 0.735,
+     "js": 0.627,
+     "py": 0.748,
      "se_js": 0.024,
-     "se_py": 0.043,
-     "tol": 0.147,
+     "se_py": 0.044,
+     "tol": 0.15,
      "agree": true
     },
     {
      "metric": "feel burstiness",
-     "js": 1.427,
-     "py": 1.276,
-     "se_js": 0.03,
-     "se_py": 0.045,
+     "js": 1.426,
+     "py": 1.263,
+     "se_js": 0.031,
+     "se_py": 0.044,
      "tol": 0.5,
      "agree": true
     },
     {
      "metric": "feel jerk_rel",
-     "js": 0.418,
-     "py": 0.311,
+     "js": 0.419,
+     "py": 0.312,
      "se_js": 0.041,
      "se_py": 0.107,
      "tol": 0.287,
@@ -1932,11 +1933,11 @@
     },
     {
      "metric": "hits/min hunter",
-     "js": 13.0,
-     "py": 13.333,
-     "se_js": 2.082,
-     "se_py": 2.385,
-     "tol": 7.914,
+     "js": 11.917,
+     "py": 11.888,
+     "se_js": 2.217,
+     "se_py": 2.516,
+     "tol": 8.384,
      "agree": true
     },
     {
@@ -1959,28 +1960,28 @@
     },
     {
      "metric": "telegraphed share of first strikes",
-     "js": 0.45,
-     "py": 0.444,
-     "se_js": 0.075,
-     "se_py": 0.06,
-     "tol": 0.24,
-     "agree": true
+     "js": 0.808,
+     "py": 0.519,
+     "se_js": 0.038,
+     "se_py": 0.074,
+     "tol": 0.242,
+     "agree": false
     },
     {
      "metric": "telegraph first strike s (telegraphed)",
-     "js": 0.785,
+     "js": 0.7,
      "py": 1.0,
-     "se_js": 0.116,
+     "se_js": 0.135,
      "se_py": 0.13,
-     "tol": 0.436,
+     "tol": 0.469,
      "agree": true
     },
     {
      "metric": "telegraph (shared) s",
-     "js": 0.13,
-     "py": 0.1,
-     "se_js": 0.075,
-     "se_py": 0.041,
+     "js": 0.27,
+     "py": 0.15,
+     "se_js": 0.062,
+     "se_py": 0.04,
      "tol": 0.25,
      "agree": true
     },
@@ -2699,22 +2700,150 @@
  },
  "dt30": {
   "rows": {
+   "pack": [
+    {
+     "metric": "hits/min wander",
+     "js": 4.333,
+     "py": 5.11,
+     "se_js": 0.743,
+     "se_py": 0.397,
+     "tol": 2.106,
+     "agree": true
+    },
+    {
+     "metric": "hits/min evader",
+     "js": 0.0,
+     "py": 0.0,
+     "se_js": 0,
+     "se_py": 0,
+     "tol": 1.0,
+     "agree": true
+    },
+    {
+     "metric": "hits/min hunter",
+     "js": 1.583,
+     "py": 1.888,
+     "se_js": 0.152,
+     "se_py": 0.098,
+     "tol": 1.0,
+     "agree": true
+    },
+    {
+     "metric": "payoff/min (hunter)",
+     "js": 4.667,
+     "py": 4.667,
+     "se_js": 0.0,
+     "se_py": 0,
+     "tol": 1.4,
+     "agree": true
+    },
+    {
+     "metric": "counterplay (evader/wander)",
+     "js": 0.0,
+     "py": 0.0,
+     "se_js": 0,
+     "se_py": 0,
+     "tol": 0.15,
+     "agree": true
+    },
+    {
+     "metric": "telegraphed share of first strikes",
+     "js": 0.787,
+     "py": 0.873,
+     "se_js": 0.046,
+     "se_py": 0.038,
+     "tol": 0.262,
+     "agree": true
+    },
+    {
+     "metric": "telegraph first strike s (telegraphed)",
+     "js": 0.885,
+     "py": 0.95,
+     "se_js": 0.056,
+     "se_py": 0.03,
+     "tol": 0.285,
+     "agree": true
+    },
+    {
+     "metric": "telegraph (shared) s",
+     "js": 1.225,
+     "py": 0.995,
+     "se_js": 0.101,
+     "se_py": 0.067,
+     "tol": 0.367,
+     "agree": true
+    },
+    {
+     "metric": "feel speed_rel",
+     "js": 0.505,
+     "py": 0.6,
+     "se_js": 0.008,
+     "se_py": 0.04,
+     "tol": 0.15,
+     "agree": true
+    },
+    {
+     "metric": "feel approach",
+     "js": -15.534,
+     "py": -14.562,
+     "se_js": 0.746,
+     "se_py": 2.517,
+     "tol": 6.562,
+     "agree": true
+    },
+    {
+     "metric": "feel coherence",
+     "js": 0.627,
+     "py": 0.743,
+     "se_js": 0.025,
+     "se_py": 0.044,
+     "tol": 0.149,
+     "agree": true
+    },
+    {
+     "metric": "feel burstiness",
+     "js": 1.426,
+     "py": 1.288,
+     "se_js": 0.03,
+     "se_py": 0.054,
+     "tol": 0.5,
+     "agree": true
+    },
+    {
+     "metric": "feel jerk_rel",
+     "js": 0.419,
+     "py": 0.231,
+     "se_js": 0.043,
+     "se_py": 0.08,
+     "tol": 0.226,
+     "agree": true
+    },
+    {
+     "metric": "feel size",
+     "js": 12.0,
+     "py": 12.0,
+     "se_js": 0,
+     "se_py": 0,
+     "tol": 1.8,
+     "agree": true
+    }
+   ],
    "lurker": [
     {
      "metric": "hits/min wander",
      "js": 2.0,
      "py": 0.89,
-     "se_js": 0.346,
-     "se_py": 0.389,
-     "tol": 1.301,
+     "se_js": 0.332,
+     "se_py": 0.405,
+     "tol": 1.309,
      "agree": true
     },
     {
      "metric": "hits/min evader",
      "js": 0.667,
      "py": 0.333,
-     "se_js": 0.198,
-     "se_py": 0.298,
+     "se_js": 0.189,
+     "se_py": 0.297,
      "tol": 1.0,
      "agree": true
     },
@@ -2722,7 +2851,7 @@
      "metric": "hits/min hunter",
      "js": 10.583,
      "py": 10.67,
-     "se_js": 0.072,
+     "se_js": 0.075,
      "se_py": 0,
      "tol": 3.201,
      "agree": true
@@ -2757,7 +2886,7 @@
      "metric": "telegraph first strike s (telegraphed)",
      "js": 0.87,
      "py": 0.87,
-     "se_js": 0.013,
+     "se_js": 0.012,
      "se_py": 0.001,
      "tol": 0.261,
      "agree": true
@@ -2766,7 +2895,7 @@
      "metric": "telegraph (shared) s",
      "js": 0.93,
      "py": 0.87,
-     "se_js": 0.057,
+     "se_js": 0.055,
      "se_py": 0.035,
      "tol": 0.279,
      "agree": true
@@ -2784,8 +2913,8 @@
      "metric": "feel approach",
      "js": -52.521,
      "py": -50.864,
-     "se_js": 0.926,
-     "se_py": 0.882,
+     "se_js": 0.92,
+     "se_py": 0.887,
      "tol": 15.756,
      "agree": true
     },
@@ -2793,7 +2922,7 @@
      "metric": "feel coherence",
      "js": 0.165,
      "py": 0.163,
-     "se_js": 0.009,
+     "se_js": 0.01,
      "se_py": 0.01,
      "tol": 0.05,
      "agree": true
@@ -2802,8 +2931,8 @@
      "metric": "feel burstiness",
      "js": 30772522.431,
      "py": 29382877.217,
-     "se_js": 1346249.771,
-     "se_py": 1204744.657,
+     "se_js": 1356213.607,
+     "se_py": 1262795.849,
      "tol": 9231756.729,
      "agree": true
     },
@@ -2811,9 +2940,9 @@
      "metric": "feel jerk_rel",
      "js": 2881.094,
      "py": 1805.463,
-     "se_js": 842.363,
-     "se_py": 275.216,
-     "tol": 2215.456,
+     "se_js": 882.316,
+     "se_py": 288.932,
+     "tol": 2321.049,
      "agree": true
     },
     {
@@ -2831,9 +2960,9 @@
      "metric": "hits/min wander",
      "js": 8.5,
      "py": 8.333,
-     "se_js": 2.345,
-     "se_py": 1.402,
-     "tol": 6.831,
+     "se_js": 2.274,
+     "se_py": 1.376,
+     "tol": 6.645,
      "agree": true
     },
     {
@@ -2847,20 +2976,20 @@
     },
     {
      "metric": "hits/min hunter",
-     "js": 13.0,
-     "py": 16.335,
-     "se_js": 2.124,
-     "se_py": 1.993,
-     "tol": 7.282,
+     "js": 11.917,
+     "py": 15.557,
+     "se_js": 2.065,
+     "se_py": 1.966,
+     "tol": 7.128,
      "agree": true
     },
     {
      "metric": "payoff/min (hunter)",
      "js": 3.583,
      "py": 2.889,
-     "se_js": 0.711,
-     "se_py": 0.485,
-     "tol": 2.152,
+     "se_js": 0.704,
+     "se_py": 0.461,
+     "tol": 2.104,
      "agree": true
     },
     {
@@ -2874,28 +3003,28 @@
     },
     {
      "metric": "telegraphed share of first strikes",
-     "js": 0.45,
-     "py": 0.475,
-     "se_js": 0.078,
-     "se_py": 0.063,
-     "tol": 0.25,
+     "js": 0.808,
+     "py": 0.776,
+     "se_js": 0.039,
+     "se_py": 0.065,
+     "tol": 0.242,
      "agree": true
     },
     {
      "metric": "telegraph first strike s (telegraphed)",
-     "js": 0.785,
-     "py": 0.93,
-     "se_js": 0.111,
-     "se_py": 0.155,
-     "tol": 0.477,
+     "js": 0.7,
+     "py": 0.7,
+     "se_js": 0.128,
+     "se_py": 0.098,
+     "tol": 0.404,
      "agree": true
     },
     {
      "metric": "telegraph (shared) s",
-     "js": 0.13,
-     "py": 0.08,
-     "se_js": 0.075,
-     "se_py": 0.006,
+     "js": 0.27,
+     "py": 0.115,
+     "se_js": 0.063,
+     "se_py": 0.027,
      "tol": 0.25,
      "agree": true
     },
@@ -2912,16 +3041,16 @@
      "metric": "feel approach",
      "js": 9.645,
      "py": 20.459,
-     "se_js": 3.789,
-     "se_py": 7.991,
-     "tol": 22.11,
+     "se_js": 3.889,
+     "se_py": 8.395,
+     "tol": 23.129,
      "agree": true
     },
     {
      "metric": "feel coherence",
      "js": 0.898,
      "py": 0.889,
-     "se_js": 0.006,
+     "se_js": 0.005,
      "se_py": 0.006,
      "tol": 0.18,
      "agree": true
@@ -2930,8 +3059,8 @@
      "metric": "feel burstiness",
      "js": 3.177,
      "py": 3.273,
-     "se_js": 0.114,
-     "se_py": 0.102,
+     "se_js": 0.108,
+     "se_py": 0.101,
      "tol": 0.982,
      "agree": true
     },
@@ -2959,8 +3088,8 @@
      "metric": "hits/min wander",
      "js": 0.333,
      "py": 0.667,
-     "se_js": 0.161,
-     "se_py": 0.235,
+     "se_js": 0.17,
+     "se_py": 0.211,
      "tol": 1.0,
      "agree": true
     },
@@ -2977,18 +3106,18 @@
      "metric": "hits/min hunter",
      "js": 9.417,
      "py": 7.778,
-     "se_js": 0.451,
-     "se_py": 1.136,
-     "tol": 3.055,
+     "se_js": 0.456,
+     "se_py": 1.068,
+     "tol": 2.904,
      "agree": true
     },
     {
      "metric": "payoff/min (hunter)",
      "js": 40.0,
      "py": 34.0,
-     "se_js": 3.78,
-     "se_py": 5.41,
-     "tol": 16.498,
+     "se_js": 3.947,
+     "se_py": 5.521,
+     "tol": 16.967,
      "agree": true
     },
     {
@@ -3012,8 +3141,8 @@
      "metric": "telegraph first strike s (telegraphed)",
      "js": 1.07,
      "py": 0.93,
-     "se_js": 0.037,
-     "se_py": 0.047,
+     "se_js": 0.034,
+     "se_py": 0.046,
      "tol": 0.321,
      "agree": true
     },
@@ -3021,8 +3150,8 @@
      "metric": "telegraph (shared) s",
      "js": 0.85,
      "py": 0.92,
-     "se_js": 0.093,
-     "se_py": 0.036,
+     "se_js": 0.091,
+     "se_py": 0.033,
      "tol": 0.276,
      "agree": true
     },
@@ -3031,7 +3160,7 @@
      "js": 0.283,
      "py": 0.292,
      "se_js": 0.002,
-     "se_py": 0.005,
+     "se_py": 0.006,
      "tol": 0.073,
      "agree": true
     },
@@ -3039,9 +3168,9 @@
      "metric": "feel approach",
      "js": 12.338,
      "py": -8.564,
-     "se_js": 4.934,
-     "se_py": 5.74,
-     "tol": 18.924,
+     "se_js": 4.953,
+     "se_py": 5.645,
+     "tol": 18.775,
      "agree": false
     },
     {
@@ -3057,7 +3186,7 @@
      "metric": "feel burstiness",
      "js": 2.248,
      "py": 2.114,
-     "se_js": 0.076,
+     "se_js": 0.079,
      "se_py": 0.105,
      "tol": 0.674,
      "agree": true
@@ -3086,9 +3215,9 @@
      "metric": "hits/min wander",
      "js": 1.75,
      "py": 1.778,
-     "se_js": 1.593,
-     "se_py": 1.065,
-     "tol": 4.79,
+     "se_js": 1.45,
+     "se_py": 1.082,
+     "tol": 4.524,
      "agree": true
     },
     {
@@ -3104,18 +3233,18 @@
      "metric": "hits/min hunter",
      "js": 23.583,
      "py": 24.332,
-     "se_js": 2.543,
-     "se_py": 2.763,
-     "tol": 9.388,
+     "se_js": 2.511,
+     "se_py": 2.715,
+     "tol": 9.246,
      "agree": true
     },
     {
      "metric": "payoff/min (hunter)",
      "js": 18.333,
      "py": 17.667,
-     "se_js": 2.703,
-     "se_py": 2.093,
-     "tol": 8.546,
+     "se_js": 2.73,
+     "se_py": 2.126,
+     "tol": 8.65,
      "agree": true
     },
     {
@@ -3132,7 +3261,7 @@
      "js": 1.0,
      "py": 0.938,
      "se_js": 0,
-     "se_py": 0.026,
+     "se_py": 0.027,
      "tol": 0.3,
      "agree": true
     },
@@ -3140,8 +3269,8 @@
      "metric": "telegraph first strike s (telegraphed)",
      "js": 0.97,
      "py": 0.97,
-     "se_js": 0.031,
-     "se_py": 0.022,
+     "se_js": 0.028,
+     "se_py": 0.023,
      "tol": 0.291,
      "agree": true
     },
@@ -3149,9 +3278,9 @@
      "metric": "telegraph (shared) s",
      "js": 0.245,
      "py": 0.335,
-     "se_js": 0.072,
-     "se_py": 0.137,
-     "tol": 0.388,
+     "se_js": 0.066,
+     "se_py": 0.129,
+     "tol": 0.364,
      "agree": true
     },
     {
@@ -3167,16 +3296,16 @@
      "metric": "feel approach",
      "js": 2.351,
      "py": 1.895,
-     "se_js": 2.26,
-     "se_py": 1.086,
-     "tol": 6.268,
+     "se_js": 2.205,
+     "se_py": 1.13,
+     "tol": 6.195,
      "agree": true
     },
     {
      "metric": "feel coherence",
      "js": 0.314,
      "py": 0.302,
-     "se_js": 0.006,
+     "se_js": 0.007,
      "se_py": 0.007,
      "tol": 0.063,
      "agree": true
@@ -3185,8 +3314,8 @@
      "metric": "feel burstiness",
      "js": 2.635,
      "py": 2.573,
-     "se_js": 0.21,
-     "se_py": 0.197,
+     "se_js": 0.222,
+     "se_py": 0.225,
      "tol": 0.791,
      "agree": true
     },
@@ -3195,7 +3324,7 @@
      "js": 1.54,
      "py": 1.577,
      "se_js": 0.029,
-     "se_py": 0.035,
+     "se_py": 0.033,
      "tol": 0.473,
      "agree": true
     },
@@ -3241,9 +3370,9 @@
      "metric": "payoff/min (hunter)",
      "js": 34.417,
      "py": 27.667,
-     "se_js": 4.067,
-     "se_py": 2.782,
-     "tol": 12.318,
+     "se_js": 3.869,
+     "se_py": 2.773,
+     "tol": 11.899,
      "agree": true
     },
     {
@@ -3291,8 +3420,8 @@
      "metric": "feel approach",
      "js": -2.429,
      "py": 1.096,
-     "se_js": 1.298,
-     "se_py": 1.314,
+     "se_js": 1.337,
+     "se_py": 1.376,
      "tol": 6.0,
      "agree": true
     },
@@ -3319,8 +3448,8 @@
      "js": 0.171,
      "py": 0.219,
      "se_js": 0.009,
-     "se_py": 0.038,
-     "tol": 0.097,
+     "se_py": 0.039,
+     "tol": 0.1,
      "agree": true
     },
     {
@@ -3339,7 +3468,7 @@
      "js": 0.0,
      "py": 0.222,
      "se_js": 0,
-     "se_py": 0.203,
+     "se_py": 0.193,
      "tol": 1.0,
      "agree": true
     },
@@ -3356,18 +3485,18 @@
      "metric": "hits/min hunter",
      "js": 0.75,
      "py": 1.223,
-     "se_js": 0.284,
-     "se_py": 0.371,
-     "tol": 1.168,
+     "se_js": 0.29,
+     "se_py": 0.379,
+     "tol": 1.194,
      "agree": true
     },
     {
      "metric": "payoff/min (hunter)",
      "js": 7.083,
      "py": 9.556,
-     "se_js": 0.654,
-     "se_py": 1.318,
-     "tol": 3.678,
+     "se_js": 0.677,
+     "se_py": 1.315,
+     "tol": 3.697,
      "agree": true
     },
     {
@@ -3382,27 +3511,27 @@
      "metric": "telegraphed share of first strikes",
      "js": 0.875,
      "py": 0.727,
-     "se_js": 0.118,
-     "se_py": 0.134,
-     "tol": 0.447,
+     "se_js": 0.12,
+     "se_py": 0.119,
+     "tol": 0.422,
      "agree": true
     },
     {
      "metric": "telegraph first strike s (telegraphed)",
      "js": 0.47,
      "py": 0.72,
-     "se_js": 0.102,
-     "se_py": 0.139,
-     "tol": 0.431,
+     "se_js": 0.101,
+     "se_py": 0.138,
+     "tol": 0.427,
      "agree": true
     },
     {
      "metric": "telegraph (shared) s",
      "js": 0.57,
      "py": 0.67,
-     "se_js": 0.15,
-     "se_py": 0.163,
-     "tol": 0.554,
+     "se_js": 0.158,
+     "se_py": 0.15,
+     "tol": 0.544,
      "agree": true
     },
     {
@@ -3410,7 +3539,7 @@
      "js": 0.29,
      "py": 0.293,
      "se_js": 0.0,
-     "se_py": 0.001,
+     "se_py": 0.002,
      "tol": 0.073,
      "agree": true
     },
@@ -3418,8 +3547,8 @@
      "metric": "feel approach",
      "js": -2.212,
      "py": 0.037,
-     "se_js": 1.65,
-     "se_py": 1.295,
+     "se_js": 1.593,
+     "se_py": 1.306,
      "tol": 6.0,
      "agree": true
     },
@@ -3436,8 +3565,8 @@
      "metric": "feel burstiness",
      "js": 1.64,
      "py": 1.766,
-     "se_js": 0.045,
-     "se_py": 0.014,
+     "se_js": 0.044,
+     "se_py": 0.015,
      "tol": 0.53,
      "agree": true
     },
@@ -3446,7 +3575,7 @@
      "js": 0.279,
      "py": 0.265,
      "se_js": 0.002,
-     "se_py": 0.004,
+     "se_py": 0.003,
      "tol": 0.084,
      "agree": true
     },
@@ -3462,6 +3591,7 @@
    ]
   },
   "verdict": {
+   "pack": true,
    "lurker": true,
    "stampede": true,
    "leviathan": false,
@@ -3485,8 +3615,8 @@
    "metric": "hits/min wander",
    "js": 0.417,
    "py": 0.334,
-   "se_js": 0.108,
-   "se_py": 0.108,
+   "se_js": 0.116,
+   "se_py": 0.109,
    "tol": 1.0,
    "agree": true
   },
@@ -3504,7 +3634,7 @@
    "js": 13.472,
    "py": 12.75,
    "se_js": 0.3,
-   "se_py": 0.315,
+   "se_py": 0.319,
    "tol": 4.042,
    "agree": true
   },
@@ -3512,8 +3642,8 @@
    "metric": "payoff/min (hunter)",
    "js": 35.583,
    "py": 34.833,
-   "se_js": 1.731,
-   "se_py": 1.346,
+   "se_js": 1.733,
+   "se_py": 1.366,
    "tol": 10.675,
    "agree": true
   },
@@ -3538,7 +3668,7 @@
    "metric": "telegraph first strike s (telegraphed)",
    "js": 0.9,
    "py": 0.9,
-   "se_js": 0.048,
+   "se_js": 0.047,
    "se_py": 0.029,
    "tol": 0.27,
    "agree": true
@@ -3547,7 +3677,7 @@
    "metric": "telegraph (shared) s",
    "js": 0.9,
    "py": 0.9,
-   "se_js": 0.049,
+   "se_js": 0.05,
    "se_py": 0.027,
    "tol": 0.27,
    "agree": true
@@ -3565,9 +3695,9 @@
    "metric": "feel approach",
    "js": 4.289,
    "py": 7.395,
-   "se_js": 2.555,
-   "se_py": 3.041,
-   "tol": 9.931,
+   "se_js": 2.696,
+   "se_py": 3.048,
+   "tol": 10.172,
    "agree": true
   },
   {
@@ -3583,8 +3713,8 @@
    "metric": "feel burstiness",
    "js": 2.249,
    "py": 2.271,
-   "se_js": 0.048,
-   "se_py": 0.044,
+   "se_js": 0.045,
+   "se_py": 0.045,
    "tol": 0.681,
    "agree": true
   },
@@ -3622,26 +3752,26 @@
      "metric": "hits/min wander",
      "js": 9.25,
      "py": 29.445,
-     "se_js": 3.505,
-     "se_py": 5.139,
-     "tol": 15.552,
+     "se_js": 3.912,
+     "se_py": 4.921,
+     "tol": 15.717,
      "agree": false
     },
     {
      "metric": "hits/min evader",
      "js": 0.167,
      "py": 5.333,
-     "se_js": 0.15,
-     "se_py": 3.319,
-     "tol": 8.305,
+     "se_js": 0.16,
+     "se_py": 3.156,
+     "tol": 7.899,
      "agree": true
     },
     {
      "metric": "hits/min hunter",
      "js": 66.5,
      "py": 56.11,
-     "se_js": 6.366,
-     "se_py": 3.219,
+     "se_js": 6.369,
+     "se_py": 3.641,
      "tol": 19.95,
      "agree": true
     },
@@ -3649,26 +3779,26 @@
      "metric": "payoff/min (hunter)",
      "js": 3.917,
      "py": 5.889,
-     "se_js": 0.77,
-     "se_py": 0.625,
-     "tol": 2.479,
+     "se_js": 0.718,
+     "se_py": 0.609,
+     "tol": 2.354,
      "agree": true
     },
     {
      "metric": "counterplay (evader/wander)",
      "js": 0.018,
      "py": 0.181,
-     "se_js": 0.075,
-     "se_py": 0.12,
-     "tol": 0.353,
+     "se_js": 0.065,
+     "se_py": 0.119,
+     "tol": 0.338,
      "agree": true
     },
     {
      "metric": "telegraphed share of first strikes",
      "js": 0.622,
      "py": 0.759,
-     "se_js": 0.049,
-     "se_py": 0.043,
+     "se_js": 0.048,
+     "se_py": 0.046,
      "tol": 0.228,
      "agree": true
     },
@@ -3676,8 +3806,8 @@
      "metric": "telegraph first strike s (telegraphed)",
      "js": 2.0,
      "py": 1.9,
-     "se_js": 0.146,
-     "se_py": 0.094,
+     "se_js": 0.161,
+     "se_py": 0.091,
      "tol": 0.6,
      "agree": true
     },
@@ -3685,9 +3815,9 @@
      "metric": "telegraph (shared) s",
      "js": 0.3,
      "py": 0.2,
-     "se_js": 0.07,
-     "se_py": 0.056,
-     "tol": 0.25,
+     "se_js": 0.087,
+     "se_py": 0.057,
+     "tol": 0.261,
      "agree": true
     },
     {
@@ -3703,9 +3833,9 @@
      "metric": "feel approach",
      "js": 3.217,
      "py": 10.646,
-     "se_js": 1.271,
-     "se_py": 3.433,
-     "tol": 9.152,
+     "se_js": 1.327,
+     "se_py": 3.123,
+     "tol": 8.484,
      "agree": true
     },
     {
@@ -3713,7 +3843,7 @@
      "js": 0.322,
      "py": 0.458,
      "se_js": 0.008,
-     "se_py": 0.016,
+     "se_py": 0.015,
      "tol": 0.092,
      "agree": false
     },
@@ -3721,8 +3851,8 @@
      "metric": "feel burstiness",
      "js": 1.913,
      "py": 2.749,
-     "se_js": 0.172,
-     "se_py": 0.217,
+     "se_js": 0.188,
+     "se_py": 0.22,
      "tol": 0.825,
      "agree": false
     },
@@ -3730,8 +3860,8 @@
      "metric": "feel jerk_rel",
      "js": 1.51,
      "py": 1.196,
-     "se_js": 0.075,
-     "se_py": 0.091,
+     "se_js": 0.073,
+     "se_py": 0.094,
      "tol": 0.453,
      "agree": true
     },
@@ -3764,8 +3894,8 @@
      "metric": "hits/min wander",
      "js": 0.333,
      "py": 0.445,
-     "se_js": 0.205,
-     "se_py": 0.309,
+     "se_js": 0.204,
+     "se_py": 0.315,
      "tol": 1.0,
      "agree": true
     },
@@ -3773,7 +3903,7 @@
      "metric": "hits/min evader",
      "js": 0.5,
      "py": 0.0,
-     "se_js": 0.224,
+     "se_js": 0.222,
      "se_py": 0,
      "tol": 1.0,
      "agree": true
@@ -3782,8 +3912,8 @@
      "metric": "hits/min hunter",
      "js": 10.5,
      "py": 4.667,
-     "se_js": 0.151,
-     "se_py": 0.706,
+     "se_js": 0.149,
+     "se_py": 0.753,
      "tol": 3.15,
      "agree": false
     },
@@ -3792,7 +3922,7 @@
      "js": 10.667,
      "py": 5.222,
      "se_js": 0.0,
-     "se_py": 0.819,
+     "se_py": 0.768,
      "tol": 3.2,
      "agree": false
     },
@@ -3826,7 +3956,7 @@
      "js": 0.2,
      "py": 0.8,
      "se_js": 0,
-     "se_py": 0,
+     "se_py": 0.002,
      "tol": 0.25,
      "agree": false
     },
@@ -3843,8 +3973,8 @@
      "metric": "feel approach",
      "js": -49.022,
      "py": -5.363,
-     "se_js": 3.721,
-     "se_py": 2.395,
+     "se_js": 3.62,
+     "se_py": 2.335,
      "tol": 14.707,
      "agree": false
     },
@@ -3861,7 +3991,7 @@
      "metric": "feel burstiness",
      "js": 32405922.079,
      "py": 35000000.0,
-     "se_js": 904848.636,
+     "se_js": 901549.589,
      "se_py": 0,
      "tol": 10500000.0,
      "agree": true
@@ -3870,9 +4000,9 @@
      "metric": "feel jerk_rel",
      "js": 5082.037,
      "py": 190.238,
-     "se_js": 1321.445,
-     "se_py": 45.449,
-     "tol": 3305.565,
+     "se_js": 1379.959,
+     "se_py": 45.632,
+     "tol": 3451.784,
      "agree": false
     },
     {
@@ -3901,10 +4031,10 @@
     {
      "metric": "hits/min wander",
      "js": 0.0,
-     "py": 5.663,
+     "py": 5.443,
      "se_js": 0,
-     "se_py": 0.532,
-     "tol": 1.699,
+     "se_py": 0.553,
+     "tol": 1.633,
      "agree": false
     },
     {
@@ -3918,11 +4048,11 @@
     },
     {
      "metric": "hits/min hunter",
-     "js": 4.333,
-     "py": 2.558,
-     "se_js": 0.117,
-     "se_py": 0.107,
-     "tol": 1.3,
+     "js": 0.0,
+     "py": 1.777,
+     "se_js": 0,
+     "se_py": 0.13,
+     "tol": 1.0,
      "agree": false
     },
     {
@@ -3944,12 +4074,11 @@
     },
     {
      "metric": "telegraphed share of first strikes",
-     "js": 0.0,
-     "py": 0.81,
-     "se_js": 0,
-     "se_py": 0.039,
-     "tol": 0.243,
-     "agree": false
+     "js": null,
+     "py": 0.8958333333333334,
+     "tol": null,
+     "agree": false,
+     "note": "defined on one side only"
     },
     {
      "metric": "telegraph first strike s (telegraphed)",
@@ -3961,56 +4090,55 @@
     },
     {
      "metric": "telegraph (shared) s",
-     "js": 3.35,
-     "py": 1.2,
-     "se_js": 0.128,
-     "se_py": 0.102,
-     "tol": 1.005,
-     "agree": false
+     "js": null,
+     "py": 1.225,
+     "tol": null,
+     "agree": false,
+     "note": "defined on one side only"
     },
     {
      "metric": "feel speed_rel",
-     "js": 0.534,
-     "py": 0.612,
+     "js": 0.538,
+     "py": 0.613,
      "se_js": 0.005,
-     "se_py": 0.036,
+     "se_py": 0.035,
      "tol": 0.153,
      "agree": true
     },
     {
      "metric": "feel approach",
-     "js": -13.366,
-     "py": -13.376,
-     "se_js": 1.123,
-     "se_py": 2.37,
-     "tol": 6.557,
+     "js": -8.387,
+     "py": -13.011,
+     "se_js": 1.258,
+     "se_py": 2.26,
+     "tol": 6.466,
      "agree": true
     },
     {
      "metric": "feel coherence",
-     "js": 0.709,
-     "py": 0.735,
-     "se_js": 0.021,
-     "se_py": 0.044,
-     "tol": 0.147,
+     "js": 0.734,
+     "py": 0.748,
+     "se_js": 0.022,
+     "se_py": 0.045,
+     "tol": 0.15,
      "agree": true
     },
     {
      "metric": "feel burstiness",
-     "js": 1.318,
-     "py": 1.276,
-     "se_js": 0.039,
-     "se_py": 0.046,
+     "js": 1.311,
+     "py": 1.263,
+     "se_js": 0.037,
+     "se_py": 0.047,
      "tol": 0.5,
      "agree": true
     },
     {
      "metric": "feel jerk_rel",
-     "js": 0.558,
-     "py": 0.311,
-     "se_js": 0.056,
-     "se_py": 0.107,
-     "tol": 0.302,
+     "js": 0.563,
+     "py": 0.312,
+     "se_js": 0.055,
+     "se_py": 0.104,
+     "tol": 0.293,
      "agree": true
     },
     {

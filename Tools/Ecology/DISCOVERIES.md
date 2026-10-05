@@ -1835,3 +1835,50 @@ cell; flying through it cuts voxels that the NCA regrows, shedding time crystals
   molting unit may also change body region. 0.69 ms/frame at n = 1024.
 - Lizard: sparse active set + a WebAssembly SIMD kernel took a step from 33.5 ms to ~2.6 ms (max diff 7e-6 vs the
   dense step; JS fallback ~19 ms). A 20% bite regrows to 90% in 21 steps (0.7 s at 30 steps/s).
+
+### Fair burns (2026-10-05)
+The weak telegraph cells above (snap trap vs `reader` 0.67, stampede vs hunter 0.63, pack wander 0.83, lurker wander
+0.83) were traced one unread burn at a time: for each, what the striker's own intent, distance and closing speed were
+in the second before (`/home/claude/scratch/tele/diag.js`-style trace; `stakes_eval.js` now takes `--species` and `--out`).
+- **Half of it was the metric.** `TeleTrack` judged every strike by the species' agent NEAREST the player. With many
+  agents near, a strike by agent B was scored on agent A's intent: a snap trap priming 1 s in plain view, scored on
+  the idle trap 3 u closer; lurker and fortress strikes likewise. Fixed: `Arena.hit(p, kind, amt, who, standing)` now
+  names the striker (instrumentation only, no behaviour change), and a strike is telegraphed when THAT agent's own
+  intent was > 0.5 for >= 0.25 s (reset below 0.2). A snap trap's rim teeth are a standing danger prism, always drawn
+  hot: they count as telegraphed once they have existed >= 0.25 s. The nearest-agent rule remains only as a fallback
+  for strikes with no named agent (the page's tadpole swarm, a leviathan gulp). Metric fix alone: lurker wander
+  0.83 -> 1.00, fortress hunter 0.86 -> 1.00, snap trap wander 0.87 -> 0.97; pooled 0.93/0.92 -> 0.95/0.94.
+- **Real cause 1, stampede / pack: a strike in the same frame as its telegraph.** Against a ramming hunter, a calm
+  animal bolted (speed > 60, heading at you -> intent 1) and gored in that same step; intent was 0 the whole second
+  before. Pack hunters bit a hunter who flew into them at intent 0, and against the wanderer a wolf's closure (the
+  ring) collapsed below 0.2 as the pack converged, so the telegraph switched off 0.1 s before the bite. Fix (Python
+  `bestiary/species/pack.py`, `stampede.py` and the JS port, `WINDUP` exported through params.json): **a strike lands
+  only after the striker's own intent has shown for 0.4 s** (`wind` accumulates while intent > 0.5, resets below 0.2,
+  the tracker's hysteresis). 0.3 s was tried first and left strikes at a measured lead of 0.23 s: the tracker sees an
+  intent one frame after the species sets it and the hit is stamped at the start of its step, so 2 frames of lag.
+- **Real cause 2, snap trap vs reader: a spawn on the teeth.** The reader's one unread burn (20 petals shipped) was at
+  t = 0.1 s: seed 4 drops the pilot onto a trap's rim. Fix (stakes layer, not the species): **1 s spawn grace**
+  (`STAKES_RULES.*.grace`, `Stakes({spawn})`; the page passes the respawn time). Not in the shipped asset; a proposal.
+- Gates: fidelity (pack, stampede re-run on both sides, dt 0.1 and 1/30): page verdict PASS for all 10, negative
+  controls still fail. The dt-0.1 Python vs dt-1/30 JS cross-step row still fails for stampede (it did before).
+  Bestiary scorecards: pack telegraph_first 0.9 -> 0.9, unwarned 0.16 -> 0.12, hits/min wander 6.0 -> 5.6;
+  stampede telegraph_first **0.7 -> 0.9** (was exactly on the bar), unwarned 0.33 -> 0.23, hits/min unchanged;
+  counterplay, variety, payoff unchanged, all four verdicts pass for both.
+
+| stakes_eval, 3 min x 6 seeds | read before | read after | burn/min before -> after |
+|---|---|---|---|
+| snap trap / reader, shipped | 0.67 | 1.00 | 3.33 -> 2.22 |
+| snap trap / reader, tuned | 0.67 | 1.00 | 0.67 -> 0.44 |
+| stampede / hunter, tuned | 0.63 | 1.00 | 9.44 -> 9.05 |
+| pack / wander, shipped | 0.83 | 1.00 | 6.67 -> 6.67 |
+| pack / hunter, tuned | 0.71 | 1.00 | 4.67 -> 3.56 |
+| lurker / wander, shipped | 0.83 | 1.00 | 6.67 -> 6.67 |
+| pooled, shipped / tuned | 0.93 / 0.92 | **1.00 / 1.00** | skilled 0.91 -> 0.80, 0.22 -> 0.20 |
+
+- Every species x pilot cell is now >= 0.8 (all 1.00). The wind-up mostly delays strikes rather than preventing them:
+  careless burn rates and strip times are unchanged, so the threat survives; a pilot who reads gets 0.4 s to act.
+- **Negatives kept**: lurker under the shipped rule still taxes the skilled evader almost as hard as the careless
+  wanderer (5.56 vs 6.67 petals/min; tuned 1.55 vs 5.78), so "skill clearly matters" fails there under shipped. Its
+  burns are all telegraphed (the gape is a real 0.7 s+ wind-up); the evader just cannot outrun an ambush it flies
+  into. 100% read is also the ceiling of this metric, not proof of readability: it says the striker's own intent was
+  up for 0.25 s, not that a human could see that agent among the others.

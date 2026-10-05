@@ -2253,9 +2253,11 @@ const ELEMENT_COLOUR = { mass: [0.98, 0.42, 0.30], charge: [1.0, 0.84, 0.25], sp
 /** burn = normalized level burned per element per contact (0.1 = one petal); own = the temporary debuff's size. */
 const STAKES_RULES = {
   // VesselElementalDebuffByDangerPrismEffect.asset as shipped: debuffMagnitude -0.5, debuffDuration 4, cooldown 1
-  shipped: { label: 'game as shipped (5 petals x 4 per contact)', burn: 0.5, cooldown: 1.0, ownDuration: 4 },
+  shipped: { label: 'game as shipped (5 petals x 4 per contact)', burn: 0.5, cooldown: 1.0, ownDuration: 4, grace: 1.0 },
   // the recommendation measured by stakes_eval.js (see DISCOVERIES "Stakes")
-  tuned: { label: 'recommended (1 petal x 4 per contact)', burn: 0.1, cooldown: 1.0, ownDuration: 4 },
+  tuned: { label: 'recommended (1 petal x 4 per contact)', burn: 0.1, cooldown: 1.0, ownDuration: 4, grace: 1.0 },
+  // grace: seconds after a (re)spawn in which danger contacts do not land - a pilot dropped onto a snap trap's rim
+  // teeth cannot have read them (DISCOVERIES "Fair burns"). Not in the shipped asset; a spawn-protection proposal.
 };
 /** which strike kinds are danger-prism contacts, and their weight. A mobber's peck is a nibble, a quarter of a bite. */
 const DANGER_KINDS = { bite: 1, burn: 1, snap: 1, sting: 1, drain: 0.25 };
@@ -2273,6 +2275,7 @@ function Stakes(opt) {
   for (const e of ELEMENTS) { this.base[e] = start; this.pending[e] = 0; this.transient[e] = []; }
   this.startTotal = start * ELEMENTS.length;
   this.lastContact = -1e9;
+  this.spawnT = opt.spawn === undefined ? 0 : opt.spawn;   // when the pilot (re)spawned: grace runs from here
   this.burned = 0; this.gained = 0; this.contacts = 0; this.blocked = 0; this.telegraphedBurns = 0;
   this.bySpecies = {}; this.events = []; this.strippedAt = null;
 }
@@ -2287,6 +2290,7 @@ Stakes.prototype.effective = function (e, t) {
 Stakes.prototype.contact = function (t, kind, src, telegraphed) {
   const w = DANGER_KINDS[kind]; if (!w) return null;
   this.contacts++;
+  if (t < this.spawnT + (this.rule.grace || 0)) { this.blocked++; return { petals: {}, total: 0, form: 'grace' }; }
   if (t - this.lastContact < this.rule.cooldown) { this.blocked++; return { petals: {}, total: 0, form: 'cooldown' }; }
   this.lastContact = t;
   const amt = this.rule.burn * w, out = {}; let tot = 0;
