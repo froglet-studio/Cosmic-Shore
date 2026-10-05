@@ -15,6 +15,12 @@
 #
 # Needs a dotnet 8+ SDK (a per-user install in ~/.dotnet is fine). No .csproj on purpose: the
 # repo gitignores *.csproj, so everything builds into $TMPDIR.
+#
+# The whole body is one { ...; exit; } block on purpose. bash reads a script AS IT RUNS it, so editing
+# this file during an hour-long tune shifted its read position and re-ran the last line - a second,
+# unwanted tune (2026-10-05). A block is parsed whole before any of it runs, so an edit cannot reach
+# a run already in flight - the same reason the assembly runs from a private copy below.
+{
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../../.." && pwd)"
@@ -71,3 +77,5 @@ mkdir -p "$RUN"
 cp "$OUT/sim.dll" "$OUT/sim.runtimeconfig.json" "$OUT/track.txt" "$RUN/"
 trap 'rm -rf "$RUN"' EXIT
 "$DOTNET" "$RUN/sim.dll" "$RUN/track.txt" "$@"
+exit
+}
