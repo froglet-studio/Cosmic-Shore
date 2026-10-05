@@ -8,6 +8,23 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ---
 
+## BH-4.1 — Bloomrush restarted a 0-0-0 round when Jade was not fielded
+
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Symptom:** in a Bloomrush match that fielded only Ruby and Gold (or any set without Jade), a
+  round that ended 0-0-0 never showed a winner and started again.
+- **Root cause:** `BloomrushScoringRuleSO.ResolveWinner` walked `ActiveDomains[0..RequestedDomainCount)`,
+  so Jade won every all-zero tie even with no Jade players. `BloomrushController` then looked for a
+  Jade `winnerRep`, found none, returned without setting `_finalResultsSent`, and `SetupNewRound`
+  ran again.
+- **Fix:** `ResolveWinner` now considers only domains that appear in `RoundStatsList` (fielded
+  players), still iterating ActiveDomains order so Jade → Ruby → Gold remains the last resort
+  among those that played. Matches how `ResolvePlacementOrder` already works.
+- **Verification:** gate scripts pass; not run in Unity. Retest is on the handoff playtest list.
+- **PR/commit:** pending.
+
+---
+
 ## BH-4.2 / 4.3 — owner stat-report RPCs accepted NaN volumes and out-of-turn reports
 
 - **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.

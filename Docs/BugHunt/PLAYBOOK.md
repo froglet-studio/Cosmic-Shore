@@ -367,5 +367,19 @@ owner-reported stat RPCs on `gameData.IsTurnRunning` (`Player.TurnAcceptsStatRep
 
 ---
 
+## 17. Rank only domains that fielded players
+
+**Shows up as:** a round that never ends, or restarts, when a team that was never in the match
+"wins" a zero-score tie (BH-4.1).
+
+**Why:** walking a fixed domain list (Jade → Ruby → Gold) on a 0-0-0 picks the first slot even when
+nobody played it. The controller then fails to find a player for that domain and never latches the
+end-of-round flag.
+
+**Fix pattern:** build the candidate set from `RoundStatsList` (who actually fielded), and only then
+apply the enum-order tie-break. `ResolvePlacementOrder` already does this; `ResolveWinner` must match.
+
+---
+
 Threading errors (`EnsureRunningOnMainThread`, UGS callbacks off the main thread) have their own
 guide: [`../THREADING.md`](../THREADING.md).

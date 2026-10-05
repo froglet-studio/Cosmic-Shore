@@ -50,6 +50,7 @@ Confidence scale:
 | 23 | **Reconnect from the menu is a valid app-state transition (was §2.4).** `ApplicationStateMachine` refused `MainMenu → Authenticating`, so reconnect logged `Invalid transition` and the state mirror stayed `MainMenu` during the re-boot. The edge is now in the table from the menu and from the in-game states, with tests. Shipped on `Bug_Hunt`. | `ApplicationStateMachine`, `ApplicationStateMachineTests` |
 | 24 | **Play Again fade-in is armed before the init delay (was §3.1).** `FadeFromBlackOnReplay` was subscribed to `OnClientReady` after the 1 s `InitDelayMs` wait, so a vessel that became ready earlier left the replay overlay black. It is now armed in `OnNetworkSpawn` and removed on despawn. Shipped on `Bug_Hunt`. | `MultiplayerMiniGameControllerBase` |
 | 25 | **Stat report RPCs reject NaN volumes and out-of-turn reports (was §4).** `ReportEnvironmentPrismDestroyed` and `ReportPrismStolen` now use `!(volume >= 0f)`, and the five owner-reported stat RPCs (fauna kill, combat hit, fuses beaten, environment prism destroyed, prism stolen) ignore reports unless a turn is running. Shipped on `Bug_Hunt`. | `Player` |
+| 26 | **Bloomrush end-of-round only ranks fielded domains (was §4).** `ResolveWinner` no longer lets an unfielded Jade win a 0-0-0 and strand `_finalResultsSent`, which restarted the round. Shipped on `Bug_Hunt`. | `BloomrushScoringRuleSO` |
 
 ### Playtest items for the shipped fixes
 - **Squirrel ring (#6):** fly Menu_Main freestyle → an arcade game → back, 2-3 round trips, then
@@ -130,6 +131,11 @@ Confidence scale:
   (Dogfight, Rampage or a flora mode). The client's scores must still rise during the round, as
   before. After the round ends, the final scoreboard must not change. A normal match is all that is
   needed; a NaN cannot be sent without a hacked build.
+- **STILL TO TEST (revisit): 4.1 Bloomrush fielded-domain tie-break, kept on Bug_Hunt untested at Yash's call.**
+- **Bloomrush 0-0-0 (§4.1):** start Bloomrush with only Ruby and Gold fielded (no Jade). Let the
+  round end with no blooms scored. It must declare a winner (Ruby, by enum order among fielded
+  domains) and show the scoreboard — not restart the round. A normal two-domain match that does
+  score should still rank by volume, then fuses beaten.
 
 ---
 
@@ -149,7 +155,6 @@ Confidence scale:
 
 | Item | Where | Fix |
 |---|---|---|
-| Bloomrush restarts a tied 0-0-0 round when Jade is not fielded | Bloomrush end-of-round | tie-break over FIELDED domains only |
 | Trunk count re-rolled every iteration | `BranchingFlora.cs:~150` | roll once before the loop |
 | Name generator never picks the last word | `NameGenerationData.cs:20-21` | `Random.Range(0, list.Count)` (dead code today) |
 | `PrismTimerManager.CancelScheduledActions` is O(N²) | `PrismTimerManager` | index by prism; only matters on mass cancels |
