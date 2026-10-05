@@ -116,6 +116,7 @@ EXISTING = {
     "BrittlestarPrefab":  "c719f00ea7596c24185379994f7dc824",
     "SharkPrefab":        "a67ba7ddaecf6624ab37cd9f5f2210a6",
     "WormColonyPrefab":   "8f79c97ef2bd4624a730a96900e4daaa",
+    "ClawfishPrefab":     "a525483096f54bc44a73646161623bf5",
     "TadpoleBodyMat":     "5140ec1c42866e849927f442d5965f7f",
     # the cell's CellRuntimeDataSO - the spawn ring resolves its Cell through this, and it now
     # also owns the fauna-kill SOAP channel this mode scores on
@@ -130,6 +131,7 @@ FAUNA_FILEID = {
     "Brittlestar": 5351160486092638538,   # LightFauna, herbivore, 10 body prisms
     "Shark":       5351160486092638538,   # LightFauna, PREDATOR,  11 body prisms
     "WormColony":                  1002,  # WormFauna,  apex omnivore colony
+    "Clawfish":     369859875180954115,   # LightFauna, herbivore, 4 fluke-rib body prisms
 }
 FAUNA_PREFAB = {
     "Tadpole":     EXISTING["TadpolePrefab"],
@@ -137,6 +139,7 @@ FAUNA_PREFAB = {
     "Brittlestar": EXISTING["BrittlestarPrefab"],
     "Shark":       EXISTING["SharkPrefab"],
     "WormColony":  EXISTING["WormColonyPrefab"],
+    "Clawfish":    EXISTING["ClawfishPrefab"],
 }
 
 # Per-element sibling configs, reused verbatim (read-only species identity assets) so every
@@ -152,6 +155,8 @@ PALETTE = {
                     "eaf56c14345740849f35fc84467059e9", "78ce842bb8554d748af1e96abf430137"],
     "WormColony":  ["c1a7e2b45f0d4c1e8a6b9d3f2e7c5a10", "a3d59c8e71b24f6a9c0e4d8b5f172c33",
                     "e7f1b3a2c9d84e5fb6a08c7d4e392b55", "b9c4d7e2a1f34b8cd5e6f0a39b8d1c77"],
+    "Clawfish":    ["9a71c56e49ff4ee493c70be766f1b335", "d6d14731fd184959b837ab47e378f813",
+                    "0e87f3117e7141a7b5bce66b0385a2d0", "c7ff7791587d4467ba9fbe88358b2119"],
 }
 
 PRISM_FILEID = 4563009547826722997
@@ -461,8 +466,10 @@ for i in INTENSITIES:
 
         # Reproduction: the population DRIVER above the seed floor. Bigger creatures convert
         # prey to offspring more slowly, so the swarm churns and the kaiju does not.
-        feeds = {"Tadpole": 24, "QuadFish": 20, "Brittlestar": 16, "Shark": 8, "WormColony": 0}[species]
-        cooldown = {"Tadpole": 10, "QuadFish": 12, "Brittlestar": 14, "Shark": 30, "WormColony": 60}[species]
+        feeds = {"Tadpole": 24, "QuadFish": 20, "Brittlestar": 16, "Shark": 8, "WormColony": 0,
+                 "Clawfish": 18}[species]
+        cooldown = {"Tadpole": 10, "QuadFish": 12, "Brittlestar": 14, "Shark": 30, "WormColony": 60,
+                    "Clawfish": 13}[species]
 
         emit(fauna_asset_path(species, i),
              HEADER_FOR(EXISTING["FaunaConfigurationSO"], fauna_asset_name(species, i)) +
@@ -966,7 +973,26 @@ if stale:
         print("   -", os.path.relpath(f, ROOT))
 
 if CHECK_ONLY:
-    print("\n--check: no files written, nothing deleted.")
+    # --check must read the DISK (flora skill 8): a check that only re-runs the in-memory
+    # validation passes whatever the shipped assets actually say. Drift or a pending prune is a
+    # failure, so a hand-edit or a generator change that was never re-run cannot sit green.
+    drifted = []
+    for rel, content in sorted(files.items()):
+        path = os.path.join(ROOT, rel)
+        if not os.path.exists(path):
+            drifted.append(rel + " (missing)")
+            continue
+        with open(path, encoding="utf-8", newline="") as fh:
+            if fh.read() != content:
+                drifted.append(rel)
+    if drifted or stale:
+        print(f"\n--check: {len(drifted)} file(s) differ from the authored output"
+              f"{f' and {len(stale)} stale file(s) await pruning' if stale else ''}:")
+        for rel in drifted:
+            print("  -", rel)
+        print("Re-run without --check to author them.")
+        sys.exit(1)
+    print(f"\n--check: OK, all {len(files)} generated file(s) match disk; nothing written.")
     sys.exit(0)
 
 for f in stale:
