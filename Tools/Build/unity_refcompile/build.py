@@ -448,9 +448,10 @@ def depublicize():
     out = os.path.join(CACHE, "engine_refs")
     stage = os.path.join(CACHE, "engine_refs_in")
     dll = depublicize_tool()
-    # the output depends on the inputs, not on which .NET built the tool: a new SDK must not rewrite
-    # the engine references (that would recompile every cached package assembly)
-    fp = fingerprint([tool_src, ovr, cecil])
+    # the output depends on the inputs' content, not on which .NET built the tool or where the inputs
+    # sit: a new SDK or a fresh checkout must not rewrite the engine references (that would recompile
+    # every cached package assembly)
+    fp = content_fingerprint([tool_src, ovr, cecil])
     stamp = os.path.join(out, ".stamp")
     if os.path.exists(stamp) and open(stamp).read() == fp:
         return out
@@ -529,6 +530,18 @@ def engine_refs():
     d = depublicize()
     out = [p for p in sorted(glob.glob(os.path.join(d, "UnityEngine*.dll"))) if os.path.basename(p) != "UnityEngine.UI.dll"]
     return out, {"UnityEngine.UI": os.path.join(d, "UnityEngine.UI.dll"), "Unity.TextMeshPro": os.path.join(d, "Unity.TextMeshPro.dll")}
+
+
+def content_fingerprint(paths):
+    """fingerprint() on file CONTENT, not path and mtime: a checkout, a rebase or another worktree's
+    copy of the same file must not invalidate what was built from it (and, through the engine
+    references, every cached package assembly)."""
+    h = hashlib.sha1()
+    for p in paths:
+        h.update(os.path.basename(p).encode())
+        with open(p, "rb") as f:
+            h.update(hashlib.sha1(f.read()).digest())
+    return h.hexdigest()
 
 
 def fingerprint(items):
@@ -624,7 +637,27 @@ def learn(errs):
     return bool(new)
 
 
+def lock_shared_state():
+    """One run at a time per cache and per output root. The engine references, the helper tools and
+    the shared package assemblies are rewritten in place, and a run reading them mid-write fails at
+    random (seen: Unity.Entities "FAILED: 2 errors" while a parallel run rebuilt the references)."""
+    import fcntl
+    held = []
+    out_root = os.path.join(os.environ.get("TMPDIR", "/tmp"), "unity_refcompile_out")
+    for d in dict.fromkeys(os.path.realpath(x) for x in (CACHE, out_root)):
+        os.makedirs(d, exist_ok=True)
+        f = open(os.path.join(d, ".build.lock"), "w")
+        try:
+            fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            print("[build] waiting for another unity_refcompile run using %s" % d, flush=True)
+            fcntl.flock(f, fcntl.LOCK_EX)
+        held.append(f)
+    return held
+
+
 def main():
+    _locks = lock_shared_state()  # noqa: F841 (held until the process exits)
     for attempt in range(8):
         rc = run_once()
         if rc != 3:
@@ -689,14 +722,21 @@ def run_once():
             continue
         head = open(sp, encoding="utf-8").read(2048)
         if n.startswith("UnityEngine."):
-            # engine-module stub: compiled up front and added to every assembly's engine references
-            edll = os.path.join(out, n + ".dll")
-            r = subprocess.run([os.path.join(DOTNET_ROOT, "dotnet"), csc_path(), "-nologo", "-noconfig", "-nostdlib",
-                                "-target:library", "-langversion:9.0", "-out:" + edll, sp]
-                               + ["-r:" + x for x in base_refs() + eng], stdout=subprocess.PIPE,
-                               stderr=subprocess.STDOUT, text=True)
-            if r.returncode != 0:
-                sys.exit("engine stub %s failed:\n%s" % (n, r.stdout))
+            # engine-module stub: added to every assembly's engine references, so it is built once into
+            # the shared package directory. A fresh copy per run and per config (as it was) changed
+            # every package's fingerprint, and no package assembly was ever served from the cache.
+            edll = os.path.join(pkg_out, n + ".dll")
+            srefs = base_refs() + eng
+            fp = content_fingerprint([sp]) + fingerprint(srefs)
+            stamp = edll + ".stamp"
+            if not (os.path.exists(edll) and os.path.exists(stamp) and open(stamp).read() == fp):
+                r = subprocess.run([os.path.join(DOTNET_ROOT, "dotnet"), csc_path(), "-nologo", "-noconfig", "-nostdlib",
+                                    "-target:library", "-langversion:9.0", "-deterministic", "-out:" + edll, sp]
+                                   + ["-r:" + x for x in srefs], stdout=subprocess.PIPE,
+                                   stderr=subprocess.STDOUT, text=True)
+                if r.returncode != 0:
+                    sys.exit("engine stub %s failed:\n%s" % (n, r.stdout))
+                open(stamp, "w").write(fp)
             eng.append(edll)
             engine_stubs.append(n)
             continue

@@ -9,8 +9,10 @@ bash Tools/Build/unity_refcompile/run.sh --quiet-buckets       # count, don't li
 
 Exit 0 = **no compile error in project code**; exit 1 = errors, listed, with every one in a file
 changed since `origin/bleeding-edge` tagged `[CHANGED-TONIGHT]`; exit 2 = offline with no cache.
-First run ~10 min (fetch + ~90 assemblies), later runs ~3 min (package assemblies are compiled once,
-player-mode, into a shared cache keyed by input fingerprint; only Assets assemblies recompile).
+First run ~10 min (the fetch, then ~2 min compiling ~90 assemblies). Later runs take ~30 s: package
+assemblies are compiled once, player-mode, into a cache keyed by input fingerprint and shared by every
+config and worktree, and only Assets assemblies recompile. Runs that share a cache or `TMPDIR` take
+turns (a lock), so starting several at once is safe.
 Needs a .NET SDK, **8.0 or newer** (8.0 and 10.0 both verified), under `DOTNET_ROOT` (`run.sh` falls
 back to `$HOME/.dotnet`); the helper tools are built for the newest runtime + reference pack it holds.
 
@@ -127,7 +129,8 @@ Does not prove:
 
 Assets assemblies and their `.rsp` files land in `$TMPDIR/unity_refcompile_out/<tree>-<hash>/<config>/`, one
 directory per working tree, so several worktrees can share a TMPDIR without reading each other's compile.
-Package assemblies are shared in `$TMPDIR/unity_refcompile_out/_packages/`. `Schema/` binds the same
+Package assemblies (and the `UnityEngine.UnityConsentModule` stub) are shared in
+`$TMPDIR/unity_refcompile_out/_packages/`. `Schema/` binds the same
 compilation, once with the player defines and once adding `UNITY_EDITOR`, and writes every type's serialized
 fields, bases and enum members. `Tools/Build/check_generated_assets.py` audits YAML assets against that output,
 so run this tool before it.
