@@ -558,6 +558,24 @@ def check_swarm(audit, changed):
                     for r in (d.data.get(k) or []):
                         if isinstance(r, dict) and r.get("guid"):
                             listed.add(r["guid"])
+    # ...and every spawn profile already in the tree: a MODIFIED config (a generator re-tuning a
+    # biome's species) is listed by a profile nobody touched, which the changed-files scan
+    # above cannot see. Read straight from the profiles' list blocks, through the tree so a
+    # self-test overlay still applies.
+    so_root = os.path.join(ROOT, "Assets", "_SO_Assets")
+    for dirpath, _, names in os.walk(so_root):
+        for name in names:
+            if not name.endswith(".asset"):
+                continue
+            rel = os.path.relpath(os.path.join(dirpath, name), ROOT)
+            if not tree.exists(rel):
+                continue
+            text = tree.read(rel)
+            for key in ("SupportedFaunas:", "SupportedFloras:"):
+                if key not in text:
+                    continue
+                block = re.match(r"(?:\n  [- ] .*)*", text.split(key, 1)[1])
+                listed.update(re.findall(r"guid: ([0-9a-f]{32})", block.group(0)))
     # The Spawn Matrix toy is the other way a config spawns: its species rows release one exact
     # config on demand, and some configs exist ONLY for it (the bench swarm models in
     # Swarm Fauna/Bench/, authored by author_spawn_matrix_roster.py).
