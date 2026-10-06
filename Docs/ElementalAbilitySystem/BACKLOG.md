@@ -457,7 +457,9 @@ measurement attached is worse than no row.
   the surviving `vesselSkimmerEffectsSO.data[0]` points at the haptics effect, which IS live — via
   the CONTAINER, not via this override. Removing them is a prefab-YAML edit with no behaviour to
   change, and the real fix is to finish the container migration the comments describe.
-- **Two mode generators are red and were red before this branch** — proven by running both at
+- ~~**Two mode generators are red and were red before this branch**~~ [Edit 2026-10-06: both are
+  green - #969 stopped Dog Fight emitting the retired key and #967 guarded Wildlife Liberation's
+  spent clone; all 25 `author_*_assets.py --check` pass. Kept for the record:] proven by running both at
   `origin/bleeding-edge`: `author_dogfight_assets.py --check` fails its asset-key validation on
   `CallToActionTargetType` (a field the call-to-action retirement deleted from `SO_ArcadeGame`, so
   re-running it would re-introduce a retired key), and `author_wildlife_liberation_assets.py`
