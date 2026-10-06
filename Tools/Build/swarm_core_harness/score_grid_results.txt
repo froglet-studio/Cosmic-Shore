@@ -1,0 +1,89 @@
+  exported research charge seed 7: n=183 plan=charge 1.702 ms/step
+  exported research mass   seed 7: n=201 plan=mass 1.055 ms/step
+  exported research space  seed 7: n=92 plan=space 0.647 ms/step
+  exported research time   seed 7: n=81 plan=time 0.650 ms/step
+  exported research charge seed 23: n=183 plan=charge 1.009 ms/step
+  exported research mass   seed 23: n=198 plan=mass 1.010 ms/step
+  exported research space  seed 23: n=89 plan=space 0.739 ms/step
+  exported research time   seed 23: n=78 plan=time 0.670 ms/step
+  exported research charge seed 41: n=181 plan=charge 1.134 ms/step
+  exported research mass   seed 41: n=193 plan=mass 1.032 ms/step
+  exported research space  seed 41: n=93 plan=space 0.689 ms/step
+  exported research time   seed 41: n=79 plan=time 0.594 ms/step
+  exported research charge seed 108: n=185 plan=charge 1.021 ms/step
+  exported research mass   seed 108: n=195 plan=mass 1.091 ms/step
+  exported research space  seed 108: n=91 plan=space 0.644 ms/step
+  exported research time   seed 108: n=81 plan=time 0.610 ms/step
+  exported research charge seed 209: n=182 plan=charge 1.027 ms/step
+  exported research mass   seed 209: n=194 plan=mass 0.985 ms/step
+  exported research space  seed 209: n=92 plan=space 0.605 ms/step
+  exported research time   seed 209: n=80 plan=time 0.554 ms/step
+  exported research charge seed 310: n=185 plan=charge 1.399 ms/step
+  exported research mass   seed 310: n=198 plan=mass 1.039 ms/step
+  exported research space  seed 310: n=98 plan=space 0.695 ms/step
+  exported research time   seed 310: n=82 plan=time 0.623 ms/step
+  exported research charge seed 411: n=183 plan=charge 0.992 ms/step
+  exported research mass   seed 411: n=198 plan=mass 0.946 ms/step
+  exported research space  seed 411: n=92 plan=space 0.736 ms/step
+  exported research time   seed 411: n=80 plan=time 0.709 ms/step
+  exported research charge seed 512: n=180 plan=charge 1.132 ms/step
+  exported research mass   seed 512: n=198 plan=mass 1.010 ms/step
+  exported research space  seed 512: n=91 plan=space 0.620 ms/step
+  exported research time   seed 512: n=81 plan=time 0.602 ms/step
+  exported game     charge seed 7: n=183 plan=charge 1.075 ms/step
+  exported game     mass   seed 7: n=192 plan=mass 1.090 ms/step
+  exported game     space  seed 7: n=88 plan=space 0.612 ms/step
+  exported game     time   seed 7: n=76 plan=time 0.645 ms/step
+  exported game     charge seed 23: n=179 plan=charge 1.168 ms/step
+  exported game     mass   seed 23: n=192 plan=mass 1.338 ms/step
+  exported game     space  seed 23: n=88 plan=space 0.617 ms/step
+  exported game     time   seed 23: n=76 plan=time 0.667 ms/step
+  exported game     charge seed 41: n=179 plan=charge 1.103 ms/step
+  exported game     mass   seed 41: n=192 plan=mass 1.132 ms/step
+  exported game     space  seed 41: n=88 plan=space 0.652 ms/step
+  exported game     time   seed 41: n=76 plan=time 0.624 ms/step
+  exported game     charge seed 108: n=180 plan=charge 1.074 ms/step
+  exported game     mass   seed 108: n=192 plan=mass 1.075 ms/step
+  exported game     space  seed 108: n=88 plan=space 0.592 ms/step
+  exported game     time   seed 108: n=76 plan=time 0.549 ms/step
+  exported game     charge seed 209: n=181 plan=charge 1.065 ms/step
+  exported game     mass   seed 209: n=192 plan=mass 1.127 ms/step
+  exported game     space  seed 209: n=88 plan=space 0.844 ms/step
+  exported game     time   seed 209: n=76 plan=time 0.609 ms/step
+  exported game     charge seed 310: n=180 plan=charge 1.126 ms/step
+  exported game     mass   seed 310: n=192 plan=mass 1.328 ms/step
+  exported game     space  seed 310: n=88 plan=space 0.698 ms/step
+  exported game     time   seed 310: n=76 plan=time 0.961 ms/step
+  exported game     charge seed 411: n=180 plan=charge 1.384 ms/step
+  exported game     mass   seed 411: n=192 plan=mass 1.395 ms/step
+  exported game     space  seed 411: n=88 plan=space 0.709 ms/step
+  exported game     time   seed 411: n=76 plan=time 0.650 ms/step
+  exported game     charge seed 512: n=180 plan=charge 1.159 ms/step
+  exported game     mass   seed 512: n=192 plan=mass 1.239 ms/step
+  exported game     space  seed 512: n=88 plan=space 0.635 ms/step
+  exported game     time   seed 512: n=76 plan=time 0.568 ms/step
+
+C# export: 96 runs in 30s
+Python hgrid2 reference: 32 runs in 151s
+
+OWN-PLAN LOSS (swarm_loss sink, default LossCfg; bar 8)  per seed 7,23,41,108,209,310,411,512
+  python hgrid2            mass    5.48  4.62  9.74  5.57  7.35  5.27  8.51  6.72   mean  6.66  pass 6/8  n~196  13.27 ms/step
+  python hgrid2            space   5.52  3.67  5.20  4.16  4.69  3.75  4.35  5.56   mean  4.61  pass 8/8  n~94  12.41 ms/step
+  python hgrid2            charge  4.33  5.40  6.18  6.77  5.50  4.65  3.86  2.93   mean  4.95  pass 8/8  n~182  13.03 ms/step
+  python hgrid2            time    7.24  8.80  8.81  7.36  7.01  6.22  5.67  8.39   mean  7.44  pass 5/8  n~81  12.44 ms/step
+  C# grid research         mass    8.36  8.56  8.28  7.36  6.24  7.50  8.22  8.89   mean  7.93  pass 3/8  n~197  1.02 ms/step
+  C# grid research         space   7.33  3.44  5.03  4.94  3.87  5.22  5.52  2.60   mean  4.74  pass 8/8  n~92  0.67 ms/step
+  C# grid research         charge  4.71  3.37  3.52  6.18  3.93  4.46  4.22  4.29   mean  4.33  pass 8/8  n~183  1.18 ms/step
+  C# grid research         time    9.99  5.77  5.95  8.13  7.94  6.82  7.44  9.72   mean  7.72  pass 5/8  n~80  0.63 ms/step
+  C# grid game (1-domain)  mass    4.96  6.48  5.19  4.13  5.16  4.75  5.29  5.15   mean  5.14  pass 8/8  n~192  1.22 ms/step
+  C# grid game (1-domain)  space   1.25  1.35  1.54  1.98  1.16  1.44  2.14  1.89   mean  1.59  pass 8/8  n~88  0.67 ms/step
+  C# grid game (1-domain)  charge  3.11  3.49  3.98  3.00  3.44  3.11  3.41  3.23   mean  3.35  pass 8/8  n~180  1.14 ms/step
+  C# grid game (1-domain)  time    3.84  3.14  3.80  3.92  4.25  4.12  3.26  4.60   mean  3.87  pass 8/8  n~76  0.66 ms/step
+
+FEEL (swarm_feel.metrics, mean over plans and seeds)
+  csharp_research    speed 0.197  jerk_rel 0.598  planar_frac 0.428  coherence 0.565  jitter 1.094  phase 0.822  stuck 0.000  osc 0.034
+  csharp_game        speed 0.209  jerk_rel 0.572  planar_frac 0.460  coherence 0.574  jitter 1.023  phase 0.546  stuck 0.000  osc 0.031
+  csharp_field       speed 0.404  jerk_rel 0.130  planar_frac 0.500  coherence 0.776  jitter 0.656  phase 0.777  stuck 0.094  osc 0.028
+  python_hgrid2      speed 0.198  jerk_rel 0.597  planar_frac 0.419  coherence 0.571  jitter 1.098  phase 0.821  stuck 0.000  osc 0.033
+
+wrote /tmp/score8.json

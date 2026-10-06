@@ -10,11 +10,11 @@ using System.Threading.Tasks;
 namespace CosmicShore.Mcp
 {
     /// <summary>
-    /// cs-mcp - the Froglet Engine as an MCP server (stdio, JSON-RPC 2.0, one message per line).
+    /// prisma-mcp - Prisma as an MCP server (stdio, JSON-RPC 2.0, one message per line).
     /// Gives an agent the engine's own verbs: build and test the port, check it leaves Unity
     /// alone, and start / look at / drive / stop a running player through its control port.
     ///
-    ///   claude mcp add froglet-engine -- dotnet run --project Port/src/CosmicShore.Mcp
+    ///   claude mcp add prisma -- dotnet run --project Port/src/CosmicShore.Mcp
     ///
     /// stdout is the protocol and nothing else; every diagnostic goes to stderr.
     /// </summary>
@@ -26,9 +26,9 @@ namespace CosmicShore.Mcp
         public static async Task<int> Main(string[] args)
         {
             var repo = Repo.Find(args.SkipWhile(a => a != "--repo").Skip(1).FirstOrDefault());
-            if (repo == null) { Console.Error.WriteLine("cs-mcp: no Cosmic Shore checkout found (run it inside one, or pass --repo DIR)"); return 1; }
+            if (repo == null) { Console.Error.WriteLine("prisma-mcp: no Cosmic Shore checkout found (run it inside one, or pass --repo DIR)"); return 1; }
             s_tools = new Tools(repo);
-            Console.Error.WriteLine($"cs-mcp: serving {repo}");
+            Console.Error.WriteLine($"prisma-mcp: serving {repo}");
             var stdout = new StreamWriter(Console.OpenStandardOutput(), new UTF8Encoding(false)) { AutoFlush = true, NewLine = "\n" };
             using var stdin = new StreamReader(Console.OpenStandardInput(), Encoding.UTF8);
             try
@@ -60,7 +60,7 @@ namespace CosmicShore.Mcp
                     {
                         ["protocolVersion"] = p["protocolVersion"]?.GetValue<string>() ?? "2025-06-18",
                         ["capabilities"] = new JsonObject { ["tools"] = new JsonObject() },
-                        ["serverInfo"] = new JsonObject { ["name"] = "froglet-engine", ["version"] = "0.1.0" },
+                        ["serverInfo"] = new JsonObject { ["name"] = "prisma", ["version"] = "0.1.0" },
                         ["instructions"] = Tools.Instructions,
                     });
                 case "ping":

@@ -13,6 +13,9 @@ namespace CosmicShore.Gameplay
     ///     tick so clients see the authoritative values.
     ///   - Client: on NetworkVariable change, overwrite Cell's locally-computed values
     ///     with the server's via <see cref="Cell.ApplyAuthoritativePhaseAndDomain"/>.
+    ///   - Both: the config's authored STARTING controller (<see cref="Cell.StartingController"/>)
+    ///     is resolved on the server - against the host's pilot - and pinned on clients, so
+    ///     an unclaimed cell spawns ONE colour on every peer instead of each client's own.
     ///
     /// Flora and fauna spawning is non-deterministic per-side (each client runs its own
     /// IntensityWiseLifeSpawner with local Random.value rolls), so per-side LiveBlockCount
@@ -36,6 +39,7 @@ namespace CosmicShore.Gameplay
         readonly NetworkVariable<int> _netLiveBlockCount = new(0);
         readonly NetworkVariable<CellPhase> _netPhase = new(CellPhase.Calm);
         readonly NetworkVariable<Domains> _netDominantDomain = new(Domains.Blue);
+        readonly NetworkVariable<Domains> _netStartingController = new(Domains.Blue);
 
         float _nextMirrorAt;
 
@@ -48,6 +52,7 @@ namespace CosmicShore.Gameplay
         {
             _netPhase.OnValueChanged += OnNetPhaseChanged;
             _netDominantDomain.OnValueChanged += OnNetDominantDomainChanged;
+            _netStartingController.OnValueChanged += OnNetStartingControllerChanged;
 
             // Late-joiners arrive with NetworkVariables already at server's last value
             // but no OnValueChanged event. Apply once on spawn so the joining client's
@@ -61,6 +66,7 @@ namespace CosmicShore.Gameplay
                 // boundary. Cell.Update keeps recomputing phase locally; the pinned
                 // dominant read overrides only the control answer.
                 cell.SetReplicatedDominantDomain(_netDominantDomain.Value);
+                cell.SetReplicatedStartingController(_netStartingController.Value);
                 cell.ApplyAuthoritativePhaseAndDomain(_netPhase.Value, _netDominantDomain.Value);
             }
 
@@ -71,11 +77,15 @@ namespace CosmicShore.Gameplay
         {
             _netPhase.OnValueChanged -= OnNetPhaseChanged;
             _netDominantDomain.OnValueChanged -= OnNetDominantDomainChanged;
+            _netStartingController.OnValueChanged -= OnNetStartingControllerChanged;
 
             // Release the pinned control read - after despawn the Cell is local-only
             // again (single-player fallback semantics).
             if (!IsServer && cell)
+            {
                 cell.SetReplicatedDominantDomain(null);
+                cell.SetReplicatedStartingController(null);
+            }
         }
 
         void Update()
@@ -91,10 +101,12 @@ namespace CosmicShore.Gameplay
             int liveCount = cell.LiveBlockCount;
             var phase = cell.Phase;
             var dominant = cell.DominantDomain;
+            var starting = cell.StartingController;
 
             if (_netLiveBlockCount.Value != liveCount) _netLiveBlockCount.Value = liveCount;
             if (_netPhase.Value != phase) _netPhase.Value = phase;
             if (_netDominantDomain.Value != dominant) _netDominantDomain.Value = dominant;
+            if (_netStartingController.Value != starting) _netStartingController.Value = starting;
         }
 
         void OnNetPhaseChanged(CellPhase _, CellPhase next)
@@ -114,6 +126,12 @@ namespace CosmicShore.Gameplay
                 cell.SetReplicatedDominantDomain(next);
                 cell.ApplyAuthoritativePhaseAndDomain(_netPhase.Value, next);
             }
+        }
+
+        void OnNetStartingControllerChanged(Domains _, Domains next)
+        {
+            if (IsServer) return;
+            if (cell) cell.SetReplicatedStartingController(next);
         }
     }
 }

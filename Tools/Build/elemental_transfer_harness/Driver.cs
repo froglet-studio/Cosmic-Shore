@@ -3,6 +3,7 @@
 // It re-implements AccrueElementalLoss's arithmetic against the SAME constants the shipped file
 // declares, then asserts the invariants the design rests on.
 using System;
+using System.IO;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 
@@ -27,11 +28,11 @@ static class Driver
         public int Accrue(float amount)
         {
             if (amount <= 0f) return 0;
+            const float Eps = 1e-4f;
             float takeable = Math.Max(0f, Held - 0f);
-            if (takeable < Petal) { Pending = 0f; return 0; }
+            if (takeable + Eps < Petal) { Pending = 0f; return 0; }
 
             Pending += Math.Min(amount, takeable);
-            const float Eps = 1e-4f;
             int petals = (int)Math.Floor((Pending + Eps) / Petal);
             int cap = (int)Math.Floor((takeable + Eps) / Petal);
             if (petals > cap) petals = cap;
@@ -41,6 +42,14 @@ static class Driver
             Held -= petals * Petal;
             return petals;
         }
+    }
+
+    static float AssetFloat(string asset, string key)
+    {
+        var m = System.Text.RegularExpressions.Regex.Match(asset, "^  " + key + @": (-?[0-9.]+)\s*$",
+                                                           System.Text.RegularExpressions.RegexOptions.Multiline);
+        if (!m.Success) { Check(false, $"effect asset has no {key}"); return float.NaN; }
+        return float.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture);
     }
 
     static int Main()
@@ -106,6 +115,39 @@ static class Driver
         Check(nc.Accrue(0.001f) == 1, "  ... and the crumb that crosses settles exactly one");
         Check(nc.Accrue(0.0f) == 0, "a zero accrual is a no-op");
         Check(new Pot(1.0f).Accrue(-0.5f) == 0, "a negative accrual cannot GRANT a petal");
+
+        // The petal-burn switch (Docs/ELEMENTAL_ECONOMY.md §4.1). The magnitudes come from the
+        // SHIPPED asset, through the game's own resolver (PetalBurnRule.cs compiles in), into the
+        // same settlement mirror as T1-T7: one hostile contact burns FIVE whole petals per element
+        // under Shipped and ONE under Tuned, still clamped to what is held.
+        Console.WriteLine("T8  the petal-burn switch - Shipped 5 / Tuned 1 petal per element per contact");
+        string asset = File.ReadAllText(Environment.GetEnvironmentVariable("PETAL_BURN_ASSET"));
+        float shipped = AssetFloat(asset, "debuffMagnitude");
+        float tuned = AssetFloat(asset, "tunedDebuffMagnitude");
+        float ms = PetalBurnRules.Magnitude(PetalBurnRule.Shipped, shipped, tuned);
+        float mt = PetalBurnRules.Magnitude(PetalBurnRule.Tuned, shipped, tuned);
+        Check(ms == shipped && mt == tuned, $"the resolver picks the asset's sizes (shipped {shipped}, tuned {tuned})");
+        Check(PetalBurnRules.Magnitude((PetalBurnRule)7, shipped, tuned) == shipped,
+              "  ... and an unknown rule falls back to Shipped");
+        Check((int)PetalBurnRule.Shipped == 0 && (int)PetalBurnRule.Tuned == 1,
+              "  ... and the enum's serialized values are Shipped=0, Tuned=1 (a silent cell plays Shipped)");
+        // The effect burns -magnitude on each of the four elements; a start-of-match pilot holds 5.
+        int burnedS = 0, burnedT = 0;
+        for (int el = 0; el < 4; el++) { burnedS += new Pot(0.5f).Accrue(-ms); burnedT += new Pot(0.5f).Accrue(-mt); }
+        Check(burnedS == 20, $"Shipped: one contact on a 5-petal-per-element pilot burns 5 x 4 = {burnedS}");
+        Check(burnedT == 4, $"Tuned: one contact burns 1 x 4 = {burnedT}");
+        var full = new Pot(1.0f);
+        Check(full.Accrue(-ms) == 5 && full.Accrue(-ms) == 5 && Math.Abs(full.Held) < 1e-5,
+              "Shipped strips a full 10-petal element in exactly 2 contacts (burn-rules.md)");
+        var tp = new Pot(1.0f);
+        int contacts = 0;
+        while (tp.Held > 1e-5f && contacts < 100) { if (tp.Accrue(-mt) != 1) break; contacts++; }
+        Check(contacts == 10, $"Tuned takes exactly one whole petal per contact - 10 contacts to strip a full element ({contacts})");
+        var thin3 = new Pot(0.3f);
+        Check(thin3.Accrue(-ms) == 3 && Math.Abs(thin3.Held) < 1e-5,
+              "Shipped on a 3-petal element is clamped to 3, leaving it empty, not negative");
+        var bare = new Pot(0f);
+        Check(bare.Accrue(-mt) == 0 && bare.Pending == 0f, "Tuned on an empty element burns nothing and banks nothing");
 
         Console.WriteLine(_fail == 0 ? "\nALL PASS" : $"\n{_fail} FAILED");
         return _fail == 0 ? 0 : 1;

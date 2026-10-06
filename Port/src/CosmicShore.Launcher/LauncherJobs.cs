@@ -277,16 +277,40 @@ namespace CosmicShore.Launcher
             if (!_s.Network) psi.Environment["COSMIC_SHORE_NET"] = "off";
             if (_s.MobileRenderPath) psi.Environment["COSMIC_SHORE_GLES"] = "1";
             if (!string.IsNullOrWhiteSpace(_s.Profile)) psi.Environment["COSMIC_SHORE_PROFILE"] = _s.Profile.Trim();
+            // Every play session leaves a report (scenes, frame times, errors) the CLAUDE page can hand to Claude.
+            LastSessionReport = Path.Combine(SessionsDir, $"session-{DateTime.Now:yyyyMMdd-HHmmss}.json");
+            psi.Environment["COSMIC_SHORE_SESSION_REPORT"] = LastSessionReport;
+            psi.Environment["COSMIC_SHORE_BRANCH"] = _s.Branch;
+            var commit = ProcessRunner.Capture(_tools.Git ?? "git", "-C", _ws.Dir, "rev-parse", "--short", "HEAD");
+            if (commit != null) psi.Environment["COSMIC_SHORE_COMMIT"] = commit;
+            PruneSessions();
 
             _game = new Process { StartInfo = psi, EnableRaisingEvents = true };
             _game.OutputDataReceived += (_, e) => { if (e.Data != null) Log.Add(LogKind.Output, e.Data); };
             _game.ErrorDataReceived += (_, e) => { if (e.Data != null) Log.Add(LogKind.Output, e.Data); };
-            _game.Exited += (_, _) => Log.Add(LogKind.Info, $"Game closed (exit code {SafeExit(_game)}).");
+            _game.Exited += (_, _) => { Log.Add(LogKind.Info, $"Game closed (exit code {SafeExit(_game)})."); GameExited?.Invoke(); };
             _game.Start();
             _game.BeginOutputReadLine();
             _game.BeginErrorReadLine();
             Log.Add(LogKind.Success, "Game running. Have fun.");
             return true;
+        }
+
+        /// <summary>Raised when a game started from PLAY closes (its session report is written by then, or a moment later).</summary>
+        public event Action? GameExited;
+
+        public static string SessionsDir => Path.Combine(LauncherSettings.DataDir, "sessions");
+        public string? LastSessionReport { get; private set; }
+
+        /// <summary>The newest session reports, newest first.</summary>
+        public static List<FileInfo> Sessions() =>
+            Directory.Exists(SessionsDir)
+                ? new DirectoryInfo(SessionsDir).GetFiles("session-*.json").OrderByDescending(f => f.LastWriteTimeUtc).ToList()
+                : new List<FileInfo>();
+
+        static void PruneSessions()
+        {
+            try { foreach (var f in Sessions().Skip(40)) f.Delete(); } catch { }
         }
 
         public List<string> PlayerArgs()

@@ -4,11 +4,13 @@ A ground-up replication of Cosmic Shore onto a stack wholly owned by Froglet Inc
 no Unity, no editor-bound tooling, no dependency that blocks a fully autonomous,
 headless develop/build/test loop.
 
-**Just want to play a branch?** Unzip `dist/FrogletLauncher-Windows.zip` and run
-`FrogletLauncher.exe`: pick a branch, press START GAME. See `docs/LAUNCHER.md`.
+**Just want to play a branch?** Unzip `dist/Prisma-Windows.zip` and run
+`Prisma.exe`: pick a branch, press START GAME. See `docs/LAUNCHER.md`.
 
 **Working with Claude Code?** `CLAUDE.md` in this folder: the engine's MCP server lets an agent
 build, run, see and drive the game.
+
+**Where it is going:** `docs/ROADMAP.md` (gameplay parity, then Unity-free development).
 
 **Start here:** `docs/ARCHITECTURE.md` — how the whole port fits together, with
 diagrams and annotated screenshots of every screen and control.
@@ -33,7 +35,7 @@ dotnet test
 
 ## Try it (Windows)
 
-Run `FrogletLauncher.exe` (unzip `dist/FrogletLauncher-Windows.zip`): pick a branch, press
+Run `Prisma.exe` (unzip `dist/Prisma-Windows.zip`): pick a branch, press
 START GAME. It fetches that branch into its own workspace (or a worktree beside your clone),
 builds it from source and starts the game. Your own checkout is never touched. `docs/LAUNCHER.md`.
 
@@ -98,11 +100,11 @@ Port/
 │   ├── CosmicShore.Game/        # ported game code (mirrors Assets/_Scripts structure)
 │   ├── CosmicShore.AssetTool/   # cs-asset: edit/create/delete in scenes & prefabs (docs/AUTHORING.md)
 │   ├── CosmicShore.Build/       # cs-build: Android/iOS player builds (docs/MOBILE_BUILDS.md)
-│   ├── CosmicShore.Launcher/    # FrogletLauncher.exe: branch > fetch > build > play, phone builds (docs/LAUNCHER.md)
+│   ├── CosmicShore.Launcher/    # Prisma.exe: branch > fetch > build > play, phone builds (docs/LAUNCHER.md)
 │   ├── CosmicShore.Mobile/      # the phone player (Android activity / iOS app around PlayerWindow)
 │   ├── CosmicShore.Cli/         # headless smoke/sim harness (engine boot, SOAP, sims)
 │   └── CosmicShore.Client/      # playable SkimRace window (Silk.NET, sprint builds)
-├── dist/                        # FrogletLauncher-Windows.zip (the one file to give a tester)
+├── dist/                        # Prisma-Windows.zip (the one file to give a tester)
 ├── artifacts/                   # curated headless render verifications
 └── tests/
     ├── CosmicShore.Tests/        # xunit suite (engine, vessel layer, enum freezes)

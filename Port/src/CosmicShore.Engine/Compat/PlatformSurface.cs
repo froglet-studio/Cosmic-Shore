@@ -305,6 +305,12 @@ namespace CosmicShore.Engine
         public static int graphicsShaderLevel => 45;
         public static bool graphicsMultiThreaded => false;
         public static bool supportsComputeShaders { get; set; }
+        /// <summary>
+        /// Storage buffers readable in the vertex stage. Prisma renders with GL 3.3 / GL ES 3.0, which
+        /// have none, so this is 0 - what Unity reports on such a device. Code that draws from a
+        /// <see cref="GraphicsBuffer"/> in a vertex shader checks it and takes its own fallback.
+        /// </summary>
+        public static int maxComputeBufferInputsVertex => 0;
         public static bool supportsInstancing => true;
         public static bool supportsAsyncGPUReadback => false;
         public static bool supportsGyroscope => false;

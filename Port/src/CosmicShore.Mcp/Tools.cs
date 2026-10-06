@@ -18,7 +18,7 @@ namespace CosmicShore.Mcp
     public sealed class Tools : IDisposable
     {
         public const string Instructions =
-            "Froglet Engine (the Cosmic Shore .NET port). Read Port/CLAUDE.md first. Loop: edit code -> engine_build -> " +
+            "Prisma (the Cosmic Shore .NET port). Read Port/CLAUDE.md first. Loop: edit code -> engine_build -> engine_smoke -> " +
             "game_start -> game_state / game_screenshot / game_input / game_get ... -> game_stop. The port must not change " +
             "Assets/, Packages/ or ProjectSettings/ (unity_isolation_check). Coordinates are screenshot pixels, top-left origin.";
 
@@ -38,7 +38,13 @@ namespace CosmicShore.Mcp
         {
             var schema = new JsonObject { ["type"] = "object", ["properties"] = props ?? new JsonObject() };
             if (required.Length > 0) schema["required"] = new JsonArray(required.Select(r => (JsonNode)r).ToArray());
-            return new JsonObject { ["name"] = name, ["description"] = description, ["inputSchema"] = schema };
+            // None of these tools edits a source file (they build into bin/, run the game, read it),
+            // so they are read-only for Claude Code's plan mode: an agent can test while it plans.
+            return new JsonObject
+            {
+                ["name"] = name, ["description"] = description, ["inputSchema"] = schema,
+                ["annotations"] = new JsonObject { ["readOnlyHint"] = true, ["destructiveHint"] = false, ["openWorldHint"] = false },
+            };
         }
 
         static JsonObject P(string type, string description) => new() { ["type"] = type, ["description"] = description };
@@ -53,6 +59,30 @@ namespace CosmicShore.Mcp
                     ["filter"] = P("string", "dotnet test --filter expression, e.g. FullyQualifiedName~SceneModel"),
                     ["suite"] = new JsonObject { ["type"] = "string", ["enum"] = new JsonArray("engine", "ported"), ["description"] = "engine = Port/tests/CosmicShore.Tests (default); ported = the game's own tests" },
                 }),
+            Tool("engine_smoke", "Automated smoke test: boot the real game headless for N frames and report PASS/FAIL - the scenes it reached, every distinct error, exception and warning with counts. Builds first.",
+                new JsonObject
+                {
+                    ["frames"] = P("integer", "frames to run at 60 Hz (default 1200 = 20 s of game time)"),
+                    ["scene"] = P("string", "start in this scene instead of Bootstrap"),
+                    ["expect"] = P("string", "scene that must be reached for a PASS (default: any)"),
+                    ["build"] = P("boolean", "compile first (default true)"),
+                }),
+            Tool("prisma_tracks", "Prisma's memory of play runs: the last runs, open problems (crashes, exceptions, errors, audio, performance) with how often and when they were seen, performance by scene over time. Read this first when asked about a problem in the game.",
+                new JsonObject
+                {
+                    ["section"] = new JsonObject { ["type"] = "string", ["enum"] = new JsonArray("memory", "issues", "runs"), ["description"] = "memory (default): the brief; issues: every problem as JSON; runs: every run as JSON" },
+                }),
+            Tool("prisma_board", "Prisma's task and bug tracker: every bug and task with its state (suggested, todo, doing, done), priority, source and notes.",
+                new JsonObject { ["state"] = P("string", "only this state (suggested, todo, doing, done); default: everything open") }),
+            Tool("prisma_board_suggest", "Suggest a bug or task to the user. It appears on Prisma's BOARD as SUGGESTED until the user accepts it. Use it for problems you find but are not fixing now. Every suggestion needs an acceptance criterion: the check that will prove it done.",
+                new JsonObject
+                {
+                    ["type"] = new JsonObject { ["type"] = "string", ["enum"] = new JsonArray("bug", "task") },
+                    ["title"] = P("string", "one line"),
+                    ["detail"] = P("string", "what, where (files, scene), evidence, and the suggested fix"),
+                    ["criterion"] = P("string", "done when: a check anyone can run - a test that passes, an engine_smoke with no such error, a scene that stays clean for 3 runs, a measured number"),
+                    ["priority"] = P("integer", "1 high, 2 normal, 3 low"),
+                }, "type", "title", "criterion"),
             Tool("unity_isolation_check", "Fails if the branch changes anything outside Port/ that Unity would see. Run before committing.",
                 new JsonObject { ["base"] = P("string", "branch to diff against (default origin/bleeding-edge)") }),
             Tool("game_start", "Build (unless build=false) and start the player with its control port, then wait until it answers. On a Linux server without a display it runs under xvfb-run. Stops a previous player first.",
@@ -118,6 +148,42 @@ namespace CosmicShore.Mcp
                     var r = await Run(OperatingSystem.IsWindows() ? "python" : "python3", args, _repo, TimeSpan.FromMinutes(2));
                     return new JsonArray(Text(r.Output.Trim()));
                 }
+                case "prisma_board":
+                {
+                    var b = Prisma.PrismaBoard.Load();
+                    var want = Str(a, "state").ToLowerInvariant();
+                    var items = b.Items.Where(i => want.Length > 0 ? i.State.ToString().ToLowerInvariant() == want
+                                                                    : i.State is not (Prisma.PrismaBoard.Status.Done or Prisma.PrismaBoard.Status.Dismissed))
+                                       .OrderBy(i => i.State).ThenBy(i => i.Priority);
+                    var text = string.Join("\n", items.Select(i => $"{i.Id} [{i.State}] P{i.Priority} {i.Type} ({i.Source}): {i.Title}" +
+                        (i.Detail.Length > 0 ? "\n    " + i.Detail.Replace("\n", "\n    ") : "") +
+                        (i.Criterion.Length > 0 ? $"\n    done when: {i.Criterion}{(i.CriterionMet != null ? $" (MET {i.CriterionMet:yyyy-MM-dd})" : "")}" : "") +
+                        (i.Notes.Count > 0 ? "\n    notes: " + string.Join(" | ", i.Notes) : "")));
+                    return new JsonArray(Text(text.Length > 0 ? text : "The board is empty."));
+                }
+                case "prisma_board_suggest":
+                {
+                    var b = Prisma.PrismaBoard.Load();
+                    var type = Str(a, "type") == "bug" ? Prisma.PrismaBoard.Kind.Bug : Prisma.PrismaBoard.Kind.Task;
+                    if (Str(a, "criterion").Trim().Length == 0)
+                        return new JsonArray(Text("Not added: give a criterion - the check that will prove this done."));
+                    var item = b.Add(type, Str(a, "title"), Str(a, "detail"), "agent", Prisma.PrismaBoard.Status.Suggested, Int(a, "priority", 2), criterion: Str(a, "criterion"));
+                    b.Save();
+                    return new JsonArray(Text($"Suggested {item.Id}: {item.Title}. The user accepts or dismisses it on Prisma's BOARD."));
+                }
+                case "prisma_tracks":
+                {
+                    var t = Prisma.PrismaTracks.Load();
+                    var section = Str(a, "section", "memory");
+                    var text = section switch
+                    {
+                        "issues" => JsonSerializer.Serialize(t.Issues.Values.OrderByDescending(i => i.LastSeen), new JsonSerializerOptions { WriteIndented = true }),
+                        "runs" => JsonSerializer.Serialize(t.Runs.AsEnumerable().Reverse().Take(60), new JsonSerializerOptions { WriteIndented = true }),
+                        _ => t.Memory(20000),
+                    };
+                    return new JsonArray(Text(text));
+                }
+                case "engine_smoke": return new JsonArray(Text(await Smoke(a)));
                 case "game_start": return new JsonArray(Text(await Start(a)));
                 case "game_attach":
                 {
@@ -298,6 +364,46 @@ namespace CosmicShore.Mcp
             return "player stopped";
         }
 
+        async Task<string> Smoke(JsonObject a)
+        {
+            var sb = new StringBuilder();
+            if (Bool(a, "build", true))
+            {
+                var b = await Build("player");
+                if (!b.StartsWith("build ok")) return "FAIL (build)\n" + b;
+            }
+            var exe = Path.Combine(PortSrc("CosmicShore.Player"), "bin", "Debug", "net10.0", OperatingSystem.IsWindows() ? "CosmicShore.exe" : "CosmicShore");
+            var report = Path.Combine(Path.GetTempPath(), "froglet-mcp", $"smoke-{DateTime.Now:HHmmss}.json");
+            int frames = Int(a, "frames", 1200);
+            var args = new List<string> { "--headless", "--quiet", "--frames", frames.ToString(), "--session-report", report };
+            if (Str(a, "scene").Length > 0) { args.Add("--scene"); args.Add(Str(a, "scene")); }
+            var env = new Dictionary<string, string> { ["COSMIC_SHORE_NET"] = "off", ["COSMIC_SHORE_AUDIO"] = "off", ["COSMIC_SHORE_PROFILE"] = "smoke" };
+            var r = await Run(exe, args, _repo, TimeSpan.FromMinutes(20), env);
+            if (!File.Exists(report))
+                return $"FAIL (the player wrote no report; exit {r.ExitCode})\n" + string.Join('\n', r.Output.Split('\n').TakeLast(40));
+            using var doc = JsonDocument.Parse(await File.ReadAllTextAsync(report));
+            var d = doc.RootElement;
+            var scenes = d.GetProperty("scenes").EnumerateArray().Select(x => x.GetProperty("name").GetString() ?? "").ToList();
+            int errors = d.GetProperty("counts").GetProperty("errors").GetInt32();
+            int exceptions = d.GetProperty("counts").GetProperty("exceptions").GetInt32();
+            int warnings = d.GetProperty("counts").GetProperty("warnings").GetInt32();
+            bool crashed = d.GetProperty("crash").ValueKind == JsonValueKind.String;
+            string expect = Str(a, "expect");
+            bool reached = expect.Length == 0 || scenes.Contains(expect, StringComparer.OrdinalIgnoreCase);
+            bool pass = !crashed && errors == 0 && exceptions == 0 && reached && r.ExitCode == 0;
+            var fr = d.GetProperty("frames");
+            double P(string k) => fr.TryGetProperty(k, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetDouble() : 0;
+            sb.AppendLine((pass ? "PASS" : "FAIL") + (P("p50Ms") > 0 ? $"  -  tick p50 {P("p50Ms"):0.0} ms, p95 {P("p95Ms"):0.0} ms, worst {P("worstMs"):0.0} ms" : ""));
+            sb.AppendLine($"{frames} frames in {d.GetProperty("seconds").GetDouble():0} s; scenes: {string.Join(" -> ", scenes)}" + (reached ? "" : $" (expected {expect})"));
+            sb.AppendLine($"{exceptions} exception(s), {errors} error(s), {warnings} warning(s)" + (crashed ? "; CRASHED" : ""));
+            if (crashed) sb.AppendLine(d.GetProperty("crash").GetString());
+            foreach (var kind in new[] { "exceptions", "errors", "asserts", "warnings" })
+                foreach (var e in d.GetProperty(kind).EnumerateArray().Take(kind == "warnings" ? 10 : 25))
+                    sb.AppendLine($"  [{kind.TrimEnd('s')}] x{e.GetProperty("count").GetInt32()} {e.GetProperty("message").GetString()}");
+            sb.AppendLine("report: " + report);
+            return sb.ToString().TrimEnd();
+        }
+
         // ---- build & test ----------------------------------------------------------------------
 
         async Task<string> Build(string target)
@@ -335,10 +441,11 @@ namespace CosmicShore.Mcp
 
         sealed record RunResult(int ExitCode, string Output);
 
-        static async Task<RunResult> Run(string file, IEnumerable<string> args, string cwd, TimeSpan timeout)
+        static async Task<RunResult> Run(string file, IEnumerable<string> args, string cwd, TimeSpan timeout, Dictionary<string, string>? env = null)
         {
             var psi = new ProcessStartInfo(file) { WorkingDirectory = cwd, UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true, RedirectStandardInput = true };
             foreach (var a in args) psi.ArgumentList.Add(a);
+            if (env != null) foreach (var kv in env) psi.Environment[kv.Key] = kv.Value;
             psi.Environment["DOTNET_CLI_TELEMETRY_OPTOUT"] = "1";
             psi.Environment["DOTNET_NOLOGO"] = "1";
             psi.Environment["MSBUILDTERMINALLOGGER"] = "off";

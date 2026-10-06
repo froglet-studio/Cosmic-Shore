@@ -9,9 +9,25 @@ using System.Threading.Tasks;
 
 namespace CosmicShore.Launcher
 {
-    public enum ChatRole { User, Assistant, Tool, System, Error }
+    public enum ChatRole { User, Assistant, Tool, System, Error, Plan, Todo }
 
-    public sealed record ChatItem(ChatRole Role, string Text);
+    /// <summary>
+    /// One row of the transcript, drawn the way Claude Code draws it: a message, or a tool call
+    /// with its result folded under it (<see cref="Detail"/>), a proposed plan, or a to-do list.
+    /// Tool results that carry a picture (game_screenshot) keep the PNG so the page can show it.
+    /// </summary>
+    public sealed class ChatItem
+    {
+        public ChatRole Role;
+        public string Text;
+        public string? Detail;
+        public string? ToolId;
+        public bool Failed;
+        public byte[]? Image;
+        public List<(string text, string status)>? Todos;
+        public ChatItem(ChatRole role, string text) { Role = role; Text = text; }
+        public ChatItem Copy() => (ChatItem)MemberwiseClone();
+    }
 
     /// <summary>
     /// Claude Code inside the launcher. Each message runs the official <c>claude</c> CLI in print
@@ -22,7 +38,31 @@ namespace CosmicShore.Launcher
     /// </summary>
     public sealed class ClaudeChat
     {
-        public enum Mode { Ask = 0, Edit = 1, Auto = 2 }
+        /// <summary>Claude Code's permission modes: plan (read and propose), accept edits, or run everything.</summary>
+        public enum Mode { Plan = 0, Edit = 1, Auto = 2 }
+
+        public static readonly string[] Models = { "default", "fable", "opus", "sonnet", "haiku" };
+        public static readonly string[] Efforts = { "default", "low", "medium", "high", "xhigh", "max" };
+
+        /// <summary>Model the CLI reported for the running session, its elapsed time, and the latest context size.</summary>
+        public string? ActiveModel { get; private set; }
+        public DateTime BusySince { get; private set; }
+        public long ContextTokens { get; private set; }
+        public int Turns { get; private set; }
+
+        /// <summary>Raised on the chat thread when a reply finishes (voice reads it aloud).</summary>
+        public event Action<string>? ReplyFinished;
+
+        /// <summary>A milestone run that ended short: it hit its turn, time or cost budget, or failed.</summary>
+        public sealed record SessionStop(string Milestone, string Title, string Reason, string Tried, string LastWords);
+
+        /// <summary>Raised on the chat thread when a milestone run stops short (never for the user's own STOP).</summary>
+        public event Action<SessionStop>? MilestoneStopped;
+
+        // Why a run ended early, as "at the 80-turn limit" (a budget) - set by the result event or the watchdog.
+        volatile string? _stopReason;
+        volatile string? _lastError;
+        volatile bool _userStopped;
 
         readonly LauncherSettings _s;
         readonly Toolchain _tools;
@@ -38,19 +78,23 @@ namespace CosmicShore.Launcher
         public string? Cli { get; private set; }
         public bool Installing { get; private set; }
 
-        public void Snapshot(List<ChatItem> into) { lock (_lock) { into.Clear(); into.AddRange(_items); } }
+        public void Snapshot(List<ChatItem> into) { lock (_lock) { into.Clear(); foreach (var i in _items) into.Add(i.Copy()); } }
         public int Count { get { lock (_lock) return _items.Count; } }
         void Add(ChatRole r, string t) { lock (_lock) _items.Add(new ChatItem(r, t)); }
+
+        /// <summary>A launcher-side note in the transcript (not sent to Claude).</summary>
+        public void Note(string t) => Add(ChatRole.System, t);
 
         public void NewChat()
         {
             Stop();
             lock (_lock) _items.Clear();
-            _session = null; CostUsd = 0;
+            _session = null; CostUsd = 0; ContextTokens = 0; Turns = 0; ActiveModel = null;
         }
 
         public void Stop()
         {
+            _userStopped = true;
             try { if (_proc is { HasExited: false }) _proc.Kill(entireProcessTree: true); } catch { }
         }
 
@@ -135,7 +179,7 @@ namespace CosmicShore.Launcher
             try
             {
                 using var http = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromMinutes(30) };
-                http.DefaultRequestHeaders.UserAgent.ParseAdd("FrogletLauncher/0.1");
+                http.DefaultRequestHeaders.UserAgent.ParseAdd("Prisma/0.1");
                 InstallStatus = "Finding the latest version";
                 string version = (await http.GetStringAsync($"{Releases}/latest", ct)).Trim();
                 if (!System.Text.RegularExpressions.Regex.IsMatch(version, @"^\d+\.\d+\.\d+"))
@@ -216,17 +260,82 @@ namespace CosmicShore.Launcher
             }
         }
 
-        public void Send(string text, string workDir, Mode mode)
+        public void Send(string text, string workDir, Mode mode, string? extraDir = null)
         {
             if (Busy || string.IsNullOrWhiteSpace(text)) return;
             if (Cli == null && Detect() == null) { Add(ChatRole.Error, "Claude Code is not installed."); return; }
             Add(ChatRole.User, text.Trim());
             Busy = true;
-            Task.Run(() => Run(text.Trim(), workDir, mode));
+            BusySince = DateTime.UtcNow;
+            Task.Run(() => Run(text.Trim(), workDir, mode, extraDir));
         }
 
-        void Run(string text, string workDir, Mode mode)
+        /// <summary>
+        /// The scope every launcher conversation runs under: this is Prisma's agent. It
+        /// works on Port/, reads Assets/ only as the game's input, and is refused (deny rules, which
+        /// hold in every mode) any edit to what Unity reads.
+        /// </summary>
+        /// <summary>
+        /// Who the conversation is. GAME: the Prisma Agent, powered by Claude - it works on Cosmic
+        /// Shore (the game's code and content in Assets/) as it runs in Prisma, and never edits
+        /// Prisma itself. MILESTONE: a roadmap checkpoint session - engine work on Port/ toward a
+        /// milestone, which never edits the game. Deny rules enforce each side in every mode.
+        /// </summary>
+        public enum Scope { Game = 0, Milestone = 1 }
+
+        public Scope CurrentScope { get; private set; } = Scope.Game;
+        public string? Milestone { get; private set; }
+        public string? MilestoneTitle { get; private set; }
+
+        /// <summary>Switches who the conversation is; a different scope starts a fresh conversation.</summary>
+        public void SetScope(Scope scope, string? milestone = null, string? title = null)
         {
+            if (scope == CurrentScope && milestone == Milestone) return;
+            NewChat();
+            CurrentScope = scope; Milestone = milestone; MilestoneTitle = title;
+            Note(scope == Scope.Game ? "Prisma Agent: working on the game." : $"Milestone {milestone} - {title}: engine work on Prisma.");
+        }
+
+        const string GameScope =
+            "You are the Prisma Agent, powered by Claude, running inside Prisma - Froglet's own engine - on a checkout of the Cosmic Shore repository. " +
+            "You work on the GAME: Cosmic Shore's code and content (Assets/), as it runs in Prisma. You do not change Prisma itself (Port/): " +
+            "engine work happens in Prisma's MILESTONES sessions, so when a problem's cause is in the engine, say which milestone it belongs to and describe it. " +
+            "Follow the repository's root CLAUDE.md for game work. Prisma records every play run as tracks (performance per scene, features, audio, every problem " +
+            "with when it was first and last seen); the brief below is the latest, and prisma_tracks has the rest. Start from it: when asked to fix something, " +
+            "find it in the tracks, reproduce it with the prisma tools (engine_smoke, game_start, game_screenshot, game_logs ...), fix it, and prove the fix the same way. " +
+            "A board item's 'done when' is its acceptance test: run it and show the result before calling the work done. " +
+            "Keep replies short; the user reads them in Prisma's chat panel.";
+
+        string MilestoneScope() =>
+            $"You are running milestone {Milestone} ({MilestoneTitle}) inside Prisma, Froglet's own engine for Cosmic Shore, on a checkout of the Cosmic Shore repository. " +
+            "This session works on the ENGINE: Port/ (Prisma's source, tools, tests and docs). Read Port/CLAUDE.md and Port/docs/ROADMAP.md first; the checkpoint's " +
+            "exit criterion is in Port/docs/milestones.json. Assets/, Packages/ and ProjectSettings/ are the Unity project: read them as the game's input, never change them. " +
+            $"Prove every step with the prisma tools (engine_build, engine_test, engine_smoke, game_* ...). When the work moves the checkpoint, update {Milestone}'s entry in " +
+            "Port/docs/milestones.json: status (todo, in-progress, done) and a dated note with the evidence. The exit criterion is the acceptance test: never set a " +
+            "checkpoint to done until you have run that check and it passed, and put the command and its result in the note. Problems you find but do not fix go on " +
+            "the board with prisma_board_suggest, each with its own criterion. Keep replies short.";
+
+        // Edit(path) rules cover every file-editing tool (Edit, Write, NotebookEdit) in every mode.
+        static readonly string[] UnityDenies = { "Edit(Assets/**)", "Edit(Packages/**)", "Edit(ProjectSettings/**)" };
+
+        static readonly string[] EngineDenies = { "Edit(Port/**)" };
+
+        /// <summary>The tracks brief the Prisma Agent starts every prompt with.</summary>
+        static string TracksBrief()
+        {
+            try { return Prisma.PrismaTracks.Load(Path.Combine(LauncherSettings.DataDir, "tracks")).Memory(5000); }
+            catch { return ""; }
+        }
+
+        void Run(string text, string workDir, Mode mode, string? extraDir)
+        {
+            var reply = new System.Text.StringBuilder();
+            bool milestone = CurrentScope == Scope.Milestone;
+            int exit = 0;
+            _stopReason = null;
+            _lastError = null;
+            _userStopped = false;
+            System.Threading.Timer? watchdog = null;
             try
             {
                 var psi = new ProcessStartInfo(Cli!)
@@ -239,33 +348,84 @@ namespace CosmicShore.Launcher
                     CreateNoWindow = true,
                 };
                 foreach (var a in new[] { "-p", "--output-format", "stream-json", "--verbose",
-                             "--permission-mode", mode switch { Mode.Ask => "plan", Mode.Edit => "acceptEdits", _ => "bypassPermissions" } })
+                             "--permission-mode", mode switch { Mode.Plan => "plan", Mode.Edit => "acceptEdits", _ => "bypassPermissions" } })
                     psi.ArgumentList.Add(a);
                 if (_session != null) { psi.ArgumentList.Add("--resume"); psi.ArgumentList.Add(_session); }
-                if (!string.IsNullOrWhiteSpace(_s.ClaudeModel)) { psi.ArgumentList.Add("--model"); psi.ArgumentList.Add(_s.ClaudeModel.Trim()); }
-                bool engine = WireEngine(psi, psi.WorkingDirectory);
+                var model = _s.ClaudeModel?.Trim() ?? "";
+                if (model.Length > 0 && model != "default") { psi.ArgumentList.Add("--model"); psi.ArgumentList.Add(model); }
+                var effort = _s.ClaudeEffort?.Trim() ?? "";
+                if (effort.Length > 0 && effort != "default") { psi.ArgumentList.Add("--effort"); psi.ArgumentList.Add(effort); }
+                if (milestone)
+                {
+                    // Engine work runs unattended for long stretches: give each run a budget.
+                    psi.ArgumentList.Add("--max-turns");
+                    psi.ArgumentList.Add(Math.Max(1, _s.MilestoneMaxTurns).ToString(System.Globalization.CultureInfo.InvariantCulture));
+                    if (_s.MilestoneMaxUsd > 0)
+                    {
+                        psi.ArgumentList.Add("--max-budget-usd");
+                        psi.ArgumentList.Add(_s.MilestoneMaxUsd.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture));
+                    }
+                }
+                psi.ArgumentList.Add("--disallowedTools");
+                foreach (var d in CurrentScope == Scope.Game ? EngineDenies : UnityDenies) psi.ArgumentList.Add(d);
+                foreach (var dir in new[] { extraDir, Path.Combine(LauncherSettings.DataDir, "tracks") })
+                    if (dir != null && Directory.Exists(dir)) { psi.ArgumentList.Add("--add-dir"); psi.ArgumentList.Add(dir); }
+                WireEngine(psi, psi.WorkingDirectory);
                 psi.ArgumentList.Add("--append-system-prompt");
-                psi.ArgumentList.Add("You are running inside the Froglet Engine Launcher, in a checkout of the Cosmic Shore repository " +
-                                     $"(branch {_s.Branch}). Keep replies short; the user reads them in a small chat panel." +
-                                     (engine ? " The froglet-engine MCP tools build the engine and start, see and drive the running game; read Port/CLAUDE.md before engine work." : ""));
+                psi.ArgumentList.Add((CurrentScope == Scope.Game ? GameScope + "\n\n" + TracksBrief() : MilestoneScope()) + $"\n\nBranch: {_s.Branch}." + (mode == Mode.Plan
+                    ? " You are in PLAN mode: investigate (reading files and using the prisma tools is fine), then make your final message " +
+                      "the plan itself - a short title line and numbered steps naming the files to change. The launcher shows that message as the plan " +
+                      "with Approve buttons, so do not write plan files and do not ask how to submit it."
+                    : ""));
                 if (!string.IsNullOrWhiteSpace(_s.AnthropicApiKey)) psi.Environment["ANTHROPIC_API_KEY"] = _s.AnthropicApiKey.Trim();
 
                 _proc = Process.Start(psi)!;
+                var proc = _proc;
+                if (milestone && _s.MilestoneMaxMinutes > 0)
+                    watchdog = new System.Threading.Timer(_ =>
+                    {
+                        _stopReason = $"at the {_s.MilestoneMaxMinutes}-minute limit";
+                        try { if (!proc.HasExited) proc.Kill(entireProcessTree: true); } catch { }
+                    }, null, TimeSpan.FromMinutes(_s.MilestoneMaxMinutes), System.Threading.Timeout.InfiniteTimeSpan);
                 _proc.StandardInput.Write(text);
                 _proc.StandardInput.Close();
                 var err = _proc.StandardError.ReadToEndAsync();
                 string? line;
-                while ((line = _proc.StandardOutput.ReadLine()) != null) Parse(line);
+                while ((line = _proc.StandardOutput.ReadLine()) != null) Parse(line, reply);
                 _proc.WaitForExit();
-                if (_proc.ExitCode != 0)
+                exit = _proc.ExitCode;
+                if (exit != 0 && !_userStopped)
                 {
-                    var e = err.Result.Trim();
-                    Add(ChatRole.Error, e.Length > 0 ? e : $"claude exited with {_proc.ExitCode}");
+                    if (_stopReason != null) Add(ChatRole.Error, $"Stopped {_stopReason}.");
+                    else if (_lastError == null)
+                    {
+                        var e = err.Result.Trim();
+                        Add(ChatRole.Error, e.Length > 0 ? e : $"claude exited with {exit}");
+                    }
                     RefreshAuth(); // a sign-in that expired shows up as SIGN IN
                 }
             }
-            catch (Exception ex) { Add(ChatRole.Error, ex.Message); }
-            finally { Busy = false; }
+            catch (Exception ex) { Add(ChatRole.Error, ex.Message); exit = -1; }
+            finally
+            {
+                watchdog?.Dispose();
+                if (milestone && !_userStopped && (_stopReason != null || exit != 0))
+                {
+                    string reason = _stopReason ?? (_lastError is { } le ? "after an error: " + (le.Length > 90 ? le[..89] + "..." : le) : $"after claude exited with {exit}");
+                    var stop = new SessionStop(Milestone ?? "", MilestoneTitle ?? "", reason, Tried(), LastWords());
+                    try { MilestoneStopped?.Invoke(stop); } catch { }
+                }
+                // Headless Claude has no plan-approval tool: a plan-mode turn's final message is the plan.
+                if (mode == Mode.Plan)
+                    lock (_lock)
+                    {
+                        int user = _items.FindLastIndex(x => x.Role == ChatRole.User);
+                        int last = _items.FindLastIndex(x => x.Role == ChatRole.Assistant);
+                        if (last > user && user >= 0 && !_items.Skip(user).Any(x => x.Role == ChatRole.Plan)) _items[last].Role = ChatRole.Plan;
+                    }
+                Busy = false;
+                if (reply.Length > 0) try { ReplyFinished?.Invoke(reply.ToString()); } catch { }
+            }
         }
 
         /// <summary>
@@ -282,7 +442,7 @@ namespace CosmicShore.Launcher
             {
                 ["mcpServers"] = new Dictionary<string, object>
                 {
-                    ["froglet-engine"] = new Dictionary<string, object>
+                    ["prisma"] = new Dictionary<string, object>
                     {
                         ["command"] = _tools.Dotnet,
                         ["args"] = new[] { "run", "--project", project, "--" },
@@ -296,11 +456,11 @@ namespace CosmicShore.Launcher
             psi.ArgumentList.Add(path);
             // Its tools build and run the game but edit no files, so every mode may use them.
             psi.ArgumentList.Add("--allowedTools");
-            psi.ArgumentList.Add("mcp__froglet-engine");
+            psi.ArgumentList.Add("mcp__prisma");
             return true;
         }
 
-        void Parse(string line)
+        void Parse(string line, System.Text.StringBuilder reply)
         {
             JsonDocument doc;
             try { doc = JsonDocument.Parse(line); } catch { return; }
@@ -309,33 +469,140 @@ namespace CosmicShore.Launcher
                 var root = doc.RootElement;
                 if (root.TryGetProperty("session_id", out var sid) && sid.ValueKind == JsonValueKind.String) _session = sid.GetString();
                 string type = root.TryGetProperty("type", out var t) ? t.GetString() ?? "" : "";
-                if (type == "assistant" && root.TryGetProperty("message", out var msg) && msg.TryGetProperty("content", out var content))
+                if (type == "system" && root.TryGetProperty("model", out var m) && m.ValueKind == JsonValueKind.String) ActiveModel = m.GetString();
+                if (type == "assistant" && root.TryGetProperty("message", out var msg))
                 {
+                    if (msg.TryGetProperty("usage", out var u)) ContextTokens = Tokens(u);
+                    if (!msg.TryGetProperty("content", out var content)) return;
                     foreach (var block in content.EnumerateArray())
                     {
                         var bt = block.GetProperty("type").GetString();
-                        if (bt == "text") { var s = block.GetProperty("text").GetString(); if (!string.IsNullOrWhiteSpace(s)) Add(ChatRole.Assistant, s!.Trim()); }
-                        else if (bt == "tool_use") Add(ChatRole.Tool, Describe(block));
+                        if (bt == "text")
+                        {
+                            var s = block.GetProperty("text").GetString();
+                            if (string.IsNullOrWhiteSpace(s)) continue;
+                            Add(ChatRole.Assistant, s!.Trim());
+                            reply.Append(s).Append('\n');
+                        }
+                        else if (bt == "tool_use") AddTool(block);
                     }
+                }
+                else if (type == "user" && root.TryGetProperty("message", out var um) && um.TryGetProperty("content", out var uc) && uc.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var block in uc.EnumerateArray())
+                        if (block.TryGetProperty("type", out var bt) && bt.GetString() == "tool_result") AttachResult(block);
                 }
                 else if (type == "result")
                 {
                     if (root.TryGetProperty("total_cost_usd", out var c) && c.ValueKind == JsonValueKind.Number) CostUsd += c.GetDouble();
-                    if (root.TryGetProperty("is_error", out var ie) && ie.ValueKind == JsonValueKind.True
-                        && root.TryGetProperty("result", out var res)) Add(ChatRole.Error, res.ToString());
+                    if (root.TryGetProperty("num_turns", out var nt) && nt.ValueKind == JsonValueKind.Number) Turns += nt.GetInt32();
+                    string sub = root.TryGetProperty("subtype", out var st) && st.ValueKind == JsonValueKind.String ? st.GetString() ?? "" : "";
+                    // A run that ends on a limit says so in subtype (error_max_turns, error_max_budget_usd ...), with no result text.
+                    if (sub == "error_max_turns") _stopReason = $"at the {_s.MilestoneMaxTurns}-turn limit";
+                    else if (sub.StartsWith("error_max_budget", StringComparison.Ordinal)) _stopReason = $"at the ${_s.MilestoneMaxUsd:0.##} budget";
+                    else if (root.TryGetProperty("is_error", out var ie) && ie.ValueKind == JsonValueKind.True)
+                    {
+                        string? text = root.TryGetProperty("result", out var res) ? res.ToString()
+                            : root.TryGetProperty("errors", out var errs) && errs.ValueKind == JsonValueKind.Array
+                                ? string.Join("\n", errs.EnumerateArray().Select(x => x.ToString())) : null;
+                        if (!string.IsNullOrWhiteSpace(text)) { Add(ChatRole.Error, text!); _lastError = text!.Split('\n')[0]; }
+                    }
                 }
+            }
+        }
+
+        /// <summary>What the current run tried: its tool calls since the last user message, oldest first.</summary>
+        string Tried()
+        {
+            lock (_lock)
+            {
+                int user = _items.FindLastIndex(x => x.Role == ChatRole.User);
+                var tools = _items.Skip(Math.Max(0, user + 1)).Where(x => x.Role == ChatRole.Tool)
+                                  .Select(x => (x.Failed ? "FAILED " : "") + x.Text.Replace('\n', ' ')).ToList();
+                if (tools.Count == 0) return "No tool calls.";
+                var shown = tools.Count > 30 ? tools.Take(10).Append($"... {tools.Count - 20} more ...").Concat(tools.TakeLast(10)) : tools;
+                return string.Join("\n", shown.Select(t => "- " + (t.Length > 160 ? t[..159] + "..." : t)));
+            }
+        }
+
+        string LastWords()
+        {
+            lock (_lock)
+            {
+                var last = _items.LastOrDefault(x => x.Role is ChatRole.Assistant or ChatRole.Plan);
+                return last == null ? "" : last.Text.Length > 1200 ? last.Text[..1200] + "..." : last.Text;
+            }
+        }
+
+        static long Tokens(JsonElement u)
+        {
+            long n = 0;
+            foreach (var k in new[] { "input_tokens", "cache_read_input_tokens", "cache_creation_input_tokens" })
+                if (u.TryGetProperty(k, out var v) && v.ValueKind == JsonValueKind.Number) n += v.GetInt64();
+            return n;
+        }
+
+        void AddTool(JsonElement block)
+        {
+            string name = block.TryGetProperty("name", out var n) ? n.GetString() ?? "tool" : "tool";
+            string? id = block.TryGetProperty("id", out var i) ? i.GetString() : null;
+            var input = block.TryGetProperty("input", out var inp) ? inp : default;
+            if (name == "TodoWrite" && input.ValueKind == JsonValueKind.Object && input.TryGetProperty("todos", out var todos))
+            {
+                var list = todos.EnumerateArray().Select(x => (
+                    x.TryGetProperty("content", out var ct) ? ct.GetString() ?? "" : "",
+                    x.TryGetProperty("status", out var st) ? st.GetString() ?? "pending" : "pending")).ToList();
+                lock (_lock) _items.Add(new ChatItem(ChatRole.Todo, "Update todos") { Todos = list, ToolId = id });
+                return;
+            }
+            if (name == "ExitPlanMode" && input.ValueKind == JsonValueKind.Object && input.TryGetProperty("plan", out var plan))
+            {
+                lock (_lock) _items.Add(new ChatItem(ChatRole.Plan, plan.GetString() ?? "") { ToolId = id });
+                return;
+            }
+            lock (_lock) _items.Add(new ChatItem(ChatRole.Tool, Describe(block)) { ToolId = id });
+        }
+
+        /// <summary>Folds a tool's result under its call: the first lines of text, and any picture it returned.</summary>
+        void AttachResult(JsonElement block)
+        {
+            string? id = block.TryGetProperty("tool_use_id", out var i) ? i.GetString() : null;
+            bool failed = block.TryGetProperty("is_error", out var e) && e.ValueKind == JsonValueKind.True;
+            var text = new System.Text.StringBuilder();
+            byte[]? image = null;
+            if (block.TryGetProperty("content", out var c))
+            {
+                if (c.ValueKind == JsonValueKind.String) text.Append(c.GetString());
+                else if (c.ValueKind == JsonValueKind.Array)
+                    foreach (var part in c.EnumerateArray())
+                    {
+                        var pt = part.TryGetProperty("type", out var ptt) ? ptt.GetString() : null;
+                        if (pt == "text") text.AppendLine(part.GetProperty("text").GetString());
+                        else if (pt == "image" && part.TryGetProperty("source", out var src) && src.TryGetProperty("data", out var data))
+                            try { image = Convert.FromBase64String(data.GetString() ?? ""); } catch { }
+                    }
+            }
+            var lines = text.ToString().Replace("\r", "").Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            string detail = lines.Length == 0 ? (image != null ? "screenshot" : "done")
+                : string.Join("\n", lines.Take(3).Select(l => l.Length > 140 ? l[..139] + "..." : l)) + (lines.Length > 3 ? $"\n... +{lines.Length - 3} lines" : "");
+            lock (_lock)
+            {
+                var item = _items.LastOrDefault(x => x.ToolId == id && id != null);
+                if (item == null) return;
+                if (item.Role == ChatRole.Tool) { item.Detail = detail; item.Failed = failed; item.Image = image; }
             }
         }
 
         static string Describe(JsonElement toolUse)
         {
             string name = toolUse.TryGetProperty("name", out var n) ? n.GetString() ?? "tool" : "tool";
+            name = name.StartsWith("mcp__prisma__") ? name["mcp__prisma__".Length..] : name;
             if (!toolUse.TryGetProperty("input", out var input) || input.ValueKind != JsonValueKind.Object) return name;
-            foreach (var key in new[] { "file_path", "path", "command", "pattern", "url", "description" })
+            foreach (var key in new[] { "file_path", "path", "command", "pattern", "action", "url", "target", "text", "scene", "description" })
                 if (input.TryGetProperty(key, out var v) && v.ValueKind == JsonValueKind.String)
                 {
                     var s = v.GetString()!.Replace('\n', ' ');
-                    return name + "  " + (s.Length > 90 ? s[..89] + "..." : s);
+                    return $"{name}({(s.Length > 80 ? s[..79] + "..." : s)})";
                 }
             return name;
         }
