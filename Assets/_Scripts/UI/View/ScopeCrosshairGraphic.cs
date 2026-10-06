@@ -34,6 +34,7 @@ namespace CosmicShore.UI
     /// <para>Raycasting is off by default and should stay off: this draws over the middle of the
     /// screen, and a hit target there would eat presses meant for the world.</para>
     /// </summary>
+    [RequireComponent(typeof(CanvasRenderer))]
     [AddComponentMenu("UI/Scope Crosshair Graphic", 15)]
     public class ScopeCrosshairGraphic : MaskableGraphic
     {

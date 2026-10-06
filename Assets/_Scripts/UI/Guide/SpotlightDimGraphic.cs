@@ -8,7 +8,15 @@ namespace CosmicShore.UI
     /// A full-screen dim with rectangular cut-outs. Drawn as the cells of the grid the cut-outs'
     /// edges make, skipping cells inside a cut-out, so any number of cut-outs costs a handful of
     /// quads. Blocks every press except inside a cut-out.
+    ///
+    /// <para><b>RequireComponent(CanvasRenderer) is load-bearing.</b> <c>Graphic</c> itself does not
+    /// require one (Image, RawImage and TMP each declare it). Built in code with AddComponent and no
+    /// CanvasRenderer, every access threw MissingComponentException in the Unity Editor (Prisma adds
+    /// one on demand, which is why it drew there): the dim drew nothing and its throw inside
+    /// GraphicRaycaster killed every UI press in the menu.
+    /// <c>Tools/Build/check_graphic_canvas_renderer.py</c> holds the rule for every Graphic.</para>
     /// </summary>
+    [RequireComponent(typeof(CanvasRenderer))]
     public class SpotlightDimGraphic : MaskableGraphic, ICanvasRaycastFilter
     {
         /// <summary>

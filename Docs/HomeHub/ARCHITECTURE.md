@@ -1804,6 +1804,7 @@ preview, with B refused → tap in and the spotlight fades.
   space once (`ScreenPointToLocalPointInRectangle`), and the raycast filter converts the press the
   same way - one coordinate space for drawing and for blocking. Prisma drew it correctly either way,
   so this is the Unity-only difference; it is the strongest candidate rather than a proven cause.
+  **It was not the cause - see 8.2.** The change stays: one coordinate space is still right.
 - **Settings is marked, not only found.** Finding it from its inspector-wired onClick works in Unity
   but depends on persistent-listener introspection (Prisma's port of `UnityEvent` cannot answer it),
   so Menu_Main's `SettingsButton` now carries `MenuGuideAlwaysAvailable`. Both routes stay.
@@ -1817,4 +1818,35 @@ are drawn over the gear (`Arcade_Panel` covers it), so Settings cannot be presse
 without a guide. "Settings is always reachable" therefore holds on Home only today. Making it hold
 everywhere is a menu change - the gear above every window, or pad West opening Settings from any
 menu window - and wants its own decision.
+
+### 8.2 Second playtest: the real cause - the dim had no CanvasRenderer
+
+The second Unity run still drew nothing, the menu ignored every press, and the console said
+**"There is no 'CanvasRenderer' attached to the 'Dim' game object, but a script is trying to access
+it."** That one line explains every symptom:
+
+- `UnityEngine.UI.Graphic` does not itself require a `CanvasRenderer`. `Image`, `RawImage` and TMP
+  each declare `[RequireComponent(typeof(CanvasRenderer))]` on their own class. `SpotlightDimGraphic`
+  and `SpotlightFrameGraphic` did not, and `MenuSpotlight` builds them with `AddComponent<T>()` on a
+  bare GameObject, so they had no renderer. (The caption is TMP, which is why it was the one thing
+  that drew in the first playtest.)
+- In the Unity Editor every access to the missing renderer throws `MissingComponentException`. The
+  dim and frame drew nothing. And because the dim is a raycast target, `GraphicRaycaster` threw on
+  it for every pointer event, so **no UI press anywhere in the menu reached anything**. That is the
+  "nothing works when I click", not the dim's filter.
+- Prisma's port adds the renderer on demand, so it drew everything correctly from the same code. The
+  Editor-only failure is why the walk in 8.1 passed.
+
+**Fix.** Both spotlight graphics now carry `[RequireComponent(typeof(CanvasRenderer))]`. So do the
+other first-party Graphics without it: `ScopeRingGraphic` and `ScopeCrosshairGraphic` are built
+exactly this way by `SniperScopeOverlay` (see `SERPENT_SNIPER_SCOPE.md`), and `TrapezoidGraphic` and
+`MouseFlightWidget` get theirs some other way today but carry the attribute anyway.
+**Gate:** `python3 Tools/Build/check_graphic_canvas_renderer.py` (`--self-test`) fails on any
+`Graphic`/`MaskableGraphic` subclass under `Assets/_Scripts` or `Assets/FTUE` without the attribute.
+It flagged all six on the old tree.
+
+**Lesson.** A port that is more forgiving than the engine passes exactly the bugs that live in that
+gap. Prisma's walk proved the guide's logic, not that Unity would build its parts. **Read the Unity
+console first**; the answer was on screen in red in the playtest screenshot.
+
 

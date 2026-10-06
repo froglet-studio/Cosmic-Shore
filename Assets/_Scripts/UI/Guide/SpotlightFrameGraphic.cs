@@ -5,8 +5,10 @@ namespace CosmicShore.UI
 {
     /// <summary>
     /// The call-to-action frame: a solid line around the cut-out with a soft glow fading outward,
-    /// both mitred at the corners.
+    /// both mitred at the corners. Requires its CanvasRenderer for the reason on
+    /// <see cref="SpotlightDimGraphic"/>.
     /// </summary>
+    [RequireComponent(typeof(CanvasRenderer))]
     public class SpotlightFrameGraphic : MaskableGraphic
     {
         public Rect Inner;

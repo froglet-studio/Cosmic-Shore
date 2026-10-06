@@ -1638,3 +1638,20 @@ constant) both firing.
   ability added here.
 - Consider whether any arena that super-shields structure for the Rhino's sword alone needs
   re-checking now that a second hull can open it.
+
+## Likely cause of the invisible reticle marks (found from the FTUE spotlight, 2026-10-06)
+
+`ScopeRingGraphic` and `ScopeCrosshairGraphic` are bare `MaskableGraphic`s that `SniperScopeOverlay`
+builds with `AddComponent<T>()` on a GameObject with only a `RectTransform`. `Graphic` does not
+require a `CanvasRenderer` (`Image`/`RawImage`/TMP each declare it themselves), so these had none.
+The FTUE spotlight was built the same way and drew nothing in the Unity Editor, while Prisma drew it
+correctly. The console said "There is no 'CanvasRenderer' attached to ..."
+(`Docs/HomeHub/ARCHITECTURE.md` §8.2). The eyepiece is a `RawImage`, which brings its own renderer,
+so a drawn window with no marks in it is exactly this shape. That matches rounds 9 and 9a above,
+which raised the ring's size and closed `SelfCheck`'s blind spot without finding the cause.
+
+Both graphics now declare `[RequireComponent(typeof(CanvasRenderer))]`, and
+`Tools/Build/check_graphic_canvas_renderer.py` fails on any first-party Graphic without it. **Not
+yet confirmed in the editor for the scope:** scope in on the Serpent; the reticle ring, its posts and
+the recharge arc should now draw. If they do, this was the cause. Check the console for a
+`MissingComponentException` on a `Ring`/`Cross` object if they still do not.

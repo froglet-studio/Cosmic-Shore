@@ -4298,9 +4298,12 @@ container), not a number, so it is reported rather than done.
 
 ## 🔴 First-login guide — spotlight draws nothing in Unity (`claude/exciting-bell-69b398`, 2026-10-06) — NOT EDITOR-VERIFIED
 
-**State.** Second Unity playtest after the local-space geometry fix: still no dim and no CTA frame,
-and presses are refused (so the dim exists and its raycast filter runs). Prisma draws all of it from
-the same code (`Docs/HomeHub/ARCHITECTURE.md` §8.1).
+**State.** Second Unity playtest: still no dim, no CTA frame, no caption, and no UI press worked.
+Console: "There is no 'CanvasRenderer' attached to the 'Dim' game object". **Root cause found and
+fixed:** the spotlight's code-built Graphics lacked `[RequireComponent(typeof(CanvasRenderer))]`,
+and the throw inside `GraphicRaycaster` killed every press (`Docs/HomeHub/ARCHITECTURE.md` §8.2).
+Gate: `Tools/Build/check_graphic_canvas_renderer.py`. **Re-test:** the menu takes presses again;
+Home shows the dim, the pulsing frame on ARCADE, the caption, and the gear cut out and pressable.
 
 **What landed for it.** A reader tool, **FrogletTools > Diagnostics > Report Menu Spotlight**
 (`Assets/_Scripts/Editor/Diagnostics/MenuSpotlightReport.cs`). Type-checked with

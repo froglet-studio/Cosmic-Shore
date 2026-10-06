@@ -25,6 +25,7 @@ namespace CosmicShore.UI
     /// <para>Raycasting is off by default and should stay off — this is a readout drawn over the
     /// middle of the screen, and a hit target there would eat presses meant for the world.</para>
     /// </summary>
+    [RequireComponent(typeof(CanvasRenderer))]
     [AddComponentMenu("UI/Scope Ring Graphic", 14)]
     public class ScopeRingGraphic : MaskableGraphic
     {

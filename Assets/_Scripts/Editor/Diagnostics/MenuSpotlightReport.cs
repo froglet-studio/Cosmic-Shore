@@ -48,14 +48,21 @@ namespace CosmicShore.Editor
 
             var spots = Object.FindObjectsByType<MenuSpotlight>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             sb.AppendLine($"MenuSpotlight instances: {spots.Length}");
-            foreach (var spot in spots) ReportSpotlight(sb, spot);
-
-            ReportOverlayCanvases(sb);
-            ReportAllowed(sb);
+            // Each section stands alone: a throw in one is reported in place and the rest still run,
+            // so a broken frame still yields a report.
+            foreach (var spot in spots) Section(sb, () => ReportSpotlight(sb, spot));
+            Section(sb, () => ReportOverlayCanvases(sb));
+            Section(sb, () => ReportAllowed(sb));
 
             Debug.Log(sb.ToString());
             EditorGUIUtility.systemCopyBuffer = sb.ToString();
             Debug.Log("[MenuSpotlightReport] Report copied to the clipboard.");
+        }
+
+        static void Section(StringBuilder sb, System.Action section)
+        {
+            try { section(); }
+            catch (System.Exception e) { sb.AppendLine($"   !! section threw {e.GetType().Name}: {e.Message}"); }
         }
 
         static void ReportSpotlight(StringBuilder sb, MenuSpotlight spot)
@@ -80,7 +87,14 @@ namespace CosmicShore.Editor
 
             foreach (var g in spot.GetComponentsInChildren<Graphic>(true))
             {
-                var cr = g.canvasRenderer;
+                // Never g.canvasRenderer: with the component missing that throws in the Editor,
+                // which is the very fault this report first had to find (it ate the whole report).
+                if (!g.TryGetComponent(out CanvasRenderer cr))
+                {
+                    sb.AppendLine($"   [{g.GetType().Name}] '{g.name}'  <-- NO CanvasRenderer: draws nothing, and as a " +
+                                  "raycast target it throws inside GraphicRaycaster, killing every UI press");
+                    continue;
+                }
                 var mat = g.materialForRendering;
                 var shader = mat ? mat.shader : null;
                 sb.AppendLine($"   [{g.GetType().Name}] '{g.name}' active={g.gameObject.activeInHierarchy} enabled={g.enabled} " +
