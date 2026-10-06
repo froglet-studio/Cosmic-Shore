@@ -446,6 +446,11 @@ public class VesselTransformer : MonoBehaviour
             transform.position += velocityShift * Time.deltaTime;
         }
 
+        // The multiplier this transformer last raised on boostChanged. NaN = raise on the next
+        // decay whatever the value (set on initialize and reset, which write the multiplier
+        // without raising).
+        float _lastRaisedBoost = float.NaN;
+
         protected virtual void DecayBoost()
         {
             if (VesselStatus == null) return;
@@ -455,6 +460,15 @@ public class VesselTransformer : MonoBehaviour
             VesselStatus.BoostMultiplier = VesselStatus.BoostMultiplier > 1 ? 
                     VesselStatus.BoostMultiplier - BoostDecayRate * Time.deltaTime:
                     Mathf.Min(1f, VesselStatus.BoostMultiplier + BoostDecayRate * Time.deltaTime);
+
+            // Raise only when the value moved since this transformer last raised it. At rest the
+            // multiplier sits at 1.0 and an unconditional raise ran every listener every frame -
+            // and the channel is global, so on every peer each vessel's rest fanned out to every
+            // vessel's HUD and boost audio. A writer that changes the multiplier and raises itself
+            // (skim boost, reset-boost, consume-boost) is caught here on its next decay step.
+            if (Mathf.Approximately(_lastRaisedBoost, VesselStatus.BoostMultiplier))
+                return;
+            _lastRaisedBoost = VesselStatus.BoostMultiplier;
 
             boostChanged?.Raise(new BoostChangedPayload
             {
@@ -469,6 +483,7 @@ public class VesselTransformer : MonoBehaviour
         public virtual void Initialize(IVessel vessel)
         {
             Vessel = vessel;
+            _lastRaisedBoost = float.NaN;
             // ResetTransformer();
         }
     
@@ -483,6 +498,7 @@ public class VesselTransformer : MonoBehaviour
             speed = 0f;
             throttleMultiplier = 1f;
             _speedTrackingRate = 0f;
+            _lastRaisedBoost = float.NaN;   // the next decay re-announces the boost to its listeners
 
             // Rotation - reset to face forward
             accumulatedRotation = Quaternion.identity;

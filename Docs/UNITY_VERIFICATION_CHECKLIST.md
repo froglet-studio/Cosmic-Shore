@@ -65,6 +65,41 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Platform-agnostic fixes: boost event quiet at rest, skim-tick rate limit (`claude/serene-edison-lfv24f`, 2026-10-06)
+
+Step 6 of `Docs/PLATFORM_UNIFICATION.md` (§3.7). These change EVERY platform, Windows included. No
+editor and no `unity` CLI in the authoring session, so `/verify-unity` did NOT run. Out-of-editor:
+**`Tools/Build/unity_refcompile/run.sh` compiled the whole branch (Steps 2-6) against real Unity
+reference assemblies and locked package sources with 0 errors in project code** (91 player
+assemblies; negative control: a missing-member call planted in `RaceTrailCap` fails it with CS1061);
+the Froglet Engine live build is also 0 errors. The approximate `--config editor` run reports 4
+errors in three untouched runtime files, an artifact of that config (see §3.7).
+
+**What landed**
+
+1. `VesselTransformer.DecayBoost` raises `boostChanged` only when the multiplier moved since it last
+   raised it; `Initialize` and `ResetTransformer` force one re-raise. Only the Squirrel runs it.
+2. `ProximityBoostAudioController.minTickInterval` (0.07 s, new inspector field): the skim-tick
+   one-shot fires at most ~14 times a second.
+
+**Verify in editor**
+
+1. Squirrel, Desktop: at rest the energy bar sits empty and still; skim - it fills and drains
+   smoothly exactly as before; respawn / vessel-swap mid-boost - the bar returns to empty.
+2. Squirrel: skim dense trail continuously (a Skim Race straight, or the Wanderway belt). The tick
+   reads as rapid separate clicks, not a buzz; the boost loop is unchanged; the boost itself is
+   unchanged (same top speed). Try it with VSync off at a high frame rate - that is where the old
+   buzz was worst.
+3. Two-player session (ParrelSync): each pilot's energy bar tracks only their own Squirrel.
+
+**First-pass tuning:** `Squirrel.prefab ▸ ProximityBoostAudioController.minTickInterval` 0.07
+(0 restores the old behaviour).
+
+**Open, needs a design call:** removing the `[Obsolete]` beam from
+`SquirrelSkimmerImpactorDataContainer` (`Docs/ElementalAbilitySystem/BACKLOG.md` item 21).
+
+---
+
 ### 🔴 Content tier: MobileLow menu/freestyle trail policy, Skim Race / Joust trail cap, menu teardown, glow, cytoplasm, Wanderway budget (`claude/serene-edison-lfv24f`, 2026-10-05)
 
 Step 5 of `Docs/PLATFORM_UNIFICATION.md` (§3.6). No editor and no `unity` CLI in the authoring

@@ -1,8 +1,10 @@
 # One codebase for Windows, iOS and Android — diagnosis and plan
 
 **Status (2026-10-05): diagnosis (§1) and inventory (§2) done. Steps 2 (touch controls), 3 (device
-tiers), 4 (render tier) and 5 (content tier) landed on this branch, awaiting editor/device
-verification (`Docs/UNITY_VERIFICATION_CHECKLIST.md`, top four entries). Device measurements are
+tiers), 4 (render tier), 5 (content tier) and 6 (platform-agnostic fixes) landed on this branch,
+awaiting editor/device verification (`Docs/UNITY_VERIFICATION_CHECKLIST.md`, top five entries). The
+whole branch's runtime C# compiles with 0 project errors against real Unity references
+(`Tools/Build/unity_refcompile`, §3.7). Device measurements are
 deferred, not a gate (owner's call).**
 
 ### Decisions recorded (2026-10-05, project owner)
@@ -383,6 +385,46 @@ so Windows and iOS run exactly what bleeding-edge ran. MobileLow carries Garrett
 **Mixed-device matches:** trail prisms are local to each peer, so the race cap is per device. In a
 phone-vs-PC race the phone's ribbons end a lap or two back while the PC still draws (and can skim)
 the whole trail. Accepted with the exception (`Docs/ECOSYSTEM.md` §0).
+
+### 3.7 As built (Step 6)
+
+These change every platform, Windows included - they are fixes, not tiers.
+
+| Fix | What Windows notices |
+|---|---|
+| **`VesselTransformer.DecayBoost` raises `boostChanged` only when the multiplier moved** since this transformer last raised it (Garrett's change), and re-raises once after `Initialize` / `ResetTransformer`, which write the multiplier without raising. The channel is global and `DecayBoost` runs for every vessel on every peer, so at rest each vessel used to fan out to every vessel's HUD and boost audio every frame | nothing: the HUD and the boost audio get the same values, just not the same value again 60-240 times a second. Only the Squirrel authors `decayBoost: 1`, and it is the only vessel with `boostChanged` listeners (its HUD and boost audio); every other writer of its multiplier (skim boost, reset-boost) raises the event itself. The silent writers (`GrowSkimmer`, `RampBoost`, Manta's turn boost) are on vessels that never run `DecayBoost` |
+| **`ProximityBoostAudioController.minTickInterval` 0.07 s**: the Squirrel's skim-tick one-shot fires at most ~14 times a second | dense skimming reads as rapid clicks instead of a buzz. The buzz scaled with frame rate, so a 144-240 Hz PC had it worst. The loop layer and the boost itself are untouched |
+| `FoldGatePortalView` render target no longer reallocated every frame | already landed with Step 4 (§3.5) |
+
+**Waiting on a design call, not ported:** dropping the `[Obsolete]` `SkimmerFXPrismEffect` beam from
+`SquirrelSkimmerImpactorDataContainer` (the forcefield crackle would be the Squirrel's only skim
+visual, as on the Dolphin). `Docs/ElementalAbilitySystem/BACKLOG.md` item 21 records that the beam
+may be intentional on a trail-riding vessel and asks for an explicit decision; it is a one-line asset
+change once made.
+
+**Not ported, and why:**
+
+- **The "silent above 90% boost" half of the tick change** (`maxTickNormalized`). A tuning call for
+  audio sign-off, as §2.6 said.
+- **`ArcadeExploreView.IsLaunchableInThisBuild`** (cards hidden when their scene is not in the
+  build). Bleeding-edge gates the same thing at build time - `Tools/Build/check_gamelist_scenes.py`
+  fails on any card naming an unloadable scene, and every list is green - and the runtime filter
+  would hide in-progress modes in the Editor whenever their scene is not in the build list yet.
+- **`DiagnosticsHUD`'s qualified base class**: bleeding-edge already keeps `using UnityEngine`
+  outside the `#if`.
+- **`SkimRaceController.OnDestroy`**: the trail cap here needs no such override (`RaceTrailCap` is
+  its own component), so there is nothing to hide.
+- **`SquirrelImpactorDataContainer`'s per-element crystal lists** (the strip filled all four with
+  one effect): a gameplay change, not a fix; not in this inventory.
+
+**Verification:** `bash Tools/Build/unity_refcompile/run.sh` (real Unity 6000.0 reference
+assemblies + every package at its locked source) reports **0 errors in project code across 91
+player assemblies** with Steps 2-6 in place; a call to a missing member planted in `RaceTrailCap`
+fails it with CS1061, tagged `[CHANGED-TONIGHT]`. The approximate `--config editor` run reports 4
+errors, none in this branch's files: they are `'Editor' is a namespace` in three runtime
+`#if UNITY_EDITOR` files, which appear only because that config compiles changed Editor-folder files
+(declaring `namespace CosmicShore.Editor`) into the runtime compilation. Unity compiles those into
+Assembly-CSharp-Editor, which runtime code cannot see.
 ---
 
 ## 4. Step plan
@@ -397,7 +439,7 @@ Each step is its own PR into bleeding-edge, and each leaves Windows unchanged un
 | 3 | ✅ *(landed on this branch, unverified in editor; see §3.4)* **Device tier foundation.** `DeviceTierClassifier`, `PlatformProfileSO` ×3, dev override, a `CSLogChannel` for it, and a mobile branch in `SettingsAutoDetector` that reads the tier. `Desktop` profile = today's behaviour. | `System/`, `Controller/Settings` | identical | correct tier | correct tier |
 | 4 | ✅ *(landed on this branch, unverified in editor; see §3.5)* **Render tier.** MobileLow: HDR off, 4x MSAA, baked sky, membrane capped at 642 capsules, fold-gate window capped at 0.5 — each a `PlatformProfileSO` field. Everywhere: the fold-gate window renders only its footprint. | `_Graphics`, profile, `CapsuleMembrane`, `FoldGatePortalView` | fold-gate footprint only | none | per `MobileLow` |
 | 5 | ✅ *(landed on this branch, unverified in editor; see §3.6)* **Content tier.** Every `PerfStrip` gate the owner kept becomes a profile read: menu/freestyle trail policy, the Skim Race / Joust trail cap (decision 4: granted), menu-UI teardown while flying, HUD glow, cytoplasm, Wander/conveyor budgets as per-tier overrides (not edits to the shared SO). | gameplay | none | none (`MobileHigh` sets nothing) | per `MobileLow` |
-| 6 | **Platform-agnostic fixes** Garrett found, merged ungated (§2.6). Can go any time. | various | yes (fixes) | yes | yes |
+| 6 | ✅ *(landed on this branch, unverified in editor; see §3.7)* **Platform-agnostic fixes** Garrett found, merged ungated (§2.6): the boost event quiet at rest, the skim-tick rate limit. The Squirrel beam removal waits on a design call. | various | yes (fixes) | yes | yes |
 | 7 | **Retire the branches.** Build all three platforms from bleeding-edge; device verification matrix. | — | — | — | — |
 
 Open decisions (needed before steps 3–5):
