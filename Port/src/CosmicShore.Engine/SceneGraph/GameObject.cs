@@ -174,9 +174,42 @@ namespace CosmicShore.Engine
 
             beforeLifecycle?.Invoke();
 
+            // Unity delivers a loaded scene's Awake/OnEnable in script execution order (each
+            // behaviour's Awake then its OnEnable, scripts with a lower order first, load order
+            // within one order). A scene with no ordered script keeps the plain hierarchy walk.
+            var order = new List<(Component c, int index)>();
             foreach (var root in activated)
-                if (!root.destroyedFlag && root.activeSelf)
-                    root.NotifyHierarchyActiveChanged(true);
+                if (!root.destroyedFlag && root.activeSelf) root.CollectActive(order);
+            bool ordered = false;
+            foreach (var (c, _) in order)
+                if (c is MonoBehaviour m && m.ExecutionOrder != 0) { ordered = true; break; }
+            if (!ordered)
+            {
+                foreach (var root in activated)
+                    if (!root.destroyedFlag && root.activeSelf)
+                        root.NotifyHierarchyActiveChanged(true);
+                return;
+            }
+            // Colliders are in the physics scene from the moment the scene loads, before any Awake.
+            foreach (var (c, _) in order)
+                if (c is Collider collider && collider.enabled && !collider.gameObject.destroyedFlag && collider.gameObject.activeInHierarchy)
+                    GameLoop.Current?.Triggers.NoteArrived(collider);
+            var behaviours = new List<(MonoBehaviour mb, int index)>();
+            foreach (var (c, i) in order) if (c is MonoBehaviour mb) behaviours.Add((mb, i));
+            behaviours.Sort((a, b) => a.mb.ExecutionOrder != b.mb.ExecutionOrder ? a.mb.ExecutionOrder.CompareTo(b.mb.ExecutionOrder) : a.index.CompareTo(b.index));
+            foreach (var (mb, _) in behaviours)
+                // An earlier Awake may have destroyed or deactivated this one's object: then it does not wake.
+                if (!mb.destroyedFlag && !mb.gameObject.destroyedFlag && mb.gameObject.activeInHierarchy)
+                    mb.HandleHierarchyActive(true);
+        }
+
+        /// <summary>This active subtree's components in load (hierarchy) order, for an ordered scene activation.</summary>
+        void CollectActive(List<(Component, int)> into)
+        {
+            foreach (var component in _components) into.Add((component, into.Count));
+            foreach (var child in transform.Children)
+                if (!child.gameObject.destroyedFlag && child.gameObject.activeSelf)
+                    child.gameObject.CollectActive(into);
         }
 
         /// <summary>Propagate an effective-activation change to this subtree's behaviours.</summary>

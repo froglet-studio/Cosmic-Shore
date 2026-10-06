@@ -225,6 +225,25 @@ namespace CosmicShore.Gameplay
         internal PrismRenderHandle RenderHandle;
         bool _renderVisible;
         bool _exoticVisualActive;
+        bool _ownerHidden;
+
+        /// <summary>
+        /// An OWNER that draws this prism by other means hides it here (a swarm member's body: the swarm
+        /// draws every living member from one GPU buffer, Docs/SWARM_FAUNA.md §14, and this prism is the
+        /// member's collider-and-mass PROXY). Only photons change: the collider, the spatial index, the
+        /// mass and every gameplay state stay exactly as they are, and the companion entity still EXISTS
+        /// (clock stamps are one-shot - an entity created late loses them), it is just not drawn. The
+        /// owner must un-hide before the prism stops being drawn elsewhere - a skeleton, a released body -
+        /// or it becomes an invisible piece of mass. Cleared on pool reuse.
+        /// </summary>
+        public void SetOwnerHidden(bool hidden)
+        {
+            if (_ownerHidden == hidden) return;
+            _ownerHidden = hidden;
+            ApplyRenderPath();
+        }
+
+        public bool OwnerHidden => _ownerHidden;
 
         /// <summary>True when per-frame color animation should sink into the
         /// companion entity instead of a MaterialPropertyBlock.</summary>
@@ -414,6 +433,8 @@ namespace CosmicShore.Gameplay
             // already hid the entity, and re-showing it would orphan a visible
             // entity until pool reuse.
             bool show = _renderVisible && gameObject.activeInHierarchy;
+            // existence follows `show`; DRAWING additionally follows the owner's hide (SetOwnerHidden)
+            bool draw = show && !_ownerHidden;
 
             // Entity EXISTENCE is deliberately independent of which path currently
             // DRAWS. Clock stamps are one-shot initial-conditions writes
@@ -446,7 +467,7 @@ namespace CosmicShore.Gameplay
                 // Batched: applied in one structural change per direction at
                 // LateUpdate (same frame, before rendering). Per-prism toggles were
                 // the dominant creation-tick cost (Prism.Create.Visibility).
-                PrismRenderService.QueueVisible(in RenderHandle, show);
+                PrismRenderService.QueueVisible(in RenderHandle, draw);
             }
             else
             {
@@ -455,7 +476,7 @@ namespace CosmicShore.Gameplay
                 // entity + MeshRenderer for the rest of the frame.
                 if (PrismRenderService.IsHandleUsable(in RenderHandle))
                     PrismRenderService.SetVisible(in RenderHandle, false);
-                if (meshRenderer) meshRenderer.enabled = _renderVisible;
+                if (meshRenderer) meshRenderer.enabled = _renderVisible && !_ownerHidden;
             }
         }
 
@@ -823,7 +844,8 @@ namespace CosmicShore.Gameplay
                 authoredTargetScale = transform.localScale;
 
             scaleAnimator.SetTargetScale(authoredTargetScale);
-            StartCoroutine(CreateBlockCoroutine(authoredTargetScale));
+            _creationScale = authoredTargetScale;
+            _creationRoutine = StartCoroutine(CreateBlockCoroutine(authoredTargetScale));
 
             if (prismProperties.IsShielded) ActivateShield();
             if (prismProperties.IsDangerous) MakeDangerous();
@@ -844,6 +866,7 @@ namespace CosmicShore.Gameplay
 
             destroyed = false;
             devastated = false;
+            _ownerHidden = false;
             CompletesAsLiveRibbon = false; // pool reuse: the next life states its own class
             _destroyedByCreature = false; // pool reuse: clear stale creature-kill flag
             _destroyedByGunfire = false;  // pool reuse: clear stale gunfire-kill flag
@@ -936,6 +959,7 @@ namespace CosmicShore.Gameplay
                 Debug.LogWarning($"[Prism] '{name}' has an invalid PrismProperties.DefaultLayerName '{prismProperties.DefaultLayerName}' — keeping layer '{LayerMask.LayerToName(gameObject.layer)}'.", this);
 
             prismProperties.volume = 1f;
+            prismProperties.DangerWeight = 1f;
         }
 
         // Creation-completion budget. Simultaneous spawns (a pooled ring detonation,
@@ -1086,6 +1110,30 @@ namespace CosmicShore.Gameplay
             if (isEnvironmentMass) s_environmentCompletionsThisFrame++;
             else s_creationCompletionsThisFrame++;
 
+            _creationRoutine = null;
+            FinishCreation(authoredTargetScale);
+        }
+
+        Coroutine _creationRoutine;
+        Vector3 _creationScale;
+
+        /// <summary>
+        /// Finish THIS life's creation now: skip the spawn wait and the per-frame completion budget, and run
+        /// exactly the completion the coroutine would have run (visibility, collider, growth stamp, created
+        /// event, spatial registration). For an OWNER that needs the prism real in the frame it asked - a swarm
+        /// member materialised to take a hit a weapon has already landed (Docs/SWARM_FAUNA.md §16.2). The caller
+        /// owns the budget: every call is one full completion. No-op once complete, destroyed, or never started.
+        /// </summary>
+        public void CompleteCreationImmediately()
+        {
+            if (destroyed || IsCreationComplete || _creationRoutine == null) return;
+            StopCoroutine(_creationRoutine);
+            _creationRoutine = null;
+            FinishCreation(_creationScale);
+        }
+
+        void FinishCreation(Vector3 authoredTargetScale)
+        {
             // Measured across the WHOLE completion (visibility, growth stamp, SOAP raise,
             // spatial registration) rather than one block of it - a slice that only counts
             // part of the work it is meant to bound is not a bound.
@@ -1767,8 +1815,20 @@ namespace CosmicShore.Gameplay
 
             // Movers (gyroid steering, fauna body prisms) must also keep the
             // companion render entity's matrix honest — same contract as the
-            // spatial index position.
-            SyncRenderTransform();
+            // spatial index position. Queued, not written: every mover's pose this
+            // frame lands in ONE Burst pass at PrismRenderService's LateUpdate flush
+            // (still before rendering, so no visible lag) instead of one managed
+            // EntityManager.SetComponentData per prism per frame.
+            QueueRenderTransform();
+        }
+
+        /// <summary>Deferred <see cref="SyncRenderTransform"/> for per-frame movers —
+        /// applied in this frame's batched transform flush.</summary>
+        internal void QueueRenderTransform()
+        {
+            if (_exoticVisualActive) return;
+            if (!PrismRenderService.IsHandleUsable(in RenderHandle)) return;
+            PrismRenderService.QueueTransform(in RenderHandle, transform.localToWorldMatrix);
         }
 
         private void OnDisable()

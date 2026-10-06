@@ -48,10 +48,18 @@ namespace CosmicShore.Content
         GameObject _templatesRoot;
         readonly Dictionary<string, (PrefabGraph graph, LoadedScene loaded)> _prefabTemplates = new(StringComparer.Ordinal);
 
+        /// <summary>Unity's Script Execution Order settings, from the script metas, before any scene loads.</summary>
+        void RegisterExecutionOrders()
+        {
+            foreach (var (guid, order) in Db.ScriptExecutionOrders())
+                if (Scripts.Resolve(guid) is { } type) ScriptExecutionOrder.Set(type, order);
+        }
+
         public ContentRuntime(string projectRoot, IEnumerable<Assembly> assemblies, InstantiateOptions options = null)
         {
             Db = new AssetDatabase(projectRoot);
             Scripts = new ScriptTypeMap(Db, assemblies.Append(typeof(GameObject).Assembly));
+            RegisterExecutionOrders();
             Assets = new AssetLoader(Db, Scripts);
             Options = options ?? new InstantiateOptions();
             ReadBuildSettings();
@@ -66,6 +74,7 @@ namespace CosmicShore.Content
             Fonts = new Fonts.TmpFontLibrary(Db);
             Assets.Importers[typeof(CosmicShore.Engine.UI.TMP_FontAsset)] = LoadFontAsset;
             Audio.MixerImporter.Register(Assets, new Audio.MixerImporter(Db));
+            Assets.Importers[typeof(TextAsset)] = LoadTextAsset;
             ChainImporter(typeof(Mesh), r => r.Guid == AssetLoader.BuiltinDefaultGuid ? BuiltinMeshes.ForFileId(r.FileId) : null);
             ChainImporter(typeof(Material), r => r.Guid == AssetLoader.BuiltinExtraGuid ? BuiltinMaterials.ForFileId(r.FileId) : null);
             ShaderProperties = new Shaders.ShaderPropertyCatalog(Db);
@@ -80,6 +89,14 @@ namespace CosmicShore.Content
         {
             Assets.Importers.TryGetValue(type, out var previous);
             Assets.Importers[type] = previous == null ? importer : r => importer(r) ?? previous(r);
+        }
+
+        /// <summary>A text or binary file Unity imports as a TextAsset (.json, .txt, .bytes ...): its bytes as they are.</summary>
+        EngineObject LoadTextAsset(ObjRef r)
+        {
+            var path = Db.PathOf(r.Guid);
+            if (path == null || !TextAsset.IsTextAssetExtension(System.IO.Path.GetExtension(path)) || !System.IO.File.Exists(path)) return null;
+            return TextAsset.FromFile(path);
         }
 
         /// <summary>A TMP font asset reference (only a MonoBehaviour whose script IS TMP_FontAsset).</summary>
@@ -103,8 +120,8 @@ namespace CosmicShore.Content
 
         void ReadBuildSettings()
         {
-            // The engine's own Scenes In Build (Port/ProjectSettings/FrogletProject.json) wins when authored.
-            var froglet = CosmicShore.Froglet.FrogletProjectSettings.Load(Db.ProjectRoot);
+            // The engine's own Scenes In Build (Port/ProjectSettings/PrismaProject.json) wins when authored.
+            var froglet = Prisma.PrismaProjectSettings.Load(Db.ProjectRoot);
             if (froglet.Scenes is { Count: > 0 } own)
             {
                 foreach (var s in own) BuildScenes.Add((s.Path, s.Guid, s.Enabled));

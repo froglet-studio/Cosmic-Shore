@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c778cfbe4dfc4c5c8401e40c17802311, type: 3}
+  m_Name: Wildlife Clawfish 3
+  m_EditorClassIdentifier:
+  FaunaPrefab: {fileID: 369859875180954115, guid: a525483096f54bc44a73646161623bf5, type: 3}
+  InitialSpawnCount: 34
+  PopulationSize: 34
+  SpawnProbability: 1
+  FeedsPerOffspring: 18
+  OffspringPerBirth: 1
+  ReproductionCooldownSeconds: 13
+  MaxLivePopulation: 77
+  ReleaseTier: 0
+  BandInnerRadius: 0
+  BandOuterRadius: 1180
+  CenterFocusBias: 0
+  Element: 0
+  Variant:
+    Enabled: 0
+  SpreadElements: 1
+  ElementPalette:
+  - {fileID: 11400000, guid: 9a71c56e49ff4ee493c70be766f1b335, type: 2}
+  - {fileID: 11400000, guid: d6d14731fd184959b837ab47e378f813, type: 2}
+  - {fileID: 11400000, guid: 0e87f3117e7141a7b5bce66b0385a2d0, type: 2}
+  - {fileID: 11400000, guid: c7ff7791587d4467ba9fbe88358b2119, type: 2}

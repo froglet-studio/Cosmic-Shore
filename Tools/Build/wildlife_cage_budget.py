@@ -302,9 +302,13 @@ def phase_thresholds(n, v):
 # index as the creature swims), which is why this roster and not the cage is the mode's headline
 # performance risk.
 #
-# NOTE the Clawfish is deliberately absent: its prefab carries no HealthPrism at all, so it has
-# no body to shoot and cannot be killed by a Sparrow. Adding it would put un-scoreable creatures
-# in a hunt. See WILDLIFE_LIBERATION.md "Known limitations".
+# The CLAWFISH joined 2026-10. It was held out while its prefab carried no HealthPrism at all (no
+# body to shoot, so an un-scoreable creature in a hunt). Docs/ECOSYSTEM.md 46.2 gave it a body:
+# four HealthPrism fluke ribs directly under its Spindle (author_clawfish_anatomy.py) - the same
+# HealthBlock prefab the QuadFish's four fins are - and a heart seated in its own cavity
+# (verify_fauna_heart_seat.py). Its row is NOT play-tested; it is sized as a mid-swarm species,
+# about a tenth of the QuadFish by count and four colliders each, so it adds 308 body prisms at
+# cap after POPULATION_SCALE (~2% on the intensity-4 collider worst case).
 
 #          species        seed   cap  prisms
 ROSTER = [
@@ -316,6 +320,8 @@ ROSTER = [
     # "big ones concentrated in the centre" the roam-band pass exists to end. Whole arena now.
     ("Shark",              38,   80,   11),
     ("WormColony",          6,   11,   26),
+    # Four fluke-rib HealthPrisms each (author_clawfish_anatomy.py). New 2026-10, unplaytested.
+    ("Clawfish",           40,   90,    4),
 ]
 
 # Before POPULATION_SCALE the roster is 610 creatures at seed rising to 1409 at cap - the

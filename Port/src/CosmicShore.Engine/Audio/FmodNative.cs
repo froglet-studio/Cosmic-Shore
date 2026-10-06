@@ -170,6 +170,7 @@ namespace CosmicShore.Engine.Audio.Fmod
             if (d == IntPtr.Zero)
             {
                 if (_reported.Add(reference.ToString())) Console.Error.WriteLine($"[fmod] event not found in the loaded banks: {reference}");
+                AudioStats.Missing.Add(reference.ToString());
                 return;
             }
             if (string.IsNullOrEmpty(state.Path)) state.Path = PathOf(d);

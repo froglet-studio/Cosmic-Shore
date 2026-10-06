@@ -16,10 +16,13 @@ namespace CosmicShore.Engine
         public bool receiveShadows;
         public uint renderingLayerMask;
         public int layer;
+        /// <summary>Per-draw property overrides (UnityEngine.RenderParams.matProps).</summary>
+        public MaterialPropertyBlock matProps;
 
         public RenderParams(Material material)
         {
             this.material = material;
+            matProps = null;
             worldBounds = new Bounds(Vector3.zero, Vector3.zero);
             shadowCastingMode = Rendering.ShadowCastingMode.On;
             receiveShadows = true;
@@ -111,6 +114,21 @@ namespace CosmicShore.Engine
         /// <paramref name="instanceCount"/>, when non-negative) instances of one submesh.
         /// Headless: records the submission.
         /// </summary>
+        static bool s_primitivesWarned;
+
+        /// <summary>
+        /// Procedural instancing: the shader builds each instance from GPU buffers (SV_InstanceID).
+        /// Prisma's renderer has no vertex-stage storage buffers
+        /// (<see cref="SystemInfo.maxComputeBufferInputsVertex"/> is 0), so nothing is drawn and the
+        /// first call says so. Code that checks the capability first never gets here.
+        /// </summary>
+        public static void RenderMeshPrimitives(in RenderParams rparams, Mesh mesh, int submeshIndex, int instanceCount = 1, int startInstance = 0)
+        {
+            if (s_primitivesWarned || mesh is null || instanceCount <= 0) return;
+            s_primitivesWarned = true;
+            Debug.LogWarning($"[port] Graphics.RenderMeshPrimitives ('{mesh.name}', material '{rparams.material?.name}') is not drawn: procedural instancing from GPU buffers has no Prisma backend yet.");
+        }
+
         public static void RenderMeshInstanced(in RenderParams rparams, Mesh mesh, int submeshIndex,
             CosmicShore.Engine.Matrix4x4[] instanceData, int instanceCount = -1, int startInstance = 0)
         {

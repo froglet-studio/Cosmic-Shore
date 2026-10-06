@@ -1,0 +1,90 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 59f530038a65bd16ab586027ff1f34ae, type: 3}
+  m_Name: FortressColonyConfig
+  m_EditorClassIdentifier:
+  Species: 0
+  MemberPrefab: {fileID: 5945480239701989318, guid: 66504f098e300c8a60c29e3d931eaa0a, type: 3}
+  MemberShader: {fileID: 4800000, guid: 887013231f4a269178623abc40fc1a02, type: 3}
+  Theme: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  DrawMembersOnGpu: 1
+  EngageRadius: 140
+  MaxProxies: 24
+  ProxyLingerSeconds: 2
+  TickHz: 10
+  BodyScale: {x: 1.4, y: 0.9, z: 2.6}
+  HeartWorldScale: {x: 2.298, y: 1.737, z: 2.298, w: 1.737}
+  HeartPrismGap: 0.6
+  BirthBloomSeconds: 0.8
+  VesselRadius: 9
+  SettleSeconds: 0.35
+  MacroLod: 1
+  ThawReserveSeconds: 20
+  ExtinctLingerSeconds: 8
+  Founders: 48
+  MaxWorkers: 48
+  WorkerSpeed: 70
+  Sense: 220
+  ForageFraction: 4
+  LatticeSpacing: 8
+  LatticeHalf: 16
+  ShellRadius: 40
+  ShellWidth: 7
+  CementK: 0.6
+  Nucleate: 0.02
+  Mend: 3
+  GapGain: 2.5
+  AlarmGain: 1
+  ScarGain: 3
+  AlarmRadius: 110
+  StrikeAt: 0.6
+  DefendCaste: 0.3
+  WorkerStomach: 40
+  WorkerMetabolism: 0.02
+  WorkerHungryBelow: 0.35
+  WorkerBirthAbove: 0.9
+  WorkerBirthCost: 16
+  ThiefFounders: 6
+  MaxThieves: 18
+  ThiefSpeed: 150
+  LadenSpeed: 75
+  WarmSeconds: 1.5
+  SpotRange: 700
+  ScoutRange: 400
+  Territory: 900
+  TimidRange: 120
+  ThiefStomach: 20
+  ThiefMetabolism: 0.02
+  ThiefTorpor: 0.004
+  ThiefHungryBelow: 0.4
+  ThiefBirthAbove: 0.9
+  ThiefBirthCost: 8
+  WearerFounders: 16
+  MaxWearerHearts: 24
+  WearerSpeed: 95
+  WearHuntAt: 60
+  WearBodyCap: 150
+  WornCap: 300
+  WearSense: 180
+  WearKeepOff: 90
+  WearSight: 700
+  WearWindup: 1
+  WearLunge: 2.2
+  WearRearAt: 140
+  WearContact: 0.5
+  WearHurtFraction: 0.1667
+  WearHurtShed: 0.3
+  WearHurtWindow: 2
+  WearerStomach: 30
+  WearerMetabolism: 0.01
+  WearerHungryBelow: 0.3
+  WearerBirthCost: 10

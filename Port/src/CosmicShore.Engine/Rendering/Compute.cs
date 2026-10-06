@@ -5,10 +5,50 @@ namespace CosmicShore.Engine
     public enum ComputeBufferType { Default = 0, Raw = 1, Append = 2, Counter = 4, Constant = 8, Structured = 16, IndirectArguments = 256 }
     public enum ComputeBufferMode { Immutable = 0, Dynamic = 1, SubUpdates = 3 }
 
+    /// <summary>
+    /// The CPU copy behind <see cref="ComputeBuffer"/> and <see cref="GraphicsBuffer"/>: SetData/GetData
+    /// round-trip byte for byte. Elements are copied from pinned memory, so arrays of structs work
+    /// (Buffer.BlockCopy only accepts arrays of primitives).
+    /// </summary>
+    internal sealed class BufferBytes
+    {
+        byte[] _data;
+        readonly int _stride;
+
+        public BufferBytes(int count, int stride) { _stride = Math.Max(0, stride); _data = new byte[Math.Max(0, count) * _stride]; }
+
+        public bool Valid => _data != null;
+        public void Release() => _data = null;
+
+        public void Set(Array data, int managedStart, int bufferStart, int count)
+        {
+            if (data == null || _data == null || count <= 0) return;
+            int elem = System.Runtime.InteropServices.Marshal.SizeOf(data.GetType().GetElementType()!);
+            count = Math.Min(count, data.Length - managedStart);
+            int dst = bufferStart * _stride, len = Math.Min(count * elem, _data.Length - dst);
+            if (managedStart < 0 || dst < 0 || len <= 0) return;
+            var pin = System.Runtime.InteropServices.GCHandle.Alloc(data, System.Runtime.InteropServices.GCHandleType.Pinned);
+            try { System.Runtime.InteropServices.Marshal.Copy(pin.AddrOfPinnedObject() + managedStart * elem, _data, dst, len); }
+            finally { pin.Free(); }
+        }
+
+        public void Get(Array data, int managedStart, int bufferStart, int count)
+        {
+            if (data == null || _data == null || count <= 0) return;
+            int elem = System.Runtime.InteropServices.Marshal.SizeOf(data.GetType().GetElementType()!);
+            count = Math.Min(count, data.Length - managedStart);
+            int src = bufferStart * _stride, len = Math.Min(count * elem, _data.Length - src);
+            if (managedStart < 0 || src < 0 || len <= 0) return;
+            var pin = System.Runtime.InteropServices.GCHandle.Alloc(data, System.Runtime.InteropServices.GCHandleType.Pinned);
+            try { System.Runtime.InteropServices.Marshal.Copy(_data, src, pin.AddrOfPinnedObject() + managedStart * elem, len); }
+            finally { pin.Free(); }
+        }
+    }
+
     /// <summary>GPU buffer (UnityEngine.ComputeBuffer). CPU-backed in the port so SetData/GetData round-trip.</summary>
     public sealed class ComputeBuffer : IDisposable
     {
-        byte[] _data;
+        readonly BufferBytes _data;
         public int count { get; }
         public int stride { get; }
         public ComputeBufferType type { get; }
@@ -16,29 +56,61 @@ namespace CosmicShore.Engine
 
         public ComputeBuffer(int count, int stride) : this(count, stride, ComputeBufferType.Default) { }
         public ComputeBuffer(int count, int stride, ComputeBufferType type, ComputeBufferMode usage = ComputeBufferMode.Immutable)
-        { this.count = count; this.stride = stride; this.type = type; _data = new byte[Math.Max(0, count * stride)]; }
+        { this.count = count; this.stride = stride; this.type = type; _data = new BufferBytes(count, stride); }
 
-        public bool IsValid() => _data != null;
-        public void Release() => _data = null;
+        public bool IsValid() => _data.Valid;
+        public void Release() => _data.Release();
         public void Dispose() => Release();
 
         public void SetData(Array data) => SetData(data, 0, 0, data?.Length ?? 0);
         public void SetData(Array data, int managedBufferStartIndex, int computeBufferStartIndex, int count)
-        {
-            if (data == null || _data == null) return;
-            int elem = System.Runtime.InteropServices.Marshal.SizeOf(data.GetType().GetElementType());
-            var bytes = new byte[data.Length * elem];
-            Buffer.BlockCopy(data, 0, bytes, 0, Math.Min(bytes.Length, Buffer.ByteLength(data)));
-            int src = managedBufferStartIndex * elem, dst = computeBufferStartIndex * stride, len = Math.Min(count * elem, _data.Length - dst);
-            if (len > 0) Buffer.BlockCopy(bytes, src, _data, dst, len);
-        }
+            => _data.Set(data, managedBufferStartIndex, computeBufferStartIndex, count);
         public void SetData<T>(System.Collections.Generic.List<T> data) where T : struct => SetData(data.ToArray());
-        public void GetData(Array data)
-        {
-            if (data == null || _data == null) return;
-            Buffer.BlockCopy(_data, 0, data, 0, Math.Min(_data.Length, Buffer.ByteLength(data)));
-        }
+        public void GetData(Array data) => _data.Get(data, 0, 0, data?.Length ?? 0);
+        public void GetData(Array data, int managedBufferStartIndex, int computeBufferStartIndex, int count)
+            => _data.Get(data, managedBufferStartIndex, computeBufferStartIndex, count);
         public void SetCounterValue(uint counterValue) { }
+    }
+
+    /// <summary>
+    /// GPU buffer (UnityEngine.GraphicsBuffer), CPU-backed like <see cref="ComputeBuffer"/>. Prisma's
+    /// GL 3.3 / GL ES 3.0 renderer has no vertex-stage storage buffers, so nothing draws from one
+    /// (<see cref="SystemInfo.maxComputeBufferInputsVertex"/> says so, as Unity does on such a device).
+    /// </summary>
+    public sealed class GraphicsBuffer : IDisposable
+    {
+        [Flags]
+        public enum Target
+        {
+            Vertex = 1, Index = 2, CopySource = 4, CopyDestination = 8, Structured = 16, Raw = 32,
+            Append = 64, Counter = 128, IndirectArguments = 256, Constant = 512,
+        }
+
+        [Flags]
+        public enum UsageFlags { None = 0, LockBufferForWrite = 1 }
+
+        readonly BufferBytes _data;
+        public int count { get; }
+        public int stride { get; }
+        public Target target { get; }
+        public UsageFlags usageFlags { get; }
+        public string name { get; set; }
+
+        public GraphicsBuffer(Target target, int count, int stride) : this(target, UsageFlags.None, count, stride) { }
+        public GraphicsBuffer(Target target, UsageFlags usageFlags, int count, int stride)
+        { this.target = target; this.usageFlags = usageFlags; this.count = count; this.stride = stride; _data = new BufferBytes(count, stride); }
+
+        public bool IsValid() => _data.Valid;
+        public void Release() => _data.Release();
+        public void Dispose() => Release();
+
+        public void SetData(Array data) => SetData(data, 0, 0, data?.Length ?? 0);
+        public void SetData(Array data, int managedBufferStartIndex, int graphicsBufferStartIndex, int count)
+            => _data.Set(data, managedBufferStartIndex, graphicsBufferStartIndex, count);
+        public void SetData<T>(System.Collections.Generic.List<T> data) where T : struct => SetData(data.ToArray());
+        public void GetData(Array data) => _data.Get(data, 0, 0, data?.Length ?? 0);
+        public void GetData(Array data, int managedBufferStartIndex, int graphicsBufferStartIndex, int count)
+            => _data.Get(data, managedBufferStartIndex, graphicsBufferStartIndex, count);
     }
 
     /// <summary>Compute program asset. The port has no compute path; dispatches are no-ops and say so once.</summary>

@@ -15,14 +15,14 @@ using System.Threading.Tasks;
 namespace CosmicShore.Launcher
 {
     /// <summary>
-    /// Builds the iOS .ipa on GitHub's free macOS runner (.github/workflows/froglet-engine-ios.yml):
+    /// Builds the iOS .ipa on GitHub's free macOS runner (.github/workflows/prisma-ios.yml):
     /// starts the run for a branch, follows it step by step, downloads the artifact and unzips the
     /// .ipa. Apple only compiles iPhone apps on macOS; this is how a Windows PC gets one without a Mac.
     /// The .ipa is unsigned: Sideloadly (or AltStore) signs it with the user's Apple ID.
     /// </summary>
     public sealed class GitHubActions
     {
-        public const string Workflow = "froglet-engine-ios.yml";
+        public const string Workflow = "prisma-ios.yml";
         const string RequestFile = "Port/ios-build-request.txt";
         static readonly string[] SharedBranches = { "bleeding-edge", "development", "main" };
 
@@ -37,7 +37,7 @@ namespace CosmicShore.Launcher
             if (!m.Success) throw new InvalidOperationException("The repository is not on github.com: " + remoteUrl);
             _owner = m.Groups[1].Value; _repo = m.Groups[2].Value; _token = token;
             _http = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }) { Timeout = TimeSpan.FromMinutes(10) };
-            _http.DefaultRequestHeaders.UserAgent.ParseAdd("FrogletLauncher/0.1");
+            _http.DefaultRequestHeaders.UserAgent.ParseAdd("Prisma/0.1");
             _http.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
             _http.DefaultRequestHeaders.Add("X-GitHub-Api-Version", "2022-11-28");
         }
@@ -110,10 +110,10 @@ namespace CosmicShore.Launcher
             if (cur.IsSuccessStatusCode)
                 using (var doc = JsonDocument.Parse(await cur.Content.ReadAsStringAsync(ct)))
                     sha = doc.RootElement.GetProperty("sha").GetString();
-            var text = $"Requested by the Froglet Launcher at {DateTime.UtcNow:O}\n";
+            var text = $"Requested by Prisma at {DateTime.UtcNow:O}\n";
             var put = await Send(HttpMethod.Put, Api("contents/" + RequestFile), new
             {
-                message = "ci(ios): request a Froglet Engine .ipa build",
+                message = "ci(ios): request a Prisma .ipa build",
                 content = Convert.ToBase64String(Encoding.UTF8.GetBytes(text)),
                 branch,
                 sha,

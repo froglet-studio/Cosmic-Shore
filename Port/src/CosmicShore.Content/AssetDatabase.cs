@@ -121,6 +121,35 @@ namespace CosmicShore.Content
             return guid != null && _bakedScripts.TryGetValue(guid, out var id) ? id : null;
         }
 
+        Dictionary<string, int> _executionOrders;
+
+        /// <summary>
+        /// Script guid -> the <c>executionOrder</c> its .meta sets (Unity's Script Execution Order
+        /// settings live there, under MonoImporter), for every script that sets a non-zero one.
+        /// Packaged player data ships the script metas, so this works in both forms.
+        /// </summary>
+        public IReadOnlyDictionary<string, int> ScriptExecutionOrders()
+        {
+            if (_executionOrders != null) return _executionOrders;
+            var map = new Dictionary<string, int>(StringComparer.Ordinal);
+            foreach (var (guid, path) in _guidToPath)
+            {
+                if (!path.EndsWith(".cs", StringComparison.OrdinalIgnoreCase)) continue;
+                try
+                {
+                    foreach (var line in File.ReadLines(path + ".meta"))
+                    {
+                        var t = line.TrimStart();
+                        if (!t.StartsWith("executionOrder:", StringComparison.Ordinal)) continue;
+                        if (int.TryParse(t.Substring("executionOrder:".Length).Trim(), out int n) && n != 0) map[guid] = n;
+                        break;
+                    }
+                }
+                catch (IOException) { }
+            }
+            return _executionOrders = map;
+        }
+
         static string ReadGuid(string metaPath)
         {
             using var reader = new StreamReader(metaPath);

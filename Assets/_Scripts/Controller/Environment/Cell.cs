@@ -346,6 +346,12 @@ namespace CosmicShore.Gameplay
         // networked clients the replicated value overrides the locally-computed
         // one (client-local trail reconstruction can drift near the boundary).
         Domains? _replicatedDominantDomain;
+
+        // Server-replicated authored starting controller (CellNetworkSync, client side only) - see
+        // StartingController. Unlike the dominant pin it survives a config swap: the server's
+        // mirror re-sends it within one interval, and a stale value can only be read while the
+        // swapped-in cell has no leader yet.
+        Domains? _replicatedStartingController;
         float _nextVolumeRecomputeAt = float.NegativeInfinity;
         const float VolumeRecomputeIntervalSeconds = 0.25f;
 
@@ -867,6 +873,7 @@ namespace CosmicShore.Gameplay
                 if (!index.TryScheduleCellVolumeSum(_volumeCellId, transform.position, _nucleusControlRadiusSqr,
                         _volumeSumNative, out _volumeSumHandle))
                     return;
+                _macroFauna.Latch();   // round 11f: the macro ledger as of THIS index snapshot (counted once, never twice)
                 _volumeSumPending = true;
                 _nextVolumeRecomputeAt = Time.time + VolumeRecomputeIntervalSeconds;
             }
@@ -882,13 +889,74 @@ namespace CosmicShore.Gameplay
         {
             for (int i = 0; i < PrismSpatialIndex.CellDomainSlotCount; i++)
             {
-                liveVolumeByDomain[s_volumeDomainSlots[i]] = _volumeSumNative[PrismSpatialIndex.CellVolumeBySlot + i];
+                liveVolumeByDomain[s_volumeDomainSlots[i]] = _volumeSumNative[PrismSpatialIndex.CellVolumeBySlot + i]
+                                                             + (float)_macroFauna.Latched(i);
                 liveEnvVolumeByDomain[s_volumeDomainSlots[i]] = _volumeSumNative[PrismSpatialIndex.CellEnvVolumeBySlot + i];
                 nucleusEnvVolumeByDomain[s_volumeDomainSlots[i]] = _volumeSumNative[PrismSpatialIndex.CellNucleusEnvVolumeBySlot + i];
             }
-            liveVolumeTotal = _volumeSumNative[PrismSpatialIndex.CellVolumeTotal];
+            liveVolumeTotal = _volumeSumNative[PrismSpatialIndex.CellVolumeTotal] + (float)_macroFauna.LatchedTotal;
             liveEnvVolumeTotal = _volumeSumNative[PrismSpatialIndex.CellEnvVolumeTotal];
             liveExteriorEnvVolumeTotal = _volumeSumNative[PrismSpatialIndex.CellExteriorEnvVolumeTotal];
+        }
+
+        // ------------------------------------------------------------------
+        //  VIRTUAL fauna body mass (round 11a, Docs/SWARM_FAUNA.md §19.1).
+        //  A swarm member that is only data is a PrismSpatialIndex VIRTUAL entry,
+        //  so the Burst pass above sums its body exactly where a fauna body prism
+        //  lands - volume-only (EnvMass 0): the all-source per-domain volume and
+        //  the total, never the environment / nucleus / exterior sums. Round 8's
+        //  per-source aggregate (SetVirtualVolume) is retired with it: a member
+        //  whose proxy body is a registered prism has its virtual entry
+        //  SUSPENDED, which the sum job skips, so nothing counts twice.
+        // ------------------------------------------------------------------
+
+        /// <summary>
+        /// Binds a VIRTUAL index entry (a data-only fauna body) to this cell's summation view as volume-only fauna
+        /// mass in <paramref name="domain"/>. The virtual-entry counterpart of the binding <see cref="AddBlock"/>
+        /// writes for a registered fauna body prism - this cell stays the single writer of its own bindings. Re-call
+        /// to re-attribute the domain; <see cref="PrismSpatialIndex.Unregister"/> releases it.
+        /// </summary>
+        public void BindVirtualMass(int spatialIndexId, Domains domain)
+        {
+            if (spatialIndexId < 0) return;
+            if (_volumeCellId == 0) _volumeCellId = s_nextVolumeCellId++;
+            PrismSpatialIndex.Instance?.SetCellBinding(spatialIndexId, _volumeCellId, false, domain);
+        }
+
+        // ------------------------------------------------------------------
+        //  MACRO fauna mass + the soil (round 11f, Docs/ECOLOGY_LOD.md §4).
+        //  A population collapsed to a macro state either keeps its virtual
+        //  entries (the swarm: its frozen formation is still in the index) or
+        //  releases them and books the same body volume here, in the same call.
+        //  The ledger is latched with each index snapshot (see EnsureVolumeFresh)
+        //  so LiveVolume and the phase ladder read one number either way.
+        // ------------------------------------------------------------------
+
+        readonly MacroFaunaLedger _macroFauna = new();
+
+        /// <summary>
+        /// Books (+) or releases (-) fauna body volume held by a MACRO population in <paramref name="domain"/>. Call it in
+        /// the same frame the population releases (or re-registers) the matching index entries.
+        /// </summary>
+        public void BookMacroFaunaVolume(Domains domain, double volume)
+        {
+            int slot = System.Array.IndexOf(s_volumeDomainSlots, domain);
+            if (slot >= 0) _macroFauna.Book(slot, volume);
+        }
+
+        /// <summary>Body volume currently held by macro populations (all domains), as booked now (not latched).</summary>
+        public double MacroFaunaVolume => _macroFauna.LiveTotal;
+
+        /// <summary>
+        /// The soil: volume fauna metabolism burned and stomach overflow returned (Fauna's conserved stomach, round 11f).
+        /// A ledger bucket - the seam nutrient-limited flora growth would draw from (research N -> F); nothing in the
+        /// game draws from it yet, because flora growth here is phase-driven, not nutrient-driven.
+        /// </summary>
+        public double SoilNutrientVolume { get; private set; }
+
+        public void DepositSoilNutrient(float volume)
+        {
+            if (volume > 0f) SoilNutrientVolume += volume;
         }
 
         /// <summary>
@@ -913,6 +981,7 @@ namespace CosmicShore.Gameplay
             liveVolumeTotal = 0f;
             liveEnvVolumeTotal = 0f;
             liveExteriorEnvVolumeTotal = 0f;
+            _macroFauna.Clear();   // the reset also destroys every population that booked into it
         }
 
         /// <summary>
@@ -1195,12 +1264,12 @@ namespace CosmicShore.Gameplay
         };
 
         /// <summary>
-        /// "Controlling color" for fauna spawns. Prefers the cell's live
-        /// <see cref="DominantDomain"/> (per-domain prism count leader), then falls
-        /// back to gameData's controlling team by remaining volume, then to the local
-        /// player's domain (useful in Menu_Main where there is no scored controlling
-        /// team), then to Jade as a last resort. Never returns Blue (the "no team"
-        /// sentinel) - callers can use it directly without further branching.
+        /// "Controlling color" for fauna spawns - resolved by <see cref="CellControlRules.ControllingDomain"/>:
+        /// the cell's live <see cref="DominantDomain"/> (per-domain prism-count leader), then the
+        /// config's authored <see cref="StartingController"/>, then gameData's controlling team by
+        /// remaining volume, then the local pilot's domain (Menu_Main has no scored controlling
+        /// team), then Jade. Never returns Blue (the "no team" sentinel) - callers can use it
+        /// directly without further branching.
         /// </summary>
         public Domains ControllingDomain
         {
@@ -1210,21 +1279,43 @@ namespace CosmicShore.Gameplay
                 if (dominant != Domains.Blue)
                     return dominant;
 
-                if (gameData != null)
-                {
-                    var top = gameData.GetControllingTeamStatsBasedOnVolumeRemaining();
-                    if (top.Team != Domains.Blue && top.Volume > 0f)
-                        return top.Team;
-
-                    var local = gameData.LocalRoundStats?.Domain
-                                ?? gameData.LocalPlayer?.Domain
-                                ?? Domains.Blue;
-                    if (local != Domains.Blue)
-                        return local;
-                }
-                return Domains.Jade;
+                var top = gameData != null
+                    ? gameData.GetControllingTeamStatsBasedOnVolumeRemaining()
+                    : (Team: Domains.Blue, Volume: 0f);
+                return CellControlRules.ControllingDomain(
+                    dominant, StartingController, top.Team, top.Volume, LocalPilotDomain);
             }
         }
+
+        /// <summary>
+        /// The config's authored starting controller (<see cref="CellConfigDataSO.InitialControllingDomain"/>),
+        /// resolved against this machine's local pilot; Blue when the config authors none. On a
+        /// networked CLIENT the server's answer (<see cref="CellNetworkSync"/>) overrides the local
+        /// resolve, so "opposing the local pilot" means opposing the HOST's pilot on every peer and
+        /// all peers spawn one colour. Not latched: a pilot who changes domain still faces an
+        /// opposing cell until they claim it.
+        /// </summary>
+        public Domains StartingController
+        {
+            get
+            {
+                if (_replicatedStartingController.HasValue)
+                    return _replicatedStartingController.Value;
+                var rule = cellConfigData ? cellConfigData.InitialControllingDomain : InitialControllingDomain.Unset;
+                return CellControlRules.StartingController(rule, LocalPilotDomain);
+            }
+        }
+
+        /// <summary>
+        /// Client-side hook for <see cref="CellNetworkSync"/>: pins <see cref="StartingController"/>
+        /// to the server's replicated answer. Pass null (server / single-player / despawn) to clear.
+        /// </summary>
+        public void SetReplicatedStartingController(Domains? domain) => _replicatedStartingController = domain;
+
+        Domains LocalPilotDomain =>
+            gameData != null
+                ? gameData.LocalRoundStats?.Domain ?? gameData.LocalPlayer?.Domain ?? Domains.Blue
+                : Domains.Blue;
 
         /// <summary>
         /// Sole entry point for phase mutation. Updates the local field and the

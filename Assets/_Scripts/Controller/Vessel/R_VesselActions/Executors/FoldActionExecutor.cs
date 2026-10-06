@@ -87,6 +87,30 @@ namespace CosmicShore.Gameplay
                  "applies to a preview as much as to conserved mass.")]
         [SerializeField, Min(0f)] float ghostBloomSeconds = 0.18f;
 
+        [Header("Audio")]
+        [Tooltip("FMOD event when a Fold is ENGAGED — the vessel stops, the wings shut and the " +
+                 "ghost starts to reach out. Every peer, at the hull. Leave empty for silence - " +
+                 "never point it at a borrowed event to hear something.")]
+        [SerializeField] FMODUnity.EventReference foldEngageEvent;
+
+        [Tooltip("FMOD event when the hold is RELEASED and the fold commits — the hull withers " +
+                 "out at the origin. Every peer, at the origin. Leave empty for silence.")]
+        [SerializeField] FMODUnity.EventReference foldDepartEvent;
+
+        [Tooltip("FMOD event when the pose lands and the hull blooms back in at the destination. " +
+                 "Every peer, at the destination. Leave empty for silence.")]
+        [SerializeField] FMODUnity.EventReference foldArriveEvent;
+
+        [Tooltip("FMOD event when this fold's PAIR of gates opens (origin + destination). Played " +
+                 "once, at the destination gate. Leave empty for silence.")]
+        [SerializeField] FMODUnity.EventReference gatesOpenEvent;
+
+        [Tooltip("FMOD event when a pilot THREADS one of this Butterfly's gates and comes out of " +
+                 "the other. Handed to each gate at build; played on the threading pilot's own " +
+                 "machine (only the owner decides a transit), at the exit. Leave empty for " +
+                 "silence.")]
+        [SerializeField] FMODUnity.EventReference gateThreadEvent;
+
         // The theme the gates' rings are painted from AND the roster they test for crossings.
         // Injected rather than serialized because a vessel IS injected on every spawn path
         // (ServerPlayerVesselInitializer.SpawnVesselForPlayer -> GameObjectInjector.InjectRecursive),
@@ -127,6 +151,7 @@ namespace CosmicShore.Gameplay
         bool _awaitingGates;
         float _gateSettleDeadline;
         bool _warnedNoGameData;
+        bool _arriveCuePending;        // a PEER's arrival cue, waiting for the replicated pose
 
         /// <summary>True while the pilot is holding the Fold. Maintained on every peer — the
         /// closed-wing pose and the stop are things every machine draws.</summary>
@@ -166,6 +191,7 @@ namespace CosmicShore.Gameplay
             // neither are their gates, which belong to the Butterfly that placed them.
             ReleaseInternal(commit: false);
             _awaitingGates = false;
+            _arriveCuePending = false;
             RetireGates(config ? config.GateBloomSeconds : 0.45f);
             _cooldownUntil = float.NegativeInfinity;
         }
@@ -218,6 +244,7 @@ namespace CosmicShore.Gameplay
             SetStopped(true);
             _status.VesselPrismController?.SetSpawnerPaused(true);
             _animation?.SetFolded(true);
+            PlayCue(foldEngageEvent, _status.Transform.position);
         }
 
         public void Release(FoldActionSO so, IVesselStatus status) => ReleaseInternal(commit: true);
@@ -261,6 +288,7 @@ namespace CosmicShore.Gameplay
                 Transform hull = _status.Transform;
                 _gateOrigin = hull.position;
                 _gateAxis = hull.forward;
+                PlayCue(foldDepartEvent, _gateOrigin);
             }
             else
             {
@@ -384,6 +412,13 @@ namespace CosmicShore.Gameplay
                 _status.Vessel.SetPose(new Pose(_ghostPosition, hull.rotation));
             }
 
+            // The owner has just written the pose, so the ghost's position IS the destination.
+            // A peer has neither: only the owner's sticks move the ghost, and the replicated pose
+            // has not landed yet - so a peer voices the arrival once that pose is seen
+            // (TickGatePlacement), rather than at the origin it would read here.
+            if (_status != null && _status.IsNetworkOwner) PlayCue(foldArriveEvent, _ghostPosition);
+            else _arriveCuePending = true;
+
             // The stance and the pen come back the moment the pose is written — the vessel is
             // flying again, it is simply still blooming in. The camera is handed back on the SAME
             // frame, and hands back to a vessel that is now standing exactly where the camera was
@@ -432,7 +467,7 @@ namespace CosmicShore.Gameplay
         void TickGatePlacement()
         {
             var so = _activeSo ? _activeSo : config;
-            if (so == null || _status == null) { _awaitingGates = false; return; }
+            if (so == null || _status == null) { _awaitingGates = false; _arriveCuePending = false; return; }
 
             Vector3 destination = _status.Transform.position;
             bool separated = Vector3.Distance(_gateOrigin, destination) >= so.MinGateSeparation;
@@ -441,13 +476,22 @@ namespace CosmicShore.Gameplay
             {
                 if (Time.time < _gateSettleDeadline) return;     // still waiting on replication
                 _awaitingGates = false;
+                PlayPendingArriveCue(destination);
                 CSDebug.LogVerbose(CSLogChannel.ButterflyFold,
                     "[FoldGate] Fold too short to keep - the standing pair is left as it was.");
                 return;
             }
 
             _awaitingGates = false;
+            PlayPendingArriveCue(destination);
             PlaceGates(so, destination);
+        }
+
+        void PlayPendingArriveCue(Vector3 at)
+        {
+            if (!_arriveCuePending) return;
+            _arriveCuePending = false;
+            PlayCue(foldArriveEvent, at);
         }
 
         void PlaceGates(FoldActionSO so, Vector3 destination)
@@ -476,6 +520,7 @@ namespace CosmicShore.Gameplay
             _gateA = BuildGate(so, $"FoldGate::{_status.PlayerName}::A", _gateOrigin);
             _gateB = BuildGate(so, $"FoldGate::{_status.PlayerName}::B", destination);
             FoldGate.Pair(_gateA, _gateB);
+            PlayCue(gatesOpenEvent, destination);
 
             CSDebug.LogVerbose(CSLogChannel.ButterflyFold,
                 $"[FoldGate] {_status.PlayerName} ({_status.Domain}) opened a pair " +
@@ -490,7 +535,20 @@ namespace CosmicShore.Gameplay
                        so.GateExitClearance, so.GateBloomSeconds, _gameData.ThemeManagerData,
                        so.PortalWindowRange, so.PortalWindowFadeSeconds,
                        so.PortalWindowRenderScale);
+            gate.ThreadEvent = gateThreadEvent;
             return gate;
+        }
+
+        /// <summary>
+        /// One-shot at <paramref name="position"/>. An EMPTY slot is a clean no-op - each of these
+        /// is an authoring slot for the audio owner, never a borrowed event (the FMOD
+        /// exposed-field law, <c>Docs/claude/IMPACT_EFFECTS_AND_AUDIO.md</c>).
+        /// </summary>
+        static void PlayCue(FMODUnity.EventReference reference, Vector3 position)
+        {
+            if (reference.IsNull) return;
+            var audio = CosmicShore.Core.AudioSystem.Instance;
+            if (audio) audio.PlaySFXEvent(reference, position);
         }
 
         /// <summary>Close this Butterfly's standing pair. Only ever called because the pilot
