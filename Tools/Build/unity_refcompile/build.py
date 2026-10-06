@@ -683,6 +683,22 @@ def learn(errs):
     return bool(new)
 
 
+def changed_since(base):
+    """Absolute paths of the .cs files changed since `base` (from the merge-base, as `base...HEAD`),
+    uncommitted and untracked ones INCLUDED: the tool is run before a commit (CLAUDE.md: verify every
+    C# change before committing it), so the working tree is what it judges. They decide what gates in
+    the Editor folders and what is tagged [CHANGED-TONIGHT]."""
+    def git(*a):
+        r = subprocess.run(["git"] + list(a), cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+        return r.stdout if r.returncode == 0 else ""
+    mb = git("merge-base", base, "HEAD").strip()
+    if not mb:
+        print("[build] WARNING: --changed-base %s not found - only untracked files count as changed" % base)
+    names = (git("diff", "-z", "--name-only", mb, "--", "*.cs") if mb else "") \
+        + git("ls-files", "-z", "--others", "--exclude-standard", "--", "*.cs")
+    return {os.path.join(ROOT, x) for x in names.split("\0") if x}
+
+
 def lock_shared_state():
     """One run at a time per cache and per output root. The engine references, the helper tools and
     the shared package assemblies are rewritten in place, and a run reading them mid-write fails at
@@ -739,10 +755,7 @@ def run_once():
     os.makedirs(pkg_out, exist_ok=True)
     editor = args.config == "editor"
     editor_files = []   # editor config: every loose Editor-folder script (Assembly-CSharp-Editor and -firstpass)
-    changed_files = set()
-    r = subprocess.run(["git", "diff", "--name-only", args.changed_base + "...HEAD", "--", "*.cs"], cwd=ROOT,
-                       stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
-    changed_files = {os.path.join(ROOT, x) for x in r.stdout.split()}
+    changed_files = changed_since(args.changed_base)
     os.makedirs(out, exist_ok=True)
     apply_source_patches()
     roots, versions = package_roots()
@@ -896,13 +909,7 @@ def run_once():
 
     csc = csc_path()
     nsrefs = base_refs()
-    changed = set()
-    try:
-        r = subprocess.run(["git", "diff", "--name-only", args.changed_base + "...HEAD", "--", "*.cs"], cwd=ROOT,
-                           stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
-        changed = {os.path.join(ROOT, x) for x in r.stdout.split()}
-    except Exception:
-        pass
+    changed = changed_files
 
     outputs = {}
     results = {}

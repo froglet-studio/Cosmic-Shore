@@ -8,7 +8,8 @@ bash Tools/Build/unity_refcompile/run.sh --quiet-buckets       # count, don't li
 ```
 
 Exit 0 = **no compile error in project code**; exit 1 = errors, listed, with every one in a file
-changed since `origin/bleeding-edge` tagged `[CHANGED-TONIGHT]`; exit 2 = offline with no cache.
+changed since `origin/bleeding-edge` (committed or not, untracked included) tagged `[CHANGED-TONIGHT]`;
+exit 2 = offline with no cache.
 First run ~10 min (the fetch, then ~2 min compiling ~90 assemblies). Later runs take ~30 s: package
 assemblies are compiled once, player-mode, into a cache keyed by input fingerprint and shared by every
 config and worktree, and only Assets assemblies recompile. Runs that share a cache or `TMPDIR` take
@@ -23,7 +24,7 @@ the way Unity does: as their own **`Assembly-CSharp-Editor`** (`-Editor-firstpas
 cannot see it. So an Editor file's `namespace CosmicShore.Editor` no longer shadows UnityEditor's
 `Editor` for a runtime `#if UNITY_EDITOR` class, and runtime code that names an Editor-folder type
 fails as it does in Unity. Only errors in the Editor-folder files **changed since `--changed-base`**
-(committed) gate. The unchanged ones are compiled as context, so a changed tool binds against
+gate: committed, uncommitted and untracked alike, so run it before you commit. The unchanged ones are compiled as context, so a changed tool binds against
 `FrogletTool`, `FrogletEditorPalette` and the rest, and their errors are listed separately (36 on
 bleeding-edge, every one a reference-set artifact, see "Editor reference gaps" below). `Assembly-CSharp` never emits a
 DLL here, because the unfetchable-package files always fail it, so the editor assembly is **bound
