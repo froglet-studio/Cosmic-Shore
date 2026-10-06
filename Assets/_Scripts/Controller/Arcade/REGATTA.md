@@ -217,8 +217,11 @@ on a Sparrow), and a guest's own hull carries the same levels as the host's repl
   every class asset's icons. `Docs/HomeHub/ARCHITECTURE.md` §3.5.
 - **Team play (2026-10-06): Squirrel opponents, the ally hull picker, the team-sum score — NOT
   EDITOR-VERIFIED.** Compiled headless against real Unity references
-  (`Tools/Build/unity_refcompile`); edit-mode tests in `RegattaTeamPlayTests` and
-  `ArcadeLobbySnapshotTests` are written but were not run (no editor). First editor run: open the
+  (`Tools/Build/unity_refcompile`, player and editor configs: 0 project errors, none of the changed
+  files in the unobtainable-package bucket beyond `GameDataSO`'s pre-existing
+  `Unity.Services.Multiplayer` lines). `AIHullSeating` was also run for real under .NET 8 (every
+  seating/cycle case passed). The NUnit tests in `RegattaTeamPlayTests` and
+  `ArcadeLobbySnapshotTests` compile but were not run (no editor). First editor run: open the
   Regatta card solo with one AI placed on Ruby and one on Jade — the Ruby chip shows the
   Squirrel and does not react to a tap; tapping the Jade chip steps it auto → Manta → Dolphin …
   → auto, skipping your own confirmed hull. Launch: every Ruby bot is a Squirrel, the Jade bot
