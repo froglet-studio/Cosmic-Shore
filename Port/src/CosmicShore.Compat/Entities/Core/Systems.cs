@@ -24,6 +24,10 @@ namespace Unity.Entities
 
         public abstract void Update();
 
+        /// <summary>A <see cref="ComponentLookup{T}"/> onto this system's world.</summary>
+        public ComponentLookup<T> GetComponentLookup<T>(bool isReadOnly = false) where T : unmanaged, IComponentData
+            => new(EntityManager, isReadOnly);
+
         internal void CreateInstance(World world)
         {
             World = world;

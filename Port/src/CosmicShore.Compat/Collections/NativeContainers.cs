@@ -19,13 +19,18 @@ namespace CosmicShore.Engine.Collections
     /// <summary>
     /// Original contract: a fixed-length unmanaged buffer. The port backs it with a managed
     /// array; semantics that matter to callers (length, value-type copies sharing storage,
-    /// IsCreated/Dispose, sub-arrays viewing the same memory) are preserved.
+    /// IsCreated/Dispose, sub-arrays viewing the same memory) are preserved. A
+    /// <see cref="Reinterpret{U}()"/> view aliases the original storage, as in Unity: a write
+    /// through the view lands in the array it was taken from.
     /// </summary>
     public struct NativeArray<T> : IDisposable, IEnumerable<T>, IEquatable<NativeArray<T>> where T : struct
     {
         internal T[] m_Buffer;
         internal int m_Offset;
         internal int m_Length;
+        // A Reinterpret view: the storage is an array of another element type, addressed in bytes.
+        internal Array m_Alias;
+        internal int m_AliasByteOffset;
 
         public NativeArray(int length, Allocator allocator, NativeArrayOptions options = NativeArrayOptions.ClearMemory)
         { m_Buffer = new T[Math.Max(0, length)]; m_Offset = 0; m_Length = Math.Max(0, length); }
@@ -36,54 +41,93 @@ namespace CosmicShore.Engine.Collections
         public NativeArray(NativeArray<T> array, Allocator allocator)
         { m_Buffer = array.ToArray(); m_Offset = 0; m_Length = m_Buffer.Length; }
 
-        internal NativeArray(T[] shared, int offset, int length) { m_Buffer = shared; m_Offset = offset; m_Length = length; }
+        internal NativeArray(T[] shared, int offset, int length) { m_Buffer = shared; m_Offset = offset; m_Length = length; m_Alias = null; m_AliasByteOffset = 0; }
+
+        /// <summary>A view of <paramref name="length"/> elements over another array's memory, starting <paramref name="byteOffset"/> bytes in.</summary>
+        internal static NativeArray<T> Alias(Array storage, int byteOffset, int length) =>
+            new() { m_Alias = storage, m_AliasByteOffset = byteOffset, m_Length = length };
 
         public int Length => m_Length;
-        public bool IsCreated => m_Buffer != null;
+        public bool IsCreated => m_Buffer != null || m_Alias != null;
 
         public T this[int index]
         {
-            get { Check(index); return m_Buffer[m_Offset + index]; }
-            set { Check(index); m_Buffer[m_Offset + index] = value; }
+            get { Check(index); return m_Alias == null ? m_Buffer[m_Offset + index] : AliasSpan()[index]; }
+            set { Check(index); if (m_Alias == null) m_Buffer[m_Offset + index] = value; else AliasSpan()[index] = value; }
+        }
+
+        static int SizeOf<U>() => System.Runtime.CompilerServices.Unsafe.SizeOf<U>();
+
+        Span<T> AliasSpan()
+        {
+            ref byte start = ref System.Runtime.InteropServices.MemoryMarshal.GetArrayDataReference(m_Alias);
+            var bytes = System.Runtime.InteropServices.MemoryMarshal.CreateSpan(
+                ref System.Runtime.CompilerServices.Unsafe.Add(ref start, m_AliasByteOffset), m_Length * SizeOf<T>());
+            return System.Runtime.InteropServices.MemoryMarshal.Cast<byte, T>(bytes);
         }
 
         void Check(int index) { if ((uint)index >= (uint)m_Length) throw new IndexOutOfRangeException($"Index {index} is out of range of '{m_Length}' Length."); }
 
-        public void Dispose() { m_Buffer = null; m_Length = 0; }
+        public void Dispose() { m_Buffer = null; m_Alias = null; m_Length = 0; }
         public JobHandle Dispose(JobHandle inputDeps) { Dispose(); return inputDeps; }
 
-        public T[] ToArray() { var r = new T[m_Length]; if (m_Buffer != null) Array.Copy(m_Buffer, m_Offset, r, 0, m_Length); return r; }
-        public void CopyFrom(T[] array) => Array.Copy(array, 0, m_Buffer, m_Offset, Math.Min(array.Length, m_Length));
-        public void CopyFrom(NativeArray<T> array) => Array.Copy(array.m_Buffer, array.m_Offset, m_Buffer, m_Offset, Math.Min(array.m_Length, m_Length));
-        public void CopyTo(T[] array) => Array.Copy(m_Buffer, m_Offset, array, 0, Math.Min(array.Length, m_Length));
+        // Copies go through spans, so a Reinterpret view copies like any other array.
+        public T[] ToArray() => IsCreated ? AsSpan().ToArray() : new T[m_Length];
+        public void CopyFrom(T[] array) => array.AsSpan(0, Math.Min(array.Length, m_Length)).CopyTo(AsSpan());
+        public void CopyFrom(NativeArray<T> array) { var src = array.AsSpan(); src.Slice(0, Math.Min(src.Length, m_Length)).CopyTo(AsSpan()); }
+        public void CopyTo(T[] array) { var src = AsSpan(); src.Slice(0, Math.Min(array.Length, src.Length)).CopyTo(array); }
         public void CopyTo(NativeArray<T> array) => array.CopyFrom(this);
         public static void Copy(NativeArray<T> src, NativeArray<T> dst) => dst.CopyFrom(src);
-        public static void Copy(NativeArray<T> src, NativeArray<T> dst, int length) => Array.Copy(src.m_Buffer, src.m_Offset, dst.m_Buffer, dst.m_Offset, length);
-        public static void Copy(NativeArray<T> src, int srcIndex, NativeArray<T> dst, int dstIndex, int length) => Array.Copy(src.m_Buffer, src.m_Offset + srcIndex, dst.m_Buffer, dst.m_Offset + dstIndex, length);
+        public static void Copy(NativeArray<T> src, NativeArray<T> dst, int length) => src.AsSpan().Slice(0, length).CopyTo(dst.AsSpan());
+        public static void Copy(NativeArray<T> src, int srcIndex, NativeArray<T> dst, int dstIndex, int length) => src.AsSpan().Slice(srcIndex, length).CopyTo(dst.AsSpan().Slice(dstIndex));
         public static void Copy(T[] src, NativeArray<T> dst) => dst.CopyFrom(src);
         public static void Copy(NativeArray<T> src, T[] dst) => src.CopyTo(dst);
-        public static void Copy(T[] src, int srcIndex, NativeArray<T> dst, int dstIndex, int length) => Array.Copy(src, srcIndex, dst.m_Buffer, dst.m_Offset + dstIndex, length);
-        public static void Copy(NativeArray<T> src, int srcIndex, T[] dst, int dstIndex, int length) => Array.Copy(src.m_Buffer, src.m_Offset + srcIndex, dst, dstIndex, length);
+        public static void Copy(T[] src, NativeArray<T> dst, int length) => new ReadOnlySpan<T>(src, 0, length).CopyTo(dst.AsSpan());
+        public static void Copy(NativeArray<T> src, T[] dst, int length) => src.AsSpan().Slice(0, length).CopyTo(dst);
+        public static void Copy(T[] src, int srcIndex, NativeArray<T> dst, int dstIndex, int length) => new ReadOnlySpan<T>(src, srcIndex, length).CopyTo(dst.AsSpan().Slice(dstIndex));
+        public static void Copy(NativeArray<T> src, int srcIndex, T[] dst, int dstIndex, int length) => src.AsSpan().Slice(srcIndex, length).CopyTo(new Span<T>(dst, dstIndex, length));
 
-        public NativeArray<T> GetSubArray(int start, int length) => new(m_Buffer, m_Offset + start, length);
+        public NativeArray<T> GetSubArray(int start, int length) =>
+            m_Alias == null ? new(m_Buffer, m_Offset + start, length) : Alias(m_Alias, m_AliasByteOffset + start * SizeOf<T>(), length);
+
+        /// <summary>The same memory as an array of <typeparamref name="U"/>, which must be the same size as <typeparamref name="T"/>.</summary>
         public NativeArray<U> Reinterpret<U>() where U : struct
         {
-            if (typeof(U) == typeof(T)) return (NativeArray<U>)(object)this;
-            var bytes = System.Runtime.InteropServices.MemoryMarshal.AsBytes(new ReadOnlySpan<T>(m_Buffer, m_Offset, m_Length)).ToArray();
-            var r = System.Runtime.InteropServices.MemoryMarshal.Cast<byte, U>(bytes).ToArray();
-            return new NativeArray<U>(r, Allocator.Temp);
+            if (SizeOf<U>() != SizeOf<T>())
+                throw new InvalidOperationException($"Types {typeof(T)} and {typeof(U)} are different sizes - direct reinterpretation is not possible. If this is what you intended, use Reinterpret(<type size>)");
+            return Reinterpret<U>(SizeOf<T>());
         }
 
-        public Span<T> AsSpan() => new(m_Buffer, m_Offset, m_Length);
+        /// <summary>
+        /// The same memory as an array of <typeparamref name="U"/>; its length is
+        /// Length * <paramref name="expectedTypeSize"/> / sizeof(U). A write through it lands in this array.
+        /// </summary>
+        public NativeArray<U> Reinterpret<U>(int expectedTypeSize) where U : struct
+        {
+            if (expectedTypeSize != SizeOf<T>())
+                throw new InvalidOperationException($"Type {typeof(T)} was expected to be {expectedTypeSize} but is {SizeOf<T>()} bytes");
+            long bytes = (long)m_Length * expectedTypeSize;
+            if (bytes % SizeOf<U>() != 0)
+                throw new InvalidOperationException($"Types {typeof(T)} (array length {m_Length}) and {typeof(U)} cannot be aliased due to size constraints. The size of the types and lengths involved must line up.");
+            if (typeof(U) == typeof(T)) return (NativeArray<U>)(object)this;
+            int length = (int)(bytes / SizeOf<U>());
+            return m_Alias == null
+                ? NativeArray<U>.Alias(m_Buffer, m_Offset * SizeOf<T>(), length)
+                : NativeArray<U>.Alias(m_Alias, m_AliasByteOffset, length);
+        }
+
+        public Span<T> AsSpan() => m_Alias == null ? new(m_Buffer, m_Offset, m_Length) : AliasSpan();
+        public ReadOnlySpan<T> AsReadOnlySpan() => AsSpan();
         public ReadOnly AsReadOnly() => new(this);
 
         public Enumerator GetEnumerator() => new(this);
         IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-        public bool Equals(NativeArray<T> other) => ReferenceEquals(m_Buffer, other.m_Buffer) && m_Offset == other.m_Offset && m_Length == other.m_Length;
+        public bool Equals(NativeArray<T> other) => ReferenceEquals(m_Buffer, other.m_Buffer) && ReferenceEquals(m_Alias, other.m_Alias)
+            && m_Offset == other.m_Offset && m_AliasByteOffset == other.m_AliasByteOffset && m_Length == other.m_Length;
         public override bool Equals(object obj) => obj is NativeArray<T> o && Equals(o);
-        public override int GetHashCode() => (m_Buffer?.GetHashCode() ?? 0) ^ m_Offset ^ (m_Length << 8);
+        public override int GetHashCode() => ((object)m_Buffer ?? m_Alias)?.GetHashCode() ?? 0 ^ m_Offset ^ m_AliasByteOffset ^ (m_Length << 8);
         public static bool operator ==(NativeArray<T> a, NativeArray<T> b) => a.Equals(b);
         public static bool operator !=(NativeArray<T> a, NativeArray<T> b) => !a.Equals(b);
 
@@ -334,8 +378,8 @@ namespace CosmicShore.Engine.Collections
     {
         public static bool Contains<T, U>(this NativeArray<T> array, U value) where T : struct, IEquatable<U> { for (int i = 0; i < array.Length; i++) if (array[i].Equals(value)) return true; return false; }
         public static int IndexOf<T, U>(this NativeArray<T> array, U value) where T : struct, IEquatable<U> { for (int i = 0; i < array.Length; i++) if (array[i].Equals(value)) return i; return -1; }
-        public static void Sort<T>(this NativeArray<T> array) where T : struct, IComparable<T> => Array.Sort(array.m_Buffer, array.m_Offset, array.Length);
-        public static void Sort<T, U>(this NativeArray<T> array, U comp) where T : struct where U : IComparer<T> => Array.Sort(array.m_Buffer, array.m_Offset, array.Length, comp);
+        public static void Sort<T>(this NativeArray<T> array) where T : struct, IComparable<T> => array.AsSpan().Sort();
+        public static void Sort<T, U>(this NativeArray<T> array, U comp) where T : struct where U : IComparer<T> => array.AsSpan().Sort(comp);
         public static void Sort<T>(this NativeList<T> list) where T : struct, IComparable<T> { var a = list.ToArray(); Array.Sort(a); for (int i = 0; i < a.Length; i++) list[i] = a[i]; }
     }
 }

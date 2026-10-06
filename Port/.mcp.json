@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "froglet-engine": {
+    "prisma": {
       "command": "dotnet",
       "args": ["run", "--project", "Port/src/CosmicShore.Mcp", "--"]
     }

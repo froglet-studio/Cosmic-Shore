@@ -1,0 +1,102 @@
+# Prisma - iOS .ipa from source, on a free GitHub-hosted Mac.
+#
+# The engine needs no Unity step: the game's source and data are already in the repository, so a
+# macOS runner can go straight from a branch to an UNSIGNED .ipa. Sign and install that .ipa on
+# Windows with Sideloadly and a free Apple ID (Docs/IOS_BUILD.md section 2, Path A, step 4 - the
+# same Windows step the Unity path uses).
+#
+# This only builds Port/ (Prisma). It never imports or changes the Unity project. The
+# Unity build keeps its own workflow, ios-unsigned-ipa.yml.
+#
+# HOW TO RUN
+#   - Prisma > BUILD > iOS > "BUILD .IPA ON GITHUB" (dispatches this, waits, downloads it), or
+#   - Actions tab > "Prisma iOS ipa" > Run workflow, type the branch, or
+#   - push any change to Port/ios-build-request.txt on a FEATURE branch.
+#
+# PRIVACY: the repository is public, so the artifact is downloadable by any signed-in GitHub user who
+# finds the run. It is unsigned (runs on no phone until signed) and kept for 3 days.
+
+name: Prisma iOS ipa
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Branch, tag or commit to build'
+        required: true
+        default: 'bleeding-edge'
+      configuration:
+        description: 'Release or Debug'
+        required: false
+        default: 'Release'
+  push:
+    paths:
+      - 'Port/ios-build-request.txt'
+    branches-ignore:
+      - 'bleeding-edge'
+      - 'development'
+      - 'main'
+      - 'build/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: prisma-ios-${{ github.event.inputs.ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ipa:
+    runs-on: macos-15
+    timeout-minutes: 120
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+      DOTNET_NOLOGO: '1'
+      OUT: ${{ github.workspace }}/ios-out
+    steps:
+      - name: Check out the branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref || github.ref }}
+          fetch-depth: 1
+          lfs: false
+
+      - name: Select the newest Xcode
+        run: |
+          # .NET 10's iOS workload targets the newest Xcode; take the highest version the image has.
+          XCODE=$(ls -d /Applications/Xcode_*.app 2>/dev/null | grep -v -i beta | sort -V | tail -1)
+          XCODE=$(cd "$XCODE" && pwd -P)
+          sudo xcode-select -s "$XCODE/Contents/Developer"
+          echo "DEVELOPER_DIR=$XCODE/Contents/Developer" >> "$GITHUB_ENV"
+          xcodebuild -version
+
+      - name: Install .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install the iOS workload
+        run: dotnet workload install ios --skip-manifest-update || dotnet workload install ios
+
+      - name: Build the unsigned .ipa
+        run: |
+          CONFIG="${{ github.event.inputs.configuration }}"
+          [ "$CONFIG" = "Debug" ] && EXTRA="--debug" || EXTRA=""
+          dotnet run --project Port/src/CosmicShore.Build -c Release -- ios --unsigned $EXTRA --out "$OUT"
+          ls -lh "$OUT"/*.ipa
+
+      - name: Check the Xcode project export opens in Xcode
+        # The launcher's "EXPORT XCODE PROJECT" output is generated without a Mac; prove Xcode reads it.
+        continue-on-error: true
+        run: |
+          dotnet run --project Port/src/CosmicShore.Build -c Release -- ios --xcode --out "$RUNNER_TEMP/xcode-export" > /dev/null
+          xcodebuild -list -project "$RUNNER_TEMP/xcode-export/CosmicShore.xcodeproj"
+
+      - name: Upload the .ipa
+        uses: actions/upload-artifact@v4
+        with:
+          name: CosmicShore-ios-ipa
+          path: ios-out/*.ipa
+          retention-days: 3
+          if-no-files-found: error
+          compression-level: 0
