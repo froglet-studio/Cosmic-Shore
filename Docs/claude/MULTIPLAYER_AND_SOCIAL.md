@@ -4,7 +4,7 @@
 
 ### Multiplayer / Netcode
 
-The game uses Unity Netcode for GameObjects (`com.unity.netcode.gameobjects` 2.5.0) for multiplayer. Key files in `Assets/_Scripts/Controller/Multiplayer/`:
+The game uses Unity Netcode for GameObjects (`com.unity.netcode.gameobjects` 2.13.3; the pinned versions live in `Packages/manifest.json`) for multiplayer. Key files in `Assets/_Scripts/Controller/Multiplayer/`:
 
 **Bump the protocol version with every change to what goes over the wire (rule, 2026-10-05).** Two
 builds that disagree about a replicated payload's layout - a `NetworkVariable` struct such as
@@ -48,7 +48,7 @@ ClientPlayerVesselInitializer (NetworkBehaviour)
 └── Used by all ServerPlayerVesselInitializer variants
 
 PlayerSpawner / VesselSpawner (single-player, non-networked path)
-└── PlayerSpawnerAdapterBase → MiniGamePlayerSpawnerAdapter, VolumeTestPlayerSpawnerAdapter
+└── PlayerSpawnerAdapterBase → MiniGamePlayerSpawnerAdapter
 ```
 
 **Player (`NetworkBehaviour`) NetworkVariables:**

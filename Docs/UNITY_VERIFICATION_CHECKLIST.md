@@ -68,14 +68,14 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 ### 🔴 Integration: multiplayer SDK bump + Skim Race AI + perf + Bug Hunt on one branch (`Ys-bleeding-edge`, 2026-10-06)
 
 **What landed.** `Ys-bleeding-edge` now carries, in merge commits and in this order: `bleeding-edge`
-0c48d08f5 (PRs #964-#969), `claude/confident-pascal-w76l2o` 21f74d8e3 (which already contained
+0c48d08f5 (PRs #964-#969), `claude/confident-pascal-w76l2o` 21f74d8ee (which already contained
 `claude/bold-fermi-54nlts` 059450b16 and `Bug_Hunt` a334af21c), then the two branches' later tips,
-`Bug_Hunt` a88ad646c and `claude/bold-fermi-54nlts` 10e8c8c4e. Six conflicts were resolved by hand:
+`Bug_Hunt` a88ad646a and `claude/bold-fermi-54nlts` 10e8c8c48. Six conflicts were resolved by hand:
 the QA backlog header, the Tollway intensity-4 cell config (bleeding-edge's content regenerated with
 BH-5.2's quoting), the dogfight generator's import, `SkimRacePilot.cs`'s profiler markers (both
 branches added them; the duplicates were dropped), the simulator `run.sh`, and this file's entries.
 Two fixes of its own: `check_generated_assets.py` recognises package scripts, and the stale
-`BasePrice` key is gone from all 64 captain assets.
+`BasePrice` key is gone from all 71 SO_Captain assets (64 shipped, 7 under `_SO_Assets/_TEMP`).
 
 **Proven without the editor.** `unity_refcompile`: 0 project errors in 95 assemblies, with Netcode
 2.13.3, Transport 2.7.4, Multiplayer Services 2.3.3, Friends 1.3.0 compiled from source, so every

@@ -891,7 +891,7 @@ work is saved and Phase 2 can be picked up.
    - *Menu_Main:* dense flora, flora visibly resume growing in pulses, fauna spawn
      in the controlling color (Jade appears when Jade leads), hunt, and thin out as
      prey runs low; spawn ring sweeps; **no numeric readout**.
-   - *One gameplay scene* (e.g. `MinigameWildlifeBlitzMultuplayerCoOp` / `MinigameSkimRace`): confirm
+   - *One gameplay scene* (e.g. `MinigameWildlifeLiberation` / `MinigameSkimRace`): confirm
      the prey-linked fauna + flora regrowth pulse don't break gameplay — fauna
      still appear, nothing runs away, framerate holds.
 2. **Perf pass** at the new menu density (~4200 prisms steady). If it dips on a
@@ -3630,7 +3630,7 @@ Two things to watch in a playtest, in this order:
 ### 26.8 In-editor verification (the human is the gate)
 
 Scene: **Menu_Main** freestyle (Squirrel is the menu vessel, so the joust is one flight away), and
-**MinigameWildlifeBlitzMultuplayerCoOp** for a populated cell (the single-player scene was retired 2026-09).
+**MinigameWildlifeLiberation** for a populated cell (both Wildlife Blitz scenes were deleted, 2026-09 and 2026-10).
 
 1. **Joust a fauna.** Fly the Squirrel faster than a brittlestar/shark and clip its heart. Expect:
    no explosion; the crystal flies to *your* vessel and grants its element; the arms/fins evaporate

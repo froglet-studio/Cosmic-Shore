@@ -93,7 +93,7 @@ the property is.
 | MinigameDuelForTheCell (retired 2026-09) | CORE | 85 | layout 53 · button 13 · active 6 · script-field 5 |
 | MinigameFreestyleMultiplayer_Gameplay | CORE | 81 | layout 49 · button 11 · script-field 11 · active 5 |
 | Maelstrom | CORE | 65 | layout 49 · button 10 (+ 8 removed GameObjects) |
-| MinigameWildlifeBlitzMultuplayerCoOp | CORE | 61 | layout 49 · button 10 |
+| MinigameWildlifeBlitzMultuplayerCoOp (retired, deleted 2026-10) | CORE | 61 | layout 49 · button 10 |
 | Recording Studio / MattsRecording Studio | CORE | 27 each | layout 21 · other 4 |
 
 ---

@@ -106,7 +106,7 @@ Do not snapshot domain at component-creation time. Either subscribe to `Player.N
 - **Engine**: Unity 6+ with URP (Universal Render Pipeline) — `com.unity.render-pipelines.universal` 17.0.4
 - **Language**: C# with UniTask (`com.cysharp.unitask`) for async
 - **Architecture**: ScriptableObject-driven config separation + SOAP (Scriptable Object Architecture Pattern) for cross-system communication
-- **Networking**: Unity Netcode for GameObjects (`com.unity.netcode.gameobjects` 2.5.0)
+- **Networking**: Unity Netcode for GameObjects (`com.unity.netcode.gameobjects` 2.13.3, with Unity Multiplayer Services 2.3.3 and Transport 2.7.4; see `Packages/manifest.json`)
 - **Camera**: Custom plain-transform rigs — `CustomCameraController` (gameplay) + `MainMenuCameraController`/`MenuCameraConfigSO` (menu) — with per-vessel `CameraSettingsSO` assets. Cinemachine 3.1.2 remains installed for tool scenes only (Recording Studio); the menu and gameplay cameras do not use it
 - **VFX**: VFX Graph 17.0.4, custom HLSL shaders, Shader Graph
 - **Input**: Unity Input System 1.14.2 with strategy pattern (`IInputStrategy` → platform-specific implementations). Desktop has TWO schemes and which one you get is decided by the VESSEL: `KeyboardInputStrategy` (dual-WASD) for a two-stick hull, and `SingleStickMouseInputStrategy` — the mouse as the single stick — for a **one-thumb** hull (`IsSingleStickControls`: Sparrow, Serpent, Grizzly, Termite, Falcon, Shrike, Scarab), which reads only `EasedLeftJoystickPosition` and so gets nothing from the dual-stick mix. See `_Scripts/Controller/IO/ONE_THUMB_MOUSE_CONTROLS.md`

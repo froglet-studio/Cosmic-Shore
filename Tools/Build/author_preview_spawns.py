@@ -32,7 +32,7 @@ SCENE_FOR_MODE = {
     28: 'MinigameFreestyleMultiplayer_Gameplay',
     29: 'MinigameDuelForCellMultiplayer_Gameplay',
     30: 'ArcadeGameMultiplayer2v2CoOpVsAI',
-    32: 'MinigameWildlifeBlitzMultuplayerCoOp',  # retired BH-5.5 — scene kept, not in Build Settings
+    32: 'MinigameWildlifeBlitzMultuplayerCoOp',  # retired; scene + controller deleted BH-5.7 (no preview exists for 32)
     33: 'MinigameSkimRace',
     34: 'MinigameJoust_Gameplay',
     35: 'MinigameScurryMultiplayer_Gameplay',
