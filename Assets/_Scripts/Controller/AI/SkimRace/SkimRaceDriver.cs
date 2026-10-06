@@ -782,7 +782,7 @@ namespace CosmicShore.Gameplay
         }
 
         // ── Tracking MPC: follow the racing line itself, not a look-ahead point on it ──
-        float _nextTrack;
+        int _trackSlot;   // the re-plan grid slot last planned in (TrackMpc)
         float _trackYaw, _trackPitch;
         bool _trackValid;
 
@@ -866,11 +866,18 @@ namespace CosmicShore.Gameplay
         void TrackMpc(in SkimRaceObservation o, SkimRaceCourse course, Vector3 aim, bool lineMode, float now,
             ref float yaw, ref float pitch, float throttle)
         {
-            if (now >= _nextTrack)
+            // Re-plans sit on a fixed grid of 1/TrackMpcHz, odd lanes offset by half a period, so two AI
+            // re-plan on DIFFERENT frames whenever a frame is shorter than half a period: the frame that
+            // carries a planner carries one (section 14.4 - at Debug optimization both together cost the
+            // editor ~11 ms in one frame of ten). A grid, not "now + period": re-seeding from the frame
+            // time let the first frame that happened to carry both lock them in step for the whole race.
+            float period = 1f / Mathf.Max(1f, _cfg.TrackMpcHz);
+            int slot = Mathf.FloorToInt((now - (Lane & 1) * 0.5f * period) / period);
+            if (slot != _trackSlot)
             {
                 // Timed only when it re-plans (TrackMpcHz), so the Profiler shows the frames it lands on.
                 using var replanScope = s_TrackMpcMarker.Auto();
-                _nextTrack = now + 1f / Mathf.Max(1f, _cfg.TrackMpcHz);
+                _trackSlot = slot;
                 course.Project(o.Position, ref _trackHint, out _, out _);
                 float best = TrackCost(o, course, yaw, pitch, throttle, aim, lineMode) * (1f - _cfg.TrackMpcNominalBias);
                 float by = yaw, bp = pitch;
@@ -1219,7 +1226,7 @@ namespace CosmicShore.Gameplay
             _lastCollected = -1;
             _pickupHoldUntil = -1f;
             _nextMpc = 0f; _mpcValid = false; MpcOverrides = 0;
-            _nextTrack = 0f; _trackValid = false; _trackHint = -1;
+            _trackSlot = int.MinValue; _trackValid = false; _trackHint = -1;
             _lookDist = 100f;
             _trackerHint = -1;
             _nextLevel = 0f; _levelValid = false; _levelHint = -1; LevelOverrides = 0;

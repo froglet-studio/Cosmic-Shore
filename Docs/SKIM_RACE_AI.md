@@ -1221,8 +1221,35 @@ per frame, and both AIs together in one frame:
 So at Debug optimization, two AI on I2 cost the editor **about 11 ms in one frame of every ten** (both
 re-plan on the same frames, 20 times a second), and I3's mass guard about 5 ms. A 60 fps frame is 16.7 ms.
 In a Release/IL2CPP build the same work is 2-3 ms at worst. The Unity Profiler reading (the checklist's
-Profiler-timers entry) is the real number; the stand-in says where it will land. What the AI can do about
-it, before the frame-rate retune of §14.5 absorbs the change, is below.
+Profiler-timers entry) is the real number; the stand-in says where it will land.
+
+**The planner stagger (shipped with the retune below).** Both AI re-planned on the same frames because both
+started at race time 0 and each scheduled its next re-plan as "now + 1/TrackMpcHz". `SkimRaceDriver.TrackMpc`
+now re-plans on a FIXED grid of 1/TrackMpcHz (50 ms) with odd lanes offset by half a period, so two AI
+re-plan on different frames whenever a frame is shorter than half a period. (A first version offset only
+the start and kept "now + period": the first frame that happened to carry both re-plans locked the two in
+step for the rest of the race, and nothing changed - a probe of the private schedule found it.) Measured, I2,
+shipped policy, 2 AI, unoptimized build, both AIs' thinking per frame:
+
+| Frames | Before: typical / worst 10% / worst 1% | Grid: typical / worst 10% / worst 1% |
+|---|---|---|
+| 16 ms (62 fps) | 0.7 / **10.1** / 14.0 ms | 4.2 / **6.1** / 8.5 ms |
+| 28 ms ± 50% (36 fps) | 1.3 / 10.7 / 14.8 ms | 5.4 / 10.2 / 24.5 ms |
+
+At 60 fps the worst frames carry one planner instead of two. At 36 fps with ±50% jitter many frames are
+longer than 25 ms and span both grid points, so the worst 10% is unchanged (the worst 1% is GC noise in the
+unoptimized build; the maxima were 40-50 ms in every variant). At 25 fps and below each AI re-plans every
+frame whatever the phase: only a cheaper planner (the candidate grid is 5x5 sticks + nominal = 26 rollouts of
+22 steps) or a one-planner-per-frame budget would help there, and neither was done. The total CPU is the
+same; it is spread over more frames (the typical frame rose), which is the point for frame pacing. Race
+times under the SHIPPED tuning, 24 races: at 16 ms frames the seat median went 82.6 → 79.5 s (one race
+past the cut), at 28 ms 75.8 → 77.6 s - the grid also changes even lanes' schedule from a drifting ~56 ms
+to an exact 50 ms, and the shipped numbers were fitted to the old one. The retune (§14.5) is done with the
+grid in place.
+
+**The zero-code lever for the editor:** the bug icon at the bottom right of the editor - Code Optimization
+**Release** instead of Debug. The table in this section is the Debug-to-Release ratio: about 5x on the
+planner. A player build is IL2CPP and does not have the choice.
 
 ### 14.5 Retuning across frame rates
 
