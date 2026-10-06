@@ -299,33 +299,61 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Returns the action list for a given input event, checking device-specific
-        /// overrides first and falling back to the shared mapping.
+        /// overrides first and falling back to the shared mapping. Only called once
+        /// <see cref="HasAction"/> has passed, so the event always resolves.
         /// </summary>
         List<ShipActionSO> ResolveActions(InputEvents controlType)
         {
-            var overrides = GetActiveOverrides();
-            if (overrides != null && overrides.TryGetValue(controlType, out var overrideList) && overrideList is { Count: > 0 })
-                return overrideList;
-            return _shipControlActions[controlType];
+            TryGetPressedActions(_shipControlActions, GetActiveOverrides(), controlType, out var actions);
+            return actions;
+        }
+
+        /// <summary>
+        /// What pressing <paramref name="inputEvent"/> runs, given the shared map and the override
+        /// map of the device the vessel is being driven by (null when there is no device yet): a
+        /// non-empty override list wins, otherwise the shared list. The ONE resolution rule — the
+        /// press gate (<see cref="HasAction"/>), the press itself (<see cref="ResolveActions"/>) and
+        /// the autopilot lookup (<see cref="TryGetBoundAction{T}"/>) all ask it, so a control the
+        /// lookup hands out is by construction a control the press accepts.
+        /// </summary>
+        internal static bool TryGetPressedActions(Dictionary<InputEvents, List<ShipActionSO>> shared,
+                                                  Dictionary<InputEvents, List<ShipActionSO>> overrides,
+                                                  InputEvents inputEvent, out List<ShipActionSO> actions)
+        {
+            if (overrides != null && overrides.TryGetValue(inputEvent, out actions) && actions is { Count: > 0 })
+                return true;
+            if (shared != null && shared.TryGetValue(inputEvent, out actions) && actions is { Count: > 0 })
+                return true;
+            actions = null;
+            return false;
         }
 
         Dictionary<InputEvents, List<ShipActionSO>> GetActiveOverrides()
         {
             if (vesselStatus?.InputStatus == null) return null;
-            return vesselStatus.InputStatus.ActiveInputDevice switch
+            return OverridesFor(vesselStatus.InputStatus.ActiveInputDevice, _touchOverrideActions, _gamepadOverrideActions);
+        }
+
+        /// <summary>Which override map a device's presses resolve against.</summary>
+        internal static Dictionary<InputEvents, List<ShipActionSO>> OverridesFor(
+            InputDeviceType device,
+            Dictionary<InputEvents, List<ShipActionSO>> touchOverrides,
+            Dictionary<InputEvents, List<ShipActionSO>> gamepadOverrides)
+        {
+            return device switch
             {
-                InputDeviceType.Touch   => _touchOverrideActions,
-                InputDeviceType.Gamepad => _gamepadOverrideActions,
+                InputDeviceType.Touch   => touchOverrides,
+                InputDeviceType.Gamepad => gamepadOverrides,
                 // DualMouse and Keyboard raise the same LeftStick/RightStick trigger events as the
                 // gamepad (keyboard: Left Shift / Right Shift), so they share the gamepad's
                 // per-trigger override mapping. Vessels with no gamepad overrides fall through to
                 // the shared mapping exactly as before.
-                InputDeviceType.DualMouse => _gamepadOverrideActions,
-                InputDeviceType.Keyboard => _gamepadOverrideActions,
+                InputDeviceType.DualMouse => gamepadOverrides,
+                InputDeviceType.Keyboard => gamepadOverrides,
                 // Same reason again for the one-thumb mouse scheme: SingleStickMouseInputStrategy
                 // raises the pad's LeftStick/RightStick trigger events (LMB / RMB, and the shift
                 // keys alongside them), so it wants the pad's per-trigger overrides.
-                InputDeviceType.MouseKeyboard => _gamepadOverrideActions,
+                InputDeviceType.MouseKeyboard => gamepadOverrides,
                 _                       => null
             };
         }
@@ -386,32 +414,42 @@ namespace CosmicShore.Gameplay
             IsBound(_gamepadOverrideActions, inputEvent);
 
         /// <summary>
-        /// The reverse of <see cref="CollectBoundActions"/>: which control drives an ability of
-        /// type <typeparamref name="T"/> on this vessel, if any.
+        /// The reverse of <see cref="CollectBoundActions"/>: which control, PRESSED NOW, runs an
+        /// ability of type <typeparamref name="T"/> on this vessel, if any.
         ///
         /// It exists so an autonomous pilot can press an ability WITHOUT knowing which vessel it is
         /// flying or which trigger that vessel's designer put it on — the AI asks for the concept
         /// and the binding answers. <typeparamref name="T"/> is constrained to <c>class</c> rather
         /// than to <c>ShipActionSO</c> precisely so it can be a capability INTERFACE
         /// (<see cref="IAimTelegraphAction"/>) — asking for a concrete SO type would put the
-        /// caller back to naming one vessel's ability, which is the coupling this removes. Sweeps the shared map first and then both device override maps,
-        /// so it returns a real binding even for an ability a vessel exposes only on one device.
+        /// caller back to naming one vessel's ability, which is the coupling this removes.
         ///
-        /// Returns false for a vessel that binds no such ability — the answer for most of the
-        /// fleet, so it must be a quiet no-op rather than a warning. <paramref name="inputEvent"/>
-        /// is then <c>default</c>, which is the REAL member <c>FullSpeedStraightAction</c> and not a
-        /// sentinel (<see cref="InputEvents"/> deliberately has none, since every value is a control
-        /// somebody's vessel binds). Check the return value; never read the out parameter on false.
+        /// <para><b>It answers for the device the vessel is being driven by</b>, by the same rule a
+        /// press resolves with (<see cref="TryGetPressedActions"/>): the active device's override
+        /// map first, then the shared entries that map does not shadow. Every caller is an
+        /// autopilot that goes on to PRESS the answer, so an answer the press gate would refuse is
+        /// worse than none. It used to sweep shared → touch → gamepad regardless of device, which
+        /// on the Squirrel — drift and Boost Ring bound ONLY in the two override maps — handed out
+        /// the TOUCH controls (12 / 11), and on a PC (Gamepad, Keyboard, DualMouse and
+        /// MouseKeyboard all resolve against the gamepad overrides) the press was refused at
+        /// <see cref="HasAction"/>: the Skim Race AI's drift and ring could never fire on a PC. An
+        /// override-only ability on another device is deliberately NOT a fallback: that control
+        /// either does nothing here or, if the shared map binds it, fires a different ability.</para>
+        ///
+        /// Presentation code that wants every device's bindings at once (the HUD's control-hint
+        /// binder) uses <see cref="CollectBoundActions"/> / <see cref="HasBinding"/>, which stay
+        /// device-agnostic.
+        ///
+        /// Returns false for a vessel that binds no such ability on its active device — the answer
+        /// for most of the fleet, so it must be a quiet no-op rather than a warning.
+        /// <paramref name="inputEvent"/> is then <c>default</c>, which is the REAL member
+        /// <c>FullSpeedStraightAction</c> and not a sentinel (<see cref="InputEvents"/> deliberately
+        /// has none, since every value is a control somebody's vessel binds). Check the return
+        /// value; never read the out parameter on false. The device can change (a pad plugged in,
+        /// a pilot swap), so ask at press time rather than caching the answer for a match.
         /// </summary>
         public bool TryGetInputForAction<T>(out InputEvents inputEvent) where T : class
-        {
-            if (TryFindInput<T>(_shipControlActions, out inputEvent)) return true;
-            if (TryFindInput<T>(_touchOverrideActions, out inputEvent)) return true;
-            if (TryFindInput<T>(_gamepadOverrideActions, out inputEvent)) return true;
-
-            inputEvent = default;   // meaningless on false - see the summary
-            return false;
-        }
+            => TryGetBoundAction<T>(out _, out inputEvent);
 
         /// <summary>
         /// <see cref="TryGetInputForAction{T}"/>, plus the ACTION itself. The same question with
@@ -421,14 +459,27 @@ namespace CosmicShore.Gameplay
         /// source of them rather than copying a reach speed into a mode's controller — where it
         /// would be right on the day it was copied and silently stale after the next retune.
         ///
-        /// Same sweep order and the same contract as its sibling: false for a vessel that binds no
-        /// such ability, and on false neither out parameter means anything.
+        /// Same resolution and the same contract as its sibling: false for a vessel that binds no
+        /// such ability on its active device, and on false neither out parameter means anything.
         /// </summary>
         public bool TryGetBoundAction<T>(out T action, out InputEvents inputEvent) where T : class
+            => TryFindPressableAction(_shipControlActions, GetActiveOverrides(), out action, out inputEvent);
+
+        /// <summary>
+        /// The resolution behind <see cref="TryGetBoundAction{T}"/>, over explicit maps:
+        /// <paramref name="overrides"/> is the active device's override map
+        /// (<see cref="OverridesFor"/>), or null when there is no device yet — in which case a press
+        /// runs the shared map alone, and so does this. Every input it returns satisfies
+        /// <see cref="TryGetPressedActions"/> with a list that contains the action it returns.
+        /// </summary>
+        internal static bool TryFindPressableAction<T>(Dictionary<InputEvents, List<ShipActionSO>> shared,
+                                                       Dictionary<InputEvents, List<ShipActionSO>> overrides,
+                                                       out T action, out InputEvents inputEvent) where T : class
         {
-            if (TryFindAction(_shipControlActions, out action, out inputEvent)) return true;
-            if (TryFindAction(_touchOverrideActions, out action, out inputEvent)) return true;
-            if (TryFindAction(_gamepadOverrideActions, out action, out inputEvent)) return true;
+            // Every non-empty override entry is exactly what its input runs on this device.
+            if (TryFindAction(overrides, null, out action, out inputEvent)) return true;
+            // A shared entry runs only where the device's overrides leave its input alone.
+            if (TryFindAction(shared, overrides, out action, out inputEvent)) return true;
 
             action = null;
             inputEvent = default;   // meaningless on false - see TryGetInputForAction
@@ -436,6 +487,7 @@ namespace CosmicShore.Gameplay
         }
 
         static bool TryFindAction<T>(Dictionary<InputEvents, List<ShipActionSO>> map,
+                                     Dictionary<InputEvents, List<ShipActionSO>> shadowedBy,
                                      out T action, out InputEvents inputEvent) where T : class
         {
             action = null;
@@ -446,30 +498,11 @@ namespace CosmicShore.Gameplay
             {
                 var list = kv.Value;
                 if (list == null) continue;
+                if (shadowedBy != null && IsBound(shadowedBy, kv.Key)) continue;
                 for (int i = 0; i < list.Count; i++)
                 {
                     if (list[i] is not T typed) continue;
                     action = typed;
-                    inputEvent = kv.Key;
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        static bool TryFindInput<T>(Dictionary<InputEvents, List<ShipActionSO>> map, out InputEvents inputEvent)
-            where T : class
-        {
-            inputEvent = default;
-            if (map == null) return false;
-
-            foreach (var kv in map)
-            {
-                var list = kv.Value;
-                if (list == null) continue;
-                for (int i = 0; i < list.Count; i++)
-                {
-                    if (list[i] is not T) continue;
                     inputEvent = kv.Key;
                     return true;
                 }
@@ -520,13 +553,8 @@ namespace CosmicShore.Gameplay
         static bool IsBound(Dictionary<InputEvents, List<ShipActionSO>> map, InputEvents inputEvent)
             => map != null && map.TryGetValue(inputEvent, out var list) && list is { Count: > 0 };
 
-        bool HasAction(InputEvents inputEvent)
-        {
-            var overrides = GetActiveOverrides();
-            if (overrides != null && overrides.TryGetValue(inputEvent, out var overrideList) && overrideList is { Count: > 0 })
-                return true;
-            return _shipControlActions.TryGetValue(inputEvent, out var list) && list is { Count: > 0 };
-        }
+        bool HasAction(InputEvents inputEvent) =>
+            TryGetPressedActions(_shipControlActions, GetActiveOverrides(), inputEvent, out _);
 
         void OnButtonPressed(InputEvents ie)
         {

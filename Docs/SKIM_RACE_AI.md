@@ -83,8 +83,15 @@ no longer has a time-scale option, and the recorder fails any race during which 
 left 1.
 
 The pilot writes `IInputStatus.XSum` (yaw), `YSum` (pitch), `YDiff` (roll), `XDiff` (throttle) —
-the same channels the dual-stick strategies write — and presses the hull's own bound controls
-through `PerformShipControllerActions` (drift, Boost Ring; both off in the shipped policy). It reads
+the same channels the dual-stick strategies write — plus `LeftTriggerAnalog`, held at full pull
+while its drift is held (the drift's DEPTH on a pad device; `SkimRacePilot.DriftTriggerPull`), and
+presses the hull's own bound controls through `PerformShipControllerActions` (drift, Boost Ring;
+both off in the shipped policy). The controls are asked for by ability type at every press, and
+`R_VesselActionHandler.TryGetInputForAction` answers for the hull's ACTIVE device: the Squirrel binds
+both abilities only in its touch and pad override maps. **Until 2026-10-06 neither could fire on a
+PC** — the lookup handed out the touch controls, which a PC device refuses — so `UseDrift` /
+`UseLaunchRing` being off has never been measured against a working drift or ring (the simulator
+does not model drift either). See `SQUIRREL_DRIFT.md` §10. It reads
 pose, speed, boost, the transformer's commanded rotation (new read-only `CommandedRotation`), the
 visible track and the live crystal. It never writes a transform, speed, course, crystal, score or
 timer, and grants itself nothing a human pilot does not have.
