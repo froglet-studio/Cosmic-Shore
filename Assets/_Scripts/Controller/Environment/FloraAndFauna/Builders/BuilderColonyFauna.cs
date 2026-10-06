@@ -201,8 +201,9 @@ namespace CosmicShore.Gameplay
             if (config.Species == BuilderSpecies.Fortress)
             {
                 _nest = transform.position;
-                _fort = new BuilderColonyCore(_world, config.ToColonyParams(centre, membrane, bandInner, bandOuter),
-                                              S(_nest), (int)domain, _colonyId, seed);
+                var fp = config.ToColonyParams(centre, membrane, bandInner, bandOuter);
+                fp.Diet = OnPlatformDiet;
+                _fort = new BuilderColonyCore(_world, fp, S(_nest), (int)domain, _colonyId, seed);
                 _world.SiteAddress = site => { _fort.SiteCoords(site, out int x, out int y, out int z); return new Vector3Int(x, y, z); };
                 _cap = _fort.Cap; _pos = _fort.Pos; _vel = _fort.Vel; _alive = _fort.Alive; _bornAt = _fort.BornAt;
                 _deaths = _fort.Deaths; _born = _fort.Born; _platformBody = _fort.PlatformBody;
@@ -211,14 +212,18 @@ namespace CosmicShore.Gameplay
             {
                 // the hearts are founded where the cell spawned the anchor (its band); they roam the whole cell after a trail
                 _nest = transform.position;
-                _wear = new WearerCore(_world, config.ToWearerParams(centre, membrane), S(_nest), (int)domain, _colonyId, seed);
+                var wp = config.ToWearerParams(centre, membrane);
+                wp.Diet = OnPlatformDiet;
+                _wear = new WearerCore(_world, wp, S(_nest), (int)domain, _colonyId, seed);
                 _cap = _wear.Cap; _pos = _wear.Pos; _vel = _wear.Vel; _alive = _wear.Alive; _bornAt = _wear.BornAt;
                 _deaths = _wear.Deaths; _born = _wear.Born; _platformBody = _wear.PlatformBody;
             }
             else
             {
                 _nest = FindNestPlant(centre, membrane);
-                _thief = new ThiefNestCore(_world, config.ToThiefParams(centre, membrane), S(_nest), (int)domain, _colonyId, seed);
+                var tp = config.ToThiefParams(centre, membrane);
+                tp.Diet = OnPlatformDiet;
+                _thief = new ThiefNestCore(_world, tp, S(_nest), (int)domain, _colonyId, seed);
                 _cap = _thief.Cap; _pos = _thief.Pos; _vel = _thief.Vel; _alive = _thief.Alive; _bornAt = _thief.BornAt;
                 _deaths = _thief.Deaths; _born = _thief.Born; _platformBody = _thief.PlatformBody;
             }
@@ -932,6 +937,20 @@ namespace CosmicShore.Gameplay
         }
 
         static Vector3 U(SVector3 v) => new(v.X, v.Y, v.Z);
+
+        /// <summary>
+        /// The platform diet the cores ask about every forage candidate (Docs/BUILDERS_AND_THIEVES.md §2.1):
+        /// <see cref="Cell.IsPreyForHerbivore"/> - ANY domain's mass outside the nucleus, nothing inside it, nothing outside
+        /// a mode's pen; the cores already refuse shielded mass (<see cref="Fauna.IsShieldedMass"/> via IBuilderWorld.Shielded).
+        /// Never "not my colour": a colony spawned in the pilot's domain (a Spawn Matrix release, the controlling-colour
+        /// spawn) starved on that test. Not <c>Fauna.IsPreyForMe</c>: the species band is where a
+        /// colony LIVES - its members forage the cell, and the fortress applies its own widened forage band in the core.
+        /// </summary>
+        bool OnPlatformDiet(SVector3 position, int preyDomain)
+        {
+            var host = HostCell;   // the cell Seed founded in (a colony never founds without one)
+            return host && host.IsPreyForHerbivore(U(position), domain, (Domains)preyDomain);
+        }
         static SVector3 S(Vector3 v) => new(v.x, v.y, v.z);
 
         // ───────────────────────────────────────────────────────────────── teardown

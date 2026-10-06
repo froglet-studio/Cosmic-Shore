@@ -55,6 +55,9 @@ namespace CosmicShore.Gameplay
         public Vector3 CellCentre;
         /// <summary>Research ablations: Cold = any trail prism, never tails a ship; Bold = never veers off.</summary>
         public bool Cold, Bold;
+        /// <summary>GAME: the platform diet (<see cref="BuilderColonyParams.Diet"/>) - ANY pilot's wake, its own colour's
+        /// included, outside the nucleus and inside a mode's pen. Null = the research arena (every domain).</summary>
+        public Func<Vector3, int, bool> Diet;
         public BuilderStomachParams Stomach = new()
         {
             Capacity = 20f, FounderFill = 0.6f, Metabolism = 0.02f, Torpor = 0.004f,
@@ -155,12 +158,13 @@ namespace CosmicShore.Gameplay
             Metabolised += BuilderRoost.Burn(Alive, Stomach, Cap, RoostRate, dt, RoostBug);
         }
 
-        /// <summary>A prism a thief may claim: live, unshielded, a vessel's trail, warm, loose, not this nest's colour.</summary>
+        /// <summary>A prism a thief may claim: live, unshielded, a vessel's trail, warm, loose, on the platform diet (any
+        /// domain - a nest that shares the pilot's colour must still be able to feed).</summary>
         bool Wanted(int h)
         {
-            if (!_world.Alive(h) || _world.Shielded(h) || !_world.IsTrail(h)) return false;
-            if (_world.Domain(h) == Domain || !_world.Loose(h)) return false;
-            return P.Cold || _world.Age(h) <= P.Warm;
+            if (!_world.Alive(h) || _world.Shielded(h) || !_world.IsTrail(h) || !_world.Loose(h)) return false;
+            if (!P.Cold && _world.Age(h) > P.Warm) return false;
+            return P.Diet == null || P.Diet(_world.Position(h), _world.Domain(h));
         }
 
         /// <summary>The nest's shared warm-wake book for this tick: one QuerySphere at the TAIL of each vessel in its territory.</summary>
@@ -294,7 +298,7 @@ namespace CosmicShore.Gameplay
                     }
                 }
                 int cl = Claim[i];
-                if (cl >= 0 && (!_world.Alive(cl) || !_world.IsTrail(cl) || _world.Domain(cl) == Domain
+                if (cl >= 0 && (!_world.Alive(cl) || !_world.IsTrail(cl) || !_world.Loose(cl)
                                 || (!P.Cold && _world.Age(cl) > P.Warm + 1.5f)))
                 {
                     _book.Remove(cl); Claim[i] = cl = -1;

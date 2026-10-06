@@ -42,6 +42,7 @@ static partial class Program
         if (only == "" || only == "thieves") Thieves();
         if (only == "" || only == "wearers") Wearers();
         if (only == "" || only == "lod") Lod();
+        if (only == "" || only == "diet") Diet();
         Console.WriteLine($"\n{(_fail == 0 ? "OK" : $"FAILED ({_fail})")} - builders harness, {sw.Elapsed.TotalSeconds:F1} s");
         return _fail == 0 ? 0 : 1;
     }
@@ -177,9 +178,9 @@ static partial class Program
         int[] seeds = { 7, 23, 41, 101, 202, 303 };
         var variants = new (string, Action<BuilderColonyParams>)[]
         {
-            ("def-on r0", p => { p.ReserveClear = 0f; p.SkipOwnDomain = false; }),
-            ("def-off r0", p => { p.ReserveClear = 0f; p.SkipOwnDomain = false; p.AlarmRadius = 0f; }),
-            ("caste30 r0", p => { p.ReserveClear = 0f; p.SkipOwnDomain = false; p.DefendCaste = 0.3f; }),
+            ("def-on r0", p => { p.ReserveClear = 0f; }),
+            ("def-off r0", p => { p.ReserveClear = 0f; p.AlarmRadius = 0f; }),
+            ("caste30 r0", p => { p.ReserveClear = 0f; p.DefendCaste = 0.3f; }),
             ("caste30 r1.5", p => { p.ReserveClear = 1.5f; p.DefendCaste = 0.3f; }),
             ("caste30 r3.6", p => { p.ReserveClear = 3.6f; p.DefendCaste = 0.3f; }),
         };
@@ -197,7 +198,7 @@ static partial class Program
     {
         int[] seeds = { 7, 23, 41, 101, 202, 303 };
         Console.WriteLine("B1. fortress repair after a cut (run_fortress.py: 150 s of building, 3 cutting passes, 5 min; the shipped");
-        Console.WriteLine("    defaults: a 30% defender caste, TryReserve 3.6 u, own-domain mass skipped). Research t50 / t90:");
+        Console.WriteLine("    defaults: a 30% defender caste, TryReserve 3.6 u, any domain is forage - the game gates it on the platform diet). Research t50 / t90:");
         Console.WriteLine("    round 1: none 39.5 / 90.4, gap 15.8 / 43.6, alarm 6.8 / 41.1, both 6.4 / 61.6 (trail 97-98%);");
         Console.WriteLine("    round 3 (run_defend_vs_mend.py, both): defence on 17.8 / 70.0, off 5.6 / 38.5, caste 30% 5.6 / 41.3");
         var sum = new Dictionary<BuilderMendRule, (float t50, float t90, string healed, float trail, int sites)>();
@@ -415,6 +416,62 @@ static partial class Program
         Console.WriteLine("\nT5. shielded trail is never snatched");
         var shl = seeds.Take(3).Select(s => ThiefRun(s, "wander", game: true, minutes: 3f, shielded: 0.3f)).ToList();
         Check(shl.Sum(r => r.ShieldTaken) == 0, "0 shielded prisms changed hands");
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════════════ WEARERS
+
+    /// <summary>
+    /// The platform diet (Docs/BUILDERS_AND_THIEVES.md §2.1): every species feeds on a pilot of its OWN colour (a Spawn
+    /// Matrix release, the controlling-colour spawn - the old "not my domain" test starved them), and the glue's Diet gate
+    /// (Cell.IsPreyForHerbivore in the game: nothing inside the nucleus) is obeyed - the negative control proves it fires.
+    /// </summary>
+    static void Diet()
+    {
+        Console.WriteLine("\nD1. the platform diet: a colony of the pilot's own colour feeds; a Diet that refuses is obeyed");
+        const int Own = 1;
+        foreach (bool refuse in new[] { false, true })
+        {
+            Func<Vector3, int, bool> diet = refuse ? (_, _) => false : null;
+            string tag = refuse ? "diet refuses (inside the nucleus)" : "same domain as the pilot";
+            int fort, thief, wear;
+            {
+                var ar = new Arena(31);
+                var col = new BuilderColonyCore(ar, new BuilderColonyParams { Founders = 1, MaxWorkers = 1, Containment = ar.R * 0.95f, Diet = diet },
+                                                new Vector3(400, 0, 0), Own, 1, 31);
+                ar.Lay(col.Pos[0] + new Vector3(1, 0, 0), 6f, Own, true);
+                ar.Rebuild();
+                var vs = new BuilderVessel[1];
+                for (int st = 0; st < 40; st++) { col.Step(Dt, vs, 0); ar.Step(Dt); }
+                fort = col.Pickups + col.Eaten;
+            }
+            {
+                var ar = new Arena(32);
+                var core = new ThiefNestCore(ar, new ThiefParams { Founders = 1, MaxThieves = 1, Stomach = null, Diet = diet },
+                                             new Vector3(600, 0, 0), Own, 2, 32);
+                int prism = ar.Lay(core.Pos[0] + new Vector3(1, 0, 0), 10f, Own, true);
+                ar.Rebuild();
+                var pilot = ar.AddPilot(new Pilot { Policy = "wander", Domain = Own });
+                pilot.Pos = ar.Pos[prism] + new Vector3(0, 0, 60); pilot.Vel = new Vector3(0, 0, 120);
+                var vs = new BuilderVessel[2];
+                for (int st = 0; st < 3 && core.Carry[0] < 0; st++) { int n = ar.Vessels(vs); core.Step(Dt, vs, n); ar.Step(Dt); }
+                thief = core.Steals;
+            }
+            {
+                var ar = new WearArena(33);
+                var core = new WearerCore(ar, new WearerParams { Founders = 1, MaxHearts = 1, Containment = ar.R * 0.95f, Diet = diet },
+                                          new Vector3(300, 0, 0), Own, 3, 33);
+                for (int i = 0; i < 12; i++) ar.Lay(core.Pos[0] + ar.Rng.Normal3(10f), 6f, Own, true);
+                ar.Rebuild();
+                var vs = new BuilderVessel[1];
+                for (int st = 0; st < 60; st++) { core.Step(Dt, vs, 0); ar.Step(Dt); }
+                wear = core.WornSteals;
+            }
+            Console.WriteLine($"    {tag}: fortress took {fort}, thief snatched {thief}, wearer wore {wear}");
+            if (!refuse)
+                Check(fort > 0 && thief > 0 && wear > 0, "every species feeds on mass of its own colour (lifecycle: feed, then breed)");
+            else
+                Check(fort == 0 && thief == 0 && wear == 0, "a Diet that refuses is obeyed by all three species (the gate fires)");
+        }
     }
 
     // ═════════════════════════════════════════════════════════════════════════════════ WEARERS

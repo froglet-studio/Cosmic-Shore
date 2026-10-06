@@ -73,6 +73,9 @@ namespace CosmicShore.Gameplay
         public float HeartSize = 2f;
         public float Containment = 1140f;
         public Vector3 CellCentre;
+        /// <summary>GAME: the platform diet (<see cref="BuilderColonyParams.Diet"/>) - ANY domain's loose mass outside the
+        /// nucleus and inside a mode's pen. Null = the research arena (every domain).</summary>
+        public Func<Vector3, int, bool> Diet;
         public BuilderStomachParams Stomach = new()
         {
             Capacity = 30f, FounderFill = 0.6f, Metabolism = 0.01f, Torpor = 0.01f,
@@ -299,7 +302,10 @@ namespace CosmicShore.Gameplay
 
         // ── the one predicate (BuilderColonyCore.IsStealableForMe, without a band) ───────────────────
         bool Stealable(int h) =>
-            _world.Alive(h) && !_world.Shielded(h) && _world.Domain(h) != Domain && !_claimed.Contains(h) && _world.Loose(h);
+            _world.Alive(h) && !_world.Shielded(h) && !_claimed.Contains(h) && _world.Loose(h) && OnDiet(h);
+
+        /// <summary>The platform diet, any domain - never "not my colour" (a colony sharing the pilot's colour must feed).</summary>
+        bool OnDiet(int h) => P.Diet == null || P.Diet(_world.Position(h), _world.Domain(h));
 
         /// <summary>Can a heart of radius <paramref name="R"/> ever touch prism <paramref name="h"/>? The integrator clamps a leader
         /// to the containment sphere, so a prism farther out than Containment + the steal reach (R + 3) is out of reach for good -
@@ -445,7 +451,7 @@ namespace CosmicShore.Gameplay
             Intent[k] = 0f;
             if (has && dist < P.FleeRange) return BuilderMath.Unit(Pos[k] - tgt.Pos) * sp * 1.2f;   // turned on: flee
             int g = Goal[k];
-            if (g >= 0 && (!_world.Alive(g) || _world.Domain(g) == Domain || _world.Shielded(g) || !_world.Loose(g) || !Reachable(g, R)))
+            if (g >= 0 && (!_world.Alive(g) || _world.Shielded(g) || !_world.Loose(g) || !OnDiet(g) || !Reachable(g, R)))
             {
                 _claimed.Remove(g); Goal[k] = g = -1;
             }

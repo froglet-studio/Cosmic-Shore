@@ -46,10 +46,23 @@ of these hold:
 
 - it is live;
 - it is **not shielded or super-shielded** (shielded mass is never a target or food);
-- it is not the colony's own domain;
 - it is not built by ANY colony, and not carried by anyone (`BuilderRegistry`);
 - it is not living tissue (a flora or fauna body prism);
-- it is inside the forage band.
+- it is inside the forage band;
+- it is on the **platform diet**, in ANY domain: the glue binds each core's `Diet` (on `BuilderColonyParams`,
+  `ThiefParams`, `WearerParams`) to `BuilderColonyFauna.OnPlatformDiet` → `Cell.IsPreyForHerbivore` - any domain's
+  mass outside the nucleus, nothing inside it, nothing outside a mode's pen (a cell with no nucleus keeps the
+  platform's legacy opposing-domain rule, like every grazer).
+
+**Why there is no "not my colour" test (2026-10).** PORT.md's predicate skipped the colony's own domain
+(`SkipOwnDomain`, the thieves' and wearers' `Domain != Domain`). A colony always wears the spawning domain - a Spawn
+Matrix release spawns in the local pilot's domain, the spawner in the cell's controlling colour - so the one pilot it
+shares a cell with was never food and the colony could not complete its lifecycle (feed, then breed) before dying.
+The diet is the platform's one rule (`Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md`, "No domain asymmetry"), not a
+per-species copy. It is not `Fauna.IsPreyForMe`: the species band is where a colony LIVES, while its members forage
+the cell (the fortress keeps its own widened forage band in the core). Ownership tests are unchanged - a built,
+carried, hoarded or worn prism that changes domain still reads as taken back. Harness D1 asserts a same-colour
+colony of each species feeds, and that a refusing `Diet` is obeyed (the negative control).
 
 **Pickup** is `Prism.Steal(colonyName, colonyDomain, superSteal: false)`.
 
@@ -185,7 +198,7 @@ Run with a private `TMPDIR`. Shared `/tmp` races with other workers' harnesses.
 
 ```
 export DOTNET_ROOT=/usr/lib/dotnet TMPDIR=<private dir>
-bash Tools/Build/builders_harness/run.sh            # all; or: fortress | thieves | wearers | exp
+bash Tools/Build/builders_harness/run.sh            # all; or: fortress | thieves | wearers | diet | exp
 bash Tools/Build/swarm_glue_typecheck/run.sh        # cores + glue against the stubs (netstandard2.1, C# 9)
 python3 Tools/Build/author_builders.py --check
 python3 Tools/Build/author_swarm_fauna.py --check
@@ -216,6 +229,7 @@ SAME core files the game compiles. Its asserted results:
 | T4 founded nest vs full colony, first minute | 39% (≤ 60%); blooms (births); rate grows | |
 | T4 45 min, a ship 2 min in every 6 | no seed extinct (6/8/6/9 alive) | 3 of 4 extinct |
 | T5 shielded trail | 0 snatched | |
+| D1 platform diet (any domain) | a fortress, a nest and a wearer of the pilot's OWN colour each feed; a refusing `Diet` gets 0 from all three | |
 | Mass audit | 0 in every run | 0 |
 | Thief cost | 0.012 ms/step | |
 
@@ -287,8 +301,8 @@ Hurt it fast and it MOULTS, shedding its outer layer back to whoever it was stol
   prism-entity bodies, proxies near a vessel, every death through a proxy's sealed `Die`. The worn body is NOT
   lifeform tissue: it is stolen mass. When a leader dies, its body falls loose (still the colony's domain) and its
   riders split off.
-- **The one predicate.** A heart steals a prism only if it is alive, unshielded, not its own domain, unclaimed and
-  `Loose`. `Loose` excludes built, carried and worn prisms, living tissue and grove tissue
+- **The one predicate.** A heart steals a prism only if it is alive, unshielded, unclaimed, `Loose` and on the
+  platform diet in any domain (§2.1, no "not my colour" test). `Loose` excludes built, carried and worn prisms, living tissue and grove tissue
   (`ThreatGrove.IsGroveTissue`, merged from 9261700ee). A worn prism that becomes shielded, changes domain or dies
   leaves the body that tick.
 
