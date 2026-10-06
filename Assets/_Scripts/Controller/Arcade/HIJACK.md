@@ -425,15 +425,16 @@ merge without a conflict in that file. Do not edit it on this branch for that re
   the wrong team. **Shield state is not part of the table**: a Mass-5 rail prism shielded on one
   machine may not be on another, so whether a steal is refused (`Steal` drops a shield instead of
   flipping) can still differ. The SCORE path is unchanged and was already correct on every peer.
-- **The Urchin has no HUD prefab.** There is no `UrchinHUDVariant.prefab` and the vessel wires
-  none, so an Urchin-only mode ships with no ability lockup row, no elemental petal bars, no
-  control chips and **no ammo gauge** — while the pilot's only weapon is gated on exactly that
-  meter. It is also noisy: `VesselStatus.VesselHUDController` logs an error whenever the field
-  does not implement the interface, which includes null, and it is read on every vessel spawn and
-  every HUD hide/show. Latent and not reachable from this mode: four call sites in
-  `VesselController` dereference the same getter unguarded, so any mode that calls `ChangePlayer`
-  on an Urchin (today only Cellular Duel's ownership swap) would throw and leave the vessel
-  uncontrollable.
+- **The Urchin HUD is placeholder art.** Since #973 (2026-10) `Urchin.prefab` wires
+  `VesselStatus.vesselHUDController` to an `UrchinVesselHUDController` driving a nested
+  `UrchinHUDVariant.prefab` (a Prefab Variant of `VesselHUDPrefab`, authored by
+  `Tools/Build/author_urchin_hud.py`): the four-icon row Chain Spikes / Trail Rider / Track
+  Projector / Slip with RT / LT / B chips, the elemental petal bars, the **ammo gauge** on the
+  Charge card (the meter this mode's only weapon spends), the riding indicator on Mass and the
+  Track Projector's recharge veil on Space. The four icons are white placeholder silhouettes
+  awaiting the art pass, and the Chain Spikes hold-to-charge has no gauge yet (the executor does
+  not expose charge progress). The old "no HUD" state also logged `VesselHUDController is null`
+  on every spawn; that is gone with the wiring.
 - **`ram: 1` is a fleet-wide AI field, and it was audited (2026-10) rather than narrowed.**
   `Urchin.prefab` is shared, so every AI Urchin flies at full throttle whenever it is lined up on
   its objective. Every context one flies in WANTS that: Skein and Regatta both aim an attached AI
