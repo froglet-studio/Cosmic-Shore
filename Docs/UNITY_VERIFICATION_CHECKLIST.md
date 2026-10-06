@@ -4400,11 +4400,14 @@ been executed.
    `Docs/PERFORMANCE_OPTIMIZATION.md`, beside Crystal Capture at intensity 4 (68,320) for scale. If it is over budget,
    Atlantis's density is the lever only for its leaves and strands - most of it does not scale (0.15 still lays 49,407).
 4. **The lunge.** Fly at a healthy creature: within about 380 u it turns on you, guard plates out round its jaws, and
-   charges at about 144 u/s; touching a plate stings and slows the hull. Cut it under 70% and it runs instead.
+   charges at about 144 u/s for up to 2.5 s, resting 6 s between; touching a plate stings and slows the hull. Cut it under 70% and it runs instead.
 5. **No clock.** The goal stack has two rows outside the dance (the form and progress, the mood and body) and the drum
    row only during it; nothing ends the match on time.
 6. **Faster forms.** The first change comes within about a minute unopposed, and each new body reads within a second or
    two of the commit (no long scramble of tadpoles).
+7. **No stalemate.** With no clock, fill a lobby with AI and let it run ten minutes: note whether the creature is ever
+   pinned at one form (the lab's bots kept it at its first two forms for seven minutes). Then loiter near it yourself:
+   it should charge you every 8 s or so and still get meals in between (harness T17).
 
 
 **What landed.** A new arena card, `GameModes.Tandava = 62` (Rhino / Squirrel / Sparrow, every pilot on ONE

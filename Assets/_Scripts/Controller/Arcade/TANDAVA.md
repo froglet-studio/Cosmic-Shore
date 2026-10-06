@@ -29,7 +29,7 @@ reasons, each answered here:
 | The prompter's note | What changed |
 |---|---|
 | remove the timer: there should not be any timer | `TandavaDirectorSettings.MatchSeconds` is 0 - no clock, no "Time left" row; the hunt ends when the creature is broken or its cycle is complete (`HeldOff` stays in the enum, unreachable) |
-| make it more aggressive | a HEALTHY creature (body at 70%+ of its form) turns on a pilot within 380 u and LUNGES - its feed pose's guard plates out round its jaws, 144 u/s, turning 3x - for up to 3.5 s; only a HURT one flees (§3.3, harness T8) |
+| make it more aggressive | a HEALTHY creature (body at 70%+ of its form) turns on a pilot within 380 u and LUNGES - its feed pose's guard plates out round its jaws, 144 u/s, turning 3x - for up to 2.5 s, resting 6 s between; only a HURT one flees (§3.3, harness T8, T17) |
 | make the cell smaller, it is too big | the membrane at 800 u (the standard is 1,200) with the Scurry cell's half-size core (196 u) |
 | more types of flora, cramped up | 27 plants of six species in the band 240-720 u: Borromean, Coral, Lantern, Reed and Frond (Mass) and Tendril and Coral (Space) |
 | an environment, from Scurry intensity 4 | Crystal Capture's intensity-4 world, `SpawnableAtlantis`, on the cell config (seed 62, density 0.3: 52,802 prisms) |
@@ -146,12 +146,15 @@ THREAT (0..1) is the larger of two readings, smoothed (rising in 0.25 s, falling
 |---|---|---|---|---|
 | Calm | below 0.2 | 1.0 - **60 u/s** | 1.0 | the best plant, a plant spoiled by half by a nearby pilot |
 | Wary | 0.3 | 1.5 - **90 u/s** | 1.6 | hurries, and avoids plants near pilots (spoiled by 90%) |
-| **Lunging** | 0.25, HEALTHY (body 70%+ of its form), a pilot within 380 u, 2.5 s since the last | 2.4 - **144 u/s** | 3.0 | turns on the nearest pilot and charges it JAWS first, wearing its feed pose - the guard plates out round its mouth are the weapon (a pilot who touches one is stung and slowed). Aimed 0.35 s ahead of the pilot; it ends when the jaws are within 40 u, after 3.5 s, or when the pilot is out of reach |
+| **Lunging** | 0.25, HEALTHY (body 70%+ of its form), a pilot within 380 u, 6 s since the last | 2.4 - **144 u/s** | 3.0 | turns on the nearest pilot and charges it JAWS first, wearing its feed pose - the guard plates out round its mouth are the weapon (a pilot who touches one is stung and slowed). Aimed 0.35 s ahead of the pilot; it ends when the jaws are within 40 u, after 2.5 s, or when the pilot is out of reach |
 | Fleeing | 0.65 (out below 0.4, at least 4 s), only HURT (body under 70%) | 2.1 - **126 u/s** | 2.5 | bolts AWAY from the pilots, weighted by how near each is; cornered at the wall, it runs along it |
 | Feeding | - | 0.5 (it holds station) | 1.0 | see §3.4. It neither lunges nor bolts from pilots it merely sees: its guards are out |
 
 So a healthy creature is aggressive and a hurt one runs - the pilots' first job is to take it under 70% so it stops
-coming at them, and the broken meal still sends even a healthy one bolting.
+coming at them, and the broken meal still sends even a healthy one bolting. The rest between lunges is what keeps it an
+animal rather than a turret: the playable lab's first cut (3.5 s lunges, 2.5 s rest) let one pilot loitering in range pin
+it for seven minutes without a meal - with no clock, a stalemate. At 2.5 s / 6 s a pilot hanging 250 u off it is charged
+8 times in two minutes and it still eats 4 meals (harness T17).
 
 Harness T8: healthy, a pilot coming in to 200 u was lunged at, its jaws always aimed at the pilot, at up to 143 u/s, and
 it never fled; hurt (40% cut, nothing to regrow from), the same pilot sent it bolting, always away, and alone again it
@@ -303,6 +306,7 @@ policies.
 | T14 | over 300 seeds every variant of every form is drawn; the draw packs into one int and is the same on every peer |
 | T15 | no clock: the shipped settings carry `MatchSeconds` 0, and twenty minutes alone end nothing |
 | T16 | a form change READS fast: Great Serpent -> Seven-Headed at 60% coverage in 1.0 s (3.5 s at the research's member speeds) |
+| T17 | aggression does not starve it: a pilot loitering 250 u off it for 120 s is charged 8 times, and it still eats 4 meals |
 
 What it is not: the game's bites are prism queries against real plants, its pilots are people and its kills are
 collisions, so the TIMES above are a model, not a measurement - QA-TANDAVA-9..16 measure them.
@@ -325,7 +329,11 @@ Each is a model result to check in the Editor (QA-TANDAVA-15), not a measured de
   lobby can win through the halo, against §3.9's honest limit.
 
 The lab was rebuilt for the third pass (the small cell, the reef, Atlantis, the lunge, no clock); the first flag is
-softer now that its first meal comes sooner in a crowded reef, and the lunge makes a chase from behind a riskier one.
+softer now that its first meal comes sooner in a crowded reef, and the lunge makes a chase from behind a riskier one. It
+flagged one new thing: **with no clock, two autopilot wingmates can pin it** - cutting it at every meal, they kept it at
+its first or second form for seven minutes and more without shattering it (the lab's bots are sharper than the game's
+may be). If that holds in the Editor it is a long, flat match; the levers are the bots' strike rate or a floor under how
+long a broken meal keeps it hungry (QA-TANDAVA-16).
 
 ## 5. Numbers and where they live
 
@@ -374,7 +382,7 @@ not yet device-profiled either (QA-TANDAVA-16 soaks it).
 | `Environment/CellVisualTint.cs` | the cell's colour transition (platform, phase A) |
 | `Environment/FloraAndFauna/Swarm/*` | the levers (§3.1) |
 | `Tools/Build/tandava_plans.py`, `Tools/Build/author_tandava_assets.py` | the plans; every asset (`--check`; `--self-test` runs the scene checks on the donor scene, where all 16 must fire) |
-| `Tools/Build/swarm_core_harness/TandavaHarness.cs` | T1-T16 |
+| `Tools/Build/swarm_core_harness/TandavaHarness.cs` | T1-T17 |
 | `Assets/_Scenes/Multiplayer Scenes/MinigameTandava.unity` | a one-shot clone of `MinigameBroodRush`: the controller, monitor, cell and four RANDOM-hull AI templates swapped, the pilots' line at x = 600 facing the hatch. When the donor moves on, the generator keeps the committed scene and still validates it |
 | `Assets/_SO_Assets/Cell Configs/Tandava Cell/` | the cell config, spawn profile, the swarm species and the seven dispersed flora forks |
 | `Assets/_Prefabs/Environment/TandavaMembrane.prefab`, `Assets/_Prefabs/Spawnables/SpawnableAtlantis Tandava.prefab` | generated copies: the CapsuleMembrane at 800 u, Atlantis at seed 62 / density 0.3 |

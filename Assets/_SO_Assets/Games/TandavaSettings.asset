@@ -132,8 +132,8 @@ MonoBehaviour:
     LungeRadius: 380
     LungeBodyMin: 0.7
     LungeEnter: 0.25
-    LungeSeconds: 3.5
-    LungeCooldownSeconds: 2.5
+    LungeSeconds: 2.5
+    LungeCooldownSeconds: 6
     LungeLead: 0.35
     LungeReach: 40
     CruiseCalm: 1

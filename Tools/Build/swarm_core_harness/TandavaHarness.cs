@@ -950,6 +950,26 @@ static class TandavaHarness
                   $"Great Serpent -> Seven-Headed: the new body reads (60% coverage) in {quickT:F1} s ({slowT:F1} s at the research's member speeds)");
         }
 
+        // ── T17: aggression does not starve it - a pilot loitering in lunge range is charged, and between charges it eats
+        Console.WriteLine("T17 pressed, it still eats");
+        {
+            var s = MakeSim(b, new[] { 0, 0, 0, 0 }, 67);
+            var pilot = new Pilot { At = TandavaArena.Hatch + new Vector3(0f, 250f, 0f) };
+            s.Pilots.Add(pilot);
+            int lunges = 0; var was = TandavaMood.Calm;
+            RunFor(s, 120f, x =>
+            {
+                var me = x.C.Anchor * UnitScale;
+                var want = me + Vector3.Normalize(pilot.At - me + new Vector3(0f, 1f, 0f)) * 250f;   // it hangs 250 u off the body
+                var to = want - pilot.At; float dd = to.Length();
+                pilot.Vel = dd > 5f ? to / dd * MathF.Min(150f, dd * 4f) : Vector3.Zero;
+                if (x.D.Mood == TandavaMood.Lunging && was != TandavaMood.Lunging) lunges++;
+                was = x.D.Mood;
+            });
+            Check(lunges >= 3 && s.Meals >= 2,
+                  $"a pilot hanging 250 u off it for two minutes was charged {lunges} times, and it still ate {s.Meals} meals (form {s.D.Form.Name})");
+        }
+
         Console.WriteLine(_fail == 0 ? "\ntandava: OK" : $"\ntandava: {_fail} FAILED");
         return _fail;
     }

@@ -199,7 +199,7 @@ namespace CosmicShore.Gameplay
         /// <summary>The threat at which a healthy creature lunges - well before a hurt one would bolt.</summary>
         public float LungeEnter = 0.25f;
         /// <summary>The longest one lunge lasts, and the breath it takes before the next.</summary>
-        public float LungeSeconds = 3.5f, LungeCooldownSeconds = 2.5f;
+        public float LungeSeconds = 2.5f, LungeCooldownSeconds = 6f;
         /// <summary>How far ahead of a pilot it aims: seconds of the pilot's own velocity.</summary>
         public float LungeLead = 0.35f;
         /// <summary>Its mouth this close to the pilot (world): it has struck, and the lunge ends.</summary>
