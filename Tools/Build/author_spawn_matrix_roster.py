@@ -18,6 +18,9 @@ loudly here instead of leaving a dangling reference in the toy.
 A species may express fewer than four elements (most Swarm-cell species are one element each);
 the toy's variant row shows one station per element the species actually has.
 
+It also owns speciesDescriptions - one description per row, for EVERY row in the toy (its own and
+the other generators') - and fails when a row has none.
+
     python3 Tools/Build/author_spawn_matrix_roster.py           # write
     python3 Tools/Build/author_spawn_matrix_roster.py --check   # exit 1 if the toy has drifted
 """
@@ -154,6 +157,116 @@ FLORA = [
     ("Snap Trap", ["Threat Flora/Swarm Snap Trap Flora Time Config Data.asset"]),
 ]
 
+# ── Species descriptions ───────────────────────────────────────────────────────
+# Shown in the Toy Box while a species (or one of its element stations) is picked. EVERY row in the
+# toy needs one, including the rows other generators own (Borromean, the Mandelbulb family), and
+# --check fails on a row without one: an undescribed species is one a player cannot tell apart from
+# its neighbours. Each says what distinguishes it and, where it matters in the Barren cell, what it
+# eats - Barren starts with no food, so a lone grazer or predator there starves on its clock.
+DESCRIPTIONS = {
+    # Fauna
+    "Tadpole": "A small flock of tiny fish. Mass tadpoles eat trail and multiply (they starve in about "
+               "90s with none); Charge, Space and Time tadpoles never feed, they just drift and circle.",
+    "Brittlestar": "A slow starfish with swaying, dangling arms that grazes loose mass. Easy prey for "
+                   "sharks; shoot its arms or joust it for its crystal. Starves in 30s without mass or trail.",
+    "Shark": "An armoured hunter that ignores prisms and stalks other creatures in bursts, snapping its "
+             "jaws. Drops a big crystal. Eats only grazers: release brittlestars or quadfish first.",
+    "QuadFish": "A bending fish body with four stroking fin prisms. Schools and grazes mass for a quick, "
+                "mid-size crystal. Starves in 30s without mass or trail.",
+    "Clawfish": "A hollow, open-mouthed horn with two tail flukes; its heart sits just inside the mouth. "
+                "Grazes mass. Starves in 30s without mass or trail.",
+    "Worm Colony": "A segmented giant worm that hunts mass and lunges at ships with fanged jaws. Cut it "
+                   "in two and you get two worms; every segment drops a crystal. Sheds segments when starved.",
+    "Piranha": "A fast pack of eight tiny, always-hungry fish that eat any team's trail and pull toward "
+               "the middle of the cell. Charge crystals. Starves in 40s without trail.",
+    "Swarm": "The SORT swarm: about 240 tadpoles that sort themselves into one animal per element "
+             "(Charge pufferfish, Mass whale, Space jellyfish, Time dragonfly). Kill its main element "
+             "and it molts into another. Eats flora only.",
+    "Swarm Field": "The FIELD swarm model: designed attractor fields where every tadpole owns a slot, "
+                   "so the animal reads crisp and exact. Smaller bodies than the Sort swarm. Eats flora only.",
+    "Swarm Grid": "The GRID swarm model: each tadpole reads only the morphogen at its own position, so "
+                  "the animal is looser and more organic than Field. Smaller bodies than Sort. Eats flora only.",
+    "Swarm EvoFate": "The EVOFATE swarm model: a learned network moves every tadpole, with a light pull "
+                     "toward its chosen place. The most alive texture and the most expensive. Eats flora only.",
+    "Pack Hunter": "Six long hunters that ring your ship, close in and strike together, then tire for 3s. "
+                   "They also hunt locusts by scent. Time crystals.",
+    "Locust": "Lone, bobbing grazers that flip into a fast biting swarm when crowded and hungry, and "
+              "breed from the plants they eat. Space crystals. Needs flora.",
+    "Lurker": "Looks like a plant's crystal. It creeps toward you while you look away, freezes when you "
+              "look, then gapes and snaps. Best among flora, which it mimics and eats.",
+    "Stampede": "Grazing herds where every fourth animal is a bull that lowers its head and charges a "
+                "nearby ship. Mass crystals. Needs flora.",
+    "Mobber": "Roosting birds that mob a slow ship or one near their roost: they circle, dive and peck "
+              "to drain you. Time crystals.",
+    "Leech": "Drifting puddles that pounce on a ship within 140u, latch on and slowly drain it. Turn "
+             "hard to fling them off. Charge crystals. Needs flora.",
+    "Leviathan": "A shoal of grazers that assembles into a 120u manta when fed, opens its jaws and "
+                 "surges into a ship ahead of it. Space crystals. Falls apart unfed: needs flora.",
+    "Fortress Builders": "48 workers that steal loose prisms and your trail to wall in their nest. A cut "
+                         "wall knits shut and defenders sting. Mass crystals. Fly a trail to feed them.",
+    "Thief Nest": "Magpies that nest on a plant, tail your ship, snatch your fresh trail and fly it "
+                  "home to a visible hoard. Space crystals. Fly a trail near them.",
+    "Wearer Builders": "Hearts that steal your trail and wear it as a body, fuse together, then rear "
+                       "and lunge. Ram one to strip the prisms back. Fly a trail to feed them.",
+    # Flora
+    "Gyroid": "A colony of 30-prism tiles of a saddle-shaped minimal surface, budding a neighbour about "
+              "every 30s into one endless lattice. Space grows needles.",
+    "SchwarzP": "A colony of 36-prism tiles of the cubic tube-and-chamber surface, budding into a lattice "
+                "of pipes. Space tiles are five times wider.",
+    "Quasicrystal": "A colony of 110-strut stars of a lattice that never repeats, budding outward. Space "
+                    "struts run long, Mass beams short.",
+    "Wall": "A flat strip of square plates laid side by side out of its crystal: a living barrier. All "
+            "four elements share one form.",
+    "Branching": "A tree that grows toward the cell's crystal, forking two or three ways at up to 60 "
+                 "degrees, with up to 5,000 leaves.",
+    "Cacti": "An upright trunk throwing five to nine right-angle arms per node, slowly crusted with "
+             "chunky pads.",
+    "Pine": "A trunk that whorls ten to thirteen level boughs per node, tier on tier, then flushes all "
+            "its needles at once.",
+    "Nerve": "A long, gently forking fibre of small cubes, up to 300 deep, that buds a second nerve "
+             "beside its first leaf.",
+    "Mandelbulb": "Fractal foliage: twisting plate helices traced over a Mandelbulb. Charge is a bead "
+                  "cage, Mass spiral bracts, Space a wire cage, Time an anemone. Takes minutes to grow out.",
+    "Coral Bloom": "Long untwisted arcs that cross through a whole Mandelbulb shell: an open cage you "
+                   "see the fractal through. Takes minutes to grow out.",
+    "Watershed": "A Mandelbulb's ridge-and-gully net, each curve running from a saddle to a peak or a "
+                 "pit, in rings that differ by element. Takes minutes to grow out.",
+    "Apollonia": "Circles packed in circles (an Apollonian gasket) crowning a Mandelbulb's lobes and "
+                 "spiralling into its crystal. Takes minutes to grow out.",
+    "Arbor": "The canopy tree: one trunk forking to ten tips, flaring whorls of five leaves and a big "
+             "crown, about 280u tall.",
+    "Coral": "A low thicket of three stems forking to fourteen stubby tips, with no leaves at all.",
+    "Frond": "A fern of four arching, drooping stems lined with paired leaflets the whole way along.",
+    "Lantern": "A hanging bell: one stem ending in a single big blossom head cupped downward.",
+    "Reed": "Five straight upright blades with a pair of leaves near the top, the grass at a pool's edge.",
+    "Rosette": "A ground carpet: one short stalk with eight steeply cupped leaves at every node.",
+    "Spire": "A tall thin mast whose small whorls corkscrew up to a huge crown.",
+    "Tendril": "A climber: three wandering stems fork to eight and trail long dangles, the longest reach "
+               "per prism of any plant.",
+    "Swarm Borromean": "The Swarm cell's pastures: Borromean membranes in its grazer bands. Mass grows "
+                       "in the inner band, Time in the middle (four pens), Space at the outer.",
+    "Physarum": "A slime-mould grove at the rim: five beating hearts cable together, danger pulses run "
+                "down the cables, and your wake repels it.",
+    "Snap Trap": "Venus flytraps in three clumps at the rim. Their jaws turn toward your path, glow, "
+                 "then snap shut on danger teeth.",
+    "Gyroid Topiary": "A clipped gyroid specimen for garden beds: 30-prism tiles with smaller leaves in "
+                      "Mass slabs, a colony that stops at eight instead of sprawling into a lattice.",
+    "SchwarzP Topiary": "A clipped Schwarz-P specimen for garden beds: 36-prism tiles with smaller leaves "
+                        "in Mass slabs, a colony that stops at four instead of sprawling into a lattice.",
+    "Borromean": "One closed soap-film membrane spanning three interlocked rings, grown out from its "
+                 "crystal. Space spans twice as wide.",
+}
+
+
+def yaml_quoted(text):
+    return '"' + text.replace("\\", "\\\\").replace('"', '\\"') + '"'
+
+
+def descriptions_text(names):
+    body = "".join(f"  - Species: {n}\n    Description: {yaml_quoted(DESCRIPTIONS[n])}\n" for n in names)
+    return "  speciesDescriptions:\n" + body if names else "  speciesDescriptions: []\n"
+
+
 def guid_of(rel):
     asset = SO / rel
     meta = SO / (rel + ".meta")
@@ -250,6 +363,29 @@ def main():
     if m:
         section = section[:m.start()] + section[m.end():] + m.group(0)
         toy = toy[:start] + section + toy[end:]
+
+    # One description per row, in roster order, kept between floraSpecies and vesselRoster (the
+    # definition's field order, so a Unity re-save does not move it).
+    names = []
+    for key in ("faunaSpecies", "floraSpecies"):
+        names += re.findall(r"^  - Name: (.+)$", toy[slice(*section_bounds(toy, key))], re.M)
+    missing = [n for n in names if n not in DESCRIPTIONS]
+    if missing:
+        sys.exit("author_spawn_matrix_roster: species with no description (add them to DESCRIPTIONS): "
+                 + ", ".join(missing))
+    stale = sorted(set(DESCRIPTIONS) - set(names))
+    if stale:
+        sys.exit("author_spawn_matrix_roster: DESCRIPTIONS names rows the toy does not have: "
+                 + ", ".join(stale))
+    block = descriptions_text(names)
+    m = re.search(r"^  speciesDescriptions:(?: \[\])?\n(?:  [- ] .*\n)*", toy, re.M)
+    if m:
+        toy = toy[:m.start()] + block + toy[m.end():]
+    else:
+        m = re.search(r"^  vesselRoster:", toy, re.M)
+        if not m:
+            sys.exit("author_spawn_matrix_roster: vesselRoster not found in the toy asset")
+        toy = toy[:m.start()] + block + toy[m.start():]
 
     # Every guid in the toy must resolve to an asset somewhere (catches rows other generators own).
     known = set()

@@ -174,9 +174,10 @@ where the species lives, never at the toy**, through the cell spawner's own plac
   swarms, the seven substrate species, the builders) is scattered one point per creature through
   its own band and inside the cell's pens. An unbanded one hatches as a group (±150 u, the spawner
   wave jitter) on the cell's densest mass; when the cell holds no mass at all
-  (`Cell.TryGetDensestRegionAnyDomain` is false — the Barren cell), on a fresh random point in open
-  water (`CellLifeSpawnerBase.RandomPointInCytoplasm`) rather than on the crystal, which is where
-  every release used to pile up.
+  (`Cell.TryGetDensestRegionAnyDomain` is false — the Barren cell), 220 u ahead of the pilot,
+  whose trail is the only food such a cell will ever have, else on a random point in open water
+  (`CellLifeSpawnerBase.RandomPointInCytoplasm`) - never on the crystal, which is where every
+  release used to pile up.
 - **Flora** go through `CellLifeSpawnerBase.PlantFlora` (the call `RandomLifeSpawner` plants with):
   a prepared planting site when the cell has one, otherwise the species' own `Plant()` dispersal
   through its planting band — threat flora pick their grove site, the Swarm Borromean bands honour
@@ -192,21 +193,33 @@ grow an anchor after it seeds, so each press founds a new population. In the Toy
 Spawn button stays armed after a press (`ToyShellOption.Repeatable`).
 
 **Navigate goes to what you spawned.** A variant row's `WorldAnchor` is the newest still-living
-thing it released, and the window's Navigate takes the player to the SELECTED row's live anchor
+thing it released (for a population body - a swarm, substrate pack or builder colony,
+`IMacroPopulation` - a marker moved onto its live `MacroCentre`, because a stampede's herds or a
+mobber's roosts are seeded across a whole sector, far from their anchor GameObject), and the window's Navigate takes the player to the SELECTED row's live anchor
 before falling back to the toy (`ToyConfigureModal.ResolveDestination`; the arrow is
 `ToyNavigationBeacon.PointAt(Transform, …)`). That rule is generic: any toy row with a live
 `WorldAnchor` is where Navigate goes while that row is selected.
 
-Every spawn logs on the ToyBox channel, including the cell's Frenzy growth-freeze state.
+Every spawn logs on the ToyBox channel. When the cell is at Frenzy (flora growth frozen
+cell-wide - a Barren cell has no grazers to bring it back down), the flora element rows say
+"Growth frozen" and their description explains it, so a plant that stays a seed prism does not read
+as a broken species.
+
+**Descriptions.** Every species row has an authored description (`speciesDescriptions`, read by
+`SpawnMatrixToyDefinitionSO.DescriptionOf`) shown in the Toy Box while that species or one of its
+elements is picked: what distinguishes it and, where it matters in Barren, what it eats. The
+generator owns the list for EVERY row, including rows other generators own, and its `--check`
+fails on a row without one. The entries are keyed `Species:` rather than `Name:` because other
+generators find their rows by `- Name: <row>` across the whole file.
 
 **The roster** (`faunaSpecies` / `floraSpecies`) holds every spawnable species: the original
 Lifeforms set, the generator-owned rows (Borromean, Mandelbulb family), and the rows
 `Tools/Build/author_spawn_matrix_roster.py` owns — piranha, the Swarm cell's life forms (swarm,
-pack hunter, locust, lurker, stampede, mobber, leech, leviathan, fortress builders, thief nest,
-wearer builders, Swarm Borromean, physarum, snap trap) and the Arbor/Coral/Frond/Lantern/Reed/
+the bench-only FIELD / GRID / EVOFATE swarm models and Sort's Time element, pack hunter, locust, lurker, stampede, mobber, leech, leviathan, fortress builders, thief nest,
+wearer builders, Swarm Borromean, physarum, snap trap), the Hesperides gyroid and Schwarz-P topiaries and the Arbor/Coral/Frond/Lantern/Reed/
 Rosette/Spire/Tendril flora sets. Most Swarm-cell species express one element, so their variant
 row has one station. Run the generator with `--check` after touching any of those configs. With
-42 species a kingdom's species row wraps into a grid of `speciesPerRow` (6) columns.
+47 species a kingdom's species row wraps into a grid of `speciesPerRow` (6) columns.
 
 **Inspecting one species on its own:** Cell Selector ▸ **Barren** (no environment, empty spawn
 profile, so nothing seeds itself), then Spawn Matrix ▸ kingdom ▸ species ▸ element. Barren has no

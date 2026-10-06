@@ -47,8 +47,10 @@ namespace CosmicShore.ScriptableObjects
         [Serializable]
         public class SpeciesDescription
         {
-            [Tooltip("The species row this describes - matches FaunaSpecies.Name / FloraSpecies.Name.")]
-            public string Name;
+            [Tooltip("The species row this describes - matches FaunaSpecies.Name / FloraSpecies.Name. " +
+                     "Not itself called Name: other generators find their rows in the asset by " +
+                     "'- Name: <row>' across the whole file, and must never match a description.")]
+            public string Species;
             [TextArea(2, 5), Tooltip("What distinguishes this species: how it looks or grows, where " +
                                      "it lives, what it eats or does to a pilot, what it pays.")]
             public string Description;
@@ -95,7 +97,7 @@ namespace CosmicShore.ScriptableObjects
         {
             if (speciesDescriptions == null || string.IsNullOrEmpty(name)) return "";
             foreach (var d in speciesDescriptions)
-                if (d != null && d.Name == name) return d.Description ?? "";
+                if (d != null && d.Species == name) return d.Description ?? "";
             return "";
         }
 

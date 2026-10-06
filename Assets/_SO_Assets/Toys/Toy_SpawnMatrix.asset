@@ -258,6 +258,101 @@ MonoBehaviour:
     - {fileID: 11400000, guid: 46383de74eda38d7fc0f12e180a2bef3, type: 2}
     - {fileID: 11400000, guid: 06f079efbc163df424ab2731dc9267eb, type: 2}
     - {fileID: 11400000, guid: 53ee29f1406fdd26f9c5fddefd961fe0, type: 2}
+  speciesDescriptions:
+  - Species: Tadpole
+    Description: "A small flock of tiny fish. Mass tadpoles eat trail and multiply (they starve in about 90s with none); Charge, Space and Time tadpoles never feed, they just drift and circle."
+  - Species: Brittlestar
+    Description: "A slow starfish with swaying, dangling arms that grazes loose mass. Easy prey for sharks; shoot its arms or joust it for its crystal. Starves in 30s without mass or trail."
+  - Species: Shark
+    Description: "An armoured hunter that ignores prisms and stalks other creatures in bursts, snapping its jaws. Drops a big crystal. Eats only grazers: release brittlestars or quadfish first."
+  - Species: QuadFish
+    Description: "A bending fish body with four stroking fin prisms. Schools and grazes mass for a quick, mid-size crystal. Starves in 30s without mass or trail."
+  - Species: Clawfish
+    Description: "A hollow, open-mouthed horn with two tail flukes; its heart sits just inside the mouth. Grazes mass. Starves in 30s without mass or trail."
+  - Species: Worm Colony
+    Description: "A segmented giant worm that hunts mass and lunges at ships with fanged jaws. Cut it in two and you get two worms; every segment drops a crystal. Sheds segments when starved."
+  - Species: Piranha
+    Description: "A fast pack of eight tiny, always-hungry fish that eat any team's trail and pull toward the middle of the cell. Charge crystals. Starves in 40s without trail."
+  - Species: Swarm
+    Description: "The SORT swarm: about 240 tadpoles that sort themselves into one animal per element (Charge pufferfish, Mass whale, Space jellyfish, Time dragonfly). Kill its main element and it molts into another. Eats flora only."
+  - Species: Pack Hunter
+    Description: "Six long hunters that ring your ship, close in and strike together, then tire for 3s. They also hunt locusts by scent. Time crystals."
+  - Species: Locust
+    Description: "Lone, bobbing grazers that flip into a fast biting swarm when crowded and hungry, and breed from the plants they eat. Space crystals. Needs flora."
+  - Species: Lurker
+    Description: "Looks like a plant's crystal. It creeps toward you while you look away, freezes when you look, then gapes and snaps. Best among flora, which it mimics and eats."
+  - Species: Stampede
+    Description: "Grazing herds where every fourth animal is a bull that lowers its head and charges a nearby ship. Mass crystals. Needs flora."
+  - Species: Mobber
+    Description: "Roosting birds that mob a slow ship or one near their roost: they circle, dive and peck to drain you. Time crystals."
+  - Species: Leech
+    Description: "Drifting puddles that pounce on a ship within 140u, latch on and slowly drain it. Turn hard to fling them off. Charge crystals. Needs flora."
+  - Species: Leviathan
+    Description: "A shoal of grazers that assembles into a 120u manta when fed, opens its jaws and surges into a ship ahead of it. Space crystals. Falls apart unfed: needs flora."
+  - Species: Fortress Builders
+    Description: "48 workers that steal loose prisms and your trail to wall in their nest. A cut wall knits shut and defenders sting. Mass crystals. Fly a trail to feed them."
+  - Species: Thief Nest
+    Description: "Magpies that nest on a plant, tail your ship, snatch your fresh trail and fly it home to a visible hoard. Space crystals. Fly a trail near them."
+  - Species: Wearer Builders
+    Description: "Hearts that steal your trail and wear it as a body, fuse together, then rear and lunge. Ram one to strip the prisms back. Fly a trail to feed them."
+  - Species: Swarm Field
+    Description: "The FIELD swarm model: designed attractor fields where every tadpole owns a slot, so the animal reads crisp and exact. Smaller bodies than the Sort swarm. Eats flora only."
+  - Species: Swarm Grid
+    Description: "The GRID swarm model: each tadpole reads only the morphogen at its own position, so the animal is looser and more organic than Field. Smaller bodies than Sort. Eats flora only."
+  - Species: Swarm EvoFate
+    Description: "The EVOFATE swarm model: a learned network moves every tadpole, with a light pull toward its chosen place. The most alive texture and the most expensive. Eats flora only."
+  - Species: Gyroid
+    Description: "A colony of 30-prism tiles of a saddle-shaped minimal surface, budding a neighbour about every 30s into one endless lattice. Space grows needles."
+  - Species: SchwarzP
+    Description: "A colony of 36-prism tiles of the cubic tube-and-chamber surface, budding into a lattice of pipes. Space tiles are five times wider."
+  - Species: Quasicrystal
+    Description: "A colony of 110-strut stars of a lattice that never repeats, budding outward. Space struts run long, Mass beams short."
+  - Species: Wall
+    Description: "A flat strip of square plates laid side by side out of its crystal: a living barrier. All four elements share one form."
+  - Species: Branching
+    Description: "A tree that grows toward the cell's crystal, forking two or three ways at up to 60 degrees, with up to 5,000 leaves."
+  - Species: Cacti
+    Description: "An upright trunk throwing five to nine right-angle arms per node, slowly crusted with chunky pads."
+  - Species: Pine
+    Description: "A trunk that whorls ten to thirteen level boughs per node, tier on tier, then flushes all its needles at once."
+  - Species: Nerve
+    Description: "A long, gently forking fibre of small cubes, up to 300 deep, that buds a second nerve beside its first leaf."
+  - Species: Mandelbulb
+    Description: "Fractal foliage: twisting plate helices traced over a Mandelbulb. Charge is a bead cage, Mass spiral bracts, Space a wire cage, Time an anemone. Takes minutes to grow out."
+  - Species: Coral Bloom
+    Description: "Long untwisted arcs that cross through a whole Mandelbulb shell: an open cage you see the fractal through. Takes minutes to grow out."
+  - Species: Watershed
+    Description: "A Mandelbulb's ridge-and-gully net, each curve running from a saddle to a peak or a pit, in rings that differ by element. Takes minutes to grow out."
+  - Species: Apollonia
+    Description: "Circles packed in circles (an Apollonian gasket) crowning a Mandelbulb's lobes and spiralling into its crystal. Takes minutes to grow out."
+  - Species: Arbor
+    Description: "The canopy tree: one trunk forking to ten tips, flaring whorls of five leaves and a big crown, about 280u tall."
+  - Species: Coral
+    Description: "A low thicket of three stems forking to fourteen stubby tips, with no leaves at all."
+  - Species: Frond
+    Description: "A fern of four arching, drooping stems lined with paired leaflets the whole way along."
+  - Species: Lantern
+    Description: "A hanging bell: one stem ending in a single big blossom head cupped downward."
+  - Species: Reed
+    Description: "Five straight upright blades with a pair of leaves near the top, the grass at a pool's edge."
+  - Species: Rosette
+    Description: "A ground carpet: one short stalk with eight steeply cupped leaves at every node."
+  - Species: Spire
+    Description: "A tall thin mast whose small whorls corkscrew up to a huge crown."
+  - Species: Tendril
+    Description: "A climber: three wandering stems fork to eight and trail long dangles, the longest reach per prism of any plant."
+  - Species: Swarm Borromean
+    Description: "The Swarm cell's pastures: Borromean membranes in its grazer bands. Mass grows in the inner band, Time in the middle (four pens), Space at the outer."
+  - Species: Physarum
+    Description: "A slime-mould grove at the rim: five beating hearts cable together, danger pulses run down the cables, and your wake repels it."
+  - Species: Snap Trap
+    Description: "Venus flytraps in three clumps at the rim. Their jaws turn toward your path, glow, then snap shut on danger teeth."
+  - Species: Gyroid Topiary
+    Description: "A clipped gyroid specimen for garden beds: 30-prism tiles with smaller leaves in Mass slabs, a colony that stops at eight instead of sprawling into a lattice."
+  - Species: SchwarzP Topiary
+    Description: "A clipped Schwarz-P specimen for garden beds: 36-prism tiles with smaller leaves in Mass slabs, a colony that stops at four instead of sprawling into a lattice."
+  - Species: Borromean
+    Description: "One closed soap-film membrane spanning three interlocked rings, grown out from its crystal. Space spans twice as wide."
   vesselRoster: []
   stationSpacing: 90
   stationRadius: 12

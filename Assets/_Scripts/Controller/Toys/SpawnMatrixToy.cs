@@ -292,6 +292,10 @@ namespace CosmicShore.Gameplay
             return model;
         }
 
+        const string FrozenNotice =
+            "Growth frozen: this cell holds so much prism mass that it is at Frenzy, so new plants " +
+            "stay seed prisms. Clear mass (graze, joust, abilities) or start a fresh Barren cell.";
+
         // The last lifeform a shell press released, so the window can turn its picture onto it.
         Transform _lastShellRelease;
 
@@ -306,7 +310,7 @@ namespace CosmicShore.Gameplay
                     Label = captured.Name,
                     Description = _def.DescriptionOf(captured.Name),
                     Accent = Definition ? Definition.AccentColor : Color.white,
-                    Expand = () => BuildShellVariants(captured.ElementConfigs, null),
+                    Expand = () => BuildShellVariants(captured.Name, captured.ElementConfigs, null),
                     BuildPreview = parent => BuildShellSpeciesPreview(captured.ElementConfigs, null, null, parent),
                 });
             }
@@ -324,7 +328,7 @@ namespace CosmicShore.Gameplay
                     Label = captured.Name,
                     Description = _def.DescriptionOf(captured.Name),
                     Accent = Definition ? Definition.AccentColor : Color.white,
-                    Expand = () => BuildShellVariants(null, captured.ElementConfigs),
+                    Expand = () => BuildShellVariants(captured.Name, null, captured.ElementConfigs),
                     BuildPreview = parent => BuildShellSpeciesPreview(null, captured.ElementConfigs, null, parent),
                 });
             }
@@ -335,10 +339,21 @@ namespace CosmicShore.Gameplay
         /// A species' element row - one option per element the species actually expresses, which
         /// is the whole matrix (a lifeform is its species and its element and nothing else).
         /// </summary>
-        List<ToyShellOption> BuildShellVariants(FaunaConfigurationSO[] faunaConfigs,
+        List<ToyShellOption> BuildShellVariants(string species, FaunaConfigurationSO[] faunaConfigs,
             FloraConfigurationSO[] floraConfigs)
         {
             var options = new List<ToyShellOption>();
+
+            // Frenzy freezes flora growth cell-wide (the ecology's one growth brake), and a Barren
+            // cell has no grazers to bring it back down, so a flora row released into a frozen cell
+            // sits as seed prisms for good. The rows say so - the layer is re-asked after every
+            // press, so the notice appears on the press that crosses the line.
+            bool floraFrozen = floraConfigs != null &&
+                               Cell.FindCellContaining(transform.position) is { } host &&
+                               !host.FloraGrowingEnabled;
+            string frozenDescription = floraFrozen
+                ? (_def ? _def.DescriptionOf(species) + "\n\n" : "") + FrozenNotice
+                : "";
 
             foreach (var element in Elements)
             {
@@ -357,6 +372,9 @@ namespace CosmicShore.Gameplay
                 options.Add(new ToyShellOption
                 {
                     Label = element.ToString(),
+                    Detail = capturedFlora && floraFrozen ? "Growth frozen" : "",
+                    // Empty unless frozen: the layer then shows the species row's own description.
+                    Description = capturedFlora ? frozenDescription : "",
                     Accent = Definition ? Definition.AccentColor : Color.white,
                     // A lifeform is SPAWNED: it is released into the cell and lives there on its
                     // own terms, so "Switch" would name a thing this press does not do.
@@ -377,7 +395,7 @@ namespace CosmicShore.Gameplay
                     Repeatable = true,
                     // Where this variant LIVES once released - Navigate takes the player there
                     // rather than back to the bench.
-                    WorldAnchor = () => LatestRelease(capturedFauna ? capturedFauna : capturedFlora),
+                    WorldAnchor = () => ReleaseAnchor(capturedFauna ? capturedFauna : capturedFlora),
                     WorldAnchorRadius = _def ? _def.StationRadius * 3f : 0f,
                     Payload = capturedFauna ? capturedFauna : capturedFlora,
                 });
@@ -867,9 +885,13 @@ namespace CosmicShore.Gameplay
                 out bool joined);
 
             // Joining a live population: hatch beside it (an unbanded group should read as ONE
-            // group, not two). A new one goes to the densest mass, or open water in an empty cell.
+            // group, not two). A new one goes to the densest mass. In an EMPTY cell (the Barren
+            // inspection cell) the pilot's own trail is the only food there will ever be, so it
+            // hatches a short way ahead of the pilot - where it is seen and can start grazing -
+            // rather than at a random point it would wither in before anything reached it.
             Vector3 goal = joined && TryFindLineageMember(cell, clone, out var member) ? member
                 : cell.TryGetDensestRegionAnyDomain(out var densest) ? densest
+                : TryPointAheadOfPilot(cell, out var ahead) ? ahead
                 : CellLifeSpawnerBase.RandomPointInCytoplasm(cell);
 
             Domains domain = Context?.GameData?.LocalPlayer?.Vessel?.VesselStatus?.Domain ?? cell.ControllingDomain;
@@ -934,7 +956,7 @@ namespace CosmicShore.Gameplay
             // spawn sits as seed prisms until mass is cleared - say so instead of looking broken.
             string growth = cell.FloraGrowingEnabled
                 ? "growing (from seed prisms - watch them build)"
-                : "FROZEN - cell is at Frenzy; clear prism mass (graze/joust/ability) and growth resumes";
+                : FrozenNotice;
             if (CSDebug.IsVerbose(CSLogChannel.ToyBox))
                 CSDebug.LogVerbose(CSLogChannel.ToyBox,
                     $"[SpawnMatrix] Planted {spawned}/{count} x {clone.name} in its own band, into " +
@@ -1004,6 +1026,46 @@ namespace CosmicShore.Gameplay
             }
             position = default;
             return false;
+        }
+
+        // How far ahead of the pilot an unbanded release hatches in an empty cell: clear of the
+        // hull (the group jitters ±UnbandedReleaseJitter around it), close enough to be in view.
+        const float PilotHatchDistance = 220f;
+
+        bool TryPointAheadOfPilot(Cell cell, out Vector3 point)
+        {
+            point = default;
+            var vessel = Context?.GameData?.LocalPlayer?.Vessel?.Transform;
+            if (!vessel || !cell.IsInsideMembrane(vessel.position)) return false;
+            point = vessel.position + vessel.forward * PilotHatchDistance;
+            if (!cell.IsInsideMembrane(point)) point = vessel.position;
+            return true;
+        }
+
+        // Navigate's target for a population that is a BODY rather than one creature (a swarm, a
+        // substrate pack, a builder colony): its anchor GameObject can sit far from where its
+        // members actually are (a stampede's herds are seeded across its whole sector), so the
+        // window is pointed at this marker, moved onto the population's live centre on each ask.
+        Transform _navigateMarker;
+
+        /// <summary>
+        /// Where this variant's newest release IS: the creature or plant itself, or for a
+        /// population body (<see cref="IMacroPopulation"/>) the body's live centre.
+        /// </summary>
+        Transform ReleaseAnchor(ScriptableObject authored)
+        {
+            var made = LatestRelease(authored);
+            if (!made) return null;
+            if (!made.TryGetComponent(out IMacroPopulation body)) return made;
+
+            if (!_navigateMarker)
+            {
+                _navigateMarker = new GameObject("SpawnMatrix NavigateMarker").transform;
+                _navigateMarker.SetParent(transform, false);
+            }
+            var c = body.MacroCentre;
+            _navigateMarker.position = new Vector3(c.X, c.Y, c.Z);
+            return _navigateMarker;
         }
 
         void RecordRelease(ScriptableObject authored, Transform made)
