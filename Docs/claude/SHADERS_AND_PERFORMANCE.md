@@ -26,10 +26,16 @@
 
 ### Prism System Performance
 
-The prism system is the most performance-critical gameplay system. See `Assets/_Scripts/Game/Prisms/PRISM_PERFORMANCE_AUDIT.md` for the full audit (note: audit doc remains in the vestigial `Game/` directory). Key facts:
+The prism system was the most performance-critical gameplay system, and its rendering is now
+**solved**: each prism keeps a GameObject (colliders, gameplay components) but its
+`MeshRenderer` is disabled and it draws through an **instanced Entities Graphics companion
+entity** (`PrismRenderService`, `Docs/PRISM_ECS_MIGRATION.md`). Measured: **103,823 prisms at
+4.8 ms CPU vs 61.9 ms on the legacy path (12.9×)**, and 8,436 boot-world prisms in **23 draw
+calls**. Prism animation is GPU-clocked (`Docs/PRISM_ANIMATION.md`), deaths are batched pure
+entities, and spatial queries go through `PrismSpatialIndex`.
 
-- Each prism is a full GameObject with 5-6 MonoBehaviours + BoxCollider + MeshRenderer
-- At 2,000 prisms: ~12,000 MonoBehaviour instances + 2,000 colliders
-- Scale and material animation are already Jobs + Burst optimized
-- Main bottlenecks: explosion/implosion VFX (per-object UniTask), physics colliders, material instancing leaks
-- Active optimization: `PrismTimerManager`, per-frame explosion VFX cap, `EventListenerBase` GC elimination
+What still costs is what hangs **off** prisms — flora spindles (one GameObject renderer per grown
+lattice prism), growth `Instantiate`, and GameObject existence itself. Current state, the ranked
+lever list and the measuring method: **`Docs/PERFORMANCE_OPTIMIZATION.md`**. The pre-ECS audit
+that used to be linked here (`_Scripts/Game/Prisms/PRISM_PERFORMANCE_AUDIT.md`) described an
+architecture that no longer exists and was deleted 2026-09-22.

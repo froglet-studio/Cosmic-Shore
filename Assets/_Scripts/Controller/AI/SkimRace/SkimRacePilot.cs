@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using Unity.Profiling;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -32,6 +33,16 @@ namespace CosmicShore.Gameplay
     [DisallowMultipleComponent]
     public class SkimRacePilot : MonoBehaviour
     {
+        // Per-frame cost, readable in the Unity Profiler (search "SkimRace"): SkimRace.Pilot.Update is the
+        // whole pilot, .Sense its reading of the game, .FillObstacles the prism gather that feeds the
+        // laid-mass guard and .Decide the thinking (SkimRace.Driver.* its parts). Every AI seat pays them on
+        // every frame it decides (each frame, at DecisionHz 0); Decide and FillObstacles are also default
+        // diag markers (MarkerBudget.DefaultMarkers).
+        static readonly ProfilerMarker s_UpdateMarker = new("SkimRace.Pilot.Update");
+        static readonly ProfilerMarker s_SenseMarker = new("SkimRace.Pilot.Sense");
+        static readonly ProfilerMarker s_FillObstaclesMarker = new("SkimRace.Pilot.FillObstacles");
+        static readonly ProfilerMarker s_DecideMarker = new("SkimRace.Pilot.Decide");
+
         IVessel _vessel;
         IVesselStatus _status;
         GameDataSO _gameData;
@@ -75,17 +86,29 @@ namespace CosmicShore.Gameplay
         public SkimRaceObservation LastObservation { get; private set; }
         public SkimRaceAction LastAction => _held;
         public IVessel Vessel => _vessel;
+        /// <summary>This pilot's team - the domain its crystals and teammates belong to.</summary>
+        public Domains Domain => _status != null ? _status.Domain : Domains.Blue;
+        /// <summary>Where this pilot's vessel is (what its teammates see).</summary>
+        public Vector3 Position => _vessel != null ? _vessel.Transform.position : Vector3.zero;
 
         /// <summary>Raised on the frame the race starts for this pilot (race time 0).</summary>
         public event System.Action<SkimRacePilot> RaceStarted;
 
-        public void Bind(IVessel vessel, GameDataSO gameData, SkimRaceAIConfigSO config)
+        /// <param name="handicap">The lobby difficulty's deliberate mistakes
+        /// (<see cref="SkimRaceDifficultySO.For"/>); none for Hard.</param>
+        public void Bind(IVessel vessel, GameDataSO gameData, SkimRaceAIConfigSO config, SkimRaceHandicapLevel handicap)
         {
             _vessel = vessel;
             _status = vessel?.VesselStatus;
             _gameData = gameData;
             _config = config != null ? config : SkimRaceAIConfigSO.LoadDefault();
             _driver = new SkimRaceDriver(_config);
+            // Seeded off the clock and this component, so every race - and every seat in it - errs
+            // differently. Never UnityEngine.Random: the track generator seeds its global state, and
+            // drawing from it would both repeat the same mistakes per track and shift the track's own
+            // sequence.
+            if (!handicap.IsNone)
+                _driver.Handicap = new SkimRaceHandicap(handicap, unchecked(System.Environment.TickCount * 31 + GetInstanceID()));
             _aiPilot = _status?.AIPilot;
             _bound = _vessel != null && _status != null && _gameData != null;
             SuppressOtherPilots();
@@ -115,6 +138,7 @@ namespace CosmicShore.Gameplay
         public void ResetRace()
         {
             _raceActive = false;
+            SkimRaceTeamPlan.Leave(this);
             _driver?.Reset();
             _courseHint = -1;
             _targetHint = -1;
@@ -146,6 +170,7 @@ namespace CosmicShore.Gameplay
                 ResetRace();
                 if (_driver != null) _driver.Lane = ResolveLane();
                 _raceActive = true;
+                SkimRaceTeamPlan.Join(this);
                 _raceStart = Time.time;
                 _lastForward = _vessel.Transform.forward;
                 EnsureEditorRaceRecorder();
@@ -154,20 +179,25 @@ namespace CosmicShore.Gameplay
 
             if (_status.IsStationary) { WriteNeutral(); return; }
 
-            EnsureCourse();
-
-            float now = Time.time - _raceStart;
-            var obs = Observe(now);
-            LastObservation = obs;
-
-            if (_config.DecisionHz <= 0f || Time.time >= _nextDecision)
+            using (s_UpdateMarker.Auto())
             {
-                FillObstacles(obs);
-                _held = _driver.Decide(obs, _course, now, Time.deltaTime);
-                if (_config.DecisionHz > 0f) _nextDecision = Time.time + 1f / _config.DecisionHz;
-            }
+                EnsureCourse();
 
-            Apply(_held);
+                float now = Time.time - _raceStart;
+                SkimRaceObservation obs;
+                using (s_SenseMarker.Auto())
+                    obs = Observe(now);
+                LastObservation = obs;
+
+                if (_config.DecisionHz <= 0f || Time.time >= _nextDecision)
+                {
+                    using (s_FillObstaclesMarker.Auto()) FillObstacles(obs);
+                    using (s_DecideMarker.Auto()) _held = _driver.Decide(obs, _course, now, Time.deltaTime);
+                    if (_config.DecisionHz > 0f) _nextDecision = Time.time + 1f / _config.DecisionHz;
+                }
+
+                Apply(_held);
+            }
         }
 
         static string s_manualSession;
@@ -234,8 +264,14 @@ namespace CosmicShore.Gameplay
             if (_bound) SuppressOtherPilots();
         }
 
+        void OnEnable()
+        {
+            if (_raceActive) SkimRaceTeamPlan.Join(this);
+        }
+
         void OnDisable()
         {
+            SkimRaceTeamPlan.Leave(this);
             ReleaseDrift();
             if (_ringPressed) ReleaseRing();
             WriteNeutral();
@@ -287,8 +323,11 @@ namespace CosmicShore.Gameplay
             o.TimeSinceCollection = now - _lastCollectionTime;
             o.TimeSinceProgress = _driver.TimeSinceProgress;
 
-            // Target: the authoritative active crystal for this domain.
-            _target = SkimRaceTargetTracker.Select(_status.Domain, o.Position, _target);
+            // Target: the authoritative active crystal for this domain. When other AI fly for the same
+            // team, the team plan shares the crystals out so no two chase the same one
+            // (SkimRaceTeamPlan); a lone AI - or one the plan has no crystal for - flies the nearest.
+            var planned = SkimRaceTeamPlan.TargetFor(this, _status.Domain);
+            _target = planned != null ? planned : SkimRaceTargetTracker.Select(_status.Domain, o.Position, _target);
             if (_target != null)
             {
                 o.HasTarget = true;

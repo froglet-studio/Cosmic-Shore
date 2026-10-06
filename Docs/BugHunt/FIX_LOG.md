@@ -8,6 +8,306 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ---
 
+## BH-4.7 follow-up 2 — PrismTimerManager allocated a list per scheduled owner
+
+- **Date:** fixed 2026-10-05, found in the Skim Race frame-rate pass after merging `Bug_Hunt` into
+  `claude/bold-fermi-54nlts`.
+- **Symptom (cost):** a managed allocation (a `List<ScheduledAction>` and its backing array) every
+  time an owner with nothing pending schedules a settle - every prism material animation, prism
+  explosion/implosion and crystal tint does - and every one becomes garbage when it fires.
+  BH-4.7 introduced it; the flat list it replaced allocated nothing per schedule.
+- **Root cause:** `ScheduleAction` built a fresh list for each new owner, and every removal path
+  dropped the owner's list.
+- **Fix:** retired lists go to a pool (`ownerListPool`) through one `RetireOwner` used by all three
+  removal paths (cancel, destroyed owner, last action fired) and are reused by the next new owner.
+  Cleared on retire so no owner or callback is kept alive. Behaviour unchanged.
+- **Verification:** the Froglet Engine's live compile of runtime `Assets/_Scripts` builds (0
+  errors) and its suites pass (1569 engine + 352 ported). Not run in Unity (no editor in the
+  session): `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Skim Race pilot cost".
+- **PR/commit:** `bbdab6450` on `claude/bold-fermi-54nlts` (not yet PR'd to bleeding-edge).
+
+---
+
+## BH-4.7 follow-up — PrismTimerManager did not compile (OnDestroy cleared the removed list)
+
+- **Date:** fixed 2026-10-05, found while merging `bleeding-edge` into `Bug_Hunt`.
+- **Symptom:** `CS0103: The name 'scheduledActions' does not exist in the current context` at
+  `PrismTimerManager.cs:264`. From BH-4.7 (`a2e0c23ca`) on, `Bug_Hunt` does not compile in Unity,
+  so no Play mode and none of the BH fixes can be retested.
+- **Root cause:** BH-4.7 replaced the flat `scheduledActions` list with `scheduledByOwner` +
+  `scheduledActionCount` and updated every use except `OnDestroy`. The gate scripts do not compile
+  C#, so BH-4.7's "gate scripts pass" could not catch it.
+- **Fix:** `OnDestroy` clears `scheduledByOwner` and `ownerScratch` and zeroes
+  `scheduledActionCount`: what it cleared before, in the new shape.
+- **Verification:** the Froglet Engine's live compile (`dotnet build Port/src/CosmicShore.Player`,
+  which compiles every runtime file under `Assets/_Scripts` with the real C# compiler) went from
+  1 error to 0. Not run in Unity (no editor in the session). `Editor/` and `Tests/` folders are
+  outside that compile.
+- **PR/commit:** `30b85ac17` on `Bug_Hunt` (not yet PR'd to bleeding-edge).
+
+---
+
+## BH-5.7 — Delete Wildlife Blitz co-op leftovers (scene + controller)
+
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Purpose / symptom:** co-op Wildlife Blitz scene and controller still on disk after BH-5.5/5.6 retired the shipped surfaces, inviting accidental relaunch or stale GUID refs.
+- **Root cause:** retirement was staged; leftovers were kept on purpose until nothing shipped them.
+- **Decision:** BH-5.5/5.6 had kept `MinigameWildlifeBlitzMultuplayerCoOp.unity` and
+  `CoOpWildlifeBlitzMiniGame` on disk on purpose; delete them now that nothing ships them.
+- **Deleted:** `Assets/_Scenes/Multiplayer Scenes/MinigameWildlifeBlitzMultuplayerCoOp.unity` (+
+  `.meta`), `Assets/_Scripts/Controller/Arcade/CoOpWildlifeBlitzMiniGame.cs` (+ `.meta`).
+- **Refs cleaned:** dropped `GameModes.CoOpWildlifeBlitz` scene/host cases from
+  `TrainingAutoLauncher`; enum value kept (integrity tests / rename migration). Comment on
+  `MultiplayerMiniGameControllerBase` ready-gate history updated. No GUID refs remained outside the
+  deleted assets.
+- **Docs:** `Docs/SettingsSystem/ARCHITECTURE.md` no longer lists deleted
+  `SandboxBenchmarkController`; documents the live `BenchmarkStressTest` Wildlife Blitz controller
+  stack (`SinglePlayerWildlifeBlitzController` + trackers/HUD). Handoff §0 / revisit updated.
+- **Verification:** gate scripts pass; not run in Unity. Retest is on the handoff list.
+- **PR/commit:** `a0aa2b036` (+ docs `a8de4e2ca`) on `Bug_Hunt` only.
+
+---
+
+## BH-5.6 — Orphan classes after Wildlife Blitz / hangar retirement (salvage-before-delete)
+
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Purpose / symptom:** after hangar/Build Settings retirement, several Wildlife Blitz / sandbox classes had no scene, prefab, or asset references but still sat in the tree.
+- **Root cause:** mode retirement left code orphans; some types are still required by the Editor `BenchmarkStressTest` path.
+- **Decision (handoff §5):** salvage-before-delete; KEEP anything still needed by the Editor
+  `BenchmarkStressTest` path.
+- **Kept (BenchmarkStressTest still references):** `SinglePlayerWildlifeBlitzController`,
+  `SinglePlayerWildlifeBlitzScoreTracker`, `SingleplayerWildlifeBlitzTurnMonitor`,
+  `WildlifeBlitzHUD`, `WildlifeBlitzStatsProvider`. Co-op leftovers
+  (`CoOpWildlifeBlitzMiniGame` + scene) deleted later in BH-5.7.
+- **Deleted (no scene/prefab/asset refs):** `WildlifeBlitzMiniGame`,
+  `SinglePlayerSlipnStrideController`, `VolumeTestPlayerSpawnerAdapter`,
+  `SandboxBenchmarkController`, `WildlifeBlitzEndGameStatsTracker`, `WildlifeBlitzStats`.
+  Cleared a dead `MiniGameHUD` Ready onClick that still named `WildlifeBlitzMiniGame`.
+- **Already gone:** single-player `VesselSelectionPanelController` (deleted 2026-09-23).
+- **Verification:** GUID scan + gate scripts pass; not run in Unity. Retest is on the handoff list.
+- **PR/commit:** `16f949c2c` on `Bug_Hunt` only.
+
+---
+
+## BH-5.5 — Wildlife Blitz retired from shipped surfaces
+
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Root cause:** product decision to RETIRE the mode (handoff §5) after scenes were half-cleaned without clearing Build Settings / previews.
+- **Symptom:** neither Wildlife Blitz mode was in any `SO_GameList`; the co-op scene was still in
+  Build Settings and ModePreviewLibrary, so it looked half-alive after the SP scene cleanup.
+- **Decision (handoff §5):** RETIRE (not ship). Do not half-delete scenes without cleaning refs.
+- **Fix:** removed `MinigameWildlifeBlitzMultuplayerCoOp` from Build Settings; dropped the co-op
+  preview from `ModePreviewLibrary`; deleted `ArcadeGameCoOpWildlifeBlitz` and
+  `ModePreview_CoOpWildlifeBlitz`. Co-op scene/`CoOpWildlifeBlitzMiniGame` later deleted in
+  BH-5.7 (enum value kept). SP card already removed with hangar training (BH-5.4).
+  `GameModes.WildlifeBlitz` remains for Editor `BenchmarkSceneLauncher`.
+- **Verification:** gate scripts pass; not run in Unity. Retest is on the handoff playtest list.
+- **PR/commit:** `be1c838cd` on `Bug_Hunt` only.
+
+---
+
+## BH-5.4 — Hangar Wildlife Blitz training entries + card retired
+
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Root cause:** training SOs still pointed at a deleted Wildlife Blitz scene; hangar launch path was already dead (`Arcade.Instance` never placed).
+- **Symptom:** Rhino's and Sparrow's hangar training pointed at `SO_TrainingGame_WildLifeBlitz` →
+  `ArcadeGameWildlifeBlitz`, whose scene was deleted in the earlier cleanup. `Arcade.Instance` is
+  also never placed, so hangar training could not launch.
+- **Decision (handoff §5):** retire the training entries and the card together.
+- **Fix:** cleared `TrainingGames` on `SO_Class_Rhino` / `SO_Class_Sparrow`; removed the entry from
+  `TrainingGames.asset`; deleted `SO_TrainingGame_WildLifeBlitz` and `ArcadeGameWildlifeBlitz`.
+- **Verification:** gate scripts pass; not run in Unity. Retest is on the handoff playtest list.
+- **PR/commit:** `f8f73d66b` on `Bug_Hunt` only.
+
+---
+
+## BH-5.3 — Run Benchmark is Editor-only (not in player builds)
+
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Root cause:** Settings exposed `BenchmarkSceneLauncher` in player builds while `BenchmarkStressTest` is intentionally not in Build Settings.
+- **Symptom (risk):** Settings ▸ Run Benchmark called `BenchmarkSceneLauncher`, which loads
+  `BenchmarkStressTest`, but that scene is not in Build Settings — a player build would fail the load.
+- **Decision (handoff §5):** hide the path in players; do **not** add the scene to Build Settings.
+- **Fix:** `GameSettingsPanelController` hides/unwires the benchmark button outside `UNITY_EDITOR`
+  (same idea as the desktop-only quit button); `LaunchBenchmark` early-returns in players.
+- **Verification:** gate scripts pass; not run in Unity. Retest is on the handoff playtest list.
+- **PR/commit:** `e36ea1b35` on `Bug_Hunt` only.
+
+---
+
+## BH-5.2 — Strict-YAML failures on cell configs, arcade cards, and captain SOs
+
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Symptom (risk):** 17 assets failed a strict YAML parse (Unity tolerates mid-line `: ` today, but a
+  wrap that ends a line on `:` would make the asset unload as nothing — same class as the Rampage
+  Config 1 parse error fixed in PR #905).
+- **Root cause:** multi-line plain (unquoted) `Description` scalars containing `: `; captain SOs had
+  an unquoted `Flavor` with `Death: `, tab indentation, and two keys on one line.
+- **Fix:** `arcade_mode_lib.wrap_yaml_scalar` (same single-quoted fold as `rampage_intensity.py`);
+  generators `author_{dogfight,regatta,tollway,broadside,waystation}_assets.py` emit quoted
+  Descriptions; the 14 cell/card assets were re-quoted to match; captain SOs
+  (`SO_Captain_Dolphin_Space`, `SO_Captain_Sparrow_Charge`, `SO_Captain_Sparrow_Space`) hand-fixed
+  (also split `PrimaryElement`/`Element` on Sparrow Space).
+- **Verification:** strict YAML parse passes for all 17; gate scripts pass; not run in Unity.
+- **PR/commit:** `4798dd04e` on `Bug_Hunt` only.
+
+---
+
+## BH-5.1 — Crystal.ActivateCrystal NRE when the cell is already gone
+
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Symptom:** `NullReferenceException` in `Crystal.ActivateCrystal` at `transform.parent = cellData.Cell.transform`,
+  from `Fauna.ReleaseHeart` ← `LightFauna.WitherCoroutine` (3× in the 0447 Editor log, near scene cleanup).
+- **Root cause:** teardown order — the wither coroutine can still release the heart after the cell is
+  destroyed (or the scene is unloading). `DetachHeartToCell` already Unity-null-checked the cell;
+  `ActivateCrystal` did not.
+- **Fix:** return when `!gameObject.scene.isLoaded`; reparent only when `cellData && cellData.Cell`
+  (same Unity-null pattern as `DetachHeartToCell`). Enabling as a collectible still runs when the
+  scene is live but the cell reference is missing.
+- **Verification:** gate scripts pass; not run in Unity. Retest is on the handoff playtest list.
+- **PR/commit:** `f6c699e5e` on `Bug_Hunt` only.
+
+---
+
+## BH-4.8 — Trail block indices wrapped past 65,535 prisms
+
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Symptom (risk):** a very long freestyle trail that passes 65,535 prisms silently wraps the stored
+  index (`ushort`), so `GetBlockIndex` / ride stepping point at the wrong block.
+- **Root cause:** `Dictionary<Prism, ushort>` and casts to `ushort` on add and reindex.
+- **Fix:** widened the map to `Dictionary<Prism, int>` (matches `GetBlockIndex`'s return type). No
+  assert-and-cap: mass is conserved and trails are not artificially truncated.
+- **Verification:** gate scripts pass; not run in Unity. Retest is on the handoff playtest list.
+- **PR/commit:** `874671db4` on `Bug_Hunt` only.
+
+---
+
+## BH-4.7 — PrismTimerManager.CancelScheduledActions was O(N²)
+
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Symptom (risk):** mass pool returns (many prisms cancelled in one frame) hitch while cancel walks the
+  whole scheduled list and `RemoveAt`-shifts for each match.
+- **Root cause:** a single flat `List<ScheduledAction>` scanned on every cancel.
+- **Fix:** actions are stored in `Dictionary<owner, List<…>>`. Cancel removes that owner's list in
+  one step; Update walks owners via a scratch key list so callbacks can reschedule safely.
+- **Verification:** gate scripts pass; not run in Unity. Retest is on the handoff playtest list.
+- **PR/commit:** `a2e0c23ca` on `Bug_Hunt` only.
+
+---
+
+## BH-4.6 — ThumbCursor / ThumbPerimeter used legacy Input.touches
+
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Symptom (risk):** under the new Input System, `Input.touches` is empty, so the thumb cursor and
+  perimeter never saw a finger down (both scripts are currently TEMP-disabled, so this was latent).
+- **Root cause:** legacy Input Manager API.
+- **Fix:** both read active touch count from `Touchscreen.current.touches` (same package as
+  `InputController` / `InputDeviceActuation`).
+- **Verification:** gate scripts pass; not run in Unity. Retest is on the handoff playtest list.
+- **PR/commit:** `373444828` + `b11b37744` on `Bug_Hunt` only.
+
+---
+
+## BH-4.5 — name generator skipped the last word in each list
+
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Symptom:** the last entry in `FirstWordList` / `SecondWordList` could never appear in a generated name.
+- **Root cause:** `Random.Range(0, list.Length - 1)` — Unity's int overload treats the max as exclusive, so
+  the last index was never chosen. Dead for gameplay today if the lists are unused, but wrong when called.
+- **Fix:** `Random.Range(0, list.Length)`.
+- **Verification:** gate scripts pass; not run in Unity. Retest is on the handoff playtest list.
+- **PR/commit:** `0707372e1` on `Bug_Hunt` only.
+
+---
+
+## BH-4.4 — BranchingFlora re-rolled the trunk count every loop iteration
+
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Symptom (risk):** trunk count drifted as `SeedBranches` ran, and a late roll could keep the loop
+  going far past `maxTrunks` (or forever if the rolled value stayed above `i`).
+- **Root cause:** `for (int i = 0; i < Random.Range(minTrunks, maxTrunks + 1); i++)` re-evaluates
+  the upper bound every iteration.
+- **Fix:** roll `trunkCount` once before the loop.
+- **Verification:** gate scripts pass; not run in Unity. Retest is on the handoff playtest list.
+- **PR/commit:** `96a588618` on `Bug_Hunt` only.
+
+---
+
+## BH-4.1 — Bloomrush restarted a 0-0-0 round when Jade was not fielded
+
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Symptom:** in a Bloomrush match that fielded only Ruby and Gold (or any set without Jade), a
+  round that ended 0-0-0 never showed a winner and started again.
+- **Root cause:** `BloomrushScoringRuleSO.ResolveWinner` walked `ActiveDomains[0..RequestedDomainCount)`,
+  so Jade won every all-zero tie even with no Jade players. `BloomrushController` then looked for a
+  Jade `winnerRep`, found none, returned without setting `_finalResultsSent`, and `SetupNewRound`
+  ran again.
+- **Fix:** `ResolveWinner` now considers only domains that appear in `RoundStatsList` (fielded
+  players), still iterating ActiveDomains order so Jade → Ruby → Gold remains the last resort
+  among those that played. Matches how `ResolvePlacementOrder` already works.
+- **Verification:** gate scripts pass; not run in Unity. Retest is on the handoff playtest list.
+- **PR/commit:** `4a6bec37b` on `Bug_Hunt` only.
+
+---
+
+## BH-4.2 / 4.3 — owner stat-report RPCs accepted NaN volumes and out-of-turn reports
+
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Symptom (risk):** a client could send a NaN volume that passed the `volume < 0f` check (every
+  comparison with NaN is false) and poisoned that player's volume totals. A report that arrived
+  after the turn had ended, or before it started, was credited into `RoundStats`, which can
+  disagree with a result the server already froze.
+- **Root cause:** the report RPCs in `Player.cs` trusted the value and ignored the turn state;
+  only `ReportSwitchThreaded_ServerRpc` had a turn gate.
+- **Fix:** `ReportEnvironmentPrismDestroyed_ServerRpc` and `ReportPrismStolen_ServerRpc` use
+  `if (!(volume >= 0f)) return;` so NaN is rejected. A new `TurnAcceptsStatReports` property
+  (`gameData.IsTurnRunning`) gates `ReportFaunaKill`, `ReportCombatHit`, `ReportFusesBeaten`,
+  `ReportEnvironmentPrismDestroyed` and `ReportPrismStolen`.
+- **Trade-off:** a legitimate report still in flight when the turn ends is now dropped. That is the
+  intended behaviour, the same as the switch-thread gate.
+- **Verification:** gate scripts pass; not run in Unity (needs a multiplayer match). Retest is on
+  the handoff playtest list.
+- **PR/commit:** `5933726ab` on `Bug_Hunt` only.
+
+---
+
+## BH-3.1 — Play Again could leave the screen black when the vessel was ready early
+
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Symptom (suspected):** after Play Again (scene-reload replay) a host or client stays on a black
+  overlay and never fades in.
+- **Root cause:** `MultiplayerMiniGameControllerBase` subscribed `FadeFromBlackOnReplay` to
+  `OnClientReady` inside `InitializeAfterDelay`, after the `InitDelayMs` (1 s) wait and after
+  `InitializeGame()`. The player vessel can finish initialising inside that window, so
+  `OnClientReady` had already fired, the subscription never saw it, and nothing lowered the overlay.
+- **Fix:** the fade is now armed in `OnNetworkSpawn`, as soon as `IsReplayReload` is seen (the flag
+  is cleared there). The late block is removed. `OnNetworkDespawn` unsubscribes so an armed fade
+  cannot outlive the scene. The handler still unsubscribes itself on first run.
+- **Verification:** gate scripts pass; not run in Unity (needs a multiplayer replay). Retest is on
+  the handoff playtest list.
+- **PR/commit:** `09f02be11` on `Bug_Hunt` only.
+
+---
+
+## BH-2.4 — reconnect from the main menu was refused by the app-state machine
+
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Symptom:** after tapping Reconnect in the menu the console shows `[AppState] Invalid
+  transition: MainMenu → Authenticating`, and the app-state mirror stays `MainMenu` while the auth
+  scene runs. Anything keyed on app state sees the wrong phase during the re-boot.
+- **Root cause:** `ReconnectService` calls `TransitionTo(Authenticating)` from the menu, but the
+  transition table only listed `MainMenu → LoadingGame`.
+- **Fix:** `Authenticating` is now a valid target from `MainMenu`, `LoadingGame`, `InGame` and
+  `GameOver` (reconnect is a legitimate path from any of them, since the disconnect notice can
+  appear mid-game). The class summary lists it, and `ApplicationStateMachineTests` has new cases.
+- **Not changed:** `Bootstrapping`, `None` and `ShuttingDown` still do not accept it, and
+  `Disconnected` already did.
+- **Verification:** gate scripts pass; the new EditMode test was not run (Unity not available
+  here). Retest is on the handoff playtest list.
+- **PR/commit:** `9e7f9cc6f` + `50d48ea39` (+ docs `701e0acfa`) on `Bug_Hunt` only.
+
+---
+
 ## BH-2.3 — invite-clear could skip the lobby mutex and race an invite send
 
 - **Date:** fixed 2026-10-05; merged 2026-10-05 at Yash's call with the retest deferred to the handoff revisit list. Repro skipped.
@@ -27,7 +327,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
   its own mutex hold and does not call the clear.
 - **Verification:** all gate scripts pass; not run in Unity (two players needed). Retest is on
   the handoff playtest list.
-- **PR/commit:** pending.
+- **PR/commit:** `f92384eb4` · PR #956 · merge `ac71b471f`.
 
 ---
 
@@ -48,7 +348,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 - **Verification:** all gate scripts pass; not run in Unity (needs two players and a network cut).
   Retest is on the handoff playtest list. The identity republish after rejoin still comes from
   `LivePropertySource` as before.
-- **PR/commit:** pending.
+- **PR/commit:** `93c5df556` · PR #955 · merge `a0346c699`.
 
 ---
 
@@ -75,7 +375,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
   That matches what already happened on the next launch, and is safer than overwriting the record.
 - **Verification:** all gate scripts pass; not run in Unity. No test double implements
   `ICloudSaveProvider`, so no tests needed updating. Retest is on the handoff playtest list.
-- **PR/commit:** pending.
+- **PR/commit:** `cca2959c6` · PR #954 · merge `0f791df4b`.
 
 ---
 
@@ -94,7 +394,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
   there.
 - **Verification:** all gate scripts pass; not run in Unity (needs two devices). Retest is on the
   handoff playtest list.
-- **PR/commit:** pending.
+- **PR/commit:** `89d5b1759` · PR #953 · merge `11065629f`.
 
 ---
 
@@ -114,7 +414,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 - **Verification:** all gate scripts pass; no test asserted the old strings; not run in Unity.
   Retest is on the handoff playtest list. Alternative if the symbols are wanted back: add the
   glyphs to the font asset instead.
-- **PR/commit:** pending.
+- **PR/commit:** `cc29a75a2` · PR #951 · merge `3689e3fcc`.
 
 ---
 
@@ -134,7 +434,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
   `LogControlWindow` (benchmark/diagnostic file names and display text). They are outside the
   handoff list; sweep them if a diagnostic ever needs to be machine-parsed.
 - **Verification:** all gate scripts pass; not run in Unity. Retest is on the handoff playtest list.
-- **PR/commit:** pending.
+- **PR/commit:** `6b7041e9f` · PR #950 · merge `9cef9fc3c`.
 
 ---
 
@@ -154,7 +454,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
   `now - entry.Time >= entry.Window`. `TryAdmit` behaviour is unchanged.
 - **Verification:** all gate scripts pass; not run in Unity. Retest and the Broadside balance
   re-check are on the handoff playtest list.
-- **PR/commit:** pending.
+- **PR/commit:** `b9d1f25c9` · PR #949 · merge `5f64846d9`.
 
 ---
 
@@ -175,7 +475,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
   that a live session must keep.
 - **Verification:** all gate scripts pass; not run in Unity. Retest steps (two peers) are on the
   handoff playtest list.
-- **PR/commit:** pending.
+- **PR/commit:** `1a5b5688e` · PR #948 · merge `462f44927`.
 
 ---
 
@@ -195,7 +495,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 - **Verification:** all gate scripts pass; not run in Unity. Retest steps are on the handoff
   playtest list. Same lesson as BH-1.4 (PLAYBOOK §7): a call that swallows failures is not proof of
   success; check the state after it.
-- **PR/commit:** pending.
+- **PR/commit:** `458eaa78c` · PR #947 · merge `2505f5fd0`.
 
 ---
 
@@ -279,7 +579,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
     menu, matching its existing failure behaviour, instead of waiting out the profile timeout.
 - **Verification:** all gate scripts pass; not run in Unity. Retest steps are in the handoff
   playtest list and PLAYBOOK §7.
-- **PR/commit:** pending.
+- **PR/commit:** `6d1621909` · PR #940 · merge `75d5058b1`.
 
 ---
 
@@ -305,7 +605,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
     the same code path as a real let-go (`ReleaseHeldTriggers` calls it with 0, 0).
 - **Verification:** all gate scripts pass; Yash retested with a pad and it works. Re-verify steps are
   kept in PLAYBOOK §6 and the handoff playtest list in case it recurs.
-- **PR/commit:** pending.
+- **PR/commit:** `b9b636def` · PR #939 · merge `10637f08e`.
 
 ---
 
@@ -321,7 +621,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
   `AITraining` channel), the same as every other training log in that file. Same message text.
 - **Verification:** `python3 Tools/Build/check_console_logging.py` reports no problems (it
   reported 1 before).
-- **PR/commit:** pending.
+- **PR/commit:** `fb47b6528` · PR #938 · merge `b13f7f613`.
 
 ---
 
@@ -340,7 +640,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
   calls `StopAIPilot` first. Sending input from a teardown path risks null references.
 - **Verification:** Yash tested the Menu_Main freestyle takeover on `Bug_Hunt` and the ship flew
   normally, with no stuck drift.
-- **PR/commit:** docs only.
+- **PR/commit:** docs only · PR #937 · merge `94544d417`.
 
 ---
 
@@ -365,7 +665,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 - **Verification:** all four gate scripts pass. Needs Yash's retest on `Bug_Hunt`: play the
   Wildlife Blitz co-op scene (or any mode with fauna), let creatures die, and check that nothing
   throws and the creatures count goes down as they die.
-- **PR/commit:** pending.
+- **PR/commit:** `a7b09cc99` · PR #936 · merge `d8f10ebf6`.
 
 ---
 
@@ -393,7 +693,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
   - The handoff doc's §1.10 moved to §0.
 - **Verification:** all four gate scripts pass. Needs Yash's retest on `Bug_Hunt`: the same
   play path should leave the Material count flat and show no `Crystal (Instance)` entries.
-- **PR/commit:** pending.
+- **PR/commit:** `7e0d219da` · PR #935 · merge `9d2f95225`.
 
 ---
 
@@ -524,23 +824,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ## Known open console issues
 
-Checked against `Bug_Hunt` @ `546bda3` on 2026-09-29.
+Checked against `Bug_Hunt` @ `546bda3` on 2026-09-29; Crystal NRE closed as BH-5.1 and the 17
+strict-YAML assets closed as BH-5.2 on 2026-10-05.
 
-- **17 assets fail a strict YAML parse.** Unity has not reported these (it tolerates a mid-line
-  `: `), but they are invalid YAML, and the next edit that wraps a line ending in `:` will break
-  them. Fix the generator where there is one (PLAYBOOK §3).
-  - `Boneyard Cell Config 1-4`: `author_dogfight_assets.py`
-  - `Regatta Cell Config 1-4`: `author_regatta_assets.py`
-  - `Tollway Cell Config 1-4`: `author_tollway_assets.py`
-  - `ArcadeGameBroadside`: `author_broadside_assets.py`
-  - `ArcadeGameWaystation`: `author_waystation_assets.py` (**new since PR #905**, added by
-    `de3a4c8`)
-  - `SO_Captain_Dolphin_Space`: `Flavor: “…Death: The…”` is unquoted
-  - `SO_Captain_Sparrow_Charge`: tab-indented `Space:`/`Time:` lines
-  - `SO_Captain_Sparrow_Space`: `IconActive:` is on the same line as `HeadshotImage: {fileID: 0}`,
-    so the value is probably lost
-- **`NullReferenceException` in `Crystal.ActivateCrystal`** (Crystal.cs:699,
-  `transform.parent = cellData.Cell.transform;`), called from `Fauna.ReleaseHeart ←
-  LightFauna.WitherCoroutine`. It appears 3 times in the 0447 log, e.g. line 44274, about 100
-  lines before a scene-cleanup error. It is likely a teardown-order problem: the cell is gone
-  before the wither coroutine reaches the heart (PLAYBOOK §4). Not fixed.
+- *(none listed — last open console items from this section are closed.)*

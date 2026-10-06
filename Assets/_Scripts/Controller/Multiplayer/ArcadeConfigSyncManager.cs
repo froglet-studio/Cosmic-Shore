@@ -120,6 +120,14 @@ namespace CosmicShore.Gameplay
             /// under-counts humans draws phantom AI avatars nobody ever spawns.
             /// </summary>
             public int  HumanCount;
+            /// <summary>
+            /// How well the AI flies (<c>CosmicShore.Data.AIDifficulty</c> as an int), the host's
+            /// pick on the launch panel. Replicated so a guest's panel shows the bots it is about
+            /// to race, and an int (not the enum) so the struct stays a plain value every
+            /// reflection test can mutate. 0 = unset; readers resolve it through
+            /// <c>AIDifficultyRules.Resolve</c>.
+            /// </summary>
+            public int  AIDifficulty;
             public int  AiCount;
             public int  Ai0, Ai1, Ai2, Ai3, Ai4, Ai5;
 
@@ -133,6 +141,7 @@ namespace CosmicShore.Gameplay
                 serializer.SerializeValue(ref MaxPlayers);
                 serializer.SerializeValue(ref DomainCount);
                 serializer.SerializeValue(ref HumanCount);
+                serializer.SerializeValue(ref AIDifficulty);
                 serializer.SerializeValue(ref AiCount);
                 serializer.SerializeValue(ref Ai0);
                 serializer.SerializeValue(ref Ai1);
@@ -145,7 +154,8 @@ namespace CosmicShore.Gameplay
             public bool Equals(LobbySnapshot o) =>
                 Generation == o.Generation && IsOpen == o.IsOpen && GameMode == o.GameMode &&
                 Intensity == o.Intensity && PlayerCount == o.PlayerCount && MaxPlayers == o.MaxPlayers &&
-                DomainCount == o.DomainCount && HumanCount == o.HumanCount && SameAi(o);
+                DomainCount == o.DomainCount && HumanCount == o.HumanCount &&
+                AIDifficulty == o.AIDifficulty && SameAi(o);
 
             public bool SameAi(LobbySnapshot o) =>
                 AiCount == o.AiCount && Ai0 == o.Ai0 && Ai1 == o.Ai1 && Ai2 == o.Ai2 && Ai3 == o.Ai3 &&
@@ -242,6 +252,14 @@ namespace CosmicShore.Gameplay
         /// client's modal follows the host's number and rebuilds (or exits) its own preview.
         /// </summary>
         public event System.Action<int> OnIntensityChangedOnClient;
+
+        /// <summary>
+        /// Raised on clients when the host picks a different AI difficulty while the lobby is
+        /// open. Arg: the difficulty as an int (<c>CosmicShore.Data.AIDifficulty</c>). A lobby
+        /// that OPENS carries its difficulty in <see cref="CurrentLobby"/>, which the open
+        /// handler reads directly - this is only the change.
+        /// </summary>
+        public event System.Action<int> OnAIDifficultyChangedOnClient;
 
         /// <summary>
         /// Raised on clients when the host reshapes the roster mid-lobby - an AI placed on a
@@ -506,7 +524,8 @@ namespace CosmicShore.Gameplay
         /// at the _isCommitted gate.
         /// </summary>
         public void CommitConfiguration(int gameMode, int intensity, int playerCount,
-                                        int maxPlayers, int humanCount, int domainCount)
+                                        int maxPlayers, int humanCount, int domainCount,
+                                        int aiDifficulty)
         {
             if (!IsServer) return;
 
@@ -553,6 +572,7 @@ namespace CosmicShore.Gameplay
                 MaxPlayers  = maxPlayers,
                 DomainCount = domainCount,
                 HumanCount  = Mathf.Max(1, SpectatorSession.CountHumanClients(NetworkManager.Singleton)),
+                AIDifficulty = aiDifficulty,
             };
         }
 
@@ -604,6 +624,9 @@ namespace CosmicShore.Gameplay
             if (previous.Intensity != next.Intensity)
                 OnIntensityChangedOnClient?.Invoke(next.Intensity);
 
+            if (previous.AIDifficulty != next.AIDifficulty)
+                OnAIDifficultyChangedOnClient?.Invoke(next.AIDifficulty);
+
             // HumanCount is not carried by the event - a client reads it off CurrentLobby - but a
             // change to it still reshapes the roster (seats minus humans is the AI count), so it
             // has to be one of the things that asks for a redraw.
@@ -648,6 +671,19 @@ namespace CosmicShore.Gameplay
             var snapshot = _lobby.Value;
             if (!snapshot.IsOpen || snapshot.Intensity == intensity) return;
             snapshot.Intensity = intensity;
+            _lobby.Value = snapshot;
+        }
+
+        /// <summary>
+        /// Called by ArcadeGameConfigureModal on the host whenever the AI difficulty changes while
+        /// the lobby is open, so every guest's panel shows the bots they are about to race.
+        /// </summary>
+        public void NotifyAIDifficultyChanged(int aiDifficulty)
+        {
+            if (!IsServer) return;
+            var snapshot = _lobby.Value;
+            if (!snapshot.IsOpen || snapshot.AIDifficulty == aiDifficulty) return;
+            snapshot.AIDifficulty = aiDifficulty;
             _lobby.Value = snapshot;
         }
 

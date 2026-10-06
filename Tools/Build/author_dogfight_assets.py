@@ -44,6 +44,7 @@ CHECK_ONLY = "--check" in sys.argv
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import boneyard_budget as budget  # noqa: E402
 import arcade_mode_lib as aml  # noqa: E402  - card background + retired-key checks
+from arcade_mode_lib import wrap_yaml_scalar  # noqa: E402  - strict-YAML descriptions (BH-5.2)
 
 
 def guid(name: str) -> str:
@@ -685,14 +686,14 @@ for i in INTENSITIES:
     # only how much wreckage there is to hide behind.
     env_ref = (f"{{fileID: 5260000000000503, "
                f"guid: {G_ASSET[f'SpawnableBoneyard{i}.prefab']}, type: 3}}")
-    description = (
-        f"The Dog Fight arena at intensity {i} - {row['total']} prisms of wreckage\n"
-        f"    inside r={budget.ARENA_RADIUS:.0f}: {hulks} hollow hulks to hide in, {spires} leaning spires,\n"
-        f"    {frames} girder cages, {overpasses} broken overpasses, and {row['danger']} danger traps on the torn\n"
-        "    ends and around the reactor, scattered into debris fields with an open centre.\n"
-        "    Cover, never an objective - shooting it scores nothing. NO NUCLEUS by design.\n"
-        "    PhaseThresholds ride THIS intensity's own baseline; regenerate with\n"
-        "    Tools/Build/author_dogfight_assets.py after any change rather than hand-editing.")
+    description = wrap_yaml_scalar(
+        f"The Dog Fight arena at intensity {i} - {row['total']} prisms of wreckage "
+        f"inside r={budget.ARENA_RADIUS:.0f}: {hulks} hollow hulks to hide in, {spires} leaning spires, "
+        f"{frames} girder cages, {overpasses} broken overpasses, and {row['danger']} danger traps on the torn "
+        "ends and around the reactor, scattered into debris fields with an open centre. "
+        "Cover, never an objective - shooting it scores nothing. NO NUCLEUS by design. "
+        "PhaseThresholds ride THIS intensity's own baseline; regenerate with "
+        "Tools/Build/author_dogfight_assets.py after any change rather than hand-editing.")
     th = budget.phase_thresholds(row["total"], row["volume"])
     thresholds = f"""  PhaseThresholds:
     RestlessEnter: {th['RestlessEnter']}

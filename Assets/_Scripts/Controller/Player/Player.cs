@@ -422,6 +422,14 @@ namespace CosmicShore.Gameplay
             if (!NetMaelstromRoster.Value.Equals(roster)) NetMaelstromRoster.Value = roster;
         }
 
+        /// <summary>
+        /// True only while a turn is running. The owner-reported stat RPCs ignore anything that
+        /// arrives outside a turn: a client keeps detecting for the round trip it takes the turn
+        /// end to reach it, and a late or forged report must not change a result the server has
+        /// already frozen (see <see cref="ReportSwitchThreaded_ServerRpc"/>).
+        /// </summary>
+        bool TurnAcceptsStatReports => gameData != null && gameData.IsTurnRunning;
+
         [ServerRpc]
         public void ReportFaunaKill_ServerRpc()
         {
@@ -429,6 +437,7 @@ namespace CosmicShore.Gameplay
             CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
 
             if (RoundStats == null) return;
+            if (!TurnAcceptsStatReports) return;
             RoundStats.LifeformsKilled++;
         }
 
@@ -458,6 +467,7 @@ namespace CosmicShore.Gameplay
             CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
 
             if (RoundStats == null) return;
+            if (!TurnAcceptsStatReports) return;
 
             // Validate against the DECLARED set rather than testing for one member and
             // collapsing everything else onto Bullet. That earlier shape was a latent
@@ -498,6 +508,7 @@ namespace CosmicShore.Gameplay
             CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
 
             if (RoundStats == null) return;
+            if (!TurnAcceptsStatReports) return;
             RoundStats.FusesBeaten += Mathf.Clamp(count, 0, 32);
         }
 
@@ -531,7 +542,8 @@ namespace CosmicShore.Gameplay
             CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
 
             if (RoundStats == null) return;
-            if (volume < 0f) return;
+            if (!(volume >= 0f)) return; // also rejects NaN, which `volume < 0f` lets through
+            if (!TurnAcceptsStatReports) return;
 
             var resolved = System.Enum.IsDefined(typeof(Domains), prismDomain)
                 ? (Domains)prismDomain
@@ -607,7 +619,8 @@ namespace CosmicShore.Gameplay
             CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
 
             if (RoundStats == null) return;
-            if (volume < 0f) return;
+            if (!(volume >= 0f)) return; // also rejects NaN, which `volume < 0f` lets through
+            if (!TurnAcceptsStatReports) return;
 
             StatsManager.CreditPrismSteal(RoundStats, volume);
         }

@@ -273,6 +273,25 @@ def num(v) -> str:
     return s if s else "0"
 
 
+def wrap_yaml_scalar(text: str, width: int = 88, indent: str = "    ") -> str:
+    """Unity's style for a long string: a SINGLE-QUOTED scalar ('' escapes a quote), first
+    line inline, continuations indented. Must be quoted - plain scalars cannot hold ': ' or a
+    line ending in ':' (Unity: "Expect ':' between key and value within mapping"). Folding
+    turns each line break back into the single space it replaced, so the loaded string is
+    exactly `text`. Same helper as Tools/Build/rampage_intensity.py::_wrap_yaml_scalar."""
+    words, lines, cur = ("'" + text.replace("'", "''") + "'").split(), [], ""
+    for w in words:
+        cand = f"{cur} {w}".strip()
+        if len(cand) > width and cur:
+            lines.append(cur)
+            cur = w
+        else:
+            cur = cand
+    if cur:
+        lines.append(cur)
+    return ("\n" + indent).join(lines)
+
+
 def toast(situation: int, template: str, tint_domain: int = 0, domain_names: int = 1,
           every_n: int = 1, idle: int = 0, idle_seconds: int = 60, alpha=1) -> str:
     """One GameToastDefinition entry (the field set GameToastConfigSO serializes today)."""

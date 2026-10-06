@@ -7,9 +7,25 @@
 #   bash Tools/Build/skimrace_sim_harness/run.sh eval  4 20 [Field=value ...] [ph.Field=value ...]
 #   bash Tools/Build/skimrace_sim_harness/run.sh trace 4 3  [...]
 #   bash Tools/Build/skimrace_sim_harness/run.sh tune  4 8 30 [...]
+#   bash Tools/Build/skimrace_sim_harness/run.sh handicap 2 40 120 ph.HcReaction=0.5 [...]
+#        the lobby difficulty's mistake chance that puts an AI seat's median at 120 s (section 10).
+#   bash Tools/Build/skimrace_sim_harness/run.sh tuneall 1,2,3,4 4 16 [sigma=s] [final=n] [set=winner] [only=stated] [...]
+#        ONE policy tuned on several tracks at once - the general SkimRaceAIConfig that any
+#        intensity without its own file falls back to (Docs/SKIM_RACE_AI.md section 6.12).
+#   bash Tools/Build/skimrace_sim_harness/run.sh fingerprint
+#        each track's map fingerprint as the game computes it (Docs/SKIM_RACE_AI.md section 11).
+#   bash Tools/Build/skimrace_sim_harness/run.sh eval 1 20 [...] ph.Seats=2 ph.Team=1 [ph.TeamRule=0]
+#        a TEAM race: the seats share one domain and its crystals (section 13), flying the game's team
+#        plan; ph.TeamRule=0 flies the rule from before team play (every seat on the nearest crystal).
 #
 # Needs a dotnet 8+ SDK (a per-user install in ~/.dotnet is fine). No .csproj on purpose: the
 # repo gitignores *.csproj, so everything builds into $TMPDIR.
+#
+# The whole body is one { ...; exit; } block on purpose. bash reads a script AS IT RUNS it, so editing
+# this file during an hour-long tune shifted its read position and re-ran the last line - a second,
+# unwanted tune (2026-10-05). A block is parsed whole before any of it runs, so an edit cannot reach
+# a run already in flight - the same reason the assembly runs from a private copy below.
+{
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../../.." && pwd)"
@@ -23,37 +39,13 @@ SR="$ROOT/Assets/_Scripts/Controller/AI/SkimRace"
 mkdir -p "$OUT"
 
 # Track geometry straight out of the shipped scene: per intensity the waypoint track (and whether
-# it is a spline), the per-intensity laps, and the crystal anchors.
-python3 - "$ROOT" "$OUT/track.txt" <<'PY'
-import re, sys
-root, out = sys.argv[1], sys.argv[2]
-t = open(f"{root}/Assets/_Scenes/Multiplayer Scenes/MinigameSkimRace.unity").read()
-docs = re.split(r"\n--- ", t)
-def block_with(key):
-    for d in docs:
-        if key in d: return d
-    raise SystemExit("missing " + key)
-track = block_with("prismSpacing:")
-cm = block_with("listOfCrystalPositions:")
-mon = block_with("lapsPerIntensity:")
-def sets(blk, start, stop):
-    body = blk.split(start)[1].split(stop)[0]
-    return [re.findall(r"x: ([-\d.e]+), y: ([-\d.e]+), z: ([-\d.e]+)", s) for s in body.split("- positions:")[1:]]
-wps = sets(track, "waypoints:", "useSplinePerIntensity")
-anchors = sets(cm, "listOfCrystalPositions:", "anchorJitterRadius")
-spl = re.search(r"useSplinePerIntensity: ([0-9a-f]+)", track).group(1)
-spline = [int(spl[i*8:i*8+2], 16) for i in range(len(spl)//8)]
-laps_hex = re.search(r"lapsPerIntensity: ([0-9a-f]+)", mon).group(1)
-laps = [int.from_bytes(bytes.fromhex(laps_hex[i*8:i*8+8]), "little") for i in range(len(laps_hex)//8)]
-with open(out, "w") as fh:
-    for i in range(4):
-        fmt = lambda pts: ";".join(",".join(p) for p in pts)
-        fh.write(f"{i+1}|{spline[i]}|{laps[i]}|{fmt(wps[i])}|{fmt(anchors[i])}\n")
-PY
+# it is a spline), the laps and the crystal anchors - resolved exactly as the game resolves them, by
+# the same reader that computes each intensity's map fingerprint (so a fifth intensity is raced too).
+python3 "$ROOT/Tools/Build/skimrace_track_fingerprint.py" --emit-track "$OUT/track.txt"
 
 ls "$REFDIR"/*.dll | sed 's/^/-r:/' > "$OUT/refs.rsp"
 printf '"%s"\n' "$HERE/UnityShim.cs" "$HERE/Sim.cs" \
-  "$SR/SkimRaceAIConfigSO.cs" "$SR/SkimRaceCourse.cs" "$SR/SkimRaceObservation.cs" "$SR/SkimRaceDriver.cs" "${SKIMRACE_SHELL_FILE:-$SR/SkimRaceShell.cs}" "$SR/SkimRacePlanner.cs" "$SR/SkimRaceObstacle.cs" > "$OUT/files.rsp"
+  "$SR/SkimRaceAIConfigSO.cs" "$SR/SkimRaceCourse.cs" "$SR/SkimRaceObservation.cs" "$SR/SkimRaceDriver.cs" "${SKIMRACE_SHELL_FILE:-$SR/SkimRaceShell.cs}" "$SR/SkimRacePlanner.cs" "$SR/SkimRaceObstacle.cs" "$SR/SkimRaceHandicap.cs" "$SR/SkimRaceTrackFingerprint.cs" "$SR/SkimRaceTargetTracker.cs" "$SR/SkimRaceTeamAssignment.cs" > "$OUT/files.rsp"
 "$DOTNET" "$CSC" -nologo -langversion:latest -nostdlib -noconfig -optimize+ "@$OUT/refs.rsp" \
   -nowarn:CS1591,CS0067,CS0649,CS0414,CS1574,CS0169,CS8632,CS0108,CS1587 \
   -target:exe -main:Program -out:"$OUT/sim.dll" "@$OUT/files.rsp" >&2
@@ -66,3 +58,5 @@ mkdir -p "$RUN"
 cp "$OUT/sim.dll" "$OUT/sim.runtimeconfig.json" "$OUT/track.txt" "$RUN/"
 trap 'rm -rf "$RUN"' EXIT
 "$DOTNET" "$RUN/sim.dll" "$RUN/track.txt" "$@"
+exit
+}

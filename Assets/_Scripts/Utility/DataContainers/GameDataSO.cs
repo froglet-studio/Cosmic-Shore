@@ -164,6 +164,18 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
+        /// How well the AI flies this match - the host's pick on the launch panel, written by the
+        /// launch pipeline beside <see cref="RequestedAIDomains"/> and read on the server where the
+        /// AI is installed (the Skim Race pilot first; <see cref="AIDifficultyRules.IsOfferedFor"/>
+        /// lists the modes that read it). Independent of intensity: intensity is the map,
+        /// difficulty is the opponent. Pre-launch config like the AI domains, so it survives
+        /// <see cref="ResetRuntimeData"/> into the game scene (and its replay reloads) and is
+        /// reset only by <see cref="ResetAllData"/>. [NonSerialized] for the same reason the
+        /// domain list is: a play-mode session must never bake a setting into the asset.
+        /// </summary>
+        [NonSerialized] public AIDifficulty RequestedAIDifficulty = AIDifficultyRules.Default;
+
+        /// <summary>
         /// Levels of ALL FOUR elements a trailing player/team gains per unit of score deficit
         /// behind first place - this game's comeback strength, authored on SO_ArcadeGame and
         /// synced from the launch pipeline (host) / config RPC (clients). Read every tick by
@@ -752,8 +764,8 @@ namespace CosmicShore.Utility
             CombatPointTargetCount = 0;
             SwitchTargetCount = 0;
             System.Array.Clear(_domainMetricSums, 0, _domainMetricSums.Length);
-            // Note: RequestedAIBackfillCount and RequestedDomainCount are intentionally
-            // NOT reset here. They are pre-launch config values set by
+            // Note: RequestedAIBackfillCount, RequestedDomainCount and RequestedAIDifficulty
+            // are intentionally NOT reset here. They are pre-launch config values set by
             // ArcadeGameConfigureModal and must survive the ResetRuntimeData() call
             // in SceneLoader.LoadSceneAsync() so the game scene can read them.
             // They are reset in ResetAllData() instead.
@@ -861,6 +873,7 @@ namespace CosmicShore.Utility
             SelectedIntensity.Value = 1;
             RequestedAIBackfillCount = 0;
             RequestedAIDomains.Clear();
+            RequestedAIDifficulty = AIDifficultyRules.Default;
             RequestedDomainCount = 3;
             IsMaelstromMode = false;
 

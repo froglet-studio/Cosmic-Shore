@@ -387,8 +387,7 @@ namespace CosmicShore.Gameplay
             if (listOfCrystalPositions == null || listOfCrystalPositions.Count == 0)
                 return false;
 
-            int intensity = Mathf.Clamp(CurrentIntensity, 1, listOfCrystalPositions.Count);
-            var set = listOfCrystalPositions[intensity - 1];
+            var set = listOfCrystalPositions[AnchorSetIndex(CurrentIntensity)];
 
             if (set == null || set.positions == null || set.positions.Count == 0)
             {
@@ -407,6 +406,23 @@ namespace CosmicShore.Gameplay
             positions = _cachedAnchors;
             return true;
         }
+
+        /// <summary>
+        /// The authored anchors the given 1-based intensity spawns its crystals at - the set
+        /// <see cref="TryGetCrystalPositionListByIntensity"/> picks for that intensity (clamped into
+        /// the list) - or an empty list when none are authored. Read-only; the Skim Race AI's map
+        /// fingerprint reads it.
+        /// </summary>
+        public IReadOnlyList<Vector3> AnchorsForIntensity(int intensity)
+        {
+            if (listOfCrystalPositions == null || listOfCrystalPositions.Count == 0) return Array.Empty<Vector3>();
+            var set = listOfCrystalPositions[AnchorSetIndex(intensity)];
+            return set?.positions != null ? (IReadOnlyList<Vector3>)set.positions : Array.Empty<Vector3>();
+        }
+
+        /// <summary>The anchor set an intensity reads: clamped into the authored list, so an intensity
+        /// beyond the last set reuses the last one. Callers check the list is non-empty first.</summary>
+        int AnchorSetIndex(int intensity) => Mathf.Clamp(intensity, 1, listOfCrystalPositions.Count) - 1;
 
         /// <summary>
         /// The intensity this manager authors against: the serialized SOAP variable when a scene

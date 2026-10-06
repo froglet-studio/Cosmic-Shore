@@ -18,7 +18,8 @@ new: Rampage intensity 1 is, by its own documentation, the heaviest cell in any 
 explicitly **not profiled**.
 
 Read `Docs/STEAM_RELEASE_TASKS.md` (item R7), `Assets/_Scripts/Utility/PerformanceBenchmark/BENCHMARK_TOOL.md`
-§5 and `Docs/PERFORMANCE_OPTIMIZATION.md` §2–§3 first.
+§5 and `Docs/PERFORMANCE_OPTIMIZATION.md` (§4 How to measure) first; the locked conventions are in
+`Docs/archive/PERFORMANCE_LOG_2026.md` §2.
 
 ## What already exists — do not rebuild it
 
@@ -66,14 +67,14 @@ and write the result into a table a human can read top-down by worst cell.
 ## Constraints
 
 - **This is measurement, not optimisation.** Do not change load behaviour in this branch. If you
-  find something egregious, record it in `Docs/PERFORMANCE_OPTIMIZATION.md` §4 as a backlog entry
+  find something egregious, record it in `Docs/PERFORMANCE_OPTIMIZATION.md` §3.3 as a lever
   with its root cause and leave it.
 - **Verify Burst compilation is ON before trusting any number you take.** `Docs/PERFORMANCE_OPTIMIZATION.md`
-  §0 records this as the first rule of every perf session: it was off on a developer machine for an
+  §4.2 records this as the first rule of every perf session: it was off on a developer machine for an
   entire investigation, ran every job as managed IL at roughly 20× cost, and invalidated four
   captures. The tell in the Hierarchy view is a job showing as `ExecuteJobFunction.Invoke()`.
-- Do not re-measure into the doc's existing tables — its numbers were verified 2026-07-08 and are
-  two months and ~15 modes stale. Add a dated section; do not silently overwrite history.
+- Do not re-measure into the archived log's tables (`Docs/archive/PERFORMANCE_LOG_2026.md` is frozen). Add dated
+  numbers to `Docs/PERFORMANCE_OPTIMIZATION.md`; do not silently overwrite history.
 - The actual sweep needs a machine and, for the floor numbers, the GTX 1060-class box (item H8).
   Author the harness and the target; hand the run over.
 

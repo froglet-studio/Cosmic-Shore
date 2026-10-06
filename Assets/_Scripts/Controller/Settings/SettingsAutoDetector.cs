@@ -13,7 +13,7 @@ namespace CosmicShore.Core
     /// The pixel term is not cosmetic. A machine's capability score says nothing about its display,
     /// and the two are wildly decoupled: a Retina MacBook and a 1080p desktop can score identically
     /// while the Mac is asked to render ~4x the pixels every frame. Since the rendering frontier on
-    /// this title is transparent-prism overdraw (Docs/PERFORMANCE_OPTIMIZATION.md §0, capture #4),
+    /// this title was suspected to be transparent-prism overdraw (Docs/archive/PERFORMANCE_LOG_2026.md §0.6, capture #4; never confirmed),
     /// pixel count is a first-order framerate term - so the recommendation budgets it explicitly
     /// via render scale and MSAA rather than pretending every display is 1080p.
     /// </summary>
