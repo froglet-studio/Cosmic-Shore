@@ -200,6 +200,12 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        // FillObstacles' two halves, so a prof capture says whether the index query or the per-prism
+        // pack (filters + transform reads) is the cost. (The Decide / FillObstacles markers themselves
+        // are declared with the Update / Sense markers above - MarkerBudget.DefaultMarkers.)
+        static readonly ProfilerMarker s_ObstacleQueryMarker = new("SkimRace.Pilot.FillObstacles.Query");
+        static readonly ProfilerMarker s_ObstaclePackMarker = new("SkimRace.Pilot.FillObstacles.Pack");
+
         static string s_manualSession;
         static int s_manualRace;
 
@@ -242,20 +248,29 @@ namespace CosmicShore.Gameplay
             if (index == null) return;
             float half = o.Speed * _config.MassGuardSeconds * 0.5f;
             Vector3 centre = o.Position + o.Forward * half;
-            index.QuerySphere(centre, half + 20f, _nearPrisms);
-            for (int i = 0; i < _nearPrisms.Count; i++)
+            using (s_ObstacleQueryMarker.Auto())
+                index.QuerySphere(centre, half + 20f, _nearPrisms);
+            using (s_ObstaclePackMarker.Auto())
             {
-                var prism = _nearPrisms[i];
-                if (prism == null || prism.prismProperties == null) continue;
-                if (prism.prismProperties.IsSuperShielded) continue;
-                if (SelfTrailContactConfigSO.SuppressesHullContact(prism, _status)) continue;
-                var t = prism.transform;
-                _driver.Obstacles.Add(new SkimRaceObstacle
+                // Read once for the frame, not once per prism (SuppressesHullContact's rule, as a filter).
+                var ownFresh = SelfTrailContactConfigSO.HullContactFilter(_status);
+                for (int i = 0; i < _nearPrisms.Count; i++)
                 {
-                    Center = t.position,
-                    Rotation = t.rotation,
-                    Half = t.lossyScale * 0.5f,
-                });
+                    // QuerySphere returns only live prisms, and nothing in this loop can destroy one, so
+                    // there is no liveness check here (it is a native round-trip per prism in the editor).
+                    var prism = _nearPrisms[i];
+                    var props = prism.prismProperties;
+                    if (props == null) continue;
+                    if (props.IsSuperShielded) continue;
+                    if (ownFresh.Suppresses(prism)) continue;
+                    var t = prism.transform;
+                    _driver.Obstacles.Add(new SkimRaceObstacle
+                    {
+                        Center = t.position,
+                        Rotation = t.rotation,
+                        Half = t.lossyScale * 0.5f,
+                    });
+                }
             }
         }
 
@@ -376,7 +391,7 @@ namespace CosmicShore.Gameplay
             if (c != null && c.TryGetComponent(out SphereCollider sc))
             {
                 var s = sc.transform.lossyScale;
-                _radius = sc.radius * Mathf.Max(Mathf.Abs(s.x), Mathf.Abs(s.y), Mathf.Abs(s.z));
+                _radius = sc.radius * MathfNoAlloc.Max(Mathf.Abs(s.x), Mathf.Abs(s.y), Mathf.Abs(s.z));
             }
             return _radius;
         }

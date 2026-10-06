@@ -199,7 +199,7 @@ namespace CosmicShore.Utility
             float halfAngle = Mathf.Atan(Mathf.Tan(fov * 0.5f * Mathf.Deg2Rad) * Mathf.Max(0.1f, aspect));
             float fitDistance = halfSpan / Mathf.Max(1e-3f, Mathf.Tan(halfAngle * PairFrameFill));
 
-            float distance = Mathf.Max(
+            float distance = MathfNoAlloc.Max(
                 Sample(concept.distance, rng),
                 fitDistance,
                 Mathf.Max(minimumDistance, MinimumDistance));
