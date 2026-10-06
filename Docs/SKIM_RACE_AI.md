@@ -414,6 +414,39 @@ These are environment results, not AI results (the simulator at 115 ms frames al
 same policy from 53 s to 77 s). **The in-editor matrix for the current code is still owed** - run it
 on an idle machine with the editor focused (§7), 2 launches x 5 races per cell, players 3 and 4.
 
+### 8.0g The editor computes floats in double precision - and caught the float rewrite (2026-10-06)
+
+The first editor run of `SkimRaceCourseQueryTests` failed three of five
+(`Project_MatchesThePlainWindowedSearch`, `StellaDistance_FloatKernelMatchesTheVectorForm`,
+`ObstacleLocalFrame_MatchesInverseRotationTimesOffset`) although all five passed on .NET and on stock
+Mono. Reproduced off-editor exactly - the same three fail, the same two pass - with
+`mono --optimize=-float32`: **Unity's editor Mono computes inside an expression in DOUBLE precision**
+and rounds to float only where a value lands in memory. A `Vector3` component always lands in memory,
+so the old code rounded after every operator; the float rewrite (§8.0f) folded several operators into
+one expression and, once the JIT optimizes, kept float LOCALS in double registers too. Same algorithm,
+different last bits - and in a chaotic race, different decisions. The earlier "byte-identical" proof
+held only on single-precision runtimes (.NET, stock Mono, IL2CPP players).
+
+Measured: the OLD `Vector3` code agrees with itself bit for bit between Mono double precision with and
+without JIT optimizations (0 of 40,000 values differ), and differs from single precision in about half
+of them. So the editor's own answer was stable, and the rewrite now reproduces it.
+
+**Fix:** every value the `Vector3` form rounds - each component of a Vector3 it builds, each float it
+returns or passes - is rounded in the rewrite with an explicit `(float)` (C#'s defined way to force
+float precision, which the JIT must honour); expressions the `Vector3` form keeps whole stay whole; its
+own locals stay plain locals. `SkimRaceObstacle.LocalFrame` keeps the nine quaternion products and
+evaluates each component as Unity's operator does, instead of pre-rounded 3x3 terms.
+
+**Proof:** all five `SkimRaceCourseQueryTests` pass on .NET and on Mono in single precision and in four
+double-precision configurations (optimized, all optimizations, Debug IL without inlining, no
+optimizations); dropping ONE of the roundings fails the stella test in double precision (and passes in
+single, which is why the first suite could not see it). Simulator race output, old code vs new, Mono
+double precision (the editor's mode): I2 x 2 seeds identical, decide cost per seat per frame 2.805 -> 1.986 ms
+(that run shared the CPU; I4 and the .NET re-check are recorded below when they finish).
+
+The simulator's Mono mode now runs double precision by default (`SKIMRACE_RUNTIME=mono` adds
+`--optimize=-float32`; `SKIMRACE_MONO_OPTS=""` for stock Mono).
+
 ### 8.0f The first editor measurement of the pilot, and what it changed (2026-10-06)
 
 `diag S_SkimRace_I2 15` and three `prof` captures in a hand-played I2 race with 2 AI seats (editor
@@ -445,7 +478,8 @@ simulator said. Two reasons, each fixed exactly (decisions unchanged):
    against Mono's class libraries; same race output as .NET, the editor's cost profile).
 
 Proof for both: race output byte-identical to the previous code on .NET (I1/I2/I4 x 6 seeds) and on
-Mono (I2/I4 x 2 seeds); `SkimRaceCourseQueryTests` pins the float stella kernel and the box frame
+stock Mono (I2/I4 x 2 seeds) - both SINGLE precision; the editor computes in double, and §8.0g is what
+that changed; `SkimRaceCourseQueryTests` pins the float stella kernel and the box frame
 to their Vector3 forms bit for bit and fails when ONE sum is re-associated.
 
 Also from the same captures: `FillObstacles` reads its per-frame inputs once and drops redundant

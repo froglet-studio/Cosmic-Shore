@@ -79,7 +79,11 @@ child markers; `SkimFxRunner` recycles skim beams (`SkimFxPool`); `PrismStateMan
 `Assets/_Scripts` builds with 0 errors and its suites pass (1569 + 352); offline gates pass.
 
 **Verify in editor:**
-1. The project compiles; Test Runner > EditMode: `SkimRaceCourseQueryTests` (5) pass.
+1. The project compiles; Test Runner > EditMode: `SkimRaceCourseQueryTests` (5) pass - in BOTH
+   Code Optimization modes (the bug icon, bottom-right: Debug, then Release). The first editor run
+   failed 3 of 5 because the editor computes floats in double precision; fixed in `81df54ed0`
+   (`Docs/SKIM_RACE_AI.md` §8.0g) and passing off-editor in six runtime configurations, but not yet
+   seen green in the editor.
 2. Skim Race I2, 2 AI: the AI races as before (no new strikes or orbits).
 3. Skim along a trail and along the track: the green skim beams appear, stretch to the ship and
    vanish as before - no beam left frozen in place, none appearing at the world origin, none
