@@ -102,6 +102,7 @@ a gate that is not there. Each mode's key and what the one number means:
 | Mode | Key | Means | Shipped |
 |---|---|---|---|
 | Skein | `skeinRingTarget` | rings laid on the cable AND rings to thread | 24 |
+| Breakwater | `breakwaterStationTarget` + `breakwaterLaps` | crossings = 1 + (stations - 1) x laps: a start gate, then the circuit every lap. TWO authored inputs, one derived target (`GetBreakwaterCrossingTarget`); the window has a row for each and shows the derived crossings under "Effective now" | 15 stations, 2 laps = 29 |
 | Headlong | `headlongGateTarget` | threadings = laps x rings; rings per lap = ceil(target / laps), laps = `HeadlongController.laps` in `MinigameHeadlong.unity` (3) | 24 (3 x 8) |
 
 Both are ONE count each, so each has one row in the window ("Skein - Ring Target", "Headlong -

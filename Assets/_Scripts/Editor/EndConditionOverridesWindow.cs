@@ -126,6 +126,10 @@ namespace CosmicShore.Editor
                 "and the number of breakwaters laid, measured against a domain's LEAD RUNNER. " +
                 "Also sizes the arena, so raising it adds mass as well as distance. Default " +
                 EndConditionOverridesSO.DefaultBreakwaterStationTarget + ".\n" +
+                "  • Breakwater laps: how many times the circuit is flown. The start gate is " +
+                "threaded once and the rest every lap, so the race is 1 + (stations - 1) x laps " +
+                "CROSSINGS (shown under Effective now) and laps cost no arena mass. Default " +
+                EndConditionOverridesSO.DefaultBreakwaterLaps + ".\n" +
                 "  • Skein: rings in the Urchin cable course - both how many a pilot must thread " +
                 "and how many the arena and the controller lay, measured against a domain's LEAD " +
                 "RUNNER. The rings must close on the finish collar after a whole number of cable " +
@@ -187,6 +191,7 @@ namespace CosmicShore.Editor
             int sw  = Mathf.Max(0, EditorGUILayout.IntField("Switchback - Gate Target", _config.switchbackGateTarget));
             int ws  = Mathf.Max(0, EditorGUILayout.IntField("Waystation - Ring Target", _config.waystationRingTarget));
             int bw  = Mathf.Max(0, EditorGUILayout.IntField("Breakwater - Station Target", _config.breakwaterStationTarget));
+            int bl  = Mathf.Max(0, EditorGUILayout.IntField("Breakwater - Laps", _config.breakwaterLaps));
             int sk  = Mathf.Max(0, EditorGUILayout.IntField("Skein - Ring Target", _config.skeinRingTarget));
             int hl  = Mathf.Max(0, EditorGUILayout.IntField("Headlong - Gate Target (laps x rings)", _config.headlongGateTarget));
             int hj  = Mathf.Max(0, EditorGUILayout.IntField("Hijack - Steal Target", _config.hijackStealTarget));
@@ -219,6 +224,7 @@ namespace CosmicShore.Editor
                     _config.switchbackGateTarget = sw;
                     _config.waystationRingTarget = ws;
                     _config.breakwaterStationTarget = bw;
+                    _config.breakwaterLaps = bl;
                     _config.skeinRingTarget = sk;
                     _config.headlongGateTarget = hl;
                     _config.hijackStealTarget = hj;
@@ -255,6 +261,8 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Switchback", sw > 0 ? sw.ToString() : EndConditionOverridesSO.DefaultSwitchbackGateTarget + " (default)");
             EditorGUILayout.LabelField("Waystation", ws > 0 ? ws.ToString() : EndConditionOverridesSO.DefaultWaystationRingTarget + " (default)");
             EditorGUILayout.LabelField("Breakwater", bw > 0 ? bw.ToString() : EndConditionOverridesSO.DefaultBreakwaterStationTarget + " (default)");
+            EditorGUILayout.LabelField("Breakwater laps", bl > 0 ? bl.ToString() : EndConditionOverridesSO.DefaultBreakwaterLaps + " (default)");
+            EditorGUILayout.LabelField("Breakwater crossings", _config.GetBreakwaterCrossingTarget() + " (1 + (stations - 1) x laps)");
             EditorGUILayout.LabelField("Skein", sk > 0 ? sk.ToString() : EndConditionOverridesSO.DefaultSkeinRingTarget + " (default)");
             EditorGUILayout.LabelField("Headlong", hl > 0 ? hl.ToString() : EndConditionOverridesSO.DefaultHeadlongGateTarget + " (default)");
             EditorGUILayout.LabelField("Hijack", hj > 0 ? hj.ToString() : EndConditionOverridesSO.DefaultHijackStealTarget + " (default)");
@@ -312,6 +320,7 @@ namespace CosmicShore.Editor
                    "Switchback: " + Fmt(_config.switchbackGateTargetBuild, "default " + EndConditionOverridesSO.DefaultSwitchbackGateTarget) + "\n" +
                    "Waystation: " + Fmt(_config.waystationRingTargetBuild, "default " + EndConditionOverridesSO.DefaultWaystationRingTarget) + "\n" +
                    "Breakwater: " + Fmt(_config.breakwaterStationTargetBuild, "default " + EndConditionOverridesSO.DefaultBreakwaterStationTarget) + "\n" +
+                   "Breakwater laps: " + Fmt(_config.breakwaterLapsBuild, "default " + EndConditionOverridesSO.DefaultBreakwaterLaps) + "\n" +
                    "Skein: " + Fmt(_config.skeinRingTargetBuild, "default " + EndConditionOverridesSO.DefaultSkeinRingTarget) + "\n" +
                    "Headlong: " + Fmt(_config.headlongGateTargetBuild, "default " + EndConditionOverridesSO.DefaultHeadlongGateTarget) + "\n" +
                    "Hijack: " + Fmt(_config.hijackStealTargetBuild, "default " + EndConditionOverridesSO.DefaultHijackStealTarget) + "\n" +
