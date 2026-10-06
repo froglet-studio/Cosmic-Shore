@@ -1,11 +1,11 @@
-# iOS builds of the Froglet Engine
+# iOS builds of Prisma
 
 Apple only compiles iPhone apps on macOS. The engine gives three ways around that, all from the
 same source the Windows player builds from (no Unity export involved):
 
 | Way | Command | Output |
 |---|---|---|
-| **No Mac: GitHub's Mac** | Launcher > BUILD > iOS > GITHUB, or Actions > *Froglet Engine iOS ipa* > Run workflow (type the branch) | unsigned `CosmicShore-unsigned.ipa` (artifact `CosmicShore-ios-ipa`, kept 3 days) |
+| **No Mac: GitHub's Mac** | Launcher > BUILD > iOS > GITHUB, or Actions > *Prisma iOS ipa* > Run workflow (type the branch) | unsigned `CosmicShore-unsigned.ipa` (artifact `CosmicShore-ios-ipa`, kept 3 days) |
 | **Xcode project** | `cs-build ios --xcode` (any OS) | `Builds/iOS/CosmicShore.xcodeproj` + `PlayerData/` |
 | **On a Mac** | `cs-build ios` (signed) / `cs-build ios --unsigned` | `Builds/iOS/*.ipa` |
 
@@ -28,5 +28,5 @@ points at the repository it was exported from; set `COSMIC_SHORE_REPO` to use an
 ## Identifiers
 
 Bundle id, version and build number come from Unity's Player Settings unless the engine's
-Project Settings (`Port/ProjectSettings/FrogletProject.json`, launcher PROJECT page) override
+Project Settings (`Port/ProjectSettings/PrismaProject.json`, launcher PROJECT page) override
 them. iOS defaults to the test id `com.FrogletGames.CosmicShore.dev` (`Docs/IOS_BUILD.md` section 1).

@@ -20,6 +20,7 @@ namespace CosmicShore.Engine
         readonly Dictionary<int, Matrix4x4> _matrices = new();
         readonly Dictionary<int, float[]> _floatArrays = new();
         readonly Dictionary<int, Vector4[]> _vectorArrays = new();
+        readonly Dictionary<int, object> _buffers = new();   // ComputeBuffer / GraphicsBuffer: kept, nothing samples them
 
         public bool isEmpty => _colors.Count == 0 && _floats.Count == 0 && _vectors.Count == 0
                                && _textures.Count == 0 && _matrices.Count == 0 && _floatArrays.Count == 0 && _vectorArrays.Count == 0;
@@ -33,9 +34,15 @@ namespace CosmicShore.Engine
             _matrices.Clear();
             _floatArrays.Clear();
             _vectorArrays.Clear();
+            _buffers.Clear();
         }
 
         public void Clear(bool includeTextures) => Clear();
+
+        public void SetBuffer(int nameID, ComputeBuffer value) => _buffers[nameID] = value;
+        public void SetBuffer(string name, ComputeBuffer value) => SetBuffer(Shader.PropertyToID(name), value);
+        public void SetBuffer(int nameID, GraphicsBuffer value) => _buffers[nameID] = value;
+        public void SetBuffer(string name, GraphicsBuffer value) => SetBuffer(Shader.PropertyToID(name), value);
 
         public void SetInt(string name, int value) => SetFloat(name, value);
         public void SetInt(int nameID, int value) => SetFloat(nameID, value);

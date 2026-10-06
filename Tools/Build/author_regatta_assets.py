@@ -296,7 +296,7 @@ g.emit_asset("Assets/_SO_Assets/Games/ArcadeGameRegatta.asset", G_ASSET["ArcadeG
     best - the card hands the slow ones a head start in Time.
   IconActive: {{fileID: 21300000, guid: {EXISTING['IconActive']}, type: 3}}
   IconInactive: {{fileID: 21300000, guid: {EXISTING['IconInactive']}, type: 3}}
-  CardBackground: {{fileID: 21300000, guid: {EXISTING['CardBackground']}, type: 3}}
+  CardBackground: {{fileID: 21300000, guid: {lib.card_background('Regatta')}, type: 3}}
   GolfScoring: 1
   SceneName: MinigameRegatta
   Vessels:

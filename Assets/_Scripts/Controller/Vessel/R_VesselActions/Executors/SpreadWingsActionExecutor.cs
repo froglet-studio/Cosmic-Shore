@@ -38,6 +38,16 @@ namespace CosmicShore.Gameplay
                  "unwired, and reported once by name if there is none.")]
         [SerializeField] ButterflyDustField dustField;
 
+        [Header("Audio")]
+        [Tooltip("FMOD event when the right trigger switches INTO Mass mode — wings open, the wide " +
+                 "wake. Played on every peer, at the hull. Leave empty for silence - never point " +
+                 "it at a borrowed event to hear something.")]
+        [SerializeField] FMODUnity.EventReference massModeEvent;
+
+        [Tooltip("FMOD event when the right trigger switches INTO Dust mode — wings shut, the dust " +
+                 "capsule on. Played on every peer, at the hull. Leave empty for silence.")]
+        [SerializeField] FMODUnity.EventReference dustModeEvent;
+
         IVesselStatus _status;
         SpreadWingsActionSO _activeSo;
         ButterflyAnimation _animation;
@@ -101,18 +111,37 @@ namespace CosmicShore.Gameplay
             _activeSo = so;
             if (_status == null) _status = status;
 
+            bool was = _dustMode;
             _dustMode = so.InputStyle == SpreadWingsActionSO.ModeInputStyle.HoldForDust
                 ? true
                 : !_dustMode;
             ApplyMode();
+            if (_dustMode != was) PlayModeCue();
         }
 
         public void Release(SpreadWingsActionSO so, IVesselStatus status)
         {
             if (!so) return;
             if (so.InputStyle != SpreadWingsActionSO.ModeInputStyle.HoldForDust) return;
+            bool was = _dustMode;
             _dustMode = false;
             ApplyMode();
+            if (was) PlayModeCue();
+        }
+
+        /// <summary>
+        /// The switch's own voice — only on a press or release that actually CHANGED the mode,
+        /// never from <see cref="Initialize"/> or a teardown, which reset the mode without the
+        /// pilot doing anything. Empty slots are a clean no-op (the FMOD exposed-field law).
+        /// </summary>
+        void PlayModeCue()
+        {
+            var reference = _dustMode ? dustModeEvent : massModeEvent;
+            if (reference.IsNull) return;
+            var audio = CosmicShore.Core.AudioSystem.Instance;
+            if (!audio) return;
+            var root = _status?.Vessel != null ? _status.Vessel.Transform : transform;
+            audio.PlaySFXEvent(reference, root.position);
         }
 
         void ApplyMode()

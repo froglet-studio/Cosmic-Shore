@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
@@ -45,6 +46,9 @@ namespace CosmicShore.Launcher
         {
             lock (_gate) { target.Clear(); target.AddRange(_lines); }
         }
+
+        /// <summary>The last <paramref name="n"/> lines' text.</summary>
+        public List<string> Tail(int n) { lock (_gate) return _lines.Skip(Math.Max(0, _lines.Count - n)).Select(l => l.Text).ToList(); }
 
         public string LastLine
         {

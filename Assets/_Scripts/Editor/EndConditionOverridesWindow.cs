@@ -110,6 +110,9 @@ namespace CosmicShore.Editor
                 EndConditionOverridesSO.DefaultBroadsidePointsPerPilot + " PER PILOT (the race target scales with team size: x1 / x1.6 / x2.2 / x2.8).\n" +
                 "  • Scarab Scramble: goals a DOMAIN needs to win (race to N) - a forged ball " +
                 "through any hoop, default " + EndConditionOverridesSO.DefaultScarabScrambleGoalTarget + ".\n" +
+                "  • Astro League: goals a DOMAIN needs to end the match EARLY (mercy rule) - " +
+                "the match is otherwise timed with golden-goal overtime, default " +
+                EndConditionOverridesSO.DefaultAstroLeagueGoalLimit + ".\n" +
                 "  • Salvo: hostile prisms destroyed to win (race to N), default " +
                 EndConditionOverridesSO.DefaultSalvoPrismTarget + ".\n" +
                 "  • Switchback: gates in the course - both the length a pilot must thread " +
@@ -168,6 +171,7 @@ namespace CosmicShore.Editor
             int df  = Mathf.Max(0, EditorGUILayout.IntField("Dog Fight - Point Target", _config.dogFightPointTarget));
             int bd  = Mathf.Max(0, EditorGUILayout.IntField("The Bends - Bend Target", _config.bendsPointTarget));
             int ss  = Mathf.Max(0, EditorGUILayout.IntField("Scarab Scramble - Goal Target", _config.scarabScrambleGoalTarget));
+            int al  = Mathf.Max(0, EditorGUILayout.IntField("Astro League - Goal Limit (mercy)", _config.astroLeagueGoalLimit));
             int sv  = Mathf.Max(0, EditorGUILayout.IntField("Salvo - Prism Target", _config.salvoPrismTarget));
             int sw  = Mathf.Max(0, EditorGUILayout.IntField("Switchback - Gate Target", _config.switchbackGateTarget));
             int ws  = Mathf.Max(0, EditorGUILayout.IntField("Waystation - Ring Target", _config.waystationRingTarget));
@@ -197,6 +201,7 @@ namespace CosmicShore.Editor
                     _config.dogFightPointTarget = df;
                     _config.bendsPointTarget = bd;
                     _config.scarabScrambleGoalTarget = ss;
+                    _config.astroLeagueGoalLimit = al;
                     _config.salvoPrismTarget = sv;
                     _config.switchbackGateTarget = sw;
                     _config.waystationRingTarget = ws;
@@ -230,6 +235,7 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Dog Fight", df > 0 ? df.ToString() : EndConditionOverridesSO.DefaultDogFightPointTarget + " (default)");
             EditorGUILayout.LabelField("The Bends", bd > 0 ? bd.ToString() : EndConditionOverridesSO.DefaultBendsPointTarget + " (default)");
             EditorGUILayout.LabelField("Scarab Scramble", ss > 0 ? ss.ToString() : EndConditionOverridesSO.DefaultScarabScrambleGoalTarget + " (default)");
+            EditorGUILayout.LabelField("Astro League", al > 0 ? al.ToString() : EndConditionOverridesSO.DefaultAstroLeagueGoalLimit + " (default)");
             EditorGUILayout.LabelField("Salvo", sv > 0 ? sv.ToString() : EndConditionOverridesSO.DefaultSalvoPrismTarget + " (default)");
             EditorGUILayout.LabelField("Switchback", sw > 0 ? sw.ToString() : EndConditionOverridesSO.DefaultSwitchbackGateTarget + " (default)");
             EditorGUILayout.LabelField("Waystation", ws > 0 ? ws.ToString() : EndConditionOverridesSO.DefaultWaystationRingTarget + " (default)");
@@ -284,6 +290,7 @@ namespace CosmicShore.Editor
                    "Dog Fight: " + Fmt(_config.dogFightPointTargetBuild, "default " + EndConditionOverridesSO.DefaultDogFightPointTarget) + "\n" +
                    "The Bends: " + Fmt(_config.bendsPointTargetBuild, "default " + EndConditionOverridesSO.DefaultBendsPointTarget) + "\n" +
                    "Scarab Scramble: " + Fmt(_config.scarabScrambleGoalTargetBuild, "default " + EndConditionOverridesSO.DefaultScarabScrambleGoalTarget) + "\n" +
+                   "Astro League: " + Fmt(_config.astroLeagueGoalLimitBuild, "default " + EndConditionOverridesSO.DefaultAstroLeagueGoalLimit) + "\n" +
                    "Salvo: " + Fmt(_config.salvoPrismTargetBuild, "default " + EndConditionOverridesSO.DefaultSalvoPrismTarget) + "\n" +
                    "Switchback: " + Fmt(_config.switchbackGateTargetBuild, "default " + EndConditionOverridesSO.DefaultSwitchbackGateTarget) + "\n" +
                    "Waystation: " + Fmt(_config.waystationRingTargetBuild, "default " + EndConditionOverridesSO.DefaultWaystationRingTarget) + "\n" +

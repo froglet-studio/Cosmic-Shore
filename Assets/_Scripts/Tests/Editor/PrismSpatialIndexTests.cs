@@ -427,6 +427,200 @@ namespace CosmicShore.Tests
             Assert.AreEqual(40f, results[PrismSpatialIndex.CellVolumeTotal], 1e-4f,
                 "Another cell's bindings must survive the bulk clear.");
         }
+        // ------------------------------------------------------------------
+        // Virtual entries (data-driven prisms with no GameObject Prism yet)
+        // ------------------------------------------------------------------
+
+        /// <summary>Test owner: materialises a member by spawning + registering a real
+        /// prism at the member's stored position (what a swarm proxy does).</summary>
+        sealed class TestVirtualOwner : IVirtualPrismOwner
+        {
+            public PrismSpatialIndexTests Fixture;
+            public readonly Dictionary<int, Vector3> Positions = new();
+            public readonly Dictionary<int, Prism> Materialised = new();
+            public int Calls;
+            public bool Refuse;
+
+            public Prism MaterialiseVirtualPrism(int slot)
+            {
+                Calls++;
+                if (Refuse) return null;
+                if (Materialised.TryGetValue(slot, out var existing)) return existing;
+                var prism = Fixture.SpawnRegisteredPrism(Positions[slot]);
+                Materialised[slot] = prism;
+                return prism;
+            }
+        }
+
+        TestVirtualOwner NewOwner() => new TestVirtualOwner { Fixture = this };
+
+        int AddVirtual(TestVirtualOwner owner, int slot, Vector3 position, int domain = 0, float volume = 1f)
+        {
+            owner.Positions[slot] = position;
+            return _index.RegisterVirtual(owner, slot, position, domain, volume);
+        }
+
+        readonly List<int> _ids = new();
+
+        [Test]
+        public void Virtual_IsSeenByIdQueryAndProbes_ButNotByPrismListQueries()
+        {
+            var owner = NewOwner();
+            int id = AddVirtual(owner, 3, Vector3.zero);
+
+            Assert.IsTrue(_index.IsVirtual(id));
+            Assert.IsTrue(_index.IsLiveVirtual(id));
+            Assert.AreEqual(1, _index.VirtualCount);
+            Assert.IsTrue(_index.IsAnyPrismWithin(Vector3.zero, 2f), "Occupancy must see virtual members.");
+            Assert.AreEqual(1, _index.QuerySphereIds(Vector3.zero, 5f, _ids));
+            Assert.AreEqual(id, _ids[0]);
+            Assert.IsTrue(_index.TryGetVirtual(id, out var o, out int slot));
+            Assert.AreSame(owner, o);
+            Assert.AreEqual(3, slot);
+
+            // Sensing through the Prism-list queries never materialises.
+            Assert.AreEqual(0, _index.QuerySphere(Vector3.zero, 5f, _results));
+            Assert.AreEqual(0, _index.QuerySegment(new Vector3(-5f, 0f, 0f), new Vector3(5f, 0f, 0f), 2f, _results));
+            Assert.AreEqual(0, _index.CopyLivePrisms(_results));
+            Assert.IsNull(_index.ResolvePrism(id, materialise: false));
+            Assert.AreEqual(0, owner.Calls);
+        }
+
+        [Test]
+        public void Virtual_BucketWalkPath_FindsVirtualEntry()
+        {
+            SpawnPaddingPrisms(40);
+            var owner = NewOwner();
+            int id = AddVirtual(owner, 0, new Vector3(1f, 1f, 1f));
+
+            Assert.AreEqual(1, _index.QuerySphereIds(Vector3.zero, 4f, _ids));
+            Assert.AreEqual(id, _ids[0]);
+        }
+
+        [Test]
+        public void Virtual_Materialise_SuspendsSlot_SoMemberCountsOnce()
+        {
+            var owner = NewOwner();
+            int id = AddVirtual(owner, 1, Vector3.zero);
+            int liveBefore = _index.LiveCount;
+
+            var prism = _index.ResolvePrism(id, materialise: true);
+            Assert.IsNotNull(prism);
+            Assert.AreEqual(1, owner.Calls);
+            Assert.IsFalse(_index.IsLiveVirtual(id), "Materialising must suspend the virtual slot.");
+            Assert.IsTrue(_index.IsVirtual(id), "Suspended slots keep their owner record.");
+            Assert.AreEqual(liveBefore, _index.LiveCount, "Proxy registered, virtual suspended: net count unchanged.");
+
+            // Exactly one entry for the member: the proxy's real slot.
+            Assert.AreEqual(1, _index.QuerySphereIds(Vector3.zero, 5f, _ids));
+            Assert.AreEqual(prism.SpatialIndexId, _ids[0]);
+            Assert.AreEqual(1, _index.QuerySphere(Vector3.zero, 5f, _results));
+
+            // A suspended slot does not materialise again.
+            Assert.IsNull(_index.ResolvePrism(id, materialise: true));
+            Assert.AreEqual(1, owner.Calls);
+        }
+
+        [Test]
+        public void Virtual_RefusedMaterialise_LeavesSlotLive()
+        {
+            var owner = NewOwner();
+            owner.Refuse = true;
+            int id = AddVirtual(owner, 0, Vector3.zero);
+
+            Assert.IsNull(_index.ResolvePrism(id, materialise: true));
+            Assert.IsTrue(_index.IsLiveVirtual(id));
+        }
+
+        [Test]
+        public void Virtual_ResumeAfterProxyRetires_ReentersQueriesAtUpdatedPosition()
+        {
+            var owner = NewOwner();
+            int id = AddVirtual(owner, 0, Vector3.zero);
+            var proxy = _index.ResolvePrism(id, materialise: true);
+
+            // Proxy retires: its slot goes, the member continues as data elsewhere.
+            _index.Unregister(proxy.SpatialIndexId);
+            proxy.SpatialIndexId = -1;
+            var moved = new Vector3(100f, 0f, 0f);
+            _index.UpdatePosition(id, moved);
+            _index.SetVirtualSuspended(id, false);
+
+            Assert.IsTrue(_index.IsLiveVirtual(id));
+            Assert.AreEqual(0, _index.QuerySphereIds(Vector3.zero, 5f, _ids));
+            Assert.AreEqual(1, _index.QuerySphereIds(moved, 5f, _ids));
+            Assert.AreEqual(id, _ids[0]);
+        }
+
+        [Test]
+        public void Virtual_UpdatePositionsBatch_RebucketsEveryEntry()
+        {
+            SpawnPaddingPrisms(40);
+            var owner = NewOwner();
+            int a = AddVirtual(owner, 0, Vector3.zero);
+            int b = AddVirtual(owner, 1, new Vector3(1f, 0f, 0f));
+
+            var ids = new NativeArray<int>(new[] { a, b }, Allocator.TempJob);
+            var pos = new NativeArray<Unity.Mathematics.float3>(2, Allocator.TempJob);
+            pos[0] = new Unity.Mathematics.float3(300f, 0f, 0f);
+            pos[1] = new Unity.Mathematics.float3(301f, 0f, 0f);
+            _index.UpdatePositionsBatch(ids, pos);
+            ids.Dispose();
+            pos.Dispose();
+
+            Assert.AreEqual(0, _index.QuerySphereIds(Vector3.zero, 4f, _ids), "Old buckets must be vacated.");
+            Assert.AreEqual(2, _index.QuerySphereIds(new Vector3(300f, 0f, 0f), 4f, _ids));
+        }
+
+        [Test]
+        public void Virtual_CellMass_CountsOnce_AcrossMaterialisation()
+        {
+            var owner = NewOwner();
+            int id = AddVirtual(owner, 0, Vector3.zero, (int)Domains.Gold, 12f);
+            _index.SetCellBinding(id, 7, false, Domains.Gold);
+            _index.UpdateCellVolume(id, 12f);
+
+            var results = NewResults();
+            _index.SumCellVolumes(7, Vector3.zero, 0f, results);
+            Assert.AreEqual(12f, results[PrismSpatialIndex.CellVolumeTotal], 1e-4f);
+
+            // Materialise: the proxy takes over the binding; the virtual slot drops out.
+            var proxy = _index.ResolvePrism(id, materialise: true);
+            _index.SetCellBinding(proxy.SpatialIndexId, 7, false, Domains.Gold);
+            _index.UpdateCellVolume(proxy.SpatialIndexId, 12f);
+
+            _index.SumCellVolumes(7, Vector3.zero, 0f, results);
+            Assert.AreEqual(12f, results[PrismSpatialIndex.CellVolumeTotal], 1e-4f,
+                "A materialised member must not be summed twice (virtual + proxy).");
+        }
+
+        [Test]
+        public void Virtual_Unregister_FreesSlotAndOwnerRecord_SlotReuseIsClean()
+        {
+            var owner = NewOwner();
+            int id = AddVirtual(owner, 0, Vector3.zero);
+            int liveBefore = _index.LiveCount;
+
+            _index.Unregister(id);
+            Assert.IsFalse(_index.IsVirtual(id));
+            Assert.AreEqual(0, _index.VirtualCount);
+            Assert.AreEqual(liveBefore - 1, _index.LiveCount);
+            Assert.AreEqual(0, _index.QuerySphereIds(Vector3.zero, 5f, _ids));
+            _index.Unregister(id); // double free is a no-op
+            Assert.AreEqual(liveBefore - 1, _index.LiveCount);
+
+            // The freed slot is reused by a real prism with no virtual residue.
+            var prism = SpawnRegisteredPrism(Vector3.zero);
+            Assert.AreEqual(id, prism.SpatialIndexId);
+            Assert.IsFalse(_index.IsVirtual(prism.SpatialIndexId));
+            Assert.AreSame(prism, _index.ResolvePrism(prism.SpatialIndexId, materialise: true));
+        }
+
+        [Test]
+        public void Virtual_NullOwner_IsRejected()
+        {
+            Assert.AreEqual(-1, _index.RegisterVirtual(null, 0, Unity.Mathematics.float3.zero, 0));
+        }
     }
 }
 #endif

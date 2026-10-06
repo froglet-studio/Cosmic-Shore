@@ -46,7 +46,7 @@ namespace CosmicShore.AssetTool
             var pos = new List<string>();
             for (int i = 0; i < args.Length; i++)
             {
-                if (args[i] is "--dry-run" or "--force" or "--all") { opts[args[i][2..]] = "1"; continue; }
+                if (args[i] is "--dry-run" or "--force" or "--all" or "--json") { opts[args[i][2..]] = "1"; continue; }
                 if (args[i].StartsWith("--", StringComparison.Ordinal) && i + 1 < args.Length) { opts[args[i][2..]] = args[++i]; continue; }
                 pos.Add(args[i]);
             }
@@ -57,6 +57,7 @@ namespace CosmicShore.AssetTool
                 {
                     "roundtrip" => RoundTrip(pos.Skip(1).ToList()),
                     "schema" => Scripts.Schema(pos.Skip(1).ToList()),
+                    "serialization-audit" => SerializationAudit.Run(pos.Skip(1).ToList(), opts.ContainsKey("json")),
                     "addall" => Scripts.AddAll(),
                     "list" => List(Need(pos, 2)),
                     "docs" => Docs(Need(pos, 2)),
@@ -95,6 +96,7 @@ namespace CosmicShore.AssetTool
 @"cs-asset — edit Unity scenes, prefabs and assets without the Unity Editor
 
   roundtrip [path...]                       verify parse -> write is byte-identical (default: all of Assets/)
+  serialization-audit [path...] [--json]    every script field Unity reads that Prisma drops (and the reverse)
   list   <file>                             GameObjects and their hierarchy paths
   docs   <file>                             every document: fileID, class, type
   get    <file> <object> [field.path]       print a document, or one field of it
