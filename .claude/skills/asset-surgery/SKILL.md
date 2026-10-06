@@ -1045,7 +1045,9 @@ references, m_Script classes). Four things that cost time on the first run (2026
   Editor-folder files INTO the runtime compilation; Unity keeps them in Assembly-CSharp-Editor,
   which runtime code cannot see. The summary line says "(0 in files changed since …)" - believe it.
 - **Negative-control both tools before quoting them**: plant a call to a missing member in a file
-  you changed (the compile must fail with that file tagged `[CHANGED-TONIGHT]`), and misspell one
+  you changed (the compile must fail with that file tagged `[CHANGED-TONIGHT]`; a misspelled local
+  or type, CS0103/CS0246, gates too since 2026-10-06, before which every run bucketed it
+  "unverified" behind the three package assemblies that always fail), and misspell one
   key in an asset you changed (the audit must name the file and the key). Restore, then
   `git status --short` the paths. Both discriminated on their first try here.
 

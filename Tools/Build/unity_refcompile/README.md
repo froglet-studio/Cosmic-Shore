@@ -44,7 +44,16 @@ A small re-implementation of Unity's script pipeline (`build.py`):
    after declaration errors**, so one file naming an unfetchable package would otherwise hide every
    method-body error in every other file. `Diagnose` binds all bodies regardless.
 7. Buckets the errors: **project errors** (the gate), **missing-type errors in files that `using` a
-   package that cannot be fetched**, and **missing-type errors while a referenced package failed**.
+   package that cannot be fetched**, and **unverified**: a missing-type error (CS0246, CS0234,
+   CS0103, CS1069, CS0012, CS0538) that names something a **referenced assembly that did not
+   compile** declares. `Diagnose --declarations` reads each failed assembly's own sources, with its
+   own defines, for the namespaces and top-level types they declare. The error is unverified only
+   when it names that assembly (CS0012/CS1069), a namespace only it declares, or one of its types
+   that the file can see: the type's namespace is `using`d (or `using static`), encloses the file,
+   or the name is fully qualified. Every other missing-type error gates, so a misspelled local
+   (CS0103) or type (CS0246) fails the run, even though three package assemblies fail on every run.
+   `python3 Tools/Build/unity_refcompile/build.py --self-test` checks the rule on fixtures in about
+   a second, with no .NET SDK and no cache.
 
 ## Where the references come from (fetched by `fetch.py`, cached, never committed)
 
@@ -101,8 +110,10 @@ Does not prove:
   reveals (stay public: a possible false pass on use of an engine internal).
 - Code in files that `using` an unfetchable package, for errors that involve those types.
 - ILPostProcessors (Netcode/Burst/Entities codegen after compile), Burst compilation, IL2CPP.
-- Package assemblies listed as "did not compile" (Purchasing.Stores/Codeless, InputSystem.ForUI) —
-  dependents were compiled without them; any project use of their types would surface as an error.
+- Project code that uses types from package assemblies listed as "did not compile"
+  (Purchasing.Stores/Codeless, InputSystem.ForUI). Dependents were compiled without them, so any
+  such use is reported as **unverified**, by name, and does not gate (step 7). No Assets file uses
+  their namespaces today.
 
 ## Outputs, and the asset audit that reads them
 
