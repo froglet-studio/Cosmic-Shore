@@ -260,7 +260,7 @@ MonoBehaviour:
     - {fileID: 11400000, guid: 53ee29f1406fdd26f9c5fddefd961fe0, type: 2}
   speciesDescriptions:
   - Species: Tadpole
-    Description: "A small flock of tiny fish. Mass tadpoles eat trail and multiply (they starve in about 90s with none); Charge, Space and Time tadpoles never feed, they just drift and circle."
+    Description: "A small flock of tiny fish that hunt the densest mass, eat any team's trail and breed a new tadpole every 20 bites. Starves in about 90s without trail."
   - Species: Brittlestar
     Description: "A slow starfish with swaying, dangling arms that grazes loose mass. Easy prey for sharks; shoot its arms or joust it for its crystal. Starves in 30s without mass or trail."
   - Species: Shark

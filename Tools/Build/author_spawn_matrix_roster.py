@@ -165,8 +165,8 @@ FLORA = [
 # eats - Barren starts with no food, so a lone grazer or predator there starves on its clock.
 DESCRIPTIONS = {
     # Fauna
-    "Tadpole": "A small flock of tiny fish. Mass tadpoles eat trail and multiply (they starve in about "
-               "90s with none); Charge, Space and Time tadpoles never feed, they just drift and circle.",
+    "Tadpole": "A small flock of tiny fish that hunt the densest mass, eat any team's trail and breed "
+               "a new tadpole every 20 bites. Starves in about 90s without trail.",
     "Brittlestar": "A slow starfish with swaying, dangling arms that grazes loose mass. Easy prey for "
                    "sharks; shoot its arms or joust it for its crystal. Starves in 30s without mass or trail.",
     "Shark": "An armoured hunter that ignores prisms and stalks other creatures in bursts, snapping its "
