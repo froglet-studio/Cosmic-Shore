@@ -355,7 +355,10 @@ the lookup, so a control the lookup hands out is by construction one the press a
 bound only for ANOTHER device is deliberately not a fallback (that control does nothing here, or
 fires whatever the shared map puts on it). `CollectBoundActions` / `HasBinding` — the HUD's
 all-devices view — are untouched. Every other caller (`AIPilot`'s aim telegraph, Tollway, Waystation,
-the Butterfly mode driver) binds its ability in the shared map, so its answer is unchanged.
+the Butterfly mode driver, and the AI boost policies' `CreateDriver` for the Sparrow, Serpent and
+Dolphin) binds its ability in the shared map, so its answer is unchanged; `SkimRingAIPolicySO` asks
+for the Squirrel's ring, which is bound in BOTH override maps, so it is found on every device as it
+was before (the policies start the returned action themselves rather than pressing its control).
 `SkimRacePilot` now asks at every press instead of caching the first answer for the match, and
 releases on the control its own press used. Pinned by `DeviceAwareActionLookupTests`, which also
 reads the shipped prefab and asserts both abilities are pressable on all five devices.
