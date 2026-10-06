@@ -180,6 +180,32 @@ The rules the measurement pinned down, all asserted in `ComponentAuthoringTests`
 
 For anything without a template, `add --like &fileID` copies an existing component instead.
 
+### How faithful the script loader is (`cs-asset serialization-audit`)
+
+`schema` checks the writer. `serialization-audit` checks the other direction: for every key Unity
+wrote into a script component or ScriptableObject (recursing into nested `[Serializable]` classes
+and lists), does Unity's serializer read it, and does Prisma's loader?
+
+| Class | Meaning |
+|---|---|
+| DROPPED | Unity reads it, Prisma does not: the value silently never arrives (the worst kind) |
+| EXTRA | Prisma reads it, Unity ignores it: Prisma loads data Unity never would |
+| STALE | Neither reads it: left over from an older version of the script; harmless |
+| MANAGED | A `[SerializeReference]` (`references:`) block, which Prisma does not load yet |
+
+It exits 1 on any DROPPED or EXTRA key, so it can gate a build. Unity's rules, as Prisma applies
+them to script types (`Content/Serialization/UnitySerializationRules.cs`): public or
+`[SerializeField]` fields, not `[NonSerialized]`, readonly or const; the field's type must be one
+Unity serializes (no `Dictionary`, interface, abstract type or nested collection, and a custom
+class needs `[Serializable]`); `[field: SerializeField]` auto-properties load from
+`<Name>k__BackingField`; `[FormerlySerializedAs]` names still load; properties and `m_` spellings
+never do; `OnAfterDeserialize` runs after the read. Engine and package built-ins keep their native
+`m_` layouts.
+
+Measured on 2026-10-06 over 14,319 script instances (112,941 keys): before the rules, 52 DROPPED
+(the vessels' `ResourceSystem` levels) and 78 EXTRA; after, **0 DROPPED, 0 EXTRA**, 0 MANAGED and
+7,070 STALE keys over 630 fields.
+
 ### Two bugs this found in existing code
 
 - **`ScriptTypeMap` lost components whose file name differs from the class only in case.**
@@ -365,6 +391,7 @@ $T apply  <file> GameCanvas/ConnectingPanel                  # that object's ove
 $T apply  <file> GameCanvas --all                            # everything the instance changes
 
 $T schema                                             # measure the script serializer against the project
+$T serialization-audit [path...] [--json]             # what Unity reads vs what Prisma's loader reads
 $T addall                                             # smoke-test adding every component
 ```
 

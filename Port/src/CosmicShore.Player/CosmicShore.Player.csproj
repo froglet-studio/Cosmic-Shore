@@ -8,6 +8,12 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>disable</Nullable>
     <AssemblyName>CosmicShore</AssemblyName>
+    <!-- A game wants short pauses, not throughput: workstation GC with background (concurrent)
+         gen2 collections. These are .NET's defaults; stated so nobody flips to server GC, whose
+         larger gen0 budgets mean fewer but longer pauses. The session report measures the result
+         (memory.steadyGcPauseMsPerFrame); architecture review G16. -->
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
   </PropertyGroup>
 
   <ItemGroup>

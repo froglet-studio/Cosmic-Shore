@@ -24,12 +24,15 @@ namespace CosmicShore.Content.Serialization
     }
 
     /// <summary>
-    /// Maps a serialized YAML body onto a .NET object by reflection, following the Unity
-    /// serializer's naming: a key matches a field of the same name, or — because the
-    /// engine's hand-written built-ins sometimes expose the public spelling — the
-    /// <c>m_Foo</c> key matches <c>foo</c>/<c>Foo</c>, and <c>[FormerlySerializedAs]</c>
-    /// names match too. Unknown keys are ignored (exactly like Unity loading data written
-    /// by an older or newer script version).
+    /// Maps a serialized YAML body onto a .NET object by reflection. For script code (the game's
+    /// own types) it follows Unity's serializer exactly (<see cref="UnitySerializationRules"/>):
+    /// public or [SerializeField] fields, [field: SerializeField] backing fields and
+    /// [FormerlySerializedAs] names - nothing else. For the engine's hand-written built-ins a
+    /// key also matches the public spelling (<c>m_Foo</c> to <c>foo</c>/<c>Foo</c>, fields or
+    /// properties), because those mirror Unity's native layouts. Unknown keys are ignored
+    /// (exactly like Unity loading data written by an older or newer script version), and
+    /// ISerializationCallbackReceiver.OnAfterDeserialize runs once an object is read.
+    /// <c>cs-asset serialization-audit</c> checks every asset against both rule sets.
     /// </summary>
     public sealed class SerializedReader
     {
@@ -64,6 +67,10 @@ namespace CosmicShore.Content.Serialization
                     // One bad field must never sink the object (Unity: logs and moves on).
                 }
             }
+            // Unity's contract: after an object's fields are read, OnAfterDeserialize (nested
+            // [Serializable] objects included - this method fills those too).
+            if (target is ISerializationCallbackReceiver receiver)
+                try { receiver.OnAfterDeserialize(); } catch (Exception) { /* as above: never sinks the load */ }
         }
 
         public object ReadValue(YNode node, Type type, object existing, AssetFile origin)
@@ -277,6 +284,12 @@ namespace CosmicShore.Content.Serialization
             public Action<object, object> Set;
         }
 
+        /// <summary>Whether this reader assigns <paramref name="key"/> when it fills a <paramref name="type"/> (the serialization audit's question).</summary>
+        public static bool Accepts(Type type, string key) => !SkipKeys.Contains(key) && MembersOf(type).ContainsKey(key);
+
+        /// <summary>Keys the reader skips for every object (Unity's own bookkeeping).</summary>
+        public static bool IsBookkeeping(string key) => SkipKeys.Contains(key);
+
         static readonly ConcurrentDictionary<Type, Dictionary<string, Member>> s_members = new();
 
         static Dictionary<string, Member> MembersOf(Type type) => s_members.GetOrAdd(type, Build);
@@ -289,6 +302,22 @@ namespace CosmicShore.Content.Serialization
 
             for (var t = type; t != null && t != typeof(object); t = t.BaseType)
             {
+                if (UnitySerializationRules.IsScriptType(t))
+                {
+                    // Script code: exactly Unity's serializer - public or [SerializeField] fields
+                    // (an auto-property's [field: SerializeField] backing field under its own
+                    // "<Name>k__BackingField" key), [FormerlySerializedAs] names, and nothing else:
+                    // no properties and no m_ spellings, so a key Unity ignores stays ignored.
+                    foreach (var f in t.GetFields(flags))
+                    {
+                        if (!UnitySerializationRules.IsSerialized(f)) continue;
+                        var m = new Member { Type = f.FieldType, Get = f.GetValue, Set = f.SetValue };
+                        result.TryAdd(f.Name, m);
+                        foreach (var fs in f.GetCustomAttributes<FormerlySerializedAsAttribute>(false))
+                            aliases.TryAdd(fs.oldName, m);
+                    }
+                    continue;
+                }
                 foreach (var f in t.GetFields(flags))
                 {
                     if (f.IsInitOnly || f.IsLiteral || f.IsDefined(typeof(NonSerializedAttribute), false)) continue;

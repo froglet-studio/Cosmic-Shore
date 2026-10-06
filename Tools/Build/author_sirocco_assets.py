@@ -98,7 +98,7 @@ g.emit_asset(CARD_REL, G_ASSET["ArcadeGameSirocco"],
     target wins.
   IconActive: {{fileID: 21300000, guid: {EXISTING['IconActive']}, type: 3}}
   IconInactive: {{fileID: 21300000, guid: {EXISTING['IconInactive']}, type: 3}}
-  CardBackground: {{fileID: 21300000, guid: {common.card_background(CARD_REL)}, type: 3}}
+  CardBackground: {{fileID: 21300000, guid: {lib.card_background(CARD_REL)}, type: 3}}
   GolfScoring: 1
   SceneName: MinigameSirocco
   Vessels:

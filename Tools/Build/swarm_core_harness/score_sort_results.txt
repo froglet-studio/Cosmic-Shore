@@ -1,0 +1,131 @@
+  exported sortresearch charge seed 7: n=169 plan=charge 0.186 ms/step grown, self-deaths 0
+  exported sortresearch mass   seed 7: n=181 plan=mass 0.187 ms/step grown, self-deaths 0
+  exported sortresearch space  seed 7: n=83 plan=space 0.072 ms/step grown, self-deaths 0
+  exported sortresearch time   seed 7: n=72 plan=time 0.068 ms/step grown, self-deaths 0
+  exported sortresearch charge seed 23: n=169 plan=charge 0.203 ms/step grown, self-deaths 0
+  exported sortresearch mass   seed 23: n=181 plan=mass 0.118 ms/step grown, self-deaths 0
+  exported sortresearch space  seed 23: n=83 plan=space 0.037 ms/step grown, self-deaths 0
+  exported sortresearch time   seed 23: n=72 plan=time 0.029 ms/step grown, self-deaths 0
+  exported sortresearch charge seed 41: n=169 plan=charge 0.103 ms/step grown, self-deaths 0
+  exported sortresearch mass   seed 41: n=181 plan=mass 0.125 ms/step grown, self-deaths 0
+  exported sortresearch space  seed 41: n=83 plan=space 0.032 ms/step grown, self-deaths 0
+  exported sortresearch time   seed 41: n=72 plan=time 0.029 ms/step grown, self-deaths 0
+  exported sortresearch charge seed 108: n=169 plan=charge 0.110 ms/step grown, self-deaths 0
+  exported sortresearch mass   seed 108: n=181 plan=mass 0.128 ms/step grown, self-deaths 0
+  exported sortresearch space  seed 108: n=83 plan=space 0.037 ms/step grown, self-deaths 0
+  exported sortresearch time   seed 108: n=72 plan=time 0.028 ms/step grown, self-deaths 0
+  exported sortresearch charge seed 209: n=169 plan=charge 0.107 ms/step grown, self-deaths 0
+  exported sortresearch mass   seed 209: n=181 plan=mass 0.129 ms/step grown, self-deaths 0
+  exported sortresearch space  seed 209: n=83 plan=space 0.035 ms/step grown, self-deaths 0
+  exported sortresearch time   seed 209: n=72 plan=time 0.031 ms/step grown, self-deaths 0
+  exported sortresearch charge seed 310: n=169 plan=charge 0.114 ms/step grown, self-deaths 0
+  exported sortresearch mass   seed 310: n=181 plan=mass 0.122 ms/step grown, self-deaths 0
+  exported sortresearch space  seed 310: n=83 plan=space 0.034 ms/step grown, self-deaths 0
+  exported sortresearch time   seed 310: n=72 plan=time 0.031 ms/step grown, self-deaths 0
+  exported sortresearch charge seed 411: n=169 plan=charge 0.093 ms/step grown, self-deaths 0
+  exported sortresearch mass   seed 411: n=181 plan=mass 0.126 ms/step grown, self-deaths 0
+  exported sortresearch space  seed 411: n=83 plan=space 0.027 ms/step grown, self-deaths 0
+  exported sortresearch time   seed 411: n=72 plan=time 0.025 ms/step grown, self-deaths 0
+  exported sortresearch charge seed 512: n=169 plan=charge 0.103 ms/step grown, self-deaths 0
+  exported sortresearch mass   seed 512: n=181 plan=mass 0.120 ms/step grown, self-deaths 0
+  exported sortresearch space  seed 512: n=83 plan=space 0.050 ms/step grown, self-deaths 0
+  exported sortresearch time   seed 512: n=72 plan=time 0.029 ms/step grown, self-deaths 0
+  exported sortgame     charge seed 7: n=169 plan=charge 0.148 ms/step grown, self-deaths 0
+  exported sortgame     mass   seed 7: n=181 plan=mass 0.169 ms/step grown, self-deaths 0
+  exported sortgame     space  seed 7: n=88 plan=space 0.052 ms/step grown, self-deaths 0
+  exported sortgame     time   seed 7: n=76 plan=time 0.052 ms/step grown, self-deaths 0
+  exported sortgame     charge seed 23: n=169 plan=charge 0.140 ms/step grown, self-deaths 0
+  exported sortgame     mass   seed 23: n=181 plan=mass 0.159 ms/step grown, self-deaths 0
+  exported sortgame     space  seed 23: n=88 plan=space 0.055 ms/step grown, self-deaths 0
+  exported sortgame     time   seed 23: n=76 plan=time 0.051 ms/step grown, self-deaths 0
+  exported sortgame     charge seed 41: n=169 plan=charge 0.120 ms/step grown, self-deaths 0
+  exported sortgame     mass   seed 41: n=181 plan=mass 0.175 ms/step grown, self-deaths 0
+  exported sortgame     space  seed 41: n=88 plan=space 0.058 ms/step grown, self-deaths 0
+  exported sortgame     time   seed 41: n=76 plan=time 0.054 ms/step grown, self-deaths 0
+  exported sortgame     charge seed 108: n=169 plan=charge 0.132 ms/step grown, self-deaths 0
+  exported sortgame     mass   seed 108: n=181 plan=mass 0.148 ms/step grown, self-deaths 0
+  exported sortgame     space  seed 108: n=88 plan=space 0.057 ms/step grown, self-deaths 0
+  exported sortgame     time   seed 108: n=76 plan=time 0.054 ms/step grown, self-deaths 0
+  exported sortgame     charge seed 209: n=169 plan=charge 0.137 ms/step grown, self-deaths 0
+  exported sortgame     mass   seed 209: n=181 plan=mass 0.172 ms/step grown, self-deaths 0
+  exported sortgame     space  seed 209: n=88 plan=space 0.053 ms/step grown, self-deaths 0
+  exported sortgame     time   seed 209: n=76 plan=time 0.050 ms/step grown, self-deaths 0
+  exported sortgame     charge seed 310: n=169 plan=charge 0.133 ms/step grown, self-deaths 0
+  exported sortgame     mass   seed 310: n=181 plan=mass 0.153 ms/step grown, self-deaths 0
+  exported sortgame     space  seed 310: n=88 plan=space 0.056 ms/step grown, self-deaths 0
+  exported sortgame     time   seed 310: n=76 plan=time 0.047 ms/step grown, self-deaths 0
+  exported sortgame     charge seed 411: n=169 plan=charge 0.132 ms/step grown, self-deaths 0
+  exported sortgame     mass   seed 411: n=181 plan=mass 0.143 ms/step grown, self-deaths 0
+  exported sortgame     space  seed 411: n=88 plan=space 0.051 ms/step grown, self-deaths 0
+  exported sortgame     time   seed 411: n=76 plan=time 0.044 ms/step grown, self-deaths 0
+  exported sortgame     charge seed 512: n=169 plan=charge 0.118 ms/step grown, self-deaths 0
+  exported sortgame     mass   seed 512: n=181 plan=mass 0.148 ms/step grown, self-deaths 0
+  exported sortgame     space  seed 512: n=88 plan=space 0.048 ms/step grown, self-deaths 0
+  exported sortgame     time   seed 512: n=76 plan=time 0.048 ms/step grown, self-deaths 0
+  exported game     charge seed 7: n=183 plan=charge 1.682 ms/step
+  exported game     mass   seed 7: n=192 plan=mass 1.130 ms/step
+  exported game     space  seed 7: n=88 plan=space 0.623 ms/step
+  exported game     time   seed 7: n=76 plan=time 0.649 ms/step
+  exported game     charge seed 23: n=179 plan=charge 0.896 ms/step
+  exported game     mass   seed 23: n=192 plan=mass 0.925 ms/step
+  exported game     space  seed 23: n=88 plan=space 0.531 ms/step
+  exported game     time   seed 23: n=76 plan=time 0.539 ms/step
+  exported game     charge seed 41: n=179 plan=charge 0.978 ms/step
+  exported game     mass   seed 41: n=192 plan=mass 0.958 ms/step
+  exported game     space  seed 41: n=88 plan=space 0.522 ms/step
+  exported game     time   seed 41: n=76 plan=time 0.566 ms/step
+  exported game     charge seed 108: n=180 plan=charge 1.016 ms/step
+  exported game     mass   seed 108: n=192 plan=mass 1.013 ms/step
+  exported game     space  seed 108: n=88 plan=space 0.612 ms/step
+  exported game     time   seed 108: n=76 plan=time 0.542 ms/step
+  exported game     charge seed 209: n=181 plan=charge 1.142 ms/step
+  exported game     mass   seed 209: n=192 plan=mass 1.123 ms/step
+  exported game     space  seed 209: n=88 plan=space 0.550 ms/step
+  exported game     time   seed 209: n=76 plan=time 0.515 ms/step
+  exported game     charge seed 310: n=180 plan=charge 0.933 ms/step
+  exported game     mass   seed 310: n=192 plan=mass 0.936 ms/step
+  exported game     space  seed 310: n=88 plan=space 0.510 ms/step
+  exported game     time   seed 310: n=76 plan=time 0.481 ms/step
+  exported game     charge seed 411: n=180 plan=charge 0.937 ms/step
+  exported game     mass   seed 411: n=192 plan=mass 0.944 ms/step
+  exported game     space  seed 411: n=88 plan=space 0.517 ms/step
+  exported game     time   seed 411: n=76 plan=time 0.491 ms/step
+  exported game     charge seed 512: n=180 plan=charge 0.899 ms/step
+  exported game     mass   seed 512: n=192 plan=mass 0.924 ms/step
+  exported game     space  seed 512: n=88 plan=space 0.542 ms/step
+  exported game     time   seed 512: n=76 plan=time 0.494 ms/step
+
+C# export: 128 runs in 22s
+Python sort reference: 32 runs in 46s
+
+OWN-PLAN LOSS (swarm_loss sink, default LossCfg; bar 8)  per seed 7,23,41,108,209,310,411,512
+  python sort              mass    1.42  1.47  1.95  1.31  1.48  2.02  1.62  1.30   mean  1.57  pass 8/8  n~181  4.098 ms/step
+  python sort              space   2.56  3.17  3.45  2.58  2.18  2.38  2.26  3.03   mean  2.70  pass 8/8  n~83  1.542 ms/step
+  python sort              charge  1.03  1.02  1.34  1.00  1.12  1.32  1.10  1.01   mean  1.12  pass 8/8  n~169  3.569 ms/step
+  python sort              time    5.06  5.02  4.74  5.03  4.99  4.94  3.48  4.53   mean  4.72  pass 8/8  n~72  1.427 ms/step
+  C# sort research         mass    1.37  1.17  1.59  1.60  1.38  1.36  1.66  1.33   mean  1.43  pass 8/8  n~181  0.132 ms/step
+  C# sort research         space   2.52  2.32  3.21  2.02  2.03  1.98  2.82  2.64   mean  2.44  pass 8/8  n~83  0.040 ms/step
+  C# sort research         charge  1.00  0.95  0.94  0.96  1.39  1.05  0.92  0.89   mean  1.01  pass 8/8  n~169  0.127 ms/step
+  C# sort research         time    5.04  3.09  3.02  4.73  3.58  5.70  3.76  3.04   mean  4.00  pass 8/8  n~72  0.034 ms/step
+  C# sort game (1-domain)  mass    1.56  1.57  1.43  1.62  1.63  1.48  1.50  1.61   mean  1.55  pass 8/8  n~181  0.158 ms/step
+  C# sort game (1-domain)  space   1.87  1.84  1.90  1.84  1.66  1.90  1.90  1.77   mean  1.83  pass 8/8  n~88  0.054 ms/step
+  C# sort game (1-domain)  charge  1.66  1.62  1.62  1.66  1.64  1.24  1.61  1.46   mean  1.56  pass 8/8  n~169  0.132 ms/step
+  C# sort game (1-domain)  time    4.44  4.31  4.29  4.35  4.28  4.33  4.29  4.28   mean  4.32  pass 8/8  n~76  0.050 ms/step
+  C# grid game (1-domain)  mass    4.96  6.48  5.19  4.13  5.16  4.75  5.29  5.15   mean  5.14  pass 8/8  n~192  0.994 ms/step
+  C# grid game (1-domain)  space   1.25  1.35  1.54  1.98  1.16  1.44  2.14  1.89   mean  1.59  pass 8/8  n~88  0.551 ms/step
+  C# grid game (1-domain)  charge  3.11  3.49  3.98  3.00  3.44  3.11  3.41  3.23   mean  3.35  pass 8/8  n~180  1.060 ms/step
+  C# grid game (1-domain)  time    3.84  3.14  3.80  3.92  4.25  4.12  3.26  4.60   mean  3.87  pass 8/8  n~76  0.535 ms/step
+
+FEEL (swarm_feel.metrics, mean over plans and seeds)
+  C# sort research         speed 0.019  jerk_rel 0.799  planar_frac 0.634  coherence 0.761  jitter 0.637  phase 0.113  stuck 0.000  osc 0.016  planar_excess 0.160  -> out (planar)
+  C# sort game (1-domain)  speed 0.192  jerk_rel 0.633  planar_frac 0.637  coherence 0.555  jitter 0.846  phase 0.809  stuck 0.000  osc 0.016  planar_excess 0.278  -> out (planar)
+  C# grid game (1-domain)  speed 0.209  jerk_rel 0.572  planar_frac 0.460  coherence 0.574  jitter 1.023  phase 0.546  stuck 0.000  osc 0.031  planar_excess 0.000  -> ORGANIC
+  C# field game            speed 0.404  jerk_rel 0.130  planar_frac 0.500  coherence 0.776  jitter 0.656  phase 0.777  stuck 0.094  osc 0.028  planar_excess 0.034  -> out (jerk_rel, stuck)
+  python sort              speed 0.020  jerk_rel 0.899  planar_frac 0.647  coherence 0.687  jitter 0.675  phase 0.090  stuck 0.000  osc 0.035  planar_excess 0.262  -> out (planar)
+
+LOSSLESS (members that vanished without being killed, per run)
+  C# sort research         0 over 32 runs
+  C# sort game (1-domain)  0 over 32 runs
+  python sort (scorecard)  deaths 0  lossless True
+
+wrote /tmp/claude-0/ss8.json

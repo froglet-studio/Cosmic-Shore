@@ -293,8 +293,8 @@ leaving them as an absence.
 - **Not editor-verified.** Everything above §8 is asserted by static analysis, a real
   out-of-editor **compile** of the whole racing set AND the vessel-side change against stubbed
   packages, a 2400-circuit offline run of the shipped generator, and a 21-test edit-mode suite
-  compiled and run under a stub harness. Nobody has flown it. See
-  `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+  compiled and run under a stub harness. Nobody has flown it, and there is no Headlong entry in
+  `Docs/UNITY_VERIFICATION_CHECKLIST.md` yet, so the first-flight check is still unrecorded.
 - **The AI has never been tuned for a circuit.** It inherits Switchback's approach/commit
   distances (260/300/220), which were sized for a Dolphin at 347 u/s. A Rhino at 1200 arrives
   3.5× faster and those numbers are very likely too short. The graded ramp helps here for free —

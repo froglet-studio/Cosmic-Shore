@@ -11,19 +11,39 @@ namespace CosmicShore.Launcher
     /// </summary>
     public static class Neon
     {
-        public static readonly Vector4 Cyan = new(0.20f, 0.92f, 1.00f, 1f);
-        public static readonly Vector4 Magenta = new(1.00f, 0.22f, 0.86f, 1f);
-        public static readonly Vector4 Violet = new(0.55f, 0.36f, 1.00f, 1f);
+        // The accent and space colours are a theme (SETTINGS > LOOK); everything reads them live.
+        public static Vector4 Cyan = new(0.20f, 0.92f, 1.00f, 1f);
+        public static Vector4 Magenta = new(1.00f, 0.22f, 0.86f, 1f);
+        public static Vector4 Violet = new(0.55f, 0.36f, 1.00f, 1f);
         public static readonly Vector4 Lime = new(0.62f, 1.00f, 0.30f, 1f);
         public static readonly Vector4 Amber = new(1.00f, 0.72f, 0.18f, 1f);
         public static readonly Vector4 Red = new(1.00f, 0.30f, 0.38f, 1f);
         public static readonly Vector4 Ink = new(0.86f, 0.93f, 1.00f, 1f);
         public static readonly Vector4 Dim = new(0.52f, 0.60f, 0.78f, 1f);
-        public static readonly Vector4 Space0 = new(0.012f, 0.010f, 0.045f, 1f);
-        public static readonly Vector4 Space1 = new(0.045f, 0.030f, 0.140f, 1f);
+        public static Vector4 Space0 = new(0.012f, 0.010f, 0.045f, 1f);
+        public static Vector4 Space1 = new(0.045f, 0.030f, 0.140f, 1f);
+
+        /// <summary>Accent themes: the game's own look, its four domain colours, and a quiet grey.</summary>
+        public static readonly string[] Themes = { "COSMIC", "JADE", "RUBY", "GOLD", "ICE", "MONO" };
+
+        public static void ApplyTheme(int theme)
+        {
+            (Cyan, Magenta, Violet, Space0, Space1) = theme switch
+            {
+                1 => (V(0.25f, 1.00f, 0.70f), V(0.10f, 0.75f, 0.55f), V(0.20f, 0.55f, 0.65f), V(0.005f, 0.030f, 0.030f), V(0.020f, 0.090f, 0.080f)),
+                2 => (V(1.00f, 0.42f, 0.52f), V(0.95f, 0.15f, 0.35f), V(0.65f, 0.15f, 0.45f), V(0.035f, 0.008f, 0.020f), V(0.120f, 0.020f, 0.060f)),
+                3 => (V(1.00f, 0.82f, 0.30f), V(1.00f, 0.52f, 0.15f), V(0.85f, 0.40f, 0.25f), V(0.030f, 0.020f, 0.008f), V(0.110f, 0.070f, 0.020f)),
+                4 => (V(0.70f, 0.90f, 1.00f), V(0.35f, 0.55f, 1.00f), V(0.45f, 0.50f, 0.95f), V(0.010f, 0.020f, 0.045f), V(0.030f, 0.070f, 0.150f)),
+                5 => (V(0.92f, 0.94f, 0.98f), V(0.62f, 0.66f, 0.74f), V(0.45f, 0.48f, 0.56f), V(0.015f, 0.016f, 0.020f), V(0.060f, 0.064f, 0.075f)),
+                _ => (V(0.20f, 0.92f, 1.00f), V(1.00f, 0.22f, 0.86f), V(0.55f, 0.36f, 1.00f), V(0.012f, 0.010f, 0.045f), V(0.045f, 0.030f, 0.140f)),
+            };
+        }
+
+        static Vector4 V(float r, float g, float b) => new(r, g, b, 1f);
         public static readonly Vector4 Panel = new(0.035f, 0.045f, 0.120f, 0.82f);
 
-        public static ImFontPtr Body, Small, Heading, Hero, Mono, Title;
+        /// <summary>Body/Small/Strong: Inter (the macOS feel). Heading/Title/Hero: Aldrich (Cosmic Shore's display face).</summary>
+        public static ImFontPtr Body, Small, Strong, Heading, Hero, Mono, Title;
 
         public static uint U(Vector4 c, float alpha = 1f) =>
             ImGui.ColorConvertFloat4ToU32(new Vector4(c.X, c.Y, c.Z, c.W * Math.Clamp(alpha, 0f, 1f)));
@@ -33,15 +53,38 @@ namespace CosmicShore.Launcher
         public static float Time => (float)ImGui.GetTime();
 
         /// <summary>A rectangle with its top-left and bottom-right corners cut - the game's UI shape.</summary>
+        /// <summary>
+        /// Prisma's panel shape: macOS's continuous rounded rectangle, sized from the old chamfer
+        /// cut so every caller keeps its proportions (a bigger cut is a rounder corner).
+        /// </summary>
         public static void ChamferPath(ImDrawListPtr dl, Vector2 a, Vector2 b, float cut)
         {
-            cut = Math.Min(cut, Math.Min(b.X - a.X, b.Y - a.Y) * 0.45f);
-            dl.PathLineTo(new Vector2(a.X + cut, a.Y));
-            dl.PathLineTo(new Vector2(b.X, a.Y));
-            dl.PathLineTo(new Vector2(b.X, b.Y - cut));
-            dl.PathLineTo(new Vector2(b.X - cut, b.Y));
-            dl.PathLineTo(new Vector2(a.X, b.Y));
-            dl.PathLineTo(new Vector2(a.X, a.Y + cut));
+            float r = Math.Min(cut * 1.35f + 2f, Math.Min(b.X - a.X, b.Y - a.Y) * 0.5f);
+            dl.PathRect(a, b, r);
+        }
+
+        public static float Radius(float cut, Vector2 a, Vector2 b) => Math.Min(cut * 1.35f + 2f, Math.Min(b.X - a.X, b.Y - a.Y) * 0.5f);
+
+        /// <summary>Prisma's mark: a faceted Cosmic Shore crystal in cyan and magenta, gently breathing.</summary>
+        public static void PrismIcon(ImDrawListPtr dl, Vector2 c, float size, float alpha = 1f, float t = 0f)
+        {
+            float w = size * 0.32f, h = size * 0.52f;
+            Vector2 P(float x, float y) => c + new Vector2(x * w, y * h);
+            Vector2 top = P(0, -1), ur = P(1, -0.42f), lr = P(1, 0.42f), bot = P(0, 1), ll = P(-1, 0.42f), ul = P(-1, -0.42f);
+            Vector2 mt = P(0, -0.25f), mb = P(0, 0.55f);
+            float breathe = 0.85f + 0.15f * MathF.Sin(t * 2f);
+            for (int i = 4; i >= 1; i--) dl.AddCircleFilled(c, size * 0.18f * i, U(Cyan, 0.035f * alpha * breathe), 24);
+            dl.AddTriangleFilled(top, mt, ul, U(new Vector4(0.6f, 0.98f, 1f, 1f), 0.92f * alpha));
+            dl.AddTriangleFilled(top, ur, mt, U(new Vector4(0.32f, 0.78f, 1f, 1f), 0.92f * alpha));
+            dl.AddQuadFilled(ul, mt, mb, ll, U(new Vector4(0.16f, 0.66f, 0.94f, 1f), 0.92f * alpha));
+            dl.AddQuadFilled(mt, ur, lr, mb, U(new Vector4(0.58f, 0.28f, 0.94f, 1f), 0.92f * alpha));
+            dl.AddTriangleFilled(ll, mb, bot, U(new Vector4(0.28f, 0.43f, 0.9f, 1f), 0.92f * alpha));
+            dl.AddTriangleFilled(mb, lr, bot, U(Magenta, 0.92f * alpha));
+            uint edge = U(Ink, 0.85f * alpha);
+            float lw = Math.Max(1f, size * 0.03f);
+            dl.AddPolyline(ref new[] { top, ur, lr, bot, ll, ul }[0], 6, edge, ImDrawFlags.Closed, lw);
+            dl.AddLine(top, mt, edge, lw); dl.AddLine(mt, mb, edge, lw); dl.AddLine(mb, bot, edge, lw);
+            dl.AddLine(ul, mt, edge, lw); dl.AddLine(mt, ur, edge, lw); dl.AddLine(ll, mb, edge, lw); dl.AddLine(mb, lr, edge, lw);
         }
 
         public static void ChamferFill(ImDrawListPtr dl, Vector2 a, Vector2 b, float cut, uint col)
@@ -218,8 +261,8 @@ namespace CosmicShore.Launcher
         public static void ApplyStyle()
         {
             var s = ImGui.GetStyle();
-            s.WindowRounding = 0; s.FrameRounding = 3; s.PopupRounding = 3; s.GrabRounding = 2; s.TabRounding = 2;
-            s.ScrollbarRounding = 2; s.ChildRounding = 4;
+            s.WindowRounding = 0; s.FrameRounding = 7; s.PopupRounding = 10; s.GrabRounding = 7; s.TabRounding = 7;
+            s.ScrollbarRounding = 8; s.ChildRounding = 10;
             s.WindowBorderSize = 0; s.FrameBorderSize = 1; s.PopupBorderSize = 1;
             s.FramePadding = new Vector2(10, 7); s.ItemSpacing = new Vector2(10, 9); s.ScrollbarSize = 10;
             s.WindowPadding = new Vector2(0, 0);
@@ -229,7 +272,7 @@ namespace CosmicShore.Launcher
             c[(int)ImGuiCol.WindowBg] = new Vector4(0, 0, 0, 0);
             c[(int)ImGuiCol.ChildBg] = new Vector4(0, 0, 0, 0);
             c[(int)ImGuiCol.PopupBg] = new Vector4(0.03f, 0.03f, 0.10f, 0.97f);
-            c[(int)ImGuiCol.Border] = new Vector4(0.20f, 0.92f, 1f, 0.35f);
+            c[(int)ImGuiCol.Border] = new Vector4(1f, 1f, 1f, 0.10f);
             c[(int)ImGuiCol.FrameBg] = new Vector4(0.02f, 0.03f, 0.09f, 0.9f);
             c[(int)ImGuiCol.FrameBgHovered] = new Vector4(0.06f, 0.10f, 0.22f, 0.95f);
             c[(int)ImGuiCol.FrameBgActive] = new Vector4(0.08f, 0.14f, 0.30f, 1f);

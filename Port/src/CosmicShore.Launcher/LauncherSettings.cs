@@ -61,10 +61,26 @@ namespace CosmicShore.Launcher
         public IosMode Ios { get; set; } = OperatingSystem.IsMacOS() ? IosMode.ThisMac : IosMode.GitHub;
 
         // Claude
+        // Look (SETTINGS > LOOK)
+        public int Background { get; set; }
+        public int Theme { get; set; }
+        public string BackgroundImage { get; set; } = "";
+        public float BackgroundMotion { get; set; } = 1f;
+        public float BackgroundDim { get; set; } = 0.25f;
+        public bool Animations { get; set; } = true;
+        public bool TourDone { get; set; }
+
         public string AnthropicApiKey { get; set; } = "";
         public string ClaudeModel { get; set; } = "";
+        public string ClaudeEffort { get; set; } = "";
+        public bool VoiceReplies { get; set; }
         public string ClaudePath { get; set; } = "";
         public int ChatMode { get; set; }
+        // A milestone run's budget (each message is one run): agentic turns, wall-clock minutes,
+        // and an optional dollar cap. A run that hits one stops and leaves what it tried on the board.
+        public int MilestoneMaxTurns { get; set; } = 80;
+        public int MilestoneMaxMinutes { get; set; } = 60;
+        public double MilestoneMaxUsd { get; set; }
 
         // Toolchain
         public string DotnetPath { get; set; } = "";
@@ -81,7 +97,11 @@ namespace CosmicShore.Launcher
             var baseDir = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             if (string.IsNullOrEmpty(baseDir))
                 baseDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".local", "share");
-            var dir = Path.Combine(baseDir, "FrogletEngine");
+            var dir = Path.Combine(baseDir, "Prisma");
+            // Settings, sessions, tracks and versions from before the rename move over once.
+            var legacy = Path.Combine(baseDir, "FrogletEngine");
+            if (!Directory.Exists(dir) && Directory.Exists(legacy))
+                try { Directory.Move(legacy, dir); } catch { /* in use: start fresh beside it */ }
             Directory.CreateDirectory(dir);
             return dir;
         }
