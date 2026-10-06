@@ -39,13 +39,13 @@ Measured off the shipped prefabs and assets (2026-09-15; re-measure before trust
 | hull | cruise → top | speed source | autopilot can use it? | vs shielded / super-shielded mass |
 |---|---|---|---|---|
 | Manta | 180 → 720 (×1.3 Time 10) | Soar (free; costs yaw) | YES (`MantaAnalogTurnBoostExecutor` drive) | ram = slow |
-| Dolphin | 68 → 347 | drift-charge → discharge; skims for seed energy | no | ram = slow + half charge |
+| Dolphin | 68 → 347 | drift-charge → discharge; skims for seed energy | yes (`ChargeBoostAIPolicySO`: discharges on the straight; off in Bends/Rampage/Broadside) | ram = slow + half charge |
 | Rhino | 50 → 1200 | ramp on a straight stick | yes, by the gesture | **energised sword pops super-shield**; no slow wired |
 | Urchin | 65 → 300 on its OWN-colour rail (20 on a rival's; Time-5 Slipstream 300) | riding, no resource | rides (aim it down the rail) | rides the shell's envelope |
 | Squirrel | 60 → 300 | skim energy (+0.1/contact, decays 0.3/s) | no | ram **resets** the boost |
-| Serpent | 60 → 160 (×1.6 Time 10, duration too) | 4 charges × 3 s, regen 3.6 s | no | no slow wired |
-| Sparrow | 35 → 135 (×1.5 Time 10) | indefinite boost (free) | no | ram = slow |
-| Scarab | 216 → 324 (Time 1→1.5) | throttle ceiling | throttle only | no slow wired |
+| Serpent | 60 → 160 (×1.6 Time 10, duration too) | 4 charges × 3 s, regen 3.6 s | yes (`PelletBoostAIPolicySO`: stacks pellets on straights) | no slow wired |
+| Sparrow | 35 → 135 (×1.5 Time 10) | indefinite boost (free) | yes (`HoldBoostAIPolicySO`: holds on straights; off in Dog Fight/Wildlife Liberation) | ram = slow |
+| Scarab | 216 → 324 (Time 1→1.5) | throttle ceiling | throttle (always full) + Time-5 Snap Dash (`SnapDashAIPolicySO`) | no slow wired |
 
 Three things every row above teaches:
 

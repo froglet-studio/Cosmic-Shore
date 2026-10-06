@@ -21,8 +21,11 @@ namespace CosmicShore.UI
                  "NewRaceLeader: {0}=leader name\n" +
                  "ComebackActivated: {0}=player name\n" +
                  "BroodWaveScored: {0}=domain name, {1}=brood sum, {2}=wave target\n" +
-                 "CrystalCollected / RocketHit / BendLanded / PrismsDestroyedMilestone / LifeformKilled: " +
+                 "CrystalCollected / RocketHit / BendLanded / PrismsDestroyedMilestone / LifeformKilled / " +
+                 "PrismsStolenMilestone: " +
                  "{0}=player name, {1}=new total, {2}=increase, {3}=objective target (0 if none)\n" +
+                 "DomainRaceQuarter / Half / LeadChanged / HomeStretch / FinalLap: {0}=leading domain, " +
+                 "{1}=its score, {2}=target, {3}=its best single pilot\n" +
                  "Rich text (<b>, <i>, <color>) is supported.")]
         [TextArea]
         public string messageTemplate;
@@ -44,7 +47,7 @@ namespace CosmicShore.UI
         [Header("Stat Toasts")]
         [Min(1)]
         [Tooltip("For the per-player STAT situations (CrystalCollected, RocketHit, BendLanded, " +
-                 "PrismsDestroyedMilestone, LifeformKilled): fire only when the player's total " +
+                 "PrismsDestroyedMilestone, LifeformKilled, PrismsStolenMilestone): fire only when the player's total " +
                  "crosses a multiple of this. 1 = every increase (Skim Race's crystals); " +
                  "10 = every tenth (Scurry's crystals). Ignored by every other situation.")]
         public int everyN = 1;
