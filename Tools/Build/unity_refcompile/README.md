@@ -25,7 +25,7 @@ cannot see it. So an Editor file's `namespace CosmicShore.Editor` no longer shad
 fails as it does in Unity. Only errors in the Editor-folder files **changed since `--changed-base`**
 (committed) gate. The unchanged ones are compiled as context, so a changed tool binds against
 `FrogletTool`, `FrogletEditorPalette` and the rest, and their errors are listed separately (36 on
-bleeding-edge, every one a reference-set artifact; see Known issues). `Assembly-CSharp` never emits a
+bleeding-edge, every one a reference-set artifact, see "Editor reference gaps" below). `Assembly-CSharp` never emits a
 DLL here, because the unfetchable-package files always fail it, so the editor assembly is **bound
 against its source** (`Diagnose --source-ref`): a runtime error is reported once, in the runtime file,
 not as missing types in the Editor files. The references are the newest **non-publicized
@@ -64,8 +64,8 @@ A small re-implementation of Unity's script pipeline (`build.py`):
    failed dependency's source instead of its (missing) DLL.
 7. Buckets the errors: **project errors** (the gate), **missing-type errors in files that `using` a
    package that cannot be fetched**, **missing-type errors naming a type or namespace that a failed
-   package declares**, and
-   (editor config) **errors in Editor-folder files not changed since `--changed-base`**.
+   package declares** or (editor config) an `EDITOR_REFERENCE_GAPS` entry, and (editor config)
+   **errors in Editor-folder files not changed since `--changed-base`**.
 
 ## Where the references come from (fetched by `fetch.py`, cached, never committed)
 
@@ -138,18 +138,28 @@ fields, bases and enum members. `Tools/Build/check_generated_assets.py` audits Y
 so run this tool before it.
 
 
+## Editor reference gaps (`EDITOR_REFERENCE_GAPS` in `build.py`)
+
+Compiled together on bleeding-edge (2026-10-06), the 301 loose Editor-folder scripts give 36 errors in
+9 files, and none of them is the code's fault: Unity 6 editor API that the 2021.1 `UnityEditor`
+reference lacks, and the test framework, which is not fetched.
+
+| Gap | Errors | Files |
+|---|---|---|
+| `MaterialProperty.propertyType` (Unity 6) | 13 | `SSUShaderGUI.cs`, `CodingHelper.cs` |
+| `NamedBuildTarget`, `PlayerSettings.Get/SetScriptingDefineSymbols` (2021.2) | 5 | `Build/CosmicShoreBuildPipeline.cs` |
+| `PrefabStageUtility` out of `Experimental` (2021.2) | 3 | `CanvasUpgrader/CanvasUpgraderWindow.cs` |
+| `EditorUtility.EntityIdToObject` (6000.2) | 1 | `FrogletTools/GameCanvasUnifier.cs` |
+| `UnityEditor.TestTools` (test framework) | 10 | `AI/SkimRaceBenchmarkRemote.cs` |
+| `LogAssert` (test framework) | 4 | three test files |
+
+Each gap is matched on its whole error message and listed as "unverified" wherever it appears, so a
+branch that changes one of these files is not failed by the reference set, and a typo on the same API
+(`propertyTyp`, `LogAsert`) still gates. A newly used Unity 6 editor API reads as a project error until
+it gets an entry: add one only for documented Unity API, with the version that introduced it.
+
 ## Known issues (open)
 
-- **Unity 6-only `UnityEditor` API reads as an error in the `editor` config.** Compiled together on
-  bleeding-edge (2026-10-06), the 301 loose Editor-folder scripts give 36 errors in 9 files, all
-  reference-set artifacts: `MaterialProperty.propertyType` (13: `SSUShaderGUI.cs`, `CodingHelper.cs`),
-  `NamedBuildTarget` / `PlayerSettings.Get/SetScriptingDefineSymbols` (5:
-  `Build/CosmicShoreBuildPipeline.cs`), `PrefabStageUtility` outside `Experimental` (3:
-  `CanvasUpgrader/CanvasUpgraderWindow.cs`), `EditorUtility.EntityIdToObject` (1:
-  `FrogletTools/GameCanvasUnifier.cs`), and the unfetched test framework: `UnityEditor.TestTools` (10:
-  `AI/SkimRaceBenchmarkRemote.cs`) and `LogAssert` (4, in three test files). While those files are
-  unchanged they are listed, not gated. A branch that changes one of them gets these as false project
-  errors. Read them against this list.
 - **`--config editor` only sees Editor-folder files COMMITTED since `--changed-base`.** The set
   is `git diff --name-only <base>...HEAD`, so a NEW test file that is still untracked or only
   staged is not compiled at all — and a planted error in it passes green (seen 2026-10-08 on

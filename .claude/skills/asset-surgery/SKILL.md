@@ -1069,8 +1069,9 @@ references, m_Script classes). Four things that cost time on the first run (2026
   false `CS0118 'Editor' is a namespace but is used like a type` errors in untouched runtime
   `#if UNITY_EDITOR` files. A run from an older checkout still does. Only the CHANGED Editor files
   gate. The ~36 errors listed for unchanged ones are reference-set artifacts (2021.1 `UnityEditor`, no
-  test framework), itemised in the README's Known issues. If your branch changes one of those files,
-  read its errors against that list.
+  test framework). `EDITOR_REFERENCE_GAPS` in `build.py` matches each one, so they stay unverified
+  even in a file your branch changes. A Unity 6 editor API your branch starts using reads as an error
+  until it gets an entry there.
 - **`--config editor` only sees Editor-folder files that are COMMITTED.** It picks them with
   `git diff --name-only <changed-base>...HEAD`, so a test you edited but have not committed is
   silently left out and the run is green without having compiled it. Read the

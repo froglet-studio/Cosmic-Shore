@@ -562,6 +562,19 @@ MISSING_CODES = {"CS0246", "CS0234", "CS0103", "CS1069", "CS0012", "CS0538"}
 # In a file that uses an unobtainable package, these are cascades of its unresolved types too
 # (`out var x` from an unknown TryGetValue -> CS0165, `unknown.Count > 0` -> CS0019, ...).
 UNOBTAINABLE_CASCADE_CODES = MISSING_CODES | {"CS0165", "CS0019", "CS1061"}
+# Editor config: errors that are the 2021.1 UnityEditor reference (the newest non-publicized one
+# obtainable) or the unfetched test framework, not the code. Matched on the whole message, so a typo
+# on the same type still gates. Add an entry only for documented Unity API, naming where it came from.
+EDITOR_REFERENCE_GAPS = [
+    (r"'MaterialProperty' does not contain a definition for 'propertyType'", "MaterialProperty.propertyType, Unity 6"),
+    (r"name 'NamedBuildTarget'", "UnityEditor.Build.NamedBuildTarget, 2021.2"),
+    (r"'PlayerSettings' does not contain a definition for '[GS]etScriptingDefineSymbols'",
+     "PlayerSettings.Get/SetScriptingDefineSymbols(NamedBuildTarget), 2021.2"),
+    (r"name 'PrefabStageUtility' does not exist", "UnityEditor.SceneManagement.PrefabStageUtility (out of Experimental), 2021.2"),
+    (r"'EditorUtility' does not contain a definition for 'EntityIdToObject'", "EditorUtility.EntityIdToObject, 6000.2"),
+    (r"name 'TestTools' does not exist in the namespace 'UnityEditor'", "com.unity.test-framework (not fetched)"),
+    (r"name 'LogAssert' does not exist", "UnityEngine.TestTools.LogAssert, com.unity.test-framework (not fetched)"),
+]
 _DECLARED_TYPE = re.compile(r"\b(?:class|struct|interface|enum|record)\s+(\w+)|\bdelegate\s+[^;{(=]*?\b(\w+)\s*(?:<[^>]*>)?\s*\(")
 
 
@@ -1064,6 +1077,8 @@ def run_once():
                 # the uGUI/engine reference DLLs are PLAYER builds: their #if UNITY_EDITOR members
                 # (UIBehaviour.OnValidate/Reset) do not exist in them
                 unverified.append((k, e))
+            elif editor and any(re.search(rx, m.group(3)) for rx, _ in EDITOR_REFERENCE_GAPS):
+                unverified.append((k, e))
             elif code in MISSING_CODES and names_failed_package(m.group(3), pkg_failed, failed_types, failed_namespaces):
                 unverified.append((k, e))
             else:
@@ -1080,8 +1095,8 @@ def run_once():
     show("ERRORS in project code", real, args.max_errors)
     show("missing-type errors in files using a package that cannot be fetched (%s)" % ", ".join(UNOBTAINABLE_NAMESPACES),
          unobtainable, 0 if args.quiet_buckets else args.max_errors)
-    show("unverified: types a failed package declares, or editor-only members absent from the player-build reference DLLs",
-         unverified,
+    show("unverified: types a failed package declares, editor-only members absent from the player-build reference DLLs, "
+         "or Unity 6 editor API / the test framework absent from the editor references (EDITOR_REFERENCE_GAPS)", unverified,
          0 if args.quiet_buckets else args.max_errors)
     if editor:
         show("unverified: errors in Editor-folder files NOT changed since %s (compiled as context for the changed ones; "
