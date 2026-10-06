@@ -4295,3 +4295,24 @@ Fleet-wide. Every drain got lighter and three verbs gained one they never had.
 The **Rhino's energised sword** lands a Strike and drains nothing — it is now the only scoring
 verb with no drain path. Arming it is a Rhino kit decision (a skimmer drain SO on the sword's
 container), not a number, so it is reported rather than done.
+
+## 🔴 First-login guide — spotlight draws nothing in Unity (`claude/exciting-bell-69b398`, 2026-10-06) — NOT EDITOR-VERIFIED
+
+**State.** Second Unity playtest after the local-space geometry fix: still no dim and no CTA frame,
+and presses are refused (so the dim exists and its raycast filter runs). Prisma draws all of it from
+the same code (`Docs/HomeHub/ARCHITECTURE.md` §8.1).
+
+**What landed for it.** A reader tool, **FrogletTools > Diagnostics > Report Menu Spotlight**
+(`Assets/_Scripts/Editor/Diagnostics/MenuSpotlightReport.cs`). Type-checked with
+`unity_refcompile --config editor` against the Unity 6 engine assemblies. Its only errors are the
+`FrogletTool` attribute types, which that config cannot see because it compiles only changed
+Editor-folder files. It has not been opened in Unity.
+
+**To run.** Fresh profile (both resets: Reset Microgame Lessons + the Quest Graph Editor's restart),
+enter play mode, wait for the caption over ARCADE, run the tool. The report is copied to the
+clipboard. Paste it back. What it settles:
+- Does the dim's generated **mesh** have vertices, inside the screen, with alpha around 178 (0.7)?
+- Is any **cut-out non-finite**, or does one cover the whole screen?
+- Is the spotlight's **material/shader** `UI/Default` and supported, and is its CanvasRenderer
+  culled or at zero inherited alpha?
+- Does a press at the **target centre** pass the dim and reach the Arcade button?
