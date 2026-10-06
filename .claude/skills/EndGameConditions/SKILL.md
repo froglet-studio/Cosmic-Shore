@@ -1,6 +1,6 @@
 ---
 name: EndGameConditions
-description: Use when setting, changing, or asking where the end-game / win-condition COUNTS live for the domain modes — SkimRace crystal count, Joust joust count, Crystal Capture crystal count (how many crystals/jousts end a turn), and Maelstrom win target (placement points to win the whole shuffle, "race to N"). These are now authored ONLY through the FrogletTools > Game Modes > End Game Conditions editor window (backed by Resources/EndConditionOverrides.asset), never via per-scene inspector fields. Trigger when editing CrystalCollisionTurnMonitor / JoustCollisionTurnMonitor / NetworkCrystalCollisionTurnMonitor / NetworkJoustCollisionTurnMonitor, MaelstromDataSO / MaelstromController, EndConditionOverridesSO, or when someone wants to make a mode end sooner/later.
+description: Use when setting, changing, or asking where the end-game / win-condition COUNTS live for the domain modes — SkimRace crystal count, Joust joust count, Crystal Capture crystal count (how many crystals/jousts end a turn), Maelstrom win target (placement points to win the whole shuffle, "race to N"), and the gate-race lengths (Skein rings, Headlong laps x rings, and the other GateRaceController modes). These are now authored ONLY through the FrogletTools > Game Modes > End Game Conditions editor window (backed by Resources/EndConditionOverrides.asset), never via per-scene inspector fields. Trigger when editing CrystalCollisionTurnMonitor / JoustCollisionTurnMonitor / NetworkCrystalCollisionTurnMonitor / NetworkJoustCollisionTurnMonitor, MaelstromDataSO / MaelstromController, EndConditionOverridesSO, EndConditionOverridesWindow, a GateRaceController subclass's AuthoredGateTarget (SkeinController, HeadlongController), or when someone wants to make a mode end sooner/later.
 ---
 
 # End Game Conditions — how the modes' win counts are set
@@ -36,6 +36,11 @@ at runtime via `Resources.Load`.
   - **Rampage** — `0` → `EndConditionOverridesSO.DefaultRampagePrismTarget` (2000): hostile prisms
     (another domain's mass) a domain must destroy to win (resolved by
     `RampagePrismTurnMonitor.StartMonitor` → `GameDataSO.PrismTargetCount`, synced by NetworkVariable).
+  - **Skein** — `0` → `EndConditionOverridesSO.DefaultSkeinRingTarget` (24): rings in the
+    Urchin cable course, which is both the finish line and the number of rings laid. See
+    "Gate races" below for why this number is not free to change.
+  - **Headlong** — `0` → `EndConditionOverridesSO.DefaultHeadlongGateTarget` (24): gate
+    THREADINGS, i.e. laps x rings. See "Gate races" below.
   - **Maelstrom** — `0` → `EndConditionOverridesSO.DefaultMaelstromWinTarget` (6). This is the
     "race to N" win target: the first DOMAIN whose cumulative `{2,1,0}` placement points reach it
     wins the shuffle. NOT a per-turn count — it ends the whole tournament.
@@ -82,7 +87,41 @@ networking.
 3. Commit `Assets/Resources/EndConditionOverrides.asset` (and its `.meta`).
 
 Defaults shipped (match the pre-tool scene/asset values, so behavior is unchanged until edited):
-SkimRace `0` (auto), Crystal Capture `20`, Joust `3`, Maelstrom `6`, Brood Rush `3`, Rampage `2000`.
+SkimRace `0` (auto), Crystal Capture `20`, Joust `3`, Maelstrom `6`, Brood Rush `3`, Rampage `2000`,
+Skein `24`, Headlong `24`. The window draws a row for every Live field on the SO; the asset itself
+is the authority for the rest of the modes' shipped values.
+
+## Gate races (Skein, Headlong, and the other GateRaceController modes)
+
+A gate race has no per-mode turn monitor. `RaceGateTurnMonitor` asks the scene's
+`GateRaceController.AuthoredGateTarget()` for the target, and the controller reads its own key on
+this SO, so the monitor never knows which key its mode uses. The same number sizes the course, and
+once the course exists its real length (`AuthoritativeGateCount`) wins, so a target can never name
+a gate that is not there. Each mode's key and what the one number means:
+
+| Mode | Key | Means | Shipped |
+|---|---|---|---|
+| Skein | `skeinRingTarget` | rings laid on the cable AND rings to thread | 24 |
+| Headlong | `headlongGateTarget` | threadings = laps x rings; rings per lap = ceil(target / laps), laps = `HeadlongController.laps` in `MinigameHeadlong.unity` (3) | 24 (3 x 8) |
+
+Both are ONE count each, so each has one row in the window ("Skein - Ring Target", "Headlong -
+Gate Target (laps x rings)"). Headlong's lap count is a per-scene input to the course shape, the
+same way SkimRace's `lapsPerIntensity` is an input to its auto-calc; it is not a second end
+condition, and the race length does not change when it does (only rings per lap does, rounded up
+to a whole lap).
+
+**Skein's ring count is load-bearing geometry, not just a length.** The rings must close on the
+finish collar after a whole number of cable laps, so the count sets the ring SPACING
+(`laps x L / (count - 1)`), and `Tools/Build/skein_budget.py` proves the pinned-ring spacing and the
+intensity-1 "next ring is on screen" promise at `GATE_COUNT = 24` only. The arena
+(`SpawnableSkein`) builds its cable with `SkeinCourseSettings.ForIntensity`'s own `GateCount`
+(24), and `BuildAll` rejects a seed whose walk lays a different ring count, so the count decides
+which re-roll a cable lands on. `SkeinController.BuildCourse` therefore picks the seed with the
+ARENA's count and walks the authored count on that same seed: at 24 that is the one pass it always
+was; at any other count the rings stay on rails the arena really laid, and if that seed cannot carry
+the authored count the course fails loudly with the fix in the message (set it back to 24, or
+re-measure the budget). Change Skein's count only together with a `skein_budget.py` run at the new
+count.
 
 ## Live vs. Build values (don't ship a test config)
 
@@ -122,13 +161,19 @@ build restore.
 | Joust reads it here | `Assets/_Scripts/Controller/Arcade/TurnMonitors/JoustCollisionTurnMonitor.cs` (`StartMonitor`) |
 | Maelstrom resolves it here | `Assets/_Scripts/Controller/Arcade/MaelstromController.cs` (`StartMaelstromInternal` → `ResolveWinTarget`) |
 | Maelstrom reads it here | `Assets/_Scripts/Utility/DataContainers/MaelstromDataSO.cs` (`EffectiveWinTarget`, `IsShuffleComplete`) |
+| Gate races resolve it here | `Assets/_Scripts/Controller/Arcade/Racing/RaceGateTurnMonitor.cs` (`StartMonitor` → `GateRaceController.AuthoredGateTarget`) |
+| Skein / Headlong keys read here | `Skein/SkeinController.cs`, `Headlong/HeadlongController.cs` (`AuthoredGateTarget`, `BuildCourse`) |
 | Network sync (unchanged) | `NetworkCrystalCollisionTurnMonitor.cs` (`CrystalTargetCount`), `NetworkJoustCollisionTurnMonitor.cs` (`JoustTargetCount`) |
 
 ## When adding a new count-based mode
 
-Add a Live field **and** its `*Build` counterpart (+ a `case`/getter) in `EndConditionOverridesSO`,
-include both in `LiveMatchesBuild` / `ApplyBuildValues` / `CaptureBuildValues`, add the Live input
-row + the Build-baseline display line in the editor window, then have that mode resolve its count
+Add a Live field **and** its `*Build` counterpart (+ a `case`/getter, + a `TryGetAuthoredTurnTarget`
+row) in `EndConditionOverridesSO`, include both in `LiveMatchesBuild` / `ApplyBuildValues` /
+`CaptureBuildValues`, and add ALL FOUR window pieces in `EndConditionOverridesWindow`: the help-text
+bullet, the Live input row (plus its assignment inside the `Persist` block), the "Effective now"
+row, and the Build-baseline line in `DescribeBuildValues`. Skein and Headlong shipped with every SO
+row and none of the window rows, which left the asset as the only way to change them - check the
+window, not just the SO, then have that mode resolve its count
 through the SO — **never** with a new per-scene `[SerializeField]`.
 
 - **Per-turn modes** (crystal/joust): the turn monitor resolves the count at `StartMonitor`.
