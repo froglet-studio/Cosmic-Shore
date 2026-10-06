@@ -25,6 +25,7 @@ MonoBehaviour:
   maxBlastScale: 60
   spawnBehindDistance: 6
   spawnSideOffset: 3
+  aiPumpStickBand: 0.35
   bombEvent:
     Guid:
       Data1: 0

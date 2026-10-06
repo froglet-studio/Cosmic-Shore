@@ -86,8 +86,24 @@ own trail. So the bomb spares your domain and the executor pushes the hull itsel
 | `spawnBehindDistance` / `spawnSideOffset` | 6 / 3 | Where the bomb goes off; LT left, RT right |
 | `aoePrefabs` | `AOEGrizzlyExplosion` | Same blast as the cannon |
 | `bombEvent` | empty | FMOD event — ships silent until audio authors it |
+| `aiPumpStickBand` | 0.35 | Autopilot drive (below). Stick deflection under which an AI blows full-size bombs; 0 disables |
 
 For reference: Rush adds 80 u/s for 1 s; the Grizzly cruises at `DefaultThrottleScaler` 50.
+
+## Autopilot drive (added for Grizzly Time, 2026-10)
+
+`AIPilot` writes the stick and the throttle only, so an autopilot never pressed a trigger and an
+AI Grizzly never pumped. While `AIPilot.AutoPilotEnabled`, `GrizzlyBombPumpExecutor.Update` skips
+pressure tracking and calls `AutopilotPump`: it blows from whichever trigger's clock is older,
+on the same 0.45 s per-trigger cooldown (so the rhythm is a human's alternating LT/RT), with a size
+from `GrizzlyBombPumpConfigSO.AutopilotPumpSize` — 1 while the stick is inside `aiPumpStickBand`,
+easing linearly to the smallest bomb at a full deflection. It goes through the same `Blow`, so the
+kick, the blast and the relay to peers are identical to a human's. Gated on the PILOT, so the menu's
+lava-lamp Grizzly and released companions pump too (the Manta's autopilot Soar rule, REDLINE.md §5).
+
+`Grizzly.prefab`'s `AIPilot` was also serialized **disabled** (every other hull ships it enabled):
+`StartAIPilot` does not enable the component and steering runs in `Update`, so no AI Grizzly had
+ever steered. It is enabled now, with AI throttle 0.7 → 1.0 across skill (was a flat 0.6).
 
 ## In-editor verification
 

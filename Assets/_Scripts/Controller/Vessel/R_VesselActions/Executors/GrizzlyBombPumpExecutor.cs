@@ -88,8 +88,43 @@ namespace CosmicShore.Gameplay
             var input = _status.InputStatus;
             if (input == null) return;
 
+            if (IsAutopilotDriven)
+            {
+                AutopilotPump(input);
+                return;
+            }
+
             Track(ref _sides[0], input.LeftTriggerAnalog);
             Track(ref _sides[1], input.RightTriggerAnalog);
+        }
+
+        // ── Autopilot drive ───────────────────────────────────────────────────
+
+        /// <summary>True while an autopilot flies this hull - an AI player, a released companion,
+        /// or the menu's lava-lamp autopilot. Gated on the PILOT, not on the player being an AI,
+        /// so every autopilot flies the same kit a human does (the Manta's autopilot Soar rule,
+        /// REDLINE.md §5).</summary>
+        bool IsAutopilotDriven => _status.AIPilot != null && _status.AIPilot.AutoPilotEnabled;
+
+        /// <summary>
+        /// The pump an autopilot cannot press. Alternates LT and RT on each trigger's own
+        /// cooldown - the older clock first, so the rhythm is the human's one bomb every half
+        /// cooldown - with a size from <see cref="GrizzlyBombPumpConfigSO.AutopilotPumpSize"/>:
+        /// full on a straight stick, the smallest bomb at a full deflection. Reads the stick
+        /// AIPilot last wrote (a frame stale at worst, harmless against a 0.8 s kick). No pressure
+        /// tracking and no press/release round trip: this IS the simulating machine, and the
+        /// relay replays each bomb to every peer exactly as it does a human's.
+        /// </summary>
+        void AutopilotPump(IInputStatus input)
+        {
+            if (!config || config.AiPumpStickBand <= 0f) return;
+
+            int side = _sides[0].LastBombTime <= _sides[1].LastBombTime ? 0 : 1;
+            if (Time.time - _sides[side].LastBombTime < config.CooldownPerTrigger) return;
+            _sides[side].LastBombTime = Time.time;
+
+            float stick = Mathf.Max(Mathf.Abs(input.XSum), Mathf.Abs(input.YSum));
+            Blow((GrizzlyBombActionSO.TriggerSide)side, config.AutopilotPumpSize(stick));
         }
 
         static void Track(ref TriggerState s, float analog)

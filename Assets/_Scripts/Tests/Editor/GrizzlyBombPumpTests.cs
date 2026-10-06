@@ -52,5 +52,31 @@ namespace CosmicShore.Tests
             Assert.AreEqual(_cfg.MaxBlastScale, _cfg.BlastScaleForSize(1f), 1e-4f);
             Assert.Greater(_cfg.MaxKick, _cfg.MinKick, "a harder squeeze must kick harder");
         }
+
+        // ── Autopilot drive (Grizzly Time: an AI Grizzly that cannot pump races at cruise) ──
+
+        [Test]
+        public void AutopilotPumpsFullOnAStraightStick()
+        {
+            Assert.Greater(_cfg.AiPumpStickBand, 0f,
+                "the shipped band is 0, which disables the drive - every AI Grizzly races at cruise");
+            Assert.AreEqual(1f, _cfg.AutopilotPumpSize(0f), 1e-5f);
+            Assert.AreEqual(1f, _cfg.AutopilotPumpSize(_cfg.AiPumpStickBand), 1e-5f);
+            Assert.AreEqual(1f, _cfg.AutopilotPumpSize(-_cfg.AiPumpStickBand), 1e-5f,
+                "a left turn and a right turn of the same deflection must pump the same");
+        }
+
+        [Test]
+        public void AutopilotEasesToTheSmallestBombAtFullDeflection()
+        {
+            Assert.AreEqual(0f, _cfg.AutopilotPumpSize(1f), 1e-5f);
+            float prev = 2f;
+            for (float s = 0f; s <= 1.0001f; s += 0.01f)
+            {
+                float size = _cfg.AutopilotPumpSize(s);
+                Assert.LessOrEqual(size, prev, $"autopilot bomb grew at stick {s}");
+                prev = size;
+            }
+        }
     }
 }

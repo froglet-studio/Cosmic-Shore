@@ -51,6 +51,15 @@ namespace CosmicShore.Gameplay
         [SerializeField, Tooltip("Sideways offset per trigger (LT left, RT right) so alternating bombs read as two thrusters.")]
         float spawnSideOffset = 3f;
 
+        [Header("Autopilot")]
+        [SerializeField, Tooltip("An AUTOPILOT has no triggers (AIPilot writes the stick and throttle only), so " +
+                 "without this an AI Grizzly never pumps and races at cruise. While AIPilot.AutoPilotEnabled, " +
+                 "the executor alternates LT/RT on the triggers' own cooldowns with a bomb size that is HOW " +
+                 "STRAIGHT THE STICK IS: full inside this band, fading to the smallest bomb at a full " +
+                 "deflection - pump the straights, ease off to turn, the trade a human makes. " +
+                 "0 disables the drive (an autopilot then never pumps).")]
+        [Range(0f, 1f)] float aiPumpStickBand = 0.35f;
+
         [Header("Audio")]
         [SerializeField, Tooltip("FMOD event played when a bomb blows. Leave empty for silence.")]
         EventReference bombEvent;
@@ -68,6 +77,21 @@ namespace CosmicShore.Gameplay
         public float SpawnBehindDistance => spawnBehindDistance;
         public float SpawnSideOffset => spawnSideOffset;
         public EventReference BombEvent => bombEvent;
+        public float AiPumpStickBand => aiPumpStickBand;
+
+        /// <summary>
+        /// The bomb size an autopilot blows at stick deflection <paramref name="stick"/> (the
+        /// larger of |x| and |y|): 1 inside <see cref="AiPumpStickBand"/>, falling linearly to 0
+        /// at a full deflection. Size 0 is still a bomb (the minimum kick) - the autopilot keeps
+        /// the rhythm through a corner and only softens it, as a pilot feathering the triggers
+        /// does. Pure; edit-mode tested.
+        /// </summary>
+        public float AutopilotPumpSize(float stick)
+        {
+            float s = Mathf.Abs(stick);
+            if (s <= aiPumpStickBand) return 1f;
+            return Mathf.Clamp01(1f - (s - aiPumpStickBand) / Mathf.Max(1e-4f, 1f - aiPumpStickBand));
+        }
 
         /// <summary>Peak trigger pressure (0-1) → bomb size (0-1). Pure; edit-mode tested.</summary>
         public float SizeForPressure(float pressure)
