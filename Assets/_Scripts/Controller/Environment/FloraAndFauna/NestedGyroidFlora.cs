@@ -13,9 +13,12 @@ namespace CosmicShore.Gameplay
     /// <para>The plain <see cref="GyroidAssembler"/> flora tiles the single sheet G = 0, a 2D prismscape. This one
     /// tiles N sheets inside |t| &lt; √2 - where ∇G never vanishes, so the sheets never touch - and the fibers are
     /// what make them ONE object: cut them and the stack falls apart into separate shells (the harness's negative
-    /// control). Plates lie IN their sheet with local +z on the sheet normal, their long axes combed across the
-    /// sheet and turned a fixed angle per sheet (helicoidal plywood); struts lie ALONG their fiber. Every size
-    /// comes from the local layer gap Δt/|∇G| and is then FITTED so no prism interpenetrates another.</para>
+    /// control). <b>Its base sheet IS that gyroid flora</b>: <see cref="NestedGyroidTemplate"/> is the original plant's
+    /// tiling measured as one period (576 sites, its block types, its frames), and every nested sheet is that tiling
+    /// carried along the gradient lines - so every layer has the original's loop subdivisions and its danger octagon
+    /// rings, and each element wears the original's prism for that element (its config's LeafSize / LatticeScale,
+    /// quoted). Plates lie IN their sheet with local +z on the sheet normal; struts lie ALONG their fiber; thickness
+    /// follows the local layer gap Δt/|∇G|; everything is then FITTED so no prism interpenetrates another.</para>
     ///
     /// <para><b>It grows the way a flora withers, run backwards.</b> The crystal sits at G(0) = 0, on the t = 0
     /// sheet; the plant grows that sheet outward from it, then ring by ring - each new sheet spreading out of the
@@ -84,16 +87,29 @@ namespace CosmicShore.Gameplay
             if (tuning.MaxTotalSpawnedObjectsScale > 0f) _budgetScale = tuning.MaxTotalSpawnedObjectsScale;
         }
 
+        /// <summary>
+        /// The growth rule's inputs. The element speaks through the gyroid flora's own per-element numbers, carried on
+        /// this plant's config: its LEAF (<see cref="Flora.LeafSize"/>, set from <c>Variant.LeafSize</c> by
+        /// <see cref="Flora.ApplyVariantTuning"/>) and its LATTICE scale (<c>Variant.LatticeScale</c>) - the template's
+        /// proportions, element by element (Tools/Build/author_nested_gyroid_flora_assets.py copies them across).
+        /// </summary>
         NestedGyroidSettings ResolveSettings()
         {
             int budget = _budgetOverride >= 0 ? _budgetOverride : config.PrismBudget;
             // Round half UP explicitly (Mathf.RoundToInt is banker's rounding) - the Borromean's rule.
             if (_budgetScale > 0f) budget = Mathf.Max(16, Mathf.FloorToInt(budget * _budgetScale + 0.5f));
-            return config.ToSettings(_lengthScale, budget);
+            return config.ToSettings(LeafSize, _lengthScale, budget);
         }
+
+        // The grow period as AUTHORED, before the element's tempo law rescales it (Flora.OnElementResolved, inside
+        // base.Initialize). A tick lays GrowthRate x THIS many prisms and fires every SCALED period, so the element's
+        // law changes the plant's rate - sizing the tick from the scaled period would cancel it exactly, and every
+        // element would grow at one speed.
+        float _authoredGrowPeriod;
 
         public override void Initialize(Cell cell)
         {
+            _authoredGrowPeriod = growPeriod;
             if (!config)
             {
                 // A plant with no rule is a crystal and nothing else - loud, never silent.
@@ -160,8 +176,9 @@ namespace CosmicShore.Gameplay
                     "Run Tools/Build/nested_gyroid_harness/run.sh with these settings.", this);
             if (s.TruncatedByBudget > 0)
                 CSDebug.LogWarning(
-                    $"{name}: nested gyroid '{config.name}' could not fit its stack in {config.PrismBudget} prisms even " +
-                    $"after coarsening; {s.TruncatedByBudget} outer prisms were cut, so its outer skin is incomplete. " +
+                    $"{name}: nested gyroid '{config.name}' could not fit its stack in {config.PrismBudget} prisms (the " +
+                    $"tiling is the template's and is never coarsened); {s.TruncatedByBudget} outer prisms were cut, so its " +
+                    "outer skin is incomplete. " +
                     "Raise PrismBudget or lower CellsPerSide / SheetCount.", this);
         }
 
@@ -178,7 +195,7 @@ namespace CosmicShore.Gameplay
         }
 
         int PrismsPerTick =>
-            config ? Mathf.Max(1, Mathf.RoundToInt(config.GrowthRate * Mathf.Max(0.05f, growPeriod))) : 1;
+            config ? Mathf.Max(1, Mathf.RoundToInt(config.GrowthRate * Mathf.Max(0.05f, _authoredGrowPeriod))) : 1;
 
         public override void Grow()
         {
@@ -254,6 +271,13 @@ namespace CosmicShore.Gameplay
             // localScale, and a non-uniform scale above a rotated child is a shear (Docs/ECOSYSTEM.md 37.9).
             prism.transform.SetParent(holder, true);
             prism.LifeForm = this;
+
+            // DANGER, as the gyroid flora draws it: the template's octagon rings on every sheet, and every strut.
+            // Stated true OR false before the team stamp - a pooled prism keeps its previous life's IsDangerous
+            // (Prism.Initialize does not clear it: spawners request it), so a plain plate must say it is plain.
+            bool danger = _lattice.DangerRing[site] || _lattice.Kind[site] == NestedGyroidPrismKind.Fiber;
+            prism.prismProperties.IsDangerous = danger;
+            if (danger) prism.MakeDangerous();
             prism.ChangeTeam(domain);
 
             _pendingPrismScale = V(_lattice.Size[site]);
@@ -266,17 +290,15 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
+        /// <summary>The through-thickness grade: a DARKENING of the domain colour only (gain <= 1, never lit), on plain and
+        /// danger prisms alike - <see cref="Prism.SetColorShade"/> re-applies after every material sync, so a danger
+        /// prism keeps its sheet's grade.</summary>
         void ApplyShade(HealthPrism prism, int site)
         {
-            if (_lattice.Kind[site] == NestedGyroidPrismKind.Fiber)
-            {
-                prism.SetColorShade(1f, config.FiberWhiten);
-                return;
-            }
             float gain = config.ColorMode == NestedGyroidColorMode.AlternatingSheets
                 ? (_lattice.Sheet[site] % 2 == 0 ? 1f : config.AlternateSheetGain)
-                : Mathf.Lerp(config.GradedGain.x, config.GradedGain.y, _lattice.Gradient01(site));
-            prism.SetColorShade(gain, 0f);
+                : Mathf.Lerp(config.GradedInnerGain, 1f, _lattice.Gradient01(site));
+            prism.SetColorShade(Mathf.Min(1f, gain));
         }
 
         // The size the next AddHealthBlock stamps: this species fits a size per prism (MandelbulbFlora's pattern).
@@ -418,10 +440,10 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Pure preview - see <see cref="Flora.TryPreviewGrowth"/>. An icon asks for a few hundred prisms (the Spawn
         /// Matrix asks 220), and the first 220 of the real growth order are a disc of the central sheet - nothing
-        /// that says "stack". So the preview grows the WHOLE stack on a tiling coarsened to fit the request
-        /// (<see cref="NestedGyroidSettings.PreviewOf"/>): every sheet and fiber, fewer and bigger plates. It is the
-        /// same rule on the same field, cached per key, and cheap enough to build synchronously (~1/30 of the full
-        /// build - the voxel grid shrinks with the spacing). Never touches UnityEngine.Random.
+        /// that says "stack". So the preview grows a WINDOW of the same tiling (<see cref="NestedGyroidSettings.PreviewOf"/>):
+        /// three sheets and their struts, wide enough to hold whole octagon rings, at the template's own subdivision -
+        /// never a coarsened copy. Same rule, same field, cached per key, ~7 ms (cheap enough to build synchronously).
+        /// Never touches UnityEngine.Random.
         /// </summary>
         public override bool TryPreviewGrowth(int budget, int seed, List<SpawnPoint> into)
         {

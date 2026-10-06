@@ -1,7 +1,7 @@
 // THE NESTED GYROID - the growth rule of NestedGyroidFlora, as a pure function of its settings.
 // Plain C# with System.Numerics and NO UnityEngine, so this exact file compiles and RUNS headless in
 // Tools/Build/nested_gyroid_harness (the acceptance gates: budget, one component, gap < reach, zero
-// cross-sheet overlaps, slice timing). The flora is the only Unity-side reader. Docs/ECOSYSTEM.md §58.
+// cross-sheet overlaps, the template's loops on every sheet, slice timing). Docs/ECOSYSTEM.md §58.
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -17,18 +17,22 @@ namespace CosmicShore.Gameplay
         Fiber = 2,
     }
 
-    /// <summary>How sheet plates are shaded inside their domain colour (the hue stays the domain's - a
-    /// colour is a team, never a decoration). Fibers always take the third, whitened treatment.</summary>
+    /// <summary>How the stack reads through its thickness. The contrast is drawn in the domain's own two prism
+    /// states - plain and DANGER - plus a darkening shade, never a lighter or whitened one: a colour is a team,
+    /// and a lit prism reads as a state the game does not have.</summary>
     public enum NestedGyroidColorMode
     {
+        /// <summary>Plain prisms darken from +tMax (unshaded) to -tMax; fibers are danger prisms.</summary>
         GradedByLevel = 1,
+        /// <summary>Odd sheets darkened; fibers are danger prisms.</summary>
         AlternatingSheets = 2,
     }
 
     /// <summary>
-    /// Every number the growth rule reads. Copied out of <c>NestedGyroidConfigSO</c> (plus the rider model
-    /// the Urchin's ride kernel is built on) so the lattice is a pure function of this object and nothing
-    /// else - which is what lets one plant's build be cached for every plant with the same settings.
+    /// Every number the growth rule reads. Copied out of <c>NestedGyroidConfigSO</c> and the plant's element (its
+    /// leaf, its lattice scale) plus the rider model the Urchin's ride kernel is built on, so the lattice is a pure
+    /// function of this object and nothing else - which is what lets one build be cached for every plant with the
+    /// same settings.
     /// </summary>
     public sealed class NestedGyroidSettings
     {
@@ -36,20 +40,26 @@ namespace CosmicShore.Gameplay
         /// gradient never vanishes: the sheets never touch and every gradient line crosses each sheet once.</summary>
         public const float TMaxCeiling = 1.40f;
 
+        /// <summary>World size of one gyroid period - <see cref="NestedGyroidTemplate.Period"/> × the gyroid
+        /// flora's lattice scale this plant is grown at.</summary>
         public float CellSize = 240f;
         public int CellsPerSide = 1;
+        /// <summary>Share of the CellsPerSide cube that is kept (1 = all). The PREVIEW uses it: a smaller window of
+        /// the same tiling, so an icon shows the template's own subdivisions rather than a coarsened copy.</summary>
+        public float ClipFraction = 1f;
         public int SheetCount = 7;
         public float TMax = 1.2f;
         public int MaxSheets = 7;
-        public float SheetPoissonSpacing = 20f;
+        /// <summary>The element's leaf on the t = 0 sheet, in world units (x along the template's own long axis,
+        /// z the sheet normal) - the gyroid flora's per-element prism, scaled with its lattice.</summary>
+        public Vector3 Leaf = new Vector3(18f, 6.8f, 3f);
         public float FiberSeedSpacing = 60f;
         public float FiberPrismSpacing = 8f;
-        public float PlywoodTwistDegrees = 25f;
-        public int PrismBudget = 2600;
+        public float PlywoodTwistDegrees = 0f;
+        public int PrismBudget = 4600;
 
-        public float PlateLengthOfSpacing = 0.8f;
-        public float PlateWidthOfSpacing = 0.45f;
-        public float PlateThicknessOfGap = 0.22f;
+        /// <summary>A plate is never thicker than this share of its local layer gap.</summary>
+        public float PlateThicknessOfGap = 0.45f;
         public float FiberThickness = 1.6f;
         public float FiberFill = 0.8f;
         public float Clearance = 0.5f;
@@ -64,22 +74,21 @@ namespace CosmicShore.Gameplay
 
         public NestedGyroidSettings Clone() => (NestedGyroidSettings)MemberwiseClone();
 
-        /// <summary>Clamps every field into the range the rule is defined on. Returns this.</summary>
+        /// <summary>Clamps every field into the range the rule is defined on. Returns a copy.</summary>
         public NestedGyroidSettings Sanitized()
         {
             var s = Clone();
             s.CellSize = Math.Max(10f, s.CellSize);
             s.CellsPerSide = Math.Max(1, Math.Min(4, s.CellsPerSide));
+            s.ClipFraction = Math.Max(0.1f, Math.Min(1f, s.ClipFraction));
             s.SheetCount = Math.Max(2, Math.Min(15, s.SheetCount));
             s.TMax = Math.Max(0.05f, Math.Min(TMaxCeiling, s.TMax));
             s.MaxSheets = Math.Max(1, Math.Min(s.SheetCount, s.MaxSheets));
-            s.SheetPoissonSpacing = Math.Max(1f, s.SheetPoissonSpacing);
-            s.FiberSeedSpacing = Math.Max(s.SheetPoissonSpacing, s.FiberSeedSpacing);
+            s.Leaf = Vector3.Max(new Vector3(0.1f), s.Leaf);
+            s.FiberSeedSpacing = Math.Max(1f, s.FiberSeedSpacing);
             s.FiberPrismSpacing = Math.Max(0.5f, s.FiberPrismSpacing);
             s.PrismBudget = Math.Max(16, s.PrismBudget);
-            s.PlateLengthOfSpacing = Math.Max(0.05f, Math.Min(1.5f, s.PlateLengthOfSpacing));
-            s.PlateWidthOfSpacing = Math.Max(0.05f, Math.Min(1.5f, s.PlateWidthOfSpacing));
-            s.PlateThicknessOfGap = Math.Max(0.02f, Math.Min(0.6f, s.PlateThicknessOfGap));
+            s.PlateThicknessOfGap = Math.Max(0.02f, Math.Min(0.9f, s.PlateThicknessOfGap));
             s.FiberThickness = Math.Max(0.1f, s.FiberThickness);
             s.FiberFill = Math.Max(0.1f, Math.Min(0.95f, s.FiberFill));
             s.Clearance = Math.Max(0f, s.Clearance);
@@ -90,24 +99,26 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The same stack on a tiling coarsened to about <paramref name="prisms"/> prisms - for an ICON, which needs
-        /// the whole silhouette (every sheet, every fiber) rather than the first few hundred of the real growth
-        /// order. Count goes as 1/spacing², so the spacings scale by √(0.8 budget / prisms) (a full build lands
-        /// near 80% of its budget); the builder's own coarsening catches any remainder. Lengths that are not spacing (clearance,
-        /// heart seat, fiber thickness) scale too, so the preview is a coarser plant rather than a sparser one.
+        /// The same stack in a smaller window - for an ICON, which asks for a few hundred prisms and must show the
+        /// whole stack (every sheet, the struts between them) at the template's own subdivision, never a coarsened
+        /// copy. The window is chosen from a MEASURED count model rather than a pure cube root, because a transported
+        /// image may leave the window by the stack's depth (<c>TransportMargin</c>): count ≈ full × ((f + 0.18) / 1.18)³
+        /// (fits f = 0.15-0.4 within ~25%, Tools/Build/nested_gyroid_harness). Aimed at 90% of the request so the
+        /// budget cut, if any, is a few outer prisms.
         /// </summary>
         public NestedGyroidSettings PreviewOf(int prisms)
         {
             var s = Sanitized();
             int target = Math.Max(16, prisms);
-            float k = Math.Max(1f, MathF.Sqrt(0.8f * s.PrismBudget / (float)target));
-            s.SheetPoissonSpacing *= k;
-            // Fibers thin by only √k: they are what joins the sheets, and a coarse stack with the full build's
-            // fiber RATIO keeps two or three of them and prunes most of its sheets as islands.
-            s.FiberSeedSpacing = Math.Max(s.SheetPoissonSpacing, s.FiberSeedSpacing * MathF.Sqrt(k));
-            s.FiberPrismSpacing *= k;
-            s.FiberThickness *= k;
-            s.Clearance *= k;
+            // At most THREE sheets - the heart's and one either side: enough to read as a stack, and it leaves an icon's
+            // budget a window wide enough to hold whole octagon rings (24 a period; seven sheets in 220 prisms is a
+            // window of 15 sites a sheet, which holds none).
+            s.MaxSheets = Math.Min(s.MaxSheets, 3);
+            float full = 1.05f * NestedGyroidTemplate.SiteCount * s.MaxSheets * s.CellsPerSide * s.CellsPerSide * s.CellsPerSide;
+            float f = 1.18f * MathF.Pow(0.9f * target / full, 1f / 3f) - 0.18f;
+            s.ClipFraction = Math.Max(0.15f, Math.Min(1f, f));
+            // Fibers thin more slowly than the window: they are what joins it.
+            s.FiberSeedSpacing *= MathF.Sqrt(s.ClipFraction);
             s.PrismBudget = target;
             return s;
         }
@@ -115,23 +126,23 @@ namespace CosmicShore.Gameplay
         /// <summary>Identity of the lattice these settings grow - the build cache key.</summary>
         public string Key() => string.Join("|", new object[]
         {
-            CellSize, CellsPerSide, SheetCount, TMax, MaxSheets, SheetPoissonSpacing, FiberSeedSpacing,
-            FiberPrismSpacing, PlywoodTwistDegrees, PrismBudget, PlateLengthOfSpacing, PlateWidthOfSpacing,
-            PlateThicknessOfGap, FiberThickness, FiberFill, Clearance, HeartClearance,
-            RiderGroundSearchScale, RiderHoverHeight, Seed,
+            CellSize, CellsPerSide, ClipFraction, SheetCount, TMax, MaxSheets, Leaf.X, Leaf.Y, Leaf.Z, FiberSeedSpacing,
+            FiberPrismSpacing, PlywoodTwistDegrees, PrismBudget, PlateThicknessOfGap, FiberThickness, FiberFill,
+            Clearance, HeartClearance, RiderGroundSearchScale, RiderHoverHeight, Seed,
         });
     }
 
     /// <summary>The measurements a build reports - what the flora logs and the harness asserts.</summary>
     public sealed class NestedGyroidStats
     {
-        public int SheetPrisms, FiberPrisms, Fibers, FibersTruncated;
-        public int SheetsGrown;
+        public int SheetPrisms, FiberPrisms, DangerPrisms, Fibers;
+        public int SheetsGrown, TemplateSites;
+        /// <summary>The world period the stack was built at (for readers that need the field's scale).</summary>
+        public float CellSize;
         public int ComponentsBeforePrune, PrunedIslandPrisms, Components;
-        public int OverlapsBeforeFit, CrossSheetOverlapsBeforeFit, DroppedByFit;
+        public int OverlapsBeforeFit, CrossSheetOverlapsBeforeFit, DroppedByFit, DroppedStruts;
         public int RemainingOverlaps, RemainingCrossSheetOverlaps;
-        public int TruncatedByBudget, CoarsenPasses;
-        public float EffectiveSheetSpacing;
+        public int TruncatedByBudget;
         public int InSheetEdges, CrossSheetEdges;
         /// <summary>Per prism, the distance to its nearest graph neighbour: min / median / max.</summary>
         public float GapMin, GapMedian, GapMax;
@@ -142,9 +153,11 @@ namespace CosmicShore.Gameplay
         public float ReachMin;
         public float SheetGapWorldMin, SheetGapWorldMax;
         public float ThicknessMin, ThicknessMax;
-        /// <summary>Mean neighbour misalignment of the plate long axes (a LINE field, 0-90°), for the
-        /// naive per-site projection (the negative control) and the combed field that ships.</summary>
-        public float CombBeforeDegrees, CombAfterDegrees;
+        /// <summary>How far the template stretches in-plane as it is carried out along ∇G (min / max over prisms).</summary>
+        public float StretchMin, StretchMax;
+        /// <summary>Worst |G - t| of a laid plate before its Newton snap, in field units: how far off its level the
+        /// transported template lands (0 = exactly on the sheet).</summary>
+        public float WorstLevelError;
         public double BuildMilliseconds;
     }
 
@@ -152,8 +165,8 @@ namespace CosmicShore.Gameplay
     /// The finished stack. Every array is indexed by GROWTH ORDER: prism <c>i</c>'s parent is always
     /// <c>&lt; i</c> (or -1 = the heart), so any prefix is one connected object hanging off the crystal.
     /// Positions are in the plant's local space, heart at the origin (G(0) = 0: the crystal sits on the
-    /// t = 0 sheet). A prism's local +z (Forward) is its RIDE NORMAL - the sheet normal ∇G for a plate,
-    /// the fiber tangent (also ∇G) for a strut - which is what the Urchin's ride kernel reads.
+    /// t = 0 sheet). A prism's local +z (Forward) is its RIDE NORMAL, pointing UP G - the sheet normal for a plate,
+    /// the fiber tangent for a strut - which is what the Urchin's ride kernel reads; +y (Up) is the template's own.
     /// </summary>
     public sealed class NestedGyroidLattice
     {
@@ -168,6 +181,13 @@ namespace CosmicShore.Gameplay
         /// 2i+1. Increases with G, i.e. along every prism's Forward. What the Urchin's layered ride reads to
         /// tell "beside me" from "the next layer".</summary>
         public int[] Stack;
+        /// <summary>The template site a plate is the image of (-1 for a strut): the same index on every sheet.</summary>
+        public int[] Site;
+        /// <summary>True for a plate of one of the template's four danger block types - the gyroid flora's
+        /// octagon rings, carried onto every sheet.</summary>
+        public bool[] DangerRing;
+        /// <summary>True where the zero-overlap fit had to shrink this prism below its rule size.</summary>
+        public bool[] Fitted;
         public int[] Parent;
         /// <summary>True where this prism's bond to its parent is a LIMB (a spindle): the heart bonds and
         /// every bond along a fiber. A plate-to-plate bond inside a sheet is tiling, not a limb.</summary>
@@ -187,13 +207,15 @@ namespace CosmicShore.Gameplay
     /// millisecond budget is spent and returns, so a spawning plant spreads the build over frames and never
     /// hitches. <see cref="BuildNow"/> runs it to completion (tests, the harness).
     ///
-    /// <para>The rule, in order: the field on a voxel grid; sign changes of G - t_i refined by Newton onto
-    /// each sheet; fiber seeds Poisson-thinned on t = 0 and traced along ∇G/|∇G| to ±tMax, their sheet
-    /// crossings FORCED into each sheet's Poisson set so a fiber always lands on a plate; the plates'
-    /// long axes combed and twisted per sheet (helicoidal plywood); struts laid between consecutive
-    /// crossings; every size taken from the local gap Δt/|∇G| and then FITTED (exact OBB separating-axis
-    /// test) so no two prisms interpenetrate; the rider graph (in-sheet links within reach, cross-sheet
-    /// links along fibers); islands pruned; growth ordered outward from the heart, ring by ring.</para>
+    /// <para>The rule, in order. The BASE SHEET is the gyroid flora's own tiling (<see cref="NestedGyroidTemplate"/>:
+    /// 576 sites per period, its block types, its frames), tiled over the bounding cube and Newton-snapped onto G = 0.
+    /// Every site is carried along ∇G/|∇G| (RK4) to every nested level G = t_i, so each sheet is the SAME tiling - the
+    /// same loop subdivisions, the same octagon rings - and the gradient line through a site is literally the fiber
+    /// that site lies on. A Poisson subset of those lines carries struts. The frames ride along (projected onto each
+    /// sheet; the helicoidal-plywood turn per sheet defaults to 0, because turning crosses plates over their loops), every plate takes the element's leaf scaled by how far the
+    /// template has stretched there and thickened with the local gap Δt/|∇G|, and an exact OBB fit guarantees no two
+    /// prisms interpenetrate. Then the rider graph (in-sheet links within reach, cross-sheet links along fibers),
+    /// islands pruned, growth ordered outward from the heart, ring by ring.</para>
     /// </summary>
     public sealed class NestedGyroidBuilder
     {
@@ -204,6 +226,8 @@ namespace CosmicShore.Gameplay
         readonly Stopwatch _total = new Stopwatch();
 
         public NestedGyroidLattice Result { get; private set; }
+        /// <summary>The stage the build is in - diagnostics (which stage a long slice belonged to).</summary>
+        public string Stage { get; private set; } = "start";
         public int Slices { get; private set; }
         public double MaxSliceMilliseconds { get; private set; }
 
@@ -219,11 +243,13 @@ namespace CosmicShore.Gameplay
             if (Result != null) return true;
             var slice = Stopwatch.StartNew();
             _total.Start();
+            // At least one chunk per call, whatever the budget: a budget smaller than one chunk must slow the build,
+            // never stall it.
             bool done = false;
-            while (slice.Elapsed.TotalMilliseconds < budgetMilliseconds)
+            do
             {
                 if (!_work.MoveNext()) { done = true; break; }
-            }
+            } while (slice.Elapsed.TotalMilliseconds < budgetMilliseconds);
             _total.Stop();
             Slices++;
             MaxSliceMilliseconds = Math.Max(MaxSliceMilliseconds, slice.Elapsed.TotalMilliseconds);
@@ -266,19 +292,21 @@ namespace CosmicShore.Gameplay
         {
             public Vector3 P, F, U, Size, Size0;
             public NestedGyroidPrismKind Kind;
-            public int Sheet, Rank, Fiber;
-            public float Gap;
+            public int Sheet, Rank, Fiber, Site;
+            public bool Danger;
+            public float Gap, Stretch;
             public bool Alive;
         }
 
+        /// <summary>One template site's gradient line: its image on every sheet it reaches, and the polyline between
+        /// consecutive images (from the INNER one). Every site has one; only a Poisson subset carries struts.</summary>
         sealed class FiberPath
         {
             public Vector3 SeedWorld;
-            // Per sheet index: the crossing (world) and the polyline from the INNER neighbour crossing.
             public readonly Dictionary<int, Vector3> Crossing = new Dictionary<int, Vector3>();
             public readonly Dictionary<int, List<Vector3>> Segment = new Dictionary<int, List<Vector3>>();
             public readonly Dictionary<int, int> NodeAt = new Dictionary<int, int>();
-            public bool Truncated;
+            public bool Strutted;
         }
 
         float _scale;          // world units per field unit
@@ -287,61 +315,48 @@ namespace CosmicShore.Gameplay
         int[] _rankOf;
         int _maxRank;
         float _dt;
-        float _spacing, _fiberSeedSpacing, _fiberPrismSpacing;
         List<Node> _nodes;
         List<FiberPath> _fibers;
-        List<(int a, int b)> _chain;
+        /// <summary>One sequence per strutted gap: inner plate, its struts in order, outer plate. A SEQUENCE and
+        /// not an inner->next map: a t = 0 plate starts two chains (up the stack and down it), and a map keyed on
+        /// the inner node kept only whichever was laid last - half the stack lost its stitch.</summary>
+        List<List<int>> _chains;
         NestedGyroidStats _stats;
         ulong _rng;
+        NestedGyroidLattice _built;
 
         int Yields;
 
         IEnumerator<int> Run()
         {
-            float coarsen = 1f;
-            NestedGyroidLattice lattice = null;
-            int passes = 0;
-            for (int attempt = 0; attempt < 4; attempt++)
-            {
-                var once = BuildOnce(coarsen);
-                while (once.MoveNext()) yield return 0;
-                lattice = _built;
-                if (lattice.Count <= _s.PrismBudget) break;
-                // Over budget: coarsen the TILING - sheets and fibers together - never truncate the stack
-                // first: a truncated stack has no outer skin. Count goes as 1/spacing², so one corrected pass
-                // usually lands it.
-                coarsen *= MathF.Sqrt(lattice.Count / (float)_s.PrismBudget) * 1.03f;
-                passes++;
-            }
-
+            var once = BuildOnce();
+            while (once.MoveNext()) yield return 0;
+            var lattice = _built;
+            Stage = "stats";
+            yield return 0;
             if (lattice.Count > _s.PrismBudget)
             {
-                // Last resort: the growth-order PREFIX is connected by construction, so a cut is a plant
-                // that simply stopped growing early - never an island.
+                // The tiling is the template's and is not ours to coarsen, so an over-budget stack is CUT: the
+                // growth-order prefix is connected by construction, so a cut is a plant that stopped growing early
+                // (its outermost ring incomplete) - never an island.
                 lattice.Stats.TruncatedByBudget = lattice.Count - _s.PrismBudget;
                 Truncate(lattice, _s.PrismBudget);
             }
-            lattice.Stats.CoarsenPasses = passes;
-            Recount(lattice);
+            var recount = RecountSteps(lattice);
+            while (recount.MoveNext()) yield return 0;
             Result = lattice;
         }
 
-        NestedGyroidLattice _built;
-
-        IEnumerator<int> BuildOnce(float coarsen)
+        IEnumerator<int> BuildOnce()
         {
-            float spacing = _s.SheetPoissonSpacing * coarsen;
-            _spacing = spacing;
-            _fiberSeedSpacing = _s.FiberSeedSpacing * coarsen;
-            _fiberPrismSpacing = _s.FiberPrismSpacing * coarsen;
-            _stats = new NestedGyroidStats { EffectiveSheetSpacing = spacing };
-            _nodes = new List<Node>(4096);
+            _stats = new NestedGyroidStats { CellSize = _s.CellSize };
+            _nodes = new List<Node>(8192);
             _fibers = new List<FiberPath>();
-            _chain = new List<(int, int)>();
+            _chains = new List<List<int>>();
             _rng = 0x9E3779B97F4A7C15UL ^ (ulong)(uint)_s.Seed;
 
             _scale = _s.CellSize / TwoPi;
-            _half = (float)Math.PI * _s.CellsPerSide;
+            _half = (float)Math.PI * _s.CellsPerSide * _s.ClipFraction;
 
             int n = _s.SheetCount;
             _levels = new float[n];
@@ -368,99 +383,146 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < n; i++) if (_rankOf[i] <= _maxRank) grown++;
             _stats.SheetsGrown = grown;
 
-            // ---- the field on a voxel grid
-            float spacingField = spacing / _scale;
-            float h = spacingField * 0.3f;
-            int g = Math.Min(160, (int)MathF.Ceiling(2f * _half / h) + 1);
-            h = 2f * _half / (g - 1);
-            var field = new float[g * g * g];
-            for (int ix = 0; ix < g; ix++)
+            Stage = "template";
+            // ---- the base sheet: the gyroid flora's tiling, tiled over the cube and snapped onto G = 0
+            var basePos = new List<Vector3>();
+            var baseFwd = new List<Vector3>();
+            var baseUp = new List<Vector3>();
+            var baseType = new List<byte>();
+            int span = (int)MathF.Ceiling(_s.CellsPerSide * 0.5f) + 1;
+            for (int cx = -span; cx < span; cx++)
+            for (int cy = -span; cy < span; cy++)
+            for (int cz = -span; cz < span; cz++)
             {
-                for (int iy = 0; iy < g; iy++)
-                for (int iz = 0; iz < g; iz++)
-                    field[(ix * g + iy) * g + iz] = G(GridPoint(ix, iy, iz, h));
-                if ((++Yields & 3) == 0) yield return 0;
-            }
-
-            // ---- sheet candidates (sign changes refined by Newton) for every grown sheet, and t = 0
-            var candidates = new Dictionary<int, List<Vector3>>();
-            for (int i = 0; i < n; i++)
-            {
-                if (_rankOf[i] > _maxRank) continue;
-                var list = new List<Vector3>(8192);
-                var scan = ScanLevel(field, g, h, _levels[i], list);
-                while (scan.MoveNext()) yield return 0;
-                candidates[i] = list;
-            }
-            List<Vector3> zero;
-            int centre = Array.IndexOf(_levels, 0f);
-            if (centre >= 0 && candidates.ContainsKey(centre)) zero = candidates[centre];
-            else
-            {
-                zero = new List<Vector3>(8192);
-                var scan = ScanLevel(field, g, h, 0f, zero);
-                while (scan.MoveNext()) yield return 0;
-            }
-
-            // ---- fibers: Poisson seeds on t = 0, traced along ±∇G/|∇G|
-            var seeds = new List<Vector3>();
-            var thin = Poisson(zero, _fiberSeedSpacing, null, seeds);
-            while (thin.MoveNext()) yield return 0;
-            foreach (var seed in seeds)
-            {
-                var fiber = new FiberPath { SeedWorld = seed };
-                if (centre >= 0 && _rankOf[centre] <= _maxRank)
+                for (int k = 0; k < NestedGyroidTemplate.SiteCount; k++)
                 {
-                    fiber.Crossing[centre] = seed;
-                    fiber.Segment[centre] = new List<Vector3> { seed };
+                    var q = (NestedGyroidTemplate.Position[k] + new Vector3(cx, cy, cz)) * TwoPi;
+                    if (!InBox(q)) continue;
+                    q = Newton(Newton(q, 0f), 0f);
+                    if (!InBox(q)) continue;
+                    var g = Grad(q);
+                    float gl = g.Length();
+                    if (gl < 1e-4f) continue;
+                    var normal = g / gl;
+                    // The flora built its normals with either sign; here every +z points UP G.
+                    var up = ProjectOnPlane(NestedGyroidTemplate.Up[k], normal);
+                    up = up.LengthSquared() > 1e-6f ? Vector3.Normalize(up) : AnyTangent(normal);
+                    basePos.Add(q * _scale);
+                    baseFwd.Add(normal);
+                    baseUp.Add(up);
+                    baseType.Add(NestedGyroidTemplate.BlockType[k]);
+                    if ((k & 127) == 127) yield return 0;
+                }
+            }
+            _stats.TemplateSites = basePos.Count;
+
+            // The template's own bonds (its four mates), for the in-plane stretch the flow imposes per sheet.
+            var mates = TemplateMates(basePos);
+            yield return 0;
+
+            Stage = "transport";
+            // ---- every site's gradient line, out to every grown level on both sides
+            int centre = Array.IndexOf(_levels, 0f);
+            bool centreGrown = centre >= 0 && _rankOf[centre] <= _maxRank;
+            for (int k = 0; k < basePos.Count; k++)
+            {
+                var fiber = new FiberPath { SeedWorld = basePos[k] };
+                if (centreGrown)
+                {
+                    fiber.Crossing[centre] = basePos[k];
+                    fiber.Segment[centre] = new List<Vector3> { basePos[k] };
                 }
                 Trace(fiber, +1f);
                 Trace(fiber, -1f);
-                if (fiber.Crossing.Count >= 2) _fibers.Add(fiber);
-                if ((++Yields & 7) == 0) yield return 0;
+                _fibers.Add(fiber);
+                if ((++Yields & 15) == 0) yield return 0;
             }
-            _stats.Fibers = _fibers.Count;
 
-            // ---- sheets: Poisson per sheet, inner rings first, fiber crossings FORCED in
-            var order = new List<int>();
-            for (int r = 0; r <= _maxRank; r++)
-                for (int i = 0; i < n; i++) if (_rankOf[i] == r) order.Add(i);
-            foreach (int i in order)
+            Stage = "fiber seeds";
+            // ---- struts ride a Poisson subset of the lines (all lines are fibers; these are the visible ones)
+            var seeds = new List<Vector3>();
+            var thin = Poisson(basePos, _s.FiberSeedSpacing, null, seeds);
+            while (thin.MoveNext()) yield return 0;
+            var seedSet = new HashSet<Vector3>(seeds);
+            for (int k = 0; k < _fibers.Count; k++) _fibers[k].Strutted = seedSet.Contains(basePos[k]);
+
+            Stage = "plates";
+            // ---- plates: each site's image on each sheet, the template frame carried along and twisted per sheet
+            float twist = _s.PlywoodTwistDegrees * (float)Math.PI / 180f;
+            float clear = _s.HeartClearance;
+            for (int k = 0; k < _fibers.Count; k++)
             {
-                var forced = new List<(Vector3 p, FiberPath f)>();
-                foreach (var f in _fibers)
+                var f = _fibers[k];
+                foreach (var kv in f.Crossing)
                 {
-                    if (!f.Crossing.TryGetValue(i, out var x)) continue;
-                    int inner = InnerNeighbour(i);
-                    // A fiber is contiguous from t = 0 outward: it reaches this sheet only if it was admitted
-                    // on the sheet inside it.
-                    if (inner >= 0 && !f.NodeAt.ContainsKey(inner)) { f.Truncated = true; continue; }
-                    forced.Add((x, f));
+                    int sheet = kv.Key;
+                    var p = kv.Value;
+                    if (p.Length() < clear) continue;          // the crystal's seat
+                    var g = Grad(p / _scale);
+                    float gl = g.Length();
+                    if (gl < 1e-4f) continue;
+                    var normal = g / gl;
+                    var up = ProjectOnPlane(baseUp[k], normal);
+                    up = up.LengthSquared() > 1e-6f ? Vector3.Normalize(up) : AnyTangent(normal);
+                    up = Vector3.Normalize(Rotate(up, normal, twist * (sheet - c)));
+                    _stats.WorstLevelError = Math.Max(_stats.WorstLevelError, MathF.Abs(G(p / _scale) - _levels[sheet]));
+                    f.NodeAt[sheet] = _nodes.Count;
+                    _nodes.Add(new Node
+                    {
+                        P = p, F = normal, U = up,
+                        Kind = NestedGyroidPrismKind.Sheet,
+                        Sheet = sheet, Rank = _rankOf[sheet], Fiber = k, Site = k,
+                        Danger = NestedGyroidTemplate.IsDangerType(baseType[k]),
+                        Gap = GapWorld(p), Alive = true,
+                    });
                 }
-                var add = AddSheet(i, candidates[i], forced);
-                while (add.MoveNext()) yield return 0;
+                if ((++Yields & 31) == 0) yield return 0;
             }
-            foreach (var f in _fibers) if (f.Truncated) _stats.FibersTruncated++;
 
-            // ---- orientation: comb the plates' long axes, then twist per sheet (plywood)
-            var comb = Comb();
-            while (comb.MoveNext()) yield return 0;
-
-            // ---- fiber struts between consecutive crossings
+            Stage = "sizing";
+            // ---- sizes (leaf x stretch, thickness from the gap), then the struts between the plates they join
+            SizeSheets(basePos, mates);
             LayFibers();
             yield return 0;
 
+            Stage = "fit";
             // ---- fit: no two prisms interpenetrate
             var fit = Fit();
             while (fit.MoveNext()) yield return 0;
 
+            Stage = "graph";
             // ---- rider graph, islands, growth order
             var assemble = Assemble();
             while (assemble.MoveNext()) yield return 0;
         }
 
-        Vector3 GridPoint(int ix, int iy, int iz, float h) =>
-            new Vector3(-_half + ix * h, -_half + iy * h, -_half + iz * h);
+        /// <summary>Each base site's template mates: its nearest sites within 1.4× the template's own bond length,
+        /// at most four (the bond table's four corner sites).</summary>
+        List<int>[] TemplateMates(List<Vector3> basePos)
+        {
+            // The gyroid flora's bond is ~8.0 units at its native period 120; scale it to this lattice.
+            float bond = 8.0f * _s.CellSize / NestedGyroidTemplate.Period;
+            var grid = new Grid(1.4f * bond);
+            for (int i = 0; i < basePos.Count; i++) grid.Add(basePos[i], i);
+            var mates = new List<int>[basePos.Count];
+            var cand = new List<(float d, int j)>(16);
+            for (int i = 0; i < basePos.Count; i++)
+            {
+                grid.Near(basePos[i], _near);
+                cand.Clear();
+                foreach (int j in _near)
+                {
+                    if (j == i) continue;
+                    float d = Vector3.Distance(basePos[i], basePos[j]);
+                    if (d < 1.4f * bond) cand.Add((d, j));
+                }
+                cand.Sort((a, b) => a.d.CompareTo(b.d));
+                var l = new List<int>(4);
+                for (int m = 0; m < cand.Count && m < 4; m++) l.Add(cand[m].j);
+                mates[i] = l;
+            }
+            return mates;
+        }
 
         /// <summary>The inner sheet of the gap whose outer sheet is <paramref name="outer"/> (even N's central
         /// gap included, whose "outer" is the upper central sheet).</summary>
@@ -478,34 +540,126 @@ namespace CosmicShore.Gameplay
             return sheet < c ? sheet + 1 : sheet - 1;
         }
 
-        IEnumerator<int> ScanLevel(float[] field, int g, float h, float t, List<Vector3> into)
+        bool InBox(Vector3 q, float margin = 0f) =>
+            MathF.Abs(q.X) <= _half + margin && MathF.Abs(q.Y) <= _half + margin && MathF.Abs(q.Z) <= _half + margin;
+
+        /// <summary>How far (field units) a transported image may leave the base cube: as far again as the cube's own
+        /// half-size. The stack's depth is tMax over the smallest |∇G| on its outermost level, which is ~1.7 at
+        /// tMax 1.2 and grows without bound toward √2 (|∇G| -> 0); an image stops at its own level anyway, so the
+        /// margin only has to be large enough never to be the thing that ends a line.</summary>
+        float TransportMargin => _half;
+
+        static Vector3 ProjectOnPlane(Vector3 v, Vector3 n) => v - Vector3.Dot(v, n) * n;
+
+        static Vector3 AnyTangent(Vector3 n)
         {
-            float clear = _s.HeartClearance / _scale;
-            for (int ix = 0; ix < g; ix++)
-            {
-                for (int iy = 0; iy < g; iy++)
-                for (int iz = 0; iz < g; iz++)
-                {
-                    float a = field[(ix * g + iy) * g + iz] - t;
-                    for (int axis = 0; axis < 3; axis++)
-                    {
-                        int jx = ix + (axis == 0 ? 1 : 0), jy = iy + (axis == 1 ? 1 : 0), jz = iz + (axis == 2 ? 1 : 0);
-                        if (jx >= g || jy >= g || jz >= g) continue;
-                        float b = field[(jx * g + jy) * g + jz] - t;
-                        if ((a < 0f) == (b < 0f)) continue;
-                        float u = a / (a - b);
-                        var q = Vector3.Lerp(GridPoint(ix, iy, iz, h), GridPoint(jx, jy, jz, h), u);
-                        q = Newton(Newton(q, t), t);
-                        if (MathF.Abs(G(q) - t) > 1e-3f || !InBox(q) || q.Length() < clear) continue;
-                        into.Add(q * _scale);
-                    }
-                }
-                if ((++Yields & 1) == 0) yield return 0;
-            }
+            var a = MathF.Abs(n.X) < 0.8f ? Vector3.UnitX : Vector3.UnitY;
+            return Vector3.Normalize(ProjectOnPlane(a, n));
         }
 
-        bool InBox(Vector3 q) =>
-            MathF.Abs(q.X) <= _half && MathF.Abs(q.Y) <= _half && MathF.Abs(q.Z) <= _half;
+        static Vector3 Rotate(Vector3 v, Vector3 axis, float radians)
+        {
+            float c = MathF.Cos(radians), s = MathF.Sin(radians);
+            return v * c + Vector3.Cross(axis, v) * s + axis * (Vector3.Dot(axis, v) * (1f - c));
+        }
+
+        int NearestToOrigin()
+        {
+            int best = -1;
+            float bd = float.MaxValue;
+            for (int i = 0; i < _nodes.Count; i++)
+            {
+                if (_nodes[i].Rank != 0 || _nodes[i].Kind != NestedGyroidPrismKind.Sheet) continue;
+                float d = _nodes[i].P.LengthSquared();
+                if (d < bd) { bd = d; best = i; }
+            }
+            return best;
+        }
+
+        float GapWorld(Vector3 world)
+        {
+            float gl = Grad(world / _scale).Length();
+            return _scale * _dt / Math.Max(gl, 1e-3f);
+        }
+
+        // ------------------------------------------------------------------ sizing + fiber struts
+
+        void SizeSheets(List<Vector3> basePos, List<int>[] mates)
+        {
+            // The reference: the t = 0 layer's median gap. A plate there wears the element's leaf exactly; out along
+            // the flow it stretches with the template and thickens with the layer.
+            var baseGaps = new List<float>();
+            foreach (var p in basePos) baseGaps.Add(GapWorld(p));
+            baseGaps.Sort();
+            float gap0 = baseGaps.Count > 0 ? baseGaps[baseGaps.Count / 2] : 1f;
+
+            var gaps = new List<float>();
+            float smin = float.MaxValue, smax = 0f;
+            for (int i = 0; i < _nodes.Count; i++)
+            {
+                var nd = _nodes[i];
+                if (nd.Kind != NestedGyroidPrismKind.Sheet) continue;
+                gaps.Add(nd.Gap);
+
+                // In-plane stretch: this image's distance to its mates' images on the same sheet, over the base's.
+                double sum = 0, sum0 = 0;
+                foreach (int m in mates[nd.Site])
+                {
+                    if (!_fibers[m].Crossing.TryGetValue(nd.Sheet, out var pm)) continue;
+                    sum += Vector3.Distance(nd.P, pm);
+                    sum0 += Vector3.Distance(basePos[nd.Site], basePos[m]);
+                }
+                float stretch = sum0 > 1e-6 ? (float)(sum / sum0) : 1f;
+                stretch = Math.Max(0.5f, Math.Min(2f, stretch));
+                smin = Math.Min(smin, stretch);
+                smax = Math.Max(smax, stretch);
+
+                // Thickness follows the layer, but a plate stays a PLATE: at most twice the element's own thickness
+                // (deep layers near tMax -> √2 are ten times the base gap, and a plate that followed them became a
+                // block that swallowed its neighbours' struts), and never more than its share of the gap.
+                float thick = _s.Leaf.Z * (nd.Gap / gap0);
+                thick = Math.Max(0.3f, Math.Min(Math.Min(_s.PlateThicknessOfGap * nd.Gap, 2f * _s.Leaf.Z), thick));
+                nd.Stretch = stretch;
+                nd.Size = new Vector3(_s.Leaf.X * stretch, _s.Leaf.Y * stretch, thick);
+                nd.Size0 = nd.Size;
+                _nodes[i] = nd;
+            }
+            gaps.Sort();
+            _stats.SheetGapWorldMin = gaps.Count > 0 ? gaps[0] : 0f;
+            _stats.SheetGapWorldMax = gaps.Count > 0 ? gaps[gaps.Count - 1] : 0f;
+            _stats.StretchMin = smin == float.MaxValue ? 1f : smin;
+            _stats.StretchMax = smax;
+        }
+
+        void LayFibers()
+        {
+            for (int fi = 0; fi < _fibers.Count; fi++)
+            {
+                var f = _fibers[fi];
+                if (!f.Strutted) continue;
+                _stats.Fibers++;
+                foreach (var kv in f.NodeAt)
+                {
+                    int sheet = kv.Key;
+                    int inner = InnerNeighbour(sheet);
+                    List<Vector3> poly;
+                    if (inner < 0)
+                    {
+                        // Even N has no t = 0 sheet: its two central sheets are both ring 0, and the
+                        // fiber's segment between them is the two half-traces out of the seed, joined.
+                        if (_s.SheetCount % 2 != 0 || _levels[sheet] < 0f) continue;
+                        inner = sheet - 1;
+                        if (!f.Segment.TryGetValue(inner, out var down)) continue;
+                        poly = new List<Vector3>(down);
+                        poly.Reverse();
+                        poly.AddRange(f.Segment[sheet].GetRange(1, f.Segment[sheet].Count - 1));
+                    }
+                    else poly = f.Segment[sheet];
+                    if (!f.NodeAt.TryGetValue(inner, out int innerNode)) continue;
+                    LayStruts(fi, innerNode, kv.Value, poly, sheet);
+                }
+            }
+        }
 
         // ------------------------------------------------------------------ Poisson thinning
 
@@ -605,10 +759,13 @@ namespace CosmicShore.Gameplay
             const float ds = 0.03f;
             int next = 0;
             var poly = new List<Vector3> { q * _scale };
-            for (int step = 0; step < 400 && next < targets.Count; step++)
+            for (int step = 0; step < 2000 && next < targets.Count; step++)
             {
                 Vector3 q1 = Rk4(q, dir, ds);
-                if (!InBox(q1)) return;   // left the cube: the fiber ends at the last sheet it reached
+                // The STACK is the base cube's tiling carried outward, so an image may leave the cube by the depth
+                // of the stack: the sheets' edges then lie over the base sheet's edge instead of each outer sheet
+                // losing the third of the template that flows out of the face (measured: 426 -> 576 of 576 sites).
+                if (!InBox(q1, TransportMargin)) return;
                 float g1 = G(q1);
                 poly.Add(q1 * _scale);
                 while (next < targets.Count)
@@ -646,268 +803,6 @@ namespace CosmicShore.Gameplay
             return q + h / 6f * (k1 + 2f * k2 + 2f * k3 + k4);
         }
 
-        // ------------------------------------------------------------------ sheets
-
-        float GapWorld(Vector3 world)
-        {
-            float gl = Grad(world / _scale).Length();
-            return _scale * _dt / Math.Max(gl, 1e-3f);
-        }
-
-        IEnumerator<int> AddSheet(int sheet, List<Vector3> pool, List<(Vector3 p, FiberPath f)> forced)
-        {
-            // Forced crossings first; two that crowd each other truncate the LATER fiber from here out.
-            var admitted = new List<Vector3>();
-            var fgrid = new Grid(_spacing);
-            float minForced = 0.7f * _spacing;
-            var admittedFibers = new List<FiberPath>();
-            foreach (var (p, f) in forced)
-            {
-                fgrid.Near(p, _near);
-                bool ok = true;
-                foreach (int j in _near) if (Vector3.Distance(admitted[j], p) < minForced) { ok = false; break; }
-                if (!ok) { f.Truncated = true; continue; }
-                fgrid.Add(p, admitted.Count);
-                admitted.Add(p);
-                admittedFibers.Add(f);
-            }
-
-            var points = new List<Vector3>();
-            var thin = Poisson(pool, _spacing, admitted, points);
-            while (thin.MoveNext()) yield return 0;
-            for (int k = 0; k < points.Count; k++)
-            {
-                var p = points[k];
-                var g = Grad(p / _scale);
-                float gl = g.Length();
-                if (gl < 1e-4f) continue;
-                var node = new Node
-                {
-                    P = p,
-                    F = g / gl,
-                    Kind = NestedGyroidPrismKind.Sheet,
-                    Sheet = sheet,
-                    Rank = _rankOf[sheet],
-                    Fiber = -1,
-                    Gap = GapWorld(p),
-                    Alive = true,
-                };
-                if (k < admittedFibers.Count)
-                {
-                    node.Fiber = _fibers.IndexOf(admittedFibers[k]);
-                    admittedFibers[k].NodeAt[sheet] = _nodes.Count;
-                }
-                _nodes.Add(node);
-            }
-        }
-
-        // ------------------------------------------------------------------ combing + plywood
-
-        static Vector3 ProjectOnPlane(Vector3 v, Vector3 n) => v - Vector3.Dot(v, n) * n;
-
-        static Vector3 AnyTangent(Vector3 n)
-        {
-            var a = MathF.Abs(n.X) < 0.8f ? Vector3.UnitX : Vector3.UnitY;
-            return Vector3.Normalize(ProjectOnPlane(a, n));
-        }
-
-        static Vector3 Rotate(Vector3 v, Vector3 axis, float radians)
-        {
-            float c = MathF.Cos(radians), s = MathF.Sin(radians);
-            return v * c + Vector3.Cross(axis, v) * s + axis * (Vector3.Dot(axis, v) * (1f - c));
-        }
-
-        /// <summary>Line-field angle between two tangents (0-90°): a plate is symmetric under 180°.</summary>
-        static float LineAngle(Vector3 a, Vector3 b) =>
-            MathF.Acos(Math.Min(1f, MathF.Abs(Vector3.Dot(a, b)))) * (180f / (float)Math.PI);
-
-        IEnumerator<int> Comb()
-        {
-            int count = _nodes.Count;
-            var grid = new Grid(1.5f * _spacing);
-            for (int i = 0; i < count; i++) grid.Add(_nodes[i].P, i);
-
-            // Combing graph: same-sheet neighbours within 1.5 spacings, plus the adjacent sheets' plates
-            // directly over/under (one base field for the whole stack, so the per-sheet twist reads).
-            var nbr = new List<int>[count];
-            float same2 = (1.5f * _spacing) * (1.5f * _spacing);
-            for (int i = 0; i < count; i++)
-            {
-                var ni = _nodes[i];
-                grid.Near(ni.P, _near);
-                var l = new List<int>(12);
-                foreach (int j in _near)
-                {
-                    if (j == i) continue;
-                    var nj = _nodes[j];
-                    float d2 = Vector3.DistanceSquared(ni.P, nj.P);
-                    if (nj.Sheet == ni.Sheet ? d2 < same2 : (Math.Abs(nj.Sheet - ni.Sheet) == 1 && d2 < 0.5f * same2))
-                        l.Add(j);
-                }
-                nbr[i] = l;
-                if ((i & 255) == 0) yield return 0;
-            }
-
-            // Negative control: the per-site choice (a fixed axis projected into each plane).
-            var t = new Vector3[count];
-            var reference = Vector3.Normalize(new Vector3(0.31f, 0.83f, 0.46f));
-            for (int i = 0; i < count; i++)
-            {
-                var p = ProjectOnPlane(reference, _nodes[i].F);
-                t[i] = p.LengthSquared() > 1e-6f ? Vector3.Normalize(p) : AnyTangent(_nodes[i].F);
-            }
-            _stats.CombBeforeDegrees = MeanSameSheetAngle(t, nbr);
-
-            // Seed: parallel transport outward from the plate nearest the heart (BFS over the comb graph),
-            // so neighbours start agreeing instead of starting from a per-site choice.
-            var seen = new bool[count];
-            var queue = new Queue<int>();
-            for (int start = NearestToOrigin(); start >= 0; start = FirstUnseen(seen))
-            {
-                seen[start] = true;
-                queue.Enqueue(start);
-                while (queue.Count > 0)
-                {
-                    int i = queue.Dequeue();
-                    foreach (int j in nbr[i])
-                    {
-                        if (seen[j]) continue;
-                        seen[j] = true;
-                        var p = ProjectOnPlane(t[i], _nodes[j].F);
-                        t[j] = p.LengthSquared() > 1e-6f ? Vector3.Normalize(p) : AnyTangent(_nodes[j].F);
-                        queue.Enqueue(j);
-                    }
-                }
-            }
-            yield return 0;
-
-            // Smooth: doubled-angle (sign-free) average over neighbours, Jacobi passes.
-            var next = new Vector3[count];
-            for (int pass = 0; pass < 12; pass++)
-            {
-                for (int i = 0; i < count; i++)
-                {
-                    var n = _nodes[i].F;
-                    var e1 = t[i];
-                    var e2 = Vector3.Cross(n, e1);
-                    float cs = 1f, sn = 0f;
-                    foreach (int j in nbr[i])
-                    {
-                        var v = ProjectOnPlane(t[j], n);
-                        float l = v.Length();
-                        if (l < 1e-4f) continue;
-                        float th = MathF.Atan2(Vector3.Dot(v, e2), Vector3.Dot(v, e1));
-                        cs += MathF.Cos(2f * th);
-                        sn += MathF.Sin(2f * th);
-                    }
-                    float half = 0.5f * MathF.Atan2(sn, cs);
-                    next[i] = Vector3.Normalize(e1 * MathF.Cos(half) + e2 * MathF.Sin(half));
-                }
-                (t, next) = (next, t);
-                yield return 0;
-            }
-            _stats.CombAfterDegrees = MeanSameSheetAngle(t, nbr);
-
-            // Helicoidal plywood: each sheet's long axis turned a fixed angle per sheet index about ∇G.
-            float c = (_s.SheetCount - 1) * 0.5f;
-            float step = _s.PlywoodTwistDegrees * (float)Math.PI / 180f;
-            for (int i = 0; i < count; i++)
-            {
-                var node = _nodes[i];
-                node.U = Vector3.Normalize(Rotate(t[i], node.F, step * (node.Sheet - c)));
-                _nodes[i] = node;
-            }
-        }
-
-        float MeanSameSheetAngle(Vector3[] t, List<int>[] nbr)
-        {
-            double sum = 0;
-            int pairs = 0;
-            for (int i = 0; i < t.Length; i++)
-                foreach (int j in nbr[i])
-                {
-                    if (j <= i || _nodes[j].Sheet != _nodes[i].Sheet) continue;
-                    sum += LineAngle(t[i], t[j]);
-                    pairs++;
-                }
-            return pairs > 0 ? (float)(sum / pairs) : 0f;
-        }
-
-        int NearestToOrigin()
-        {
-            int best = -1;
-            float bd = float.MaxValue;
-            for (int i = 0; i < _nodes.Count; i++)
-            {
-                if (_nodes[i].Rank != 0) continue;
-                float d = _nodes[i].P.LengthSquared();
-                if (d < bd) { bd = d; best = i; }
-            }
-            return best;
-        }
-
-        static int FirstUnseen(bool[] seen)
-        {
-            for (int i = 0; i < seen.Length; i++) if (!seen[i]) return i;
-            return -1;
-        }
-
-        // ------------------------------------------------------------------ sizing + fiber struts
-
-        void SizeSheets()
-        {
-            var gaps = new List<float>();
-            foreach (var nd in _nodes) if (nd.Kind == NestedGyroidPrismKind.Sheet) gaps.Add(nd.Gap);
-            gaps.Sort();
-            float median = gaps.Count > 0 ? gaps[gaps.Count / 2] : 1f;
-            _stats.SheetGapWorldMin = gaps.Count > 0 ? gaps[0] : 0f;
-            _stats.SheetGapWorldMax = gaps.Count > 0 ? gaps[gaps.Count - 1] : 0f;
-            for (int i = 0; i < _nodes.Count; i++)
-            {
-                var nd = _nodes[i];
-                if (nd.Kind != NestedGyroidPrismKind.Sheet) continue;
-                // Thickness-aware: the layer is Δt/|∇G| thick here, so the plate takes a fixed share of it
-                // (thicker near the saddles, where |∇G| is smallest), and its footprint leans the same way.
-                float f = Math.Max(0.85f, Math.Min(1.25f, MathF.Sqrt(nd.Gap / median)));
-                float width = _spacing * _s.PlateWidthOfSpacing * f;
-                // A plate stays a plate: never thicker than three quarters of its own width, however wide
-                // the layer it sits in (few sheets / a high tMax make very deep layers).
-                float thick = Math.Max(0.3f, Math.Min(0.75f * width, _s.PlateThicknessOfGap * nd.Gap));
-                nd.Size = new Vector3(width, _spacing * _s.PlateLengthOfSpacing * f, thick);
-                nd.Size0 = nd.Size;
-                _nodes[i] = nd;
-            }
-        }
-
-        void LayFibers()
-        {
-            SizeSheets();
-            for (int fi = 0; fi < _fibers.Count; fi++)
-            {
-                var f = _fibers[fi];
-                foreach (var kv in f.NodeAt)
-                {
-                    int sheet = kv.Key;
-                    int inner = InnerNeighbour(sheet);
-                    List<Vector3> poly;
-                    if (inner < 0)
-                    {
-                        // Even N has no t = 0 sheet: its two central sheets are both ring 0, and the
-                        // fiber's segment between them is the two half-traces out of the seed, joined.
-                        if (_s.SheetCount % 2 != 0 || _levels[sheet] < 0f) continue;
-                        inner = sheet - 1;
-                        if (!f.Segment.TryGetValue(inner, out var down)) continue;
-                        poly = new List<Vector3>(down);
-                        poly.Reverse();
-                        poly.AddRange(f.Segment[sheet].GetRange(1, f.Segment[sheet].Count - 1));
-                    }
-                    else poly = f.Segment[sheet];
-                    if (!f.NodeAt.TryGetValue(inner, out int innerNode)) continue;
-                    LayStruts(fi, innerNode, kv.Value, poly, sheet);
-                }
-            }
-        }
-
         void LayStruts(int fiber, int innerNode, int outerNode, List<Vector3> poly, int outerSheet)
         {
             // Arc length along the traced polyline, inner crossing -> outer crossing.
@@ -917,10 +812,10 @@ namespace CosmicShore.Gameplay
             float s0 = 0.5f * _nodes[innerNode].Size.Z + _s.Clearance;
             float s1 = total - 0.5f * _nodes[outerNode].Size.Z - _s.Clearance;
             float usable = s1 - s0;
-            int prev = innerNode;
+            var chain = new List<int> { innerNode };
             if (usable >= 1f)
             {
-                int m = Math.Max(1, (int)MathF.Round(usable / _fiberPrismSpacing));
+                int m = Math.Max(1, (int)MathF.Round(usable / _s.FiberPrismSpacing));
                 float slot = usable / m;
                 for (int j = 0; j < m; j++)
                 {
@@ -940,11 +835,11 @@ namespace CosmicShore.Gameplay
                         Sheet = outerSheet, Rank = _rankOf[outerSheet], Fiber = fiber,
                         Gap = total, Alive = true,
                     });
-                    _chain.Add((prev, id));
-                    prev = id;
+                    chain.Add(id);
                 }
             }
-            _chain.Add((prev, outerNode));
+            chain.Add(outerNode);
+            _chains.Add(chain);
         }
 
         static (Vector3 p, Vector3 tangent) Along(List<Vector3> poly, float[] cum, float at)
@@ -1044,11 +939,16 @@ namespace CosmicShore.Gameplay
             foreach (var (i, j) in pairs) if (CrossSheet(i, j)) _stats.CrossSheetOverlapsBeforeFit++;
             yield return 0;
 
-            for (int pass = 0; pass < 10 && pairs.Count > 0; pass++)
+            for (int pass = 0; pass < 18 && pairs.Count > 0; pass++)
             {
                 var touched = new HashSet<int>();
                 foreach (var (i, j) in pairs) { touched.Add(i); touched.Add(j); }
-                foreach (int i in touched) Shrink(i, 0.88f);
+                // STRUTS NEVER GIVE WAY - they are the stack's stitches. A shrunk strut has a shorter rider reach than
+                // the bond it spans, and a dropped one leaves the chain bridging two slots (measured: up to 123% of
+                // reach near tMax 1.38). The plates beside it shrink instead; a strut-strut touch (two fibers crossing
+                // in a converging layer) is resolved below by dropping the outer one.
+                foreach (int i in touched)
+                    if (_nodes[i].Kind == NestedGyroidPrismKind.Sheet) Shrink(i, 0.88f);
                 scan = OverlappingPairs(margin, pairs);
                 while (scan.MoveNext()) yield return 0;
             }
@@ -1058,13 +958,17 @@ namespace CosmicShore.Gameplay
             {
                 if (!_nodes[i].Alive || !_nodes[j].Alive) continue;
                 int drop = _nodes[j].Rank > _nodes[i].Rank || (_nodes[j].Rank == _nodes[i].Rank && j > i) ? j : i;
+                // A plate touching a strut is the one that goes.
+                if (_nodes[i].Kind != _nodes[j].Kind)
+                    drop = _nodes[i].Kind == NestedGyroidPrismKind.Sheet ? i : j;
                 // A fiber crossing is a stitch; never drop it in favour of a free plate.
-                if (_nodes[drop].Fiber >= 0 && _nodes[drop].Kind == NestedGyroidPrismKind.Sheet)
+                else if (_nodes[drop].Kind == NestedGyroidPrismKind.Sheet && _fibers[_nodes[drop].Fiber].Strutted)
                     drop = drop == i ? j : i;
                 var nd = _nodes[drop];
                 nd.Alive = false;
                 _nodes[drop] = nd;
                 _stats.DroppedByFit++;
+                if (nd.Kind == NestedGyroidPrismKind.Fiber) _stats.DroppedStruts++;
             }
 
             var remaining = new List<(int, int)>();
@@ -1080,8 +984,13 @@ namespace CosmicShore.Gameplay
             const float floor = 0.35f;
             if (nd.Kind == NestedGyroidPrismKind.Sheet)
             {
+                // The footprint gives way first; a plate whose footprint is already at its floor and still touches
+                // is touching THROUGH its thickness (two template neighbours meeting at an angle, on a deep layer),
+                // so the thickness gives way next.
+                bool footprintAtFloor = nd.Size.X <= nd.Size0.X * floor * 1.0001f && nd.Size.Y <= nd.Size0.Y * floor * 1.0001f;
                 nd.Size.X = Math.Max(nd.Size0.X * floor, nd.Size.X * k);
                 nd.Size.Y = Math.Max(nd.Size0.Y * floor, nd.Size.Y * k);
+                if (footprintAtFloor) nd.Size.Z = Math.Max(nd.Size0.Z * floor, nd.Size.Z * k);
             }
             else nd.Size.Z = Math.Max(nd.Size0.Z * floor, nd.Size.Z * k);
             _nodes[i] = nd;
@@ -1105,31 +1014,40 @@ namespace CosmicShore.Gameplay
             var cross = new HashSet<long>();
             for (int i = 0; i < count; i++) adj[i] = new List<int>(8);
 
-            // Cross-sheet links: along the fibers, over any strut the fit dropped.
-            var chainNext = new Dictionary<int, int>();
-            foreach (var (a, b) in _chain) chainNext[a] = b;
-            foreach (var (a0, _) in _chain)
+            // Cross-sheet links: along the fibers, bridging any strut the fit dropped.
+            foreach (var chain in _chains)
             {
-                if (!_nodes[a0].Alive) continue;
-                int b = chainNext[a0];
-                while (!_nodes[b].Alive && chainNext.TryGetValue(b, out int nb)) b = nb;
-                if (!_nodes[b].Alive || b == a0) continue;
-                Link(adj, a0, b);
-                cross.Add(PairKey(a0, b));
+                int prev = -1;
+                foreach (int node in chain)
+                {
+                    if (!_nodes[node].Alive) continue;
+                    if (prev >= 0)
+                    {
+                        Link(adj, prev, node);
+                        cross.Add(PairKey(prev, node));
+                    }
+                    prev = node;
+                }
             }
 
             // In-sheet links: same sheet, within both endpoints' rider reach.
             float maxReach = 0f;
             foreach (var nd in _nodes) if (nd.Alive) maxReach = Math.Max(maxReach, ReachOf(nd));
-            var grid = new Grid(maxReach);
-            for (int i = 0; i < count; i++)
-                if (_nodes[i].Alive && _nodes[i].Kind == NestedGyroidPrismKind.Sheet) grid.Add(_nodes[i].P, i);
+            // One grid per SHEET: an in-sheet link never looks at another layer, and at the default size every layer
+            // lies inside one reach-sized cell of every other, so a shared grid scanned the whole stack per plate.
+            var grids = new Dictionary<int, Grid>();
             for (int i = 0; i < count; i++)
             {
-                if ((i & 127) == 127) yield return 0;
+                if (!_nodes[i].Alive || _nodes[i].Kind != NestedGyroidPrismKind.Sheet) continue;
+                if (!grids.TryGetValue(_nodes[i].Sheet, out var g)) grids[_nodes[i].Sheet] = g = new Grid(maxReach);
+                g.Add(_nodes[i].P, i);
+            }
+            for (int i = 0; i < count; i++)
+            {
+                if ((i & 31) == 31) yield return 0;
                 var ni = _nodes[i];
                 if (!ni.Alive || ni.Kind != NestedGyroidPrismKind.Sheet) continue;
-                grid.Near(ni.P, _near);
+                grids[ni.Sheet].Near(ni.P, _near);
                 foreach (int j in _near)
                 {
                     if (j <= i) continue;
@@ -1146,7 +1064,11 @@ namespace CosmicShore.Gameplay
             var parent = new int[count];
             for (int i = 0; i < count; i++) parent[i] = i;
             int Find(int x) { while (parent[x] != x) { parent[x] = parent[parent[x]]; x = parent[x]; } return x; }
-            for (int i = 0; i < count; i++) foreach (int j in adj[i]) parent[Find(i)] = Find(j);
+            for (int i = 0; i < count; i++)
+            {
+                foreach (int j in adj[i]) parent[Find(i)] = Find(j);
+                if ((i & 63) == 63) yield return 0;
+            }
             var roots = new HashSet<int>();
             for (int i = 0; i < count; i++) if (_nodes[i].Alive) roots.Add(Find(i));
             _stats.ComponentsBeforePrune = roots.Count;
@@ -1183,8 +1105,10 @@ namespace CosmicShore.Gameplay
             {
                 var queue = new Queue<int>(order);
                 yield return 0;
+                int popped = 0;
                 while (queue.Count > 0)
                 {
+                    if ((++popped & 255) == 255) yield return 0;
                     int i = queue.Dequeue();
                     foreach (int j in adj[i])
                     {
@@ -1203,12 +1127,15 @@ namespace CosmicShore.Gameplay
                 Count = n,
                 Position = new Vector3[n], Forward = new Vector3[n], Up = new Vector3[n], Size = new Vector3[n],
                 Kind = new NestedGyroidPrismKind[n], Sheet = new int[n], Rank = new int[n], Stack = new int[n], Parent = new int[n],
+                Site = new int[n], DangerRing = new bool[n], Fitted = new bool[n],
                 LimbBond = new bool[n], Reach = new float[n],
                 SheetLevels = (float[])_levels.Clone(), SheetCount = _s.SheetCount,
                 Stats = _stats,
             };
+            yield return 0;
             for (int k = 0; k < n; k++)
             {
+                if ((k & 511) == 511) yield return 0;
                 var nd = _nodes[order[k]];
                 L.Position[k] = nd.P;
                 L.Forward[k] = nd.F;
@@ -1217,6 +1144,9 @@ namespace CosmicShore.Gameplay
                 L.Kind[k] = nd.Kind;
                 L.Sheet[k] = nd.Sheet;
                 L.Rank[k] = nd.Rank;
+                L.Site[k] = nd.Kind == NestedGyroidPrismKind.Sheet ? nd.Site : -1;
+                L.DangerRing[k] = nd.Kind == NestedGyroidPrismKind.Sheet && nd.Danger;
+                L.Fitted[k] = nd.Size != nd.Size0;
                 L.Stack[k] = nd.Kind == NestedGyroidPrismKind.Sheet ? 2 * nd.Sheet : nd.Sheet + StrutInnerSheet(nd.Sheet);
                 L.Parent[k] = growParent[k];
                 L.Reach[k] = ReachOf(nd);
@@ -1225,6 +1155,7 @@ namespace CosmicShore.Gameplay
 
             var start2 = new int[n + 1];
             var flat = new List<int>(n * 6);
+            yield return 0;
             for (int k = 0; k < n; k++)
             {
                 start2[k] = flat.Count;
@@ -1267,9 +1198,15 @@ namespace CosmicShore.Gameplay
         /// <summary>Recomputes the counts, gap statistics and component count over the shipped prefix.</summary>
         public static void Recount(NestedGyroidLattice L)
         {
+            var steps = RecountSteps(L);
+            while (steps.MoveNext()) { }
+        }
+
+        static IEnumerator<int> RecountSteps(NestedGyroidLattice L)
+        {
             var s = L.Stats;
             int n = L.Count;
-            s.SheetPrisms = s.FiberPrisms = s.InSheetEdges = s.CrossSheetEdges = 0;
+            s.SheetPrisms = s.FiberPrisms = s.DangerPrisms = s.InSheetEdges = s.CrossSheetEdges = 0;
             s.ThicknessMin = float.MaxValue;
             s.ThicknessMax = 0f;
             s.ReachMin = float.MaxValue;
@@ -1282,9 +1219,11 @@ namespace CosmicShore.Gameplay
 
             for (int i = 0; i < n; i++)
             {
+                if ((i & 63) == 63) yield return 0;
                 if (L.Kind[i] == NestedGyroidPrismKind.Sheet)
                 {
                     s.SheetPrisms++;
+                    if (L.DangerRing[i]) s.DangerPrisms++;
                     s.ThicknessMin = Math.Min(s.ThicknessMin, L.Size[i].Z);
                     s.ThicknessMax = Math.Max(s.ThicknessMax, L.Size[i].Z);
                 }
@@ -1312,7 +1251,9 @@ namespace CosmicShore.Gameplay
             s.Components = roots.Count;
             s.MaxEdgeOverReach = worst;
 
+            yield return 0;
             gaps.Sort();
+            yield return 0;
             edges.Sort();
             s.GapMin = gaps.Count > 0 ? gaps[0] : 0f;
             s.GapMedian = gaps.Count > 0 ? gaps[gaps.Count / 2] : 0f;
@@ -1333,9 +1274,10 @@ namespace CosmicShore.Gameplay
                    $"neighbour gap min/median/max {s.GapMin:F2}/{s.GapMedian:F2}/{s.GapMax:F2} " +
                    $"(worst bond {s.MaxEdgeOverReach:P0} of reach), overlaps {s.RemainingOverlaps} " +
                    $"({s.RemainingCrossSheetOverlaps} cross-sheet), fit dropped {s.DroppedByFit}, " +
-                   $"spacing {s.EffectiveSheetSpacing:F1} after {s.CoarsenPasses} coarsen pass(es), " +
-                   $"budget cut {s.TruncatedByBudget}, comb {s.CombBeforeDegrees:F1}° -> {s.CombAfterDegrees:F1}°, " +
+                   $"{s.DangerPrisms} danger-ring plates, template {s.TemplateSites} sites/sheet, stretch {s.StretchMin:F2}..{s.StretchMax:F2}, " +
+                   $"budget cut {s.TruncatedByBudget}, " +
                    $"build {s.BuildMilliseconds:F0} ms";
         }
     }
 }
+

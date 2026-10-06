@@ -37,6 +37,44 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void EverySheetIsTheGyroidFloraTemplate()
+        {
+            // The base sheet is the gyroid flora's own tiling (576 sites a period) carried onto every level, so every
+            // sheet carries (nearly) every site exactly once, and a third of them are its danger octagon rings.
+            var l = Default;
+            Assert.AreEqual(NestedGyroidTemplate.SiteCount, l.Stats.TemplateSites);
+            var seen = new HashSet<(int sheet, int site)>();
+            var perSheet = new Dictionary<int, int>();
+            int danger = 0, plates = 0;
+            for (int i = 0; i < l.Count; i++)
+            {
+                if (l.Kind[i] != NestedGyroidPrismKind.Sheet) continue;
+                Assert.IsTrue(seen.Add((l.Sheet[i], l.Site[i])), "a template site appears twice on one sheet");
+                perSheet[l.Sheet[i]] = perSheet.TryGetValue(l.Sheet[i], out int c) ? c + 1 : 1;
+                plates++;
+                if (l.DangerRing[i]) danger++;
+            }
+            foreach (var kv in perSheet)
+                Assert.GreaterOrEqual(kv.Value, (int)(0.9f * NestedGyroidTemplate.SiteCount), $"sheet {kv.Key} lost its tiling");
+            Assert.AreEqual(1f / 3f, danger / (float)plates, 0.05f, "the octagon rings are 192 of the template's 576 sites");
+        }
+
+        [Test]
+        public void Template_IsTheMeasuredGyroidFloraCell()
+        {
+            Assert.AreEqual(576, NestedGyroidTemplate.SiteCount);
+            Assert.AreEqual(120f, NestedGyroidTemplate.Period, 0.5f);
+            int danger = 0;
+            for (int k = 0; k < NestedGyroidTemplate.SiteCount; k++)
+            {
+                var q = NestedGyroidTemplate.Position[k] * (2f * Mathf.PI);
+                Assert.Less(Mathf.Abs(NestedGyroidBuilder.G(q)), 0.15f, "a template site is off the gyroid");
+                if (NestedGyroidTemplate.IsDangerType(NestedGyroidTemplate.BlockType[k])) danger++;
+            }
+            Assert.AreEqual(192, danger);
+        }
+
+        [Test]
         public void IsOneConnectedComponent()
         {
             Assert.AreEqual(1, Default.Stats.Components);
@@ -136,7 +174,11 @@ namespace CosmicShore.Tests
         {
             // The SO's defaults and the settings' defaults are one lattice - the harness measures the latter.
             var so = ScriptableObject.CreateInstance<NestedGyroidConfigSO>();
-            try { Assert.AreEqual(new NestedGyroidSettings().Sanitized().Key(), so.ToSettings().Key()); }
+            try
+            {
+                Assert.AreEqual(new NestedGyroidSettings().Sanitized().Key(),
+                                so.ToSettings(NestedGyroidConfigSO.TemplateTimeLeaf).Key());
+            }
             finally { Object.DestroyImmediate(so); }
         }
 

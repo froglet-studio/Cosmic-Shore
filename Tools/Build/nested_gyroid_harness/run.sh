@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# NESTED GYROID (Docs/ECOSYSTEM.md §58). Compiles the SHIPPED NestedGyroidLattice.cs and RUNS it:
+# NESTED GYROID (Docs/ECOSYSTEM.md §58). Compiles the SHIPPED NestedGyroidLattice.cs + the measured
+# NestedGyroidTemplate.cs (the gyroid flora's tiling, Tools/Build/measure_nested_gyroid_template.py) and RUNS them:
 #   1. the core compiles against netstandard2.1 + C# 9 (Unity's API profile);
 #   2. the acceptance gates on the default config (Driver.cs says what each asserts, and each has a
 #      negative control that must FAIL when the thing it guards is broken);
@@ -22,13 +23,14 @@ REFDIR=$(ls -d "$DOTNET_ROOT"/packs/Microsoft.NETCore.App.Ref/*/ref/net8.0 | hea
 NSREF=$(ls "$DOTNET_ROOT"/packs/NETStandard.Library.Ref/*/ref/netstandard2.1/netstandard.dll 2>/dev/null | head -1 || true)
 OUT="${TMPDIR:-/tmp}/nested_gyroid_harness"
 mkdir -p "$OUT"
-CORE="$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/NestedGyroidLattice.cs"
+FAF="$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna"
+CORES=("$FAF/NestedGyroidLattice.cs" "$FAF/NestedGyroidTemplate.cs")
 
 # 1. Unity's API profile (skipped, loudly, when the netstandard reference pack is absent)
 if [ -n "$NSREF" ]; then
   "$DOTNET" "$CSC" -nologo -langversion:9.0 -nostdlib -noconfig "-r:$NSREF" -target:library \
-    -out:"$OUT/core_unityprofile.dll" "$CORE" \
-    || { echo "FAIL: NestedGyroidLattice.cs does not compile against netstandard2.1 (Unity's API profile)" >&2; exit 1; }
+    -out:"$OUT/core_unityprofile.dll" "${CORES[@]}" \
+    || { echo "FAIL: the nested-gyroid core does not compile against netstandard2.1 (Unity's API profile)" >&2; exit 1; }
   echo "core compiles against netstandard2.1 / C# 9: OK"
 else
   echo "WARN: no NETStandard.Library.Ref pack - the Unity-profile compile was NOT checked" >&2
@@ -41,7 +43,7 @@ GLUE=("$G/Controller/Environment/FloraAndFauna/NestedGyroidFlora.cs" "$G/Control
       "$G/Data/Enums/PrismscapeDimension.cs")
 if [ -n "$NSREF" ]; then
   "$DOTNET" "$CSC" -nologo -langversion:9.0 -nostdlib -noconfig "-r:$NSREF" -target:library -warnaserror- -nowarn:CS0108,CS0114,CS0649,CS0414 \
-    -out:"$OUT/glue.dll" "$HERE/GlueStubs.cs" "$CORE" "${GLUE[@]}" \
+    -out:"$OUT/glue.dll" "$HERE/GlueStubs.cs" "${CORES[@]}" "${GLUE[@]}" \
     || { echo "FAIL: the nested-gyroid glue does not type-check against GlueStubs.cs" >&2; exit 1; }
   echo "glue type-check OK"
 fi
@@ -49,8 +51,8 @@ fi
 # 2 + 3. the gates
 ls "$REFDIR"/*.dll | sed 's/^/-r:/' > "$OUT/refs.rsp"
 "$DOTNET" "$CSC" -nologo -langversion:9.0 -nostdlib -noconfig -optimize+ "@$OUT/refs.rsp" -target:exe -main:Driver \
-  -out:"$OUT/nestedgyroid.exe" "$CORE" "$HERE/Driver.cs" "$HERE/RideModel.cs"
+  -out:"$OUT/nestedgyroid.exe" "${CORES[@]}" "$HERE/Driver.cs" "$HERE/RideModel.cs"
 V=$(ls "$DOTNET_ROOT"/shared/Microsoft.NETCore.App | head -1)
 printf '{"runtimeOptions":{"tfm":"net8.0","framework":{"name":"Microsoft.NETCore.App","version":"%s"}}}' "$V" \
   > "$OUT/nestedgyroid.runtimeconfig.json"
-exec "$DOTNET" "$OUT/nestedgyroid.exe" "$@"
+NG_ROOT="$ROOT" exec "$DOTNET" "$OUT/nestedgyroid.exe" "$@"

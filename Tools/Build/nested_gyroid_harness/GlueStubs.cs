@@ -52,6 +52,7 @@ namespace UnityEngine
     public struct Vector3
     {
         public float x, y, z;
+        public static Vector3 one;
         public Vector3(float a, float b, float c) { x = a; y = b; z = c; }
         public static Vector3 zero, up, forward;
         public float sqrMagnitude => 0; public float magnitude => 0; public Vector3 normalized => this;
@@ -127,14 +128,17 @@ namespace CosmicShore.Gameplay
     public enum Domains { Unassigned = 0, Jade = 1, Ruby = 2, Gold = 4, Blue = 5 }
     public class Cell : MonoBehaviour { public bool FloraGrowingEnabled => true; }
     public class Trail { public List<Prism> TrailList; public CosmicShore.Data.PrismscapeDimension Dimension; }
+    public class PrismProperties { public bool IsDangerous; }   // PrismProperties.cs
     public class Prism : MonoBehaviour
     {
         public Trail Trail; public bool destroyed; public Domains Domain;
+        [SerializeField] public PrismProperties prismProperties;
+        public void MakeDangerous() { }
         public void ChangeTeam(Domains d) { }
         public virtual void Initialize(string playerName = "") { }
         public void AdmitTargetScale(Vector3 target) { }
         public Vector3 TargetScale { get; set; }
-        public void SetColorShade(float gain, float whiten) { }
+        public void SetColorShade(float gain) { }
     }
     public class HealthPrism : Prism { public LifeForm LifeForm; }
     public class Spindle : MonoBehaviour { public LifeForm LifeForm; }
@@ -173,6 +177,7 @@ namespace CosmicShore.Gameplay
     public abstract class Flora : LifeForm
     {
         [SerializeField] protected float growPeriod = 3f;
+        protected Vector3 LeafSize { get; set; }
         public abstract void Grow();
         public abstract void Plant();
         public virtual bool TryPreviewGrowth(int budget, int seed, List<SpawnPoint> into) => false;

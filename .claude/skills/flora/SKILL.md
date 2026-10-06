@@ -39,7 +39,7 @@ remembered:
 | SchwarzP | `AssembledFlora` (+`SchwarzPAssembler`) | `AssemblyBranch` |
 | Quasicrystal | `AssembledFlora` (+`QuasicrystalAssembler`) | `QuasicrystalBranch` |
 | Borromean | `BorromeanFlora` | `Branch` |
-| NestedGyroid | `NestedGyroidFlora` — a 3D STACK of gyroid sheets + fibers, the only flora that is a `Volume` prismscape and an `ILayeredPrismscape` (`Docs/ECOSYSTEM.md` §58) | `Branch` |
+| NestedGyroid | `NestedGyroidFlora` — a 3D STACK of gyroid sheets + fibers whose every sheet is the GYROID flora's own tiling (`NestedGyroidTemplate`, measured) carried along ∇G; the only flora that is a `Volume` prismscape and an `ILayeredPrismscape` (`Docs/ECOSYSTEM.md` §58) | `Branch` |
 | MandelbulbFlora, CoralBloomFlora, WatershedFlora, ApolloniaFlora | `MandelbulbFlora` — **all four**, measured; there is no `CoralBloomFlora` class, the species differ only in their authored `GrowthRules` (`Docs/ECOSYSTEM.md` §50, §52, §53, §54, §55, §56) | `Branch` |
 | Wall | `AssembledFlora` | `AssemblyBranch` |
 | **Seaweed** | **`SegmentSpawner` — NOT a `Flora` at all** | (n/a) |

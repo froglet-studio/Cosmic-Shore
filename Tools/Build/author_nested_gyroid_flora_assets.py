@@ -8,12 +8,13 @@ Author the NestedGyroidFlora species' four per-element configs and its Spawn Mat
 
 The generator is the source and the assets are the build (Docs/TOOLING.md). Docs/ECOSYSTEM.md §58.6.
 
-WHAT THE FOUR ELEMENTS ARE. One lattice: the geometry is fitted (PrismSizeFixedByGrowthRule), so the
-Mass/Space leaf law does not reshape it, and every element grows the same 2,011-prism stack out of one
-cached build. What differs is what the PLATFORM's element laws already say on every flora: Time grows
-fastest (Flora.ResolveGrowPeriod), Charge is armoured (Flora.ResolveShieldPeriod, stated here as
-ShieldPeriod 1 because Tools/Build/author_charge_flora_shields.py gates that every Charge flora asset
-says so), and each drops its own element's heart. A per-element GEOMETRY (§51) is not authored.
+WHAT THE FOUR ELEMENTS ARE: the GYROID FLORA's four. The base sheet is that plant's own tiling
+(NestedGyroidTemplate), and each element's prism is that plant's prism for the element - Variant.LeafSize and
+Variant.LatticeScale QUOTED out of `Gyroid Flora <Element>.asset` (Time 9 x 3.4 x 1.5; Mass 7 x 4.5 x 3.5;
+Space 40 x 1 x 1 on a 3.19x lattice; Charge 4.28 x 1.62 x 0.71, the plate the gyroid fitted to its shields),
+scaled with NestedGyroidConfigSO.CellSize / 120. On top, the platform's element laws: Time grows fastest
+(Flora.ResolveGrowPeriod), Charge is armoured (ShieldPeriod 1, which author_charge_flora_shields.py gates),
+each drops its own element's heart. Re-run this after any edit to a Gyroid Flora element.
 
 THE HEART IS PINNED, NOT SIZED - and that is a decision, stated so nobody mistakes it for an omission.
 Tools/Build/author_lifeform_heart_sizes.py owns HeartWorldScale fleet-wide and solves K so the LARGEST
@@ -91,15 +92,21 @@ def config_budget():
     return int(m.group(1))
 
 
-def representative_leaf():
-    """The prefab's authored leaf - informational only (every prism's size is fitted), but the config
-    must not be silent about the plant it describes."""
-    m = re.search(r'^  leafSize: \{x: ([\d.]+), y: ([\d.]+), z: ([\d.]+)\}$', open(PREFAB).read(), re.M)
-    if not m: sys.exit('leafSize not found in NestedGyroidFlora.prefab')
-    return m.group(1), m.group(2), m.group(3)
+def gyroid_element(element):
+    """The GYROID FLORA's own per-element prism - its config's Variant.LeafSize and Variant.LatticeScale - QUOTED,
+    never retyped: the nested gyroid's base sheet is that plant's tiling, so its element proportions are that
+    plant's too (Docs/ECOSYSTEM.md §58.7). LatticeScale -1 (absent) = the template's native period."""
+    path = os.path.join(LIFEDIR, f'Gyroid Flora {element}.asset')
+    if not os.path.exists(path): sys.exit(f'{os.path.relpath(path, ROOT)} is missing - it is the template')
+    t = open(path).read()
+    m = re.search(r'^    LeafSize: \{x: ([-\d.e]+), y: ([-\d.e]+), z: ([-\d.e]+)\}$', t, re.M)
+    if not m: sys.exit(f'{os.path.relpath(path, ROOT)} has no Variant.LeafSize')
+    ls = re.search(r'^    LatticeScale: ([-\d.e]+)$', t, re.M)
+    return m.groups(), (ls.group(1) if ls else '-1')
 
 
-def build_config(element, value, prefab_guid, heart, leaf, budget):
+def build_config(element, value, prefab_guid, heart, budget):
+    leaf, lattice = gyroid_element(element)
     quota = 0                         # a specimen: does not reproduce (see the docstring)
     shield = 1 if element == 'Charge' else -1
     return (
@@ -135,7 +142,7 @@ def build_config(element, value, prefab_guid, heart, leaf, budget):
         f'    HeartWorldScale: {heart}\n'
         f'    LeafSize: {{x: {leaf[0]}, y: {leaf[1]}, z: {leaf[2]}}}\n'
         '    GrowPeriod: -1\n'
-        '    LatticeScale: -1\n'
+        f'    LatticeScale: {lattice}\n'
         f'    ShieldPeriod: {shield}\n'
         '    WitherRingInterval: -1\n'
         '    MaxTotalSpawnedObjects: -1\n'
@@ -185,14 +192,14 @@ def owners_elsewhere(g, ours):
 
 def plan():
     prefab_guid = meta_guid(PREFAB)
-    heart, leaf, budget = heart_max(), representative_leaf(), config_budget()
+    heart, budget = heart_max(), config_budget()
     files, guids = {}, []
     for element, value in ELEMENTS:
         name = f'Nested Gyroid Flora {element}'
         p = os.path.join(LIFEDIR, name + '.asset')
         g = guid(name + '.asset')
         guids.append(g)
-        files[p] = build_config(element, value, prefab_guid, heart, leaf, budget)
+        files[p] = build_config(element, value, prefab_guid, heart, budget)
         files[p + '.meta'] = asset_meta(g)
     files[MATRIX] = upsert_matrix_row(open(MATRIX).read(), guids)
     return files, guids, dict(prefab=prefab_guid, heart=heart, budget=budget)

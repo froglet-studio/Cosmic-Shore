@@ -4560,13 +4560,16 @@ all 11 green.
 ### 2. The plant grows (test scene)
 New empty scene (or `Assets/_Scenes/Game_TestDesign/`), drop `Assets/_Prefabs/FloraAndFauna/NestedGyroidFlora.prefab`
 at the origin, enter Play. Enable **FrogletTools > Toolbox > Logging > Ecology** first.
-- Within ~1 s a `[NestedGyroid] NestedGyroidConfig: 2011 prisms (1799 sheet / 212 fiber …), 1 component(s) …`
-  line appears — the counts must match the harness. **No hitch** on the frame it appears (Profiler: the
-  build runs ≤ ~2 ms per frame across ~40 frames).
+- Within ~2-3 s a `[NestedGyroid] NestedGyroidConfig: 4222 prisms (4000 sheet / 222 fiber …), 1 component(s) …`
+  line appears (the prefab's Time leaf) — the counts must match the harness. **No hitch** on the frame it
+  appears (Profiler: the build runs ~2 ms per frame across ~140 frames, worst frame ~6 ms).
 - Growth starts on the t = 0 sheet around the crystal and spreads outward; struts appear as each new sheet
-  does; at 40 prisms/s the plant completes in ~50 s.
-- Sheets read as graded shades of ONE domain colour (darker at −t, brighter at +t); struts read whitened.
-  Switch `ColorMode` to `AlternatingSheets` on the config and replant: odd sheets darker.
+  does; at 40 prisms/s the plant completes in ~105 s (Time faster).
+- **Every sheet is the gyroid flora's tiling**: put a Gyroid flora beside it - the t = 0 sheet must read as
+  the same plates in the same loops, with the same DANGER octagon rings, and every nested sheet as the same
+  pattern carried outward. Struts are danger prisms.
+- Through the thickness the sheets darken toward -tMax (never brighter, never whitened - no prism reads
+  "lit"). Switch `ColorMode` to `AlternatingSheets` on the config and replant: odd sheets darker.
 - At full growth a `physics spot-check: 0 cross-layer overlaps in N prisms` line (N > 0 — if every prism
   is "skipped, collider LOD-culled", fly a vessel into the plant and re-run).
 
@@ -4585,11 +4588,13 @@ channel — it must say **Volume**).
 
 ### 3b. The Spawn Matrix carries all four (`Tools/Build/author_nested_gyroid_flora_assets.py`)
 Menu freestyle cell → Spawn Matrix → Flora: a **Nested Gyroid** station sits before Borromean, its icon a
-small whole stack (seven sheets with struts, not a single disc), and it opens four element variants. Release
-each: the plant roots at the station and grows. Time grows visibly fastest; Charge's prisms are shielded
-(and the octahedra are NOT fitted against the layer gap — report how it reads); each plant's heart is the
-largest in the cell (4.6). Opening the Flora row must not hitch (the preview build is ~25 ms).
+small window of a three-sheet stack with its danger octagon rings and struts, and it opens four element
+variants. Release each: the plant roots at the station and grows. Each element wears the GYROID FLORA's own
+prism for that element (Time 2:1 plates, Mass chunky slabs, Space long needles on a ~3x wider lattice, Charge
+small plates); Time grows visibly fastest; Charge's prisms are shielded over time (the octahedra are NOT
+fitted against the layer gap — report how it reads); each plant's heart is the largest in the cell (4.6).
+Opening the Flora row must not hitch (the preview build is ~7 ms).
 
 ### 4. Colour shade does not leak
 Destroy a few nested-gyroid plates, then lay ordinary trail prisms (pooled reuse): no trail prism may come
-out darkened or whitened.
+out darkened, and none may come out dangerous.

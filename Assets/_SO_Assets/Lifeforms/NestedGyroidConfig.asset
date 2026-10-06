@@ -17,11 +17,8 @@ MonoBehaviour:
   SheetCount: 7
   TMax: 1.2
   MaxSheetCount: 7
-  SheetPoissonSpacing: 20
-  PlateLengthOfSpacing: 0.8
-  PlateWidthOfSpacing: 0.45
-  PlateThicknessOfGap: 0.22
-  PlywoodTwistDegrees: 25
+  PlateThicknessOfGap: 0.45
+  PlywoodTwistDegrees: 0
   FiberSeedSpacing: 60
   FiberPrismSpacing: 8
   FiberThickness: 1.6
@@ -29,12 +26,11 @@ MonoBehaviour:
   Clearance: 0.5
   HeartClearance: 8
   GrowthRate: 40
-  PrismBudget: 2600
+  PrismBudget: 4600
   BuildSliceMilliseconds: 2
   ColorMode: 1
-  GradedGain: {x: 0.55, y: 1.25}
+  GradedInnerGain: 0.55
   AlternateSheetGain: 0.6
-  FiberWhiten: 0.45
   RiderGroundSearchScale: 2.5
   RiderHoverHeight: 2
   Seed: 1
