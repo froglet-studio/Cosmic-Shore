@@ -285,7 +285,9 @@ serialized values are stale garbage, exactly like `ThrottleScaler`.
    pass as written. In Skim Race the Squirrel AI seats belong to `SkimRacePilot`, not `AIPilot`,
    and every shipped `SkimRaceAIConfig*.asset` has `UseDrift: 0`, so no AI in Skim Race ever asks
    to drift; the `AIPilot` course-lock drift this step describes runs in the OTHER modes a Squirrel
-   AI flies. To see the Skim Race pilot drift, follow §10's verification instead.
+   AI flies. To see the Skim Race pilot drift, follow §10's verification instead. ⚠ **Corrected
+   again the same day:** until §11 it did not run there either — `Squirrel.prefab`'s `AIPilot` had
+   `drift: 0`, so no AI Squirrel drifted anywhere. §11 has the steps that see it.
 6. **Danger prism while drifting.** Clip a danger prism mid-drift — the slow must land.
 7. **Vessel swap.** Menu freestyle → vessel changer → Squirrel at speed. The new hull inherits the
    speed rather than dropping to a stop.
@@ -403,3 +405,57 @@ In the editor:
 4. HUD unchanged: your own Squirrel's control chips and ability row read exactly as before, on pad
    and on keyboard.
 5. Revert step 1.
+
+---
+
+## 11. The platform autopilot's commit drift (`AIPilot`, 2026-10-06)
+
+`AIPilot` — the AI in every mode except Skim Race — has a COMMIT loop: once the objective is
+lined up it locks `VesselStatus.Course` on it, presses the hull's drift, and swings the nose onto
+a mass cluster (`Docs/ECOSYSTEM.md` §27.7). The vector model was built to honour that Course write
+(`SyncExternalWrites`, §3). Two things kept it from ever running on a Squirrel:
+
+- **The flag was off.** `Squirrel.prefab`'s `AIPilot` shipped `drift: 0`, so the loop never pressed
+  anything; measured across the fleet, only the Dolphin had it on. It is on now.
+- **The control was a constant.** The loop pressed `LeftStickAction (2)`. The Squirrel binds its
+  drift only in its override maps (touch on `OnlyLeftStickAction (12)`), and an AI's device is the
+  host's, so on a handheld every commit would have been refused at `HasAction`. The loop now asks
+  `TryGetInputForAction<DriftActionSO>` at each press (`AIPilot.ResolveCommitControl`, same rule as
+  §10) and releases the control that press used; with no drift bound it falls back to
+  `LeftStickAction`, so the Butterfly (Fold), Serpent (SniperScope), Sparrow (SkyBurstGun), Urchin
+  (UrchinTrack) and Rhino (pad ShieldSwipeLeft) get the presses and releases they always got. The
+  ability-cycler exclusion in `StartAIPilot` uses the same resolution.
+
+**Depth.** As in §10, a pad device scales the drift by `LeftTriggerAnalog`, which an AI never
+writes, so a pad-device commit drifted at depth 0. `AIPilot.holdDriftTrigger` (default on) writes
+`LeftTriggerAnalog = 1` every frame the commit is held and 0 on release. **The Dolphin has it OFF**
+(`holdDriftTrigger: 0` in `Dolphin.prefab`): its pad-device commit has always drifted at depth 0
+(its two-trigger drift reads `L + R` on a pad), and changing that is a Dolphin behaviour change to
+fly before taking. Every other hull has `drift: 0`, so the hold never reaches it.
+
+**The re-seek.** The loop re-picks an objective when a commit ends, but only `EngageAimTelegraph`
+armed it, so a hull with no aim telegraph (the Squirrel) kept chasing an objective it had
+overshot. The commit press now arms it too; on a telegraph hull that is already true at that point
+(a held telegraph implies an armed re-seek), so the Dolphin is unchanged.
+
+**Measured scope** (pinned by `AIPilotCommitControlTests`): over the 13 hulls with an `AIPilot` and
+all five devices, the commit control moved off `LeftStickAction` for exactly one pair, Squirrel on
+Touch → `OnlyLeftStickAction`. The commit loop runs on the Dolphin and the Squirrel only, and the
+trigger hold reaches the Squirrel only.
+
+**Verification (NOT EDITOR-VERIFIED).** Out of editor, `AIPilotCommitControlTests` and
+`DeviceAwareActionLookupTests` were compiled with Roslyn and run against the shipped prefabs
+(14/14). Six negative controls each failed the tests aimed at them. An actuation harness ran the shipped
+`PressCommitDrift` / per-frame hold / `ReleaseCommitDrift` through the shipped press gate,
+`DriftActionSO` and `VesselTransformer` drift depth on all five devices. With the old constant the
+Squirrel was refused on Touch and drifted at depth 0 on Gamepad. Fixed, it drifts at depth 1 on
+every device and releases clean. The Dolphin's results were identical before and after.
+In the editor:
+1. Any `AIPilot` mode with an AI Squirrel (or Menu_Main freestyle autopilot on a Squirrel), **no
+   pad**: on lining up a crystal the AI's trail keeps running at the crystal while the hull swings
+   off-axis; `IsDrifting` toggles on its `VesselStatus`.
+2. Same with a **pad connected**: the same slide, with the AI's `InputStatus.LeftTriggerAnalog`
+   reading 1 during it and 0 after.
+3. On a touch device (or with the AI's `ActiveInputDevice` forced to Touch): the same slide.
+4. The Dolphin AI (The Bends) behaves as before on each device.
+

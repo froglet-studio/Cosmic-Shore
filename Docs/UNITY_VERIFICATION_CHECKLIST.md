@@ -4581,3 +4581,46 @@ standing gates and `check_ai_no_state_writes.py` (+ `--self-test`) pass.
 `UseDrift: 0` / `UseLaunchRing: 0`, so in a normal match nothing changes on screen. That setting was
 never measured against a working drift (the simulator does not model drift; PC benchmarks had the
 press refused) — whether to turn it on is a benchmark question.
+
+## 🔴 AI Squirrel commit drift under AIPilot — device-aware commit control (`claude/admiring-euler-86o7hv`, 2026-10-06) — NOT EDITOR-VERIFIED
+
+**What landed.** `AIPilot`'s commit loop pressed the constant `LeftStickAction`. The Squirrel binds
+its drift only in its device overrides (touch `OnlyLeftStickAction`, pad `LeftStickAction`), so on a
+Touch-device AI the press would be refused. And `Squirrel.prefab`'s `AIPilot` had `drift: 0`,
+so the loop never ran on a Squirrel at all. Now:
+- The commit press asks `TryGetInputForAction<DriftActionSO>` at each press (`ResolveCommitControl`),
+  falling back to `LeftStickAction`. The release uses the same control, and so does the
+  `StartAIPilot` cycler exclusion.
+- `Squirrel.prefab` has `drift: 1`.
+- `AIPilot.holdDriftTrigger` (default on) holds `LeftTriggerAnalog = 1` during a commit, so a
+  pad-device commit has depth. It is set to 0 on the Dolphin, which keeps its old depth-0 pad commit.
+- The commit press also arms the end-of-commit re-seek. This is a no-op on the Dolphin.
+
+Measured scope: across 13 hulls and 5 devices, the commit control moved only for Squirrel on Touch.
+`SQUIRREL_DRIFT.md` §11 has the details.
+
+**Compiled? Not by Unity.** `/verify-unity` could not run (no editor, no `unity` binary, no
+`Library/`). Out of editor:
+- `Tools/Build/unity_refcompile` (player config) reports 0 project errors across 91 assemblies.
+- `AIPilotCommitControlTests` and `DeviceAwareActionLookupTests` were compiled with Roslyn against
+  stubs and run against the shipped prefabs: 14/14 pass.
+- Six negative controls each failed the tests aimed at them: the old constant; Squirrel `drift: 0`;
+  Squirrel hold off; Dolphin hold at the default; Butterfly `drift: 1`; drift unbound from the
+  Squirrel's touch map.
+- An actuation harness ran the shipped `PressCommitDrift`, per-frame hold and `ReleaseCommitDrift`
+  through the shipped press gate, `DriftActionSO` and `VesselTransformer` drift depth on all five
+  devices. With the old constant, the Squirrel's press was refused on Touch and drifted at depth 0
+  on Gamepad. With the fix, it drifts at depth 1 on every device and releases clean. The Dolphin's
+  results are identical before and after.
+
+**Verify:**
+1. Run `AIPilotCommitControlTests` and `DeviceAwareActionLookupTests` in the Test Runner.
+2. With **no pad** connected, run any AIPilot mode with an AI Squirrel, or Menu_Main freestyle
+   autopilot on a Squirrel. When it lines up a crystal, its trail should keep running at the crystal
+   while the hull swings off-axis, and `IsDrifting` should toggle on its `VesselStatus`.
+3. Repeat with a **pad connected**. You should see the same slide, with the AI's
+   `InputStatus.LeftTriggerAnalog` at 1 during it and 0 after.
+4. Repeat on a touch device. You should see the same slide.
+5. The Dolphin AI in The Bends, and the Butterfly, Serpent, Sparrow, Urchin and Rhino AIs, should
+   behave as before.
+

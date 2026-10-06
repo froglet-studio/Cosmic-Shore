@@ -1024,7 +1024,8 @@ MonoBehaviour:
   raycastHeight: 2
   raycastWidth: 2
   ram: 0
-  drift: 0
+  drift: 1
+  holdDriftTrigger: 1
   seekPlayers: 0
   playerSeekUpdateInterval: 0.5
   playerReacquireInterval: 0.1

@@ -173,7 +173,12 @@ falls back to Jade — the wrong paint plus a console error).
   be bound in BOTH of them, or an AI on the other device family cannot press it. The device-blind
   view (every map at once) is `CollectBoundActions`/`HasBinding`, for presentation only. Until
   2026-10-06 the lookup was device-blind and the Squirrel's AI could not drift on a PC
-  (`SQUIRREL_DRIFT.md` §10).
+  (`SQUIRREL_DRIFT.md` §10). `AIPilot`'s commit loop asks the same lookup for the hull's
+  `DriftActionSO` at each press (falling back to `LeftStickAction` when none is bound) instead of
+  pressing a constant `LeftStickAction`, and runs only on a hull whose `AIPilot.drift` is on (the
+  Dolphin and the Squirrel). On a pad device a drift's depth is the analog trigger, which an AI
+  never touches, so `AIPilot.holdDriftTrigger` holds `LeftTriggerAnalog` at 1 while a commit is
+  held. It is off on the Dolphin (`SQUIRREL_DRIFT.md` §11; pinned by `AIPilotCommitControlTests`).
 - **AI parity is free if you don't fork**: AI drives the same executors. Stick-triggered
   abilities need explicit AI trigger synthesis in the executor (autopilot produces no stick
   input). Do not build a parallel ability path.

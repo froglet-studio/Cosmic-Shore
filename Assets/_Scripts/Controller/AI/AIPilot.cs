@@ -62,6 +62,14 @@ namespace CosmicShore.Gameplay
 
         [SerializeField] bool ram;
         [SerializeField] bool drift;
+        [Tooltip("While the commit drift is held, pull the left trigger all the way " +
+                 "(LeftTriggerAnalog = 1). On a GAMEPAD device VesselTransformer.GetTriggerSum " +
+                 "scales the drift by the trigger, and an AI has no physical trigger, so without " +
+                 "this a pad-device commit drifts at depth 0 (inert while still reporting " +
+                 "IsDrifting). Every other device reads a started drift as full depth and ignores " +
+                 "the trigger. Off only on the Dolphin, which still drifts at depth 0 on a pad " +
+                 "device (unchanged, pending its own check). Ignored when Drift is off.")]
+        [SerializeField] bool holdDriftTrigger = true;
 
         [Header("Targeting")]
         [Tooltip("When true, AI targets enemy players instead of crystals/items (used for Joust)")]
@@ -283,12 +291,54 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The control the COMMIT loop drives - the input the commit branch presses to lock the
-        /// course and free the nose (on the Dolphin: the drift + charge boost + drift trail trio).
-        /// One name for it so the commit branches and the ability-cycler exclusion below can never
-        /// drift apart about which control they are talking about.
+        /// The control the COMMIT loop presses on a hull that binds no drift on its active
+        /// device. It was the commit control outright until 2026-10-06; every hull except the
+        /// Squirrel still resolves to it (see <see cref="ResolveCommitControl"/>).
         /// </summary>
-        const InputEvents CommitControl = InputEvents.LeftStickAction;
+        internal const InputEvents DefaultCommitControl = InputEvents.LeftStickAction;
+
+        /// <summary>How far <see cref="holdDriftTrigger"/> pulls the left trigger: all the way,
+        /// the one depth every device agrees on. Same value and reason as
+        /// <c>SkimRacePilot.DriftTriggerPull</c>.</summary>
+        internal const float CommitDriftTriggerPull = 1f;
+
+        /// <summary>
+        /// The control the commit loop drives, given what the hull's drift lookup answered: the
+        /// control its drift is bound to on the active device, or <see cref="DefaultCommitControl"/>
+        /// when there is none. Split out so the edit-mode tests run the same rule over the shipped
+        /// prefabs' maps.
+        /// </summary>
+        internal static InputEvents CommitControlFrom(bool driftBound, InputEvents driftInput) =>
+            driftBound ? driftInput : DefaultCommitControl;
+
+        /// <summary>
+        /// The control the COMMIT loop presses to lock the course and free the nose (on the
+        /// Dolphin: the drift + charge boost + drift trail trio): whichever control runs this
+        /// hull's <see cref="DriftActionSO"/> on its ACTIVE device.
+        ///
+        /// <para>It was the constant <see cref="DefaultCommitControl"/>, which the press gate
+        /// refused on a Squirrel on Touch: the Squirrel binds its drift only in its device
+        /// override maps (touch on <c>OnlyLeftStickAction</c>, pad on <c>LeftStickAction</c>),
+        /// and an AI's device is whatever the host is (Touch on a handheld). The lookup
+        /// (<see cref="R_VesselActionHandler.TryGetInputForAction{T}"/>) answers with the same rule
+        /// the press resolves with, so the answer is always a control the press accepts.</para>
+        ///
+        /// <para>Every other hull resolves to <see cref="DefaultCommitControl"/> on every device,
+        /// either because its drift is bound there (Dolphin, Scarab) or because it binds no
+        /// drift (the fallback): Butterfly's Fold, Serpent's SniperScope, Sparrow's SkyBurstGun,
+        /// Urchin's UrchinTrack and the Rhino's pad ShieldSwipeLeft are on that control and get
+        /// exactly the presses and releases they got before. <c>AIPilotCommitControlTests</c>
+        /// pins this.</para>
+        ///
+        /// Asked at every press, not cached: the device can change (a pilot swap). The press and
+        /// its release use the same answer (<see cref="_commitDriftInput"/>).
+        /// </summary>
+        InputEvents ResolveCommitControl()
+        {
+            var handler = VesselStatus?.ActionHandler;
+            if (handler == null) return DefaultCommitControl;
+            return CommitControlFrom(handler.TryGetInputForAction<DriftActionSO>(out var driftInput), driftInput);
+        }
 
         // Scratch for the commit-control binding lookup in StartAIPilot.
         readonly List<ShipActionSO> _commitBoundActions = new();
@@ -625,9 +675,10 @@ namespace CosmicShore.Gameplay
             // "the AI roams around its target, tries to aim, and never hits" - the shipped state
             // of The Bends until 2026-08-22. The commit loop starts and stops these abilities
             // itself; everything not bound to the commit control still cycles as before.
+            // Resolved the way the press resolves it, so the two agree on which control that is.
             _commitBoundActions.Clear();
             if (drift)
-                VesselStatus?.ActionHandler?.CollectBoundActions(CommitControl, _commitBoundActions);
+                VesselStatus?.ActionHandler?.CollectBoundActions(ResolveCommitControl(), _commitBoundActions);
 
             foreach (var ability in abilities)
             {
@@ -669,16 +720,42 @@ namespace CosmicShore.Gameplay
             _activeAbilities.Clear();
 
             if (_commitDriftHeld)
-            {
-                _commitDriftHeld = false;
-                vessel?.StopShipControllerActions(CommitControl);
-            }
+                ReleaseCommitDrift();
         }
 
         // The cycled abilities currently between their StartAction and StopAction, and whether
         // this pilot is holding the commit drift - the two things StopAIPilot has to give back.
         readonly HashSet<AIAbility> _activeAbilities = new();
         bool _commitDriftHeld;
+        // The control the held commit drift was pressed on - released on the same one.
+        InputEvents _commitDriftInput = DefaultCommitControl;
+
+        void PressCommitDrift()
+        {
+            _commitDriftInput = ResolveCommitControl();
+            vessel.PerformShipControllerActions(_commitDriftInput);
+            _commitDriftHeld = true;
+            // Closes the loop on a hull with no aim telegraph (the Squirrel): EngageAimTelegraph
+            // is the only other place that arms the re-seek. On a hull with one this changes
+            // nothing - a held telegraph already implies an armed re-seek.
+            _reseekArmed = true;
+        }
+
+        /// <summary>
+        /// Release the commit control: the one the held commit was pressed on, or - when this
+        /// pilot is not holding one (a drift started elsewhere) - the one a press would use now,
+        /// which is what the drift-ended branch has always released.
+        /// </summary>
+        void ReleaseCommitDrift()
+        {
+            bool held = _commitDriftHeld;
+            _commitDriftHeld = false;
+            if (vessel == null) return;
+
+            if (held && holdDriftTrigger && VesselStatus?.InputStatus is { } input)
+                input.LeftTriggerAnalog = 0f;
+            vessel.StopShipControllerActions(held ? _commitDriftInput : ResolveCommitControl());
+        }
 
         void Update()
         {
@@ -735,8 +812,7 @@ namespace CosmicShore.Gameplay
                 // elsewhere; from here the vessel is travelling at the crystal no matter where it
                 // points, which is exactly the window in which announcing the aim is honest.
                 VesselStatus.Course = desiredDirection;
-                vessel.PerformShipControllerActions(CommitControl);
-                _commitDriftHeld = true;
+                PressCommitDrift();
                 EngageAimTelegraph();
                 desiredDirection = ResolveDriftLookDirection(desiredDirection);
             }
@@ -758,8 +834,7 @@ namespace CosmicShore.Gameplay
                 // last step is what CLOSES the loop: without it the AI keeps the target it can no
                 // longer reach until the cell happens to raise OnCellItemsUpdated, which is a
                 // crystal event and not a "this pilot needs a new goal" event.
-                vessel.StopShipControllerActions(CommitControl);
-                _commitDriftHeld = false;
+                ReleaseCommitDrift();
                 ReleaseAimTelegraph();
 
                 if (_reseekArmed)
@@ -777,6 +852,11 @@ namespace CosmicShore.Gameplay
                 // course is locked on the objective and the vessel is drifting along it.
                 ReleaseAimTelegraph();
             }
+
+            // The commit drift's depth on a pad device (see holdDriftTrigger). Written every frame
+            // it is held, like the sticks, so an input reset mid-drift cannot leave it at depth 0.
+            if (_commitDriftHeld && holdDriftTrigger)
+                _inputStatus.LeftTriggerAnalog = CommitDriftTriggerPull;
 
 
             if (_distance.sqrMagnitude < float.Epsilon) // On top of the target - avoid div-by-zero (guards the sqrMagnitude divisor below)

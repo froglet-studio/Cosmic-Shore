@@ -192,7 +192,7 @@ namespace CosmicShore.Tests
         /// Builds a handler map from the prefab's SERIALIZED list, the way <c>Initialize</c> builds
         /// the runtime one, minus the per-action <c>Initialize(vesselStatus)</c> (there is no vessel).
         /// </summary>
-        static ActionMap SerializedMap(SerializedObject handler, string field)
+        internal static ActionMap SerializedMap(SerializedObject handler, string field)
         {
             var list = handler.FindProperty(field);
             Assert.IsNotNull(list, $"R_VesselActionHandler.{field} is gone - update this test with the rename.");

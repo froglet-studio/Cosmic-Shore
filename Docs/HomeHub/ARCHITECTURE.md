@@ -555,7 +555,8 @@ order-independent.
   Add AI path and the wire each had their own.
 - *"The D-pad sent me into a spin I couldn't get out of."* A stopped autopilot left its hull
   holding things. The AI's COMMIT DRIFT (course locked on a crystal, nose free) is started with
-  `PerformShipControllerActions(CommitControl)` and released only by the AI's own steering, which
+  `PerformShipControllerActions` on the hull's drift control (`AIPilot.ResolveCommitControl`, asked
+  per press for the active device since 2026-10-06) and released only by the AI's own steering, which
   never runs again once it is stopped; and `StopAIPilot`'s per-ability `StopCoroutine` was handed
   a fresh iterator and stopped nothing, so a cycled ability ran on to the end of its Duration on the
   hull the human now flew. On the host - where ownership does not move, so nothing else resets the
