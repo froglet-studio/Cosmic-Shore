@@ -72,7 +72,13 @@ falls back to Jade — the wrong paint plus a console error).
   (InputEvents → List\<ShipActionSO>; multiple SOs on one event start/stop together) plus
   `_touchActionOverrides`/`_gamepadActionOverrides` (per active device; DualMouse shares
   gamepad). Dispatch replicates by re-execution: ServerRpc → ClientRpc →
-  `PerformShipControllerActions` on every peer.
+  `PerformShipControllerActions` on every peer. **An autopilot finds a control with
+  `TryGetInputForAction<T>` / `TryGetBoundAction<T>`, which answer for the ACTIVE device by the
+  press's own rule (`TryGetPressedActions`)** — so an ability bound only in the override maps must
+  be bound in BOTH of them, or an AI on the other device family cannot press it. The device-blind
+  view (every map at once) is `CollectBoundActions`/`HasBinding`, for presentation only. Until
+  2026-10-06 the lookup was device-blind and the Squirrel's AI could not drift on a PC
+  (`SQUIRREL_DRIFT.md` §10).
 - **AI parity is free if you don't fork**: AI drives the same executors. Stick-triggered
   abilities need explicit AI trigger synthesis in the executor (autopilot produces no stick
   input). Do not build a parallel ability path.
@@ -258,7 +264,8 @@ juice through `ElementBars` when a vessel wants it.
   OnEnable (gated) and OnDisable/OnDestroy. Gate everything on
   `IsInitializedAsAI || !IsLocalUser` — **the base class does not gate for you** — and
   sender-filter shared SOAP channels (every vessel that wires `boostChanged` raises it — today
-  every Squirrel instance, **including remote ones**, per-frame via `DecayBoost` — so an
+  every Squirrel instance, **including remote ones**, via `DecayBoost` whenever the multiplier
+  moves (quiet at rest since 2026-10-06) — so an
   unfiltered handler lets a remote vessel pin your energy bar).
 - **Data discipline**: bind resources **by name** with serialized index as fallback; only bind
   meters whose writers raise the per-resource event; adopt displayed constants from the gameplay

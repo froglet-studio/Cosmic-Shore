@@ -82,6 +82,16 @@ namespace CosmicShore.Gameplay
         /// <summary>True while a wander is in progress.</summary>
         public bool IsRunning => _running;
 
+        /// <summary>True while any wander is live. Read by the device-tier trail policy
+        /// (MenuCrystalClickHandler), which must never hold the trail while a tether rides it.</summary>
+        public static bool AnyRunning => s_liveRuns > 0;
+        static int s_liveRuns;
+
+        // Enter Play Mode runs without a domain reload: a run live when Play stopped must not
+        // read as live in the next session.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => s_liveRuns = 0;
+
         /// <param name="onEnded">Raised after the run ends by ANY route (return station, overview
         /// button, a second pass through the toy) so the Wanderway toy can re-sync its look
         /// instead of polling.</param>
@@ -104,6 +114,7 @@ namespace CosmicShore.Gameplay
         {
             if (_running) return;
             _running = true;
+            s_liveRuns++;
             _wasFreestyle = true;
 
             if (localVessel?.Transform)
@@ -374,6 +385,7 @@ namespace CosmicShore.Gameplay
         {
             if (!_running) return;
             _running = false;
+            if (s_liveRuns > 0) s_liveRuns--;
 
             var vessel = LocalVessel();
             FlushWithering();

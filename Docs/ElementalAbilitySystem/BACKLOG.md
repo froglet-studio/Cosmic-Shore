@@ -224,14 +224,15 @@ Mechanics reference: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_
 
 ## Skim-visual follow-ups (opened by `claude/dolphin-skim-effect-7sd2w1`)
 
-21. **The Squirrel still runs BOTH skim visuals.** `SquirrelSkimmerImpactorDataContainer` holds
-    `SkimmerFXPrismEffect` (the `[Obsolete]` per-prism beam) *and*
-    `SkimmerForcefieldCracklePrismEffect` (its replacement) — the same doubled state the Dolphin
-    was just cleaned out of. It was left alone deliberately: the Dolphin's removal was a
-    playtest call on one vessel, and the Squirrel's beam may be reading as intentional on a
-    vessel whose whole loop is trail-riding. Decide it explicitly — either retire the beam
-    fleet-wide and delete `SkimmerFXPrismEffectSO` with it, or state in the SO's summary that
-    the two are meant to compose and drop the `[Obsolete]`. Do not leave it as an accident.
+21. ~~**The Squirrel still runs BOTH skim visuals.**~~ **Decided 2026-10-06 (project owner): the
+    beam is retired.** `SquirrelSkimmerImpactorDataContainer` no longer holds
+    `SkimmerFXPrismEffect` (the `[Obsolete]` per-prism beam); the forcefield crackle is the
+    Squirrel's only skim visual, as on the Dolphin (branch `claude/serene-edison-lfv24f`, Step 6
+    of `Docs/PLATFORM_UNIFICATION.md`; Garrett's Android strip had already run it that way). No
+    live container references the beam now. Left for a cleanup pass: deleting
+    `SkimmerFXPrismEffectSO` and its asset — `SkimFxRunner` stays, `VesselFXPrismEffectSO` uses
+    it — which wants item 22's dead Dolphin override swept first, since that override is the
+    asset's last reference.
 22. **The Dolphin prefab carries three DEAD prefab-instance overrides** on its inactive nested
     legacy `Skimmer.prefab` instance (`m_IsActive: 0`), writing
     `skimmerPrismEffectsSO.Array.{size,data[0..2]}` — a field that is **commented out** on

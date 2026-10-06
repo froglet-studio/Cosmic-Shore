@@ -1,0 +1,14 @@
+{
+ "inputs": {
+  "Assets/_Graphics/Materials/Shaders/HyperSeaSkybox.shader": "b817239cac36db04e8ad38da872700a945669aaf90ffe7b363a56413bde4b50e",
+  "Assets/_Graphics/Skyboxes/HyperSeaSkybox.mat": "6b21304f0a311aaed737bd804fa7f49fc22328013e0c255b4d49b095a0fe968c",
+  "Tools/Build/static_skybox_harness/hlsl_shim.h": "d4338d5aff100d47ca330d86f7b573493f5e22716f62a6284a2c6f33db4a2561",
+  "bake code": "1f14c213aa0c749b2c257d47a0df993078fb2386f7201a1ee7677c9f82ccfabc"
+ },
+ "png": "ac4756a1217e0d38bc390769049d70a90b639723802c727e1c97be9ff6a77968",
+ "size": [
+  4096,
+  2048
+ ],
+ "supersample": 3
+}

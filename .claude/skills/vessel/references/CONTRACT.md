@@ -442,7 +442,8 @@ juice through `ElementBars` when a vessel wants it.
   OnEnable (gated) and OnDisable/OnDestroy. Gate everything on
   `IsInitializedAsAI || !IsLocalUser` — **the base class does not gate for you** — and
   sender-filter shared SOAP channels (every vessel that wires `boostChanged` raises it — today
-  every Squirrel instance, **including remote ones**, per-frame via `DecayBoost` — so an
+  every Squirrel instance, **including remote ones**, via `DecayBoost` whenever the multiplier
+  moves (quiet at rest since 2026-10-06) — so an
   unfiltered handler lets a remote vessel pin your energy bar).
 - **Data discipline**: bind resources **by name** with serialized index as fallback; only bind
   meters whose writers raise the per-resource event; adopt displayed constants from the gameplay

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
@@ -85,6 +86,11 @@ namespace CosmicShore.Gameplay
             _def = definition;
             _wanderCfg = definition ? definition.BuildWithoutArkConfig() : new ConveyorConfig();
             _arkCfg = definition ? definition.BuildWithArkConfig() : new ArkwayConfig();
+
+            // The device tier's belt budget lands on the BUILT config, never on the settings asset,
+            // so every other tier still flies the authored belt (Docs/PLATFORM_UNIFICATION.md §3.6).
+            var profile = PlatformProfile.Current;
+            if (profile) profile.Wanderway.ApplyTo(_wanderCfg);
         }
 
         bool WanderRunning => _wanderRun && _wanderRun.IsRunning;

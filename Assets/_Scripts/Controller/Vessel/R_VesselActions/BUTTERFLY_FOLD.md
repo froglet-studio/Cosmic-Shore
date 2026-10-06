@@ -493,10 +493,17 @@ and was then yanked to a pose already a round trip stale. The host path is uncha
 ### Cost and budget
 
 - **Colliders: zero.** No prism, no collider, no mass anywhere in this.
-- **One extra render of the world per frame**, at `portalWindowRenderScale` (0.75) of the gameplay
-  camera's resolution, no shadows / AA / post — only while a threadable gate is on screen within
-  `portalWindowRange`, and for at most one gate. One screen-scaled HDR render target, released
-  whenever no gate is standing.
+- **One extra render of the window's FOOTPRINT per frame**, at `portalWindowRenderScale` (0.75)
+  of the gameplay camera's resolution (capped per device tier by
+  `PlatformProfileSO.FoldGateWindowMaxRenderScale`: 0.5 on MobileLow, no cap on Desktop or
+  MobileHigh), no shadows / AA / post — only while a threadable gate
+  is on screen within `portalWindowRange`, and for at most one gate. The far-side projection is
+  CROPPED to the window disc's own rectangle of the screen (its bounding square, projected; the
+  whole screen once a corner is behind the near plane, i.e. during the carry), so culling drops
+  everything the window cannot show and the target is sized to that rectangle's pixels, in 32-texel
+  steps with 1.25x growth headroom; the shader maps screen UV into it through `_FoldGatePortalUV`.
+  A distant gate costs a thumbnail-sized render; a gate that fills the screen costs what the whole
+  window did before. The target is released whenever no gate is standing.
 - A ribbon ghost per trail per teleport, gone once drained.
 
 ### Verification status
