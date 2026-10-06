@@ -134,7 +134,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < TrailList.Count; i++)
             {
                 var block = TrailList[i];
-                if (block) trailBlockIndices[block] = (ushort)i;
+                if (block) trailBlockIndices[block] = i; // int since BH-4.8 - a (ushort) wraps past 65,535
             }
 
             for (int i = 0; i < count; i++)
