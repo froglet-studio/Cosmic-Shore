@@ -2550,7 +2550,9 @@ movement model — plus the `Sharks-and-worms` branch's telegraph→burst attack
   `Cell.CurrentFaunaSpawnPeriod` the colony grows exactly ONE member — a head if it has
   none, else a tail if it has none, else a body segment blooming in behind the head.
   Body growth is gated on the colony being FED, so length still only accrues while the
-  kaiju is eating; a mouth is not, because a headless colony cannot feed.
+  kaiju is eating; a mouth is not, because a headless colony cannot feed. At full
+  length a fed colony reproduces instead — it splits itself in two at mid-chain, under
+  the species cap (**fission**, §23.10).
 - **Starvation digests the colony tail-first** (one segment per
   `StarvationShedIntervalSeconds`): deny the kaiju food and it shrinks; keep denying and
   it dies. Population bounded by consumption, never a lifespan. A starving worm also
@@ -3097,6 +3099,47 @@ Machine-validated only: the changed C# type-checks clean under the Roslyn stub h
    still regrow a missing end) and shed tail-first.
 6. **Budget**: in Wildlife Liberation, watch the worm count and length after a few minutes —
    this is the cell where the 441 number lands.
+
+### 23.10 The colony reproduces by FISSION (Oct 2026)
+
+The rule from the game owner: *every life form must have a way to complete its lifecycle — feed
+and reproduce — before dying.* The worm fed and grew, but every config authors
+`FeedsPerOffspring: 0`, so `Fauna.TryReproduce` never fires for it and a new colony appeared only
+when a **player** cut one. A worm left alone grew to 16 and then sat there.
+
+**Fission.** When a colony's production cycle (§23.9) comes round and it is already at
+`MaxSegmentsPerWorm`, a **fed** colony (`!IsStarving`) produces a whole new colony instead of a
+segment: `WormFauna.TryFission` splits the chain at the middle (`count / 2` — a 16-chain becomes
+8 + 8) and hands the rear half to **`SpawnSplitColony`, the exact path a player's mid-body cut
+runs**, minus the dead member. So nothing pops in and nothing is bespoke: the daughter is a clone
+of the parent brain that adopts segments already swimming in place, inherits the lineage config
+and the variant pick (breeds true), every member keeps its own heart (§23.8 — no heart drops,
+because nothing died), segment totals are conserved, both halves feel separation immediately and
+shoulder apart, and each regrows its missing end on its own next cycle (front half a tail, rear
+half a head — head regrowth is ungated, §23.9). Wither and starvation are untouched.
+
+**Gates** (refusal is silent — the colony just holds at full length until the next cycle):
+
+- **The cycle is stamped first.** `TickProduction` stamps `_lastProductionTime` when the period
+  elapses, before the cap test, so a refused fission still costs the cycle and a colony at the
+  species cap cannot bank time and fission instantly when a slot opens (the ecology trap).
+- **Species cap** — `Cell.IsFaunaAtCap(SourceConfig)`, the same comparison `Fauna.TryReproduce`
+  makes. Unlike a player cut (which ignores `MaxLivePopulation`, §23.9), fission never pushes the
+  colony count over the cell's cap.
+- **`ReproductionCooldownSeconds`** from the species config, per colony (10 s on the Lifeforms
+  configs, 60 s on Wildlife Liberation's). In practice a daughter needs ~8 cycles to regrow to 16,
+  so the cooldown rarely binds; it is honoured because it is the platform's reproduction rule.
+- **Lineage + authority** — a colony with no `SourceConfig` (no species cap to respect) never
+  fissions, and only the sim authority decides (as for every birth).
+- **A complete parent and viable halves** — the chain must be Head…Tail and each half at least
+  2 members (one capital end plus one body), so after one regrowth each daughter is at least the
+  3-member colony `BuildChain` spawns. Binds only for a config with `MaxSegmentsPerWorm` under 4.
+
+**Budget.** Fission adds no segments and respects the cap, so the §23.9 worst case is unchanged:
+`MaxLivePopulation × 49` colliders (**441** in Wildlife Liberation, 147 for the cap-3 Lifeforms
+configs). What changes is that it is now reached **without a fight** — an unmolested, fed colony
+walks to 16, fissions, and both halves walk back to 16 until the cell is at cap. Cut-born
+colonies can still exceed the cap as before.
 
 ---
 
