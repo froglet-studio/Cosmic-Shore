@@ -9,7 +9,7 @@ bash Tools/Build/unity_refcompile/run.sh --quiet-buckets       # count, don't li
 
 Exit 0 = **no compile error in project code**; exit 1 = errors, listed, with every one in a file
 changed since `origin/bleeding-edge` tagged `[CHANGED-TONIGHT]`; exit 2 = offline with no cache.
-First run ~10 min (fetch + ~90 assemblies), later runs ~3 min (package assemblies are compiled once,
+First run ~10 min (fetch + ~100 assemblies), later runs ~3 min (package assemblies are compiled once,
 player-mode, into a shared cache keyed by input fingerprint; only Assets assemblies recompile).
 
 **The `editor` config is approximate.** It compiles the project's runtime code with `UNITY_EDITOR`
@@ -42,24 +42,41 @@ A small re-implementation of Unity's script pipeline (`build.py`):
    `ENABLE_INPUT_SYSTEM` only — `activeInputHandler: 1`) and `UNITY_6000_3_17` version defines.
 6. For project assemblies it re-runs the compile through `Diagnose/` (the Roslyn API): **csc stops
    after declaration errors**, so one file naming an unfetchable package would otherwise hide every
-   method-body error in every other file. `Diagnose` binds all bodies regardless.
-7. Buckets the errors: **project errors** (the gate), **missing-type errors in files that `using` a
-   package that cannot be fetched**, and **unverified**: a missing-type error (CS0246, CS0234,
-   CS0103, CS1069, CS0012, CS0538) that names something a **referenced assembly that did not
-   compile** declares. `Diagnose --declarations` reads each failed assembly's own sources, with its
-   own defines, for the namespaces and top-level types they declare. The error is unverified only
-   when it names that assembly (CS0012/CS1069), a namespace only it declares, or one of its types
-   that the file can see: the type's namespace is `using`d (or `using static`), encloses the file,
-   or the name is fully qualified. Every other missing-type error gates, so a misspelled local
-   (CS0103) or type (CS0246) fails the run, even though three package assemblies fail on every run.
-   `python3 Tools/Build/unity_refcompile/build.py --self-test` checks the rule on fixtures in about
-   a second, with no .NET SDK and no cache.
+   method-body error in every other file. `Diagnose` binds all bodies regardless. Each error that is
+   not itself an unresolved name gets the unresolved types its expression involves appended:
+   `[unresolved types: IReadOnlyPlayer]`.
+7. Buckets the errors. **Project errors** gate. Two buckets do not gate, and an error goes into one
+   only when it can stem from an assembly that is absent from the compile:
+   - **unobtainable**: a package needle-mirror does not carry (Services.Multiplayer / Friends /
+     Leaderboards, Multiplayer.Playmode / Widgets) that this run could not get from packages.unity.com
+     either. What it declares comes from the committed `unobtainable_declarations.tsv` (below). When
+     fetch got these packages, they compile like any other and the bucket is `(none)`, with 0 errors.
+   - **unverified**: a referenced package assembly that did not compile (Purchasing.Stores/Codeless and
+     InputSystem.ForUI fail on every run). `Diagnose --declarations` reads what it declares from its own
+     sources, with its own defines. The `editor` config's `OnValidate`/`Reset` case also lands here.
+
+   A missing-name error (CS0246, CS0234, CS0103, CS1069, CS0012, CS0538) goes into a bucket only when
+   it names something the absent assembly declares: the assembly itself (CS0012/CS1069), a namespace
+   only it declares, or one of its public top-level types that the file can see. The file can see a
+   type when its namespace is `using`d (or `using static`), encloses the file, or the name is fully
+   qualified. A cascade (CS0165, CS0019, CS1061) goes into a bucket only when one of its
+   `[unresolved types: …]` passes the same test. For example, `p.Properties.TryGetValue(k, out var v)
+   && int.TryParse(v.Value, out int n)`, with `p` an unknown `IReadOnlyPlayer`, gives a CS0165 on
+   `n`. Diagnose follows a `var` local that was inferred from an unresolved expression back to its
+   declaration. Every other error gates, in every file, the party services included: a misspelled
+   local (CS0103), a misspelled type (CS0246), a missing member of a known type (CS1061), and a real
+   unassigned local (CS0165).
+   `python3 Tools/Build/unity_refcompile/build.py --self-test` checks the rule on fixtures, and checks
+   `unobtainable_declarations.tsv` against `packages-lock.json`. It takes about a second and needs no
+   .NET SDK and no cache.
 
 ## Where the references come from (fetched by `fetch.py`, cached, never committed)
 
 Cache: `${UNITY_REFCOMPILE_CACHE:-$TMPDIR/unity_refcompile_cache}` (~550 MB; files a compile does
 not read are pruned on fetch). Network needed once: `api.nuget.org` and `github.com` (read-only git
-clones). Offline with no cache → exit 2 with a message; offline with a cache → reuses it.
+clones), and `packages.unity.com` (redirects to `cdn.packages.unity.com`) for the five packages
+needle-mirror lacks. Without that last host the run still works: those five go to the `unobtainable`
+bucket (step 7). Offline with no cache → exit 2 with a message; offline with a cache → reuses it.
 
 | What | Source | Real or not |
 |---|---|---|
@@ -71,7 +88,7 @@ clones). Offline with no cache → exit 2 with a message; offline with a cache �
 | SRP Core / URP / URP-config / ShaderGraph / VFX | `Unity-Technologies/Graphics` branch `6000.0/staging` | real source, **17.0.x not the locked 17.3.0** (17.3 needs 6000.3-only engine API the references lack) |
 | Burst | needle-mirror `1.6.0-pre.2` | **substitute** for locked 1.8.29 (newest mirrored tag) |
 | `UnityEngine.UnityConsentModule` | `stubs/UnityEngine.UnityConsentModule.cs` (3 members Analytics uses) | **stub** — 6000.0.75 only type-forwards to it |
-| Services.Multiplayer / Friends / Leaderboards, Multiplayer.Playmode / Widgets | not mirrored anywhere reachable | **absent** — files that `using` them are bucketed, not gated |
+| Services.Multiplayer 1.1.8 / Friends 1.1.1 / Leaderboards 2.3.3, Multiplayer.Playmode 1.6.1 / Widgets 1.0.1 (not on needle-mirror) | the **Unity registry's own tarball** (`packages.unity.com`) at the locked version, sha1-checked against the registry's record; marked `.registry` in the cache | real source — or, where that host is blocked, **absent**: errors naming their types are bucketed, not gated (step 7) |
 
 ### Making the engine references honest (`Depublicize/`)
 
@@ -91,6 +108,22 @@ is compiled with the **6000.0.75** defines/versionDefines, matching the referenc
 code paths whose engine API the DLLs actually contain. A 6000.0→6000.3 engine gap can therefore only
 surface in Assets code, where a human judges it.
 
+### What the registry-only packages declare (`unobtainable_declarations.tsv`)
+
+This file lists the namespaces and public top-level types that each registry-only package declares, at
+its locked version, with the tarball's sha1. It covers only the assemblies that Assets code references
+directly (no package grants Assets code `InternalsVisibleTo`, so internal types are left out). A run
+that could not fetch these packages uses it to tell a UGS name from a typo. It is generated, never
+hand-edited, by a run that DID fetch them:
+
+```
+bash Tools/Build/unity_refcompile/run.sh --write-declarations
+```
+
+Refresh it whenever `packages-lock.json` moves one of these packages. Until then the build prints a
+warning and `--self-test` fails. If a package is neither fetched nor in the file, the build prints a
+warning naming it, and errors that name its types gate. That fails loudly, never as a silent pass.
+
 ### Source patches (`source_patches.json`)
 
 Body-local edits to fetched package sources where a package head needs engine API newer than the
@@ -108,7 +141,12 @@ Does not prove:
 - Engine API added between 6000.0.75 and 6000.3.17 (would show as a false error, not a false pass);
   engine members whose accessibility changed in a way neither the 2021.1 oracle nor package code
   reveals (stay public: a possible false pass on use of an engine internal).
-- Code in files that `using` an unfetchable package, for errors that involve those types.
+- When packages.unity.com was blocked (the `unobtainable` bucket names packages): how project code
+  uses those five packages' types. For example, a wrong member, argument or overload on an `ISession`
+  is not reported, because the type itself is unresolved. Errors that do not involve those types still
+  gate. The bucket test goes by name, so a misspelling that happens to be a declared type name visible
+  to the file is bucketed. When fetch reached the registry, the packages are real source and this item
+  does not apply.
 - ILPostProcessors (Netcode/Burst/Entities codegen after compile), Burst compilation, IL2CPP.
 - Project code that uses types from package assemblies listed as "did not compile"
   (Purchasing.Stores/Codeless, InputSystem.ForUI). Dependents were compiled without them, so any

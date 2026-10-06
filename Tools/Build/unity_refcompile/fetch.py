@@ -12,18 +12,26 @@ Sources (all public, fetched read-only, used only as compile references):
   * NETStandard.Library 2.0.3 facades (mscorlib/System/System.Core -> netstandard) so the net4x
     UnityEngine references unify with the netstandard2.1 API profile Unity compiles against.
   * Every registry package in Packages/packages-lock.json, as SOURCE, at its exact locked version,
-    from the needle-mirror GitHub mirrors of the Unity package registry (packages.unity.com is
-    not reachable from this sandbox).
+    from the needle-mirror GitHub mirrors of the Unity package registry. A package needle-mirror
+    does not carry (Services.Multiplayer / Friends / Leaderboards, Multiplayer.Playmode / Widgets)
+    comes from the Unity registry itself (packages.unity.com tarball, sha1-checked against the
+    registry's own record) where that host is reachable, and is marked with a `.registry` file.
+    Where it is not, the package is absent and build.py falls back to
+    unobtainable_declarations.tsv (see README step 7).
   * The three git packages at their locked commits (UniTask, Reflex, ParrelSync).
   * SRP core / URP / ShaderGraph / VFX Graph from Unity-Technologies/Graphics at the 6000.3
     staging branch - 6000.0, matching the engine references (these are editor-bundled "builtin" packages; 17.3.x has no mirror tag).
 
 Fails loudly (exit 2) when the network is unreachable and the cache is empty.
 """
+import hashlib
+import io
 import json
 import os
+import shutil
 import subprocess
 import sys
+import tarfile
 import urllib.request
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
@@ -99,7 +107,6 @@ KEEP = (".cs", ".asmdef", ".asmref", ".dll", ".dll.meta", ".asmdef.meta", ".asmr
 
 def prune(dest):
     """Keep only what a compile reads (sources, asmdefs, DLLs and their .meta): the disk is shared."""
-    import shutil
     shutil.rmtree(os.path.join(dest, ".git"), ignore_errors=True)
     for dirpath, _, files in os.walk(dest):
         for f in files:
@@ -131,14 +138,51 @@ def git_clone_commit(url, sha, dest):
     return "fetched"
 
 
+UNITY_REGISTRY = "https://packages.unity.com/"
+
+
+def unity_registry_tarball(name, ver, dest):
+    """The package's own tarball from the Unity registry, checked against the sha1 the registry
+    records for that version. Marks dest with `.registry` (build.py --write-declarations reads it)."""
+    if os.path.exists(os.path.join(dest, ".fetched")):
+        return "cached"
+    meta = json.load(urllib.request.urlopen(UNITY_REGISTRY + name, timeout=60))
+    if ver not in meta.get("versions", {}):
+        raise RuntimeError("%s has no version %s on %s" % (name, ver, UNITY_REGISTRY))
+    dist = meta["versions"][ver]["dist"]
+    data = urllib.request.urlopen(dist["tarball"], timeout=300).read()
+    if hashlib.sha1(data).hexdigest() != dist["shasum"]:
+        raise RuntimeError("%s@%s tarball does not match the registry's sha1 %s" % (name, ver, dist["shasum"]))
+    tmp = dest + ".tmp"
+    shutil.rmtree(tmp, ignore_errors=True)
+    with tarfile.open(fileobj=io.BytesIO(data)) as t:
+        safe = [m for m in t.getmembers() if (m.isfile() or m.isdir()) and m.name.startswith("package/")
+                and not os.path.isabs(m.name) and ".." not in m.name.split("/")]
+        t.extractall(tmp, members=safe, **({"filter": "data"} if hasattr(tarfile, "data_filter") else {}))
+    shutil.rmtree(dest, ignore_errors=True)
+    os.rename(os.path.join(tmp, "package"), dest)
+    shutil.rmtree(tmp, ignore_errors=True)
+    prune(dest)
+    with open(os.path.join(dest, ".registry"), "w") as f:
+        f.write("%s %s %s\n" % (UNITY_REGISTRY + name, ver, dist["shasum"]))
+    return "fetched from " + UNITY_REGISTRY
+
+
 def fetch_registry(name, ver):
     tag = NEAREST_TAG.get(name, ver)
     dest = os.path.join(CACHE, "packages", name + "@" + tag)
     try:
         st = git_clone_tag("https://github.com/needle-mirror/" + name, tag, dest)
+        if os.path.exists(os.path.join(dest, ".registry")):
+            st += " (from " + UNITY_REGISTRY + ")"
         return (name, tag, st if tag == ver else st + " (SUBSTITUTE for locked " + ver + ")")
     except RuntimeError as e:
-        return (name, ver, "UNAVAILABLE: " + str(e).splitlines()[0][:160])
+        mirror_err = str(e).splitlines()[0][:160]
+    # not on needle-mirror: the Unity registry's own tarball, at the exact locked version
+    try:
+        return (name, ver, unity_registry_tarball(name, ver, os.path.join(CACHE, "packages", name + "@" + ver)))
+    except Exception as e:
+        return (name, ver, "UNAVAILABLE: %s; %s: %s" % (mirror_err, UNITY_REGISTRY, str(e).splitlines()[0][:160]))
 
 
 def fetch_git(name, url, sha):
@@ -182,7 +226,8 @@ def main():
             log("OFFLINE: api.nuget.org unreachable - reusing the existing cache at " + CACHE)
             return 0
         log("ERROR: OFFLINE and no cache at %s. This tool needs api.nuget.org and github.com "
-            "(read-only) on its first run; nothing can be verified without real references." % CACHE)
+            "(read-only) on its first run, and packages.unity.com for five UGS packages; nothing can be "
+            "verified without real references." % CACHE)
         return 2
     jobs = []
     with ThreadPoolExecutor(max_workers=12) as ex:

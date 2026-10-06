@@ -487,14 +487,20 @@ def fingerprint(items):
     return h.hexdigest()
 
 
-# Packages that are not reachable from this sandbox (no mirror): files that `using` them can only be
-# checked for errors that do not involve their types.
-UNOBTAINABLE_NAMESPACES = ["Unity.Services.Multiplayer", "Unity.Services.Friends", "Unity.Services.Leaderboards",
-                           "Unity.Multiplayer.Playmode", "Unity.Multiplayer.Widgets"]
+# Packages needle-mirror does not carry come from the Unity registry (fetch.py) where that host is
+# reachable, and are compiled like any other. Where it is not, such a package is ABSENT from the run:
+# an error that names something it declares (or a cascade of one) is bucketed "unobtainable", never
+# gated. What each one declares is snapshotted here from its real tarball at the locked version by
+# `build.py --write-declarations` (run where they ARE fetched); see README step 7.
+UNOBTAINABLE_SNAPSHOT = os.path.join(HERE, "unobtainable_declarations.tsv")
 MISSING_CODES = {"CS0246", "CS0234", "CS0103", "CS1069", "CS0012", "CS0538"}
-# In a file that uses an unobtainable package, these are cascades of its unresolved types too
-# (`out var x` from an unknown TryGetValue -> CS0165, `unknown.Count > 0` -> CS0019, ...).
-UNOBTAINABLE_CASCADE_CODES = MISSING_CODES | {"CS0165", "CS0019", "CS1061"}
+# Errors that can be cascades of an unresolved type rather than a name of their own: `out var x` from
+# an unknown TryGetValue -> CS0165, `unknown.Count > 0` -> CS0019, a member of a List<Unknown> -> CS1061.
+# Diagnose suffixes each with the named error types its expression involves.
+CASCADE_CODES = {"CS0165", "CS0019", "CS1061"}
+REFRESH_HINT = ("refresh it where packages.unity.com is reachable: run.sh (fetch), then "
+                "build.py --write-declarations")
+UNRESOLVED_RE = re.compile(r" \[unresolved types: ([^\]]*)\]$")
 
 # Missing-type messages, by code: the name (and namespace / assembly) each one is about.
 MISSING_SIMPLE = re.compile(r"The type or namespace name '([^']+)' could not be found|"
@@ -506,32 +512,90 @@ USING_RE = re.compile(r"^\s*using\s+(static\s+)?(?:\w+\s*=\s*)?(?:global::)?([\w
 NAMESPACE_RE = re.compile(r"^\s*namespace\s+([\w.]+)", re.M)
 
 
+def no_declarations():
+    return {"asms": set(), "namespaces": set(), "types": {}}
+
+
+def add_declaration(decl, f):
+    """One Diagnose --declarations record, split on tabs: "N", ns | "T", ns, name."""
+    if f[0] == "N":
+        parts = f[1].split(".")
+        decl["namespaces"].update(".".join(parts[:i]) for i in range(1, len(parts) + 1))
+    elif f[0] == "T":
+        decl["types"].setdefault(f[2], set()).add(f[1])
+
+
+def merge_declarations(decls):
+    out = no_declarations()
+    for d in decls:
+        out["asms"] |= d["asms"]
+        out["namespaces"] |= d["namespaces"]
+        for name, nss in d["types"].items():
+            out["types"].setdefault(name, set()).update(nss)
+    return out
+
+
+def declared(rsp):
+    """Diagnose --declarations for one assembly: its "N\t<ns>" and "T\t<ns>\t<public type>" lines."""
+    r = subprocess.run([os.path.join(DOTNET_ROOT, "dotnet"), diagnose_tool(), "--declarations", rsp],
+                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    if r.returncode != 0:
+        sys.exit("Diagnose --declarations failed for %s:\n%s" % (rsp, r.stdout))
+    return r.stdout.splitlines()
+
+
 def declarations(rsps):
     """What the assemblies compiled from these .rsp files declare, read from their own sources with
     their own defines (Diagnose --declarations): {"asms", "namespaces" (with every prefix), "types":
-    {top-level type name: {namespace}}}."""
-    decl = {"asms": set(), "namespaces": set(), "types": {}}
+    {public top-level type name: {namespace}}}."""
+    decl = no_declarations()
     for name, rsp in rsps.items():
         decl["asms"].add(name)
-        r = subprocess.run([os.path.join(DOTNET_ROOT, "dotnet"), diagnose_tool(), "--declarations", rsp],
-                           stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-        if r.returncode != 0:
-            sys.exit("Diagnose --declarations failed for %s:\n%s" % (name, r.stdout))
-        for line in r.stdout.splitlines():
-            f = line.split("\t")
-            if f[0] == "N":
-                parts = f[1].split(".")
-                decl["namespaces"].update(".".join(parts[:i]) for i in range(1, len(parts) + 1))
-            elif f[0] == "T":
-                decl["types"].setdefault(f[2], set()).add(f[1])
+        for line in declared(rsp):
+            add_declaration(decl, line.split("\t"))
     return decl
 
 
-def from_failed_assembly(code, msg, src, decl):
-    """True when a missing-type error can stem from a referenced assembly that did not compile (decl:
-    what those assemblies declare). It must name one of them, or a namespace or top-level type they
-    declare that this file can see: its namespace is `using`d, encloses the file, or is global. A
-    misspelled local, member or type is anything else, and gates."""
+def load_snapshot(path=UNOBTAINABLE_SNAPSHOT):
+    """unobtainable_declarations.tsv -> {package: {"version", "asms", "namespaces", "types"}}."""
+    snap, cur = {}, None
+    if not os.path.exists(path):
+        return snap
+    for line in open(path, encoding="utf-8"):
+        f = line.rstrip("\n").split("\t")
+        if not f[0] or f[0].startswith("#"):
+            continue
+        if f[0] == "P":
+            cur = snap[f[1]] = dict(no_declarations(), version=f[2])
+        elif f[0] == "A":
+            cur["asms"].add(f[1])
+        else:
+            add_declaration(cur, f)
+    return snap
+
+
+def write_snapshot(packages, path=UNOBTAINABLE_SNAPSHOT):
+    """packages: [(package, version, sha1, {assembly: rsp})] -> unobtainable_declarations.tsv."""
+    lines = ["# What the packages needle-mirror does not carry declare, for a run that cannot fetch them from",
+             "# packages.unity.com either: an Assets error is bucketed \"unobtainable\" only when it names one of",
+             "# these (README step 7). Written by `build.py --write-declarations` from the real tarballs at their",
+             "# locked versions, assemblies Assets code references only, public top-level types only. Do not edit.",
+             "# P package version tarball-sha1 | A assembly | N namespace | T namespace type"]
+    for pkg, ver, sha, asms in sorted(packages):
+        lines.append("P\t%s\t%s\t%s" % (pkg, ver, sha))
+        for asm in sorted(asms):
+            lines.append("A\t" + asm)
+            lines += sorted(set(declared(asms[asm])))
+    with open(path, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines) + "\n")
+
+
+def from_absent_assembly(code, msg, src, decl):
+    """True when a missing-type error can stem from an assembly absent from this compile (decl: what
+    it declares - a referenced package assembly that did not compile, or a package this run could not
+    fetch). It must name one of them, or a namespace or top-level type they declare that this file can
+    see: its namespace is `using`d, encloses the file, or is global. A misspelled local, member or type
+    is anything else, and gates."""
     if code not in MISSING_CODES or not (decl["asms"] or decl["types"]):
         return False
     m = MISSING_ASM.search(msg)
@@ -571,9 +635,20 @@ def from_failed_assembly(code, msg, src, decl):
     return code == "CS0246" and any((v + "." + name).lstrip(".") in decl["namespaces"] for v in visible)
 
 
+def stems_from(code, msg, src, decl):
+    """from_absent_assembly, plus cascades: a CASCADE_CODES error stems from the absent assembly when
+    one of the unresolved types Diagnose found in its expression is a name it declares that this file
+    can see. With no such type (a real flow error, a missing member of a known type) it gates."""
+    m = UNRESOLVED_RE.search(msg)
+    if code in CASCADE_CODES:
+        return any(from_absent_assembly("CS0246", "The type or namespace name '%s' could not be found" % n.strip(), src, decl)
+                   for n in (m.group(1).split(",") if m else []))
+    return from_absent_assembly(code, msg[:m.start()] if m else msg, src, decl)
+
+
 def self_test():
-    """Classifier fixtures (no dotnet, no cache): planted misspellings gate; names a failed assembly
-    declares are unverified only where the file can see them."""
+    """Classifier fixtures (no dotnet, no cache): planted misspellings gate; names an absent assembly
+    declares, and their cascades, are bucketed only where the file can see them."""
     decl = {"asms": {"UnityEngine.Purchasing.Stores"},
             "namespaces": {"UnityEngine", "UnityEngine.Purchasing", "UnityEngine.Purchasing.Extension"},
             "types": {"StandardPurchasingModule": {"UnityEngine.Purchasing"}, "IStoreListener": {"UnityEngine.Purchasing"},
@@ -581,7 +656,7 @@ def self_test():
     iap = "using UnityEngine;\nusing UnityEngine.Purchasing;\nnamespace CosmicShore.Store {\n"
     plain = "using UnityEngine;\nnamespace CosmicShore.Controller {\n"
     cases = [
-        # (expect unverified, code, message, source)
+        # (expect bucketed, code, message, source)
         (False, "CS0103", "The name 'nearClipPlan' does not exist in the current context", plain),
         (False, "CS0103", "The name 'nearClipPlan' does not exist in the current context", iap),
         (False, "CS0246", "The type or namespace name 'Vectr3' could not be found (are you missing a using directive or an assembly reference?)", iap),
@@ -600,12 +675,73 @@ def self_test():
         (True, "CS0234", "The type or namespace name 'CodelessIAPStoreListener' does not exist in the namespace 'UnityEngine.Purchasing' (are you missing an assembly reference?)", plain),
         (True, "CS0012", "The type 'IStoreListener' is defined in an assembly that is not referenced. You must add a reference to assembly 'UnityEngine.Purchasing.Stores, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null'.", plain),
     ]
-    bad = [(want, code, msg) for want, code, msg, src in cases if from_failed_assembly(code, msg, src, decl) != want]
-    nothing = {"asms": set(), "namespaces": set(), "types": {}}
-    bad += [(False, code, msg) for want, code, msg, src in cases if from_failed_assembly(code, msg, src, nothing)]
+    # an unobtainable package, as the snapshot gives it: the party services' shape
+    ugs = {"asms": {"Unity.Services.Multiplayer"},
+           "namespaces": {"Unity", "Unity.Services", "Unity.Services.Multiplayer"},
+           "types": {n: {"Unity.Services.Multiplayer"} for n in
+                     ("ISession", "ISessionInfo", "IReadOnlyPlayer", "MultiplayerService", "PlayerProperty")}}
+    party = "using System;\nusing Unity.Services.Multiplayer;\nusing UnityEngine;\nnamespace CosmicShore.Gameplay {\n"
+    nf = "The type or namespace name '%s' could not be found (are you missing a using directive or an assembly reference?)"
+    ugs_cases = [
+        (False, "CS0103", "The name 'sesion' does not exist in the current context", party),
+        (False, "CS0246", nf % "ISesion", party),
+        (False, "CS0234", "The type or namespace name 'Multiplayr' does not exist in the namespace 'Unity.Services' (are you missing an assembly reference?)", party),
+        (False, "CS0246", nf % "ISession", plain),
+        (False, "CS1061", "'HostConnectionDataSO' does not contain a definition for 'LocalPlayr' and no accessible extension method 'LocalPlayr' accepting a first argument of type 'HostConnectionDataSO' could be found (are you missing a using directive or an assembly reference?)", party),
+        (False, "CS0165", "Use of unassigned local variable 'parsed'", party),
+        (False, "CS0165", "Use of unassigned local variable 'parsed' [unresolved types: Vectr3]", party),
+        (False, "CS0019", "Operator '>' cannot be applied to operands of type 'method group' and 'int' [unresolved types: ISessionInfo]", plain),
+        (False, "CS0029", "Cannot implicitly convert type 'string' to 'int' [unresolved types: ISession]", party),
+        (True, "CS0234", "The type or namespace name 'Multiplayer' does not exist in the namespace 'Unity.Services' (are you missing an assembly reference?)", party),
+        (True, "CS0246", nf % "ISession", party),
+        (True, "CS0246", nf % "Unity.Services.Multiplayer.ISession", plain),
+        (True, "CS0103", "The name 'MultiplayerService' does not exist in the current context", party),
+        (True, "CS0165", "Use of unassigned local variable 'parsedAv' [unresolved types: IReadOnlyPlayer]", party),
+        (True, "CS0165", "Use of unassigned local variable 'parsedAv' [unresolved types: IReadOnlyPlayer, Vectr3]", party),
+        (True, "CS0019", "Operator '>' cannot be applied to operands of type 'method group' and 'int' [unresolved types: ISessionInfo]", party),
+        (True, "CS0019", "Operator '>' cannot be applied to operands of type 'method group' and 'int' [unresolved types: Unity.Services.Multiplayer.ISessionInfo]", plain),
+        (True, "CS1061", "'List<ISession>' does not contain a definition for 'Lenght' and no accessible extension method 'Lenght' accepting a first argument of type 'List<ISession>' could be found [unresolved types: ISession]", party),
+    ]
+    nothing = no_declarations()
+    bad = [(want, code, msg) for want, code, msg, src in cases if stems_from(code, msg, src, decl) != want]
+    bad += [(want, code, msg) for want, code, msg, src in ugs_cases if stems_from(code, msg, src, ugs) != want]
+    bad += [(False, code, msg) for want, code, msg, src in cases + ugs_cases if stems_from(code, msg, src, nothing)]
+    # the committed snapshot: every name the party services use from the five packages is declared, and a
+    # misspelling is not (the names below are the ones a run without packages.unity.com reports)
+    snap = load_snapshot()
+    real = merge_declarations(snap.values())
+    friends = ("using Unity.Services.Friends;\nusing Unity.Services.Friends.Models;\nusing Unity.Services.Friends.Exceptions;\n"
+               "using Unity.Services.Friends.Notifications;\n" + plain)
+    board = "using Unity.Services.Leaderboards;\n" + plain
+    snap_cases = [(True, "CS0103", "The name '%s' does not exist in the current context" % n, party)
+                  for n in ("MultiplayerService", "VisibilityPropertyOptions", "FilterField", "FilterOperation")]
+    snap_cases += [(True, "CS0246", nf % n, party) for n in
+                   ("ISession", "ISessionInfo", "IReadOnlyPlayer", "PlayerProperty", "SessionProperty", "SessionOptions",
+                    "JoinSessionOptions", "QuerySessionsOptions", "FilterOption", "SessionException", "SessionError",
+                    "PropertyIndex", "IMultiplayerService")]
+    snap_cases += [(True, "CS0246", nf % n, friends) for n in
+                   ("FriendsService", "IFriendsService", "FriendsServiceException", "Availability", "Relationship", "MemberRole",
+                    "RelationshipType", "IRelationshipAddedEvent", "IRelationshipDeletedEvent", "IPresenceUpdatedEvent")]
+    snap_cases += [(True, "CS0246", nf % n, board) for n in
+                   ("LeaderboardsService", "AddPlayerScoreOptions", "GetScoresOptions", "GetScoresByPlayerIdsOptions")]
+    snap_cases += [(True, "CS0234", "The type or namespace name '%s' does not exist in the namespace 'Unity.Services' (are you missing an assembly reference?)" % n, plain)
+                   for n in ("Multiplayer", "Friends", "Leaderboards")]
+    snap_cases += [(False, "CS0103", "The name 'sesion' does not exist in the current context", party),
+                   (False, "CS0246", nf % "ISesion", party),
+                   # declared, but in Friends.Notifications, which this file does not `using`
+                   (False, "CS0246", nf % "IRelationshipAddedEvent", "using Unity.Services.Friends;\n" + plain)]
+    bad += [(want, code, msg) for want, code, msg, src in snap_cases if stems_from(code, msg, src, real) != want]
+    lock = load_json(os.path.join(ROOT, "Packages", "packages-lock.json"))["dependencies"]
+    for pkg, d in sorted(snap.items()):
+        if lock.get(pkg, {}).get("version") != d["version"]:
+            bad.append((True, "-", "%s@%s in unobtainable_declarations.tsv, %s in packages-lock.json: %s"
+                        % (pkg, d["version"], lock.get(pkg, {}).get("version", "absent"), REFRESH_HINT)))
+    if not snap:
+        bad.append((True, "-", "unobtainable_declarations.tsv is missing or empty: " + REFRESH_HINT))
     for want, code, msg in bad:
-        print("[self-test] FAIL: expected %s: %s %s" % ("unverified" if want else "project error", code, msg))
-    print("[self-test] %s (%d cases)" % ("FAILED" if bad else "OK", len(cases)))
+        print("[self-test] FAIL: expected %s: %s %s" % ("bucketed" if want else "project error", code, msg))
+    n = len(cases) + len(ugs_cases) + len(snap_cases)
+    print("[self-test] %s (%d cases)" % ("FAILED" if bad else "OK", n))
     return 1 if bad else 0
 
 LEARN_0507 = re.compile(r"overriding 'public' inherited member '([^']+)'")
@@ -702,6 +838,8 @@ def run_once():
     ap.add_argument("--changed-base", default="origin/bleeding-edge")
     ap.add_argument("--quiet-buckets", action="store_true", help="count, do not list, the unverifiable buckets")
     ap.add_argument("--self-test", action="store_true", help="check the error bucketing on fixtures, then exit")
+    ap.add_argument("--write-declarations", action="store_true",
+                    help="rewrite unobtainable_declarations.tsv from the packages this cache got from packages.unity.com")
     args = ap.parse_args()
     if args.self_test:
         return self_test()
@@ -728,6 +866,11 @@ def run_once():
     os.makedirs(out, exist_ok=True)
     apply_source_patches()
     roots, versions = package_roots()
+    registry = {n: d for n, d in roots if os.path.exists(os.path.join(d, ".registry"))}
+    if args.write_declarations and not registry:
+        print("ERROR: --write-declarations: no package in %s came from packages.unity.com - run fetch.py where "
+              "that host is reachable." % CACHE)
+        return 2
     asms, by_guid, owners, sources, dlls = discover(defines, pkg_defines, versions, roots)
     eng, ugui = engine_refs()
 
@@ -983,6 +1126,20 @@ def run_once():
 
     if relearn:
         return 3
+    if args.write_declarations:
+        # what Assets code can see of each registry-only package: the assemblies an Assets assembly
+        # references directly (auto-referenced ones included), read from the rsp they compiled from
+        seen = {resolve(r).name for x in live.values() if x.origin in ("assets", "predefined") and x.name in need
+                for r in x.refs if resolve(r) is not None}
+        snap = []
+        for pkg, d in sorted(registry.items()):
+            url, ver, sha = open(os.path.join(d, ".registry")).read().split()
+            rsps = {n: os.path.join(pkg_out, n + ".rsp") for n in seen
+                    if n in live and live[n].origin == "package:" + pkg and os.path.exists(os.path.join(pkg_out, n + ".rsp"))}
+            snap.append((pkg, ver, sha, rsps))
+            print("[build] declarations of %s@%s: %s" % (pkg, ver, ", ".join(sorted(rsps)) or "NO assembly Assets references"))
+        write_snapshot(snap)
+        print("[build] wrote %s" % os.path.relpath(UNOBTAINABLE_SNAPSHOT, ROOT))
     # report
     rep = {"config": args.config, "results": {k: {"status": v[0], "errors": v[1]} for k, v in results.items()},
            "missing_refs": missing}
@@ -1006,6 +1163,26 @@ def run_once():
             decl_cache[up] = declarations({d: os.path.join(pkg_out if live[d].origin.startswith("package:") else out,
                                                            d + ".rsp") for d in up})
         return decl_cache[up]
+    # packages this run could not fetch: what each declares comes from the committed snapshot
+    lock = load_json(os.path.join(ROOT, "Packages", "packages-lock.json"))["dependencies"]
+    snapshot = load_snapshot()
+    present = {n for n, _ in roots}
+    absent = {p: d for p, d in snapshot.items() if p not in present}
+    absent_decl = merge_declarations(absent.values())
+    for p, d in sorted(absent.items()):
+        if lock.get(p, {}).get("version") != d["version"]:
+            print("[build] WARNING: %s is absent and unobtainable_declarations.tsv describes %s, not the locked %s - %s"
+                  % (p, d["version"], lock.get(p, {}).get("version", "(not in the lock)"), REFRESH_HINT))
+    unavailable = [r[0] for r in load_json(os.path.join(CACHE, "manifest.json")).get("results", [])
+                   if str(r[2]).startswith("UNAVAILABLE") and r[0] not in snapshot and r[0] not in present]
+    if unavailable:
+        print("[build] WARNING: not fetched and not in unobtainable_declarations.tsv: %s - errors naming their "
+              "types are reported as project errors" % ", ".join(sorted(unavailable)))
+    for p, d in sorted(registry.items()):
+        ver = os.path.basename(d).split("@", 1)[1]
+        if snapshot.get(p, {}).get("version") != ver:
+            print("[build] NOTE: unobtainable_declarations.tsv does not describe %s@%s, which this cache got from "
+                  "packages.unity.com - rerun with --write-declarations to refresh it" % (p, ver))
     real, unobtainable, unverified = [], [], []
     for k in failed:
         if k in pkg_failed:
@@ -1017,13 +1194,13 @@ def run_once():
                 continue
             path, code = m.group(1), m.group(2)
             src = open(path, encoding="utf-8-sig", errors="replace").read() if os.path.exists(path) else ""
-            if code in UNOBTAINABLE_CASCADE_CODES and any(re.search(r"^\s*using\s+" + re.escape(ns) + r"\b", src, re.M) for ns in UNOBTAINABLE_NAMESPACES):
+            if stems_from(code, m.group(3), src, absent_decl):
                 unobtainable.append((k, e))
             elif editor and code in ("CS0115", "CS0117", "CS1061") and re.search(r"'(OnValidate|Reset)'|\.(OnValidate|Reset)\(\)", m.group(3)):
                 # the uGUI/engine reference DLLs are PLAYER builds: their #if UNITY_EDITOR members
                 # (UIBehaviour.OnValidate/Reset) do not exist in them
                 unverified.append((k, e))
-            elif from_failed_assembly(code, m.group(3), src, failed_decl(k)):
+            elif stems_from(code, m.group(3), src, failed_decl(k)):
                 unverified.append((k, e))
             else:
                 real.append((k, e))
@@ -1037,8 +1214,8 @@ def run_once():
         if len(rows) > limit:
             print("    ... %d more (report.json)" % (len(rows) - limit))
     show("ERRORS in project code", real, args.max_errors)
-    show("missing-type errors in files using a package that cannot be fetched (%s)" % ", ".join(UNOBTAINABLE_NAMESPACES),
-         unobtainable, 0 if args.quiet_buckets else args.max_errors)
+    show("unobtainable: names declared by a package this run could not fetch (%s), and their cascades"
+         % (", ".join(sorted(absent)) or "none"), unobtainable, 0 if args.quiet_buckets else args.max_errors)
     show("unverified: names declared by a referenced assembly that did not compile, or editor-only members absent from the player-build reference DLLs", unverified,
          0 if args.quiet_buckets else args.max_errors)
     n_changed = sum(1 for _, e in real if e.split("(")[0] in changed)
@@ -1046,14 +1223,15 @@ def run_once():
     print("[build] stubbed assemblies: %s" % (", ".join(sorted(stubbed)) or "none"))
     unresolved = sorted({r for v in missing.values() for r in v})
     print("[build] unresolved asmdef references (Unity would also skip these): %s" % (", ".join(unresolved) or "none"))
-    json.dump({"real": real, "unobtainable": unobtainable, "unverified": unverified, "package_failed": pkg_failed},
+    json.dump({"real": real, "unobtainable": unobtainable, "unverified": unverified, "package_failed": pkg_failed,
+               "absent_packages": sorted(absent)},
               open(os.path.join(out, "buckets.json"), "w"), indent=1)
     if real:
         print("[build] RESULT: FAILED - %d error(s) in project code (%d in files changed since %s)"
               % (len(real), n_changed, args.changed_base))
         return 1
-    print("[build] RESULT: OK - no errors in project code (%d assemblies; %d unobtainable-package and %d unverified "
-          "missing-type errors listed above)" % (len(order), len(unobtainable), len(unverified)))
+    print("[build] RESULT: OK - no errors in project code (%d assemblies; %d unobtainable and %d unverified "
+          "errors bucketed above)" % (len(order), len(unobtainable), len(unverified)))
     return 0
 
 

@@ -1035,10 +1035,13 @@ references, m_Script classes). Four things that cost time on the first run (2026
   With only a .NET 10 SDK, `depublicize()` dies with `IndexError: list index out of range` after a
   full ten-minute fetch, which reads as a broken tool. Install the 8.0 channel per-user (above) and
   point `DOTNET_ROOT` at it; `TMPDIR` decides where the ~550 MB cache lands.
-- **"218 errors" is not 218 errors.** Read the `ERRORS in project code:` line. The large bucket is
-  files that `using` a UGS package no mirror carries (Multiplayer, Friends, Leaderboards); they are
-  counted, not judged. Check your own files are not in that bucket (they would be unverified):
-  grep the run's `report.json` for each file you changed.
+- **Read the `ERRORS in project code:` line, not the total.** Five UGS packages (Multiplayer,
+  Friends, Leaderboards, Playmode, Widgets) are not on needle-mirror. fetch gets them from
+  packages.unity.com, and then they compile like everything else and the `unobtainable` bucket is
+  `(none)`, with 0 errors. Where that host is blocked, the bucket holds about 218 errors. Each of them names a
+  type those packages declare, or is a CS0165/CS0019 cascade of one. Since 2026-10-06 anything else
+  in those files gates, a typo included. A file of yours in that bucket is unverified only in how it
+  uses UGS types: grep the run's `buckets.json` for each file you changed.
 - **`--config editor` reports false `CS0118 'Editor' is a namespace but is used like a type`** in
   untouched runtime `#if UNITY_EDITOR` files whenever the branch changed an Editor-folder file
   declaring `namespace CosmicShore.Editor` (123 files do). That config compiles changed
