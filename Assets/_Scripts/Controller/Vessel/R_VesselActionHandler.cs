@@ -216,6 +216,9 @@ namespace CosmicShore.Gameplay
         public override void OnNetworkDespawn()
         {
             if (IsOwner) UnsubscribeFromInputEvents();
+            // Stop the reconcile with it: between despawn and the deferred Destroy (a vessel swap)
+            // Update would otherwise re-subscribe the dying hull to the global button channel.
+            DetachInputPause();
             ShipHelper.DestroyRuntimeActions(_runtimeInstances);
         }
 
@@ -307,7 +310,7 @@ namespace CosmicShore.Gameplay
             _inputAbilityStartTimes[controlType] = Time.time;
             _heldInputs.Add(controlType);
             var actions = ResolveActions(controlType);
-            ReportDiagnostic("ran", $"{controlType} x{actions.Count}");
+            ReportRan(controlType, actions.Count);
 
             foreach (var t in actions)
                 t.StartAction(_executors, vesselStatus);
@@ -385,9 +388,29 @@ namespace CosmicShore.Gameplay
         [System.Diagnostics.Conditional("UNITY_EDITOR"), System.Diagnostics.Conditional("DEVELOPMENT_BUILD")]
         void ReportDiagnostic(string label, string value)
         {
-            if (!HasLivePilot() || !vesselStatus.IsLocalUser) return;
+            if (!DiagnosticsWanted()) return;
             CosmicShore.Utility.PerformanceBenchmark.DiagnosticsHUD.SetStat("Abilities", label, value);
         }
+
+        /// <summary>The press row. Its own conditional method so the bound/unbound lookup and the
+        /// string are compiled out of release builds and skipped for every pilot but the local one.</summary>
+        [System.Diagnostics.Conditional("UNITY_EDITOR"), System.Diagnostics.Conditional("DEVELOPMENT_BUILD")]
+        void ReportPress(InputEvents ie)
+        {
+            if (!DiagnosticsWanted()) return;
+            CosmicShore.Utility.PerformanceBenchmark.DiagnosticsHUD.SetStat("Abilities",
+                HasAction(ie) ? "press" : "unbound", $"{ie} ({GetActiveDeviceName()})");
+        }
+
+        /// <summary>The dispatch row, filtered before its string is built (see <see cref="ReportPress"/>).</summary>
+        [System.Diagnostics.Conditional("UNITY_EDITOR"), System.Diagnostics.Conditional("DEVELOPMENT_BUILD")]
+        void ReportRan(InputEvents ie, int actionCount)
+        {
+            if (!DiagnosticsWanted()) return;
+            CosmicShore.Utility.PerformanceBenchmark.DiagnosticsHUD.SetStat("Abilities", "ran", $"{ie} x{actionCount}");
+        }
+
+        bool DiagnosticsWanted() => HasLivePilot() && vesselStatus.IsLocalUser;
 
         /// <summary>
         /// Detach the input-pause subscription from the pilot currently on this vessel. Call
@@ -596,8 +619,7 @@ namespace CosmicShore.Gameplay
             if (IsInputMuted(ie)) { ReportDiagnostic("press", $"{ie}: muted"); return; }
             // Unbound presses (IdleAction, the straight-line gestures) arrive every few frames,
             // so they get their own row rather than overwriting the ability that was pressed.
-            if (HasAction(ie)) ReportDiagnostic("press", $"{ie} ({GetActiveDeviceName()})");
-            else               ReportDiagnostic("unbound", $"{ie} ({GetActiveDeviceName()})");
+            ReportPress(ie);
             if (IsSpawned && IsOwner)
             {
                 SendButtonPressed_ServerRpc(ie);

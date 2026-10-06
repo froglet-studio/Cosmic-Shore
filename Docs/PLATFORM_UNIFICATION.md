@@ -138,7 +138,7 @@ Windows too.
 | `TouchInputStrategy`: stick radius 0.6" and dead zone 0.05" (physical size, 12 px floor), one-thumb mirror at full authority, re-zero on every 1↔2-thumb change, throttle held through a lift and carried back, 75% linear + 25% cubic curve | ungated (Touch strategy only) | as-is → every touch device |
 | Left/RightStickAction only on a thumb **lift**, never on first touch (the Butterfly's mode toggled / Fold started on whichever thumb landed first) | `PerfStrip.TouchStickEventsOnLiftOnly` | **ungated**: it's a touch bug fix, and iOS has the same bug |
 | `VesselTransformer.touchNoseResponse` (Squirrel 9, Butterfly 5; fleet stays 1.5): the hull follows the thumb with ~14° lag instead of ~80° | `ActiveInputDevice == Touch` | **gate to the local human pilot.** On a handheld, AI players also read Touch, so AI hulls would get it too, and bleeding-edge's Skim Race AI models its own hull at the fleet's 1.5 (`VesselTransformer.RotationFollowRate`) |
-| `GetTriggerSum` / `DriftAudioController`: a drift with no measured trigger travel is a full pull (touch lift, key, digital-trigger pad) | **ungated, all devices** | as-is; it also fixes digital-trigger pads on PC (they drifted at depth 0) |
+| `GetTriggerSum` / `DriftAudioController`: a drift with no measured trigger travel is a full pull (touch lift, key, digital-trigger pad) | **ungated, all devices** | **not ported** (reverted in the 2026-10-06 ship review). Touch and keyboard already drift at a full pull on bleeding-edge; the change only reaches GAMEPADS, and there the "digital trigger" case cannot occur (`GamepadInputStrategy` raises the drift only above 0.05 travel). What it did reach: a party client's release window (the release arrives by RPC while the trigger already reads 0, so the drift surged to full for a round trip) and AI pilots, which read `Gamepad` on a PC with a pad connected and drift at trigger 0 |
 | `R_VesselActionHandler`: the ability subscription is reconciled to the pause state every frame (a missed NetworkVariable edge left the vessel flying with every ability dead) + DiagnosticsHUD "Abilities" rows | ungated, fleet-wide | as-is (it's a fix) |
 | `Squirrel.prefab` | `touchNoseResponse: 9`, **and `boostLoopEvent` cleared** | port the nose field; **do NOT port the audio clear**: it is a merge loss that silently reverts bleeding-edge's "new skim move" wiring (`fb564b517`) |
 
@@ -323,15 +323,18 @@ assets keep the defaults (pinned by `DeviceTierTests.DesktopAndMobileHigh_Change
 |---|---|---|
 | **HDR off** | `disableHdr` → `GraphicsSettingsApplier.ApplyQuality` sets `urp.supportsHDR = false` (it never turns HDR on) | edited the shared `URP_Asset.asset`, which would have switched HDR off on every platform |
 | **4x MSAA** (was FXAA in Step 3) | first-run recommendation on `PlatformProfile_MobileLow.asset` | 4x MSAA + FXAA on the shared asset / per camera. With HDR off, 4x MSAA fits a tile GPU's on-chip memory (Garrett's Round 8) |
-| **Baked HyperSea sky** (one texture sample per pixel instead of the 767-line procedural shader) | `skyboxReplacements`: `HyperSeaSkybox.mat` → `StaticHyperSeaSkybox.mat`, applied on every scene load by `PlatformRenderApplier`. Assets and `Tools/Build/bake_static_skybox.py` (`--check` is OK against bleeding-edge's sky) taken as-is; the material moved out of `Resources/` | `PerfStripRuntime` replaced every scene's sky and every camera's clear |
+| **Baked HyperSea sky** (one texture sample per pixel instead of the 767-line procedural shader) | `skyboxReplacements`: `HyperSeaSkybox.mat` → the Resources path `PlatformSkyboxes/StaticHyperSeaSkybox`, loaded and applied on scene load by `PlatformRenderApplier` (Play mode only). A path, not a reference: every tier loads the whole profile set, so a reference kept the 4096x2048 bake resident on Windows and iPhones too (ship review; pinned by `ProfileSet_DoesNotHoldTheBakedSkyResident`). Assets and `Tools/Build/bake_static_skybox.py` (`--check` is OK against bleeding-edge's sky) taken as-is | `PerfStripRuntime` replaced every scene's sky and every camera's clear |
 | **Membrane at 642 capsules instead of 2,562** | `membraneMaxSubdivisions: 3` → `CapsuleMembrane` draws the first 642 baked capsules. The icosphere generator only appends, so that prefix IS a level-3 membrane (same seed, same jitter, same bake): proven by running the real generator, pinned by `Icosphere_LowerLevelIsAPrefixOfHigherLevel` | swapped 13 shared cell configs to an opaque inward-facing `MeshMembrane`. Opaque hides everything past the radius from inside (it needed a special larger membrane for Skim Race intensity 3) and would have changed those 10+ modes on every platform. Still available as a design choice if the lattice look is not wanted on phones |
 | **Fold-gate window render capped at 0.5** | `foldGateWindowMaxRenderScale` → `FoldGatePortalView` | `PerfStrip.FoldGateWindowMaxRenderScale` |
 
 **Changed on every platform (platform-agnostic, ported with the cap):** the Butterfly's fold-gate
 window now renders only its own on-screen FOOTPRINT (projection cropped to the window's rectangle,
 target sized to it, `_FoldGatePortalUV` remap in `FoldGatePortal.shader`), and its render target is no
-longer reallocated every frame (the format check compared the requested format against what
-`DefaultHDR` resolved to). Visually identical by construction: the crop maps viewport u to
+longer reallocated every frame: the format check compared the requested format against what
+`DefaultHDR` resolved to, and - found at ship review, in Garrett's code too - the reuse test rejected the
+target the allocation had just made at the 32-texel floor, so every DISTANT gate reallocated every
+frame (`TargetFits` / `TargetSize`, pinned by `FoldGateTarget_AFreshTargetAlwaysFitsItsOwnFootprint`).
+The window renders HDR only when the pipeline does (MobileLow's HDR-off asset gets an LDR window). Visually identical by construction: the crop maps viewport u to
 (u - xMin) / width, which is exactly the shader's `uv * (1/w) - xMin/w`. One operand order was
 changed from Garrett's code (`row3 * cx` for `cx * row3`) so the Froglet Engine compiles it too.
 
@@ -352,8 +355,9 @@ leave `URP_Asset.asset` with HDR off.
   intermediate texture anyway, so it buys nothing there.
 - **Render scale 0.8 on the asset.** Replaced by the tier's pixel budget (Step 3).
 
-**Build size:** the baked sky (4096x2048, no mips) is referenced from `Resources/PlatformProfiles`,
-so it ships in every platform's build (~4 MB compressed), including Windows where it is unused.
+**Build size and memory:** the baked sky (4096x2048, no mips) lives under `Resources/`, so it ships
+in every platform's build (~4 MB compressed), including Windows where it is unused - but it is LOADED
+only on a tier whose profile swaps to it.
 
 ### 3.6 As built (Step 5)
 
@@ -364,10 +368,10 @@ so Windows and iOS run exactly what bleeding-edge ran. MobileLow carries Garrett
 
 | MobileLow gets | How | Garrett's version |
 |---|---|---|
-| **Skim Race / Joust trail cap** (Skim Race 6,000 shared, 800–2,000 per vessel; Joust 4,000 shared, 400–1,200) | `skimRaceTrail` / `joustTrail` → `RaceTrailCap`, added by `SkimRaceController` / `JoustController` in `OnNetworkSpawn` only when the tier sets a budget. Every 0.2 s it holds each vessel's two ribbons at its share; the oldest prism withers (0.8 s, the tether's recipe) and returns to its pool. Seats = max(selected players, live vessels), so AI backfill shares the budget too. **An owner-authorized exception to the no-trail-cap law**, recorded in `Docs/ECOSYSTEM.md` §0 | same numbers and share formula; a FIFO inside `VesselPrismController` (a knob on the shared system) that `Prism.Consume`d the oldest: an implosion per prism, the object left destroyed-but-live (no memory back), and a shielded prism only lost its shield. Seats were the HUMAN count only |
-| **Menu lava lamp lays no trail** | `menuAutopilotLaysNoTrail` → `MenuCrystalClickHandler` holds every vessel's trail creation (`VesselPrismController.SetTierHold`, its own bool beside the pen, so it never fights a fold, a painting or a cell swap) whenever the menu is not in freestyle. Creation-side only: nothing laid is removed | `PerfStrip.TrailsDisabled` refused `StartSpawn` everywhere outside freestyle / race / tether (the strip shipped no other mode) |
-| **Freestyle trail waits above 10,000 cell prisms**, resumes at 9,700 | `freestyleCellPrismBudget` / `Resume` → the same handler, once a second, per cell with hysteresis. Never during a Wanderway run (`WanderwayRun.AnyRunning`): the tether needs a trail. A spawner that waits is the sanctioned lever, not an exception | same numbers, checked inside the spawn loop |
-| **Menu screens and nav bar DEACTIVATED while flying** | `deactivateMenuWhileFlying` → `ScreenSwitcher`: on the enter blend's end it switches off every screen root and the nav bar that was active, and switches exactly those back on at the start of the exit, before the fade-in | same, plus every non-HOME screen disabled for the whole session (not ported: those screens are features) |
+| **Skim Race / Joust trail cap** (Skim Race 6,000 shared, 800–2,000 per vessel; Joust 4,000 shared, 400–1,200) | `skimRaceTrail` / `joustTrail` → `RaceTrailCap`, added by `SkimRaceController` / `JoustController` in `OnNetworkSpawn` only when the tier sets a budget. Every 0.2 s it holds each vessel's two ribbons at its share; the oldest prism withers (0.8 s, the tether's recipe) and returns to its pool. Seats = max(selected players, live vessels); selected players already counts AI backfill. Each ribbon is cut in one pass (`Trail.RemoveOldest(int)`, one re-index), and a prism eaten while it withers is never pool-returned. **An owner-authorized exception to the no-trail-cap law**, recorded in `Docs/ECOSYSTEM.md` §0 | same numbers and share formula; a FIFO inside `VesselPrismController` (a knob on the shared system) that `Prism.Consume`d the oldest: an implosion per prism, the object left destroyed-but-live (no memory back), and a shielded prism only lost its shield. |
+| **Menu lava lamp lays no trail** | `menuAutopilotLaysNoTrail` → `MenuCrystalClickHandler` holds every vessel's trail creation (`VesselPrismController.SetTierHold`, its own bool beside the pen, so it never fights a fold, a painting or a cell swap) whenever the menu is not in freestyle, except while a mode preview runs (`ModePreviewSession.AnyActive`) - a preview shows a mode as it plays. Creation-side only: nothing laid is removed | `PerfStrip.TrailsDisabled` refused `StartSpawn` everywhere outside freestyle / race / tether (the strip shipped no other mode) |
+| **Freestyle trail waits above 10,000 cell prisms**, resumes at 9,700 | `freestyleCellPrismBudget` / `Resume` → the same handler, once a second, per cell with hysteresis. Never during a Wanderway run (`WanderwayRun.AnyRunning`): the tether needs a trail - re-evaluated the frame a run or preview starts or stops, not a second later. A spawner that waits is the sanctioned lever, not an exception | same numbers, checked inside the spawn loop |
+| **Menu screens and nav bar DEACTIVATED while flying** | `deactivateMenuWhileFlying` → `ScreenSwitcher`: on the enter blend's end it switches off every active screen root EXCEPT HOME, and the nav bar, and switches exactly those back on at the start of the exit, before the fade-in. HOME stays live because it carries listeners a flight must not silence (ship review): the party-invite popup subscribes in `OnEnable`, and `HomeScreen` subscribes to profile changes in `Start` but drops them in `OnDisable`. `FlipUI` re-applies the last phone flip when re-enabled | HOME + nav bar in flight, plus every non-HOME screen disabled for the whole session (not ported: those screens are features). Garrett's build was offline, so it had no invites to miss |
 | **HUD domain glow rests instead of breathing** | `quietScoreGlow` → `DomainScorePanel.ArmGlow`; the score-change punch still plays | same |
 | **No cytoplasm motes** | `disableCytoplasm` → `SnowChanger.Initialize` | same |
 | **Wanderway belt 30,000 → 1,200 resident prisms, no lifeform scenes, 4 ahead, 2 crystals, 2 arrivals at once** | `wanderwayBudget` → `WanderToy.Configure` writes it onto the BUILT `ConveyorConfig`; the settings asset is untouched. `MaxConcurrentArrivals` moved from a constant onto `ConveyorConfig` (default 3) for it | edited the shared `Wander_WithoutArk.asset` and the constant, so every platform got the small belt |
@@ -423,6 +427,42 @@ errors, none in this branch's files: they are `'Editor' is a namespace` in three
 `#if UNITY_EDITOR` files, which appear only because that config compiles changed Editor-folder files
 (declaring `namespace CosmicShore.Editor`) into the runtime compilation. Unity compiles those into
 Assembly-CSharp-Editor, which runtime code cannot see.
+
+### 3.8 Ship review (2026-10-06)
+
+Three independent adversarial reviews of Steps 2-6 found two blockers and a set of should-fixes, all
+fixed on this branch before the PR:
+
+| Found | Fixed by |
+|---|---|
+| **Blocker:** the Step 2 "binary drift for an unmeasured trigger" changed GAMEPAD drift on every platform - a party client's drift surged to full for a round trip at every release, and AI drift on a PC with a pad attached ran at full instead of inert. The "digital-trigger pad" it was for cannot occur | reverted: `GetTriggerSum` and `DriftAudioController` are byte-identical to bleeding-edge (§2.2) |
+| **Blocker:** fold-gate target reallocated every frame for distant gates (above, §3.5) | `TargetFits` / `TargetSize` + test |
+| Baked sky resident on Windows and iPhones through the profile set | Resources path, loaded on swap; test |
+| Fold-gate window HDR on a pipeline with HDR off | format follows the pipeline |
+| Menu teardown silenced party invites / profile updates / phone flips | HOME stays active; `FlipUI` re-syncs on enable |
+| Mode previews laid no trail on MobileLow | previews exempt; exemptions apply the same frame |
+| Race cap could pool-return a prism eaten mid-wither, re-indexed a ribbon per prism, stalled silently | release re-checks; one cut per ribbon + `ProfilerMarker`; a stall warns |
+| A 3→1 thumb lift fired the one-thumb ability without re-zeroing | re-zero on every one↔several change |
+| Dying hull could re-subscribe to the button channel between despawn and destroy | `DetachInputPause` in `OnNetworkDespawn` |
+| Smaller: settings v3 re-seed under a SIMULATED tier, sky swap outside Play, URP restore covering only the default asset, raw `Debug.LogError`, diagnostics work surviving release builds, a near-zero `Screen.dpi` dividing by zero, stale comments | each fixed in place |
+
+**Follow-ups and debt (rows, not fixed here):**
+
+- **`QuestTrackView` rebuilds every quest card on `OnEnable`** (ProfileScreen), so on MobileLow each
+  freestyle exit pays that rebuild. Measure on the Samsung; if it hitches, make the rebuild lazy or
+  keep ProfileScreen active too.
+- **Two copies of the destroyed-safe player → trail-controller lookup** (`RaceTrailCap.ControllerOf`,
+  `MenuCrystalClickHandler.TrailControllerOf`). Fold into one helper on the player side if a third
+  caller appears.
+- **`SkimmerFXPrismEffectSO` is now referenced by no live container** - `Docs/ElementalAbilitySystem/BACKLOG.md`
+  items 21-22 own its deletion.
+- **The tick change's other half** (`maxTickNormalized`, silence above 90% boost) waits on audio sign-off (§3.7).
+- **The Ability diagnostics rows filter on `IsLocalUser`**, so the non-networked legacy spawn shows none.
+- **A Wanderway run still flies up to 0.2 s under the lava-lamp hold on exit** (the run ends on its own
+  next tick). Accepted: the run is ending.
+- **Pre-existing, found in passing (task suggested):** AI Squirrels never drift on a PC -
+  `SkimRacePilot` resolves the drift's TOUCH input, which the PC's gamepad/keyboard overrides reject.
+- **Tooling (task suggested):** `unity_refcompile --config editor` false positives, recorded in its README.
 ---
 
 ## 4. Step plan
@@ -433,7 +473,7 @@ Each step is its own PR into bleeding-edge, and each leaves Windows unchanged un
 |---|---|---|---|---|---|
 | 0 | **Measure** (deferred, not a gate). Development builds on the Samsung and the iPhone; `DiagnosticsHUD` bound verdict + main-thread ms; Garrett's branch on the same Samsung; exact model. | nothing | — | — | — |
 | 1 | **Android build plumbing.** Your two Gradle commits (`0f6b38ba5`, `359ad3d1b`; the namespace fix lives OUTSIDE the EDM4U block, the durable version of the same fix Garrett made inside it). Then decide: ARM64-only, R8 minify + Garrett's `proguard-user.txt` keep rules (the WorkManager crash came from Unity Ads, which your branch removes). Graphics APIs stay Auto (decided). | ProjectSettings (Android only), `Assets/Plugins/Android/*` | none | none | builds |
-| 2 | ✅ *(landed on this branch, unverified in editor)* **Touch controls into bleeding-edge, ungated.** `TouchInputStrategy` (physical-size stick + dead zone, one-thumb mirror, re-zero on lift, throttle carry, events on lift only, 75/25 curve) + touch-only vessel tuning (`touchNoseResponse`, gated to the local human pilot) + binary drift for any unmeasured trigger + the ability-dispatch hardening (§2.2). Not the Squirrel `boostLoopEvent` clear. | `Controller/IO`, `VesselTransformer`, Squirrel/Butterfly prefabs | none (touch only) | **new controls** | **new controls** |
+| 2 | ✅ *(landed on this branch, unverified in editor)* **Touch controls into bleeding-edge, ungated.** `TouchInputStrategy` (physical-size stick + dead zone, one-thumb mirror, re-zero on lift, throttle carry, events on lift only, 75/25 curve) + touch-only vessel tuning (`touchNoseResponse`, gated to the local human pilot) + the ability-dispatch hardening (§2.2). Not the Squirrel `boostLoopEvent` clear, and not the gamepad half of the binary-drift change (reverted at ship review, §2.2). | `Controller/IO`, `VesselTransformer`, Squirrel/Butterfly prefabs | none intended: the touch changes are touch-only; the ability-subscription reconcile runs on every device and only re-asserts the subscription the pause state already implies | **new controls** | **new controls** |
 | 3 | ✅ *(landed on this branch, unverified in editor; see §3.4)* **Device tier foundation.** `DeviceTierClassifier`, `PlatformProfileSO` ×3, dev override, a `CSLogChannel` for it, and a mobile branch in `SettingsAutoDetector` that reads the tier. `Desktop` profile = today's behaviour. | `System/`, `Controller/Settings` | identical | correct tier | correct tier |
 | 4 | ✅ *(landed on this branch, unverified in editor; see §3.5)* **Render tier.** MobileLow: HDR off, 4x MSAA, baked sky, membrane capped at 642 capsules, fold-gate window capped at 0.5 — each a `PlatformProfileSO` field. Everywhere: the fold-gate window renders only its footprint. | `_Graphics`, profile, `CapsuleMembrane`, `FoldGatePortalView` | fold-gate footprint only | none | per `MobileLow` |
 | 5 | ✅ *(landed on this branch, unverified in editor; see §3.6)* **Content tier.** Every `PerfStrip` gate the owner kept becomes a profile read: menu/freestyle trail policy, the Skim Race / Joust trail cap (decision 4: granted), menu-UI teardown while flying, HUD glow, cytoplasm, Wander/conveyor budgets as per-tier overrides (not edits to the shared SO). | gameplay | none | none (`MobileHigh` sets nothing) | per `MobileLow` |

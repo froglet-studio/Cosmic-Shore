@@ -37,6 +37,10 @@ namespace CosmicShore.Core
         /// <summary>Swap the active scene's skybox for the tier's replacement, if it has one.</summary>
         public static void ApplySkybox()
         {
+            // The handlers outlive Play (no domain reload), and an edit-mode active-scene change
+            // would otherwise write the tier's sky into a scene someone is editing.
+            if (!Application.isPlaying) return;
+
             var profile = PlatformProfile.Current;
             if (!profile) return;
 

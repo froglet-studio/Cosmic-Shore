@@ -111,7 +111,7 @@ namespace CosmicShore.Core
 
             var set = LoadSet();
             if (!set)
-                Debug.LogError($"[Platform] Resources/{PlatformProfileSetSO.ResourcePath}.asset is missing: " +
+                CSDebug.LogError($"[Platform] Resources/{PlatformProfileSetSO.ResourcePath}.asset is missing: " +
                                "every device runs its pre-tier behaviour. Restore " +
                                $"Assets/Resources/{PlatformProfileSetSO.ResourcePath}.asset.");
 
@@ -127,7 +127,7 @@ namespace CosmicShore.Core
 
             s_profile = set ? set.For(s_tier) : null;
             if (set && !s_profile)
-                Debug.LogError($"[Platform] {set.name} has no profile assigned for {s_tier}: this device runs " +
+                CSDebug.LogError($"[Platform] {set.name} has no profile assigned for {s_tier}: this device runs " +
                                "its pre-tier behaviour. Assign one on the asset.");
 
             CSDebug.LogVerbose(CSLogChannel.Boot,

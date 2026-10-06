@@ -14,9 +14,11 @@ namespace CosmicShore.Gameplay
     /// Toggles between menu state (autopilot + menu UI) and freestyle state
     /// (player control + freestyle UI) on Menu_Main.
     ///
-    /// Operates exclusively on <see cref="GameDataSO.LocalPlayer"/> - in multiplayer,
-    /// each client has its own instance controlling only the locally-owned vessel.
-    /// Other clients' vessels are unaffected by this toggle.
+    /// The toggle operates exclusively on <see cref="GameDataSO.LocalPlayer"/> - in multiplayer,
+    /// each client has its own instance controlling only the locally-owned vessel, and other
+    /// clients' vessels are unaffected by it. (The device-tier trail policy below is the one
+    /// exception: it holds trail creation on EVERY vessel in this device's scene, because a party
+    /// member's vessel lays its trail on this device too.)
     ///
     /// Raises SOAP transition bracket events via <see cref="MenuFreestyleEventsContainerSO"/>
     /// so decoupled systems (<see cref="Core.MainMenuController"/>, ScreenSwitcher,
@@ -76,6 +78,8 @@ namespace CosmicShore.Gameplay
         readonly HashSet<VesselPrismController> _tierHeld = new();
         readonly Dictionary<Cell, bool> _cellTrailWaiting = new();
         readonly List<Cell> _deadCells = new();
+        bool _wanderSeen;
+        bool _previewSeen;
 
         /// <summary>Whether the menu is currently in freestyle state.</summary>
         public bool IsInFreestyle => _isInFreestyle;
@@ -135,7 +139,14 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
-            if (Time.unscaledTime < _nextTierTrailPolicyAt) return;
+            // The two exemptions apply the frame they start or stop, not up to a second later: a
+            // Wanderway tether begun under a held pen would start with no trail to ride.
+            bool wander = WanderwayRun.AnyRunning, preview = ModePreviewSession.AnyActive;
+            bool edge = wander != _wanderSeen || preview != _previewSeen;
+            _wanderSeen = wander;
+            _previewSeen = preview;
+
+            if (!edge && Time.unscaledTime < _nextTierTrailPolicyAt) return;
             _nextTierTrailPolicyAt = Time.unscaledTime + TierTrailPolicySeconds;
             ApplyTierTrailPolicy();
         }
@@ -292,7 +303,8 @@ namespace CosmicShore.Gameplay
         /// prisms, resuming at <see cref="PlatformProfileSO.FreestyleCellPrismResume"/> once the food
         /// web has grazed room. Both are creation-side (<see cref="VesselPrismController.SetTierHold"/>):
         /// a spawner that waits, never a cap - nothing already laid is touched. A live Wanderway run
-        /// is exempt, because its tether and the way home riding it need the trail.
+        /// is exempt, because its tether and the way home riding it need the trail, and so is a
+        /// mode preview, which shows a mode as it plays (<see cref="ModePreviewSession.AnyActive"/>).
         ///
         /// Applies to every vessel in the scene, not just the local one: a party member's vessel
         /// lays its trail on this device too. Desktop and MobileHigh set neither field, so there
@@ -313,9 +325,10 @@ namespace CosmicShore.Gameplay
                 var controller = TrailControllerOf(player);
                 if (!controller) continue;
 
-                bool hold = _isInFreestyle
-                    ? FreestyleTrailWaits(profile, controller.transform.position)
-                    : profile.MenuAutopilotLaysNoTrail;
+                bool hold = !ModePreviewSession.AnyActive
+                            && (_isInFreestyle
+                                ? FreestyleTrailWaits(profile, controller.transform.position)
+                                : profile.MenuAutopilotLaysNoTrail);
 
                 controller.SetTierHold(hold);
                 if (hold) _tierHeld.Add(controller);

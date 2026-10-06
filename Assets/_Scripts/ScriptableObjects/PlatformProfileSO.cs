@@ -1,6 +1,7 @@
 using System;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.ScriptableObjects
@@ -61,7 +62,9 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Skybox materials replaced on this tier: when a scene's RenderSettings.skybox is an " +
                  "entry's authored material, the replacement draws instead (PlatformRenderApplier, on " +
                  "every scene load). MobileLow swaps the 767-line procedural HyperSea sky for its offline " +
-                 "bake (Tools/Build/bake_static_skybox.py) - one texture sample per pixel.")]
+                 "bake (Tools/Build/bake_static_skybox.py) - one texture sample per pixel. The replacement " +
+                 "is a Resources PATH, loaded only when it is used: every tier loads every profile, so " +
+                 "a reference here would keep the bake's texture resident on tiers that never draw it.")]
         [SerializeField] SkyboxReplacement[] skyboxReplacements = Array.Empty<SkyboxReplacement>();
 
         [Tooltip("Cap on a CapsuleMembrane's icosphere subdivision level on this tier; -1 = no cap. " +
@@ -78,8 +81,9 @@ namespace CosmicShore.ScriptableObjects
 
         [Header("Content: trails (applied at runtime on this tier)")]
         [Tooltip("The Menu_Main autopilot (the lava lamp behind the menu) lays no trail on this tier. " +
-                 "Creation-side only - the vessel's pen is held up (VesselPrismController." +
-                 "SetSpawnerPaused); nothing already laid is removed. Freestyle lays trail as usual.")]
+                 "Creation-side only - a hold of its own (VesselPrismController.SetTierHold), separate " +
+                 "from the pen folds and painting use; nothing already laid is removed. Freestyle and " +
+                 "a live mode preview lay trail as usual.")]
         [SerializeField] bool menuAutopilotLaysNoTrail;
 
         [Tooltip("Freestyle trail WAITS while the pilot's cell holds more than this many live prisms " +
@@ -155,13 +159,20 @@ namespace CosmicShore.ScriptableObjects
         public bool DisableCytoplasm => disableCytoplasm;
         public WanderwayBudget Wanderway => wanderwayBudget;
 
-        /// <summary>The skybox this tier draws in place of <paramref name="authored"/>, or null to keep it.</summary>
+        /// <summary>The skybox this tier draws in place of <paramref name="authored"/>, or null to keep
+        /// it. Loads the replacement on first use (Resources caches it after that).</summary>
         public Material SkyboxReplacementFor(Material authored)
         {
             if (!authored || skyboxReplacements == null) return null;
             foreach (var entry in skyboxReplacements)
-                if (entry.Authored == authored && entry.Replacement)
-                    return entry.Replacement;
+            {
+                if (entry.Authored != authored || string.IsNullOrEmpty(entry.ReplacementResource)) continue;
+                var replacement = Resources.Load<Material>(entry.ReplacementResource);
+                if (!replacement)
+                    CSDebug.LogWarning($"[PlatformProfile] {name}: skybox replacement " +
+                                       $"'{entry.ReplacementResource}' is not a Material under a Resources folder.");
+                return replacement;
+            }
             return null;
         }
 
@@ -245,19 +256,20 @@ namespace CosmicShore.ScriptableObjects
             }
         }
 
-        /// <summary>One skybox swap: draw <see cref="Replacement"/> wherever a scene authored
-        /// <see cref="Authored"/>.</summary>
+        /// <summary>One skybox swap: draw the material at <see cref="ReplacementResource"/> wherever
+        /// a scene authored <see cref="Authored"/>.</summary>
         [Serializable]
         public struct SkyboxReplacement
         {
             [Tooltip("The skybox material a scene authors (RenderSettings).")]
             [SerializeField] Material authored;
 
-            [Tooltip("The material drawn instead on this tier.")]
-            [SerializeField] Material replacement;
+            [Tooltip("Resources path (no extension) of the material drawn instead on this tier, e.g. " +
+                     "PlatformSkyboxes/StaticHyperSeaSkybox. A path, not a reference - see skyboxReplacements.")]
+            [SerializeField] string replacementResource;
 
             public Material Authored => authored;
-            public Material Replacement => replacement;
+            public string ReplacementResource => replacementResource;
         }
     }
 

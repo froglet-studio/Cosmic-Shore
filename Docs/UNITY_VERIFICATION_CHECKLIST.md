@@ -86,6 +86,8 @@ errors in three untouched runtime files, an artifact of that config (see §3.7).
 
 **Verify in editor**
 
+0. `DeviceTierTests` pass - 56 cases after the 2026-10-06 ship review, which added the baked-sky
+   residency test and the two fold-gate target tests.
 1. Squirrel, Desktop: at rest the energy bar sits empty and still; skim - it fills and drains
    smoothly exactly as before; respawn / vessel-swap mid-boost - the bar returns to empty.
 2. Squirrel: skim dense trail continuously (a Skim Race straight, or the Wanderway belt). The tick
@@ -139,15 +141,20 @@ repo C# gates green.
    the HUD glow breathes, the Wanderway belt is the big one with lifeform scenes.
 3. Device Tier window → **Mobile Low**, Play Menu_Main: the lava-lamp vessel lays NO trail (what was
    laid stays); enter freestyle and it lays trail again within a second; no motes in the cell.
-4. Still Mobile Low, in freestyle: the Hierarchy shows the menu screen roots and the NavBar INACTIVE
-   once the blend has settled. Exit freestyle: the screen you left (and the nav bar) come back active,
-   the hub row fades in, the current screen re-enters normally; any screen that was inactive before
-   stays inactive. Repeat a few times, and once via a toy/arcade launch that leaves freestyle.
+4. Still Mobile Low, in freestyle: the Hierarchy shows the non-HOME screen roots and the NavBar
+   INACTIVE once the blend has settled, and HomeScreen still ACTIVE. Exit freestyle: the nav bar and
+   every screen that was active come back, the hub row fades in, the current screen re-enters
+   normally; any screen that was inactive before stays inactive. Repeat a few times, and once via a
+   toy/arcade launch that leaves freestyle. With a second client: send a party invite while the
+   phone flies - the popup appears. Change the profile name in flight - the home header updates.
+   Watch the exit for a hitch (ProfileScreen's `QuestTrackView` rebuilds its cards on enable).
+4b. Still Mobile Low: open an arcade card's preview and tap in - the previewed vessel lays its trail.
 5. Still Mobile Low: fly a Wanderway run — the belt is the small one (8 scenes, no lifeforms) and the
    tether + return station still work (the trail is never held during a run).
 6. Still Mobile Low, Skim Race with AI backfill to 4: after about two laps each ribbon stops growing
    at its tail; the oldest prisms SHRINK away (no pop, no implosion burst), a Squirrel riding a rival's
-   tail detaches cleanly when its prism leaves. Joust: same, at the shorter cap. Scores/finish are
+   tail detaches cleanly when its prism leaves. Profiler: `RaceTrailCap.Hold` stays well under a
+   millisecond per 0.2 s tick. No `[RaceTrailCap] ... not pooled` warning in the console. Joust: same, at the shorter cap. Scores/finish are
    unchanged. The HUD top bar's domain glow rests (no breathing) and still flares on a score.
 7. Freestyle on Mobile Low, if a cell can be pushed past 10,000 live prisms: the trail stops at the
    budget and resumes once grazing brings it under 9,700.
@@ -192,13 +199,17 @@ against bleeding-edge's sky; repo C# gates green.
    star twinkle), full capsule membrane, HDR bloom on crystals.
 3. Butterfly (any platform): fold a gate far away, then fly into it. The window shows the far side
    correctly at every distance, with no seam against the ring, no flicker, and no hitch as it grows
-   to fill the screen during the carry. This is the one change Windows sees.
+   to fill the screen during the carry. This is the one change Windows sees. With open SKY behind a
+   distant gate, the sky in the window lines up with the sky around it (the cropped projection must
+   carry the skybox pass too). Memory Profiler: no `FoldGatePortalRT` allocation per frame while a
+   gate sits far away (was every frame at the 32-texel floor).
 4. Device Tier window → **Mobile Low**, Play Menu_Main: the sky is the baked panorama (galactic
    band, nebulae; no twinkle animation), the membrane lattice is visibly sparser (same radius),
    bloom still glows, the Panini curve is still there. Fly a Wanderway run outside the cell: the
    baked sky, not black.
 5. Exit Play: the URP asset (`Assets/_Graphics/URP_Asset.asset`) shows HDR ON again in the
-   inspector, and `git status` does not list it.
+   inspector, and `git status` does not list it. On Desktop, the Memory Profiler shows NO
+   `StaticHyperSeaSky` texture loaded (it is loaded only by a tier that swaps to it).
 6. Set the override back to **Auto**.
 7. On the 4 GB Samsung (Development build): compare frame time against the Step 3 build in Menu_Main
    and freestyle; the Samsung should be MobileLow automatically. On the iPhone: unchanged.
@@ -274,8 +285,9 @@ negative-controlled with CS1002 / CS0102 / CS0111), the repo's C# gates, and
    follows the thumb faster, **only for this machine's human pilot on touch** — AI, the menu
    autopilot and remote replicas keep the fleet's 1.5 (new `IsLocalHumanTouchPilot`; the strip
    applied it to every hull on a handheld, AI included).
-3. Drift with no measured trigger travel is a full pull (`GetTriggerSum`, `DriftAudioController`):
-   a touch thumb lift, a key, and now a **digital-trigger gamepad** (it used to drift at depth 0).
+3. ~~Drift with no measured trigger travel is a full pull for a gamepad too~~ — reverted in the
+   2026-10-06 ship review (it changed pad drift on party clients and for AI; touch and keys already
+   drift at a full pull). `GetTriggerSum` and `DriftAudioController` are as on bleeding-edge.
 4. `R_VesselActionHandler` reconciles its button subscription with the pause state every frame
    (local pilot only) and re-attaches the pause source in `OnEnable`; DiagnosticsHUD "Abilities"
    rows + the Squirrel's "boost ring" row (Development builds only).
@@ -291,7 +303,8 @@ negative-controlled with CS1002 / CS0102 / CS0111), the repo's C# gates, and
    Mass/Dust; lifting the right thumb and putting it back performs a Fold.
 6. Menu lava lamp (autopilot) and AI Squirrels in a Skim Race on a phone steer as before (fleet
    response) — the AI's corner leads should not overshoot.
-7. Windows: pad and keyboard flight unchanged. A pad with a DIGITAL left trigger now drifts.
+7. Windows: pad and keyboard flight unchanged, drift included (feathered LT = light drift; releasing
+   LT ends the drift without a surge, also as a party client).
 8. Pause and un-pause mid-flight on any device: abilities still fire afterwards. In a Development
    build the DiagnosticsHUD "Abilities" rows read `listening yes` while flying.
 

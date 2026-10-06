@@ -198,7 +198,8 @@ namespace CosmicShore.Tests
         #region Render tier (Step 4)
 
         const string ProceduralSkyPath = "Assets/_Graphics/Skyboxes/HyperSeaSkybox.mat";
-        const string BakedSkyPath = "Assets/_Graphics/Skyboxes/StaticHyperSeaSkybox.mat";
+        const string BakedSkyPath = "Assets/Resources/PlatformSkyboxes/StaticHyperSeaSkybox.mat";
+        const string BakedSkyTexturePath = "Assets/_Graphics/Skyboxes/StaticHyperSeaSky.png";
 
         static PlatformProfileSO ShippedProfile(DeviceTier tier) =>
             Resources.Load<PlatformProfileSetSO>(PlatformProfileSetSO.ResourcePath).For(tier);
@@ -228,6 +229,44 @@ namespace CosmicShore.Tests
             Assert.IsNull(profile.SkyboxReplacementFor(bakedSky), "a replacement is not itself replaced");
             Assert.IsTrue(profile.DisableHdr, "MobileLow HDR");
             Assert.AreEqual(3, profile.MembraneMaxSubdivisions, "MobileLow membrane cap");
+        }
+
+        [Test]
+        public void ProfileSet_DoesNotHoldTheBakedSkyResident()
+        {
+            // Every tier loads the whole profile set, so anything it references - directly or
+            // through a profile - is in memory on Windows and iOS too. The 4096x2048 bake must be
+            // reachable only by its Resources path, loaded on the tier that swaps.
+            var dependencies = AssetDatabase.GetDependencies(
+                "Assets/Resources/" + PlatformProfileSetSO.ResourcePath + ".asset", true);
+            CollectionAssert.DoesNotContain(dependencies, BakedSkyTexturePath);
+            CollectionAssert.DoesNotContain(dependencies, BakedSkyPath);
+        }
+
+        [Test]
+        public void FoldGateTarget_AFreshTargetAlwaysFitsItsOwnFootprint()
+        {
+            // The reuse rule and the allocation rule must agree, or a target is released the
+            // frame after it was made. They disagreed at the 32-texel floor (a 64 target for a
+            // 32 footprint failed a 51.2 shrink bound), so every distant gate reallocated every
+            // frame on every platform.
+            foreach (int cap in new[] { 540, 960, 1440 })
+                for (int needW = 32; needW <= cap; needW++)
+                    for (int needH = 32; needH <= cap; needH += 37)
+                    {
+                        int w = CosmicShore.Gameplay.FoldGatePortalView.TargetSize(needW, cap);
+                        int h = CosmicShore.Gameplay.FoldGatePortalView.TargetSize(needH, cap);
+                        Assert.IsTrue(CosmicShore.Gameplay.FoldGatePortalView.TargetFits(w, h, needW, needH),
+                            $"cap {cap}: a {w}x{h} target made for {needW}x{needH} is rejected");
+                    }
+        }
+
+        [Test]
+        public void FoldGateTarget_ShrinksWhenGrosslyLarger_AndRegrowsWhenTooSmall()
+        {
+            Assert.IsFalse(CosmicShore.Gameplay.FoldGatePortalView.TargetFits(1024, 1024, 64, 64), "a receding gate frees its big target");
+            Assert.IsFalse(CosmicShore.Gameplay.FoldGatePortalView.TargetFits(64, 64, 65, 40), "a target narrower than the footprint");
+            Assert.IsTrue(CosmicShore.Gameplay.FoldGatePortalView.TargetFits(96, 96, 70, 70), "a little headroom is kept");
         }
 
         [Test]

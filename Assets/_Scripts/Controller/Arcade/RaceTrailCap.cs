@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using Unity.Profiling;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -51,10 +52,15 @@ namespace CosmicShore.Gameplay
         /// <summary>Seconds a retiring prism withers for before it is handed back to the pool.</summary>
         const float WitherSeconds = 0.8f;
 
+        static readonly ProfilerMarker s_holdMarker = new("RaceTrailCap.Hold");
+
         GameDataSO _gameData;
         PlatformProfileSO.RaceTrailBudget _budget;
         float _nextTickAt;
-        readonly List<(Prism prism, float dueAt)> _withering = new();
+        // The ribbon each prism was detached from rides along: a prism its pool took back early and
+        // handed to another trail must not be pool-returned out from under that trail.
+        readonly List<(Prism prism, float dueAt, Trail from)> _withering = new();
+        readonly HashSet<VesselPrismController> _stallReported = new();
 
         /// <summary>
         /// Cap the race's trails to <paramref name="budget"/>, or do nothing when the tier sets no
@@ -122,60 +128,97 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Hold the vessel's trail at <paramref name="cap"/> prisms across BOTH ribbons (the strip's
         /// cap counted every prism the vessel laid, and a double-trail vessel lays every other prism
-        /// in <see cref="VesselPrismController.SecondaryTrail"/>). The ribbons alternate, so the
-        /// longer one's oldest prism is the vessel's oldest to within one.
+        /// in <see cref="VesselPrismController.SecondaryTrail"/>). The ribbons alternate, so taking
+        /// from the longer until they are level, then evenly, retires the vessel's oldest prisms to
+        /// within one. Each ribbon is cut in ONE <see cref="Trail.RemoveOldest(int)"/> - the per-prism
+        /// form re-indexes the whole ribbon every call.
         /// </summary>
         void Hold(VesselPrismController controller, int cap)
         {
+            using var _ = s_holdMarker.Auto();
+
             var primary = controller.Trail;
             var secondary = controller.SecondaryTrail;
+            int a = primary?.TrailList.Count ?? 0;
+            int b = secondary?.TrailList.Count ?? 0;
+            int excess = Math.Min(a + b - cap, MaxRetiresPerVesselPerTick);
+            if (excess <= 0) return;
 
-            for (int guard = MaxRetiresPerVesselPerTick; guard > 0; guard--)
+            int fromA, fromB;
+            if (a - b >= excess) { fromA = excess; fromB = 0; }
+            else if (b - a >= excess) { fromA = 0; fromB = excess; }
+            else
             {
-                int a = primary?.TrailList.Count ?? 0;
-                int b = secondary?.TrailList.Count ?? 0;
-                if (a + b <= cap) return;
-
-                if (!RetireOldest(a >= b ? primary : secondary)) return;
+                int rest = excess - Math.Abs(a - b);
+                fromA = Math.Max(0, a - b) + (rest + 1) / 2;
+                fromB = excess - fromA;
             }
+
+            int doneA = RetireOldest(primary, fromA);
+            int doneB = RetireOldest(secondary, fromB);
+            // A ribbon held up by an unpooled prism hands its share to the other one.
+            if (doneA < fromA) doneB += RetireOldest(secondary, fromA - doneA);
+            if (doneB < fromB) doneA += RetireOldest(primary, fromB - doneB);
+
+            if (doneA + doneB < excess && _stallReported.Add(controller))
+                CSDebug.LogWarning($"[RaceTrailCap] {controller.name}: the oldest trail prism is not " +
+                                   "pooled, so this vessel's trail cannot be held at its cap.");
         }
 
-        /// <summary>Detach the ribbon's oldest prism and start it withering. False when the oldest
-        /// is not ours to recycle, so the ribbon stays contiguous and is retried next tick.</summary>
-        bool RetireOldest(Trail trail)
+        /// <summary>
+        /// Start up to <paramref name="count"/> of the ribbon's oldest prisms withering and detach
+        /// them in one cut. Stops early at a prism that is not ours to recycle (unpooled), so the
+        /// ribbon stays contiguous and is retried next tick. Returns how many slots were removed.
+        /// </summary>
+        int RetireOldest(Trail trail, int count)
         {
-            var oldest = trail.TrailList[0];
+            if (trail == null || count <= 0) return 0;
 
-            // Already gone (eaten, exploded) - just drop the slot. A consumed prism stays ACTIVE
-            // with destroyed = true, so the test needs both; withering or pool-returning it would
-            // fight whoever took it (Ark.RetireOldestWake makes the same call).
-            if (!oldest || oldest.destroyed) { trail.RemoveOldest(); return true; }
+            var list = trail.TrailList;
+            int take = 0;
+            for (; take < count && take < list.Count; take++)
+            {
+                var prism = list[take];
 
-            // An unpooled prism has nowhere to go: shrinking it would leave an invisible collider.
-            if (oldest.OnReturnToPool == null) return false;
+                // Already gone - eaten, exploded, or taken back by its pool - so the slot is dropped
+                // and nothing withers. A consumed prism stays ACTIVE with destroyed = true, so that
+                // test is separate; withering or pool-returning it would fight whoever took it
+                // (Ark.RetireOldestWake and ArkwayRun make the same calls).
+                if (!prism || prism.destroyed || !prism.gameObject.activeInHierarchy || prism.Trail != trail)
+                    continue;
 
-            trail.RemoveOldest();
-            oldest.TargetScale = RetiredScale;
-            _withering.Add((oldest, Time.time + WitherSeconds));
-            return true;
+                // An unpooled prism has nowhere to go: shrinking it would leave an invisible collider.
+                if (prism.OnReturnToPool == null) break;
+
+                prism.TargetScale = RetiredScale;
+                _withering.Add((prism, Time.time + WitherSeconds, trail));
+            }
+
+            if (take > 0) trail.RemoveOldest(take);
+            return take;
         }
+
+        /// <summary>A withered prism goes back to its pool only if it is still the one we detached:
+        /// not eaten while it withered, and not already reissued to another trail.</summary>
+        static bool StillOurs(Prism prism, Trail from) =>
+            prism && !prism.destroyed && prism.Trail == from;
 
         void RetireDueWithering()
         {
             for (int i = _withering.Count - 1; i >= 0; i--)
             {
-                var (prism, dueAt) = _withering[i];
+                var (prism, dueAt, from) = _withering[i];
                 if (prism && Time.time < dueAt) continue;
                 _withering.RemoveAt(i);
-                if (prism) prism.ReturnToPool();
+                if (StillOurs(prism, from)) prism.ReturnToPool();
             }
         }
 
         void OnDestroy()
         {
             // Race teardown: hand everything still mid-wither straight back (as the tether does).
-            for (int i = 0; i < _withering.Count; i++)
-                if (_withering[i].prism) _withering[i].prism.ReturnToPool();
+            foreach (var (prism, _, from) in _withering)
+                if (StillOurs(prism, from)) prism.ReturnToPool();
             _withering.Clear();
         }
     }

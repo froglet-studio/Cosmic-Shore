@@ -113,7 +113,36 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Raised after <see cref="RemoveOldest"/> has shifted every surviving prism one slot
+        /// Detach the <paramref name="count"/> OLDEST prisms in one cut - the same contract and the
+        /// same recorded callers as <see cref="RemoveOldest()"/>, for a caller retiring several at
+        /// once: the survivors are re-indexed ONCE instead of once per prism, and
+        /// <see cref="OnOldestRemoved"/> is still raised once per prism, so an index-cacher steps
+        /// back exactly as far as the ribbon moved.
+        /// </summary>
+        public void RemoveOldest(int count)
+        {
+            count = Math.Min(count, TrailList.Count);
+            if (count <= 0) return;
+
+            for (int i = 0; i < count; i++)
+            {
+                var removed = TrailList[i];
+                if (removed) trailBlockIndices.Remove(removed);
+            }
+            TrailList.RemoveRange(0, count);
+
+            for (int i = 0; i < TrailList.Count; i++)
+            {
+                var block = TrailList[i];
+                if (block) trailBlockIndices[block] = (ushort)i;
+            }
+
+            for (int i = 0; i < count; i++)
+                OnOldestRemoved?.Invoke();
+        }
+
+        /// <summary>
+        /// Raised after <see cref="RemoveOldest()"/> has shifted every surviving prism one slot
         /// toward the head. Anything holding a CACHED index into this trail (rather than a prism
         /// reference) must decrement it here or it will silently start pointing at a prism further
         /// along the ribbon — <see cref="TrailFollower"/> caches exactly such an index and advances

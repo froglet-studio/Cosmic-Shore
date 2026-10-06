@@ -22,7 +22,7 @@ MonoBehaviour:
   disableHdr: 1
   skyboxReplacements:
   - authored: {fileID: 2100000, guid: b9e5d3c7f0a2468135792bde4c6a8f01, type: 2}
-    replacement: {fileID: 2100000, guid: 9852d08c40940fd6ab90ce838bbe2a1c, type: 2}
+    replacementResource: PlatformSkyboxes/StaticHyperSeaSkybox
   membraneMaxSubdivisions: 3
   foldGateWindowMaxRenderScale: 0.5
   menuAutopilotLaysNoTrail: 1

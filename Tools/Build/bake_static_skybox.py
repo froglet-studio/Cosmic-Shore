@@ -6,9 +6,10 @@ WHY THIS EXISTS
 The authored sky (Assets/_Graphics/Materials/Shaders/HyperSeaSkybox.shader) is a 767-line
 procedural fragment shader - two 3x3x3 Voronoi searches and ~20 octaves of value noise PER
 PIXEL - one of the largest GPU costs on a budget phone. The MobileLow device tier swaps it for
-this bake: PlatformProfile_MobileLow.asset lists HyperSeaSkybox.mat -> StaticHyperSeaSkybox.mat in
-its skybox replacements (Docs/PLATFORM_UNIFICATION.md, Step 4). Desktop and MobileHigh keep the
-procedural sky.
+this bake: PlatformProfile_MobileLow.asset lists HyperSeaSkybox.mat -> the RESOURCES PATH of
+StaticHyperSeaSkybox.mat in its skybox replacements (Docs/PLATFORM_UNIFICATION.md, Step 4). A path,
+not a reference: the profile set is loaded on every tier, and a hard reference would keep this
+4096x2048 texture resident on Desktop and MobileHigh, which keep the procedural sky.
 
 Originally written on the Android strip branch (claude/android-performance-stripped-dap5z2), where
 an editor-side cubemap bake had been tried first and retired. This one needs no editor: the sky is pure math with no
@@ -56,7 +57,7 @@ STAMP = ROOT / "Tools/Build/static_skybox_bake.json"
 
 PANO_SHADER = ROOT / "Assets/_Graphics/Materials/Shaders/StaticSkyPanorama.shader"
 PANO_PNG = ROOT / "Assets/_Graphics/Skyboxes/StaticHyperSeaSky.png"
-PANO_MAT = ROOT / "Assets/_Graphics/Skyboxes/StaticHyperSeaSkybox.mat"  # a PlatformProfileSO skybox swap
+PANO_MAT = ROOT / "Assets/Resources/PlatformSkyboxes/StaticHyperSeaSkybox.mat"  # loaded BY PATH on the tier that swaps
 
 SHADER_GUID = "ab68fa1bd374aa8ce953141437b86c68"
 PNG_GUID = "1b949062bcfb1f515313a19f5c981d1c"

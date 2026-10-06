@@ -22,10 +22,11 @@ namespace CosmicShore.Gameplay
         const float JoystickRadiusInches = 0.6f;
 
         /// <summary>Centre zone around the touch origin, in inches - 8% of the stick's travel at
-        /// any screen density. It was a flat 12 px, which is 0.075" on a 160 dpi screen and
-        /// 0.03" (under a millimetre) on the 400+ dpi phones the game actually runs on: a centre
-        /// nobody could find by feel, so a thumb walked back to "straight" kept a small turn
-        /// alive and the pilot corrected it into an overcorrection. Output rescales from the
+        /// any screen density. Bleeding-edge had no zone at all, and the Android strip's first
+        /// one was a flat 12 px - 0.075" on a 160 dpi screen and 0.03" (under a millimetre) on the
+        /// 400+ dpi phones the game actually runs on: a centre nobody could find by feel, so a
+        /// thumb walked back to "straight" kept a small turn alive and the pilot corrected it
+        /// into an overcorrection. Output rescales from the
         /// zone's EDGE to the rim (scaled radial dead zone), so there is no cliff leaving it.</summary>
         const float DeadZoneInches = 0.05f;
 
@@ -143,7 +144,9 @@ namespace CosmicShore.Gameplay
             base.Initialize(inputStatus);
             float dpi = Screen.dpi > 0f ? Screen.dpi : FallbackDpi;
             joystickRadius = dpi * JoystickRadiusInches;
-            deadZone = Mathf.Max(DeadZoneMinPixels, dpi * DeadZoneInches);
+            // Never more than half the travel: a bogus near-zero Screen.dpi would otherwise put the
+            // 12 px floor past the rim, and the rescale below would divide by zero or less.
+            deadZone = Mathf.Min(Mathf.Max(DeadZoneMinPixels, dpi * DeadZoneInches), joystickRadius * 0.5f);
             leftJoystickValue = leftClampedPosition = new Vector2(joystickRadius, joystickRadius);
             rightJoystickValue = rightClampedPosition = new Vector2(Screen.currentResolution.width - joystickRadius, joystickRadius);
             EnhancedTouchSupport.Enable();
@@ -159,7 +162,7 @@ namespace CosmicShore.Gameplay
         /// Touch-tuned easing: 75% linear + 25% cubic - between the near-linear 90/10 the Android
         /// strip branch once ran and the gamepad's cosine (<see cref="BaseInputStrategy"/>),
         /// which is flat at the centre. Output at quarter / half / three-quarter deflection: 0.191 / 0.406 / 0.668,
-        /// against the pad's 0.076 / 0.293 / 0.617 and the old 0.227 / 0.463 / 0.717. Full
+        /// against the pad's 0.076 / 0.293 / 0.617 and the strip's 90/10 0.227 / 0.463 / 0.717. Full
         /// deflection is 1 on every curve, so the turn-rate ceiling (and the drift) is unchanged.
         ///
         /// The 90/10 pass answered "touch feels
@@ -243,10 +246,11 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private void HandleDriftTransitions(int touchCount)
         {
-            // Any change between one and two thumbs re-zeroes the sticks where the thumbs are
-            // (see rebaseSticks). A three-finger fumble is not a deliberate lift, so it is left
-            // alone.
-            if ((prevTouchCount == 2 && touchCount == 1) || (prevTouchCount == 1 && touchCount == 2))
+            // Every change between ONE thumb and several re-zeroes the sticks where the thumbs are
+            // (see rebaseSticks) - the same edges the ability below fires on, so a three-finger
+            // lift that fires it also re-zeroes, and the mirrored one-thumb flight never starts
+            // from wherever the lifted thumbs left the stick.
+            if ((prevTouchCount >= 2 && touchCount == 1) || (prevTouchCount == 1 && touchCount >= 2))
                 rebaseSticks = true;
 
             // Coming back from an ABILITY lift: carry the held throttle into two-thumb flight.

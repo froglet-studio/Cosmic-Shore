@@ -445,21 +445,25 @@ namespace CosmicShore.Gameplay
             int capH = Mathf.Max(TexelQuantum, Mathf.RoundToInt(view.pixelHeight * scale));
             int needW = Mathf.Clamp(Mathf.CeilToInt(footprint.width * view.pixelWidth * scale), TexelQuantum, capW);
             int needH = Mathf.Clamp(Mathf.CeilToInt(footprint.height * view.pixelHeight * scale), TexelQuantum, capH);
-            var format = view.allowHDR && SystemInfo.SupportsRenderTextureFormat(RenderTextureFormat.DefaultHDR)
-                ? RenderTextureFormat.DefaultHDR
-                : RenderTextureFormat.Default;
+            // HDR only when the PIPELINE renders HDR too: a camera keeps allowHDR when a device tier
+            // turns the URP asset's HDR off (MobileLow), and an HDR window there would cost the
+            // bandwidth the tier switched HDR off to save.
+            var pipeline = GraphicsSettings.currentRenderPipeline
+                as UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset;
+            bool hdr = view.allowHDR && (!pipeline || pipeline.supportsHDR)
+                       && SystemInfo.SupportsRenderTextureFormat(RenderTextureFormat.DefaultHDR);
+            var format = hdr ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default;
 
             // Reuse the target while it covers the footprint and is not grossly larger than it;
             // the crop maps the footprint onto the whole target whatever its size, so a target a
             // little larger than needed only renders a little sharper.
             bool fits = _texture != null && _textureFormat == format
-                        && _texture.width >= needW && _texture.height >= needH
-                        && (_texture.width <= needW * ShrinkSlack || _texture.height <= needH * ShrinkSlack);
+                        && TargetFits(_texture.width, _texture.height, needW, needH);
             if (_texture != null && !fits)
                 ReleaseTexture();
 
-            int width = Mathf.Min(capW, Quantize(needW * GrowHeadroom));
-            int height = Mathf.Min(capH, Quantize(needH * GrowHeadroom));
+            int width = TargetSize(needW, capW);
+            int height = TargetSize(needH, capH);
 
             if (_texture == null)
             {
@@ -521,6 +525,23 @@ namespace CosmicShore.Gameplay
 
         static int Quantize(float texels) =>
             Mathf.Max(TexelQuantum, Mathf.CeilToInt(texels / TexelQuantum) * TexelQuantum);
+
+        /// <summary>The side a freshly allocated window target takes for a footprint needing
+        /// <paramref name="need"/> texels: quantized, with grow headroom, never above the cap.</summary>
+        public static int TargetSize(int need, int cap) => Mathf.Min(cap, Quantize(need * GrowHeadroom));
+
+        /// <summary>
+        /// Whether an existing target still serves a footprint: it covers it, and is not grossly
+        /// larger on both axes. The shrink bound is QUANTIZED exactly as the allocation is - a raw
+        /// <c>need * ShrinkSlack</c> bound rejected the target <see cref="TargetSize"/> had just
+        /// made for the same footprint (need 32 → a 64 target → 64 > 51.2), so a distant gate,
+        /// whose footprint sits on the 32-texel floor, reallocated its target every frame. Since
+        /// Quantize only rounds up, <c>TargetSize(n) ≤ Quantize(n × ShrinkSlack)</c> for every n,
+        /// so a fresh target always fits the footprint it was sized for.
+        /// </summary>
+        public static bool TargetFits(int width, int height, int needW, int needH) =>
+            width >= needW && height >= needH
+            && (width <= Quantize(needW * ShrinkSlack) || height <= Quantize(needH * ShrinkSlack));
 
         // ---- the straddling ship ------------------------------------------------------------
 

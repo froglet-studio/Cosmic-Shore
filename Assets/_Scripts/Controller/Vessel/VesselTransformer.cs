@@ -186,7 +186,9 @@ public class VesselTransformer : MonoBehaviour
         [Tooltip("How fast the hull swings onto the rotation the pilot has commanded, per second, " +
                  "while this machine's HUMAN pilot flies on touch - in a drift as well as out of " +
                  "one. AI, autopilot and remote hulls always use the fleet's shared response. " +
-                 "0 = the fleet's shared response (1.5/s, a 0.67 s time constant).")]
+                 "0 = the fleet's shared response (1.5/s, a 0.67 s time constant). Read by the " +
+                 "base RotateShip only: a transformer that overrides it (single-stick, command) " +
+                 "ignores this field.")]
         [SerializeField, Min(0f)] float touchNoseResponse = 0f;
 
         /// <summary>
@@ -365,14 +367,6 @@ public class VesselTransformer : MonoBehaviour
         private float _frameTriggerSum;
         private bool _driftEaseOutPending;
         private const float DRIFT_EASE_SPEED = 12f; // ~83ms for 0→1 ramp
-
-        /// <summary>Trigger travel below which a RUNNING drift is read as having no analog
-        /// measurement at all (a digital trigger) and falls back to a full pull.</summary>
-        private const float MeasuredTriggerTravel = 0.01f;
-
-        /// <summary>Whether the last <see cref="GetTriggerSum"/> took the binary fallback - no
-        /// measured trigger travel - and so needs the simulated pull/release ease.</summary>
-        private bool _triggerSumBinary;
         public bool IsDriftActive => _singleDriftActive || _sharpDriftActive || _driftEaseOutPending;
 
         private bool _driftSpeedHeld;
@@ -400,7 +394,8 @@ public class VesselTransformer : MonoBehaviour
 
             // Smooth trigger sum for non-analog input to simulate a quick trigger pull
             float rawTriggerSum = GetTriggerSum();
-            bool needsEasing = _triggerSumBinary;
+            bool needsEasing = InputStatus != null
+                            && InputStatus.ActiveInputDevice != InputDeviceType.Gamepad;
             _frameTriggerSum = needsEasing
                 ? Mathf.MoveTowards(_frameTriggerSum, rawTriggerSum, DRIFT_EASE_SPEED * Time.deltaTime)
                 : rawTriggerSum;
@@ -766,9 +761,8 @@ public class VesselTransformer : MonoBehaviour
 
             if (!_singleDriftActive && !_sharpDriftActive)
             {
-                // A binary drift (no measured trigger travel) has no trigger to ease it out, so it
-                // is eased here; an analog one already rode the trigger back down.
-                bool needsEasing = _triggerSumBinary;
+                bool needsEasing = InputStatus != null
+                                && InputStatus.ActiveInputDevice != InputDeviceType.Gamepad;
                 if (needsEasing)
                     _driftEaseOutPending = true;
                 else
@@ -825,42 +819,26 @@ public class VesselTransformer : MonoBehaviour
         /// <item>TWO stacked tiers (the Scarab: single + sharp on the same trigger) — the 0-1
         /// travel is remapped across 0-2 so one trigger spans no-drift → single → sharp.</item>
         /// </list>
-        ///
-        /// <para><b>Analog when measured, BINARY when not.</b> Any input that cannot report trigger
-        /// travel gets the binary fallback: a drift that is on is a FULL pull (1 single, 2 sharp).
-        /// That is every non-gamepad device - a touch thumb LIFT is a full pull, a key is a full
-        /// pull - and a gamepad whose trigger is DIGITAL (or mapped as a plain button), detected as
-        /// a drift that is running while the trigger reports no travel at all. Before this a
-        /// digital pad trigger started the drift and then fed it a depth of zero, i.e. no drift.
-        /// One rule for every device, so a lift on glass and a button on a pad feel like the same
-        /// buried trigger.</para>
+        /// For non-gamepad input, returns a binary value based on which drift level is active.
         /// </summary>
         private float GetTriggerSum()
         {
             if (InputStatus == null)
                 return 0f;
 
-            bool drifting = _singleDriftActive || _sharpDriftActive;
-
             if (InputStatus.ActiveInputDevice == InputDeviceType.Gamepad)
             {
+                if (!singleTriggerDrift)
+                    return InputStatus.LeftTriggerAnalog + InputStatus.RightTriggerAnalog;
+
                 // A hull that never binds a sharp tier has exactly one drift to scale, so the
                 // trigger's travel maps straight onto it instead of maxing out at half-pull.
-                float analog = !singleTriggerDrift
-                    ? InputStatus.LeftTriggerAnalog + InputStatus.RightTriggerAnalog
-                    : _sharpDriftParamsSet
-                        ? InputStatus.LeftTriggerAnalog * 2f
-                        : InputStatus.LeftTriggerAnalog;
-
-                if (analog > MeasuredTriggerTravel || !drifting)
-                {
-                    _triggerSumBinary = false;
-                    return analog;
-                }
+                return _sharpDriftParamsSet
+                    ? InputStatus.LeftTriggerAnalog * 2f
+                    : InputStatus.LeftTriggerAnalog;
             }
 
-            // Binary fallback: a drift that is on is a full pull.
-            _triggerSumBinary = true;
+            // Non-gamepad fallback: binary intensity
             if (_sharpDriftActive) return 2f;
             if (_singleDriftActive) return 1f;
             return 0f;

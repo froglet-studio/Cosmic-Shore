@@ -177,6 +177,11 @@ namespace CosmicShore.Core
             var profile = PlatformProfile.Current;
             if (!profile || profile.AutoDetect.UseCapabilityHeuristic) return;
 
+            // A SIMULATED tier (FrogletTools ▸ Performance ▸ Device Tier) must not rewrite this
+            // machine's saved graphics: clearing the override would not bring them back, because the
+            // migration stamps the settings version and never runs again.
+            if (PlatformProfile.TierOverride.HasValue) return;
+
             var old = SettingsAutoDetector.RecommendByCapability();
             bool untouched = _data.QualityPreset == old.QualityPreset
                              && _data.AntiAliasing == old.AntiAliasing

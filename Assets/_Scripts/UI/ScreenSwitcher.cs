@@ -1508,11 +1508,16 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// On a device tier that asks (<see cref="PlatformProfileSO.DeactivateMenuWhileFlying"/>,
-        /// MobileLow): once the enter-freestyle blend has settled, DEACTIVATE the screen roots and
-        /// the nav bar. A CanvasGroup at alpha 0 still runs every Update, coroutine and canvas
-        /// rebuild under it - the hidden screens' per-frame work is paid for the whole flight.
+        /// MobileLow): once the enter-freestyle blend has settled, DEACTIVATE the hidden screen
+        /// roots and the nav bar. A CanvasGroup at alpha 0 still runs every Update, coroutine and
+        /// canvas rebuild under it - the hidden screens' per-frame work is paid for the whole flight.
         /// <see cref="RestoreMenuAfterFlying"/> puts back exactly what was active, on the way out.
-        /// This switcher's own branch is never touched: its subscriptions and slides must survive.
+        ///
+        /// The HOME root is never switched off: it carries things that must keep listening while
+        /// the pilot flies - the party-invite popup subscribes in OnEnable (an invite arriving
+        /// mid-flight would be missed), and HomeScreen subscribes to profile changes in Start and
+        /// drops them in OnDisable (one flight would end its updates for the session). This
+        /// switcher's own branch is never touched either: its subscriptions and slides must survive.
         /// Docs/PLATFORM_UNIFICATION.md §3.6.
         /// </summary>
         private void HandleFreestyleSettled()
@@ -1523,7 +1528,7 @@ namespace CosmicShore.UI
 
             if (screens != null)
                 foreach (var entry in screens)
-                    if (entry?.root) DeactivateWhileFlying(entry.root.gameObject);
+                    if (entry?.root && entry.id != MenuScreens.HOME) DeactivateWhileFlying(entry.root.gameObject);
 
             if (NavBar) DeactivateWhileFlying(NavBar.gameObject);
         }
