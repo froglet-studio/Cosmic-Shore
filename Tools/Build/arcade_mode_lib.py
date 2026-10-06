@@ -21,6 +21,12 @@ script is only the numbers and the decisions that are genuinely its own. See
     g.register_toast_config(toast_guid)
     g.register_preview(preview_guid)
     g.finish(errors, referenced=EXISTING, minted=[...])   # validate, then --check or write
+
+The card's `CardBackground` is NOT the generator's to choose: emit `lib.card_background("<Mode>")`
+(the /cardart render) and `finish` rejects a card carrying anything else or a retired key
+(`card_errors`). A standalone generator that does not use `Generator` calls `check_cards(files)`
+and `drift(files)` itself, and adopts its committed scene through `committed_scene`.
+`python3 Tools/Build/arcade_mode_lib.py --self-test` runs the negative controls for all of it.
 """
 import hashlib
 import os
@@ -90,11 +96,116 @@ VESSEL_CLASS_ID = {
 }
 
 # ── Arcade card art shared by the pure-aggression party games (Rampage, Dog Fight, Bends) ──
+# CardBackground here is only the FIRST-BRING-UP placeholder: a card's real background is its
+# /cardart render, which card_background() returns once it exists. Never emit this one directly.
 CARD_ART = {
     "IconActive":     "1dc25875d7cbd3e478fc5a133e65eedb",
     "IconInactive":   "fa9b62abd1b217b4ba3d7c5a4a2c0916",
     "CardBackground": "587d2203114c8004c9985d0112c89585",
 }
+
+
+CARD_BACKGROUNDS_DIR = "Assets/_Graphics/ARCADE/CardBackgrounds"   # /cardart's output
+CARDS_DIR = "Assets/_SO_Assets/Games"
+
+# Keys the C# no longer declares. A generator that re-emits a whole card is the second place a
+# schema change has to land: the call-to-action retirement swept the shipped cards and left the
+# generators emitting `CallToActionTargetType`, so every re-run put it back (or refused to run).
+RETIRED_CARD_KEYS = ("CallToActionTargetType", "PreviewClip")
+
+
+def card_background(card_name: str) -> str:
+    """The guid a mode's card `CardBackground` must carry - the ONE place a generator gets it.
+
+    `CardBackground` is owned by the /cardart pipeline (`render_card_backgrounds.py` renders
+    `CardBackgrounds/<CardName>.png`, `author_card_backgrounds.py` imports it and rewires the
+    card), not by the mode's generator. Twelve generators re-emitted `CARD_ART`'s legacy
+    placeholder over the rendered picture, so every re-run silently put the old backdrop back.
+
+    The answer is derived from the RENDER, not read back off the card: when the mode's PNG exists,
+    its .meta guid is the truth, so a card that has drifted back to the placeholder (a hand edit, a
+    stale merge, a generator that bypassed this) FAILS the generator's `--check` instead of being
+    copied forward. Before /cardart has run for a mode (first bring-up) it falls back to the
+    shared placeholder.
+
+    `card_name` is the card asset's name with `ArcadeGame` stripped (`WreckingBall`), the same
+    stem author_card_backgrounds.py uses; `ArcadeGameWreckingBall` and a card path are accepted.
+    """
+    stem = os.path.splitext(os.path.basename(card_name))[0]
+    if stem.startswith("ArcadeGame"):
+        stem = stem[len("ArcadeGame"):]
+    for ext in (".png", ".jpg"):
+        meta = os.path.join(ROOT, CARD_BACKGROUNDS_DIR, stem + ext + ".meta")
+        if os.path.exists(meta):
+            with open(meta, encoding="utf-8") as fh:
+                m = re.search(r"^guid: ([0-9a-f]{32})", fh.read(), re.M)
+            assert m, f"no guid in {meta}"
+            return m.group(1)
+    return CARD_ART["CardBackground"]
+
+
+def card_errors(rel: str, content: str) -> "list[str]":
+    """What is wrong with an arcade card a generator is about to emit: a retired key, or a
+    `CardBackground` that is not the /cardart render (`card_background`). Every generator that
+    emits an `ArcadeGame<Mode>.asset` runs this (Generator.finish does it automatically), so a
+    regression on either is a validation failure, not a silent re-run."""
+    errs = []
+    name = os.path.basename(rel)
+    for key in RETIRED_CARD_KEYS:
+        if re.search(rf"^  {key}:", content, re.M):
+            errs.append(f"{name}: emits retired key {key} (not a field on SO_ArcadeGame)")
+    m = re.search(r"^  CardBackground: \{fileID: 21300000, guid: ([0-9a-f]{32}), type: 3\}",
+                  content, re.M)
+    want = card_background(rel)
+    if not m:
+        errs.append(f"{name}: no CardBackground sprite reference")
+    elif m.group(1) != want:
+        errs.append(f"{name}: CardBackground {m.group(1)} is not the /cardart render ({want}) - "
+                    f"emit arcade_mode_lib.card_background(...) instead of a literal")
+    return errs
+
+
+def check_cards(files: "dict[str, str]") -> "list[str]":
+    """card_errors over every arcade card in a generator's output map (rel path -> content)."""
+    errs = []
+    for rel, content in files.items():
+        if re.match(rf"{re.escape(CARDS_DIR)}/ArcadeGame[^/]*\.asset$", rel.replace(os.sep, "/")):
+            errs += card_errors(rel, content)
+    return errs
+
+
+def committed_scene(rel: str, build_clone, authored_blocks=()) -> "tuple[str, list[str]]":
+    """The scene a generator emits: its donor CLONE on first bring-up, the COMMITTED scene after.
+
+    A mode scene is cloned once from a sibling's (`build_clone()`, which swaps guids / blocks and
+    asserts the donor still matches). From the moment it is committed, the Editor owns it: the
+    first save mints the scene's own fileIDs and Netcode `GlobalObjectIdHash`es, and editor tools
+    (Game Mode Prefab Kit, the GameCanvas unifier) keep editing it. Re-cloning on every run then
+    reports that as drift, and writing it would revert the Editor's ids to the DONOR's and undo
+    any later scene edit (Bends and Switchback reported 43 / 10 such lines; Hijack and Salvo,
+    whose --check never diffed, ~330 each - plus a Hijack controller field the Editor added and
+    Cleave's per-intensity spawn floor the clone would have dragged in). So a committed scene is
+    adopted as-is and the clone STANDS DOWN -
+    including when the donor has moved on and its asserts fire (the CLAUDE.md "spent one-shot"
+    rule) - and the generator's checks run on the committed text.
+
+    `authored_blocks` are the exact text blocks the clone writes that the generator still OWNS
+    (a controller's field block, a cell block): each must still appear verbatim in the committed
+    scene, so re-tuning one of them here without updating the scene fails `--check` instead of
+    being silently ignored. Returns (scene text, errors)."""
+    full = os.path.join(ROOT, rel)
+    if not os.path.exists(full):
+        return build_clone(), []
+    with open(full, encoding="utf-8") as fh:
+        scene = fh.read()
+    try:
+        build_clone()
+    except AssertionError as e:
+        print(f"note: scene clone stood down - the donor has moved on ({e}) and "
+              f"{os.path.basename(rel)} is committed. Every other check still runs.")
+    errs = [f"{os.path.basename(rel)}: authored block no longer in the committed scene:\n"
+            f"{block}" for block in authored_blocks if block not in scene]
+    return scene, errs
 
 
 def guid(name: str) -> str:
@@ -345,7 +456,7 @@ class Generator:
         """Run the shared validation, then --check or write. `errors` is the mode's own list of
         failures (may be empty); `referenced` the guids it read from the repo; `minted` the guids
         it invented. Exits non-zero on any failure."""
-        errors = list(errors)
+        errors = list(errors) + check_cards(self.files)
         if len(set(minted)) != len(minted):
             errors.append("minted GUID collision within this script")
 
@@ -380,18 +491,7 @@ class Generator:
             sys.exit(1)
 
         if CHECK_ONLY:
-            changed = []
-            for rel, content in self.files.items():
-                full = os.path.join(ROOT, rel)
-                if not os.path.exists(full):
-                    changed.append(f"{rel} (missing on disk)")
-                    continue
-                on_disk = self.read(rel)
-                if on_disk != content:
-                    changed.append(f"{rel} ({first_diff_line(on_disk, content)})")
-            for rel in self.stale:
-                if os.path.exists(os.path.join(ROOT, rel)):
-                    changed.append(f"{rel} (stale - should be deleted)")
+            changed = drift(self.files, self.stale)
             if changed:
                 print(f"--check: {len(changed)} file(s) differ from the authored output:")
                 for c in sorted(changed):
@@ -415,9 +515,97 @@ class Generator:
             print("  ", rel)
 
 
+def _meta_lines(text: str) -> "list[str]":
+    return [ln.rstrip() for ln in text.splitlines()]
+
+
+def drift(files: "dict[str, str]", stale=()) -> "list[str]":
+    """Every queued file that differs from disk, as "<rel> (<where>)" - the `--check` half of a
+    generator, shared so the standalone generators diff the same way Generator.finish does.
+
+    A `.meta` is compared modulo TRAILING WHITESPACE per line: Unity writes `userData: ` with a
+    trailing space and a generator writes `userData:`, the two are the same YAML, and the Editor
+    rewrites one into the other on reimport - so that difference is not drift, only noise that
+    makes a gate red for nothing. Every other file is compared byte for byte."""
+    changed = []
+    for rel, content in files.items():
+        full = os.path.join(ROOT, rel)
+        if not os.path.exists(full):
+            changed.append(f"{rel} (missing on disk)")
+            continue
+        with open(full, encoding="utf-8") as fh:
+            on_disk = fh.read()
+        if on_disk == content:
+            continue
+        if rel.endswith(".meta") and _meta_lines(on_disk) == _meta_lines(content):
+            continue
+        changed.append(f"{rel} ({first_diff_line(on_disk, content)})")
+    for rel in stale:
+        if os.path.exists(os.path.join(ROOT, rel)):
+            changed.append(f"{rel} (stale - should be deleted)")
+    return changed
+
+
 def first_diff_line(a: str, b: str) -> str:
     al, bl = a.splitlines(), b.splitlines()
     for i, (x, y) in enumerate(zip(al, bl), start=1):
         if x != y:
             return f"line {i}"
     return f"line {min(len(al), len(bl)) + 1} (length differs)"
+
+
+def _self_test() -> int:
+    """Negative controls for the shared card + drift checks, run against the shipped tree:
+    `python3 Tools/Build/arcade_mode_lib.py --self-test`. Each probe is a regression the checks
+    exist to catch; a probe that comes back clean means the check stopped working."""
+    fails = []
+
+    def expect(cond, what):
+        print(("  ok    " if cond else "  FAIL  ") + what)
+        if not cond:
+            fails.append(what)
+
+    rel = f"{CARDS_DIR}/ArcadeGameBreakwater.asset"
+    with open(os.path.join(ROOT, rel), encoding="utf-8") as fh:
+        card = fh.read()
+    rendered = card_background("Breakwater")
+    placeholder = CARD_ART["CardBackground"]
+    expect(rendered != placeholder,
+           "card_background reads the /cardart render's .meta guid, not the placeholder")
+    expect(card_background("ArcadeGameBreakwater") == card_background(rel) == rendered,
+           "card_background accepts a stem, a card name and a card path alike")
+    expect(card_background("NoSuchModeEver") == placeholder,
+           "card_background falls back to the placeholder before /cardart has run")
+    expect(card_errors(rel, card) == [], "the shipped Breakwater card passes card_errors")
+
+    regressed = card.replace(rendered, placeholder)
+    expect(any("CardBackground" in e for e in card_errors(rel, regressed)),
+           "a card emitted with the legacy placeholder over its render is a validation error")
+    with_key = card.replace("  ViewUserAction:", "  CallToActionTargetType: 404\n  ViewUserAction:")
+    expect(any("CallToActionTargetType" in e for e in card_errors(rel, with_key)),
+           "a card emitting the retired CallToActionTargetType is a validation error")
+    expect(check_cards({rel: regressed, "Assets/x.asset": "unrelated"}) != [],
+           "check_cards finds an arcade card inside a generator's output map")
+
+    expect(drift({rel: card}) == [], "drift: the shipped card matches itself")
+    expect(drift({rel: regressed}) != [],
+           "drift: a CardBackground regression ON DISK fails --check (the generator emits the render)")
+    meta_rel = rel + ".meta"
+    with open(os.path.join(ROOT, meta_rel), encoding="utf-8") as fh:
+        meta = fh.read()
+    toggled = re.sub(r"^ *(userData|assetBundleName|assetBundleVariant):.*$",
+                     lambda m: m.group(0).rstrip() if m.group(0).endswith(" ") else m.group(0) + " ",
+                     meta, flags=re.M)
+    expect(toggled != meta and drift({meta_rel: toggled}) == [],
+           "drift: a .meta differing only in trailing whitespace is not drift")
+    expect(drift({meta_rel: meta.replace("guid: ", "guid: 0", 1)}) != [],
+           "drift: a .meta with a different guid IS drift")
+
+    print("self-test: " + ("OK" if not fails else f"{len(fails)} FAILED"))
+    return 1 if fails else 0
+
+
+if __name__ == "__main__":
+    if "--self-test" in sys.argv:
+        sys.exit(_self_test())
+    print(__doc__)
