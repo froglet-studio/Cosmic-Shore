@@ -156,9 +156,19 @@ def _spine_frame(s, length, f, wv):
     return p, toward_head, side
 
 
-def _serpent_body(nb, nt, ring_r, tail_r, shimmer, wv, tails=1, tail_spread=0.0):
-    """The serpent's body: nb 4-unit rings (Mass, with Space rods along the back at the `shimmer` stations), then nt
-    2-unit Time rings (the tail rattle) - one tail, or `tails` tails fanning out sideways by `tail_spread` per station."""
+def _wave_frame(length, wv):
+    """The swimming (and the strike pose's settled) spine as a frame function: (point, toward the head, side, up)."""
+    def frame(s, f):
+        p, fwd, side = _spine_frame(s, length, f, wv)
+        return p, fwd, side, [0.0, 1.0, 0.0]
+    return frame
+
+
+def _serpent_body(nb, nt, ring_r, tail_r, shimmer, frame, tails=1, tail_spread=0.0, fan_up=False):
+    """The serpent's body along `frame(s, f)` -> (point, toward the head, side, up): nb 4-unit rings (Mass, with Space
+    rods along the back at the `shimmer` stations), then nt 2-unit Time rings (the tail rattle) - one tail, or `tails`
+    tails fanning out by `tail_spread` per station, along the side (or, `fan_up`, the up: rolled up, the side points
+    into the curve, and a forked tail fanned that way bunches on the inside of the bend)."""
     units = []
     length = (nb + nt - 1) * SPACING
     for k in range(nb):
@@ -168,11 +178,11 @@ def _serpent_body(nb, nt, ring_r, tail_r, shimmer, wv, tails=1, tail_spread=0.0)
             a = math.radians(ang)
 
             def at(f, s=s, a=a):
-                p, fwd, side = _spine_frame(s, length, f, wv)
-                return add(p, add(mul(side, ring_r * math.cos(a)), [0.0, ring_r * math.sin(a), 0.0]))
+                p, fwd, side, up = frame(s, f)
+                return add(p, add(mul(side, ring_r * math.cos(a)), mul(up, ring_r * math.sin(a))))
 
             def face(f, s=s):
-                return _spine_frame(s, length, f, wv)[1]
+                return frame(s, f)[1]
             units.append(_unit_at(elem, slot, 0, at, face))
     for j in range(tails):
         lane = (j - (tails - 1) / 2.0)
@@ -183,13 +193,150 @@ def _serpent_body(nb, nt, ring_r, tail_r, shimmer, wv, tails=1, tail_spread=0.0)
                 a = math.radians(ang)
 
                 def at(f, s=s, a=a, fan=fan):
-                    p, fwd, side = _spine_frame(s, length, f, wv)
-                    return add(add(p, mul(side, fan)), [0.0, tail_r * math.sin(a), 0.0])
+                    p, fwd, side, up = frame(s, f)
+                    across, ring = (up, side) if fan_up else (side, up)
+                    return add(add(p, mul(across, fan)), mul(ring, tail_r * math.sin(a)))
 
                 def face(f, s=s):
-                    return mul(_spine_frame(s, length, f, wv)[1], -1.0)
+                    return mul(frame(s, f)[1], -1.0)
                 units.append(_unit_at(TIME, slot, 0, at, face))
     return units, length
+
+
+# ───────────────────────────────────────────────────────────────── the coils (the serpents' meals)
+#
+# A serpent eats ROLLED UP, and in a different formation each meal (the prompter, 2026-10-06: "make the serpent roll up
+# like a snake in different formations when eating"). Each formation is a curve the body lies along, head first:
+#
+#   coil    a flat spiral, the head on the inner turn - a resting snake's coil
+#   wrap    a helix, two turns stacked up the axis - a constrictor round its prey
+#   eight   a figure-eight, its two passes crossing one above the other - the lemniscate
+#
+# The Great Serpent coils ROUND the plant (the plant is the formation's centre - its mouth), so far more of its body is
+# in reach of the food than the strike pose's head ever was: a bite is a member within BiteRadius of a leaf
+# (SwarmFauna.Feed), and the formations differ in how much of the body that is - which is why a meal is faster, and why
+# it is not equally fast in every formation. The Many-Headed Serpent's heads already close round the plant (its strike
+# pose's ring), so its body coils BEHIND the collar instead. Every coil keeps the strike pose's units in the same order
+# (thinned together with it), so a commit between any two poses is a re-sort, never a molt.
+
+COILS = ("coil", "wrap", "eight")
+COIL_PITCH = 6.0           # voxels between neighbouring turns' spines: the 4-unit rings (1.38 out) and a forked
+                           # tail's lanes clear MIN_GAP
+COIL_BREATHE = 0.025       # the coil squeezes and loosens round its meal, this share of its radius, once a loop
+COIL_FRAME_STEPS = 12      # 8 frames x 12 steps at 10 Hz = a squeeze, and a turn of its guards, every 9.6 s
+COIL_GUARD_LIFT = 6.5      # a flat formation's guards ride a crown this far above its plane
+EIGHT_RISE = 3.6           # the figure-eight's passes cross this far above and below its centre
+EIGHT_SHARE = 0.9          # the body covers at most this share of the eight (the tail stops short of the head)
+EIGHT_MIN_R = 9.0          # the figure-eight's two round lobes are never tighter than this (a lemniscate's lobe tips
+                           # bend at a third of its size: one long enough for the body bunches its rings at the tips)
+COIL_TAIL_SPREAD = 0.5     # a forked tail fans this much per station in a coil (less than swimming: a coil is curved)
+
+
+def _polyline(fn, t0, t1, n=4000):
+    return [fn(t0 + (t1 - t0) * i / n) for i in range(n + 1)]
+
+
+def _arc_table(pts):
+    acc = [0.0]
+    for i in range(1, len(pts)):
+        acc.append(acc[-1] + norm(sub(pts[i], pts[i - 1])))
+    return acc
+
+
+def _along(pts, acc, s):
+    """The point at arc length s along a dense polyline (clamped to its ends)."""
+    s = max(0.0, min(acc[-1], s))
+    lo, hi = 0, len(acc) - 1
+    while hi - lo > 1:
+        mid = (lo + hi) // 2
+        if acc[mid] <= s:
+            lo = mid
+        else:
+            hi = mid
+    span = acc[hi] - acc[lo]
+    w = (s - acc[lo]) / span if span > 1e-12 else 0.0
+    return [pts[lo][q] + (pts[hi][q] - pts[lo][q]) * w for q in range(3)]
+
+
+def _coil_shape(kind, length, inner):
+    """A formation's curve in its own frame, head end first, at least `length` long, round the origin (its centre),
+    axis +y: (points, guard ring (centre, axis, radius)). `inner` is the innermost spine radius."""
+    P = COIL_PITCH
+    if kind == "coil":
+        turns = 0.0
+        while True:   # enough turns for the body
+            pts = _polyline(lambda th: [(inner + P * th / (2 * math.pi)) * math.cos(th), 0.0,
+                                        (inner + P * th / (2 * math.pi)) * math.sin(th)], 0.0, 2 * math.pi * (turns + 0.25))
+            if _arc_table(pts)[-1] >= length + 1.0:
+                break
+            turns += 0.25
+        return pts, ([0.0, COIL_GUARD_LIFT, 0.0], [0.0, 1.0, 0.0], inner + 0.5 * P + 1.5)
+    if kind == "wrap":
+        per_turn = math.hypot(2 * math.pi * inner, P)
+        turns = length / per_turn + 0.05
+        h = P * turns
+        pts = _polyline(lambda th: [inner * math.cos(th), h / 2 - P * th / (2 * math.pi), inner * math.sin(th)],
+                        0.0, 2 * math.pi * turns)
+        return pts, ([0.0, 0.0, 0.0], [0.0, 1.0, 0.0], inner + 7.5)
+    if kind == "eight":
+        # two round lobes of radius r either side of the centre, joined by the straights that cross there at right
+        # angles: out along +45 deg, three quarters round the far lobe, back through the centre, three quarters round
+        # the near lobe, home. The two passes cross EIGHT_RISE above and below the centre.
+        r = max(EIGHT_MIN_R, length / ((4.0 + 3.0 * math.pi) * EIGHT_SHARE))
+        total = (4.0 + 3.0 * math.pi) * r
+        pts, x, z, h, s = [], 0.0, 0.0, math.pi / 4, 0.0
+        step = 0.02
+        for seg_len, turn in ((r, 0.0), (1.5 * math.pi * r, -1.0), (2.0 * r, 0.0), (1.5 * math.pi * r, 1.0), (r, 0.0)):
+            for _ in range(int(round(seg_len / step))):
+                pts.append([x, EIGHT_RISE * math.cos(2 * math.pi * s / total), z])
+                h += turn * step / r
+                x += step * math.cos(h); z += step * math.sin(h); s += step
+        pts.append([x, EIGHT_RISE * math.cos(2 * math.pi * s / total), z])
+        return pts, ([0.0, EIGHT_RISE + COIL_GUARD_LIFT, 0.0], [0.0, 1.0, 0.0], 1.25 * r)
+    raise ValueError(kind)
+
+
+def _coil_frame(pts, centre):
+    """A frame function along a formation's curve, breathing about `centre`'s vertical axis (a uniform squeeze, so no
+    two turns ever close on each other)."""
+    acc = _arc_table(pts)
+
+    def at(s, f):
+        q = _along(pts, acc, s)
+        k = 1.0 + COIL_BREATHE * math.sin(2 * math.pi * f / FRAMES)
+        return [centre[0] + (q[0] - centre[0]) * k, q[1], centre[2] + (q[2] - centre[2]) * k]
+
+    def frame(s, f):
+        p, q = at(s, f), at(s + 0.25, f)
+        fwd = unit(sub(p, q))
+        side = unit(cross(fwd, [0.0, 1.0, 0.0]))
+        return p, fwd, side, cross(side, fwd)
+    return frame
+
+
+def _placed_behind(pts, run, drop, bend_r):
+    """The formation turned and moved so it leaves the collar (the origin) backward and DOWN: an S-bend of two arcs of
+    radius `bend_r` dropping `drop` (level again at its foot), a straight `run` on along -x, then the curve, entered
+    along its own start tangent."""
+    out, x, y, a = [], 0.0, 0.0, 0.0                            # a: the heading's dip below -x
+    th = math.acos(1.0 - drop / (2.0 * bend_r))
+    step = 0.05
+    for turn in (1.0, -1.0):
+        for _ in range(int(bend_r * th / step)):
+            out.append([x, y, 0.0])
+            a += turn * step / bend_r
+            x -= step * math.cos(a); y -= step * math.sin(a)
+    for _ in range(int(run / step)):
+        out.append([x, y, 0.0])
+        x -= step
+    tx, tz = pts[1][0] - pts[0][0], pts[1][2] - pts[0][2]
+    rot = math.atan2(tz, tx) - math.pi                          # turn the start tangent onto -x
+    c, s_ = math.cos(-rot), math.sin(-rot)
+    lead = len(out)
+    for q in pts:
+        dx, dz = q[0] - pts[0][0], q[2] - pts[0][2]
+        out.append([x + dx * c - dz * s_, y + q[1] - pts[0][1], dx * s_ + dz * c])
+    return out, lead
 
 
 # ───────────────────────────────────────────────────────────────── form 1: the Great Serpent
@@ -202,18 +349,26 @@ GREAT_SERPENT = {
     3: dict(nb=29, nt=10, nh=14, ring_r=2.05, wave=(30.0, 0.3, 2.6), shimmer=3, span=290.0),
 }
 SERPENT_TAIL_R = 1.4
-FEED_SETTLE = 0.3          # a feeding body's wave, as a share of its swimming one
+FEED_SETTLE = 0.3          # a striking body's wave, as a share of its swimming one
+COIL_INNER = 10.5          # the Great Serpent's innermost turn round its plant (a plant is ~28 u = ~9.7 voxels across)
 
 
 def great_serpent(v, pose="travel"):
     """THE GREAT SERPENT: Mass coils (bulk, food store, what regrows), Space rods along the back (the shimmer), a Time
-    tail rattle, and a fan of Charge plates flared round the head - the hood, shield tier. Feeding, the hood plates go
-    out to orbit the mouth as danger-tier guards and the body lies still behind them."""
+    tail rattle, and a fan of Charge plates flared round the head - the hood, shield tier. Striking (`feed`, the lunge
+    pose), the hood plates go out to orbit its jaws as danger-tier guards and the body lies still behind them. Eating
+    (a pose in COILS), it rolls up round the plant in that formation, its guards on a ring outside the coil."""
     p = GREAT_SERPENT[v]
-    settle = FEED_SETTLE if pose == "feed" else 1.0
+    settle = FEED_SETTLE if pose != "travel" else 1.0
     wv = (p["wave"][0], p["wave"][1], p["wave"][2], settle)
     shimmer = set(range(2, p["nb"], p["shimmer"]))
-    units, length = _serpent_body(p["nb"], p["nt"], p["ring_r"], SERPENT_TAIL_R, shimmer, wv)
+    length = (p["nb"] + p["nt"] - 1) * SPACING
+    if pose in COILS:
+        pts, (gc, ga, gr) = _coil_shape(pose, length, COIL_INNER)
+        frame = _coil_frame(pts, [0.0, 0.0, 0.0])
+    else:
+        frame = _wave_frame(length, wv)
+    units, length = _serpent_body(p["nb"], p["nt"], p["ring_r"], SERPENT_TAIL_R, shimmer, frame)
     hood_r = max(4.3, SPACING * p["nh"] / math.radians(p["span"]))
     hood = []
     for q in range(p["nh"]):
@@ -227,6 +382,8 @@ def great_serpent(v, pose="travel"):
         mouth = [3.0, 0.0, 0.0]
         hood = _guard_ring(hood, mouth, [1.0, 0.0, 0.0], hood_r + 6.5, 1 if v % 2 else -1)
         return units + hood, mouth
+    if pose in COILS:
+        return units + _guard_ring(hood, gc, ga, gr, 1 if v % 2 else -1), [0.0, 0.0, 0.0]   # the plant at its centre
     return units + hood, None
 
 
@@ -243,6 +400,29 @@ MANY_HEADED = {
 HEAD_WORDS = {5: "Five", 7: "Seven", 10: "Ten"}
 
 
+MH_COIL_INNER = 10.5       # the Many-Headed Serpent's innermost turn (its coil lies under its heads, round nothing)
+MH_COIL_DROP = 7.0         # its coil lies this far below the collar: the necks rise from it like a rearing cobra's
+MH_BEND_R = 9.0            # the S-bend down to it (its arcs no tighter than the rings allow)
+MH_COIL_REACH = 9.0        # ...and the coil may come this far forward of the collar UNDER the necks (its heads ring the
+                           # food ~17 voxels out, its guards ~16 round them - the space below the fan is free)
+
+
+def _many_headed_coil(kind, length):
+    """The Many-Headed Serpent's body rolled up UNDER its raised heads (which ring the food, in front): an S-bend down
+    from the collar, then the formation - the flat coil entered at its OUTER end, so no turn passes back over the bend.
+    The run on from the bend is as short as keeps every turn behind the collar's line wherever it rises past the space
+    under the necks."""
+    th = math.acos(1.0 - MH_COIL_DROP / (2.0 * MH_BEND_R))
+    bend = 2.0 * MH_BEND_R * th
+    for run in [0.5 * k for k in range(80)]:
+        shape = _coil_shape(kind, length - bend - run + 2.0, MH_COIL_INNER)[0]
+        pts, lead = _placed_behind(shape[::-1] if kind == "coil" else shape, run, MH_COIL_DROP, MH_BEND_R)
+        if all(q[0] <= (MH_COIL_REACH if q[1] <= -MH_COIL_DROP + 3.5 else -4.0) for q in pts[lead:]):
+            break
+    xs, zs = [q[0] for q in pts[lead:]], [q[2] for q in pts[lead:]]
+    return _coil_frame(pts, [(min(xs) + max(xs)) / 2, 0.0, (min(zs) + max(zs)) / 2])
+
+
 def many_headed(v, pose="travel"):
     """THE MANY-HEADED SERPENT: a serpent's body whose front widens into a collar from which N necks (Space rods)
     rise in a fan, each ending in a head (two Mass units, the snout ahead) with two Charge hood plates behind it - the
@@ -254,11 +434,16 @@ def many_headed(v, pose="travel"):
     danger-tier guards."""
     p = MANY_HEADED[v]
     n = p["heads"]
-    feed = pose == "feed"
+    feed = pose != "travel"   # the heads close round the food in the strike pose and in every coil
     settle = FEED_SETTLE if feed else 1.0
     wv = (36.0, 0.2, 3.0, settle)
-    units, length = _serpent_body(p["nb"], p["nt"], 1.95, SERPENT_TAIL_R, set(range(2, p["nb"], 4)), wv,
-                                  tails=p["tails"], tail_spread=1.2)
+    length = (p["nb"] + p["nt"] - 1) * SPACING
+    frame = _wave_frame(length, wv)
+    if pose in COILS:
+        frame = _many_headed_coil(pose, length)
+    coiled = pose in COILS
+    units, length = _serpent_body(p["nb"], p["nt"], 1.95, SERPENT_TAIL_R, set(range(2, p["nb"], 4)), frame,
+                                  tails=p["tails"], tail_spread=COIL_TAIL_SPREAD if coiled else 1.2, fan_up=coiled)
     fan = math.radians(p["fan"])
     dphi = fan / (n - 1)
     collar = max(3.4, 2.4 / (2 * math.sin(dphi / 2)))   # roots on an arc wide enough to keep neighbouring necks apart
@@ -277,7 +462,7 @@ def many_headed(v, pose="travel"):
 
         def travel_pt(f, j, phi0=phi0, k=k):
             r = radial(f, phi0, k)
-            c = _spine_frame(0.0, length, f, wv)[0]
+            c = _spine_frame(0.0, length, f, wv)[0]   # the collar (the head end's settled wave, in every feeding pose)
             d = unit(add([0.55, 0.0, 0.0], r))
             return add(add(c, mul(r, collar)), add(mul(d, j * SPACING), [0.12 * j * j, 0.0, 0.0]))
 
@@ -544,7 +729,8 @@ FORM_NAMES = ["Great Serpent", "Many-Headed Serpent", "Lord of the Dance", "Sea 
 
 
 def _variants():
-    """Every plan the swarm config lists, in order: (key, form index, display name, builder, pose, feeds)."""
+    """Every plan the swarm config lists, in order: (key, form index, display name, builder, feeds). A feeding form has a
+    strike pose (`_feed`); the two serpents also eat in each of the COILS (`_coil`, `_wrap`, `_eight`)."""
     out = []
     for v in (1, 2, 3):
         out.append((f"great_serpent_{v}", 0, "Great Serpent", lambda pose, v=v: great_serpent(v, pose), True))
@@ -560,14 +746,29 @@ def _variants():
 VARIANTS = _variants()
 
 
+def coils_of(form):
+    """The meal formations a form eats in (none: it eats in its strike pose)."""
+    return COILS if form in (0, 1) else ()
+
+
 def plan_keys():
-    """Every plan key in swarm-config order: each variant's travel plan, then its feed twin when it has one."""
+    """Every plan key in swarm-config order: each variant's travel plan, then its strike pose (`_feed`) when it eats,
+    then its coils."""
     keys = []
     for key, form, name, build, feeds in VARIANTS:
         keys.append(key)
         if feeds:
             keys.append(key + "_feed")
+            keys += [f"{key}_{c}" for c in coils_of(form)]
     return keys
+
+
+def split_key(key):
+    """(variant key, pose): pose is "travel", "feed" or one of COILS."""
+    for pose in ("feed",) + COILS:
+        if key.endswith("_" + pose):
+            return key[:-len(pose) - 1], pose
+    return key, "travel"
 
 
 def ring_of(c):
@@ -595,25 +796,37 @@ def _r(x):
 
 
 def _frame_steps(key):
+    if split_key(key)[1] in COILS:
+        return COIL_FRAME_STEPS
     if key.endswith("_feed") or key.startswith("dancer"):
         return FEED_FRAME_STEPS if key.endswith("_feed") else DANCER_FRAME_STEPS
     return SEA_LION_FRAME_STEPS if key.startswith("sea_lion") else FRAME_STEPS
 
 
+_BUILT = {}
+
+
+def _build_variant(base):
+    """Every pose of one variant - travel, and (for a feeding form) its strike pose and coils - built together and
+    THINNED together, so all keep the same members in the same order."""
+    if base not in _BUILT:
+        entry = next(e for e in VARIANTS if e[0] == base)
+        names = ["travel"] + (["feed"] + list(coils_of(entry[1])) if entry[4] else [])
+        built = {name: entry[3](name) for name in names}
+        n = len(built["travel"][0])
+        for name, (units, _) in built.items():
+            assert len(units) == n, f"{base}: the {name} pose builds {len(units)} units, the travel pose {n}"
+        keep = _keep([built[name][0] for name in names])
+        _BUILT[base] = (entry, {name: ([units[i] for i in keep], mouth) for name, (units, mouth) in built.items()})
+    return _BUILT[base]
+
+
 def _build(key):
-    """A plan's units: its travel pose and (for a feeding form) its feed twin are built together and thinned together,
-    so both keep the same members in the same order."""
-    base = key[:-5] if key.endswith("_feed") else key
-    entry = next(e for e in VARIANTS if e[0] == base)
-    travel, _ = entry[3]("travel")
-    poses = [travel]
-    mouth = None
-    if entry[4]:
-        feed, mouth = entry[3]("feed")
-        assert len(feed) == len(travel), f"{base}: the feed pose builds {len(feed)} units, the travel pose {len(travel)}"
-        poses.append(feed)
-    keep = _keep(poses)
-    units = [(poses[1] if key.endswith("_feed") else poses[0])[i] for i in keep]
+    base, pose = split_key(key)
+    entry, poses = _build_variant(base)
+    units, mouth = poses[pose]
+    if pose == "travel" and "feed" in poses:
+        mouth = poses["feed"][1]   # the travel plan's mouth is the strike pose's, in its own frame: how it lines up on a plant
     return entry, units, mouth
 
 
@@ -698,8 +911,9 @@ def validate(plans):
                 errors.append(f"{kind}: Space unit {k} is not a rod {h}")
         if len(p["pos"]) != 3 * FRAMES * n or len(p["face"]) != 3 * FRAMES * n or len(p["sp"]) != 2 * FRAMES * n:
             errors.append(f"{kind}: frame arrays are the wrong length")
-        if kind.endswith("_feed"):
-            twin = plans.get(kind[:-5])
+        base, pose = split_key(kind)
+        if pose != "travel":
+            twin = plans.get(base)
             if twin is None or census(twin) != m:
                 errors.append(f"{kind}: a feed twin must carry its travel plan's element counts exactly "
                               f"({m} vs {census(twin) if twin else 'missing'}) - the commit is a re-sort, never a molt")
@@ -711,7 +925,7 @@ def validate(plans):
     if forms != [0, 1, 2, 3]:
         errors.append(f"the plans make forms {forms}, not the four")
     for form in range(4):
-        if sum(1 for p in plans.values() if p["form"] == form and not p["kind"].endswith("_feed")) != 3:
+        if sum(1 for p in plans.values() if p["form"] == form and split_key(p["kind"])[1] == "travel") != 3:
             errors.append(f"form {form} does not have three variants")
     # every form is at least as big as EVERY variant of the one before it (a match draws the variants independently):
     # a commit then only ever GROWS the body - eggs, paid from the bank - and never leaves a surplus crowding the new

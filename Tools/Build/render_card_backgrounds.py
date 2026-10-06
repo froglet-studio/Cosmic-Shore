@@ -102,7 +102,6 @@ SOURCES = [
     f"{_MG}/SpawnableWaypointTrack.cs",
     f"{_SP}/Generators/ConcentricLayersGenerator.cs",
     f"{_MG}/SpawnableSpherene.cs",
-    f"{_MG}/SpawnableAtlantis.cs",
     f"{_AR}/Skein/SkeinCourse.cs",
     f"{_AR}/Regatta/RegattaCourse.cs",
     f"{_AR}/Racing/RaceCourseGeometry.cs",
@@ -751,7 +750,7 @@ def recipe(stem, card_path, pal, ends):
                        "rim": [c * 1.4 for c in colour], "emissive": [c * 0.8 for c in colour], "unbound": True})
 
     s = stem
-    if env is not None and s != "Tandava":   # Tandava draws its creature and reef OVER its environment (below)
+    if env is not None:
         tier = "RUN"
         layers.append(generator_node(env))
         if s == "Regatta":
@@ -935,17 +934,14 @@ def recipe(stem, card_path, pal, ends):
         stage["radius"] = nuc * 1.3
         stage["centre"] = [0, 0, 0]
     elif s == "Tandava":
-        # RUN tier for the world, MODEL for what lives in it. The cell's environment (Crystal Capture's Atlantis,
-        # thinned) is its real generator; the cell is CLOSED and its reef DISPERSED: the planting is the cell's own seven
+        # MODEL tier. The cell carries no environment; it is CLOSED and its reef DISPERSED: the planting is the cell's own seven
         # forks drawn as ModePreviewPlantingModel draws them (each fork's count, volume-uniform radii in its band), each
         # plant its species' glyph. The creature is the Great Serpent FEEDING - the mode's moment, and the one a pilot strikes:
-        # its OWN feed-twin plan (frame 0 of SwarmPlan_tandava_great_serpent_1_feed.json), unit for unit at 2.2x its
-        # world size so the body reads at card size, its mouth on a plant and its plates out round the mouth as DANGER
-        # guards, in the cell's hostile colour. The membrane wears the cell's OWN colours: Tandava's cell changes only
+        # rolled up round a plant in its constrictor's wrap (frame 0 of SwarmPlan_tandava_great_serpent_1_wrap.json), unit
+        # for unit at 2.2x its world size so the body reads at card size, its plates out round the coil as DANGER guards,
+        # in the cell's hostile colour. The membrane wears the cell's OWN colours: Tandava's cell changes only
         # for the dance (TANDAVA.md §3.3).
-        tier = "RUN" if env is not None else "MODEL"
-        if env is not None:
-            layers.append(generator_node(env))
+        tier = "MODEL"
         rng = Rng(stable_seed(s))
         rows, plants = [], []
         for cfg_name, prefab, count, (inner, outer) in flora_species(facts):
@@ -955,11 +951,11 @@ def recipe(stem, card_path, pal, ends):
                 pos = v_mul(u, rng.range(i3, o3) ** (1 / 3))
                 plants.append(pos)
                 plant_glyph(prefab, pos, u, 70 * rng.range(0.8, 1.2), GOLD if "Space" in cfg_name else JADE, rng, rows)
-        plan = json.loads(read(ROOT / "Assets/_SO_Assets/Swarm Fauna/Tandava/SwarmPlan_tandava_great_serpent_1_feed.json"))
+        plan = json.loads(read(ROOT / "Assets/_SO_Assets/Swarm Fauna/Tandava/SwarmPlan_tandava_great_serpent_1_wrap.json"))
         k_world = 2.0 * 3 ** (1 / 3) * 2.2   # UnitScale 2 x cbrt(PlanDensity 3) x 2.2
         meal = min(plants, key=lambda p: abs(v_dot(v_norm(p), [0, 1, 0])))   # the plant nearest the equator
         up = [0.0, 1.0, 0.0]
-        fwd = v_norm(v_cross(up, meal))       # the body lies ACROSS the cell, its head on the plant
+        fwd = v_norm(v_cross(up, meal))       # its body axes: the coil's axis is the cell's up
         side = v_cross(fwd, up)
         mouth = plan["mouth"]
         centre = v_sub(meal, v_mul(v_add(v_add(v_mul(fwd, mouth[0]), v_mul(up, mouth[1])), v_mul(side, mouth[2])), k_world))
@@ -975,10 +971,10 @@ def recipe(stem, card_path, pal, ends):
                               [2 * x * k_world * 1.8 for x in h], RUBY, DANGER if danger else PLAIN))
         layers.append({"kind": "prisms", "rows": rows})
         nucleus()
-        body = v_add(centre, v_mul(fwd, -80.0))
-        # between the feeding serpent and the world-tree it hunts round: the reef and Atlantis share the shot
-        cam["target"] = v_mul(v_add(body, meal), 0.32)
-        cam["radius"] = 560.0
+        body = centre
+        # on the coiled serpent, wide enough for the crowded reef behind
+        cam["target"] = v_mul(body, 0.7)
+        cam["radius"] = 470.0
         stage.update({"centre": body, "radius": 260.0,
                       "vessels": [{"domain": JADE, "r": 0.9, "tilt": 12, "a0": 150, "sweep": 55, "yaw": 0},
                                   {"domain": JADE, "r": 1.3, "tilt": -18, "a0": 200, "sweep": 45, "yaw": 20},

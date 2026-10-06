@@ -22,16 +22,34 @@ MonoBehaviour:
   ScriptedPlans:
   - {fileID: 4900000, guid: a1589cf87057960e08782033a61d6c18, type: 3}
   - {fileID: 4900000, guid: 301d28bdf8ed3927be1ba381f8f03922, type: 3}
+  - {fileID: 4900000, guid: 3c9d37a62195c1c0bcf81a132b0706cd, type: 3}
+  - {fileID: 4900000, guid: 2747ef3e7082b92fac6fdbe0130072d4, type: 3}
+  - {fileID: 4900000, guid: d67f14aa0408cb18f0ea4773519ae758, type: 3}
   - {fileID: 4900000, guid: c4b3e9fbf9e3479add7322329d614783, type: 3}
   - {fileID: 4900000, guid: 314522d1607a8f717520feabd865ab5c, type: 3}
+  - {fileID: 4900000, guid: 5ce6d4c6d56d8fda41d90d3040783f04, type: 3}
+  - {fileID: 4900000, guid: b88d05a349aafcbbe7217de93e679bc5, type: 3}
+  - {fileID: 4900000, guid: eea3b9f8deeabd006d7833c6e6136d9b, type: 3}
   - {fileID: 4900000, guid: c5b180500399132b1df94c845c89c93b, type: 3}
   - {fileID: 4900000, guid: 407c2b62295d6645550efcd1f027182a, type: 3}
+  - {fileID: 4900000, guid: 050cad9990435e94598da1bb61fd4edf, type: 3}
+  - {fileID: 4900000, guid: 6d7ac1fc6590dceb461fa96d7484adb5, type: 3}
+  - {fileID: 4900000, guid: ef90edc79a56709615df3d58518e7366, type: 3}
   - {fileID: 4900000, guid: ef16320dbd960c290125375a8e7a0492, type: 3}
   - {fileID: 4900000, guid: d58f0c0a90371cb3d226069556a09e80, type: 3}
+  - {fileID: 4900000, guid: f354376b1b4ac37a03590a9ddbb0f6d4, type: 3}
+  - {fileID: 4900000, guid: 3ebabf4d4830220d92ce34b6a36fc477, type: 3}
+  - {fileID: 4900000, guid: 0ba143aade06ad8002de4f9dd07a46f1, type: 3}
   - {fileID: 4900000, guid: ab6be453d56c64666fd2ccbaca2d5f9a, type: 3}
   - {fileID: 4900000, guid: affd3cc1b7dc21e9371c626076af1cf0, type: 3}
+  - {fileID: 4900000, guid: 8cd68d3db13e2100b9b5ae738967d016, type: 3}
+  - {fileID: 4900000, guid: 7d64bd9e9026a43742b6fc258c50e784, type: 3}
+  - {fileID: 4900000, guid: 61bc0f758e4970fa0709afff018851e0, type: 3}
   - {fileID: 4900000, guid: 35d96503f3557eef4629d917ba1fde55, type: 3}
   - {fileID: 4900000, guid: 0af71cd95bc87df145fcd9911d77f438, type: 3}
+  - {fileID: 4900000, guid: 1c89679fee9b1593c9d66f60ef0eef07, type: 3}
+  - {fileID: 4900000, guid: 3aefa21d5a31033198e9b9d6fc34ba6a, type: 3}
+  - {fileID: 4900000, guid: f13107ff0fcb678a7b2118e242e7a749, type: 3}
   - {fileID: 4900000, guid: e4dc8630cac7380b1515d95fb2209f65, type: 3}
   - {fileID: 4900000, guid: ea132811d53ee96cce8f75161b9d1446, type: 3}
   - {fileID: 4900000, guid: d779594b3a418b6f34302f2086da0047, type: 3}
@@ -44,16 +62,34 @@ MonoBehaviour:
   ScriptedPlanPeriods:
   - 6
   - 40
+  - 12
+  - 12
+  - 12
   - 6
   - 40
+  - 12
+  - 12
+  - 12
   - 6
   - 40
+  - 12
+  - 12
+  - 12
   - 6
   - 40
+  - 12
+  - 12
+  - 12
   - 6
   - 40
+  - 12
+  - 12
+  - 12
   - 6
   - 40
+  - 12
+  - 12
+  - 12
   - 40
   - 40
   - 40

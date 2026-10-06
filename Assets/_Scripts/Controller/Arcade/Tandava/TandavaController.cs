@@ -282,11 +282,14 @@ namespace CosmicShore.Gameplay
             {
                 var spec = settings.Forms[k];
                 var v = Variant(k);
+                var coilMouths = Coils(v);
                 forms.Add(new TandavaForm
                 {
                     Name = VariantName(k), Role = spec.Role, PlanIndex = v.PlanIndex, FeedPlanIndex = v.FeedPlanIndex,
                     PlanCount = swarm.FormMemberCount(v.PlanIndex), FillToEvolve = spec.FillToEvolve,
                     Bank = spec.BankShare * stomach, MealVolume = spec.MealVolume, Mouth = S(v.Mouth), FeedMouth = S(v.FeedMouth),
+                    CoilPlanIndices = coilMouths.Length > 0 ? v.CoilPlanIndices : System.Array.Empty<int>(), CoilMouths = coilMouths,
+                    CoilRoamRadius = v.CoilRoamRadius,
                 });
             }
             var overrides = EndConditionOverridesSO.Instance;
@@ -919,6 +922,23 @@ namespace CosmicShore.Gameplay
         }
 
         static int CountBits(int m) { int n = 0; while (m != 0) { m &= m - 1; n++; } return n; }
+
+        /// <summary>A variant's coil mouths, one per coil plan (a variant authored with the two out of step eats in its
+        /// strike pose rather than index past the end).</summary>
+        static SVector3[] Coils(in TandavaVariantSpec v)
+        {
+            int n = v.CoilPlanIndices?.Length ?? 0;
+            if (n == 0) return System.Array.Empty<SVector3>();
+            if (v.CoilMouths == null || v.CoilMouths.Length != n)
+            {
+                CSDebug.LogError($"[Tandava] {v.DisplayName}: {n} coil plans but {v.CoilMouths?.Length ?? 0} coil mouths - " +
+                                 "re-run Tools/Build/author_tandava_assets.py. It eats in its strike pose.");
+                return System.Array.Empty<SVector3>();
+            }
+            var mouths = new SVector3[n];
+            for (int k = 0; k < n; k++) mouths[k] = S(v.CoilMouths[k]);
+            return mouths;
+        }
 
         static SVector3 S(Vector3 v) => new(v.x, v.y, v.z);
         static Vector3 V(SVector3 v) => new(v.X, v.Y, v.Z);

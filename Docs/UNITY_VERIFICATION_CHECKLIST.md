@@ -4387,27 +4387,49 @@ been executed.
    thread nine rings before the drum stops. If they do, an all-AI lobby can win, and the halo wants a tighter mouth,
    more held rings or fewer open ones.
 
-### QA-TANDAVA-16 — the third pass: the small crowded cell, Atlantis, the lunge, no clock (`TANDAVA.md` §0, §3.2-3.3)
+### QA-TANDAVA-16 — the third pass: the small crowded cell, the lunge, no clock (`TANDAVA.md` §0, §3.2-3.3)
+
+The third pass also laid Atlantis through the cell; the fourth removed it (QA-TANDAVA-17), so its phase-floor and
+perf-soak items are gone.
 
 1. **The cell.** The membrane reads at 800 u (the creature's body is about a third of the cell across), the half-size
-   nucleus at 196 u, Atlantis standing round the centre inside the wall, and 27 plants of six species (Borromean, Coral,
-   Lantern, Reed, Frond in the cell's Mass colour; Tendril and Coral in Space) crowded through the reef. The membrane
-   animates (it has no baked preset at this radius - watch for a stall or a pop at load).
-2. **The phase stays Calm** at the go and through the match (the ladder's floor is Atlantis's measured 52,802 prisms /
-   742,404 volume): the reef keeps regrowing after it is grazed. If the HUD or the log shows Restless or Frenzy at the go,
-   read `Cell.LiveVolume` and the prism count there and re-measure (`TANDAVA.md` §3.2).
-3. **Perf soak.** About 56,000 prisms with one swarm of up to 642: profile a full match against
-   `Docs/PERFORMANCE_OPTIMIZATION.md`, beside Crystal Capture at intensity 4 (68,320) for scale. If it is over budget,
-   Atlantis's density is the lever only for its leaves and strands - most of it does not scale (0.15 still lays 49,407).
-4. **The lunge.** Fly at a healthy creature: within about 380 u it turns on you, guard plates out round its jaws, and
+   nucleus at 196 u, NO environment, and 27 plants of six species (Borromean, Coral, Lantern, Reed, Frond in the cell's
+   Mass colour; Tendril and Coral in Space) crowded through the reef. The membrane animates (it has no baked preset at
+   this radius - watch for a stall or a pop at load).
+2. **The lunge.** Fly at a healthy creature: within about 380 u it turns on you, guard plates out round its jaws, and
    charges at about 144 u/s for up to 2.5 s, resting 6 s between; touching a plate stings and slows the hull. Cut it under 70% and it runs instead.
-5. **No clock.** The goal stack has two rows outside the dance (the form and progress, the mood and body) and the drum
+3. **No clock.** The goal stack has two rows outside the dance (the form and progress, the mood and body) and the drum
    row only during it; nothing ends the match on time.
-6. **Faster forms.** The first change comes within about a minute unopposed, and each new body reads within a second or
+4. **Faster forms.** The first change comes within about a minute unopposed, and each new body reads within a second or
    two of the commit (no long scramble of tadpoles).
-7. **No stalemate.** With no clock, fill a lobby with AI and let it run ten minutes: note whether the creature is ever
+5. **No stalemate.** With no clock, fill a lobby with AI and let it run ten minutes: note whether the creature is ever
    pinned at one form (the lab's bots kept it at its first two forms for seven minutes). Then loiter near it yourself:
    it should charge you every 8 s or so and still get meals in between (harness T17).
+
+### QA-TANDAVA-17 — the fourth pass: no environment, the serpents eat rolled up (`TANDAVA.md` §0, §2, §3.4)
+
+C# changed (`TandavaDirectorCore`: `TandavaForm.CoilPlanIndices` / `CoilMouths` / `CoilRoamRadius`, `Coil`, `DrawCoil`;
+`TandavaVariantSpec`'s three new fields; `TandavaController.BuildCore` copies them). `/verify-unity` was not available in
+the session: compiled headless with `Tools/Build/unity_refcompile` (player config, 0 project errors) and run in the swarm
+harness (T1-T18 pass), never in the Editor.
+
+1. **No environment.** The cell loads with nothing between the reef and the wall - no Atlantis, no city, no thorns; the
+   load veil lifts no slower than before. `SpawnableAtlantis Tandava.prefab` is gone from the project and nothing logs a
+   missing reference.
+2. **The coils.** Watch the Great Serpent eat three meals: each time it swims over its plant and rolls up round it - a
+   flat coil, a constrictor's wrap (a helix up the plant) or a figure-eight - a different one each meal, the hood plates
+   circling it (a crown above the flat ones, a ring round the wrap). The body reads as one snake through the curl
+   (no tadpoles left behind at the old head end, no knot where the turns meet).
+3. **The Many-Headed Serpent** coils its body under its raised heads (the necks rise from the coil like a rearing cobra's)
+   while the heads ring the food; again a different formation each meal. The ten-headed one's two tails stay apart.
+4. **Faster meals.** A Great Serpent meal lasts a few seconds (the harness: 2.5 s against 10.7 s in the old pose); a
+   Many-Headed one about 6 s. Note it against the old feel: if a meal is now too short to punish, the lever is
+   `MealVolume` or `BitersPerStep`, not the coils.
+5. **By the wall.** Lead it to a plant near the membrane (the band runs to 720 u): it should still coil round it, its
+   coil inside the wall (its centre may go to about 700 u while coiled, 616 swimming).
+6. **Striking a coil.** A pass through the coiled body cuts it; a pass through the guard crown stings. The lunge still
+   wears the old strike pose (guards round the jaws), not a coil.
+7. **Card.** The Tandava card shows the serpent wrapped round a plant in the reef, no city.
 
 
 **What landed.** A new arena card, `GameModes.Tandava = 62` (Rhino / Squirrel / Sparrow, every pilot on ONE

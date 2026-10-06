@@ -12,13 +12,23 @@ namespace CosmicShore.Gameplay
         public string DisplayName;
         [Tooltip("Its travel plan's index in the swarm config's ScriptedPlans.")]
         [Min(0)] public int PlanIndex;
-        [Tooltip("Its feed twin's index in ScriptedPlans: the same members re-arranged to eat, its plates out round the " +
-                 "mouth as danger guards. -1 for a form that does not eat (the dance).")]
+        [Tooltip("Its strike pose's index in ScriptedPlans: the same members re-arranged, its plates out round the jaws " +
+                 "as danger guards - what it lunges in, and eats in when it has no coils. -1 for a form that does not eat " +
+                 "(the dance).")]
         public int FeedPlanIndex;
+        [Tooltip("The formations it ROLLS UP in to eat (a flat coil, a constrictor's wrap, a figure-eight), as indices " +
+                 "into ScriptedPlans; the director draws a different one each meal. Empty: it eats in its strike pose.")]
+        public int[] CoilPlanIndices;
+        [Tooltip("Where the plant sits in each of CoilPlanIndices (world units from the body's centre, along its axes).")]
+        public Vector3[] CoilMouths;
+        [Tooltip("How far from the cell's centre its centre may go to roll up round a plant (world): the wall less its " +
+                 "coils' reach. 0 without coils.")]
+        [Min(0f)] public float CoilRoamRadius;
         [Tooltip("Its mouth in the TRAVEL pose (world units from the body's centre, along its axes: x forward, y up, z " +
                  "side) - how it lines its head up on a plant. Baked by Tools/Build/tandava_plans.py.")]
         public Vector3 Mouth;
-        [Tooltip("Its mouth in the FEED pose: where the plant must sit while it eats.")]
+        [Tooltip("Its mouth in the strike pose: where its jaws are when it lunges, and where the plant sits when it eats " +
+                 "without coils.")]
         public Vector3 FeedMouth;
         [Tooltip("The dance form only: the halo's centre from the body's centre, in its axes (world).")]
         public Vector3 HaloCentre;
@@ -154,7 +164,7 @@ namespace CosmicShore.Gameplay
         [Header("Narration")]
         [TextArea] public string StartLine = "Something in the reef remembers the old shapes.";
         [Tooltip("Said the first time it feeds.")]
-        [TextArea] public string FeedingLine = "It is feeding - its guards are out round its mouth. Strike the body.";
+        [TextArea] public string FeedingLine = "It is feeding, rolled up round the plant - its guards circle it. Strike the body.";
         [TextArea] public string MealBrokenLine = "Its meal is broken. It bolts.";
         [TextArea] public string RisingLine = "It has eaten enough. It rises into the Lord of the Dance.";
         [TextArea] public string HaloLitLine = "The halo is lit. Break the rings before the drum stops.";

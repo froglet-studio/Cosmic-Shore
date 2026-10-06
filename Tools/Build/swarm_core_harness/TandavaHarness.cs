@@ -97,11 +97,17 @@ static class TandavaHarness
     /// <summary>Every plan, in the swarm config's ScriptedPlans order (tandava_plans.plan_keys - the generator checks).</summary>
     public static readonly string[] Keys =
     {
-        "great_serpent_1", "great_serpent_1_feed", "great_serpent_2", "great_serpent_2_feed", "great_serpent_3", "great_serpent_3_feed",
-        "many_headed_5", "many_headed_5_feed", "many_headed_7", "many_headed_7_feed", "many_headed_10", "many_headed_10_feed",
+        "great_serpent_1", "great_serpent_1_feed", "great_serpent_1_coil", "great_serpent_1_wrap", "great_serpent_1_eight",
+        "great_serpent_2", "great_serpent_2_feed", "great_serpent_2_coil", "great_serpent_2_wrap", "great_serpent_2_eight",
+        "great_serpent_3", "great_serpent_3_feed", "great_serpent_3_coil", "great_serpent_3_wrap", "great_serpent_3_eight",
+        "many_headed_5", "many_headed_5_feed", "many_headed_5_coil", "many_headed_5_wrap", "many_headed_5_eight",
+        "many_headed_7", "many_headed_7_feed", "many_headed_7_coil", "many_headed_7_wrap", "many_headed_7_eight",
+        "many_headed_10", "many_headed_10_feed", "many_headed_10_coil", "many_headed_10_wrap", "many_headed_10_eight",
         "dancer_1", "dancer_2", "dancer_3",
         "sea_lion_1", "sea_lion_1_feed", "sea_lion_2", "sea_lion_2_feed", "sea_lion_3", "sea_lion_3_feed",
     };
+    /// <summary>The meal formations the two serpents roll up in (tandava_plans.COILS).</summary>
+    static readonly string[] Coils = { "coil", "wrap", "eight" };
     static readonly string[][] Variants =
     {
         new[] { "great_serpent_1", "great_serpent_2", "great_serpent_3" },
@@ -124,6 +130,8 @@ static class TandavaHarness
         public SwarmPlanData[] Plans;
         public readonly Dictionary<string, int> Ix = new();
         public readonly Dictionary<string, Vector3> Mouth = new();
+        /// <summary>The farthest any of a plan's units comes from its centre, in any frame (world).</summary>
+        public readonly Dictionary<string, float> Reach = new();
         public readonly Dictionary<string, (Vector3 centre, float radius, float orbit)> Ring = new();
     }
 
@@ -140,6 +148,12 @@ static class TandavaHarness
                       .ToPlanData().Upsample(Density, SwarmPlanData.DefaultUpsampleRadius));
             using var doc = JsonDocument.Parse(text);
             var root = doc.RootElement;
+            {
+                var pos = root.GetProperty("pos"); float reach = 0f;
+                for (int q = 0; q + 2 < pos.GetArrayLength(); q += 3)
+                    reach = MathF.Max(reach, new Vector3(pos[q].GetSingle(), pos[q + 1].GetSingle(), pos[q + 2].GetSingle()).Length());
+                b.Reach[key] = reach * k;   // author_tandava_assets.py coil_roam_radius: the same reach, off the same JSON
+            }
             if (root.TryGetProperty("mouth", out var m)) b.Mouth[key] = new Vector3(m[0].GetSingle(), m[1].GetSingle(), m[2].GetSingle()) * k;
             if (root.TryGetProperty("ring", out var r))
             {
@@ -155,6 +169,9 @@ static class TandavaHarness
     /// <summary>The forms a match with these variant picks runs - author_tandava_assets.py build_forms: each eating form's
     /// bank is its BankShare of the stomach, its meal one MealVolume; the dance does not eat; the Sea Lion's bank is the
     /// FEAST that completes the cycle.</summary>
+    /// <summary>The serpents eat in their strike pose, as before the coils (T18's baseline; TANDAVA_NOCOIL=1 for every run).</summary>
+    static bool NoCoils = Environment.GetEnvironmentVariable("TANDAVA_NOCOIL") == "1";
+
     static List<TandavaForm> BuildForms(Bake b, IReadOnlyList<int> picks)
     {
         var forms = new List<TandavaForm>();
@@ -171,6 +188,12 @@ static class TandavaHarness
             {
                 form.FeedPlanIndex = b.Ix[key + "_feed"];
                 form.Mouth = b.Mouth[key]; form.FeedMouth = b.Mouth[key + "_feed"];
+                if (f < 2 && !NoCoils)
+                {
+                    form.CoilPlanIndices = Coils.Select(c => b.Ix[$"{key}_{c}"]).ToArray();
+                    form.CoilMouths = Coils.Select(c => b.Mouth[$"{key}_{c}"]).ToArray();
+                    form.CoilRoamRadius = TandavaArena.MembraneRadius * 0.97f - Coils.Max(c => b.Reach[$"{key}_{c}"]);
+                }
                 form.Bank = BankShare[f] * StomachCapacity;
                 form.MealVolume = MealVolume;
             }
@@ -359,6 +382,9 @@ static class TandavaHarness
         public int Meals, MealsBroken, LaidWhileFeeding, Sheds;
         public readonly int[] MealEnds = new int[5];
         public float MealSeconds, MealVolumeEaten, MealStart, MealEatenAtStart;
+        public readonly int[] FormMeals = new int[4], CoilMeals = new int[3];
+        public readonly float[] FormMealSeconds = new float[4], FormMealVolume = new float[4];
+        public int MealForm, MealCoil = -1, CoilRepeats, SerpentStrikeMeals;
         public float MaxRadius, RiseAt = -1f, DanceAt = -1f;
         public Vector3 RiseAnchor;
         // the halo, placed when the drum starts
@@ -457,8 +483,19 @@ static class TandavaHarness
         foreach (var e in d.Events)
         {
             if (e.Kind == TandavaEventKind.FormCommitted) s.Commits.Add((s.Now, e.B));
-            if (e.Kind == TandavaEventKind.FeedBegan) { s.Meals++; s.MealStart = s.Now; s.MealEatenAtStart = s.Eaten; }
-            if (e.Kind == TandavaEventKind.FeedEnded) { s.MealSeconds += s.Now - s.MealStart; s.MealVolumeEaten += s.Eaten - s.MealEatenAtStart; }
+            if (e.Kind == TandavaEventKind.FeedBegan)
+            {
+                s.Meals++; s.MealStart = s.Now; s.MealEatenAtStart = s.Eaten;
+                if (e.B >= 0) { s.CoilMeals[e.B]++; if (d.FormIx == s.MealForm && e.B == s.MealCoil) s.CoilRepeats++; }
+                else if (d.FormIx < 2) s.SerpentStrikeMeals++;
+                s.MealForm = d.FormIx; s.MealCoil = e.B;
+            }
+            if (e.Kind == TandavaEventKind.FeedEnded)
+            {
+                s.MealSeconds += s.Now - s.MealStart; s.MealVolumeEaten += s.Eaten - s.MealEatenAtStart;
+                s.FormMeals[d.FormIx]++; s.FormMealSeconds[d.FormIx] += s.Now - s.MealStart;
+                s.FormMealVolume[d.FormIx] += s.Eaten - s.MealEatenAtStart;
+            }
             if (e.Kind == TandavaEventKind.FeedEnded) { s.MealEnds[e.B]++; if (e.B == (int)TandavaMealEnd.Broken) s.MealsBroken++; }
             if (e.Kind == TandavaEventKind.FeedEnded && e.B == (int)TandavaMealEnd.Bare && Environment.GetEnvironmentVariable("TANDAVA_DIAG") == "1")
             {
@@ -502,6 +539,8 @@ static class TandavaHarness
         c.Step(ReadOnlySpan<SwarmPredator>.Empty);
         foreach (var e in c.Events) if (e.Kind == SwarmEventKind.Laid && d.Feeding) s.LaidWhileFeeding++;
         c.Events.Clear();
+        if ((c.Anchor * UnitScale).Length() > s.MaxRadius && Environment.GetEnvironmentVariable("TANDAVA_DIAG") == "2" && (c.Anchor * UnitScale).Length() > 630f)
+            Console.WriteLine($"      r {(c.Anchor * UnitScale).Length():F0} at {s.Now:F1} s: {Keys[c.PlanIx]} phase {d.Phase} mood {d.Mood} goal r {d.Goal.Length():F0} coil {d.Coil}");
         s.MaxRadius = MathF.Max(s.MaxRadius, (c.Anchor * UnitScale).Length());
         if (d.InDance && s.Post != null && (int)MathF.Round(s.Now * TickHz) % 10 == 0)
             for (int k = 0; k < HaloCount; k++) { if (d.HaloIsOut(k)) continue; s.HaloSamples++; if (Guarded(s, k)) s.GuardedSamples++; }
@@ -521,6 +560,10 @@ static class TandavaHarness
         for (int q = 0; q < steps && s.D.Outcome == TandavaOutcome.Running; q++) Tick(s, pilots);
     }
 
+    static string MealsByForm(Sim s) =>
+        string.Join(", ", Enumerable.Range(0, 4).Where(f => s.FormMeals[f] > 0)
+                                    .Select(f => $"{FormNames[f]} {s.FormMealSeconds[f] / s.FormMeals[f]:F1} s x {s.FormMeals[f]}"));
+
     static string Timeline(Sim s) =>
         string.Join(", ", s.Commits.Select(x => $"{FormNames[x.form]} {x.t:F0} s")) +
         (s.RiseAt >= 0 ? $", rose {s.RiseAt:F0} s" : "") + (s.DanceAt >= 0 ? $", drum {s.DanceAt:F0} s" : "");
@@ -537,31 +580,37 @@ static class TandavaHarness
                           string.Join(" / ", Variants.Select(v => string.Join(",", v.Select(k => b.Plans[b.Ix[k]].N)))) +
                           $" members; stomach {StomachCapacity:F0}; a meal {MealVolume:F0}");
 
-        // ── T1: four forms x three variants, feed twins that are the same body, forms that only grow
+        // ── T1: four forms x three variants, poses that are the same body, forms that only grow
         Console.WriteLine("T1 the plans");
         {
             bool twins = true, mouths = true, rings = true;
-            foreach (var key in Keys.Where(k => !k.EndsWith("_feed") && !k.StartsWith("dancer")))
+            foreach (var key in Variants[0].Concat(Variants[1]).Concat(Variants[3]))
             {
-                twins &= Mix(b.Plans[b.Ix[key]]).SequenceEqual(Mix(b.Plans[b.Ix[key + "_feed"]]));
-                mouths &= b.Mouth.ContainsKey(key) && b.Mouth.ContainsKey(key + "_feed");
+                var poses = new[] { "_feed" }.Concat(Variants[3].Contains(key) ? Array.Empty<string>() : Coils.Select(c => "_" + c));
+                foreach (var pose in poses)
+                {
+                    twins &= Mix(b.Plans[b.Ix[key]]).SequenceEqual(Mix(b.Plans[b.Ix[key + pose]]));
+                    mouths &= b.Mouth.ContainsKey(key + pose);
+                }
+                mouths &= b.Mouth.ContainsKey(key);
             }
             foreach (var key in Variants[2]) rings &= b.Ring.ContainsKey(key);
-            Check(b.Plans.Length == 21, "21 plans: 4 forms x 3 variants, and a feed twin for each variant of the three forms that eat");
-            Check(twins, "every feed twin carries exactly its travel plan's element counts (the pose commit is a re-sort, never a molt)");
+            Check(b.Plans.Length == 39, "39 plans: 4 forms x 3 variants, a strike pose for each variant of the three forms that eat, " +
+                                        "and three coils for each serpent");
+            Check(twins, "every pose carries exactly its travel plan's element counts (a pose commit is a re-sort, never a molt)");
             Check(mouths && rings, "every eating plan bakes its mouth, every dance plan its halo");
             bool grows = true;
             for (int f = 1; f < 4; f++)
                 grows &= Variants[f].Min(k => b.Plans[b.Ix[k]].N) >= Variants[f - 1].Max(k => b.Plans[b.Ix[k]].N);
             Check(grows, "every variant of a form is at least as big as every variant of the one before (a commit only grows the body)");
             bool danger = true;
-            foreach (var key in Keys.Where(k => k.EndsWith("_feed")))
+            foreach (var key in Keys.Where(k => k.EndsWith("_feed") || Coils.Any(c => k.EndsWith("_" + c))))
             {
                 var p = b.Plans[b.Ix[key]];
                 int charge = Enumerable.Range(0, p.N).Count(u => p.Elem[u] == 0);
                 danger &= charge > 0 && Enumerable.Range(0, p.N).Count(u => p.Elem[u] == 0 && p.Tier[u] == 1) == charge;
             }
-            Check(danger, "every feed twin's plates are ALL danger tier: the protectors");
+            Check(danger, "every strike pose's and coil's plates are ALL danger tier: the protectors");
         }
 
         // ── T2: it hatches WHOLE as the Great Serpent - no young serpent
@@ -700,12 +749,14 @@ static class TandavaHarness
             Console.WriteLine($"    picks {tag}: {d.Outcome} at {d.Clock:F0} s - {Timeline(s)}; {s.Meals} meals " +
                               $"(fed/bare/full/broken/long {string.Join("/", s.MealEnds)}, {s.MealSeconds / Math.Max(1, s.Meals):F1} s and " +
                               $"{s.MealVolumeEaten / Math.Max(1f, s.MealSeconds):F0} volume/s a meal), max radius {s.MaxRadius:F0}, ate {s.Eaten:F0}");
+            Console.WriteLine($"      a meal by form {MealsByForm(s)}; coils/wraps/eights {string.Join("/", s.CoilMeals)}");
             Check(d.Outcome == TandavaOutcome.Completed && s.Commits.Select(x => x.form).SequenceEqual(new[] { 1, 2, 3 }),
                   $"picks {tag}: Great Serpent -> Many-Headed -> Lord of the Dance -> Sea Lion -> the cycle completes");
             Check(d.Clock < 200f, $"unopposed it completes in {d.Clock:F0} s (< 200 s): the forms come fast, so the pilots must stop it, not wait it out");
             Check(s.Commits.Count == 3 && s.Commits[0].t < 60f, $"its first change comes at {s.Commits[0].t:F0} s (< 60 s)");
             Check(s.LaidWhileFeeding == 0, "it never laid an egg while it ate (the hold: it cannot heal at the table)");
-            Check(s.MaxRadius <= DirectorSettings().RoamRadius + 40f, $"it never left the cell (max radius {s.MaxRadius:F0} of {DirectorSettings().RoamRadius:F0})");
+            float roam = MathF.Max(DirectorSettings().RoamRadius, s.Forms.Max(f => f.CoilRoamRadius));   // rolled up, it reaches further
+            Check(s.MaxRadius <= roam + 40f, $"it never left the cell (max radius {s.MaxRadius:F0} of {roam:F0})");
             if (s.RiseAt >= 0f)
                 Check(Vector3.Distance(s.RiseAnchor, d.DancePoint) <= DirectorSettings().DanceReach + 20f,
                       $"it rose where it stood ({Vector3.Distance(s.RiseAnchor, d.DancePoint):F0} u from the dance ground)");
@@ -968,6 +1019,42 @@ static class TandavaHarness
             });
             Check(lunges >= 3 && s.Meals >= 2,
                   $"a pilot hanging 250 u off it for two minutes was charged {lunges} times, and it still ate {s.Meals} meals (form {s.D.Form.Name})");
+        }
+
+        // ── T18: a serpent eats ROLLED UP - a formation drawn per meal, never the same one twice running, and the body
+        // round the plant eats faster than the strike pose's head did (the prompter, 2026-10-06: "make the serpent roll up
+        // like a snake in different formations when eating ... it takes a long time to eat")
+        Console.WriteLine("T18 it eats rolled up");
+        {
+            var runs = new[] { (new[] { 0, 0, 0, 0 }, 31), (new[] { 1, 2, 1, 2 }, 37), (new[] { 2, 1, 2, 1 }, 41) };
+            var secs = new float[2, 2]; var vol = new float[2, 2]; var meals = new int[2, 2];
+            var used = new int[3]; int repeats = 0, strike = 0; float clockOn = 0f, clockOff = 0f;
+            bool was = NoCoils;
+            for (int mode = 0; mode < 2; mode++)
+            {
+                NoCoils = mode == 1;
+                foreach (var (picks, seed) in runs)
+                {
+                    var s = MakeSim(b, picks, seed);
+                    RunFor(s, RunCap);
+                    for (int f = 0; f < 2; f++) { secs[mode, f] += s.FormMealSeconds[f]; vol[mode, f] += s.FormMealVolume[f]; meals[mode, f] += s.FormMeals[f]; }
+                    if (mode == 0) { for (int k = 0; k < 3; k++) used[k] += s.CoilMeals[k]; repeats += s.CoilRepeats; strike += s.SerpentStrikeMeals; clockOn += s.D.Clock; }
+                    else clockOff += s.D.Clock;
+                }
+            }
+            NoCoils = was;
+            for (int f = 0; f < 2; f++)
+                Console.WriteLine($"    {FormNames[f]}: rolled up {secs[0, f] / Math.Max(1, meals[0, f]):F1} s a meal at {vol[0, f] / Math.Max(1f, secs[0, f]):F0} volume/s; " +
+                                  $"in the strike pose {secs[1, f] / Math.Max(1, meals[1, f]):F1} s at {vol[1, f] / Math.Max(1f, secs[1, f]):F0} volume/s");
+            Console.WriteLine($"    free runs {clockOn / runs.Length:F0} s rolled up, {clockOff / runs.Length:F0} s in the strike pose");
+            Check(strike == 0 && used.Sum() == meals[0, 0] + meals[0, 1],
+                  $"every serpent meal rolled up ({used.Sum()} of {meals[0, 0] + meals[0, 1]}; {strike} in the strike pose)");
+            Check(used.All(n => n > 0), $"in every formation: coil {used[0]}, wrap {used[1]}, eight {used[2]}");
+            Check(repeats == 0, $"never the same formation twice running ({repeats} repeats)");
+            float rateOn = vol[0, 0] / Math.Max(1f, secs[0, 0]), rateOff = vol[1, 0] / Math.Max(1f, secs[1, 0]);
+            Check(rateOn >= 2f * rateOff, $"the Great Serpent coiled round its plant eats {rateOn / Math.Max(1f, rateOff):F1}x as fast as its strike pose (>= 2x)");
+            float mealOn = secs[0, 0] / Math.Max(1, meals[0, 0]), mealOff = secs[1, 0] / Math.Max(1, meals[1, 0]);
+            Check(mealOn <= 6f && mealOn < mealOff, $"a Great Serpent meal takes {mealOn:F1} s (<= 6 s; {mealOff:F1} s in the strike pose)");
         }
 
         Console.WriteLine(_fail == 0 ? "\ntandava: OK" : $"\ntandava: {_fail} FAILED");

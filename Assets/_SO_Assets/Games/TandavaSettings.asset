@@ -26,18 +26,45 @@ MonoBehaviour:
     - DisplayName: Great Serpent
       PlanIndex: 0
       FeedPlanIndex: 1
+      CoilPlanIndices:
+      - 2
+      - 3
+      - 4
+      CoilMouths:
+      - {x: -4.226, y: -1.286, z: 1.451}
+      - {x: -0.868, y: -1.644, z: -4.272}
+      - {x: -8.299, y: -0.6, z: -2.931}
+      CoilRoamRadius: 703.2
       Mouth: {x: 137.063, y: -0.586, z: -0.081}
       FeedMouth: {x: 136.22, y: 0, z: -0.02}
       HaloCentre: {x: 0, y: 0, z: 0}
     - DisplayName: Great Serpent
-      PlanIndex: 2
-      FeedPlanIndex: 3
+      PlanIndex: 5
+      FeedPlanIndex: 6
+      CoilPlanIndices:
+      - 7
+      - 8
+      - 9
+      CoilMouths:
+      - {x: -6.202, y: -0.972, z: -0.978}
+      - {x: 0.381, y: -1.563, z: -4.18}
+      - {x: -6.248, y: -0.173, z: -3.029}
+      CoilRoamRadius: 699.4
       Mouth: {x: 151.419, y: -0.597, z: -0.026}
       FeedMouth: {x: 150.784, y: 0, z: -0.006}
       HaloCentre: {x: 0, y: 0, z: 0}
     - DisplayName: Great Serpent
-      PlanIndex: 4
-      FeedPlanIndex: 5
+      PlanIndex: 10
+      FeedPlanIndex: 11
+      CoilPlanIndices:
+      - 12
+      - 13
+      - 14
+      CoilMouths:
+      - {x: -2.126, y: -1.751, z: 2.137}
+      - {x: -1.243, y: -1.731, z: -3.73}
+      - {x: -11.483, y: -1.301, z: -2.769}
+      CoilRoamRadius: 700.1
       Mouth: {x: 125.906, y: -0.45, z: -0.329}
       FeedMouth: {x: 124.746, y: 0, z: -0.092}
       HaloCentre: {x: 0, y: 0, z: 0}
@@ -49,20 +76,47 @@ MonoBehaviour:
     Line: 'Its coils split: a {0}. Every head dips to the food when it eats.'
     Variants:
     - DisplayName: Five-Headed Serpent
-      PlanIndex: 6
-      FeedPlanIndex: 7
+      PlanIndex: 15
+      FeedPlanIndex: 16
+      CoilPlanIndices:
+      - 17
+      - 18
+      - 19
+      CoilMouths:
+      - {x: 78.735, y: 26.258, z: -31.256}
+      - {x: 72.202, y: 32.474, z: 18.158}
+      - {x: 82.981, y: 33.801, z: -9.706}
+      CoilRoamRadius: 661.9
       Mouth: {x: 146.821, y: 10.116, z: 0.185}
       FeedMouth: {x: 143.836, y: 12.054, z: 0.049}
       HaloCentre: {x: 0, y: 0, z: 0}
     - DisplayName: Seven-Headed Serpent
-      PlanIndex: 8
-      FeedPlanIndex: 9
+      PlanIndex: 20
+      FeedPlanIndex: 21
+      CoilPlanIndices:
+      - 22
+      - 23
+      - 24
+      CoilMouths:
+      - {x: 76.904, y: 24.697, z: -28.268}
+      - {x: 69.317, y: 29.886, z: 17.053}
+      - {x: 80.452, y: 31.179, z: -10.456}
+      CoilRoamRadius: 665.4
       Mouth: {x: 134.239, y: 8.763, z: 0.248}
       FeedMouth: {x: 129.615, y: 11.852, z: 0.101}
       HaloCentre: {x: 0, y: 0, z: 0}
     - DisplayName: Ten-Headed Serpent
-      PlanIndex: 10
-      FeedPlanIndex: 11
+      PlanIndex: 25
+      FeedPlanIndex: 26
+      CoilPlanIndices:
+      - 27
+      - 28
+      - 29
+      CoilMouths:
+      - {x: 76.367, y: 22.398, z: -21.804}
+      - {x: 67.474, y: 25.819, z: 15.112}
+      - {x: 77.83, y: 26.82, z: -10.612}
+      CoilRoamRadius: 668.6
       Mouth: {x: 114.719, y: 7.508, z: 0.972}
       FeedMouth: {x: 107.491, y: 12.098, z: 0.242}
       HaloCentre: {x: 0, y: 0, z: 0}
@@ -74,20 +128,29 @@ MonoBehaviour:
     Line: 
     Variants:
     - DisplayName: Lord of the Dance
-      PlanIndex: 12
+      PlanIndex: 30
       FeedPlanIndex: -1
+      CoilPlanIndices: []
+      CoilMouths: []
+      CoilRoamRadius: 0
       Mouth: {x: 0, y: 0, z: 0}
       FeedMouth: {x: 0, y: 0, z: 0}
       HaloCentre: {x: 0.012, y: 3.854, z: 1.125}
     - DisplayName: Lord of the Dance
-      PlanIndex: 13
+      PlanIndex: 31
       FeedPlanIndex: -1
+      CoilPlanIndices: []
+      CoilMouths: []
+      CoilRoamRadius: 0
       Mouth: {x: 0, y: 0, z: 0}
       FeedMouth: {x: 0, y: 0, z: 0}
       HaloCentre: {x: 0.012, y: 3.854, z: -1.125}
     - DisplayName: Lord of the Dance
-      PlanIndex: 14
+      PlanIndex: 32
       FeedPlanIndex: -1
+      CoilPlanIndices: []
+      CoilMouths: []
+      CoilRoamRadius: 0
       Mouth: {x: 0, y: 0, z: 0}
       FeedMouth: {x: 0, y: 0, z: 0}
       HaloCentre: {x: 0.012, y: 1.76, z: 0.937}
@@ -99,20 +162,29 @@ MonoBehaviour:
     Line: 'The drum stops. A {0} swims out of the halo. One last feast and the cycle is complete.'
     Variants:
     - DisplayName: Sea Lion
-      PlanIndex: 15
-      FeedPlanIndex: 16
+      PlanIndex: 33
+      FeedPlanIndex: 34
+      CoilPlanIndices: []
+      CoilMouths: []
+      CoilRoamRadius: 0
       Mouth: {x: 82.399, y: 10.802, z: 0.133}
       FeedMouth: {x: 73.252, y: 9.741, z: 0.133}
       HaloCentre: {x: 0, y: 0, z: 0}
     - DisplayName: Sea Lion
-      PlanIndex: 17
-      FeedPlanIndex: 18
+      PlanIndex: 35
+      FeedPlanIndex: 36
+      CoilPlanIndices: []
+      CoilMouths: []
+      CoilRoamRadius: 0
       Mouth: {x: 78.663, y: 10.018, z: 0.15}
       FeedMouth: {x: 68.068, y: 9.216, z: 0.141}
       HaloCentre: {x: 0, y: 0, z: 0}
     - DisplayName: Sea Lion
-      PlanIndex: 19
-      FeedPlanIndex: 20
+      PlanIndex: 37
+      FeedPlanIndex: 38
+      CoilPlanIndices: []
+      CoilMouths: []
+      CoilRoamRadius: 0
       Mouth: {x: 85.39, y: 11.1, z: 0.127}
       FeedMouth: {x: 76.157, y: 9.923, z: 0.127}
       HaloCentre: {x: 0, y: 0, z: 0}
@@ -197,7 +269,7 @@ MonoBehaviour:
   TransitionFlash: 1.2
   RestoreSeconds: 5
   StartLine: Something in the reef remembers the old shapes.
-  FeedingLine: It is feeding - its guards are out round its mouth. Strike the body.
+  FeedingLine: 'It is feeding, rolled up round the plant - its guards circle it. Strike the body.'
   MealBrokenLine: Its meal is broken. It bolts.
   RisingLine: It has eaten enough. It rises into the Lord of the Dance.
   HaloLitLine: The halo is lit. Break the rings before the drum stops.

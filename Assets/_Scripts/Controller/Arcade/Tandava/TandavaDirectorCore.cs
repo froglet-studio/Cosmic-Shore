@@ -10,9 +10,12 @@
 //     AGGRESSIVE: a pilot that comes close is LUNGED at - it bares its guard plates and charges, faster and turning
 //     harder than it ever cruises. HURT, it FLEES: it bolts away from them. The speed and the turn are the sort core's
 //     levers;
-//   * HOW TO FEED - at the plant it settles into its FEED pose (the same members re-arranged: its plates go out to orbit
-//     its mouth as DANGER guards - the protectors) with its mouth on the plant, and it stops regrowing. That is the one
-//     time it is both dangerous to approach and unable to heal. A meal it is hurt badly enough during is BROKEN: it bolts;
+//   * HOW TO FEED - at the plant it settles into a meal pose (the same members re-arranged: its plates go out to orbit
+//     it as DANGER guards - the protectors) and stops regrowing. A serpent ROLLS UP for each meal in a formation drawn
+//     afresh each time (a flat coil, a constrictor's wrap, a figure-eight - the Great Serpent round the plant itself, so
+//     most of its body is in reach of the food); a form without coils eats in its strike pose, mouth on the plant. That is
+//     the one time it is both dangerous to approach and unable to heal. A meal it is hurt badly enough during is BROKEN:
+//     it bolts;
 //   * WHEN TO CHANGE - a full body with the form's bank in its stomach takes the next form, never mid-meal. The banked
 //     Many-Headed Serpent RISES where it stands into the Lord of the Dance: a halo of rings lights round it and a drum
 //     runs, and breaking enough rings breaks the dance. When the drum ends it becomes the Sea Lion, whose last feast
@@ -88,7 +91,7 @@ namespace CosmicShore.Gameplay
     {
         /// <summary>A: the form left, B: the form entered (every form change - the rise into the dance included).</summary>
         FormCommitted = 0,
-        /// <summary>A: the food's id.</summary>
+        /// <summary>A: the food's id, B: the formation it rolls up in (an index into the form's coils; -1: its strike pose).</summary>
         FeedBegan = 1,
         /// <summary>A: the food's id, B: the <see cref="TandavaMealEnd"/>.</summary>
         FeedEnded = 2,
@@ -128,8 +131,18 @@ namespace CosmicShore.Gameplay
         public TandavaFormRole Role;
         /// <summary>Its travel plan's index in the swarm's scripted plan list.</summary>
         public int PlanIndex;
-        /// <summary>Its feed twin's index (-1: a form that does not eat).</summary>
+        /// <summary>Its strike pose's index - the guards out round its jaws: its lunge, and its meal pose when it has no
+        /// coils (-1: a form that does not eat).</summary>
         public int FeedPlanIndex = -1;
+        /// <summary>The formations it rolls up in to eat, one drawn per meal (empty: it eats in its strike pose).</summary>
+        public int[] CoilPlanIndices = Array.Empty<int>();
+        /// <summary>Where the plant sits in each of <see cref="CoilPlanIndices"/> (world units along the body axes from
+        /// its centre).</summary>
+        public Vector3[] CoilMouths = Array.Empty<Vector3>();
+        /// <summary>How far from the cell's centre its centre may go to roll up round a plant (world): the wall less its
+        /// coils' reach. A coiled body is a third the size of a swimming one, so it can reach a plant by the wall that
+        /// <see cref="TandavaDirectorSettings.RoamRadius"/> (the wall less the swimming body's reach) keeps it off.</summary>
+        public float CoilRoamRadius;
         /// <summary>Members of its full body.</summary>
         public int PlanCount;
         /// <summary>The body must be at least this share of <see cref="PlanCount"/> to take the next form.</summary>
@@ -323,9 +336,14 @@ namespace CosmicShore.Gameplay
         public TandavaForm Form => Forms[FormIx];
         public int FinalIx => Forms.Count - 1;
         public bool IsFinalForm => FormIx == FinalIx;
-        /// <summary>The plan the body should wear now: the form's feed twin while it eats, else its travel plan.
-        /// The feed twin is also its LUNGE pose: it charges a pilot with the guard plates out round its jaws.</summary>
-        public int WantPlan => (Feeding || Lunging) && Form.FeedPlanIndex >= 0 ? Form.FeedPlanIndex : Form.PlanIndex;
+        /// <summary>The plan the body should wear now: its coil while it eats (its strike pose, for a form without coils),
+        /// its strike pose while it lunges (it charges a pilot with the guard plates out round its jaws), else its travel
+        /// plan.</summary>
+        public int WantPlan => Feeding && Coil >= 0 ? Form.CoilPlanIndices[Coil]
+            : (Feeding || Lunging) && Form.FeedPlanIndex >= 0 ? Form.FeedPlanIndex : Form.PlanIndex;
+        /// <summary>The formation the current (or the coming) meal rolls up in - an index into the form's
+        /// <see cref="TandavaForm.CoilPlanIndices"/>, -1 for none.</summary>
+        public int Coil { get; private set; } = -1;
         public bool Lunging => Mood == TandavaMood.Lunging;
         public float DrumRemaining => InDance ? MathF.Max(0f, S.DrumSeconds - DanceTime) : 0f;
         public float RiseRemaining => Phase == TandavaPhase.Rising ? MathF.Max(0f, S.RiseSeconds - (Clock - _phaseSince)) : 0f;
@@ -334,7 +352,7 @@ namespace CosmicShore.Gameplay
         readonly Random _rng;
         readonly Dictionary<int, float> _restUntil = new();
         float _feedSince, _eatenAtMeal, _phaseSince, _fleeUntil = -1f, _lossRate, _lungeUntil = -1f, _lungeReadyAt;
-        int _lostAtMeal, _lostPrev = -1;
+        int _lostAtMeal, _lostPrev = -1, _coilFor = -1, _coilForm = -1;
         bool _armed, _haveWander;
         Vector3 _wander;
 
@@ -620,10 +638,13 @@ namespace CosmicShore.Gameplay
             var plant = food[k];
             TargetFood = plant.Id;
             _haveWander = false;
-            // line its MOUTH up on the plant: the body's centre aims at the plant less the mouth's reach, so it arrives
-            // head first and slows with its mouth there
-            Goal = ClampInside(plant.Position - InBody(s, Form.Mouth), S.RoamRadius);
-            var mouth = s.Anchor + InBody(s, Form.Mouth);
+            if (plant.Id != _coilFor || FormIx != _coilForm) DrawCoil(plant.Id);
+            // line the meal's MOUTH up on the plant: the body's centre aims at the plant less the mouth's reach. In its
+            // strike pose that is the head, so it arrives head first; rolling up, it is the coil's centre, so it swims
+            // over the plant until its middle is there and curls round it
+            var reach = Coil >= 0 ? Form.CoilMouths[Coil] : Form.Mouth;
+            Goal = ClampInside(plant.Position - InBody(s, reach), MealRoamRadius);
+            var mouth = s.Anchor + InBody(s, reach);
             if (Form.FeedPlanIndex >= 0 && Vector3.Distance(mouth, plant.Position) <= S.ArriveMargin) BeginFeed(s, plant);
         }
 
@@ -703,13 +724,29 @@ namespace CosmicShore.Gameplay
 
         // ──────────────────────────────────────────────────────────────── feeding
 
+        /// <summary>The formation for a meal at <paramref name="plantId"/>: a different one from the last, while the form has
+        /// more than one.</summary>
+        void DrawCoil(int plantId)
+        {
+            int n = Form.CoilPlanIndices.Length;
+            int last = FormIx == _coilForm ? Coil : -1;
+            Coil = n == 0 ? -1 : n == 1 ? 0 : last < 0 ? _rng.Next(n) : (last + 1 + _rng.Next(n - 1)) % n;
+            _coilFor = plantId; _coilForm = FormIx;
+        }
+
+        /// <summary>Where the plant sits in the pose it eats in now.</summary>
+        Vector3 MealMouth => Coil >= 0 ? Form.CoilMouths[Coil] : Form.FeedMouth;
+
+        /// <summary>How far out its centre may go for the meal it is on its way to, or at.</summary>
+        float MealRoamRadius => Coil >= 0 ? MathF.Max(S.RoamRadius, Form.CoilRoamRadius) : S.RoamRadius;
+
         void BeginFeed(in TandavaSwarmState s, in TandavaFood plant)
         {
             Phase = TandavaPhase.Feed; _phaseSince = Clock;
             _feedSince = Clock; _eatenAtMeal = s.EatenTotal; _lostAtMeal = s.Lost; EatenHere = 0f;
             TargetFood = plant.Id;
-            Goal = ClampInside(plant.Position - InBody(s, Form.FeedMouth), S.RoamRadius);
-            Events.Add(new TandavaEvent { Kind = TandavaEventKind.FeedBegan, A = plant.Id });
+            Goal = ClampInside(plant.Position - InBody(s, MealMouth), MealRoamRadius);
+            Events.Add(new TandavaEvent { Kind = TandavaEventKind.FeedBegan, A = plant.Id, B = Coil });
         }
 
         void FeedTick(in TandavaSwarmState s, IReadOnlyList<TandavaFood> food)
@@ -733,7 +770,7 @@ namespace CosmicShore.Gameplay
             if (s.StomachFill >= S.LeaveWhenStomachFill) { EndMeal(TandavaMealEnd.Full); return; }
             if (sat > S.FeedSettleSeconds + S.GiveUpSeconds && s.SinceBite > S.GiveUpSeconds) { EndMeal(TandavaMealEnd.Bare); return; }
             if (sat > S.MaxFeedSeconds) { EndMeal(TandavaMealEnd.TooLong); return; }
-            Goal = ClampInside(food[k].Position - InBody(s, Form.FeedMouth), S.RoamRadius);
+            Goal = ClampInside(food[k].Position - InBody(s, MealMouth), MealRoamRadius);
         }
 
         void EndMeal(TandavaMealEnd why)
@@ -743,6 +780,7 @@ namespace CosmicShore.Gameplay
             if (id >= 0) _restUntil[id] = Clock + S.RestSeconds;
             Events.Add(new TandavaEvent { Kind = TandavaEventKind.FeedEnded, A = id, B = (int)why });
             TargetFood = -1;
+            _coilFor = -1;   // the next meal, even at this plant again, draws a new formation
         }
 
         void End(TandavaOutcome outcome)
