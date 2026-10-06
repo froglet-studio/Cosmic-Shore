@@ -57,6 +57,31 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Skim Race editor pass: no-alloc steering, float planner loops, skim-beam pool (`claude/bold-fermi-54nlts`, 2026-10-06)
+
+**What landed** (`Docs/SKIM_RACE_AI.md` §8.0f): `MathfNoAlloc` replaces the 7 three-value
+`Mathf.Min/Max` calls (new gate `check_mathf_params_alloc.py`); the planner's inner loops in floats
+(`SkimRaceCourse`, `SkimRaceShell`, `SkimRaceObstacle.LocalFrame`); `FillObstacles` reads its
+per-frame inputs once (`SelfTrailContactConfigSO.HullContactFilter`) and gains `.Query` / `.Pack`
+child markers; `SkimFxRunner` recycles skim beams (`SkimFxPool`); `PrismStateManager` /
+`PrismOctahedronShield` `Awake` use `TryGetComponent`.
+
+**Verified without the editor:** simulator race output byte-identical on .NET and Mono;
+`SkimRaceCourseQueryTests` (5) pass on both; the Froglet Engine's live compile of runtime
+`Assets/_Scripts` builds with 0 errors and its suites pass (1569 + 352); offline gates pass.
+
+**Verify in editor:**
+1. The project compiles; Test Runner > EditMode: `SkimRaceCourseQueryTests` (5) pass.
+2. Skim Race I2, 2 AI: the AI races as before (no new strikes or orbits).
+3. Skim along a trail and along the track: the green skim beams appear, stretch to the ship and
+   vanish as before - no beam left frozen in place, none appearing at the world origin, none
+   carrying old particles from a previous contact.
+4. Leave a race for the menu and start another: beams still appear (the pool survives scenes).
+5. F7 > `diag S_SkimRace_I2 15` and `prof S_SkimRace_I2`: `SkimRace.Pilot.Decide` shows ~0 GC.Alloc
+   (was 840 a frame), and `SkimRace.Pilot.FillObstacles.Query` / `.Pack` appear under the pilot.
+
+---
+
 ### 🔴 Skim Race pilot cost, PrismTimerManager list pool, diag markers (`claude/bold-fermi-54nlts`, 2026-10-05)
 
 **What landed:**
