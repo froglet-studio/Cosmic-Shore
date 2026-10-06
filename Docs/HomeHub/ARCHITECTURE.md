@@ -1786,3 +1786,35 @@ not merely unused, so nothing can reach for them again. The Quest Graph's `Navig
 stand down under the developer unlock today, and converting them to guides is part of
 re-deciding them (`Docs/ModePreview/TRAINING_PLAN.md` §11). `author_first_login_guide.py --check`
 fails if a carrying node ever appears in the first-login phase.
+
+### 8.1 First playtest: the dim drew nothing in Unity, and Settings was never cut out
+
+Reported from the Unity editor: the caption appeared over the Arcade button and nothing else did -
+no dim, no CTA frame, every hub button and the nameplate lit as normal. Three changes followed, and
+the flow was then walked end to end in **Prisma** (`Port/`), which runs the real Menu_Main and
+compiles `Assets/_Scripts` live: Home (dim, frame on ARCADE, Settings cut out) → Toybox press
+ignored → Settings opens and the spotlight stands aside → pad B closes it and the guide returns →
+Arcade opens and the light moves to this week's card → the card opens and the light moves to the
+preview, with B refused → tap in and the spotlight fades.
+
+- **All spotlight geometry is in the overlay's LOCAL space, never `Screen.*`.** The dim built its
+  mesh from `Screen.width`/`Screen.height` at rebuild time; in the Editor a canvas rebuild can run
+  while another window is the one being painted, which places every cell somewhere other than the
+  Game view. The mesh now reads its own `rectTransform.rect`, the cut-outs are converted into that
+  space once (`ScreenPointToLocalPointInRectangle`), and the raycast filter converts the press the
+  same way - one coordinate space for drawing and for blocking. Prisma drew it correctly either way,
+  so this is the Unity-only difference; it is the strongest candidate rather than a proven cause.
+- **Settings is marked, not only found.** Finding it from its inspector-wired onClick works in Unity
+  but depends on persistent-listener introspection (Prisma's port of `UnityEvent` cannot answer it),
+  so Menu_Main's `SettingsButton` now carries `MenuGuideAlwaysAvailable`. Both routes stay.
+- **A Settings cut-out is punched only where a press would actually reach Settings** (an
+  `EventSystem` raycast at its centre, ignoring the spotlight). The configure window is drawn over
+  the gear; cutting a hole there showed an empty square and passed the press to the window beneath.
+- **The caption has a dark backing**, because white text over dimmed card art is still unreadable.
+
+**Open, and not the guide's to fix:** inside the Arcade and the launch window, the menu's own panels
+are drawn over the gear (`Arcade_Panel` covers it), so Settings cannot be pressed there with or
+without a guide. "Settings is always reachable" therefore holds on Home only today. Making it hold
+everywhere is a menu change - the gear above every window, or pad West opening Settings from any
+menu window - and wants its own decision.
+

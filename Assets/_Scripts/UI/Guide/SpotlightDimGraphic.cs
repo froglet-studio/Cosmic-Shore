@@ -11,7 +11,12 @@ namespace CosmicShore.UI
     /// </summary>
     public class SpotlightDimGraphic : MaskableGraphic, ICanvasRaycastFilter
     {
-        /// <summary>Cut-outs in screen pixels (owned by <see cref="MenuSpotlight"/>).</summary>
+        /// <summary>
+        /// Cut-outs in THIS graphic's local space (owned by <see cref="MenuSpotlight"/>). Local, not
+        /// screen pixels: the mesh is built in local space, and reading <c>Screen.width</c> inside a
+        /// mesh rebuild is not safe in the Editor, where a rebuild can run while another window is
+        /// the one being painted - which is how the first build drew no dim at all in Unity.
+        /// </summary>
         public List<Rect> Holes;
 
         static readonly List<float> Xs = new();
@@ -20,15 +25,16 @@ namespace CosmicShore.UI
         protected override void OnPopulateMesh(VertexHelper vh)
         {
             vh.Clear();
-            float w = Screen.width, h = Screen.height;
+            var bounds = rectTransform.rect;
+            float x0b = bounds.xMin, x1b = bounds.xMax, y0b = bounds.yMin, y1b = bounds.yMax;
 
             Xs.Clear(); Ys.Clear();
-            Xs.Add(0f); Xs.Add(w); Ys.Add(0f); Ys.Add(h);
+            Xs.Add(x0b); Xs.Add(x1b); Ys.Add(y0b); Ys.Add(y1b);
             if (Holes != null)
                 foreach (var r in Holes)
                 {
-                    Xs.Add(Mathf.Clamp(r.xMin, 0f, w)); Xs.Add(Mathf.Clamp(r.xMax, 0f, w));
-                    Ys.Add(Mathf.Clamp(r.yMin, 0f, h)); Ys.Add(Mathf.Clamp(r.yMax, 0f, h));
+                    Xs.Add(Mathf.Clamp(r.xMin, x0b, x1b)); Xs.Add(Mathf.Clamp(r.xMax, x0b, x1b));
+                    Ys.Add(Mathf.Clamp(r.yMin, y0b, y1b)); Ys.Add(Mathf.Clamp(r.yMax, y0b, y1b));
                 }
             Xs.Sort(); Ys.Sort();
 
@@ -59,6 +65,8 @@ namespace CosmicShore.UI
         }
 
         /// <summary>A press inside a cut-out is not ours - it falls through to the control beneath.</summary>
-        public bool IsRaycastLocationValid(Vector2 screenPoint, Camera eventCamera) => !InHole(screenPoint);
+        public bool IsRaycastLocationValid(Vector2 screenPoint, Camera eventCamera) =>
+            !RectTransformUtility.ScreenPointToLocalPointInRectangle(rectTransform, screenPoint, eventCamera, out var local)
+            || !InHole(local);
     }
 }

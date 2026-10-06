@@ -804,7 +804,6 @@ namespace CosmicShore.UI
                 else if (b.min.y < v.yMin) shift = v.yMin - b.min.y;     // below: move content up
                 if (Mathf.Abs(shift) > 0.5f)
                 {
-                    scroll.StopMovement();
                     scroll.content.anchoredPosition += new Vector2(0f, shift);
                 }
             }

@@ -91375,6 +91375,18 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &8805150672914031207
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1473612410234841810}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 78b91dfca48a4d0e982ccbc473cfce97, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.MenuGuideAlwaysAvailable
 --- !u!1 &1473612410234841810
 GameObject:
   m_ObjectHideFlags: 0
@@ -91390,6 +91402,7 @@ GameObject:
   - component: {fileID: 3689056578567696206}
   - component: {fileID: 1462554587758757933}
   - component: {fileID: 6480133856667877324}
+  - component: {fileID: 8805150672914031207}
   m_Layer: 5
   m_Name: SettingsButton
   m_TagString: Untagged

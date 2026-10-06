@@ -41,8 +41,10 @@ namespace CosmicShore.UI
         Canvas _canvas;
         CanvasGroup _group;
         SpotlightDimGraphic _dim;
+        RectTransform _dimRect;
         SpotlightFrameGraphic _frame;
         TextMeshProUGUI _caption;
+        Image _captionBacking;
 
         RectTransform _target;
         string _captionText;
@@ -99,11 +101,22 @@ namespace CosmicShore.UI
             _group.interactable = false;
 
             _dim = MakeChild<SpotlightDimGraphic>("Dim");
+            _dimRect = _dim.rectTransform;
             _dim.raycastTarget = true;
             _dim.Holes = _holes;
 
             _frame = MakeChild<SpotlightFrameGraphic>("CallToAction");
             _frame.raycastTarget = false;
+
+            // A dark pill behind the caption: the caption sits over whatever the menu draws there
+            // (card art, titles), and dimmed art behind white text is still busy art.
+            var backingRect = new GameObject("CaptionBacking", typeof(RectTransform)).GetComponent<RectTransform>();
+            backingRect.SetParent(transform, false);
+            backingRect.anchorMin = backingRect.anchorMax = Vector2.zero;
+            backingRect.pivot = new Vector2(0.5f, 0.5f);
+            _captionBacking = backingRect.gameObject.AddComponent<Image>();
+            _captionBacking.color = new Color(0f, 0f, 0f, 0.78f);
+            _captionBacking.raycastTarget = false;
 
             var captionRect = new GameObject("Caption", typeof(RectTransform)).GetComponent<RectTransform>();
             captionRect.SetParent(transform, false);
@@ -145,9 +158,12 @@ namespace CosmicShore.UI
                 return;
             }
 
-            if (!TryScreenRect(_target, out var rect)) return;
+            if (!TryLocalRect(_target, out var rect)) return;
 
-            float scale = Mathf.Max(0.5f, Screen.height / 1080f);
+            // Everything below is in the dim's LOCAL space (pixels from the overlay's bottom-left),
+            // never Screen.*: see SpotlightDimGraphic.Holes.
+            var bounds = _dimRect.rect;
+            float scale = Mathf.Max(0.5f, bounds.height / 1080f);
             rect = Inflate(rect, 10f * scale);
 
             _hole = _hasHole && _group.alpha > 0f
@@ -158,13 +174,14 @@ namespace CosmicShore.UI
             if (Time.unscaledTime >= _allowedRefreshAt)
             {
                 MenuGuide.CollectAlwaysAvailable(_allowed);
+                _allowed.RemoveAll(a => !IsReachable(a));
                 _allowedRefreshAt = Time.unscaledTime + AllowedRefreshSeconds;
             }
 
             _holes.Clear();
             _holes.Add(_hole);
             foreach (var allowed in _allowed)
-                if (allowed && TryScreenRect(allowed, out var a))
+                if (allowed && TryLocalRect(allowed, out var a))
                     _holes.Add(Inflate(a, 4f * scale));
             _dim.SetVerticesDirty();
 
@@ -177,14 +194,15 @@ namespace CosmicShore.UI
             _frame.color = c;
             _frame.SetVerticesDirty();
 
-            PlaceCaption(scale);
+            PlaceCaption(scale, bounds);
             HoldPadOnPath();
         }
 
-        void PlaceCaption(float scale)
+        void PlaceCaption(float scale, Rect bounds)
         {
             bool show = !string.IsNullOrEmpty(_captionText);
             _caption.gameObject.SetActive(show);
+            _captionBacking.gameObject.SetActive(show);
             if (!show) return;
 
             if (_caption.text != _captionText) _caption.text = _captionText;
@@ -194,7 +212,7 @@ namespace CosmicShore.UI
                 if (font) _caption.font = font;
             }
 
-            float width = Mathf.Min(760f * scale, Screen.width - 40f * scale);
+            float width = Mathf.Min(760f * scale, bounds.width - 40f * scale);
             float height = 120f * scale;
             _caption.fontSize = 36f * scale;
             var rect = _caption.rectTransform;
@@ -203,9 +221,20 @@ namespace CosmicShore.UI
             float gap = 28f * scale + height * 0.5f;
             float above = _hole.yMax + gap;
             float below = _hole.yMin - gap;
-            float y = above + height * 0.5f <= Screen.height ? above : below;
-            float x = Mathf.Clamp(_hole.center.x, width * 0.5f, Screen.width - width * 0.5f);
+            float y = above + height * 0.5f <= bounds.yMax ? above : below;
+            float x = Mathf.Clamp(_hole.center.x, bounds.xMin + width * 0.5f, bounds.xMax - width * 0.5f);
             rect.anchoredPosition = new Vector2(x, y);
+
+            // The pill hugs the text that is actually drawn, not the caption's whole box.
+            // Single-line preferred size, folded into the wrap width (the one GetPreferredValues
+            // overload every TMP build has).
+            var line = _caption.GetPreferredValues(_captionText);
+            int lines = Mathf.Max(1, Mathf.CeilToInt(line.x / Mathf.Max(1f, width)));
+            float pad = 18f * scale;
+            var backing = _captionBacking.rectTransform;
+            backing.sizeDelta = new Vector2(Mathf.Min(line.x, width) + pad * 2f,
+                                            Mathf.Min(line.y * lines, height) + pad);
+            backing.anchoredPosition = rect.anchoredPosition;
         }
 
         TMP_FontAsset ResolveFont()
@@ -232,6 +261,30 @@ namespace CosmicShore.UI
                 es.SetSelectedGameObject(selectable.gameObject);
         }
 
+        static readonly List<RaycastResult> Hits = new();
+
+        /// <summary>
+        /// True when a press on the centre of <paramref name="control"/> would actually reach it -
+        /// ignoring this overlay. A Settings button another window is drawn over is not available
+        /// there, and cutting a hole for it would show an empty window and pass the press to
+        /// whatever is underneath.
+        /// </summary>
+        bool IsReachable(RectTransform control)
+        {
+            var es = EventSystem.current;
+            if (!control || !es || !TryScreenRect(control, out var screen)) return false;
+
+            var data = new PointerEventData(es) { position = screen.center };
+            Hits.Clear();
+            es.RaycastAll(data, Hits);
+            foreach (var hit in Hits)
+            {
+                if (!hit.gameObject || hit.gameObject.transform.IsChildOf(transform)) continue;
+                return hit.gameObject.transform.IsChildOf(control);
+            }
+            return false;
+        }
+
         bool OnPath(Transform t)
         {
             if (t.IsChildOf(_target) || _target.IsChildOf(t)) return true;
@@ -243,6 +296,18 @@ namespace CosmicShore.UI
         // ── Geometry ────────────────────────────────────────────────────────
 
         static readonly Vector3[] Corners = new Vector3[4];
+
+        /// <summary><paramref name="rect"/>'s on-screen rectangle, in the dim's local space.</summary>
+        bool TryLocalRect(RectTransform rect, out Rect local)
+        {
+            local = default;
+            if (!TryScreenRect(rect, out var screen)) return false;
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(_dimRect, screen.min, null, out var a)
+                || !RectTransformUtility.ScreenPointToLocalPointInRectangle(_dimRect, screen.max, null, out var b))
+                return false;
+            local = Rect.MinMaxRect(Mathf.Min(a.x, b.x), Mathf.Min(a.y, b.y), Mathf.Max(a.x, b.x), Mathf.Max(a.y, b.y));
+            return true;
+        }
 
         /// <summary>
         /// <paramref name="rect"/>'s on-screen rectangle in pixels, clipped to any mask above it (a
