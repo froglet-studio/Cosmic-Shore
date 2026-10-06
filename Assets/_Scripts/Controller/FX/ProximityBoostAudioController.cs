@@ -336,7 +336,7 @@ namespace CosmicShore.Gameplay.Audio
             if (!_classGatePass || !_localGatePass) return;
 
             // The SOAP event is global; every vessel (incl. the remote owner's
-            // per-frame DecayBoost) raises it. Filter by source-vessel identity so
+            // DecayBoost) raises it. Filter by source-vessel identity so
             // we only react to our own vessel's boost. Robust where two vessels
             // momentarily share a multiplier - the old multiplier-match filter
             // mis-fired in that case.

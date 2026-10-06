@@ -332,7 +332,7 @@ namespace CosmicShore.UI
             if (!view) return;
 
             // Multiplayer: boostChanged is a shared global SOAP channel raised by EVERY
-            // vessel (notably the remote owner's per-frame DecayBoost). Ignore raises that
+            // vessel (notably the remote owner's DecayBoost). Ignore raises that
             // didn't originate from our own vessel, else a remote vessel pins this HUD and
             // the local owner's energy bar goes unresponsive.
             if (payload.VesselStatus != null && payload.VesselStatus != _vesselStatus) return;

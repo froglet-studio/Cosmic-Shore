@@ -200,7 +200,9 @@ The vessels' `_touchActionOverrides` are unchanged in net; touch and pad bind th
 
 ### 2.7 Things to know before porting
 
-1. **The FIFO trail cap breaks a LOCKED rule.** `Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md`:
+1. **The FIFO trail cap breaks a LOCKED rule.** *(Resolved 2026-10-05: the owner granted it for
+   `MobileLow` only - decision 4, §3.6; the paragraph below is the analysis that asked for it.)*
+   `Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md`:
    *"there is no context in which trail caps, prism TTLs, or idle cullers are acceptable."* The
    only exception is the Wanderway tether, recorded in `Docs/ECOSYSTEM.md` §0. The strip relied
    on a branch-only OK (2026-07-07). Bringing the Skim Race / Joust cap to bleeding-edge, even
@@ -255,7 +257,8 @@ today), and the 4 GB Samsung lands on `MobileLow` (Garrett's strip).
    leak across platforms, so Garrett's Android-only settings and your Gradle fixes merge as-is.
 2. **Runtime: device tier + one `PlatformProfileSO` per tier.** Every knob the strip hard-codes in
    `PerfStrip` (a `static class` with `Enabled = true`) becomes a field on the profile asset, so
-   `PerfStrip.TrailsDisabled` becomes `PlatformProfile.Current.TrailsDisabled` and so on. The
+   `PerfStrip.TrailsDisabled` becomes a profile read (as built, the fields have their own names:
+   §3.4-§3.6 list them; there is no `TrailsDisabled`). The
    `Desktop` profile is "everything off", so Windows behaves exactly as bleeding-edge does today.
    Config lives in SOs per CLAUDE.md config separation; no `#if UNITY_ANDROID` in gameplay code
    (runtime detection only, per `Docs/CONDITIONAL_COMPILATION.md`).

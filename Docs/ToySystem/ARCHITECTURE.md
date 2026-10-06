@@ -1385,7 +1385,9 @@ so there is always a field of structures ahead.
 **Scale — 30,000 conserved prisms, built once behind a veil.** The belt's whole stock is
 `poolSize × prismBudgetPerScene` (**20 × 1500 = 30,000** at the authored defaults — the same order as
 an authored cell environment, which is the proven envelope for the instanced render path + collider
-LOD). It is built **up front**, on the first pass through the toy, behind the same
+LOD; a device tier may override the BUILT config, never the asset: MobileLow phones run 8 × 150 =
+1,200 with no lifeform scenes and 2 concurrent arrivals — `PlatformProfileSO.WanderwayBudget`,
+applied in `WanderToy.Configure`, `Docs/PLATFORM_UNIFICATION.md` §3.6). It is built **up front**, on the first pass through the toy, behind the same
 `EnvironmentLoadVeil` the Cell Selector raises for a world swap: `MicrosceneConveyor.PrimeAsync`
 brackets `PrismTrailBuilder.BeginArenaBuild`/`EndArenaBuild`, raises the veil, and lays all
 `poolSize` scenes concurrently through `PrismTrailBuilder.LayBudgetedAsync` — the time-budgeted,
