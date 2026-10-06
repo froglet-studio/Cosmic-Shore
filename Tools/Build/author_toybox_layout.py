@@ -55,8 +55,8 @@ TOY_CELL = (400.0, 250.0)
 # Editor on 2026-09-09 (050ee6e82, "Update Menu_Main.unity") to a FIXED THREE-COLUMN grid
 # (m_Constraint 1 / m_ConstraintCount 3, which this script does not author) with 10 between
 # columns (3 x 400 + 2 x 10 + the 36/16 insets = 1272 wide). The scene is the design; this
-# constant follows it. HomeHubWiringWindow.ToyLayout.ToySpacing
-# still says (20, 20) and needs the same change, or a WIRE IT re-run widens the gutter again.
+# constant follows it, and so does HomeHubWiringWindow.ToyLayout.ToySpacing (+ ToyColumns 3), so
+# a WIRE IT re-run cannot widen the gutter again.
 TOY_SPACING = (10.0, 20.0)
 TOY_PADDING = 16
 VARIANT_CELL = (275.0, 88.0)
