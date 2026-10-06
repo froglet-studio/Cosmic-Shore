@@ -394,13 +394,8 @@ These change every platform, Windows included - they are fixes, not tiers.
 |---|---|
 | **`VesselTransformer.DecayBoost` raises `boostChanged` only when the multiplier moved** since this transformer last raised it (Garrett's change), and re-raises once after `Initialize` / `ResetTransformer`, which write the multiplier without raising. The channel is global and `DecayBoost` runs for every vessel on every peer, so at rest each vessel used to fan out to every vessel's HUD and boost audio every frame | nothing: the HUD and the boost audio get the same values, just not the same value again 60-240 times a second. Only the Squirrel authors `decayBoost: 1`, and it is the only vessel with `boostChanged` listeners (its HUD and boost audio); every other writer of its multiplier (skim boost, reset-boost) raises the event itself. The silent writers (`GrowSkimmer`, `RampBoost`, Manta's turn boost) are on vessels that never run `DecayBoost` |
 | **`ProximityBoostAudioController.minTickInterval` 0.07 s**: the Squirrel's skim-tick one-shot fires at most ~14 times a second | dense skimming reads as rapid clicks instead of a buzz. The buzz scaled with frame rate, so a 144-240 Hz PC had it worst. The loop layer and the boost itself are untouched |
+| **The `[Obsolete]` `SkimmerFXPrismEffect` beam dropped from `SquirrelSkimmerImpactorDataContainer`** (owner's decision, 2026-10-06; closes `Docs/ElementalAbilitySystem/BACKLOG.md` item 21) | the Squirrel no longer draws a beam to every prism it skims; the forcefield crackle is its only skim visual, as on the Dolphin. Skim boost, steal and haptics are separate entries in the same container and unchanged |
 | `FoldGatePortalView` render target no longer reallocated every frame | already landed with Step 4 (§3.5) |
-
-**Waiting on a design call, not ported:** dropping the `[Obsolete]` `SkimmerFXPrismEffect` beam from
-`SquirrelSkimmerImpactorDataContainer` (the forcefield crackle would be the Squirrel's only skim
-visual, as on the Dolphin). `Docs/ElementalAbilitySystem/BACKLOG.md` item 21 records that the beam
-may be intentional on a trail-riding vessel and asks for an explicit decision; it is a one-line asset
-change once made.
 
 **Not ported, and why:**
 
@@ -439,7 +434,7 @@ Each step is its own PR into bleeding-edge, and each leaves Windows unchanged un
 | 3 | ✅ *(landed on this branch, unverified in editor; see §3.4)* **Device tier foundation.** `DeviceTierClassifier`, `PlatformProfileSO` ×3, dev override, a `CSLogChannel` for it, and a mobile branch in `SettingsAutoDetector` that reads the tier. `Desktop` profile = today's behaviour. | `System/`, `Controller/Settings` | identical | correct tier | correct tier |
 | 4 | ✅ *(landed on this branch, unverified in editor; see §3.5)* **Render tier.** MobileLow: HDR off, 4x MSAA, baked sky, membrane capped at 642 capsules, fold-gate window capped at 0.5 — each a `PlatformProfileSO` field. Everywhere: the fold-gate window renders only its footprint. | `_Graphics`, profile, `CapsuleMembrane`, `FoldGatePortalView` | fold-gate footprint only | none | per `MobileLow` |
 | 5 | ✅ *(landed on this branch, unverified in editor; see §3.6)* **Content tier.** Every `PerfStrip` gate the owner kept becomes a profile read: menu/freestyle trail policy, the Skim Race / Joust trail cap (decision 4: granted), menu-UI teardown while flying, HUD glow, cytoplasm, Wander/conveyor budgets as per-tier overrides (not edits to the shared SO). | gameplay | none | none (`MobileHigh` sets nothing) | per `MobileLow` |
-| 6 | ✅ *(landed on this branch, unverified in editor; see §3.7)* **Platform-agnostic fixes** Garrett found, merged ungated (§2.6): the boost event quiet at rest, the skim-tick rate limit. The Squirrel beam removal waits on a design call. | various | yes (fixes) | yes | yes |
+| 6 | ✅ *(landed on this branch, unverified in editor; see §3.7)* **Platform-agnostic fixes** Garrett found, merged ungated (§2.6): the boost event quiet at rest, the skim-tick rate limit, the Squirrel's obsolete beam retired (owner's call). | various | yes (fixes) | yes | yes |
 | 7 | **Retire the branches.** Build all three platforms from bleeding-edge; device verification matrix. | — | — | — | — |
 
 Open decisions (needed before steps 3–5):

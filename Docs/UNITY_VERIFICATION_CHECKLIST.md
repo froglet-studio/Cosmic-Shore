@@ -65,7 +65,7 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
-### 🔴 Platform-agnostic fixes: boost event quiet at rest, skim-tick rate limit (`claude/serene-edison-lfv24f`, 2026-10-06)
+### 🔴 Platform-agnostic fixes: boost event quiet at rest, skim-tick rate limit, Squirrel beam retired (`claude/serene-edison-lfv24f`, 2026-10-06)
 
 Step 6 of `Docs/PLATFORM_UNIFICATION.md` (§3.7). These change EVERY platform, Windows included. No
 editor and no `unity` CLI in the authoring session, so `/verify-unity` did NOT run. Out-of-editor:
@@ -81,6 +81,8 @@ errors in three untouched runtime files, an artifact of that config (see §3.7).
    raised it; `Initialize` and `ResetTransformer` force one re-raise. Only the Squirrel runs it.
 2. `ProximityBoostAudioController.minTickInterval` (0.07 s, new inspector field): the skim-tick
    one-shot fires at most ~14 times a second.
+3. `SquirrelSkimmerImpactorDataContainer` no longer holds the `[Obsolete]` `SkimmerFXPrismEffect`
+   beam (owner's decision); the forcefield crackle is the Squirrel's only skim visual.
 
 **Verify in editor**
 
@@ -91,12 +93,12 @@ errors in three untouched runtime files, an artifact of that config (see §3.7).
    unchanged (same top speed). Try it with VSync off at a high frame rate - that is where the old
    buzz was worst.
 3. Two-player session (ParrelSync): each pilot's energy bar tracks only their own Squirrel.
+4. Squirrel skimming cell mass: no beam lines to the skimmed prisms; the forcefield crackle still
+   flashes on the skimmer sphere at each contact (if it does not, the crackle wiring is broken and
+   the Squirrel now has NO skim visual - see `Docs/claude/IMPACT_EFFECTS_AND_AUDIO.md`).
 
 **First-pass tuning:** `Squirrel.prefab ▸ ProximityBoostAudioController.minTickInterval` 0.07
 (0 restores the old behaviour).
-
-**Open, needs a design call:** removing the `[Obsolete]` beam from
-`SquirrelSkimmerImpactorDataContainer` (`Docs/ElementalAbilitySystem/BACKLOG.md` item 21).
 
 ---
 
