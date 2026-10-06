@@ -189,6 +189,14 @@
    "track": null,
    "triangles": 20620
   },
+  "Tandava": {
+   "cell": "Tandava Cell Config",
+   "environment": null,
+   "prisms": 1458,
+   "tier": "MODEL",
+   "track": null,
+   "triangles": 40420
+  },
   "Tapestry": {
    "cell": "Barren Cell Config",
    "environment": null,
@@ -243,5 +251,5 @@
   768,
   510
  ],
- "source_hash": "b05680f41b0b4caf89bdaf59fd9631d7be91cf6098e578eeee26e9f77ad1082e"
+ "source_hash": "cb5a888650370954be6d0a7315e439dfcd9ec9add889f9325b090890e7be52c8"
 }

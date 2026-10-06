@@ -46,6 +46,19 @@ namespace CosmicShore.Gameplay
         [Tooltip("The Space plan - the jellyfish.")] public TextAsset SpacePlan;
         [Tooltip("The Time plan - the dragonfly.")] public TextAsset TimePlan;
 
+        [Header("Scripted forms (Tandava - Assets/_Scripts/Controller/Arcade/TANDAVA.md)")]
+        [Tooltip("Empty (every shipped swarm): the swarm grows the body plan of its MAJORITY element from the four plans " +
+                 "above. Non-empty: a DIRECTOR (ISwarmDirector) names the swarm's form from this ordered list instead - " +
+                 "it hatches as entry 0 and changes form only when the director asks (SwarmFauna.RequestForm), through " +
+                 "the same commit a majority morph takes. Killing the majority never re-forms a scripted swarm. Sort " +
+                 "model only. Baked by Tools/Build/tandava_plans.py, authored by Tools/Build/author_tandava_assets.py.")]
+        public TextAsset[] ScriptedPlans = System.Array.Empty<TextAsset>();
+        [Tooltip("Steps per animation frame for each scripted form (same order). Missing or 0 = the form's major " +
+                 "element's SortFramePeriod.")]
+        public int[] ScriptedPlanPeriods = System.Array.Empty<int>();
+        /// <summary>True when a director, not the census, names this swarm's form.</summary>
+        public bool HasScriptedPlans => ScriptedPlans is { Length: > 0 };
+
         [Header("Member")]
         [Tooltip("The tadpole every member is: a heart, a spindle and one body prism. Must carry NO " +
                  "NetworkObject - swarm members are client-local (Docs/PartySystem/BUGS.md B16).")]

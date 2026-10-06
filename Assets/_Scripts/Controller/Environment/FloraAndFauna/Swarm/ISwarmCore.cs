@@ -152,6 +152,20 @@ namespace CosmicShore.Gameplay
     }
 
     /// <summary>
+    /// Tandava (Assets/_Scripts/Controller/Arcade/TANDAVA.md): a core whose body plan a DIRECTOR names instead of its
+    /// census. Only <see cref="SwarmSortCore"/> implements it, and only with <see cref="SwarmSortParams.Scripted"/> set;
+    /// every shipped swarm still picks its plan by majority.
+    /// </summary>
+    public interface IScriptedSwarmCore
+    {
+        bool Scripted { get; }
+        /// <summary>How many forms the director can name (indices into the core's plan list).</summary>
+        int PlanCount { get; }
+        /// <summary>Commit form <paramref name="planIx"/> at the start of the next step (owner thread only).</summary>
+        void RequestPlan(int planIx);
+    }
+
+    /// <summary>
     /// Rules every core shares, written once: the vessel reaction (SwarmFieldCore's predator layer,
     /// reused by the grid and sort cores) and funded laying (an egg costs eaten volume). The field core
     /// still inlines its own copy of both - it was first, and its behaviour is pinned by its tests.

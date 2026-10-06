@@ -36,6 +36,13 @@ namespace CosmicShore.Gameplay
         // when idle. OnCellItemsUpdated only rewinds the cursor; Update does the work.
         int _reorientCursor = int.MaxValue;
 
+        // A mode-side tint (CellVisualTint): ONE material clone for this cell's shards, made once, so recolouring the
+        // whole cytoplasm is one SetColor a frame however many shards there are (a property block per shard would be
+        // thousands of writes a frame). The snow prefab's own material is never written.
+        static readonly int ColorId = Shader.PropertyToID("_Color");
+        Material _tintMaterial;
+        Color _baseColour = Color.white;
+
         void OnEnable()
         {
             cellData.OnCellItemsUpdated.OnRaised += ChangeSnowOrientation;
@@ -59,7 +66,10 @@ namespace CosmicShore.Gameplay
 
             float innerR = nucleusRadius;
             float outerR = membraneRadius;
-            float cellVolume = shardDistance * shardDistance * shardDistance;
+            // a cell config may space its motes wider than the prefab does (a big arena: the count is a CUBE of the radius)
+            var config = cellData.Cell != null ? cellData.Cell.Config : null;
+            float spacing = config != null && config.CytoplasmShardDistance > 0 ? config.CytoplasmShardDistance : shardDistance;
+            float cellVolume = spacing * spacing * spacing;
 
             // Uniform density throughout the full sphere (0 → membrane)
             float sphereVolume = (4f / 3f) * Mathf.PI * (outerR * outerR * outerR);
@@ -82,9 +92,61 @@ namespace CosmicShore.Gameplay
                     r * cosTheta);
 
                 shards[i] = tempSnow;
+                if (_tintMaterial) AssignTint(tempSnow);
             }
 
             ChangeSnowOrientation();
+        }
+
+        /// <summary>The cytoplasm's own colour (SnowGraph's <c>_Color</c> on the shard prefab's material).</summary>
+        public bool TryGetMaterialColour(out Color colour)
+        {
+            colour = Color.white;
+            var r = snow ? snow.GetComponentInChildren<Renderer>() : null;
+            var m = r ? r.sharedMaterial : null;
+            if (!m || !m.HasProperty(ColorId)) return false;
+            colour = m.GetColor(ColorId);
+            return true;
+        }
+
+        /// <summary>
+        /// Make this cell's shards tintable: clone the shard material ONCE and point every shard at the clone. A loop over
+        /// every shard, so call it before the moment that needs it (a mode's ready screen), not inside a transition.
+        /// </summary>
+        public void PrepareColourOverride()
+        {
+            if (_tintMaterial) return;
+            var r = snow ? snow.GetComponentInChildren<Renderer>() : null;
+            var baseMat = r ? r.sharedMaterial : null;
+            if (!baseMat) return;
+            _tintMaterial = new Material(baseMat) { name = baseMat.name + " (cell tint)" };
+            if (baseMat.HasProperty(ColorId)) _baseColour = baseMat.GetColor(ColorId);
+            if (shards == null) return;
+            for (int i = 0; i < shards.Length; i++) if (shards[i]) AssignTint(shards[i]);
+        }
+
+        /// <summary>Recolour every shard of this cell (the clone's colour; prepared on first use).</summary>
+        public void SetColourOverride(Color colour)
+        {
+            PrepareColourOverride();
+            if (_tintMaterial) _tintMaterial.SetColor(ColorId, colour);
+        }
+
+        /// <summary>Back to the material's own colour (the clone stays assigned; it now matches the original).</summary>
+        public void ClearColourOverride()
+        {
+            if (_tintMaterial) _tintMaterial.SetColor(ColorId, _baseColour);
+        }
+
+        void AssignTint(GameObject shard)
+        {
+            var renderers = shard.GetComponentsInChildren<Renderer>();
+            for (int k = 0; k < renderers.Length; k++) renderers[k].sharedMaterial = _tintMaterial;
+        }
+
+        void OnDestroy()
+        {
+            if (_tintMaterial) Destroy(_tintMaterial);
         }
 
         /// <summary>Requests a reorientation pass. The work is time-sliced in Update

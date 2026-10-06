@@ -671,6 +671,8 @@ CAMERAS = {
     # Broadside and Sirocco the forest with Rampage / Bends / Bloomrush, so each gets its own angle.
     "Waystation": (35, 30, 0.95, 42), "Dustup": (165, 28, 0.62, 46), "Tapestry": (40, 24, 0.95, 42),
     "Sirocco": (320, 10, 0.66, 46),
+    # Tandava: from beside and behind the hatch end, down the course toward the exit
+    "Tandava": (250, 38, 0.95, 46),
 }
 
 # Pilots in the shot: (domain, radius fraction, tilt, start angle, sweep). None = generic trio.
@@ -895,6 +897,59 @@ def recipe(stem, card_path, pal, ends):
         cam["radius"] = nuc * 1.7
         stage["radius"] = nuc * 1.3
         stage["centre"] = [0, 0, 0]
+    elif s == "Tandava":
+        # MODEL tier. The route is the controller's own settings asset (TandavaSettings: the oases, in order);
+        # the forest is the cell's three flora forks planted into their PENS (one sector cone per oasis,
+        # FloraConfigurationSO.PlantingPens), each plant a Borromean glyph; the swarm is the Great Serpent's OWN body
+        # plan (frame 0 of SwarmPlan_tandava_serpent_l.json), unit for unit at x3 glyph scale - the real body is
+        # ~140 u, sub-pixel at card size - in the cell's hostile colour, mid-course and heading for the exit. The
+        # membrane wears the Great Serpent's palette: the cell that changes with the swarm is the mode's signature.
+        tier = "MODEL"
+        rng = Rng(stable_seed(s))
+        rows = []
+        prof = read(facts["profile"])
+        floras = re.search(r"^  SupportedFloras:\n((?:  - .*\n)+)", prof, re.M).group(1)
+        for fg in re.findall(r"guid: (\w+)", floras):
+            body = read(asset(fg))
+            count = int(re.search(r"^  InitialSpawnCount: (\d+)", body, re.M).group(1))
+            pens = re.findall(r"  - Axis: \{x: (-?[\d.]+), y: (-?[\d.]+), z: (-?[\d.]+)\}\n    HalfAngle: ([\d.]+)\n"
+                              r"    InnerFraction: ([\d.]+)\n    OuterFraction: ([\d.]+)", body)
+            prefab = ref(body, "FloraPrefab").stem
+            for k in range(count):
+                ax, ay, az_, half, inner, outer = (float(v) for v in pens[k % len(pens)])
+                axis = v_norm([ax, ay, az_])
+                r = rng.range(inner * R, outer * R)
+                side = v_norm(v_cross(axis, [0, 1, 0]))
+                upv = v_cross(side, axis)
+                lat = r * math.tan(math.radians(half)) * rng.u() ** 0.5
+                phi = rng.range(0, 2 * math.pi)
+                pos = v_add(v_mul(axis, r), v_add(v_mul(side, lat * math.cos(phi)), v_mul(upv, lat * math.sin(phi))))
+                plant_glyph(prefab, pos, rng.unit(), 95 * rng.range(0.8, 1.2), GOLD if "Space" in body else JADE, rng, rows)
+        plan = json.loads(read(ROOT / "Assets/_SO_Assets/Swarm Fauna/Tandava/SwarmPlan_tandava_serpent_l.json"))
+        k_world = 2.0 * 3.0                  # UnitScale 2 x glyph scale 3
+        swarm_at = [-760.0, 40.0, 30.0]
+        for u in range(plan["n"]):
+            p = v_add(swarm_at, v_mul(plan["pos"][3 * u:3 * u + 3], k_world))
+            f = plan["face"][3 * u:3 * u + 3]
+            h = plan["half"][3 * u:3 * u + 3]
+            rows.append(prism(p, f if v_dot(f, f) > 1e-6 else [1, 0, 0], [0, 1, 0],
+                              # each unit drawn at 1.8x its own prism so the body reads as one animal at card size
+                              [2 * x * k_world * 1.8 for x in h], RUBY, SHIELDED if plan["elem"][u] == 0 else PLAIN))
+        layers.append({"kind": "prisms", "rows": rows})
+        nucleus()
+        great = re.search(r"DisplayName: Great Serpent\n(?:    .*\n)*?      MembraneBright: \{r: ([\d.]+), g: ([\d.]+), b: ([\d.]+)",
+                          read(next((ROOT / "Assets/_SO_Assets").rglob("TandavaSettings.asset"))))
+        tint = [float(c) for c in great.groups()]
+        look["membrane"] = [c * 0.7 for c in tint]
+        # the backdrop takes the form's colour too (the cell's motes and membrane ARE the scene's ambient light)
+        look["Nebula"] = [c * 0.028 for c in tint]
+        look["SkyBottom"] = [c * 0.008 for c in tint]
+        cam["target"] = [-700.0, 20.0, 20.0]
+        cam["radius"] = 470.0
+        stage.update({"centre": swarm_at, "radius": 260.0,
+                      "vessels": [{"domain": JADE, "r": 0.9, "tilt": 12, "a0": 150, "sweep": 55, "yaw": 0},
+                                  {"domain": JADE, "r": 1.3, "tilt": -18, "a0": 200, "sweep": 45, "yaw": 20},
+                                  {"domain": JADE, "r": 1.1, "tilt": 30, "a0": 110, "sweep": 40, "yaw": -15}]})
     elif s == "Maelstrom":
         return {"tier": "MONTAGE", "layers": [], "camera": cam, "look": look, "stage": None,
                 "cell": None, "env": None, "track": None}
@@ -925,7 +980,8 @@ def recipe(stem, card_path, pal, ends):
     accents(s, layers, stage, cam, pal, R, card_path)
 
     if R > 0:
-        layers.append({"kind": "shell", "c": [0, 0, 0], "r": R, "color": [0.2, 0.3, 0.8], "strength": 0.1})
+        layers.append({"kind": "shell", "c": [0, 0, 0], "r": R, "color": look.pop("membrane", [0.2, 0.3, 0.8]),
+                       "strength": 0.1})
     return {"tier": tier, "layers": layers, "camera": cam, "look": look, "stage": stage,
             "cell": facts["name"] if facts else None, "env": env.stem if env else None,
             "track": track.stem if track else None}
@@ -1049,6 +1105,16 @@ def accents(s, layers, stage, cam, pal, R, card_path):
         for k in range(60):
             p = v_add(v_add(a, v_mul(v_sub(b, a), k / 59)), v_mul(rng.unit(), span * 0.03))
             glow(p, span * rng.range(0.006, 0.012), GOLD, 1.2, 0.55)
+    elif s == "Tandava":
+        # The two acts the mode scores on: culling (tracers into the serpent) and DENIAL (the oasis ahead burning in
+        # the pilots' colour before the swarm reaches it).
+        body = stage["centre"]
+        for k in range(5):
+            tgt = v_add(body, [rng.range(-120, 120), rng.range(-20, 30), rng.range(-30, 30)])
+            src = v_add(tgt, [rng.range(-260, -120), rng.range(40, 120), rng.range(-160, 160)])
+            streak(v_mul(v_add(src, tgt), 0.5), v_sub(tgt, src), math.dist(src, tgt), JADE)
+        for k in range(7):
+            glow([-550 + rng.range(-70, 70), rng.range(-40, 40), rng.range(-70, 70)], rng.range(28, 55), JADE, 1.0, 0.4)
     elif s == "Tapestry":
         # Dust mode over the cut in the Ruby wake: the raid that made the gap.
         p = jitter(0.2)

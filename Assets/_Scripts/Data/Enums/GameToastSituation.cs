@@ -159,6 +159,15 @@ namespace CosmicShore.Data
         SiroccoLeadChanged = 126,       // the lead changes hands past the first milestone
         SiroccoDustHint = 127,          // idle hint: Dust mode, fly low over the forest
 
+        // Tandava - the cell's NARRATOR. {0} = the line (authored per form in TandavaSettings), so one
+        // situation serves every form; the hint takes no args.
+        TandavaMatchStart = 128,        // the race begins: {0} = TandavaSettings.StartLine
+        TandavaFormTaken = 129,         // the swarm committed a new form: {0} = that form's line
+        TandavaEscaped = 130,           // it crossed the exit membrane: {0} = TandavaSettings.EscapedLine
+        TandavaBroken = 131,            // the pilots won (wiped, starved or broken): {0} = TandavaSettings.WonLine
+        TandavaHeadingForExit = 132,    // its last oasis is behind it: {0} = TandavaSettings.HeadingForExitLine
+        TandavaDenyHint = 133,          // idle hint: burn the oasis ahead before it feeds
+
         // END-OF-GAME LOBBY. Shared across every multiplayer mode, so 100+ rather than crowding
         // the per-mode blocks. {0} = player name, {1} = how many have asked so far, {2} = how many
         // humans are in the match.

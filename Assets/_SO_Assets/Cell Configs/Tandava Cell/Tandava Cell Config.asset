@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 01f934d50526431a9392a6ceca1dc33d, type: 3}
+  m_Name: Tandava Cell Config
+  m_EditorClassIdentifier:
+  CellName: Tandava
+  Description: A long cell for one swarm's run - the Cleave membrane, eight Borromean oases along the
+    course, and an exit at the far end. Authored by Tools/Build/author_tandava_assets.py
+  Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
+  Difficulty: 2
+  CellEndGameScore: 0
+  MembranePrefab: {fileID: 346633111830028674, guid: 6eb45784f9024cbb879f94c23ae46bd9, type: 3}
+  NucleusPrefab: {fileID: 7555898194514117247, guid: b9cf1833fa2493d4b8724ccb6740fb3a, type: 3}
+  CytoplasmPrefab: {fileID: 639495419069806261, guid: 9cacd903fcf4643459f5f14ac811bb20, type: 3}
+  CytoplasmShardDistance: 360
+  CellModifiers:
+  - {fileID: 8058406376250941529, guid: daa37ae0e7af4b04383c1c4e6e76817d, type: 3}
+  SpawnProfile: {fileID: 11400000, guid: 016d1a1998bd51290ab8cd579383defa, type: 2}
+  BootDefault: 0
+  EnvironmentPrefab: {fileID: 0}
+  EnvironmentIntensity: 1
+  SenseRadiusOverride: 0
+  PetalBurnRule: 0
+  initialControllingDomain: 1
+  conservedFaunaStomach: 0
+  PhaseThresholds:
+    RestlessEnter: 600
+    RestlessExit: 500
+    FrenzyEnter: 4000
+    FrenzyExit: 3600
+    RestlessEnterVolume: 37000
+    RestlessExitVolume: 28000
+    FrenzyEnterVolume: 263000
+    FrenzyExitVolume: 232000

@@ -486,6 +486,9 @@ namespace CosmicShore.UI
                     return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Tapestry");
                 // Sirocco deliberately has NO arrow, like Cleave: the forest rings the whole
                 // cell, so "where is the thing to erode" has no single answer worth pointing at.
+                case GameModes.Tandava:
+                    // the swarm: one opponent, one side, a long cell - "which way is it" is the whole question
+                    return CreateProviderComponent<TandavaObjectiveProvider>("ObjectiveProvider_Tandava");
                 default:
                     return null;
             }

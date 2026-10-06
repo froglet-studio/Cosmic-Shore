@@ -136,6 +136,16 @@ namespace CosmicShore.Gameplay
         public float Noise = 0f;
         /// <summary>Steps per plan animation frame, indexed by research element (the dragonfly's wings: 16).</summary>
         public int[] Periods = { 8, 8, 8, 16 };
+        /// <summary>Tandava (Assets/_Scripts/Controller/Arcade/TANDAVA.md): a DIRECTOR picks the body plan instead of the
+        /// census. <see cref="SwarmSortCore.Plans"/> is then an ordered list of forms (any length, each with its own
+        /// <see cref="SwarmPlanData.MajorElement"/>), the swarm hatches as the plan it is seeded with, and it changes plan
+        /// only when <see cref="SwarmSortCore.RequestPlan"/> asks - through the SAME commit as a majority switch (the
+        /// Switched event, stale fates, the region map re-picked, the lay ramp restarted). Killing the majority element
+        /// never re-plans a scripted swarm. False (every shipped config) = the majority rule, unchanged.</summary>
+        public bool Scripted = false;
+        /// <summary>Scripted only: steps per animation frame per PLAN index; a missing or non-positive entry falls back
+        /// to <see cref="Periods"/> of the plan's major element.</summary>
+        public int[] PlanPeriods;
         /// <summary>Turn the code into the body's heading (swimming). False = the research's fixed frame.</summary>
         public bool Oriented = false;
         public float Cruise = 0f, Turn = 0.03f;
@@ -355,9 +365,9 @@ namespace CosmicShore.Gameplay
         }
     }
 
-    public sealed class SwarmSortCore : ISwarmCore
+    public sealed class SwarmSortCore : ISwarmCore, IScriptedSwarmCore
     {
-        public readonly SwarmPlanData[] Plans;   // indexed by research element (0 Charge .. 3 Time)
+        public readonly SwarmPlanData[] Plans;   // indexed by research element (0 Charge .. 3 Time); a scripted swarm's forms in order
         public readonly SwarmSortParams C;
         public readonly int Cap;
 
@@ -382,7 +392,7 @@ namespace CosmicShore.Gameplay
         public readonly int[] RoleOfDom = { 0, -1, -1 };
 
         readonly Random _rng;
-        int _cand = -1, _candN, _layHoldUntil, _settleUntil = int.MinValue, _nLive;
+        int _cand = -1, _candN, _layHoldUntil, _settleUntil = int.MinValue, _nLive, _requested = -1;
         float _layU = 1f;   // round 11d: how far laying has eased back in after the last wound (0..1)
         bool _permSet;
         // per-step scratch (Step allocates nothing)
@@ -440,6 +450,20 @@ namespace CosmicShore.Gameplay
 
         public SwarmPlanData Plan => Plans[Math.Max(0, PlanIx)];
         public SwarmSortCode Code => SwarmSortCode.For(Plan, C);
+        /// <summary>The current plan's major element - the element whose lead laying and molting protect. In the
+        /// majority mode the plans are indexed by element, so this IS <see cref="PlanIx"/>; a scripted form list
+        /// (<see cref="SwarmSortParams.Scripted"/>) can hold several plans of one element (the serpent's three sizes).</summary>
+        public int Major => Plans[Math.Max(0, PlanIx)].MajorElement;
+
+        /// <summary>Scripted plans (<see cref="SwarmSortParams.Scripted"/>): commit plan <paramref name="planIx"/> at the
+        /// start of the next step, through the same commit a majority switch takes. Ignored in the majority mode, for an
+        /// index outside <see cref="Plans"/>, and for the plan the swarm already wears. Call it on the thread that owns
+        /// the core (the worker, via <see cref="SwarmTickJob.RequestPlan"/>).</summary>
+        public void RequestPlan(int planIx)
+        {
+            if (!C.Scripted || planIx < 0 || planIx >= Plans.Length) return;
+            _requested = planIx;
+        }
         int ISwarmCore.Cap => Cap;
         Vector3[] ISwarmCore.Pos => Pos;
         Vector3[] ISwarmCore.Vel => Vel;
@@ -454,6 +478,8 @@ namespace CosmicShore.Gameplay
         List<SwarmEvent> ISwarmCore.Events => Events;
         int ISwarmCore.Clock => Clock;
         int ISwarmCore.PlanIx => Math.Max(0, PlanIx);
+        bool IScriptedSwarmCore.Scripted => C.Scripted;
+        int IScriptedSwarmCore.PlanCount => Plans.Length;
         Vector3 ISwarmCore.Anchor => Anchor;
         Vector3 ISwarmCore.BX => BX;
         Vector3 ISwarmCore.BY => BY;
@@ -531,7 +557,9 @@ namespace CosmicShore.Gameplay
         // ──────────────────────────────────────────────────────────────── seeding
 
         /// <summary>The GAME's seed: <paramref name="count"/> hatched tadpoles at the plan's element mix
-        /// (every element present) in a small knot at <paramref name="anchor"/>; the body grows out of it.</summary>
+        /// (every element present) in a small knot at <paramref name="anchor"/>; the body grows out of it.
+        /// <paramref name="planElement"/> indexes <see cref="Plans"/> - the research element in the majority mode, the
+        /// FORM in a scripted one.</summary>
         public void Seed(int planElement, int count, Vector3 anchor, Vector3 heading)
         {
             var plan = Plans[planElement];
@@ -551,6 +579,7 @@ namespace CosmicShore.Gameplay
                 RoleOfDom[0] = r0; RoleOfDom[1] = RoleOfDom[2] = -1;
                 _permSet = true;
             }
+            if (C.Scripted) { PlanIx = planElement; _cand = planElement; _candN = 0; }   // Tandava: the form it was seeded as
             SetHeading(heading, snap: true);
             SwimTarget = anchor;
         }
@@ -657,6 +686,11 @@ namespace CosmicShore.Gameplay
 
         int PeriodOf(int planIx) => C.Periods != null && planIx >= 0 && planIx < C.Periods.Length && C.Periods[planIx] > 0 ? C.Periods[planIx] : 8;
 
+        /// <summary>The current plan's steps per animation frame: a scripted form's own <see cref="SwarmSortParams.PlanPeriods"/>
+        /// entry, else its major element's <see cref="SwarmSortParams.Periods"/> (the majority mode: PlanIx IS that element).</summary>
+        int PeriodOfPlan() =>
+            C.PlanPeriods != null && PlanIx >= 0 && PlanIx < C.PlanPeriods.Length && C.PlanPeriods[PlanIx] > 0 ? C.PlanPeriods[PlanIx] : PeriodOf(Major);
+
         // ──────────────────────────────────────────────────────────────── step
 
         public void Step(ReadOnlySpan<SwarmPredator> preds)
@@ -694,10 +728,10 @@ namespace CosmicShore.Gameplay
                 var toT = SwimTarget - cen; float dT = toT.Length();
                 if (dT > C.AimHold * plan.Radius) SetHeading(toT / dT);
             }
-            float swell = 1f + C.Inflate[PlanIx] * ThreatLevel;
+            float swell = 1f + C.Inflate[Major] * ThreatLevel;
 
             // the code's frame (research: frame 0; game: the plan's animation, interpolated)
-            int fA = 0, fB = 0; float fa = 0f, per = PeriodOf(PlanIx);
+            int fA = 0, fB = 0; float fa = 0f, per = PeriodOfPlan();
             if (C.Animate && plan.Order.Length > 0)
             {
                 int L = plan.Order.Length, slot = (int)(Clock / per);
@@ -754,7 +788,7 @@ namespace CosmicShore.Gameplay
             }
 
             // ── 5. own-well chemotaxis (the fated well's log-density gradient), orphans climb the whole body
-            float m0 = PlanIx == 3 && C.WellDeadTime >= 0f ? C.WellDeadTime : C.WellDead;
+            float m0 = Major == 3 && C.WellDeadTime >= 0f ? C.WellDeadTime : C.WellDead;
             for (int a = 0; a < nl; a++)
             {
                 int i = _liveIx[a], t = _type[i];
@@ -1037,6 +1071,13 @@ namespace CosmicShore.Gameplay
         /// hold Dwell steps (contested meanwhile: no laying, no molting) before the swarm commits.</summary>
         bool DecidePlan()
         {
+            if (C.Scripted)
+            {
+                // Tandava: the director names the form; the census never does. Same commit as a majority switch.
+                if (_requested >= 0 && _requested != PlanIx) CommitPlan(_requested);
+                _requested = -1;
+                return false;
+            }
             Array.Clear(_cnt, 0, 4);
             for (int i = 0; i < Cap; i++) if (Active[i] && Hatched[i]) _cnt[EffectiveElement(i)]++;
             int cur = PlanIx, top = ArgMax(_cnt);
@@ -1045,11 +1086,18 @@ namespace CosmicShore.Gameplay
             _candN = _cand == maj ? _candN + 1 : 1;
             _cand = maj;
             if (_candN < C.Dwell) return true;
-            Events.Add(new SwarmEvent { Kind = SwarmEventKind.Switched, Index = cur, Other = maj });
-            PlanIx = maj; _candN = 0; _permSet = false; _layU = 0f;   // round 11d: a new body eases its laying in
+            CommitPlan(maj);
+            return false;
+        }
+
+        /// <summary>The one plan commit, whoever decided it (the majority's dwell, or a scripted director): every fate
+        /// goes stale through its key, the region map is re-picked, laying eases back in and the molt window opens.</summary>
+        void CommitPlan(int to)
+        {
+            Events.Add(new SwarmEvent { Kind = SwarmEventKind.Switched, Index = PlanIx, Other = to });
+            PlanIx = to; _candN = 0; _permSet = false; _layU = 0f;   // round 11d: a new body eases its laying in
             if (C.MoltWindow >= 0) _settleUntil = Clock + C.MoltWindow;
             if (C.Oriented) SetHeading(Heading, snap: true);
-            return false;
         }
 
         static readonly int[][][] PERMS =
@@ -1274,7 +1322,7 @@ namespace CosmicShore.Gameplay
             if (nlay <= 0) return;
             Array.Clear(_ec, 0, 4);
             for (int i = 0; i < Cap; i++) if (Active[i]) _ec[EffectiveElement(i)]++;
-            int maj = PlanIx, laid = 0, freeFrom = 0, ns = Math.Clamp(code.NSlots, 1, 3);
+            int maj = Major, laid = 0, freeFrom = 0, ns = Math.Clamp(code.NSlots, 1, 3);
             bool lineages = C.DomainSlots && C.Lineages;
             // parents in random order (a partial Fisher-Yates over the hatched members)
             int np = 0; for (int i = 0; i < Cap; i++) if (Active[i] && Hatched[i]) _members[np++] = i;
@@ -1338,7 +1386,7 @@ namespace CosmicShore.Gameplay
             // roles are read BEFORE any transfer this step (sort_model computes them once)
             for (int q = 0; q < np; q++) _type[_members[q]] = EffRole(_members[q]);
             for (int q = np - 1; q > 0; q--) { int j = _rng.Next(q + 1); (_members[q], _members[j]) = (_members[j], _members[q]); }
-            int maj = PlanIx;
+            int maj = Major;
             bool lineages = C.DomainSlots && C.Lineages;
             for (int pq = 0; pq < np; pq++)
             {

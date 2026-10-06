@@ -111,6 +111,7 @@ namespace CosmicShore.Gameplay
         int _killCount;
         readonly float[] _deposit = new float[4], _depositRun = new float[4];
         readonly object _inLock = new();
+        int _requestPlan = -1;
         public bool WantStarvationVictim;
 
         // ── front buffers (main thread reads after Collect) ──
@@ -243,6 +244,15 @@ namespace CosmicShore.Gameplay
             lock (_inLock) _deposit[element] += volume;
         }
 
+        /// <summary>Tandava: ask a scripted core (<see cref="IScriptedSwarmCore"/>) to commit form <paramref name="planIx"/>.
+        /// Main thread, any time; applied at the start of the next tick that STARTS after it, beside the queued kills.
+        /// A core that is not scripted ignores it.</summary>
+        public void RequestPlan(int planIx)
+        {
+            if (planIx < 0) return;
+            lock (_inLock) _requestPlan = planIx;
+        }
+
         /// <summary>
         /// Round 11f (Docs/ECOLOGY_LOD.md §5): a collapsed swarm drifts rigidly by <paramref name="dSim"/> (sim units).
         /// Main thread, only while <see cref="State"/> is Idle (the worker owns the core while Running, and a Done
@@ -318,14 +328,16 @@ namespace CosmicShore.Gameplay
         void Run()
         {
             // inputs first, on the thread that owns the core now
-            int kills;
+            int kills, plan;
             lock (_inLock)
             {
                 kills = _killCount;
                 Array.Copy(_kills, _killsRun, kills);
                 _killCount = 0;
                 for (int e = 0; e < 4; e++) { _depositRun[e] = _deposit[e]; _deposit[e] = 0f; }
+                plan = _requestPlan; _requestPlan = -1;
             }
+            if (plan >= 0 && Core is IScriptedSwarmCore scripted) scripted.RequestPlan(plan);
             for (int q = 0; q < kills; q++) Core.Kill(_killsRun[q]);
             for (int e = 0; e < 4; e++) Core.Stomach[e] += _depositRun[e];
             Core.SwimTarget = SwimTarget;

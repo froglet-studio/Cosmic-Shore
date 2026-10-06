@@ -81,6 +81,8 @@ namespace CosmicShore.Gameplay
 
         int _biteCursor;
         float _lastFedTime, _lastShedTime, _extinctSince = -1f;
+        float _eatenTotal, _lastBiteTime = -1f;   // Tandava's director reads both (EatenTotal, SecondsSinceBite)
+        ISwarmDirector _director;
         Element _startElement = Element.Mass;
         bool _seeded, _warnedError;
         string _eaterName;
@@ -146,13 +148,74 @@ namespace CosmicShore.Gameplay
         public SwarmFaunaConfigSO Config => config;
 
         /// <summary>The body plan the swarm is currently growing ("mass", "space", "charge", "time").</summary>
-        public string CurrentPlan => _job != null && _plans != null ? _plans[Mathf.Clamp(_job.PlanIx, 0, 3)].Kind : "";
+        public string CurrentPlan => _job != null && _plans != null ? PlanAt(_job.PlanIx).Kind : "";
 
         /// <summary>Live members (eggs included), as of the last published tick.</summary>
         public int MemberCount => _job != null ? _job.AliveCount : 0;
 
         /// <summary>Members that currently have a proxy (a GameObject, colliders on).</summary>
         public int ProxyCount => _proxySlots.Count;
+
+        // ───────────────────────────────────────────────────────────────── director (Tandava)
+
+        static readonly Dictionary<SwarmFaunaConfigSO, ISwarmDirector> s_directors = new();
+        static readonly List<SwarmFauna> s_live = new();
+
+        /// <summary>
+        /// A mode takes over every swarm of <paramref name="cfg"/> (<see cref="ISwarmDirector"/>): those hatched from now on
+        /// ask it where to hatch, and those already alive bind at once. Null clears it. Call <see cref="ClearDirector"/> on
+        /// the mode's teardown - the registry is static and outlives a scene.
+        /// </summary>
+        public static void SetDirector(SwarmFaunaConfigSO cfg, ISwarmDirector director)
+        {
+            if (!cfg) return;
+            if (director == null) s_directors.Remove(cfg); else s_directors[cfg] = director;
+            for (int i = 0; i < s_live.Count; i++) if (s_live[i] && s_live[i].config == cfg) s_live[i]._director = director;
+        }
+
+        /// <summary>Releases <paramref name="cfg"/> from <paramref name="director"/> (only if it is still the one registered).</summary>
+        public static void ClearDirector(SwarmFaunaConfigSO cfg, ISwarmDirector director)
+        {
+            if (!cfg || !s_directors.TryGetValue(cfg, out var d) || d != director) return;
+            SetDirector(cfg, null);
+        }
+
+        /// <summary>The form the swarm wears: an index into its scripted forms (or its research element). -1 before it hatches.</summary>
+        public int FormIndex => _job != null ? _job.PlanIx : -1;
+        /// <summary>How many forms the swarm has (4 elemental plans, or the scripted list).</summary>
+        public int FormCount => _plans?.Length ?? 0;
+        /// <summary>Members of form <paramref name="form"/>'s full body at this swarm's density.</summary>
+        public int FormMemberCount(int form) => _plans != null && form >= 0 && form < _plans.Length ? _plans[form].N : 0;
+        /// <summary>Form <paramref name="form"/>'s plan kind (its baked name, e.g. "serpent_s").</summary>
+        public string FormKind(int form) => _plans != null && form >= 0 && form < _plans.Length ? _plans[form].Kind : "";
+        /// <summary>Ask a SCRIPTED swarm to commit form <paramref name="form"/> next tick (the director's one lever on shape).
+        /// Ignored by a swarm whose census picks its plan.</summary>
+        public void RequestForm(int form)
+        {
+            if (_job != null && config.HasScriptedPlans) _job.RequestPlan(form);
+        }
+        /// <summary>The body's centre in world space, as of the last published tick.</summary>
+        public Vector3 AnchorWorld => _job != null ? Uni(_job.Anchor) : transform.position;
+        /// <summary>Banked eaten volume of one research element (0 Charge .. 3 Time).</summary>
+        public float StomachVolume(int element) => _job != null && element >= 0 && element < 4 ? _job.Stomach[element] : 0f;
+        /// <summary>The stomach's fill, 0..1.</summary>
+        public float StomachFraction => _job != null ? StomachFill : 0f;
+        /// <summary>What the stomach holds when full (flora volume).</summary>
+        public float StomachCapacityVolume => config ? StomachCapacity : 0f;
+        /// <summary>Flora volume eaten since hatching (monotone).</summary>
+        public float EatenTotal => _eatenTotal;
+        /// <summary>Seconds since the last bite (infinite before the first).</summary>
+        public float SecondsSinceBite => _lastBiteTime < 0f ? float.PositiveInfinity : Time.time - _lastBiteTime;
+        /// <summary>True while the swarm's unfed clock has run out and it is hungry - it is shedding members.</summary>
+        public bool IsStarving => _job != null && Starving(Time.time);
+        /// <summary>
+        /// Move the whole body rigidly by <paramref name="worldDelta"/> (a client correcting toward the authority's swarm).
+        /// The core, the published frame, the index points and the anchor move together, so nothing is interpolated across
+        /// it - keep each nudge small (continuity of existence). False while a tick is in flight (try next frame).
+        /// </summary>
+        public bool TryNudge(Vector3 worldDelta) => _job != null && _job.Translate(Sim(worldDelta / config.UnitScale));
+
+        SwarmPlanData PlanAt(int ix) => _plans[Mathf.Clamp(ix, 0, _plans.Length - 1)];
 
         public override float CurrentSpeed => config ? config.Cruise * config.UnitScale * config.TickHz : 0f;
 
@@ -191,16 +254,21 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogWarning($"{name}: swarm has no config, tadpole prefab or host cell - it will not hatch.");
                 return;
             }
-            _plans = SwarmPlanLibrary.Load(config);
+            bool scripted = config.HasScriptedPlans;
+            if (scripted && config.Model != SwarmModel.Sort)
+                CSDebug.LogError($"[Swarm] {config.name}: scripted forms need the Sort model (it is {config.Model}) - running Sort.");
+            _plans = scripted ? SwarmPlanLibrary.LoadScripted(config) : SwarmPlanLibrary.Load(config);
             if (_plans == null) return;
             _seeded = true;
+            if (!s_live.Contains(this)) s_live.Add(this);
+            s_directors.TryGetValue(config, out _director);
 
             _centre = host.transform.position;
             _dt = 1f / config.TickHz;
             _bloomTicks = config.BirthBloomSeconds * config.TickHz;
             _eaterName = "swarm";
 
-            _core = config.Model switch
+            _core = (scripted ? SwarmModel.Sort : config.Model) switch
             {
                 SwarmModel.Grid => BuildGridCore(host),
                 SwarmModel.Sort => BuildSortCore(host),
@@ -222,11 +290,19 @@ namespace CosmicShore.Gameplay
                 var plant = FloraHeartRegistry.NearestToPoint(transform.position, NotFoodForMe);
                 if (plant) transform.position = plant.HeartTransform.position;
             }
+            Vector3 heading = Vector3.zero;
+            if (_director != null && _director.TryGetSeed(this, out var seedAt, out var seedHeading))
+            {
+                transform.position = seedAt;   // before the first member exists: nothing has been drawn yet
+                heading = seedHeading;
+            }
             var anchor = ToSim(transform.position);
             var radial = transform.position - _centre;
-            var tangent = Vector3.Cross(radial.sqrMagnitude > 1f ? radial.normalized : Vector3.forward, Random.onUnitSphere);
+            var tangent = heading.sqrMagnitude > 1e-6f ? heading
+                : Vector3.Cross(radial.sqrMagnitude > 1f ? radial.normalized : Vector3.forward, Random.onUnitSphere);
             if (tangent.sqrMagnitude < 1e-4f) tangent = Vector3.right;
-            _core.Seed(SwarmFaunaConfigSO.ToIndex(_startElement), config.SeedMembers * Density, anchor, Sim(tangent.normalized));
+            // a scripted swarm hatches as its FIRST form; a census swarm as its species' element
+            _core.Seed(scripted ? 0 : SwarmFaunaConfigSO.ToIndex(_startElement), config.SeedMembers * Density, anchor, Sim(tangent.normalized));
             _core.SwimTarget = anchor;
 
             _job = new SwarmTickJob(_core, BuildTickSettings(), config.TickHz) { SwimTarget = anchor };
@@ -357,7 +433,15 @@ namespace CosmicShore.Gameplay
         // standard membrane's 1200 is the fallback rather than a 0 that would pen the body in a point
         float SimMembrane(Cell host) => (host.MembraneRadius > 1f ? host.MembraneRadius : 1200f) * 0.97f / config.UnitScale;
 
-        int PlanCap => Mathf.Max(_plans[0].N, Mathf.Max(_plans[1].N, Mathf.Max(_plans[2].N, _plans[3].N)));
+        int PlanCap
+        {
+            get
+            {
+                int cap = 0;
+                for (int k = 0; k < _plans.Length; k++) cap = Mathf.Max(cap, _plans[k].N);
+                return cap;
+            }
+        }
 
         bool TryBand(out float inner, out float outer)
         {
@@ -448,6 +532,9 @@ namespace CosmicShore.Gameplay
                 DomainSlots = Lineages, Lineages = Lineages, Drift = config.LineageDrift, Funded = true, Animate = true, WellLook = true, Oriented = true,
                 Cruise = config.Cruise, Turn = config.TurnPerStep,
                 Membrane = SimMembrane(host), CrossCost = config.CrossElementCost, Cap = PlanCap,
+                // Tandava: a director names the form (TANDAVA.md §4); every shipped config leaves this off
+                Scripted = config.HasScriptedPlans,
+                PlanPeriods = config.HasScriptedPlans ? config.ScriptedPlanPeriods : null,
                 // round 6 (Docs/SWARM_FAUNA.md §12): sortfeel's flat wells + wander, the 1-in-k update
                 WellDead = config.SortWellDead, WellDeadTime = config.SortWellDeadTime,
                 Wander = config.SortWander, WanderTau = config.SortWanderTau,
@@ -529,6 +616,8 @@ namespace CosmicShore.Gameplay
             // harmless (the job holds no Unity object). The GPU buffers are ours to release.
             _render?.Dispose();
             _render = null;
+            s_live.Remove(this);
+            _director = null;
             VirtualFauna.Unregister(this);
             _lod?.Unregister(this);
             _lod = null;
@@ -563,7 +652,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>The swarm's world radius as drawn (the draw bounds' half extent, less the margin).</summary>
-        float BodyRadius => (_plans[Mathf.Clamp(_job.PlanIx, 0, 3)].Radius * 3f + 20f) * config.UnitScale;
+        float BodyRadius => (PlanAt(_job.PlanIx).Radius * 3f + 20f) * config.UnitScale;
 
         void DrawMembers(float alpha)
         {
@@ -642,6 +731,7 @@ namespace CosmicShore.Gameplay
             Extinction();
             transform.position = Uni(_job.Anchor);
             ReportCost();
+            _director?.OnTickPublished(this);
         }
 
         double _tickMsSum; int _tickMsCount; float _nextCostReport;
@@ -679,6 +769,7 @@ namespace CosmicShore.Gameplay
                 $"[Swarm] {name} morphs {_plans[fromPlan].Kind} -> {_plans[toPlan].Kind} ({_job.AliveCount} tadpoles)");
             if (!config.MorphEvent.IsNull && AudioSystem.Instance)
                 AudioSystem.Instance.PlaySFXEvent(config.MorphEvent, transform.position);
+            _director?.OnFormCommitted(this, fromPlan, toPlan);
         }
 
         // ───────────────────────────────────────────────────────────────── proxies
@@ -1366,7 +1457,7 @@ namespace CosmicShore.Gameplay
         {
             _job.PredCount = 0;
             _seen.Clear();
-            float radius = _plans[Mathf.Clamp(_job.PlanIx, 0, 3)].Radius * config.UnitScale * 1.6f
+            float radius = PlanAt(_job.PlanIx).Radius * config.UnitScale * 1.6f
                            + Mathf.Max(config.SenseMargin, config.EngageRadius);
             int hits = Physics.OverlapSphereNonAlloc(transform.position, radius, OverlapScratch, NonPrismOverlapMask);
             float toSimVel = 1f / (config.UnitScale * config.TickHz);
@@ -1442,6 +1533,7 @@ namespace CosmicShore.Gameplay
                     if (_macro is { Collapsed: true }) _macro.Bank(e, volume);
                     else _job.QueueDeposit(e, volume);
                     _lastFedTime = Time.time;
+                    _lastBiteTime = Time.time; _eatenTotal += volume;
                     if (fromGoal) _lastGoalBite = Time.time;
                     break;
                 }
@@ -1488,6 +1580,7 @@ namespace CosmicShore.Gameplay
         protected override Vector3 ResolveGoal()
         {
             if (_job == null || !HostCell) return Goal;
+            if (_director != null && _director.TryGetGoal(this, out var directed)) return directed;   // Tandava: the route
             Vector3 here = transform.position;
             float now = Time.time, fill = StomachFill;
 
@@ -1565,6 +1658,10 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>A plant this swarm may not be led to: dying, outside its band, in the nucleus, not its prey, or of no element.</summary>
+        /// <summary>Would this swarm graze <paramref name="f"/> - the one edibility predicate its goal and its bites use
+        /// (alive, in its band, outside the nucleus, prey for its domain, a real element). Tandava asks it of an oasis.</summary>
+        public bool CanEat(Flora f) => f && HostCell && !NotFoodForMe(f);
+
         bool NotFoodForMe(Flora f) =>
             f.IsDying || !IsInsideBand(f.HeartTransform.position) ||
             HostCell.IsInsideNucleus(f.HeartTransform.position) ||

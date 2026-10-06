@@ -117,6 +117,12 @@ namespace CosmicShore.ScriptableObjects
         /// can reach.</para></summary>
         public const float BroadsideExtraPilotFraction = 0.6f;
 
+        /// <summary>Tandava's break threshold used when <see cref="tandavaBreakPercent"/> is 0: the pilots win when the
+        /// swarm's FINAL form is cut below this percent of its full body (the echo loses the shape and scatters). The
+        /// design's starting value (Assets/_Scripts/Controller/Arcade/TANDAVA.md); the match also ends when the swarm is
+        /// wiped out or starved (pilots win) or crosses the exit membrane (they lose).</summary>
+        public const int DefaultTandavaBreakPercent = 35;
+
         /// <summary>Switchback course length used when <see cref="switchbackGateTarget"/> is 0
         /// (auto/default). It is BOTH the end-game target and the number of gates the course is
         /// built with - SwitchbackController reads this same getter - so the two cannot drift.</summary>
@@ -330,6 +336,11 @@ namespace CosmicShore.ScriptableObjects
                  "0 = default (100).")]
         [Min(0)] public int broadsidePointsPerPilot = 100;
 
+        [Tooltip("Tandava: the pilots win when the swarm's FINAL form is cut below this PERCENT of its full body. " +
+                 "They also win by wiping it out or starving it, and lose if it crosses the exit membrane. " +
+                 "0 = default (35).")]
+        [Range(0, 100)] public int tandavaBreakPercent = 35;
+
 
         [Header("Build baseline - what a shipping build uses. Set via the tool's \"Set Build Values\" button.")]
         [Min(0)] public int hexRaceCrystalCountBuild = 0;
@@ -362,6 +373,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int tapestryRoundSecondsBuild = 150;
         [Min(0)] public int siroccoPrismTargetBuild = 600;
         [Min(0)] public int broadsidePointsPerPilotBuild = 100;
+        [Range(0, 100)] public int tandavaBreakPercentBuild = 35;
 
         [Tooltip("When on, a build first copies the Build baseline onto the Live counts, so test values are never shipped.")]
         public bool autoRestoreBuildValuesBeforeBuild = true;
@@ -647,6 +659,11 @@ namespace CosmicShore.ScriptableObjects
             Mathf.RoundToInt(GetBroadsidePointsPerPilot() *
                              (1f + BroadsideExtraPilotFraction * (Mathf.Max(1, teamSize) - 1)));
 
+        /// <summary>Tandava's break threshold in percent of the final form's full body: the configured value when &gt; 0,
+        /// otherwise <see cref="DefaultTandavaBreakPercent"/>. Read server-side by TandavaController.</summary>
+        public int GetTandavaBreakPercent() =>
+            tandavaBreakPercent > 0 ? tandavaBreakPercent : DefaultTandavaBreakPercent;
+
         /// <summary>
         /// The AUTHORED turn target for a mode - what a match of it races to. Returns false for a
         /// mode whose target is auto-calculated from its track (SkimRace with a 0 count), or that
@@ -689,6 +706,8 @@ namespace CosmicShore.ScriptableObjects
                 // Per PILOT, not a total - the race target scales with team size and is only known at
                 // runtime, so the editor's authored-target readout shows the rate.
                 GameModes.Broadside                 => GetBroadsidePointsPerPilot(),
+                // A PERCENT of the final form's body, not a count: the readout shows the threshold.
+                GameModes.Tandava                   => GetTandavaBreakPercent(),
                 _                                   => 0,
             };
 
@@ -739,7 +758,8 @@ namespace CosmicShore.ScriptableObjects
             dustupPointTarget == dustupPointTargetBuild &&
             tapestryRoundSeconds == tapestryRoundSecondsBuild &&
             siroccoPrismTarget == siroccoPrismTargetBuild &&
-            broadsidePointsPerPilot == broadsidePointsPerPilotBuild;
+            broadsidePointsPerPilot == broadsidePointsPerPilotBuild &&
+            tandavaBreakPercent == tandavaBreakPercentBuild;
 
         /// <summary>Copy the Build baseline onto the Live counts (build → live) - used by the build auto-restore.</summary>
         public void ApplyBuildValues()
@@ -773,6 +793,7 @@ namespace CosmicShore.ScriptableObjects
             tapestryRoundSeconds = tapestryRoundSecondsBuild;
             siroccoPrismTarget = siroccoPrismTargetBuild;
             broadsidePointsPerPilot = broadsidePointsPerPilotBuild;
+            tandavaBreakPercent = tandavaBreakPercentBuild;
         }
 
         /// <summary>Snapshot the current Live counts as the Build baseline (live → build) - used by "Set Build Values".</summary>
@@ -807,6 +828,7 @@ namespace CosmicShore.ScriptableObjects
             tapestryRoundSecondsBuild = tapestryRoundSeconds;
             siroccoPrismTargetBuild = siroccoPrismTarget;
             broadsidePointsPerPilotBuild = broadsidePointsPerPilot;
+            tandavaBreakPercentBuild = tandavaBreakPercent;
         }
     }
 }

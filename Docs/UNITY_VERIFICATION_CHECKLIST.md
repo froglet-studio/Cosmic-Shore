@@ -4287,3 +4287,66 @@ Fleet-wide. Every drain got lighter and three verbs gained one they never had.
 The **Rhino's energised sword** lands a Strike and drains nothing — it is now the only scoring
 verb with no drain path. Arming it is a Rhino kit decision (a skimmer drain SO on the sword's
 container), not a number, so it is reported rather than done.
+
+## 🔴 Tandava — the co-op arena swarm race (`claude/tandava-arena-mode`, 2026-10-06) — NOT EDITOR-VERIFIED
+
+**What landed.** A new arena card, `GameModes.Tandava = 62` (Rhino / Squirrel / Sparrow, every pilot on ONE
+domain), scene `MinigameTandava`, every asset authored by `Tools/Build/author_tandava_assets.py`. A tadpole swarm
+(the sort core in a new SCRIPTED mode: `SwarmSortParams.Scripted`, `SwarmFauna.RequestForm`) hatches at x = -2,000
+of a 3,600 u cell (the Cleave membrane), eats at eight Borromean oases and races for an exit plane at x = +2,000.
+Each time its body is full and its stomach holds the surplus it takes its next form (Young Serpent → Serpent →
+Great Serpent → Bull), and every peer's cell blooms and eases into that form's colours (`CellVisualTint`: membrane,
+nucleus and cytoplasm, recoloured by property block / one per-cell material clone). Pilots win by wiping it out,
+starving it, or cutting the Bull below 35% (`EndConditionOverrides.tandavaBreakPercent`). Design and status:
+`Assets/_Scripts/Controller/Arcade/TANDAVA.md`.
+
+**Compiled? Headless only.** `/verify-unity` could NOT run: the authoring session had no Unity editor and no `unity`
+CLI. What did run: `unity_refcompile` (player and editor configs: 0 errors in project code, none of the changed files
+in any unverifiable bucket), `swarm_glue_typecheck`, the swarm harness (294 checks including Tandava T1-T9, all
+pass), the generator's `--check` and its `--self-test` negative control (the donor scene trips all 16 scene checks),
+and the standing static gates. Nothing has run in the Editor, and `EnumIntegrityTests` (updated to 60 modes) has not
+been executed.
+
+### QA-TANDAVA-1 — the race runs and the cell changes with it (solo, any hull)
+
+1. Open `MinigameTandava.unity`: no `Missing (Mono Script)`; the controller shows `settings = TandavaSettings`,
+   `rule = TandavaScoringRule`; the Cell lists `Tandava Cell Config`; four AI templates on **Random**.
+2. Launch from the **Arena** screen. The carousel must offer exactly Rhino, Squirrel and Sparrow.
+3. You spawn on a start line at x = -2,300 facing down the course. The swarm hatches ~6 s in at x = -2,000 as the
+   Young Serpent (~140 tadpoles growing toward ~200) and holds there until GO.
+4. At GO: the cell **blooms** (up to ~2.5x bright, gone by mid-ease) and eases over 3 s into teal. A toast reads
+   "Something in the reef remembers the old shapes."
+5. Let it run unopposed. Expect it to stop at each oasis, commit Serpent / Great Serpent / Bull at very roughly
+   40 / 85 / 125 s (the harness model, NOT a measurement - record the real times), the cell blooming into emerald /
+   jade / ember at each, and to escape at ~2.5 min: the cell turns crimson, DEFEAT "ESCAPED AS THE BULL (4 OF 4)".
+6. Watch the frame time with the swarm fully grown (462 tadpoles at density 3) and ~4,200 cytoplasm motes.
+
+**PASS:** the forms commit in order, each with the colour change at that moment; the HUD reads "Serpent 62%"-style
+progress; the run ends on the exit. **FAIL:** a form skipped or repeated · the cell recolouring with no form change, or
+staying recoloured in the NEXT match (an override that leaked into the shared membrane/nucleus/snow materials) · the
+swarm never leaving the hatch (no director: look for the 30 s "no swarm" error) · the swarm stalling at an oasis
+longer than 45 s.
+
+### QA-TANDAVA-2 — the pilots can win, and denial costs the swarm
+
+1. Burn the plants of the oasis ahead before it arrives. It must skip that oasis (the server re-checks each second)
+   and reach the exit a form short.
+2. Cull it: every member killed → VICTORY "THE SWARM IS GONE". Cut the Bull below 35% → "THE BULL IS BROKEN".
+3. Scores are members culled ("N culled"); a starved tadpole scores nobody.
+4. AI teammates fly at the swarm (led 40 u toward its goal, spread ±45 u). An all-AI Sparrow cannot keep up (cruise 35
+   vs the swarm's 50) - stated in TANDAVA.md, not a bug.
+5. The swarm wears ONE colour (the cell's hostile controller). No member may ever show the pilots' own colour.
+
+### QA-TANDAVA-3 — two peers see the same animal (host + client, MPPM)
+
+1. Both peers see the same form at the same moment and the cell changes colour together.
+2. Measure how far apart the two peers' swarms are mid-race (the client is nudged toward the server's anchor: 20%
+   of the gap per tick, at most 6 u, once past 25 u). Record the worst gap.
+3. A client's kills count toward its score on both machines; the match ends on the server's outcome for both.
+
+### QA-TANDAVA-4 — nothing else moved
+
+1. **The Swarm cell's swarms are unchanged**: kill a majority, it still morphs (they are not scripted).
+2. **Cleave's cell** (the other 3,600 u cell) still builds its cytoplasm at the prefab's spacing (its config does not
+   author `CytoplasmShardDistance`).
+3. A cell with no tint never allocates the per-cell snow material (the clone is made only by `PrepareColourOverride`).
