@@ -108,11 +108,11 @@ namespace CosmicShore.Editor
                 "  • Broadside: points a DOMAIN needs in the mixed-fleet brawl - a hit is priced by " +
                 "its VERB (round 1, contact strike 8, area debuff 12, rocket 10/20/30), default " +
                 EndConditionOverridesSO.DefaultBroadsidePointsPerPilot + " PER PILOT (the race target scales with team size: x1 / x1.6 / x2.2 / x2.8).\n" +
-                "  • Tandava: the PERCENT of the swarm's final form below which it breaks (the pilots win; they also " +
-                "win by wiping it out or starving it, and lose if it crosses the exit), default " +
-                EndConditionOverridesSO.DefaultTandavaBreakPercent + "%; and the FLAMES of the ring of fire (12 round the " +
-                "Lord of the Dance) the pilots must put out before its drum stops to break the dance, default " +
-                EndConditionOverridesSO.DefaultTandavaFlamesToBreak + ".\n" +
+                "  • Tandava: the PERCENT of the swarm's form below which its body shatters (the pilots win; they also " +
+                "win by breaking the halo or holding it off until the clock runs out, and lose if the Sea Lion eats its " +
+                "last feast), default " + EndConditionOverridesSO.DefaultTandavaBreakPercent + "%; and the HALO RINGS " +
+                "(12 round the Lord of the Dance) the pilots must break before its drum stops to break the dance, default " +
+                EndConditionOverridesSO.DefaultTandavaHaloRingsToBreak + ".\n" +
                 "  • Scarab Scramble: goals a DOMAIN needs to win (race to N) - a forged ball " +
                 "through any hoop, default " + EndConditionOverridesSO.DefaultScarabScrambleGoalTarget + ".\n" +
                 "  • Salvo: hostile prisms destroyed to win (race to N), default " +
@@ -188,7 +188,7 @@ namespace CosmicShore.Editor
             int sc  = Mathf.Max(0, EditorGUILayout.IntField("Sirocco - Prism Target", _config.siroccoPrismTarget));
             int bs  = Mathf.Max(0, EditorGUILayout.IntField("Broadside - Points PER PILOT", _config.broadsidePointsPerPilot));
             int tv  = Mathf.Clamp(EditorGUILayout.IntField("Tandava - Break PERCENT", _config.tandavaBreakPercent), 0, 100);
-            int tf  = Mathf.Clamp(EditorGUILayout.IntField("Tandava - Flames to Break the Dance", _config.tandavaFlamesToBreak), 0, 12);
+            int tf  = Mathf.Clamp(EditorGUILayout.IntField("Tandava - Halo Rings to Break the Dance", _config.tandavaHaloRingsToBreak), 0, 12);
             if (EditorGUI.EndChangeCheck())
                 Persist("Edit End Game Conditions", () =>
                 {
@@ -219,7 +219,7 @@ namespace CosmicShore.Editor
                     _config.siroccoPrismTarget = sc;
                     _config.broadsidePointsPerPilot = bs;
                     _config.tandavaBreakPercent = tv;
-                    _config.tandavaFlamesToBreak = tf;
+                    _config.tandavaHaloRingsToBreak = tf;
                 });
 
             EditorGUILayout.Space();
@@ -254,7 +254,7 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Sirocco", sc > 0 ? sc.ToString() : EndConditionOverridesSO.DefaultSiroccoPrismTarget + " (default)");
             EditorGUILayout.LabelField("Broadside (per pilot)", bs > 0 ? bs.ToString() : EndConditionOverridesSO.DefaultBroadsidePointsPerPilot + " (default)");
             EditorGUILayout.LabelField("Tandava (break %)", tv > 0 ? tv.ToString() : EndConditionOverridesSO.DefaultTandavaBreakPercent + " (default)");
-            EditorGUILayout.LabelField("Tandava (flames to break)", tf > 0 ? tf.ToString() : EndConditionOverridesSO.DefaultTandavaFlamesToBreak + " (default)");
+            EditorGUILayout.LabelField("Tandava (halo rings to break)", tf > 0 ? tf.ToString() : EndConditionOverridesSO.DefaultTandavaHaloRingsToBreak + " (default)");
             EditorGUI.indentLevel--;
 
             // ---- Build baseline (read-only display + capture button) ----
@@ -310,7 +310,7 @@ namespace CosmicShore.Editor
                    "Sirocco: " + Fmt(_config.siroccoPrismTargetBuild, "default " + EndConditionOverridesSO.DefaultSiroccoPrismTarget) + "\n" +
                    "Broadside (per pilot): " + Fmt(_config.broadsidePointsPerPilotBuild, "default " + EndConditionOverridesSO.DefaultBroadsidePointsPerPilot) + "\n" +
                    "Tandava (break %): " + Fmt(_config.tandavaBreakPercentBuild, "default " + EndConditionOverridesSO.DefaultTandavaBreakPercent) + "\n" +
-                   "Tandava (flames to break): " + Fmt(_config.tandavaFlamesToBreakBuild, "default " + EndConditionOverridesSO.DefaultTandavaFlamesToBreak);
+                   "Tandava (halo rings to break): " + Fmt(_config.tandavaHaloRingsToBreakBuild, "default " + EndConditionOverridesSO.DefaultTandavaHaloRingsToBreak);
 
             static string Fmt(int value, string zeroMeaning) => value > 0 ? value.ToString() : "0 (" + zeroMeaning + ")";
         }

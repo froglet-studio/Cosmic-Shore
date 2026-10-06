@@ -185,6 +185,11 @@ namespace CosmicShore.Gameplay
         [Min(0f)] public float Cruise = 0.35f;
         [Tooltip("Max heading turn in radians per step.")]
         [Min(0.001f)] public float TurnPerStep = 0.03f;
+        [Tooltip("SORT model: the share (0..1) of each step's heading turn the members ride rigidly about the body's " +
+                 "centre, as they already ride its swim. 0 (every shipped swarm) = members chase their turning wells at " +
+                 "their own top speed, so a long body's tail strings out behind a sharp turn. Tandava's forms are 300 u " +
+                 "long and turn at a fleeing creature's rate: 1 keeps the animal readable through the turn.")]
+        [Range(0f, 1f)] public float SortTurnCarry = 0f;
         [Tooltip("World units: a swarm with nothing to eat in sight wanders to a fresh point in its " +
                  "band at least this far away.")]
         [Min(0f)] public float WanderReach = 300f;

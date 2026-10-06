@@ -1,24 +1,23 @@
-// Tandava's STAGE DIRECTOR (Assets/_Scripts/Controller/Arcade/TANDAVA.md §3) - pure C#: no UnityEngine, System.Numerics
+// Tandava's DIRECTOR (Assets/_Scripts/Controller/Arcade/TANDAVA.md §3) - pure C#: no UnityEngine, System.Numerics
 // only, so the SAME file compiles and RUNS in Tools/Build/swarm_core_harness beside the shipped sort core (mode
-// `tandava`). TandavaController feeds it the swarm's state once per tick and applies what it decides.
+// `tandava`). TandavaController feeds it the swarm, the pilots and the cell's flora once per published tick and applies
+// what it decides.
 //
-// It owns four decisions and nothing else:
-//   * the ROUTE - which oasis the swarm swims to next and when it has fed enough to move on; once the route is eaten,
-//     it FORAGES whatever the pilots left (nearest oasis with food first), and with nothing left anywhere it presses on
-//     the sealed membrane, STARVING;
-//   * the FORM - when the body is full AND the stomach has banked the next form's surplus, it commits the next form
-//     (the swarm re-sorts through the sort core's ordinary plan commit: stale fates, molts, the lay ramp). The last
-//     EATING form (the Bull) does not eat on to anything: banked, it RISES into the dance form (the Lord of the Dance,
-//     its attendant packs patrolling) and swims to the DANCE GROUND as it assembles;
-//   * the ASCENSION - at the dance ground the ring of fire lights round the figure, a drum runs, and pilots put out
-//     flames by threading them. Enough flames out and the dance is BROKEN; the drum ends first and the swarm takes its
-//     FINAL form;
-//   * the OUTCOME - the exit is SEALED to every form but the final one: crossing it as the final form is the pilots'
-//     loss. Wiped out, starved at the membrane, the dance broken, or the final form cut below its break threshold is
-//     the pilots' win.
-// The swarm still EVOLVES BY EATING: a form is committed only when the body the swarm grew from eaten flora is full
-// and its stomach holds the surplus. The director names which shape comes next, never when, and never kills anyone:
-// starvation is the swarm's own metabolism (SwarmFaunaConfigSO.StarvationSeconds), the director only stops it leaving.
+// The creature lives in a CLOSED cell - the membrane is its wall; there is no route and no exit. It decides four things:
+//   * WHERE TO EAT - any plant in the cell, scored by food x safety / distance, with a stick bonus so it commits to one;
+//   * HOW TO MOVE - by THREAT, read from the pilots (how near they are, how fast they close) and from its own wounds (how
+//     fast it is losing members). CALM it cruises; WARY it hurries and prefers food away from the pilots; FLEEING it
+//     bolts away from them, faster and turning harder. The speed and the turn are the sort core's levers;
+//   * HOW TO FEED - at the plant it settles into its FEED pose (the same members re-arranged: its plates go out to orbit
+//     its mouth as DANGER guards - the protectors) with its mouth on the plant, and it stops regrowing. That is the one
+//     time it is both dangerous to approach and unable to heal. A meal it is hurt badly enough during is BROKEN: it bolts;
+//   * WHEN TO CHANGE - a full body with the form's bank in its stomach takes the next form, never mid-meal. The banked
+//     Many-Headed Serpent RISES where it stands into the Lord of the Dance: a halo of rings lights round it and a drum
+//     runs, and breaking enough rings breaks the dance. When the drum ends it becomes the Sea Lion, whose last feast
+//     completes the cycle.
+// A form, once taken, is REMEMBERED: the director never steps a form back. A cut limb regrows from the stomach (the sort
+// core's funded laying at the wound), which is why denying food matters, and why a broken meal matters most.
+// It never kills and never feeds: starvation is the swarm's own metabolism, and growth is paid for out of what it ate.
 using System;
 using System.Collections.Generic;
 using System.Numerics;
@@ -29,156 +28,241 @@ namespace CosmicShore.Gameplay
     public enum TandavaOutcome
     {
         Running = 0,
-        /// <summary>The final form crossed the exit membrane. The pilots lose.</summary>
-        Escaped = 1,
+        /// <summary>The Sea Lion ate its last feast: the cycle is complete. The pilots lose.</summary>
+        Completed = 1,
         /// <summary>Every member is dead.</summary>
         Wiped = 2,
-        /// <summary>Nothing left to eat and no form left it could take: it starved at the sealed membrane.</summary>
+        /// <summary>Its body fell below the shatter threshold while it was starving.</summary>
         Starved = 3,
-        /// <summary>The final form was cut below its break threshold.</summary>
-        Broken = 4,
-        /// <summary>The pilots put out enough of the ring of fire before the drum stopped.</summary>
+        /// <summary>Its body was cut below the shatter threshold.</summary>
+        Shattered = 4,
+        /// <summary>The pilots broke enough of the halo before the drum stopped.</summary>
         DanceBroken = 5,
+        /// <summary>The match clock ran out before the cycle was complete.</summary>
+        HeldOff = 6,
     }
 
-    /// <summary>Where the swarm is in its story. Explicit values: replicated as an int.</summary>
+    /// <summary>What the swarm is doing. Explicit values: replicated as an int.</summary>
     public enum TandavaPhase
     {
-        /// <summary>Eating its way down the route, oasis by oasis.</summary>
-        Route = 0,
-        /// <summary>The route is eaten; foraging what the pilots left, nearest food first.</summary>
-        Forage = 1,
-        /// <summary>Nothing left to eat anywhere: pressing on the sealed membrane.</summary>
-        Starving = 2,
-        /// <summary>The last eating form is banked: it has risen into the dance form and is going to the dance ground.</summary>
-        ToDance = 3,
-        /// <summary>The ascension: the ring of fire, the drum.</summary>
-        Dance = 4,
-        /// <summary>The final form, and the exit open to it.</summary>
-        Final = 5,
-        Over = 6,
+        /// <summary>Travelling - to a plant, away from the pilots, or wandering.</summary>
+        Roam = 0,
+        /// <summary>Eating at a plant in its feed pose, guards out, not regrowing.</summary>
+        Feed = 1,
+        /// <summary>The ascension: the Lord of the Dance assembling where the serpent rose.</summary>
+        Rising = 2,
+        /// <summary>The halo is lit and the drum is running.</summary>
+        Dance = 3,
+        Over = 4,
+    }
+
+    /// <summary>How threatened the swarm feels. Explicit values: replicated as an int.</summary>
+    public enum TandavaMood
+    {
+        Calm = 0,
+        Wary = 1,
+        Fleeing = 2,
+    }
+
+    /// <summary>Why a meal ended.</summary>
+    public enum TandavaMealEnd
+    {
+        /// <summary>It ate the meal, or what its form needed.</summary>
+        Fed = 0,
+        /// <summary>The plant gave it nothing for a while, or died.</summary>
+        Bare = 1,
+        /// <summary>Its stomach is full.</summary>
+        Full = 2,
+        /// <summary>The pilots hurt it badly enough during the meal: it bolts.</summary>
+        Broken = 3,
+        /// <summary>It sat at one plant for the longest a meal may take.</summary>
+        TooLong = 4,
     }
 
     public enum TandavaEventKind
     {
+        /// <summary>A: the form left, B: the form entered (every form change - the rise into the dance included).</summary>
         FormCommitted = 0,
-        OasisReached = 1,
-        OasisLeft = 2,
-        OasisSkipped = 3,
-        /// <summary>The route's last oasis is behind it.</summary>
-        HeadingForExit = 4,
-        Ended = 5,
-        /// <summary>Foraging: the route is eaten.</summary>
-        RouteEaten = 6,
-        /// <summary>No food left anywhere.</summary>
-        Starving = 7,
-        /// <summary>The last eating form is banked: it takes the dance form and turns for the dance ground. A: the form
-        /// left, B: the dance form.</summary>
-        ReadyToDance = 8,
-        /// <summary>At the dance ground: the ring of fire lights and the drum starts. B: the dance form.</summary>
-        AscensionBegun = 9,
-        /// <summary>A flame of the ring of fire went out. A: the flame. B: flames out so far.</summary>
-        FlameOut = 10,
-        /// <summary>A non-final form reached the exit and the membrane held.</summary>
-        Sealed = 11,
+        /// <summary>A: the food's id.</summary>
+        FeedBegan = 1,
+        /// <summary>A: the food's id, B: the <see cref="TandavaMealEnd"/>.</summary>
+        FeedEnded = 2,
+        /// <summary>A: the mood left, B: the mood entered.</summary>
+        MoodChanged = 3,
+        /// <summary>The banked eater rose into the dance form. A: the form left, B: the dance form.</summary>
+        Rising = 4,
+        /// <summary>The halo lit and the drum started. A: the dance form.</summary>
+        DanceBegan = 5,
+        /// <summary>A halo ring was broken. A: the ring, B: rings broken so far.</summary>
+        HaloBroken = 6,
+        /// <summary>A: the form it ended in, B: the <see cref="TandavaOutcome"/>.</summary>
+        Ended = 7,
     }
 
     public struct TandavaEvent
     {
         public TandavaEventKind Kind;
-        /// <summary>FormCommitted: the form left. Oasis*: the oasis index. FlameOut: the flame.</summary>
-        public int A;
-        /// <summary>FormCommitted: the form entered. Ended: the <see cref="TandavaOutcome"/>. FlameOut: flames out.</summary>
-        public int B;
+        public int A, B;
     }
 
-    /// <summary>One form the swarm can take, in order. Plan counts are in GAME members (the plan's units x density).</summary>
+    /// <summary>What a form does in the story.</summary>
+    public enum TandavaFormRole
+    {
+        /// <summary>It eats, and banks its way to the next form.</summary>
+        Eater = 0,
+        /// <summary>The ascension: it does not eat; it stands in its halo until the drum ends.</summary>
+        Dance = 1,
+        /// <summary>The last form: it eats, and its bank is the FEAST that completes the cycle.</summary>
+        Final = 2,
+    }
+
+    /// <summary>One form the swarm takes, in order. Counts are GAME members (plan units x density); lengths are world.</summary>
     public sealed class TandavaForm
     {
         public string Name = "";
-        /// <summary>Index of this form's body plan in the swarm's scripted plan list.</summary>
+        public TandavaFormRole Role;
+        /// <summary>Its travel plan's index in the swarm's scripted plan list.</summary>
         public int PlanIndex;
-        /// <summary>Members of this form's full body.</summary>
+        /// <summary>Its feed twin's index (-1: a form that does not eat).</summary>
+        public int FeedPlanIndex = -1;
+        /// <summary>Members of its full body.</summary>
         public int PlanCount;
-        /// <summary>The body must be at least this share of <see cref="PlanCount"/> alive (hatched) to evolve on.</summary>
+        /// <summary>The body must be at least this share of <see cref="PlanCount"/> to take the next form.</summary>
         public float FillToEvolve = 0.9f;
-        /// <summary>Banked stomach volume per research element (0 Charge .. 3 Time) the swarm must hold to evolve on.
-        /// Zero for an element the form does not need. The last eating form's bank is the ascension's.</summary>
-        public readonly float[] BankToEvolve = new float[4];
-        /// <summary>What one stop eats in this form (flora volume): the swarm leaves an oasis once it has eaten this
-        /// much THERE. The generator authors it as the form's whole stage (grow the body + bank the surplus) over the
-        /// design's "two to three oases per stage", so a denied oasis is a meal the stage is short.</summary>
+        /// <summary>Banked stomach volume (every element together) the swarm must hold to take the next form - or, for the
+        /// <see cref="TandavaFormRole.Final"/> form, to complete the cycle. A TOTAL, not per element: what it eats is
+        /// whatever the cell grows, and a bank in one element would clog on the other's food.</summary>
+        public float Bank;
+        /// <summary>What one meal eats (flora volume): it leaves a plant once it has eaten this much there.</summary>
         public float MealVolume = float.PositiveInfinity;
+        /// <summary>Where its mouth is, in WORLD units along the body axes (x forward, y up, z side) from its centre: in
+        /// the travel pose (how it lines up on a plant) and in the feed pose (where the plant must sit while it eats).</summary>
+        public Vector3 Mouth, FeedMouth;
     }
 
-    /// <summary>A feeding ground on the route: where it is, how near counts as "there", and whether pilots denied it.</summary>
-    public struct TandavaOasis
+    /// <summary>A plant the swarm could eat (the glue lists only what it CAN eat).</summary>
+    public struct TandavaFood
     {
-        public Vector3 Centre;
-        public float Radius;
-        /// <summary>Nothing there is food for the swarm any more (burned, claimed, or grazed bare). Set by the glue.</summary>
-        public bool Denied;
+        /// <summary>Stable while the plant lives (the glue's own key).</summary>
+        public int Id;
+        public Vector3 Position;
+        /// <summary>Edible volume left on it.</summary>
+        public float Volume;
     }
 
+    /// <summary>A pilot, as the swarm senses it.</summary>
+    public struct TandavaPilot
+    {
+        public Vector3 Position, Velocity;
+    }
+
+    /// <summary>
+    /// Every dial the director runs on. Serializable as plain fields so <c>TandavaSettingsSO.Director</c> carries the SAME
+    /// class the harness constructs - one place for a number, read by the game, the harness and the generator alike
+    /// (author_tandava_assets.py authors the asset's block from these defaults and asserts it).
+    /// </summary>
+    [Serializable]
     public sealed class TandavaDirectorSettings
     {
-        /// <summary>The swarm is AT an oasis when its anchor is within the oasis radius plus this (world units).</summary>
-        public float ArriveMargin = 60f;
-        /// <summary>It leaves an oasis once its stomach is this full (0..1), whatever its meal - there is no room left.</summary>
-        public float LeaveWhenStomachFill = 0.98f;
-        /// <summary>It leaves an oasis it has taken no bite from for this long (grazed bare, or denied around it).</summary>
-        public float GiveUpSeconds = 8f;
-        /// <summary>It never sits at one oasis longer than this, fed or not - the race keeps moving.</summary>
-        public float MaxFeedSeconds = 40f;
-        /// <summary>A point on the exit membrane, and its normal pointing OUT of the course.</summary>
-        public Vector3 ExitPoint, ExitNormal = Vector3.UnitX;
-        /// <summary>A non-final form is "at the sealed membrane" within this of the exit plane (world units).</summary>
-        public float SealMargin = 60f;
-        /// <summary>The sealed membrane holds a non-final form's anchor at least this far inside the exit plane
-        /// (<see cref="TandavaDirectorCore.SealCorrection"/>). At or above <see cref="SealMargin"/>'s reach, so a held swarm
-        /// keeps raising the Sealed beat.</summary>
-        public float SealHold = 60f;
-        /// <summary>Where a starving swarm waits: this far inside the exit plane, pressing on the membrane.</summary>
-        public float StarveStandoff = 140f;
-        /// <summary>A swarm with nothing to eat is Starved after pressing on the membrane this long (counted from when it
-        /// reaches the standoff), or once its body is below <see cref="StarvedBelowFraction"/> of its plan - whichever
-        /// comes first. The body's own shedding is the swarm's metabolism (SwarmFaunaConfigSO.StarvationSeconds); this is
-        /// the clock that says the pilots have WON, for a swarm whose banked stomach keeps it from shedding at all.</summary>
-        public float StarvingSeconds = 40f;
-        public float StarvedBelowFraction = 0.15f;
-        /// <summary>The final form is broken when fewer than this share of its plan count are alive.</summary>
-        public float BreakFraction = 0.35f;
-        /// <summary>The break threshold arms only once the final form has held this share of its plan count - so the
-        /// moment of its commit (a body still growing into its new shape) can never read as "broken".</summary>
-        public float BreakArmFraction = 0.6f;
+        // ── the arena
+        /// <summary>The cell's centre (world) - set at runtime from the cell, never authored.</summary>
+        [NonSerialized] public Vector3 Centre;
+        /// <summary>The swarm's centre stays within this of the cell's centre (world): the membrane less the body's reach.</summary>
+        public float RoamRadius = 900f;
 
-        /// <summary>The ascension: Forms[^2] is the dance form and Forms[^1] the final one. Off, the last form is final
-        /// and the last-but-one commits on to it by eating, as phase A shipped.</summary>
-        public bool Ascension = true;
-        public Vector3 DancePoint;
-        /// <summary>The swarm is at the dance ground within this (world units).</summary>
-        public float DanceArrive = 70f;
-        /// <summary>How long the drum runs: the pilots' window to break the ring of fire.</summary>
+        // ── threat
+        /// <summary>A pilot is felt within this of the swarm's centre (world).</summary>
+        public float SenseRadius = 450f;
+        /// <summary>A pilot closing at this speed (world units/s) reads as a full charge.</summary>
+        public float ApproachSpeed = 80f;
+        /// <summary>Losing this share of its full body per second reads as full threat.</summary>
+        public float DamageRef = 0.04f;
+        /// <summary>Seconds the threat takes to rise to a new reading, and to fall from one.</summary>
+        public float ThreatRiseSeconds = 0.25f, ThreatFallSeconds = 2.5f;
+        /// <summary>Mood thresholds on the threat, with hysteresis (enter above, leave below).</summary>
+        public float WaryEnter = 0.3f, WaryExit = 0.2f, FleeEnter = 0.65f, FleeExit = 0.4f;
+        /// <summary>Once it bolts it runs at least this long.</summary>
+        public float FleeMinSeconds = 4f;
+        /// <summary>How far ahead it aims when it bolts (world).</summary>
+        public float FleeReach = 700f;
+
+        // ── the levers, per mood: x the config's Cruise and TurnPerStep
+        public float CruiseCalm = 1f, CruiseWary = 1.5f, CruiseFlee = 2.1f, CruiseFeed = 0.5f;
+        public float TurnCalm = 1f, TurnWary = 1.6f, TurnFlee = 2.5f, TurnFeed = 1f;
+
+        // ── where to eat
+        /// <summary>A pilot within about this of a plant makes it unsafe (world).</summary>
+        public float SafeRadius = 350f;
+        /// <summary>How much a nearby pilot spoils a plant, calm and wary (0 = not at all, 1 = completely).</summary>
+        public float FearCalm = 0.5f, FearWary = 0.9f;
+        /// <summary>Added to a plant's distance before dividing, so the nearest plant is not chosen at any cost.</summary>
+        public float DistanceBias = 300f;
+        /// <summary>The plant it is already heading for scores this many times higher: it commits.</summary>
+        public float StickBonus = 1.3f;
+        /// <summary>A plant with less than this to eat is not worth the trip.</summary>
+        public float MinFood = 200f;
+        /// <summary>A plant it left is not revisited for this long (it has to grow back).</summary>
+        public float RestSeconds = 25f;
+        /// <summary>With nothing to eat it wanders to a point at least this far away (world).</summary>
+        public float WanderReach = 500f;
+
+        // ── feeding
+        /// <summary>It starts eating when its mouth is within this of the plant (world).</summary>
+        public float ArriveMargin = 70f;
+        /// <summary>Losing this share of its full body during one meal breaks the meal: it bolts.</summary>
+        public float MealBreakFraction = 0.2f;
+        /// <summary>A plant it has had no bite from for this long is bare...</summary>
+        public float GiveUpSeconds = 6f;
+        /// <summary>...counted only after this long at the plant: the body needs a few seconds to settle into its feed pose
+        /// (the heads to reach the food) before a quiet mouth means anything.</summary>
+        public float FeedSettleSeconds = 4f;
+        /// <summary>The longest one meal may take.</summary>
+        public float MaxFeedSeconds = 30f;
+        /// <summary>It stops eating once its stomach is this full (0..1).</summary>
+        public float LeaveWhenStomachFill = 0.98f;
+
+        // ── the shatter: the pilots' strike
+        /// <summary>The body is shattered below this share of its form's full body...</summary>
+        public float ShatterFraction = 0.35f;
+        /// <summary>...once it has held this share (so a body still growing into a new form never reads as shattered).</summary>
+        public float ArmFraction = 0.6f;
+
+        // ── the ascension
+        /// <summary>Seconds the Lord of the Dance takes to assemble before the halo lights.</summary>
+        public float RiseSeconds = 12f;
+        /// <summary>How long the drum runs: the pilots' window to break the halo.</summary>
         public float DrumSeconds = 30f;
-        /// <summary>Flames in the ring of fire, and how many must go out to break the dance.</summary>
-        public int FlameCount = 12;
-        public int FlamesToBreak = 9;
+        public int HaloCount = 12, HaloToBreak = 9;
+        /// <summary>The dance's reach from its centre (the halo and the guard posts, world): the dance ground is kept this
+        /// far inside the roam radius.</summary>
+        public float DanceReach = 250f;
+
+        // ── the match
+        /// <summary>The cycle must complete within this many seconds of the go, or the pilots have held it off. 0 = no clock.</summary>
+        public float MatchSeconds = 420f;
+
+        /// <summary>A copy to run a match on (the game's settings asset is never written at runtime).</summary>
+        public TandavaDirectorSettings Clone() => (TandavaDirectorSettings)MemberwiseClone();
     }
 
     /// <summary>What the director needs to know about the swarm, sampled once per tick by the glue.</summary>
     public struct TandavaSwarmState
     {
         public int Alive;
+        /// <summary>Members lost since it hatched, to anything (monotone).</summary>
+        public int Lost;
         public Vector3 Anchor;
+        /// <summary>The body's axes (world, unit): its heading, its up, its side.</summary>
+        public Vector3 Forward, Up, Side;
         /// <summary>Banked eaten volume per research element (0 Charge .. 3 Time).</summary>
         public float Stomach0, Stomach1, Stomach2, Stomach3;
-        /// <summary>The stomach's fill, 0..1 (the swarm's own StomachFill).</summary>
+        /// <summary>The stomach's fill, 0..1.</summary>
         public float StomachFill;
-        /// <summary>Seconds since the swarm last took a bite.</summary>
+        /// <summary>Seconds since it last took a bite.</summary>
         public float SinceBite;
-        /// <summary>Flora volume the swarm has eaten since it hatched (monotone; the glue sums its deposits).</summary>
+        /// <summary>Flora volume eaten since it hatched (monotone).</summary>
         public float EatenTotal;
-        /// <summary>True while the swarm is starving (the host's StarvationSeconds clock has run out).</summary>
+        /// <summary>True while its own unfed clock has run out (SwarmFauna.IsStarving).</summary>
         public bool Starving;
         public float Stomach(int e) => e switch { 0 => Stomach0, 1 => Stomach1, 2 => Stomach2, _ => Stomach3 };
     }
@@ -186,252 +270,446 @@ namespace CosmicShore.Gameplay
     public sealed class TandavaDirectorCore
     {
         public readonly IReadOnlyList<TandavaForm> Forms;
-        public readonly TandavaOasis[] Oases;
         public readonly TandavaDirectorSettings S;
         public readonly List<TandavaEvent> Events = new();
 
         public int FormIx { get; private set; }
-        public TandavaPhase Phase { get; private set; } = TandavaPhase.Route;
-        /// <summary>The oasis the swarm is heading to or feeding at (-1 when none); on the route it walks 0..Oases.Length.</summary>
-        public int Target { get; private set; }
-        /// <summary>The route's progress, kept for logs and the HUD: the oasis index the route has reached.</summary>
-        public int OasisIx => Math.Max(0, Math.Min(Target, Oases.Length));
-        public bool Feeding { get; private set; }
+        public TandavaPhase Phase { get; private set; } = TandavaPhase.Roam;
+        public TandavaMood Mood { get; private set; } = TandavaMood.Calm;
         public TandavaOutcome Outcome { get; private set; } = TandavaOutcome.Running;
-        public Vector3 Goal { get; private set; }
+        /// <summary>0..1, smoothed: the larger of the pilots' pressure and the wound rate.</summary>
+        public float Threat { get; private set; }
+        /// <summary>Seconds since the go.</summary>
         public float Clock { get; private set; }
+        /// <summary>Where the body swims (world).</summary>
+        public Vector3 Goal { get; private set; }
+        /// <summary>The food it is going to or eating (-1: none).</summary>
+        public int TargetFood { get; private set; } = -1;
+        /// <summary>The levers this tick: x cruise, x turn, and whether laying is held.</summary>
+        public float CruiseScale { get; private set; } = 1f;
+        public float TurnScale { get; private set; } = 1f;
+        public bool HoldLaying { get; private set; }
+        /// <summary>Volume eaten in the current meal.</summary>
+        public float EatenHere { get; private set; }
+        /// <summary>Where the dance stands (world; set when it rises).</summary>
+        public Vector3 DancePoint { get; private set; }
         /// <summary>Seconds the drum has run (0 outside the dance).</summary>
         public float DanceTime { get; private set; }
-        public float DrumRemaining => Phase == TandavaPhase.Dance ? MathF.Max(0f, S.DrumSeconds - DanceTime) : 0f;
-        /// <summary>Which flames are out, as a bitmask (replicated as an int).</summary>
-        public int FlamesOutMask { get; private set; }
-        public int FlamesOut { get; private set; }
-        /// <summary>Seconds left before a swarm starving at the membrane is Starved (-1 when not pressing on it).</summary>
-        public float StarveRemaining => Phase == TandavaPhase.Starving && _starvingSince >= 0f ? MathF.Max(0f, S.StarvingSeconds - (Clock - _starvingSince)) : -1f;
+        public int HaloOutMask { get; private set; }
+        public int HaloOut { get; private set; }
 
-        public int FinalIx => Forms.Count - 1;
-        /// <summary>The dance form, or -1 without the ascension.</summary>
-        public int DanceIx => S.Ascension && Forms.Count >= 3 ? Forms.Count - 2 : -1;
-        /// <summary>The last form the swarm reaches by EATING.</summary>
-        public int LastEaterIx => DanceIx >= 0 ? DanceIx - 1 : FinalIx;
-        public bool IsFinalForm => FormIx == FinalIx;
+        public bool Feeding => Phase == TandavaPhase.Feed;
         public bool InDance => Phase == TandavaPhase.Dance;
-        /// <summary>The form the swarm escaped as (1 = the first form) - the pilots' loss score. 0 while running or won.</summary>
-        public int EscapedAsForm => Outcome == TandavaOutcome.Escaped ? FormIx + 1 : 0;
+        public TandavaForm Form => Forms[FormIx];
+        public int FinalIx => Forms.Count - 1;
+        public bool IsFinalForm => FormIx == FinalIx;
+        /// <summary>The plan the body should wear now: the form's feed twin while it eats, else its travel plan.</summary>
+        public int WantPlan => Feeding && Form.FeedPlanIndex >= 0 ? Form.FeedPlanIndex : Form.PlanIndex;
+        public float DrumRemaining => InDance ? MathF.Max(0f, S.DrumSeconds - DanceTime) : 0f;
+        public float RiseRemaining => Phase == TandavaPhase.Rising ? MathF.Max(0f, S.RiseSeconds - (Clock - _phaseSince)) : 0f;
+        public float TimeRemaining => S.MatchSeconds > 0f ? MathF.Max(0f, S.MatchSeconds - Clock) : -1f;
 
-        float _feedSince = -1f, _eatenAtArrival, _starvingSince = -1f, _sealedAt = -999f;
-        bool _breakArmed;
+        readonly Random _rng;
+        readonly Dictionary<int, float> _restUntil = new();
+        float _feedSince, _eatenAtMeal, _phaseSince, _fleeUntil = -1f, _lossRate;
+        int _lostAtMeal, _lostPrev = -1;
+        bool _armed, _haveWander;
+        Vector3 _wander;
 
-        /// <summary>Volume eaten at the oasis the swarm is feeding at (0 while travelling) - the meal so far.</summary>
-        public float EatenHere { get; private set; }
-
-        public TandavaDirectorCore(IReadOnlyList<TandavaForm> forms, TandavaOasis[] oases, TandavaDirectorSettings settings)
+        public TandavaDirectorCore(IReadOnlyList<TandavaForm> forms, TandavaDirectorSettings settings, int seed = 1)
         {
             if (forms == null || forms.Count == 0) throw new ArgumentException("Tandava needs at least one form", nameof(forms));
-            Forms = forms; Oases = oases ?? Array.Empty<TandavaOasis>(); S = settings ?? new TandavaDirectorSettings();
-            Goal = Oases.Length > 0 ? Oases[0].Centre : S.ExitPoint;
+            Forms = forms; S = settings ?? new TandavaDirectorSettings();
+            _rng = new Random(seed);
+            Goal = S.Centre;
         }
 
-        /// <summary>How far the current form is toward its next, 0..1: the lesser of its body fill and its banked surplus
-        /// while it eats; the drum's progress in the dance; 1 in the final form.</summary>
-        public float EvolveProgress(in TandavaSwarmState s)
+        // ──────────────────────────────────────────────────────────────── the readouts
+
+        /// <summary>How far the current form is toward its next (or, the final form, toward completing the cycle), 0..1:
+        /// the lesser of its body fill and its bank. The banks RISE form by form (as shares of the stomach), so what a form
+        /// carries over never skips the next one, and every member the pilots cut is regrown out of the bank before the bank
+        /// is full - which is how a cut costs it time without costing it its form. The drum's progress while it dances.</summary>
+        public float Progress(in TandavaSwarmState s)
         {
-            if (InDance) return S.DrumSeconds > 0f ? Math.Clamp(DanceTime / S.DrumSeconds, 0f, 1f) : 1f;
-            if (FormIx > LastEaterIx || (FormIx == LastEaterIx && DanceIx < 0)) return 1f;
-            var f = Forms[FormIx];
+            var f = Form;
+            if (f.Role == TandavaFormRole.Dance)
+                return Phase == TandavaPhase.Dance && S.DrumSeconds > 0f ? Math.Clamp(DanceTime / S.DrumSeconds, 0f, 1f) : 0f;
             float fill = f.PlanCount > 0 ? s.Alive / (f.FillToEvolve * f.PlanCount) : 1f;
-            float bank = 1f;
-            for (int e = 0; e < 4; e++)
-                if (f.BankToEvolve[e] > 0f) bank = MathF.Min(bank, s.Stomach(e) / f.BankToEvolve[e]);
+            float bank = f.Bank > 0f ? (s.Stomach0 + s.Stomach1 + s.Stomach2 + s.Stomach3) / f.Bank : 1f;
             return Math.Clamp(MathF.Min(fill, bank), 0f, 1f);
         }
 
-        /// <summary>The glue marks an oasis denied (nothing there the swarm can eat). A swarm heading there skips it.</summary>
-        public void SetDenied(int oasis, bool denied)
+        /// <summary>The body against its form's full body, 0..1+.</summary>
+        public float BodyFraction(in TandavaSwarmState s) => Form.PlanCount > 0 ? s.Alive / (float)Form.PlanCount : 1f;
+
+        public bool HaloIsOut(int k) => k >= 0 && k < 32 && (HaloOutMask & (1 << k)) != 0;
+
+        /// <summary>A pilot threaded halo ring <paramref name="k"/> while nothing guarded it (the glue decides both).
+        /// Returns true when it broke. Enough broken ends the match: the dance is broken.</summary>
+        public bool BreakHalo(int k)
         {
-            if (oasis >= 0 && oasis < Oases.Length) Oases[oasis].Denied = denied;
-        }
-
-        /// <summary>The sealed exit as a correction every peer applies to its OWN swarm (the swarms are client-local): a
-        /// non-final form whose anchor is past <see cref="TandavaDirectorSettings.SealHold"/> of the exit plane is pushed
-        /// straight back to it - the membrane holds. Zero for the final form, and inside the hold.</summary>
-        public Vector3 SealCorrection(Vector3 anchor) => SealCorrection(anchor, IsFinalForm, S);
-
-        /// <summary>The same rule for a peer that knows only the replicated form (a client).</summary>
-        public static Vector3 SealCorrection(Vector3 anchor, bool finalForm, TandavaDirectorSettings s)
-        {
-            if (finalForm || s == null) return Vector3.Zero;
-            float over = Vector3.Dot(anchor - s.ExitPoint, s.ExitNormal) + s.SealHold;
-            return over > 0f ? -s.ExitNormal * over : Vector3.Zero;
-        }
-
-        public bool FlameIsOut(int k) => k >= 0 && k < 32 && (FlamesOutMask & (1 << k)) != 0;
-
-        /// <summary>A pilot threaded flame <paramref name="k"/> while nothing guarded it (the glue decides both). Returns
-        /// true when it went out. Enough flames out ends the match: the dance is broken.</summary>
-        public bool BreakFlame(int k)
-        {
-            if (!InDance || Outcome != TandavaOutcome.Running || k < 0 || k >= S.FlameCount || FlameIsOut(k)) return false;
-            FlamesOutMask |= 1 << k; FlamesOut++;
-            Events.Add(new TandavaEvent { Kind = TandavaEventKind.FlameOut, A = k, B = FlamesOut });
-            if (FlamesOut >= S.FlamesToBreak) End(TandavaOutcome.DanceBroken);
+            if (!InDance || Outcome != TandavaOutcome.Running || k < 0 || k >= S.HaloCount || HaloIsOut(k)) return false;
+            HaloOutMask |= 1 << k; HaloOut++;
+            Events.Add(new TandavaEvent { Kind = TandavaEventKind.HaloBroken, A = k, B = HaloOut });
+            if (HaloOut >= S.HaloToBreak) End(TandavaOutcome.DanceBroken);
             return true;
         }
 
-        /// <summary>One director tick: outcome, form, route, ascension. Events of this tick are appended to <see cref="Events"/>.</summary>
-        public void Tick(float dt, in TandavaSwarmState s)
+        /// <summary>A world offset in the body axes of <paramref name="s"/> (x forward, y up, z side).</summary>
+        public static Vector3 InBody(in TandavaSwarmState s, Vector3 local) => s.Forward * local.X + s.Up * local.Y + s.Side * local.Z;
+
+        // ──────────────────────────────────────────────────────────────── the tick
+
+        /// <summary>One director tick. <paramref name="food"/> is every plant the swarm can eat; <paramref name="pilots"/>
+        /// every live pilot. Events of this tick are appended to <see cref="Events"/>.</summary>
+        public void Tick(float dt, in TandavaSwarmState s, IReadOnlyList<TandavaFood> food, IReadOnlyList<TandavaPilot> pilots)
         {
             if (Outcome != TandavaOutcome.Running) return;
+            dt = MathF.Max(0f, dt);
             Clock += dt;
 
-            // ── outcome first
-            if (s.Alive <= 0) { End(Phase == TandavaPhase.Starving || s.Starving ? TandavaOutcome.Starved : TandavaOutcome.Wiped); return; }
-            float outward = Vector3.Dot(s.Anchor - S.ExitPoint, S.ExitNormal);
-            if (IsFinalForm && outward >= 0f) { End(TandavaOutcome.Escaped); return; }
-            if (!IsFinalForm && outward >= -S.SealMargin && Clock - _sealedAt > 5f)
+            // ── the outcome first
+            if (s.Alive <= 0) { End(s.Starving ? TandavaOutcome.Starved : TandavaOutcome.Wiped); return; }
+            var form = Form;
+            if (!_armed && s.Alive >= S.ArmFraction * form.PlanCount) _armed = true;
+            if (_armed && s.Alive < S.ShatterFraction * form.PlanCount)
             {
-                _sealedAt = Clock;
-                Events.Add(new TandavaEvent { Kind = TandavaEventKind.Sealed, A = FormIx });
+                End(s.Starving ? TandavaOutcome.Starved : TandavaOutcome.Shattered);
+                return;
             }
-            if (IsFinalForm)
-            {
-                var fin = Forms[FormIx];
-                if (!_breakArmed && s.Alive >= S.BreakArmFraction * fin.PlanCount) _breakArmed = true;
-                if (_breakArmed && s.Alive < S.BreakFraction * fin.PlanCount) { End(TandavaOutcome.Broken); return; }
-            }
-            if (Phase == TandavaPhase.Starving)
-            {
-                if (_starvingSince < 0f && outward >= -(S.StarveStandoff + S.ArriveMargin)) _starvingSince = Clock;   // at the membrane
-                if ((_starvingSince >= 0f && Clock - _starvingSince >= S.StarvingSeconds) ||
-                    s.Alive < S.StarvedBelowFraction * Forms[FormIx].PlanCount)
-                { End(TandavaOutcome.Starved); return; }
-            }
+            if (S.MatchSeconds > 0f && Clock >= S.MatchSeconds) { End(TandavaOutcome.HeldOff); return; }
 
-            // ── form: a full body with the surplus banked takes the next shape (or, banked as the last eater, the dance)
-            bool eating = Phase is TandavaPhase.Route or TandavaPhase.Forage or TandavaPhase.Starving;
-            if (eating && FormIx <= LastEaterIx && !(FormIx == LastEaterIx && DanceIx < 0 && IsFinalForm) && EvolveProgress(s) >= 1f)
-            {
-                if (FormIx < LastEaterIx || DanceIx < 0) Commit(FormIx + 1, s);
-                else
-                {
-                    // the banked Bull rises into the dance form NOW and assembles it on the way, so the figure and its
-                    // attendants are standing when the ring lights (the shape needs its time; the drum is the pilots')
-                    int from = FormIx;
-                    Phase = TandavaPhase.ToDance; Feeding = false; FormIx = DanceIx;
-                    Events.Add(new TandavaEvent { Kind = TandavaEventKind.ReadyToDance, A = from, B = DanceIx });
-                }
-            }
+            SenseThreat(dt, s, pilots);
 
-            // ── route, forage, starve
-            if (Phase is TandavaPhase.Route or TandavaPhase.Forage or TandavaPhase.Starving) Route(s);
-
-            // ── the ascension
-            if (Phase == TandavaPhase.ToDance && Vector3.Distance(s.Anchor, S.DancePoint) <= S.DanceArrive)
+            switch (Phase)
             {
-                Phase = TandavaPhase.Dance; DanceTime = 0f; FlamesOut = 0; FlamesOutMask = 0;
-                Events.Add(new TandavaEvent { Kind = TandavaEventKind.AscensionBegun, A = FormIx, B = DanceIx });
+                case TandavaPhase.Roam:
+                    if (Progress(s) >= 1f) { Advance(s); if (Outcome != TandavaOutcome.Running) return; }
+                    if (Phase == TandavaPhase.Roam) Roam(s, food, pilots);
+                    break;
+                case TandavaPhase.Feed:
+                    FeedTick(s, food);
+                    if (Phase == TandavaPhase.Roam) Roam(s, food, pilots);   // the meal ended: be somewhere this tick
+                    break;
+                case TandavaPhase.Rising:
+                    Goal = DancePoint;
+                    if (Clock - _phaseSince >= S.RiseSeconds)
+                    {
+                        Phase = TandavaPhase.Dance; _phaseSince = Clock; DanceTime = 0f; HaloOut = 0; HaloOutMask = 0;
+                        Events.Add(new TandavaEvent { Kind = TandavaEventKind.DanceBegan, A = FormIx });
+                    }
+                    break;
+                case TandavaPhase.Dance:
+                    Goal = DancePoint;
+                    DanceTime += dt;
+                    if (DanceTime >= S.DrumSeconds)
+                    {
+                        Commit(FinalIx, s);
+                        Phase = TandavaPhase.Roam; _phaseSince = Clock; DanceTime = 0f;
+                        Roam(s, food, pilots);
+                    }
+                    break;
             }
-            else if (Phase == TandavaPhase.Dance)
-            {
-                DanceTime += dt;
-                if (DanceTime >= S.DrumSeconds) { Phase = TandavaPhase.Final; Commit(FinalIx, s); }
-            }
+            if (Outcome == TandavaOutcome.Running) Levers();
+        }
 
-            Goal = Phase switch
+        /// <summary>A banked form moves on: an eater to the next form (into the dance: the rise), the final form completes.</summary>
+        void Advance(in TandavaSwarmState s)
+        {
+            if (Form.Role == TandavaFormRole.Final) { End(TandavaOutcome.Completed); return; }
+            int next = FormIx + 1;
+            if (next >= Forms.Count) { End(TandavaOutcome.Completed); return; }
+            if (Forms[next].Role == TandavaFormRole.Dance)
             {
-                TandavaPhase.ToDance or TandavaPhase.Dance => S.DancePoint,
-                TandavaPhase.Final => S.ExitPoint + S.ExitNormal * 200f,
-                TandavaPhase.Starving => S.ExitPoint - S.ExitNormal * S.StarveStandoff,
-                _ => Target >= 0 && Target < Oases.Length ? Oases[Target].Centre : S.ExitPoint - S.ExitNormal * S.StarveStandoff,
-            };
+                int from = FormIx;
+                Commit(next, s);
+                // it rises WHERE IT STANDS - only pulled in from the wall far enough for the halo and its guards to fit
+                DancePoint = ClampInside(s.Anchor, MathF.Max(0f, S.RoamRadius - S.DanceReach));
+                Phase = TandavaPhase.Rising; _phaseSince = Clock; TargetFood = -1;
+                Goal = DancePoint;
+                Events.Add(new TandavaEvent { Kind = TandavaEventKind.Rising, A = from, B = next });
+                return;
+            }
+            Commit(next, s);
         }
 
         void Commit(int to, in TandavaSwarmState s)
         {
             int from = FormIx; FormIx = to;
             Events.Add(new TandavaEvent { Kind = TandavaEventKind.FormCommitted, A = from, B = to });
-            // the body it commits with already counts toward the final form's arming (a cull the very next second
-            // must still be able to break it)
-            if (IsFinalForm && s.Alive >= S.BreakArmFraction * Forms[FormIx].PlanCount) _breakArmed = true;
-            if (IsFinalForm) Phase = TandavaPhase.Final;
+            // the body it commits with counts toward the new form's arming: a cull the next second can still shatter it
+            _armed = s.Alive >= S.ArmFraction * Forms[to].PlanCount;
         }
 
-        int NearestFood(Vector3 at)
+        // ──────────────────────────────────────────────────────────────── threat and mood
+
+        void SenseThreat(float dt, in TandavaSwarmState s, IReadOnlyList<TandavaPilot> pilots)
         {
-            int best = -1; float bd = float.MaxValue;
-            for (int k = 0; k < Oases.Length; k++)
+            float prox = 0f;
+            if (pilots != null)
+                for (int k = 0; k < pilots.Count; k++)
+                {
+                    var rel = pilots[k].Position - s.Anchor; float d = rel.Length();
+                    if (d >= S.SenseRadius) continue;
+                    float near = 1f - d / MathF.Max(1f, S.SenseRadius);
+                    float closing = d > 1e-3f ? -Vector3.Dot(pilots[k].Velocity, rel / d) : 0f;
+                    float charge = Math.Clamp(closing / MathF.Max(1f, S.ApproachSpeed), 0f, 1f);
+                    float w = Math.Clamp(near * (0.55f + 0.45f * charge), 0f, 1f);
+                    prox = 1f - (1f - prox) * (1f - w);   // a soft OR: two pilots press harder than one
+                }
+            int lost = _lostPrev < 0 ? 0 : Math.Max(0, s.Lost - _lostPrev);
+            _lostPrev = s.Lost;
+            if (dt > 0f)
             {
-                if (Oases[k].Denied) continue;
-                float d = Vector3.Distance(at, Oases[k].Centre);
-                if (d < bd) { bd = d; best = k; }
+                float a = 1f - MathF.Exp(-dt / 0.5f);
+                _lossRate += (lost / dt - _lossRate) * a;
+            }
+            float wound = Math.Clamp(_lossRate / MathF.Max(1f, S.DamageRef * Form.PlanCount), 0f, 1f);
+            float raw = MathF.Max(prox, wound);
+            if (dt > 0f)
+            {
+                float tau = raw > Threat ? S.ThreatRiseSeconds : S.ThreatFallSeconds;
+                Threat += (raw - Threat) * (1f - MathF.Exp(-dt / MathF.Max(1e-3f, tau)));
+            }
+            Threat = Math.Clamp(Threat, 0f, 1f);
+
+            // the mood, with hysteresis. Feeding it does NOT bolt from pilots it merely sees - its guards are out; only a
+            // broken meal (FeedTick) sends a feeding swarm running. Dancing it stands its ground.
+            var was = Mood; var mood = Mood;
+            bool canBolt = Phase == TandavaPhase.Roam;
+            if (Clock < _fleeUntil) mood = TandavaMood.Fleeing;
+            else switch (Mood)
+            {
+                case TandavaMood.Calm:
+                    if (canBolt && Threat >= S.FleeEnter) mood = TandavaMood.Fleeing;
+                    else if (Threat >= S.WaryEnter) mood = TandavaMood.Wary;
+                    break;
+                case TandavaMood.Wary:
+                    if (canBolt && Threat >= S.FleeEnter) mood = TandavaMood.Fleeing;
+                    else if (Threat < S.WaryExit) mood = TandavaMood.Calm;
+                    break;
+                default:
+                    if (Threat < S.FleeExit || !canBolt) mood = Threat < S.WaryExit ? TandavaMood.Calm : TandavaMood.Wary;
+                    break;
+            }
+            if (mood == TandavaMood.Fleeing && was != TandavaMood.Fleeing && _fleeUntil < Clock) _fleeUntil = Clock + S.FleeMinSeconds;
+            SetMood(mood);
+        }
+
+        void SetMood(TandavaMood mood)
+        {
+            if (mood == Mood) return;
+            Events.Add(new TandavaEvent { Kind = TandavaEventKind.MoodChanged, A = (int)Mood, B = (int)mood });
+            Mood = mood;
+        }
+
+        void Levers()
+        {
+            LeversFor(Phase, Mood, S, out float cruise, out float turn, out bool hold);
+            CruiseScale = cruise; TurnScale = turn; HoldLaying = hold;
+        }
+
+        /// <summary>The levers a phase and mood mean - the server's director and every client's swarm (which knows only
+        /// the replicated phase and mood) read the same rule.</summary>
+        public static void LeversFor(TandavaPhase phase, TandavaMood mood, TandavaDirectorSettings s,
+                                     out float cruise, out float turn, out bool holdLaying)
+        {
+            switch (phase)
+            {
+                case TandavaPhase.Feed:
+                    cruise = s.CruiseFeed; turn = s.TurnFeed; holdLaying = true;   // still, and not healing
+                    return;
+                case TandavaPhase.Rising:
+                case TandavaPhase.Dance:
+                    cruise = s.CruiseFeed; turn = s.TurnFeed; holdLaying = false;
+                    return;
+                case TandavaPhase.Over:
+                    cruise = 1f; turn = 1f; holdLaying = false;
+                    return;
+            }
+            holdLaying = false;
+            switch (mood)
+            {
+                case TandavaMood.Fleeing: cruise = s.CruiseFlee; turn = s.TurnFlee; break;
+                case TandavaMood.Wary: cruise = s.CruiseWary; turn = s.TurnWary; break;
+                default: cruise = s.CruiseCalm; turn = s.TurnCalm; break;
+            }
+        }
+
+        // ──────────────────────────────────────────────────────────────── roaming
+
+        void Roam(in TandavaSwarmState s, IReadOnlyList<TandavaFood> food, IReadOnlyList<TandavaPilot> pilots)
+        {
+            if (Mood == TandavaMood.Fleeing)
+            {
+                TargetFood = -1;
+                Goal = FleePoint(s, pilots);
+                return;
+            }
+            int k = ChooseFood(s, food, pilots);
+            if (k < 0)
+            {
+                TargetFood = -1;
+                Goal = WanderPoint(s);
+                return;
+            }
+            var plant = food[k];
+            TargetFood = plant.Id;
+            _haveWander = false;
+            // line its MOUTH up on the plant: the body's centre aims at the plant less the mouth's reach, so it arrives
+            // head first and slows with its mouth there
+            Goal = ClampInside(plant.Position - InBody(s, Form.Mouth), S.RoamRadius);
+            var mouth = s.Anchor + InBody(s, Form.Mouth);
+            if (Form.FeedPlanIndex >= 0 && Vector3.Distance(mouth, plant.Position) <= S.ArriveMargin) BeginFeed(s, plant);
+        }
+
+        /// <summary>The best plant to go to now (an index into <paramref name="food"/>), or -1.</summary>
+        int ChooseFood(in TandavaSwarmState s, IReadOnlyList<TandavaFood> food, IReadOnlyList<TandavaPilot> pilots)
+        {
+            if (food == null) return -1;
+            float fear = Mood == TandavaMood.Wary ? S.FearWary : S.FearCalm;
+            int best = -1; float bestScore = 0f;
+            for (int k = 0; k < food.Count; k++)
+            {
+                var f = food[k];
+                if (f.Volume < S.MinFood) continue;
+                if (_restUntil.TryGetValue(f.Id, out float until) && Clock < until) continue;
+                float d = Vector3.Distance(f.Position, s.Anchor);
+                float safety = 1f;
+                if (pilots != null)
+                    for (int q = 0; q < pilots.Count; q++)
+                    {
+                        float dp = Vector3.Distance(pilots[q].Position, f.Position);
+                        safety *= 1f - fear * MathF.Exp(-dp / MathF.Max(1f, S.SafeRadius));
+                    }
+                float score = MathF.Sqrt(f.Volume) * safety / (d + S.DistanceBias);
+                if (f.Id == TargetFood) score *= S.StickBonus;
+                if (score > bestScore) { bestScore = score; best = k; }
             }
             return best;
         }
 
-        void Route(in TandavaSwarmState s)
+        Vector3 FleePoint(in TandavaSwarmState s, IReadOnlyList<TandavaPilot> pilots)
         {
-            if (Phase == TandavaPhase.Route)
-            {
-                while (Target < Oases.Length && !Feeding && Oases[Target].Denied)
+            // away from the pilots, weighted by how near each one is
+            Vector3 c = Vector3.Zero; float w = 0f;
+            if (pilots != null)
+                for (int k = 0; k < pilots.Count; k++)
                 {
-                    Events.Add(new TandavaEvent { Kind = TandavaEventKind.OasisSkipped, A = Target });
-                    Target++;
+                    float d = Vector3.Distance(pilots[k].Position, s.Anchor);
+                    float wk = 1f / MathF.Max(25f, d);
+                    c += pilots[k].Position * wk; w += wk;
                 }
-                if (Target >= Oases.Length) { Phase = TandavaPhase.Forage; Events.Add(new TandavaEvent { Kind = TandavaEventKind.RouteEaten }); }
+            Vector3 away = w > 0f ? s.Anchor - c / w : -s.Forward;
+            if (away.LengthSquared() < 1e-4f) away = s.Forward;
+            away = Vector3.Normalize(away);
+            var target = s.Anchor + away * S.FleeReach;
+            var inside = ClampInside(target, S.RoamRadius);
+            if (Vector3.Distance(inside, s.Anchor) >= 0.35f * S.FleeReach) return inside;
+            // cornered against the wall: run ALONG it, the side the pilots are not
+            var radial = s.Anchor - S.Centre;
+            radial = radial.LengthSquared() > 1e-4f ? Vector3.Normalize(radial) : Vector3.UnitX;
+            var along = away - Vector3.Dot(away, radial) * radial;
+            if (along.LengthSquared() < 1e-4f) along = Vector3.Cross(radial, MathF.Abs(radial.Y) < 0.9f ? Vector3.UnitY : Vector3.UnitX);
+            along = Vector3.Normalize(along);
+            return ClampInside(s.Anchor + along * S.FleeReach - radial * 0.25f * S.FleeReach, S.RoamRadius);
+        }
+
+        Vector3 WanderPoint(in TandavaSwarmState s)
+        {
+            if (_haveWander && Vector3.Distance(_wander, s.Anchor) > 0.25f * S.WanderReach) return _wander;
+            for (int tries = 0; tries < 12; tries++)
+            {
+                var d = new Vector3((float)(_rng.NextDouble() * 2 - 1), (float)(_rng.NextDouble() * 2 - 1), (float)(_rng.NextDouble() * 2 - 1));
+                if (d.LengthSquared() < 1e-3f || d.LengthSquared() > 1f) continue;
+                var p = S.Centre + d * S.RoamRadius;
+                if (Vector3.Distance(p, s.Anchor) < S.WanderReach) continue;
+                _wander = p; _haveWander = true;
+                return p;
             }
-            if (Phase != TandavaPhase.Route && !Feeding)
+            _wander = ClampInside(S.Centre - (s.Anchor - S.Centre), S.RoamRadius); _haveWander = true;
+            return _wander;
+        }
+
+        Vector3 ClampInside(Vector3 p, float radius)
+        {
+            var d = p - S.Centre; float l = d.Length();
+            return l > radius && l > 1e-3f ? S.Centre + d * (radius / l) : p;
+        }
+
+        // ──────────────────────────────────────────────────────────────── feeding
+
+        void BeginFeed(in TandavaSwarmState s, in TandavaFood plant)
+        {
+            Phase = TandavaPhase.Feed; _phaseSince = Clock;
+            _feedSince = Clock; _eatenAtMeal = s.EatenTotal; _lostAtMeal = s.Lost; EatenHere = 0f;
+            TargetFood = plant.Id;
+            Goal = ClampInside(plant.Position - InBody(s, Form.FeedMouth), S.RoamRadius);
+            Events.Add(new TandavaEvent { Kind = TandavaEventKind.FeedBegan, A = plant.Id });
+        }
+
+        void FeedTick(in TandavaSwarmState s, IReadOnlyList<TandavaFood> food)
+        {
+            int k = -1;
+            if (food != null) for (int q = 0; q < food.Count; q++) if (food[q].Id == TargetFood) { k = q; break; }
+            EatenHere = s.EatenTotal - _eatenAtMeal;
+            float sat = Clock - _feedSince;
+            int lostHere = s.Lost - _lostAtMeal;
+            if (lostHere >= S.MealBreakFraction * Form.PlanCount)
             {
-                int k = NearestFood(s.Anchor);
-                if (k < 0)
-                {
-                    if (Phase != TandavaPhase.Starving)
-                    {
-                        Phase = TandavaPhase.Starving; _starvingSince = -1f;
-                        Events.Add(new TandavaEvent { Kind = TandavaEventKind.Starving });
-                    }
-                    Target = -1;
-                    return;
-                }
-                if (Phase == TandavaPhase.Starving) { Phase = TandavaPhase.Forage; _starvingSince = -1f; }
-                Target = k;
-            }
-            if (Target < 0 || Target >= Oases.Length) return;
-            ref var o = ref Oases[Target];
-            if (!Feeding)
-            {
-                if (Vector3.Distance(s.Anchor, o.Centre) <= o.Radius + S.ArriveMargin)
-                {
-                    Feeding = true; _feedSince = Clock; _eatenAtArrival = s.EatenTotal; EatenHere = 0f;
-                    Events.Add(new TandavaEvent { Kind = TandavaEventKind.OasisReached, A = Target });
-                }
+                EndMeal(TandavaMealEnd.Broken);
+                _fleeUntil = Clock + S.FleeMinSeconds;   // hurt at the table: it bolts
+                Threat = MathF.Max(Threat, S.FleeEnter);
+                SetMood(TandavaMood.Fleeing);
                 return;
             }
-            float sat = Clock - _feedSince;
-            EatenHere = s.EatenTotal - _eatenAtArrival;
-            bool fed = EatenHere >= Forms[Math.Min(FormIx, LastEaterIx)].MealVolume;
-            bool full = s.StomachFill >= S.LeaveWhenStomachFill;
-            bool bare = sat > S.GiveUpSeconds && s.SinceBite > S.GiveUpSeconds;
-            if (fed || full || bare || o.Denied || sat > S.MaxFeedSeconds)
-            {
-                Events.Add(new TandavaEvent { Kind = TandavaEventKind.OasisLeft, A = Target });
-                Feeding = false; _feedSince = -1f; EatenHere = 0f;
-                if (Phase == TandavaPhase.Route)
-                {
-                    Target++;
-                    if (Target == Oases.Length) Events.Add(new TandavaEvent { Kind = TandavaEventKind.HeadingForExit, A = Target });
-                }
-                // foraging: a stop that yields nothing is written off, so the forage moves on rather than circling
-                else if (bare || sat > S.MaxFeedSeconds) o.Denied = true;
-            }
+            if (Form.Role == TandavaFormRole.Final && Progress(s) >= 1f) { End(TandavaOutcome.Completed); return; }
+            if (k < 0) { EndMeal(TandavaMealEnd.Bare); return; }
+            if (EatenHere >= Form.MealVolume || Progress(s) >= 1f) { EndMeal(TandavaMealEnd.Fed); return; }
+            if (s.StomachFill >= S.LeaveWhenStomachFill) { EndMeal(TandavaMealEnd.Full); return; }
+            if (sat > S.FeedSettleSeconds + S.GiveUpSeconds && s.SinceBite > S.GiveUpSeconds) { EndMeal(TandavaMealEnd.Bare); return; }
+            if (sat > S.MaxFeedSeconds) { EndMeal(TandavaMealEnd.TooLong); return; }
+            Goal = ClampInside(food[k].Position - InBody(s, Form.FeedMouth), S.RoamRadius);
+        }
+
+        void EndMeal(TandavaMealEnd why)
+        {
+            int id = TargetFood;
+            Phase = TandavaPhase.Roam; _phaseSince = Clock;
+            if (id >= 0) _restUntil[id] = Clock + S.RestSeconds;
+            Events.Add(new TandavaEvent { Kind = TandavaEventKind.FeedEnded, A = id, B = (int)why });
+            TargetFood = -1;
         }
 
         void End(TandavaOutcome outcome)
         {
             if (Outcome != TandavaOutcome.Running) return;
             Outcome = outcome;
-            Feeding = false;
             Phase = TandavaPhase.Over;
+            HoldLaying = false; CruiseScale = 1f; TurnScale = 1f;
             Events.Add(new TandavaEvent { Kind = TandavaEventKind.Ended, A = FormIx, B = (int)outcome });
         }
+
+        // ──────────────────────────────────────────────────────────────── the variants (pure, so every peer agrees)
+
+        /// <summary>One variant per form, drawn from <paramref name="seed"/>: <paramref name="variants"/>[k] choices for form k.</summary>
+        public static int[] DrawVariants(int seed, IReadOnlyList<int> variants)
+        {
+            var rng = new Random(seed);
+            var pick = new int[variants.Count];
+            for (int k = 0; k < pick.Length; k++) pick[k] = variants[k] > 1 ? rng.Next(variants[k]) : 0;
+            return pick;
+        }
+
+        /// <summary>The picks packed four bits a form (replicated as one int).</summary>
+        public static int Pack(IReadOnlyList<int> picks)
+        {
+            int m = 0;
+            for (int k = 0; k < picks.Count && k < 8; k++) m |= (picks[k] & 15) << (4 * k);
+            return m;
+        }
+
+        public static int Unpack(int packed, int form) => form is >= 0 and < 8 ? (packed >> (4 * form)) & 15 : 0;
     }
 }

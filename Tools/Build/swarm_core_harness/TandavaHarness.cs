@@ -1,22 +1,25 @@
-// Headless proof of Tandava's swarm (Assets/_Scripts/Controller/Arcade/TANDAVA.md §8): the SHIPPED sort core in its
-// scripted-plan mode (SwarmSortParams.Scripted) walking the Tandava forms, and the SHIPPED stage director
-// (TandavaDirectorCore) racing that swarm down the route, up through the ascension, and out as the final form.
+// Headless proof of Tandava (Assets/_Scripts/Controller/Arcade/TANDAVA.md §8): the SHIPPED sort core in its scripted-plan
+// mode with Tandava's levers (cruise and turn scale, the laying hold, the pose commit, the turn carry, plan-tier danger),
+// and the SHIPPED director (TandavaDirectorCore) running the creature in a CLOSED cell of dispersed, regrowing plants.
 //
 //   bash Tools/Build/swarm_core_harness/run.sh <plans> tandava <tandava plans dir>
 //
-// T1-T5 are the core: a scripted seed holds its form, the director walks Serpent S -> M -> L -> Bull -> Lord of the
-// Dance -> Winged Lion through the ordinary commit with ZERO self-inflicted deaths and nothing lost, a killed majority
-// never re-plans a scripted swarm, bad requests are ignored, and the majority mode is untouched. T6-T13 race the route
-// with a simplified FOOD model that keeps the one thing SwarmFauna.Feed's arithmetic depends on - GEOMETRY: each tick
-// BitersPerStep members are asked round-robin, and a member bites only if it is within BiteRadius of a plant that still
-// has food (a plant is a ball of PlantRadius around its heart; the oasis holds PlantsAt plants of PrismsPerPlant prisms,
-// each prism one bite of BiteVolume). So the intake is BitersPerStep x the share of the body touching a plant, exactly
-// the shape of the real one. The swarm's own METABOLISM is SwarmFauna's rule (unfed StarvationSeconds while hungry ->
-// shed one member every ShedIntervalSeconds, the core picking who), and the RING OF FIRE is the glue's: twelve flames
-// placed off the dance plan's baked ring and the swarm's body axes at the moment the ascension begins, each guarded
-// while enough Time members (the attendant packs) are near its guard post. What it is not: the game's bites are prism
-// queries against real Borromean plants of a real (budget-capped) shape, and its pilots are people threading rings, so
-// the race TIMES below are a model, not a measurement - QA-TANDAVA-1 and QA-TANDAVA-6 measure them.
+// T1-T6 prove the core under the director's levers: the plans; the swarm hatching whole as its first form; the cruise and
+// turn levers; a cut body regrowing into the SAME form; the laying hold; and the feed pose (the plates go out to orbit
+// the mouth as danger plates). T7-T15 run the director: a free run through all four forms to the last feast; threat and
+// mood; where it chooses to eat; the broken meal; denial; the dance; the shatter; the variant draw; the clock.
+//
+// The FOOD model keeps the one thing SwarmFauna.Feed's arithmetic depends on - GEOMETRY. Each tick BitersPerStep members
+// are asked round-robin, and a member bites only if it is within PlantRadius + BiteRadius of a plant that still has food,
+// one prism (BiteVolume) a bite. So the intake is BitersPerStep x the share of the body touching a plant - which is why
+// the mouth matters. A plant regrows RegrowPrismsPerSecond while it has not been bitten for RegrowPause (Borromean's
+// orbit-a-period growth and its 2 s damage pause), dies at DiesAtPrisms and is replanted ReplantSeconds later somewhere
+// else (the cell's seeder). The METABOLISM is SwarmFauna's: unfed StarvationSeconds while hungry, it sheds one member
+// every ShedIntervalSeconds, the core choosing who. The PILOTS are scripted policies that move points and kill members;
+// the halo is the glue's (rings placed off the dance plan's baked ring and the body axes when the drum starts, each
+// guarded while enough attendants are at its post).
+// What it is not: the game's bites are prism queries against real plants, its pilots are people, and its kills are
+// collisions - so the TIMES below are a model, not a measurement. QA-TANDAVA-9..12 measure them in the Editor.
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -25,58 +28,75 @@ using System.Numerics;
 using System.Text.Json;
 using CosmicShore.Gameplay;
 
-/// <summary>The route author_tandava_assets.py lays (ROUTE there): start, oases and their plant counts, the dance
-/// ground, the exit plane.</summary>
-static class TandavaRoute
+/// <summary>The arena author_tandava_assets.py lays (its MEMBRANE_RADIUS, the flora band, the plant counts).</summary>
+static class TandavaArena
 {
-    public const float StartX = -2000f, ExitX = 2000f, DanceX = 1075f, DanceZ = 400f;   // the dance ground is beside the course
-    public static readonly float[] OasisX = { -1650, -1250, -900, -550, 550, 900, 1250, 1650 };   // outside the nucleus (r ~392)
-    public static readonly int[] PlantsAt = { 2, 2, 2, 2, 3, 3, 3, 3 };
+    public const float MembraneRadius = 1200f;   // CapsuleMembrane: the standard cell, closed
+    public const float NucleusRadius = 392f;     // fauna eat nothing inside it
+    public const float PlantInner = 470f, PlantOuter = 1060f;   // the flora band (world, from the centre)
+    public const int MassPlants = 12, SpacePlants = 4;
+    public const float BodyReach = 160f;          // the longest body's half-length: its centre roams the membrane less this
+    public static readonly Vector3 Hatch = new(-650f, 0f, 0f);
 }
 
 static class TandavaHarness
 {
     static int _fail;
-    static readonly string[] Forms = { "serpent_s", "serpent_m", "serpent_l", "bull", "dancer", "lion" };
-    const int BullIx = 3, DancerIx = 4, LionIx = 5;
 
-    // the game's numbers (author_tandava_assets.py authors the same into the Tandava swarm config + settings)
+    // ── the swarm config (TandavaSwarmFaunaConfig) - author_tandava_assets.py reads every one of these back
     const float UnitScale = 2f, TickHz = 10f;
-    const int Density = 3;                    // TandavaSwarmFaunaConfig PlanDensity (the design's budget note)
-    const int SeedMembers = 48;               // x Density
+    const int Density = 3;
+    const int SeedMembers = 180;          // x Density, capped at the seeded form's plan: it hatches WHOLE
     static readonly float[] EggVolume = { 20.45f, 40.31f, 22.18f, 12.8f };
-    const float StomachCapacity = 240f * Density * (20.45f + 40.31f + 22.18f + 12.8f) * 0.25f;   // SwarmFauna.StomachCapacity
-    const float SurplusFactor = 0.4f;         // the design: "plan count reached plus 40% of that again in banked volume"
-    const float AscensionSurplus = 1.0f;      // the Bull's offering: a whole body's worth of Mass banked (stomach-capped)
-    // the tuning dials (author_tandava_assets.py authors the same), overridable for a sweep: TANDAVA_CRUISE,
-    // TANDAVA_MAX_FEED. The 2026-10-06 sweep: cruise 2.0 / 2.5 / 3.0 all hold T6-T9; 2.5 x interval-2 grazing failed T6
-    // (stops hit the cap, the unopposed swarm stalls a form short) - one biter EVERY tick is the shipped intake.
-    static readonly float Cruise = Env("TANDAVA_CRUISE", 2.5f);          // voxels/step: 2.5 x UnitScale 2 x 10 Hz = 50 u/s
-    const int BitersPerStep = 1;                                       // SwarmFaunaConfigSO.BitersPerStep
-    static readonly float MaxFeedSeconds = Env("TANDAVA_MAX_FEED", 45f);
-    static float Env(string k, float d) => float.TryParse(Environment.GetEnvironmentVariable(k), System.Globalization.NumberStyles.Float,
-        System.Globalization.CultureInfo.InvariantCulture, out var v) ? v : d;
-    const float BiteVolume = 5.60606f * 4.67172f * 2.7822f;   // one Borromean Mass leaf prism (the shipped Variant.LeafSize)
-    const int PrismsPerPlant = 60;                 // the Tandava flora configs' MaxTotalSpawnedObjectsOverride
-    const float PlantRadius = 28f, BiteRadius = 10f, PlantSpread = 70f;   // world units
-    const float MealsPerForm = 2.5f;               // the design: "the swarm needs 2 to 3 [oases] per stage"
-    // the metabolism (TandavaSwarmFaunaConfig: SwarmFauna.Starving's dials)
-    const float StarvationSeconds = 30f, ShedIntervalSeconds = 0.25f, ForageBelow = 0.5f;
-    // the ascension (TandavaSettingsSO, authored from the dance plan's baked ring)
-    const float DrumSeconds = 30f, GuardRadius = 40f;
-    const int FlameCount = 12, FlamesToBreak = 9, GuardMembers = 6, GuardElement = 3;   // Time: the attendants
-    // TandavaSwarmFaunaConfig SortWellsPerType: the dance and the lion are STROKE figures (limbs, hair, feathers) and
-    // twelve Gaussian wells per element blur a stroke into a blob - 24 lifts both (statue 64-72% -> 70-73%, lion
-    // 73% -> 77%) and leaves the blob forms where they were (96-99%)
+    const int StomachEggs = 500;
+    static readonly float StomachCapacity = StomachEggs * Density * (20.45f + 40.31f + 22.18f + 12.8f) * 0.25f;   // SwarmFauna.StomachCapacity
+    const float Cruise = 3.0f;            // voxels/step: x UnitScale 2 x 10 Hz = 60 u/s calm (126 fleeing)
+    const float TurnPerStep = 0.03f;
+    const float SortTurnCarry = 1f;
+    const float SortLayRate = 0.084f;
+    const int SortLayMax = 8;             // x Density: 24 eggs a step at most
+    const float KillLayHoldSeconds = 0f;  // a cut never stops it regrowing - only feeding does (the director's hold)
+    const float SortLayRampSeconds = 1.5f;
+    const int BitersPerStep = 8;
     const int SortWellsPerType = 24;
-    // TandavaSwarmFaunaConfig SortWellDead: no flat-bottomed wells. The sortfeel's 0.7-sigma dead zone lets a tissue
-    // fill its well "as a liquid" - right for a blob, wrong for a stroke, which it widens into one (the design's own
-    // note for the statue). At 0 the statue holds 70-77% over the drum's end (57-68% at 0.7) and the blob forms keep
-    // their 97-99%; the noise and wander stay (zeroing them as well bought nothing on the statue)
     const float SortWellDead = 0f;
-    // the bar a stroke figure is held to: calibrated on the harness's own picture (TANDAVA_DUMP) of the 72% statue,
-    // which reads cleanly - crown, hair, drum, the raised leg, the pedestal, the four packs on patrol
-    const float StrokeCoverage = 0.65f;
+    const float StarvationSeconds = 30f, ShedIntervalSeconds = 0.25f, ForageBelow = 0.5f;
+    const float BodyFill = 0.939f;        // SortBodyFill
+
+    // ── the economy (author_tandava_assets.py build_forms: the same arithmetic)
+    const float FillToEvolve = 0.9f;
+    // the banks, as shares of the stomach - RISING, so what one form carries over never skips the next, and all under
+    // the 0.98 fill at which a meal ends full (a bank above it could never be reached: a full stomach stops grazing)
+    static readonly float[] BankShare = { 0.35f, 0.6f, 0f, 0.85f };   // Great Serpent, Many-Headed (the dance's offering), -, Sea Lion (the feast)
+    const float MealVolume = 4000f;       // one meal (flora volume): most of a 60-prism plant - about 13 s at it
+
+    // ── the food
+    const float BiteVolume = 5.60606f * 4.67172f * 2.7822f;   // one Borromean Mass leaf prism (the shipped LeafSize)
+    const int PrismsPerPlant = 60;        // MaxTotalSpawnedObjectsOverride
+    const float PlantRadius = 28f, BiteRadius = 10f;
+    const float RegrowPrismsPerSecond = 7.5f, RegrowPause = 2f, ReplantSeconds = 120f;
+    const int DiesAtPrisms = 4;
+
+    // ── the halo
+    const int HaloCount = 12, HaloToBreak = 9, GuardMembers = 6, GuardElement = 3;   // Time: the attendant packs
+    const float GuardRadius = 40f;
+
+    /// <summary>Every plan, in the swarm config's ScriptedPlans order (tandava_plans.plan_keys - the generator checks).</summary>
+    public static readonly string[] Keys =
+    {
+        "great_serpent_1", "great_serpent_1_feed", "great_serpent_2", "great_serpent_2_feed", "great_serpent_3", "great_serpent_3_feed",
+        "many_headed_5", "many_headed_5_feed", "many_headed_7", "many_headed_7_feed", "many_headed_10", "many_headed_10_feed",
+        "dancer_1", "dancer_2", "dancer_3",
+        "sea_lion_1", "sea_lion_1_feed", "sea_lion_2", "sea_lion_2_feed", "sea_lion_3", "sea_lion_3_feed",
+    };
+    static readonly string[][] Variants =
+    {
+        new[] { "great_serpent_1", "great_serpent_2", "great_serpent_3" },
+        new[] { "many_headed_5", "many_headed_7", "many_headed_10" },
+        new[] { "dancer_1", "dancer_2", "dancer_3" },
+        new[] { "sea_lion_1", "sea_lion_2", "sea_lion_3" },
+    };
+    static readonly string[] FormNames = { "Great Serpent", "Many-Headed Serpent", "Lord of the Dance", "Sea Lion" };
 
     static void Check(bool ok, string what)
     {
@@ -84,26 +104,67 @@ static class TandavaHarness
         if (!ok) _fail++;
     }
 
-    static SwarmPlanData[] LoadTandava(string dir) =>
-        Forms.Select(k => JsonSerializer.Deserialize<SwarmPlanJson>(
-            File.ReadAllText(Path.Combine(dir, $"SwarmPlan_tandava_{k}.json")), new JsonSerializerOptions { IncludeFields = true })
-            .ToPlanData().Upsample(Density, SwarmPlanData.DefaultUpsampleRadius)).ToArray();
+    // ──────────────────────────────────────────────────────────────── the bake
 
-    /// <summary>The ring of fire the dance plan bakes ("ring"), in WORLD units relative to the swarm's anchor and body
-    /// axes (x along BX, y along BY, z along BZ): the density upsample scales positions by cbrt(Density).</summary>
-    sealed class Ring { public Vector3 Centre; public float Radius, GuardOrbit; }
-
-    static Ring LoadRing(string dir)
+    sealed class Bake
     {
-        using var doc = JsonDocument.Parse(File.ReadAllText(Path.Combine(dir, "SwarmPlan_tandava_dancer.json")));
-        var r = doc.RootElement.GetProperty("ring");
-        var c = r.GetProperty("centre");
-        float k = MathF.Pow(Density, 1f / 3f) * UnitScale;
-        return new Ring
+        public SwarmPlanData[] Plans;
+        public readonly Dictionary<string, int> Ix = new();
+        public readonly Dictionary<string, Vector3> Mouth = new();
+        public readonly Dictionary<string, (Vector3 centre, float radius, float orbit)> Ring = new();
+    }
+
+    static Bake Load(string dir)
+    {
+        var b = new Bake();
+        var plans = new List<SwarmPlanData>();
+        float k = MathF.Pow(Density, 1f / 3f) * UnitScale;   // plan voxels -> world (SwarmPlanData.Upsample scales by cbrt(m))
+        foreach (var key in Keys)
         {
-            Centre = new Vector3(c[0].GetSingle(), c[1].GetSingle(), c[2].GetSingle()) * k,
-            Radius = r.GetProperty("radius").GetSingle() * k, GuardOrbit = r.GetProperty("guardOrbit").GetSingle() * k,
-        };
+            string text = File.ReadAllText(Path.Combine(dir, $"SwarmPlan_tandava_{key}.json"));
+            b.Ix[key] = plans.Count;
+            plans.Add(JsonSerializer.Deserialize<SwarmPlanJson>(text, new JsonSerializerOptions { IncludeFields = true })
+                      .ToPlanData().Upsample(Density, SwarmPlanData.DefaultUpsampleRadius));
+            using var doc = JsonDocument.Parse(text);
+            var root = doc.RootElement;
+            if (root.TryGetProperty("mouth", out var m)) b.Mouth[key] = new Vector3(m[0].GetSingle(), m[1].GetSingle(), m[2].GetSingle()) * k;
+            if (root.TryGetProperty("ring", out var r))
+            {
+                var c = r.GetProperty("centre");
+                b.Ring[key] = (new Vector3(c[0].GetSingle(), c[1].GetSingle(), c[2].GetSingle()) * k,
+                               r.GetProperty("radius").GetSingle() * k, r.GetProperty("guardOrbit").GetSingle() * k);
+            }
+        }
+        b.Plans = plans.ToArray();
+        return b;
+    }
+
+    /// <summary>The forms a match with these variant picks runs - author_tandava_assets.py build_forms: each eating form's
+    /// bank is its BankShare of the stomach, its meal one MealVolume; the dance does not eat; the Sea Lion's bank is the
+    /// FEAST that completes the cycle.</summary>
+    static List<TandavaForm> BuildForms(Bake b, IReadOnlyList<int> picks)
+    {
+        var forms = new List<TandavaForm>();
+        for (int f = 0; f < 4; f++)
+        {
+            string key = Variants[f][picks[f]];
+            var plan = b.Plans[b.Ix[key]];
+            var form = new TandavaForm
+            {
+                Name = FormNames[f], PlanIndex = b.Ix[key], PlanCount = plan.N, FillToEvolve = FillToEvolve,
+                Role = f == 2 ? TandavaFormRole.Dance : f == 3 ? TandavaFormRole.Final : TandavaFormRole.Eater,
+            };
+            if (f != 2)
+            {
+                form.FeedPlanIndex = b.Ix[key + "_feed"];
+                form.Mouth = b.Mouth[key]; form.FeedMouth = b.Mouth[key + "_feed"];
+                form.Bank = BankShare[f] * StomachCapacity;
+                form.MealVolume = MealVolume;
+            }
+            else form.MealVolume = 1f;
+            forms.Add(form);
+        }
+        return forms;
     }
 
     static SwarmSortParams Params(SwarmPlanData[] plans)
@@ -114,32 +175,30 @@ static class TandavaHarness
         p.K = SortWellsPerType;
         p.WellDead = SortWellDead;
         p.Cap = plans.Max(x => x.N);
-        p.LayMax = 5 * Density;
+        p.LayRate = SortLayRate;
+        p.LayMax = SortLayMax * Density;
+        p.KillLayHoldSteps = (int)MathF.Round(KillLayHoldSeconds * TickHz);
+        p.LayRamp = (int)MathF.Round(SortLayRampSeconds * TickHz);
         p.ThreatGain = 3f * MathF.Pow(Density, 2f / 3f);
-        p.Membrane = 3600f * 0.97f / UnitScale;
-        p.Cruise = Cruise;
+        p.Membrane = TandavaArena.MembraneRadius * 0.97f / UnitScale;
+        p.Cruise = Cruise; p.Turn = TurnPerStep; p.TurnCarry = SortTurnCarry;
+        p.Over = BodyFill;
         for (int e = 0; e < 4; e++) p.EggCost[e] = EggVolume[e];
         return p;
     }
 
-    static SwarmSortCore Make(SwarmPlanData[] plans, Vector3 at, int seed, bool fed)
+    static TandavaDirectorSettings DirectorSettings() => new()
     {
-        var c = new SwarmSortCore(plans, Params(plans), seed);
-        c.Seed(0, SeedMembers * Density, at, Vector3.UnitX);
-        c.SwimTarget = c.Anchor;
-        if (fed) for (int e = 0; e < 4; e++) c.Stomach[e] = 1e6f;
-        return c;
-    }
+        Centre = Vector3.Zero,
+        RoamRadius = TandavaArena.MembraneRadius * 0.97f - TandavaArena.BodyReach,   // the membrane less the longest body's half-length
+        HaloCount = HaloCount, HaloToBreak = HaloToBreak,
+    };
 
-    static int Live(SwarmSortCore c) { int n = 0; for (int i = 0; i < c.Cap; i++) if (c.Active[i] && c.Hatched[i]) n++; return n; }
     static int Active(SwarmSortCore c) { int n = 0; for (int i = 0; i < c.Cap; i++) if (c.Active[i]) n++; return n; }
-    static int[] Mix(SwarmSortCore c) { var m = new int[4]; for (int i = 0; i < c.Cap; i++) if (c.Active[i] && c.Hatched[i]) m[c.EffectiveElement(i)]++; return m; }
+    static int[] Mix(SwarmPlanData p) { var m = new int[4]; for (int u = 0; u < p.N; u++) m[p.Elem[u]]++; return m; }
 
-    /// <summary>Shape coverage: the share of the plan's units (body frame, at the pose the core is steering to this step -
-    /// the plan's frames interpolated exactly as SwarmSortCore.Step does) with a same-element member within
-    /// <paramref name="reach"/> voxels - "every part of the animal is there, where it should be NOW". An animated form
-    /// (the attendants' patrol, the lion's wings) measured against its nearest keyframe would read every limb mid-swing as
-    /// missing.</summary>
+    /// <summary>Shape coverage: the share of the plan's units (body frame, at the pose the core is steering to this step)
+    /// with a same-element member within <paramref name="reach"/> voxels - "every part of the animal is there NOW".</summary>
     static float Coverage(SwarmSortCore c, float reach)
     {
         var plan = c.Plan; int n = plan.N;
@@ -169,23 +228,16 @@ static class TandavaHarness
         return hit / (float)n;
     }
 
-    /// <summary>TANDAVA_DUMP=dir: the live body and the pose it is steering to, in body coordinates, for a picture.</summary>
+    /// <summary>TANDAVA_DUMP=dir: the live body (body coordinates, element) for a picture.</summary>
     static void Dump(SwarmSortCore c, string name)
     {
         var dir = Environment.GetEnvironmentVariable("TANDAVA_DUMP");
         if (string.IsNullOrEmpty(dir)) return;
-        var plan = c.Plan; int n = plan.N;
+        Directory.CreateDirectory(dir);
         Vector3 cen = Vector3.Zero; int k = 0;
         for (int i = 0; i < c.Cap; i++) if (c.Active[i] && c.Hatched[i]) { cen += c.Pos[i]; k++; }
         cen /= Math.Max(1, k);
-        int per = c.C.PlanPeriods[c.PlanIx], L = plan.Order.Length, slot = (int)(c.Clock / per);
-        int fA = plan.Order[slot % L], fB = plan.Order[(slot + 1) % L]; float fa = (c.Clock % per) / (float)per;
-        var fc = Vector3.Zero; var pt = new Vector3[n];
-        for (int u = 0; u < n; u++) { pt[u] = plan.P[fA][u] + fa * (plan.P[fB][u] - plan.P[fA][u]); fc += pt[u]; }
-        fc /= n;
-        var sb = new System.Text.StringBuilder("{\"plan\":[");
-        for (int u = 0; u < n; u++) { var q = pt[u] - fc; sb.Append(FormattableString.Invariant($"{(u > 0 ? "," : "")}[{q.X:F2},{q.Y:F2},{q.Z:F2},{plan.Elem[u]}]")); }
-        sb.Append("],\"live\":[");
+        var sb = new System.Text.StringBuilder("{\"live\":[");
         bool first = true;
         for (int i = 0; i < c.Cap; i++)
             if (c.Active[i] && c.Hatched[i])
@@ -194,482 +246,655 @@ static class TandavaHarness
                 sb.Append(FormattableString.Invariant($"{(first ? "" : ",")}[{Vector3.Dot(d, c.BX):F2},{Vector3.Dot(d, c.BY):F2},{Vector3.Dot(d, c.BZ):F2},{c.EffectiveElement(i)}]"));
                 first = false;
             }
-        sb.Append(FormattableString.Invariant($"],\"coverage\":{Coverage(c, 3.2f):F3}}}"));
+        sb.Append(FormattableString.Invariant($"],\"plan\":\"{c.Plan.Kind}\",\"coverage\":{Coverage(c, 3.2f):F3}}}"));
         File.WriteAllText(Path.Combine(dir, name + ".json"), sb.ToString());
     }
 
-    static int _selfDeaths;
-    static void Step(SwarmSortCore c)
+    static SwarmSortCore MakeCore(Bake b, int plan, Vector3 worldAt, int seed, bool fed)
     {
-        var before = (bool[])c.Active.Clone();
-        c.Step(ReadOnlySpan<SwarmPredator>.Empty);
-        for (int i = 0; i < c.Cap; i++) if (before[i] && !c.Active[i]) _selfDeaths++;
+        var c = new SwarmSortCore(b.Plans, Params(b.Plans), seed);
+        c.Seed(plan, SeedMembers * Density, worldAt / UnitScale, Vector3.UnitX);
+        c.SwimTarget = c.Anchor;
+        if (fed) { c.Stomach[0] = c.Stomach[2] = c.Stomach[3] = 0.1f * StomachCapacity; c.Stomach[1] = 0.6f * StomachCapacity; }
+        return c;
     }
 
-    /// <summary>Steps until the body is at least <paramref name="share"/> of its plan (or the budget runs out).</summary>
-    static int GrowTo(SwarmSortCore c, float share, int budget, List<SwarmEvent> seen = null)
+    static int _selfDeaths;
+    static void Step(SwarmSortCore c, int n = 1)
     {
-        for (int t = 0; t < budget; t++)
+        for (int q = 0; q < n; q++)
         {
-            if (Live(c) >= share * c.Plan.N) return t;
-            Step(c);
-            if (seen != null) seen.AddRange(c.Events);
+            var before = (bool[])c.Active.Clone();
+            c.Step(ReadOnlySpan<SwarmPredator>.Empty);
+            for (int i = 0; i < c.Cap; i++) if (before[i] && !c.Active[i]) _selfDeaths++;
             c.Events.Clear();
         }
-        return -1;
     }
+
+    /// <summary>Kill the <paramref name="n"/> live members furthest along -<paramref name="along"/> (body frame) - a cut
+    /// from that end. Returns how many died.</summary>
+    static int Cut(SwarmSortCore c, int n, Vector3 along, Func<int, bool> spare = null)
+    {
+        var order = Enumerable.Range(0, c.Cap).Where(i => c.Active[i] && c.Hatched[i] && (spare == null || !spare(i)))
+                              .OrderBy(i => Vector3.Dot(c.Pos[i] - c.Anchor, along)).Take(n).ToList();
+        foreach (int i in order) c.Kill(i);
+        return order.Count;
+    }
+
+    // ──────────────────────────────────────────────────────────────── the closed cell, its plants, its pilots
+
+    sealed class Plant
+    {
+        public int Id, Element;
+        public Vector3 At;
+        public float Store, LastBite = -1e9f, ReplantAt;
+        public bool Alive = true;
+    }
+
+    static Vector3 PlantSite(Random rng, List<Plant> others)
+    {
+        // SpreadPlanting: the best of 8 points (uniform by volume in the band) - the one farthest from its neighbours
+        Vector3 best = default; float bd = -1f;
+        for (int t = 0; t < 8; t++)
+        {
+            Vector3 d;
+            do d = new Vector3((float)(rng.NextDouble() * 2 - 1), (float)(rng.NextDouble() * 2 - 1), (float)(rng.NextDouble() * 2 - 1));
+            while (d.LengthSquared() > 1f || d.LengthSquared() < 1e-3f);
+            d = Vector3.Normalize(d);
+            float lo = TandavaArena.PlantInner, hi = TandavaArena.PlantOuter;
+            float r = MathF.Cbrt((float)(lo * lo * lo + rng.NextDouble() * (hi * hi * hi - lo * lo * lo)));
+            var p = d * r;
+            float near = float.MaxValue;
+            foreach (var o in others) if (o.Alive) near = MathF.Min(near, Vector3.Distance(o.At, p));
+            if (near > bd) { bd = near; best = p; }
+        }
+        return best;
+    }
+
+    static List<Plant> LayPlants(int seed)
+    {
+        var rng = new Random(seed * 131 + 9);
+        var plants = new List<Plant>();
+        for (int k = 0; k < TandavaArena.MassPlants + TandavaArena.SpacePlants; k++)
+            plants.Add(new Plant { Id = k, Element = k < TandavaArena.MassPlants ? 1 : 2, At = PlantSite(rng, plants),
+                                   Store = PrismsPerPlant * BiteVolume });
+        return plants;
+    }
+
+    /// <summary>A scripted pilot: where it is and how it moves.</summary>
+    sealed class Pilot { public Vector3 At, Vel; }
+
+    sealed class Sim
+    {
+        public Bake B;
+        public List<TandavaForm> Forms;
+        public SwarmSortCore C;
+        public TandavaDirectorCore D;
+        public List<Plant> Plants;
+        public readonly List<Pilot> Pilots = new();
+        public readonly List<TandavaFood> Food = new();
+        public readonly List<TandavaPilot> Sensed = new();
+        public float Now, SinceBite = float.PositiveInfinity, SinceFed, Eaten, LastShed = -1e9f;
+        public int Lost, BiteCursor, LastForm, NextPlantId = 1000;
+        public Random Rng;
+        // the log
+        public readonly List<(float t, int form)> Commits = new();
+        public int Meals, MealsBroken, LaidWhileFeeding, Sheds;
+        public readonly int[] MealEnds = new int[5];
+        public float MealSeconds, MealVolumeEaten, MealStart, MealEatenAtStart;
+        public float MaxRadius, RiseAt = -1f, DanceAt = -1f;
+        public Vector3 RiseAnchor;
+        // the halo, placed when the drum starts
+        public Vector3[] Post;
+        public int GuardedSamples, HaloSamples;
+    }
+
+    static Sim MakeSim(Bake b, int[] picks, int seed)
+    {
+        var s = new Sim { B = b, Rng = new Random(seed) };
+        s.Forms = BuildForms(b, picks);
+        s.C = MakeCore(b, s.Forms[0].PlanIndex, TandavaArena.Hatch, seed, fed: false);
+        s.D = new TandavaDirectorCore(s.Forms, DirectorSettings(), seed);
+        s.Plants = LayPlants(seed);
+        s.LastForm = 0;
+        return s;
+    }
+
+    static TandavaSwarmState State(Sim s)
+    {
+        var c = s.C;
+        float fill = (c.Stomach[0] + c.Stomach[1] + c.Stomach[2] + c.Stomach[3]) / StomachCapacity;
+        return new TandavaSwarmState
+        {
+            Alive = Active(c), Lost = s.Lost, Anchor = c.Anchor * UnitScale, Forward = c.BX, Up = c.BY, Side = c.BZ,
+            Stomach0 = c.Stomach[0], Stomach1 = c.Stomach[1], Stomach2 = c.Stomach[2], Stomach3 = c.Stomach[3],
+            StomachFill = fill, SinceBite = s.SinceBite, EatenTotal = s.Eaten,
+            Starving = s.SinceFed >= StarvationSeconds && fill < ForageBelow,
+        };
+    }
+
+    /// <summary>One 10 Hz tick, in the order SwarmFauna runs it: feed, the plants, the metabolism, the pilots, the
+    /// director, the plan the director wants, the levers, the swim, the core step.</summary>
+    static void Tick(Sim s, Action<Sim> pilots = null)
+    {
+        const float dt = 1f / TickHz;
+        var c = s.C;
+        s.Now += dt;
+        // feed: BitersPerStep members asked round-robin, each biting a plant it touches
+        bool bit = false;
+        float fill0 = (c.Stomach[0] + c.Stomach[1] + c.Stomach[2] + c.Stomach[3]) / StomachCapacity;
+        if (fill0 < 1f)
+            for (int b = 0, tries = 0; b < BitersPerStep && tries < c.Cap; tries++)
+            {
+                s.BiteCursor = (s.BiteCursor + 1) % c.Cap;
+                int i = s.BiteCursor;
+                if (!c.Active[i]) continue;
+                b++;
+                var at = c.Pos[i] * UnitScale;
+                foreach (var p in s.Plants)
+                {
+                    if (!p.Alive || p.Store < BiteVolume) continue;
+                    if (Vector3.DistanceSquared(at, p.At) > (PlantRadius + BiteRadius) * (PlantRadius + BiteRadius)) continue;
+                    p.Store -= BiteVolume; p.LastBite = s.Now;
+                    c.Stomach[p.Element] += BiteVolume; s.Eaten += BiteVolume; bit = true;
+                    break;
+                }
+            }
+        s.SinceBite = bit ? 0f : s.SinceBite + dt;
+        float fill = (c.Stomach[0] + c.Stomach[1] + c.Stomach[2] + c.Stomach[3]) / StomachCapacity;
+        s.SinceFed = bit || fill >= 1f ? 0f : s.SinceFed + dt;
+        // the plants: regrow when left alone, die eaten down, replant elsewhere later
+        foreach (var p in s.Plants)
+        {
+            if (!p.Alive)
+            {
+                if (s.Now >= p.ReplantAt)
+                {
+                    p.Alive = true; p.At = PlantSite(s.Rng, s.Plants); p.Store = 6 * BiteVolume; p.LastBite = -1e9f; p.Id = s.NextPlantId++;
+                }
+                continue;
+            }
+            if (s.Now - p.LastBite > RegrowPause) p.Store = MathF.Min(PrismsPerPlant * BiteVolume, p.Store + RegrowPrismsPerSecond * BiteVolume * dt);
+            if (p.Store <= DiesAtPrisms * BiteVolume) { p.Alive = false; p.ReplantAt = s.Now + ReplantSeconds; }
+        }
+        // the metabolism: unfed and hungry, it sheds a member every interval (the core picks who)
+        var st = State(s);
+        if (st.Starving && s.Now - s.LastShed >= ShedIntervalSeconds)
+        {
+            s.LastShed = s.Now;
+            int v = c.StarvationVictim();
+            if (v >= 0) { c.Kill(v); s.Lost++; s.Sheds++; }
+        }
+        // the pilots act (move, kill)
+        pilots?.Invoke(s);
+        foreach (var p in s.Pilots) p.At += p.Vel * dt;
+        // what the director is told: every plant it can eat (outside the nucleus), every pilot
+        s.Food.Clear();
+        foreach (var p in s.Plants)
+            if (p.Alive && p.At.Length() > TandavaArena.NucleusRadius) s.Food.Add(new TandavaFood { Id = p.Id, Position = p.At, Volume = p.Store });
+        s.Sensed.Clear();
+        foreach (var p in s.Pilots) s.Sensed.Add(new TandavaPilot { Position = p.At, Velocity = p.Vel });
+        st = State(s);
+        var d = s.D;
+        d.Tick(dt, st, s.Food, s.Sensed);
+        foreach (var e in d.Events)
+        {
+            if (e.Kind == TandavaEventKind.FormCommitted) s.Commits.Add((s.Now, e.B));
+            if (e.Kind == TandavaEventKind.FeedBegan) { s.Meals++; s.MealStart = s.Now; s.MealEatenAtStart = s.Eaten; }
+            if (e.Kind == TandavaEventKind.FeedEnded) { s.MealSeconds += s.Now - s.MealStart; s.MealVolumeEaten += s.Eaten - s.MealEatenAtStart; }
+            if (e.Kind == TandavaEventKind.FeedEnded) { s.MealEnds[e.B]++; if (e.B == (int)TandavaMealEnd.Broken) s.MealsBroken++; }
+            if (e.Kind == TandavaEventKind.FeedEnded && e.B == (int)TandavaMealEnd.Bare && Environment.GetEnvironmentVariable("TANDAVA_DIAG") == "1")
+            {
+                var pl = s.Plants.FirstOrDefault(x => x.Id == e.A);
+                if (pl != null)
+                {
+                    float nearest = float.MaxValue;
+                    for (int i = 0; i < c.Cap; i++) if (c.Active[i]) nearest = MathF.Min(nearest, Vector3.Distance(c.Pos[i] * UnitScale, pl.At));
+                    var mouthW = c.Anchor * UnitScale + TandavaDirectorCore.InBody(st, d.Form.FeedMouth);
+                    Console.WriteLine($"      bare at {s.Now:F0} s: {d.Form.Name} plan {Keys[c.PlanIx]}, plant r {pl.At.Length():F0} store {pl.Store / BiteVolume:F0} prisms, " +
+                                      $"mouth-plant {Vector3.Distance(mouthW, pl.At):F0} u, nearest member {nearest:F0} u, goal r {d.Goal.Length():F0}, mood {d.Mood}");
+                }
+            }
+            if (e.Kind == TandavaEventKind.Rising) { s.RiseAt = s.Now; s.RiseAnchor = c.Anchor * UnitScale; }
+            if (e.Kind == TandavaEventKind.DanceBegan)
+            {
+                s.DanceAt = s.Now;
+                // TandavaController.PlaceHalo: the dance ground plus the plan's ring offset in the body axes of the moment
+                var ring = s.B.Ring[Keys[d.Form.PlanIndex]];
+                var centre = d.DancePoint + c.BX * ring.centre.X + c.BY * ring.centre.Y + c.BZ * ring.centre.Z;
+                s.Post = new Vector3[HaloCount];
+                for (int k = 0; k < HaloCount; k++)
+                {
+                    float th = 2f * MathF.PI * k / HaloCount;
+                    s.Post[k] = centre + (c.BY * MathF.Cos(th) + c.BZ * MathF.Sin(th)) * ring.orbit;
+                }
+            }
+        }
+        d.Events.Clear();
+        if (d.Outcome != TandavaOutcome.Running) return;
+        // the plan the director wants (TandavaController.ApplyPlan): a new FORM is a new body (RequestPlan, the lay ease
+        // restarts); the same form's other pose is a re-arrangement (RequestPose, the lay ease kept)
+        if (c.PlanIx != d.WantPlan)
+        {
+            if (d.FormIx != s.LastForm) c.RequestPlan(d.WantPlan);
+            else c.RequestPose(d.WantPlan);
+        }
+        s.LastForm = d.FormIx;
+        c.SetLevers(d.CruiseScale, d.TurnScale, d.HoldLaying);
+        c.SwimTarget = d.Goal / UnitScale;
+        c.Step(ReadOnlySpan<SwarmPredator>.Empty);
+        foreach (var e in c.Events) if (e.Kind == SwarmEventKind.Laid && d.Feeding) s.LaidWhileFeeding++;
+        c.Events.Clear();
+        s.MaxRadius = MathF.Max(s.MaxRadius, (c.Anchor * UnitScale).Length());
+        if (d.InDance && s.Post != null && (int)MathF.Round(s.Now * TickHz) % 10 == 0)
+            for (int k = 0; k < HaloCount; k++) { if (d.HaloIsOut(k)) continue; s.HaloSamples++; if (Guarded(s, k)) s.GuardedSamples++; }
+    }
+
+    static bool Guarded(Sim s, int k)
+    {
+        var c = s.C; int n = 0; float r2 = GuardRadius * GuardRadius;
+        for (int i = 0; i < c.Cap; i++)
+            if (c.Active[i] && c.Hatched[i] && c.EffectiveElement(i) == GuardElement && Vector3.DistanceSquared(c.Pos[i] * UnitScale, s.Post[k]) <= r2) n++;
+        return n >= GuardMembers;
+    }
+
+    static void RunFor(Sim s, float seconds, Action<Sim> pilots = null)
+    {
+        int steps = (int)(seconds * TickHz);
+        for (int q = 0; q < steps && s.D.Outcome == TandavaOutcome.Running; q++) Tick(s, pilots);
+    }
+
+    static string Timeline(Sim s) =>
+        string.Join(", ", s.Commits.Select(x => $"{FormNames[x.form]} {x.t:F0} s")) +
+        (s.RiseAt >= 0 ? $", rose {s.RiseAt:F0} s" : "") + (s.DanceAt >= 0 ? $", drum {s.DanceAt:F0} s" : "");
+
+    static bool PilotsWon(TandavaOutcome o) =>
+        o is TandavaOutcome.Wiped or TandavaOutcome.Starved or TandavaOutcome.Shattered or TandavaOutcome.DanceBroken or TandavaOutcome.HeldOff;
+
+    // ──────────────────────────────────────────────────────────────── the tests
 
     public static int Run(SwarmPlanData[] basePlans, string dir)
     {
-        var plans = LoadTandava(dir);
-        var ring = LoadRing(dir);
-        Console.WriteLine($"tandava: forms {string.Join(" / ", plans.Select(p => $"{p.Kind} {p.N}"))} at density {Density}; " +
-                          $"ring of fire r {ring.Radius:F0} (guard posts r {ring.GuardOrbit:F0}) world units");
+        var b = Load(dir);
+        Console.WriteLine($"tandava: {b.Plans.Length} plans at density {Density}: " +
+                          string.Join(" / ", Variants.Select(v => string.Join(",", v.Select(k => b.Plans[b.Ix[k]].N)))) +
+                          $" members; stomach {StomachCapacity:F0}; a meal {MealVolume:F0}");
 
-        // ── T1: a scripted seed hatches as the form it was seeded with, and holds it
-        Console.WriteLine("T1 scripted seed");
+        // ── T1: four forms x three variants, feed twins that are the same body, forms that only grow
+        Console.WriteLine("T1 the plans");
         {
-            var c = Make(plans, new Vector3(-900, 0, 0), 7, fed: true);
-            Check(c.PlanIx == 0, $"seeded as form 0 ({c.Plan.Kind}), census majority {Array.IndexOf(Mix(c), Mix(c).Max())}");
-            int t = GrowTo(c, 0.85f, 1200);
-            Check(t >= 0 && c.PlanIx == 0, $"a fed serpent_s grows to 85% of its plan in {t} steps and keeps its form ({Live(c)}/{c.Plan.N})");
+            bool twins = true, mouths = true, rings = true;
+            foreach (var key in Keys.Where(k => !k.EndsWith("_feed") && !k.StartsWith("dancer")))
+            {
+                twins &= Mix(b.Plans[b.Ix[key]]).SequenceEqual(Mix(b.Plans[b.Ix[key + "_feed"]]));
+                mouths &= b.Mouth.ContainsKey(key) && b.Mouth.ContainsKey(key + "_feed");
+            }
+            foreach (var key in Variants[2]) rings &= b.Ring.ContainsKey(key);
+            Check(b.Plans.Length == 21, "21 plans: 4 forms x 3 variants, and a feed twin for each variant of the three forms that eat");
+            Check(twins, "every feed twin carries exactly its travel plan's element counts (the pose commit is a re-sort, never a molt)");
+            Check(mouths && rings, "every eating plan bakes its mouth, every dance plan its halo");
+            bool grows = true;
+            for (int f = 1; f < 4; f++)
+                grows &= Variants[f].Min(k => b.Plans[b.Ix[k]].N) >= Variants[f - 1].Max(k => b.Plans[b.Ix[k]].N);
+            Check(grows, "every variant of a form is at least as big as every variant of the one before (a commit only grows the body)");
+            bool danger = true;
+            foreach (var key in Keys.Where(k => k.EndsWith("_feed")))
+            {
+                var p = b.Plans[b.Ix[key]];
+                int charge = Enumerable.Range(0, p.N).Count(u => p.Elem[u] == 0);
+                danger &= charge > 0 && Enumerable.Range(0, p.N).Count(u => p.Elem[u] == 0 && p.Tier[u] == 1) == charge;
+            }
+            Check(danger, "every feed twin's plates are ALL danger tier: the protectors");
         }
 
-        // ── T2: the director's walk S -> M -> L -> Bull -> Dance -> Lion through the ordinary commit; nothing lost, nobody dies
-        Console.WriteLine("T2 the walk");
+        // ── T2: it hatches WHOLE as the Great Serpent - no young serpent
+        Console.WriteLine("T2 it hatches whole");
+        foreach (var key in Variants[0])
+        {
+            var c = MakeCore(b, b.Ix[key], TandavaArena.Hatch, 7, fed: false);
+            int n0 = Active(c);
+            Step(c, 150);
+            float cov = Coverage(c, 3.2f);
+            Check(c.PlanIx == b.Ix[key] && n0 == c.Plan.N && cov >= 0.6f,
+                  $"{key}: seeded at its full {n0}/{c.Plan.N} members, still {key}, shape coverage {cov:P0} after 15 s (>= 60%)");
+        }
+
+        // ── T3: the levers - the cruise scale is the body's speed, and the turn carry keeps a long body whole round a turn
+        Console.WriteLine("T3 the levers");
+        {
+            float Speed(float scale)
+            {
+                var c = MakeCore(b, b.Ix["great_serpent_1"], new Vector3(-900, 0, 0), 11, fed: false);
+                Step(c, 60);
+                c.SetLevers(scale, 1f, false);
+                c.SwimTarget = c.Anchor + Vector3.UnitX * 2000f / UnitScale;
+                Step(c, 30);
+                var a0 = c.Anchor; Step(c, 50);
+                return Vector3.Distance(c.Anchor, a0) * UnitScale / 5f;
+            }
+            float v1 = Speed(1f), v2 = Speed(2.1f);
+            float cfg = Cruise * UnitScale * TickHz;
+            Check(MathF.Abs(v1 - cfg) < 0.15f * cfg, $"calm, the body swims at {v1:F0} u/s (the config's {cfg:F0})");
+            Check(MathF.Abs(v2 / v1 - 2.1f) < 0.25f, $"fleeing (x2.1) it swims at {v2:F0} u/s - {v2 / v1:F2}x");
+            float Turned(float carry)
+            {
+                var c = MakeCore(b, b.Ix["great_serpent_2"], new Vector3(-600, 0, 0), 13, fed: false);
+                c.C.TurnCarry = carry;
+                c.SwimTarget = c.Anchor + Vector3.UnitX * 2000f / UnitScale;
+                Step(c, 120);
+                c.SetLevers(2.1f, 2.5f, false);
+                c.SwimTarget = c.Anchor + Vector3.UnitZ * 2000f / UnitScale;   // a hard 90 degree turn, fleeing
+                Step(c, 40);
+                return Coverage(c, 3.2f);
+            }
+            float with = Turned(1f), without = Turned(0f);
+            Check(with >= 0.6f && with > without,
+                  $"round a hard fleeing turn the body keeps {with:P0} of its shape with the turn carry ({without:P0} without)");
+        }
+
+        // ── T4: a form, once taken, is REMEMBERED - a cut regrows into the same form, fast
+        Console.WriteLine("T4 it remembers its form");
         {
             _selfDeaths = 0;
-            var c = Make(plans, new Vector3(-900, 0, 0), 23, fed: true);
-            GrowTo(c, 0.85f, 1200);
-            int prevLive = Live(c);
-            bool monotone = true;
-            for (int k = 1; k < plans.Length; k++)
-            {
-                c.RequestPlan(k);
-                var seen = new List<SwarmEvent>();
-                Step(c); seen.AddRange(c.Events); c.Events.Clear();
-                bool switched = seen.Any(e => e.Kind == SwarmEventKind.Switched && e.Index == k - 1 && e.Other == k);
-                Check(c.PlanIx == k && switched, $"request {plans[k].Kind}: committed next step with Switched {k - 1} -> {k}");
-                int t = GrowTo(c, 0.85f, 2400, seen);
-                for (int q = 0; q < 300; q++) { Step(c); seen.AddRange(c.Events); c.Events.Clear(); }   // 30 s to re-sort
-                monotone &= Active(c) >= prevLive;
-                int molts = seen.Count(e => e.Kind == SwarmEventKind.MoltBegan);
-                float cov = Coverage(c, 3.2f);
-                Check(t >= 0, $"{plans[k].Kind}: grows to 85% in {t} steps, then 30 s to re-sort ({Live(c)}/{plans[k].N}, {molts} molts), shape coverage {cov:P0}");
-                float bar = k >= DancerIx ? StrokeCoverage : 0.7f;
-                Check(cov >= bar, $"{plans[k].Kind}: at least {bar:P0} of the plan's units have a member of their element within 3.2 voxels");
-                prevLive = Active(c);
-                if (k == BullIx)
-                {
-                    int[] mb = Mix(c);
-                    Check(mb[1] > mb[0] && mb[1] > mb[2] && mb[1] > mb[3], $"the bull is Mass-majority (C/M/S/T {string.Join("/", mb)})");
-                }
-            }
-            Check(_selfDeaths == 0, $"zero self-inflicted deaths across the walk, the ascension included ({_selfDeaths})");
-            Check(monotone, "the body never shrank through a commit (lossless: molts, not deaths)");
+            var c = MakeCore(b, b.Ix["great_serpent_1"], new Vector3(-600, 0, 0), 17, fed: true);
+            Step(c, 120);
+            int full = Active(c), plan = c.PlanIx;
+            float stomach0 = c.Stomach.Sum();
+            int cut = Cut(c, (int)(0.3f * full), c.BX);   // the tail third
+            int t = 0;
+            while (Active(c) < 0.93f * full && t < 200) { Step(c); t++; }
+            Step(c, 100);
+            float cov = Coverage(c, 3.2f);
+            Check(t < 60, $"the tail cut off ({cut} of {full}) grows back to 93% in {t / TickHz:F1} s (< 6 s)");
+            Check(c.PlanIx == plan && _selfDeaths == 0, $"still the same form, and nothing it did not lose died ({_selfDeaths})");
+            Check(cov >= 0.6f, $"and it is the same animal again: shape coverage {cov:P0} 10 s later");
+            Check(c.Stomach.Sum() < stomach0 - 0.5f * cut * EggVolume.Min(), $"the regrowth was PAID from the stomach ({stomach0 - c.Stomach.Sum():F0} volume)");
         }
 
-        // ── T3: killing the majority never re-plans a scripted swarm (the census does not choose the form)
-        Console.WriteLine("T3 kills never re-plan");
+        // ── T5: the laying hold (the director holds it while the swarm feeds): a cut sticks until it lets go
+        Console.WriteLine("T5 the laying hold");
         {
-            var c = Make(plans, new Vector3(-900, 0, 0), 41, fed: true);
-            GrowTo(c, 0.85f, 1200);
-            int killed = 0;
-            for (int i = 0; i < c.Cap; i++) if (c.Active[i] && c.Hatched[i] && c.EffectiveElement(i) == 1 && killed < (int)(0.9f * Mix(c)[1])) { c.Kill(i); killed++; }
-            var seen = new List<SwarmEvent>();
-            for (int t = 0; t < 120; t++) { Step(c); seen.AddRange(c.Events); c.Events.Clear(); }
-            Check(c.PlanIx == 0 && !seen.Any(e => e.Kind == SwarmEventKind.Switched), $"90% of the Mass killed ({killed}): still {c.Plan.Kind}, no Switched in 12 s");
+            var c = MakeCore(b, b.Ix["great_serpent_3"], new Vector3(-600, 0, 0), 19, fed: true);
+            Step(c, 120);
+            c.SetLevers(1f, 1f, true);
+            int full = Active(c);
+            Cut(c, (int)(0.2f * full), c.BX);
+            int held0 = Active(c);
+            Step(c, 50);
+            Check(Active(c) == held0, $"held, a 20% cut stays cut for 5 s ({Active(c)}/{full})");
+            c.SetLevers(1f, 1f, false);
+            int t = 0;
+            while (Active(c) < 0.93f * full && t < 200) { Step(c); t++; }
+            Check(t < 60, $"let go, it grows back in {t / TickHz:F1} s");
         }
 
-        // ── T4: bad requests and the majority mode
-        Console.WriteLine("T4 requests");
+        // ── T6: the feed pose - the plates go out to orbit the mouth, as DANGER plates; the lay ease is kept
+        Console.WriteLine("T6 the feed pose");
+        foreach (var key in new[] { "great_serpent_2", "many_headed_10", "sea_lion_1" })
         {
-            var c = Make(plans, new Vector3(-900, 0, 0), 101, fed: true);
-            c.RequestPlan(-1); c.RequestPlan(99); Step(c); c.Events.Clear();
-            Check(c.PlanIx == 0, "a request outside the form list is ignored");
-            var m = SortHarness.GameSwarm(basePlans, 1, 7);
-            m.RequestPlan(2); SortHarness.Step(m); m.Events.Clear();
-            Check(m.PlanIx == 1, "the majority mode ignores RequestPlan (every shipped swarm)");
-        }
-
-        // ── T5: the shipped Swarm cell is untouched - a Scripted=false core still morphs by majority (S4's shape)
-        Console.WriteLine("T5 majority mode still morphs");
-        {
-            var m = SortHarness.GameSwarm(basePlans, 3, 23);
-            SortHarness.Run(m, 600);
-            int killed = 0, want = Mix(m)[3];
-            for (int i = 0; i < m.Cap && killed < want; i++) if (m.Active[i] && m.Hatched[i] && m.EffectiveElement(i) == 3) { m.Kill(i); killed++; }
-            var seen = new List<SwarmEvent>();
-            for (int t = 0; t < 60; t++) { SortHarness.Step(m); seen.AddRange(m.Events); m.Events.Clear(); }
-            Check(seen.Any(e => e.Kind == SwarmEventKind.Switched) && m.PlanIx != 3, $"a dragonfly with its Time killed morphs ({string.Join(", ", seen.Where(e => e.Kind == SwarmEventKind.Switched).Select(e => $"{e.Index}->{e.Other}"))})");
-        }
-
-        // ── T6-T13: the race
-        Console.WriteLine("T6 the unopposed race");
-        var won = Race(plans, ring, 7, new RaceOpts { Tag = "unopposed" }, out var r6);
-        Check(r6.Outcome == TandavaOutcome.Escaped && r6.FormIx == LionIx,
-            $"unopposed: escapes as the final form ({plans[r6.FormIx].Kind}) after {r6.Clock:F0} s");
-        Check(won.AscensionAt > 0f && won.Commits.Count == 4,
-            $"through every form: commits at {string.Join(", ", won.Commits.Select(x => $"{x:F0}s"))}, the Bull rises into the dance at " +
-            $"{won.RoseAt:F0} s and the ring lights at {won.AscensionAt:F0} s");
-        Check(r6.Clock >= 150f && r6.Clock <= 360f, $"the unopposed race lasts 2.5-6 minutes ({r6.Clock:F0} s)");
-        Check(won.Commits.Take(3).Zip(won.Commits.Skip(1).Take(2), (a, b) => b - a).All(g => g >= 20f),
-            $"its eating forms are spread down the route, at least 20 s apart");
-        Check(won.Stops >= 3, $"it stopped to feed at {won.Stops} oases (feeding means stopping)");
-        Check(won.LionAt > 0f && won.LionAt - won.AscensionAt >= DrumSeconds - 0.5f,
-            $"the final form is taken only when the drum ends ({won.LionAt - won.AscensionAt:F0} s after the ascension began)");
-
-        Console.WriteLine("T7 starvation");
-        var denied = Race(plans, ring, 7, new RaceOpts { Deny = _ => true }, out var r7);
-        Check(r7.Outcome == TandavaOutcome.Starved, $"every oasis denied: it never evolves and STARVES ({r7.Outcome} as {plans[r7.FormIx].Kind} at {r7.Clock:F0} s, {denied.Sheds} shed)");
-        Check(denied.Stops == 0, "a denied oasis is skipped, never fed at");
-        var burnt = Race(plans, ring, 7, new RaceOpts { DenyAllWhen = d => d.FormIx == BullIx }, out var r7b);
-        Check(r7b.Outcome == TandavaOutcome.Starved && r7b.FormIx == BullIx,
-            $"all food burnt once it is the Bull: it cannot ascend and cannot leave - {r7b.Outcome} as {plans[r7b.FormIx].Kind} at {r7b.Clock:F0} s " +
-            $"({burnt.Sheds} shed on the way; the membrane clock, not the body, says it has starved)");
-
-        Console.WriteLine("T8 two oases denied");
-        Race(plans, ring, 7, new RaceOpts { Deny = o => o == 1 || o == 2 }, out var r8);
-        Check(r8.Outcome != TandavaOutcome.Escaped || r8.Clock > r6.Clock,
-            $"denying two oases costs the swarm ({r8.Outcome} as {plans[r8.FormIx].Kind} at {r8.Clock:F0} s vs {r6.Clock:F0} s unopposed)");
-
-        Console.WriteLine("T9 culling wins");
-        Race(plans, ring, 7, new RaceOpts { Cull = (core, d) => d.Clock > 20f ? 1f : 0f }, out var r9);
-        Check(r9.Outcome == TandavaOutcome.Wiped, $"a lobby that kills every member wins (outcome {r9.Outcome} at {r9.Clock:F0} s)");
-        Race(plans, ring, 7, new RaceOpts { Cull = (core, d) => d.IsFinalForm ? 0.7f : 0f }, out var r9b);
-        Check(r9b.Outcome == TandavaOutcome.Broken, $"cutting the final form below its break threshold wins (outcome {r9b.Outcome})");
-
-        Console.WriteLine("T10 the sealed exit");
-        {
-            var fs = BuildForms(plans);
-            var d = new TandavaDirectorCore(fs, Array.Empty<TandavaOasis>(), Settings());
-            var st = new TandavaSwarmState { Alive = fs[0].PlanCount, Anchor = new Vector3(TandavaRoute.ExitX + 300f, 0, 0) };
-            d.Tick(0.1f, st);
-            Check(d.Outcome == TandavaOutcome.Running && d.Events.Any(e => e.Kind == TandavaEventKind.Sealed),
-                $"a serpent PAST the exit plane has not escaped (outcome {d.Outcome}) and the membrane raised Sealed");
-            var push = d.SealCorrection(st.Anchor);
-            Check(Vector3.Dot(st.Anchor + push - d.S.ExitPoint, d.S.ExitNormal) <= -d.S.SealHold + 1e-3f,
-                $"and its correction puts the anchor back {d.S.SealHold:F0} u inside ({push.X:F0} u)");
-            Check(TandavaDirectorCore.SealCorrection(st.Anchor, finalForm: true, d.S) == Vector3.Zero, "the final form is never held");
-        }
-        var rogue = Race(plans, ring, 7, new RaceOpts { Rogue = true, MaxSeconds = 150f }, out var r10);
-        Check(r10.Outcome != TandavaOutcome.Escaped && rogue.SealedBeats > 0 && rogue.MaxOutward <= -r10.S.SealHold + 1f,
-            $"a swarm swimming straight at the exit for 150 s never crosses it as {plans[r10.FormIx].Kind} " +
-            $"({rogue.SealedBeats} sealed beats, anchor at most {rogue.MaxOutward:F0} u from the plane)");
-
-        Console.WriteLine("T11 the ascension");
-        Check(won.DanceCovLate >= StrokeCoverage, $"the Lord of the Dance is assembled by the drum's end: shape coverage {won.DanceCovLate:P0} " +
-              $"over its last 5 s (at 10 s {won.DanceCov10:P0}, 20 s {won.DanceCov20:P0}, the last instant {won.DanceCoverage:P0})");
-        Check(won.AxisDrift <= 25f, $"the figure holds still inside its ring: the body axes drift {won.AxisDrift:F1} deg over the drum");
-        Check(won.StatueInRing >= 0.9f && won.AttendantsOut >= 0.5f,
-            $"the figure stands inside its ring of fire ({won.StatueInRing:P0} of the non-Time body) and the attendants patrol outside it " +
-            $"({won.AttendantsOut:P0} of the Time members; the dwarf and the palm are Time too, and inside)");
-        Check(won.GuardedShare >= 0.1f && won.GuardedShare <= 0.6f,
-            $"the attendants guard part of the ring, never all of it: {won.GuardedShare:P0} of flame-seconds guarded");
-        Check(won.FlamesEverGuarded >= 8, $"the guard PATROLS: {won.FlamesEverGuarded} of {FlameCount} flames were guarded at some point");
-        Check(won.LionCoverage >= StrokeCoverage, $"the Winged Lion is assembled before it crosses: shape coverage {won.LionCoverage:P0}");
-
-        Console.WriteLine("T12 breaking the dance");
-        _selfDeaths = 0;
-        var broke = Race(plans, ring, 7, new RaceOpts { FlameEvery = 1.5f, MoltBackSteps = 200 }, out var r12);
-        Check(r12.Outcome == TandavaOutcome.DanceBroken && r12.FlamesOut == FlamesToBreak,
-            $"a lobby threading an unguarded flame every 1.5 s breaks the dance ({r12.Outcome}, {r12.FlamesOut} out, " +
-            $"{broke.FlameTries - broke.Repelled} of {broke.FlameTries} tries landed, at {r12.Clock:F0} s)");
-        Check(broke.DeathsAfterBreak == 0 && broke.AliveAfterBreak >= broke.AliveAtBreak,
-            $"the broken dance kills nobody: molted back to the {plans[BullIx].Kind} in 20 s with {broke.AliveAfterBreak}/{broke.AliveAtBreak} alive");
-        Check(_selfDeaths == 0, $"and the core killed nobody across the whole race ({_selfDeaths})");
-        var blind = Race(plans, ring, 7, new RaceOpts { FlameEvery = 1.5f, Blind = true }, out var r12b);
-        Check(blind.Repelled > 0 && r12b.FlamesOut < r12.FlamesOut + 1 && (r12b.Outcome != TandavaOutcome.DanceBroken || r12b.Clock > r12.Clock),
-            $"pilots who charge the attendants are repelled: {blind.Repelled} of {blind.FlameTries} tries hit a guarded flame, " +
-            $"{r12b.FlamesOut} out ({r12b.Outcome} at {r12b.Clock:F0} s vs {r12.Clock:F0} s for the lobby that reads the patrol)");
-
-        Console.WriteLine("T13 the drum wins a slow lobby");
-        var slow = Race(plans, ring, 7, new RaceOpts { FlameEvery = 5f }, out var r13);
-        Check(slow.LionAt > 0f && r13.FlamesOut < FlamesToBreak,
-            $"one flame per 5 s puts out {r13.FlamesOut} before the drum stops; the swarm takes the {plans[LionIx].Kind} ({r13.Outcome} at {r13.Clock:F0} s)");
-
-        Console.WriteLine();
-        Console.WriteLine(_fail == 0 ? "tandava: OK" : $"tandava: {_fail} FAILED");
-        return _fail;
-    }
-
-    sealed class RaceOpts
-    {
-        /// <summary>Oases denied from the start.</summary>
-        public Func<int, bool> Deny = _ => false;
-        /// <summary>Burn every oasis the first tick this holds.</summary>
-        public Func<TandavaDirectorCore, bool> DenyAllWhen;
-        /// <summary>The share of the live body the pilots kill this second (0 = none).</summary>
-        public Func<SwarmSortCore, TandavaDirectorCore, float> Cull;
-        /// <summary>The swarm swims straight at the exit, whatever the director says (the seal must hold anyway).</summary>
-        public bool Rogue;
-        /// <summary>During the dance the pilots thread one lit flame this often (seconds; 0 = never)...</summary>
-        public float FlameEvery;
-        /// <summary>...charging a GUARDED flame whenever one is lit (the lobby that ignores the attendants), rather than
-        /// choosing among the unguarded ones.</summary>
-        public bool Blind;
-        /// <summary>After a broken dance: steps to run on with the last eating form requested back (the glue's molt back).</summary>
-        public int MoltBackSteps;
-        public float MaxSeconds = 20f * 60f;
-        /// <summary>Names the TANDAVA_DUMP pictures of this race (null: none).</summary>
-        public string Tag;
-    }
-
-    sealed class RaceLog
-    {
-        public readonly List<float> Commits = new();
-        public int Stops, Sheds, SealedBeats, FlameTries, Repelled, FlamesEverGuarded;
-        public float RoseAt = -1f, AscensionAt = -1f, LionAt = -1f, MaxOutward = float.NegativeInfinity;
-        public float DanceCoverage, DanceCov10, DanceCov20, DanceCovLate, LionCoverage, AxisDrift, StatueInRing, AttendantsOut, GuardedShare;
-        public int AliveAtBreak, AliveAfterBreak, DeathsAfterBreak;
-    }
-
-    static TandavaDirectorSettings Settings() => new()
-    {
-        ExitPoint = new Vector3(TandavaRoute.ExitX, 0, 0), ExitNormal = Vector3.UnitX, MaxFeedSeconds = MaxFeedSeconds,
-        DancePoint = new Vector3(TandavaRoute.DanceX, 0, TandavaRoute.DanceZ), DrumSeconds = DrumSeconds, FlameCount = FlameCount, FlamesToBreak = FlamesToBreak,
-    };
-
-    /// <summary>The forms as the generator authors them (author_tandava_assets.py forms(), the same arithmetic): the bank
-    /// is the design's surplus of the form's own body - and the last EATING form's (the Bull's) is the ascension's, a
-    /// whole body's worth; a STAGE is the NEW food the form must eat to evolve - grow from the body it arrived with (the
-    /// previous form's evolve fill, or the seed) to its own evolve fill at its own mix's egg prices, plus its bank, less
-    /// the previous form's bank (which the commit spends on exactly that growth) - and a meal is the stage over
-    /// MealsPerForm, so a denied oasis is a meal the stage is short. The dance and final forms do not eat on the route:
-    /// no bank, the minimum meal.</summary>
-    internal static List<TandavaForm> BuildForms(SwarmPlanData[] plans)
-    {
-        var forms = new List<TandavaForm>();
-        int lastEater = plans.Length >= 3 ? plans.Length - 3 : plans.Length - 1;
-        float arrived = SeedMembers * Density, banked = 0f;
-        for (int k = 0; k < plans.Length; k++)
-        {
-            var f = new TandavaForm { Name = plans[k].Kind, PlanIndex = k, PlanCount = plans[k].N };
-            if (k > lastEater) { f.MealVolume = 1f; forms.Add(f); continue; }
-            float avgEgg = 0f;
-            for (int e = 0; e < 4; e++) avgEgg += plans[k].Mix[e] * EggVolume[e];
-            avgEgg /= plans[k].N;
-            float fillTo = f.FillToEvolve * plans[k].N;
-            float surplus = k < lastEater ? SurplusFactor : AscensionSurplus;
-            f.BankToEvolve[1] = MathF.Min(surplus * plans[k].N * EggVolume[1], 0.9f * StomachCapacity);
-            float stage = MathF.Max(0f, MathF.Max(0f, fillTo - arrived) * avgEgg + f.BankToEvolve[1] - banked);
-            f.MealVolume = MathF.Max(1f, stage / MealsPerForm);   // TandavaFormSpec.MealVolume is [Min(1)]
-            arrived = fillTo; banked = f.BankToEvolve[1];
-            forms.Add(f);
-        }
-        return forms;
-    }
-
-    /// <summary>One race on the route with the simplified food model, the swarm's own metabolism and the glue's ring of
-    /// fire (see the file header).</summary>
-    static RaceLog Race(SwarmPlanData[] plans, Ring ring, int seed, RaceOpts o, out TandavaDirectorCore dir)
-    {
-        float[] oasisX = TandavaRoute.OasisX;
-        var oases = oasisX.Select(x => new TandavaOasis { Centre = new Vector3(x, 0, 0), Radius = 100f }).ToArray();
-        // plants: PlantsAt[o] per oasis, scattered (seeded) inside it; each a ball of PlantRadius with its own store
-        var prng = new Random(seed * 31 + 7);
-        var plants = new List<(int oasis, Vector3 at)>();
-        for (int q = 0; q < oases.Length; q++)
-            for (int k = 0; k < TandavaRoute.PlantsAt[q]; k++)
+            var c = MakeCore(b, b.Ix[key], new Vector3(-500, 0, 0), 23, fed: true);
+            Step(c, 200);
+            var settings = new SwarmTickSettings
             {
-                double a = prng.NextDouble() * 2 * Math.PI, r = PlantSpread * Math.Sqrt(prng.NextDouble());
-                plants.Add((q, oases[q].Centre + new Vector3((float)(r * Math.Cos(a)), (float)((prng.NextDouble() - 0.5) * 40), (float)(r * Math.Sin(a)))));
-            }
-        var plantStore = plants.Select(_ => PrismsPerPlant * BiteVolume).ToArray();
-        var forms = BuildForms(plans);
-        var s = Settings();
-        dir = new TandavaDirectorCore(forms, oases, s);   // the director holds THIS array: a denial below is seen by both
-        for (int q = 0; q < oases.Length; q++) dir.SetDenied(q, o.Deny(q));
-
-        var c = new SwarmSortCore(plans, Params(plans), seed);
-        c.Seed(0, SeedMembers * Density, new Vector3(TandavaRoute.StartX, 0, 0) / UnitScale, Vector3.UnitX);
-        var log = new RaceLog();
-        float sinceBite = 0f, sinceFed = 0f, eaten = 0f, lastShed = -1e9f, dt = 1f / TickHz, nextTry = 0f;
-        int biteCursor = 0;
-        bool burnt = false;
-        var rng = new Random(seed);
-        // the ring of fire, placed once when the ascension begins
-        Vector3[] post = null; Vector3 ringC = default, by0 = default; int guardedSamples = 0, flameSamples = 0; var everGuarded = new bool[FlameCount];
-
-        int GuardCount(int k)
-        {
-            int n = 0; float r2 = GuardRadius * GuardRadius;
-            for (int i = 0; i < c.Cap; i++)
-                if (c.Active[i] && c.Hatched[i] && c.EffectiveElement(i) == GuardElement && Vector3.DistanceSquared(c.Pos[i] * UnitScale, post[k]) <= r2) n++;
-            return n;
-        }
-        bool Guarded(int k) => GuardCount(k) >= GuardMembers;
-
-        int step = 0;
-        for (; step < o.MaxSeconds * TickHz && dir.Outcome == TandavaOutcome.Running; step++)
-        {
-            float now = step * dt;
-            // feed (SwarmFauna.Feed's shape): BitersPerStep members asked round-robin; each bites only if it touches a
-            // plant with food left in an undenied oasis. A full stomach does not graze.
-            bool bit = false;
-            float fill0 = (c.Stomach[0] + c.Stomach[1] + c.Stomach[2] + c.Stomach[3]) / StomachCapacity;
-            if (fill0 < 1f)
-                for (int b = 0; b < BitersPerStep; b++)
-                {
-                    int i = -1;
-                    for (int tries = 0; tries < c.Cap; tries++)
-                    {
-                        biteCursor = (biteCursor + 1) % c.Cap;
-                        if (c.Active[biteCursor] && c.Hatched[biteCursor]) { i = biteCursor; break; }
-                    }
-                    if (i < 0) break;
-                    var at = c.Pos[i] * UnitScale;
-                    for (int q = 0; q < plants.Count; q++)
-                    {
-                        if (plantStore[q] <= 0f || oases[plants[q].oasis].Denied) continue;
-                        if (Vector3.DistanceSquared(at, plants[q].at) > (PlantRadius + BiteRadius) * (PlantRadius + BiteRadius)) continue;
-                        float v = MathF.Min(plantStore[q], BiteVolume);
-                        plantStore[q] -= v; c.Stomach[1] += v; eaten += v; bit = true;
-                        break;
-                    }
-                }
-            sinceBite = bit ? 0f : sinceBite + dt;
-            float fill = (c.Stomach[0] + c.Stomach[1] + c.Stomach[2] + c.Stomach[3]) / StomachCapacity;
-            sinceFed = bit || fill >= 1f ? 0f : sinceFed + dt;   // SwarmFauna._lastFedTime: a bite, or sated
-            // the glue's denial: an oasis with nothing left to eat is denied (TandavaController asks SwarmFauna.CanEat)
-            for (int q = 0; q < oases.Length; q++)
-                if (!oases[q].Denied && plants.Select((p, j) => (p, j)).Where(x => x.p.oasis == q).All(x => plantStore[x.j] <= 0f)) dir.SetDenied(q, true);
-            if (!burnt && o.DenyAllWhen != null && o.DenyAllWhen(dir))
-            {
-                burnt = true;
-                for (int q = 0; q < oases.Length; q++) dir.SetDenied(q, true);
-            }
-            // the metabolism (SwarmFauna.Starving): unfed and hungry sheds one member per interval, the core choosing who
-            bool starving = sinceFed >= StarvationSeconds && fill < ForageBelow;
-            if (starving && now - lastShed >= ShedIntervalSeconds)
-            {
-                lastShed = now;
-                int v = c.StarvationVictim();
-                if (v >= 0) { c.Kill(v); log.Sheds++; }
-            }
-            // pilots: culling
-            if (o.Cull != null && step % 10 == 0)
-            {
-                float share = o.Cull(c, dir);
-                if (share > 0f)
-                {
-                    int n = (int)MathF.Ceiling(share * Live(c));
-                    for (int i = 0; i < c.Cap && n > 0; i++) if (c.Active[i] && c.Hatched[i]) { c.Kill(i); n--; }
-                }
-            }
-            // pilots: the ring of fire
-            if (dir.InDance && post != null)
-            {
-                if (step % 10 == 0)
-                    for (int k = 0; k < FlameCount; k++)
-                    {
-                        if (dir.FlameIsOut(k)) continue;
-                        flameSamples++;
-                        if (Guarded(k)) { guardedSamples++; everGuarded[k] = true; }
-                    }
-                if (o.FlameEvery > 0f && now >= nextTry)
-                {
-                    nextTry = now + o.FlameEvery;
-                    var d = dir;   // an out parameter cannot be captured
-                    var lit = Enumerable.Range(0, FlameCount).Where(k => !d.FlameIsOut(k) && (o.Blind ? Guarded(k) : !Guarded(k))).ToList();
-                    if (o.Blind && lit.Count == 0) lit = Enumerable.Range(0, FlameCount).Where(k => !d.FlameIsOut(k)).ToList();
-                    if (lit.Count > 0)
-                    {
-                        int k = lit[rng.Next(lit.Count)];
-                        log.FlameTries++;
-                        if (Guarded(k)) log.Repelled++;
-                        else dir.BreakFlame(k);
-                    }
-                }
-            }
-            var st = new TandavaSwarmState
-            {
-                Alive = Live(c), Anchor = c.Anchor * UnitScale,
-                Stomach0 = c.Stomach[0], Stomach1 = c.Stomach[1], Stomach2 = c.Stomach[2], Stomach3 = c.Stomach[3],
-                StomachFill = fill, SinceBite = sinceBite, EatenTotal = eaten, Starving = starving,
+                UnitScale = UnitScale, PrismScale = 1f, PlanDanger = true,
+                DefaultHalf = new[] { Vector3.One, Vector3.One, Vector3.One, Vector3.One },
             };
-            dir.Tick(dt, st);
-            foreach (var e in dir.Events)
+            var job = new SwarmTickJob(c, settings, TickHz) { SwimTarget = c.SwimTarget };
+            job.Prime();
+            float ease = c.LayEase;
+            job.RequestPose(b.Ix[key + "_feed"]);
+            for (int q = 0; q < 100; q++) { job.Kick(true); job.Collect(); }
+            var mouth = b.Mouth[key + "_feed"] / UnitScale;   // sim voxels, in the plan's own (centred) frame
+            var m = c.Anchor + c.BX * mouth.X + c.BY * mouth.Y + c.BZ * mouth.Z;
+            // the guard ring's radius, read off the feed plan itself: its plates' mean distance from its mouth
+            var fp = b.Plans[b.Ix[key + "_feed"]];
+            var ringR = Enumerable.Range(0, fp.N).Where(u => fp.Elem[u] == 0).Average(u => Vector3.Distance(fp.P[0][u], mouth));
+            int charge = 0, near = 0, danger = 0;
+            for (int i = 0; i < c.Cap; i++)
             {
-                if (e.Kind == TandavaEventKind.FormCommitted)
-                {
-                    if (e.A == DancerIx)
-                    {
-                        log.DanceCoverage = Coverage(c, 3.2f);
-                        float cosD = Math.Clamp(Vector3.Dot(Vector3.Normalize(by0), Vector3.Normalize(c.BY)), -1f, 1f);
-                        log.AxisDrift = MathF.Acos(cosD) * 180f / MathF.PI;
-                        int inside = 0, statue = 0, outside = 0, guards = 0;
-                        for (int i = 0; i < c.Cap; i++)
-                            if (c.Active[i] && c.Hatched[i])
-                            {
-                                var d = c.Pos[i] * UnitScale - ringC;
-                                float along = Vector3.Dot(d, c.BX);
-                                bool inRing = (d - c.BX * along).Length() <= ring.Radius;
-                                if (c.EffectiveElement(i) == GuardElement) { guards++; if (!inRing) outside++; }
-                                else { statue++; if (inRing) inside++; }
-                            }
-                        log.StatueInRing = statue > 0 ? inside / (float)statue : 0f;
-                        log.AttendantsOut = guards > 0 ? outside / (float)guards : 0f;
-                        if (o.Tag != null) Dump(c, o.Tag + "_dancer");
-                        log.LionAt = dir.Clock;
-                    }
-                    c.RequestPlan(forms[e.B].PlanIndex); log.Commits.Add(dir.Clock);
-                }
-                if (e.Kind == TandavaEventKind.ReadyToDance) { c.RequestPlan(forms[e.B].PlanIndex); log.RoseAt = dir.Clock; }
-                if (e.Kind == TandavaEventKind.AscensionBegun)
-                {
-                    log.AscensionAt = dir.Clock;
-                    // TandavaController's placement: the dance ground, the plan's ring offset in the body axes of the moment
-                    ringC = s.DancePoint + c.BX * ring.Centre.X + c.BY * ring.Centre.Y + c.BZ * ring.Centre.Z;
-                    by0 = c.BY;
-                    post = new Vector3[FlameCount];
-                    for (int k = 0; k < FlameCount; k++)
-                    {
-                        float th = 2f * MathF.PI * k / FlameCount;
-                        post[k] = ringC + (c.BY * MathF.Cos(th) + c.BZ * MathF.Sin(th)) * ring.GuardOrbit;
-                    }
-                }
-                if (e.Kind == TandavaEventKind.OasisReached) log.Stops++;
-                if (e.Kind == TandavaEventKind.Sealed) log.SealedBeats++;
+                if (!c.Active[i] || c.EffectiveElement(i) != 0) continue;
+                charge++;
+                if (MathF.Abs(Vector3.Distance(c.Pos[i], m) - (float)ringR) <= 0.3f * (float)ringR + 3f) near++;
+                if (job.Instances[i].Tier == 1) danger++;
             }
-            dir.Events.Clear();
-            if (dir.InDance && log.AscensionAt >= 0f)
+            Check(c.PlanIx == b.Ix[key + "_feed"] && c.LayEase >= ease - 1e-3f,
+                  $"{key}: the pose commit keeps the lay ease ({ease:F2} -> {c.LayEase:F2}) - feeding is not a wound");
+            Check(near >= 0.7f * charge, $"{key}: {near}/{charge} plates are on the guard ring (r {ringR * UnitScale:F0} u) round the mouth after 10 s");
+            Check(danger >= 0.8f * charge, $"{key}: {danger}/{charge} of them wear DANGER plates (PlanDanger: the plan's tier, not a startle)");
+            // and a census swarm never reads its plan's tier-1 marks: the same core behind a job without PlanDanger
+            var quiet = new SwarmTickJob(c, new SwarmTickSettings
             {
-                float into = dir.Clock - log.AscensionAt;
-                if (log.DanceCov10 == 0f && into >= 10f) log.DanceCov10 = Coverage(c, 3.2f);
-                if (log.DanceCov20 == 0f && into >= 20f) log.DanceCov20 = Coverage(c, 3.2f);
-                // the figure as it stands over the drum's last 5 s: one instant reads the packs mid-swing between frames
-                if (into >= DrumSeconds - 5f && step % 10 == 0) log.DanceCovLate = MathF.Max(log.DanceCovLate, Coverage(c, 3.2f));
-            }
-            if (dir.IsFinalForm && step % 10 == 0)
-            {
-                float lc = Coverage(c, 3.2f);
-                if (lc > log.LionCoverage && o.Tag != null) Dump(c, o.Tag + "_lion");
-                log.LionCoverage = MathF.Max(log.LionCoverage, lc);
-            }
-            c.SwimTarget = (o.Rogue && !dir.IsFinalForm ? s.ExitPoint + s.ExitNormal * 400f : dir.Goal) / UnitScale;
-            Step(c);
-            c.Events.Clear();
-            // the sealed exit, as every peer applies it to its own swarm (TandavaController -> SwarmFauna.TryNudge)
-            var hold = dir.SealCorrection(c.Anchor * UnitScale);
-            if (hold != Vector3.Zero) c.Translate(hold / UnitScale);
-            if (!dir.IsFinalForm) log.MaxOutward = MathF.Max(log.MaxOutward, Vector3.Dot(c.Anchor * UnitScale - s.ExitPoint, s.ExitNormal));
+                UnitScale = UnitScale, PrismScale = 1f,
+                DefaultHalf = new[] { Vector3.One, Vector3.One, Vector3.One, Vector3.One },
+            }, TickHz) { SwimTarget = c.SwimTarget };
+            quiet.Prime();
+            int quietDanger = Enumerable.Range(0, c.Cap).Count(i => c.Active[i] && quiet.Instances[i].Tier == 1);
+            Check(quietDanger == 0, $"{key}: without PlanDanger (every shipped swarm) the same plates show no danger ({quietDanger})");
         }
-        log.FlamesEverGuarded = everGuarded.Count(x => x);
-        log.GuardedShare = flameSamples > 0 ? guardedSamples / (float)flameSamples : 0f;
-        if (dir.Outcome == TandavaOutcome.DanceBroken && o.MoltBackSteps > 0)
+
+        // ── T7: a free run - nobody stops it: through all four forms and its last feast, inside the cell
+        Console.WriteLine("T7 a free run");
+        foreach (var (picks, seed) in new[] { (new[] { 0, 0, 0, 0 }, 31), (new[] { 1, 2, 1, 2 }, 37), (new[] { 2, 1, 2, 1 }, 41) })
         {
-            // the glue on a broken dance: the figure falls back into the last beast it ate its way to - a molt, never a kill
-            log.AliveAtBreak = Live(c);
-            int before = _selfDeaths;
-            c.RequestPlan(forms[dir.LastEaterIx].PlanIndex);
-            for (int q = 0; q < o.MoltBackSteps; q++) { Step(c); c.Events.Clear(); }
-            log.DeathsAfterBreak = _selfDeaths - before;
-            log.AliveAfterBreak = Live(c);
+            var s = MakeSim(b, picks, seed);
+            RunFor(s, DirectorSettings().MatchSeconds + 5f);
+            var d = s.D;
+            string tag = string.Join("", picks);
+            Console.WriteLine($"    picks {tag}: {d.Outcome} at {d.Clock:F0} s - {Timeline(s)}; {s.Meals} meals " +
+                              $"(fed/bare/full/broken/long {string.Join("/", s.MealEnds)}, {s.MealSeconds / Math.Max(1, s.Meals):F1} s and " +
+                              $"{s.MealVolumeEaten / Math.Max(1f, s.MealSeconds):F0} volume/s a meal), max radius {s.MaxRadius:F0}, ate {s.Eaten:F0}");
+            Check(d.Outcome == TandavaOutcome.Completed && s.Commits.Select(x => x.form).SequenceEqual(new[] { 1, 2, 3 }),
+                  $"picks {tag}: Great Serpent -> Many-Headed -> Lord of the Dance -> Sea Lion -> the cycle completes");
+            Check(d.Clock < 0.85f * DirectorSettings().MatchSeconds,
+                  $"unopposed it completes in {d.Clock:F0} s, inside the {DirectorSettings().MatchSeconds:F0} s clock - the pilots must take time OFF it");
+            Check(s.LaidWhileFeeding == 0, "it never laid an egg while it ate (the hold: it cannot heal at the table)");
+            Check(s.MaxRadius <= DirectorSettings().RoamRadius + 40f, $"it never left the cell (max radius {s.MaxRadius:F0} of {DirectorSettings().RoamRadius:F0})");
+            if (s.RiseAt >= 0f)
+                Check(Vector3.Distance(s.RiseAnchor, d.DancePoint) <= DirectorSettings().DanceReach + 20f,
+                      $"it rose where it stood ({Vector3.Distance(s.RiseAnchor, d.DancePoint):F0} u from the dance ground)");
+            if (seed == 31) Dump(s.C, "free_run_end");
         }
-        Console.WriteLine($"    race: {dir.Outcome} as {plans[dir.FormIx].Kind} at {dir.Clock:F0} s ({dir.Phase}), {log.Stops} stops, " +
-                          $"oasis {dir.OasisIx}/{oases.Length}, {Live(c)} alive, {log.Sheds} shed, flames out {dir.FlamesOut}, " +
-                          $"food left by oasis {string.Join("/", Enumerable.Range(0, oases.Length).Select(q => (int)plants.Select((p, j) => p.oasis == q ? plantStore[j] : 0f).Sum()))}");
-        return log;
+
+        // ── T8: threat and mood - a pilot charging it makes it wary, then bolt AWAY, faster; alone again it calms
+        Console.WriteLine("T8 threat and mood");
+        {
+            var s = MakeSim(b, new[] { 0, 0, 0, 0 }, 43);
+            RunFor(s, 20f);
+            var c = s.C;
+            var pilot = new Pilot { At = c.Anchor * UnitScale + Vector3.Normalize(new Vector3(0.3f, 0.2f, 1f)) * 800f };
+            s.Pilots.Add(pilot);
+            float wary = -1f, flee = -1f, fleeSpeed = 0f; bool away = true; int awaySamples = 0;
+            for (int q = 0; q < 200 && s.D.Outcome == TandavaOutcome.Running; q++)
+            {
+                var a0 = c.Anchor;
+                Tick(s, x =>
+                {
+                    var to = x.C.Anchor * UnitScale - pilot.At; float dd = to.Length();
+                    pilot.Vel = dd > 80f ? to / dd * 130f : Vector3.Zero;   // it charges, and stays on the body
+                });
+                if (wary < 0 && s.D.Mood >= TandavaMood.Wary) wary = s.Now;
+                if (s.D.Mood == TandavaMood.Fleeing)
+                {
+                    if (flee < 0) flee = s.Now;
+                    away &= Vector3.Dot(s.D.Goal - c.Anchor * UnitScale, pilot.At - c.Anchor * UnitScale) < 0f;
+                    awaySamples++;
+                    fleeSpeed = MathF.Max(fleeSpeed, Vector3.Distance(c.Anchor, a0) * UnitScale * TickHz);
+                }
+            }
+            Check(wary >= 0f && flee >= wary, $"charged, it turned wary at {wary:F1} s and bolted at {flee:F1} s");
+            Check(away && awaySamples > 0, "fleeing, it always aims AWAY from the pilot");
+            Check(fleeSpeed >= 1.6f * Cruise * UnitScale * TickHz, $"fleeing, it swims at up to {fleeSpeed:F0} u/s");
+            float left = s.Now;
+            pilot.Vel = Vector3.Zero; pilot.At = new Vector3(5000f, 0f, 0f);   // the pilot goes away
+            float calm = -1f;
+            for (int q = 0; q < 300 && calm < 0f && s.D.Outcome == TandavaOutcome.Running; q++)
+            {
+                Tick(s);
+                if (s.D.Mood == TandavaMood.Calm) calm = s.Now - left;
+            }
+            Check(calm >= 0f && calm < 20f, $"alone again, it calmed in {calm:F1} s");
+        }
+
+        // ── T9: where it chooses to eat - away from a pilot parked at a plant
+        Console.WriteLine("T9 where it eats");
+        {
+            var forms = BuildForms(b, new[] { 0, 0, 0, 0 });
+            var st = new TandavaSwarmState { Alive = forms[0].PlanCount, Anchor = Vector3.Zero, Forward = Vector3.UnitX, Up = Vector3.UnitY, Side = Vector3.UnitZ };
+            var food = new List<TandavaFood>
+            {
+                new() { Id = 1, Position = new Vector3(0, 0, 600), Volume = 4000 },
+                new() { Id = 2, Position = new Vector3(0, 0, -620), Volume = 4000 },
+            };
+            int Pick(List<TandavaPilot> pilots)
+            {
+                var d = new TandavaDirectorCore(forms, DirectorSettings(), 1);
+                for (int q = 0; q < 5; q++) d.Tick(0.1f, st, food, pilots);
+                return d.TargetFood;
+            }
+            int alone = Pick(new List<TandavaPilot>());
+            int guarded = Pick(new List<TandavaPilot> { new() { Position = new Vector3(0, 0, 640) } });
+            Check(alone == 1, $"alone it goes to the nearer plant (food {alone})");
+            Check(guarded == 2, $"with a pilot parked by the nearer plant it goes to the far one (food {guarded})");
+        }
+
+        // ── T10: the broken meal - hurt at the table it bolts; it did not heal while it ate, and it regrows after
+        Console.WriteLine("T10 the broken meal");
+        {
+            var s = MakeSim(b, new[] { 1, 1, 1, 1 }, 47);
+            s.C.Stomach[1] = 0.25f * StomachCapacity;   // it has eaten before: the test is the meal, not the hatchling
+            while (!s.D.Feeding && s.D.Outcome == TandavaOutcome.Running && s.Now < 120f) Tick(s);
+            Check(s.D.Feeding, $"it reached a plant and began to eat at {s.Now:F0} s");
+            float began = s.Now;
+            int plan = s.D.Form.PlanCount;
+            int full = Active(s.C);
+            Tick(s); Tick(s);
+            int target = (int)(0.22f * plan), killed = 0;
+            float brokenAt = -1f;
+            s.Pilots.Add(new Pilot { At = s.C.Anchor * UnitScale - s.C.BX * 60f });
+            for (int q = 0; q < 40 && brokenAt < 0f; q++)
+            {
+                Tick(s, x =>
+                {
+                    if (killed >= target) return;
+                    // strike the BODY, not the head: cut from the tail, sparing the plates round the mouth
+                    int n = Cut(x.C, Math.Min(12, target - killed), x.C.BX, i => x.C.EffectiveElement(i) == 0);
+                    killed += n; x.Lost += n;
+                });
+                if (!s.D.Feeding) brokenAt = s.Now;
+            }
+            Check(brokenAt > 0f && s.MealsBroken == 1 && s.D.Mood == TandavaMood.Fleeing,
+                  $"cut by {killed} ({killed / (float)plan:P0}) mid-meal, the meal broke {brokenAt - began:F1} s in and it bolted");
+            Check(s.LaidWhileFeeding == 0, "it laid nothing while it ate");
+            float t0 = s.Now;
+            s.Pilots.Clear();
+            while (Active(s.C) < 0.9f * full && s.Now - t0 < 30f) Tick(s);
+            Check(Active(s.C) >= 0.9f * full, $"away from the table it regrew to 90% in {s.Now - t0:F1} s - the same form, remembered");
+        }
+
+        // ── T11: denial - break every meal, and the clock runs out on it (or it starves to pieces)
+        Console.WriteLine("T11 denial");
+        {
+            var s = MakeSim(b, new[] { 0, 1, 2, 0 }, 53);
+            float strikeAt = -1f; int killedThisMeal = 0;
+            RunFor(s, DirectorSettings().MatchSeconds + 5f, x =>
+            {
+                if (!x.D.Feeding || x.Now < 25f) { strikeAt = -1f; killedThisMeal = 0; return; }   // they spawn across the cell
+                if (strikeAt < 0f) strikeAt = x.Now + 3f;   // the pilots arrive three seconds into every meal
+                if (x.Now < strikeAt) return;
+                int target = (int)(0.21f * x.D.Form.PlanCount);
+                if (killedThisMeal >= target) return;
+                int n = Cut(x.C, Math.Min(12, target - killedThisMeal), x.C.BX, i => x.C.EffectiveElement(i) == 0);
+                killedThisMeal += n; x.Lost += n;
+            });
+            var d = s.D;
+            Console.WriteLine($"    {d.Outcome} at {d.Clock:F0} s as the {d.Form.Name}: {s.Meals} meals, {s.MealsBroken} broken; {Timeline(s)}");
+            Check(PilotsWon(d.Outcome), $"every meal broken, the pilots win ({d.Outcome})");
+            Check(d.FormIx <= 1, $"it never reached the dance ({d.Form.Name})");
+        }
+
+        // ── T12: the dance - it rises in place; break the halo and the dance is broken; let the drum end and it is the Sea Lion
+        Console.WriteLine("T12 the dance");
+        foreach (bool pilotsThread in new[] { false, true })
+        {
+            var s = MakeSim(b, new[] { 2, 2, pilotsThread ? 1 : 0, 0 }, pilotsThread ? 59 : 61);
+            s.C.Stomach[1] = 0.95f * StomachCapacity;   // a stuffed stomach: it banks its way straight up to the dance
+            for (int e = 0; e < 4; e++) if (e != 1) s.C.Stomach[e] = 0.05f * StomachCapacity;
+            float nextTry = 0f; int tries = 0, repelled = 0;
+            RunFor(s, 260f, x =>
+            {
+                if (!pilotsThread || !x.D.InDance || x.Post == null || x.Now < nextTry) return;
+                nextTry = x.Now + 1.5f;
+                var open = Enumerable.Range(0, HaloCount).Where(k => !x.D.HaloIsOut(k)).ToList();
+                if (open.Count == 0) return;
+                int k = open[x.Rng.Next(open.Count)];
+                tries++;
+                if (Guarded(x, k)) repelled++;
+                else x.D.BreakHalo(k);
+            });
+            var d = s.D;
+            float guarded = s.HaloSamples > 0 ? s.GuardedSamples / (float)s.HaloSamples : 0f;
+            Console.WriteLine($"    {(pilotsThread ? "pilots threading" : "nobody threading")}: {d.Outcome} at {d.Clock:F0} s - {Timeline(s)}; " +
+                              $"halo {d.HaloOut}/{HaloToBreak} ({tries} tries, {repelled} held by the attendants), guarded {guarded:P0} of the time");
+            Check(s.RiseAt >= 0f && s.DanceAt - s.RiseAt >= DirectorSettings().RiseSeconds - 0.2f,
+                  $"it rose into the Lord of the Dance and the halo lit {s.DanceAt - s.RiseAt:F1} s later (the figure assembles first)");
+            if (pilotsThread) Check(d.Outcome == TandavaOutcome.DanceBroken, $"nine rings broken before the drum stops: the dance is broken ({d.Outcome})");
+            else Check(s.Commits.Any(x => x.form == 3) && s.Commits.Last(x => x.form == 3).t - s.DanceAt >= DirectorSettings().DrumSeconds - 0.2f,
+                       "nobody threads: when the drum stops it is the Sea Lion");
+            Check(guarded > 0.05f, $"the attendant packs guard the halo some of the time ({guarded:P0})");
+        }
+
+        // ── T13: the shatter - the pilots' strike: a body cut below a third of its form, once armed
+        Console.WriteLine("T13 the shatter");
+        {
+            var forms = BuildForms(b, new[] { 0, 0, 0, 0 });
+            int n = forms[0].PlanCount;
+            TandavaOutcome After(int alive, bool starving)
+            {
+                var d = new TandavaDirectorCore(forms, DirectorSettings(), 1);
+                var st = new TandavaSwarmState { Alive = n, Anchor = Vector3.Zero, Forward = Vector3.UnitX, Up = Vector3.UnitY, Side = Vector3.UnitZ };
+                d.Tick(0.1f, st, null, null);
+                st.Alive = alive; st.Starving = starving;
+                d.Tick(0.1f, st, null, null);
+                return d.Outcome;
+            }
+            Check(After((int)(0.3f * n), false) == TandavaOutcome.Shattered, "cut to 30% of its body: shattered");
+            Check(After((int)(0.3f * n), true) == TandavaOutcome.Starved, "starving and down to 30%: starved");
+            Check(After((int)(0.5f * n), false) == TandavaOutcome.Running, "at half its body it fights on (it regrows if it can eat)");
+            Check(After(0, false) == TandavaOutcome.Wiped, "every member dead: wiped out");
+        }
+
+        // ── T14: every match draws its own animals
+        Console.WriteLine("T14 the variants");
+        {
+            var seen = new int[4, 3];
+            bool round = true;
+            for (int seed = 1; seed <= 300; seed++)
+            {
+                var picks = TandavaDirectorCore.DrawVariants(seed, new[] { 3, 3, 3, 3 });
+                for (int f = 0; f < 4; f++) seen[f, picks[f]]++;
+                int packed = TandavaDirectorCore.Pack(picks);
+                for (int f = 0; f < 4; f++) round &= TandavaDirectorCore.Unpack(packed, f) == picks[f];
+            }
+            bool all = true;
+            for (int f = 0; f < 4; f++) for (int v = 0; v < 3; v++) all &= seen[f, v] > 40;
+            Check(all, "over 300 matches every variant of every form is drawn (each at least 40 times)");
+            Check(round, "the picks pack into one int and back (replicated once)");
+            Check(TandavaDirectorCore.DrawVariants(99, new[] { 3, 3, 3, 3 }).SequenceEqual(TandavaDirectorCore.DrawVariants(99, new[] { 3, 3, 3, 3 })),
+                  "the same seed draws the same animals (every peer agrees)");
+        }
+
+        // ── T15: the clock - a cycle not completed in time is held off
+        Console.WriteLine("T15 the clock");
+        {
+            var forms = BuildForms(b, new[] { 0, 0, 0, 0 });
+            var s = DirectorSettings(); s.MatchSeconds = 2f;
+            var d = new TandavaDirectorCore(forms, s, 1);
+            var st = new TandavaSwarmState { Alive = forms[0].PlanCount, Anchor = Vector3.Zero, Forward = Vector3.UnitX, Up = Vector3.UnitY, Side = Vector3.UnitZ };
+            for (int q = 0; q < 25; q++) d.Tick(0.1f, st, null, null);
+            Check(d.Outcome == TandavaOutcome.HeldOff, $"the clock ran out at {d.Clock:F1} s: held off ({d.Outcome})");
+        }
+
+        Console.WriteLine(_fail == 0 ? "\ntandava: OK" : $"\ntandava: {_fail} FAILED");
+        return _fail;
     }
 }

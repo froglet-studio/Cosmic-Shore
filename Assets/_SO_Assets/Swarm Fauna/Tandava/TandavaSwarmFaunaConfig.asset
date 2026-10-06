@@ -20,19 +20,49 @@ MonoBehaviour:
   SpacePlan: {fileID: 4900000, guid: 337aaa14d97dd0a87399f1d0223ec939, type: 3}
   TimePlan: {fileID: 4900000, guid: db839ccf55616a4c67e38f69d7927a62, type: 3}
   ScriptedPlans:
-  - {fileID: 4900000, guid: 0b2d265cb28ab8d5ecca936946de86c2, type: 3}
-  - {fileID: 4900000, guid: 4a7e5791dc5247e4be99da27c174defa, type: 3}
-  - {fileID: 4900000, guid: 53adf7bd6c33b03051ad74562b3c2af7, type: 3}
-  - {fileID: 4900000, guid: 5d46092a03bf4c0b852a49887a29379c, type: 3}
-  - {fileID: 4900000, guid: 8cc15d08cc7f4536484d40e01e0511e8, type: 3}
-  - {fileID: 4900000, guid: 28349b6ae3a205be7373371e69aefc85, type: 3}
+  - {fileID: 4900000, guid: a1589cf87057960e08782033a61d6c18, type: 3}
+  - {fileID: 4900000, guid: 301d28bdf8ed3927be1ba381f8f03922, type: 3}
+  - {fileID: 4900000, guid: c4b3e9fbf9e3479add7322329d614783, type: 3}
+  - {fileID: 4900000, guid: 314522d1607a8f717520feabd865ab5c, type: 3}
+  - {fileID: 4900000, guid: c5b180500399132b1df94c845c89c93b, type: 3}
+  - {fileID: 4900000, guid: 407c2b62295d6645550efcd1f027182a, type: 3}
+  - {fileID: 4900000, guid: ef16320dbd960c290125375a8e7a0492, type: 3}
+  - {fileID: 4900000, guid: d58f0c0a90371cb3d226069556a09e80, type: 3}
+  - {fileID: 4900000, guid: ab6be453d56c64666fd2ccbaca2d5f9a, type: 3}
+  - {fileID: 4900000, guid: affd3cc1b7dc21e9371c626076af1cf0, type: 3}
+  - {fileID: 4900000, guid: 35d96503f3557eef4629d917ba1fde55, type: 3}
+  - {fileID: 4900000, guid: 0af71cd95bc87df145fcd9911d77f438, type: 3}
+  - {fileID: 4900000, guid: e4dc8630cac7380b1515d95fb2209f65, type: 3}
+  - {fileID: 4900000, guid: ea132811d53ee96cce8f75161b9d1446, type: 3}
+  - {fileID: 4900000, guid: d779594b3a418b6f34302f2086da0047, type: 3}
+  - {fileID: 4900000, guid: fa60fc875dfd19e53720bb1c682486e5, type: 3}
+  - {fileID: 4900000, guid: 347c95bb7493d8f2231c2a589367d37c, type: 3}
+  - {fileID: 4900000, guid: 28a4204b1358d83b050f83d58a2702be, type: 3}
+  - {fileID: 4900000, guid: 4588492656707f26775517d92cf906c9, type: 3}
+  - {fileID: 4900000, guid: c6804f2f3b18a5b709d75a7613fa3130, type: 3}
+  - {fileID: 4900000, guid: 0d73d0b85a0407c846787f313503a951, type: 3}
   ScriptedPlanPeriods:
   - 6
-  - 6
-  - 6
+  - 40
   - 6
   - 40
+  - 6
+  - 40
+  - 6
+  - 40
+  - 6
+  - 40
+  - 6
+  - 40
+  - 40
+  - 40
+  - 40
   - 12
+  - 40
+  - 12
+  - 40
+  - 12
+  - 40
   TadpolePrefab: {fileID: 5945480239701989318, guid: 66504f098e300c8a60c29e3d931eaa0a, type: 3}
   UnitScale: 2
   TickHz: 10
@@ -49,12 +79,12 @@ MonoBehaviour:
   MaxHitMaterialisationsPerFrame: 48
   UnifiedPrismBodies: 1
   MacroLod: 0
-  SeedMembers: 48
+  SeedMembers: 180
   BiteRadius: 10
-  BitersPerStep: 1
+  BitersPerStep: 8
   EggVolume: {x: 20.45, y: 40.31, z: 22.18, w: 12.8}
   CrossElementCost: 2
-  StomachEggs: 240
+  StomachEggs: 500
   ForageBelow: 0.5
   SatedAbove: 0.9
   GiveUpSeconds: 10
@@ -62,12 +92,13 @@ MonoBehaviour:
   LayRate: 0.2
   LayMax: 16
   MaxSpawnsPerFrame: 24
-  KillLayHoldSeconds: 2
+  KillLayHoldSeconds: 0
   StarvationSeconds: 30
   ShedIntervalSeconds: 0.25
   ExtinctLingerSeconds: 10
-  Cruise: 2.5
+  Cruise: 3
   TurnPerStep: 0.03
+  SortTurnCarry: 1
   WanderReach: 300
   VesselRadius: 9
   SenseMargin: 400
@@ -118,7 +149,7 @@ MonoBehaviour:
   SortFeedForward: 1
   SortDwell: 12
   SortLayRate: 0.084
-  SortLayMax: 5
+  SortLayMax: 8
   SortCrossChance: 0.466
   SortFillTolerance: 0.15
   SortBodyFill: 0.939
@@ -132,7 +163,7 @@ MonoBehaviour:
   SortUpdateFraction: 8
   SortBudAtWound: 1
   SortFateNear: 1
-  SortLayRampSeconds: 12
+  SortLayRampSeconds: 1.5
   EvoRule: {fileID: 4900000, guid: 5e7a9fa52ba5247800582378f4795aa7, type: 3}
   EvoPull: 2
   EvoDeadZone: 1.5

@@ -4288,7 +4288,93 @@ The **Rhino's energised sword** lands a Strike and drains nothing — it is now 
 verb with no drain path. Arming it is a Rhino kit decision (a skimmer drain SO on the sword's
 container), not a number, so it is reported rather than done.
 
-## 🔴 Tandava — the co-op arena swarm race (`claude/tandava-arena-mode`, 2026-10-06) — NOT EDITOR-VERIFIED
+## 🔴 Tandava — the co-op arena hunt (`claude/tandava-arena-mode`, 2026-10-06) — NOT EDITOR-VERIFIED
+
+**The second design (2026-10-06) supersedes everything from "What landed" down to QA-TANDAVA-8 below** (kept as the
+record of the first design; its route, exit, oases, bull, winged lion and ring of fire are gone). One creature in a
+CLOSED standard cell (`CapsuleMembrane`, radius 1,200) with 16 dispersed Borromean plants. It hatches WHOLE as the Great
+Serpent and forages where it likes, its speed and behaviour set by THREAT (calm 60 u/s, wary 90, fleeing 126; the turn up
+to 2.5x with the whole body carried round it, `SortTurnCarry`). Feeding, it takes its feed twin - its Charge plates out
+round its mouth as DANGER plates (`SwarmTickSettings.PlanDanger`) - and stops regrowing (`SetLevers` hold); losing 20%
+of its body at one meal breaks it and it bolts. Otherwise a cut regrows within about a second (no kill-lay-hold). Banked
+(rising stomach shares 0.35 / 0.6 / 0.85) it becomes the Many-Headed Serpent (5, 7 or 10 heads), rises in place into the
+Lord of the Dance inside a halo of twelve pearl `TandavaHaloRing` switch rings (`ToySwitchSignal.Halo`, was `Flame`) with
+a 30 s drum and a gold cell, then the Sea Lion, whose last feast completes the cycle. A variant of each form is drawn
+per match. No fire anywhere: the effect is gold prism debris (`TandavaGoldBurst`). Pilots win by shattering it (below
+35% of its form), breaking the halo (9 of 12, `EndConditionOverrides.tandavaHaloRingsToBreak`), wiping it out, starving
+it, or holding it off for 7 minutes. The top-left goal stack draws the mode's own rows (`IGoalSource`). Design and
+status: `Assets/_Scripts/Controller/Arcade/TANDAVA.md`.
+
+**Compiled? Headless only.** `/verify-unity` could NOT run: the authoring session had no Unity editor and no `unity`
+CLI. What did run: `unity_refcompile` player config (0 errors in project code, none of the changed files in any
+unverifiable bucket); the editor config (4 errors, all in files this branch does not touch - `CameraSettingsSOEditor`,
+`ResourceDisplay`, `UniversalStatsProviderEditor`, last changed by the port's `aeba7a88`; the three changed Editor files
+compile); `swarm_glue_typecheck`; the swarm harness - Tandava T1-T15 and the untouched field / grid / sort / evofate /
+round 11d / tick job / lineage / LOD suites, all pass; `author_tandava_assets.py --check` (88 files) and `--self-test`
+(16 of 16 scene checks fire on the donor); `tandava_plans.py`; `render_card_backgrounds.py` (the Tandava card
+re-rendered); `check_console_logging`, `check_conditional_compilation`, `check_gamelist_scenes`,
+`author_arena_launch_panel_layout --check` (`check_vessel_class_icons` reports only the Butterfly's empty icons -
+untouched, not on this card). Nothing has run in the Editor; `ToySwitchVocabularyTests` (the `Halo` colour) has not
+been executed.
+
+### QA-TANDAVA-9 — the hunt runs: it hatches whole, forages, flees (solo, any hull)
+
+1. Open `MinigameTandava.unity`: no `Missing (Mono Script)`; the controller shows `settings = TandavaSettings`,
+   `rule = TandavaScoringRule`; the Cell lists `Tandava Cell Config` (the standard membrane, not Cleave).
+2. Launch from the **Arena** screen (Rhino / Squirrel / Sparrow). During the ready screen a Great Serpent (450-510
+   tadpoles) assembles at x = -650 - WHOLE, not a young serpent growing - while 16 Borromean plants stand dispersed.
+3. After the go, leave it alone: it swims plant to plant (~60 u/s), lines its head up on each, and the goal rows (top
+   left) read its name and a rising percentage, "Roaming", "Body 100%", "Time left 6:59".
+4. Charge it: row 2 turns "Wary", then "Fleeing", and it bolts AWAY from you visibly faster (~125 u/s) and turns harder,
+   its body turning as ONE piece (no tail strung out behind). Back off: it calms within a few seconds.
+5. Record: does a fleeing creature outrun each hull? (the model: the Sparrow can just keep up, the Squirrel and Rhino catch it)
+
+### QA-TANDAVA-10 — feeding: the guards, the vulnerability, the broken meal
+
+1. Watch it reach a plant: its hood plates leave its head and orbit its mouth (red DANGER plates, ~40 u round the
+   plant); row 2 reads "Feeding - strike the body"; the first time, the narrator says so.
+2. Fly into a guard plate: your hull is burned and slowed (the danger-prism effect). Fly through the BODY behind the ring:
+   the cut stays cut while it eats (no regrowth at the table).
+3. Cut ~20% of it during one meal: the meal breaks ("Its meal is broken. It bolts."), it flees, and the cut regrows
+   within about a second once it is away (if it has eaten before).
+4. Record the meal length and how much a plant loses per meal (the model: 7-10 s, most of a 60-prism plant).
+
+### QA-TANDAVA-11 — the forms, the goals tab, the gold
+
+1. Let it feed: on each change the old shape bursts into GOLD prism shards (no fire, no red flames anywhere), a gold
+   light flashes over it, the primary goal row FLARES with the new name ("Seven-Headed Serpent", say), and a toast names it.
+2. The Many-Headed Serpent: when it eats, every head dips to the food in a ring round the plant.
+3. Cut its limbs at any form outside a meal: they regrow quickly and it stays that form (it never shrinks back a form).
+4. Replay a few matches: the variants differ (the serpent's length and hood, the head count 5 / 7 / 10, the dancer's pose,
+   the sea lion's fluke and fins).
+
+### QA-TANDAVA-12 — the ascension: the rise, the halo, the drum, the Sea Lion
+
+1. Banked, the Many-Headed Serpent rises where it stands into the Lord of the Dance; the cell blooms and eases to GOLD
+   (and only now - every other form, the cell keeps its own colours); the figure assembles ~12 s.
+2. Twelve pearl halo rings light round it; row 1 reads "Halo rings broken 0/9", row 3 the drum. The attendant packs
+   patrol, and a ring they sit on DIMS and cannot be broken.
+3. Thread open rings: each breaks with a gold burst and scores 25; nine before the drum stops breaks the dance (the
+   figure falls back into the serpent; "The dance is broken").
+4. Let the drum run out instead: it becomes the Sea Lion (row 1: "Sea Lion - the last feast"), the cell eases back to
+   its own colours, and its last feast completes the cycle (the pilots lose) unless they shatter it or the clock runs out.
+
+### QA-TANDAVA-13 — two peers, one animal (host + client, MPPM)
+
+1. Both see the same variants, the same form at the same moment (burst, flare, toast), the same moods, the halo in the
+   same place, and the creature in the same place (the client's nudged within ~25 u).
+2. A CLIENT threading a ring breaks it on both machines (reported, the server checks the guard and the distance).
+3. A client that joins late hatches the first variant and re-sorts into the drawn one at once (watch for a visible snap).
+
+### QA-TANDAVA-14 — nothing else moved
+
+1. **The Swarm cell's swarms are unchanged** (no scripted plans: no levers, no turn carry, no plan danger): kill a majority,
+   it still morphs; its research plans' tier-1 marks still show no danger at rest.
+2. Every other mode's goal stack still draws its metric row (`GoalStack.Source` is null outside Tandava).
+3. Every other switch is unchanged: the toybox's Neutral and Domain switches, Switchback's lime Next gate.
+4. `EndConditionOverrides` (FrogletTools > Game Modes > End Game Conditions) shows "Tandava - Halo Rings to Break the
+   Dance" = 9 and the shatter percent = 35, and the asset's old `tandavaFlamesToBreak` value carried across.
+
 
 **What landed.** A new arena card, `GameModes.Tandava = 62` (Rhino / Squirrel / Sparrow, every pilot on ONE
 domain), scene `MinigameTandava`, every asset authored by `Tools/Build/author_tandava_assets.py`. A tadpole swarm

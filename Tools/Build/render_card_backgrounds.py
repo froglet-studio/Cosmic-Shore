@@ -671,8 +671,8 @@ CAMERAS = {
     # Broadside and Sirocco the forest with Rampage / Bends / Bloomrush, so each gets its own angle.
     "Waystation": (35, 30, 0.95, 42), "Dustup": (165, 28, 0.62, 46), "Tapestry": (40, 24, 0.95, 42),
     "Sirocco": (320, 10, 0.66, 46),
-    # Tandava: from beside and behind the hatch end, down the course toward the exit
-    "Tandava": (250, 38, 0.95, 46),
+    # Tandava: from above the feeding serpent's flank, its guarded head and the plant in the shot
+    "Tandava": (35, 30, 0.95, 44),
 }
 
 # Pilots in the shot: (domain, radius fraction, tilt, start angle, sweep). None = generic trio.
@@ -898,49 +898,47 @@ def recipe(stem, card_path, pal, ends):
         stage["radius"] = nuc * 1.3
         stage["centre"] = [0, 0, 0]
     elif s == "Tandava":
-        # MODEL tier. The route is the controller's own settings asset (TandavaSettings: the oases, in order);
-        # the forest is the cell's three flora forks planted into their PENS (one sector cone per oasis,
-        # FloraConfigurationSO.PlantingPens), each plant a Borromean glyph; the swarm is the Great Serpent's OWN body
-        # plan (frame 0 of SwarmPlan_tandava_serpent_l.json), unit for unit at x3 glyph scale - the real body is
-        # ~140 u, sub-pixel at card size - in the cell's hostile colour, mid-course and heading for the exit. The
-        # membrane wears the cell's OWN colours: Tandava's cell changes only for the dance (TANDAVA.md §3.3), and a
-        # serpent on the route is the cell as a pilot sees it nearly all match.
+        # MODEL tier. The cell is CLOSED and its flora DISPERSED: the planting is the cell's own two forks drawn as
+        # ModePreviewPlantingModel draws them (each fork's count, volume-uniform radii in its band), each plant a
+        # Borromean glyph. The creature is the Great Serpent FEEDING - the mode's moment, and the one a pilot strikes:
+        # its OWN feed-twin plan (frame 0 of SwarmPlan_tandava_great_serpent_1_feed.json), unit for unit at 2.2x its
+        # world size so the body reads at card size, its mouth on a plant and its plates out round the mouth as DANGER
+        # guards, in the cell's hostile colour. The membrane wears the cell's OWN colours: Tandava's cell changes only
+        # for the dance (TANDAVA.md §3.3).
         tier = "MODEL"
         rng = Rng(stable_seed(s))
-        rows = []
-        prof = read(facts["profile"])
-        floras = re.search(r"^  SupportedFloras:\n((?:  - .*\n)+)", prof, re.M).group(1)
-        for fg in re.findall(r"guid: (\w+)", floras):
-            body = read(asset(fg))
-            count = int(re.search(r"^  InitialSpawnCount: (\d+)", body, re.M).group(1))
-            pens = re.findall(r"  - Axis: \{x: (-?[\d.]+), y: (-?[\d.]+), z: (-?[\d.]+)\}\n    HalfAngle: ([\d.]+)\n"
-                              r"    InnerFraction: ([\d.]+)\n    OuterFraction: ([\d.]+)", body)
-            prefab = ref(body, "FloraPrefab").stem
-            for k in range(count):
-                ax, ay, az_, half, inner, outer = (float(v) for v in pens[k % len(pens)])
-                axis = v_norm([ax, ay, az_])
-                r = rng.range(inner * R, outer * R)
-                side = v_norm(v_cross(axis, [0, 1, 0]))
-                upv = v_cross(side, axis)
-                lat = r * math.tan(math.radians(half)) * rng.u() ** 0.5
-                phi = rng.range(0, 2 * math.pi)
-                pos = v_add(v_mul(axis, r), v_add(v_mul(side, lat * math.cos(phi)), v_mul(upv, lat * math.sin(phi))))
-                plant_glyph(prefab, pos, rng.unit(), 95 * rng.range(0.8, 1.2), GOLD if "Space" in body else JADE, rng, rows)
-        plan = json.loads(read(ROOT / "Assets/_SO_Assets/Swarm Fauna/Tandava/SwarmPlan_tandava_serpent_l.json"))
-        k_world = 2.0 * 3.0                  # UnitScale 2 x glyph scale 3
-        swarm_at = [-760.0, 40.0, 30.0]
+        rows, plants = [], []
+        for cfg_name, prefab, count, (inner, outer) in flora_species(facts):
+            i3, o3 = (inner * R) ** 3, (outer * R) ** 3
+            for _ in range(count):
+                u = rng.unit()
+                pos = v_mul(u, rng.range(i3, o3) ** (1 / 3))
+                plants.append(pos)
+                plant_glyph(prefab, pos, u, 95 * rng.range(0.8, 1.2), GOLD if "Space" in cfg_name else JADE, rng, rows)
+        plan = json.loads(read(ROOT / "Assets/_SO_Assets/Swarm Fauna/Tandava/SwarmPlan_tandava_great_serpent_1_feed.json"))
+        k_world = 2.0 * 3 ** (1 / 3) * 2.2   # UnitScale 2 x cbrt(PlanDensity 3) x 2.2
+        meal = min(plants, key=lambda p: abs(v_dot(v_norm(p), [0, 1, 0])))   # the plant nearest the equator
+        up = [0.0, 1.0, 0.0]
+        fwd = v_norm(v_cross(up, meal))       # the body lies ACROSS the cell, its head on the plant
+        side = v_cross(fwd, up)
+        mouth = plan["mouth"]
+        centre = v_sub(meal, v_mul(v_add(v_add(v_mul(fwd, mouth[0]), v_mul(up, mouth[1])), v_mul(side, mouth[2])), k_world))
         for u in range(plan["n"]):
-            p = v_add(swarm_at, v_mul(plan["pos"][3 * u:3 * u + 3], k_world))
+            q = plan["pos"][3 * u:3 * u + 3]
+            p = v_add(centre, v_mul(v_add(v_add(v_mul(fwd, q[0]), v_mul(up, q[1])), v_mul(side, q[2])), k_world))
             f = plan["face"][3 * u:3 * u + 3]
+            fw = v_add(v_add(v_mul(fwd, f[0]), v_mul(up, f[1])), v_mul(side, f[2]))
             h = plan["half"][3 * u:3 * u + 3]
-            rows.append(prism(p, f if v_dot(f, f) > 1e-6 else [1, 0, 0], [0, 1, 0],
+            danger = plan["elem"][u] == 0 and plan["tier"][u] == 1
+            rows.append(prism(p, fw if v_dot(fw, fw) > 1e-6 else fwd, up,
                               # each unit drawn at 1.8x its own prism so the body reads as one animal at card size
-                              [2 * x * k_world * 1.8 for x in h], RUBY, SHIELDED if plan["elem"][u] == 0 else PLAIN))
+                              [2 * x * k_world * 1.8 for x in h], RUBY, DANGER if danger else PLAIN))
         layers.append({"kind": "prisms", "rows": rows})
         nucleus()
-        cam["target"] = [-700.0, 20.0, 20.0]
-        cam["radius"] = 470.0
-        stage.update({"centre": swarm_at, "radius": 260.0,
+        body = v_add(centre, v_mul(fwd, -80.0))
+        cam["target"] = v_mul(v_add(body, meal), 0.5)
+        cam["radius"] = 400.0
+        stage.update({"centre": body, "radius": 260.0,
                       "vessels": [{"domain": JADE, "r": 0.9, "tilt": 12, "a0": 150, "sweep": 55, "yaw": 0},
                                   {"domain": JADE, "r": 1.3, "tilt": -18, "a0": 200, "sweep": 45, "yaw": 20},
                                   {"domain": JADE, "r": 1.1, "tilt": 30, "a0": 110, "sweep": 40, "yaw": -15}]})
@@ -1100,15 +1098,13 @@ def accents(s, layers, stage, cam, pal, R, card_path):
             p = v_add(v_add(a, v_mul(v_sub(b, a), k / 59)), v_mul(rng.unit(), span * 0.03))
             glow(p, span * rng.range(0.006, 0.012), GOLD, 1.2, 0.55)
     elif s == "Tandava":
-        # The two acts the mode scores on: culling (tracers into the serpent) and DENIAL (the oasis ahead burning in
-        # the pilots' colour before the swarm reaches it).
+        # The act the mode turns on: pilots striking the feeding body BEHIND its guards (tracers into the coils, none
+        # into the danger ring round the mouth).
         body = stage["centre"]
-        for k in range(5):
-            tgt = v_add(body, [rng.range(-120, 120), rng.range(-20, 30), rng.range(-30, 30)])
+        for k in range(4):
+            tgt = v_add(body, [rng.range(-150, 150), rng.range(-20, 30), rng.range(-30, 30)])
             src = v_add(tgt, [rng.range(-260, -120), rng.range(40, 120), rng.range(-160, 160)])
             streak(v_mul(v_add(src, tgt), 0.5), v_sub(tgt, src), math.dist(src, tgt), JADE)
-        for k in range(7):
-            glow([-550 + rng.range(-70, 70), rng.range(-40, 40), rng.range(-70, 70)], rng.range(28, 55), JADE, 1.0, 0.4)
     elif s == "Tapestry":
         # Dust mode over the cut in the Ruby wake: the raid that made the gap.
         p = jitter(0.2)

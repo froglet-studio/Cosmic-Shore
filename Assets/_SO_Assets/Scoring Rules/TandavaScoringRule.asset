@@ -14,4 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   metric: 7
   golfRules: 0
-  flamePoints: 25
+  haloPoints: 25

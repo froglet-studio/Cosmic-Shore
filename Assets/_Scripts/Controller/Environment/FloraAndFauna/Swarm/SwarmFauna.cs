@@ -186,7 +186,7 @@ namespace CosmicShore.Gameplay
         public int FormCount => _plans?.Length ?? 0;
         /// <summary>Members of form <paramref name="form"/>'s full body at this swarm's density.</summary>
         public int FormMemberCount(int form) => _plans != null && form >= 0 && form < _plans.Length ? _plans[form].N : 0;
-        /// <summary>Form <paramref name="form"/>'s plan kind (its baked name, e.g. "serpent_s").</summary>
+        /// <summary>Form <paramref name="form"/>'s plan kind (its baked name, e.g. "great_serpent_1").</summary>
         public string FormKind(int form) => _plans != null && form >= 0 && form < _plans.Length ? _plans[form].Kind : "";
         /// <summary>Ask a SCRIPTED swarm to commit form <paramref name="form"/> next tick (the director's one lever on shape).
         /// Ignored by a swarm whose census picks its plan.</summary>
@@ -194,6 +194,27 @@ namespace CosmicShore.Gameplay
         {
             if (_job != null && config.HasScriptedPlans) _job.RequestPlan(form);
         }
+        /// <summary>Ask a SCRIPTED swarm to re-arrange the body it wears into plan <paramref name="form"/> - a pose of the
+        /// same body (Tandava's feed twins: the same members, the protectors moved round the mouth). Unlike
+        /// <see cref="RequestForm"/> the commit does not restart the lay ease. Ignored by a census-planned swarm.</summary>
+        public void RequestPose(int form)
+        {
+            if (_job != null && config.HasScriptedPlans) _job.RequestPose(form);
+        }
+
+        float _cruiseScale = 1f, _turnScale = 1f;
+        bool _holdRegrowth;
+        /// <summary>
+        /// The director's motion and growth levers (Tandava): the body swims at <paramref name="cruiseScale"/> x its
+        /// config's cruise and turns at <paramref name="turnScale"/> x its turn rate, and lays no eggs while
+        /// <paramref name="holdRegrowth"/>. Main thread, any time; the next tick picks them up. Every other swarm leaves
+        /// them at rest (1, 1, false), which is exactly the authored behaviour.
+        /// </summary>
+        public void SetLevers(float cruiseScale, float turnScale, bool holdRegrowth)
+        {
+            _cruiseScale = cruiseScale; _turnScale = turnScale; _holdRegrowth = holdRegrowth;
+        }
+
         /// <summary>The body's centre in world space, as of the last published tick.</summary>
         public Vector3 AnchorWorld => _job != null ? Uni(_job.Anchor) : transform.position;
         /// <summary>The body's axes in world space as of the last published tick: its heading, its up, and its side
@@ -223,6 +244,28 @@ namespace CosmicShore.Gameplay
             return n;
         }
 
+        /// <summary>
+        /// Up to <paramref name="max"/> live members' world positions at their published pose, spread evenly over the
+        /// body (every k-th live member) - where a mode throws an effect FROM the animal (Tandava's gold burst at a form
+        /// change). Appends to <paramref name="into"/>; returns how many it added. O(members).
+        /// </summary>
+        public int SampleMemberPositions(List<Vector3> into, int max)
+        {
+            if (_job == null || into == null || max <= 0) return 0;
+            int alive = _job.AliveCount;
+            if (alive <= 0) return 0;
+            int every = Mathf.Max(1, alive / max), seen = 0, added = 0;
+            var inst = _job.Instances;
+            for (int i = 0; i < _cap && added < max; i++)
+            {
+                if (!inst[i].Alive || _gone[i]) continue;
+                if (seen++ % every != 0) continue;
+                into.Add(Uni(_job.PoseAt(i, _alpha)));
+                added++;
+            }
+            return added;
+        }
+
         /// <summary>Banked eaten volume of one research element (0 Charge .. 3 Time).</summary>
         public float StomachVolume(int element) => _job != null && element >= 0 && element < 4 ? _job.Stomach[element] : 0f;
         /// <summary>The stomach's fill, 0..1.</summary>
@@ -231,6 +274,11 @@ namespace CosmicShore.Gameplay
         public float StomachCapacityVolume => config ? StomachCapacity : 0f;
         /// <summary>Flora volume eaten since hatching (monotone).</summary>
         public float EatenTotal => _eatenTotal;
+        int _membersLost;
+        /// <summary>Members this swarm has lost since it hatched, to anything - pilots, predators, its own starvation.
+        /// Monotone; Tandava's director reads its rate as the damage half of the threat, and its rise over a meal as a
+        /// meal broken.</summary>
+        public int MembersLost => _membersLost;
         /// <summary>Seconds since the last bite (infinite before the first).</summary>
         public float SecondsSinceBite => _lastBiteTime < 0f ? float.PositiveInfinity : Time.time - _lastBiteTime;
         /// <summary>True while the swarm's unfed clock has run out and it is hungry - it is shedding members.</summary>
@@ -244,7 +292,7 @@ namespace CosmicShore.Gameplay
 
         SwarmPlanData PlanAt(int ix) => _plans[Mathf.Clamp(ix, 0, _plans.Length - 1)];
 
-        public override float CurrentSpeed => config ? config.Cruise * config.UnitScale * config.TickHz : 0f;
+        public override float CurrentSpeed => config ? config.Cruise * _cruiseScale * config.UnitScale * config.TickHz : 0f;
 
         /// <summary>A member's swim speed in world units/s - what a jouster has to outrun.</summary>
         public float MemberSpeed(int i) => _job != null && i >= 0 && i < _cap ? _job.Speed[i] : 0f;
@@ -328,8 +376,12 @@ namespace CosmicShore.Gameplay
             var tangent = heading.sqrMagnitude > 1e-6f ? heading
                 : Vector3.Cross(radial.sqrMagnitude > 1f ? radial.normalized : Vector3.forward, Random.onUnitSphere);
             if (tangent.sqrMagnitude < 1e-4f) tangent = Vector3.right;
-            // a scripted swarm hatches as its FIRST form; a census swarm as its species' element
-            _core.Seed(scripted ? 0 : SwarmFaunaConfigSO.ToIndex(_startElement), config.SeedMembers * Density, anchor, Sim(tangent.normalized));
+            // a scripted swarm hatches as the form its director names (its FIRST form without one); a census swarm as its
+            // species' element
+            int seedForm = 0;
+            if (scripted && _director != null && _director.TryGetSeedForm(this, out int named) && named >= 0 && named < _plans.Length)
+                seedForm = named;
+            _core.Seed(scripted ? seedForm : SwarmFaunaConfigSO.ToIndex(_startElement), config.SeedMembers * Density, anchor, Sim(tangent.normalized));
             _core.SwimTarget = anchor;
 
             _job = new SwarmTickJob(_core, BuildTickSettings(), config.TickHz) { SwimTarget = anchor };
@@ -384,6 +436,8 @@ namespace CosmicShore.Gameplay
                 LocustPhaseTicks = Mathf.Max(1, Mathf.RoundToInt(config.LocustPhaseSeconds * config.TickHz)),
                 EngageRadius = config.EngageRadius, MaxEngaged = config.MaxProxies,
                 MultiDomain = Lineages,
+                // a scripted form's tiers are a designed body (Tandava's protectors); a census plan's tier-1 marks stay unread
+                PlanDanger = config.HasScriptedPlans,
             };
             for (int e = 0; e < 4; e++)
             {
@@ -560,7 +614,7 @@ namespace CosmicShore.Gameplay
                 Cruise = config.Cruise, Turn = config.TurnPerStep,
                 Membrane = SimMembrane(host), CrossCost = config.CrossElementCost, Cap = PlanCap,
                 // Tandava: a director names the form (TANDAVA.md §4); every shipped config leaves this off
-                Scripted = config.HasScriptedPlans,
+                Scripted = config.HasScriptedPlans, TurnCarry = config.SortTurnCarry,
                 PlanPeriods = config.HasScriptedPlans ? config.ScriptedPlanPeriods : null,
                 // round 6 (Docs/SWARM_FAUNA.md §12): sortfeel's flat wells + wander, the 1-in-k update
                 WellDead = config.SortWellDead, WellDeadTime = config.SortWellDeadTime,
@@ -720,6 +774,7 @@ namespace CosmicShore.Gameplay
         {
             using (s_mSense.Auto()) SenseVessels();
             _job.SwimTarget = ToSim(Goal);
+            _job.CruiseScale = _cruiseScale; _job.TurnScale = _turnScale; _job.HoldLaying = _holdRegrowth;
             if (!_inline)
             {
                 using (s_mKick.Auto()) _job.Kick(false);
@@ -891,6 +946,7 @@ namespace CosmicShore.Gameplay
             int i = member.Index;
             if (i < 0 || i >= _cap || _proxy[i] != member) return;
             _job.QueueKill(i);
+            _membersLost++;
             _proxy[i] = null;
             _proxySlots.Remove(i);
             _starving[i] = false;

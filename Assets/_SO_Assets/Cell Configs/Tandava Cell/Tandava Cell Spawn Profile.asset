@@ -20,9 +20,8 @@ MonoBehaviour:
   FloraPlantBudgetScale: 1
   FloraPrismScale: 1
   SupportedFloras:
-  - {fileID: 11400000, guid: 78090bcb374ca5dc8c0531fb548e0d68, type: 2}
-  - {fileID: 11400000, guid: f6da310f48e22b7690eaa563072e9f41, type: 2}
-  - {fileID: 11400000, guid: 275e5a6c5a4a6650024bad0348538679, type: 2}
+  - {fileID: 11400000, guid: c692bf5260bc43a29cf28b1035724e42, type: 2}
+  - {fileID: 11400000, guid: 898597a560658d63bc0b82400069816f, type: 2}
   FaunaExcludeLocalDomain: 0
   InitialFaunaSpawnWaitTime: 6
   InitialFaunaReleaseTier: 2147483647

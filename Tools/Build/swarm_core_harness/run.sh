@@ -11,7 +11,7 @@
 #   SWARM_DENSITY=5 bash Tools/Build/swarm_core_harness/run.sh <plans> lineage [out.json]   # round 9: regional lineages (R9a-d)
 #   SWARM_DENSITY=5 bash Tools/Build/swarm_core_harness/run.sh <plans> emotion <jobs.txt>   # §27: emotion-probe export (Tools/Build/emotion_range)
 #   SWARM_DENSITY=5 bash Tools/Build/swarm_core_harness/run.sh <plans> lod      # round 11f: the swarm as an IMacroPopulation
-#   bash Tools/Build/swarm_core_harness/run.sh <plans> tandava <tandava plans>   # Tandava: scripted forms + the stage director (T1-T9)
+#   bash Tools/Build/swarm_core_harness/run.sh <plans> tandava <tandava plans>   # Tandava: the levers, the feed pose + the director (T1-T15)
 #   bash Tools/Build/swarm_core_harness/run.sh evofate <plans> <fixture.json>   # exactness vs Python (evofate_fixture.py)
 #   bash Tools/Build/swarm_core_harness/run.sh export <plans> <out.json> 7,23,41   # states for score_grid.py / score_sort.py
 #   bash Tools/Build/swarm_core_harness/run.sh smoothsort <plans> <out.json> 7 researchSortFeelF8 0:1,...  # swarm_smooth events (score_sortfeel.py)
@@ -35,7 +35,7 @@ ls "$REFDIR"/*.dll | sed 's/^/-r:/' > "$OUT/refs.rsp"
 # could not see it). So compile the five cores against netstandard2.1 first and fail the way Unity would.
 NSREF=$(ls "$DOTNET_ROOT"/packs/NETStandard.Library.Ref/*/ref/netstandard2.1/netstandard.dll | head -1)
 SW="$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm"
-TANDAVA="$ROOT/Assets/_Scripts/Controller/Arcade/Tandava/TandavaDirectorCore.cs"   # pure C#: the stage director
+TANDAVA="$ROOT/Assets/_Scripts/Controller/Arcade/Tandava/TandavaDirectorCore.cs"   # pure C#: the director
 "$DOTNET" "$CSC" -nologo -langversion:9.0 -nostdlib -noconfig "-r:$NSREF" -target:library -out:"$OUT/unityprofile.dll" \
   "$SW/ISwarmCore.cs" "$SW/SwarmFieldCore.cs" "$SW/SwarmGridCore.cs" "$SW/SwarmSortCore.cs" "$SW/SwarmEvoFateCore.cs" \
   "$SW/SwarmTickJob.cs" "$SW/SwarmPrismSync.cs" "$TANDAVA" || { echo "FAIL: the sim cores do not compile against netstandard2.1 (Unity's API profile)" >&2; exit 1; }

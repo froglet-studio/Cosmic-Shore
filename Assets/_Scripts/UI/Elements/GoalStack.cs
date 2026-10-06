@@ -15,11 +15,14 @@ namespace CosmicShore.UI
         /// <summary>Set when the goal is a count; clear for a clock or any other raw readout.</summary>
         public readonly bool IsCount;
         public readonly string RawValue;
+        /// <summary>A proportion (0..1) drawn as the hairline under a mode-worded value; NaN when the goal has none.</summary>
+        public readonly float Fraction;
+        public bool HasFraction => !float.IsNaN(Fraction);
 
-        GoalEntry(Sprite glyph, string label, int current, int target, bool isCount, string raw)
+        GoalEntry(Sprite glyph, string label, int current, int target, bool isCount, string raw, float fraction = float.NaN)
         {
             Glyph = glyph; Label = label; Current = current;
-            Target = target; IsCount = isCount; RawValue = raw;
+            Target = target; IsCount = isCount; RawValue = raw; Fraction = fraction;
         }
 
         public static GoalEntry Count(Sprite glyph, string label, int current, int target) =>
@@ -27,6 +30,27 @@ namespace CosmicShore.UI
 
         public static GoalEntry Text(Sprite glyph, string label, string value) =>
             new GoalEntry(glyph, label, 0, 0, false, value);
+
+        /// <summary>A value the mode words itself ("62%", "Body 86%") over a hairline filled to <paramref name="fraction"/>.</summary>
+        public static GoalEntry Progress(Sprite glyph, string label, float fraction, string value) =>
+            new GoalEntry(glyph, label, 0, 0, false, value, float.IsNaN(fraction) ? 0f : fraction);
+    }
+
+    /// <summary>
+    /// A MODE that draws its own goal rows - the seam <see cref="GoalStack.SetGoals"/> was left for. Tandava's objective
+    /// is not a metric to race: the stack shows the creature's form and how close it is to the next, what it is doing,
+    /// and the clock. While a source is set (<see cref="GoalStack.Source"/>) every stack draws its rows instead of the
+    /// metric row; the mode clears it when it ends. Rows are re-read on every rebuild (each turn-monitor tick) and on
+    /// <see cref="GoalStack.RefreshAll"/>.
+    /// </summary>
+    public interface IGoalSource
+    {
+        /// <summary>Fill <paramref name="goals"/> (it arrives empty), entry 0 the primary. False = draw the metric row.</summary>
+        bool TryGetGoals(List<GoalEntry> goals);
+
+        /// <summary>Bumped whenever something the player must notice happens (Tandava: a new form). The stack flares its
+        /// primary row the first time it draws a new revision.</summary>
+        int Revision { get; }
     }
 
     /// <summary>
@@ -62,6 +86,33 @@ namespace CosmicShore.UI
         [SerializeField] string clockLabel = "Time remaining";
 
         readonly List<GoalEntry> _entries = new();
+
+        static IGoalSource s_source;
+        static readonly List<GoalStack> s_live = new();
+        int _drawnRevision = int.MinValue;
+
+        /// <summary>The mode drawing its own rows, or null (every mode but Tandava): see <see cref="IGoalSource"/>.
+        /// Setting it rebuilds every live stack.</summary>
+        public static IGoalSource Source
+        {
+            get => s_source;
+            set { s_source = value; RefreshAll(); }
+        }
+
+        /// <summary>Rebuild every live stack now (a source's rows changed between monitor ticks - a new form).</summary>
+        public static void RefreshAll()
+        {
+            for (int i = s_live.Count - 1; i >= 0; i--)
+                if (s_live[i]) s_live[i].Rebuild();
+                else s_live.RemoveAt(i);
+        }
+
+        void OnEnable()
+        {
+            if (!s_live.Contains(this)) s_live.Add(this);
+        }
+
+        void OnDisable() => s_live.Remove(this);
 
         ScoringMetric? _metric;
         int _target;
@@ -116,6 +167,26 @@ namespace CosmicShore.UI
         {
             _entries.Clear();
 
+            // a mode that words its own goals draws them instead of the metric row
+            var source = s_source;
+            if (source != null)
+            {
+                if (source.TryGetGoals(_entries))
+                {
+                    Draw();
+                    int revision = source.Revision;
+                    if (revision != _drawnRevision)
+                    {
+                        // a new revision is something to look at - but not the first one a stack ever draws (arriving
+                        // at a value is not something that just happened)
+                        if (_drawnRevision != int.MinValue && rows is { Length: > 0 } && rows[0]) rows[0].Punch();
+                        _drawnRevision = revision;
+                    }
+                    return;
+                }
+                _entries.Clear();
+            }
+
             if (!string.IsNullOrEmpty(_payload))
             {
                 if (_secondsMode)
@@ -161,8 +232,9 @@ namespace CosmicShore.UI
 
                 var e = _entries[i];
                 var rank = i == 0 ? GoalRank.Primary : GoalRank.Secondary;
-                if (e.IsCount) row.ShowCount(e.Glyph, e.Label, e.Current, e.Target, rank);
-                else           row.ShowText(e.Glyph, e.Label, e.RawValue, rank);
+                if (e.IsCount)          row.ShowCount(e.Glyph, e.Label, e.Current, e.Target, rank);
+                else if (e.HasFraction) row.ShowProgress(e.Glyph, e.Label, e.RawValue, e.Fraction, rank);
+                else                    row.ShowText(e.Glyph, e.Label, e.RawValue, rank);
             }
         }
     }

@@ -1,31 +1,33 @@
 #!/usr/bin/env python3
 """
-Author every serialized asset Tandava (GameModes.Tandava = 62) adds - the swarm arena race.
+Author every serialized asset Tandava (GameModes.Tandava = 62) adds - the swarm hunt in a closed cell.
 Assets/_Scripts/Controller/Arcade/TANDAVA.md is the design and status doc.
 
-A tadpole swarm hatches at one end of a long cell and races for the exit membrane at the other, eating at oases on
-the way. Every time its body is full and its stomach holds the surplus it takes its next FORM (Young Serpent ->
-Serpent -> Great Serpent -> Bull), and the cell's membrane, nucleus and cytoplasm change colour at that moment. Every
-pilot flies on ONE domain against it, in a Squirrel, a Sparrow or a Rhino.
+One creature, a tadpole swarm, hatches WHOLE as the Great Serpent inside a closed cell (the standard membrane is its
+wall) with the cell's flora dispersed through the cytoplasm. It goes where it likes to eat, its speed and manner set by
+how threatened it feels; feeding it puts its plates out round its mouth as danger guards and stops regrowing. Banked, it
+takes its next form - the Many-Headed Serpent, then (rising where it stands) the Lord of the Dance inside a halo of
+rings, then the Sea Lion, whose last feast completes the cycle. Every match draws one of three variants of each form.
+Every pilot flies on ONE domain against it, in a Squirrel, a Sparrow or a Rhino.
 
 What this script owns (one owner per file; the folders below are this script's alone):
 
-  * the four form plans, baked by Tools/Build/tandava_plans.py (it validates them; this script refuses to write a
-    plan that fails) - Assets/_SO_Assets/Swarm Fauna/Tandava/SwarmPlan_tandava_<kind>.json;
-  * the swarm: TandavaSwarmFaunaConfig.asset (the Swarm cell's sort config with Tandava's numbers and the scripted
-    plan list) and TandavaSwarmFauna.prefab (the sort anchor, pointing at it);
-  * the Tandava cell (Assets/_SO_Assets/Cell Configs/Tandava Cell/): the cell config on the Cleave membrane, its
-    spawn profile, the one swarm species and three Borromean flora FORKS planted into pens on the oases. A fork is
-    owned here, not by author_borromean_flora_assets.py (whose DEPLOYMENTS do not list this cell - the Swarm and
-    Wrecking Ball precedent);
-  * the mode: TandavaSettings.asset (route, forms, the dance's palette, narration), TandavaScoringRule.asset, the arena card,
-    the toasts, the preview, MinigameTandava.unity (a clone of MinigameBroodRush), and the shared registries;
+  * the 21 form plans, baked by Tools/Build/tandava_plans.py (it validates them; this script refuses to write a plan
+    that fails) - Assets/_SO_Assets/Swarm Fauna/Tandava/SwarmPlan_tandava_<key>.json;
+  * the swarm: TandavaSwarmFaunaConfig.asset (the Swarm cell's sort config with Tandava's numbers and the scripted plan
+    list) and TandavaSwarmFauna.prefab (the sort anchor, pointing at it);
+  * the Tandava cell (Assets/_SO_Assets/Cell Configs/Tandava Cell/): the cell config on the standard membrane, its spawn
+    profile, the one swarm species and two Borromean flora FORKS dispersed through the cell. A fork is owned here, not by
+    author_borromean_flora_assets.py (whose DEPLOYMENTS do not list this cell - the Swarm and Wrecking Ball precedent);
+  * the mode: TandavaSettings.asset (the forms and their variants, the director's dials, the halo, the gold burst, the
+    dance's palette, narration), TandavaScoringRule.asset, the arena card, the toasts, the preview, MinigameTandava.unity
+    (a clone of MinigameBroodRush), and the shared registries;
   * the .meta of every new script except ISwarmDirector.cs, which lives in the Swarm folder and so belongs to
     author_swarm_fauna.py (SCRIPTS there).
 
-The route and the food numbers are the harness's (Tools/Build/swarm_core_harness/TandavaHarness.cs, T6-T9); the
-validation below reads the harness's constants back and fails on any disagreement, so the model and the shipped
-assets cannot drift apart silently.
+The numbers are the harness's (Tools/Build/swarm_core_harness/TandavaHarness.cs, T1-T15): the validation below reads
+the harness's constants back and fails on any disagreement, and the director's block in the settings asset IS the C#
+defaults of TandavaDirectorSettings (read back too) - so the model and the shipped assets cannot drift apart silently.
 
 Run:  python3 Tools/Build/author_tandava_assets.py [--check] [--self-test]
 """
@@ -50,7 +52,8 @@ SCRIPT_PATHS = {
     "TandavaSettingsSO":        "Assets/_Scripts/Controller/Arcade/Tandava/TandavaSettingsSO.cs",
     "TandavaDirectorCore":      "Assets/_Scripts/Controller/Arcade/Tandava/TandavaDirectorCore.cs",
     "TandavaObjectiveProvider": "Assets/_Scripts/Controller/Arcade/Tandava/TandavaObjectiveProvider.cs",
-    "TandavaFlame":             "Assets/_Scripts/Controller/Arcade/Tandava/TandavaFlame.cs",
+    "TandavaHaloRing":          "Assets/_Scripts/Controller/Arcade/Tandava/TandavaHaloRing.cs",
+    "TandavaGoldBurst":         "Assets/_Scripts/Controller/Arcade/Tandava/TandavaGoldBurst.cs",
     "TandavaScoringRuleSO":     "Assets/_Scripts/Controller/Arcade/Scoring/TandavaScoringRuleSO.cs",
     "TandavaTurnMonitor":       "Assets/_Scripts/Controller/Arcade/TurnMonitors/TandavaTurnMonitor.cs",
     "CellVisualTint":           "Assets/_Scripts/Controller/Environment/CellVisualTint.cs",
@@ -63,17 +66,23 @@ CELL_DIR = "Assets/_SO_Assets/Cell Configs/Tandava Cell"
 MODE_DIR = "Assets/_Scripts/Controller/Arcade/Tandava"
 PREFAB = "Assets/_Prefabs/FloraAndFauna/TandavaSwarmFauna.prefab"
 
-# ── New assets ───────────────────────────────────────────────────────────────
-FORM_KINDS = ["serpent_s", "serpent_m", "serpent_l", "bull", "dancer", "lion"]
-LAST_EATER = FORM_KINDS.index("bull")   # the forms after it are the ASCENSION's: taken at the dance ground, never eaten to
-G_PLAN = {k: guid(f"asset/TandavaPlan_{k}") for k in FORM_KINDS}
+# ── The plans: every variant of every form, and the feed twins ───────────────
+PLAN_KEYS = tandava_plans.plan_keys()
+G_PLAN = {k: guid(f"asset/TandavaPlan_{k}") for k in PLAN_KEYS}
+# the first redesign's six plans and three oasis flora forks, retired by this one (the second redesign, 2026-10-06)
+RETIRED = ([f"{SWARM_DIR}/SwarmPlan_tandava_{k}.json" for k in ("serpent_s", "serpent_m", "serpent_l", "bull", "dancer", "lion")]
+           + [f"{CELL_DIR}/Tandava {n} Borromean Flora {e} Config Data.asset"
+              for n, e in (("Early", "Mass"), ("Late", "Mass"), ("Late", "Space"))]
+           + ["Assets/_Scripts/Controller/Arcade/Tandava/TandavaFlame.cs"])
+for rel in RETIRED:
+    g.stale += [rel, rel + ".meta"]
+
 G_ASSET = {
     "TandavaSwarmFaunaConfig":  guid("asset/TandavaSwarmFaunaConfig"),
     "TandavaSwarmFauna.prefab": guid("asset/TandavaSwarmFauna.prefab"),
     "SwarmSpecies":             guid("asset/TandavaSwarmSpecies"),
-    "FloraEarlyMass":           guid("asset/TandavaFloraEarlyMass"),
-    "FloraLateMass":            guid("asset/TandavaFloraLateMass"),
-    "FloraLateSpace":           guid("asset/TandavaFloraLateSpace"),
+    "FloraMass":                guid("asset/TandavaFloraMass"),
+    "FloraSpace":               guid("asset/TandavaFloraSpace"),
     "SpawnProfile":             guid("asset/TandavaCellSpawnProfile"),
     "CellConfig":               guid("asset/TandavaCellConfig"),
     "TandavaSettings":          guid("asset/TandavaSettings"),
@@ -102,7 +111,7 @@ SORT_CONFIG = "Assets/_SO_Assets/Swarm Fauna/SwarmSortFaunaConfig.asset"
 SORT_PREFAB = "Assets/_Prefabs/FloraAndFauna/SwarmSortFauna.prefab"
 EXISTING["SwarmSortFaunaConfig"] = lib.existing_guid(SORT_CONFIG)
 EXISTING["SwarmSortFauna.prefab"] = lib.existing_guid(SORT_PREFAB)
-EXISTING["CleaveMembrane"] = lib.existing_guid("Assets/_Prefabs/Environment/CleaveMembrane.prefab")
+EXISTING["CapsuleMembrane"] = lib.existing_guid("Assets/_Prefabs/Environment/CapsuleMembrane.prefab")
 EXISTING["Nucleus"] = lib.CELL_VISUALS["NucleusPrefab"]
 EXISTING["Cytoplasm"] = lib.CELL_VISUALS["CytoplasmPrefab"]
 EXISTING["CellIcon"] = lib.CELL_VISUALS["CellIcon"]
@@ -125,102 +134,83 @@ for k, v in DONOR.items():
     EXISTING[f"donor_{k}"] = v
 
 # ═════════════════════════════════════════════════════════════════════════════
-# THE NUMBERS
+# THE NUMBERS (the harness's - TandavaHarness.cs; every one is read back below)
 # ═════════════════════════════════════════════════════════════════════════════
-MEMBRANE_RADIUS = 3600.0         # CleaveMembrane (a x3 similarity of the standard 1,200 membrane)
-NUCLEUS_RADIUS = 392.0           # the standard nucleus prefab, unscaled (Cell.nucleusScaleMultiplier 1 in the scene)
-CYTOPLASM_SHARD_DISTANCE = 360   # ~4,200 motes in a 3,600 u cell (the prefab's 120 would build ~113,000)
+MEMBRANE_RADIUS = 1200.0         # CapsuleMembrane: the standard cell, CLOSED - the membrane is the creature's wall
+NUCLEUS_RADIUS = 392.0           # the standard nucleus prefab, unscaled: fauna eat nothing inside it
+BODY_REACH = 160.0               # the longest body's half-length: its centre roams the membrane less this
+ROAM_RADIUS = MEMBRANE_RADIUS * 0.97 - BODY_REACH   # the swarm's own member clamp is 0.97 of the membrane
+HATCH = (-650.0, 0.0, 0.0)       # it hatches whole, facing +x, across the cell from the pilots
+PLANT_INNER, PLANT_OUTER = 470.0, 1060.0   # the flora band: clear of the nucleus, inside the wall
+MASS_PLANTS, SPACE_PLANTS = 12, 4
+PRISMS_PER_PLANT = 60            # MaxTotalSpawnedObjectsOverride: a meal is most of a plant, and a plant regrows
 
-# The swarm (TandavaSwarmFaunaConfig) - the harness's numbers (TandavaHarness.cs; asserted below)
-DENSITY = 3                      # the design's budget note: PlanDensity 3
-SEED_MEMBERS = 48                # x DENSITY at hatch
-BITERS_PER_STEP = 1              # the 2026-10-06 sweep: one biter every tick is the intake that holds T6-T9
-CRUISE = 2.5                     # voxels/step: 2.5 x UnitScale 2 x 10 Hz = 50 u/s
+# The swarm (TandavaSwarmFaunaConfig)
+DENSITY = 3                      # PlanDensity: every plan unit is three tadpoles in game
+SEED_MEMBERS = 180               # x DENSITY, capped at the seeded form's plan: it hatches WHOLE (no young serpent)
+BITERS_PER_STEP = 8              # the harness's 2026-10-06 sweep: 2 left a feeding head unasked for whole meals
+CRUISE = 3.0                     # voxels/step: 3 x UnitScale 2 x 10 Hz = 60 u/s calm; x the director's mood levers
+TURN_PER_STEP = 0.03
+SORT_TURN_CARRY = 1.0            # the body turns as one piece (harness T3: 93% of its shape round a fleeing turn, 18% without)
+SORT_LAY_RATE, SORT_LAY_MAX = 0.084, 8
+KILL_LAY_HOLD_SECONDS = 0.0      # a cut never stops it regrowing - only feeding does (the director's hold)
+SORT_LAY_RAMP_SECONDS = 1.5      # a cut limb is back in about a second (harness T4)
 UNIT_SCALE, PRISM_SCALE = 2.0, 1.0
 EGG = [20.45, 40.31, 22.18, 12.8]  # Charge, Mass, Space, Time (the Swarm cell's measured egg volumes)
-STOMACH_EGGS = 240
-SURPLUS_FACTOR = 0.4             # the design: "plan count reached plus 40% of that again in banked volume"
-ASCENSION_SURPLUS = 1.0          # the Bull's offering: a whole body's worth of Mass banked (stomach-capped) to ascend
-MEALS_PER_FORM = 2.5             # the design: "the swarm needs 2 to 3 [oases] per stage"
-FILL_TO_EVOLVE = 0.9
+STOMACH_EGGS = 500
 BODY_FILL = 0.939                # SortBodyFill (the sort core's grown body)
 MAX_PROXIES = 160
 # the metabolism: starvation is the swarm's OWN (SwarmFauna.Starving: unfed this long while hungry, it sheds one member
-# per interval). The sort config's 90 s / 1 s is a reef's pace; a race is decided in minutes, so a swarm with nothing
-# left to eat must visibly wither while it presses on the sealed membrane
+# per interval). The sort config's 90 s / 1 s is a reef's pace; a hunt is decided in minutes
 STARVATION_SECONDS, SHED_INTERVAL_SECONDS, FORAGE_BELOW = 30, 0.25, 0.5
-# SortWellsPerType: the dance and the lion are STROKE figures, and twelve Gaussian wells per element blur a stroke into
-# a blob - 24 lifts both (harness T2/T11) and leaves the blob forms where they were
-SORT_WELLS_PER_TYPE = 24
-# SortWellDead 0: no flat-bottomed wells - the sortfeel's dead zone widens a stroke into a blob (harness T11)
-SORT_WELL_DEAD = 0
-# MultiDomain OFF, against the design's "MultiDomain on": a lineage swarm gives its slots 1 and 2 the OTHER two
-# playable domains (SwarmFauna.BuildSlotDomains), and with every pilot on one domain one of those IS the pilots'.
-# A drifted lineage would grow members in the pilots' own colour - an enemy that reads as a friend. One colour (the
-# cell's hostile controller) until a lineage can exclude the pilots' domain.
+# SortWellsPerType 24 / SortWellDead 0: the dance is a STROKE figure - 12 Gaussian wells a type blur a stroke into a blob
+SORT_WELLS_PER_TYPE, SORT_WELL_DEAD = 24, 0
+# MultiDomain OFF: a lineage swarm gives its slots the OTHER playable domains, and with every pilot on one domain one of
+# them IS the pilots' - an enemy that reads as a friend
 MULTI_DOMAIN = 0
 # MacroLod OFF: a collapsed swarm stops its worker tick, and the director runs on published ticks
-# (ISwarmDirector.OnTickPublished) - a race the pilots fell behind in would freeze.
 MACRO_LOD = 0
 
-# The route (world, the cell's frame) - TandavaRoute in the harness
-START_X, EXIT_X = -2000.0, 2000.0
-OASIS_X = [-1650, -1250, -900, -550, 550, 900, 1250, 1650]
-OASIS_RADIUS = 100.0
-PLANTS_AT = [2, 2, 2, 2, 3, 3, 3, 3]       # Mass plants per oasis (early 1-4, late 5-8)
-SPACE_AT = [0, 0, 0, 0, 1, 1, 1, 1]        # the design's "mixed later": one Space plant at each late oasis
-PRISMS_PER_PLANT = 60                       # MaxTotalSpawnedObjectsOverride: a lobby can burn an oasis out
-MAX_FEED_SECONDS = 45.0
+# The economy (TandavaHarness.BuildForms)
+FILL_TO_EVOLVE = 0.9
+BANK_SHARE = [0.35, 0.6, 0.0, 0.85]   # of the stomach, RISING: a carried-over stomach never skips a form
+MEAL_VOLUME = 4000.0
 
-# The sealed exit and starvation (TandavaDirectorSettings; the harness runs the defaults)
-SEAL_MARGIN, SEAL_HOLD = 60.0, 60.0
-STARVE_STANDOFF, STARVING_SECONDS, STARVED_BELOW = 140.0, 40.0, 0.15
-
-# The ascension: the dance ground beside the course between the sixth and seventh oases - OFF the axis, because on
-# it the ring (guard reach ~207 u) would stand in both oases' flora - the drum, the ring of fire
-DANCE_X, DANCE_Z, DANCE_ARRIVE, DRUM_SECONDS = 1075.0, 400.0, 70.0, 30.0
-FLAME_COUNT, FLAMES_TO_BREAK = 12, 9   # EndConditionOverridesSO.DefaultTandavaFlamesToBreak (asserted)
-FLAME_MOUTH = 24.0                     # world: flames sit ~70 u apart on the ring, so a mouth of 48 leaves a gap between
+# The halo and the end conditions
+HALO_COUNT, HALO_TO_BREAK = 12, 9      # EndConditionOverridesSO.DefaultTandavaHaloRingsToBreak (asserted)
+HALO_MOUTH = 24.0                      # world: rings sit ~87 u apart on the halo
 GUARD_RADIUS, GUARD_MEMBERS = 40.0, 6  # a pack is 7 Time units x density 3; a lobby that culls most of it unguards it
-FLAME_POINTS = 25                      # TandavaScoringRuleSO.flamePoints: a flame is worth a pack of culls
+HALO_POINTS = 25                       # TandavaScoringRuleSO.haloPoints: a ring is worth a pack of culls
+BREAK_PERCENT = 35                     # EndConditionOverridesSO.DefaultTandavaBreakPercent (asserted): the shatter
 
-# Pilots line up behind the hatch, facing down the course (Y +90 deg)
-SPAWN_X = -2300.0
+# Pilots line up across the cell from the hatch, facing it (Y -90 deg)
+SPAWN_X = 950.0
 SPAWN_Z = [-90.0, -30.0, 30.0, 90.0]
-SPAWN_ROT = (0.0, 0.7071068, 0.0, 0.7071068)
+SPAWN_ROT = (0.0, -0.7071068, 0.0, 0.7071068)
 
 # The phase ladder (the Swarm cell's ratios against this cell's modelled mature mass)
 RESTLESS_ENTER, RESTLESS_EXIT, FRENZY_ENTER, FRENZY_EXIT = 0.35, 0.26, 2.5, 2.2
 COLLIDER_CEILING = 1200
 
-BREAK_PERCENT = 35   # EndConditionOverridesSO.DefaultTandavaBreakPercent (asserted)
 
-# ── Palettes (HDR: above 1 glows). The cell's own: membrane (0.37, 0.40, 0.96)/(0, 0.03, 1), cage edge
-# (0, 0.02, 0.75, a 0.41), cage line (0.33, 0.35, 0.75, a 0.41), motes (0.38, 0.38, 0.5).
+# ── Palettes (HDR: above 1 glows). The cell keeps its OWN colours for every form; it glows GOLD from the rise into the
+# Lord of the Dance until the dance ends - gold, never fire (the prompter took fire out of the mode, 2026-10-06)
 def pal(bright, dull, edge, straight, cyto):
     return dict(MembraneBright=bright, MembraneDull=dull, NucleusEdge=edge, NucleusStraight=straight, Cytoplasm=cyto)
 
+
+ASCENSION_PALETTE = pal((1.40, 1.12, 0.42, 1), (0.16, 0.11, 0.02, 1), (1.00, 0.80, 0.30, 0.45), (1.15, 0.96, 0.52, 0.45),
+                        (0.86, 0.72, 0.36, 1))
+
 FORMS = [
-    dict(kind="serpent_s", name="Young Serpent",
-         line="The brood knots into a young serpent. It is hungry."),
-    dict(kind="serpent_m", name="Serpent",
-         line="The serpent grows longer. Burn what it means to eat."),
-    dict(kind="serpent_l", name="Great Serpent",
-         line="A great serpent now. One more meal and it will change."),
-    dict(kind="bull", name="Bull",
-         line="The coils fold. A bull flies where the serpent was. It is gathering itself for the dance."),
-    # the ascension. The dance form's line is said when the ring of fire LIGHTS (the rise itself is ReadyToDanceLine)
-    dict(kind="dancer", name="Lord of the Dance",
-         line="The ring of fire lights round the Lord of the Dance. Put out the flames before the drum stops."),
-    dict(kind="lion", name="Winged Lion",
-         line="The drum stops. A winged lion rises out of the fire, trailing flame. Only this form can pass the "
-              "membrane."),
+    dict(name="Great Serpent", role=0,
+         line="The {0} is hungry. Wherever it eats, its hood comes off its head to guard its mouth."),
+    dict(name="Many-Headed Serpent", role=0,
+         line="Its coils split: a {0}. Every head dips to the food when it eats."),
+    dict(name="Lord of the Dance", role=1, line=""),   # the rise is RisingLine; the halo lighting is HaloLitLine
+    dict(name="Sea Lion", role=2,
+         line="The drum stops. A {0} swims out of the halo. One last feast and the cycle is complete."),
 ]
-# THE CELL KEEPS ITS OWN COLOURS for every form (the prompter's call, 2026-10-06): it changes only at the moment the
-# Bull rises into the Lord of the Dance, and holds the dance's colours - bronze and fire, the artifact's ASC_PAL - until
-# the dance ends
-ASCENSION_PALETTE = pal((1.45, 0.95, 0.32, 1), (0.10, 0.04, 0.38, 1), (0.95, 0.62, 0.14, 0.45), (1.10, 0.82, 0.40, 0.45),
-                        (0.78, 0.48, 0.20, 1))
 
 # ═════════════════════════════════════════════════════════════════════════════
 # Derived
@@ -228,50 +218,8 @@ ASCENSION_PALETTE = pal((1.45, 0.95, 0.32, 1), (0.10, 0.04, 0.38, 1), (0.95, 0.6
 PLANS = tandava_plans.bake_all()
 plan_errors = tandava_plans.validate(PLANS)
 STOMACH_CAPACITY = STOMACH_EGGS * DENSITY * sum(EGG) * 0.25   # SwarmFauna.StomachCapacityVolume
-# the ring of fire in WORLD units: the dance plan's baked ring (plan voxels, its own frame) at this swarm's density
-# (SwarmPlanData.Upsample scales positions by cbrt(m)) and unit scale - the harness reads the same "ring" off the JSON
-RING_SCALE = DENSITY ** (1.0 / 3.0) * UNIT_SCALE
-_rc, _rr, _ro = tandava_plans.dancer_ring(PLANS["dancer"])
-RING_CENTRE_LOCAL = [x * RING_SCALE for x in _rc]          # x along the body's heading, y up, z side
-RING_RADIUS, GUARD_POST_RADIUS = _rr * RING_SCALE, _ro * RING_SCALE
-
-
-def mix(plan):
-    m = [0, 0, 0, 0]
-    for e in plan["elem"]:
-        m[e] += 1
-    return m
-
-
-def build_forms():
-    """The forms' banks and meals - TandavaHarness.BuildForms, the same arithmetic on the same upsampled bodies
-    (SwarmPlanData.Upsample(m) is exactly m copies of every unit, so N and the mix scale by DENSITY).
-
-    The bank is the design's surplus of the form's own body in banked Mass. A STAGE is the NEW food the form must eat
-    to evolve: grow from the body it arrived with (the previous form's evolve fill, or the hatch) to its own evolve fill
-    at its own mix's egg prices, plus its bank, less the previous form's bank (which the commit spends on exactly
-    that growth). A meal is the stage over MEALS_PER_FORM, so a denied oasis is a meal the stage is short. The last
-    EATING form's (the Bull's) bank is the ascension's offering, ASCENSION_SURPLUS of its body; the dance and final
-    forms are taken at the dance ground, not eaten to - no bank, the minimum meal."""
-    out, arrived, banked = [], SEED_MEMBERS * DENSITY, 0.0
-    for k, f in enumerate(FORMS):
-        p = PLANS[f["kind"]]
-        n = p["n"] * DENSITY
-        if k > LAST_EATER:
-            out.append(dict(f, n=n, bank=0.0, stage=0.0, meal=1.0))
-            continue
-        m = [x * DENSITY for x in mix(p)]
-        avg_egg = sum(m[e] * EGG[e] for e in range(4)) / n
-        fill_to = FILL_TO_EVOLVE * n
-        surplus = SURPLUS_FACTOR if k < LAST_EATER else ASCENSION_SURPLUS
-        bank = min(surplus * n * EGG[1], 0.9 * STOMACH_CAPACITY)
-        stage = max(0.0, max(0.0, fill_to - arrived) * avg_egg + bank - banked)
-        out.append(dict(f, n=n, bank=round(bank, 1), stage=stage, meal=round(max(1.0, stage / MEALS_PER_FORM), 1)))
-        arrived, banked = fill_to, bank
-    return out
-
-
-FORM_ROWS = build_forms()
+# plan voxels -> world: SwarmPlanData.Upsample scales positions by cbrt(m), and the unit scale
+WORLD = DENSITY ** (1.0 / 3.0) * UNIT_SCALE
 
 
 def leaf_volume(path):
@@ -283,17 +231,51 @@ MASS_LEAF = leaf_volume(CANON_FLORA["Mass"])
 SPACE_LEAF = leaf_volume(CANON_FLORA["Space"])
 
 
+def variants_of(form):
+    """(key, display name) of each variant of a form, in the plans' order (tandava_plans.VARIANTS)."""
+    return [(key, name) for key, f, name, _, _ in tandava_plans.VARIANTS if f == form]
+
+
+def wv(p):
+    return [x * WORLD for x in p]
+
+
+def build_forms():
+    """The four forms as TandavaHarness.BuildForms runs them: each variant's plan and feed twin by index into the swarm
+    config's ScriptedPlans, its mouths (travel and feed, world, body axes), and - the dance - its halo's centre."""
+    out = []
+    for k, f in enumerate(FORMS):
+        vs = []
+        for key, name in variants_of(k):
+            p = PLANS[key]
+            feeds = key + "_feed" in PLANS
+            vs.append(dict(name=name, plan=PLAN_KEYS.index(key), feed=PLAN_KEYS.index(key + "_feed") if feeds else -1,
+                           mouth=wv(p["mouth"]) if "mouth" in p else [0.0, 0.0, 0.0],
+                           feed_mouth=wv(PLANS[key + "_feed"]["mouth"]) if feeds else [0.0, 0.0, 0.0],
+                           halo=wv(p["ring"]["centre"]) if "ring" in p else [0.0, 0.0, 0.0],
+                           n=p["n"] * DENSITY))
+        out.append(dict(f, bank=BANK_SHARE[k], meal=MEAL_VOLUME if f["role"] != 1 else 1.0, variants=vs))
+    return out
+
+
+FORM_ROWS = build_forms()
+_ring = next(PLANS[k]["ring"] for k in PLAN_KEYS if "ring" in PLANS[k])
+HALO_RADIUS, GUARD_POST_RADIUS = _ring["radius"] * WORLD, _ring["guardOrbit"] * WORLD
+HALO_OFFSET = max(math.sqrt(sum(x * x for x in v["halo"])) for v in FORM_ROWS[2]["variants"])
+DANCE_REACH_NEEDED = GUARD_POST_RADIUS + GUARD_RADIUS + HALO_OFFSET
+
+PLANT_VOLUME = PRISMS_PER_PLANT * MASS_LEAF
+FOREST_PRISMS = (MASS_PLANTS + SPACE_PLANTS) * PRISMS_PER_PLANT
+FOREST_VOLUME = PRISMS_PER_PLANT * (MASS_PLANTS * MASS_LEAF + SPACE_PLANTS * SPACE_LEAF)
+
+
 def body_volume(plan):
     m3 = (2.0 * UNIT_SCALE * PRISM_SCALE) ** 3          # SwarmTickJob: scale = 2 x unit x prismScale x half
     h = plan["half"]
     return DENSITY * BODY_FILL * sum(m3 * abs(h[3 * k] * h[3 * k + 1] * h[3 * k + 2]) for k in range(plan["n"]))
 
 
-PLANTS_MASS = sum(PLANTS_AT)
-PLANTS_SPACE = sum(SPACE_AT)
-FOREST_PRISMS = (PLANTS_MASS + PLANTS_SPACE) * PRISMS_PER_PLANT
-FOREST_VOLUME = PRISMS_PER_PLANT * (PLANTS_MASS * MASS_LEAF + PLANTS_SPACE * SPACE_LEAF)
-BIGGEST_BODY = max(body_volume(PLANS[k]) for k in FORM_KINDS)
+BIGGEST_BODY = max(body_volume(PLANS[k]) for k in PLAN_KEYS)
 
 
 def ladder():
@@ -324,6 +306,29 @@ def yaml_str(s):
     return s
 
 
+def v3(x, y=0.0, z=0.0):
+    return f"{{x: {num(round(float(x), 3))}, y: {num(round(float(y), 3))}, z: {num(round(float(z), 3))}}}"
+
+
+# ── the director's dials: TandavaDirectorSettings' C# defaults, read off the source (the ONE place a number lives)
+DIRECTOR_SRC = g.read(SCRIPT_PATHS["TandavaDirectorCore"])
+
+
+def director_defaults():
+    body = DIRECTOR_SRC.split("public sealed class TandavaDirectorSettings")[1].split("\n    }\n")[0]
+    out = []
+    for m in re.finditer(r"(?m)^\s*(\[NonSerialized\]\s*)?public (float|int) ([^;]+);", body):
+        if m.group(1):
+            continue
+        for decl in m.group(3).split(","):
+            name, value = (x.strip() for x in decl.split("="))
+            out.append((name, float(value.rstrip("f")), m.group(2)))
+    return out
+
+
+DIRECTOR = director_defaults()
+DIRECTOR_AUTHORED = {"RoamRadius": ROAM_RADIUS, "HaloCount": HALO_COUNT, "HaloToBreak": HALO_TO_BREAK}
+
 # ═════════════════════════════════════════════════════════════════════════════
 # 0. Metas
 # ═════════════════════════════════════════════════════════════════════════════
@@ -339,7 +344,7 @@ TEXT_META = ("fileFormatVersion: 2\nguid: {}\nTextScriptImporter:\n  externalObj
 # ═════════════════════════════════════════════════════════════════════════════
 # 1. The form plans
 # ═════════════════════════════════════════════════════════════════════════════
-for k in FORM_KINDS:
+for k in PLAN_KEYS:
     rel = f"{SWARM_DIR}/SwarmPlan_tandava_{k}.json"
     g.emit(rel, tandava_plans.dumps(PLANS[k]))
     g.emit(rel + ".meta", TEXT_META.format(G_PLAN[k]))
@@ -363,22 +368,26 @@ cfg = g.read(SORT_CONFIG)
 cfg = set_key(cfg, "m_Name", "TandavaSwarmFaunaConfig")
 for key, value in (("Model", 2), ("MultiDomain", MULTI_DOMAIN), ("PlanDensity", DENSITY),
                    ("SeedMembers", SEED_MEMBERS), ("BitersPerStep", BITERS_PER_STEP), ("Cruise", num(CRUISE)),
+                   ("TurnPerStep", num(TURN_PER_STEP)),
                    ("UnitScale", num(UNIT_SCALE)), ("PrismScale", num(PRISM_SCALE)), ("StomachEggs", STOMACH_EGGS),
                    ("StarvationSeconds", num(STARVATION_SECONDS)), ("ShedIntervalSeconds", num(SHED_INTERVAL_SECONDS)),
                    ("ForageBelow", num(FORAGE_BELOW)), ("SortWellsPerType", SORT_WELLS_PER_TYPE),
-                   ("SortWellDead", num(SORT_WELL_DEAD)),
+                   ("SortWellDead", num(SORT_WELL_DEAD)), ("SortLayRate", num(SORT_LAY_RATE)), ("SortLayMax", SORT_LAY_MAX),
+                   ("KillLayHoldSeconds", num(KILL_LAY_HOLD_SECONDS)), ("SortLayRampSeconds", num(SORT_LAY_RAMP_SECONDS)),
+                   ("SortBodyFill", num(BODY_FILL)),
                    ("EggVolume", "{x: %s, y: %s, z: %s, w: %s}" % tuple(num(e) for e in EGG))):
     cfg = set_key(cfg, key, value)
 # keys the shipped sort config predates (Unity has been reading their C# defaults): written explicitly here, in
-# declaration order, because two of them are Tandava decisions
-for key in ("ScriptedPlans", "ScriptedPlanPeriods", "MaxHitMaterialisationsPerFrame", "UnifiedPrismBodies", "MacroLod",
-            "Bestiary", "HuntEnter", "LurkCalm", "LocustPhaseSeconds"):
+# declaration order, because each is a Tandava decision
+for key in ("ScriptedPlans", "ScriptedPlanPeriods", "SortTurnCarry", "MaxHitMaterialisationsPerFrame",
+            "UnifiedPrismBodies", "MacroLod", "Bestiary", "HuntEnter", "LurkCalm", "LocustPhaseSeconds"):
     assert not re.search(rf"(?m)^  {key}:", cfg), f"the shipped sort config now carries '{key}' - set it, do not insert it"
 cfg = insert_after(cfg, "TimePlan",
                    "  ScriptedPlans:\n" +
-                   "".join(f"  - {{fileID: 4900000, guid: {G_PLAN[k]}, type: 3}}\n" for k in FORM_KINDS) +
+                   "".join(f"  - {{fileID: 4900000, guid: {G_PLAN[k]}, type: 3}}\n" for k in PLAN_KEYS) +
                    "  ScriptedPlanPeriods:\n" +
-                   "".join(f"  - {PLANS[k]['frameSteps']}\n" for k in FORM_KINDS))
+                   "".join(f"  - {PLANS[k]['frameSteps']}\n" for k in PLAN_KEYS))
+cfg = insert_after(cfg, "TurnPerStep", f"  SortTurnCarry: {num(SORT_TURN_CARRY)}\n")
 cfg = insert_after(cfg, "ProxyLingerSeconds",
                    f"  MaxHitMaterialisationsPerFrame: 48\n  UnifiedPrismBodies: 1\n  MacroLod: {MACRO_LOD}\n")
 cfg = insert_after(cfg, "DangerExit", "  Bestiary: 1\n  HuntEnter: 0.2\n  LurkCalm: 0.05\n  LocustPhaseSeconds: 2\n")
@@ -422,25 +431,10 @@ g.emit_asset(f"{CELL_DIR}/Tandava Swarm Fauna Config Data.asset", G_ASSET["Swarm
 """)
 
 
-def pens(oasis_ix):
-    """One sector pen per oasis: a cone about the course axis through the oasis centre, between the oasis's near and
-    far radius from the cell centre (FloraPlantingPen: fractions of the membrane radius)."""
-    out = "  PlantingPens:\n"
-    for o in oasis_ix:
-        x = OASIS_X[o]
-        d = abs(x)
-        out += (f"  - Axis: {{x: {1 if x > 0 else -1}, y: 0, z: 0}}\n"
-                f"    HalfAngle: {g5(math.degrees(math.atan(OASIS_RADIUS / d)))}\n"
-                f"    InnerFraction: {g5((d - OASIS_RADIUS) / MEMBRANE_RADIUS)}\n"
-                f"    OuterFraction: {g5((d + OASIS_RADIUS) / MEMBRANE_RADIUS)}\n")
-    return out
-
-
-def flora_fork(element, name, oasis_ix, per_oasis):
-    """A FORK of the canonical Borromean species config: the species' own plate, quota, heart and shield byte for
-    byte, with only what a CELL owns rewritten - the name, how many, where (one pen per oasis) and how big a plant
-    may get here. Every plant it plants is a dispersed one, so the pens hold the floor."""
-    count = per_oasis * len(oasis_ix)
+def flora_fork(element, name, count):
+    """A FORK of the canonical Borromean species config: the species' own plate, quota, heart and shield byte for byte,
+    with only what a CELL owns rewritten - the name, how many, where (DISPERSED: the whole band between the nucleus and
+    the wall, spread apart, no pens) and how big a plant may get here."""
     t = g.read(CANON_FLORA[element])
     t = re.sub(r"(?m)^  m_Name: .*$", f"  m_Name: {name}", t, count=1)
     for key, value in (("InitialSpawnCount", count), ("PopulationSize", count), ("MaxLivePopulation", count)):
@@ -450,25 +444,19 @@ def flora_fork(element, name, oasis_ix, per_oasis):
     t = re.sub(r"(?m)^  PlantingPens:.*\n(?:  - .*\n|    .*\n)*", "", t)
     if not t.endswith("\n"):
         t += "\n"
-    near = min(abs(OASIS_X[o]) for o in oasis_ix) - OASIS_RADIUS
-    far = max(abs(OASIS_X[o]) for o in oasis_ix) + OASIS_RADIUS
-    t += (f"  PlantRadiusCellFractionMaxOverride: {g5(far / MEMBRANE_RADIUS)}\n"
-          f"  PlantRadiusCellFractionMinOverride: {g5(near / MEMBRANE_RADIUS)}\n"
+    t += (f"  PlantRadiusCellFractionMaxOverride: {g5(PLANT_OUTER / MEMBRANE_RADIUS)}\n"
+          f"  PlantRadiusCellFractionMinOverride: {g5(PLANT_INNER / MEMBRANE_RADIUS)}\n"
           f"  MaxTotalSpawnedObjectsOverride: {PRISMS_PER_PLANT}\n"
-          "  SpreadPlanting: 1\n" + pens(oasis_ix))
+          "  SpreadPlanting: 1\n")
     return t
 
 
-EARLY, LATE = [0, 1, 2, 3], [4, 5, 6, 7]
-assert all(PLANTS_AT[o] == PLANTS_AT[EARLY[0]] for o in EARLY) and all(PLANTS_AT[o] == PLANTS_AT[LATE[0]] for o in LATE)
-assert all(SPACE_AT[o] == 0 for o in EARLY) and all(SPACE_AT[o] == SPACE_AT[LATE[0]] for o in LATE)
 FLORAS = [
-    ("FloraEarlyMass", "Tandava Early Borromean Flora Mass Config Data", "Mass", EARLY, PLANTS_AT[EARLY[0]]),
-    ("FloraLateMass", "Tandava Late Borromean Flora Mass Config Data", "Mass", LATE, PLANTS_AT[LATE[0]]),
-    ("FloraLateSpace", "Tandava Late Borromean Flora Space Config Data", "Space", LATE, SPACE_AT[LATE[0]]),
+    ("FloraMass", "Tandava Borromean Flora Mass Config Data", "Mass", MASS_PLANTS),
+    ("FloraSpace", "Tandava Borromean Flora Space Config Data", "Space", SPACE_PLANTS),
 ]
-for key, name, element, oases, per in FLORAS:
-    g.emit_asset(f"{CELL_DIR}/{name}.asset", G_ASSET[key], flora_fork(element, name, oases, per))
+for key, name, element, count in FLORAS:
+    g.emit_asset(f"{CELL_DIR}/{name}.asset", G_ASSET[key], flora_fork(element, name, count))
 
 g.emit_asset(f"{CELL_DIR}/Tandava Cell Spawn Profile.asset", G_ASSET["SpawnProfile"],
              so(lib.SCRIPT_GUIDS["SpawnProfileSO"], "Tandava Cell Spawn Profile") +
@@ -487,15 +475,15 @@ LADDER = ladder()
 g.emit_asset(f"{CELL_DIR}/Tandava Cell Config.asset", G_ASSET["CellConfig"],
              so(lib.SCRIPT_GUIDS["CellConfigDataSO"], "Tandava Cell Config") +
              f"""  CellName: Tandava
-  Description: A long cell for one swarm's run - the Cleave membrane, eight Borromean oases along the
-    course, and an exit at the far end. Authored by Tools/Build/author_tandava_assets.py
+  Description: A closed cell for one creature's hunt - the standard membrane, Borromean flora dispersed
+    through the cytoplasm, and nothing else. Authored by Tools/Build/author_tandava_assets.py
   Icon: {{fileID: 21300000, guid: {EXISTING['CellIcon']}, type: 3}}
   Difficulty: 2
   CellEndGameScore: 0
-  MembranePrefab: {{fileID: 346633111830028674, guid: {EXISTING['CleaveMembrane']}, type: 3}}
+  MembranePrefab: {{fileID: 346633111830028674, guid: {EXISTING['CapsuleMembrane']}, type: 3}}
   NucleusPrefab: {{fileID: 7555898194514117247, guid: {EXISTING['Nucleus']}, type: 3}}
   CytoplasmPrefab: {{fileID: 639495419069806261, guid: {EXISTING['Cytoplasm']}, type: 3}}
-  CytoplasmShardDistance: {CYTOPLASM_SHARD_DISTANCE}
+  CytoplasmShardDistance: 0
   CellModifiers:
   - {{fileID: 8058406376250941529, guid: {EXISTING['ExtraOmniCrystals']}, type: 3}}
   SpawnProfile: {{fileID: 11400000, guid: {G_ASSET['SpawnProfile']}, type: 2}}
@@ -512,66 +500,70 @@ g.emit_asset(f"{CELL_DIR}/Tandava Cell Config.asset", G_ASSET["CellConfig"],
 # ═════════════════════════════════════════════════════════════════════════════
 # 4. The mode
 # ═════════════════════════════════════════════════════════════════════════════
-def v3(x, y=0.0, z=0.0):
-    return f"{{x: {num(float(x))}, y: {num(float(y))}, z: {num(float(z))}}}"
-
-
 def palette_yaml(p, indent):
     return "".join(f"{indent}{k}: {colour(p[k])}\n"
                    for k in ("MembraneBright", "MembraneDull", "NucleusEdge", "NucleusStraight", "Cytoplasm"))
 
 
 forms_yaml = ""
-for k, f in enumerate(FORM_ROWS):
-    forms_yaml += (f"  - DisplayName: {yaml_str(f['name'])}\n    PlanIndex: {k}\n    FillToEvolve: {num(FILL_TO_EVOLVE)}\n"
-                   f"    BankToEvolve: {{x: 0, y: {num(f['bank'])}, z: 0, w: 0}}\n    MealVolume: {num(f['meal'])}\n"
-                   f"    Line: {yaml_str(f['line'])}\n")
+for f in FORM_ROWS:
+    forms_yaml += (f"  - DisplayName: {yaml_str(f['name'])}\n    Role: {f['role']}\n    FillToEvolve: {num(FILL_TO_EVOLVE)}\n"
+                   f"    BankShare: {num(f['bank'])}\n    MealVolume: {num(f['meal'])}\n"
+                   f"    Line: {yaml_str(f['line']) if f['line'] else ''}\n    Variants:\n")
+    for v in f["variants"]:
+        forms_yaml += (f"    - DisplayName: {yaml_str(v['name'])}\n      PlanIndex: {v['plan']}\n      FeedPlanIndex: {v['feed']}\n"
+                       f"      Mouth: {v3(*v['mouth'])}\n      FeedMouth: {v3(*v['feed_mouth'])}\n      HaloCentre: {v3(*v['halo'])}\n")
 
-g.emit_asset("Assets/_SO_Assets/Games/TandavaSettings.asset", G_ASSET["TandavaSettings"],
+director_yaml = "  Director:\n" + "".join(
+    f"    {name}: {num(round(DIRECTOR_AUTHORED.get(name, value), 3)) if kind == 'float' else int(DIRECTOR_AUTHORED.get(name, value))}\n"
+    for name, value, kind in DIRECTOR)
+
+SETTINGS_REL = "Assets/_SO_Assets/Games/TandavaSettings.asset"
+g.emit_asset(SETTINGS_REL, G_ASSET["TandavaSettings"],
              so(G_SCRIPT["TandavaSettingsSO"], "TandavaSettings") +
              f"  SwarmConfig: {{fileID: 11400000, guid: {G_ASSET['TandavaSwarmFaunaConfig']}, type: 2}}\n"
-             f"  StartPoint: {v3(START_X)}\n  StartHeading: {v3(1)}\n  Oases:\n" +
-             "".join(f"  - Centre: {v3(x)}\n    Radius: {num(OASIS_RADIUS)}\n" for x in OASIS_X) +
-             f"  ExitPoint: {v3(EXIT_X)}\n  ExitNormal: {v3(1)}\n"
-             f"  ArriveMargin: 60\n  LeaveWhenStomachFill: 0.98\n  GiveUpSeconds: 8\n  MaxFeedSeconds: {num(MAX_FEED_SECONDS)}\n"
-             "  BreakArmFraction: 0.6\n  DenialCheckSeconds: 1\n  Forms:\n" + forms_yaml +
-             f"  SealMargin: {num(SEAL_MARGIN)}\n  SealHold: {num(SEAL_HOLD)}\n"
-             f"  StarveStandoff: {num(STARVE_STANDOFF)}\n  StarvingSeconds: {num(STARVING_SECONDS)}\n"
-             f"  StarvedBelowFraction: {num(STARVED_BELOW)}\n" +
-             f"  DancePoint: {v3(DANCE_X, 0, DANCE_Z)}\n  DanceArrive: {num(DANCE_ARRIVE)}\n  DrumSeconds: {num(DRUM_SECONDS)}\n"
-             f"  FlameCount: {FLAME_COUNT}\n  FlameRingCentreLocal: {v3(*[round(x, 3) for x in RING_CENTRE_LOCAL])}\n"
-             f"  FlameRingRadius: {num(round(RING_RADIUS, 2))}\n  FlameMouthRadius: {num(FLAME_MOUTH)}\n"
+             f"  HatchPoint: {v3(*HATCH)}\n  HatchHeading: {v3(1)}\n  Forms:\n" + forms_yaml + director_yaml +
+             f"  FoodPerPrism: {num(round(MASS_LEAF, 3))}\n  FoodCheckSeconds: 0.5\n"
+             f"  HaloRadius: {num(round(HALO_RADIUS, 2))}\n  HaloMouthRadius: {num(HALO_MOUTH)}\n"
              f"  GuardPostRadius: {num(round(GUARD_POST_RADIUS, 2))}\n  GuardRadius: {num(GUARD_RADIUS)}\n"
-             f"  GuardMembers: {GUARD_MEMBERS}\n  GuardElement: 4\n  FlameGutter: 0.35\n"
-             "  FlameBloomSeconds: 1.2\n  FlameOutSeconds: 0.6\n  MaxPlausibleSpeed: 1500\n"
+             f"  GuardMembers: {GUARD_MEMBERS}\n  GuardElement: 4\n  HaloGuardScale: 0.35\n"
+             "  HaloBloomSeconds: 1.2\n  HaloBreakSeconds: 0.6\n  MaxPlausibleSpeed: 1500\n"
+             "  FormBurstShards: 64\n  HaloBurstShards: 18\n  BurstSpeed: 70\n  BurstScale: 3\n"
+             "  FlashSeconds: 0.6\n  FlashRadius: 260\n  FlashStrength: 0.8\n"
              "  AscensionPalette:\n" + palette_yaml(ASCENSION_PALETTE, "    ") +
-             "  TransitionSeconds: 3\n  TransitionFlash: 1.5\n  RestoreSeconds: 5\n"
+             "  TransitionSeconds: 3\n  TransitionFlash: 1.2\n  RestoreSeconds: 5\n"
              "  StartLine: Something in the reef remembers the old shapes.\n"
-             "  HeadingForExitLine: The route is eaten. It turns back to forage what you left.\n"
-             "  StarvingLine: Nothing left to eat. It presses on the membrane and starves.\n"
-             "  ReadyToDanceLine: The Bull has eaten enough. It rises into the Lord of the Dance and turns for the dance ground.\n"
-             "  SealedLine: The membrane holds. Only the final form can pass.\n"
-             f"  FirstFlameLine: {yaml_str('A flame is out. Put out {1} and the dance is broken.')}\n"
-             f"  LastFlameLine: {yaml_str('{0} of {1}. One flame more!')}\n"
-             "  EscapedLine: The Winged Lion crosses the membrane. The cycle ends too soon.\n"
-             "  WonLine: The swarm is gone. The reef keeps its turn.\n"
+             f"  FeedingLine: {yaml_str('It is feeding - its guards are out round its mouth. Strike the body.')}\n"
+             "  MealBrokenLine: Its meal is broken. It bolts.\n"
+             "  RisingLine: It has eaten enough. It rises into the Lord of the Dance.\n"
+             "  HaloLitLine: The halo is lit. Break the rings before the drum stops.\n"
+             f"  FirstHaloLine: {yaml_str('A ring is broken. Break {1} and the dance falls.')}\n"
+             f"  LastHaloLine: {yaml_str('{0} of {1}. One more ring!')}\n"
+             "  CompletedLine: The Sea Lion has fed. The cycle is complete.\n"
+             "  WonLine: Its body is broken. The reef keeps its turn.\n"
              "  DanceBrokenLine: The dance is broken. The reef keeps its turn.\n"
-             "  NudgeThreshold: 25\n  NudgeFraction: 0.2\n  MaxNudge: 6\n")
+             f"  HeldOffLine: {yaml_str('Time. You held it off - the cycle is unfinished.')}\n"
+             "  RoamingLabel: Roaming\n  WaryLabel: Wary\n  FleeingLabel: Fleeing\n"
+             f"  FeedingLabel: {yaml_str('Feeding - strike the body')}\n  RisingLabel: Rising\n"
+             f"  DancingLabel: {yaml_str('Dancing - break the halo')}\n  FeastLabel: the last feast\n"
+             "  HaloLabel: Halo rings broken\n  DrumLabel: Drum\n  TimeLabel: Time left\n"
+             f"  BodyFormat: {yaml_str('Body {0}%')}\n"
+             "  NudgeThreshold: 25\n  NudgeFraction: 0.2\n  MaxNudge: 8\n  AiFlankBack: 70\n")
 
 g.emit_asset("Assets/_SO_Assets/Scoring Rules/TandavaScoringRule.asset", G_ASSET["TandavaScoringRule"],
              so(G_SCRIPT["TandavaScoringRuleSO"], "TandavaScoringRule") +
-             f"  metric: 7\n  golfRules: 0\n  flamePoints: {FLAME_POINTS}\n")
+             f"  metric: 7\n  golfRules: 0\n  haloPoints: {HALO_POINTS}\n")
 
 CARD_HULLS = ("Rhino", "Squirrel", "Sparrow")
 g.emit_asset("Assets/_SO_Assets/Games/ArcadeGameTandava.asset", G_ASSET["ArcadeGameTandava"],
              so(EXISTING["SO_ArcadeGame"], "ArcadeGameTandava") + f"""  Mode: {MODE_ID}
   IsMultiplayer: 1
   DisplayName: Tandava
-  Description: A tadpole swarm eats its way down a long cell. Each time it has eaten enough it
-    takes a new form - a serpent that grows, then a flying horned bull. The exit is sealed to all
-    but its last form, so the Bull rises into the Lord of the Dance inside a ring of fire, and the
-    whole cell turns to fire with it. Put out the flames before the drum stops, or stop the Winged
-    Lion before the membrane. Everyone flies together.
+  Description: One creature lives in this cell, and it is hungry. It hatches as a great serpent and
+    eats wherever it likes - bolting when you charge it, putting its guards out round its mouth when
+    it feeds. Fed, it becomes a many-headed serpent, then rises into the Lord of the Dance inside a
+    halo, then a sea lion. Shatter it, break its halo, or hold it off until time runs out. Everyone
+    flies together.
   IconActive: {{fileID: 21300000, guid: {EXISTING['IconActive']}, type: 3}}
   IconInactive: {{fileID: 21300000, guid: {EXISTING['IconInactive']}, type: 3}}
   CardBackground: {{fileID: 21300000, guid: {EXISTING['CardBackground']}, type: 3}}
@@ -586,11 +578,11 @@ g.emit_asset("Assets/_SO_Assets/Games/ArcadeGameTandava.asset", G_ASSET["ArcadeG
   MaxIntensity: 4
   ArenaRules: 1
   Tips:
-  - Burn the oasis ahead before it gets there. A swarm that cannot eat cannot change.
-  - The exit is sealed to every form but the last. Burn all its food and it starves at the membrane.
-  - At the dance, put out nine of the twelve flames before the drum stops. Fly round the ring - the attendant packs guard the flames they pass.
-  - The Winged Lion is the only form that can leave. Cut it below a third of its body.
-  - The cell changes colour only when the Bull rises into the Lord of the Dance. When the membrane turns to fire, the dance has begun.
+  - It cannot heal while it eats. Strike its body then - not its head, where the guards are.
+  - Hurt it badly enough at a plant and the meal is broken. Every broken meal is time it does not have.
+  - A cut limb grows back from what it has eaten. Starve it and the cuts stay cut.
+  - At the dance, break nine of the twelve halo rings before the drum stops. The attendant packs guard the rings they pass.
+  - The goals on the top left show its form and how close it is to the next. The cell glows gold only for the dance.
   ViewUserAction: 0
   PlayUserAction: 0
   StartingElements: []
@@ -605,8 +597,7 @@ g.emit_asset("Assets/_SO_Assets/Game Toasts/GameToastConfig_Tandava.asset", G_AS
              lib.toast(130, "{0}", domain_names=0) +
              lib.toast(131, "{0}", domain_names=0) +
              lib.toast(132, "{0}", domain_names=0) +
-             lib.toast(133, "Burn the oasis ahead - a swarm that cannot eat cannot change", domain_names=0,
-                       idle=1, idle_seconds=40) +
+             lib.toast(133, "Break its meals - strike the body while it eats", domain_names=0, idle=1, idle_seconds=40) +
              lib.toast(134, "{0}", domain_names=0) +
              lib.toast(135, "{0}", domain_names=0) +
              lib.toast(136, "{0}", domain_names=0) +
@@ -620,15 +611,15 @@ def fmt4(x):
 
 g.emit_asset("Assets/_SO_Assets/Mode Previews/ModePreview_Tandava.asset", G_ASSET["ModePreviewTandava"],
              so(EXISTING["ModePreviewDefinitionSO"], "ModePreview_Tandava") + f"""  Mode: {MODE_ID}
-  Notes: 'The Tandava cell as the mode flies it - the oases, the swarm, the start line. No director runs
-    in a preview, so the swarm wanders as its first form rather than racing, and the cell keeps its own
-    colours. Vessel is -1 (ANY): the carousel''s pick flies it.'
+  Notes: 'The Tandava cell as the mode flies it - the dispersed flora, the creature, the pilots'' line.
+    No director runs in a preview, so the swarm grazes as its first form rather than hunting, and the
+    cell keeps its own colours. Vessel is -1 (ANY): the carousel''s pick flies it.'
   PreviewCell: {{fileID: 11400000, guid: {G_ASSET['CellConfig']}, type: 2}}
   PreviewCellsByIntensity: []
   StructurePrefab: {{fileID: 0}}
   TrackSpawnablesByIntensity: []
   Vessel: -1
-  ObjectiveText: Stop the swarm before the membrane
+  ObjectiveText: Shatter the creature, break its halo, or hold it off
   ObjectiveMetric: 7
   ObjectiveTarget: 0
   DurationSeconds: 60
@@ -650,12 +641,11 @@ SPAWN_FIDS = ["1468661147", "1074736317", "1323644424", "1564881929"]
 
 def move_transform(text, fid, pos, rot):
     m = re.search(rf"--- !u!4 &{fid}\n(?:(?!--- !u!).*\n)*", text)
-    assert m, f"spawn transform {fid} not found in the donor"
+    assert m, f"spawn transform {fid} not found"
     doc = m.group(0)
     new = re.sub(r"m_LocalRotation: \{[^}]*\}", "m_LocalRotation: {x: %s, y: %s, z: %s, w: %s}" % rot, doc)
     new = re.sub(r"m_LocalPosition: \{[^}]*\}", "m_LocalPosition: {x: %s, y: %s, z: %s}" % pos, new)
-    new = re.sub(r"m_LocalEulerAnglesHint: \{[^}]*\}", "m_LocalEulerAnglesHint: {x: 0, y: 90, z: 0}", new)
-    assert new != doc, f"spawn transform {fid} unchanged"
+    new = re.sub(r"m_LocalEulerAnglesHint: \{[^}]*\}", "m_LocalEulerAnglesHint: {x: 0, y: -90, z: 0}", new)
     return text.replace(doc, new, 1)
 
 
@@ -674,11 +664,9 @@ def clone_scene():
     # from the card's three
     scene = lib.swap_guid(scene, "  - vesselClass: 6\n", "  - vesselClass: 0\n", "AI templates", expected=4)
     scene = lib.swap_guid(scene, DONOR["cell"], G_ASSET["CellConfig"], "cell config")
-    # a start LINE behind the hatch, not a ring round the nucleus
+    # a LINE across the cell from the hatch, not a ring round the nucleus
     scene = lib.replace_block(scene, "  arrangeSpawnPointsAroundCell: 1\n", "  arrangeSpawnPointsAroundCell: 0\n",
                               "spawn ring flag")
-    for fid, z in zip(SPAWN_FIDS, SPAWN_Z):
-        scene = move_transform(scene, fid, (num(SPAWN_X), 0, num(z)), tuple(num(v) for v in SPAWN_ROT))
     return scene
 
 
@@ -692,6 +680,9 @@ except AssertionError as e:
         raise
     SCENE = g.read(SCENE_REL)
     SCENE_SOURCE = f"committed scene kept (the donor no longer matches the one-shot clone: {e})"
+# the pilots' line is this script's, whichever scene it is (idempotent)
+for fid, z in zip(SPAWN_FIDS, SPAWN_Z):
+    SCENE = move_transform(SCENE, fid, (num(SPAWN_X), 0, num(z)), tuple(num(v) for v in SPAWN_ROT))
 g.emit_scene("MinigameTandava", G_ASSET["MinigameTandava.unity"], SCENE)
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -700,8 +691,12 @@ g.emit_scene("MinigameTandava", G_ASSET["MinigameTandava.unity"], SCENE)
 g.register_arena_card(G_ASSET["ArcadeGameTandava"])        # master + ARENA grid, never Arcade
 g.register_always_unlocked()
 g.register_build_scene("MinigameBroodRush", "MinigameTandava", G_ASSET["MinigameTandava.unity"])
+# the halo's target was the ring of fire's: migrate the key (FormerlySerializedAs reads the old one; this rewrites it)
+_ec = g.read_current(lib.END_CONDITIONS)
+_ec = re.sub(r"(?m)^  tandavaFlamesToBreak(Build)?: ", lambda m: f"  tandavaHaloRingsToBreak{m.group(1) or ''}: ", _ec)
+g.emit(lib.END_CONDITIONS, _ec)
 g.set_end_condition("tandavaBreakPercent", after="broadsidePointsPerPilot", value=BREAK_PERCENT)
-g.set_end_condition("tandavaFlamesToBreak", after="tandavaBreakPercent", value=FLAMES_TO_BREAK)
+g.set_end_condition("tandavaHaloRingsToBreak", after="tandavaBreakPercent", value=HALO_TO_BREAK)
 
 
 # ══ VALIDATE EVERYTHING BEFORE WRITING ANYTHING ═════════════════════════════
@@ -724,72 +719,62 @@ def validate_scene(sc):
     for fid, z in zip(SPAWN_FIDS, SPAWN_Z):
         m = re.search(rf"--- !u!4 &{fid}\n(?:(?!--- !u!).*\n)*", sc)
         if not m or f"m_LocalPosition: {{x: {num(SPAWN_X)}, y: 0, z: {num(z)}}}" not in m.group(0):
-            errs.append(f"spawn point {fid} is not on the start line at x = {num(SPAWN_X)}, z = {num(z)}")
+            errs.append(f"spawn point {fid} is not on the pilots' line at x = {num(SPAWN_X)}, z = {num(z)}")
     return errs
 
 
 errors = [f"plan: {e}" for e in plan_errors]
 errors += validate_scene(g.files[SCENE_REL])
 
-# the forms: an order of growing bodies, each a stage the route can feed
-if [f["kind"] for f in FORM_ROWS] != FORM_KINDS:
-    errors.append("the forms are not the plans in order")
-EATERS = FORM_ROWS[:LAST_EATER + 1]
-for a, b in zip(EATERS, EATERS[1:]):
-    if a["n"] >= b["n"] and b["kind"] != "bull":
-        errors.append(f"{b['name']} ({b['n']}) is not bigger than {a['name']} ({a['n']})")
-for f in EATERS:
-    if not 0 < f["bank"] < STOMACH_CAPACITY:
-        errors.append(f"{f['name']}: bank {f['bank']} outside (0, stomach capacity {STOMACH_CAPACITY:.0f})")
-    if f["meal"] <= 1:
-        errors.append(f"{f['name']}: meal {f['meal']} - a stop that eats nothing")
-if EATERS[-1]["bank"] <= max(f["bank"] for f in EATERS[:-1]):
-    errors.append("the Bull's ascension bank is not the biggest offering on the route")
-for f in FORM_ROWS[LAST_EATER + 1:]:
-    if f["bank"] != 0 or f["meal"] != 1:
-        errors.append(f"{f['name']}: an ascension form banks nothing and eats the minimum (bank {f['bank']}, meal {f['meal']})")
-if [f["kind"] for f in FORM_ROWS[LAST_EATER + 1:]] != ["dancer", "lion"]:
-    errors.append("the ascension is not the dance form then the final form")
-
-# the ascension's ground: past the nucleus with its whole ring (flame posts + guard reach), short of the starving
-# standoff, and between oases rather than on one (the swarm must not feed while it dances)
-reach = GUARD_POST_RADIUS + GUARD_RADIUS
-if not (math.hypot(DANCE_X, DANCE_Z) > NUCLEUS_RADIUS + reach and DANCE_X < EXIT_X - STARVE_STANDOFF - DANCE_ARRIVE
-        and math.hypot(DANCE_X, DANCE_Z) + reach < MEMBRANE_RADIUS):
-    errors.append(f"the dance ground ({DANCE_X}, 0, {DANCE_Z}) is not clear of the nucleus and the membranes (ring reach {reach:.0f})")
-for x in OASIS_X:
-    # the plants grow within PlantSpread ~70 u of an oasis centre; the statue and its packs reach `reach` from the ground
-    if math.hypot(x - DANCE_X, DANCE_Z) <= OASIS_RADIUS + reach + DANCE_ARRIVE:
-        errors.append(f"the dance ground ({DANCE_X}, 0, {DANCE_Z}) puts the ring in the oasis at x = {x}")
-if not 1 <= FLAMES_TO_BREAK <= FLAME_COUNT:
-    errors.append(f"{FLAMES_TO_BREAK} flames to break a ring of {FLAME_COUNT}")
-spacing = 2 * math.pi * RING_RADIUS / FLAME_COUNT
-if 2 * FLAME_MOUTH >= spacing:
-    errors.append(f"flame mouths ({2 * FLAME_MOUTH:.0f}) overlap at {spacing:.0f} u spacing on a {RING_RADIUS:.0f} u ring")
-if not RING_RADIUS < GUARD_POST_RADIUS:
-    errors.append("the attendants' guard posts are not outside the ring of fire")
-if max(f["n"] for f in FORM_ROWS) > 1000:
+# the forms: four, in their roles, three variants each, the plan list in the config's order
+if [f["role"] for f in FORM_ROWS] != [0, 0, 1, 2]:
+    errors.append("the forms are not eater, eater, dance, final")
+for f in FORM_ROWS:
+    if len(f["variants"]) != 3:
+        errors.append(f"{f['name']}: {len(f['variants'])} variants (the design: three, one drawn per match)")
+    for v in f["variants"]:
+        if (v["feed"] >= 0) != (f["role"] != 1):
+            errors.append(f"{v['name']}: a form that eats needs a feed twin and only those do")
+eats = [f for f in FORM_ROWS if f["role"] != 1]
+if [f["bank"] for f in eats] != sorted(f["bank"] for f in eats) or len({f["bank"] for f in eats}) != len(eats):
+    errors.append(f"the banks {[f['bank'] for f in eats]} do not RISE form by form")
+if max(BANK_SHARE) >= 0.97:
+    errors.append("a bank at or above the stomach fill at which a meal ends full could never be reached")
+if MEAL_VOLUME > PLANT_VOLUME:
+    errors.append(f"a meal ({MEAL_VOLUME:.0f}) is bigger than a whole plant ({PLANT_VOLUME:.0f})")
+if max(v["n"] for f in FORM_ROWS for v in f["variants"]) > 1000:
     errors.append("a form over 1,000 tadpoles (round 7's per-swarm ceiling)")
 
-# the food: the oases at their floor must pay every stage's Mass (a grazed plant regrows; this is the floor)
-mass_bill = sum(f["stage"] for f in FORM_ROWS)
-mass_food = PLANTS_MASS * PRISMS_PER_PLANT * MASS_LEAF
-if mass_food < mass_bill:
-    errors.append(f"the route's Mass ({mass_food:,.0f}) cannot pay the stages ({mass_bill:,.0f})")
-
-# the route: inside the membrane, outside the nucleus, in order
-if not (-MEMBRANE_RADIUS < START_X < OASIS_X[0] and OASIS_X == sorted(OASIS_X) and OASIS_X[-1] < EXIT_X < MEMBRANE_RADIUS):
-    errors.append("the route is not start < oases (ascending) < exit inside the membrane")
-for x in OASIS_X:
-    if abs(x) - OASIS_RADIUS <= NUCLEUS_RADIUS:
-        errors.append(f"the oasis at x = {x} reaches into the nucleus (fauna eat nothing there)")
-if not -MEMBRANE_RADIUS < SPAWN_X < START_X:
-    errors.append("the start line is not behind the hatch inside the membrane")
+# the arena: the hatch, the flora band and the pilots' line inside the wall and clear of the nucleus
+hatch_r = math.hypot(*HATCH)
+if not NUCLEUS_RADIUS < hatch_r < ROAM_RADIUS:
+    errors.append(f"the hatch (r {hatch_r:.0f}) is not between the nucleus and the roam radius {ROAM_RADIUS:.0f}")
+if not NUCLEUS_RADIUS < PLANT_INNER < PLANT_OUTER < MEMBRANE_RADIUS * 0.97:
+    errors.append("the flora band is not between the nucleus and the wall")
+for z in SPAWN_Z:
+    if math.hypot(SPAWN_X, z) >= MEMBRANE_RADIUS * 0.9:
+        errors.append(f"a pilot spawn ({SPAWN_X}, 0, {z}) is outside the cell")
 if len(SPAWN_Z) < len(CARD_HULLS):
     errors.append(f"{len(SPAWN_Z)} spawn points for {len(CARD_HULLS)} seats - GetRandomSpawnPose would stack pilots")
 
+# the halo: rings that do not overlap, posts outside the halo, and a dance that fits inside the cell
+spacing = 2 * math.pi * HALO_RADIUS / HALO_COUNT
+if 2 * HALO_MOUTH >= spacing:
+    errors.append(f"halo ring mouths ({2 * HALO_MOUTH:.0f}) overlap at {spacing:.0f} u spacing on a {HALO_RADIUS:.0f} u halo")
+if not HALO_RADIUS < GUARD_POST_RADIUS:
+    errors.append("the attendants' guard posts are not outside the halo")
+if not 1 <= HALO_TO_BREAK <= HALO_COUNT:
+    errors.append(f"{HALO_TO_BREAK} rings to break a halo of {HALO_COUNT}")
+director = {name: value for name, value, _ in DIRECTOR}
+if director["DanceReach"] < DANCE_REACH_NEEDED:
+    errors.append(f"DanceReach {director['DanceReach']:.0f} is short of the halo's reach {DANCE_REACH_NEEDED:.0f} (posts + guards + offset)")
+if director["DanceReach"] >= ROAM_RADIUS:
+    errors.append("the dance's reach does not fit inside the roam radius")
+if director["HaloCount"] != HALO_COUNT:
+    errors.append(f"TandavaDirectorSettings.HaloCount {director['HaloCount']:.0f} != the authored halo {HALO_COUNT}")
+
 # the collider budget: always-on plant hearts + one swarm fully engaged (heart + body per proxy)
-colliders = PLANTS_MASS + PLANTS_SPACE + 2 * MAX_PROXIES
+colliders = MASS_PLANTS + SPACE_PLANTS + 2 * MAX_PROXIES
 if colliders >= COLLIDER_CEILING:
     errors.append(f"{colliders} colliders >= the ceiling {COLLIDER_CEILING}")
 
@@ -799,23 +784,34 @@ SO_SRC = {
     "CellConfigDataSO": g.read("Assets/_Scripts/Utility/DataContainers/CellConfigDataSO.cs"),
     "FloraConfigurationSO": g.read("Assets/_Scripts/Utility/DataContainers/FloraConfigurationSO.cs"),
     "TandavaSettingsSO": g.read(SCRIPT_PATHS["TandavaSettingsSO"]),
+    "TandavaScoringRuleSO": g.read(SCRIPT_PATHS["TandavaScoringRuleSO"]),
 }
-for so_name, keys in (("SwarmFaunaConfigSO", ("ScriptedPlans", "ScriptedPlanPeriods", "MacroLod", "MultiDomain", "PlanDensity")),
+for so_name, keys in (("SwarmFaunaConfigSO", ("ScriptedPlans", "ScriptedPlanPeriods", "MacroLod", "MultiDomain", "PlanDensity",
+                                              "SortTurnCarry", "KillLayHoldSeconds", "SortLayRampSeconds", "SortLayMax")),
                       ("CellConfigDataSO", ("CytoplasmShardDistance",)),
-                      ("FloraConfigurationSO", ("MaxTotalSpawnedObjectsOverride", "PlantingPens", "SpreadPlanting")),
-                      ("TandavaSettingsSO", ("SwarmConfig", "Oases", "MaxFeedSeconds", "Forms", "AscensionPalette", "MaxNudge"))):
+                      ("FloraConfigurationSO", ("MaxTotalSpawnedObjectsOverride", "SpreadPlanting")),
+                      ("TandavaSettingsSO", ("SwarmConfig", "Forms", "Director", "AscensionPalette", "MaxNudge", "FoodPerPrism")),
+                      ("TandavaScoringRuleSO", ("haloPoints",))):
     for key in keys:
         if not re.search(rf"\b{key}\b\s*(=|;)", SO_SRC[so_name]):
             errors.append(f"{so_name} no longer declares '{key}' - the key this script authors")
-settings_keys = set(re.findall(r"(?m)^  (\w+):", g.files["Assets/_SO_Assets/Games/TandavaSettings.asset"])) - {
+settings_keys = set(re.findall(r"(?m)^  (\w+):", g.files[SETTINGS_REL])) - {
     "m_ObjectHideFlags", "m_CorrespondingSourceObject", "m_PrefabInstance", "m_PrefabAsset", "m_GameObject", "m_Enabled",
     "m_EditorHideFlags", "m_Script", "m_Name", "m_EditorClassIdentifier"}
 declared = set(re.findall(r"public\s+[\w<>\[\]]+\s+(\w+)\s*(?:=|;)", SO_SRC["TandavaSettingsSO"].split("class TandavaSettingsSO")[1]))
 if settings_keys != declared:
     errors.append(f"TandavaSettings.asset keys differ from TandavaSettingsSO: extra {sorted(settings_keys - declared)}, "
                   f"missing {sorted(declared - settings_keys)}")
+director_keys = re.findall(r"(?m)^    (\w+): ", g.files[SETTINGS_REL].split("  Director:\n")[1].split("\n  FoodPerPrism")[0] + "\n")
+if director_keys != [name for name, _, _ in DIRECTOR]:
+    errors.append("the settings asset's Director block is not TandavaDirectorSettings' fields in declaration order")
+for spec_struct, keys in (("TandavaFormSpec", ("DisplayName", "Role", "FillToEvolve", "BankShare", "MealVolume", "Line", "Variants")),
+                          ("TandavaVariantSpec", ("DisplayName", "PlanIndex", "FeedPlanIndex", "Mouth", "FeedMouth", "HaloCentre"))):
+    body = SO_SRC["TandavaSettingsSO"].split(f"public struct {spec_struct}")[1].split("\n    }")[0]
+    if re.findall(r"public\s+[\w<>\[\]]+\s+(\w+)\s*;", body) != list(keys):
+        errors.append(f"{spec_struct}'s fields are not {keys} in order (the asset this script writes)")
 
-# the harness models the route and the swarm this script lays (TandavaHarness.cs) - read back, not trusted
+# the harness models the swarm and the cell this script lays (TandavaHarness.cs) - read back, not trusted
 H = g.read("Tools/Build/swarm_core_harness/TandavaHarness.cs")
 
 
@@ -830,52 +826,67 @@ def h_const(pattern, label):
 for label, pattern, ours in (
         ("Density", r"const int Density = (\d+);", DENSITY),
         ("SeedMembers", r"const int SeedMembers = (\d+);", SEED_MEMBERS),
+        ("StomachEggs", r"const int StomachEggs = (\d+);", STOMACH_EGGS),
+        ("Cruise", r"const float Cruise = ([\d.]+)f;", CRUISE),
+        ("TurnPerStep", r"const float TurnPerStep = ([\d.]+)f;", TURN_PER_STEP),
+        ("SortTurnCarry", r"const float SortTurnCarry = ([\d.]+)f;", SORT_TURN_CARRY),
+        ("SortLayRate", r"const float SortLayRate = ([\d.]+)f;", SORT_LAY_RATE),
+        ("SortLayMax", r"const int SortLayMax = (\d+);", SORT_LAY_MAX),
+        ("KillLayHoldSeconds", r"const float KillLayHoldSeconds = ([\d.]+)f;", KILL_LAY_HOLD_SECONDS),
+        ("SortLayRampSeconds", r"const float SortLayRampSeconds = ([\d.]+)f;", SORT_LAY_RAMP_SECONDS),
         ("BitersPerStep", r"const int BitersPerStep = (\d+);", BITERS_PER_STEP),
-        ("PrismsPerPlant", r"const int PrismsPerPlant = (\d+);", PRISMS_PER_PLANT),
-        ("StartX", r"StartX = (-?[\d.]+)f", START_X), ("ExitX", r"ExitX = (-?[\d.]+)f", EXIT_X),
-        ("Cruise", r'Env\("TANDAVA_CRUISE", ([\d.]+)f\)', CRUISE),
-        ("MaxFeedSeconds", r'Env\("TANDAVA_MAX_FEED", ([\d.]+)f\)', MAX_FEED_SECONDS),
-        ("SurplusFactor", r"SurplusFactor = ([\d.]+)f", SURPLUS_FACTOR),
-        ("AscensionSurplus", r"AscensionSurplus = ([\d.]+)f", ASCENSION_SURPLUS),
-        ("MealsPerForm", r"MealsPerForm = ([\d.]+)f", MEALS_PER_FORM),
+        ("SortWellsPerType", r"const int SortWellsPerType = (\d+);", SORT_WELLS_PER_TYPE),
+        ("SortWellDead", r"const float SortWellDead = ([\d.]+)f;", SORT_WELL_DEAD),
         ("StarvationSeconds", r"StarvationSeconds = ([\d.]+)f", STARVATION_SECONDS),
         ("ShedIntervalSeconds", r"ShedIntervalSeconds = ([\d.]+)f", SHED_INTERVAL_SECONDS),
         ("ForageBelow", r"ForageBelow = ([\d.]+)f", FORAGE_BELOW),
-        ("DanceX", r"DanceX = (-?[\d.]+)f", DANCE_X), ("DanceZ", r"DanceZ = (-?[\d.]+)f", DANCE_Z),
-        ("DrumSeconds", r"DrumSeconds = ([\d.]+)f", DRUM_SECONDS),
-        ("GuardRadius", r"GuardRadius = ([\d.]+)f", GUARD_RADIUS),
-        ("FlameCount", r"FlameCount = (\d+)", FLAME_COUNT),
-        ("FlamesToBreak", r"FlamesToBreak = (\d+)", FLAMES_TO_BREAK),
-        ("GuardMembers", r"GuardMembers = (\d+)", GUARD_MEMBERS),
-        ("SortWellsPerType", r"const int SortWellsPerType = (\d+);", SORT_WELLS_PER_TYPE),
-        ("SortWellDead", r"const float SortWellDead = ([\d.]+)f;", SORT_WELL_DEAD)):
+        ("BodyFill", r"const float BodyFill = ([\d.]+)f;", BODY_FILL),
+        ("FillToEvolve", r"const float FillToEvolve = ([\d.]+)f;", FILL_TO_EVOLVE),
+        ("MealVolume", r"const float MealVolume = ([\d.]+)f;", MEAL_VOLUME),
+        ("PrismsPerPlant", r"const int PrismsPerPlant = (\d+);", PRISMS_PER_PLANT),
+        ("MembraneRadius", r"MembraneRadius = ([\d.]+)f;", MEMBRANE_RADIUS),
+        ("NucleusRadius", r"NucleusRadius = ([\d.]+)f;", NUCLEUS_RADIUS),
+        ("BodyReach", r"BodyReach = ([\d.]+)f;", BODY_REACH),
+        ("PlantInner", r"PlantInner = ([\d.]+)f", PLANT_INNER), ("PlantOuter", r"PlantOuter = ([\d.]+)f;", PLANT_OUTER),
+        ("MassPlants", r"MassPlants = (\d+)", MASS_PLANTS), ("SpacePlants", r"SpacePlants = (\d+);", SPACE_PLANTS),
+        ("HaloCount", r"HaloCount = (\d+)", HALO_COUNT), ("HaloToBreak", r"HaloToBreak = (\d+)", HALO_TO_BREAK),
+        ("GuardMembers", r"GuardMembers = (\d+)", GUARD_MEMBERS), ("GuardRadius", r"GuardRadius = ([\d.]+)f;", GUARD_RADIUS)):
     v = h_const(pattern, label)
     if v is not None and abs(float(v) - float(ours)) > 1e-6:
         errors.append(f"harness {label} = {v}, this script authors {ours}")
-for label, ours in (("OasisX", OASIS_X), ("PlantsAt", PLANTS_AT)):
-    v = h_const(rf"{label} = \{{([^}}]*)\}}", label)
-    if v is not None and [float(x) for x in v.split(",")] != [float(x) for x in ours]:
-        errors.append(f"harness {label} = {{{v.strip()}}}, this script authors {ours}")
+v = h_const(r"Hatch = new\(([^)]*)\)", "Hatch")
+if v is not None and [float(x.strip().rstrip("f")) for x in v.split(",")] != list(HATCH):
+    errors.append(f"harness Hatch ({v}) != {HATCH}")
+v = h_const(r"static readonly float\[\] BankShare = \{([^}]*)\}", "BankShare")
+if v is not None and [float(x.strip().rstrip("f")) for x in v.split(",")] != BANK_SHARE:
+    errors.append(f"harness BankShare {{{v.strip()}}} != {BANK_SHARE}")
 v = h_const(r"static readonly float\[\] EggVolume = \{([^}]*)\}", "EggVolume")
 if v is not None and [float(x.strip().rstrip("f")) for x in v.split(",")] != EGG:
     errors.append(f"harness EggVolume {{{v.strip()}}} != {EGG}")
+v = h_const(r"public static readonly string\[\] Keys =\s*\{([^}]*)\}", "Keys")
+if v is not None and re.findall(r'"(\w+)"', v) != PLAN_KEYS:
+    errors.append("harness Keys are not tandava_plans.plan_keys() in order (the swarm config's ScriptedPlans)")
 
-# the end condition, the enum ids, the toast situations
+# the end conditions, the enum ids, the toast situations
 eco = g.read("Assets/_Scripts/ScriptableObjects/EndConditionOverridesSO.cs")
 m = re.search(r"DefaultTandavaBreakPercent = (\d+);", eco)
 if not m or int(m.group(1)) != BREAK_PERCENT:
-    errors.append("EndConditionOverridesSO.DefaultTandavaBreakPercent differs from the authored break percent")
-m = re.search(r"DefaultTandavaFlamesToBreak = (\d+);", eco)
-if not m or int(m.group(1)) != FLAMES_TO_BREAK:
-    errors.append("EndConditionOverridesSO.DefaultTandavaFlamesToBreak differs from the authored flames to break")
+    errors.append("EndConditionOverridesSO.DefaultTandavaBreakPercent differs from the authored shatter percent")
+m = re.search(r"DefaultTandavaHaloRingsToBreak = (\d+);", eco)
+if not m or int(m.group(1)) != HALO_TO_BREAK:
+    errors.append("EndConditionOverridesSO.DefaultTandavaHaloRingsToBreak differs from the authored rings to break")
+if "tandavaFlamesToBreak" in g.files[lib.END_CONDITIONS]:
+    errors.append("EndConditionOverrides.asset still carries the ring of fire's key")
 if not re.search(rf"\bTandava = {MODE_ID},", g.read("Assets/_Scripts/Data/Enums/GameModes.cs")):
     errors.append(f"GameModes.Tandava is not {MODE_ID}")
 toasts_src = g.read("Assets/_Scripts/Data/Enums/GameToastSituation.cs")
-for name, sid in (("TandavaMatchStart", 128), ("TandavaFormTaken", 129), ("TandavaEscaped", 130), ("TandavaBroken", 131),
-                  ("TandavaHeadingForExit", 132), ("TandavaDenyHint", 133), ("TandavaStarving", 134),
-                  ("TandavaReadyToDance", 135), ("TandavaSealed", 136), ("TandavaFlameOut", 137)):
+for name, sid in (("TandavaMatchStart", 128), ("TandavaFormTaken", 129), ("TandavaCompleted", 130), ("TandavaBroken", 131),
+                  ("TandavaFeeding", 132), ("TandavaDenyHint", 133), ("TandavaMealBroken", 134), ("TandavaRising", 135),
+                  ("TandavaHaloLit", 136), ("TandavaHaloBroken", 137)):
     if not re.search(rf"\b{name} = {sid},", toasts_src):
         errors.append(f"GameToastSituation.{name} is not {sid}")
+if not re.search(r"\bHalo = 3,", g.read("Assets/_Scripts/Data/Enums/ToySwitchSignal.cs")):
+    errors.append("ToySwitchSignal.Halo is not 3 (the halo rings' verb)")
 
 # the card is an ARENA card, single domain, its hulls only
 card = g.files["Assets/_SO_Assets/Games/ArcadeGameTandava.asset"]
@@ -886,25 +897,28 @@ if G_ASSET["ArcadeGameTandava"] not in g.files.get(lib.ARENA_GRID, ""):
     errors.append("card is not on the ARENA grid")
 if G_ASSET["ArcadeGameTandava"] in g.read_current(lib.ARCADE_GRID):
     errors.append("card is on the ARCADE grid (arena cards never are)")
+if re.search(r"(?i)\bfire\b|\bflame", card + g.files[SETTINGS_REL]):
+    errors.append("the card or the settings still speak of fire (the prompter took fire out of the mode)")
 
-# the swarm config really is scripted, sort, and dense enough
+# the swarm config really is scripted, sort, dense enough, and regrows the way the harness proved
 sw = g.files[f"{SWARM_DIR}/TandavaSwarmFaunaConfig.asset"]
 for key, want in (("Model", "2"), ("PlanDensity", str(DENSITY)), ("MacroLod", str(MACRO_LOD)), ("MultiDomain", str(MULTI_DOMAIN)),
-                  ("BitersPerStep", str(BITERS_PER_STEP)), ("Cruise", num(CRUISE))):
-    if not re.search(rf"(?m)^  {key}: {re.escape(want)}$", sw):
-        errors.append(f"swarm config {key} is not {want}")
-if [x for x in re.findall(r"guid: ([0-9a-f]{32}), type: 3\}", sw.split("ScriptedPlans:")[1].split("ScriptedPlanPeriods:")[0])] \
-        != [G_PLAN[k] for k in FORM_KINDS]:
-    errors.append("swarm config's ScriptedPlans are not the six forms in order")
-periods = re.findall(r"(?m)^  - (\d+)$", sw.split("ScriptedPlanPeriods:")[1].split("\n  ", 1)[0] + "\n" +
-                     "\n".join(sw.split("ScriptedPlanPeriods:\n")[1].split("\n")[:len(FORM_KINDS)]))
-if [int(x) for x in periods[:len(FORM_KINDS)]] != [PLANS[k]["frameSteps"] for k in FORM_KINDS]:
-    errors.append(f"swarm config's ScriptedPlanPeriods {periods} are not the plans' own frame steps")
-for key, want in (("StarvationSeconds", num(STARVATION_SECONDS)), ("ShedIntervalSeconds", num(SHED_INTERVAL_SECONDS)),
+                  ("BitersPerStep", str(BITERS_PER_STEP)), ("Cruise", num(CRUISE)), ("SortTurnCarry", num(SORT_TURN_CARRY)),
+                  ("KillLayHoldSeconds", num(KILL_LAY_HOLD_SECONDS)), ("SortLayRampSeconds", num(SORT_LAY_RAMP_SECONDS)),
+                  ("StomachEggs", str(STOMACH_EGGS)), ("SeedMembers", str(SEED_MEMBERS)),
+                  ("StarvationSeconds", num(STARVATION_SECONDS)), ("ShedIntervalSeconds", num(SHED_INTERVAL_SECONDS)),
                   ("ForageBelow", num(FORAGE_BELOW)), ("SortWellsPerType", str(SORT_WELLS_PER_TYPE)),
                   ("SortWellDead", num(SORT_WELL_DEAD))):
     if not re.search(rf"(?m)^  {key}: {re.escape(want)}$", sw):
         errors.append(f"swarm config {key} is not {want}")
+if [x for x in re.findall(r"guid: ([0-9a-f]{32}), type: 3\}", sw.split("ScriptedPlans:")[1].split("ScriptedPlanPeriods:")[0])] \
+        != [G_PLAN[k] for k in PLAN_KEYS]:
+    errors.append("swarm config's ScriptedPlans are not the 21 plans in order")
+periods = [int(x) for x in re.findall(r"(?m)^  - (\d+)$", sw.split("ScriptedPlanPeriods:\n")[1])[:len(PLAN_KEYS)]]
+if periods != [PLANS[k]["frameSteps"] for k in PLAN_KEYS]:
+    errors.append(f"swarm config's ScriptedPlanPeriods {periods} are not the plans' own frame steps")
+if SEED_MEMBERS * DENSITY < max(v["n"] for v in FORM_ROWS[0]["variants"]):
+    errors.append("the seed is smaller than a Great Serpent: it would hatch as a young serpent")
 
 if "--self-test" in sys.argv:
     # NEGATIVE CONTROL: the scene checks must fire on the donor, every one of them
@@ -916,15 +930,17 @@ if "--self-test" in sys.argv:
     sys.exit(0 if len(donor_errs) == expected else 1)
 
 # ── report ──
-print("Tandava - the swarm's forms (density %d, stomach capacity %.0f):" % (DENSITY, STOMACH_CAPACITY))
+print("Tandava - the creature's forms (density %d, stomach %.0f, a meal %.0f, a plant %.0f):"
+      % (DENSITY, STOMACH_CAPACITY, MEAL_VOLUME, PLANT_VOLUME))
 for f in FORM_ROWS:
-    print(f"  {f['name']:<14} {f['n']:>4} tadpoles  bank {f['bank']:>7,.1f}  stage {f['stage']:>8,.1f}  meal {f['meal']:>7,.1f}")
-print(f"  route Mass {mass_food:,.0f} at the floor vs the stages' {mass_bill:,.0f};  forest {FOREST_PRISMS} prisms, "
-      f"{FOREST_VOLUME:,.0f} volume;  biggest body {BIGGEST_BODY:,.0f} volume;  {colliders} colliders worst case")
+    print(f"  {f['name']:<20} bank {f['bank']:.2f} of the stomach ({f['bank'] * STOMACH_CAPACITY:>7,.0f})  variants: " +
+          ", ".join(f"{v['name']} {v['n']}" for v in f["variants"]))
+print(f"  forest {FOREST_PRISMS} prisms, {FOREST_VOLUME:,.0f} volume; biggest body {BIGGEST_BODY:,.0f} volume; {colliders} colliders worst case")
 print("  ladder: " + ", ".join(f"{k} {v:,}" for k, v in LADDER.items()))
-print(f"  ascension: dance ground ({DANCE_X:.0f}, 0, {DANCE_Z:.0f}), drum {DRUM_SECONDS:.0f} s, ring of fire r {RING_RADIUS:.1f} "
-      f"({FLAME_COUNT} flames {spacing:.0f} u apart, mouth {FLAME_MOUTH:.0f}, {FLAMES_TO_BREAK} to break), guard posts r "
-      f"{GUARD_POST_RADIUS:.1f}, centre {', '.join(f'{x:.1f}' for x in RING_CENTRE_LOCAL)} in the body axes")
+print(f"  arena: membrane {MEMBRANE_RADIUS:.0f}, roam {ROAM_RADIUS:.0f}, flora {PLANT_INNER:.0f}-{PLANT_OUTER:.0f}, hatch {HATCH}, "
+      f"pilots at x {SPAWN_X:.0f}")
+print(f"  halo: r {HALO_RADIUS:.1f} ({HALO_COUNT} rings {spacing:.0f} u apart, mouth {HALO_MOUTH:.0f}, {HALO_TO_BREAK} to break), "
+      f"guard posts r {GUARD_POST_RADIUS:.1f}; the dance reaches {DANCE_REACH_NEEDED:.0f} of its {director['DanceReach']:.0f}")
 print(f"  scene: {SCENE_SOURCE}")
 
 g.finish(errors, referenced=EXISTING,

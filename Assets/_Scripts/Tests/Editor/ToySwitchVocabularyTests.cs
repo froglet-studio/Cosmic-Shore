@@ -122,7 +122,7 @@ namespace CosmicShore.Tests
         [Test]
         public void EveryUnreservedVerbReadsAsItself()
         {
-            // The unreserved verbs must not be mistakable for EACH OTHER either: a fire that reads
+            // The unreserved verbs must not be mistakable for EACH OTHER either: a halo ring that reads
             // as "thread me next" would send a pilot into the one ring the dance is guarding.
             var verbs = NonDomainSignals.ToList();
             for (int a = 0; a < verbs.Count; a++)

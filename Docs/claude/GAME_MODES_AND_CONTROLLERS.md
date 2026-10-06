@@ -1270,7 +1270,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
         └── DustupController                    — Butterfly-only dust duel in the Boneyard; a pass OVER a rival is a Strike point (CombatPoints)
         └── TapestryController                  — Butterfly-only timed painting war in the Barren cell; volume standing at the whistle (VolumeRemaining)
         └── SiroccoController                   — Butterfly-only erosion race through Rampage's forest; prisms-destroyed scoring
-        └── TandavaController                   — the first CO-OP ARENA card (Rhino / Squirrel / Sparrow, one domain): a scripted swarm eats its way down a long cell, evolving form at oases; the exit is sealed to all but its last form, so the banked Bull rises into the Lord of the Dance inside a ring of fire (the one time the cell changes colour) and, if the pilots do not break the dance, takes the legless Winged Lion; the match ends on the swarm's outcome (`TANDAVA.md`)
+        └── TandavaController                   — the first CO-OP ARENA card (Rhino / Squirrel / Sparrow, one domain): one scripted swarm hunts flora through a CLOSED cell, its speed set by how threatened it feels; feeding, its plates go out as danger guards round its mouth and it cannot heal. Banked, the Great Serpent becomes a Many-Headed Serpent, rises into the Lord of the Dance inside a halo of switch rings (the one time the cell changes colour, gold), and becomes the Sea Lion, whose last feast completes the cycle; every match draws one of three variants of each form; the match ends on the swarm's outcome (`TANDAVA.md`)
 ```
 
 #### Game Launch Pipeline

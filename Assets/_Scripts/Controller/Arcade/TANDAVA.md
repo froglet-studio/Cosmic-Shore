@@ -1,427 +1,348 @@
 # Tandava
 
 `GameModes.Tandava = 62` · ARENA card · Squirrel, Sparrow, Rhino · co-op (every pilot on one domain) · scene
-`MinigameTandava` · assets owned by `Tools/Build/author_tandava_assets.py` (`--check`).
+`MinigameTandava` · assets owned by `Tools/Build/author_tandava_assets.py` (`--check`, `--self-test`).
 
 **Status: authored headless, NOT yet run in the Unity editor.** Everything below that describes behaviour is from the
-headless harness (`Tools/Build/swarm_core_harness`, mode `tandava`), the reference compile (`unity_refcompile`, player
-and editor), a Roslyn type-check of the swarm glue, and the generators. QA: `QA-TANDAVA-1..8` in
+headless harness (`Tools/Build/swarm_core_harness`, mode `tandava`, T1-T15), the reference compile (`unity_refcompile`,
+player and editor), a Roslyn type-check of the swarm glue, and the generators. QA: `QA-TANDAVA-9..14` in
 `Docs/UNITY_VERIFICATION_CHECKLIST.md` (§ Tandava; `/verify-unity` could not run: no Unity editor or `unity` CLI in the
-authoring sessions). Phase A (the route, the four eating forms, the cell's colour) and phase B (the ascension, the
-Winged Lion, the sealed exit, foraging and starvation) are both in.
+authoring session). `QA-TANDAVA-1..8` describe the first design and are superseded.
+
+**This is the second design (2026-10-06).** The first - a swarm racing down a long tube cell to an exit, through a young
+serpent, two bigger serpents, a bull and a winged lion - was rejected by the prompter as "stupid and boring", for eight
+reasons, each answered here:
+
+| The prompter's note | What changed |
+|---|---|
+| 1. the young serpent and the serpent go; only the Great Serpent remains | four forms; the swarm hatches WHOLE as the Great Serpent (seeded at its full plan, harness T2) |
+| 2. cut limbs must not shrink it; once a form is reached it is remembered and regrows, like the automata | the director never steps a form back; regrowth is fast and funded (no kill-lay-hold, a 1.5 s ramp, laid at the wound - T4: a 30% tail cut regrows in 1.1 s) and only feeding holds it |
+| 3. no visible form change; at least show it in the goals tab | the top-left goal stack draws the mode's own rows (`IGoalSource`): the form's name and progress, flaring on every change; a gold prism burst from the body; a toast naming the variant |
+| 4. no straight path to victory: shut it in the cell like Scarab Scramble, flora dispersed, it eats anywhere, defends while it eats and is most vulnerable then | a CLOSED standard cell, 16 dispersed plants, threat-weighted foraging; the FEED pose puts its plates out round its mouth as DANGER guards and holds its regrowth |
+| 5. no bull; a sea creature from the myth - a many-headed serpent; the lion becomes a sea lion; no fire anywhere, use gold prisms | Great Serpent -> Many-Headed Serpent (5, 7 or 10 heads) -> Lord of the Dance -> Sea Lion; the ring of fire is a pearl HALO; the effects are gold prism debris; the dance glows gold |
+| 6. every match a different formation, but only four forms | three variants of each form, one drawn per match (T14) |
+| 7. faster, and its speed and behaviour set by the threat | calm 60 u/s, wary 90, fleeing 126 (T3, T8), the turn up to 2.5x, the whole body carried round the turn (93% of its shape kept vs 18%) |
+| 8. the artifact | the playable lab, rebuilt for this design |
 
 ## 1. The pitch
 
-A tadpole swarm hatches at one end of a long cell and eats its way down a route of oases toward the exit membrane at
-the other. Every time its body is full and its stomach holds the surplus, it takes its next **form**. Every form is a
-**flyer** (the HyperSea has no ground): no form walks. The cell keeps its own colours through every form; it changes
-for one thing only, the dance (below).
+One creature lives in this cell, and it is hungry. It hatches as a **Great Serpent** and goes where it likes to eat,
+plant to plant through a closed cell, at a pace and in a manner set by how threatened it feels. Charge it and it turns
+wary, then bolts. Leave it alone and it cruises to the nearest good plant. At a plant it settles into its **feed pose**:
+its hood comes off its head to orbit its mouth as a ring of **danger guards** (a pilot who touches one is burned), and
+it **stops regrowing**. That is the moment to strike: the body, not the head. Hurt it badly enough at the table and the
+meal is **broken**: it bolts, hungry.
 
-**The exit is sealed to every form but the last.** A serpent or a bull that reaches the membrane is held back by it.
-To leave, the banked Bull must **ascend**: it rises into the **Lord of the Dance** (the Nataraja, as a sculpture of
-tadpoles) and swims to the dance ground as the figure assembles, and **the cell blooms and turns to fire with it**.
-There a **ring of fire** of twelve flames lights round the figure, its attendant packs patrolling round the ring, and a
-drum runs. When the drum stops, the swarm takes its **final form**, the **Winged Lion**, the only form the membrane
-lets through, and the cell eases back to its own colours.
+Fed, it changes. The Great Serpent becomes a **Many-Headed Serpent** whose heads all dip to the food when it eats. Fed
+again, it **rises where it stands** into the **Lord of the Dance**: a halo of twelve rings lights round the figure, its
+attendant packs patrol the halo, a drum runs, and the cell glows gold. When the drum stops it becomes the **Sea Lion**,
+and one last feast completes the cycle.
 
-Pilots chase it, cull it, and burn its food. They win four ways:
-- **wipe it out**;
-- **starve it**: with nothing left to eat and the membrane sealed, it presses on the membrane and withers;
-- **break the dance**: put out nine of the twelve flames before the drum stops, by threading them, past the patrol;
-- **break the Winged Lion**: cut the final form below 35% of its body before it crosses.
+Every form, once taken, is **remembered**: cut limbs grow back from what it has eaten. So the pilots win by denying it
+and by striking it when it cannot heal:
+- **shatter it**: cut its body below 35% of its form (the shatter threshold, `EndConditionOverrides`);
+- **break the dance**: break nine of the twelve halo rings before the drum stops, past the attendants;
+- **hold it off**: the cycle must complete within seven minutes of the go;
+- or wipe it out, or starve it to pieces.
 
-They lose only when the Winged Lion crosses the exit.
-
-Only the mode carries the name. The forms, the narrator and every UI string use plain English names.
+They lose when the Sea Lion's last feast is eaten. Only the mode carries the name; the forms, the narrator and every UI
+string use plain English names.
 
 ## 2. The forms
 
-| # | Form | Body (plan / in game at density 3) | Element mix | How it is reached |
+Every match draws ONE variant of each form (`TandavaDirectorCore.DrawVariants`, replicated as one packed int), so no two
+matches meet the same animal. Counts are plan units / in-game tadpoles at `PlanDensity` 3. Every form is at least as big
+as every variant of the one before it (`tandava_plans.validate`, harness T1): a commit only ever GROWS the body, paid
+from the bank, so no surplus ever crowds a new shape's wells into a blob.
+
+| # | Form | Variants (units / tadpoles) | What it is | Feeding |
 |---|---|---|---|---|
-| 1 | Young Serpent | 69 / 207 | Mass 72 · Charge 7 · Space 9 · Time 12 % | it hatches as this |
-| 2 | Serpent | 108 / 324 | Mass 72 · Charge 7 · Space 9 · Time 11 % | eating: the same head and hood, a longer tail |
-| 3 | Great Serpent | 157 / 471 | Mass 71 · Charge 7 · Space 10 · Time 11 % | eating: longer again |
-| 4 | Bull | 154 / 462 | Mass 53 · Charge 26 · Space 5 · Time 16 % | eating: coils fold into a horned bull that FLIES, legs swept back and out as fins |
-| 5 | Lord of the Dance | 128 / 384 | Mass 49 · Charge 10 · Space 10 · Time 30 % | the ASCENSION: the banked Bull rises into it on the way to the dance ground |
-| 6 | Winged Lion | 142 / 426 | Mass 42 · Charge 15 · Space 27 · Time 17 % | the drum stops; NO legs; the only form the exit lets through |
+| 1 | **Great Serpent** | long and slender 157 / 471 · longer, narrow hood 169 / 507 · short and thick, broad hood 150 / 450 | Mass coils, Space shimmer rods along the back, a Time tail rattle, and a hood of Charge plates (shield tier) | the hood leaves the head to orbit the mouth as danger guards; the body's wave settles |
+| 2 | **Many-Headed Serpent** | **Five-Headed** 175 / 525 · **Seven-Headed** 181 / 543 · **Ten-Headed**, two tails 195 / 585 | a serpent's body whose front widens into a collar of Space necks fanned over the top, each with a Mass head and two Charge hood plates | every head DIPS to the food, the heads closing into a ring round the mouth, snouts in; the hoods orbit outside them |
+| 3 | **Lord of the Dance** | 204 / 612 each (the mirror pose; the hair flown wider) | the Nataraja as a sculpture of tadpoles: the figure, a Charge gem in the raised hand (no fire), the crown, the halo and four Time attendant packs patrolling outside it | does not eat |
+| 4 | **Sea Lion** | crescent fluke, 4 rays 206 / 618 · forked fluke, 5 rays 211 / 633 · long fins, 3 rays 214 / 642 | the heraldic sea-lion: a lion's head and Charge mane on a Mass body, great sculling fore-fins of Space rays, a Time fish's tail with a Charge fluke. No legs: every form flies | the mane and the fluke leave the body to orbit the mouth |
 
-The names are what the HUD ("Serpent 62%") and the narrator say. The plans are keyed `serpent_s` / `serpent_m` /
-`serpent_l` / `bull` / `dancer` / `lion` (`Assets/_SO_Assets/Swarm Fauna/Tandava/SwarmPlan_tandava_<kind>.json`).
+Every eating form has a **feed twin** (`<key>_feed`): the same units in the same order, re-arranged. The commit between
+them is a POSE commit (`RequestPose`): the same members re-sorting, no molt, and the lay ease kept (feeding is not a
+wound - T6). Every plan is Mass-majority (the director, not the census, picks the form); the plans are 21 JSONs baked
+by `Tools/Build/tandava_plans.py`, which also bakes each eating plan's **mouth** (where the director puts the food) and
+each dance plan's **halo**.
 
-- **Lord of the Dance**: the Nataraja in the body's (side, up) plane, facing back down its heading: the right leg on
-  the prone dwarf, the left leg raised and swung across, four arms (the drum, the fire, the open palm, the arm across
-  the chest), the crown and two locks of flying hair, on a pedestal. Limbs are double strokes so the pose reads at a
-  distance. Outside the ring of fire, four **attendant packs** of seven Time units (the bestiary's pack hunters)
-  orbit the ring across the eight frames, two each way, one turn per loop. The dance plan runs at 40 steps a frame
-  (one patrol turn per 32 s); the figure itself barely moves between frames. The plan bakes where the ring is
-  (`"ring"`: its centre, radius and the packs' patrol radius), so the mode and the harness read one source.
-- **Winged Lion**: an ellipsoid body and head under a Charge mane of two shield-plate rings, two great wings of five
-  Space feathers each beating slowly (a 9.6 s wingbeat at 12 steps a frame: feathers are the slowest tadpoles,
-  0.8 voxels a step, and a faster stroke left the live wings smeared above the body), a tail with a tuft, and **no
-  legs**: two Time flame ribbons stream from its haunches into a swallow-tail V beside the tail, rippling, each with a
-  Charge flame tip. They start at mid-height and never hang below the belly, so from a chase camera they read as
-  contrails, not legs (the prompter's call, 2026-10-06: a legged animal walking through the HyperSea looks wrong).
-
-- **Serpent**: Mass coils (bulk, food store, what grows), a Charge **hood** of shield-tier plates flared round the
-  head, Space rods along the back (the shimmer band), and a Time tail rattle. A lateral travelling wave carries it.
-  It grows by adding stations at the TAIL, so a small → medium → large commit reads as the snake getting longer.
-- **Bull**: a hollow Mass body with a hump, a Charge brow and two long horns, a Space neck bell and tail, and four
-  Time legs that are **fins**: swept back AND out from the lower flanks like a manta's, the fore pair spreading wide, the
-  hind pair trailing past the rump, beating together in one stroke from root to tip (never a gait). Swept back alone
-  they read as two hanging columns from the front, which is why they spread.
-
-The plans are generated procedurally by `Tools/Build/tandava_plans.py`, in the same JSON schema as the Swarm cell's
-four elemental plans and through the same element identity clamp (`swarm_plans.identity`). It asserts:
-- the design's shares, to within 3.5 points;
-- both regions present, so lineages can colour back and belly;
-- only Charge carries a tier;
-- every pair of units at least 2.1 voxels apart in every frame (the sort core's collision radius is 2.25).
-
-The dance and the lion are STROKE figures, and the sort core blurs a stroke into a blob at its default twelve
-Gaussian wells per element and its sortfeel dead zone. The Tandava config runs `SortWellsPerType 24` and
-`SortWellDead 0` (no flat-bottomed wells; the design's own note for the statue) (§4).
+The ten-headed variant is the prompter's ("a ten-headed or multi-tailed snake"); five and seven are the traditional
+counts of a many-hooded naga. The Lord of the Dance is the ascension of the mode's name (Shiva's dance) - the one
+reference the mode carries, never named on screen.
 
 ## 3. How it works
 
-```
-TandavaController  (MultiplayerDomainGamesController + ISwarmDirector, on every peer)
- ├─ SERVER: TandavaDirectorCore  (pure C#: route, forms, ascension, outcome)   <- the swarm's state, once per tick
- │     ├─ Route: oasis 1 .. 8; a denied oasis is skipped
- │     ├─ Forage: the route is eaten - nearest oasis with food left; a stop that yields nothing is written off
- │     ├─ Starving: nothing left anywhere - it presses on the sealed membrane until it has starved
- │     ├─ form: body >= 90% of its plan AND the bank holds the surplus -> commit the next form; the banked Bull -> ToDance
- │     ├─ Dance: the dance form, the drum, BreakFlame(k); the drum's end -> the final form (Final)
- │     └─ outcome: escaped (the final form only) | wiped | starved | broken | dance broken
- │   replicated: form, phase, goal, anchor, progress, the story clock, the outcome, the ring's centre and axes,
- │               the flames-out and flames-guarded masks (NetworkVariables) + narrator lines (ClientRpc)
- ├─ every peer: SwarmFauna (the swarm, client-local like all fauna) asks the director where to hatch and swim;
- │   a CLIENT's swarm takes the replicated form and is nudged toward the server's anchor;
- │   EVERY peer holds its own swarm behind the sealed membrane (TandavaDirectorCore.SealCorrection)
- ├─ every peer: the ring of fire - twelve TandavaFlame switches from the replicated placement; each peer tests the
- │   pilots it simulates and reports a threaded flame; the server judges it against the guard
- └─ every peer: CellVisualTint on the cell - eases membrane / nucleus / cytoplasm to the form's (or starving) palette
-```
+### 3.1 The swarm: the sort core, scripted, with the director's levers
 
-### 3.1 The swarm: the sort core with a scripted form list
+`SwarmSortParams.Scripted` (phase A) lets a director name the form; the census never does. This design adds five
+levers, every one a no-op at its default so every shipped swarm is bit-for-bit unchanged (the sort, round-11d, tick-job,
+lineage and LOD suites all pass):
 
-The swarm is the Swarm cell's own sort core (`Docs/SWARM_FAUNA.md` §9), with one addition:
-- `SwarmSortParams.Scripted` lets a director name the plan instead of the census.
-- The plan list is then the ordered forms. A form's major element is data (`SwarmPlanData.MajorElement`), so three
-  Serpent sizes can all be Mass.
-- A form changes only on `RequestPlan`, through the same commit a majority morph takes: the `Switched` event, stale
-  fates, the region map re-picked, the lay ramp restarted.
-- Killing the majority never re-forms a scripted swarm.
-- Every shipped config leaves `Scripted` off, and the majority mode is bit-identical. The four elemental plans index
-  by element, so `Major == PlanIx`, and all 209 existing harness checks plus the tick-job and LOD suites still pass.
-
-The swarm still evolves **by eating**: it lays only from eaten flora (1:1), and a form commits only when the body it
-grew is full and the stomach holds the surplus. The director names which shape comes next, never when. It cannot
-kill, spawn or feed a member.
-
-### 3.2 The route
-
-The cell is the Cleave membrane (radius 3,600). The route runs along +X through the centre:
-- the swarm hatches at x = -2,000;
-- 8 oases sit at x = ±550, ±900, ±1,250, ±1,650, each 100 u in radius;
-- the exit membrane plane is at x = +2,000.
-
-The middle crossing passes the nucleus (r ~392). No oasis sits inside it, because fauna eat nothing in the nucleus.
-
-The flora is the cell's own (the Cell owns the environment): three Borromean flora configs, planted by the cell's
-spawner into **planting pens** (sector cones of the membrane) centred on the oases.
-
-| Config | Oases | Plants |
+| Lever | What it does | Where |
 |---|---|---|
-| early Mass | 1-4 | 2 each |
-| late Mass | 5-8 | 3 each |
-| late Space | 5-8 | 1 each ("mixed later") |
+| `SetLevers(cruiseScale, turnScale, holdLaying)` | the body's speed and turn as multiples of the config's, and a laying hold | `IScriptedSwarmCore` / `SwarmSortCore` / `SwarmTickJob` / `SwarmFauna` |
+| `RequestPose(plan)` | a plan commit that keeps the lay ease (a re-arrangement, not a new body) | same |
+| `SwarmSortParams.TurnCarry` (`SwarmFaunaConfigSO.SortTurnCarry`) | members ride each step's heading turn rigidly, as they already ride the swim. 0 = shipped: a 300 u body's tail, moving at turn x length, strings out behind a sharp turn | `SwarmSortCore.CarryTurn` |
+| `SwarmTickSettings.PlanDanger` | a Charge member in a plan well authored DANGER tier wears a danger plate - a designed body part, not a startle. On for scripted plans only: the research plans' tier-1 marks stay unread | `SwarmTickJob.Build` |
+| `ISwarmDirector.TryGetSeedForm` | the scripted form a swarm hatches as (the drawn variant) | `SwarmFauna.Seed` |
 
-Each plant is budget-capped at 60 prisms (`MaxTotalSpawnedObjectsOverride`), so a lobby can burn an oasis out.
+and three readouts: `SwarmFauna.MembersLost` (monotone, every death), `SampleMemberPositions` (where an effect is thrown
+from) and `LifeForm.HealthBlockCount` (a plant's live prisms: what is left to eat).
 
-The director's route loop:
-1. **Travel** to the next oasis.
-2. **Feed** until it has eaten its meal there. A meal is the form's stage over 2.5, the design's "two to three oases
-   a stage". It also leaves when the oasis is grazed bare, when its stomach is full, or after 45 s.
-3. **Move on** to the next oasis.
+### 3.2 The closed cell and its food
 
-An oasis with no edible flora left is **denied** and skipped. The server re-checks this each second.
+The standard membrane (`CapsuleMembrane`, radius 1,200) is the creature's wall: the swarm's own member clamp holds every
+member inside 0.97 of it, and the director keeps the body's centre within 1,004 u of the cell's centre (the membrane less
+the longest body's half-length). The nucleus (radius 392) is glass the creature swims through; fauna eat nothing inside
+it. Pilots spawn on a line across the cell from the hatch (x = 950, facing it); the creature hatches at x = -650.
 
-After the last oasis the route is eaten, and the swarm **forages**: it goes to the nearest oasis that still has food
-(the pilots' leftovers), and writes off a stop that yields nothing so it never circles. With nothing left anywhere it
-is **Starving**: it swims to 140 u inside the exit plane and presses on the sealed membrane. Two things end it there,
-and neither is the director killing anyone:
-- **the swarm's own metabolism.** Unfed for `StarvationSeconds` (30 in this config) while hungry, `SwarmFauna` sheds a
-  member every `ShedIntervalSeconds` (0.25), the core choosing whom. Below 15% of its form's plan it has starved;
-- **the membrane's clock.** 40 s pressing on the membrane, it has starved. This is the outcome's clock for a swarm
-  whose banked stomach keeps it from shedding at all (a Bull banking its offering can sit above the hunger line). It
-  says who won; it removes no one.
+The flora is two forks of the canonical Borromean configs, **dispersed**: 12 Mass and 4 Space plants, spread apart
+(`SpreadPlanting`) through the band 470-1,060 u from the centre, each capped at 60 prisms (4,372 volume - a meal is most
+of one). A plant regrows when it is left alone and dies when it is eaten down to 4 prisms; the cell's seeder replants it
+elsewhere. The director surveys every plant the swarm can eat (`SwarmFauna.CanEat`, the one edibility predicate) twice a
+second and weighs it by its live prisms.
 
-**The sealed exit.** A form that is not the final one never crosses the exit plane: every peer nudges its own swarm
-back to `SealHold` (60 u) inside it (`TandavaDirectorCore.SealCorrection`, the pure rule; the client nudge's rigid move).
-Within `SealMargin` the narrator says the membrane holds, once per form.
+**Where it eats** (`TandavaDirectorCore.ChooseFood`): score = sqrt(food) x safety / (distance + 300), where every pilot
+within about 350 u of a plant spoils it (by half when the creature is calm, by 90% when it is wary). The plant it is
+already heading for scores 1.3x (it commits), and a plant it just left rests 25 s. So it goes wherever the food is good
+and the pilots are not - harness T9: with a pilot parked by the nearer of two plants, it takes the far one.
 
-### 3.3 The cell changes for the dance alone
+### 3.3 Threat and mood
 
-`CellVisualTint` is a new, mode-agnostic Cell capability. It eases the cell's own spawned membrane, nucleus and
-cytoplasm to a `CellPalette` and back. It changes how they **look**, never gameplay: the boundary, the nucleus
-control radius and the phase are untouched. It recolours draws, never assets:
+THREAT (0..1) is the larger of two readings, smoothed (rising in 0.25 s, falling over 2.5 s):
+- the pilots' pressure: each pilot within 450 u presses by its nearness, more when it closes fast (80 u/s reads as a
+  full charge); two pilots press harder than one (a soft OR);
+- the wound rate: losing 4% of its full body a second reads as full threat.
 
-| Visual | How it is recoloured | Why |
+| Mood | Enters at | Speed (x the config's 60 u/s) | Turn | Behaviour |
+|---|---|---|---|---|
+| Calm | below 0.2 | 1.0 - **60 u/s** | 1.0 | the best plant, a plant spoiled by half by a nearby pilot |
+| Wary | 0.3 | 1.5 - **90 u/s** | 1.6 | hurries, and avoids plants near pilots (spoiled by 90%) |
+| Fleeing | 0.65 (out below 0.4, at least 4 s) | 2.1 - **126 u/s** | 2.5 | bolts AWAY from the pilots, weighted by how near each is; cornered at the wall, it runs along it |
+| Feeding | - | 0.5 (it holds station) | 1.0 | see §3.4. It does not bolt from pilots it merely sees: its guards are out |
+
+Harness T8: a pilot charging from 800 u at 130 u/s turned it wary at 4.0 s and sent it bolting at 5.2 s, always away,
+at up to 126 u/s; alone again it calmed in 3.6 s. A Sparrow (top 135 u/s) can just keep up with a bolting creature; a
+Squirrel or a Rhino can catch it.
+
+### 3.4 Feeding: the guards, and the one time it cannot heal
+
+When its MOUTH is within 70 u of the chosen plant it begins to eat: the body takes its feed twin (the plates going out to
+orbit the mouth as a ring of DANGER plates, 39-40 u in radius - the protectors; T6: every plate on the ring and every
+one a danger plate after 10 s), slides so the plant sits at the feed pose's mouth, and stops laying (`holdLaying`). A
+pilot who touches a danger plate is burned (`VesselElementalDebuffByDangerPrismEffect`: an opposing-domain hull loses
+petals) and slowed. The body behind the ring has no shields left - they are the guards - and cannot regrow: this is
+where the pilots strike.
+
+A meal ends when it has eaten one `MealVolume` (4,000) there or all its form needs, when its stomach is full, when the
+plant gives it nothing for 6 s (after a 4 s settle), after 30 s, or when it is **broken**: losing 20% of its full body
+during one meal sends it bolting (`TandavaMealEnd.Broken`; T10: a 21% cut broke the meal in 1.1 s). A plant it leaves
+rests 25 s.
+
+Feeding is round-robin intake (`SwarmFaunaConfigSO.BitersPerStep` 8 members asked a tick, each biting a prism it
+touches), so it is the members AT the plant that eat - which is why every form's feed pose brings its head, its snouts
+or its jaws to the mouth. Measured in the harness: 260-370 volume/s, a meal in 7-10 s.
+
+### 3.5 A form is remembered
+
+The director never steps a form back. A cut limb regrows: the sort core lays at the wound (`SortBudAtWound`), at up to
+24 eggs a step, with no hold after a kill and a 1.5 s ramp - harness T4: a fed Great Serpent with its tail third cut
+off grows back to 93% in 1.1 s, the same form, nothing it did not lose dying, and the eggs paid from its stomach.
+Laying is held only while it eats (T5).
+
+Regrowth is PAID: every egg costs eaten volume (`SwarmFaunaConfigSO.EggVolume`). So the pilots' cuts cost the creature
+food, and food is evolution. A form moves on when its body is at 90% of its full plan AND its stomach holds the form's
+**bank**:
+
+| Form | Bank (share of the stomach, 35,903 volume at 500 eggs) |
+|---|---|
+| Great Serpent | 0.35 (12,566) |
+| Many-Headed Serpent | 0.60 (21,542) - the dance's offering |
+| Lord of the Dance | none: the drum decides |
+| Sea Lion | 0.85 (30,517) - the last feast, which completes the cycle |
+
+The banks RISE, so what one form carries over never skips the next, and all sit under the 0.98 stomach fill at which a
+meal ends full (a full stomach stops grazing: a bank above it could never be reached - the harness's first tuning hit
+exactly that deadlock). A form is never taken mid-meal.
+
+A creature with an empty stomach cannot heal. That is the pilots' long game: break its meals and its cuts stay cut (T11:
+every meal struck from 25 s in, it was shattered at 123 s, never reaching the dance).
+
+### 3.6 The ascension: rising in place, the halo, the drum
+
+When the Many-Headed Serpent is banked it **rises where it stands** into the Lord of the Dance (pulled in from the wall
+only as far as the halo needs: `DanceReach` 250 u). The figure assembles for 12 s (`RiseSeconds`), then the **halo** of
+twelve `TandavaHaloRing` switch rings lights round it, 167 u in radius, 88 u apart, each with a 24 u mouth, in the
+plane the figure stands in. The four attendant packs patrol at 202 u. A ring is **guarded** while six or more
+attendants (Time members) are within 40 u of its guard post, and a guarded ring dims and cannot be broken (the switch
+law: drawn smaller than its trigger is legal, drawn larger is the lie). Threading an open ring breaks it, scoring the
+pilot (`IRoundStats.SwitchesThreaded`, 25 points) and throwing gold where it stood. Break nine before the 30 s drum stops
+and the dance is broken (the figure falls back into the serpent it rose from - a molt, never a kill); otherwise, when
+the drum stops, it is the Sea Lion. Harness T12: the halo lit 12.0 s after the rise; nobody threading, the Sea Lion
+came at the drum's end; threading a ring every 1.5 s broke the dance (10 tries, one held by the attendants); the packs
+guard about a fifth of the halo at any moment.
+
+The rings are pearl (`ToySwitchSignal.Halo`, value 3 - it was `Flame`): a fixed warm white, the one colour no playable
+domain, no danger rim and no free pickup wears (`ToySwitchVocabularyTests` holds every pair apart).
+
+### 3.7 The HUD: the goals, top left
+
+`TandavaController` is the goal stack's `IGoalSource` on every peer (a new seam: `GoalStack.Source`, mode-worded rows
+with `GoalEntry.Progress` - a value the mode words over a hairline it fills). Its rows:
+
+| Row | Roaming / feeding | The dance |
 |---|---|---|
-| membrane | a property block on its instanced draw (`CapsuleMembrane.SetColourOverride`) | its `SpindleMaterial` is shared with every spindle |
-| nucleus | property blocks on its renderers | per-renderer, no material copy |
-| cytoplasm | ONE per-cell material clone (`SnowChanger.SetColourOverride`) | one write a frame however many motes |
+| 1 (primary) | the variant's name ("Seven-Headed Serpent") and its progress to the next form, "62%" over a bar; the Sea Lion's reads "Sea Lion - the last feast" | "Halo rings broken 4/9" |
+| 2 | what it is doing - Roaming / Wary / Fleeing / **Feeding - strike the body** / Rising - and its body, "Body 86%", over a bar | "Dancing - break the halo", its body |
+| 3 | "Time left 4:12" | "Drum 0:12" |
 
-**The rule (the prompter's call, 2026-10-06): the cell keeps its own colours for every form and every moment but
-one.** When the Bull rises into the Lord of the Dance, every peer's cell blooms (up to 2.5× bright, gone by mid-ease)
-and eases over 3 s into the dance's bronze and fire (`TandavaSettings.AscensionPalette`). It holds that through the
-dance, and eases back to its own colours over 5 s when the dance ends: the Winged Lion is taken, or the dance is
-broken. Nothing else tints it: not the serpents, not the Bull, not starvation, not the escape, not the win. The
-trigger is the replicated form index (the dance form), so every peer changes at the same moment. Idle, the tint costs
-nothing, and a cell the mode never tinted is never restored (no override is ever applied to it).
+Every form change bumps the source's `Revision`, and the stack flares its primary row the first time it draws a new
+revision - so a new form is a new name lighting up where the pilots already look. The narrator toasts it too, naming
+the variant drawn ("Its coils split: a Seven-Headed Serpent."), and the creature's old shape shatters into gold.
 
-A big cell needs sparse motes: `CellConfigDataSO.CytoplasmShardDistance` (new, 0 = the prefab's 120). Tandava
-authors 360, giving about 4,200 motes in the 3,600 u cell instead of the ~113,000 the prefab's spacing would build.
-Cleave, the other 3,600 u cell, is unchanged.
+### 3.8 No fire: the gold burst, and the cell glows for the dance alone
 
-### 3.4 Pilots, stakes and the AI
+The mode has no fire anywhere (the prompter's call). Its effect is **gold prism debris**: `TandavaGoldBurst` throws the
+platform's own prism death shards (`PrismDebris`, the batched entity debris every dying prism throws) in the Gold
+domain's prism colours - 64 from the creature's own members at every form change, 18 from a broken halo ring - with a
+gold light over the place (`PrismLit.PublishLight`) for 0.6 s. Debris, not mass: no collider, no volume, nothing the cell
+counts.
 
-The cell takes one rule from the Swarm cell and keeps the shipped default for the rest:
-- It starts **hostile** (`initialControllingDomain: OpposingLocalPilot`). Without it, an empty nucleus hands control
-  to the local pilot and the swarm hatches friendly.
-- It plays the **Shipped** petal burn and the **shipped** fauna stomach. The Tuned burn and the conserved stomach are
-  the Swarm cell's contained experiments: `check_elemental_economy.py` fails on a second Tuned cell, and
-  `Fauna.UsesConservedStomach` documents the stomach as the Swarm cell's alone. The swarm's own stomach is
-  `SwarmFauna`'s and does not read that flag.
-- Every strike rule of the round-10 bestiary applies per element (`Bestiary` on): pufferfish plates (Charge), lurker
-  (Mass), locust shimmer (Space), pack (Time).
-- **One colour.** `MultiDomain` is OFF, against the design's "MultiDomain on". A lineage swarm gives its slots 1 and 2
-  the other two playable domains (`SwarmFauna.BuildSlotDomains`), and with every pilot on one domain one of those IS
-  the pilots'. A drifted lineage would grow members in the pilots' own colour: an enemy that reads as a friend. It
-  stays off until a lineage can exclude the pilots' domain.
+`CellVisualTint` (phase A) recolours the cell's own membrane, nucleus and cytoplasm, never a shared material and never
+what they do. The cell keeps its own colours for every form and every moment but one: from the rise into the Lord of
+the Dance until the dance ends it blooms and eases into GOLD (`TandavaSettings.AscensionPalette`), and eases back after.
 
-The fleet (every hull on the card, flown by a human):
+### 3.9 Pilots, stakes and the AI
 
-| Hull | Keeps up with the swarm's 50 u/s? | How it culls | How it denies an oasis |
-|---|---|---|---|
-| Rhino | yes: cruise 50, ramps to 1,200 on a straight | the sword, at speed | rams and sword through the plants |
-| Squirrel | yes: cruise 60, 300 on skim energy (a teammate's trail is the steady source) | the joust | rams |
-| Sparrow | yes with its free boost (35 → 135) | guns and rockets, from range | guns into the plants |
-
-There are no starting elements: nobody races anybody, and every hull can hold the swarm's pace. The residual is
-the AI, below.
-
-Scoring:
-- A pilot's score is members culled (`ScoringMetric.LifeformsKilled`, attributed kills only) plus 25 for each flame
-  they put out (`TandavaScoringRuleSO.flamePoints`, counted in `SwitchesThreaded`: a flame is a switch, threaded).
-- The match result is the swarm's outcome, not a metric race.
-- `MinDomainsAllowed = MaxDomainsAllowed = 1`: every pilot and AI teammate flies one domain. It is the first co-op
-  arena card.
-
-The AI: `ArmChasers` points every AI pilot at the swarm, led 40 u toward its goal and spread ±45 u across the body.
-During the dance it flies at the nearest lit, unguarded flame instead, aimed 30 u past it along the flame's axis so the
-line it flies threads the mouth.
-**An all-AI lobby cannot win** (the Tollway rule, restated for speed):
-
-| Hull | Autopilot speed | vs the swarm's 50 u/s cruise |
+| Outcome | Pilots | How |
 |---|---|---|
-| Squirrel | 60 u/s (cruise) | can keep up |
-| Sparrow | 35 u/s (cruise) | cannot keep up |
-| Rhino | ramps on straights | can keep up |
+| `Shattered` | win | its body below 35% of its form, once it has held 60% (so a body still growing into a new form never reads as shattered) |
+| `Starved` | win | the same, while its own unfed clock has run out |
+| `Wiped` | win | every member dead |
+| `DanceBroken` | win | nine halo rings broken before the drum stops |
+| `HeldOff` | win | seven minutes from the go and the cycle is not complete |
+| `Completed` | lose | the Sea Lion's bank is full: the cycle is complete |
 
-### 3.5 Networking (the design's open question, settled)
+A pilot's score is the members they culled (`LifeformsKilled`, attributed kills only) plus 25 per halo ring. The free
+run (nobody opposing it) completes in 211-245 s over 9-10 meals (T7), well inside the seven-minute clock: the pilots
+must take about three minutes off it - every broken meal costs it the meal, the flight and the food to regrow.
 
-The sim runs on the server and every peer follows it:
-- **The server is authoritative.** It runs the director on its own swarm and replicates the form, goal, anchor,
-  evolve progress and outcome. The match end and the scoring are the server's.
-- **A client runs its own swarm** (fauna are client-local, the Brood Rush precedent). It takes the replicated form
-  and goal, and is nudged toward the server's anchor: 20% of the gap per tick, at most 6 u, once past 25 u
-  (`SwarmFauna.TryNudge`, the LOD's rigid move).
+AI pilots hunt it (`AIPilot.SetExternalTargetProvider`): at the body led toward where it is going, spread by seat; while
+it feeds, at its body 70 u behind its centre, clear of the guards; in the dance, at the nearest open halo ring, aimed
+past it so the line threads the mouth. Honest limit (the Tollway rule, restated for speed): the Squirrel's and Sparrow's
+autopilots fly at cruise (60 / 35 u/s); a bot catches the creature only at a plant. An all-AI lobby is not expected to win.
 
-What this does not make identical:
-- A client's individual tadpoles are its own: same animal, same place, different members.
-- Kills land on each peer's own swarm through the replicated vessels and weapons.
+### 3.10 Networking
 
-Proving how far apart two peers' swarms drift is QA-TANDAVA-3.
-
-### 3.6 The ascension: the dance ground, the drum and the ring of fire
-
-The banked Bull (its offering is a whole body's worth of Mass, 15,510 at density 3, the stomach's 90% cap) **rises
-into the dance form at once** through the ordinary commit (molts, never deaths; T2), and the cell turns to fire. It
-swims to the **dance ground** at (1,075, 0, 400) assembling the figure on the way, so the statue and its patrols are
-standing when the flames light; the drum is the pilots' window, not the shape's. The ground is beside the course,
-between the sixth and seventh oases, clear of both by the ring's whole reach so the dance never stands in flora (the
-generator asserts it). There:
-1. **The ring of fire is placed once**, on the server: its centre is the dance ground plus the dance plan's baked ring
-   offset in the swarm's body axes of that moment, and its plane is the body's (up, side) - the plane the statue
-   stands in. Twelve flames sit on it, 133 u from the centre and 69 u apart, each a switch ring of mouth 24 u whose
-   axis is the ring's TANGENT: a pilot circling the dancer threads flame after flame, against the patrol.
-2. **The drum runs 30 s.** Every flame a pilot threads while it is **unguarded** goes out. A flame is guarded while at
-   least 6 of the swarm's Time members (the attendants) are within 40 u of its **guard post**, 167 u from the centre
-   straight out from the flame (the packs' patrol radius). The guard is read off the SERVER's swarm and replicated
-   as a mask; a guarded flame's drawn ring gutters to 35% of its mouth, so the ring never advertises a mouth that is
-   not open. Culling a pack unguards what it was guarding.
-3. **Nine out (EndConditionOverrides `tandavaFlamesToBreak`) and the dance is broken**: the pilots win, the figure
-   falls back into the Bull (a molt; nobody dies), and the cell eases back to its own colours. **The drum stops
-   first**, and the swarm takes the Winged Lion: the cell eases back, the exit is open to it alone, and the pilots
-   have its flight to the membrane (~27 s unopposed) to cut it below 35%.
-
-The flame is the switch vocabulary's fourth verb, `ToySwitchSignal.Flame`: *this is a fire, thread it to put it out*,
-painted the platform's danger red (`Docs/ToySystem/ARCHITECTURE.md`, "What a switch's SHADER says").
+The server runs the director on its own swarm and replicates: the variants (one packed int), the form, the plan the body
+wears, the phase and mood (every peer derives the same speed and turn from them - `TandavaDirectorCore.LeversFor`), the
+goal, the anchor, the HUD's numbers, the halo's placement and its broken / guarded masks, and the outcome. A client runs
+its own swarm (fauna are client-local, the Brood Rush precedent): it takes the replicated plan, levers and goal (written
+straight into `Fauna.Goal` every published tick - the fauna's own goal poll is seconds apart, far too slow for a creature
+that bolts) and is nudged toward the server's anchor (20% of the gap a tick, at most 8 u, past 25 u). A client that has
+not heard the variant draw when its swarm hatches hatches as the first variant and re-sorts into the drawn one on its
+first tick. Narration is an index into the settings' lines (`TandavaLine`), so every peer reads its own text.
 
 ## 4. What the harness proves (`bash Tools/Build/swarm_core_harness/run.sh <plans> tandava <tandava plans>`)
 
-The real sort core and the real director, with a food model that keeps the geometry `SwarmFauna.Feed` depends on:
-each tick one biting member (`BitersPerStep 1`) bites only if it touches a plant with food.
+The shipped sort core (scripted, with the levers) and the shipped director in a closed 1,200 u cell of 16 dispersed,
+regrowing plants (`TandavaHarness.cs`, header). The food model keeps the one thing `SwarmFauna.Feed` depends on -
+geometry: BitersPerStep members asked round-robin, each biting a prism within reach. Pilots are scripted policies.
 
-The swarm's own metabolism is `SwarmFauna.Starving`'s rule (unfed 30 s while hungry, one member shed per 0.25 s, the
-core choosing whom), and the ring of fire is the glue's (placed off the baked ring and the body axes, guarded by Time
-members at the posts). Numbers from 2026-10-06:
-
-| Test | Result |
+| Test | What it shows |
 |---|---|
-| T1 scripted seed | hatches as the Young Serpent and holds it while it grows |
-| T2 the walk | Young Serpent → Serpent → Great Serpent → Bull → Lord of the Dance → Winged Lion, each a `Switched` the next step. 0 self-inflicted deaths, the body never shrinks through a commit. Shape coverage after 30 s to re-sort: 98 / 97 / 100 / 70 / 80 % (stroke figures held to 65%, the blob forms to 70%) |
-| T3 | killing 90% of the Mass never re-forms it |
-| T4 | bad requests are ignored, and the majority mode ignores `RequestPlan` |
-| T5 | a shipped (majority) swarm still morphs when its Time is killed |
-| T6 unopposed | escapes **as the Winged Lion** at 239 s: forms at 40 / 88 / 126 s, the Bull rises into the dance at 162 s, the ring lights at 182 s, the lion at 212 s (exactly the drum after), 9 stops |
-| T7 starvation | every oasis denied: never evolves and **starves** (64 s, 113 shed). All food burnt once it is the Bull: it cannot ascend and cannot leave - **starves** at the membrane (177 s) |
-| T8 two oases denied | the race costs it 19 s |
-| T9 | culling every member wins (Wiped); cutting the Winged Lion below 35% wins (Broken) |
-| T10 the sealed exit | a serpent past the exit plane has not escaped and the membrane raises `Sealed`; its correction puts it back 60 u inside; the final form is never held. A swarm swimming straight at the exit for 150 s never crosses (14 sealed beats, at most -60 u from the plane) |
-| T11 the ascension | the statue is assembled by the drum's end (73% over its last 5 s; 72% already when the ring lights, because it assembled on the way); the body axes drift 0° over the drum; 100% of the non-Time body stands inside the ring and 72% of the Time members patrol outside it; the attendants guard 26% of flame-seconds, and all 12 flames at some point (the guard patrols); the lion is assembled before it crosses (80%) |
-| T12 breaking the dance | a lobby threading an unguarded flame every 1.5 s breaks the dance at 194 s, 9 of 9 tries landing; molted back to the Bull with 443/443 alive and 0 deaths; pilots who charge the guarded flames are repelled on 19 of 20 tries and only put out 1 |
-| T13 the drum wins a slow lobby | one flame per 5 s puts out 6 before the drum stops; the swarm takes the lion and escapes |
+| T1 | 21 plans; every twin is its travel plan's census; every eating plan bakes a mouth, every dance plan a halo; the forms only grow; every feed twin's plates are danger tier |
+| T2 | every Great Serpent variant hatches whole (450-507 tadpoles) and holds 93-98% of its shape 15 s later |
+| T3 | calm 61 u/s against the config's 60; x2.1 = 127 u/s; the turn carry keeps 93% of the body's shape round a hard fleeing turn (18% without) |
+| T4 | a 30% tail cut regrows to 93% in 1.1 s, the same form, no self-inflicted deaths, 3,044 volume paid |
+| T5 | held, a 20% cut stays cut; let go, it regrows in 0.3 s |
+| T6 | the feed pose: every plate on the guard ring, every one a DANGER plate (and none without `PlanDanger`); the lay ease kept |
+| T7 | three free runs complete in 211-245 s, every form in order, no egg laid at a meal, never leaving the cell, rising where it stood |
+| T8 | charged: wary, then bolting away at up to 126 u/s; alone again, calm in 3.6 s |
+| T9 | it takes the far plant when a pilot sits by the near one |
+| T10 | a 21% cut mid-meal breaks it and it bolts; nothing laid while it ate; fed before, it regrows at once afterwards |
+| T11 | every meal broken: the pilots win (shattered at 123 s) |
+| T12 | the halo lights 12 s after the rise; the drum's end brings the Sea Lion; nine rings broken break the dance; the packs guard ~20% |
+| T13 | 30% of its body: shattered (starved if starving); half its body fights on; none: wiped |
+| T14 | over 300 seeds every variant of every form is drawn; the draw packs into one int and is the same on every peer |
+| T15 | the clock runs out: held off |
 
-**Negative control:** with the scripted branch disabled, T1-T3, T6, T8 and T9 fail.
-
-`TANDAVA_DUMP=<dir>` writes the live body against the pose the core is steering to, at the drum's end and at the
-lion's best, as JSON for a picture. Three things were found only that way: the dance plan briefly shipped at the
-shared 6 steps a frame (the packs' wells spun a turn every 4.8 s, faster than a tadpole swims, and no Time member ever
-reached a guard post); the lion's feathers smeared above its body (the wingbeat outran Space's top speed); and the
-statue plateaued at 57-68% however long it was given, which was the sortfeel dead zone widening every stroke
-(`SortWellDead 0` lifts it to 70-77%; more time alone did nothing).
-
-**Sweep** (2026-10-06):
-- Cruise 2.0 / 2.5 / 3.0 all hold T6-T9.
-- Grazing every second tick fails T6: stops hit the cap and the swarm stalls a form short.
-- Ships: cruise 2.5 (50 u/s), one biter every tick, a 45 s stop cap.
-
-**What is not proved:** the real bite rate against a real budget-capped Borromean plant, frame time, the look, and
-the network drift. The race times are a model, not a measurement.
+What it is not: the game's bites are prism queries against real plants, its pilots are people and its kills are
+collisions, so the TIMES above are a model, not a measurement - QA-TANDAVA-9..14 measure them.
 
 ## 5. Numbers and where they live
 
-| Value | Where |
-|---|---|
-| route, forms, the dance's palette, narration, director dials, the seal and starvation, the dance ground, drum and ring of fire, client nudge | `Assets/_SO_Assets/Games/TandavaSettings.asset` |
-| swarm (PlanDensity 3, cruise 2.5, biters 1, MacroLod off, MultiDomain off, StarvationSeconds 30 / ShedInterval 0.25, SortWellsPerType 24, SortWellDead 0, the six scripted plans and their periods 6/6/6/6/40/12) | `Assets/_SO_Assets/Swarm Fauna/Tandava/TandavaSwarmFaunaConfig.asset` |
-| break threshold 35%; flames to break the dance 9 | `EndConditionOverrides.asset` `tandavaBreakPercent`, `tandavaFlamesToBreak` (FrogletTools > Game Modes > End Game Conditions) |
-| 25 points a flame | `TandavaScoringRule.asset` `flamePoints` |
-| cell, flora pens, ladder | `Assets/_SO_Assets/Cell Configs/Tandava Cell/` |
+| Number | Value | Lives in |
+|---|---|---|
+| speed, turn, the turn carry | Cruise 3 voxels/step (60 u/s), TurnPerStep 0.03, SortTurnCarry 1 | `TandavaSwarmFaunaConfig` |
+| regrowth | SortLayRate 0.084, SortLayMax 8 (x3), KillLayHoldSeconds 0, SortLayRampSeconds 1.5, BudAtWound | same |
+| the stomach and intake | StomachEggs 500 (35,903 volume), BitersPerStep 8, SeedMembers 180 (x3, capped at the plan: it hatches whole) | same |
+| every director dial (threat, moods, levers, food, feeding, shatter, ascension, clock) | `TandavaDirectorSettings`' C# defaults | `TandavaSettings.Director` (authored from the C# defaults and asserted) |
+| the forms, variants, banks, meals, mouths, halo centres | §2, §3.5 | `TandavaSettings.Forms` |
+| the halo, the burst, the palette, the lines, the HUD words | §3.6-3.8 | `TandavaSettings` |
+| the shatter, the rings to break | 35%, 9 | `EndConditionOverrides` (`tandavaBreakPercent`, `tandavaHaloRingsToBreak`) |
 
-**Each form's bank** is the design's starting value: 40% of its body in banked Mass volume (Mass egg 40.31),
-clamped to 90% of the stomach. The Bull's is the ascension's offering: a whole body's worth, which the cap holds to
-15,509.9. The dance and final forms are taken at the dance ground, not eaten to.
-
-| Form | Bank (Mass) | Stage | Meal |
-|---|---|---|---|
-| Young Serpent | 3,337.7 | 4,780.3 | 1,912.1 |
-| Serpent | 5,224.2 | 5,477.6 | 2,191.0 |
-| Great Serpent | 7,594.4 | 6,857.4 | 2,743.0 |
-| Bull | 15,509.9 | 7,915.5 | 3,166.2 |
-| Lord of the Dance | 0 | 0 | 1 (the field's floor) |
-| Winged Lion | 0 | 0 | 1 |
-
-The route holds 87,439 Mass at its floor (20 plants × 60 prisms) against the stages' 25,031, so a lobby that burns
-nothing loses to an unopposed swarm, and one that burns well can starve it (T7) or slow it (T8).
-
-**The ring of fire** (world, from the dance plan's baked ring × cbrt(3) × unit scale 2): radius 132.7, guard posts at
-167.3, centre (0, 2.3, 0) in the body axes; 12 flames 69 u apart, mouth 24, guard radius 40, 6 Time members to guard.
-
-**Each form's meal** is that form's stage over 2.5 (never below 1). A stage is three parts:
-1. grow from the body it arrived with to 90% of its own, at its own mix's egg prices;
-2. plus its bank;
-3. less the previous form's bank, which the commit spends on exactly that growth.
-
-The generator and `TandavaHarness.BuildForms` compute the same arithmetic.
+The generator reads the harness's constants back and fails on any disagreement; the settings' director block is the C#
+defaults, in declaration order.
 
 ## 6. Ecology invariants (the protocol)
 
 | Law | Holds? |
 |---|---|
-| continuity of existence | yes: births bloom, molts re-form, the cell's colour eases, a client nudge is small |
-| no imposed death | yes: the director cannot kill. Starvation is the swarm's own metabolism (`SwarmFauna.Starving`, as everywhere, at this config's pace); the membrane's starving clock and a broken dance are OUTCOMES, and a broken dance molts the figure back into the Bull |
-| mass is conserved | yes: eggs are paid 1:1 from eaten flora |
-| one colour at birth | yes: Tandava's swarm is ONE colour, the cell's hostile controller (`MultiDomain` off, §3.4). The Swarm cell's lineages are unchanged |
-| shielded mass is never food | yes, and this is why the Bull's design diet (Charge flora) is NOT built (§9) |
-| the Cell owns the environment | yes: oases are the cell's flora in planting pens, the tint recolours the cell's own visuals, and the mode owns only the exit plane |
-| endogenous selection | a stated, user-requested exception: the FORM ORDER is scripted. The swarm still grows only by eating, and a form commits only when eating has filled it. |
+| continuity of existence | yes: it hatches by blooming, re-sorts between forms, its gold shards fly and fade, the cell's colour eases, a client nudge is small |
+| no imposed death | yes: the director cannot kill. Starvation is the swarm's own metabolism; the shatter, the clock and a broken dance are OUTCOMES, and a broken dance molts the figure back |
+| mass is conserved | yes: every egg is paid from eaten flora; the seed is the spawn; the gold burst is debris, not mass |
+| one colour at birth | yes: one colour, the cell's hostile controller (`MultiDomain` off: a lineage could grow members in the pilots' own colour) |
+| shielded mass is never food | yes: the swarm eats through the one edibility predicate |
+| the Cell owns the environment | yes: the flora is the cell's own forks, the tint recolours the cell's own visuals, the mode adds nothing to the arena but the halo's switch rings |
+| endogenous selection | a stated, user-requested exception: the FORM ORDER is scripted. The swarm still grows only by eating, and a form commits only when its eating has banked it |
 
-**Colliders:**
-- Always on: flora hearts, 24 at cap (20 Mass + 4 Space plants).
-- With a vessel near: proxies, up to 2 × 160 for the one swarm.
-- Worst case 344, under the 1,200 ceiling (asserted by the generator).
-
-**Phase ladder** (the Swarm cell's ratios 0.35 / 0.26 / 2.5 / 2.2 against this cell's mature model: 1,440 forest
-prisms + 160 proxies, 89,625 forest volume + the biggest body's 15,543): Restless 600 / 500 prisms and 37,000 /
-28,000 volume, Frenzy 4,000 / 3,600 prisms and 263,000 / 232,000 volume.
+Colliders: 16 always-on plant hearts + up to 2 x 160 proxies = 336 worst case, under the 1,200 ceiling (asserted).
 
 ## 7. Files
 
 | File | Role |
 |---|---|
-| `Arcade/Tandava/TandavaDirectorCore.cs` | the stage director (pure C#; the harness runs it) |
-| `Arcade/Tandava/TandavaController.cs` | the mode: director glue, replication, cell tint, the sealed exit on every peer, the ring of fire, AI chasers, game end |
-| `Arcade/Tandava/TandavaFlame.cs` | one flame of the ring of fire: a `Flame` switch ring, swept-segment crossing test, gutters while guarded |
-| `Arcade/Tandava/TandavaSettingsSO.cs`, `TandavaObjectiveProvider.cs` | settings; the HUD arrow (points at the swarm) |
-| `Arcade/Scoring/TandavaScoringRuleSO.cs`, `Arcade/TurnMonitors/TandavaTurnMonitor.cs` | outcome-based rule (culls + flames); the turn ends on the outcome, and the display follows the story: "Serpent 62%", "Bull - to the dance ground", "Ring of fire 4/9 - drum 12 s", "Bull - starving 23 s", "Winged Lion" |
-| `Environment/CellVisualTint.cs` | the cell's colour transition (platform capability) |
-| `Environment/FloraAndFauna/Swarm/ISwarmDirector.cs` | the director seam on `SwarmFauna` |
-| `SwarmSortCore.cs` (`Scripted`, `RequestPlan`, `Major`), `SwarmTickJob.RequestPlan`, `SwarmPlanLibrary.LoadScripted` | the scripted form list |
+| `Arcade/Tandava/TandavaDirectorCore.cs` | the director (pure C#; the harness runs it): roam, threat and mood, feeding, evolution, the ascension, the outcome, the variant draw |
+| `Arcade/Tandava/TandavaController.cs` | the mode: director glue, replication, the levers on every peer, the halo, the HUD's goal rows, the gold burst and light, the cell's dance glow, AI hunters, game end |
+| `Arcade/Tandava/TandavaHaloRing.cs` | one halo ring: a `Halo` switch ring, swept-segment crossing test, dims while guarded |
+| `Arcade/Tandava/TandavaGoldBurst.cs` | the gold prism debris burst |
+| `Arcade/Tandava/TandavaSettingsSO.cs`, `TandavaObjectiveProvider.cs` | settings; the HUD arrow (points at the creature) |
+| `Arcade/Scoring/TandavaScoringRuleSO.cs`, `Arcade/TurnMonitors/TandavaTurnMonitor.cs` | the outcome rule (culls + halo rings); the turn ends on the outcome, and the monitor's tick rebuilds the goal stack |
+| `UI/Elements/GoalStack.cs`, `GoalRow.cs` | `IGoalSource`, `GoalEntry.Progress`, `GoalRow.ShowProgress` / `Punch` (platform) |
+| `Environment/CellVisualTint.cs` | the cell's colour transition (platform, phase A) |
+| `Environment/FloraAndFauna/Swarm/*` | the levers (§3.1) |
 | `Tools/Build/tandava_plans.py`, `Tools/Build/author_tandava_assets.py` | the plans; every asset (`--check`; `--self-test` runs the scene checks on the donor scene, where all 16 must fire) |
-| `Tools/Build/swarm_core_harness/TandavaHarness.cs` | T1-T13 |
-| `Assets/_Scenes/Multiplayer Scenes/MinigameTandava.unity` | a one-shot clone of `MinigameBroodRush`: the controller, monitor, cell and four RANDOM-hull AI templates swapped, pilots on a start line at x = -2,300 facing the course. When the donor moves on, the generator keeps the committed scene and still validates it |
-| `Assets/_SO_Assets/Cell Configs/Tandava Cell/` | the cell config, spawn profile, the swarm species and three Borromean flora forks, one planting pen per oasis |
+| `Tools/Build/swarm_core_harness/TandavaHarness.cs` | T1-T15 |
+| `Assets/_Scenes/Multiplayer Scenes/MinigameTandava.unity` | a one-shot clone of `MinigameBroodRush`: the controller, monitor, cell and four RANDOM-hull AI templates swapped, the pilots' line at x = 950 facing the hatch. When the donor moves on, the generator keeps the committed scene and still validates it |
+| `Assets/_SO_Assets/Cell Configs/Tandava Cell/` | the cell config (the standard membrane), spawn profile, the swarm species and the two dispersed Borromean forks |
 | `Assets/_SO_Assets/Games/ArcadeGameTandava.asset` | the arena card: Rhino, Squirrel, Sparrow; 1-6 players seated as 3 (one per hull); one domain |
-| `Assets/_Graphics/ARCADE/CardBackgrounds/Tandava.png` | the card backdrop, rendered MODEL tier by `render_card_backgrounds.py`: the oases as Borromean glyphs in their pens, the Great Serpent's own plan at glyph scale, three pilots, the cell in its OWN colours (it changes only for the dance). The icons are the shared placeholder pair (`arcade_mode_lib.CARD_ART`) |
+| `Assets/_Graphics/ARCADE/CardBackgrounds/Tandava.png` | the card backdrop, MODEL tier (`render_card_backgrounds.py`): the dispersed flora as Borromean glyphs, the Great Serpent FEEDING (its own feed-twin plan, its danger plates round its mouth on a plant), pilots striking the body, the cell in its own colours |
 
 ## 8. Platform changes (and the rule each records)
 
-- **`SwarmSortParams.Scripted` + `IScriptedSwarmCore`.** A plan index is not an element. Every element-semantic read
-  of `PlanIx` (inflation, the frame period, the Time dead zone, the lay and molt majority guard) now reads `Major`.
-  General rule: *when an index has been doubling as a meaning, name the meaning before you let the index grow.*
-- **`ISwarmDirector` / `SwarmFauna.SetDirector`.** A mode steers a population by registering per config; nothing in
-  the swarm names the mode.
-- **`CellVisualTint` + colour overrides on `CapsuleMembrane` / `SnowChanger` + `Cell.MembraneVisual` / `NucleusVisual`
-  / `CytoplasmVisual`.** A mode may change how the cell's own visuals LOOK. It never edits a shared material, and
-  never touches what they DO.
-- **`CellConfigDataSO.CytoplasmShardDistance`.** The mote count is a cube of the radius, so it is a per-cell number.
-- **`ToySwitchSignal.Flame` (the vocabulary's fourth verb) + `ToyFactory.FireRed`.** A ring that is a FIRE to put out.
-  `ToySwitchVocabularyTests` now also asserts every unreserved verb reads as itself (0.5 summed channel distance
-  between each pair), because a fire that read as "thread me next" would send a pilot into the guarded ring.
-- **`SwarmFauna.CountMembersNear(world, radius, element)` and `BodyForward / BodyUp / BodySide`.** A mode may ask
-  where a population's members are and how its body is turned; it still cannot move or kill one.
-- **`TandavaDirectorCore.SealCorrection`.** A boundary a population may not cross is one pure rule every peer applies
-  to its own copy, never a server correction the clients chase.
+- **The director's levers** (`SetLevers`, `RequestPose`, `TurnCarry`, `PlanDanger`, `TryGetSeedForm`). A mode may set
+  how fast a population moves, how it turns, whether it lays, and which designed pose it wears; it still cannot move,
+  feed or kill a member. Every lever's default is the shipped behaviour, proven by the untouched suites.
+- **`IGoalSource` / `GoalStack.Source` / `GoalEntry.Progress`.** A mode whose objective is not a metric to race words
+  its own goal rows - the seam `GoalStack.SetGoals` was left for, now live. The metric row is untouched for every other
+  mode. *A goal that changes what it IS (a new form) flares; a goal that only moves does not.*
+- **`ToySwitchSignal.Halo` (was `Flame`) + `ToyFactory.HaloPearl`.** A verb's colour must read as itself and as no
+  domain; the value is kept so nothing serialized against it moves.
+- **`SwarmFauna.MembersLost` / `SampleMemberPositions`, `LifeForm.HealthBlockCount`.** Readouts only.
+- **`EndConditionOverridesSO.tandavaHaloRingsToBreak`** (`FormerlySerializedAs("tandavaFlamesToBreak")`; the generator
+  migrates the asset's key).
+- Phase A's `SwarmSortParams.Scripted`, `ISwarmDirector`, `CellVisualTint`, `CellConfigDataSO.CytoplasmShardDistance`
+  and `SwarmFauna.CountMembersNear` / `BodyForward / BodyUp / BodySide` stand as they were.
 
-## 9. Next phases (from the design, in its order)
+## 9. Next phases
 
-1. **Run phases A and B in the editor** (the design's own prerequisite: the Swarm cell has not run in Unity either):
-   QA-SWARM-* first, then QA-TANDAVA-*. Nothing is drawn at the exit: the exit is a plane the director tests and the
-   peers hold the swarm behind. A visible sealed membrane (a gameplay-bearing structure, the mode's own) comes with
-   the first playtest's readability notes.
-2. **The Bull's diet.** The design has its horns crack shielded Charge flora. That is the locked "shielded mass is
-   never food" law, so it needs the owner's sign-off and a named exception before it is built.
-3. **Region overrides:** a queued command API on the core (a limb's wells onto a pilot for N ticks, a region's tier,
-   the body goal) applied on the worker beside the kills. This gives the tactic chooser its verbs: limb strike,
-   shield wall, whole-body charge.
-4. **Severing:** a region split into its own `SwarmFauna` (decoy or hunter), within the proxy and collider ceilings.
-5. ~~**The ascension**~~ (phase B, §3.6). Built differently from the design's sketch: the attendants are four packs
-   INSIDE the dance plan (the core carries them round by its frames, no split), the flames are switch rings rather
-   than tadpole clusters, and the statue is the shipped sort core at 24 wells rather than a special one-frame mode.
-6. **The tactic chooser:** threat meter, Thompson sampling per tactic, cooldowns, a grudge target with a visible tell.
-7. **The Winged Lion hunts** (phase B built its body, its open exit and its 35% break): a hunting goal blend and
-   feeding from combat.
-8. **Variety:** a seeded temperament genome, a route seed, one announced mutation per match.
+1. **Run it in the editor** (QA-TANDAVA-9..14; the Swarm cell has not run in Unity either - QA-SWARM-* first): the
+   feeding intake against real Borromean plants, the bolt against real hulls, the HUD rows and the flare, the gold burst,
+   the halo, and how a full match plays against the seven-minute clock.
+2. **Tune from the playtest**: the moods' thresholds and speeds, the meal-break share, the banks, the clock.
+3. **The tactic chooser**: per-form defences beyond the feed pose (a Many-Headed lunge, the Sea Lion's fin sweep) on the
+   same queued-lever seam, each with a visible tell.
+4. **Severing**: a cut region split into its own `SwarmFauna` (a decoy or a hunter), within the proxy and collider ceilings.

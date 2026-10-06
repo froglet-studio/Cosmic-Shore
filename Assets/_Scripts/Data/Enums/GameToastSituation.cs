@@ -159,18 +159,18 @@ namespace CosmicShore.Data
         SiroccoLeadChanged = 126,       // the lead changes hands past the first milestone
         SiroccoDustHint = 127,          // idle hint: Dust mode, fly low over the forest
 
-        // Tandava - the cell's NARRATOR. {0} = the line (authored per form in TandavaSettings), so one
-        // situation serves every form; the hint takes no args.
-        TandavaMatchStart = 128,        // the race begins: {0} = TandavaSettings.StartLine
-        TandavaFormTaken = 129,         // the swarm committed a new form: {0} = that form's line
-        TandavaEscaped = 130,           // it crossed the exit membrane: {0} = TandavaSettings.EscapedLine
-        TandavaBroken = 131,            // the pilots won: {0} = TandavaSettings.WonLine, or DanceBrokenLine for a broken dance
-        TandavaHeadingForExit = 132,    // the route is eaten, it forages what is left: {0} = TandavaSettings.HeadingForExitLine
-        TandavaDenyHint = 133,          // idle hint: burn the oasis ahead before it feeds
-        TandavaStarving = 134,          // nothing left to eat anywhere: {0} = TandavaSettings.StarvingLine
-        TandavaReadyToDance = 135,      // the Bull is banked and turns for the dance ground: {0} = ReadyToDanceLine
-        TandavaSealed = 136,            // a non-final form reached the exit and the membrane held: {0} = SealedLine
-        TandavaFlameOut = 137,          // the first flame, and the last-but-one, of the ring of fire: {0} = the line
+        // Tandava - the cell's NARRATOR. {0} = the line (authored in TandavaSettings and sent as an index, so every
+        // peer reads its own copy); the hint takes no args.
+        TandavaMatchStart = 128,        // the hunt begins: {0} = TandavaSettings.StartLine
+        TandavaFormTaken = 129,         // the swarm took a new form: {0} = that form's line, naming the variant drawn
+        TandavaCompleted = 130,         // the Sea Lion ate its last feast - the swarm won: {0} = CompletedLine
+        TandavaBroken = 131,            // the pilots won: {0} = WonLine, DanceBrokenLine or HeldOffLine
+        TandavaFeeding = 132,           // its first meal - its guards are out, strike the body: {0} = FeedingLine
+        TandavaDenyHint = 133,          // idle hint: break its meals - hit the body while it eats
+        TandavaMealBroken = 134,        // the pilots hurt it at the table and it bolted: {0} = MealBrokenLine
+        TandavaRising = 135,            // banked, it rises into the Lord of the Dance where it stands: {0} = RisingLine
+        TandavaHaloLit = 136,           // the halo lit and the drum started: {0} = HaloLitLine
+        TandavaHaloBroken = 137,        // the first halo ring, and the last-but-one, broken: {0} = the line
 
         // END-OF-GAME LOBBY. Shared across every multiplayer mode, so 100+ rather than crowding
         // the per-mode blocks. {0} = player name, {1} = how many have asked so far, {2} = how many

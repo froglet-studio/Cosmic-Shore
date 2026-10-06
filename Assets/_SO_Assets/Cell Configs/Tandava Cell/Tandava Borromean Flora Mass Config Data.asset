@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a32a297a7606432885f4d3e1f83bea9a, type: 3}
-  m_Name: Tandava Late Borromean Flora Mass Config Data
+  m_Name: Tandava Borromean Flora Mass Config Data
   m_EditorClassIdentifier:
   FloraPrefab: {fileID: 8186157953239024492, guid: 421bf59ddd3f6def5e0ad21fb5cbbcf1, type: 3}
   SpawnProbability: 1
@@ -41,24 +41,7 @@ MonoBehaviour:
     MaxSpawnsPerFrame: -1
     PlantRadiusCellFraction: -1
     PlantRadiusCellFractionMin: -1
-  PlantRadiusCellFractionMaxOverride: 0.48611
-  PlantRadiusCellFractionMinOverride: 0.125
+  PlantRadiusCellFractionMaxOverride: 0.88333
+  PlantRadiusCellFractionMinOverride: 0.39167
   MaxTotalSpawnedObjectsOverride: 60
   SpreadPlanting: 1
-  PlantingPens:
-  - Axis: {x: 1, y: 0, z: 0}
-    HalfAngle: 10.30485
-    InnerFraction: 0.125
-    OuterFraction: 0.18056
-  - Axis: {x: 1, y: 0, z: 0}
-    HalfAngle: 6.34019
-    InnerFraction: 0.22222
-    OuterFraction: 0.27778
-  - Axis: {x: 1, y: 0, z: 0}
-    HalfAngle: 4.57392
-    InnerFraction: 0.31944
-    OuterFraction: 0.375
-  - Axis: {x: 1, y: 0, z: 0}
-    HalfAngle: 3.46823
-    InnerFraction: 0.43056
-    OuterFraction: 0.48611

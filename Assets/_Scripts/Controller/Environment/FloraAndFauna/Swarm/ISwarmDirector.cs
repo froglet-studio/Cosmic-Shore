@@ -16,6 +16,11 @@ namespace CosmicShore.Gameplay
         /// <summary>Where the swarm hatches and which way it first faces (world). False = where the spawner put it.</summary>
         bool TryGetSeed(SwarmFauna swarm, out Vector3 position, out Vector3 heading);
 
+        /// <summary>A SCRIPTED swarm: the form it hatches as (an index into its scripted plans - Tandava draws one of three
+        /// variants per match). False, or an index outside the list = its first form. Asked once, before the first member
+        /// exists.</summary>
+        bool TryGetSeedForm(SwarmFauna swarm, out int form);
+
         /// <summary>The swarm's current swim goal (world). False = its own grazing goal.</summary>
         bool TryGetGoal(SwarmFauna swarm, out Vector3 goal);
 

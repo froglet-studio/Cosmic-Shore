@@ -163,6 +163,14 @@ namespace CosmicShore.Gameplay
         int PlanCount { get; }
         /// <summary>Commit form <paramref name="planIx"/> at the start of the next step (owner thread only).</summary>
         void RequestPlan(int planIx);
+        /// <summary>Commit plan <paramref name="planIx"/> as a POSE of the body the swarm already wears (a feed twin: the
+        /// same members, re-arranged): the same commit as <see cref="RequestPlan"/> except that the lay ease is kept - a
+        /// creature lowering its head to eat has not been wounded. Owner thread only.</summary>
+        void RequestPose(int planIx);
+        /// <summary>The director's motion and growth levers, read every step until changed (owner thread only):
+        /// <paramref name="cruiseScale"/> and <paramref name="turnScale"/> multiply the config's Cruise and Turn (1 = as
+        /// authored), and <paramref name="holdLaying"/> stops the body laying (a feeding creature does not regrow).</summary>
+        void SetLevers(float cruiseScale, float turnScale, bool holdLaying);
     }
 
     /// <summary>

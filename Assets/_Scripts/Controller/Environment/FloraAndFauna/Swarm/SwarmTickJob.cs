@@ -76,6 +76,11 @@ namespace CosmicShore.Gameplay
         public float HuntEnter = 0.2f, LurkCalm = 0.05f;
         /// <summary>Ticks a locust shimmer holds before the dangerous quarter of the cloud moves on.</summary>
         public int LocustPhaseTicks = 20;
+        /// <summary>Tandava (TANDAVA.md §3): a Charge member whose plan well is authored DANGER tier (1) wears a danger
+        /// plate for as long as it holds that well - a designed body part (a feeding form's protectors), not a startle.
+        /// Off (every census-planned swarm) = only the strike state machine raises danger, as shipped: the research plans'
+        /// tier-1 marks stay unread.</summary>
+        public bool PlanDanger;
         /// <summary>World radius around a vessel inside which a member becomes a real proxy.</summary>
         public float EngageRadius = 160f;
         /// <summary>Most proxies this swarm may hold (nearest first).</summary>
@@ -112,7 +117,12 @@ namespace CosmicShore.Gameplay
         readonly float[] _deposit = new float[4], _depositRun = new float[4];
         readonly object _inLock = new();
         int _requestPlan = -1;
+        bool _requestPose;
         public bool WantStarvationVictim;
+        /// <summary>Tandava's levers (<see cref="IScriptedSwarmCore.SetLevers"/>), handed to the core at the start of every
+        /// tick: cruise and turn scales (1 = as authored) and the laying hold. Every other swarm leaves them at rest.</summary>
+        public float CruiseScale = 1f, TurnScale = 1f;
+        public bool HoldLaying;
 
         // ── front buffers (main thread reads after Collect) ──
         public SwarmInstance[] Instances;
@@ -250,7 +260,15 @@ namespace CosmicShore.Gameplay
         public void RequestPlan(int planIx)
         {
             if (planIx < 0) return;
-            lock (_inLock) _requestPlan = planIx;
+            lock (_inLock) { _requestPlan = planIx; _requestPose = false; }
+        }
+
+        /// <summary>Tandava: <see cref="RequestPlan"/> for a POSE of the current body (a feed twin) - the commit keeps the
+        /// lay ease (<see cref="IScriptedSwarmCore.RequestPose"/>). Same thread rule.</summary>
+        public void RequestPose(int planIx)
+        {
+            if (planIx < 0) return;
+            lock (_inLock) { _requestPlan = planIx; _requestPose = true; }
         }
 
         /// <summary>
@@ -329,6 +347,7 @@ namespace CosmicShore.Gameplay
         {
             // inputs first, on the thread that owns the core now
             int kills, plan;
+            bool pose;
             lock (_inLock)
             {
                 kills = _killCount;
@@ -336,8 +355,17 @@ namespace CosmicShore.Gameplay
                 _killCount = 0;
                 for (int e = 0; e < 4; e++) { _depositRun[e] = _deposit[e]; _deposit[e] = 0f; }
                 plan = _requestPlan; _requestPlan = -1;
+                pose = _requestPose; _requestPose = false;
             }
-            if (plan >= 0 && Core is IScriptedSwarmCore scripted) scripted.RequestPlan(plan);
+            if (Core is IScriptedSwarmCore scripted)
+            {
+                scripted.SetLevers(CruiseScale, TurnScale, HoldLaying);
+                if (plan >= 0)
+                {
+                    if (pose) scripted.RequestPose(plan);
+                    else scripted.RequestPlan(plan);
+                }
+            }
             for (int q = 0; q < kills; q++) Core.Kill(_killsRun[q]);
             for (int e = 0; e < 4; e++) Core.Stomach[e] += _depositRun[e];
             Core.SwimTarget = SwimTarget;
@@ -398,7 +426,7 @@ namespace CosmicShore.Gameplay
                 int eff = c.EffectiveElement(i);
                 var h = S.DefaultHalf[eff];
                 int tier = 0;
-                if (c.TryGetLook(i, eff, out var look, out int lt)) { h = look; if (eff == 0 && lt == 2) tier = 2; }
+                if (c.TryGetLook(i, eff, out var look, out int lt)) { h = look; if (eff == 0 && (lt == 2 || (lt == 1 && S.PlanDanger))) tier = lt; }
                 if (_strikeEff[i] != eff) { _strikeEff[i] = (sbyte)eff; _strike[i] = 0; }
                 _strike[i] = StrikeState(eff, i, _tick, c.Startle[i], _strike[i], S);
                 bool shielded = tier == 2;   // the mass stays shielded while a puff shows danger (round 11d-2)
