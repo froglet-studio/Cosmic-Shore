@@ -130,8 +130,13 @@ namespace CosmicShore.Gameplay
 
         // Written out in floats on purpose: ~49 of these run per projection, a projection runs every
         // rollout step, and the editor's Mono JIT pays for each Vector3 operator as a call and a
-        // struct copy. The same float operations in the same order as the Vector3 form
-        // t = Clamp01(Dot(p - a, ab) / len2), d2 = (a + ab * t - p).sqrMagnitude, so the same answer.
+        // struct copy. It must still give the Vector3 form's answer, t = Clamp01(Dot(p - a, ab) / len2)
+        // and d2 = (a + ab * t - p).sqrMagnitude, on EVERY runtime - and the editor's Mono computes
+        // inside an expression in double precision and keeps float LOCALS in double registers once it
+        // optimizes, while a Vector3 component always lands in memory as a float. So each value the
+        // Vector3 form rounds (a Vector3 component, a returned or passed float) is rounded here with an
+        // explicit (float) - the C#-defined way to force float precision - and nothing else is
+        // (SkimRaceCourseQueryTests, on .NET and on Mono in single and double precision).
         void TestSegment(int i, Vector3 p, ref int bestSeg, ref float bestSqr, ref float bestT)
         {
             Vector3 a = _points[i];
@@ -140,13 +145,15 @@ namespace CosmicShore.Gameplay
             float t = 0f;
             if (len2 > 1e-6f)
             {
-                t = ((p.x - a.x) * ab.x + (p.y - a.y) * ab.y + (p.z - a.z) * ab.z) / len2;
-                t = t < 0f ? 0f : t > 1f ? 1f : t; // Mathf.Clamp01
+                float apx = (float)(p.x - a.x), apy = (float)(p.y - a.y), apz = (float)(p.z - a.z); // p - a
+                float dot = (float)(apx * ab.x + apy * ab.y + apz * ab.z);  // Vector3.Dot
+                float q = (float)(dot / len2);                               // Clamp01's argument
+                t = q < 0f ? 0f : q > 1f ? 1f : q;                           // Mathf.Clamp01
             }
-            float dx = a.x + ab.x * t - p.x;
-            float dy = a.y + ab.y * t - p.y;
-            float dz = a.z + ab.z * t - p.z;
-            float d2 = dx * dx + dy * dy + dz * dz;
+            float sx = (float)(ab.x * t), sy = (float)(ab.y * t), sz = (float)(ab.z * t); // ab * t
+            float cx = (float)(a.x + sx), cy = (float)(a.y + sy), cz = (float)(a.z + sz); // a + ab * t
+            float dx = (float)(cx - p.x), dy = (float)(cy - p.y), dz = (float)(cz - p.z); // ... - p
+            float d2 = (float)(dx * dx + dy * dy + dz * dz);              // .sqrMagnitude
             if (d2 < bestSqr) { bestSqr = d2; bestSeg = i; bestT = t; }
         }
 
@@ -197,11 +204,13 @@ namespace CosmicShore.Gameplay
             {
                 int k = (j & 1) == 0 ? j >> 1 : -((j + 1) >> 1);
                 int i = ((hint + k) % n + n) % n;
-                // In floats, as TestSegment and for the same reason: d = position - point, its
-                // sqrMagnitude, and local = inverseRotation * d by Unity's own Quaternion * Vector3.
+                // In floats, as TestSegment and by its rounding rule: d = position - point and its
+                // sqrMagnitude rounded where the Vector3 form rounds them, then local = inverseRotation
+                // * d by Unity's own Quaternion * Vector3 - its products are plain locals there too, and
+                // each component one expression, rounded as the field it lands in.
                 Vector3 pt = _points[i];
-                float dx = position.x - pt.x, dy = position.y - pt.y, dz = position.z - pt.z;
-                float d2 = dx * dx + dy * dy + dz * dz;
+                float dx = (float)(position.x - pt.x), dy = (float)(position.y - pt.y), dz = (float)(position.z - pt.z);
+                float d2 = (float)(dx * dx + dy * dy + dz * dz);
                 if (d2 > 60f * 60f) continue;
                 float cut = best + BoundSlack;
                 if (Mathf.Sqrt(d2) - _shellRadius[i] > cut) continue;
@@ -210,9 +219,9 @@ namespace CosmicShore.Gameplay
                 float xx = q.x * nx, yy = q.y * ny, zz = q.z * nz;
                 float xy = q.x * ny, xz = q.x * nz, yz = q.y * nz;
                 float wx = q.w * nx, wy = q.w * ny, wz = q.w * nz;
-                float lx = (1f - (yy + zz)) * dx + (xy - wz) * dy + (xz + wy) * dz;
-                float ly = (xy + wz) * dx + (1f - (xx + zz)) * dy + (yz - wx) * dz;
-                float lz = (xz - wy) * dx + (yz + wx) * dy + (1f - (xx + yy)) * dz;
+                float lx = (float)((1f - (yy + zz)) * dx + (xy - wz) * dy + (xz + wy) * dz);
+                float ly = (float)((xy + wz) * dx + (1f - (xx + zz)) * dy + (yz - wx) * dz);
+                float lz = (float)((xz - wy) * dx + (yz + wx) * dy + (1f - (xx + yy)) * dz);
                 Vector3 box = _shellBox[i];
                 float bx = Mathf.Max(Mathf.Abs(lx) - box.x, 0f);
                 float by = Mathf.Max(Mathf.Abs(ly) - box.y, 0f);

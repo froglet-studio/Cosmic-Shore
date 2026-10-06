@@ -993,20 +993,26 @@ namespace CosmicShore.Gameplay
         /// </summary>
         float BoxClearance(int i, Vector3 pos, Vector3 right, Vector3 fwd, float minC)
         {
-            // In floats, for the editor's Mono JIT (see SkimRaceObstacle.LocalFrame): each line is the
-            // Vector3 expression it replaced - (oc - pos).sqrMagnitude, then Distance at pos, pos +- right
-            // and pos +- fwd, each point formed first and the centre subtracted from it.
+            // In floats, for the editor's Mono JIT (see SkimRaceObstacle.LocalFrame), rounding - an explicit
+            // (float) - every value the Vector3 form rounded: (oc - pos) and its sqrMagnitude for the reach
+            // cull, then for each of pos, pos +- right, pos +- fwd the point itself and its offset from the
+            // centre. The editor's Mono keeps float locals in double registers once it optimizes.
             Vector3 oc = _obCenter[i];
-            float ox = oc.x - pos.x, oy = oc.y - pos.y, oz = oc.z - pos.z;
+            float ox = (float)(oc.x - pos.x), oy = (float)(oc.y - pos.y), oz = (float)(oc.z - pos.z);
+            float o2 = (float)(ox * ox + oy * oy + oz * oz);
             float reach = _obReach[i];
-            if (ox * ox + oy * oy + oz * oz > reach * reach) return minC;
+            if (o2 > reach * reach) return minC;
             ref readonly SkimRaceObstacle.LocalFrame f = ref _obFrame[i];
             Vector3 half = _obHalf[i];
-            float c0 = f.Distance(pos.x - oc.x, pos.y - oc.y, pos.z - oc.z, half);
-            float c1 = f.Distance(pos.x + right.x - oc.x, pos.y + right.y - oc.y, pos.z + right.z - oc.z, half);
-            float c2 = f.Distance(pos.x - right.x - oc.x, pos.y - right.y - oc.y, pos.z - right.z - oc.z, half);
-            float c3 = f.Distance(pos.x + fwd.x - oc.x, pos.y + fwd.y - oc.y, pos.z + fwd.z - oc.z, half);
-            float c4 = f.Distance(pos.x - fwd.x - oc.x, pos.y - fwd.y - oc.y, pos.z - fwd.z - oc.z, half);
+            float rpx = (float)(pos.x + right.x), rpy = (float)(pos.y + right.y), rpz = (float)(pos.z + right.z); // pos + right
+            float rmx = (float)(pos.x - right.x), rmy = (float)(pos.y - right.y), rmz = (float)(pos.z - right.z); // pos - right
+            float fpx = (float)(pos.x + fwd.x), fpy = (float)(pos.y + fwd.y), fpz = (float)(pos.z + fwd.z);       // pos + fwd
+            float fmx = (float)(pos.x - fwd.x), fmy = (float)(pos.y - fwd.y), fmz = (float)(pos.z - fwd.z);       // pos - fwd
+            float c0 = BoxPoint(f, half, oc, pos.x, pos.y, pos.z);
+            float c1 = BoxPoint(f, half, oc, rpx, rpy, rpz);
+            float c2 = BoxPoint(f, half, oc, rmx, rmy, rmz);
+            float c3 = BoxPoint(f, half, oc, fpx, fpy, fpz);
+            float c4 = BoxPoint(f, half, oc, fmx, fmy, fmz);
             float c = Mathf.Min(c0, Mathf.Min(c1, c2));
             c = Mathf.Min(c, Mathf.Min(c3, c4));
             return c < minC ? c : minC;
@@ -1014,6 +1020,14 @@ namespace CosmicShore.Gameplay
 
         int GridBucket(int x, int y, int z) =>
             (int)(((uint)x * 73856093u) ^ ((uint)y * 19349663u) ^ ((uint)z * 83492791u)) & _gridMask;
+
+        /// <summary>Distance from one hull point (already stored, as <c>pos + right</c> was) to one box; its
+        /// offset from the centre is stored before it is rotated, as <c>p - center</c> was.</summary>
+        static float BoxPoint(in SkimRaceObstacle.LocalFrame f, Vector3 half, Vector3 oc, float px, float py, float pz)
+        {
+            float dx = (float)(px - oc.x), dy = (float)(py - oc.y), dz = (float)(pz - oc.z);
+            return f.Distance(dx, dy, dz, half);
+        }
 
         SkimRacePlanner _planner;
         SkimRacePlanner.Result _plan;

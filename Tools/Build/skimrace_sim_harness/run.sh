@@ -15,6 +15,9 @@
 # Roslyn still compiles, against Mono's class libraries). Mono is the editor's runtime family, and
 # its "decide cost" is the number that predicts the editor's: .NET's JIT hides what a Vector3
 # operator or a params array costs there (Docs/SKIM_RACE_AI.md 8.0f - 12x apart on the same code).
+# It runs with --optimize=-float32 by default: like Unity's editor Mono, it then computes inside an
+# expression in DOUBLE precision, which is where a float rewrite of Vector3 code can drift
+# (8.0g). SKIMRACE_MONO_OPTS overrides it ("" for stock Mono's single-precision mode).
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../../.." && pwd)"
@@ -73,7 +76,7 @@ printf '"%s"\n' "$HERE/UnityShim.cs" "$HERE/Sim.cs" \
 if [ "$RUNTIME" = mono ]; then
   RUN="$OUT/run_$$"; mkdir -p "$RUN"; cp "$OUT/sim.dll" "$OUT/track.txt" "$RUN/"
   trap 'rm -rf "$RUN"' EXIT
-  mono "$RUN/sim.dll" "$RUN/track.txt" "$@"
+  mono ${SKIMRACE_MONO_OPTS---optimize=-float32} "$RUN/sim.dll" "$RUN/track.txt" "$@"
   exit
 fi
 V=$(ls "$DOTNET_ROOT"/shared/Microsoft.NETCore.App | tail -1)

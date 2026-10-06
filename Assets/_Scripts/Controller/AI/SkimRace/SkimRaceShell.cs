@@ -62,10 +62,13 @@ namespace CosmicShore.Gameplay
         {
             // Inside: on the inner side of all four face planes, i.e. dot(v_k, p/h) >= -1 for each of
             // the tetrahedron's own vertex directions v_k (see the class comment).
-            float ux = px / hx, uy = py / hy, uz = pz / hz;
+            float ux = (float)(px / hx), uy = (float)(py / hy), uz = (float)(pz / hz);                // u = p / h
             bool inside = true;
             for (int k = 0; k < 4 && inside; k++)
-                if (sx[k] * ux + sy[k] * uy + sz[k] * uz < -1f) inside = false;
+            {
+                float dot = (float)(sx[k] * ux + sy[k] * uy + sz[k] * uz);         // Vector3.Dot(v[k], u)
+                if (dot < -1f) inside = false;
+            }
             if (inside) return 0f;
 
             // The vertices v_k scaled by h.
@@ -85,58 +88,79 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Squared distance from p to triangle abc: the closest point (Ericson, RTCD 5.1.5) minus p,
-        /// squared. In floats; each line is the Vector3 expression it replaced, component by component.
+        /// squared. In floats, rounding exactly where the Vector3 form rounds: every value it rounds -
+        /// each component of a Vector3 it builds, each float it returns or passes - is rounded here with
+        /// an explicit (float), each expression it keeps whole is whole here, and its own locals are
+        /// plain locals. That matters because the editor's Mono computes inside an expression in double
+        /// precision and, optimizing, keeps float locals in double registers, while a Vector3 component
+        /// always lands in memory as a float (<c>SkimRaceCourseQueryTests</c> runs both forms).
         /// </summary>
         static float TriangleSqr(float px, float py, float pz, float ax, float ay, float az,
             float bx, float by, float bz, float cx, float cy, float cz)
         {
-            float abx = bx - ax, aby = by - ay, abz = bz - az;             // ab = b - a
-            float acx = cx - ax, acy = cy - ay, acz = cz - az;             // ac = c - a
-            float apx = px - ax, apy = py - ay, apz = pz - az;             // ap = p - a
-            float d1 = abx * apx + aby * apy + abz * apz;                  // Dot(ab, ap)
-            float d2 = acx * apx + acy * apy + acz * apz;                  // Dot(ac, ap)
+            float abx = (float)(bx - ax), aby = (float)(by - ay), abz = (float)(bz - az);             // ab = b - a
+            float acx = (float)(cx - ax), acy = (float)(cy - ay), acz = (float)(cz - az);             // ac = c - a
+            float apx = (float)(px - ax), apy = (float)(py - ay), apz = (float)(pz - az);             // ap = p - a
+            float d1 = (float)(abx * apx + aby * apy + abz * apz);                  // Dot(ab, ap)
+            float d2 = (float)(acx * apx + acy * apy + acz * apz);                  // Dot(ac, ap)
             float qx, qy, qz;
             if (d1 <= 0f && d2 <= 0f) { qx = ax; qy = ay; qz = az; }       // a
             else
             {
-                float bpx = px - bx, bpy = py - by, bpz = pz - bz;         // bp = p - b
-                float d3 = abx * bpx + aby * bpy + abz * bpz;              // Dot(ab, bp)
-                float d4 = acx * bpx + acy * bpy + acz * bpz;              // Dot(ac, bp)
-                float vc = d1 * d4 - d3 * d2;
+                float bpx = (float)(px - bx), bpy = (float)(py - by), bpz = (float)(pz - bz);         // bp = p - b
+                float d3 = (float)(abx * bpx + aby * bpy + abz * bpz);              // Dot(ab, bp)
+                float d4 = (float)(acx * bpx + acy * bpy + acz * bpz);              // Dot(ac, bp)
                 if (d3 >= 0f && d4 <= d3) { qx = bx; qy = by; qz = bz; }   // b
-                else if (vc <= 0f && d1 >= 0f && d3 <= 0f)
-                {
-                    float v = d1 / (d1 - d3);                              // a + v * ab
-                    qx = ax + abx * v; qy = ay + aby * v; qz = az + abz * v;
-                }
                 else
                 {
-                    float cpx = px - cx, cpy = py - cy, cpz = pz - cz;     // cp = p - c
-                    float d5 = abx * cpx + aby * cpy + abz * cpz;          // Dot(ab, cp)
-                    float d6 = acx * cpx + acy * cpy + acz * cpz;          // Dot(ac, cp)
-                    float vb = d5 * d2 - d1 * d6;
-                    float va = d3 * d6 - d5 * d4;
-                    if (d6 >= 0f && d5 <= d6) { qx = cx; qy = cy; qz = cz; } // c
-                    else if (vb <= 0f && d2 >= 0f && d6 <= 0f)
+                    float vc = d1 * d4 - d3 * d2;
+                    if (vc <= 0f && d1 >= 0f && d3 <= 0f)
                     {
-                        float w = d2 / (d2 - d6);                          // a + w * ac
-                        qx = ax + acx * w; qy = ay + acy * w; qz = az + acz * w;
-                    }
-                    else if (va <= 0f && d4 - d3 >= 0f && d5 - d6 >= 0f)
-                    {
-                        float w = (d4 - d3) / ((d4 - d3) + (d5 - d6));     // b + w * (c - b)
-                        qx = bx + (cx - bx) * w; qy = by + (cy - by) * w; qz = bz + (cz - bz) * w;
+                        float v = (float)(d1 / (d1 - d3));                          // a + v * ab
+                        float tx = (float)(abx * v), ty = (float)(aby * v), tz = (float)(abz * v);
+                        qx = (float)(ax + tx); qy = (float)(ay + ty); qz = (float)(az + tz);
                     }
                     else
                     {
-                        float denom = 1f / (va + vb + vc);                 // a + ab * v + ac * w
-                        float v = vb * denom, w = vc * denom;
-                        qx = ax + abx * v + acx * w; qy = ay + aby * v + acy * w; qz = az + abz * v + acz * w;
+                        float cpx = (float)(px - cx), cpy = (float)(py - cy), cpz = (float)(pz - cz); // cp = p - c
+                        float d5 = (float)(abx * cpx + aby * cpy + abz * cpz);      // Dot(ab, cp)
+                        float d6 = (float)(acx * cpx + acy * cpy + acz * cpz);      // Dot(ac, cp)
+                        if (d6 >= 0f && d5 <= d6) { qx = cx; qy = cy; qz = cz; } // c
+                        else
+                        {
+                            float vb = d5 * d2 - d1 * d6;
+                            if (vb <= 0f && d2 >= 0f && d6 <= 0f)
+                            {
+                                float w = (float)(d2 / (d2 - d6));                  // a + w * ac
+                                float tx = (float)(acx * w), ty = (float)(acy * w), tz = (float)(acz * w);
+                                qx = (float)(ax + tx); qy = (float)(ay + ty); qz = (float)(az + tz);
+                            }
+                            else
+                            {
+                                float va = d3 * d6 - d5 * d4;
+                                if (va <= 0f && d4 - d3 >= 0f && d5 - d6 >= 0f)
+                                {
+                                    float w = (float)((d4 - d3) / ((d4 - d3) + (d5 - d6))); // b + w * (c - b)
+                                    float cbx = (float)(cx - bx), cby = (float)(cy - by), cbz = (float)(cz - bz);
+                                    float tx = (float)(cbx * w), ty = (float)(cby * w), tz = (float)(cbz * w);
+                                    qx = (float)(bx + tx); qy = (float)(by + ty); qz = (float)(bz + tz);
+                                }
+                                else
+                                {
+                                    float denom = 1f / (va + vb + vc);     // a + ab * v + ac * w
+                                    float v = (float)(vb * denom), w = (float)(vc * denom);
+                                    float t1x = (float)(abx * v), t1y = (float)(aby * v), t1z = (float)(abz * v);
+                                    float s1x = (float)(ax + t1x), s1y = (float)(ay + t1y), s1z = (float)(az + t1z);
+                                    float t2x = (float)(acx * w), t2y = (float)(acy * w), t2z = (float)(acz * w);
+                                    qx = (float)(s1x + t2x); qy = (float)(s1y + t2y); qz = (float)(s1z + t2z);
+                                }
+                            }
+                        }
                     }
                 }
             }
-            float ex = qx - px, ey = qy - py, ez = qz - pz;                // (q - p).sqrMagnitude
-            return ex * ex + ey * ey + ez * ez;
+            float ex = (float)(qx - px), ey = (float)(qy - py), ez = (float)(qz - pz);                // q - p
+            return (float)(ex * ex + ey * ey + ez * ez);                   // .sqrMagnitude
         }
 
         static float PlaneBound(Vector3 p, Vector3 h, Vector3[] signs)

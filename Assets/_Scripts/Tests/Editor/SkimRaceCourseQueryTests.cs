@@ -93,8 +93,10 @@ namespace CosmicShore.Tests
         public void StellaDistance_FloatKernelMatchesTheVectorForm()
         {
             // The shell search's exact test is written out in floats for the editor's Mono JIT. It must
-            // return what the Vector3 form returned, bit for bit: inside (0), beside faces and edges,
-            // past spike tips, far off, and on degenerate (clamped) extents.
+            // return what the Vector3 form returned, bit for bit, on every runtime - the editor's Mono
+            // computes inside an expression in double precision, so the float form must round where the
+            // Vector3 form does: inside (0), beside faces and edges, past spike tips, far off, and on
+            // degenerate (clamped) extents.
             var rng = new System.Random(31);
             var halves = new[] { Plate, new Vector3(0.5f, 6f, 2f), new Vector3(20f, 0.2f, 12f), Vector3.zero, new Vector3(1e-4f, 3f, 0f) };
             for (int q = 0; q < 20000; q++)
@@ -114,7 +116,9 @@ namespace CosmicShore.Tests
         public void ObstacleLocalFrame_MatchesInverseRotationTimesOffset()
         {
             // The laid-mass guard measures each box through a precomputed SkimRaceObstacle.LocalFrame.
-            // It must equal the form it replaced, Inverse(rotation) * (p - center), bit for bit.
+            // It must equal the form it replaced, Inverse(rotation) * (p - center), bit for bit - in the
+            // editor's Mono too, which computes inside an expression in double precision (pre-rounded
+            // 3x3 matrix terms passed every single-precision runtime and failed there).
             var rng = new System.Random(47);
             for (int q = 0; q < 20000; q++)
             {
@@ -131,7 +135,8 @@ namespace CosmicShore.Tests
                 float y = Mathf.Max(Mathf.Abs(lp.y) - box.Half.y, 0f);
                 float z = Mathf.Max(Mathf.Abs(lp.z) - box.Half.z, 0f);
                 float want = Mathf.Sqrt(x * x + y * y + z * z);
-                float got = new SkimRaceObstacle.LocalFrame(inv).Distance(p.x - box.Center.x, p.y - box.Center.y, p.z - box.Center.z, box.Half);
+                float dx = (float)(p.x - box.Center.x), dy = (float)(p.y - box.Center.y), dz = (float)(p.z - box.Center.z); // as p - center's fields
+                float got = new SkimRaceObstacle.LocalFrame(inv).Distance(dx, dy, dz, box.Half);
                 Assert.IsTrue(SameBits(want, got), $"box {got:R} != {want:R} (case {q})");
                 Assert.IsTrue(SameBits(want, box.Distance(p)), $"SkimRaceObstacle.Distance (case {q})");
             }

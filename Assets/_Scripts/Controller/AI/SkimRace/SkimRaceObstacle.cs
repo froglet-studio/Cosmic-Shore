@@ -21,38 +21,42 @@ namespace CosmicShore.Gameplay
         /// The same distance with the box's inverse rotation supplied. ONE kernel for every form
         /// (<see cref="LocalFrame.Distance"/>), so they cannot disagree.
         /// </summary>
-        public static float Distance(Vector3 center, Quaternion inverseRotation, Vector3 half, Vector3 p) =>
-            new LocalFrame(inverseRotation).Distance(p.x - center.x, p.y - center.y, p.z - center.z, half);
+        public static float Distance(Vector3 center, Quaternion inverseRotation, Vector3 half, Vector3 p)
+        {
+            float dx = (float)(p.x - center.x), dy = (float)(p.y - center.y), dz = (float)(p.z - center.z); // p - center
+            return new LocalFrame(inverseRotation).Distance(dx, dy, dz, half);
+        }
 
         /// <summary>
-        /// A box's inverse rotation as the 3x3 matrix Unity's <c>Quaternion * Vector3</c> applies, built
-        /// once so the planner can measure one box from five hull points per rollout step without
-        /// re-deriving it - and in floats, because the editor's Mono JIT pays for every Vector3 operator
-        /// as a call and a struct copy. The coefficients and the dot products are Unity's own formula,
-        /// term for term, so a point lands where <c>inverseRotation * (p - center)</c> put it.
+        /// A box's inverse rotation, prepared once so the planner can measure one box from five hull
+        /// points per rollout step - in floats, because the editor's Mono JIT pays for every Vector3
+        /// operator as a call and a struct copy. It keeps the nine products Unity's
+        /// <c>Quaternion * Vector3</c> keeps as locals and evaluates each component as that operator's
+        /// one expression, so a point lands exactly where <c>inverseRotation * (p - center)</c> put it
+        /// - including in the editor's Mono, which computes inside an expression in double precision
+        /// (pre-rounding the 3x3 matrix terms would NOT be the same). Pass the offset (dx, dy, dz)
+        /// rounded to float - an explicit (float) - as the fields of <c>p - center</c> would be.
         /// </summary>
         public readonly struct LocalFrame
         {
-            readonly float _m00, _m01, _m02, _m10, _m11, _m12, _m20, _m21, _m22;
+            readonly float _xx, _yy, _zz, _xy, _xz, _yz, _wx, _wy, _wz;
 
             public LocalFrame(Quaternion q)
             {
                 float nx = q.x * 2f, ny = q.y * 2f, nz = q.z * 2f;
-                float xx = q.x * nx, yy = q.y * ny, zz = q.z * nz;
-                float xy = q.x * ny, xz = q.x * nz, yz = q.y * nz;
-                float wx = q.w * nx, wy = q.w * ny, wz = q.w * nz;
-                _m00 = 1f - (yy + zz); _m01 = xy - wz; _m02 = xz + wy;
-                _m10 = xy + wz; _m11 = 1f - (xx + zz); _m12 = yz - wx;
-                _m20 = xz - wy; _m21 = yz + wx; _m22 = 1f - (xx + yy);
+                _xx = q.x * nx; _yy = q.y * ny; _zz = q.z * nz;
+                _xy = q.x * ny; _xz = q.x * nz; _yz = q.y * nz;
+                _wx = q.w * nx; _wy = q.w * ny; _wz = q.w * nz;
             }
 
             /// <summary>Distance (0 inside) from the point at world offset (dx, dy, dz) from the box
             /// centre to the box of half-extents <paramref name="half"/>.</summary>
             public float Distance(float dx, float dy, float dz, Vector3 half)
             {
-                float lx = _m00 * dx + _m01 * dy + _m02 * dz;
-                float ly = _m10 * dx + _m11 * dy + _m12 * dz;
-                float lz = _m20 * dx + _m21 * dy + _m22 * dz;
+                // Each component rounded as the Vector3 field it lands in (see the struct's summary).
+                float lx = (float)((1f - (_yy + _zz)) * dx + (_xy - _wz) * dy + (_xz + _wy) * dz);
+                float ly = (float)((_xy + _wz) * dx + (1f - (_xx + _zz)) * dy + (_yz - _wx) * dz);
+                float lz = (float)((_xz - _wy) * dx + (_yz + _wx) * dy + (1f - (_xx + _yy)) * dz);
                 float x = Mathf.Max(Mathf.Abs(lx) - half.x, 0f);
                 float y = Mathf.Max(Mathf.Abs(ly) - half.y, 0f);
                 float z = Mathf.Max(Mathf.Abs(lz) - half.z, 0f);
