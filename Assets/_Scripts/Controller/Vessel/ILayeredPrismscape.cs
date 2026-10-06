@@ -22,5 +22,13 @@ namespace CosmicShore.Gameplay
         /// (or is no longer) part of this structure.
         /// </summary>
         bool TryGetStackCoordinate(Prism prism, out int coordinate);
+
+        /// <summary>
+        /// The frame the stack coordinates are measured in. Two structures with the same layer space number their
+        /// layers identically, so the ride treats them as ONE stack: the nested gyroid's plants are tiles of one
+        /// colony lattice (Docs/ECOSYSTEM.md §58.9), and a rider crossing from one plant to its neighbour must keep
+        /// its sheet. A structure that shares its frame with nothing returns itself.
+        /// </summary>
+        object LayerSpace { get; }
     }
 }

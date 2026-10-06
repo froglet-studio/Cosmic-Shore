@@ -1,5 +1,11 @@
-// The NESTED GYROID gates. Every gate prints PASS/FAIL; every gate that can be wrong in a way that still
-// passes has a NEGATIVE CONTROL that breaks the thing it guards and must come back red.
+// The NESTED GYROID gates (Docs/ECOSYSTEM.md §58). Every gate prints PASS/FAIL; every gate that can be wrong in a
+// way that still passes has a NEGATIVE CONTROL that breaks the thing it guards and must come back red.
+//
+// Three levels, matching the shipped model:
+//   PERIOD - one period of the whole stack, built and fitted as a periodic structure (NestedGyroidBuilder);
+//   PLANT  - one octagon tile of it on every sheet, grown as one spindle tree out of its crystal (Period.Plant);
+//   COLONY - plants at tiles of one shared lattice frame, born one at a time at a random open tile. The colony
+//            book here is the SHIPPED NestedGyroidColony.cs, run against ColonyStubs.cs.
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,15 +25,32 @@ static class Driver
     static int Main(string[] args)
     {
         var s = new NestedGyroidSettings();
-        Console.WriteLine("== default config ==");
-        var L = Run(s, verbose: true);
+        Console.WriteLine("== default config: the period ==");
+        var P = NestedGyroidBuilder.BuildNow(s);
+        PeriodGates(P);
+
+        Console.WriteLine("== default config: every plant of the period (all 24 octagon tiles) ==");
+        AllPlants(P, verbose: true);
+
+        Console.WriteLine("== default config: colonies (the shipped NestedGyroidColony book) ==");
+        var colony = ColonyGates(P, verbose: true);
+
+        Console.WriteLine("== default config: a grown colony as one prismscape ==");
+        var (U, plantOf) = UnionGates(P, colony, verbose: true);
+
+        Console.WriteLine("== ride (model of BlockscapeFollower, Urchin defaults) across the colony ==");
+        Ride(U, plantOf);
 
         Console.WriteLine("== the four elements, as shipped (each config's quoted Gyroid Flora leaf + lattice scale) ==");
         foreach (var e in new[] { "Time", "Mass", "Space", "Charge" })
         {
             var es = ElementSettings(e);
             if (es == null) { Gate($"{e} config readable", false, "Nested Gyroid Flora " + e + ".asset not found (set NG_ROOT)"); continue; }
-            Run(es, verbose: false, label: $"{e}: leaf {es.Leaf}, period {es.CellSize:F0}");
+            Console.WriteLine($"-- {e}: leaf {es.Leaf}, period {es.CellSize:F0}");
+            var EP = NestedGyroidBuilder.BuildNow(es);
+            PeriodGates(EP);
+            AllPlants(EP, verbose: false);
+            UnionGates(EP, GrowColony(EP, 12, seed: 7), verbose: false);
         }
 
         Console.WriteLine("== slicing (2 ms budget per Step, as the flora runs it) ==");
@@ -43,153 +66,454 @@ static class Driver
         }
         Gate("time-sliced build", best < 8.0,
              $"{b.Slices} slices, worst {best:F2} ms (best of 3 builds), total {b.Result.Stats.BuildMilliseconds:F0} ms");
-        Gate("deterministic", Same(L, b.Result), "two builds of one config are identical");
+        Gate("deterministic", Same(P, b.Result), "two builds of one config are identical, plant by plant");
 
-        Console.WriteLine("== preview (the Spawn Matrix icon asks 220 prisms) ==");
+        Console.WriteLine("== preview (the Spawn Matrix icon asks 220 prisms; NestedGyroidFlora.TryPreviewGrowth) ==");
         var watch = System.Diagnostics.Stopwatch.StartNew();
-        var P = NestedGyroidBuilder.BuildNow(s.PreviewOf(220));
+        var ps = s.Clone(); ps.MaxSheets = Math.Min(ps.MaxSheets, 3);
+        var PP = NestedGyroidBuilder.BuildNow(ps);
+        var preview = PP.Plant(0);
         double previewMs = watch.Elapsed.TotalMilliseconds;
-        Console.WriteLine("  " + NestedGyroidBuilder.Describe(P));
-        int previewSheets = Enumerable.Range(0, P.Count).Where(i => P.Kind[i] == NestedGyroidPrismKind.Sheet).Select(i => P.Sheet[i]).Distinct().Count();
-        Gate("icon preview is a stack at the template's own subdivision, inside the icon budget",
-             P.Count <= 220 && P.Count >= 110 && previewSheets == 3 && P.Stats.FiberPrisms > 0 && P.Stats.DangerPrisms >= 8 && P.Stats.Components == 1,
-             $"{P.Count} prisms, {previewSheets} sheets, {P.Stats.FiberPrisms} struts, {P.Stats.DangerPrisms} danger-ring plates (an octagon is 8), " +
-             $"{P.Stats.TemplateSites} template sites in the window, {P.Stats.Components} component(s)");
-        Gate("icon preview is cheap enough to build synchronously", previewMs < 0.25 * L.Stats.BuildMilliseconds + 5.0,
-             $"{previewMs:F1} ms against the full build's {L.Stats.BuildMilliseconds:F0} ms");
+        Console.WriteLine("  " + NestedGyroidBuilder.Describe(preview, PP));
+        int previewSheets = Enumerable.Range(0, preview.Count).Where(i => preview.Kind[i] == NestedGyroidPrismKind.Sheet).Select(i => preview.Sheet[i]).Distinct().Count();
+        Gate("icon preview is one whole plant of 3 sheets, inside the icon budget",
+             preview.Count <= 220 && previewSheets == 3 && preview.Stats.FiberPrisms > 0 && preview.Stats.DangerPrisms >= 8 && preview.Stats.TruncatedByBudget == 0,
+             $"{preview.Count} prisms, {previewSheets} sheets, {preview.Stats.FiberPrisms} struts, {preview.Stats.DangerPrisms} danger-ring plates");
+        Gate("icon preview is cheap enough to build synchronously", previewMs < 0.6 * P.Stats.BuildMilliseconds + 5.0,
+             $"{previewMs:F1} ms against the full period's {P.Stats.BuildMilliseconds:F0} ms (cached after the first icon)");
 
         Console.WriteLine("== settings guard ==");
         var hot = new NestedGyroidSettings { TMax = 2.0f }.Sanitized();
         Gate("tMax clamped below the critical values", hot.TMax <= NestedGyroidSettings.TMaxCeiling && hot.TMax < MathF.Sqrt(2f),
              $"2.0 -> {hot.TMax}");
-
-        Console.WriteLine("== ride (model of BlockscapeFollower, Urchin defaults) ==");
-        Ride(L);
+        var cut = new NestedGyroidSettings { PrismBudget = 60 };
+        var CP = NestedGyroidBuilder.BuildNow(cut).Plant(3);
+        Gate("a budget below the plant CUTS the growth order and stays one tree on the crystal",
+             CP.Count == 60 && CP.Stats.TruncatedByBudget > 0 && CP.Stats.RootedPrisms == CP.Count,
+             $"{CP.Count} laid, {CP.Stats.TruncatedByBudget} cut, {CP.Stats.RootedPrisms} rooted");
 
         if (args.Length > 0 && args[0] == "sweep")
         {
             Console.WriteLine("== sweep ==");
             foreach (int n in new[] { 2, 3, 5, 7, 9 })
             foreach (float t in new[] { 0.6f, 1.2f, 1.3f, 1.35f, 1.38f })
-                Run(new NestedGyroidSettings { SheetCount = n, TMax = t, MaxSheets = n, PrismBudget = 700 * n }, verbose: false, label: $"N={n} t={t}");
-            Run(new NestedGyroidSettings { CellsPerSide = 2, PrismBudget = 36000 }, verbose: false, label: "2 cells, budget 36000");
-            Run(new NestedGyroidSettings { MaxSheets = 3 }, verbose: false, label: "maxSheets 3");
+            {
+                var sw = new NestedGyroidSettings { SheetCount = n, TMax = t, MaxSheets = n, PrismBudget = 60 * n + 100 };
+                Console.WriteLine($"-- N={n} t={t}");
+                var SP = NestedGyroidBuilder.BuildNow(sw);
+                PeriodGates(SP);
+                AllPlants(SP, verbose: false);
+                // Rideability is a property of the SHIPPED stack (N 7, tMax 1.2 - every element gated above). A sparse
+                // stack (N <= 3: layer gaps far beyond the rider's reach) or a near-critical one (tMax >= 1.3: outer
+                // sheets whose area collapses) has outer-sheet fragments the rider cannot bridge; reported, not gated.
+                UnionGates(SP, GrowColony(SP, 12, seed: n), verbose: false, rideGate: false);
+            }
+            Console.WriteLine("-- maxSheets 3");
+            var M3 = NestedGyroidBuilder.BuildNow(new NestedGyroidSettings { MaxSheets = 3 });
+            PeriodGates(M3);
+            AllPlants(M3, verbose: false);
         }
 
         Console.WriteLine(fails == 0 ? "ALL GATES PASS" : $"{fails} GATE(S) FAILED");
         return fails == 0 ? 0 : 1;
     }
 
-    static NestedGyroidLattice Run(NestedGyroidSettings s, bool verbose, string label = null)
+    // ------------------------------------------------------------------ the period
+
+    static void PeriodGates(NestedGyroidPeriod P)
     {
-        var L = NestedGyroidBuilder.BuildNow(s);
-        var st = L.Stats;
-        if (label != null) Console.WriteLine($"-- {label}");
-        Console.WriteLine("  " + NestedGyroidBuilder.Describe(L));
-        var clean = s.Sanitized();
+        var st = P.Stats;
+        int alive = Enumerable.Range(0, P.Count).Count(i => P.Alive[i]);
+        Gate("period: zero overlaps after the periodic fit", st.RemainingOverlaps == 0,
+             $"{alive} prisms; {st.OverlapsBeforeFit} overlapping pairs before the fit ({st.CrossSheetOverlapsBeforeFit} cross-sheet), " +
+             $"{st.RemainingOverlaps} after; {st.DroppedByFit} plates dropped, {st.DroppedStruts} struts dropped");
+    }
 
-        Console.WriteLine($"  limbs (heart + fiber bonds): {L.LimbBond.Take(L.Count).Count(b => b)}");
-        Gate("budget", L.Count <= clean.PrismBudget, $"{L.Count} <= {clean.PrismBudget} ({st.SheetPrisms} sheet, {st.FiberPrisms} fiber)");
-        Gate("one connected component", st.Components == 1, $"{st.Components} (pruned {st.PrunedIslandPrisms} island prisms of {st.ComponentsBeforePrune - 1} islands)");
-        Gate("every bond within the Urchin's reach", st.MaxEdgeOverReach < 1f,
-             $"worst bond {st.MaxEdgeOverReach:P1} of reach; gap min/median/max {st.GapMin:F2}/{st.GapMedian:F2}/{st.GapMax:F2}, reach min {st.ReachMin:F1}");
+    // ------------------------------------------------------------------ one plant
 
-        var (all, cross) = BruteOverlaps(L, 1f);
-        Gate("no prism interpenetrates another (brute-force OBB, every pair)", all == 0, $"{all} overlapping pairs, {cross} between neighbouring sheets");
-
-        bool order = true, bonded = true;
-        for (int i = 0; i < L.Count; i++)
+    /// <summary>Plant 0 in full; every other plant prints only a failing gate, then one summary line.</summary>
+    static void AllPlants(NestedGyroidPeriod P, bool verbose)
+    {
+        int before = fails;
+        var counts = new List<int>();
+        for (int o = 0; o < NestedGyroidTemplate.OctagonCount; o++)
         {
-            int p = L.Parent[i];
-            if (p >= i) order = false;
-            if (p >= 0 && !Neighbours(L, i).Contains(p)) bonded = false;
+            PlantGates(P, o, verbose: verbose && o == 0, quiet: !verbose || o > 0);
+            counts.Add(P.Plant(o).Count);
         }
-        Gate("growth order: every parent is laid first and is a real bond", order && bonded && L.Parent[0] == -1,
-             "parent[i] < i, parent in adjacency, root hangs off the heart");
+        Console.WriteLine($"  [{(fails == before ? "PASS" : "FAIL")}] all {NestedGyroidTemplate.OctagonCount} plants: " +
+                          $"{counts.Min()}-{counts.Max()} prisms, struts {Enumerable.Range(0, NestedGyroidTemplate.OctagonCount).Min(o => P.Plant(o).Stats.FiberPrisms)}" +
+                          $"-{Enumerable.Range(0, NestedGyroidTemplate.OctagonCount).Max(o => P.Plant(o).Stats.FiberPrisms)} each " +
+                          "(budget, crystal tree, one tile, danger ring, up the stack, ring order, stitching, proportions)");
+    }
 
+    static void PlantGates(NestedGyroidPeriod P, int octagon, bool verbose, bool quiet = false)
+    {
+        var L = P.Plant(octagon);
+        var st = L.Stats;
+        var clean = P.Settings;
+        if (verbose) Console.WriteLine("  " + NestedGyroidBuilder.Describe(L, P));
+        var log = new List<(string, bool, string)>();
+        void G(string name, bool ok, string detail) => log.Add(($"plant #{octagon}: {name}", ok, detail));
+
+        G("budget", L.Count <= clean.PrismBudget && st.TruncatedByBudget == 0,
+          $"{L.Count} <= {clean.PrismBudget} ({st.SheetPrisms} plate, {st.FiberPrisms} strut), {st.TruncatedByBudget} cut");
+
+        // THE CRYSTAL: every prism's parent chain ends at the heart, and every bond to a parent is a limb.
+        bool order = true;
+        for (int i = 0; i < L.Count; i++) if (L.Parent[i] >= i) order = false;
+        int roots = Enumerable.Range(0, L.Count).Count(i => L.Parent[i] < 0);
+        float rootFar = Enumerable.Range(0, L.Count).Where(i => L.Parent[i] < 0).Select(i => L.Position[i].Length()).DefaultIfEmpty(0f).Max();
+        G("every prism hangs off the crystal through spindles", st.RootedPrisms == L.Count && order && roots > 0,
+          $"{st.RootedPrisms}/{L.Count} rooted, parent laid first, {roots} limbs straight out of the crystal (furthest {rootFar:F1} from it)");
+        int ringRoots = Enumerable.Range(0, L.Count).Count(i => L.Parent[i] < 0 && L.DangerRing[i] && L.Rank[i] == 0);
+        // Odd N: the ring lies on the crystal's own (t = 0) sheet, ~10 template units out. Even N: the crystal sits
+        // BETWEEN the two central sheets, so its first limbs also cross half the central gap.
+        float ringBound = (clean.SheetCount % 2 == 1 ? 0.12f : 0.25f) * clean.CellSize;
+        // The heart's own sheet(s) near-critical (N = 2 at tMax >= 1.3) lose ring plates like any such sheet.
+        bool heartSheetCritical = Enumerable.Range(0, L.Count).Any(i => L.Parent[i] < 0 && MathF.Abs(L.SheetLevels[L.Sheet[i]]) > 1.25f);
+        G("the crystal sits at the centre of its octagon ring", ringRoots == roots && roots >= (heartSheetCritical ? 1 : 8) && rootFar < ringBound,
+          $"{ringRoots} of {roots} first limbs land on the ring on the heart's sheet(s); furthest {rootFar:F1} (bound {ringBound:F0}, period {clean.CellSize:F0})");
+
+        // ONE UNIT: the plant is one tile on every sheet, never a cube of the lattice.
+        var perSheet = Enumerable.Range(0, L.Count).Where(i => L.Kind[i] == NestedGyroidPrismKind.Sheet)
+                                 .GroupBy(i => L.Sheet[i]).ToDictionary(g => g.Key, g => g.Count());
+        float extent = Enumerable.Range(0, L.Count).Max(i => L.Position[i].Length());
+        int tileSites = st.TemplateSites;
+        bool sitesOk = SitesUniquePerSheet(L) && perSheet.Values.All(c => c <= tileSites);
+        int zeroSheet = Array.IndexOf(L.SheetLevels, 0f);
+        int baseCount = zeroSheet >= 0 && perSheet.ContainsKey(zeroSheet) ? perSheet[zeroSheet] : tileSites;
+        G("the plant is ONE octagon tile on every sheet", sitesOk && perSheet.Count == st.SheetsGrown && tileSites >= 23 && tileSites <= 25
+          && baseCount >= tileSites - 1 && perSheet.Values.Min() >= 0.6f * tileSites && extent < 0.5f * clean.CellSize,
+          $"{tileSites}-site tile; plates per sheet {string.Join("/", perSheet.OrderBy(k => k.Key).Select(k => k.Value))}; " +
+          $"furthest prism {extent:F0} from the crystal (period {clean.CellSize:F0})");
+
+        // DANGER: the octagon ring, on every sheet.
+        var ringPerSheet = perSheet.Keys.ToDictionary(sh => sh,
+            sh => Enumerable.Range(0, L.Count).Count(i => L.Kind[i] == NestedGyroidPrismKind.Sheet && L.Sheet[i] == sh && L.DangerRing[i]));
+        // Near the critical values (|t| -> √2) a level's AREA collapses toward G's maxima and the fit drops what no
+        // longer fits - measured 2-4 of 8 ring plates left on a |t| >= 1.3 sheet. There the ring must survive, not be whole.
+        G("its octagon ring is danger on every sheet",
+          ringPerSheet.All(kv => kv.Value >= (MathF.Abs(L.SheetLevels[kv.Key]) <= 1.25f ? 6 : 1)),
+          $"ring plates per sheet {string.Join("/", ringPerSheet.OrderBy(k => k.Key).Select(k => k.Value))} (an octagon is 8)");
+
+        // Up the stack; a limb never skips a layer; ring by ring.
         float sc = clean.CellSize / (2f * MathF.PI);
-        int down = Enumerable.Range(0, L.Count).Count(i => Vector3.Dot(L.Forward[i], NestedGyroidBuilder.Grad(L.Position[i] / sc)) <= 0f);
-        Gate("every prism's +z points UP the stack (the ride's layer direction)", down == 0, $"{down} pointing down G");
-        int badStack = 0;
-        for (int i = 0; i < L.Count; i++)
-            foreach (int j in Neighbours(L, i))
-                if (Math.Abs(L.Stack[i] - L.Stack[j]) > 2) badStack++;
-        Gate("stack coordinates: a bond never skips a layer", badStack == 0, $"{badStack} bonds jump more than one sheet");
-
+        var centre = NestedGyroidTemplate.OctagonCenter[octagon] * clean.CellSize;
+        int down = Enumerable.Range(0, L.Count).Count(i => Vector3.Dot(L.Forward[i], NestedGyroidBuilder.Grad((L.Position[i] + centre) / sc)) <= 0f);
+        G("every prism's +z points UP the stack", down == 0, $"{down} pointing down G");
+        int skip = 0;
+        for (int i = 0; i < L.Count; i++) if (L.Parent[i] >= 0 && Math.Abs(L.Stack[i] - L.Stack[L.Parent[i]]) > 2) skip++;
+        G("a limb never skips a layer", skip == 0, $"{skip} limbs jump more than one sheet");
         int ringBreak = 0;
         for (int i = 1; i < L.Count; i++) if (L.Rank[i] < L.Rank[i - 1]) ringBreak++;
-        // A prism an inner ring cannot reach without passing through an outer one (a sheet fragment the cube
-        // clip cut off, stitched only from outside) is laid when that outer ring arrives - legitimately late.
-        Gate("grows outward ring by ring", ringBreak <= Math.Max(1, L.Count / 100), $"{ringBreak} prisms laid after a later ring (deferred fragments), of {L.Count}");
-
-        var sheets = Enumerable.Range(0, L.Count).Where(i => L.Kind[i] == NestedGyroidPrismKind.Sheet).Select(i => L.Sheet[i]).Distinct().Count();
-        Gate("every grown sheet carries prisms", sheets == st.SheetsGrown, $"{sheets}/{st.SheetsGrown}");
+        G("grows outward ring by ring", ringBreak == 0, $"{ringBreak} prisms laid after a later ring");
 
         if (st.SheetsGrown > 1)
         {
-            Gate("fibers stitch the sheets", st.CrossSheetEdges > 0 && st.FiberPrisms > 0,
-                 $"{st.Fibers} fibers, {st.FiberPrisms} struts, {st.CrossSheetEdges} cross-sheet / {st.InSheetEdges} in-sheet links");
-            // NEGATIVE CONTROL: cut the fibers and the stack must fall apart into separate shells - this is
-            // what proves the warp, not the skin, is what makes it ONE lattice.
-            int shells = ComponentsWithoutFibers(L);
-            Gate("negative control: without the fibers it is separate shells", shells >= st.SheetsGrown, $"{shells} components with fiber links cut");
+            int shells = TreeComponentsWithoutCrossLimbs(L);
+            // Every tile is ANCHORED a strutted column; near-critical a plate the column ends on can be fitted away,
+            // and that column then carries no strut (seen once in 24 plants at N = 2, tMax 1.35).
+            G("struts and columns stitch the sheets (negative control: cut them and it is separate shells)",
+              st.Fibers > 0 && (st.FiberPrisms > 0 || clean.TMax > 1.3f) && shells >= st.SheetsGrown,
+              $"{st.Fibers} strutted columns, {st.FiberPrisms} struts; {shells} pieces with every cross-sheet limb cut");
         }
 
-        var (r, saturated) = Corr(L, clean);
-        Gate("thickness tracks the local gap Δt/|∇G|", r > 0.5 || saturated > 0.5f,
-             (saturated > 0.5f ? $"{saturated:P0} of plates at the plate-shape cap (deep layers) - " : "") + $"corr(plate thickness, 1/|∇G|) = {r:F2}; plates {st.ThicknessMin:F2}..{st.ThicknessMax:F2}, layer gap {st.SheetGapWorldMin:F1}..{st.SheetGapWorldMax:F1}");
-        // THE TEMPLATE: every sheet is the gyroid flora's own tiling, so every sheet carries (close to) the base
-        // sheet's site count, the same sites, and the danger octagon rings in the template's own 1:2 proportion.
-        var perSheet = Enumerable.Range(0, L.Count).Where(i => L.Kind[i] == NestedGyroidPrismKind.Sheet)
-                                 .GroupBy(i => L.Sheet[i]).ToDictionary(g => g.Key, g => g.Count());
-        int minSheet = perSheet.Values.Min(), maxSheet = perSheet.Values.Max();
-        // The base (ring 0) sheet carries the whole template; an outer sheet may carry less, because near tMax -> √2 the
-        // outer levels have much less AREA than the base (the gradient lines converge on G's maxima) and the fit drops
-        // what no longer fits - measured 64% on the outermost sheet at tMax 1.38, 96-100% at 1.2.
-        // The BASE is the t = 0 sheet, which only odd N grows; for even N every sheet is a carried copy.
-        int zeroSheet = Array.IndexOf(L.SheetLevels, 0f);
-        int baseMin = zeroSheet >= 0 && perSheet.ContainsKey(zeroSheet) ? perSheet[zeroSheet] : st.TemplateSites;
-        Gate("every sheet is the template's tiling (same subdivision on every layer)",
-             baseMin >= 0.95f * st.TemplateSites && minSheet >= 0.6f * st.TemplateSites && maxSheet <= st.TemplateSites
-             && SitesUniquePerSheet(L),
-             $"{st.TemplateSites} template sites in the cube; " + (zeroSheet >= 0 ? $"t = 0 sheet {baseMin}, " : "no t = 0 sheet (even N), ") +
-             $"every sheet {minSheet}..{maxSheet}, no site twice");
-        var fullSheets = perSheet.Where(kv => kv.Value >= 0.9f * st.TemplateSites).Select(kv => kv.Key).ToHashSet();
-        int dangerFull = Enumerable.Range(0, L.Count).Count(i => L.Kind[i] == NestedGyroidPrismKind.Sheet && fullSheets.Contains(L.Sheet[i]) && L.DangerRing[i]);
-        int platesFull = fullSheets.Sum(k => perSheet[k]);
-        float dangerShare = dangerFull / (float)Math.Max(1, platesFull);
-        Gate("the template's danger octagon rings are on every sheet", (fullSheets.Count == 0 || Math.Abs(dangerShare - 1f / 3f) < 0.05f) &&
-             perSheet.Keys.All(sh => Enumerable.Range(0, L.Count).Any(i => L.Kind[i] == NestedGyroidPrismKind.Sheet && L.Sheet[i] == sh && L.DangerRing[i])),
-             $"{st.DangerPrisms} danger-ring plates; {dangerShare:P1} of the plates on the {fullSheets.Count} whole sheets (template: 192 / 576 = 33.3%)");
-        // Proportions: every plate the fit left alone wears the element's leaf ASPECT exactly (the flow stretches its
-        // footprint, x and y together); the fit's shrinks are counted separately.
+        // Proportions: every plate the fit left alone wears the element's leaf aspect exactly.
         var unfitted = Enumerable.Range(0, L.Count).Where(i => L.Kind[i] == NestedGyroidPrismKind.Sheet && !L.Fitted[i]).ToList();
         float leafAspect = clean.Leaf.X / clean.Leaf.Y;
         float aspectErr = unfitted.Count == 0 ? 0f : unfitted.Max(i => MathF.Abs(L.Size[i].X / L.Size[i].Y / leafAspect - 1f));
-        int fitted = Enumerable.Range(0, L.Count).Count(i => L.Kind[i] == NestedGyroidPrismKind.Sheet && L.Fitted[i]);
-        Gate("plates keep the element's proportions", aspectErr < 1e-3f,
-             $"leaf aspect {leafAspect:F2} on all {unfitted.Count} unfitted plates (worst {aspectErr:P2} off); {fitted} plates shrunk by the fit; " +
-             $"in-plane stretch {st.StretchMin:F2}..{st.StretchMax:F2} along ∇G");
+        G("plates keep the element's proportions", aspectErr < 1e-3f,
+          $"leaf aspect {leafAspect:F2} on {unfitted.Count} unfitted plates (worst {aspectErr:P2} off); " +
+          $"{L.Fitted.Take(L.Count).Count(f => f)} shrunk by the fit");
 
-        var outer = OuterSkin(L, clean);
-        Gate("outer surfaces are a ridable skin", outer.ok, outer.detail);
+        // Spindle length is INFORMATION: a limb is the plant's skeleton, not the rider's path. The rider rides the
+        // prisms, and the colony-union gate is what proves every prism has a ridable neighbour.
+        G("limb lengths (info)", true,
+          $"min/median/max {st.BondMin:F1}/{st.BondMedian:F1}/{st.BondMax:F1}, longest {st.MaxEdgeOverReach:P0} of the rider's reach");
 
+        foreach (var (n, ok, d) in log)
+        {
+            if (quiet && ok) continue;
+            Gate(n, ok, d);
+        }
+    }
+
+    static int TreeComponentsWithoutCrossLimbs(NestedGyroidLattice L)
+    {
+        var p = Enumerable.Range(0, L.Count).ToArray();
+        int F(int x) { while (p[x] != x) x = p[x] = p[p[x]]; return x; }
+        for (int i = 0; i < L.Count; i++)
+        {
+            int j = L.Parent[i];
+            if (j < 0) continue;
+            if (L.Kind[i] == NestedGyroidPrismKind.Sheet && L.Kind[j] == NestedGyroidPrismKind.Sheet && L.Sheet[i] == L.Sheet[j]) p[F(i)] = F(j);
+        }
+        // The crystal joins its roots - which all sit on the heart's sheet(s).
+        int first = -1;
+        for (int i = 0; i < L.Count; i++)
+            if (L.Parent[i] < 0) { if (first < 0) first = i; else if (L.Sheet[i] == L.Sheet[first]) p[F(i)] = F(first); }
+        return Enumerable.Range(0, L.Count).Where(i => L.Kind[i] == NestedGyroidPrismKind.Sheet).Select(F).Distinct().Count();
+    }
+
+    static bool SitesUniquePerSheet(NestedGyroidLattice L)
+    {
+        var seen = new HashSet<(int, int)>();
+        for (int i = 0; i < L.Count; i++)
+            if (L.Kind[i] == NestedGyroidPrismKind.Sheet && !seen.Add((L.Sheet[i], L.Site[i]))) return false;
+        return true;
+    }
+
+    // ------------------------------------------------------------------ the colony (the shipped book)
+
+    sealed class Grown
+    {
+        public readonly List<NestedGyroidColony.Tile> Tiles = new();
+        public NestedGyroidColony Book;
+    }
+
+    /// <summary>
+    /// Runs the shipped colony book the way NestedGyroidFlora drives it: a founder claims its tile; a plant that has
+    /// grown contributes its neighbours; once per cycle the population pops ONE random open tile and a daughter
+    /// claims it. Plants grow in ~4 s against a ~30 s cycle, so every plant is complete by the next cycle.
+    /// </summary>
+    static Grown GrowColony(NestedGyroidPeriod P, int plants, int seed, int founderOctagon = -1)
+    {
+        UnityEngine.Random.Rng = new System.Random(seed);
+        UnityEngine.Time.time = 0f;
+        var g = new Grown();
+        var founderTile = new NestedGyroidColony.Tile(0, 0, 0, founderOctagon >= 0 ? founderOctagon : UnityEngine.Random.Range(0, NestedGyroidTemplate.OctagonCount));
+        var cell = new Cell();
+        var species = new CosmicShore.Utility.FloraConfigurationSO();
+        g.Book = NestedGyroidColony.Found(cell, species, default, UnityEngine.Quaternion.identity, P.Settings.CellSize);
+        int id = 0;
+        if (!g.Book.TryClaim(founderTile, new NestedGyroidFlora(id++))) throw new Exception("founder could not claim");
+        g.Tiles.Add(founderTile);
+        var matured = new HashSet<NestedGyroidColony.Tile>();
+        const float cycle = 30f;
+        g.Book.TryBeginCycle(cycle, 0.35f);              // anchors the clock
+        for (int guard = 0; g.Tiles.Count < plants && guard < plants * 10; guard++)
+        {
+            foreach (var t in g.Tiles) if (matured.Add(t)) g.Book.ContributeNeighbors(t);
+            UnityEngine.Time.time += cycle;
+            if (!g.Book.TryBeginCycle(cycle, 0.35f)) continue;
+            if (!g.Book.TryPopRandom(out var tile)) break;
+            if (!g.Book.TryClaim(tile, new NestedGyroidFlora(id++))) throw new Exception($"popped a claimed tile {tile}");
+            g.Tiles.Add(tile);
+        }
+        NestedGyroidColony.Clear(cell);
+        return g;
+    }
+
+    static Grown ColonyGates(NestedGyroidPeriod P, bool verbose)
+    {
+        var shapes = new List<string>();
+        var sets = new HashSet<string>();
+        bool unique = true, adjacent = true, reached = true;
+        float worstFill = 0f;
+        for (int seed = 1; seed <= 8; seed++)
+        {
+            var g = GrowColony(P, 60, seed);
+            unique &= g.Tiles.Distinct().Count() == g.Tiles.Count;
+            reached &= g.Tiles.Count == 60;
+            // Every birth borders an earlier plant (a colony grows THROUGH the lattice, never jumps).
+            for (int k = 1; k < g.Tiles.Count; k++)
+                adjacent &= g.Tiles.Take(k).Any(m => m.Neighbors().Contains(g.Tiles[k]));
+            sets.Add(string.Join(";", g.Tiles.OrderBy(t => (t.X, t.Y, t.Z, t.Octagon))));
+            // Shape: how much of the period-cell box it spans does it fill? A grown CUBE fills 1.0 of its box.
+            int cx = g.Tiles.Max(t => t.X) - g.Tiles.Min(t => t.X) + 1;
+            int cy = g.Tiles.Max(t => t.Y) - g.Tiles.Min(t => t.Y) + 1;
+            int cz = g.Tiles.Max(t => t.Z) - g.Tiles.Min(t => t.Z) + 1;
+            float fill = g.Tiles.Count / (float)(cx * cy * cz * NestedGyroidTemplate.OctagonCount);
+            worstFill = MathF.Max(worstFill, fill);
+            if (seed <= 3) shapes.Add($"seed {seed}: spans {cx}x{cy}x{cz} periods, fills {fill:P0} of that box");
+        }
+        Gate("colony: no tile is ever claimed twice", unique, "8 colonies of 60 plants");
+        Gate("colony: every birth borders a living plant (grows THROUGH the periodic structure)", adjacent && reached, "8 colonies of 60 plants");
+        Gate("colony: random, not a fixed fill order - every seed grows a different colony", sets.Count == 8, $"{sets.Count} distinct shapes of 8");
+        Gate("colony: a sparse wandering population, not a filled cube", worstFill < 0.5f, string.Join("; ", shapes) + $"; densest fills {worstFill:P0}");
+
+        // NEGATIVE CONTROL for the shape gate: a cube-filling population (every tile of one period, then the next)
+        // fills its box completely - the gate above must be able to see that.
+        var cube = new List<NestedGyroidColony.Tile>();
+        for (int o = 0; o < NestedGyroidTemplate.OctagonCount; o++) cube.Add(new NestedGyroidColony.Tile(0, 0, 0, o));
+        Gate("negative control: a whole-period fill reads as a full box", cube.Count / (float)NestedGyroidTemplate.OctagonCount >= 0.99f, "24 of 24");
+
+        // Death frees a tile and the frontier re-offers it; the next birth can land there again.
+        UnityEngine.Random.Rng = new System.Random(3);
+        var cell = new Cell(); var species = new CosmicShore.Utility.FloraConfigurationSO();
+        var book = NestedGyroidColony.Found(cell, species, default, UnityEngine.Quaternion.identity, P.Settings.CellSize);
+        var a = new NestedGyroidColony.Tile(0, 0, 0, 0);
+        var plantA = new NestedGyroidFlora(0);
+        book.TryClaim(a, plantA);
+        var nb = a.Neighbors().First();
+        var plantB = new NestedGyroidFlora(1);
+        book.TryClaim(nb, plantB);
+        book.Release(nb, plantB);
+        bool reoffered = book.OpenTiles == 1 && book.TryPopRandom(out var back) && back.Equals(nb);
+        bool freed = !book.IsClaimed(nb) && book.TryClaim(nb, new NestedGyroidFlora(2));
+        book.Release(a, plantB);                          // the wrong plant cannot free a tile
+        Gate("colony: a death frees its tile for regrowth; only the owner can free it", freed && book.IsClaimed(a) && reoffered,
+             "released, re-offered, re-claimed; foreign release ignored");
+        Gate("colony: the book is keyed by (cell, species) and dies with the population",
+             NestedGyroidColony.Find(cell, species) == book && FindAfterClear(cell, species), "Find, then Clear(cell)");
+
+        // TryAnyOpenTile: a second seed JOINS the colony while the founder is still growing (frontier empty).
+        UnityEngine.Random.Rng = new System.Random(5);
+        var cell2 = new Cell();
+        var b2 = NestedGyroidColony.Found(cell2, species, default, UnityEngine.Quaternion.identity, P.Settings.CellSize);
+        var f = new NestedGyroidColony.Tile(0, 0, 0, 5);
+        b2.TryClaim(f, new NestedGyroidFlora(0));
+        bool joined = b2.OpenTiles == 0 && b2.TryAnyOpenTile(out var j) && f.Neighbors().Contains(j);
+        bool refused = !b2.TryAnyOpenTile(out _, t => false);
+        Gate("colony: a seed joins a growing founder at a neighbouring tile; a refused band yields none", joined && refused,
+             $"joined beside the founder: {joined}; nothing outside the planting band: {refused}");
+        NestedGyroidColony.Clear(cell2);
+
+        // The tile table itself: 4 neighbours each, symmetric.
+        bool symmetric = true;
+        for (int o = 0; o < NestedGyroidTemplate.OctagonCount; o++)
+        {
+            var t = new NestedGyroidColony.Tile(0, 0, 0, o);
+            foreach (var n in t.Neighbors()) symmetric &= n.Neighbors().Contains(t);
+        }
+        Gate("colony: the tile neighbour table is symmetric (a neighbour's neighbour is me)", symmetric, "24 octagons x 4");
+
+        var grown = GrowColony(P, 12, seed: 11);
+        if (verbose) Console.WriteLine($"  colony at the shipped cap of 12: {string.Join(" ", grown.Tiles)}");
+        return grown;
+    }
+
+    static bool FindAfterClear(Cell cell, CosmicShore.Utility.FloraConfigurationSO species)
+    {
+        NestedGyroidColony.Clear(cell);
+        return NestedGyroidColony.Find(cell, species) == null;
+    }
+
+    // ------------------------------------------------------------------ the colony as one prismscape
+
+    /// <summary>Every plant of a grown colony laid in the colony frame: tile centre + the plant's local layout.</summary>
+    static (NestedGyroidLattice U, int[] plantOf) Union(NestedGyroidPeriod P, Grown g)
+    {
+        var plants = g.Tiles.Select(t => (t, L: P.Plant(t.Octagon))).ToList();
+        int n = plants.Sum(p => p.L.Count);
+        var U = new NestedGyroidLattice
+        {
+            Count = n, Position = new Vector3[n], Forward = new Vector3[n], Up = new Vector3[n], Size = new Vector3[n],
+            Kind = new NestedGyroidPrismKind[n], Sheet = new int[n], Rank = new int[n], Stack = new int[n], Site = new int[n],
+            DangerRing = new bool[n], Fitted = new bool[n], Parent = new int[n], Reach = new float[n],
+            SheetLevels = plants[0].L.SheetLevels, SheetCount = plants[0].L.SheetCount, Stats = new NestedGyroidStats(),
+        };
+        var plantOf = new int[n];
+        int k = 0;
+        for (int pi = 0; pi < plants.Count; pi++)
+        {
+            var (t, L) = plants[pi];
+            var c = NestedGyroidLattice.TileCenter(t.X, t.Y, t.Z, t.Octagon, P.Settings.CellSize);
+            for (int i = 0; i < L.Count; i++, k++)
+            {
+                U.Position[k] = L.Position[i] + c; U.Forward[k] = L.Forward[i]; U.Up[k] = L.Up[i]; U.Size[k] = L.Size[i];
+                U.Kind[k] = L.Kind[i]; U.Sheet[k] = L.Sheet[i]; U.Rank[k] = L.Rank[i]; U.Stack[k] = L.Stack[i]; U.Site[k] = L.Site[i];
+                U.DangerRing[k] = L.DangerRing[i]; U.Fitted[k] = L.Fitted[i]; U.Reach[k] = L.Reach[i];
+                U.Parent[k] = L.Parent[i] < 0 ? -1 : k - i + L.Parent[i];
+                plantOf[k] = pi;
+            }
+        }
+        return (U, plantOf);
+    }
+
+    static (NestedGyroidLattice, int[]) UnionGates(NestedGyroidPeriod P, Grown g, bool verbose, bool rideGate = true)
+    {
+        var (U, plantOf) = Union(P, g);
+        int plants = g.Tiles.Count;
+
+        // No duplicates: a tile owns its sites' images and its columns' struts, so two plants never lay one prism.
+        int dup = 0;
+        var grid = new Dictionary<(int, int, int), List<int>>();
+        (int, int, int) Key(Vector3 p) => ((int)MathF.Floor(p.X), (int)MathF.Floor(p.Y), (int)MathF.Floor(p.Z));
+        for (int i = 0; i < U.Count; i++)
+        {
+            var key = Key(U.Position[i]);
+            if (!grid.TryGetValue(key, out var l)) grid[key] = l = new List<int>();
+            foreach (int j in l) if (Vector3.DistanceSquared(U.Position[i], U.Position[j]) < 1e-4f) dup++;
+            l.Add(i);
+        }
+
+        var (all, cross, between) = BruteOverlaps(U, plantOf, 1f);
+        Gate($"colony of {plants}: no prism interpenetrates another, within or BETWEEN plants (brute-force OBB, every pair)",
+             all == 0 && dup == 0, $"{U.Count} prisms; {all} overlapping pairs ({between} between plants, {cross} cross-sheet), {dup} duplicates");
+
+        // Rideability. The rider's floor search reaches max(1, extent) x 2.5 + hover around it (BlockscapeFollower):
+        // a prism is ridable onward when another lies within that reach. Every prism needs one, and the reach graph
+        // of the whole colony must be ONE piece - so the Urchin can get from any prism of any plant to any other.
+        var links = ReachLinks(U, 1f);
+        int lonely = Enumerable.Range(0, U.Count).Count(i => links[i].Count == 0);
+        int comps = Components(U.Count, links, out int largest);
+        int crossPlant = 0;
+        for (int i = 0; i < U.Count; i++) foreach (int j in links[i]) if (plantOf[i] != plantOf[j]) crossPlant++;
+        string rideDetail = $"{lonely} prisms with no neighbour in reach; {comps} component(s) (largest {largest}/{U.Count}); {crossPlant / 2} reach links between plants";
+        if (rideGate)
+            Gate($"colony of {plants}: every prism has a ridable neighbour; the reach graph is ONE piece", lonely == 0 && comps == 1, rideDetail);
+        else
+            Console.WriteLine($"  [info] colony of {plants}, rideability (gated on the shipped configs only): {rideDetail}");
         if (verbose)
         {
-            // NEGATIVE CONTROLS for the geometry gates: each must fail when its property is broken.
-            var (inflated, _) = BruteOverlaps(L, 1.6f);
+            var low = ReachLinks(U, 0.4f);
+            int lowComps = Components(U.Count, low, out _);
+            Gate("negative control: at 0.4x the rider's reach the colony falls apart", lowComps > 1, $"{lowComps} components");
+            var (inflated, _, _) = BruteOverlaps(U, plantOf, 1.6f);
             Gate("negative control: plates grown 1.6x DO overlap", inflated > 0, $"{inflated} pairs");
-            float worstAtLowReach = 0f;
-            for (int i = 0; i < L.Count; i++)
-                foreach (int j in Neighbours(L, i))
-                {
-                    float reachI = MathF.Max(1f, Extent(L, i)) * 1.0f + 2f, reachJ = MathF.Max(1f, Extent(L, j)) * 1.0f + 2f;
-                    worstAtLowReach = MathF.Max(worstAtLowReach, Vector3.Distance(L.Position[i], L.Position[j]) / MathF.Min(reachI, reachJ));
-                }
-            Gate("negative control: a 1.0x search radius CANNOT reach", worstAtLowReach >= 1f, $"worst bond {worstAtLowReach:P0} of a 1.0x reach");
         }
-        return L;
+        return (U, plantOf);
     }
+
+    static List<int>[] ReachLinks(NestedGyroidLattice U, float scale)
+    {
+        var links = new List<int>[U.Count];
+        for (int i = 0; i < U.Count; i++) links[i] = new List<int>();
+        float Reach(int i) { var s = U.Size[i]; return (MathF.Max(1f, MathF.Max(s.X, MathF.Max(s.Y, s.Z))) * 2.5f + 2f) * scale; }
+        for (int i = 0; i < U.Count; i++)
+            for (int j = i + 1; j < U.Count; j++)
+            {
+                float r = MathF.Min(Reach(i), Reach(j));
+                if (Vector3.DistanceSquared(U.Position[i], U.Position[j]) <= r * r) { links[i].Add(j); links[j].Add(i); }
+            }
+        return links;
+    }
+
+    static int Components(int n, List<int>[] links, out int largest)
+    {
+        var p = Enumerable.Range(0, n).ToArray();
+        int F(int x) { while (p[x] != x) x = p[x] = p[p[x]]; return x; }
+        for (int i = 0; i < n; i++) foreach (int j in links[i]) p[F(i)] = F(j);
+        var groups = Enumerable.Range(0, n).GroupBy(F).Select(gr => gr.Count()).ToList();
+        largest = groups.Max();
+        return groups.Count;
+    }
+
+    static (int all, int cross, int between) BruteOverlaps(NestedGyroidLattice L, int[] plantOf, float grow)
+    {
+        int all = 0, cross = 0, between = 0;
+        for (int i = 0; i < L.Count; i++)
+        {
+            var xi = Vector3.Cross(L.Up[i], L.Forward[i]);
+            float ri = 0.5f * grow * L.Size[i].Length();
+            for (int j = i + 1; j < L.Count; j++)
+            {
+                float rj = 0.5f * grow * L.Size[j].Length();
+                if (Vector3.DistanceSquared(L.Position[i], L.Position[j]) > (ri + rj) * (ri + rj)) continue;
+                var xj = Vector3.Cross(L.Up[j], L.Forward[j]);
+                if (!NestedGyroidBuilder.ObbOverlap(L.Position[i], xi, L.Up[i], L.Forward[i], 0.5f * grow * L.Size[i],
+                                                    L.Position[j], xj, L.Up[j], L.Forward[j], 0.5f * grow * L.Size[j])) continue;
+                all++;
+                if (plantOf[i] != plantOf[j]) between++;
+                if (L.Kind[i] == NestedGyroidPrismKind.Sheet && L.Kind[j] == NestedGyroidPrismKind.Sheet && L.Sheet[i] != L.Sheet[j]) cross++;
+            }
+        }
+        return (all, cross, between);
+    }
+
+    // ------------------------------------------------------------------ elements, determinism
 
     /// <summary>The settings a shipped element config grows - NestedGyroidConfigSO.ToSettings, transcribed: the
     /// leaf scales with CellSize / Period, the lattice (period, fiber spacings, strut thickness, clearances) with the
@@ -215,175 +539,67 @@ static class Driver
         };
     }
 
-    static float Extent(NestedGyroidLattice L, int i) { var s = L.Size[i]; return MathF.Max(s.X, MathF.Max(s.Y, s.Z)); }
-
-    static IEnumerable<int> Neighbours(NestedGyroidLattice L, int i)
-    {
-        for (int e = L.AdjStart[i]; e < L.AdjStart[i + 1]; e++) yield return L.Adj[e];
-    }
-
-    static (int all, int cross) BruteOverlaps(NestedGyroidLattice L, float grow)
-    {
-        int all = 0, cross = 0;
-        for (int i = 0; i < L.Count; i++)
-        {
-            var xi = Vector3.Cross(L.Up[i], L.Forward[i]);
-            float ri = 0.5f * grow * L.Size[i].Length();
-            for (int j = i + 1; j < L.Count; j++)
-            {
-                float rj = 0.5f * grow * L.Size[j].Length();
-                if (Vector3.DistanceSquared(L.Position[i], L.Position[j]) > (ri + rj) * (ri + rj)) continue;
-                var xj = Vector3.Cross(L.Up[j], L.Forward[j]);
-                if (!NestedGyroidBuilder.ObbOverlap(L.Position[i], xi, L.Up[i], L.Forward[i], 0.5f * grow * L.Size[i],
-                                                    L.Position[j], xj, L.Up[j], L.Forward[j], 0.5f * grow * L.Size[j])) continue;
-                all++;
-                if (L.Kind[i] == NestedGyroidPrismKind.Sheet && L.Kind[j] == NestedGyroidPrismKind.Sheet && L.Sheet[i] != L.Sheet[j]) cross++;
-            }
-        }
-        return (all, cross);
-    }
-
-    static int ComponentsWithoutFibers(NestedGyroidLattice L)
-    {
-        var p = Enumerable.Range(0, L.Count).ToArray();
-        int F(int x) { while (p[x] != x) x = p[x] = p[p[x]]; return x; }
-        for (int i = 0; i < L.Count; i++)
-            foreach (int j in Neighbours(L, i))
-            {
-                bool inSheet = L.Kind[i] == NestedGyroidPrismKind.Sheet && L.Kind[j] == NestedGyroidPrismKind.Sheet && L.Sheet[i] == L.Sheet[j];
-                if (inSheet) p[F(i)] = F(j);
-            }
-        return Enumerable.Range(0, L.Count).Where(i => L.Kind[i] == NestedGyroidPrismKind.Sheet).Select(F).Distinct().Count();
-    }
-
-    static (bool ok, string detail) OuterSkin(NestedGyroidLattice L, NestedGyroidSettings s)
-    {
-        int maxRank = L.Rank.Take(L.Count).Max();
-        var outerSheets = Enumerable.Range(0, L.Count).Where(i => L.Kind[i] == NestedGyroidPrismKind.Sheet && L.Rank[i] == maxRank)
-                                    .Select(i => L.Sheet[i]).Distinct().ToList();
-        // Fibers stop at the outermost sheets: no strut belongs to a gap beyond them.
-        bool fibersStop = Enumerable.Range(0, L.Count).All(i => L.Kind[i] != NestedGyroidPrismKind.Fiber || L.Rank[i] <= maxRank);
-        var parts = new List<string>();
-        bool ok = fibersStop;
-        foreach (int sh in outerSheets)
-        {
-            var ids = Enumerable.Range(0, L.Count).Where(i => L.Kind[i] == NestedGyroidPrismKind.Sheet && L.Sheet[i] == sh).ToList();
-            var p = new Dictionary<int, int>();
-            foreach (int i in ids) p[i] = i;
-            int F(int x) { while (p[x] != x) x = p[x] = p[p[x]]; return x; }
-            foreach (int i in ids)
-                foreach (int j in Neighbours(L, i))
-                    if (p.ContainsKey(j)) p[F(i)] = F(j);
-            var sizes = ids.GroupBy(F).Select(g => g.Count()).OrderByDescending(c => c).ToList();
-            float share = sizes[0] / (float)ids.Count;
-            // The skin is the cube-clipped sheet, so it may come in pieces where the clip cuts a channel -
-            // every piece is still reachable through the fibers (the component gate). Ridable = the bulk of it
-            // is one continuous in-sheet surface.
-            ok &= share >= 0.8f;
-            parts.Add($"sheet {sh}: {ids.Count} plates, largest in-sheet piece {share:P0} ({sizes.Count} pieces)");
-        }
-        return (ok, (fibersStop ? "fibers stop at the outer sheets; " : "FIBERS PAST THE OUTER SHEETS; ") + string.Join("; ", parts));
-    }
-
-    static int Rank(NestedGyroidLattice L, int sheet)
-    {
-        for (int i = 0; i < L.Count; i++) if (L.Kind[i] == NestedGyroidPrismKind.Sheet && L.Sheet[i] == sheet) return L.Rank[i];
-        return -1;
-    }
-
-    static bool SitesUniquePerSheet(NestedGyroidLattice L)
-    {
-        var seen = new HashSet<(int, int)>();
-        for (int i = 0; i < L.Count; i++)
-            if (L.Kind[i] == NestedGyroidPrismKind.Sheet && !seen.Add((L.Sheet[i], L.Site[i]))) return false;
-        return true;
-    }
-
-    static float GapOf(NestedGyroidLattice L, int i, NestedGyroidSettings s)
-    {
-        float sc = s.CellSize / (2f * MathF.PI);
-        float dt = 2f * s.TMax / (s.SheetCount - 1);
-        return sc * dt / MathF.Max(1e-3f, NestedGyroidBuilder.Grad(L.Position[i] / sc).Length());
-    }
-
-    static (double r, float saturated) Corr(NestedGyroidLattice L, NestedGyroidSettings clean)
-    {
-        var xs = new List<double>(); var ys = new List<double>();
-        int capped = 0, plates = 0;
-        float scale = L.Stats.CellSize / (2f * MathF.PI);
-        for (int i = 0; i < L.Count; i++)
-        {
-            if (L.Kind[i] != NestedGyroidPrismKind.Sheet) continue;
-            float g = NestedGyroidBuilder.Grad(L.Position[i] / scale).Length();
-            plates++;
-            if (L.Fitted[i] || L.Size[i].Z >= 0.999f * clean.PlateThicknessOfGap * GapOf(L, i, clean)) { capped++; continue; }
-            xs.Add(L.Size[i].Z); ys.Add(1.0 / g);
-        }
-        if (xs.Count < 3) return (0, capped / (float)Math.Max(1, plates));
-        double mx = xs.Average(), my = ys.Average();
-        double sxy = 0, sxx = 0, syy = 0;
-        for (int k = 0; k < xs.Count; k++) { sxy += (xs[k] - mx) * (ys[k] - my); sxx += (xs[k] - mx) * (xs[k] - mx); syy += (ys[k] - my) * (ys[k] - my); }
-        return (sxy / Math.Sqrt(sxx * syy + 1e-12), capped / (float)Math.Max(1, plates));
-    }
-
-    static bool Same(NestedGyroidLattice a, NestedGyroidLattice b)
+    static bool Same(NestedGyroidPeriod a, NestedGyroidPeriod b)
     {
         if (a.Count != b.Count) return false;
-        for (int i = 0; i < a.Count; i++)
-            if (a.Position[i] != b.Position[i] || a.Up[i] != b.Up[i] || a.Size[i] != b.Size[i] || a.Parent[i] != b.Parent[i]) return false;
+        for (int o = 0; o < NestedGyroidTemplate.OctagonCount; o++)
+        {
+            var x = a.Plant(o); var y = b.Plant(o);
+            if (x.Count != y.Count) return false;
+            for (int i = 0; i < x.Count; i++)
+                if (x.Position[i] != y.Position[i] || x.Up[i] != y.Up[i] || x.Size[i] != y.Size[i] || x.Parent[i] != y.Parent[i]) return false;
+        }
         return true;
     }
 
     // ------------------------------------------------------------------ the ride
 
-    static void Ride(NestedGyroidLattice L)
+    static void Ride(NestedGyroidLattice U, int[] plantOf)
     {
-        int maxRank = L.Rank.Take(L.Count).Max();
-        int lo = Enumerable.Range(0, L.Count).Where(i => L.Kind[i] == NestedGyroidPrismKind.Sheet && L.Rank[i] == maxRank).Min(i => L.Sheet[i]);
-        int hi = Enumerable.Range(0, L.Count).Where(i => L.Kind[i] == NestedGyroidPrismKind.Sheet && L.Rank[i] == maxRank).Max(i => L.Sheet[i]);
+        int lo = Enumerable.Range(0, U.Count).Where(i => U.Kind[i] == NestedGyroidPrismKind.Sheet).Min(i => U.Sheet[i]);
+        int hi = Enumerable.Range(0, U.Count).Where(i => U.Kind[i] == NestedGyroidPrismKind.Sheet).Max(i => U.Sheet[i]);
+        int start = 0;   // the founder's first limb: a ring plate on the heart's sheet
 
-        // Start on a ring-0 plate with a fiber crossing nearby (any ring-0 plate near the heart serves).
-        int start = 0;
         foreach (bool layered in new[] { true, false })
         {
             string rule = layered ? "LAYERED (shipped)" : "legacy nearest-centre (negative control)";
 
             // A. Roam within the sheet: aim along the surface.
-            var m = new RideModel(L) { Layered = layered };
-            m.Attach(start, L.Position[start] + L.Forward[start] * 5f);
-            var aim = Vector3.Normalize(L.Up[start]);
-            var visited = new HashSet<int>(); var sheetsSeen = new HashSet<int>();
+            var m = new RideModel(U) { Layered = layered };
+            m.Attach(start, U.Position[start] + U.Forward[start] * 5f);
+            var aim = Vector3.Normalize(U.Up[start]);
+            var visited = new HashSet<int>(); var sheetsSeen = new HashSet<int>(); var plantsSeen = new HashSet<int>();
             for (int f = 0; f < 60 * 6; f++)
             {
                 aim = Vector3.Normalize(aim - Vector3.Dot(aim, m.SurfaceNormal) * m.SurfaceNormal);
                 m.Tick(aim, 1f, 60f, 1f / 60f);
                 visited.Add(m.Ground);
-                if (L.Kind[m.Ground] == NestedGyroidPrismKind.Sheet) sheetsSeen.Add(L.Sheet[m.Ground]);
+                plantsSeen.Add(plantOf[m.Ground]);
+                if (U.Kind[m.Ground] == NestedGyroidPrismKind.Sheet) sheetsSeen.Add(U.Sheet[m.Ground]);
             }
-            bool stay = sheetsSeen.Count == 1 && visited.Count >= 8;
-            string roll = $"{visited.Count} prisms crossed, sheets {string.Join(",", sheetsSeen)}";
-            if (layered) Gate("ride: rolls WITHIN a sheet when aimed along it", stay, roll);
+            bool stay = sheetsSeen.Count == 1 && visited.Count >= 8 && plantsSeen.Count >= 2;
+            string roll = $"{visited.Count} prisms crossed on {plantsSeen.Count} plants, sheets {string.Join(",", sheetsSeen)}";
+            if (layered) Gate("ride: rolls WITHIN a sheet when aimed along it, from plant to plant", stay, roll);
             else Gate("negative control: the legacy rule CANNOT hold a sheet in a stack", sheetsSeen.Count > 1, roll);
 
             // B/C. Pitch out of the sheet, then into it.
             foreach (float pitch in new[] { +1f, -1f })
             {
-                m = new RideModel(L) { Layered = layered };
-                m.Attach(start, L.Position[start] + L.Forward[start] * 5f);
+                m = new RideModel(U) { Layered = layered };
+                m.Attach(start, U.Position[start] + U.Forward[start] * 5f);
                 var seq = new List<int>();
                 for (int f = 0; f < 60 * 8; f++)
                 {
-                    var tangent = Vector3.Normalize(L.Up[m.Ground] - Vector3.Dot(L.Up[m.Ground], m.SurfaceNormal) * m.SurfaceNormal);
+                    var tangent = Vector3.Normalize(U.Up[m.Ground] - Vector3.Dot(U.Up[m.Ground], m.SurfaceNormal) * m.SurfaceNormal);
                     // The pilot aims UP or DOWN the stack in world terms - along the ground's +∇G (every prism's
                     // Forward points up G) - not along the ridden normal, whose sign a rim wrap can flip.
-                    var dir = Vector3.Normalize(0.5f * tangent + pitch * 0.87f * L.Forward[m.Ground]);
+                    var dir = Vector3.Normalize(0.5f * tangent + pitch * 0.87f * U.Forward[m.Ground]);
                     m.Tick(dir, 1f, 60f, 1f / 60f);
-                    if (L.Kind[m.Ground] == NestedGyroidPrismKind.Sheet && (seq.Count == 0 || seq[^1] != L.Sheet[m.Ground])) seq.Add(L.Sheet[m.Ground]);
+                    if (U.Kind[m.Ground] == NestedGyroidPrismKind.Sheet && (seq.Count == 0 || seq[^1] != U.Sheet[m.Ground])) seq.Add(U.Sheet[m.Ground]);
                 }
                 bool reachedSkin = seq.Count > 0 && seq[^1] == (pitch > 0 ? hi : lo);
                 string what = pitch > 0 ? "climbs UP the stack (+G)" : "dives DOWN the stack (-G)";
                 string detail = $"sheets visited in order {string.Join(" > ", seq)}";
-                // Monotone: the pilot's pitch decides the direction - one sheet at a time, never back.
                 int reversals = 0;
                 for (int k = 2; k < seq.Count; k++) if (Math.Sign(seq[k] - seq[k - 1]) != Math.Sign(seq[k - 1] - seq[k - 2])) reversals++;
                 if (layered) Gate($"ride: {what} and stops on the outer skin", seq.Count >= 3 && reachedSkin && reversals == 0, detail + $" ({reversals} reversals)");

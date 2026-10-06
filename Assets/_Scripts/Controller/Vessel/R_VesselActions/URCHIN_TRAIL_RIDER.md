@@ -1117,6 +1117,9 @@ in-sheet roll under that rule wandered over five of seven sheets). A structure t
 (`ILayeredPrismscape.TryGetStackCoordinate`, implemented by `NestedGyroidFlora`), and while the ground
 belongs to one, `BlockscapeFollower`:
 
+- treats every structure sharing the ground's `ILayeredPrismscape.LayerSpace` as ONE stack - the nested gyroid's
+  plants are tiles of one colony frame, so the ride holds its sheet from one plant onto the next;
+
 - keeps the ground on the SAME layer; the next strut/sheet (stack ±1/±2) becomes eligible only while the
   pilot pitches toward it past `layerClimbDeadzone` (0.35);
 - scores candidates to their HOVER point, so a climb hands over halfway between riding heights;

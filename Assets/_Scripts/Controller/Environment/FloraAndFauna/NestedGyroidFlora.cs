@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using CosmicShore.Data;
 using CosmicShore.Utility;
 using UnityEngine;
 using NVec = System.Numerics.Vector3;
@@ -7,34 +8,32 @@ using NVec = System.Numerics.Vector3;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// A plant that grows a THREE-DIMENSIONAL prismscape: a stack of nested gyroid sheets G = t_i, woven together
-    /// by fibers that run along ∇G through every sheet at right angles (Docs/ECOSYSTEM.md §58).
+    /// A plant that grows ONE UNIT of a three-dimensional prismscape: one octagon tile of the gyroid flora's own
+    /// tiling, on every one of a stack of nested gyroid sheets G = t_i, stitched through the stack along its gradient
+    /// lines (Docs/ECOSYSTEM.md §58).
     ///
-    /// <para>The plain <see cref="GyroidAssembler"/> flora tiles the single sheet G = 0, a 2D prismscape. This one
-    /// tiles N sheets inside |t| &lt; √2 - where ∇G never vanishes, so the sheets never touch - and the fibers are
-    /// what make them ONE object: cut them and the stack falls apart into separate shells (the harness's negative
-    /// control). <b>Its base sheet IS that gyroid flora</b>: <see cref="NestedGyroidTemplate"/> is the original plant's
-    /// tiling measured as one period (576 sites, its block types, its frames), and every nested sheet is that tiling
-    /// carried along the gradient lines - so every layer has the original's loop subdivisions and its danger octagon
-    /// rings, and each element wears the original's prism for that element (its config's LeafSize / LatticeScale,
-    /// quoted). Plates lie IN their sheet with local +z on the sheet normal; struts lie ALONG their fiber; thickness
-    /// follows the local layer gap Δt/|∇G|; everything is then FITTED so no prism interpenetrates another.</para>
+    /// <para><b>A plant is one octagon, exactly like a gyroid flora.</b> <see cref="NestedGyroidTemplate"/> is the
+    /// gyroid flora's tiling measured as one period: 576 sites, 24 octagon rings, each ring OWNING the 23-25 sites
+    /// nearest it along the bond graph (the gyroid's "24 prisms a lifeform", §32.7). This plant is the tile of one
+    /// octagon - its ring and its patch - on every nested sheet, the images of those sites carried out along ∇G,
+    /// plus the struts of its strutted columns: ~170-180 prisms. Its CRYSTAL sits at the octagon's centre, the plant's
+    /// origin.</para>
     ///
-    /// <para><b>It grows the way a flora withers, run backwards.</b> The crystal sits at G(0) = 0, on the t = 0
-    /// sheet; the plant grows that sheet outward from it, then ring by ring - each new sheet spreading out of the
-    /// fibers that reached it - and every prism's parent is already standing (<see cref="NestedGyroidLattice"/>).
-    /// The limbs are the BONDS that are limbs: out of the heart, and along every fiber. A plate beside a plate is
-    /// tiling, not a limb, and carries none.</para>
+    /// <para><b>Every prism hangs off the crystal through spindles.</b> The growth plan
+    /// (<see cref="NestedGyroidPeriod.Plant"/>) is one tree rooted at the crystal: limbs out of the crystal to the
+    /// ring's images on the heart's own sheet, then along the tile's own bonds, then out along each site's column,
+    /// ring by ring. EVERY bond is a limb, posed on the bond and parented under its parent's limb, so the plant is one
+    /// spindle tree hanging off its heart and a prism is never parented to another prism.</para>
     ///
-    /// <para><b>It is a COMPACT species.</b> The cube it is clipped to is finished, so like the Borromean it
-    /// completes, stops, and funds an ordinary per-plant offspring from its growth quota. No frontier, no claim
-    /// book, no lattice-scale tolerances. Its geometry is a measured table in absolute units, so
-    /// <see cref="PrismSizeFixedByGrowthRule"/> is true; it resizes through FloraVariantTuning.LatticeScale, a
-    /// uniform similarity of the whole lattice.</para>
+    /// <para><b>It reproduces as a COLONY through the triply periodic structure</b>, the gyroid flora's model
+    /// (<see cref="NestedGyroidColony"/>): every plant of a (cell, species) shares one lattice frame; a complete plant
+    /// offers its four neighbouring tiles; once per cycle the population births ONE plant at a uniformly random open
+    /// tile. So a population wanders through the periodic lattice tile by tile instead of filling a cube, and since
+    /// the whole period is fitted as one periodic structure, neighbouring plants' prisms never overlap.</para>
     ///
-    /// <para><b>The Urchin rides it in three directions.</b> The plant is an <see cref="ILayeredPrismscape"/>: it
-    /// tells the ride kernel which layer each prism is on, so the rider holds its sheet while steering and steps
-    /// through the stack only when the pilot pitches toward the next layer (§58.4).</para>
+    /// <para><b>The Urchin rides it in three directions.</b> The plant is an <see cref="ILayeredPrismscape"/> whose layer
+    /// SPACE is its colony: stack coordinates agree across every plant of one colony, so the rider holds its sheet
+    /// across plant boundaries and steps through the stack only when the pilot pitches toward the next layer.</para>
     /// </summary>
     public class NestedGyroidFlora : Flora, ILayeredPrismscape
     {
@@ -47,6 +46,7 @@ namespace CosmicShore.Gameplay
         float _budgetScale;
         float _lengthScale = 1f;
 
+        NestedGyroidPeriod _period;
         NestedGyroidLattice _lattice;
         HealthPrism[] _occupant;
         Spindle[] _limb;
@@ -54,8 +54,15 @@ namespace CosmicShore.Gameplay
         int _laidCount;
         bool _spotChecked;
 
-        // ---- the build cache: one lattice per settings key, built once, shared by every plant of the config.
-        static readonly Dictionary<string, NestedGyroidLattice> s_built = new();
+        // The colony this plant belongs to, and the tile it owns in it.
+        NestedGyroidColony _colony;
+        NestedGyroidColony.Tile _tile;
+        bool _tileAssigned;
+        bool _matured;
+        NestedGyroidColony.Tile? _pendingBirth;
+
+        // ---- the build cache: one PERIOD per settings key, built once, shared by every plant of the config.
+        static readonly Dictionary<string, NestedGyroidPeriod> s_built = new();
         static readonly Dictionary<string, NestedGyroidBuilder> s_building = new();
         static readonly Dictionary<string, int> s_steppedFrame = new();
 
@@ -71,12 +78,15 @@ namespace CosmicShore.Gameplay
         // Measured once per spindle PREFAB (see ResolveBranchReach).
         static readonly Dictionary<int, float> BranchReach = new();
 
-        /// <summary>The live-prism budget: the lattice this plant grows (the base reads it for maturity).</summary>
+        /// <summary>The live-prism budget: this plant's tile (the base reads it for maturity).</summary>
         protected override int PrismBudget => _lattice?.Count ?? (config ? config.PrismBudget : 0);
 
-        /// <summary>Every prism's size and place come out of the fitted lattice, in absolute units - a per-cell
-        /// leaf scale would lay prisms the lattice no longer describes.</summary>
+        /// <summary>Every prism's size and place come out of the fitted period, in absolute units - a per-cell leaf
+        /// scale would lay prisms the lattice no longer describes.</summary>
         protected override bool PrismSizeFixedByGrowthRule => true;
+
+        /// <summary>The octagon tile this plant owns in its colony.</summary>
+        public NestedGyroidColony.Tile Tile => _tile;
 
         public override void ApplyVariantTuning(FloraVariantTuning tuning)
         {
@@ -101,6 +111,9 @@ namespace CosmicShore.Gameplay
             return config.ToSettings(LeafSize, _lengthScale, budget);
         }
 
+        /// <summary>World size of one period for this plant's element.</summary>
+        float WorldPeriod => config ? config.CellSize * (_lengthScale > 0f ? _lengthScale : 1f) : 240f;
+
         // The grow period as AUTHORED, before the element's tempo law rescales it (Flora.OnElementResolved, inside
         // base.Initialize). A tick lays GrowthRate x THIS many prisms and fires every SCALED period, so the element's
         // law changes the plant's rate - sizing the tick from the scaled period would cancel it exactly, and every
@@ -116,18 +129,18 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogError($"{name}: NestedGyroidFlora has no NestedGyroidConfigSO assigned; it will not grow.", this);
             }
             base.Initialize(cell);
-            if (config) StartCoroutine(BuildLatticeCoroutine(ResolveSettings()));
+            if (config) StartCoroutine(BuildPeriodCoroutine(ResolveSettings()));
         }
 
         /// <summary>
-        /// Builds (or fetches) the lattice in time slices - <see cref="NestedGyroidConfigSO.BuildSliceMilliseconds"/>
+        /// Builds (or fetches) the period in time slices - <see cref="NestedGyroidConfigSO.BuildSliceMilliseconds"/>
         /// per frame - so planting never hitches. Plants that share a config share ONE in-flight build: whichever
-        /// asks first in a frame steps it.
+        /// asks first in a frame steps it. Then cuts this plant's tile out of it.
         /// </summary>
-        IEnumerator BuildLatticeCoroutine(NestedGyroidSettings settings)
+        IEnumerator BuildPeriodCoroutine(NestedGyroidSettings settings)
         {
             string key = settings.Key();
-            if (!s_built.TryGetValue(key, out var lattice))
+            if (!s_built.TryGetValue(key, out var period))
             {
                 if (!s_building.TryGetValue(key, out var builder))
                 {
@@ -136,17 +149,17 @@ namespace CosmicShore.Gameplay
                 }
                 while (true)
                 {
-                    if (s_built.TryGetValue(key, out lattice)) break;
+                    if (s_built.TryGetValue(key, out period)) break;
                     if (!s_steppedFrame.TryGetValue(key, out int frame) || frame != Time.frameCount)
                     {
                         s_steppedFrame[key] = Time.frameCount;
                         if (builder.Step(config.BuildSliceMilliseconds))
                         {
-                            lattice = builder.Result;
-                            s_built[key] = lattice;
+                            period = builder.Result;
+                            s_built[key] = period;
                             s_building.Remove(key);
                             s_steppedFrame.Remove(key);
-                            Report(lattice, builder);
+                            Report(period, builder);
                             break;
                         }
                     }
@@ -154,45 +167,166 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            _lattice = lattice;
-            _occupant = new HealthPrism[lattice.Count];
-            _limb = new Spindle[lattice.Count];
+            _period = period;
+            _lattice = period.Plant(_tile.Octagon);
+            _occupant = new HealthPrism[_lattice.Count];
+            _limb = new Spindle[_lattice.Count];
+            if (_lattice.Stats.RootedPrisms != _lattice.Count || _lattice.Stats.TruncatedByBudget > 0)
+                CSDebug.LogWarning(
+                    $"{name}: nested gyroid tile {_tile} - {_lattice.Stats.RootedPrisms}/{_lattice.Count} prisms on the " +
+                    $"crystal's spindle tree, {_lattice.Stats.TruncatedByBudget} cut by PrismBudget {config.PrismBudget}.", this);
         }
 
-        /// <summary>The acceptance numbers, once per built lattice. A broken guarantee is a WARNING (a real fault);
-        /// the counts themselves are a fact about a finished build and ride the Ecology channel.</summary>
-        void Report(NestedGyroidLattice lattice, NestedGyroidBuilder builder)
+        /// <summary>The acceptance numbers, once per built period. A broken guarantee is a WARNING (a real fault); the
+        /// counts themselves are a fact about a finished build and ride the Ecology channel.</summary>
+        void Report(NestedGyroidPeriod period, NestedGyroidBuilder builder)
         {
-            var s = lattice.Stats;
+            var s = period.Stats;
             if (CSDebug.IsVerbose(CSLogChannel.Ecology))
                 CSDebug.LogVerbose(CSLogChannel.Ecology,
-                    $"[NestedGyroid] {config.name}: {NestedGyroidBuilder.Describe(lattice)}; " +
+                    $"[NestedGyroid] {config.name}: {NestedGyroidBuilder.Describe(period.Plant(_tile.Octagon), period)}; " +
                     $"{builder.Slices} slices, worst {builder.MaxSliceMilliseconds:F2} ms");
+            if (s.RemainingOverlaps > 0)
+                CSDebug.LogWarning(
+                    $"{name}: nested gyroid '{config.name}' broke its zero-overlap guarantee - {s.RemainingOverlaps} " +
+                    "overlapping prism pair(s) in the period. Run Tools/Build/nested_gyroid_harness/run.sh with these settings.", this);
+        }
 
-            if (s.Components != 1 || s.MaxEdgeOverReach >= 1f || s.RemainingOverlaps > 0)
-                CSDebug.LogWarning(
-                    $"{name}: nested gyroid '{config.name}' broke a guarantee - {s.Components} component(s), worst bond " +
-                    $"{s.MaxEdgeOverReach:P0} of the Urchin's reach, {s.RemainingOverlaps} overlapping prism pair(s). " +
-                    "Run Tools/Build/nested_gyroid_harness/run.sh with these settings.", this);
-            if (s.TruncatedByBudget > 0)
-                CSDebug.LogWarning(
-                    $"{name}: nested gyroid '{config.name}' could not fit its stack in {config.PrismBudget} prisms (the " +
-                    $"tiling is the template's and is never coarsened); {s.TruncatedByBudget} outer prisms were cut, so its " +
-                    "outer skin is incomplete. " +
-                    "Raise PrismBudget or lower CellsPerSide / SheetCount.", this);
+        // ------------------------------------------------------------------ the colony
+
+        /// <summary>Hands a daughter her tile BEFORE Initialize (Flora.ConfigureOffspring), so her Plant() roots her on
+        /// it and her growth plan is that tile's.</summary>
+        void AssignTile(NestedGyroidColony colony, NestedGyroidColony.Tile tile)
+        {
+            _colony = colony;
+            _tile = tile;
+            _tileAssigned = colony.TryClaim(tile, this);
         }
 
         public override void Plant()
         {
-            if (TryGetPlantPositionOverride(out var pinned))
-                transform.position = pinned;
-            // No cell: a plant dropped into a scene by hand (a test scene) roots where it was placed.
-            else if (cell)
-                transform.position = ResolveDispersalPoint(legacyRadius: 200f);
+            if (_tileAssigned && _colony != null)
+            {
+                transform.SetPositionAndRotation(_colony.TileWorld(_tile), _colony.Rotation);
+                return;
+            }
 
-            // One fixed lattice per config; a random attitude per plant shows each a different face of it.
-            if (cell) transform.rotation = Random.rotationUniform;
+            bool pinned = TryGetPlantPositionOverride(out var at);
+            // No cell: a plant dropped into a scene by hand (a test scene) roots where it was placed.
+            if (!pinned) at = cell ? ResolveDispersalPoint(legacyRadius: 200f) : transform.position;
+            var rotation = cell || pinned ? Random.rotationUniform : transform.rotation;
+
+            // A seeded plant JOINS its species' living colony at a random open tile, so the population stays one
+            // periodic structure; a pinned one (the Spawn Matrix station) founds its own where it was asked to be.
+            var existing = pinned ? null : NestedGyroidColony.Find(cell, SourceConfig);
+            if (existing != null && existing.TryAnyOpenTile(out var open, t => InPlantingBand(existing, t))
+                && existing.TryClaim(open, this))
+            {
+                _colony = existing;
+                _tile = open;
+            }
+            else
+            {
+                // Founder: a new frame whose tile (0,0,0, random octagon) has its crystal exactly here.
+                _tile = new NestedGyroidColony.Tile(0, 0, 0, Random.Range(0, NestedGyroidTemplate.OctagonCount));
+                var c = NestedGyroidLattice.TileCenter(0, 0, 0, _tile.Octagon, WorldPeriod);
+                var origin = at - rotation * new Vector3(c.X, c.Y, c.Z);
+                bool register = existing == null && NestedGyroidColony.Find(cell, SourceConfig) == null;
+                _colony = NestedGyroidColony.Found(register ? cell : null, register ? SourceConfig : null,
+                    origin, rotation, WorldPeriod);
+                _colony.TryClaim(_tile, this);
+            }
+            _tileAssigned = true;
+            transform.SetPositionAndRotation(_colony.TileWorld(_tile), _colony.Rotation);
         }
+
+        /// <summary>The colony's births ride the cell's fauna-wave cadence scaled by the CONFIG's element (the gyroid
+        /// colony's rule, AssembledFlora.ColonyCyclePeriod): Time breeds fastest.</summary>
+        float ColonyCyclePeriod
+        {
+            get
+            {
+                float period = cell ? cell.CurrentFaunaSpawnPeriod : 0f;
+                if (period <= 0f) period = 30f;
+                var element = SourceConfig ? SourceConfig.Element : Element.None;
+                return FloraReproductionRules.ScaleCostPerChild(period, FloraReproductionRules.ReproductionRateFor(element));
+            }
+        }
+
+        const float PopulationCycleStagger = 0.35f;
+
+        /// <summary>A tile the colony may grow into: its crystal inside this species' planting band (never the
+        /// nucleus, never past the band's outer edge) - the same band a dispersed seed and a default offspring keep
+        /// to. A plant with no cell has no band and accepts every tile.</summary>
+        bool InPlantingBand(NestedGyroidColony colony, NestedGyroidColony.Tile tile)
+        {
+            if (!cell) return true;
+            Vector3 p = colony.TileWorld(tile);
+            return (ClampToPlantingBand(p) - p).sqrMagnitude < 1e-4f;
+        }
+
+        /// <summary>
+        /// The population drive, from every plant's grow tick (Docs/ECOSYSTEM.md §58.9). A plant offers its four
+        /// neighbouring tiles the first tick it is COMPLETE (every prism of its tile laid once); once per cycle the
+        /// population births one plant at a uniformly random open tile. Production gates (Frenzy freeze, the cell's
+        /// cap) are checked BEFORE popping, so a capped colony burns no frontier.
+        /// </summary>
+        void TickColony()
+        {
+            if (_colony == null || !SourceConfig || !cell) return;
+            if (!_matured && _lattice != null && _laidCount >= _lattice.Count)
+            {
+                _matured = true;
+                _colony.ContributeNeighbors(_tile);
+            }
+            if (!_colony.TryBeginCycle(ColonyCyclePeriod, PopulationCycleStagger)) return;
+            if (!cell.FloraPlantingEnabled || cell.IsFloraAtCap(SourceConfig)) return;
+            if (!_colony.TryPopRandom(out var tile, t => InPlantingBand(_colony, t))) return;
+
+            _pendingBirth = tile;
+            bool born = TrySpawnOneOffspring();
+            _pendingBirth = null;
+            if (!born) _colony.Requeue(tile);
+        }
+
+        protected override bool TryResolveOffspringPlacement(out Vector3 position, out Quaternion rotation, out Vector3? up)
+        {
+            if (_pendingBirth.HasValue && _colony != null)
+            {
+                position = _colony.TileWorld(_pendingBirth.Value);
+                rotation = _colony.Rotation;
+                up = null;
+                return true;
+            }
+            return base.TryResolveOffspringPlacement(out position, out rotation, out up);
+        }
+
+        protected override void ConfigureOffspring(Flora child)
+        {
+            if (child is NestedGyroidFlora daughter && _pendingBirth.HasValue && _colony != null)
+                daughter.AssignTile(_colony, _pendingBirth.Value);
+        }
+
+        protected override void Die(string killerName = "")
+        {
+            ReleaseTile();
+            base.Die(killerName);
+        }
+
+        protected override void OnDestroy()
+        {
+            ReleaseTile();
+            base.OnDestroy();
+        }
+
+        void ReleaseTile()
+        {
+            if (_colony == null || !_tileAssigned) return;
+            _colony.Release(_tile, this);
+            _tileAssigned = false;
+        }
+
+        // ------------------------------------------------------------------ growth
 
         int PrismsPerTick =>
             config ? Mathf.Max(1, Mathf.RoundToInt(config.GrowthRate * Mathf.Max(0.05f, _authoredGrowPeriod))) : 1;
@@ -225,6 +359,8 @@ namespace CosmicShore.Gameplay
                 _spotChecked = true;
                 if (CSDebug.IsVerbose(CSLogChannel.Ecology)) SpotCheckOverlaps();
             }
+
+            TickColony();
         }
 
         static Vector3 V(NVec v) => new Vector3(v.X, v.Y, v.Z);
@@ -240,39 +376,38 @@ namespace CosmicShore.Gameplay
             Quaternion rot = SiteRotation(site);
             int parent = _lattice.Parent[site];
 
-            Transform holder = transform;
-            if (_lattice.LimbBond[site])
+            // EVERY prism hangs off a LIMB on its bond: rooted at its parent (the crystal, for the ring's first
+            // prisms), aimed at it, stretched to span the gap, and parented under the parent's own limb - so the plant
+            // is one spindle tree out of its heart. Up is this prism's +y, which keeps the branch's cross-section
+            // turned with the structure instead of rolling about the bond. A limb outlives its grazed prism and is
+            // reused when the prism regrows.
+            Vector3 root = parent >= 0 ? SiteWorld(parent) : transform.position;
+            Vector3 bond = pos - root;
+            Spindle limb = _limb[site];
+            if (!limb)
             {
-                // A LIMB: out of the heart, or along a fiber - rooted at the parent, aimed at this prism, stretched
-                // to span the bond. Up is this prism's +z (the sheet normal / fiber axis), which keeps the branch's
-                // cross-section turned with the structure instead of rolling about the bond.
-                Vector3 root = parent >= 0 ? SiteWorld(parent) : transform.position;
-                Vector3 bond = pos - root;
-                Spindle limb = _limb[site];
-                if (!limb)
-                {
-                    limb = AddSpindle();
-                    if (!limb) return false;
-                    limb.LifeForm = this;
-                    _limb[site] = limb;
-                    limb.transform.position = root;
-                    Vector3 up = rot * Vector3.up;
-                    if (!SafeLookRotation.TrySet(limb.transform, bond, up, this))
-                        limb.transform.rotation = rot;
-                    StretchToBond(limb, bond.magnitude);
-                }
-                holder = limb.transform;
+                limb = AddSpindle();
+                if (!limb) return false;
+                limb.LifeForm = this;
+                _limb[site] = limb;
+                Transform under = parent >= 0 && _limb[parent] ? _limb[parent].transform : transform;
+                limb.transform.SetParent(under, false);
+                limb.transform.position = root;
+                if (!SafeLookRotation.TrySet(limb.transform, bond, rot * Vector3.up, this))
+                    limb.transform.rotation = rot;
+                StretchToBond(limb, bond.magnitude);
             }
 
             var prism = EnvironmentPrismPool.Get(healthPrism, pos, rot);
             if (!prism) return false;
 
-            // Parented to its LIMB or to the plant root, never to another prism: a prism wears its size as
-            // localScale, and a non-uniform scale above a rotated child is a shear (Docs/ECOSYSTEM.md 37.9).
-            prism.transform.SetParent(holder, true);
+            // Parented to its LIMB, never to another prism: a prism wears its size as localScale, and a non-uniform
+            // scale above a rotated child is a shear (Docs/ECOSYSTEM.md 37.9). The limb ROOT is never scaled - only
+            // its own branch children are (StretchToBond) - so nothing leaks into the leaf.
+            prism.transform.SetParent(limb.transform, true);
             prism.LifeForm = this;
 
-            // DANGER, as the gyroid flora draws it: the template's octagon rings on every sheet, and every strut.
+            // DANGER, as the gyroid flora draws it: the template's octagon ring on every sheet, and every strut.
             // Stated true OR false before the team stamp - a pooled prism keeps its previous life's IsDangerous
             // (Prism.Initialize does not clear it: spawners request it), so a plain plate must say it is plain.
             bool danger = _lattice.DangerRing[site] || _lattice.Kind[site] == NestedGyroidPrismKind.Fiber;
@@ -315,6 +450,9 @@ namespace CosmicShore.Gameplay
             }
             _pendingPrismScale = null;
         }
+
+        /// <inheritdoc/>
+        public object LayerSpace => (object)_colony ?? this;
 
         /// <inheritdoc/>
         public bool TryGetStackCoordinate(Prism prism, out int coordinate)
@@ -438,27 +576,26 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Pure preview - see <see cref="Flora.TryPreviewGrowth"/>. An icon asks for a few hundred prisms (the Spawn
-        /// Matrix asks 220), and the first 220 of the real growth order are a disc of the central sheet - nothing
-        /// that says "stack". So the preview grows a WINDOW of the same tiling (<see cref="NestedGyroidSettings.PreviewOf"/>):
-        /// three sheets and their struts, wide enough to hold whole octagon rings, at the template's own subdivision -
-        /// never a coarsened copy. Same rule, same field, cached per key, ~7 ms (cheap enough to build synchronously).
-        /// Never touches UnityEngine.Random.
+        /// Pure preview - see <see cref="Flora.TryPreviewGrowth"/>: ONE PLANT, the same tile a planted one grows (an
+        /// icon's 220-prism ask holds a whole ~180-prism plant). Built from a three-sheet period so a synchronous icon
+        /// build stays cheap; cached per key. Never touches UnityEngine.Random.
         /// </summary>
         public override bool TryPreviewGrowth(int budget, int seed, List<SpawnPoint> into)
         {
             if (!config || into == null || budget <= 0) return false;
-            var settings = ResolveSettings().PreviewOf(budget);
+            var settings = ResolveSettings();
+            settings.MaxSheets = Mathf.Min(settings.MaxSheets, 3);
             string key = settings.Key();
-            if (!s_built.TryGetValue(key, out var lattice))
+            if (!s_built.TryGetValue(key, out var period))
             {
-                lattice = NestedGyroidBuilder.BuildNow(settings);
-                s_built[key] = lattice;
+                period = NestedGyroidBuilder.BuildNow(settings);
+                s_built[key] = period;
             }
-            int n = Mathf.Min(budget, lattice.Count);
+            var plant = period.Plant(0);
+            int n = Mathf.Min(budget, plant.Count);
             for (int i = 0; i < n; i++)
-                into.Add(new SpawnPoint(V(lattice.Position[i]),
-                    Quaternion.LookRotation(V(lattice.Forward[i]), V(lattice.Up[i])), V(lattice.Size[i])));
+                into.Add(new SpawnPoint(V(plant.Position[i]),
+                    Quaternion.LookRotation(V(plant.Forward[i]), V(plant.Up[i])), V(plant.Size[i])));
             return n > 0;
         }
     }

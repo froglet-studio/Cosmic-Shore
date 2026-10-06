@@ -6,8 +6,8 @@ namespace CosmicShore.Gameplay
     /// Everything that shapes a <see cref="NestedGyroidFlora"/>: the stack of nested gyroid sheets, the fibers that
     /// stitch them, how fast it grows and how it reads through its thickness. One asset per deployment; per the
     /// config-separation rule no numbers live on the prefab. The growth rule itself is <see cref="NestedGyroidBuilder"/>,
-    /// a pure function of <see cref="ToSettings"/>, so two plants with one config and one element grow one lattice
-    /// (built once, cached).
+    /// a pure function of <see cref="ToSettings"/>: it builds ONE PERIOD of the stack (cached, shared by every plant
+    /// of a config and element), and each plant grows one octagon tile of it (<see cref="NestedGyroidPeriod.Plant"/>).
     ///
     /// <para><b>The base sheet is the GYROID FLORA's own tiling</b> (<see cref="NestedGyroidTemplate"/>, measured off its
     /// bond table: 576 sites per period, its octagon rings, its frames), and the element's prism is the gyroid flora's
@@ -25,10 +25,6 @@ namespace CosmicShore.Gameplay
                  "own LatticeScale (Space 3.19) then widens the lattice only, exactly as on the gyroid flora. At 240 " +
                  "the thinnest layer is ~9 units deep.")]
         [Min(10f)] public float CellSize = 240f;
-
-        [Tooltip("Gyroid periods per side of the bounding cube. 576 template sites per period per sheet, so the prism " +
-                 "count goes as the CUBE of this - 2 needs a budget near 8x the default.")]
-        [Range(1, 4)] public int CellsPerSide = 1;
 
         [Tooltip("N - the number of nested sheets G = t_i, t_i evenly spaced on [-tMax, +tMax]. Odd N puts a sheet " +
                  "through the heart (G(0) = 0); even N puts the heart between the two central sheets. Every sheet " +
@@ -56,7 +52,8 @@ namespace CosmicShore.Gameplay
         [Range(-90f, 90f)] public float PlywoodTwistDegrees = 0f;
 
         [Header("Fibers (the warp)")]
-        [Tooltip("Poisson spacing, over the template's sites, of the gradient lines that carry STRUTS. Every site's " +
+        [Tooltip("Poisson spacing, over the template's sites, of the gradient lines that carry STRUTS - after one per octagon " +
+                 "tile, so every plant carries at least one whatever this is. Every site's " +
                  "line through the stack is what places its plate on each sheet, so a strut always runs plate to " +
                  "plate; these are the lines drawn. Fibers are the stack's cross-sheet bonds: without them it is " +
                  "separate shells.")]
@@ -85,13 +82,14 @@ namespace CosmicShore.Gameplay
                  "as each new sheet appears, every prism hanging off one already standing.")]
         [Min(0.1f)] public float GrowthRate = 40f;
 
-        [Tooltip("Hard ceiling on the plant's prisms. The tiling is the template's and is never coarsened, so over it " +
-                 "the growth order is CUT (a cut prefix is still one connected plant, but its outer ring is " +
-                 "incomplete - and the build warns). The default stack is ~4,250 at one period per side.")]
-        [Min(16)] public int PrismBudget = 4600;
+        [Tooltip("Hard ceiling on ONE PLANT's prisms - one octagon tile through the stack, ~170-180 at the default " +
+                 "seven sheets. The tiling is the template's and is never coarsened, so over it the growth order is " +
+                 "CUT (a cut prefix is still one tree on the crystal, but its outer sheets are incomplete - and the " +
+                 "build warns). A colony's size is the species' population cap, not this.")]
+        [Min(16)] public int PrismBudget = 400;
 
-        [Tooltip("Milliseconds of lattice build per frame while a plant is first planted. The build is cached per config, " +
-                 "so only the first plant of a config pays it.")]
+        [Tooltip("Milliseconds of period build per frame while the first plant of a config is planted. The period is " +
+                 "cached per config and element, so every later plant (every colony daughter) only cuts its tile.")]
         [Range(0.25f, 8f)] public float BuildSliceMilliseconds = 2f;
 
         [Header("Look - the domain's own prism states, never a lit one")]
@@ -139,7 +137,6 @@ namespace CosmicShore.Gameplay
             return new NestedGyroidSettings
             {
                 CellSize = CellSize * k,
-                CellsPerSide = CellsPerSide,
                 SheetCount = SheetCount,
                 TMax = TMax,
                 MaxSheets = MaxSheetCount,

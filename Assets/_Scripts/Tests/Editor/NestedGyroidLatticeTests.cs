@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using CosmicShore.Gameplay;
 using NUnit.Framework;
 using UnityEngine;
@@ -7,57 +8,26 @@ using NVec = System.Numerics.Vector3;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// Locks the nested gyroid's acceptance guarantees on the shipped default config (Docs/ECOSYSTEM.md §58):
-    /// the budget, ONE connected component, every bond inside the Urchin's reach, zero interpenetration, a growth
-    /// order that hangs every prism off one already standing, and that the FIBERS - not the sheets - are what
-    /// make it one object. Tools/Build/nested_gyroid_harness runs the same rule headless with negative controls
-    /// and the ride model; this is the in-editor twin.
+    /// Locks the nested gyroid's guarantees on the shipped default config (Docs/ECOSYSTEM.md §58). A PLANT is one
+    /// octagon tile of the gyroid flora's tiling on every nested sheet, every prism hanging off its crystal through
+    /// spindles; a COLONY is plants at tiles of one shared periodic frame, born one at a time at random open tiles.
+    /// Tools/Build/nested_gyroid_harness runs the same rule headless with negative controls, grown colonies and the
+    /// ride model; this is the in-editor twin.
     ///
     /// Under an Editor/ folder deliberately (see CLAUDE.md): NUnit attributes in Assembly-CSharp break IL2CPP.
     /// </summary>
     public class NestedGyroidLatticeTests
     {
-        static NestedGyroidLattice s_lattice;
+        static NestedGyroidPeriod s_period;
 
-        static NestedGyroidLattice Default => s_lattice ??= NestedGyroidBuilder.BuildNow(new NestedGyroidSettings());
+        static NestedGyroidPeriod Default => s_period ??= NestedGyroidBuilder.BuildNow(new NestedGyroidSettings());
 
-        static IEnumerable<int> Neighbours(NestedGyroidLattice l, int i)
+        static IEnumerable<NestedGyroidLattice> AllPlants()
         {
-            for (int e = l.AdjStart[i]; e < l.AdjStart[i + 1]; e++) yield return l.Adj[e];
+            for (int o = 0; o < NestedGyroidTemplate.OctagonCount; o++) yield return Default.Plant(o);
         }
 
-        [Test]
-        public void StaysWithinBudget_AndGrowsBothSheetsAndFibers()
-        {
-            var l = Default;
-            Assert.LessOrEqual(l.Count, new NestedGyroidSettings().PrismBudget);
-            Assert.Greater(l.Stats.SheetPrisms, 0);
-            Assert.Greater(l.Stats.FiberPrisms, 0, "no fibers: the stack would be separate shells");
-            Assert.AreEqual(7, l.Stats.SheetsGrown);
-        }
-
-        [Test]
-        public void EverySheetIsTheGyroidFloraTemplate()
-        {
-            // The base sheet is the gyroid flora's own tiling (576 sites a period) carried onto every level, so every
-            // sheet carries (nearly) every site exactly once, and a third of them are its danger octagon rings.
-            var l = Default;
-            Assert.AreEqual(NestedGyroidTemplate.SiteCount, l.Stats.TemplateSites);
-            var seen = new HashSet<(int sheet, int site)>();
-            var perSheet = new Dictionary<int, int>();
-            int danger = 0, plates = 0;
-            for (int i = 0; i < l.Count; i++)
-            {
-                if (l.Kind[i] != NestedGyroidPrismKind.Sheet) continue;
-                Assert.IsTrue(seen.Add((l.Sheet[i], l.Site[i])), "a template site appears twice on one sheet");
-                perSheet[l.Sheet[i]] = perSheet.TryGetValue(l.Sheet[i], out int c) ? c + 1 : 1;
-                plates++;
-                if (l.DangerRing[i]) danger++;
-            }
-            foreach (var kv in perSheet)
-                Assert.GreaterOrEqual(kv.Value, (int)(0.9f * NestedGyroidTemplate.SiteCount), $"sheet {kv.Key} lost its tiling");
-            Assert.AreEqual(1f / 3f, danger / (float)plates, 0.05f, "the octagon rings are 192 of the template's 576 sites");
-        }
+        // ------------------------------------------------------------------ the template
 
         [Test]
         public void Template_IsTheMeasuredGyroidFloraCell()
@@ -75,54 +45,152 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void IsOneConnectedComponent()
+        public void Template_TilesThePeriodIntoTwentyFourOctagons()
         {
-            Assert.AreEqual(1, Default.Stats.Components);
+            // The gyroid flora's "24 prisms a lifeform": every site owned by one octagon, 23-25 each, 8 of them its ring.
+            Assert.AreEqual(24, NestedGyroidTemplate.OctagonCount);
+            var owned = new int[NestedGyroidTemplate.OctagonCount];
+            var ring = new int[NestedGyroidTemplate.OctagonCount];
+            for (int k = 0; k < NestedGyroidTemplate.SiteCount; k++)
+            {
+                int o = NestedGyroidTemplate.SiteOwner[k];
+                owned[o]++;
+                if (NestedGyroidTemplate.IsDangerType(NestedGyroidTemplate.BlockType[k])) ring[o]++;
+            }
+            for (int o = 0; o < NestedGyroidTemplate.OctagonCount; o++)
+            {
+                Assert.That(owned[o], Is.InRange(23, 25), $"octagon {o}");
+                Assert.AreEqual(8, ring[o], $"octagon {o} does not own its own ring");
+            }
         }
 
         [Test]
-        public void WithoutFiberLinks_FallsApartIntoShells()
+        public void Template_NeighbourTableIsSymmetric()
         {
-            // The negative control for the claim the species exists to make.
-            var l = Default;
-            var parent = new int[l.Count];
-            for (int i = 0; i < l.Count; i++) parent[i] = i;
+            for (int o = 0; o < NestedGyroidTemplate.OctagonCount; o++)
+            {
+                var t = new NestedGyroidColony.Tile(0, 0, 0, o);
+                var n = t.Neighbors().ToList();
+                Assert.AreEqual(4, n.Count);
+                foreach (var m in n) CollectionAssert.Contains(m.Neighbors().ToList(), t, $"{m} does not list {t} back");
+            }
+        }
+
+        // ------------------------------------------------------------------ one plant
+
+        [Test]
+        public void EveryPlant_IsOneTileOnEverySheet_WithinBudget()
+        {
+            var budget = new NestedGyroidSettings().PrismBudget;
+            foreach (var l in AllPlants())
+            {
+                Assert.LessOrEqual(l.Count, budget);
+                Assert.AreEqual(0, l.Stats.TruncatedByBudget, $"plant {l.Octagon} was cut by the budget");
+                Assert.AreEqual(7, l.Stats.SheetsGrown);
+                Assert.Greater(l.Stats.FiberPrisms, 0, $"plant {l.Octagon} has no struts: its sheets would be separate shells");
+                var seen = new HashSet<(int, int)>();
+                for (int i = 0; i < l.Count; i++)
+                {
+                    if (l.Kind[i] != NestedGyroidPrismKind.Sheet) continue;
+                    Assert.IsTrue(seen.Add((l.Sheet[i], l.Site[i])), "a site appears twice on one sheet");
+                    Assert.AreEqual(l.Octagon, NestedGyroidTemplate.SiteOwner[l.Site[i]], "a plate outside the plant's tile");
+                }
+                Assert.Less(l.Position.Take(l.Count).Max(p => p.Length()), 0.5f * new NestedGyroidSettings().CellSize,
+                            "a plant is one tile, never a cube of the lattice");
+            }
+        }
+
+        [Test]
+        public void EveryPrism_HangsOffTheCrystal()
+        {
+            foreach (var l in AllPlants())
+            {
+                Assert.AreEqual(l.Count, l.Stats.RootedPrisms, $"plant {l.Octagon}");
+                int roots = 0;
+                for (int i = 0; i < l.Count; i++)
+                {
+                    Assert.Less(l.Parent[i], i, "a parent must be laid first");
+                    if (l.Parent[i] >= 0) continue;
+                    roots++;
+                    Assert.IsTrue(l.DangerRing[i] && l.Rank[i] == 0, "the crystal's own limbs land on its octagon ring");
+                }
+                Assert.GreaterOrEqual(roots, 8);
+            }
+        }
+
+        [Test]
+        public void TheOctagonRing_IsDangerOnEverySheet()
+        {
+            foreach (var l in AllPlants())
+                for (int sheet = 0; sheet < l.SheetCount; sheet++)
+                {
+                    int ring = 0;
+                    for (int i = 0; i < l.Count; i++)
+                        if (l.Kind[i] == NestedGyroidPrismKind.Sheet && l.Sheet[i] == sheet && l.DangerRing[i]) ring++;
+                    Assert.GreaterOrEqual(ring, 6, $"plant {l.Octagon} sheet {sheet}");
+                }
+        }
+
+        [Test]
+        public void WithoutCrossSheetLimbs_APlantFallsApartIntoShells()
+        {
+            // The negative control for the claim the species exists to make: the columns and struts are the stack.
+            var l = Default.Plant(0);
+            var parent = Enumerable.Range(0, l.Count).ToArray();
             int Find(int x) { while (parent[x] != x) x = parent[x] = parent[parent[x]]; return x; }
             for (int i = 0; i < l.Count; i++)
-                foreach (int j in Neighbours(l, i))
-                    if (l.Kind[i] == NestedGyroidPrismKind.Sheet && l.Kind[j] == NestedGyroidPrismKind.Sheet && l.Sheet[i] == l.Sheet[j])
-                        parent[Find(i)] = Find(j);
+            {
+                int j = l.Parent[i];
+                if (j >= 0 && l.Kind[i] == NestedGyroidPrismKind.Sheet && l.Kind[j] == NestedGyroidPrismKind.Sheet && l.Sheet[i] == l.Sheet[j])
+                    parent[Find(i)] = Find(j);
+            }
             var roots = new HashSet<int>();
             for (int i = 0; i < l.Count; i++) if (l.Kind[i] == NestedGyroidPrismKind.Sheet) roots.Add(Find(i));
             Assert.GreaterOrEqual(roots.Count, l.Stats.SheetsGrown);
         }
 
         [Test]
-        public void EveryBondIsInsideTheUrchinsReach()
+        public void EveryPrismPointsUpTheStack()
         {
-            var l = Default;
-            Assert.Less(l.Stats.MaxEdgeOverReach, 1f);
-            for (int i = 0; i < l.Count; i++)
-                foreach (int j in Neighbours(l, i))
-                    Assert.Less(NVec.Distance(l.Position[i], l.Position[j]), Mathf.Min(l.Reach[i], l.Reach[j]));
+            // The layered ride reads +z as "up G": a strut on a negative-t gap must not point down it.
+            float cell = new NestedGyroidSettings().CellSize;
+            float scale = cell / (2f * Mathf.PI);
+            foreach (var l in AllPlants())
+            {
+                var centre = NestedGyroidTemplate.OctagonCenter[l.Octagon] * cell;
+                for (int i = 0; i < l.Count; i++)
+                    Assert.Greater(NVec.Dot(l.Forward[i], NestedGyroidBuilder.Grad((l.Position[i] + centre) / scale)), 0f);
+            }
         }
 
+        // ------------------------------------------------------------------ plants side by side
+
         [Test]
-        public void NoPrismInterpenetratesAnother()
+        public void APlantAndItsNeighbours_NeverInterpenetrate()
         {
-            var l = Default;
-            int overlaps = 0;
-            for (int i = 0; i < l.Count; i++)
+            Assert.AreEqual(0, Default.Stats.RemainingOverlaps);
+            float cell = new NestedGyroidSettings().CellSize;
+            var tiles = new List<NestedGyroidColony.Tile> { new NestedGyroidColony.Tile(0, 0, 0, 0) };
+            tiles.AddRange(tiles[0].Neighbors());
+            var pos = new List<NVec>(); var fwd = new List<NVec>(); var up = new List<NVec>(); var size = new List<NVec>();
+            foreach (var t in tiles)
             {
-                var xi = NVec.Cross(l.Up[i], l.Forward[i]);
-                float ri = 0.5f * l.Size[i].Length();
-                for (int j = i + 1; j < l.Count; j++)
+                var l = Default.Plant(t.Octagon);
+                var c = NestedGyroidLattice.TileCenter(t.X, t.Y, t.Z, t.Octagon, cell);
+                for (int i = 0; i < l.Count; i++) { pos.Add(l.Position[i] + c); fwd.Add(l.Forward[i]); up.Add(l.Up[i]); size.Add(l.Size[i]); }
+            }
+            int overlaps = 0;
+            for (int i = 0; i < pos.Count; i++)
+            {
+                var xi = NVec.Cross(up[i], fwd[i]);
+                float ri = 0.5f * size[i].Length();
+                for (int j = i + 1; j < pos.Count; j++)
                 {
-                    float rj = 0.5f * l.Size[j].Length();
-                    if (NVec.DistanceSquared(l.Position[i], l.Position[j]) > (ri + rj) * (ri + rj)) continue;
-                    var xj = NVec.Cross(l.Up[j], l.Forward[j]);
-                    if (NestedGyroidBuilder.ObbOverlap(l.Position[i], xi, l.Up[i], l.Forward[i], 0.5f * l.Size[i],
-                                                       l.Position[j], xj, l.Up[j], l.Forward[j], 0.5f * l.Size[j]))
+                    float rj = 0.5f * size[j].Length();
+                    if (NVec.DistanceSquared(pos[i], pos[j]) > (ri + rj) * (ri + rj)) continue;
+                    Assert.Greater(NVec.DistanceSquared(pos[i], pos[j]), 1e-4f, "two plants laid the same prism");
+                    var xj = NVec.Cross(up[j], fwd[j]);
+                    if (NestedGyroidBuilder.ObbOverlap(pos[i], xi, up[i], fwd[i], 0.5f * size[i], pos[j], xj, up[j], fwd[j], 0.5f * size[j]))
                         overlaps++;
                 }
             }
@@ -138,29 +206,49 @@ namespace CosmicShore.Tests
             Assert.IsFalse(NestedGyroidBuilder.ObbOverlap(NVec.Zero, x, y, z, h, new NVec(2f, 0, 0), x, y, z, h));
         }
 
+        // ------------------------------------------------------------------ the colony book
+
         [Test]
-        public void GrowthOrder_HangsEveryPrismOffOneAlreadyStanding()
+        public void Colony_GrowsTileByTile_NeverClaimingTwice()
         {
-            var l = Default;
-            Assert.AreEqual(-1, l.Parent[0], "the first prism grows out of the heart");
-            Assert.IsTrue(l.LimbBond[0]);
-            for (int i = 1; i < l.Count; i++)
+            Random.InitState(7);
+            var book = NestedGyroidColony.Found(null, null, Vector3.zero, Quaternion.identity, 240f);
+            var founder = new NestedGyroidColony.Tile(0, 0, 0, 3);
+            Assert.IsTrue(book.TryClaim(founder, null));
+            Assert.IsFalse(book.TryClaim(founder, null), "a claimed tile cannot be claimed again");
+            var members = new List<NestedGyroidColony.Tile> { founder };
+            for (int birth = 0; birth < 40; birth++)
             {
-                Assert.Less(l.Parent[i], i);
-                Assert.GreaterOrEqual(l.Parent[i], 0);
-                CollectionAssert.Contains(new List<int>(Neighbours(l, i)), l.Parent[i], "a parent must be a real bond");
+                foreach (var m in members) book.ContributeNeighbors(m);
+                Assert.IsTrue(book.TryPopRandom(out var tile));
+                Assert.IsFalse(book.IsClaimed(tile));
+                Assert.IsTrue(members.Any(m => m.Neighbors().Contains(tile)), "a birth must border a living plant");
+                Assert.IsTrue(book.TryClaim(tile, null));
+                members.Add(tile);
             }
+            Assert.AreEqual(41, book.Members);
+            Assert.AreEqual(members.Count, members.Distinct().Count());
         }
 
         [Test]
-        public void EveryPrismPointsUpTheStack()
+        public void Colony_ASeedJoinsAGrowingFounder_AndADeathFreesItsTile()
         {
-            // The layered ride reads +z as "up G": a strut on a negative-t gap must not point down it.
-            var l = Default;
-            float scale = new NestedGyroidSettings().CellSize / (2f * Mathf.PI);
-            for (int i = 0; i < l.Count; i++)
-                Assert.Greater(NVec.Dot(l.Forward[i], NestedGyroidBuilder.Grad(l.Position[i] / scale)), 0f);
+            Random.InitState(3);
+            var book = NestedGyroidColony.Found(null, null, Vector3.zero, Quaternion.identity, 240f);
+            var founder = new NestedGyroidColony.Tile(0, 0, 0, 5);
+            book.TryClaim(founder, null);
+            Assert.AreEqual(0, book.OpenTiles, "an immature founder has offered nothing yet");
+            Assert.IsTrue(book.TryAnyOpenTile(out var joined));
+            CollectionAssert.Contains(founder.Neighbors().ToList(), joined, "a seed joins BESIDE the founder");
+            Assert.IsFalse(book.TryAnyOpenTile(out _, t => false), "a tile outside the planting band is never offered");
+
+            book.TryClaim(joined, null);
+            book.Release(joined, null);
+            Assert.IsFalse(book.IsClaimed(joined));
+            Assert.IsTrue(book.TryPopRandom(out var back) && back.Equals(joined), "the freed tile is open lattice again");
         }
+
+        // ------------------------------------------------------------------ settings
 
         [Test]
         public void TMax_IsClampedBelowTheCriticalValues()
@@ -170,14 +258,20 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void ConfigDefaults_GrowTheMeasuredLattice()
+        public void ConfigDefaults_GrowTheMeasuredPeriod()
         {
-            // The SO's defaults and the settings' defaults are one lattice - the harness measures the latter.
+            // The SO's defaults and the settings' defaults are one period - the harness measures the latter. The
+            // leaf goes through CellSize / NestedGyroidTemplate.Period (119.99), so it lands a hair off 18 x 6.8 x 3.
             var so = ScriptableObject.CreateInstance<NestedGyroidConfigSO>();
             try
             {
-                Assert.AreEqual(new NestedGyroidSettings().Sanitized().Key(),
-                                so.ToSettings(NestedGyroidConfigSO.TemplateTimeLeaf).Key());
+                var fromSo = so.ToSettings(NestedGyroidConfigSO.TemplateTimeLeaf);
+                var expected = new NestedGyroidSettings();
+                Assert.AreEqual(expected.Leaf.X, fromSo.Leaf.X, 0.01f);
+                Assert.AreEqual(expected.Leaf.Y, fromSo.Leaf.Y, 0.01f);
+                Assert.AreEqual(expected.Leaf.Z, fromSo.Leaf.Z, 0.01f);
+                expected.Leaf = fromSo.Leaf;
+                Assert.AreEqual(expected.Sanitized().Key(), fromSo.Key());
             }
             finally { Object.DestroyImmediate(so); }
         }
@@ -185,8 +279,8 @@ namespace CosmicShore.Tests
         [Test]
         public void Build_IsDeterministic()
         {
-            var a = Default;
-            var b = NestedGyroidBuilder.BuildNow(new NestedGyroidSettings());
+            var a = Default.Plant(0);
+            var b = NestedGyroidBuilder.BuildNow(new NestedGyroidSettings()).Plant(0);
             Assert.AreEqual(a.Count, b.Count);
             for (int i = 0; i < a.Count; i++)
             {

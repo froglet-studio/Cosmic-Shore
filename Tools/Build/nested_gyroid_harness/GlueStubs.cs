@@ -1,5 +1,5 @@
 // TYPE-CHECK STUBS for the nested-gyroid Unity glue (NestedGyroidFlora, NestedGyroidConfigSO, ILayeredPrismscape,
-// PrismscapeTopology, BlockscapeFollower). Every member stands for a REAL declaration and keeps its real
+// PrismscapeTopology, BlockscapeFollower, NestedGyroidColony). Every member stands for a REAL declaration and keeps its real
 // signature and accessibility (copied by hand on 2026-10-06), so this catches a misspelt member, a wrong argument,
 // a bad override or an accessibility mistake against THOSE signatures. It cannot catch a signature that has since
 // changed in the real file, and it proves nothing about runtime behaviour - that is the Editor's job
@@ -38,6 +38,7 @@ namespace UnityEngine
         public Transform GetChild(int i) => null;
         public Vector3 TransformPoint(Vector3 p) => p;
         public void SetParent(Transform p, bool worldPositionStays) { }
+        public void SetPositionAndRotation(Vector3 position, Quaternion rotation) { }
     }
     public class Collider : Component { public bool enabled; }
     public class MeshFilter : Component { public Mesh sharedMesh; }
@@ -82,8 +83,13 @@ namespace UnityEngine
         public static float Lerp(float a, float b, float t) => a; public static float Clamp01(float a) => a;
         public static int RoundToInt(float a) => 0; public static int FloorToInt(float a) => 0;
     }
-    public static class Random { public static Quaternion rotationUniform; public static float value; }
-    public static class Time { public static float deltaTime; public static int frameCount; }
+    public static class Random
+    {
+        public static Quaternion rotationUniform; public static float value;
+        public static int Range(int minInclusive, int maxExclusive) => minInclusive;
+        public static float Range(float min, float max) => min;
+    }
+    public static class Time { public static float deltaTime, time; public static int frameCount; }
     public enum QueryTriggerInteraction { UseGlobal = 0, Ignore = 1, Collide = 2 }
     public static class Physics
     {
@@ -119,6 +125,13 @@ namespace CosmicShore.Utility
     }
     // FloraConfigurationSO.cs
     public class FloraVariantTuning { public float LatticeScale = -1f; public int MaxTotalSpawnedObjects = -1; public float MaxTotalSpawnedObjectsScale; }
+    public class FloraConfigurationSO : ScriptableObject { public CosmicShore.Data.Element Element = CosmicShore.Data.Element.None; }
+    // FloraReproductionRules.cs
+    public static class FloraReproductionRules
+    {
+        public static float ReproductionRateFor(CosmicShore.Data.Element element) => 1f;
+        public static float ScaleCostPerChild(float authoredCost, float rate) => authoredCost;
+    }
 }
 
 namespace CosmicShore.Gameplay
@@ -126,7 +139,13 @@ namespace CosmicShore.Gameplay
     using UnityEngine;
     using CosmicShore.Utility;
     public enum Domains { Unassigned = 0, Jade = 1, Ruby = 2, Gold = 4, Blue = 5 }
-    public class Cell : MonoBehaviour { public bool FloraGrowingEnabled => true; }
+    public class Cell : MonoBehaviour
+    {
+        public bool FloraGrowingEnabled => true;
+        public bool FloraPlantingEnabled => FloraGrowingEnabled;
+        public float CurrentFaunaSpawnPeriod => 0f;
+        public bool IsFloraAtCap(FloraConfigurationSO config) => false;
+    }
     public class Trail { public List<Prism> TrailList; public CosmicShore.Data.PrismscapeDimension Dimension; }
     public class PrismProperties { public bool IsDangerous; }   // PrismProperties.cs
     public class Prism : MonoBehaviour
@@ -173,6 +192,7 @@ namespace CosmicShore.Gameplay
         public Spindle AddSpindle() => null;
         public virtual void RemoveSpindle(Spindle spindle) { }
         public virtual void ApplyVariantTuning(FloraVariantTuning tuning) { }
+        protected virtual void Die(string killerName = "") { }
     }
     public abstract class Flora : LifeForm
     {
@@ -186,6 +206,14 @@ namespace CosmicShore.Gameplay
         protected virtual bool PrismSizeFixedByGrowthRule => false;
         protected virtual int PrismBudget => 0;
         protected void NotifyGrew(int prisms = 1) { }
+        public FloraConfigurationSO SourceConfig => null;
+        protected override void Die(string killerName = "") { }
+        protected bool TrySpawnOneOffspring() => false;
+        protected virtual bool TryResolveOffspringPlacement(out Vector3 position, out Quaternion rotation, out Vector3? up)
+        { position = default; rotation = default; up = null; return true; }
+        protected virtual void ConfigureOffspring(Flora child) { }
+        protected Vector3 ClampToPlantingBand(Vector3 point) => point;
+        protected virtual void OnDestroy() { }
         public override void AddHealthBlock(HealthPrism healthPrism) { }
         public override void Initialize(Cell cell) { }
         public override void ApplyVariantTuning(FloraVariantTuning tuning) { }

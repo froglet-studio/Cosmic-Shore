@@ -124,6 +124,7 @@ namespace CosmicShore.Gameplay
 
         // Layered ride state - null / 0 whenever the ground is not part of a stack.
         ILayeredPrismscape _layers;
+        object _layerSpace;      // _layers.LayerSpace - every structure sharing it is one stack
         int _groundStack;
         int _climbIntent;        // +1 up the stack, -1 down, 0 = hold the layer
         bool _layerAhead;        // the last refresh saw a layer to climb INTO
@@ -153,6 +154,7 @@ namespace CosmicShore.Gameplay
         {
             AttachedPrism = null;
             _layers = null;
+            _layerSpace = null;
         }
 
         void ResolveLayers(Prism ground)
@@ -163,6 +165,7 @@ namespace CosmicShore.Gameplay
                 _layers = null;
                 _groundStack = 0;
             }
+            _layerSpace = _layers?.LayerSpace;
         }
 
         public void RideTheTrail()
@@ -332,13 +335,15 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// In a stack, the ground may stay on its layer, or - only while the pilot climbs - step to the next
-        /// strut or sheet in the direction of the climb (stack coordinate ±1 or ±2). A prism of ANOTHER
-        /// structure is eligible exactly as it always was: a stack must not wall the rider off the world.
+        /// strut or sheet in the direction of the climb (stack coordinate ±1 or ±2). "The stack" is every structure
+        /// sharing the ground's layer space (one colony of plants is one stack). A prism of ANOTHER stack is
+        /// eligible exactly as it always was: a stack must not wall the rider off the world.
         /// </summary>
         bool IsLayerEligible(Prism candidate)
         {
             var owner = PrismscapeTopology.LayeredOwnerOf(candidate);
-            if (owner != _layers || !owner.TryGetStackCoordinate(candidate, out int stack)) return true;
+            if (owner == null || !ReferenceEquals(owner.LayerSpace, _layerSpace)
+                || !owner.TryGetStackCoordinate(candidate, out int stack)) return true;
             int delta = stack - _groundStack;
             if (delta == 0) return true;
             bool ahead = _climbIntent != 0 && (delta > 0 ? 1 : -1) == _climbIntent && Mathf.Abs(delta) <= 2;

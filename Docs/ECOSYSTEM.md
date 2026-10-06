@@ -11057,8 +11057,11 @@ Borromean four read out of `BorromeanSurfaceData.cs` — and the cell has never 
 `NestedGyroidFlora` grows a stack of **N nested gyroid sheets** G = t_i (t_i evenly spaced on
 [−tMax, +tMax], defaults N = 7, tMax = 1.2) woven together by **fibers** traced along ∇G. The plain
 Gyroid flora (§32, §34) tiles the single sheet G = 0, a 2D prismscape; this is the first flora that is a
-**Volume** in `PrismscapeDimension`'s sense. Files: the rule `NestedGyroidLattice.cs` (pure C#,
-System.Numerics, no UnityEngine), the plant `NestedGyroidFlora.cs`, the config `NestedGyroidConfigSO`
+**Volume** in `PrismscapeDimension`'s sense. **A plant is ONE octagon tile of the gyroid flora's tiling on
+every sheet, hung off its crystal by spindles, and the species spreads as a COLONY of such tiles through the
+triply periodic structure** (§58.3, §58.9) — exactly the gyroid flora's model, a layer deeper. Files: the rule
+`NestedGyroidLattice.cs` (pure C#, System.Numerics, no UnityEngine), the population book `NestedGyroidColony.cs`,
+the plant `NestedGyroidFlora.cs`, the config `NestedGyroidConfigSO`
 (`Assets/_SO_Assets/Lifeforms/NestedGyroidConfig.asset`), the prefab `NestedGyroidFlora.prefab`, the
 gates `Tools/Build/nested_gyroid_harness/run.sh` and `NestedGyroidLatticeTests`.
 
@@ -11073,65 +11076,73 @@ well-defined object rather than a hope. `NestedGyroidSettings.TMaxCeiling` = 1.4
 
 ### 58.2 The rule, and what each step is for
 
+The builder grows ONE PERIOD of the whole stack — every tile, every sheet, every strut — as a periodic structure
+(minimum-image distances throughout), and a plant is cut out of it (§58.3). Building the period, not a plant, is what
+makes neighbouring plants of a colony clear each other exactly: the fit already saw them side by side.
+
 1. **The base sheet is the GYROID FLORA's own tiling** (§58.7): `NestedGyroidTemplate`, 576 sites per period
-   measured off its bond table, tiled over the bounding cube and Newton-snapped onto G = 0. Each site keeps the
-   flora's frame (+z flipped where needed so it points UP G, +y its own) and its block type.
-2. **Every sheet is that tiling carried along the gradient lines.** Each site is traced by RK4 along
-   ±∇G/|∇G| to every grown level G = t_i; its crossing IS its plate on that sheet. So every layer has the gyroid
-   flora's loop subdivisions and its octagon rings, and the gradient line through a site is literally the fiber
-   that site lies on. An image may leave the base cube by as much as the cube's own half-size (so the outer sheets'
-   edges sit over the base sheet's instead of losing the third of the template that flows out of the faces —
-   measured 426 → 555–576 of 576 per sheet).
-3. **Fibers (the warp).** A Poisson subset of those lines (`FiberSeedSpacing`) carries struts, laid between
-   consecutive images, kept a clearance off both plates. Every prism's local **+z points UP G**.
-4. **Orientation.** The template's frames ride along (projected onto each sheet's tangent plane). Combing is
-   gone — the flora's tiling is already a consistent field. The helicoidal-plywood twist is still a config field,
-   but **defaults to 0**: turning the plates crosses each one over its loop neighbours (measured at 25°/sheet:
-   52–66 plates per element lost to the fit, against 0–15 at 0°).
+   measured off its bond table, Newton-snapped onto G = 0. Each site keeps the flora's frame (+z flipped where needed
+   so it points UP G, +y its own) and its block type, and each site's 4 nearest periodic neighbours are its MATES —
+   the in-sheet bonds.
+2. **Every sheet is that tiling carried along the gradient lines.** Each site is traced by RK4 along ±∇G/|∇G| to
+   every grown level G = t_i; its crossing IS its plate on that sheet. So every layer has the gyroid flora's loop
+   subdivisions and its octagon rings, and the gradient line through a site is literally its COLUMN through the
+   stack. No plate within `HeartClearance` of any octagon centre (any crystal's seat).
+3. **Fibers (the warp).** A subset of the columns carries struts, laid between consecutive images, kept a clearance
+   off both plates. The subset is **one anchor per octagon tile** (a random site of its patch, never its ring),
+   then a periodic Poisson fill at `FiberSeedSpacing` around the anchors — so every PLANT carries struts whatever
+   the spacing (without the anchors 4 of the 24 tiles drew none: plants that were a stack of plates on a crystal).
+   Every prism's local **+z points UP G**.
+4. **Orientation.** The template's frames ride along (projected onto each sheet's tangent plane). The
+   helicoidal-plywood twist is a config field but **defaults to 0**: turning the plates crosses each one over its
+   loop neighbours (measured at 25°/sheet: 52–66 plates per element lost to the fit, against 0–15 at 0°).
 5. **Sizing — the element's proportions, carried.** A plate wears the element's leaf (the gyroid flora's
    `Variant.LeafSize`, scaled by `CellSize / 120`) times the template's local IN-PLANE STRETCH (its distance to its
-   four mates' images over the base's: 0.60–1.57 at the defaults — x and y together, so the aspect is exact on
-   every plate the fit leaves alone). Thickness follows the layer: leaf z × (local gap / the t = 0 layer's median
-   gap), capped at 2× the leaf's own thickness and at 45% of the gap — a plate stays a plate.
-6. **The fit.** Exact OBB separating-axis test, margin = half the clearance. Plates shrink 0.88×/pass in their
-   footprint, then (footprint at its 35% floor) in their thickness. **Struts never give way** — a shrunk strut has
-   a shorter rider reach than the bond it spans and a dropped one makes the chain bridge two slots (measured: up to
-   123% of reach near tMax 1.38 before this rule); the plates beside a strut give way instead.
-7. **The rider graph** — in-sheet links inside 90% of the smaller rider reach (`BlockscapeFollower`'s own ground
-   search radius), cross-sheet links along each strutted gap's CHAIN of prisms — islands pruned, growth ordered
-   ring by ring outward from the heart. `Parent[i] < i`, every parent a real bond.
-8. **Budget.** The tiling is the template's and is never coarsened; over `PrismBudget` the growth-order prefix is
-   cut (still one plant) and the plant warns that its outer ring is incomplete.
+   mates' images over the base's: 0.82–1.49 at the defaults — x and y together, so the aspect is exact on every
+   plate the fit leaves alone). Thickness follows the layer: leaf z × (local gap / the t = 0 layer's median gap),
+   capped at 2× the leaf's own thickness and at 45% of the gap — a plate stays a plate.
+6. **The fit — periodic.** Exact OBB separating-axis test on minimum-image pairs, margin = half the clearance. Plates
+   shrink 0.88×/pass in their footprint, then (footprint at its 35% floor) in their thickness. **Struts never give
+   way** — the plates beside a strut give way instead.
 
-**Default build (Time leaf): 4,222 prisms (4,000 plates / 222 struts, 37 fibers, 7 sheets), 1 component, 1,329
-danger-ring plates (33.2% — the template's 192/576), every sheet 555–576 of the template's 576 sites, neighbour gap
-min/median/max 4.57 / 12.39 / 19.57, worst bond 90% of reach, 0 overlaps (2,781 pairs before the fit, 10 plates
-dropped), sliced at 2 ms into ~65 slices (worst slice ~2.5 ms, best of three builds), ~0.14 s total (~0.34 s on
-a cold JIT).** The other three elements, built from
-their shipped configs: Mass 4,228, Space 4,283 (on its 766-unit period), Charge 4,241 — all green. The sweep
-N ∈ {2,3,5,7,9} × tMax ∈ {0.6, 1.2, 1.3, 1.35, 1.38}, 2 periods a side and maxSheets 3 passes every gate. **Cut the
-fiber links and it is 15 separate shells.** Near √2 the outer levels have much less AREA than the base (the
-gradient lines converge on G's maxima), so the fit drops what no longer fits: the outermost sheet keeps 64–68% of
-the template at tMax 1.35–1.38, 96–100% at 1.2.
+**Default period (Time leaf): 4,235 prisms, 0 overlaps after the fit (3,160 pairs before it, 1 plate dropped),
+sliced at 2 ms into ~93 slices (worst slice ~2.6 ms, best of three builds), ~0.2–0.4 s total.** It is built ONCE per
+settings key and cached: every later plant of that config and element — every colony daughter — only cuts its tile.
+Near √2 the outer levels have much less AREA than the base (the gradient lines converge on G's maxima), so the fit
+drops what no longer fits: at tMax 1.35–1.38, 336 plates a period, and a plant's outermost sheet keeps 2–4 of its 8
+ring plates.
 
-### 58.3 The plant
+### 58.3 The plant — one octagon, one crystal, one spindle tree
 
-A COMPACT species (§6 of the flora skill): it completes and funds per-plant offspring from its quota; no
-frontier, no claim book. `PrismSizeFixedByGrowthRule` is true (every size is fitted); resizing is
-`FloraVariantTuning.LatticeScale`, a uniform similarity of every length. One lattice per settings key is
-built once (time-sliced, one in-flight build shared by every plant of the config) and cached. Limbs are
-the bonds that ARE limbs — out of the heart and along every fiber (445 at the defaults); a plate beside a
-plate is tiling and carries none, which keeps the spindle count near a tenth of the prism count. Sizes ride the
-`_pendingPrismScale` stamp `MandelbulbFlora` established. Counts are logged once per build on the
-**Ecology** channel (`FrogletTools > Toolbox > Logging`); a broken guarantee or a budget cut is a warning.
-At full growth, with the channel on, a physics spot-check runs `OverlapBox` on 64 sampled prisms and
-reports cross-layer hits (and how many it skipped for an LOD-culled collider).
+**A plant is one octagon tile on every sheet**, the gyroid flora's "24 prisms a lifeform" (§32.7) carried through
+the stack: `NestedGyroidPeriod.Plant(octagon)` takes the 23–25 template sites the octagon OWNS (§58.7), their plates on
+every grown sheet, and the struts of their strutted columns — **167–187 prisms at the defaults (161–175 plates, 6–18
+struts), reaching ~76 units from its crystal on a 240-unit period.** The plant's origin is the octagon's centre on the
+t = 0 level: **its CRYSTAL**.
+
+**Every prism hangs off the crystal through spindles.** The plan is one tree rooted at the crystal: limbs out of the
+crystal to its own ring's eight images on the heart's sheet (or both central sheets, even N), then a ring-layered
+breadth-first growth along the plant's bonds — the template mates within the tile, each column's chain of struts, and
+the column itself between adjacent sheets where it carries no strut. `Parent[i] < i`, the parent chain of every
+prism ends at the crystal (counted, not assumed: `Stats.RootedPrisms`), and `NestedGyroidFlora.LayAt` gives EVERY
+prism a limb on the bond to its parent, rooted at the parent, stretched to span it (`StretchToBond`, the Borromean's
+measured stretch) and parented under the parent's own limb — so the plant is one spindle hierarchy out of its heart and
+a prism is never parented to a prism (a non-uniform scale above a rotated child is a shear, §37.9). A grazed prism's limb
+stays and is reused when it regrows; a prism whose parent is grazed waits for it. Limbs are 4.8–25.6 long at the
+defaults — the skeleton, not the rider's path, so their length against the rider's reach is reported, not gated
+(rideability is a COLONY property, §58.9).
+
+`PrismSizeFixedByGrowthRule` is true (every size is fitted); resizing is `FloraVariantTuning.LatticeScale`, a uniform
+similarity of every length. Sizes ride the `_pendingPrismScale` stamp `MandelbulbFlora` established. Counts are logged
+once per built period on the **Ecology** channel (`FrogletTools > Toolbox > Logging`); a broken guarantee or a budget
+cut is a warning. `PrismBudget` (400) is PER PLANT: over it the growth order is cut — still one tree on the crystal,
+outer sheets incomplete. At full growth, with the channel on, a physics spot-check runs `OverlapBox` on 64 sampled
+prisms and reports cross-layer hits (and how many it skipped for an LOD-culled collider).
 
 **Element geometry is the gyroid flora's** (§58.6). A Charge plant's shields (1.5 × leaf octahedra) are not fitted
-against the layer gap — exactly as on the gyroid flora, whose Charge plate was fitted to its own shields on ONE
-sheet. No cell adopts the
-species — it is reachable from the Spawn Matrix toy (§58.6), and the prefab is `autoInitialize` and roots
-where it is placed when it has no cell, which is the test-scene path.
+against the layer gap — exactly as on the gyroid flora, whose Charge plate was fitted to its own shields on ONE sheet.
+No cell adopts the species — it is reachable from the Spawn Matrix toy (§58.6), and the prefab is `autoInitialize` and
+roots where it is placed when it has no cell, which is the test-scene path.
 
 ### 58.4 The Urchin could not ride a stack — and the change that lets it
 
@@ -11143,12 +11154,15 @@ drifts toward it. **Measured on the ride model: an in-sheet roll under the old r
 weighting the off-plane distance was tried first and still leaked (3, 4, 2, 1), because how far apart two
 layers are is not something a prism's position says. So the structure says it:
 
-* **`ILayeredPrismscape.TryGetStackCoordinate`** — sheet i is 2i, a strut between i and i+1 is 2i+1.
-  `NestedGyroidFlora` implements it; `PrismscapeTopology.LayeredOwnerOf` resolves it through
+* **`ILayeredPrismscape.TryGetStackCoordinate`** — sheet i is 2i, a strut between i and i+1 is 2i+1 — and
+  **`LayerSpace`**, the frame those numbers are measured in. A nested gyroid's layer space is its COLONY: every plant
+  of one colony shares one lattice frame, so sheet 3 of one plant is sheet 3 of its neighbour, and the ride treats the
+  whole colony as one stack (it holds its sheet across a plant boundary instead of letting the neighbour's other
+  layers in). A structure that shares its frame with nothing returns itself. `NestedGyroidFlora` implements it; `PrismscapeTopology.LayeredOwnerOf` resolves it through
   `HealthPrism.LifeForm` (Unity-null-checked), and `DimensionOf` returns **Volume** for it rather than
   running the census, which near the outer skin sees half the stack and would say Surface.
 * **Layered ground rule** (only while the ground's owner declares a stack — every other prismscape rides
-  exactly as before): a candidate of the same structure is eligible only on the SAME layer, or, while the
+  exactly as before): a candidate of the same STACK (same layer space) is eligible only on the SAME layer, or, while the
   pilot pitches past `layerClimbDeadzone` (0.35), on the next strut or sheet in that direction (±1/±2).
   Candidates are scored to their **hover point** (centre + hoverHeight along their normal), so a climb
   hands over halfway between riding heights. A prism of another structure stays eligible as it always was.
@@ -11157,9 +11171,10 @@ layers are is not something a prism's position says. So the structure says it:
   exists ahead — the spring's equilibrium (climb speed / 5) otherwise stalls short of a deep outer gap.
   Pitching out of the outermost skin finds no layer ahead, so the spring holds and the skin stays ridden.
 
-**Measured on the ride model (harness, Urchin defaults, 60 u/s):** an in-sheet roll crosses 10 plates and
-stays on sheet 3; pitching up the stack visits 3 > 4 > 5 > 6 and stops on the skin; pitching down visits
-3 > 2 > 1 > 0; zero reversals. The model is a transcription of `BlockscapeFollower` (the shipped file is a
+**Measured on the ride model (harness, Urchin defaults, 60 u/s) across a grown 12-plant colony:** an in-sheet roll
+crosses 14 plates on 3 different plants and stays on sheet 3; pitching up the stack visits 3 > 4 > 5 > 6 and stops on
+the skin; pitching down visits 3 > 2 > 1 > 0; zero reversals. The legacy nearest-centre rule (negative control) roams
+all seven sheets. The model is a transcription of `BlockscapeFollower` (the shipped file is a
 MonoBehaviour); `RideModel.cs` names the method each block mirrors and must move with it.
 
 ### 58.5 The look — danger prisms, never a lit one
@@ -11197,19 +11212,20 @@ of `Toy_SpawnMatrix.asset`'s flora kingdom. GUIDs are `md5("cosmicshore/nestedgy
   deliberately absent from that tool's `FLORA_PREFABS`, and the generator reads `HEART_MAX` out of it (and
   asserts the absence), so the pin cannot drift from the band. It is the biggest lifeform in the project; the
   top of the band is honest for it and re-prices nobody.
-* **Population: a specimen.** Seed 1, cap 1 per element (4 heart colliders across the four), and
-  `GrowthPerOffspring 0` — with a cap of 1 any quota is a number nothing reads, so the asset says it does not
-  reproduce. Consequence: the Squirrel's nourish joust declines on it.
+* **Population: a colony** (§58.9). Seed floor 1 (the spawner only founds the colony and re-founds it after
+  extinction; a second seed would only join the same frame), cap **12 plants** per element (~2,100 prisms, 48 heart
+  colliders across the four), and `GrowthPerOffspring 0` ON PURPOSE: the colony births on the population clock through
+  `Flora.TrySpawnOneOffspring`, and a per-plant quota would add a second, uncoordinated birth path that scatters
+  daughters off the lattice. `OffspringSpread` is unread for the same reason — a daughter's place is its tile.
 * **The row goes immediately BEFORE Borromean**, because `author_borromean_flora_assets.py` deletes its own
   row and re-appends it at the END of the list; after it, that tool's `--check` would report drift. Verified:
   the Borromean, Mandelbulb, charge-shield and heart-size `--check`s are all green with the row in.
-* **The icon.** The matrix builds each species' icon synchronously from `TryPreviewGrowth(220)`. The preview
-  grows a smaller WINDOW of the same tiling (`NestedGyroidSettings.PreviewOf`): three sheets, the window sized from
-  a measured count model so it holds whole octagon rings — 142 prisms, 42 template sites a sheet, 36 danger-ring
-  plates, 16 struts, one component, 7 ms. Never a coarsened copy: the template's subdivision is the point.
-* **Cost at the bench.** A release roots the plant AT the station, and the plant is a 240-unit cube while
-  stations sit 90 apart, so it envelops its neighbours — that is the prismscape working, not a bug. Its ~2,000
-  prisms land on the cell's Frenzy COUNT backstop like any planting.
+* **The icon.** The matrix builds each species' icon synchronously from `TryPreviewGrowth(220)`: ONE PLANT — the
+  same tile a planted one grows — cut from a three-sheet period (71 prisms, 24 danger-ring plates, 2 struts; the
+  three-sheet period builds in ~28 ms and is cached). Never a coarsened copy: the template's subdivision is the point.
+* **At the bench.** A release roots its founder's crystal AT the station (a pinned plant founds its own colony
+  frame there), and the colony then wanders out tile by tile up to its cap, ~76 units a plant from each crystal —
+  wider than the 90-unit station spacing once it spreads, which is the prismscape working, not a bug.
 
 ### 58.7 The template: the gyroid flora, measured as one period
 
@@ -11227,8 +11243,16 @@ it:
   the four danger types are **192 sites = 24 octagon rings**. Each site is the mean of its ~8.7 periodic images
   (chained rotations drift a little per hop).
 
-Its five structure gates fail loudly; `NestedGyroidLatticeTests.Template_IsTheMeasuredGyroidFloraCell` re-proves
-the shipped table in the editor.
+It then cuts the period into the gyroid flora's **plants**: each of the 24 octagon rings OWNS the sites nearest it
+**along the bond graph** (multi-source Dijkstra from the ring's eight sites over the 4-mate bonds) — 23–25 sites each,
+every tile connected through its own bonds, exactly four neighbouring tiles each, symmetric. The table ships as
+`OctagonCenter`, `SiteOwner`, `SiteShift` (the whole-period shift that puts a site's image beside its owner) and
+`NeighborOctagon` / `NeighborShift`. **Euclidean nearest-centre ownership was tried first and gave 17 of the 24 tiles a
+disconnected fragment** — a site across a channel of the surface is near in space and far along it; geodesic
+ownership has none.
+
+Its structure gates fail loudly; `NestedGyroidLatticeTests.Template_IsTheMeasuredGyroidFloraCell` and
+`Template_TilesThePeriodIntoTwentyFourOctagons` re-prove the shipped table in the editor.
 
 ### 58.8 Three latent defects the rebuild exposed (all fixed)
 
@@ -11238,4 +11262,39 @@ the shipped table in the editor.
 * **`Step` could stall.** It checked its budget before doing any work, so a budget below one chunk advanced
   nothing, forever. It now always runs at least one chunk.
 * **The Time law was cancelled** (§58.6).
+
+### 58.9 The colony — a population through the triply periodic structure
+
+The first cut of this species grew a whole bounding CUBE of the stack as one plant (~4,200 prisms, one live plant per
+element). That is not how the gyroid flora lives: its plants are octagons, and its population wanders through the
+lattice as a colony (§32.7). This species now does the same, with the same rules:
+
+* **One frame per (cell, species).** `NestedGyroidColony` holds the colony's lattice origin, rotation and period and
+  the book of claimed tiles. Because the lattice is an exact periodic table, a tile has an INTEGER address — period cell
+  (x, y, z) and octagon — so a claim is a set lookup; none of the gyroid book's float dedupe or misalignment gates.
+* **The founder** (a seeded plant with no living colony, or any PINNED plant — the Spawn Matrix station) lays the frame
+  so a random octagon's crystal lands exactly where it was planted, at a random rotation.
+* **A complete plant offers its four neighbouring tiles**; **once per cycle the population births ONE plant at a
+  uniformly random open tile** — the cycle is the gyroid's: the cell's fauna-wave period scaled by the element's
+  reproduction rate (Time breeds fastest), stagger 0.35. Production gates (planting enabled, the cell's cap) are checked
+  before the pop, so a capped colony burns no frontier; a birth the spawner refuses is requeued. The daughter is handed
+  her tile in `ConfigureOffspring` (before `Initialize`), and her `Plant()` roots her on it.
+* **The planting band bounds it.** A tile whose crystal falls outside the species' planting band (`ClampToPlantingBand`:
+  never the nucleus, never past the band's edge) leaves the book for good.
+* **A second SEED joins, it does not found.** `TryAnyOpenTile` returns a frontier tile, or — while the founder is still
+  growing and has offered nothing — a random free neighbour of a member, so two seeds never lay rival frames on top of
+  each other.
+* **Death frees the tile** (`Die`, `OnDestroy`): it is re-offered if a living member borders it. Only the owner can
+  free it. `Cell`'s world resets clear the cell's colonies at the same four sites that clear the gyroid's book.
+
+**Measured (harness, the SHIPPED `NestedGyroidColony.cs` run against stubs):** 8 colonies of 60 plants — no tile
+claimed twice, every birth beside a living plant, 8 different shapes, each spanning 2–3 periods a side and filling
+**14%** of that box (a cube-filling population fills 100%). A grown 12-plant colony at the defaults: **2,125 prisms,
+0 overlapping pairs within or BETWEEN plants (brute-force OBB over every pair), 0 duplicates, every prism with a
+neighbour inside the rider's reach, the whole colony ONE reach component** (10,309 reach links between plants; at 0.4×
+the reach it falls into 409 pieces — the negative control). Mass, Space (766-unit period) and Charge: the same, all
+green. The sweep (N ∈ {2,3,5,7,9} × tMax ∈ {0.6, 1.2, 1.3, 1.35, 1.38}, maxSheets 3) passes every plant and period gate;
+colony RIDEABILITY is gated on the shipped configs only and reported for the sweep, because a sparse stack (N ≤ 3:
+layer gaps far beyond the reach) or a near-critical one (tMax ≥ 1.3, outer sheets whose area collapses) leaves
+outer-sheet fragments the rider cannot bridge (largest component 83–99%).
 

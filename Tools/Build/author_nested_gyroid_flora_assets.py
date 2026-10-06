@@ -25,11 +25,18 @@ deliberately NOT in that tool's FLORA_PREFABS; its heart is authored here at exa
 of that tool so the two cannot disagree. It is the biggest lifeform in the project; the top of the band
 is the honest place for it, and it re-prices nobody.
 
-POPULATION: a specimen. One founder, one live plant per element - the plant is ~2,000 prisms and a whole
-prismscape - and GrowthPerOffspring 0: it does not reproduce. With a cap of 1 any quota would be a number
-nothing ever reads (the trap author_flora_populations.py's GrowthPerOffspring on lattice configs is), so
-the asset says so outright. Consequence: the Squirrel's nourish joust declines on it (Flora.Nourish). In no SpawnProfile: the Spawn Matrix toy IS its
-deployment (re-prove by grepping the four GUIDs across _SO_Assets before inheriting the claim).
+POPULATION: a COLONY, the gyroid flora's model (Docs/ECOSYSTEM.md §58.9). A plant is ONE octagon tile of the
+stack (~170-180 prisms on the default seven sheets, its crystal at the octagon's centre), and the species grows
+as a population of tiles through one shared periodic frame: a complete plant offers its four neighbouring tiles
+and once per cycle the colony births ONE plant at a uniformly random open tile (NestedGyroidColony). So the seed
+floor is 1 - the spawner only founds the colony and re-founds it after extinction; a second seed would only join
+the same frame - and the CAP is what bounds it: 12 plants is ~2,100 prisms per element, near the gyroid flora's
+42 x 24-prism colony per prism count of plant. GrowthPerOffspring stays 0 ON PURPOSE: the colony births through
+Flora.TrySpawnOneOffspring on the population clock, and a per-plant quota would add a second, uncoordinated
+birth path that scatters daughters off the lattice (the trap author_flora_populations.py's GrowthPerOffspring
+on lattice configs is). OffspringSpread is unread for the same reason - a daughter's place is its tile.
+In no SpawnProfile: the Spawn Matrix toy IS its deployment (re-prove by grepping the four GUIDs across
+_SO_Assets before inheriting the claim).
 
 THE MATRIX ROW goes immediately BEFORE the Borromean row: author_borromean_flora_assets.py deletes its own
 row and re-appends it at the END of the flora list, so a row placed after it would make that tool's
@@ -59,10 +66,10 @@ ELEMENTS = [('Charge', 1), ('Mass', 2), ('Space', 3), ('Time', 4)]
 ROW_NAME = 'Nested Gyroid'
 
 SEED_FLOOR = 1
-CAP        = 1
+CAP        = 12
 COOLDOWN   = 5
 MATURITY   = 0.5
-SPREAD     = 480      # a plant is a 240-unit cube; an offspring belongs well clear of it
+SPREAD     = 240      # unread: a colony daughter's place is its tile (see the docstring)
 
 
 def guid(name):
@@ -107,7 +114,7 @@ def gyroid_element(element):
 
 def build_config(element, value, prefab_guid, heart, budget):
     leaf, lattice = gyroid_element(element)
-    quota = 0                         # a specimen: does not reproduce (see the docstring)
+    quota = 0                         # the colony clock births, never a per-plant quota (see the docstring)
     shield = 1 if element == 'Charge' else -1
     return (
         '%YAML 1.1\n'

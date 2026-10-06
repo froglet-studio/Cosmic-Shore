@@ -18,12 +18,12 @@ MonoBehaviour:
   OverrideDefaultPlantPeriod: 0
   NewPlantPeriod: 9999999
   PopulationSize: 1
-  MaxLivePopulation: 1
+  MaxLivePopulation: 12
   GrowthPerOffspring: 0
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 5
   MaturityFraction: 0.5
-  OffspringSpread: 480
+  OffspringSpread: 240
   Element: 1
   Variant:
     Enabled: 1

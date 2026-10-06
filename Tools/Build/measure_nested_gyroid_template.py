@@ -21,12 +21,19 @@ WHAT IT MEASURES, and why each number is a measurement rather than a choice:
        * exactly 576 sites, 48 of each of the 12 block types;
        * every site within |G| < 0.15 of the surface and its local +z within 15° of ∇G;
        * the four danger types (DE, EG, GEs, EsD) - the octagon rings - are 192 sites (24 rings of 8).
+  5. find the 24 OCTAGON TILES - one gyroid flora plant each (Docs/ECOSYSTEM.md §32.7): the danger-only bond
+     graph's 8-rings (their centres are where the crystals sit), and each site's OWNER, assigned by distance ALONG
+     THE BOND GRAPH from the rings (multi-source Dijkstra). Straight-line nearest-centre is wrong on a curved
+     surface: it hands 17 of 24 tiles a stray site across a channel (25.8u from its centre, 13.7u from the rest
+     of its tile); the gyroid flora escapes that only because a prism grows from an existing branch, which IS the
+     bond-graph distance. Asserted: 24 rings of 8, tiles of 22-28 sites (the gyroid flora's measured patches),
+     every tile connected through its own bonds, exactly four neighbouring tiles each, symmetric.
 The C# table stores, per site, its position in CELL units (fractions of a), its local +z (the surface normal,
 signed as the flora built it) and +y in the cube frame, and its block type. NestedGyroidBuilder Newton-snaps each
 site onto G = 0 exactly and carries it along ∇G/|∇G| to every nested level, so every sheet of the stack has the
 gyroid flora's own loop subdivisions.
 """
-import argparse, collections, os, re, sys
+import argparse, collections, heapq, os, re, sys
 import numpy as np
 from scipy.optimize import minimize
 from scipy.spatial import cKDTree
@@ -166,8 +173,83 @@ def measure():
     g = G(q); n = grad(q); n /= np.linalg.norm(n, axis=1)[:, None]
     align = np.abs(np.einsum('ij,ij->i', n, np.array([s[1] for s in sites])))
     counts = collections.Counter(s[3] for s in sites)
+    tiles = measure_tiles(sites)
     return dict(a=a, sites=sites, gmax=float(np.abs(g).max()), gmean=float(np.abs(g).mean()),
-                align_min=float(align.min()), counts=counts, images=float(np.mean([len(m) for m in members])))
+                align_min=float(align.min()), counts=counts, images=float(np.mean([len(m) for m in members])),
+                **tiles)
+
+
+BOND_LINK = 1.4 * 8.0 / 120.0   # a template bond, in cell units (bonds measure 7.8-8.3 at period 120)
+
+
+def measure_tiles(sites):
+    X = np.array([s[0] for s in sites])
+    n = len(X)
+    mind = lambda d: d - np.round(d)
+    D = np.linalg.norm(mind(X[None, :, :] - X[:, None, :]), axis=2)
+    nbr = [[j for j in range(n) if j != i and D[i, j] < BOND_LINK] for i in range(n)]
+    danger = [i for i in range(n) if sites[i][3] in DANGER]
+    dset = set(danger)
+    seen, rings = set(), []
+    for i in danger:
+        if i in seen: continue
+        comp, stack = [], [i]
+        seen.add(i)
+        while stack:
+            u = stack.pop(); comp.append(u)
+            for v in nbr[u]:
+                if v in dset and v not in seen: seen.add(v); stack.append(v)
+        rings.append(sorted(comp))
+    rings.sort()
+    centres = []
+    for r in rings:
+        base = X[r[0]]
+        centres.append(np.mean([base + mind(X[j] - base) for j in r], 0))
+    centres = np.mod(np.array(centres), 1.0)
+
+    # Ownership by distance along the bond graph, ties by straight-line distance to the centre, then index.
+    dist, owner, heap = [np.inf] * n, [-1] * n, []
+    for k, r in enumerate(rings):
+        for j in r:
+            dist[j] = 0.0
+            heapq.heappush(heap, (0.0, float(np.linalg.norm(mind(X[j] - centres[k]))), k, j))
+    done = [False] * n
+    while heap:
+        d, _, k, u = heapq.heappop(heap)
+        if done[u]: continue
+        done[u] = True; owner[u] = k
+        for v in nbr[u]:
+            nd = d + D[u, v]
+            if not done[v] and nd <= dist[v] + 1e-9:
+                dist[v] = min(dist[v], nd)
+                heapq.heappush(heap, (nd, float(np.linalg.norm(mind(X[v] - centres[k]))), k, v))
+    shift = [np.round(centres[owner[i]] - X[i]) for i in range(n)]     # site image nearest its owner: X + shift
+
+    tile_ok = True
+    for k in range(len(rings)):
+        mem = [i for i in range(n) if owner[i] == k]
+        got, stack = {mem[0]}, [mem[0]]
+        while stack:
+            u = stack.pop()
+            for v in mem:
+                if v not in got and D[u, v] < BOND_LINK: got.add(v); stack.append(v)
+        tile_ok &= len(got) == len(mem)
+
+    neighbours = []
+    for k in range(len(rings)):
+        row = []
+        for j in range(len(rings)):
+            if j == k: continue
+            d = centres[j] - centres[k]
+            sh = -np.round(d)
+            if np.linalg.norm(d + sh) < 44.0 / 120.0: row.append((j, sh))
+        row.sort(key=lambda r: (r[0], tuple(r[1])))
+        neighbours.append(row)
+    symmetric = all(any(j2 == k and np.allclose(sh2, -sh) for j2, sh2 in neighbours[j])
+                    for k in range(len(rings)) for j, sh in neighbours[k])
+    sizes = collections.Counter(owner)
+    return dict(rings=rings, centres=centres, owner=owner, shift=shift, tiles_connected=tile_ok,
+                tile_sizes=sorted(sizes.values()), neighbours=neighbours, symmetric=symmetric)
 
 
 def emit(m):
@@ -206,6 +288,31 @@ def emit(m):
     lines += ['        };', '', '        public static readonly Vector3[] Up =', '        {']
     lines += [f'            new Vector3({f(v[0])}, {f(v[1])}, {f(v[2])}),' for _, _, v, _ in m['sites']]
     lines += ['        };', '',
+              f'        /// <summary>The octagon TILES: one gyroid flora plant each - its 8-ring of danger sites and the sites',
+              f'        /// nearest it along the bond graph. Measured: sizes {m["tile_sizes"][0]}-{m["tile_sizes"][-1]}, every tile connected.</summary>',
+              f'        public const int OctagonCount = {len(m["rings"])};', '',
+              '        /// <summary>Each octagon\'s centre in CELL units, in [0, 1) - where its plant\'s crystal sits.</summary>',
+              '        public static readonly Vector3[] OctagonCenter =', '        {']
+    lines += [f'            new Vector3({f(c[0])}, {f(c[1])}, {f(c[2])}),' for c in m['centres']]
+    lines += ['        };', '',
+              '        /// <summary>The octagon that owns each site.</summary>',
+              '        public static readonly byte[] SiteOwner =', '        {']
+    for i in range(0, len(m['owner']), 24):
+        lines.append('            ' + ', '.join(str(x) for x in m['owner'][i:i + 24]) + ',')
+    lines += ['        };', '',
+              '        /// <summary>Whole-cell shift that puts a site\'s image beside its owner\'s centre: Position + SiteShift.</summary>',
+              '        public static readonly Vector3[] SiteShift =', '        {']
+    lines += [f'            new Vector3({int(v[0])}, {int(v[1])}, {int(v[2])}),' for v in m['shift']]
+    lines += ['        };', '',
+              '        /// <summary>Each octagon\'s FOUR neighbouring tiles, four entries per octagon: the neighbour\'s index, and the',
+              '        /// whole-cell shift that puts that neighbour\'s centre beside this one (OctagonCenter[n] + shift).</summary>',
+              '        public static readonly byte[] NeighborOctagon =', '        {']
+    flat = [j for row in m['neighbours'] for j, _ in row]
+    for i in range(0, len(flat), 24):
+        lines.append('            ' + ', '.join(str(x) for x in flat[i:i + 24]) + ',')
+    lines += ['        };', '', '        public static readonly Vector3[] NeighborShift =', '        {']
+    lines += [f'            new Vector3({int(sh[0])}, {int(sh[1])}, {int(sh[2])}),' for row in m['neighbours'] for _, sh in row]
+    lines += ['        };', '',
               '        /// <summary>True for the four danger block types - the octagon rings of the gyroid flora.</summary>',
               '        public static bool IsDangerType(byte type) => type == 4 || type == 6 || type == 10 || type == 12;',
               '    }', '}', '']
@@ -233,6 +340,11 @@ def main():
     gate('every site on the surface (|G| < 0.15)', m['gmax'] < 0.15)
     gate('every site\'s +z within 15° of ∇G', m['align_min'] > np.cos(np.radians(15)))
     gate('192 danger sites (24 octagon rings)', danger == 192)
+    gate('24 danger 8-rings (one gyroid flora plant each)', len(m['rings']) == 24 and all(len(r) == 8 for r in m['rings']))
+    gate(f'tiles of 22-28 sites (measured {m["tile_sizes"][0]}-{m["tile_sizes"][-1]}), each connected through its own bonds',
+         m['tile_sizes'][0] >= 22 and m['tile_sizes'][-1] <= 28 and m['tiles_connected'] and sum(m['tile_sizes']) == 576)
+    gate('exactly four neighbouring tiles each, symmetric',
+         all(len(r) == 4 for r in m['neighbours']) and m['symmetric'])
     if not ok: return 1
     text = emit(m)
     if args.write:

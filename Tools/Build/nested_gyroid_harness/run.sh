@@ -4,10 +4,11 @@
 #   1. the core compiles against netstandard2.1 + C# 9 (Unity's API profile);
 #   2. the acceptance gates on the default config (Driver.cs says what each asserts, and each has a
 #      negative control that must FAIL when the thing it guards is broken);
-#   3. a model of the Urchin's layered ride kernel driven across the built stack.
+#   3. the SHIPPED colony book (NestedGyroidColony.cs, against ColonyStubs.cs) grown into colonies, and a model of
+#      the Urchin's layered ride kernel driven across a grown colony.
 #
 #   bash Tools/Build/nested_gyroid_harness/run.sh            # gates (exit 1 on any failure)
-#   bash Tools/Build/nested_gyroid_harness/run.sh sweep      # also sweeps N / tMax / cellsPerSide
+#   bash Tools/Build/nested_gyroid_harness/run.sh sweep      # also sweeps N / tMax / budget
 #
 # Needs a dotnet 8 SDK (DOTNET_ROOT, default ~/.dotnet). No .csproj: the repo gitignores them.
 #   curl -fsSL https://dot.net/v1/dotnet-install.sh | bash -s -- --channel 8.0 --install-dir "$HOME/.dotnet"
@@ -39,6 +40,7 @@ fi
 # 1b. a Roslyn TYPE-CHECK of the Unity glue against hand-copied stubs (GlueStubs.cs says what that proves)
 G="$ROOT/Assets/_Scripts"
 GLUE=("$G/Controller/Environment/FloraAndFauna/NestedGyroidFlora.cs" "$G/Controller/Environment/FloraAndFauna/NestedGyroidConfigSO.cs"
+      "$G/Controller/Environment/FloraAndFauna/NestedGyroidColony.cs" "$G/Data/Enums/Element.cs"
       "$G/Controller/Vessel/ILayeredPrismscape.cs" "$G/Controller/Vessel/PrismscapeTopology.cs" "$G/Controller/Vessel/BlockscapeFollower.cs"
       "$G/Data/Enums/PrismscapeDimension.cs")
 if [ -n "$NSREF" ]; then
@@ -51,7 +53,7 @@ fi
 # 2 + 3. the gates
 ls "$REFDIR"/*.dll | sed 's/^/-r:/' > "$OUT/refs.rsp"
 "$DOTNET" "$CSC" -nologo -langversion:9.0 -nostdlib -noconfig -optimize+ "@$OUT/refs.rsp" -target:exe -main:Driver \
-  -out:"$OUT/nestedgyroid.exe" "${CORES[@]}" "$HERE/Driver.cs" "$HERE/RideModel.cs"
+  -out:"$OUT/nestedgyroid.exe" "${CORES[@]}" "$FAF/NestedGyroidColony.cs" "$HERE/ColonyStubs.cs" "$HERE/Driver.cs" "$HERE/RideModel.cs"
 V=$(ls "$DOTNET_ROOT"/shared/Microsoft.NETCore.App | head -1)
 printf '{"runtimeOptions":{"tfm":"net8.0","framework":{"name":"Microsoft.NETCore.App","version":"%s"}}}' "$V" \
   > "$OUT/nestedgyroid.runtimeconfig.json"
