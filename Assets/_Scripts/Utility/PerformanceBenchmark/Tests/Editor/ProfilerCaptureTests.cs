@@ -467,6 +467,64 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Tests
             StringAssert.Contains("Deep Profile was ON", string.Join(" ", r.notes));
         }
 
+        const string Invoke = "UnityEngine.CoreModule.dll!::ExecuteJobFunction.Invoke() [Invoke]";
+
+        /// <summary>
+        /// A [BurstCompile] job that ran as managed code (Burst still compiling) must be called out:
+        /// it made the 2026-10-07 Skim Race capture read 1.3 ms for a 0.08 ms query. NEGATIVE CONTROL:
+        /// the same job Burst-compiled (" (Burst)", no managed invoke under it) is not flagged.
+        /// </summary>
+        [Test]
+        public void ManagedJobs_AreFlagged_AndABurstJobIsNot()
+        {
+            var acc = new ProfilerCapture.Accumulator();
+            for (int f = 0; f < 2; f++)
+                AddFrame(acc, f, 12f,
+                    new N(P("PlayerLoop"), 12f, 8f),
+                    new N(P("PlayerLoop", "ShellContact.Query"), 1.4f, 0.1f),
+                    new N(P("PlayerLoop", "ShellContact.Query", "ShellContactQueryJob"), 1.3f, 0.02f),
+                    new N(P("PlayerLoop", "ShellContact.Query", "ShellContactQueryJob", Invoke), 1.28f, 1.28f),
+                    new N(P("PlayerLoop", "LOD.Sweep"), 0.5f, 0.1f),
+                    new N(P("PlayerLoop", "LOD.Sweep", Invoke), 0.4f, 0.4f),
+                    new N(P("PlayerLoop", "Batches", "UpdateChunksJob (Burst)"), 0.1f, 0.1f));
+
+            var r = BuildFrom(acc, Opts("root=LOD"));
+            Assert.AreEqual(1.68f, r.managedJobMs, 1e-4f, "the whole capture, not just the root=LOD subtree");
+            Assert.AreEqual(2, r.managedJobs.Count);
+            Assert.AreEqual("ShellContactQueryJob", r.managedJobs[0].caller, "largest first, named by the sample it ran under");
+            Assert.AreEqual("LOD.Sweep", r.managedJobs[1].caller);
+            StringAssert.Contains("MANAGED", string.Join(" ", r.notes));
+            StringAssert.Contains("WITHOUT BURST", ProfilerCapture.Summarize(r));
+            StringAssert.Contains("C# JOBS THAT RAN AS MANAGED CODE", ProfilerCapture.BuildText(r));
+
+            var burst = new ProfilerCapture.Accumulator();
+            AddFrame(burst, 1, 9f,
+                new N(P("PlayerLoop"), 9f, 8f),
+                new N(P("PlayerLoop", "ShellContact.Query"), 0.08f, 0.01f),
+                new N(P("PlayerLoop", "ShellContact.Query", "ShellContactQueryJob (Burst)"), 0.07f, 0.07f));
+            var clean = BuildFrom(burst, Opts());
+            Assert.AreEqual(0f, clean.managedJobMs);
+            Assert.IsEmpty(clean.managedJobs);
+            StringAssert.DoesNotContain("MANAGED", string.Join(" ", clean.notes));
+            StringAssert.DoesNotContain("WITHOUT BURST", ProfilerCapture.Summarize(clean));
+        }
+
+        /// <summary>A small managed job (one written without [BurstCompile]) is listed but not shouted about.</summary>
+        [Test]
+        public void ManagedJobs_BelowTheWarnLine_AreListedQuietly()
+        {
+            var acc = new ProfilerCapture.Accumulator();
+            AddFrame(acc, 1, 9f,
+                new N(P("PlayerLoop"), 9f, 8f),
+                new N(P("PlayerLoop", "Tiny.Run"), 0.03f, 0.01f),
+                new N(P("PlayerLoop", "Tiny.Run", Invoke), 0.02f, 0.02f));
+            var r = BuildFrom(acc, Opts());
+            Assert.AreEqual(1, r.managedJobs.Count);
+            Assert.Less(r.managedJobMs, ProfilerCapture.ManagedJobWarnMs);
+            StringAssert.DoesNotContain("MANAGED", string.Join(" ", r.notes));
+            StringAssert.DoesNotContain("WITHOUT BURST", ProfilerCapture.Summarize(r));
+        }
+
         [Test]
         public void BuildText_CarriesEverySection()
         {

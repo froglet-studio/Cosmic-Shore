@@ -468,6 +468,54 @@ These are environment results, not AI results (the simulator at 115 ms frames al
 same policy from 53 s to 77 s). **The in-editor matrix for the current code is still owed** - run it
 on an idle machine with the editor focused (§7), 2 launches x 5 races per cell, players 3 and 4.
 
+### 8.0h The perf branch in the editor: 35 -> 55 fps, and what is left (2026-10-07)
+
+`diag S_SkimRace_I2 15` and one `prof` in a hand-played I2 race with 2 AI seats, same machine and
+settings as §8.0f, on `perf/performance-optimization` `df25d942f` (`Ys-bleeding-edge` plus §8.0e-g).
+All five `SkimRaceCourseQueryTests` pass in the editor (§8.0g's fix, first seen green here).
+
+| What | 10-06 (§8.0f) | 10-07 |
+|---|---|---|
+| Frame avg / p95 / p99 | 28.3 / 39.4 / 43.4 ms (35 fps) | **18.0 / 26.9 / 33.3 ms (55 fps)** |
+| PlayerLoop | 25.3 ms | 15.2 ms |
+| `SkimRace.Pilot.Decide` (2 seats) avg / p50 / p95 / max | 7.20 / 2.5 / 16.1 / 18.5 ms | **3.35** / 0.5 / 11.1 / 24.1 ms |
+| `SkimRace.Pilot.FillObstacles` | 2.12 ms | 0.95 ms |
+| Garbage | 78 KB/frame | 27 KB/frame; `Decide` allocates nothing |
+| Prism entities in the race | 8362 | 5717 |
+| GPU | 6.7 ms | 3.6 ms |
+
+**Not all of the 10 ms is this work.** The two races differ (32% fewer prisms, half the GPU time), and
+systems this work never touched fell too (`Fauna.BodySync` 0.94 -> 0.27 ms, `LightFauna.Tick.PrismScan`
+0.71 -> 0.06). The like-for-like number is the AI's own markers: Decide + FillObstacles 9.3 -> 4.3 ms
+a frame, and FillObstacles scales with the prisms in range, so part of its drop is the smaller race.
+
+**The `prof` was taken while Burst was still compiling.** Three `[BurstCompile]` jobs ran as managed
+code (`ExecuteJobFunction.Invoke` under them; a Burst job's sample is "`<name> (Burst)`"):
+`ShellContact.Query` 1.32 ms a frame against 0.08 ms in all three 10-06 captures of the same,
+unchanged code, `LOD.Sweep` 0.36 vs 0.08, `PrismRender.TransformFlush` 0.15. The Editor compiles
+Burst in the background after a script change or branch switch and runs the managed version until it
+is done. The `diag` ran 43 s earlier and did not time those jobs, so it may carry some of this too.
+`prof` now reports any managed job time and warns above 0.1 ms a frame; `diag` times
+`ShellContact.Query` (its tell) and records the Editor's Code Optimization mode, which neither
+capture could say.
+
+**What is left in the AI: the track planner's bursts.** `SkimRace.Driver.TrackMpc` is 2.89 ms of the
+3.35 ms Decide. It re-plans at 20 Hz with 26 rollouts of 16 steps each, about 4 ms per seat per
+re-plan on editor Mono, and it lands in 35% of frames. Both seats
+re-plan in the same frame about half the time (prof: 1.5 calls per frame it appears in). The 47 ms
+spike frame had both, 8.1 ms, beside a managed `LOD.Sweep` (2.7 ms) and 11 boid coroutines (5.2 ms).
+`GuardMass` is 0.14 ms (p95 0.9). Every remaining lever changes timing, so each needs a decision and
+the simulator's 20-seed benchmark:
+
+1. **Stagger the seats.** Offset each seat's re-plan phase so no two share a frame. The average stays
+   the same and the per-frame peak halves. Each seat still re-plans at 20 Hz; only the moment it does so moves.
+2. **Spread one re-plan over the frames between.** The 26 rollouts go across about 3 frames, so the peak drops ~3x and
+   the plan acted on is 1-2 frames older.
+3. **Burst the rollouts.** A job over the 26 candidates, off the main thread. It is the largest win
+   (likely an order of magnitude on this cost; not measured), and also a project: the course goes into native arrays. Burst floats
+   differ from Mono's, so the races are not byte-identical; the benchmark has to show the policy is
+   no worse.
+
 ### 8.0g The editor computes floats in double precision - and caught the float rewrite (2026-10-06)
 
 The first editor run of `SkimRaceCourseQueryTests` failed three of five

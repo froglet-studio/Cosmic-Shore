@@ -65,6 +65,26 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 `prof` flags jobs that ran without Burst; `diag` records Code Optimization (`perf/performance-optimization`, 2026-10-07)
+
+**What landed** (`Docs/SKIM_RACE_AI.md` §8.0h): `ProfilerCapture` reports main-thread time spent in
+`ExecuteJobFunction.Invoke` (a C# job running as managed code) as `managedJobMs` / `managedJobs`, a
+note, a console-line flag above 0.1 ms a frame, and a section in the .txt; `RunEnvironment` gains
+`codeOptimization` (`CompilationPipeline.codeOptimization` in the Editor, "Player" in a build);
+`diag` times `ShellContact.Query` by default.
+
+**Verified without the editor:** `ProfilerCaptureTests` 42/42 on .NET with `UNITY_EDITOR` defined,
+including two new tests; two mutations of the detector each fail them. The Froglet Engine's live
+compile (`DEVELOPMENT_BUILD`) builds. The `UNITY_EDITOR` branch of `RunEnvironment.Capture` (the
+`UnityEditor.Compilation` call) is compiled only by the editor. /verify-unity was not available.
+
+**Verify in editor:**
+1. The project compiles; Test Runner > EditMode: `ProfilerCaptureTests` pass.
+2. Right after a script change, enter Play mode at once and run `prof`: the console line carries
+   `[JOBS RAN WITHOUT BURST ...]` and the JSON lists `ShellContactQueryJob` / `LOD.Sweep`. A minute later,
+   another `prof` does not.
+3. `diag`: the .txt's environment line reads `code Debug` or `code Release`, matching the bug icon.
+
 ### 🔴 Integration: multiplayer SDK bump + Skim Race AI + perf + Bug Hunt on one branch (`Ys-bleeding-edge`, 2026-10-06)
 
 **What landed.** `Ys-bleeding-edge` now carries, in merge commits and in this order: `bleeding-edge`
@@ -97,7 +117,7 @@ hold the detailed steps; this entry is the gate they all share:
       protocol 9): intended.
 - [ ] The Bug Hunt playtest list in `Docs/BUG_HUNT_HANDOFF_2026-09.md` §0.
 
-### 🔴 Skim Race editor pass: no-alloc steering, float planner loops, skim-beam pool (`claude/bold-fermi-54nlts`, 2026-10-06)
+### 🟡 Skim Race editor pass: no-alloc steering, float planner loops, skim-beam pool (`claude/bold-fermi-54nlts`, 2026-10-06)
 
 **What landed** (`Docs/SKIM_RACE_AI.md` §8.0f): `MathfNoAlloc` replaces the 7 three-value
 `Mathf.Min/Max` calls (new gate `check_mathf_params_alloc.py`); the planner's inner loops in floats
@@ -109,6 +129,11 @@ child markers; `SkimFxRunner` recycles skim beams (`SkimFxPool`); `PrismStateMan
 **Verified without the editor:** simulator race output byte-identical on .NET and Mono;
 `SkimRaceCourseQueryTests` (5) pass on both; the Froglet Engine's live compile of runtime
 `Assets/_Scripts` builds with 0 errors and its suites pass (1569 + 352); offline gates pass.
+
+**Confirmed in the editor 2026-10-07** (`perf/performance-optimization` `df25d942f`,
+`Docs/SKIM_RACE_AI.md` §8.0h): step 1 - all five tests green (Code Optimization mode not recorded);
+step 5 - `Decide` allocates nothing, `.Query` / `.Pack` appear, Skim Race I2 went 35 -> 55 fps.
+Steps 2-4 not yet reported.
 
 **Verify in editor:**
 1. The project compiles; Test Runner > EditMode: `SkimRaceCourseQueryTests` (5) pass - in BOTH
