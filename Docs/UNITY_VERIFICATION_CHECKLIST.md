@@ -65,6 +65,38 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Integration: multiplayer SDK bump + Skim Race AI + perf + Bug Hunt on one branch (`Ys-bleeding-edge`, 2026-10-06)
+
+**What landed.** `Ys-bleeding-edge` now carries, in merge commits and in this order: `bleeding-edge`
+0c48d08f5 (PRs #964-#969), `claude/confident-pascal-w76l2o` 21f74d8e3 (which already contained
+`claude/bold-fermi-54nlts` 059450b16 and `Bug_Hunt` a334af21c), then the two branches' later tips,
+`Bug_Hunt` a88ad646c and `claude/bold-fermi-54nlts` 10e8c8c4e. Six conflicts were resolved by hand:
+the QA backlog header, the Tollway intensity-4 cell config (bleeding-edge's content regenerated with
+BH-5.2's quoting), the dogfight generator's import, `SkimRacePilot.cs`'s profiler markers (both
+branches added them; the duplicates were dropped), the simulator `run.sh`, and this file's entries.
+Two fixes of its own: `check_generated_assets.py` recognises package scripts, and the stale
+`BasePrice` key is gone from all 64 captain assets.
+
+**Proven without the editor.** `unity_refcompile`: 0 project errors in 95 assemblies, with Netcode
+2.13.3, Transport 2.7.4, Multiplayer Services 2.3.3, Friends 1.3.0 compiled from source, so every
+call site of the SDK bump compiled against the real new API. All 27 `Tools/Build/check_*.py` gates
+and all 25 `author_*_assets.py --check` pass. The Skim Race simulator gives byte-identical races
+(`eval 1 4`, solo and `ph.Seats=2 ph.Team=1`) on this tree, on the AI branch and on the perf branch.
+
+**Verify in editor** — the per-branch entries below and the `QA-NET-*` items in `Docs/QA/QA_BACKLOG.md`
+hold the detailed steps; this entry is the gate they all share:
+- [ ] Project opens on 6000.3.17f1 with **zero red errors**; about 20 yellow `RequireOwnership` /
+      `InScenePlaced` deprecation warnings are expected (QA-NET-SDK-UPGRADE). Any red error naming
+      `CurrentPlayer` means the MPPM 2.0 engine module is missing: revert that one manifest line to 1.6.3.
+- [ ] Two MPPM instances reach the same party and the arcade panel shows the party UI on BOTH. If one
+      shows the offline notice at boot, that is B24 (`Docs/PartySystem/BUGS.md`): read the console for a
+      429 and see whether the new retry now survives it.
+- [ ] Skim Race, Hard, you vs a 2-AI team: the two AI fly DIFFERENT crystals from the first pickup
+      (team plan), and the Profiler shows `SkimRace.Pilot.*` with no per-frame GC allocation from the pilot.
+- [ ] A build from this branch refuses to pair with a `bleeding-edge` build (`NetworkConfig mismatch`,
+      protocol 9): intended.
+- [ ] The Bug Hunt playtest list in `Docs/BUG_HUNT_HANDOFF_2026-09.md` §0.
+
 ### 🔴 Skim Race editor pass: no-alloc steering, float planner loops, skim-beam pool (`claude/bold-fermi-54nlts`, 2026-10-06)
 
 **What landed** (`Docs/SKIM_RACE_AI.md` §8.0f): `MathfNoAlloc` replaces the 7 three-value
