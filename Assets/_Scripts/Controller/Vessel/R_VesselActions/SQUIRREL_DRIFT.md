@@ -403,3 +403,111 @@ In the editor:
 4. HUD unchanged: your own Squirrel's control chips and ability row read exactly as before, on pad
    and on keyboard.
 5. Revert step 1.
+
+---
+
+## 11. What a press runs on the OTHER machines (2026-10-06)
+
+§10 made the autopilot's lookup agree with the press gate on ONE machine. This is the cross-machine
+half: whether the same press runs the same actions on every peer. It is fleet-wide (the Squirrel is
+one of three hulls it hit), recorded here beside §10 because the Squirrel's override-only drift is
+what surfaced it.
+
+**The defect.** A press replicates by RE-EXECUTION: owner → `SendButtonPressed_ServerRpc` →
+`SendButtonPressed_ClientRpc` → every peer resolves the pressed INPUT to actions itself, against
+`R_VesselActionHandler`'s device override maps (Touch reads `_touchActionOverrides`; Gamepad,
+Keyboard, DualMouse and MouseKeyboard read `_gamepadActionOverrides`). The device came from
+`InputStatus.ActiveInputDevice`, which was the one `InputStatus` field that did not replicate — and
+every peer runs `InputController.Initialize` for every player (`Player.OnNetworkSpawn`), which picks
+a strategy from THAT machine's hardware (`SystemInfo.deviceType == Handheld` → Touch). So a phone saw
+a PC pilot as Touch and a PC saw a phone pilot as Keyboard, and each resolved the remote press
+against the wrong map. Measured from the shipped prefabs by `Tools/Build/peer_press_harness`, which
+compiles the real handler and routes its RPCs between an owner copy and a peer copy: of 675 presses
+(13 vessels × owner device × what the peer thinks the device is × bound input), **72 ran something
+different on the peer**, all on the three hulls that author device overrides:
+
+| Hull | Owner → peer | What diverged |
+|---|---|---|
+| Squirrel | PC → phone, phone → PC | Drift + `DriftTrailAction` (2 / 12) and the Boost Ring (1 / 11) **refused** on the other side — no drift, no drift-trail prisms, no ring |
+| Manta | phone → PC | **A different ability ran**: a touch pilot's both-thumbs boost (13) ran `BoostAction` locally and `MantaAnalogTurnBoostAction` on the PC; one-thumb yaw (11 / 12) likewise |
+| Rhino | PC → phone | Shield swipes (1 / 2) refused on the phone |
+
+The same 72 for an AI's `PerformShipControllerActionsReplicated` (the server's hardware decides the
+AI's device). Every hull without overrides is unaffected. The prismscape diverged with it, plus a
+second defect on the same path: **a release resolved against the device at RELEASE time**, so a
+device switch mid-hold (a phone pilot picking up a pad) released against the other map — 48 cases
+stranded the held ability, and on the Manta the release stopped an ability that was never started.
+
+**The fix — two halves, because each closes a gap the other cannot.**
+
+1. **`InputStatus.ActiveInputDevice` is an owner-write NetworkVariable** (`n_device`), the same
+   pattern as every other field there. Every reader on a replica now sees the OWNER's device, which
+   matters well beyond the action maps: `MantaAnalogTurnBoostExecutor` shapes the Yastri trail
+   (`SetTurnTrail`) only for pad/keyboard pilots; `VesselTransformer.GetTriggerSum` reads trigger
+   depth as analog on a pad and full pull otherwise, and eases non-pad input; `DriftAudioController`
+   does the same for the drift sound. The trigger analogs those interpret already replicated; the
+   device that says how to interpret them did not.
+2. **The press and release RPCs carry the device** the owner resolved with, as one byte
+   (`(byte)InputDeviceType`, or `R_VesselActionHandler.NoDevice` = 255 when the vessel has no pilot
+   input), and every peer — the owner's own copy included — resolves with THAT. Needed because a
+   NetworkVariable and an RPC are not ordered against each other (different objects — the device
+   lives on the Player, the press on the vessel — and a variable's delta goes out at the network
+   tick while an RPC goes out at once), so the first press after a device switch would otherwise
+   reach peers ahead of the switch. The press ledger (`_heldInputs`) now records the device each
+   held input was pressed with: a release resolves with the press's device, so it stops what the
+   press started; and the owner's release carries that device, for a peer that never ran the press
+   (joined mid-hold).
+
+**Rejected:** carrying the resolved action LIST (needs an action-index scheme every peer agrees on,
+costs more than a byte per press, and still leaves the executors' own device reads divergent); the
+NetworkVariable alone (the first press after a switch races it, and the release mismatch remains);
+the RPC alone (fixes the maps, leaves the Manta trail and the drift depth simulating the wrong
+device on every replica). Bandwidth: +1 byte per press and per release; the variable changes only
+when a pilot switches device.
+
+**What changes on screen beyond the fix.** A replica now simulates the owner's device, not the
+watching machine's: a PC watching a pad pilot's Squirrel reads that pilot's analog trigger depth
+(it read full pull when the PC had no pad); a phone watching a pad Manta now runs its trigger turn
+and boost exactly as a PC peer always did. An AI's device is the host's on every machine. Surfaces
+gated on the LOCAL pilot (`VesselTransformer.IsLocalHumanTouchPilot`,
+`ShieldSwipeActionExecutor.IsLocalAnalogPilot`) are unchanged. No asset changed.
+
+**Files.**
+
+| File | Change |
+|---|---|
+| `Controller/IO/InputStatus.cs` | `n_device`; `ActiveInputDevice` follows the owner-write pattern |
+| `Controller/Vessel/R_VesselActionHandler.cs` | RPCs carry `byte device`; `StartPressedActions` / `StopPressedActions` resolve with it; `_heldInputs` is `input → device`; `CurrentDevice`, `PressedDevice`, `NoDevice`, `OverridesForCarried` |
+| `Tests/Editor/CarriedInputDeviceTests.cs` | the byte encoding: every device fits and round-trips, the sentinel collides with none, an unknown byte resolves to the shared map |
+| `Tools/Build/peer_press_harness/` | the two-machine harness; `--rev <git-rev>` reproduces the defect on an older handler, `--self-test` removes each mechanism above and requires a failure |
+
+**Verification.** NOT EDITOR-VERIFIED: no editor and no `unity` CLI in the authoring session, so
+`/verify-unity` did not run. Out of editor: `Tools/Build/unity_refcompile/run.sh` compiled the
+branch against the real Netcode 2.5.0 source and Unity reference assemblies with 0 errors in project
+code (negative control: a wrong-arity call planted in the ClientRpc fails it with CS7036, tagged as
+a changed file). `peer_press_harness` on the pre-fix handler (`--rev` of the merge base): 72 / 72
+divergent presses, 48 stranded holds; on this branch: 0 everywhere, plus the 4 shipped
+`CarriedInputDeviceTests` run green; `--self-test` catches all three removals. What none of that
+covers: Netcode delivery itself, the variable's replication, and what an executor DOES with a press
+— those need two real machines.
+
+In the editor (the Touch half needs a phone build: `InputController` keys Touch on
+`UnityEngine.SystemInfo.deviceType`, which reads Desktop in the editor and in every MPPM player; the
+Device Simulator overrides only `UnityEngine.Device.SystemInfo`):
+1. Edit-mode tests: `CarriedInputDeviceTests` (4) and `DeviceAwareActionLookupTests` pass.
+2. **Phone build + PC host, both on Squirrels.** PC pilot drifts (left trigger or Left Shift): on
+   the phone the PC Squirrel slides AND lays its drift trail — before the fix the trail never
+   appeared there. Phone pilot lifts the right thumb to drift: the PC sees the trail. Each pilot's
+   Boost Ring appears on the other machine. Prism counts in the drift trail match on both screens.
+3. **Same pair on Mantas.** Phone pilot lifts both thumbs (boost): the PC sees a straight boost, not
+   a trigger turn. PC pilot (pad) holds one trigger: the phone sees the Yastri flared trail.
+4. **Same pair on Rhinos.** PC pilot swipes the shield (pad triggers): the phone shows the swipe.
+5. **Mid-hold switch** (phone with a Bluetooth pad): hold a touch drift, touch the pad, let go — the
+   drift ends on BOTH screens (before: it could stay engaged).
+6. MPPM / two desktop players (no Touch available): a match plays exactly as before — presses, AI
+   abilities (Tollway, Waystation, Butterfly modes, Skim Race AI drift per §10), no console errors.
+
+**Follow-ups.** None required by this change. The harness covers what a press RESOLVES to; an
+executor that reads the local machine's hardware directly (`Gamepad.current`, as
+`ShieldSwipeActionExecutor` does for the local pilot) is a separate question and is gated correctly
+today.

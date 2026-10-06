@@ -104,12 +104,13 @@ namespace CosmicShore.Gameplay
         readonly Dictionary<InputEvents, List<ShipActionSO>> _gamepadOverrideActions = new();
         readonly Dictionary<ResourceEvents, List<ShipActionSO>> _classResourceActions = new();
         readonly Dictionary<InputEvents, float> _inputAbilityStartTimes = new();
-        /// <summary>Input events whose actions are currently STARTED on this machine — the ledger
-        /// <see cref="ReleaseHeldInputs"/> needs. <c>_inputAbilityStartTimes</c> cannot serve: it
-        /// records when an event LAST started and is never cleared, so it cannot tell a held
-        /// ability from one released a minute ago.</summary>
-        readonly HashSet<InputEvents> _heldInputs = new();
-        readonly List<InputEvents> _heldScratch = new();
+        /// <summary>Input events whose actions are currently STARTED on this machine, each with the
+        /// device its press was resolved against — the ledger <see cref="ReleaseHeldInputs"/> needs,
+        /// and what a release resolves with, so a release stops what its press started.
+        /// <c>_inputAbilityStartTimes</c> cannot serve: it records when an event LAST started and is
+        /// never cleared, so it cannot tell a held ability from one released a minute ago.</summary>
+        readonly Dictionary<InputEvents, byte> _heldInputs = new();
+        readonly List<KeyValuePair<InputEvents, byte>> _heldScratch = new();
         readonly Dictionary<ResourceEvents, float> _resourceAbilityStartTimes = new();
         readonly HashSet<InputEvents> _suppressedInputs = new();
         private readonly Dictionary<InputEvents, float> _inputMuteUntil = new();
@@ -262,14 +263,15 @@ namespace CosmicShore.Gameplay
             if (_heldInputs.Count == 0) return;
 
             _heldScratch.Clear();
-            _heldScratch.AddRange(_heldInputs);      // StopShipControllerActions mutates the set
+            _heldScratch.AddRange(_heldInputs);      // StopPressedActions mutates the ledger
             _heldInputs.Clear();
 
             for (int i = 0; i < _heldScratch.Count; i++)
             {
-                var ie = _heldScratch[i];
-                if (IsSpawned && IsOwner) SendButtonReleased_ServerRpc(ie);
-                else                      StopShipControllerActions(ie);
+                var ie = _heldScratch[i].Key;
+                var device = _heldScratch[i].Value;
+                if (IsSpawned && IsOwner) SendButtonReleased_ServerRpc(ie, device);
+                else                      StopPressedActions(ie, device);
                 OnInputEventStopped?.Invoke(ie);
             }
             _heldScratch.Clear();
@@ -302,23 +304,38 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        public void PerformShipControllerActions(InputEvents controlType)
+        /// <summary>Press <paramref name="controlType"/> locally, resolved against the device this
+        /// vessel's pilot is flying with. For a caller on THIS machine (the server-only autopilots);
+        /// a press that arrives over the wire resolves against the device it carries instead.</summary>
+        public void PerformShipControllerActions(InputEvents controlType) =>
+            StartPressedActions(controlType, CurrentDevice());
+
+        void StartPressedActions(InputEvents controlType, byte device)
         {
             if (IsInputMuted(controlType)) return;
-            if (!HasAction(controlType)) return;
+            if (!TryResolveActions(controlType, device, out var actions)) return;
 
             _inputAbilityStartTimes[controlType] = Time.time;
-            _heldInputs.Add(controlType);
-            var actions = ResolveActions(controlType);
+            _heldInputs[controlType] = device;
             ReportRan(controlType, actions.Count);
 
             foreach (var t in actions)
                 t.StartAction(_executors, vesselStatus);
         }
 
-        public void StopShipControllerActions(InputEvents controlType)
+        /// <summary>Release counterpart of <see cref="PerformShipControllerActions(InputEvents)"/>.</summary>
+        public void StopShipControllerActions(InputEvents controlType) =>
+            StopPressedActions(controlType, CurrentDevice());
+
+        void StopPressedActions(InputEvents controlType, byte device)
         {
-            if (!HasAction(controlType)) return;
+            // A RELEASE STOPS WHAT ITS PRESS STARTED. A press records the device it resolved with,
+            // and that record outranks the device handed in here: a pilot who picks up a pad
+            // mid-hold would otherwise resolve the release against the other map and stop nothing,
+            // leaving the held ability running on every peer. The device handed in only decides
+            // for a release whose press this machine never ran (a client that joined mid-hold).
+            if (_heldInputs.TryGetValue(controlType, out var pressedWith)) device = pressedWith;
+            if (!TryResolveActions(controlType, device, out var actions)) return;
 
             float duration = 0f;
             if (_inputAbilityStartTimes.TryGetValue(controlType, out var start))
@@ -332,30 +349,63 @@ namespace CosmicShore.Gameplay
             });
 
             _heldInputs.Remove(controlType);
-            var actions = ResolveActions(controlType);
 
             for (int i = 0; i < actions.Count; i++)
                 actions[i].StopAction(_executors, vesselStatus);
         }
 
+        bool TryResolveActions(InputEvents controlType, byte device, out List<ShipActionSO> actions) =>
+            TryGetPressedActions(_shipControlActions,
+                OverridesForCarried(device, _touchOverrideActions, _gamepadOverrideActions),
+                controlType, out actions);
+
         /// <summary>
-        /// Returns the action list for a given input event, checking device-specific
-        /// overrides first and falling back to the shared mapping. Only called once
-        /// <see cref="HasAction"/> has passed, so the event always resolves.
+        /// The device a press is resolved against, in the form the press and release RPCs carry it:
+        /// <c>(byte)InputDeviceType</c>, or <see cref="NoDevice"/> while the vessel has no pilot input
+        /// (a press then runs the shared map alone).
+        ///
+        /// <para><b>Why a press carries its device at all.</b> Replication here is by RE-EXECUTION:
+        /// the owner sends which INPUT was pressed and every peer resolves that input to actions
+        /// itself. The resolution depends on the device (Touch reads the touch overrides; every
+        /// desktop device reads the pad overrides), so a peer that resolved against ITS idea of the
+        /// device ran a different press. Until 2026-10 that idea was its own hardware's — the field
+        /// did not replicate — so on the Squirrel, whose drift (with its trail prisms) and Boost
+        /// Ring live only in the override maps, a phone peer refused a PC pilot's drift outright and
+        /// a PC peer refused a phone pilot's; on the Manta the same press ran the BOOST on one
+        /// machine and the analog turn-boost on the other. The device now also replicates
+        /// (<see cref="InputStatus"/>), which fixes every other reader, but a NetworkVariable and an
+        /// RPC are not ordered against each other: the press made on the frame a device switches
+        /// would reach peers ahead of the switch. So the press says what it was resolved against
+        /// and every peer — the owner's own copy included — runs exactly that. One byte per press,
+        /// not the enum's four.</para>
         /// </summary>
-        List<ShipActionSO> ResolveActions(InputEvents controlType)
-        {
-            TryGetPressedActions(_shipControlActions, GetActiveOverrides(), controlType, out var actions);
-            return actions;
-        }
+        byte CurrentDevice() =>
+            vesselStatus?.InputStatus == null ? NoDevice : (byte)vesselStatus.InputStatus.ActiveInputDevice;
+
+        /// <summary>The device the HELD <paramref name="ie"/> was pressed with, for its release to
+        /// carry; the current device when this machine has no record of the press.</summary>
+        byte PressedDevice(InputEvents ie) => _heldInputs.TryGetValue(ie, out var d) ? d : CurrentDevice();
+
+        /// <summary>The carried form of "no pilot input yet" - see <see cref="CurrentDevice"/>.</summary>
+        internal const byte NoDevice = byte.MaxValue;
+
+        /// <summary><see cref="OverridesFor"/> for a device as a press carries it
+        /// (<see cref="CurrentDevice"/>): <see cref="NoDevice"/> resolves against no override map,
+        /// and so does any value that names no <see cref="InputDeviceType"/>.</summary>
+        internal static Dictionary<InputEvents, List<ShipActionSO>> OverridesForCarried(
+            byte device,
+            Dictionary<InputEvents, List<ShipActionSO>> touchOverrides,
+            Dictionary<InputEvents, List<ShipActionSO>> gamepadOverrides) =>
+            device == NoDevice ? null : OverridesFor((InputDeviceType)device, touchOverrides, gamepadOverrides);
 
         /// <summary>
         /// What pressing <paramref name="inputEvent"/> runs, given the shared map and the override
-        /// map of the device the vessel is being driven by (null when there is no device yet): a
+        /// map of the device the press is resolved against (null when there is no device yet): a
         /// non-empty override list wins, otherwise the shared list. The ONE resolution rule — the
-        /// press gate (<see cref="HasAction"/>), the press itself (<see cref="ResolveActions"/>) and
-        /// the autopilot lookup (<see cref="TryGetBoundAction{T}"/>) all ask it, so a control the
-        /// lookup hands out is by construction a control the press accepts.
+        /// press and its release (<see cref="TryResolveActions"/>, against the device the press
+        /// carried) and the autopilot lookup (<see cref="TryGetBoundAction{T}"/>, against the
+        /// current device) all ask it, so a control the lookup hands out is by construction a
+        /// control the press accepts.
         /// </summary>
         internal static bool TryGetPressedActions(Dictionary<InputEvents, List<ShipActionSO>> shared,
                                                   Dictionary<InputEvents, List<ShipActionSO>> overrides,
@@ -369,11 +419,8 @@ namespace CosmicShore.Gameplay
             return false;
         }
 
-        Dictionary<InputEvents, List<ShipActionSO>> GetActiveOverrides()
-        {
-            if (vesselStatus?.InputStatus == null) return null;
-            return OverridesFor(vesselStatus.InputStatus.ActiveInputDevice, _touchOverrideActions, _gamepadOverrideActions);
-        }
+        Dictionary<InputEvents, List<ShipActionSO>> GetActiveOverrides() =>
+            OverridesForCarried(CurrentDevice(), _touchOverrideActions, _gamepadOverrideActions);
 
         /// <summary>Which override map a device's presses resolve against.</summary>
         internal static Dictionary<InputEvents, List<ShipActionSO>> OverridesFor(
@@ -609,7 +656,7 @@ namespace CosmicShore.Gameplay
         public void PerformShipControllerActionsReplicated(InputEvents ie)
         {
             if (IsSpawned && IsOwner)
-                SendButtonPressed_ServerRpc(ie);
+                SendButtonPressed_ServerRpc(ie, CurrentDevice());
             else
                 PerformShipControllerActions(ie);
         }
@@ -618,7 +665,7 @@ namespace CosmicShore.Gameplay
         public void StopShipControllerActionsReplicated(InputEvents ie)
         {
             if (IsSpawned && IsOwner)
-                SendButtonReleased_ServerRpc(ie);
+                SendButtonReleased_ServerRpc(ie, PressedDevice(ie));
             else
                 StopShipControllerActions(ie);
         }
@@ -633,8 +680,7 @@ namespace CosmicShore.Gameplay
         static bool IsBound(Dictionary<InputEvents, List<ShipActionSO>> map, InputEvents inputEvent)
             => map != null && map.TryGetValue(inputEvent, out var list) && list is { Count: > 0 };
 
-        bool HasAction(InputEvents inputEvent) =>
-            TryGetPressedActions(_shipControlActions, GetActiveOverrides(), inputEvent, out _);
+        bool HasAction(InputEvents inputEvent) => TryResolveActions(inputEvent, CurrentDevice(), out _);
 
         void OnButtonPressed(InputEvents ie)
         {
@@ -650,7 +696,7 @@ namespace CosmicShore.Gameplay
             ReportPress(ie);
             if (IsSpawned && IsOwner)
             {
-                SendButtonPressed_ServerRpc(ie);
+                SendButtonPressed_ServerRpc(ie, CurrentDevice());
             }
             else
             {
@@ -660,23 +706,25 @@ namespace CosmicShore.Gameplay
             OnInputEventStarted?.Invoke(ie);
         }
 
+        // The press travels with the device it was resolved against (CurrentDevice), and every
+        // peer resolves with THAT - never with its own copy of the pilot's input status.
         [ServerRpc]
-        private void SendButtonPressed_ServerRpc(InputEvents ie)
+        private void SendButtonPressed_ServerRpc(InputEvents ie, byte device)
         {
             using (CosmicShore.Utility.PerformanceBenchmark.NetMarkers.RpcDispatch.Auto())
             {
                 CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
-                SendButtonPressed_ClientRpc(ie);
+                SendButtonPressed_ClientRpc(ie, device);
             }
         }
 
         [ClientRpc]
-        void SendButtonPressed_ClientRpc(InputEvents ie)
+        void SendButtonPressed_ClientRpc(InputEvents ie, byte device)
         {
             using (CosmicShore.Utility.PerformanceBenchmark.NetMarkers.RpcDispatch.Auto())
             {
                 CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
-                PerformShipControllerActions(ie);
+                StartPressedActions(ie, device);
             }
         }
 
@@ -688,7 +736,7 @@ namespace CosmicShore.Gameplay
 
             if (IsSpawned && IsOwner)
             {
-                SendButtonReleased_ServerRpc(ie);
+                SendButtonReleased_ServerRpc(ie, PressedDevice(ie));
             }
             else
             {
@@ -699,22 +747,22 @@ namespace CosmicShore.Gameplay
         }
 
         [ServerRpc]
-        private void SendButtonReleased_ServerRpc(InputEvents ie)
+        private void SendButtonReleased_ServerRpc(InputEvents ie, byte device)
         {
             using (CosmicShore.Utility.PerformanceBenchmark.NetMarkers.RpcDispatch.Auto())
             {
                 CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
-                SendButtonReleased_ClientRpc(ie);
+                SendButtonReleased_ClientRpc(ie, device);
             }
         }
 
         [ClientRpc]
-        void SendButtonReleased_ClientRpc(InputEvents ie)
+        void SendButtonReleased_ClientRpc(InputEvents ie, byte device)
         {
             using (CosmicShore.Utility.PerformanceBenchmark.NetMarkers.RpcDispatch.Auto())
             {
                 CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
-                StopShipControllerActions(ie);
+                StopPressedActions(ie, device);
             }
         }
 

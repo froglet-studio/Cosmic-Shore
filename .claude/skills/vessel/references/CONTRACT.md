@@ -166,8 +166,17 @@ falls back to Jade — the wrong paint plus a console error).
 - **Input binding is prefab data**: `R_VesselActionHandler._inputEventShipActions`
   (InputEvents → List\<ShipActionSO>; multiple SOs on one event start/stop together) plus
   `_touchActionOverrides`/`_gamepadActionOverrides` (per active device; DualMouse shares
-  gamepad). Dispatch replicates by re-execution: ServerRpc → ClientRpc →
-  `PerformShipControllerActions` on every peer. **An autopilot finds a control with
+  gamepad). Dispatch replicates by re-execution: ServerRpc → ClientRpc → every peer resolves
+  the pressed input to actions ITSELF — so **the press carries the device it was resolved
+  against** (one byte) and every peer resolves with that, never with its own copy of the
+  pilot's input status; and a release resolves with its press's recorded device, so it stops
+  what the press started. Until 2026-10 the device did not travel and did not replicate, and the
+  three hulls with device overrides (Squirrel, Manta, Rhino) ran different abilities — or none —
+  on other machines (`R_VesselActions/SQUIRREL_DRIFT.md` §11). **Anything else that changes what
+  a press resolves to must travel with the press the same way.** Gate:
+  `python3 Tools/Build/peer_press_harness/run.py` (`--self-test`; `--rev` to compare an older
+  handler) — compiles the shipped handler as an owner copy and a peer copy over every shipped
+  vessel's maps. **An autopilot finds a control with
   `TryGetInputForAction<T>` / `TryGetBoundAction<T>`, which answer for the ACTIVE device by the
   press's own rule (`TryGetPressedActions`)** — so an ability bound only in the override maps must
   be bound in BOTH of them, or an AI on the other device family cannot press it. The device-blind

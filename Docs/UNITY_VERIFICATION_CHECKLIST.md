@@ -65,6 +65,40 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Ability presses run the same actions on every machine — the device travels with the press (`claude/relaxed-heisenberg-t7utre`, 2026-10-06)
+
+No editor and no `unity` CLI in the authoring session, so `/verify-unity` did NOT run. Out of
+editor: `Tools/Build/unity_refcompile/run.sh` compiled the branch against the real Netcode 2.5.0
+source with 0 errors in project code (negative control: a wrong-arity call planted in the
+ClientRpc fails with CS7036). `Tools/Build/peer_press_harness/run.py` ran the SHIPPED
+`R_VesselActionHandler` as an owner copy and a peer copy over all 13 shipped vessels' maps: the
+pre-fix handler ran something different on the peer for 72 of 675 presses (Squirrel, Manta, Rhino)
+and stranded 48 holds across a device switch; this branch: 0 and 0, the 4 shipped
+`CarriedInputDeviceTests` pass, and `--self-test` catches each of the three mechanisms removed.
+Full record: `Assets/_Scripts/Controller/Vessel/R_VesselActions/SQUIRREL_DRIFT.md` §11.
+
+**What landed**
+
+1. `InputStatus.ActiveInputDevice` is an owner-write NetworkVariable (was a local field, so each
+   machine saw a remote pilot as whatever ITS OWN hardware was).
+2. `R_VesselActionHandler`'s press/release RPCs carry the device as one byte; every peer resolves
+   with it. A release resolves with the device its press recorded.
+
+**Verify in editor** (the Touch half needs a phone build — the editor and every MPPM player read
+`SystemInfo.deviceType` as Desktop)
+
+0. Edit-mode: `CarriedInputDeviceTests` (4) and `DeviceAwareActionLookupTests` pass.
+1. Phone build + PC host, both Squirrels: each pilot's drift lays its drift trail, and each Boost
+   Ring appears, on the OTHER screen too (before: refused there).
+2. Same pair, Mantas: the phone pilot's both-thumbs boost reads as a straight boost on the PC; the
+   PC pad pilot's one-trigger turn shows its flared trail on the phone.
+3. Same pair, Rhinos: the PC pilot's shield swipe shows on the phone.
+4. Phone + Bluetooth pad: hold a touch drift, touch the pad, release — the drift ends on both screens.
+5. Two desktop players (MPPM is fine): presses, AI abilities (Tollway, Waystation, Butterfly modes,
+   Skim Race AI drift) behave as before; no console errors.
+
+---
+
 ### 🔴 Platform-agnostic fixes: boost event quiet at rest, skim-tick rate limit, Squirrel beam retired (`claude/serene-edison-lfv24f`, 2026-10-06)
 
 Step 6 of `Docs/PLATFORM_UNIFICATION.md` (§3.7). These change EVERY platform, Windows included. No

@@ -811,6 +811,14 @@ is now a different mode, and the doc's measured ladder is the first thing to go 
   classes — it is not a compile.** Everything needing a symbol table (a member that does not
   exist, an override whose signature drifted, an argument mismatch) is still editor-only, so say
   so when you hand back rather than reporting "all checks pass".
+- **Two gates go past syntax; a change to the ability PRESS path runs both.**
+  `bash Tools/Build/unity_refcompile/run.sh` binds all of `Assembly-CSharp` against real Unity
+  references and the locked package sources (Netcode included), so for runtime code the
+  symbol-table classes above are no longer editor-only (asset-surgery §4 has the setup and its
+  limits). `python3 Tools/Build/peer_press_harness/run.py --self-test` runs the shipped
+  `R_VesselActionHandler` as an owner copy and a peer copy over every shipped vessel's maps — the
+  only check short of two real devices that a press runs the same actions on every machine
+  (CONTRACT.md §2; `R_VesselActions/SQUIRREL_DRIFT.md` §11 is what it caught).
 - State which auditors to run and the expected result: **Audit Vessel Ability Rows**,
   **Audit Vessel Skimmers**, **Audit Vessel Elemental Morphs** (which measures shape MAGNITUDE,
   not labels), **Audit Vessel Construction** (guid ownership · nested-instance reachability ·
