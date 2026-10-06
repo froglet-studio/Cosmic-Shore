@@ -6,6 +6,7 @@ using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 using CosmicShore.Gameplay;
+using CosmicShore.Core;
 using CosmicShore.Utility;
 using CosmicShore.Data;
 
@@ -59,6 +60,12 @@ namespace CosmicShore.Gameplay
             gameData.ScoringRule = rule;
             numberOfRounds = 1;
             numberOfTurnsPerRound = 1;
+
+            // MobileLow only: each vessel keeps its share of a race-wide trail budget and the
+            // oldest prism withers past it - the owner-authorized exception in Docs/ECOSYSTEM.md
+            // §0. Every other tier sets no budget and this adds nothing.
+            var profile = PlatformProfile.Current;
+            if (profile) RaceTrailCap.Attach(this, gameData, profile.SkimRaceTrail);
 
             // SkimRaceController owns the track lifecycle (seed generation, spawning, replay reset).
             // Prevent SegmentSpawner from auto-resetting on OnResetForReplay.
