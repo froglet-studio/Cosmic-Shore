@@ -17,6 +17,7 @@ the vector flight model that fixes it, and the numbers.
 | Input (gamepad) | **Left trigger**, analog. `singleTriggerDrift: 1` on the prefab and ONE drift action bound, so **the drift amount is how far LT is pulled**: 0 = no drift, full pull = the action's full authored drift, linear in between (`GetTriggerSum` returns raw `LeftTriggerAnalog` when no sharp tier is bound) |
 | Drift sound | `DriftAudioController.singleTriggerDepth: 1` on the prefab — the FMOD `Drift Amount` parameter follows the same LT pull (0 feathered → 1 buried), so the sound gets harder as the drift does; keyboard/touch read 1 |
 | Input (touch) | **Right-thumb lift = a full trigger pull** (every touch device, iOS and Android; ported from the Android strip branch 2026-10-05): lifting the right thumb raises `OnlyLeftStickAction (12)`, which the Squirrel's touch override binds to the drift. Glass measures no trigger travel, so the drift takes the BINARY fallback every non-gamepad input gets (`VesselTransformer.GetTriggerSum`: a gamepad reads its analog trigger; every other device drifts at a full pull). The left thumb flies alone - mirrored onto both sticks at FULL authority (one thumb at the rim commands what two full pad sticks command), pitch and yaw only, re-zeroed where it rests so the lift does not yank the vessel; the drift's own `Mult` then turns it sharper exactly as on a pad, and the hull follows at `touchNoseResponse` (9; local human pilot only - AI and autopilot keep the fleet's 1.5) through the drift as out of it. Putting the thumb back ends the drift; binary drifts ease in and out over `DRIFT_EASE_SPEED`. **The touch drift is the pad drift with the analog trigger replaced by a full pull** - `Tools/Build/touch_drift_slip.py --check` fails if they differ (same drift assets bound on both overrides, no one-thumb gain, the same full-deflection authority; `--self-test` proves each rule fires). A full-lock 180° hairpin at full pull scrubs ~7% on BOTH devices (reported, not gated: it is the drift action's tuning, `Mult`/`driftDamping`). The strip branch once cut the mirror to 0.70 (`OneThumbDriftTurnGain`) to stop that scrub on touch alone - a steering cut a pad pilot never had, since retired, as were a two-thumb overdrive (out of reach from cruise) and a depth-from-the-steering-thumb (the slide changed under the pilot as they steered) |
+| Input (AI) | `SkimRacePilot` asks `TryGetInputForAction<DriftActionSO>` at each press — it answers for the hull's ACTIVE device (12 on touch, 2 on every PC device) — and holds the left trigger at **full pull** (`DriftTriggerPull = 1`) while the drift is held, so an AI drifts at the tier's full authored depth on every device. See §10 |
 | Drift action | `SquirrelDriftAction` — at full pull rotation ×**1.8**, grip **0.25** (the old sharp tier's values; the old ×1.4 / 0.5 single tier now sits at ≈ half pull). `SquirrelSharpDriftAction` is no longer bound (2026-09-23) |
 | Right trigger | **NOT free** — `RightStickAction (1)` is `SquirrelTubeAction` (touch: `OnlyRightStickAction (11)`). The Squirrel keeps its two-stick scissor throttle; do not propose a Scarab-style RT accelerator here |
 
@@ -280,7 +281,11 @@ serialized values are stale garbage, exactly like `ThrottleScaler`.
    read as a speed dial while drifting.
 5. **AI drift.** SkimRace, watch an AI approach a crystal. At drift entry its trail must continue
    toward the crystal while the hull swings off-axis. If the trail follows the nose instead, the
-   Course re-aim in `SyncExternalWrites` regressed.
+   Course re-aim in `SyncExternalWrites` regressed. ⚠ **Corrected 2026-10-06:** this step cannot
+   pass as written. In Skim Race the Squirrel AI seats belong to `SkimRacePilot`, not `AIPilot`,
+   and every shipped `SkimRaceAIConfig*.asset` has `UseDrift: 0`, so no AI in Skim Race ever asks
+   to drift; the `AIPilot` course-lock drift this step describes runs in the OTHER modes a Squirrel
+   AI flies. To see the Skim Race pilot drift, follow §10's verification instead.
 6. **Danger prism while drifting.** Clip a danger prism mid-drift — the slow must land.
 7. **Vessel swap.** Menu freestyle → vessel changer → Squirrel at speed. The new hull inherits the
    speed rather than dropping to a stop.
@@ -327,3 +332,74 @@ serialized values are stale garbage, exactly like `ThrottleScaler`.
 - The remaining scalar-path vessels have the same latent defect wherever they drift. Manta is the
   live case (two-trigger drift, `singleTriggerDrift: 0`); flipping its flag is a one-line change
   plus a feel pass, deliberately not taken in this branch.
+
+---
+
+## 10. AI drift: which control, and how deep (2026-10-06)
+
+**The defect.** An AI Squirrel in Skim Race could never drift — nor lay a Boost Ring — on a PC.
+`Squirrel.prefab` binds both abilities ONLY in its `R_VesselActionHandler` device-override maps
+(touch: drift on `OnlyLeftStickAction (12)`, ring on `OnlyRightStickAction (11)`; pad: drift on
+`LeftStickAction (2)`, ring on `RightStickAction (1)`; the shared map is empty).
+`TryGetInputForAction<T>` swept shared → touch → gamepad regardless of device, so it handed the
+pilot the TOUCH controls, and on a PC — `GetActiveOverrides` resolves Gamepad, Keyboard, DualMouse
+and MouseKeyboard all against the pad overrides — `PerformShipControllerActions(12)` was refused at
+`HasAction`. An AI player's `ActiveInputDevice` is decided once, by its own `InputController`, from
+the host's hardware: Gamepad with a pad connected, Keyboard without, Touch on a handheld. So only a
+handheld host ever drifted.
+
+**The fix (lookup).** `TryGetInputForAction` / `TryGetBoundAction` now resolve with the same rule a
+press does — `R_VesselActionHandler.TryGetPressedActions`: the ACTIVE device's override map first,
+then the shared entries that map does not shadow. One function serves the press gate, the press and
+the lookup, so a control the lookup hands out is by construction one the press accepts. An ability
+bound only for ANOTHER device is deliberately not a fallback (that control does nothing here, or
+fires whatever the shared map puts on it). `CollectBoundActions` / `HasBinding` — the HUD's
+all-devices view — are untouched. Every other caller (`AIPilot`'s aim telegraph, Tollway, Waystation,
+the Butterfly mode driver) binds its ability in the shared map, so its answer is unchanged.
+`SkimRacePilot` now asks at every press instead of caching the first answer for the match, and
+releases on the control its own press used. Pinned by `DeviceAwareActionLookupTests`, which also
+reads the shipped prefab and asserts both abilities are pressable on all five devices.
+
+**The depth (a deliberate choice).** With the press accepted, the drift's depth still depended on
+the device: on a PAD `VesselTransformer.GetTriggerSum` scales the drift by `LeftTriggerAnalog`, and
+an AI has no physical trigger, so a pad-device AI drifted at depth 0 — inert, while still reporting
+`IsDrifting` — and a keyboard-device AI at full depth. **An AI drift is now full depth on every
+device**: `SkimRacePilot` writes `LeftTriggerAnalog = 1` (`DriftTriggerPull`) every frame its drift
+is held and 0 otherwise, as one more input channel beside the sticks. Reasons:
+- full pull is the only depth every device agrees on — keyboard, mouse and touch already treat a
+  started drift as full depth, so a partial pull would only ever take effect on a pad;
+- the race must not depend on whether a controller is plugged into the host;
+- the driver's drift decision is on/off (enter past `DriftEnterDegrees`, leave under
+  `DriftExitDegrees`), and on/off means the tier's authored drift;
+- a buried trigger is a human input, inside the input-only contract (`Docs/SKIM_RACE_AI.md` §3).
+
+It is a constant, not a config field, for the first reason. Written every frame (not once at the
+press) so a neutral frame — a stationary hull — cannot leave a held drift at depth 0 when flight
+resumes. `LeftTriggerAnalog` replicates (`n_lTrig`), so remote peers' drift audio
+(`DriftAudioController.singleTriggerDepth`) reads the same buried trigger.
+
+**What this does NOT change: the shipped policy never asks to drift.** Every
+`SkimRaceAIConfig*.asset` ships `UseDrift: 0` and `UseLaunchRing: 0` (the C# defaults). That "off"
+was never measured against a working drift: the offline simulator does not model drift at all, and
+an in-editor benchmark on a PC had its drift and ring presses refused. Whether either should be on
+is a tuning question for the benchmark (`Docs/SKIM_RACE_AI.md` §7), not something this fix decides.
+
+**Verification (NOT EDITOR-VERIFIED at the time of writing).** Out of editor: the shipped
+`DeviceAwareActionLookupTests` were compiled with Roslyn against the shipped lookup methods and RUN
+against the real `Squirrel.prefab` (8/8, with three negative controls each failing the test aimed at
+it), and a harness drove the shipped `SkimRacePilot` actuation through the shipped press path on all
+five devices — the pre-fix code reproduced the report exactly (drift and ring start on Touch only),
+the fixed code drifts, holds the trigger at 1, releases it to 0 and lays the ring on every device.
+In the editor:
+1. Set `UseDrift: 1` on the config the intensity you play reads (`SkimRaceAIConfig_I1` for I1) —
+   a test edit, do not commit it.
+2. Skim Race with AI seats, **no pad connected**: an AI drifts on sharp heading changes — the hull
+   swings off its travel direction and its trail curves; `IsDrifting` toggles on the AI's
+   `VesselStatus`.
+3. Same with a **pad connected** (the AI's device becomes Gamepad): the same drift at the same
+   depth — with the AI's `InputStatus.LeftTriggerAnalog` reading 1 while it drifts. Before the fix
+   no drift started at all; with the lookup fixed but no trigger write, this run would show
+   `IsDrifting` with no visible drift (depth 0).
+4. HUD unchanged: your own Squirrel's control chips and ability row read exactly as before, on pad
+   and on keyboard.
+5. Revert step 1.

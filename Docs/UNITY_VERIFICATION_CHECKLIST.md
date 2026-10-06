@@ -4543,3 +4543,41 @@ Fleet-wide. Every drain got lighter and three verbs gained one they never had.
 The **Rhino's energised sword** lands a Strike and drains nothing — it is now the only scoring
 verb with no drain path. Arming it is a Rhino kit decision (a skimmer drain SO on the sword's
 container), not a number, so it is reported rather than done.
+
+## 🔴 AI Squirrel drift / Boost Ring on a PC — device-aware autopilot lookup (`claude/kind-edison-nvml7l`, 2026-10-06) — NOT EDITOR-VERIFIED
+
+**What landed.** `R_VesselActionHandler.TryGetInputForAction<T>` / `TryGetBoundAction<T>` now answer
+for the vessel's ACTIVE device, through the same `TryGetPressedActions` rule the press gate uses
+(active override map first, then unshadowed shared entries). Before, they swept shared → touch →
+gamepad regardless of device, so on the Squirrel — drift and ring bound only in the override maps —
+the Skim Race AI was handed the touch controls (12 / 11), which every PC device refuses: no AI
+drift or ring on Windows. `SkimRacePilot` now asks at every press and holds `LeftTriggerAnalog = 1`
+while its drift is held, so an AI drift is full depth on a pad device as well as on keyboard/touch
+(the deliberate depth choice; `SQUIRREL_DRIFT.md` §10). HUD control hints use
+`CollectBoundActions`/`HasBinding`, which are untouched.
+
+**Compiled? Not by Unity.** `/verify-unity` could not run (no editor, no `unity` binary, no
+`Library/` in the session). Out of editor: Roslyn found no structural errors in the changed files;
+the shipped `DeviceAwareActionLookupTests` compiled against the extracted shipped lookup methods
+and RAN 8/8 against the real `Squirrel.prefab`, with three negative controls each failing its test;
+a harness ran the shipped `SkimRacePilot` actuation through the shipped press path on all five
+devices (pre-fix code: drift/ring start on Touch only; fixed code: on every device). The six
+standing gates and `check_ai_no_state_writes.py` (+ `--self-test`) pass.
+
+**Verify:**
+1. Run `DeviceAwareActionLookupTests` and `AimTelegraphBindingTests` in the Test Runner.
+2. Temporarily set `UseDrift: 1` on `Resources/SkimRaceAIConfig_I1.asset` (do not commit — the
+   shipped policy keeps drift off; see note). Skim Race I1 with AI seats, **no pad**: AIs drift on
+   sharp turns (hull swings off the travel line, trail curves).
+3. Same with a **pad connected**: identical drift depth; the AI's `InputStatus.LeftTriggerAnalog`
+   reads 1 while drifting, 0 otherwise.
+4. Optional, same way with `UseLaunchRing: 1`: AIs lay Boost Rings ahead of themselves on a PC.
+5. HUD unchanged: your own Squirrel's ability row and control chips, on pad and keyboard. Fly a
+   Dolphin vs AI in The Bends (aim telegraph), a Tollway and a Waystation match — the AI presses
+   there are shared-map bindings and must behave exactly as before.
+6. Revert step 2 (and 4).
+
+**Note — the shipped Skim Race AI never asks to drift.** All four `SkimRaceAIConfig*.asset` ship
+`UseDrift: 0` / `UseLaunchRing: 0`, so in a normal match nothing changes on screen. That setting was
+never measured against a working drift (the simulator does not model drift; PC benchmarks had the
+press refused) — whether to turn it on is a benchmark question.
