@@ -2074,6 +2074,7 @@ MonoBehaviour:
     Cooldown: 4.3
   OnCellItemsUpdated: {fileID: 11400000, guid: 0da8a5ebddfaa83418cecd539efd19dd, type: 2}
   actionExecutorRegistry: {fileID: 3871735532039758911}
+  boostPolicy: {fileID: 11400000, guid: b89486e2a081497ea892fbc75e50a2bc, type: 2}
 --- !u!114 &6776027772320837218
 MonoBehaviour:
   m_ObjectHideFlags: 0

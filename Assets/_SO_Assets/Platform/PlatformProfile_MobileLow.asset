@@ -1,0 +1,48 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4bdd00a5ac0148148cfbd42312f56f3d, type: 3}
+  m_Name: PlatformProfile_MobileLow
+  m_EditorClassIdentifier: 
+  useCapabilityHeuristic: 0
+  preset: 0
+  pixelBudget: 1300000
+  minRenderScalePercent: 50
+  upscalingWhenScaled: 1
+  antiAliasing: 4
+  maxTargetFrameRate: 60
+  disableHdr: 1
+  skyboxReplacements:
+  - authored: {fileID: 2100000, guid: b9e5d3c7f0a2468135792bde4c6a8f01, type: 2}
+    replacementResource: PlatformSkyboxes/StaticHyperSeaSkybox
+  membraneMaxSubdivisions: 3
+  foldGateWindowMaxRenderScale: 0.5
+  menuAutopilotLaysNoTrail: 1
+  freestyleCellPrismBudget: 10000
+  freestyleCellPrismResume: 9700
+  skimRaceTrail:
+    raceBudget: 6000
+    floorPerVessel: 800
+    ceilingPerVessel: 2000
+  joustTrail:
+    raceBudget: 4000
+    floorPerVessel: 400
+    ceilingPerVessel: 1200
+  deactivateMenuWhileFlying: 1
+  quietScoreGlow: 1
+  disableCytoplasm: 1
+  wanderwayBudget:
+    poolSize: 8
+    prismBudgetPerScene: 150
+    aheadTargetScenes: 4
+    maxCrystalsPerScene: 2
+    lifeformScenes: 0
+    maxConcurrentArrivals: 2

@@ -40,8 +40,8 @@ gauge that moves a tenth of its range per skim reads as nothing — so "I feel n
 not evidence about the wiring in either direction. **The crackle is meant to be a vessel's ONLY
 skim visual**: the beam is the effect it replaced, so a container holding both draws a beam to
 every prism in the sphere *on top of* the crackle. The Dolphin ran both for three hours of
-branch history and now wires the crackle alone; the Squirrel still carries both, which is the
-open item, not the reference. The forcefield crackle needs **three** pieces to be
+branch history and now wires the crackle alone; the Squirrel's beam was retired too (2026-10-06,
+owner's call), so no live container holds the beam. The forcefield crackle needs **three** pieces to be
 present or `SkimmerForcefieldCracklePrismEffectSO.Execute` returns silently: the effect in the
 container, a `ForcefieldCrackleController` on the impactor's own GameObject, and an overlay
 `MeshRenderer` assigned to it (vessels whose skimmer IS `Skimmer.prefab` get the last two free;
