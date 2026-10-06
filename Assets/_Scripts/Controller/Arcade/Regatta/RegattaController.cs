@@ -63,6 +63,12 @@ namespace CosmicShore.Gameplay
         /// domain totals, which sum Score, are the team standings the rule decided on.</summary>
         protected override bool UseGolfRules => false;
 
+        /// <summary>The team score is a SUM of pilots' gates (<see cref="RegattaScoringRuleSO"/>),
+        /// so halfway / home stretch / final lap are measured against the leading team's
+        /// combined courses - its pilot count times the course - not one pilot's 24 gates, which
+        /// a two-pilot team "reached halfway" on with each pilot a quarter of the way round.</summary>
+        protected override bool RaceToastsSumTeams => true;
+
         /// <summary>Laps = authored gate threadings / the arena's rings per lap. ONE authority:
         /// the arena lays exactly RingsPerLap rings, the target is authored once in the end-game
         /// conditions, and the generator asserts the target is a whole number of laps.</summary>

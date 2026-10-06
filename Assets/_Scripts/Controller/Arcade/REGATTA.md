@@ -223,8 +223,30 @@ Everything by `Tools/Build/author_regatta_assets.py` (`--check` passes; `--check
 fail on a mutated cell config). The card is registered in the **master roster and `ArenaGames`**
 (`arcade_mode_lib.register_arena_card`), never `ArcadeGames`. The scene is a clone of
 `MinigameRedline` with the controller, rule, field block, IntensityWise cell list and AI templates
-swapped. Toasts: two idle hints (`RegattaRailHint` 110, `RegattaLaneHint` 111) and the comeback
-line. Preview: four cells by intensity, `Vessel: -1` (the carousel's pick flies).
+swapped. Preview: four cells by intensity, `Vessel: -1` (the carousel's pick flies).
+
+**Toasts** (`GameToastConfig_Regatta.asset`, authored by the generator): two idle hints
+(`RegattaRailHint` 110, `RegattaLaneHint` 111), the comeback line, and — since #985 — the four
+shared **race beats** that `GateRaceController`'s `DomainRaceToasts` posts for every gate race,
+in the gate-race family's voice (`{0}` leading domain, `{1}` its score, `{2}` the target):
+
+| situation | id | template |
+|---|---|---|
+| `DomainRaceHalf` | 129 | `{0} is halfway home - {1}/{2} gates` |
+| `DomainRaceLeadChanged` | 130 | `{0} takes the lead - {1}/{2} gates` |
+| `DomainRaceHomeStretch` | 131 | `{0} is on the home stretch - {1}/{2} gates` |
+| `DomainRaceFinalLap` | 132 | `{0} is on the final lap` |
+
+No Quarter (128); no gate race authors it. **Regatta's score is a TEAM SUM**, so the beats are
+measured against the leading team's combined courses, not one pilot's: `RegattaController`
+sets `RaceToastsSumTeams`, and `DomainRaceToasts` then scales the target, the 3-gate home
+stretch and the final-lap mark by that team's pilot count (`DomainRaceToasts.Evaluate`,
+`CountPilots` over the replicated RoundStats). A two-pilot team is "halfway home" at 24 of 48
+gates and on the final lap at 32 — `{2}` reads 48. Before this, the beats compared the summed
+score with one pilot's 24-gate course, so a pair each a quarter of the way round was announced
+halfway, and with two or more pilots per team halfway, home stretch and final lap all fired
+early. Every other gate race passes no counter and its arithmetic is unchanged
+(`DomainRaceToastsTests.OnePilot_MatchesTheUnscaledThresholds`).
 
 Measurement chain: `Tools/Build/regatta_course_harness/run.sh` compiles the three pure course
 files against a UnityEngine math stub with Roslyn and RUNS them (the four shipped seeds plus the

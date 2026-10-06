@@ -684,6 +684,14 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// True for a mode whose domain score is the SUM of its pilots' gates (Regatta) rather
+        /// than its lead runner's: the race beats then measure a team against its own pilots'
+        /// combined courses instead of one pilot's (see <see cref="DomainRaceToasts"/>). False
+        /// for every other gate race, whose arithmetic is unchanged.
+        /// </summary>
+        protected virtual bool RaceToastsSumTeams => false;
+
+        /// <summary>
         /// Feed the race beats. The FINAL LAP threshold is where the last lap's first gate
         /// falls - the race length of a course one lap shorter - so it means the same thing on
         /// a plain circuit (Headlong, Redline) and behind a lead-in (Breakwater), and an open
@@ -691,7 +699,8 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void TickRaceToasts()
         {
-            _raceToasts ??= new DomainRaceToasts(rule);
+            _raceToasts ??= new DomainRaceToasts(rule,
+                RaceToastsSumTeams ? DomainRaceToasts.CountPilots : null);
             int finalLapAt = LapsPerRace > 1
                 ? RaceLengthFor(_rings.Count, LeadInGates, LapsPerRace - 1)
                 : 0;
