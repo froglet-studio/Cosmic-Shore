@@ -105,6 +105,11 @@ def fbx_bounds(path):
         if node.name != "Objects":
             continue
         for geo in node.find("Geometry"):
+            # A blend-shape target is also a Geometry with a `Vertices` array, but its numbers
+            # are DELTAS, not positions - the old space crystal's `pin` key reached 78.2 raw
+            # units against a mesh spanning 73.1, which read the heart 7% too big.
+            if len(geo.props) >= 3 and geo.props[2][1] == b"Shape":
+                continue
             verts = geo.first("Vertices")
             if not verts or not verts.props:
                 continue
