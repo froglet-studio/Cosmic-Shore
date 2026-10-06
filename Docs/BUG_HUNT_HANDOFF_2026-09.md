@@ -21,6 +21,33 @@ Confidence scale:
 
 ---
 
+## Merge log (bleeding-edge → Bug_Hunt)
+
+- **2026-10-06 — merged `bleeding-edge @ 0c48d08f5` (PR #965 tip) into `Bug_Hunt`** (merge commit
+  `eb05ce26b`, Bug_Hunt first parent; merge-base `3ba8ea1d2`). Brought in **158 BE commits** (115
+  non-merge): swarm fauna (#960) with substrate / builder colonies / threat flora / ecology LOD,
+  GPU-drawn swarm members on the prism platform (`PrismRenderService`, `PrismSpatialIndex`,
+  `Prism`, `Cell`, `Fauna`, `LightFauna`, `Flora`), objective arrows for Bends / Cleave / Sirocco /
+  Wildlife Liberation / Brood Rush / Scurry (#964, `MiniGameHUD`), silent-hull FMOD slots (#966),
+  Wildlife / Tollway gates (#967), QA arcade matrix (#968), generator gates (#969), registration
+  copy drift (#965), Port / Froglet Engine work.
+  - **Conflicts (2):** `Tollway Cell Config 4.asset` — kept BE's new Description (Borromean
+    anchors, 78558 vol / 3654 prisms) in BH-5.2's single-quoted folded form
+    (`wrap_yaml_scalar`); `author_dogfight_assets.py` — kept both imports (BE `aml`, BH
+    `wrap_yaml_scalar`).
+  - **No follow-up fix needed:** BE did not touch `EditorBuildSettings` (Wildlife Blitz co-op
+    removal stands), no BE code / asset references any BH-5.3..5.7 deleted file or GUID, and
+    nothing references `PrismTimerManager.scheduledActions`. BH fixes in BE-touched files
+    survived (`Cell.OnDestroy` grid dispose, `Fauna.OnDestroy` unregister,
+    `Flora.RemoveHealthBlock` base call, `Crystal.ActivateCrystal` guard).
+  - **Gates:** 4 textual gates OK; strict YAML on the 113 changed assets OK; `author_{tollway,
+    dogfight,regatta,broadside,waystation}_assets.py --check` OK; `dotnet build
+    Port/src/CosmicShore.Player` 0 errors. Not run in Unity. Playtest list for the merged branch:
+    the "Playtest items" section below plus the merge-risk checks (swarm / fauna / prism platform,
+    objective-arrow HUD).
+
+---
+
 ## 0. What already shipped (so you do not redo it)
 
 | # | Fix | Where |
