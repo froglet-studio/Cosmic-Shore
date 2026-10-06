@@ -38,6 +38,15 @@ Confidence scale:
 | 11 | **AI no longer leaves a held drift when stopped (was §1.1).** Already fixed by `4c866f880` (2026-09-26): `AIPilot.StopAIPilot` releases the commit drift, stops every started ability and clears the aim telegraph, and `PilotSwap` releases the hull's held inputs while the server owns it. Verified by Yash in Menu_Main freestyle takeover on `Bug_Hunt`. No code change was needed; `AIPilot.OnDisable` was left alone on purpose (teardown path, vessel is going away). | `AIPilot.StopAIPilot`, `PilotSwap` |
 | 12 | **Gamepad triggers released on strategy switch and pause (was §1.2).** `GamepadInputStrategy` had no `OnStrategyDeactivated` / `OnPaused`, so a trigger or speed gesture held when the player touched the keyboard or mouse (or paused) never sent its release and the vessel kept the ability held. It now releases held triggers and speed effects and resets its state, mirroring `KeyboardInputStrategy`; the trigger edge logic moved into a shared `DispatchTriggers`. Shipped on `Bug_Hunt`. | `GamepadInputStrategy` |
 | 13 | **Auth scene: cached-auth timeout stays on the main thread, and a silent sign-in failure is no longer treated as success (was §1.3 and §1.4).** `TrySignInCachedWithTimeoutAsync` switches to the main thread in both catches (the `CancelAfter` timer thread used to resume it) and uses `.AsMainThread()` on the success path; `HostConnectionService.WaitForProfileInitAsync` got the same switch. `OnGuestLoginAsync` and `AttemptAutoSignInAsync` now check `_facade.IsSignedIn` after the await: guest shows the error and re-enables the button, auto sign-in goes to the main menu instead of waiting out the profile timeout. Shipped on `Bug_Hunt`. | `AuthenticationSceneController`, `HostConnectionService` |
+| 14 | **Friends init no longer latches on a failed start (was §1.5).** `FriendsInitializer.InitializeFriendsAsync` set `_initialized = true` right after `friendsService.InitializeAsync()`, but the facade swallows its own failures, so a failed init still latched and every retry was refused for the session. It now takes `friendsService.IsInitialized` and returns (without setting presence) when the service is not up. Shipped on `Bug_Hunt`. | `FriendsInitializer` |
+| 15 | **Online Duel rematch starts from zero round/turn counters (was §1.6).** `ResetForReplay_ClientRpc` reset scores but not `RoundsPlayed` / `TurnsTakenThisRound`, so the in-place replay (Cellular Duel, the one mode that does not reload the scene) started with the last game's counters: the rematch ended early and swapped vessels on its first round. Both are now zeroed on every peer in the RPC. Shipped on `Bug_Hunt`. | `MultiplayerMiniGameControllerBase` |
+| 16 | **Combat-hit latch prunes each entry by its own window (was §1.7).** `VesselCombatHitLatch` pruned every entry with whichever call's cooldown triggered the sweep, so a long-window entry (Rhino sword 1.4 s) could be dropped early by a short-window call (Urchin spike 0.12 s) and the same hit paid twice. Each entry now stores the window it was admitted under and is pruned by that. Admission itself is unchanged. Shipped on `Bug_Hunt`; Broadside's balance should be re-checked (see playtest list). | `VesselCombatHitLatch` |
+| 17 | **Timestamps formatted with the invariant culture (was §1.9).** `PostHogAnalyticsSink` and `AnalyticsServiceFacade` wrote their ISO-8601 UTC timestamps with the device culture, and `ScreenshotDirectorConfigSO.BuildFileName` and `DesktopPlatformServices.TimestampedName` built file names the same way. On ar-SA, th-TH and fa-IR that renders a non-Gregorian year or non-Latin digits. All four now pass `CultureInfo.InvariantCulture`. Shipped on `Bug_Hunt`. | `PostHogAnalyticsSink`, `AnalyticsServiceFacade`, `ScreenshotDirectorConfigSO`, `DesktopPlatformServices` |
+| 18 | **Non-ASCII UI strings replaced with ASCII (was §1.11).** The only UI font (ALDRICH) has 97 glyphs, so `◀ ▶ ✕ › · × ● ◆` rendered as empty boxes. Replaced in `SpectatorOverlay` (buttons and hint), `ToyConfigureModal` (Back), `ToyVariantCard` (branch marker), `DogFightScoringRuleSO` (breakdown now reads `N pts - B rounds, M rockets`), and the Broadside and Undertow scoring-rule labels (`·` became `,`). Shipped on `Bug_Hunt`. | `SpectatorOverlay`, `ToyConfigureModal`, `ToyVariantCard`, `DogFightScoringRuleSO`, `BroadsideScoringRuleSO`, `UndertowScoringRuleSO` |
+| 19 | **A departed player's vessel handed to the AI is now marked AI (was §1.12).** `ConvertPlayerToAI` only flipped `NetIsAI`, so the local `Player.IsInitializedAsAI` stayed false on the server and every client. `Player` now follows `NetIsAI` changes (`OnNetIsAIChanged`). Shipped on `Bug_Hunt`. | `Player` |
+| 20 | **Cloud Save no longer tells a failed load apart from "no data" (was §2.1).** `ICloudSaveProvider.TryLoadAsync` reports `Loaded`, `Missing` or `Failed`. After a `Failed` load a repository keeps using its local snapshot but does not upload to the cloud until a retry gets a definite answer (`Missing` allows the write; `Loaded` adopts the real record). An unreadable stored value now counts as `Failed`. Shipped on `Bug_Hunt`. | `ICloudSaveProvider`, `UGSCloudSaveProvider`, `CloudDataRepository` |
+| 21 | **Presence lobby is rejoined with backoff after a failed reconnect (was §2.2).** After three refresh errors the lobby was cleared and rejoined once; if that one attempt failed the lobby stayed null and nothing retried. `HostConnectionService` now retries from `Update` at 3s, 6s, 12s up to 60s until the lobby is back. Shipped on `Bug_Hunt`. | `HostConnectionService` |
+| 22 | **Invite-clear always takes the lobby mutex unless the caller holds it (was §2.3).** The shared `_insideRefreshCycle` flag meant "some refresh is running", so a user cancel, a party-leave callback, or a fire-and-forget clear that outlived its refresh skipped the lock and could race a send. It is replaced by an explicit `callerHoldsLobbyMutex` argument, true only for the one awaited call inside `RefreshPartyMembersAsync`. Shipped on `Bug_Hunt`. | `HostConnectionService`, `LobbyPropertyWriter` (comment) |
 
 ### Playtest items for the shipped fixes
 - **Squirrel ring (#6):** fly Menu_Main freestyle → an arcade game → back, 2-3 round trips, then
@@ -59,88 +68,58 @@ Confidence scale:
 - **Silent sign-in failure (1.4):** with no network and no session, press Guest. It should show the
   sign-in error and re-enable the button immediately, not sit on "Loading profile…" until the
   profile timeout. Re-check this if the auth scene ever hangs after a failed sign-in.
+- **Friends init retry (1.5):** boot with no network / UGS Friends unreachable, then restore the
+  connection and sign in again (or trigger the sign-in event). Friends should initialize on the
+  second attempt, and the log should show "Friends service did not come up" for the first one.
+- **STILL TO TEST (revisit): 1.6 was merged without a two-peer retest** (and 1.3/1.4 above). Run the next item.
+- **Online Duel rematch (1.6):** play a full Cellular Duel with two peers, then Play Again (rematch).
+  The rematch must play the full set of rounds/turns, and its first round must NOT swap vessels.
+  Re-check this if a rematch ever ends early or starts swapped.
+- **STILL TO TEST (revisit): 1.7 was merged without a retest or the Broadside balance re-check.** Run the next item.
+- **Combat-hit latch (1.7):** fight with a long-window weapon (Rhino sword) while a short-window one
+  (Urchin spike) is also landing hits in the same match. One sword swing must pay once per 1.4 s
+  window, never twice. Re-check the Broadside balance model (`BROADSIDE.md`) against the windows.
+- **STILL TO TEST (revisit): 1.9 was merged without a retest.** Run the next item.
+- **Culture-safe timestamps (1.9):** set the device/Editor culture to ar-SA, th-TH or fa-IR, then
+  trigger an analytics event, a screenshot and a share. The PostHog payload timestamp must read like
+  `2026-10-05T12:00:00.000Z` and the file names must use Latin digits and the Gregorian year.
+- **STILL TO TEST (revisit): 1.11, merged untested at Yash's call.**
+- **No tofu in UI text (1.11):** open the spectator overlay (buttons, hint line, Leave), the Toy
+  configure modal (Back, and a branching variant card), and finish a Dogfight, Broadside and
+  Undertow round (scoreboard breakdown lines). Every character must be a real glyph, no empty boxes.
+- **STILL TO TEST (revisit): 1.12, merged untested at Yash's call.**
+- **Departed pilot becomes AI (1.12):** start a 2-device match (host plus one client), have the
+  client quit mid-round. The ship must keep flying under the AI, its object name must change to
+  `AI`, and at the next round reset it must be restarted by the AI (not left idle). Watch for the
+  host console showing no new errors.
+- **STILL TO TEST (revisit): 2.1, merged untested at Yash's call.**
+- **Cloud Save failed load (2.1):** (a) normal boot online: profile, hangar, settings and
+  progress load as before, and a change you make is still saved (check the cloud record or relaunch).
+  (b) With a signed-in account that has progress, start the game with the network cut (or block
+  Unity Services), make a change, then restore the network and wait a minute or play on: the
+  console may show "adopting it instead of uploading local data", and the original progress must
+  still be there. It must never reset to a new-player state. (c) A fresh account still saves its
+  first changes.
+- **STILL TO TEST (revisit): 2.2, merged untested at Yash's call.**
+- **Presence lobby rejoin (2.2):** needs two online players. Start both on Menu_Main and confirm
+  each sees the other in the online list. Cut one machine's network for about 30 seconds (long
+  enough for three failed refreshes, then a failed rejoin), then restore it. Within about a
+  minute the console should show "Presence lobby rejoined", the online list should refill on both
+  sides, and an invite sent after that should arrive. Before the fix the list stayed empty until
+  a restart.
+- **STILL TO TEST (revisit): 2.3, merged untested at Yash's call.**
+- **Invite clear vs send (2.3):** with two players, send an invite and cancel it straight away,
+  then send it again; the second invite must arrive and fire once. Repeat while the other player
+  joins or leaves the party. Also let an invite time out, then re-invite. No stuck or doubled
+  invites, and no hang on the invite button (a hang would mean a lock deadlock).
 
 ---
 
 ## 1. Tier 2 — small, local, high value (do these first)
 
-### 1.5 Friends init latches `_initialized` before the service is actually up — High
-- **Where:** `Assets/_Scripts/Controller/Party/FriendsInitializer.cs` (~236-241).
-- **Bug:** `_initialized = true` right after `friendsService.InitializeAsync()`. The facade swallows
-  its own failures, so a failed init still latches, and the guard at 236 then refuses every retry
-  for the session.
-- **Fix:** `_initialized = friendsService.IsInitialized; if (!_initialized) return;` (use whatever
-  the facade exposes for "ready" — `FriendsDataSO.IsInitialized` is the SOAP mirror).
-
-### 1.6 Online Duel rematch starts with stale round/turn counters — Medium
-- **Where:** `MultiplayerMiniGameControllerBase.ResetForReplay_ClientRpc` (793).
-- **Bug:** the in-place replay path resets scores but not `RoundsPlayed` / `TurnsTakenThisRound`.
-- **Trigger:** Cellular Duel (the one mode that does NOT replay by scene reload) → rematch.
-- **Consequence:** the rematch ends early or skips the vessel-swap round.
-- **Fix:** zero both counters in the RPC, on every peer.
-
-### 1.7 Combat-hit latch prunes by one global window — Medium
-- **Where:** `Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Helpers/VesselCombatHitLatch.cs`.
-- **Bug:** windows are authored PER ASSET (the Rhino sword 1.4 s, the Urchin spike 0.12 s), but the
-  prune pass uses a single window. An entry is either dropped before its own window elapses (double
-  pay) or kept past it (a legitimate hit refused).
-- **Fix:** store the window on the entry and prune `now - t > entry.window`.
-- **Note:** Broadside's balance rests on these windows (`BROADSIDE.md`). Re-check the balance model
-  after the fix.
-
-### 1.9 Analytics timestamps are culture-dependent — High
-- **Where:** `PostHogAnalyticsSink.cs:199`, `AnalyticsServiceFacade.cs:768`. Also sweep
-  `ScreenshotDirectorConfigSO.cs` (~523) and `DesktopPlatformServices.cs` (~136).
-- **Bug:** `ToString("yyyy-MM-dd…")` with no culture renders in the device's calendar. On ar-SA,
-  th-TH and fa-IR that is not Gregorian (see the weekly-challenge finding in CLAUDE.md).
-- **Fix:** pass `CultureInfo.InvariantCulture` to every one.
-
-### 1.11 Non-ASCII glyphs render as tofu — High
-- **Where:** `SpectatorOverlay.cs` 125 (`◀`), 138 (`▶`), 150 (`✕`). Also check
-  `ToyConfigureModal.cs` (~514), `DogFightScoringRuleSO.cs` (~141), the `·` in the Broadside and
-  Undertow scoring-rule labels, and `ToyVariantCard.cs` (~188).
-- **Bug:** the only UI font (ALDRICH) has 97 glyphs: ASCII plus nbsp and the ellipsis. See CLAUDE.md,
-  "Any non-ASCII character in a string that reaches a TMP_Text".
-- **Fix:** use ASCII (`<`, `>`, `X`, `-`), or add the glyphs to the font asset.
-
-### 1.12 A departed player's vessel converted to AI is not marked AI — Medium
-- **Where:** `ServerPlayerVesselInitializer.ConvertPlayerToAI` (809).
-- **Bug:** the player is handed to autopilot but not recorded the way a spawned AI is (the
-  processed-player bookkeeping and `IsInitializedAsAI`).
-- **Consequence:** later passes treat it as a human (ready gates, domain normalisation).
-- **Fix:** mark it exactly as `ServerPlayerVesselInitializerWithAI` marks its own AI.
-
 ---
 
 ## 2. Larger items (need design or several files)
-
-### 2.1 Cloud Save cannot tell "load failed" from "no data yet" — High, highest stakes
-- **Where:** `Assets/_Scripts/System/CloudData/Providers/UGSCloudSaveProvider.cs` (~64-117: the
-  catches return `null`). Also `CloudDataRepository` and `PlayerDataService`.
-- **Bug:** a network/auth error returns the same `null` as a missing key. The repository then
-  treats the player as new, seeds defaults, and **saves those defaults over the real cloud record**
-  on the next write.
-- **Consequence:** progression / unlock / profile wipe on a flaky connection.
-- **Fix:** return a result type (`Loaded`, `Missing`, `Failed`). On `Failed`, fall back to
-  `LocalCloudDataCache` and **block writes** for that key until a successful load. This touches
-  every repository, so plan it as its own PR.
-
-### 2.2 Presence lobby is never rejoined after it drops — Medium
-- **Where:** `HostConnectionService.cs`: the `Update` gate (~418), the refresh loop (~1496-1528), and
-  join (~537-572).
-- **Bug:** once the presence lobby is lost (network blip, lobby expiry), the refresh loop's gate
-  stays closed. Nothing re-runs the join.
-- **Consequence:** the online list goes empty and invites stop arriving until the app restarts.
-- **Fix:** on refresh failure with a lobby-not-found/unauthorised class error, clear the lobby and
-  re-enter the join path with backoff. `Docs/PresenceSystem/ARCHITECTURE.md` has the lifecycle.
-
-### 2.3 Invite-clear runs without the property-write mutex — Medium
-- **Where:** `HostConnectionService.cs` ~2034 (`needsLock`). Callers: ~757, 1729, 1810, 1915, 2000, 2422.
-- **Bug:** some paths clear `invite_payloads` without taking the lock the send path takes, so a
-  clear and a send race and one overwrites the other.
-- **Consequence:** an invite that silently never arrives, or one that re-fires.
-- **Fix:** every write to the per-player invite property goes through the same lock. Audit the six
-  callers.
 
 ### 2.4 `ApplicationStateMachine` refuses MainMenu → Authenticating — High
 - **Where:** `Assets/_Scripts/System/ReconnectService.cs:193` calls

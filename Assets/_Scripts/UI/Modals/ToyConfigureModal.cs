@@ -576,7 +576,7 @@ namespace CosmicShore.UI
         {
             return new ToyShellOption
             {
-                Label = "◀  Back",
+                Label = "<  Back",
                 Accent = _boundDefinition ? _boundDefinition.AccentColor : Color.white,
                 AppliesOnSelect = true,
                 Apply = GoBackLayer,

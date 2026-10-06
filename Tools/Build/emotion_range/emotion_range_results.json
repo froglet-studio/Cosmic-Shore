@@ -1,0 +1,3058 @@
+{
+ "swarm charge - pufferfish": {
+  "game/hover": {
+   "viewer": "hover",
+   "run": {
+    "top": "majestic",
+    "p": {
+     "cute": 0.042,
+     "playful": 0.032,
+     "eerie": 0.041,
+     "majestic": 0.403,
+     "menacing": 0.126,
+     "terrifying": 0.308,
+     "neutral": 0.048
+    }
+   },
+   "phases": {
+    "plates": {
+     "n": 81,
+     "top": "majestic",
+     "p": {
+      "cute": 0.038,
+      "playful": 0.029,
+      "eerie": 0.051,
+      "majestic": 0.476,
+      "menacing": 0.119,
+      "terrifying": 0.218,
+      "neutral": 0.07
+     },
+     "votes": {
+      "majestic": 63,
+      "terrifying": 18
+     },
+     "threat": 0.337
+    }
+   },
+   "timelines": [
+    "JJTTTTTTJJJJJJJJJJJJJJJJJJJ",
+    "JJTTTTTTJJJJJJJJJJJJJJJJJJJ",
+    "JJTTTTTTJJJJJJJJJJJJJJJJJJJ"
+   ],
+   "peak_threat": 0.785,
+   "mean_threat": 0.336,
+   "log": [
+    "emotion export: charge seed 7, warm 1500 ticks, 841/895 alive, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/swarm_out.f32",
+    "emotion export: charge seed 23, warm 1500 ticks, 841/895 alive, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/swarm_out.f32",
+    "emotion export: charge seed 41, warm 1500 ticks, 841/895 alive, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/swarm_out.f32"
+   ]
+  },
+  "game/cruise": {
+   "viewer": "cruise",
+   "run": {
+    "top": "majestic",
+    "p": {
+     "cute": 0.034,
+     "playful": 0.025,
+     "eerie": 0.036,
+     "majestic": 0.604,
+     "menacing": 0.124,
+     "terrifying": 0.083,
+     "neutral": 0.093
+    }
+   },
+   "phases": {
+    "plates": {
+     "n": 81,
+     "top": "majestic",
+     "p": {
+      "cute": 0.018,
+      "playful": 0.012,
+      "eerie": 0.054,
+      "majestic": 0.668,
+      "menacing": 0.084,
+      "terrifying": 0.075,
+      "neutral": 0.089
+     },
+     "votes": {
+      "terrifying": 6,
+      "majestic": 74,
+      "menacing": 1
+     },
+     "threat": 0.159
+    }
+   },
+   "timelines": [
+    "TTJJJJJJJJJJJJJJJJJJJJJJJJJ",
+    "TTJJJJJJJJJJJJJJJJJJJJJJJJJ",
+    "TTJJJJJJJJJJJJJJJJJJJJJJJJM"
+   ],
+   "peak_threat": 0.662,
+   "mean_threat": 0.159,
+   "log": [
+    "emotion export: charge seed 7, warm 1500 ticks, 841/895 alive, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/swarm_out.f32",
+    "emotion export: charge seed 23, warm 1500 ticks, 841/895 alive, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/swarm_out.f32",
+    "emotion export: charge seed 41, warm 1500 ticks, 841/895 alive, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/swarm_out.f32"
+   ]
+  }
+ },
+ "swarm mass - lurker (whale)": {
+  "game/hover": {
+   "viewer": "hover",
+   "run": {
+    "top": "terrifying",
+    "p": {
+     "cute": 0.004,
+     "playful": 0.022,
+     "eerie": 0.023,
+     "majestic": 0.271,
+     "menacing": 0.316,
+     "terrifying": 0.344,
+     "neutral": 0.021
+    }
+   },
+   "phases": {
+    "plates": {
+     "n": 65,
+     "top": "majestic",
+     "p": {
+      "cute": 0.003,
+      "playful": 0.018,
+      "eerie": 0.031,
+      "majestic": 0.435,
+      "menacing": 0.325,
+      "terrifying": 0.151,
+      "neutral": 0.037
+     },
+     "votes": {
+      "menacing": 18,
+      "terrifying": 3,
+      "majestic": 44
+     },
+     "threat": 0.476
+    },
+    "strike": {
+     "n": 16,
+     "top": "terrifying",
+     "p": {
+      "cute": 0.005,
+      "playful": 0.031,
+      "eerie": 0.029,
+      "majestic": 0.092,
+      "menacing": 0.297,
+      "terrifying": 0.533,
+      "neutral": 0.014
+     },
+     "votes": {
+      "terrifying": 15,
+      "menacing": 1
+     },
+     "threat": 0.83
+    }
+   },
+   "timelines": [
+    "MMTTTTTTJJJJJJJJJJJJJJJJJJJ",
+    "MMTTTTTTJJJJJJJJJJJJJJJJJJJ",
+    "MMTTTTTTMMMJJMMMMMMMMMMJJJJ"
+   ],
+   "peak_threat": 0.892,
+   "mean_threat": 0.546,
+   "log": [
+    "emotion export: mass seed 7, warm 1500 ticks, 902/960 alive, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/swarm_out.f32",
+    "emotion export: mass seed 23, warm 1500 ticks, 902/960 alive, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/swarm_out.f32",
+    "emotion export: mass seed 41, warm 1500 ticks, 902/960 alive, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/swarm_out.f32"
+   ]
+  },
+  "research/hover": {
+   "viewer": "hover",
+   "run": {
+    "top": "majestic",
+    "p": {
+     "cute": 0.003,
+     "playful": 0.012,
+     "eerie": 0.032,
+     "majestic": 0.401,
+     "menacing": 0.36,
+     "terrifying": 0.137,
+     "neutral": 0.053
+    }
+   },
+   "phases": {
+    "-": {
+     "n": 81,
+     "top": "majestic",
+     "p": {
+      "cute": 0.003,
+      "playful": 0.013,
+      "eerie": 0.039,
+      "majestic": 0.438,
+      "menacing": 0.345,
+      "terrifying": 0.095,
+      "neutral": 0.066
+     },
+     "votes": {
+      "majestic": 48,
+      "menacing": 30,
+      "terrifying": 3
+     },
+     "threat": 0.44
+    }
+   },
+   "timelines": [
+    "JJMMMJJJJJJJJMMMMMMJJJJJMMM",
+    "MMTTTJJJJJJJJJJJJJJJJJMMMMM",
+    "JJMMMMJJJJJJJMMMMMMMJJJJJJJ"
+   ],
+   "peak_threat": 0.793,
+   "mean_threat": 0.44
+  },
+  "game/cruise": {
+   "viewer": "cruise",
+   "run": {
+    "top": "majestic",
+    "p": {
+     "cute": 0.003,
+     "playful": 0.018,
+     "eerie": 0.021,
+     "majestic": 0.466,
+     "menacing": 0.338,
+     "terrifying": 0.113,
+     "neutral": 0.041
+    }
+   },
+   "phases": {
+    "strike": {
+     "n": 9,
+     "top": "terrifying",
+     "p": {
+      "cute": 0.004,
+      "playful": 0.026,
+      "eerie": 0.016,
+      "majestic": 0.288,
+      "menacing": 0.228,
+      "terrifying": 0.376,
+      "neutral": 0.063
+     },
+     "votes": {
+      "terrifying": 6,
+      "majestic": 3
+     },
+     "threat": 0.604
+    },
+    "plates": {
+     "n": 72,
+     "top": "majestic",
+     "p": {
+      "cute": 0.002,
+      "playful": 0.008,
+      "eerie": 0.038,
+      "majestic": 0.602,
+      "menacing": 0.254,
+      "terrifying": 0.049,
+      "neutral": 0.048
+     },
+     "votes": {
+      "majestic": 69,
+      "menacing": 3
+     },
+     "threat": 0.303
+    }
+   },
+   "timelines": [
+    "TTJJJJJJJJJJJJJJJJJJJJJJJJJ",
+    "TTJJJJJJJJJJJJJJJJJJJJJJJJJ",
+    "TTJJMMJJJJJJJJJJJJJJJJJJJJM"
+   ],
+   "peak_threat": 0.816,
+   "mean_threat": 0.337,
+   "log": [
+    "emotion export: mass seed 7, warm 1500 ticks, 902/960 alive, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/swarm_out.f32",
+    "emotion export: mass seed 23, warm 1500 ticks, 902/960 alive, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/swarm_out.f32",
+    "emotion export: mass seed 41, warm 1500 ticks, 902/960 alive, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/swarm_out.f32"
+   ]
+  },
+  "research/cruise": {
+   "viewer": "cruise",
+   "run": {
+    "top": "majestic",
+    "p": {
+     "cute": 0.003,
+     "playful": 0.014,
+     "eerie": 0.021,
+     "majestic": 0.503,
+     "menacing": 0.323,
+     "terrifying": 0.052,
+     "neutral": 0.083
+    }
+   },
+   "phases": {
+    "-": {
+     "n": 81,
+     "top": "majestic",
+     "p": {
+      "cute": 0.002,
+      "playful": 0.009,
+      "eerie": 0.028,
+      "majestic": 0.565,
+      "menacing": 0.262,
+      "terrifying": 0.05,
+      "neutral": 0.085
+     },
+     "votes": {
+      "terrifying": 5,
+      "majestic": 65,
+      "menacing": 11
+     },
+     "threat": 0.312
+    }
+   },
+   "timelines": [
+    "TTJJJJJJJJJJJJJJJJJJJJJJJJJ",
+    "TTJJJMMMJJJJJJJJJMMMMJJJJJJ",
+    "TJJJMMJJJJJJJJJJJJJJJJJJJMM"
+   ],
+   "peak_threat": 0.742,
+   "mean_threat": 0.312
+  }
+ },
+ "swarm space - locust (jellyfish)": {
+  "game/hover": {
+   "viewer": "hover",
+   "run": {
+    "top": "majestic",
+    "p": {
+     "cute": 0.032,
+     "playful": 0.034,
+     "eerie": 0.044,
+     "majestic": 0.375,
+     "menacing": 0.158,
+     "terrifying": 0.309,
+     "neutral": 0.049
+    }
+   },
+   "phases": {
+    "strike": {
+     "n": 81,
+     "top": "majestic",
+     "p": {
+      "cute": 0.03,
+      "playful": 0.029,
+      "eerie": 0.055,
+      "majestic": 0.457,
+      "menacing": 0.144,
+      "terrifying": 0.213,
+      "neutral": 0.071
+     },
+     "votes": {
+      "majestic": 62,
+      "terrifying": 19
+     },
+     "threat": 0.357
+    }
+   },
+   "timelines": [
+    "JJTTTTTTJJJJJJJJJJJJJJJJJJJ",
+    "JJTTTTTTJJJJJJJJJJJJJJJJJJJ",
+    "JJTTTTTTTJJJJJJJJJJJJJJJJJJ"
+   ],
+   "peak_threat": 0.771,
+   "mean_threat": 0.357,
+   "log": [
+    "emotion export: space seed 7, warm 1500 ticks, 414/440 alive, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/swarm_out.f32",
+    "emotion export: space seed 23, warm 1500 ticks, 414/440 alive, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/swarm_out.f32",
+    "emotion export: space seed 41, warm 1500 ticks, 414/440 alive, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/swarm_out.f32"
+   ]
+  },
+  "game/cruise": {
+   "viewer": "cruise",
+   "run": {
+    "top": "majestic",
+    "p": {
+     "cute": 0.027,
+     "playful": 0.029,
+     "eerie": 0.038,
+     "majestic": 0.56,
+     "menacing": 0.16,
+     "terrifying": 0.09,
+     "neutral": 0.096
+    }
+   },
+   "phases": {
+    "strike": {
+     "n": 81,
+     "top": "majestic",
+     "p": {
+      "cute": 0.015,
+      "playful": 0.013,
+      "eerie": 0.057,
+      "majestic": 0.64,
+      "menacing": 0.106,
+      "terrifying": 0.078,
+      "neutral": 0.091
+     },
+     "votes": {
+      "terrifying": 6,
+      "majestic": 74,
+      "menacing": 1
+     },
+     "threat": 0.184
+    }
+   },
+   "timelines": [
+    "TTJJJJJJJJJJJJJJJJJJJJJJJJJ",
+    "TTJJJJJJJJJJJJJJJJJJJJJJJJJ",
+    "TTJJJJJJJJJJJJJJJJJJJJJJJJM"
+   ],
+   "peak_threat": 0.704,
+   "mean_threat": 0.184,
+   "log": [
+    "emotion export: space seed 7, warm 1500 ticks, 414/440 alive, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/swarm_out.f32",
+    "emotion export: space seed 23, warm 1500 ticks, 414/440 alive, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/swarm_out.f32",
+    "emotion export: space seed 41, warm 1500 ticks, 414/440 alive, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/swarm_out.f32"
+   ]
+  }
+ },
+ "swarm time - pack hunter (dragonfly)": {
+  "game/hover": {
+   "viewer": "hover",
+   "run": {
+    "top": "menacing",
+    "p": {
+     "cute": 0.004,
+     "playful": 0.025,
+     "eerie": 0.022,
+     "majestic": 0.248,
+     "menacing": 0.339,
+     "terrifying": 0.336,
+     "neutral": 0.025
+    }
+   },
+   "phases": {
+    "plates": {
+     "n": 70,
+     "top": "majestic",
+     "p": {
+      "cute": 0.003,
+      "playful": 0.022,
+      "eerie": 0.03,
+      "majestic": 0.373,
+      "menacing": 0.352,
+      "terrifying": 0.177,
+      "neutral": 0.043
+     },
+     "votes": {
+      "menacing": 22,
+      "majestic": 39,
+      "terrifying": 9
+     },
+     "threat": 0.529
+    },
+    "strike": {
+     "n": 11,
+     "top": "terrifying",
+     "p": {
+      "cute": 0.005,
+      "playful": 0.034,
+      "eerie": 0.025,
+      "majestic": 0.101,
+      "menacing": 0.323,
+      "terrifying": 0.497,
+      "neutral": 0.014
+     },
+     "votes": {
+      "terrifying": 10,
+      "menacing": 1
+     },
+     "threat": 0.82
+    }
+   },
+   "timelines": [
+    "MMTTTTTTMJJJJJJJJJJJJJJJJJJ",
+    "MMTTTTTTTJJJJJJJJJJJJJJJJJJ",
+    "MMTTTTTTMMMMMMMMMMMMMMMMJJJ"
+   ],
+   "peak_threat": 0.889,
+   "mean_threat": 0.569,
+   "log": [
+    "emotion export: time seed 7, warm 1500 ticks, 357/380 alive, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/swarm_out.f32",
+    "emotion export: time seed 23, warm 1500 ticks, 357/380 alive, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/swarm_out.f32",
+    "emotion export: time seed 41, warm 1500 ticks, 357/380 alive, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/swarm_out.f32"
+   ]
+  },
+  "research/hover": {
+   "viewer": "hover",
+   "run": {
+    "top": "menacing",
+    "p": {
+     "cute": 0.003,
+     "playful": 0.012,
+     "eerie": 0.043,
+     "majestic": 0.215,
+     "menacing": 0.463,
+     "terrifying": 0.223,
+     "neutral": 0.041
+    }
+   },
+   "phases": {
+    "-": {
+     "n": 81,
+     "top": "menacing",
+     "p": {
+      "cute": 0.003,
+      "playful": 0.012,
+      "eerie": 0.043,
+      "majestic": 0.331,
+      "menacing": 0.414,
+      "terrifying": 0.139,
+      "neutral": 0.059
+     },
+     "votes": {
+      "menacing": 51,
+      "terrifying": 6,
+      "majestic": 24
+     },
+     "threat": 0.553
+    }
+   },
+   "timelines": [
+    "MMTTTMMMMMMMMMMMMMMMMJJJMMM",
+    "MMMMMMMJJJJJJJJJJJJJJJJJMMM",
+    "MMTTTMMMMMMMMMMMMMMMMMJJJJM"
+   ],
+   "peak_threat": 0.885,
+   "mean_threat": 0.553
+  },
+  "game/cruise": {
+   "viewer": "cruise",
+   "run": {
+    "top": "majestic",
+    "p": {
+     "cute": 0.003,
+     "playful": 0.021,
+     "eerie": 0.022,
+     "majestic": 0.438,
+     "menacing": 0.363,
+     "terrifying": 0.102,
+     "neutral": 0.051
+    }
+   },
+   "phases": {
+    "strike": {
+     "n": 5,
+     "top": "terrifying",
+     "p": {
+      "cute": 0.004,
+      "playful": 0.035,
+      "eerie": 0.016,
+      "majestic": 0.207,
+      "menacing": 0.243,
+      "terrifying": 0.438,
+      "neutral": 0.057
+     },
+     "votes": {
+      "terrifying": 4,
+      "majestic": 1
+     },
+     "threat": 0.681
+    },
+    "plates": {
+     "n": 76,
+     "top": "majestic",
+     "p": {
+      "cute": 0.002,
+      "playful": 0.01,
+      "eerie": 0.035,
+      "majestic": 0.549,
+      "menacing": 0.279,
+      "terrifying": 0.064,
+      "neutral": 0.061
+     },
+     "votes": {
+      "majestic": 70,
+      "terrifying": 2,
+      "menacing": 4
+     },
+     "threat": 0.343
+    }
+   },
+   "timelines": [
+    "TTJJJJJJJJJJJJJJJJJJJJJJJJJ",
+    "TTJJJJJJJJJJJJJJJJJJJJJJJJJ",
+    "TTJJMMMJJJJJJJJJJJJJJJJJJJM"
+   ],
+   "peak_threat": 0.832,
+   "mean_threat": 0.364,
+   "log": [
+    "emotion export: time seed 7, warm 1500 ticks, 357/380 alive, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/swarm_out.f32",
+    "emotion export: time seed 23, warm 1500 ticks, 357/380 alive, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/swarm_out.f32",
+    "emotion export: time seed 41, warm 1500 ticks, 357/380 alive, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/swarm_out.f32"
+   ]
+  },
+  "research/cruise": {
+   "viewer": "cruise",
+   "run": {
+    "top": "menacing",
+    "p": {
+     "cute": 0.002,
+     "playful": 0.016,
+     "eerie": 0.029,
+     "majestic": 0.343,
+     "menacing": 0.465,
+     "terrifying": 0.053,
+     "neutral": 0.093
+    }
+   },
+   "phases": {
+    "-": {
+     "n": 81,
+     "top": "majestic",
+     "p": {
+      "cute": 0.001,
+      "playful": 0.014,
+      "eerie": 0.029,
+      "majestic": 0.469,
+      "menacing": 0.328,
+      "terrifying": 0.047,
+      "neutral": 0.111
+     },
+     "votes": {
+      "menacing": 14,
+      "terrifying": 3,
+      "majestic": 64
+     },
+     "threat": 0.375
+    }
+   },
+   "timelines": [
+    "MTJJJJJJJJJJJJJJJJJJJJJJJJJ",
+    "MMJJMMMMMJJJJJJJJJJJJJJJJJJ",
+    "TTJMMMMJJJJJJJJJJJJJJJJJJMM"
+   ],
+   "peak_threat": 0.715,
+   "mean_threat": 0.376
+  }
+ },
+ "substrate pack": {
+  "game/hover": {
+   "viewer": "hover",
+   "run": {
+    "top": "terrifying",
+    "p": {
+     "cute": 0.014,
+     "playful": 0.36,
+     "eerie": 0.045,
+     "majestic": 0.03,
+     "menacing": 0.117,
+     "terrifying": 0.423,
+     "neutral": 0.012
+    }
+   },
+   "phases": {
+    "winded": {
+     "n": 20,
+     "top": "terrifying",
+     "p": {
+      "cute": 0.013,
+      "playful": 0.301,
+      "eerie": 0.106,
+      "majestic": 0.089,
+      "menacing": 0.155,
+      "terrifying": 0.304,
+      "neutral": 0.032
+     },
+     "votes": {
+      "terrifying": 10,
+      "playful": 9,
+      "majestic": 1
+     },
+     "threat": 0.459
+    },
+    "strike": {
+     "n": 60,
+     "top": "terrifying",
+     "p": {
+      "cute": 0.013,
+      "playful": 0.39,
+      "eerie": 0.036,
+      "majestic": 0.027,
+      "menacing": 0.099,
+      "terrifying": 0.423,
+      "neutral": 0.012
+     },
+     "votes": {
+      "terrifying": 31,
+      "playful": 29
+     },
+     "threat": 0.522
+    },
+    "ring": {
+     "n": 1,
+     "top": "terrifying",
+     "p": {
+      "cute": 0.018,
+      "playful": 0.244,
+      "eerie": 0.162,
+      "majestic": 0.045,
+      "menacing": 0.169,
+      "terrifying": 0.348,
+      "neutral": 0.013
+     },
+     "votes": {
+      "terrifying": 1
+     },
+     "threat": 0.517
+    }
+   },
+   "timelines": [
+    "TTTTpTTppppppTTppppppTTTTTp",
+    "TTpTppTTTTTTppTTTTTTpppppTT",
+    "pppJTTTTTTTTTpTTpppppppppTp"
+   ],
+   "beats": [
+    false
+   ],
+   "peak_threat": 0.781,
+   "mean_threat": 0.507,
+   "log": [
+    "emotion export: substrate pack seed 7, 6 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32",
+    "emotion export: substrate pack seed 23, 6 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32",
+    "emotion export: substrate pack seed 41, 6 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32"
+   ]
+  },
+  "research/hover": {
+   "viewer": "hover",
+   "run": {
+    "top": "playful",
+    "p": {
+     "cute": 0.014,
+     "playful": 0.841,
+     "eerie": 0.003,
+     "majestic": 0.001,
+     "menacing": 0.004,
+     "terrifying": 0.135,
+     "neutral": 0.001
+    }
+   },
+   "phases": {
+    "strike": {
+     "n": 81,
+     "top": "playful",
+     "p": {
+      "cute": 0.019,
+      "playful": 0.833,
+      "eerie": 0.008,
+      "majestic": 0.002,
+      "menacing": 0.006,
+      "terrifying": 0.129,
+      "neutral": 0.002
+     },
+     "votes": {
+      "playful": 81
+     },
+     "threat": 0.135
+    }
+   },
+   "timelines": [
+    "ppppppppppppppppppppppppppp",
+    "ppppppppppppppppppppppppppp",
+    "ppppppppppppppppppppppppppp"
+   ],
+   "beats": [],
+   "peak_threat": 0.234,
+   "mean_threat": 0.135
+  },
+  "bestiary/hover": {
+   "viewer": "hover",
+   "run": {
+    "top": "menacing",
+    "p": {
+     "cute": 0.017,
+     "playful": 0.047,
+     "eerie": 0.249,
+     "majestic": 0.155,
+     "menacing": 0.292,
+     "terrifying": 0.103,
+     "neutral": 0.139
+    }
+   },
+   "phases": {
+    "-": {
+     "n": 81,
+     "top": "menacing",
+     "p": {
+      "cute": 0.013,
+      "playful": 0.075,
+      "eerie": 0.203,
+      "majestic": 0.185,
+      "menacing": 0.249,
+      "terrifying": 0.109,
+      "neutral": 0.167
+     },
+     "votes": {
+      "menacing": 41,
+      "terrifying": 13,
+      "eerie": 10,
+      "neutral": 5,
+      "majestic": 12
+     },
+     "threat": 0.358
+    }
+   },
+   "timelines": [
+    "MMMTTTTeeeeeMMMMMMMnnJJJJJJ",
+    "MMMTTTTeeMMMMMMMMMJnnnJJJJJ",
+    "MMMTTTTMeMMMMMMMMMMMMMTeeMM"
+   ],
+   "beats": [],
+   "peak_threat": 0.639,
+   "mean_threat": 0.358
+  },
+  "game/cruise": {
+   "viewer": "cruise",
+   "run": {
+    "top": "terrifying",
+    "p": {
+     "cute": 0.019,
+     "playful": 0.144,
+     "eerie": 0.151,
+     "majestic": 0.082,
+     "menacing": 0.198,
+     "terrifying": 0.374,
+     "neutral": 0.032
+    }
+   },
+   "phases": {
+    "strike": {
+     "n": 15,
+     "top": "terrifying",
+     "p": {
+      "cute": 0.018,
+      "playful": 0.321,
+      "eerie": 0.069,
+      "majestic": 0.046,
+      "menacing": 0.147,
+      "terrifying": 0.374,
+      "neutral": 0.024
+     },
+     "votes": {
+      "terrifying": 8,
+      "playful": 5,
+      "menacing": 2
+     },
+     "threat": 0.521
+    },
+    "winded": {
+     "n": 43,
+     "top": "terrifying",
+     "p": {
+      "cute": 0.017,
+      "playful": 0.171,
+      "eerie": 0.161,
+      "majestic": 0.102,
+      "menacing": 0.179,
+      "terrifying": 0.325,
+      "neutral": 0.046
+     },
+     "votes": {
+      "majestic": 4,
+      "neutral": 1,
+      "terrifying": 28,
+      "playful": 2,
+      "menacing": 5,
+      "eerie": 3
+     },
+     "threat": 0.504
+    },
+    "stalk": {
+     "n": 8,
+     "top": "eerie",
+     "p": {
+      "cute": 0.014,
+      "playful": 0.074,
+      "eerie": 0.256,
+      "majestic": 0.204,
+      "menacing": 0.211,
+      "terrifying": 0.08,
+      "neutral": 0.16
+     },
+     "votes": {
+      "eerie": 4,
+      "majestic": 2,
+      "menacing": 1,
+      "terrifying": 1
+     },
+     "threat": 0.291
+    },
+    "ring": {
+     "n": 15,
+     "top": "eerie",
+     "p": {
+      "cute": 0.016,
+      "playful": 0.096,
+      "eerie": 0.258,
+      "majestic": 0.115,
+      "menacing": 0.199,
+      "terrifying": 0.258,
+      "neutral": 0.058
+     },
+     "votes": {
+      "eerie": 7,
+      "terrifying": 7,
+      "playful": 1
+     },
+     "threat": 0.457
+    }
+   },
+   "timelines": [
+    "TpMJneeeTTTTTTTTJJeeeMTppTT",
+    "pTJMeTTTTTTTppTTMMMMMTTTTep",
+    "pJJeTTTTeeeeTTTTeTTTTTTTTTT"
+   ],
+   "beats": [
+    false,
+    false,
+    false
+   ],
+   "peak_threat": 0.752,
+   "mean_threat": 0.477,
+   "log": [
+    "emotion export: substrate pack seed 7, 6 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32",
+    "emotion export: substrate pack seed 23, 6 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32",
+    "emotion export: substrate pack seed 41, 7 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32"
+   ]
+  },
+  "research/cruise": {
+   "viewer": "cruise",
+   "run": {
+    "top": "playful",
+    "p": {
+     "cute": 0.023,
+     "playful": 0.917,
+     "eerie": 0.004,
+     "majestic": 0.001,
+     "menacing": 0.004,
+     "terrifying": 0.05,
+     "neutral": 0.001
+    }
+   },
+   "phases": {
+    "strike": {
+     "n": 81,
+     "top": "playful",
+     "p": {
+      "cute": 0.034,
+      "playful": 0.892,
+      "eerie": 0.011,
+      "majestic": 0.003,
+      "menacing": 0.008,
+      "terrifying": 0.049,
+      "neutral": 0.003
+     },
+     "votes": {
+      "playful": 81
+     },
+     "threat": 0.057
+    }
+   },
+   "timelines": [
+    "ppppppppppppppppppppppppppp",
+    "ppppppppppppppppppppppppppp",
+    "ppppppppppppppppppppppppppp"
+   ],
+   "beats": [],
+   "peak_threat": 0.174,
+   "mean_threat": 0.057
+  },
+  "bestiary/cruise": {
+   "viewer": "cruise",
+   "run": {
+    "top": "menacing",
+    "p": {
+     "cute": 0.019,
+     "playful": 0.053,
+     "eerie": 0.167,
+     "majestic": 0.201,
+     "menacing": 0.282,
+     "terrifying": 0.034,
+     "neutral": 0.244
+    }
+   },
+   "phases": {
+    "-": {
+     "n": 81,
+     "top": "majestic",
+     "p": {
+      "cute": 0.018,
+      "playful": 0.066,
+      "eerie": 0.117,
+      "majestic": 0.315,
+      "menacing": 0.176,
+      "terrifying": 0.037,
+      "neutral": 0.27
+     },
+     "votes": {
+      "terrifying": 5,
+      "majestic": 40,
+      "neutral": 21,
+      "menacing": 13,
+      "playful": 2
+     },
+     "threat": 0.213
+    }
+   },
+   "timelines": [
+    "TTJnnnJJJJJJnJJJJJJJJJJJJJJ",
+    "TTnnnJJnMpJJnnnnJJJJJJJJJJJ",
+    "pTnnMMMMnnnJJJMMMMMMnnnJnMM"
+   ],
+   "beats": [],
+   "peak_threat": 0.509,
+   "mean_threat": 0.214
+  }
+ },
+ "substrate locust_sparse": {
+  "game/hover": {
+   "viewer": "hover",
+   "run": {
+    "top": "cute",
+    "p": {
+     "cute": 0.723,
+     "playful": 0.107,
+     "eerie": 0.081,
+     "majestic": 0.009,
+     "menacing": 0.011,
+     "terrifying": 0.026,
+     "neutral": 0.043
+    }
+   },
+   "phases": {
+    "solitary": {
+     "n": 77,
+     "top": "cute",
+     "p": {
+      "cute": 0.7,
+      "playful": 0.104,
+      "eerie": 0.099,
+      "majestic": 0.01,
+      "menacing": 0.011,
+      "terrifying": 0.024,
+      "neutral": 0.052
+     },
+     "votes": {
+      "cute": 77
+     },
+     "threat": 0.035
+    },
+    "storm": {
+     "n": 4,
+     "top": "cute",
+     "p": {
+      "cute": 0.494,
+      "playful": 0.344,
+      "eerie": 0.05,
+      "majestic": 0.008,
+      "menacing": 0.015,
+      "terrifying": 0.066,
+      "neutral": 0.022
+     },
+     "votes": {
+      "cute": 4
+     },
+     "threat": 0.081
+    }
+   },
+   "timelines": [
+    "ccccccccccccccccccccccccccc",
+    "ccccccccccccccccccccccccccc",
+    "ccccccccccccccccccccccccccc"
+   ],
+   "beats": [],
+   "peak_threat": 0.089,
+   "mean_threat": 0.037,
+   "log": [
+    "emotion export: substrate locust_sparse seed 7, 48 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32",
+    "emotion export: substrate locust_sparse seed 23, 46 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32",
+    "emotion export: substrate locust_sparse seed 41, 48 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32"
+   ]
+  },
+  "research/hover": {
+   "viewer": "hover",
+   "run": {
+    "top": "cute",
+    "p": {
+     "cute": 0.731,
+     "playful": 0.131,
+     "eerie": 0.056,
+     "majestic": 0.008,
+     "menacing": 0.01,
+     "terrifying": 0.026,
+     "neutral": 0.039
+    }
+   },
+   "phases": {
+    "solitary": {
+     "n": 66,
+     "top": "cute",
+     "p": {
+      "cute": 0.677,
+      "playful": 0.167,
+      "eerie": 0.073,
+      "majestic": 0.007,
+      "menacing": 0.008,
+      "terrifying": 0.024,
+      "neutral": 0.043
+     },
+     "votes": {
+      "cute": 59,
+      "playful": 7
+     },
+     "threat": 0.032
+    },
+    "storm": {
+     "n": 15,
+     "top": "cute",
+     "p": {
+      "cute": 0.469,
+      "playful": 0.341,
+      "eerie": 0.05,
+      "majestic": 0.014,
+      "menacing": 0.011,
+      "terrifying": 0.051,
+      "neutral": 0.064
+     },
+     "votes": {
+      "cute": 11,
+      "playful": 4
+     },
+     "threat": 0.062
+    }
+   },
+   "timelines": [
+    "ccccccccccccppppccpppcccccc",
+    "cccccccccccppppcccccccccccc",
+    "ccccccccccccccccccccccccccc"
+   ],
+   "beats": [],
+   "peak_threat": 0.111,
+   "mean_threat": 0.038
+  },
+  "bestiary/hover": {
+   "viewer": "hover",
+   "run": {
+    "top": "cute",
+    "p": {
+     "cute": 0.578,
+     "playful": 0.059,
+     "eerie": 0.048,
+     "majestic": 0.018,
+     "menacing": 0.005,
+     "terrifying": 0.205,
+     "neutral": 0.087
+    }
+   },
+   "phases": {
+    "-": {
+     "n": 81,
+     "top": "cute",
+     "p": {
+      "cute": 0.547,
+      "playful": 0.049,
+      "eerie": 0.06,
+      "majestic": 0.047,
+      "menacing": 0.006,
+      "terrifying": 0.144,
+      "neutral": 0.147
+     },
+     "votes": {
+      "cute": 60,
+      "neutral": 5,
+      "terrifying": 16
+     },
+     "threat": 0.15
+    }
+   },
+   "timelines": [
+    "ccccccccccccccccccccnnccccc",
+    "ccccccccccTTTTTTTccTcTTTTTT",
+    "cccccccccccccnnccccncccccTT"
+   ],
+   "beats": [],
+   "peak_threat": 0.803,
+   "mean_threat": 0.151
+  },
+  "game/cruise": {
+   "viewer": "cruise",
+   "run": {
+    "top": "cute",
+    "p": {
+     "cute": 0.79,
+     "playful": 0.044,
+     "eerie": 0.051,
+     "majestic": 0.011,
+     "menacing": 0.005,
+     "terrifying": 0.004,
+     "neutral": 0.095
+    }
+   },
+   "phases": {
+    "solitary": {
+     "n": 81,
+     "top": "cute",
+     "p": {
+      "cute": 0.699,
+      "playful": 0.036,
+      "eerie": 0.08,
+      "majestic": 0.026,
+      "menacing": 0.007,
+      "terrifying": 0.004,
+      "neutral": 0.149
+     },
+     "votes": {
+      "cute": 79,
+      "neutral": 2
+     },
+     "threat": 0.011
+    }
+   },
+   "timelines": [
+    "cccccccccccnncccccccccccccc",
+    "ccccccccccccccccccccccccccc",
+    "ccccccccccccccccccccccccccc"
+   ],
+   "beats": [],
+   "peak_threat": 0.021,
+   "mean_threat": 0.011,
+   "log": [
+    "emotion export: substrate locust_sparse seed 7, 61 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32",
+    "emotion export: substrate locust_sparse seed 23, 57 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32",
+    "emotion export: substrate locust_sparse seed 41, 55 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32"
+   ]
+  },
+  "research/cruise": {
+   "viewer": "cruise",
+   "run": {
+    "top": "cute",
+    "p": {
+     "cute": 0.712,
+     "playful": 0.056,
+     "eerie": 0.07,
+     "majestic": 0.016,
+     "menacing": 0.009,
+     "terrifying": 0.007,
+     "neutral": 0.13
+    }
+   },
+   "phases": {
+    "solitary": {
+     "n": 81,
+     "top": "cute",
+     "p": {
+      "cute": 0.615,
+      "playful": 0.049,
+      "eerie": 0.086,
+      "majestic": 0.041,
+      "menacing": 0.009,
+      "terrifying": 0.004,
+      "neutral": 0.196
+     },
+     "votes": {
+      "cute": 73,
+      "neutral": 8
+     },
+     "threat": 0.013
+    }
+   },
+   "timelines": [
+    "ccccccccccccccccccccccccccc",
+    "ccccccccccccccccnccccccnnnn",
+    "ccccccccccccccccnnccccncccc"
+   ],
+   "beats": [],
+   "peak_threat": 0.024,
+   "mean_threat": 0.013
+  },
+  "bestiary/cruise": {
+   "viewer": "cruise",
+   "run": {
+    "top": "cute",
+    "p": {
+     "cute": 0.646,
+     "playful": 0.047,
+     "eerie": 0.036,
+     "majestic": 0.043,
+     "menacing": 0.004,
+     "terrifying": 0.043,
+     "neutral": 0.181
+    }
+   },
+   "phases": {
+    "-": {
+     "n": 81,
+     "top": "cute",
+     "p": {
+      "cute": 0.487,
+      "playful": 0.029,
+      "eerie": 0.043,
+      "majestic": 0.11,
+      "menacing": 0.005,
+      "terrifying": 0.057,
+      "neutral": 0.268
+     },
+     "votes": {
+      "cute": 57,
+      "neutral": 21,
+      "terrifying": 3
+     },
+     "threat": 0.062
+    }
+   },
+   "timelines": [
+    "ccccccncccccccnnccccnnnnnnn",
+    "cccccccccnccccccTTTcccccccc",
+    "ccnccccccccncccccccnnnnnnnn"
+   ],
+   "beats": [],
+   "peak_threat": 0.67,
+   "mean_threat": 0.062
+  }
+ },
+ "substrate locust_dense": {
+  "game/hover": {
+   "viewer": "hover",
+   "run": {
+    "top": "terrifying",
+    "p": {
+     "cute": 0.008,
+     "playful": 0.125,
+     "eerie": 0.005,
+     "majestic": 0.001,
+     "menacing": 0.007,
+     "terrifying": 0.852,
+     "neutral": 0.001
+    }
+   },
+   "phases": {
+    "storm": {
+     "n": 48,
+     "top": "terrifying",
+     "p": {
+      "cute": 0.015,
+      "playful": 0.17,
+      "eerie": 0.008,
+      "majestic": 0.001,
+      "menacing": 0.008,
+      "terrifying": 0.797,
+      "neutral": 0.001
+     },
+     "votes": {
+      "terrifying": 48
+     },
+     "threat": 0.805
+    },
+    "solitary": {
+     "n": 33,
+     "top": "neutral",
+     "p": {
+      "cute": 0.026,
+      "playful": 0.015,
+      "eerie": 0.022,
+      "majestic": 0.234,
+      "menacing": 0.011,
+      "terrifying": 0.074,
+      "neutral": 0.617
+     },
+     "votes": {
+      "terrifying": 3,
+      "neutral": 30
+     },
+     "threat": 0.085
+    }
+   },
+   "timelines": [
+    "TTTTTTTTTTTTTTTTTnnnnnnnnnn",
+    "TTTTTTTTTTTTTTTTTnnnnnnnnnn",
+    "TTTTTTTTTTTTTTTTTnnnnnnnnnn"
+   ],
+   "beats": [],
+   "peak_threat": 0.907,
+   "mean_threat": 0.512,
+   "log": [
+    "emotion export: substrate locust_dense seed 7, 0 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32",
+    "emotion export: substrate locust_dense seed 23, 0 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32",
+    "emotion export: substrate locust_dense seed 41, 0 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32"
+   ]
+  },
+  "research/hover": {
+   "viewer": "hover",
+   "run": {
+    "top": "terrifying",
+    "p": {
+     "cute": 0.021,
+     "playful": 0.206,
+     "eerie": 0.01,
+     "majestic": 0.002,
+     "menacing": 0.011,
+     "terrifying": 0.748,
+     "neutral": 0.002
+    }
+   },
+   "phases": {
+    "storm": {
+     "n": 71,
+     "top": "terrifying",
+     "p": {
+      "cute": 0.061,
+      "playful": 0.298,
+      "eerie": 0.016,
+      "majestic": 0.003,
+      "menacing": 0.01,
+      "terrifying": 0.606,
+      "neutral": 0.005
+     },
+     "votes": {
+      "terrifying": 49,
+      "playful": 22
+     },
+     "threat": 0.616
+    },
+    "solitary": {
+     "n": 10,
+     "top": "cute",
+     "p": {
+      "cute": 0.499,
+      "playful": 0.271,
+      "eerie": 0.069,
+      "majestic": 0.023,
+      "menacing": 0.019,
+      "terrifying": 0.039,
+      "neutral": 0.08
+     },
+     "votes": {
+      "cute": 10
+     },
+     "threat": 0.058
+    }
+   },
+   "timelines": [
+    "TTTTTTTTTTTTTTTTppppppppccc",
+    "TTTTTTTTTTTTTTTTppppccccccc",
+    "TTTTTTTTTTTTTTTTTpppppppppp"
+   ],
+   "beats": [],
+   "peak_threat": 0.878,
+   "mean_threat": 0.548
+  },
+  "game/cruise": {
+   "viewer": "cruise",
+   "run": {
+    "top": "terrifying",
+    "p": {
+     "cute": 0.015,
+     "playful": 0.183,
+     "eerie": 0.02,
+     "majestic": 0.009,
+     "menacing": 0.031,
+     "terrifying": 0.738,
+     "neutral": 0.003
+    }
+   },
+   "phases": {
+    "storm": {
+     "n": 48,
+     "top": "terrifying",
+     "p": {
+      "cute": 0.02,
+      "playful": 0.288,
+      "eerie": 0.035,
+      "majestic": 0.014,
+      "menacing": 0.04,
+      "terrifying": 0.598,
+      "neutral": 0.005
+     },
+     "votes": {
+      "terrifying": 41,
+      "playful": 7
+     },
+     "threat": 0.638
+    },
+    "solitary": {
+     "n": 33,
+     "top": "neutral",
+     "p": {
+      "cute": 0.026,
+      "playful": 0.022,
+      "eerie": 0.032,
+      "majestic": 0.239,
+      "menacing": 0.019,
+      "terrifying": 0.042,
+      "neutral": 0.62
+     },
+     "votes": {
+      "terrifying": 3,
+      "neutral": 30
+     },
+     "threat": 0.061
+    }
+   },
+   "timelines": [
+    "TTTTTTTTTTTTTpTTTnnnnnnnnnn",
+    "TTTTTTTTTTTTTTpTTnnnnnnnnnn",
+    "TTTTTTTppppTTTTpTnnnnnnnnnn"
+   ],
+   "beats": [],
+   "peak_threat": 0.892,
+   "mean_threat": 0.403,
+   "log": [
+    "emotion export: substrate locust_dense seed 7, 0 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32",
+    "emotion export: substrate locust_dense seed 23, 0 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32",
+    "emotion export: substrate locust_dense seed 41, 0 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32"
+   ]
+  },
+  "research/cruise": {
+   "viewer": "cruise",
+   "run": {
+    "top": "terrifying",
+    "p": {
+     "cute": 0.027,
+     "playful": 0.322,
+     "eerie": 0.025,
+     "majestic": 0.01,
+     "menacing": 0.037,
+     "terrifying": 0.574,
+     "neutral": 0.004
+    }
+   },
+   "phases": {
+    "storm": {
+     "n": 81,
+     "top": "playful",
+     "p": {
+      "cute": 0.048,
+      "playful": 0.416,
+      "eerie": 0.045,
+      "majestic": 0.019,
+      "menacing": 0.042,
+      "terrifying": 0.414,
+      "neutral": 0.015
+     },
+     "votes": {
+      "terrifying": 45,
+      "playful": 35,
+      "neutral": 1
+     },
+     "threat": 0.456
+    }
+   },
+   "timelines": [
+    "TTTTTTTTTTTTTTTTTpppppppppp",
+    "TTTTTTTTTTTTTTTpppppppppppn",
+    "TTTTTTTpTppTTTTTppppppppppp"
+   ],
+   "beats": [],
+   "peak_threat": 0.902,
+   "mean_threat": 0.456
+  }
+ },
+ "substrate lurker": {
+  "game/hover": {
+   "viewer": "hover",
+   "run": {
+    "top": "terrifying",
+    "p": {
+     "cute": 0.121,
+     "playful": 0.313,
+     "eerie": 0.082,
+     "majestic": 0.008,
+     "menacing": 0.05,
+     "terrifying": 0.407,
+     "neutral": 0.019
+    }
+   },
+   "phases": {
+    "snap": {
+     "n": 79,
+     "top": "terrifying",
+     "p": {
+      "cute": 0.104,
+      "playful": 0.288,
+      "eerie": 0.131,
+      "majestic": 0.011,
+      "menacing": 0.058,
+      "terrifying": 0.372,
+      "neutral": 0.035
+     },
+     "votes": {
+      "cute": 1,
+      "terrifying": 41,
+      "playful": 25,
+      "eerie": 12
+     },
+     "threat": 0.43
+    },
+    "gape": {
+     "n": 1,
+     "top": "terrifying",
+     "p": {
+      "cute": 0.175,
+      "playful": 0.158,
+      "eerie": 0.258,
+      "majestic": 0.013,
+      "menacing": 0.052,
+      "terrifying": 0.282,
+      "neutral": 0.062
+     },
+     "votes": {
+      "terrifying": 1
+     },
+     "threat": 0.334
+    },
+    "creep": {
+     "n": 1,
+     "top": "cute",
+     "p": {
+      "cute": 0.328,
+      "playful": 0.302,
+      "eerie": 0.103,
+      "majestic": 0.012,
+      "menacing": 0.028,
+      "terrifying": 0.141,
+      "neutral": 0.085
+     },
+     "votes": {
+      "cute": 1
+     },
+     "threat": 0.169
+    }
+   },
+   "timelines": [
+    "cTTTTTTpppppeTTTTTTeeeeTTTT",
+    "TTTTTTTpppppppTTTTeeTTTTppp",
+    "cpTTTTTTpppppeTTTTTppppeeee"
+   ],
+   "beats": [],
+   "peak_threat": 0.871,
+   "mean_threat": 0.426,
+   "log": [
+    "emotion export: substrate lurker seed 7, 12 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32",
+    "emotion export: substrate lurker seed 23, 12 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32",
+    "emotion export: substrate lurker seed 41, 12 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32"
+   ]
+  },
+  "research/hover": {
+   "viewer": "hover",
+   "run": {
+    "top": "playful",
+    "p": {
+     "cute": 0.084,
+     "playful": 0.234,
+     "eerie": 0.144,
+     "majestic": 0.05,
+     "menacing": 0.089,
+     "terrifying": 0.178,
+     "neutral": 0.222
+    }
+   },
+   "phases": {
+    "snap": {
+     "n": 44,
+     "top": "playful",
+     "p": {
+      "cute": 0.06,
+      "playful": 0.503,
+      "eerie": 0.069,
+      "majestic": 0.025,
+      "menacing": 0.033,
+      "terrifying": 0.22,
+      "neutral": 0.09
+     },
+     "votes": {
+      "neutral": 7,
+      "playful": 36,
+      "terrifying": 1
+     },
+     "threat": 0.253
+    },
+    "still": {
+     "n": 26,
+     "top": "neutral",
+     "p": {
+      "cute": 0.016,
+      "playful": 0.013,
+      "eerie": 0.121,
+      "majestic": 0.259,
+      "menacing": 0.043,
+      "terrifying": 0.005,
+      "neutral": 0.543
+     },
+     "votes": {
+      "neutral": 26
+     },
+     "threat": 0.048
+    },
+    "gape": {
+     "n": 11,
+     "top": "neutral",
+     "p": {
+      "cute": 0.031,
+      "playful": 0.027,
+      "eerie": 0.134,
+      "majestic": 0.164,
+      "menacing": 0.069,
+      "terrifying": 0.015,
+      "neutral": 0.56
+     },
+     "votes": {
+      "neutral": 11
+     },
+     "threat": 0.084
+    }
+   },
+   "timelines": [
+    "npppppppnnnnnnnnnnnnnnnnnnn",
+    "pppTppppppppppnnnnnnnnnnnnn",
+    "npppppppppnnnnnnnnnnppppppp"
+   ],
+   "beats": [],
+   "peak_threat": 0.507,
+   "mean_threat": 0.164
+  },
+  "bestiary/hover": {
+   "viewer": "hover",
+   "run": {
+    "top": "neutral",
+    "p": {
+     "cute": 0.316,
+     "playful": 0.035,
+     "eerie": 0.116,
+     "majestic": 0.081,
+     "menacing": 0.041,
+     "terrifying": 0.063,
+     "neutral": 0.348
+    }
+   },
+   "phases": {
+    "-": {
+     "n": 81,
+     "top": "neutral",
+     "p": {
+      "cute": 0.259,
+      "playful": 0.044,
+      "eerie": 0.115,
+      "majestic": 0.14,
+      "menacing": 0.03,
+      "terrifying": 0.045,
+      "neutral": 0.365
+     },
+     "votes": {
+      "eerie": 2,
+      "cute": 28,
+      "neutral": 51
+     },
+     "threat": 0.075
+    }
+   },
+   "timelines": [
+    "eeccccccnnnnnnnnnnnnnnnnnnn",
+    "ncccccccncnnnnnnnnnnnnnnnnn",
+    "ncccccccnnnnnnnncccccccnnnn"
+   ],
+   "beats": [],
+   "peak_threat": 0.236,
+   "mean_threat": 0.075
+  },
+  "game/cruise": {
+   "viewer": "cruise",
+   "run": {
+    "top": "neutral",
+    "p": {
+     "cute": 0.155,
+     "playful": 0.042,
+     "eerie": 0.229,
+     "majestic": 0.081,
+     "menacing": 0.04,
+     "terrifying": 0.024,
+     "neutral": 0.428
+    }
+   },
+   "phases": {
+    "snap": {
+     "n": 9,
+     "top": "playful",
+     "p": {
+      "cute": 0.118,
+      "playful": 0.525,
+      "eerie": 0.12,
+      "majestic": 0.007,
+      "menacing": 0.028,
+      "terrifying": 0.165,
+      "neutral": 0.037
+     },
+     "votes": {
+      "playful": 9
+     },
+     "threat": 0.193
+    },
+    "spent": {
+     "n": 14,
+     "top": "neutral",
+     "p": {
+      "cute": 0.151,
+      "playful": 0.084,
+      "eerie": 0.241,
+      "majestic": 0.067,
+      "menacing": 0.028,
+      "terrifying": 0.022,
+      "neutral": 0.407
+     },
+     "votes": {
+      "neutral": 12,
+      "eerie": 1,
+      "playful": 1
+     },
+     "threat": 0.05
+    },
+    "creep": {
+     "n": 54,
+     "top": "neutral",
+     "p": {
+      "cute": 0.063,
+      "playful": 0.016,
+      "eerie": 0.151,
+      "majestic": 0.174,
+      "menacing": 0.018,
+      "terrifying": 0.004,
+      "neutral": 0.575
+     },
+     "votes": {
+      "neutral": 52,
+      "eerie": 2
+     },
+     "threat": 0.022
+    },
+    "gape": {
+     "n": 3,
+     "top": "neutral",
+     "p": {
+      "cute": 0.061,
+      "playful": 0.011,
+      "eerie": 0.199,
+      "majestic": 0.171,
+      "menacing": 0.017,
+      "terrifying": 0.005,
+      "neutral": 0.537
+     },
+     "votes": {
+      "neutral": 3
+     },
+     "threat": 0.022
+    },
+    "still": {
+     "n": 1,
+     "top": "neutral",
+     "p": {
+      "cute": 0.03,
+      "playful": 0.007,
+      "eerie": 0.043,
+      "majestic": 0.208,
+      "menacing": 0.007,
+      "terrifying": 0.001,
+      "neutral": 0.703
+     },
+     "votes": {
+      "neutral": 1
+     },
+     "threat": 0.008
+    }
+   },
+   "timelines": [
+    "ppnnnnnnnnnnnnnnnnnnnnnnnnn",
+    "ppnnnnnnnnnnnnnnnnennnnnnnn",
+    "pppnepppnnnnnnnnnnnnnnnnnne"
+   ],
+   "beats": [],
+   "peak_threat": 0.297,
+   "mean_threat": 0.046,
+   "log": [
+    "emotion export: substrate lurker seed 7, 12 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32",
+    "emotion export: substrate lurker seed 23, 12 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32",
+    "emotion export: substrate lurker seed 41, 12 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32"
+   ]
+  },
+  "research/cruise": {
+   "viewer": "cruise",
+   "run": {
+    "top": "playful",
+    "p": {
+     "cute": 0.131,
+     "playful": 0.481,
+     "eerie": 0.081,
+     "majestic": 0.018,
+     "menacing": 0.045,
+     "terrifying": 0.171,
+     "neutral": 0.072
+    }
+   },
+   "phases": {
+    "snap": {
+     "n": 52,
+     "top": "playful",
+     "p": {
+      "cute": 0.067,
+      "playful": 0.658,
+      "eerie": 0.035,
+      "majestic": 0.021,
+      "menacing": 0.018,
+      "terrifying": 0.102,
+      "neutral": 0.099
+     },
+     "votes": {
+      "playful": 44,
+      "neutral": 8
+     },
+     "threat": 0.12
+    },
+    "still": {
+     "n": 29,
+     "top": "neutral",
+     "p": {
+      "cute": 0.02,
+      "playful": 0.013,
+      "eerie": 0.078,
+      "majestic": 0.293,
+      "menacing": 0.026,
+      "terrifying": 0.002,
+      "neutral": 0.566
+     },
+     "votes": {
+      "neutral": 29
+     },
+     "threat": 0.028
+    }
+   },
+   "timelines": [
+    "ppppppppppppppppnnnnnnnnnnn",
+    "ppppppppppppnnnppppppnnnnnn",
+    "ppppppppppnnnnnnnnnnnnnnnnn"
+   ],
+   "beats": [],
+   "peak_threat": 0.39,
+   "mean_threat": 0.087
+  },
+  "bestiary/cruise": {
+   "viewer": "cruise",
+   "run": {
+    "top": "neutral",
+    "p": {
+     "cute": 0.229,
+     "playful": 0.024,
+     "eerie": 0.083,
+     "majestic": 0.146,
+     "menacing": 0.041,
+     "terrifying": 0.016,
+     "neutral": 0.461
+    }
+   },
+   "phases": {
+    "-": {
+     "n": 81,
+     "top": "neutral",
+     "p": {
+      "cute": 0.164,
+      "playful": 0.023,
+      "eerie": 0.07,
+      "majestic": 0.225,
+      "menacing": 0.024,
+      "terrifying": 0.015,
+      "neutral": 0.478
+     },
+     "votes": {
+      "cute": 11,
+      "neutral": 69,
+      "majestic": 1
+     },
+     "threat": 0.039
+    }
+   },
+   "timelines": [
+    "ccnnnnnnnnnnnnJnnnnnnnccccn",
+    "ccnncnnnnnnnnnnnnnnnnnnnnnn",
+    "ccnnnnnnnnnnnnnnnnnnnnnnnnn"
+   ],
+   "beats": [],
+   "peak_threat": 0.159,
+   "mean_threat": 0.038
+  }
+ },
+ "builders fortress": {
+  "game/hover": {
+   "viewer": "hover",
+   "run": {
+    "top": "terrifying",
+    "p": {
+     "cute": 0.096,
+     "playful": 0.162,
+     "eerie": 0.117,
+     "majestic": 0.105,
+     "menacing": 0.105,
+     "terrifying": 0.24,
+     "neutral": 0.175
+    }
+   },
+   "phases": {
+    "build": {
+     "n": 66,
+     "top": "neutral",
+     "p": {
+      "cute": 0.078,
+      "playful": 0.138,
+      "eerie": 0.164,
+      "majestic": 0.14,
+      "menacing": 0.093,
+      "terrifying": 0.041,
+      "neutral": 0.347
+     },
+     "votes": {
+      "neutral": 59,
+      "playful": 3,
+      "eerie": 4
+     },
+     "threat": 0.134
+    },
+    "strike": {
+     "n": 15,
+     "top": "terrifying",
+     "p": {
+      "cute": 0.091,
+      "playful": 0.194,
+      "eerie": 0.077,
+      "majestic": 0.035,
+      "menacing": 0.069,
+      "terrifying": 0.507,
+      "neutral": 0.027
+     },
+     "votes": {
+      "playful": 2,
+      "terrifying": 13
+     },
+     "threat": 0.576
+    }
+   },
+   "timelines": [
+    "nnnnnnpTTTTTTpnnnnnnnnnnnnn",
+    "nnnnnnnnnnnnnnnnnnnnnnnnnnn",
+    "nnpTTTTTTTennnnnnnneeeppnnn"
+   ],
+   "peak_threat": 0.801,
+   "mean_threat": 0.216,
+   "log": [
+    "emotion export: fortress seed 7, 48 alive at the encounter, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/builders_out.f32",
+    "emotion export: fortress seed 23, 48 alive at the encounter, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/builders_out.f32",
+    "emotion export: fortress seed 41, 48 alive at the encounter, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/builders_out.f32"
+   ]
+  },
+  "research/hover": {
+   "viewer": "hover",
+   "run": {
+    "top": "terrifying",
+    "p": {
+     "cute": 0.084,
+     "playful": 0.124,
+     "eerie": 0.112,
+     "majestic": 0.112,
+     "menacing": 0.101,
+     "terrifying": 0.303,
+     "neutral": 0.164
+    }
+   },
+   "phases": {
+    "build": {
+     "n": 68,
+     "top": "neutral",
+     "p": {
+      "cute": 0.065,
+      "playful": 0.1,
+      "eerie": 0.181,
+      "majestic": 0.166,
+      "menacing": 0.092,
+      "terrifying": 0.03,
+      "neutral": 0.366
+     },
+     "votes": {
+      "neutral": 63,
+      "eerie": 5
+     },
+     "threat": 0.122
+    },
+    "strike": {
+     "n": 13,
+     "top": "terrifying",
+     "p": {
+      "cute": 0.077,
+      "playful": 0.15,
+      "eerie": 0.049,
+      "majestic": 0.027,
+      "menacing": 0.048,
+      "terrifying": 0.631,
+      "neutral": 0.018
+     },
+     "votes": {
+      "terrifying": 13
+     },
+     "threat": 0.679
+    }
+   },
+   "timelines": [
+    "nnnnnnnnnnnnnnnnnnnnnnnnnnn",
+    "neeTTTTTTnnnnnnnnnnnnnnnnnn",
+    "nneeTTTTTTTnnnnnnnnnennnnnn"
+   ],
+   "peak_threat": 0.805,
+   "mean_threat": 0.212
+  },
+  "game/cruise": {
+   "viewer": "cruise",
+   "run": {
+    "top": "neutral",
+    "p": {
+     "cute": 0.084,
+     "playful": 0.129,
+     "eerie": 0.126,
+     "majestic": 0.138,
+     "menacing": 0.077,
+     "terrifying": 0.024,
+     "neutral": 0.421
+    }
+   },
+   "phases": {
+    "build": {
+     "n": 81,
+     "top": "neutral",
+     "p": {
+      "cute": 0.074,
+      "playful": 0.121,
+      "eerie": 0.109,
+      "majestic": 0.168,
+      "menacing": 0.061,
+      "terrifying": 0.018,
+      "neutral": 0.45
+     },
+     "votes": {
+      "neutral": 79,
+      "playful": 2
+     },
+     "threat": 0.079
+    }
+   },
+   "timelines": [
+    "npnnnnnnnnnnnnnnnnnnnnnnnnn",
+    "nnnnnnnnnnnnnnnnnnnnnnnnnnn",
+    "pnnnnnnnnnnnnnnnnnnnnnnnnnn"
+   ],
+   "peak_threat": 0.18,
+   "mean_threat": 0.078,
+   "log": [
+    "emotion export: fortress seed 7, 48 alive at the encounter, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/builders_out.f32",
+    "emotion export: fortress seed 23, 48 alive at the encounter, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/builders_out.f32",
+    "emotion export: fortress seed 41, 48 alive at the encounter, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/builders_out.f32"
+   ]
+  },
+  "research/cruise": {
+   "viewer": "cruise",
+   "run": {
+    "top": "neutral",
+    "p": {
+     "cute": 0.083,
+     "playful": 0.106,
+     "eerie": 0.113,
+     "majestic": 0.174,
+     "menacing": 0.066,
+     "terrifying": 0.018,
+     "neutral": 0.44
+    }
+   },
+   "phases": {
+    "build": {
+     "n": 76,
+     "top": "neutral",
+     "p": {
+      "cute": 0.069,
+      "playful": 0.101,
+      "eerie": 0.104,
+      "majestic": 0.213,
+      "menacing": 0.059,
+      "terrifying": 0.014,
+      "neutral": 0.44
+     },
+     "votes": {
+      "neutral": 73,
+      "majestic": 2,
+      "playful": 1
+     },
+     "threat": 0.073
+    },
+    "strike": {
+     "n": 5,
+     "top": "playful",
+     "p": {
+      "cute": 0.151,
+      "playful": 0.345,
+      "eerie": 0.109,
+      "majestic": 0.052,
+      "menacing": 0.076,
+      "terrifying": 0.202,
+      "neutral": 0.065
+     },
+     "votes": {
+      "playful": 5
+     },
+     "threat": 0.278
+    }
+   },
+   "timelines": [
+    "nnnnnnnnnnnnnnnnnnnnnnnnnJn",
+    "pppnnnnnnnnnnnnnnnnnnnnnnnn",
+    "pppnnnnnnnnnnnnnnnnnnnnJnnn"
+   ],
+   "peak_threat": 0.362,
+   "mean_threat": 0.086
+  }
+ },
+ "builders thief": {
+  "game/hover": {
+   "viewer": "hover",
+   "run": {
+    "top": "playful",
+    "p": {
+     "cute": 0.167,
+     "playful": 0.64,
+     "eerie": 0.053,
+     "majestic": 0.014,
+     "menacing": 0.024,
+     "terrifying": 0.063,
+     "neutral": 0.04
+    }
+   },
+   "phases": {
+    "laden": {
+     "n": 81,
+     "top": "playful",
+     "p": {
+      "cute": 0.167,
+      "playful": 0.596,
+      "eerie": 0.063,
+      "majestic": 0.023,
+      "menacing": 0.023,
+      "terrifying": 0.05,
+      "neutral": 0.077
+     },
+     "votes": {
+      "playful": 74,
+      "neutral": 6,
+      "cute": 1
+     },
+     "threat": 0.073
+    }
+   },
+   "timelines": [
+    "ppppppppppppnnppppppppppppp",
+    "pppppppppppppppnpcnnnpppppp",
+    "ppppppppppppppppppppppppppp"
+   ],
+   "peak_threat": 0.148,
+   "mean_threat": 0.074,
+   "log": [
+    "emotion export: thief seed 7, 6 alive at the encounter, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/builders_out.f32",
+    "emotion export: thief seed 23, 8 alive at the encounter, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/builders_out.f32",
+    "emotion export: thief seed 41, 6 alive at the encounter, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/builders_out.f32"
+   ]
+  },
+  "bestiary/hover": {
+   "viewer": "hover",
+   "run": {
+    "top": "cute",
+    "p": {
+     "cute": 0.488,
+     "playful": 0.081,
+     "eerie": 0.149,
+     "majestic": 0.052,
+     "menacing": 0.022,
+     "terrifying": 0.04,
+     "neutral": 0.168
+    }
+   },
+   "phases": {
+    "-": {
+     "n": 81,
+     "top": "cute",
+     "p": {
+      "cute": 0.393,
+      "playful": 0.119,
+      "eerie": 0.151,
+      "majestic": 0.08,
+      "menacing": 0.02,
+      "terrifying": 0.03,
+      "neutral": 0.207
+     },
+     "votes": {
+      "eerie": 4,
+      "cute": 55,
+      "neutral": 17,
+      "playful": 5
+     },
+     "threat": 0.05
+    }
+   },
+   "timelines": [
+    "eccccccccccccccccncnnnccccc",
+    "cppppccccccnnnccccccnnnncnp",
+    "eeccccccccnnnnneccccccccccc"
+   ],
+   "peak_threat": 0.096,
+   "mean_threat": 0.05
+  },
+  "game/cruise": {
+   "viewer": "cruise",
+   "run": {
+    "top": "neutral",
+    "p": {
+     "cute": 0.129,
+     "playful": 0.077,
+     "eerie": 0.151,
+     "majestic": 0.141,
+     "menacing": 0.052,
+     "terrifying": 0.019,
+     "neutral": 0.431
+    }
+   },
+   "phases": {
+    "laden": {
+     "n": 73,
+     "top": "neutral",
+     "p": {
+      "cute": 0.186,
+      "playful": 0.065,
+      "eerie": 0.14,
+      "majestic": 0.131,
+      "menacing": 0.042,
+      "terrifying": 0.017,
+      "neutral": 0.42
+     },
+     "votes": {
+      "playful": 1,
+      "neutral": 58,
+      "eerie": 4,
+      "cute": 10
+     },
+     "threat": 0.059
+    },
+    "forage": {
+     "n": 8,
+     "top": "cute",
+     "p": {
+      "cute": 0.788,
+      "playful": 0.063,
+      "eerie": 0.07,
+      "majestic": 0.011,
+      "menacing": 0.016,
+      "terrifying": 0.006,
+      "neutral": 0.047
+     },
+     "votes": {
+      "cute": 7,
+      "playful": 1
+     },
+     "threat": 0.022
+    }
+   },
+   "timelines": [
+    "pnnnnnnnnnnnnnnnennnnnccccc",
+    "ennnnnnnnnnncccccceennnnncc",
+    "nnnnnnnnnnnnnnnnnnnnnnccccp"
+   ],
+   "peak_threat": 0.123,
+   "mean_threat": 0.056,
+   "log": [
+    "emotion export: thief seed 7, 6 alive at the encounter, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/builders_out.f32",
+    "emotion export: thief seed 23, 8 alive at the encounter, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/builders_out.f32",
+    "emotion export: thief seed 41, 6 alive at the encounter, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/builders_out.f32"
+   ]
+  },
+  "bestiary/cruise": {
+   "viewer": "cruise",
+   "run": {
+    "top": "cute",
+    "p": {
+     "cute": 0.454,
+     "playful": 0.083,
+     "eerie": 0.099,
+     "majestic": 0.098,
+     "menacing": 0.019,
+     "terrifying": 0.013,
+     "neutral": 0.233
+    }
+   },
+   "phases": {
+    "-": {
+     "n": 81,
+     "top": "cute",
+     "p": {
+      "cute": 0.388,
+      "playful": 0.088,
+      "eerie": 0.085,
+      "majestic": 0.145,
+      "menacing": 0.015,
+      "terrifying": 0.012,
+      "neutral": 0.266
+     },
+     "votes": {
+      "cute": 43,
+      "neutral": 37,
+      "majestic": 1
+     },
+     "threat": 0.027
+    }
+   },
+   "timelines": [
+    "cccnnnnnnccccccccnnnnnnnnnn",
+    "ccccccnnnnnnnnncccccccJnccc",
+    "cccccccccnccccccnnnnnnnnnnc"
+   ],
+   "peak_threat": 0.098,
+   "mean_threat": 0.028
+  }
+ },
+ "flora snaptrap": {
+  "game/hover": {
+   "viewer": "hover",
+   "run": {
+    "top": "majestic",
+    "p": {
+     "cute": 0.007,
+     "playful": 0.01,
+     "eerie": 0.141,
+     "majestic": 0.396,
+     "menacing": 0.11,
+     "terrifying": 0.258,
+     "neutral": 0.077
+    }
+   },
+   "phases": {
+    "snap": {
+     "n": 46,
+     "top": "majestic",
+     "p": {
+      "cute": 0.007,
+      "playful": 0.01,
+      "eerie": 0.183,
+      "majestic": 0.341,
+      "menacing": 0.115,
+      "terrifying": 0.273,
+      "neutral": 0.072
+     },
+     "votes": {
+      "eerie": 1,
+      "terrifying": 20,
+      "majestic": 25
+     },
+     "threat": 0.388
+    },
+    "rest": {
+     "n": 35,
+     "top": "majestic",
+     "p": {
+      "cute": 0.005,
+      "playful": 0.008,
+      "eerie": 0.109,
+      "majestic": 0.59,
+      "menacing": 0.075,
+      "terrifying": 0.099,
+      "neutral": 0.114
+     },
+     "votes": {
+      "majestic": 35
+     },
+     "threat": 0.174
+    }
+   },
+   "timelines": [
+    "eTTTTTTTJJJJJJJJJJJJJJJJJJJ",
+    "JJJJJJJJJJJJJJJJJJJJJJJJJJJ",
+    "JTTTTTTTJJJJJJJJJTTTTTTJJJJ"
+   ],
+   "peak_threat": 0.586,
+   "mean_threat": 0.295,
+   "log": [
+    "emotion export: snaptrap seed 7, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/flora_out.f32",
+    "emotion export: snaptrap seed 23, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/flora_out.f32",
+    "emotion export: snaptrap seed 41, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/flora_out.f32"
+   ]
+  },
+  "research/hover": {
+   "viewer": "hover",
+   "run": {
+    "top": "terrifying",
+    "p": {
+     "cute": 0.01,
+     "playful": 0.014,
+     "eerie": 0.166,
+     "majestic": 0.231,
+     "menacing": 0.123,
+     "terrifying": 0.405,
+     "neutral": 0.052
+    }
+   },
+   "phases": {
+    "snap": {
+     "n": 66,
+     "top": "terrifying",
+     "p": {
+      "cute": 0.008,
+      "playful": 0.013,
+      "eerie": 0.177,
+      "majestic": 0.257,
+      "menacing": 0.115,
+      "terrifying": 0.371,
+      "neutral": 0.059
+     },
+     "votes": {
+      "eerie": 2,
+      "terrifying": 44,
+      "majestic": 20
+     },
+     "threat": 0.486
+    },
+    "rest": {
+     "n": 15,
+     "top": "majestic",
+     "p": {
+      "cute": 0.006,
+      "playful": 0.007,
+      "eerie": 0.097,
+      "majestic": 0.582,
+      "menacing": 0.074,
+      "terrifying": 0.048,
+      "neutral": 0.185
+     },
+     "votes": {
+      "majestic": 15
+     },
+     "threat": 0.122
+    }
+   },
+   "timelines": [
+    "eeTTTTTTTTTTJJJJJJJJJJJJJJJ",
+    "TTJTTTTTTTTTTTTTTTJJJJJJJJJ",
+    "JTTTTTTTTJJJJJJJJTTTTTTTTTJ"
+   ],
+   "peak_threat": 0.755,
+   "mean_threat": 0.418
+  },
+  "game/cruise": {
+   "viewer": "cruise",
+   "run": {
+    "top": "majestic",
+    "p": {
+     "cute": 0.008,
+     "playful": 0.009,
+     "eerie": 0.108,
+     "majestic": 0.545,
+     "menacing": 0.086,
+     "terrifying": 0.114,
+     "neutral": 0.131
+    }
+   },
+   "phases": {
+    "snap": {
+     "n": 16,
+     "top": "majestic",
+     "p": {
+      "cute": 0.008,
+      "playful": 0.01,
+      "eerie": 0.148,
+      "majestic": 0.369,
+      "menacing": 0.101,
+      "terrifying": 0.286,
+      "neutral": 0.079
+     },
+     "votes": {
+      "terrifying": 7,
+      "majestic": 9
+     },
+     "threat": 0.387
+    },
+    "rest": {
+     "n": 65,
+     "top": "majestic",
+     "p": {
+      "cute": 0.007,
+      "playful": 0.007,
+      "eerie": 0.102,
+      "majestic": 0.557,
+      "menacing": 0.082,
+      "terrifying": 0.04,
+      "neutral": 0.204
+     },
+     "votes": {
+      "majestic": 65
+     },
+     "threat": 0.122
+    }
+   },
+   "timelines": [
+    "TJJJJJJJJJJJJJJJJJJJJJJJJJJ",
+    "JJJJJJJJJJJJJJJJJJJJJJJJJJJ",
+    "TTJJTTTTJJJJJJJJJJJJJJJJJJJ"
+   ],
+   "peak_threat": 0.584,
+   "mean_threat": 0.174,
+   "log": [
+    "emotion export: snaptrap seed 7, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/flora_out.f32",
+    "emotion export: snaptrap seed 23, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/flora_out.f32",
+    "emotion export: snaptrap seed 41, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/flora_out.f32"
+   ]
+  },
+  "research/cruise": {
+   "viewer": "cruise",
+   "run": {
+    "top": "majestic",
+    "p": {
+     "cute": 0.01,
+     "playful": 0.011,
+     "eerie": 0.107,
+     "majestic": 0.497,
+     "menacing": 0.095,
+     "terrifying": 0.164,
+     "neutral": 0.116
+    }
+   },
+   "phases": {
+    "snap": {
+     "n": 25,
+     "top": "terrifying",
+     "p": {
+      "cute": 0.009,
+      "playful": 0.013,
+      "eerie": 0.157,
+      "majestic": 0.306,
+      "menacing": 0.104,
+      "terrifying": 0.329,
+      "neutral": 0.082
+     },
+     "votes": {
+      "terrifying": 12,
+      "majestic": 13
+     },
+     "threat": 0.433
+    },
+    "rest": {
+     "n": 56,
+     "top": "majestic",
+     "p": {
+      "cute": 0.008,
+      "playful": 0.008,
+      "eerie": 0.088,
+      "majestic": 0.561,
+      "menacing": 0.081,
+      "terrifying": 0.031,
+      "neutral": 0.224
+     },
+     "votes": {
+      "majestic": 56
+     },
+     "threat": 0.112
+    }
+   },
+   "timelines": [
+    "TTTJJJJJJJJJJJJJJJJJJJJJJJJ",
+    "TTTJJJJJJJJJJJJJJJJJJJJJJJJ",
+    "TTJJTTTTJJJJJJJJJJJJJJJJJJJ"
+   ],
+   "peak_threat": 0.681,
+   "mean_threat": 0.211
+  }
+ },
+ "flora physarum": {
+  "game/hover": {
+   "viewer": "hover",
+   "run": {
+    "top": "neutral",
+    "p": {
+     "cute": 0.019,
+     "playful": 0.013,
+     "eerie": 0.325,
+     "majestic": 0.107,
+     "menacing": 0.134,
+     "terrifying": 0.051,
+     "neutral": 0.352
+    }
+   },
+   "phases": {
+    "pulse": {
+     "n": 81,
+     "top": "neutral",
+     "p": {
+      "cute": 0.021,
+      "playful": 0.015,
+      "eerie": 0.25,
+      "majestic": 0.158,
+      "menacing": 0.103,
+      "terrifying": 0.03,
+      "neutral": 0.422
+     },
+     "votes": {
+      "eerie": 20,
+      "neutral": 61
+     },
+     "threat": 0.133
+    }
+   },
+   "timelines": [
+    "eeeeennnnnnnnnnennnnnnnnnnn",
+    "nenneeneeeennneennnnnnnnnnn",
+    "nennennnnnnneeennnnnnnnnnnn"
+   ],
+   "peak_threat": 0.208,
+   "mean_threat": 0.134,
+   "log": [
+    "emotion export: physarum seed 7, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/flora_out.f32",
+    "emotion export: physarum seed 23, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/flora_out.f32",
+    "emotion export: physarum seed 41, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/flora_out.f32"
+   ]
+  },
+  "research/hover": {
+   "viewer": "hover",
+   "run": {
+    "top": "neutral",
+    "p": {
+     "cute": 0.035,
+     "playful": 0.016,
+     "eerie": 0.291,
+     "majestic": 0.111,
+     "menacing": 0.127,
+     "terrifying": 0.038,
+     "neutral": 0.384
+    }
+   },
+   "phases": {
+    "-": {
+     "n": 81,
+     "top": "neutral",
+     "p": {
+      "cute": 0.031,
+      "playful": 0.014,
+      "eerie": 0.281,
+      "majestic": 0.14,
+      "menacing": 0.094,
+      "terrifying": 0.025,
+      "neutral": 0.414
+     },
+     "votes": {
+      "eerie": 27,
+      "neutral": 54
+     },
+     "threat": 0.119
+    }
+   },
+   "timelines": [
+    "eeeeneeeeennnnnnnnnnnnnnnnn",
+    "nnnnnnnnnnnnnnnnnnneeennnnn",
+    "nnnneenneeeneeeeneeennennee"
+   ],
+   "peak_threat": 0.209,
+   "mean_threat": 0.12
+  },
+  "game/cruise": {
+   "viewer": "cruise",
+   "run": {
+    "top": "neutral",
+    "p": {
+     "cute": 0.03,
+     "playful": 0.016,
+     "eerie": 0.23,
+     "majestic": 0.162,
+     "menacing": 0.098,
+     "terrifying": 0.02,
+     "neutral": 0.444
+    }
+   },
+   "phases": {
+    "pulse": {
+     "n": 56,
+     "top": "neutral",
+     "p": {
+      "cute": 0.024,
+      "playful": 0.014,
+      "eerie": 0.198,
+      "majestic": 0.184,
+      "menacing": 0.082,
+      "terrifying": 0.016,
+      "neutral": 0.481
+     },
+     "votes": {
+      "neutral": 48,
+      "eerie": 8
+     },
+     "threat": 0.098
+    },
+    "rest": {
+     "n": 25,
+     "top": "neutral",
+     "p": {
+      "cute": 0.023,
+      "playful": 0.011,
+      "eerie": 0.147,
+      "majestic": 0.204,
+      "menacing": 0.067,
+      "terrifying": 0.007,
+      "neutral": 0.54
+     },
+     "votes": {
+      "neutral": 25
+     },
+     "threat": 0.074
+    }
+   },
+   "timelines": [
+    "nnnnnnnnnnnnnnnnnnnnnnnnnnn",
+    "nnnnnnnnnnnnnnnnnnneennnnnn",
+    "nenneeennnnnnnnnnnnnnnnnnee"
+   ],
+   "peak_threat": 0.199,
+   "mean_threat": 0.09,
+   "log": [
+    "emotion export: physarum seed 7, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/flora_out.f32",
+    "emotion export: physarum seed 23, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/flora_out.f32",
+    "emotion export: physarum seed 41, 600 frames -> /tmp/claude-0/tmp-feel/emotion_range/flora_out.f32"
+   ]
+  },
+  "research/cruise": {
+   "viewer": "cruise",
+   "run": {
+    "top": "neutral",
+    "p": {
+     "cute": 0.032,
+     "playful": 0.015,
+     "eerie": 0.2,
+     "majestic": 0.173,
+     "menacing": 0.094,
+     "terrifying": 0.018,
+     "neutral": 0.468
+    }
+   },
+   "phases": {
+    "-": {
+     "n": 81,
+     "top": "neutral",
+     "p": {
+      "cute": 0.029,
+      "playful": 0.014,
+      "eerie": 0.207,
+      "majestic": 0.182,
+      "menacing": 0.073,
+      "terrifying": 0.014,
+      "neutral": 0.482
+     },
+     "votes": {
+      "eerie": 16,
+      "neutral": 65
+     },
+     "threat": 0.087
+    }
+   },
+   "timelines": [
+    "eennnnnnnnnnnnennnnnnnnnnnn",
+    "nnnnnnnnnnnnnnnnnnnneeeneen",
+    "nnnneeennnnnnneennnnnnnneee"
+   ],
+   "peak_threat": 0.204,
+   "mean_threat": 0.087
+  }
+ },
+ "substrate pack_hold": {
+  "game/hover": {
+   "viewer": "hover",
+   "run": {
+    "top": "terrifying",
+    "p": {
+     "cute": 0.016,
+     "playful": 0.155,
+     "eerie": 0.148,
+     "majestic": 0.089,
+     "menacing": 0.191,
+     "terrifying": 0.367,
+     "neutral": 0.034
+    }
+   },
+   "phases": {
+    "ring": {
+     "n": 42,
+     "top": "terrifying",
+     "p": {
+      "cute": 0.015,
+      "playful": 0.177,
+      "eerie": 0.168,
+      "majestic": 0.084,
+      "menacing": 0.179,
+      "terrifying": 0.344,
+      "neutral": 0.033
+     },
+     "votes": {
+      "terrifying": 29,
+      "eerie": 6,
+      "playful": 6,
+      "menacing": 1
+     },
+     "threat": 0.523
+    },
+    "winded": {
+     "n": 36,
+     "top": "terrifying",
+     "p": {
+      "cute": 0.014,
+      "playful": 0.197,
+      "eerie": 0.145,
+      "majestic": 0.113,
+      "menacing": 0.18,
+      "terrifying": 0.305,
+      "neutral": 0.046
+     },
+     "votes": {
+      "terrifying": 25,
+      "majestic": 3,
+      "playful": 5,
+      "eerie": 1,
+      "menacing": 2
+     },
+     "threat": 0.485
+    },
+    "strike": {
+     "n": 3,
+     "top": "playful",
+     "p": {
+      "cute": 0.014,
+      "playful": 0.274,
+      "eerie": 0.119,
+      "majestic": 0.112,
+      "menacing": 0.206,
+      "terrifying": 0.226,
+      "neutral": 0.049
+     },
+     "votes": {
+      "terrifying": 1,
+      "playful": 2
+     },
+     "threat": 0.432
+    }
+   },
+   "timelines": [
+    "TeTTTTJeeTppTeTTTTTTTppTTTT",
+    "TTTTTpMTppTTTTTTMeTTTTTTTTT",
+    "TTTpTeeJJMTTTTTppppTTTTTTTp"
+   ],
+   "beats": [
+    true,
+    true,
+    true
+   ],
+   "peak_threat": 0.694,
+   "mean_threat": 0.503,
+   "log": [
+    "emotion export: substrate pack_hold seed 7, 6 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32",
+    "emotion export: substrate pack_hold seed 23, 6 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32",
+    "emotion export: substrate pack_hold seed 41, 6 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32"
+   ]
+  },
+  "game/cruise": {
+   "viewer": "cruise",
+   "run": {
+    "top": "terrifying",
+    "p": {
+     "cute": 0.021,
+     "playful": 0.088,
+     "eerie": 0.245,
+     "majestic": 0.103,
+     "menacing": 0.207,
+     "terrifying": 0.299,
+     "neutral": 0.037
+    }
+   },
+   "phases": {
+    "ring": {
+     "n": 48,
+     "top": "eerie",
+     "p": {
+      "cute": 0.023,
+      "playful": 0.1,
+      "eerie": 0.329,
+      "majestic": 0.086,
+      "menacing": 0.182,
+      "terrifying": 0.232,
+      "neutral": 0.048
+     },
+     "votes": {
+      "eerie": 34,
+      "terrifying": 13,
+      "majestic": 1
+     },
+     "threat": 0.414
+    },
+    "winded": {
+     "n": 21,
+     "top": "terrifying",
+     "p": {
+      "cute": 0.017,
+      "playful": 0.161,
+      "eerie": 0.146,
+      "majestic": 0.177,
+      "menacing": 0.162,
+      "terrifying": 0.266,
+      "neutral": 0.071
+     },
+     "votes": {
+      "terrifying": 15,
+      "majestic": 3,
+      "eerie": 2,
+      "playful": 1
+     },
+     "threat": 0.428
+    },
+    "stalk": {
+     "n": 12,
+     "top": "eerie",
+     "p": {
+      "cute": 0.014,
+      "playful": 0.077,
+      "eerie": 0.275,
+      "majestic": 0.225,
+      "menacing": 0.194,
+      "terrifying": 0.065,
+      "neutral": 0.15
+     },
+     "votes": {
+      "majestic": 4,
+      "eerie": 7,
+      "menacing": 1
+     },
+     "threat": 0.259
+    }
+   },
+   "timelines": [
+    "eeTTTeTTTJJeeeeeeeTTTeeeeee",
+    "TeTTTTJeeeeeeTTeTTTTJeeeJMJ",
+    "eeeTTTJeeeeeeeeeeeeTpJeTTTT"
+   ],
+   "beats": [
+    true,
+    true,
+    true
+   ],
+   "peak_threat": 0.683,
+   "mean_threat": 0.395,
+   "log": [
+    "emotion export: substrate pack_hold seed 7, 6 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32",
+    "emotion export: substrate pack_hold seed 23, 6 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32",
+    "emotion export: substrate pack_hold seed 41, 6 alive at the end, 600 frames -> /tmp/claude-0/tmp-feel/ph/emotion_range/substrate_out.f32"
+   ]
+  }
+ }
+}

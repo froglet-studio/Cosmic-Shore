@@ -93,7 +93,10 @@ namespace CosmicShore.Gameplay
 
         // Reused so a shot allocates nothing on the hot path.
         readonly List<Prism> _hits = new();
-        readonly List<(Prism prism, float distance)> _ordered = new();
+        // A target along the round is a prism OR a swarm member that is only data (round 8, Docs/SWARM_FAUNA.md
+        // §16.2) - the member slot is >= 0 and the prism null until the member is materialised at its turn.
+        readonly List<(Prism prism, int virtualId, float distance)> _ordered = new();
+        readonly List<int> _virtualIds = new();
         readonly List<Transform> _vesselScratch = new();
 
         /// <summary>Seconds until the next shot is available, 0 when ready. Read by the HUD.</summary>
@@ -236,7 +239,24 @@ namespace CosmicShore.Gameplay
                 {
                     var prism = _hits[i];
                     if (!IsValidTarget(prism)) continue;
-                    _ordered.Add((prism, Vector3.Dot(prism.transform.position - origin, direction)));
+                    _ordered.Add((prism, -1, Vector3.Dot(prism.transform.position - origin, direction)));
+                }
+
+                // VIRTUAL entries (prisms that are only data - a swarm member past 160 u of a vessel,
+                // Docs/SWARM_FAUNA.md §19): QueryCone returns only prisms with a GameObject, so the SAME cone
+                // (QueryConeVirtualIds: same preprocessing, same ConeContains) is asked of the virtual entries. They
+                // join the ordered list, so pierce counts them exactly as the prisms they are, and IsValidTarget's
+                // domain rule is asked before one is materialised.
+                if (index.VirtualCount > 0)
+                {
+                    index.QueryConeVirtualIds(origin, direction, so.RangeUnits, so.ConeHalfAngleDegrees,
+                                              so.MinPathRadius, _virtualIds);
+                    for (int i = 0; i < _virtualIds.Count; i++)
+                    {
+                        if (!index.TryGetVirtualEntry(_virtualIds[i], out var at, out var domain, out _)) continue;
+                        if (domain == _status.Domain) continue;   // IsValidTarget: never eat your own
+                        _ordered.Add(((Prism)null, _virtualIds[i], Vector3.Dot(at - origin, direction)));
+                    }
                 }
                 _ordered.Sort((a, b) => a.distance.CompareTo(b.distance));
 
@@ -253,6 +273,14 @@ namespace CosmicShore.Gameplay
                 for (int i = 0; i < _ordered.Count && killed < budget; i++)
                 {
                     var prism = _ordered[i].prism;
+                    if (prism == null && _ordered[i].virtualId >= 0)
+                    {
+                        // the entry becomes a real prism now (its owner materialises it - for a swarm member, its
+                        // proxy's body - and the index suspends the entry), which the round then destroys exactly as
+                        // it destroys any prism (the creature dies through the sealed Fauna.Die). A sniper's handful
+                        // of virtual hits is never deferred.
+                        prism = index.ResolvePrism(_ordered[i].virtualId, materialise: true);
+                    }
                     // Re-tested: the list is a snapshot, and destroying a prism can destroy others
                     // through its own side effects (QueryCone's own documented contract). The stop
                     // point is read BEFORE the kill, because a destroyed prism's transform is on

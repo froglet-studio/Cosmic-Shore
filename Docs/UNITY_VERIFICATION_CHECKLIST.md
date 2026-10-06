@@ -33,6 +33,14 @@
 > hand-edit would be overwritten by the next scan.
 >
 > Until R2 runs, **this file is live, not superseded.** Work the open items below.
+>
+> **Partly migrated 2026-10-05 (arcade/arena matrix pass).** Every 🔴 entry for the **Dolphin**
+> (10), **Sparrow** (13), **Scarab** (5 + Scarab Scramble), **Urchin** (2) and the **Bends AI
+> aim** entry now has a self-contained item in `Docs/QA/QA_BACKLOG.md` (Blocks A, E, F, I and
+> `QA-BENDS-MODE`). Run those from the backlog, not from here. Everything else below (offline
+> fallback, reconnect, ability lockup fleet chips, prism-clock prompts, flora, safe-area, shield
+> morphs, self-trail grace, Rhino sword v3, projectile tunnelling, fauna consumption) is still
+> only recorded here.
 
 **Purpose.** Some changes land on shared branches (`bleeding-edge` and the
 per-feature branches) without ever being opened in the Unity Editor —

@@ -330,7 +330,11 @@ namespace CosmicShore.UI
             // OnClickMultiplayerPauseButton pauses only the local player's input, so PauseSystem
             // alone would let a second Escape re-invoke the button on an already-open panel.
             if (CosmicShore.Core.PauseSystem.Paused) return;
-            if (gameData?.LocalPlayer?.InputStatus?.Paused == true) return;
+            // `?.` on an interface reference skips Unity's destroyed-object check, so a Player torn
+            // down by a replay's scene reload passed it and threw every frame. Test it as an Object.
+            var localPlayer = gameData != null ? gameData.LocalPlayer : null;
+            if (localPlayer is UnityEngine.Object lpo && !lpo) return;
+            if (localPlayer?.InputStatus?.Paused == true) return;
             if (!OverviewGesture.RequestedThisFrame()) return;
 
             // The cached field, never ResolveVolumePauseButton(): that falls back to a
@@ -480,8 +484,35 @@ namespace CosmicShore.UI
                     // wake is laid behind them. The PAINT half needs no arrow - you paint where
                     // you are.
                     return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Tapestry");
-                // Sirocco deliberately has NO arrow, like Cleave: the forest rings the whole
-                // cell, so "where is the thing to erode" has no single answer worth pointing at.
+                case GameModes.Bends:
+                    // The provider was written for this mode and borrowed by three others before
+                    // the mode itself was registered: the nearest pilot this player may bend.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Bends");
+                case GameModes.Cleave:
+                    // The arena surrounds you, so "where is mass" has no answer - but "where is
+                    // there still a LOT of it" does, and on the 2,160-unit open rungs it is far
+                    // from obvious. Densest hostile mass, the query Cleave's AI raids with.
+                    return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_Cleave");
+                case GameModes.Sirocco:
+                    // Same provider, same reason: the forest rings the cell, so the arrow names
+                    // the densest standing hostile stand - the point Sirocco's AI erosion runs
+                    // steer to. NOT Rampage's crystal: here the crystal is a pickup, not the weapon.
+                    return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_Sirocco");
+                case GameModes.WildlifeLiberation:
+                    // The nearest living creature, any colour - wildlife is quarry whatever it
+                    // wears, and fauna are client-local, so this peer's registry IS what the
+                    // pilot can shoot.
+                    return CreateProviderComponent<WildlifeObjectiveProvider>("ObjectiveProvider_WildlifeLiberation");
+                case GameModes.BroodRush:
+                    // The nucleus: control is decided only by mass laid inside it, and every
+                    // wave hatched under a claim is the score. Hidden while you are inside it.
+                    return CreateProviderComponent<BroodRushObjectiveProvider>("ObjectiveProvider_BroodRush");
+                case GameModes.Scurry:
+                    // Rampage's provider: the nearest collectable MANAGED crystal. Scurry's
+                    // crystals are neutral and manager-spawned, so this names exactly the
+                    // scoring crystals and never a lifeform heart (SkimRace's own-domain filter
+                    // would reject every one of them).
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Scurry");
                 default:
                     return null;
             }

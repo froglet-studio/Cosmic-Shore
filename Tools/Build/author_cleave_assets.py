@@ -34,6 +34,7 @@ CHECK_ONLY = "--check" in sys.argv
 # raises instead of writing.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import cleave_budget as budget  # noqa: E402
+import arcade_mode_lib as aml  # noqa: E402  - card background + retired-key checks
 
 MEASURED, ARENAS = budget.ladder()
 
@@ -353,7 +354,7 @@ emit("Assets/_SO_Assets/Games/ArcadeGameCleave.asset",
     the rims and the outside of the bends, so read the place before you commit.
   IconActive: {{fileID: 21300000, guid: {EXISTING['IconActive']}, type: 3}}
   IconInactive: {{fileID: 21300000, guid: {EXISTING['IconInactive']}, type: 3}}
-  CardBackground: {{fileID: 21300000, guid: {EXISTING['CardBackground']}, type: 3}}
+  CardBackground: {{fileID: 21300000, guid: {aml.card_background('Cleave')}, type: 3}}
   GolfScoring: 1
   SceneName: MinigameCleave
   Vessels:
@@ -716,6 +717,10 @@ if cage is None:
     errors.append("the cage arena is missing from the ladder")
 elif cage["shellCount"] != 3:
     errors.append(f"the cage is {cage['shellCount']} shells - the kept arena is the THREE-rind one")
+
+# The card's CardBackground is the /cardart render and no retired key rides on it - the
+# shared check every arcade generator runs (arcade_mode_lib.card_errors).
+errors += aml.check_cards(files)
 
 if errors:
     print("VALIDATION FAILED - nothing written:")

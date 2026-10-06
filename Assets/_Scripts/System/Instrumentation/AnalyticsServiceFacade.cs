@@ -765,7 +765,7 @@ namespace CosmicShore.Core
         {
             var nowUtc = DateTime.UtcNow;
             parameters["timestamp_utc_ms"] = new DateTimeOffset(nowUtc).ToUnixTimeMilliseconds();
-            parameters["timestamp_utc_iso"] = nowUtc.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
+            parameters["timestamp_utc_iso"] = nowUtc.ToString("yyyy-MM-ddTHH:mm:ss.fffZ", CultureInfo.InvariantCulture);
         }
 
         Dictionary<string, object> BuildGameParameters() => new()

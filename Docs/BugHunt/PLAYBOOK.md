@@ -231,10 +231,97 @@ touches. Full background: [`../THREADING.md`](../THREADING.md).
 
 **Related, BH-1.4:** a facade call that reports failure through an event (for example
 `AuthenticationServiceFacade.OnSignInFailed`) does not throw, so a bare `await` is not proof of
-success. Check the state afterwards (`_facade.IsSignedIn`) before moving on.
+success. Check the state afterwards (`_facade.IsSignedIn`) before moving on. Same for BH-1.5: `FriendsServiceFacade.InitializeAsync` swallows its failure, so
+check `IsInitialized` before latching a flag.
 
 **Verify:** shorten the timeout to ~0.1 s (or go offline) and boot: no `EnsureRunningOnMainThread`
 error, and the flow carries on. With no network and no session, Guest shows the error at once.
+
+---
+
+## 8. Culture-dependent `DateTime` / number formatting
+
+**Shows up as:** a timestamp or file name with the wrong year or non-Latin digits on devices set to
+ar-SA, th-TH or fa-IR (BH-1.9). Never an error.
+
+**Fix pattern:** any string meant for a machine (analytics, file names, JSON, logs you parse) is
+formatted with `CultureInfo.InvariantCulture`: `dt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)`.
+`$"{dt:yyyy}"` uses the current culture, so convert it to an explicit `ToString`. The same goes for
+`float.ToString` / `float.Parse`. Find candidates with
+`rg -n 'DateTime[A-Za-z.()]*\.ToString\("' Assets/_Scripts`.
+
+---
+
+## 9. Tofu (empty boxes) in UI text
+
+**Shows up as:** an empty box where an arrow, check mark, middle dot, times sign or other symbol
+should be. No console message (BH-1.11).
+
+**Why:** the UI font has only 97 glyphs (ASCII, nbsp, ellipsis) and no fallback fonts.
+
+**Find it:** `rg -nP '[^\x00-\x7F]' Assets/_Scripts --glob '*.cs'` and ignore comments, tooltips and
+log strings (they never reach the font). Only strings that end up in a `TMP_Text` matter.
+
+**Fix pattern:** use ASCII (`<`, `>`, `X`, `-`, `,`), or add the glyph to
+`ALDRICH-REGULAR SDF.asset` (or give it a fallback). Also check prefabs and the generators that
+write them, not just C#.
+
+---
+
+## 10. A networked flag changed after init, but the local copy did not follow
+
+**Shows up as:** an object behaves as its old type on some or all peers after a server-side
+conversion (BH-1.12: a human pilot handed to the AI still read as human).
+
+**Why:** a plain local property (`IsInitializedAsAI`) is copied from a `NetworkVariable` once at
+init. Anything that later writes only the `NetworkVariable` leaves the copy stale.
+
+**Fix pattern:** subscribe to the variable's `OnValueChanged` for the object's whole spawned life
+(subscribe in `OnNetworkSpawn`, unsubscribe in `OnNetworkDespawn`) and update the copy there.
+When hunting a similar bug, `rg "\.Value = " ` for writes to that variable and check each writer
+also refreshes the copy.
+
+---
+
+## 11. "Not found" and "failed" must not look the same
+
+**Shows up as:** a player's saved data reset to defaults after a network blip (BH-2.1).
+
+**Why:** a loader that returns `null` for both "key missing" and "request failed" lets the caller
+seed defaults and later upload them over the real record.
+
+**Fix pattern:** return a three-way result (`Loaded`, `Missing`, `Failed`). On `Failed`, use the local
+snapshot for play, block uploads, and retry the load before the next upload. Treat data that exists
+but cannot be parsed as `Failed`. A deliberate reset is the only thing allowed to skip the block.
+
+**Check when adding a repository:** it must go through `CloudDataRepository`, not call the
+provider's save directly.
+
+---
+
+## 12. A recovery that runs once is not a recovery
+
+**Shows up as:** a feature (online list, invites) dead after a blip until restart (BH-2.2).
+
+**Why:** the code resets state and retries once; the per-frame loop that would retry is gated on the
+very state the failed retry left unset.
+
+**Fix pattern:** when a recovery attempt can fail, record "still needs recovery" in its own flag
+that the loop checks before the gate, retry with capped exponential backoff, and clear the flag on
+success, shutdown or when another path restores the state. Log each retry once.
+
+---
+
+## 13. "Am I holding the lock?" must be answered per call, not with a shared flag
+
+**Shows up as:** two lobby writes overwriting each other, with the lock apparently in place (BH-2.3).
+
+**Why:** a field such as `_insideRefreshCycle` says that someone is inside the section, not that the
+current caller is. Unrelated callers, and continuations that outlive the section, read it wrongly and
+skip the lock. A non-reentrant semaphore makes the opposite mistake a deadlock.
+
+**Fix pattern:** pass `callerHoldsMutex` explicitly, true only where the caller is awaited inside
+the locked section. Fire-and-forget work started inside the section takes the lock itself.
 
 ---
 

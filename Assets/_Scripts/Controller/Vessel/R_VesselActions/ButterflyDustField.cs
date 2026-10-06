@@ -63,6 +63,27 @@ namespace CosmicShore.Gameplay
         [Tooltip("Motes drift slowly downward, as dust falls off a wing.")]
         [SerializeField] float fallSpeed = 6f;
 
+        [Header("Audio")]
+        [Tooltip("SCALE DUST (Charge) - FMOD event when the dust BITES an opposing pilot (the " +
+                 "all-element debuff lands). Played on every peer that resolves the bite, at the " +
+                 "victim. Already rate-limited per victim by the debuff's own cooldown. Leave " +
+                 "empty for silence - never point it at a borrowed event to hear something.")]
+        [SerializeField] FMODUnity.EventReference scaleDustBiteEvent;
+
+        [Tooltip("DUST REACH (Space) - FMOD event when the dust TENDS the pilot's own mass (a " +
+                 "prism grows, turns dangerous, shields or super-shields). At the prism. Leave " +
+                 "empty for silence.")]
+        [SerializeField] FMODUnity.EventReference dustTendEvent;
+
+        [Tooltip("DUST REACH (Space) - FMOD event when the dust BLIGHTS opposing mass (a prism is " +
+                 "destroyed, shrunk or stolen). At the prism. Leave empty for silence.")]
+        [SerializeField] FMODUnity.EventReference dustBlightEvent;
+
+        [Tooltip("Minimum seconds between two Dust Reach one-shots of the SAME kind. The capsule " +
+                 "sweeps a whole wall of prisms in a few frames, and one voice per prism would be " +
+                 "a hundred one-shots stacked on one frame.")]
+        [SerializeField, Min(0f)] float dustReachSoundInterval = 0.08f;
+
         // The palette. Injected: the dust skimmer is a child of the vessel prefab, and vessels are
         // GameObjectInjector.InjectRecursive'd on every spawn path.
         [Inject] GameDataSO _gameData;
@@ -77,6 +98,8 @@ namespace CosmicShore.Gameplay
         bool _active;
         bool _built;
         static bool s_warnedNoMaterial;
+        float _nextTendSoundTime;
+        float _nextBlightSoundTime;
 
         /// <summary>True while the dust is live.</summary>
         public bool IsActive => _active;
@@ -120,6 +143,37 @@ namespace CosmicShore.Gameplay
                 // lives and fade out — continuity of existence.
                 _particles.Stop(true, ParticleSystemStopBehavior.StopEmitting);
             }
+        }
+
+        // ── audio — called by the dust's effect SOs, which find this component on the skimmer ──
+
+        /// <summary>Scale Dust bit an opposing pilot. Empty slot = silence.</summary>
+        public void PlayScaleDustBite(Vector3 position) => Play(scaleDustBiteEvent, position);
+
+        /// <summary>Dust Reach touched a prism: <paramref name="ownMass"/> = tended (own domain),
+        /// otherwise blighted. Throttled per kind; empty slot = silence.</summary>
+        public void PlayDustReach(bool ownMass, Vector3 position)
+        {
+            float now = Time.time;
+            if (ownMass)
+            {
+                if (dustTendEvent.IsNull || now < _nextTendSoundTime) return;
+                _nextTendSoundTime = now + dustReachSoundInterval;
+                Play(dustTendEvent, position);
+            }
+            else
+            {
+                if (dustBlightEvent.IsNull || now < _nextBlightSoundTime) return;
+                _nextBlightSoundTime = now + dustReachSoundInterval;
+                Play(dustBlightEvent, position);
+            }
+        }
+
+        static void Play(FMODUnity.EventReference reference, Vector3 position)
+        {
+            if (reference.IsNull) return;
+            var audio = CosmicShore.Core.AudioSystem.Instance;
+            if (audio) audio.PlaySFXEvent(reference, position);
         }
 
         void ApplyColliderState(bool active)

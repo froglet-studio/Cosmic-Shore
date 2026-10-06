@@ -125,6 +125,12 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < elements.Length; i++)
                 rs.ApplyElementalEffect(elements[i], magnitude, debuffDuration,
                                         ElementalDebuffSources.VesselContact);
+
+            // The bite's voice. Its slot lives on the Butterfly's dust capsule
+            // (ButterflyDustField), beside the SkimmerImpactor doing the sweeping; any other
+            // adopter of this effect has no such component and stays silent here.
+            if (impactee.TryGetComponent(out ButterflyDustField dust))
+                dust.PlayScaleDustBite(impactor.transform.position);
         }
 
         /// <summary>The element-scaled bite multiplier, at the pilot's replicated level.</summary>

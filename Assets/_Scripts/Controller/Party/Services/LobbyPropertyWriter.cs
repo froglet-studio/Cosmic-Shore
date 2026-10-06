@@ -56,7 +56,7 @@ namespace CosmicShore.Gameplay
         //
         // Exposed as public fields so HostConnectionService can acquire/release
         // them directly in RefreshAsync and ClearOutgoingInviteIfPresentAsync
-        // (where the lock-or-no-lock decision depends on _insideRefreshCycle).
+        // (where the lock-or-no-lock decision is the caller's explicit callerHoldsLobbyMutex argument).
         // ─────────────────────────────────────────────────────────────────────
 
         /// <summary>

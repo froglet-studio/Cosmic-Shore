@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The port's "player build": the REAL game (CosmicShore.Live — Assets/_Scripts compiled
+       against the port engine) booted from the project's own scenes and content. It references
+       no hand-ported gameplay (CosmicShore.Game / .Data), so every behaviour on screen is the
+       shipped C# running unmodified. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>disable</Nullable>
+    <AssemblyName>CosmicShore</AssemblyName>
+    <!-- A game wants short pauses, not throughput: workstation GC with background (concurrent)
+         gen2 collections. These are .NET's defaults; stated so nobody flips to server GC, whose
+         larger gen0 budgets mean fewer but longer pauses. The session report measures the result
+         (memory.steadyGcPauseMsPerFrame); architecture review G16. -->
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../CosmicShore.Engine/CosmicShore.Engine.csproj" />
+    <ProjectReference Include="../CosmicShore.Compat/CosmicShore.Compat.csproj" />
+    <ProjectReference Include="../CosmicShore.Live/CosmicShore.Live.csproj" />
+    <ProjectReference Include="../CosmicShore.Content/CosmicShore.Content.csproj" />
+    <ProjectReference Include="../CosmicShore.Render/CosmicShore.Render.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Silk.NET.Windowing" Version="2.22.0" />
+    <PackageReference Include="Silk.NET.Input" Version="2.22.0" />
+    <PackageReference Include="Silk.NET.OpenGL" Version="2.22.0" />
+    <PackageReference Include="Silk.NET.Maths" Version="2.22.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Shared screenshot encoder (no engine dependency). -->
+    <Compile Include="../CosmicShore.Client/MiniPng.cs" Link="MiniPng.cs" />
+  </ItemGroup>
+
+  <!-- Same native-copy workaround as CosmicShore.Client (Silk's loader does not probe
+       runtimes/<rid>/native reliably). -->
+  <Target Name="CopySilkNativesBesideApp" AfterTargets="Build">
+    <ItemGroup>
+      <_SilkNatives Include="$(OutputPath)runtimes/$(NETCoreSdkRuntimeIdentifier)/native/*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_SilkNatives)" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true" />
+  </Target>
+</Project>

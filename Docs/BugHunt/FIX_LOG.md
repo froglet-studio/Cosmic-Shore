@@ -8,6 +8,197 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ---
 
+## BH-2.3 — invite-clear could skip the lobby mutex and race an invite send
+
+- **Date:** fixed 2026-10-05; merged 2026-10-05 at Yash's call with the retest deferred to the handoff revisit list. Repro skipped.
+- **Symptom (risk):** an invite that never arrives, or one that fires twice, when a clear and a
+  send overlap.
+- **Root cause:** `HandleInviteClearedAsync` decided whether to take `_lobbyMutex` from a shared
+  `_insideRefreshCycle` flag. That flag only meant "some refresh or reconcile is running", not
+  "this caller holds the lock". So user-cancel, the party-leave callback and the fire-and-forget
+  clears started inside a refresh (which keep running after the refresh releases the mutex) wrote the
+  invite property without the lock whenever a refresh was in flight.
+- **Fix:** `_insideRefreshCycle` is removed. `ClearOutgoingInviteIfPresentAsync` and
+  `HandleInviteClearedAsync` take `callerHoldsLobbyMutex` (default false). Only the awaited call
+  inside `RefreshPartyMembersAsync`, which always runs under the mutex, passes true. All other
+  callers (Update expiry, user cancel, presence-leave, presence-join, party-leave) wait for the
+  mutex. The fire-and-forget ones are not awaited by the refresh, so they cannot deadlock it.
+- **Audit:** the six callers were checked; the invite send path (`SendInviteAsync`) writes under
+  its own mutex hold and does not call the clear.
+- **Verification:** all gate scripts pass; not run in Unity (two players needed). Retest is on
+  the handoff playtest list.
+- **PR/commit:** pending.
+
+---
+
+## BH-2.2 — presence lobby was never rejoined after a failed reconnect
+
+- **Date:** fixed 2026-10-05; merged 2026-10-05 at Yash's call with the retest deferred to the handoff revisit list. Repro skipped.
+- **Symptom:** after a network blip the online list stays empty and invites stop arriving until
+  the app is restarted.
+- **Root cause:** after three consecutive refresh errors `RefreshAsync` calls `ForceReset()` and
+  runs `JoinOrCreateAsync` once. If that attempt fails (`CreateAsync` swallows its own errors and
+  leaves the lobby null), `Update` is gated on `IsInPresenceLobby` (lobby not null), so nothing ever
+  ran the join again. A throw from `JoinOrCreateAsync` there was also unobserved.
+- **Fix:** `HostConnectionService` sets `_presenceRejoinPending` when the rejoin leaves no lobby
+  (or throws). `Update` then calls `TryPresenceRejoin`, which retries `JoinOrCreateAsync` with
+  exponential backoff (3s doubling to 60s). It stops when the lobby is back, the service is
+  disconnected, the session is offline, or the normal `EnsureInitializedAsync` path takes over.
+  `Docs/PresenceSystem/ARCHITECTURE.md` documents it under ForceReset.
+- **Verification:** all gate scripts pass; not run in Unity (needs two players and a network cut).
+  Retest is on the handoff playtest list. The identity republish after rejoin still comes from
+  `LivePropertySource` as before.
+- **PR/commit:** pending.
+
+---
+
+## BH-2.1 — Cloud Save could not tell "load failed" from "no data yet"
+
+- **Date:** fixed 2026-10-05; merged 2026-10-05 at Yash's call with the retest deferred to the handoff revisit list. Repro skipped.
+- **Symptom (risk):** on a flaky connection a player's progression, unlocks or profile could be
+  replaced by defaults.
+- **Root cause:** `UGSCloudSaveProvider.LoadAsync` returned `null` both for a missing key and
+  for any error (offline, auth, network, unreadable value). `CloudDataRepository` treated both as
+  "new player", kept its fresh default object and uploaded it on the next write, over the
+  real record.
+- **Fix:**
+  - `ICloudSaveProvider.TryLoadAsync` returns `CloudLoadResult<T>` with a `CloudLoadStatus` of
+    `Loaded`, `Missing` or `Failed`. `LoadAsync` stays as a wrapper. A stored value that cannot be
+    read is `Failed`, not `Missing`.
+  - `CloudDataRepository.LoadAsync` records a failed load. It still falls back to the local
+    snapshot so the player can play. `SaveAsync` still writes the local snapshot, but while the
+    load is marked failed it does not upload: it retries the load first. `Missing` clears the flag
+    and allows the upload, `Loaded` adopts the cloud record (cloud wins, as on a normal load; the
+    pending local edits are dropped and a warning is logged), and `Failed` leaves the data dirty to
+    retry later. `ResetAsync` clears the flag because a deliberate wipe is meant to overwrite.
+- **Trade-off:** edits made while the load was failing are dropped if the real record then loads.
+  That matches what already happened on the next launch, and is safer than overwriting the record.
+- **Verification:** all gate scripts pass; not run in Unity. No test double implements
+  `ICloudSaveProvider`, so no tests needed updating. Retest is on the handoff playtest list.
+- **PR/commit:** pending.
+
+---
+
+## BH-1.12 — a departed player's vessel handed to the AI was not marked AI
+
+- **Date:** fixed 2026-10-05; merged 2026-10-05 at Yash's call with the retest deferred to the handoff revisit list. Repro skipped.
+- **Symptom:** after a client leaves mid-match the ship flies on under the AI, but the rest of the
+  game still treats that Player as a human (ready gates, round reset, HUD checks).
+- **Root cause:** `ServerPlayerVesselInitializer.ConvertPlayerToAI` flips the networked
+  `NetIsAI` only. `Player.IsInitializedAsAI`, the flag everything reads, is a local copy that was
+  refreshed only when the pair was first initialised, so it stayed `false` on the server and on
+  every client. A spawned backfill bot has it set at spawn, which is why bots were fine.
+- **Fix:** `Player` subscribes to `NetIsAI.OnValueChanged` (subscribed in `OnNetworkSpawn`,
+  unsubscribed in `OnNetworkDespawn`) and updates `IsInitializedAsAI` and the object name.
+  The player is already in `_processedPlayers` from when it was a human, so no change was needed
+  there.
+- **Verification:** all gate scripts pass; not run in Unity (needs two devices). Retest is on the
+  handoff playtest list.
+- **PR/commit:** pending.
+
+---
+
+## BH-1.11 — non-ASCII characters in UI strings rendered as empty boxes
+
+- **Date:** fixed 2026-10-05; merged 2026-10-05 at Yash's call with the retest deferred to the handoff revisit list. Repro skipped.
+- **Symptom:** arrows, a cross, a middle dot, a times sign and shape bullets in UI text show as
+  empty boxes. Nothing in the Console.
+- **Root cause:** the only UI font (`ALDRICH-REGULAR SDF`) carries 97 glyphs (ASCII, nbsp and an
+  ellipsis) with no fallback table. See `Docs/claude/ANTI_PATTERNS.md`.
+- **Fix:** ASCII replacements, all in strings that reach a `TMP_Text`:
+  - `SpectatorOverlay`: `<` and `>` buttons, `X  LEAVE`, and the hint line `< > / Q E ...`.
+  - `ToyConfigureModal`: `<  Back`. `ToyVariantCard`: branch marker `>`.
+  - `DogFightScoringRuleSO`: `N pts - B rounds, M rockets` (was `N pts · B×● M×◆`, the shapes
+    had no meaning without a legend).
+  - `BroadsideScoringRuleSO` and `UndertowScoringRuleSO`: the `·` separator became `, `.
+- **Verification:** all gate scripts pass; no test asserted the old strings; not run in Unity.
+  Retest is on the handoff playtest list. Alternative if the symbols are wanted back: add the
+  glyphs to the font asset instead.
+- **PR/commit:** pending.
+
+---
+
+## BH-1.9 — culture-dependent timestamps in analytics and file names
+
+- **Date:** fixed 2026-10-05; merged 2026-10-05 at Yash's call with the retest deferred to the handoff revisit list. Repro skipped.
+- **Symptom:** on a device whose culture uses a non-Gregorian calendar or non-Latin digits (ar-SA,
+  th-TH, fa-IR) the PostHog event timestamp and generated file names carried the wrong year or
+  digits. Nothing in the Console.
+- **Root cause:** `DateTime.ToString("yyyy-MM-dd...")` and `$"{dt:format}"` with no culture use the
+  current culture.
+- **Fix:** `CultureInfo.InvariantCulture` on all four sites the handoff listed:
+  `PostHogAnalyticsSink` (event timestamp), `AnalyticsServiceFacade` (`timestamp_utc_iso`),
+  `ScreenshotDirectorConfigSO.BuildFileName` and `DesktopPlatformServices.TimestampedName`.
+- **Not changed (dev tools only):** a similar `DateTime...ToString` stamp exists in
+  `PrismExplosionBenchmark`, `LoadInsightReport`, `DiagnosticsHUD`, `ProfilerCsvLogger` and
+  `LogControlWindow` (benchmark/diagnostic file names and display text). They are outside the
+  handoff list; sweep them if a diagnostic ever needs to be machine-parsed.
+- **Verification:** all gate scripts pass; not run in Unity. Retest is on the handoff playtest list.
+- **PR/commit:** pending.
+
+---
+
+## BH-1.7 — combat-hit latch pruned every entry by one window
+
+- **Date:** fixed 2026-10-05; merged 2026-10-05 at Yash's call with the retest and Broadside balance re-check deferred to the handoff revisit list. Repro skipped.
+- **Symptom:** a hit with a long per-weapon window (Rhino sword 1.4 s) could pay twice, because its
+  latch entry was dropped before its own window ran out.
+- **Root cause:** windows are authored per weapon asset, but `VesselCombatHitLatch.Prune` judged
+  every entry against the cooldown of whichever call happened to trigger the periodic sweep (every
+  128 admissions). A short-window call (Urchin spike 0.12 s) therefore pruned long-window entries
+  early. The handoff also said entries could be KEPT past their window, but admission compares
+  against the calling asset's own cooldown, so a stale entry only costs memory; only the early-drop
+  half was a real gameplay bug.
+- **Fix:** `Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Helpers/VesselCombatHitLatch.cs`
+  stores the admitting window on each `Entry` and `Prune(now)` drops an entry only when
+  `now - entry.Time >= entry.Window`. `TryAdmit` behaviour is unchanged.
+- **Verification:** all gate scripts pass; not run in Unity. Retest and the Broadside balance
+  re-check are on the handoff playtest list.
+- **PR/commit:** pending.
+
+---
+
+## BH-1.6 — online duel rematch started with the last game's round/turn counters
+
+- **Date:** fixed 2026-10-05; merged 2026-10-05 at Yash's call with the two-peer retest deferred to the handoff revisit list. Repro skipped.
+- **Symptom:** Cellular Duel, finish a game, Play Again. The rematch ends early and/or swaps the
+  vessels on its very first round.
+- **Root cause:** `MultiplayerMiniGameControllerBase.ResetForReplay_ClientRpc` (the in-place replay;
+  Cellular Duel is the one mode that does not reload the scene) reset scores and players but never
+  `GameDataSO.RoundsPlayed` / `TurnsTakenThisRound`. The server's `SetupNewRound` zeroes the turn
+  counter, but `RoundsPlayed` stayed at the old game's value on every peer, so
+  `RoundsPlayed >= numberOfRounds` held almost at once and
+  `OnlineDuelForTheCellController.SetupNewRound` (`allowSwap = RoundsPlayed > 0`) swapped on round one.
+- **Fix:** `Assets/_Scripts/Controller/Arcade/MultiplayerMiniGameControllerBase.cs` zeroes both
+  counters in `ResetForReplay_ClientRpc`, so it runs on every peer. Deliberately NOT
+  `GameDataSO.ResetRuntimeDataForReplay`, which also clears `GameConfigSynced` and the spawn poses
+  that a live session must keep.
+- **Verification:** all gate scripts pass; not run in Unity. Retest steps (two peers) are on the
+  handoff playtest list.
+- **PR/commit:** pending.
+
+---
+
+## BH-1.5 — friends init latched `_initialized` even when the service failed to start
+
+- **Date:** fixed 2026-10-02; awaiting Yash's retest on `Bug_Hunt`. Repro skipped.
+- **Symptom:** if Friends initialization fails once (UGS slow or unreachable at sign-in), friends and
+  presence stay dead for the rest of the session. Only a warning from the facade is logged.
+- **Root cause:** `FriendsServiceFacade.InitializeAsync` catches its own exceptions and returns, so
+  `FriendsInitializer.InitializeFriendsAsync` could not tell failure from success and set
+  `_initialized = true`. The guard in that method and in `HandleSignedInEvent` then refused every
+  retry.
+- **Fix:** `Assets/_Scripts/Controller/Party/FriendsInitializer.cs` now sets
+  `_initialized = friendsService.IsInitialized` and returns early (no presence write) when the
+  service is not up, so the next sign-in event can retry. The facade already resets its own
+  in-progress flag on failure, so a retry is a real second attempt.
+- **Verification:** all gate scripts pass; not run in Unity. Retest steps are on the handoff
+  playtest list. Same lesson as BH-1.4 (PLAYBOOK §7): a call that swallows failures is not proof of
+  success; check the state after it.
+- **PR/commit:** pending.
+
+---
+
 ## CAM-1 — Sparrow freestyle: camera stops following after the turret stance (partial)
 
 - **Date:** 2026-10-02. **Status: not reproduced; root cause of the stance trigger NOT found.**

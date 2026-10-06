@@ -1605,12 +1605,12 @@ Run this in order:
   to forget.
 
 - **No toasts.** No `GameToastConfigSO`, so no "STATION 12/14" or lead-change announcement. Rampage,
-  Dog Fight, The Bends, Salvo and Switchback all ship this way.
+  Salvo and Switchback also ship this way.
 
-- **No mode preview.** No `ModePreview_Breakwater.asset`, so the arcade card falls back to its
-  `CardBackground` and hides Test Flight — the same state Salvo and Switchback ship in. Worth
-  authoring here, since the arena is the thing worth looking at; note the preview's satellite arena
-  has no controller to roll a course, so it would need a canned one.
+- **The mode preview has no stations in it.** `ModePreview_Breakwater.asset` exists (authored by
+  `Tools/Build/author_mode_previews.py`), but the fourteen stations are controller-built and the
+  preview's satellite arena has no controller to roll a course, so it shows the cell's own four
+  configs and the Sparrow's guns and skyburst only. Showing the stations would need a canned course.
 
 - **Adding a card is adding a ROW.** Menu_Main's arcade grid is authored at 3 × 4 and
   `EnsureGridCapacity` / `FitScrollContent` / `ReportUnreachableCards` now handle the growth

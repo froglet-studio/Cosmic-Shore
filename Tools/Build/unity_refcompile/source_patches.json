@@ -1,0 +1,8 @@
+[
+  {
+    "file": "graphics/Packages/com.unity.render-pipelines.core/Runtime/GPUDriven/InstanceCullingBatcherBurst.cs",
+    "old": "packedMaterialData.hasTessellation",
+    "new": "false /* refcompile: GPUDrivenPackedMaterialData.hasTessellation is newer than the 6000.0.75 engine references */",
+    "why": "The Graphics 6000.0/staging head uses an engine member added after 6000.0.75; a body-local edit, no API change."
+  }
+]
