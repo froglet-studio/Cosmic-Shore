@@ -123,6 +123,10 @@ namespace CosmicShore.ScriptableObjects
         /// wiped out or starved (pilots win) or crosses the exit membrane (they lose).</summary>
         public const int DefaultTandavaBreakPercent = 35;
 
+        /// <summary>Tandava's ring of fire used when <see cref="tandavaFlamesToBreak"/> is 0: the pilots win when they
+        /// put out this many of the twelve flames round the Lord of the Dance before its drum stops (TANDAVA.md §3.6).</summary>
+        public const int DefaultTandavaFlamesToBreak = 9;
+
         /// <summary>Switchback course length used when <see cref="switchbackGateTarget"/> is 0
         /// (auto/default). It is BOTH the end-game target and the number of gates the course is
         /// built with - SwitchbackController reads this same getter - so the two cannot drift.</summary>
@@ -341,6 +345,10 @@ namespace CosmicShore.ScriptableObjects
                  "0 = default (35).")]
         [Range(0, 100)] public int tandavaBreakPercent = 35;
 
+        [Tooltip("Tandava: flames of the ring of fire (twelve round the Lord of the Dance) the pilots must put out before " +
+                 "its drum stops to break the dance and win. Clamped to the ring's flame count. 0 = default (9).")]
+        [Range(0, 12)] public int tandavaFlamesToBreak = 9;
+
 
         [Header("Build baseline - what a shipping build uses. Set via the tool's \"Set Build Values\" button.")]
         [Min(0)] public int hexRaceCrystalCountBuild = 0;
@@ -374,6 +382,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int siroccoPrismTargetBuild = 600;
         [Min(0)] public int broadsidePointsPerPilotBuild = 100;
         [Range(0, 100)] public int tandavaBreakPercentBuild = 35;
+        [Range(0, 12)] public int tandavaFlamesToBreakBuild = 9;
 
         [Tooltip("When on, a build first copies the Build baseline onto the Live counts, so test values are never shipped.")]
         public bool autoRestoreBuildValuesBeforeBuild = true;
@@ -664,6 +673,12 @@ namespace CosmicShore.ScriptableObjects
         public int GetTandavaBreakPercent() =>
             tandavaBreakPercent > 0 ? tandavaBreakPercent : DefaultTandavaBreakPercent;
 
+        /// <summary>Flames of Tandava's ring of fire the pilots must put out to break the dance: the configured value when
+        /// &gt; 0, otherwise <see cref="DefaultTandavaFlamesToBreak"/>. Read server-side by TandavaController, which clamps
+        /// it to the ring it built.</summary>
+        public int GetTandavaFlamesToBreak() =>
+            tandavaFlamesToBreak > 0 ? tandavaFlamesToBreak : DefaultTandavaFlamesToBreak;
+
         /// <summary>
         /// The AUTHORED turn target for a mode - what a match of it races to. Returns false for a
         /// mode whose target is auto-calculated from its track (SkimRace with a 0 count), or that
@@ -759,7 +774,8 @@ namespace CosmicShore.ScriptableObjects
             tapestryRoundSeconds == tapestryRoundSecondsBuild &&
             siroccoPrismTarget == siroccoPrismTargetBuild &&
             broadsidePointsPerPilot == broadsidePointsPerPilotBuild &&
-            tandavaBreakPercent == tandavaBreakPercentBuild;
+            tandavaBreakPercent == tandavaBreakPercentBuild &&
+            tandavaFlamesToBreak == tandavaFlamesToBreakBuild;
 
         /// <summary>Copy the Build baseline onto the Live counts (build → live) - used by the build auto-restore.</summary>
         public void ApplyBuildValues()
@@ -794,6 +810,7 @@ namespace CosmicShore.ScriptableObjects
             siroccoPrismTarget = siroccoPrismTargetBuild;
             broadsidePointsPerPilot = broadsidePointsPerPilotBuild;
             tandavaBreakPercent = tandavaBreakPercentBuild;
+            tandavaFlamesToBreak = tandavaFlamesToBreakBuild;
         }
 
         /// <summary>Snapshot the current Live counts as the Build baseline (live → build) - used by "Set Build Values".</summary>
@@ -829,6 +846,7 @@ namespace CosmicShore.ScriptableObjects
             siroccoPrismTargetBuild = siroccoPrismTarget;
             broadsidePointsPerPilotBuild = broadsidePointsPerPilot;
             tandavaBreakPercentBuild = tandavaBreakPercent;
+            tandavaFlamesToBreakBuild = tandavaFlamesToBreak;
         }
     }
 }

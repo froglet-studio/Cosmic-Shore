@@ -903,7 +903,8 @@ def recipe(stem, card_path, pal, ends):
         # FloraConfigurationSO.PlantingPens), each plant a Borromean glyph; the swarm is the Great Serpent's OWN body
         # plan (frame 0 of SwarmPlan_tandava_serpent_l.json), unit for unit at x3 glyph scale - the real body is
         # ~140 u, sub-pixel at card size - in the cell's hostile colour, mid-course and heading for the exit. The
-        # membrane wears the Great Serpent's palette: the cell that changes with the swarm is the mode's signature.
+        # membrane wears the cell's OWN colours: Tandava's cell changes only for the dance (TANDAVA.md §3.3), and a
+        # serpent on the route is the cell as a pilot sees it nearly all match.
         tier = "MODEL"
         rng = Rng(stable_seed(s))
         rows = []
@@ -937,13 +938,6 @@ def recipe(stem, card_path, pal, ends):
                               [2 * x * k_world * 1.8 for x in h], RUBY, SHIELDED if plan["elem"][u] == 0 else PLAIN))
         layers.append({"kind": "prisms", "rows": rows})
         nucleus()
-        great = re.search(r"DisplayName: Great Serpent\n(?:    .*\n)*?      MembraneBright: \{r: ([\d.]+), g: ([\d.]+), b: ([\d.]+)",
-                          read(next((ROOT / "Assets/_SO_Assets").rglob("TandavaSettings.asset"))))
-        tint = [float(c) for c in great.groups()]
-        look["membrane"] = [c * 0.7 for c in tint]
-        # the backdrop takes the form's colour too (the cell's motes and membrane ARE the scene's ambient light)
-        look["Nebula"] = [c * 0.028 for c in tint]
-        look["SkyBottom"] = [c * 0.008 for c in tint]
         cam["target"] = [-700.0, 20.0, 20.0]
         cam["radius"] = 470.0
         stage.update({"centre": swarm_at, "radius": 260.0,

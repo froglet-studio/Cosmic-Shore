@@ -341,6 +341,10 @@ namespace CosmicShore.Gameplay
             if (signal == ToySwitchSignal.Next)
                 return PrismShaderMaterial(CtaLime(theme),
                                            theme && theme.BaseMaterialSet ? theme.BaseMaterialSet.BlockMaterial : null);
+            // FLAME likewise: the danger red, minted on the prism shader once and cached by colour.
+            if (signal == ToySwitchSignal.Flame)
+                return PrismShaderMaterial(FireRed(theme),
+                                           theme && theme.BaseMaterialSet ? theme.BaseMaterialSet.BlockMaterial : null);
 
             var painted = SwitchDomain(signal, domain);
             // Unity's null is not C#'s, so this is an explicit truthiness test rather than `??`.
@@ -354,9 +358,30 @@ namespace CosmicShore.Gameplay
 
         /// <summary>The colour a switch of this signal reads as (its label, its hub, its ring tint fallback).</summary>
         public static Color SwitchColor(ThemeManagerDataContainerSO theme, ToySwitchSignal signal, Domains domain)
-            => signal == ToySwitchSignal.Next
-                ? CtaLime(theme)
-                : DomainAccentColor(theme, SwitchDomain(signal, domain));
+            => signal switch
+            {
+                ToySwitchSignal.Next => CtaLime(theme),
+                ToySwitchSignal.Flame => FireRed(theme),
+                _ => DomainAccentColor(theme, SwitchDomain(signal, domain)),
+            };
+
+        /// <summary>
+        /// A FLAME switch's red: the platform's danger rim at signal strength
+        /// (<c>SO_ColorSet.GetDangerSignalColor</c>), so a fire reads as the same family as every danger
+        /// prism. Falls back to a fixed red for no theme and for a palette that authors no danger rim
+        /// (both inactive palettes author it (0,0,0,0), which the accessor returns as alpha 0) - the
+        /// fallback is the shipped OriginalColorSetSO danger normalised, so it matches what it stands
+        /// in for.
+        /// </summary>
+        public static Color FireRed(ThemeManagerDataContainerSO theme)
+        {
+            if (theme && theme.ColorSet)
+            {
+                var danger = theme.ColorSet.GetDangerSignalColor();
+                if (danger.a > 0f) return danger;
+            }
+            return new Color(1f, 0.004f, 0.005f);
+        }
 
         /// <summary>
         /// The free-pickup LIME - the platform's "this one is available to you" colour, taken from

@@ -15,10 +15,11 @@ MonoBehaviour:
   Mode: 62
   IsMultiplayer: 1
   DisplayName: Tandava
-  Description: A tadpole swarm races down a long cell for the exit, eating at every oasis. Each
-    time it has eaten enough it takes a new form - a serpent that grows, then a horned bull - and
-    the whole cell changes colour with it. Cull it, burn the oasis ahead, and stop it before the
-    membrane. Everyone flies together.
+  Description: A tadpole swarm eats its way down a long cell. Each time it has eaten enough it
+    takes a new form - a serpent that grows, then a flying horned bull. The exit is sealed to all
+    but its last form, so the Bull rises into the Lord of the Dance inside a ring of fire, and the
+    whole cell turns to fire with it. Put out the flames before the drum stops, or stop the Winged
+    Lion before the membrane. Everyone flies together.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: a797820482af42d4a6eb9a4b7426539b, type: 3}
@@ -37,9 +38,10 @@ MonoBehaviour:
   ArenaRules: 1
   Tips:
   - Burn the oasis ahead before it gets there. A swarm that cannot eat cannot change.
-  - It changes form only when its body is full and its stomach holds the surplus. Culling sets both back.
-  - The final form breaks when you cut it below a third of its body.
-  - The cell changes colour the moment the swarm changes form. Watch the membrane.
+  - The exit is sealed to every form but the last. Burn all its food and it starves at the membrane.
+  - At the dance, put out nine of the twelve flames before the drum stops. Fly round the ring - the attendant packs guard the flames they pass.
+  - The Winged Lion is the only form that can leave. Cut it below a third of its body.
+  - The cell changes colour only when the Bull rises into the Lord of the Dance. When the membrane turns to fire, the dance has begun.
   ViewUserAction: 0
   PlayUserAction: 0
   StartingElements: []

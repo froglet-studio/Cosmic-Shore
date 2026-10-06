@@ -1120,6 +1120,7 @@ and is gone: that toy is a switch now.)*
 | `Neutral` | `Domains.Blue`'s plain prism material — the platform's existing "no team / neutral entity" sentinel | *thread me and something happens* | every toy root, every matrix station, the painting's milestones and its SHARE/REPAINT gates, the Wanderway return station |
 | `Domain` | that domain's plain prism material | *threading me makes your trail this domain* | the Domain Changer's slots; the painting's **stroke-start gates** (crossing one calls `RequestStrokeDomain`, so it really does hand you one) |
 | `Next` | the free-pickup LIME (`SO_ColorSet.GetCtaSignalColor`) on the prism shader | *this is the switch YOU are meant to thread next* | Switchback's gates — the local pilot's next one only |
+| `Flame` | the DANGER red (`SO_ColorSet.GetDangerSignalColor`, the rim every danger prism wears) on the prism shader | *this is a fire: thread it to put it out* | Tandava's ring of fire (`TandavaFlame`) — a guarded flame does not change colour, its drawn ring gutters smaller while its crossing test is off (`Assets/_Scripts/Controller/Arcade/TANDAVA.md` §3.6) |
 
 **`Next` is the first PER-VIEWER signal, and that is what makes it legal.** Every other signal
 describes the switch itself and reads the same on every screen; this one describes the

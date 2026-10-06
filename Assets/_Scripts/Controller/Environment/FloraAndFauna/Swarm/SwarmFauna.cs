@@ -196,6 +196,33 @@ namespace CosmicShore.Gameplay
         }
         /// <summary>The body's centre in world space, as of the last published tick.</summary>
         public Vector3 AnchorWorld => _job != null ? Uni(_job.Anchor) : transform.position;
+        /// <summary>The body's axes in world space as of the last published tick: its heading, its up, and its side
+        /// (forward x up). A scripted form's plan is laid out in exactly these (plan x, y, z).</summary>
+        public Vector3 BodyForward => _job != null ? Uni(_job.BX) : transform.forward;
+        public Vector3 BodyUp => _job != null ? Uni(_job.BY) : transform.up;
+        public Vector3 BodySide => _job != null ? Uni(_job.BZ) : transform.right;
+
+        /// <summary>
+        /// Live members of one research element (0 Charge .. 3 Time; -1 any) within <paramref name="radius"/> of a world
+        /// point, at their published pose. A member mid-molt counts as the element it is turning into once it is half way
+        /// (the same reading its heart's look takes). Tandava asks it of each flame's guard post - the dance plan's
+        /// attendant packs are its Time units. O(members): a few calls a second, never one per member.
+        /// </summary>
+        public int CountMembersNear(Vector3 world, float radius, int element = -1)
+        {
+            if (_job == null) return 0;
+            float r2 = radius * radius;
+            int n = 0;
+            for (int i = 0; i < _cap; i++)
+            {
+                ref var s = ref _job.Instances[i];
+                if (!s.Alive || _gone[i]) continue;
+                if (element >= 0 && (s.CurMolt >= 0.5f && s.CurMolt < 1f ? s.HeartTo : s.HeartFrom) != element) continue;
+                if ((Uni(_job.PoseAt(i, _alpha)) - world).sqrMagnitude <= r2) n++;
+            }
+            return n;
+        }
+
         /// <summary>Banked eaten volume of one research element (0 Charge .. 3 Time).</summary>
         public float StomachVolume(int element) => _job != null && element >= 0 && element < 4 ? _job.Stomach[element] : 0f;
         /// <summary>The stomach's fill, 0..1.</summary>

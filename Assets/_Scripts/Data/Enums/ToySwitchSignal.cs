@@ -56,5 +56,22 @@ namespace CosmicShore.Data
         /// domain's colour and never can be.</para>
         /// </summary>
         Next = 2,
+
+        /// <summary>
+        /// <i>This switch is a FIRE: thread it to put it out.</i> Painted in the platform's DANGER
+        /// red (<c>SO_ColorSet.GetDangerSignalColor</c>, the rim every danger prism wears) on the
+        /// prism shader - a fire is the one switch whose ring is itself the hazard to the thing it
+        /// belongs to.
+        ///
+        /// <para>Describes the switch, not the viewer, so it reads the same on every screen. Its one
+        /// wearer is Tandava's ring of fire (TandavaFlame): twelve flames round the Lord of the Dance
+        /// that the pilots put out by threading them. A flame its attendants are guarding does not
+        /// change colour - its drawn ring gutters SMALLER while the crossing test is off, so the ring
+        /// never advertises a mouth that is not open (the switch law, read in the strict direction).</para>
+        ///
+        /// <para>No domain claim: <c>ToyFactory.SwitchDomain</c> keeps it on <c>Domains.Blue</c>, and
+        /// the reservation is untouched - the danger red is not a playable domain's colour.</para>
+        /// </summary>
+        Flame = 3,
     }
 }

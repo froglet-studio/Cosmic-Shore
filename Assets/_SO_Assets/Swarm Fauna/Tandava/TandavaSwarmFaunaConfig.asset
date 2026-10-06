@@ -24,11 +24,15 @@ MonoBehaviour:
   - {fileID: 4900000, guid: 4a7e5791dc5247e4be99da27c174defa, type: 3}
   - {fileID: 4900000, guid: 53adf7bd6c33b03051ad74562b3c2af7, type: 3}
   - {fileID: 4900000, guid: 5d46092a03bf4c0b852a49887a29379c, type: 3}
+  - {fileID: 4900000, guid: 8cc15d08cc7f4536484d40e01e0511e8, type: 3}
+  - {fileID: 4900000, guid: 28349b6ae3a205be7373371e69aefc85, type: 3}
   ScriptedPlanPeriods:
   - 6
   - 6
   - 6
   - 6
+  - 40
+  - 12
   TadpolePrefab: {fileID: 5945480239701989318, guid: 66504f098e300c8a60c29e3d931eaa0a, type: 3}
   UnitScale: 2
   TickHz: 10
@@ -59,8 +63,8 @@ MonoBehaviour:
   LayMax: 16
   MaxSpawnsPerFrame: 24
   KillLayHoldSeconds: 2
-  StarvationSeconds: 90
-  ShedIntervalSeconds: 1
+  StarvationSeconds: 30
+  ShedIntervalSeconds: 0.25
   ExtinctLingerSeconds: 10
   Cruise: 2.5
   TurnPerStep: 0.03
@@ -98,7 +102,7 @@ MonoBehaviour:
   GridMoltRate: 0.04
   GridMoltSteps: 10
   GridLayCap: 1
-  SortWellsPerType: 12
+  SortWellsPerType: 24
   SortUnitsPerWell: 4
   SortWellWidth: 0.89
   SortWellGain: 0.412
@@ -121,7 +125,7 @@ MonoBehaviour:
   SortMoltRate: 0.03
   SortMoltSteps: 10
   SortFramePeriod: {x: 8, y: 8, z: 8, w: 16}
-  SortWellDead: 0.7
+  SortWellDead: 0
   SortWellDeadTime: 0
   SortWander: 0.05
   SortWanderTau: 12

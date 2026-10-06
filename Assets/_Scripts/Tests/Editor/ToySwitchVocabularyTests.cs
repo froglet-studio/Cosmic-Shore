@@ -120,6 +120,24 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void EveryUnreservedVerbReadsAsItself()
+        {
+            // The unreserved verbs must not be mistakable for EACH OTHER either: a fire that reads
+            // as "thread me next" would send a pilot into the one ring the dance is guarding.
+            var verbs = NonDomainSignals.ToList();
+            for (int a = 0; a < verbs.Count; a++)
+                for (int b = a + 1; b < verbs.Count; b++)
+                {
+                    Color ca = ToyFactory.SwitchColor(null, verbs[a], Domains.Blue);
+                    Color cb = ToyFactory.SwitchColor(null, verbs[b], Domains.Blue);
+                    float delta = Mathf.Abs(ca.r - cb.r) + Mathf.Abs(ca.g - cb.g) + Mathf.Abs(ca.b - cb.b);
+                    Assert.Greater(delta, 0.5f,
+                        $"{verbs[a]} and {verbs[b]} switches are too close in colour ({delta:F2} summed " +
+                        "channel distance) - the signal is the only thing that says what a ring does.");
+                }
+        }
+
+        [Test]
         public void AddSwitchRingTakesNoRawColourOrMaterial()
         {
             // The signal is the ONLY door. A raw Color or Material parameter would let a caller

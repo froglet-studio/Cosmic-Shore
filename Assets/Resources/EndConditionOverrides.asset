@@ -36,6 +36,7 @@ MonoBehaviour:
   siroccoPrismTarget: 600
   broadsidePointsPerPilot: 100
   tandavaBreakPercent: 35
+  tandavaFlamesToBreak: 9
   salvoPrismTarget: 700
   switchbackGateTarget: 20
   waystationRingTarget: 24
@@ -69,6 +70,7 @@ MonoBehaviour:
   siroccoPrismTargetBuild: 600
   broadsidePointsPerPilotBuild: 100
   tandavaBreakPercentBuild: 35
+  tandavaFlamesToBreakBuild: 9
   salvoPrismTargetBuild: 700
   switchbackGateTargetBuild: 20
   waystationRingTargetBuild: 24

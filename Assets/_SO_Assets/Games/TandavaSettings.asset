@@ -46,62 +46,76 @@ MonoBehaviour:
     FillToEvolve: 0.9
     BankToEvolve: {x: 0, y: 3337.7, z: 0, w: 0}
     MealVolume: 1912.1
-    Palette:
-      MembraneBright: {r: 0.2, g: 0.85, b: 0.8, a: 1}
-      MembraneDull: {r: 0, g: 0.45, b: 0.42, a: 1}
-      NucleusEdge: {r: 0, g: 0.55, b: 0.5, a: 0.41}
-      NucleusStraight: {r: 0.25, g: 0.7, b: 0.65, a: 0.41}
-      Cytoplasm: {r: 0.3, g: 0.5, b: 0.48, a: 1}
     Line: The brood knots into a young serpent. It is hungry.
   - DisplayName: Serpent
     PlanIndex: 1
     FillToEvolve: 0.9
     BankToEvolve: {x: 0, y: 5224.2, z: 0, w: 0}
     MealVolume: 2191
-    Palette:
-      MembraneBright: {r: 0.15, g: 0.9, b: 0.45, a: 1}
-      MembraneDull: {r: 0, g: 0.5, b: 0.2, a: 1}
-      NucleusEdge: {r: 0, g: 0.6, b: 0.25, a: 0.43}
-      NucleusStraight: {r: 0.2, g: 0.72, b: 0.35, a: 0.43}
-      Cytoplasm: {r: 0.28, g: 0.5, b: 0.34, a: 1}
     Line: The serpent grows longer. Burn what it means to eat.
   - DisplayName: Great Serpent
     PlanIndex: 2
     FillToEvolve: 0.9
     BankToEvolve: {x: 0, y: 7594.4, z: 0, w: 0}
     MealVolume: 2743
-    Palette:
-      MembraneBright: {r: 0.35, g: 1.1, b: 0.6, a: 1}
-      MembraneDull: {r: 0, g: 0.38, b: 0.18, a: 1}
-      NucleusEdge: {r: 0.05, g: 0.5, b: 0.25, a: 0.45}
-      NucleusStraight: {r: 0.3, g: 0.8, b: 0.45, a: 0.45}
-      Cytoplasm: {r: 0.25, g: 0.45, b: 0.3, a: 1}
     Line: A great serpent now. One more meal and it will change.
   - DisplayName: Bull
     PlanIndex: 3
     FillToEvolve: 0.9
+    BankToEvolve: {x: 0, y: 15509.9, z: 0, w: 0}
+    MealVolume: 3166.2
+    Line: The coils fold. A bull flies where the serpent was. It is gathering itself for the dance.
+  - DisplayName: Lord of the Dance
+    PlanIndex: 4
+    FillToEvolve: 0.9
     BankToEvolve: {x: 0, y: 0, z: 0, w: 0}
     MealVolume: 1
-    Palette:
-      MembraneBright: {r: 1.3, g: 0.45, b: 0.1, a: 1}
-      MembraneDull: {r: 0.6, g: 0.12, b: 0, a: 1}
-      NucleusEdge: {r: 0.75, g: 0.2, b: 0, a: 0.45}
-      NucleusStraight: {r: 0.9, g: 0.45, b: 0.15, a: 0.45}
-      Cytoplasm: {r: 0.55, g: 0.32, b: 0.22, a: 1}
-    Line: The coils fold. A bull stands where the serpent was. Break it.
+    Line: The ring of fire lights round the Lord of the Dance. Put out the flames before the drum stops.
+  - DisplayName: Winged Lion
+    PlanIndex: 5
+    FillToEvolve: 0.9
+    BankToEvolve: {x: 0, y: 0, z: 0, w: 0}
+    MealVolume: 1
+    Line: 'The drum stops. A winged lion rises out of the fire, trailing flame. Only this form can pass the membrane.'
+  SealMargin: 60
+  SealHold: 60
+  StarveStandoff: 140
+  StarvingSeconds: 40
+  StarvedBelowFraction: 0.15
+  DancePoint: {x: 1075, y: 0, z: 400}
+  DanceArrive: 70
+  DrumSeconds: 30
+  FlameCount: 12
+  FlameRingCentreLocal: {x: -0.04, y: 2.345, z: -0.04}
+  FlameRingRadius: 132.69
+  FlameMouthRadius: 24
+  GuardPostRadius: 167.3
+  GuardRadius: 40
+  GuardMembers: 6
+  GuardElement: 4
+  FlameGutter: 0.35
+  FlameBloomSeconds: 1.2
+  FlameOutSeconds: 0.6
+  MaxPlausibleSpeed: 1500
+  AscensionPalette:
+    MembraneBright: {r: 1.45, g: 0.95, b: 0.32, a: 1}
+    MembraneDull: {r: 0.1, g: 0.04, b: 0.38, a: 1}
+    NucleusEdge: {r: 0.95, g: 0.62, b: 0.14, a: 0.45}
+    NucleusStraight: {r: 1.1, g: 0.82, b: 0.4, a: 0.45}
+    Cytoplasm: {r: 0.78, g: 0.48, b: 0.2, a: 1}
   TransitionSeconds: 3
   TransitionFlash: 1.5
-  EscapedPalette:
-    MembraneBright: {r: 1.2, g: 0.08, b: 0.15, a: 1}
-    MembraneDull: {r: 0.55, g: 0, b: 0.05, a: 1}
-    NucleusEdge: {r: 0.7, g: 0, b: 0.05, a: 0.5}
-    NucleusStraight: {r: 0.85, g: 0.2, b: 0.25, a: 0.5}
-    Cytoplasm: {r: 0.5, g: 0.18, b: 0.2, a: 1}
   RestoreSeconds: 5
   StartLine: Something in the reef remembers the old shapes.
-  HeadingForExitLine: Its last meal is behind it. Stop it before the membrane.
-  EscapedLine: The cycle ends. Too soon.
-  WonLine: The dance is broken. The reef keeps its turn.
+  HeadingForExitLine: The route is eaten. It turns back to forage what you left.
+  StarvingLine: Nothing left to eat. It presses on the membrane and starves.
+  ReadyToDanceLine: The Bull has eaten enough. It rises into the Lord of the Dance and turns for the dance ground.
+  SealedLine: The membrane holds. Only the final form can pass.
+  FirstFlameLine: 'A flame is out. Put out {1} and the dance is broken.'
+  LastFlameLine: '{0} of {1}. One flame more!'
+  EscapedLine: The Winged Lion crosses the membrane. The cycle ends too soon.
+  WonLine: The swarm is gone. The reef keeps its turn.
+  DanceBrokenLine: The dance is broken. The reef keeps its turn.
   NudgeThreshold: 25
   NudgeFraction: 0.2
   MaxNudge: 6

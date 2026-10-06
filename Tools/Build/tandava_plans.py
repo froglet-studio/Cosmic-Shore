@@ -178,7 +178,13 @@ def _poisson(cands, taken, gap, limit=None):
 BULL_BODY_C, BULL_BODY_R = [0.0, 0.0, 0.0], [11.0, 5.6, 5.0]
 BULL_HUMP_C, BULL_HUMP_R = [5.0, 5.2, 0.0], [4.0, 2.6, 3.4]
 BULL_HEAD_X = 14.2
-BULL_LEGS = [(7.0, 3.2, 0.0), (7.0, -3.2, math.pi), (-7.0, 3.2, math.pi), (-7.0, -3.2, 0.0)]   # x, z, gait phase
+# The Bull FLIES (the HyperSea has no ground to walk on): its four legs are FINS swept back AND out from the body's
+# lower flanks like a manta's - the fore pair spreading wide, the hind pair trailing past the rump - rippling together in
+# one stroke from root to tip, never a gait. Swept back alone they read as two hanging columns from the front (the
+# 2026-10-06 artifact screenshot); spread sideways they read as fins from every side. (x, y, z) of each root, and the
+# unit direction it sweeps (x, y, z), z mirrored per side.
+BULL_LEGS = [((7.0, -4.2, 4.4), (-0.55, -0.12, 0.83)), ((7.0, -4.2, -4.4), (-0.55, -0.12, -0.83)),
+             ((-7.0, -3.6, 4.2), (-0.83, -0.06, 0.56)), ((-7.0, -3.6, -4.2), (-0.83, -0.06, -0.56))]
 BULL_LEG_UNITS = 6
 BULL_HORN_STATIONS = 8
 
@@ -234,15 +240,16 @@ def bull():
                 p = add(c, mul(across, 1.3 * j))
                 if all(norm(sub(p, q)) >= MIN_GAP for q in rest):
                     place(CHARGE, 0, p, tan, half=[1.1, 0.7, 0.6], anim=nod)
-    # the legs: four Time columns, diagonal pairs on opposite phases (a walk); the foot swings and lifts most
-    for lx, lz, phase in BULL_LEGS:
+    # the legs: four Time FINS swept back (a bull in flight), all four on one stroke - a wave that travels from the
+    # root to the tip, flaring the tips a little outward on the downstroke
+    for root, d in BULL_LEGS:
         for j in range(BULL_LEG_UNITS):
-            base = [lx, -BULL_BODY_R[1] - 2.4 - j * SPACING, lz]
+            base = add(root, mul(list(d), (j + 1) * SPACING))
             depth = (j + 1) / BULL_LEG_UNITS
 
-            def gait(ph, depth=depth, phase=phase):
-                return add(bob(ph), [2.4 * depth * math.sin(ph + phase), 0.9 * depth * max(0.0, math.cos(ph + phase)), 0.0])
-            place(TIME, 1, base, [0.0, -1.0, 0.0], anim=gait)
+            def stroke(ph, depth=depth):
+                return add(bob(ph), [0.0, 1.1 * depth * math.sin(ph - 1.6 * depth), 0.0])   # the fin beats up and down
+            place(TIME, 1, base, list(d), anim=stroke)
     # the neck bell: Space rods hanging under the throat; the tail: rods from the rump, swishing
     for k in range(3):
         base = [11.5 + (k - 1) * 0.2, -BULL_BODY_R[1] - 2.2 - k * 0.1, (k - 1) * SPACING]
@@ -257,6 +264,224 @@ def bull():
     return units
 
 
+# ───────────────────────────────────────────────────────────────── the ascension: the Lord of the Dance
+
+def _poly_len(pts):
+    return sum(math.hypot(pts[i + 1][0] - pts[i][0], pts[i + 1][1] - pts[i][1]) for i in range(len(pts) - 1))
+
+
+def _sample(pts, step):
+    """Points every `step` along a polyline of (u, v) pairs, each with its unit tangent."""
+    out, carry = [], 0.0
+    for i in range(len(pts) - 1):
+        a, b = pts[i], pts[i + 1]
+        L = math.hypot(b[0] - a[0], b[1] - a[1])
+        if L < 1e-9:
+            continue
+        tu, tv = (b[0] - a[0]) / L, (b[1] - a[1]) / L
+        d = carry
+        while d <= L:
+            out.append((a[0] + tu * d, a[1] + tv * d, tu, tv))
+            d += step
+        carry = d - L
+    return out
+
+
+def _arc(cu, cv, r, a0, a1, n):
+    return [(cu + r * math.sin(math.radians(a0 + (a1 - a0) * k / n)), cv + r * math.cos(math.radians(a0 + (a1 - a0) * k / n)))
+            for k in range(n + 1)]
+
+
+def _thin(units):
+    """Drop any unit that comes closer than MIN_GAP to one kept before it, in ANY frame (strokes cross at joints)."""
+    kept = []
+    for u in units:
+        if all(min(norm(sub(u.pos[f], k.pos[f])) for f in range(FRAMES)) >= MIN_GAP for k in kept):
+            kept.append(u)
+    return kept
+
+
+DANCER_SCALE = 1.15        # the figure's size in plan voxels per sketch unit
+DANCER_TARGET = 112        # statue units before thinning (x density 3 in game)
+DANCER_RING = (40.0, -2.0) # the ring of fire: radius and centre height, sketch units (the mode draws it as 12 flames)
+DANCER_PACKS = 4           # attendant packs patrolling outside the ring
+DANCER_PACK_OUT = 12.0     # their orbit, plan voxels outside the ring
+DANCER_PACK_UNITS = 7      # a centre and six round it
+DANCER_FRAME_STEPS = 40    # sim steps per frame: 8 frames x 40 steps at 10 Hz = one patrol turn per 32 s (the statue
+                           # itself barely moves between frames, so a slow loop is only the attendants' pace)
+
+
+def dancer():
+    """THE LORD OF THE DANCE (the Nataraja) as a sculpture of tadpoles, which the swarm assembles at the ascension.
+
+    The figure stands in the body's (z across, y up) plane and faces -x, back down the course toward the pilots: the
+    right leg on the prone dwarf, the left leg raised and swung across, four arms (the drum, the fire, the open palm,
+    and the arm across the chest pointing at the lifted foot), the crown, and two locks of hair flying out each side.
+    The limbs are double strokes so the pose reads at a distance. Outside the ring of fire, four ATTENDANT packs of
+    Time units (the bestiary's pack hunters) orbit the ring across the eight frames - two each way, one turn per loop -
+    so the sort core carries them round with no new API, and whichever flame a pack is over is guarded."""
+    s = DANCER_SCALE
+    parts = [  # (elem, tier, polyline in sketch units, kind)
+        (MASS, 0, [(-18, -40), (18, -40)], ''), (MASS, 0, [(-14, -38.5), (14, -38.5)], ''),            # the pedestal
+        (TIME, 0, [(-13, -35), (8, -35)], ''), (TIME, 0, [(-12, -33.2), (7, -33.2)], ''),                # the dwarf
+        (TIME, 0, _arc(10.5, -34, 2, 0, 360, 8), ''),
+        (MASS, 0, [(-2, -6), (-8, -17), (-3, -31)], 'thick'), (MASS, 0, [(-6, -32), (0.5, -32)], ''),    # standing leg
+        (MASS, 0, [(3, -6), (15, -10), (3, -16)], 'thick'), (MASS, 0, [(3, -16), (-1.5, -18)], ''),      # raised leg
+        (MASS, 0, [(-3.5, -5), (-2.5, 1), (-4.5, 10)], ''), (MASS, 0, [(0, -5), (0, 11)], ''),           # torso
+        (MASS, 0, [(3.5, -5), (2.5, 1), (4.5, 10)], ''), (MASS, 0, [(-6, 11), (6, 11)], ''),
+        (CHARGE, 1, [(-4, -4), (4, -4)], ''),                                                             # sash
+        (MASS, 0, _arc(0, 16, 3.2, 0, 360, 10), ''), (MASS, 0, [(0, 11), (0, 13)], ''),                  # head, neck
+        (CHARGE, 1, [(0, 19.5), (0, 29)], ''), (CHARGE, 1, [(0, 19.5), (-4, 28)], ''),                   # the crown
+        (CHARGE, 1, [(0, 19.5), (4, 28)], ''), (CHARGE, 1, [(0, 19.5), (-7, 25.5)], ''),
+        (CHARGE, 1, [(0, 19.5), (7, 25.5)], ''),
+        (MASS, 0, [(-6, 11), (-15, 13), (-17, 20)], 'thick'),                                            # drum arm
+        (CHARGE, 1, [(-19.5, 25.5), (-14.5, 25.5), (-17, 23), (-19.5, 20.5), (-14.5, 20.5), (-17, 23)], ''),  # drum
+        (MASS, 0, [(6, 11), (15, 13), (17, 20)], 'thick'),                                               # fire arm
+        (CHARGE, 2, [(17, 20.5), (15.5, 23), (17, 27.5), (18.5, 23), (17, 20.5)], 'flame'),              # the fire
+        (MASS, 0, [(-5, 9), (-11, 3), (-9.5, 9.5)], 'thick'), (TIME, 0, _arc(-9.5, 11, 1.4, 0, 360, 6), ''),  # palm
+        (MASS, 0, [(5, 9), (1, 5), (-5, 3), (-7, -1)], 'thick'),                                         # across the chest
+    ]
+    for side in (-1, 1):                                                                                  # the hair
+        for end_v, wob in ((22.0, 0.4), (14.0, 1.2)):
+            pts = [(side * (3 + 25 * k / 12), 18 + (end_v - 18) * k / 12 + 1.4 * math.sin(k / 12 * 7 + wob)) for k in range(13)]
+            parts.append((SPACE, 0, pts, 'hair'))
+    total = sum(_poly_len(p[2]) * (2 if p[3] == 'thick' else 1) for p in parts) * s
+    step = max(2.35, total / DANCER_TARGET)
+    units = []
+    for elem, tier, pts, kind in parts:
+        for (u0, v0, tu, tv) in _sample([(u * s, v * s) for u, v in pts], step):
+            for off in ((-1.1, 1.1) if kind == 'thick' else (0.0,)):
+                u_, v_ = u0 - tv * off * s, v0 + tu * off * s
+                depth = 0.0 if kind == 'thick' or elem != MASS or abs(u_) >= 6 * s else (0.9 if len(units) % 2 else -0.9)
+                un = Unit(elem, 0 if v_ > -5 * s else 1, tier)
+                for f in range(FRAMES):
+                    ph = 2 * math.pi * f / FRAMES
+                    v = v_
+                    if kind == 'hair':
+                        v += 0.9 * s * math.sin(ph + abs(u_) * 0.12) * abs(u_) / (28 * s)
+                    if kind == 'flame':
+                        v += 0.5 * math.sin(2 * ph + u_)
+                    un.pos[f] = [depth, v, u_]
+                    un.face[f] = unit([0.0, tv, tu])
+                units.append(un)
+    # the attendants: four packs orbiting the ring in its plane, two each way, one full turn per frame loop
+    rr, vc = DANCER_RING[0] * s, DANCER_RING[1] * s
+    orbit = rr + DANCER_PACK_OUT
+    shell = [(0, 0, 0)] + [(MIN_GAP * 1.15 * a, MIN_GAP * 1.15 * b, MIN_GAP * 1.15 * c)
+                           for a, b, c in ((1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1))]
+    for k in range(DANCER_PACKS):
+        a0, sense = 2 * math.pi * (k + 0.5) / DANCER_PACKS, (1 if k % 2 == 0 else -1)
+        for (ox, oy, oz) in shell[:DANCER_PACK_UNITS]:
+            un = Unit(TIME, 0 if k % 2 == 0 else 1)
+            for f in range(FRAMES):
+                a = a0 + sense * 2 * math.pi * f / FRAMES
+                un.pos[f] = [(4.0 if k % 2 else -4.0) + ox, vc + orbit * math.cos(a) + oy, orbit * math.sin(a) + oz]
+                un.face[f] = unit([0.0, -math.sin(a) * sense, math.cos(a) * sense])
+            units.append(un)
+    return _thin(units)
+
+
+# ───────────────────────────────────────────────────────────────── the final form: the Winged Lion
+
+LION_SCALE = 1.2
+LION_TARGET = 155
+LION_FLAP = 0.35           # the wingbeat's half-angle (radians)
+LION_FRAME_STEPS = 12      # 8 frames x 12 steps at 10 Hz = a 9.6 s wingbeat. The feathers are Space, the slowest
+                           # tadpoles (0.8 voxels/step): at the shared 6 steps and a 0.6 rad stroke the tips swept
+                           # ~3 voxels/step and the live wings smeared above the body (harness picture, 2026-10-06)
+
+
+def lion():
+    """THE WINGED LION: the final form, and the only form the exit lets through. A lion's body under a Charge mane,
+    two great feathered wings beating across the eight frames, a long tail - and NO legs: it flies, so two flame
+    ribbons stream from its haunches instead."""
+    s, N, units = LION_SCALE, LION_TARGET, []
+    ga = math.pi * (3 - math.sqrt(5))
+
+    def add_unit(elem, tier, at, face, slot):
+        un = Unit(elem, slot, tier)
+        for f in range(FRAMES):
+            un.pos[f] = at(f)
+            un.face[f] = unit(face(f))
+        units.append(un)
+
+    nb = round(N * 0.33)
+    for i in range(nb):                                                     # the body: a shell on an ellipsoid
+        y = 1 - 2 * (i + 0.5) / nb
+        rr, th = math.sqrt(1 - y * y), ga * i
+        x, z = math.cos(th) * rr, math.sin(th) * rr
+        add_unit(MASS, 0, lambda f, x=x, y=y, z=z: [x * 13 * s, (y * 5.5 + 0.3 * math.sin(2 * math.pi * f / FRAMES + x)) * s, z * 4.8 * s],
+                 lambda f: [1, 0, 0], 0 if y > 0 else 1)
+    nh = round(N * 0.06)
+    for i in range(nh):                                                     # the head
+        y = 1 - 2 * (i + 0.5) / nh
+        rr, th = math.sqrt(1 - y * y), ga * i
+        add_unit(MASS, 0, lambda f, y=y, rr=rr, th=th: [(16 + math.cos(th) * rr * 3.6) * s, (4 + y * 3.4) * s, math.sin(th) * rr * 3.4 * s],
+                 lambda f: [1, 0, 0], 0)
+    nm = round(N * 0.12)
+    for i in range(nm):                                                     # the mane: two rings of shield plates
+        outer, a = i % 2, 2 * math.pi * i / nm
+        r = 8.5 if outer else 6.0
+        add_unit(CHARGE, 1, lambda f, a=a, r=r, outer=outer: [(10.5 if outer else 12) * s,
+                 (4 + math.cos(a) * r * (1 + 0.04 * math.sin(2 * math.pi * f / FRAMES))) * s, math.sin(a) * r * s],
+                 lambda f: [1, 0, 0], 0)
+    nwf = max(3, round(N * 0.22 / 10))
+    for side in (-1, 1):                                                    # the wings: five feathers each, flapping
+        for k in range(5):
+            root, tip = [6 - 2.4 * k, 5.5, 4 * side], [2 - 5 * k, 9 - 1.5 * k, (34 - 3 * k) * side]
+            for j in range(nwf):
+                t = (j + 0.5) / nwf
+
+                def at(f, t=t, root=root, tip=tip, side=side):
+                    flap = LION_FLAP * math.sin(2 * math.pi * f / FRAMES - t * 0.8)
+                    x = root[0] + (tip[0] - root[0]) * t
+                    y0 = root[1] + (tip[1] - root[1]) * t + 2.5 * math.sin(t * math.pi)
+                    z0 = root[2] + (tip[2] - root[2]) * t
+                    dy, dz = y0 - root[1], z0 - root[2]
+                    c, sn = math.cos(flap * side), math.sin(flap * side)
+                    return [x * s, (root[1] + dy * c + dz * sn) * s, (root[2] + dz * c - dy * sn) * s]
+                add_unit(SPACE, 0, at, lambda f, root=root, tip=tip: sub(tip, root), 0)
+    # no legs (it FLIES - the HyperSea has no ground): two flame RIBBONS of Time stream from its haunches, back past
+    # the rump on either side of its tail like a comet's, rippling, each ending in a Charge flame tip. They start at the
+    # body's mid-height, never hang below the belly, and spread into a swallow-tail V: from a chase camera behind it
+    # they read as two contrails, not as legs dangling toward the viewer
+    nr = max(6, round(N * 0.16 / 2))
+
+    def ribbon_at(t, side, f):
+        ph = 2 * math.pi * f / FRAMES
+        return [(-11.0 - 26.0 * t) * s, (-2.0 + 1.2 * t + 2.0 * t * math.sin(ph - 3.0 * t)) * s,
+                side * (4.6 + 9.0 * t + 1.2 * t * math.sin(ph - 3.0 * t + 1.0)) * s]
+    for side in (-1, 1):
+        for j in range(nr):
+            t = (j + 0.5) / nr
+            add_unit(TIME, 0, lambda f, t=t, side=side: ribbon_at(t, side, f), lambda f: [-1, -0.05, 0], 1)
+        add_unit(CHARGE, 1, lambda f, side=side: ribbon_at(1.0 + 1.0 / nr, side, f), lambda f: [-1, 0, 0], 1)
+    nt = max(5, round(N * 0.05))
+    for k in range(1, nt + 1):                                              # the tail and its tuft
+        add_unit(SPACE, 0, lambda f, k=k: [(-13 - 2.4 * k) * s, (1 + 0.9 * k + 0.1 * k * k) * s,
+                 1.5 * math.sin(2 * math.pi * f / FRAMES + k * 0.5) * s], lambda f: [-1, 0.5, 0], 1)
+    e = nt + 1
+    for k in range(3):
+        add_unit(CHARGE, 1, lambda f, k=k: [(-13 - 2.4 * e) * s - k * 1.4, (1 + 0.9 * e + 0.1 * e * e) * s + (k - 1) * 1.6,
+                 1.5 * math.sin(2 * math.pi * f / FRAMES + e * 0.5) * s], lambda f: [-1, 0, 0], 1)
+    return _thin(units)
+
+
+def ring_of(c):
+    """The ring of fire in the dancer plan's own (re-centred) voxels, before the density upsample: its centre [x, y, z]
+    (the plan is baked centred on frame 0's centroid <c>), its radius, and the radius the attendant packs patrol at
+    (each flame's GUARD POST sits there, straight out from the flame)."""
+    return {"centre": [_r(-c[0]), _r(DANCER_RING[1] * DANCER_SCALE - c[1]), _r(-c[2])],
+            "radius": _r(DANCER_RING[0] * DANCER_SCALE), "guardOrbit": _r(DANCER_RING[0] * DANCER_SCALE + DANCER_PACK_OUT)}
+
+
+def dancer_ring(plan):
+    """Where the mode draws the ring of fire, in this plan's own (re-centred) voxels: (centre [x, y, z], radius, the
+    attendants' patrol radius). The plan JSON carries the same as "ring" (the harness reads it there)."""
+    r = plan["ring"]
+    return r["centre"], r["radius"], r["guardOrbit"]
+
+
 # ───────────────────────────────────────────────────────────────── bake + validate
 
 PLANS = {
@@ -264,6 +489,8 @@ PLANS = {
     "serpent_m": ("Serpent (medium)", lambda: serpent("serpent_m")),
     "serpent_l": ("Serpent (large)", lambda: serpent("serpent_l")),
     "bull": ("Bull", bull),
+    "dancer": ("Lord of the Dance", dancer),
+    "lion": ("Winged Lion", lion),
 }
 # the shares each form must hold (fraction of its units, +- SHARE_TOL) - the design's table
 SHARES = {
@@ -299,11 +526,14 @@ def bake(kind):
         h, _ = identity(u.elem, u.half, u.tier)
         half0.extend(_r(x) for x in h)
     return {
-        "kind": kind, "name": name, "major": MAJOR, "n": n, "frames": FRAMES, "frameSteps": FRAME_STEPS,
+        "kind": kind, "name": name, "major": MAJOR, "n": n, "frames": FRAMES,
+        "frameSteps": {"dancer": DANCER_FRAME_STEPS, "lion": LION_FRAME_STEPS}.get(kind, FRAME_STEPS),
         "order": list(range(FRAMES)),   # every Tandava form loops (no ping-pong)
         "elem": [u.elem for u in units], "tier": [u.tier if u.elem == CHARGE else 0 for u in units], "half": half0,
         "pos": pos, "face": face, "swimAxis": [1, 0, 0], "upAxis": [0, 1, 0],
         "slot": [u.slot for u in units], "halfF": half_f, "tierF": tier_f, "sp": sp_f,
+        "centroid": [_r(x) for x in c],
+        **({"ring": ring_of(c)} if kind == "dancer" else {}),
     }
 
 
@@ -336,7 +566,7 @@ def validate(plans):
     for kind, p in plans.items():
         n = p["n"]
         m = census(p)
-        for e, want in SHARES[kind].items():
+        for e, want in SHARES.get(kind, {}).items():
             got = m[e] / n
             if abs(got - want) > SHARE_TOL:
                 errors.append(f"{kind}: element {e} share {got:.3f}, the design wants {want:.2f} +- {SHARE_TOL}")

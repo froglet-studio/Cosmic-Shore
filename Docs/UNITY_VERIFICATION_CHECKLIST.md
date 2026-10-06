@@ -4295,17 +4295,33 @@ domain), scene `MinigameTandava`, every asset authored by `Tools/Build/author_ta
 (the sort core in a new SCRIPTED mode: `SwarmSortParams.Scripted`, `SwarmFauna.RequestForm`) hatches at x = -2,000
 of a 3,600 u cell (the Cleave membrane), eats at eight Borromean oases and races for an exit plane at x = +2,000.
 Each time its body is full and its stomach holds the surplus it takes its next form (Young Serpent → Serpent →
-Great Serpent → Bull), and every peer's cell blooms and eases into that form's colours (`CellVisualTint`: membrane,
-nucleus and cytoplasm, recoloured by property block / one per-cell material clone). Pilots win by wiping it out,
-starving it, or cutting the Bull below 35% (`EndConditionOverrides.tandavaBreakPercent`). Design and status:
-`Assets/_Scripts/Controller/Arcade/TANDAVA.md`.
+Great Serpent → Bull). Phase A eased every peer's cell into each form's colours; that was superseded the same day
+(see phase B: the cell now keeps its own colours except through the dance; `CellVisualTint`: membrane, nucleus and
+cytoplasm, recoloured by property block / one per-cell material clone).
+
+**Phase B (the ascension, same branch, 2026-10-06).** The exit is SEALED to every form but the last: every peer
+nudges its own swarm back inside the membrane (`TandavaDirectorCore.SealCorrection`). When the route is eaten the swarm
+forages leftovers, and with nothing left it presses on the membrane and starves (its own metabolism: the Tandava
+config's `StarvationSeconds 30` / `ShedIntervalSeconds 0.25`, plus a 40 s outcome clock). The banked Bull goes to a
+dance ground at (1,075, 0, 400) and takes a fifth form, the **Lord of the Dance** (a Nataraja of tadpoles with four
+Time attendant packs orbiting), inside a **ring of fire**: twelve `TandavaFlame` switch rings (new switch verb
+`ToySwitchSignal.Flame`, the danger red). A 30 s drum runs; nine flames threaded while unguarded
+(`EndConditionOverrides.tandavaFlamesToBreak`) break the dance and win, and the figure molts back into the Bull.
+When the drum stops it takes the sixth form, the **Winged Lion**, the only form that may cross. Pilots win by
+wiping it out, starving it, breaking the dance, or cutting the Winged Lion below 35%
+(`EndConditionOverrides.tandavaBreakPercent`). Design and status: `Assets/_Scripts/Controller/Arcade/TANDAVA.md`.
 
 **Compiled? Headless only.** `/verify-unity` could NOT run: the authoring session had no Unity editor and no `unity`
 CLI. What did run: `unity_refcompile` (player and editor configs: 0 errors in project code, none of the changed files
 in any unverifiable bucket), `swarm_glue_typecheck`, the swarm harness (294 checks including Tandava T1-T9, all
 pass), the generator's `--check` and its `--self-test` negative control (the donor scene trips all 16 scene checks),
 and the standing static gates. Nothing has run in the Editor, and `EnumIntegrityTests` (updated to 60 modes) has not
-been executed.
+been executed. **Phase B**: `unity_refcompile` player config 0 project errors and none of the changed files in any
+bucket; the editor config's 4 errors are all `FrogletTool` in `EndConditionOverridesWindow.cs`, whose attribute lives in
+an UNCHANGED Editor file that config does not compile (an artifact of the approximate config, not a defect);
+`swarm_glue_typecheck` OK; the full swarm harness OK with Tandava T1-T13; the generator's `--check` (59 files) and
+`--self-test`; the `check_*` gates (only `check_vessel_class_icons` fails, on the Butterfly's empty icons - untouched,
+not on this card). `ToySwitchVocabularyTests.EveryUnreservedVerbReadsAsItself` (new) has not been executed.
 
 ### QA-TANDAVA-1 — the race runs and the cell changes with it (solo, any hull)
 
@@ -4314,15 +4330,21 @@ been executed.
 2. Launch from the **Arena** screen. The carousel must offer exactly Rhino, Squirrel and Sparrow.
 3. You spawn on a start line at x = -2,300 facing down the course. The swarm hatches ~6 s in at x = -2,000 as the
    Young Serpent (~140 tadpoles growing toward ~200) and holds there until GO.
-4. At GO: the cell **blooms** (up to ~2.5x bright, gone by mid-ease) and eases over 3 s into teal. A toast reads
-   "Something in the reef remembers the old shapes."
+4. At GO the cell keeps its OWN colours (no bloom, no tint). A toast reads "Something in the reef remembers the old
+   shapes."
 5. Let it run unopposed. Expect it to stop at each oasis, commit Serpent / Great Serpent / Bull at very roughly
-   40 / 85 / 125 s (the harness model, NOT a measurement - record the real times), the cell blooming into emerald /
-   jade / ember at each, and to escape at ~2.5 min: the cell turns crimson, DEFEAT "ESCAPED AS THE BULL (4 OF 4)".
+   40 / 88 / 126 s (the harness model, NOT a measurement - record the real times) with the cell UNCHANGED at each; the
+   Bull to bank and rise into the Lord of the Dance at ~162 s ("The Bull has eaten enough. It rises into the Lord of
+   the Dance...") - the ONE moment the cell blooms and turns to bronze and fire - the ring to light at ~182 s, the
+   Winged Lion at ~212 s (the cell easing back to its own colours), and escape at ~4 min: DEFEAT "ESCAPED AS THE
+   WINGED LION", the cell still its own.
+   **The shapes:** no form walks. The Bull flies, its four legs swept back and out as fins beating together; look at
+   it from the front and the side - from no angle may it read as a bull walking on legs.
 6. Watch the frame time with the swarm fully grown (462 tadpoles at density 3) and ~4,200 cytoplasm motes.
 
-**PASS:** the forms commit in order, each with the colour change at that moment; the HUD reads "Serpent 62%"-style
-progress; the run ends on the exit. **FAIL:** a form skipped or repeated · the cell recolouring with no form change, or
+**PASS:** the forms commit in order; the cell changes colour ONLY from the rise into the dance to the Winged Lion; the
+HUD reads "Serpent 62%"-style progress; the run ends on the exit. **FAIL:** a form skipped or repeated · the cell
+recolouring at a serpent or Bull commit, on starvation, at the escape or the win · the cell recolouring with no form change, or
 staying recoloured in the NEXT match (an override that leaked into the shared membrane/nucleus/snow materials) · the
 swarm never leaving the hatch (no director: look for the 30 s "no swarm" error) · the swarm stalling at an oasis
 longer than 45 s.
@@ -4331,8 +4353,9 @@ longer than 45 s.
 
 1. Burn the plants of the oasis ahead before it arrives. It must skip that oasis (the server re-checks each second)
    and reach the exit a form short.
-2. Cull it: every member killed → VICTORY "THE SWARM IS GONE". Cut the Bull below 35% → "THE BULL IS BROKEN".
-3. Scores are members culled ("N culled"); a starved tadpole scores nobody.
+2. Cull it: every member killed → VICTORY "THE SWARM IS GONE". Cut the Winged Lion below 35% → "THE WINGED LION IS
+   BROKEN".
+3. Scores are members culled plus 25 a flame ("N culled, M flames"); a starved tadpole scores nobody.
 4. AI teammates fly at the swarm (led 40 u toward its goal, spread ±45 u). An all-AI Sparrow cannot keep up (cruise 35
    vs the swarm's 50) - stated in TANDAVA.md, not a bug.
 5. The swarm wears ONE colour (the cell's hostile controller). No member may ever show the pilots' own colour.
@@ -4344,9 +4367,55 @@ longer than 45 s.
    of the gap per tick, at most 6 u, once past 25 u). Record the worst gap.
 3. A client's kills count toward its score on both machines; the match ends on the server's outcome for both.
 
+### QA-TANDAVA-5 — the sealed exit and starvation
+
+1. **The seal**: herd the Young Serpent (or any non-final form) to the exit plane at x = +2,000. It must never cross:
+   held ~60 u inside, the narrator saying "The membrane holds. Only the final form can pass." ONCE per form. Watch for
+   a visible jerk at the hold (the nudge is rigid; it should read as pressing on a wall, not a teleport).
+2. **Starvation**: burn every oasis once it is the Bull. It forages (visits the leftovers), then "Nothing left to
+   eat...", the cell keeps its own colours, it presses on the membrane ~140 u inside and sheds members (one per 0.25 s
+   once unfed 30 s while hungry). Within ~40 s at the membrane: VICTORY "STARVED BEFORE THE MEMBRANE".
+3. A shed tadpole scores nobody; nobody is killed by the mode (watch the kill feed).
+
+### QA-TANDAVA-6 — the ascension: the dance ground, the statue and the ring of fire
+
+1. The banked Bull rises into the dance form AT ONCE (the cell blooms and turns to bronze and fire - the only tint in
+   the match) and swims to (1,075, 0, 400), beside the course, assembling as it goes. On arrival: the dance form's
+   line, and twelve **red** rings bloom in a circle ~133 u round the swarm in its (up, side) plane.
+2. By arrival (~20 s after the rise) the swarm reads as the **Lord of the Dance**: crown, flying hair, the drum and fire
+   hands, the raised leg, the pedestal and dwarf - and four green packs orbiting just outside the ring, two each way
+   (a turn per ~32 s). Compare against the harness picture (`TANDAVA_DUMP`, TANDAVA.md §4). Record how long the shape
+   takes to read, and whether it reads while still swimming.
+3. The HUD reads "Ring of fire 0/9 - drum 30 s" and counts down.
+4. **Thread a flame** (the rings face along the circle - fly ROUND the dancer): it withers out; the HUD counts; the
+   first flame's toast "A flame is out. Put out 9..." and at eight "8 of 9. One flame more!".
+5. **The guard**: when a pack is over a flame, its ring shrinks to about a third (guttered) and threading it does
+   nothing. Kill most of a pack: the flame it held opens again.
+6. Put out nine before the drum stops: VICTORY "THE DANCE IS BROKEN"; the remaining flames wither; the figure molts
+   back into the Bull with NO deaths; the cell eases back to its own colours.
+7. Let the drum finish instead: the remaining flames wither, the swarm takes the Winged Lion, and the cell eases back
+   to its own colours.
+
+### QA-TANDAVA-7 — the Winged Lion
+
+1. The cell is its own again; the lion reads as a body, mane, two great wings beating slowly (~10 s a beat), a tail, and
+   NO legs: two flame ribbons stream from its haunches in a V beside the tail. From the pilots' chase view the ribbons
+   must read as contrails, not dangling legs. It heads for the exit, which lets it through.
+2. Cut it below 35% before it crosses (~27 s of flight unopposed): "THE WINGED LION IS BROKEN".
+3. AI teammates threaded flames during the dance and chase the lion after (watch an all-AI Rhino lobby).
+
+### QA-TANDAVA-8 — the ascension on two peers (host + client, MPPM)
+
+1. Both peers draw the ring in the same place, the same flames out, the same flames guttered.
+2. A CLIENT threading a flame puts it out on both machines (reported to the server, which checks the guard and that
+   the client's vessel is within ~174 u of the flame) and scores it.
+3. The client's swarm is held behind the sealed membrane too (each peer applies the seal to its own swarm).
+
 ### QA-TANDAVA-4 — nothing else moved
 
 1. **The Swarm cell's swarms are unchanged**: kill a majority, it still morphs (they are not scripted).
 2. **Cleave's cell** (the other 3,600 u cell) still builds its cytoplasm at the prefab's spacing (its config does not
    author `CytoplasmShardDistance`).
 3. A cell with no tint never allocates the per-cell snow material (the clone is made only by `PrepareColourOverride`).
+4. Every other switch is unchanged: the toybox's Neutral and Domain switches, Switchback's lime Next gate (the new
+   `Flame` verb only adds a material row in `ToyFactory.SwitchMaterial`).

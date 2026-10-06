@@ -164,9 +164,13 @@ namespace CosmicShore.Data
         TandavaMatchStart = 128,        // the race begins: {0} = TandavaSettings.StartLine
         TandavaFormTaken = 129,         // the swarm committed a new form: {0} = that form's line
         TandavaEscaped = 130,           // it crossed the exit membrane: {0} = TandavaSettings.EscapedLine
-        TandavaBroken = 131,            // the pilots won (wiped, starved or broken): {0} = TandavaSettings.WonLine
-        TandavaHeadingForExit = 132,    // its last oasis is behind it: {0} = TandavaSettings.HeadingForExitLine
+        TandavaBroken = 131,            // the pilots won: {0} = TandavaSettings.WonLine, or DanceBrokenLine for a broken dance
+        TandavaHeadingForExit = 132,    // the route is eaten, it forages what is left: {0} = TandavaSettings.HeadingForExitLine
         TandavaDenyHint = 133,          // idle hint: burn the oasis ahead before it feeds
+        TandavaStarving = 134,          // nothing left to eat anywhere: {0} = TandavaSettings.StarvingLine
+        TandavaReadyToDance = 135,      // the Bull is banked and turns for the dance ground: {0} = ReadyToDanceLine
+        TandavaSealed = 136,            // a non-final form reached the exit and the membrane held: {0} = SealedLine
+        TandavaFlameOut = 137,          // the first flame, and the last-but-one, of the ring of fire: {0} = the line
 
         // END-OF-GAME LOBBY. Shared across every multiplayer mode, so 100+ rather than crowding
         // the per-mode blocks. {0} = player name, {1} = how many have asked so far, {2} = how many
