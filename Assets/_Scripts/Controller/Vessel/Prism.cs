@@ -551,6 +551,7 @@ namespace CosmicShore.Gameplay
             {
                 _renderEntityDecline = null;
                 _renderEntityMesh = renderMesh;
+                ApplyColorShade();
             }
             else
             {
@@ -714,6 +715,40 @@ namespace CosmicShore.Gameplay
             // Always refresh: clock color transitions bind the end-state material
             // at the stamp, and its authored values ARE the lerp targets.
             PrismRenderService.SetMaterial(in RenderHandle, meshRenderer.sharedMaterial, refreshColors: true);
+            ApplyColorShade();
+        }
+
+        // Per-prism SHADE of the domain colour (SetColorShade). Identity = 1 / 0, which every prism has
+        // unless an owner asks otherwise; reset on every pooled Initialize.
+        float _colorShadeGain = 1f;
+        float _colorShadeWhiten;
+
+        bool HasColorShade => _colorShadeGain != 1f || _colorShadeWhiten != 0f;
+
+        /// <summary>
+        /// Draw this prism as a SHADE of its domain colour: brightness scaled by <paramref name="gain"/>, then
+        /// whitened by <paramref name="whiten"/> (0-1). The hue stays the domain's - a prism's colour is its
+        /// team, so an owner may vary how light or dark its prisms read but never which colour they are. It is
+        /// re-applied after every material sync, so it survives a team change, a shield and a transparency
+        /// swap, and cleared by the next pooled <see cref="Initialize"/>. The nested gyroid grades its sheets
+        /// with it (Docs/ECOSYSTEM.md §58.5). Drawn on the instanced (entity) path only; while a per-prism
+        /// exotic visual holds the GameObject renderer the prism shows its material unshaded.
+        /// </summary>
+        public void SetColorShade(float gain, float whiten)
+        {
+            _colorShadeGain = Mathf.Max(0f, gain);
+            _colorShadeWhiten = Mathf.Clamp01(whiten);
+            if (PrismRenderService.IsHandleUsable(in RenderHandle) && meshRenderer != null)
+            {
+                if (HasColorShade) ApplyColorShade();
+                else PrismRenderService.SetMaterial(in RenderHandle, meshRenderer.sharedMaterial, refreshColors: true);
+            }
+        }
+
+        void ApplyColorShade()
+        {
+            if (!HasColorShade || meshRenderer == null) return;
+            PrismRenderService.ApplyColorShade(in RenderHandle, meshRenderer.sharedMaterial, _colorShadeGain, _colorShadeWhiten);
         }
 
         /// <summary>
@@ -802,6 +837,8 @@ namespace CosmicShore.Gameplay
             ClearRenderMeshOverride(); // pooled reuse: the entity must not keep a prior life's shield mesh
             PrismRenderService.ClearPrismStamps(in RenderHandle); // nor a prior life's clock-animation stamps
             SetSuperShieldMark(false); // nor a prior life's super-shield
+            _colorShadeGain = 1f;      // nor a prior owner's colour shade (the next material sync drops it)
+            _colorShadeWhiten = 0f;
 
             PlayerName = playerName;
             blockCollider.enabled = false;

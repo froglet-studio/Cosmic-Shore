@@ -1166,6 +1166,30 @@ namespace CosmicShore.ECS
         }
 
         /// <summary>
+        /// Re-writes the entity's bright/dark overrides as a SHADE of <paramref name="material"/>'s authored
+        /// colours: scaled by <paramref name="gain"/>, then lerped toward white by <paramref name="whiten"/>.
+        /// The hue stays the material's (a prism's colour is its DOMAIN, and a shade must never read as another
+        /// team). Inputs are authored-space; the colour-space transform is applied here, as in
+        /// <see cref="SetMaterial"/>. Spread is left as the material set it. Called by
+        /// <c>Prism.ApplyColorShade</c> after every material sync, so a domain or state change keeps the shade.
+        /// </summary>
+        public static void ApplyColorShade(in PrismRenderHandle handle, Material material, float gain, float whiten)
+        {
+            if (material == null || !IsUsable(in handle)) return;
+            var em = _world.EntityManager;
+            em.SetComponentData(handle.Entity, new PrismBrightColorOverride { Value = ReadShadedColor(material, BrightColorId, gain, whiten) });
+            em.SetComponentData(handle.Entity, new PrismDarkColorOverride { Value = ReadShadedColor(material, DarkColorId, gain, whiten) });
+        }
+
+        static float4 ReadShadedColor(Material material, int propertyId, float gain, float whiten)
+        {
+            Color c = material.HasProperty(propertyId) ? material.GetColor(propertyId) : Color.white;
+            var scaled = new Color(c.r * gain, c.g * gain, c.b * gain, c.a);
+            var shaded = Color.Lerp(scaled, new Color(1f, 1f, 1f, c.a), whiten);
+            return ApplyColorSpace(new float4(shaded.r, shaded.g, shaded.b, shaded.a));
+        }
+
+        /// <summary>
         /// Swaps the entity's mesh (settled octahedron shield ↔ prism box) and refreshes
         /// RenderBounds. The mesh registers once and is shared across entities, so
         /// same-geometry shielded prisms keep batching.

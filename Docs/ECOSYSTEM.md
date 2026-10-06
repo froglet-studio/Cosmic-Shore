@@ -11051,3 +11051,120 @@ selector at it would fix all three at once and is not done here.
 **Nothing has been run in the editor**: the prism counts, volumes and extents above are the
 offline model's — the Mandelbulb sixteen measured by growing the shipped C# growth rule, the
 Borromean four read out of `BorromeanSurfaceData.cs` — and the cell has never been loaded.
+
+## 58. THE NESTED GYROID — a 3D prismscape, and the stack the Urchin could not ride (Oct 2026)
+
+`NestedGyroidFlora` grows a stack of **N nested gyroid sheets** G = t_i (t_i evenly spaced on
+[−tMax, +tMax], defaults N = 7, tMax = 1.2) woven together by **fibers** traced along ∇G. The plain
+Gyroid flora (§32, §34) tiles the single sheet G = 0, a 2D prismscape; this is the first flora that is a
+**Volume** in `PrismscapeDimension`'s sense. Files: the rule `NestedGyroidLattice.cs` (pure C#,
+System.Numerics, no UnityEngine), the plant `NestedGyroidFlora.cs`, the config `NestedGyroidConfigSO`
+(`Assets/_SO_Assets/Lifeforms/NestedGyroidConfig.asset`), the prefab `NestedGyroidFlora.prefab`, the
+gates `Tools/Build/nested_gyroid_harness/run.sh` and `NestedGyroidLatticeTests`.
+
+### 58.1 Why tMax < √2 is the whole licence
+
+G = sin x cos y + sin y cos z + sin z cos x has critical values only at ±√2 and ±1.5, so inside
+|t| < √2 the gradient never vanishes: the level sets never touch and every gradient line crosses each one
+exactly once. That single fact is what makes "N sheets plus fibers that cross every sheet once" a
+well-defined object rather than a hope. `NestedGyroidSettings.TMaxCeiling` = 1.40 enforces it
+(`Sanitized`, and the config's `[Range]`). Measured |∇G| per level: t = 0 → 1.41–1.73, t = 0.8 →
+1.15–1.48, t = 1.2 → 0.70–1.08 — so the outer layers are up to **2.3×** deeper than the inner ones.
+
+### 58.2 The rule, and what each step is for
+
+1. **Sheets (the skin).** Sign changes of G − t_i on a voxel grid (0.3 × the spacing), 2 Newton steps
+   p ← p − (G − t)·∇G/|∇G|², Poisson-disk thinning (deterministic splitmix64 — never UnityEngine.Random).
+2. **Fibers (the warp).** Seeds Poisson-thinned on G = 0 at `FiberSeedSpacing`, traced by RK4 along
+   ±∇G/|∇G| to ±tMax. Each crossing is **forced** into that sheet's Poisson set, so a fiber always lands
+   on a plate; two crossings that crowd each other truncate the later fiber from there out (a fiber is
+   contiguous from t = 0 or it is nothing). Struts fill each gap between consecutive crossings, kept a
+   clearance off both plates. Every prism's local **+z points UP G** — the strut tangent on a negative-t
+   gap is flipped — because the layered ride (§58.4) reads +z as the stack's direction.
+3. **Orientation.** Plates: +z = ∇G (the ride kernel's authored normal), +y = the combed long axis.
+   Combing: parallel transport outward from the heart over a same-sheet + adjacent-sheet graph, then 12
+   doubled-angle (sign-free) Jacobi passes. **Measured: 26.4° → 20.0°** mean neighbour misalignment
+   (the per-site projection of a fixed axis is the negative control). The residual is curvature, not
+   noise: at the default budget the plate spacing (20) is close to the sheet's curvature radius (~25).
+   Then the **helicoidal plywood**: each sheet's axis turned `PlywoodTwistDegrees` (25°) × sheet index
+   about ∇G.
+4. **Thickness-aware sizing.** Local layer gap Δt/|∇G| (8.8–20.4 world units at the defaults). Plate
+   thickness = 0.22 × gap (capped at ¾ of its width so a plate stays a plate); footprint × √(gap/median)
+   clamped [0.85, 1.25]. corr(thickness, 1/|∇G|) = 1.00 — the saddles read visibly thicker.
+5. **The fit.** Exact OBB separating-axis test over every pair within reach, margin = half the
+   clearance; overlapping prisms shrink 0.88× per pass (plates in-plane, struts along), floor 35%, then
+   the outer-ring prism of a still-touching pair is dropped. **Default: 57 pairs before the fit, 0 after,
+   0 dropped**; the brute-force every-pair re-check is 0 with a 1.6×-inflated negative control at 1,657.
+6. **The rider graph.** In-sheet links inside **90%** of the smaller endpoint's Urchin reach
+   (`max(1, largest extent) × 2.5 + 2` — `BlockscapeFollower`'s own ground-search radius); cross-sheet
+   links along the fibers only. Union-find, keep the heart's component, prune the rest (the cube clip
+   leaves a few fragments: 1 prism at the defaults).
+7. **Growth order.** Ring by ring from the t = 0 sheet; within a ring, multi-source BFS from everything
+   laid — so each new sheet spreads out of the fibers that reached it. `Parent[i] < i` and every parent is
+   a real bond (asserted). 3 of 2,011 prisms are laid a ring late — fragments of an inner sheet reachable
+   only from outside — and the gate allows 1%.
+8. **Budget.** Over `PrismBudget` the tiling **coarsens** (sheets and fibers together, ∝ √(count/budget))
+   and rebuilds; only if four passes cannot fit is the growth-order prefix cut, which is still one plant
+   (and warns that the outer skin is incomplete).
+
+**Default build: 2,011 prisms (1,799 sheet / 212 fiber, 44 fibers, 7 sheets), 1 component, neighbour gap
+min/median/max 4.45 / 20.97 / 38.63, worst bond 90% of reach, 0 overlaps, ~0.1 s total, sliced at 2 ms
+per frame into 38 slices (worst 4.8 ms).** The sweep N ∈ {2,3,5,7,9} × tMax ∈ {0.6, 1.2, 1.38}, 2 cells per
+side, and maxSheets 3 passes every gate (`run.sh sweep`). **Cut the fiber links and it is 15 separate
+shells** — the negative control for the claim this species exists to make.
+
+### 58.3 The plant
+
+A COMPACT species (§6 of the flora skill): it completes and funds per-plant offspring from its quota; no
+frontier, no claim book. `PrismSizeFixedByGrowthRule` is true (every size is fitted); resizing is
+`FloraVariantTuning.LatticeScale`, a uniform similarity of every length. One lattice per settings key is
+built once (time-sliced, one in-flight build shared by every plant of the config) and cached. Limbs are
+the bonds that ARE limbs — out of the heart and along every fiber (389 at the defaults); a plate beside a
+plate is tiling and carries none, which keeps the spindle count under a fifth of the prism count. Sizes ride the
+`_pendingPrismScale` stamp `MandelbulbFlora` established. Counts are logged once per build on the
+**Ecology** channel (`FrogletTools > Toolbox > Logging`); a broken guarantee or a budget cut is a warning.
+At full growth, with the channel on, a physics spot-check runs `OverlapBox` on 64 sampled prisms and
+reports cross-layer hits (and how many it skipped for an LOD-culled collider).
+
+**Not done, deliberately:** the four-element contract (§51). Every element grows the anchor lattice; a
+Charge plant's shields (1.5 × leaf octahedra) are not fitted against the layer gap. No `FloraConfigurationSO`
+exists and no cell adopts the species — the prefab is `autoInitialize` and roots where it is placed when
+it has no cell, which is the test-scene path.
+
+### 58.4 The Urchin could not ride a stack — and the change that lets it
+
+`BlockscapeFollower` takes the **nearest prism centre** as its ground and never consults adjacency. On a
+shell that is the shell. In this stack the layers lie 8.8–20 apart while plates lie ~20 apart in-plane,
+so the nearest centre is often on the NEXT layer, and a rider coasting between plates on a convex sheet
+drifts toward it. **Measured on the ride model: an in-sheet roll under the old rule visited sheets
+3, 2, 4, 5, 1**; pitching in or out was a random walk with 6–9 reversals. A geometric fix cannot work —
+weighting the off-plane distance was tried first and still leaked (3, 4, 2, 1), because how far apart two
+layers are is not something a prism's position says. So the structure says it:
+
+* **`ILayeredPrismscape.TryGetStackCoordinate`** — sheet i is 2i, a strut between i and i+1 is 2i+1.
+  `NestedGyroidFlora` implements it; `PrismscapeTopology.LayeredOwnerOf` resolves it through
+  `HealthPrism.LifeForm` (Unity-null-checked), and `DimensionOf` returns **Volume** for it rather than
+  running the census, which near the outer skin sees half the stack and would say Surface.
+* **Layered ground rule** (only while the ground's owner declares a stack — every other prismscape rides
+  exactly as before): a candidate of the same structure is eligible only on the SAME layer, or, while the
+  pilot pitches past `layerClimbDeadzone` (0.35), on the next strut or sheet in that direction (±1/±2).
+  Candidates are scored to their **hover point** (centre + hoverHeight along their normal), so a climb
+  hands over halfway between riding heights. A prism of another structure stays eligible as it always was.
+* **Layered climb**: the aim's out-of-plane component (past the deadzone) carries the rider along the
+  normal at `layerClimbFraction` (0.6) of crawl speed, and the hover spring **lets go** while a layer
+  exists ahead — the spring's equilibrium (climb speed / 5) otherwise stalls short of a deep outer gap.
+  Pitching out of the outermost skin finds no layer ahead, so the spring holds and the skin stays ridden.
+
+**Measured on the ride model (harness, Urchin defaults, 60 u/s):** an in-sheet roll crosses 10 plates and
+stays on sheet 3; pitching up the stack visits 3 > 4 > 5 > 6 and stops on the skin; pitching down visits
+3 > 2 > 1 > 0; zero reversals. The model is a transcription of `BlockscapeFollower` (the shipped file is a
+MonoBehaviour); `RideModel.cs` names the method each block mirrors and must move with it.
+
+### 58.5 The look
+
+Colour is a team (`Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md`), so the sheets are graded as a **shade of the domain colour**, never a new hue:
+`Prism.SetColorShade(gain, whiten)` → `PrismRenderService.ApplyColorShade`, re-applied after every
+material sync (survives team / shield / transparency changes), reset on pooled `Initialize`. Modes:
+`GradedByLevel` (gain 0.55 at −tMax → 1.25 at +tMax) or `AlternatingSheets` (odd sheets 0.6); fibers
+are whitened 45% — the third treatment. Entity path only: while a shield's exotic visual holds the
+GameObject renderer the prism shows its material unshaded.

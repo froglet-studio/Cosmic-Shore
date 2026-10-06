@@ -4543,3 +4543,46 @@ Fleet-wide. Every drain got lighter and three verbs gained one they never had.
 The **Rhino's energised sword** lands a Strike and drains nothing — it is now the only scoring
 verb with no drain path. Arming it is a Rhino kit decision (a skimmer drain SO on the sword's
 container), not a number, so it is reported rather than done.
+
+## 🔴 Nested Gyroid flora + the Urchin's layered ride (`cece/happy-clarke-e0xu4y`, 2026-10-06) — NOT EDITOR-VERIFIED
+
+No Unity Editor or `unity` CLI was available in the authoring session, so `/verify-unity` did **not** run.
+What WAS run: `bash Tools/Build/nested_gyroid_harness/run.sh` (and `run.sh sweep`) — the shipped
+`NestedGyroidLattice.cs` compiled against netstandard2.1 / C# 9 and executed, every acceptance gate green
+with negative controls; a Roslyn type-check of `NestedGyroidFlora`, `NestedGyroidConfigSO`,
+`ILayeredPrismscape`, `PrismscapeTopology` and `BlockscapeFollower` against hand-copied stubs. **Not
+compiled at all:** the `Prism.cs` / `PrismRenderService.cs` colour-shade additions. Docs/ECOSYSTEM.md §58.
+
+### 1. It compiles and the edit-mode suite passes
+Open the project; confirm zero compile errors. Run `NestedGyroidLatticeTests` (Test Runner, EditMode) —
+all 11 green.
+
+### 2. The plant grows (test scene)
+New empty scene (or `Assets/_Scenes/Game_TestDesign/`), drop `Assets/_Prefabs/FloraAndFauna/NestedGyroidFlora.prefab`
+at the origin, enter Play. Enable **FrogletTools > Toolbox > Logging > Ecology** first.
+- Within ~1 s a `[NestedGyroid] NestedGyroidConfig: 2011 prisms (1799 sheet / 212 fiber …), 1 component(s) …`
+  line appears — the counts must match the harness. **No hitch** on the frame it appears (Profiler: the
+  build runs ≤ ~2 ms per frame across ~40 frames).
+- Growth starts on the t = 0 sheet around the crystal and spreads outward; struts appear as each new sheet
+  does; at 40 prisms/s the plant completes in ~50 s.
+- Sheets read as graded shades of ONE domain colour (darker at −t, brighter at +t); struts read whitened.
+  Switch `ColorMode` to `AlternatingSheets` on the config and replant: odd sheets darker.
+- At full growth a `physics spot-check: 0 cross-layer overlaps in N prisms` line (N > 0 — if every prism
+  is "skipped, collider LOD-culled", fly a vessel into the plant and re-run).
+
+### 3. The Urchin rides it in three directions
+Same scene plus an Urchin (Toy/Freestyle spawn), or the Freestyle cell with the prefab placed in it.
+Fly into a sheet and attach (`[GunVesselTransformer] Riding a Volume prismscape.` on the PrismscapeRide
+channel — it must say **Volume**).
+- **Within a sheet:** aim along the surface and roll. The rider stays on its sheet (no jumping to the
+  layer above/below as it crosses between plates) and wraps over clipped edges.
+- **Through the stack:** pitch the nose firmly into the sheet (past ~20° out of plane). The rider steps
+  inward one layer at a time; pitch out and it steps outward. On the outermost sheet pitching out keeps
+  it on the skin (it does not float away).
+- **Regression — every other prismscape:** ride a vessel trail, the gyroid flora, a Schwarz P surface and
+  the Switchyard (a Volume declared by its Trail): behaviour must be unchanged (the layered rules engage
+  only for an `ILayeredPrismscape`).
+
+### 4. Colour shade does not leak
+Destroy a few nested-gyroid plates, then lay ordinary trail prisms (pooled reuse): no trail prism may come
+out darkened or whitened.
