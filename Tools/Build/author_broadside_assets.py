@@ -259,7 +259,7 @@ g.emit_asset("Assets/_SO_Assets/Games/ArcadeGameBroadside.asset", G_ASSET["Arcad
     12, a rocket up to 30. First team to the target wins. Pick the hull you fight best.
   IconActive: {{fileID: 21300000, guid: {EXISTING['IconActive']}, type: 3}}
   IconInactive: {{fileID: 21300000, guid: {EXISTING['IconInactive']}, type: 3}}
-  CardBackground: {{fileID: 21300000, guid: {EXISTING['CardBackground']}, type: 3}}
+  CardBackground: {{fileID: 21300000, guid: {lib.card_background('Broadside')}, type: 3}}
   GolfScoring: 1
   SceneName: MinigameBroadside
   Vessels:

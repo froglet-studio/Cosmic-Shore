@@ -61,6 +61,8 @@ namespace CosmicShore.ScriptableObjects
         public const int DefaultBendsPointTarget = 3;
         /// <summary>Scarab Scramble goal target used when <see cref="scarabScrambleGoalTarget"/> is 0 (auto/default).</summary>
         public const int DefaultScarabScrambleGoalTarget = 10;
+        /// <summary>Astro League mercy-rule goal limit used when <see cref="astroLeagueGoalLimit"/> is 0 (auto/default).</summary>
+        public const int DefaultAstroLeagueGoalLimit = 5;
         /// <summary>Salvo hostile-prism target used when <see cref="salvoPrismTarget"/> is 0 (auto/default).</summary>
         public const int DefaultSalvoPrismTarget = 700;
         /// <summary>Hijack steal target used when <see cref="hijackStealTarget"/> is 0 (auto/default).</summary>
@@ -233,6 +235,11 @@ namespace CosmicShore.ScriptableObjects
                  "crystals and continuous play, 10 reads as a 3-5 minute party match. " +
                  "0 = default (10).")]
         [Min(0)] public int scarabScrambleGoalTarget = 10;
+        [Tooltip("Astro League: goals a DOMAIN needs to end the match early (the mercy rule). " +
+                 "The match is otherwise TIMED (AstroLeagueSettingsSO.matchDurationSeconds), with " +
+                 "golden-goal overtime on a tie, so this caps a blowout rather than setting the " +
+                 "length. 0 = default (5).")]
+        [Min(0)] public int astroLeagueGoalLimit = 5;
         [Tooltip("Salvo: hostile prisms (the Boneyard's wreckage, rival trails, fauna bodies) a " +
                  "domain must destroy between them to win (race to N), summed across that " +
                  "domain's players. Lower than Rampage's target because the Sparrow's salvos " +
@@ -344,6 +351,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int dogFightPointTargetBuild = 90;
         [Min(0)] public int bendsPointTargetBuild = 3;
         [Min(0)] public int scarabScrambleGoalTargetBuild = 10;
+        [Min(0)] public int astroLeagueGoalLimitBuild = 5;
         [Min(0)] public int salvoPrismTargetBuild = 700;
         [Min(0)] public int switchbackGateTargetBuild = 20;
         [Min(0)] public int breakwaterStationTargetBuild = 15;
@@ -484,6 +492,14 @@ namespace CosmicShore.ScriptableObjects
         /// </summary>
         public int GetScarabScrambleGoalTarget() =>
             scarabScrambleGoalTarget > 0 ? scarabScrambleGoalTarget : DefaultScarabScrambleGoalTarget;
+
+        /// <summary>
+        /// Astro League mercy-rule goal limit: the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultAstroLeagueGoalLimit"/>. Resolved once by AstroLeagueController on the
+        /// server and replicated to clients as GameDataSO.GoalTargetCount.
+        /// </summary>
+        public int GetAstroLeagueGoalLimit() =>
+            astroLeagueGoalLimit > 0 ? astroLeagueGoalLimit : DefaultAstroLeagueGoalLimit;
 
         /// <summary>
         /// Salvo prism target ("race to N" hostile prisms destroyed): the configured value when
@@ -670,6 +686,8 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.DogFight                  => dogFightPointTarget > 0 ? dogFightPointTarget : DefaultDogFightPointTarget,
                 GameModes.Bends                     => bendsPointTarget > 0 ? bendsPointTarget : DefaultBendsPointTarget,
                 GameModes.ScarabScramble            => scarabScrambleGoalTarget > 0 ? scarabScrambleGoalTarget : DefaultScarabScrambleGoalTarget,
+                // Mercy-rule cap on a TIMED match: the most goals a match can race to.
+                GameModes.AstroLeague               => GetAstroLeagueGoalLimit(),
                 GameModes.Salvo                     => salvoPrismTarget > 0 ? salvoPrismTarget : DefaultSalvoPrismTarget,
                 GameModes.Switchback                => switchbackGateTarget > 0 ? switchbackGateTarget : DefaultSwitchbackGateTarget,
                 GameModes.Waystation                => waystationRingTarget > 0 ? waystationRingTarget : DefaultWaystationRingTarget,
@@ -723,6 +741,7 @@ namespace CosmicShore.ScriptableObjects
             dogFightPointTarget == dogFightPointTargetBuild &&
             bendsPointTarget == bendsPointTargetBuild &&
             scarabScrambleGoalTarget == scarabScrambleGoalTargetBuild &&
+            astroLeagueGoalLimit == astroLeagueGoalLimitBuild &&
             salvoPrismTarget == salvoPrismTargetBuild &&
             switchbackGateTarget == switchbackGateTargetBuild &&
             waystationRingTarget == waystationRingTargetBuild &&
@@ -756,6 +775,7 @@ namespace CosmicShore.ScriptableObjects
             dogFightPointTarget = dogFightPointTargetBuild;
             bendsPointTarget = bendsPointTargetBuild;
             scarabScrambleGoalTarget = scarabScrambleGoalTargetBuild;
+            astroLeagueGoalLimit = astroLeagueGoalLimitBuild;
             salvoPrismTarget = salvoPrismTargetBuild;
             switchbackGateTarget = switchbackGateTargetBuild;
             waystationRingTarget = waystationRingTargetBuild;
@@ -790,6 +810,7 @@ namespace CosmicShore.ScriptableObjects
             dogFightPointTargetBuild = dogFightPointTarget;
             bendsPointTargetBuild = bendsPointTarget;
             scarabScrambleGoalTargetBuild = scarabScrambleGoalTarget;
+            astroLeagueGoalLimitBuild = astroLeagueGoalLimit;
             salvoPrismTargetBuild = salvoPrismTarget;
             switchbackGateTargetBuild = switchbackGateTarget;
             waystationRingTargetBuild = waystationRingTarget;

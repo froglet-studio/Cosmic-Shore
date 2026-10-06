@@ -680,8 +680,10 @@ post plus `HapticController.PlayAlert()` on every peer. A lead change after the 
 posts `DogFightLeadChanged`.
 
 These are **pure feedback — they change no game state**, so a missed or late sample costs a toast,
-never a rule. Toast copy is unauthored today, so **right now the shake IS the milestone feedback**
-(same state as Cleave and Wildlife Liberation).
+never a rule. Toast copy is authored in `_SO_Assets/Game Toasts/GameToastConfig_DogFight.asset`
+(registered in `GameToastLibrary.asset`): the quarter, half and lead-change milestones, plus
+`RocketHit` ("landed a rocket!") and the comeback notice, so the haptic shake and the toast fire
+together.
 
 ## Everyone starts at zero
 
@@ -943,10 +945,9 @@ the bullet effect onto `SparrowFullAutoProjectileImpactContainer` **and**
   matters — a `ClientRpc` broadcast of the confirmed hit (the joust's
   `NetworkVesselImpactor.ExecuteJoust_ClientRpc` shape) is the clean fix and is deliberately out
   of scope here.
-- **Toast copy is unauthored.** The three `GameToastSituation` values exist but no
-  `GameToastConfigSO` authors definitions, so they are silently skipped (which is how a mode opts
-  out). Author a `GameToastConfig_DogFight.asset` with `{0}`=domain, `{1}`=points, `{2}`=target
-  to make them visible.
+- **Toast copy is authored** in `GameToastConfig_DogFight.asset` (`{0}`=domain, `{1}`=points,
+  `{2}`=target) for `DogFightQuarterDown`, `DogFightHalfDown`, `DogFightLeadChanged`,
+  `RocketHit` and the comeback notice. Edit the copy there.
 - **No UGS stats reporter yet** (a "most missile hits" leaderboard is a clean follow-up), and no
   dedicated end-game controller — the shared scoreboard handles it.
 - **A 4-player / 3-domain lobby is 2v1v1**, which is not balanced. The lobby allows it because
