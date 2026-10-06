@@ -440,8 +440,9 @@ simulator said. Two reasons, each fixed exactly (decisions unchanged):
    `Project`, the per-prism step and the stella kernel in `ShellClearance`, the laid-mass box test
    (`SkimRaceObstacle.LocalFrame`) - now do the same float operations in the same order on scalars.
    Measured on Mono 6.8 (the editor's runtime family), decide cost per seat per frame, 3 AI seats:
-   I2 1.926 -> 0.902 ms, I4 0.562 -> 0.243 ms. The simulator now builds for Mono too
-   (`monosim.sh` pattern: the SDK's Roslyn against Mono's class libraries).
+   I2 1.926 -> 0.902 ms, I4 0.562 -> 0.243 ms. The simulator now runs on Mono too:
+   `SKIMRACE_RUNTIME=mono bash Tools/Build/skimrace_sim_harness/run.sh eval ...` (the SDK's Roslyn
+   against Mono's class libraries; same race output as .NET, the editor's cost profile).
 
 Proof for both: race output byte-identical to the previous code on .NET (I1/I2/I4 x 6 seeds) and on
 Mono (I2/I4 x 2 seeds); `SkimRaceCourseQueryTests` pins the float stella kernel and the box frame
