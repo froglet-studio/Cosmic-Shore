@@ -1044,6 +1044,11 @@ references, m_Script classes). Four things that cost time on the first run (2026
   declaring `namespace CosmicShore.Editor` (123 files do). That config compiles changed
   Editor-folder files INTO the runtime compilation; Unity keeps them in Assembly-CSharp-Editor,
   which runtime code cannot see. The summary line says "(0 in files changed since …)" - believe it.
+- **`--config editor` only sees Editor-folder files that are COMMITTED.** It picks them with
+  `git diff --name-only <changed-base>...HEAD`, so a test you edited but have not committed is
+  silently left out and the run is green without having compiled it. Read the
+  `editor config: + N Editor-folder file(s) changed since …` line and confirm your file is named;
+  if not, commit first and re-run (2026-10-06: `SkimRaceAITests.cs` was missing until committed).
 - **Negative-control both tools before quoting them**: plant a call to a missing member in a file
   you changed (the compile must fail with that file tagged `[CHANGED-TONIGHT]`), and misspell one
   key in an asset you changed (the audit must name the file and the key). Restore, then

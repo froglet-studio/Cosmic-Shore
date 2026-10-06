@@ -205,6 +205,12 @@ namespace CosmicShore.Gameplay
             foreach (var human in GatherHumanPlayers())
                 if (human) hullsInUse.Add(gameData.ClampVesselToGame(human.NetDefaultVesselType.Value));
 
+            // Domains a human flies - after NormalizeUnassignedHumans, so a re-seated human
+            // counts where they will actually fly. An AI elsewhere is an OPPONENT seat.
+            var humanDomains = new HashSet<Domains>();
+            foreach (var kv in humanCounts)
+                if (kv.Value > 0) humanDomains.Add(kv.Key);
+
             // The whole loop runs synchronously in ONE frame — the dominant launch spike at
             // high player counts. The span makes that cost (and its scaling) visible.
             using var _ = LoadInsights.Measure(LoadInsightCategory.AiBackfill,
@@ -235,22 +241,6 @@ namespace CosmicShore.Gameplay
 
                 // Use template data if available, otherwise derive values dynamically
                 var hasTemplate = aiInitializeDatas != null && i < aiInitializeDatas.Length;
-
-                var aiVesselType = hasTemplate ? aiInitializeDatas[i].vesselClass : VesselClassType.Random;
-                // ARENA: a hull is flown by ONE pilot, so an authored template that names a hull
-                // somebody already has is re-drawn like an unset one.
-                if (aiVesselType is VesselClassType.Any or VesselClassType.Random ||
-                    (gameData.IsArenaMatch && hullsInUse.Contains(aiVesselType)))
-                    aiVesselType = PickAIVesselType(hullsInUse);
-
-                // A restricted-vessel mode restricts the AI too. The AI's class comes from the
-                // scene's aiInitializeDatas (or the captain roll), neither of which knows the
-                // mode's rules - so a scene authored with the wrong template, or a captain roll
-                // in a single-vessel mode, would field opponents in an illegal hull. Same clamp
-                // and same authority as the human path (ResolveSpawnVesselType); no-op when the
-                // game authors no Vessels list.
-                aiVesselType = gameData.ClampVesselToGame(aiVesselType);
-                hullsInUse.Add(aiVesselType);
 
                 // A seat already dealt this tournament is replayed verbatim - same bot, same team,
                 // every round. It still bumps the placement counts, so any bot WITHOUT a seat yet
@@ -300,6 +290,10 @@ namespace CosmicShore.Gameplay
                     if (tournament)
                         tournamentData.MaelstromAISeats.Add(new MaelstromAISeat { Name = aiName, Domain = aiDomain });
                 }
+
+                // The HULL is decided after the DOMAIN, because which kind of seat this is
+                // (opponent or ally) is a question about the domain - see AIHullSeating.
+                var aiVesselType = ResolveAIVesselType(i, hasTemplate, aiDomain, humanDomains, hullsInUse);
 
                 aiPlayer.NetDefaultVesselType.Value = aiVesselType;
                 aiPlayer.NetName.Value = aiName;
@@ -426,6 +420,64 @@ namespace CosmicShore.Gameplay
             }
 
             CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-5AI] NormalizeUnassignedHumans: {reassigned}/{humans.Count} humans reassigned, totals={string.Join(", ", totalCounts)}");
+        }
+
+        /// <summary>
+        /// The hull AI seat <paramref name="seat"/> flies, once its domain is known.
+        ///
+        /// <para><b>Opponent seat</b> (a domain no human flies) on a card that pins an opponent
+        /// hull (<c>SO_ArcadeGame.OpponentAIVessel</c>): that hull, every time. It is NOT added to
+        /// <paramref name="hullsInUse"/> - a pinned opponent grid is exempt from arena seating
+        /// and must not narrow the allies' draw.</para>
+        ///
+        /// <para><b>Ally seat</b>: the hull a teammate picked for it on the launch panel
+        /// (<see cref="GameDataSO.RequestedAIVessels"/>) when that hull is legal, built, and -
+        /// under arena seating - still free; otherwise the scene template, otherwise the card's
+        /// draw. Every route ends in the same clamp the human path uses.</para>
+        /// </summary>
+        VesselClassType ResolveAIVesselType(int seat, bool hasTemplate, Domains aiDomain,
+                                            ICollection<Domains> humanDomains,
+                                            HashSet<VesselClassType> hullsInUse)
+        {
+            var opponentHull = gameData.OpponentAIVesselClass;
+            if (AIHullSeating.IsOpponentSeat(opponentHull, aiDomain, humanDomains) &&
+                vesselPrefabContainer.TryGetShipPrefab(opponentHull, out _, reportMissing: false))
+                return opponentHull;
+
+            var picked = seat < gameData.RequestedAIVessels.Count
+                ? gameData.RequestedAIVessels[seat]
+                : VesselClassType.Random;
+            if (AIHullSeating.IsConcrete(picked))
+            {
+                bool legal = gameData.ClampVesselToGame(picked) == picked;
+                bool free = !gameData.IsArenaMatch || !hullsInUse.Contains(picked);
+                if (legal && free && vesselPrefabContainer.TryGetShipPrefab(picked, out _, reportMissing: false))
+                {
+                    hullsInUse.Add(picked);
+                    return picked;
+                }
+
+                CSDebug.LogWarning($"[ServerPlayerVesselInitializerWithAI] Ally AI {seat} was picked " +
+                                   $"{picked}, which is {(legal ? free ? "not built" : "already flown" : "not on this card")}; " +
+                                   "drawing from the card instead.");
+            }
+
+            var aiVesselType = hasTemplate ? aiInitializeDatas[seat].vesselClass : VesselClassType.Random;
+            // ARENA: a hull is flown by ONE pilot, so an authored template that names a hull
+            // somebody already has is re-drawn like an unset one.
+            if (!AIHullSeating.IsConcrete(aiVesselType) ||
+                (gameData.IsArenaMatch && hullsInUse.Contains(aiVesselType)))
+                aiVesselType = PickAIVesselType(hullsInUse);
+
+            // A restricted-vessel mode restricts the AI too. The AI's class comes from the
+            // scene's aiInitializeDatas (or the captain roll), neither of which knows the
+            // mode's rules - so a scene authored with the wrong template, or a captain roll
+            // in a single-vessel mode, would field opponents in an illegal hull. Same clamp
+            // and same authority as the human path (ResolveSpawnVesselType); no-op when the
+            // game authors no Vessels list.
+            aiVesselType = gameData.ClampVesselToGame(aiVesselType);
+            hullsInUse.Add(aiVesselType);
+            return aiVesselType;
         }
 
         /// <summary>

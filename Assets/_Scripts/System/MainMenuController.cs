@@ -164,6 +164,7 @@ namespace CosmicShore.Core
             // Same for arena seating: the menu is not a match, so no hull is exclusive and the
             // pilot-swap gesture has no teammate to reach.
             _gameData.IsArenaMatch = false;
+            _gameData.OpponentAIVesselClass = VesselClassType.Random;
 
             // The host's Player NetworkObject was spawned in the Auth scene, where
             // gameData.selectedVesselClass was Squirrel (set by AppManager.ConfigureGameData).
