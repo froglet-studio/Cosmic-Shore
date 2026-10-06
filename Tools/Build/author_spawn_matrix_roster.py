@@ -22,6 +22,7 @@ the toy's variant row shows one station per element the species actually has.
     python3 Tools/Build/author_spawn_matrix_roster.py --check   # exit 1 if the toy has drifted
 """
 import argparse
+import hashlib
 import re
 import sys
 from pathlib import Path
@@ -37,6 +38,84 @@ def lifeform_set(name):
     return [f"Lifeforms/{name} Flora {e}.asset" for e in ELEMENTS]
 
 
+# ── Bench-only swarm configs ─────────────────────────────────────────────────────────────────
+# The Swarm cell ships the SORT model only (round 7 repointed / deleted the configs of the other
+# three sim models), but SWARM_FAUNA.md §14 keeps the FIELD, GRID and EVOFATE prefabs in the tree
+# for the bench. Nothing pointed a FaunaConfigurationSO at them, so they were unreachable. These
+# configs exist only for the Spawn Matrix: one per element per model, in their own folder so the
+# Swarm-cell and Lifeforms generators never see them. Cloned from the shipped Sort config.
+BENCH_DIR = "Swarm Fauna/Bench"
+SWARM_DONOR = "Cell Configs/Swarm Cell/Swarm Inner Mass Swarm Fauna Config Data.asset"
+SWARM_PREFAB_FILEID = "4174204561870355101"
+# model: (prefab guid, band inner, band outer) - bands are each model's last shipped band.
+SWARM_MODELS = {
+    "Field": ("d38acaa5904e7a000730e2d5ad289ffc", 610, 740),
+    "Grid": ("fdf92e28cdd61e8c14732eb0bc7c549d", 430, 560),
+    "EvoFate": ("a6815be88f6a14d8e8197168459d2680", 970, 1120),
+}
+SORT_PREFAB = "dba51f6ae2c167ee689fa855305270f7"
+ELEMENT_VALUES = {"Charge": 1, "Mass": 2, "Space": 3, "Time": 4}
+
+
+def bench_guid(name):
+    return hashlib.md5(f"spawn-matrix-bench:{name}".encode()).hexdigest()
+
+
+def bench_name(model, element):
+    return f"Bench Swarm {model} {element} Fauna Config Data"
+
+
+def bench_configs():
+    """{relative path: (asset text, guid)} for every bench-only swarm config."""
+    donor = (SO / SWARM_DONOR).read_text()
+    out = {}
+    plan = [(m, e, *SWARM_MODELS[m]) for m in SWARM_MODELS for e in ELEMENTS]
+    # The shipped Sort swarm has Charge, Mass and Space; its Time element (the dragonfly) is
+    # bench-only, in the shipped middle band.
+    plan.append(("Sort", "Time", SORT_PREFAB, 690, 840))
+    for model, element, prefab, inner, outer in plan:
+        name = bench_name(model, element)
+        text = donor
+        for pattern, repl in (
+            (r"^  m_Name: .*$", f"  m_Name: {name}"),
+            (r"^  FaunaPrefab: .*$",
+             f"  FaunaPrefab: {{fileID: {SWARM_PREFAB_FILEID}, guid: {prefab}, type: 3}}"),
+            (r"^  BandInnerRadius: .*$", f"  BandInnerRadius: {inner}"),
+            (r"^  BandOuterRadius: .*$", f"  BandOuterRadius: {outer}"),
+            (r"^  Element: .*$", f"  Element: {ELEMENT_VALUES[element]}"),
+        ):
+            text, n = re.subn(pattern, repl, text, count=1, flags=re.M)
+            if n != 1:
+                sys.exit(f"author_spawn_matrix_roster: donor swarm config lacks '{pattern}'")
+        out[f"{BENCH_DIR}/{name}.asset"] = (text, bench_guid(name))
+    return out
+
+
+ASSET_META = """fileFormatVersion: 2
+guid: {guid}
+NativeFormatImporter:
+  externalObjects: {{}}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+"""
+
+FOLDER_META = """fileFormatVersion: 2
+guid: {guid}
+folderAsset: yes
+DefaultImporter:
+  externalObjects: {{}}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+"""
+
+
+def bench_set(model):
+    return [f"{BENCH_DIR}/{bench_name(model, e)}.asset" for e in ELEMENTS]
+
+
 # (row name, [config paths relative to Assets/_SO_Assets]) in display order.
 FAUNA = [
     ("Piranha", ["Cell Configs/Astro League Cell/Astro League Piranha Fauna Config Data.asset"]),
@@ -44,7 +123,11 @@ FAUNA = [
         "Cell Configs/Swarm Cell/Swarm Middle Charge Swarm Fauna Config Data.asset",
         "Cell Configs/Swarm Cell/Swarm Inner Mass Swarm Fauna Config Data.asset",
         "Cell Configs/Swarm Cell/Swarm Outer Space Swarm Fauna Config Data.asset",
+        f"{BENCH_DIR}/{bench_name('Sort', 'Time')}.asset",
     ]),
+    ("Swarm Field", bench_set("Field")),
+    ("Swarm Grid", bench_set("Grid")),
+    ("Swarm EvoFate", bench_set("EvoFate")),
     ("Pack Hunter", ["Substrate Fauna/Substrate Pack Hunter Fauna Config Data.asset"]),
     ("Locust", ["Substrate Fauna/Substrate Locust Fauna Config Data.asset"]),
     ("Lurker", ["Substrate Fauna/Substrate Lurker Fauna Config Data.asset"]),
@@ -65,6 +148,8 @@ FLORA = [
         "Cell Configs/Swarm Cell/Swarm Outer Borromean Flora Space Config Data.asset",
         "Cell Configs/Swarm Cell/Swarm Middle Borromean Flora Time Config Data.asset",
     ]),
+    ("Gyroid Topiary", ["Cell Configs/Hesperides Cell/Hesperides Gyroid Topiary Config Data.asset"]),
+    ("SchwarzP Topiary", ["Cell Configs/Hesperides Cell/Hesperides SchwarzP Topiary Config Data.asset"]),
     ("Physarum", ["Threat Flora/Swarm Physarum Flora Space Config Data.asset"]),
     ("Snap Trap", ["Threat Flora/Swarm Snap Trap Flora Time Config Data.asset"]),
 ]
@@ -125,6 +210,24 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true")
     args = ap.parse_args()
+
+    # Bench-only configs first: the rows below resolve their guids from the metas on disk.
+    drifted = []
+    files = {}
+    for rel, (text, guid) in bench_configs().items():
+        files[SO / rel] = text
+        files[SO / (rel + ".meta")] = ASSET_META.format(guid=guid)
+    files[SO / (BENCH_DIR + ".meta")] = FOLDER_META.format(guid=bench_guid("folder"))
+    for path, text in files.items():
+        if path.exists() and path.read_text() == text:
+            continue
+        drifted.append(path.relative_to(ROOT))
+        if not args.check:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(text)
+    if drifted and args.check:
+        print("author_spawn_matrix_roster: bench configs drifted: " + ", ".join(map(str, drifted)))
+        sys.exit(1)
 
     original = TOY.read_text()
     toy = original

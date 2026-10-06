@@ -162,10 +162,14 @@ namespace CosmicShore.UI
             // The label of the branch row that opened this layer; null on the toy's own top
             // layer. Read back as the PATH a committed variant is remembered under.
             public readonly string OpenedBy;
-            public Layer(List<ToyShellOption> options, string openedBy = null)
+            // The opening row's own Description, shown while the player is inside this layer (a
+            // species' element row is still "about" that species).
+            public readonly string Description;
+            public Layer(List<ToyShellOption> options, string openedBy = null, string description = null)
             {
-                Options  = options;
-                OpenedBy = openedBy;
+                Options     = options;
+                OpenedBy    = openedBy;
+                Description = description;
             }
         }
 
@@ -314,7 +318,7 @@ namespace CosmicShore.UI
                     if (!option.IsBranch) return null;
                     var next = option.Expand();
                     if (next is not { Count: > 0 }) return null;
-                    PushLayer(next, option.Label);
+                    PushLayer(next, option.Label, option.Description);
                     continue;
                 }
 
@@ -476,7 +480,7 @@ namespace CosmicShore.UI
             // tagline - falling back to the toy definition's own line for a toy the codex has not
             // been scanned for. Never a string table in the UI layer: that would be a second place
             // to describe a toy, and it would drift from the toy's own assets.
-            if (descriptionText) descriptionText.text = ToyPortraitLibrary.Body(def);
+            UpdateDescription();
 
             if (preview) preview.Show(ResolveToy());
 
@@ -550,9 +554,9 @@ namespace CosmicShore.UI
             DrawRows();
         }
 
-        void PushLayer(List<ToyShellOption> options, string openedBy = null)
+        void PushLayer(List<ToyShellOption> options, string openedBy = null, string description = null)
         {
-            _stack.Add(new Layer(options, openedBy));
+            _stack.Add(new Layer(options, openedBy, description));
             _selected = -1;
             if (preview) preview.ClearVariant();
             DrawRows();
@@ -612,6 +616,36 @@ namespace CosmicShore.UI
 
             AutoSelectLoneRow();
             UpdateSwitchButton();
+            UpdateDescription();
+        }
+
+        /// <summary>
+        /// The description panel says what the player is LOOKING AT: the selected row's own
+        /// <see cref="ToyShellOption.Description"/>, else the description of the row that opened
+        /// the layer they are in (a species, while its elements are listed), else the toy's codex
+        /// body. A list of forty creature names is unreadable without it.
+        /// </summary>
+        void UpdateDescription()
+        {
+            if (!descriptionText) return;
+
+            if (_selected >= 0 && _selected < _rows.Count &&
+                !string.IsNullOrEmpty(_rows[_selected].Description))
+            {
+                descriptionText.text = _rows[_selected].Description;
+                return;
+            }
+            for (int i = _stack.Count - 1; i >= 0; i--)
+            {
+                if (string.IsNullOrEmpty(_stack[i].Description)) continue;
+                descriptionText.text = _stack[i].Description;
+                return;
+            }
+            // The codex's authored BODY copy - a paragraph, where the card gets the one-line
+            // tagline - falling back to the toy definition's own line for a toy the codex has not
+            // been scanned for. Never a string table in the UI layer: that would be a second place
+            // to describe a toy, and it would drift from the toy's own assets.
+            descriptionText.text = ToyPortraitLibrary.Body(LiveSurface?.ShellDefinition);
         }
 
         /// <summary>
@@ -703,7 +737,7 @@ namespace CosmicShore.UI
                 }
 
                 PlayMenuAudio(MenuAudioCategory.OptionClick);
-                PushLayer(next, option.Label);
+                PushLayer(next, option.Label, option.Description);
                 return;
             }
 
@@ -743,6 +777,7 @@ namespace CosmicShore.UI
                 if (_variantCards[i]) _variantCards[i].Bind(_rows[i], i == _selected);
 
             UpdateSwitchButton();
+            UpdateDescription();
         }
 
         void SwitchToSelected()

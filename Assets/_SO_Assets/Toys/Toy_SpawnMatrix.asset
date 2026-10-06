@@ -65,6 +65,7 @@ MonoBehaviour:
     - {fileID: 11400000, guid: e20c8e8ef02af26b9ce959fec6d4f293, type: 2}
     - {fileID: 11400000, guid: b859f07e3048bdf21b251d3f01260a10, type: 2}
     - {fileID: 11400000, guid: 294ab46e52e300bc36ccb3b4b9ab0640, type: 2}
+    - {fileID: 11400000, guid: 6ff4659cc12055a333f1812fd180cd90, type: 2}
   - Name: Pack Hunter
     ElementConfigs:
     - {fileID: 11400000, guid: 025124ddfd18b749d5627878c0ce725d, type: 2}
@@ -95,6 +96,24 @@ MonoBehaviour:
   - Name: Wearer Builders
     ElementConfigs:
     - {fileID: 11400000, guid: a635d6272e1d571db605a90a6452c41f, type: 2}
+  - Name: Swarm Field
+    ElementConfigs:
+    - {fileID: 11400000, guid: 28519724a437c877b6752a1641782706, type: 2}
+    - {fileID: 11400000, guid: d88bd07d2da7f8606093b21d78ff85aa, type: 2}
+    - {fileID: 11400000, guid: 6039cd2e3e73e255bbc5cf2900e9e539, type: 2}
+    - {fileID: 11400000, guid: 73c428da018f80ae52c69a64177d1d81, type: 2}
+  - Name: Swarm Grid
+    ElementConfigs:
+    - {fileID: 11400000, guid: d6bc369b80d3e3c88bcb69113c633aea, type: 2}
+    - {fileID: 11400000, guid: 64313e5dbea7f4301ccaf835a03b821a, type: 2}
+    - {fileID: 11400000, guid: b9728461572d47dc24d01eb17fc7119f, type: 2}
+    - {fileID: 11400000, guid: d4a4bbb28aa5361ef80d728304542a5d, type: 2}
+  - Name: Swarm EvoFate
+    ElementConfigs:
+    - {fileID: 11400000, guid: 03a0ee7d9805800ab3d24b7e1a603c60, type: 2}
+    - {fileID: 11400000, guid: 006bca47a3bb370689c7188e2d50dc11, type: 2}
+    - {fileID: 11400000, guid: aada3ccd4801efbc3f4c25cdc10f174a, type: 2}
+    - {fileID: 11400000, guid: 8f142de0bfa977f1443ba2d8bc0a1ef8, type: 2}
   floraSpecies:
   - Name: Gyroid
     ElementConfigs:
@@ -227,6 +246,12 @@ MonoBehaviour:
   - Name: Snap Trap
     ElementConfigs:
     - {fileID: 11400000, guid: b61248e2fe33d5cc91e5178d9cac74e3, type: 2}
+  - Name: Gyroid Topiary
+    ElementConfigs:
+    - {fileID: 11400000, guid: 4e4d2aa57519f8c461f0955dd262a5ea, type: 2}
+  - Name: SchwarzP Topiary
+    ElementConfigs:
+    - {fileID: 11400000, guid: b9e2c6e7516a215009922f1d6150a05c, type: 2}
   - Name: Borromean
     ElementConfigs:
     - {fileID: 11400000, guid: e61deb54b42a17dc301eedd9cf2a3b2a, type: 2}

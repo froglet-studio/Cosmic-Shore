@@ -23,6 +23,14 @@ namespace CosmicShore.Gameplay
         /// <summary>Second line: progress, state, "you are already here". Optional.</summary>
         public string Detail = "";
 
+        /// <summary>
+        /// What this option IS, in a sentence or two - shown in the window's description panel
+        /// while the row is selected, and while the player is inside the layer it opened. Optional;
+        /// empty falls back to the toy's own codex copy. The Spawn Matrix sets it for every species,
+        /// so a name like "Lurker" or "Watershed" says what distinguishes it.
+        /// </summary>
+        public string Description = "";
+
         /// <summary>The colour the station wears in the world.</summary>
         public Color Accent = Color.white;
 

@@ -304,6 +304,7 @@ namespace CosmicShore.Gameplay
                 options.Add(new ToyShellOption
                 {
                     Label = captured.Name,
+                    Description = _def.DescriptionOf(captured.Name),
                     Accent = Definition ? Definition.AccentColor : Color.white,
                     Expand = () => BuildShellVariants(captured.ElementConfigs, null),
                     BuildPreview = parent => BuildShellSpeciesPreview(captured.ElementConfigs, null, null, parent),
@@ -321,6 +322,7 @@ namespace CosmicShore.Gameplay
                 options.Add(new ToyShellOption
                 {
                     Label = captured.Name,
+                    Description = _def.DescriptionOf(captured.Name),
                     Accent = Definition ? Definition.AccentColor : Color.white,
                     Expand = () => BuildShellVariants(null, captured.ElementConfigs),
                     BuildPreview = parent => BuildShellSpeciesPreview(null, captured.ElementConfigs, null, parent),

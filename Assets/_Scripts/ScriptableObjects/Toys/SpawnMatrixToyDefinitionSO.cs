@@ -44,9 +44,25 @@ namespace CosmicShore.ScriptableObjects
             public FloraConfigurationSO[] ElementConfigs;
         }
 
+        [Serializable]
+        public class SpeciesDescription
+        {
+            [Tooltip("The species row this describes - matches FaunaSpecies.Name / FloraSpecies.Name.")]
+            public string Name;
+            [TextArea(2, 5), Tooltip("What distinguishes this species: how it looks or grows, where " +
+                                     "it lives, what it eats or does to a pilot, what it pays.")]
+            public string Description;
+        }
+
         [Header("Menagerie")]
         [SerializeField] FaunaSpecies[] faunaSpecies;
         [SerializeField] FloraSpecies[] floraSpecies;
+        [SerializeField, Tooltip("One description per species row, shown in the Toy Box while the " +
+                                 "species (or one of its elements) is picked. Kept beside the rows " +
+                                 "rather than in them because several generators own rows; " +
+                                 "Tools/Build/author_spawn_matrix_roster.py owns this list and its " +
+                                 "--check fails on a row with no description.")]
+        SpeciesDescription[] speciesDescriptions;
 
         [Header("Hangar")]
         [SerializeField, Tooltip("Vessel classes offered by the VESSELS branch, each a mini hull. " +
@@ -73,6 +89,15 @@ namespace CosmicShore.ScriptableObjects
         // NOTE: elements have SHAPE signatures, not colour signatures (colour belongs to
         // DOMAINS). Stations identify their element with the element's crystal MODEL - the
         // canonical in-world shape signature - never with a per-element tint.
+
+        /// <summary>The authored description for species row <paramref name="name"/>, or "".</summary>
+        public string DescriptionOf(string name)
+        {
+            if (speciesDescriptions == null || string.IsNullOrEmpty(name)) return "";
+            foreach (var d in speciesDescriptions)
+                if (d != null && d.Name == name) return d.Description ?? "";
+            return "";
+        }
 
         public FaunaSpecies[] Fauna => faunaSpecies;
         public FloraSpecies[] Flora => floraSpecies;
