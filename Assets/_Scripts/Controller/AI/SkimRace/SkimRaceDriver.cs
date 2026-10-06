@@ -917,7 +917,7 @@ namespace CosmicShore.Gameplay
         // (65536 cells is at least 32k units; a course is a few thousand).
         const float GridSpan = 65536f;
         Vector3[] _obCenter = new Vector3[0];
-        Quaternion[] _obInverse = new Quaternion[0];
+        SkimRaceObstacle.LocalFrame[] _obFrame = new SkimRaceObstacle.LocalFrame[0];
         Vector3[] _obHalf = new Vector3[0];
         float[] _obReach = new float[0];
         int[] _gridNext = new int[0];
@@ -936,7 +936,7 @@ namespace CosmicShore.Gameplay
             {
                 int cap = Mathf.NextPowerOfTwo(n);
                 _obCenter = new Vector3[cap];
-                _obInverse = new Quaternion[cap];
+                _obFrame = new SkimRaceObstacle.LocalFrame[cap];
                 _obHalf = new Vector3[cap];
                 _obReach = new float[cap];
                 _gridNext = new int[cap];
@@ -949,7 +949,7 @@ namespace CosmicShore.Gameplay
             {
                 var ob = Obstacles[i];
                 _obCenter[i] = ob.Center;
-                _obInverse[i] = Quaternion.Inverse(ob.Rotation);
+                _obFrame[i] = new SkimRaceObstacle.LocalFrame(Quaternion.Inverse(ob.Rotation));
                 _obHalf[i] = ob.Half;
                 // Same expression, same order, as the per-step test it replaces.
                 float reach = ob.Half.magnitude + w + l + _cfg.MassGuardMargin;
@@ -986,23 +986,29 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The guard's per-box test, verbatim: the reach cull, then the nearest of the hull centre,
+        /// The guard's per-box test, the same arithmetic as ever: the reach cull, then the nearest of the hull centre,
         /// wingtips, nose and tail to box <paramref name="i"/>. Returns the smaller of that and
         /// <paramref name="minC"/>. The grid walk and the exhaustive scan both call this, so the two
         /// paths cannot disagree about a box.
         /// </summary>
         float BoxClearance(int i, Vector3 pos, Vector3 right, Vector3 fwd, float minC)
         {
+            // In floats, for the editor's Mono JIT (see SkimRaceObstacle.LocalFrame): each line is the
+            // Vector3 expression it replaced - (oc - pos).sqrMagnitude, then Distance at pos, pos +- right
+            // and pos +- fwd, each point formed first and the centre subtracted from it.
             Vector3 oc = _obCenter[i];
+            float ox = oc.x - pos.x, oy = oc.y - pos.y, oz = oc.z - pos.z;
             float reach = _obReach[i];
-            if ((oc - pos).sqrMagnitude > reach * reach) return minC;
-            Quaternion inv = _obInverse[i];
+            if (ox * ox + oy * oy + oz * oz > reach * reach) return minC;
+            ref readonly SkimRaceObstacle.LocalFrame f = ref _obFrame[i];
             Vector3 half = _obHalf[i];
-            float c = Mathf.Min(SkimRaceObstacle.Distance(oc, inv, half, pos),
-                Mathf.Min(SkimRaceObstacle.Distance(oc, inv, half, pos + right),
-                          SkimRaceObstacle.Distance(oc, inv, half, pos - right)));
-            c = Mathf.Min(c, Mathf.Min(SkimRaceObstacle.Distance(oc, inv, half, pos + fwd),
-                                       SkimRaceObstacle.Distance(oc, inv, half, pos - fwd)));
+            float c0 = f.Distance(pos.x - oc.x, pos.y - oc.y, pos.z - oc.z, half);
+            float c1 = f.Distance(pos.x + right.x - oc.x, pos.y + right.y - oc.y, pos.z + right.z - oc.z, half);
+            float c2 = f.Distance(pos.x - right.x - oc.x, pos.y - right.y - oc.y, pos.z - right.z - oc.z, half);
+            float c3 = f.Distance(pos.x + fwd.x - oc.x, pos.y + fwd.y - oc.y, pos.z + fwd.z - oc.z, half);
+            float c4 = f.Distance(pos.x - fwd.x - oc.x, pos.y - fwd.y - oc.y, pos.z - fwd.z - oc.z, half);
+            float c = Mathf.Min(c0, Mathf.Min(c1, c2));
+            c = Mathf.Min(c, Mathf.Min(c3, c4));
             return c < minC ? c : minC;
         }
 

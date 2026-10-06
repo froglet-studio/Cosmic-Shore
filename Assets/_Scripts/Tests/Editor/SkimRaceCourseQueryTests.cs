@@ -89,6 +89,54 @@ namespace CosmicShore.Tests
             }
         }
 
+        [Test]
+        public void StellaDistance_FloatKernelMatchesTheVectorForm()
+        {
+            // The shell search's exact test is written out in floats for the editor's Mono JIT. It must
+            // return what the Vector3 form returned, bit for bit: inside (0), beside faces and edges,
+            // past spike tips, far off, and on degenerate (clamped) extents.
+            var rng = new System.Random(31);
+            var halves = new[] { Plate, new Vector3(0.5f, 6f, 2f), new Vector3(20f, 0.2f, 12f), Vector3.zero, new Vector3(1e-4f, 3f, 0f) };
+            for (int q = 0; q < 20000; q++)
+            {
+                Vector3 h = halves[q % halves.Length];
+                Vector3 p = q % 4 == 0
+                    ? Vector3.Scale(h, new Vector3(Range(rng, -1.1f, 1.1f), Range(rng, -1.1f, 1.1f), Range(rng, -1.1f, 1.1f)))
+                    : new Vector3(Range(rng, -40f, 40f), Range(rng, -15f, 15f), Range(rng, -40f, 40f));
+                float want = ReferenceStella(p, h);
+                float got = SkimRaceShell.StellaDistance(p.x, p.y, p.z, h);
+                Assert.IsTrue(SameBits(want, got), $"stella {got:R} != {want:R} at p=({p.x:R}, {p.y:R}, {p.z:R}) h={h}");
+                Assert.IsTrue(SameBits(want, SkimRaceShell.StellaDistance(p, h)), "the Vector3 entry point");
+            }
+        }
+
+        [Test]
+        public void ObstacleLocalFrame_MatchesInverseRotationTimesOffset()
+        {
+            // The laid-mass guard measures each box through a precomputed SkimRaceObstacle.LocalFrame.
+            // It must equal the form it replaced, Inverse(rotation) * (p - center), bit for bit.
+            var rng = new System.Random(47);
+            for (int q = 0; q < 20000; q++)
+            {
+                var box = new SkimRaceObstacle
+                {
+                    Center = new Vector3(Range(rng, -900f, 900f), Range(rng, -200f, 200f), Range(rng, -900f, 900f)),
+                    Rotation = Quaternion.Euler(Range(rng, -180f, 180f), Range(rng, -180f, 180f), Range(rng, -180f, 180f)),
+                    Half = new Vector3(Range(rng, 0f, 8f), Range(rng, 0f, 8f), Range(rng, 0f, 8f)),
+                };
+                Vector3 p = box.Center + new Vector3(Range(rng, -20f, 20f), Range(rng, -20f, 20f), Range(rng, -20f, 20f));
+                Quaternion inv = Quaternion.Inverse(box.Rotation);
+                Vector3 lp = inv * (p - box.Center);
+                float x = Mathf.Max(Mathf.Abs(lp.x) - box.Half.x, 0f);
+                float y = Mathf.Max(Mathf.Abs(lp.y) - box.Half.y, 0f);
+                float z = Mathf.Max(Mathf.Abs(lp.z) - box.Half.z, 0f);
+                float want = Mathf.Sqrt(x * x + y * y + z * z);
+                float got = new SkimRaceObstacle.LocalFrame(inv).Distance(p.x - box.Center.x, p.y - box.Center.y, p.z - box.Center.z, box.Half);
+                Assert.IsTrue(SameBits(want, got), $"box {got:R} != {want:R} (case {q})");
+                Assert.IsTrue(SameBits(want, box.Distance(p)), $"SkimRaceObstacle.Distance (case {q})");
+            }
+        }
+
         // ── The definitions ─────────────────────────────────────────────────────────
 
         static float ReferenceShellClearance(Vector3 position, int hint, int window, Vector3[] points,
@@ -146,6 +194,53 @@ namespace CosmicShore.Tests
             float t = len2 > 1e-6f ? Mathf.Clamp01(Vector3.Dot(p - a, ab) / len2) : 0f;
             float d2 = (a + ab * t - p).sqrMagnitude;
             if (d2 < bestSqr) { bestSqr = d2; bestSeg = i; bestT = t; }
+        }
+
+        /// <summary>The stella distance as the Vector3 form computed it before the float kernel, verbatim.</summary>
+        static float ReferenceStella(Vector3 local, Vector3 half)
+        {
+            half = new Vector3(Mathf.Max(half.x, 1e-3f), Mathf.Max(half.y, 1e-3f), Mathf.Max(half.z, 1e-3f));
+            return Mathf.Min(ReferenceTetra(local, half, TetraA), ReferenceTetra(local, half, TetraB));
+        }
+
+        static readonly Vector3[] TetraA = { new(1, 1, 1), new(1, -1, -1), new(-1, 1, -1), new(-1, -1, 1) };
+        static readonly Vector3[] TetraB = { new(-1, -1, -1), new(-1, 1, 1), new(1, -1, 1), new(1, 1, -1) };
+
+        static float ReferenceTetra(Vector3 p, Vector3 h, Vector3[] v)
+        {
+            Vector3 u = new(p.x / h.x, p.y / h.y, p.z / h.z);
+            bool inside = true;
+            for (int k = 0; k < 4 && inside; k++)
+                if (Vector3.Dot(v[k], u) < -1f) inside = false;
+            if (inside) return 0f;
+            Vector3 w0 = Vector3.Scale(v[0], h), w1 = Vector3.Scale(v[1], h), w2 = Vector3.Scale(v[2], h), w3 = Vector3.Scale(v[3], h);
+            float best = (ReferenceClosest(p, w0, w1, w2) - p).sqrMagnitude;
+            best = Mathf.Min(best, (ReferenceClosest(p, w0, w1, w3) - p).sqrMagnitude);
+            best = Mathf.Min(best, (ReferenceClosest(p, w0, w2, w3) - p).sqrMagnitude);
+            best = Mathf.Min(best, (ReferenceClosest(p, w1, w2, w3) - p).sqrMagnitude);
+            return Mathf.Sqrt(best);
+        }
+
+        static Vector3 ReferenceClosest(Vector3 p, Vector3 a, Vector3 b, Vector3 c)
+        {
+            Vector3 ab = b - a, ac = c - a, ap = p - a;
+            float d1 = Vector3.Dot(ab, ap), d2 = Vector3.Dot(ac, ap);
+            if (d1 <= 0f && d2 <= 0f) return a;
+            Vector3 bp = p - b;
+            float d3 = Vector3.Dot(ab, bp), d4 = Vector3.Dot(ac, bp);
+            if (d3 >= 0f && d4 <= d3) return b;
+            float vc = d1 * d4 - d3 * d2;
+            if (vc <= 0f && d1 >= 0f && d3 <= 0f) return a + d1 / (d1 - d3) * ab;
+            Vector3 cp = p - c;
+            float d5 = Vector3.Dot(ab, cp), d6 = Vector3.Dot(ac, cp);
+            if (d6 >= 0f && d5 <= d6) return c;
+            float vb = d5 * d2 - d1 * d6;
+            if (vb <= 0f && d2 >= 0f && d6 <= 0f) return a + d2 / (d2 - d6) * ac;
+            float va = d3 * d6 - d5 * d4;
+            if (va <= 0f && d4 - d3 >= 0f && d5 - d6 >= 0f)
+                return b + (d4 - d3) / ((d4 - d3) + (d5 - d6)) * (c - b);
+            float denom = 1f / (va + vb + vc);
+            return a + ab * (vb * denom) + ac * (vc * denom);
         }
 
         // ── Fixtures ────────────────────────────────────────────────────────────────

@@ -128,13 +128,25 @@ namespace CosmicShore.Gameplay
             return _cumulative[bestSeg] + bestT * (_cumulative[bestSeg + 1] - _cumulative[bestSeg]);
         }
 
+        // Written out in floats on purpose: ~49 of these run per projection, a projection runs every
+        // rollout step, and the editor's Mono JIT pays for each Vector3 operator as a call and a
+        // struct copy. The same float operations in the same order as the Vector3 form
+        // t = Clamp01(Dot(p - a, ab) / len2), d2 = (a + ab * t - p).sqrMagnitude, so the same answer.
         void TestSegment(int i, Vector3 p, ref int bestSeg, ref float bestSqr, ref float bestT)
         {
             Vector3 a = _points[i];
             Vector3 ab = _segDir[i];   // b - a and its squared length, computed once at construction
             float len2 = _segLen2[i];
-            float t = len2 > 1e-6f ? Mathf.Clamp01(Vector3.Dot(p - a, ab) / len2) : 0f;
-            float d2 = (a + ab * t - p).sqrMagnitude;
+            float t = 0f;
+            if (len2 > 1e-6f)
+            {
+                t = ((p.x - a.x) * ab.x + (p.y - a.y) * ab.y + (p.z - a.z) * ab.z) / len2;
+                t = t < 0f ? 0f : t > 1f ? 1f : t; // Mathf.Clamp01
+            }
+            float dx = a.x + ab.x * t - p.x;
+            float dy = a.y + ab.y * t - p.y;
+            float dz = a.z + ab.z * t - p.z;
+            float d2 = dx * dx + dy * dy + dz * dz;
             if (d2 < bestSqr) { bestSqr = d2; bestSeg = i; bestT = t; }
         }
 
@@ -185,18 +197,28 @@ namespace CosmicShore.Gameplay
             {
                 int k = (j & 1) == 0 ? j >> 1 : -((j + 1) >> 1);
                 int i = ((hint + k) % n + n) % n;
-                Vector3 d = position - _points[i];
-                float d2 = d.sqrMagnitude;
+                // In floats, as TestSegment and for the same reason: d = position - point, its
+                // sqrMagnitude, and local = inverseRotation * d by Unity's own Quaternion * Vector3.
+                Vector3 pt = _points[i];
+                float dx = position.x - pt.x, dy = position.y - pt.y, dz = position.z - pt.z;
+                float d2 = dx * dx + dy * dy + dz * dz;
                 if (d2 > 60f * 60f) continue;
                 float cut = best + BoundSlack;
                 if (Mathf.Sqrt(d2) - _shellRadius[i] > cut) continue;
-                Vector3 local = _invRotations[i] * d;
+                Quaternion q = _invRotations[i];
+                float nx = q.x * 2f, ny = q.y * 2f, nz = q.z * 2f;
+                float xx = q.x * nx, yy = q.y * ny, zz = q.z * nz;
+                float xy = q.x * ny, xz = q.x * nz, yz = q.y * nz;
+                float wx = q.w * nx, wy = q.w * ny, wz = q.w * nz;
+                float lx = (1f - (yy + zz)) * dx + (xy - wz) * dy + (xz + wy) * dz;
+                float ly = (xy + wz) * dx + (1f - (xx + zz)) * dy + (yz - wx) * dz;
+                float lz = (xz - wy) * dx + (yz + wx) * dy + (1f - (xx + yy)) * dz;
                 Vector3 box = _shellBox[i];
-                float bx = Mathf.Max(Mathf.Abs(local.x) - box.x, 0f);
-                float by = Mathf.Max(Mathf.Abs(local.y) - box.y, 0f);
-                float bz = Mathf.Max(Mathf.Abs(local.z) - box.z, 0f);
+                float bx = Mathf.Max(Mathf.Abs(lx) - box.x, 0f);
+                float by = Mathf.Max(Mathf.Abs(ly) - box.y, 0f);
+                float bz = Mathf.Max(Mathf.Abs(lz) - box.z, 0f);
                 if (bx * bx + by * by + bz * bz > cut * cut) continue;
-                float c = SkimRaceShell.StellaDistance(local, _shellHalf[i]);
+                float c = SkimRaceShell.StellaDistance(lx, ly, lz, _shellHalf[i]);
                 if (c < best || (c == best && k < bestK)) { best = c; bestK = k; nearest = i; }
             }
             return best;
