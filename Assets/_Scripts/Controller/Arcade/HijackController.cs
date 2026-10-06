@@ -111,11 +111,11 @@ namespace CosmicShore.Gameplay
                  "hatch is a no-op.")]
         [SerializeField, Min(1f)] float aiSlippedRailCooldown = 10f;
 
-        // The Urchin's controls, from Resources/ElementalAbilityMaps/Urchin.asset. Named rather
-        // than looked up: the AI drives exactly two of the four, and a binding sweep that
-        // silently found nothing would read as an AI that simply never used its weapon.
-        const InputEvents SpikeControl = InputEvents.RightStickAction;   // Charge - Chain Spikes
-        const InputEvents SlipControl = InputEvents.Button2Action;       // Time  - Slip
+        // The Urchin's kit (spike, slip), shared with Skein. Controls are found by CAPABILITY on
+        // the vessel's own bindings, and the spike's meter and cost are read off its ability SO,
+        // so a re-bound or retuned Urchin cannot leave this AI pressing a dead trigger.
+        UrchinAutopilotDriver _urchinAI;
+        UrchinAutopilotDriver UrchinAI => _urchinAI ??= new UrchinAutopilotDriver();
 
         [Header("Ownership Sync")]
         [Tooltip("Seconds between ownership flushes. Prism changes are coalesced per prism and " +
@@ -402,7 +402,6 @@ namespace CosmicShore.Gameplay
                 int excludedRail = -1;
                 float excludedUntil = 0f;
                 float nextRetarget = 0f;
-                float nextSpike = 0f;
                 // Stamped NOW, not 0: the stall test is Time.time - movingSince, and a zero
                 // seed makes the very first attached frame read as several minutes parked.
                 float movingSince = Time.time;
@@ -452,7 +451,7 @@ namespace CosmicShore.Gameplay
                         if (self.Speed >= aiParkedSpeed) movingSince = Time.time;
                         else if (Time.time - movingSince > aiStuckSeconds)
                         {
-                            Slip(self);
+                            UrchinAI.TrySlip(captured);
                             excludedRail = rail;
                             excludedUntil = Time.time + aiSlippedRailCooldown;
                             rail = -1;
@@ -461,7 +460,7 @@ namespace CosmicShore.Gameplay
                             return centre;
                         }
 
-                        TrySpike(self, ref nextSpike, IsHostileUnderfoot(yard, self, domain));
+                        if (IsHostileUnderfoot(yard, self, domain)) SpikeVolley(captured);
 
                         // Keep the nose down-rail: the ride constrains position, never attitude,
                         // so where the AI looks is what it launches along.
@@ -483,8 +482,7 @@ namespace CosmicShore.Gameplay
                             // Airborne: the cluster ahead is what the volley is for. Rolling it:
                             // ask what is actually underfoot, or a raider on an emptied burr
                             // spends its whole meter on its own mass.
-                            TrySpike(self, ref nextSpike,
-                                     !self.IsAttached || IsHostileUnderfoot(yard, self, domain));
+                            if (!self.IsAttached || IsHostileUnderfoot(yard, self, domain)) SpikeVolley(captured);
                             Vector3 through = range > 1e-3f ? (burr - pos) / range : selfTf.forward;
                             return burr + through * aiThroughDistance;
                         }
@@ -505,6 +503,7 @@ namespace CosmicShore.Gameplay
 
         void DisarmRaiders()
         {
+            _urchinAI?.Clear();
             var players = gameData != null ? gameData.Players : null;
             if (players == null) return;
             foreach (var p in players)
@@ -572,45 +571,12 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Tap the chain-spike trigger, if the mass in front is worth spending a volley on and the
-        /// meter can pay for it. Press and release in the same call: the Urchin's trigger is
-        /// tap-for-shotgun / hold-for-burst, and an AI that held it would charge a burst it never
-        /// released.
+        /// Tap the chain-spike trigger through the shared Urchin driver, at this mode's authored
+        /// cadence and ammo floor. The driver owns the per-pilot interval, so the press-and-release
+        /// is one call and can never charge a burst it does not release.
         /// </summary>
-        void TrySpike(IVesselStatus status, ref float nextSpike, bool hostileUnderfoot)
-        {
-            if (!hostileUnderfoot || Time.time < nextSpike) return;
-
-            var handler = status.ActionHandler;
-            if (handler == null) return;
-            if (!HasSpikeAmmo(status)) return;
-
-            nextSpike = Time.time + aiSpikeIntervalSeconds;
-            handler.PerformShipControllerActionsReplicated(SpikeControl);
-            handler.StopShipControllerActionsReplicated(SpikeControl);
-        }
-
-        /// <summary>
-        /// True while the vessel's spike meter is above the floor. Reads the FIRST resource, which
-        /// is the ammo meter <c>GunVesselTransformer.SlideActions</c> recharges - a named index
-        /// would be a second place the Urchin's meter order has to be kept in step, and the wrong
-        /// one silently reads a different resource rather than failing.
-        /// </summary>
-        bool HasSpikeAmmo(IVesselStatus status)
-        {
-            var resources = status.ResourceSystem?.Resources;
-            if (resources == null || resources.Count == 0) return true;   // no meter: never gate
-            var ammo = resources[0];
-            return ammo.MaxAmount <= 0f || ammo.CurrentAmount / ammo.MaxAmount >= aiMinSpikeAmmo;
-        }
-
-        static void Slip(IVesselStatus status)
-        {
-            var handler = status.ActionHandler;
-            if (handler == null) return;
-            handler.PerformShipControllerActionsReplicated(SlipControl);
-            handler.StopShipControllerActionsReplicated(SlipControl);
-        }
+        void SpikeVolley(IPlayer pilot) =>
+            UrchinAI.TrySpike(pilot, aiSpikeIntervalSeconds, aiMinSpikeAmmo);
 
         // ── Server-authoritative game end (the Rampage/Salvo shape) ──────────
 
