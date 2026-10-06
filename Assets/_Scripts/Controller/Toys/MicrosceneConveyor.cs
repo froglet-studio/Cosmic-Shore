@@ -36,6 +36,13 @@ namespace CosmicShore.Gameplay
         public bool LifeformScenes = true;
         public int Seed;
 
+        // Arrivals allowed to transition at once: the belt must outpace full throttle + elemental
+        // Time buffs (~150 u/s), and at high speed the speed-scaled spacing stretches so each
+        // arrival buys more distance. Boost bursts beyond that just fill in over the next few
+        // ticks. Not on the settings asset: a device tier lowers it (PlatformProfileSO, 2 on
+        // MobileLow) to cut the worst-case per-frame transition cost.
+        public int MaxConcurrentArrivals = 3;
+
         // Visibility guards (see MicrosceneConveyor): the player must never watch a scene bloom in
         // on top of them, nor watch one suction away.
         public float MinPlacementDistance = 380f;
@@ -104,11 +111,6 @@ namespace CosmicShore.Gameplay
     public class MicrosceneConveyor : MonoBehaviour
     {
         const float TickSeconds = 0.25f;
-
-        // Three arrivals may transition at once: the belt must outpace full throttle + elemental
-        // Time buffs (~150 u/s), and at high speed the speed-scaled spacing stretches so each
-        // arrival buys more distance. Boost bursts beyond that just fill in over the next few ticks.
-        const int MaxConcurrentArrivals = 3;
 
         // A near hole opens (and the belt drops a fresh scene straight ahead) once the nearest scene
         // on the flight line sits farther than firstDistance + this × spacing - big enough that a
@@ -238,7 +240,7 @@ namespace CosmicShore.Gameplay
             // in the world (conserved mass, released citizens), it just stops advancing.
             if (_isFreestyleActive != null && !_isFreestyleActive()) return;
             if (!TryGetVessel(out Vector3 playerPos, out Vector3 course, out float speed)) return;
-            if (BusySceneCount() >= MaxConcurrentArrivals) return;
+            if (BusySceneCount() >= Mathf.Max(1, _cfg.MaxConcurrentArrivals)) return;
 
             // Speed-scaled belt geometry: at cruise the base spacing rules; the faster you fly,
             // the wider the spacing and the deeper the lookahead, so the field ahead holds

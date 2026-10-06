@@ -364,6 +364,17 @@ Post-Reload (via InitializeAfterDelay):
 | `mainMenuButton` | `HomeButton` GO | Same gating; the button's onClick routes through `PauseMenu.OnClickMainMenu` (host-guarded) |
 | `onClickToMainMenu` | `EventOnClickToMainMenuButton.asset` | When the main-menu SOAP event fires (i.e. the transition is committed), the Scoreboard hides both nav buttons so the host can't spam-click during the unload |
 
+## Trail cap on low-end phones (MobileLow only)
+
+On the `MobileLow` device tier (`Docs/PLATFORM_UNIFICATION.md` §3.6) `OnNetworkSpawn` adds a
+`RaceTrailCap` (`RaceTrailCap.Attach(this, gameData, profile.SkimRaceTrail)`): each vessel keeps
+its share of a 6,000-prism race budget, clamped to 800–2,000 (one lap to two), and past it the
+oldest prism withers and returns to its pool. Every other tier — every PC, every iPhone that tiers
+High — sets no budget and adds nothing. This is an owner-authorized exception to the no-trail-cap
+law, recorded in `Docs/ECOSYSTEM.md` §0 with its fence; it is not a precedent. Trail prisms are
+local per peer, so in a phone-vs-PC race the phone's ribbons end a lap or two back while the PC
+still draws them.
+
 ## Elemental Comeback System
 
 `ElementalComebackSystem` (attached in scene alongside `SkimRaceController`):

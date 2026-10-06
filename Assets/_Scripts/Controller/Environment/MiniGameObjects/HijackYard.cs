@@ -24,9 +24,17 @@ namespace CosmicShore.Gameplay
     /// "read <c>ExpectedNucleusWorldRadius</c>, not the spawned one" rule records.</para>
     ///
     /// <para>The registry is a plain static list in the <c>Crystal.Active</c> shape: every peer
-    /// builds its own arena locally (closed form, so they agree), so there is nothing to
-    /// replicate and nothing to synchronise. It is cleared on disable, so a cell swap or a scene
-    /// reload cannot leave a consumer pointing at a destroyed yard.</para>
+    /// builds its own arena locally (closed form, so they agree), so the GEOMETRY needs no
+    /// replication. It is cleared on disable, so a cell swap or a scene reload cannot leave a
+    /// consumer pointing at a destroyed yard.</para>
+    ///
+    /// <para><b>OWNERSHIP is replicated, and every read here goes through it.</b> The shape is
+    /// identical on every peer but who owns each prism is not - a steal is a local call on
+    /// whichever machine ran it. While a Hijack match is live, <see cref="HijackController"/>
+    /// binds its server-authoritative table (<see cref="Ownership"/>, a
+    /// <see cref="HijackOwnershipLedger"/>) to this yard, and <see cref="DomainAt"/> answers from
+    /// that table instead of the local prism. Outside a match (the mode preview's satellite
+    /// arena) nothing is bound and the reads fall back to the prism's own domain.</para>
     ///
     /// <para><b>Burr colour is READ LIVE, never stored.</b> The whole mode is players flipping
     /// this mass back and forth, so a cached domain would be a lie within seconds. A burr reports
@@ -84,6 +92,56 @@ namespace CosmicShore.Gameplay
         public IReadOnlyList<Burr> Burrs => _burrs;
         public IReadOnlyList<Rail> Rails => _rails;
 
+        /// <summary>The match's replicated ownership table, bound by
+        /// <see cref="HijackController"/> while a match is live; null otherwise.</summary>
+        internal HijackOwnershipLedger Ownership { get; set; }
+
+        /// <summary>
+        /// Who owns the <paramref name="index"/>th prism of trail <paramref name="slot"/>, as the
+        /// match's replicated table says, or the prism's own domain when no table is bound or the
+        /// table has not seen this prism yet.
+        /// </summary>
+        Domains DomainAt(int slot, int index, Prism prism)
+        {
+            var table = Ownership;
+            if (table != null && table.TryRead(slot, index, out var owner)) return owner;
+            return prism.Domain;
+        }
+
+        /// <summary>
+        /// The replicated owner of any prism in this yard - the same answer on every peer. A
+        /// prism that is not one of the yard's own (or with no table bound) reports its local
+        /// domain.
+        /// </summary>
+        public Domains DomainOf(Prism prism)
+        {
+            if (!prism) return Domains.Blue;
+            var table = Ownership;
+            if (table == null) return prism.Domain;
+            int slot = table.SlotOf(prism.Trail);
+            int index = slot >= 0 ? prism.Trail.GetBlockIndex(prism) : -1;
+            return index >= 0 ? DomainAt(slot, index, prism) : prism.Domain;
+        }
+
+        /// <summary>
+        /// Fraction (0-1) of a rail's prisms that <paramref name="domain"/> owns, read from the
+        /// replicated table - the AI's "how much of this run is already a fast one" term.
+        /// </summary>
+        public float OwnFractionOfRail(int rail, Domains domain)
+        {
+            var list = _rails[rail].Trail?.TrailList;
+            if (list == null || list.Count == 0) return 0f;
+
+            int slot = HijackOwnershipLedger.RailSlot(this, rail);
+            int own = 0;
+            for (int i = 0; i < list.Count; i++)
+            {
+                var prism = list[i];
+                if (prism && DomainAt(slot, i, prism) == domain) own++;
+            }
+            return own / (float)list.Count;
+        }
+
         void OnEnable()
         {
             if (!s_active.Contains(this)) s_active.Add(this);
@@ -116,11 +174,12 @@ namespace CosmicShore.Gameplay
             var list = trail?.TrailList;
             if (list == null) return 0;
 
+            int slot = HijackOwnershipLedger.BurrSlot(index);
             int hostile = 0;
             for (int i = 0; i < list.Count; i++)
             {
                 var prism = list[i];
-                if (prism && prism.Domain != domain) hostile++;
+                if (prism && DomainAt(slot, i, prism) != domain) hostile++;
             }
             return hostile;
         }
@@ -136,10 +195,11 @@ namespace CosmicShore.Gameplay
             var list = _burrs[index].Trail?.TrailList;
             if (list == null) return false;
 
+            int slot = HijackOwnershipLedger.BurrSlot(index);
             for (int i = 0; i < list.Count; i++)
             {
                 var prism = list[i];
-                if (prism && prism.Domain != domain) return true;
+                if (prism && DomainAt(slot, i, prism) != domain) return true;
             }
             return false;
         }
