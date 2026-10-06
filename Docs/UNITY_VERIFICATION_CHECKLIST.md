@@ -4583,6 +4583,13 @@ channel — it must say **Volume**).
   the Switchyard (a Volume declared by its Trail): behaviour must be unchanged (the layered rules engage
   only for an `ILayeredPrismscape`).
 
+### 3b. The Spawn Matrix carries all four (`Tools/Build/author_nested_gyroid_flora_assets.py`)
+Menu freestyle cell → Spawn Matrix → Flora: a **Nested Gyroid** station sits before Borromean, its icon a
+small whole stack (seven sheets with struts, not a single disc), and it opens four element variants. Release
+each: the plant roots at the station and grows. Time grows visibly fastest; Charge's prisms are shielded
+(and the octahedra are NOT fitted against the layer gap — report how it reads); each plant's heart is the
+largest in the cell (4.6). Opening the Flora row must not hitch (the preview build is ~25 ms).
+
 ### 4. Colour shade does not leak
 Destroy a few nested-gyroid plates, then lay ordinary trail prisms (pooled reuse): no trail prism may come
 out darkened or whitened.

@@ -89,6 +89,29 @@ namespace CosmicShore.Gameplay
             return s;
         }
 
+        /// <summary>
+        /// The same stack on a tiling coarsened to about <paramref name="prisms"/> prisms - for an ICON, which needs
+        /// the whole silhouette (every sheet, every fiber) rather than the first few hundred of the real growth
+        /// order. Count goes as 1/spacing², so the spacings scale by √(0.8 budget / prisms) (a full build lands
+        /// near 80% of its budget); the builder's own coarsening catches any remainder. Lengths that are not spacing (clearance,
+        /// heart seat, fiber thickness) scale too, so the preview is a coarser plant rather than a sparser one.
+        /// </summary>
+        public NestedGyroidSettings PreviewOf(int prisms)
+        {
+            var s = Sanitized();
+            int target = Math.Max(16, prisms);
+            float k = Math.Max(1f, MathF.Sqrt(0.8f * s.PrismBudget / (float)target));
+            s.SheetPoissonSpacing *= k;
+            // Fibers thin by only √k: they are what joins the sheets, and a coarse stack with the full build's
+            // fiber RATIO keeps two or three of them and prunes most of its sheets as islands.
+            s.FiberSeedSpacing = Math.Max(s.SheetPoissonSpacing, s.FiberSeedSpacing * MathF.Sqrt(k));
+            s.FiberPrismSpacing *= k;
+            s.FiberThickness *= k;
+            s.Clearance *= k;
+            s.PrismBudget = target;
+            return s;
+        }
+
         /// <summary>Identity of the lattice these settings grow - the build cache key.</summary>
         public string Key() => string.Join("|", new object[]
         {

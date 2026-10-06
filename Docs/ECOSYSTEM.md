@@ -11126,10 +11126,10 @@ plate is tiling and carries none, which keeps the spindle count under a fifth of
 At full growth, with the channel on, a physics spot-check runs `OverlapBox` on 64 sampled prisms and
 reports cross-layer hits (and how many it skipped for an LOD-culled collider).
 
-**Not done, deliberately:** the four-element contract (§51). Every element grows the anchor lattice; a
-Charge plant's shields (1.5 × leaf octahedra) are not fitted against the layer gap. No `FloraConfigurationSO`
-exists and no cell adopts the species — the prefab is `autoInitialize` and roots where it is placed when
-it has no cell, which is the test-scene path.
+**Not done, deliberately:** a per-element GEOMETRY (§51). Every element grows the anchor lattice; a
+Charge plant's shields (1.5 × leaf octahedra) are not fitted against the layer gap. No cell adopts the
+species — it is reachable from the Spawn Matrix toy (§58.6), and the prefab is `autoInitialize` and roots
+where it is placed when it has no cell, which is the test-scene path.
 
 ### 58.4 The Urchin could not ride a stack — and the change that lets it
 
@@ -11168,3 +11168,35 @@ material sync (survives team / shield / transparency changes), reset on pooled `
 `GradedByLevel` (gain 0.55 at −tMax → 1.25 at +tMax) or `AlternatingSheets` (odd sheets 0.6); fibers
 are whitened 45% — the third treatment. Entity path only: while a shield's exotic visual holds the
 GameObject renderer the prism shows its material unshaded.
+
+### 58.6 Four elements, in the Spawn Matrix
+
+`Tools/Build/author_nested_gyroid_flora_assets.py` (`--check` / `--write`) owns the four canonical configs
+`_SO_Assets/Lifeforms/Nested Gyroid Flora {Charge, Mass, Space, Time}.asset` and the **Nested Gyroid** row
+of `Toy_SpawnMatrix.asset`'s flora kingdom. GUIDs are `md5("cosmicshore/nestedgyroid/<asset>")`.
+
+* **What the four elements are.** One lattice — the geometry is fitted, so the Mass/Space leaf law
+  (`FloraElementalForm.ShapeLeaf`) does not reshape it, and all four share one cached build. The platform's
+  laws still make them four plants: **Time** grows fastest (`ResolveGrowPeriod`), **Charge** is armoured
+  (`ShieldPeriod 1`, which `author_charge_flora_shields.py` gates), each drops its own element's heart.
+* **The heart is PINNED at `HEART_MAX` (4.6), not sized.** `author_lifeform_heart_sizes.py` solves K so the
+  largest body lands on `HEART_MAX`; its flora body model (a disc of N × footprint, N capped at 400) would
+  measure this species at ~270 against today's largest (Nerve, 158) and so **re-price every heart in the game
+  downward** — a balance change, because heart scale is the collect reward. The species is therefore
+  deliberately absent from that tool's `FLORA_PREFABS`, and the generator reads `HEART_MAX` out of it (and
+  asserts the absence), so the pin cannot drift from the band. It is the biggest lifeform in the project; the
+  top of the band is honest for it and re-prices nobody.
+* **Population: a specimen.** Seed 1, cap 1 per element (4 heart colliders across the four), and
+  `GrowthPerOffspring 0` — with a cap of 1 any quota is a number nothing reads, so the asset says it does not
+  reproduce. Consequence: the Squirrel's nourish joust declines on it.
+* **The row goes immediately BEFORE Borromean**, because `author_borromean_flora_assets.py` deletes its own
+  row and re-appends it at the END of the list; after it, that tool's `--check` would report drift. Verified:
+  the Borromean, Mandelbulb, charge-shield and heart-size `--check`s are all green with the row in.
+* **The icon.** The matrix builds each species' icon synchronously from `TryPreviewGrowth(220)`. The first
+  220 of the real growth order are a disc of the central sheet; the preview instead grows the WHOLE stack on
+  a coarsened tiling (`NestedGyroidSettings.PreviewOf`): 198 prisms, all 7 sheets, 37 struts, one component,
+  23 ms (against 173 ms for the full build), cached.
+* **Cost at the bench.** A release roots the plant AT the station, and the plant is a 240-unit cube while
+  stations sit 90 apart, so it envelops its neighbours — that is the prismscape working, not a bug. Its ~2,000
+  prisms land on the cell's Frenzy COUNT backstop like any planting.
+

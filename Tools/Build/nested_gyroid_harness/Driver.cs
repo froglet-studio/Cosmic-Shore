@@ -29,6 +29,16 @@ static class Driver
              $"{b.Slices} slices, worst {b.MaxSliceMilliseconds:F2} ms, total {b.Result.Stats.BuildMilliseconds:F0} ms");
         Gate("deterministic", Same(L, b.Result), "two builds of one config are identical");
 
+        Console.WriteLine("== preview (the Spawn Matrix icon asks 220 prisms) ==");
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        var P = NestedGyroidBuilder.BuildNow(s.PreviewOf(220));
+        double previewMs = watch.Elapsed.TotalMilliseconds;
+        Console.WriteLine("  " + NestedGyroidBuilder.Describe(P));
+        Gate("icon preview is the WHOLE stack inside the icon budget", P.Count <= 220 && P.Stats.SheetsGrown == L.Stats.SheetsGrown && P.Stats.FiberPrisms > 0 && P.Stats.Components == 1,
+             $"{P.Count} prisms, {P.Stats.SheetsGrown} sheets, {P.Stats.FiberPrisms} struts, {P.Stats.Components} component(s)");
+        Gate("icon preview is cheap enough to build synchronously", previewMs < 0.25 * L.Stats.BuildMilliseconds + 5.0,
+             $"{previewMs:F1} ms against the full build's {L.Stats.BuildMilliseconds:F0} ms");
+
         Console.WriteLine("== settings guard ==");
         var hot = new NestedGyroidSettings { TMax = 2.0f }.Sanitized();
         Gate("tMax clamped below the critical values", hot.TMax <= NestedGyroidSettings.TMaxCeiling && hot.TMax < MathF.Sqrt(2f),

@@ -416,14 +416,17 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Pure preview - see <see cref="Flora.TryPreviewGrowth"/>. The growth rule is deterministic, so the preview
-        /// is the first <paramref name="budget"/> entries of the same lattice the plant grows. Builds synchronously
-        /// on a cache miss (an icon is not gameplay); never touches UnityEngine.Random.
+        /// Pure preview - see <see cref="Flora.TryPreviewGrowth"/>. An icon asks for a few hundred prisms (the Spawn
+        /// Matrix asks 220), and the first 220 of the real growth order are a disc of the central sheet - nothing
+        /// that says "stack". So the preview grows the WHOLE stack on a tiling coarsened to fit the request
+        /// (<see cref="NestedGyroidSettings.PreviewOf"/>): every sheet and fiber, fewer and bigger plates. It is the
+        /// same rule on the same field, cached per key, and cheap enough to build synchronously (~1/30 of the full
+        /// build - the voxel grid shrinks with the spacing). Never touches UnityEngine.Random.
         /// </summary>
         public override bool TryPreviewGrowth(int budget, int seed, List<SpawnPoint> into)
         {
             if (!config || into == null || budget <= 0) return false;
-            var settings = ResolveSettings();
+            var settings = ResolveSettings().PreviewOf(budget);
             string key = settings.Key();
             if (!s_built.TryGetValue(key, out var lattice))
             {
