@@ -284,6 +284,18 @@ With `ram: 1`, an AI whose course is on target (which a rider always is) grinds 
 
 It is AI-only, so it changes nothing for a human pilot in any mode.
 
+**The spike and Slip presses go through the shared Urchin driver** (`UrchinAutopilotDriver`,
+`_Scripts/Controller/AI/Urchin/`), the same one Skein flies its strands with. It finds each control
+by CAPABILITY on the vessel's own bindings (`TryGetBoundAction<UrchinSpikeActionSO>` /
+`<UrchinSlipActionSO>`) rather than by a named trigger, and gates a tap on the spike ability's own
+`AmmoIndex` / `AmmoCost` - the two numbers the executor's `CanPay` checks - on top of this mode's
+`aiMinSpikeAmmo` floor, so a re-bound or retuned Urchin cannot leave the raider pressing a trigger
+that no-ops. The cadence and floor are still this controller's authored fields. The driver's rail
+CHOICE (ride / reverse / leave) is not used here: this yard's rails are 20 degree arcs chosen by
+`ChooseRail`, and the RIDE state already rides each one to its end. Its Track Projector is not
+used here either, deliberately: the yard is under 1,850 u across, and a projected track's 360 u/s
+launch overshoots the 80 u approach-commit window every rail approach depends on.
+
 ---
 
 ## 7. Budget and collider impact
@@ -414,12 +426,16 @@ merge without a conflict in that file. Do not edit it on this branch for that re
   `VesselController` dereference the same getter unguarded, so any mode that calls `ChangePlayer`
   on an Urchin (today only Cellular Duel's ownership swap) would throw and leave the vessel
   uncontrollable.
-- **`ram: 1` is a FLEET-WIDE AI change made for one mode.** `Urchin.prefab` is shared, so every
-  AI Urchin in every context — the menu lava-lamp autopilot, the Spawn Matrix's vessel hangar,
-  any future mode that does not lock its hull — now flies at full throttle whenever it is lined
-  up on its objective, not just here. It has the Rhino's precedent and it is AI-only, so no human
-  pilot is affected; if it ever needs to be narrower, the honest lever is a per-mode setter rather
-  than a prefab field.
+- **`ram: 1` is a fleet-wide AI field, and it was audited (2026-10) rather than narrowed.**
+  `Urchin.prefab` is shared, so every AI Urchin flies at full throttle whenever it is lined up on
+  its objective. Every context one flies in WANTS that: Skein and Regatta both aim an attached AI
+  down its own rail precisely so `LookingAtCrystal` holds and `ram` keeps the grind at full speed
+  (without it the ride runs at the authored `defaultThrottle 0.8` = +0.6 signed, 180 u/s on a
+  friendly rail); Broadside's opponent lock lands a hit by ARRIVING; and the menu / hangar
+  autopilot only chases crystals, where full speed is merely faster (the orbit break handles the
+  wider turning circle). No mode was found where it hurts, so a per-mode setter would add a
+  second authority for no behaviour change. If one is ever needed, it belongs in `AIPilot` as a
+  runtime override, not as a second prefab.
 - **750 is unmeasured**, and so is the intensity ladder's effect on match length. It was halved
   from 1,500 for pace without re-measuring either, so the intended length is now roughly half of
   the original 3–5 minute estimate — which is itself an estimate. The target is one editor field.

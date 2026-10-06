@@ -450,6 +450,30 @@ the grind at 300 rather than collapsing to 60 u/s). Off-rail it flies at its own
 *through* it, because `AIPilot` has no arrive-and-stop behaviour. The provider is cleared at
 teardown — Switchback ships without that and leaks its closure across a scene-reload replay.
 
+**The AI now flies the Urchin's kit, not just its aim** (`UrchinAutopilotDriver`,
+`_Scripts/Controller/AI/Urchin/`, asked from `TryOverrideAim`). Aiming down the rail made an AI
+ride whatever strand it touched to wherever that strand went - fine at intensity 1, where every
+ring is a collar, and a pilot that threads only the pinned rings its strands happen to pass above
+it. While attached the driver walks the strand both ways from the pilot (`UrchinRailAssessment`,
+pure and unit-tested) and picks one of three: **RIDE** (the strand threads the next ring within
+`CaptureFraction` of its mouth, or still closes 30%+ of the range at grind speed, or ends within
+160 u so the pilot launches rather than slips), **REVERSE** (the ring is back the way it came: the
+ride's direction is the pilot's FACING, so the AI swings its nose round, aiming behind AND to one
+side so AIPilot's cross product cannot vanish dead astern) or **LEAVE** (Slip, then the platform's
+gate aiming flies it at the ring). It taps the chain spikes whenever the prism underfoot is a
+rival's colour and the spike ability's own ammo cost is covered, so a hostile lane is converted
+instead of crawled at 20 u/s; a dry hostile crawl leaves the strand unless the ring is within
+80 u. A parked ride (under 6 u/s for 5 s) Slips. In free flight it lays a **Track Projector** rail
+on a long straight shot - nose within 8 degrees of the ring, the ring 3+ track lengths away, and
+the flight line along the ring's axis so the launch goes through the mouth. Every control is found
+by capability on the vessel's own bindings and pressed replicated; every read is the host's own
+simulation of the AI vessel. Tunables: `Resources/UrchinAutopilotConfig.asset`.
+
+AI backfill already seats Urchins here: the card's `MinPlayersAllowed 2` means a solo launch
+requests one AI, `ServerPlayerVesselInitializerWithAI` (present in `MinigameSkein.unity`, every
+template `vesselClass: 4`) spawns it, and `ClampVesselToGame` holds it to the card's single hull.
+Nothing was gating it off.
+
 **Still unverified in the editor:** whether that AI actually races, and everything about how the
 mode plays. Nothing here has been run in Unity.
 
