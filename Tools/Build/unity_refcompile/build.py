@@ -496,6 +496,118 @@ MISSING_CODES = {"CS0246", "CS0234", "CS0103", "CS1069", "CS0012", "CS0538"}
 # (`out var x` from an unknown TryGetValue -> CS0165, `unknown.Count > 0` -> CS0019, ...).
 UNOBTAINABLE_CASCADE_CODES = MISSING_CODES | {"CS0165", "CS0019", "CS1061"}
 
+# Missing-type messages, by code: the name (and namespace / assembly) each one is about.
+MISSING_SIMPLE = re.compile(r"The type or namespace name '([^']+)' could not be found|"
+                            r"The name '([^']+)' does not exist in the current context|"
+                            r"'([^']+)' in explicit interface declaration is not an interface")
+MISSING_IN_NS = re.compile(r"The type (?:or namespace )?name '([^']+)' (?:does not exist in|could not be found in) the namespace '([^']+)'")
+MISSING_ASM = re.compile(r"(?:reference to|forwarded to) assembly '([^',]+)")
+USING_RE = re.compile(r"^\s*using\s+(static\s+)?(?:\w+\s*=\s*)?(?:global::)?([\w.]+)\s*;", re.M)
+NAMESPACE_RE = re.compile(r"^\s*namespace\s+([\w.]+)", re.M)
+
+
+def declarations(rsps):
+    """What the assemblies compiled from these .rsp files declare, read from their own sources with
+    their own defines (Diagnose --declarations): {"asms", "namespaces" (with every prefix), "types":
+    {top-level type name: {namespace}}}."""
+    decl = {"asms": set(), "namespaces": set(), "types": {}}
+    for name, rsp in rsps.items():
+        decl["asms"].add(name)
+        r = subprocess.run([os.path.join(DOTNET_ROOT, "dotnet"), diagnose_tool(), "--declarations", rsp],
+                           stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        if r.returncode != 0:
+            sys.exit("Diagnose --declarations failed for %s:\n%s" % (name, r.stdout))
+        for line in r.stdout.splitlines():
+            f = line.split("\t")
+            if f[0] == "N":
+                parts = f[1].split(".")
+                decl["namespaces"].update(".".join(parts[:i]) for i in range(1, len(parts) + 1))
+            elif f[0] == "T":
+                decl["types"].setdefault(f[2], set()).add(f[1])
+    return decl
+
+
+def from_failed_assembly(code, msg, src, decl):
+    """True when a missing-type error can stem from a referenced assembly that did not compile (decl:
+    what those assemblies declare). It must name one of them, or a namespace or top-level type they
+    declare that this file can see: its namespace is `using`d, encloses the file, or is global. A
+    misspelled local, member or type is anything else, and gates."""
+    if code not in MISSING_CODES or not (decl["asms"] or decl["types"]):
+        return False
+    m = MISSING_ASM.search(msg)
+    if m and m.group(1) in decl["asms"]:
+        return True
+    visible, static = {""}, []
+    for st, ns in USING_RE.findall(src):
+        if st:
+            static.append(ns)
+        else:
+            visible.add(ns)
+    for ns in NAMESPACE_RE.findall(src):
+        parts = ns.split(".")
+        visible.update(".".join(parts[:i]) for i in range(1, len(parts) + 1))
+
+    def declares(ns, name):
+        name = re.sub(r"<.*", "", name)
+        names = {name, name + "Attribute"} | ({name[:-len("Attribute")]} if name.endswith("Attribute") else set())
+        return any(ns in decl["types"].get(n, ()) for n in names)
+    # `using static N.T;` of a type they declare: any simple name in this file may be one of its members
+    if code in ("CS0103", "CS0246") and any(declares(*s.rpartition(".")[::2]) for s in static):
+        return True
+    m = MISSING_IN_NS.search(msg)
+    if m:
+        name, ns = m.group(1), m.group(2).replace("global::", "")
+        return declares(ns, name) or (code == "CS0234" and ns + "." + re.sub(r"<.*", "", name) in decl["namespaces"])
+    m = MISSING_SIMPLE.search(msg)
+    if not m:
+        return False
+    name = re.sub(r"<.*", "", next(g for g in m.groups() if g)).replace("global::", "")
+    if "." in name:
+        ns, _, name = name.rpartition(".")
+        return declares(ns, name)
+    if any(declares(ns, name) for ns in visible):
+        return True
+    # a type-or-namespace name may be the next segment of a namespace only they declare
+    return code == "CS0246" and any((v + "." + name).lstrip(".") in decl["namespaces"] for v in visible)
+
+
+def self_test():
+    """Classifier fixtures (no dotnet, no cache): planted misspellings gate; names a failed assembly
+    declares are unverified only where the file can see them."""
+    decl = {"asms": {"UnityEngine.Purchasing.Stores"},
+            "namespaces": {"UnityEngine", "UnityEngine.Purchasing", "UnityEngine.Purchasing.Extension"},
+            "types": {"StandardPurchasingModule": {"UnityEngine.Purchasing"}, "IStoreListener": {"UnityEngine.Purchasing"},
+                      "CodelessIAPStoreListener": {"UnityEngine.Purchasing"}, "IAPButtonAttribute": {"UnityEngine.Purchasing"}}}
+    iap = "using UnityEngine;\nusing UnityEngine.Purchasing;\nnamespace CosmicShore.Store {\n"
+    plain = "using UnityEngine;\nnamespace CosmicShore.Controller {\n"
+    cases = [
+        # (expect unverified, code, message, source)
+        (False, "CS0103", "The name 'nearClipPlan' does not exist in the current context", plain),
+        (False, "CS0103", "The name 'nearClipPlan' does not exist in the current context", iap),
+        (False, "CS0246", "The type or namespace name 'Vectr3' could not be found (are you missing a using directive or an assembly reference?)", iap),
+        (False, "CS0246", "The type or namespace name 'IStoreListener' could not be found (are you missing a using directive or an assembly reference?)", plain),
+        (False, "CS0234", "The type or namespace name 'Extensoin' does not exist in the namespace 'UnityEngine.Purchasing' (are you missing an assembly reference?)", iap),
+        (False, "CS0012", "The type 'Foo' is defined in an assembly that is not referenced. You must add a reference to assembly 'CosmicShore.Data, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null'.", plain),
+        (False, "CS1061", "'Camera' does not contain a definition for 'nearClipPlan' and no accessible extension method", iap),
+        (True, "CS0246", "The type or namespace name 'IStoreListener' could not be found (are you missing a using directive or an assembly reference?)", iap),
+        (True, "CS0246", "The type or namespace name 'IStoreListener' could not be found (are you missing a using directive or an assembly reference?)", "namespace UnityEngine.Purchasing.Custom {\n"),
+        (True, "CS0246", "The type or namespace name 'IAPButton' could not be found (are you missing a using directive or an assembly reference?)", iap),
+        (True, "CS0103", "The name 'StandardPurchasingModule' does not exist in the current context", iap),
+        (True, "CS0103", "The name 'Instance' does not exist in the current context", "using static UnityEngine.Purchasing.StandardPurchasingModule;\n" + plain),
+        (True, "CS0538", "'IStoreListener' in explicit interface declaration is not an interface", iap),
+        (True, "CS0538", "'UnityEngine.Purchasing.IStoreListener' in explicit interface declaration is not an interface", plain),
+        (True, "CS0234", "The type or namespace name 'Extension' does not exist in the namespace 'UnityEngine.Purchasing' (are you missing an assembly reference?)", plain),
+        (True, "CS0234", "The type or namespace name 'CodelessIAPStoreListener' does not exist in the namespace 'UnityEngine.Purchasing' (are you missing an assembly reference?)", plain),
+        (True, "CS0012", "The type 'IStoreListener' is defined in an assembly that is not referenced. You must add a reference to assembly 'UnityEngine.Purchasing.Stores, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null'.", plain),
+    ]
+    bad = [(want, code, msg) for want, code, msg, src in cases if from_failed_assembly(code, msg, src, decl) != want]
+    nothing = {"asms": set(), "namespaces": set(), "types": {}}
+    bad += [(False, code, msg) for want, code, msg, src in cases if from_failed_assembly(code, msg, src, nothing)]
+    for want, code, msg in bad:
+        print("[self-test] FAIL: expected %s: %s %s" % ("unverified" if want else "project error", code, msg))
+    print("[self-test] %s (%d cases)" % ("FAILED" if bad else "OK", len(cases)))
+    return 1 if bad else 0
+
 LEARN_0507 = re.compile(r"overriding 'public' inherited member '([^']+)'")
 LEARN_0122 = re.compile(r"error CS0122: '([^']+)' is inaccessible due to its protection level")
 LEARN_0104 = re.compile(r"error CS0104: '[^']+' is an ambiguous reference between '([^']+)' and '([^']+)'")
@@ -589,7 +701,10 @@ def run_once():
     ap.add_argument("--max-errors", type=int, default=400)
     ap.add_argument("--changed-base", default="origin/bleeding-edge")
     ap.add_argument("--quiet-buckets", action="store_true", help="count, do not list, the unverifiable buckets")
+    ap.add_argument("--self-test", action="store_true", help="check the error bucketing on fixtures, then exit")
     args = ap.parse_args()
+    if args.self_test:
+        return self_test()
 
     if not os.path.exists(os.path.join(CACHE, "manifest.json")):
         print("ERROR: no reference cache at %s - run fetch.py first (needs network once)." % CACHE)
@@ -881,6 +996,16 @@ def run_once():
         for k in pkg_failed:
             errs = results[k][1]
             print("[build]   %s (%d errors), e.g. %s" % (k, len(errs), re.sub(r"^.*?: error ", "", errs[0])[:150] if errs else ""))
+    # what each failed assembly declares, read from its own sources: an Assets missing-type error is a
+    # reference-set artifact only when it names one of these, from an assembly k actually references
+    decl_cache = {}
+
+    def failed_decl(k):
+        up = tuple(sorted(d for d in refs_closure(k) if d in failed))
+        if up not in decl_cache:
+            decl_cache[up] = declarations({d: os.path.join(pkg_out if live[d].origin.startswith("package:") else out,
+                                                           d + ".rsp") for d in up})
+        return decl_cache[up]
     real, unobtainable, unverified = [], [], []
     for k in failed:
         if k in pkg_failed:
@@ -898,7 +1023,7 @@ def run_once():
                 # the uGUI/engine reference DLLs are PLAYER builds: their #if UNITY_EDITOR members
                 # (UIBehaviour.OnValidate/Reset) do not exist in them
                 unverified.append((k, e))
-            elif code in MISSING_CODES and pkg_failed:
+            elif from_failed_assembly(code, m.group(3), src, failed_decl(k)):
                 unverified.append((k, e))
             else:
                 real.append((k, e))
@@ -914,7 +1039,7 @@ def run_once():
     show("ERRORS in project code", real, args.max_errors)
     show("missing-type errors in files using a package that cannot be fetched (%s)" % ", ".join(UNOBTAINABLE_NAMESPACES),
          unobtainable, 0 if args.quiet_buckets else args.max_errors)
-    show("unverified: missing types while a referenced package failed, or editor-only members absent from the player-build reference DLLs", unverified,
+    show("unverified: names declared by a referenced assembly that did not compile, or editor-only members absent from the player-build reference DLLs", unverified,
          0 if args.quiet_buckets else args.max_errors)
     n_changed = sum(1 for _, e in real if e.split("(")[0] in changed)
     stubbed = [k for k in need if live[k].origin == "stub"] + engine_stubs
