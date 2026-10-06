@@ -3,7 +3,7 @@
 ```
 bash Tools/Build/unity_refcompile/run.sh                       # player config (the shipped IL2CPP release)
 bash Tools/Build/unity_refcompile/run.sh --config player-dev   # + DEVELOPMENT_BUILD / ENABLE_PROFILER / DEBUG
-bash Tools/Build/unity_refcompile/run.sh --config editor       # APPROXIMATE: UNITY_EDITOR branches + changed Editor-folder files
+bash Tools/Build/unity_refcompile/run.sh --config editor       # APPROXIMATE: UNITY_EDITOR branches + Assembly-CSharp-Editor
 bash Tools/Build/unity_refcompile/run.sh --quiet-buckets       # count, don't list, the unverifiable buckets
 ```
 
@@ -15,13 +15,24 @@ Needs a .NET SDK, **8.0 or newer** (8.0 and 10.0 both verified), under `DOTNET_R
 back to `$HOME/.dotnet`); the helper tools are built for the newest runtime + reference pack it holds.
 
 **The `editor` config is approximate.** It compiles the project's runtime code with `UNITY_EDITOR`
-(Mono, collections checks, `UNITY_INCLUDE_TESTS`). It also compiles the `Editor/`-folder files changed
-since `--changed-base`, into the same compilation with NUnit (`com.unity.ext.nunit`). The references
-are the newest **non-publicized `UnityEditor.dll` obtainable, 2021.1**, and the 6000.0 engine DLLs.
-Those engine DLLs are player builds, so their own `#if UNITY_EDITOR` members are missing: for example,
-`UIBehaviour.OnValidate` and `Reset` are reported as "unverified", not as errors. Packages stay
-player-compiled. Use it to catch errors in editor branches. A green editor run is weaker evidence than
-a green player run.
+(Mono, collections checks, `UNITY_INCLUDE_TESTS`). It also compiles the loose `Editor/`-folder scripts
+the way Unity does: as their own **`Assembly-CSharp-Editor`** (`-Editor-firstpass` under `Plugins/` and
+`Standard Assets/`), with NUnit (`com.unity.ext.nunit`), referencing the runtime assemblies, which
+cannot see it. So an Editor file's `namespace CosmicShore.Editor` no longer shadows UnityEditor's
+`Editor` for a runtime `#if UNITY_EDITOR` class, and runtime code that names an Editor-folder type
+fails as it does in Unity. Only errors in the Editor-folder files **changed since `--changed-base`**
+(committed) gate. The unchanged ones are compiled as context, so a changed tool binds against
+`FrogletTool`, `FrogletEditorPalette` and the rest, and their errors are listed separately (36 on
+bleeding-edge, every one a reference-set artifact; see Known issues). `Assembly-CSharp` never emits a
+DLL here, because the unfetchable-package files always fail it, so the editor assembly is **bound
+against its source** (`Diagnose --source-ref`): a runtime error is reported once, in the runtime file,
+not as missing types in the Editor files. The references are the newest **non-publicized
+`UnityEditor.dll` obtainable, 2021.1**, and the 6000.0 engine DLLs. Those engine DLLs are player
+builds, so their own `#if UNITY_EDITOR` members are missing: for example, `UIBehaviour.OnValidate` and
+`Reset` are reported as "unverified", not as errors. Packages stay player-compiled, and editor-only
+asmdefs (`Obvious.Soap.Editor`, `FMODUnityEditor`, package editor assemblies) and the test framework
+are not compiled. Use it to catch errors in editor branches. A green editor run is weaker evidence
+than a green player run.
 
 ## What it does
 
@@ -32,7 +43,8 @@ A small re-implementation of Unity's script pipeline (`build.py`):
    `versionDefines`, `overrideReferences`/`precompiledReferences`/`autoReferenced`, name and GUID
    references.
 2. **Assigns loose scripts** to `Assembly-CSharp-firstpass` (`Assets/Plugins`, `Standard Assets`)
-   and `Assembly-CSharp`; `Editor/` folders are skipped in the player configs.
+   and `Assembly-CSharp`; `Editor/` folders are skipped in the player configs and go to
+   `Assembly-CSharp-Editor(-firstpass)` in the editor config.
 3. **Precompiled DLLs** (DOTween, FMOD, ILSupport, ...): managed-only, platform and
    `isExplicitlyReferenced` read from each `.meta`'s PluginImporter block.
 4. **Source generators** labelled `RoslynAnalyzer` run for the owning asmdef and every assembly that
@@ -44,9 +56,13 @@ A small re-implementation of Unity's script pipeline (`build.py`):
    `ENABLE_INPUT_SYSTEM` only — `activeInputHandler: 1`) and `UNITY_6000_3_17` version defines.
 6. For project assemblies it re-runs the compile through `Diagnose/` (the Roslyn API): **csc stops
    after declaration errors**, so one file naming an unfetchable package would otherwise hide every
-   method-body error in every other file. `Diagnose` binds all bodies regardless.
+   method-body error in every other file. `Diagnose` binds all bodies regardless. It names each
+   compilation after its `-out:` file, as csc does, so `[InternalsVisibleTo("Assembly-CSharp-Editor")]`
+   (`Assets/_Scripts/AssemblyInfo.cs`) applies. With `--source-ref <dep>.rsp` it binds against a
+   failed dependency's source instead of its (missing) DLL.
 7. Buckets the errors: **project errors** (the gate), **missing-type errors in files that `using` a
-   package that cannot be fetched**, and **missing-type errors while a referenced package failed**.
+   package that cannot be fetched**, **missing-type errors while a referenced package failed**, and
+   (editor config) **errors in Editor-folder files not changed since `--changed-base`**.
 
 ## Where the references come from (fetched by `fetch.py`, cached, never committed)
 
@@ -97,7 +113,8 @@ sources at their locked versions and the real (6000.0.75) engine API — includi
 
 Does not prove:
 - `#if UNITY_EDITOR` blocks and `Editor/` folders against the real Unity 6 `UnityEditor`: none is
-  obtainable. The `editor` config checks them against 2021.1, and only the changed Editor-folder files.
+  obtainable. The `editor` config checks them against 2021.1, and gates only the changed Editor-folder
+  files; editor-only asmdefs and the files inside them are not compiled at all.
 - Engine API added between 6000.0.75 and 6000.3.17 (would show as a false error, not a false pass);
   engine members whose accessibility changed in a way neither the 2021.1 oracle nor package code
   reveals (stay public: a possible false pass on use of an engine internal).
@@ -118,17 +135,23 @@ so run this tool before it.
 
 ## Known issues (open)
 
-- **`--config editor` reports false `CS0118 'Editor' is a namespace but is used like a type`.**
-  Seen 2026-10-06 on `claude/serene-edison-lfv24f`: 4 errors in three untouched runtime files
-  (`Controller/Camera/CameraSettingsSOEditor.cs:8`, `UI/ResourceDisplay.cs:286`,
-  `UI/UniversalStatsProviderEditor.cs:14` plus a follow-on CS1503 at `:40`), all from a branch that
-  changed `Assets/_Scripts/Editor/UrpAssetPlayModeRestore.cs` (`namespace CosmicShore.Editor`). The
-  editor config compiles changed Editor-folder files INTO the runtime compilation, so a runtime class
-  inside `namespace CosmicShore.*` that derives from UnityEditor's `Editor` resolves the name to the
-  namespace first. 123 Editor-folder files declare `CosmicShore.Editor` and no runtime file does,
-  so any branch touching one of them gets these. Fix: compile changed Editor-folder files as a
-  separate Assembly-CSharp-Editor that references Assembly-CSharp. Done when such a branch reports
-  0, and a planted error in an Editor file and in a runtime `#if UNITY_EDITOR` block still fail.
+- **Unity 6-only `UnityEditor` API reads as an error in the `editor` config.** Compiled together on
+  bleeding-edge (2026-10-06), the 301 loose Editor-folder scripts give 36 errors in 9 files, all
+  reference-set artifacts: `MaterialProperty.propertyType` (13: `SSUShaderGUI.cs`, `CodingHelper.cs`),
+  `NamedBuildTarget` / `PlayerSettings.Get/SetScriptingDefineSymbols` (5:
+  `Build/CosmicShoreBuildPipeline.cs`), `PrefabStageUtility` outside `Experimental` (3:
+  `CanvasUpgrader/CanvasUpgraderWindow.cs`), `EditorUtility.EntityIdToObject` (1:
+  `FrogletTools/GameCanvasUnifier.cs`), and the unfetched test framework: `UnityEditor.TestTools` (10:
+  `AI/SkimRaceBenchmarkRemote.cs`) and `LogAssert` (4, in three test files). While those files are
+  unchanged they are listed, not gated. A branch that changes one of them gets these as false project
+  errors (the missing-member ones; missing-type ones are "unverified", below). Read them against this
+  list.
+- **Missing-type errors never gate while any package failed, and three always do**
+  (`UnityEngine.Purchasing.Stores`, `-.Codeless`, `Unity.InputSystem.ForUI`). The bucket rule
+  `code in MISSING_CODES and pkg_failed` is not limited to files that use those packages, so a planted
+  `CS0103`/`CS0246`/`CS0234` anywhere in Assets reports `RESULT: OK`. Only missing-MEMBER codes
+  (`CS1061`, `CS0117`) and the rest gate. Plant a missing member when negative-controlling the tool.
+  Fix: limit the bucket to errors that can involve a failed package's types.
 - **`--config editor` only sees Editor-folder files COMMITTED since `--changed-base`.** The set
   is `git diff --name-only <base>...HEAD`, so a NEW test file that is still untracked or only
   staged is not compiled at all — and a planted error in it passes green (seen 2026-10-08 on

@@ -6,8 +6,9 @@ Mini re-implementation of Unity's script-compilation pipeline (enough of it to t
   * evaluates includePlatforms/excludePlatforms, defineConstraints and versionDefines for the
     chosen configuration (player = StandaloneWindows64 / IL2CPP / NET Standard 2.1, the project's
     shipped target; see DEFINES below);
-  * assigns loose Assets scripts to Assembly-CSharp-firstpass / Assembly-CSharp (Editor folders
-    excluded in the player configuration);
+  * assigns loose Assets scripts to Assembly-CSharp-firstpass / Assembly-CSharp; Editor-folder
+    scripts are excluded in the player configurations, and in the editor configuration go to
+    Assembly-CSharp-Editor(-firstpass), which references the runtime assemblies;
   * resolves name and GUID references, auto-referenced asmdefs and precompiled managed DLLs
     (PluginImporter .meta: platform, isExplicitlyReferenced, defineConstraints);
   * runs Roslyn source generators labelled RoslynAnalyzer for the asmdef that owns them and every
@@ -88,11 +89,17 @@ CONFIGS = {
     "player-dev": ["ENABLE_IL2CPP", "DEVELOPMENT_BUILD", "ENABLE_PROFILER", "UNITY_ASSERTIONS", "DEBUG", "TRACE"],
     # APPROXIMATE editor compile of the project's runtime code: UNITY_EDITOR branches type-checked
     # against the newest non-publicized UnityEditor obtainable (2021.1 - see README), plus the
-    # Editor-folder files changed since --changed-base (with NUnit). Packages stay player-compiled.
+    # Editor-folder scripts in their own Assembly-CSharp-Editor (with NUnit), gated on the ones changed
+    # since --changed-base (see EDITOR_PREDEFINED). Packages stay player-compiled.
     "editor": ["ENABLE_MONO", "UNITY_EDITOR", "UNITY_EDITOR_64", "UNITY_EDITOR_WIN", "ENABLE_PROFILER",
                "UNITY_ASSERTIONS", "DEBUG", "TRACE", "ENABLE_UNITY_COLLECTIONS_CHECKS", "UNITY_INCLUDE_TESTS"],
 }
 PLAYER_PLATFORM = "WindowsStandalone64"
+# Unity's predefined EDITOR assemblies, for loose scripts under an Editor/ folder (Plugins/ and
+# Standard Assets/ ones go to -firstpass). They reference the runtime assemblies, never the other way
+# round. Only the editor config fills them; it gates on errors in the Editor-folder files changed
+# since --changed-base and lists the rest's, which are compiled only so the changed ones bind.
+EDITOR_PREDEFINED = ("Assembly-CSharp-Editor-firstpass", "Assembly-CSharp-Editor")
 
 
 # --- helpers -----------------------------------------------------------------------------------
@@ -652,7 +659,7 @@ def run_once():
     pkg_out = os.path.join(out_root, "_packages")
     os.makedirs(pkg_out, exist_ok=True)
     editor = args.config == "editor"
-    editor_included = []
+    editor_files = []   # editor config: every loose Editor-folder script (Assembly-CSharp-Editor and -firstpass)
     changed_files = set()
     r = subprocess.run(["git", "diff", "--name-only", args.changed_base + "...HEAD", "--", "*.cs"], cwd=ROOT,
                        stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
@@ -703,8 +710,7 @@ def run_once():
     # assign sources
     assets = os.path.join(ROOT, "Assets")
     firstpass_roots = [os.path.join(assets, d) + os.sep for d in ("Plugins", "Standard Assets", "Pro Standard Assets")]
-    pre = {"Assembly-CSharp-firstpass": Asm("Assembly-CSharp-firstpass", assets, "predefined"),
-           "Assembly-CSharp": Asm("Assembly-CSharp", assets, "predefined")}
+    pre = {n: Asm(n, assets, "predefined") for n in ("Assembly-CSharp-firstpass", "Assembly-CSharp") + EDITOR_PREDEFINED}
     editor_skipped = 0
     for kind, root, p in sources:
         o = owner_of(p, owners, root)
@@ -715,15 +721,20 @@ def run_once():
             continue  # package scripts outside any asmdef are not compiled by Unity
         rel = os.path.relpath(p, assets).split(os.sep)
         if "Editor" in rel[:-1]:
-            if editor and p in changed_files:
-                pre["Assembly-CSharp"].files.append(p)
-                editor_included.append(p)
+            if editor:
+                # ALL of them, as Unity compiles them: a changed one needs its unchanged neighbours
+                # (FrogletTool, FrogletEditorPalette, ...) to bind. Only the changed ones are gated.
+                firstpass = any(p.startswith(r) for r in firstpass_roots)
+                pre["Assembly-CSharp-Editor-firstpass" if firstpass else "Assembly-CSharp-Editor"].files.append(p)
+                editor_files.append(p)
                 continue
             editor_skipped += 1
             continue
         tgt = "Assembly-CSharp-firstpass" if any(p.startswith(r) for r in firstpass_roots) else "Assembly-CSharp"
         pre[tgt].files.append(p)
     pre["Assembly-CSharp"].refs = ["Assembly-CSharp-firstpass"]
+    pre["Assembly-CSharp-Editor-firstpass"].refs = ["Assembly-CSharp-firstpass"]
+    pre["Assembly-CSharp-Editor"].refs = ["Assembly-CSharp-firstpass", "Assembly-CSharp", "Assembly-CSharp-Editor-firstpass"]
 
     # precompiled managed DLLs
     auto_dlls, named_dlls, analyzers = [], {}, []
@@ -756,13 +767,15 @@ def run_once():
 
     live = {n: a for n, a in allasm.items()
             if a.excluded_reason is None and (a.files or getattr(a, "dlls", None))}
-    # predefined assemblies reference every auto-referenced asmdef
-    for pn in ("Assembly-CSharp-firstpass", "Assembly-CSharp"):
-        extra = [n for n, a in live.items() if a.origin not in ("predefined",) and a.auto]
-        pre[pn].refs = pre[pn].refs + extra
+    # predefined assemblies reference every auto-referenced asmdef, and an EMPTY predefined assembly
+    # does not exist (Unity creates none), so it is not a reference either
+    extra = [n for n, a in live.items() if a.origin not in ("predefined",) and a.auto]
+    for pn in pre:
+        pre[pn].refs = [r for r in pre[pn].refs if r not in pre or r in live] + extra
 
-    # drop transitively-unneeded assemblies: compile only what Assembly-CSharp needs
-    need, stack = set(), ["Assembly-CSharp"]
+    # drop transitively-unneeded assemblies: compile only what Assembly-CSharp (and, in the editor
+    # config, the editor assemblies) needs
+    need, stack = set(), ["Assembly-CSharp"] + [n for n in EDITOR_PREDEFINED if n in live]
     missing = {}
     while stack:
         n = stack.pop()
@@ -807,9 +820,12 @@ def run_once():
 
     outputs = {}
     results = {}
+    editor_changed = [p for p in editor_files if p in changed_files]
+    editor_unchanged = set(editor_files) - set(editor_changed)
     if editor:
-        print("[build] editor config: + %d Editor-folder file(s) changed since %s: %s" % (
-            len(editor_included), args.changed_base, ", ".join(os.path.relpath(x, ROOT) for x in editor_included) or "none"))
+        print("[build] editor config: + %d Editor-folder script(s) as %s; gated: the %d changed since %s: %s" % (
+            len(editor_files), " + ".join(n for n in EDITOR_PREDEFINED if n in live) or "-", len(editor_changed),
+            args.changed_base, ", ".join(os.path.relpath(x, ROOT) for x in editor_changed) or "none"))
     print("[build] config=%s, %d assemblies to compile (of %d discovered), %d Editor-folder scripts skipped"
           % (args.config, len(order), len(allasm), editor_skipped))
 
@@ -830,6 +846,7 @@ def run_once():
         return res
 
     relearn = False
+    rsps = {}   # Assets assembly -> the .rsp it was compiled from
     for n in order:
         a = live[n]
         if getattr(a, "dlls", None):
@@ -850,6 +867,13 @@ def run_once():
         # A package assembly that failed (a reference-set artifact, listed in the summary) is left
         # out and its dependents still compile; Assets errors that stem from it name its types.
         refs += [x for d in trans if d in outputs for x in outputs[d]]
+        # An editor assembly is instead BOUND against the source of a failed Assets reference
+        # (Diagnose --source-ref): compiled without it, one runtime error would read as dozens of
+        # missing types in the changed Editor files. Dependency order, as Diagnose takes them.
+        source_refs = [d for d in order if d in blocked and d in rsps] if n in EDITOR_PREDEFINED else []
+        blocked = [d for d in blocked if d not in source_refs]
+        if source_refs:
+            print("[build] %-55s binding against the SOURCE of failed reference(s): %s" % (n, ", ".join(source_refs)))
         if blocked:
             print("[build] %-55s compiling WITHOUT failed reference(s): %s" % (n, ", ".join(blocked[:6])))
         if a.override:
@@ -888,6 +912,23 @@ def run_once():
             f.write('-out:"%s"\n' % dll)
             for s in sorted(a.files):
                 f.write('"%s"\n' % s)
+        if not a.origin.startswith("package:"):
+            rsps[n] = rsp
+        if source_refs:
+            # nothing to emit (a reference has no DLL): full diagnostics are the whole result
+            d = subprocess.run([os.path.join(DOTNET_ROOT, "dotnet"), diagnose_tool(), rsp]
+                               + [x for sr in source_refs for x in ("--source-ref", rsps[sr])],
+                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            errs = [l for l in d.stdout.splitlines() if ": error " in l]
+            if d.returncode == 0 and not errs:
+                results[n] = ("bound", [])
+                print("[build] %-55s ok (%d files, bound only - no DLL while a reference failed)" % (n, len(a.files)))
+            else:
+                results[n] = ("FAILED", errs or d.stdout.splitlines()[-20:])
+                print("[build] %-55s FAILED: %d errors (%s)" % (n, len(results[n][1]), a.origin))
+            if args.only and n == args.only:
+                break
+            continue
         r = subprocess.run([os.path.join(DOTNET_ROOT, "dotnet"), csc, "@" + rsp], stdout=subprocess.PIPE,
                            stderr=subprocess.STDOUT, text=True)
         errs = [l for l in r.stdout.splitlines() if ": error " in l]
@@ -928,7 +969,7 @@ def run_once():
         for k in pkg_failed:
             errs = results[k][1]
             print("[build]   %s (%d errors), e.g. %s" % (k, len(errs), re.sub(r"^.*?: error ", "", errs[0])[:150] if errs else ""))
-    real, unobtainable, unverified = [], [], []
+    real, unobtainable, unverified, editor_context = [], [], [], []
     for k in failed:
         if k in pkg_failed:
             continue
@@ -939,7 +980,11 @@ def run_once():
                 continue
             path, code = m.group(1), m.group(2)
             src = open(path, encoding="utf-8-sig", errors="replace").read() if os.path.exists(path) else ""
-            if code in UNOBTAINABLE_CASCADE_CODES and any(re.search(r"^\s*using\s+" + re.escape(ns) + r"\b", src, re.M) for ns in UNOBTAINABLE_NAMESPACES):
+            if path in editor_unchanged:
+                # compiled only so the changed Editor files bind; against UnityEditor 2021.1 and without
+                # the (unfetched) test framework, an unchanged one is not evidence either way
+                editor_context.append((k, e))
+            elif code in UNOBTAINABLE_CASCADE_CODES and any(re.search(r"^\s*using\s+" + re.escape(ns) + r"\b", src, re.M) for ns in UNOBTAINABLE_NAMESPACES):
                 unobtainable.append((k, e))
             elif editor and code in ("CS0115", "CS0117", "CS1061") and re.search(r"'(OnValidate|Reset)'|\.(OnValidate|Reset)\(\)", m.group(3)):
                 # the uGUI/engine reference DLLs are PLAYER builds: their #if UNITY_EDITOR members
@@ -963,19 +1008,25 @@ def run_once():
          unobtainable, 0 if args.quiet_buckets else args.max_errors)
     show("unverified: missing types while a referenced package failed, or editor-only members absent from the player-build reference DLLs", unverified,
          0 if args.quiet_buckets else args.max_errors)
+    if editor:
+        show("unverified: errors in Editor-folder files NOT changed since %s (compiled as context for the changed ones; "
+             "UnityEditor 2021.1, no test framework)" % args.changed_base, editor_context,
+             0 if args.quiet_buckets else args.max_errors)
     n_changed = sum(1 for _, e in real if e.split("(")[0] in changed)
     stubbed = [k for k in need if live[k].origin == "stub"] + engine_stubs
     print("[build] stubbed assemblies: %s" % (", ".join(sorted(stubbed)) or "none"))
     unresolved = sorted({r for v in missing.values() for r in v})
     print("[build] unresolved asmdef references (Unity would also skip these): %s" % (", ".join(unresolved) or "none"))
-    json.dump({"real": real, "unobtainable": unobtainable, "unverified": unverified, "package_failed": pkg_failed},
+    json.dump({"real": real, "unobtainable": unobtainable, "unverified": unverified, "editor_context": editor_context,
+               "package_failed": pkg_failed},
               open(os.path.join(out, "buckets.json"), "w"), indent=1)
     if real:
         print("[build] RESULT: FAILED - %d error(s) in project code (%d in files changed since %s)"
               % (len(real), n_changed, args.changed_base))
         return 1
     print("[build] RESULT: OK - no errors in project code (%d assemblies; %d unobtainable-package and %d unverified "
-          "missing-type errors listed above)" % (len(order), len(unobtainable), len(unverified)))
+          "missing-type errors%s listed above)" % (len(order), len(unobtainable), len(unverified),
+                                                   ", %d in unchanged Editor files," % len(editor_context) if editor else ""))
     return 0
 
 

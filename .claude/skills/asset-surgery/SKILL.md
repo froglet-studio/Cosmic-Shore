@@ -1063,11 +1063,14 @@ references, m_Script classes). Four things that cost time on the first run (2026
   files that `using` a UGS package no mirror carries (Multiplayer, Friends, Leaderboards); they are
   counted, not judged. Check your own files are not in that bucket (they would be unverified):
   grep the run's `report.json` for each file you changed.
-- **`--config editor` reports false `CS0118 'Editor' is a namespace but is used like a type`** in
-  untouched runtime `#if UNITY_EDITOR` files whenever the branch changed an Editor-folder file
-  declaring `namespace CosmicShore.Editor` (123 files do). That config compiles changed
-  Editor-folder files INTO the runtime compilation; Unity keeps them in Assembly-CSharp-Editor,
-  which runtime code cannot see. The summary line says "(0 in files changed since …)" - believe it.
+- **`--config editor` compiles the Editor-folder scripts as their own `Assembly-CSharp-Editor`**,
+  referencing the runtime, as Unity does. Before 2026-10-06 it merged the changed ones INTO the
+  runtime compilation, so any branch touching one of the 123 `namespace CosmicShore.Editor` files got
+  false `CS0118 'Editor' is a namespace but is used like a type` errors in untouched runtime
+  `#if UNITY_EDITOR` files. A run from an older checkout still does. Only the CHANGED Editor files
+  gate. The ~36 errors listed for unchanged ones are reference-set artifacts (2021.1 `UnityEditor`, no
+  test framework), itemised in the README's Known issues. If your branch changes one of those files,
+  read its errors against that list.
 - **`--config editor` only sees Editor-folder files that are COMMITTED.** It picks them with
   `git diff --name-only <changed-base>...HEAD`, so a test you edited but have not committed is
   silently left out and the run is green without having compiled it. Read the
@@ -1102,10 +1105,12 @@ references, m_Script classes). Four things that cost time on the first run (2026
   in `report.json` - intersect them with your diff's changed lines (parse `@@ +a,n @@` from
   `git diff -U0 <base>...HEAD -- <file>` and look for any error at those line numbers). Zero hits
   on changed lines is the evidence; "the run was green" is not.
-- **Negative-control both tools before quoting them**: plant a call to a missing member in a file
-  you changed (the compile must fail with that file tagged `[CHANGED-TONIGHT]`), and misspell one
-  key in an asset you changed (the audit must name the file and the key). Restore, then
-  `git status --short` the paths. Both discriminated on their first try here.
+- **Negative-control both tools before quoting them**: plant a call to a missing MEMBER
+  (`CS1061`/`CS0117`), not a missing name, in a file you changed. Missing-type codes such as `CS0103`
+  never gate, see the README's Known issues. The compile must fail with that file tagged
+  `[CHANGED-TONIGHT]`. For the asset audit, misspell one key in an asset you changed (the audit
+  must name the file and the key). Restore, then `git status --short` the paths. Both discriminated
+  on their first try here.
 
 **But a REAL type check of the files you actually wrote is still available, and it is worth the
 20 minutes** on new code (as opposed to a small edit inside a large existing file). Build a stub

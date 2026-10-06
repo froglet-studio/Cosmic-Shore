@@ -468,6 +468,8 @@ fixed on this branch before the PR:
   on a pad (the §2.2 row above). The shipped Skim Race policy keeps `UseDrift: 0`, so nothing changes
   on screen until that is turned on. `SQUIRREL_DRIFT.md` §10.
 - **Tooling (task suggested):** `unity_refcompile --config editor` false positives, recorded in its README.
+  Fixed 2026-10-06: the editor config now compiles Editor-folder scripts as a separate
+  Assembly-CSharp-Editor (no more false CS0118), and the tool runs on any .NET SDK from 8.0 up.
 ---
 
 ## 4. Step plan
