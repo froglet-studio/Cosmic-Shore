@@ -141,7 +141,10 @@ hull backstop alike):
 - **Opponent seat** — an AI on a domain no human flies. The card pins
   `SO_ArcadeGame.OpponentAIVessel` to the **Squirrel**, so every opponent is a Squirrel: it skims
   the rails for boost energy, which is the one speed source a gate-following autopilot reaches
-  just by flying the racing line. Pinned opponents sit **outside arena seating** — a grid of
+  just by flying the racing line. Every Regatta Squirrel AI flies the **Skim Race pilot**
+  (`SkimRacePilot`, `Docs/SKIM_RACE_AI.md`) with `RegattaRingObjective`: the same racing AI, its
+  crystal swapped for the next ring and its track for the domain's rail. On the platform
+  `AIPilot`'s ring waypoints the Squirrels threaded no rings at all (first playtest, 2026-10-06). Pinned opponents sit **outside arena seating** — a grid of
   identical opponents is the point, and the arena backstop
   (`ServerPlayerVesselInitializer.ResolveArenaUniqueHull`) skips them so a human who picked the
   Squirrel keeps it. **This is a stopgap**: when the racing AI can drive every hull, clear
