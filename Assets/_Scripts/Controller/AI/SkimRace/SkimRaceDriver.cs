@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Gameplay
 {
@@ -349,7 +350,7 @@ namespace CosmicShore.Gameplay
             {
                 Vector3 axis = Vector3.Cross(fwd, desired);
                 if (axis.sqrMagnitude < 1e-8f) axis = up;
-                float lead = Mathf.Min(headingErr * _cfg.LeadGain, headingErr + _cfg.MaxLeadDegrees, 179f);
+                float lead = MathfNoAlloc.Min(headingErr * _cfg.LeadGain, headingErr + _cfg.MaxLeadDegrees, 179f);
                 cmdTarget = Quaternion.AngleAxis(lead, axis.normalized) * fwd;
             }
             cmdErr = Vector3.Angle(cmdFwd, cmdTarget);
@@ -361,7 +362,7 @@ namespace CosmicShore.Gameplay
                 axis.Normalize();
                 float stick = Mathf.Clamp01(cmdErr * _cfg.StickGainPerDegree);
                 float u = Vector3.Dot(axis, up), r = Vector3.Dot(axis, right);
-                float m = Mathf.Max(Mathf.Abs(u), Mathf.Abs(r), 1e-4f);
+                float m = MathfNoAlloc.Max(Mathf.Abs(u), Mathf.Abs(r), 1e-4f);
                 yaw = stick * u / m;
                 pitch = stick * r / m;
             }
@@ -378,7 +379,7 @@ namespace CosmicShore.Gameplay
             axis.Normalize();
             float stick = Mathf.Clamp01(cmdErr * _cfg.StickGainPerDegree);
             float u = Vector3.Dot(axis, up), r = Vector3.Dot(axis, right);
-            float m = Mathf.Max(Mathf.Abs(u), Mathf.Abs(r), 1e-4f);
+            float m = MathfNoAlloc.Max(Mathf.Abs(u), Mathf.Abs(r), 1e-4f);
             yaw = stick * u / m;
             pitch = stick * r / m;
         }

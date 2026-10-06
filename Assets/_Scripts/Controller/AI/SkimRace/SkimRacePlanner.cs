@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Gameplay
 {
@@ -88,7 +89,7 @@ namespace CosmicShore.Gameplay
                     float stick = Mathf.Clamp01(ang * _cfg.StickGainPerDegree);
                     Vector3 up = rot * Vector3.up, right = rot * Vector3.right;
                     float u = Vector3.Dot(axis, up), r = Vector3.Dot(axis, right);
-                    float m = Mathf.Max(Mathf.Abs(u), Mathf.Abs(r), 1e-4f);
+                    float m = MathfNoAlloc.Max(Mathf.Abs(u), Mathf.Abs(r), 1e-4f);
                     y = stick * u / m; p = stick * r / m; thr = 1f;
                 }
 

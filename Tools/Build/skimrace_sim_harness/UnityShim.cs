@@ -339,12 +339,13 @@ namespace UnityEngine
         public static float Pow(float a, float b) => (float)Math.Pow(a, b);
         public static float Sign(float f) => f >= 0f ? 1f : -1f;
         public static float Max(float a, float b) => a > b ? a : b;
-        public static float Max(float a, float b, float c) => Max(Max(a, b), c);
+        // No three-argument overloads, exactly like UnityEngine.Mathf: a 3-value call binds to the
+        // params form (and allocates, in Unity). The shim used to define them, which hid 840
+        // allocations per frame in the pilot from this simulator; MathfNoAlloc is the fix.
         public static float Max(params float[] v) { float m = v[0]; foreach (var f in v) if (f > m) m = f; return m; }
         public static int Max(int a, int b) => a > b ? a : b;
         public static int Max(params int[] v) { int m = v[0]; foreach (var f in v) if (f > m) m = f; return m; }
         public static float Min(float a, float b) => a < b ? a : b;
-        public static float Min(float a, float b, float c) => Min(Min(a, b), c);
         public static float Min(params float[] v) { float m = v[0]; foreach (var f in v) if (f < m) m = f; return m; }
         public static int Min(int a, int b) => a < b ? a : b;
         public static int Min(params int[] v) { int m = v[0]; foreach (var f in v) if (f < m) m = f; return m; }
