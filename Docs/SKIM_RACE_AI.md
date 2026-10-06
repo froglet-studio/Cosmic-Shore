@@ -441,8 +441,11 @@ evaluates each component as Unity's operator does, instead of pre-rounded 3x3 te
 double-precision configurations (optimized, all optimizations, Debug IL without inlining, no
 optimizations); dropping ONE of the roundings fails the stella test in double precision (and passes in
 single, which is why the first suite could not see it). Simulator race output, old code vs new, Mono
-double precision (the editor's mode): I2 x 2 seeds identical, decide cost per seat per frame 2.805 -> 1.986 ms
-(that run shared the CPU; I4 and the .NET re-check are recorded below when they finish).
+double precision (the editor's mode), 2 seeds, decide cost per seat per frame: I2 identical, 2.805 -> 1.986 ms;
+I4 identical, 0.845 -> 0.575 ms (~1.4x - less than §8.0f's single-precision 2.1x, because double
+precision is what the editor runs and the explicit roundings cost a little). .NET, I1/I2/I4 x 6 seeds:
+identical. Note the double-precision Mono cost of the OLD code (2.8 ms per seat at I2) is close to the
+editor's measured 3.6 ms; single-precision Mono (1.9 ms) was not - this is the mode to predict with.
 
 The simulator's Mono mode now runs double precision by default (`SKIMRACE_RUNTIME=mono` adds
 `--optimize=-float32`; `SKIMRACE_MONO_OPTS=""` for stock Mono).
