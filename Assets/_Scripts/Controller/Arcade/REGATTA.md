@@ -130,10 +130,18 @@ corner it did not ask for.
 
 The platform's gate-race AI (two-waypoint approach, latched side) plus one override: an
 **attached** AI aims down its own rail (`TryOverrideAim`, Skein's), because the rail passes
-through every ring and fighting its curve is the only way to lose it. Known and stated: an AI
-holds 0.6 throttle, the Manta is the only hull whose boost has an autopilot drive, and the
-Rhino's ramp engages off a straight stick an AI naturally holds — so an AI Sparrow, Serpent,
-Dolphin or Scarab races at cruise. They finish; they do not win.
+through every ring and fighting its curve is the only way to lose it. The AI templates are
+`Random`, so the bot grid draws its hulls from the card. The Manta's boost has an autopilot
+drive and the Rhino's ramp engages off a straight stick an AI naturally holds; every other
+hull's AI now spends its boost through a per-hull **AI boost policy**
+(`AI/AI_BOOST.md`): the Sparrow holds its afterburner down each straight, the Serpent stacks
+pellets on long legs, the Dolphin discharges its drift charge onto the straight instead of
+into the turn, and a Time-5 Scarab
+Snap Dashes (below Time 5 the Scarab is already at its throttle ceiling). None of them is
+Regatta-specific and none has been measured in a race yet — the claim that an all-AI domain
+in those hulls can now WIN is unverified until a playtest says so. The **Squirrel** is the
+exception: in Regatta it does not fly `AIPilot` at all (and so never runs its `SkimRing` boost
+policy) — it flies the Skim Race pilot, below.
 
 **Two kinds of AI seat** (`AIHullSeating`, read by the lobby chips, the backfill and the arena
 hull backstop alike):
@@ -144,8 +152,8 @@ hull backstop alike):
   just by flying the racing line. Every Regatta Squirrel AI flies the **Skim Race pilot**
   (`SkimRacePilot`, `Docs/SKIM_RACE_AI.md`) with `RegattaRingObjective`: the same racing AI, its
   crystal swapped for the next ring and its track for the domain's rail. On the platform
-  `AIPilot`'s ring waypoints the Squirrels threaded no rings at all (first playtest, 2026-10-06). Pinned opponents sit **outside arena seating** — a grid of
-  identical opponents is the point, and the arena backstop
+  `AIPilot`'s ring waypoints the Squirrels threaded no rings at all (first playtest, 2026-10-06).
+  Pinned opponents sit **outside arena seating** — a grid of identical opponents is the point, and the arena backstop
   (`ServerPlayerVesselInitializer.ResolveArenaUniqueHull`) skips them so a human who picked the
   Squirrel keeps it. **This is a stopgap**: when the racing AI can drive every hull, clear
   `OpponentAIVessel` in `author_regatta_assets.py` (and drop its assert) and the opponent grid
