@@ -1733,11 +1733,21 @@ tiny constraint interface). Compile it together with the REAL subject files it t
 driver that reflects over `[Test]` methods, and you have executed the shipped assertions against
 the shipped code. This is what makes the body-level blindness above survivable: the 2026-08-24
 table says the no-stubs pass proves nothing inside a method, and a whole-file test harness proves
-everything inside every method the suite covers. Two mechanics that cost a cycle each:
+everything inside every method the suite covers. Three mechanics that cost a cycle each:
 
 - **`rm` the output assembly before every rebuild.** A failed build leaves the previous `.dll` in
   place, the driver runs it, and a *broken* file reports the previous run's "7 passed" — the exact
   false green a gate exists to prevent.
+- **…and `rm` every GENERATED SOURCE too, and abort when its generator fails.** A harness that
+  extracts the shipped methods into `Foo.g.cs` and then compiles has two artefacts that can go
+  stale, not one. If the extractor hard-fails (as it should, on a signature it cannot find) and the
+  build line runs anyway, the compiler happily reuses the PREVIOUS `Foo.g.cs` and the run reports a
+  pass for code that is no longer the tree. It happened re-verifying a branch after merging the
+  base: the extractor read its "pre-fix" side from `git show HEAD:`, which stopped being pre-fix the
+  moment the fix was committed, so it failed — and the merged-tree "re-verification" printed ALL OK
+  for the pre-merge code. So: delete generated sources and outputs first, chain the generator with
+  `|| exit`, and pin any "before" side of a before/after harness to a COMMIT (`<fix>^`, the merge
+  base), never to `HEAD`, which moves under you.
 - **Run from the PROJECT ROOT**, not the harness directory: Unity runs edit-mode tests with cwd =
   project root, so every `File.Exists("Assets/...")` in the suite is project-relative and fails
   everywhere else. Four passing tests read as four failures until you notice.
