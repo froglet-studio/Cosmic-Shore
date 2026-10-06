@@ -68,6 +68,15 @@ negative control too: a `--check` you have only ever watched SUCCEED is a `--che
 not tested — mutate one authored value, confirm it exits non-zero AND names the file, then
 restore and confirm the tree is clean (`git status --short` on the asset path).
 
+**One tool changes the premise above, though not the policy: `Tools/Build/unity_refcompile`
+(2026-10).** It binds the whole of `Assembly-CSharp`, method bodies included, against real Unity 6
+reference assemblies and every package at its locked source — not the syntax-only Roslyn pass this
+section warns about — and `check_generated_assets.py` then audits changed YAML assets against the
+schema it wrote. It is still not a ship gate and still optional; but when a session has network and
+ten minutes, a green run of it (negative-controlled) IS evidence, and the verification line may say
+"compiled against Unity reference assemblies (`unity_refcompile`), not opened in the editor" instead
+of "not compiled". How to run it, and its false positives: `/asset-surgery` §4.
+
 **§2.5 is NOT one of these.** The tool-output gate is a git and filesystem question — did the
 WRITER tool's assets land in a commit — and it needs no compiler, no editor and no CI. It
 runs in full, in every mode.

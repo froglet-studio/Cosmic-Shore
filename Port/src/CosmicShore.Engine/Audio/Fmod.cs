@@ -252,6 +252,7 @@ namespace CosmicShore.Engine.Audio.Fmod
         {
             if (reference.IsNull)
                 throw new System.ArgumentException("EventReference is null.", nameof(reference));
+            AudioStats.Created(reference.Path ?? reference.ToString());
             var state = new EventInstanceState { Path = reference.Path };
             FmodBackend.Current?.Create(state, reference);
             return new EventInstance { State = state };
@@ -321,7 +322,7 @@ namespace CosmicShore.Engine.Audio.Fmod
 
         public static void PlayOneShot(EventReference reference, Vector3 position = default)
         {
-            if (reference.IsNull) return;
+            if (reference.IsNull) { AudioStats.UnwiredOneShots++; return; }
             var i = CreateInstance(reference);
             i.set3DAttributes(RuntimeUtils.To3DAttributes(position));
             i.start(); i.release();
@@ -331,7 +332,7 @@ namespace CosmicShore.Engine.Audio.Fmod
 
         public static void PlayOneShotAttached(EventReference reference, GameObject gameObject)
         {
-            if (reference.IsNull) return;
+            if (reference.IsNull) { AudioStats.UnwiredOneShots++; return; }
             var i = CreateInstance(reference);
             AttachInstanceToGameObject(i, gameObject);
             i.start(); i.release();

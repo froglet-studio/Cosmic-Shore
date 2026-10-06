@@ -20,6 +20,8 @@ import hashlib
 import os
 import re
 import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import arcade_mode_lib as aml  # noqa: E402  - card background + retired-key checks
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 CHECK = "--check" in sys.argv
@@ -186,8 +188,7 @@ MonoBehaviour:
     wins it for your domain.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
-  CardBackground: {fileID: 21300000, guid: 587d2203114c8004c9985d0112c89585, type: 3}
-  PreviewClip: {fileID: 241334157148977051, guid: 4396864d799a6154bb82e5346ac0093b, type: 3}
+  CardBackground: {fileID: 21300000, guid: %(bg)s, type: 3}
   GolfScoring: 0
   SceneName: MinigameBloomrush
   Vessels:
@@ -201,7 +202,9 @@ MonoBehaviour:
   ViewUserAction: 0
   PlayUserAction: 0
   ComebackRatePerScoreDeficit: %(rate)s
-""" % {"script": SO_ARCADE_GAME_SCRIPT, "manta": MANTA_CLASS_GUID, "rate": COMEBACK_RATE}
+""" % {"script": SO_ARCADE_GAME_SCRIPT, "manta": MANTA_CLASS_GUID, "rate": COMEBACK_RATE,
+       # the /cardart render, never a literal - see aml.card_background
+       "bg": aml.card_background("Bloomrush")}
 
 
 TOAST_CONFIG = """%%YAML 1.1
@@ -299,6 +302,11 @@ def main() -> int:
                         "    guid: %s\n" % SCENE_GUID)
         bs2 = sub(bs, anchor, new, "build settings")
         writes["ProjectSettings/EditorBuildSettings.asset"] = bs2
+
+    card_errors = aml.check_cards(writes)
+    if card_errors:
+        print("VALIDATION FAILED - nothing written:\n  " + "\n  ".join(card_errors))
+        return 1
 
     drift = []
     for rel, want in writes.items():

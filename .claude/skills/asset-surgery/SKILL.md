@@ -1022,7 +1022,32 @@ CSC=$(ls "$PWD"/dotnet/sdk/*/Roslyn/bincore/csc.dll | head -1)
 Do NOT conclude "no compiler here" from a missing `dotnet` on `PATH` — that was the state of
 a 2026-08 remote session that then nearly shipped on inspection alone. There are also no Unity
 managed DLLs in such a container (no `Library/`, no `UnityEngine.dll` anywhere on disk), so a
-**whole-assembly** type check is impossible and the no-stubs filter below is the fallback.
+**whole-assembly** type check used to be impossible and the no-stubs filter below was the fallback.
+
+**Since 2026-10 a whole-assembly check against REAL Unity references exists: run it first.**
+`bash Tools/Build/unity_refcompile/run.sh` fetches the 6000.0 engine reference DLLs and every
+package at its locked source, then binds ALL of `Assembly-CSharp` (method bodies included) the way
+a player build would; `Tools/Build/unity_refcompile/README.md` says exactly what it does and does not
+prove. Then `python3 Tools/Build/check_generated_assets.py` audits every changed `.asset` / `.prefab`
+/ `.unity` against the schema that compile wrote (serialized keys, enum values, guid/fileID
+references, m_Script classes). Four things that cost time on the first run (2026-10-06):
+- **`DOTNET_ROOT` must hold a net8.0 REFERENCE PACK** (`packs/Microsoft.NETCore.App.Ref/8.*/ref/net8.0`).
+  With only a .NET 10 SDK, `depublicize()` dies with `IndexError: list index out of range` after a
+  full ten-minute fetch, which reads as a broken tool. Install the 8.0 channel per-user (above) and
+  point `DOTNET_ROOT` at it; `TMPDIR` decides where the ~550 MB cache lands.
+- **"218 errors" is not 218 errors.** Read the `ERRORS in project code:` line. The large bucket is
+  files that `using` a UGS package no mirror carries (Multiplayer, Friends, Leaderboards); they are
+  counted, not judged. Check your own files are not in that bucket (they would be unverified):
+  grep the run's `report.json` for each file you changed.
+- **`--config editor` reports false `CS0118 'Editor' is a namespace but is used like a type`** in
+  untouched runtime `#if UNITY_EDITOR` files whenever the branch changed an Editor-folder file
+  declaring `namespace CosmicShore.Editor` (123 files do). That config compiles changed
+  Editor-folder files INTO the runtime compilation; Unity keeps them in Assembly-CSharp-Editor,
+  which runtime code cannot see. The summary line says "(0 in files changed since …)" - believe it.
+- **Negative-control both tools before quoting them**: plant a call to a missing member in a file
+  you changed (the compile must fail with that file tagged `[CHANGED-TONIGHT]`), and misspell one
+  key in an asset you changed (the audit must name the file and the key). Restore, then
+  `git status --short` the paths. Both discriminated on their first try here.
 
 **But a REAL type check of the files you actually wrote is still available, and it is worth the
 20 minutes** on new code (as opposed to a small edit inside a large existing file). Build a stub

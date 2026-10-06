@@ -165,6 +165,61 @@ rich-get-richer problem; only play will say.
 **Also worth watching:** the Dolphin's Time-5 Drift Ward wards `DangerPrism` and nothing else,
 which now means it wards *the sink*. That is a real and deliberate strengthening of it.
 
+### 4.1 The petal-burn switch: Shipped or Tuned, per cell (Oct 2026, round 11g)
+
+How big the sink bites is now a **per-cell setting**, so the size can be playtested without
+overwriting what shipped. Nothing about *who* is punished changes; only *how much*.
+
+| Rule | Where the number lives | Per element, per contact | Per contact (4 elements) |
+|---|---|---|---|
+| **Shipped** = 0 (default) | `VesselElementalDebuffByDangerPrismEffect.asset` `debuffMagnitude: -0.5` | **5 petals** | 20 petals |
+| **Tuned** = 1 | the same asset, `tunedDebuffMagnitude: -0.1` | **1 petal** | 4 petals |
+
+- **The switch is `CellConfigDataSO.PetalBurnRule`** (enum `PetalBurnRule`, `Assets/_Scripts/Data/Enums/PetalBurnRule.cs`).
+  The effect reads the live cell through its `cellData` reference (Runtime Cell Data): `cellData.Cell.Config`,
+  never `cellData.Config` alone. That field survives a scene load and is cleared only when a Cell enables, so after
+  the Swarm cell had been picked, a scene with no Cell would otherwise have kept playing Tuned. It picks the size
+  with the pure resolver `PetalBurnRules.Magnitude`. If no cell is live or the reference is unwired, it plays
+  Shipped.
+- **The Swarm cell (the demo cell) is Tuned.** It is authored by `Tools/Build/author_swarm_fauna.py`
+  (`PETAL_BURN_RULE = 1`). The other 61 cell configs author nothing, so they play Shipped.
+- **Flip it in one place.** Set `PETAL_BURN_RULE` and re-run the generator, or set the field on
+  any Cell Config asset in the inspector (**Stakes ▸ Petal Burn Rule**). If you also change which
+  cells are Tuned, update `TUNED_CELLS` in `check_elemental_economy.py` §5. To adopt one rule
+  everywhere, change `debuffMagnitude` on the asset; the gate's `EXPECTED_PETALS` and this table move
+  with it.
+- **The own-domain sting uses the same size.** Under either rule, your own trail applies a temporary
+  debuff the same size as the hostile burn (§4). This is the coupling the lab's rules file states.
+  The gate fails if the two branches stop sharing one resolved size.
+- Settlement is unchanged. The loss accrues in a pending pool and settles in **whole petals**,
+  clamped to what is held. While building the switch, the harness found one pre-existing defect.
+  `AccrueElementalLoss`'s "nothing left" test had no epsilon, so after nine single-petal losses the
+  element held 0.0999999 and its **last petal could never be taken**. Under Shipped's 5-petal bites
+  it was rarely reached. Under Tuned it hit every pilot. It is fixed: the test now uses the same
+  1e-4 epsilon as the settle. T8 is the negative control: before the fix it counted 9 contacts to
+  strip a full element, not 10.
+
+**What each rule does to a pilot.** These numbers come from the Living Ecology lab's stakes
+evaluation (`/mnt/project-files/overnight/burn-rules.md`; research branch
+`Tools/Ecology/flight/src/60_stakes.js` and `flight/results/stakes_eval.json`). Setup: every
+species, 3 pilot styles × 6 seeds × 3 min, starting at 20 petals.
+
+| Petals lost per minute | careless | skilled | aggressive | runs stripped to 0 |
+|---|---|---|---|---|
+| **Shipped** (5/element) | 3.89 | 0.91 | 10.67 | 42% |
+| **Tuned** (1/element) | 3.25 | **0.22** | 6.04 | 21% |
+
+- **Shipped strips a careless pilot fast:** in 5 s against the snap trap, 16 s against the pack,
+  20 s against the lurker and 37 s against the stampede.
+- **Shipped also strips a skilled pilot:** they lose everything to the lurker in 79 s.
+- **Tuned spares skill.** A skilled pilot loses 0.22 petals/min. A careless one still loses 3.25.
+- **Most burns were readable either way:** 92-93% were telegraphed. A strike counts as telegraphed
+  when the striker showed intent > 0.5 for ≥ 0.25 s before contact.
+- **The lab recommends Tuned.** Garrett has not chosen yet, so the shipped value stays and only the
+  demo cell plays Tuned.
+
+QA: `QA-SWARM-ROUND11-7` (Docs/QA/QA_BACKLOG.md).
+
 ## 5. Every hull can now fight for it
 
 The headline requirement — *every vessel needs the ability to debuff other vessels* — was false
@@ -240,8 +295,9 @@ still gets their comeback bonus on top.
 
 | What | How |
 |---|---|
-| The transfer arithmetic | `bash Tools/Build/elemental_transfer_harness/run.sh` — compiles the shipped C# against a stub surface and **runs** it. 7 blocks, negative-controlled. |
-| The economy's four invariants | `python3 Tools/Build/check_elemental_economy.py` (`--self-test`: six controls, all fire) |
+| The transfer arithmetic | `bash Tools/Build/elemental_transfer_harness/run.sh` — compiles the shipped C# against a stub surface and **runs** it. 8 blocks, negative-controlled. T8 is the petal-burn switch (§4.1), on the asset's own numbers. The same script type-checks the danger-prism effect SO and `CellConfigDataSO` against `SwitchStubs.cs`. |
+| The economy's five invariants | `python3 Tools/Build/check_elemental_economy.py` (`--self-test`: twelve controls, all fire). §5 is the petal-burn switch. |
+| The switch's asset half | `python3 Tools/Build/author_petal_burn_rule.py --check` (effect asset) · `python3 Tools/Build/author_swarm_fauna.py --check` (the Swarm cell's `PetalBurnRule: 1`) |
 | The drain magnitudes | `python3 Tools/Build/author_combat_debuff_magnitudes.py --check` |
 | Standing gates | `check_conditional_compilation` · `check_enum_member_references` · `check_switch_label_collisions` · `check_self_referential_locals` · `check_using_directives` |
 

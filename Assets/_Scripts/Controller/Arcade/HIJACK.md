@@ -424,8 +424,10 @@ merge without a conflict in that file. Do not edit it on this branch for that re
   from 1,500 for pace without re-measuring either, so the intended length is now roughly half of
   the original 3–5 minute estimate — which is itself an estimate. The target is one editor field.
 - **Mass-5 armour on rail prisms** is the one uncapped collider source — see §7.
-- **No `ModePreview_Hijack.asset`**, so the arcade card shows "LEVEL PREVIEW NOT AVAILABLE".
-  Salvo ships the same way, so this is a gap rather than a regression.
+- **The mode preview exists**: `ModePreview_Hijack.asset` (authored by
+  `Tools/Build/author_mode_previews.py`). The Switchyard is an authored EnvironmentPrefab per
+  intensity, so the scale model shows the rings and burrs, and the flight preview lets the Urchin
+  grind a rail and launch into a burr.
 - **Not suppressed while riding: `AIPilot`'s orbit-break.** `UpdateOrbitBreak` exempts drifting
   but not attachment, and `breakOrbits` defaults on. If it ever fires mid-grind it drops
   `LookingAtCrystal` (and with it `ram`, so 150 → 90 or 10 → 6) and swings the nose off-rail.

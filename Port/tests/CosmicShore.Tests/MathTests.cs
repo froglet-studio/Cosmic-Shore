@@ -264,3 +264,15 @@ public class MathfTests
         Assert.Equal(10f, Mathf.MoveTowardsAngle(350f, 10f, 30f), 3);
     }
 }
+
+public class Vector4Tests
+{
+    [Fact]
+    public void ScalarTimesVector_MatchesVectorTimesScalar()
+    {
+        var v = new Vector4(1f, -2f, 3.5f, 0.25f);
+        Assert.Equal(v * 2.5f, 2.5f * v);
+        var r = 2f * v;
+        Assert.Equal((2f, -4f, 7f, 0.5f), (r.x, r.y, r.z, r.w));
+    }
+}

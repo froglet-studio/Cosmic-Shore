@@ -211,7 +211,8 @@ and irrelevant: the card's `Vessels` list clamps every AI to the Manta
 
 - **Not editor-verified.** Asserted by a real out-of-editor compile of the course + tests
   against Unity-semantics stubs and a 1,600-circuit run of the shipped solver; nobody has
-  flown it. See `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+  flown it, and there is no Redline entry in `Docs/UNITY_VERIFICATION_CHECKLIST.md` yet, so the
+  first-flight check is still unrecorded.
 - **The autopilot drive is new to the whole fleet's AI Manta**, not just this mode — a
   lava-lamp Manta now Soars on straights. If the menu reads too fast, the dial is
   `aiBoostStickBand` on `Manta.prefab` (0 disables the drive).

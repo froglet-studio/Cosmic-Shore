@@ -414,10 +414,13 @@ TTLs, or idle cullers are acceptable.** If prism accumulation in the menu (or
 anywhere) is a perf problem, solve it with the universal systems: **fauna
 cleanup** (cleanup is one of the fauna's jobs — foragers consume trail mass
 through the food web) or **pause/throttle the spawner** (not creating mass is
-allowed; aging it out is not). **One authorized exception exists** — the
+allowed; aging it out is not). **Two authorized exceptions exist** — the
 Wanderway rolling tether, granted by explicit sign-off to make that toy a truly
-infinite runner at fixed memory, fenced to a live `WanderwayRun` and recorded in
-`Docs/ECOSYSTEM.md` §0. It is an exception *because it was asked for*, not a
+infinite runner at fixed memory, fenced to a live `WanderwayRun`; and the Skim Race
+/ Joust trail cap on low-end phones (2026-10-05), granted by the project owner for
+the `MobileLow` device tier only, fenced to `RaceTrailCap` in those two modes on that
+tier (`Docs/PLATFORM_UNIFICATION.md` §3.6). Both are recorded in
+`Docs/ECOSYSTEM.md` §0. Each is an exception *because it was asked for*, not a
 precedent: the protocol still stands, and the next one needs its own sign-off.
 
 ### Universality — one HyperSea, one rule set
@@ -428,7 +431,10 @@ scenes alike. Do not create context-specific exemptions ("it's only the menu,"
 "it's just cosmetic," "it's a perf special case"). Every carve-out creeps
 confusion into best practices about when the rules apply, and carve-outs are
 precisely how rejected cheats re-enter the codebase — both resolved examples
-above came back wearing a special-circumstance costume.
+above came back wearing a special-circumstance costume. (The phone race cap is the
+one perf special case that was explicitly granted — by the project owner, for one
+device tier and two modes, recorded in `Docs/ECOSYSTEM.md` §0. That grant does not
+extend to any other tier, mode or system; asking again is the only route.)
 
 When a context creates pressure (performance, pacing, visuals), solve it with
 the universal systems that already exist — fauna have many jobs and cleanup is

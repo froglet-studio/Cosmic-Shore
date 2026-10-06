@@ -28,6 +28,7 @@ MonoBehaviour:
   dogFightPointTarget: 90
   bendsPointTarget: 3
   scarabScrambleGoalTarget: 10
+  astroLeagueGoalLimit: 5
   tollwayTollTarget: 4
   wreckingBallPrismTarget: 1500
   undertowPointTarget: 12
@@ -40,6 +41,7 @@ MonoBehaviour:
   waystationRingTarget: 24
   breakwaterStationTarget: 15
   breakwaterLaps: 2
+  skeinRingTarget: 24
   headlongGateTarget: 24
   redlineGateTarget: 24
   regattaGateTarget: 24
@@ -60,6 +62,7 @@ MonoBehaviour:
   dogFightPointTargetBuild: 90
   bendsPointTargetBuild: 3
   scarabScrambleGoalTargetBuild: 10
+  astroLeagueGoalLimitBuild: 5
   tollwayTollTargetBuild: 4
   wreckingBallPrismTargetBuild: 1500
   undertowPointTargetBuild: 12
@@ -72,6 +75,7 @@ MonoBehaviour:
   waystationRingTargetBuild: 24
   breakwaterStationTargetBuild: 15
   breakwaterLapsBuild: 2
+  skeinRingTargetBuild: 24
   headlongGateTargetBuild: 24
   redlineGateTargetBuild: 24
   regattaGateTargetBuild: 24

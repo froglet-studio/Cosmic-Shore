@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using CosmicShore.Core;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
@@ -126,7 +127,11 @@ namespace CosmicShore.Gameplay
                 // Compute scale + court shape from the (server-authoritative) selected intensity and
                 // publish them; they replicate to every current AND future peer. Set BEFORE subscribing
                 // so the host doesn't fire OnValueChanged per-field and rebuild the arena mid-config.
-                n_GoalTarget.Value = settings.goalLimit;
+                // Mercy-rule goal limit is authored in the End Game Conditions tool
+                // (EndConditionOverridesSO); the settings field is only the fallback when that
+                // asset is missing.
+                var overrides = EndConditionOverridesSO.Instance;
+                n_GoalTarget.Value = overrides != null ? overrides.GetAstroLeagueGoalLimit() : settings.goalLimit;
                 n_IntensityScale.Value = ScaleForIntensity();
                 n_BoundaryShape.Value = (int)ShapeForIntensity();
                 n_CentralGoal.Value = CentralGoalForIntensity();

@@ -25,7 +25,7 @@ MonoBehaviour:
   StructurePrefab: {fileID: 0}
   TrackSpawnablesByIntensity: []
   Vessel: -1
-  ObjectiveText: Classic Dogfight
+  ObjectiveText: Shoot rival pilots with guns and rockets
   ObjectiveMetric: 8
   ObjectiveTarget: 0
   DurationSeconds: 60

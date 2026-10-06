@@ -1,16 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- Froglet Engine Launcher: the one shareable .exe for testing the engine. Picks a branch,
+  <!-- Prisma: the one shareable .exe for testing the engine. Picks a branch,
        fetches it, builds the player from that branch's own source and starts the game; also
        builds Android/iOS packages. Its UI is drawn with Dear ImGui on our own Silk.NET window. -->
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <AssemblyName>FrogletLauncher</AssemblyName>
+    <AssemblyName>Prisma</AssemblyName>
     <RootNamespace>CosmicShore.Launcher</RootNamespace>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ApplicationIcon>app.ico</ApplicationIcon>
     <Version>0.1.0</Version>
-    <Product>Froglet Engine Launcher</Product>
+    <Product>Prisma</Product>
     <Company>Froglet Inc.</Company>
     <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
@@ -21,6 +21,9 @@
     <PackageReference Include="Silk.NET.OpenGL" Version="2.22.0" />
     <PackageReference Include="Silk.NET.OpenGL.Extensions.ImGui" Version="2.22.0" />
     <PackageReference Include="StbImageSharp" Version="2.30.16" />
+    <!-- Voice in the CLAUDE page: Windows' built-in speech recognition and synthesis (Microsoft's
+         package; it compiles everywhere and is only called on Windows). -->
+    <PackageReference Include="System.Speech" Version="10.0.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -35,6 +38,42 @@
     <Copy SourceFiles="@(_SilkNatives)" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true" />
   </Target>
   <ItemGroup>
-    <Compile Include="../Shared/FrogletProjectSettings.cs" Link="Shared/FrogletProjectSettings.cs" />
+    <Compile Include="../Shared/PrismaProjectSettings.cs" Link="Shared/PrismaProjectSettings.cs" />
+  </ItemGroup>
+
+  <!-- Upgrade path from before the engine was named Prisma: a launcher built then looks for
+       FrogletLauncher(.exe) in what it publishes. Leave a copy under that name so its UPDATE
+       button can still install Prisma; Prisma's own updater deletes the copy. -->
+  <Target Name="LegacyLauncherName" AfterTargets="Publish" Condition="'$(PublishSingleFile)' == 'true'">
+    <Copy SourceFiles="$(PublishDir)$(AssemblyName)$(_NativeExecutableExtension)"
+          DestinationFiles="$(PublishDir)FrogletLauncher$(_NativeExecutableExtension)" Condition="Exists('$(PublishDir)$(AssemblyName)$(_NativeExecutableExtension)')" />
+  </Target>
+
+  <!-- The launcher's identity: the last commit that changed its source, and that commit's date.
+       The UPDATE button compares it with the branch to say whether a newer launcher exists. A
+       build from an exported source tree (the updater's own) passes both as properties. -->
+  <Target Name="StampLauncherVersion" BeforeTargets="GetAssemblyAttributes;CoreGenerateAssemblyInfo">
+    <Exec Condition="'$(LauncherCommit)' == ''" Command="git log -1 --format=%H -- ../CosmicShore.Launcher ../Shared"
+          ConsoleToMSBuild="true" ContinueOnError="true" StandardOutputImportance="low" IgnoreExitCode="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="LauncherCommit" />
+    </Exec>
+    <Exec Condition="'$(LauncherDate)' == ''" Command="git log -1 --format=%cs -- ../CosmicShore.Launcher ../Shared"
+          ConsoleToMSBuild="true" ContinueOnError="true" StandardOutputImportance="low" IgnoreExitCode="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="LauncherDate" />
+    </Exec>
+    <ItemGroup>
+      <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+        <_Parameter1>LauncherCommit</_Parameter1>
+        <_Parameter2>$(LauncherCommit)</_Parameter2>
+      </AssemblyAttribute>
+      <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+        <_Parameter1>LauncherDate</_Parameter1>
+        <_Parameter2>$(LauncherDate)</_Parameter2>
+      </AssemblyAttribute>
+    </ItemGroup>
+  </Target>
+  <ItemGroup>
+    <Compile Include="../Shared/PrismaTracks.cs" Link="Shared/PrismaTracks.cs" />
+    <Compile Include="../Shared/PrismaBoard.cs" Link="Shared/PrismaBoard.cs" />
   </ItemGroup>
 </Project>

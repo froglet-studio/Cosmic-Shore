@@ -185,8 +185,8 @@ namespace CosmicShore.Gameplay
             {
                 // Shell measured from the CELL CENTRE (Flora.ResolvePlantCenter), not the
                 // crystal - see BranchingFlora.Plant.
-                float radius = ResolvePlantRadius(legacyRadius: 200f);
-                transform.position = ResolvePlantCenter() + radius * Random.onUnitSphere;
+                // (a SpreadPlanting species takes the best of several points - Flora.ResolveDispersalPoint)
+                transform.position = ResolveDispersalPoint(legacyRadius: 200f);
             }
 
             // A random attitude per plant. The surface is one fixed shape, so without this

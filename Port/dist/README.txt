@@ -1,6 +1,6 @@
-Froglet Engine - distributables
+Prisma - distributables
 
-FrogletLauncher-Windows.zip  - the launcher. Unzip, run FrogletLauncher.exe, pick a branch,
+Prisma-Windows.zip  - the launcher. Unzip, run Prisma.exe, pick a branch,
     press START GAME. It builds the game from that branch's source, so it is never stale.
     Rebuild it with ..\build-launcher.bat. Guide: ..\docs\LAUNCHER.md
 

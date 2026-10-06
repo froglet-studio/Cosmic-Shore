@@ -324,8 +324,14 @@ namespace CosmicShore.Gameplay
             // outright rather than merely softening it: no loss, no crystal, no theft.
             if (IsImmuneTo(source)) return 0;
 
+            // Epsilon because these amounts are sums of authored floats (0.01 x 10 is not 0.1), and
+            // a petal that lands a ULP short would otherwise never settle. It guards the empty test
+            // too: ten single-petal burns step 1.0 down to 0.0999999, and a bare `< PetalNormalized`
+            // there made a pilot's LAST petal unburnable (found by the petal-burn switch's T8).
+            const float Epsilon = 1e-4f;
+
             float takeable = TakeableLevel(element);
-            if (takeable < PetalNormalized)
+            if (takeable + Epsilon < PetalNormalized)
             {
                 // Nothing left to give - drop any stale remainder so it cannot be spent later
                 // against petals this vessel has since re-earned.
@@ -336,9 +342,6 @@ namespace CosmicShore.Gameplay
             _pendingLoss.TryGetValue(element, out float pending);
             pending += Mathf.Min(normalizedAmount, takeable);
 
-            // Epsilon because these amounts are sums of authored floats (0.01 x 10 is not 0.1), and
-            // a petal that lands a ULP short would otherwise never settle.
-            const float Epsilon = 1e-4f;
             int petals = Mathf.FloorToInt((pending + Epsilon) / PetalNormalized);
             petals = Mathf.Min(petals, Mathf.FloorToInt((takeable + Epsilon) / PetalNormalized));
 

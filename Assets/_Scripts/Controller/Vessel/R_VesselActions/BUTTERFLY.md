@@ -412,8 +412,22 @@ Run **FrogletTools ▸ Vessels ▸ Create Butterfly Vessel**, read its report, t
 - **No jets and no tail mounts are authored.** `VesselTailAndJets` is on the prefab; the mounts are
   not (`Docs/VESSEL_TAIL_AND_JETS.md` §4.z: the plume's dial is `m_LocalScale` on the jet instance,
   target `(0.6, 0.6, 0.13) × |followOffset.z| / 20` = `(3.6, 3.6, 0.78)` at this camera).
-- **No FMOD events.** Every sound slot ships empty and therefore silent, per the audio convention —
-  a wingbeat, the fold's departure and arrival, and the dust are the four that want events.
+- **No FMOD events are AUTHORED, but every slot now exists** (2026-10-05). Each ships empty and
+  therefore silent, per the audio convention — an empty `EventReference` is a clean no-op:
+  - `ShipAudioController` on the root — `engineEvent` (the engine loop; the fleet's other hulls use
+    `event:/Engine stuff/space ship engine main`). Empty logs ONE warning per hull per session.
+  - `SpreadWingsActionExecutor` — `massModeEvent`, `dustModeEvent` (the RT switch, only on a press
+    or release that actually changed the mode).
+  - `FoldActionExecutor` — `foldEngageEvent`, `foldDepartEvent`, `foldArriveEvent`,
+    `gatesOpenEvent`, `gateThreadEvent` (the last handed to each `FoldGate` at build, since a gate
+    is AddComponent'd at runtime and has no inspector). A PEER voices the arrival once the
+    replicated pose is seen, not at the origin.
+  - `ButterflyDustField` on `Components/ButterflyDustSkimmer.prefab` — `scaleDustBiteEvent`
+    (Charge; played by `VesselElementalDebuffBySkimmerEffectSO` after its per-victim cooldown),
+    `dustTendEvent` / `dustBlightEvent` (Space; played by `SkimmerScaleDustPrismEffectSO`,
+    throttled per kind by `dustReachSoundInterval`).
+  Still slotless: the **wingbeat** (it would live on `ButterflyAnimation`, keyed to the beat phase)
+  and Scale Dust's heart wither/refresh (`Skimmer*LifeformByCrystalEffectSO`).
 - **The hull's morph bake duplicates the Scarab's.** `BakeMorphSet`/`BlendPart`/`AssertSameTopology`
   are the same machinery with different geometry. Extracting a shared `ProceduralHullMorph` is a
   genuine refactor, deliberately **logged and not acted on** inside a new-vessel branch.
@@ -424,5 +438,5 @@ Run **FrogletTools ▸ Vessels ▸ Create Butterfly Vessel**, read its report, t
 - **No card icons.** `SO_Class_Butterfly` authors no `IconActive`/`IconInactive`, so
   `check_vessel_class_icons.py` is red on this hull. The Scarab's fix
   (`Tools/Build/render_scarab_card_icons.py`) is the pattern.
-- **A standing fold gate has no HUD marker and no sound**, and an AI never threads one
+- **A standing fold gate has no HUD marker** (its open/thread sounds now have slots, above), and an AI never threads one
   (`BUTTERFLY_FOLD.md` § Follow-ups).

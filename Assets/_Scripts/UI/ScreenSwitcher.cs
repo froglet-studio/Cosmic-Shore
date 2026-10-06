@@ -562,6 +562,7 @@ namespace CosmicShore.UI
             freestyleEvents.OnMenuStateTransitionStart.OnRaised += HandleExitFreestyle;
             freestyleEvents.OnGameStateTransitionEnd.OnRaised += HandleFreestyleTransitionEnd;
             freestyleEvents.OnMenuStateTransitionEnd.OnRaised += HandleFreestyleTransitionEnd;
+            freestyleEvents.OnGameStateTransitionEnd.OnRaised += HandleFreestyleSettled;
         }
 
         private void UnsubscribeFreestyleEvents()
@@ -573,6 +574,7 @@ namespace CosmicShore.UI
             freestyleEvents.OnMenuStateTransitionStart.OnRaised -= HandleExitFreestyle;
             freestyleEvents.OnGameStateTransitionEnd.OnRaised -= HandleFreestyleTransitionEnd;
             freestyleEvents.OnMenuStateTransitionEnd.OnRaised -= HandleFreestyleTransitionEnd;
+            freestyleEvents.OnGameStateTransitionEnd.OnRaised -= HandleFreestyleSettled;
         }
 
         private void Start()
@@ -1501,6 +1503,50 @@ namespace CosmicShore.UI
             _freestyleToggleCooldownUntil = Time.unscaledTime + freestyleToggleCooldown;
         }
 
+        // Menu objects HandleFreestyleSettled switched off, each of which was active before.
+        private readonly List<GameObject> _deactivatedWhileFlying = new();
+
+        /// <summary>
+        /// On a device tier that asks (<see cref="PlatformProfileSO.DeactivateMenuWhileFlying"/>,
+        /// MobileLow): once the enter-freestyle blend has settled, DEACTIVATE the hidden screen
+        /// roots and the nav bar. A CanvasGroup at alpha 0 still runs every Update, coroutine and
+        /// canvas rebuild under it - the hidden screens' per-frame work is paid for the whole flight.
+        /// <see cref="RestoreMenuAfterFlying"/> puts back exactly what was active, on the way out.
+        ///
+        /// The HOME root is never switched off: it carries things that must keep listening while
+        /// the pilot flies - the party-invite popup subscribes in OnEnable (an invite arriving
+        /// mid-flight would be missed), and HomeScreen subscribes to profile changes in Start and
+        /// drops them in OnDisable (one flight would end its updates for the session). This
+        /// switcher's own branch is never touched either: its subscriptions and slides must survive.
+        /// Docs/PLATFORM_UNIFICATION.md §3.6.
+        /// </summary>
+        private void HandleFreestyleSettled()
+        {
+            var profile = PlatformProfile.Current;
+            if (!profile || !profile.DeactivateMenuWhileFlying) return;
+            if (!InFreestyle || _deactivatedWhileFlying.Count > 0) return;
+
+            if (screens != null)
+                foreach (var entry in screens)
+                    if (entry?.root && entry.id != MenuScreens.HOME) DeactivateWhileFlying(entry.root.gameObject);
+
+            if (NavBar) DeactivateWhileFlying(NavBar.gameObject);
+        }
+
+        private void DeactivateWhileFlying(GameObject go)
+        {
+            if (!go.activeSelf || transform.IsChildOf(go.transform)) return;
+            _deactivatedWhileFlying.Add(go);
+            go.SetActive(false);
+        }
+
+        private void RestoreMenuAfterFlying()
+        {
+            foreach (var go in _deactivatedWhileFlying)
+                if (go) go.SetActive(true);
+            _deactivatedWhileFlying.Clear();
+        }
+
         /// <summary>
         /// LIVE freestyle state: the event-driven flag OR'd with the crystal handler's own
         /// state, so gamepad gating can never desync from reality if a transition event is
@@ -1553,6 +1599,10 @@ namespace CosmicShore.UI
         private void HandleExitFreestyle()
         {
             _isInFreestyle = false;
+
+            // Bring back what the device tier switched off while flying, before anything below
+            // fades it in or tells the current screen it is being re-entered.
+            RestoreMenuAfterFlying();
 
             // Close any modals that were open
             CloseAllModals();

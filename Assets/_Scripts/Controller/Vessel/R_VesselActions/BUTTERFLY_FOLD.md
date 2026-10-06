@@ -493,10 +493,17 @@ and was then yanked to a pose already a round trip stale. The host path is uncha
 ### Cost and budget
 
 - **Colliders: zero.** No prism, no collider, no mass anywhere in this.
-- **One extra render of the world per frame**, at `portalWindowRenderScale` (0.75) of the gameplay
-  camera's resolution, no shadows / AA / post — only while a threadable gate is on screen within
-  `portalWindowRange`, and for at most one gate. One screen-scaled HDR render target, released
-  whenever no gate is standing.
+- **One extra render of the window's FOOTPRINT per frame**, at `portalWindowRenderScale` (0.75)
+  of the gameplay camera's resolution (capped per device tier by
+  `PlatformProfileSO.FoldGateWindowMaxRenderScale`: 0.5 on MobileLow, no cap on Desktop or
+  MobileHigh), no shadows / AA / post — only while a threadable gate
+  is on screen within `portalWindowRange`, and for at most one gate. The far-side projection is
+  CROPPED to the window disc's own rectangle of the screen (its bounding square, projected; the
+  whole screen once a corner is behind the near plane, i.e. during the carry), so culling drops
+  everything the window cannot show and the target is sized to that rectangle's pixels, in 32-texel
+  steps with 1.25x growth headroom; the shader maps screen UV into it through `_FoldGatePortalUV`.
+  A distant gate costs a thumbnail-sized render; a gate that fills the screen costs what the whole
+  window did before. The target is released whenever no gate is standing.
 - A ribbon ghost per trail per teleport, gone once drained.
 
 ### Verification status
@@ -528,7 +535,9 @@ its own old gate is the only plausible way to do that); the cost would be one ca
 - No HUD marker for a standing gate. The Butterfly has no way to see where its own pair is once it
   has flown away from both ends; `FoldGate.Live` is the roster an objective-arrow-style marker
   would read.
-- No sound. Both the bloom and the transit want one, and per the FMOD convention each gets its own
-  `EventReference` field rather than a borrowed category.
+- No sound AUTHORED. The slots exist (2026-10-05) and ship empty: `FoldActionExecutor`'s
+  `foldEngageEvent` / `foldDepartEvent` / `foldArriveEvent` / `gatesOpenEvent` / `gateThreadEvent`
+  — the last handed to each `FoldGate.ThreadEvent` at build and played on the threading pilot's
+  machine at the exit (only the owner decides a transit).
 - An AI never uses a gate. `AIPilot` steers at objectives and knows nothing about `FoldGate.Live`,
   so a bot teammate walks past a shortcut its Butterfly left for it.

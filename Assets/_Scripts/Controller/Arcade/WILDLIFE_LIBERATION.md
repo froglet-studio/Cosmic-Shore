@@ -327,7 +327,7 @@ Measure Cell Environment Baselines):
 
 ## The wildlife (the objective)
 
-**One `FaunaConfigurationSO` per (species, intensity)** — four species, four intensities, and
+**One `FaunaConfigurationSO` per (species, intensity)** — five species, four intensities, and
 the spawner runs one loop per config. Every one carries the **same** band (0..1180, the whole
 arena) and every one runs `SpreadElements` over its species' four canonical element assets, so a
 species' variety is its ELEMENT.
@@ -338,7 +338,18 @@ species' variety is its ELEMENT.
 | Brittlestar | 99 | 228 | 10 | 2,280 |
 | Shark (predator) | 32 | 68 | 11 | 748 |
 | Worm Colony (kaiju) | 5 | 9 | ~26 | 234 |
-| **total** | **519** | **1,198** | | **4,155 prisms at cap** |
+| Clawfish (new 2026-10, unplaytested) | 34 | 77 | 4 | 308 |
+| **total** | **553** | **1,275** | | **4,463 prisms at cap** |
+
+**The Clawfish joined in 2026-10.** It was held out while its prefab carried no `HealthPrism` —
+nothing to shoot, so an un-scoreable creature in a hunt. `Docs/ECOSYSTEM.md` §46.2 gave it a body
+(four fluke-rib `HealthPrism`s directly under its `Spindle`, the same `HealthBlock` prefab the
+QuadFish's four fins are, authored by `Tools/Build/author_clawfish_anatomy.py`) and a heart seated
+in its own cavity (`verify_fauna_heart_seat.py`), so it dies to a Sparrow's fire the way the other
+`LightFauna` species do and its kill publishes on `OnFaunaKilled` like theirs. Its row (40 / 90
+before `POPULATION_SCALE`) is a first pass sized as a mid-swarm species. The merge history and the
+15% cut below describe the four-species roster that was play-tested; the Clawfish rides on top
+of both.
 
 **The roster has been merged TWICE, and both merges were arithmetic.** It started as
 `species × room` — the pens gave this table a `room` column, so a species living in two rooms
@@ -406,10 +417,12 @@ wildlife moving through them.
 
 | intensity | cage prisms | fauna body prisms (cap) | total | was |
 |---|---:|---:|---:|---:|
-| 1 | 9,206 | 4,155 | **13,361** | 14,102 |
-| 2 | 12,696 | 4,155 | **16,851** | 17,592 |
-| 3 | 13,244 | 4,155 | **17,399** | 18,140 |
-| 4 | 13,956 | 4,155 | **18,111** | 18,852 |
+| 1 | 9,206 | 4,463 | **13,669** | 13,361 |
+| 2 | 12,696 | 4,463 | **17,159** | 16,851 |
+| 3 | 13,244 | 4,463 | **17,707** | 17,399 |
+| 4 | 13,956 | 4,463 | **18,419** | 18,111 |
+
+(*was* = before the Clawfish joined: +308 movers at every intensity, ~2% on the worst case.)
 
 **The 15% cut moves the budget in the right direction and does not change its shape** — the cage
 is untouched, so the saving is 741 movers per intensity. The cage half will now also *shrink
@@ -421,12 +434,12 @@ expensive per collider than the cage half**, and that is this branch's headline 
 
 - **Every fauna body prism is a MOVER.** It re-buckets in `PrismSpatialIndex` as the creature
   swims (`Fauna.NotifyBodyPrismsMoved`), where a cage prism is registered once and never moves.
-- **Every creature runs a behaviour coroutine** — **519 at seed, up to 1,198 at the caps.** This
+- **Every creature runs a behaviour coroutine** — **553 at seed, up to 1,275 at the caps.** This
   is the number to watch, not the prism count.
 - **This is still well over the masterplan's ≤1,500-per-cell fauna-prism target** and many times
   more creatures than any shipped biome. It is an explicit product decision ("very heavy…",
   requested 2026-08), trimmed 15% in the dispersal pass, not an accident of the roster.
-- **Bootstrap cost:** 519 creatures, seeded one per `InitialSpawnCount` step per species loop
+- **Bootstrap cost:** 553 creatures, seeded one per `InitialSpawnCount` step per species loop
   with a frame yield between each. Expect a visible fill-in during the countdown rather than a
   hitch.
 
@@ -529,8 +542,8 @@ Authored ONLY through **FrogletTools ▸ Game Modes ▸ End Game Conditions**
 **domain** must kill between them. Live/Build split + build auto-restore work like every other mode. The
 milestone rungs are fractions of it (0.25 / 0.5).
 
-> **30, down from 250 (requested 2026-08).** Every intensity holds ~519 creatures at seed and
-> breeds toward ~1,198, so 30 is a small fraction of the standing population — this is now a
+> **30, down from 250 (requested 2026-08).** Every intensity holds ~553 creatures at seed and
+> breeds toward ~1,275, so 30 is a small fraction of the standing population — this is now a
 > **short, punchy** match rather than a long grind, and with the wildlife dispersed everywhere a
 > hunter can start scoring from the spawn ring without breaking into anything. Milestones land at
 > **8** (0.25) and **15** (0.5), and they follow the field automatically.
@@ -661,8 +674,8 @@ the band and the PhaseThresholds cannot drift apart.
    defaults to `host.transform.position`), or the volume-uniform draw has been reverted to
    `Random.Range(inner, outer)`, which alone puts 63% of the population in the innermost
    quarter-volume.
-9b. **Population grows.** Note the rough headcount at the countdown (~519) and again three
-   minutes in: it should be visibly denser, heading toward ~1,198 — that is reproduction. If it
+9b. **Population grows.** Note the rough headcount at the countdown (~553) and again three
+   minutes in: it should be visibly denser, heading toward ~1,275 — that is reproduction. If it
    is flat, the species are hitting their caps immediately or nothing is feeding.
 9c. **⚠ NEW — watch the cage erode, and judge whether it is too fast.** The roam band made the
    bars food (see "What the pens were silently buying"). Some grazing is expected and correct.
@@ -709,10 +722,9 @@ the band and the PhaseThresholds cannot drift apart.
 
 ## Known limitations / follow-ups
 
-- **The Clawfish is deliberately not in the roster.** Its prefab carries **no `HealthPrism` at
-  all**, so it has no body to shoot and cannot be killed by a Sparrow. Putting un-scoreable
-  creatures in a hunt would read as a bug. Giving it a body is a prefab change and would let it
-  join the outer room.
+- **The Clawfish row is unplaytested.** It joined once its prefab had a body (four fluke-rib
+  `HealthPrism`s, `Docs/ECOSYSTEM.md` §46.2); confirm in play that shooting a fluke kills it and
+  the kill scores, and retune its 40 / 90 row in `wildlife_cage_budget.py` if it reads wrong.
 - **500 is unmeasured** — see the pacing flag.
 - **Toast copy is unauthored.** The four `GameToastSituation` values exist but no
   `GameToastConfigSO` authors definitions, so they are silently skipped (which is how a mode opts
