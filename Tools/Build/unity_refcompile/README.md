@@ -11,6 +11,8 @@ Exit 0 = **no compile error in project code**; exit 1 = errors, listed, with eve
 changed since `origin/bleeding-edge` tagged `[CHANGED-TONIGHT]`; exit 2 = offline with no cache.
 First run ~10 min (fetch + ~90 assemblies), later runs ~3 min (package assemblies are compiled once,
 player-mode, into a shared cache keyed by input fingerprint; only Assets assemblies recompile).
+Needs a .NET SDK, **8.0 or newer** (8.0 and 10.0 both verified), under `DOTNET_ROOT` (`run.sh` falls
+back to `$HOME/.dotnet`); the helper tools are built for the newest runtime + reference pack it holds.
 
 **The `editor` config is approximate.** It compiles the project's runtime code with `UNITY_EDITOR`
 (Mono, collections checks, `UNITY_INCLUDE_TESTS`). It also compiles the `Editor/`-folder files changed
@@ -56,7 +58,7 @@ clones). Offline with no cache → exit 2 with a message; offline with a cache �
 |---|---|---|
 | UnityEngine modules, UnityEngine.UI, TextMeshPro | nuget `Digitalroot.References.Unity` **6000.0.75** (no 6000.3 build is published anywhere reachable) | real engine metadata, **publicized** by the re-packer — see below |
 | Accessibility oracle | nuget `Unity3D.SDK` 2021.1.14.1 `UnityEngine.dll` (non-publicized) | real |
-| netstandard facades | nuget `NETStandard.Library` 2.0.3 + the SDK's `NETStandard.Library.Ref` 2.1 | real |
+| netstandard facades | nuget `NETStandard.Library` 2.0.3 + `NETStandard.Library.Ref` 2.1 (the SDK's; nuget's when the SDK no longer bundles it, as 10.0 does not) | real |
 | Every registry package in `packages-lock.json` (Entities 1.4.2, Entities.Graphics 1.4.15, Collections 2.6.6, Mathematics 1.3.3, Netcode 2.5.0, Transport 2.6.0, InputSystem 1.14.2, Cinemachine 3.1.2, Services.Core/Auth/CloudSave/Analytics, Purchasing, Splines, Timeline, ...) | source at the **exact locked tag** from the `needle-mirror` GitHub mirrors | real source |
 | UniTask, Reflex, ParrelSync | source at the locked commit | real source |
 | SRP Core / URP / URP-config / ShaderGraph / VFX | `Unity-Technologies/Graphics` branch `6000.0/staging` | real source, **17.0.x not the locked 17.3.0** (17.3 needs 6000.3-only engine API the references lack) |
@@ -134,7 +136,3 @@ so run this tool before it.
   `Tests/Editor/*.cs` did not). Commit first, then run the editor config; the run then lists the
   file under `editor config: + N Editor-folder file(s)`. Fix: union in `git status --porcelain`
   paths (an unmerged branch, `claude/hopeful-heisenberg-murjor`, does this).
-- **`depublicize()` needs a net8.0 reference pack under `DOTNET_ROOT`.** With only a .NET 10 SDK it
-  raises `IndexError: list index out of range` (`build.py`, the `Microsoft.NETCore.App.Ref/*/ref/net8.0`
-  glob) after the full fetch. Workaround: point `DOTNET_ROOT` at an 8.0 install. Fix: accept any
-  installed ref pack, or say which one is missing.

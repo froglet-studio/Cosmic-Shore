@@ -347,16 +347,50 @@ def owner_of(path, owners, stop):
 
 
 # --- compile -----------------------------------------------------------------------------------
+def version_key(name):
+    """Numeric sort key for a version directory name: "10.0.12" sorts after "8.0.31" (a plain string
+    sort puts it first, and picked .NET 8 over 10 whenever both were installed)."""
+    return tuple(int(x) for x in re.findall(r"\d+", name))
+
+
 def csc_path():
-    c = sorted(glob.glob(os.path.join(DOTNET_ROOT, "sdk", "*", "Roslyn", "bincore", "csc.dll")))
+    c = sorted(glob.glob(os.path.join(DOTNET_ROOT, "sdk", "*", "Roslyn", "bincore", "csc.dll")),
+               key=lambda p: version_key(p.split(os.sep)[-4]))
     if not c:
         sys.exit("csc.dll not found under %s/sdk (set DOTNET_ROOT)" % DOTNET_ROOT)
     return c[-1]
 
 
+def netcore_toolchain():
+    """(reference-pack dir, runtime version, tfm) for building and running the helper tools
+    (Depublicize, Diagnose, Schema). Any .NET SDK from 8.0 up will do: the tools are compiled against
+    the newest Microsoft.NETCore.App reference pack the newest installed runtime can run."""
+    shared = os.path.join(DOTNET_ROOT, "shared", "Microsoft.NETCore.App")
+    runtimes = sorted((r for r in (os.listdir(shared) if os.path.isdir(shared) else []) if version_key(r)),
+                      key=version_key)
+    if not runtimes:
+        sys.exit("no .NET runtime under %s (DOTNET_ROOT=%s): install a .NET SDK, 8.0 or newer" % (shared, DOTNET_ROOT))
+    rt = runtimes[-1]
+    packs = sorted(glob.glob(os.path.join(DOTNET_ROOT, "packs", "Microsoft.NETCore.App.Ref", "*", "ref", "net*.0")),
+                   key=lambda p: version_key(p.split(os.sep)[-3]))
+    usable = [p for p in packs if version_key(p.split(os.sep)[-3])[:1] <= version_key(rt)[:1]]
+    if not usable:
+        sys.exit("no Microsoft.NETCore.App reference pack that runtime %s can run under %s/packs (found: %s): "
+                 "install a .NET SDK, not only a runtime" % (rt, DOTNET_ROOT, ", ".join(packs) or "none"))
+    return usable[-1], rt, os.path.basename(usable[-1])
+
+
 def base_refs():
-    ns = sorted(glob.glob(os.path.join(DOTNET_ROOT, "packs", "NETStandard.Library.Ref", "*", "ref", "netstandard2.1",
-                                       "netstandard.dll")))[-1]
+    """netstandard 2.1 (Unity's API profile) + the NETStandard 2.0 facades. netstandard.dll comes from
+    the SDK's NETStandard.Library.Ref pack when the SDK bundles one (8.0 does, 10.0 does not), else
+    from the nuget copy fetch.py caches."""
+    sdk = sorted(glob.glob(os.path.join(DOTNET_ROOT, "packs", "NETStandard.Library.Ref", "*", "ref", "netstandard2.1",
+                                        "netstandard.dll")), key=lambda p: version_key(p.split(os.sep)[-4]))
+    nuget = os.path.join(CACHE, "nuget", "netstandard.library.ref.2.1.0", "ref", "netstandard2.1", "netstandard.dll")
+    ns = (sdk[-1:] + [nuget])[0]
+    if not os.path.exists(ns):
+        sys.exit("netstandard.dll 2.1 not found: no NETStandard.Library.Ref pack under %s/packs and no %s - "
+                 "rerun fetch.py (needs network once)" % (DOTNET_ROOT, nuget))
     fac = os.path.join(CACHE, "nuget", "netstandard.library.2.0.3", "build", "netstandard2.0", "ref")
     refs = [ns] + [p for p in glob.glob(os.path.join(fac, "*.dll")) if os.path.basename(p) != "netstandard.dll"]
     return refs
@@ -372,6 +406,30 @@ UGUI_ALIASES = ["Unity.ugui", "UnityEngine.UI", "Unity.TextMeshPro", "GUID:2bafa
                 "GUID:6055be8ebefd69e48b49212b09b47b2f", "GUID:6546d7765b4165b40850b3667f981c26"]
 
 
+def depublicize_tool():
+    """Build (cached per toolchain) Depublicize/Program.cs - the Mono.Cecil rewriter, also the engine index."""
+    cecil = os.path.join(CACHE, "packages", "com.unity.nuget.mono-cecil@1.11.6", "Mono.Cecil.dll")
+    tool_src = os.path.join(HERE, "Depublicize", "Program.cs")
+    tools = os.path.join(CACHE, "tools")
+    dll = os.path.join(tools, "Depublicize.dll")
+    ref, rt, tfm = netcore_toolchain()
+    fp = fingerprint([tool_src, cecil, csc_path(), ref, rt])
+    stamp = dll + ".stamp"
+    if os.path.exists(dll) and os.path.exists(stamp) and open(stamp).read() == fp:
+        return dll
+    os.makedirs(tools, exist_ok=True)
+    cmd = [os.path.join(DOTNET_ROOT, "dotnet"), csc_path(), "-nologo", "-noconfig", "-nostdlib", "-langversion:latest",
+           "-r:" + cecil, "-out:" + dll, tool_src] + ["-r:" + x for x in glob.glob(os.path.join(ref, "*.dll"))]
+    r = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    if r.returncode != 0:
+        sys.exit("Depublicize tool failed to build:\n" + r.stdout)
+    shutil.copyfile(cecil, os.path.join(tools, "Mono.Cecil.dll"))
+    json.dump({"runtimeOptions": {"tfm": tfm, "framework": {"name": "Microsoft.NETCore.App", "version": rt}}},
+              open(os.path.join(tools, "Depublicize.runtimeconfig.json"), "w"))
+    open(stamp, "w").write(fp)
+    return dll
+
+
 def depublicize():
     """Build (once, cached) the de-publicized copies of the Unity 6 reference DLLs - see
     Depublicize/Program.cs. Rebuilt whenever overrides.txt or the tool changes."""
@@ -380,31 +438,21 @@ def depublicize():
     cecil = os.path.join(CACHE, "packages", "com.unity.nuget.mono-cecil@1.11.6", "Mono.Cecil.dll")
     tool_src = os.path.join(HERE, "Depublicize", "Program.cs")
     ovr = os.path.join(HERE, "depublicize_overrides.txt")
-    tools = os.path.join(CACHE, "tools")
     out = os.path.join(CACHE, "engine_refs")
     stage = os.path.join(CACHE, "engine_refs_in")
+    dll = depublicize_tool()
+    # the output depends on the inputs, not on which .NET built the tool: a new SDK must not rewrite
+    # the engine references (that would recompile every cached package assembly)
     fp = fingerprint([tool_src, ovr, cecil])
     stamp = os.path.join(out, ".stamp")
     if os.path.exists(stamp) and open(stamp).read() == fp:
         return out
-    os.makedirs(tools, exist_ok=True)
     os.makedirs(stage, exist_ok=True)
     for p in glob.glob(os.path.join(src, "*.dll")):
         b = os.path.basename(p).replace("-publicized", "")
         if b.startswith("UnityEngine") or b == "Unity.TextMeshPro.dll":
             if not b.startswith("UnityEngine.SpatialTracking") and not b.startswith("UnityEngine.XR.Legacy"):
                 shutil.copyfile(p, os.path.join(stage, b))
-    ref = sorted(glob.glob(os.path.join(DOTNET_ROOT, "packs", "Microsoft.NETCore.App.Ref", "*", "ref", "net8.0")))[-1]
-    rt = sorted(os.listdir(os.path.join(DOTNET_ROOT, "shared", "Microsoft.NETCore.App")))[-1]
-    dll = os.path.join(tools, "Depublicize.dll")
-    cmd = [os.path.join(DOTNET_ROOT, "dotnet"), csc_path(), "-nologo", "-noconfig", "-nostdlib", "-langversion:latest",
-           "-r:" + cecil, "-out:" + dll, tool_src] + ["-r:" + x for x in glob.glob(os.path.join(ref, "*.dll"))]
-    r = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-    if r.returncode != 0:
-        sys.exit("Depublicize tool failed to build:\n" + r.stdout)
-    shutil.copyfile(cecil, os.path.join(tools, "Mono.Cecil.dll"))
-    json.dump({"runtimeOptions": {"tfm": "net8.0", "framework": {"name": "Microsoft.NETCore.App", "version": rt}}},
-              open(os.path.join(tools, "Depublicize.runtimeconfig.json"), "w"))
     if os.path.isdir(out):
         shutil.rmtree(out)
     r = subprocess.run([os.path.join(DOTNET_ROOT, "dotnet"), dll, stage, out, oracle, ovr],
@@ -443,12 +491,11 @@ def diagnose_tool():
     src = os.path.join(HERE, "Diagnose", "Program.cs")
     dll = os.path.join(tools, "Diagnose.dll")
     stamp = dll + ".stamp"
-    fp = fingerprint([src, csc_path()])
+    ref, rt, tfm = netcore_toolchain()
+    fp = fingerprint([src, csc_path(), ref, rt])
     if os.path.exists(stamp) and open(stamp).read() == fp:
         return dll
     bincore = os.path.dirname(csc_path())
-    ref = sorted(glob.glob(os.path.join(DOTNET_ROOT, "packs", "Microsoft.NETCore.App.Ref", "*", "ref", "net8.0")))[-1]
-    rt = sorted(os.listdir(os.path.join(DOTNET_ROOT, "shared", "Microsoft.NETCore.App")))[-1]
     os.makedirs(tools, exist_ok=True)
     for b in ("Microsoft.CodeAnalysis.dll", "Microsoft.CodeAnalysis.CSharp.dll"):
         shutil.copyfile(os.path.join(bincore, b), os.path.join(tools, b))
@@ -458,7 +505,7 @@ def diagnose_tool():
     r = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
     if r.returncode != 0:
         sys.exit("Diagnose tool failed to build:\n" + r.stdout)
-    json.dump({"runtimeOptions": {"tfm": "net8.0", "framework": {"name": "Microsoft.NETCore.App", "version": rt}}},
+    json.dump({"runtimeOptions": {"tfm": tfm, "framework": {"name": "Microsoft.NETCore.App", "version": rt}}},
               open(os.path.join(tools, "Diagnose.runtimeconfig.json"), "w"))
     open(stamp, "w").write(fp)
     return dll
@@ -508,7 +555,7 @@ def engine_index():
     global _INDEX
     if _INDEX is None:
         tsv = os.path.join(CACHE, "engine_refs_index.tsv")
-        dll = os.path.join(CACHE, "tools", "Depublicize.dll")
+        dll = depublicize_tool()
         subprocess.run([os.path.join(DOTNET_ROOT, "dotnet"), dll, "--index", os.path.join(CACHE, "engine_refs_in"), tsv],
                        check=True)
         _INDEX = [l.rstrip("\n").split("\t") for l in open(tsv)]

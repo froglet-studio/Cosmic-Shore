@@ -1048,10 +1048,11 @@ a player build would; `Tools/Build/unity_refcompile/README.md` says exactly what
 prove. Then `python3 Tools/Build/check_generated_assets.py` audits every changed `.asset` / `.prefab`
 / `.unity` against the schema that compile wrote (serialized keys, enum values, guid/fileID
 references, m_Script classes). Four things that cost time on the first run (2026-10-06):
-- **`DOTNET_ROOT` must hold a net8.0 REFERENCE PACK** (`packs/Microsoft.NETCore.App.Ref/8.*/ref/net8.0`).
-  With only a .NET 10 SDK, `depublicize()` dies with `IndexError: list index out of range` after a
-  full ten-minute fetch, which reads as a broken tool. Install the 8.0 channel per-user (above) and
-  point `DOTNET_ROOT` at it; `TMPDIR` decides where the ~550 MB cache lands.
+- **`DOTNET_ROOT` must hold a .NET SDK, 8.0 or newer** (a runtime alone has no reference pack, and
+  the tool says so). Until 2026-10-06 it had to be 8.0 exactly: a .NET 10-only `DOTNET_ROOT` died with
+  `IndexError: list index out of range` after the full ten-minute fetch. Any SDK from 8.0 works now
+  (8.0 and 10.0 verified). Install a channel per-user (above) and point `DOTNET_ROOT` at it;
+  `TMPDIR` decides where the ~550 MB cache lands.
 - **`check_generated_assets.py` needs the SAME `DOTNET_ROOT` and `TMPDIR` the compile ran with.**
   Run it bare after a compile that used a per-user SDK and it says `no Roslyn tools in
   <TMPDIR>/unity_refcompile_cache/tools - run run.sh first` — while the tools sit in that very
