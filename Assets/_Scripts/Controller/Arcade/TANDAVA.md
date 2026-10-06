@@ -22,14 +22,14 @@ reasons, each answered here:
 | 5. no bull; a sea creature from the myth - a many-headed serpent; the lion becomes a sea lion; no fire anywhere, use gold prisms | Great Serpent -> Many-Headed Serpent (5, 7 or 10 heads) -> Lord of the Dance -> Sea Lion; the ring of fire is a pearl HALO; the effects are gold prism debris; the dance glows gold |
 | 6. every match a different formation, but only four forms | three variants of each form, one drawn per match (T14) |
 | 7. faster, and its speed and behaviour set by the threat | calm 60 u/s, wary 90, fleeing 126 (T3, T8), the turn up to 2.5x, the whole body carried round the turn (93% of its shape kept vs 18%) |
-| 8. the artifact | the playable lab, rebuilt for this design |
+| 8. the artifact | the playable lab, rebuilt for this design (§4.1) |
 
 ## 1. The pitch
 
 One creature lives in this cell, and it is hungry. It hatches as a **Great Serpent** and goes where it likes to eat,
 plant to plant through a closed cell, at a pace and in a manner set by how threatened it feels. Charge it and it turns
 wary, then bolts. Leave it alone and it cruises to the nearest good plant. At a plant it settles into its **feed pose**:
-its hood comes off its head to orbit its mouth as a ring of **danger guards** (a pilot who touches one is burned), and
+its hood comes off its head to orbit its mouth as a ring of **danger guards** (a pilot who touches one is stung), and
 it **stops regrowing**. That is the moment to strike: the body, not the head. Hurt it badly enough at the table and the
 meal is **broken**: it bolts, hungry.
 
@@ -132,7 +132,7 @@ Squirrel or a Rhino can catch it.
 When its MOUTH is within 70 u of the chosen plant it begins to eat: the body takes its feed twin (the plates going out to
 orbit the mouth as a ring of DANGER plates, 39-40 u in radius - the protectors; T6: every plate on the ring and every
 one a danger plate after 10 s), slides so the plant sits at the feed pose's mouth, and stops laying (`holdLaying`). A
-pilot who touches a danger plate is burned (`VesselElementalDebuffByDangerPrismEffect`: an opposing-domain hull loses
+pilot who touches a danger plate is stung (`VesselElementalDebuffByDangerPrismEffect`: an opposing-domain hull loses
 petals) and slowed. The body behind the ring has no shields left - they are the guards - and cannot regrow: this is
 where the pilots strike.
 
@@ -271,6 +271,23 @@ geometry: BitersPerStep members asked round-robin, each biting a prism within re
 
 What it is not: the game's bites are prism queries against real plants, its pilots are people and its kills are
 collisions, so the TIMES above are a model, not a measurement - QA-TANDAVA-9..14 measure them.
+
+### 4.1 What the playable lab flagged
+
+The Tandava Form Lab (the artifact: the 21 shipped plans, a JS port of `TandavaDirectorCore` over the harness's food
+model, a simplified flock, and a click-flown dart with two autopilot wingmates) reproduces T7 - unopposed it completes
+in 210-237 s over 9-10 meals at 333-384 volume/s - and flagged three things the harness's scripted pilots never tried.
+Each is a model result to check in the Editor (QA-TANDAVA-15), not a measured defect:
+- **The hatchling cannot heal.** The sort core hatches with an empty stomach (`SwarmSortCore.Seed`), so until its first
+  meal (about 20 s in) every cut sticks. A starting stomach of one meal barely helped in the model against a relentless
+  chase; whether to give it one is a design call (it is mass the seed would have to pay for).
+- **A cut along the spine is forty times a cut across it.** A 6 u pass across a Great Serpent takes about 2% of it; the
+  same pass along its spine (a chase from behind) takes about 40%. How hard a pursuer can do that depends on the hull's
+  turn at speed: with a point-mass dart that turns on a dime, one relentless pilot starved it in under a minute; capped at
+  the hull-like 420 u/s^2 of lateral grip, the same chase cut almost nothing.
+- **Two autopilot wingmates broke the dance on their own.** Riding the halo's circle threads ring after ring (§3.6); at
+  70 u/s and a tight turn, two bots took nine rings in about 9 s. If the game's `AIPilot` threads as cleanly, an all-AI
+  lobby can win through the halo, against §3.9's honest limit.
 
 ## 5. Numbers and where they live
 

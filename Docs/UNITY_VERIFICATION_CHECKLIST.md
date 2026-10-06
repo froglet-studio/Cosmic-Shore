@@ -4375,6 +4375,18 @@ been executed.
 4. `EndConditionOverrides` (FrogletTools > Game Modes > End Game Conditions) shows "Tandava - Halo Rings to Break the
    Dance" = 9 and the shatter percent = 35, and the asset's old `tandavaFlamesToBreak` value carried across.
 
+### QA-TANDAVA-15 — the three things the playable lab flagged (`TANDAVA.md` §4.1)
+
+1. **The hatchling cannot heal.** In the first 20 s, before its first meal, cut a third of the Great Serpent: expect it
+   to stay cut (the stomach is empty). Then let it eat once and cut again: expect it back to its full form within about
+   a second. Note how long a pair of pilots takes to shatter it if they rush it from the go.
+2. **The spine cut.** In a Squirrel, chase the fleeing serpent from behind and fly down its spine; then cross its body
+   side to side. Count the tadpoles each pass takes (the lab predicts about 40% and about 2%), and whether a real hull can
+   repeat the spine pass before it regrows.
+3. **The wing at the halo.** Fill a lobby with AI, let the creature reach the dance, and watch whether the autopilots
+   thread nine rings before the drum stops. If they do, an all-AI lobby can win, and the halo wants a tighter mouth,
+   more held rings or fewer open ones.
+
 
 **What landed.** A new arena card, `GameModes.Tandava = 62` (Rhino / Squirrel / Sparrow, every pilot on ONE
 domain), scene `MinigameTandava`, every asset authored by `Tools/Build/author_tandava_assets.py`. A tadpole swarm
