@@ -1,5 +1,9 @@
-// Stubs for R_VesselActionHandler's world. Every signature is transcribed from the tree
-// (grep'd 2026-10-06); Netcode/UniTask/Unity shapes are the minimum the handler touches.
+// Stubs for R_VesselActionHandler's world, so peer_press_harness can RUN it.
+// - CosmicShore.* and Obvious.Soap types: signatures transcribed from the tree (2026-10-06);
+//   ShipHelper.InitializeShipControlActions keeps the real body minus action.Initialize.
+// - UnityEngine / Unity.Netcode / Cysharp.Threading.Tasks / NUnit: minimal stand-ins, NOT
+//   transcriptions. Whether the handler compiles against the real packages is
+//   Tools/Build/unity_refcompile's job; these only have to let the shipped code execute.
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
