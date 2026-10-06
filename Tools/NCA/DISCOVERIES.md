@@ -2223,3 +2223,42 @@ Recommended combinations (my inference):
 
 Scratch artifacts: `scratchpad/h/` contains the extracted core, `Program.cs`, the plans, `run.out` (my 33/33 re-run)
 and `Exp.cs` (the molting-mode experiment).
+
+---
+
+## The four swarm species (the lead's decision, 2026-10-06)
+
+The lead asked for three tracks. With the in-game designed field swarm (`cece/swarm-fauna-game`), they give four distinct
+swarm fauna, each a different answer to "how much is designed":
+
+| # | species | composition (who lays / molts into what) | shape (where each tadpole goes) | perception | branch |
+|---|---|---|---|---|---|
+| 1 | **designed field swarm** (in game) | designed | designed attractor fields + boids | global slots | `cece/swarm-fauna-game` |
+| 2 | **peak hybrid shapeshifter** = posinfo2, FROZEN | designed (homeo-7) | learned MLP, BPTT | mixed: neighbours + body frame + element census | `results/posinfo2` |
+| 3 | **pure emergent swimmer** | learned | learned | local only: neighbours within R + self-secreted fields | `cece/swarm-x-emergent` |
+| 4 | **co-evolved predator and prey** | learned | learned, against each other | local | `cece/swarm-x-arms` |
+
+**Species 2 is frozen as the reference.** posinfo2 (`results/posinfo2/rule.pt`, `posinfo2:` spec) is the peak hybrid
+optimised for the four-plan shapeshifting brief: 51/52 feasible transitions under the loss-8 bar at seeds 7/23/41/1000,
+0 self-inflicted deaths, 5.2 ms/step, organic band in. Do not retrain it in place. A new hybrid ships under a new tag
+and is scored against this one.
+
+What is designed vs learned in species 2 (the lead asked, so it is recorded):
+- DESIGNED: the four targets and which majority picks which plan, the loss-8 bar, the world physics (repulsion,
+  membrane, per-element top speed, neighbour radius, egg rules), the perception wiring (which inputs the network sees),
+  and the whole composition controller (death output masked, scaled quota, orphan-domain molting, majority guard).
+- LEARNED: per-tadpole velocity, the hidden channels, which hatchling goes where (the sorting), and how a body reshapes
+  after a switch.
+- EMERGENT (never in the loss): the motion feel, and healing after a vessel strike.
+
+**Species 3 relaxes the brief to make "pure" reachable.** Every family that passed tier 1 so far paired a designed
+composition controller with a local shape rule; learning composition (meta, colony) failed against four plans at once.
+The lead's relaxation: ONE animated target (a swimming body), no designed controller, no global inputs, deaths penalised
+rather than masked. Prior art for an animated target with particles: `particle_nca.py --experiment swim2d` (tempo 8.4
+steps/frame, 10^-2.57). Its yardstick is a NEW one (shape loss over the swim cycle, tempo, regrowth, lossless, feel,
+locality "local"); the 16-transition yardstick does not apply.
+
+**Species 4 is a different brief**: no body plan at all. A predator swarm and a prey swarm are trained against each
+other in an asymmetric arms race (different speed, size, perception). Success is measured as a play matrix across
+generations (does each newer generation beat older opponents, or do they cycle?), the behaviours that emerge
+(encircling, confusion, schooling, decoys), and whether a player finds the hunt readable.
