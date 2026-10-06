@@ -12,29 +12,29 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4bf12f8c9f443417b8791c1048628978, type: 3}
   m_Name: SkimRaceAIConfig_I4
   m_EditorClassIdentifier: 
-  PolicyVersion: skimrace-v1-i4
+  PolicyVersion: skimrace-v2-i4
   TrackFingerprint: 227b9055
   DeployInNormalPlay: 1
   DecisionHz: 0
-  LookaheadSeconds: 0.562
-  LookaheadMin: 38.148
-  LookaheadMax: 435.887
-  SkimHeight: 8.064
-  CrystalBumpHalfWidth: 204.001
-  LowBoostApproachScale: 0.637
-  LowBoostFull: 3.758
-  DirectBoost: 2.554
-  DirectBoostHysteresis: 0.427
-  DirectViaClearance: 2
-  DirectViaLift: 22.619
-  DirectViaLateral: 23.841
+  LookaheadSeconds: 0.676
+  LookaheadMin: 34.798
+  LookaheadMax: 390.173
+  SkimHeight: 8.616
+  CrystalBumpHalfWidth: 219.591
+  LowBoostApproachScale: 0.608
+  LowBoostFull: 4.159
+  DirectBoost: 2.668
+  DirectBoostHysteresis: 0.387
+  DirectViaClearance: 2.109
+  DirectViaLift: 24.447
+  DirectViaLateral: 22.432
   TrackGuard: 1
-  TrackGuardMargin: 1.54
-  PassMargin: 9.2
+  TrackGuardMargin: 2.137
+  PassMargin: 10.744
   DefaultCaptureRadius: 24
-  RibbonClearHeight: 4.737
-  RibbonClearLateral: 29.748
-  CrossingHeightFraction: 0.153
+  RibbonClearHeight: 4.696
+  RibbonClearLateral: 28.856
+  CrossingHeightFraction: 0.223
   SequencedCrossing: 0
   CrossingLeadSeconds: 0
   CrossingLookaheadScale: 1
@@ -44,8 +44,8 @@ MonoBehaviour:
   HullGuardSeconds: 0
   HullMargin: 1.2
   HullEscapeLift: 40
-  CrystalDirectDistance: 98.858
-  TerminalCentreBias: 0.1
+  CrystalDirectDistance: 164.689
+  TerminalCentreBias: 0.101
   TerminalNeedsClearChord: 0
   TerminalChordClearance: 1.5
   LineBandClamp: 0
@@ -54,9 +54,9 @@ MonoBehaviour:
   ChordClearance: 0
   LaneHeightStep: 3
   PickupClearDistance: 0
-  MassGuardSeconds: 0.915
-  MassGuardMargin: 0.857
-  MassGuardSegment: 0.221
+  MassGuardSeconds: 0.947
+  MassGuardMargin: 1.078
+  MassGuardSegment: 0.169
   MassGuardStep: 0.04
   RolloutFollowsLine: 0
   HullHalfWidth: 2.06
@@ -82,9 +82,9 @@ MonoBehaviour:
   MpcStrikeCost: 20
   MpcStrikeUsesBoostLoss: 0
   MpcNominalBias: 0.05
-  LeadGain: 2.474
-  MaxLeadDegrees: 25.604
-  StickGainPerDegree: 0.133
+  LeadGain: 2.411
+  MaxLeadDegrees: 21.942
+  StickGainPerDegree: 0.144
   LevelingRoll: 0.25
   UseLineTracker: 0
   TrackerConvergeSeconds: 0.6
@@ -94,8 +94,8 @@ MonoBehaviour:
   TrackerMaxLeadDegrees: 90
   TrackerCurvatureSpan: 12
   CruiseThrottle: 1
-  MinThrottle: 0.155
-  ReachabilityMargin: 1.232
+  MinThrottle: 0.129
+  ReachabilityMargin: 1.354
   CaptureThrottleSearch: 0
   CaptureHorizon: 1.5
   CaptureWindowSeconds: 2
@@ -131,8 +131,8 @@ MonoBehaviour:
   RingAlignDegrees: 1.5
   RingForwardDistance: 100
   RingCooldownSeconds: 20.5
-  StallSeconds: 4.308
+  StallSeconds: 4.703
   ProgressEpsilon: 25
   RecoverySeconds: 2.5
-  RecoveryThrottle: 0.641
+  RecoveryThrottle: 0.658
   MissingTargetGrace: 0.25

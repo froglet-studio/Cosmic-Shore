@@ -1253,8 +1253,51 @@ planner. A player build is IL2CPP and does not have the choice.
 
 ### 14.5 Retuning across frame rates
 
-Retune each policy against SEVERAL frame rates at once, for example 16 / 28 / 50 ms frames with
-`ph.PhysicsStep=0.04`, instead of 28 ms alone. That needs a small tuner change (average the score over a
-list of `ph.Dt` values) and a few hours of tuning per intensity, and it changes the shipped policies.
-The frame rates to weight should be the ones players see. The recorder's `frameMs` per race
+The user's call (2026-10-06): retune each policy against SEVERAL frame rates at once. The simulator's
+`dts=0.016,0.028,0.05` spreads a tune's or an eval's races over those frame times, round-robin by seed, so a
+policy is scored at 62, 36 and 20 fps at once at no extra cost; `skimrace_retune.py` now tunes and judges
+under `ph.PhysicsStep=0.04 dts=0.016,0.028,0.05` (its `PHYSICS`), with the planner grid of §14.4 in place.
+The frame rates to weight are the ones players see; the recorder's `frameMs` per race
 (`BenchmarkResults/SkimRaceAI/manual_*.jsonl`) and the Game view's Stats overlay give them.
+
+Each retune started from the shipped policy (`only=stated`: the same numbers re-fitted, no control switched
+on or off), 16 search steps of 24 candidates on 4 races each, and was kept only if it beat the general policy
+on 20 fresh races (the script's own rule). Then shipped and new were raced head to head at FIVE frame rates
+on 20 fresh races each (seedbase 77000; the 120 fps column was not in the tuning set). Figures: each AI's
+median finish in seconds (races finished within the cut, of 20).
+
+**I1** (`skimrace-v4-i1` → `skimrace-v5-i1`, 23 numbers re-fitted, 4 minutes):
+
+| I1, Hard | 120 fps | 62 fps | 36 fps | 20 fps | 12 fps |
+|---|---|---|---|---|---|
+| shipped v4 | 66.0 (20) | 66.0 (20) | 64.2 (20) | 64.6 (20) | 73.7 (20) |
+| new v5 | 64.3 (19) | 65.1 (20) | 65.4 (20) | 63.5 (20) | **66.8** (20) |
+
+The 120 fps cell's one unfinished race was checked on 40 more races at 120 fps (seedbase 123000): new 40/40,
+median 73.9 s, 0.05 recoveries per race; shipped 39/40, 75.7 s, 0.55 recoveries per race. So v5 is level at
+36-62 fps and better at both ends, and more robust at 120 fps. Kept.
+
+**I2** (`skimrace-v2-i2` → `skimrace-v3-i2`, 22 minutes; on the script's own fresh races the new tuning's winner
+median was 70.8 s against the general policy's 101.5 s):
+
+| I2, Hard | 120 fps | 62 fps | 36 fps | 20 fps | 12 fps |
+|---|---|---|---|---|---|
+| shipped v2 | 82.1 (20) | 79.9 (20) | 78.6 (20) | 78.0 (20) | 88.0 (19) |
+| new v3 | 80.6 (20) | 79.3 (20) | 78.3 (19) | 79.3 (20) | **84.3** (20) |
+
+A small, consistent gain at both ends and level in the middle (99 of 100 races finished either way). The
+shipped I2 was already the least frame-rate-sensitive of the four; its 12 fps tail is what moved. Kept.
+
+**I4** (`skimrace-v1-i4` → `skimrace-v2-i4`, 15 minutes; on the script's own fresh races 142.3 s against the
+general policy's 159.8 s):
+
+| I4, Hard | 120 fps | 62 fps | 36 fps | 20 fps | 12 fps |
+|---|---|---|---|---|---|
+| shipped v1 | 164.3 (20) | 150.2 (20) | 149.3 (20) | 145.6 (20) | 145.8 (20) |
+| new v2 | **150.8** (20) | 149.1 (20) | 146.0 (20) | 144.1 (20) | 144.1 (20) |
+
+Better at every frame rate, most at 120 fps (−13.5 s), every race finished. Kept.
+
+**A failure mode the retune did not touch.** In 1 of 100 I2 races (shipped and new alike) one AI gets stuck at
+20-22 of 30 crystals with 7 recoveries and never finishes within the cut, while its teammate finishes
+normally. It is a recovery-loop case, not a tuning number, and it is the same 1% before and after.
