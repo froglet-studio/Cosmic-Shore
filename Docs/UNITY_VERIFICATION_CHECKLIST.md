@@ -4295,3 +4295,28 @@ Fleet-wide. Every drain got lighter and three verbs gained one they never had.
 The **Rhino's energised sword** lands a Strike and drains nothing — it is now the only scoring
 verb with no drain path. Arming it is a Rhino kit decision (a skimmer drain SO on the sword's
 container), not a number, so it is reported rather than done.
+
+## 🔴 Grizzly Time (63), Grizzly in the toybox, AI Grizzlies that steer and pump (`cece/eloquent-goodall-g1llta`, 2026-10-06) — NOT EDITOR-VERIFIED
+
+No Unity editor or `unity` CLI in the authoring session, so `/verify-unity` did not run. What
+DID run: the course + its 14-test suite and Redline's 14 (shared solver) compiled with Roslyn
+and executed over 400 seeds x 4 intensities, watched failing under a mutated course; the pump
+executor + config type-checked with Roslyn against stubs transcribed from the real declarations
+(and watched failing on a bad member); every Tools/Build gate. Full steps:
+`_Scripts/Controller/Arcade/GRIZZLYTIME.md` §7. The short list:
+
+1. **Compiles in the editor** — the new/changed C#: `GrizzlyTimeController`, `GrizzlyTimeCourse`,
+   `GrizzlyBombPumpExecutor` (autopilot pump), `GrizzlyBombPumpConfigSO`, `EndConditionOverridesSO`
+   + its window, `MiniGameHUD`, `ToyVesselRoster`, and the tests. Edit-mode suite green,
+   especially `GrizzlyTimeCourseTests`, `GrizzlyBombPumpTests`, `EnumIntegrityTests` (61 modes),
+   `ToyVesselRosterCoverageTests`.
+2. **Toybox** — Menu freestyle: the Vessel Changer and the Spawn Matrix hangar each offer a
+   **Grizzly** station; flying into it swaps you into a Grizzly. Releasing an AI Grizzly from the
+   hangar gives a companion that **steers and pumps** (it never steered before: `AIPilot` was
+   serialized disabled on `Grizzly.prefab`).
+3. **Arcade** — both **Grizzly Charge** and **Grizzly Time** cards show, clickable on a fresh
+   account, each pinned to the Grizzly. Grizzly Time launches into a 14-ring circuit, two laps.
+4. **Grizzly Charge regression** — its AI Grizzlies now steer (same prefab fix); confirm the
+   match still plays as Jonathan left it.
+5. **Lava-lamp** — the menu autopilot Grizzly now bombs on the straights. If that is too busy,
+   `GrizzlyBombPumpConfig.aiPumpStickBand` = 0 turns the drive off.

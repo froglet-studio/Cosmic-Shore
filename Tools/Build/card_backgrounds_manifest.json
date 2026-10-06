@@ -80,6 +80,14 @@
    "track": null,
    "triangles": 216196
   },
+  "GrizzlyTime": {
+   "cell": "Skim Race Cell Config",
+   "environment": null,
+   "prisms": 0,
+   "tier": "COURSE",
+   "track": null,
+   "triangles": 14032
+  },
   "Headlong": {
    "cell": "Skim Race Cell Config",
    "environment": null,
@@ -251,5 +259,5 @@
   768,
   510
  ],
- "source_hash": "2f503196e0d6a3e9fbdfebf1495c704fbf97115fdf192b278eff16f0a9046361"
+ "source_hash": "905800c8cb07f86bcc01bc3a9e292713985470ac22cc3aabf4adcd94fe8fa77e"
 }

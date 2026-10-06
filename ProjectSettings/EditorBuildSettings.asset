@@ -90,6 +90,9 @@ EditorBuildSettings:
     path: Assets/_Scenes/Multiplayer Scenes/MinigameRedline.unity
     guid: 5c4a19b94fe0e6e8cf6276e50013e091
   - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameGrizzlyTime.unity
+    guid: d812410bca4cfa283c84f0302b92fd28
+  - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameRegatta.unity
     guid: 49396577723d994f703e783dce685bff
   - enabled: 1
