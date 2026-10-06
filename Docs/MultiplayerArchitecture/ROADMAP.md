@@ -35,7 +35,10 @@ Companion to the PDF dossier in `Docs/MultiplayerArchitecture/`
 
 ### Highest — the verification debt, which is now the binding constraint (added 2026-10-05)
 
-**Measured, not asserted: there are ZERO 🔴 open party or presence bugs.** What there is
+**Measured, not asserted: there were ZERO 🔴 open party or presence bugs** when this block was
+written on 2026-10-05. The **first MPPM run, the next day, produced B24** — which is the whole
+argument of this block arriving on schedule: the queue was not short of fixes, it was short of
+runs, and one run found a latent defect that no amount of further reading had. What there is
 instead is a large body of work that is *fixed but never run in the Editor*, and that is
 what "the multiplayer systems don't perform well" actually resolves to today. More fixes do
 not help until this is drained — a second fix landing on an unverified first one is how a
@@ -44,6 +47,7 @@ regression becomes un-bisectable.
 | What | State | Where |
 |---|---|---|
 | **B18–B23** — client can't leave a match; lost scene transition = black screen; a leaver strands the ready gate; a leaver takes their score out; Scoreboard exit/rematch unwired; arcade card lobby doesn't follow the host | all 🟡 *fixed, unverified* | `../PartySystem/BUGS.md` |
+| **B24** — a 429 matched neither retry filter: the guest bounced to solo and the host fell back to an OFFLINE session, hiding the online-only party panel. Found by the **first MPPM run**, 2026-10-05 | 🟡 *fixed, unverified* | `../PartySystem/BUGS.md` |
 | **B5** — 3-4 player sequential/concurrent join | 🟢 but *"wants a multi-machine pass"*, and the pre-fix build passes without an arcade card selected first | `../PartySystem/BUGS.md` |
 | **B1 · B4 · B6** — LobbyPatcher spam, second invite not delivered, `WrappedLobbyService` NRE | all 🟡 | `../PresenceSystem/BUGS.md` |
 | **Join + Spectate** (the whole no-invite entry path, `partySession` publication, the spectator approval token, `CountHumanClients` subtraction in four systems) | *"Not yet verified in the Editor"* — authored out-of-editor, syntax-gated only | `../PartySystem/SPECTATOR.md` §6 |
@@ -151,11 +155,11 @@ with a reproduction. A bug that is neither was not tested.
 
 ## Open bugs (track separately)
 
-`../PartySystem/BUGS.md` (**B2–B23**) and `../PresenceSystem/BUGS.md` (B1 · B4 · B6).
+`../PartySystem/BUGS.md` (**B2–B24**) and `../PresenceSystem/BUGS.md` (B1 · B4 · B6).
 B5 is also listed above because multi-joiner reliability is a roadmap-level priority, not just a bug.
 
 > **Corrected 2026-10-05.** This line read "(B2 · B3 · B5 · B7)" — the party tracker's own
-> original four. It has held **B2–B23** since; B18–B23 landed without this pointer moving. That
+> original four. It has held **B2–B24** since; B18–B23 landed without this pointer moving. That
 > is the same index-vs-entry drift `../PartySystem/BUGS.md` warns about in its own footnote
 > ("a status only the index carries is one nobody acts on"), one level up. **When you add a bug
 > entry, check who points at the list as well as the list itself.**

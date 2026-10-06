@@ -513,6 +513,49 @@ corridor radius that is not ship-sized.
 
 ## Priority 1 — merged features that have never been played
 
+### QA-NET-RATE-LIMIT-RETEST ⬜ — two players get into a party without anyone being thrown out
+**Source:** `Docs/PartySystem/BUGS.md` **B24**, found by your own first Play Mode run on
+2026-10-05 and fixed in `13d40805d`. **Run this one first — it is the retest of that run.**
+What happened: the server was told "too many requests" by the online service, and the code
+that is supposed to wait and try again did not recognise that answer, so it never waited. One
+player was thrown back to its own menu, and the other quietly gave up on the online service
+altogether and started an offline game instead — which is why its party panel was missing.
+Needs **two Play Mode instances**, set up exactly as you had them: one **Server and Client**,
+one **Client** only.
+
+1. Open the project in Unity and wait until it finishes importing.
+2. Open the **Console** (**Window ▸ General ▸ Console**). Turn **Error Pause** off and
+   **Clear on Play** off.
+3. Start the two instances, one Server+Client and one Client.
+4. **Before anything else, look at the online/offline lamp on the Server+Client instance.**
+   This is the single most important observation in this item. Write down whether it reads
+   online or offline, and whether an "you are offline" notice appeared while it started up.
+5. Open the arcade panel on **both** instances. Each must show the party panel (the row of
+   player slots with a Leave button).
+6. Put the two players in a party together.
+7. Watch the Console for `429` or `too many requests`. If any appear, note **how many** and
+   whether the game carried on anyway — carrying on is now the expected behaviour.
+8. Confirm neither instance drops back to its own separate menu on its own.
+9. Leave both sitting in the menu together for **five minutes**, then re-check step 5.
+
+**PASS:** both instances show the party panel; the Server+Client lamp reads **online**; the two
+players stay in one party; and any `429` in the Console is followed by the game continuing
+rather than a player being thrown out.
+**FAIL:** either instance missing the party panel · the lamp reading offline · an "you are
+offline" notice on startup · either player bounced back to its own menu · a `429` that still
+ends with somebody leaving the party.
+**What each failure means, so the report is useful:**
+- **Lamp offline / offline notice, panel missing** → B24's second path is still live. The party
+  panel is *correctly* hidden in an offline game, so the bug is the offline fallback, not the UI.
+  Attach the first 50 Console lines from startup.
+- **Panel missing but the lamp reads ONLINE** → this is a different, unknown bug. Say so
+  explicitly: the wiring was checked and all four copies of that panel are correctly connected,
+  so this would be something new.
+- **`429` still appearing, but nothing breaks** → that is a partial pass. Record the count; the
+  remaining work is reducing how many requests we send, not how we handle them
+  (`Docs/PresenceSystem/TODOS.md` TODO-P2).
+
+
 ### QA-NET-CLIENT-CAN-LEAVE ⬜ — a joined player can leave from every screen
 **Source:** `Docs/PartySystem/BUGS.md` B18 + B22, fixed 2026-09-11, never played.
 Before the fix, a player who joined somebody else's game could not leave it at all until
@@ -617,10 +660,13 @@ the departed player listed twice · the match ending for everybody.
 ### QA-NET-ARCADE-LOBBY-FOLLOW ⬜ — guests follow the host to the game card — **needs three real machines**
 **Source:** `Docs/PartySystem/BUGS.md` B23, fixed 2026-09-11, never played. The owner
 reported these four together as *"the worst feature in the party experience"*.
-⚠ **Multiplayer Play Mode (several Unity windows on one computer) is NOT a valid test for
-this item.** Those windows share one process and one copy of the game data, which hides
-exactly the failure this fix is about. You need **three separate computers**, each running
-its own copy of the game.
+⚠ **Run this under Multiplayer Play Mode first, then confirm on three computers.**
+*(Corrected 2026-10-06: this item used to say Play Mode was not a valid test at all, on the
+grounds that its windows share one process and one copy of the game data. That is wrong —
+Play Mode's additional instances are separate processes with their own copy, so they do
+exercise this.)* Three separate computers remain the stronger test, because instances on one
+computer share the project's asset cache and their saved settings, so state riding on either
+can look synchronised when it is not.
 
 1. Host, guest 1 and guest 2 are all in a party together, in the main menu.
 2. Put **guest 1 in freestyle flight** — have them click the centre of the screen (or
@@ -640,7 +686,8 @@ its own copy of the game.
    There must be no extra computer players that do not appear in the actual game.
 9. Start the game and confirm the players in the arena match what the lobby showed.
 
-**PASS:** all four checks above, on three separate computers.
+**PASS:** all four checks above — under Play Mode for the first pass, and again on three
+separate computers to confirm.
 **FAIL:** a flying guest who never sees the card · a rejoining guest who never sees it ·
 guests who do not follow the host to a different card · a gamepad **B** back-out that
 leaves guests behind · any guest showing a different number of computer players than the
@@ -2649,7 +2696,7 @@ or the pre-staged file being swept in.
 ### QA-NET-PRESENCE-PARTY 🟡 — party/presence regression pass, and the fault-rate numbers
 **Source:** PR #666 + `Docs/PartySystem/BUGS.md` + `Docs/PresenceSystem/BUGS.md`
 (**refreshed 2026-10-05:** this item used to say "B2/B3/B5 open" — all three are closed
-now. The party tracker holds **B2–B23**, and the open presence bugs are **B1, B4 and B6**.
+now. The party tracker holds **B2–B24**, and the open presence bugs are **B1, B4 and B6**.
 B18–B23 have their own items above; this item is the broad regression sweep and the
 numbers run.)
 Procedures: `Docs/PartySystem/TESTS.md` (S-series) and `Docs/PresenceSystem/TESTS.md`
