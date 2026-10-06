@@ -86,7 +86,13 @@ namespace CosmicShore.Gameplay
                 $"prismsDmg={(prismsDamagedStat != null ? "OK" : "NULL")}");
         }
 
-        protected virtual void OnEnable() => TrySubscribe();
+        protected virtual void OnEnable()
+        {
+            TrySubscribe();
+            // Re-enabled mid-turn (deactivated and reactivated while tracking): the turn's
+            // hooks were released at OnDisable, so take them again.
+            if (IsTracking) AttachTurnHooks();
+        }
 
         private void Start() => TrySubscribe();
 
@@ -104,6 +110,13 @@ namespace CosmicShore.Gameplay
 
         protected virtual void OnDisable()
         {
+            // A turn that never ends (a scene reload mid-match, a return to the menu, the AI
+            // training watchdog) never raises OnMiniGameTurnEnd, and the turn's hooks are
+            // static events and persistent SOAP assets: left attached they keep this
+            // destroyed component — and through Vessel its vessel and whole trail — alive for
+            // the rest of the session. Release them here as well as at turn end.
+            DetachTurnHooks();
+
             if (!_subscribed) return;
 
             if (gameData != null)
@@ -127,6 +140,7 @@ namespace CosmicShore.Gameplay
 
         private void HandleTurnStarted()
         {
+            DetachTurnHooks(); // the previous turn never ended: never subscribe twice
             ResetAll();
 
             Vessel = gameData.LocalPlayer?.Vessel?.VesselStatus;
@@ -145,7 +159,7 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogVerbose(CSLogChannel.VesselTelemetry, $"[VesselTelemetry] {GetType().Name} HandleTurnStarted - " +
                 $"tracking {Vessel.VesselType} for player '{Vessel.PlayerName}', " +
                 $"{_allStats.Count} stat(s) registered");
-            OnTurnStartedExtended();
+            AttachTurnHooks();
         }
 
         private void HandleTurnEnded()
@@ -153,13 +167,35 @@ namespace CosmicShore.Gameplay
             FinalizeInProgressDrift();
             FinalizeInProgressBoost();
             IsTracking = false;
-            OnTurnEndedExtended();
+            DetachTurnHooks();
             if (CSDebug.IsVerbose(CSLogChannel.VesselTelemetry))
                 CSDebug.LogVerbose(CSLogChannel.VesselTelemetry, $"[VesselTelemetry] {GetType().Name} HandleTurnEnded - " +
                 $"drift={MaxDriftTime:F2}s, boost={MaxBoostTime:F2}s, prismsDmg={PrismsDamaged}");
         }
 
+        // Whether OnTurnStartedExtended's subscriptions are live. The base owns the pairing so
+        // a subclass can neither leak them (turn end never raised) nor double them (turn start
+        // raised twice).
+        bool _turnHooksAttached;
+
+        void AttachTurnHooks()
+        {
+            if (_turnHooksAttached) return;
+            _turnHooksAttached = true;
+            OnTurnStartedExtended();
+        }
+
+        void DetachTurnHooks()
+        {
+            if (!_turnHooksAttached) return;
+            _turnHooksAttached = false;
+            OnTurnEndedExtended();
+        }
+
         // ── Extension points ───────────────────────────────────────────────────
+        // OnTurnStartedExtended subscribes to the turn's events; OnTurnEndedExtended must ONLY
+        // undo exactly that. It also runs when the component is disabled or destroyed mid-turn,
+        // so it must not finalize or raise stats. The base guarantees the two alternate.
 
         protected virtual void RegisterStatsExtended() { }
         protected virtual void OnTurnStartedExtended() { }

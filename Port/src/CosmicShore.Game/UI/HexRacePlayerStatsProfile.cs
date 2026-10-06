@@ -1,0 +1,25 @@
+// Ported verbatim from _Scripts/UI/HexRacePlayerStatsProfile.cs (CloudSave arc 2026-07-09).
+using System;
+using System.Collections.Generic;
+
+namespace CosmicShore.UI
+{
+    [Serializable]
+    public class HexRacePlayerStatsProfile
+    {
+        // Key = "Mode_Intensity", Value = RaceTime (Lower is better)
+        public Dictionary<string, float> BestMultiplayerRaceTimes = new();
+
+        public bool TryUpdateBestTime(string levelKey, float newTime)
+        {
+            if (BestMultiplayerRaceTimes.TryGetValue(levelKey, out float currentBest))
+            {
+                if (newTime >= currentBest) return false;
+                BestMultiplayerRaceTimes[levelKey] = newTime;
+                return true;
+            }
+            BestMultiplayerRaceTimes.Add(levelKey, newTime);
+            return true;
+        }
+    }
+}

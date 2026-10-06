@@ -37,6 +37,8 @@ import hashlib
 import os
 import re
 import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import arcade_mode_lib as aml  # noqa: E402  - card background + retired-key checks
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 CHECK_ONLY = "--check" in sys.argv
@@ -217,7 +219,7 @@ emit("Assets/_SO_Assets/Games/ArcadeGameHeadlong.asset",
     hands are quiet enough. Laps until somebody's nerve breaks.
   IconActive: {{fileID: 21300000, guid: {EXISTING['IconActive']}, type: 3}}
   IconInactive: {{fileID: 21300000, guid: {EXISTING['IconInactive']}, type: 3}}
-  CardBackground: {{fileID: 21300000, guid: {EXISTING['CardBackground']}, type: 3}}
+  CardBackground: {{fileID: 21300000, guid: {aml.card_background('Headlong')}, type: 3}}
   GolfScoring: 1
   SceneName: MinigameHeadlong
   Vessels:
@@ -228,7 +230,6 @@ emit("Assets/_SO_Assets/Games/ArcadeGameHeadlong.asset",
   MaxDomainsAllowed: 3
   MinIntensity: 1
   MaxIntensity: 4
-  CallToActionTargetType: 404
   ViewUserAction: 0
   PlayUserAction: 0
   ComebackRatePerScoreDeficit: {COMEBACK_RATE}
@@ -411,6 +412,10 @@ for name, g in EXISTING.items():
 for k, p in SCRIPT_PATHS.items():
     if not os.path.exists(os.path.join(ROOT, p)):
         errors.append(f"script {p} does not exist")
+
+# The card's CardBackground is the /cardart render and no retired key rides on it - the
+# shared check every arcade generator runs (arcade_mode_lib.card_errors).
+errors += aml.check_cards(files)
 
 if errors:
     print("VALIDATION FAILED:")

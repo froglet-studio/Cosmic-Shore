@@ -139,6 +139,14 @@ namespace CosmicShore.Gameplay
         /// pilot to a destination that does not exist yet.</summary>
         public FoldGate Partner => _partner;
 
+        /// <summary>
+        /// FMOD event played when a pilot threads this gate. A gate is built at runtime with
+        /// AddComponent, so it has no inspector of its own: the slot lives on the placer's
+        /// <see cref="FoldActionExecutor"/> (<c>gateThreadEvent</c>) and is handed over at build.
+        /// Empty = silence.
+        /// </summary>
+        public FMODUnity.EventReference ThreadEvent { get; set; }
+
         /// <summary>Lay the ring. Call immediately after AddComponent, as ScarabSwitch does.</summary>
         public void Build(IVesselStatus placer, IReadOnlyList<IPlayer> players,
                           Vector3 centre, Vector3 axis, float radius,
@@ -356,6 +364,9 @@ namespace CosmicShore.Gameplay
 
             Flare();
             partner.Flare();
+
+            if (!ThreadEvent.IsNull && CosmicShore.Core.AudioSystem.Instance)
+                CosmicShore.Core.AudioSystem.Instance.PlaySFXEvent(ThreadEvent, now);
 
             CSDebug.LogVerbose(CSLogChannel.ButterflyFold,
                 $"[FoldGate] {status.PlayerName} threaded {_placerName}'s gate " +

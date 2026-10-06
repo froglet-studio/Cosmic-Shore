@@ -3,12 +3,28 @@
   "sessions": {
     "2026-08-14-caleb.md": {
       "submitted_hash": "476824387dd9e282012dfed5ee234f626de98761da3a52096f466d99f641fd60",
-      "applied_hash": "ab4099a80dd06a7e7030908cc5929dd40a74a1a7839d211184a0bd3bf4d4f029",
+      "applied_hash": "476824387dd9e282012dfed5ee234f626de98761da3a52096f466d99f641fd60",
       "items": {
         "QA-BUILD-COMPILE": {
           "verdict": "PASS",
           "row": "a43c5c4bd61b9c6b",
           "date": "2026-08-14"
+        }
+      }
+    },
+    "2026-09-21-claude-progression-merge.md": {
+      "submitted_hash": null,
+      "applied_hash": null,
+      "items": {}
+    },
+    "2026-10-05-akouroshm.md": {
+      "submitted_hash": "cfbcd6032187ade924c42d98d5ac82e01b3e6a713b9d0f5ace32d94884bf2c2b",
+      "applied_hash": "cfbcd6032187ade924c42d98d5ac82e01b3e6a713b9d0f5ace32d94884bf2c2b",
+      "items": {
+        "QA-P2-SPAWN-MATRIX-MOONS": {
+          "verdict": "PASS",
+          "row": "243a034270d1ced3",
+          "date": "2026-10-05"
         }
       }
     }

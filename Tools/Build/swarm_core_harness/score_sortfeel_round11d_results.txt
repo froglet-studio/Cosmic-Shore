@@ -1,0 +1,205 @@
+  negative control: the round-11a System.Numerics pose trips 5 rule(s)
+burst pose gate: OK
+  yardstick researchSortFeelD0F8 seed 7: 2s, 0.174 ms/step mean, self-deaths so far 0
+  yardstick researchSortFeelD0F8 seed 23: 1s, 0.107 ms/step mean, self-deaths so far 0
+  yardstick researchSortFeelD0F8 seed 41: 1s, 0.114 ms/step mean, self-deaths so far 0
+  yardstick researchSortFeelD0F8 seed 101: 1s, 0.112 ms/step mean, self-deaths so far 0
+  yardstick researchSortFeelD0F8 seed 1000: 1s, 0.110 ms/step mean, self-deaths so far 0
+  yardstick researchSortFeelDom3D0F8 seed 7: 1s, 0.133 ms/step mean, self-deaths so far 0
+  yardstick researchSortFeelDom3D0F8 seed 23: 1s, 0.134 ms/step mean, self-deaths so far 0
+  yardstick researchSortFeelDom3D0F8 seed 41: 1s, 0.127 ms/step mean, self-deaths so far 0
+  yardstick researchSortFeelDom3D0F8 seed 101: 1s, 0.137 ms/step mean, self-deaths so far 0
+  yardstick researchSortFeelDom3D0F8 seed 1000: 1s, 0.156 ms/step mean, self-deaths so far 0
+  yardstick researchSortDom3 seed 7: 4s, 0.397 ms/step mean, self-deaths so far 0
+  yardstick researchSortDom3 seed 23: 3s, 0.344 ms/step mean, self-deaths so far 0
+  yardstick researchSortDom3 seed 41: 3s, 0.340 ms/step mean, self-deaths so far 0
+  yardstick researchSortDom3 seed 101: 3s, 0.349 ms/step mean, self-deaths so far 0
+  yardstick researchSortDom3 seed 1000: 3s, 0.296 ms/step mean, self-deaths so far 0
+  yardstick gameSortFeelD0F8 seed 7: 2s, 0.222 ms/step mean, self-deaths so far 0
+  yardstick gameSortFeelD0F8 seed 23: 2s, 0.184 ms/step mean, self-deaths so far 0
+  yardstick gameSortFeelD0F8 seed 41: 2s, 0.189 ms/step mean, self-deaths so far 0
+  yardstick gameSortFeelD0F8 seed 101: 2s, 0.168 ms/step mean, self-deaths so far 0
+  yardstick gameSortFeelD0F8 seed 1000: 2s, 0.193 ms/step mean, self-deaths so far 0
+  yardstick gameSortFeelWndFnLr120D0F8 seed 7: 1s, 0.149 ms/step mean, self-deaths so far 0
+  yardstick gameSortFeelWndFnLr120D0F8 seed 23: 1s, 0.152 ms/step mean, self-deaths so far 0
+  yardstick gameSortFeelWndFnLr120D0F8 seed 41: 1s, 0.148 ms/step mean, self-deaths so far 0
+  yardstick gameSortFeelWndFnLr120D0F8 seed 101: 1s, 0.152 ms/step mean, self-deaths so far 0
+  yardstick gameSortFeelWndFnLr120D0F8 seed 1000: 2s, 0.180 ms/step mean, self-deaths so far 0
+
+C# yardstick: 1200 records in 55s; self-inflicted deaths 0
+  scored 975 records x 4 plans in 1129s
+  negative control: the round-11a System.Numerics pose trips 5 rule(s)
+burst pose gate: OK
+  smooth gameSortFeelD0F8: 1s, self-deaths so far 0
+  smooth gameSortFeelWndFnLr120D0F8: 1s, self-deaths so far 0
+  smooth gameSortFeelD0F4: 1s, self-deaths so far 0
+  smooth gameSortFeelWndFnLr120D0F4: 1s, self-deaths so far 0
+
+C# smooth export, seed 7: 32 events in 7s
+  negative control: the round-11a System.Numerics pose trips 5 rule(s)
+burst pose gate: OK
+  smooth gameSortFeelD0F8: 1s, self-deaths so far 0
+  smooth gameSortFeelWndFnLr120D0F8: 1s, self-deaths so far 0
+  smooth gameSortFeelD0F4: 1s, self-deaths so far 0
+  smooth gameSortFeelWndFnLr120D0F4: 1s, self-deaths so far 0
+
+C# smooth export, seed 23: 32 events in 7s
+  negative control: the round-11a System.Numerics pose trips 5 rule(s)
+burst pose gate: OK
+  smooth gameSortFeelD0F8: 1s, self-deaths so far 0
+  smooth gameSortFeelWndFnLr120D0F8: 0s, self-deaths so far 0
+  smooth gameSortFeelD0F4: 1s, self-deaths so far 0
+  smooth gameSortFeelWndFnLr120D0F4: 1s, self-deaths so far 0
+
+C# smooth export, seed 41: 32 events in 7s
+
+YARDSTICK (swarm_eval: 4 own + 12 switches, majority of samples, loss-8 bar); own = mass / space / charge / time
+  C# researchSortFeelD0F8  seed   7: 12/13  own 1.55 / 2.53 / 1.17 / 4.19  fails ['time->space(9.49)']
+  C# researchSortFeelD0F8  seed  23: 12/13  own 1.65 / 2.24 / 1.10 / 4.49  fails ['time->space(8.59)']
+  C# researchSortFeelD0F8  seed  41: 13/13  own 1.67 / 2.41 / 1.23 / 4.63  fails []
+  C# researchSortFeelD0F8  seed 101: 12/13  own 1.58 / 2.17 / 1.04 / 4.52  fails ['time->space(9.41)']
+  C# researchSortFeelD0F8  seed 1000: 12/13  own 1.62 / 2.36 / 1.01 / 4.27  fails ['time->space(9.62)']
+  C# researchSortFeelD0F8  TOTAL     61/65
+  C# researchSortFeelDom3D0F8 seed   7: 13/13  own 1.55 / 2.53 / 1.17 / 4.19  fails []
+  C# researchSortFeelDom3D0F8 seed  23: 13/13  own 1.65 / 2.24 / 1.10 / 4.49  fails []
+  C# researchSortFeelDom3D0F8 seed  41: 13/13  own 1.67 / 2.41 / 1.23 / 4.63  fails []
+  C# researchSortFeelDom3D0F8 seed 101: 13/13  own 1.58 / 2.17 / 1.04 / 4.52  fails []
+  C# researchSortFeelDom3D0F8 seed 1000: 13/13  own 1.62 / 2.36 / 1.01 / 4.27  fails []
+  C# researchSortFeelDom3D0F8 TOTAL     65/65
+  C# researchSortDom3      seed   7: 13/13  own 1.54 / 2.06 / 0.97 / 4.07  fails []
+  C# researchSortDom3      seed  23: 13/13  own 1.28 / 2.44 / 1.04 / 4.21  fails []
+  C# researchSortDom3      seed  41: 13/13  own 1.47 / 2.51 / 1.21 / 4.50  fails []
+  C# researchSortDom3      seed 101: 13/13  own 1.67 / 2.44 / 1.18 / 3.93  fails []
+  C# researchSortDom3      seed 1000: 13/13  own 1.39 / 2.25 / 1.41 / 4.44  fails []
+  C# researchSortDom3      TOTAL     65/65
+  C# gameSortFeelD0F8      seed   7: 13/13  own 1.91 / 2.18 / 1.63 / 5.50  fails []
+  C# gameSortFeelD0F8      seed  23: 13/13  own 1.98 / 2.18 / 1.52 / 5.49  fails []
+  C# gameSortFeelD0F8      seed  41: 13/13  own 2.08 / 2.19 / 1.78 / 5.71  fails []
+  C# gameSortFeelD0F8      seed 101: 13/13  own 1.93 / 2.38 / 1.65 / 5.51  fails []
+  C# gameSortFeelD0F8      seed 1000: 13/13  own 1.97 / 2.12 / 1.75 / 5.57  fails []
+  C# gameSortFeelD0F8      TOTAL     65/65
+  C# gameSortFeelWndFnLr120D0F8 seed   7: 13/13  own 1.90 / 2.39 / 1.62 / 5.53  fails []
+  C# gameSortFeelWndFnLr120D0F8 seed  23: 13/13  own 1.99 / 2.24 / 1.69 / 5.46  fails []
+  C# gameSortFeelWndFnLr120D0F8 seed  41: 13/13  own 2.01 / 2.13 / 1.55 / 5.94  fails []
+  C# gameSortFeelWndFnLr120D0F8 seed 101: 13/13  own 1.90 / 2.32 / 1.57 / 6.21  fails []
+  C# gameSortFeelWndFnLr120D0F8 seed 1000: 13/13  own 1.90 / 2.03 / 1.69 / 5.34  fails []
+  C# gameSortFeelWndFnLr120D0F8 TOTAL     65/65
+
+FEEL (swarm_feel.metrics over each grown own-plan body's 64-step window, mean)
+  researchSortFeelD0F8     speed 0.156  jerk_rel 0.651  planar_frac 0.498  coherence 0.012  jitter 1.207  phase 0.747  stuck 0.000  osc 0.042  planar_excess 0.116 -> ORGANIC
+  researchSortFeelDom3D0F8 speed 0.156  jerk_rel 0.651  planar_frac 0.498  coherence 0.012  jitter 1.207  phase 0.747  stuck 0.000  osc 0.042  planar_excess 0.116 -> ORGANIC
+  researchSortDom3         speed 0.019  jerk_rel 0.814  planar_frac 0.638  coherence 0.761  jitter 0.616  phase 0.087  stuck 0.000  osc 0.021  planar_excess 0.166 -> out (planar)
+  gameSortFeelD0F8         speed 0.353  jerk_rel 0.476  planar_frac 0.413  coherence 0.227  jitter 1.098  phase 0.882  stuck 0.000  osc 0.042  planar_excess 0.016 -> ORGANIC
+  gameSortFeelWndFnLr120D0F8 speed 0.352  jerk_rel 0.477  planar_frac 0.412  coherence 0.225  jitter 1.099  phase 0.889  stuck 0.000  osc 0.041  planar_excess 0.015 -> ORGANIC
+
+SMOOTHNESS (swarm_smooth's events + formulas on C# trajectories)
+  gameSortFeelD0F8         smoothness 0.917 (per seed {'7': 0.901, '23': 0.963, '41': 0.886})  deaths 0  mean {'backtrack': 0.0, 'lurch': 1.629, 'teleport': 0.965, 'jerk_rel': 0.446, 'molt_burst': 0.033, 'birth_burst': 0.173, 'rough': 0.092}
+                           worst {'backtrack': 0.0, 'lurch': 3.2, 'teleport': 1.076, 'jerk_rel': 0.51, 'molt_burst': 0.133, 'birth_burst': 0.306, 'rough': 0.56}
+      seed 7 switch mass->space {'loss_start': 52.76, 'loss_end': 2.41, 'backtrack': 0.0, 'travel': 0.99, 'lurch': 1.48, 'teleport': 0.992, 'jerk_rel': 0.456, 'molt_burst': 0.107, 'birth_burst': 0.0, 'deaths': 0, 'n_end': 84, 'rough': 0.07}
+      seed 7 switch space->charge {'loss_start': 41.5, 'loss_end': 1.66, 'backtrack': 0.0, 'travel': 1.07, 'lurch': 2.11, 'teleport': 1.056, 'jerk_rel': 0.447, 'molt_burst': 0.03, 'birth_burst': 0.237, 'deaths': 0, 'n_end': 169, 'rough': 0.0}
+      seed 7 switch charge->time {'loss_start': 46.19, 'loss_end': 6.74, 'backtrack': 0.0, 'travel': 3.02, 'lurch': 1.35, 'teleport': 1.064, 'jerk_rel': 0.363, 'molt_burst': 0.125, 'birth_burst': 0.014, 'deaths': 0, 'n_end': 72, 'rough': 0.25}
+      seed 7 switch time->mass {'loss_start': 46.96, 'loss_end': 2.1, 'backtrack': 0.0, 'travel': 0.54, 'lurch': 1.73, 'teleport': 1.035, 'jerk_rel': 0.44, 'molt_burst': 0.0, 'birth_burst': 0.221, 'deaths': 0, 'n_end': 181, 'rough': 0.0}
+      seed 7 heal charge     {'loss_start': 4.88, 'loss_end': 1.66, 'backtrack': 0.0, 'travel': 1.02, 'lurch': 1.76, 'teleport': 0.921, 'jerk_rel': 0.483, 'molt_burst': 0.0, 'birth_burst': 0.231, 'deaths': 0, 'n_end': 169, 'rough': 0.0}
+      seed 7 heal mass       {'loss_start': 6.99, 'loss_end': 1.98, 'backtrack': 0.0, 'travel': 1.03, 'lurch': 1.73, 'teleport': 1.051, 'jerk_rel': 0.505, 'molt_burst': 0.0, 'birth_burst': 0.221, 'deaths': 0, 'n_end': 181, 'rough': 0.0}
+      seed 7 heal space      {'loss_start': 7.55, 'loss_end': 2.63, 'backtrack': 0.0, 'travel': 1.02, 'lurch': 1.51, 'teleport': 0.857, 'jerk_rel': 0.51, 'molt_burst': 0.0, 'birth_burst': 0.157, 'deaths': 0, 'n_end': 83, 'rough': 0.0}
+      seed 7 heal time       {'loss_start': 19.96, 'loss_end': 7.18, 'backtrack': 0.0, 'travel': 1.07, 'lurch': 1.35, 'teleport': 1.071, 'jerk_rel': 0.37, 'molt_burst': 0.0, 'birth_burst': 0.306, 'deaths': 0, 'n_end': 72, 'rough': 0.56}
+      seed 23 switch mass->space {'loss_start': 54.19, 'loss_end': 2.66, 'backtrack': 0.0, 'travel': 1.03, 'lurch': 1.41, 'teleport': 0.979, 'jerk_rel': 0.443, 'molt_burst': 0.131, 'birth_burst': 0.0, 'deaths': 0, 'n_end': 84, 'rough': 0.31}
+      seed 23 switch space->charge {'loss_start': 40.19, 'loss_end': 1.83, 'backtrack': 0.0, 'travel': 1.09, 'lurch': 2.11, 'teleport': 1.02, 'jerk_rel': 0.443, 'molt_burst': 0.036, 'birth_burst': 0.237, 'deaths': 0, 'n_end': 169, 'rough': 0.0}
+      seed 23 switch charge->time {'loss_start': 44.61, 'loss_end': 7.39, 'backtrack': 0.0, 'travel': 3.13, 'lurch': 1.31, 'teleport': 1.076, 'jerk_rel': 0.366, 'molt_burst': 0.096, 'birth_burst': 0.0, 'deaths': 0, 'n_end': 73, 'rough': 0.0}
+      seed 23 switch time->mass {'loss_start': 44.76, 'loss_end': 2.19, 'backtrack': 0.0, 'travel': 0.52, 'lurch': 1.64, 'teleport': 1.041, 'jerk_rel': 0.453, 'molt_burst': 0.0, 'birth_burst': 0.221, 'deaths': 0, 'n_end': 181, 'rough': 0.0}
+      seed 23 heal charge    {'loss_start': 6.13, 'loss_end': 2.26, 'backtrack': 0.0, 'travel': 1.01, 'lurch': 1.62, 'teleport': 0.93, 'jerk_rel': 0.484, 'molt_burst': 0.0, 'birth_burst': 0.237, 'deaths': 0, 'n_end': 169, 'rough': 0.0}
+      seed 23 heal mass      {'loss_start': 5.94, 'loss_end': 2.12, 'backtrack': 0.0, 'travel': 0.96, 'lurch': 1.52, 'teleport': 1.01, 'jerk_rel': 0.502, 'molt_burst': 0.0, 'birth_burst': 0.215, 'deaths': 0, 'n_end': 181, 'rough': 0.0}
+      seed 23 heal space     {'loss_start': 7.38, 'loss_end': 2.9, 'backtrack': 0.0, 'travel': 1.13, 'lurch': 1.49, 'teleport': 0.481, 'jerk_rel': 0.505, 'molt_burst': 0.0, 'birth_burst': 0.169, 'deaths': 0, 'n_end': 83, 'rough': 0.0}
+      seed 23 heal time      {'loss_start': 15.89, 'loss_end': 7.15, 'backtrack': 0.0, 'travel': 1.02, 'lurch': 1.35, 'teleport': 1.067, 'jerk_rel': 0.372, 'molt_burst': 0.0, 'birth_burst': 0.236, 'deaths': 0, 'n_end': 72, 'rough': 0.0}
+      seed 41 switch mass->space {'loss_start': 54.89, 'loss_end': 2.27, 'backtrack': 0.0, 'travel': 1.0, 'lurch': 1.53, 'teleport': 1.005, 'jerk_rel': 0.452, 'molt_burst': 0.133, 'birth_burst': 0.0, 'deaths': 0, 'n_end': 83, 'rough': 0.33}
+      seed 41 switch space->charge {'loss_start': 41.7, 'loss_end': 2.15, 'backtrack': 0.0, 'travel': 0.98, 'lurch': 3.2, 'teleport': 1.046, 'jerk_rel': 0.447, 'molt_burst': 0.03, 'birth_burst': 0.237, 'deaths': 0, 'n_end': 169, 'rough': 0.28}
+      seed 41 switch charge->time {'loss_start': 45.42, 'loss_end': 6.39, 'backtrack': 0.0, 'travel': 3.01, 'lurch': 1.39, 'teleport': 1.067, 'jerk_rel': 0.365, 'molt_burst': 0.097, 'birth_burst': 0.028, 'deaths': 0, 'n_end': 72, 'rough': 0.0}
+      seed 41 switch time->mass {'loss_start': 47.39, 'loss_end': 2.24, 'backtrack': 0.0, 'travel': 0.53, 'lurch': 1.76, 'teleport': 1.063, 'jerk_rel': 0.458, 'molt_burst': 0.0, 'birth_burst': 0.221, 'deaths': 0, 'n_end': 181, 'rough': 0.0}
+      seed 41 heal charge    {'loss_start': 7.17, 'loss_end': 1.73, 'backtrack': 0.0, 'travel': 1.07, 'lurch': 1.63, 'teleport': 0.615, 'jerk_rel': 0.482, 'molt_burst': 0.0, 'birth_burst': 0.237, 'deaths': 0, 'n_end': 169, 'rough': 0.0}
+      seed 41 heal mass      {'loss_start': 7.48, 'loss_end': 2.34, 'backtrack': 0.0, 'travel': 1.3, 'lurch': 1.34, 'teleport': 1.04, 'jerk_rel': 0.5, 'molt_burst': 0.0, 'birth_burst': 0.221, 'deaths': 0, 'n_end': 181, 'rough': 0.0}
+      seed 41 heal space     {'loss_start': 15.74, 'loss_end': 2.96, 'backtrack': 0.0, 'travel': 0.96, 'lurch': 1.42, 'teleport': 0.602, 'jerk_rel': 0.482, 'molt_burst': 0.0, 'birth_burst': 0.205, 'deaths': 0, 'n_end': 83, 'rough': 0.0}
+      seed 41 heal time      {'loss_start': 19.77, 'loss_end': 6.73, 'backtrack': 0.0, 'travel': 1.09, 'lurch': 1.35, 'teleport': 1.059, 'jerk_rel': 0.373, 'molt_burst': 0.0, 'birth_burst': 0.292, 'deaths': 0, 'n_end': 72, 'rough': 0.42}
+  gameSortFeelWndFnLr120D0F8 smoothness 0.954 (per seed {'7': 0.923, '23': 0.938, '41': 1.0})  deaths 0  mean {'backtrack': 0.006, 'lurch': 1.438, 'teleport': 0.903, 'jerk_rel': 0.451, 'molt_burst': 0.03, 'birth_burst': 0.11, 'rough': 0.05}
+                           worst {'backtrack': 0.077, 'lurch': 2.02, 'teleport': 1.09, 'jerk_rel': 0.519, 'molt_burst': 0.141, 'birth_burst': 0.193, 'rough': 0.41}
+      seed 7 switch mass->space {'loss_start': 52.66, 'loss_end': 2.23, 'backtrack': 0.0, 'travel': 1.15, 'lurch': 1.46, 'teleport': 0.801, 'jerk_rel': 0.454, 'molt_burst': 0.107, 'birth_burst': 0.0, 'deaths': 0, 'n_end': 84, 'rough': 0.07}
+      seed 7 switch space->charge {'loss_start': 40.67, 'loss_end': 1.93, 'backtrack': 0.0, 'travel': 1.1, 'lurch': 1.47, 'teleport': 0.919, 'jerk_rel': 0.445, 'molt_burst': 0.036, 'birth_burst': 0.142, 'deaths': 0, 'n_end': 169, 'rough': 0.0}
+      seed 7 switch charge->time {'loss_start': 44.99, 'loss_end': 5.86, 'backtrack': 0.0, 'travel': 2.85, 'lurch': 1.35, 'teleport': 1.07, 'jerk_rel': 0.369, 'molt_burst': 0.111, 'birth_burst': 0.0, 'deaths': 0, 'n_end': 72, 'rough': 0.11}
+      seed 7 switch time->mass {'loss_start': 52.12, 'loss_end': 2.29, 'backtrack': 0.0, 'travel': 0.54, 'lurch': 1.48, 'teleport': 1.028, 'jerk_rel': 0.449, 'molt_burst': 0.0, 'birth_burst': 0.177, 'deaths': 0, 'n_end': 181, 'rough': 0.0}
+      seed 7 heal charge     {'loss_start': 5.62, 'loss_end': 2.11, 'backtrack': 0.0, 'travel': 1.0, 'lurch': 1.58, 'teleport': 0.91, 'jerk_rel': 0.503, 'molt_burst': 0.0, 'birth_burst': 0.112, 'deaths': 0, 'n_end': 169, 'rough': 0.0}
+      seed 7 heal mass       {'loss_start': 7.28, 'loss_end': 2.22, 'backtrack': 0.045, 'travel': 1.07, 'lurch': 1.41, 'teleport': 1.042, 'jerk_rel': 0.516, 'molt_burst': 0.0, 'birth_burst': 0.116, 'deaths': 0, 'n_end': 181, 'rough': 0.18}
+      seed 7 heal space      {'loss_start': 7.51, 'loss_end': 2.86, 'backtrack': 0.077, 'travel': 0.99, 'lurch': 1.34, 'teleport': 0.452, 'jerk_rel': 0.519, 'molt_burst': 0.0, 'birth_burst': 0.157, 'deaths': 0, 'n_end': 83, 'rough': 0.308}
+      seed 7 heal time       {'loss_start': 20.06, 'loss_end': 7.21, 'backtrack': 0.0, 'travel': 1.07, 'lurch': 1.26, 'teleport': 1.057, 'jerk_rel': 0.369, 'molt_burst': 0.0, 'birth_burst': 0.111, 'deaths': 0, 'n_end': 72, 'rough': 0.0}
+      seed 23 switch mass->space {'loss_start': 55.35, 'loss_end': 2.4, 'backtrack': 0.0, 'travel': 1.15, 'lurch': 1.49, 'teleport': 1.012, 'jerk_rel': 0.456, 'molt_burst': 0.141, 'birth_burst': 0.0, 'deaths': 0, 'n_end': 85, 'rough': 0.41}
+      seed 23 switch space->charge {'loss_start': 40.46, 'loss_end': 1.57, 'backtrack': 0.0, 'travel': 1.19, 'lurch': 1.48, 'teleport': 1.05, 'jerk_rel': 0.444, 'molt_burst': 0.036, 'birth_burst': 0.142, 'deaths': 0, 'n_end': 169, 'rough': 0.0}
+      seed 23 switch charge->time {'loss_start': 45.78, 'loss_end': 8.17, 'backtrack': 0.0, 'travel': 3.39, 'lurch': 1.37, 'teleport': 1.09, 'jerk_rel': 0.365, 'molt_burst': 0.083, 'birth_burst': 0.014, 'deaths': 0, 'n_end': 72, 'rough': 0.0}
+      seed 23 switch time->mass {'loss_start': 48.07, 'loss_end': 2.25, 'backtrack': 0.0, 'travel': 0.6, 'lurch': 1.4, 'teleport': 1.028, 'jerk_rel': 0.443, 'molt_burst': 0.0, 'birth_burst': 0.177, 'deaths': 0, 'n_end': 181, 'rough': 0.0}
+      seed 23 heal charge    {'loss_start': 5.62, 'loss_end': 1.84, 'backtrack': 0.0, 'travel': 1.11, 'lurch': 1.47, 'teleport': 0.45, 'jerk_rel': 0.502, 'molt_burst': 0.0, 'birth_burst': 0.107, 'deaths': 0, 'n_end': 169, 'rough': 0.0}
+      seed 23 heal mass      {'loss_start': 6.59, 'loss_end': 2.2, 'backtrack': 0.0, 'travel': 1.05, 'lurch': 1.34, 'teleport': 0.889, 'jerk_rel': 0.516, 'molt_burst': 0.0, 'birth_burst': 0.16, 'deaths': 0, 'n_end': 181, 'rough': 0.0}
+      seed 23 heal space     {'loss_start': 6.8, 'loss_end': 2.6, 'backtrack': 0.029, 'travel': 1.11, 'lurch': 1.52, 'teleport': 0.643, 'jerk_rel': 0.513, 'molt_burst': 0.0, 'birth_burst': 0.193, 'deaths': 0, 'n_end': 83, 'rough': 0.116}
+      seed 23 heal time      {'loss_start': 15.37, 'loss_end': 7.45, 'backtrack': 0.0, 'travel': 1.01, 'lurch': 1.34, 'teleport': 1.057, 'jerk_rel': 0.368, 'molt_burst': 0.0, 'birth_burst': 0.139, 'deaths': 0, 'n_end': 72, 'rough': 0.0}
+      seed 41 switch mass->space {'loss_start': 54.75, 'loss_end': 2.34, 'backtrack': 0.0, 'travel': 1.01, 'lurch': 1.48, 'teleport': 1.044, 'jerk_rel': 0.457, 'molt_burst': 0.094, 'birth_burst': 0.0, 'deaths': 0, 'n_end': 85, 'rough': 0.0}
+      seed 41 switch space->charge {'loss_start': 41.1, 'loss_end': 1.65, 'backtrack': 0.0, 'travel': 1.25, 'lurch': 1.4, 'teleport': 1.068, 'jerk_rel': 0.446, 'molt_burst': 0.03, 'birth_burst': 0.142, 'deaths': 0, 'n_end': 169, 'rough': 0.0}
+      seed 41 switch charge->time {'loss_start': 45.93, 'loss_end': 7.41, 'backtrack': 0.0, 'travel': 2.76, 'lurch': 1.3, 'teleport': 1.05, 'jerk_rel': 0.369, 'molt_burst': 0.083, 'birth_burst': 0.028, 'deaths': 0, 'n_end': 72, 'rough': 0.0}
+      seed 41 switch time->mass {'loss_start': 45.88, 'loss_end': 2.15, 'backtrack': 0.0, 'travel': 0.58, 'lurch': 2.02, 'teleport': 1.025, 'jerk_rel': 0.45, 'molt_burst': 0.0, 'birth_burst': 0.177, 'deaths': 0, 'n_end': 181, 'rough': 0.0}
+      seed 41 heal charge    {'loss_start': 7.69, 'loss_end': 1.67, 'backtrack': 0.0, 'travel': 1.05, 'lurch': 1.41, 'teleport': 0.459, 'jerk_rel': 0.504, 'molt_burst': 0.0, 'birth_burst': 0.107, 'deaths': 0, 'n_end': 169, 'rough': 0.0}
+      seed 41 heal mass      {'loss_start': 7.26, 'loss_end': 2.27, 'backtrack': 0.0, 'travel': 1.27, 'lurch': 1.34, 'teleport': 1.013, 'jerk_rel': 0.514, 'molt_burst': 0.0, 'birth_burst': 0.133, 'deaths': 0, 'n_end': 181, 'rough': 0.0}
+      seed 41 heal space     {'loss_start': 17.8, 'loss_end': 2.73, 'backtrack': 0.0, 'travel': 1.04, 'lurch': 1.44, 'teleport': 0.452, 'jerk_rel': 0.493, 'molt_burst': 0.0, 'birth_burst': 0.193, 'deaths': 0, 'n_end': 83, 'rough': 0.0}
+      seed 41 heal time      {'loss_start': 20.03, 'loss_end': 7.12, 'backtrack': 0.0, 'travel': 1.01, 'lurch': 1.35, 'teleport': 1.055, 'jerk_rel': 0.368, 'molt_burst': 0.0, 'birth_burst': 0.111, 'deaths': 0, 'n_end': 72, 'rough': 0.0}
+  gameSortFeelD0F4         smoothness 0.861 (per seed {'7': 0.809, '23': 0.908, '41': 0.865})  deaths 0  mean {'backtrack': 0.0, 'lurch': 2.223, 'teleport': 0.921, 'jerk_rel': 0.566, 'molt_burst': 0.035, 'birth_burst': 0.174, 'rough': 0.164}
+                           worst {'backtrack': 0.005, 'lurch': 3.34, 'teleport': 1.084, 'jerk_rel': 0.685, 'molt_burst': 0.214, 'birth_burst': 0.333, 'rough': 1.14}
+      seed 7 switch mass->space {'loss_start': 54.54, 'loss_end': 2.24, 'backtrack': 0.0, 'travel': 1.22, 'lurch': 2.15, 'teleport': 1.033, 'jerk_rel': 0.58, 'molt_burst': 0.214, 'birth_burst': 0.0, 'deaths': 0, 'n_end': 84, 'rough': 1.14}
+      seed 7 switch space->charge {'loss_start': 41.06, 'loss_end': 1.59, 'backtrack': 0.0, 'travel': 1.16, 'lurch': 3.04, 'teleport': 1.027, 'jerk_rel': 0.567, 'molt_burst': 0.03, 'birth_burst': 0.237, 'deaths': 0, 'n_end': 169, 'rough': 0.216}
+      seed 7 switch charge->time {'loss_start': 44.95, 'loss_end': 5.98, 'backtrack': 0.0, 'travel': 3.79, 'lurch': 1.48, 'teleport': 1.058, 'jerk_rel': 0.423, 'molt_burst': 0.097, 'birth_burst': 0.028, 'deaths': 0, 'n_end': 72, 'rough': 0.0}
+      seed 7 switch time->mass {'loss_start': 46.46, 'loss_end': 2.15, 'backtrack': 0.0, 'travel': 0.39, 'lurch': 2.52, 'teleport': 1.045, 'jerk_rel': 0.593, 'molt_burst': 0.0, 'birth_burst': 0.221, 'deaths': 0, 'n_end': 181, 'rough': 0.008}
+      seed 7 heal charge     {'loss_start': 5.39, 'loss_end': 1.44, 'backtrack': 0.0, 'travel': 1.06, 'lurch': 2.56, 'teleport': 1.059, 'jerk_rel': 0.62, 'molt_burst': 0.0, 'birth_burst': 0.237, 'deaths': 0, 'n_end': 169, 'rough': 0.024}
+      seed 7 heal mass       {'loss_start': 7.06, 'loss_end': 2.28, 'backtrack': 0.0, 'travel': 1.03, 'lurch': 2.69, 'teleport': 1.053, 'jerk_rel': 0.679, 'molt_burst': 0.0, 'birth_burst': 0.221, 'deaths': 0, 'n_end': 181, 'rough': 0.076}
+      seed 7 heal space      {'loss_start': 8.61, 'loss_end': 2.52, 'backtrack': 0.0, 'travel': 1.12, 'lurch': 2.29, 'teleport': 0.728, 'jerk_rel': 0.675, 'molt_burst': 0.0, 'birth_burst': 0.181, 'deaths': 0, 'n_end': 83, 'rough': 0.0}
+      seed 7 heal time       {'loss_start': 20.75, 'loss_end': 6.17, 'backtrack': 0.0, 'travel': 1.05, 'lurch': 1.56, 'teleport': 1.04, 'jerk_rel': 0.414, 'molt_burst': 0.0, 'birth_burst': 0.292, 'deaths': 0, 'n_end': 72, 'rough': 0.42}
+      seed 23 switch mass->space {'loss_start': 53.04, 'loss_end': 2.05, 'backtrack': 0.0, 'travel': 1.24, 'lurch': 2.28, 'teleport': 0.818, 'jerk_rel': 0.569, 'molt_burst': 0.145, 'birth_burst': 0.0, 'deaths': 0, 'n_end': 83, 'rough': 0.45}
+      seed 23 switch space->charge {'loss_start': 40.1, 'loss_end': 1.67, 'backtrack': 0.0, 'travel': 1.22, 'lurch': 3.34, 'teleport': 1.039, 'jerk_rel': 0.566, 'molt_burst': 0.047, 'birth_burst': 0.237, 'deaths': 0, 'n_end': 169, 'rough': 0.336}
+      seed 23 switch charge->time {'loss_start': 45.37, 'loss_end': 5.96, 'backtrack': 0.0, 'travel': 3.97, 'lurch': 1.34, 'teleport': 1.045, 'jerk_rel': 0.424, 'molt_burst': 0.081, 'birth_burst': 0.0, 'deaths': 0, 'n_end': 74, 'rough': 0.0}
+      seed 23 switch time->mass {'loss_start': 48.13, 'loss_end': 2.18, 'backtrack': 0.0, 'travel': 0.35, 'lurch': 2.39, 'teleport': 1.084, 'jerk_rel': 0.61, 'molt_burst': 0.0, 'birth_burst': 0.221, 'deaths': 0, 'n_end': 181, 'rough': 0.0}
+      seed 23 heal charge    {'loss_start': 5.67, 'loss_end': 1.57, 'backtrack': 0.0, 'travel': 1.03, 'lurch': 2.49, 'teleport': 0.994, 'jerk_rel': 0.632, 'molt_burst': 0.0, 'birth_burst': 0.237, 'deaths': 0, 'n_end': 169, 'rough': 0.0}
+      seed 23 heal mass      {'loss_start': 7.08, 'loss_end': 2.31, 'backtrack': 0.0, 'travel': 1.06, 'lurch': 2.49, 'teleport': 0.725, 'jerk_rel': 0.685, 'molt_burst': 0.0, 'birth_burst': 0.188, 'deaths': 0, 'n_end': 181, 'rough': 0.0}
+      seed 23 heal space     {'loss_start': 7.07, 'loss_end': 2.42, 'backtrack': 0.005, 'travel': 1.19, 'lurch': 2.06, 'teleport': 0.447, 'jerk_rel': 0.653, 'molt_burst': 0.0, 'birth_burst': 0.169, 'deaths': 0, 'n_end': 83, 'rough': 0.02}
+      seed 23 heal time      {'loss_start': 13.84, 'loss_end': 6.3, 'backtrack': 0.0, 'travel': 1.08, 'lurch': 1.42, 'teleport': 1.047, 'jerk_rel': 0.419, 'molt_burst': 0.0, 'birth_burst': 0.25, 'deaths': 0, 'n_end': 72, 'rough': 0.0}
+      seed 41 switch mass->space {'loss_start': 56.22, 'loss_end': 2.55, 'backtrack': 0.0, 'travel': 1.33, 'lurch': 2.14, 'teleport': 0.662, 'jerk_rel': 0.565, 'molt_burst': 0.129, 'birth_burst': 0.0, 'deaths': 0, 'n_end': 85, 'rough': 0.29}
+      seed 41 switch space->charge {'loss_start': 41.5, 'loss_end': 2.05, 'backtrack': 0.0, 'travel': 1.02, 'lurch': 2.67, 'teleport': 1.035, 'jerk_rel': 0.579, 'molt_burst': 0.041, 'birth_burst': 0.237, 'deaths': 0, 'n_end': 169, 'rough': 0.068}
+      seed 41 switch charge->time {'loss_start': 44.65, 'loss_end': 6.21, 'backtrack': 0.0, 'travel': 3.72, 'lurch': 1.48, 'teleport': 1.027, 'jerk_rel': 0.417, 'molt_burst': 0.068, 'birth_burst': 0.0, 'deaths': 0, 'n_end': 74, 'rough': 0.0}
+      seed 41 switch time->mass {'loss_start': 48.13, 'loss_end': 2.36, 'backtrack': 0.0, 'travel': 0.44, 'lurch': 2.12, 'teleport': 0.969, 'jerk_rel': 0.593, 'molt_burst': 0.0, 'birth_burst': 0.221, 'deaths': 0, 'n_end': 181, 'rough': 0.0}
+      seed 41 heal charge    {'loss_start': 7.61, 'loss_end': 1.65, 'backtrack': 0.0, 'travel': 1.08, 'lurch': 2.53, 'teleport': 0.602, 'jerk_rel': 0.627, 'molt_burst': 0.0, 'birth_burst': 0.237, 'deaths': 0, 'n_end': 169, 'rough': 0.012}
+      seed 41 heal mass      {'loss_start': 6.53, 'loss_end': 2.16, 'backtrack': 0.0, 'travel': 1.01, 'lurch': 2.61, 'teleport': 1.038, 'jerk_rel': 0.679, 'molt_burst': 0.0, 'birth_burst': 0.221, 'deaths': 0, 'n_end': 181, 'rough': 0.044}
+      seed 41 heal space     {'loss_start': 16.42, 'loss_end': 2.7, 'backtrack': 0.0, 'travel': 1.15, 'lurch': 2.19, 'teleport': 0.475, 'jerk_rel': 0.614, 'molt_burst': 0.0, 'birth_burst': 0.217, 'deaths': 0, 'n_end': 83, 'rough': 0.0}
+      seed 41 heal time      {'loss_start': 23.7, 'loss_end': 6.65, 'backtrack': 0.0, 'travel': 1.08, 'lurch': 1.5, 'teleport': 1.055, 'jerk_rel': 0.401, 'molt_burst': 0.0, 'birth_burst': 0.333, 'deaths': 0, 'n_end': 72, 'rough': 0.83}
+  gameSortFeelWndFnLr120D0F4 smoothness 0.927 (per seed {'7': 0.95, '23': 0.922, '41': 0.909})  deaths 0  mean {'backtrack': 0.0, 'lurch': 1.94, 'teleport': 0.834, 'jerk_rel': 0.575, 'molt_burst': 0.038, 'birth_burst': 0.113, 'rough': 0.079}
+                           worst {'backtrack': 0.005, 'lurch': 2.48, 'teleport': 1.066, 'jerk_rel': 0.714, 'molt_burst': 0.155, 'birth_burst': 0.193, 'rough': 0.55}
+      seed 7 switch mass->space {'loss_start': 54.1, 'loss_end': 2.35, 'backtrack': 0.0, 'travel': 1.2, 'lurch': 2.17, 'teleport': 0.752, 'jerk_rel': 0.584, 'molt_burst': 0.129, 'birth_burst': 0.0, 'deaths': 0, 'n_end': 85, 'rough': 0.29}
+      seed 7 switch space->charge {'loss_start': 40.4, 'loss_end': 1.53, 'backtrack': 0.0, 'travel': 1.23, 'lurch': 2.48, 'teleport': 0.901, 'jerk_rel': 0.573, 'molt_burst': 0.036, 'birth_burst': 0.142, 'deaths': 0, 'n_end': 169, 'rough': 0.0}
+      seed 7 switch charge->time {'loss_start': 46.01, 'loss_end': 6.2, 'backtrack': 0.0, 'travel': 3.91, 'lurch': 1.47, 'teleport': 1.052, 'jerk_rel': 0.421, 'molt_burst': 0.111, 'birth_burst': 0.014, 'deaths': 0, 'n_end': 72, 'rough': 0.11}
+      seed 7 switch time->mass {'loss_start': 50.32, 'loss_end': 2.15, 'backtrack': 0.0, 'travel': 0.62, 'lurch': 1.86, 'teleport': 0.987, 'jerk_rel': 0.579, 'molt_burst': 0.0, 'birth_burst': 0.177, 'deaths': 0, 'n_end': 181, 'rough': 0.0}
+      seed 7 heal charge     {'loss_start': 5.15, 'loss_end': 1.46, 'backtrack': 0.0, 'travel': 1.0, 'lurch': 2.19, 'teleport': 0.681, 'jerk_rel': 0.653, 'molt_burst': 0.0, 'birth_burst': 0.112, 'deaths': 0, 'n_end': 169, 'rough': 0.0}
+      seed 7 heal mass       {'loss_start': 6.18, 'loss_end': 1.99, 'backtrack': 0.0, 'travel': 0.99, 'lurch': 2.38, 'teleport': 0.87, 'jerk_rel': 0.714, 'molt_burst': 0.0, 'birth_burst': 0.133, 'deaths': 0, 'n_end': 181, 'rough': 0.0}
+      seed 7 heal space      {'loss_start': 8.23, 'loss_end': 2.48, 'backtrack': 0.005, 'travel': 1.15, 'lurch': 1.49, 'teleport': 0.383, 'jerk_rel': 0.681, 'molt_burst': 0.0, 'birth_burst': 0.181, 'deaths': 0, 'n_end': 83, 'rough': 0.02}
+      seed 7 heal time       {'loss_start': 21.39, 'loss_end': 6.69, 'backtrack': 0.0, 'travel': 1.1, 'lurch': 1.51, 'teleport': 1.045, 'jerk_rel': 0.419, 'molt_burst': 0.0, 'birth_burst': 0.111, 'deaths': 0, 'n_end': 72, 'rough': 0.0}
+      seed 23 switch mass->space {'loss_start': 53.09, 'loss_end': 2.31, 'backtrack': 0.0, 'travel': 1.28, 'lurch': 2.39, 'teleport': 0.832, 'jerk_rel': 0.578, 'molt_burst': 0.141, 'birth_burst': 0.0, 'deaths': 0, 'n_end': 85, 'rough': 0.41}
+      seed 23 switch space->charge {'loss_start': 40.81, 'loss_end': 2.0, 'backtrack': 0.0, 'travel': 1.35, 'lurch': 2.22, 'teleport': 1.033, 'jerk_rel': 0.57, 'molt_burst': 0.047, 'birth_burst': 0.142, 'deaths': 0, 'n_end': 169, 'rough': 0.0}
+      seed 23 switch charge->time {'loss_start': 44.79, 'loss_end': 6.02, 'backtrack': 0.0, 'travel': 3.68, 'lurch': 1.32, 'teleport': 1.049, 'jerk_rel': 0.421, 'molt_burst': 0.125, 'birth_burst': 0.028, 'deaths': 0, 'n_end': 72, 'rough': 0.25}
+      seed 23 switch time->mass {'loss_start': 48.11, 'loss_end': 2.16, 'backtrack': 0.0, 'travel': 0.6, 'lurch': 1.37, 'teleport': 1.055, 'jerk_rel': 0.594, 'molt_burst': 0.0, 'birth_burst': 0.177, 'deaths': 0, 'n_end': 181, 'rough': 0.0}
+      seed 23 heal charge    {'loss_start': 5.58, 'loss_end': 2.03, 'backtrack': 0.0, 'travel': 1.01, 'lurch': 2.29, 'teleport': 0.47, 'jerk_rel': 0.648, 'molt_burst': 0.0, 'birth_burst': 0.107, 'deaths': 0, 'n_end': 169, 'rough': 0.0}
+      seed 23 heal mass      {'loss_start': 6.52, 'loss_end': 2.0, 'backtrack': 0.005, 'travel': 0.98, 'lurch': 2.46, 'teleport': 0.543, 'jerk_rel': 0.708, 'molt_burst': 0.0, 'birth_burst': 0.155, 'deaths': 0, 'n_end': 181, 'rough': 0.02}
+      seed 23 heal space     {'loss_start': 7.41, 'loss_end': 2.55, 'backtrack': 0.0, 'travel': 1.02, 'lurch': 1.98, 'teleport': 0.46, 'jerk_rel': 0.665, 'molt_burst': 0.0, 'birth_burst': 0.193, 'deaths': 0, 'n_end': 83, 'rough': 0.0}
+      seed 23 heal time      {'loss_start': 14.55, 'loss_end': 6.53, 'backtrack': 0.0, 'travel': 1.05, 'lurch': 1.49, 'teleport': 1.048, 'jerk_rel': 0.414, 'molt_burst': 0.0, 'birth_burst': 0.167, 'deaths': 0, 'n_end': 72, 'rough': 0.0}
+      seed 41 switch mass->space {'loss_start': 53.07, 'loss_end': 2.21, 'backtrack': 0.0, 'travel': 1.04, 'lurch': 2.25, 'teleport': 0.61, 'jerk_rel': 0.587, 'molt_burst': 0.155, 'birth_burst': 0.0, 'deaths': 0, 'n_end': 84, 'rough': 0.55}
+      seed 41 switch space->charge {'loss_start': 39.8, 'loss_end': 1.72, 'backtrack': 0.0, 'travel': 1.42, 'lurch': 2.01, 'teleport': 1.006, 'jerk_rel': 0.569, 'molt_burst': 0.041, 'birth_burst': 0.142, 'deaths': 0, 'n_end': 169, 'rough': 0.0}
+      seed 41 switch charge->time {'loss_start': 45.43, 'loss_end': 6.03, 'backtrack': 0.0, 'travel': 3.78, 'lurch': 1.48, 'teleport': 1.066, 'jerk_rel': 0.423, 'molt_burst': 0.125, 'birth_burst': 0.0, 'deaths': 0, 'n_end': 72, 'rough': 0.25}
+      seed 41 switch time->mass {'loss_start': 46.16, 'loss_end': 1.97, 'backtrack': 0.0, 'travel': 0.63, 'lurch': 2.27, 'teleport': 1.0, 'jerk_rel': 0.597, 'molt_burst': 0.0, 'birth_burst': 0.177, 'deaths': 0, 'n_end': 181, 'rough': 0.0}
+      seed 41 heal charge    {'loss_start': 6.63, 'loss_end': 1.68, 'backtrack': 0.0, 'travel': 1.1, 'lurch': 2.21, 'teleport': 0.737, 'jerk_rel': 0.651, 'molt_burst': 0.0, 'birth_burst': 0.112, 'deaths': 0, 'n_end': 169, 'rough': 0.0}
+      seed 41 heal mass      {'loss_start': 7.46, 'loss_end': 1.93, 'backtrack': 0.0, 'travel': 0.98, 'lurch': 2.11, 'teleport': 0.985, 'jerk_rel': 0.707, 'molt_burst': 0.0, 'birth_burst': 0.133, 'deaths': 0, 'n_end': 181, 'rough': 0.0}
+      seed 41 heal space     {'loss_start': 15.6, 'loss_end': 2.6, 'backtrack': 0.0, 'travel': 1.08, 'lurch': 1.64, 'teleport': 0.416, 'jerk_rel': 0.635, 'molt_burst': 0.0, 'birth_burst': 0.193, 'deaths': 0, 'n_end': 83, 'rough': 0.0}
+      seed 41 heal time      {'loss_start': 21.16, 'loss_end': 6.67, 'backtrack': 0.0, 'travel': 1.05, 'lurch': 1.51, 'teleport': 1.046, 'jerk_rel': 0.418, 'molt_burst': 0.0, 'birth_burst': 0.111, 'deaths': 0, 'n_end': 72, 'rough': 0.0}
+
+LOSSLESS: self-inflicted deaths over every C# yardstick run: 0
+
+wrote /tmp/claude-0/-home-claude/22eb748d-89d5-5278-975c-1ce6068b653d/scratchpad/final.json
+
+ASSERT OK: researchSortFeelDom3D0F8,researchSortDom3,gameSortFeelWndFnLr120D0F8

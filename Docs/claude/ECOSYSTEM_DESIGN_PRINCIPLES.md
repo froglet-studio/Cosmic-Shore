@@ -54,6 +54,19 @@ trio, and the traps).
   rule, and a per-subclass copy is a rule you can forget to apply in the next grazer.
   A biome's STARTING release state is authored data (`SpawnProfileSO.InitialFaunaReleaseTier`),
   not a runtime call — a runtime-only gate races the cell's own bootstrap and loses.
+- **THE NAMED EXCEPTION: a MultiDomain SWARM grows regional LINEAGES** (`SwarmFaunaConfigSO.MultiDomain`, ON for
+  the Swarm cell's sort swarms and OFF by default everywhere else; `Docs/SWARM_FAUNA.md §17`). Birth obeys the law:
+  every seed wears the cell's controlling domain and every child its PARENT's - **food never colours anyone** (round
+  8's diet colouring was tried and removed on playtest). The body plan's regions (a whale's back and belly) are
+  anatomy; each is OWNED by the lineage holding most of its tissue, and a child laid into tissue nobody owns may
+  found a new lineage (`LineageDrift`) in a domain the swarm lacks, drawn uniformly. So a swarm can grow a second
+  colour in one region, but nothing chooses which colour, which region, or whether it happens. Each member is drawn
+  (`Flags` bits 7-8 -> the per-slot palette), fed (`Fauna.IsPreyForMe` with its own domain), spared and credited in
+  ITS domain, and its proxy takes it. `Cell.SetModeControlOverride`'s one-colour re-colour **does not apply** to a
+  MultiDomain swarm (`Fauna.AcceptsTeamRecolour` is false); a one-colour swarm still re-colours in full, proxies
+  included (`SwarmFauna.OnTeamChanged`). Only the SORT model has lineages (a MultiDomain grid/field/evofate swarm is
+  one colour). Do not extend this to any other species: a single creature has no population to carry a lineage, so
+  for it the one-colour law stands unmodified.
 - **A creature dies when its last body prism is destroyed** — `Fauna.OnBodyPrismExploded`
   (platform-wide since Wildlife Liberation; before it, only the worm colony implemented it, so
   shooting any other creature stripped its body and left an immortal husk swimming). This is an
