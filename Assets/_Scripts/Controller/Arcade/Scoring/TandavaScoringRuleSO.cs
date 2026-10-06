@@ -11,7 +11,7 @@ namespace CosmicShore.Gameplay
     /// Tandava (Assets/_Scripts/Controller/Arcade/TANDAVA.md): every pilot is on ONE domain and the opponent is the
     /// swarm, so the winner is not a metric race. The match ends on the swarm's <see cref="TandavaOutcome"/>, which
     /// <see cref="TandavaController"/> publishes into this rule on every peer (<see cref="Publish"/>): wiped out,
-    /// shattered, starved, its dance broken or held off until the clock ran out, the pilots' domain wins; the cycle
+    /// shattered, starved or its dance broken (or held off, were a clock ever set - the shipped hunt has none), the pilots' domain wins; the cycle
     /// completed (the Sea Lion's last feast), nobody does (<see cref="Domains.Blue"/>, the platform's "no winner"
     /// sentinel). A pilot's own score is the members they culled (<see cref="ScoringMetric.LifeformsKilled"/> -
     /// attributed kills only, so a starved tadpole scores nobody) plus <see cref="haloPoints"/> for each halo ring they

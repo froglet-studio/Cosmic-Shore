@@ -33,6 +33,7 @@ Run:  python3 Tools/Build/author_tandava_assets.py [--check] [--self-test]
 """
 import math
 import os
+import hashlib
 import re
 import sys
 
@@ -73,7 +74,9 @@ G_PLAN = {k: guid(f"asset/TandavaPlan_{k}") for k in PLAN_KEYS}
 RETIRED = ([f"{SWARM_DIR}/SwarmPlan_tandava_{k}.json" for k in ("serpent_s", "serpent_m", "serpent_l", "bull", "dancer", "lion")]
            + [f"{CELL_DIR}/Tandava {n} Borromean Flora {e} Config Data.asset"
               for n, e in (("Early", "Mass"), ("Late", "Mass"), ("Late", "Space"))]
-           + ["Assets/_Scripts/Controller/Arcade/Tandava/TandavaFlame.cs"])
+           + ["Assets/_Scripts/Controller/Arcade/Tandava/TandavaFlame.cs"]
+           # the open 1,200 u cell's Space Borromean fork, retired by the crowded reef (the third pass, 2026-10-06)
+           + [f"{CELL_DIR}/Tandava Borromean Flora Space Config Data.asset"])
 for rel in RETIRED:
     g.stale += [rel, rel + ".meta"]
 
@@ -81,8 +84,9 @@ G_ASSET = {
     "TandavaSwarmFaunaConfig":  guid("asset/TandavaSwarmFaunaConfig"),
     "TandavaSwarmFauna.prefab": guid("asset/TandavaSwarmFauna.prefab"),
     "SwarmSpecies":             guid("asset/TandavaSwarmSpecies"),
-    "FloraMass":                guid("asset/TandavaFloraMass"),
-    "FloraSpace":               guid("asset/TandavaFloraSpace"),
+    "FloraMass":                guid("asset/TandavaFloraMass"),   # the Borromean Mass fork (its guid kept)
+    "Membrane.prefab":          guid("asset/TandavaMembrane.prefab"),
+    "Atlantis.prefab":          guid("asset/TandavaAtlantis.prefab"),
     "SpawnProfile":             guid("asset/TandavaCellSpawnProfile"),
     "CellConfig":               guid("asset/TandavaCellConfig"),
     "TandavaSettings":          guid("asset/TandavaSettings"),
@@ -116,9 +120,13 @@ EXISTING["Nucleus"] = lib.CELL_VISUALS["NucleusPrefab"]
 EXISTING["Cytoplasm"] = lib.CELL_VISUALS["CytoplasmPrefab"]
 EXISTING["CellIcon"] = lib.CELL_VISUALS["CellIcon"]
 EXISTING["ExtraOmniCrystals"] = "daa37ae0e7af4b04383c1c4e6e76817d"   # the Swarm cell's modifier
-CANON_FLORA = {e: f"Assets/_SO_Assets/Lifeforms/Borromean Flora {e}.asset" for e in ("Mass", "Space")}
-for e, p in CANON_FLORA.items():
-    EXISTING[f"Borromean{e}"] = lib.existing_guid(p)
+ELEMENT_NAME = {1: "Mass", 2: "Space"}   # research index -> the canonical config's element name
+EXISTING["HalfNucleus"] = lib.existing_guid("Assets/_Prefabs/Environment/HalfNucleus.prefab")   # the Scurry cell's core
+CAPSULE_MEMBRANE = "Assets/_Prefabs/Environment/CapsuleMembrane.prefab"
+ATLANTIS = "Assets/_Prefabs/Spawnables/SpawnableAtlantis.prefab"   # Crystal Capture's intensity 4: the drowned garden-city
+EXISTING["SpawnableAtlantis"] = lib.existing_guid(ATLANTIS)
+MEMBRANE_PREFAB = "Assets/_Prefabs/Environment/TandavaMembrane.prefab"
+ATLANTIS_PREFAB = "Assets/_Prefabs/Spawnables/SpawnableAtlantis Tandava.prefab"
 
 # The donor scene (Brood Rush): the other swarm-of-fauna arena, same HasEndGame shape (results through a ClientRpc),
 # same single cell, same AI-backfill initializer.
@@ -136,14 +144,22 @@ for k, v in DONOR.items():
 # ═════════════════════════════════════════════════════════════════════════════
 # THE NUMBERS (the harness's - TandavaHarness.cs; every one is read back below)
 # ═════════════════════════════════════════════════════════════════════════════
-MEMBRANE_RADIUS = 1200.0         # CapsuleMembrane: the standard cell, CLOSED - the membrane is the creature's wall
-NUCLEUS_RADIUS = 392.0           # the standard nucleus prefab, unscaled: fauna eat nothing inside it
+# The prompter's third pass (2026-10-06): "make the cell smaller, its too big; more types of floras, cramped up; an
+# environment, from Scurry intensity 4". So: the CapsuleMembrane at two thirds, the Scurry cell's half-size core, a reef of
+# seven flora forks packed through the band, and Crystal Capture's intensity-4 world (Atlantis) thinned to fit round them.
+MEMBRANE_RADIUS = 800.0          # TandavaMembrane (CapsuleMembrane, radius 800): CLOSED - the membrane is the creature's wall
+NUCLEUS_RADIUS = 196.0           # HalfNucleus, the Scurry cell's core: fauna eat nothing inside it
 BODY_REACH = 160.0               # the longest body's half-length: its centre roams the membrane less this
 ROAM_RADIUS = MEMBRANE_RADIUS * 0.97 - BODY_REACH   # the swarm's own member clamp is 0.97 of the membrane
-HATCH = (-650.0, 0.0, 0.0)       # it hatches whole, facing +x, across the cell from the pilots
-PLANT_INNER, PLANT_OUTER = 470.0, 1060.0   # the flora band: clear of the nucleus, inside the wall
-MASS_PLANTS, SPACE_PLANTS = 12, 4
-PRISMS_PER_PLANT = 60            # MaxTotalSpawnedObjectsOverride: a meal is most of a plant, and a plant regrows
+HATCH = (-430.0, 0.0, 0.0)       # it hatches whole, facing +x, across the cell from the pilots
+PLANT_INNER, PLANT_OUTER = 240.0, 720.0    # the flora band: clear of the nucleus, inside the wall
+# the reef: (species, element as a research index, how many, prisms a plant may grow). The Mass species carry the food
+# (each plant 2,000-4,400 volume - about half a meal or most of one); the Space ones are colour and a snack. Every row is
+# the harness's TandavaArena.Flora (read back below), its leaf volume read off the canonical config
+FLORA_TABLE = [("Borromean", 1, 5, 60), ("Coral", 1, 5, 110), ("Lantern", 1, 4, 70), ("Reed", 1, 4, 130),
+               ("Frond", 1, 3, 120), ("Tendril", 2, 3, 84), ("Coral", 2, 3, 140)]
+# the environment: Atlantis at this share of its prisms (~69k at 1) - the reef, the creature and the pilots share the frame
+ATLANTIS_DENSITY, ATLANTIS_SEED = 0.3, 62
 
 # The swarm (TandavaSwarmFaunaConfig)
 DENSITY = 3                      # PlanDensity: every plan unit is three tadpoles in game
@@ -152,6 +168,8 @@ BITERS_PER_STEP = 8              # the harness's 2026-10-06 sweep: 2 left a feed
 CRUISE = 3.0                     # voxels/step: 3 x UnitScale 2 x 10 Hz = 60 u/s calm; x the director's mood levers
 TURN_PER_STEP = 0.03
 SORT_TURN_CARRY = 1.0            # the body turns as one piece (harness T3: 93% of its shape round a fleeing turn, 18% without)
+# a form change READS in about a second (harness T16: 1.0 s to 60% coverage, 3.5 s at the research's member speeds)
+SORT_VMAX_SCALE, SORT_WELL_CLIP = 3.0, 1.0
 SORT_LAY_RATE, SORT_LAY_MAX = 0.084, 8
 KILL_LAY_HOLD_SECONDS = 0.0      # a cut never stops it regrowing - only feeding does (the director's hold)
 SORT_LAY_RAMP_SECONDS = 1.5      # a cut limb is back in about a second (harness T4)
@@ -173,7 +191,7 @@ MACRO_LOD = 0
 
 # The economy (TandavaHarness.BuildForms)
 FILL_TO_EVOLVE = 0.9
-BANK_SHARE = [0.35, 0.6, 0.0, 0.85]   # of the stomach, RISING: a carried-over stomach never skips a form
+BANK_SHARE = [0.15, 0.28, 0.0, 0.4]   # of the stomach, RISING: a carried-over stomach never skips a form; low: the forms come fast
 MEAL_VOLUME = 4000.0
 
 # The halo and the end conditions
@@ -184,7 +202,7 @@ HALO_POINTS = 25                       # TandavaScoringRuleSO.haloPoints: a ring
 BREAK_PERCENT = 35                     # EndConditionOverridesSO.DefaultTandavaBreakPercent (asserted): the shatter
 
 # Pilots line up across the cell from the hatch, facing it (Y -90 deg)
-SPAWN_X = 950.0
+SPAWN_X = 600.0
 SPAWN_Z = [-90.0, -30.0, 30.0, 90.0]
 SPAWN_ROT = (0.0, -0.7071068, 0.0, 0.7071068)
 
@@ -227,8 +245,18 @@ def leaf_volume(path):
     return lx * ly * lz
 
 
-MASS_LEAF = leaf_volume(CANON_FLORA["Mass"])
-SPACE_LEAF = leaf_volume(CANON_FLORA["Space"])
+def canon_flora(species, element):
+    return f"Assets/_SO_Assets/Lifeforms/{species} Flora {ELEMENT_NAME[element]}.asset"
+
+
+FLORA = [dict(species=sp, element=el, count=n, prisms=pr, path=canon_flora(sp, el), leaf=leaf_volume(canon_flora(sp, el)),
+              name=f"Tandava {sp} Flora {ELEMENT_NAME[el]} Config Data",
+              key="FloraMass" if (sp, el) == ("Borromean", 1) else f"Flora{sp}{ELEMENT_NAME[el]}")
+         for sp, el, n, pr in FLORA_TABLE]
+for f in FLORA:
+    EXISTING[f"Canon{f['key']}"] = lib.existing_guid(f["path"])
+    G_ASSET.setdefault(f["key"], guid(f"asset/Tandava{f['key']}"))
+MASS_LEAF = leaf_volume(canon_flora("Borromean", 1))   # the food survey's fallback when a plant reports no leaf
 
 
 def variants_of(form):
@@ -264,9 +292,10 @@ HALO_RADIUS, GUARD_POST_RADIUS = _ring["radius"] * WORLD, _ring["guardOrbit"] * 
 HALO_OFFSET = max(math.sqrt(sum(x * x for x in v["halo"])) for v in FORM_ROWS[2]["variants"])
 DANCE_REACH_NEEDED = GUARD_POST_RADIUS + GUARD_RADIUS + HALO_OFFSET
 
-PLANT_VOLUME = PRISMS_PER_PLANT * MASS_LEAF
-FOREST_PRISMS = (MASS_PLANTS + SPACE_PLANTS) * PRISMS_PER_PLANT
-FOREST_VOLUME = PRISMS_PER_PLANT * (MASS_PLANTS * MASS_LEAF + SPACE_PLANTS * SPACE_LEAF)
+PLANT_VOLUME = max(f["prisms"] * f["leaf"] for f in FLORA)    # the biggest plant: a meal is most of one
+PLANTS = sum(f["count"] for f in FLORA)
+FOREST_PRISMS = sum(f["count"] * f["prisms"] for f in FLORA)
+FOREST_VOLUME = sum(f["count"] * f["prisms"] * f["leaf"] for f in FLORA)
 
 
 def body_volume(plan):
@@ -278,15 +307,30 @@ def body_volume(plan):
 BIGGEST_BODY = max(body_volume(PLANS[k]) for k in PLAN_KEYS)
 
 
+# The environment is a FLOOR under the ladder: every prism counts toward Cell.LiveVolume and the count backstop, and Atlantis
+# is static mass that never grows or dies. MEASURED, not estimated: the card-art harness runs the shipped SpawnableAtlantis
+# (Tools/Build/card_art_harness) and at seed {ATLANTIS_SEED}, density {ATLANTIS_DENSITY} it lays 52,802 prisms of 742,404 volume
+# (68,320 / 958,532 at density 1 - most of its families do not scale with density: 0.15 still lays 49,407). The floor
+# carries 2% on top; an over-estimate only keeps the cell Calm, an under-estimate would park it in Frenzy and freeze the
+# reef. ATLANTIS_MEASURED_HASH guards it: change the generator, its base or its prefab and this script fails until the
+# numbers are re-measured (TANDAVA.md section 3.2 says how).
+ATLANTIS_PRISMS, ATLANTIS_VOLUME = 52802, 742404.0
+ATLANTIS_MEASURED_HASH = "60a114809a7cc613"
+ATLANTIS_SOURCES = ["Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableAtlantis.cs",
+                    "Assets/_Scripts/Controller/Environment/Spawning/CellEnvironmentSpawnableBase.cs", ATLANTIS]
+
+
 def ladder():
     rt = lambda x, st: int(math.ceil(x / st) * st)
     prisms = FOREST_PRISMS + MAX_PROXIES
     volume = FOREST_VOLUME + BIGGEST_BODY
+    floor_n, floor_v = ATLANTIS_PRISMS * 1.02, ATLANTIS_VOLUME * 1.02
     return {
-        "RestlessEnter": rt(prisms * RESTLESS_ENTER, 100), "RestlessExit": rt(prisms * RESTLESS_EXIT, 100),
-        "FrenzyEnter": rt(prisms * FRENZY_ENTER, 100), "FrenzyExit": rt(prisms * FRENZY_EXIT, 100),
-        "RestlessEnterVolume": rt(volume * RESTLESS_ENTER, 1000), "RestlessExitVolume": rt(volume * RESTLESS_EXIT, 1000),
-        "FrenzyEnterVolume": rt(volume * FRENZY_ENTER, 1000), "FrenzyExitVolume": rt(volume * FRENZY_EXIT, 1000),
+        "RestlessEnter": rt(floor_n + prisms * RESTLESS_ENTER, 100), "RestlessExit": rt(floor_n + prisms * RESTLESS_EXIT, 100),
+        "FrenzyEnter": rt(floor_n + prisms * FRENZY_ENTER, 100), "FrenzyExit": rt(floor_n + prisms * FRENZY_EXIT, 100),
+        "RestlessEnterVolume": rt(floor_v + volume * RESTLESS_ENTER, 1000),
+        "RestlessExitVolume": rt(floor_v + volume * RESTLESS_EXIT, 1000),
+        "FrenzyEnterVolume": rt(floor_v + volume * FRENZY_ENTER, 1000), "FrenzyExitVolume": rt(floor_v + volume * FRENZY_EXIT, 1000),
     }
 
 
@@ -327,6 +371,10 @@ def director_defaults():
 
 
 DIRECTOR = director_defaults()
+
+
+def director_min_food():
+    return next(v for n, v, _ in DIRECTOR if n == "MinFood")
 DIRECTOR_AUTHORED = {"RoamRadius": ROAM_RADIUS, "HaloCount": HALO_COUNT, "HaloToBreak": HALO_TO_BREAK}
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -374,12 +422,12 @@ for key, value in (("Model", 2), ("MultiDomain", MULTI_DOMAIN), ("PlanDensity", 
                    ("ForageBelow", num(FORAGE_BELOW)), ("SortWellsPerType", SORT_WELLS_PER_TYPE),
                    ("SortWellDead", num(SORT_WELL_DEAD)), ("SortLayRate", num(SORT_LAY_RATE)), ("SortLayMax", SORT_LAY_MAX),
                    ("KillLayHoldSeconds", num(KILL_LAY_HOLD_SECONDS)), ("SortLayRampSeconds", num(SORT_LAY_RAMP_SECONDS)),
-                   ("SortBodyFill", num(BODY_FILL)),
+                   ("SortBodyFill", num(BODY_FILL)), ("SortWellClip", num(SORT_WELL_CLIP)),
                    ("EggVolume", "{x: %s, y: %s, z: %s, w: %s}" % tuple(num(e) for e in EGG))):
     cfg = set_key(cfg, key, value)
 # keys the shipped sort config predates (Unity has been reading their C# defaults): written explicitly here, in
 # declaration order, because each is a Tandava decision
-for key in ("ScriptedPlans", "ScriptedPlanPeriods", "SortTurnCarry", "MaxHitMaterialisationsPerFrame",
+for key in ("ScriptedPlans", "ScriptedPlanPeriods", "SortTurnCarry", "SortVMaxScale", "MaxHitMaterialisationsPerFrame",
             "UnifiedPrismBodies", "MacroLod", "Bestiary", "HuntEnter", "LurkCalm", "LocustPhaseSeconds"):
     assert not re.search(rf"(?m)^  {key}:", cfg), f"the shipped sort config now carries '{key}' - set it, do not insert it"
 cfg = insert_after(cfg, "TimePlan",
@@ -387,7 +435,7 @@ cfg = insert_after(cfg, "TimePlan",
                    "".join(f"  - {{fileID: 4900000, guid: {G_PLAN[k]}, type: 3}}\n" for k in PLAN_KEYS) +
                    "  ScriptedPlanPeriods:\n" +
                    "".join(f"  - {PLANS[k]['frameSteps']}\n" for k in PLAN_KEYS))
-cfg = insert_after(cfg, "TurnPerStep", f"  SortTurnCarry: {num(SORT_TURN_CARRY)}\n")
+cfg = insert_after(cfg, "TurnPerStep", f"  SortTurnCarry: {num(SORT_TURN_CARRY)}\n  SortVMaxScale: {num(SORT_VMAX_SCALE)}\n")
 cfg = insert_after(cfg, "ProxyLingerSeconds",
                    f"  MaxHitMaterialisationsPerFrame: 48\n  UnifiedPrismBodies: 1\n  MacroLod: {MACRO_LOD}\n")
 cfg = insert_after(cfg, "DangerExit", "  Bestiary: 1\n  HuntEnter: 0.2\n  LurkCalm: 0.05\n  LocustPhaseSeconds: 2\n")
@@ -431,43 +479,66 @@ g.emit_asset(f"{CELL_DIR}/Tandava Swarm Fauna Config Data.asset", G_ASSET["Swarm
 """)
 
 
-def flora_fork(element, name, count):
-    """A FORK of the canonical Borromean species config: the species' own plate, quota, heart and shield byte for byte,
-    with only what a CELL owns rewritten - the name, how many, where (DISPERSED: the whole band between the nucleus and
-    the wall, spread apart, no pens) and how big a plant may get here."""
-    t = g.read(CANON_FLORA[element])
-    t = re.sub(r"(?m)^  m_Name: .*$", f"  m_Name: {name}", t, count=1)
-    for key, value in (("InitialSpawnCount", count), ("PopulationSize", count), ("MaxLivePopulation", count)):
-        t, n = re.subn(rf"(?m)^  {key}: \d+$", f"  {key}: {value}", t, count=1)
-        assert n == 1, f"{name}: {key} not found in the canonical config"
+def flora_fork(f):
+    """A FORK of a canonical species config: the species' own prefab, plate, quota, heart and shield byte for byte, with
+    only what a CELL owns rewritten - the name, how many, where (DISPERSED: the whole band between the nucleus and the
+    wall, spread apart, no pens) and how big a plant may get here. A canonical config that predates the population keys
+    (every species but Borromean) gets them written after NewPlantPeriod, where FloraConfigurationSO declares them."""
+    t = g.read(f["path"])
+    t = re.sub(r"(?m)^  m_Name: .*$", f"  m_Name: {f['name']}", t, count=1)
+    t, n = re.subn(r"(?m)^  InitialSpawnCount: \d+$", f"  InitialSpawnCount: {f['count']}", t, count=1)
+    assert n == 1, f"{f['name']}: InitialSpawnCount not found in the canonical config"
+    for key, after in (("PopulationSize", "NewPlantPeriod"), ("MaxLivePopulation", "PopulationSize")):
+        t, n = re.subn(rf"(?m)^  {key}: \d+$", f"  {key}: {f['count']}", t, count=1)
+        if n == 0:
+            t = insert_after(t, after, f"  {key}: {f['count']}\n", label=f["name"])
     t = re.sub(r"(?m)^  (PlantRadiusCellFraction(Max|Min)Override|MaxTotalSpawnedObjectsOverride|SpreadPlanting): .*\n", "", t)
     t = re.sub(r"(?m)^  PlantingPens:.*\n(?:  - .*\n|    .*\n)*", "", t)
     if not t.endswith("\n"):
         t += "\n"
     t += (f"  PlantRadiusCellFractionMaxOverride: {g5(PLANT_OUTER / MEMBRANE_RADIUS)}\n"
           f"  PlantRadiusCellFractionMinOverride: {g5(PLANT_INNER / MEMBRANE_RADIUS)}\n"
-          f"  MaxTotalSpawnedObjectsOverride: {PRISMS_PER_PLANT}\n"
+          f"  MaxTotalSpawnedObjectsOverride: {f['prisms']}\n"
           "  SpreadPlanting: 1\n")
     return t
 
 
-FLORAS = [
-    ("FloraMass", "Tandava Borromean Flora Mass Config Data", "Mass", MASS_PLANTS),
-    ("FloraSpace", "Tandava Borromean Flora Space Config Data", "Space", SPACE_PLANTS),
-]
-for key, name, element, count in FLORAS:
-    g.emit_asset(f"{CELL_DIR}/{name}.asset", G_ASSET[key], flora_fork(element, name, count))
+for f in FLORA:
+    g.emit_asset(f"{CELL_DIR}/{f['name']}.asset", G_ASSET[f["key"]], flora_fork(f))
+
+
+# the cell's wall and its world: generated COPIES of the shipped prefabs with only Tandava's fields rewritten, re-derived
+# from the source every run (the Regatta precedent: a generator-owned environment prefab per cell)
+def prefab_copy(src, name, fields, label):
+    t = g.read(src)
+    t, n = re.subn(r"(?m)^  m_Name: (?!$).*$", f"  m_Name: {name}", t, count=1)
+    assert n == 1, f"{label}: root name not found"
+    for key, value in fields:
+        t = set_key(t, key, value, label)
+    return t
+
+
+g.emit_prefab(MEMBRANE_PREFAB, G_ASSET["Membrane.prefab"],
+              prefab_copy(CAPSULE_MEMBRANE, "TandavaMembrane",
+                          # the baked animation is keyed by its radius: at 800 it would not match, so the membrane animates live
+                          (("radius", num(MEMBRANE_RADIUS)), ("animationPreset", "{fileID: 0}")), "membrane"))
+g.emit_prefab(ATLANTIS_PREFAB, G_ASSET["Atlantis.prefab"],
+              prefab_copy(ATLANTIS, "SpawnableAtlantis Tandava",
+                          (("seed", ATLANTIS_SEED), ("density", num(ATLANTIS_DENSITY))), "atlantis"))
+MEMBRANE_ROOT_FID = re.search(r"--- !u!1 &(\d+)\n", g.files[MEMBRANE_PREFAB]).group(1)
+ATLANTIS_MB_FID = re.search(r"--- !u!114 &(\d+)\n", g.files[ATLANTIS_PREFAB]).group(1)
+ATLANTIS_OUTER = float(re.search(r"(?m)^  outerRadius: ([\d.]+)$", g.files[ATLANTIS_PREFAB]).group(1))
 
 g.emit_asset(f"{CELL_DIR}/Tandava Cell Spawn Profile.asset", G_ASSET["SpawnProfile"],
              so(lib.SCRIPT_GUIDS["SpawnProfileSO"], "Tandava Cell Spawn Profile") +
              "  FloraExcludeLocalDomain: 0\n  FloraSpawnVolumeCeiling: 12000\n  FloraInitialDelaySeconds: 0\n"
              "  FloraSpawnIntervalSeconds: 0\n  FloraPopulationScale: 1\n  FloraPlantBudgetScale: 1\n"
              "  FloraPrismScale: 1\n  SupportedFloras:\n" +
-             "".join(f"  - {{fileID: 11400000, guid: {G_ASSET[k]}, type: 2}}\n" for k, *_ in FLORAS) +
+             "".join(f"  - {{fileID: 11400000, guid: {G_ASSET[f['key']]}, type: 2}}\n" for f in FLORA) +
              "  FaunaExcludeLocalDomain: 0\n  InitialFaunaSpawnWaitTime: 6\n  InitialFaunaReleaseTier: 2147483647\n"
              "  FaunaSpawnVolumeThreshold: 1\n  FaunaPopulationScale: 1\n  BaseFaunaSpawnTime: 30\n"
              "  SeedFullWaveEveryTick: 0\n  FaunaFoodFloor: 0\n  FaunaInitialDelaySeconds: 0\n"
-             "  FaunaSpawnIntervalSeconds: 0\n  HerbivoreSpawnPointCount: 3\n  HerbivoreSpawnRadius: 800\n"
+             "  FaunaSpawnIntervalSeconds: 0\n  HerbivoreSpawnPointCount: 3\n  HerbivoreSpawnRadius: 500\n"
              "  PredatorSpawnPointCount: 0\n  PredatorSpawnRadius: 900\n  SupportedFaunas:\n"
              f"  - {{fileID: 11400000, guid: {G_ASSET['SwarmSpecies']}, type: 2}}\n")
 
@@ -475,20 +546,21 @@ LADDER = ladder()
 g.emit_asset(f"{CELL_DIR}/Tandava Cell Config.asset", G_ASSET["CellConfig"],
              so(lib.SCRIPT_GUIDS["CellConfigDataSO"], "Tandava Cell Config") +
              f"""  CellName: Tandava
-  Description: A closed cell for one creature's hunt - the standard membrane, Borromean flora dispersed
-    through the cytoplasm, and nothing else. Authored by Tools/Build/author_tandava_assets.py
+  Description: A small closed cell for one creature's hunt - a membrane two thirds the standard, the Scurry
+    cell's half-size core, a cramped reef of seven flora forks, and Crystal Capture's drowned garden-city
+    (Atlantis) thinned round them. Authored by Tools/Build/author_tandava_assets.py
   Icon: {{fileID: 21300000, guid: {EXISTING['CellIcon']}, type: 3}}
   Difficulty: 2
   CellEndGameScore: 0
-  MembranePrefab: {{fileID: 346633111830028674, guid: {EXISTING['CapsuleMembrane']}, type: 3}}
-  NucleusPrefab: {{fileID: 7555898194514117247, guid: {EXISTING['Nucleus']}, type: 3}}
+  MembranePrefab: {{fileID: {MEMBRANE_ROOT_FID}, guid: {G_ASSET['Membrane.prefab']}, type: 3}}
+  NucleusPrefab: {{fileID: 7555898194514117247, guid: {EXISTING['HalfNucleus']}, type: 3}}
   CytoplasmPrefab: {{fileID: 639495419069806261, guid: {EXISTING['Cytoplasm']}, type: 3}}
   CytoplasmShardDistance: 0
   CellModifiers:
   - {{fileID: 8058406376250941529, guid: {EXISTING['ExtraOmniCrystals']}, type: 3}}
   SpawnProfile: {{fileID: 11400000, guid: {G_ASSET['SpawnProfile']}, type: 2}}
   BootDefault: 0
-  EnvironmentPrefab: {{fileID: 0}}
+  EnvironmentPrefab: {{fileID: {ATLANTIS_MB_FID}, guid: {G_ASSET['Atlantis.prefab']}, type: 3}}
   EnvironmentIntensity: 1
   SenseRadiusOverride: 0
   PetalBurnRule: 0
@@ -543,7 +615,9 @@ g.emit_asset(SETTINGS_REL, G_ASSET["TandavaSettings"],
              "  WonLine: Its body is broken. The reef keeps its turn.\n"
              "  DanceBrokenLine: The dance is broken. The reef keeps its turn.\n"
              f"  HeldOffLine: {yaml_str('Time. You held it off - the cycle is unfinished.')}\n"
+             f"  LungeLine: {yaml_str('It turns on you - its guards are out round its jaws. Hurt it and it runs.')}\n"
              "  RoamingLabel: Roaming\n  WaryLabel: Wary\n  FleeingLabel: Fleeing\n"
+             f"  LungingLabel: {yaml_str('Lunging - mind its guards')}\n"
              f"  FeedingLabel: {yaml_str('Feeding - strike the body')}\n  RisingLabel: Rising\n"
              f"  DancingLabel: {yaml_str('Dancing - break the halo')}\n  FeastLabel: the last feast\n"
              "  HaloLabel: Halo rings broken\n  DrumLabel: Drum\n  TimeLabel: Time left\n"
@@ -562,7 +636,7 @@ g.emit_asset("Assets/_SO_Assets/Games/ArcadeGameTandava.asset", G_ASSET["ArcadeG
   Description: One creature lives in this cell, and it is hungry. It hatches as a great serpent and
     eats wherever it likes - bolting when you charge it, putting its guards out round its mouth when
     it feeds. Fed, it becomes a many-headed serpent, then rises into the Lord of the Dance inside a
-    halo, then a sea lion. Shatter it, break its halo, or hold it off until time runs out. Everyone
+    halo, then a sea lion. Shatter it or break its halo before its last feast - there is no clock. Everyone
     flies together.
   IconActive: {{fileID: 21300000, guid: {EXISTING['IconActive']}, type: 3}}
   IconInactive: {{fileID: 21300000, guid: {EXISTING['IconInactive']}, type: 3}}
@@ -581,6 +655,7 @@ g.emit_asset("Assets/_SO_Assets/Games/ArcadeGameTandava.asset", G_ASSET["ArcadeG
   - It cannot heal while it eats. Strike its body then - not its head, where the guards are.
   - Hurt it badly enough at a plant and the meal is broken. Every broken meal is time it does not have.
   - A cut limb grows back from what it has eaten. Starve it and the cuts stay cut.
+  - Healthy, it turns on a pilot who comes close and lunges, its guards out. Hurt it below seven tenths and it runs instead.
   - At the dance, break nine of the twelve halo rings before the drum stops. The attendant packs guard the rings they pass.
   - The goals on the top left show its form and how close it is to the next. The cell glows gold only for the dance.
   ViewUserAction: 0
@@ -601,7 +676,8 @@ g.emit_asset("Assets/_SO_Assets/Game Toasts/GameToastConfig_Tandava.asset", G_AS
              lib.toast(134, "{0}", domain_names=0) +
              lib.toast(135, "{0}", domain_names=0) +
              lib.toast(136, "{0}", domain_names=0) +
-             lib.toast(137, "{0}", domain_names=0))
+             lib.toast(137, "{0}", domain_names=0) +
+             lib.toast(138, "{0}", domain_names=0))
 g.register_toast_config(G_ASSET["GameToastConfigTandava"])
 
 
@@ -619,7 +695,7 @@ g.emit_asset("Assets/_SO_Assets/Mode Previews/ModePreview_Tandava.asset", G_ASSE
   StructurePrefab: {{fileID: 0}}
   TrackSpawnablesByIntensity: []
   Vessel: -1
-  ObjectiveText: Shatter the creature, break its halo, or hold it off
+  ObjectiveText: Shatter the creature or break its halo
   ObjectiveMetric: 7
   ObjectiveTarget: 0
   DurationSeconds: 60
@@ -741,7 +817,28 @@ if [f["bank"] for f in eats] != sorted(f["bank"] for f in eats) or len({f["bank"
 if max(BANK_SHARE) >= 0.97:
     errors.append("a bank at or above the stomach fill at which a meal ends full could never be reached")
 if MEAL_VOLUME > PLANT_VOLUME:
-    errors.append(f"a meal ({MEAL_VOLUME:.0f}) is bigger than a whole plant ({PLANT_VOLUME:.0f})")
+    errors.append(f"a meal ({MEAL_VOLUME:.0f}) is bigger than the biggest plant ({PLANT_VOLUME:.0f})")
+for f in FLORA:
+    cap = int(re.search(r"MaxTotalSpawnedObjects: (\d+)", g.read(f["path"])).group(1))
+    if f["prisms"] > cap:
+        errors.append(f"{f['name']}: {f['prisms']} prisms a plant is past the species' own {cap}")
+    if f["prisms"] * f["leaf"] < director_min_food():
+        errors.append(f"{f['name']}: a whole plant ({f['prisms'] * f['leaf']:.0f}) is under MinFood - the creature never eats it")
+if len({f["species"] for f in FLORA}) < 5:
+    errors.append("fewer than five flora species: the reef is not varied")
+# the environment fits the cell: Atlantis's outer mass (and its currents/atolls ~25% past it) inside the wall
+if ATLANTIS_OUTER * 1.25 >= MEMBRANE_RADIUS * 0.97:
+    errors.append(f"Atlantis (outer {ATLANTIS_OUTER:.0f}, reach {ATLANTIS_OUTER * 1.25:.0f}) does not fit inside the {MEMBRANE_RADIUS:.0f} membrane")
+_h = hashlib.sha256(b"".join(open(os.path.join(ROOT, p), "rb").read() for p in ATLANTIS_SOURCES)).hexdigest()[:16]
+if _h != ATLANTIS_MEASURED_HASH or (ATLANTIS_SEED, ATLANTIS_DENSITY) != (62, 0.3):
+    errors.append(f"Atlantis changed since its prisms were measured (hash {_h}, seed {ATLANTIS_SEED}, density {ATLANTIS_DENSITY}) - "
+                  "re-measure ATLANTIS_PRISMS / ATLANTIS_VOLUME with the card-art harness")
+if not 0 < ATLANTIS_DENSITY <= 0.5:
+    errors.append(f"Atlantis density {ATLANTIS_DENSITY}: the 69k-prism world has to be thinned to share the frame")
+if "{fileID: 0}" in g.files[f"{CELL_DIR}/Tandava Cell Config.asset"].split("EnvironmentPrefab:")[1].split("\n")[0]:
+    errors.append("the cell carries no environment")
+if f"radius: {num(MEMBRANE_RADIUS)}" not in g.files[MEMBRANE_PREFAB]:
+    errors.append("the membrane prefab is not the authored radius")
 if max(v["n"] for f in FORM_ROWS for v in f["variants"]) > 1000:
     errors.append("a form over 1,000 tadpoles (round 7's per-swarm ceiling)")
 
@@ -774,7 +871,7 @@ if director["HaloCount"] != HALO_COUNT:
     errors.append(f"TandavaDirectorSettings.HaloCount {director['HaloCount']:.0f} != the authored halo {HALO_COUNT}")
 
 # the collider budget: always-on plant hearts + one swarm fully engaged (heart + body per proxy)
-colliders = MASS_PLANTS + SPACE_PLANTS + 2 * MAX_PROXIES
+colliders = PLANTS + 2 * MAX_PROXIES
 if colliders >= COLLIDER_CEILING:
     errors.append(f"{colliders} colliders >= the ceiling {COLLIDER_CEILING}")
 
@@ -787,8 +884,9 @@ SO_SRC = {
     "TandavaScoringRuleSO": g.read(SCRIPT_PATHS["TandavaScoringRuleSO"]),
 }
 for so_name, keys in (("SwarmFaunaConfigSO", ("ScriptedPlans", "ScriptedPlanPeriods", "MacroLod", "MultiDomain", "PlanDensity",
-                                              "SortTurnCarry", "KillLayHoldSeconds", "SortLayRampSeconds", "SortLayMax")),
-                      ("CellConfigDataSO", ("CytoplasmShardDistance",)),
+                                              "SortTurnCarry", "SortVMaxScale", "SortWellClip", "KillLayHoldSeconds",
+                                              "SortLayRampSeconds", "SortLayMax")),
+                      ("CellConfigDataSO", ("CytoplasmShardDistance", "EnvironmentPrefab", "EnvironmentIntensity")),
                       ("FloraConfigurationSO", ("MaxTotalSpawnedObjectsOverride", "SpreadPlanting")),
                       ("TandavaSettingsSO", ("SwarmConfig", "Forms", "Director", "AscensionPalette", "MaxNudge", "FoodPerPrism")),
                       ("TandavaScoringRuleSO", ("haloPoints",))):
@@ -843,12 +941,12 @@ for label, pattern, ours in (
         ("BodyFill", r"const float BodyFill = ([\d.]+)f;", BODY_FILL),
         ("FillToEvolve", r"const float FillToEvolve = ([\d.]+)f;", FILL_TO_EVOLVE),
         ("MealVolume", r"const float MealVolume = ([\d.]+)f;", MEAL_VOLUME),
-        ("PrismsPerPlant", r"const int PrismsPerPlant = (\d+);", PRISMS_PER_PLANT),
+        ("SortVMaxScale", r"const float SortVMaxScale = ([\d.]+)f;", SORT_VMAX_SCALE),
+        ("SortWellClip", r"const float SortWellClip = ([\d.]+)f;", SORT_WELL_CLIP),
         ("MembraneRadius", r"MembraneRadius = ([\d.]+)f;", MEMBRANE_RADIUS),
         ("NucleusRadius", r"NucleusRadius = ([\d.]+)f;", NUCLEUS_RADIUS),
         ("BodyReach", r"BodyReach = ([\d.]+)f;", BODY_REACH),
         ("PlantInner", r"PlantInner = ([\d.]+)f", PLANT_INNER), ("PlantOuter", r"PlantOuter = ([\d.]+)f;", PLANT_OUTER),
-        ("MassPlants", r"MassPlants = (\d+)", MASS_PLANTS), ("SpacePlants", r"SpacePlants = (\d+);", SPACE_PLANTS),
         ("HaloCount", r"HaloCount = (\d+)", HALO_COUNT), ("HaloToBreak", r"HaloToBreak = (\d+)", HALO_TO_BREAK),
         ("GuardMembers", r"GuardMembers = (\d+)", GUARD_MEMBERS), ("GuardRadius", r"GuardRadius = ([\d.]+)f;", GUARD_RADIUS)):
     v = h_const(pattern, label)
@@ -857,6 +955,16 @@ for label, pattern, ours in (
 v = h_const(r"Hatch = new\(([^)]*)\)", "Hatch")
 if v is not None and [float(x.strip().rstrip("f")) for x in v.split(",")] != list(HATCH):
     errors.append(f"harness Hatch ({v}) != {HATCH}")
+v = h_const(r"(?s)\(string Species, int Element, int Count, int Prisms, float Leaf\)\[\] Flora =\s*\{(.*?)\n    \};", "Flora")
+if v is not None:
+    rows = [(m[0], int(m[1]), int(m[2]), int(m[3]), float(m[4])) for m in
+            re.findall(r'\("(\w+)", (\d+), (\d+), (\d+), ([\d.]+)f\)', v)]
+    ours = [(f["species"], f["element"], f["count"], f["prisms"]) for f in FLORA]
+    if [r[:4] for r in rows] != ours:
+        errors.append(f"harness Flora {[r[:4] for r in rows]} != the authored reef {ours}")
+    for r, f in zip(rows, FLORA):
+        if abs(r[4] - f["leaf"]) > 0.01:
+            errors.append(f"harness Flora {r[0]} leaf {r[4]} != the canonical config's {f['leaf']:.3f}")
 v = h_const(r"static readonly float\[\] BankShare = \{([^}]*)\}", "BankShare")
 if v is not None and [float(x.strip().rstrip("f")) for x in v.split(",")] != BANK_SHARE:
     errors.append(f"harness BankShare {{{v.strip()}}} != {BANK_SHARE}")
@@ -882,7 +990,7 @@ if not re.search(rf"\bTandava = {MODE_ID},", g.read("Assets/_Scripts/Data/Enums/
 toasts_src = g.read("Assets/_Scripts/Data/Enums/GameToastSituation.cs")
 for name, sid in (("TandavaMatchStart", 128), ("TandavaFormTaken", 129), ("TandavaCompleted", 130), ("TandavaBroken", 131),
                   ("TandavaFeeding", 132), ("TandavaDenyHint", 133), ("TandavaMealBroken", 134), ("TandavaRising", 135),
-                  ("TandavaHaloLit", 136), ("TandavaHaloBroken", 137)):
+                  ("TandavaHaloLit", 136), ("TandavaHaloBroken", 137), ("TandavaLunge", 138)):
     if not re.search(rf"\b{name} = {sid},", toasts_src):
         errors.append(f"GameToastSituation.{name} is not {sid}")
 if not re.search(r"\bHalo = 3,", g.read("Assets/_Scripts/Data/Enums/ToySwitchSignal.cs")):
@@ -908,7 +1016,8 @@ for key, want in (("Model", "2"), ("PlanDensity", str(DENSITY)), ("MacroLod", st
                   ("StomachEggs", str(STOMACH_EGGS)), ("SeedMembers", str(SEED_MEMBERS)),
                   ("StarvationSeconds", num(STARVATION_SECONDS)), ("ShedIntervalSeconds", num(SHED_INTERVAL_SECONDS)),
                   ("ForageBelow", num(FORAGE_BELOW)), ("SortWellsPerType", str(SORT_WELLS_PER_TYPE)),
-                  ("SortWellDead", num(SORT_WELL_DEAD))):
+                  ("SortWellDead", num(SORT_WELL_DEAD)), ("SortVMaxScale", num(SORT_VMAX_SCALE)),
+                  ("SortWellClip", num(SORT_WELL_CLIP))):
     if not re.search(rf"(?m)^  {key}: {re.escape(want)}$", sw):
         errors.append(f"swarm config {key} is not {want}")
 if [x for x in re.findall(r"guid: ([0-9a-f]{32}), type: 3\}", sw.split("ScriptedPlans:")[1].split("ScriptedPlanPeriods:")[0])] \
@@ -935,7 +1044,10 @@ print("Tandava - the creature's forms (density %d, stomach %.0f, a meal %.0f, a 
 for f in FORM_ROWS:
     print(f"  {f['name']:<20} bank {f['bank']:.2f} of the stomach ({f['bank'] * STOMACH_CAPACITY:>7,.0f})  variants: " +
           ", ".join(f"{v['name']} {v['n']}" for v in f["variants"]))
+print(f"  reef: {PLANTS} plants of {len({f['species'] for f in FLORA})} species - " +
+      ", ".join(f"{f['count']} {f['species']} {ELEMENT_NAME[f['element']]} ({f['prisms']} x {f['leaf']:.1f})" for f in FLORA))
 print(f"  forest {FOREST_PRISMS} prisms, {FOREST_VOLUME:,.0f} volume; biggest body {BIGGEST_BODY:,.0f} volume; {colliders} colliders worst case")
+print(f"  environment: {ATLANTIS_PREFAB.rsplit('/', 1)[1]} (density {ATLANTIS_DENSITY}: {ATLANTIS_PRISMS:,} prisms, {ATLANTIS_VOLUME:,.0f} volume measured; outer {ATLANTIS_OUTER:.0f})")
 print("  ladder: " + ", ".join(f"{k} {v:,}" for k, v in LADDER.items()))
 print(f"  arena: membrane {MEMBRANE_RADIUS:.0f}, roam {ROAM_RADIUS:.0f}, flora {PLANT_INNER:.0f}-{PLANT_OUTER:.0f}, hatch {HATCH}, "
       f"pilots at x {SPAWN_X:.0f}")

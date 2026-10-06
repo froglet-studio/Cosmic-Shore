@@ -114,3 +114,13 @@ MonoBehaviour:
     resetOnSituation: 0
     idleSeconds: 60
     repeatWhileIdle: 1
+  - situation: 138
+    messageTemplate: '{0}'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 0
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1

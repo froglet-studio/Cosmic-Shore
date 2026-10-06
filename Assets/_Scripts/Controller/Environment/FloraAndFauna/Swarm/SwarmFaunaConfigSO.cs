@@ -190,6 +190,10 @@ namespace CosmicShore.Gameplay
                  "their own top speed, so a long body's tail strings out behind a sharp turn. Tandava's forms are 300 u " +
                  "long and turn at a fleeing creature's rate: 1 keeps the animal readable through the turn.")]
         [Range(0f, 1f)] public float SortTurnCarry = 0f;
+        [Tooltip("SORT model: x each element's top member speed (SwarmSortParams.VMax, 0.8 voxels/step - Time 2). It is " +
+                 "what paces a re-sort: a member crossing a 300 u body to its new well moves at most this fast. 1 (every " +
+                 "shipped swarm) = the research's speeds. Tandava's form changes read in about a second at 3.")]
+        [Min(0.1f)] public float SortVMaxScale = 1f;
         [Tooltip("World units: a swarm with nothing to eat in sight wanders to a fresh point in its " +
                  "band at least this far away.")]
         [Min(0f)] public float WanderReach = 300f;

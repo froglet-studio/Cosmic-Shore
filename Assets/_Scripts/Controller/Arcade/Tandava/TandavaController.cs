@@ -70,7 +70,7 @@ namespace CosmicShore.Gameplay
         int[] _picks;                  // server: the variants it drew
         SwarmFauna _swarm;
         float _lastTick = -1f, _nextFoodCheck, _nextGuardCheck, _turnStartedAt = -1f, _flashUntil;
-        int _endedForm = -1, _revision, _appliedForm = -1, _meals;
+        int _endedForm = -1, _revision, _appliedForm = -1, _meals, _lunges;
         bool _finalResultsSent, _cellPrepared, _warnedNoSwarm, _tinted;
         Vector3 _flashAt;
         readonly List<TandavaFood> _food = new();
@@ -353,7 +353,9 @@ namespace CosmicShore.Gameplay
                 if (!f || !swarm.CanEat(f)) continue;
                 _food.Add(new TandavaFood
                 {
-                    Id = f.GetInstanceID(), Position = S(f.HeartTransform.position), Volume = f.HealthBlockCount * settings.FoodPerPrism,
+                    // a bite is one leaf: a reef of seven species weighs each plant by its OWN leaf (FoodPerPrism: a plant that reports none)
+                    Id = f.GetInstanceID(), Position = S(f.HeartTransform.position),
+                    Volume = f.HealthBlockCount * (f.LeafVolume > 0f ? f.LeafVolume : settings.FoodPerPrism),
                 });
             }
         }
@@ -390,6 +392,9 @@ namespace CosmicShore.Gameplay
                         break;
                     case TandavaEventKind.FeedBegan:
                         if (_meals++ == 0) Narrate(GameToastSituation.TandavaFeeding, TandavaLine.Feeding);
+                        break;
+                    case TandavaEventKind.MoodChanged:
+                        if (e.B == (int)TandavaMood.Lunging && _lunges++ < 2) Narrate(GameToastSituation.TandavaLunge, TandavaLine.Lunge);
                         break;
                     case TandavaEventKind.FeedEnded:
                         if (e.B == (int)TandavaMealEnd.Broken) Narrate(GameToastSituation.TandavaMealBroken, TandavaLine.MealBroken);
@@ -626,6 +631,7 @@ namespace CosmicShore.Gameplay
             TandavaPhase.Dance => settings.DancingLabel,
             _ => Mood switch
             {
+                TandavaMood.Lunging => settings.LungingLabel,
                 TandavaMood.Fleeing => settings.FleeingLabel,
                 TandavaMood.Wary => settings.WaryLabel,
                 _ => settings.RoamingLabel,

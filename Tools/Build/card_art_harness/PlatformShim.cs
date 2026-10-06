@@ -151,8 +151,7 @@ namespace CosmicShore.Gameplay
     /// <c>Assets/_Scripts/Controller/Toys/PaintingStrokeToolkit.cs</c> (copied because that file is
     /// ~1,000 lines and pulls in the ScriptableObjects assembly). The driver HASHES the real file
     /// into the render manifest, so a change there invalidates every committed card.
-    /// CurlNoise is not copied: no photographed arena calls it, and if one starts to it fails the
-    /// run instead of silently photographing a curl-free world.
+    /// CurlNoise is copied verbatim too since Tandava's cell carries Atlantis (its kelp and currents curl).
     /// </summary>
     public static class PaintingStrokeToolkit
     {
@@ -185,10 +184,45 @@ namespace CosmicShore.Gameplay
             return Mathf.Lerp(y0v, y1v, fz);
         }
 
+        // VERBATIM from PaintingStrokeToolkit (Tandava's Atlantis environment curls its currents and kelp)
+        static readonly Vector3 PotB = new(31.416f, 47.853f, 12.793f);
+        static readonly Vector3 PotC = new(-19.271f, 83.155f, -57.604f);
+
+        /// <summary>
+        /// Divergence-free 3D flow field: curl of a noise vector potential Ψ. Because ∇·(∇×Ψ)=0 the
+        /// field has no sources/sinks, so integrated streamlines swirl and fill space without
+        /// spiralling into a point - exactly the turbulent, everywhere-curving motion of a Van Gogh
+        /// sky. Magnitude is O(1); scale by the desired step length at the call site.
+        /// </summary>
         public static Vector3 CurlNoise(Vector3 p, float freq, int seed)
         {
-            UnityEngine.Debug.LogError("CurlNoise reached: copy it into the card-art PlatformShim before photographing this arena");
-            return Vector3.zero;
+            Vector3 q = p * freq;
+            const float e = 0.35f; // finite-difference epsilon in noise space (smooth field → large e ok)
+
+            // Vector potential Ψ = (ψ1, ψ2, ψ3), each an independent noise field.
+            // curl = (∂ψ3/∂y − ∂ψ2/∂z, ∂ψ1/∂z − ∂ψ3/∂x, ∂ψ2/∂x − ∂ψ1/∂y)
+            float p2_z1 = ValueNoise(q + PotB + new Vector3(0, 0, e), seed);
+            float p2_z0 = ValueNoise(q + PotB - new Vector3(0, 0, e), seed);
+            float p3_y1 = ValueNoise(q + PotC + new Vector3(0, e, 0), seed);
+            float p3_y0 = ValueNoise(q + PotC - new Vector3(0, e, 0), seed);
+
+            float p3_x1 = ValueNoise(q + PotC + new Vector3(e, 0, 0), seed);
+            float p3_x0 = ValueNoise(q + PotC - new Vector3(e, 0, 0), seed);
+            float p1_z1 = ValueNoise(q + new Vector3(0, 0, e), seed);
+            float p1_z0 = ValueNoise(q - new Vector3(0, 0, e), seed);
+
+            float p2_x1 = ValueNoise(q + PotB + new Vector3(e, 0, 0), seed);
+            float p2_x0 = ValueNoise(q + PotB - new Vector3(e, 0, 0), seed);
+            float p1_y1 = ValueNoise(q + new Vector3(0, e, 0), seed);
+            float p1_y0 = ValueNoise(q - new Vector3(0, e, 0), seed);
+
+            float inv = 1f / (2f * e);
+            var curl = new Vector3(
+                (p3_y1 - p3_y0) - (p2_z1 - p2_z0),
+                (p1_z1 - p1_z0) - (p3_x1 - p3_x0),
+                (p2_x1 - p2_x0) - (p1_y1 - p1_y0)) * inv;
+
+            return curl.sqrMagnitude > 1e-8f ? curl.normalized : Vector3.up;
         }
     }
 

@@ -102,6 +102,7 @@ SOURCES = [
     f"{_MG}/SpawnableWaypointTrack.cs",
     f"{_SP}/Generators/ConcentricLayersGenerator.cs",
     f"{_MG}/SpawnableSpherene.cs",
+    f"{_MG}/SpawnableAtlantis.cs",
     f"{_AR}/Skein/SkeinCourse.cs",
     f"{_AR}/Regatta/RegattaCourse.cs",
     f"{_AR}/Racing/RaceCourseGeometry.cs",
@@ -587,6 +588,42 @@ def plant_glyph(species, root, up, size, dom, rng, rows):
                 branch(q, nd, L * 0.72, depth - 1)
         branch(root, up, size * 0.38, 3)
         return
+    if "lantern" in s:
+        # a stalk holding a globe of plates
+        top = v_add(root, v_mul(up, size * 0.75))
+        seg(root, top, leaf * 0.7)
+        for t in range(14):
+            a, b = 2 * math.pi * t / 14, math.acos(1 - 2 * (t + 0.5) / 14)
+            d = v_add(v_add(v_mul(side, math.cos(a) * math.sin(b)), v_mul(other, math.sin(a) * math.sin(b))), v_mul(up, math.cos(b)))
+            seg(v_add(top, v_mul(d, size * 0.16)), v_add(top, v_mul(d, size * 0.24)), leaf * 1.1)
+        return
+    if "reed" in s:
+        # a tuft of tall thin stalks
+        for k in range(7):
+            lean = v_norm(v_add(up, v_add(v_mul(side, rng.range(-0.25, 0.25)), v_mul(other, rng.range(-0.25, 0.25)))))
+            base = v_add(root, v_add(v_mul(side, rng.range(-0.08, 0.08) * size), v_mul(other, rng.range(-0.08, 0.08) * size)))
+            seg(base, v_add(base, v_mul(lean, size * rng.range(0.7, 1.05))), leaf * 0.45)
+        return
+    if "frond" in s:
+        # a fan of long pinnate leaves from one crown
+        for k in range(6):
+            a = math.pi * (0.15 + 0.7 * k / 5)
+            d = v_norm(v_add(v_mul(up, math.sin(a)), v_mul(side, math.cos(a))))
+            q = v_add(root, v_mul(d, size * 0.8))
+            seg(root, q, leaf * 0.5)
+            for j in range(1, 4):
+                m = v_add(root, v_mul(d, size * 0.8 * j / 4))
+                seg(m, v_add(m, v_mul(other, size * 0.12)), leaf * 0.4)
+        return
+    if "tendril" in s:
+        # one curling helix
+        prev = root
+        for k in range(1, 16):
+            t = k / 15
+            q = v_add(root, v_add(v_mul(up, size * t), v_add(v_mul(side, math.cos(t * 9) * size * 0.18 * t), v_mul(other, math.sin(t * 9) * size * 0.18 * t))))
+            seg(prev, q, leaf * 0.5)
+            prev = q
+        return
     # cactus (and anything unrecognised): a trunk with elbowed arms
     top = v_add(root, v_mul(up, size))
     seg(root, top, leaf * 1.3)
@@ -714,7 +751,7 @@ def recipe(stem, card_path, pal, ends):
                        "rim": [c * 1.4 for c in colour], "emissive": [c * 0.8 for c in colour], "unbound": True})
 
     s = stem
-    if env is not None:
+    if env is not None and s != "Tandava":   # Tandava draws its creature and reef OVER its environment (below)
         tier = "RUN"
         layers.append(generator_node(env))
         if s == "Regatta":
@@ -898,14 +935,17 @@ def recipe(stem, card_path, pal, ends):
         stage["radius"] = nuc * 1.3
         stage["centre"] = [0, 0, 0]
     elif s == "Tandava":
-        # MODEL tier. The cell is CLOSED and its flora DISPERSED: the planting is the cell's own two forks drawn as
-        # ModePreviewPlantingModel draws them (each fork's count, volume-uniform radii in its band), each plant a
-        # Borromean glyph. The creature is the Great Serpent FEEDING - the mode's moment, and the one a pilot strikes:
+        # RUN tier for the world, MODEL for what lives in it. The cell's environment (Crystal Capture's Atlantis,
+        # thinned) is its real generator; the cell is CLOSED and its reef DISPERSED: the planting is the cell's own seven
+        # forks drawn as ModePreviewPlantingModel draws them (each fork's count, volume-uniform radii in its band), each
+        # plant its species' glyph. The creature is the Great Serpent FEEDING - the mode's moment, and the one a pilot strikes:
         # its OWN feed-twin plan (frame 0 of SwarmPlan_tandava_great_serpent_1_feed.json), unit for unit at 2.2x its
         # world size so the body reads at card size, its mouth on a plant and its plates out round the mouth as DANGER
         # guards, in the cell's hostile colour. The membrane wears the cell's OWN colours: Tandava's cell changes only
         # for the dance (TANDAVA.md §3.3).
-        tier = "MODEL"
+        tier = "RUN" if env is not None else "MODEL"
+        if env is not None:
+            layers.append(generator_node(env))
         rng = Rng(stable_seed(s))
         rows, plants = [], []
         for cfg_name, prefab, count, (inner, outer) in flora_species(facts):
@@ -914,7 +954,7 @@ def recipe(stem, card_path, pal, ends):
                 u = rng.unit()
                 pos = v_mul(u, rng.range(i3, o3) ** (1 / 3))
                 plants.append(pos)
-                plant_glyph(prefab, pos, u, 95 * rng.range(0.8, 1.2), GOLD if "Space" in cfg_name else JADE, rng, rows)
+                plant_glyph(prefab, pos, u, 70 * rng.range(0.8, 1.2), GOLD if "Space" in cfg_name else JADE, rng, rows)
         plan = json.loads(read(ROOT / "Assets/_SO_Assets/Swarm Fauna/Tandava/SwarmPlan_tandava_great_serpent_1_feed.json"))
         k_world = 2.0 * 3 ** (1 / 3) * 2.2   # UnitScale 2 x cbrt(PlanDensity 3) x 2.2
         meal = min(plants, key=lambda p: abs(v_dot(v_norm(p), [0, 1, 0])))   # the plant nearest the equator
@@ -936,8 +976,9 @@ def recipe(stem, card_path, pal, ends):
         layers.append({"kind": "prisms", "rows": rows})
         nucleus()
         body = v_add(centre, v_mul(fwd, -80.0))
-        cam["target"] = v_mul(v_add(body, meal), 0.5)
-        cam["radius"] = 400.0
+        # between the feeding serpent and the world-tree it hunts round: the reef and Atlantis share the shot
+        cam["target"] = v_mul(v_add(body, meal), 0.32)
+        cam["radius"] = 560.0
         stage.update({"centre": body, "radius": 260.0,
                       "vessels": [{"domain": JADE, "r": 0.9, "tilt": 12, "a0": 150, "sweep": 55, "yaw": 0},
                                   {"domain": JADE, "r": 1.3, "tilt": -18, "a0": 200, "sweep": 45, "yaw": 20},

@@ -24,6 +24,17 @@ reasons, each answered here:
 | 7. faster, and its speed and behaviour set by the threat | calm 60 u/s, wary 90, fleeing 126 (T3, T8), the turn up to 2.5x, the whole body carried round the turn (93% of its shape kept vs 18%) |
 | 8. the artifact | the playable lab, rebuilt for this design (§4.1) |
 
+**The third pass (2026-10-06)** answered six more notes:
+
+| The prompter's note | What changed |
+|---|---|
+| remove the timer: there should not be any timer | `TandavaDirectorSettings.MatchSeconds` is 0 - no clock, no "Time left" row; the hunt ends when the creature is broken or its cycle is complete (`HeldOff` stays in the enum, unreachable) |
+| make it more aggressive | a HEALTHY creature (body at 70%+ of its form) turns on a pilot within 380 u and LUNGES - its feed pose's guard plates out round its jaws, 144 u/s, turning 3x - for up to 3.5 s; only a HURT one flees (§3.3, harness T8) |
+| make the cell smaller, it is too big | the membrane at 800 u (the standard is 1,200) with the Scurry cell's half-size core (196 u) |
+| more types of flora, cramped up | 27 plants of six species in the band 240-720 u: Borromean, Coral, Lantern, Reed and Frond (Mass) and Tendril and Coral (Space) |
+| an environment, from Scurry intensity 4 | Crystal Capture's intensity-4 world, `SpawnableAtlantis`, on the cell config (seed 62, density 0.3: 52,802 prisms) |
+| form changes should be faster | lower banks (0.15 / 0.28 / 0.4 of the stomach): unopposed it finishes in about 170 s, its first change at 34-51 s; the rise 5 s; the re-sort itself 1.0 s instead of 3.5 s (`SortVMaxScale` 3, `SortWellClip` 1 - harness T16) |
+
 ## 1. The pitch
 
 One creature lives in this cell, and it is hungry. It hatches as a **Great Serpent** and goes where it likes to eat,
@@ -42,8 +53,9 @@ Every form, once taken, is **remembered**: cut limbs grow back from what it has 
 and by striking it when it cannot heal:
 - **shatter it**: cut its body below 35% of its form (the shatter threshold, `EndConditionOverrides`);
 - **break the dance**: break nine of the twelve halo rings before the drum stops, past the attendants;
-- **hold it off**: the cycle must complete within seven minutes of the go;
 - or wipe it out, or starve it to pieces.
+
+There is no clock: hunt it until one of those happens, or its last feast does.
 
 They lose when the Sea Lion's last feast is eaten. Only the mode carries the name; the forms, the narrator and every UI
 string use plain English names.
@@ -91,18 +103,32 @@ lineage and LOD suites all pass):
 and three readouts: `SwarmFauna.MembersLost` (monotone, every death), `SampleMemberPositions` (where an effect is thrown
 from) and `LifeForm.HealthBlockCount` (a plant's live prisms: what is left to eat).
 
-### 3.2 The closed cell and its food
+### 3.2 The closed cell, its reef and its world
 
-The standard membrane (`CapsuleMembrane`, radius 1,200) is the creature's wall: the swarm's own member clamp holds every
-member inside 0.97 of it, and the director keeps the body's centre within 1,004 u of the cell's centre (the membrane less
-the longest body's half-length). The nucleus (radius 392) is glass the creature swims through; fauna eat nothing inside
-it. Pilots spawn on a line across the cell from the hatch (x = 950, facing it); the creature hatches at x = -650.
+The wall is `TandavaMembrane` - a generated copy of `CapsuleMembrane` at radius 800 (the standard is 1,200; its baked
+animation is keyed by radius, so this one animates live): the swarm's own member clamp holds every member inside 0.97 of
+it, and the director keeps the body's centre within 616 u of the cell's centre (the membrane less the longest body's
+half-length). The nucleus is the Scurry cell's `HalfNucleus` (radius 196): glass the creature swims through; fauna eat
+nothing inside it. Pilots spawn on a line across the cell from the hatch (x = 600, facing it); the creature hatches at
+x = -430.
 
-The flora is two forks of the canonical Borromean configs, **dispersed**: 12 Mass and 4 Space plants, spread apart
-(`SpreadPlanting`) through the band 470-1,060 u from the centre, each capped at 60 prisms (4,372 volume - a meal is most
-of one). A plant regrows when it is left alone and dies when it is eaten down to 4 prisms; the cell's seeder replants it
-elsewhere. The director surveys every plant the swarm can eat (`SwarmFauna.CanEat`, the one edibility predicate) twice a
-second and weighs it by its live prisms.
+**The reef** is seven forks of six canonical species, **dispersed and crowded**: 27 plants spread apart (`SpreadPlanting`)
+through the band 240-720 u - five Borromean (60 prisms), five Coral (110), four Lantern (70), four Reed (130) and three
+Frond (120) in Mass, carrying the food (2,200-4,400 volume a plant, half a meal to most of one), and three Tendril (84) and
+three Coral (140) in Space, colour and a snack. A plant regrows when it is left alone and dies when it is eaten down to 4
+prisms; the cell's seeder replants it elsewhere. The director surveys every plant the swarm can eat (`SwarmFauna.CanEat`,
+the one edibility predicate) twice a second and weighs it by its live prisms times its OWN leaf (`Flora.LeafVolume`: a
+Borromean leaf is 73 volume, a Coral one 25, a Reed one 17).
+
+**The world** is Crystal Capture's intensity-4 environment, `SpawnableAtlantis` - the drowned garden-city: world-tree,
+terraces, reef mounds, kelp, the Mobius causeway, atolls and curl currents - as a generated copy on the cell config
+(`EnvironmentPrefab`; seed 62, density 0.3), out to about 540 u and inside the wall. Measured by the card-art harness,
+which runs the shipped generator: **52,802 prisms of 742,404 volume** (most of its families do not scale with density:
+68,320 at 1, 49,407 at 0.15), 258 of them danger thorns and 48 super-shielded heartwood. Its mass is static, so it is a
+FLOOR under the cell's phase ladder (the ladder adds the reef's and the body's mass on top, x1.02): a ladder that ignored
+it would park the cell in Frenzy and freeze the reef. The generator carries the measurement with a hash of the three
+sources it came from (`SpawnableAtlantis.cs`, `CellEnvironmentSpawnableBase.cs`, the prefab) and fails when any changes:
+re-measure by running the card-art harness on the Tandava card with a prism and volume sum on the generator layer.
 
 **Where it eats** (`TandavaDirectorCore.ChooseFood`): score = sqrt(food) x safety / (distance + 300), where every pilot
 within about 350 u of a plant spoils it (by half when the creature is calm, by 90% when it is wary). The plant it is
@@ -120,12 +146,16 @@ THREAT (0..1) is the larger of two readings, smoothed (rising in 0.25 s, falling
 |---|---|---|---|---|
 | Calm | below 0.2 | 1.0 - **60 u/s** | 1.0 | the best plant, a plant spoiled by half by a nearby pilot |
 | Wary | 0.3 | 1.5 - **90 u/s** | 1.6 | hurries, and avoids plants near pilots (spoiled by 90%) |
-| Fleeing | 0.65 (out below 0.4, at least 4 s) | 2.1 - **126 u/s** | 2.5 | bolts AWAY from the pilots, weighted by how near each is; cornered at the wall, it runs along it |
-| Feeding | - | 0.5 (it holds station) | 1.0 | see §3.4. It does not bolt from pilots it merely sees: its guards are out |
+| **Lunging** | 0.25, HEALTHY (body 70%+ of its form), a pilot within 380 u, 2.5 s since the last | 2.4 - **144 u/s** | 3.0 | turns on the nearest pilot and charges it JAWS first, wearing its feed pose - the guard plates out round its mouth are the weapon (a pilot who touches one is stung and slowed). Aimed 0.35 s ahead of the pilot; it ends when the jaws are within 40 u, after 3.5 s, or when the pilot is out of reach |
+| Fleeing | 0.65 (out below 0.4, at least 4 s), only HURT (body under 70%) | 2.1 - **126 u/s** | 2.5 | bolts AWAY from the pilots, weighted by how near each is; cornered at the wall, it runs along it |
+| Feeding | - | 0.5 (it holds station) | 1.0 | see §3.4. It neither lunges nor bolts from pilots it merely sees: its guards are out |
 
-Harness T8: a pilot charging from 800 u at 130 u/s turned it wary at 4.0 s and sent it bolting at 5.2 s, always away,
-at up to 126 u/s; alone again it calmed in 3.6 s. A Sparrow (top 135 u/s) can just keep up with a bolting creature; a
-Squirrel or a Rhino can catch it.
+So a healthy creature is aggressive and a hurt one runs - the pilots' first job is to take it under 70% so it stops
+coming at them, and the broken meal still sends even a healthy one bolting.
+
+Harness T8: healthy, a pilot coming in to 200 u was lunged at, its jaws always aimed at the pilot, at up to 143 u/s, and
+it never fled; hurt (40% cut, nothing to regrow from), the same pilot sent it bolting, always away, and alone again it
+calmed in 1.7 s. A Sparrow (top 135 u/s) cannot outrun a lunge; a Squirrel or a Rhino can.
 
 ### 3.4 Feeding: the guards, and the one time it cannot heal
 
@@ -158,29 +188,31 @@ food, and food is evolution. A form moves on when its body is at 90% of its full
 
 | Form | Bank (share of the stomach, 35,903 volume at 500 eggs) |
 |---|---|
-| Great Serpent | 0.35 (12,566) |
-| Many-Headed Serpent | 0.60 (21,542) - the dance's offering |
+| Great Serpent | 0.15 (5,385) |
+| Many-Headed Serpent | 0.28 (10,053) - the dance's offering |
 | Lord of the Dance | none: the drum decides |
-| Sea Lion | 0.85 (30,517) - the last feast, which completes the cycle |
+| Sea Lion | 0.40 (14,361) - the last feast, which completes the cycle |
+
+The banks are low on purpose (the third pass: "form changes should be faster"): about two meals a form.
 
 The banks RISE, so what one form carries over never skips the next, and all sit under the 0.98 stomach fill at which a
 meal ends full (a full stomach stops grazing: a bank above it could never be reached - the harness's first tuning hit
 exactly that deadlock). A form is never taken mid-meal.
 
 A creature with an empty stomach cannot heal. That is the pilots' long game: break its meals and its cuts stay cut (T11:
-every meal struck from 25 s in, it was shattered at 123 s, never reaching the dance).
+every meal struck from 25 s in, it was shattered at 103 s, never reaching the dance).
 
 ### 3.6 The ascension: rising in place, the halo, the drum
 
 When the Many-Headed Serpent is banked it **rises where it stands** into the Lord of the Dance (pulled in from the wall
-only as far as the halo needs: `DanceReach` 250 u). The figure assembles for 12 s (`RiseSeconds`), then the **halo** of
+only as far as the halo needs: `DanceReach` 250 u). The figure assembles for 5 s (`RiseSeconds`), then the **halo** of
 twelve `TandavaHaloRing` switch rings lights round it, 167 u in radius, 88 u apart, each with a 24 u mouth, in the
 plane the figure stands in. The four attendant packs patrol at 202 u. A ring is **guarded** while six or more
 attendants (Time members) are within 40 u of its guard post, and a guarded ring dims and cannot be broken (the switch
 law: drawn smaller than its trigger is legal, drawn larger is the lie). Threading an open ring breaks it, scoring the
 pilot (`IRoundStats.SwitchesThreaded`, 25 points) and throwing gold where it stood. Break nine before the 30 s drum stops
 and the dance is broken (the figure falls back into the serpent it rose from - a molt, never a kill); otherwise, when
-the drum stops, it is the Sea Lion. Harness T12: the halo lit 12.0 s after the rise; nobody threading, the Sea Lion
+the drum stops, it is the Sea Lion. Harness T12: the halo lit 5.1 s after the rise; nobody threading, the Sea Lion
 came at the drum's end; threading a ring every 1.5 s broke the dance (10 tries, one held by the attendants); the packs
 guard about a fifth of the halo at any moment.
 
@@ -196,7 +228,7 @@ with `GoalEntry.Progress` - a value the mode words over a hairline it fills). It
 |---|---|---|
 | 1 (primary) | the variant's name ("Seven-Headed Serpent") and its progress to the next form, "62%" over a bar; the Sea Lion's reads "Sea Lion - the last feast" | "Halo rings broken 4/9" |
 | 2 | what it is doing - Roaming / Wary / Fleeing / **Feeding - strike the body** / Rising - and its body, "Body 86%", over a bar | "Dancing - break the halo", its body |
-| 3 | "Time left 4:12" | "Drum 0:12" |
+| 3 | - (there is no clock) | "Drum 0:12" |
 
 Every form change bumps the source's `Revision`, and the stack flares its primary row the first time it draws a new
 revision - so a new form is a new name lighting up where the pilots already look. The narrator toasts it too, naming
@@ -222,12 +254,12 @@ the Dance until the dance ends it blooms and eases into GOLD (`TandavaSettings.A
 | `Starved` | win | the same, while its own unfed clock has run out |
 | `Wiped` | win | every member dead |
 | `DanceBroken` | win | nine halo rings broken before the drum stops |
-| `HeldOff` | win | seven minutes from the go and the cycle is not complete |
+| `HeldOff` | - | unreachable: the shipped hunt has no clock (`MatchSeconds` 0) |
 | `Completed` | lose | the Sea Lion's bank is full: the cycle is complete |
 
 A pilot's score is the members they culled (`LifeformsKilled`, attributed kills only) plus 25 per halo ring. The free
-run (nobody opposing it) completes in 211-245 s over 9-10 meals (T7), well inside the seven-minute clock: the pilots
-must take about three minutes off it - every broken meal costs it the meal, the flight and the food to regrow.
+run (nobody opposing it) completes in about 170 s over 6-9 meals (T7): with no clock to hide behind, the pilots must break
+it - every broken meal costs it the meal, the flight and the food to regrow.
 
 AI pilots hunt it (`AIPilot.SetExternalTargetProvider`): at the body led toward where it is going, spread by seat; while
 it feeds, at its body 70 u behind its centre, clear of the guards; in the dance, at the nearest open halo ring, aimed
@@ -247,34 +279,37 @@ first tick. Narration is an index into the settings' lines (`TandavaLine`), so e
 
 ## 4. What the harness proves (`bash Tools/Build/swarm_core_harness/run.sh <plans> tandava <tandava plans>`)
 
-The shipped sort core (scripted, with the levers) and the shipped director in a closed 1,200 u cell of 16 dispersed,
-regrowing plants (`TandavaHarness.cs`, header). The food model keeps the one thing `SwarmFauna.Feed` depends on -
-geometry: BitersPerStep members asked round-robin, each biting a prism within reach. Pilots are scripted policies.
+The shipped sort core (scripted, with the levers) and the shipped director in a closed 800 u cell of 27 dispersed,
+regrowing plants of six species (`TandavaHarness.cs`, header; the harness does not lay Atlantis - it is static mass the
+creature swims through and never eats). The food model keeps the one thing `SwarmFauna.Feed` depends on - geometry:
+BitersPerStep members asked round-robin, each biting a prism (its species' leaf) within reach. Pilots are scripted
+policies.
 
 | Test | What it shows |
 |---|---|
 | T1 | 21 plans; every twin is its travel plan's census; every eating plan bakes a mouth, every dance plan a halo; the forms only grow; every feed twin's plates are danger tier |
 | T2 | every Great Serpent variant hatches whole (450-507 tadpoles) and holds 93-98% of its shape 15 s later |
-| T3 | calm 61 u/s against the config's 60; x2.1 = 127 u/s; the turn carry keeps 93% of the body's shape round a hard fleeing turn (18% without) |
+| T3 | calm 61 u/s against the config's 60; x2.1 = 127 u/s; the turn carry keeps the body's shape round a hard fleeing turn |
 | T4 | a 30% tail cut regrows to 93% in 1.1 s, the same form, no self-inflicted deaths, 3,044 volume paid |
 | T5 | held, a 20% cut stays cut; let go, it regrows in 0.3 s |
 | T6 | the feed pose: every plate on the guard ring, every one a DANGER plate (and none without `PlanDanger`); the lay ease kept |
-| T7 | three free runs complete in 211-245 s, every form in order, no egg laid at a meal, never leaving the cell, rising where it stood |
-| T8 | charged: wary, then bolting away at up to 126 u/s; alone again, calm in 3.6 s |
+| T7 | three free runs complete in 169-170 s (under 200), the first change at 34-51 s, every form in order, no egg laid at a meal, never leaving the cell |
+| T8 | healthy: it lunges at a pilot, jaws aimed at it, guards out, at up to 143 u/s, never fleeing; hurt: it bolts away and never lunges; alone again, calm in 1.7 s |
 | T9 | it takes the far plant when a pilot sits by the near one |
 | T10 | a 21% cut mid-meal breaks it and it bolts; nothing laid while it ate; fed before, it regrows at once afterwards |
 | T11 | every meal broken: the pilots win (shattered at 123 s) |
-| T12 | the halo lights 12 s after the rise; the drum's end brings the Sea Lion; nine rings broken break the dance; the packs guard ~20% |
+| T12 | the halo lights 5 s after the rise; the drum's end brings the Sea Lion; nine rings broken break the dance; the packs guard ~22% |
 | T13 | 30% of its body: shattered (starved if starving); half its body fights on; none: wiped |
 | T14 | over 300 seeds every variant of every form is drawn; the draw packs into one int and is the same on every peer |
-| T15 | the clock runs out: held off |
+| T15 | no clock: the shipped settings carry `MatchSeconds` 0, and twenty minutes alone end nothing |
+| T16 | a form change READS fast: Great Serpent -> Seven-Headed at 60% coverage in 1.0 s (3.5 s at the research's member speeds) |
 
 What it is not: the game's bites are prism queries against real plants, its pilots are people and its kills are
-collisions, so the TIMES above are a model, not a measurement - QA-TANDAVA-9..14 measure them.
+collisions, so the TIMES above are a model, not a measurement - QA-TANDAVA-9..16 measure them.
 
 ### 4.1 What the playable lab flagged
 
-The Tandava Form Lab (the artifact: the 21 shipped plans, a JS port of `TandavaDirectorCore` over the harness's food
+The Tandava Form Lab (the artifact, first built for the second pass: the 21 shipped plans, a JS port of `TandavaDirectorCore` over the harness's food
 model, a simplified flock, and a click-flown dart with two autopilot wingmates) reproduces T7 - unopposed it completes
 in 210-237 s over 9-10 meals at 333-384 volume/s - and flagged three things the harness's scripted pilots never tried.
 Each is a model result to check in the Editor (QA-TANDAVA-15), not a measured defect:
@@ -289,14 +324,18 @@ Each is a model result to check in the Editor (QA-TANDAVA-15), not a measured de
   70 u/s and a tight turn, two bots took nine rings in about 9 s. If the game's `AIPilot` threads as cleanly, an all-AI
   lobby can win through the halo, against §3.9's honest limit.
 
+The lab was rebuilt for the third pass (the small cell, the reef, Atlantis, the lunge, no clock); the first flag is
+softer now that its first meal comes sooner in a crowded reef, and the lunge makes a chase from behind a riskier one.
+
 ## 5. Numbers and where they live
 
 | Number | Value | Lives in |
 |---|---|---|
-| speed, turn, the turn carry | Cruise 3 voxels/step (60 u/s), TurnPerStep 0.03, SortTurnCarry 1 | `TandavaSwarmFaunaConfig` |
+| speed, turn, the turn carry, the re-sort | Cruise 3 voxels/step (60 u/s), TurnPerStep 0.03, SortTurnCarry 1, SortVMaxScale 3, SortWellClip 1 | `TandavaSwarmFaunaConfig` |
 | regrowth | SortLayRate 0.084, SortLayMax 8 (x3), KillLayHoldSeconds 0, SortLayRampSeconds 1.5, BudAtWound | same |
 | the stomach and intake | StomachEggs 500 (35,903 volume), BitersPerStep 8, SeedMembers 180 (x3, capped at the plan: it hatches whole) | same |
-| every director dial (threat, moods, levers, food, feeding, shatter, ascension, clock) | `TandavaDirectorSettings`' C# defaults | `TandavaSettings.Director` (authored from the C# defaults and asserted) |
+| every director dial (threat, moods, the lunge, levers, food, feeding, shatter, ascension, the clock - 0) | `TandavaDirectorSettings`' C# defaults | `TandavaSettings.Director` (authored from the C# defaults and asserted) |
+| the cell, the reef, the world | membrane 800, nucleus 196, 27 plants of six species, Atlantis (seed 62, density 0.3, measured 52,802 prisms) | `author_tandava_assets.py` (FLORA_TABLE, ATLANTIS_*), the harness's `TandavaArena` (read back) |
 | the forms, variants, banks, meals, mouths, halo centres | §2, §3.5 | `TandavaSettings.Forms` |
 | the halo, the burst, the palette, the lines, the HUD words | §3.6-3.8 | `TandavaSettings` |
 | the shatter, the rings to break | 35%, 9 | `EndConditionOverrides` (`tandavaBreakPercent`, `tandavaHaloRingsToBreak`) |
@@ -309,14 +348,17 @@ defaults, in declaration order.
 | Law | Holds? |
 |---|---|
 | continuity of existence | yes: it hatches by blooming, re-sorts between forms, its gold shards fly and fade, the cell's colour eases, a client nudge is small |
-| no imposed death | yes: the director cannot kill. Starvation is the swarm's own metabolism; the shatter, the clock and a broken dance are OUTCOMES, and a broken dance molts the figure back |
+| no imposed death | yes: the director cannot kill. Starvation is the swarm's own metabolism; the shatter and a broken dance are OUTCOMES, and a broken dance molts the figure back. A lunge kills nobody: it is a charge, and the danger plates sting the pilot |
 | mass is conserved | yes: every egg is paid from eaten flora; the seed is the spawn; the gold burst is debris, not mass |
 | one colour at birth | yes: one colour, the cell's hostile controller (`MultiDomain` off: a lineage could grow members in the pilots' own colour) |
 | shielded mass is never food | yes: the swarm eats through the one edibility predicate |
-| the Cell owns the environment | yes: the flora is the cell's own forks, the tint recolours the cell's own visuals, the mode adds nothing to the arena but the halo's switch rings |
+| the Cell owns the environment | yes: the flora is the cell's own forks, Atlantis is the cell config's own `EnvironmentPrefab` (spawned by the Cell behind the load veil), the tint recolours the cell's own visuals, the mode adds nothing to the arena but the halo's switch rings |
 | endogenous selection | a stated, user-requested exception: the FORM ORDER is scripted. The swarm still grows only by eating, and a form commits only when its eating has banked it |
 
-Colliders: 16 always-on plant hearts + up to 2 x 160 proxies = 336 worst case, under the 1,200 ceiling (asserted).
+Colliders: 27 always-on plant hearts + up to 2 x 160 proxies = 347 worst case, under the 1,200 ceiling (asserted); Atlantis's
+prisms ride the LOD-cullable collider like every environment's (active count bounded by the LOD radius, not population).
+Prisms: Atlantis 52,802 + the reef 2,682 + one body of up to 642 - about Crystal Capture's intensity 4 (68,320), which is
+not yet device-profiled either (QA-TANDAVA-16 soaks it).
 
 ## 7. Files
 
@@ -332,13 +374,21 @@ Colliders: 16 always-on plant hearts + up to 2 x 160 proxies = 336 worst case, u
 | `Environment/CellVisualTint.cs` | the cell's colour transition (platform, phase A) |
 | `Environment/FloraAndFauna/Swarm/*` | the levers (§3.1) |
 | `Tools/Build/tandava_plans.py`, `Tools/Build/author_tandava_assets.py` | the plans; every asset (`--check`; `--self-test` runs the scene checks on the donor scene, where all 16 must fire) |
-| `Tools/Build/swarm_core_harness/TandavaHarness.cs` | T1-T15 |
-| `Assets/_Scenes/Multiplayer Scenes/MinigameTandava.unity` | a one-shot clone of `MinigameBroodRush`: the controller, monitor, cell and four RANDOM-hull AI templates swapped, the pilots' line at x = 950 facing the hatch. When the donor moves on, the generator keeps the committed scene and still validates it |
-| `Assets/_SO_Assets/Cell Configs/Tandava Cell/` | the cell config (the standard membrane), spawn profile, the swarm species and the two dispersed Borromean forks |
+| `Tools/Build/swarm_core_harness/TandavaHarness.cs` | T1-T16 |
+| `Assets/_Scenes/Multiplayer Scenes/MinigameTandava.unity` | a one-shot clone of `MinigameBroodRush`: the controller, monitor, cell and four RANDOM-hull AI templates swapped, the pilots' line at x = 600 facing the hatch. When the donor moves on, the generator keeps the committed scene and still validates it |
+| `Assets/_SO_Assets/Cell Configs/Tandava Cell/` | the cell config, spawn profile, the swarm species and the seven dispersed flora forks |
+| `Assets/_Prefabs/Environment/TandavaMembrane.prefab`, `Assets/_Prefabs/Spawnables/SpawnableAtlantis Tandava.prefab` | generated copies: the CapsuleMembrane at 800 u, Atlantis at seed 62 / density 0.3 |
 | `Assets/_SO_Assets/Games/ArcadeGameTandava.asset` | the arena card: Rhino, Squirrel, Sparrow; 1-6 players seated as 3 (one per hull); one domain |
-| `Assets/_Graphics/ARCADE/CardBackgrounds/Tandava.png` | the card backdrop, MODEL tier (`render_card_backgrounds.py`): the dispersed flora as Borromean glyphs, the Great Serpent FEEDING (its own feed-twin plan, its danger plates round its mouth on a plant), pilots striking the body, the cell in its own colours |
+| `Assets/_Graphics/ARCADE/CardBackgrounds/Tandava.png` | the card backdrop (`render_card_backgrounds.py`): Atlantis from its real generator (RUN tier - the card-art harness now compiles `SpawnableAtlantis` and carries `CurlNoise` verbatim), the reef as species glyphs, the Great Serpent FEEDING (its own feed-twin plan, its danger plates round its mouth on a plant), pilots striking the body |
 
 ## 8. Platform changes (and the rule each records)
+
+- **`SwarmFaunaConfigSO.SortVMaxScale`** (default 1: every shipped swarm unchanged) scales the sort core's top member speed
+  (`SwarmSortParams.VMax`), the thing that paces a re-sort. A form change that takes 3.5 s to read is a form change
+  nobody sees; at 3 (with `SortWellClip` 1) it reads in a second.
+- **`Flora.LeafVolume`** (read-only): one leaf prism's volume - what a bite of the plant is worth. A forager weighing a
+  reef of several species must weigh each by its own leaf; a single per-mode constant was right only while every plant was
+  a Borromean.
 
 - **The director's levers** (`SetLevers`, `RequestPose`, `TurnCarry`, `PlanDanger`, `TryGetSeedForm`). A mode may set
   how fast a population moves, how it turns, whether it lays, and which designed pose it wears; it still cannot move,

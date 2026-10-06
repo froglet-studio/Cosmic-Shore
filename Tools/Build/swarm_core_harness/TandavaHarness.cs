@@ -11,7 +11,7 @@
 //
 // The FOOD model keeps the one thing SwarmFauna.Feed's arithmetic depends on - GEOMETRY. Each tick BitersPerStep members
 // are asked round-robin, and a member bites only if it is within PlantRadius + BiteRadius of a plant that still has food,
-// one prism (BiteVolume) a bite. So the intake is BitersPerStep x the share of the body touching a plant - which is why
+// one prism (its species' leaf) a bite. So the intake is BitersPerStep x the share of the body touching a plant - which is why
 // the mouth matters. A plant regrows RegrowPrismsPerSecond while it has not been bitten for RegrowPause (Borromean's
 // orbit-a-period growth and its 2 s damage pause), dies at DiesAtPrisms and is replanted ReplantSeconds later somewhere
 // else (the cell's seeder). The METABOLISM is SwarmFauna's: unfed StarvationSeconds while hungry, it sheds one member
@@ -28,15 +28,26 @@ using System.Numerics;
 using System.Text.Json;
 using CosmicShore.Gameplay;
 
-/// <summary>The arena author_tandava_assets.py lays (its MEMBRANE_RADIUS, the flora band, the plant counts).</summary>
+/// <summary>The arena author_tandava_assets.py lays (its MEMBRANE_RADIUS, the flora band, the flora table).</summary>
 static class TandavaArena
 {
-    public const float MembraneRadius = 1200f;   // CapsuleMembrane: the standard cell, closed
-    public const float NucleusRadius = 392f;     // fauna eat nothing inside it
-    public const float PlantInner = 470f, PlantOuter = 1060f;   // the flora band (world, from the centre)
-    public const int MassPlants = 12, SpacePlants = 4;
+    public const float MembraneRadius = 800f;    // TandavaMembrane: the CapsuleMembrane at two thirds - a crowded hunt
+    public const float NucleusRadius = 196f;     // HalfNucleus (the Scurry cell's core): fauna eat nothing inside it
+    public const float PlantInner = 240f, PlantOuter = 720f;    // the flora band (world, from the centre)
     public const float BodyReach = 160f;          // the longest body's half-length: its centre roams the membrane less this
-    public static readonly Vector3 Hatch = new(-650f, 0f, 0f);
+    public static readonly Vector3 Hatch = new(-430f, 0f, 0f);
+    /// <summary>The cramped reef: species, element (research index), how many, prisms a plant may grow, one leaf's volume
+    /// (its canonical LeafSize - the generator reads every row back).</summary>
+    public static readonly (string Species, int Element, int Count, int Prisms, float Leaf)[] Flora =
+    {
+        ("Borromean", 1, 5, 60, 72.866f),
+        ("Coral", 1, 5, 110, 24.640f),
+        ("Lantern", 1, 4, 70, 43.740f),
+        ("Reed", 1, 4, 130, 16.796f),
+        ("Frond", 1, 3, 120, 22.964f),
+        ("Tendril", 2, 3, 84, 3.268f),
+        ("Coral", 2, 3, 140, 3.377f),
+    };
 }
 
 static class TandavaHarness
@@ -49,6 +60,8 @@ static class TandavaHarness
     const int SeedMembers = 180;          // x Density, capped at the seeded form's plan: it hatches WHOLE
     static readonly float[] EggVolume = { 20.45f, 40.31f, 22.18f, 12.8f };
     const int StomachEggs = 500;
+    const float SortVMaxScale = 3f;       // a re-sort reads in about a second (x the research's top member speed)
+    const float SortWellClip = 1f;
     static readonly float StomachCapacity = StomachEggs * Density * (20.45f + 40.31f + 22.18f + 12.8f) * 0.25f;   // SwarmFauna.StomachCapacity
     const float Cruise = 3.0f;            // voxels/step: x UnitScale 2 x 10 Hz = 60 u/s calm (126 fleeing)
     const float TurnPerStep = 0.03f;
@@ -67,12 +80,10 @@ static class TandavaHarness
     const float FillToEvolve = 0.9f;
     // the banks, as shares of the stomach - RISING, so what one form carries over never skips the next, and all under
     // the 0.98 fill at which a meal ends full (a bank above it could never be reached: a full stomach stops grazing)
-    static readonly float[] BankShare = { 0.35f, 0.6f, 0f, 0.85f };   // Great Serpent, Many-Headed (the dance's offering), -, Sea Lion (the feast)
+    static readonly float[] BankShare = { 0.15f, 0.28f, 0f, 0.4f };   // Great Serpent, Many-Headed (the dance's offering), -, Sea Lion (the feast)
     const float MealVolume = 4000f;       // one meal (flora volume): most of a 60-prism plant - about 13 s at it
 
-    // ── the food
-    const float BiteVolume = 5.60606f * 4.67172f * 2.7822f;   // one Borromean Mass leaf prism (the shipped LeafSize)
-    const int PrismsPerPlant = 60;        // MaxTotalSpawnedObjectsOverride
+    // ── the food (a bite is one prism: its species' leaf)
     const float PlantRadius = 28f, BiteRadius = 10f;
     const float RegrowPrismsPerSecond = 7.5f, RegrowPause = 2f, ReplantSeconds = 120f;
     const int DiesAtPrisms = 4;
@@ -80,6 +91,8 @@ static class TandavaHarness
     // ── the halo
     const int HaloCount = 12, HaloToBreak = 9, GuardMembers = 6, GuardElement = 3;   // Time: the attendant packs
     const float GuardRadius = 40f;
+    /// <summary>A test run's length: the hunt has no clock, so a test stops itself.</summary>
+    const float RunCap = 420f;
 
     /// <summary>Every plan, in the swarm config's ScriptedPlans order (tandava_plans.plan_keys - the generator checks).</summary>
     public static readonly string[] Keys =
@@ -182,6 +195,8 @@ static class TandavaHarness
         p.ThreatGain = 3f * MathF.Pow(Density, 2f / 3f);
         p.Membrane = TandavaArena.MembraneRadius * 0.97f / UnitScale;
         p.Cruise = Cruise; p.Turn = TurnPerStep; p.TurnCarry = SortTurnCarry;
+        p.WellClip = SortWellClip;
+        for (int e = 0; e < 4; e++) p.VMax[e] *= SortVMaxScale;   // SwarmFauna.BuildSortCore (SortVMaxScale)
         p.Over = BodyFill;
         for (int e = 0; e < 4; e++) p.EggCost[e] = EggVolume[e];
         return p;
@@ -285,7 +300,8 @@ static class TandavaHarness
 
     sealed class Plant
     {
-        public int Id, Element;
+        public int Id, Element, Prisms;
+        public float Leaf;
         public Vector3 At;
         public float Store, LastBite = -1e9f, ReplantAt;
         public bool Alive = true;
@@ -315,9 +331,10 @@ static class TandavaHarness
     {
         var rng = new Random(seed * 131 + 9);
         var plants = new List<Plant>();
-        for (int k = 0; k < TandavaArena.MassPlants + TandavaArena.SpacePlants; k++)
-            plants.Add(new Plant { Id = k, Element = k < TandavaArena.MassPlants ? 1 : 2, At = PlantSite(rng, plants),
-                                   Store = PrismsPerPlant * BiteVolume });
+        foreach (var f in TandavaArena.Flora)
+            for (int k = 0; k < f.Count; k++)
+                plants.Add(new Plant { Id = plants.Count, Element = f.Element, Prisms = f.Prisms, Leaf = f.Leaf,
+                                       At = PlantSite(rng, plants), Store = f.Prisms * f.Leaf });
         return plants;
     }
 
@@ -393,10 +410,10 @@ static class TandavaHarness
                 var at = c.Pos[i] * UnitScale;
                 foreach (var p in s.Plants)
                 {
-                    if (!p.Alive || p.Store < BiteVolume) continue;
+                    if (!p.Alive || p.Store < p.Leaf) continue;
                     if (Vector3.DistanceSquared(at, p.At) > (PlantRadius + BiteRadius) * (PlantRadius + BiteRadius)) continue;
-                    p.Store -= BiteVolume; p.LastBite = s.Now;
-                    c.Stomach[p.Element] += BiteVolume; s.Eaten += BiteVolume; bit = true;
+                    p.Store -= p.Leaf; p.LastBite = s.Now;
+                    c.Stomach[p.Element] += p.Leaf; s.Eaten += p.Leaf; bit = true;
                     break;
                 }
             }
@@ -410,12 +427,12 @@ static class TandavaHarness
             {
                 if (s.Now >= p.ReplantAt)
                 {
-                    p.Alive = true; p.At = PlantSite(s.Rng, s.Plants); p.Store = 6 * BiteVolume; p.LastBite = -1e9f; p.Id = s.NextPlantId++;
+                    p.Alive = true; p.At = PlantSite(s.Rng, s.Plants); p.Store = 6 * p.Leaf; p.LastBite = -1e9f; p.Id = s.NextPlantId++;
                 }
                 continue;
             }
-            if (s.Now - p.LastBite > RegrowPause) p.Store = MathF.Min(PrismsPerPlant * BiteVolume, p.Store + RegrowPrismsPerSecond * BiteVolume * dt);
-            if (p.Store <= DiesAtPrisms * BiteVolume) { p.Alive = false; p.ReplantAt = s.Now + ReplantSeconds; }
+            if (s.Now - p.LastBite > RegrowPause) p.Store = MathF.Min(p.Prisms * p.Leaf, p.Store + RegrowPrismsPerSecond * p.Leaf * dt);
+            if (p.Store <= DiesAtPrisms * p.Leaf) { p.Alive = false; p.ReplantAt = s.Now + ReplantSeconds; }
         }
         // the metabolism: unfed and hungry, it sheds a member every interval (the core picks who)
         var st = State(s);
@@ -451,7 +468,7 @@ static class TandavaHarness
                     float nearest = float.MaxValue;
                     for (int i = 0; i < c.Cap; i++) if (c.Active[i]) nearest = MathF.Min(nearest, Vector3.Distance(c.Pos[i] * UnitScale, pl.At));
                     var mouthW = c.Anchor * UnitScale + TandavaDirectorCore.InBody(st, d.Form.FeedMouth);
-                    Console.WriteLine($"      bare at {s.Now:F0} s: {d.Form.Name} plan {Keys[c.PlanIx]}, plant r {pl.At.Length():F0} store {pl.Store / BiteVolume:F0} prisms, " +
+                    Console.WriteLine($"      bare at {s.Now:F0} s: {d.Form.Name} plan {Keys[c.PlanIx]}, plant r {pl.At.Length():F0} store {pl.Store / pl.Leaf:F0} prisms, " +
                                       $"mouth-plant {Vector3.Distance(mouthW, pl.At):F0} u, nearest member {nearest:F0} u, goal r {d.Goal.Length():F0}, mood {d.Mood}");
                 }
             }
@@ -677,7 +694,7 @@ static class TandavaHarness
         foreach (var (picks, seed) in new[] { (new[] { 0, 0, 0, 0 }, 31), (new[] { 1, 2, 1, 2 }, 37), (new[] { 2, 1, 2, 1 }, 41) })
         {
             var s = MakeSim(b, picks, seed);
-            RunFor(s, DirectorSettings().MatchSeconds + 5f);
+            RunFor(s, RunCap);
             var d = s.D;
             string tag = string.Join("", picks);
             Console.WriteLine($"    picks {tag}: {d.Outcome} at {d.Clock:F0} s - {Timeline(s)}; {s.Meals} meals " +
@@ -685,8 +702,8 @@ static class TandavaHarness
                               $"{s.MealVolumeEaten / Math.Max(1f, s.MealSeconds):F0} volume/s a meal), max radius {s.MaxRadius:F0}, ate {s.Eaten:F0}");
             Check(d.Outcome == TandavaOutcome.Completed && s.Commits.Select(x => x.form).SequenceEqual(new[] { 1, 2, 3 }),
                   $"picks {tag}: Great Serpent -> Many-Headed -> Lord of the Dance -> Sea Lion -> the cycle completes");
-            Check(d.Clock < 0.85f * DirectorSettings().MatchSeconds,
-                  $"unopposed it completes in {d.Clock:F0} s, inside the {DirectorSettings().MatchSeconds:F0} s clock - the pilots must take time OFF it");
+            Check(d.Clock < 200f, $"unopposed it completes in {d.Clock:F0} s (< 200 s): the forms come fast, so the pilots must stop it, not wait it out");
+            Check(s.Commits.Count == 3 && s.Commits[0].t < 60f, $"its first change comes at {s.Commits[0].t:F0} s (< 60 s)");
             Check(s.LaidWhileFeeding == 0, "it never laid an egg while it ate (the hold: it cannot heal at the table)");
             Check(s.MaxRadius <= DirectorSettings().RoamRadius + 40f, $"it never left the cell (max radius {s.MaxRadius:F0} of {DirectorSettings().RoamRadius:F0})");
             if (s.RiseAt >= 0f)
@@ -695,44 +712,65 @@ static class TandavaHarness
             if (seed == 31) Dump(s.C, "free_run_end");
         }
 
-        // ── T8: threat and mood - a pilot charging it makes it wary, then bolt AWAY, faster; alone again it calms
+        // ── T8: threat and mood - HEALTHY, a pilot coming at it is LUNGED at; HURT, it bolts AWAY, faster; alone it calms
         Console.WriteLine("T8 threat and mood");
+        foreach (bool hurt in new[] { false, true })
         {
             var s = MakeSim(b, new[] { 0, 0, 0, 0 }, 43);
-            RunFor(s, 20f);
+            s.C.Stomach[1] = 0.15f * StomachCapacity;   // fed once: the test is the mood, not the hatchling
+            RunFor(s, 12f);
             var c = s.C;
-            var pilot = new Pilot { At = c.Anchor * UnitScale + Vector3.Normalize(new Vector3(0.3f, 0.2f, 1f)) * 800f };
+            if (hurt) { int cut = Cut(c, (int)(0.4f * Active(c)), c.BX); s.Lost += cut; Array.Clear(c.Stomach); s.Plants.Clear(); }   // and nothing to regrow from, nor to eat
+            var pilot = new Pilot { At = c.Anchor * UnitScale + Vector3.Normalize(new Vector3(0.3f, 0.2f, 1f)) * 600f };
             s.Pilots.Add(pilot);
-            float wary = -1f, flee = -1f, fleeSpeed = 0f; bool away = true; int awaySamples = 0;
-            for (int q = 0; q < 200 && s.D.Outcome == TandavaOutcome.Running; q++)
+            float wary = -1f, flee = -1f, lunge = -1f, fast = 0f; bool away = true, toward = true; int awaySamples = 0, towardSamples = 0; string why = null;
+            for (int q = 0; q < 150 && s.D.Outcome == TandavaOutcome.Running; q++)
             {
                 var a0 = c.Anchor;
                 Tick(s, x =>
                 {
                     var to = x.C.Anchor * UnitScale - pilot.At; float dd = to.Length();
-                    pilot.Vel = dd > 80f ? to / dd * 130f : Vector3.Zero;   // it charges, and stays on the body
+                    pilot.Vel = dd > 200f ? to / dd * 110f : Vector3.Zero;   // it comes in, and sits 200 u off the body
                 });
+                var me = c.Anchor * UnitScale;
                 if (wary < 0 && s.D.Mood >= TandavaMood.Wary) wary = s.Now;
                 if (s.D.Mood == TandavaMood.Fleeing)
                 {
                     if (flee < 0) flee = s.Now;
-                    away &= Vector3.Dot(s.D.Goal - c.Anchor * UnitScale, pilot.At - c.Anchor * UnitScale) < 0f;
-                    awaySamples++;
-                    fleeSpeed = MathF.Max(fleeSpeed, Vector3.Distance(c.Anchor, a0) * UnitScale * TickHz);
+                    away &= Vector3.Dot(s.D.Goal - me, pilot.At - me) < 0f; awaySamples++;
                 }
+                if (s.D.Mood == TandavaMood.Lunging)
+                {
+                    if (lunge < 0) lunge = s.Now;
+                    // it aims its JAWS (the feed pose's mouth) at the pilot, led by the pilot's velocity
+                    var jawsAim = s.D.Goal + TandavaDirectorCore.InBody(State(s), s.D.Form.FeedMouth);
+                    bool at = Vector3.Distance(jawsAim, pilot.At) < 80f, bared = c.PlanIx == s.D.Form.FeedPlanIndex || s.Now - lunge <= 0.3f;
+                    if ((!at || !bared) && why == null) why = $" (at {s.Now:F1} s: jaws aimed {Vector3.Distance(jawsAim, pilot.At):F0} u from it, plan {Keys[c.PlanIx]}, pilot {Vector3.Distance(pilot.At, me):F0} u off)";
+                    toward &= at && bared; towardSamples++;
+                }
+                fast = MathF.Max(fast, Vector3.Distance(c.Anchor, a0) * UnitScale * TickHz);
             }
-            Check(wary >= 0f && flee >= wary, $"charged, it turned wary at {wary:F1} s and bolted at {flee:F1} s");
-            Check(away && awaySamples > 0, "fleeing, it always aims AWAY from the pilot");
-            Check(fleeSpeed >= 1.6f * Cruise * UnitScale * TickHz, $"fleeing, it swims at up to {fleeSpeed:F0} u/s");
-            float left = s.Now;
-            pilot.Vel = Vector3.Zero; pilot.At = new Vector3(5000f, 0f, 0f);   // the pilot goes away
-            float calm = -1f;
-            for (int q = 0; q < 300 && calm < 0f && s.D.Outcome == TandavaOutcome.Running; q++)
+            if (!hurt)
             {
-                Tick(s);
-                if (s.D.Mood == TandavaMood.Calm) calm = s.Now - left;
+                Check(lunge >= 0f && towardSamples > 0 && toward, $"healthy, it LUNGED at the pilot at {lunge:F1} s, guards out, jaws always aimed at it{why}");
+                Check(fast >= 2f * Cruise * UnitScale * TickHz, $"lunging, it swims at up to {fast:F0} u/s");
+                Check(flee < 0f, "and it never fled");
             }
-            Check(calm >= 0f && calm < 20f, $"alone again, it calmed in {calm:F1} s");
+            else
+            {
+                Check(flee >= 0f && awaySamples > 0 && away, $"hurt (40% cut), it bolted at {flee:F1} s, always AWAY from the pilot");
+                Check(lunge < 0f, "hurt, it never lunged");
+                Check(fast >= 1.6f * Cruise * UnitScale * TickHz, $"fleeing, it swims at up to {fast:F0} u/s");
+                float left = s.Now;
+                pilot.Vel = Vector3.Zero; pilot.At = new Vector3(5000f, 0f, 0f);   // the pilot goes away
+                float calm = -1f;
+                for (int q = 0; q < 300 && calm < 0f && s.D.Outcome == TandavaOutcome.Running; q++)
+                {
+                    Tick(s);
+                    if (s.D.Mood == TandavaMood.Calm) calm = s.Now - left;
+                }
+                Check(calm >= 0f && calm < 20f, $"alone again, it calmed in {calm:F1} s");
+            }
         }
 
         // ── T9: where it chooses to eat - away from a pilot parked at a plant
@@ -742,8 +780,8 @@ static class TandavaHarness
             var st = new TandavaSwarmState { Alive = forms[0].PlanCount, Anchor = Vector3.Zero, Forward = Vector3.UnitX, Up = Vector3.UnitY, Side = Vector3.UnitZ };
             var food = new List<TandavaFood>
             {
-                new() { Id = 1, Position = new Vector3(0, 0, 600), Volume = 4000 },
-                new() { Id = 2, Position = new Vector3(0, 0, -620), Volume = 4000 },
+                new() { Id = 1, Position = new Vector3(0, 0, 400), Volume = 4000 },
+                new() { Id = 2, Position = new Vector3(0, 0, -420), Volume = 4000 },
             };
             int Pick(List<TandavaPilot> pilots)
             {
@@ -752,7 +790,7 @@ static class TandavaHarness
                 return d.TargetFood;
             }
             int alone = Pick(new List<TandavaPilot>());
-            int guarded = Pick(new List<TandavaPilot> { new() { Position = new Vector3(0, 0, 640) } });
+            int guarded = Pick(new List<TandavaPilot> { new() { Position = new Vector3(0, 0, 440) } });
             Check(alone == 1, $"alone it goes to the nearer plant (food {alone})");
             Check(guarded == 2, $"with a pilot parked by the nearer plant it goes to the far one (food {guarded})");
         }
@@ -791,12 +829,12 @@ static class TandavaHarness
             Check(Active(s.C) >= 0.9f * full, $"away from the table it regrew to 90% in {s.Now - t0:F1} s - the same form, remembered");
         }
 
-        // ── T11: denial - break every meal, and the clock runs out on it (or it starves to pieces)
+        // ── T11: denial - break every meal and it starves to pieces (there is no clock to run out)
         Console.WriteLine("T11 denial");
         {
             var s = MakeSim(b, new[] { 0, 1, 2, 0 }, 53);
             float strikeAt = -1f; int killedThisMeal = 0;
-            RunFor(s, DirectorSettings().MatchSeconds + 5f, x =>
+            RunFor(s, RunCap, x =>
             {
                 if (!x.D.Feeding || x.Now < 25f) { strikeAt = -1f; killedThisMeal = 0; return; }   // they spawn across the cell
                 if (strikeAt < 0f) strikeAt = x.Now + 3f;   // the pilots arrive three seconds into every meal
@@ -883,15 +921,33 @@ static class TandavaHarness
                   "the same seed draws the same animals (every peer agrees)");
         }
 
-        // ── T15: the clock - a cycle not completed in time is held off
-        Console.WriteLine("T15 the clock");
+        // ── T15: no clock - the hunt ends when the creature is broken or its cycle is complete, never on time
+        Console.WriteLine("T15 no clock");
         {
+            Check(DirectorSettings().MatchSeconds == 0f, "the shipped settings carry no match clock (MatchSeconds 0)");
             var forms = BuildForms(b, new[] { 0, 0, 0, 0 });
-            var s = DirectorSettings(); s.MatchSeconds = 2f;
-            var d = new TandavaDirectorCore(forms, s, 1);
+            var d = new TandavaDirectorCore(forms, DirectorSettings(), 1);
             var st = new TandavaSwarmState { Alive = forms[0].PlanCount, Anchor = Vector3.Zero, Forward = Vector3.UnitX, Up = Vector3.UnitY, Side = Vector3.UnitZ };
-            for (int q = 0; q < 25; q++) d.Tick(0.1f, st, null, null);
-            Check(d.Outcome == TandavaOutcome.HeldOff, $"the clock ran out at {d.Clock:F1} s: held off ({d.Outcome})");
+            for (int q = 0; q < 12000; q++) d.Tick(0.1f, st, null, null);
+            Check(d.Outcome == TandavaOutcome.Running && d.TimeRemaining < 0f, $"twenty minutes with nothing to eat and nobody hunting: still running ({d.Outcome})");
+        }
+
+        // ── T16: a form change READS quickly - the re-sort into the new body (SortVMaxScale, SortWellClip)
+        Console.WriteLine("T16 the form change");
+        {
+            float Reform(bool quick)
+            {
+                var c = MakeCore(b, b.Ix["great_serpent_1"], new Vector3(-300, 0, 0), 29, fed: true);
+                if (!quick) { c.C.WellClip = 0.52463809f; for (int e = 0; e < 4; e++) c.C.VMax[e] /= SortVMaxScale; }
+                Step(c, 80);
+                c.Stomach[1] = 0.9f * StomachCapacity;
+                c.RequestPlan(b.Ix["many_headed_7"]);
+                for (int t = 1; t <= 300; t++) { Step(c); if (t % 5 == 0 && Coverage(c, 3.2f) >= 0.6f) return t / TickHz; }
+                return 30f;
+            }
+            float quickT = Reform(true), slowT = Reform(false);
+            Check(quickT <= 4f && quickT < 0.6f * slowT,
+                  $"Great Serpent -> Seven-Headed: the new body reads (60% coverage) in {quickT:F1} s ({slowT:F1} s at the research's member speeds)");
         }
 
         Console.WriteLine(_fail == 0 ? "\ntandava: OK" : $"\ntandava: {_fail} FAILED");

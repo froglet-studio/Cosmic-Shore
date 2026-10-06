@@ -64,6 +64,8 @@ namespace CosmicShore.Gameplay
         Won = 9,
         DanceBroken = 10,
         HeldOff = 11,
+        /// <summary>It turned on a pilot: a lunge, its guard plates out.</summary>
+        Lunge = 12,
     }
 
     /// <summary>
@@ -164,11 +166,13 @@ namespace CosmicShore.Gameplay
         [TextArea] public string WonLine = "Its body is broken. The reef keeps its turn.";
         [TextArea] public string DanceBrokenLine = "The dance is broken. The reef keeps its turn.";
         [TextArea] public string HeldOffLine = "Time. You held it off - the cycle is unfinished.";
+        [TextArea] public string LungeLine = "It turns on you - its guards are out round its jaws. Hurt it and it runs.";
 
         [Header("HUD words (the goal rows, top left)")]
         public string RoamingLabel = "Roaming";
         public string WaryLabel = "Wary";
         public string FleeingLabel = "Fleeing";
+        public string LungingLabel = "Lunging - mind its guards";
         public string FeedingLabel = "Feeding - strike the body";
         public string RisingLabel = "Rising";
         public string DancingLabel = "Dancing - break the halo";
@@ -210,6 +214,7 @@ namespace CosmicShore.Gameplay
                 TandavaLine.Won => WonLine,
                 TandavaLine.DanceBroken => DanceBrokenLine,
                 TandavaLine.HeldOff => HeldOffLine,
+                TandavaLine.Lunge => LungeLine,
                 _ => "",
             };
             if (line == TandavaLine.Form) return (text ?? "").Replace("{0}", name ?? "");

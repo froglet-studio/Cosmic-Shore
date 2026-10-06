@@ -627,6 +627,7 @@ namespace CosmicShore.Gameplay
                 ThreatGain = 3f * Mathf.Pow(Density, 2f / 3f),
             };
             for (int e = 0; e < 4; e++) p.EggCost[e] = SwarmFaunaConfigSO.Of(config.EggVolume, SwarmFaunaConfigSO.ToElement(e));
+            if (!Mathf.Approximately(config.SortVMaxScale, 1f)) for (int e = 0; e < 4; e++) p.VMax[e] *= config.SortVMaxScale;   // Tandava: a quick re-sort
             if (TryBand(out float lo, out float hi)) { p.BandInner = lo; p.BandOuter = hi; }
             return new SwarmSortCore(_plans, p, Random.Range(1, int.MaxValue));
         }

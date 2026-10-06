@@ -171,6 +171,7 @@ namespace CosmicShore.Data
         TandavaRising = 135,            // banked, it rises into the Lord of the Dance where it stands: {0} = RisingLine
         TandavaHaloLit = 136,           // the halo lit and the drum started: {0} = HaloLitLine
         TandavaHaloBroken = 137,        // the first halo ring, and the last-but-one, broken: {0} = the line
+        TandavaLunge = 138,             // the creature turned on a pilot (its first lunges): {0} = LungeLine
 
         // END-OF-GAME LOBBY. Shared across every multiplayer mode, so 100+ rather than crowding
         // the per-mode blocks. {0} = player name, {1} = how many have asked so far, {2} = how many

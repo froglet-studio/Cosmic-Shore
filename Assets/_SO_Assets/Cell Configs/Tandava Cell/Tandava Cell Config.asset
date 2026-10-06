@@ -13,31 +13,32 @@ MonoBehaviour:
   m_Name: Tandava Cell Config
   m_EditorClassIdentifier:
   CellName: Tandava
-  Description: A closed cell for one creature's hunt - the standard membrane, Borromean flora dispersed
-    through the cytoplasm, and nothing else. Authored by Tools/Build/author_tandava_assets.py
+  Description: A small closed cell for one creature's hunt - a membrane two thirds the standard, the Scurry
+    cell's half-size core, a cramped reef of seven flora forks, and Crystal Capture's drowned garden-city
+    (Atlantis) thinned round them. Authored by Tools/Build/author_tandava_assets.py
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
   Difficulty: 2
   CellEndGameScore: 0
-  MembranePrefab: {fileID: 346633111830028674, guid: 6e330f85972faf843b8a128e7166f7b5, type: 3}
-  NucleusPrefab: {fileID: 7555898194514117247, guid: b9cf1833fa2493d4b8724ccb6740fb3a, type: 3}
+  MembranePrefab: {fileID: 346633111830028674, guid: eec690b31ed567a5f27ba0c911e59a51, type: 3}
+  NucleusPrefab: {fileID: 7555898194514117247, guid: 1d3d15a174cc41388679c1487f53bced, type: 3}
   CytoplasmPrefab: {fileID: 639495419069806261, guid: 9cacd903fcf4643459f5f14ac811bb20, type: 3}
   CytoplasmShardDistance: 0
   CellModifiers:
   - {fileID: 8058406376250941529, guid: daa37ae0e7af4b04383c1c4e6e76817d, type: 3}
   SpawnProfile: {fileID: 11400000, guid: 016d1a1998bd51290ab8cd579383defa, type: 2}
   BootDefault: 0
-  EnvironmentPrefab: {fileID: 0}
+  EnvironmentPrefab: {fileID: 4711172930391493203, guid: 5b909ab3ba4d0e2df260aab13a164e98, type: 3}
   EnvironmentIntensity: 1
   SenseRadiusOverride: 0
   PetalBurnRule: 0
   initialControllingDomain: 1
   conservedFaunaStomach: 0
   PhaseThresholds:
-    RestlessEnter: 400
-    RestlessExit: 300
-    FrenzyEnter: 2800
-    FrenzyExit: 2500
-    RestlessEnterVolume: 27000
-    RestlessExitVolume: 20000
-    FrenzyEnterVolume: 191000
-    FrenzyExitVolume: 168000
+    RestlessEnter: 54900
+    RestlessExit: 54600
+    FrenzyEnter: 61000
+    FrenzyExit: 60200
+    RestlessEnterVolume: 789000
+    RestlessExitVolume: 781000
+    FrenzyEnterVolume: 979000
+    FrenzyExitVolume: 952000

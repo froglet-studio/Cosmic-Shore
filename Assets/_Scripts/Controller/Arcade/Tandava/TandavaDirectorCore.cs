@@ -6,8 +6,10 @@
 // The creature lives in a CLOSED cell - the membrane is its wall; there is no route and no exit. It decides four things:
 //   * WHERE TO EAT - any plant in the cell, scored by food x safety / distance, with a stick bonus so it commits to one;
 //   * HOW TO MOVE - by THREAT, read from the pilots (how near they are, how fast they close) and from its own wounds (how
-//     fast it is losing members). CALM it cruises; WARY it hurries and prefers food away from the pilots; FLEEING it
-//     bolts away from them, faster and turning harder. The speed and the turn are the sort core's levers;
+//     fast it is losing members). CALM it cruises; WARY it hurries and prefers food away from the pilots. HEALTHY, it is
+//     AGGRESSIVE: a pilot that comes close is LUNGED at - it bares its guard plates and charges, faster and turning
+//     harder than it ever cruises. HURT, it FLEES: it bolts away from them. The speed and the turn are the sort core's
+//     levers;
 //   * HOW TO FEED - at the plant it settles into its FEED pose (the same members re-arranged: its plates go out to orbit
 //     its mouth as DANGER guards - the protectors) with its mouth on the plant, and it stops regrowing. That is the one
 //     time it is both dangerous to approach and unable to heal. A meal it is hurt badly enough during is BROKEN: it bolts;
@@ -38,7 +40,8 @@ namespace CosmicShore.Gameplay
         Shattered = 4,
         /// <summary>The pilots broke enough of the halo before the drum stopped.</summary>
         DanceBroken = 5,
-        /// <summary>The match clock ran out before the cycle was complete.</summary>
+        /// <summary>The match clock ran out before the cycle was complete. Unreachable at the shipped
+        /// <see cref="TandavaDirectorSettings.MatchSeconds"/> 0: the hunt has no clock (the prompter's call, 2026-10-06).</summary>
         HeldOff = 6,
     }
 
@@ -62,6 +65,8 @@ namespace CosmicShore.Gameplay
         Calm = 0,
         Wary = 1,
         Fleeing = 2,
+        /// <summary>Healthy and pressed: it turns on the nearest pilot and charges it, its guard plates out.</summary>
+        Lunging = 3,
     }
 
     /// <summary>Why a meal ended.</summary>
@@ -184,11 +189,25 @@ namespace CosmicShore.Gameplay
         /// <summary>Once it bolts it runs at least this long.</summary>
         public float FleeMinSeconds = 4f;
         /// <summary>How far ahead it aims when it bolts (world).</summary>
-        public float FleeReach = 700f;
+        public float FleeReach = 500f;
+
+        // ── aggression: a healthy creature turns on a pilot that comes close; a hurt one runs
+        /// <summary>A pilot within this of its centre can be lunged at (world).</summary>
+        public float LungeRadius = 380f;
+        /// <summary>It lunges while its body is at least this share of its form; below it, it is HURT and flees instead.</summary>
+        public float LungeBodyMin = 0.7f;
+        /// <summary>The threat at which a healthy creature lunges - well before a hurt one would bolt.</summary>
+        public float LungeEnter = 0.25f;
+        /// <summary>The longest one lunge lasts, and the breath it takes before the next.</summary>
+        public float LungeSeconds = 3.5f, LungeCooldownSeconds = 2.5f;
+        /// <summary>How far ahead of a pilot it aims: seconds of the pilot's own velocity.</summary>
+        public float LungeLead = 0.35f;
+        /// <summary>Its mouth this close to the pilot (world): it has struck, and the lunge ends.</summary>
+        public float LungeReach = 40f;
 
         // ── the levers, per mood: x the config's Cruise and TurnPerStep
-        public float CruiseCalm = 1f, CruiseWary = 1.5f, CruiseFlee = 2.1f, CruiseFeed = 0.5f;
-        public float TurnCalm = 1f, TurnWary = 1.6f, TurnFlee = 2.5f, TurnFeed = 1f;
+        public float CruiseCalm = 1f, CruiseWary = 1.5f, CruiseFlee = 2.1f, CruiseFeed = 0.5f, CruiseLunge = 2.4f;
+        public float TurnCalm = 1f, TurnWary = 1.6f, TurnFlee = 2.5f, TurnFeed = 1f, TurnLunge = 3f;
 
         // ── where to eat
         /// <summary>A pilot within about this of a plant makes it unsafe (world).</summary>
@@ -204,7 +223,7 @@ namespace CosmicShore.Gameplay
         /// <summary>A plant it left is not revisited for this long (it has to grow back).</summary>
         public float RestSeconds = 25f;
         /// <summary>With nothing to eat it wanders to a point at least this far away (world).</summary>
-        public float WanderReach = 500f;
+        public float WanderReach = 350f;
 
         // ── feeding
         /// <summary>It starts eating when its mouth is within this of the plant (world).</summary>
@@ -229,7 +248,7 @@ namespace CosmicShore.Gameplay
 
         // ── the ascension
         /// <summary>Seconds the Lord of the Dance takes to assemble before the halo lights.</summary>
-        public float RiseSeconds = 12f;
+        public float RiseSeconds = 5f;
         /// <summary>How long the drum runs: the pilots' window to break the halo.</summary>
         public float DrumSeconds = 30f;
         public int HaloCount = 12, HaloToBreak = 9;
@@ -238,8 +257,9 @@ namespace CosmicShore.Gameplay
         public float DanceReach = 250f;
 
         // ── the match
-        /// <summary>The cycle must complete within this many seconds of the go, or the pilots have held it off. 0 = no clock.</summary>
-        public float MatchSeconds = 420f;
+        /// <summary>The cycle must complete within this many seconds of the go, or the pilots have held it off. 0 = no clock -
+        /// the shipped hunt: it ends when the creature is broken or its cycle is complete, never on a timer.</summary>
+        public float MatchSeconds = 0f;
 
         /// <summary>A copy to run a match on (the game's settings asset is never written at runtime).</summary>
         public TandavaDirectorSettings Clone() => (TandavaDirectorSettings)MemberwiseClone();
@@ -303,15 +323,17 @@ namespace CosmicShore.Gameplay
         public TandavaForm Form => Forms[FormIx];
         public int FinalIx => Forms.Count - 1;
         public bool IsFinalForm => FormIx == FinalIx;
-        /// <summary>The plan the body should wear now: the form's feed twin while it eats, else its travel plan.</summary>
-        public int WantPlan => Feeding && Form.FeedPlanIndex >= 0 ? Form.FeedPlanIndex : Form.PlanIndex;
+        /// <summary>The plan the body should wear now: the form's feed twin while it eats, else its travel plan.
+        /// The feed twin is also its LUNGE pose: it charges a pilot with the guard plates out round its jaws.</summary>
+        public int WantPlan => (Feeding || Lunging) && Form.FeedPlanIndex >= 0 ? Form.FeedPlanIndex : Form.PlanIndex;
+        public bool Lunging => Mood == TandavaMood.Lunging;
         public float DrumRemaining => InDance ? MathF.Max(0f, S.DrumSeconds - DanceTime) : 0f;
         public float RiseRemaining => Phase == TandavaPhase.Rising ? MathF.Max(0f, S.RiseSeconds - (Clock - _phaseSince)) : 0f;
         public float TimeRemaining => S.MatchSeconds > 0f ? MathF.Max(0f, S.MatchSeconds - Clock) : -1f;
 
         readonly Random _rng;
         readonly Dictionary<int, float> _restUntil = new();
-        float _feedSince, _eatenAtMeal, _phaseSince, _fleeUntil = -1f, _lossRate;
+        float _feedSince, _eatenAtMeal, _phaseSince, _fleeUntil = -1f, _lossRate, _lungeUntil = -1f, _lungeReadyAt;
         int _lostAtMeal, _lostPrev = -1;
         bool _armed, _haveWander;
         Vector3 _wander;
@@ -475,10 +497,20 @@ namespace CosmicShore.Gameplay
             Threat = Math.Clamp(Threat, 0f, 1f);
 
             // the mood, with hysteresis. Feeding it does NOT bolt from pilots it merely sees - its guards are out; only a
-            // broken meal (FeedTick) sends a feeding swarm running. Dancing it stands its ground.
+            // broken meal (FeedTick) sends a feeding swarm running. Dancing it stands its ground. Roaming, a HEALTHY creature
+            // turns on a pilot that comes close (a lunge); only a HURT one bolts.
             var was = Mood; var mood = Mood;
-            bool canBolt = Phase == TandavaPhase.Roam;
+            bool roaming = Phase == TandavaPhase.Roam;
+            bool hurt = s.Alive < S.LungeBodyMin * Form.PlanCount;
+            bool canBolt = roaming && hurt;
+            float nearest = NearestPilot(s, pilots, out _);
+            bool canLunge = roaming && !hurt && Clock >= _lungeReadyAt && nearest <= S.LungeRadius;
             if (Clock < _fleeUntil) mood = TandavaMood.Fleeing;
+            else if (Mood == TandavaMood.Lunging)
+            {
+                if (!roaming || hurt || Clock >= _lungeUntil || nearest > 1.5f * S.LungeRadius) { EndLunge(); mood = Threat >= S.WaryExit ? TandavaMood.Wary : TandavaMood.Calm; }
+            }
+            else if (canLunge && Threat >= S.LungeEnter) { mood = TandavaMood.Lunging; _lungeUntil = Clock + S.LungeSeconds; }
             else switch (Mood)
             {
                 case TandavaMood.Calm:
@@ -495,6 +527,21 @@ namespace CosmicShore.Gameplay
             }
             if (mood == TandavaMood.Fleeing && was != TandavaMood.Fleeing && _fleeUntil < Clock) _fleeUntil = Clock + S.FleeMinSeconds;
             SetMood(mood);
+        }
+
+        void EndLunge() { _lungeUntil = -1f; _lungeReadyAt = Clock + S.LungeCooldownSeconds; }
+
+        /// <summary>The distance to the nearest pilot (infinity with none), and its index.</summary>
+        static float NearestPilot(in TandavaSwarmState s, IReadOnlyList<TandavaPilot> pilots, out int ix)
+        {
+            ix = -1; float best = float.PositiveInfinity;
+            if (pilots == null) return best;
+            for (int k = 0; k < pilots.Count; k++)
+            {
+                float d = Vector3.Distance(pilots[k].Position, s.Anchor);
+                if (d < best) { best = d; ix = k; }
+            }
+            return best;
         }
 
         void SetMood(TandavaMood mood)
@@ -531,6 +578,7 @@ namespace CosmicShore.Gameplay
             holdLaying = false;
             switch (mood)
             {
+                case TandavaMood.Lunging: cruise = s.CruiseLunge; turn = s.TurnLunge; break;
                 case TandavaMood.Fleeing: cruise = s.CruiseFlee; turn = s.TurnFlee; break;
                 case TandavaMood.Wary: cruise = s.CruiseWary; turn = s.TurnWary; break;
                 default: cruise = s.CruiseCalm; turn = s.TurnCalm; break;
@@ -545,6 +593,21 @@ namespace CosmicShore.Gameplay
             {
                 TargetFood = -1;
                 Goal = FleePoint(s, pilots);
+                return;
+            }
+            if (Mood == TandavaMood.Lunging && NearestPilot(s, pilots, out int prey) < float.PositiveInfinity)
+            {
+                // at the pilot, led by its own velocity, MOUTH first: the guard ring round its jaws is the weapon
+                TargetFood = -1;
+                var p = pilots[prey];
+                var aim = p.Position + p.Velocity * S.LungeLead;
+                Goal = ClampInside(aim - InBody(s, Form.FeedMouth), S.RoamRadius);
+                var jaws = s.Anchor + InBody(s, Form.FeedMouth);
+                if (Vector3.Distance(jaws, p.Position) <= S.LungeReach)
+                {
+                    EndLunge();
+                    SetMood(TandavaMood.Wary);
+                }
                 return;
             }
             int k = ChooseFood(s, food, pilots);

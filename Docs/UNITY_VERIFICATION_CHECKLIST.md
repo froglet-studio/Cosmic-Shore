@@ -4387,6 +4387,25 @@ been executed.
    thread nine rings before the drum stops. If they do, an all-AI lobby can win, and the halo wants a tighter mouth,
    more held rings or fewer open ones.
 
+### QA-TANDAVA-16 — the third pass: the small crowded cell, Atlantis, the lunge, no clock (`TANDAVA.md` §0, §3.2-3.3)
+
+1. **The cell.** The membrane reads at 800 u (the creature's body is about a third of the cell across), the half-size
+   nucleus at 196 u, Atlantis standing round the centre inside the wall, and 27 plants of six species (Borromean, Coral,
+   Lantern, Reed, Frond in the cell's Mass colour; Tendril and Coral in Space) crowded through the reef. The membrane
+   animates (it has no baked preset at this radius - watch for a stall or a pop at load).
+2. **The phase stays Calm** at the go and through the match (the ladder's floor is Atlantis's measured 52,802 prisms /
+   742,404 volume): the reef keeps regrowing after it is grazed. If the HUD or the log shows Restless or Frenzy at the go,
+   read `Cell.LiveVolume` and the prism count there and re-measure (`TANDAVA.md` §3.2).
+3. **Perf soak.** About 56,000 prisms with one swarm of up to 642: profile a full match against
+   `Docs/PERFORMANCE_OPTIMIZATION.md`, beside Crystal Capture at intensity 4 (68,320) for scale. If it is over budget,
+   Atlantis's density is the lever only for its leaves and strands - most of it does not scale (0.15 still lays 49,407).
+4. **The lunge.** Fly at a healthy creature: within about 380 u it turns on you, guard plates out round its jaws, and
+   charges at about 144 u/s; touching a plate stings and slows the hull. Cut it under 70% and it runs instead.
+5. **No clock.** The goal stack has two rows outside the dance (the form and progress, the mood and body) and the drum
+   row only during it; nothing ends the match on time.
+6. **Faster forms.** The first change comes within about a minute unopposed, and each new body reads within a second or
+   two of the commit (no long scramble of tadpoles).
+
 
 **What landed.** A new arena card, `GameModes.Tandava = 62` (Rhino / Squirrel / Sparrow, every pilot on ONE
 domain), scene `MinigameTandava`, every asset authored by `Tools/Build/author_tandava_assets.py`. A tadpole swarm

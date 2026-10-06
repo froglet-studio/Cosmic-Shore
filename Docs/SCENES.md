@@ -596,7 +596,7 @@ Turn monitors determine when a turn ends. They are scene-placed components manag
 | `DustupPointTurnMonitor` | `TurnMonitors/` | A domain's summed dustings (Strike-class CombatPoints) reach the Dustup target (on `CombatPointTurnMonitorBase`) |
 | `TapestryTimeTurnMonitor` | `TurnMonitors/` | Timed: the round ends when `EndConditionOverridesSO.tapestryRoundSeconds` runs out (on `NetworkTimeBasedTurnMonitor`, duration read at `StartMonitor` on every peer) |
 | `SiroccoPrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile-prism destruction reaches the Sirocco target |
-| `TandavaTurnMonitor` | `TurnMonitors/` | Server-side: the turn ends the moment the swarm's outcome stops being Running (the cycle completed, or it was shattered, starved, its dance broken, or held off until the clock ran out), read off `TandavaScoringRuleSO`; the goal stack draws the mode's own rows (`TandavaController` is its `IGoalSource`: the form and its progress, what it is doing and its body, the clock or the halo) and this monitor's display is what rebuilds it each tick |
+| `TandavaTurnMonitor` | `TurnMonitors/` | Server-side: the turn ends the moment the swarm's outcome stops being Running (the cycle completed, or it was shattered, starved, or its dance broken - there is no clock), read off `TandavaScoringRuleSO`; the goal stack draws the mode's own rows (`TandavaController` is its `IGoalSource`: the form and its progress, what it is doing and its body, the halo and the drum) and this monitor's display is what rebuilds it each tick |
 
 All turn monitors live in `Assets/_Scripts/Controller/Arcade/TurnMonitors/`.
 

@@ -99,6 +99,7 @@ MonoBehaviour:
   Cruise: 3
   TurnPerStep: 0.03
   SortTurnCarry: 1
+  SortVMaxScale: 3
   WanderReach: 300
   VesselRadius: 9
   SenseMargin: 400
@@ -137,7 +138,7 @@ MonoBehaviour:
   SortUnitsPerWell: 4
   SortWellWidth: 0.89
   SortWellGain: 0.412
-  SortWellClip: 0.525
+  SortWellClip: 1
   SortSpacing: 2.25
   SortRepulsion: 0.151
   SortAdhesionRadius: 5.38
