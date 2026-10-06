@@ -1134,3 +1134,79 @@ further apart. A respawned crystal's "move away from where it last was" rule is 
 it for a lone AI). Human teammates are not modelled at all. A hand-played editor race records itself
 (`BenchmarkResults/SkimRaceAI/manual_I<n>_*.jsonl`, §1), and that record is how a human pair's time
 gets compared.
+
+## 14. Frame rate: the AI is tuned for one frame rate (2026-10-06)
+
+**Why this section exists.** The user reported the AI racing poorly at Easy, Medium and Hard alike while
+testing. Nothing in that day's bleeding-edge merge changes how the Squirrel flies on desktop (§14.3), so
+the AI was measured at the frame rates people actually play at.
+
+### 14.1 Two things in the GAME depend on frame rate
+
+- **Contacts run on the fixed step.** `ProjectSettings/TimeManager.asset` sets Fixed Timestep 0.04 s and
+  physics simulates in FixedUpdate, so skim, hull, laid-mass and crystal triggers are tested 25 times a
+  second, at the positions the last frame left. Above 25 fps some frames test nothing; below it every frame
+  tests once. The simulator now models this as `ph.PhysicsStep=0.04`. The default, 0, tests every frame:
+  the model the shipped policies were tuned under, and still line-for-line identical (I1 and I2, 6 races).
+- **The trail is laid at most once per frame.** `VesselPrismController.SpawnLoopAsync` lays a pair, then
+  awaits `wavelength / speed`. The await resumes on a frame, so a slow frame leaves one pair per frame and
+  the trail is SPARSER at low frame rates and evenly dense at high ones. The simulator lays its rails the
+  same way (all the pairs a frame owes, at the frame's position).
+
+The policies were tuned at 28 ms ±50% frames (about 36 fps). That means a sparser trail than a desktop at
+60-144 fps lays, and longer steps between contact tests.
+
+### 14.2 Measured: slower at every frame rate but the one it was tuned at
+
+Simulator with the game's contact step (`ph.PhysicsStep=0.04`), each track's shipped policy, 2 AI, frames
+±50%, 12 races per cell. The figure is each AI's median finish in seconds, then (races that finished
+within the cut / 12) and hull hits per AI per race.
+
+| I1 | 145 fps | 62 fps | 36 fps | 20 fps | 12 fps |
+|---|---|---|---|---|---|
+| Hard | 77.0 (12) h30 | 70.7 (12) h29 | **67.9** (12) h25 | 66.6 (12) h23 | 77.0 (12) h25 |
+| Medium | 84.0 (9) h32 | 84.8 (11) h32 | 83.0 (12) h32 | 81.5 (11) h32 | 85.0 (12) h28 |
+| Easy | 104.3 (9) h46 | 102.2 (11) h44 | 100.7 (11) h35 | 93.7 (11) h36 | 102.5 (9) h34 |
+
+| I2 | 145 fps | 62 fps | 36 fps | 20 fps | 12 fps |
+|---|---|---|---|---|---|
+| Hard | 84.6 (12) h15 | 82.6 (12) h12 | **75.8** (12) h8 | 78.6 (12) h7 | 91.4 (11) h15 |
+| Medium | 111.5 (9) h18 | 101.3 (11) h17 | 100.2 (10) h13 | 100.2 (12) h12 | 102.6 (10) h18 |
+| Easy | 126.7 (4) h23 | 120.8 (7) h20 | 130.3 (5) h17 | 119.5 (8) h14 | 119.6 (9) h19 |
+
+- Hard is 4-13% slower at 60-145 fps than at the 36 fps it was tuned at, and 13-21% slower at 12 fps. The
+  hull hits that grow at high frame rates are mostly the AI's OWN rails (I1: 4.8 per race at 145 fps vs 2.7
+  at 36), the pickup ring (6.1 vs 4.8) and other seats' rails: the denser trail of §14.1.
+- At low frame rates the hull moves in large steps (38 u per frame at 127 ms and 300 u/s), so pass points
+  are overshot. §8.0c measured the same thing in the editor at 8 fps.
+- Easy at I2 often runs past the simulator's cut (limit + 60 s). That makes it slow, not stuck; the game
+  has no cut.
+- The every-frame contact model (`PhysicsStep=0`) gives the same picture, with more hull hits at high frame
+  rates because it tests contacts more often than the game does.
+- I2's pickup hold (`PickupClearDistance` 1.569 u, under one frame of travel at any speed) is effectively
+  "hold for exactly one frame", which is a frame-rate-dependent rule. Lengthening it to 8.4 or 14 u was
+  not a consistent gain across 145/62/36 fps at 12 races per cell, so it is not the main lever.
+
+### 14.3 What the 2026-10-06 bleeding-edge merge changed for the AI
+
+Nothing in how the Squirrel races on desktop:
+
+- The "skim-tick rate limit" is the skim SOUND (`ProximityBoostAudioController.minTickInterval`).
+- `DecayBoost` now raises its event only on change; the boost value itself is the same.
+- The race trail cap (`RaceTrailCap`) attaches only on the MobileLow tier.
+- The new Squirrel AI boost policy lists Skim Race (33) in `disabledInModes`, and `AIPilot` is off under
+  `SkimRacePilot` anyway.
+
+One change touches testing: commit `c13425ba5` ("drift changes") also changed `ProjectSettings/QualitySettings.asset`.
+The editor's current level went from 2 (Medium) to 4 (Very High, which carries vSync on and 4x MSAA), and the
+per-platform default levels were cleared. §8.0c's 8 fps hand-played editor races were observed at Very High
+with vSync. `GraphicsSettingsApplier` applies the player's saved preset at runtime, so builds are governed by
+the settings menu; the editor's starting point is not.
+
+### 14.4 What would fix it (not done - the user's call)
+
+Retune each policy against SEVERAL frame rates at once, for example 16 / 28 / 50 ms frames with
+`ph.PhysicsStep=0.04`, instead of 28 ms alone. That needs a small tuner change (average the score over a
+list of `ph.Dt` values) and a few hours of tuning per intensity, and it changes the shipped policies.
+The frame rates to weight should be the ones players see. The recorder's `frameMs` per race
+(`BenchmarkResults/SkimRaceAI/manual_*.jsonl`) and the Game view's Stats overlay give them.

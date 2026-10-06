@@ -17,6 +17,8 @@
 #   bash Tools/Build/skimrace_sim_harness/run.sh eval 1 20 [...] ph.Seats=2 ph.Team=1 [ph.TeamRule=0]
 #        a TEAM race: the seats share one domain and its crystals (section 13), flying the game's team
 #        plan; ph.TeamRule=0 flies the rule from before team play (every seat on the nearest crystal).
+#   ... ph.PhysicsStep=0.04 tests contacts on the game's 0.04 s fixed step instead of every frame (section 14);
+#        with ph.Dt=<frame seconds> it shows how the AI races at another frame rate.
 #
 # Needs a dotnet 8+ SDK (a per-user install in ~/.dotnet is fine). No .csproj on purpose: the
 # repo gitignores *.csproj, so everything builds into $TMPDIR.

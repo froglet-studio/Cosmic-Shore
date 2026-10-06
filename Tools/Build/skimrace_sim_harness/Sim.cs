@@ -131,6 +131,12 @@ class Physics
     public Vector3 SpawnFwd = new(0, 0, 1);
     public float Dt = 1f / 60f;
     public float DtJitter = 0f;          // frame-time noise as a fraction of Dt (editor frames are uneven)
+    // The game evaluates trigger contacts (skim, hull, laid mass, crystal) in its FIXED step -
+    // Time.fixedDeltaTime 0.04 s (ProjectSettings/TimeManager.asset), physics simulated in FixedUpdate -
+    // at the positions the last frame left: above 25 fps some frames see no contact pass at all, below it
+    // every frame sees one. 0 = a contact pass every frame (the model the shipped policies were tuned
+    // under); 0.04 = the game's step.
+    public float PhysicsStep = 0f;
     // The lobby AI difficulty's deliberate mistakes (SkimRaceHandicap, Docs/SKIM_RACE_AI.md section 10):
     // seconds before a new crystal is noticed, and the chance per crystal of misjudging its pass.
     // Both 0 = no handicap (Hard). The `handicap` mode searches HcMistake for a target time.
@@ -447,9 +453,19 @@ static class Race
             else ag.SlowUntil = now + ph.HullSlowSeconds;
         }
 
+        float physicsClock = 0f;
         while (t < maxT && agents.Exists(x => !x.Done))
         {
             float dt = ph.DtJitter > 0f ? ph.Dt * (1f + ph.DtJitter * (float)(rng.NextDouble() * 2.0 - 1.0)) : ph.Dt;
+            // Does a fixed step fall inside this frame? Then the next frame's FixedUpdate evaluates contacts
+            // at the positions this frame ends on - which is where the contact pass below runs.
+            bool physicsTick = true;
+            if (ph.PhysicsStep > 0f)
+            {
+                physicsClock += dt;
+                physicsTick = physicsClock >= ph.PhysicsStep;
+                while (physicsClock >= ph.PhysicsStep) physicsClock -= ph.PhysicsStep;
+            }
             long frameTicks = 0;
             int frameDecides = 0;
             if (ph.Team != 0 && ph.TeamRule == 1 && agents.Count >= 2) PlanTeam();
@@ -576,83 +592,105 @@ static class Race
                         obs.Add(ag.Pos - rgt * ph.RailOffset, ag.Rot, half, tn + ph.ColliderDelay, ag.Id, tn + Math.Max(ph.TrailGrace, ph.ColliderDelay));
                     }
                 }
-                // ── contacts with laid mass ──
-                obs.Query(ag.Pos, obsNear);
+                // Contacts, skim and pickup: only on a frame a fixed step evaluates them (PhysicsStep).
+                if (physicsTick)
                 {
-                    var onow = new HashSet<int>(); var hnowO = new HashSet<int>();
-                    foreach (var i in obsNear)
+                    // ── contacts with laid mass ──
+                    obs.Query(ag.Pos, obsNear);
                     {
-                        if (!obs.ActiveFor(i, ag.Id, tn)) continue;
-                        float d = obs.Distance(i, ag.Pos);
-                        if (d <= ph.SkimReach) onow.Add(i);
+                        var onow = new HashSet<int>(); var hnowO = new HashSet<int>();
+                        foreach (var i in obsNear)
+                        {
+                            if (!obs.ActiveFor(i, ag.Id, tn)) continue;
+                            float d = obs.Distance(i, ag.Pos);
+                            if (d <= ph.SkimReach) onow.Add(i);
+                            float dh = d;
+                            if (ph.HullBox != 0 && d <= ph.HullReach + 3f)
+                                for (int bx = -1; bx <= 1; bx++)
+                                for (int bz = -1; bz <= 1; bz++)
+                                    dh = Math.Min(dh, obs.Distance(i, ag.Pos + ag.Rot * new Vector3(bx * ph.HullHalfX, 0f, bz * ph.HullHalfZ)));
+                            if (ph.MassHits != 0 && dh <= ph.HullReach) hnowO.Add(i);
+                        }
+                        foreach (var i in onow)
+                            if (ag.ObsInside.Add(i)) { ag.Boosting = true; ag.Boost = Mathf.Clamp(ag.Boost + ph.SkimAdd, 1f, ph.MaxBoost); }
+                        ag.ObsInside.IntersectWith(onow);
+                        foreach (var i in hnowO)
+                            if (ag.ObsHull.Add(i))
+                            {
+                                int own = obs.Owners[i].owner;
+                                ag.Note(own < 0 ? "pickup-ring" : own == ag.Id ? "own-rail" : "other-rail", ag.Boost);
+                                ag.HullHits++; var oh = obs.Items[i].half; Slow(ag, 8f * oh.x * oh.y * oh.z, tn); ag.Boost = 1f;
+                                if (trace) Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "   OBSHIT a{0} t={1:F2} spd={2:F0} owner={3} pull={4}", ag.Id, tn, ag.Speed, obs.Owners[i].owner, driver.LastDiagnostics.CrystalPull));
+                            }
+                        ag.ObsHull.IntersectWith(hnowO);
+                    }
+
+                    // ── skimmer & hull contacts (enter events), against each track prism's shell ──
+                    prisms.Query(ag.Pos, 40f, near);
+                    var now = new HashSet<int>();
+                    var hnow = new HashSet<int>();
+                    foreach (var i in near)
+                    {
+                        float d = prisms.ShellDistance(i, ag.Pos);
+                        if (d <= ph.SkimReach) now.Add(i);
                         float dh = d;
                         if (ph.HullBox != 0 && d <= ph.HullReach + 3f)
                             for (int bx = -1; bx <= 1; bx++)
                             for (int bz = -1; bz <= 1; bz++)
-                                dh = Math.Min(dh, obs.Distance(i, ag.Pos + ag.Rot * new Vector3(bx * ph.HullHalfX, 0f, bz * ph.HullHalfZ)));
-                        if (ph.MassHits != 0 && dh <= ph.HullReach) hnowO.Add(i);
+                                dh = Math.Min(dh, prisms.ShellDistance(i, ag.Pos + ag.Rot * new Vector3(bx * ph.HullHalfX, 0f, bz * ph.HullHalfZ)));
+                        if (ph.TrackHits != 0 && dh <= ph.HullReach) hnow.Add(i);
                     }
-                    foreach (var i in onow)
-                        if (ag.ObsInside.Add(i)) { ag.Boosting = true; ag.Boost = Mathf.Clamp(ag.Boost + ph.SkimAdd, 1f, ph.MaxBoost); }
-                    ag.ObsInside.IntersectWith(onow);
-                    foreach (var i in hnowO)
-                        if (ag.ObsHull.Add(i))
+                    foreach (var i in now)
+                        if (ag.Inside.Add(i)) { ag.Boosting = true; ag.Boost = Mathf.Clamp(ag.Boost + ph.SkimAdd, 1f, ph.MaxBoost); }
+                    ag.Inside.IntersectWith(now);
+                    foreach (var i in hnow)
+                        if (ag.Hull.Add(i))
                         {
-                            int own = obs.Owners[i].owner;
-                            ag.Note(own < 0 ? "pickup-ring" : own == ag.Id ? "own-rail" : "other-rail", ag.Boost);
-                            ag.HullHits++; var oh = obs.Items[i].half; Slow(ag, 8f * oh.x * oh.y * oh.z, tn); ag.Boost = 1f;
-                            if (trace) Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "   OBSHIT a{0} t={1:F2} spd={2:F0} owner={3} pull={4}", ag.Id, tn, ag.Speed, obs.Owners[i].owner, driver.LastDiagnostics.CrystalPull));
+                            ag.Note(driver.Crossing ? "track-crossing" : driver.LastDiagnostics.CrystalPull ? "track-pull" : "track-line", ag.Boost);
+                            {
+                                Vector3 lph = Quaternion.Inverse(prisms.Rotations[i]) * (ag.Pos - prisms.Points[i]);
+                                ag.TrackHitLog.Add((ag.Phase(driver, tn), lph.x, lph.y, lph.z, driver.LastDiagnostics.HeadingErrorDegrees, ag.Speed * mult, ag.Boost));
+                            }
+                            ag.HullHits++; Slow(ag, 30f, tn); ag.Boost = 1f; // VesselResetBoostPrismEffect + SquirrelVesselChangeSpeedByPrism
+                            if (trace)
+                            {
+                                Vector3 lp = Quaternion.Inverse(prisms.Rotations[i]) * (ag.Pos - prisms.Points[i]);
+                                Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
+                                    "   HIT a{9} t={0:F2} prism={1} local=({2:F1},{3:F1},{4:F1}) spd={5:F0} mode={6} pull={7} dist={8:F0} cross={10}",
+                                    tn, i, lp.x, lp.y, lp.z, ag.Speed, driver.CurrentMode, driver.LastDiagnostics.CrystalPull, (ag.Crystal - ag.Pos).magnitude, ag.Id, driver.Crossing));
+                                Console.WriteLine("      guard nominal/chosen clearance: " + string.Join(" ", ag.GuardLog));
+                            }
                         }
-                    ag.ObsHull.IntersectWith(hnowO);
-                }
+                    ag.Hull.IntersectWith(hnow);
 
-                // ── skimmer & hull contacts (enter events), against each track prism's shell ──
-                prisms.Query(ag.Pos, 40f, near);
-                var now = new HashSet<int>();
-                var hnow = new HashSet<int>();
-                foreach (var i in near)
-                {
-                    float d = prisms.ShellDistance(i, ag.Pos);
-                    if (d <= ph.SkimReach) now.Add(i);
-                    float dh = d;
-                    if (ph.HullBox != 0 && d <= ph.HullReach + 3f)
-                        for (int bx = -1; bx <= 1; bx++)
-                        for (int bz = -1; bz <= 1; bz++)
-                            dh = Math.Min(dh, prisms.ShellDistance(i, ag.Pos + ag.Rot * new Vector3(bx * ph.HullHalfX, 0f, bz * ph.HullHalfZ)));
-                    if (ph.TrackHits != 0 && dh <= ph.HullReach) hnow.Add(i);
-                }
-                foreach (var i in now)
-                    if (ag.Inside.Add(i)) { ag.Boosting = true; ag.Boost = Mathf.Clamp(ag.Boost + ph.SkimAdd, 1f, ph.MaxBoost); }
-                ag.Inside.IntersectWith(now);
-                foreach (var i in hnow)
-                    if (ag.Hull.Add(i))
+                    // ── crystal ──
+                    if (ph.Team != 0)
                     {
-                        ag.Note(driver.Crossing ? "track-crossing" : driver.LastDiagnostics.CrystalPull ? "track-pull" : "track-line", ag.Boost);
+                        // Any of the team's crystals in reach is taken (TeamCrystalImpactor admits any crystal of
+                        // the vessel's domain); it moves to ITS next anchor; the team's sum finishes everyone.
+                        for (int j = 0; j < teamCrystals.Count && !ag.Done; j++)
                         {
-                            Vector3 lph = Quaternion.Inverse(prisms.Rotations[i]) * (ag.Pos - prisms.Points[i]);
-                            ag.TrackHitLog.Add((ag.Phase(driver, tn), lph.x, lph.y, lph.z, driver.LastDiagnostics.HeadingErrorDegrees, ag.Speed * mult, ag.Boost));
-                        }
-                        ag.HullHits++; Slow(ag, 30f, tn); ag.Boost = 1f; // VesselResetBoostPrismEffect + SquirrelVesselChangeSpeedByPrism
-                        if (trace)
-                        {
-                            Vector3 lp = Quaternion.Inverse(prisms.Rotations[i]) * (ag.Pos - prisms.Points[i]);
-                            Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
-                                "   HIT a{9} t={0:F2} prism={1} local=({2:F1},{3:F1},{4:F1}) spd={5:F0} mode={6} pull={7} dist={8:F0} cross={10}",
-                                tn, i, lp.x, lp.y, lp.z, ag.Speed, driver.CurrentMode, driver.LastDiagnostics.CrystalPull, (ag.Crystal - ag.Pos).magnitude, ag.Id, driver.Crossing));
-                            Console.WriteLine("      guard nominal/chosen clearance: " + string.Join(" ", ag.GuardLog));
+                            if ((teamCrystals[j] - ag.Pos).sqrMagnitude > ph.CaptureReach * ph.CaptureReach) continue;
+                            teamCollected++;
+                            ag.Collected++;
+                            ag.LastPickupAt = tn;
+                            if (ph.RingGeometry != 0) AddPickupRing(ag, tn);
+                            else
+                            {
+                                ag.Boosting = true;
+                                ag.Boost = Mathf.Clamp(ag.Boost + ph.SkimAdd * ph.PickupRingPrisms, 1f, ph.MaxBoost);
+                            }
+                            if (teamCollected >= required)
+                            {
+                                foreach (var x in agents) if (!x.Done) { x.Done = true; x.DoneAt = tn; }
+                                break;
+                            }
+                            teamAnchor[j] = (teamAnchor[j] + 1) % def.Anchors.Count;
+                            teamCrystals[j] = def.Anchors[teamAnchor[j]] + OnUnitSphere(teamRng) * ph.Jitter;
                         }
                     }
-                ag.Hull.IntersectWith(hnow);
-
-                // ── crystal ──
-                if (ph.Team != 0)
-                {
-                    // Any of the team's crystals in reach is taken (TeamCrystalImpactor admits any crystal of
-                    // the vessel's domain); it moves to ITS next anchor; the team's sum finishes everyone.
-                    for (int j = 0; j < teamCrystals.Count && !ag.Done; j++)
+                    else if ((ag.Crystal - ag.Pos).sqrMagnitude <= ph.CaptureReach * ph.CaptureReach)
                     {
-                        if ((teamCrystals[j] - ag.Pos).sqrMagnitude > ph.CaptureReach * ph.CaptureReach) continue;
-                        teamCollected++;
                         ag.Collected++;
                         ag.LastPickupAt = tn;
                         if (ph.RingGeometry != 0) AddPickupRing(ag, tn);
@@ -661,31 +699,13 @@ static class Race
                             ag.Boosting = true;
                             ag.Boost = Mathf.Clamp(ag.Boost + ph.SkimAdd * ph.PickupRingPrisms, 1f, ph.MaxBoost);
                         }
-                        if (teamCollected >= required)
+                        if (ag.Collected >= required) { ag.Done = true; ag.DoneAt = tn; }
+                        else
                         {
-                            foreach (var x in agents) if (!x.Done) { x.Done = true; x.DoneAt = tn; }
-                            break;
+                            ag.Anchor = (ag.Anchor + 1) % def.Anchors.Count;
+                            ag.Crystal = def.Anchors[ag.Anchor] + OnUnitSphere(ag.Rng) * ph.Jitter;
+                            ag.TargetHint = -1;
                         }
-                        teamAnchor[j] = (teamAnchor[j] + 1) % def.Anchors.Count;
-                        teamCrystals[j] = def.Anchors[teamAnchor[j]] + OnUnitSphere(teamRng) * ph.Jitter;
-                    }
-                }
-                else if ((ag.Crystal - ag.Pos).sqrMagnitude <= ph.CaptureReach * ph.CaptureReach)
-                {
-                    ag.Collected++;
-                    ag.LastPickupAt = tn;
-                    if (ph.RingGeometry != 0) AddPickupRing(ag, tn);
-                    else
-                    {
-                        ag.Boosting = true;
-                        ag.Boost = Mathf.Clamp(ag.Boost + ph.SkimAdd * ph.PickupRingPrisms, 1f, ph.MaxBoost);
-                    }
-                    if (ag.Collected >= required) { ag.Done = true; ag.DoneAt = tn; }
-                    else
-                    {
-                        ag.Anchor = (ag.Anchor + 1) % def.Anchors.Count;
-                        ag.Crystal = def.Anchors[ag.Anchor] + OnUnitSphere(ag.Rng) * ph.Jitter;
-                        ag.TargetHint = -1;
                     }
                 }
 
