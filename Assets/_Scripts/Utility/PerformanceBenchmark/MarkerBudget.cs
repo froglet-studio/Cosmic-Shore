@@ -68,9 +68,12 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             "LOD.Drain",
             "PrismDebris.RefreshConvergence",
 
-            // Skim Race AI (every AI seat, every frame).
+            // Skim Race AI (every AI seat, every frame), and the two planners inside Decide that cost
+            // the most: the 20 Hz track planner (bursts) and the laid-mass guard.
             "SkimRace.Pilot.Decide",
             "SkimRace.Pilot.FillObstacles",
+            "SkimRace.Driver.TrackMpc",
+            "SkimRace.Driver.GuardMass",
         };
 
         /// <summary>The <c>diag</c> argument prefix that adds markers: <c>m=Name1,Name2</c>.</summary>
