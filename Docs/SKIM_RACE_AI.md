@@ -1095,8 +1095,29 @@ that preceded it. `SkimRaceTeamAssignmentTests` covers the plan: two AI never sh
 cheapest plan beats "nearest pair first", a near-tie keeps the last plan, a plan that cannot be kept is
 replaced, and the edge cases (more AI than crystals, a team past the exact search, no AI or no crystal).
 Three deliberate breaks of the code (greedy only, never keep, allow a crystal twice) are each caught by
-the test written for them. Team SIZE (whether backfilled AI should form one team like a human party)
-is a separate, open step.
+the test written for them.
+
+**Team size: today's seating rule is kept** (the user's call, 2026-10-06, after seeing the table below).
+Backfilled AI still go to the team with the fewest pilots (`GetBalancedDomain`). To race 2 humans against a
+2-AI team, the host sets it up by hand: remove the placed AI (✕), arm **Add AI**, and tap one tile twice.
+How today's rule seats every shape a 4-seat Skim Race allows, all humans starting on Jade unless they pick a tile:
+
+| Who is playing | Today's seating | Note |
+|---|---|---|
+| 1 human + 1 or 2 AI | everyone alone | fair |
+| 1 human + 3 AI | human · **2 AI on Ruby** · 1 AI | the Ruby pair now plays as a team (about twice one AI's pace) |
+| 2 humans on one team + 1 AI | the pair vs 1 AI | the lone AI must take every crystal itself |
+| 2 humans on one team + 2 AI | the pair · 1 AI · 1 AI | the user's co-op race; for 2 vs 2 use Add AI |
+| 2 humans on different teams + 2 AI | human · human · **2 AI on Gold** | the Gold pair plays as a team |
+| 3 humans (2 + 1) + 1 AI | the pair · the lone human · 1 AI | |
+| 3 humans on one team + 1 AI | the trio vs 1 AI | |
+| 3 humans on 3 teams + 1 AI | the AI joins Jade's human | |
+
+The two rules weighed and not taken: "fill the AI into a team the size of the biggest human team" (would
+change only the 2 + 2 and the 2+1 + 1 rows), and "equal teams" (would also give a solo human facing 3 AI, and
+each of 2 rivals facing 2 AI, an AI teammate). "2 vs 1" and "3 vs 1" cannot be equal with 4 seats under any
+seating rule. Only a crystal target that grows with team size would even them, and the user declined
+that change on 2026-10-05.
 
 **Run it:**
 
