@@ -1203,7 +1203,28 @@ per-platform default levels were cleared. §8.0c's 8 fps hand-played editor race
 with vSync. `GraphicsSettingsApplier` applies the player's saved preset at runtime, so builds are governed by
 the settings menu; the editor's starting point is not.
 
-### 14.4 What would fix it (not done - the user's call)
+### 14.4 What the AI costs the editor (2026-10-06)
+
+The user's report was that the GAME runs slow while testing Skim Race with AI. The simulator's .NET build
+is optimized; the Unity editor runs the same C# on Mono with its Code Optimization usually at **Debug**,
+which is much slower. As a stand-in, the simulator was compiled WITHOUT optimization (`csc -optimize-`) and
+each track raced with 2 AI, 28 ms frames ±50%, the game's contact step, 10 races (seedbase 50000). Per AI
+per frame, and both AIs together in one frame:
+
+| Track | Optimized: per AI | Both AIs, typical / worst 10% / worst 1% | Unoptimized: per AI | Both AIs, typical / worst 10% / worst 1% | Biggest part (unoptimized) |
+|---|---|---|---|---|---|
+| I1 | 0.05 ms | 0.02 / 0.26 / 0.72 ms | 0.11 ms | 0.06 / 0.72 / 1.32 ms | laid-mass guard 0.10 ms |
+| I2 | 0.41 ms | 0.34 / 1.88 / 2.74 ms | **2.30 ms** | 1.32 / **10.74** / **14.79** ms | planner 1.92 ms per decision (0.78 per AI per re-plan optimized, ~4.5 unoptimized) |
+| I3 | 0.15 ms | 0.16 / 0.85 / 1.65 ms | 1.04 ms | 1.23 / 5.46 / 9.27 ms | laid-mass guard 0.56 ms |
+| I4 | 0.09 ms | 0.06 / 0.48 / 1.40 ms | 0.56 ms | 0.40 / 2.72 / 8.74 ms | laid-mass guard 0.45 ms |
+
+So at Debug optimization, two AI on I2 cost the editor **about 11 ms in one frame of every ten** (both
+re-plan on the same frames, 20 times a second), and I3's mass guard about 5 ms. A 60 fps frame is 16.7 ms.
+In a Release/IL2CPP build the same work is 2-3 ms at worst. The Unity Profiler reading (the checklist's
+Profiler-timers entry) is the real number; the stand-in says where it will land. What the AI can do about
+it, before the frame-rate retune of §14.5 absorbs the change, is below.
+
+### 14.5 Retuning across frame rates
 
 Retune each policy against SEVERAL frame rates at once, for example 16 / 28 / 50 ms frames with
 `ph.PhysicsStep=0.04`, instead of 28 ms alone. That needs a small tuner change (average the score over a

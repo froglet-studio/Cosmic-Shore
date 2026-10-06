@@ -875,11 +875,24 @@ static class Program
         return (cfg, ph);
     }
 
+    // dts=0.016,0.028,0.05 (any mode): the frame times the races are spread over, round-robin by seed, so a
+    // policy is scored across frame rates at once (Docs/SKIM_RACE_AI.md section 14) at no extra cost. Null =
+    // every race at ph.Dt. Read once in Main; every Race.Run goes through PhysicsFor.
+    static float[] FrameDts;
+
+    static Physics PhysicsFor(Physics ph, int seedIndex)
+    {
+        if (FrameDts == null || FrameDts.Length == 0) return ph;
+        var local = ph.Clone();
+        local.Dt = FrameDts[((seedIndex % FrameDts.Length) + FrameDts.Length) % FrameDts.Length];
+        return local;
+    }
+
     static (float score, int fin, float median, float worst, float mean, List<RaceResult> runs) Evaluate(
         TrackDef def, TrackPrisms prisms, SkimRaceCourse course, SkimRaceAIConfigSO cfg, Physics ph, int seeds, float limit, int seedBase = 1000, float overWeight = 0f, bool winnerScore = false)
     {
         var runs = new List<RaceResult>();
-        for (int s = 0; s < seeds; s++) runs.Add(Race.Run(def, prisms, course, cfg, ph, seedBase + s, limit));
+        for (int s = 0; s < seeds; s++) runs.Add(Race.Run(def, prisms, course, cfg, PhysicsFor(ph, s), seedBase + s, limit));
         var fin = runs.Where(r => r.Finished).Select(r => r.Time).OrderBy(x => x).ToList();
         float median = fin.Count > 0 ? fin[fin.Count / 2] : 999f;
         float worst = runs.All(r => r.Finished) ? fin.Max() : 999f;
@@ -1106,7 +1119,7 @@ static class Program
             var local = ph.Clone();
             local.HcMistake = chance;
             var runs = new RaceResult[n];
-            System.Threading.Tasks.Parallel.For(0, n, s => runs[s] = Race.Run(def, prisms, course, cfg, local, seedBase + s, lim));
+            System.Threading.Tasks.Parallel.For(0, n, s => runs[s] = Race.Run(def, prisms, course, cfg, PhysicsFor(local, s), seedBase + s, lim));
             var times = runs.SelectMany(r => r.AgentTimes).OrderBy(x => x).ToList();
             int fin = times.Count(x => x < 999f);
             return (times[times.Count / 2], times[times.Count / 10], times[times.Count * 9 / 10], fin, times.Count,
@@ -1153,6 +1166,11 @@ static class Program
 
     static int Main(string[] args)
     {
+        // dts=a,b,c - the frame times to spread the races over (section 14). Taken out of args here so no
+        // mode's parser sees it.
+        foreach (var a in args.Where(a => a.StartsWith("dts=")))
+            FrameDts = a.Substring(4).Split(',').Select(x => float.Parse(x, CultureInfo.InvariantCulture)).ToArray();
+        args = args.Where(a => !a.StartsWith("dts=")).ToArray();
         var tracks = Json.Load(args[0]);
         string mode = args[1];
         if (mode == "fingerprint")
@@ -1240,6 +1258,16 @@ static class Program
             Race.RecordFrames = true;
             if (mode == "trace") { var r = Race.Run(def, prisms, course, cfg, ph, 1000 + seeds, limit, true); Console.WriteLine($"finished={r.Finished} t={r.Time:F2} {r.Collected}/{r.Required}"); return 0; }
             var e = Evaluate(def, prisms, course, cfg, ph, seeds, limit, seedBase);
+            if (FrameDts != null)
+                for (int k = 0; k < FrameDts.Length; k++)
+                {
+                    var at = e.runs.Where((r, idx) => idx % FrameDts.Length == k).ToList();
+                    var seatTimesAt = at.SelectMany(r => r.AgentTimes).OrderBy(x => x).ToList();
+                    Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
+                        "  at {0:F1} ms frames ({1} races): finished {2}/{1}, seat median {3:F2} s, worst seat {4:F2} s",
+                        FrameDts[k] * 1000f, at.Count, at.Count(r => r.Finished), seatTimesAt.Count > 0 ? seatTimesAt[seatTimesAt.Count / 2] : 999f,
+                        seatTimesAt.Count > 0 ? seatTimesAt[seatTimesAt.Count - 1] : 999f));
+                }
             Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "  decide cost: {0:F3} ms per seat per frame (sim runtime, {1} calls), {2:F0} bytes allocated per decision",
                 1000.0 * Race.DecideTicks / System.Diagnostics.Stopwatch.Frequency / Math.Max(1, Race.DecideCalls), Race.DecideCalls,
                 Race.DecideBytes / (double)Math.Max(1, Race.DecideCalls)));

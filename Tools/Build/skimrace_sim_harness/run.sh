@@ -19,6 +19,8 @@
 #        plan; ph.TeamRule=0 flies the rule from before team play (every seat on the nearest crystal).
 #   ... ph.PhysicsStep=0.04 tests contacts on the game's 0.04 s fixed step instead of every frame (section 14);
 #        with ph.Dt=<frame seconds> it shows how the AI races at another frame rate.
+#   ... dts=0.016,0.028,0.05 (any mode) spreads the races over those frame times, round-robin by seed, so a
+#        tune or an eval judges a policy across frame rates at once (section 14).
 #
 # Needs a dotnet 8+ SDK (a per-user install in ~/.dotnet is fine). No .csproj on purpose: the
 # repo gitignores *.csproj, so everything builds into $TMPDIR.
