@@ -127,6 +127,17 @@ namespace CosmicShore.Gameplay
         // Suppress the base turn->round->game flow so there is no duplicate.
         protected override bool HasEndGame => false;
 
+        // The race beats as toasts (quarter, halfway, lead change). A local poll over the
+        // replicated scored stat, run on every peer - see DomainRaceToasts. Feedback only.
+        DomainRaceToasts _raceToasts;
+
+        void Update()
+        {
+            if (_finalResultsSent || rule == null) return;
+            _raceToasts ??= new DomainRaceToasts(rule);
+            _raceToasts.Tick(gameData);
+        }
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
