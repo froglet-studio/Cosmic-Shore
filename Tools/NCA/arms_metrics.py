@@ -8,7 +8,7 @@ Every behaviour NAME used in NOTE.md is one of the numbers below, each against a
 PREY
   polarisation_global   |mean unit velocity| over all prey (1 = everyone the same way)
   polarisation_local    mean over prey with >= 2 neighbours within 15 u of |mean unit velocity of itself + them|
-  social_share          share of prey with >= 2 neighbours within 15 u (a null of 120 uniform prey in the pond: ~0.05)
+  social_share          share of prey with >= 2 neighbours within 15 u (null: 120 uniform prey in the pond ~0.003)
   milling               |mean over a group of (r x v)/(|r||v|) . axis| about the group centroid (1 = a mill/torus)
   groups                clusters (single linkage, 8 u) with >= 3 prey; largest_share = largest cluster / alive
   nnd                   mean nearest-neighbour distance (u)

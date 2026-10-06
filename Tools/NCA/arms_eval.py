@@ -111,7 +111,7 @@ def record(cfg, thq, thp, seed, secs, vessel=None, ghost=True):
     st = A.reset(cfg, 1, seed)
     rng = np.random.default_rng(seed + 11)
     steps = int(secs / cfg.dt)
-    keys = dict(qp=[], qv=[], qa=[], pp=[], pv=[], pa=[], pb=[], vp=[], pt=[])
+    keys = dict(qp=[], qv=[], qa=[], pp=[], pv=[], pa=[], pb=[], vp=[], pt=[], fd=[])
     arena = None
     if vessel is not None:
         from common.arena import Arena
@@ -134,7 +134,7 @@ def record(cfg, thq, thp, seed, secs, vessel=None, ghost=True):
             arena.step(cfg.dt)
             keys["pt"].append(st.last_aux["pred_target"][0].copy())
         for k, v in (("qp", st.pos[0]), ("qv", st.vel[0]), ("qa", st.alive[0]), ("pp", st.pos[1]), ("pv", st.vel[1]),
-                     ("pa", st.alive[1]), ("pb", st.burst)):
+                     ("pa", st.alive[1]), ("pb", st.burst), ("fd", st.food)):
             keys[k].append(v[0].copy())
     rec = {k: np.array(v) for k, v in keys.items() if len(v)}
     rec["events"] = [(e[1], e[2], e[3], e[4], e[5], e[6]) for e in st.events]
@@ -293,18 +293,15 @@ def viewer_json(rec, cfg, path, label, note, every=2):
     f0 = rec["food"]
     cells = np.argwhere(f0 > 0.25)
     fpos = np.stack([X[tuple(cells.T)], Y[tuple(cells.T)], Z[tuple(cells.T)]], -1) if len(cells) else np.zeros((0, 3))
-    mass0 = dict(pos=np.round(fpos, 1).tolist(), elem=[1] * len(fpos), style=[1] * len(fpos))
+    mass0 = dict(pos=np.round(fpos, 1).tolist(), elem=[1] * len(fpos), style=[4] * len(fpos))   # jade = food
     frames = []
     T = len(rec["qp"])
-    # re-simulate food depletion is not stored per step; approximate alive by linear blend to the final food
-    ffin = rec["food_final"]
-    alive_end = ffin[tuple(cells.T)] > 0.25 if len(cells) else np.zeros(0, bool)
     for t in range(0, T, every):
         qa, pa = rec["qa"][t], rec["pa"][t]
         burst = rec["pb"][t][pa]
         fr = dict(t=round(t * cfg.dt, 2),
                   pilots=[np.round(rec["vp"][t], 1).tolist()] if "vp" in rec else [],
-                  alive=np.packbits(np.ones(len(fpos), bool) if t < T // 2 else alive_end | (len(fpos) == 0)).tobytes().hex(),
+                  alive=np.packbits(rec["fd"][t][tuple(cells.T)] > 0.25 if len(cells) else np.zeros(0, bool)).tobytes().hex(),
                   species=dict(
                       prey=dict(pos=np.round(rec["qp"][t][qa], 1).tolist(),
                                 col=np.round(np.tile([0.45, 0.9, 1.0], (int(qa.sum()), 1)), 2).tolist(),
@@ -449,7 +446,7 @@ def main():
             rec = record(cfg, snaps[gq]["thq"], snaps[gp]["thp"], 41, 60.0)
             runs.append(viewer_json(rec, cfg, os.path.join(a.out, f"encounter_g{gp}_g{gq}.json"),
                                     f"pred g{gp} vs prey g{gq}", f"Co-evolved predators (orange; red = bursting) vs prey "
-                                    f"(cyan). Food patches are the grey points. {len(rec['events'])} catches in 60 s."))
+                                    f"(cyan). Green prisms are the grazeable food field (a cell blinks out when grazed below 25%). {len(rec['events'])} catches in 60 s."))
             gif(rec, cfg, os.path.join(a.out, f"encounter_g{gp}_g{gq}.gif"), 0, 20, every=2, title=f"P{gp} v Q{gq}")
             recv = record(cfg, snaps[gq]["thq"], snaps[gp]["thp"], 31, 40.0, vessel=Pilot.wanderer(speed=120.0), ghost=True)
             runs.append(viewer_json(recv, cfg, os.path.join(a.out, f"vessel_g{gp}_g{gq}.json"),
