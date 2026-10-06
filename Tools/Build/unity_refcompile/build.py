@@ -562,6 +562,39 @@ MISSING_CODES = {"CS0246", "CS0234", "CS0103", "CS1069", "CS0012", "CS0538"}
 # In a file that uses an unobtainable package, these are cascades of its unresolved types too
 # (`out var x` from an unknown TryGetValue -> CS0165, `unknown.Count > 0` -> CS0019, ...).
 UNOBTAINABLE_CASCADE_CODES = MISSING_CODES | {"CS0165", "CS0019", "CS1061"}
+_DECLARED_TYPE = re.compile(r"\b(?:class|struct|interface|enum|record)\s+(\w+)|\bdelegate\s+[^;{(=]*?\b(\w+)\s*(?:<[^>]*>)?\s*\(")
+
+
+def declared_names(files):
+    """(type names, namespaces) declared in these sources - what a dependent cannot see while the
+    assembly they compile into has failed."""
+    types, namespaces = set(), set()
+    for f in files:
+        try:
+            txt = open(f, encoding="utf-8-sig", errors="replace").read()
+        except OSError:
+            continue
+        types.update(m.group(1) or m.group(2) for m in _DECLARED_TYPE.finditer(txt))
+        for ns in re.findall(r"\bnamespace\s+([\w.]+)", txt):
+            parts = ns.split(".")
+            namespaces.update(".".join(parts[:i]) for i in range(1, len(parts) + 1))
+    return types, namespaces
+
+
+def names_failed_package(msg, failed, types, namespaces):
+    """Can this missing-type error stem from a failed package? Only if the name it cannot find is
+    one that package declares (or, CS0012, it names the package's assembly). Anything else - a typo,
+    a type from an Editor folder - is a real error, however many packages failed."""
+    if any("assembly '%s," % k in msg for k in failed):
+        return True
+    m = re.search(r"'([^']+)' does not exist in the namespace '([^']+)'", msg)
+    if m and m.group(2) + "." + m.group(1) in namespaces:
+        return True
+    m = re.search(r"'([^']+)'", msg)
+    if not m:
+        return False
+    name = re.sub(r"<.*", "", m.group(1))
+    return name in namespaces or name.split(".")[-1] in types
 
 LEARN_0507 = re.compile(r"overriding 'public' inherited member '([^']+)'")
 LEARN_0122 = re.compile(r"error CS0122: '([^']+)' is inaccessible due to its protection level")
@@ -1010,6 +1043,7 @@ def run_once():
             errs = results[k][1]
             print("[build]   %s (%d errors), e.g. %s" % (k, len(errs), re.sub(r"^.*?: error ", "", errs[0])[:150] if errs else ""))
     real, unobtainable, unverified, editor_context = [], [], [], []
+    failed_types, failed_namespaces = declared_names([f for k in pkg_failed for f in live[k].files])
     for k in failed:
         if k in pkg_failed:
             continue
@@ -1030,7 +1064,7 @@ def run_once():
                 # the uGUI/engine reference DLLs are PLAYER builds: their #if UNITY_EDITOR members
                 # (UIBehaviour.OnValidate/Reset) do not exist in them
                 unverified.append((k, e))
-            elif code in MISSING_CODES and pkg_failed:
+            elif code in MISSING_CODES and names_failed_package(m.group(3), pkg_failed, failed_types, failed_namespaces):
                 unverified.append((k, e))
             else:
                 real.append((k, e))
@@ -1046,7 +1080,8 @@ def run_once():
     show("ERRORS in project code", real, args.max_errors)
     show("missing-type errors in files using a package that cannot be fetched (%s)" % ", ".join(UNOBTAINABLE_NAMESPACES),
          unobtainable, 0 if args.quiet_buckets else args.max_errors)
-    show("unverified: missing types while a referenced package failed, or editor-only members absent from the player-build reference DLLs", unverified,
+    show("unverified: types a failed package declares, or editor-only members absent from the player-build reference DLLs",
+         unverified,
          0 if args.quiet_buckets else args.max_errors)
     if editor:
         show("unverified: errors in Editor-folder files NOT changed since %s (compiled as context for the changed ones; "

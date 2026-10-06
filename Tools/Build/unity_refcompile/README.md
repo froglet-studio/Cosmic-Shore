@@ -63,7 +63,8 @@ A small re-implementation of Unity's script pipeline (`build.py`):
    (`Assets/_Scripts/AssemblyInfo.cs`) applies. With `--source-ref <dep>.rsp` it binds against a
    failed dependency's source instead of its (missing) DLL.
 7. Buckets the errors: **project errors** (the gate), **missing-type errors in files that `using` a
-   package that cannot be fetched**, **missing-type errors while a referenced package failed**, and
+   package that cannot be fetched**, **missing-type errors naming a type or namespace that a failed
+   package declares**, and
    (editor config) **errors in Editor-folder files not changed since `--changed-base`**.
 
 ## Where the references come from (fetched by `fetch.py`, cached, never committed)
@@ -123,7 +124,8 @@ Does not prove:
 - Code in files that `using` an unfetchable package, for errors that involve those types.
 - ILPostProcessors (Netcode/Burst/Entities codegen after compile), Burst compilation, IL2CPP.
 - Package assemblies listed as "did not compile" (Purchasing.Stores/Codeless, InputSystem.ForUI) —
-  dependents were compiled without them; any project use of their types would surface as an error.
+  dependents were compiled without them, and a project use of a type they declare is listed as
+  unverified, not judged.
 
 ## Outputs, and the asset audit that reads them
 
@@ -147,14 +149,7 @@ so run this tool before it.
   `FrogletTools/GameCanvasUnifier.cs`), and the unfetched test framework: `UnityEditor.TestTools` (10:
   `AI/SkimRaceBenchmarkRemote.cs`) and `LogAssert` (4, in three test files). While those files are
   unchanged they are listed, not gated. A branch that changes one of them gets these as false project
-  errors (the missing-member ones; missing-type ones are "unverified", below). Read them against this
-  list.
-- **Missing-type errors never gate while any package failed, and three always do**
-  (`UnityEngine.Purchasing.Stores`, `-.Codeless`, `Unity.InputSystem.ForUI`). The bucket rule
-  `code in MISSING_CODES and pkg_failed` is not limited to files that use those packages, so a planted
-  `CS0103`/`CS0246`/`CS0234` anywhere in Assets reports `RESULT: OK`. Only missing-MEMBER codes
-  (`CS1061`, `CS0117`) and the rest gate. Plant a missing member when negative-controlling the tool.
-  Fix: limit the bucket to errors that can involve a failed package's types.
+  errors. Read them against this list.
 - **`--config editor` only sees Editor-folder files COMMITTED since `--changed-base`.** The set
   is `git diff --name-only <base>...HEAD`, so a NEW test file that is still untracked or only
   staged is not compiled at all — and a planted error in it passes green (seen 2026-10-08 on

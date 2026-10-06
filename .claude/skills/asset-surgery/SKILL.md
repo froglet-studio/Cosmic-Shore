@@ -1105,9 +1105,10 @@ references, m_Script classes). Four things that cost time on the first run (2026
   in `report.json` - intersect them with your diff's changed lines (parse `@@ +a,n @@` from
   `git diff -U0 <base>...HEAD -- <file>` and look for any error at those line numbers). Zero hits
   on changed lines is the evidence; "the run was green" is not.
-- **Negative-control both tools before quoting them**: plant a call to a missing MEMBER
-  (`CS1061`/`CS0117`), not a missing name, in a file you changed. Missing-type codes such as `CS0103`
-  never gate, see the README's Known issues. The compile must fail with that file tagged
+- **Negative-control both tools before quoting them**: plant a call to a missing member, or a
+  misspelt name, in a file you changed. Until 2026-10-06 a missing NAME (`CS0103`, `CS0246`) never
+  gated: three packages always fail, and missing-type errors were all bucketed while any had. Now only
+  a name a failed package declares is bucketed. The compile must fail with that file tagged
   `[CHANGED-TONIGHT]`. For the asset audit, misspell one key in an asset you changed (the audit
   must name the file and the key). Restore, then `git status --short` the paths. Both discriminated
   on their first try here.
