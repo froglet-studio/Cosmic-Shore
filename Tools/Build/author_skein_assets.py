@@ -27,6 +27,8 @@ import hashlib
 import os
 import re
 import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import arcade_mode_lib as aml  # noqa: E402  - card background + retired-key checks
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 CHECK_ONLY = "--check" in sys.argv
@@ -373,7 +375,7 @@ def arcade_card(icon_active, icon_inactive, card_bg) -> str:
             + "  MinPlayersAllowed: 2\n  MaxPlayersAllowed: 4\n"
             + "  MinDomainsAllowed: 2\n  MaxDomainsAllowed: 3\n"
             + "  MinIntensity: 1\n  MaxIntensity: 4\n"
-            + "  CallToActionTargetType: 404\n  ViewUserAction: 0\n  PlayUserAction: 0\n"
+            + "  ViewUserAction: 0\n  PlayUserAction: 0\n"
             + "  ComebackRatePerScoreDeficit: 0.5\n")
 
 
@@ -478,7 +480,7 @@ def register_progression():
 def main():
     nums = arena_numbers()
 
-    # Art: reuse Hijack's card art. Skein has no art of its own yet, and a card with a MISSING
+    # Art: reuse Hijack's card ICONS. Skein has no art of its own yet, and a card with a MISSING
     # sprite renders as a solid tinted quad rather than as nothing (Docs: the Pip border defect),
     # which reads as a broken card rather than an unfinished one.
     hij = open(rel("Assets/_SO_Assets/Games/ArcadeGameHijack.asset"), encoding="utf-8").read()
@@ -486,6 +488,14 @@ def main():
         m = re.search(rf"{field}: {{fileID: \d+, guid: ([0-9a-f]{{32}}), type: 3}}", hij)
         assert m, f"could not read {field} from ArcadeGameHijack"
         return m.group(1)
+
+    # The card BACKGROUND is not Hijack's: it is Skein's own /cardart render, which this script
+    # must never overwrite (aml.card_background). The card is validated before anything is written.
+    card = arcade_card(art("IconActive"), art("IconInactive"), aml.card_background("Skein"))
+    card_errors = aml.card_errors("Assets/_SO_Assets/Games/ArcadeGameSkein.asset", card)
+    if card_errors:
+        print("VALIDATION FAILED - nothing written:\n  " + "\n  ".join(card_errors))
+        return 1
 
     # ── .meta for the new C# ────────────────────────────────────────────────
     cs = {
@@ -518,8 +528,7 @@ def main():
     emit("Assets/_SO_Assets/Scoring Rules/SkeinScoringRule.asset", scoring_rule())
     emit("Assets/_SO_Assets/Scoring Rules/SkeinScoringRule.asset.meta",
          META_ASSET.format(g=G["SkeinScoringRule"]))
-    emit("Assets/_SO_Assets/Games/ArcadeGameSkein.asset",
-         arcade_card(art("IconActive"), art("IconInactive"), art("CardBackground")))
+    emit("Assets/_SO_Assets/Games/ArcadeGameSkein.asset", card)
     emit("Assets/_SO_Assets/Games/ArcadeGameSkein.asset.meta",
          META_ASSET.format(g=G["ArcadeGameSkein"]))
 

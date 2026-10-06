@@ -318,6 +318,7 @@ extent against the spawn ring and membrane, and the painting balance.
 | scoring rule | `_Scripts/Controller/Arcade/Scoring/HijackScoringRuleSO.cs` |
 | turn monitor | `_Scripts/Controller/Arcade/TurnMonitors/HijackStealTurnMonitor.cs` |
 | objective arrow | `_Scripts/Controller/Arcade/HijackObjectiveProvider.cs` |
+| replicated prism ownership | `_Scripts/Controller/Arcade/HijackOwnershipLedger.cs` (RPCs on `HijackController`) |
 | arena generator | `_Scripts/Controller/Environment/MiniGameObjects/SpawnableSwitchyard.cs` |
 | the arena's map of itself | `_Scripts/Controller/Environment/MiniGameObjects/HijackYard.cs` |
 | budget + geometry proofs | `Tools/Build/hijack_budget.py` |
@@ -352,9 +353,19 @@ item is a real check a human has to perform, in this order (load-bearing first).
 8. **Comeback.** Fall ~375 behind: the trailing pilots' element flowers fill ~3 levels; at Time 5
    they ride hostile rails at full speed.
 9. **Regression.** The Urchin still flies correctly in freestyle (the `ram` change is AI-only).
-10. **HOST-SIDE FIRST, then a client.** Prism ownership does not replicate (§10), so the two
-    machines will disagree about which rail thirds are fast and which burrs still hold loot. The
-    SCORE should agree; the arena will not. Confirm the score does.
+10. **OWNERSHIP AGREES ACROSS MACHINES (host + one client, ideally MPPM or two builds).**
+    a. On the CLIENT, grind a hostile rail third and spike a burr. On the HOST, the same prisms
+       turn the client's colour within ~0.1s, and the host's own ride over them is fast.
+    b. On the HOST, steal a burr. On the CLIENT the burr flips, and the client's arrow moves off
+       it to the next cluster that still holds loot.
+    c. Watch a remote pilot grind a hostile rail on your screen: its prisms flip as it passes and
+       STAY flipped (no flicker back). If a flip snaps back after about half a second, the
+       owner's report is not reaching the server — check the console for RPC errors.
+    d. AI raiders (host-run) stop targeting a burr a CLIENT emptied: empty one, then watch which
+       rail the AI picks next.
+    e. **Late join:** start a match host-only, steal a burr or two, then join a client mid-match.
+       Its yard must show those burrs in the host's colour once laid, not their painted colour.
+    f. Score still agrees on both machines (unchanged path).
 
 ---
 
@@ -393,18 +404,15 @@ merge without a conflict in that file. Do not edit it on this branch for that re
 
 ## 10. Known limitations
 
-- **PRISM OWNERSHIP DOES NOT REPLICATE, and this mode is the first whose whole subject is
-  ownership.** `PrismTeamManager` is a plain `MonoBehaviour`: `ChangeTeam` / `Steal` mutate a
-  local field and raise a SOAP event, with no NetworkVariable and no RPC anywhere. Every peer
-  builds a byte-identical yard (the generator is closed form) and then diverges from the first
-  steal. **The SCORE is correct on every peer** — that rides the owner-detects / server-records
-  round trip and was traced end to end — but three reads are per-machine:
-  ride speed (`TrailFollower.GetTerrainAwareBlockSpeed`, so two pilots disagree about which
-  thirds are fast), the objective arrow (`HijackYard.HasHostileMass` walks the local trail), and
-  the AI's rail choice — which runs server-side and never sees a client's steals, so AI raiders
-  keep attacking burrs a human client already emptied. This is a platform gap rather than
-  something the mode introduced (`CLAUDE.md` records the destruction half of it), but Hijack is
-  where it stops being academic. **Play-test it host-side first.**
+- **Prism ownership replicates for the YARD only, and the trust unit is a domain, not a pilot.**
+  Fixed 2026-10 (`HijackOwnershipLedger`, §11). Platform ownership (`PrismTeamManager`) is still
+  local everywhere else — this mode did not change it — so anything outside the Switchyard's 42
+  trails (an Urchin's own trail, if it ever lays one here) still diverges per peer. Within the
+  yard, a peer believes a flip into a domain it simulates a pilot of, so a peer also believes its
+  PROXY of a remote teammate; that can make a teammate's steal land early, never hand a prism to
+  the wrong team. **Shield state is not part of the table**: a Mass-5 rail prism shielded on one
+  machine may not be on another, so whether a steal is refused (`Steal` drops a shield instead of
+  flipping) can still differ. The SCORE path is unchanged and was already correct on every peer.
 - **The Urchin has no HUD prefab.** There is no `UrchinHUDVariant.prefab` and the vessel wires
   none, so an Urchin-only mode ships with no ability lockup row, no elemental petal bars, no
   control chips and **no ammo gauge** — while the pilot's only weapon is gated on exactly that
@@ -424,10 +432,49 @@ merge without a conflict in that file. Do not edit it on this branch for that re
   from 1,500 for pace without re-measuring either, so the intended length is now roughly half of
   the original 3–5 minute estimate — which is itself an estimate. The target is one editor field.
 - **Mass-5 armour on rail prisms** is the one uncapped collider source — see §7.
-- **No `ModePreview_Hijack.asset`**, so the arcade card shows "LEVEL PREVIEW NOT AVAILABLE".
-  Salvo ships the same way, so this is a gap rather than a regression.
+- **The mode preview exists**: `ModePreview_Hijack.asset` (authored by
+  `Tools/Build/author_mode_previews.py`). The Switchyard is an authored EnvironmentPrefab per
+  intensity, so the scale model shows the rings and burrs, and the flight preview lets the Urchin
+  grind a rail and launch into a burr.
 - **Not suppressed while riding: `AIPilot`'s orbit-break.** `UpdateOrbitBreak` exempts drifting
   but not attachment, and `breakOrbits` defaults on. If it ever fires mid-grind it drops
   `LookingAtCrystal` (and with it `ram`, so 150 → 90 or 10 → 6) and swings the nose off-rail.
   A 20° arc supplies nowhere near the 540° of sweep the detector wants, so it is very unlikely to
   trip — but it is unproven rather than ruled out, and the cheap guard is one clause.
+
+## 11. Replicated prism ownership
+
+The mode's subject is who owns each prism, and ownership was local — every peer built the same
+yard and diverged from the first steal, so ride speed, the arrow and the AI's rail choice all
+disagreed between machines. `HijackOwnershipLedger` (plain C#) plus four RPCs on
+`HijackController` (the mode's only `NetworkBehaviour`, so no scene change) make it
+server-authoritative for the yard's 42 trails. Nothing about how a prism changes hands elsewhere
+moved.
+
+- **Addressing.** A prism is `(slot, index)`: slot = burrs in `HijackYard.Burrs` order then rails
+  in `HijackYard.Rails` order; index = position in that trail's append-only `TrailList`, laid in
+  the same order on every peer. One packed `int` per change: `domain << 24 | slot << 16 | index`.
+- **Who is believed.** A flip is authoritative on the machine that simulates a pilot of the NEW
+  domain (server: host pilot + every AI; client: its own pilot) — `StatsManager.OwnsAttacker`'s
+  rule, applied to the prism. The server writes its own straight into the table; a client reports
+  its own (`ReportOwnership_ServerRpc`) and the server accepts only entries in the SENDER's
+  domain, taken from its own copy of the sender's `Player`. A rejected entry is answered with the
+  table's value so the sender converges.
+- **Everything else is provisional.** A remote pilot's proxy grinding a rail on this machine
+  still flips prisms locally (the ride code is shared and untouched); those flips stay on screen
+  for `ownershipGraceSeconds` (0.5s) so the owner's real change can arrive, then are put back to
+  the table. A confirmed steal therefore never flickers; a phantom one lasts half a second.
+- **Bandwidth.** No per-frame traffic. Changes are coalesced per prism and flushed every
+  `ownershipFlushSeconds` (0.1s), 4 bytes each, chunked at 512 per RPC — a 100-prism cascade is
+  one ~400-byte message. Server → clients: `SyncOwnership_ClientRpc`.
+- **Late join.** Every client sends `RequestOwnershipSnapshot_ServerRpc` on spawn; the server
+  answers (to that client only) with every prism that has EVER changed hands. Everything else is
+  still the colour the closed-form generator painted, which the joiner's own yard already shows.
+  A key that names a prism the joiner has not laid yet waits in its table and applies the moment
+  the prism appears.
+- **Readers.** `HijackYard.HostileMassAt` / `HasHostileMass` / `NearestHostileBurr` /
+  `OwnFractionOfRail` / `DomainOf` read the table, so the arrow and the AI's rail choice and
+  "hostile underfoot" test agree on every peer. Ride speed (`TrailFollower`, vessel code) still
+  reads the prism, and agrees because the ledger keeps every yard prism showing the table's
+  value (immediately for a replicated change; within the grace window for a provisional one).
+

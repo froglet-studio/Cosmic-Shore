@@ -337,6 +337,12 @@ namespace CosmicShore.Gameplay.Audio
 
         readonly List<LayerRuntime> _layers = new List<LayerRuntime>();
 
+        // Hull names already told their engine slot is empty - one line per hull per session.
+        static readonly HashSet<string> s_warnedEmptyEngine = new HashSet<string>();
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => s_warnedEmptyEngine.Clear();
+
         void Awake()
         {
             _vessel = GetComponent<IVessel>();
@@ -510,7 +516,13 @@ namespace CosmicShore.Gameplay.Audio
         {
             if (engineEvent.IsNull)
             {
-                CSDebug.LogError($"[ShipAudioController] '{name}' has no Engine Event assigned; nothing will play.", this);
+                // An EMPTY slot is the shipped state of a hull the audio owner has not voiced yet
+                // (the LOCKED FMOD convention: ship the field empty, never a borrowed event), so
+                // it is a silent no-op that says so ONCE per hull per session - not an error on
+                // every spawn.
+                if (s_warnedEmptyEngine.Add(name))
+                    CSDebug.LogWarning($"[ShipAudioController] '{name}' has no Engine Event assigned; " +
+                                       "the engine is silent until one is authored.", this);
                 return;
             }
 

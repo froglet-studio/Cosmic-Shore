@@ -33,6 +33,14 @@
 > hand-edit would be overwritten by the next scan.
 >
 > Until R2 runs, **this file is live, not superseded.** Work the open items below.
+>
+> **Partly migrated 2026-10-05 (arcade/arena matrix pass).** Every 🔴 entry for the **Dolphin**
+> (10), **Sparrow** (13), **Scarab** (5 + Scarab Scramble), **Urchin** (2) and the **Bends AI
+> aim** entry now has a self-contained item in `Docs/QA/QA_BACKLOG.md` (Blocks A, E, F, I and
+> `QA-BENDS-MODE`). Run those from the backlog, not from here. Everything else below (offline
+> fallback, reconnect, ability lockup fleet chips, prism-clock prompts, flora, safe-area, shield
+> morphs, self-trail grace, Rhino sword v3, projectile tunnelling, fauna consumption) is still
+> only recorded here.
 
 **Purpose.** Some changes land on shared branches (`bleeding-edge` and the
 per-feature branches) without ever being opened in the Unity Editor —
@@ -56,6 +64,252 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 - Status markers: 🔴 unverified · 🟡 partially confirmed · 🟢 verified in editor.
 
 ---
+
+### 🔴 Platform-agnostic fixes: boost event quiet at rest, skim-tick rate limit, Squirrel beam retired (`claude/serene-edison-lfv24f`, 2026-10-06)
+
+Step 6 of `Docs/PLATFORM_UNIFICATION.md` (§3.7). These change EVERY platform, Windows included. No
+editor and no `unity` CLI in the authoring session, so `/verify-unity` did NOT run. Out-of-editor:
+**`Tools/Build/unity_refcompile/run.sh` compiled the whole branch (Steps 2-6) against real Unity
+reference assemblies and locked package sources with 0 errors in project code** (91 player
+assemblies; negative control: a missing-member call planted in `RaceTrailCap` fails it with CS1061);
+the Froglet Engine live build is also 0 errors. The approximate `--config editor` run reports 4
+errors in three untouched runtime files, an artifact of that config (see §3.7).
+
+**What landed**
+
+1. `VesselTransformer.DecayBoost` raises `boostChanged` only when the multiplier moved since it last
+   raised it; `Initialize` and `ResetTransformer` force one re-raise. Only the Squirrel runs it.
+2. `ProximityBoostAudioController.minTickInterval` (0.07 s, new inspector field): the skim-tick
+   one-shot fires at most ~14 times a second.
+3. `SquirrelSkimmerImpactorDataContainer` no longer holds the `[Obsolete]` `SkimmerFXPrismEffect`
+   beam (owner's decision); the forcefield crackle is the Squirrel's only skim visual.
+
+**Verify in editor**
+
+0. `DeviceTierTests` pass - 56 cases after the 2026-10-06 ship review, which added the baked-sky
+   residency test and the two fold-gate target tests.
+1. Squirrel, Desktop: at rest the energy bar sits empty and still; skim - it fills and drains
+   smoothly exactly as before; respawn / vessel-swap mid-boost - the bar returns to empty.
+2. Squirrel: skim dense trail continuously (a Skim Race straight, or the Wanderway belt). The tick
+   reads as rapid separate clicks, not a buzz; the boost loop is unchanged; the boost itself is
+   unchanged (same top speed). Try it with VSync off at a high frame rate - that is where the old
+   buzz was worst.
+3. Two-player session (ParrelSync): each pilot's energy bar tracks only their own Squirrel.
+4. Squirrel skimming cell mass: no beam lines to the skimmed prisms; the forcefield crackle still
+   flashes on the skimmer sphere at each contact (if it does not, the crackle wiring is broken and
+   the Squirrel now has NO skim visual - see `Docs/claude/IMPACT_EFFECTS_AND_AUDIO.md`).
+
+**First-pass tuning:** `Squirrel.prefab ▸ ProximityBoostAudioController.minTickInterval` 0.07
+(0 restores the old behaviour).
+
+---
+
+### 🔴 Content tier: MobileLow menu/freestyle trail policy, Skim Race / Joust trail cap, menu teardown, glow, cytoplasm, Wanderway budget (`claude/serene-edison-lfv24f`, 2026-10-05)
+
+Step 5 of `Docs/PLATFORM_UNIFICATION.md` (§3.6). No editor and no `unity` CLI in the authoring
+session, so `/verify-unity` did NOT run. Out-of-editor: **the Froglet Engine compiled every runtime
+file under `Assets/_Scripts` with 0 errors and no new warnings** (`dotnet build
+Port/src/CosmicShore.Live`; negative control: a call to a missing member injected into
+`RaceTrailCap` fails with CS1061); `DeviceTierTests` type-checked against the stub harness (with the
+REAL `ConveyorConfig` extracted from source) and its 42 non-asset cases RUN green; two mutations of
+`PlatformProfileSO` (no floor on the per-vessel share; `KeepAll` overwriting crystals) each fail the
+new tests; the three profile assets' YAML parsed and checked against every asset-backed assertion;
+repo C# gates green.
+
+**What landed**
+
+1. `PlatformProfileSO` content fields (all no-change on Desktop/MobileHigh): `menuAutopilotLaysNoTrail`,
+   `freestyleCellPrismBudget` / `Resume`, `skimRaceTrail` / `joustTrail` (`RaceTrailBudget`),
+   `deactivateMenuWhileFlying`, `quietScoreGlow`, `disableCytoplasm`, `wanderwayBudget`. MobileLow
+   carries Garrett's numbers.
+2. `RaceTrailCap` (new), attached by `SkimRaceController` / `JoustController` in `OnNetworkSpawn` on
+   MobileLow only: oldest trail prism withers and returns to its pool past the vessel's share. The
+   owner-authorized exception recorded in `Docs/ECOSYSTEM.md` §0.
+3. `VesselPrismController.SetTierHold` (a creation hold independent of the pen) driven once a second
+   by `MenuCrystalClickHandler`: no trail in the lava lamp, freestyle trail waits above 10,000 cell
+   prisms (resumes at 9,700), never during a Wanderway run (`WanderwayRun.AnyRunning`).
+4. `ScreenSwitcher` deactivates the active screen roots + nav bar once the freestyle blend settles and
+   restores exactly those on exit; `DomainScorePanel` skips the glow breath; `SnowChanger` skips the
+   motes; `WanderToy` applies the belt budget to the built config (`ConveyorConfig.MaxConcurrentArrivals`
+   replaces the conveyor's constant, default 3).
+
+**Verify in editor / on device**
+
+1. Project compiles; `DeviceTierTests` pass (now 53 cases).
+2. Desktop, override Auto: Menu_Main's lava lamp lays trail, freestyle lays trail, the menu fades
+   back exactly as before, cytoplasm motes are there, a Skim Race keeps every vessel's whole trail,
+   the HUD glow breathes, the Wanderway belt is the big one with lifeform scenes.
+3. Device Tier window → **Mobile Low**, Play Menu_Main: the lava-lamp vessel lays NO trail (what was
+   laid stays); enter freestyle and it lays trail again within a second; no motes in the cell.
+4. Still Mobile Low, in freestyle: the Hierarchy shows the non-HOME screen roots and the NavBar
+   INACTIVE once the blend has settled, and HomeScreen still ACTIVE. Exit freestyle: the nav bar and
+   every screen that was active come back, the hub row fades in, the current screen re-enters
+   normally; any screen that was inactive before stays inactive. Repeat a few times, and once via a
+   toy/arcade launch that leaves freestyle. With a second client: send a party invite while the
+   phone flies - the popup appears. Change the profile name in flight - the home header updates.
+   Watch the exit for a hitch (ProfileScreen's `QuestTrackView` rebuilds its cards on enable).
+4b. Still Mobile Low: open an arcade card's preview and tap in - the previewed vessel lays its trail.
+5. Still Mobile Low: fly a Wanderway run — the belt is the small one (8 scenes, no lifeforms) and the
+   tether + return station still work (the trail is never held during a run).
+6. Still Mobile Low, Skim Race with AI backfill to 4: after about two laps each ribbon stops growing
+   at its tail; the oldest prisms SHRINK away (no pop, no implosion burst), a Squirrel riding a rival's
+   tail detaches cleanly when its prism leaves. Profiler: `RaceTrailCap.Hold` stays well under a
+   millisecond per 0.2 s tick. No `[RaceTrailCap] ... not pooled` warning in the console. Joust: same, at the shorter cap. Scores/finish are
+   unchanged. The HUD top bar's domain glow rests (no breathing) and still flares on a score.
+7. Freestyle on Mobile Low, if a cell can be pushed past 10,000 live prisms: the trail stops at the
+   budget and resumes once grazing brings it under 9,700.
+8. Set the override back to **Auto**.
+9. On the 4 GB Samsung (Development build): Menu_Main, freestyle and a 4-seat Skim Race against the
+   Step 4 build; the iPhone (MobileHigh) is unchanged.
+
+**First-pass tuning** (assets only, `PlatformProfile_MobileLow.asset`): Skim Race 6000 / 800 / 2000,
+Joust 4000 / 400 / 1200, freestyle 10000 / 9700, Wanderway 8 scenes x 150 prisms, 4 ahead, 2
+crystals, 2 arrivals.
+
+---
+
+### 🔴 Render tier: MobileLow HDR off, baked sky, lighter membrane, fold-gate cap; fold-gate footprint everywhere (`claude/serene-edison-lfv24f`, 2026-10-05)
+
+Step 4 of `Docs/PLATFORM_UNIFICATION.md` (§3.5). No editor and no `unity` CLI in the authoring
+session, so `/verify-unity` did NOT run. Out-of-editor: **the Froglet Engine compiled every runtime
+file under `Assets/_Scripts` with 0 errors** (`dotnet build Port/src/CosmicShore.Live`; covers Steps
+2-4; negative control: an injected `PlatformProfile.Curent` fails with CS0117); editor/test files
+type-checked against the stub harness (negative-controlled); the REAL icosphere generator run
+outside Unity proves levels 0-3 are exact prefixes of level 4; `bake_static_skybox.py --check` OK
+against bleeding-edge's sky; repo C# gates green.
+
+**What landed**
+
+1. `PlatformProfileSO` render fields (all no-change on Desktop/MobileHigh): `disableHdr`,
+   `skyboxReplacements`, `membraneMaxSubdivisions`, `foldGateWindowMaxRenderScale`. MobileLow: HDR
+   off, `HyperSeaSkybox.mat` → `StaticHyperSeaSkybox.mat`, membrane level 3 (642 capsules), fold-gate
+   cap 0.5, and its first-run AA is now 4x MSAA.
+2. `PlatformRenderApplier` swaps the skybox on every scene load; `GraphicsSettingsApplier` turns
+   HDR off; `CapsuleMembrane` draws the capped prefix; `FoldGatePortalView` caps the window.
+3. **All platforms:** the fold-gate window renders only its on-screen footprint (shader remap
+   `_FoldGatePortalUV`) and no longer reallocates its target every frame.
+4. Editor: `UrpAssetPlayModeRestore` restores the URP asset's HDR / render scale / MSAA / upscaler
+   after Play.
+
+**Verify in editor / on device**
+
+1. Project compiles; `DeviceTierTests` pass (now 41 cases, including the render-tier ones that load
+   the shipped assets and the icosphere prefix test).
+2. Desktop, override Auto: Menu_Main and a race look exactly as before - procedural sky (animated
+   star twinkle), full capsule membrane, HDR bloom on crystals.
+3. Butterfly (any platform): fold a gate far away, then fly into it. The window shows the far side
+   correctly at every distance, with no seam against the ring, no flicker, and no hitch as it grows
+   to fill the screen during the carry. This is the one change Windows sees. With open SKY behind a
+   distant gate, the sky in the window lines up with the sky around it (the cropped projection must
+   carry the skybox pass too). Memory Profiler: no `FoldGatePortalRT` allocation per frame while a
+   gate sits far away (was every frame at the 32-texel floor).
+4. Device Tier window → **Mobile Low**, Play Menu_Main: the sky is the baked panorama (galactic
+   band, nebulae; no twinkle animation), the membrane lattice is visibly sparser (same radius),
+   bloom still glows, the Panini curve is still there. Fly a Wanderway run outside the cell: the
+   baked sky, not black.
+5. Exit Play: the URP asset (`Assets/_Graphics/URP_Asset.asset`) shows HDR ON again in the
+   inspector, and `git status` does not list it. On Desktop, the Memory Profiler shows NO
+   `StaticHyperSeaSky` texture loaded (it is loaded only by a tier that swaps to it).
+6. Set the override back to **Auto**.
+7. On the 4 GB Samsung (Development build): compare frame time against the Step 3 build in Menu_Main
+   and freestyle; the Samsung should be MobileLow automatically. On the iPhone: unchanged.
+
+**First-pass tuning** (assets only): `PlatformProfile_MobileLow.asset` — `membraneMaxSubdivisions`
+3 (2 = 162 capsules if still heavy), `foldGateWindowMaxRenderScale` 0.5, `antiAliasing` 4 (MSAA4x).
+
+---
+
+### 🔴 Device tiers: Desktop / MobileHigh / MobileLow + tier-aware first-run graphics (`claude/serene-edison-lfv24f`, 2026-10-05)
+
+Step 3 of `Docs/PLATFORM_UNIFICATION.md` (§3.4 has the full as-built table). No editor and no
+`unity` CLI in the authoring session, so `/verify-unity` did NOT run. Out-of-editor: the pure
+classifier compiled and RUN outside Unity (36 cases, negative-controlled); every new/changed C# file
+type-checked under Roslyn against a stub harness with bodies bound (six injected defects, six hits);
+the edit-mode test file's 33 non-asset cases executed under that harness; asset YAML parsed and every
+referenced guid resolves to exactly one `.meta`; the repo's C# gates.
+
+**What landed**
+
+1. `PlatformProfile` resolves the device's `DeviceTier` once per session (`Resources/PlatformProfiles`
+   + `SystemInfo`), with a PlayerPrefs override, logged on the `Boot` channel and shown on the
+   DiagnosticsHUD "Platform" rows.
+2. `SettingsAutoDetector.RecommendSettings` asks the tier's profile: Desktop and MobileHigh keep the
+   old capability heuristic (no change on Windows or iPhone); MobileLow gets Very Low, a 1.3 M pixel
+   budget, Linear upscaling, FXAA, 60 fps cap.
+3. `DisplayGraphicsSettings` v3 re-seeds a MobileLow device's graphics once, only if they still equal
+   the old auto-detect's output.
+4. FrogletTools ▸ Performance ▸ **Device Tier** window.
+
+**Verify in editor / on device**
+
+1. Project compiles; the edit-mode suite's `DeviceTierTests` pass (all 36, including the three
+   that load `Resources/PlatformProfiles`).
+2. FrogletTools ▸ Performance ▸ Device Tier: "Classifies as Desktop - not a handheld device". The
+   board shows the card under Performance.
+3. Play Menu_Main with the override on Auto: nothing differs from before (Settings ▸ Performance
+   shows the same preset / AA / render scale you had).
+4. Set **Mobile Low**, press Play on a fresh PlayerPrefs (or press "Re-run graphics auto-detect" in
+   the window): Settings shows Very Low, FXAA, Linear upscaling and a render scale fitted to the
+   MONITOR's native resolution (~79% on 1080p, ~59% on 1440p). Set back to **Auto** afterwards.
+5. Device Simulator (Window ▸ General ▸ Device Simulator), override on Auto, enter Play with a
+   budget Android device selected: the window's "This Play session" row reads MobileLow; with an
+   iPhone selected, MobileHigh. (If the simulator does not simulate RAM, the device line shows it.)
+6. On the 4 GB Samsung (Development build): DiagnosticsHUD "Platform" rows read `tier MobileLow` and
+   the device line names its GPU; Settings shows the MobileLow recommendation. On the iPhone: tier
+   MobileHigh and the settings it had before.
+7. `[Platform]` lines appear only with the Boot log channel on (FrogletTools ▸ Toolbox ▸ Logging).
+
+**First-pass tuning** (all on the assets, no code): `PlatformProfiles.asset` — `iosLowMemoryMB` 2500,
+`androidHighMinMemoryMB` 5000, `androidHighEndGpuPatterns`; `PlatformProfile_MobileLow.asset` —
+`pixelBudget` 1,300,000, `upscalingWhenScaled` Linear, `antiAliasing` FXAA, `maxTargetFrameRate` 60.
+
+---
+
+### 🔴 Touch controls from the Android strip branch, for every touch device (`claude/serene-edison-lfv24f`, 2026-10-05)
+
+Step 2 of `Docs/PLATFORM_UNIFICATION.md`. Ported from `claude/android-performance-stripped-dap5z2`
+(where it was played on Android), **ungated**: it now runs on iOS too. No editor, no `unity` CLI in
+the authoring session, so `/verify-unity` did NOT run. Out-of-editor: Roslyn pass over the five C#
+files (syntax and duplicate members only; method bodies cannot bind without Unity's assemblies,
+negative-controlled with CS1002 / CS0102 / CS0111), the repo's C# gates, and
+`Tools/Build/touch_drift_slip.py --check` / `--self-test`.
+
+**What landed**
+
+1. `TouchInputStrategy`: stick radius 0.6" and dead zone 0.05" (physical size, 12 px floor);
+   one-thumb flight mirrors the live thumb onto both sticks at full authority (pitch + yaw only);
+   sticks re-zero on every one↔two-thumb change; throttle held through a lift and carried back;
+   Left/RightStickAction fire only on a thumb **lift**, never on the first thumb down (was a
+   strip-only flag).
+2. `VesselTransformer.touchNoseResponse` (Squirrel **9**, Butterfly **5**, fleet 0 = 1.5): the hull
+   follows the thumb faster, **only for this machine's human pilot on touch** — AI, the menu
+   autopilot and remote replicas keep the fleet's 1.5 (new `IsLocalHumanTouchPilot`; the strip
+   applied it to every hull on a handheld, AI included).
+3. ~~Drift with no measured trigger travel is a full pull for a gamepad too~~ — reverted in the
+   2026-10-06 ship review (it changed pad drift on party clients and for AI; touch and keys already
+   drift at a full pull). `GetTriggerSum` and `DriftAudioController` are as on bleeding-edge.
+4. `R_VesselActionHandler` reconciles its button subscription with the pause state every frame
+   (local pilot only) and re-attaches the pause source in `OnEnable`; DiagnosticsHUD "Abilities"
+   rows + the Squirrel's "boost ring" row (Development builds only).
+
+**Verify in editor / on device**
+
+1. Project compiles; no new console errors entering Menu_Main or a race.
+2. iOS or Android, Squirrel, freestyle: thumbs centred = straight flight (no creeping turn);
+   a turn stops when the thumbs return to centre, no swing to correct.
+3. Lift the **left** thumb: boost ring ahead, vessel keeps its line and speed; put it back: no yank.
+4. Lift the **right** thumb: full drift at once, left thumb steers it; put it back: straightens at speed.
+5. Butterfly on touch: right thumb down FIRST toggles nothing; lifting the left thumb toggles
+   Mass/Dust; lifting the right thumb and putting it back performs a Fold.
+6. Menu lava lamp (autopilot) and AI Squirrels in a Skim Race on a phone steer as before (fleet
+   response) — the AI's corner leads should not overshoot.
+7. Windows: pad and keyboard flight unchanged, drift included (feathered LT = light drift; releasing
+   LT ends the drift without a surge, also as a party client).
+8. Pause and un-pause mid-flight on any device: abilities still fire afterwards. In a Development
+   build the DiagnosticsHUD "Abilities" rows read `listening yes` while flying.
+
+**First-pass tuning:** `touchNoseResponse` (prefab, per hull) — raise if the nose still trails the
+thumb, lower toward 1.5 if it feels twitchy. Touch curve `Ease` 75/25 (unchanged on bleeding-edge).
 
 ### 🔴 Skim Race AI teammates split the crystals (`claude/confident-pascal-w76l2o`, 2026-10-05)
 

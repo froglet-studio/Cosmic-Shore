@@ -117,6 +117,28 @@ namespace CosmicShore.Gameplay
         const InputEvents SpikeControl = InputEvents.RightStickAction;   // Charge - Chain Spikes
         const InputEvents SlipControl = InputEvents.Button2Action;       // Time  - Slip
 
+        [Header("Ownership Sync")]
+        [Tooltip("Seconds between ownership flushes. Prism changes are coalesced per prism and " +
+                 "sent as one packed message per flush (server: broadcast; client: report of its " +
+                 "own steals), so a spike cascade costs one message, not one per prism.")]
+        [SerializeField, Min(0.02f)] float ownershipFlushSeconds = 0.1f;
+
+        [Tooltip("Seconds a flip this machine cannot vouch for (a REMOTE pilot's proxy grinding a " +
+                 "rail here) stays on screen before it is put back to the server's table. Long " +
+                 "enough for the real change to arrive from its owner, so a confirmed steal never " +
+                 "flickers; short enough that a steal that never happened does not linger.")]
+        [SerializeField, Min(0f)] float ownershipGraceSeconds = 0.5f;
+
+        /// <summary>Entries per ownership RPC. 512 packed ints is 2 KB - well inside one
+        /// transport payload, so a big late-join snapshot goes as several plain messages rather
+        /// than leaning on fragmentation.</summary>
+        const int OwnershipChunk = 512;
+
+        HijackOwnershipLedger _ownership;
+        float _nextOwnershipFlush;
+        int _authorityMaskFrame = -1;
+        int _authorityMask;
+
         bool _finalResultsSent;
 
         protected override bool UseGolfRules => true;
@@ -126,6 +148,17 @@ namespace CosmicShore.Gameplay
         // SyncFinalScores_ClientRpc, which calls InvokeWinnerCalculated + InvokeMiniGameEnd.
         // Suppress the base turn->round->game flow so there is no duplicate.
         protected override bool HasEndGame => false;
+
+        // The race beats as toasts (quarter, halfway, lead change). A local poll over the
+        // replicated scored stat, run on every peer - see DomainRaceToasts. Feedback only.
+        DomainRaceToasts _raceToasts;
+
+        void Update()
+        {
+            if (_finalResultsSent || rule == null) return;
+            _raceToasts ??= new DomainRaceToasts(rule);
+            _raceToasts.Tick(gameData);
+        }
 
         public override void OnNetworkSpawn()
         {
@@ -139,12 +172,166 @@ namespace CosmicShore.Gameplay
             // load is worth zeroing twice rather than never (the Cleave regression where
             // players started a match already on the board).
             if (IsServer) ZeroStealCounters();
+
+            _ownership = new HijackOwnershipLedger(IsServer, IsLocallyAuthoritative, ownershipGraceSeconds);
+            _nextOwnershipFlush = 0f;
+
+            // Every client pulls the table once, not just a late joiner: early in a match it is
+            // empty and costs nothing, and it means there is one path to correctness rather than
+            // a "did I join late?" guess. Keys that name prisms this peer has not laid yet wait
+            // in the table and apply as the yard fills.
+            if (!IsServer) RequestOwnershipSnapshot_ServerRpc();
         }
 
         public override void OnNetworkDespawn()
         {
             DisarmRaiders();
+            UnbindOwnership();
             base.OnNetworkDespawn();
+        }
+
+        // ── Replicated prism ownership ───────────────────────────────────────
+
+        /// <summary>
+        /// Keeps the yard's prisms showing the SERVER's ownership on every peer - which is what
+        /// makes ride speed (<c>TrailFollower</c> reads the prism it is on), the objective arrow
+        /// and the AI's rail choice (both read <see cref="HijackYard"/>, which reads the table)
+        /// agree between machines. See <see cref="HijackOwnershipLedger"/> for who is believed
+        /// and why; this method is the per-frame driver and the wire.
+        /// </summary>
+        void LateUpdate()
+        {
+            if (_ownership == null || !IsSpawned) return;
+
+            var yard = HijackYard.Current;
+            if (yard != _ownership.Yard || (yard == null && _ownership.IsBound))
+            {
+                UnbindOwnership(keepLedger: true);
+                if (yard != null)
+                {
+                    _ownership.Bind(yard);
+                    yard.Ownership = _ownership;
+                }
+            }
+
+            _ownership.Tick(Time.time);
+
+            if (Time.time < _nextOwnershipFlush) return;
+            _nextOwnershipFlush = Time.time + ownershipFlushSeconds;
+
+            var packed = _ownership.TakeOutbox();
+            if (packed == null) return;
+
+            if (IsServer) SendOwnership(packed, default);
+            else
+                for (int o = 0; o < packed.Length; o += OwnershipChunk)
+                    ReportOwnership_ServerRpc(Chunk(packed, o));
+        }
+
+        void UnbindOwnership(bool keepLedger = false)
+        {
+            if (_ownership == null) return;
+            var yard = _ownership.Yard;
+            if (yard != null && yard.Ownership == _ownership) yard.Ownership = null;
+            _ownership.Unbind();
+            if (!keepLedger) _ownership = null;
+        }
+
+        /// <summary>
+        /// Does this machine simulate a pilot of <paramref name="domain"/>? The server simulates
+        /// the host's own pilot and every AI; a client simulates its own pilot. Same ownership
+        /// test as <c>StatsManager.OwnsAttacker</c>. Cached per frame: a spike cascade asks this
+        /// once per prism it flips.
+        /// </summary>
+        bool IsLocallyAuthoritative(Domains domain)
+        {
+            if (_authorityMaskFrame != Time.frameCount)
+            {
+                _authorityMaskFrame = Time.frameCount;
+                _authorityMask = 0;
+                var players = gameData != null ? gameData.Players : null;
+                if (players != null)
+                {
+                    foreach (var p in players)
+                    {
+                        if (p == null) continue;
+                        bool simulatedHere = p is not Player net || !net.IsSpawned || net.IsOwner;
+                        if (simulatedHere) _authorityMask |= 1 << (int)p.Domain;
+                    }
+                }
+            }
+            return (_authorityMask & (1 << (int)domain)) != 0;
+        }
+
+        static int[] Chunk(int[] packed, int offset)
+        {
+            int length = Mathf.Min(OwnershipChunk, packed.Length - offset);
+            if (offset == 0 && length == packed.Length) return packed;
+            var chunk = new int[length];
+            System.Array.Copy(packed, offset, chunk, 0, length);
+            return chunk;
+        }
+
+        void SendOwnership(int[] packed, ClientRpcParams target)
+        {
+            for (int o = 0; o < packed.Length; o += OwnershipChunk)
+                SyncOwnership_ClientRpc(Chunk(packed, o), target);
+        }
+
+        /// <summary>
+        /// CLIENT → SERVER: this client's own steals. The server accepts each only in the
+        /// SENDER's domain - taken from the server's copy of the Player that owns the RPC, never
+        /// from the payload - and re-broadcasts what it accepted on its next flush.
+        /// </summary>
+        [ServerRpc(RequireOwnership = false)]
+        void ReportOwnership_ServerRpc(int[] packed, ServerRpcParams rpcParams = default)
+        {
+            if (_ownership == null) return;
+            if (!TryGetHumanDomain(rpcParams.Receive.SenderClientId, out var senderDomain)) return;
+            _ownership.AcceptClientReports(packed, senderDomain);
+        }
+
+        /// <summary>
+        /// CLIENT → SERVER: send me every prism that has changed hands so far. Answered to the
+        /// asker only; deltas after it ride the normal broadcast, in order behind it.
+        /// </summary>
+        [ServerRpc(RequireOwnership = false)]
+        void RequestOwnershipSnapshot_ServerRpc(ServerRpcParams rpcParams = default)
+        {
+            if (_ownership == null) return;
+            var snapshot = _ownership.BuildSnapshot();
+            if (snapshot.Length == 0) return;
+            SendOwnership(snapshot, new ClientRpcParams
+            {
+                Send = new ClientRpcSendParams { TargetClientIds = new[] { rpcParams.Receive.SenderClientId } }
+            });
+        }
+
+        /// <summary>SERVER → CLIENTS: ownership deltas, or one chunk of a late-join snapshot.</summary>
+        [ClientRpc]
+        void SyncOwnership_ClientRpc(int[] packed, ClientRpcParams rpcParams = default)
+        {
+            if (IsServer) return;   // the server's own table is the source
+            _ownership?.ApplyAuthoritative(packed);
+        }
+
+        bool TryGetHumanDomain(ulong clientId, out Domains domain)
+        {
+            var players = gameData != null ? gameData.Players : null;
+            if (players != null)
+            {
+                foreach (var p in players)
+                {
+                    if (p is Player net && net.IsSpawned && !net.IsInitializedAsAI
+                        && net.OwnerClientId == clientId)
+                    {
+                        domain = net.Domain;
+                        return true;
+                    }
+                }
+            }
+            domain = Domains.Blue;
+            return false;
         }
 
         /// <summary>
@@ -274,7 +461,7 @@ namespace CosmicShore.Gameplay
                             return centre;
                         }
 
-                        TrySpike(self, ref nextSpike, IsHostileUnderfoot(self, domain));
+                        TrySpike(self, ref nextSpike, IsHostileUnderfoot(yard, self, domain));
 
                         // Keep the nose down-rail: the ride constrains position, never attitude,
                         // so where the AI looks is what it launches along.
@@ -297,7 +484,7 @@ namespace CosmicShore.Gameplay
                             // ask what is actually underfoot, or a raider on an emptied burr
                             // spends its whole meter on its own mass.
                             TrySpike(self, ref nextSpike,
-                                     !self.IsAttached || IsHostileUnderfoot(self, domain));
+                                     !self.IsAttached || IsHostileUnderfoot(yard, self, domain));
                             Vector3 through = range > 1e-3f ? (burr - pos) / range : selfTf.forward;
                             return burr + through * aiThroughDistance;
                         }
@@ -363,7 +550,7 @@ namespace CosmicShore.Gameplay
                 // network instead of parking when a cluster runs dry.
                 float loot = Mathf.Max(1, _burrLoot[r.TargetBurr]);
                 float distance = Vector3.Distance(from, yard.WorldPoint(r.LocalStart));
-                float ownFraction = OwnFractionOf(r.Trail, domain);
+                float ownFraction = yard.OwnFractionOfRail(i, domain);
 
                 float score = loot / (1f + distance / 300f) * (ownFraction + 0.3f);
                 if (score > bestScore) { bestScore = score; best = i; }
@@ -375,21 +562,13 @@ namespace CosmicShore.Gameplay
         /// whole controller: the provider closures run on the main thread, one after another.</summary>
         int[] _burrLoot;
 
-        static float OwnFractionOf(Trail trail, Domains domain)
-        {
-            var list = trail?.TrailList;
-            if (list == null || list.Count == 0) return 0f;
-
-            int own = 0;
-            for (int i = 0; i < list.Count; i++)
-                if (list[i] && list[i].Domain == domain) own++;
-            return own / (float)list.Count;
-        }
-
-        static bool IsHostileUnderfoot(IVesselStatus status, Domains domain)
+        /// <summary>Is the prism this AI is riding someone else's? Asked of the yard, so the
+        /// answer is the server's table rather than whatever a remote pilot's proxy just did to
+        /// this machine's copy - an AI spends ammo on it.</summary>
+        static bool IsHostileUnderfoot(HijackYard yard, IVesselStatus status, Domains domain)
         {
             var prism = status.AttachedPrism;
-            return prism && prism.Domain != domain;
+            return prism && yard.DomainOf(prism) != domain;
         }
 
         /// <summary>

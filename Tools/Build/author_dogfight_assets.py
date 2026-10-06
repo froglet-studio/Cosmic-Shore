@@ -43,6 +43,7 @@ CHECK_ONLY = "--check" in sys.argv
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import boneyard_budget as budget  # noqa: E402
+import arcade_mode_lib as aml  # noqa: E402  - card background + retired-key checks
 from arcade_mode_lib import wrap_yaml_scalar  # noqa: E402
 
 
@@ -116,7 +117,6 @@ EXISTING = {
     "IconActive":         "1dc25875d7cbd3e478fc5a133e65eedb",
     "IconInactive":       "fa9b62abd1b217b4ba3d7c5a4a2c0916",
     "CardBackground":     "587d2203114c8004c9985d0112c89585",
-    "PreviewClip":        "4396864d799a6154bb82e5346ac0093b",
     # the scavengers
     "QuadFishPrefab":     "19615ed0c903b1041973d70593d4b0a3",
     # the cell's CellRuntimeDataSO - the spawn ring resolves its Cell through this
@@ -132,8 +132,6 @@ QUADFISH_PALETTE = ["4053ff006892420d8ca5efa51365570c", "5697aa8685514f2ca9b9de9
 PRISM_FILEID = 4563009547826722997
 MEMBRANE_FILEID = 346633111830028674
 CYTOPLASM_FILEID = 639495419069806261
-PREVIEW_FILEID = 241334157148977051
-
 # The point target - the race metric. The 25%/50% milestone rungs are fractions of this (so 30
 # and 60), and moving it moves the whole progress ladder. Kept in sync with
 # EndConditionOverridesSO.DefaultDogFightPointTarget.
@@ -452,16 +450,17 @@ emit(SKYBURST_PATH, skyburst)
 # every vessel it engulfed - a Sparrow rocket has never done anything to a pilot it did not hit
 # dead-on. This is the container it was missing.
 #
-# Scoped to the CONIC prefab deliberately. The same detonation also spawns the shared
-# AOEExplosion.prefab, which the Manta's crystal path uses too; hanging a "missile hit" on that
-# would label a crystal blast as gunnery in every mode. The conic burst is the big one (scale
-# 100-170) and is Sparrow-only, so it is the honest place for this.
+# The BLAST-tier reporter no longer hangs here. The Sparrow pass (89c8a53c7, "both rockets pay
+# the blast") moved VesselCombatHitByMissileBlast onto SkyBurstBlastExplosionImpactorDataContainer
+# - the container on the DESTRUCTIVE AOEExplosion both rocket variants spawn - and emptied this
+# one, so the heavy rocket's conic burst no longer double-reports the blast tier. This container
+# stays (the conic prefab still needs a non-null container, or AcceptImpactee returns for every
+# vessel) but carries no vessel effect; the blast reporter's new home is checked READ-ONLY below.
 emit("Assets/_SO_Assets/Effects/Effect Containers/Explosion Containers/"
      "SkyBurstExplosionImpactorDataContainer.asset",
      HEADER_FOR(EXISTING["ExplosionImpactorDataContainerSO"],
                 "SkyBurstExplosionImpactorDataContainer") +
-     f"""  vesselExplosionEffects:
-  - {{fileID: 11400000, guid: {G_ASSET['VesselCombatHitByMissileBlast']}, type: 2}}
+     """  vesselExplosionEffects: []
   explosionPrismEffects: []
 """)
 emit("Assets/_SO_Assets/Effects/Effect Containers/Explosion Containers/"
@@ -595,8 +594,7 @@ emit("Assets/_SO_Assets/Games/ArcadeGameDogFight.asset",
     to the point target takes it.
   IconActive: {{fileID: 21300000, guid: {EXISTING['IconActive']}, type: 3}}
   IconInactive: {{fileID: 21300000, guid: {EXISTING['IconInactive']}, type: 3}}
-  CardBackground: {{fileID: 21300000, guid: {EXISTING['CardBackground']}, type: 3}}
-  PreviewClip: {{fileID: {PREVIEW_FILEID}, guid: {EXISTING['PreviewClip']}, type: 3}}
+  CardBackground: {{fileID: 21300000, guid: {aml.card_background('DogFight')}, type: 3}}
   GolfScoring: 1
   SceneName: MinigameDogFight
   Vessels:
@@ -607,7 +605,6 @@ emit("Assets/_SO_Assets/Games/ArcadeGameDogFight.asset",
   MaxDomainsAllowed: 3
   MinIntensity: 1
   MaxIntensity: 4
-  CallToActionTargetType: 404
   ViewUserAction: 0
   PlayUserAction: 0
   ComebackRatePerScoreDeficit: {COMEBACK_RATE}
@@ -1032,6 +1029,17 @@ WARHEAD_CONTAINER_PATH = ("Assets/_SO_Assets/Effects/Effect Containers/Explosion
 if G_ASSET["VesselCombatHitByMissileShockwave"] not in read(WARHEAD_CONTAINER_PATH):
     errors.append("the missile WARHEAD container does not carry the shockwave scoring effect - "
                   "the most common way a rocket reaches a pilot would score nothing")
+# READ, not emitted, for the same reason: the blast tier's container is the Sparrow pass's.
+BLAST_CONTAINER_PATH = ("Assets/_SO_Assets/Effects/Effect Containers/Explosion Containers/"
+                        "SkyBurstBlastExplosionImpactorDataContainer.asset")
+if G_ASSET["VesselCombatHitByMissileBlast"] not in read(BLAST_CONTAINER_PATH):
+    errors.append("the skyburst BLAST container does not carry the blast scoring effect - a "
+                  "rocket's 20-point prism blast would score nothing")
+if G_ASSET["VesselCombatHitByMissileBlast"] in files[
+        "Assets/_SO_Assets/Effects/Effect Containers/Explosion Containers/"
+        "SkyBurstExplosionImpactorDataContainer.asset"]:
+    errors.append("the conic skyburst container carries the blast reporter again - the heavy "
+                  "rocket would report its blast tier from two containers")
 if G_ASSET["SkyBurstExplosionContainer"] not in files[CONIC_PATH]:
     errors.append("AOEConicSkyBurst has no explosion container - a rocket's BLAST would never "
                   "score, which is most of what a rocket does")
@@ -1161,7 +1169,7 @@ if "PointsForCombatHit" not in cs_fields("Assets/_Scripts/Controller/Arcade/Scor
 
 SO_BASE = {"CellName", "Description", "Icon", "Difficulty", "CellEndGameScore", "Mode",
            "IsMultiplayer", "DisplayName", "IconActive", "IconInactive", "CardBackground",
-           "PreviewClip", "GolfScoring", "SceneName"}
+           "GolfScoring", "SceneName"}
 for asset_path, cs_path in CHECKS:
     keys = set(re.findall(r"^  (\w+):", files[asset_path], re.M)) - {
         "m_ObjectHideFlags", "m_CorrespondingSourceObject", "m_PrefabInstance", "m_PrefabAsset",
@@ -1212,6 +1220,10 @@ for i in BONEYARD_INTENSITIES:
                       f"{i - 1}'s ({prev}) - the phase ladder is not riding its own baseline")
     prev = enter
 
+# The card's CardBackground is the /cardart render and no retired key rides on it - the
+# shared check every arcade generator runs (arcade_mode_lib.card_errors).
+errors += aml.check_cards(files)
+
 if errors:
     print("VALIDATION FAILED - nothing written:")
     for e in errors:
@@ -1223,7 +1235,15 @@ for rel in sorted(files):
     print("  ", rel)
 
 if CHECK_ONLY:
-    print("\n--check: no files written.")
+    # Diff against disk. This used to print "no files written" and exit 0 - a --check that
+    # never compares is a false green (the CardBackground and SkyBurst drift sat behind it).
+    _changed = aml.drift(files)
+    if _changed:
+        print(f"\n--check: {len(_changed)} file(s) differ from the authored output:")
+        for _c in sorted(_changed):
+            print("  -", _c)
+        sys.exit(1)
+    print(f"\n--check: no files written; all {len(files)} files match what this script authors.")
     sys.exit(0)
 
 for rel, content in files.items():

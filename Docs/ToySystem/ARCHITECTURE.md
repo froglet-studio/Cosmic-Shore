@@ -1385,7 +1385,9 @@ so there is always a field of structures ahead.
 **Scale — 30,000 conserved prisms, built once behind a veil.** The belt's whole stock is
 `poolSize × prismBudgetPerScene` (**20 × 1500 = 30,000** at the authored defaults — the same order as
 an authored cell environment, which is the proven envelope for the instanced render path + collider
-LOD). It is built **up front**, on the first pass through the toy, behind the same
+LOD; a device tier may override the BUILT config, never the asset: MobileLow phones run 8 × 150 =
+1,200 with no lifeform scenes and 2 concurrent arrivals — `PlatformProfileSO.WanderwayBudget`,
+applied in `WanderToy.Configure`, `Docs/PLATFORM_UNIFICATION.md` §3.6). It is built **up front**, on the first pass through the toy, behind the same
 `EnvironmentLoadVeil` the Cell Selector raises for a world swap: `MicrosceneConveyor.PrimeAsync`
 brackets `PrismTrailBuilder.BeginArenaBuild`/`EndArenaBuild`, raises the veil, and lays all
 `poolSize` scenes concurrently through `PrismTrailBuilder.LayBudgetedAsync` — the time-budgeted,
@@ -1513,12 +1515,14 @@ back from. Starting one does three things, and all three are undone when it ends
   the run's tick — the tail advances a prism at a time and a station that teleported after it would
   read as a pop.
 
-> **The rolling tether is an AUTHORIZED EXCEPTION to mass conservation** — the one sanctioned place
-> trail mass is recycled, granted by explicit sign-off so the Wanderway can be an endless runner
+> **The rolling tether is an AUTHORIZED EXCEPTION to mass conservation** — a sanctioned place
+> trail mass is recycled (the other is the phone race cap, `RaceTrailCap`, MobileLow Skim Race /
+> Joust only), granted by explicit sign-off so the Wanderway can be an endless runner
 > without an ever-growing world. It is mechanically the reverted `maxTrailBlocks` cap, and it is
-> fenced so it cannot leak: `WanderwayRun.RollTether` is the ONLY caller of `Trail.RemoveOldest`,
+> fenced so it cannot leak: `WanderwayRun.RollTether` is the tether's only removal path,
 > it runs only while a run is live, and `VesselPrismController` grew no cap field — outside a run
-> the trail is untouched and the law holds in full. **Continuity of existence is not waived**: a
+> the tether never touches the trail. The device-tier trail policy (`MenuCrystalClickHandler`)
+> never holds the pen during a run (`WanderwayRun.AnyRunning`): the tether needs a trail to ride. **Continuity of existence is not waived**: a
 > retiring prism withers on the GPU clock (one grow-clock re-stamp toward a near-zero scale — the
 > belt's own collapse, `Docs/PRISM_ANIMATION.md` §5 C8) and returns to the pool only once it has
 > shrunk away. Full record: `Docs/ECOSYSTEM.md` §0. Do not generalise it; do not revert it.

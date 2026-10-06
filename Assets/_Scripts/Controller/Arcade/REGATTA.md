@@ -129,10 +129,15 @@ corner it did not ask for.
 The platform's gate-race AI (two-waypoint approach, latched side) plus one override: an
 **attached** AI aims down its own rail (`TryOverrideAim`, Skein's), because the rail passes
 through every ring and fighting its curve is the only way to lose it. The AI templates are
-`Random`, so the bot grid draws its hulls from the card. Known and stated: an AI holds 0.6
-throttle, the Manta is the only hull whose boost has an autopilot drive, and the Rhino's ramp
-engages off a straight stick an AI naturally holds — so an AI Sparrow, Serpent, Dolphin or
-Scarab races at cruise. They finish; they do not win.
+`Random`, so the bot grid draws its hulls from the card. The Manta's boost has an autopilot
+drive and the Rhino's ramp engages off a straight stick an AI naturally holds; every other
+hull's AI now spends its boost through a per-hull **AI boost policy**
+(`AI/AI_BOOST.md`): the Sparrow holds its afterburner down each straight, the Serpent stacks
+pellets on long legs, the Dolphin discharges its drift charge onto the straight instead of
+into the turn, the Squirrel lays its Boost Ring as a skim launch pad, and a Time-5 Scarab
+Snap Dashes (below Time 5 the Scarab is already at its throttle ceiling). None of them is
+Regatta-specific and none has been measured in a race yet — the claim that an all-AI domain
+in those hulls can now WIN is unverified until a playtest says so.
 
 ## 7. Assets and where they are authored
 

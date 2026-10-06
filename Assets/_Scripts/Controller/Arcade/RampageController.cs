@@ -64,6 +64,17 @@ namespace CosmicShore.Gameplay
         // InvokeWinnerCalculated from SyncGameEnd_ClientRpc.
         protected override bool HasEndGame => false;
 
+        // The race beats as toasts (quarter, halfway, lead change). A local poll over the
+        // replicated scored stat, run on every peer - see DomainRaceToasts. Feedback only.
+        DomainRaceToasts _raceToasts;
+
+        void Update()
+        {
+            if (_finalResultsSent || rule == null) return;
+            _raceToasts ??= new DomainRaceToasts(rule);
+            _raceToasts.Tick(gameData);
+        }
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();

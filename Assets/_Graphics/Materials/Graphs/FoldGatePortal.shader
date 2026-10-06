@@ -9,8 +9,11 @@
 // pixel of the window shows exactly what the camera would see through that pixel on the far side,
 // and the ship, flying into the window, is already in the place it is about to be.
 //
-// SCREEN-SPACE, NOT UV-MAPPED. The texture is a full-frame render with the gameplay camera's own
-// projection, so the right texel for a fragment is the one at that fragment's screen position — a
+// SCREEN-SPACE, NOT UV-MAPPED. The texture is a render with the gameplay camera's own projection,
+// CROPPED to the window's own rectangle of the screen (FoldGatePortalView renders only the
+// window's footprint), so the right texel for a fragment is the one at that fragment's screen
+// position, mapped into the rectangle by _FoldGatePortalUV (uv' = uv * xy + zw; identity when the
+// target covers the whole screen) — a
 // surface UV would paste a picture onto the disc, which is a painting of the far side rather than a
 // window onto it and would swim as the camera moves. The screen position is the built-in
 // ComputeScreenPos arithmetic written out here (it carries the render-target flip in
@@ -33,7 +36,8 @@
 //                  far plane on whichever side the camera stands, so both faces show the right thing.
 //
 // COST. One texture fetch per fragment on a single disc. The real cost is the second render of the
-// world, which FoldGatePortalView pays only while a threadable gate is on screen and in range.
+// world, which FoldGatePortalView pays only for the window's footprint, only while a threadable
+// gate is on screen and in range.
 
 Shader "CosmicShore/FoldGatePortal"
 {
@@ -75,6 +79,8 @@ Shader "CosmicShore/FoldGatePortal"
             // belongs to whichever gate is being shown; the material stays shared.
             TEXTURE2D(_FoldGatePortalTex);
             SAMPLER(sampler_FoldGatePortalTex);
+            // GLOBAL: screen UV -> the rectangle of the screen the far-side target covers.
+            float4 _FoldGatePortalUV;
 
             CBUFFER_START(UnityPerMaterial)
                 float _PortalBlend;
@@ -112,6 +118,7 @@ Shader "CosmicShore/FoldGatePortal"
             half4 frag (Varyings input) : SV_Target
             {
                 float2 uv = input.screenPos.xy / max(input.screenPos.w, 1e-5);
+                uv = uv * _FoldGatePortalUV.xy + _FoldGatePortalUV.zw;
                 half3 colour = SAMPLE_TEXTURE2D(_FoldGatePortalTex, sampler_FoldGatePortalTex, uv).rgb;
 
                 // The rim tucks under the ring's tube; the soft edge only keeps a hard disc

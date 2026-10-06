@@ -949,8 +949,11 @@ generators, which proves what they EMIT; it proves nothing about how any of it l
   `{2}`=target to make them visible.
 - **`wildlife_cage_budget.py` still carries the doubled jitter factor** — see above. Out of scope
   here, but it is a live tuning defect in Wildlife Liberation's cell.
-- **No objective-arrow provider**: like Rampage, `MiniGameHUD.CreateObjectiveProviderForGameMode`
-  has no Cleave case — the arena surrounds you, so there is no single point to aim at.
+- **Objective arrow**: `HostileMassObjectiveProvider` — the densest mass hostile to the pilot's
+  domain (`Cell.GetExplosionTarget`, the query the AI's raid beat uses), resampled every 1.5 s.
+  The arena surrounds you, so the arrow answers "where is there still a lot of it", not "where
+  is it". Its grid omits mass wearing your own colour, so it leans toward the other two-thirds
+  of the triad-painted arena.
 - **No UGS stats reporter yet**, and no dedicated end-game controller — the shared scoreboard
   handles it.
 - **Danger placement is a first pass in all four arenas** (pane rims, swell crests, twistband

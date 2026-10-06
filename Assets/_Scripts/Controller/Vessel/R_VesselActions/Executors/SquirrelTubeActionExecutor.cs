@@ -78,7 +78,11 @@ namespace CosmicShore.Gameplay
         public void Begin(SquirrelTubeActionSO so, IVesselStatus status)
         {
             if (!so || status?.Vessel?.Transform == null) return;
-            if (Time.time < _cooldownEndTime) return;   // on cooldown → no-op
+            if (Time.time < _cooldownEndTime)   // on cooldown → no-op
+            {
+                ReportDiagnostic(status, $"cooldown {_cooldownEndTime - Time.time:F1}s");
+                return;
+            }
 
             var vessel = status.Vessel.Transform;
             // Lead the placement by the vessel's speed so the tube mouth appears ~LeadSeconds of
@@ -88,6 +92,7 @@ namespace CosmicShore.Gameplay
             float offset = Mathf.Max(so.ForwardOffset, status.Speed * so.LeadSeconds);
             Vector3 origin = vessel.position + vessel.forward * offset;
             SpawnTube(so, status, new Pose(origin, vessel.rotation));
+            ReportDiagnostic(status, $"laid {offset:F0}u ahead");
 
             // MASS -> cooldown: the boost-ring recharge shortens as the vessel's live Mass level
             // rises (atFull authored on the SO). Deficit Mass lengthens it. The ring is the
@@ -96,6 +101,16 @@ namespace CosmicShore.Gameplay
                 status, Element.Mass, so.CooldownMultiplierAtFullMass, so.MinCooldownMultiplier);
             _activeCooldown = cooldown;
             _cooldownEndTime = Time.time + cooldown;
+        }
+
+        /// <summary>The ring's row on the on-screen DiagnosticsHUD, local pilot only - on a device a
+        /// press on cooldown and a press that never arrived look the same. Compiled out (arguments
+        /// included) outside the editor and development builds.</summary>
+        [System.Diagnostics.Conditional("UNITY_EDITOR"), System.Diagnostics.Conditional("DEVELOPMENT_BUILD")]
+        static void ReportDiagnostic(IVesselStatus status, string value)
+        {
+            if (status?.Player == null || (status.Player is UnityEngine.Object o && o == null) || !status.IsLocalUser) return;
+            CosmicShore.Utility.PerformanceBenchmark.DiagnosticsHUD.SetStat("Abilities", "boost ring", value);
         }
 
         /// <summary>Release: nothing - the tube is placed on press (no preview).</summary>

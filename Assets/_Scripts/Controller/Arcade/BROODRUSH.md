@@ -145,8 +145,8 @@ Authored ONLY via **FrogletTools ▸ Game Modes ▸ End Game Conditions**
 
 ## Known limitations / follow-ups
 
-- No HUD objective provider yet (`MiniGameHUD.CreateObjectiveProviderForGameMode`
-  returns null for this mode) — a nucleus-pointing arrow would help new players.
+- Objective arrow: `BroodRushObjectiveProvider` points at the nucleus (the cell's own
+  transform) and hides while the pilot is inside it.
 - The scene keeps the Astro League comeback profile asset; author a Brood Rush profile
   if the buff curve needs its own tuning.
 - Fauna waves are client-local visuals: a client's wave may hatch a beat later than

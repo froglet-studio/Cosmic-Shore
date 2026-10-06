@@ -44,7 +44,9 @@ rule set and everything follows it: game scenes, Menu_Main's lava-lamp/freestyle
 tools and test scenes. There is **no "cosmetic," "menu-only," or "perf special
 case" exemption** — the menu autopilot vessel *is* the freestyle gameplay vessel
 (lava lamp == freestyle; see CLAUDE.md → "Lava-Lamp Mode"), so any removal
-mechanism attached to it is gameplay decay.
+mechanism attached to it is gameplay decay. The two signed-off exceptions below
+(the Wanderway tether, and the phone race cap — the only perf special case ever
+granted) are fenced and recorded; neither licenses another.
 
 > **Rejected cheat (reverted): the menu trail cap.** Commit `64d8f0c8` added a
 > per-trail ring-buffer cap (`VesselPrismController.maxTrailBlocks` +
@@ -72,9 +74,11 @@ mechanism attached to it is gameplay decay.
 >
 > Its scope is the fence — do not widen it, and do not "fix" it by reverting:
 >
-> - **Live-run only.** `WanderwayRun.RollTether` is the sole caller of
->   `Trail.RemoveOldest`. Outside a run — everywhere else in freestyle, every game
->   mode, the menu lava lamp — the trail is untouched and §0 holds in full.
+> - **Live-run only.** The tether's removal (`WanderwayRun.RollTether` →
+>   `Trail.RemoveOldest`) runs only inside a run. Outside a run — everywhere else in
+>   freestyle, every game mode, the menu lava lamp — the tether never touches the
+>   trail and §0 holds in full (the one other recycling exception, the phone race
+>   cap below, is fenced the same way to its own two modes and one device tier).
 > - **No length limit on the trail itself.** `VesselPrismController` grew no
 >   `maxTrailBlocks` field; nothing about laying a prism consults a cap. The run
 >   reaches in from outside and only while it exists.
@@ -86,6 +90,41 @@ mechanism attached to it is gameplay decay.
 >   pool only once it has shrunk away. Nothing pops.
 >
 > Detail: `Docs/ToySystem/ARCHITECTURE.md` § "The run".
+
+> **AUTHORIZED EXCEPTION (2026-10-05): the Skim Race / Joust trail cap on low-end
+> phones.** The second sanctioned place trail mass is recycled, granted by the project
+> owner for the `MobileLow` device tier only (`Docs/PLATFORM_UNIFICATION.md` §3.6). A
+> 4 GB Android phone cannot carry a 12-seat race's unbounded trail, and Garrett's
+> Android strip shipped exactly this cap; the owner asked for his numbers on phones.
+> In those two races, on that tier, every vessel keeps its share of a race-wide trail
+> budget (Skim Race 6,000 shared, 800–2,000 per vessel — at least one lap, two when
+> the grid is small; Joust 4,000 shared, 400–1,200), and past it the OLDEST prism
+> withers and returns to its pool. It is mechanically the reverted menu cap again, and
+> it is here **because it was asked for**, not as a precedent: the protocol still
+> stands, and the next one needs its own sign-off.
+>
+> The fence:
+>
+> - **One tier, two modes.** Only a `PlatformProfileSO` that sets a race budget turns
+>   it on, and only `MobileLow` does. Desktop and `MobileHigh` (so every PC and every
+>   iPhone that tiers High) carry no budget and never add the component.
+> - **Feature-owned, no knob on the shared system.** `RaceTrailCap` is added by
+>   `SkimRaceController` and `JoustController` (`OnNetworkSpawn`, through
+>   `RaceTrailCap.Attach`) and dies with the race scene. `VesselPrismController` grew
+>   no cap field; nothing about laying a prism consults one.
+> - **Recycle, not decay; continuity NOT waived.** The tether's recipe: detach the
+>   oldest (`Trail.RemoveOldest`, both ribbons), wither it on the grow clock, return it
+>   to the pool once it has shrunk away. A prism the food web already took is only
+>   unlinked — never withered or pool-returned out from under its consumer.
+> - **Per device, so a mixed match is asymmetric.** Trail prisms are local to each peer,
+>   so on a phone every ribbon ends a lap or two back while a PC in the same match still
+>   draws the whole trail (and can skim mass the phone no longer has). Accepted with the
+>   exception; it is the cost of not networking trail mass.
+>
+> The menu half of the phone tier is NOT an exception and needs none: the lava lamp lays
+> no trail and freestyle trail waits while the cell is over 10,000 prisms
+> (`VesselPrismController.SetTierHold`) — pausing the spawner, the sanctioned lever named
+> in the rejected-cheat note above. Nothing already laid is removed.
 
 **Growth-side cheats — all retired.** Two artificial throttles used to fake the
 homeostasis the food web is meant to produce, both now gone:
