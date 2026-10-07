@@ -1,0 +1,167 @@
+{
+ "space": {
+  "n": 280,
+  "speed": 0.195,
+  "jerk": 0.39,
+  "jerk_rel": 2.002,
+  "jerk_e": {
+   "Charge": 0.308,
+   "Mass": 0.365,
+   "Space": 0.345,
+   "Time": 1.267
+  },
+  "planar_frac": 0.303,
+  "flat_mean": 0.175,
+  "planar_plan": 0.375,
+  "coherence": 0.093,
+  "jitter": 2.486,
+  "phase": 0.295,
+  "stuck": 0.0,
+  "osc": 0.068
+ },
+ "mean_over_seeds": {
+  "speed": 0.192,
+  "jerk": 0.382,
+  "jerk_rel": 1.991,
+  "planar_frac": 0.289,
+  "planar_plan": 0.375,
+  "coherence": 0.102,
+  "jitter": 2.486,
+  "phase": 0.283,
+  "stuck": 0.0,
+  "osc": 0.068
+ },
+ "organic": {
+  "ok": true,
+  "checks": {
+   "jerk_rel": true,
+   "osc": true,
+   "stuck": true,
+   "planar": true
+  },
+  "planar_excess": 0.0
+ },
+ "locality": "local",
+ "band": {
+  "jerk_rel": [
+   0.2,
+   2.5
+  ],
+  "osc_max": 0.08,
+  "stuck_max": 0.02,
+  "planar_excess_max": 0.15
+ },
+ "compare": {
+  "posinfo2_space": {
+   "n": 88,
+   "speed": 0.097,
+   "jerk": 0.195,
+   "jerk_rel": 2.023,
+   "jerk_e": {
+    "Charge": 0.103,
+    "Space": 0.23,
+    "Time": 0.203
+   },
+   "planar_frac": 0.229,
+   "flat_mean": 0.194,
+   "planar_plan": 0.375,
+   "coherence": 0.203,
+   "jitter": 2.853,
+   "phase": 0.065,
+   "stuck": 0.0,
+   "osc": 0.012
+  },
+  "posinfo2_mean": {
+   "speed": 0.101,
+   "jerk": 0.207,
+   "jerk_rel": 2.051,
+   "planar_frac": 0.483,
+   "flat_mean": 0.131,
+   "coherence": 0.188,
+   "jitter": 2.725,
+   "phase": 0.17,
+   "stuck": 0.01,
+   "osc": 0.035
+  },
+  "calibration_space": {
+   "evo (organic)": {
+    "n": 280,
+    "speed": 0.165,
+    "jerk": 0.32,
+    "jerk_rel": 1.934,
+    "jerk_e": {
+     "Charge": 0.291,
+     "Mass": 0.306,
+     "Space": 0.31,
+     "Time": 0.512
+    },
+    "planar_frac": 0.134,
+    "flat_mean": 0.221,
+    "planar_plan": 0.375,
+    "coherence": 0.12,
+    "jitter": 2.669,
+    "phase": 0.177,
+    "stuck": 0.0,
+    "osc": 0.041
+   },
+   "evo compact (jerky, planar)": {
+    "n": 280,
+    "speed": 0.15,
+    "jerk": 0.176,
+    "jerk_rel": 1.174,
+    "jerk_e": {
+     "Charge": 0.296,
+     "Mass": 0.19,
+     "Space": 0.165,
+     "Time": 0.217
+    },
+    "planar_frac": 0.61,
+    "flat_mean": 0.104,
+    "planar_plan": 0.375,
+    "coherence": 0.663,
+    "jitter": 0.845,
+    "phase": 0.621,
+    "stuck": 0.0,
+    "osc": 0.139
+   },
+   "field (too clean)": {
+    "n": 88,
+    "speed": 0.274,
+    "jerk": 0.044,
+    "jerk_rel": 0.159,
+    "jerk_e": {
+     "Charge": 0.038,
+     "Space": 0.045,
+     "Time": 0.06
+    },
+    "planar_frac": 0.366,
+    "flat_mean": 0.205,
+    "planar_plan": 0.375,
+    "coherence": 0.856,
+    "jitter": 0.549,
+    "phase": 0.079,
+    "stuck": 0.0,
+    "osc": 0.041
+   },
+   "hgrid oracle (accurate+organic)": {
+    "n": 95,
+    "speed": 0.188,
+    "jerk": 0.064,
+    "jerk_rel": 0.342,
+    "jerk_e": {
+     "Charge": 0.061,
+     "Space": 0.06,
+     "Time": 0.103
+    },
+    "planar_frac": 0.153,
+    "flat_mean": 0.22,
+    "planar_plan": 0.375,
+    "coherence": 0.614,
+    "jitter": 1.183,
+    "phase": 0.871,
+    "stuck": 0.0,
+    "osc": 0.007
+   }
+  }
+ }
+}

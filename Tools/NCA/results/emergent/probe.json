@@ -1,0 +1,142 @@
+{
+ "space": {
+  "before": 6.5,
+  "n_before": 280,
+  "killed": 101,
+  "cut": 21.05,
+  "recovered": 11.41,
+  "n_after": 280,
+  "heal": 0.663,
+  "steps_to_half": 80,
+  "steps_to_90pct": null,
+  "traj": [
+   [
+    10,
+    20.67,
+    187
+   ],
+   [
+    20,
+    19.76,
+    192
+   ],
+   [
+    30,
+    17.81,
+    201
+   ],
+   [
+    40,
+    16.39,
+    213
+   ],
+   [
+    50,
+    15.51,
+    218
+   ],
+   [
+    60,
+    14.5,
+    232
+   ],
+   [
+    70,
+    14.33,
+    240
+   ],
+   [
+    80,
+    13.45,
+    246
+   ],
+   [
+    90,
+    12.89,
+    254
+   ],
+   [
+    100,
+    12.74,
+    259
+   ],
+   [
+    110,
+    11.82,
+    266
+   ],
+   [
+    120,
+    11.34,
+    276
+   ],
+   [
+    130,
+    11.66,
+    280
+   ],
+   [
+    140,
+    11.65,
+    280
+   ],
+   [
+    150,
+    11.5,
+    280
+   ],
+   [
+    160,
+    11.41,
+    280
+   ]
+  ]
+ },
+ "per_seed": {
+  "7": {
+   "before": 6.5,
+   "n_before": 280,
+   "killed": 101,
+   "cut": 21.05,
+   "recovered": 11.41,
+   "n_after": 280,
+   "heal": 0.663,
+   "steps_to_half": 80,
+   "steps_to_90pct": null
+  },
+  "23": {
+   "before": 10.46,
+   "n_before": 280,
+   "killed": 84,
+   "cut": 16.34,
+   "recovered": 13.2,
+   "n_after": 280,
+   "heal": 0.534,
+   "steps_to_half": 60,
+   "steps_to_90pct": null
+  },
+  "41": {
+   "before": 10.76,
+   "n_before": 280,
+   "killed": 85,
+   "cut": 22.25,
+   "recovered": 15.03,
+   "n_after": 280,
+   "heal": 0.628,
+   "steps_to_half": 130,
+   "steps_to_90pct": null
+  },
+  "1000": {
+   "before": 5.3,
+   "n_before": 280,
+   "killed": 75,
+   "cut": 10.35,
+   "recovered": 5.68,
+   "n_after": 280,
+   "heal": 0.925,
+   "steps_to_half": 60,
+   "steps_to_90pct": 160
+  }
+ },
+ "note": "swarm_probe.strike (sphere of one RMS radius, ~a third of the body) on the grown jellyfish, then 160 steps of regrowth; scored as swarm_probe scores (best-frame divergence). Only the jellyfish: this rule has one target."
+}

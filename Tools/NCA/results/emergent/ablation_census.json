@@ -1,0 +1,106 @@
+{
+ "steps": 300,
+ "rule": "results/solo_space/rule_latest.pt",
+ "results": {
+  "both global inputs (as trained)": {
+   "mean": 7.69,
+   "per_seed": [
+    {
+     "seed": 7,
+     "loss": 5.21,
+     "n": 230
+    },
+    {
+     "seed": 23,
+     "loss": 10.33,
+     "n": 241
+    },
+    {
+     "seed": 41,
+     "loss": 7.52,
+     "n": 261
+    }
+   ]
+  },
+  "headcount only (mix constant)": {
+   "mean": 9.57,
+   "per_seed": [
+    {
+     "seed": 7,
+     "loss": 8.49,
+     "n": 204
+    },
+    {
+     "seed": 23,
+     "loss": 11.84,
+     "n": 248
+    },
+    {
+     "seed": 41,
+     "loss": 8.37,
+     "n": 257
+    }
+   ]
+  },
+  "mix only (headcount constant 88)": {
+   "mean": 11.69,
+   "per_seed": [
+    {
+     "seed": 7,
+     "loss": 10.22,
+     "n": 259
+    },
+    {
+     "seed": 23,
+     "loss": 12.66,
+     "n": 276
+    },
+    {
+     "seed": 41,
+     "loss": 12.18,
+     "n": 280
+    }
+   ]
+  },
+  "mix only (headcount constant 150)": {
+   "mean": 12.12,
+   "per_seed": [
+    {
+     "seed": 7,
+     "loss": 13.18,
+     "n": 90
+    },
+    {
+     "seed": 23,
+     "loss": 14.4,
+     "n": 155
+    },
+    {
+     "seed": 41,
+     "loss": 8.79,
+     "n": 193
+    }
+   ]
+  },
+  "neither (both constant; = a purely local rule)": {
+   "mean": 7.72,
+   "per_seed": [
+    {
+     "seed": 7,
+     "loss": 7.68,
+     "n": 226
+    },
+    {
+     "seed": 23,
+     "loss": 9.49,
+     "n": 229
+    },
+    {
+     "seed": 41,
+     "loss": 5.99,
+     "n": 265
+    }
+   ]
+  }
+ }
+}
