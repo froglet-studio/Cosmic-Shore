@@ -584,9 +584,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                     $"C# jobs ran as MANAGED code for {F(report.managedJobMs)} ms a frame on the main thread " +
                     $"(under {string.Join(", ", callers)}). A [BurstCompile] job only does that while Burst has " +
                     "not compiled it yet - the Editor compiles in the background after every script change or " +
-                    "branch switch - or when Burst failed to compile it (check the Console). Those rows, and the " +
-                    "frame time, are several times too large: wait for the compile to finish (or turn on Jobs > " +
-                    "Burst > Synchronous Compilation), then capture again.");
+                    "branch switch - or when Burst cannot compile it. Those rows, and the frame time, are several " +
+                    "times too large. Capture again a minute later; if this note is still here, Burst is failing: " +
+                    "search the Console (or Editor.log) for \"Burst\". Seen 2026-10-07 for 15 hours on end.");
             }
         }
 
@@ -861,7 +861,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             if (!r.completed) sb.Append(" [INCOMPLETE]");
             if (r.deepProfiling) sb.Append(" [DEEP PROFILE ON - times inflated]");
             if (r.managedJobMs >= ManagedJobWarnMs)
-                sb.Append($" [JOBS RAN WITHOUT BURST {F(r.managedJobMs)} ms/f - recapture once Burst has compiled]");
+                sb.Append($" [JOBS RAN WITHOUT BURST {F(r.managedJobMs)} ms/f - still compiling, or failing: see the note]");
             if (!string.IsNullOrEmpty(savedPath)) sb.Append($" - saved {savedPath}");
             return sb.ToString();
         }

@@ -65,7 +65,7 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
-### 🔴 Skim Race AI seats stagger their track-planner re-plans (`perf/performance-optimization`, 2026-10-07)
+### 🟡 Skim Race AI seats stagger their track-planner re-plans (`perf/performance-optimization`, 2026-10-07)
 
 **What landed** (`Docs/SKIM_RACE_AI.md` §8.0i): `SkimRaceReplanGate` (new), shared by every
 `SkimRacePilot`, lets one AI seat's track-planner re-plan claim a frame. A seat whose frame is taken flies
@@ -77,6 +77,10 @@ planner.
 (three mutations each fail one); simulator A/B over 400 races per arm shows no detectable change to
 racing, and on Mono AI frame cost p90/p99 falls ~38%; the Froglet Engine's live compile builds; the
 policy generator's `--check` passes. /verify-unity was not available.
+
+**Confirmed in the editor 2026-10-07 (evening):** step 1 (all `SkimRaceAITests` green) and step 3
+(`TrackMpc` p95 10.55 -> 5.28 ms in 83% of frames, `Decide` p95 11.13 -> 7.13, spike frame 1 re-plan;
+`Docs/SKIM_RACE_AI.md` §8.0j). Step 2 (racing feel) not yet reported.
 
 **Verify in editor:**
 1. The project compiles; Test Runner > EditMode: `SkimRaceAITests` pass (four new ones).

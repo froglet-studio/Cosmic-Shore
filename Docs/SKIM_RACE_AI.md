@@ -468,6 +468,41 @@ These are environment results, not AI results (the simulator at 115 ms frames al
 same policy from 53 s to 77 s). **The in-editor matrix for the current code is still owed** - run it
 on an idle machine with the editor focused (§7), 2 launches x 5 races per cell, players 3 and 4.
 
+### 8.0j The stagger in the editor, and the game's Burst jobs running as managed code (2026-10-07, evening)
+
+`diag` + `prof`, I2 with 2 AI, same machine, on `e8fc01dcd`; all `SkimRaceAITests` green in the editor.
+The race was twice as heavy as §8.0h's (11,102 prism entities vs 5,717), and `diag` now records the Code
+Optimization: **Debug**. So the whole-frame numbers (25.3 ms, 40 fps) do not compare with §8.0h's 18.0 ms.
+Per-seat costs that grow with laid mass grew with it: `FillObstacles` 0.95 -> 2.21 ms, `GuardMass` 0.14 -> 0.57.
+
+**The stagger did what §8.0i predicted:**
+
+| | §8.0h (before) | Now |
+|---|---|---|
+| `SkimRace.Driver.TrackMpc` p95 / max | 10.55 / 23.67 ms | **5.28 / 13.01 ms** |
+| `TrackMpc` present in | 35% of frames | 83% |
+| `SkimRace.Pilot.Decide` p95 / max | 11.13 / 24.05 ms | **7.13 / 13.36 ms** |
+| `prof` spike frame | `TrackMpc` 2 calls, 8.1 ms | 1 call, 4.1 ms |
+
+One re-plan still costs ~4.1 ms per seat, as before.
+
+**Found: none of the game's own Burst jobs are Burst-compiled in this editor, and they have not been since
+the `Ys-bleeding-edge` merge.** The new `prof` check fired (1.71 ms a frame of managed job code on the main
+thread). The worker threads say the same: on 10-06 they ran `ShellContactQueryJob (Burst)` at 0.013 ms.
+In both 10-07 captures, taken 15 hours apart and 3 minutes after a `diag`, so not a compile still in
+flight, they ran plain `ShellContactQueryJob` at 0.6-0.97 ms per worker. Next to it, `CellVolumeSumJob` and
+`FindDensestRegionJob` run managed too. Unity's own package jobs (`FrustumCullingJob (Burst)`,
+`UpdateOldEntitiesGraphicsChunksJob (Burst)`) still compile. On the main thread it costs ~1.9 ms a frame
+here: `ShellContact.Query` 1.53 ms against 0.08, plus `LOD.Sweep` and `PrismRender.TransformFlush`. It
+reaches every mode that runs those jobs, ecology above all.
+
+Ruled out from the repository: Burst is the same version (1.8.29) and Burst is enabled
+(`RunEnvironment.burstEnabled`). The flags the jobs read are constants. No assembly attribute or Burst
+setting changed. Burst compiles each job separately, so one job failing (for example the new
+`SubstrateAgentJob`, whose gate is textual) would not take the shell-contact query with it.
+What does take every job in one assembly is something assembly-wide, and only the editor's own Burst
+messages (Console, `Editor.log`) can say what. **Owed:** those messages.
+
 ### 8.0i The AI seats no longer re-plan in the same frame (2026-10-07)
 
 The user's choice from §8.0h's list: stagger the seats. **Mechanism:** `SkimRaceReplanGate`, one per
