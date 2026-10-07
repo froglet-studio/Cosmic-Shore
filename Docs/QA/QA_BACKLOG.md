@@ -4294,6 +4294,28 @@ before · any new error that was not there previously.
 (`Docs/PresenceSystem/BUGS.md` B1) — it is a defect inside Unity's own code, not ours.
 This change reduces how often it clusters; it does not remove it. Just record the count.
 
+### QA-P1-PARTY-REQUEST-DISCIPLINE ⬜ — one retry policy, no PENDING handshake, join pre-flight, nested timeouts
+
+**Landed:** `931dcd51`, `0521b858`, `d31e01b2`, `12e2cb1b`, `8a0eaa0d` on `Ys-bleeding-edge` (2026-10-07; review
+`Docs/MultiplayerArchitecture/REVIEW_INVITE_AND_RESILIENCE.md` Phases 0–1). Compiled and unit-tested
+headlessly; never opened in Unity.
+
+**Setup:** MPPM, 1 host + 3 virtual players, FrogletTools > Toolbox > Logging > `Party` ON. Every
+NetDiag log line now ends in `ugs[req/min=… 429/min=… retry/min=… reset=… offline=…]`.
+
+| # | Steps | Pass |
+|---|---|---|
+| 1 | Host invites all three within 5 s; each accepts within 10 s. | Roster 4/4 on all four screens < 2 s after the last accept; `429/min=0`, `reset=0`. |
+| 2 | Three guests press **Join** on the host's row at the same moment. | All seated; nobody bounced to a solo menu. |
+| 3 | Party 4/4; a fifth client presses Join. | Toast "…party is full"; the fifth client stays in its own menu with its own session (no reload). |
+| 4 | Guest accepts an invite whose sender quit 2 s earlier. | Toast "…no longer online" or "…no longer available"; invite row disappears; no reload. |
+| 5 | All four spam Invite/Cancel for 60 s. | `reset=0`, `offline=0`; UI never stalls > 2 s; a `UgsRequestPolicy` budget warning is acceptable. |
+| 6 | Pull a guest's network mid-match. | Host converts the vessel to AI at ~10 s (was 30 s); the guest bounces with a toast. |
+| 7 | Watch the Console through all of the above. | No `AcceptanceSignalService` lines (class deleted); no `IsRateLimitException`-era "retry 1/3 in 2000ms" chatter. |
+
+**On failure:** copy the NetDiag line(s) with the `ugs[...]` field into the result; the counters say
+which layer misbehaved (429s → the service, `reset` → the presence loop, `offline` → boot).
+
 ### QA-P2-QUIT-BUTTON ⬜ — the drop-in quit button
 **Source:** PR #701 (`QuitGameButton`, a self-wiring component for nested prefabs).
 Place/locate one on a desktop build: it must wire itself to `Button.onClick`, quit

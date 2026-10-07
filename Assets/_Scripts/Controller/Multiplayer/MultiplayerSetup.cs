@@ -28,13 +28,31 @@ namespace CosmicShore.Gameplay
         private NetworkManager networkManager;
         private bool _hostStartInProgress;
 
-        private const int RATE_LIMIT_MAX_RETRIES = 3;
-        private const int RATE_LIMIT_BASE_DELAY_MS = 2000;
+        [Inject] UgsRequestPolicy _requestPolicy;
+        bool _requestPolicyFallbackLogged;
 
-        private static bool IsRateLimitException(Exception e)
+        /// <summary>
+        /// The one UGS retry / back-off policy (AppManager DI). A missing injection is loud - a
+        /// [Inject] that stays null is a dead feature, never a quiet default - but the match
+        /// launch still proceeds on the default settings rather than stranding the player.
+        /// </summary>
+        UgsRequestPolicy Policy
         {
-            return e.Message != null && e.Message.Contains("Too Many Requests");
+            get
+            {
+                if (_requestPolicy == null)
+                {
+                    if (!_requestPolicyFallbackLogged)
+                    {
+                        _requestPolicyFallbackLogged = true;
+                        CSDebug.LogError("[MultiplayerSetup] UgsRequestPolicy was not injected - check AppManager DI registration. Using default settings.");
+                    }
+                    _requestPolicy = UgsRequestPolicy.CreateDefault();
+                }
+                return _requestPolicy;
+            }
         }
+
 
         private void Start()
         {
@@ -349,8 +367,6 @@ namespace CosmicShore.Gameplay
                 catch (SessionException sx)
                 {
                     CSDebug.LogWarning($"[MultiplayerSetup] Join failed for {s.Id}: {sx.Message} - trying next.");
-                    if (IsRateLimitException(sx))
-                        await UniTask.Delay(RATE_LIMIT_BASE_DELAY_MS);
                     continue;
                 }
                 catch (Exception ex)
@@ -389,20 +405,8 @@ namespace CosmicShore.Gameplay
                 SessionProperties = sessionProperties
             }.WithRelayNetwork();
 
-            for (int attempt = 0; ; attempt++)
-            {
-                try
-                {
-                    gameData.ActiveSession = await MultiplayerService.Instance.CreateSessionAsync(sessionOpts).AsMainThread();
-                    break;
-                }
-                catch (Exception e) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(e))
-                {
-                    int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
-                    CSDebug.LogWarning($"[MultiplayerSetup] Rate limited on CreateSession - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
-                    await UniTask.Delay(delay);
-                }
-            }
+            gameData.ActiveSession = await Policy.ExecuteAsync("match:create",
+                async () => await MultiplayerService.Instance.CreateSessionAsync(sessionOpts).AsMainThread());
 
             gameData.InvokeSessionStarted();
             CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[MultiplayerSetup] Created session {gameData.ActiveSession.Id} with GameMode = {gameData.GameMode}");
@@ -418,7 +422,8 @@ namespace CosmicShore.Gameplay
             };
 
             CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[MultiplayerSetup] Joining session {sessionId}");
-            gameData.ActiveSession = await MultiplayerService.Instance.JoinSessionByIdAsync(sessionId, joinOpts).AsMainThread();
+            gameData.ActiveSession = await Policy.ExecuteAsync($"match:join:{sessionId}",
+                async () => await MultiplayerService.Instance.JoinSessionByIdAsync(sessionId, joinOpts).AsMainThread());
         }
 
         // --------------------------
@@ -433,21 +438,10 @@ namespace CosmicShore.Gameplay
             queryOptions.FilterOptions.Add(new FilterOption(FilterField.StringIndex1, gameModeString, FilterOperation.Equal));
             queryOptions.FilterOptions.Add(new FilterOption(FilterField.StringIndex2, maxPlayers,     FilterOperation.Equal));
 
-            for (int attempt = 0; ; attempt++)
-            {
-                try
-                {
-                    var results = await MultiplayerService.Instance.QuerySessionsAsync(queryOptions).AsMainThread();
-                    CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[MultiplayerSetup] Queried {results.Sessions.Count} sessions for GameMode {gameModeString}");
-                    return results.Sessions;
-                }
-                catch (Exception e) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(e))
-                {
-                    int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
-                    CSDebug.LogWarning($"[MultiplayerSetup] Rate limited on QuerySessions - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
-                    await UniTask.Delay(delay);
-                }
-            }
+            var results = await Policy.ExecuteAsync("match:query",
+                async () => await MultiplayerService.Instance.QuerySessionsAsync(queryOptions).AsMainThread());
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[MultiplayerSetup] Queried {results.Sessions.Count} sessions for GameMode {gameModeString}");
+            return results.Sessions;
         }
 
         // --------------------------

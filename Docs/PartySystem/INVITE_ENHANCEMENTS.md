@@ -148,7 +148,7 @@ already called on panel open by `ArcadeLobbyList.OnEnable` and
   `OnInviteReceived` → `FriendsListPanel.HandlePartyInviteReceived` spawns a
   request row (and auto-opens the panel).
 - **Accept** (`AcceptInviteAsync` ~`:599`, via `PartyInviteController.AcceptInviteAsync`):
-  1. publish accept signal to the host (`AcceptanceSignalService`),
+  1. ~~publish accept signal to the host~~ (the PENDING handshake was retired 2026-10-07 - the invite carries the real id),
   2. **leave own session** (`_partySessionService.LeaveAsync()` ~`:635`),
   3. **join inviter's session** (`JoinByIdAsync(invite.PartySessionId)` ~`:638`),
   4. `IsPartyHost = false`, reseed `PartyMembers` with the host,
@@ -596,6 +596,8 @@ There is no "C joins B's session" payload bug to fix:
 - **Inviter (B).** C's acceptance signal (`accepted_invite = B`) is consumed
   by B (scan gated on `OutgoingCount > 0`); the `RepublishWithRealIdAsync` it
   triggers is a no-op under eager sessions (patches PENDING entries only).
+  *(2026-10-07: that whole handshake - signal, scan and republish - is gone; B's
+  pending row now clears only through the SyncFromSession path below.)*
   B's pending row clears via the ungated SyncFromSession `"party-join"` path
   (~`:1485-1486`); B's `Inviting → InParty` fires when C appears in the
   session roster (~`:1490-1491`). The fast `"presence-join"` clear never runs

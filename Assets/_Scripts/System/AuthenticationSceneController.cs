@@ -826,6 +826,9 @@ namespace CosmicShore.Core
                 // Netcode spawn chain and every AI-backfilled mode runs unchanged, and the
                 // player's last-known-good profile / unlocks load from the local
                 // cloud-cache. The session stays offline until the app restarts.
+                // Counted: an unwanted offline start is the failure the request policy exists to prevent
+                // (Docs/MultiplayerArchitecture/REVIEW_INVITE_AND_RESILIENCE.md, B24).
+                if (!offlinePreferred) UgsRequestTelemetry.Count(UgsRequestCounter.OfflineFallback);
                 if (offlinePreferred)
                     ShowLoading("Starting offline…");
                 else

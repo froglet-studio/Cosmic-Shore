@@ -87,6 +87,18 @@ namespace CosmicShore.Utility
         public bool HasOpenDisplaySlots =>
             PartyMembers == null || PartyMembers.Count < PartyDisplaySlots;
 
+        // ─────────────────────────────────────────────────────
+        // UGS request policy
+        // ─────────────────────────────────────────────────────
+        [Header("UGS Request Policy")]
+        [Tooltip("Back-off, jitter and retry-budget tunables for every UGS (Lobby / Sessions / Relay) call the " +
+                 "party, presence and match layers make. Read once at bootstrap into the shared UgsRequestPolicy " +
+                 "(AppManager DI) - retune here, never in code. See " +
+                 "Docs/MultiplayerArchitecture/REVIEW_INVITE_AND_RESILIENCE.md §5.4.")]
+        [SerializeField] private UgsRequestPolicySettings ugsRequestPolicy = new UgsRequestPolicySettings();
+        /// <summary>Tunables for <see cref="Utility.UgsRequestPolicy"/>. Never null after deserialization.</summary>
+        public UgsRequestPolicySettings UgsRequestPolicySettings => ugsRequestPolicy;
+
         // ─────────────────────────────────────────────────────────────────────
         // Invites
         // ─────────────────────────────────────────────────────────────────────

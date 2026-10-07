@@ -483,8 +483,18 @@ namespace CosmicShore.Core
             // Registration order does not matter - all factories are lazy and
             // resolve their own deps from the container on first injection.
 
+            // One retry / back-off / budget policy for every UGS call the party, presence and match
+            // layers make (Docs/MultiplayerArchitecture/REVIEW_INVITE_AND_RESILIENCE.md §5.4). The
+            // tunables ride HostConnectionDataSO so they are config; the INSTANCE is shared so the
+            // per-minute retry budget is per client, not per service.
             builder.RegisterFactory(
-                _ => new LobbyPropertyWriter(),
+                _ => new CosmicShore.Utility.UgsRequestPolicy(
+                    hostConnectionData != null ? hostConnectionData.UgsRequestPolicySettings : null),
+                lifetime: Lifetime.Singleton,
+                resolution: Resolution.Lazy
+            );
+            builder.RegisterFactory(
+                c => new LobbyPropertyWriter(c.Resolve<UgsRequestPolicy>()),
                 lifetime: Lifetime.Singleton,
                 resolution: Resolution.Lazy
             );
@@ -508,20 +518,14 @@ namespace CosmicShore.Core
                 resolution: Resolution.Lazy
             );
 
-            builder.RegisterFactory(
-                _ => new AcceptanceSignalService(),
-                lifetime: Lifetime.Singleton,
-                resolution: Resolution.Lazy
-            );
-
             builder.RegisterFactory<IPresenceLobbyService>(
-                c => new PresenceLobbyService(hostConnectionData, c.Resolve<LobbyPropertyWriter>()),
+                c => new PresenceLobbyService(hostConnectionData, c.Resolve<LobbyPropertyWriter>(), c.Resolve<UgsRequestPolicy>()),
                 lifetime: Lifetime.Singleton,
                 resolution: Resolution.Lazy
             );
 
             builder.RegisterFactory<IPartySessionService>(
-                c => new PartySessionService(hostConnectionData, c.Resolve<GameDataSO>()),
+                c => new PartySessionService(hostConnectionData, c.Resolve<GameDataSO>(), c.Resolve<UgsRequestPolicy>()),
                 lifetime: Lifetime.Singleton,
                 resolution: Resolution.Lazy
             );

@@ -69,7 +69,6 @@ namespace CosmicShore.Gameplay
         private const string MATCH_NAME_KEY           = "matchName";
         private const string INVITE_PAYLOADS_KEY      = "invite_payloads";
         private const string JOINED_PARTY_KEY         = "joined_party";
-        private const string ACCEPTED_INVITE_KEY      = "accepted_invite";
         private const string PARTY_SESSION_KEY        = "partySession";
 
         /// <summary>
@@ -78,8 +77,6 @@ namespace CosmicShore.Gameplay
         /// same millisecond in MPPM or near-simultaneous launches).
         /// </summary>
         private const int LOBBY_RACE_SETTLE_MS   = 1500;
-        private const int RATE_LIMIT_MAX_RETRIES = 3;
-        private const int RATE_LIMIT_BASE_DELAY_MS = 2000;
 
         // ─────────────────────────────────────────────────────────────────────
         // Private state
@@ -87,6 +84,7 @@ namespace CosmicShore.Gameplay
 
         private readonly HostConnectionDataSO _connectionData;
         private readonly LobbyPropertyWriter  _propertyWriter;
+        private readonly UgsRequestPolicy     _policy;
 
         /// <summary>
         /// UGS multiplayer service, resolved fresh at use time. Never cache
@@ -115,10 +113,11 @@ namespace CosmicShore.Gameplay
         /// Owns the lobby mutex and SaveWithRetry pattern; used by
         /// <see cref="SavePropertiesAsync"/> to write player properties safely.
         /// </param>
-        public PresenceLobbyService(HostConnectionDataSO connectionData, LobbyPropertyWriter propertyWriter)
+        public PresenceLobbyService(HostConnectionDataSO connectionData, LobbyPropertyWriter propertyWriter, UgsRequestPolicy policy)
         {
             _connectionData = connectionData;
             _propertyWriter = propertyWriter;
+            _policy         = policy ?? UgsRequestPolicy.CreateDefault();
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -184,26 +183,17 @@ namespace CosmicShore.Gameplay
             queryOptions.FilterOptions.Add(
                 new FilterOption(FilterField.StringIndex1, PRESENCE_LOBBY_GAME_MODE, FilterOperation.Equal));
 
-            IList<ISessionInfo> sessions = null;
-            for (int attempt = 0; ; attempt++)
+            IList<ISessionInfo> sessions;
+            try
             {
-                try
-                {
-                    var results = await _multiplayerService.QuerySessionsAsync(queryOptions).AsMainThread();
-                    sessions = results.Sessions;
-                    break;
-                }
-                catch (Exception qe) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(qe))
-                {
-                    int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
-                    CSDebug.LogWarning($"[PresenceLobbyService] Rate limited during converge query - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
-                    await UniTask.Delay(delay);
-                }
-                catch (Exception e)
-                {
-                    CSDebug.LogWarning($"[PresenceLobbyService] Converge query failed ({e.GetType().Name}): {e.Message}");
-                    return;
-                }
+                var results = await _policy.ExecuteAsync("presence:query",
+                    async () => await _multiplayerService.QuerySessionsAsync(queryOptions).AsMainThread());
+                sessions = results.Sessions;
+            }
+            catch (Exception e)
+            {
+                CSDebug.LogWarning($"[PresenceLobbyService] Converge query failed ({e.GetType().Name}): {e.Message}");
+                return;
             }
 
             // Canonical id = smallest (ordinal) over the visible set ∪ our own lobby.
@@ -305,6 +295,7 @@ namespace CosmicShore.Gameplay
         public async UniTask RefreshAsync()
         {
             if (_activeLobby == null) return;
+            UgsRequestTelemetry.Count(UgsRequestCounter.LobbyReads);
             await _activeLobby.RefreshAsync().AsMainThread();
         }
 
@@ -314,7 +305,7 @@ namespace CosmicShore.Gameplay
         /// do NOT call while already holding the mutex (e.g. from inside
         /// <see cref="HostConnectionService"/>'s RefreshAsync cycle).  For in-mutex
         /// writes, set properties directly then call
-        /// <see cref="LobbyPropertyWriter.SaveWithRetryAsync"/> explicitly.
+        /// <see cref="LobbyPropertyWriter.SaveAsync"/> explicitly.
         /// </remarks>
         public async UniTask SavePropertiesAsync(
             Dictionary<string, PlayerProperty> properties,
@@ -380,7 +371,6 @@ namespace CosmicShore.Gameplay
                 { MATCH_NAME_KEY,      new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
                 { JOINED_PARTY_KEY,    new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
                 { INVITE_PAYLOADS_KEY, new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
-                { ACCEPTED_INVITE_KEY, new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
                 // The joinable/spectatable session id (HostConnectionService.PARTY_SESSION_KEY).
                 // Seeded empty like every stateful key; the live overlay below fills it in.
                 { PARTY_SESSION_KEY,   new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
@@ -423,22 +413,9 @@ namespace CosmicShore.Gameplay
             queryOptions.FilterOptions.Add(
                 new FilterOption(FilterField.StringIndex1, PRESENCE_LOBBY_GAME_MODE, FilterOperation.Equal));
 
-            IList<ISessionInfo> sessions = null;
-            for (int attempt = 0; ; attempt++)
-            {
-                try
-                {
-                    var results = await _multiplayerService.QuerySessionsAsync(queryOptions).AsMainThread();
-                    sessions = results.Sessions;
-                    break;
-                }
-                catch (Exception qe) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(qe))
-                {
-                    int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
-                    CSDebug.LogWarning($"[PresenceLobbyService] Rate limited querying lobby - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
-                    await UniTask.Delay(delay);
-                }
-            }
+            var results = await _policy.ExecuteAsync("presence:query",
+                async () => await _multiplayerService.QuerySessionsAsync(queryOptions).AsMainThread());
+            IList<ISessionInfo> sessions = results.Sessions;
 
             if (sessions == null || sessions.Count == 0) return null;
 
@@ -455,17 +432,16 @@ namespace CosmicShore.Gameplay
 
                 try
                 {
-                    var joined = await _multiplayerService.JoinSessionByIdAsync(
-                        session.Id,
-                        new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() }).AsMainThread();
+                    var joined = await _policy.ExecuteAsync($"presence:join:{session.Id}",
+                        async () => await _multiplayerService.JoinSessionByIdAsync(
+                            session.Id,
+                            new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() }).AsMainThread());
                     CSDebug.LogVerbose(CSLogChannel.Party, $"[PresenceLobbyService] Joined existing presence lobby {joined.Id} (capacity {maxPlayers}).");
                     return joined;
                 }
                 catch (Exception e)
                 {
                     CSDebug.LogWarning($"[PresenceLobbyService] Failed to join session {session.Id}: {e.Message}");
-                    if (IsRateLimitException(e))
-                        await UniTask.Delay(RATE_LIMIT_BASE_DELAY_MS);
                 }
             }
 
@@ -474,7 +450,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Creates a new presence lobby and stores it in <see cref="_activeLobby"/>.
-        /// Retries up to <see cref="RATE_LIMIT_MAX_RETRIES"/> times on HTTP 429.
+        /// Runs under <see cref="UgsRequestPolicy.ExecuteAsync{T}"/> (key <c>presence:create</c>).
         /// </summary>
         private async UniTask CreateAsync(int maxPlayers)
         {
@@ -499,21 +475,9 @@ namespace CosmicShore.Gameplay
                     }
                 };
 
-                for (int attempt = 0; ; attempt++)
-                {
-                    try
-                    {
-                        _activeLobby = await _multiplayerService.CreateSessionAsync(opts).AsMainThread();
-                        CSDebug.LogVerbose(CSLogChannel.Party, $"[PresenceLobbyService] Created presence lobby {_activeLobby.Id}.");
-                        return;
-                    }
-                    catch (Exception re) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(re))
-                    {
-                        int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
-                        CSDebug.LogWarning($"[PresenceLobbyService] Rate limited creating lobby - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
-                        await UniTask.Delay(delay);
-                    }
-                }
+                _activeLobby = await _policy.ExecuteAsync("presence:create",
+                    async () => await _multiplayerService.CreateSessionAsync(opts).AsMainThread());
+                CSDebug.LogVerbose(CSLogChannel.Party, $"[PresenceLobbyService] Created presence lobby {_activeLobby.Id}.");
             }
             catch (Exception e)
             {
@@ -558,12 +522,5 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>
-        /// True when the exception is a UGS HTTP 429 Too Many Requests response.
-        /// Used in <c>catch ... when (...)</c> clauses to distinguish rate-limit
-        /// errors (retry-able) from other errors (propagate).
-        /// </summary>
-        private static bool IsRateLimitException(Exception e) =>
-            e.Message != null && e.Message.Contains("Too Many Requests");
     }
 }
