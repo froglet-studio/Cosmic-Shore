@@ -82,6 +82,14 @@ MB_STANDARD = {"m_ObjectHideFlags", "m_CorrespondingSourceObject", "m_PrefabInst
 UNITY_OBJECT = "UnityEngine.Object"
 
 
+def is_ref_registry(v):
+    """Unity's [SerializeReference] registry: a top-level `references:` block (`version` + `RefIds`)
+    that Unity writes beside the fields of any object holding managed references, at any depth (the
+    drill SOs' MentorTip.Moment / LessonStep.Condition). It is not a field, so the schema never lists
+    it; a `references` key without that shape is still checked as an ordinary field."""
+    return isinstance(v, dict) and "version" in v and "RefIds" in v
+
+
 # --------------------------------------------------------------------------------------------
 # file access (an overlay lets --self-test inject defects without touching the tree)
 # --------------------------------------------------------------------------------------------
@@ -431,6 +439,8 @@ class Audit:
         for k, v in data.items():
             if k in standard:
                 continue
+            if depth == 0 and k == "references" and is_ref_registry(v):
+                continue
             f = fields.get(k)
             if f is None:
                 out.append(("field", rel, "%s: `%s` is not a serialized field of %s (Unity drops it silently)"
@@ -756,6 +766,18 @@ def self_test(schema, base):
     if [f for f in clean_scene if f[0] != "swarm"]:
         ok = False
         print("self-test: the unmodified scene reports findings:", clean_scene[:3])
+    # Unity's [SerializeReference] registry is not a field; a `references` key without its shape is
+    registry = "  references:\n    version: 2\n    RefIds: []\n"
+    found, _ = run_audit(Tree(ROOT, {cfg: tree0.read(cfg).rstrip("\n") + "\n" + registry}),
+                         schema, base, added, [], [], lambda r: None)
+    quiet = not [f for f in found if f[0] == "field" and "`references`" in f[2]]
+    print("  [%s] %-60s" % ("ok" if quiet else "FALSE HIT", "SerializeReference registry is not reported"))
+    ok &= quiet
+    found, _ = run_audit(Tree(ROOT, {cfg: tree0.read(cfg).rstrip("\n") + "\n  references: 3\n"}),
+                         schema, base, added, [], [], lambda r: None)
+    hit = [f for f in found if f[0] == "field" and "`references`" in f[2]]
+    print("  [%s] %-60s %s" % ("ok" if hit else "MISSED", "a plain `references` key is still a dead field", hit[0][2][:110] if hit else ""))
+    ok &= bool(hit)
     # a deleted file still referenced
     found, _ = run_audit(Tree(ROOT, deleted=[cfg + ".meta"]), schema, base, added[2:], [],
                          [(cfg + ".meta", meta_guid(tree0, cfg))], lambda r: None)
