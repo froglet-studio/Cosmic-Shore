@@ -47,7 +47,7 @@ MonoBehaviour:
   diskFeedMax: 1.6
   diskFeedHalfLife: 6
   diskBrightness: 4
-  diskPeakTemperature: 6500
+  diskPeakTemperature: 10000
   diskDoppler: 1
   diskSpinSpeed: 6
   diskNoiseScale: 1

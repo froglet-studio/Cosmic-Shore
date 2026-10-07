@@ -24,8 +24,19 @@ A. EXECUTION (clang++). Assets/_Graphics/Materials/Graphs/BlackHoleLens.hlsl is 
      8. SANITY over random rays: escaped directions are unit length, colours finite, alpha <= 1.
      9. FADE: the bend is exactly the straight ray at the lens edge and exactly the traced ray
         inside the fade start — no seam where the lens ends.
-    10. NEGATIVE CONTROL: rebuilt with BLACK_HOLE_LENS_STEP_FRACTION blown up (-D override of the
-        file's own #ifndef dial), the physics tests FAIL — the integration step is what holds them.
+    10. A FED DISC KEEPS ITS STREAKS: at the hottest ring, with the disc fed to the cap
+        (density 1.72), opacity still varies with the gas around the ring and never reaches a solid
+        plate; unfed (0.12) the disc is faint. (The first disc clamped its opacity, so a fed disc
+        sat at alpha = 1 and read as a flat plate in the editor.)
+    11. THE COOL OUTER DISC IS THIN: at 12 r_s the fed disc is less than half as opaque as at the
+        hottest ring, so its dim ~4,000 K light tints the scene instead of covering it.
+    12. HUE KEPT ON SCREEN: BlackHoleDiskTonemap is the identity at or below its knee, keeps the
+        channel ratios (the temperature's colour) above it, never exceeds 1 and rises with the
+        input. A bright 3,700 K orange stays orange, where the per-channel clip the project's
+        final blit applies (no tonemapper) turns it yellow — the "yellowish light disc".
+    13. NEGATIVE CONTROLS: rebuilt with BLACK_HOLE_LENS_STEP_FRACTION blown up (-D override of the
+        file's own #ifndef dial), the physics tests FAIL — the integration step is what holds them;
+        rebuilt with BLACK_HOLE_DISK_KNEE blown up (the roll-off never engages), 12 FAILS.
 
 B. COMPILE. The vertex and fragment stages of BlackHoleLens.shader, with the shipped .hlsl included.
    B1 (glslang, HLSL mode) against a declarations-only mock of the URP library, laid out FILE BY FILE
@@ -241,6 +252,67 @@ int main()
         printf("9. fade: straight at the lens edge, exactly traced inside the fade start\n");
     }
 
+    // 10. a fed disc keeps its streaks; an unfed one is faint
+    {
+        float3 axis(0,0,1);
+        float4 fed(3, 14, 1.72f, 4), unfed(3, 14, 0.12f, 4);
+        float lo = 1, hi = 0, unfedHi = 0;
+        for (int k = 0; k < 720; k++) {
+            float a = k * 6.2831853f / 720;
+            float3 xi(4.08f * std::cos(a), 4.08f * std::sin(a), 0);
+            float wf = BlackHoleDiskEmission(xi, float3(0,0,-1), axis, fed, DISK2).w;
+            lo = std::min(lo, wf); hi = std::max(hi, wf);
+            unfedHi = std::max(unfedHi, BlackHoleDiskEmission(xi, float3(0,0,-1), axis, unfed, DISK2).w);
+        }
+        CHECK(hi < 0.97f, "the fed disc is a solid plate at its hottest ring (alpha %.3f)", hi);
+        CHECK(hi - lo > 0.25f, "the fed disc's opacity barely varies with the gas (%.3f..%.3f): no streaks", lo, hi);
+        CHECK(unfedHi < 0.2f, "the unfed disc is not faint (alpha up to %.3f)", unfedHi);
+        printf("10. fed disc at the hottest ring: alpha %.2f..%.2f (streaks, no plate); unfed: alpha <= %.2f\n", lo, hi, unfedHi);
+    }
+
+    // 11. the cool outer disc is optically thin
+    {
+        float3 axis(0,0,1);
+        float4 fed(3, 14, 1.72f, 4);
+        float hot = 0, cool = 0;
+        for (int k = 0; k < 720; k++) {
+            float a = k * 6.2831853f / 720;
+            hot  += BlackHoleDiskEmission(float3(4.08f * std::cos(a), 4.08f * std::sin(a), 0), float3(0,0,-1), axis, fed, DISK2).w;
+            cool += BlackHoleDiskEmission(float3(12.0f * std::cos(a), 12.0f * std::sin(a), 0), float3(0,0,-1), axis, fed, DISK2).w;
+        }
+        hot /= 720; cool /= 720;
+        CHECK(cool < 0.5f * hot, "the outer disc (12 r_s, mean alpha %.3f) is not thinner than the hot ring (%.3f)", cool, hot);
+        printf("11. fed disc mean alpha: hottest ring %.2f, 12 r_s %.2f (thin, tints the scene)\n", hot, cool);
+    }
+
+    // 12. hue kept on screen
+    {
+        int bad = 0;
+        float3 low(0.3f, 0.2f, 0.1f), atKnee(0.6f, 0.4f, 0.2f);
+        float3 l2 = BlackHoleDiskTonemap(low), k2 = BlackHoleDiskTonemap(atKnee);
+        CHECK(l2.x == low.x && l2.y == low.y && l2.z == low.z && k2.x == atKnee.x && k2.y == atKnee.y,
+              "the roll-off touches light at or below its knee");
+        const float temps[4] = { 3700, 5000, 6500, 10000 };
+        for (float T : temps) {
+            float3 c = BlackHoleBlackbody(T);
+            float prev = 0;
+            for (float s = 0.5f; s <= 20.0f; s *= 1.25f) {
+                float3 in = c * s, o = BlackHoleDiskTonemap(in);
+                float m = std::max(o.x, std::max(o.y, o.z));
+                if (m > 1.0f + 1e-6f || m < prev - 1e-6f) bad++;
+                if (std::fabs(o.y / o.x - in.y / in.x) > 1e-4f || std::fabs(o.z / o.x - in.z / in.x) > 1e-4f) bad++;
+                prev = m;
+            }
+        }
+        CHECK(bad == 0, "%d roll-off samples exceed 1, fall with rising input, or move the hue", bad);
+        float3 orange = BlackHoleBlackbody(3700) * 4.0f;
+        float3 shown = BlackHoleDiskTonemap(orange);
+        float3 clipped(std::min(orange.x, 1.0f), std::min(orange.y, 1.0f), std::min(orange.z, 1.0f));
+        CHECK(shown.y / shown.x < 0.75f, "a bright 3700 K orange left the roll-off yellow (G/R %.2f)", shown.y / shown.x);
+        printf("12. roll-off: identity below the knee, hue kept, <= 1; 3700 K x4 shows G/R %.2f (orange) where a per-channel clip gives %.2f (yellow)\n",
+               shown.y / shown.x, clipped.y / clipped.x);
+    }
+
     if (failures) { printf("\n%d FAILURE(S)\n", failures); return 1; }
     printf("\nall properties hold\n");
     return 0;
@@ -409,7 +481,12 @@ def main():
         rc, out = build_and_run(work, HARNESS, ["-DBLACK_HOLE_LENS_STEP_FRACTION=2.5"], "control")
         fired = rc is not None and rc != 0
         last = out.strip().splitlines()[-1] if out.strip() else "(no output)"
-        print(f"\n10. negative control [integration step x31]: {'FIRED' if fired else 'DID NOT FIRE'} ({last})")
+        print(f"\n13. negative control [integration step x31]: {'FIRED' if fired else 'DID NOT FIRE'} ({last})")
+        ok &= fired
+
+        rc, out = build_and_run(work, HARNESS, ["-DBLACK_HOLE_DISK_KNEE=1e9"], "control_knee")
+        fired = rc is not None and rc != 0 and "roll-off" in out
+        print(f"13. negative control [roll-off never engages]: {'FIRED' if fired else 'DID NOT FIRE'}")
         ok &= fired
 
         print("\nB1. glslang compile of BlackHoleLens.shader against the per-file URP mock")

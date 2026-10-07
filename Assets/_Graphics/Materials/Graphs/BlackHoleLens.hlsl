@@ -41,6 +41,17 @@
 // shows is the mass it has been FED (BlackHole.DiskFeed rises with every prism it consumes and
 // decays), so a hole that is eating forms its disc in real time and a starving one fades.
 //
+// THE DISC'S OPACITY AND ITS LIGHT ON SCREEN. Opacity is Beer–Lambert through the gas column,
+// α = 1 − e^−τ, and the column thins outward with the glow (τ ∝ √flux): the hot inner disc is
+// optically thick, the cool outer disc is thin — faint warm light over the scene, never a screen in
+// front of it. And the disc's light reaches the screen through BlackHoleDiskTonemap, which rolls
+// the brightest channel off toward 1 and scales the others with it, so a temperature keeps its
+// colour. The first version did neither: its α was a clamp, so a fed disc (density past ~0.8)
+// sat at α = 1 everywhere, its spiral streaks vanished and its cool outer ring (~3,700 K, dim
+// orange) covered the scene; and with no tonemapper in the project (DefaultVolumeProfile:
+// Tonemapping None) the HDR emission was clipped PER CHANNEL at the final blit, turning the hot
+// ring into a flat white plate and the dim orange into beige — the "yellowish light disc".
+//
 // UNITS. Everything inside the trace is in units of the horizon radius r_s, centred on the hole.
 // The shader converts world → hole units on the way in and back to a world direction on the way
 // out, so the same trace serves a strength-1 hole and a strength-100 one.
@@ -64,6 +75,12 @@
 // The Shakura–Sunyaev flux shape x⁻³(1 − x^−½) at its peak (x = 49/36), so the profile can be
 // normalised to 1 at the hottest ring.
 #define BLACK_HOLE_DISK_FLUX_PEAK 0.05665
+
+// Where BlackHoleDiskTonemap starts rolling the disc's light off (brightest channel, linear). Below
+// it the light is untouched; above it it approaches 1 with slope continuous at the knee.
+#ifndef BLACK_HOLE_DISK_KNEE
+#define BLACK_HOLE_DISK_KNEE 0.6
+#endif
 
 // ---------------- Small helpers ----------------
 
@@ -176,11 +193,31 @@ float4 BlackHoleDiskEmission(float3 xi, float3 rayDir, float3 axis, float4 disk,
     float n = BlackHoleNoise(float3(rc * disk2.w * 3.0, rsn * disk2.w * 3.0, log(r) * disk2.w * 4.0));
     n = 0.55 * n + 0.45 * BlackHoleNoise(float3(rc * disk2.w * 7.0, rsn * disk2.w * 7.0, log(r) * disk2.w * 9.0 + 3.1));
 
+    // Beer–Lambert through the gas column, which thins outward with the glow: never a clamp, so
+    // the streaks survive any feed, and the cool outer disc stays translucent. The two-octave
+    // noise clusters around 0.5, so its middle half is stretched to the full clump range (mean
+    // column unchanged): gaps and dense streaks, not a uniform haze.
     float edge = smoothstep(inner, inner * 1.15, r) * (1.0 - smoothstep(outer * 0.7, outer, r));
-    float alpha = saturate(disk.z * (0.35 + 0.9 * n) * edge);
+    float clump = saturate((n - 0.25) * 2.0);
+    float tau = max(disk.z, 0.0) * (0.15 + 1.3 * clump) * edge * sqrt(flux);
+    float alpha = 1.0 - exp(-tau);
 
     float3 colour = BlackHoleBlackbody(tLocal * shift) * (disk.w * flux * shift * shift * shift);
     return float4(colour * alpha, alpha);
+}
+
+// The disc's accumulated light (premultiplied, linear HDR) into displayable range without moving
+// its hue: the brightest channel is rolled off above BLACK_HOLE_DISK_KNEE toward 1 and the other
+// two are scaled by the same factor. A per-channel clip — what the final blit does to HDR when
+// there is no tonemapper — saturates the strongest channel first and drags every colour toward
+// yellow and then white; this keeps 3,700 K orange and 6,500 K warm white.
+float3 BlackHoleDiskTonemap(float3 c)
+{
+    float m = max(c.x, max(c.y, c.z));
+    if (!(m > BLACK_HOLE_DISK_KNEE)) return c;
+    float k = BLACK_HOLE_DISK_KNEE;
+    float mapped = k + (1.0 - k) * (1.0 - exp(-(m - k) / (1.0 - k)));
+    return c * (mapped / m);
 }
 
 // The fictitious force whose orbits are null geodesics: x'' = −(3/2) h² x / |x|⁵ (units r_s).

@@ -174,7 +174,9 @@ Shader "CosmicShore/BlackHoleLens"
                     background = scene;
                 }
 
-                float3 colour = diskLight.rgb + (1.0 - diskLight.a) * background;
+                // The disc's light rolled off by its brightest channel (hue kept), then over the
+                // background it lets through — the project has no tonemapper to do it later.
+                float3 colour = BlackHoleDiskTonemap(diskLight.rgb) + (1.0 - diskLight.a) * background;
                 return half4(colour, 1.0);
             }
             ENDHLSL

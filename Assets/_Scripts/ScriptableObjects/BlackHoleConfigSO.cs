@@ -222,10 +222,12 @@ namespace CosmicShore.ScriptableObjects
         [Range(0f, 20f)]
         [SerializeField] float diskBrightness = 4f;
 
-        [Tooltip("Temperature of the hottest ring, kelvin. ~4,000 is orange, ~7,000 white-yellow, " +
-                 "~12,000 blue-white. The Doppler shift moves each side of the disc from here.")]
+        [Tooltip("Temperature of the hottest ring, kelvin. ~4,000 is orange, ~6,500 warm white (the " +
+                 "Interstellar look), ~10,000 white-hot, ~20,000 blue-white. Real accretion discs are far " +
+                 "hotter than 10,000 K, so white to blue-white is the realistic range. The outer disc is " +
+                 "cooler, and the Doppler shift moves each side of the disc from here.")]
         [Range(1500f, 30000f)]
-        [SerializeField] float diskPeakTemperature = 6500f;
+        [SerializeField] float diskPeakTemperature = 10000f;
 
         [Tooltip("How much of the relativistic Doppler shift and beaming to apply, 0..1. At 1 the side " +
                  "of the disc turning toward the camera is bluer and much brighter than the side " +
