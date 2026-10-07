@@ -333,7 +333,26 @@ generations, `matrix_a7_conf1r20.json`).
 - **Rejected.** The prey did not school.
 - Their gains (newer prey cut older predators' catch in 93% of cells, by 7/min) came from the same solo juking.
 
-Across a3, a5, a6 and a7 the conclusion is consistent. **With a single shared policy per species and
+
+**a8: "confusion on DETECTION makes grouping pay"** (detection confusion 2.0 within 20 u, plus a7's contact
+confusion; 600 generations; `matrix_a8_detect.json`). Each step, a predator's perceived nearest prey is swapped,
+with probability `1 - 1/(1 + 2 * crowd)`, for a random prey within 20 u of it. A predator chasing one member of a
+group keeps losing track.
+
+| | a8 g0 | a8 g600 |
+|---|---|---|
+| catch/min | 43 | 42 |
+| prey social share; nearest-neighbour distance; groups; largest share | 0.18; 25.4 u; 2.1; 0.04 | 0.22; 22.2 u; 2.5; 0.04 |
+| global polarisation; milling | 0.10; 0.24 | 0.12; 0.27 |
+| predator nearest-packmate distance; cooperative catches | 88 u; 0.41 | 75 u; 0.53 |
+
+- **Mostly rejected.** The prey drift toward each other: nearest-neighbour distance falls 13%, and the social share
+  rises 23% relative. But nothing like a school forms: polarisation stays a gas at 0.12.
+- The predators answer by staying closer together.
+- **The first sign of cycling in any run.** Newer predators beat older prey in only 38% of cells, and 3 of 35 triples
+  are intransitive. On a flat plateau, where neither side can gain, the race starts to wander.
+
+Across a3, a5, a6, a7 and a8 the conclusion is consistent. **With a single shared policy per species and
 per-encounter fitness, the prey's best answer to a turn-limited pursuer is an individual juke, and the
 predators' best answer is the membrane.** Schooling and encirclement need a reason this world does not provide:
 - detection-based confusion (the predator loses its target among many, before contact);
@@ -352,7 +371,8 @@ Those are the next round's levers.
    54/min from a2's g170 prey, the learned predators 3.8/min. **ES did not discover pursuit from scratch in
    ~200 generations.** Hence the designed seed.
 3. **No schooling, encirclement, ambush or relay emerged**, including in the three runs designed to provoke them:
-   a5 (confusion 1.0), a6 (slower burst) and a7 (confusion 1.0 at 20 u).
+   a5 (confusion 1.0), a6 (slower burst), a7 (confusion 1.0 at 20 u) and a8 (confusion on detection). a8 moved
+   the prey 13% closer together, and that is the only grouping response measured.
 4. **The open economy collapses** unless a designed satiety gate is added, and the evolved predators dwindle even
    with it.
 5. **Infrastructure**: a container restart killed a1 mid-run, because a background job does not survive an idle
@@ -392,9 +412,12 @@ How it ports to the game's Fauna:
   2. **Give coordination a reason to exist.** A slower burst alone did not (a6). Remove the wall as an ally (a
      spherical pond with a soft, unbounded edge, or prey that read the membrane earlier), so the only "second
      predator" left is a packmate.
-  3. **Give schooling a reason.** Contact-time confusion did not (a5, a7). Try confusion on DETECTION: the
-     predator's nearest-prey input jitters with the local prey density. Or "many eyes": an alarm a prey hears
-     through the signal channel. Both are perception rules, not rewards.
+  3. **Give schooling a reason.**
+     - Contact-time confusion did not (a5, a7). Detection confusion only nudged the prey together (a8, 600
+       generations).
+     - Next, in order: "many eyes" (an alarm a prey hears through the signal channel, so a neighbour's flight is
+       information); longer runs of a8; and per-INDIVIDUAL fitness for the prey (selfish herd), because the shared
+       species fitness pays nothing for being the safer one in the middle.
 
 
 ## Files
@@ -404,15 +427,15 @@ How it ports to the game's Fauna:
 | `policy_a3_g1460_pred_and_prey.npz` | the recommended pair (`thp` predator, `thq` prey; arms_sim.mlp layout) |
 | `seed_g0_designed.npz` | generation 0: the behaviour clones of the scripted heuristics |
 | `policy_a5_conf1_g400.npz` | a5's final pair (confusion 1.0) |
-| `snaps_a3/`, `snaps_a4_nopool/`, `snaps_a6_burst75/`, `snaps_a7_conf1r20/` | the snapshots each matrix uses |
-| `matrix.json` (a3), `matrix_a4_nopool.json`, `matrix_a6_burst75.json`, `matrix_a7_conf1r20.json` | play matrices |
+| `snaps_a3/`, `snaps_a4_nopool/`, `snaps_a6_burst75/`, `snaps_a7_conf1r20/`, `snaps_a8_detect/` | the snapshots each matrix uses |
+| `matrix.json` (a3), `matrix_a4_nopool.json`, `matrix_a6_burst75.json`, `matrix_a7_conf1r20.json`, `matrix_a8_detect.json` | play matrices |
 | `eval.json` | curve, behaviours, economy, perf, player test, telegraph, locality |
 | `feel.json` | the organic band per species and pair |
 | `curve.png`, `matrix.png`, `eco_*.png` | figures |
 | `arms_viewer.html` | the shared Ecology viewer (`Tools/Ecology/common/viewer.py` template), 4 runs: g1460 and g0 encounters, plus a vessel fly-through of each. Pilot, chase, orbit and fly cameras. |
 | `encounter_g1460_g1460.json`, `vessel_g1460_g1460.json` | the recordings (viewer data contract; rebuild with `python Tools/Ecology/common/viewer.py out.html <json>...`) |
 | `encounter_*.gif`, `vessel_*.gif` | short GIFs (orange = predator, red = bursting, cyan = prey, white ring = a catch, triangle = vessel) |
-| `a1..a7_log.jsonl`, `a*_config.json` | every training run, failed ones included |
+| `a1..a8_log.jsonl`, `a*_config.json` | every training run, failed ones included |
 
 Reproduce:
 

@@ -2278,8 +2278,10 @@ generations (does each newer generation beat older opponents, or do they cycle?)
   - prey avoiding the membrane (time-share there 0.26 → 0.13);
   - predators pinning prey on the membrane (catch ratio there 2.1 → 3.9x);
   - predators that probe with short bursts and ignore an uncatchable 120 u/s vessel.
-- **What did not emerge, even in runs built to provoke it** (slower burst; strong or wide confusion): schooling,
-  encirclement, ambush and relays. The best answers in this world are an individual juke and the wall.
+- **What did not emerge, even in runs built to provoke it** (slower burst; strong or wide confusion; confusion on
+  detection): schooling, encirclement, ambush and relays. The best answers in this world are an individual juke and
+  the wall. Detection confusion moved the prey 13% closer together, and nothing more. The next lever is per-individual
+  (selfish-herd) prey fitness, or a many-eyes alarm.
 - **Organic band:** the designed seed is too smooth (jerk_rel 0.16); every evolved pair is in the band.
 - **Economy:** without a designed satiety gate the open economy collapses: predators breed to 20-30 and eat the
   pond out in 2-4 minutes. A gate (no burst above 1.25x birth mass) keeps both species alive for 10 minutes.

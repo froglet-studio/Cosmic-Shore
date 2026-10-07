@@ -96,6 +96,10 @@ class Cfg:
     pool0: float = 30.0            # nutrient pool at start (eco)
     pred_split: float = 2.0        # a predator splits at pred_split * m_pred (prey always at 2 * m_prey)
     sated: float = 0.0             # >0: a predator heavier than sated * m_pred cannot burst (a designed satiety gate)
+    detect_conf: float = 0.0       # >0: confusion on DETECTION. Each step a predator's perceived "nearest prey" is
+                                   # swapped, with probability 1 - 1/(1 + detect_conf * crowd), for a random prey within
+                                   # detect_r of it (it loses track among many). Run a8.
+    detect_r: float = 15.0
 
     def caps(self):
         return (self.cap_prey or self.n_prey, self.cap_pred or self.n_pred)
@@ -241,6 +245,7 @@ def reset(cfg: Cfg, B: int, seed: int | np.ndarray):
     st.catches = np.zeros((B, Np), F32); st.grazed = np.zeros((B, Nq), F32)
     st.burned_q = np.zeros((B, Nq), F32); st.burned_p = np.zeros((B, Np), F32)
     st.attempts = np.zeros((B, Np), F32)
+    st.obs_rng = np.random.default_rng(int(seeds[0]) + 17)
     st.caught_t = np.full((B, Nq), -1.0, F32)
     st.births = np.zeros((B, 2), np.int32); st.starved = np.zeros((B, 2), np.int32)
     st.food0 = food.copy()
@@ -358,6 +363,18 @@ def observe(cfg: Cfg, st: State, ghost_pred=None, ghost_prey=None):
     d2, m2 = _pair(Pp, Pq_v, cfg.pred_R, Aq_v)
     oth = _agg(Pp, Pq_v, d2, m2, Vq_v, None, f, r, u, R, cfg.prey_v, 20.0)
     jn = oth["j"]
+    if cfg.detect_conf > 0:
+        Nq = Pq.shape[1]
+        real = (jn < Nq) & oth["has"]
+        jc = np.minimum(jn, Nq - 1)
+        drow = np.take_along_axis(st.dqq, jc[..., None].repeat(Nq, -1), 1)          # [B, Np, Nq] distances from target
+        cand = (drow < cfg.detect_r) & Aq[:, None, :]
+        k = cand.sum(-1) - 1
+        rng_o = getattr(st, "obs_rng", None) or np.random.default_rng()
+        swap = real & (rng_o.random(jn.shape) < 1 - 1 / (1 + cfg.detect_conf * np.maximum(k, 0)))
+        jr = np.where(cand, rng_o.random(cand.shape), -1).argmax(-1)
+        jn = np.where(swap, jr, jn)
+        oth["near"] = np.where(oth["has"][..., None], _to_local(_gather(Pq_v, jn) - Pp, f, r, u) / R, 0)
     relv = _to_local(_gather(Vq_v, jn) - V, f, r, u) / cfg.prey_v * oth["has"][..., None]
     # crowding at the nearest prey (what the confusion rule punishes): row jn of the prey-prey distances
     crowd_all = ((st.dqq < cfg.conf_r) & Aq[:, None, :]).sum(-1)          # [B, Nq] (self excluded: diag is 0 < r)

@@ -358,5 +358,77 @@
     }
    }
   }
+ },
+ "a8detect:0:0": {
+  "prey": {
+   "n": 96.333,
+   "speed": 2.685,
+   "jerk_rel": 1.146,
+   "coherence": 0.068,
+   "jitter": 1.117,
+   "stuck": 0.0,
+   "osc": 0.001,
+   "organic": {
+    "ok": true,
+    "checks": {
+     "jerk_rel": true,
+     "osc": true,
+     "stuck": true
+    }
+   }
+  },
+  "pred": {
+   "n": 8.0,
+   "speed": 5.415,
+   "jerk_rel": 0.334,
+   "coherence": 0.027,
+   "jitter": 1.107,
+   "stuck": 0.0,
+   "osc": 0.0,
+   "organic": {
+    "ok": true,
+    "checks": {
+     "jerk_rel": true,
+     "osc": true,
+     "stuck": true
+    }
+   }
+  }
+ },
+ "a8detect:600:600": {
+  "prey": {
+   "n": 99.667,
+   "speed": 2.842,
+   "jerk_rel": 1.108,
+   "coherence": 0.124,
+   "jitter": 1.092,
+   "stuck": 0.0,
+   "osc": 0.002,
+   "organic": {
+    "ok": true,
+    "checks": {
+     "jerk_rel": true,
+     "osc": true,
+     "stuck": true
+    }
+   }
+  },
+  "pred": {
+   "n": 8.0,
+   "speed": 5.355,
+   "jerk_rel": 0.318,
+   "coherence": 0.065,
+   "jitter": 1.083,
+   "stuck": 0.0,
+   "osc": 0.0,
+   "organic": {
+    "ok": true,
+    "checks": {
+     "jerk_rel": true,
+     "osc": true,
+     "stuck": true
+    }
+   }
+  }
  }
 }
