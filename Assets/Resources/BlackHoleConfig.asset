@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a4e56d9c2764496f97787938466f0b3f, type: 3}
   m_Name: BlackHoleConfig
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.ScriptableObjects.BlackHoleConfigSO
-  gmPerStrength: 20000
+  gmPerStrength: 2000
   horizonPerStrength: 2
   minHorizonRadius: 1.5
   influenceAccelerationFloor: 0.6
