@@ -3755,6 +3755,27 @@ of running out along it. Tree depth is the order the plant actually grew in; dis
 ties. A lifeform whose limbs form no tree at all (every depth 0) sorts exactly as before.
 `OrderHeartOutward` is defined as the exact reverse of `OrderOutsideIn`, so the two can never drift.
 
+**Follow-ups found while doing this (rows, not done here):**
+
+1. **Three copies of the limb-stretch code.** `StretchToBond` exists in `BorromeanFlora`,
+   `MandelbulbFlora` and `NestedGyroidFlora`, and branch-reach measurement in three shapes
+   (`BorromeanFlora.ResolveBranchReach`, `NestedGyroidFlora.ResolveBranchReach`,
+   `MandelbulbFlora.ResolveBranchGeometry`, each with its own static cache). Measured with
+   `grep -rln "void StretchToBond" Assets/_Scripts` (3 hits) on 2026-10-07. Inconsistency, so a
+   fix: one shared limb helper. The blocking question is that Mandelbulb writes an ABSOLUTE z
+   scale (its limbs are re-posed) while the other two multiply, so the helper must take the
+   absolute form.
+2. **A bare limb can now hold its parent up.** When `EnvironmentPrismPool.Get` returns null after
+   `BorromeanFlora.LayAt` created a limb, that limb carries no plate, is never asked
+   `CheckForLife`, and — since §26.10 linked it — keeps its parent limb standing. It is re-used on
+   the next tick, so it is a transient, not a leak, unless the pool stays empty. Unmeasured: count
+   bare limbs (no prism, no child) on a grown plant with the pool starved.
+3. **Two ordered-wither stampers.** `LifeForm.WitherToSkeleton` and `LightFauna.WitherCoroutine`
+   both order, isolate, skeletonise and stamp `ForceWither(i * interval)`. They differ in heart
+   release and husk teardown, so the shared part is the order-isolate-stamp core, and the
+   `PrismSpindleDeathClockTests` string gates that pin the literal stamp expressions in both files
+   would have to move with it.
+
 **Verification.** `SpindleOutsideInOrderTests`: outside-in never spends a parent before any of its
 descendants and heart-outward never spends a child before its parent, both on a tree whose geometry
 folds back past the heart; the negative controls are the two retired distance sorts, each of which

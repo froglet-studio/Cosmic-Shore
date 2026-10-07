@@ -258,6 +258,14 @@ what the carve-out silently broke — see the traps below.
   couplings (and suspends `CheckForLife`, so handing a spindle's prisms away doesn't evaporate it
   out of turn). Detach body prisms BEFORE withering spindles — a body prism is parented to a
   spindle, so the wither would destroy the mass you meant to conserve. `Docs/ECOSYSTEM.md §26.3`.
+- **Order an ordered wither off the spindle TREE, never off distance — and the tree must exist.**
+  Every standing spindle and prism of a lifeform keeps a path of standing spindles to its crystal,
+  with the crystal joust's heart-outward unravel as the ONE sanctioned exception. Use
+  `Spindle.OrderOutsideIn` / `Spindle.OrderHeartOutward` and call them BEFORE isolating (isolation
+  severs the links the depth is read from). A distance sort spends a parent before its child on any
+  surface that folds back past its heart (the Borromean membrane). And a species that poses limbs
+  as flat siblings under its root has NO tree unless it calls `Spindle.AttachToParent` — grazing an
+  inner prism then evaporates the limb everything beyond it hangs off. `Docs/ECOSYSTEM.md §26.10`.
 - **A per-lifeform SCALE curve must exempt any species whose geometry is a LATTICE.**
   The MECHANISM that made this concrete is gone — `Flora.LevelUp` grew `leafSize` and
   `Flora.AddHealthBlock` stamped it onto every prism the plant laid, and lifeform LEVELS are now
