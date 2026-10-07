@@ -99,7 +99,9 @@ for the prisms inside its influence sphere, new ones are ranked nearest-first an
 budget goes to the mass the hole moves most. Never admitted: super-shielded mass (structure; nothing
 can destroy it, so pulling it would pile it unkillable at the singularity), a prism still growing in
 (its transform is not final), one with no index slot, one whose entity was born on a non-Prism
-prototype (debris, husks — their flight is a clock stamp). A body starts at rest; the frame dragging
+prototype (debris, husks — their flight is a clock stamp), and a creature's or a plant's body prism
+(`HealthPrism` — posed by its rig every frame; pulling it alone would tear the body off a creature
+that keeps swimming, see §8). A body starts at rest; the frame dragging
 gives it its swirl.
 
 **Two verdicts leave the set.** CAPTURED (the centre crossed a horizon): the prism is consumed through
@@ -235,6 +237,10 @@ global `blackhole` commands work here too (e.g. `blackhole spawn 10 200 0 0 -40 
 
 - **A vessel inside a horizon is held, not destroyed.** The pull is capped (90 u/s) so the game stays
   playable; a boost gets a ship out. Vessel death by singularity is a design decision, not taken here.
+- **Lifeforms are not bodies yet.** A `HealthPrism` (fauna body, flora limb) is excluded from
+  admission: the simple version would tear it off its rig. A creature or plant under gravity is a
+  whole-body force on its locomotion — an ecology change (`/ecology`, the LOCKED principles) for a
+  follow-up, not a per-prism one. Trails, cell environments and freestyle mass are all bodies.
 - **Pure-entity debris is not a body.** Explosion fragments fly on the clock stamp and are not pulled;
   they ARE warped (the map is correct on any mesh), so a burst near a hole visibly leans into it.
 - **No replication.** Each peer that spawns a hole runs it locally; prism bodies move on the machine

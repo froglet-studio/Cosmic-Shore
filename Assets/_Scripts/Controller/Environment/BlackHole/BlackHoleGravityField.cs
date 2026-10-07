@@ -119,13 +119,16 @@ namespace CosmicShore.Gameplay
                 wells.Add(h.ToWell(config));
             }
 
-            if (wells.Count > 0 && Time.unscaledTime >= _nextAdmission)
+            bool sweep = Time.unscaledTime >= _nextAdmission;
+            if (sweep)
             {
                 _nextAdmission = Time.unscaledTime + config.AdmissionInterval;
-                Admit(holes, config);
+                if (wells.Count > 0) Admit(holes, config);
             }
 
-            Prune();
+            // The cheap checks every frame; the entity and hierarchy checks on the sweep cadence
+            // — the job and the bulk writers are safe against a dead entity in between.
+            Prune(deep: sweep);
             int n = _prisms.Count;
             if (n == 0 || dt <= 0f) return;
 
@@ -222,6 +225,11 @@ namespace CosmicShore.Gameplay
             if (!p.IsCreationComplete) return false;            // still growing in: its transform is not final
             if (p.SpatialIndexId < 0) return false;
             if (p.prismProperties is { IsSuperShielded: true }) return false;
+            // A creature's or a plant's body prism is posed by its rig every frame (the fauna
+            // movers contract); pulling it on its own would tear the body off the creature while
+            // the creature keeps swimming. A lifeform under gravity is a whole-body question for
+            // the ecology (Docs/BLACK_HOLE.md §8), not a per-prism one — excluded here.
+            if (p is HealthPrism) return false;
             if (!p.gameObject.activeInHierarchy) return false;
             return PrismRenderService.IsHandleUsable(in p.RenderHandle);
         }
@@ -260,16 +268,20 @@ namespace CosmicShore.Gameplay
             _indexIds.RemoveAtSwapBack(i);
         }
 
-        /// <summary>Bodies that died, were pooled, or lost their entity since last frame leave the set.</summary>
-        static void Prune()
+        /// <summary>
+        /// Bodies that died, were pooled, or lost their entity since last frame leave the set.
+        /// <paramref name="deep"/> adds the hierarchy and entity checks, which cost a native call
+        /// per body and are only needed at the sweep cadence.
+        /// </summary>
+        static void Prune(bool deep)
         {
             for (int i = _prisms.Count - 1; i >= 0; i--)
             {
                 var p = _prisms[i];
-                bool gone = p == null || p.destroyed || !p.gameObject.activeInHierarchy ||
-                            p.SpatialIndexId < 0 ||
-                            !PrismRenderService.IsHandleUsable(in p.RenderHandle) ||
+                bool gone = p == null || p.destroyed || p.SpatialIndexId < 0 ||
                             p.RenderHandle.Epoch != PrismRenderService.HandleEpoch;
+                if (!gone && deep)
+                    gone = !p.gameObject.activeInHierarchy || !PrismRenderService.IsHandleUsable(in p.RenderHandle);
                 if (gone) RemoveAt(i, clearComponent: p != null && !p.destroyed);
                 else if (_indexIds[i] != p.SpatialIndexId) _indexIds[i] = p.SpatialIndexId;
             }
@@ -338,19 +350,21 @@ namespace CosmicShore.Gameplay
 
             public void Execute(int i, TransformAccess transform)
             {
-                Matrix4x4 lm = transform.localToWorldMatrix;
-                var m = new float4x4(lm.GetColumn(0), lm.GetColumn(1), lm.GetColumn(2), lm.GetColumn(3));
-                float3 p = m.c3.xyz;
-
                 var e = Entities[i];
-                if (e == Entity.Null || !Bodies.HasComponent(e) || !transform.isValid)
+                if (!transform.isValid || e == Entity.Null || !Bodies.HasComponent(e))
                 {
-                    Matrices[i] = m;
-                    Points[i] = p;
+                    // A dead transform or entity: nothing to move, nothing to say. The main
+                    // thread's prune drops the slot; the bulk writers skip a null entity.
+                    Matrices[i] = float4x4.identity;
+                    Points[i] = float3.zero;
                     Verdicts[i] = (byte)BlackHolePhysics.Verdict.Free;
                     CapturedBy[i] = -1;
                     return;
                 }
+
+                Matrix4x4 lm = transform.localToWorldMatrix;
+                var m = new float4x4(lm.GetColumn(0), lm.GetColumn(1), lm.GetColumn(2), lm.GetColumn(3));
+                float3 p = m.c3.xyz;
 
                 var body = Bodies[e];
                 float3 v = body.Velocity;
