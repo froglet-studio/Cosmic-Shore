@@ -393,7 +393,7 @@ its GameObject lists it in `m_Component`.
   offsets, tested against seven known meshes: zero hits). So you cannot hand-author a prefab
   reference to a bone inside a nested model prefab. Do not burn the session
   reverse-engineering it: add a serialized NAME and resolve it in `Awake`, which also survives
-  a re-export — the ids do not. This is the same choice the project's own `ResolvePart` makes.
+  a re-export — the ids do not. This is the same choice the project's own `ResolvePart` makes. **Nor can you BORROW one** by renaming a node to match a name whose id another FBX already records (two manta FBXes sharing `manta` → one id made it look safe): tried on the omni crystal's triangle shells (2026-10), Unity did not reproduce the id and the shells rendered nothing. When a hand-authored prefab must draw an FBX mesh, BAKE it into a native `Mesh` `.asset` from a generator (donor-clone `Assets/_Models/Testing/Prism.asset`'s layout; `Tools/Build/author_omni_crystal_triangles.py` is the worked example) — its reference is `{fileID: 4300000, guid: <own meta>, type: 2}`, deterministic by construction.
 - **A nested prefab instance is reachable TWO ways, and needs both when its parent is PLAIN.**
   `m_TransformParent` in the instance's modification block always, PLUS an entry in the parent
   Transform's `m_Children` **iff that parent is a plain (non-stripped) Transform**. The

@@ -453,6 +453,81 @@ colour is barely affected.
 (convert, do not normalise, do not lift), the ladder clearance, the sentinel refusal and per-domain
 hue separation.
 
+### 2.10 The omni crystal is a BODY plus three tone shells — an element's effect belongs on that element's SHAPES (2026-08-27)
+
+The omni crystal is an **exploded polyhedron**: 122 disjoint plates, one component per face of the
+solid it was blown apart from — **20 triangular prisms, 90 boxes, 12 pentagonal prisms**
+(`OmniCrystalExport1_8-21-25.fbx`, measured). Each family of plates is the shape that stands for
+one element, so an element's effect belongs on **its own shapes and nothing else**. Mass owns the
+**Shepard tone**, so the tone belongs on the 20 triangles.
+
+It did not. `Crystal.prefab` ran `ShepardGraph` over **four copies of the whole omni model**, which
+had two consequences and neither was authored:
+
+1. The tone dragged the ENTIRE crystal — squares and pentagons included — through every pulse, so
+   the omni crystal read as "the Mass crystal, bigger", and there was nowhere left to put the other
+   three elements' effects.
+2. **The crystal had no body.** `ShepardGraph` resolves `Alpha = (1.05 − s) × _Opacity` where `s`
+   sweeps `_Stop`→`_Start` over `_Period`, and the one non-scaling shell
+   (`ActiveMassCrystalMaterial 3`, `_ScaleDistance 0`, band 0.98→1.03) therefore sits at alpha
+   **0.02–0.07** — a ghost, one hundredth above the graph's own 0.01 clip. Everything you could see
+   of an omni crystal was the pulse.
+
+What ships is a body plus a three-shell tone chain, authored by
+`Tools/Build/author_omni_crystal_triangles.py` (`--check`):
+
+| slot | geometry | material | band |
+|---|---|---|---|
+| 0 | triangles only (`OmniCrystalTriangles.asset`) | `ActiveMassCrystalMaterial` / `BlueCrystalMaterial` | 0.00 → 0.33 |
+| 1 | triangles only | `ActiveMassCrystalMaterial 1` / `BlueMassCrystalMaterial 1` | 0.33 → 0.66 |
+| 2 | triangles only | `ActiveMassCrystalMaterial 2` / `BlueMassCrystalMaterial 2` | 0.66 → 1.00 |
+| 3 | **the whole omni model** | `CrystalMaterial` / `BlueCrystalMaterial` (`CrystalGraph`, static) | — |
+
+**Four slots exactly, and that bound is real**: `ThemeManagerDataContainerSO.GetTeamCrystalMaterial`
+answers indices 0..3 and warns past them, so a fifth model would log on every domain-owned
+activation *and* silently reuse slot 0's team material. The body takes the slot the ghost shell was
+already occupying, so the index roles, the queue offsets, the husk-per-model explosion and the
+`FadeIn` contract are all untouched.
+
+**The shell scale is MEASURED, not chosen.** `MassCrystalExport3ExpandedTri_10-23-25.fbx` is
+exactly the omni model's 20 triangular prisms scaled about the origin by **2.241676** — proven on
+all 120 vertices (worst direction mismatch 1.2e-13, max residual 8.3e-07 against a 1.6172 mesh
+radius). The shells therefore carry the reciprocal, **0.446094887**, and the tone's outermost reach
+lands precisely on the body's own triangles instead of 2.24× outside the crystal — which is also
+what keeps the whole thing inside the 1.2 pickup collider it has always sat in. Re-export either
+model at a different scale and `--check` fails at the script rather than in play. *If the pulse is
+ever wanted to overshoot the body, that one number is the dial.*
+
+Two things the change buys for free, and one it does not. `CrystalGraph` exposes **`_opacity`** where
+`ShepardGraph` exposes **`_Opacity`**, and both `FadeIn` and `Crystal.WriteTint`'s capture dissolve
+write the lowercase one — so the omni crystal had never bloomed in and had never dissolved on capture
+(`Docs/ECOSYSTEM.md §31`), on any of its four shells. Its body now does both. The three tone shells
+still cannot: that gap is pre-existing and is now confined to the pulse rather than the whole crystal.
+The CTA lime is unaffected either way — `Crystal.FindColorPropertyNames` accepts both shaders'
+`_BrightCrystalColor`/`_DullCrystalColor`, so §2.2's tint reaches body and shells alike.
+
+**The triangle shells draw a BAKED native mesh, not the FBX's own.** A hand-written prefab cannot
+reference an FBX sub-asset: Unity mints that fileID inside the editor, and it is not reproducible
+offline. The first pass tried to *borrow* one — rename the triangle export's node to `mass` so its
+generated id would match `masscrystal.fbx`'s recorded `-6009661875889629336` — and **Unity did not
+honour it: the shells rendered nothing**, so the omni showed its body and no tone at all. The script
+now bakes the FBX into `Assets/_Models/OmniCrystalTriangles.asset` (a native `Mesh`, referenced as
+`{fileID: 4300000, guid: <its own .meta>}`, deterministic by construction) using the conversion Unity
+applies to this export: `bakeAxisConversion: 0` keeps the mesh in node space, right→left handedness
+negates x and reverses winding, and `UnitScaleFactor 100 × useFileScale` is 1:1. The 20 triangles are
+invariant under that x-mirror, so the shells line up with the body however the importer resolves the
+handedness axis. The FBX stays the source: re-export it and re-run the script (`--check` fails until
+you do). **Never hand-reference an FBX sub-asset by a computed or borrowed fileID** — bake, or resolve
+by name at runtime.
+
+**A node offset that looks stray may be the pose the takes were authored around.** That FBX alone
+among the crystal exports carries `Lcl Translation (1.9394, -7e-08, 5.4726)` while its 120 vertices
+are symmetric about the origin — which reads as an object left off-origin in Blender, and was very
+nearly "cleaned up". Zeroing it takes assimp from **3 animations to 9**, because six of the nine takes
+hold translation curves that ARE that offset and were being dropped as no-ops against it. It stays.
+It never reaches the shells anyway — they reference the MESH, whose vertices Unity keeps in node
+space. *Before removing a transform that looks like an export artifact, check what reads it.*
+
 ## 3. The colour-space rule (this is the trap)
 
 The project is **Linear** (`ProjectSettings/ProjectSettings.asset: m_ActiveColorSpace: 1`)
