@@ -1554,3 +1554,5 @@ A refinement nobody has measured: let the gate stand down when the frame is long
   entry, lists the steps.
 - To redo any of this after a map or code change: `python3 Tools/Build/skimrace_retune.py <I>` (per intensity),
   and for the general policy the `tuneall` line above, transcribed into `author_skimrace_ai_config.py`.
+- The session that produced §10–§14 (asks, decisions by date, every commit, the verification record, open
+  items) is written up in `Docs/SKIM_RACE_AI_SESSION_LOG.md`.
