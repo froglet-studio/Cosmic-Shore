@@ -462,8 +462,19 @@ The family is defined by four axes. A new member is a choice on each:
 
 - **CRADLE** (Urchin, `Docs/PRISM_ANIMATION.md` §4.7.2) — *hull · drape · riding · 24 × s16*.
   Mass around a riding hull slides along its own radius onto the hull's sphere; inside closes
-  over, outside rises to meet. **It is the family's only member, and the only consumer of the
-  high-poly swap, the residency contract and the global-uniform bank.**
+  over, outside rises to meet. The first member, and the reference implementation of the
+  high-poly swap, the residency contract and the global-uniform bank.
+- **GRAVITY WARP** (black hole, `Docs/PRISM_ANIMATION.md` §4.7.4, `Docs/BLACK_HOLE.md` §5) —
+  *a placed world object · pucker toward a point (a radial STRAIN) · proximity to a horizon ·
+  32 × s12*. Mass near a black hole's horizon is drawn tidally stretched toward the singularity.
+  **Built 2026-10-07, not yet playtested.** Two things it added to the family: a member whose
+  SOURCE is not a vessel and whose source also MOVES the prisms (through the ordinary movers
+  contract, a separate system with a separate budget — the morph never reads anything the field
+  did not already make true); and a second node on the vertex chain, spliced immediately BEFORE
+  the cradle (the cradle stays last), anchored structurally on "the morph that feeds the vertex
+  blocks" — the rule-1 exception taken deliberately on ownership grounds, with all sixteen sibling
+  wirers passing. Its harness adds a *tidal* property (radial stretch > tangential stretch,
+  a theorem of `g' ≤ 0`) to the cradle's ten.
 
 **A neighbour, not a member: the Rhino sword's SLICE** (`Docs/PRISM_ANIMATION.md` §4.10). It is
 the admission test's question 1 answered "no" and still wanting the dense mesh — every input (the

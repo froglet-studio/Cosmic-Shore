@@ -2014,6 +2014,41 @@ much of its life at full size) and the one you may spend depends on who owns the
 effect **strong enough to be an EVENT stops being one the moment it is continuous**, which no
 measurement will tell you.
 
+### 4.7.4 The fifth citizen of §4.7 — the black hole's WARP (built 2026-10-07, not yet playtested)
+
+Not a law: a world object's signature, live only while a black hole is. Recorded here because it is
+the second §4.7 consumer that moves VERTICES, and the first whose source is not a vessel — a spawned
+`BlackHole` (`Docs/BLACK_HOLE.md`), which also MOVES the prisms around it through the ordinary
+movers contract (§1 "Animation vs. live gameplay data", §3.6). The two halves are deliberately
+separate systems: the FIELD changes where mass is (gameplay data — colliders, index, entity), the
+WARP changes only how it is drawn, so the bend can be tuned, switched off or judged on look without
+touching the physics.
+
+Mass near a horizon is drawn TIDALLY STRETCHED toward the singularity — near faces pulled harder than
+far faces, so a prism elongates along the radial and squeezes across it (spaghettification). The map
+is the cradle's shape with a STRAIN instead of a drape: `p' = U + dir·d·(1 − w·k(s))`, `s = d − r_s`,
+`k` the same C1 falloff from the horizon to the reach. It never folds (`f' ≥ 1 − g > 0`), never crosses
+the centre, is affine in the eased strain, and the tidal claim (radial stretch > tangential stretch)
+is a theorem of `g' ≤ 0`, asserted by the harness. The normal is the analytic inverse-transpose,
+proven by convergence rate with a negative control (`Tools/Shaders/verify_prism_gravity_warp.py`).
+
+`BlackHoleWarp` publishes `_PrismGravityWarpCentre[4]` / `_PrismGravityWarpWeight[4]` /
+`_PrismGravityWarpParams` once per frame from the registry's one driver (order 29500) and reconciles
+a high-poly residency of its own (32 × s12, nearest-to-horizon first — the field decays with
+distance, so that is the right key) through the same `HighPolyPrismMesh` handoff the cradle uses. The
+node (`PrismGravityWarpDeform`, `PrismGravityWarp.hlsl`) is spliced IMMEDIATELY BEFORE the cradle on
+both live graphs by `Tools/Shaders/wire_prism_gravity_warp.py`, anchored structurally on "the morph
+that feeds the vertex blocks" — the cradle stays last, and all sixteen sibling wirers still pass. A
+separate node rather than a map kind inside `PrismCradle.hlsl` (the prism-morph skill's preference),
+weighed on ownership: a world object and one vessel's ride feel never legitimately fight over a vertex.
+
+Three things worth carrying: **a strain is the right amplitude for a field with a size** (the hole's
+horizon IS its scale, so the displacement must scale with it — the skill's finding (c), chosen
+deliberately this time); **gameplay motion and the morph can share one source** so long as they are
+two systems with two budgets, and the morph never reads anything the field did not already make
+true; and **a hole that despawns keeps publishing a falling weight** while the field has already
+stopped pulling — only the photons ease.
+
 ### 4.8 The shield morph — the last CPU ticker (shipped 2026-08-15, B4)
 
 Both shield tiers animated their per-face **engage bloom** and **disengage shatter** by
@@ -2590,6 +2625,7 @@ Phase C — rogue paths & ecosystem visuals (each is standalone):
 | C16 | A LIVING health prism stands still while the limb it is bolted to bends — the lockup that reads as one creature comes apart | ✅ SHIPPED 2026-09-16 — new `PrismSway` (its own `PrismSway.hlsl`, which `#include`s `SpindleSway.hlsl` so the prism and the limb share the two wave constants rather than each carrying a copy) + `_SwaySpanX`/`_SwaySpanY`/`_SwayAxis`/`_SwayTiming` (Hybrid Per Instance, wired into **both** live-prism graphs by `Tools/Shaders/wire_prism_sway.py`, spliced immediately AFTER `PrismShieldMorph` so the two compose) + `PrismRenderService.StampSway`/`ClearSwayStamp` + `PrismSway` (the bake and the stamp site) + `Prism.OnCreationComplete` (a new one-line virtual — the stamp cannot live in `Initialize`, which runs before the companion entity exists and before `AssembledFlora` has re-parented the prism onto its spindle). The prism reads the LIMB'S OWN shear field evaluated at its own vertices, so the two move together **bit-identically** rather than approximately; `verify_prism_sway.py` T3 asserts exactly that against `SpindleSway`, which is why the limb height is folded into the span BEFORE the sine. Everything stamped is a constant of the attachment, so there is no start time, no duration and no per-frame CPU. A ZERO span is the exact no-op and is the default, so trails, authored environments and the skeleton a dead lifeform leaves behind (`HealthPrism.LeaveAsSkeleton` clears the stamp) are unchanged — which is the feature: **living mass is the mass that moves**. Design, the four proof layers and the instance-data cost: `Docs/ECOSYSTEM.md` §47 |
 | C17 | The Urchin's CRADLE — the mass around a RIDING Urchin drapes onto its hull (a per-frame, per-prism deformation that a per-prism material write would have made a §1 violation) | ✅ SHIPPED 2026-09-16 as the THIRD §4.7 global-uniform citizen (§4.7.2); **RE-CUT 2026-09-22 from a per-triangle rigid motion to a high-poly radial DRAPE** after the per-face and per-wedge cuts were both rejected on look (*"this looks terrible"* → a 10x tone-down → *"really bad to the point i put this down"*) — a deformation is only as smooth as the surface it moves, and 24 triangles is not a surface. Now: `HighPolyPrismMesh` (the identical solid subdivided 16x per face axis, 3,072 tris, SHARED so the swapped prisms still batch) + `PrismCradle`'s residency pass (`Prism.SetRenderMeshOverride` on the nearest prisms within `hullRadius + drapeReach + residencyMargin` — a STATE CHANGE, final at the instant it is applied, like a shield engaging, and budgeted at 24 prisms; it declines any prism already holding an override and only clears one that is still its own) + `PrismCradle.hlsl` (`PrismCradleDeform`, VERTEX stage, 4 slots — the object-space Tangent Vector the wedge cut needed is GONE, the map reads only world position and normal — spliced LAST on both live graphs by `Tools/Shaders/wire_prism_cradle.py`, whose migration is now written against slot DIRECTIONS so it runs in both directions and sweeps the feeder nodes an old signature orphaned) + `PrismCradleSource` (ensured on every Urchin by `GunVesselTransformer.Initialize`, gated on `IsRiding`) + `PrismCradleConfigSO` (`Resources/PrismCradleConfig`: 6 u drape reach, exponent 1.5, max strength **1**, subdivision 16, 24 resident prisms, 2 u residency margin, 0.25 s in / 0.4 s out). The map is ONE line — `p' = U + dir·(d − s·k(s)·w)` — with a falloff C1 at both ends (no seam) and the ANALYTIC inverse-transpose for the normal (the cheap lerp-toward-the-sphere-normal shortcut pops where `n·dir` crosses zero, which is a line down the middle of the ridden prism's side faces). Proven by `Tools/Shaders/verify_prism_cradle.py` (clang++ over the SHIPPED file: identity off/beyond reach, the wrap onto the surface along the outward radial, the lip never past the surface and never folding, radial purity, the normal proven by CONVERGENCE RATE — halving the patch quarters the error, 0.32 → 0.0058 — no seam at the reach, affine in the weight, dominant slot, plus a negative control that PLATEAUS at 0.74 with the radial Jacobian term neutered). Not run in the editor. |
 | C18 | The Rhino sword's kills burst into debris like any other death — a blade reads as a blast | ✅ SHIPPED 2026-09-26 (§4.10) — a blade kill is a CUT: two pure render entities per prism on the shared `HighPolyPrismMesh`, the far skin centrally projected onto the cut plane (`PrismSlice.hlsl`), rigid hinge-opening motion and a dissolve from the cut face, all off one stamp per half; batched spawn/retire (`PrismSlice.cs`, `PrismRenderService.SpawnSliceDebrisBatch`), explosion fallback on any refusal, budget 115k triangles / zero colliders. Proven offline by `verify_prism_slice.py` (execution + glslang) and `PrismSliceTests`; **not run in the editor** |
+| C19 | A BLACK HOLE — mass around a spawned gravity well orbits, spirals in and is consumed, and bends on screen as it goes (a per-frame, per-prism deformation and a per-frame, per-prism MOVE) | ✅ BUILT 2026-10-07 (§4.7.4, `Docs/BLACK_HOLE.md`) — the MOVE is live gameplay data under the movers contract (one Burst `IJobParallelForTransform` over the admitted bodies + `SetTransformsBatch` + `UpdatePositionsBatch`; `GravityBody` on every prism prototype, disabled until admitted), the BEND is a §4.7 global bank (`PrismGravityWarp.hlsl`, spliced immediately before the cradle on both live graphs, its own 32 × s12 residency); captures go through `Prism.Consume` with the hole as the implosion sink. Proven offline by `verify_prism_gravity_warp.py` (ten properties + negative control), `BlackHoleTests`, `BlackHolePhysicsTests`; **not run in the editor** |
 
 Phase D — lock-in:
 
