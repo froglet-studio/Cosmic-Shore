@@ -11106,7 +11106,7 @@ makes neighbouring plants of a colony clear each other exactly: the fit already 
    way** — the plates beside a strut give way instead.
 
 **Default period (Time leaf): 4,235 prisms, 0 overlaps after the fit (3,160 pairs before it, 1 plate dropped),
-sliced at 2 ms into ~93 slices (worst slice ~2.6 ms, best of three builds), ~0.2–0.4 s total.** It is built ONCE per
+sliced at 2 ms into ~85–95 slices (worst slice ~2.5 ms, best of three builds), ~0.2–0.4 s total; measured by `nested_gyroid_harness/run.sh`, re-run it rather than trusting these figures.** It is built ONCE per
 settings key and cached: every later plant of that config and element — every colony daughter — only cuts its tile.
 Near √2 the outer levels have much less AREA than the base (the gradient lines converge on G's maxima), so the fit
 drops what no longer fits: at tMax 1.35–1.38, 336 plates a period, and a plant's outermost sheet keeps 2–4 of its 8

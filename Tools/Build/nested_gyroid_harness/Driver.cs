@@ -272,14 +272,14 @@ static class Driver
         public NestedGyroidColony Book;
     }
 
+    /// <summary>The shipped cap (author_nested_gyroid_flora_assets.py CAP - the gyroid flora's own).</summary>
+    const int ShippedCap = 42;
+
     /// <summary>
     /// Runs the shipped colony book the way NestedGyroidFlora drives it: a founder claims its tile; a plant that has
     /// grown contributes its neighbours; once per cycle the population pops ONE random open tile and a daughter
     /// claims it. Plants grow in ~4 s against a ~30 s cycle, so every plant is complete by the next cycle.
     /// </summary>
-    /// <summary>The shipped cap (author_nested_gyroid_flora_assets.py CAP - the gyroid flora's own).</summary>
-    const int ShippedCap = 42;
-
     static Grown GrowColony(NestedGyroidPeriod P, int plants, int seed, int founderOctagon = -1,
                             Func<NestedGyroidColony, NestedGyroidColony.Tile, bool> accept = null)
     {
