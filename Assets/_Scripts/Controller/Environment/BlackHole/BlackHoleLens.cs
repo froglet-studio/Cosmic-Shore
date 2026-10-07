@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using UnityEngine;
@@ -11,7 +12,8 @@ namespace CosmicShore.Gameplay
     /// around it — the gravitational lens — the shadow, and the accretion disc lensed over the top
     /// and bottom of the shadow. The work is all in <c>BlackHoleLens.shader</c> /
     /// <c>BlackHoleLens.hlsl</c> (a per-pixel Schwarzschild ray trace); this component is the
-    /// carrier: a camera-facing quad at the hole sized to the lens, and one
+    /// carrier: the lens SPHERE around the hole, sized to the lens (the shader draws its far side,
+    /// so the lens is right from every viewpoint, including from inside it), and one
     /// <see cref="MaterialPropertyBlock"/> of per-hole numbers written each frame.
     ///
     /// The per-frame write is fine here and would not be on a prism: this is one renderer per hole
@@ -34,7 +36,10 @@ namespace CosmicShore.Gameplay
         static readonly int DiskId = Shader.PropertyToID("_BHDisk");
         static readonly int Disk2Id = Shader.PropertyToID("_BHDisk2");
 
-        static Mesh s_quad;
+        /// <summary>Icosahedron subdivisions of <see cref="LensSphere"/> (2 = 320 triangles).</summary>
+        const int LensSphereSubdivisions = 2;
+
+        static Mesh s_sphere;
         static Material s_material;
         static bool s_materialResolved;
 
@@ -119,7 +124,7 @@ namespace CosmicShore.Gameplay
 
             var go = new GameObject("Lens");
             go.transform.SetParent(hole.transform, false);
-            go.AddComponent<MeshFilter>().sharedMesh = Quad();
+            go.AddComponent<MeshFilter>().sharedMesh = LensSphere();
             var renderer = go.AddComponent<MeshRenderer>();
             renderer.sharedMaterial = material;
             renderer.shadowCastingMode = ShadowCastingMode.Off;
@@ -135,24 +140,79 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// A unit quad in XY with BOUNDS that are a unit cube, so a uniform scale of the lens
-        /// diameter gives the renderer culling bounds that contain the billboard from every
-        /// viewing angle (the vertex stage turns it toward the camera, which the mesh bounds
-        /// cannot know).
+        /// The lens volume: an icosphere that CIRCUMSCRIBES the unit-diameter sphere — every face
+        /// lies at or outside radius 0.5 — with every face wound outward. A uniform scale of the
+        /// lens diameter then covers every ray that passes through the lens, from outside it or
+        /// from inside it, and the shader's <c>Cull Front</c> draws exactly one layer: the far
+        /// side. The shader discards past the true lens radius, so the facets never show.
         /// </summary>
-        static Mesh Quad()
+        public static Mesh LensSphere()
         {
-            if (s_quad != null) return s_quad;
-            s_quad = new Mesh { name = "BlackHoleLensQuad" };
-            s_quad.SetVertices(new[]
+            if (s_sphere != null) return s_sphere;
+
+            float t = (1f + Mathf.Sqrt(5f)) * 0.5f;
+            var vertices = new List<Vector3>
             {
-                new Vector3(-0.5f, -0.5f, 0f), new Vector3(0.5f, -0.5f, 0f),
-                new Vector3(0.5f, 0.5f, 0f), new Vector3(-0.5f, 0.5f, 0f),
-            });
-            s_quad.SetTriangles(new[] { 0, 2, 1, 0, 3, 2 }, 0);
-            s_quad.bounds = new Bounds(Vector3.zero, Vector3.one);
-            s_quad.hideFlags = HideFlags.DontSave;
-            return s_quad;
+                new(-1f, t, 0f), new(1f, t, 0f), new(-1f, -t, 0f), new(1f, -t, 0f),
+                new(0f, -1f, t), new(0f, 1f, t), new(0f, -1f, -t), new(0f, 1f, -t),
+                new(t, 0f, -1f), new(t, 0f, 1f), new(-t, 0f, -1f), new(-t, 0f, 1f),
+            };
+            for (int i = 0; i < vertices.Count; i++) vertices[i] = vertices[i].normalized;
+            var triangles = new List<int>
+            {
+                0, 11, 5, 0, 5, 1, 0, 1, 7, 0, 7, 10, 0, 10, 11, 1, 5, 9, 5, 11, 4, 11, 10, 2, 10, 7, 6, 7, 1, 8,
+                3, 9, 4, 3, 4, 2, 3, 2, 6, 3, 6, 8, 3, 8, 9, 4, 9, 5, 2, 4, 11, 6, 2, 10, 8, 6, 7, 9, 8, 1,
+            };
+
+            var midpoints = new Dictionary<long, int>();
+            int Midpoint(int a, int b)
+            {
+                long key = a < b ? ((long)a << 32) | (uint)b : ((long)b << 32) | (uint)a;
+                if (midpoints.TryGetValue(key, out int index)) return index;
+                vertices.Add(((vertices[a] + vertices[b]) * 0.5f).normalized);
+                midpoints[key] = vertices.Count - 1;
+                return vertices.Count - 1;
+            }
+
+            for (int level = 0; level < LensSphereSubdivisions; level++)
+            {
+                var next = new List<int>(triangles.Count * 4);
+                for (int i = 0; i < triangles.Count; i += 3)
+                {
+                    int a = triangles[i], b = triangles[i + 1], c = triangles[i + 2];
+                    int ab = Midpoint(a, b), bc = Midpoint(b, c), ca = Midpoint(c, a);
+                    next.Add(a); next.Add(ab); next.Add(ca);
+                    next.Add(b); next.Add(bc); next.Add(ab);
+                    next.Add(c); next.Add(ca); next.Add(bc);
+                    next.Add(ab); next.Add(bc); next.Add(ca);
+                }
+                triangles = next;
+                midpoints.Clear();
+            }
+
+            // Wind every face outward (Unity's front face has cross(b − a, c − a) toward the viewer)
+            // and find the face plane closest to the centre; push the vertices out so that plane
+            // sits at radius 0.5. Done here rather than trusted to the tables above.
+            float closest = 1f;
+            for (int i = 0; i < triangles.Count; i += 3)
+            {
+                Vector3 a = vertices[triangles[i]], b = vertices[triangles[i + 1]], c = vertices[triangles[i + 2]];
+                var normal = Vector3.Cross(b - a, c - a);
+                if (Vector3.Dot(normal, a + b + c) < 0f)
+                {
+                    (triangles[i + 1], triangles[i + 2]) = (triangles[i + 2], triangles[i + 1]);
+                    normal = -normal;
+                }
+                closest = Mathf.Min(closest, Vector3.Dot(normal.normalized, a));
+            }
+            float radius = 0.5f / closest;
+            for (int i = 0; i < vertices.Count; i++) vertices[i] *= radius;
+
+            s_sphere = new Mesh { name = "BlackHoleLensSphere", hideFlags = HideFlags.DontSave };
+            s_sphere.SetVertices(vertices);
+            s_sphere.SetTriangles(triangles, 0);
+            s_sphere.RecalculateBounds();
+            return s_sphere;
         }
 
         void OnEnable() => CameraSupport.Acquire();

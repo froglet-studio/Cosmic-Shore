@@ -348,6 +348,8 @@ float3 TransformObjectToWorld(float3 p) { return mul(unity_ObjectToWorld, float4
 float4 TransformWorldToHClip(float3 p) { return mul(unity_MatrixVP, float4(p, 1.0)); }
 float4 ComputeScreenPos(float4 positionCS) { float4 o = positionCS * 0.5; o.xy = float2(o.x, o.y * _ProjectionParams.x) + o.w; o.zw = positionCS.zw; return o; }
 float LinearEyeDepth(float depth, float4 zBufferParam) { return 1.0 / (zBufferParam.z * depth + zBufferParam.w); }
+float4 _ScaledScreenParams;
+float2 GetNormalizedScreenSpaceUV(float4 positionCS) { return positionCS.xy / _ScaledScreenParams.xy; }
 // URP Input.hlsl: the sky reflection URP keeps of the skybox
 TEXTURECUBE(_GlossyEnvironmentCubeMap);
 SAMPLER(sampler_GlossyEnvironmentCubeMap);

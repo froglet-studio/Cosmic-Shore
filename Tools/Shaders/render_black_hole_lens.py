@@ -175,7 +175,7 @@ def main():
     p.add_argument("--outer", default="14")
     p.add_argument("--density", default="1.72", help="diskBaseDensity + DiskFeed (1.72 = fed to the cap)")
     p.add_argument("--brightness", default="4")
-    p.add_argument("--temp", default="6500", help="diskPeakTemperature, kelvin")
+    p.add_argument("--temp", default="10000", help="diskPeakTemperature, kelvin (the config default)")
     p.add_argument("--doppler", default="1")
     p.add_argument("--phase", default="50", help="Time x diskSpinSpeed")
     p.add_argument("--noise", default="1")

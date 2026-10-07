@@ -3,15 +3,24 @@
 // Tools/Shaders/verify_black_hole_lens.py compiles with clang++ and executes; this file is the URP
 // plumbing around it, and the verifier front-end compiles it with glslang against a URP mock.
 //
-// HOW IT DRAWS. One camera-facing billboard per hole, centred on the hole and sized to its lens
-// (BlackHoleLens.cs sets the object's scale to the lens DIAMETER; the vertex stage turns the quad
-// toward the camera). In the transparent queue — after URP has copied the opaque scene into
-// _CameraOpaqueTexture — each pixel traces its light ray backwards around the hole and paints what
-// that ray sees: the opaque scene in the BENT direction (prisms and the skybox smeared into arcs
-// and rings), black where the ray fell through the horizon (the shadow), plus the accretion disc's
-// glow every time the ray crossed it. The billboard sits at the hole's CENTRE depth, so anything in
-// front of the hole occludes it by the ordinary depth test and is drawn unbent, exactly as it
-// should be — only what is behind the hole is lensed.
+// HOW IT DRAWS. One SPHERE per hole — the lens volume itself, centred on the hole (BlackHoleLens.cs
+// sets the object's scale to the lens DIAMETER; the mesh circumscribes the unit-diameter sphere).
+// Its BACK faces are drawn (Cull Front), so exactly one layer covers every pixel whose ray passes
+// through the lens, from any viewpoint: far away, up close, off to one side, or with the camera
+// INSIDE the lens. (The first version drew a camera-facing quad at the hole's centre depth; a quad
+// covers the lens's true screen footprint only from far away, so close up the lens was cut off at
+// a hard edge, and from inside it, or with the hole behind the camera, it could not be seen at all.)
+// In the transparent queue — after URP has copied the opaque scene into _CameraOpaqueTexture —
+// each pixel traces its light ray backwards around the hole and paints what that ray sees: the
+// opaque scene in the BENT direction (prisms and the skybox smeared into arcs and rings), black
+// where the ray fell through the horizon (the shadow), plus the accretion disc's glow every time
+// the ray crossed it.
+//
+// WHAT IS LENSED. Only what is BEHIND the hole: a pixel whose opaque scene depth is in front of the
+// hole's centre is left alone (discarded, the scene shows through unbent). The quad got that from
+// the hardware depth test at the hole's depth; the sphere's faces are not at that depth, so the
+// test is made in the shader against the depth texture (ZTest Always), which is also what lets the
+// sphere draw when its far side is behind other geometry or past the far plane.
 //
 // Requires the camera's opaque and depth textures, which the project has OFF in URP_Asset;
 // BlackHoleLens.cs switches them on per camera (UniversalAdditionalCameraData) only while a hole is
@@ -47,8 +56,8 @@ Shader "CosmicShore/BlackHoleLens"
             Tags { "LightMode" = "UniversalForward" }
 
             ZWrite Off
-            ZTest LEqual
-            Cull Off
+            ZTest Always      // depth is tested in the fragment stage against the hole's centre
+            Cull Front        // the far side of the lens sphere: one layer, inside or outside it
             Blend Off
 
             HLSLPROGRAM
@@ -92,17 +101,19 @@ Shader "CosmicShore/BlackHoleLens"
                 UNITY_SETUP_INSTANCE_ID(input);
                 UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
 
-                // A camera-facing quad at the hole's centre, as wide as the object's scale (the
-                // lens diameter). The view matrix's first two rows are the camera's right and up.
-                float3 centre = TransformObjectToWorld(float3(0.0, 0.0, 0.0));
-                float4x4 objectToWorld = GetObjectToWorldMatrix();
-                float size = length(float3(objectToWorld[0][0], objectToWorld[1][0], objectToWorld[2][0]));
-                float3 right = UNITY_MATRIX_V[0].xyz;
-                float3 up = UNITY_MATRIX_V[1].xyz;
-                float3 positionWS = centre + (right * input.positionOS.x + up * input.positionOS.y) * size;
+                // The lens sphere, as authored. Its depth decides nothing (ZTest Always, no depth
+                // write) except clipping, so it is pinned just inside the far plane: a lens wider
+                // than the camera's far distance, or seen from inside, is never cut.
+                float3 positionWS = TransformObjectToWorld(input.positionOS.xyz);
+                float4 positionCS = TransformWorldToHClip(positionWS);
+            #if UNITY_REVERSED_Z
+                positionCS.z = positionCS.w * 1e-5;
+            #else
+                positionCS.z = positionCS.w * (1.0 - 1e-5);
+            #endif
 
                 output.positionWS = positionWS;
-                output.positionCS = TransformWorldToHClip(positionWS);
+                output.positionCS = positionCS;
                 return output;
             }
 
@@ -138,9 +149,19 @@ Shader "CosmicShore/BlackHoleLens"
                 float3 x0 = (eye - centre) / rs;
                 float lensR = _BHLens.x;
 
-                // Outside the lens circle there is nothing to do: show the scene as it is.
+                // Outside the lens there is nothing to do: show the scene as it is. (The mesh
+                // circumscribes the lens sphere, so its corners reach just past it.)
                 float b = length(cross(x0, d));
                 if (b >= lensR) discard;
+
+                // Only what is BEHIND the hole is lensed: where the opaque scene at this pixel is
+                // in front of the hole's centre, it is drawn unbent (the depth test the old quad
+                // got from the hardware, made here because the sphere's faces are not at the
+                // hole's depth). Before the trace, so an occluded pixel costs one depth read.
+                float3 viewForward = -UNITY_MATRIX_V[2].xyz;
+                float holeEye = dot(centre - eye, viewForward);
+                float2 pixelUV = GetNormalizedScreenSpaceUV(input.positionCS);
+                if (LinearEyeDepth(SampleSceneDepth(pixelUV), _ZBufferParams) < holeEye) discard;
 
                 float3 axis = normalize(_BHSpin.xyz + float3(0.0, 0.0, 1e-6));
                 float3 bent;
@@ -166,7 +187,6 @@ Shader "CosmicShore/BlackHoleLens"
                     float3 scene = sky;
                     if (onScreen > 0.0)
                     {
-                        float holeEye = dot(centre - eye, -UNITY_MATRIX_V[2].xyz);
                         float sampleEye = LinearEyeDepth(SampleSceneDepth(uv), _ZBufferParams);
                         float behind = step(holeEye - rs, sampleEye);
                         scene = lerp(sky, SampleSceneColor(uv), onScreen * behind);

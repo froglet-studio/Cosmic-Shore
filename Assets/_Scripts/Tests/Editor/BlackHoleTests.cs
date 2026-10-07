@@ -242,6 +242,9 @@ namespace CosmicShore.Tests
                 "the lens shader no longer reads the opaque and depth copies it bends.");
             Assert.IsTrue(shader.Contains("\"Queue\" = \"Transparent"),
                 "the lens must draw in the transparent queue — after URP copies the opaque scene it bends.");
+            Assert.IsTrue(shader.Contains("Cull Front") && shader.Contains("ZTest Always"),
+                "the lens draws the FAR side of its sphere with its own depth test — a camera-facing quad or a " +
+                "hardware depth test cuts the lens off up close and loses it from inside.");
 
             string hlsl = File.ReadAllText(lensHlslPath);
             Assert.IsTrue(hlsl.Contains("void BlackHoleLensTrace("), "BlackHoleLens.hlsl lost its trace entry point.");
@@ -271,6 +274,29 @@ namespace CosmicShore.Tests
             Assert.IsFalse(ShaderUtil.ShaderHasError(material.shader),
                 "CosmicShore/BlackHoleLens does not compile — every hole draws magenta:\n" + string.Join("\n", errors));
             Assert.IsTrue(BlackHoleLens.IsDrawable(material, out string reason), reason);
+        }
+
+        /// <summary>
+        /// The lens mesh covers every ray through the lens and draws exactly its far side: every
+        /// face lies at or outside the unit-diameter sphere (the lens scale is its diameter) and is
+        /// wound outward, so the shader's Cull Front keeps the far side from outside AND inside.
+        /// </summary>
+        [Test]
+        public void Lens_SphereCircumscribesTheLensAndFacesOutward()
+        {
+            var mesh = BlackHoleLens.LensSphere();
+            var vertices = mesh.vertices;
+            var triangles = mesh.triangles;
+            Assert.Greater(triangles.Length, 0, "the lens sphere has no triangles.");
+            for (int i = 0; i < triangles.Length; i += 3)
+            {
+                Vector3 a = vertices[triangles[i]], b = vertices[triangles[i + 1]], c = vertices[triangles[i + 2]];
+                var normal = Vector3.Cross(b - a, c - a).normalized;
+                Assert.Greater(Vector3.Dot(normal, a + b + c), 0f,
+                    $"lens face {i / 3} is wound inward — Cull Front would draw the near side.");
+                Assert.GreaterOrEqual(Vector3.Dot(normal, a), 0.5f - 1e-5f,
+                    $"lens face {i / 3} cuts inside the lens sphere — rays through that corner are never lensed.");
+            }
         }
 
         [Test]

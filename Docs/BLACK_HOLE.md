@@ -265,13 +265,28 @@ and traces exactly the photon's orbit) with **velocity Verlet** — first-order 
 put the shadow's edge 2% inside `b_c`, which the harness caught. Step = 8% of the current radius, so
 rays are fine near the photon sphere and coarse far out; 128 steps per pixel by default.
 
-**How it draws.** One camera-facing billboard per hole at the hole's CENTRE depth, sized to the lens
-(30 r_s by default), in the transparent queue — after URP copies the opaque scene. Anything in front
-of the hole occludes the billboard by the ordinary depth test and is drawn unbent; only what is
-behind it is lensed. The hole grows in on spawn and shrinks out on despawn (its effective horizon
-rides the same eased weight as the warp), so the shadow never pops. Per-hole numbers go through a
+**How it draws.** One SPHERE per hole — the lens volume itself, an icosphere (320 triangles) that
+circumscribes the lens radius, scaled to the lens diameter (30 r_s by default) — in the transparent
+queue, after URP copies the opaque scene. The shader draws its BACK faces (`Cull Front`): a convex
+mesh shows exactly one back-face layer over every pixel whose ray passes through it, so the lens
+covers its true screen footprint from any viewpoint — far away, close up, off to one side, or with
+the camera INSIDE the lens (a strong hole's lens is hundreds of units wide, so flying into it is
+ordinary). Its depth is pinned just inside the far plane, so a lens wider than the camera's far
+distance is never clipped. **Only what is behind the hole is lensed**: the fragment reads the depth
+texture first and discards wherever the opaque scene is in front of the hole's centre (`ZTest
+Always`, the test made in the shader), so an occluded pixel costs one depth read and never runs the
+trace. The hole grows in on spawn and shrinks out on despawn (its effective horizon rides the same
+eased weight as the warp), so the shadow never pops. Per-hole numbers go through a
 `MaterialPropertyBlock` each frame — one renderer per hole, at most four; the clock-material law
 governs prisms, not this.
+
+*Why not the first version's billboard:* a camera-facing quad at the hole's centre depth, as wide as
+the lens, covers the lens's screen footprint only from far away. Measured on axis, it missed 0.6%
+of the rays that should bend with the camera at 5 lens radii, 9.8% at 2, **22% at 1.5** (about the
+test scene's framing), 40% at 1.2, and from inside the lens it could not cover the view — the lens
+was cut off at a hard edge close up and lost entirely from inside. *Why not a full-screen camera
+effect:* it would shade every pixel of every camera for every hole; the sphere shades only the
+lens's own footprint, with the same per-pixel trace, and needs no renderer feature.
 
 **Camera textures.** The lens reads URP's opaque-scene copy and depth texture, which are OFF in
 `URP_Asset` (they cost a copy per frame). `BlackHoleLens.CameraSupport` turns them on for the MAIN
