@@ -110,6 +110,7 @@ namespace CosmicShore.Gameplay
                 // Refresh before writing - the SDK's player-index cache can be
                 // stale, causing SaveCurrentPlayerDataAsync to fail silently if
                 // the local player's index moved since the last refresh.
+                UgsRequestTelemetry.Count(UgsRequestCounter.LobbyReads);
                 await lobby.RefreshAsync().AsMainThread();
                 setProperty();
                 await SaveWithRetryAsync(lobby);
@@ -148,6 +149,7 @@ namespace CosmicShore.Gameplay
                     // the server.  Reduces the window where WebSocket deltas reference
                     // stale player indices (root cause of harmless
                     // ArgumentOutOfRangeException in LobbyPatcher).
+                    UgsRequestTelemetry.Count(UgsRequestCounter.LobbyReads);
                     try { await lobby.RefreshAsync().AsMainThread(); }
                     catch { /* polling corrects on next cycle */ }
 
@@ -172,6 +174,7 @@ namespace CosmicShore.Gameplay
                     CSDebug.LogVerbose(CSLogChannel.Party,
                         $"[LobbyPropertyWriter] Save failed ({e.GetType().Name}: {e.Message}) - retry {attempt + 1}/{maxRetries} in {baseDelayMs}ms");
                     await UniTask.Delay(baseDelayMs);
+                    UgsRequestTelemetry.Count(UgsRequestCounter.LobbyReads);
                     try { await lobby.RefreshAsync().AsMainThread(); } catch { /* best-effort */ }
                 }
             }

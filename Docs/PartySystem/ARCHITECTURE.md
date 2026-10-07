@@ -129,13 +129,18 @@ and the two extracted services (`PartySessionService`,
 
 Owns the Relay-backed UGS session lifecycle: `CreateAsync`,
 `JoinByIdAsync`, `LeaveAsync`. Both create and join run inside retry
-loops keyed on three exception classifiers:
+loops keyed on the ONE UGS failure classifier,
+`UgsRequestPolicy.Classify` (`Assets/_Scripts/Utility/UgsRequestPolicy.cs`,
+2026-10-07 — it replaced the three private predicates this table used to
+name, plus the copies in `PresenceLobbyService`, `HostConnectionService`,
+`MultiplayerSetup` and `BenignLobbyLogFilter`):
 
-| Classifier | Behavior |
+| `UgsFailureClass` | Behavior |
 |---|---|
-| `IsHostConflictException` | Retry up to `HOST_CONFLICT_MAX_RETRIES`, no backoff |
-| `IsRateLimitException` (HTTP 429) | Retry up to `RATE_LIMIT_MAX_RETRIES` with exponential backoff |
-| `IsTransientSessionException` | Retry up to `TRANSIENT_MAX_RETRIES` with exponential backoff — covers SDK `SessionException` NRE / lobby-events 23006 / non-fatal session-state collisions |
+| `Conflict` (structured `SessionError.NetworkManager*` / `SessionConflict` / `LobbyAlreadyExists`, or a message naming `NetworkManager`) | Retry up to `HOST_CONFLICT_MAX_RETRIES`, no backoff. The retired probe matched ANY message containing "host". |
+| `RateLimited` (`SessionError.RateLimitExceeded`, HTTP 429, or the "Too Many Requests" text) | Retry up to `RATE_LIMIT_MAX_RETRIES` with exponential backoff |
+| `Transient` / `Benign` (SDK `SessionException` NRE, lobby-events 23006, the `SessionError.Unknown` stale-index family) | Retry up to `TRANSIENT_MAX_RETRIES` with exponential backoff |
+| `Gone`, `Full`, `Fatal`, `Cancelled` | Not retried — propagate |
 
 Non-transient errors propagate to `HostConnectionService.AcceptInviteAsync`,
 which logs and rethrows so `PartyInviteController` fails fast.

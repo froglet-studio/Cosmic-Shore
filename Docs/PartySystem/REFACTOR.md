@@ -104,10 +104,19 @@ live path writes PENDING, then remove the protocol across `InviteService`,
 
 ### D2. Extract `RefreshErrorPolicy` helper
 
-Fold `_rateLimitBackoffUntil`, `_consecutiveRefreshErrors`,
-`MAX_REFRESH_ERRORS_BEFORE_RECONNECT`, and the benign/transient/definite
-classification predicates out of `HostConnectionService` into a single testable
-policy object. This is the same surface the YS2 two-layer guard touches (see
+**Classification half landed 2026-10-07** (Phase 0 of
+`../MultiplayerArchitecture/REVIEW_INVITE_AND_RESILIENCE.md`): the
+benign/rate-limit/definite predicates — and the four other copies of the same
+question in `PartySessionService`, `PresenceLobbyService`, `MultiplayerSetup`
+and `BenignLobbyLogFilter` — are now the one `UgsRequestPolicy.Classify`
+(`Assets/_Scripts/Utility/UgsRequestPolicy.cs`, table pinned in
+`Tests/Editor/UgsRequestPolicyTests.cs`). Measured while doing it: the row above
+was wrong about the surface — there were FIVE copies, not one, and the
+`PartyAcceptFlowPlayModeTests` suite reflected into one of them by name.
+
+**Still open:** fold `_rateLimitBackoffUntil`, `_consecutiveRefreshErrors` and
+`MAX_REFRESH_ERRORS_BEFORE_RECONNECT` out of `HostConnectionService` into a
+testable policy object. This is the same surface the YS2 two-layer guard touches (see
 `BUGS.md` B-series), so do it *with* the cross-class refactor so the refresh loop
 observes one transition gate instead of inferring it from
 `PartyInviteController.IsTransitioning`.

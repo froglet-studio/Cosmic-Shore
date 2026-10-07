@@ -483,6 +483,16 @@ namespace CosmicShore.Core
             // Registration order does not matter - all factories are lazy and
             // resolve their own deps from the container on first injection.
 
+            // One retry / back-off / budget policy for every UGS call the party, presence and match
+            // layers make (Docs/MultiplayerArchitecture/REVIEW_INVITE_AND_RESILIENCE.md §5.4). The
+            // tunables ride HostConnectionDataSO so they are config; the INSTANCE is shared so the
+            // per-minute retry budget is per client, not per service.
+            builder.RegisterFactory(
+                _ => new CosmicShore.Utility.UgsRequestPolicy(
+                    hostConnectionData != null ? hostConnectionData.UgsRequestPolicySettings : null),
+                lifetime: Lifetime.Singleton,
+                resolution: Resolution.Lazy
+            );
             builder.RegisterFactory(
                 _ => new LobbyPropertyWriter(),
                 lifetime: Lifetime.Singleton,

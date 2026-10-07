@@ -193,7 +193,7 @@ namespace CosmicShore.Gameplay
                     sessions = results.Sessions;
                     break;
                 }
-                catch (Exception qe) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(qe))
+                catch (Exception qe) when (attempt < RATE_LIMIT_MAX_RETRIES && UgsRequestPolicy.Classify(qe) == UgsFailureClass.RateLimited)
                 {
                     int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
                     CSDebug.LogWarning($"[PresenceLobbyService] Rate limited during converge query - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
@@ -305,6 +305,7 @@ namespace CosmicShore.Gameplay
         public async UniTask RefreshAsync()
         {
             if (_activeLobby == null) return;
+            UgsRequestTelemetry.Count(UgsRequestCounter.LobbyReads);
             await _activeLobby.RefreshAsync().AsMainThread();
         }
 
@@ -432,7 +433,7 @@ namespace CosmicShore.Gameplay
                     sessions = results.Sessions;
                     break;
                 }
-                catch (Exception qe) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(qe))
+                catch (Exception qe) when (attempt < RATE_LIMIT_MAX_RETRIES && UgsRequestPolicy.Classify(qe) == UgsFailureClass.RateLimited)
                 {
                     int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
                     CSDebug.LogWarning($"[PresenceLobbyService] Rate limited querying lobby - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
@@ -464,7 +465,7 @@ namespace CosmicShore.Gameplay
                 catch (Exception e)
                 {
                     CSDebug.LogWarning($"[PresenceLobbyService] Failed to join session {session.Id}: {e.Message}");
-                    if (IsRateLimitException(e))
+                    if (UgsRequestPolicy.Classify(e) == UgsFailureClass.RateLimited)
                         await UniTask.Delay(RATE_LIMIT_BASE_DELAY_MS);
                 }
             }
@@ -507,7 +508,7 @@ namespace CosmicShore.Gameplay
                         CSDebug.LogVerbose(CSLogChannel.Party, $"[PresenceLobbyService] Created presence lobby {_activeLobby.Id}.");
                         return;
                     }
-                    catch (Exception re) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(re))
+                    catch (Exception re) when (attempt < RATE_LIMIT_MAX_RETRIES && UgsRequestPolicy.Classify(re) == UgsFailureClass.RateLimited)
                     {
                         int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
                         CSDebug.LogWarning($"[PresenceLobbyService] Rate limited creating lobby - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
@@ -558,12 +559,5 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>
-        /// True when the exception is a UGS HTTP 429 Too Many Requests response.
-        /// Used in <c>catch ... when (...)</c> clauses to distinguish rate-limit
-        /// errors (retry-able) from other errors (propagate).
-        /// </summary>
-        private static bool IsRateLimitException(Exception e) =>
-            e.Message != null && e.Message.Contains("Too Many Requests");
     }
 }

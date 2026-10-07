@@ -31,10 +31,6 @@ namespace CosmicShore.Gameplay
         private const int RATE_LIMIT_MAX_RETRIES = 3;
         private const int RATE_LIMIT_BASE_DELAY_MS = 2000;
 
-        private static bool IsRateLimitException(Exception e)
-        {
-            return e.Message != null && e.Message.Contains("Too Many Requests");
-        }
 
         private void Start()
         {
@@ -349,7 +345,7 @@ namespace CosmicShore.Gameplay
                 catch (SessionException sx)
                 {
                     CSDebug.LogWarning($"[MultiplayerSetup] Join failed for {s.Id}: {sx.Message} - trying next.");
-                    if (IsRateLimitException(sx))
+                    if (UgsRequestPolicy.Classify(sx) == UgsFailureClass.RateLimited)
                         await UniTask.Delay(RATE_LIMIT_BASE_DELAY_MS);
                     continue;
                 }
@@ -396,7 +392,7 @@ namespace CosmicShore.Gameplay
                     gameData.ActiveSession = await MultiplayerService.Instance.CreateSessionAsync(sessionOpts).AsMainThread();
                     break;
                 }
-                catch (Exception e) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(e))
+                catch (Exception e) when (attempt < RATE_LIMIT_MAX_RETRIES && UgsRequestPolicy.Classify(e) == UgsFailureClass.RateLimited)
                 {
                     int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
                     CSDebug.LogWarning($"[MultiplayerSetup] Rate limited on CreateSession - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
@@ -441,7 +437,7 @@ namespace CosmicShore.Gameplay
                     CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[MultiplayerSetup] Queried {results.Sessions.Count} sessions for GameMode {gameModeString}");
                     return results.Sessions;
                 }
-                catch (Exception e) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(e))
+                catch (Exception e) when (attempt < RATE_LIMIT_MAX_RETRIES && UgsRequestPolicy.Classify(e) == UgsFailureClass.RateLimited)
                 {
                     int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
                     CSDebug.LogWarning($"[MultiplayerSetup] Rate limited on QuerySessions - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");

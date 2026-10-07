@@ -1473,19 +1473,19 @@ namespace CosmicShore.Gameplay
             }
             catch (Exception e)
             {
-                // UGS SDK self-corrects on the next refresh tick. Treat as a
-                // no-op so the consecutive-error counter doesn't roll into
-                // the reconnect path on harmless SDK noise.
-                if (IsBenignLobbyPatcherError(e))
+                // One classifier for every UGS failure - UgsRequestPolicy.Classify (Phase 0 of
+                // Docs/MultiplayerArchitecture/REVIEW_INVITE_AND_RESILIENCE.md). This catch is the
+                // refresh LOOP, which is itself the retry: it decides only what the class means for
+                // the error counter.
+                var failure = UgsRequestPolicy.Classify(e);
+                if (failure == UgsFailureClass.Benign)
                 {
-                    // intentional: no log, no counter increment, no state change
+                    // SDK stale-index noise (the LobbyPatcher ArgumentOutOfRangeException and the
+                    // SessionError.Unknown family it also surfaces through, Docs/PresenceSystem/BUGS.md
+                    // B1 / B6) self-corrects on the next refresh tick. Intentional: no log, no counter
+                    // increment, no state change.
                 }
-                else if (IsBenignSdkStaleIndexError(e))
-                {
-                    // Same SDK stale-index defect, read-path surface. Silence to
-                    // match the IsBenignLobbyPatcherError treatment above.
-                }
-                else if (IsRateLimitException(e))
+                else if (failure == UgsFailureClass.RateLimited)
                 {
                     _rateLimitBackoffUntil = Time.unscaledTime + refreshIntervalSeconds * 2;
                     CSDebug.LogWarning("[HostConnectionService] Rate limited during refresh - backing off");
@@ -1514,6 +1514,7 @@ namespace CosmicShore.Gameplay
                     if (_consecutiveRefreshErrors >= MAX_REFRESH_ERRORS_BEFORE_RECONNECT)
                     {
                         CSDebug.LogWarning($"[HostConnectionService] {_consecutiveRefreshErrors} consecutive refresh errors - reconnecting to presence lobby");
+                        UgsRequestTelemetry.Count(UgsRequestCounter.PresenceForceReset);
                         _consecutiveRefreshErrors = 0;
                         // Clear the internal session reference so JoinOrCreateAsync will proceed.
                         _lobbyService.ForceReset();
@@ -1937,23 +1938,20 @@ namespace CosmicShore.Gameplay
                 if (PartyInviteController.Instance != null && PartyInviteController.Instance.IsTransitioning)
                     return;
 
-                // Error-handling matrix - see Docs/PartySystem/ARCHITECTURE.md.
-                //
-                // [benign] LobbyPatcher stale-index ArgumentOutOfRangeException -
-                // known harmless SDK noise, self-corrects on the next tick.
-                if (IsBenignLobbyPatcherError(e))
-                    return;
-
-                // [benign] WrappedLobbyService NRE on lobby refresh - same SDK
-                // stale-index family as the LobbyPatcher case above, surfacing on
-                // the read path. Same recovery (retry next tick); silence to match.
-                // See Docs/PresenceSystem/BUGS.md B6 + Docs/PartySystem/MPPM_SESSION_LOG.md
+                // Error-handling matrix - see Docs/PartySystem/ARCHITECTURE.md. One classifier
+                // for every branch: UgsRequestPolicy.Classify.
+                var failure = UgsRequestPolicy.Classify(e);
+                // [benign] The SDK's stale-index family - the LobbyPatcher
+                // ArgumentOutOfRangeException on the WebSocket-delta path and the
+                // SessionError.Unknown-wrapped NRE / index errors on the read path. Known
+                // harmless SDK noise, self-corrects on the next tick; silence to match.
+                // See Docs/PresenceSystem/BUGS.md B1 / B6 + Docs/PartySystem/MPPM_SESSION_LOG.md
                 // Session 1 finding #2.
-                if (IsBenignSdkStaleIndexError(e))
+                if (failure == UgsFailureClass.Benign)
                     return;
 
                 // [rate-limit] UGS throttled us - back off, keep ActiveSession.
-                if (IsRateLimitException(e))
+                if (failure == UgsFailureClass.RateLimited)
                 {
                     CSDebug.LogWarning($"[HostConnectionService] Party session refresh rate-limited - backing off");
                     _rateLimitBackoffUntil = Time.unscaledTime + refreshIntervalSeconds * 2;
@@ -1965,7 +1963,7 @@ namespace CosmicShore.Gameplay
                 // showing a stale "in party" state. Auto-recover into a fresh solo
                 // session so the user is back in a functional menu with no manual
                 // action. See HandleDefiniteSessionGoneAsync.
-                if (IsDefiniteSessionGoneException(e))
+                if (failure == UgsFailureClass.Gone)
                 {
                     CSDebug.LogWarning(
                         $"[HostConnectionService] Party session gone server-side " +
@@ -2008,7 +2006,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Recovery action for a definite server-side session loss (see
-        /// <see cref="IsDefiniteSessionGoneException"/>). Leaves the dead session
+        /// <see cref="UgsFailureClass.Gone"/>). Leaves the dead session
         /// and recreates a fresh solo Relay so the user returns to a functional
         /// menu with no manual action.
         ///
@@ -2555,134 +2553,5 @@ namespace CosmicShore.Gameplay
             var sceneName = SceneManager.GetActiveScene().name;
             return sceneName == "Menu_Main" || sceneName == "Authentication";
         }
-
-        private static bool IsRateLimitException(Exception e) =>
-            e.Message != null && e.Message.Contains("Too Many Requests");
-
-        /// <summary>
-        /// Detects a "session is definitely gone server-side" error - as opposed
-        /// to a transient refresh failure that the SDK self-corrects on the next
-        /// tick. A definite-gone error means our cached <see cref="ISession"/> no
-        /// longer maps to a live UGS session (host deleted it, server reaped it,
-        /// or we were removed). The <see cref="RefreshPartyMembersAsync"/> catch
-        /// auto-recovers into a fresh solo session on this signal instead of
-        /// retrying forever.
-        ///
-        /// <para>
-        /// Structured-first: matches <see cref="SessionError.SessionNotFound"/>,
-        /// <see cref="SessionError.SessionDeleted"/>, and
-        /// <see cref="SessionError.NotInLobby"/> on a <see cref="SessionException"/>,
-        /// plus an HTTP-404 <c>RequestFailedException</c>. Falls back to a narrow
-        /// message match (requires the word "session" to co-occur with a
-        /// gone-flavored phrase) for SDK paths that surface as plain text. Walks
-        /// the <see cref="Exception.InnerException"/> chain because UGS / UniTask
-        /// wrap exceptions.
-        /// </para>
-        /// </summary>
-        private static bool IsDefiniteSessionGoneException(Exception e)
-        {
-            for (var current = e; current != null; current = current.InnerException)
-            {
-                if (current is SessionException se &&
-                    se.Error is SessionError.SessionNotFound
-                             or SessionError.SessionDeleted
-                             or SessionError.NotInLobby)
-                    return true;
-
-                if (current is Unity.Services.Core.RequestFailedException rfe && rfe.ErrorCode == 404)
-                    return true;
-
-                var msg = current.Message;
-                if (!string.IsNullOrEmpty(msg) &&
-                    msg.IndexOf("session", StringComparison.OrdinalIgnoreCase) >= 0 &&
-                    (msg.IndexOf("not found",      StringComparison.OrdinalIgnoreCase) >= 0 ||
-                     msg.IndexOf("deleted",        StringComparison.OrdinalIgnoreCase) >= 0 ||
-                     msg.IndexOf("does not exist", StringComparison.OrdinalIgnoreCase) >= 0))
-                    return true;
-            }
-            return false;
-        }
-
-        /// <summary>
-        /// Detects the harmless <see cref="ArgumentOutOfRangeException"/> the UGS
-        /// Lobby SDK throws from <c>LobbyPatcher.ApplyPatchesToLobby</c> when a
-        /// WebSocket delta references a stale player index. Surfaces both as the
-        /// direct exception and as an <c>AggregateException</c>/inner-wrapped
-        /// exception forwarded by <c>await</c>. <see cref="RefreshPartyMembersAsync"/>
-        /// swallows these on the next-tick path so the refresh loop stays clean.
-        /// </summary>
-        private static bool IsBenignLobbyPatcherError(Exception e)
-        {
-            for (var current = e; current != null; current = current.InnerException)
-            {
-                if (current is ArgumentOutOfRangeException
-                    && (current.StackTrace?.Contains("LobbyPatcher") ?? false))
-                    return true;
-            }
-            return false;
-        }
-
-        /// <summary>
-        /// Detects the harmless <c>SessionException</c> family the UGS SDK throws
-        /// from <c>WrappedLobbyService.GetLobbyAsync</c> when a lobby read
-        /// deserialises against a stale local cache. Same root cause as
-        /// <see cref="IsBenignLobbyPatcherError"/>, surfacing on the read path
-        /// instead of the WebSocket-delta path: the HTTP GET succeeds, then the
-        /// SDK throws while parsing the response. Self-corrects on the next
-        /// refresh tick once the cache reconciles.
-        ///
-        /// <para>
-        /// <b>Discriminator: <see cref="SessionException.Error"/> ==
-        /// <see cref="SessionError.Unknown"/></b> - NOT the message string. The
-        /// SDK surfaces this single defect through a moving set of inner-exception
-        /// messages ("Object reference not set…", "Index was out of range…",
-        /// "Index must be within the bounds of the List…", and likely more), all
-        /// wrapped in a <c>SessionException</c> whose structured
-        /// <c>Error</c> is <c>Unknown</c> (visible as <c>[Error: Unknown]</c> in
-        /// the log). Chasing message strings was whack-a-mole - three variants
-        /// appeared across three MPPM restarts. The structured <c>Error</c> is the
-        /// stable signal: a genuinely actionable <c>SessionException</c> carries a
-        /// specific reason (<c>SessionNotFound</c>, <c>RateLimited</c>, …), which
-        /// the <c>[definite]</c> / rate-limit branches handle *before* this check
-        /// runs; only the unclassifiable SDK-internal failures land on
-        /// <c>Unknown</c>, and for those "log-silent, retry next tick" is already
-        /// the correct (and only) recovery.
-        /// </para>
-        ///
-        /// <para>
-        /// Stack is deliberately NOT used: <see cref="Exception.StackTrace"/> is
-        /// unreliable after the exception crosses several async <c>SetException</c>
-        /// boundaries (UniTask + Task continuations) before our catch - the call
-        /// stack in the Unity console is Unity's *captured* stack, not the
-        /// exception object's own string. An earlier stack-substring match
-        /// silently failed for exactly this reason.
-        /// </para>
-        ///
-        /// <para>
-        /// <see cref="LobbyPropertyWriter.SaveWithRetryAsync"/> handles the same
-        /// defect on the write path via a message filter (it does not have a
-        /// structured <c>Error</c> to inspect at that callsite).
-        /// See <c>Docs/PresenceSystem/BUGS.md</c> B1 (write/delta-path symptoms)
-        /// and B6 (read-path symptom) for the full SDK-defect characterization,
-        /// and <c>Docs/PartySystem/MPPM_SESSION_LOG.md</c> Session 1 finding #2
-        /// for the discovery + the message→structured-Error pivot.
-        /// </para>
-        /// </summary>
-        private static bool IsBenignSdkStaleIndexError(Exception e)
-        {
-            for (var current = e; current != null; current = current.InnerException)
-            {
-                // Structured match: SessionException with Error == Unknown.
-                // ToString() compare avoids pinning the exact enum member spelling
-                // across SDK versions; SessionError.Unknown is the documented
-                // "unclassified" reason and the common factor across every observed
-                // stale-index message variant.
-                if (current is SessionException se &&
-                    string.Equals(se.Error.ToString(), "Unknown", StringComparison.Ordinal))
-                    return true;
-            }
-            return false;
-        }
-
     }
 }

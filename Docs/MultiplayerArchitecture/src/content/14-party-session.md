@@ -15,16 +15,17 @@ fourth (recovery) explicitly clears the stale session first.
 `ActiveSession` reads and writes a single backing field on `GameDataSO`, so there is one source of
 truth for "which session am I in" and it is never nulled outside an intentional leave.
 
-## Three retry classifiers
+## One classifier, three retry loops
 
-Both create and join run inside retry loops keyed on three exception classifiers — each with its own
-policy:
+Both create and join run inside retry loops keyed on the one UGS failure classifier,
+`UgsRequestPolicy.Classify` (2026-10-07; it replaced three private predicates here and the copies in
+four other files) — each loop with its own policy:
 
-| Classifier | Retries | Backoff | Covers |
+| `UgsFailureClass` | Retries | Backoff | Covers |
 |---|---|---|---|
-| `IsHostConflictException` | up to 2 | none | `NetworkManager` still shutting down from a prior host |
-| `IsRateLimitException` (HTTP 429) | up to 3 | exponential (2 s base) | UGS read/write rate limits |
-| `IsTransientSessionException` | up to 5 | exponential (1 s base) | SDK `SessionException` NRE, lobby-events 23006, non-fatal collisions |
+| `Conflict` | up to 2 | none | `NetworkManager` still shutting down from a prior host |
+| `RateLimited` (HTTP 429) | up to 3 | exponential (2 s base) | UGS read/write rate limits |
+| `Transient` / `Benign` | up to 5 | exponential (1 s base) | SDK `SessionException` NRE, lobby-events 23006, the stale-index family |
 
 Non-transient errors propagate to `HostConnectionService.AcceptInviteAsync`, which logs and rethrows
 so `PartyInviteController` fails fast into its recovery path. A freshly-provisioned session can
