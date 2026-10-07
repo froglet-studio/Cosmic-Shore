@@ -492,6 +492,108 @@ namespace CosmicShore.Tests
             Assert.AreEqual(1f, i1.CrossingThrottle);
         }
 
+        // ── Track-planner stagger (SkimRaceReplanGate) ────────────────────
+
+        static SkimRaceObservation TrackObs(SkimRaceCourse c)
+        {
+            var o = Obs(new Vector3(200, 6, -150), Vector3.forward, new Vector3(0, 0, 200), 200f);
+            int hint = -1, targetHint = -1;
+            o.HasCourse = true;
+            o.CourseLength = c.Length;
+            o.CourseProgress = c.Project(o.Position, ref hint, out _, out o.CourseDistance);
+            o.TargetAheadOnCourse = c.Ahead(o.CourseProgress, c.Project(o.TargetPosition, ref targetHint, out _, out _));
+            return o;
+        }
+
+        static SkimRaceDriver[] TrackDrivers(int count, bool stagger, SkimRaceReplanGate gate)
+        {
+            var cfg = Config();
+            cfg.UseTrackMpc = true;
+            cfg.TrackMpcStaggerSeats = stagger;
+            var drivers = new SkimRaceDriver[count];
+            for (int i = 0; i < count; i++) drivers[i] = new SkimRaceDriver(cfg) { ReplanGate = gate };
+            return drivers;
+        }
+
+        [Test]
+        public void ReplanGate_OneClaimPerFrame_ANewFrameFreesIt()
+        {
+            var g = new SkimRaceReplanGate();
+            g.BeginFrame(1);
+            Assert.IsTrue(g.TryClaim());
+            Assert.IsFalse(g.TryClaim(), "the frame is taken");
+            g.BeginFrame(1);
+            Assert.IsFalse(g.TryClaim(), "marking the SAME frame again (a second seat) does not free it");
+            g.BeginFrame(2);
+            Assert.IsTrue(g.TryClaim());
+        }
+
+        /// <summary>
+        /// Two seats due in the same frame: one re-plans, the other flies its previous plan one frame
+        /// and re-plans in the next. NEGATIVE CONTROL: with the stagger off, both re-plan together.
+        /// </summary>
+        [Test]
+        public void TrackPlanner_TwoSeatsDueTogether_TheSecondWaitsOneFrame()
+        {
+            var c = Square();
+            var o = TrackObs(c);
+            var gate = new SkimRaceReplanGate();
+            var d = TrackDrivers(2, true, gate);
+
+            gate.BeginFrame(1);
+            d[0].Decide(o, c, 0f, 0.016f);
+            d[1].Decide(o, c, 0f, 0.016f);
+            Assert.AreEqual(1, d[0].TrackReplans);
+            Assert.AreEqual(0, d[1].TrackReplans, "the frame was taken");
+            Assert.AreEqual(1, d[1].TrackWaits);
+
+            gate.BeginFrame(2);
+            d[0].Decide(o, c, 0.016f, 0.016f);
+            d[1].Decide(o, c, 0.016f, 0.016f);
+            Assert.AreEqual(1, d[0].TrackReplans, "not due again until 1/TrackMpcHz later");
+            Assert.AreEqual(1, d[1].TrackReplans, "re-plans in the next frame");
+            Assert.AreEqual(1, d[1].TrackWaits);
+
+            var together = TrackDrivers(2, false, new SkimRaceReplanGate());
+            together[0].ReplanGate.BeginFrame(1);
+            together[0].Decide(o, c, 0f, 0.016f);
+            together[1].Decide(o, c, 0f, 0.016f);
+            Assert.AreEqual(1, together[1].TrackReplans, "stagger off: both re-plan in the same frame");
+            Assert.AreEqual(0, together[1].TrackWaits);
+        }
+
+        /// <summary>A seat waits at most ONE frame: three seats due together, and the third re-plans in the
+        /// second frame even though the second seat has claimed it.</summary>
+        [Test]
+        public void TrackPlanner_NoSeatWaitsTwice()
+        {
+            var c = Square();
+            var o = TrackObs(c);
+            var gate = new SkimRaceReplanGate();
+            var d = TrackDrivers(3, true, gate);
+
+            gate.BeginFrame(1);
+            foreach (var x in d) x.Decide(o, c, 0f, 0.016f);
+            Assert.AreEqual(new[] { 1, 0, 0 }, new[] { d[0].TrackReplans, d[1].TrackReplans, d[2].TrackReplans });
+
+            gate.BeginFrame(2);
+            foreach (var x in d) x.Decide(o, c, 0.016f, 0.016f);
+            Assert.AreEqual(new[] { 1, 1, 1 }, new[] { d[0].TrackReplans, d[1].TrackReplans, d[2].TrackReplans });
+            Assert.AreEqual(1, d[2].TrackWaits, "waited once, then went anyway");
+        }
+
+        [Test]
+        public void TrackPlanner_WithoutAGate_ReplansOnItsOwnClock()
+        {
+            var c = Square();
+            var o = TrackObs(c);
+            var d = TrackDrivers(2, true, null);
+            d[0].Decide(o, c, 0f, 0.016f);
+            d[1].Decide(o, c, 0f, 0.016f);
+            Assert.AreEqual(1, d[1].TrackReplans);
+            Assert.AreEqual(0, d[1].TrackWaits);
+        }
+
         // ── Benchmark verdict ─────────────────────────────────────────────
 
         [Test]

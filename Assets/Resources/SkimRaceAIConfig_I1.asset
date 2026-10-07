@@ -63,6 +63,7 @@ MonoBehaviour:
   HullHalfLength: 1.55
   UseTrackMpc: 0
   TrackMpcHz: 20
+  TrackMpcStaggerSeats: 1
   TrackMpcHorizon: 0.8
   TrackMpcSegment: 0.25
   TrackMpcStep: 0.05

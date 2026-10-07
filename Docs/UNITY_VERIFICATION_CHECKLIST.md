@@ -65,6 +65,26 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Skim Race AI seats stagger their track-planner re-plans (`perf/performance-optimization`, 2026-10-07)
+
+**What landed** (`Docs/SKIM_RACE_AI.md` §8.0i): `SkimRaceReplanGate` (new), shared by every
+`SkimRacePilot`, lets one AI seat's track-planner re-plan claim a frame. A seat whose frame is taken flies
+its previous plan one frame longer, never two. `SkimRaceAIConfigSO.TrackMpcStaggerSeats` (on; written into
+all four policy assets by `author_skimrace_ai_config.py`) switches it. Only the I2 policy flies the track
+planner.
+
+**Verified without the editor:** the four new `SkimRaceAITests` pass on .NET against the Unity shim
+(three mutations each fail one); simulator A/B over 400 races per arm shows no detectable change to
+racing, and on Mono AI frame cost p90/p99 falls ~38%; the Froglet Engine's live compile builds; the
+policy generator's `--check` passes. /verify-unity was not available.
+
+**Verify in editor:**
+1. The project compiles; Test Runner > EditMode: `SkimRaceAITests` pass (four new ones).
+2. Skim Race I2 with 2 AI races as before: no new orbits, strikes or stalls.
+3. `diag S_SkimRace_I2 15`: `SkimRace.Driver.TrackMpc` is present in roughly TWICE the share of frames
+   it was (~70% instead of ~35%) at about HALF its p95, and `SkimRace.Pilot.Decide` p95 drops from
+   ~11 ms. A `prof` spike frame should never show `TrackMpc` with 2 calls.
+
 ### 🔴 `prof` flags jobs that ran without Burst; `diag` records Code Optimization (`perf/performance-optimization`, 2026-10-07)
 
 **What landed** (`Docs/SKIM_RACE_AI.md` §8.0h): `ProfilerCapture` reports main-thread time spent in

@@ -306,6 +306,9 @@ static class Race
     // frame of the game pays for all its AI together. Off in the parallel tuners.
     public static bool RecordFrames;
     public static readonly List<float> FrameMs = new();
+    // eval only: the track planner's re-plans, the frames they land in, the frames two or more seats
+    // re-planned in together, and the re-plans held a frame for another seat's (SkimRaceReplanGate).
+    public static long TrackReplans, TrackReplanFrames, SharedReplanFrames, TrackWaits;
     // Unity's Random.onUnitSphere stand-in (the shape matters, not the stream).
     static Vector3 OnUnitSphere(System.Random r)
     {
@@ -374,9 +377,12 @@ static class Race
         var obsNear = new List<int>();
         var near = new List<int>();
         var agents = new List<Agent>();
+        // One per race, as SkimRacePilot shares one across the game's seats; marked once a frame below.
+        var replanGate = new SkimRaceReplanGate();
+        int frame = 0;
         for (int k = 0; k < Math.Max(1, ph.Seats); k++)
         {
-            var ag = new Agent { Id = k, Driver = new SkimRaceDriver(cfg) { Lane = k, Handicap = HandicapFor(ph, seed, k) }, Rng = new System.Random(seed * 31 + k * 977) };
+            var ag = new Agent { Id = k, Driver = new SkimRaceDriver(cfg) { Lane = k, Handicap = HandicapFor(ph, seed, k), ReplanGate = replanGate }, Rng = new System.Random(seed * 31 + k * 977) };
             ag.Driver.Reset();
             ag.Pos = ph.SpawnPos + Vector3.up * (10f * k);
             ag.Rot = ag.Acc = Quaternion.LookRotation(ph.SpawnFwd, Vector3.up);
@@ -452,6 +458,8 @@ static class Race
             float dt = ph.DtJitter > 0f ? ph.Dt * (1f + ph.DtJitter * (float)(rng.NextDouble() * 2.0 - 1.0)) : ph.Dt;
             long frameTicks = 0;
             int frameDecides = 0;
+            int frameReplans = 0;
+            replanGate.BeginFrame(frame++);
             if (ph.Team != 0 && ph.TeamRule == 1 && agents.Count >= 2) PlanTeam();
             foreach (var ag in agents)
             {
@@ -519,9 +527,11 @@ static class Race
                     }
                 }
                 long b0 = GC.GetAllocatedBytesForCurrentThread();
+                int replans0 = driver.TrackReplans;
                 long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
                 var a = driver.Decide(o, course, t, dt);
                 long spent = System.Diagnostics.Stopwatch.GetTimestamp() - t0;
+                frameReplans += driver.TrackReplans - replans0;
                 DecideTicks += spent; DecideCalls++;
                 frameTicks += spent; frameDecides++;
                 DecideBytes += GC.GetAllocatedBytesForCurrentThread() - b0;
@@ -702,8 +712,15 @@ static class Race
                 }
             }
             if (RecordFrames && frameDecides > 0) FrameMs.Add((float)(1000.0 * frameTicks / System.Diagnostics.Stopwatch.Frequency));
+            if (RecordFrames && frameReplans > 0)
+            {
+                TrackReplans += frameReplans;
+                TrackReplanFrames++;
+                if (frameReplans >= 2) SharedReplanFrames++;
+            }
             t += dt;
         }
+        if (RecordFrames) foreach (var ag in agents) TrackWaits += ag.Driver.TrackWaits;
 
         // The STRICT reading of "each AI completes in 70 s": the race result is the SLOWEST seat.
         var worst = agents[0];
@@ -1230,6 +1247,11 @@ static class Program
                     "  AI thinking per frame, all {0} seats together: median {1:F3} ms, p90 {2:F3} ms, p99 {3:F3} ms, max {4:F3} ms ({5} frames)",
                     ph.Seats, fm[fm.Count / 2], fm[fm.Count * 9 / 10], fm[fm.Count * 99 / 100], fm[fm.Count - 1], fm.Count));
             }
+            if (Race.TrackReplans > 0)
+                Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
+                    "  track planner: {0} re-plans in {1} frames; {2} frames with 2+ seats re-planning ({3:F1}%); {4} re-plans held a frame for another seat",
+                    Race.TrackReplans, Race.TrackReplanFrames, Race.SharedReplanFrames,
+                    100.0 * Race.SharedReplanFrames / Math.Max(1, Race.TrackReplanFrames), Race.TrackWaits));
             // Where it goes: the pilot's own Profiler markers (the names the Unity Profiler shows), per decision.
             var tally = Unity.Profiling.ProfilerTally.Names.Select((n, k) => (n, k)).Where(x => Unity.Profiling.ProfilerTally.Calls[x.k] > 0).ToList();
             if (tally.Count > 0)

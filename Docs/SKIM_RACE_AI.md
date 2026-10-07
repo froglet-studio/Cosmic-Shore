@@ -468,6 +468,50 @@ These are environment results, not AI results (the simulator at 115 ms frames al
 same policy from 53 s to 77 s). **The in-editor matrix for the current code is still owed** - run it
 on an idle machine with the editor focused (§7), 2 launches x 5 races per cell, players 3 and 4.
 
+### 8.0i The AI seats no longer re-plan in the same frame (2026-10-07)
+
+The user's choice from §8.0h's list: stagger the seats. **Mechanism:** `SkimRaceReplanGate`, one per
+process (`SkimRacePilot` shares it across every AI seat), lets ONE track-planner re-plan claim a frame. A
+seat that finds its frame taken flies its previous plan one frame longer and re-plans in the next. It
+never waits twice: next frame it re-plans whether or not that frame is free. Each seat keeps its own
+`TrackMpcHz` clock, so the re-plan rate and the average cost do not change. `TrackMpcStaggerSeats`
+(on by default, in every policy asset) turns it off. Only the I2 policy flies the track planner today.
+
+**Why seats shared frames.** Each seat schedules its next re-plan as `now + 1/Hz`. Once two seats re-plan
+in the same frame, they compute the same next time and stay together. In the simulator, 86-89% of
+re-plan frames had both seats; the editor's `prof` saw about half.
+
+**Cost** (simulator on Mono in double precision, the editor's mode; I2, 2 seats, 18 ms frames ±30%,
+6 races per arm; AI thinking per frame, both seats together):
+
+| | Stagger off | Stagger on |
+|---|---|---|
+| Frames with 2 re-plans | 89% of re-plan frames | 0% |
+| p90 / p99 | 11.0 / 15.0 ms | **6.8 / 9.6 ms** |
+| Median | 0.8 ms | 4.2 ms (the same work, spread over more frames) |
+| Average per seat | 1.89 ms | 1.87 ms |
+| One re-plan | 4.7 ms | 4.7 ms (the editor measured ~4 ms) |
+
+**Racing** (.NET, the shipped I2 policy, 2 seats, same seeds in each arm): no detectable change.
+
+| Frames | Races per arm | Seat time, on - off (paired) | Seats <= 80 s, on / off | Unfinished races, on / off |
+|---|---|---|---|---|
+| 18 ms ±30% (the editor at 55 fps) | 280 | +0.59 s (SE 0.56, t 1.05) | 49.5% / 47.9% | 3 / 2 |
+| 26 ms ±50% (the tuning setting) | 120 | +0.70 s (SE 0.65, t 1.08) | 57.1% / 59.2% | 0 / 1 |
+
+Mann-Whitney on all seat times: z +0.42 and +0.87. The pooled estimate is +0.6 s per ~80 s seat (SE 0.4),
+inside the noise. A seat waited on 4% of its re-plans at 18 ms frames and 9% at 26 ms.
+The unfinished races are the policy's known orbit-and-recover (a slow seat circling a crystal it cannot
+turn into, §6.10). One was traced in full: the seat orbited for 16 s after the other seat had finished, when no
+stagger was active. Both arms have them.
+
+With `TrackMpcStaggerSeats` off, the new code races byte-identically to the previous commit (I2, 12 seeds).
+The I1 policy, which does not fly the track planner, is identical with it on (6 seeds).
+
+Off-editor proof: `SkimRaceAITests` gains four tests (the gate; two seats due together, the second
+waiting one frame; no seat waiting twice; no gate, no change). Three mutations of the wait rule, each
+failing a test. The simulator's eval prints the planner's re-plans, the frames shared and the waits.
+
 ### 8.0h The perf branch in the editor: 35 -> 55 fps, and what is left (2026-10-07)
 
 `diag S_SkimRace_I2 15` and one `prof` in a hand-played I2 race with 2 AI seats, same machine and
@@ -509,6 +553,7 @@ the simulator's 20-seed benchmark:
 
 1. **Stagger the seats.** Offset each seat's re-plan phase so no two share a frame. The average stays
    the same and the per-frame peak halves. Each seat still re-plans at 20 Hz; only the moment it does so moves.
+   **Done, §8.0i.**
 2. **Spread one re-plan over the frames between.** The 26 rollouts go across about 3 frames, so the peak drops ~3x and
    the plan acted on is 1-2 frames older.
 3. **Burst the rollouts.** A job over the 26 candidates, off the main thread. It is the largest win
@@ -1152,7 +1197,8 @@ that changes flying is the user's decision):
   is the version that pays.
 - *Would change how the AI flies (needs a decision):* stagger the AIs' re-plans so they do not share a
   frame (halves the spike with two AI); re-plan less often (`TrackMpcHz`); fewer candidate sticks. The user
-chose to decide on these after reading the real numbers in the Unity Profiler.
+chose to decide on these after reading the real numbers in the Unity Profiler. **Stagger: chosen and applied
+2026-10-07 (§8.0i)** - no measurable change to racing, p90/p99 AI frame cost down ~38%.
 
 ## 13. Team races (teammates share their crystals)
 

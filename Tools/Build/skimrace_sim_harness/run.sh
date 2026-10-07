@@ -60,7 +60,7 @@ else
   ls "$REFDIR"/*.dll | sed 's/^/-r:/' > "$OUT/refs.rsp"
 fi
 printf '"%s"\n' "$HERE/UnityShim.cs" "$HERE/Sim.cs" \
-  "$SR/SkimRaceAIConfigSO.cs" "$SR/SkimRaceCourse.cs" "$SR/SkimRaceObservation.cs" "$SR/SkimRaceDriver.cs" "${SKIMRACE_SHELL_FILE:-$SR/SkimRaceShell.cs}" "$SR/SkimRacePlanner.cs" "$SR/SkimRaceObstacle.cs" "$SR/SkimRaceHandicap.cs" "$SR/SkimRaceTrackFingerprint.cs" "$SR/SkimRaceTargetTracker.cs" "$SR/SkimRaceTeamAssignment.cs" \
+  "$SR/SkimRaceAIConfigSO.cs" "$SR/SkimRaceCourse.cs" "$SR/SkimRaceObservation.cs" "$SR/SkimRaceDriver.cs" "${SKIMRACE_SHELL_FILE:-$SR/SkimRaceShell.cs}" "$SR/SkimRacePlanner.cs" "$SR/SkimRaceObstacle.cs" "$SR/SkimRaceHandicap.cs" "$SR/SkimRaceTrackFingerprint.cs" "$SR/SkimRaceTargetTracker.cs" "$SR/SkimRaceTeamAssignment.cs" "$SR/SkimRaceReplanGate.cs" \
   "$ROOT/Assets/_Scripts/Utility/MathfNoAlloc.cs" > "$OUT/files.rsp"
 "$DOTNET" "$CSC" -nologo -langversion:latest -nostdlib -noconfig -optimize+ "@$OUT/refs.rsp" \
   -nowarn:CS1591,CS0067,CS0649,CS0414,CS1574,CS0169,CS8632,CS0108,CS1587 \

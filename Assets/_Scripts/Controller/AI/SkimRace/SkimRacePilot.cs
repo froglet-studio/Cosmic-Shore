@@ -43,6 +43,13 @@ namespace CosmicShore.Gameplay
         static readonly ProfilerMarker s_FillObstaclesMarker = new("SkimRace.Pilot.FillObstacles");
         static readonly ProfilerMarker s_DecideMarker = new("SkimRace.Pilot.Decide");
 
+        // Every AI seat in this process shares one, so at most one seat's track-planner re-plan lands in a
+        // frame (SkimRaceReplanGate; SkimRaceAIConfigSO.TrackMpcStaggerSeats).
+        static SkimRaceReplanGate s_replanGate = new();
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => s_replanGate = new SkimRaceReplanGate();
+
         IVessel _vessel;
         IVesselStatus _status;
         GameDataSO _gameData;
@@ -102,7 +109,7 @@ namespace CosmicShore.Gameplay
             _status = vessel?.VesselStatus;
             _gameData = gameData;
             _config = config != null ? config : SkimRaceAIConfigSO.LoadDefault();
-            _driver = new SkimRaceDriver(_config);
+            _driver = new SkimRaceDriver(_config) { ReplanGate = s_replanGate };
             // Seeded off the clock and this component, so every race - and every seat in it - errs
             // differently. Never UnityEngine.Random: the track generator seeds its global state, and
             // drawing from it would both repeat the same mistakes per track and shift the track's own
@@ -192,6 +199,7 @@ namespace CosmicShore.Gameplay
                 if (_config.DecisionHz <= 0f || Time.time >= _nextDecision)
                 {
                     using (s_FillObstaclesMarker.Auto()) FillObstacles(obs);
+                    s_replanGate.BeginFrame(Time.frameCount);
                     using (s_DecideMarker.Auto()) _held = _driver.Decide(obs, _course, now, Time.deltaTime);
                     if (_config.DecisionHz > 0f) _nextDecision = Time.time + 1f / _config.DecisionHz;
                 }
