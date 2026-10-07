@@ -105,6 +105,7 @@ def main():
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--w_burn", type=float, default=0.25)
     ap.add_argument("--pfsp", type=int, default=1)
+    ap.add_argument("--init", default="", help="npz with thq/thp to start from (arms_seed.py: the designed generation 0)")
     a = ap.parse_args()
     global W_BURN
     W_BURN = a.w_burn
@@ -127,6 +128,8 @@ def main():
     else:
         thq = A.init_params(rng, A.PREY_IN, A.PREY_OUT).astype(np.float64)
         thp = A.init_params(rng, A.PRED_IN, A.PRED_OUT).astype(np.float64)
+        if a.init:
+            z = np.load(a.init); thq = z["thq"].astype(np.float64); thp = z["thp"].astype(np.float64)
         oq, op = Adam(len(thq), a.lr), Adam(len(thp), a.lr)
         gen0 = 0
         json.dump(dict(args=vars(a), cfg=A.cfg_dict(cfg), algo="OpenAI-ES antithetic, factorial blocks vs current + "
