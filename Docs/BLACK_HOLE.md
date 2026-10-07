@@ -267,7 +267,14 @@ Offline, in this order; nothing was run in the editor:
 - `check_conditional_compilation`, `check_console_logging`, `check_enum_member_references`,
   `check_switch_label_collisions`, `check_self_referential_locals`, `check_duplicate_attributes`,
   `check_abstract_member_implementations`, `check_using_directives`: all OK.
-- `Tools/Build/unity_refcompile/run.sh --config player-dev`: see the PR for the run's verdict.
+- `Tools/Build/unity_refcompile/run.sh --config player-dev` over the final tree: **0 errors in
+  project code, 0 unverified missing-type errors** across 91 assemblies (the ten new runtime files
+  are in `Assembly-CSharp.rsp` and in no error bucket). Negative control: a planted call to a missing
+  member lands in the "unverified" bucket (1), so that bucket reading 0 is the evidence, not the
+  headline alone. `--config editor`: the four Editor-folder files (both tests, the setup tool, the
+  validator) compile clean; its 4 reported errors are the README's known `CS0118 'Editor' is a
+  namespace` false positives in untouched files. `check_generated_assets.py`: 4 added + 2 modified
+  assets OK against the compiled schema.
 - Edit-mode: `BlackHoleTests` (HLSL/bank/slot agreement, splice order on both graphs, validator
   specs, config sanity, residency budget, test scene wiring) and `BlackHolePhysicsTests` (eleven
   claims about what a hole does, run through the shipped integrator) — written, to be run in the
