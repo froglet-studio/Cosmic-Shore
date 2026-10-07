@@ -83,8 +83,9 @@ namespace CosmicShore.Gameplay
 
         // ── Ordered death wither ─────────────────────────────────────────────
         // A dying lifeform spends its spindles ONE AT A TIME, in an order the death
-        // itself dictates (Docs/ECOSYSTEM.md §26): outside-in for starvation, from the
-        // heart outward for a joust. Two couplings in the ordinary spindle lifecycle
+        // itself dictates (Docs/ECOSYSTEM.md §26): outside-in along the spindle tree
+        // (OrderOutsideIn), except the crystal joust, which unravels from the heart outward
+        // (OrderHeartOutward, §26.10). Two couplings in the ordinary spindle lifecycle
         // fight that, and both are structural rather than cosmetic:
         //   • ForceWither RECURSES into child spindles, so withering an inner spindle
         //     first would collapse the whole creature in a single step.
@@ -358,6 +359,94 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Hangs this limb off <paramref name="parent"/> in the spindle TREE (null = off the heart)
+        /// without touching the transform hierarchy. For a species that keeps its limbs as flat
+        /// siblings under the plant root and poses each one on a bond (<c>BorromeanFlora</c>,
+        /// <c>MandelbulbFlora</c>) this is the only thing that makes the tree real - and the tree
+        /// is what keeps a limb standing while anything still hangs off it, so a plant can never
+        /// lose the limb between its crystal and its outer prisms (Docs/ECOSYSTEM.md §26.10).
+        /// Re-linking releases the old parent, which then withers if nothing else holds it up.
+        /// </summary>
+        public void AttachToParent(Spindle parent)
+        {
+            if (parent == this || parentSpindle == parent) return;
+
+            var previous = parentSpindle;
+            parentSpindle = null;
+            if (previous) previous.RemoveSpindle(this);
+
+            if (parent) parent.AddSpindle(this);
+        }
+
+        /// <summary>
+        /// This limb's parent in the spindle tree: the logical link when one is set, otherwise
+        /// the nearest spindle above it in the transform hierarchy - which is what
+        /// <see cref="Start"/> would link it to, read before Start has run.
+        /// </summary>
+        Spindle ResolveTreeParent()
+        {
+            if (parentSpindle) return parentSpindle;
+            var up = transform.parent;
+            return up ? up.GetComponentInParent<Spindle>() : null;
+        }
+
+        /// <summary>
+        /// How many limbs stand between this one and the heart (0 = it grows straight out of the
+        /// crystal). Bounded so a malformed link can never hang the death path.
+        /// </summary>
+        int TreeDepth()
+        {
+            int depth = 0;
+            for (var p = ResolveTreeParent(); p && depth < 4096; p = p.ResolveTreeParent())
+                depth++;
+            return depth;
+        }
+
+        /// <summary>
+        /// The order an ordered death wither spends a lifeform's limbs in: OUTSIDE-IN along the
+        /// spindle tree, deepest first, so every limb still standing has an unbroken path of
+        /// standing limbs back to the heart at every instant of the wither. Ties (and a
+        /// lifeform whose limbs form no tree at all) fall back to farthest-from-the-heart first.
+        /// Euclidean distance alone is NOT enough on a plant whose surface wraps back past its
+        /// own heart (the Borromean membrane): a limb five hops out can sit closer to the crystal
+        /// than its own grandparent.
+        ///
+        /// <para>Every ordered wither uses this EXCEPT the crystal joust, which unravels
+        /// <see cref="OrderHeartOutward"/> from the hole the joust left (Docs/ECOSYSTEM.md
+        /// §26.10).</para>
+        ///
+        /// <para>Must be called BEFORE <see cref="IsolateForOrderedWither"/>, which is what
+        /// severs the links the depth is read from.</para>
+        /// </summary>
+        public static List<Spindle> OrderOutsideIn(IEnumerable<Spindle> spindles, Vector3 heart)
+        {
+            return spindles
+                .Where(s => s)
+                .Select(s => (spindle: s, depth: s.TreeDepth(),
+                              distance: (s.transform.position - heart).sqrMagnitude))
+                .OrderByDescending(e => e.depth)
+                .ThenByDescending(e => e.distance)
+                .Select(e => e.spindle)
+                .ToList();
+        }
+
+        /// <summary>
+        /// The crystal joust's EXCEPTION to <see cref="OrderOutsideIn"/>, and its exact reverse:
+        /// FROM THE MISSING CRYSTAL TO THE LEAVES along the spindle tree, the limbs at the heart
+        /// first. The jouster took the heart, so the body comes apart around the hole it left —
+        /// the one death in which an outer limb is ALLOWED to stand after the limb joining it to
+        /// the heart has gone (Docs/ECOSYSTEM.md §26.10). Read off the tree rather than distance
+        /// so the unravel follows the plant's own growth order on a surface that folds back past
+        /// its heart. Same call-before-isolation rule.
+        /// </summary>
+        public static List<Spindle> OrderHeartOutward(IEnumerable<Spindle> spindles, Vector3 heart)
+        {
+            var order = OrderOutsideIn(spindles, heart);
+            order.Reverse();
+            return order;
+        }
+
+        /// <summary>
         /// Sets this spindle aside for an ORDERED death wither (see the isolation notes):
         /// detaches it from its parent and children - logically AND in the hierarchy, so it
         /// can be destroyed without taking anything else with it - and suspends
@@ -472,8 +561,9 @@ namespace CosmicShore.Gameplay
 
         /// <param name="evaporateDelay">
         /// Seconds until this spindle's fade STARTS. Ordered wither stamps every
-        /// spindle in one pass with <c>i * interval</c> so starvation stays
-        /// extremity-first and a joust stays heart-outward — never a per-frame cascade.
+        /// spindle in one pass with <c>i * interval</c> so starvation stays outside-in
+        /// (<see cref="OrderOutsideIn"/>) and a joust stays heart-outward
+        /// (<see cref="OrderHeartOutward"/>) — never a per-frame cascade.
         /// </param>
         public void ForceWither(float evaporateDelay = 0f)
         {

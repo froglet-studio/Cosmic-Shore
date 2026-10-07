@@ -4626,3 +4626,33 @@ Opening the Flora row must not hitch (the icon is one plant cut from a three-she
 ### 4. Colour shade does not leak
 Destroy a few nested-gyroid plates, then lay ordinary trail prisms (pooled reuse): no trail prism may come
 out darkened, and none may come out dangerous.
+
+---
+
+## 🔴 Every standing spindle keeps a path to its crystal (`cece/youthful-tesla-eq16r6`, 2026-10-07) — NOT EDITOR-VERIFIED
+
+`Docs/ECOSYSTEM.md` §26.10. (1) `BorromeanFlora` and the Mandelbulb family (Mandelbulb, Coral Bloom,
+Watershed, Apollonia) now link each limb to its parent limb (`Spindle.AttachToParent`), so a limb
+stays standing while anything hangs off it. (2) Ordered withers are read off the spindle TREE
+instead of distance: starvation `Spindle.OrderOutsideIn` (deepest first), the crystal joust
+`Spindle.OrderHeartOutward` (from the missing crystal to the leaves — the one sanctioned exception).
+
+### 1. Graze / shoot an INNER plate on a living Borromean and a Mandelbulb-family plant
+
+Destroy one plate in the innermost orbit (next to the crystal). Its limb must **stay** (the outer
+limbs hang off it), and the plant must regrow that plate on later grow ticks onto the same limb (no
+second limb on that bond). Then destroy an OUTERMOST plate: its limb (nothing beyond it) withers, and
+a bare parent limb with nothing else hanging off it follows. At no point may a limb stand with a
+gap between it and the crystal.
+
+### 2. Crystal-joust a Borromean plant — the exception
+
+Squirrel joust (or skim/explode its crystal). The heart is collected at the strike, the plates stay
+as a skeleton, and the limbs unravel **from the crystal out to the tips**, following the plant's
+own branches (it used to jump around the membrane by straight-line distance).
+
+### 3. Starve / joust a spindled creature (shark, brittlestar, clawfish)
+
+Starvation: fins / arms before the core body, the heart collectable only once the wither reaches
+the core. Joust: heart taken at the strike, body unravels from the heart outward. If either reads
+wrong on a creature whose prefab nests its spindles oddly, report the prefab.

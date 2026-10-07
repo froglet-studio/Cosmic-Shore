@@ -3529,12 +3529,12 @@ force that did the killing, read back at the moment the body comes apart.
 |  | **Joust** (a vessel took the heart) | **Starvation** (nobody took it) |
 |---|---|---|
 | Heart | freed **first**, at the strike, and **auto-collected** by the jouster | freed **last**, when the wither reaches the core — then collectable by **any** vessel |
-| Spindles | wither **nearest-the-heart first**, unravelling **outward** around the hole | wither **farthest-from-the-heart first**, spending the extremities **inward** |
+| Spindles | wither **from the missing crystal to the leaves** along the spindle tree, unravelling **outward** around the hole — the one sanctioned exception to §26.10 | wither **outside-in** along the spindle tree (deepest limb first), spending the extremities **inward** |
 | Body prisms | left standing as a **skeleton** | left standing as a **skeleton** |
 | Detonation | none | none |
 
-They are the same operation sorted the other way: order the spindles by distance from the heart,
-ascending for a joust, descending for starvation. A shark's fins and a brittlestar's arms still go
+They are the same operation sorted the other way — since §26.10, by depth in the spindle TREE
+(distance from the heart breaks ties): shallowest first for a joust, deepest first for starvation. A shark's fins and a brittlestar's arms still go
 before the core body on the starvation death — emergent from geometry, with nothing authored per
 prefab — and on a joust the same geometry runs backwards.
 
@@ -3564,7 +3564,8 @@ as ordinary cell mass:
 detached **before** any spindle withers — evaporating a spindle first destroys the very mass the
 skeleton is conserving. The wither **pacing** is stamped once as per-spindle start-time offsets
 (`ForceWither(i * interval)` after a one-time distance sort — `Docs/PRISM_ANIMATION.md` §5 C11);
-the visual is still extremity-first (starvation) / heart-outward (joust). Heart release still
+the visual is outside-in (starvation, `Spindle.OrderOutsideIn`) / heart-outward (joust,
+`Spindle.OrderHeartOutward`), both along the spindle tree (§26.10). Heart release still
 waits until the wither has reached the core (`count × interval`). Continuity of existence is
 the fade itself, not a snap.
 
@@ -3636,7 +3637,7 @@ which is the starvation behaviour and therefore never a lost crystal.
 - **Fauna**: `LightFauna` (the spindled creatures — shark, brittlestar, clawfish) gets both
   directions plus the deferred heart. `Boid` (the tadpole) has no spindle rings to order, so it
   leaves its skeleton and fades the empty husk out.
-- **Flora**: `LifeForm.Jousted` withers heart-outward and leaves a skeleton. **Every other flora
+- **Flora**: `LifeForm.Jousted` withers heart-outward along the spindle tree and leaves a skeleton. **Every other flora
   death keeps the existing destruction** (`DamageAll` + `ForceWitherAll`) — a plant grazed down to
   its lethal threshold has been actively eaten, and the prompter's ask was specifically about the
   joust.
@@ -3707,6 +3708,78 @@ speed.
 3. **Skeleton accumulation over a long round** is the §26.7 budget risk and can only be answered by
    a playtest. If skeletons outpace grazing, the levers are the existing diet/spawn dials
    (`SpawnProfile.FaunaFoodFloor`, per-species populations) — never a timer, never a cap.
+
+### 26.10 Every standing limb connects to its crystal — except in the crystal joust (Oct 2026)
+
+> *"I killed some Borromean plant but the spindles near the crystal were dying off before the rest
+> of the spindles. This should not be possible. Spindles and prisms should always have a spindle
+> path that connects to the lifeform crystal."* — and, on review: *"the crystal joust which uses
+> the wither effect should still be able to evoke an exception where the spindles wither from the
+> missing crystal to the leaves."*
+
+**The invariant.** Every spindle and every prism still belonging to a lifeform has an unbroken path
+of standing spindles back to its crystal — while it grows, while it is grazed or shot, and through
+every death. It is the growth law (`/flora` §2: crystal first, spindles from the crystal, prisms
+from spindles) held in both directions: a lifeform grows outward from its heart and is spent back
+INTO it. Skeleton prisms are outside it because they no longer belong to the lifeform —
+`LeaveAsSkeleton` hands them to the cell before any limb withers.
+
+**The one sanctioned exception: the crystal joust.** A joust (`LifeformDeathStyle.Jousted` —
+the vessel, skimmer and explosion `…WitherLifeformByCrystalEffectSO`s) takes the heart at the
+strike, and the body unravels FROM THE MISSING CRYSTAL TO THE LEAVES around the hole it left
+(`Spindle.OrderHeartOutward`). That outer limbs briefly stand without their path to the heart is
+the joust's signature, not a defect. Nothing else may do it: starvation, every other ordered wither
+(`Spindle.OrderOutsideIn`) and grazing all spend a lifeform outside-in.
+
+**The defect that was NOT the joust.** `BorromeanFlora` and the Mandelbulb family posed each limb
+on its bond as a FLAT SIBLING under the plant root (`LifeForm.AddSpindle()`), so `Spindle.Start`
+found no parent spindle and no limb knew anything grew from it. `Spindle.CheckForLife` keeps a limb
+only while it carries a prism or a child spindle, so grazing or shooting an inner plate evaporated
+its limb at once while every limb beyond it stood on, rooted at nothing — on a LIVING plant, with
+no joust involved. The "the limb is left standing when its plate is eaten" claim in both classes'
+docs was false in code. **Fix:** `Spindle.AttachToParent` links each limb to the limb of the site
+it grows out of (Borromean: `_table.Parents[site]`; Mandelbulb: the nearest STANDING ancestor,
+re-linked on every re-pose) without touching the transform hierarchy. A limb now stands while
+anything hangs off it, a bare leaf limb withers, and its parent follows if that leaves it bare.
+`BranchingFlora`, `PhyllotacticFlora`, `AssembledFlora` and `NestedGyroidFlora` (§58) already nest
+each spindle under its parent in the hierarchy, which `Spindle.Start` turns into the same link — which
+is why only the two bond-posed species showed it. **A new species that poses its limbs on bonds must
+do one or the other**: nest each limb under its parent limb, or call `AttachToParent`.
+
+**Both orders are read off the spindle TREE now, not distance.** The old sorts were Euclidean
+distance from the heart. On a surface that wraps back past its own crystal (the Borromean membrane
+is genus 1 over three loops) a limb five hops out can sit nearer the crystal than its own
+grandparent, so a distance sort can spend a parent before its child in EITHER direction — an
+outside-in starvation that orphans a limb, or a joust whose unravel skips around the plant instead
+of running out along it. Tree depth is the order the plant actually grew in; distance only breaks
+ties. A lifeform whose limbs form no tree at all (every depth 0) sorts exactly as before.
+`OrderHeartOutward` is defined as the exact reverse of `OrderOutsideIn`, so the two can never drift.
+
+**Follow-ups found while doing this (rows, not done here):**
+
+1. **Three copies of the limb-stretch code.** `StretchToBond` exists in `BorromeanFlora`,
+   `MandelbulbFlora` and `NestedGyroidFlora`, and branch-reach measurement in three shapes
+   (`BorromeanFlora.ResolveBranchReach`, `NestedGyroidFlora.ResolveBranchReach`,
+   `MandelbulbFlora.ResolveBranchGeometry`, each with its own static cache). Measured with
+   `grep -rln "void StretchToBond" Assets/_Scripts` (3 hits) on 2026-10-07. Inconsistency, so a
+   fix: one shared limb helper. The blocking question is that Mandelbulb writes an ABSOLUTE z
+   scale (its limbs are re-posed) while the other two multiply, so the helper must take the
+   absolute form.
+2. **A bare limb can now hold its parent up.** When `EnvironmentPrismPool.Get` returns null after
+   `BorromeanFlora.LayAt` created a limb, that limb carries no plate, is never asked
+   `CheckForLife`, and — since §26.10 linked it — keeps its parent limb standing. It is re-used on
+   the next tick, so it is a transient, not a leak, unless the pool stays empty. Unmeasured: count
+   bare limbs (no prism, no child) on a grown plant with the pool starved.
+3. **Two ordered-wither stampers.** `LifeForm.WitherToSkeleton` and `LightFauna.WitherCoroutine`
+   both order, isolate, skeletonise and stamp `ForceWither(i * interval)`. They differ in heart
+   release and husk teardown, so the shared part is the order-isolate-stamp core, and the
+   `PrismSpindleDeathClockTests` string gates that pin the literal stamp expressions in both files
+   would have to move with it.
+
+**Verification.** `SpindleOutsideInOrderTests`: outside-in never spends a parent before any of its
+descendants and heart-outward never spends a child before its parent, both on a tree whose geometry
+folds back past the heart; the negative controls are the two retired distance sorts, each of which
+fails that tree. Nothing here was run in the Editor — see `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
 ---
 

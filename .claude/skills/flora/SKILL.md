@@ -144,6 +144,14 @@ does not:
 5. **Keep the limb when its prism is eaten, and re-use it when the prism regrows.** A branch
    whose leaf was grazed is still a branch — and re-use is also what stops regrowth minting
    a second spindle on one bond. Track limb-per-site and clear the slot in `RemoveSpindle`.
+6. **A limb must know its PARENT limb.** `Spindle.CheckForLife` keeps a limb only while it
+   carries a prism OR a child spindle, and the child link comes from the transform hierarchy
+   unless you set it. A species that poses its limbs as flat siblings under the plant root
+   (Borromean, Mandelbulb) must call `limb.AttachToParent(parentLimb)` — otherwise grazing an
+   inner prism evaporates its limb while every limb beyond it stands on, cut off from the
+   crystal. **Every standing spindle and prism has a path of standing spindles to its crystal**
+   — in growth, under grazing and through every death, the crystal joust's heart-outward unravel
+   being the one sanctioned exception (`Docs/ECOSYSTEM.md` §26.10).
 
 ---
 
