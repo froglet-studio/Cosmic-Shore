@@ -11,8 +11,11 @@ the whole result is validated in memory, and only then is anything written.
 WHAT THIS MODE IS. Regatta is the ARENA race: every playable hull on the same closed circuit of
 eight switch rings, with three super-shielded rails - one per playable domain - braided along
 the racing line, so an Urchin grinds it and a Squirrel skims it while a Manta, a Rhino, a
-Scarab or a Sparrow flies beside it. First DOMAIN whose LEAD RUNNER threads the last gate of
-the last lap wins. See Assets/_Scripts/Controller/Arcade/REGATTA.md.
+Scarab or a Sparrow flies beside it. The race ends when the first pilot threads the last gate of
+the last lap; the TEAM with the most gates threaded - every pilot's gates, summed
+(RegattaScoringRuleSO) - wins. Opponent AI (a domain no human flies) are pinned to the Squirrel
+through the card's OpponentAIVessel until the racing AI can drive every hull; ally AI fly what
+their teammates pick on the launch panel. See Assets/_Scripts/Controller/Arcade/REGATTA.md.
 
 WHAT IS FORKED AND WHY. Four cell configs, because the arena is an AUTHORED environment (the
 rails, one SpawnableRegattaRails prefab variant per intensity) and its volume ladder has to
@@ -21,7 +24,8 @@ derivation would price at a seventeenth. The spawn profile is the Barren cell's,
 no flora, no fauna (shielded mass is never food anyway, and fauna are per-peer).
 
 WHAT IS REFERENCED. The scene is a clone of MinigameRedline (itself Headlong's): the gate-race
-platform, the RaceGateTurnMonitor, the generic GateRaceScoringRuleSO (a second asset), the
+platform and the RaceGateTurnMonitor (the scoring rule is Regatta's own team-sum
+RegattaScoringRuleSO, a subclass of the gate-race rule), the
 equatorial spawn ring (overridden at runtime by the controller's own start line behind gate 0),
 the crystal manager, the cell network sync. The scoring metric, the objective icon, the goal
 row and the comeback source are SwitchesThreaded's, reused.
@@ -59,6 +63,7 @@ g = lib.Generator(MODE_ID, "Regatta")
 # ── New script GUIDs (the .cs.meta files this script also writes) ─────────────
 SCRIPT_PATHS = {
     "RegattaController":         "Assets/_Scripts/Controller/Arcade/Regatta/RegattaController.cs",
+    "RegattaScoringRuleSO":      "Assets/_Scripts/Controller/Arcade/Scoring/RegattaScoringRuleSO.cs",
     "RegattaCourse":             "Assets/_Scripts/Controller/Arcade/Regatta/RegattaCourse.cs",
     "SpawnableRegattaRails":     "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableRegattaRails.cs",
     "VesselStartingElements":    "Assets/_Scripts/Data/Structs/VesselStartingElements.cs",
@@ -90,7 +95,6 @@ EXISTING.update(lib.CELL_VISUALS)
 EXISTING.update(lib.CARD_ART)
 for _h, _g in lib.VESSELS.items():
     EXISTING[f"Vessel_{_h}"] = _g
-EXISTING["GateRaceScoringRuleSO"] = lib.existing_guid("Assets/_Scripts/Controller/Arcade/Scoring/GateRaceScoringRuleSO.cs")
 EXISTING["RedlineController"] = lib.existing_guid("Assets/_Scripts/Controller/Arcade/Redline/RedlineController.cs")
 EXISTING["RedlineScoringRule"] = lib.existing_guid("Assets/_SO_Assets/Scoring Rules/RedlineScoringRule.asset")
 EXISTING["SkimRaceCellConfig"] = lib.existing_guid("Assets/_SO_Assets/Cell Configs/Skim Race Cell/Skim Race Cell Config.asset")
@@ -157,10 +161,12 @@ g.folder_meta(SCRIPTS_DIR)
 g.text_meta(DOC)
 g.folder_meta(CELL_DIR)
 
-# ── 2. Scoring rule: the generic gate-race rule, a second asset ─────────────
+# ── 2. Scoring rule: the TEAM SUM - every pilot's gates count, highest team total wins ──
+# Points, not golf (golfRules 0): a pilot's Score is their own gate count, and RegattaController
+# runs points rules to match, so the end-game domain totals ARE the team sums.
 g.emit_asset("Assets/_SO_Assets/Scoring Rules/RegattaScoringRule.asset", G_ASSET["RegattaScoringRule"],
-             lib.header_for(EXISTING["GateRaceScoringRuleSO"], "RegattaScoringRule") +
-             "  metric: 9\n  golfRules: 1\n")
+             lib.header_for(G_SCRIPT["RegattaScoringRuleSO"], "RegattaScoringRule") +
+             "  metric: 9\n  golfRules: 0\n")
 
 # ── 3. The arena: one SpawnableRegattaRails prefab per intensity ────────────
 def spawnable_prefab(i: int) -> str:
@@ -266,6 +272,12 @@ for _i in range(1, 5):
 """ + "".join(f"    {k}: {v}\n" for k, v in t.items()))
 
 # ── 5. The arcade card: every playable hull, and the starting-element table ──
+# Every OPPONENT AI (a domain no human flies) flies this hull: the platform's gate-race AI holds
+# 0.6 throttle and drives no hull's speed ability but the Manta's, so a mixed opponent grid was
+# mostly hulls racing at cruise. The Squirrel skims the rails for its boost energy, which is the
+# one speed source a gate-following autopilot reaches by flying the racing line. Retire this when
+# the racing AI drives every hull (clear OpponentAIVessel and drop the assert below).
+OPPONENT_AI_HULL = "Squirrel"
 HULL_ORDER = ["Manta", "Dolphin", "Rhino", "Urchin", "Squirrel", "Serpent", "Sparrow", "Scarab"]
 VESSEL_ROWS = "".join(f"  - {{fileID: 11400000, guid: {EXISTING[f'Vessel_{h}']}, type: 2}}\n" for h in HULL_ORDER)
 
@@ -292,12 +304,13 @@ g.emit_asset("Assets/_SO_Assets/Games/ArcadeGameRegatta.asset", G_ASSET["ArcadeG
   Description: Every hull, one circuit, three laps. Three rails run the racing line in the
     three team colours - an Urchin grinds the one in its colour and a Squirrel skims it,
     while a Manta, a Rhino, a Scarab or a Sparrow flies beside it. Thread the rings in
-    order; first team to put a pilot through the last one takes it. Pick the hull you fly
-    best - the card hands the slow ones a head start in Time.
+    order - every gate anyone on your team threads counts. The race ends when the first
+    pilot finishes; the team with the most gates wins. Pick your hull, and tap an ally's
+    avatar to pick theirs.
   IconActive: {{fileID: 21300000, guid: {EXISTING['IconActive']}, type: 3}}
   IconInactive: {{fileID: 21300000, guid: {EXISTING['IconInactive']}, type: 3}}
   CardBackground: {{fileID: 21300000, guid: {lib.card_background('Regatta')}, type: 3}}
-  GolfScoring: 1
+  GolfScoring: 0
   SceneName: MinigameRegatta
   Vessels:
 {VESSEL_ROWS}  MinPlayersAllowed: 2
@@ -312,10 +325,12 @@ g.emit_asset("Assets/_SO_Assets/Games/ArcadeGameRegatta.asset", G_ASSET["ArcadeG
   - A rail cannot be shot away. Only an energised Rhino sword opens a hole, and riders bridge holes.
   - Rhino and Manta pilots: every corner is a price. Lift for the tight ones, wind back up on the straight.
   - Slow hulls start with Time already high - it is your boost. Fast hulls start with it low.
+  - Every gate your team threads counts. Tap an ally AI's avatar on your team tile to pick the hull it flies.
   ViewUserAction: 0
   PlayUserAction: 0
   StartingElements:
 {STARTING}  ComebackRatePerScoreDeficit: {lib.num(COMEBACK_RATE)}
+  OpponentAIVessel: {{fileID: 11400000, guid: {EXISTING[f'Vessel_{OPPONENT_AI_HULL}']}, type: 2}}
 """)
 
 # ── 6. Toasts: two idle hints and the comeback line ─────────────────────────
@@ -504,8 +519,15 @@ if sc.count("  cellTypeChoiceOptions: 1\n") != 1:
 # The card lists every playable hull exactly once, and every StartingElements row names one of them.
 card = g.files["Assets/_SO_Assets/Games/ArcadeGameRegatta.asset"]
 for h in HULL_ORDER:
-    if card.count(EXISTING[f"Vessel_{h}"]) != 1:
+    if card.count(f"  - {{fileID: 11400000, guid: {EXISTING[f'Vessel_{h}']}, type: 2}}\n") != 1:
         errors.append(f"card does not list {h} exactly once")
+if f"  OpponentAIVessel: {{fileID: 11400000, guid: {EXISTING[f'Vessel_{OPPONENT_AI_HULL}']}, type: 2}}\n" not in card:
+    errors.append(f"card does not pin the {OPPONENT_AI_HULL} as its OpponentAIVessel")
+if OPPONENT_AI_HULL not in HULL_ORDER:
+    errors.append(f"the opponent hull {OPPONENT_AI_HULL} is not on the card - ClampVesselToGame would move it")
+rule = g.files["Assets/_SO_Assets/Scoring Rules/RegattaScoringRule.asset"]
+if G_SCRIPT["RegattaScoringRuleSO"] not in rule or "  golfRules: 0\n" not in rule:
+    errors.append("RegattaScoringRule.asset is not the points-rules RegattaScoringRuleSO")
 for m in re.finditer(r"^  - Class: (\d+)$", card, re.M):
     if int(m.group(1)) not in {lib.VESSEL_CLASS_ID[h] for h in HULL_ORDER}:
         errors.append(f"StartingElements names class {m.group(1)}, which the card does not seat")

@@ -59,9 +59,10 @@ Read from the prefab and from an in-editor probe (`SkimRaceRaceRecorder.WritePro
 | File | Role |
 |---|---|
 | `SkimRacePilot` | MonoBehaviour on the AI vessel: lifecycle, sensing, actuation. Inactive (neutral input) until `GameDataSO.IsTurnRunning` rises; neutral again when the turn ends; stops and disables `AIPilot` while it owns the vessel |
-| `SkimRaceAIDeployment` | Installs the pilot from `ServerPlayerVesselInitializerWithAI.ConfigureAIPilot` — every Skim Race backfill seat in normal play, no scene wiring. Skipped while `IsTraining`; `TrainingDeploymentService` defers to it. Reads the host's lobby AI difficulty (`GameDataSO.RequestedAIDifficulty`, §10). Picks the policy (`PolicyFor`): the intensity's own file only while it fits the map in the scene, else the general one (§11) |
-| `SkimRaceTargetTracker` | The authoritative target: a live, non-embedded crystal of this domain from `Crystal.Active` (mid-collection crystals are valid only once moved away from the pilot); nearest wins with hysteresis. The whole rule for a lone AI on its team, and the fallback for AI teammates |
-| `SkimRaceTeamPlan` / `SkimRaceTeamAssignment` | Team play (§13): when two or more AI fly for one team, one plan per team per frame gives each a DIFFERENT crystal (least total distance, kept until another plan is 15% cheaper). AI only - a human teammate is never planned for. The assignment is pure C#, shared with the simulator |
+| `SkimRaceAIDeployment` | Installs the pilot from `ServerPlayerVesselInitializerWithAI.ConfigureAIPilot` — every Squirrel backfill seat in **Skim Race and Regatta** in normal play, no scene wiring. Skipped while `IsTraining`; `TrainingDeploymentService` defers to it for Squirrel seats. Reads the host's lobby AI difficulty (`GameDataSO.RequestedAIDifficulty`, §10). Picks the policy (`PolicyFor`): the intensity's own file only while it fits the map in the scene, else the general one (§11) |
+| `SkimRaceObjective` | WHAT the pilot races for — the only mode-aware part. `CrystalTrackObjective` (Skim Race: the waypoint track's ribbon, this domain's crystal, crystals collected — the pilot's original behaviour, moved verbatim) and `RegattaRingObjective` (Regatta: this domain's rail, the pilot's next ring via `GateRaceController.TryGetNextGate` at 0.7 × the mouth, gates threaded). `SkimRaceObjective.For(gameData)` picks by mode |
+| `SkimRaceTargetTracker` | Skim Race's target: a live, non-embedded crystal of this domain from `Crystal.Active` (mid-collection crystals are valid only once moved away from the pilot); nearest wins with hysteresis. The whole rule for a lone AI on its team, and the fallback for AI teammates |
+| `SkimRaceTeamPlan` / `SkimRaceTeamAssignment` | Team play (§13): when two or more AI fly for one team, one plan per team per frame gives each a DIFFERENT crystal (least total distance, kept until another plan is 15% cheaper). AI only - a human teammate is never planned for. The assignment is pure C#, shared with the simulator. Feeds `CrystalTrackObjective.Planned`; rings are each pilot's own, so Regatta has no plan |
 | `SkimRaceCourse` / `SkimRaceCourseSource` | The racing line: the track prisms the game actually laid, in lay order, with each prism's pose and contact shell |
 | `SkimRaceObservation` / `SkimRaceAction` | The observation and action schema (feature vector, schema version, NaN sanitising, clamping) |
 | `SkimRaceDriver` | The decision core (pure C#): racing line, crystal pass planning, lag-compensated steering, throttle, recovery |
@@ -732,6 +733,13 @@ Runs excluded, and why (all disclosed, none are AI results):
 | v1-i2 (2026-10-02, 1 AI seat) | 3 | 0/3 | 111.7 | session 20261003-024656 |
 
 ## 9. Status and known limits
+
+- **Regatta (2026-10-06, NOT editor-verified).** Regatta's opponent Squirrels fly this pilot with
+  `RegattaRingObjective`: crystals swapped for rings, the waypoint ribbon for the domain's rail.
+  Before this they flew the platform `AIPilot` steered at ring waypoints and threaded none. The
+  policy is Skim Race's per-intensity config, untuned for a rail; the rail lanes sit 22 u off the
+  ring spine and the mouths are 54–110 u, so the skim line passes well inside each mouth. A pilot
+  whose hull a human swaps into stands down (no input writes) until the AI gets it back.
 
 **Limits: I1 70 s, I2 80 s (re-baselined, §6.11), I4 70 s. Met on I1 (editor, winner); I2 80 s is met
 with `skimrace-v2-i2` at normal frame rates: the last 5 consecutive hand-played races 67.4-76.6 s

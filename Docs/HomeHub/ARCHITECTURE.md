@@ -617,6 +617,20 @@ is the first thing to run it against every hull on the card rather than against 
 was spawned as. Stated cost: swapping INTO the Urchin still shows no ability row, because it has
 none to show.
 
+**Two exceptions a card can author (2026-10-06, Regatta).** `AIHullSeating` splits AI seats in two:
+
+- **A pinned opponent grid.** `SO_ArcadeGame.OpponentAIVessel` (published host-side as
+  `GameDataSO.OpponentAIVesselClass`) makes every AI on a domain NO human flies fly that one hull.
+  Those vessels sit OUTSIDE rule 2: `SpawnAIs` never adds them to the used set, and
+  `ResolveArenaUniqueHull` skips them (`GameDataSO.IsPinnedOpponent`), so a human who claimed the
+  same hull keeps it. Regatta pins the Squirrel until the racing AI can drive every hull.
+- **Ally hulls picked by teammates.** On an arena card each ally AI chip (an AI on a domain a human
+  flies) shows its hull, and a pilot taps their OWN team's chips to step it (auto → card hulls →
+  auto), skipping claimed hulls and other allies' picks. Host-arbitrated
+  (`ArcadeConfigSyncManager.RequestAllyVesselCycle`, refused for another team's AI), replicated in
+  `LobbySnapshot.AiV0..AiV5`, launched as `GameDataSO.RequestedAIVessels`; the AI draw honours a pick
+  that is still free and falls back to its ordinary deal otherwise. `REGATTA.md` §6.
+
 **Stated limits.** Element levels are simulated on the machine that OWNS a hull and never
 replicate, so a hull that changes machines keeps the levels its new owner's replica held (starting
 elements plus whatever it saw) - crystal-earned levels the previous owner simulated do not travel.

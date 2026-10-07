@@ -8,8 +8,10 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The Skim Race AI on one vessel: lifecycle, sensing, and actuation around a
-    /// <see cref="SkimRaceDriver"/>.
+    /// The racing AI on one vessel: lifecycle, sensing, and actuation around a
+    /// <see cref="SkimRaceDriver"/>. Built for Skim Race and named for it; WHAT it races for -
+    /// the course, the target, the progress count - is a <see cref="SkimRaceObjective"/>, so the
+    /// same pilot flies Skim Race's crystals and Regatta's rings.
     ///
     /// <b>Lifecycle.</b> Bound once per AI vessel (<see cref="Bind"/>, by
     /// <see cref="SkimRaceAIDeployment"/>). It holds neutral input and does nothing until the
@@ -49,6 +51,7 @@ namespace CosmicShore.Gameplay
         SkimRaceAIConfigSO _config;
         SkimRaceDriver _driver;
         SkimRaceCourse _course;
+        SkimRaceObjective _objective;
         AIPilot _aiPilot;
 
         bool _bound;
@@ -76,13 +79,13 @@ namespace CosmicShore.Gameplay
         Vector3 _lastForward;
         float _lastCollectionTime;
         int _lastCollected;
-        Crystal _target;
 
         public bool IsBound => _bound;
         public bool RaceActive => _raceActive;
         public SkimRaceAIConfigSO Config => _config;
         public SkimRaceDriver Driver => _driver;
         public SkimRaceCourse Course => _course;
+        public SkimRaceObjective Objective => _objective;
         public SkimRaceObservation LastObservation { get; private set; }
         public SkimRaceAction LastAction => _held;
         public IVessel Vessel => _vessel;
@@ -94,9 +97,13 @@ namespace CosmicShore.Gameplay
         /// <summary>Raised on the frame the race starts for this pilot (race time 0).</summary>
         public event System.Action<SkimRacePilot> RaceStarted;
 
+        /// <summary>Bind to <paramref name="vessel"/>. <paramref name="objective"/> null = this
+        /// match's mode objective (<see cref="SkimRaceObjective.For"/>), which is Skim Race's
+        /// crystals when no mode claims it.</summary>
         /// <param name="handicap">The lobby difficulty's deliberate mistakes
         /// (<see cref="SkimRaceDifficultySO.For"/>); none for Hard.</param>
-        public void Bind(IVessel vessel, GameDataSO gameData, SkimRaceAIConfigSO config, SkimRaceHandicapLevel handicap)
+        public void Bind(IVessel vessel, GameDataSO gameData, SkimRaceAIConfigSO config, SkimRaceHandicapLevel handicap,
+                         SkimRaceObjective objective = null)
         {
             _vessel = vessel;
             _status = vessel?.VesselStatus;
@@ -109,6 +116,8 @@ namespace CosmicShore.Gameplay
             // sequence.
             if (!handicap.IsNone)
                 _driver.Handicap = new SkimRaceHandicap(handicap, unchecked(System.Environment.TickCount * 31 + GetInstanceID()));
+            _objective = objective ?? SkimRaceObjective.For(gameData) ?? new CrystalTrackObjective(gameData);
+            _course = null;
             _aiPilot = _status?.AIPilot;
             _bound = _vessel != null && _status != null && _gameData != null;
             SuppressOtherPilots();
@@ -146,7 +155,7 @@ namespace CosmicShore.Gameplay
             _held = SkimRaceAction.Neutral;
             _lastCollected = 0;
             _lastCollectionTime = 0f;
-            _target = null;
+            _objective?.Reset();
             ReleaseDrift();
             WriteNeutral();
         }
@@ -155,6 +164,14 @@ namespace CosmicShore.Gameplay
         {
             if (!_bound) return;
             if (_vessel == null || _status == null || _status.InputStatus == null) { _bound = false; return; }
+
+            // A human took this hull (arena pilot swap): the sticks are theirs now. Stand down
+            // without writing anything; the departed-pilot path re-binds when the AI gets it back.
+            if (_status.Player != null && !_status.Player.IsInitializedAsAI)
+            {
+                if (_raceActive) { _raceActive = false; ReleaseDrift(); if (_ringPressed) ReleaseRing(); }
+                return;
+            }
 
             SuppressOtherPilots();
 
@@ -213,6 +230,7 @@ namespace CosmicShore.Gameplay
         void EnsureEditorRaceRecorder()
         {
             if (!Application.isEditor || SkimRaceBenchmarkRunner.Active != null) return;
+            if (_objective == null || !_objective.RecordsManualRaces) return;
             if (FindAnyObjectByType<SkimRaceRaceRecorder>() != null) return;
             int intensity = _gameData.SelectedIntensity != null ? _gameData.SelectedIntensity.Value : 0;
             s_manualSession ??= System.DateTime.UtcNow.ToString("yyyyMMdd-HHmmss", System.Globalization.CultureInfo.InvariantCulture);
@@ -310,35 +328,35 @@ namespace CosmicShore.Gameplay
             o.AngularVelocity = axis.sqrMagnitude > 1e-10f ? axis.normalized * (ang / dt) : Vector3.zero;
             _lastForward = o.Forward;
 
-            // Race bookkeeping off the authoritative round stats.
-            var stats = _status.Player?.RoundStats;
-            int collected = stats != null ? stats.CrystalsCollected : 0;
+            // Race bookkeeping off the authoritative round stats (crystals or gates - the objective's).
+            int collected = _objective.OwnProgress(_status);
             if (collected != _lastCollected)
             {
                 _lastCollected = collected;
                 _lastCollectionTime = now;
             }
-            o.Collected = SumDomainCrystals(_status.Domain);
-            o.Remaining = Mathf.Max(0, _gameData.CrystalTargetCount - o.Collected);
+            o.Collected = _objective.SharedProgress(_status);
+            o.Remaining = _objective.Remaining(_status);
             o.TimeSinceCollection = now - _lastCollectionTime;
             o.TimeSinceProgress = _driver.TimeSinceProgress;
 
-            // Target: the authoritative active crystal for this domain. When other AI fly for the same
-            // team, the team plan shares the crystals out so no two chase the same one
-            // (SkimRaceTeamPlan); a lone AI - or one the plan has no crystal for - flies the nearest.
-            var planned = SkimRaceTeamPlan.TargetFor(this, _status.Domain);
-            _target = planned != null ? planned : SkimRaceTargetTracker.Select(_status.Domain, o.Position, _target);
-            if (_target != null)
+            // Target: the objective's (this domain's crystal, or this pilot's next ring). In Skim Race the
+            // team plan comes first: when other AI fly for the same team it shares the crystals out so no
+            // two chase the same one (SkimRaceTeamPlan); a lone AI - or one the plan has no crystal for -
+            // flies the nearest. Rings are each pilot's own, so Regatta has no plan.
+            if (_objective is CrystalTrackObjective crystals)
+                crystals.Planned = SkimRaceTeamPlan.TargetFor(this, _status.Domain);
+            if (_objective.TryGetTarget(_status, o.Position, out var target))
             {
                 o.HasTarget = true;
-                o.TargetId = _target.GetInstanceID();
-                o.TargetPosition = _target.transform.position;
+                o.TargetId = target.Id;
+                o.TargetPosition = target.Position;
                 o.ToTarget = o.TargetPosition - o.Position;
                 o.TargetDistance = o.ToTarget.magnitude;
                 Vector3 dir = o.TargetDistance > 1e-3f ? o.ToTarget / o.TargetDistance : o.Forward;
                 o.TargetLocalDirection = t.InverseTransformDirection(dir);
                 o.TargetAlignment = Vector3.Dot(o.Forward, dir);
-                o.TargetRadius = CaptureRadius(_target);
+                o.TargetRadius = target.Radius;
             }
 
             if (_course != null)
@@ -364,37 +382,11 @@ namespace CosmicShore.Gameplay
             return o;
         }
 
-        Crystal _radiusOf;
-        float _radius;
-
-        /// <summary>World radius of the crystal's pickup sphere — what the hull has to touch.</summary>
-        float CaptureRadius(Crystal c)
-        {
-            if (c == _radiusOf) return _radius;
-            _radiusOf = c;
-            _radius = 0f;
-            if (c != null && c.TryGetComponent(out SphereCollider sc))
-            {
-                var s = sc.transform.lossyScale;
-                _radius = sc.radius * Mathf.Max(Mathf.Abs(s.x), Mathf.Abs(s.y), Mathf.Abs(s.z));
-            }
-            return _radius;
-        }
-
-        int SumDomainCrystals(Domains domain)
-        {
-            int sum = 0;
-            var list = _gameData.RoundStatsList;
-            for (int i = 0; i < list.Count; i++)
-                if (list[i] != null && list[i].Domain == domain) sum += list[i].CrystalsCollected;
-            return sum;
-        }
-
         void EnsureCourse()
         {
             if (_course != null || Time.unscaledTime < _nextCourseAttempt) return;
             _nextCourseAttempt = Time.unscaledTime + 0.5f;
-            if (SkimRaceCourseSource.TryBuildFromScene(out var course))
+            if (_objective.TryBuildCourse(_status, out var course))
             {
                 _course = course;
                 _courseHint = -1;

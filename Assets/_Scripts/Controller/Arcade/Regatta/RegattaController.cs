@@ -8,8 +8,11 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// Regatta - the ARENA race: every playable hull on the same closed circuit of switch rings,
     /// with three super-shielded rails (one per domain) braided along the racing line. Every
-    /// pilot flies LAPS of it in order; the first DOMAIN whose LEAD RUNNER threads the last gate
-    /// of the last lap wins.
+    /// pilot flies LAPS of it in order. The race ends when the first pilot threads the last gate
+    /// of the last lap, and the TEAM with the most gates threaded - every pilot's gates, summed
+    /// (<see cref="RegattaScoringRuleSO"/>) - wins. Opponent AI fly the card's pinned
+    /// <c>OpponentAIVessel</c> (the Squirrel) until the racing AI can drive every hull; ally AI
+    /// fly what their teammates pick on the launch panel.
     ///
     /// <para><b>The mode is a question about what your hull is FOR.</b> A Rhino ramps to 1200 u/s
     /// on a straight and pays five seconds for every corner it cannot hold; a Manta trades Soar
@@ -54,6 +57,11 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(1f)] float aiRailLeadDistance = 260f;
 
         protected override string ModeName => "Regatta";
+
+        /// <summary>Points, not golf: a pilot scores their own gates and a team the SUM of its
+        /// pilots' (<see cref="RegattaScoringRuleSO"/>), highest total winning - so the end-game
+        /// domain totals, which sum Score, are the team standings the rule decided on.</summary>
+        protected override bool UseGolfRules => false;
 
         /// <summary>Laps = authored gate threadings / the arena's rings per lap. ONE authority:
         /// the arena lays exactly RingsPerLap rings, the target is authored once in the end-game
