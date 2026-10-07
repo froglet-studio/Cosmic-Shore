@@ -204,6 +204,10 @@ turn-limited.
   vessel turns tighter than a predator.
 - **Variety: moderate.** Catches spread over the whole pond. Half are at the membrane, and cooperative chases are
   45% of catches, so no two hunts look alike. But there is one predator tactic (chase + pin), not a repertoire.
+- **What it looks like in a living pond** (`living_g1460.gif`, and the viewer's third run): with the gate on, the
+  pond breathes. Over 120 s the prey go from 119 to 141 (grazing, splitting), and 8 predators patrol, bursting red,
+  pinning tadpoles on the membrane. They turn lazy (no bursts) while fed, and lose one of their number to
+  starvation.
 - **Payoff: unclear in this sim.** In game, a fed predator (mass above its birth mass) is the payoff target: it
   carries the eaten mass, and the satiety gate makes it slow and lazy, which is readable.
 
@@ -415,9 +419,11 @@ How it ports to the game's Fauna:
   3. **Give schooling a reason.**
      - Contact-time confusion did not (a5, a7). Detection confusion only nudged the prey together (a8, 600
        generations).
-     - Next, in order: "many eyes" (an alarm a prey hears through the signal channel, so a neighbour's flight is
-       information); longer runs of a8; and per-INDIVIDUAL fitness for the prey (selfish herd), because the shared
-       species fitness pays nothing for being the safer one in the middle.
+     - The prey already perceive their neighbours' velocities and signals, so "many eyes" information was available
+       and went unused.
+     - The untried lever is a POPULATION of distinct prey genomes in each pond, with individual fitness (Hamilton's
+       selfish herd). A single shared policy scored on the species mean cannot reward being the safer one in the
+       middle, which is the classic origin of grouping.
 
 
 ## Files
@@ -432,8 +438,8 @@ How it ports to the game's Fauna:
 | `eval.json` | curve, behaviours, economy, perf, player test, telegraph, locality |
 | `feel.json` | the organic band per species and pair |
 | `curve.png`, `matrix.png`, `eco_*.png` | figures |
-| `arms_viewer.html` | the shared Ecology viewer (`Tools/Ecology/common/viewer.py` template), 4 runs: g1460 and g0 encounters, plus a vessel fly-through of each. Pilot, chase, orbit and fly cameras. |
-| `encounter_g1460_g1460.json`, `vessel_g1460_g1460.json` | the recordings (viewer data contract; rebuild with `python Tools/Ecology/common/viewer.py out.html <json>...`) |
+| `arms_viewer.html` | the shared Ecology viewer (`Tools/Ecology/common/viewer.py` template), 5 runs: the g1460 encounter, a vessel through g1460, the LIVING pond (g1460, open economy + satiety gate, 120 s, population on the HUD), the g0 encounter and a vessel through g0. Pilot, chase, orbit and fly cameras. |
+| `encounter_g1460_g1460.json`, `vessel_g1460_g1460.json`, `living_g1460.json` | the recordings (viewer data contract; rebuild with `python Tools/Ecology/common/viewer.py out.html <json>...`; `arms_living.py` re-records the living pond) |
 | `encounter_*.gif`, `vessel_*.gif` | short GIFs (orange = predator, red = bursting, cyan = prey, white ring = a catch, triangle = vessel) |
 | `a1..a8_log.jsonl`, `a*_config.json` | every training run, failed ones included |
 

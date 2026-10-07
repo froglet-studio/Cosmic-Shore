@@ -2280,8 +2280,9 @@ generations (does each newer generation beat older opponents, or do they cycle?)
   - predators that probe with short bursts and ignore an uncatchable 120 u/s vessel.
 - **What did not emerge, even in runs built to provoke it** (slower burst; strong or wide confusion; confusion on
   detection): schooling, encirclement, ambush and relays. The best answers in this world are an individual juke and
-  the wall. Detection confusion moved the prey 13% closer together, and nothing more. The next lever is per-individual
-  (selfish-herd) prey fitness, or a many-eyes alarm.
+  the wall. Detection confusion moved the prey 13% closer together, and nothing more. The next lever is a population of
+  distinct prey genomes per pond with individual (selfish-herd) fitness: a shared policy scored on the species mean
+  cannot reward being the safer one in the middle.
 - **Organic band:** the designed seed is too smooth (jerk_rel 0.16); every evolved pair is in the band.
 - **Economy:** without a designed satiety gate the open economy collapses: predators breed to 20-30 and eat the
   pond out in 2-4 minutes. A gate (no burst above 1.25x birth mass) keeps both species alive for 10 minutes.
