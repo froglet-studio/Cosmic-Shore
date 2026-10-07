@@ -24,8 +24,8 @@ Branch `cece/swarm-x-arms`. Code: `Tools/NCA/arms_sim.py` (world + policies), `a
   - predators **ignore a vessel they cannot catch**: time-share within 40 u of it fell from 1.6% to 0.7% (the null
     is 0.8%).
 - **SCHOOLING EMERGES under individual-level (selfish-herd) prey selection** (run a9, 4 competing prey tribes per
-  pond). Local polarisation rose from 0.53 to 0.86 and feel coherence from 0.05 to 0.74, still climbing at the
-  last generation. The predators answered by packing. Under the species-mean fitness of every other run, the prey
+  pond). Local polarisation rose from 0.53 to 0.86 and feel coherence from 0.05 to 0.74 by g1500, then held
+  through g2000. The predators answered by packing. Under the species-mean fitness of every other run, the prey
   never schooled.
 - **What did NOT emerge under species-mean fitness**: schooling, splitting or decoys in the prey, and encirclement,
   ambush or relay chases in the predators. Each is measured, below, against its null. Four follow-up runs were built to provoke them:
@@ -64,6 +64,8 @@ Branch `cece/swarm-x-arms`. Code: `Tools/NCA/arms_sim.py` (world + policies), `a
 | predators pinning prey against the membrane (catch ratio 2.1x → 3.9x) | EMERGENT. The seed already had some of it, by geometry |
 | predators testing with short bursts and giving up (more, shorter, less successful bursts) | EMERGENT |
 | evolved predators ignoring the uncatchable vessel; prey fleeing it | EMERGENT, and never trained against |
+| a9: the selfish-herd selection scheme (4 tribes per pond, within-pond antithetic differences) | DESIGNED (the training method, not a behaviour) |
+| a9: prey SCHOOLING (aligned groups, polarisation 0.86) and predator packing in response | EMERGENT: no term rewards grouping, alignment or packing |
 
 ## Training curve (`curve.png`, `a3_log.jsonl`)
 
@@ -385,26 +387,26 @@ Hamilton's selfish herd needs individual-level selection.
 - Predators keep one shared policy (antithetic encounter pairs).
 - No pool. Physics and economy are unchanged from a3, warm-started from a3 g1460.
 
-Behaviour over the run (3 seeds × 60 s each):
+Behaviour over the run (3 seeds × 60 s each; the matrix, economy and player test use g1500):
 
-| metric | g0 | g250 | g500 | g750 | g1000 | g1250 | g1500 |
-|---|---|---|---|---|---|---|---|
-| catch/min | 46 | 53 | 44 | 53 | 52 | 48 | 39 |
-| prey local polarisation | 0.53 | 0.52 | 0.62 | 0.69 | 0.78 | 0.82 | 0.86 |
-| prey global polarisation | 0.11 | 0.13 | 0.16 | 0.20 | 0.26 | 0.32 | 0.33 |
-| prey feel coherence | 0.05 | 0.09 | 0.28 | 0.43 | 0.61 | 0.71 | 0.74 |
-| social share (≥ 2 neighbours in 15 u) | 0.18 | 0.34 | 0.34 | 0.30 | 0.39 | 0.52 | 0.60 |
-| nearest-neighbour distance (u) | 25.5 | 19.6 | 19.9 | 19.8 | 17.4 | 14.2 | 13.1 |
-| groups ≥ 3; largest share | 2.4; 0.04 | 3.4; 0.06 | 3.2; 0.05 | 2.5; 0.06 | 3.5; 0.06 | 4.7; 0.08 | 5.8; 0.10 |
-| confusion-fail share | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | 0.015 |
-| grazed per prey per min | 0.96 | 0.91 | 0.92 | 0.91 | 0.91 | 0.83 | 0.86 |
-| predator pack share; packmate distance | 0.26; 84 | 0.29; 76 | 0.28; 77 | 0.28; 78 | 0.37; 70 | 0.37; 69 | 0.38; 68 |
-| membrane catch ratio | 3.9 | 3.1 | 4.1 | 2.7 | 2.6 | 2.9 | 3.0 |
-| cooperative catches; victim coverage (null) | 0.45; 0.32 (0.41) | 0.52; 0.33 (0.39) | 0.45; 0.30 (0.38) | 0.50; 0.34 (0.40) | 0.48; 0.30 (0.39) | 0.57; 0.22 (0.39) | 0.49; 0.30 (0.39) |
-| organic band (prey / pred) | yes / yes | yes / yes | yes / yes | yes / yes | yes / yes | yes / yes | yes / yes |
+| metric | g0 | g250 | g500 | g750 | g1000 | g1250 | g1500 | g1750 | g2000 |
+|---|---|---|---|---|---|---|---|---|---|
+| catch/min | 46 | 53 | 44 | 53 | 52 | 48 | 39 | 39 | 37 |
+| prey local polarisation | 0.53 | 0.52 | 0.62 | 0.69 | 0.78 | 0.82 | 0.86 | 0.90 | 0.86 |
+| prey global polarisation | 0.11 | 0.13 | 0.16 | 0.20 | 0.26 | 0.32 | 0.33 | 0.40 | 0.34 |
+| prey feel coherence | 0.05 | 0.09 | 0.28 | 0.43 | 0.61 | 0.71 | 0.74 | 0.83 | 0.79 |
+| social share | 0.18 | 0.34 | 0.34 | 0.30 | 0.39 | 0.52 | 0.60 | 0.67 | 0.65 |
+| nearest-neighbour distance (u) | 25.5 | 19.6 | 19.9 | 19.8 | 17.4 | 14.2 | 13.1 | 12.0 | 12.0 |
+| groups ≥ 3; largest share | 2.4; 0.04 | 3.4; 0.06 | 3.2; 0.05 | 2.5; 0.06 | 3.5; 0.06 | 4.7; 0.08 | 5.8; 0.10 | 6.2; 0.13 | 6.3; 0.12 |
+| confusion-fail share | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | 0.015 | 0.000 | 0.017 |
+| grazed per prey per min | 0.96 | 0.91 | 0.92 | 0.91 | 0.91 | 0.83 | 0.86 | 0.81 | 0.84 |
+| predator pack share; packmate distance | 0.26; 84 | 0.29; 76 | 0.28; 77 | 0.28; 78 | 0.37; 70 | 0.37; 69 | 0.38; 68 | 0.42; 64 | 0.37; 70 |
+| membrane catch ratio | 3.9 | 3.1 | 4.1 | 2.7 | 2.6 | 2.9 | 3.0 | 3.2 | 3.1 |
+| cooperative catches; victim coverage (null) | 0.45; 0.32 (0.41) | 0.52; 0.33 (0.39) | 0.45; 0.30 (0.38) | 0.50; 0.34 (0.40) | 0.48; 0.30 (0.39) | 0.57; 0.22 (0.39) | 0.49; 0.30 (0.39) | 0.57; 0.23 (0.41) | 0.53; 0.26 (0.40) |
+| organic band (prey / pred) | yes / yes | yes / yes | yes / yes | yes / yes | yes / yes | yes / yes | yes / yes | yes / yes | yes / yes |
 
-
-- **Schooling emerges, steadily, and is still climbing at the last generation.**
+- **Schooling emerges steadily over 1500 generations, then holds at a plateau through g2000** (local polarisation
+  0.86-0.90, nearest-neighbour distance 12 u, catches 37-39/min).
   - Local polarisation rose from 0.53 to 0.86, global polarisation from 0.11 to 0.33 (a gas becoming a flock).
   - Feel coherence rose from 0.05 to 0.74.
   - Nearest-neighbour distance fell from 25.5 to 13.1 u, and social share rose from 0.18 to 0.60.
