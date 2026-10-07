@@ -2,8 +2,10 @@
 
 > `GameModes.Regatta = 56`. Every playable hull on the same closed circuit of eight switch
 > rings, with three **super-shielded rails** — one per playable domain — braided along the
-> racing line. Every pilot flies **three laps** of it in order; the first **domain** whose
-> **lead runner** threads the last gate of the last lap wins. It is an **Arena** card
+> racing line. Every pilot flies **three laps** of it in order. The race ends when the first
+> pilot threads the last gate of the last lap, and the **team with the most gates threaded —
+> every pilot's gates, summed** — wins (§6.5). Opponent AI fly **Squirrels** until the racing AI
+> can drive every hull; teammates pick their **ally AI's hulls** on the launch panel (§6). It is an **Arena** card
 > (`ArenaGames`, the `ArenaLaunchPanel` vessel carousel), and the first one built for the
 > whole fleet rather than for a hull.
 
@@ -134,10 +136,56 @@ drive and the Rhino's ramp engages off a straight stick an AI naturally holds; e
 hull's AI now spends its boost through a per-hull **AI boost policy**
 (`AI/AI_BOOST.md`): the Sparrow holds its afterburner down each straight, the Serpent stacks
 pellets on long legs, the Dolphin discharges its drift charge onto the straight instead of
-into the turn, the Squirrel lays its Boost Ring as a skim launch pad, and a Time-5 Scarab
+into the turn, and a Time-5 Scarab
 Snap Dashes (below Time 5 the Scarab is already at its throttle ceiling). None of them is
 Regatta-specific and none has been measured in a race yet — the claim that an all-AI domain
-in those hulls can now WIN is unverified until a playtest says so.
+in those hulls can now WIN is unverified until a playtest says so. The **Squirrel** is the
+exception: in Regatta it does not fly `AIPilot` at all (and so never runs its `SkimRing` boost
+policy) — it flies the Skim Race pilot, below.
+
+**Two kinds of AI seat** (`AIHullSeating`, read by the lobby chips, the backfill and the arena
+hull backstop alike):
+
+- **Opponent seat** — an AI on a domain no human flies. The card pins
+  `SO_ArcadeGame.OpponentAIVessel` to the **Squirrel**, so every opponent is a Squirrel: it skims
+  the rails for boost energy, which is the one speed source a gate-following autopilot reaches
+  just by flying the racing line. Every Regatta Squirrel AI flies the **Skim Race pilot**
+  (`SkimRacePilot`, `Docs/SKIM_RACE_AI.md`) with `RegattaRingObjective`: the same racing AI, its
+  crystal swapped for the next ring and its track for the domain's rail. On the platform
+  `AIPilot`'s ring waypoints the Squirrels threaded no rings at all (first playtest, 2026-10-06).
+  Pinned opponents sit **outside arena seating** — a grid of identical opponents is the point, and the arena backstop
+  (`ServerPlayerVesselInitializer.ResolveArenaUniqueHull`) skips them so a human who picked the
+  Squirrel keeps it. **This is a stopgap**: when the racing AI can drive every hull, clear
+  `OpponentAIVessel` in `author_regatta_assets.py` (and drop its assert) and the opponent grid
+  goes back to the card's mixed draw.
+- **Ally seat** — an AI on a domain a human flies. On the launch panel its avatar chip on the
+  team tile shows the hull it will fly; **tap one of your own team's ally chips to step its hull**
+  through *auto → the card's hulls in order → auto*, skipping hulls another pilot has claimed or
+  another ally already flies. The host owns the roster: a guest's tap is a
+  `RequestAllyVesselCycle` ServerRpc, the host refuses a pick for another team's AI, and the picks
+  replicate in `LobbySnapshot.AiV0..AiV5` beside the placements. At launch the picks go to
+  `GameDataSO.RequestedAIVessels` (entry *i* = bot *i*); the spawner honours a pick that is on the
+  card, built and still free, and otherwise draws from the card as before. *Auto* (no pick) is
+  the old behaviour. Picks are per session — not remembered with the launch preference.
+
+## 6.5 Scoring — the team sum
+
+`RegattaScoringRuleSO` (a `GateRaceScoringRuleSO` subclass; the asset is points rules,
+`golfRules: 0`, and `RegattaController.UseGolfRules` is false to match):
+
+- **A team's score is the SUM of every pilot's gates** (`DomainValue` = `SumByDomain`), so the
+  HUD's domain boxes, the comeback deficit, the placement order and the winner all read the team
+  total. It used to be the lead runner's (`BestByDomain`), so only the fastest pilot counted.
+- **The race ends when any pilot finishes the course** — three laps, as before. Ending on a team
+  total would make the race length depend on team size; one clock for everyone keeps it a race.
+- **The highest team total at that moment wins**; a tie goes to the team that put the finisher
+  across.
+- Each pilot's `Score` is their own gate count, so the end-game domain totals
+  (`CalculateDomainStats` sums Score) are the team sums. The scoreboard lists the winning team
+  first, each row reading the pilot's own gates and the team total.
+- **Not normalised for team size**: a team with more pilots has more laps to sum, and the
+  comeback deficit is measured in summed gates. The host shapes the teams with Add AI, which is
+  where that balance is set.
 
 ## 7. Assets and where they are authored
 
@@ -178,6 +226,20 @@ on a Sparrow), and a guest's own hull carries the same levels as the host's repl
   (a missing sprite draws a solid white quad); `author_urchin_card_icons.py` re-points them at
   `Urchin_Square.png` plus a derived `Urchin_Inactive.png`, and `check_vessel_class_icons.py` gates
   every class asset's icons. `Docs/HomeHub/ARCHITECTURE.md` §3.5.
+- **Team play (2026-10-06): Squirrel opponents, the ally hull picker, the team-sum score — NOT
+  EDITOR-VERIFIED.** Compiled headless against real Unity references
+  (`Tools/Build/unity_refcompile`, player and editor configs: 0 project errors, none of the changed
+  files in the unobtainable-package bucket beyond `GameDataSO`'s pre-existing
+  `Unity.Services.Multiplayer` lines). `AIHullSeating` was also run for real under .NET 8 (every
+  seating/cycle case passed). The NUnit tests in `RegattaTeamPlayTests` and
+  `ArcadeLobbySnapshotTests` compile but were not run (no editor). First editor run: open the
+  Regatta card solo with one AI placed on Ruby and one on Jade — the Ruby chip shows the
+  Squirrel and does not react to a tap; tapping the Jade chip steps it auto → Manta → Dolphin …
+  → auto, skipping your own confirmed hull. Launch: every Ruby bot is a Squirrel, the Jade bot
+  flies the hull you picked. As a guest, tap your own team's ally chip and confirm the host's
+  chip follows; tap another team's and confirm nothing changes. In the race, the domain boxes
+  climb by every pilot's gates, the race ends when the first pilot finishes lap three, and the
+  scoreboard puts the higher team total first.
 - **The residual 5–6× spread is real.** The lever the user named — starting elements — reaches
   five hulls by ~1.5×. **This used to read "and the Rhino not at all", which was half wrong and
   is now wholly stale.** `RampBoostActionExecutor` has always read `Multiplier(Element.Time)` and

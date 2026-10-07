@@ -1109,6 +1109,26 @@ the editor yet.
 | The cradle — shader | `_Graphics/Materials/Graphs/PrismCradle.hlsl` (`PrismCradleDeform`: Position, Normal → OutPosition, OutNormal — nothing else), spliced LAST on BlockGraph + ExplodingBlockGraph by `Tools/Shaders/wire_prism_cradle.py`; proven by `Tools/Shaders/verify_prism_cradle.py`. It is the LAST node on the vertex chain and `PrismClockWiringValidator` asserts both of its feeders, because a second morph spliced after it would ripple the very vertices the drape had just closed onto the hull and re-open the hole — so any future member of the family goes in FRONT of this one |
 | The cradle — tuning | `ScriptableObjects/PrismCradleConfigSO.cs` → `Assets/Resources/PrismCradleConfig.asset` |
 
+## Layered prismscapes — riding THROUGH a stack (2026-10, Docs/ECOSYSTEM.md §58.4)
+
+The surface kernel's ground rule is "nearest prism centre", which cannot hold a sheet in a stack of
+nested sheets whose layers lie closer together than their plates lie apart (the nested gyroid: an
+in-sheet roll under that rule wandered over five of seven sheets). A structure that is a stack now says so
+(`ILayeredPrismscape.TryGetStackCoordinate`, implemented by `NestedGyroidFlora`), and while the ground
+belongs to one, `BlockscapeFollower`:
+
+- treats every structure sharing the ground's `ILayeredPrismscape.LayerSpace` as ONE stack - the nested gyroid's
+  plants are tiles of one colony frame, so the ride holds its sheet from one plant onto the next;
+
+- keeps the ground on the SAME layer; the next strut/sheet (stack ±1/±2) becomes eligible only while the
+  pilot pitches toward it past `layerClimbDeadzone` (0.35);
+- scores candidates to their HOVER point, so a climb hands over halfway between riding heights;
+- carries the rider along the normal at `layerClimbFraction` (0.6) of crawl speed and releases the hover
+  spring while a layer exists ahead (pitching out of the outer skin keeps you on the skin).
+
+`PrismscapeTopology.DimensionOf` reports such a structure as **Volume**. Every other prismscape rides
+exactly as before. Gate: `Tools/Build/nested_gyroid_harness/run.sh` (ride model + negative control).
+
 ## Tuning knobs
 
 | Knob | Where | Value |

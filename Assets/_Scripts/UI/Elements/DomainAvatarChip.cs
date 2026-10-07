@@ -11,6 +11,12 @@ namespace CosmicShore.UI
     /// see <see cref="SetKickable"/>. Author the ✕ art as a Button on the prefab and wire
     /// <see cref="kickButton"/>; an unwired chip builds a plain functional ✕ from primitives so
     /// the feature works before the art lands, and steps aside the moment the field is wired.</para>
+    ///
+    /// <para>An AI chip can also show the HULL that AI will fly - see <see cref="SetHull"/>: an
+    /// opponent's pinned hull, or the hull a teammate picked for an ally. An ally chip on the
+    /// local pilot's own team is tappable, and a tap steps its hull. Wire
+    /// <see cref="hullPickButton"/> for authored art; unwired, the chip itself becomes the button
+    /// (the avatar image is its hit area).</para>
     /// </summary>
     public class DomainAvatarChip : MonoBehaviour
     {
@@ -23,9 +29,18 @@ namespace CosmicShore.UI
                  "empty and a plain generated ✕ stands in until the art is authored.")]
         [SerializeField] Button kickButton;
 
+        [Header("Hull pick")]
+        [Tooltip("Optional button that steps an ally AI's hull. Leave empty and the chip itself " +
+                 "becomes the button, with the avatar image as its hit area.")]
+        [SerializeField] Button hullPickButton;
+
         System.Action _onKick;
         Button _generatedKick;
         bool _kickWired;
+
+        System.Action _onPickHull;
+        Button _generatedHullPick;
+        bool _hullPickWired;
 
         public void Set(Sprite sprite, bool isLocal)
         {
@@ -42,9 +57,10 @@ namespace CosmicShore.UI
             if (localPlayerOutline)
                 localPlayerOutline.SetActive(isLocal);
 
-            // Chips are reused: a fresh Set is a fresh identity, so any kick state from the
-            // previous occupant is stale until the owner re-asks for one.
+            // Chips are reused: a fresh Set is a fresh identity, so any kick / hull-pick state
+            // from the previous occupant is stale until the owner re-asks for one.
             SetKickable(false);
+            SetHullPickable(false);
 
             gameObject.SetActive(true);
         }
@@ -72,6 +88,59 @@ namespace CosmicShore.UI
         }
 
         void HandleKickClicked() => _onKick?.Invoke();
+
+        /// <summary>
+        /// Show the hull this AI seat will fly in place of its avatar (<paramref name="hullIcon"/>
+        /// null keeps the avatar - an ally nobody has picked a hull for yet). When
+        /// <paramref name="onPick"/> is non-null the chip is tappable and a tap raises it; the
+        /// caller owns what a pick MEANS (the modal steps the seat's hull through the host).
+        /// </summary>
+        public void SetHull(Sprite hullIcon, System.Action onPick)
+        {
+            if (avatarImage && hullIcon)
+            {
+                avatarImage.sprite = hullIcon;
+                avatarImage.enabled = true;
+            }
+            SetHullPickable(onPick != null, onPick);
+        }
+
+        void SetHullPickable(bool pickable, System.Action onPick = null)
+        {
+            _onPickHull = pickable ? onPick : null;
+
+            var button = hullPickButton ? hullPickButton : _generatedHullPick;
+            if (!button && pickable)
+                button = _generatedHullPick = BuildFallbackHullPick();
+            if (!button) return;
+
+            if (!_hullPickWired)
+            {
+                button.onClick.AddListener(HandleHullPickClicked);
+                _hullPickWired = true;
+            }
+
+            // The authored button is shown only while pickable; the generated one IS the chip,
+            // so it is switched off rather than hidden.
+            if (hullPickButton) hullPickButton.gameObject.SetActive(pickable);
+            else button.enabled = pickable;
+        }
+
+        void HandleHullPickClicked() => _onPickHull?.Invoke();
+
+        /// <summary>The chip itself as the hull-pick button: clicks on the avatar image bubble up
+        /// to it. Never built while <see cref="hullPickButton"/> is wired.</summary>
+        Button BuildFallbackHullPick()
+        {
+            if (!TryGetComponent(out Button button))
+                button = gameObject.AddComponent<Button>();
+            if (avatarImage)
+            {
+                avatarImage.raycastTarget = true;
+                button.targetGraphic = avatarImage;
+            }
+            return button;
+        }
 
         /// <summary>
         /// A functional ✕ built from primitives - a small dark disc with two crossed bars -
@@ -108,6 +177,7 @@ namespace CosmicShore.UI
         public void Hide()
         {
             SetKickable(false);
+            SetHullPickable(false);
             gameObject.SetActive(false);
         }
     }
