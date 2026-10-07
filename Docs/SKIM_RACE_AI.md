@@ -504,6 +504,19 @@ setting changed. Burst compiles each job separately, so one job failing (for exa
 What does take every job in one assembly is something assembly-wide, and only the editor's own Burst
 messages (Console, `Editor.log`) can say what. **Owed:** those messages.
 
+**Narrowed (same evening).** The Burst Inspector's Assembly view compiles every one of the eight jobs
+without an error: `ShellContactQueryJob`, plus the seven added since the last good capture
+(`SubstrateAgentJob`, `SwarmPoseJob`, `UpdatePositionsJob`, `WriteLocalToWorldJob`, `SetLookJob`,
+`ResolveHandlesJob`, `InitCreatedJob`). No game code changes Burst's runtime switches (`JobCompilerEnabled`,
+`BurstCompiler.Options`). So the jobs CAN be Burst-compiled and are not being compiled in Play mode. Two
+candidates are left, and one test separates them:
+- Play started before the background compile of the game's jobs finished. It recompiles after every script
+  change or branch switch, while the package jobs' cache stays valid, which matches what was seen.
+- The editor's Debug code optimization, or an attached managed debugger, kept them managed.
+
+Test: Jobs > Burst > Synchronous Compilation on, then `prof` in Debug. If the flag is still there, `prof`
+again in Release.
+
 ### 8.0i The AI seats no longer re-plan in the same frame (2026-10-07)
 
 The user's choice from §8.0h's list: stagger the seats. **Mechanism:** `SkimRaceReplanGate`, one per
