@@ -859,6 +859,32 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Zero-request pre-flight for Accept / Join / Spectate, run by
+        /// <see cref="PartyInviteController"/> BEFORE it shuts the local NetworkManager down and
+        /// before we leave our own session: decides from the presence lobby's freshest view
+        /// (<see cref="HostConnectionDataSO.OnlinePlayers"/>) whether the target can still be
+        /// joined - still online, still advertising <paramref name="expectedSessionId"/>, a seat
+        /// free (or, for a spectate, in a match). A refusal costs the player a toast; the old
+        /// behaviour cost them their own session and the scene-reload bounce
+        /// (Docs/MultiplayerArchitecture/REVIEW_INVITE_AND_RESILIENCE.md §3.7). At most one poll
+        /// interval stale, so a host whose transport died silently still fails the real join.
+        /// </summary>
+        /// <returns>True to proceed; false with <paramref name="message"/> as the player-facing reason.</returns>
+        public bool TryValidateJoinTarget(string targetPlayerId, string expectedSessionId, bool asSpectator, out string message)
+        {
+            var verdict = JoinTargetValidator.Validate(
+                connectionData.OnlinePlayers,
+                targetPlayerId,
+                expectedSessionId,
+                asSpectator,
+                offlineSession: _gameData != null && _gameData.IsOfflineSession,
+                out message);
+            if (verdict != JoinTargetVerdict.Ok)
+                CSDebug.LogWarning($"[HostConnectionService] Join pre-flight refused ({verdict}) for '{targetPlayerId}' / session '{expectedSessionId}': {message}");
+            return verdict == JoinTargetVerdict.Ok;
+        }
+
+        /// <summary>
         /// DIRECT party join - no invite. The row's Join button: leave our own eager solo
         /// session, join <paramref name="target"/>'s advertised party session (the id every
         /// member publishes under <see cref="PARTY_SESSION_KEY"/>), seed the roster and

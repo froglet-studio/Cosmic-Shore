@@ -127,6 +127,15 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogWarning("[PartyInviteController] Already transitioning - ignoring duplicate accept.");
                 return;
             }
+            // Pre-flight BEFORE any teardown: a stale invite (sender left, party filled, session
+            // recreated) is resolved with a toast while our own session and menu are still intact,
+            // instead of after the shutdown + join failure + scene-reload bounce.
+            if (!PreflightOrToast(invite.HostPlayerId, invite.PartySessionId, asSpectator: false))
+            {
+                if (HostConnectionService.Instance != null)
+                    await HostConnectionService.Instance.DeclineInviteAsync(); // clears the stale row
+                return;
+            }
 
             _transitioning = true;
             _cts?.Cancel();
@@ -275,12 +284,16 @@ namespace CosmicShore.Gameplay
         /// hardened path), differing only in the session join it performs
         /// (<see cref="HostConnectionService.JoinPartyDirectAsync"/>).
         /// </summary>
-        public UniTask JoinPartyAsync(PartyPlayerData target) =>
-            RunClientJoinAsync(
+        public UniTask JoinPartyAsync(PartyPlayerData target)
+        {
+            if (!PreflightOrToast(target.PlayerId, target.PartySessionId, asSpectator: false))
+                return UniTask.CompletedTask;
+            return RunClientJoinAsync(
                 $"direct-join -> {target.DisplayName}",
                 expectLocalVessel: true,
                 joinSession: () => HostConnectionService.Instance.JoinPartyDirectAsync(target),
                 afterConnected: null);
+        }
 
         /// <summary>
         /// The online row's SPECTATE button: connect to the match <paramref name="target"/> is
@@ -291,8 +304,11 @@ namespace CosmicShore.Gameplay
         /// and the exit. The success gate is "watching a vessel", never OnClientReady - a
         /// spectator has no local vessel, so that event never fires for it.
         /// </summary>
-        public UniTask SpectateAsync(PartyPlayerData target) =>
-            RunClientJoinAsync(
+        public UniTask SpectateAsync(PartyPlayerData target)
+        {
+            if (!PreflightOrToast(target.PlayerId, target.PartySessionId, asSpectator: true))
+                return UniTask.CompletedTask;
+            return RunClientJoinAsync(
                 $"spectate -> {target.DisplayName}",
                 expectLocalVessel: false,
                 joinSession: () =>
@@ -305,6 +321,23 @@ namespace CosmicShore.Gameplay
                     var controller = SpectatorController.Begin(target, gameData, _sceneTransitionManager, _sceneNames);
                     return controller.WaitUntilWatchingAsync(spectateReadyTimeoutSeconds, ct);
                 });
+        }
+
+        /// <summary>
+        /// The zero-request pre-flight shared by Accept, Join and Spectate
+        /// (<see cref="HostConnectionService.TryValidateJoinTarget"/>). A refusal shows the reason
+        /// on the live menu's toast and returns false with NOTHING torn down. No service is
+        /// treated as a refusal - the flow then surfaces the real error itself.
+        /// </summary>
+        private bool PreflightOrToast(string targetPlayerId, string sessionId, bool asSpectator)
+        {
+            var hcs = HostConnectionService.Instance;
+            if (hcs == null) return true;
+            if (hcs.TryValidateJoinTarget(targetPlayerId, sessionId, asSpectator, out var refusal)) return true;
+            CSDebug.LogWarning($"[PartyInviteController] Refused before teardown: {refusal}");
+            bounceToastChannel?.ShowPrefix(refusal);
+            return false;
+        }
 
         /// <summary>
         /// Shared body of the two no-invite joins. Mirrors <see cref="AcceptInviteAsync"/> step

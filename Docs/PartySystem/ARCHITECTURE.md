@@ -249,6 +249,7 @@ verification gate per commit.
 | Netcode transitions | `Assets/_Scripts/Controller/Party/Services/NetworkTransitionService.cs` |
 | Lobby property writes (mutex; save under the request policy) | `Assets/_Scripts/Controller/Party/Services/LobbyPropertyWriter.cs` |
 | UGS failure classifier + retry executor | `Assets/_Scripts/Utility/UgsRequestPolicy.cs` (tests: `Assets/_Scripts/Tests/Editor/UgsRequestPolicyTests.cs`) |
+| Join pre-flight (zero-request, before teardown) | `Assets/_Scripts/Controller/Party/Services/JoinTargetValidator.cs` (tests: `Assets/_Scripts/Tests/Editor/JoinTargetValidatorTests.cs`) |
 | Invite-receive detection | `Assets/_Scripts/Controller/Party/Services/InviteService.cs` |
 | Refresh cadence (boost + base) | `Assets/_Scripts/Controller/Party/Services/LobbyRefreshScheduler.cs` |
 | SOAP event bus | `Assets/_Scripts/Controller/Party/Services/SoapPartyEventBus.cs` |
@@ -400,7 +401,7 @@ predicate") — the matrix decides *what to do*, NetDiag only decides *what to l
 | `CreateAsync` / `JoinByIdAsync` `RateLimited` | UGS rate limit | `UgsRequestPolicy` jittered back-off out of the per-client budget; never counts toward `ForceReset`. |
 | `CreateAsync` other | Permanent failure | Bubble to `EnsurePartySessionAsync`, which raises retry event for `BootStatusPanel`. User-visible recovery. |
 | `SendInviteAsync` UGS throw | Lobby gone / target offline | Wrap, log, return false. UI shows error toast (already wired). |
-| `AcceptInviteAsync` UGS throw on join | Inviter session gone | Caller (`PartyInviteController.AcceptInviteAsync`) catches → `RecoverFromFailedTransitionAsync`. |
+| `AcceptInviteAsync` UGS throw on join | Inviter session gone | Caller (`PartyInviteController.AcceptInviteAsync`) catches → `RecoverFromFailedTransitionAsync`. Since 2026-10-07 the common causes (sender offline, session recreated, party full) are refused BEFORE teardown by `JoinTargetValidator` with a toast and no bounce. |
 | `OnDestroy` null fields | Missing inspector ref / Reflex DI failure | `Debug.LogError`, skip the dependent cleanup. Loud failure → visible in editor. |
 
 ## Related docs
