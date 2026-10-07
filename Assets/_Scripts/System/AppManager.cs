@@ -518,12 +518,6 @@ namespace CosmicShore.Core
                 resolution: Resolution.Lazy
             );
 
-            builder.RegisterFactory(
-                _ => new AcceptanceSignalService(),
-                lifetime: Lifetime.Singleton,
-                resolution: Resolution.Lazy
-            );
-
             builder.RegisterFactory<IPresenceLobbyService>(
                 c => new PresenceLobbyService(hostConnectionData, c.Resolve<LobbyPropertyWriter>(), c.Resolve<UgsRequestPolicy>()),
                 lifetime: Lifetime.Singleton,

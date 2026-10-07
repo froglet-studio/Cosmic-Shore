@@ -69,7 +69,6 @@ namespace CosmicShore.Gameplay
         private const string MATCH_NAME_KEY           = "matchName";
         private const string INVITE_PAYLOADS_KEY      = "invite_payloads";
         private const string JOINED_PARTY_KEY         = "joined_party";
-        private const string ACCEPTED_INVITE_KEY      = "accepted_invite";
         private const string PARTY_SESSION_KEY        = "partySession";
 
         /// <summary>
@@ -372,7 +371,6 @@ namespace CosmicShore.Gameplay
                 { MATCH_NAME_KEY,      new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
                 { JOINED_PARTY_KEY,    new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
                 { INVITE_PAYLOADS_KEY, new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
-                { ACCEPTED_INVITE_KEY, new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
                 // The joinable/spectatable session id (HostConnectionService.PARTY_SESSION_KEY).
                 // Seeded empty like every stateful key; the live overlay below fills it in.
                 { PARTY_SESSION_KEY,   new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },

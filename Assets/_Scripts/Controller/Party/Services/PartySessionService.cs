@@ -74,7 +74,6 @@ namespace CosmicShore.Gameplay
         private const string MATCH_NAME_KEY      = "matchName";
         private const string JOINED_PARTY_KEY    = "joined_party";
         private const string INVITE_PAYLOADS_KEY = "invite_payloads";
-        private const string ACCEPTED_INVITE_KEY = "accepted_invite";
 
         /// <summary>
         /// Session player-property key a SPECTATOR sets to "1" on join. Read by
@@ -208,11 +207,6 @@ namespace CosmicShore.Gameplay
         /// Joins an existing party session by its UGS session ID and sets
         /// <see cref="ActiveSession"/>.
         ///
-        /// <para>
-        /// The caller must ensure <paramref name="sessionId"/> is the real (non-PENDING)
-        /// Relay session id before calling - use
-        /// <see cref="AcceptanceSignalService.WaitForRealSessionIdAsync"/> to obtain it.
-        /// </para>
         /// </summary>
         /// <param name="sessionId">
         /// The UGS Relay session id published by the host after they call
@@ -346,7 +340,6 @@ namespace CosmicShore.Gameplay
                 { MATCH_NAME_KEY,      new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
                 { JOINED_PARTY_KEY,    new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
                 { INVITE_PAYLOADS_KEY, new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
-                { ACCEPTED_INVITE_KEY, new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
             };
         }
     }

@@ -95,15 +95,20 @@ cleanup. Listed here so they survive the doc reorg.
 
 ### D1. Audit / remove the PENDING-sentinel three-phase acceptance protocol
 
-With eager per-user Relay, invites carry the real session ID directly, so the
-PENDING handshake may be dead code. The protocol spans
-`InviteService.PENDING_SESSION_ID`, `AcceptanceSignalService.PublishSignalAsync` /
-`WaitForRealSessionIdAsync` / `RepublishWithRealIdAsync`, and
-`LobbyRefreshScheduler`'s PENDING-republish boost window. **Action:** confirm no
-live path writes PENDING, then remove the protocol across `InviteService`,
-`AcceptanceSignalService`, `LobbyRefreshScheduler`, and their interfaces. Spans
-5+ files. (Touches presence-side refresh — coordinate with
-`../PresenceSystem/REFACTOR.md`.)
+**Closed 2026-10-07.** Measured first: nothing wrote `PENDING_SESSION_ID` (every
+`AddOrRefresh` passed the real id), the only reader of `accepted_invite` was
+`ScanForSignals`, and the only thing the scan triggered was
+`RepublishWithRealIdAsync`, which early-returned whenever no entry was PENDING —
+i.e. always. So the row was right that it was dead, and wrong about the cost of
+leaving it: every Accept still paid one lobby player-update (of 60/min) plus two
+reads for it, in the ten seconds when four players accepting is exactly what trips
+the UGS rate limit. Removed: `AcceptanceSignalService` (whole class + DI
+registration), the `PublishSignalAsync` call and the acceptance scan in
+`HostConnectionService`, `InviteService.PENDING_SESSION_ID` /
+`UpdatePayloadsWithRealSessionId` (+ `IInviteService`), the `accepted_invite` seed
+in both session services, and the scheduler's PENDING comment. The boost window
+itself stays (it still covers the send → poll → accept → join round-trip) until
+the push-based presence of Phase 2 removes the polling it boosts.
 
 ### D2. Extract `RefreshErrorPolicy` helper
 

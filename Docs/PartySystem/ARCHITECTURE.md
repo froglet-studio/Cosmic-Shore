@@ -250,7 +250,6 @@ verification gate per commit.
 | Lobby property writes (mutex; save under the request policy) | `Assets/_Scripts/Controller/Party/Services/LobbyPropertyWriter.cs` |
 | UGS failure classifier + retry executor | `Assets/_Scripts/Utility/UgsRequestPolicy.cs` (tests: `Assets/_Scripts/Tests/Editor/UgsRequestPolicyTests.cs`) |
 | Invite-receive detection | `Assets/_Scripts/Controller/Party/Services/InviteService.cs` |
-| Acceptance signal (sender ↔ receiver handshake) | `Assets/_Scripts/Controller/Party/Services/AcceptanceSignalService.cs` |
 | Refresh cadence (boost + base) | `Assets/_Scripts/Controller/Party/Services/LobbyRefreshScheduler.cs` |
 | SOAP event bus | `Assets/_Scripts/Controller/Party/Services/SoapPartyEventBus.cs` |
 | Party member sync | `Assets/_Scripts/Controller/Party/Services/PartyMemberService.cs` |

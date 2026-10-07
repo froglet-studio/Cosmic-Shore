@@ -217,7 +217,6 @@ block (companion to the existing entry guard at the top of
 | UGS failure classifier + retry executor | `Assets/_Scripts/Utility/UgsRequestPolicy.cs` |
 | Refresh cadence | `Assets/_Scripts/Controller/Party/Services/LobbyRefreshScheduler.cs` |
 | Invite-receive detection | `Assets/_Scripts/Controller/Party/Services/InviteService.cs` |
-| Acceptance signal | `Assets/_Scripts/Controller/Party/Services/AcceptanceSignalService.cs` |
 | Benign log filter | `Assets/_Scripts/Utility/BenignLobbyLogFilter.cs` |
 
 ## Related docs

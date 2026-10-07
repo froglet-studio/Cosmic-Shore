@@ -27,7 +27,6 @@ namespace CosmicShore.Gameplay
     /// • <see cref="InviteService"/>          – payload build/track/serialize/parse (Phase 5)
     /// • <see cref="LobbyRefreshScheduler"/>     – refresh timer + boost window (Phase 6)
     /// • <see cref="PresenceLobbyService"/>      – presence lobby join/leave/refresh (Phase 7)
-    /// • <see cref="AcceptanceSignalService"/>   – PENDING-sentinel acceptance handshake (Phase 8)
     /// • <see cref="PartySessionService"/>       – Relay party session create/join/leave (Phase 9)
     /// • <see cref="PartyMemberService"/>        – PartyMembers SOAP list diff + events (Phase 10)
     /// • <see cref="NetworkTransitionService"/>  – NM shutdown for party session creation (Phase 11)
@@ -83,7 +82,6 @@ namespace CosmicShore.Gameplay
         private const string MATCH_NAME_KEY          = "matchName";
         private const string INVITE_PAYLOADS_KEY     = "invite_payloads";
         private const string JOINED_PARTY_KEY        = "joined_party";
-        private const string ACCEPTED_INVITE_KEY     = "accepted_invite";
         /// <summary>
         /// The local player's CURRENT Relay party session id, published by EVERY member - host
         /// and guest alike - so any online row can be JOINED directly or SPECTATED without an
@@ -95,7 +93,6 @@ namespace CosmicShore.Gameplay
         /// See Docs/PartySystem/SPECTATOR.md.
         /// </summary>
         private const string PARTY_SESSION_KEY       = "partySession";
-        private const string PENDING_SESSION_ID      = "PENDING";
 
         // The HOST's clock starts at SEND, while the recipient's starts when their lobby poll
         // OBSERVES the invite - a refresh interval plus RTT plus any 429 backoff later. At 10s
@@ -126,9 +123,8 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// After session creation, suppress <see cref="RefreshPartyMembersAsync"/>
         /// for this many seconds.  A freshly-provisioned session can transiently
-        /// fail RefreshAsync; nulling the session in response would cause
-        /// <see cref="AcceptanceSignalService.ScanForSignals"/> to recreate it on
-        /// the next tick, kicking any joining client.
+        /// fail RefreshAsync; treating that as "gone" would clear the session and
+        /// start a recreate under any client that is already joining it.
         /// </summary>
         private const float SESSION_CREATION_GRACE_PERIOD_SECONDS = 4f;
 
@@ -178,7 +174,6 @@ namespace CosmicShore.Gameplay
         /// Orchestrates the PENDING-sentinel three-phase acceptance handshake:
         /// scan for signals, publish acceptance, wait for real id, republish.
         /// </summary>
-        [Inject] private AcceptanceSignalService _acceptanceService;
 
         /// <summary>Manages the UGS Relay-backed party session lifecycle.</summary>
         [Inject] private IPartySessionService _partySessionService;
@@ -388,9 +383,8 @@ namespace CosmicShore.Gameplay
         /// outgoing invite lines (a member's pending invite survives a converge
         /// migration), a guest's joined_party advertisement (the host's admit scan
         /// doesn't lose them mid-migration), and the current match name. The
-        /// accepted_invite signal is deliberately NOT preserved - it is a fast-path
-        /// hint the inviter also gets from the session member sync, and carrying it
-        /// across rejoins would make stale signals permanent.
+        /// (The retired accepted_invite signal was never preserved here either - a
+        /// stale signal carried across rejoins would have been permanent.)
         /// </summary>
         private IReadOnlyDictionary<string, string> BuildLivePresenceProperties()
         {
@@ -547,11 +541,10 @@ namespace CosmicShore.Gameplay
         /// (auth-already-signed-in path) and <see cref="HandleSignedInEvent"/>
         /// (auth-signed-in-after-Start path) - concurrent calls collapse to one.
         ///
-        /// NOTE: party session is intentionally NOT created here. Eager creation
-        /// would burn a Relay allocation per launch and would call
-        /// <c>nm.Shutdown()</c> + <c>StartHost()</c> - destroying and respawning
-        /// every menu vessel. The Relay session is created lazily on first
-        /// invite acceptance via <see cref="AcceptanceSignalService.ScanForSignals"/>.
+        /// NOTE: the party session is not created here either. It is created EAGERLY
+        /// on menu entry by <see cref="EnsurePartySessionAsync"/> (the locked
+        /// "Always InParty" design, Docs/PartySystem/ARCHITECTURE.md) - this method
+        /// only joins the presence lobby.
         /// </summary>
         private async UniTask EnsureInitializedAsync()
         {
@@ -794,13 +787,11 @@ namespace CosmicShore.Gameplay
                 // Accepting moves us from browsing to actively connecting.
                 _stateMachine.TryTransition(PartyState.JoiningParty);
 
-                // Three-phase accept:
-                //   1. Tell the host we accepted (presence-lobby property write).
-                //   2. Wait for the host to publish the real session id (poll).
-                //   3. Join the now-real session via Relay.
-                await _acceptanceService.PublishSignalAsync(
-                    _lobbyService.ActiveLobby, invite.HostPlayerId, _propertyWriter);
-
+                // The invite carries the host's REAL session id (eager per-user Relay), so the
+                // accept is one hop: leave our own session, join theirs. The old three-phase
+                // handshake (publish accepted_invite -> host republishes a real id -> poll for
+                // it) was retired on 2026-10-07 - it cost one lobby write and two reads per
+                // accept for a reader whose only action had been a no-op since eager creation.
                 string realSessionId = invite.PartySessionId;
                 if (string.IsNullOrEmpty(realSessionId))
                 {
@@ -872,10 +863,9 @@ namespace CosmicShore.Gameplay
         /// session, join <paramref name="target"/>'s advertised party session (the id every
         /// member publishes under <see cref="PARTY_SESSION_KEY"/>), seed the roster and
         /// advertise <c>joined_party</c> so the host's admit-scan sees us. It is
-        /// <see cref="AcceptInviteAsync"/> without the two things an invite adds: the
-        /// <c>accepted_invite</c> handshake (the session id is already real - eager creation -
-        /// so there is nothing to wait for) and the <c>PartyFormedByInvite</c> analytics flag
-        /// (this party formed ORGANICALLY, which is precisely the cohort that flag separates).
+        /// <see cref="AcceptInviteAsync"/> without the one thing an invite adds: the
+        /// <c>PartyFormedByInvite</c> analytics flag (this party formed ORGANICALLY, which is
+        /// precisely the cohort that flag separates).
         /// Throws on failure so <see cref="PartyInviteController"/> fails fast and bounces.
         /// </summary>
         public async UniTask JoinPartyDirectAsync(PartyPlayerData target)
@@ -1419,40 +1409,6 @@ namespace CosmicShore.Gameplay
                 }
                 ForgetWithdrawnInvite(lastHostStillInviting);
 
-                // Acceptance-signal scan. Must run BEFORE the JOINED_PARTY_KEY scan
-                // because recipients won't set joined_party until after they read the
-                // real session id. Gated on outgoing-invite count - no work to do if
-                // we haven't sent any invites.
-                if (_inviteService.OutgoingCount > 0)
-                {
-                    var accepters = _acceptanceService.ScanForSignals(
-                        _lobbyService.ActiveLobby,
-                        connectionData.LocalPlayerId,
-                        _inviteService.OutgoingTargets);
-
-                    if (accepters.Count > 0)
-                    {
-                        // Every player hosts their own Relay session from menu entry
-                        // (eager creation), so the session already exists before the
-                        // invite was sent - no session creation needed here.
-                        // See Docs/PartySystem/ARCHITECTURE.md (Locked design).
-                        string activeSessionId = _partySessionService.ActiveSession?.Id;
-                        string who = string.Join(", ", accepters);
-                        if (string.IsNullOrEmpty(activeSessionId))
-                        {
-                            CSDebug.LogError($"[HostConnectionService] Acceptance signal from {who} but no active party session - joiner cannot connect.");
-                        }
-                        else
-                        {
-                            CSDebug.LogVerbose(CSLogChannel.Party, $"[HostConnectionService] Acceptance signal from {who} - joiner will connect to existing session {activeSessionId}.");
-                            // One republish covers every accepter: it patches the whole outgoing
-                            // set, and it is a no-op write when nothing was PENDING.
-                            await _acceptanceService.RepublishWithRealIdAsync(
-                                _lobbyService, activeSessionId, _inviteService, _propertyWriter);
-                        }
-                    }
-                }
-
                 // ── Presence-lobby party-join scan (host only) ──────────────
                 // Clients advertise their party join via JOINED_PARTY_KEY so we
                 // can detect them even when the party-session Players list is
@@ -1905,7 +1861,7 @@ namespace CosmicShore.Gameplay
 
             // Grace period: a freshly-provisioned session can transiently fail
             // RefreshAsync.  Clearing the session here would cause
-            // AcceptanceSignalService.ScanForSignals to recreate it on the next tick,
+            // the host to recreate it on the next tick,
             // kicking any joining client.  Bypassed for leave-driven reconcile
             // (ReconcilePartyMembersNow): the goal there is to remove a departed
             // member immediately, not to protect a joining one.
