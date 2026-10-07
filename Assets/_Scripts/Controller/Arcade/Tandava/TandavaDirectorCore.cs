@@ -18,7 +18,7 @@
 //     it bolts;
 //   * WHEN TO CHANGE - a full body with the form's bank in its stomach takes the next form, never mid-meal. The banked
 //     Many-Headed Serpent RISES where it stands into the Lord of the Dance: a halo of rings lights round it and a drum
-//     runs, and breaking enough rings breaks the dance. When the drum ends it becomes the Sea Lion, whose last feast
+//     runs, and breaking enough rings breaks the dance. When the drum ends it becomes the Antlion, whose last feast
 //     completes the cycle.
 // A form, once taken, is REMEMBERED: the director never steps a form back. A cut limb regrows from the stomach (the sort
 // core's funded laying at the wound), which is why denying food matters, and why a broken meal matters most.
@@ -33,7 +33,7 @@ namespace CosmicShore.Gameplay
     public enum TandavaOutcome
     {
         Running = 0,
-        /// <summary>The Sea Lion ate its last feast: the cycle is complete. The pilots lose.</summary>
+        /// <summary>The Antlion ate its last feast: the cycle is complete. The pilots lose.</summary>
         Completed = 1,
         /// <summary>Every member is dead.</summary>
         Wiped = 2,

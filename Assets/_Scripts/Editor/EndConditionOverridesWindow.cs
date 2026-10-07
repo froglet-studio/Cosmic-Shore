@@ -109,7 +109,7 @@ namespace CosmicShore.Editor
                 "its VERB (round 1, contact strike 8, area debuff 12, rocket 10/20/30), default " +
                 EndConditionOverridesSO.DefaultBroadsidePointsPerPilot + " PER PILOT (the race target scales with team size: x1 / x1.6 / x2.2 / x2.8).\n" +
                 "  • Tandava: the PERCENT of the swarm's form below which its body shatters (the pilots win; they also " +
-                "win by breaking the halo or holding it off until the clock runs out, and lose if the Sea Lion eats its " +
+                "win by breaking the halo or holding it off until the clock runs out, and lose if the Antlion eats its " +
                 "last feast), default " + EndConditionOverridesSO.DefaultTandavaBreakPercent + "%; and the HALO RINGS " +
                 "(12 round the Lord of the Dance) the pilots must break before its drum stops to break the dance, default " +
                 EndConditionOverridesSO.DefaultTandavaHaloRingsToBreak + ".\n" +

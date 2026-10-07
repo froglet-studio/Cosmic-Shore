@@ -80,7 +80,7 @@ static class TandavaHarness
     const float FillToEvolve = 0.9f;
     // the banks, as shares of the stomach - RISING, so what one form carries over never skips the next, and all under
     // the 0.98 fill at which a meal ends full (a bank above it could never be reached: a full stomach stops grazing)
-    static readonly float[] BankShare = { 0.15f, 0.28f, 0f, 0.4f };   // Great Serpent, Many-Headed (the dance's offering), -, Sea Lion (the feast)
+    static readonly float[] BankShare = { 0.15f, 0.28f, 0f, 0.4f };   // Great Serpent, Many-Headed (the dance's offering), -, Antlion (the feast)
     const float MealVolume = 4000f;       // one meal (flora volume): most of a 60-prism plant - about 13 s at it
 
     // ── the food (a bite is one prism: its species' leaf)
@@ -104,7 +104,7 @@ static class TandavaHarness
         "many_headed_7", "many_headed_7_feed", "many_headed_7_coil", "many_headed_7_wrap", "many_headed_7_eight",
         "many_headed_10", "many_headed_10_feed", "many_headed_10_coil", "many_headed_10_wrap", "many_headed_10_eight",
         "dancer_1", "dancer_2", "dancer_3",
-        "sea_lion_1", "sea_lion_1_feed", "sea_lion_2", "sea_lion_2_feed", "sea_lion_3", "sea_lion_3_feed",
+        "antlion_1", "antlion_1_feed", "antlion_2", "antlion_2_feed", "antlion_3", "antlion_3_feed",
     };
     /// <summary>The meal formations the two serpents roll up in (tandava_plans.COILS).</summary>
     static readonly string[] Coils = { "coil", "wrap", "eight" };
@@ -113,9 +113,9 @@ static class TandavaHarness
         new[] { "great_serpent_1", "great_serpent_2", "great_serpent_3" },
         new[] { "many_headed_5", "many_headed_7", "many_headed_10" },
         new[] { "dancer_1", "dancer_2", "dancer_3" },
-        new[] { "sea_lion_1", "sea_lion_2", "sea_lion_3" },
+        new[] { "antlion_1", "antlion_2", "antlion_3" },
     };
-    static readonly string[] FormNames = { "Great Serpent", "Many-Headed Serpent", "Lord of the Dance", "Sea Lion" };
+    static readonly string[] FormNames = { "Great Serpent", "Many-Headed Serpent", "Lord of the Dance", "Antlion" };
 
     static void Check(bool ok, string what)
     {
@@ -167,7 +167,7 @@ static class TandavaHarness
     }
 
     /// <summary>The forms a match with these variant picks runs - author_tandava_assets.py build_forms: each eating form's
-    /// bank is its BankShare of the stomach, its meal one MealVolume; the dance does not eat; the Sea Lion's bank is the
+    /// bank is its BankShare of the stomach, its meal one MealVolume; the dance does not eat; the Antlion's bank is the
     /// FEAST that completes the cycle.</summary>
     /// <summary>The serpents eat in their strike pose, as before the coils (T18's baseline; TANDAVA_NOCOIL=1 for every run).</summary>
     static bool NoCoils = Environment.GetEnvironmentVariable("TANDAVA_NOCOIL") == "1";
@@ -696,7 +696,7 @@ static class TandavaHarness
 
         // ── T6: the feed pose - the plates go out to orbit the mouth, as DANGER plates; the lay ease is kept
         Console.WriteLine("T6 the feed pose");
-        foreach (var key in new[] { "great_serpent_2", "many_headed_10", "sea_lion_1" })
+        foreach (var key in new[] { "great_serpent_2", "many_headed_10", "antlion_1" })
         {
             var c = MakeCore(b, b.Ix[key], new Vector3(-500, 0, 0), 23, fed: true);
             Step(c, 200);
@@ -751,7 +751,7 @@ static class TandavaHarness
                               $"{s.MealVolumeEaten / Math.Max(1f, s.MealSeconds):F0} volume/s a meal), max radius {s.MaxRadius:F0}, ate {s.Eaten:F0}");
             Console.WriteLine($"      a meal by form {MealsByForm(s)}; coils/wraps/eights {string.Join("/", s.CoilMeals)}");
             Check(d.Outcome == TandavaOutcome.Completed && s.Commits.Select(x => x.form).SequenceEqual(new[] { 1, 2, 3 }),
-                  $"picks {tag}: Great Serpent -> Many-Headed -> Lord of the Dance -> Sea Lion -> the cycle completes");
+                  $"picks {tag}: Great Serpent -> Many-Headed -> Lord of the Dance -> Antlion -> the cycle completes");
             Check(d.Clock < 200f, $"unopposed it completes in {d.Clock:F0} s (< 200 s): the forms come fast, so the pilots must stop it, not wait it out");
             Check(s.Commits.Count == 3 && s.Commits[0].t < 60f, $"its first change comes at {s.Commits[0].t:F0} s (< 60 s)");
             Check(s.LaidWhileFeeding == 0, "it never laid an egg while it ate (the hold: it cannot heal at the table)");
@@ -901,7 +901,7 @@ static class TandavaHarness
             Check(d.FormIx <= 1, $"it never reached the dance ({d.Form.Name})");
         }
 
-        // ── T12: the dance - it rises in place; break the halo and the dance is broken; let the drum end and it is the Sea Lion
+        // ── T12: the dance - it rises in place; break the halo and the dance is broken; let the drum end and it is the Antlion
         Console.WriteLine("T12 the dance");
         foreach (bool pilotsThread in new[] { false, true })
         {
@@ -928,7 +928,7 @@ static class TandavaHarness
                   $"it rose into the Lord of the Dance and the halo lit {s.DanceAt - s.RiseAt:F1} s later (the figure assembles first)");
             if (pilotsThread) Check(d.Outcome == TandavaOutcome.DanceBroken, $"nine rings broken before the drum stops: the dance is broken ({d.Outcome})");
             else Check(s.Commits.Any(x => x.form == 3) && s.Commits.Last(x => x.form == 3).t - s.DanceAt >= DirectorSettings().DrumSeconds - 0.2f,
-                       "nobody threads: when the drum stops it is the Sea Lion");
+                       "nobody threads: when the drum stops it is the Antlion");
             Check(guarded > 0.05f, $"the attendant packs guard the halo some of the time ({guarded:P0})");
         }
 

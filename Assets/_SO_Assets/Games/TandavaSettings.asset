@@ -154,39 +154,39 @@ MonoBehaviour:
       Mouth: {x: 0, y: 0, z: 0}
       FeedMouth: {x: 0, y: 0, z: 0}
       HaloCentre: {x: 0.012, y: 1.76, z: 0.937}
-  - DisplayName: Sea Lion
+  - DisplayName: Antlion
     Role: 2
     FillToEvolve: 0.9
     BankShare: 0.4
     MealVolume: 4000
-    Line: 'The drum stops. A {0} swims out of the halo. One last feast and the cycle is complete.'
+    Line: 'The drum stops. The {0} drops out of the halo, jaws open. One last feast and the cycle is complete.'
     Variants:
-    - DisplayName: Sea Lion
+    - DisplayName: Antlion
       PlanIndex: 33
       FeedPlanIndex: 34
       CoilPlanIndices: []
       CoilMouths: []
       CoilRoamRadius: 0
-      Mouth: {x: 82.399, y: 10.802, z: 0.133}
-      FeedMouth: {x: 73.252, y: 9.741, z: 0.133}
+      Mouth: {x: 85.771, y: -0.219, z: -0.26}
+      FeedMouth: {x: 73.953, y: 0.173, z: -0.254}
       HaloCentre: {x: 0, y: 0, z: 0}
-    - DisplayName: Sea Lion
+    - DisplayName: Antlion
       PlanIndex: 35
       FeedPlanIndex: 36
       CoilPlanIndices: []
       CoilMouths: []
       CoilRoamRadius: 0
-      Mouth: {x: 78.663, y: 10.018, z: 0.15}
-      FeedMouth: {x: 68.068, y: 9.216, z: 0.141}
+      Mouth: {x: 82.598, y: -1.004, z: -0.11}
+      FeedMouth: {x: 64.959, y: 0.115, z: -0.101}
       HaloCentre: {x: 0, y: 0, z: 0}
-    - DisplayName: Sea Lion
+    - DisplayName: Antlion
       PlanIndex: 37
       FeedPlanIndex: 38
       CoilPlanIndices: []
       CoilMouths: []
       CoilRoamRadius: 0
-      Mouth: {x: 85.39, y: 11.1, z: 0.127}
-      FeedMouth: {x: 76.157, y: 9.923, z: 0.127}
+      Mouth: {x: 92.688, y: -0.329, z: -0.312}
+      FeedMouth: {x: 81.326, y: 0.029, z: -0.303}
       HaloCentre: {x: 0, y: 0, z: 0}
   Director:
     RoamRadius: 616
@@ -275,7 +275,7 @@ MonoBehaviour:
   HaloLitLine: The halo is lit. Break the rings before the drum stops.
   FirstHaloLine: 'A ring is broken. Break {1} and the dance falls.'
   LastHaloLine: '{0} of {1}. One more ring!'
-  CompletedLine: The Sea Lion has fed. The cycle is complete.
+  CompletedLine: The Antlion has fed. The cycle is complete.
   WonLine: Its body is broken. The reef keeps its turn.
   DanceBrokenLine: The dance is broken. The reef keeps its turn.
   HeldOffLine: Time. You held it off - the cycle is unfinished.

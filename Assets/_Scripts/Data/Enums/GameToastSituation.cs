@@ -163,7 +163,7 @@ namespace CosmicShore.Data
         // peer reads its own copy); the hint takes no args.
         TandavaMatchStart = 128,        // the hunt begins: {0} = TandavaSettings.StartLine
         TandavaFormTaken = 129,         // the swarm took a new form: {0} = that form's line, naming the variant drawn
-        TandavaCompleted = 130,         // the Sea Lion ate its last feast - the swarm won: {0} = CompletedLine
+        TandavaCompleted = 130,         // the Antlion ate its last feast - the swarm won: {0} = CompletedLine
         TandavaBroken = 131,            // the pilots won: {0} = WonLine, DanceBrokenLine or HeldOffLine
         TandavaFeeding = 132,           // its first meal - its guards are out, strike the body: {0} = FeedingLine
         TandavaDenyHint = 133,          // idle hint: break its meals - hit the body while it eats

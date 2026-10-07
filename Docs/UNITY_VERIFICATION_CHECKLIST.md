@@ -4431,6 +4431,22 @@ harness (T1-T18 pass), never in the Editor.
    wears the old strike pose (guards round the jaws), not a coil.
 7. **Card.** The Tandava card shows the serpent wrapped round a plant in the reef, no city.
 
+### QA-TANDAVA-18 — the fifth pass: the Antlion replaces the Sea Lion (`TANDAVA.md` §0, §2)
+
+Plans and C# comments/strings only (the director is unchanged: the final form is still form 4, its bank and feast the
+same). Where QA-TANDAVA-11/12 say "Sea Lion", read "Antlion". Headless only: harness T1-T18 pass; never seen in the Editor.
+
+1. **The look.** Let the drum run out: the figure re-sorts into an antlion larva - a wide, flat, oval abdomen ringed by a
+   fringe of bristle plates (a double fringe on the short-jawed variant), a dark stripe down its back, a narrow thorax,
+   a flat head and two long sickle jaws hooking in with a gap between the tips; six short legs paddling. It should read
+   as one animal at the camera's usual distance (compare the reference photo in the session).
+2. **The jaws work.** In flight the jaws open and close a little (a 9.6 s cycle) and the tips never touch or cross.
+3. **The meal.** At a plant it clasps the plant inside its jaws, the bristles leave the abdomen to circle it as danger
+   plates; a meal takes about 10-11 s (harness).
+4. **HUD and narration** say "Antlion" everywhere ("Antlion - the last feast"; the line "The drum stops. The Antlion drops
+   out of the halo, jaws open."), and the end card on a loss reads that the Antlion has fed.
+5. **Size.** The body is 675-744 tadpoles (the Sea Lion's were 618-642): watch the frame time through the final form.
+
 
 **What landed.** A new arena card, `GameModes.Tandava = 62` (Rhino / Squirrel / Sparrow, every pilot on ONE
 domain), scene `MinigameTandava`, every asset authored by `Tools/Build/author_tandava_assets.py`. A tadpole swarm

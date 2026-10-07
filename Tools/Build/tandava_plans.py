@@ -15,11 +15,12 @@ FOUR forms, in order - and a match draws ONE of three VARIANTS of each, so no tw
                          serpent's body (the ten-headed one has two tails).
   dancer_1/2/3           the Lord of the Dance (the ascension): the figure, its halo and four attendant packs; the
                          second is the mirror pose, the third flies its hair wider.
-  sea_lion_1/2/3         the Sea Lion: the final form. A lion's head and mane on a short body, great fore-fins, and a
-                         fish's tail with a fluke. NO legs - every form FLIES (the HyperSea has no ground).
+  antlion_1/2/3          the Antlion: the final form, an antlion larva - a plump bristled abdomen, a flat head and two
+                         great sickle jaws; long jaws / short hooked jaws and a double fringe / a broad abdomen. Its six
+                         legs paddle: every form FLIES (the HyperSea has no ground).
 
 Every feeding form has a FEED twin (<key>_feed), the pose it eats in: the same units, the body settled, and its Charge
-plates (the hood, the mane, the fluke) gone OUT to orbit its mouth as a ring of DANGER-tier guards - the protectors.
+plates (the hood, the bristles) gone OUT to orbit its mouth as a ring of DANGER-tier guards - the protectors.
 Same element counts as the travel plan, so the commit between them is lossless and needs no molt. The twin bakes its
 "mouth" (where the director puts the food) and its guard ring.
 
@@ -626,106 +627,153 @@ def dancer(v, pose="travel"):
     return _thin(units), None
 
 
-# ───────────────────────────────────────────────────────────────── form 4: the Sea Lion
+# ───────────────────────────────────────────────────────────────── form 4: the Antlion
 
-SEA_LION_SCALE = 1.45      # the final form is the biggest animal of the four
-SEA_LION_FRAME_STEPS = 12  # 8 frames x 12 steps at 10 Hz = a 9.6 s stroke: fins are Space, the slowest tadpoles
-SEA_LION = {
-    # fore-fin rays per side, ray length, mane rings, tail stations, fluke (crescent | forked)
-    1: dict(rays=4, ray=13.0, mane=2, tail=11, fluke="crescent"),
-    2: dict(rays=5, ray=10.5, mane=3, tail=9, fluke="forked"),
-    3: dict(rays=3, ray=16.0, mane=2, tail=13, fluke="crescent"),
+ANTLION_SCALE = 1.4        # the final form is the biggest animal of the four
+ANTLION_FRAME_STEPS = 12   # 8 frames x 12 steps at 10 Hz = a 9.6 s cycle: the legs paddle, the jaws work, the body breathes
+ANTLION = {
+    # abdomen semi-axes (x, y, z), jaw length, the jaw's heading out from the head (rad), bristle rows
+    1: dict(abdomen=(8.0, 3.6, 6.2), jaw=14.0, out=0.32, rows=1),
+    2: dict(abdomen=(7.8, 3.5, 6.2), jaw=11.5, out=0.45, rows=2),
+    3: dict(abdomen=(8.6, 3.8, 7.2), jaw=16.0, out=0.28, rows=1),
 }
+ANTLION_JAW_ROW = 1.12     # a jaw's two rows sit this far (plan voxels) above and below its line
+ANTLION_TIP_GAP = 2.4      # the jaw tips, at their most closed, stop this far (unscaled) either side of the midline
+ANTLION_LOOKS = {1: "long sickle jaws", 2: "short hooked jaws, a double fringe", 3: "a broad abdomen, the longest jaws"}
 
 
-def sea_lion(v, pose="travel"):
-    """THE SEA LION: the final form - the heraldic sea-lion, a lion's forepart on a fish's tail. A Mass body and head,
-    a Charge mane in rings round the neck, two great fore-fins of Space rays sculling, and a Time fish's tail that
-    beats up and down (the HyperSea's swimmers fly, they do not walk) ending in a Charge fluke. No legs. Feeding, the
-    mane and the fluke leave the body to orbit its mouth as danger-tier guards."""
-    p = SEA_LION[v]
-    s = SEA_LION_SCALE
+def _shell(centre, axes, anim, scale, gap=2.5):
+    """Points spread evenly over an ellipsoid, no two closer than `gap` (plan voxels, after `scale`): a dense Fibonacci
+    lattice thinned greedily - an even lattice on the SPHERE bunches at the rim of a flattened ellipsoid. anim(f) -> its
+    breathing scale in frame f. Returns (point(f), height share y) per point, unscaled."""
+    ga = math.pi * (3 - math.sqrt(5))
+    n, kept = 4000, []
+    for i in range(n):
+        y = 1 - 2 * (i + 0.5) / n
+        rr, th = math.sqrt(1 - y * y), ga * i
+        d = [math.cos(th) * rr, y, math.sin(th) * rr]
+        q = [d[a] * axes[a] * scale for a in range(3)]
+        if all(norm(sub(q, k[1])) >= gap for k in kept):
+            kept.append((d, q))
+    out = []
+    for d, _ in kept:
+        def at(f, d=d):
+            k = anim(f)
+            return [centre[a] + d[a] * axes[a] * k for a in range(3)]
+        out.append((at, d[1]))
+    return out
+
+
+def antlion(v, pose="travel"):
+    """THE ANTLION: the final form - an antlion larva (the prompter's reference, 2026-10-07). A plump, flattened Mass
+    abdomen with a dark Space stripe down its back and a fringe of Charge bristles round its rim, a narrow thorax, a flat
+    head, and two great sickle JAWS (Time) curving forward and hooking in, their tips pointing at each other across a gap.
+    Six short Space legs paddle in a tripod gait (every form flies: the HyperSea has no ground). Feeding, it clasps the
+    plant INSIDE the ring its jaws make (so every jaw unit and the head's front are in reach of the food) and the
+    bristles leave the rim to orbit it as danger-tier guards."""
+    p = ANTLION[v]
+    s = ANTLION_SCALE
     feed = pose == "feed"
     calm = FEED_SETTLE if feed else 1.0
-    ga = math.pi * (3 - math.sqrt(5))
     units, plates = [], []
+    S3 = lambda q: [q[0] * s, q[1] * s, q[2] * s]
 
-    def stroke(f, lag=0.0):
+    def cycle(f, lag=0.0):
         return math.sin(2 * math.pi * f / FRAMES - lag)
 
-    nb = 150                                                                   # the body: a shell on an ellipsoid
-    for i in range(nb):
-        y = 1 - 2 * (i + 0.5) / nb
-        rr, th = math.sqrt(1 - y * y), ga * i
-        x, z = math.cos(th) * rr, math.sin(th) * rr
-        units.append(_unit_at(MASS, 0 if y > 0 else 1, 0,
-                              lambda f, x=x, y=y, z=z: [x * 10.5 * s, (y * 5.0 + 0.3 * calm * stroke(f, x)) * s, z * 4.6 * s],
-                              lambda f: [1, 0, 0]))
-    for i in range(18):                                                        # the head
-        y = 1 - 2 * (i + 0.5) / 18
-        rr, th = math.sqrt(1 - y * y), ga * i
-        units.append(_unit_at(MASS, 0, 0,
-                              lambda f, y=y, rr=rr, th=th: [(13.6 + math.cos(th) * rr * 3.4) * s, (3.6 + y * 3.2) * s,
-                                                            math.sin(th) * rr * 3.2 * s], lambda f: [1, 0, 0]))
-    nm = 9 * p["mane"]                                                         # the mane: rings of shield plates
-    for i in range(nm):
-        ring, a = i % p["mane"], 2 * math.pi * (i // p["mane"]) / (nm // p["mane"]) + 0.35 * (i % p["mane"])
-        r = 5.8 + 2.4 * ring
-        plates.append(_unit_at(CHARGE, 0, 2,
-                               lambda f, a=a, r=r, ring=ring: [(10.8 - 1.3 * ring) * s,
-                                                               (3.6 + math.cos(a) * r * (1 + 0.04 * stroke(f))) * s,
-                                                               math.sin(a) * r * s], lambda f: [1, 0, 0]))
-    for side in (-1, 1):                                                       # the fore-fins: rays sculling
-        for k in range(p["rays"]):
-            for j in range(max(3, round(p["ray"] / SPACING))):
-                t = (j + 0.6) / max(3, round(p["ray"] / SPACING))
-                # swept BACK along the flank and tilted a little up, like a fish's pectoral fins: a fin that
-                # reaches down reads as a leg from a three-quarter view (the 2026-10-06 contact sheet)
-                root = [6.2 - 1.9 * k, -1.0, 4.2 * side]
-                tip = [root[0] - 0.6 * p["ray"] - 1.4 * k, 1.2, side * (4.2 + 0.72 * p["ray"] - 0.8 * k)]
+    ax, ay, az = p["abdomen"]
+    abd_c = [-2.6 - ax, 0.0, 0.0]                                             # the abdomen: its front at x = -2.6
+    breathe = lambda f: 1.0 + 0.025 * calm * cycle(f)
+    for at, y in _shell(abd_c, (ax, ay, az), breathe, s):
+        units.append(_unit_at(MASS, 0 if y > 0 else 1, 0, lambda f, at=at: S3(at(f)), lambda f: [1, 0, 0]))
+    for k in range(5):                                                         # the dark stripe down its back
+        x = abd_c[0] + ax * (0.55 - 0.27 * k)
+        top = ay * math.sqrt(max(0.0, 1 - ((x - abd_c[0]) / ax) ** 2)) + 2.6 / s
+        units.append(_unit_at(SPACE, 0, 0, lambda f, x=x, top=top: S3([x, top * breathe(f), 0.0]), lambda f: [1, 0, 0]))
+    thor_c, thor_ax = [1.4, 0.3, 0.0], (2.3, 2.0, 2.7)                        # the thorax
+    for at, y in _shell(thor_c, thor_ax, lambda f: 1.0, s):
+        units.append(_unit_at(MASS, 0 if y > 0 else 1, 0, lambda f, at=at: S3(at(f)), lambda f: [1, 0, 0]))
+    head_c, head_ax = [7.6, 0.2, 0.0], (2.5, 1.5, 3.3)                         # the flat head
+    for at, y in _shell(head_c, head_ax, lambda f: 1.0, s):
+        units.append(_unit_at(MASS, 0 if y > 0 else 1, 0, lambda f, at=at: S3(at(f)), lambda f: [1, 0, 0]))
 
-                def at(f, t=t, root=root, tip=tip, side=side):
-                    sc = (0.15 if feed else 0.32) * stroke(f, 0.8 * t)
-                    x = root[0] + (tip[0] - root[0]) * t
-                    y0 = root[1] + (tip[1] - root[1]) * t
-                    z0 = root[2] + (tip[2] - root[2]) * t
-                    dy, dz = y0 - root[1], z0 - root[2]
-                    c, sn = math.cos(sc * side), math.sin(sc * side)
-                    fold = 0.55 if feed else 1.0                               # feeding, the fins fold back
-                    return [x * s, (root[1] + dy * c + dz * sn) * s, (root[2] + fold * (dz * c - dy * sn)) * s]
-                units.append(_unit_at(SPACE, 1, 0, at, lambda f, root=root, tip=tip: sub(tip, root)))
-    n_tail = p["tail"]                                                         # the fish's tail: beats up and down
-    for k in range(n_tail):
-        t = (k + 1) / n_tail
-        r = (2.0 - 0.8 * t)
+    # the jaws: sickles from the head's front corners, swinging out then hooking in; they work open and shut. How hard a
+    # sickle hooks is solved so its tip, at its most closed, stops ANTLION_TIP_GAP off the midline - the tips point at each other across a gap
+    gape = 0.12 if feed else 0.0                                           # feeding: eased open round the plant
+    swing = 0.06 if feed else 0.1
+    n_jaw = max(4, round(p["jaw"] * s / SPACING))
+    root_x, root_z = head_c[0] + 2.4, 2.4
 
-        def spine(f, t=t, k=k):
-            amp = (0.4 + 3.2 * t * t) * calm
-            return [(-10.5 - k * SPACING / s) * s, (0.4 + amp * stroke(f, 2.2 * t)) * s, 0.0]
-        for ang, slot in ((90, 0), (270, 1)):
-            units.append(_unit_at(TIME, slot, 0,
-                                  lambda f, spine=spine, ang=ang, r=r: add(spine(f), [0.0, r * math.sin(math.radians(ang)), 0.0]),
-                                  lambda f: [-1, 0, 0]))
-    tail_end = (-10.5 - n_tail * SPACING / s) * s
-    lobes = [(z, 0.0) for z in (-6.0, -3.6, -1.2, 1.2, 3.6, 6.0)] if p["fluke"] == "crescent" else \
-            [(z, 1.0) for z in (-7.0, -4.6, -2.3)] + [(z, 1.0) for z in (2.3, 4.6, 7.0)]
-    for z, forked in lobes:                                                    # the fluke: Charge plates, horizontal
-        back = 0.08 * z * z + (0.6 * abs(z) if forked else 0.0)
+    def sickle(t, out, hook, side):
+        x, z, h, steps = root_x, side * root_z, side * out, 40
+        L = p["jaw"] * t
+        for i in range(steps):                                             # straight at the base, hooked at the tip:
+            u = (i + 0.5) / steps * t                                      # the heading turns in as u^3
+            h = side * (out - hook * u ** 3)
+            x += math.cos(h) * L / steps
+            z += math.sin(h) * L / steps
+        return [x, 0.15 * math.sin(math.pi * t), z]
+    lo, hi = 0.0, 6.0
+    for _ in range(40):                                                    # bisect the hook
+        mid = (lo + hi) / 2
+        if sickle(1.0, p["out"] - swing, mid, 1)[2] > ANTLION_TIP_GAP:
+            lo = mid
+        else:
+            hi = mid
+    hook = lo
+    for side in (-1, 1):
+        def jaw_pt(f, t, side=side):
+            return sickle(t, p["out"] + gape + swing * cycle(f), hook, side)
+        for j in range(n_jaw):
+            t = (j + 0.5) / n_jaw
+            # a heavy jaw: two rows, one over the other, tapering to one for the hooked last third
+            for dy in ((-ANTLION_JAW_ROW, ANTLION_JAW_ROW) if t < 0.67 else (0.0,)):
+                units.append(_unit_at(TIME, 0 if dy >= 0 else 1, 0,
+                                      lambda f, t=t, jp=jaw_pt, dy=dy: add(S3(jp(f, t)), [0.0, dy, 0.0]),
+                                      lambda f, t=t, jp=jaw_pt: sub(jp(f, min(1.0, t + 0.05)), jp(f, t))))
+    tip_x = sickle(1.0, p["out"] + gape, hook, 1)[0]
+    clasp_x = (root_x + tip_x) / 2                                         # the middle of the ring the jaws close
 
-        def at(f, z=z, back=back):
-            amp = 3.6 * calm
-            return [tail_end - back, (0.4 + amp * stroke(f, 2.4)) * s, z * s]
-        plates.append(_unit_at(CHARGE, 1, 2, at, lambda f: [0.0, 1.0, 0.0]))
+    # six legs: from the thorax and the abdomen's shoulder, splayed out and down, paddling in a tripod gait
+    for side in (-1, 1):
+        for k, (lx, sweep) in enumerate(((3.2, 0.6), (1.2, 0.0), (-0.6, -0.7))):
+            phase = (k + (0 if side > 0 else 1)) % 2                           # tripod: L1 R2 L3 against R1 L2 R3
+            for j in range(3):
+                def leg(f, j=j, lx=lx, sweep=sweep, side=side, phase=phase):
+                    sw = sweep + (0.08 if feed else 0.22) * cycle(f, math.pi * phase)
+                    r = 3.6 + 2.6 * j
+                    return S3([lx + math.sin(sw) * r * 0.8, -0.8 - 0.55 * j, side * (2.2 + math.cos(sw) * r)])
+                units.append(_unit_at(SPACE, 1, 0, leg, lambda f, leg=leg, lx=lx, side=side: sub(leg(f), S3([lx, -0.8, side * 2.2]))))
+
+    # the bristles: a fringe of shield plates round the abdomen's rim (and a second, higher row on the double fringe)
+    rim = []
+    for row in range(p["rows"]):
+        n = 22 if row == 0 else 14
+        for k in range(n):
+            a = math.pi * (0.28 + 1.44 * k / (n - 1))                          # round the sides and the back (a = pi), not the front
+            rim.append((a, row))
+    for a, row in rim:
+        lift = 1.2 + 2.0 * row
+        shrink = 1.0 - 0.18 * row
+
+        def at(f, a=a, lift=lift, shrink=shrink):
+            k = breathe(f) + 0.02 * calm * cycle(f, 3 * a)
+            return S3([abd_c[0] + math.cos(a) * (ax * shrink + 2.1) * k, lift, math.sin(a) * (az * shrink + 2.1) * k])
+        plates.append(_unit_at(CHARGE, 0, 2, at,
+                               lambda f, a=a: unit([math.cos(a), 0.6, math.sin(a)])))
     if feed:
-        mouth = [18.5 * s, 3.0 * s, 0.0]
-        plates = _guard_ring(plates, mouth, [1.0, 0.0, 0.0], 9.5 * s, 1 if v != 2 else -1)
+        mouth = S3([clasp_x, 0.2, 0.0])                                        # clasped INSIDE the jaws' ring: all of
+                                                                               # each jaw and the head's front are at the food
+        near = [math.hypot(u.pos[0][1] - mouth[1], u.pos[0][2]) for u in units if abs(u.pos[0][0] - mouth[0]) < 3.5]
+        plates = _guard_ring(plates, mouth, [1.0, 0.0, 0.0], max(10.0, max(near, default=0.0) + 4.5),
+                             1 if v != 2 else -1)
         return units + plates, mouth
     return units + plates, None
 
 
 # ───────────────────────────────────────────────────────────────── the catalogue
 
-FORM_NAMES = ["Great Serpent", "Many-Headed Serpent", "Lord of the Dance", "Sea Lion"]
+FORM_NAMES = ["Great Serpent", "Many-Headed Serpent", "Lord of the Dance", "Antlion"]
 
 
 def _variants():
@@ -739,7 +787,7 @@ def _variants():
     for v in (1, 2, 3):
         out.append((f"dancer_{v}", 2, "Lord of the Dance", lambda pose, v=v: dancer(v, pose), False))
     for v in (1, 2, 3):
-        out.append((f"sea_lion_{v}", 3, "Sea Lion", lambda pose, v=v: sea_lion(v, pose), True))
+        out.append((f"antlion_{v}", 3, "Antlion", lambda pose, v=v: antlion(v, pose), True))
     return out
 
 
@@ -800,7 +848,7 @@ def _frame_steps(key):
         return COIL_FRAME_STEPS
     if key.endswith("_feed") or key.startswith("dancer"):
         return FEED_FRAME_STEPS if key.endswith("_feed") else DANCER_FRAME_STEPS
-    return SEA_LION_FRAME_STEPS if key.startswith("sea_lion") else FRAME_STEPS
+    return ANTLION_FRAME_STEPS if key.startswith("antlion") else FRAME_STEPS
 
 
 _BUILT = {}

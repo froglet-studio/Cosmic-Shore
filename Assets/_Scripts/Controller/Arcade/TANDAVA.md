@@ -43,6 +43,12 @@ reasons, each answered here:
 | make the serpent roll up like a snake in different formations when eating; it is boring now | the two serpents EAT ROLLED UP, in a formation drawn afresh each meal and never the same twice running: a flat **coil**, a constrictor's **wrap** (a helix) or a **figure-eight**. The Great Serpent rolls up round the plant itself; the Many-Headed Serpent coils its body under its raised heads, which ring the food. 18 new plans (§2, §3.4, harness T18) |
 | it takes a long time to eat | rolled up round its plant most of the body is in reach of the food, so it eats faster by the same bite rule: a Great Serpent meal 2.5 s (10.7 s in the old pose), a Many-Headed one 5.7 s (13.0 s); unopposed the cycle completes in about 125 s (was 170) |
 
+**The fifth pass (2026-10-07)**: "change the sea lion to an antlion" (with a reference photo of an antlion larva). The
+final form is the **Antlion** (§2): the same role, bank and feast; new plans `antlion_1/2/3` (+ `_feed`) replace
+`sea_lion_*`, retired by the generator. Its meal clasps the plant inside its jaws - 10.2-11.3 s a meal, about the Sea
+Lion's 12 s - and an unopposed cycle completes in 116-148 s (T7). The body is bigger (675-744 tadpoles against 618-642),
+which raises the phase ladder's biggest-body term.
+
 ## 1. The pitch
 
 One creature lives in this cell, and it is hungry. It hatches as a **Great Serpent** and goes where it likes to eat,
@@ -54,7 +60,7 @@ meal is **broken**: it bolts, hungry.
 
 Fed, it changes. The Great Serpent becomes a **Many-Headed Serpent** whose heads all dip to the food when it eats. Fed
 again, it **rises where it stands** into the **Lord of the Dance**: a halo of twelve rings lights round the figure, its
-attendant packs patrol the halo, a drum runs, and the cell glows gold. When the drum stops it becomes the **Sea Lion**,
+attendant packs patrol the halo, a drum runs, and the cell glows gold. When the drum stops it becomes the **Antlion**,
 and one last feast completes the cycle.
 
 Every form, once taken, is **remembered**: cut limbs grow back from what it has eaten. So the pilots win by denying it
@@ -65,7 +71,7 @@ and by striking it when it cannot heal:
 
 There is no clock: hunt it until one of those happens, or its last feast does.
 
-They lose when the Sea Lion's last feast is eaten. Only the mode carries the name; the forms, the narrator and every UI
+They lose when the Antlion's last feast is eaten. Only the mode carries the name; the forms, the narrator and every UI
 string use plain English names.
 
 ## 2. The forms
@@ -80,10 +86,10 @@ from the bank, so no surplus ever crowds a new shape's wells into a blob.
 | 1 | **Great Serpent** | long and slender 157 / 471 · longer, narrow hood 169 / 507 · short and thick, broad hood 150 / 450 | Mass coils, Space shimmer rods along the back, a Time tail rattle, and a hood of Charge plates (shield tier) | the hood leaves the head to orbit the mouth as danger guards; the body's wave settles |
 | 2 | **Many-Headed Serpent** | **Five-Headed** 175 / 525 · **Seven-Headed** 181 / 543 · **Ten-Headed**, two tails 195 / 585 | a serpent's body whose front widens into a collar of Space necks fanned over the top, each with a Mass head and two Charge hood plates | every head DIPS to the food, the heads closing into a ring round the mouth, snouts in; the hoods orbit outside them |
 | 3 | **Lord of the Dance** | 204 / 612 each (the mirror pose; the hair flown wider) | the Nataraja as a sculpture of tadpoles: the figure, a Charge gem in the raised hand (no fire), the crown, the halo and four Time attendant packs patrolling outside it | does not eat |
-| 4 | **Sea Lion** | crescent fluke, 4 rays 206 / 618 · forked fluke, 5 rays 211 / 633 · long fins, 3 rays 214 / 642 | the heraldic sea-lion: a lion's head and Charge mane on a Mass body, great sculling fore-fins of Space rays, a Time fish's tail with a Charge fluke. No legs: every form flies | the mane and the fluke leave the body to orbit the mouth |
+| 4 | **Antlion** | long sickle jaws 225 / 675 · short hooked jaws, a double fringe 231 / 693 · a broad abdomen, the longest jaws 248 / 744 | an antlion larva (the prompter's reference photo, 2026-10-07): a plump, flattened Mass abdomen with a dark Space stripe down its back and a fringe of Charge bristles round its rim, a narrow thorax, a flat head, two great Time sickle jaws (two rows deep, one at the hooked tip) hooking in, their tips pointing at each other across a gap, and six short Space legs paddling in a tripod gait (every form flies). The jaws' hook is solved so the tips never meet as they work | it clasps the plant INSIDE the ring of its jaws, so every jaw unit and the head's front are at the food; the bristles leave the rim to orbit it as danger guards |
 
 Every eating form has a **strike pose** (`<key>_feed`, the old feed twin): the same units in the same order,
-re-arranged, the hood out round its jaws as danger guards - what it LUNGES in, and what the Sea Lion eats in. The two
+re-arranged, the hood out round its jaws as danger guards - what it LUNGES in, and what the Antlion eats in. The two
 serpents also have three **meal coils** each (`<key>_coil`, `_wrap`, `_eight`), the poses they eat in (§3.4). The commit
 between any two poses is a POSE commit (`RequestPose`): the same members re-sorting, no molt, and the lay ease kept
 (feeding is not a wound - T6). Every pose of a variant is thinned TOGETHER (`tandava_plans._build_variant`), so they keep
@@ -180,7 +186,7 @@ meals; every formation used).
 Every coil breathes - a 2.5% squeeze and loosen round its centre once a loop (9.6 s) - and its guards circle it: a crown
 riding above a flat formation, a ring round the wrap's middle. The Many-Headed Serpent's body drops from the collar in an
 S-bend (two arcs, 7 voxels down) and coils below its raised necks, like a rearing cobra; its heads ring the food exactly
-as in the strike pose. A form without coils (the Sea Lion) eats in its strike pose.
+as in the strike pose. A form without coils (the Antlion) eats in its strike pose, clasping the plant in its jaws.
 
 **Arriving.** It lines the MEAL's mouth up on the plant: for a coil that is the coil's centre, so it swims over the plant
 until its middle is there and curls round it (the re-sort reads in about a second - T16); in the strike pose it is the
@@ -204,7 +210,7 @@ each biting a prism within `BiteRadius` of itself), so it is the members AT the 
 was the head; wrapped round the plant it is most of the body. Same bite rule, same `BitersPerStep`, measured in the
 harness (T18, three free runs each way): the Great Serpent eats at 724 volume/s and finishes a meal in 2.5 s (215 volume/s
 and 10.7 s in the strike pose); the Many-Headed Serpent, whose body coils behind its heads, still gains - 457 volume/s,
-5.7 s a meal (202 and 13.0 s) - because its heads now ring the plant from a settled body. The Sea Lion's meals are
+5.7 s a meal (202 and 13.0 s) - because its heads now ring the plant from a settled body. The final form's meals are
 unchanged (about 12 s). The formations differ in how much of the body is in reach (the wrap the most, the flat coil the
 least), so meals are not all the same length. A faster meal is a shorter window to break, but there are more of them, and
 the creature is rolled up and slow (`CruiseFeed` 0.5) for every one.
@@ -225,7 +231,7 @@ food, and food is evolution. A form moves on when its body is at 90% of its full
 | Great Serpent | 0.15 (5,385) |
 | Many-Headed Serpent | 0.28 (10,053) - the dance's offering |
 | Lord of the Dance | none: the drum decides |
-| Sea Lion | 0.40 (14,361) - the last feast, which completes the cycle |
+| Antlion | 0.40 (14,361) - the last feast, which completes the cycle |
 
 The banks are low on purpose (the third pass: "form changes should be faster"): about two meals a form.
 
@@ -246,7 +252,7 @@ attendants (Time members) are within 40 u of its guard post, and a guarded ring 
 law: drawn smaller than its trigger is legal, drawn larger is the lie). Threading an open ring breaks it, scoring the
 pilot (`IRoundStats.SwitchesThreaded`, 25 points) and throwing gold where it stood. Break nine before the 30 s drum stops
 and the dance is broken (the figure falls back into the serpent it rose from - a molt, never a kill); otherwise, when
-the drum stops, it is the Sea Lion. Harness T12: the halo lit 5.1 s after the rise; nobody threading, the Sea Lion
+the drum stops, it is the Antlion. Harness T12: the halo lit 5.1 s after the rise; nobody threading, the Antlion
 came at the drum's end; threading a ring every 1.5 s broke the dance (10 tries, one held by the attendants); the packs
 guard about a fifth of the halo at any moment.
 
@@ -260,7 +266,7 @@ with `GoalEntry.Progress` - a value the mode words over a hairline it fills). It
 
 | Row | Roaming / feeding | The dance |
 |---|---|---|
-| 1 (primary) | the variant's name ("Seven-Headed Serpent") and its progress to the next form, "62%" over a bar; the Sea Lion's reads "Sea Lion - the last feast" | "Halo rings broken 4/9" |
+| 1 (primary) | the variant's name ("Seven-Headed Serpent") and its progress to the next form, "62%" over a bar; the Antlion's reads "Antlion - the last feast" | "Halo rings broken 4/9" |
 | 2 | what it is doing - Roaming / Wary / Fleeing / **Feeding - strike the body** / Rising - and its body, "Body 86%", over a bar | "Dancing - break the halo", its body |
 | 3 | - (there is no clock) | "Drum 0:12" |
 
@@ -289,10 +295,10 @@ the Dance until the dance ends it blooms and eases into GOLD (`TandavaSettings.A
 | `Wiped` | win | every member dead |
 | `DanceBroken` | win | nine halo rings broken before the drum stops |
 | `HeldOff` | - | unreachable: the shipped hunt has no clock (`MatchSeconds` 0) |
-| `Completed` | lose | the Sea Lion's bank is full: the cycle is complete |
+| `Completed` | lose | the Antlion's bank is full: the cycle is complete |
 
 A pilot's score is the members they culled (`LifeformsKilled`, attributed kills only) plus 25 per halo ring. The free
-run (nobody opposing it) completes in 115-143 s over 6-7 meals (T7): with no clock to hide behind, the pilots must break
+run (nobody opposing it) completes in 116-148 s over 7-8 meals (T7): with no clock to hide behind, the pilots must break
 it - every broken meal costs it the meal, the flight and the food to regrow.
 
 AI pilots hunt it (`AIPilot.SetExternalTargetProvider`): at the body led toward where it is going, spread by seat; while
@@ -326,12 +332,12 @@ policies.
 | T4 | a 30% tail cut regrows to 93% in 1.1 s, the same form, no self-inflicted deaths, 3,044 volume paid |
 | T5 | held, a 20% cut stays cut; let go, it regrows in 0.3 s |
 | T6 | the strike pose: every plate on the guard ring, every one a DANGER plate (and none without `PlanDanger`); the lay ease kept |
-| T7 | three free runs complete in 115-143 s (under 200), the first change at 17-21 s, every form in order, no egg laid at a meal, never leaving the cell (its centre within the coiled reach, about 700 u) |
+| T7 | three free runs complete in 116-148 s (under 200), the first change at 17-21 s, every form in order, no egg laid at a meal, never leaving the cell (its centre within the coiled reach, about 700 u) |
 | T8 | healthy: it lunges at a pilot, jaws aimed at it, guards out, at up to 143 u/s, never fleeing; hurt: it bolts away and never lunges; alone again, calm in 1.7 s |
 | T9 | it takes the far plant when a pilot sits by the near one |
 | T10 | a 21% cut mid-meal breaks it and it bolts; nothing laid while it ate; fed before, it regrows at once afterwards |
 | T11 | every meal broken: the pilots win (shattered at 123 s) |
-| T12 | the halo lights 5 s after the rise; the drum's end brings the Sea Lion; nine rings broken break the dance; the packs guard ~22% |
+| T12 | the halo lights 5 s after the rise; the drum's end brings the Antlion; nine rings broken break the dance; the packs guard ~22% |
 | T13 | 30% of its body: shattered (starved if starving); half its body fights on; none: wiped |
 | T14 | over 300 seeds every variant of every form is drawn; the draw packs into one int and is the same on every peer |
 | T15 | no clock: the shipped settings carry `MatchSeconds` 0, and twenty minutes alone end nothing |
@@ -448,6 +454,6 @@ Prisms: the reef 2,682 + one body of up to 642.
    feeding intake against real Borromean plants, the bolt against real hulls, the HUD rows and the flare, the gold burst,
    the halo, and how a full match plays against the seven-minute clock.
 2. **Tune from the playtest**: the moods' thresholds and speeds, the meal-break share, the banks, the clock.
-3. **The tactic chooser**: per-form defences beyond the guard ring (a Many-Headed lunge, the Sea Lion's fin sweep) on the
+3. **The tactic chooser**: per-form defences beyond the guard ring (a Many-Headed lunge, the Antlion's jaw snap) on the
    same queued-lever seam, each with a visible tell.
 4. **Severing**: a cut region split into its own `SwarmFauna` (a decoy or a hunter), within the proxy and collider ceilings.

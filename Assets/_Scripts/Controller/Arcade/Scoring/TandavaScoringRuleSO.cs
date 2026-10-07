@@ -12,7 +12,7 @@ namespace CosmicShore.Gameplay
     /// swarm, so the winner is not a metric race. The match ends on the swarm's <see cref="TandavaOutcome"/>, which
     /// <see cref="TandavaController"/> publishes into this rule on every peer (<see cref="Publish"/>): wiped out,
     /// shattered, starved or its dance broken (or held off, were a clock ever set - the shipped hunt has none), the pilots' domain wins; the cycle
-    /// completed (the Sea Lion's last feast), nobody does (<see cref="Domains.Blue"/>, the platform's "no winner"
+    /// completed (the Antlion's last feast), nobody does (<see cref="Domains.Blue"/>, the platform's "no winner"
     /// sentinel). A pilot's own score is the members they culled (<see cref="ScoringMetric.LifeformsKilled"/> -
     /// attributed kills only, so a starved tadpole scores nobody) plus <see cref="haloPoints"/> for each halo ring they
     /// broke (counted, server-side, in <see cref="IRoundStats.SwitchesThreaded"/> - a halo ring IS a switch, threaded).
@@ -95,7 +95,7 @@ namespace CosmicShore.Gameplay
                 TandavaOutcome.Shattered => $"THE {_formName.ToUpperInvariant()} IS SHATTERED",
                 TandavaOutcome.DanceBroken => "THE DANCE IS BROKEN",
                 TandavaOutcome.HeldOff => $"HELD OFF AS THE {_formName.ToUpperInvariant()}",
-                // only the Sea Lion's feast completes the cycle, so the form IS the story
+                // only the Antlion's feast completes the cycle, so the form IS the story
                 TandavaOutcome.Completed => $"THE {_formName.ToUpperInvariant()} HAS FED - THE CYCLE IS COMPLETE",
                 _ => "",
             };

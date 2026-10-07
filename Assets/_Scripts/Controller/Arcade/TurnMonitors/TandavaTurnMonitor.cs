@@ -4,7 +4,7 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Turn monitor for Tandava (Assets/_Scripts/Controller/Arcade/TANDAVA.md). There is no count to race to: the turn
-    /// ends (server-side) the moment the swarm's outcome stops being Running - the Sea Lion ate its last feast, or the
+    /// ends (server-side) the moment the swarm's outcome stops being Running - the Antlion ate its last feast, or the
     /// pilots shattered it, starved it, broke its dance or held it off until the clock ran out - which
     /// <see cref="TandavaController"/> publishes into the mode's <see cref="TandavaScoringRuleSO"/>.
     ///

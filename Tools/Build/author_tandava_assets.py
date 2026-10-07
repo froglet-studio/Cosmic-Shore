@@ -7,7 +7,7 @@ One creature, a tadpole swarm, hatches WHOLE as the Great Serpent inside a close
 wall) with the cell's flora dispersed through the cytoplasm. It goes where it likes to eat, its speed and manner set by
 how threatened it feels; feeding it puts its plates out round its mouth as danger guards and stops regrowing. Banked, it
 takes its next form - the Many-Headed Serpent, then (rising where it stands) the Lord of the Dance inside a halo of
-rings, then the Sea Lion, whose last feast completes the cycle. Every match draws one of three variants of each form.
+rings, then the Antlion, whose last feast completes the cycle. Every match draws one of three variants of each form.
 Every pilot flies on ONE domain against it, in a Squirrel, a Sparrow or a Rhino.
 
 What this script owns (one owner per file; the folders below are this script's alone):
@@ -79,7 +79,9 @@ RETIRED = ([f"{SWARM_DIR}/SwarmPlan_tandava_{k}.json" for k in ("serpent_s", "se
            # the open 1,200 u cell's Space Borromean fork, retired by the crowded reef (the third pass, 2026-10-06)
            + [f"{CELL_DIR}/Tandava Borromean Flora Space Config Data.asset"]
            # the third pass's environment (Crystal Capture's Atlantis, thinned), removed at the prompter's word (2026-10-06)
-           + ["Assets/_Prefabs/Spawnables/SpawnableAtlantis Tandava.prefab"])
+           + ["Assets/_Prefabs/Spawnables/SpawnableAtlantis Tandava.prefab"]
+           # the Sea Lion, replaced by the Antlion as the final form (the prompter, 2026-10-07)
+           + [f"{SWARM_DIR}/SwarmPlan_tandava_sea_lion_{v}{pose}.json" for v in (1, 2, 3) for pose in ("", "_feed")])
 for rel in RETIRED:
     g.stale += [rel, rel + ".meta"]
 
@@ -224,8 +226,8 @@ FORMS = [
     dict(name="Many-Headed Serpent", role=0,
          line="Its coils split: a {0}. Every head dips to the food when it eats."),
     dict(name="Lord of the Dance", role=1, line=""),   # the rise is RisingLine; the halo lighting is HaloLitLine
-    dict(name="Sea Lion", role=2,
-         line="The drum stops. A {0} swims out of the halo. One last feast and the cycle is complete."),
+    dict(name="Antlion", role=2,
+         line="The drum stops. The {0} drops out of the halo, jaws open. One last feast and the cycle is complete."),
 ]
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -603,7 +605,7 @@ g.emit_asset(SETTINGS_REL, G_ASSET["TandavaSettings"],
              "  HaloLitLine: The halo is lit. Break the rings before the drum stops.\n"
              f"  FirstHaloLine: {yaml_str('A ring is broken. Break {1} and the dance falls.')}\n"
              f"  LastHaloLine: {yaml_str('{0} of {1}. One more ring!')}\n"
-             "  CompletedLine: The Sea Lion has fed. The cycle is complete.\n"
+             "  CompletedLine: The Antlion has fed. The cycle is complete.\n"
              "  WonLine: Its body is broken. The reef keeps its turn.\n"
              "  DanceBrokenLine: The dance is broken. The reef keeps its turn.\n"
              f"  HeldOffLine: {yaml_str('Time. You held it off - the cycle is unfinished.')}\n"
@@ -628,7 +630,7 @@ g.emit_asset("Assets/_SO_Assets/Games/ArcadeGameTandava.asset", G_ASSET["ArcadeG
   Description: One creature lives in this cell, and it is hungry. It hatches as a great serpent and
     eats wherever it likes - bolting when you charge it, putting its guards out round its mouth when
     it feeds. Fed, it becomes a many-headed serpent, then rises into the Lord of the Dance inside a
-    halo, then a sea lion. Shatter it or break its halo before its last feast - there is no clock. Everyone
+    halo, then an antlion. Shatter it or break its halo before its last feast - there is no clock. Everyone
     flies together.
   IconActive: {{fileID: 21300000, guid: {EXISTING['IconActive']}, type: 3}}
   IconInactive: {{fileID: 21300000, guid: {EXISTING['IconInactive']}, type: 3}}

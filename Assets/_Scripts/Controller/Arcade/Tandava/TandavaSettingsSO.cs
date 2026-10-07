@@ -99,7 +99,7 @@ namespace CosmicShore.Gameplay
         public Vector3 HatchHeading = Vector3.right;
 
         [Header("Forms")]
-        [Tooltip("In order: the Great Serpent, the Many-Headed Serpent, the Lord of the Dance (the ascension), the Sea Lion. " +
+        [Tooltip("In order: the Great Serpent, the Many-Headed Serpent, the Lord of the Dance (the ascension), the Antlion. " +
                  "Exactly four; each draws one of its variants per match.")]
         public List<TandavaFormSpec> Forms = new();
 
@@ -172,7 +172,7 @@ namespace CosmicShore.Gameplay
         [TextArea] public string FirstHaloLine = "A ring is broken. Break {1} and the dance falls.";
         [Tooltip("{0} = rings broken, {1} = rings to break the dance.")]
         [TextArea] public string LastHaloLine = "{0} of {1}. One more ring!";
-        [TextArea] public string CompletedLine = "The Sea Lion has fed. The cycle is complete.";
+        [TextArea] public string CompletedLine = "The Antlion has fed. The cycle is complete.";
         [TextArea] public string WonLine = "Its body is broken. The reef keeps its turn.";
         [TextArea] public string DanceBrokenLine = "The dance is broken. The reef keeps its turn.";
         [TextArea] public string HeldOffLine = "Time. You held it off - the cycle is unfinished.";

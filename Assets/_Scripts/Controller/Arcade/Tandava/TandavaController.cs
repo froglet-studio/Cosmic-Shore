@@ -20,7 +20,7 @@ namespace CosmicShore.Gameplay
     /// to heal. Hurt badly enough at the table, it bolts. Banked, it takes its next form: the MANY-HEADED SERPENT, which
     /// banked in turn RISES where it stands into the LORD OF THE DANCE - a halo of twelve rings (<see cref="TandavaHaloRing"/>)
     /// lights round it, its attendant packs patrol it, a drum runs and the cell glows gold - and when the drum stops it is
-    /// the SEA LION, whose last feast completes the cycle. A form, once taken, is remembered: cut limbs regrow from its
+    /// the ANTLION, whose last feast completes the cycle. A form, once taken, is remembered: cut limbs regrow from its
     /// stomach. Every match draws one of three VARIANTS of each form. The mode has no fire: its effect is gold prism
     /// debris (<see cref="TandavaGoldBurst"/>). Every pilot flies one domain; they win by shattering its body below a third
     /// of its form, breaking the halo, wiping it out, starving it, or holding it off until the clock runs out.
@@ -840,7 +840,7 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>The dance is over (the Sea Lion taken, or the dance broken): every ring still whole withers.</summary>
+        /// <summary>The dance is over (the Antlion taken, or the dance broken): every ring still whole withers.</summary>
         void StrikeHalo()
         {
             for (int k = 0; k < _halo.Length; k++)
