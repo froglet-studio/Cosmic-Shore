@@ -5,7 +5,9 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Puts the Skim Race pilot on an AI seat. Called by
+    /// Puts the Skim Race pilot on an AI seat - in Skim Race (crystals on the waypoint track) and
+    /// in Regatta (rings along the domain's rail): the same pilot, a different
+    /// <see cref="SkimRaceObjective"/>. Called by
     /// <c>ServerPlayerVesselInitializerWithAI.ConfigureAIPilot</c> — the one place every backfill
     /// bot (and every hull an AI inherits mid-match) is configured — so the pilot is present in
     /// the normal arcade flow with no scene wiring, and an AI seat in any other mode is untouched.
@@ -24,11 +26,12 @@ namespace CosmicShore.Gameplay
         /// per race rather than once per AI seat.</summary>
         static (int scene, int intensity) _warnedFor;
 
-        /// <summary>True when Skim Race AI seats in this match belong to <see cref="SkimRacePilot"/>.</summary>
+        /// <summary>True when this match's Squirrel AI seats belong to <see cref="SkimRacePilot"/>:
+        /// a mode with a racing objective (<see cref="SkimRaceObjective.For"/>), outside training.</summary>
         public static bool Claims(GameDataSO gameData)
         {
             if (gameData == null || gameData.IsTraining) return false;
-            if (gameData.GameMode != GameModes.SkimRace) return false;
+            if (gameData.GameMode is not (GameModes.SkimRace or GameModes.Regatta)) return false;
             var cfg = SkimRaceAIConfigSO.LoadDefault();
             return cfg != null && cfg.DeployInNormalPlay;
         }
@@ -48,13 +51,18 @@ namespace CosmicShore.Gameplay
             // The host's lobby pick, independent of intensity (intensity is the map, difficulty is
             // the opponent): the same per-intensity policy, plus the difficulty's deliberate mistakes
             // (none for Hard). Every seat - backfill and adopted hull alike - is installed under it.
+            // Only where the card OFFERS the picker (AIDifficultyRules.IsOfferedFor - Skim Race): the
+            // pick is pre-launch config that outlives the card it was made on, so without this a host
+            // who chose Easy on Skim Race would hand Regatta's AI mistakes its lobby never showed.
             var difficulty = AIDifficultyRules.Resolve(gameData.RequestedAIDifficulty);
-            var handicap = SkimRaceDifficultySO.Load().For(difficulty);
-            pilot.Bind(vessel, gameData, config, handicap);
+            var handicap = AIDifficultyRules.IsOfferedFor(gameData.GameMode)
+                ? SkimRaceDifficultySO.Load().For(difficulty)
+                : default;
+            pilot.Bind(vessel, gameData, config, SkimRaceObjective.For(gameData), handicap);
             CSDebug.LogVerbose(CSLogChannel.AITraining,
                 $"[SkimRaceAI] {vessel.VesselStatus.PlayerName} flies the Skim Race pilot " +
-                $"({config.PolicyVersion}, I{intensity}, {difficulty}" +
-                (handicap.IsNone ? ")." : $": reaction {handicap.ReactionSeconds:0.##} s, mistake chance {handicap.MistakeChance:0.##})."));
+                $"({config.PolicyVersion}, I{intensity}, {pilot.Objective?.GetType().Name}, " +
+                (handicap.IsNone ? "no handicap)." : $"{difficulty}: reaction {handicap.ReactionSeconds:0.##} s, mistake chance {handicap.MistakeChance:0.##})."));
             return pilot;
         }
 

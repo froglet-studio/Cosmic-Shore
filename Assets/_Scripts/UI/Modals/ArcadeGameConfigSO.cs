@@ -32,6 +32,26 @@ namespace CosmicShore.UI
                      "card carries the default and nothing reads it.")]
             public AIDifficulty AIDifficulty = AIDifficultyRules.Default;
 
+            [System.NonSerialized]
+            [Tooltip("The hull a teammate picked for each placed AI, parallel to AIDomains " +
+                     "(entry i is bot i). Random = no pick: the spawner draws from the card. " +
+                     "Only an ALLY seat (a domain a human flies) reads it. Kept the same length " +
+                     "as AIDomains by SyncAIVesselSlots; a kick removes the matching entry.")]
+            public List<VesselClassType> AIVessels = new();
+
+            /// <summary>The pick for AI seat <paramref name="ordinal"/>, Random when none.</summary>
+            public VesselClassType AIVesselAt(int ordinal) =>
+                ordinal >= 0 && ordinal < AIVessels.Count ? AIVessels[ordinal] : VesselClassType.Random;
+
+            /// <summary>Pad (with Random) or truncate <see cref="AIVessels"/> to one entry per
+            /// placed AI. Placements are added and dropped at the END everywhere but a kick, which
+            /// removes its own entry, so this keeps pick i on bot i.</summary>
+            public void SyncAIVesselSlots()
+            {
+                while (AIVessels.Count > AIDomains.Count) AIVessels.RemoveAt(AIVessels.Count - 1);
+                while (AIVessels.Count < AIDomains.Count) AIVessels.Add(VesselClassType.Random);
+            }
+
             public void ResetState()
             {
                 SelectedGame   = null;
@@ -42,6 +62,7 @@ namespace CosmicShore.UI
                 SelectedDomain = Domains.Jade;
                 AIDomains.Clear();
                 AIDifficulty   = AIDifficultyRules.Default;
+                AIVessels.Clear();
             }
         }
 }
