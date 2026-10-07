@@ -83,6 +83,45 @@ and editor configs, no errors in the changed files; the Froglet Engine live comp
    Schedule() …`. On a healthy editor both say `BURST`.
 3. `prof`: the JSON has an `environment` block and the .txt an `environment` line.
 
+### 🔴 Party request discipline — review Phases 0–1 (`Ys-bleeding-edge`, 2026-10-07)
+
+**What landed.** Five commits from `Docs/MultiplayerArchitecture/REVIEW_INVITE_AND_RESILIENCE.md`
+§7: `931dcd51` one UGS failure classifier (`UgsRequestPolicy.Classify`, replacing five private copies)
+plus the `ugs[...]` request counters on every NetDiag line; `0521b858` every UGS create / join / query /
+save routed through `UgsRequestPolicy.ExecuteAsync` (jittered back-off, per-client retry budget,
+single-flight on create/join; nine inline retry loops deleted); `d31e01b2` the PENDING acceptance
+handshake deleted (`AcceptanceSignalService`, the `accepted_invite` write per Accept, the per-tick
+acceptance scan); `12e2cb1b` `JoinTargetValidator` — Accept / Join / Spectate refuse a stale, full or
+offline target with a toast BEFORE the local host is torn down; `8a0eaa0d` UTP `MaxConnectAttempts`
+60 → 10 and `DisconnectTimeoutMS` 30 000 → 10 000 on `NetworkManager.prefab`, and
+`WaitForClientConnectionAsync` returns as soon as the client stops listening.
+
+**Proven without the editor.** `unity_refcompile`: 0 project errors in 95 assemblies on each commit
+(real Netcode 2.13.3 / Multiplayer Services 2.3.3 / UniTask / engine references). The shipped
+edit-mode tests executed headlessly against those assemblies: `UgsRequestPolicyTests` (77),
+`UgsRequestTelemetryTests` (5), `JoinTargetValidatorTests` (14), `PartyAcceptFlowPlayModeTests`
+(4) — all green; negative controls fail as expected. All textual gates green;
+`check_generated_assets.py` green on the prefab edit.
+
+**Needs the editor (MPPM, 1 host + 3 virtual players, `CSLogChannel.Party` verbose ON, read the
+`ugs[...]` field of any NetDiag line):**
+1. T1 — host invites P2/P3/P4 within 5 s, all accept within 10 s → roster 4/4 on all four screens
+   < 2 s after the last accept; `429/min=0`, `reset=0`.
+2. T2 — P2/P3/P4 press **Join** simultaneously → all seated, no bounce.
+3. T4 — party 4/4, a fifth client presses Join → toast "…party is full", its own session untouched
+   (no `EnsurePartySessionAsync` log), no scene reload.
+4. T10 — P2 accepts an invite whose sender left 2 s earlier → toast "…no longer online" /
+   "…no longer available", invite row cleared, no bounce.
+5. T8 — all four spam Invite / Cancel for 60 s → `429/min` may rise, `budget-out/min` may rise,
+   `reset=0`, `offline=0`, UI never stalls > 2 s.
+6. Timeout nest — kill the host's Relay reachability before a guest joins → the guest bounces within
+   ~12 s (transport gives up at 10 s), not after 30 s; mid-match, pull a client's network → the host
+   re-decides the ready gate / converts the vessel at ~10 s (was 30 s).
+7. Watch the Console for the retired `AcceptanceSignalService` / `[INVITE-SEND]` chatter: none
+   expected; any `UgsRequestPolicy` warning names a spent retry budget.
+
+---
+
 ### 🟡 Skim Race AI seats stagger their track-planner re-plans (`perf/performance-optimization`, 2026-10-07)
 
 **What landed** (`Docs/SKIM_RACE_AI.md` §8.0i): `SkimRaceReplanGate` (new), shared by every
@@ -190,6 +229,30 @@ Steps 2-4 not yet reported.
 4. Leave a race for the menu and start another: beams still appear (the pool survives scenes).
 5. F7 > `diag S_SkimRace_I2 15` and `prof S_SkimRace_I2`: `SkimRace.Pilot.Decide` shows ~0 GC.Alloc
    (was 840 a frame), and `SkimRace.Pilot.FillObstacles.Query` / `.Pack` appear under the pilot.
+
+### 🔴 Skim Race AI retuned across frame rates (`claude/confident-pascal-w76l2o`, 2026-10-06)
+
+**What landed.** The I1, I2 and I4 AI tuning files and the general policy were retuned with the races spread
+over 16/28/50 ms frames (62/36/20 fps) and the game's 0.04 s contact step (`skimrace-v5-i1`, `skimrace-v3-i2`,
+`skimrace-v2-i4`, `skimrace-v3-general`), because the previous files were tuned at one frame rate and raced
+4-21% slower at the others (`Docs/SKIM_RACE_AI.md` §14). Simulator, 2 AI on Hard, 20 races per cell at 120 / 62 /
+36 / 20 / 12 fps: level at 36-62 fps, better at 120 and 12 fps, I3 and I4 better at every frame rate (§14.5).
+The simulator gained `dts=` (races spread over frame times) and `ph.PhysicsStep` (contacts on the fixed step).
+The planner stagger this branch first shipped (a fixed grid with lane phase) was retired at the merge with
+`perf/performance-optimization` in favour of its `SkimRaceReplanGate` (the entry above), which also holds at
+25 fps and below; the retuned policies were re-raced under the gate (§14.5). Out of editor: real-Unity-reference
+compile 0 errors in project code; gates green.
+
+**Verify in editor**
+- [ ] Compiles; the Skim Race tests pass (`SkimRaceAITests` including the four gate tests,
+      `SkimRaceHandicapTests`, `SkimRaceTrackFingerprintTests`, `SkimRaceTeamAssignmentTests`, `SkimRaceCourseQueryTests`).
+- [ ] **Code Optimization = Release** (the bug icon, bottom right) for any timing; note which one it was.
+- [ ] Race the AI on Hard at I1, I2, I3 and I4 (you alone + 2 AI on separate teams), a few races each; the
+      recorder writes `BenchmarkResults/SkimRaceAI/manual_I<n>_*.jsonl` with each race's `frameMs`. Report the AI
+      winner times WITH the frame time - a time without its frame rate cannot be compared with the simulator tables.
+- [ ] Nothing visibly odd in how the AI flies at I1 (the retune moved 23 numbers; the simulator saw no new
+      failure mode, 40/40 at 120 fps).
+- [ ] Optional, the real user test: you + a friend vs a 2-AI team on Hard (Add AI twice on one tile).
 
 ### 🔴 Skim Race AI teammates split the crystals (`claude/confident-pascal-w76l2o`, 2026-10-05)
 
@@ -618,9 +681,6 @@ negative-controlled with CS1002 / CS0102 / CS0111), the repo's C# gates, and
 
 **First-pass tuning:** `touchNoseResponse` (prefab, per hull) — raise if the nose still trails the
 thumb, lower toward 1.5 if it feels twitchy. Touch curve `Ease` 75/25 (unchanged on bleeding-edge).
-
----
-
 ### 🟢 Icon renderer upgrade + authored lamp art (`claude/single-player-offline-fallback-jksga5`, 2026-08-27)
 
 **Landed and verified.** The icon renderer was rebuilt (analytic 0/1 shape + 4×4 supersampling at

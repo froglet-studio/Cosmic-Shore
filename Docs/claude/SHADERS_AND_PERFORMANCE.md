@@ -24,6 +24,37 @@
 - Cache-line-aware data layouts with hot/cold splitting and bit-packed flags (`PrismSpatialData` / `PrismDamageData` in `PrismSpatialIndex`)
 - Growth occupancy checks use `PrismSpatialIndex.TryReserve` (claim-before-spawn), never `Physics.CheckBox` — prism colliders are disabled for the first 0.6s after spawn, so physics queries are structurally blind to fresh prisms
 
+**The performance record and how to measure (2026-10-07) - start here before any perf work:**
+
+- **Read first:** `Docs/PERFORMANCE_OPTIMIZATION.md` (where the game stands, what was done, the ranked lever
+  list, how to measure without fooling yourself). Then `Docs/MEMORY_AUDIT.md` (what the game HOLDS) and
+  `Docs/PLATFORM_UNIFICATION.md` (device tiers: Desktop / MobileHigh / MobileLow, the trail cap, one codebase
+  for Windows, iOS and Android). The next session's brief: `Docs/prompts/PERFORMANCE_NEXT_SESSION_PROMPT.md`.
+- **Instruments in the game:** the console commands `diag` (per-system timings, a report to JSON),
+  `prof` (the Profiler Hierarchy as JSON; flags Burst jobs that ran as managed code), `freeze` / `ab`
+  (a same-state A/B in one line), `renderers` (a renderer census; `hide <prefix>` / `show` to A/B a family's
+  culling cost), the `DiagnosticsHUD`, and the Performance Benchmark tool
+  (`_Scripts/Utility/PerformanceBenchmark/BENCHMARK_TOOL.md`). `diag` records the editor's Code Optimization
+  mode: **measure in Release** (the bug icon, bottom right); Debug runs all C# about 5x slower and a number taken
+  there says nothing about a build.
+- **Every per-frame cost gets a `ProfilerMarker` named `System.Part`** (`SkimRace.Pilot.Decide`,
+  `SkimRace.Driver.TrackMpc`, `RaceTrailCap.Hold`, ...) so `prof` and `diag` can name it; the AI's are listed
+  in `Docs/SKIM_RACE_AI.md` §12.
+- **Allocation gates:** `Tools/Build/check_mathf_params_alloc.py` - a 3-argument `Mathf.Min/Max/...` allocates a
+  `params` array per call (the Skim Race pilot allocated 840 a frame); use `MathfNoAlloc`.
+  `Tools/Build/scan_perframe_allocations.py` scans per-frame code for allocations. `Decide` now allocates nothing.
+- **The editor runs Mono, in double precision, at Debug optimization**; a Release .NET number does not predict
+  it. The Skim Race simulator's `SKIMRACE_RUNTIME=mono` mode does (`Docs/SKIM_RACE_AI.md` §8.0f-g, §14.4), and
+  its float rewrite shows the trap: folding `Vector3` operators into float expressions changes the last bits
+  on the editor's Mono unless every value the `Vector3` form rounded is rounded with an explicit `(float)`.
+- **Spread a burst across seats and frames:** several AI seats re-planning in one frame paid the whole cost at
+  once; `SkimRaceReplanGate` lets one re-plan claim a frame and the next seat waits one frame
+  (`Docs/SKIM_RACE_AI.md` §8.0i) - the pattern for any periodic heavy step several actors run.
+- **Frame rate is a gameplay input, not just a cost:** contacts are tested on the 0.04 s fixed step and the
+  trail is laid at most once per frame, so a thing tuned at one frame rate behaves differently at another
+  (`Docs/SKIM_RACE_AI.md` §14 - the AI is now tuned across 62/36/20 fps). Measure a frame-rate-sensitive
+  system at several frame rates before calling it tuned.
+
 ### Prism System Performance
 
 The prism system was the most performance-critical gameplay system, and its rendering is now

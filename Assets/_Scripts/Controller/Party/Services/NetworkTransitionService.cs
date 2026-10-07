@@ -163,13 +163,32 @@ namespace CosmicShore.Gameplay
 
             try
             {
+                // Two exits: the client connected, or the client was started and has since STOPPED -
+                // UTP exhausted its connect window (MaxConnectAttempts × ConnectTimeoutMS) and Netcode
+                // shut the client down. Sitting out the rest of our own timeout after that only
+                // delays the bounce; it was the inverted nest the review measured (a 60 s transport
+                // window outside an 8-30 s app wait, Docs/MultiplayerArchitecture/
+                // REVIEW_INVITE_AND_RESILIENCE.md §3.3). "Started" is observed, not assumed, so a
+                // client the SDK has not begun yet still gets the full wait.
+                bool sawListening = false;
                 await UniTask.WaitUntil(
                     () =>
                     {
                         var n = NetworkManager.Singleton;
-                        return n != null && n.IsConnectedClient;
+                        if (n == null) return false;
+                        if (n.IsConnectedClient) return true;
+                        if (n.IsListening) { sawListening = true; return false; }
+                        return sawListening;
                     },
                     cancellationToken: timeoutCts.Token);
+                var after = NetworkManager.Singleton;
+                if (after == null || !after.IsConnectedClient)
+                {
+                    CSDebug.LogWarning("[NetworkTransitionService] Transport gave up before our timeout - the client stopped listening without connecting.");
+                    LogNetworkState(after, "after transport give-up");
+                    CSDebug.LogVerbose(CSLogChannel.Party, $"[NetworkTransitionService] NetDiag: class=Timeout | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
+                    return false;
+                }
                 CSDebug.LogVerbose(CSLogChannel.Party, "[NetworkTransitionService] Netcode client connected.");
                 return true;
             }

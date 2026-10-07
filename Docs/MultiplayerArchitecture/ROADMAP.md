@@ -10,6 +10,11 @@ as a prioritized next-work queue. Granular, already-sequenced items live in the 
 Companion to the PDF dossier in `Docs/MultiplayerArchitecture/`
 (Part II → “Future improvements & roadmap”).
 
+Companion **review** (2026-10-06): `REVIEW_INVITE_AND_RESILIENCE.md` — the Invite / Join-direct flow, request
+discipline (retries, 429s, duplicate requests) and disconnect resilience for a 4-player party, measured against
+industry practice, with the edge-case matrix, a four-phase rollout and the MPPM test plan. Several queue items
+below (push-based presence, reconnection, observability) are specified there.
+
 ## How to use this
 
 - The **invariants** are guardrails — keep them true. A change that breaks one is a regression, not a

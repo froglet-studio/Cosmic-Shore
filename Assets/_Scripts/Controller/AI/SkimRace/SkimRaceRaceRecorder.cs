@@ -95,6 +95,9 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Also write a 10 Hz per-AI-seat trace (CSV) beside the results file.</summary>
         public bool TraceFrames;
+        // Each seat's record by player name: SampleSeats runs every frame for every player, and a
+        // List.Find with a lambda there allocated a closure per player per frame.
+        readonly Dictionary<string, SeatRecord> _seatByName = new();
         float _nextTrace;
         readonly System.Text.StringBuilder _trace = new();
 
@@ -157,11 +160,13 @@ namespace CosmicShore.Gameplay
                 startedUtc = DateTime.UtcNow.ToString("o", System.Globalization.CultureInfo.InvariantCulture),
             };
 
+            _seatByName.Clear();
             foreach (var p in _gameData.Players)
             {
                 if (p == null) continue;
                 var seat = new SeatRecord { name = p.Name, isAI = p.IsInitializedAsAI, domain = p.Domain.ToString() };
                 _race.seats.Add(seat);
+                _seatByName[p.Name] = seat;
                 _lastCount[p.Name] = p.RoundStats != null ? p.RoundStats.CrystalsCollected : 0;
                 var go = p.Vessel?.Transform != null ? p.Vessel.Transform.gameObject : null;
                 var pilot = go != null ? go.GetComponent<SkimRacePilot>() : null;
@@ -183,8 +188,7 @@ namespace CosmicShore.Gameplay
             foreach (var p in _gameData.Players)
             {
                 if (p == null) continue;
-                var seat = _race.seats.Find(s => s.name == p.Name);
-                if (seat == null) continue;
+                if (!_seatByName.TryGetValue(p.Name, out var seat)) continue;
                 int c = p.RoundStats != null ? p.RoundStats.CrystalsCollected : 0;
                 if (_lastCount.TryGetValue(p.Name, out int last) && c > last)
                     for (int k = last; k < c; k++) seat.collectionTimes.Add(now);

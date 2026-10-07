@@ -96,5 +96,15 @@ namespace CosmicShore.ScriptableObjects
                  "ElementalComebackSystem; the comeback layer can never lift an element above " +
                  "level 10. 0 disables comeback for this game.")]
         [Min(0f)] public float ComebackRatePerScoreDeficit = 1f;
+
+        [Header("AI seating (arena cards)")]
+        [Tooltip("When set, every AI seated on a domain NO human flies - an opponent seat - " +
+                 "flies this hull, whatever the card's roster would otherwise draw. Exempt from " +
+                 "ArenaRules' one-hull-per-pilot rule (a grid of identical opponents is the " +
+                 "point), and it never blocks a human's or an ally's hull. Ally AI (a domain a " +
+                 "human flies) still draw from the card, or fly the hull a teammate picked for " +
+                 "them on the launch panel. Regatta pins the Squirrel here until the racing AI " +
+                 "can drive every hull; leave empty for the card's ordinary mixed draw.")]
+        public SO_Vessel OpponentAIVessel;
     }
 }

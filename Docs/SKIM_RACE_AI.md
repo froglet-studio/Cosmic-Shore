@@ -59,9 +59,10 @@ Read from the prefab and from an in-editor probe (`SkimRaceRaceRecorder.WritePro
 | File | Role |
 |---|---|
 | `SkimRacePilot` | MonoBehaviour on the AI vessel: lifecycle, sensing, actuation. Inactive (neutral input) until `GameDataSO.IsTurnRunning` rises; neutral again when the turn ends; stops and disables `AIPilot` while it owns the vessel |
-| `SkimRaceAIDeployment` | Installs the pilot from `ServerPlayerVesselInitializerWithAI.ConfigureAIPilot` — every Skim Race backfill seat in normal play, no scene wiring. Skipped while `IsTraining`; `TrainingDeploymentService` defers to it. Reads the host's lobby AI difficulty (`GameDataSO.RequestedAIDifficulty`, §10). Picks the policy (`PolicyFor`): the intensity's own file only while it fits the map in the scene, else the general one (§11) |
-| `SkimRaceTargetTracker` | The authoritative target: a live, non-embedded crystal of this domain from `Crystal.Active` (mid-collection crystals are valid only once moved away from the pilot); nearest wins with hysteresis. The whole rule for a lone AI on its team, and the fallback for AI teammates |
-| `SkimRaceTeamPlan` / `SkimRaceTeamAssignment` | Team play (§13): when two or more AI fly for one team, one plan per team per frame gives each a DIFFERENT crystal (least total distance, kept until another plan is 15% cheaper). AI only - a human teammate is never planned for. The assignment is pure C#, shared with the simulator |
+| `SkimRaceAIDeployment` | Installs the pilot from `ServerPlayerVesselInitializerWithAI.ConfigureAIPilot` — every Squirrel backfill seat in **Skim Race and Regatta** in normal play, no scene wiring. Skipped while `IsTraining`; `TrainingDeploymentService` defers to it for Squirrel seats. Reads the host's lobby AI difficulty (`GameDataSO.RequestedAIDifficulty`, §10). Picks the policy (`PolicyFor`): the intensity's own file only while it fits the map in the scene, else the general one (§11) |
+| `SkimRaceObjective` | WHAT the pilot races for — the only mode-aware part. `CrystalTrackObjective` (Skim Race: the waypoint track's ribbon, this domain's crystal, crystals collected — the pilot's original behaviour, moved verbatim) and `RegattaRingObjective` (Regatta: this domain's rail, the pilot's next ring via `GateRaceController.TryGetNextGate` at 0.7 × the mouth, gates threaded). `SkimRaceObjective.For(gameData)` picks by mode |
+| `SkimRaceTargetTracker` | Skim Race's target: a live, non-embedded crystal of this domain from `Crystal.Active` (mid-collection crystals are valid only once moved away from the pilot); nearest wins with hysteresis. The whole rule for a lone AI on its team, and the fallback for AI teammates |
+| `SkimRaceTeamPlan` / `SkimRaceTeamAssignment` | Team play (§13): when two or more AI fly for one team, one plan per team per frame gives each a DIFFERENT crystal (least total distance, kept until another plan is 15% cheaper). AI only - a human teammate is never planned for. The assignment is pure C#, shared with the simulator. Feeds `CrystalTrackObjective.Planned`; rings are each pilot's own, so Regatta has no plan |
 | `SkimRaceCourse` / `SkimRaceCourseSource` | The racing line: the track prisms the game actually laid, in lay order, with each prism's pose and contact shell |
 | `SkimRaceObservation` / `SkimRaceAction` | The observation and action schema (feature vector, schema version, NaN sanitising, clamping) |
 | `SkimRaceDriver` | The decision core (pure C#): racing line, crystal pass planning, lag-compensated steering, throttle, recovery |
@@ -973,6 +974,13 @@ Runs excluded, and why (all disclosed, none are AI results):
 
 ## 9. Status and known limits
 
+- **Regatta (2026-10-06, NOT editor-verified).** Regatta's opponent Squirrels fly this pilot with
+  `RegattaRingObjective`: crystals swapped for rings, the waypoint ribbon for the domain's rail.
+  Before this they flew the platform `AIPilot` steered at ring waypoints and threaded none. The
+  policy is Skim Race's per-intensity config, untuned for a rail; the rail lanes sit 22 u off the
+  ring spine and the mouths are 54–110 u, so the skim line passes well inside each mouth. A pilot
+  whose hull a human swaps into stands down (no input writes) until the AI gets it back.
+
 **Limits: I1 70 s, I2 80 s (re-baselined, §6.11), I4 70 s. Met on I1 (editor, winner); I2 80 s is met
 with `skimrace-v2-i2` at normal frame rates: the last 5 consecutive hand-played races 67.4-76.6 s
 (median 69.6 s, §8.0d), background benchmark median 72.6 s (§8.0b). Below ~8 fps (127 ms frames) it is
@@ -1375,3 +1383,238 @@ further apart. A respawned crystal's "move away from where it last was" rule is 
 it for a lone AI). Human teammates are not modelled at all. A hand-played editor race records itself
 (`BenchmarkResults/SkimRaceAI/manual_I<n>_*.jsonl`, §1), and that record is how a human pair's time
 gets compared.
+
+## 14. Frame rate: the AI is tuned for one frame rate (2026-10-06)
+
+**Why this section exists.** The user reported the AI racing poorly at Easy, Medium and Hard alike while
+testing. Nothing in that day's bleeding-edge merge changes how the Squirrel flies on desktop (§14.3), so
+the AI was measured at the frame rates people actually play at.
+
+### 14.1 Two things in the GAME depend on frame rate
+
+- **Contacts run on the fixed step.** `ProjectSettings/TimeManager.asset` sets Fixed Timestep 0.04 s and
+  physics simulates in FixedUpdate, so skim, hull, laid-mass and crystal triggers are tested 25 times a
+  second, at the positions the last frame left. Above 25 fps some frames test nothing; below it every frame
+  tests once. The simulator now models this as `ph.PhysicsStep=0.04`. The default, 0, tests every frame:
+  the model the shipped policies were tuned under, and still line-for-line identical (I1 and I2, 6 races).
+- **The trail is laid at most once per frame.** `VesselPrismController.SpawnLoopAsync` lays a pair, then
+  awaits `wavelength / speed`. The await resumes on a frame, so a slow frame leaves one pair per frame and
+  the trail is SPARSER at low frame rates and evenly dense at high ones. The simulator lays its rails the
+  same way (all the pairs a frame owes, at the frame's position).
+
+The policies were tuned at 28 ms ±50% frames (about 36 fps). That means a sparser trail than a desktop at
+60-144 fps lays, and longer steps between contact tests.
+
+### 14.2 Measured: slower at every frame rate but the one it was tuned at
+
+Simulator with the game's contact step (`ph.PhysicsStep=0.04`), each track's shipped policy, 2 AI, frames
+±50%, 12 races per cell. The figure is each AI's median finish in seconds, then (races that finished
+within the cut / 12) and hull hits per AI per race.
+
+| I1 | 145 fps | 62 fps | 36 fps | 20 fps | 12 fps |
+|---|---|---|---|---|---|
+| Hard | 77.0 (12) h30 | 70.7 (12) h29 | **67.9** (12) h25 | 66.6 (12) h23 | 77.0 (12) h25 |
+| Medium | 84.0 (9) h32 | 84.8 (11) h32 | 83.0 (12) h32 | 81.5 (11) h32 | 85.0 (12) h28 |
+| Easy | 104.3 (9) h46 | 102.2 (11) h44 | 100.7 (11) h35 | 93.7 (11) h36 | 102.5 (9) h34 |
+
+| I2 | 145 fps | 62 fps | 36 fps | 20 fps | 12 fps |
+|---|---|---|---|---|---|
+| Hard | 84.6 (12) h15 | 82.6 (12) h12 | **75.8** (12) h8 | 78.6 (12) h7 | 91.4 (11) h15 |
+| Medium | 111.5 (9) h18 | 101.3 (11) h17 | 100.2 (10) h13 | 100.2 (12) h12 | 102.6 (10) h18 |
+| Easy | 126.7 (4) h23 | 120.8 (7) h20 | 130.3 (5) h17 | 119.5 (8) h14 | 119.6 (9) h19 |
+
+- Hard is 4-13% slower at 60-145 fps than at the 36 fps it was tuned at, and 13-21% slower at 12 fps. The
+  hull hits that grow at high frame rates are mostly the AI's OWN rails (I1: 4.8 per race at 145 fps vs 2.7
+  at 36), the pickup ring (6.1 vs 4.8) and other seats' rails: the denser trail of §14.1.
+- At low frame rates the hull moves in large steps (38 u per frame at 127 ms and 300 u/s), so pass points
+  are overshot. §8.0c measured the same thing in the editor at 8 fps.
+- Easy at I2 often runs past the simulator's cut (limit + 60 s). That makes it slow, not stuck; the game
+  has no cut.
+- The every-frame contact model (`PhysicsStep=0`) gives the same picture, with more hull hits at high frame
+  rates because it tests contacts more often than the game does.
+- I2's pickup hold (`PickupClearDistance` 1.569 u, under one frame of travel at any speed) is effectively
+  "hold for exactly one frame", which is a frame-rate-dependent rule. Lengthening it to 8.4 or 14 u was
+  not a consistent gain across 145/62/36 fps at 12 races per cell, so it is not the main lever.
+
+### 14.3 What the 2026-10-06 bleeding-edge merge changed for the AI
+
+Nothing in how the Squirrel races on desktop:
+
+- The "skim-tick rate limit" is the skim SOUND (`ProximityBoostAudioController.minTickInterval`).
+- `DecayBoost` now raises its event only on change; the boost value itself is the same.
+- The race trail cap (`RaceTrailCap`) attaches only on the MobileLow tier.
+- The new Squirrel AI boost policy lists Skim Race (33) in `disabledInModes`, and `AIPilot` is off under
+  `SkimRacePilot` anyway.
+
+One change touches testing: commit `c13425ba5` ("drift changes") also changed `ProjectSettings/QualitySettings.asset`.
+The editor's current level went from 2 (Medium) to 4 (Very High, which carries vSync on and 4x MSAA), and the
+per-platform default levels were cleared. §8.0c's 8 fps hand-played editor races were observed at Very High
+with vSync. `GraphicsSettingsApplier` applies the player's saved preset at runtime, so builds are governed by
+the settings menu; the editor's starting point is not.
+
+### 14.4 What the AI costs the editor (2026-10-06)
+
+The user's report was that the GAME runs slow while testing Skim Race with AI. The simulator's .NET build
+is optimized; the Unity editor runs the same C# on Mono with its Code Optimization usually at **Debug**,
+which is much slower. As a stand-in, the simulator was compiled WITHOUT optimization (`csc -optimize-`) and
+each track raced with 2 AI, 28 ms frames ±50%, the game's contact step, 10 races (seedbase 50000). Per AI
+per frame, and both AIs together in one frame:
+
+| Track | Optimized: per AI | Both AIs, typical / worst 10% / worst 1% | Unoptimized: per AI | Both AIs, typical / worst 10% / worst 1% | Biggest part (unoptimized) |
+|---|---|---|---|---|---|
+| I1 | 0.05 ms | 0.02 / 0.26 / 0.72 ms | 0.11 ms | 0.06 / 0.72 / 1.32 ms | laid-mass guard 0.10 ms |
+| I2 | 0.41 ms | 0.34 / 1.88 / 2.74 ms | **2.30 ms** | 1.32 / **10.74** / **14.79** ms | planner 1.92 ms per decision (0.78 per AI per re-plan optimized, ~4.5 unoptimized) |
+| I3 | 0.15 ms | 0.16 / 0.85 / 1.65 ms | 1.04 ms | 1.23 / 5.46 / 9.27 ms | laid-mass guard 0.56 ms |
+| I4 | 0.09 ms | 0.06 / 0.48 / 1.40 ms | 0.56 ms | 0.40 / 2.72 / 8.74 ms | laid-mass guard 0.45 ms |
+
+So at Debug optimization, two AI on I2 cost the editor **about 11 ms in one frame of every ten** (both
+re-plan on the same frames, 20 times a second), and I3's mass guard about 5 ms. A 60 fps frame is 16.7 ms.
+In a Release/IL2CPP build the same work is 2-3 ms at worst. The Unity Profiler reading (the checklist's
+Profiler-timers entry) is the real number; the stand-in says where it will land.
+
+**The planner stagger - two branches, one mechanism kept.** Both AI re-planned on the same frames because both
+started at race time 0 and each scheduled its next re-plan as "now + 1/TrackMpcHz". This branch first fixed it
+with a FIXED grid of 1/TrackMpcHz (50 ms), odd lanes offset by half a period, so two AI re-plan on different
+frames whenever a frame is shorter than half a period. `perf/performance-optimization` fixed the same thing the
+same day with `SkimRaceReplanGate` (§8.0i): one re-plan claims a frame, a seat that finds its frame taken flies
+its previous plan ONE more frame. At the merge (2026-10-07) the gate was kept and the grid retired, because the
+gate also holds at 25 fps and below, where every seat wants to re-plan every frame and a grid separates nothing.
+The grid's measurements stay below as the independent confirmation of the problem. (A first version offset only
+the start and kept "now + period": the first frame that happened to carry both re-plans locked the two in
+step for the rest of the race, and nothing changed - a probe of the private schedule found it.) Measured, I2,
+shipped policy, 2 AI, unoptimized build, both AIs' thinking per frame:
+
+| Frames | Before: typical / worst 10% / worst 1% | Grid: typical / worst 10% / worst 1% |
+|---|---|---|
+| 16 ms (62 fps) | 0.7 / **10.1** / 14.0 ms | 4.2 / **6.1** / 8.5 ms |
+| 28 ms ± 50% (36 fps) | 1.3 / 10.7 / 14.8 ms | 5.4 / 10.2 / 24.5 ms |
+
+At 60 fps the worst frames carry one planner instead of two. At 36 fps with ±50% jitter many frames are
+longer than 25 ms and span both grid points, so the worst 10% is unchanged (the worst 1% is GC noise in the
+unoptimized build; the maxima were 40-50 ms in every variant). At 25 fps and below each AI re-plans every
+frame whatever the phase: only a cheaper planner (the candidate grid is 5x5 sticks + nominal = 26 rollouts of
+22 steps) or a one-planner-per-frame budget would help there, and neither was done. The total CPU is the
+same; it is spread over more frames (the typical frame rose), which is the point for frame pacing. Race
+times under the SHIPPED tuning, 24 races: at 16 ms frames the seat median went 82.6 → 79.5 s (one race
+past the cut), at 28 ms 75.8 → 77.6 s - the grid also changes even lanes' schedule from a drifting ~56 ms
+to an exact 50 ms, and the shipped numbers were fitted to the old one. The retune (§14.5) is done with the
+grid in place.
+
+**The zero-code lever for the editor:** the bug icon at the bottom right of the editor - Code Optimization
+**Release** instead of Debug. The table in this section is the Debug-to-Release ratio: about 5x on the
+planner. A player build is IL2CPP and does not have the choice.
+
+**The combined code, measured the editor's way** (2026-10-07, after the merge with `perf/performance-optimization`:
+its float inner loops, no-alloc Mathf and gate, this branch's retuned policies; `SKIMRACE_RUNTIME=mono`, Mono
+6.8 in double precision - the mode that predicts the editor, §8.0g; 2 AI, 28 ms frames ±50%, the 0.04 s contact
+step, 10 races, seedbase 50000):
+
+| Track | Per AI per frame | Both AIs in one frame: typical / worst 10% / worst 1% |
+|---|---|---|
+| I1 | 0.16 ms | 0.09 / 1.05 / 1.99 ms |
+| I2 | 2.24 ms | 5.0 / **6.7** / 9.1 ms (23,242 re-plans in 23,242 frames: no frame carried two) |
+| I3 | 1.13 ms | 1.3 / 5.7 / 10.4 ms |
+| I4 | 0.67 ms | 0.5 / 4.6 / 10.0 ms |
+
+Against the unoptimized-.NET stand-in above (I2 both AIs 10.7 ms in the worst 10%), the editor-mode worst 10%
+on I2 is 6.7 ms: the gate's half, with the float loops' ~1.4x on top. The I3/I4 tails are the laid-mass guard in
+dense traffic, untouched by either branch.
+
+### 14.5 Retuning across frame rates
+
+The user's call (2026-10-06): retune each policy against SEVERAL frame rates at once. The simulator's
+`dts=0.016,0.028,0.05` spreads a tune's or an eval's races over those frame times, round-robin by seed, so a
+policy is scored at 62, 36 and 20 fps at once at no extra cost; `skimrace_retune.py` now tunes and judges
+under `ph.PhysicsStep=0.04 dts=0.016,0.028,0.05` (its `PHYSICS`), with the planner grid of §14.4 in place.
+The frame rates to weight are the ones players see; the recorder's `frameMs` per race
+(`BenchmarkResults/SkimRaceAI/manual_*.jsonl`) and the Game view's Stats overlay give them.
+
+Each retune started from the shipped policy (`only=stated`: the same numbers re-fitted, no control switched
+on or off), 16 search steps of 24 candidates on 4 races each, and was kept only if it beat the general policy
+on 20 fresh races (the script's own rule). Then shipped and new were raced head to head at FIVE frame rates
+on 20 fresh races each (seedbase 77000; the 120 fps column was not in the tuning set). Figures: each AI's
+median finish in seconds (races finished within the cut, of 20).
+
+**I1** (`skimrace-v4-i1` → `skimrace-v5-i1`, 23 numbers re-fitted, 4 minutes):
+
+| I1, Hard | 120 fps | 62 fps | 36 fps | 20 fps | 12 fps |
+|---|---|---|---|---|---|
+| shipped v4 | 66.0 (20) | 66.0 (20) | 64.2 (20) | 64.6 (20) | 73.7 (20) |
+| new v5 | 64.3 (19) | 65.1 (20) | 65.4 (20) | 63.5 (20) | **66.8** (20) |
+
+The 120 fps cell's one unfinished race was checked on 40 more races at 120 fps (seedbase 123000): new 40/40,
+median 73.9 s, 0.05 recoveries per race; shipped 39/40, 75.7 s, 0.55 recoveries per race. So v5 is level at
+36-62 fps and better at both ends, and more robust at 120 fps. Kept.
+
+**I2** (`skimrace-v2-i2` → `skimrace-v3-i2`, 22 minutes; on the script's own fresh races the new tuning's winner
+median was 70.8 s against the general policy's 101.5 s):
+
+| I2, Hard | 120 fps | 62 fps | 36 fps | 20 fps | 12 fps |
+|---|---|---|---|---|---|
+| shipped v2 | 82.1 (20) | 79.9 (20) | 78.6 (20) | 78.0 (20) | 88.0 (19) |
+| new v3 | 80.6 (20) | 79.3 (20) | 78.3 (19) | 79.3 (20) | **84.3** (20) |
+
+A small, consistent gain at both ends and level in the middle (99 of 100 races finished either way). The
+shipped I2 was already the least frame-rate-sensitive of the four; its 12 fps tail is what moved. Kept.
+
+**I4** (`skimrace-v1-i4` → `skimrace-v2-i4`, 15 minutes; on the script's own fresh races 142.3 s against the
+general policy's 159.8 s):
+
+| I4, Hard | 120 fps | 62 fps | 36 fps | 20 fps | 12 fps |
+|---|---|---|---|---|---|
+| shipped v1 | 164.3 (20) | 150.2 (20) | 149.3 (20) | 145.6 (20) | 145.8 (20) |
+| new v2 | **150.8** (20) | 149.1 (20) | 146.0 (20) | 144.1 (20) | 144.1 (20) |
+
+Better at every frame rate, most at 120 fps (−13.5 s), every race finished. Kept.
+
+**A failure mode the retune did not touch.** In 1 of 100 I2 races (shipped and new alike) one AI gets stuck at
+20-22 of 30 crystals with 7 recoveries and never finishes within the cut, while its teammate finishes
+normally. It is a recovery-loop case, not a tuning number, and it is the same 1% before and after.
+
+**Easy and Medium on the new policies** (the handicap asset is unchanged: §10's reaction times and mistake
+chances). 21 races per cell spread over 16/28/50 ms frames, seat medians: I1 Hard about 65 s, **Medium 73.9 s,
+Easy 88.9 s**; I2 Hard about 79 s, **Medium 94.9 s, Easy 121.5 s**. The ladder §10 set (I1 75/86 s, I2 92/112 s
+at 28 ms frames) holds within a few seconds; Easy at I2 runs past the simulator's cut in a third of its races
+(the cut is the benchmark limit plus 60 s; the game has none), as it did before.
+
+**The general policy** (`skimrace-v2-general` → `skimrace-v3-general`; `run.sh tuneall 1,2,3,4 4 16 sigma=0.15
+final=20 only=stated` under the same conditions, 36 numbers re-fitted, about 2.5 hours; its own fresh-seed
+check finished 20/20 on every track, winner medians I1 57.6, I2 97.1, I3 175.0, I4 148.8 s). It is what
+intensity 3 flies, so the head to head is on I3:
+
+| I3, Hard (general policy) | 120 fps | 62 fps | 36 fps | 20 fps | 12 fps |
+|---|---|---|---|---|---|
+| shipped v2-general | 188.5 (20) | 185.3 (20) | 184.5 (20) | 185.0 (20) | 193.6 (20) |
+| new v3-general | 184.6 (20) | 183.4 (20) | 182.1 (20) | 181.0 (20) | **185.7** (20) |
+
+Better at every frame rate, every race finished. Kept.
+
+**Re-raced under the gate** (the retune above ran with this branch's grid stagger; the merge replaced it with
+the perf branch's gate, which only the I2 policy's planner feels). New v3-i2, 20 fresh races per cell:
+
+| I2, Hard, new v3 | 120 fps | 62 fps | 36 fps | 20 fps | 12 fps |
+|---|---|---|---|---|---|
+| under the grid (tuned) | 80.6 (20) | 79.3 (20) | 78.3 (19) | 79.3 (20) | 84.3 (20) |
+| under the gate (shipped) | **79.1** (20) | **77.1** (20) | **76.3** (20) | 79.0 (20) | 89.1 (20) |
+
+Faster at 36-120 fps, level at 20, slower at 12 fps - at 12 fps every seat wants to re-plan every frame, so the
+gate makes each re-plan every other frame (about 160 ms apart) and the planner reacts later. Every race finished.
+A refinement nobody has measured: let the gate stand down when the frame is longer than half the re-plan period.
+
+### 14.6 Where this leaves the AI (2026-10-07)
+
+- Every shipped policy is now tuned across 62 / 36 / 20 fps with the game's contact step, and checked at 120
+  and 12 fps as well. Against the previous files, on the same fresh races: level at 36-62 fps, better at 120 fps
+  and at 12 fps on every track, and I4 better everywhere. Nothing got slower beyond noise; no new failure mode
+  (the one-in-a-hundred stranded I2 seat predates this).
+- The planner gate (§8.0i, kept at the merge over this branch's grid) halves the editor's worst AI frame at any
+  frame rate; with the perf branch's float loops and no-alloc Mathf the whole AI on I2 costs the editor about
+  2.2 ms per AI per frame in its own Mono mode (§14.4's last table), 0.4 ms in a Release/IL2CPP build. Release
+  code optimization in the editor remains the single biggest lever a tester has.
+- The next measurement that matters is the one only the editor can give: a hand-played race's `frameMs` next
+  to its AI finish time (the recorder writes both). `Docs/UNITY_VERIFICATION_CHECKLIST.md`, the 2026-10-06
+  entry, lists the steps.
+- To redo any of this after a map or code change: `python3 Tools/Build/skimrace_retune.py <I>` (per intensity),
+  and for the general policy the `tuneall` line above, transcribed into `author_skimrace_ai_config.py`.
+- The session that produced §10–§14 (asks, decisions by date, every commit, the verification record, open
+  items) is written up in `Docs/SKIM_RACE_AI_SESSION_LOG.md`.
