@@ -145,6 +145,8 @@ namespace CosmicShore.Gameplay
         public bool FloraPlantingEnabled => FloraGrowingEnabled;
         public float CurrentFaunaSpawnPeriod => 0f;
         public bool IsFloraAtCap(FloraConfigurationSO config) => false;
+        public bool NucleusIsControlZone => true;
+        public float ExpectedNucleusWorldRadius => 0f;
     }
     public class Trail { public List<Prism> TrailList; public CosmicShore.Data.PrismscapeDimension Dimension; }
     public class PrismProperties { public bool IsDangerous; }   // PrismProperties.cs

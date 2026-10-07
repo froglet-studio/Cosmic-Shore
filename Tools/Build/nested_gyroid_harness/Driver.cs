@@ -50,7 +50,7 @@ static class Driver
             var EP = NestedGyroidBuilder.BuildNow(es);
             PeriodGates(EP);
             AllPlants(EP, verbose: false);
-            UnionGates(EP, GrowColony(EP, 12, seed: 7), verbose: false);
+            UnionGates(EP, GrowColony(EP, ShippedCap, seed: 7), verbose: false);
         }
 
         Console.WriteLine("== slicing (2 ms budget per Step, as the flora runs it) ==");
@@ -277,7 +277,11 @@ static class Driver
     /// grown contributes its neighbours; once per cycle the population pops ONE random open tile and a daughter
     /// claims it. Plants grow in ~4 s against a ~30 s cycle, so every plant is complete by the next cycle.
     /// </summary>
-    static Grown GrowColony(NestedGyroidPeriod P, int plants, int seed, int founderOctagon = -1)
+    /// <summary>The shipped cap (author_nested_gyroid_flora_assets.py CAP - the gyroid flora's own).</summary>
+    const int ShippedCap = 42;
+
+    static Grown GrowColony(NestedGyroidPeriod P, int plants, int seed, int founderOctagon = -1,
+                            Func<NestedGyroidColony, NestedGyroidColony.Tile, bool> accept = null)
     {
         UnityEngine.Random.Rng = new System.Random(seed);
         UnityEngine.Time.time = 0f;
@@ -297,7 +301,8 @@ static class Driver
             foreach (var t in g.Tiles) if (matured.Add(t)) g.Book.ContributeNeighbors(t);
             UnityEngine.Time.time += cycle;
             if (!g.Book.TryBeginCycle(cycle, 0.35f)) continue;
-            if (!g.Book.TryPopRandom(out var tile)) break;
+            var book = g.Book;
+            if (!g.Book.TryPopRandom(out var tile, accept == null ? null : t => accept(book, t))) break;
             if (!g.Book.TryClaim(tile, new NestedGyroidFlora(id++))) throw new Exception($"popped a claimed tile {tile}");
             g.Tiles.Add(tile);
         }
@@ -366,8 +371,8 @@ static class Driver
         b2.TryClaim(f, new NestedGyroidFlora(0));
         bool joined = b2.OpenTiles == 0 && b2.TryAnyOpenTile(out var j) && f.Neighbors().Contains(j);
         bool refused = !b2.TryAnyOpenTile(out _, t => false);
-        Gate("colony: a seed joins a growing founder at a neighbouring tile; a refused band yields none", joined && refused,
-             $"joined beside the founder: {joined}; nothing outside the planting band: {refused}");
+        Gate("colony: a seed joins a growing founder at a neighbouring tile; a refused tile is never offered", joined && refused,
+             $"joined beside the founder: {joined}; refused tiles offered: {!refused}");
         NestedGyroidColony.Clear(cell2);
 
         // The tile table itself: 4 neighbours each, symmetric.
@@ -379,8 +384,36 @@ static class Driver
         }
         Gate("colony: the tile neighbour table is symmetric (a neighbour's neighbour is me)", symmetric, "24 octagons x 4");
 
-        var grown = GrowColony(P, 12, seed: 11);
-        if (verbose) Console.WriteLine($"  colony at the shipped cap of 12: {string.Join(" ", grown.Tiles)}");
+        // THE REPORTED STALL ("the flora did not keep growing"): the colony used to refuse every tile whose crystal
+        // lay outside the species' PLANTING BAND (0.25-0.5 of the membrane radius) and drop it for good. A Spawn
+        // Matrix station sits outside the membrane, so every neighbour of the founder was refused and the population
+        // never got past one plant. The shipped rule refuses only a control-zone NUCLEUS. Both are modelled here as
+        // the flora computes them (NestedGyroidFlora.ClearOfNucleus; Flora.ClampToPlantingBand for the old one), on
+        // a cell whose centre is 3 periods from the founder.
+        float per = P.Settings.CellSize, membrane = 2.5f * per, nucleus = 0.4f * per;
+        var centre = new UnityEngine.Vector3(-3f * per, 0f, 0f);
+        float D(NestedGyroidColony b, NestedGyroidColony.Tile t)
+        {
+            var w = b.TileWorld(t);
+            float dx = w.x - centre.x, dy = w.y - centre.y, dz = w.z - centre.z;
+            return MathF.Sqrt(dx * dx + dy * dy + dz * dz);
+        }
+        var shipped = GrowColony(P, ShippedCap, seed: 4, accept: (b, t) => D(b, t) > nucleus);
+        var oldBand = GrowColony(P, ShippedCap, seed: 4, accept: (b, t) => D(b, t) > 0.25f * membrane && D(b, t) < 0.5f * membrane);
+        Gate($"colony: a founder outside the planting band (a Spawn Matrix station) grows to the cap of {ShippedCap}",
+             shipped.Tiles.Count == ShippedCap, $"{shipped.Tiles.Count} plants");
+        Gate("negative control: the retired planting-band gate strands that colony at its founder",
+             oldBand.Tiles.Count == 1, $"{oldBand.Tiles.Count} plant(s)");
+        var hugging = GrowColony(P, ShippedCap, seed: 9, accept: (b, t) => D(b, t) > nucleus);
+        centre = new UnityEngine.Vector3(0.6f * per, 0f, 0f);      // a nucleus right beside the founder
+        var beside = GrowColony(P, ShippedCap, seed: 9, accept: (b, t) => D(b, t) > nucleus);
+        int inside = beside.Tiles.Skip(1).Count(t => D(beside.Book, t) <= nucleus);
+        Gate("colony: never grows into a control-zone nucleus, even one beside the founder",
+             inside == 0 && beside.Tiles.Count == ShippedCap && hugging.Tiles.Count == ShippedCap,
+             $"{inside} daughters inside the nucleus; {beside.Tiles.Count} plants grown around it");
+
+        var grown = GrowColony(P, ShippedCap, seed: 11);
+        if (verbose) Console.WriteLine($"  colony at the shipped cap of {ShippedCap}: {string.Join(" ", grown.Tiles)}");
         return grown;
     }
 

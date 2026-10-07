@@ -28,10 +28,15 @@ is the honest place for it, and it re-prices nobody.
 POPULATION: a COLONY, the gyroid flora's model (Docs/ECOSYSTEM.md §58.9). A plant is ONE octagon tile of the
 stack (~170-180 prisms on the default seven sheets, its crystal at the octagon's centre), and the species grows
 as a population of tiles through one shared periodic frame: a complete plant offers its four neighbouring tiles
-and once per cycle the colony births ONE plant at a uniformly random open tile (NestedGyroidColony). So the seed
-floor is 1 - the spawner only founds the colony and re-founds it after extinction; a second seed would only join
-the same frame - and the CAP is what bounds it: 12 plants is ~2,100 prisms per element, near the gyroid flora's
-42 x 24-prism colony per prism count of plant. GrowthPerOffspring stays 0 ON PURPOSE: the colony births through
+and once per cycle the colony births ONE plant at a uniformly random open tile (NestedGyroidColony). The numbers
+are the GYROID FLORA's own, quoted rather than re-derived, because the population is meant to behave like its:
+InitialSpawnCount 1 (a release founds one colony), PopulationSize 4 (the seed floor - extra seeds JOIN the
+living colony's frame, they never found a rival one) and MaxLivePopulation 42 (the cap is what bounds the
+colony; nothing else does). Cost, stated: 42 plants x ~177 prisms = ~7,400 prisms (and as many limbs) per
+element at the cap - 7x the gyroid's 42 x 24, because each plant is its octagon on seven sheets; the cell's
+Frenzy COUNT backstop freezes growth first if a cell cannot carry it. An earlier cut capped it at 12 and the
+colony read as not growing (that, plus a planting-band gate that refused every tile past the band - §58.9).
+GrowthPerOffspring stays 0 ON PURPOSE: the colony births through
 Flora.TrySpawnOneOffspring on the population clock, and a per-plant quota would add a second, uncoordinated
 birth path that scatters daughters off the lattice (the trap author_flora_populations.py's GrowthPerOffspring
 on lattice configs is). OffspringSpread is unread for the same reason - a daughter's place is its tile.
@@ -65,8 +70,9 @@ FLORA_COMPONENT_FILEID   = 8186157953239024492                  # the prefab's r
 ELEMENTS = [('Charge', 1), ('Mass', 2), ('Space', 3), ('Time', 4)]
 ROW_NAME = 'Nested Gyroid'
 
-SEED_FLOOR = 1
-CAP        = 12
+SEED_FLOOR = 1      # InitialSpawnCount - the gyroid flora's
+POPULATION = 4      # PopulationSize    - the gyroid flora's seed floor
+CAP        = 42     # MaxLivePopulation - the gyroid flora's cap
 COOLDOWN   = 5
 MATURITY   = 0.5
 SPREAD     = 240      # unread: a colony daughter's place is its tile (see the docstring)
@@ -136,7 +142,7 @@ def build_config(element, value, prefab_guid, heart, budget):
         f'  InitialSpawnCount: {SEED_FLOOR}\n'
         '  OverrideDefaultPlantPeriod: 0\n'
         '  NewPlantPeriod: 9999999\n'
-        f'  PopulationSize: {SEED_FLOOR}\n'
+        f'  PopulationSize: {POPULATION}\n'
         f'  MaxLivePopulation: {CAP}\n'
         f'  GrowthPerOffspring: {quota}\n'
         '  OffspringPerBirth: 1\n'
@@ -220,7 +226,7 @@ def main():
 
     files, guids, info = plan()
     print(f'NestedGyroidFlora: 4 element configs on one lattice (budget {info["budget"]}), '
-          f'heart pinned at HEART_MAX {info["heart"]}, seed {SEED_FLOOR} / cap {CAP} per element '
+          f'heart pinned at HEART_MAX {info["heart"]}, seed {SEED_FLOOR} / floor {POPULATION} / cap {CAP} per element '
           f'({4 * CAP} heart colliders across the four), Charge armoured')
 
     for g in guids:

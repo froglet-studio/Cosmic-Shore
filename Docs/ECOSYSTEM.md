@@ -11171,8 +11171,8 @@ layers are is not something a prism's position says. So the structure says it:
   exists ahead — the spring's equilibrium (climb speed / 5) otherwise stalls short of a deep outer gap.
   Pitching out of the outermost skin finds no layer ahead, so the spring holds and the skin stays ridden.
 
-**Measured on the ride model (harness, Urchin defaults, 60 u/s) across a grown 12-plant colony:** an in-sheet roll
-crosses 14 plates on 3 different plants and stays on sheet 3; pitching up the stack visits 3 > 4 > 5 > 6 and stops on
+**Measured on the ride model (harness, Urchin defaults, 60 u/s) across a grown 42-plant colony:** an in-sheet roll
+crosses 20 plates on 4 different plants and stays on sheet 3; pitching up the stack visits 3 > 4 > 5 > 6 and stops on
 the skin; pitching down visits 3 > 2 > 1 > 0; zero reversals. The legacy nearest-centre rule (negative control) roams
 all seven sheets. The model is a transcription of `BlockscapeFollower` (the shipped file is a
 MonoBehaviour); `RideModel.cs` names the method each block mirrors and must move with it.
@@ -11212,9 +11212,10 @@ of `Toy_SpawnMatrix.asset`'s flora kingdom. GUIDs are `md5("cosmicshore/nestedgy
   deliberately absent from that tool's `FLORA_PREFABS`, and the generator reads `HEART_MAX` out of it (and
   asserts the absence), so the pin cannot drift from the band. It is the biggest lifeform in the project; the
   top of the band is honest for it and re-prices nobody.
-* **Population: a colony** (§58.9). Seed floor 1 (the spawner only founds the colony and re-founds it after
-  extinction; a second seed would only join the same frame), cap **12 plants** per element (~2,100 prisms, 48 heart
-  colliders across the four), and `GrowthPerOffspring 0` ON PURPOSE: the colony births on the population clock through
+* **Population: a colony** (§58.9), on the GYROID FLORA's own numbers: InitialSpawnCount 1, seed floor 4 (extra
+  seeds JOIN the living colony's frame, never found a rival), cap **42 plants** per element. Cost at the cap: ~7,400
+  prisms and as many limbs per element (7× the gyroid's 42 × 24, because a plant is its octagon on seven sheets), 168
+  heart colliders across the four; the cell's Frenzy COUNT backstop freezes growth first. And `GrowthPerOffspring 0` ON PURPOSE: the colony births on the population clock through
   `Flora.TrySpawnOneOffspring`, and a per-plant quota would add a second, uncoordinated birth path that scatters
   daughters off the lattice. `OffspringSpread` is unread for the same reason — a daughter's place is its tile.
 * **The row goes immediately BEFORE Borromean**, because `author_borromean_flora_assets.py` deletes its own
@@ -11279,8 +11280,14 @@ lattice as a colony (§32.7). This species now does the same, with the same rule
   reproduction rate (Time breeds fastest), stagger 0.35. Production gates (planting enabled, the cell's cap) are checked
   before the pop, so a capped colony burns no frontier; a birth the spawner refuses is requeued. The daughter is handed
   her tile in `ConfigureOffspring` (before `Initialize`), and her `Plant()` roots her on it.
-* **The planting band bounds it.** A tile whose crystal falls outside the species' planting band (`ClampToPlantingBand`:
-  never the nucleus, never past the band's edge) leaves the book for good.
+* **Only a control-zone NUCLEUS bounds where it goes** (`NestedGyroidFlora.ClearOfNucleus`): a tile whose crystal lies
+  inside one leaves the book for good. The planting band is where a SEED lands, not a fence for the colony; the cap is
+  what bounds it. **The first cut gated every birth on the band (0.25–0.5 of the membrane) and the colony did not
+  grow** — every Spawn Matrix station sits outside the membrane, so all four neighbours of the founder were refused
+  and discarded, and the population stopped at one plant (reported from play; the harness now reproduces it as a
+  negative control). The gyroid colony has no gate at all, which is why it kept spreading beside it.
+* **Maturity is "every prism of the tile has stood once"**, not "is standing now", so grazing a plant never withholds
+  its neighbours from the colony.
 * **A second SEED joins, it does not found.** `TryAnyOpenTile` returns a frontier tile, or — while the founder is still
   growing and has offered nothing — a random free neighbour of a member, so two seeds never lay rival frames on top of
   each other.
@@ -11289,10 +11296,11 @@ lattice as a colony (§32.7). This species now does the same, with the same rule
 
 **Measured (harness, the SHIPPED `NestedGyroidColony.cs` run against stubs):** 8 colonies of 60 plants — no tile
 claimed twice, every birth beside a living plant, 8 different shapes, each spanning 2–3 periods a side and filling
-**14%** of that box (a cube-filling population fills 100%). A grown 12-plant colony at the defaults: **2,125 prisms,
-0 overlapping pairs within or BETWEEN plants (brute-force OBB over every pair), 0 duplicates, every prism with a
-neighbour inside the rider's reach, the whole colony ONE reach component** (10,309 reach links between plants; at 0.4×
-the reach it falls into 409 pieces — the negative control). Mass, Space (766-unit period) and Charge: the same, all
+**14%** of that box (a cube-filling population fills 100%). A colony grown to the cap from a founder three periods outside its cell's band reaches **42 plants** (the retired band
+gate: 1). A grown 42-plant colony at the defaults: **7,417 prisms, 0 overlapping pairs within or BETWEEN plants
+(brute-force OBB over every pair), 0 duplicates, every prism with a neighbour inside the rider's reach, the whole colony
+ONE reach component** (39,432 reach links between plants; at 0.4× the reach it falls into 1,422 pieces — the negative
+control). Mass, Space (766-unit period) and Charge: the same, all
 green. The sweep (N ∈ {2,3,5,7,9} × tMax ∈ {0.6, 1.2, 1.3, 1.35, 1.38}, maxSheets 3) passes every plant and period gate;
 colony RIDEABILITY is gated on the shipped configs only and reported for the sweep, because a sparse stack (N ≤ 3:
 layer gaps far beyond the reach) or a near-critical one (tMax ≥ 1.3, outer sheets whose area collapses) leaves

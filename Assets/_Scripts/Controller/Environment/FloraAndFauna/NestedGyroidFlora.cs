@@ -52,6 +52,10 @@ namespace CosmicShore.Gameplay
         Spindle[] _limb;
         readonly Dictionary<HealthPrism, int> _siteOf = new();
         int _laidCount;
+        // Sites laid at least once - maturity is "every prism of the tile has stood", so grazing a finished
+        // plant (or one still finishing) never withholds its neighbours from the colony.
+        bool[] _laidOnce;
+        int _laidOnceCount;
         bool _spotChecked;
 
         // The colony this plant belongs to, and the tile it owns in it.
@@ -171,6 +175,8 @@ namespace CosmicShore.Gameplay
             _lattice = period.Plant(_tile.Octagon);
             _occupant = new HealthPrism[_lattice.Count];
             _limb = new Spindle[_lattice.Count];
+            _laidOnce = new bool[_lattice.Count];
+            _laidOnceCount = 0;
             if (_lattice.Stats.RootedPrisms != _lattice.Count || _lattice.Stats.TruncatedByBudget > 0)
                 CSDebug.LogWarning(
                     $"{name}: nested gyroid tile {_tile} - {_lattice.Stats.RootedPrisms}/{_lattice.Count} prisms on the " +
@@ -219,7 +225,7 @@ namespace CosmicShore.Gameplay
             // A seeded plant JOINS its species' living colony at a random open tile, so the population stays one
             // periodic structure; a pinned one (the Spawn Matrix station) founds its own where it was asked to be.
             var existing = pinned ? null : NestedGyroidColony.Find(cell, SourceConfig);
-            if (existing != null && existing.TryAnyOpenTile(out var open, t => InPlantingBand(existing, t))
+            if (existing != null && existing.TryAnyOpenTile(out var open, t => ClearOfNucleus(existing, t))
                 && existing.TryClaim(open, this))
             {
                 _colony = existing;
@@ -255,14 +261,20 @@ namespace CosmicShore.Gameplay
 
         const float PopulationCycleStagger = 0.35f;
 
-        /// <summary>A tile the colony may grow into: its crystal inside this species' planting band (never the
-        /// nucleus, never past the band's outer edge) - the same band a dispersed seed and a default offspring keep
-        /// to. A plant with no cell has no band and accepts every tile.</summary>
-        bool InPlantingBand(NestedGyroidColony colony, NestedGyroidColony.Tile tile)
+        /// <summary>
+        /// A tile the colony may grow into: anywhere the lattice goes, EXCEPT a crystal inside a nucleus that is a
+        /// control zone (the territorial claim the food web is never steered into - the same floor
+        /// <see cref="Flora.ClampToPlantingBand"/> keeps). Deliberately NOT the planting band's outer edge: the band
+        /// is where a SEED lands, and a colony wanders through the periodic structure from there, exactly as the
+        /// gyroid flora's colony does (which has no gate at all). Gating on the band starved every colony whose
+        /// founder sat near or past its edge - every Spawn Matrix station sits outside the membrane, so every
+        /// neighbour tile was refused and the population never got past its founder. The cap bounds the colony.
+        /// </summary>
+        bool ClearOfNucleus(NestedGyroidColony colony, NestedGyroidColony.Tile tile)
         {
-            if (!cell) return true;
-            Vector3 p = colony.TileWorld(tile);
-            return (ClampToPlantingBand(p) - p).sqrMagnitude < 1e-4f;
+            if (!cell || !cell.NucleusIsControlZone) return true;
+            float r = cell.ExpectedNucleusWorldRadius;
+            return (colony.TileWorld(tile) - cell.transform.position).sqrMagnitude > r * r;
         }
 
         /// <summary>
@@ -274,14 +286,14 @@ namespace CosmicShore.Gameplay
         void TickColony()
         {
             if (_colony == null || !SourceConfig || !cell) return;
-            if (!_matured && _lattice != null && _laidCount >= _lattice.Count)
+            if (!_matured && _lattice != null && _laidOnceCount >= _lattice.Count)
             {
                 _matured = true;
                 _colony.ContributeNeighbors(_tile);
             }
             if (!_colony.TryBeginCycle(ColonyCyclePeriod, PopulationCycleStagger)) return;
             if (!cell.FloraPlantingEnabled || cell.IsFloraAtCap(SourceConfig)) return;
-            if (!_colony.TryPopRandom(out var tile, t => InPlantingBand(_colony, t))) return;
+            if (!_colony.TryPopRandom(out var tile, t => ClearOfNucleus(_colony, t))) return;
 
             _pendingBirth = tile;
             bool born = TrySpawnOneOffspring();
@@ -422,6 +434,7 @@ namespace CosmicShore.Gameplay
 
             _occupant[site] = prism;
             _siteOf[prism] = site;
+            if (!_laidOnce[site]) { _laidOnce[site] = true; _laidOnceCount++; }
             return true;
         }
 

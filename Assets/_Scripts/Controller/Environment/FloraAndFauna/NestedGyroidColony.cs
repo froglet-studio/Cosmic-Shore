@@ -118,7 +118,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Removes and returns a uniformly random OPEN tile. Claimed tiles are discarded on the way, and so are tiles
-        /// <paramref name="accept"/> refuses (outside the cell's planting volume): those are not lattice this colony
+        /// <paramref name="accept"/> refuses (a crystal inside a control-zone nucleus): those are not lattice this colony
         /// can ever grow into, so they leave the book for good rather than being redrawn every cycle.
         /// </summary>
         public bool TryPopRandom(out Tile tile, System.Predicate<Tile> accept = null)

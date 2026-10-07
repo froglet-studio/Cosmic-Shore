@@ -240,7 +240,7 @@ namespace CosmicShore.Tests
             Assert.AreEqual(0, book.OpenTiles, "an immature founder has offered nothing yet");
             Assert.IsTrue(book.TryAnyOpenTile(out var joined));
             CollectionAssert.Contains(founder.Neighbors().ToList(), joined, "a seed joins BESIDE the founder");
-            Assert.IsFalse(book.TryAnyOpenTile(out _, t => false), "a tile outside the planting band is never offered");
+            Assert.IsFalse(book.TryAnyOpenTile(out _, t => false), "a tile the plant refuses (a control-zone nucleus) is never offered");
 
             book.TryClaim(joined, null);
             book.Release(joined, null);

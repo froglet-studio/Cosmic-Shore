@@ -4557,7 +4557,8 @@ additions and the `Cell.cs` colony-clear lines. Docs/ECOSYSTEM.md §58.
 
 **Model as of the third revision (plant = one octagon, colony = population):** a plant is ONE octagon tile of the
 gyroid flora's tiling on every sheet (~170-190 prisms), every prism on a limb hanging off its crystal; the species
-spreads as a colony of tiles (`NestedGyroidColony`, §58.9), one birth per cycle at a random open tile, cap 12.
+spreads as a colony of tiles (`NestedGyroidColony`, §58.9), one birth per cycle at a random open tile, on the gyroid
+flora's population numbers (seed 1, floor 4, cap 42).
 
 ### 1. It compiles and the edit-mode suite passes
 Open the project; confirm zero compile errors. Run `NestedGyroidLatticeTests` (Test Runner, EditMode) —
@@ -4592,7 +4593,11 @@ nested-gyroid config in its profile.
   tiles - flush against it, the two plants' sheets continuing into each other with no overlap and no gap (they are
   one periodic stack). Later daughters appear at random open tiles beside ANY plant, so the population wanders in an
   irregular shape, never fills a cube.
-- At 12 plants per element births stop (the cap). Graze a plant to death: its tile is re-offered and later regrown.
+- **It keeps growing** - the first play test of this model saw the colony stop at its founder (a planting-band gate
+  refused every tile next to a Spawn Matrix station, which sits outside the membrane). Release from the matrix and
+  watch for at least 3-4 births: a daughter per fauna-spawn period, beside the founder and then beside any plant.
+- At 42 plants per element births stop (the cap). Graze a plant to death: its tile is re-offered and later regrown.
+- No daughter's crystal ever lands inside a control-zone nucleus.
 - Reset the world (Cell Selector): the next founder lays a fresh frame (no daughters appear at the old world's tiles).
 
 ### 3. The Urchin rides it in three directions
