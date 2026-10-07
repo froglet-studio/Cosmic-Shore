@@ -61,7 +61,7 @@ TARGET_META = TARGET + ".meta"
 # the blend-shape index order SpaceCrystalAnimator drives: 0,1 = 5-point spin, 2,3 = 3-point.
 SPINS = [("5PointRotate-1stHalfSpin", "5PointRotate-2ndHalfSpin"),
          ("3PointRotate-1stHalfSpin", "3PointRotate-2ndHalfSpin")]
-IN_BETWEENS = 4             # frames per key at 25/50/75/100 - see --report for the error table
+IN_BETWEENS = 8             # frames per key at 12.5/25/.../100 - see --report for the error table
 
 # Object ids the target already uses for its mesh geometry and blend-shape deformer. Kept so the
 # rewrite touches as little identity as possible; channel/shape ids below are fixed constants so
@@ -183,49 +183,121 @@ def convert(source_axes, target_axes, V, deltas, target_radius):
     return (V @ M.T) * s, {k: (d @ M.T) * s for k, d in deltas.items()}, s
 
 
-def build_frames(V, quads, deltas):
+def build_frames(V, quads, deltas, frames_per_key=IN_BETWEENS, unit_targets=True):
     """Unwelded positions/normals and per-key in-between frames (position + normal deltas)."""
     corner = quads.reshape(-1)                       # control point per corner
     base_pos = V[corner]
     base_n = np.repeat(face_normals(V, quads), 4, 0)
+    n0 = face_normals(V, quads)
     channels = []
     for first, second in SPINS:
         for key, start in ((first, V), (second, V + deltas[first])):
             d = deltas[key]
-            start_n = face_normals(start, quads)
+            a = face_normals(start, quads)          # normal the key starts from (n0 for a 1st half)
+            stacked = key == second
             frames = []
-            for k in range(1, IN_BETWEENS + 1):
-                w = k / IN_BETWEENS
+            for k in range(1, frames_per_key + 1):
+                w = k / frames_per_key
                 dpos = (w * d)[corner]
-                dn = np.repeat(face_normals(start + w * d, quads) - start_n, 4, 0)
-                frames.append((100.0 * w, dpos, dn))
+                t = face_normals(start + w * d, quads)
+                if stacked and unit_targets:
+                    # The importer turns every frame into a TARGET normal (base + delta) and
+                    # normalizes it before re-deriving the delta (assimp does; the shipped result
+                    # in Unity says Unity does too: big faces right, small side faces off by up
+                    # to 38 deg). So each target must already be UNIT, while the sum with the
+                    # full 1st half (a + delta) must still point along t:
+                    #   delta = lam*t - a   =>  n0 + delta = lam*t + (n0 - a), |that| = 1
+                    # lam is the positive root of |lam*t + c| = 1 with c = n0 - a.
+                    c = n0 - a
+                    tc = (t * c).sum(1)
+                    disc = tc * tc + 1.0 - (c * c).sum(1)
+                    assert (disc >= 0).all(), "%s frame %d: no unit target exists" % (key, k)
+                    lam = -tc + np.sqrt(disc)
+                    assert (lam > 1e-3).all(), "%s frame %d: degenerate scale %.4f" % (key, k, lam.min())
+                    dn_face = lam[:, None] * t - a
+                elif stacked:
+                    dn_face = t - a                     # the first fix: right sum, NON-unit target
+                else:
+                    dn_face = t - n0                    # n0 + delta = t: already unit
+                frames.append((100.0 * w, dpos, np.repeat(dn_face, 4, 0)))
             channels.append((key, frames))
     return base_pos, base_n, channels
 
 
+def _key_delta(frames, w):
+    """Unity's in-between blend for one channel at weight w (0..1): lerp between bracketing frames."""
+    if w <= 0:
+        return 0.0, 0.0
+    ws = [0.0] + [f[0] / 100.0 for f in frames]
+    ps = [0.0] + [f[1] for f in frames]
+    ns = [0.0] + [f[2] for f in frames]
+    k = min(int(w * len(frames)), len(frames) - 1)
+    t = (w - ws[k]) / (ws[k + 1] - ws[k])
+    return ps[k] + (ps[k + 1] - ps[k]) * t, ns[k] + (ns[k + 1] - ns[k]) * t
+
+
+def _as_imported(n0, channels):
+    """What an importer reconstructs when it normalizes each frame's TARGET normal (base + delta)
+    before re-deriving the delta - assimp does, and Unity's result says Unity does too."""
+    out = []
+    for key, frames in channels:
+        fr = []
+        for w, dp, dn in frames:
+            u = n0 + dn
+            fr.append((w, dp, u / np.linalg.norm(u, axis=1, keepdims=True) - n0))
+        out.append((key, fr))
+    return out
+
+
+def blend_errors(base_pos, channels, normalize_targets):
+    """Per spin: (max err 1st half, max err 2nd half, normal jump at the reset), in degrees,
+    replaying Unity's sum base + sum(lerped frame deltas) against the true face normal."""
+    corner = np.arange(len(base_pos)).reshape(-1, 4)
+    n0 = np.repeat(face_normals(base_pos, corner), 4, 0)
+    chs = _as_imported(n0, channels) if normalize_targets else channels
+    out = []
+    for si in range(len(SPINS)):
+        a, b = chs[2 * si][1], chs[2 * si + 1][1]
+        errs = [0.0, 0.0]
+        for half, sweep in enumerate(([(w, 0.0) for w in np.linspace(0, 1, 81)],
+                                      [(1.0, w) for w in np.linspace(0, 1, 81)])):
+            for wa, wb in sweep:
+                pa, na = _key_delta(a, wa)
+                pb, nb = _key_delta(b, wb)
+                truth = np.repeat(face_normals(base_pos + pa + pb, corner), 4, 0)
+                errs[half] = max(errs[half], angle_deg(n0 + na + nb, truth).max())
+        end = base_pos + a[-1][1] + b[-1][1]
+        end_n = n0 + a[-1][2] + b[-1][2]
+        cen_end, cen0 = end.reshape(-1, 4, 3).mean(1), base_pos.reshape(-1, 4, 3).mean(1)
+        j = ((cen_end[:, None] - cen0[None]) ** 2).sum(2).argmin(1)
+        pop = angle_deg(end_n.reshape(-1, 4, 3)[:, 0], n0.reshape(-1, 4, 3)[j, 0]).max()
+        out.append((errs[0], errs[1], pop))
+    return out
+
+
 def report(V, quads, deltas):
     ws = np.linspace(0, 1, 201)
-    print("max normal error vs the true face normal (deg), over each key's 0..100 sweep")
-    print("%-14s %-24s %8s %8s" % ("spin", "scheme", "1st half", "2nd half"))
+    print("max normal error vs the true face normal (deg); 'reset' = jump when both keys snap to 0")
+    print("importer model: each frame's target normal is normalized before the delta is re-derived")
+    print("%-14s %-34s %8s %8s %8s" % ("spin", "scheme", "1st half", "2nd half", "reset"))
+    rows = {}
     for first, second in SPINS:
         dA, dB = deltas[first], deltas[second]
         n0 = face_normals(V, quads)
         calcA, calcB = face_normals(V + dA, quads) - n0, face_normals(V + dB, quads) - n0
         e1 = max(angle_deg(n0 + w * calcA, face_normals(V + w * dA, quads)).max() for w in ws)
         e2 = max(angle_deg(n0 + calcA + w * calcB, face_normals(V + dA + w * dB, quads)).max() for w in ws)
-        spin = first.split("-")[0]
-        print("%-14s %-24s %8.2f %8.2f" % (spin, "Unity Calculate (before)", e1, e2))
-        for K in (1, 2, 4, 8):
-            errs = []
-            for start, d in ((V, dA), (V + dA, dB)):
-                fr = [face_normals(start + (k / K) * d, quads) for k in range(K + 1)]
-                m = 0.0
-                for w in ws:
-                    k = min(int(w * K), K - 1); t = w * K - k
-                    m = max(m, angle_deg(fr[k] + (fr[k + 1] - fr[k]) * t, face_normals(start + w * d, quads)).max())
-                errs.append(m)
-            tag = "this tool, %d frame%s/key%s" % (K, "" if K == 1 else "s", " *" if K == IN_BETWEENS else "")
-            print("%-14s %-24s %8.2f %8.2f" % ("", tag, errs[0], errs[1]))
+        rows[first] = [("Unity Calculate (original)", (e1, e2, e2))]
+    corner = quads.reshape(-1)
+    for tag, kw in (("first fix: 4 frames, non-unit", dict(frames_per_key=4, unit_targets=False)),
+                    ("unit targets, 4 frames", dict(frames_per_key=4)),
+                    ("unit targets, %d frames (shipped)" % IN_BETWEENS, dict())):
+        _, _, channels = build_frames(V, quads, deltas, **kw)
+        for (first, _), errs in zip(SPINS, blend_errors(V[corner], channels, normalize_targets=True)):
+            rows[first].append((tag, errs))
+    for first, _ in SPINS:
+        for i, (tag, (e1, e2, pop)) in enumerate(rows[first]):
+            print("%-14s %-34s %8.2f %8.2f %8.2f" % (first.split("-")[0] if i == 0 else "", tag, e1, e2, pop))
 
 
 def rebuild_target(src_axes, V, quads, deltas):
@@ -342,37 +414,22 @@ def validate(nodes, base_pos, quads, channels):
     chans = [c.props[1][1] for c in con.children if c.props[2][1] == BLENDSHAPE_DEFORMER_ID]
     assert chans == [CHANNEL_ID_BASE + i for i in range(len(channels))], "channel order"
 
-    # Replay Unity's blend: normal = base + sum(active keys' lerped frame deltas), normalized.
-    # Every sample of every spin must match the true face normal of the deformed pose, and the
-    # end of each spin must equal the base normal of whichever face now sits in that slot.
+    # Every frame's TARGET normal (base + delta) must be unit length, so an importer that
+    # normalizes targets before re-deriving deltas imports exactly what was written.
     corner = np.arange(len(base_pos)).reshape(-1, 4)
     n0 = np.repeat(face_normals(base_pos, corner), 4, 0)
+    for key, frames in channels:
+        for w, _, dn in frames:
+            m = np.abs(np.linalg.norm(n0 + dn, axis=1) - 1.0).max()
+            assert m < 1e-9, "%s @%g: target normal not unit (off by %.2e)" % (key, w, m)
 
-    def key_delta(frames, w):
-        if w <= 0:
-            return 0.0, 0.0
-        ws = [0.0] + [f[0] / 100.0 for f in frames]
-        ps = [0.0] + [f[1] for f in frames]
-        ns = [0.0] + [f[2] for f in frames]
-        k = min(int(w * len(frames)), len(frames) - 1)
-        t = (w - ws[k]) / (ws[k + 1] - ws[k])
-        return ps[k] + (ps[k + 1] - ps[k]) * t, ns[k] + (ns[k + 1] - ns[k]) * t
-
+    # Replay Unity's blend under both importer models; every sample must match the true face
+    # normal, and the end of each spin must equal the normal of whichever face now sits there.
     worst = 0.0
-    for si in range(len(SPINS)):
-        a, b = channels[2 * si][1], channels[2 * si + 1][1]
-        for wa, wb in [(w, 0.0) for w in np.linspace(0, 1, 41)] + [(1.0, w) for w in np.linspace(0, 1, 41)]:
-            pa, na = key_delta(a, wa)
-            pb, nb = key_delta(b, wb)
-            pos = base_pos + pa + pb
-            truth = np.repeat(face_normals(pos, corner), 4, 0)
-            worst = max(worst, angle_deg(n0 + na + nb, truth).max())
-        end = base_pos + a[-1][1] + b[-1][1]
-        end_n = n0 + a[-1][2] + b[-1][2]
-        cen_end, cen0 = end.reshape(-1, 4, 3).mean(1), base_pos.reshape(-1, 4, 3).mean(1)
-        j = ((cen_end[:, None] - cen0[None]) ** 2).sum(2).argmin(1)
-        pop = angle_deg(end_n.reshape(-1, 4, 3)[:, 0], n0.reshape(-1, 4, 3)[j, 0]).max()
-        assert pop < 0.1, "spin %d pops %.2f deg on reset" % (si, pop)
+    for normalize in (False, True):
+        for si, (e1, e2, pop) in enumerate(blend_errors(base_pos, channels, normalize)):
+            assert pop < 0.1, "spin %d pops %.2f deg on reset" % (si, pop)
+            worst = max(worst, e1, e2)
     assert worst < 1.0, "blended normal error %.2f deg exceeds 1 deg" % worst
     return worst
 

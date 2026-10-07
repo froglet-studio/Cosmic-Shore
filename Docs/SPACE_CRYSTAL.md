@@ -30,7 +30,7 @@ artist's and is shipped unchanged.
 
 ## 2. Why the normals were wrong (every previous attempt)
 
-Three faults stack. Only the first is visible at a glance:
+Four faults stack. Only the first is visible at a glance, and the fourth only showed in play:
 
 1. **Stacking.** Unity blends normals as `n0 + Σ wᵢ·Δnᵢ`. Every exporter, and Unity's own
    *Calculate* mode, derives each key's `Δn` against the **base** mesh. Rotations don't add, so
@@ -43,28 +43,48 @@ Three faults stack. Only the first is visible at a glance:
    can't be right for all three.
 3. **Linear interpolation inside one key.** Even a correct end normal is lerped linearly. That
    misses the true face normal mid-key by up to 2.6° / 8.3°.
+4. **The importer normalizes every target normal (found in play, 2026-10-07).** Each frame is
+   imported as a TARGET normal, `base + delta`, which is normalized before the delta is re-derived.
+   assimp does this, and Unity's result says Unity does too. A 1st-half target is a real normal,
+   so it is unaffected. The first fix authored 2nd-half deltas as `t − a` (relative to the
+   1st-half end), whose targets `n0 + t − a` are as short as 0.15. Normalizing them bent the 2nd
+   half by up to **9.3° / 38.3°**, which then snapped back at the reset. How far depends on how
+   far a face turns about the spin axis. The two big faces per block point almost along the axis
+   (≤ 0.6°); the four small side faces point across it and took the whole error. That's exactly
+   the "small faces still swap" playtest report.
 
 ## 3. What the generator writes
 
-`python3 Tools/Build/author_space_crystal_mesh.py --report` prints this table (max error against
-the true face normal, in degrees):
+`python3 Tools/Build/author_space_crystal_mesh.py --report` prints this table. It shows the max
+error against the true face normal in degrees, under the normalizing importer; `reset` is the jump
+when both keys snap to 0:
 
 ```
-spin           scheme                   1st half 2nd half
-5PointRotate   Unity Calculate (before)     2.58    19.65
-               this tool, 4 frames/key *     0.18     0.18
-3PointRotate   Unity Calculate (before)     8.31    42.47
-               this tool, 4 frames/key *     0.61     0.61
+spin           scheme                             1st half 2nd half    reset
+5PointRotate   Unity Calculate (original)             2.58    19.65    19.65
+               first fix: 4 frames, non-unit          0.18     9.29     9.29
+               unit targets, 4 frames                 0.18     0.31     0.00
+               unit targets, 8 frames (shipped)       0.04     0.08     0.00
+3PointRotate   Unity Calculate (original)             8.31    42.47    42.47
+               first fix: 4 frames, non-unit          0.61    38.30    38.30
+               unit targets, 4 frames                 0.61     2.08     0.00
+               unit targets, 8 frames (shipped)       0.16     0.65     0.00
 ```
 
 - **Unwelded mesh.** One control point per polygon corner (1440), so a per-control-point shape
   normal *is* a per-face normal.
-- **2nd-half normals are relative to the 1st-half end pose.** The sum Unity computes is then
-  exact, and the end normal equals the base normal of whichever face now occupies that slot:
-  0.0005° at the reset, so there is no pop. **Consequence: a 2nd-half key is only correct with its
-  1st-half key at 100.** The animator always drives it that way.
-- **4 in-between frames per key** (25/50/75/100), each with exact normals. Every in-between
-  *position* lies on the original straight line, so playback motion is identical to the source.
+- **Every target normal is unit length, so normalizing it changes nothing.** A 1st-half frame's
+  delta is `t − n0`. A 2nd-half frame's delta is `λ·t − a`, where `t` is the frame's true normal and
+  `a` is the 1st-half end normal. `λ` is the positive root of `|λ·t + (n0 − a)| = 1` (the larger
+  root when there are two). Its target `n0 + λt − a` is then unit, and the sum Unity computes with
+  the full 1st half, `a + λt − a = λ·t`, points exactly along `t`. `λ` is between 1.01 and about 2,
+  so the summed normal is up to twice unit length; shaders normalize it. `validate()` asserts every
+  target is unit to 1e-9, and replays the blend under both importer models (raw and normalizing).
+  **Consequence: a 2nd-half key is only correct with its 1st-half key at 100.** The animator always
+  drives it that way.
+- **8 in-between frames per key** (12.5 … 100). The `λ` scaling interpolates a little unevenly
+  between frames: 2.1° worst at 4 frames, 0.65° at 8. Every in-between *position* lies on the
+  original straight line, so playback motion is identical to the source.
 - **Axis and scale.** The geometry is converted into the target file's axis system (a proper
   rotation, so chirality is kept) and scaled ×82.7 so the outer radius equals the old mesh's
   (74.40 raw). Every prefab's scale and collider still fit, and the heart-seat measurement
@@ -76,13 +96,24 @@ spin           scheme                   1st half 2nd half
   imports the file's normals. *Calculate* would throw them away and recompute the wrong ones.
   `--check` asserts this.
 
-Independent check: assimp reads back every frame's normal equal to the expected value within
-0.003°, positions on the line within 4e-5. **Use the per-quad (Newell) normal as the reference,
+Independent check: assimp, which normalizes targets, reads the shipped file back with a reset jump
+of 0.001° on small and big faces alike. The same check on the first fix's file reports 9.3° /
+38.3°, so it discriminates. Positions lie on the line within 4e-5. **Use the per-quad (Newell) normal as the reference,
 never a single triangle's.** The artist's half poses twist some quads by up to 14° (the blocks
 are near-rigid, not rigid). The shading uses one normal per quad, so a triangle-based reference
 reports false errors of 6–25°.
 
-## 4. The material: `_spread` is off for the block mesh
+## 4. Materials
+
+**`CrystalSpace` (2026-10-07):** it renders `BlueCrystalFresnelMateriall` (inactive) and uses
+`LimeCrystalFresnelMaterial` as its default. Both are on `Custom/SpreadFresnelShader`. Flora that
+nest `CrystalSpace` inherit these: their `inactiveCrystalMaterial` overrides name a field
+`Crystal` no longer has, so they are dead. That shader pushes each vertex out along its normal by
+`_Spread`. It now normalizes that normal first, because the blended normal here is up to 2× unit
+length (§3) and the push would otherwise grow late in each spin and snap back at the reset. For
+any mesh with unit normals that changes nothing.
+
+### The older materials: `_spread` is off for the block mesh
 
 Both space crystal materials are on `CrystalGraph`. Its vertex stage moves every vertex along its
 own **object-space normal** by `_spread × (cos t + 1.5)`. On the old mesh (60 separate kites)
@@ -150,11 +181,14 @@ squash is a visible problem.
   shuffled order with a deformer prefix. The 2nd half is never non-zero without its 1st half at
   100, and collect lands on the end pose then shrinks to zero. A mutant that swaps the halves
   fails the harness. `Tools/Build/unity_refcompile` gives **0 errors in project code**.
-- **In editor (NOT yet run — the Unity CLI was unavailable in the session that made this):**
+- **In editor, round 1 (2026-10-07, by hand):** big faces correct; the small side faces still
+  snapped at the reset. That was §2 fault 4, fixed by unit targets. Round 2 is not yet run.
+- **In editor (round 2 NOT yet run — the Unity CLI was unavailable in the session that made this):**
   1. Reimport `spacecrystalanim.fbx`. The inspector should list 4 blend shapes with no import
      warnings.
   2. Open `CrystalSpace.prefab` and scrub the 4 weights in the 1st→2nd order. The shading should
-     track the faces, and zeroing both at the end should not pop.
+     track the faces, and zeroing both at the end should not pop. **Look at the small side
+     faces** at the 3-point reset: that's where the first fix failed.
   3. Play any mode with space crystals. Watch the spin alternate 5-point / 3-point, and collect one
      (it should finish its spin and shrink).
   4. `CrystalTimeDandruff` (via `PrismManagers`) should look unchanged.
