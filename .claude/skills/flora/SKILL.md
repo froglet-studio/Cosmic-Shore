@@ -339,6 +339,20 @@ and by `AssembledFlora.ColonyCyclePeriod`. It cannot be authored per config; do 
 
 ---
 
+**A colony's birth gate must not be the PLANTING BAND.** The band (`plantRadiusCellFraction`,
+`ClampToPlantingBand`) says where a SEED lands; a colony wanders through its lattice from there.
+`NestedGyroidFlora`'s first colony cut refused every tile whose crystal fell outside the band and
+DISCARDED it from the frontier — and every Spawn Matrix station sits outside the membrane, so all
+four neighbours of the founder were refused on the first cycle and the population never grew past
+one plant, while the gyroid colony beside it (no gate at all) kept spreading. Reported from play;
+the harness reproduces it (`nested_gyroid_harness`, "retired planting-band gate" control). Refuse
+only what is permanently forbidden (a control-zone nucleus), let the CAP bound the colony, and copy
+the gyroid's population numbers (1 / 4 / 42) rather than inventing a smaller cap — a cap of 12 on a
+colony species reads as "it stopped growing" (`Docs/ECOSYSTEM.md` §58.9).
+
+**Maturity is "every prism has STOOD once", not "is standing now"** — a colony plant that contributes
+its frontier only while whole never contributes once grazing starts.
+
 ## 7. BUDGETS — what a flora species costs
 
 State all three when you add or resize one:
@@ -533,6 +547,19 @@ author_<cell>_cell.py           # a cell built FROM a species; grows it to size 
   must not advance a sequence the simulation is drawing from. Seed a `System.Random`.
 
 ---
+
+* **A fleet generator's DEFAULT mode writes.** `author_flora_populations.py` with no flag rewrites
+  every config it models; run with `--check` (or `--help`) when you only meant to look. One probe
+  rewrote three unrelated configs' populations and they rode into a commit via `git add -A` — stage
+  by explicit path after running any generator.
+* **Ownership on a surface is GEODESIC.** Cutting a periodic tiling into per-plant tiles by
+  Euclidean nearest centre gave 17 of the nested gyroid's 24 tiles a disconnected fragment (a site
+  across a channel is near in space, far along the surface); multi-source Dijkstra over the bond
+  graph gave none. Same rule as §2's "order by hop distance", one step earlier.
+* **Run the shipped bookkeeping, not a transcription.** A population book that only touches
+  `UnityEngine.Random`, `Time.time` and `Object`'s bool conversion compiles into a headless harness
+  against a ~40-line stub file (`nested_gyroid_harness/ColonyStubs.cs`) — so the colony gates test
+  `NestedGyroidColony.cs` itself, seeded, rather than a model that can drift from it.
 
 ## 10. Checklist for a new or reworked species
 

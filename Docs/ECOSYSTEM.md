@@ -11306,3 +11306,27 @@ colony RIDEABILITY is gated on the shipped configs only and reported for the swe
 layer gaps far beyond the reach) or a near-critical one (tMax ≥ 1.3, outer sheets whose area collapses) leaves
 outer-sheet fragments the rider cannot bridge (largest component 83–99%).
 
+### 58.10 Open items (recorded at ship, each with its evidence)
+
+* **Never opened in the Editor.** Everything above is headless (harness, generator `--check`s, a stub type-check of
+  the glue and the edit-mode tests). `Docs/UNITY_VERIFICATION_CHECKLIST.md` (nested gyroid entry) is the gate.
+* **The period cache key includes `PrismBudget`, which does not shape the period** (`NestedGyroidSettings.Key()`,
+  `NestedGyroidLattice.cs` ~:100; the budget is only read by `Plant`, ~:330). A per-cell budget scale therefore
+  builds and caches a second, identical period. Harmless today (no cell adopts the species); fix by keying the
+  period on everything BUT the budget and cutting plants per budget. *Inconsistency → a fix.*
+* **Every Spawn Matrix release is its own colony and its own cap.** `SpawnMatrixToy.SpawnFloraVariant` clones the
+  config per release (`Instantiate(config)`, ~:873), and both the colony book and `Cell.IsFloraAtCap` key on that
+  clone — so four releases grow up to 4 × 42 plants (~30,000 prisms). Bench semantics, shared with every species;
+  the Frenzy count backstop is what stops it. *A report, not a fix — say if the bench should share one cap.*
+* **One limb per prism doubles the object count** (~7,400 prisms + ~7,400 spindles per element at the cap). That is
+  the asked-for design (every prism hangs off the crystal); if the Profiler disagrees, the lever is the cap, not the
+  limbs. *Report.*
+* **Rideability holds on the shipped stack only** (N 7, tMax 1.2): sparse (N ≤ 3) or near-critical (tMax ≥ 1.3)
+  stacks leave outer-sheet fragments beyond the rider's reach (§58.9). *Incompleteness — a design call if those
+  configs are ever wanted.*
+* **`GlueStubs.cs` copies real signatures by hand**; it cannot see a signature that changes after it was copied.
+  `Tools/Build/unity_refcompile` would replace it with a real bind. *Report.*
+* **Unrelated, pre-existing:** `Tools/Build/author_flora_populations.py --check` exits 1 on `Tollway Anchor Flora
+  Gyroid` (no recorded pre-conversion budget in `LATTICE_SOURCE_BUDGET`), identically on a clean `bleeding-edge`
+  worktree (A/B'd at ship). Needs the number only that conversion's author has.
+
