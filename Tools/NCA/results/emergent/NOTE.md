@@ -75,7 +75,7 @@ The rule is a jellyfish attractor, as a one-target rule should be.
 
 ## The full yardstick, and what failed
 
-`eval.json` (step 750), `eval_step550.json`, `eval_step650.json`, `eval_warm_start.json` (step 0), `probe.json`, `feel.json`.
+`eval.json` (step 750), `eval_step550.json`, `eval_step650.json`, `eval_step800.json`, `eval_warm_start.json` (step 0), `probe.json`, `feel.json`.
 
 1. **SHAPE misses the bar on the mean: 8.9 strict / 8.1 static against 8.**
    - Seeds 7 and 1000 pass: 7.5 and 5.6 strict.
@@ -91,7 +91,11 @@ The rule is a jellyfish attractor, as a one-target rule should be.
      | 450 | 12.4 | |
      | 550 | 10.9 | 10.3 |
      | 650 | | 11.8 |
-     | 750 | 9.3 | 8.9 |
+     | 750 | 9.3 | 8.9 (published) |
+     | 800 | 10.7 | 8.7 |
+
+   Step 800 (`eval_step800.json`) is within noise on shape, and its heal falls to 0.31 (seed 41: -0.34). Step 750
+   stays the published rule as the better balance.
 
    - Run em_c's training sink fell from 19 to about 12.7 and was flattening at the end. Step 750 was the last snapshot
      scored.
