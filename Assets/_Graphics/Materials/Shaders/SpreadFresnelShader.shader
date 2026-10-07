@@ -45,18 +45,14 @@ Shader "Custom/SpreadFresnelShader"
                 float4 vertex : SV_POSITION;
             };
 
-            float3 _Spread;
-            float _FresnelPower;
-            float4 _BrightColor, _DarkColor;
+            // The shared core (properties, displacement, colour) lives in SpreadFresnelCore.hlsl so
+            // OmniCrystalFresnelShader can extend it without forking it.
+            #include "SpreadFresnelCore.hlsl"
 
             v2f vert (appdata v)
             {
                 v2f o;
-                float3 objectScale = float3(length(unity_ObjectToWorld._m00_m01_m02), length(unity_ObjectToWorld._m10_m11_m12), length(unity_ObjectToWorld._m20_m21_m22));
-                // normalize: a blend-shape mesh hands the vertex stage a blended normal that is not unit
-                // length (spacecrystalanim.fbx's stacked keys reach ~2x), and the push must not scale with it.
-                float3 spreadedNormal = normalize(v.normal) * (_Spread / objectScale);
-                v.vertex.xyz += spreadedNormal;
+                v.vertex.xyz = SpreadFresnelDisplace(v.vertex.xyz, v.normal);
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.worldNormal = normalize(mul((float3x3)UNITY_MATRIX_M, v.normal));
 
@@ -66,10 +62,7 @@ Shader "Custom/SpreadFresnelShader"
 
             half4 frag (v2f i) : SV_Target
             {
-                float3 viewDir = normalize(_WorldSpaceCameraPos - i.worldPos);
-                float fresnel = (1.0 + dot(viewDir, i.worldNormal))/2;
-                half4 col = lerp( _BrightColor, _DarkColor, fresnel);
-                return col;
+                return SpreadFresnelColor(i.worldPos, i.worldNormal);
             }
             ENDCG
         }

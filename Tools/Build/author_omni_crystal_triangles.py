@@ -16,24 +16,25 @@ included - through every pulse, and the crystal had no body of its own: the one
 static shell (`ActiveMassCrystalMaterial 3`) resolves to alpha 0.02..0.07, a
 ghost. What ships now is a BODY plus THREE tone shells:
 
-    slot 0..2   the Shepard chain, on the TRIANGLES ONLY
-                (MassCrystalExport3ExpandedTri, one component per omni triangle)
-    slot 3      the body - the whole omni model, static, CrystalMaterial
+    slot 0      the body - the whole omni model, static, on OmniCrystalFresnelShader
+                (the elemental crystals' SpreadFresnel look + the Scarab morph path)
+    slot 1..3   the Shepard chain, on the TRIANGLES ONLY, falling from outside the
+                crystal onto its surface (MassCrystalExport3ExpandedTri, baked)
 
 Four slots exactly, because `ThemeManagerDataContainerSO.GetTeamCrystalMaterial`
 answers indices 0..3 and warns past them; a fifth model would be a warning on
 every domain-owned activation and would silently reuse slot 0's team material.
 
-WHAT THIS SCRIPT OWNS - the two things that must not be typed by hand:
+WHAT THIS SCRIPT OWNS - the things that must not be typed by hand (the body and
+tone materials too; see the materials block below):
 
  1. THE SHELL SCALE. `MassCrystalExport3ExpandedTri_10-23-25.fbx` is EXACTLY the
     omni model's 20 triangular prisms scaled about the origin - measured 2.241676
     on every one of its 120 vertices (max residual 8.3e-07 against a 1.6172 mesh
-    radius, i.e. 5e-07 relative). So the shells carry the RECIPROCAL as their
-    local scale and the tone's outermost reach lands precisely on the body's own
-    triangles instead of 2.24x outside the crystal - which is also what keeps the
-    whole crystal inside the 1.2 pickup collider it has always sat in. Re-export
-    either model at a different scale and --check fails here rather than in play.
+    radius, i.e. 5e-07 relative). The shells carry OUTER_REACH / 2.241676 as their
+    local scale, so the tone's s = 1 is OUTER_REACH x the crystal's triangles and
+    s = 1/OUTER_REACH lands exactly ON them. Re-export either model at a different
+    scale and --check fails here rather than in play.
 
  2. THE TRIANGLE MESH. The shells cannot reference the FBX's own mesh: Unity
     mints an FBX sub-asset's fileID inside the editor by a generator that is
@@ -53,6 +54,7 @@ the mesh asset's axis conversion is the one thing to check.
 """
 
 import argparse
+import hashlib
 import math
 import os
 import re
@@ -77,15 +79,88 @@ SHELL_PREFAB_GUID = "59cbf929dd08bc1e2d4c6d5f1e48b76a"
 TRUNC_OCTA_GUID = "a089e5ab0159cc54aa784d6ebf15d2e4"   # TrucatedOctahedron.prefab (whole omni model)
 FADE_IN_GUID = "318b4eb62a2693f4e98368eb975997cd"
 
-# Materials (guid -> what it is), all pre-existing assets.
-MAT_SHEPARD = ["20e4974a2de18e44880740ec87d82e44",   # ActiveMassCrystalMaterial    band 0.00-0.33
-               "2438fa6e25f42f04f9cff49f3f505acc",   # ActiveMassCrystalMaterial 1  band 0.33-0.66
-               "0605bc709a4621e48984803a3ebca8a3"]   # ActiveMassCrystalMaterial 2  band 0.66-1.00
-MAT_SHEPARD_INACTIVE = ["650830ed7524d074991cd928a5356f37",   # BlueCrystalMaterial
-                        "77544dd168c53564e81549be625b0955",   # BlueMassCrystalMaterial 1
-                        "abcf956848542144a91c42a841a1f21d"]   # BlueMassCrystalMaterial 2
-MAT_BODY = "383f21e8586fd7243a19e1d0f26110d0"            # CrystalMaterial      (free-pickup lime CTA)
-MAT_BODY_INACTIVE = "650830ed7524d074991cd928a5356f37"   # BlueCrystalMaterial
+# ── materials ──
+# The BODY wears the omni's own shader (OmniCrystalFresnelShader: SpreadFresnelShader's look,
+# shared through SpreadFresnelCore.hlsl, plus the morph + dissolve only the omni needs). Its two
+# materials are clones of the elemental crystals' LimeCrystalFresnelMaterial /
+# BlueCrystalFresnelMateriall - same colours and spread - moved onto that shader.
+OMNI_SHADER_GUID = "554d96e9b67505208a3fbf0acb165350"           # OmniCrystalFresnelShader.shader
+MAT_DIR = "Assets/_Graphics/Materials/CrystalMaterials"
+BODY_DONORS = [("OmniCrystalBody", "LimeCrystalFresnelMaterial"),
+               ("OmniCrystalBodyInactive", "BlueCrystalFresnelMateriall")]
+MAT_BODY_EXPLODING = "383f21e8586fd7243a19e1d0f26110d0"  # CrystalMaterial: the spent husk animates
+                                                         # CrystalGraph's _velocity, which the
+                                                         # Fresnel shaders do not carry
+
+# The TONE shells get omni-only clones of the Mass crystal's ShepardGraph materials (those are
+# shared with CrystalMass.prefab, so their bands cannot move). ShepardGraph sweeps s from _Start to
+# _Stop when _Start > _Stop, scales the mesh by s about the origin, and draws Alpha =
+# (1.05 - s) * _Opacity. The shell prefab is scaled so s = 1 is OUTER_REACH x the crystal's own
+# triangles and s = 1/OUTER_REACH is ON them, and the three bands tile that range - so the
+# triangles fall in from outside the crystal and land on its surface, brightening as they arrive
+# (alpha 0.05 at the outer edge, 1.05 - 1/OUTER_REACH at the surface).
+OUTER_REACH = 2.0
+SHEPARD_DONORS = ["ActiveMassCrystalMaterial", "ActiveMassCrystalMaterial 1", "ActiveMassCrystalMaterial 2"]
+SHEPARD_INACTIVE_DONORS = ["BlueMassCrystalMaterial", "BlueMassCrystalMaterial 1", "BlueMassCrystalMaterial 2"]
+
+
+def mat_guid(name):
+    return hashlib.md5(f"CosmicShore/OmniCrystal/{name}.mat".encode()).hexdigest()
+
+
+def shepard_bands():
+    """(start, stop) per shell: three contiguous falling bands from s = 1 down to 1/OUTER_REACH."""
+    lo = 1.0 / OUTER_REACH
+    edges = [1.0 - (1.0 - lo) * k / 3 for k in range(4)]
+    return [(round(edges[k], 6), round(edges[k + 1], 6)) for k in range(3)]
+
+
+MAT_BODY = mat_guid("OmniCrystalBody")
+MAT_BODY_INACTIVE = mat_guid("OmniCrystalBodyInactive")
+MAT_SHEPARD = [mat_guid(f"OmniShepardTriangles {i}") for i in range(3)]
+MAT_SHEPARD_INACTIVE = [mat_guid(f"OmniShepardTrianglesInactive {i}") for i in range(3)]
+
+
+def _donor(name):
+    return open(os.path.join(ROOT, MAT_DIR, name + ".mat")).read()
+
+
+def _sub1(text, pattern, repl, label):
+    out, n = re.subn(pattern, repl, text, count=1, flags=re.M)
+    if n != 1:
+        raise SystemExit(f"material clone: {label} not found exactly once")
+    return out
+
+
+def material_texts():
+    out = {}
+    for name, donor in BODY_DONORS:
+        t = _sub1(_donor(donor), rf"^  m_Name: {re.escape(donor)}$", f"  m_Name: {name}", name + " m_Name")
+        t = _sub1(t, r"^  m_Shader: \{fileID: [-0-9]+, guid: \w+,\s*\n?\s*type: 3\}",
+                  f"  m_Shader: {{fileID: 4800000, guid: {OMNI_SHADER_GUID}, type: 3}}", name + " m_Shader")
+        out[name] = t
+    for i, (start, stop) in enumerate(shepard_bands()):
+        name = f"OmniShepardTriangles {i}"
+        t = _sub1(_donor(SHEPARD_DONORS[i]), rf"^  m_Name: {re.escape(SHEPARD_DONORS[i])}$",
+                  f"  m_Name: {name}", name)
+        t = _sub1(t, r"^    - _Start: .*$", f"    - _Start: {start}", name + " _Start")
+        t = _sub1(t, r"^    - _Stop: .*$", f"    - _Stop: {stop}", name + " _Stop")
+        t = _sub1(t, r"^    - _ScaleDistance: .*$", "    - _ScaleDistance: 1", name + " _ScaleDistance")
+        out[name] = t
+        iname = f"OmniShepardTrianglesInactive {i}"
+        t = _sub1(_donor(SHEPARD_INACTIVE_DONORS[i]), rf"^  m_Name: {re.escape(SHEPARD_INACTIVE_DONORS[i])}$",
+                  f"  m_Name: {iname}", iname)
+        t = _sub1(t, r"^  m_Parent: \{fileID: 2100000, guid: \w+, type: 2\}",
+                  f"  m_Parent: {{fileID: 2100000, guid: {MAT_SHEPARD[i]}, type: 2}}", iname + " m_Parent")
+        out[iname] = t
+    return {f"{MAT_DIR}/{n}.mat": t for n, t in out.items()}
+
+
+def material_meta(name):
+    return (f"fileFormatVersion: 2\nguid: {mat_guid(name)}\nNativeFormatImporter:\n"
+            "  externalObjects: {}\n  mainObjectFileID: 2100000\n  userData: \n"
+            "  assetBundleName: \n  assetBundleVariant: \n")
+
 
 # Stable ids inside OmniCrystalTriangles.prefab.
 SHELL_GO, SHELL_TR, SHELL_MF, SHELL_MR, SHELL_FADE = (
@@ -97,12 +172,17 @@ OCTA_GO, OCTA_TR, OCTA_MR = 2448508127246415652, 1114034561007818392, 2073129193
 # Crystal.prefab: the four child slots, in crystalModels order. The stripped
 # Transform/GameObject ids are PRESERVED across this rewrite so the root's
 # m_Children list and the crystalModels model references stay valid.
+#
+# The BODY is slot 0, and that is load-bearing: every consumer that wants "the crystal's shape"
+# reads crystalModels[0] (ElementCrystalModelBuilder, SpawnMatrixToy's element visual), and the
+# Scarab's crystal->ball forge (ScarabCrystalMorph.AdoptShells) builds its morph mesh from shell 0
+# and folds every shell that draws the same mesh - the whole-model body, here.
 SLOTS = [
     # (PrefabInstance id, stripped Transform id, stripped GameObject id, name)
+    (302729943389656567,  812437664975045487,  2722806873126380243, "OmniCrystalBody"),
     (693643822389642704,  492451356381860680,  2907786364588143348, "OmniShepardTriangles"),
     (3428511433788108504, 2369276566672717888, 1039871714678528508, "OmniShepardTriangles (1)"),
     (5888802945109814545, 6831084959271910281, 8089558117201123893, "OmniShepardTriangles (2)"),
-    (302729943389656567,  812437664975045487,  2722806873126380243, "OmniCrystalBody"),
 ]
 
 
@@ -482,27 +562,28 @@ def crystal_children_text():
     """The four child PrefabInstances of Crystal.prefab, in crystalModels order."""
     out = []
     for i, (inst, stripped_tr, stripped_go, name) in enumerate(SLOTS):
-        body = i == 3
+        body = i == 0
         guid = TRUNC_OCTA_GUID if body else SHELL_PREFAB_GUID
         t_go, t_tr, t_mr = ((OCTA_GO, OCTA_TR, OCTA_MR) if body
                             else (SHELL_GO, SHELL_TR, SHELL_MR))
-        mat = MAT_BODY if body else MAT_SHEPARD[i]
+        mat = MAT_BODY if body else MAT_SHEPARD[i - 1]
         out.append(_instance_block(inst, guid, t_go, t_tr, t_mr, name, mat))
         out.append(_stripped_blocks(inst, guid, stripped_tr, stripped_go, t_tr, t_go))
     return "".join(out)
 
 
 def crystal_models_text():
-    """The Crystal component's crystalModels list - three tone shells, then the body."""
+    """The Crystal component's crystalModels list - the body, then the three tone shells."""
     rows = []
     for i, (_, _, stripped_go, _) in enumerate(SLOTS):
-        body = i == 3
-        default = MAT_BODY if body else MAT_SHEPARD[i]
-        inactive = MAT_BODY_INACTIVE if body else MAT_SHEPARD_INACTIVE[i]
+        body = i == 0
+        default = MAT_BODY if body else MAT_SHEPARD[i - 1]
+        exploding = MAT_BODY_EXPLODING if body else default
+        inactive = MAT_BODY_INACTIVE if body else MAT_SHEPARD_INACTIVE[i - 1]
         rows.append(
             f"  - model: {{fileID: {stripped_go}}}\n"
             f"    defaultMaterial: {{fileID: 2100000, guid: {default}, type: 2}}\n"
-            f"    explodingMaterial: {{fileID: 2100000, guid: {default}, type: 2}}\n"
+            f"    explodingMaterial: {{fileID: 2100000, guid: {exploding}, type: 2}}\n"
             f"    inactiveMaterial: {{fileID: 2100000, guid: {inactive}, type: 2}}\n"
             f"    spaceCrystalAnimator: {{fileID: 0}}\n")
     return "  crystalModels:\n" + "".join(rows)
@@ -515,6 +596,11 @@ MODELS_BLOCK = re.compile(r"^  crystalModels:\n(?:  - model:.*?\n(?:    .*\n)*)+
 def build_crystal_prefab(existing):
     head = existing[:CHILDREN_START.search(existing).start()]
     head, n = MODELS_BLOCK.subn(crystal_models_text(), head)
+    children = "".join(f"  - {{fileID: {tr}}}\n" for _, tr, _, _ in SLOTS)
+    head, m = re.subn(r"(^  m_Children:\n)(?:  - \{fileID: \d+\}\n){4}", lambda x: x.group(1) + children,
+                      head, count=1, flags=re.M)
+    if m != 1:
+        raise SystemExit(f"{CRYSTAL_PREFAB}: root m_Children (4 entries) not found")
     if n != 1:
         raise SystemExit(f"{CRYSTAL_PREFAB}: expected exactly one crystalModels block, found {n}")
     return head + crystal_children_text()
@@ -530,10 +616,11 @@ def main():
     args = ap.parse_args()
 
     scale, residual = measure()
-    shell_scale = round(1.0 / scale, 9)
+    shell_scale = round(OUTER_REACH / scale, 9)
     print(f"omni triangles -> triangle model: uniform scale {scale:.9f} "
           f"(max residual {residual:.3e})")
-    print(f"shell localScale: {shell_scale}")
+    print(f"shell localScale: {shell_scale}  (s = 1 is {OUTER_REACH}x the crystal's triangles)")
+    print(f"tone bands (start -> stop): {shepard_bands()}")
 
     want = {
         TRI_MESH_ASSET: tri_mesh_text(),
@@ -541,6 +628,9 @@ def main():
         SHELL_PREFAB: shell_prefab_text(shell_scale),
         SHELL_PREFAB + ".meta": SHELL_META,
     }
+    for path, text in material_texts().items():
+        want[path] = text
+        want[path + ".meta"] = material_meta(os.path.basename(path)[:-4])
     crystal_path = os.path.join(ROOT, CRYSTAL_PREFAB)
     want[CRYSTAL_PREFAB] = build_crystal_prefab(open(crystal_path).read())
 

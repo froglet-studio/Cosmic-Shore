@@ -453,7 +453,7 @@ colour is barely affected.
 (convert, do not normalise, do not lift), the ladder clearance, the sentinel refusal and per-domain
 hue separation.
 
-### 2.10 The omni crystal is a BODY plus three tone shells — an element's effect belongs on that element's SHAPES (2026-08-27)
+### 2.10 The omni crystal is a BODY plus three tone shells — an element's effect belongs on that element's SHAPES (2026-10-07)
 
 The omni crystal is an **exploded polyhedron**: 122 disjoint plates, one component per face of the
 solid it was blown apart from — **20 triangular prisms, 90 boxes, 12 pentagonal prisms**
@@ -476,35 +476,57 @@ had two consequences and neither was authored:
 What ships is a body plus a three-shell tone chain, authored by
 `Tools/Build/author_omni_crystal_triangles.py` (`--check`):
 
-| slot | geometry | material | band |
+| slot | geometry | default / inactive material | band (s, falling) |
 |---|---|---|---|
-| 0 | triangles only (`OmniCrystalTriangles.asset`) | `ActiveMassCrystalMaterial` / `BlueCrystalMaterial` | 0.00 → 0.33 |
-| 1 | triangles only | `ActiveMassCrystalMaterial 1` / `BlueMassCrystalMaterial 1` | 0.33 → 0.66 |
-| 2 | triangles only | `ActiveMassCrystalMaterial 2` / `BlueMassCrystalMaterial 2` | 0.66 → 1.00 |
-| 3 | **the whole omni model** | `CrystalMaterial` / `BlueCrystalMaterial` (`CrystalGraph`, static) | — |
+| 0 | **the whole omni model**, static | `OmniCrystalBody` / `OmniCrystalBodyInactive` (`OmniCrystalFresnelShader`) | — |
+| 1 | triangles only (`OmniCrystalTriangles.asset`) | `OmniShepardTriangles 0` / `…Inactive 0` (`ShepardGraph`) | 1.000 → 0.833 |
+| 2 | triangles only | `OmniShepardTriangles 1` / `…Inactive 1` | 0.833 → 0.667 |
+| 3 | triangles only | `OmniShepardTriangles 2` / `…Inactive 2` | 0.667 → 0.500 |
 
-**Four slots exactly, and that bound is real**: `ThemeManagerDataContainerSO.GetTeamCrystalMaterial`
-answers indices 0..3 and warns past them, so a fifth model would log on every domain-owned
-activation *and* silently reuse slot 0's team material. The body takes the slot the ghost shell was
-already occupying, so the index roles, the queue offsets, the husk-per-model explosion and the
-`FadeIn` contract are all untouched.
+**The body is slot 0, and that is load-bearing.** Everything that wants "the crystal's shape" reads
+`crystalModels[0]` (`ElementCrystalModelBuilder`, `SpawnMatrixToy`'s element visual), and the
+Scarab's crystal→ball forge (`ScarabCrystalMorph.AdoptShells`) builds its morph mesh from shell 0 and
+folds every shell drawing that same mesh. The triangle shells are a different mesh, so the forge
+leaves them out (a verbose `CrystalMorph`-channel line, not a warning: it is the design). **Four slots
+exactly**: `ThemeManagerDataContainerSO.GetTeamCrystalMaterial` answers indices 0..3 and warns past
+them, so a fifth model would log on every domain-owned activation and reuse slot 0's team material.
+
+**The body wears the elemental crystals' Fresnel look on the omni's own shader.** `SpreadFresnelShader`
+(Space, Time) was split into a shared core, `SpreadFresnelCore.hlsl` — Unity shaders have no
+inheritance, so a shader *family* shares its body through an include — and the elemental shader is
+now that core and nothing else (proved identical: the fragment SPIR-V matches after inlining, the
+vertex differs only in instruction order). `OmniCrystalFresnelShader` is the core **plus** the two
+things only the omni needs: the `CrystalMorph` vertex/normal path the Scarab forge stamps
+(`_CrystalMorph`, TEXCOORD2/3, the `_PrismClock` global — a pass-through until stamped), and a
+screen-door dissolve on `_Opacity × _opacity`, which gives the body `FadeIn`'s bloom-in and the
+forge's tail. The body's materials are clones of `LimeCrystalFresnelMaterial` /
+`BlueCrystalFresnelMateriall` moved onto it; its exploding material stays `CrystalMaterial`, because
+the spent husk animates `CrystalGraph`'s `_velocity`. **Add a feature to ONE crystal in its own
+shader file; change the LOOK in the core.**
+
+**The tone falls INTO the crystal.** ShepardGraph's band comparison is `Start < Stop` (`Comparison`,
+type 2), so a band with `_Start > _Stop` — every Mass material — sweeps `s` DOWNWARD. It scales the
+mesh by `s` about the origin and draws `Alpha = (1.05 − s) × _Opacity`. The first omni pass reused
+the Mass bands (`0.33→0`, `0.66→0.33`, `1→0.66`) on shells scaled so `s = 1` was the surface, which
+made the triangles leave the surface and shrink to the centre — backwards. Now the shells are scaled
+`OUTER_REACH / 2.241676` = **0.892189773** (`OUTER_REACH = 2`), so `s = 1` is twice the crystal's
+own triangles and `s = 0.5` lands exactly ON them, and three contiguous falling bands tile that range:
+the triangles fall in from outside and land on the surface, brightening as they arrive (alpha 0.05
+at the outer edge, 0.55 at the surface). The Mass crystal's own materials are untouched — the omni
+has clones. *`OUTER_REACH` is the one dial for how far out the tone starts.*
 
 **The shell scale is MEASURED, not chosen.** `MassCrystalExport3ExpandedTri_10-23-25.fbx` is
 exactly the omni model's 20 triangular prisms scaled about the origin by **2.241676** — proven on
 all 120 vertices (worst direction mismatch 1.2e-13, max residual 8.3e-07 against a 1.6172 mesh
-radius). The shells therefore carry the reciprocal, **0.446094887**, and the tone's outermost reach
-lands precisely on the body's own triangles instead of 2.24× outside the crystal — which is also
-what keeps the whole thing inside the 1.2 pickup collider it has always sat in. Re-export either
-model at a different scale and `--check` fails at the script rather than in play. *If the pulse is
-ever wanted to overshoot the body, that one number is the dial.*
+radius). Re-export either model at a different scale and `--check` fails at the script rather than
+in play.
 
-Two things the change buys for free, and one it does not. `CrystalGraph` exposes **`_opacity`** where
-`ShepardGraph` exposes **`_Opacity`**, and both `FadeIn` and `Crystal.WriteTint`'s capture dissolve
-write the lowercase one — so the omni crystal had never bloomed in and had never dissolved on capture
-(`Docs/ECOSYSTEM.md §31`), on any of its four shells. Its body now does both. The three tone shells
-still cannot: that gap is pre-existing and is now confined to the pulse rather than the whole crystal.
-The CTA lime is unaffected either way — `Crystal.FindColorPropertyNames` accepts both shaders'
-`_BrightCrystalColor`/`_DullCrystalColor`, so §2.2's tint reaches body and shells alike.
+**Not reached by §2.2's tint, deliberately, for now.** `Crystal.FindColorPropertyNames` accepts
+`_BrightCrystalColor`/`_DullCrystalColor` or `_BrightColor`/`_DullColor`; the Fresnel family names
+its pair `_BrightColor`/`_DarkColor`, so the CTA tint reaches neither the elemental Space/Time
+crystals (upstream, 2026-10-07) nor the omni body — they show their authored lime/blue. The omni
+keeps the family's names so it reads exactly like its siblings. Whether the Fresnel family should
+join the collectability tint is one decision for all three, not this one's.
 
 **The triangle shells draw a BAKED native mesh, not the FBX's own.** A hand-written prefab cannot
 reference an FBX sub-asset: Unity mints that fileID inside the editor, and it is not reproducible
