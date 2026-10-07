@@ -11,8 +11,17 @@ ALGORITHM (OpenAI-ES, antithetic, per species, Adam):
   predators. A newer generation therefore cannot win by exploiting only the current opponent's latest quirk.
   The pool share is `pool_frac` of the pairs.
 
-FITNESS (per encounter, a fixed-roster 40 s encounter; no births, no starvation inside one):
-  predator  net mass per predator = catches * m_prey - metabolic burn (so bursting costs and an ambush can pay)
+  PFSP (prioritised fictitious self-play, AlphaStar): pool opponents are not drawn uniformly but weighted by how
+  INFORMATIVE the matchup is for the learner, from an EMA of each snapshot's result against the current policy:
+  a predator draws prey snapshots with weight s(1-s) + eps (s = catches per predator per encounter, clipped to 1:
+  neither hopeless nor trivial), prey draw predator snapshots with weight (caught share) + eps (the ones that still
+  hurt). Added after run a1, where uniform sampling let the prey win so completely that the predators saw ~0 catches,
+  their gradient became pure burn cost, and they DISENGAGED (catch rate 13 -> 1 per minute in 180 generations, and
+  falling against the pool too). `--pfsp 0` restores uniform sampling.
+
+FITNESS (per encounter, a fixed-roster encounter; no births, no starvation inside one):
+  predator  catches * m_prey - w_burn * metabolic burn, per predator (a1 used w_burn = 1: the burn swamped the
+            sparse catch signal; a2 on use 0.25 so bursting still costs and an ambush can still pay)
   prey      -(share of the prey caught) + w_graze * net mass per prey (grazed - burn)
 
 Snapshots, the pool and the optimiser state are saved every generation-block, so re-running resumes.
@@ -36,12 +45,13 @@ import multiprocessing as mp
 import arms_sim as A
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+W_BURN = 1.0                      # set from --w_burn in main (module global so pool workers see it after fork)
 
 
 def fitness(cfg, st):
     nq0, np0 = cfg.n_prey, cfg.n_pred
     caught = (st.caught_t[:, :nq0] >= 0).mean(1)
-    f_pred = (st.catches.sum(1) * cfg.m_prey - st.burned_p.sum(1)) / np0
+    f_pred = (st.catches.sum(1) * cfg.m_prey - W_BURN * st.burned_p.sum(1)) / np0
     net_q = (st.grazed[:, :nq0] - st.burned_q[:, :nq0]).mean(1) / cfg.m_prey
     return f_pred, caught, net_q, st.catches.sum(1)
 
@@ -93,7 +103,11 @@ def main():
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--confusion", type=float, default=0.3)
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--w_burn", type=float, default=0.25)
+    ap.add_argument("--pfsp", type=int, default=1)
     a = ap.parse_args()
+    global W_BURN
+    W_BURN = a.w_burn
 
     out = os.path.join(HERE, "runs", f"arms_{a.tag}")
     os.makedirs(os.path.join(out, "snaps"), exist_ok=True)
@@ -125,6 +139,12 @@ def main():
         np.savez(os.path.join(out, "snaps", "g00000.npz"), thq=thq, thp=thp)
         pool_q.append(thq.copy()); pool_p.append(thp.copy())
 
+    # PFSP statistics: EMA of the result of each pool snapshot against the current learner
+    ema_s = [0.5] * len(pool_q)          # predator learner vs prey snapshot k: catches per predator per encounter
+    ema_c = [0.1] * len(pool_p)          # prey learner vs predator snapshot k: share of prey caught
+    pf = os.path.join(out, "pfsp.json")
+    if os.path.exists(pf):
+        z = json.load(open(pf)); ema_s[:len(z["s"])] = z["s"][:len(ema_s)]; ema_c[:len(z["c"])] = z["c"][:len(ema_c)]
     workers = mp.Pool(a.workers) if a.workers > 1 else None
     logf = open(os.path.join(out, "log.jsonl"), "a")
     K, M, s = a.blocks, a.pool_pairs, a.sigma
@@ -139,7 +159,12 @@ def main():
             for j in range(4):
                 Tq.append(thq + s * SQ[j] * eq[k]); Tp.append(thp + s * SP[j] * ep[k]); seeds.append(seeds_blk[k])
         # pool pairs: predator +-e vs a pool prey; prey +-d vs a pool predator
-        hq = rng.integers(0, len(pool_q), M); hp = rng.integers(0, len(pool_p), M)
+        if a.pfsp:
+            sq_ = np.clip(np.array(ema_s), 0, 1); wq = sq_ * (1 - sq_) + 0.02
+            wp = np.array(ema_c) + 0.02
+            hq = rng.choice(len(pool_q), M, p=wq / wq.sum()); hp = rng.choice(len(pool_p), M, p=wp / wp.sum())
+        else:
+            hq = rng.integers(0, len(pool_q), M); hp = rng.integers(0, len(pool_p), M)
         seeds_pool = rng.integers(1, 2 ** 31 - 1, 2 * M)
         for m in range(M):
             for sg in (1, -1):
@@ -161,6 +186,11 @@ def main():
         gq = (_norm_diffs(dq)[:, None] * eq).mean(0) / s
         thp = thp + op.step(gp) - a.lr * a.wd * thp
         thq = thq + oq.step(gq) - a.lr * a.wd * thq
+        for m in range(M):              # PFSP updates
+            s_k = float(catches[n4 + 2 * m:n4 + 2 * m + 2].mean()) / cfg.n_pred
+            ema_s[hq[m]] = 0.8 * ema_s[hq[m]] + 0.2 * s_k
+            c_k = float(caught[n4 + 2 * M + 2 * m:n4 + 2 * M + 2 * m + 2].mean())
+            ema_c[hp[m]] = 0.8 * ema_c[hp[m]] + 0.2 * c_k
         mins = a.secs / 60
         rec = dict(gen=gen, sec=round(time.time() - t0, 2),
                    cur_catch_pm=round(float(catches[:n4].mean() / mins), 2),
@@ -169,7 +199,7 @@ def main():
                    cur_fpred=round(float(f_pred[:n4].mean()), 3),
                    predVpool_catch_pm=round(float(catches[n4:n4 + 2 * M].mean() / mins), 2),
                    preyVpool_catch_pm=round(float(catches[n4 + 2 * M:].mean() / mins), 2),
-                   pool=len(pool_q), gnorm=[round(float(np.linalg.norm(gp)), 2), round(float(np.linalg.norm(gq)), 2)],
+                   pool=len(pool_q), pfsp_top=[int(np.argmax(ema_s)), int(np.argmax(ema_c))], gnorm=[round(float(np.linalg.norm(gp)), 2), round(float(np.linalg.norm(gq)), 2)],
                    pnorm=[round(float(np.linalg.norm(thp)), 2), round(float(np.linalg.norm(thq)), 2)])
         logf.write(json.dumps(rec) + "\n"); logf.flush()
         if gen % 5 == 0:
@@ -177,6 +207,8 @@ def main():
         if (gen + 1) % a.snap_every == 0:
             np.savez(os.path.join(out, "snaps", f"g{gen + 1:05d}.npz"), thq=thq, thp=thp)
             pool_q.append(thq.copy()); pool_p.append(thp.copy())
+            ema_s.append(float(np.mean(ema_s[-3:]))); ema_c.append(float(np.mean(ema_c[-3:])))
+            json.dump(dict(s=ema_s, c=ema_c), open(pf, "w"))
             np.savez(ck, thq=thq, thp=thp, oqm=oq.m, oqv=oq.v, oqt=oq.t, opm=op.m, opv=op.v, opt=op.t, gen=gen)
 
 
