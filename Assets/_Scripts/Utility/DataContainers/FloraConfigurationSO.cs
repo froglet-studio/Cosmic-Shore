@@ -340,7 +340,7 @@ namespace CosmicShore.Utility
         public float ShieldPeriod = -1f;
 
         [Tooltip("Seconds between spindle rings on a JOUSTED death, where the structure unravels " +
-                 "outside-in back toward the heart instead of detonating (Docs/ECOSYSTEM.md §26). A denser " +
+                 "from the heart outward instead of detonating (Docs/ECOSYSTEM.md §26). A denser " +
                  "plant wants a shorter ring so the whole wither still reads at flight speed. " +
                  "-1 = keep prefab.")]
         public float WitherRingInterval = -1f;

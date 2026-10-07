@@ -16,11 +16,10 @@ namespace CosmicShore.Data
     //              becomes collectable - by any vessel - once the wither reaches it. The
     //              body prisms are left behind as a skeleton.
     //   Jousted  - a vessel out-paced the creature and took its heart (the Squirrel's
-    //              Crystal Joust). The heart leaves FIRST, awarded straight to the jouster;
-    //              the body still withers OUTSIDE IN along its spindle tree, so no limb ever
-    //              stands cut off from the limbs that join it to where the heart was
-    //              (Docs/ECOSYSTEM.md §26.10 retired the old heart-outward unravel). The body
-    //              prisms are left behind as a skeleton.
+    //              Crystal Joust). The mirror image of Withered: the heart leaves FIRST,
+    //              awarded straight to the jouster, and the body unravels FROM THE HEART
+    //              OUTWARD around the hole it left. The body prisms are left behind as a
+    //              skeleton.
     //   Consumed - a predator caught and ate the creature. No skeleton and no ordering:
     //              the body breaks apart and suctions into the mouth, because here the
     //              mass is genuinely transferred to the eater rather than left in place.

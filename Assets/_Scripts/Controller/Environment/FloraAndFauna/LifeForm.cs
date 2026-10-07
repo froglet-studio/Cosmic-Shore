@@ -37,8 +37,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] private bool autoInitialize = true;
 
         [Tooltip("Seconds between spindle rings on a JOUSTED death, where the structure " +
-                 "withers outside-in, limb by limb back toward the heart, instead of detonating " +
-                 "(Docs/ECOSYSTEM.md §26, §26.10). " +
+                 "unravels from the heart outward instead of detonating (Docs/ECOSYSTEM.md §26). " +
                  "The fauna counterpart is LightFaunaDataSO.witherRingInterval. 0 collapses the " +
                  "whole body in a single frame, which reads as a pop - keep it above zero.")]
         [SerializeField, Min(0.01f)] float witherRingInterval = 0.25f;
@@ -102,9 +101,9 @@ namespace CosmicShore.Gameplay
         /// (wither via spindles, crystal drop - mass conserved, continuity honored). Idempotent.
         ///
         /// The style is stamped BEFORE the death runs because the death READS it: a joust does
-        /// not detonate the plant. The jouster took the heart; the structure withers OUTSIDE-IN
-        /// back toward where it was and its prisms stay standing as a skeleton
-        /// (Docs/ECOSYSTEM.md §26, §26.10).
+        /// not detonate the plant. The jouster took the heart, so the structure comes apart
+        /// FROM THE HEART OUTWARD and its prisms stay standing as a skeleton
+        /// (Docs/ECOSYSTEM.md §26).
         /// </summary>
         /// <inheritdoc/>
         /// <remarks>The exact pair <see cref="Jousted"/> has always gated on - published so a
@@ -392,11 +391,12 @@ namespace CosmicShore.Gameplay
         /// The JOUSTED death (Docs/ECOSYSTEM.md §26): a vessel took this lifeform's heart, so
         /// the plant does not detonate. Its prisms are left standing as a skeleton - the frame
         /// of the thing that grew here, now ordinary cell mass the food web can graze - while
-        /// the soft tissue withers spindle by spindle OUTSIDE-IN along the spindle tree, the
-        /// limbs nearest the crystal LAST. Every limb still standing therefore keeps an unbroken
-        /// path of limbs back to where the heart was at every instant of the wither: a plant
-        /// never shows a limb floating free of its crystal (Docs/ECOSYSTEM.md §26.10, which
-        /// retired the heart-outward order this used to run).
+        /// the soft tissue withers spindle by spindle FROM THE MISSING CRYSTAL TO THE LEAVES
+        /// along the spindle tree (<see cref="Spindle.OrderHeartOutward"/>), unravelling around
+        /// the hole the joust left. This is the ONE sanctioned exception to "every standing limb
+        /// has a path to its crystal" (Docs/ECOSYSTEM.md §26.10): every other death and every
+        /// graze spends a lifeform outside-in. The mirror of the starvation wither a creature
+        /// does (see <see cref="LightFauna"/>).
         ///
         /// <see cref="DieCoroutine"/> is what waits for it: the husk is destroyed only once
         /// every spindle has finished evaporating, so this needs no completion callback.
@@ -408,8 +408,8 @@ namespace CosmicShore.Gameplay
             Vector3 heart = crystal ? crystal.transform.position : transform.position;
 
             // Ordered BEFORE isolation, because the order is read off the spindle tree and
-            // isolation is what severs it. Deepest limb first, crystal-adjacent limbs last.
-            var spindles = Spindle.OrderOutsideIn(GetComponentsInChildren<Spindle>(true), heart);
+            // isolation is what severs it. The joust exception: crystal-adjacent limbs first.
+            var spindles = Spindle.OrderHeartOutward(GetComponentsInChildren<Spindle>(true), heart);
 
             // Isolate: ForceWither recurses into child spindles and destroying a spindle
             // destroys its children, either of which would collapse the plant in one step.

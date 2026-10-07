@@ -4548,33 +4548,28 @@ container), not a number, so it is reported rather than done.
 
 ## 🔴 Every standing spindle keeps a path to its crystal (`cece/youthful-tesla-eq16r6`, 2026-10-07) — NOT EDITOR-VERIFIED
 
-`Docs/ECOSYSTEM.md` §26.10. Two changes: (1) `BorromeanFlora` and the Mandelbulb family (Mandelbulb,
-Coral Bloom, Watershed, Apollonia) now link each limb to its parent limb (`Spindle.AttachToParent`),
-so a limb stays standing while anything hangs off it; (2) every ordered wither — the flora joust and
-`LightFauna`'s joust AND starvation — now runs `Spindle.OrderOutsideIn` (deepest limb in the spindle
-tree first) instead of a distance sort. The heart-outward joust order is retired.
+`Docs/ECOSYSTEM.md` §26.10. (1) `BorromeanFlora` and the Mandelbulb family (Mandelbulb, Coral Bloom,
+Watershed, Apollonia) now link each limb to its parent limb (`Spindle.AttachToParent`), so a limb
+stays standing while anything hangs off it. (2) Ordered withers are read off the spindle TREE
+instead of distance: starvation `Spindle.OrderOutsideIn` (deepest first), the crystal joust
+`Spindle.OrderHeartOutward` (from the missing crystal to the leaves — the one sanctioned exception).
 
-### 1. Joust a Borromean plant
+### 1. Graze / shoot an INNER plate on a living Borromean and a Mandelbulb-family plant
 
-Squirrel joust (or skim/explode its crystal). The heart is collected at the strike as before, the
-plates stay as a skeleton, and the limbs must wither **from the outer edge inward**: at no moment may
-a limb still be standing while a limb between it and the crystal has already gone. The limbs at the
-crystal go LAST.
+Destroy one plate in the innermost orbit (next to the crystal). Its limb must **stay** (the outer
+limbs hang off it), and the plant must regrow that plate on later grow ticks onto the same limb (no
+second limb on that bond). Then destroy an OUTERMOST plate: its limb (nothing beyond it) withers, and
+a bare parent limb with nothing else hanging off it follows. At no point may a limb stand with a
+gap between it and the crystal.
 
-### 2. Graze / shoot an INNER plate on a Borromean and a Mandelbulb-family plant
+### 2. Crystal-joust a Borromean plant — the exception
 
-Destroy one plate in the innermost orbit (next to the crystal) of a living plant. Its limb must **stay**
-(the outer limbs hang off it), and the plant must regrow that plate on later grow ticks onto the same
-limb (no second limb on that bond). Then destroy an OUTERMOST plate: its limb (nothing beyond it)
-withers, and a bare parent limb with nothing else hanging off it follows.
+Squirrel joust (or skim/explode its crystal). The heart is collected at the strike, the plates stay
+as a skeleton, and the limbs unravel **from the crystal out to the tips**, following the plant's
+own branches (it used to jump around the membrane by straight-line distance).
 
 ### 3. Starve / joust a spindled creature (shark, brittlestar, clawfish)
 
-Fins / arms still go before the core body on starvation, and the heart is collectable only once the
-wither reaches the core. On a joust the body now also withers outside-in (it used to unravel from the
-heart). If either reads wrong on a creature whose prefab nests its spindles oddly, report the prefab.
-
-### 4. Branching / Phyllotactic / Lattice flora — unchanged
-
-Joust one of each: the limbs now wither tips-first instead of heart-first. Nothing else about these
-families changed (they already had a hierarchy-linked spindle tree).
+Starvation: fins / arms before the core body, the heart collectable only once the wither reaches
+the core. Joust: heart taken at the strike, body unravels from the heart outward. If either reads
+wrong on a creature whose prefab nests its spindles oddly, report the prefab.

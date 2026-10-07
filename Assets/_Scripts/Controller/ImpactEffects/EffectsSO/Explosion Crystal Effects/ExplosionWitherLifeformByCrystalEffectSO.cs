@@ -11,7 +11,7 @@ namespace CosmicShore.Gameplay
     /// <para>It runs the identical death: <see cref="ILifeFormEntity.Jousted"/> stamps
     /// <see cref="LifeformDeathStyle.Jousted"/> and routes through the sealed
     /// <c>Fauna.Die</c>/<c>LifeForm.Die</c>, so the creature does NOT detonate — its heart is
-    /// freed at the strike, its soft tissue withers OUTSIDE-IN back toward the heart, and
+    /// freed at the strike, its soft tissue unravels FROM THE HEART OUTWARD around the hole, and
     /// its body prisms are left standing as a skeleton the food web then grazes
     /// (Docs/ECOSYSTEM.md §26). Mass is conserved, continuity is honoured, spawn immunity is
     /// respected, and the kill is attributed to the pilot who fired the blast so

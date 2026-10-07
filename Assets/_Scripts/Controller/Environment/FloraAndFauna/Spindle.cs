@@ -83,8 +83,9 @@ namespace CosmicShore.Gameplay
 
         // ── Ordered death wither ─────────────────────────────────────────────
         // A dying lifeform spends its spindles ONE AT A TIME, in an order the death
-        // itself dictates (Docs/ECOSYSTEM.md §26): always outside-in along the spindle
-        // tree (OrderOutsideIn, §26.10). Two couplings in the ordinary spindle lifecycle
+        // itself dictates (Docs/ECOSYSTEM.md §26): outside-in along the spindle tree
+        // (OrderOutsideIn), except the crystal joust, which unravels from the heart outward
+        // (OrderHeartOutward, §26.10). Two couplings in the ordinary spindle lifecycle
         // fight that, and both are structural rather than cosmetic:
         //   • ForceWither RECURSES into child spindles, so withering an inner spindle
         //     first would collapse the whole creature in a single step.
@@ -405,10 +406,14 @@ namespace CosmicShore.Gameplay
         /// The order an ordered death wither spends a lifeform's limbs in: OUTSIDE-IN along the
         /// spindle tree, deepest first, so every limb still standing has an unbroken path of
         /// standing limbs back to the heart at every instant of the wither. Ties (and a
-        /// lifeform whose limbs form no tree at all) fall back to farthest-from-the-heart first,
-        /// which is the geometric order this replaced. Euclidean distance alone is NOT enough on
-        /// a plant whose surface wraps back past its own heart (the Borromean membrane): a limb
-        /// five hops out can sit closer to the crystal than its own grandparent.
+        /// lifeform whose limbs form no tree at all) fall back to farthest-from-the-heart first.
+        /// Euclidean distance alone is NOT enough on a plant whose surface wraps back past its
+        /// own heart (the Borromean membrane): a limb five hops out can sit closer to the crystal
+        /// than its own grandparent.
+        ///
+        /// <para>Every ordered wither uses this EXCEPT the crystal joust, which unravels
+        /// <see cref="OrderHeartOutward"/> from the hole the joust left (Docs/ECOSYSTEM.md
+        /// §26.10).</para>
         ///
         /// <para>Must be called BEFORE <see cref="IsolateForOrderedWither"/>, which is what
         /// severs the links the depth is read from.</para>
@@ -423,6 +428,22 @@ namespace CosmicShore.Gameplay
                 .ThenByDescending(e => e.distance)
                 .Select(e => e.spindle)
                 .ToList();
+        }
+
+        /// <summary>
+        /// The crystal joust's EXCEPTION to <see cref="OrderOutsideIn"/>, and its exact reverse:
+        /// FROM THE MISSING CRYSTAL TO THE LEAVES along the spindle tree, the limbs at the heart
+        /// first. The jouster took the heart, so the body comes apart around the hole it left —
+        /// the one death in which an outer limb is ALLOWED to stand after the limb joining it to
+        /// the heart has gone (Docs/ECOSYSTEM.md §26.10). Read off the tree rather than distance
+        /// so the unravel follows the plant's own growth order on a surface that folds back past
+        /// its heart. Same call-before-isolation rule.
+        /// </summary>
+        public static List<Spindle> OrderHeartOutward(IEnumerable<Spindle> spindles, Vector3 heart)
+        {
+            var order = OrderOutsideIn(spindles, heart);
+            order.Reverse();
+            return order;
         }
 
         /// <summary>
@@ -540,8 +561,9 @@ namespace CosmicShore.Gameplay
 
         /// <param name="evaporateDelay">
         /// Seconds until this spindle's fade STARTS. Ordered wither stamps every
-        /// spindle in one pass with <c>i * interval</c> so the wither stays outside-in
-        /// (<see cref="OrderOutsideIn"/>) — never a per-frame cascade.
+        /// spindle in one pass with <c>i * interval</c> so starvation stays outside-in
+        /// (<see cref="OrderOutsideIn"/>) and a joust stays heart-outward
+        /// (<see cref="OrderHeartOutward"/>) — never a per-frame cascade.
         /// </param>
         public void ForceWither(float evaporateDelay = 0f)
         {

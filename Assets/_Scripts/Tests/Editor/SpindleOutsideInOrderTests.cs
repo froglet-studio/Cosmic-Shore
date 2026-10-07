@@ -11,8 +11,11 @@ namespace CosmicShore.Tests
     /// Gates the ecology invariant of Docs/ECOSYSTEM.md §26.10: every standing spindle of a
     /// lifeform has a path of standing spindles back to its crystal, so an ordered death wither
     /// (<see cref="Spindle.OrderOutsideIn"/>) must never spend a limb before any limb that hangs
-    /// off it. The tree under test folds back past the heart, the way the Borromean membrane
-    /// does, which is the shape that defeats a pure distance sort in EITHER direction.
+    /// off it - and its one sanctioned exception, the crystal joust
+    /// (<see cref="Spindle.OrderHeartOutward"/>), must run the same tree exactly backwards, from
+    /// the missing crystal to the leaves. The tree under test folds back past the heart, the way
+    /// the Borromean membrane does, which is the shape that defeats a pure distance sort in
+    /// EITHER direction.
     /// </summary>
     public class SpindleOutsideInOrderTests
     {
@@ -68,21 +71,55 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void NegativeControl_DistanceSortsBreakTheFoldedTree()
+        public void NegativeControl_OutsideInDistanceSortOrphansTheFold()
         {
             var (a, b, c, d) = FoldedTree();
             var all = new[] { a, b, c, d };
 
-            // The retired joust order (heart-outward) - the reported defect.
-            var heartOutward = all.OrderBy(s => s.transform.position.sqrMagnitude).ToList();
-            Assert.Less(heartOutward.IndexOf(a), heartOutward.IndexOf(b),
-                "Control is broken: the heart-outward sort should spend A before B.");
-
-            // The retired starvation order (farthest first) - still wrong on a fold: C sits
-            // nearer the heart than its own grandparent.
+            // The pre-§26.10 starvation order (farthest first) is wrong on a fold: C sits nearer
+            // the heart than its own grandparent, so B is spent while C still hangs off it.
             var farthestFirst = all.OrderByDescending(s => s.transform.position.sqrMagnitude).ToList();
             Assert.Less(farthestFirst.IndexOf(b), farthestFirst.IndexOf(c),
                 "Control is broken: the distance-only outside-in sort should spend B before C.");
+        }
+
+        [Test]
+        public void OrderHeartOutward_UnravelsFromTheCrystalToTheLeaves()
+        {
+            var (a, b, c, d) = FoldedTree();
+            var order = Spindle.OrderHeartOutward(new[] { a, b, c, d }, Vector3.zero);
+
+            Assert.AreEqual(4, order.Count);
+            Assert.AreEqual(a, order[0], "The joust must spend the limb at the missing crystal FIRST.");
+            foreach (var (child, parent) in new[] { (b, a), (c, b), (d, a) })
+                Assert.Less(order.IndexOf(parent), order.IndexOf(child),
+                    $"The joust skipped ahead: {child.name} withers before {parent.name}, the limb it " +
+                    "grows out of. Order: " + string.Join(", ", order.Select(s => s.name)));
+        }
+
+        [Test]
+        public void NegativeControl_HeartOutwardDistanceSortSkipsAroundTheFold()
+        {
+            var (a, b, c, d) = FoldedTree();
+
+            // The joust's pre-§26.10 order: nearest the heart first. C folds back nearer the heart
+            // than its own grandparent, so it unravels before the limbs it grows out of.
+            var byDistance = new[] { a, b, c, d }.OrderBy(s => s.transform.position.sqrMagnitude).ToList();
+            Assert.Less(byDistance.IndexOf(c), byDistance.IndexOf(b),
+                "Control is broken: the distance-only heart-outward sort should spend C before B.");
+        }
+
+        [Test]
+        public void OrderHeartOutward_IsTheExactReverseOfOrderOutsideIn()
+        {
+            var (a, b, c, d) = FoldedTree();
+            var all = new[] { a, b, c, d };
+
+            var inward = Spindle.OrderOutsideIn(all, Vector3.zero);
+            var outward = Spindle.OrderHeartOutward(all, Vector3.zero);
+            inward.Reverse();
+
+            CollectionAssert.AreEqual(inward, outward);
         }
 
         [Test]

@@ -222,16 +222,17 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Withers the soft tissue one spindle ring at a time and leaves the body prisms
-        /// standing as a skeleton (Docs/ECOSYSTEM.md §26). The wither always travels
-        /// OUTSIDE-IN along the spindle tree (<see cref="Spindle.OrderOutsideIn"/>): a shark's
-        /// fins / a brittlestar's arms evaporate before the core body, and no limb is ever left
-        /// standing after the limb that connects it to the heart (§26.10). What the death
-        /// decides is WHEN the heart is collectable:
+        /// standing as a skeleton (Docs/ECOSYSTEM.md §26). The DIRECTION is the death itself,
+        /// and the two are exact mirrors around the heart, both read off the spindle tree:
         ///
-        ///   • starvation (and any ordinary death): the heart is the last thing left and
-        ///     becomes collectable by ANY vessel when the wither finally reaches it.
-        ///   • a joust: the jouster already took the heart at the strike; the body still
-        ///     withdraws toward where it was.
+        ///   • starvation (and any ordinary death) travels OUTSIDE-IN
+        ///     (<see cref="Spindle.OrderOutsideIn"/>) — a shark's fins / a brittlestar's arms
+        ///     evaporate before the core body, and no limb ever stands after the limb joining it
+        ///     to the heart — and the heart, the last thing left, becomes collectable by ANY
+        ///     vessel when the wither finally reaches it.
+        ///   • a crystal joust is the one sanctioned exception (§26.10): it travels FROM THE
+        ///     MISSING CRYSTAL TO THE LEAVES (<see cref="Spindle.OrderHeartOutward"/>) — the
+        ///     jouster already took the heart, so the body comes apart around the hole it left.
         ///
         /// Both reuse the same <see cref="Spindle.ForceWither"/> evaporation flora use, and
         /// both honor the continuity rule — the tissue fades, the frame stays.
@@ -239,6 +240,7 @@ namespace CosmicShore.Gameplay
         IEnumerator WitherCoroutine()
         {
             float interval = data && data.witherRingInterval > 0f ? data.witherRingInterval : 0.25f;
+            bool fromHeartOutward = DeathStyle == LifeformDeathStyle.Jousted;
 
             // Where the wither is measured from. Captured NOW: a jousted heart has already
             // been freed and is flying to the pilot who took it, so reading it later would
@@ -246,8 +248,11 @@ namespace CosmicShore.Gameplay
             Vector3 heart = crystal ? crystal.transform.position : transform.position;
 
             // Ordered BEFORE isolation: the order is read off the spindle tree, and isolation
-            // is what severs it. Deepest limb first, the limbs at the heart last.
-            var spindles = Spindle.OrderOutsideIn(GetComponentsInChildren<Spindle>(true), heart);
+            // is what severs it.
+            var limbs = GetComponentsInChildren<Spindle>(true);
+            var spindles = fromHeartOutward
+                ? Spindle.OrderHeartOutward(limbs, heart)
+                : Spindle.OrderOutsideIn(limbs, heart);
 
             // Isolate before anything else — withering one spindle must not cascade into its
             // children or destroy them with its GameObject, and handing its prisms to the
@@ -259,7 +264,7 @@ namespace CosmicShore.Gameplay
             // to a spindle, so evaporating spindles first would destroy the skeleton's mass.
             LeaveSkeleton();
 
-            // Stamp every spindle in this one pass. The outside-in order above is the
+            // Stamp every spindle in this one pass. The tree order above is the
             // ecology-LOCKED order; the offset is when that spindle's fade STARTS.
             // Do not WaitForSeconds between ForceWither calls — that was the per-frame
             // cascade C11 retires.
