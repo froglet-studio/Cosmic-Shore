@@ -398,6 +398,35 @@ Offline, in this order; nothing was run in the editor:
   claims about what a hole does, run through the shipped integrator) — written, to be run in the
   editor with the rest of the suite.
 
+### 9.1 Second round (2026-10-07): the first editor run's three faults
+
+The first editor run reported three problems. All three are fixed, and nothing has been run in the editor
+since (no `/verify-unity` in this session):
+
+1. **`Unable to find internal function System.MathF::Sqrt`** (`::Pow`, `::Exp`, `::Sin`, `::Cos`,
+   `::Acos`). These were not black-hole code: Burst was rejecting the substrate's `SubstrateAgentJob` and
+   the swarm's `SwarmPoseJob`, whose kernels used `MathF`. They now go through `KernelMath`, which is
+   `Unity.Mathematics` in Unity (`Docs/SUBSTRATE_FAUNA.md` §7.6).
+2. **A magenta lens quad.** A missing `EntityLighting.hlsl` include (§5.1, Incident).
+3. **The integration ran on one worker** for a field with one parent. It is now three chained jobs (§3).
+
+Evidence, all run on the final tree:
+- `verify_black_hole_lens.py --require-real`: A 1–10 hold. B1 (per-file mock) and B2 (DXC against
+  the real URP 17.0 / core ShaderLibrary, D3D11 + Vulkan + Metal) compile, and each negative control
+  fires. The prism warp custom function also compiles under DXC against the real library on all
+  three APIs.
+- `unity_refcompile` player-dev and player (release): **0 errors in project code, 0 unverified**.
+  All five changed runtime files are in `Assembly-CSharp.rsp`, and `UNITY_5_3_OR_NEWER` is in its
+  defines, so the `Unity.Mathematics` branch of `KernelMath` is the one that compiled.
+- `unity_refcompile` editor: 0 errors in changed files. The 4 remaining are the README's known
+  `CS0118` false positives in untouched files.
+- `substrate_harness`: all groups pass, including group K's bit-match.
+- `swarm_core_harness`: OK. It runs the burst pose gate and the new `check_kernel_math.py`.
+- `ecology_lod_harness` and `showcase_cell_harness`: OK.
+- Both glue typechecks: OK.
+- The 8 Python C# gates: OK.
+- The Burst gates' negative control: the pre-fix kernels fail on the new `MathF.` rule.
+
 ## 10. Rejected alternatives (so they are not proposed again)
 
 - **A Rigidbody per prism / Unity physics gravity.** Prisms have no Rigidbody by design (the spatial
