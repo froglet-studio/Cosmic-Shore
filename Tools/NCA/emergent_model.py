@@ -152,9 +152,12 @@ class EmergentRule(sn.SwarmRule):
         return D_MAX * torch.sigmoid(self.d_raw), 0.002 + 0.5 * torch.sigmoid(self.l_raw)
 
     @torch.no_grad()
-    def warm_from(self, path, glob_const=None):
+    def warm_from(self, path, glob_const=None, cnt_chem=None):
         """Initialise from a swarm_nca rule (e.g. the solo_space specialist). Its population inputs are
-        folded into the first bias as a CONSTANT, so the warm-started rule reads nothing global."""
+        folded into the first bias as a CONSTANT, so the warm-started rule reads nothing global.
+        cnt_chem=(a, b): instead of a constant, the headcount input (cnt/100) is re-wired to a LOCAL proxy,
+        a * log1p(chemical 0 at my position) + b (chemical 0 is secreted at a constant rate at init, so its
+        concentration grows with the body around me); fitted by runs/calib.py on the specialist's rollouts."""
         st = torch.load(path, weights_only=False, map_location="cpu")["rule"]
         w1 = st["w1"]
         n_local = self.F_local
@@ -165,7 +168,11 @@ class EmergentRule(sn.SwarmRule):
         self.w2.copy_(st["w2"]); self.b2.copy_(st["b2"])
         self.w3.zero_(); self.b3.zero_()
         self.w3[:C + 3] = st["w3"]; self.b3[:C + 3] = st["b3"]
-        nn.init.normal_(self.w1[:, n_local:], std=0.02)
+        self.w1[:, n_local:] = 0.0          # chemical inputs enter at zero weight (they still get a gradient)
+        if cnt_chem is not None and w1.shape[1] > n_local:
+            a, b = cnt_chem
+            self.w1[:, n_local] += a * w1[:, n_local]          # chemical 0's log concentration column
+            self.b1 += (b - glob_const[0]) * w1[:, n_local]     # undo the constant headcount folded above
 
     def forward(self, sw, gen=None, bud=True, fire=None):
         return self._step(ESwarm.of(sw), gen, bud, fire)

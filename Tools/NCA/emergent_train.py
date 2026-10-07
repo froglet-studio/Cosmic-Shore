@@ -54,6 +54,7 @@ class Cfg:
     w_survive: float = 60.0
     p_strike: float = 0.08
     replace_above: float = 60.0
+    replace_n: int = 1000    # pool hygiene: an overgrown sample (death is penalised, so it can never shrink) is reseeded
     init: str = ""           # an emergent rule .pt to resume weights from (new run)
     init_solo: int = 0       # warm start from the solo_space specialist, census folded to a constant
     seed: int = 0
@@ -168,6 +169,7 @@ def train(cfg: Cfg):
         sw = sw.detach()
         for b in range(cfg.batch):
             bad = (not ok[b]) or int(sw.active[b].sum()) == 0 or infos[b]["sink"] > cfg.replace_above \
+                or int((sw.active[b] & sw.hatched[b]).sum()) > cfg.replace_n \
                 or not bool(torch.isfinite(sw.s[b]).all())
             if bad:
                 fresh = seed(T, world, gen)
