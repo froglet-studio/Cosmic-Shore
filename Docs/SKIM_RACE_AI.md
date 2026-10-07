@@ -1410,10 +1410,14 @@ re-plan on the same frames, 20 times a second), and I3's mass guard about 5 ms. 
 In a Release/IL2CPP build the same work is 2-3 ms at worst. The Unity Profiler reading (the checklist's
 Profiler-timers entry) is the real number; the stand-in says where it will land.
 
-**The planner stagger (shipped with the retune below).** Both AI re-planned on the same frames because both
-started at race time 0 and each scheduled its next re-plan as "now + 1/TrackMpcHz". `SkimRaceDriver.TrackMpc`
-now re-plans on a FIXED grid of 1/TrackMpcHz (50 ms) with odd lanes offset by half a period, so two AI
-re-plan on different frames whenever a frame is shorter than half a period. (A first version offset only
+**The planner stagger - two branches, one mechanism kept.** Both AI re-planned on the same frames because both
+started at race time 0 and each scheduled its next re-plan as "now + 1/TrackMpcHz". This branch first fixed it
+with a FIXED grid of 1/TrackMpcHz (50 ms), odd lanes offset by half a period, so two AI re-plan on different
+frames whenever a frame is shorter than half a period. `perf/performance-optimization` fixed the same thing the
+same day with `SkimRaceReplanGate` (§8.0i): one re-plan claims a frame, a seat that finds its frame taken flies
+its previous plan ONE more frame. At the merge (2026-10-07) the gate was kept and the grid retired, because the
+gate also holds at 25 fps and below, where every seat wants to re-plan every frame and a grid separates nothing.
+The grid's measurements stay below as the independent confirmation of the problem. (A first version offset only
 the start and kept "now + period": the first frame that happened to carry both re-plans locked the two in
 step for the rest of the race, and nothing changed - a probe of the private schedule found it.) Measured, I2,
 shipped policy, 2 AI, unoptimized build, both AIs' thinking per frame:
@@ -1437,6 +1441,22 @@ grid in place.
 **The zero-code lever for the editor:** the bug icon at the bottom right of the editor - Code Optimization
 **Release** instead of Debug. The table in this section is the Debug-to-Release ratio: about 5x on the
 planner. A player build is IL2CPP and does not have the choice.
+
+**The combined code, measured the editor's way** (2026-10-07, after the merge with `perf/performance-optimization`:
+its float inner loops, no-alloc Mathf and gate, this branch's retuned policies; `SKIMRACE_RUNTIME=mono`, Mono
+6.8 in double precision - the mode that predicts the editor, §8.0g; 2 AI, 28 ms frames ±50%, the 0.04 s contact
+step, 10 races, seedbase 50000):
+
+| Track | Per AI per frame | Both AIs in one frame: typical / worst 10% / worst 1% |
+|---|---|---|
+| I1 | 0.16 ms | 0.09 / 1.05 / 1.99 ms |
+| I2 | 2.24 ms | 5.0 / **6.7** / 9.1 ms (23,242 re-plans in 23,242 frames: no frame carried two) |
+| I3 | 1.13 ms | 1.3 / 5.7 / 10.4 ms |
+| I4 | 0.67 ms | 0.5 / 4.6 / 10.0 ms |
+
+Against the unoptimized-.NET stand-in above (I2 both AIs 10.7 ms in the worst 10%), the editor-mode worst 10%
+on I2 is 6.7 ms: the gate's half, with the float loops' ~1.4x on top. The I3/I4 tails are the laid-mass guard in
+dense traffic, untouched by either branch.
 
 ### 14.5 Retuning across frame rates
 
@@ -1507,14 +1527,28 @@ intensity 3 flies, so the head to head is on I3:
 
 Better at every frame rate, every race finished. Kept.
 
+**Re-raced under the gate** (the retune above ran with this branch's grid stagger; the merge replaced it with
+the perf branch's gate, which only the I2 policy's planner feels). New v3-i2, 20 fresh races per cell:
+
+| I2, Hard, new v3 | 120 fps | 62 fps | 36 fps | 20 fps | 12 fps |
+|---|---|---|---|---|---|
+| under the grid (tuned) | 80.6 (20) | 79.3 (20) | 78.3 (19) | 79.3 (20) | 84.3 (20) |
+| under the gate (shipped) | **79.1** (20) | **77.1** (20) | **76.3** (20) | 79.0 (20) | 89.1 (20) |
+
+Faster at 36-120 fps, level at 20, slower at 12 fps - at 12 fps every seat wants to re-plan every frame, so the
+gate makes each re-plan every other frame (about 160 ms apart) and the planner reacts later. Every race finished.
+A refinement nobody has measured: let the gate stand down when the frame is longer than half the re-plan period.
+
 ### 14.6 Where this leaves the AI (2026-10-07)
 
 - Every shipped policy is now tuned across 62 / 36 / 20 fps with the game's contact step, and checked at 120
   and 12 fps as well. Against the previous files, on the same fresh races: level at 36-62 fps, better at 120 fps
   and at 12 fps on every track, and I4 better everywhere. Nothing got slower beyond noise; no new failure mode
   (the one-in-a-hundred stranded I2 seat predates this).
-- The planner stagger (§14.4) halves the editor's worst AI frame at 60+ fps; at Debug code optimization the
-  AI still costs the editor about 5 ms in a typical frame on I2 - Release optimization is the lever there.
+- The planner gate (§8.0i, kept at the merge over this branch's grid) halves the editor's worst AI frame at any
+  frame rate; with the perf branch's float loops and no-alloc Mathf the whole AI on I2 costs the editor about
+  2.2 ms per AI per frame in its own Mono mode (§14.4's last table), 0.4 ms in a Release/IL2CPP build. Release
+  code optimization in the editor remains the single biggest lever a tester has.
 - The next measurement that matters is the one only the editor can give: a hand-played race's `frameMs` next
   to its AI finish time (the recorder writes both). `Docs/UNITY_VERIFICATION_CHECKLIST.md`, the 2026-10-06
   entry, lists the steps.
