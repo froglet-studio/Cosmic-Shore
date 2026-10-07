@@ -96,12 +96,13 @@ MonoBehaviour:
     type: 3}
   crystalModels:
   - model: {fileID: 3792360532212070197}
-    defaultMaterial: {fileID: 2100000, guid: bc67b03dfd422ad4fb508754690fe75d, type: 2}
+    defaultMaterial: {fileID: 2100000, guid: 3fbc5051c8a40814186ae69a0cba15ff, type: 2}
     explodingMaterial: {fileID: 2100000, guid: bc67b03dfd422ad4fb508754690fe75d, type: 2}
-    inactiveMaterial: {fileID: 2100000, guid: bc67b03dfd422ad4fb508754690fe75d, type: 2}
+    inactiveMaterial: {fileID: 2100000, guid: 8e9bcad022cf0e543937d40129bc918e, type: 2}
     spaceCrystalAnimator: {fileID: 0}
   allowVesselImpactEffect: 1
   allowRespawnOnImpact: 0
+  colorTransitionSeconds: 0.8
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
 --- !u!82 &6588436222817790494
 AudioSource:
@@ -246,7 +247,7 @@ MonoBehaviour:
   Params: []
   OverrideAttenuation: 0
   OverrideMinDistance: 0
-  OverrideMaxDistance: 45
+  OverrideMaxDistance: 95
 --- !u!114 &-3326657406894871218
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -277,7 +278,7 @@ MonoBehaviour:
   Params: []
   OverrideAttenuation: 0
   OverrideMinDistance: 0
-  OverrideMaxDistance: 45
+  OverrideMaxDistance: 95
 --- !u!1001 &120305296202056045
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -360,7 +361,7 @@ PrefabInstance:
         type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: 12e1837538975dc4eb371bb8ba9a2ccd, type: 2}
+      objectReference: {fileID: 2100000, guid: 8e9bcad022cf0e543937d40129bc918e, type: 2}
     - target: {fileID: -61668413891335124, guid: 2ba95de60da486749bc7cb7a7a421a4e,
         type: 3}
       propertyPath: 'm_Materials.Array.data[1]'
