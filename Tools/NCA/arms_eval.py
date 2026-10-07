@@ -63,10 +63,10 @@ def _cell(args):
     return st.catches.sum(1), (st.caught_t[:, :cfg.n_prey] >= 0).mean(1)
 
 
-def matrix(run, every, seeds=8, secs=30.0, workers=4, last=None):
+def matrix(run, every, seeds=8, secs=30.0, workers=4, last=None, cfg=None):
     snaps = load_snaps(run)
     gens = pick_gens(snaps, every, last)
-    cfg = A.Cfg()
+    cfg = cfg or A.Cfg()
     steps = int(secs / cfg.dt)
     sd = np.arange(1, seeds + 1) * 7919 + 100000          # held-out seeds (training draws random 31-bit seeds)
     jobs = [(cfg, snaps[j]["thq"], snaps[i]["thp"], sd, steps) for i in gens for j in gens]
@@ -192,8 +192,8 @@ def organic(f):
 
 # ------------------------------------------------------------------------------------------------- economy --
 
-def eco(thq, thp, seeds=(21, 22, 23, 24), minutes=5.0, sample_s=5.0):
-    cfg = A.Cfg(eco=True, cap_prey=480, cap_pred=48)
+def eco(thq, thp, seeds=(21, 22, 23, 24), minutes=5.0, sample_s=5.0, confusion=0.3, **knobs):
+    cfg = A.Cfg(eco=True, cap_prey=480, cap_pred=48, confusion=confusion, **knobs)
     B = len(seeds)
     st = A.reset(cfg, B, np.array(seeds))
     rng = np.random.default_rng(5)
@@ -393,6 +393,9 @@ def main():
     ap.add_argument("--last", type=int, default=None)
     ap.add_argument("--gens", default="", help="comma list of generation pairs pred:prey for behave/record, e.g. 400:400,2000:2000")
     ap.add_argument("--out", default=OUT)
+    ap.add_argument("--confusion", type=float, default=0.3)
+    ap.add_argument("--prefix", default="", help="key prefix in eval.json / feel.json (e.g. a5:)")
+    ap.add_argument("--matrix_name", default="matrix.json")
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
     what = set(a.what)
@@ -401,31 +404,32 @@ def main():
     snaps = load_snaps(a.run)
     last = max(snaps) if a.last is None else max(g for g in snaps if g <= a.last)
     pairs = [tuple(int(x) for x in p.split(":")) for p in a.gens.split(",") if p] or [(last, last)]
-    cfg = A.Cfg()
+    cfg = A.Cfg(confusion=a.confusion)
     ev = json.load(open(os.path.join(a.out, "eval.json"))) if os.path.exists(os.path.join(a.out, "eval.json")) else {}
     if "curve" in what:
         ev["curve"] = curve(a.run)
     if "matrix" in what:
-        m = matrix(a.run, a.every, last=a.last)
-        json.dump(m, open(os.path.join(a.out, "matrix.json"), "w"), indent=1)
+        m = matrix(a.run, a.every, last=a.last, cfg=cfg)
+        m["run"] = os.path.basename(os.path.normpath(a.run)); m["confusion"] = a.confusion
+        json.dump(m, open(os.path.join(a.out, a.matrix_name), "w"), indent=1)
         print("matrix", json.dumps({k: v for k, v in m.items() if k not in ("catch_per_min", "sem")}))
     if "behave" in what:
         feel = json.load(open(os.path.join(a.out, "feel.json"))) if os.path.exists(os.path.join(a.out, "feel.json")) else {}
         ev.setdefault("behave", {})
         for gp, gq in pairs:
             b, f = behave(cfg, snaps[gq]["thq"], snaps[gp]["thp"])
-            ev["behave"][f"{gp}:{gq}"] = b
+            ev["behave"][f"{a.prefix}{gp}:{gq}"] = b
             for k in f:
                 f[k]["organic"] = organic(f[k])
-            feel[f"{gp}:{gq}"] = f
+            feel[f"{a.prefix}{gp}:{gq}"] = f
             print("behave", gp, gq, json.dumps(b["mean"])[:2000])
             print("feel", json.dumps(f))
         json.dump(feel, open(os.path.join(a.out, "feel.json"), "w"), indent=1)
     if "eco" in what:
         ev.setdefault("eco", {})
         for gp, gq in pairs:
-            e = eco(snaps[gq]["thq"], snaps[gp]["thp"])
-            ev["eco"][f"{gp}:{gq}"] = e
+            e = eco(snaps[gq]["thq"], snaps[gp]["thp"], confusion=a.confusion)
+            ev["eco"][f"{a.prefix}{gp}:{gq}"] = e
             print("eco", gp, gq, {k: e[k] for k in ("final_prey", "final_pred", "births", "starved", "mass_residual_max")})
     if "perf" in what:
         ev["perf"] = perf(snaps[last]["thq"], snaps[last]["thp"])
@@ -433,8 +437,8 @@ def main():
     if "player" in what:
         ev.setdefault("player", {})
         for gp, gq in pairs:
-            ev["player"][f"{gp}:{gq}"] = player(cfg, snaps[gq]["thq"], snaps[gp]["thp"])
-            print("player", gp, gq, json.dumps(ev["player"][f"{gp}:{gq}"]))
+            ev["player"][f"{a.prefix}{gp}:{gq}"] = player(cfg, snaps[gq]["thq"], snaps[gp]["thp"])
+            print("player", gp, gq, json.dumps(ev["player"][f"{a.prefix}{gp}:{gq}"]))
     ev["locality"] = ("local: every input is the agent's own state, neighbours within its perception radius "
                       "(prey 50 u, predators 80 u, in a 200 u cell), the food at its own position, and the membrane "
                       "only when it is within R; all vectors in the agent's own body frame; no census, no global frame")

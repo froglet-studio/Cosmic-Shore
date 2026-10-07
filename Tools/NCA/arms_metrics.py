@@ -20,6 +20,8 @@ PREDATORS
   encirclement          for each (prey-group centroid, >= 2 predators within 50 u): 1 - |mean unit vector from the
                         centroid to those predators|; reported with the null for the same predator counts drawn
                         uniformly on the sphere (a pack attacking from all sides scores above the null)
+  victim_encirclement   the same coverage around each CATCH VICTIM 1 s before the catch, over predators within 60 u
+                        (>= 2), with its null; cooperative_catch_share = share of catches with >= 2 predators that close
   opposed_share         share of those moments with two predators more than 120 deg apart around the group
   pred_spacing          mean nearest-predator distance (u); pack_share = share of predators with a packmate < 40 u
   burst_bouts           burst runs: mean length (s), share of bouts that end in (or within 1 s of) a catch
@@ -218,6 +220,7 @@ def pred_metrics(rec, cfg, every=5, seed=0):
             succ.append(any(s0 * dt - 1e-6 <= c <= e0 * dt + 1.0 for c in ct))
     # per-catch analyses
     relay, memb, amb, conv0, conv1, lead = [], [], [], [], [], []
+    vcov, vk, coop = [], [], []
     k2, k3, k1, k4 = int(2 / dt), int(3 / dt), int(1 / dt), int(4 / dt)
     for (t, p, q, x, y, z) in ev:
         ti = int(round(t / dt))
@@ -227,6 +230,13 @@ def pred_metrics(rec, cfg, every=5, seed=0):
             j = int(d.argmin())
             if d[j] < 40:
                 relay.append(j != p)
+        if ti - k1 >= 0:                                # victim encirclement 1 s before the catch
+            v = pp[ti - k1][pa[ti - k1]] - qp[ti - k1][q]
+            dd = np.linalg.norm(v, axis=1)
+            sel = dd < 60.0
+            coop.append(sel.sum() >= 2)
+            if sel.sum() >= 2:
+                vcov.append(1 - np.linalg.norm(_unit(v[sel]).mean(0))); vk.append(int(sel.sum()))
         if ti - k3 >= 0:
             sp = np.linalg.norm(pv[ti - k3:ti - k1, p], axis=1).mean()
             amb.append(sp < 0.4 * cfg.pred_v)
@@ -251,7 +261,11 @@ def pred_metrics(rec, cfg, every=5, seed=0):
     # membrane null: share of prey-time beyond 0.8 R
     rr = np.linalg.norm(qp, axis=-1)
     memb_null = float((rr[qa] > 0.8 * rec["R_cell"]).mean())
-    out = dict(encirclement=_r(np.mean(cov)) if cov else None, encirclement_null=_r(enc_null),
+    vnull = {k: _null_coverage(k, rng) for k in set(vk)}
+    out = dict(victim_encirclement=_r(np.mean(vcov)) if vcov else None,
+               victim_encirclement_null=_r(np.mean([vnull[k] for k in vk])) if vk else None,
+               victim_encirclement_samples=len(vcov), cooperative_catch_share=_r(np.mean(coop)) if coop else None,
+               encirclement=_r(np.mean(cov)) if cov else None, encirclement_null=_r(enc_null),
                encirclement_samples=len(cov), opposed_share=_r(np.mean(opp)) if opp else None,
                pred_spacing=_r(np.mean(spacing)) if spacing else None, pack_share=_r(np.mean(packs)) if packs else None,
                burst_bout_s=_r(np.mean(bouts)) if bouts else None, burst_bouts=len(bouts),

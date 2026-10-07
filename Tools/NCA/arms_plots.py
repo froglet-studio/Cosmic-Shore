@@ -84,7 +84,10 @@ def eco_png(ev, out):
     for key, e in (ev.get("eco") or {}).items():
         xs = [s["t"] for s in e["series"]]
         prey = np.array([s["prey"] for s in e["series"]]); pred = np.array([s["pred"] for s in e["series"]])
-        line_chart(os.path.join(out, f"eco_{key.replace(':', '_')}.png"), xs,
+        if not ("sated1.25 (10 min)" in key or key in ("0:0", "1460:1460")):
+            continue
+        name = "".join(c if c.isalnum() else "_" for c in key).strip("_")
+        line_chart(os.path.join(out, f"eco_{name}.png"), xs,
                    [prey.mean(1), pred.mean(1) * 10], f"Open economy {key}: population over time (mean of "
                    f"{prey.shape[1]} seeds)", "count", labels=("prey", "predators x10"))
 

@@ -94,6 +94,8 @@ class Cfg:
     cap_prey: int = 0              # 0 = n_prey (no births possible); eco runs set slots
     cap_pred: int = 0
     pool0: float = 30.0            # nutrient pool at start (eco)
+    pred_split: float = 2.0        # a predator splits at pred_split * m_pred (prey always at 2 * m_prey)
+    sated: float = 0.0             # >0: a predator heavier than sated * m_pred cannot burst (a designed satiety gate)
 
     def caps(self):
         return (self.cap_prey or self.n_prey, self.cap_pred or self.n_pred)
@@ -426,6 +428,8 @@ def apply(cfg, st, oq, op, aux, extra=None, rng=None, record_events=False):
     # --- predators: burst gate on stamina, handling slows them ---
     want = op[..., 4] > 0
     st.burst = want & (st.stam > 0.02) & (st.hand <= 0)
+    if cfg.sated > 0:
+        st.burst &= st.mass[1] < cfg.sated * cfg.m_pred
     st.stam = np.clip(st.stam + np.where(st.burst, -cfg.stam_drain, cfg.stam_regen) * dt, 0, 1).astype(F32)
     vmax_p = np.where(st.burst, cfg.pred_burst, cfg.pred_v) * np.where(st.hand > 0, 0.5, 1.0)
     st.hand = np.maximum(st.hand - dt, 0).astype(F32)
@@ -512,7 +516,7 @@ def apply(cfg, st, oq, op, aux, extra=None, rng=None, record_events=False):
                 st.mass[k] = np.where(starve, 0, st.mass[k]).astype(F32)
                 st.alive[k] = st.alive[k] & ~starve
                 st.starved[:, k] += starve.sum(1)
-            ready = st.alive[k] & (st.mass[k] >= 2 * mb)
+            ready = st.alive[k] & (st.mass[k] >= (2.0 if k == 0 else cfg.pred_split) * mb)
             if ready.any():
                 for b, i in zip(*np.nonzero(ready)):
                     free = np.nonzero(~st.alive[k][b])[0]

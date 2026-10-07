@@ -1,0 +1,218 @@
+{
+ "0:0": {
+  "prey": {
+   "n": 84.333,
+   "speed": 5.085,
+   "jerk_rel": 0.163,
+   "coherence": 0.372,
+   "jitter": 0.932,
+   "stuck": 0.0,
+   "osc": 0.0,
+   "organic": {
+    "ok": false,
+    "checks": {
+     "jerk_rel": false,
+     "osc": true,
+     "stuck": true
+    }
+   }
+  },
+  "pred": {
+   "n": 8.0,
+   "speed": 5.001,
+   "jerk_rel": 0.143,
+   "coherence": 0.195,
+   "jitter": 1.049,
+   "stuck": 0.0,
+   "osc": 0.0,
+   "organic": {
+    "ok": false,
+    "checks": {
+     "jerk_rel": false,
+     "osc": true,
+     "stuck": true
+    }
+   }
+  }
+ },
+ "400:400": {
+  "prey": {
+   "n": 66.333,
+   "speed": 3.017,
+   "jerk_rel": 0.788,
+   "coherence": 0.161,
+   "jitter": 1.096,
+   "stuck": 0.0,
+   "osc": 0.001,
+   "organic": {
+    "ok": true,
+    "checks": {
+     "jerk_rel": true,
+     "osc": true,
+     "stuck": true
+    }
+   }
+  },
+  "pred": {
+   "n": 8.0,
+   "speed": 5.153,
+   "jerk_rel": 0.248,
+   "coherence": 0.059,
+   "jitter": 1.12,
+   "stuck": 0.0,
+   "osc": 0.0,
+   "organic": {
+    "ok": true,
+    "checks": {
+     "jerk_rel": true,
+     "osc": true,
+     "stuck": true
+    }
+   }
+  }
+ },
+ "810:810": {
+  "prey": {
+   "n": 95.667,
+   "speed": 2.825,
+   "jerk_rel": 0.929,
+   "coherence": 0.077,
+   "jitter": 1.116,
+   "stuck": 0.0,
+   "osc": 0.006,
+   "organic": {
+    "ok": true,
+    "checks": {
+     "jerk_rel": true,
+     "osc": true,
+     "stuck": true
+    }
+   }
+  },
+  "pred": {
+   "n": 8.0,
+   "speed": 5.392,
+   "jerk_rel": 0.299,
+   "coherence": 0.132,
+   "jitter": 1.061,
+   "stuck": 0.0,
+   "osc": 0.0,
+   "organic": {
+    "ok": true,
+    "checks": {
+     "jerk_rel": true,
+     "osc": true,
+     "stuck": true
+    }
+   }
+  }
+ },
+ "1460:1460": {
+  "prey": {
+   "n": 98.0,
+   "speed": 2.754,
+   "jerk_rel": 1.098,
+   "coherence": 0.047,
+   "jitter": 1.114,
+   "stuck": 0.0,
+   "osc": 0.001,
+   "organic": {
+    "ok": true,
+    "checks": {
+     "jerk_rel": true,
+     "osc": true,
+     "stuck": true
+    }
+   }
+  },
+  "pred": {
+   "n": 8.0,
+   "speed": 5.477,
+   "jerk_rel": 0.319,
+   "coherence": 0.097,
+   "jitter": 1.072,
+   "stuck": 0.0,
+   "osc": 0.0,
+   "organic": {
+    "ok": true,
+    "checks": {
+     "jerk_rel": true,
+     "osc": true,
+     "stuck": true
+    }
+   }
+  }
+ },
+ "1460:700": {
+  "prey": {
+   "n": 86.0,
+   "speed": 3.27,
+   "jerk_rel": 0.711,
+   "coherence": 0.084,
+   "jitter": 1.093,
+   "stuck": 0.0,
+   "osc": 0.0,
+   "organic": {
+    "ok": true,
+    "checks": {
+     "jerk_rel": true,
+     "osc": true,
+     "stuck": true
+    }
+   }
+  },
+  "pred": {
+   "n": 8.0,
+   "speed": 5.363,
+   "jerk_rel": 0.298,
+   "coherence": 0.15,
+   "jitter": 1.069,
+   "stuck": 0.0,
+   "osc": 0.0,
+   "organic": {
+    "ok": true,
+    "checks": {
+     "jerk_rel": true,
+     "osc": true,
+     "stuck": true
+    }
+   }
+  }
+ },
+ "a5c1:400:400": {
+  "prey": {
+   "n": 98.0,
+   "speed": 2.826,
+   "jerk_rel": 1.116,
+   "coherence": 0.071,
+   "jitter": 1.099,
+   "stuck": 0.0,
+   "osc": 0.004,
+   "organic": {
+    "ok": true,
+    "checks": {
+     "jerk_rel": true,
+     "osc": true,
+     "stuck": true
+    }
+   }
+  },
+  "pred": {
+   "n": 8.0,
+   "speed": 5.354,
+   "jerk_rel": 0.27,
+   "coherence": 0.066,
+   "jitter": 1.083,
+   "stuck": 0.0,
+   "osc": 0.0,
+   "organic": {
+    "ok": true,
+    "checks": {
+     "jerk_rel": true,
+     "osc": true,
+     "stuck": true
+    }
+   }
+  }
+ }
+}
