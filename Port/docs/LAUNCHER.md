@@ -10,9 +10,10 @@ Source: `Port/src/CosmicShore.Launcher` (C#, Dear ImGui on our own Silk.NET wind
 
 ## Getting the .exe
 
-- Ready-made: the repository's **Releases** page on GitHub has `Prisma.exe` (tags
-  `prisma-launcher-<commit>`): download it and run it, nothing to unzip or install. The
-  `prisma-launcher.yml` workflow publishes one for every launcher change on `bleeding-edge`.
+- Ready-made: the `prisma-launcher.yml` workflow builds `Prisma.exe` for every launcher change on
+  `bleeding-edge`. It is a GitHub **release** (tags `prisma-launcher-<commit>`) when Actions may
+  write to the repository, and always the run's **artifact** (Actions > Prisma launcher release >
+  the newest run > *prisma-launcher-...*), which GitHub serves as a zip holding the .exe.
 - From then on the app updates itself (UPDATE, below); `Port/dist/Prisma-Windows.zip` is only a
   fallback for the very first copy.
 - Rebuild it yourself: double-click `Port\build-launcher.bat`.
@@ -152,6 +153,12 @@ see what changed, then **UPDATE NOW** or **NOT NOW**.
   `prisma-launcher.yml` workflow has already built `Prisma.exe` and published it as a GitHub
   release. UPDATE NOW downloads it (about 35 MB), checks its SHA-256 and restarts into it: no zip,
   no .NET SDK, no workspace needed.
+- **Where Actions may not publish releases** (the repository's *Workflow permissions* are
+  read-only - true for Cosmic Shore today), the same `Prisma.exe` is the workflow run's artifact.
+  UPDATE downloads that instead; GitHub hands artifacts out only with a token, so it uses the
+  GitHub token in SETTINGS > SOURCE (any token works on this public repository). A repository
+  admin can switch to token-free releases with *Settings > Actions > General > Workflow
+  permissions > Read and write*.
 - **Any other branch, tag or commit:** the version is built from that revision's own source in the
   workspace (needs START once, for git and .NET).
 

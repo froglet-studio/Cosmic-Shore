@@ -159,6 +159,26 @@ namespace CosmicShore.Launcher.Tests
         }
     }
 
+    public class ArtifactTests
+    {
+        [Fact]
+        public void Reads_launcher_artifacts_by_name_and_skips_expired_ones()
+        {
+            const string sha = "0e060285d68f4682d98d1a6b5779193ff26cb7aa";
+            string Art(string name, bool expired, string url) =>
+                "{\"name\":\"" + name + "\",\"size_in_bytes\":40000000,\"expired\":" + (expired ? "true" : "false") + ",\"archive_download_url\":\"" + url + "\"}";
+            var json = "{\"total_count\":3,\"artifacts\":[" + string.Join(",",
+                Art($"prisma-launcher-{sha}-2026-10-07", false, "https://api.github.com/x/zip"),
+                Art($"prisma-launcher-{sha.Replace('0', '1')}-2026-10-01", true, "https://api.github.com/y/zip"),
+                Art("ipa", false, "https://api.github.com/z/zip")) + "]}";
+            var list = LauncherUpdater.ParseArtifacts(json, "bleeding-edge", "feat(prisma): chats");
+            var r = Assert.Single(list);
+            Assert.True(r.artifact);
+            Assert.Equal((sha, "2026-10-07", "bleeding-edge", "https://api.github.com/x/zip"), (r.commit, r.date, r.branch, r.url));
+            Assert.Equal(new[] { "feat(prisma): chats" }, r.changes);
+        }
+    }
+
     public class SourceControlTests
     {
         static (SourceControl git, Workspace ws, string dir, string bare) Repo()

@@ -72,7 +72,7 @@ jobs:
           test -f "$RUNNER_TEMP/out/Prisma.exe"
           ls -la "$RUNNER_TEMP/out"
 
-      - name: Publish the release
+      - name: Describe the version
         if: steps.v.outputs.exists == 'false'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -80,34 +80,70 @@ jobs:
           SHORT: ${{ steps.v.outputs.short }}
           DATE: ${{ steps.v.outputs.date }}
           BRANCH: ${{ github.ref_name }}
+        shell: bash
         run: |
           exe="$RUNNER_TEMP/out/Prisma.exe"
           export SHA=$(sha256sum "$exe" | cut -d' ' -f1)
-          # What changed since the previous launcher release of this branch.
-          prev=$(gh release list --limit 100 --json tagName,createdAt --jq '.[].tagName' | { grep '^prisma-launcher-' || true; } | while read -r t; do
-                   b=$(gh release view "$t" --json body --jq .body | sed -n 's/.*"branch":"\([^"]*\)".*/\1/p' | head -1)
-                   c=$(gh release view "$t" --json body --jq .body | sed -n 's/.*"commit":"\([0-9a-f]*\)".*/\1/p' | head -1)
+          # What changed since the previous launcher release of this branch (none on the first run).
+          prev=$(gh release list --limit 100 --json tagName --jq '.[].tagName' 2>/dev/null | { grep '^prisma-launcher-' || true; } | while read -r t; do
+                   body=$(gh release view "$t" --json body --jq .body)
+                   b=$(echo "$body" | sed -n 's/.*"branch":"\([^"]*\)".*/\1/p' | head -1)
+                   c=$(echo "$body" | sed -n 's/.*"commit":"\([0-9a-f]*\)".*/\1/p' | head -1)
                    if [ "$b" = "$BRANCH" ] && [ -n "$c" ] && [ "$c" != "$COMMIT" ]; then echo "$c"; break; fi
                  done)
           paths="Port/src/CosmicShore.Launcher Port/src/Shared"
           if [ -n "$prev" ] && git cat-file -e "$prev^{commit}" 2>/dev/null; then range="$prev..$COMMIT"; else range="-n 8 $COMMIT"; fi
           git log --format=%s $range -- $paths | head -20 > "$RUNNER_TEMP/changes.txt"
-          python3 - "$RUNNER_TEMP/changes.txt" > "$RUNNER_TEMP/notes.md" <<'PY'
+          mkdir -p "$RUNNER_TEMP/artifact"
+          cp "$exe" "$RUNNER_TEMP/artifact/Prisma.exe"
+          python3 - "$RUNNER_TEMP/changes.txt" "$RUNNER_TEMP/artifact/prisma-launcher.json" > "$RUNNER_TEMP/notes.md" <<'PY'
           import json, os, sys
           changes = [l.strip() for l in open(sys.argv[1], encoding="utf-8") if l.strip()]
           meta = {"commit": os.environ["COMMIT"], "date": os.environ["DATE"], "branch": os.environ["BRANCH"], "sha256": os.environ["SHA"], "changes": changes}
+          json.dump(meta, open(sys.argv[2], "w"))
           print("<!-- prisma-launcher " + json.dumps(meta, separators=(",", ":")) + " -->")
           print(f"Prisma launcher `{os.environ['SHORT']}` ({os.environ['DATE']}) from `{os.environ['BRANCH']}`.\n")
           print("Download **Prisma.exe** and run it; after that, Prisma's UPDATE button installs new versions by itself.\n")
           print("What changed:")
           for c in changes: print(f"- {c}")
           PY
-          gh release create "prisma-launcher-$SHORT" "$exe" --target "$COMMIT" \
-            --title "Prisma $SHORT ($BRANCH)" --notes-file "$RUNNER_TEMP/notes.md" --prerelease --latest=false
+          cat "$RUNNER_TEMP/artifact/prisma-launcher.json"
+
+      # Always available: the updater downloads this with the GitHub token Prisma already has
+      # (SETTINGS > SOURCE), even where Actions may not create releases.
+      - name: Upload Prisma.exe as an artifact
+        if: steps.v.outputs.exists == 'false'
+        uses: actions/upload-artifact@v4
+        with:
+          name: prisma-launcher-${{ steps.v.outputs.commit }}-${{ steps.v.outputs.date }}
+          path: ${{ runner.temp }}/artifact/
+          retention-days: 90
+          if-no-files-found: error
+
+      # A release needs no token to download, but only works when the repository lets Actions
+      # write (Settings > Actions > General > Workflow permissions > Read and write).
+      - name: Publish the release
+        id: release
+        if: steps.v.outputs.exists == 'false'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          COMMIT: ${{ steps.v.outputs.commit }}
+          SHORT: ${{ steps.v.outputs.short }}
+          BRANCH: ${{ github.ref_name }}
         shell: bash
+        run: |
+          gh release create "prisma-launcher-$SHORT" "$RUNNER_TEMP/artifact/Prisma.exe" --target "$COMMIT" \
+            --title "Prisma $SHORT ($BRANCH)" --notes-file "$RUNNER_TEMP/notes.md" --prerelease --latest=false
+
+      - name: Say why there is no release
+        if: steps.release.outcome == 'failure'
+        run: |
+          echo "::notice title=No release (artifact only)::GitHub refused to create the release (Actions has read-only access here). Prisma's UPDATE still downloads the artifact with a GitHub token from SETTINGS > SOURCE. For token-free updates, set Settings > Actions > General > Workflow permissions to 'Read and write'."
 
       - name: Keep the last 8 launcher releases per branch
-        if: steps.v.outputs.exists == 'false'
+        if: steps.release.outcome == 'success'
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
           BRANCH: ${{ github.ref_name }}

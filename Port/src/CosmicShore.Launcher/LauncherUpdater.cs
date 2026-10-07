@@ -33,6 +33,8 @@ namespace CosmicShore.Launcher
             public string? Download { get; init; }
             public string? Sha256 { get; init; }
             public long Size { get; init; }
+            /// <summary>The download is a workflow artifact (a zip GitHub hands out only with a token), not a release asset.</summary>
+            public bool Artifact { get; init; }
         }
 
         readonly LauncherSettings _s;
@@ -98,6 +100,8 @@ namespace CosmicShore.Launcher
             {
                 var releases = await Releases();
                 var mine = releases?.Where(r => r.branch == _s.Branch).ToList();
+                // Where Actions may not create releases, the same .exe is the workflow run's artifact.
+                if (mine is not { Count: > 0 } && OperatingSystem.IsWindows()) mine = await Artifacts(_s.Branch);
                 if (mine is { Count: > 0 })
                 {
                     CheckRelease(mine);
@@ -125,7 +129,7 @@ namespace CosmicShore.Launcher
             foreach (var r in at > 0 ? mine.Take(at) : mine.Take(1))
                 foreach (var c in r.changes) if (!Changes.Contains(c)) Changes.Add(c);
             Available = new VersionInfo(newest.commit, newest.date, newest.changes.FirstOrDefault() ?? newest.tag, _s.Branch, "")
-                { Download = newest.url, Sha256 = newest.sha256, Size = newest.size };
+                { Download = newest.url, Sha256 = newest.sha256, Size = newest.size, Artifact = newest.artifact };
         }
 
         async Task CheckSource(bool fetch)
@@ -197,7 +201,7 @@ namespace CosmicShore.Launcher
         public const string ReleasePrefix = "prisma-launcher-";
 
         /// <summary>One published launcher: its tag, the commit and date it was built from, the branch, and the .exe.</summary>
-        public sealed record Release(string tag, string commit, string date, string branch, string url, string sha256, long size, List<string> changes);
+        public sealed record Release(string tag, string commit, string date, string branch, string url, string sha256, long size, List<string> changes, bool artifact = false);
 
         string Repo()
         {
@@ -227,6 +231,58 @@ namespace CosmicShore.Launcher
                 return ParseReleases(await resp.Content.ReadAsStringAsync());
             }
             catch { return null; }
+        }
+
+        System.Net.Http.HttpClient Api(bool auth)
+        {
+            var http = new System.Net.Http.HttpClient(new System.Net.Http.HttpClientHandler { AllowAutoRedirect = false }) { Timeout = TimeSpan.FromMinutes(20) };
+            http.DefaultRequestHeaders.UserAgent.ParseAdd("Prisma/" + Short);
+            http.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
+            if (auth && _ws.GitHubApiToken() is { Length: > 0 } token)
+                http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            return http;
+        }
+
+        /// <summary>
+        /// The launcher builds the prisma-launcher workflow left as artifacts on <paramref name="branch"/>,
+        /// newest first. Listing them needs no token on a public repository; downloading one does.
+        /// The artifact is named prisma-launcher-COMMIT-DATE.
+        /// </summary>
+        async Task<List<Release>?> Artifacts(string branch)
+        {
+            try
+            {
+                using var http = Api(auth: false);
+                var runs = await http.GetAsync($"https://api.github.com/repos/{Repo()}/actions/workflows/prisma-launcher.yml/runs?branch={Uri.EscapeDataString(branch)}&status=success&per_page=8");
+                if (!runs.IsSuccessStatusCode) return null;
+                using var rd = JsonDocument.Parse(await runs.Content.ReadAsStringAsync());
+                var list = new List<Release>();
+                foreach (var run in rd.RootElement.GetProperty("workflow_runs").EnumerateArray())
+                {
+                    var arts = await http.GetAsync($"https://api.github.com/repos/{Repo()}/actions/runs/{run.GetProperty("id").GetInt64()}/artifacts");
+                    if (!arts.IsSuccessStatusCode) continue;
+                    var title = run.TryGetProperty("display_title", out var dt) ? dt.GetString() ?? "" : "";
+                    list.AddRange(ParseArtifacts(await arts.Content.ReadAsStringAsync(), branch, title));
+                    if (list.Count >= 3) break;
+                }
+                // One entry per launcher version, newest first.
+                return list.GroupBy(r => r.commit).Select(g => g.First()).OrderByDescending(r => r.date, StringComparer.Ordinal).ToList();
+            }
+            catch { return null; }
+        }
+
+        public static List<Release> ParseArtifacts(string json, string branch, string runTitle)
+        {
+            var list = new List<Release>();
+            using var d = JsonDocument.Parse(json);
+            foreach (var a in d.RootElement.GetProperty("artifacts").EnumerateArray())
+            {
+                var m = System.Text.RegularExpressions.Regex.Match(a.GetProperty("name").GetString() ?? "", @"^prisma-launcher-([0-9a-f]{40})-(\d{4}-\d{2}-\d{2})$");
+                if (!m.Success || (a.TryGetProperty("expired", out var ex) && ex.GetBoolean())) continue;
+                list.Add(new Release("artifact", m.Groups[1].Value, m.Groups[2].Value, branch, a.GetProperty("archive_download_url").GetString() ?? "", "",
+                    a.TryGetProperty("size_in_bytes", out var sz) ? sz.GetInt64() : 0, runTitle.Length > 0 ? new List<string> { runTitle } : new List<string>(), artifact: true));
+            }
+            return list;
         }
 
         /// <summary>
@@ -276,14 +332,25 @@ namespace CosmicShore.Launcher
                 Directory.CreateDirectory(tmp);
                 var exe = Path.Combine(tmp, "Prisma.exe");
                 log.Add(LogKind.Command, $"> download Prisma {v.Short} ({v.Date})");
-                using (var http = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromMinutes(20) })
+                var file = v.Artifact ? Path.Combine(tmp, "artifact.zip") : exe;
+                if (v.Artifact && string.IsNullOrEmpty(_ws.GitHubApiToken()))
+                    throw new Exception("This version is a GitHub build artifact, which GitHub only hands out with a token: paste any GitHub token in SETTINGS > SOURCE.");
+                using (var api = Api(auth: v.Artifact))
+                using (var plain = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromMinutes(20) })
                 {
-                    http.DefaultRequestHeaders.UserAgent.ParseAdd("Prisma/" + Short);
-                    using var resp = await http.GetAsync(v.Download, System.Net.Http.HttpCompletionOption.ResponseHeadersRead);
-                    resp.EnsureSuccessStatusCode();
+                    plain.DefaultRequestHeaders.UserAgent.ParseAdd("Prisma/" + Short);
+                    var resp = await api.GetAsync(v.Download, System.Net.Http.HttpCompletionOption.ResponseHeadersRead);
+                    // Both kinds redirect to signed storage, which must be fetched WITHOUT the GitHub token.
+                    if ((int)resp.StatusCode is >= 300 and < 400 && resp.Headers.Location is { } loc)
+                    {
+                        resp.Dispose();
+                        resp = await plain.GetAsync(loc, System.Net.Http.HttpCompletionOption.ResponseHeadersRead);
+                    }
+                    using var _ = resp;
+                    if (!resp.IsSuccessStatusCode) throw new Exception($"GitHub answered {(int)resp.StatusCode} for the download" + (v.Artifact ? " (is the token still valid?)." : "."));
                     long total = resp.Content.Headers.ContentLength ?? v.Size;
                     await using var src = await resp.Content.ReadAsStreamAsync();
-                    await using var dst = File.Create(exe);
+                    await using var dst = File.Create(file);
                     var buf = new byte[1 << 16];
                     long got = 0; int n;
                     while ((n = await src.ReadAsync(buf)) > 0)
@@ -293,16 +360,29 @@ namespace CosmicShore.Launcher
                         if (total > 0) { Progress = 0.05f + 0.85f * got / total; Phase = $"Downloading  {got >> 20} / {total >> 20} MB"; }
                     }
                 }
+                string? sha = v.Sha256;
+                if (v.Artifact)
+                {
+                    // The zip holds Prisma.exe and prisma-launcher.json (its checksum and change list).
+                    using (var z = System.IO.Compression.ZipFile.OpenRead(file))
+                    {
+                        (z.GetEntry("Prisma.exe") ?? throw new Exception("The artifact holds no Prisma.exe.")).ExtractToFile(exe, overwrite: true);
+                        if (z.GetEntry("prisma-launcher.json") is { } meta)
+                            using (var ms = meta.Open()) using (var md = JsonDocument.Parse(ms))
+                                sha = md.RootElement.TryGetProperty("sha256", out var sh) ? sh.GetString() : null;
+                    }
+                    File.Delete(file);
+                }
                 Phase = "Verifying";
-                if (!string.IsNullOrEmpty(v.Sha256))
+                if (!string.IsNullOrEmpty(sha))
                 {
                     string actual;
                     await using (var f = File.OpenRead(exe)) actual = Convert.ToHexString(await System.Security.Cryptography.SHA256.HashDataAsync(f)).ToLowerInvariant();
-                    if (actual != v.Sha256) throw new Exception("The download failed its checksum. Try again.");
+                    if (actual != sha!.ToLowerInvariant()) throw new Exception("The download failed its checksum. Try again.");
                 }
                 if (Directory.Exists(dir)) Directory.Delete(dir, true);
                 Directory.Move(tmp, dir);
-                File.WriteAllText(Path.Combine(dir, "version.json"), JsonSerializer.Serialize(v with { Source = v.Source, Dir = "", Download = null, Sha256 = null }));
+                File.WriteAllText(Path.Combine(dir, "version.json"), JsonSerializer.Serialize(v with { Source = v.Source, Dir = "", Download = null, Sha256 = null, Artifact = false }));
             }
             Progress = 0.94f;
             Phase = "Installing";
@@ -363,8 +443,9 @@ namespace CosmicShore.Launcher
                 if (OperatingSystem.IsWindows())
                 {
                     var rel = rev == _s.Branch && Available?.Download != null ? Available
-                        : (await Releases())?.Where(r => r.branch == rev || r.tag == rev || (rev.Length >= 7 && r.commit.StartsWith(rev, StringComparison.OrdinalIgnoreCase)))
-                            .Select(r => new VersionInfo(r.commit, r.date, r.changes.FirstOrDefault() ?? r.tag, rev, "") { Download = r.url, Sha256 = r.sha256, Size = r.size })
+                        : ((await Releases()) ?? new()).Concat(await Artifacts(rev) ?? new())
+                            .Where(r => r.branch == rev || r.tag == rev || (rev.Length >= 7 && r.commit.StartsWith(rev, StringComparison.OrdinalIgnoreCase)))
+                            .Select(r => new VersionInfo(r.commit, r.date, r.changes.FirstOrDefault() ?? r.tag, rev, "") { Download = r.url, Sha256 = r.sha256, Size = r.size, Artifact = r.artifact })
                             .FirstOrDefault();
                     if (rel?.Download != null) { await InstallRelease(rel with { Source = rev }, log); return; }
                 }
