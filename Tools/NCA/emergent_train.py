@@ -53,6 +53,8 @@ class Cfg:
     w_over: float = 1.0
     w_survive: float = 60.0
     p_strike: float = 0.08
+    min_body: float = 0.0    # one-sided body floor (swarm_nca's min_body / w_body): w_body * relu(1 - n/min_body)^2 per checkpoint;
+    w_body: float = 0.0      # it rewards laying below the floor and is silent above it (the 'never lay' shortcut, F2/F5)
     replace_above: float = 60.0
     replace_n: int = 1000    # pool hygiene: an overgrown sample (death is penalised, so it can never shrink) is reseeded
     init: str = ""           # an emergent rule .pt to resume weights from (new run)
@@ -92,7 +94,7 @@ def train(cfg: Cfg):
     torch.set_num_threads(cfg.threads)
     os.makedirs(cfg.run, exist_ok=True)
     T = sn.load_targets()[cfg.plan]
-    L = sn.LossCfg(w_over=cfg.w_over, w_survive=cfg.w_survive)
+    L = sn.LossCfg(w_over=cfg.w_over, w_survive=cfg.w_survive, min_body=cfg.min_body, w_body=cfg.w_body)
     world = sn.World(learned_lay=1)
     torch.manual_seed(cfg.seed)
     gen = sn.make_gen(cfg.seed)
@@ -148,6 +150,9 @@ def train(cfg: Cfg):
                 l, info = sn.anim_loss(xs, T, L, cfg.period, cfg.w_speed, None)
                 ov = torch.stack([over_term(x, L.over_band) for x in xs]).mean()
                 l = l + cfg.w_over * ov
+                if cfg.w_body and cfg.min_body:
+                    body = torch.stack([torch.relu(1 - x["w"].sum() / cfg.min_body) ** 2 for x in xs]).mean()
+                    l = l + cfg.w_body * body
                 info["over"] = float(ov.detach())
                 losses.append(l); infos.append(info)
         ok = [bool(torch.isfinite(l)) for l in losses]

@@ -145,11 +145,11 @@ def run_seed(model, plan="space", seed=7, grow=600, window=192, every=4, regrow=
             traj.append((t + 1, score(sw), int(_live(sw).sum())))
     rec = traj[-1][1]
     span = cut - before
-    heal = (cut - rec) / span if span > 1e-6 else None
+    heal = (cut - rec) / span if span > 0.5 else None          # a cut that costs < 0.5 is no wound to heal
 
     def t_heal(frac):
-        if span <= 1e-6:
-            return 0
+        if span <= 0.5:
+            return None
         for st, v, _ in traj:
             if (cut - v) / span >= frac:
                 return st
