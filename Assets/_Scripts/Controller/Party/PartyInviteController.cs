@@ -41,14 +41,21 @@ namespace CosmicShore.Gameplay
         [SerializeField] private ToastChannel bounceToastChannel;
 
         [Header("Timing")]
+        // The initializers below equal what PartyServices.prefab SERIALIZES (5 / 10 / 30), so a reader
+        // of this file is not misled: a serialized field's initializer is not its shipped value.
+        // Bootstrap.unity additionally overrides connectionTimeoutSeconds to 30 on its PartyServices
+        // instance, so the live connect wait is 30 s there. Nest rule (REVIEW_INVITE_AND_RESILIENCE.md
+        // §5.5): UTP's connect window (MaxConnectAttempts × ConnectTimeoutMS = 10 × 1 s on
+        // NetworkManager.prefab) must end BEFORE this wait does, and WaitForClientConnectionAsync now
+        // returns the moment the transport gives up rather than sitting out the remainder.
         [Tooltip("Max time (seconds) to wait for NetworkManager shutdown.")]
-        [SerializeField] private float shutdownTimeoutSeconds = 2f;
+        [SerializeField] private float shutdownTimeoutSeconds = 5f;
 
-        [Tooltip("Max time (seconds) to wait for client connection after joining party session.")]
-        [SerializeField] private float connectionTimeoutSeconds = 8f;
+        [Tooltip("Max time (seconds) to wait for client connection after joining party session. Must exceed UTP's connect window (MaxConnectAttempts × ConnectTimeoutMS on NetworkManager.prefab) so the transport gives up first.")]
+        [SerializeField] private float connectionTimeoutSeconds = 10f;
 
         [Tooltip("Max seconds to wait for the local player's vessel to initialise (OnClientReady fires) after joining. On timeout the client bounces back to its own solo menu.")]
-        [SerializeField] private float joinReadyTimeoutSeconds = 10f;
+        [SerializeField] private float joinReadyTimeoutSeconds = 30f;
 
         [Inject] private GameDataSO gameData;
         [Inject] private SceneTransitionManager _sceneTransitionManager;
