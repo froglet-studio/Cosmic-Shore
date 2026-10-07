@@ -531,6 +531,17 @@ repository. No game or package code sets `JobsUtility.JobCompilerEnabled` or
 reports `BURST` or `MANAGED` from how it actually ran, beside every switch above. If the local project has the
 per-assembly disable file (it would be untracked), that is the answer.
 
+**`burst` result (2026-10-08):** `enabled=True compilation=True synchronous=True jobCompiler=True
+jobsDebugger=True debuggerAttached=False code=Debug | probe job in Assembly-CSharp: Run() MANAGED, Schedule()
+MANAGED`. The local `ProjectSettings` has no `Burst_DisableAssembliesForEditorCompilation.json`. So every
+switch is on and no debugger is attached, yet even a job compiled synchronously in Assembly-CSharp runs
+managed, while package jobs run Burst. The one non-default state left is `code=Debug`: Burst 1.8 starts its
+managed-debugger hooks (`BurstCompiler.InitialiseDebuggerHooks`, gated on `ManagedDebugger.isEnabled`) exactly
+then. That fits every observation: user-assembly jobs debuggable, so managed; package jobs Burst; no error.
+The 10-06 capture that ran Burst predates the Code Optimization record, so its mode is unknown.
+**Next:** `burst` in Release. If it is still MANAGED, close the editor, delete `Library/BurstCache`, reopen, and
+run `burst` again. If it is still MANAGED after that, read `Editor.log`.
+
 ### 8.0i The AI seats no longer re-plan in the same frame (2026-10-07)
 
 The user's choice from §8.0h's list: stagger the seats. **Mechanism:** `SkimRaceReplanGate`, one per
