@@ -305,6 +305,17 @@ namespace CosmicShore.Utility
         /// </summary>
         [CSLogChannelLabel("[Training] overnight GA bring-up")]
         AITraining = 1 << 29,
+        /// <summary>
+        /// <c>[BlackHole]</c> — the gravity well's one-line-per-second report: live holes
+        /// (strength, horizon, influence), the prism bodies under gravity, captures this
+        /// second, warp residents, vessels being pulled — including the idle case with its
+        /// reason, because a field's failure modes all render as "nothing is happening"
+        /// (Docs/BLACK_HOLE.md). Off by default like every channel; a real fault (a spawn
+        /// with no prefab, a job that could not schedule) stays a warning or an error.
+        /// Nothing per-body or per-frame logs here.
+        /// </summary>
+        [CSLogChannelLabel("[BlackHole] gravity wells, bodies, captures, warp residents")]
+        BlackHole = 1 << 30,
         All = ~0
     }
 

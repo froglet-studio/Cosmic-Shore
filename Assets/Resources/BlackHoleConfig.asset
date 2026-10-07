@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a4e56d9c2764496f97787938466f0b3f, type: 3}
+  m_Name: BlackHoleConfig
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.ScriptableObjects.BlackHoleConfigSO
+  gmPerStrength: 20000
+  horizonPerStrength: 2
+  minHorizonRadius: 1.5
+  influenceAccelerationFloor: 0.6
+  maxInfluenceRadius: 900
+  frameDragging: 0.8
+  frameDragCoupling: 0.6
+  releaseDamping: 1.5
+  releaseSpeed: 0.75
+  maxSubsteps: 8
+  maxBodies: 6000
+  maxBlackHoles: 4
+  admissionInterval: 0.1
+  pullVessels: 1
+  vesselPullScale: 1
+  maxVesselPullSpeed: 90
+  warpEnabled: 1
+  warpStrength: 0.6
+  warpReachMultiplier: 6
+  warpExponent: 2
+  warpEaseSeconds: 0.5
+  warpSubdivision: 12
+  warpMaxResidentPrisms: 32
+  warpResidencyMargin: 3

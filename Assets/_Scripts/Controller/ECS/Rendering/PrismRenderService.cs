@@ -519,6 +519,14 @@ namespace CosmicShore.ECS
                         em.AddComponentData(prototype, new PrismSuctionDirectionOverride { Value = 1f });
                         em.AddComponentData(prototype, new PrismSuctionGrowDelayOverride { Value = 0f });
                         em.AddComponentData(prototype, new PrismImplosionLocationOverride { Value = float3.zero });
+                        // Black-hole gravity body (Docs/BLACK_HOLE.md). NOT a material
+                        // property: a simulation state the gravity job reads and writes.
+                        // On the prototype so admitting a prism to a field is a
+                        // non-structural SetComponentData + SetComponentEnabled; DISABLED
+                        // by default, so every prism outside a hole's influence is exactly
+                        // what it was before the component existed.
+                        em.AddComponentData(prototype, new GravityBody());
+                        em.SetComponentEnabled<GravityBody>(prototype, false);
                         break;
                     case PrismRenderOverrideSet.Explosion:
                         em.AddComponentData(prototype, new PrismExplodeStartTimeOverride { Value = 0f });
@@ -1468,7 +1476,72 @@ namespace CosmicShore.ECS
             ClearJiggleStamp(in handle);
             ClearSuctionClockStamp(in handle);
             ClearSwayStamp(in handle);
+            ClearGravityBody(in handle);
         }
+
+        // ------------------------------------------------------------------
+        // Gravity body (Docs/BLACK_HOLE.md) — simulation state, not a stamp
+        // ------------------------------------------------------------------
+
+        /// <summary>
+        /// Seats a prism as a body under black-hole gravity: writes its state and ENABLES the
+        /// component. Non-structural (the component lives on the Prism prototype). Returns false
+        /// when there is no usable entity or the entity was created with a non-Prism override set
+        /// (debris, slices and implosion husks are not bodies — their flight is a clock stamp).
+        /// </summary>
+        public static bool SetGravityBody(in PrismRenderHandle handle, in GravityBody body, bool enabled)
+        {
+            if (!IsUsable(in handle)) return false;
+            var em = _world.EntityManager;
+            if (!em.HasComponent<GravityBody>(handle.Entity)) return false;
+            em.SetComponentData(handle.Entity, body);
+            em.SetComponentEnabled<GravityBody>(handle.Entity, enabled);
+            return true;
+        }
+
+        /// <summary>Reads a body's state (the job writes it). False when the entity has none.</summary>
+        public static bool TryGetGravityBody(in PrismRenderHandle handle, out GravityBody body)
+        {
+            body = default;
+            if (!IsUsable(in handle)) return false;
+            var em = _world.EntityManager;
+            if (!em.HasComponent<GravityBody>(handle.Entity)) return false;
+            body = em.GetComponentData<GravityBody>(handle.Entity);
+            return true;
+        }
+
+        /// <summary>
+        /// Releases a prism from gravity: zero state, component DISABLED. Pool hygiene as much as
+        /// a release — a reused prism must never inherit the velocity of the one it replaced.
+        /// </summary>
+        public static void ClearGravityBody(in PrismRenderHandle handle)
+        {
+            if (!IsUsable(in handle)) return;
+            var em = _world.EntityManager;
+            if (!em.HasComponent<GravityBody>(handle.Entity)) return;
+            em.SetComponentData(handle.Entity, new GravityBody());
+            em.SetComponentEnabled<GravityBody>(handle.Entity, false);
+        }
+
+        /// <summary>
+        /// The gravity job's access to its component: a read-write
+        /// <see cref="ComponentLookup{T}"/> over <see cref="GravityBody"/>, with any in-flight
+        /// job on it completed first. The caller schedules against it and MUST complete that
+        /// job within the same frame, before any structural change (the same contract
+        /// <see cref="SetTransformsBatch(Unity.Collections.NativeArray{PrismRenderHandle}, Unity.Collections.NativeArray{float4x4}, int, JobHandle)"/>
+        /// keeps for <c>LocalToWorld</c>). False when there is no world.
+        /// </summary>
+        internal static bool TryGetGravityBodyLookup(out ComponentLookup<GravityBody> lookup)
+        {
+            lookup = default;
+            if (_world == null || !_world.IsCreated) return false;
+            _world.EntityManager.CompleteDependencyBeforeRW<GravityBody>();
+            lookup = Lookup<GravityBody>(false);
+            return true;
+        }
+
+        /// <summary>The service's current epoch — a handle whose epoch differs is stale.</summary>
+        internal static int HandleEpoch => _epoch;
 
         /// <summary>Stamps an explosion's flight: offset/amount/opacity become pure
         /// functions of the clock. The entity transform must already hold the debris'
