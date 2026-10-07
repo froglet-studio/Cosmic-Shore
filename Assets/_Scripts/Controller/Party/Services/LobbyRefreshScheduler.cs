@@ -72,6 +72,21 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public const float BOOST_WINDOW_SECONDS = 15f;
 
+        /// <summary>
+        /// Fraction by which the NON-boosted interval is randomised, per fire
+        /// (Docs/PresenceSystem/TODOS.md TODO-P3). Without it every client in a lobby
+        /// of up to 100 polls on the same period, so their reads and the property
+        /// writes behind them arrive in clusters - which is what the SDK's
+        /// stale-index/LobbyPatcher faults feed on (PresenceSystem/BUGS.md B1).
+        ///
+        /// <para>
+        /// Applied to the DEFAULT interval only. The boosted interval is already at
+        /// 0.75 s against a ~1/s read cap, so it has no room to be jittered DOWN, and
+        /// the boost window is the one phase where responsiveness is the point.
+        /// </para>
+        /// </summary>
+        public const float INTERVAL_JITTER_FRACTION = 0.1f;
+
         // ─────────────────────────────────────────────────────────────────────
         // Private state
         // ─────────────────────────────────────────────────────────────────────
@@ -79,6 +94,21 @@ namespace CosmicShore.Gameplay
         private readonly float _defaultInterval;
         private float _timer;
         private float _boostedUntil;  // unscaled time; 0 = not boosted
+
+        /// <summary>
+        /// Jitter source. Deliberately a PRIVATE <see cref="System.Random"/> rather than
+        /// <c>UnityEngine.Random</c>: that one is a single global sequence which
+        /// <c>Random.InitState(seed)</c> callers rely on for deterministic output (the
+        /// SkimRace/Switchback track walks, the flora planting draws). Pulling from it
+        /// every interval would advance a sequence somebody else seeded.
+        /// </summary>
+        private readonly System.Random _jitter = new System.Random();
+
+        /// <summary>
+        /// The interval this cycle must reach, re-rolled on every fire. Zero until the
+        /// first roll, which <see cref="ShouldFireNow"/> treats as "roll one now".
+        /// </summary>
+        private float _currentInterval;
 
         // ─────────────────────────────────────────────────────────────────────
         // Construction
@@ -121,10 +151,33 @@ namespace CosmicShore.Gameplay
         public bool ShouldFireNow(float unscaledDeltaTime)
         {
             _timer += unscaledDeltaTime;
-            float interval = IsBoosted ? BOOSTED_INTERVAL_SECONDS : _defaultInterval;
-            if (_timer < interval) return false;
+
+            // Boosted mode is unjittered on purpose (see INTERVAL_JITTER_FRACTION).
+            if (IsBoosted)
+            {
+                if (_timer < BOOSTED_INTERVAL_SECONDS) return false;
+                _timer = 0f;
+                _currentInterval = 0f;   // re-roll on the way back out of the boost window
+                return true;
+            }
+
+            if (_currentInterval <= 0f) _currentInterval = RollInterval();
+            if (_timer < _currentInterval) return false;
             _timer = 0f;
+            _currentInterval = RollInterval();
             return true;
+        }
+
+        /// <summary>
+        /// The default interval scaled by a symmetric jitter in
+        /// <c>[1 - INTERVAL_JITTER_FRACTION, 1 + INTERVAL_JITTER_FRACTION]</c>, so the MEAN
+        /// cadence is unchanged and only the phase between clients is broken up. At the
+        /// shipped 1.5 s default that is 1.35-1.65 s, still well clear of the ~1/s read cap.
+        /// </summary>
+        private float RollInterval()
+        {
+            float span = _defaultInterval * INTERVAL_JITTER_FRACTION;
+            return _defaultInterval - span + (float)_jitter.NextDouble() * (2f * span);
         }
 
         /// <summary>

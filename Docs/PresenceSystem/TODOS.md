@@ -32,18 +32,28 @@ post-save refresh — may need to batch).
 *only* if B1 returns after the `BenignLobbyLogFilter` proves
 insufficient.
 
-### TODO-P3. Add jitter to base refresh interval
+### TODO-P3. Add jitter to base refresh interval — DONE
 
-**Why.** All clients refresh on the same 5 s tick, which clusters
-property reads/writes at the SDK and contributes to rate-limit
-incidence on the 429 hot window after invite-receive.
+**Status.** Shipped 2026-10-05 (commit `a230ced2c`). `LobbyRefreshScheduler.ShouldFireNow`
+re-rolls a per-cycle interval from the default one, scaled symmetrically by
+`INTERVAL_JITTER_FRACTION` (0.1): at the shipped 1.5 s default that is 1.35-1.65 s, mean
+unchanged (measured 1.4997 over 200k rolls), so only the phase between clients is broken up.
 
-**Touchpoint.** `LobbyRefreshScheduler` — base interval is currently
-fixed. Add a per-client uniform jitter of ±10% so refreshes spread out
-across the wall-clock window.
+Two restrictions are part of the fix rather than omissions:
 
-**Risk.** Low; jitter is additive, doesn't change median cadence
-materially.
+- **Boosted mode is left unjittered.** It is already 0.75 s against a ~1/s UGS read cap, so
+  it has no room to be jittered DOWN, and the boost window is the one phase where
+  responsiveness is the point. Leaving the window re-rolls, so the next base cycle is
+  freshly phased.
+- **The source is a private `System.Random`, not `UnityEngine.Random`.** The latter is one
+  global sequence that `Random.InitState(seed)` callers depend on for deterministic output
+  (the SkimRace / Switchback course walks, the flora planting draws). Pulling from it every
+  1.5 s would advance a sequence somebody else seeded. **Any future cadence/jitter code in a
+  per-frame path should do the same.**
+
+**What it does NOT do.** It reduces the *clustering* B1 feeds on; it does not fix B1, which
+is an SDK defect in `LobbyPatcher.ApplyPatchesToLobby`. Measure B1's incidence after this
+before assuming either way.
 
 ## Diagnostics
 

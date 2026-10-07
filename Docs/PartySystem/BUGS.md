@@ -31,6 +31,7 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B21 | A pilot who leaves mid-match takes their ship AND their score out of the arena | Root-caused & fixed | 🟡 |
 | B22 | The Scoreboard's client exit and rematch caption were never wired (`{fileID: 0}`), so B18's propagated fix was a no-op here | Root-caused & fixed | 🟡 |
 | B23 | The arcade card lobby does not follow the host: a flying guest is never pulled in, a guest who missed it once never gets it, a host who changes card cannot move the party, and guests draw phantom AI | Root-caused & fixed | 🟡 |
+| B24 | A rate-limited (HTTP 429) session create/join matched NEITHER retry filter, so the retry budget never ran: the guest bounced to its own solo menu and the host fell back to an OFFLINE session, which then correctly hid the online-only party panel | Root-caused & fixed 2026-10-06 from the first MPPM run | 🟡 |
 
 *(The table used to list only seven of these. B8 and B11–B16 had entries below
 but no index row, so the index read as "seven bugs, two of them red" while the
@@ -1616,6 +1617,93 @@ Watch that the host's roster does not double-count them.
 
 ---
 
+## B24 — a rate-limited session call matched neither retry filter, so one 429 took the guest to solo and the host offline 🟡 (root-caused & fixed 2026-10-06; needs the MPPM retest)
+
+**Symptom (owner report, first MPPM run, 2026-10-05).** Two Play Mode Scenario instances, one
+Server+Client ("player 1"), one Client-only ("player 2"). Three things at once:
+
+1. The console carried `SessionException ... HTTP 429 too many requests` attributed to player 2.
+2. Player 2 then "restarted in its own lava lamp" — i.e. bounced to its own solo menu+host.
+3. Player 1's **arcade panel had no party UI panel**; player 2's did. Reported as a UI mismatch.
+
+**All three are one root cause, and it is not a UI bug.**
+
+**Root cause.** `PartySessionService` guarded both its create and its join loops with
+
+```csharp
+IsRateLimitException(e) => e is RequestFailedException rfe && rfe.ErrorCode == 429;
+```
+
+`SessionException` derives from `Exception`, **not** from `RequestFailedException` — in UGS
+Multiplayer 1.1.8 and 2.3.3 alike, so this is **latent, not something the SDK upgrade
+introduced**. And `LobbyConverter.ToSessionException` builds it with the two-argument
+constructor (`new SessionException(message, SessionError.RateLimitExceeded)`), so
+`InnerException` is `null` too: the original `LobbyServiceException`/429 lineage is discarded
+and **only the message text survives**. The sibling predicate
+`IsTransientSessionException` probes for the NRE and `23006` families, which a 429 message does
+not match either.
+
+So **both catch filters declined and the exception escaped the retry loop.** Zero of the three
+rate-limit retries ever ran. Then:
+
+| Path | What the escaped 429 did |
+|---|---|
+| **Join** (`JoinByIdAsync`) | propagated to `AcceptInviteAsync` → `PartyInviteController` logged it and called `RecoverFromFailedTransitionAsync` → **symptom 2**, the bounce to solo |
+| **Create** (`CreateAsync`, via `EnsurePartySessionAsync`) | counted as a failed boot attempt; after 3, `AuthenticationSceneController` took the **offline fallback** → `OfflineModeService` sets `GameDataSO.IsOfflineSession = true` → `OfflineUIGate` hides every online-only object, and `ArcadeLobbyList` is on that list (`OfflineMenuWirer.OnlineOnlyPanels`) → **symptom 3** |
+
+**Symptom 3 was the gate working correctly.** The panel is wired and active in `Menu_Main` — all
+**four** `ArcadeLobbyList` instances (Toybox, Arena, Arcade, Mission panels) have 4/4 slots,
+`connectionData`, `onlineStatusText` and `leaveButton` all non-null, and no inactive ancestor on
+any of their parent chains. Nothing was mis-wired. Player 1 had simply fallen into an offline
+session, where that panel is *supposed* to be hidden. **The two instances do not share the flag**
+— MPPM additional instances are separate processes (see the correction in B23), so each has its
+own `GameDataSO`. The "mismatch" was two instances in genuinely different session states.
+
+**The confirming observation, for the retest.** An unwanted offline start calls
+`ShowOfflineNoticeAsync` before falling back, and the `OnlineStatusIndicator` lamp reads offline
+for the rest of the session. **If player 1 showed the offline notice at boot, or its lamp read
+offline, symptom 3 is fully explained by this entry.** If it did not, the panel was hidden by
+something else and symptom 3 needs its own investigation.
+
+**Fix.** Recognise a rate limit **structurally first** — `SessionError.RateLimitExceeded`, the
+SDK's own classification, which cannot drift with wording or locale — then `ErrorCode == 429`,
+then the message text as the floor. That message probe is what the three sibling predicates in
+`PresenceLobbyService`, `HostConnectionService` and `MultiplayerSetup` use *exclusively*, which
+is exactly why those three kept working while the one typed implementation did not.
+
+Also reordered `CreateAsync`'s catch filters to test rate-limit **before** host-conflict.
+`IsHostConflictException` matches any message containing `"host"` and its retry carries **no
+back-off at all**, so an exception matching both was retried three times with zero delay — the
+worst possible response to a 429. A genuine host conflict is not a 429, so the ordering cannot
+mis-route one.
+
+**Verification.** The two predicates were compiled and **run** against the SDK's real exception
+shapes (copied from the package sources), old against new:
+
+| case | OLD | NEW | want |
+|---|---|---|---|
+| SDK rate limit (the real one) | **False** | True | True |
+| typed rate limit, foreign wording | False | True | True |
+| plain `RequestFailedException` 429 | True | True | True |
+| `NotInLobby` | False | False | False |
+| lobby-events `23006` transient | False | False | False |
+
+The negative controls hold, so it is not over-matching. File parses clean under Roslyn.
+**No Unity in the authoring container, so `/verify-unity` did not run.**
+
+**General rule.** *A typed check that is narrower than the type it is handed fails silently and
+looks rigorous doing it.* It never throws and never logs — the retry simply never happens. Four
+copies of this predicate exist and three of them, written the "sloppy" way against the message,
+were the three that worked.
+
+**Still open after this fix.** Why there was a 429 at all with only two instances. Both were
+polling presence on the same machine under one UGS project; the refresh jitter landed in
+`a230ced2c` spreads that, and this fix makes a burst survivable rather than fatal, but neither
+reduces the underlying request *rate*. If the retest still shows 429s, the next step is
+`Docs/PresenceSystem/TODOS.md` TODO-P2 (write-coalescing), not another retry tweak.
+
+---
+
 ## How we work bugs
 
 Method: see `../README.md` § "How we work bugs". Party-side priority order as of
@@ -1729,9 +1817,26 @@ not sufficient. **A value being replicated does not make it delivered.**
 reflection — a field missing there never dirties the NetworkVariable, and the omission only shows
 on a second machine. **Nothing has been through the Editor.** Needs three machines: host opens a
 card with one guest flying and one guest cold-joining, host backs out and picks another.
-**MPPM is not that test** — virtual players share one process and one `GameDataSO`, so this
-branch's failure mode (a peer that cannot act on replicated state) is exactly the class MPPM
-flatters.
+**MPPM is a weaker test than three machines, but it is not the no-op this entry used to claim.**
+
+> **Corrected 2026-10-06.** This read *"MPPM is not that test — virtual players share one
+> process and one `GameDataSO`"*. **That premise is false**, and it was load-bearing — it is why
+> this entry demanded three machines, and the QA item written from it repeated the claim.
+> MPPM's own documentation (`com.unity.multiplayer.playmode@2.0.2`,
+> `Documentation~/instance-types/instance-types.md`) states: *"Additional instances are clones of
+> the Editor that **run in separate processes**."* Each one gets its own `/Library/VP/<id>/` for
+> its configuration and data. Separate processes mean separate managed heaps, therefore
+> **separate `GameDataSO` instances** — a guest really does have its own copy of the replicated
+> state, which is the thing this bug is about. So MPPM *can* exercise symptoms 1–4.
+>
+> What clone editors genuinely DO share, and what therefore still makes three machines the
+> stronger test: the project's **`Library` asset cache** (per the same page, asset and code
+> changes propagate automatically), and **`PlayerPrefs`** — one OS user, one company/product
+> name, so every instance reads and writes the same store. Any state that rides either of those
+> leaks between "players" on one machine and will look synchronised when it is not.
+>
+> Run it under MPPM first, since that is cheap and now known to be meaningful. Keep the
+> three-machine pass as the confirmation, not as the entry fee.
 
 **Open / accepted.**
 - A guest cannot dismiss the host's lobby, by design. A legitimate "leave this lobby" has to be a

@@ -12,20 +12,44 @@ or a bug. Each entry has enough context that it can be picked up cold.
 
 ## Code health
 
-### TODO-1. Remove `HostConnectionService.Instance` static accessor
+### TODO-1. Remove `HostConnectionService.Instance` static accessor — RE-SCOPED 2026-10-05
 
-**Why.** After Refactor 1 (PIC, see `REFACTOR.md`) migrates PIC to
-`[Inject] IHostConnectionService`, the only remaining consumer of the
-`Instance` static accessor is `PartyInviteSystemTests.cs:1067`
-(reflection). When that test migrates to DI, the static can be
-deleted.
+> **The original premise was wrong by 34x and is kept here as the correction.** It read:
+> *"After Refactor 1 (PIC) migrates PIC to `[Inject] IHostConnectionService`, the only
+> remaining consumer of the `Instance` static accessor is `PartyInviteSystemTests.cs:1067`
+> (reflection). When that test migrates to DI, the static can be deleted."*
+>
+> Measured on 2026-10-05: **34 call sites across 10 files**, and Refactor 1 has not
+> happened — `PartyInviteController` still carries no `IHostConnectionService` inject.
 
-**Touchpoint.** `Assets/_Scripts/Controller/Party/HostConnectionService.cs`
-(`Instance` static property + `Awake` assignment + `OnDestroy`
-unassignment).
+**Where it is actually read** (`grep -rn "HostConnectionService.Instance"`):
 
-**Risk.** Low if done after the test migration. Anything else still
-reading `HostConnectionService.Instance` would surface at compile time.
+| File | Layer |
+|---|---|
+| `Controller/Party/PartyInviteController.cs` | party (Refactor 1's target) |
+| `Controller/Party/HostConnectionService.cs` | its own `Instance` plumbing |
+| `Controller/Party/FriendsInitializer.cs` | party |
+| `Controller/Party/Interfaces/IPartyStateQuery.cs` | doc reference |
+| `Controller/Multiplayer/MultiplayerSetup.cs` | **outside the party layer** |
+| `UI/Elements/ArcadeLobbyList.cs` | **UI** |
+| `UI/Elements/FriendsListPanel.cs` | **UI** |
+| `System/ReconnectService.cs` | **offline/online switch** |
+| `System/AuthenticationSceneController.cs` | **boot gate** |
+| `System/OfflineModeService.cs` | **offline** |
+
+**So this is not a cleanup behind one test.** Six of those files are production code in
+three layers that were written against the static *after* the TODO was filed — the boot
+gate and the whole offline/reconnect path among them. Deleting the static is a real DI
+migration touching ten files, and it is **sequenced after** Refactor 1 rather than
+unlocked by it.
+
+**Risk.** Low per-site (every miss is a compile error), but it is ten files of churn in
+the boot and offline paths, which are the two areas with the least editor verification
+today. Do it as its own branch, never folded into a behaviour change.
+
+**General lesson (and the reason this entry is kept rather than edited).** A TODO's
+scope claim is a measurement taken at the moment somebody stopped looking. Re-measure
+before planning around it — see `.claude/skills/refactor`.
 
 ### TODO-2. `Docs/PARTY_OPEN_BUGS.md` reference updates — DONE
 
@@ -109,15 +133,13 @@ startup churn that contributes to B1). Tracked canonically in
 `../PresenceSystem/TODOS.md` § "TODO-P2. Coalesce startup property
 writes" — not duplicated here.
 
-### TODO-9. Document `LobbyRefreshScheduler.Boost()` semantics
+### TODO-9. Document `LobbyRefreshScheduler.Boost()` semantics — DONE
 
-**Why.** Boost is called on invite-receive to tighten the refresh
-cadence so the joiner sees state changes faster. The exact timing
-(`+15 s`, `2 s` interval) is encoded in the scheduler but not
-documented.
-
-**Touchpoint.** Inline doc comment on `LobbyRefreshScheduler.Boost()`
-or short note in `ARCHITECTURE.md`.
+**Status.** Resolved; verified 2026-10-05. `Boost()` carries a full `<summary>` plus a
+`<remarks>` list naming its three trigger cases (local player sends an invite, incoming
+invite detected, acceptance signal received), and `BOOST_WINDOW_SECONDS` /
+`BOOSTED_INTERVAL_SECONDS` each carry the reasoning for their value — including why
+0.75 s is the floor (the ~1/s UGS read cap). Nothing left to write.
 
 ## Party panel readouts
 
@@ -169,6 +191,25 @@ reasons); the party slot needs one that finds its own place beside an avatar it 
 So the seam is probably the halo's *drawing and tuning*, with placement left to the caller.
 
 **Do not** start by unifying the numbers alone — `PartySlotDomainGlow` already adopted the
-rosters' shipped values, so the three read the same today. The debt is the three copies, and
-the sprite-falloff discrepancy is the evidence it is already costing something.
+rosters' shipped values, so the three read the same today. The debt is the three copies.
+
+> **Two corrections, 2026-10-05.**
+>
+> **It was one roster, not two.** `ConnectingPlayerRoster` has no generated fallback at all
+> — it falls back to the chip template's own sprite (`haloSprite ? haloSprite :
+> _templateSprite`). `RematchVoteRoster.GeneratedHalo` was the only site with the
+> `Mathf.SmoothStep(0.5f, 1f, d)` defect.
+>
+> **The sprite-falloff half is FIXED** (commit `02ef66117`), so it is no longer available as
+> the evidence that the duplication costs something. Measured by compiling and running the
+> shipped maths: centre alpha was **127/255** against an intended 255, and the "solid core"
+> was **0 pixels** — so `haloReadyMaxAlpha` 0.95 could never exceed 0.475. It now matches
+> `PartySlotDomainGlow`'s gate.
+>
+> **One real difference remains, and it is the live argument for unifying:**
+> `PartySlotDomainGlow` additionally squares the falloff (`a *= a`) "so the visible band sits
+> close in around the avatar rather than washing the whole cell"; `RematchVoteRoster` does
+> not. That is a LOOK decision nobody has made across both sites — deliberately not imported
+> by the bug fix — and it is exactly what a shared component would force someone to decide
+> once.
 

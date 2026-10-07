@@ -135,7 +135,7 @@ namespace CosmicShore.Gameplay
             if (c != null && c.TryGetComponent(out SphereCollider sc))
             {
                 var s = sc.transform.lossyScale;
-                _radius = sc.radius * Mathf.Max(Mathf.Abs(s.x), Mathf.Abs(s.y), Mathf.Abs(s.z));
+                _radius = sc.radius * MathfNoAlloc.Max(Mathf.Abs(s.x), Mathf.Abs(s.y), Mathf.Abs(s.z));
             }
             return _radius;
         }

@@ -25,6 +25,14 @@
 # Needs a dotnet 8+ SDK (a per-user install in ~/.dotnet is fine). No .csproj on purpose: the
 # repo gitignores *.csproj, so everything builds into $TMPDIR.
 #
+# SKIMRACE_RUNTIME=mono runs the same build on Mono instead (`apt install mono-runtime`; the SDK's
+# Roslyn still compiles, against Mono's class libraries). Mono is the editor's runtime family, and
+# its "decide cost" is the number that predicts the editor's: .NET's JIT hides what a Vector3
+# operator or a params array costs there (Docs/SKIM_RACE_AI.md 8.0f - 12x apart on the same code).
+# It runs with --optimize=-float32 by default: like Unity's editor Mono, it then computes inside an
+# expression in DOUBLE precision, which is where a float rewrite of Vector3 code can drift
+# (8.0g). SKIMRACE_MONO_OPTS overrides it ("" for stock Mono's single-precision mode).
+#
 # The whole body is one { ...; exit; } block on purpose. bash reads a script AS IT RUNS it, so editing
 # this file during an hour-long tune shifted its read position and re-ran the last line - a second,
 # unwanted tune (2026-10-05). A block is parsed whole before any of it runs, so an edit cannot reach
@@ -47,12 +55,26 @@ mkdir -p "$OUT"
 # the same reader that computes each intensity's map fingerprint (so a fifth intensity is raced too).
 python3 "$ROOT/Tools/Build/skimrace_track_fingerprint.py" --emit-track "$OUT/track.txt"
 
-ls "$REFDIR"/*.dll | sed 's/^/-r:/' > "$OUT/refs.rsp"
+RUNTIME="${SKIMRACE_RUNTIME:-dotnet}"
+if [ "$RUNTIME" = mono ]; then
+  MONOLIB="${MONO_LIB:-/usr/lib/mono/4.5}"
+  printf -- '-r:%s\n' "$MONOLIB/mscorlib.dll" "$MONOLIB/System.dll" "$MONOLIB/System.Core.dll" "$MONOLIB/System.Numerics.dll" > "$OUT/refs.rsp"
+  OUT="$OUT/mono"; mkdir -p "$OUT"; cp "$OUT/../track.txt" "$OUT/"; mv "$OUT/../refs.rsp" "$OUT/"
+else
+  ls "$REFDIR"/*.dll | sed 's/^/-r:/' > "$OUT/refs.rsp"
+fi
 printf '"%s"\n' "$HERE/UnityShim.cs" "$HERE/Sim.cs" \
-  "$SR/SkimRaceAIConfigSO.cs" "$SR/SkimRaceCourse.cs" "$SR/SkimRaceObservation.cs" "$SR/SkimRaceDriver.cs" "${SKIMRACE_SHELL_FILE:-$SR/SkimRaceShell.cs}" "$SR/SkimRacePlanner.cs" "$SR/SkimRaceObstacle.cs" "$SR/SkimRaceHandicap.cs" "$SR/SkimRaceTrackFingerprint.cs" "$SR/SkimRaceTargetTracker.cs" "$SR/SkimRaceTeamAssignment.cs" > "$OUT/files.rsp"
+  "$SR/SkimRaceAIConfigSO.cs" "$SR/SkimRaceCourse.cs" "$SR/SkimRaceObservation.cs" "$SR/SkimRaceDriver.cs" "${SKIMRACE_SHELL_FILE:-$SR/SkimRaceShell.cs}" "$SR/SkimRacePlanner.cs" "$SR/SkimRaceObstacle.cs" "$SR/SkimRaceHandicap.cs" "$SR/SkimRaceTrackFingerprint.cs" "$SR/SkimRaceTargetTracker.cs" "$SR/SkimRaceTeamAssignment.cs" "$SR/SkimRaceReplanGate.cs" \
+  "$ROOT/Assets/_Scripts/Utility/MathfNoAlloc.cs" > "$OUT/files.rsp"
 "$DOTNET" "$CSC" -nologo -langversion:latest -nostdlib -noconfig -optimize+ "@$OUT/refs.rsp" \
   -nowarn:CS1591,CS0067,CS0649,CS0414,CS1574,CS0169,CS8632,CS0108,CS1587 \
   -target:exe -main:Program -out:"$OUT/sim.dll" "@$OUT/files.rsp" >&2
+if [ "$RUNTIME" = mono ]; then
+  RUN="$OUT/run_$$"; mkdir -p "$RUN"; cp "$OUT/sim.dll" "$OUT/track.txt" "$RUN/"
+  trap 'rm -rf "$RUN"' EXIT
+  mono ${SKIMRACE_MONO_OPTS---optimize=-float32} "$RUN/sim.dll" "$RUN/track.txt" "$@"
+  exit
+fi
 V=$(ls "$DOTNET_ROOT"/shared/Microsoft.NETCore.App | tail -1)
 TFM="net${V%%.*}.0"
 printf '{"runtimeOptions":{"tfm":"%s","framework":{"name":"Microsoft.NETCore.App","version":"%s"}}}' "$TFM" "$V" > "$OUT/sim.runtimeconfig.json"

@@ -179,13 +179,13 @@ See `Docs/SCENES.md` for the full scene and game mode reference. Summary below.
 
 **None ship.** `MinigameDuelForTheCell` and `MinigameWildlifeBlitz` were retired in 2026-09 — they had
 been replaced by `MinigameDuelForCellMultiplayer_Gameplay` (`OnlineDuelForTheCell (29)`) and
-`MinigameWildlifeBlitzMultuplayerCoOp` (`CoOpWildlifeBlitz (32)`), and every ability in them was
+`MinigameWildlifeBlitzMultuplayerCoOp` (`CoOpWildlifeBlitz (32)`; itself deleted 2026-10, BH-5.7), and every ability in them was
 dead (their non-networked Player fails `IsLocalUser`). The `GameModes` members 8 and 26 are KEPT
 (ids are never reused; cloud progress keys on the names). The single-player Wildlife Blitz stack
 (`SinglePlayerWildlifeBlitzController` and friends, `PlayerSpawner`/`VesselSpawner`) survives only
 because `BenchmarkStressTest.unity` — which Settings ▸ Run Benchmark launches — was cloned from it;
-note that scene is NOT in Build Settings. The `ArcadeGameWildlifeBlitz` card survives only because
-the (dead) hangar training entries for Rhino and Sparrow point at it — it is in no game list.
+note that scene is NOT in Build Settings. The `ArcadeGameWildlifeBlitz` card and the hangar training
+entries that pointed at it were deleted 2026-10 (BH-5.4).
 
 #### Multiplayer Game Scenes
 
@@ -196,7 +196,6 @@ the (dead) hangar training entries for Rhino and Sparrow point at it — it is i
 | `MinigameScurryMultiplayer_Gameplay` | `Scurry (35)` | `ScurryController` |
 | `MinigameDuelForCellMultiplayer_Gameplay` | `OnlineDuelForTheCell (29)` | `OnlineDuelForTheCellController` |
 | `MinigameJoust_Gameplay` | `Joust (34)` | `JoustController` |
-| `MinigameWildlifeBlitzMultuplayerCoOp` | `CoOpWildlifeBlitz (32)` | `CoOpWildlifeBlitzMiniGame` |
 | `MinigameAstroLeague` | `AstroLeague (36)` | `AstroLeagueController` |
 | `MinigameBroodRush` | `BroodRush (38)` | `BroodRushController` |
 | `MinigameRampage` | `Rampage (2)` | `RampageController` |

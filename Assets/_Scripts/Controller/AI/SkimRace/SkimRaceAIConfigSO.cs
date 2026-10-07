@@ -175,6 +175,10 @@ namespace CosmicShore.Gameplay
                  "path stays closest to the racing line (pure path following; the line carries the safety).")]
         public bool UseTrackMpc = false;
         [Min(1f)] public float TrackMpcHz = 20f;
+        [Tooltip("At most one AI seat re-plans per frame (SkimRaceReplanGate). A seat that finds its frame " +
+                 "taken flies its previous plan one frame longer, never more. Same re-plan rate and average " +
+                 "cost; the peak frame stops paying every seat's re-plan at once (Docs/SKIM_RACE_AI.md 8.0i).")]
+        public bool TrackMpcStaggerSeats = true;
         [Min(0.1f)] public float TrackMpcHorizon = 0.8f;
         [Min(0.02f)] public float TrackMpcSegment = 0.25f;
         [Min(0.01f)] public float TrackMpcStep = 0.05f;

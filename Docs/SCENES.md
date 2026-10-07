@@ -40,7 +40,7 @@ game scene and still exists.
 | Scene | Path | Game Mode | Controller |
 |---|---|---|---|
 | ~~MinigameDuelForTheCell~~ | retired 2026-09 | `DuelForTheCell (8)` | replaced by `MinigameDuelForCellMultiplayer_Gameplay` |
-| ~~MinigameWildlifeBlitz~~ | retired 2026-09 | `WildlifeBlitz (26)` | replaced by `MinigameWildlifeBlitzMultuplayerCoOp` |
+| ~~MinigameWildlifeBlitz~~ | retired 2026-09 | `WildlifeBlitz (26)` | scene deleted; its co-op successor `MinigameWildlifeBlitzMultuplayerCoOp` was itself deleted 2026-10 (BH-5.7) |
 
 ### Multiplayer Game Scenes
 
@@ -51,7 +51,7 @@ game scene and still exists.
 | **MinigameScurryMultiplayer_Gameplay** | `_Scenes/Multiplayer Scenes/` | `Scurry (35)` | `ScurryController` |
 | **MinigameDuelForCellMultiplayer_Gameplay** | `_Scenes/Multiplayer Scenes/` | `OnlineDuelForTheCell (29)` | `OnlineDuelForTheCellController` |
 | **MinigameJoust_Gameplay** | `_Scenes/Multiplayer Scenes/` | `Joust (34)` | `JoustController` |
-| ~~MinigameWildlifeBlitzMultuplayerCoOp~~ | retired 2026-10 (BH-5.5; scene file kept, not in Build Settings) | `CoOpWildlifeBlitz (32)` | `CoOpWildlifeBlitzMiniGame` |
+| ~~MinigameWildlifeBlitzMultuplayerCoOp~~ | deleted 2026-10 (BH-5.5 unlisted it, BH-5.7 deleted scene + controller) | `CoOpWildlifeBlitz (32)` | *(controller deleted)* |
 | **MinigameAstroLeague** | `_Scenes/Multiplayer Scenes/` | `AstroLeague (37)` | `AstroLeagueController` |
 | **MinigameBroodRush** | `_Scenes/Multiplayer Scenes/` | `BroodRush (38)` | `BroodRushController` |
 | **MinigameRampage** | `_Scenes/Multiplayer Scenes/` | `Rampage (2)` | `RampageController` |
@@ -219,9 +219,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 ├── SinglePlayerMiniGameControllerBase (abstract)
 │   │   Start(): subscribe to SOAP events, InitializeGame(), InvokeClientReady()
 │   │
-│   ├── SinglePlayerSlipnStrideController  — procedural course with intensity scaling
-│   ├── SinglePlayerWildlifeBlitzController — blitz scoring with wildlife turn monitor
-│   └── WildlifeBlitzMiniGame             — minimal variant of wildlife blitz
+│   └── SinglePlayerWildlifeBlitzController — blitz scoring with wildlife turn monitor
 │
 └── MultiplayerMiniGameControllerBase (abstract, NetworkBehaviour)
     │   OnNetworkSpawn(): server-authoritative setup + InitDelayMs (1000ms)
@@ -229,7 +227,6 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
     │   Replay + Rematch systems via ServerRpc/ClientRpc
     │
     ├── MultiplayerFreestyleController     — per-player activation, player removal protocol
-    ├── CoOpWildlifeBlitzMiniGame    — own ready-sync (not domain-based)
     │
     └── MultiplayerDomainGamesController
         │   Ready synchronization: all players must click Ready before countdown
@@ -265,7 +262,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 10 | `CellularBrawl` | SP Competitive | Shared | Scene-configured |
 | 11 | `Denial` | SP Arcade | Shared | Scene-configured |
 | 12 | `CatNMouse` | SP Arcade | Shared | Scene-configured |
-| 13 | `SlipNStride` | SP Arcade | Shared | `SinglePlayerSlipnStrideController` |
+| 13 | `SlipNStride` | SP Arcade | Shared | *(controller deleted 2026-10, BH-5.6)* |
 | 14 | `PumpNDump` | SP Arcade | Shared | Scene-configured |
 | 15 | `MasterExploder` | SP Arcade | Shared | Scene-configured |
 | 16 | `Soar` | SP Arcade | Shared | Scene-configured |
@@ -283,7 +280,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 28 | `MultiplayerFreestyle` | MP | MinigameFreestyleMultiplayer_Gameplay | `MultiplayerFreestyleController` |
 | 29 | `OnlineDuelForTheCell` | MP | MinigameDuelForCellMultiplayer_Gameplay | `OnlineDuelForTheCellController` |
 | 30 | `Multiplayer2v2CoOpVsAI` | MP | ArcadeGameMultiplayer2v2CoOpVsAI | Variant |
-| 32 | `CoOpWildlifeBlitz` | MP | MinigameWildlifeBlitzMultuplayerCoOp | `CoOpWildlifeBlitzMiniGame` |
+| 32 | `CoOpWildlifeBlitz` | MP | *(scene deleted 2026-10, BH-5.7)* | *(controller deleted)* |
 | 33 | `SkimRace` | MP Racing | MinigameSkimRace | `SkimRaceController` |
 | 34 | `Joust` | MP | MinigameJoust_Gameplay | `JoustController` |
 | 35 | `Scurry` | MP | MinigameScurryMultiplayer_Gameplay | `ScurryController` |
@@ -367,7 +364,7 @@ Blitz-mode wildlife collection with dedicated score tracking and turn monitoring
 
 ### SlipNStride (Single-Player)
 
-**Controller**: `SinglePlayerSlipnStrideController`
+**Controller**: *deleted 2026-10 (BH-5.6, `SinglePlayerSlipnStrideController`); the mode has no controller on this branch*
 **Base**: `SinglePlayerMiniGameControllerBase`
 
 Procedurally generated trail-based course with intensity-driven difficulty scaling. Ported from the deprecated `CourseMiniGame`.
@@ -703,7 +700,7 @@ Game scene names are stored in `SO_ArcadeGame.SceneName` assets, not in `SceneNa
 | Freestyle (MP) | `MultiplayerFreestyleController.cs` | `_Scripts/Controller/Arcade/` |
 | Wildlife Blitz (MP) | `CoOpWildlifeBlitzMiniGame.cs` | `_Scripts/Controller/Arcade/` |
 | Wildlife Blitz (SP) | `SinglePlayerWildlifeBlitzController.cs` | `_Scripts/Controller/Arcade/` |
-| SlipNStride | `SinglePlayerSlipnStrideController.cs` | `_Scripts/Controller/Arcade/` |
+| SlipNStride | *(controller deleted 2026-10, BH-5.6)* | — |
 | Countdown timer | `CountdownTimer.cs` | `_Scripts/Controller/Arcade/` |
 
 ### Game Data & Configuration

@@ -65,6 +65,316 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Skim Race AI seats stagger their track-planner re-plans (`perf/performance-optimization`, 2026-10-07)
+
+**What landed** (`Docs/SKIM_RACE_AI.md` §8.0i): `SkimRaceReplanGate` (new), shared by every
+`SkimRacePilot`, lets one AI seat's track-planner re-plan claim a frame. A seat whose frame is taken flies
+its previous plan one frame longer, never two. `SkimRaceAIConfigSO.TrackMpcStaggerSeats` (on; written into
+all four policy assets by `author_skimrace_ai_config.py`) switches it. Only the I2 policy flies the track
+planner.
+
+**Verified without the editor:** the four new `SkimRaceAITests` pass on .NET against the Unity shim
+(three mutations each fail one); simulator A/B over 400 races per arm shows no detectable change to
+racing, and on Mono AI frame cost p90/p99 falls ~38%; the Froglet Engine's live compile builds; the
+policy generator's `--check` passes. /verify-unity was not available.
+
+**Verify in editor:**
+1. The project compiles; Test Runner > EditMode: `SkimRaceAITests` pass (four new ones).
+2. Skim Race I2 with 2 AI races as before: no new orbits, strikes or stalls.
+3. `diag S_SkimRace_I2 15`: `SkimRace.Driver.TrackMpc` is present in roughly TWICE the share of frames
+   it was (~70% instead of ~35%) at about HALF its p95, and `SkimRace.Pilot.Decide` p95 drops from
+   ~11 ms. A `prof` spike frame should never show `TrackMpc` with 2 calls.
+
+### 🔴 `prof` flags jobs that ran without Burst; `diag` records Code Optimization (`perf/performance-optimization`, 2026-10-07)
+
+**What landed** (`Docs/SKIM_RACE_AI.md` §8.0h): `ProfilerCapture` reports main-thread time spent in
+`ExecuteJobFunction.Invoke` (a C# job running as managed code) as `managedJobMs` / `managedJobs`, a
+note, a console-line flag above 0.1 ms a frame, and a section in the .txt; `RunEnvironment` gains
+`codeOptimization` (`CompilationPipeline.codeOptimization` in the Editor, "Player" in a build);
+`diag` times `ShellContact.Query` by default.
+
+**Verified without the editor:** `ProfilerCaptureTests` 42/42 on .NET with `UNITY_EDITOR` defined,
+including two new tests; two mutations of the detector each fail them. The Froglet Engine's live
+compile (`DEVELOPMENT_BUILD`) builds. The `UNITY_EDITOR` branch of `RunEnvironment.Capture` (the
+`UnityEditor.Compilation` call) is compiled only by the editor. /verify-unity was not available.
+
+**Verify in editor:**
+1. The project compiles; Test Runner > EditMode: `ProfilerCaptureTests` pass.
+2. Right after a script change, enter Play mode at once and run `prof`: the console line carries
+   `[JOBS RAN WITHOUT BURST ...]` and the JSON lists `ShellContactQueryJob` / `LOD.Sweep`. A minute later,
+   another `prof` does not.
+3. `diag`: the .txt's environment line reads `code Debug` or `code Release`, matching the bug icon.
+
+### 🔴 Integration: multiplayer SDK bump + Skim Race AI + perf + Bug Hunt on one branch (`Ys-bleeding-edge`, 2026-10-06)
+
+**What landed.** `Ys-bleeding-edge` now carries, in merge commits and in this order: `bleeding-edge`
+0c48d08f5 (PRs #964-#969), `claude/confident-pascal-w76l2o` 21f74d8ee (which already contained
+`claude/bold-fermi-54nlts` 059450b16 and `Bug_Hunt` a334af21c), then the two branches' later tips,
+`Bug_Hunt` a88ad646a and `claude/bold-fermi-54nlts` 10e8c8c48. Six conflicts were resolved by hand:
+the QA backlog header, the Tollway intensity-4 cell config (bleeding-edge's content regenerated with
+BH-5.2's quoting), the dogfight generator's import, `SkimRacePilot.cs`'s profiler markers (both
+branches added them; the duplicates were dropped), the simulator `run.sh`, and this file's entries.
+Two fixes of its own: `check_generated_assets.py` recognises package scripts, and the stale
+`BasePrice` key is gone from all 71 SO_Captain assets (64 shipped, 7 under `_SO_Assets/_TEMP`).
+
+**Proven without the editor.** `unity_refcompile`: 0 project errors in 95 assemblies, with Netcode
+2.13.3, Transport 2.7.4, Multiplayer Services 2.3.3, Friends 1.3.0 compiled from source, so every
+call site of the SDK bump compiled against the real new API. All 27 `Tools/Build/check_*.py` gates
+and all 25 `author_*_assets.py --check` pass. The Skim Race simulator gives byte-identical races
+(`eval 1 4`, solo and `ph.Seats=2 ph.Team=1`) on this tree, on the AI branch and on the perf branch.
+
+**Verify in editor** — the per-branch entries below and the `QA-NET-*` items in `Docs/QA/QA_BACKLOG.md`
+hold the detailed steps; this entry is the gate they all share:
+- [ ] Project opens on 6000.3.17f1 with **zero red errors**; about 20 yellow `RequireOwnership` /
+      `InScenePlaced` deprecation warnings are expected (QA-NET-SDK-UPGRADE). Any red error naming
+      `CurrentPlayer` means the MPPM 2.0 engine module is missing: revert that one manifest line to 1.6.3.
+- [ ] Two MPPM instances reach the same party and the arcade panel shows the party UI on BOTH. If one
+      shows the offline notice at boot, that is B24 (`Docs/PartySystem/BUGS.md`): read the console for a
+      429 and see whether the new retry now survives it.
+- [ ] Skim Race, Hard, you vs a 2-AI team: the two AI fly DIFFERENT crystals from the first pickup
+      (team plan), and the Profiler shows `SkimRace.Pilot.*` with no per-frame GC allocation from the pilot.
+- [ ] A build from this branch refuses to pair with a `bleeding-edge` build (`NetworkConfig mismatch`,
+      protocol 9): intended.
+- [ ] The Bug Hunt playtest list in `Docs/BUG_HUNT_HANDOFF_2026-09.md` §0.
+
+### 🟡 Skim Race editor pass: no-alloc steering, float planner loops, skim-beam pool (`claude/bold-fermi-54nlts`, 2026-10-06)
+
+**What landed** (`Docs/SKIM_RACE_AI.md` §8.0f): `MathfNoAlloc` replaces the 7 three-value
+`Mathf.Min/Max` calls (new gate `check_mathf_params_alloc.py`); the planner's inner loops in floats
+(`SkimRaceCourse`, `SkimRaceShell`, `SkimRaceObstacle.LocalFrame`); `FillObstacles` reads its
+per-frame inputs once (`SelfTrailContactConfigSO.HullContactFilter`) and gains `.Query` / `.Pack`
+child markers; `SkimFxRunner` recycles skim beams (`SkimFxPool`); `PrismStateManager` /
+`PrismOctahedronShield` `Awake` use `TryGetComponent`.
+
+**Verified without the editor:** simulator race output byte-identical on .NET and Mono;
+`SkimRaceCourseQueryTests` (5) pass on both; the Froglet Engine's live compile of runtime
+`Assets/_Scripts` builds with 0 errors and its suites pass (1569 + 352); offline gates pass.
+
+**Confirmed in the editor 2026-10-07** (`perf/performance-optimization` `df25d942f`,
+`Docs/SKIM_RACE_AI.md` §8.0h): step 1 - all five tests green (Code Optimization mode not recorded);
+step 5 - `Decide` allocates nothing, `.Query` / `.Pack` appear, Skim Race I2 went 35 -> 55 fps.
+Steps 2-4 not yet reported.
+
+**Verify in editor:**
+1. The project compiles; Test Runner > EditMode: `SkimRaceCourseQueryTests` (5) pass - in BOTH
+   Code Optimization modes (the bug icon, bottom-right: Debug, then Release). The first editor run
+   failed 3 of 5 because the editor computes floats in double precision; fixed in `81df54ed0`
+   (`Docs/SKIM_RACE_AI.md` §8.0g) and passing off-editor in six runtime configurations, but not yet
+   seen green in the editor.
+2. Skim Race I2, 2 AI: the AI races as before (no new strikes or orbits).
+3. Skim along a trail and along the track: the green skim beams appear, stretch to the ship and
+   vanish as before - no beam left frozen in place, none appearing at the world origin, none
+   carrying old particles from a previous contact.
+4. Leave a race for the menu and start another: beams still appear (the pool survives scenes).
+5. F7 > `diag S_SkimRace_I2 15` and `prof S_SkimRace_I2`: `SkimRace.Pilot.Decide` shows ~0 GC.Alloc
+   (was 840 a frame), and `SkimRace.Pilot.FillObstacles.Query` / `.Pack` appear under the pilot.
+
+### 🔴 Skim Race AI retuned across frame rates (`claude/confident-pascal-w76l2o`, 2026-10-06)
+
+**What landed.** The I1, I2 and I4 AI tuning files and the general policy were retuned with the races spread
+over 16/28/50 ms frames (62/36/20 fps) and the game's 0.04 s contact step (`skimrace-v5-i1`, `skimrace-v3-i2`,
+`skimrace-v2-i4`, `skimrace-v3-general`), because the previous files were tuned at one frame rate and raced
+4-21% slower at the others (`Docs/SKIM_RACE_AI.md` §14). Simulator, 2 AI on Hard, 20 races per cell at 120 / 62 /
+36 / 20 / 12 fps: level at 36-62 fps, better at 120 and 12 fps, I3 and I4 better at every frame rate (§14.5).
+The simulator gained `dts=` (races spread over frame times) and `ph.PhysicsStep` (contacts on the fixed step).
+The planner stagger this branch first shipped (a fixed grid with lane phase) was retired at the merge with
+`perf/performance-optimization` in favour of its `SkimRaceReplanGate` (the entry above), which also holds at
+25 fps and below; the retuned policies were re-raced under the gate (§14.5). Out of editor: real-Unity-reference
+compile 0 errors in project code; gates green.
+
+**Verify in editor**
+- [ ] Compiles; the Skim Race tests pass (`SkimRaceAITests` including the four gate tests,
+      `SkimRaceHandicapTests`, `SkimRaceTrackFingerprintTests`, `SkimRaceTeamAssignmentTests`, `SkimRaceCourseQueryTests`).
+- [ ] **Code Optimization = Release** (the bug icon, bottom right) for any timing; note which one it was.
+- [ ] Race the AI on Hard at I1, I2, I3 and I4 (you alone + 2 AI on separate teams), a few races each; the
+      recorder writes `BenchmarkResults/SkimRaceAI/manual_I<n>_*.jsonl` with each race's `frameMs`. Report the AI
+      winner times WITH the frame time - a time without its frame rate cannot be compared with the simulator tables.
+- [ ] Nothing visibly odd in how the AI flies at I1 (the retune moved 23 numbers; the simulator saw no new
+      failure mode, 40/40 at 120 fps).
+- [ ] Optional, the real user test: you + a friend vs a 2-AI team on Hard (Add AI twice on one tile).
+
+### 🔴 Skim Race AI teammates split the crystals (`claude/confident-pascal-w76l2o`, 2026-10-05)
+
+**What landed.** When two or more AI fly for one Skim Race team, `SkimRaceTeamPlan` gives each a DIFFERENT
+crystal: one plan per team per frame (`SkimRaceTeamAssignment`, least total distance, kept until another plan
+is 15% cheaper), read by every AI on that team. AI only: a human teammate is never planned for. A team with one
+AI gets no plan, so solo races fly exactly as before. Every difficulty (the user's call); Easy and Medium keep
+their mistakes. Before this, two AI on a team both chased the nearest crystal: in the simulator that team was
+slower than ONE AI alone on I1 and I2. With the plan it is 28-51% faster than before
+(`Docs/SKIM_RACE_AI.md` §13). Proven outside Unity: the simulator runs the same `SkimRaceTeamAssignment`
+(identical races to the experiment); `SkimRaceTeamAssignmentTests` run offline (8/8, three deliberate breaks
+each caught); real-Unity-reference compile: player 0 errors in project code; editor 0 errors in changed files.
+
+**Verify in editor**
+- [ ] Compiles; `SkimRaceTeamAssignmentTests` pass (and `SkimRaceAITests`, `SkimRaceHandicapTests`,
+      `SkimRaceTrackFingerprintTests` still do).
+- [ ] **Two AI on one team.** Skim Race, Hard, any intensity. In the launch panel remove the placed AI (✕ on
+      their chips), arm **Add AI** and tap the same other-team tile (e.g. Ruby) twice: you alone vs a 2-AI team.
+      From the first crystal on, the two AI fly at DIFFERENT crystals: no "both chase one, one swings back".
+      Their team's count climbs about twice as fast as one AI's. The race records itself
+      (`BenchmarkResults/SkimRaceAI/manual_I<n>_*.jsonl`); the simulator's 2-AI team on I1 Hard finishes in about
+      36.5 s.
+- [ ] **A lone AI is unchanged.** You + one AI on separate teams: the AI flies as before.
+- [ ] **An AI on YOUR team never waits for you.** Place one AI on your own tile and idle: it keeps collecting at
+      its normal pace (it flies the nearest crystal and takes yours too).
+- [ ] Profiler (as in the Profiler-timers entry below): with two AI on one team, `SkimRace.Pilot.Sense` stays
+      small - the plan is built once a frame per team.
+- [ ] **The real test (the user's plan):** you and a friend vs a 2-AI team on Hard (set up as above, both AI
+      on one team). Note who wins and both teams' times; the AI's next speed step is decided from that.
+
+### 🔴 Network protocol version 8 -> 9 (`claude/confident-pascal-w76l2o`, 2026-10-05)
+
+**What landed.** `NetworkConfig.ProtocolVersion` in `Assets/_Prefabs/CORE/NetworkManager.prefab` went from
+8 to 9, because `LobbySnapshot` gained `AIDifficulty` (the lobby AI difficulty row) and a build without
+that field reads a host's lobby bytes out of step: a party invite then "does not get you into the lobby",
+silently. With the bump Netcode refuses a mismatched build at the connection request. The rule for every
+future wire change: `Docs/claude/MULTIPLAYER_AND_SOCIAL.md` (Multiplayer / Netcode).
+
+**Compiled without the editor (the whole branch, this and the entries below):** against real Unity
+references with `Tools/Build/unity_refcompile` - player config: 0 errors in project code (91 assemblies;
+the only unverifiable files are those using the unfetchable services packages, none of them on this
+branch's lines); editor config: 0 errors in the 14 changed Editor-folder files (this branch's tests and the
+benchmark window). The Froglet Engine's live compile of the runtime scripts: 0 errors.
+
+**Verify in editor (two players)**
+- [ ] Both on THIS branch, the same commit: invite, accept - the guest joins the host's party, and a lobby the
+      host opens (any arcade card) opens on the guest. Skim Race: the guest's AI difficulty row shows the host's pick.
+- [ ] One player on this branch, the other on a build WITHOUT the bump (e.g. `bleeding-edge`): the join is
+      refused at once and the HOST's console shows `NetworkConfig mismatch`; the guest falls back to its own
+      lobby without hanging.
+
+### 🔴 Skim Race AI Profiler timers - read the AI's real per-frame cost (`claude/confident-pascal-w76l2o`, 2026-10-05)
+
+**What landed.** `ProfilerMarker`s on the Skim Race pilot - `SkimRace.Pilot.Update` (the whole pilot),
+`.Sense`, `.FillObstacles`, `.Decide` - and on the parts of its thinking (`SkimRace.Driver.*`;
+`SkimRace.Driver.TrackMpc` only on the frames intensity 2's planner re-plans). `.Decide` and `.FillObstacles`
+are also `diag`'s default markers (the `claude/bold-fermi-54nlts` entry below). No behaviour change: every
+simulator race is byte-identical with and without them. The simulator's numbers are in
+`Docs/SKIM_RACE_AI.md` §12; this is the in-game reading the simulator cannot give (the editor runs C# on Mono,
+a build on IL2CPP). Simulator, intensity 2, two AI, merged code: 0.34 ms in a typical
+frame, 1.93 / 2.95 ms in the worst 10% / 1% (the planner's re-plan frames).
+
+**Verify in editor (about 5 minutes)**
+- [ ] Compiles.
+- [ ] First check the bug icon at the bottom right of the editor: **Release** code optimization gives
+      representative numbers (Debug runs all C# much slower and would overstate the AI's cost).
+- [ ] Window > Analysis > Profiler (Ctrl+7), CPU Usage module, recording on. Play Skim Race at
+      **intensity 2** with **two AI**, Hard, and let it race for 20-30 seconds.
+- [ ] Click a frame in the CPU chart, switch the bottom pane to **Hierarchy**, type `SkimRace` in its search
+      box. Note the **Total ms** of `SkimRace.Pilot.Update` (its Calls column should read 2 - one per AI;
+      Unity's own `SkimRacePilot.Update() [Invoke]` sample sits just above it and reads about the same).
+- [ ] Click through 5-10 frames: on some, `SkimRace.Driver.TrackMpc` appears (the planner re-plans 20 times
+      a second, both AIs on the same frames). Note `SkimRace.Pilot.Update` on a frame WITH it and on one
+      WITHOUT it - those two numbers are the result.
+- [ ] Optional: the same on intensity 1 (no planner - expect a much smaller number).
+
+### 🔴 Skim Race AI tuning files know their map (`claude/confident-pascal-w76l2o`, 2026-10-05)
+
+**What landed.** Each per-intensity AI tuning file records the fingerprint of the map it was tuned on
+(`SkimRaceAIConfigSO.TrackFingerprint`; `SkimRaceTrackFingerprint`). `SkimRaceAIDeployment.PolicyFor` reads
+the live map (`SkimRaceCourseSource.TryFingerprintFromScene`, through new read-only accessors on
+`SpawnableWaypointTrack`, `CrystalCollisionTurnMonitor` and `CrystalManager`) and flies the general policy,
+with ONE console warning per race, when they differ. The 1..4 intensity clamp is gone: a new intensity flies
+the general policy. Proven outside Unity: the game's C# and the Python script agree on every shipped track and
+on edited ones; the deployment's choice and warn-once rule ran against the real scene data and shipped assets
+in a stub harness (with negative controls). Design: `Docs/SKIM_RACE_AI.md` §11.
+
+**Verify in editor**
+- [ ] Compiles; `SkimRaceTrackFingerprintTests` pass (and `SkimRaceAITests` / `SkimRaceHandicapTests` still do).
+- [ ] Skim Race at intensity 2 with AI seats: NO `[SkimRaceAI] ... tuned on a different map` warning, and the
+      verbose `[SkimRaceAI]` line (AITraining channel) names `skimrace-v2-i2`.
+- [ ] Move one intensity-2 waypoint of the `SpawnableWaypointTrack` in `MinigameSkimRace` by 10 units (do NOT
+      save) and race intensity 2 with two AI seats: exactly one warning naming `SkimRaceAIConfig_I2` and
+      `python3 Tools/Build/skimrace_retune.py 2`, and the verbose line names `skimrace-v2-general`.
+- [ ] Crystal spawning and the lap count are unchanged in Skim Race and in another `CrystalManager` mode
+      (the anchor-set lookup was folded into a shared helper; same clamp, same set).
+
+### 🔴 Easy / Medium Skim Race AI make deliberate mistakes (`claude/confident-pascal-w76l2o`, 2026-10-05)
+
+**What landed.** `SkimRaceHandicap` (slow reaction + misjudged crystal, per crystal, random every race)
+installed by `SkimRaceAIDeployment` from `Resources/SkimRaceDifficulty.asset` for Easy and Medium; Hard
+has none. Proven in the offline simulator (Hard byte-identical to before; tests compiled and run outside
+Unity). Design: `Docs/SKIM_RACE_AI.md` §10.
+
+**Verify in editor**
+- [ ] Compiles; `SkimRaceHandicapTests` pass (including `Difficulty_ShippedAssetLoadsFromResources`).
+- [ ] Skim Race on Easy with one AI: the verbose `[SkimRaceAI]` line (AITraining channel) names Easy with its
+      reaction and mistake chance; the AI visibly turns in late and now and then flies over a crystal and comes
+      back for it. On Hard it flies exactly as before.
+- [ ] `FrogletTools > AI > Skim Race AI Benchmark` has an AI difficulty field (default Hard); a run's records
+      carry `difficulty` and `mistakes` per AI seat.
+
+### 🔴 AI difficulty picker on the Skim Race launch panel (`claude/confident-pascal-w76l2o`, 2026-10-05)
+
+**What landed.** An Easy / Medium / Hard row under the intensity buttons (Skim Race card only),
+host-only, replicated to guests through `LobbySnapshot.AIDifficulty`, remembered with the host
+terms, and carried to the match as `GameDataSO.RequestedAIDifficulty`. The row's objects were
+written into `ArcadeGameConfigureModal.prefab` as YAML by `Tools/Build/author_ai_difficulty_row.py`
+(`--check` passes); the C# was type-checked against stubs and the pure rules + lobby snapshot
+tests were compiled and RUN outside Unity (31 passing, negative controls failing as expected). No
+editor compile, no play mode. Design: `Docs/ArcadeLaunch/ARCHITECTURE.md` §3.3.
+
+**Verify in editor**
+- [ ] The project compiles; `AIDifficultyRulesTests`, `HomeHubPreferenceTests`, `ArcadeLobbySnapshotTests` pass.
+- [ ] Open `ArcadeGameConfigureModal.prefab`: `ConfigurationDetailView/AIDifficulty` exists (inactive), its
+      `AIDifficultyPicker` shows three options wired to Easy/Medium/Hard, and `MinigameLaunchPanel` ->
+      `Ai Difficulty Picker` points at it. No "Missing" components.
+- [ ] Open the Skim Race card: the row shows under the intensity row with MEDIUM lit (first time), EASY under 1,
+      MEDIUM under 2, HARD under 3; the controls block starts just below the row. Open any other card: no row,
+      the controls block is back at its full height.
+- [ ] Press each button: the lit plate moves, the click sound plays. Gamepad: D-pad down from intensity reaches
+      the row on Skim Race (left/right steps Easy..Hard) and skips it on other cards.
+- [ ] Launch Skim Race on Hard with an AI seat: the verbose `[SkimRaceAI]` line (AITraining channel) reads
+      `..., Hard)`. Re-open the card: Hard is still lit.
+- [ ] Party of two: the guest sees the host's pick, its row is greyed, and it follows a change live.
+
+---
+
+### 🔴 Skim Race pilot cost, PrismTimerManager list pool, diag markers (`claude/bold-fermi-54nlts`, 2026-10-05)
+
+**What landed:**
+- The Skim Race AI pilot's per-frame planning cost, halved with identical decisions: a hash-grid
+  broadphase for the laid-mass guard (`SkimRaceDriver.BuildObstacleGrid`), a nearest-first,
+  box-bounded `SkimRaceCourse.ShellClearance`, and precomputed segment vectors in
+  `SkimRaceCourse.Project` (`Docs/SKIM_RACE_AI.md` §8.0e).
+- `SkimRace.Pilot.Decide` and `SkimRace.Pilot.FillObstacles` profiler markers, timed by `diag` by
+  default (`MarkerBudget.DefaultMarkers`).
+- `PrismTimerManager` recycles its per-owner lists (`Docs/BugHunt/FIX_LOG.md`, "BH-4.7 follow-up 2").
+- New EditMode tests: `SkimRaceCourseQueryTests` (3).
+
+**Verified without the editor:** the offline simulator's race output is byte-identical to the
+previous code (I1/I2/I4 x 6 seeds and I2/I4 x 20 seeds, 3 AI seats); `SkimRaceCourseQueryTests`
+pass in .NET against the simulator's Unity shim and fail on three deliberate breaks; the Froglet
+Engine's live compile of runtime `Assets/_Scripts` builds with 0 errors and its suites pass.
+
+**Verify in editor:**
+1. The project compiles.
+2. Test Runner > EditMode: `SkimRaceCourseQueryTests`, `SkimRaceShellTests` and `SkimRaceAITests`
+   pass.
+3. Play Skim Race at I2 with 2 AI seats; the AI finishes the course as before (no new hull strikes
+   or orbits).
+4. During that race, F7 > console: `diag S_SkimRace_I2 15`. The report lists
+   `SkimRace.Pilot.Decide` and `SkimRace.Pilot.FillObstacles` with `found: true` and non-zero ms.
+5. Play any arcade mode with prisms for a minute and return to the menu: no `PrismTimerManager`
+   errors or exceptions in the console.
+
+---
+
+### 🔴 PrismTimerManager compile fix (BH-4.7 follow-up) (`Bug_Hunt`, 2026-10-05)
+
+**What landed:** `PrismTimerManager.OnDestroy` cleared `scheduledActions`, a field BH-4.7 had
+replaced with `scheduledByOwner` + `scheduledActionCount`, so `Bug_Hunt` did not compile. It now
+clears `scheduledByOwner` and `ownerScratch` and zeroes `scheduledActionCount`
+(`Docs/BugHunt/FIX_LOG.md`, "BH-4.7 follow-up").
+
+**Verified without the editor:** the Froglet Engine's live compile of the runtime
+`Assets/_Scripts` (`dotnet build Port/src/CosmicShore.Player`) went from 1 error to 0.
+
+**Verify in editor:**
+1. The project compiles: the console shows no `CS0103` for `PrismTimerManager.cs`.
+2. Play any arcade mode with prisms, then return to the menu (this unloads the scene and destroys
+   the manager): no `PrismTimerManager` errors or exceptions in the console.
+
 ### 🔴 Platform-agnostic fixes: boost event quiet at rest, skim-tick rate limit, Squirrel beam retired (`claude/serene-edison-lfv24f`, 2026-10-06)
 
 Step 6 of `Docs/PLATFORM_UNIFICATION.md` (§3.7). These change EVERY platform, Windows included. No
@@ -310,219 +620,6 @@ negative-controlled with CS1002 / CS0102 / CS0111), the repo's C# gates, and
 
 **First-pass tuning:** `touchNoseResponse` (prefab, per hull) — raise if the nose still trails the
 thumb, lower toward 1.5 if it feels twitchy. Touch curve `Ease` 75/25 (unchanged on bleeding-edge).
-
-### 🔴 Skim Race AI: planner stagger + retune across frame rates (`claude/confident-pascal-w76l2o`, 2026-10-06)
-
-**What landed.** (1) `SkimRaceDriver.TrackMpc` (intensity 2's planner) re-plans on a fixed grid of 1/TrackMpcHz
-with odd lanes offset by half a period, so two AI re-plan on different frames at 60+ fps: in an unoptimized
-build (the editor's Debug code optimization) the worst-10% frame for both AIs' thinking fell from 10.1 to
-6.1 ms at 16 ms frames; no help at 36 fps and below (`Docs/SKIM_RACE_AI.md` §14.4). (2) The I1, I2 and I4
-AI tuning files were retuned across 16/28/50 ms frames with the game's 0.04 s contact step
-(`skimrace-v5-i1`, `skimrace-v3-i2`, `skimrace-v2-i4`), and so was the general policy that intensity 3
-flies (`skimrace-v3-general`). Simulator, 2 AI on Hard, 20 races per cell: level at 36-62 fps, better at 120
-and 12 fps, I3 and I4 better at every frame rate (§14.5).
-(3) The simulator gained `dts=` (races spread over frame times) and `ph.PhysicsStep` (contacts on the fixed
-step). Out of editor: real-Unity-reference compile 0 errors in project code; gates green.
-
-**Verify in editor**
-- [ ] Compiles; the Skim Race tests still pass (`SkimRaceAITests`, `SkimRaceHandicapTests`,
-      `SkimRaceTrackFingerprintTests`, `SkimRaceTeamAssignmentTests`).
-- [ ] **Code Optimization = Release** (the bug icon, bottom right) for every timing below; note which one it was.
-- [ ] Profiler (CPU, Hierarchy, search `SkimRace`), Skim Race **intensity 2**, **two AI**, Hard, Game view
-      Stats showing 60+ fps: `SkimRace.Driver.TrackMpc` now has Calls = **1** on the frames it appears (it was 2),
-      and it appears on about twice as many frames. Note `SkimRace.Pilot.Update` Total ms on a frame with it.
-- [ ] Race the AI on Hard at I1, I2, I3 and I4 as before (you alone + 2 AI on separate teams), a few races each;
-      the recorder writes `BenchmarkResults/SkimRaceAI/manual_I<n>_*.jsonl` with each race's `frameMs`. Report
-      the AI winner times and the frame time together - that pair is the result; a time without its frame rate
-      cannot be compared with the simulator tables.
-- [ ] Nothing visibly odd in how the AI flies at I1 (the retune moved 23 numbers; the simulator saw no new
-      failure mode, 40/40 at 120 fps).
-- [ ] Optional, the real user test: you + a friend vs a 2-AI team on Hard (Add AI twice on one tile).
-
-### 🔴 Skim Race AI teammates split the crystals (`claude/confident-pascal-w76l2o`, 2026-10-05)
-
-**What landed.** When two or more AI fly for one Skim Race team, `SkimRaceTeamPlan` gives each a DIFFERENT
-crystal: one plan per team per frame (`SkimRaceTeamAssignment`, least total distance, kept until another plan
-is 15% cheaper), read by every AI on that team. AI only: a human teammate is never planned for. A team with one
-AI gets no plan, so solo races fly exactly as before. Every difficulty (the user's call); Easy and Medium keep
-their mistakes. Before this, two AI on a team both chased the nearest crystal: in the simulator that team was
-slower than ONE AI alone on I1 and I2. With the plan it is 28-51% faster than before
-(`Docs/SKIM_RACE_AI.md` §13). Proven outside Unity: the simulator runs the same `SkimRaceTeamAssignment`
-(identical races to the experiment); `SkimRaceTeamAssignmentTests` run offline (8/8, three deliberate breaks
-each caught); real-Unity-reference compile: player 0 errors in project code; editor 0 errors in changed files.
-
-**Verify in editor**
-- [ ] Compiles; `SkimRaceTeamAssignmentTests` pass (and `SkimRaceAITests`, `SkimRaceHandicapTests`,
-      `SkimRaceTrackFingerprintTests` still do).
-- [ ] **Two AI on one team.** Skim Race, Hard, any intensity. In the launch panel remove the placed AI (✕ on
-      their chips), arm **Add AI** and tap the same other-team tile (e.g. Ruby) twice: you alone vs a 2-AI team.
-      From the first crystal on, the two AI fly at DIFFERENT crystals: no "both chase one, one swings back".
-      Their team's count climbs about twice as fast as one AI's. The race records itself
-      (`BenchmarkResults/SkimRaceAI/manual_I<n>_*.jsonl`); the simulator's 2-AI team on I1 Hard finishes in about
-      36.5 s.
-- [ ] **A lone AI is unchanged.** You + one AI on separate teams: the AI flies as before.
-- [ ] **An AI on YOUR team never waits for you.** Place one AI on your own tile and idle: it keeps collecting at
-      its normal pace (it flies the nearest crystal and takes yours too).
-- [ ] Profiler (as in the Profiler-timers entry below): with two AI on one team, `SkimRace.Pilot.Sense` stays
-      small - the plan is built once a frame per team.
-- [ ] **The real test (the user's plan):** you and a friend vs a 2-AI team on Hard (set up as above, both AI
-      on one team). Note who wins and both teams' times; the AI's next speed step is decided from that.
-
-### 🔴 Network protocol version 8 -> 9 (`claude/confident-pascal-w76l2o`, 2026-10-05)
-
-**What landed.** `NetworkConfig.ProtocolVersion` in `Assets/_Prefabs/CORE/NetworkManager.prefab` went from
-8 to 9, because `LobbySnapshot` gained `AIDifficulty` (the lobby AI difficulty row) and a build without
-that field reads a host's lobby bytes out of step: a party invite then "does not get you into the lobby",
-silently. With the bump Netcode refuses a mismatched build at the connection request. The rule for every
-future wire change: `Docs/claude/MULTIPLAYER_AND_SOCIAL.md` (Multiplayer / Netcode).
-
-**Compiled without the editor (the whole branch, this and the entries below):** against real Unity
-references with `Tools/Build/unity_refcompile` - player config: 0 errors in project code (91 assemblies;
-the only unverifiable files are those using the unfetchable services packages, none of them on this
-branch's lines); editor config: 0 errors in the 14 changed Editor-folder files (this branch's tests and the
-benchmark window). The Froglet Engine's live compile of the runtime scripts: 0 errors.
-
-**Verify in editor (two players)**
-- [ ] Both on THIS branch, the same commit: invite, accept - the guest joins the host's party, and a lobby the
-      host opens (any arcade card) opens on the guest. Skim Race: the guest's AI difficulty row shows the host's pick.
-- [ ] One player on this branch, the other on a build WITHOUT the bump (e.g. `bleeding-edge`): the join is
-      refused at once and the HOST's console shows `NetworkConfig mismatch`; the guest falls back to its own
-      lobby without hanging.
-
-### 🔴 Skim Race AI Profiler timers - read the AI's real per-frame cost (`claude/confident-pascal-w76l2o`, 2026-10-05)
-
-**What landed.** `ProfilerMarker`s on the Skim Race pilot - `SkimRace.Pilot.Update` (the whole pilot),
-`.Sense`, `.FillObstacles`, `.Decide` - and on the parts of its thinking (`SkimRace.Driver.*`;
-`SkimRace.Driver.TrackMpc` only on the frames intensity 2's planner re-plans). `.Decide` and `.FillObstacles`
-are also `diag`'s default markers (the `claude/bold-fermi-54nlts` entry below). No behaviour change: every
-simulator race is byte-identical with and without them. The simulator's numbers are in
-`Docs/SKIM_RACE_AI.md` §12; this is the in-game reading the simulator cannot give (the editor runs C# on Mono,
-a build on IL2CPP). Simulator, intensity 2, two AI, merged code: 0.34 ms in a typical
-frame, 1.93 / 2.95 ms in the worst 10% / 1% (the planner's re-plan frames).
-
-**Verify in editor (about 5 minutes)**
-- [ ] Compiles.
-- [ ] First check the bug icon at the bottom right of the editor: **Release** code optimization gives
-      representative numbers (Debug runs all C# much slower and would overstate the AI's cost).
-- [ ] Window > Analysis > Profiler (Ctrl+7), CPU Usage module, recording on. Play Skim Race at
-      **intensity 2** with **two AI**, Hard, and let it race for 20-30 seconds.
-- [ ] Click a frame in the CPU chart, switch the bottom pane to **Hierarchy**, type `SkimRace` in its search
-      box. Note the **Total ms** of `SkimRace.Pilot.Update` (its Calls column should read 2 - one per AI;
-      Unity's own `SkimRacePilot.Update() [Invoke]` sample sits just above it and reads about the same).
-- [ ] Click through 5-10 frames: on some, `SkimRace.Driver.TrackMpc` appears (the planner re-plans 20 times
-      a second, both AIs on the same frames). Note `SkimRace.Pilot.Update` on a frame WITH it and on one
-      WITHOUT it - those two numbers are the result.
-- [ ] Optional: the same on intensity 1 (no planner - expect a much smaller number).
-
-### 🔴 Skim Race AI tuning files know their map (`claude/confident-pascal-w76l2o`, 2026-10-05)
-
-**What landed.** Each per-intensity AI tuning file records the fingerprint of the map it was tuned on
-(`SkimRaceAIConfigSO.TrackFingerprint`; `SkimRaceTrackFingerprint`). `SkimRaceAIDeployment.PolicyFor` reads
-the live map (`SkimRaceCourseSource.TryFingerprintFromScene`, through new read-only accessors on
-`SpawnableWaypointTrack`, `CrystalCollisionTurnMonitor` and `CrystalManager`) and flies the general policy,
-with ONE console warning per race, when they differ. The 1..4 intensity clamp is gone: a new intensity flies
-the general policy. Proven outside Unity: the game's C# and the Python script agree on every shipped track and
-on edited ones; the deployment's choice and warn-once rule ran against the real scene data and shipped assets
-in a stub harness (with negative controls). Design: `Docs/SKIM_RACE_AI.md` §11.
-
-**Verify in editor**
-- [ ] Compiles; `SkimRaceTrackFingerprintTests` pass (and `SkimRaceAITests` / `SkimRaceHandicapTests` still do).
-- [ ] Skim Race at intensity 2 with AI seats: NO `[SkimRaceAI] ... tuned on a different map` warning, and the
-      verbose `[SkimRaceAI]` line (AITraining channel) names `skimrace-v2-i2`.
-- [ ] Move one intensity-2 waypoint of the `SpawnableWaypointTrack` in `MinigameSkimRace` by 10 units (do NOT
-      save) and race intensity 2 with two AI seats: exactly one warning naming `SkimRaceAIConfig_I2` and
-      `python3 Tools/Build/skimrace_retune.py 2`, and the verbose line names `skimrace-v2-general`.
-- [ ] Crystal spawning and the lap count are unchanged in Skim Race and in another `CrystalManager` mode
-      (the anchor-set lookup was folded into a shared helper; same clamp, same set).
-
-### 🔴 Easy / Medium Skim Race AI make deliberate mistakes (`claude/confident-pascal-w76l2o`, 2026-10-05)
-
-**What landed.** `SkimRaceHandicap` (slow reaction + misjudged crystal, per crystal, random every race)
-installed by `SkimRaceAIDeployment` from `Resources/SkimRaceDifficulty.asset` for Easy and Medium; Hard
-has none. Proven in the offline simulator (Hard byte-identical to before; tests compiled and run outside
-Unity). Design: `Docs/SKIM_RACE_AI.md` §10.
-
-**Verify in editor**
-- [ ] Compiles; `SkimRaceHandicapTests` pass (including `Difficulty_ShippedAssetLoadsFromResources`).
-- [ ] Skim Race on Easy with one AI: the verbose `[SkimRaceAI]` line (AITraining channel) names Easy with its
-      reaction and mistake chance; the AI visibly turns in late and now and then flies over a crystal and comes
-      back for it. On Hard it flies exactly as before.
-- [ ] `FrogletTools > AI > Skim Race AI Benchmark` has an AI difficulty field (default Hard); a run's records
-      carry `difficulty` and `mistakes` per AI seat.
-
-### 🔴 AI difficulty picker on the Skim Race launch panel (`claude/confident-pascal-w76l2o`, 2026-10-05)
-
-**What landed.** An Easy / Medium / Hard row under the intensity buttons (Skim Race card only),
-host-only, replicated to guests through `LobbySnapshot.AIDifficulty`, remembered with the host
-terms, and carried to the match as `GameDataSO.RequestedAIDifficulty`. The row's objects were
-written into `ArcadeGameConfigureModal.prefab` as YAML by `Tools/Build/author_ai_difficulty_row.py`
-(`--check` passes); the C# was type-checked against stubs and the pure rules + lobby snapshot
-tests were compiled and RUN outside Unity (31 passing, negative controls failing as expected). No
-editor compile, no play mode. Design: `Docs/ArcadeLaunch/ARCHITECTURE.md` §3.3.
-
-**Verify in editor**
-- [ ] The project compiles; `AIDifficultyRulesTests`, `HomeHubPreferenceTests`, `ArcadeLobbySnapshotTests` pass.
-- [ ] Open `ArcadeGameConfigureModal.prefab`: `ConfigurationDetailView/AIDifficulty` exists (inactive), its
-      `AIDifficultyPicker` shows three options wired to Easy/Medium/Hard, and `MinigameLaunchPanel` ->
-      `Ai Difficulty Picker` points at it. No "Missing" components.
-- [ ] Open the Skim Race card: the row shows under the intensity row with MEDIUM lit (first time), EASY under 1,
-      MEDIUM under 2, HARD under 3; the controls block starts just below the row. Open any other card: no row,
-      the controls block is back at its full height.
-- [ ] Press each button: the lit plate moves, the click sound plays. Gamepad: D-pad down from intensity reaches
-      the row on Skim Race (left/right steps Easy..Hard) and skips it on other cards.
-- [ ] Launch Skim Race on Hard with an AI seat: the verbose `[SkimRaceAI]` line (AITraining channel) reads
-      `..., Hard)`. Re-open the card: Hard is still lit.
-- [ ] Party of two: the guest sees the host's pick, its row is greyed, and it follows a change live.
-
----
-
-### 🔴 Skim Race pilot cost, PrismTimerManager list pool, diag markers (`claude/bold-fermi-54nlts`, 2026-10-05)
-
-**What landed:**
-- The Skim Race AI pilot's per-frame planning cost, halved with identical decisions: a hash-grid
-  broadphase for the laid-mass guard (`SkimRaceDriver.BuildObstacleGrid`), a nearest-first,
-  box-bounded `SkimRaceCourse.ShellClearance`, and precomputed segment vectors in
-  `SkimRaceCourse.Project` (`Docs/SKIM_RACE_AI.md` §8.0e).
-- `SkimRace.Pilot.Decide` and `SkimRace.Pilot.FillObstacles` profiler markers, timed by `diag` by
-  default (`MarkerBudget.DefaultMarkers`).
-- `PrismTimerManager` recycles its per-owner lists (`Docs/BugHunt/FIX_LOG.md`, "BH-4.7 follow-up 2").
-- New EditMode tests: `SkimRaceCourseQueryTests` (3).
-
-**Verified without the editor:** the offline simulator's race output is byte-identical to the
-previous code (I1/I2/I4 x 6 seeds and I2/I4 x 20 seeds, 3 AI seats); `SkimRaceCourseQueryTests`
-pass in .NET against the simulator's Unity shim and fail on three deliberate breaks; the Froglet
-Engine's live compile of runtime `Assets/_Scripts` builds with 0 errors and its suites pass.
-
-**Verify in editor:**
-1. The project compiles.
-2. Test Runner > EditMode: `SkimRaceCourseQueryTests`, `SkimRaceShellTests` and `SkimRaceAITests`
-   pass.
-3. Play Skim Race at I2 with 2 AI seats; the AI finishes the course as before (no new hull strikes
-   or orbits).
-4. During that race, F7 > console: `diag S_SkimRace_I2 15`. The report lists
-   `SkimRace.Pilot.Decide` and `SkimRace.Pilot.FillObstacles` with `found: true` and non-zero ms.
-5. Play any arcade mode with prisms for a minute and return to the menu: no `PrismTimerManager`
-   errors or exceptions in the console.
-
----
-
-### 🔴 PrismTimerManager compile fix (BH-4.7 follow-up) (`Bug_Hunt`, 2026-10-05)
-
-**What landed:** `PrismTimerManager.OnDestroy` cleared `scheduledActions`, a field BH-4.7 had
-replaced with `scheduledByOwner` + `scheduledActionCount`, so `Bug_Hunt` did not compile. It now
-clears `scheduledByOwner` and `ownerScratch` and zeroes `scheduledActionCount`
-(`Docs/BugHunt/FIX_LOG.md`, "BH-4.7 follow-up").
-
-**Verified without the editor:** the Froglet Engine's live compile of the runtime
-`Assets/_Scripts` (`dotnet build Port/src/CosmicShore.Player`) went from 1 error to 0.
-
-**Verify in editor:**
-1. The project compiles: the console shows no `CS0103` for `PrismTimerManager.cs`.
-2. Play any arcade mode with prisms, then return to the menu (this unloads the scene and destroys
-   the manager): no `PrismTimerManager` errors or exceptions in the console.
-
----
-
 ### 🟢 Icon renderer upgrade + authored lamp art (`claude/single-player-offline-fallback-jksga5`, 2026-08-27)
 
 **Landed and verified.** The icon renderer was rebuilt (analytic 0/1 shape + 4×4 supersampling at

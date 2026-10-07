@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Unity.Profiling;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Gameplay
 {
@@ -69,6 +70,13 @@ namespace CosmicShore.Gameplay
         /// exactly the unhandicapped pilot.
         /// </summary>
         public SkimRaceHandicap Handicap { get; set; }
+
+        /// <summary>
+        /// Shared by every seat so that at most one track-planner re-plan lands in a frame
+        /// (<see cref="SkimRaceAIConfigSO.TrackMpcStaggerSeats"/>). Null = no staggering: each seat
+        /// re-plans on its own clock, as a lone seat always does.
+        /// </summary>
+        public SkimRaceReplanGate ReplanGate { get; set; }
 
         Mode _mode = Mode.Idle;
         float _recoveryUntil;
@@ -370,7 +378,7 @@ namespace CosmicShore.Gameplay
             {
                 Vector3 axis = Vector3.Cross(fwd, desired);
                 if (axis.sqrMagnitude < 1e-8f) axis = up;
-                float lead = Mathf.Min(headingErr * _cfg.LeadGain, headingErr + _cfg.MaxLeadDegrees, 179f);
+                float lead = MathfNoAlloc.Min(headingErr * _cfg.LeadGain, headingErr + _cfg.MaxLeadDegrees, 179f);
                 cmdTarget = Quaternion.AngleAxis(lead, axis.normalized) * fwd;
             }
             cmdErr = Vector3.Angle(cmdFwd, cmdTarget);
@@ -382,7 +390,7 @@ namespace CosmicShore.Gameplay
                 axis.Normalize();
                 float stick = Mathf.Clamp01(cmdErr * _cfg.StickGainPerDegree);
                 float u = Vector3.Dot(axis, up), r = Vector3.Dot(axis, right);
-                float m = Mathf.Max(Mathf.Abs(u), Mathf.Abs(r), 1e-4f);
+                float m = MathfNoAlloc.Max(Mathf.Abs(u), Mathf.Abs(r), 1e-4f);
                 yaw = stick * u / m;
                 pitch = stick * r / m;
             }
@@ -399,7 +407,7 @@ namespace CosmicShore.Gameplay
             axis.Normalize();
             float stick = Mathf.Clamp01(cmdErr * _cfg.StickGainPerDegree);
             float u = Vector3.Dot(axis, up), r = Vector3.Dot(axis, right);
-            float m = Mathf.Max(Mathf.Abs(u), Mathf.Abs(r), 1e-4f);
+            float m = MathfNoAlloc.Max(Mathf.Abs(u), Mathf.Abs(r), 1e-4f);
             yaw = stick * u / m;
             pitch = stick * r / m;
         }
@@ -782,9 +790,14 @@ namespace CosmicShore.Gameplay
         }
 
         // ── Tracking MPC: follow the racing line itself, not a look-ahead point on it ──
-        int _trackSlot;   // the re-plan grid slot last planned in (TrackMpc)
+        float _nextTrack;
         float _trackYaw, _trackPitch;
         bool _trackValid;
+        bool _trackWaited;
+        /// <summary>Track-planner re-plans since <see cref="Reset"/>, and how many were held one frame
+        /// for another seat's (<see cref="ReplanGate"/>).</summary>
+        public int TrackReplans { get; private set; }
+        public int TrackWaits { get; private set; }
 
         /// <summary>
         /// Mean squared distance of a rolled-out path from the racing line (each predicted position
@@ -866,18 +879,12 @@ namespace CosmicShore.Gameplay
         void TrackMpc(in SkimRaceObservation o, SkimRaceCourse course, Vector3 aim, bool lineMode, float now,
             ref float yaw, ref float pitch, float throttle)
         {
-            // Re-plans sit on a fixed grid of 1/TrackMpcHz, odd lanes offset by half a period, so two AI
-            // re-plan on DIFFERENT frames whenever a frame is shorter than half a period: the frame that
-            // carries a planner carries one (section 14.4 - at Debug optimization both together cost the
-            // editor ~11 ms in one frame of ten). A grid, not "now + period": re-seeding from the frame
-            // time let the first frame that happened to carry both lock them in step for the whole race.
-            float period = 1f / Mathf.Max(1f, _cfg.TrackMpcHz);
-            int slot = Mathf.FloorToInt((now - (Lane & 1) * 0.5f * period) / period);
-            if (slot != _trackSlot)
+            if (now >= _nextTrack && !WaitForAnotherSeat())
             {
                 // Timed only when it re-plans (TrackMpcHz), so the Profiler shows the frames it lands on.
                 using var replanScope = s_TrackMpcMarker.Auto();
-                _trackSlot = slot;
+                TrackReplans++;
+                _nextTrack = now + 1f / Mathf.Max(1f, _cfg.TrackMpcHz);
                 course.Project(o.Position, ref _trackHint, out _, out _);
                 float best = TrackCost(o, course, yaw, pitch, throttle, aim, lineMode) * (1f - _cfg.TrackMpcNominalBias);
                 float by = yaw, bp = pitch;
@@ -893,6 +900,24 @@ namespace CosmicShore.Gameplay
             if (_trackValid) { yaw = _trackYaw; pitch = _trackPitch; }
         }
         int _trackHint = -1;
+
+        /// <summary>
+        /// True when another seat has this frame's re-plan and this seat has not already waited. It then
+        /// keeps its previous plan for one frame (<see cref="SkimRaceReplanGate"/>). It waits at most
+        /// once: next frame it re-plans whether or not that frame is free.
+        /// </summary>
+        bool WaitForAnotherSeat()
+        {
+            if (!_cfg.TrackMpcStaggerSeats || ReplanGate == null) return false;
+            if (ReplanGate.TryClaim() || _trackWaited)
+            {
+                _trackWaited = false;
+                return false;
+            }
+            _trackWaited = true;
+            TrackWaits++;
+            return true;
+        }
 
         /// <summary>
         /// The laid-mass guard. Returns true when the commanded stick was replaced because its
@@ -946,7 +971,7 @@ namespace CosmicShore.Gameplay
         // (65536 cells is at least 32k units; a course is a few thousand).
         const float GridSpan = 65536f;
         Vector3[] _obCenter = new Vector3[0];
-        Quaternion[] _obInverse = new Quaternion[0];
+        SkimRaceObstacle.LocalFrame[] _obFrame = new SkimRaceObstacle.LocalFrame[0];
         Vector3[] _obHalf = new Vector3[0];
         float[] _obReach = new float[0];
         int[] _gridNext = new int[0];
@@ -965,7 +990,7 @@ namespace CosmicShore.Gameplay
             {
                 int cap = Mathf.NextPowerOfTwo(n);
                 _obCenter = new Vector3[cap];
-                _obInverse = new Quaternion[cap];
+                _obFrame = new SkimRaceObstacle.LocalFrame[cap];
                 _obHalf = new Vector3[cap];
                 _obReach = new float[cap];
                 _gridNext = new int[cap];
@@ -978,7 +1003,7 @@ namespace CosmicShore.Gameplay
             {
                 var ob = Obstacles[i];
                 _obCenter[i] = ob.Center;
-                _obInverse[i] = Quaternion.Inverse(ob.Rotation);
+                _obFrame[i] = new SkimRaceObstacle.LocalFrame(Quaternion.Inverse(ob.Rotation));
                 _obHalf[i] = ob.Half;
                 // Same expression, same order, as the per-step test it replaces.
                 float reach = ob.Half.magnitude + w + l + _cfg.MassGuardMargin;
@@ -1015,28 +1040,48 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The guard's per-box test, verbatim: the reach cull, then the nearest of the hull centre,
+        /// The guard's per-box test, the same arithmetic as ever: the reach cull, then the nearest of the hull centre,
         /// wingtips, nose and tail to box <paramref name="i"/>. Returns the smaller of that and
         /// <paramref name="minC"/>. The grid walk and the exhaustive scan both call this, so the two
         /// paths cannot disagree about a box.
         /// </summary>
         float BoxClearance(int i, Vector3 pos, Vector3 right, Vector3 fwd, float minC)
         {
+            // In floats, for the editor's Mono JIT (see SkimRaceObstacle.LocalFrame), rounding - an explicit
+            // (float) - every value the Vector3 form rounded: (oc - pos) and its sqrMagnitude for the reach
+            // cull, then for each of pos, pos +- right, pos +- fwd the point itself and its offset from the
+            // centre. The editor's Mono keeps float locals in double registers once it optimizes.
             Vector3 oc = _obCenter[i];
+            float ox = (float)(oc.x - pos.x), oy = (float)(oc.y - pos.y), oz = (float)(oc.z - pos.z);
+            float o2 = (float)(ox * ox + oy * oy + oz * oz);
             float reach = _obReach[i];
-            if ((oc - pos).sqrMagnitude > reach * reach) return minC;
-            Quaternion inv = _obInverse[i];
+            if (o2 > reach * reach) return minC;
+            ref readonly SkimRaceObstacle.LocalFrame f = ref _obFrame[i];
             Vector3 half = _obHalf[i];
-            float c = Mathf.Min(SkimRaceObstacle.Distance(oc, inv, half, pos),
-                Mathf.Min(SkimRaceObstacle.Distance(oc, inv, half, pos + right),
-                          SkimRaceObstacle.Distance(oc, inv, half, pos - right)));
-            c = Mathf.Min(c, Mathf.Min(SkimRaceObstacle.Distance(oc, inv, half, pos + fwd),
-                                       SkimRaceObstacle.Distance(oc, inv, half, pos - fwd)));
+            float rpx = (float)(pos.x + right.x), rpy = (float)(pos.y + right.y), rpz = (float)(pos.z + right.z); // pos + right
+            float rmx = (float)(pos.x - right.x), rmy = (float)(pos.y - right.y), rmz = (float)(pos.z - right.z); // pos - right
+            float fpx = (float)(pos.x + fwd.x), fpy = (float)(pos.y + fwd.y), fpz = (float)(pos.z + fwd.z);       // pos + fwd
+            float fmx = (float)(pos.x - fwd.x), fmy = (float)(pos.y - fwd.y), fmz = (float)(pos.z - fwd.z);       // pos - fwd
+            float c0 = BoxPoint(f, half, oc, pos.x, pos.y, pos.z);
+            float c1 = BoxPoint(f, half, oc, rpx, rpy, rpz);
+            float c2 = BoxPoint(f, half, oc, rmx, rmy, rmz);
+            float c3 = BoxPoint(f, half, oc, fpx, fpy, fpz);
+            float c4 = BoxPoint(f, half, oc, fmx, fmy, fmz);
+            float c = Mathf.Min(c0, Mathf.Min(c1, c2));
+            c = Mathf.Min(c, Mathf.Min(c3, c4));
             return c < minC ? c : minC;
         }
 
         int GridBucket(int x, int y, int z) =>
             (int)(((uint)x * 73856093u) ^ ((uint)y * 19349663u) ^ ((uint)z * 83492791u)) & _gridMask;
+
+        /// <summary>Distance from one hull point (already stored, as <c>pos + right</c> was) to one box; its
+        /// offset from the centre is stored before it is rotated, as <c>p - center</c> was.</summary>
+        static float BoxPoint(in SkimRaceObstacle.LocalFrame f, Vector3 half, Vector3 oc, float px, float py, float pz)
+        {
+            float dx = (float)(px - oc.x), dy = (float)(py - oc.y), dz = (float)(pz - oc.z);
+            return f.Distance(dx, dy, dz, half);
+        }
 
         SkimRacePlanner _planner;
         SkimRacePlanner.Result _plan;
@@ -1226,7 +1271,8 @@ namespace CosmicShore.Gameplay
             _lastCollected = -1;
             _pickupHoldUntil = -1f;
             _nextMpc = 0f; _mpcValid = false; MpcOverrides = 0;
-            _trackSlot = int.MinValue; _trackValid = false; _trackHint = -1;
+            _nextTrack = 0f; _trackValid = false; _trackHint = -1;
+            _trackWaited = false; TrackReplans = 0; TrackWaits = 0;
             _lookDist = 100f;
             _trackerHint = -1;
             _nextLevel = 0f; _levelValid = false; _levelHint = -1; LevelOverrides = 0;

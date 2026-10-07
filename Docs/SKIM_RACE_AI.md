@@ -469,6 +469,184 @@ These are environment results, not AI results (the simulator at 115 ms frames al
 same policy from 53 s to 77 s). **The in-editor matrix for the current code is still owed** - run it
 on an idle machine with the editor focused (§7), 2 launches x 5 races per cell, players 3 and 4.
 
+### 8.0i The AI seats no longer re-plan in the same frame (2026-10-07)
+
+The user's choice from §8.0h's list: stagger the seats. **Mechanism:** `SkimRaceReplanGate`, one per
+process (`SkimRacePilot` shares it across every AI seat), lets ONE track-planner re-plan claim a frame. A
+seat that finds its frame taken flies its previous plan one frame longer and re-plans in the next. It
+never waits twice: next frame it re-plans whether or not that frame is free. Each seat keeps its own
+`TrackMpcHz` clock, so the re-plan rate and the average cost do not change. `TrackMpcStaggerSeats`
+(on by default, in every policy asset) turns it off. Only the I2 policy flies the track planner today.
+
+**Why seats shared frames.** Each seat schedules its next re-plan as `now + 1/Hz`. Once two seats re-plan
+in the same frame, they compute the same next time and stay together. In the simulator, 86-89% of
+re-plan frames had both seats; the editor's `prof` saw about half.
+
+**Cost** (simulator on Mono in double precision, the editor's mode; I2, 2 seats, 18 ms frames ±30%,
+6 races per arm; AI thinking per frame, both seats together):
+
+| | Stagger off | Stagger on |
+|---|---|---|
+| Frames with 2 re-plans | 89% of re-plan frames | 0% |
+| p90 / p99 | 11.0 / 15.0 ms | **6.8 / 9.6 ms** |
+| Median | 0.8 ms | 4.2 ms (the same work, spread over more frames) |
+| Average per seat | 1.89 ms | 1.87 ms |
+| One re-plan | 4.7 ms | 4.7 ms (the editor measured ~4 ms) |
+
+**Racing** (.NET, the shipped I2 policy, 2 seats, same seeds in each arm): no detectable change.
+
+| Frames | Races per arm | Seat time, on - off (paired) | Seats <= 80 s, on / off | Unfinished races, on / off |
+|---|---|---|---|---|
+| 18 ms ±30% (the editor at 55 fps) | 280 | +0.59 s (SE 0.56, t 1.05) | 49.5% / 47.9% | 3 / 2 |
+| 26 ms ±50% (the tuning setting) | 120 | +0.70 s (SE 0.65, t 1.08) | 57.1% / 59.2% | 0 / 1 |
+
+Mann-Whitney on all seat times: z +0.42 and +0.87. The pooled estimate is +0.6 s per ~80 s seat (SE 0.4),
+inside the noise. A seat waited on 4% of its re-plans at 18 ms frames and 9% at 26 ms.
+The unfinished races are the policy's known orbit-and-recover (a slow seat circling a crystal it cannot
+turn into, §6.10). One was traced in full: the seat orbited for 16 s after the other seat had finished, when no
+stagger was active. Both arms have them.
+
+With `TrackMpcStaggerSeats` off, the new code races byte-identically to the previous commit (I2, 12 seeds).
+The I1 policy, which does not fly the track planner, is identical with it on (6 seeds).
+
+Off-editor proof: `SkimRaceAITests` gains four tests (the gate; two seats due together, the second
+waiting one frame; no seat waiting twice; no gate, no change). Three mutations of the wait rule, each
+failing a test. The simulator's eval prints the planner's re-plans, the frames shared and the waits.
+
+### 8.0h The perf branch in the editor: 35 -> 55 fps, and what is left (2026-10-07)
+
+`diag S_SkimRace_I2 15` and one `prof` in a hand-played I2 race with 2 AI seats, same machine and
+settings as §8.0f, on `perf/performance-optimization` `df25d942f` (`Ys-bleeding-edge` plus §8.0e-g).
+All five `SkimRaceCourseQueryTests` pass in the editor (§8.0g's fix, first seen green here).
+
+| What | 10-06 (§8.0f) | 10-07 |
+|---|---|---|
+| Frame avg / p95 / p99 | 28.3 / 39.4 / 43.4 ms (35 fps) | **18.0 / 26.9 / 33.3 ms (55 fps)** |
+| PlayerLoop | 25.3 ms | 15.2 ms |
+| `SkimRace.Pilot.Decide` (2 seats) avg / p50 / p95 / max | 7.20 / 2.5 / 16.1 / 18.5 ms | **3.35** / 0.5 / 11.1 / 24.1 ms |
+| `SkimRace.Pilot.FillObstacles` | 2.12 ms | 0.95 ms |
+| Garbage | 78 KB/frame | 27 KB/frame; `Decide` allocates nothing |
+| Prism entities in the race | 8362 | 5717 |
+| GPU | 6.7 ms | 3.6 ms |
+
+**Not all of the 10 ms is this work.** The two races differ (32% fewer prisms, half the GPU time), and
+systems this work never touched fell too (`Fauna.BodySync` 0.94 -> 0.27 ms, `LightFauna.Tick.PrismScan`
+0.71 -> 0.06). The like-for-like number is the AI's own markers: Decide + FillObstacles 9.3 -> 4.3 ms
+a frame, and FillObstacles scales with the prisms in range, so part of its drop is the smaller race.
+
+**The `prof` was taken while Burst was still compiling.** Three `[BurstCompile]` jobs ran as managed
+code (`ExecuteJobFunction.Invoke` under them; a Burst job's sample is "`<name> (Burst)`"):
+`ShellContact.Query` 1.32 ms a frame against 0.08 ms in all three 10-06 captures of the same,
+unchanged code, `LOD.Sweep` 0.36 vs 0.08, `PrismRender.TransformFlush` 0.15. The Editor compiles
+Burst in the background after a script change or branch switch and runs the managed version until it
+is done. The `diag` ran 43 s earlier and did not time those jobs, so it may carry some of this too.
+`prof` now reports any managed job time and warns above 0.1 ms a frame; `diag` times
+`ShellContact.Query` (its tell) and records the Editor's Code Optimization mode, which neither
+capture could say.
+
+**What is left in the AI: the track planner's bursts.** `SkimRace.Driver.TrackMpc` is 2.89 ms of the
+3.35 ms Decide. It re-plans at 20 Hz with 26 rollouts of 16 steps each, about 4 ms per seat per
+re-plan on editor Mono, and it lands in 35% of frames. Both seats
+re-plan in the same frame about half the time (prof: 1.5 calls per frame it appears in). The 47 ms
+spike frame had both, 8.1 ms, beside a managed `LOD.Sweep` (2.7 ms) and 11 boid coroutines (5.2 ms).
+`GuardMass` is 0.14 ms (p95 0.9). Every remaining lever changes timing, so each needs a decision and
+the simulator's 20-seed benchmark:
+
+1. **Stagger the seats.** Offset each seat's re-plan phase so no two share a frame. The average stays
+   the same and the per-frame peak halves. Each seat still re-plans at 20 Hz; only the moment it does so moves.
+   **Done, §8.0i.**
+2. **Spread one re-plan over the frames between.** The 26 rollouts go across about 3 frames, so the peak drops ~3x and
+   the plan acted on is 1-2 frames older.
+3. **Burst the rollouts.** A job over the 26 candidates, off the main thread. It is the largest win
+   (likely an order of magnitude on this cost; not measured), and also a project: the course goes into native arrays. Burst floats
+   differ from Mono's, so the races are not byte-identical; the benchmark has to show the policy is
+   no worse.
+
+### 8.0g The editor computes floats in double precision - and caught the float rewrite (2026-10-06)
+
+The first editor run of `SkimRaceCourseQueryTests` failed three of five
+(`Project_MatchesThePlainWindowedSearch`, `StellaDistance_FloatKernelMatchesTheVectorForm`,
+`ObstacleLocalFrame_MatchesInverseRotationTimesOffset`) although all five passed on .NET and on stock
+Mono. Reproduced off-editor exactly - the same three fail, the same two pass - with
+`mono --optimize=-float32`: **Unity's editor Mono computes inside an expression in DOUBLE precision**
+and rounds to float only where a value lands in memory. A `Vector3` component always lands in memory,
+so the old code rounded after every operator; the float rewrite (§8.0f) folded several operators into
+one expression and, once the JIT optimizes, kept float LOCALS in double registers too. Same algorithm,
+different last bits - and in a chaotic race, different decisions. The earlier "byte-identical" proof
+held only on single-precision runtimes (.NET, stock Mono, IL2CPP players).
+
+Measured: the OLD `Vector3` code agrees with itself bit for bit between Mono double precision with and
+without JIT optimizations (0 of 40,000 values differ), and differs from single precision in about half
+of them. So the editor's own answer was stable, and the rewrite now reproduces it.
+
+**Fix:** every value the `Vector3` form rounds - each component of a Vector3 it builds, each float it
+returns or passes - is rounded in the rewrite with an explicit `(float)` (C#'s defined way to force
+float precision, which the JIT must honour); expressions the `Vector3` form keeps whole stay whole; its
+own locals stay plain locals. `SkimRaceObstacle.LocalFrame` keeps the nine quaternion products and
+evaluates each component as Unity's operator does, instead of pre-rounded 3x3 terms.
+
+**Proof:** all five `SkimRaceCourseQueryTests` pass on .NET and on Mono in single precision and in four
+double-precision configurations (optimized, all optimizations, Debug IL without inlining, no
+optimizations); dropping ONE of the roundings fails the stella test in double precision (and passes in
+single, which is why the first suite could not see it). Simulator race output, old code vs new, Mono
+double precision (the editor's mode), 2 seeds, decide cost per seat per frame: I2 identical, 2.805 -> 1.986 ms;
+I4 identical, 0.845 -> 0.575 ms (~1.4x - less than §8.0f's single-precision 2.1x, because double
+precision is what the editor runs and the explicit roundings cost a little). .NET, I1/I2/I4 x 6 seeds:
+identical. Note the double-precision Mono cost of the OLD code (2.8 ms per seat at I2) is close to the
+editor's measured 3.6 ms; single-precision Mono (1.9 ms) was not - this is the mode to predict with.
+
+The simulator's Mono mode now runs double precision by default (`SKIMRACE_RUNTIME=mono` adds
+`--optimize=-float32`; `SKIMRACE_MONO_OPTS=""` for stock Mono).
+
+### 8.0f The first editor measurement of the pilot, and what it changed (2026-10-06)
+
+`diag S_SkimRace_I2 15` and three `prof` captures in a hand-played I2 race with 2 AI seats (editor
+6000.3.17f1, Mono, Ultra, 1920x1080 windowed, i7-8700K, RTX 4070 Ti, on `059450b16`):
+
+| What | Measured |
+|---|---|
+| Frame | 28.3 ms avg (35 fps), p95 39.4 ms, CPU-bound (GPU 6.7 ms) |
+| `SkimRace.Pilot.Decide` (2 seats) | 7.2 ms/frame avg, p50 2.5, p95 16.1 - the 20 Hz track planner fires as a burst |
+| `SkimRace.Pilot.FillObstacles` (2 seats) | 2.1 ms/frame |
+| PlayerLoop with / without the AI flying | ~24 ms / 12.6 ms (a capture taken with no pilot marker in it) |
+| Garbage | 78 KB/frame; 36 KB of it in `Decide`, 840 allocations |
+| Editor Mono vs this simulator's .NET | 3.6 vs 0.30 ms per seat per frame |
+
+So the AI was the largest single cost in the frame, and it ran ~12x slower in the editor than the
+simulator said. Two reasons, each fixed exactly (decisions unchanged):
+
+1. **840 allocations a frame.** `UnityEngine.Mathf` has no 3-argument `Min`/`Max`, so
+   `Mathf.Max(a, b, c)` in the steering law bound to `params float[]` and allocated per call. The
+   simulator's Unity shim DEFINED 3-argument overloads, which is why it never saw them. Now
+   `MathfNoAlloc` (Utility; Unity's own loop, no array), the shim matches Unity, and
+   `Tools/Build/check_mathf_params_alloc.py` fails any 3-value `Mathf.Min/Max` in runtime code.
+2. **Mono pays for every Vector3 operator.** The planner's innermost loops - the segment test in
+   `Project`, the per-prism step and the stella kernel in `ShellClearance`, the laid-mass box test
+   (`SkimRaceObstacle.LocalFrame`) - now do the same float operations in the same order on scalars.
+   Measured on Mono 6.8 (the editor's runtime family), decide cost per seat per frame, 3 AI seats:
+   I2 1.926 -> 0.902 ms, I4 0.562 -> 0.243 ms. The simulator now runs on Mono too:
+   `SKIMRACE_RUNTIME=mono bash Tools/Build/skimrace_sim_harness/run.sh eval ...` (the SDK's Roslyn
+   against Mono's class libraries; same race output as .NET, the editor's cost profile).
+
+Proof for both: race output byte-identical to the previous code on .NET (I1/I2/I4 x 6 seeds) and on
+stock Mono (I2/I4 x 2 seeds) - both SINGLE precision; the editor computes in double, and §8.0g is what
+that changed; `SkimRaceCourseQueryTests` pins the float stella kernel and the box frame
+to their Vector3 forms bit for bit and fails when ONE sum is re-associated.
+
+Also from the same captures: `FillObstacles` reads its per-frame inputs once and drops redundant
+liveness checks (child markers `.Query` / `.Pack` now split it); skim beams (`SkimFxRunner`) are
+recycled instead of instantiated per prism contact (~0.33 ms/frame, 1.3 ms spikes); prism `Awake`s
+use `TryGetComponent` (editor GC per trail prism). NOT changed: the `Squirrel Prism` pool misses
+~1.7 times a frame because a race lays mass faster than its refill (40/s), but a faster
+`InstantiateAsync` refill moves the cost into a per-frame integration budget rather than removing
+it - `PoolMiss.Squirrel Prism` vs `PoolRefill.Squirrel Prism` in the next `prof` decides.
+
+**Next measurement:** the same `diag` and `prof`, with the editor's Code Optimization set to
+**Release** (the bug icon, bottom-right) - Debug mode turns the JIT's optimizations off - and one
+`diag` in a Development build. Not yet done, and each changes timing (so the simulator's 20-seed
+benchmark re-checks finish times first): stagger the seats' 20 Hz track-planner bursts, spread one
+burst over the frames between, or `DecisionHz` 30.
+
 ### 8.0e The pilot's frame cost halved, every decision unchanged (2026-10-05)
 
 Every AI seat runs `SkimRaceDriver.Decide` on every frame (`DecisionHz` is 0 in all four configs),
@@ -1027,7 +1205,8 @@ that changes flying is the user's decision):
   is the version that pays.
 - *Would change how the AI flies (needs a decision):* stagger the AIs' re-plans so they do not share a
   frame (halves the spike with two AI); re-plan less often (`TrackMpcHz`); fewer candidate sticks. The user
-chose to decide on these after reading the real numbers in the Unity Profiler.
+chose to decide on these after reading the real numbers in the Unity Profiler. **Stagger: chosen and applied
+2026-10-07 (§8.0i)** - no measurable change to racing, p90/p99 AI frame cost down ~38%.
 
 ## 13. Team races (teammates share their crystals)
 

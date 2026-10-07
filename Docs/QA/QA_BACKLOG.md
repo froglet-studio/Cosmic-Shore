@@ -3,7 +3,10 @@
 **Generated:** 2026-10-05 (arcade/arena matrix pass) · **Scan covers:** PR bodies for merges up
 to `3ba8ea1d2` (PRs #583–#956, the 2026-10-05 refresh in PR #961), plus a full sweep of every
 launchable Arcade and Arena card, its mode doc's verification section, and the per-vessel entries
-in `Docs/UNITY_VERIFICATION_CHECKLIST.md`, against `bleeding-edge` at `bf0015838`.
+in `Docs/UNITY_VERIFICATION_CHECKLIST.md`, against `bleeding-edge` at `bf0015838`, **plus a
+multiplayer-only refresh up to `dda806d52`** (the party/presence lifecycle work B18–B24, the
+Join + Spectate entry path, the arcade card lobby, the multiplayer SDK upgrade, offline mode —
+the `QA-NET-*` items).
 · **Owner of this file:** the `/qa-backlog` skill — do not hand-edit.
 
 > **11 parallel PRs are landing alongside this list** (from the same 2026-10-05 audit): mode
@@ -12,6 +15,10 @@ in `Docs/UNITY_VERIFICATION_CHECKLIST.md`, against `bleeding-edge` at `bf0015838
 > and audio slots. Each will add Editor checks of its own. They go in the clearly marked
 > **Block P** at the end of Priority 0 — not into the blocks below — and until each merges, the
 > "Known, do not fail on" lines in the mode items tell you which gaps not to fail a mode for.
+
+> **Merged 2026-10-06 on `Ys-bleeding-edge`:** this file carried two headers — the general
+> matrix pass above and the multiplayer-only refresh. Both bodies are kept; run `/qa-backlog scan`
+> on the integrated branch before treating the list as complete.
 
 **Why this list is laid out in blocks.** The audit found that of 31 launchable arcade/arena
 cards, **16 had never been opened in Unity** and **11 more had only a partial pass** (one rung,
@@ -110,6 +117,43 @@ red error naming a mode, controller, scene or `Missing (Mono Script)`.
 HUD yet); many modes show no pop-up messages ("toasts") and several have no objective
 arrow — both are being added by parallel PRs (see the reserved section at the end of the
 mode blocks); the Butterfly, Manta, Urchin, Scarab and Serpent are silent or nearly silent.
+
+### QA-NET-SDK-UPGRADE ⬜ — the game still compiles and reaches the menu on the new multiplayer packages
+**Source:** `Packages/manifest.json` @ `114df89ec`. Five multiplayer packages moved at
+once: Netcode for GameObjects 2.5.0→2.13.3, Multiplayer Services 1.1.8→2.3.3, Transport
+2.6.0→2.7.4, Multiplayer Play Mode 1.6.1→2.0.2, Friends 1.1.1→1.3.0. **No C# was changed
+to match them**, and roughly 180 places in our code call into these packages. **Why P0:**
+if the project does not compile, nothing else on this list can be run.
+All ~180 of those calls were resolved against the new packages' own published interface
+files before this item was written and every one still exists, so a "method not found"
+error is unlikely. Two kinds of **yellow warning** are expected and correct. The single
+thing that could not be checked without Unity is step 5.
+
+1. Open the project in Unity **6000.3.17f1**.
+2. Wait until Unity finishes importing everything before judging anything on screen.
+   If this is your first time on this code, expect a long wait.
+3. Open the **Console** window (menu: **Window ▸ General ▸ Console**). Turn **Error Pause**
+   off and **Clear on Play** off, using the buttons along the top of that window.
+4. Read every message in the Console. Sort them by pressing the red (error), yellow
+   (warning) and grey (message) count buttons in the top-right of the Console.
+   - Expect about **20 yellow warnings** that each say either
+     `RequireOwnership is deprecated` (19 of them) or `Use InScenePlaced instead` (1).
+     These are correct and are not a failure.
+   - Expect **zero red errors**.
+5. Look specifically for any red error containing the word **`CurrentPlayer`**. If you see
+   one, write down the full text and stop — this is the one risk nobody could check
+   outside Unity, and engineering already has the one-line fix for it.
+6. Press Play. Sign in and reach the main menu.
+7. Take control of the ship — **click the centre of the screen**, or press **Y** on a
+   gamepad — then press it again to hand control back.
+
+**PASS:** no red errors in the Console; the game reaches the main menu; you can take
+control of the ship and give it back. About 20 yellow deprecation warnings is a pass.
+**FAIL:** any red error · the project never finishes compiling · the game does not reach
+the main menu · any red error mentioning `CurrentPlayer` (copy its full text).
+**Known, do not fail on:** the ~20 yellow warnings above. They are a planned cleanup,
+not a defect.
+
 
 ### QA-BUILD-WINDOWS-PLAYER ⬜ — a Windows IL2CPP player reaches the main menu
 **Source:** PRs #688, #690, #692, #693, #698, #699. **Why P0 and why it is separate
@@ -1960,6 +2004,289 @@ should **not** fail a mode for the gaps these PRs close.
 
 ## Priority 1 — merged features that have never been played
 
+### QA-NET-RATE-LIMIT-RETEST ⬜ — two players get into a party without anyone being thrown out
+**Source:** `Docs/PartySystem/BUGS.md` **B24**, found by your own first Play Mode run on
+2026-10-05 and fixed in `13d40805d`. **Run this one first — it is the retest of that run.**
+What happened: the server was told "too many requests" by the online service, and the code
+that is supposed to wait and try again did not recognise that answer, so it never waited. One
+player was thrown back to its own menu, and the other quietly gave up on the online service
+altogether and started an offline game instead — which is why its party panel was missing.
+Needs **two Play Mode instances**, set up exactly as you had them: one **Server and Client**,
+one **Client** only.
+
+1. Open the project in Unity and wait until it finishes importing.
+2. Open the **Console** (**Window ▸ General ▸ Console**). Turn **Error Pause** off and
+   **Clear on Play** off.
+3. Start the two instances, one Server+Client and one Client.
+4. **Before anything else, look at the online/offline lamp on the Server+Client instance.**
+   This is the single most important observation in this item. Write down whether it reads
+   online or offline, and whether an "you are offline" notice appeared while it started up.
+5. Open the arcade panel on **both** instances. Each must show the party panel (the row of
+   player slots with a Leave button).
+6. Put the two players in a party together.
+7. Watch the Console for `429` or `too many requests`. If any appear, note **how many** and
+   whether the game carried on anyway — carrying on is now the expected behaviour.
+8. Confirm neither instance drops back to its own separate menu on its own.
+9. Leave both sitting in the menu together for **five minutes**, then re-check step 5.
+
+**PASS:** both instances show the party panel; the Server+Client lamp reads **online**; the two
+players stay in one party; and any `429` in the Console is followed by the game continuing
+rather than a player being thrown out.
+**FAIL:** either instance missing the party panel · the lamp reading offline · an "you are
+offline" notice on startup · either player bounced back to its own menu · a `429` that still
+ends with somebody leaving the party.
+**What each failure means, so the report is useful:**
+- **Lamp offline / offline notice, panel missing** → B24's second path is still live. The party
+  panel is *correctly* hidden in an offline game, so the bug is the offline fallback, not the UI.
+  Attach the first 50 Console lines from startup.
+- **Panel missing but the lamp reads ONLINE** → this is a different, unknown bug. Say so
+  explicitly: the wiring was checked and all four copies of that panel are correctly connected,
+  so this would be something new.
+- **`429` still appearing, but nothing breaks** → that is a partial pass. Record the count; the
+  remaining work is reducing how many requests we send, not how we handle them
+  (`Docs/PresenceSystem/TODOS.md` TODO-P2).
+
+
+### QA-NET-CLIENT-CAN-LEAVE ⬜ — a joined player can leave from every screen
+**Source:** `Docs/PartySystem/BUGS.md` B18 + B22, fixed 2026-09-11, never played.
+Before the fix, a player who joined somebody else's game could not leave it at all until
+the match ended — and in Maelstrom, not until the whole tournament ended. The only way
+out was closing the application. The fix adds the exit to every screen, so this item has
+to check **every screen**, not just one.
+Needs **two people** (or two Unity instances): one **host** who starts the game, one
+**joined player**. The host is unaffected by the fix and is also checked here.
+
+1. Host starts any multiplayer game with the joined player in the party.
+2. **Joined player, mid-match:** open the pause menu. A **MAIN MENU** button must be
+   visible. Press it.
+3. The joined player must land in their own main menu, and the host's match must keep
+   running.
+4. Repeat steps 1–3 in a **Maelstrom** game.
+5. In Maelstrom, let a single game finish so the **scoreboard** appears. The joined player
+   must have a visible way out from that scoreboard. Press it; same expected result.
+6. Let a normal (non-Maelstrom) game finish to its scoreboard. Same check again.
+7. In the Maelstrom hub between games, check the joined player has a way out there too.
+8. **Host:** press Main Menu from the pause menu. The host's press must take the *whole
+   party* back, which is different behaviour on purpose.
+9. After each departure, look at the host's player list — the person who left must
+   disappear from it, and must not appear twice.
+
+**PASS:** the joined player can leave from the pause menu, both scoreboards and the
+Maelstrom hub; each time they land in their own main menu while the host continues; the
+host's own Main Menu still takes everyone back; the host's player list stays correct.
+**FAIL:** any screen with no way out · a press that does nothing · a press that leaves the
+player on a black or frozen screen · the host's match ending when a joined player leaves ·
+a departed player still listed, or listed twice.
+**Known, do not fail on:** the button reads **MAIN MENU** rather than "LEAVE PARTY" for a
+joined player. The label is unwired in the prefab and is a separate editor task.
+
+### QA-NET-SCENE-TRANSITION-TIMEOUT ⬜ — a lost loading screen no longer traps the player forever
+**Source:** `Docs/PartySystem/BUGS.md` B19, fixed 2026-09-11, never played.
+When a joined player follows the host into a new scene, the screen is covered while it
+loads. Before the fix nothing watched that wait, so if the load never arrived the player
+sat on an opaque screen with no error and no way out — permanently. Maelstrom made it
+worse because a tournament is a chain of these loads.
+Needs **two people**. Part of this item is deliberately trying to break the transition.
+
+1. Host and joined player play a Maelstrom tournament through **at least three** games in
+   a row, so you cross several loading screens.
+2. Watch the joined player's screen at every transition. Each cover must clear and the
+   next game must appear.
+3. Now force a bad transition: while the joined player is mid-transition, interrupt their
+   network — turn the machine's Wi-Fi off for a few seconds, then back on.
+4. The joined player must **not** be left on a permanently black or blank screen. Either
+   the game recovers, or they are returned to their own main menu, or they are shown a
+   message. Any of those three is a pass; write down which one happened.
+5. Read the joined player's Console afterwards.
+
+**PASS:** every normal transition completes; the interrupted one ends in a recovery, a
+return to the main menu, or an on-screen message — never a dead screen.
+**FAIL:** a black, blank or frozen screen the player cannot get out of · a transition that
+needs the application to be closed · an unhandled red error at the moment of transition.
+
+### QA-NET-READY-GATE-LEAVER ⬜ — somebody leaving does not strand everyone at the ready screen
+**Source:** `Docs/PartySystem/BUGS.md` B20, fixed 2026-09-11, never played.
+Before the fix, if a player left while everyone was waiting on the ready screen, the
+party waited for them forever: no error, no timeout, nothing to press.
+Needs **three people** (or three Unity instances).
+
+1. Get three players to a ready screen together.
+2. Two of them press **Ready**. The third does not.
+3. The third player leaves (use the exit from QA-NET-CLIENT-CAN-LEAVE, not a force-quit).
+4. The game must start for the remaining two almost immediately — within a second or so.
+5. Repeat the whole thing at a **launch lobby** ready screen as well as an in-match one.
+6. Now the opposite check: with three players all present, have one person press **Ready
+   twice, quickly**. The game must **not** start until all three have pressed.
+
+**PASS:** the game proceeds within about a second of the third player leaving, on both the
+match and the launch-lobby ready screens; and a double Ready press never starts the game
+early.
+**FAIL:** the remaining players wait with nothing happening · the game starts before
+everyone has pressed Ready · the ready screen needs the application closed to escape.
+
+### QA-NET-MIDMATCH-LEAVER ⬜ — a player who quits mid-match leaves their ship and their score behind
+**Source:** `Docs/PartySystem/BUGS.md` B21, fixed 2026-09-11, never played.
+Before the fix, a player leaving mid-match took their ship out of the arena and their
+points off the board, which changed the result for everyone still playing.
+Needs **three people**: one host, two joined players, in a game that keeps score.
+
+1. Start a scored multiplayer game with all three playing.
+2. Let everyone score some points, so each player has a visible, non-zero score.
+3. One joined player leaves mid-match using the in-game exit.
+4. Watch the arena: that player's ship must **keep flying**, now controlled by the
+   computer. It must not vanish.
+5. A short on-screen message should name the player who left.
+6. At the end, check the scoreboard: the departed player's score must still be there, and
+   their team/colour total must still include it.
+7. Repeat steps 1–6, but this time the joined player force-quits (close the application
+   window) instead of using the exit. Same expectations.
+8. Watch the host's player list: the departed player must not be counted twice.
+
+**PASS:** the ship keeps flying under computer control, a message names who left, the
+score survives on the scoreboard and in the team total, and nobody is double-counted —
+both for a clean exit and a force-quit.
+**FAIL:** the ship disappearing · the score vanishing or resetting to zero · no message ·
+the departed player listed twice · the match ending for everybody.
+
+### QA-NET-ARCADE-LOBBY-FOLLOW ⬜ — guests follow the host to the game card — **needs three real machines**
+**Source:** `Docs/PartySystem/BUGS.md` B23, fixed 2026-09-11, never played. The owner
+reported these four together as *"the worst feature in the party experience"*.
+⚠ **Run this under Multiplayer Play Mode first, then confirm on three computers.**
+*(Corrected 2026-10-06: this item used to say Play Mode was not a valid test at all, on the
+grounds that its windows share one process and one copy of the game data. That is wrong —
+Play Mode's additional instances are separate processes with their own copy, so they do
+exercise this.)* Three separate computers remain the stronger test, because instances on one
+computer share the project's asset cache and their saved settings, so state riding on either
+can look synchronised when it is not.
+
+1. Host, guest 1 and guest 2 are all in a party together, in the main menu.
+2. Put **guest 1 in freestyle flight** — have them click the centre of the screen (or
+   press **Y** on a gamepad) so they are flying.
+3. Leave **guest 2** sitting in the menu, not flying.
+4. The host opens any **arcade game card**.
+5. **Check 1:** guest 1 must be taken out of flight and shown the same card. They must not
+   stay flying with nothing appearing.
+6. **Check 2:** now have guest 2 close the game and rejoin the party while the host is
+   still sitting on that card. Guest 2 must be shown the card within a second or two,
+   without the host doing anything.
+7. **Check 3:** the host backs out of the card and opens a **different** one. Both guests
+   must move to the new card. Try the host backing out with the ✕ button, and again with
+   **B** on a gamepad — both must work.
+8. **Check 4:** count the player chips in the lobby on each screen. The number of
+   computer-controlled players shown on a guest's screen must match what the host shows.
+   There must be no extra computer players that do not appear in the actual game.
+9. Start the game and confirm the players in the arena match what the lobby showed.
+
+**PASS:** all four checks above — under Play Mode for the first pass, and again on three
+separate computers to confirm.
+**FAIL:** a flying guest who never sees the card · a rejoining guest who never sees it ·
+guests who do not follow the host to a different card · a gamepad **B** back-out that
+leaves guests behind · any guest showing a different number of computer players than the
+host · computer players in the lobby who never appear in the game.
+**Known, do not fail on:** a guest cannot close the host's card themselves — that is
+deliberate. If a guest is flying at the moment the host opens the card, the card may wait
+until they next land; it must still arrive.
+
+### QA-NET-JOIN-SPECTATE ⬜ — joining and watching somebody's game without an invite
+**Source:** `Docs/PartySystem/SPECTATOR.md` §6, authored entirely outside Unity — never
+compiled in the Editor, never played. This is the newest multiplayer surface and it has
+**no bug entries at all, because nobody has ever run it**.
+Needs **two people**, A and B, who can see each other in the online players list.
+
+1. A starts a party. On B's screen, A's row must show a **Join** button.
+2. B presses **Join**. B must land in A's party without any invite being sent, and both
+   names must appear in the lobby list.
+3. Fill A's party to its maximum. B's **Join** button must now be drawn greyed-out.
+4. A starts any multiplayer game. On B's screen, A's row must now show **Spectate** as the
+   only button that can be pressed.
+5. B presses **Spectate**. B must arrive in the match with a watching overlay, **no ship
+   of their own** and **no flight controls on screen**. The screen must stay covered until
+   the arena is built, then fade in.
+6. Confirm A's ready screen is **not** waiting on B — a watcher must never hold up the game.
+7. B presses the **◀** and **▶** buttons to cycle through every player, human and
+   computer-controlled. Each one must be watchable.
+8. B presses **CAM** to switch between the chase camera and the orbiting camera.
+9. The match ends. B must be back in their own main menu, no longer watching.
+10. Repeat from step 4, but this time B presses **✕ LEAVE** (or **Escape**) mid-match. B
+    must return to their own main menu and A's match must be undisturbed.
+
+**PASS:** every step. Especially: B never gets a ship while watching, A's game never waits
+for B, and B always gets back to their own main menu.
+**FAIL:** no Join or Spectate button appearing · Join that does nothing · a watcher who
+gets a ship or flight controls · a ready screen that waits for a watcher · a watcher stuck
+in the match at the end · the player count in the arena including the watcher.
+
+### QA-NET-PARTY-4P-JOIN ⬜ — three and four players can all get into one game
+**Source:** `Docs/PartySystem/BUGS.md` B5. **Read this before running:** the last attempt
+at this test, on 2026-09-16, **failed**, was root-caused and fixed, and has not been
+re-run since. There is also an upstream fix for the same root cause in the new Netcode
+package (see QA-NET-SDK-UPGRADE), so this run is also how we learn whether our own
+work-around is still needed.
+⚠ **The precondition in step 2 is the whole test.** Without it, the *broken* build passes
+too, so a run that skips it proves nothing.
+
+1. Host plus three other players, four in total.
+2. **Before the second player joins, the host must open an arcade game card and leave it
+   open.** Do not skip this.
+3. Second player joins. Confirm they actually arrive and are visible to everyone.
+4. Third player joins. Confirm the same.
+5. Fourth player joins. Confirm the same.
+6. Now repeat the whole thing with all three joining **at the same time** rather than one
+   after another.
+7. Start the game. Every player must appear in the arena with their own ship.
+8. Read the host's Console for any red error during the joins.
+
+**PASS:** all four players join, one after another and simultaneously, with the game card
+open first; everyone reaches the arena with a ship; no red errors during joining.
+**FAIL:** any player who cannot join · a player who joins but is invisible to others · a
+player with no ship in the arena · any red error during a join. For a failure, say which
+player number failed and attach the host's Console text.
+
+### QA-NET-OFFLINE-MODE ⬜ — the game is fully playable with no internet
+**Source:** `Docs/OFFLINE_MODE.md`. Shipped, with **no record of anyone ever testing it**.
+The game normally runs its own local network host even for single player, so this checks
+that path works with no connection at all.
+
+1. Turn off the computer's internet connection completely (Wi-Fi off, cable out).
+2. Launch the game.
+3. The game must reach a playable main menu. It may take a moment and may show a message
+   about being offline — that is fine. It must not hang on a loading or sign-in screen.
+4. Take control of the ship (click the centre of the screen, or **Y** on a gamepad) and
+   fly. Then hand control back.
+5. Play one full single-player arcade game to its scoreboard.
+6. Open the pause menu and return to the main menu.
+7. Now turn the internet back **on** while the game is still running, and return to the
+   main menu. Note whether online features (the friends and online player lists) appear.
+8. Read the Console.
+
+**PASS:** the game reaches the menu, flies, completes a game and returns to the menu with
+no internet at all; no red errors other than clearly-labelled network failures.
+**FAIL:** a hang on sign-in or loading · no ship control · a game that cannot be completed ·
+a crash · red errors that are not obviously network-related. Note step 7's outcome as data —
+reconnecting mid-session is not a requirement, so it does not fail this item.
+
+### QA-UI-REMATCH-HALO ⬜ — the ready glow behind a player's picture is actually bright
+**Source:** `02ef66117` (this change was made and checked by compiling the maths, but has
+never been seen on screen). The glow that appears behind a player's picture when they vote
+for a rematch was being drawn at **half** the brightness it was set to, with no solid
+centre. The fix doubles its peak brightness and gives it a solid middle.
+
+1. Play any multiplayer game with at least two players through to the end-of-game
+   scoreboard, where the rematch vote appears.
+2. Have one player vote for a rematch.
+3. Look at the glow behind that player's picture. It must read as a clearly bright,
+   solid-centred halo that fades out softly at its edge.
+4. Compare it with a player who has **not** voted — the difference must be obvious at a
+   glance, without looking for it.
+5. Check the glow is not a hard-edged circle or a visible square.
+
+**PASS:** the voted player's halo is obviously bright with a solid centre and a soft edge,
+and clearly different from a player who has not voted.
+**FAIL:** a faint or barely-visible glow · a hard edge or visible square · no visible
+difference between voted and not-voted · a glow so bright it hides the picture.
+**Judgement call:** if it now looks *too* strong, say so — the brightness is a single
+authored value and is easy to tune. Note it rather than failing the item.
+
 ### QA-SWARM-FAUNA ⬜ — swarm fauna + the Swarm cell have never been opened
 **Source:** branch `cece/swarm-fauna-game` (authored headless; never compiled in Unity). Full
 reference and exact steps: `Docs/SWARM_FAUNA.md` §5. **Why it matters:** a new fauna family
@@ -3653,25 +3980,76 @@ or the pre-staged file being swept in.
 **PASS:** compiles clean and leaves grow at the authored size.
 **FAIL:** compile error, or leaves that are obviously too big/small/absent.
 
-### QA-NET-PRESENCE-PARTY 🟡 — party/presence regression pass
-**Source:** PR #666 + `Docs/PartySystem/BUGS.md` (B2/B3/B5 open) +
-`Docs/PresenceSystem/BUGS.md` (B4/B6 open), B12 graceful path never exercised.
-Needs **MPPM with 3–4 virtual players**, and one **standalone build** for the graceful-quit case.
-Procedures: `Docs/PartySystem/TESTS.md` (S-series) and `Docs/PresenceSystem/TESTS.md` (P-series).
-1. Run the S-series and P-series test cases as written.
-2. **B12 departure specifically**, distinguishing all three cases: graceful quit
-   (in-game button / alt-F4) → expect **< 1 s**; hard kill / MPPM virtual-player
-   deactivation → expect **~30–50 s** (UGS reap, correct); editor play-mode stop →
-   < 1 s if the wire was reached, else reap.
-3. Record the observed **fault rates** for presence reads and party-session reads over
-   two independent runs (last measured: ~12 % and ~32 %).
+### QA-NET-PRESENCE-PARTY 🟡 — party/presence regression pass, and the fault-rate numbers
+**Source:** PR #666 + `Docs/PartySystem/BUGS.md` + `Docs/PresenceSystem/BUGS.md`
+(**refreshed 2026-10-05:** this item used to say "B2/B3/B5 open" — all three are closed
+now. The party tracker holds **B2–B24**, and the open presence bugs are **B1, B4 and B6**.
+B18–B23 have their own items above; this item is the broad regression sweep and the
+numbers run.)
+Procedures: `Docs/PartySystem/TESTS.md` (S-series) and `Docs/PresenceSystem/TESTS.md`
+(P-series). Needs **3–4 players**, and one **standalone build** (not the Editor) for the
+graceful-quit case.
 
-**PASS:** B11/B13/B14 stay fixed (all instances reach `Present`; peers promote
-CONNECTING… → ONLINE; no Relay 500 on boot); the graceful-quit path evicts in < 1 s;
-fault rates are no worse than the last measurement.
-**FAIL:** any of B11/B13/B14 recurring, a graceful quit taking the reap path, or fault
-rates rising. Note B2/B3/B4/B5/B6 outcomes as data — they are known-open, so they do
-not fail this item, but their current behaviour is what we need recorded.
+1. Run the S-series and P-series test cases as written in those two documents.
+2. Check how long it takes a departed player to disappear from everyone else's list, for
+   each of these three ways of leaving — they are expected to differ:
+   - **Graceful quit** (the in-game exit button, or Alt+F4) → under **1 second**.
+   - **Hard kill** (ending the process, or deactivating a Unity test instance) → about
+     **30–50 seconds**. This is the server reclaiming them and is correct.
+   - **Stopping Play mode in the Editor** → under 1 second if the exit was reached,
+     otherwise the 30–50 second path.
+3. Over two separate runs, count how often a presence read and a party-session read fail,
+   and write both percentages down. Last measured: about **12%** and **32%**.
+
+**PASS:** all instances reach a connected state; other players promote from CONNECTING to
+ONLINE; no Relay 500 error on startup; the graceful quit evicts in under a second; the
+fault rates are no worse than the numbers above.
+**FAIL:** any instance never connecting · a player stuck on CONNECTING · a Relay 500 on
+startup · a graceful quit taking the 30–50 second path · fault rates higher than above.
+**Known, do not fail on:** B1, B4 and B6 are known-open. Record what they do — their
+current behaviour is the data we need — but they do not fail this item.
+
+### QA-PROGRESSION-GATE-ON ⬜ — the shipped default: nothing is locked
+**Source:** `adadb2280`, proposed by the 2026-09-21 static-verification session
+(`Docs/QA/RESULTS/2026-09-21-claude-progression-merge.md`). The unlock service had never
+been attached to anything until that merge, so no existing item covers it.
+
+1. Launch the game and reach the main menu. Do **not** open the Froglet Toolbox.
+2. Open the **Console** (**Window ▸ General ▸ Console**). It must contain exactly one
+   warning reading `[DeveloperUnlockGate] ALL ENTITLEMENTS OPEN`.
+3. Open the Arcade. Every card must be selectable, with no padlocks.
+4. Open the Hangar. It must open, with no locked ships.
+5. Check the intensity selector. All four levels must be available.
+6. Confirm there is **no** quest dialogue, no instruction panel and no guided funnel.
+
+**PASS:** a fully open game, a healthy main menu, and exactly the one warning in step 2.
+**FAIL:** any padlock · any quest or tutorial interface appearing · a missing or broken
+main menu · the step-2 warning absent or duplicated.
+
+### QA-PROGRESSION-GATE-OFF ⬜ — real progression: locks appear and the quest chain runs
+**Source:** as QA-PROGRESSION-GATE-ON.
+
+1. Open **FrogletTools ▸ Toolbox**, find Quest Debug (or Vessel Unlock), and turn the
+   master unlock **off**.
+2. Restart the game and reach the main menu.
+3. The quest chain must start, with five quests in this order: Scurry, Hex Race, Joust,
+   Maelstrom, Vessel Hangar.
+4. Open the Arcade. Padlocks must now appear on some cards.
+5. Confirm these 18 game modes are still **unlocked**: 2, 39, 40, 41, 42, 44, 45, 46,
+   48, 49, 50, 51, 52, 53, 54, 55, 56, 57.
+6. Check the intensity selector is capped at level **3** — except on **Maelstrom**, which
+   must offer all four.
+
+**PASS:** padlocks appear, the five-quest chain runs in order, the 18 modes listed in
+step 5 stay open, and intensity is capped at 3 except on Maelstrom.
+**FAIL:** no padlocks anywhere · any of the 18 modes in step 5 locked · the quest chain
+not starting · intensity not capped · Maelstrom capped at 3.
+**Known, do not fail on:** **Scurry is NOT locked**, and that is correct — the first quest
+is always free. Earlier written instructions wrongly listed Scurry among the locked modes;
+do not file that as a defect. Modes 28, 29, 32, 33, 34, 36, 37, 38 and 43 **do** lock.
+Progress is also **not saved between sessions** yet — quit and the unlocks reset. That is
+deliberate, so treat any gate-off test as a single-session test.
+
 
 ### QA-TOY-ELEMENT-CHARGER ⬜ — the Element Charger toy grants elements to your vessel
 **Source:** PR #913. New freestyle toy, authored headless and never compiled. Reference:
@@ -3891,6 +4269,30 @@ that will not start · a reconnect that needs an app restart or throws.
 ---
 
 ## Priority 2 — lower risk, cosmetic, or data-gathering
+
+### QA-P2-NET-REFRESH-JITTER ⬜ — the online player list still updates promptly (data-gathering)
+**Source:** `a230ced2c` (`Docs/PresenceSystem/TODOS.md` TODO-P3). Every copy of the game
+used to ask the server for the online player list on exactly the same rhythm, so with
+several players running they all asked at the same instant and hit the rate limit
+together. Each copy now varies its own timing slightly (by up to a tenth of a second
+either way). This should be invisible — this item confirms that, and collects numbers.
+
+1. Run **three or four** players at once, all sitting in the main menu.
+2. Watch the online players list on each screen. Players appearing, leaving and changing
+   status must still show up within a couple of seconds, as before.
+3. Have one player start a game. The others' lists must show them as in-game promptly.
+4. Leave all of them sitting in the menu for **five minutes**.
+5. Read each Console and count the rate-limit warnings and any
+   `ArgumentOutOfRangeException` messages mentioning `LobbyPatcher`.
+6. Write the counts down — that number is the deliverable here, not a verdict.
+
+**PASS:** the list still updates within a couple of seconds and nothing is slower or
+stuck. Rate-limit warning counts are recorded.
+**FAIL:** a list that stops updating · a status change taking noticeably longer than
+before · any new error that was not there previously.
+**Known, do not fail on:** `ArgumentOutOfRangeException` from `LobbyPatcher` still appears
+(`Docs/PresenceSystem/BUGS.md` B1) — it is a defect inside Unity's own code, not ours.
+This change reduces how often it clusters; it does not remove it. Just record the count.
 
 ### QA-P2-QUIT-BUTTON ⬜ — the drop-in quit button
 **Source:** PR #701 (`QuitGameButton`, a self-wiring component for nested prefabs).
