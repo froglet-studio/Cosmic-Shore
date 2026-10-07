@@ -17,18 +17,13 @@
 //   session object returned by MultiplayerService.Instance.
 //
 // RETRY POLICY:
-//   CreateAsync retries on host-conflict (happens when the local NM is still
-//   shutting down) and rate-limit (HTTP 429) errors with exponential back-off.
-//   JoinByIdAsync retries transient errors (rate-limit / SDK SessionException NRE /
-//   lobby-events 23006) - two clients accepting the same host invite can collide on
-//   the host's session state. Non-transient join errors propagate to the caller
-//   (AcceptInviteAsync), which logs and rethrows them for fail-fast recovery.
-//
-//   A rate limit is recognised STRUCTURALLY, by SessionError.RateLimitExceeded, and
-//   only then by ErrorCode 429 and the message text. It has to be: the SDK delivers a
-//   rate-limited lobby call as a SessionException, which derives from Exception rather
-//   than RequestFailedException and is built with a null InnerException, so a check
-//   for RequestFailedException/429 alone never fires. See IsRateLimitException.
+//   Every UGS call runs through UgsRequestPolicy.ExecuteAsync (Assets/_Scripts/Utility/UgsRequestPolicy.cs):
+//   one classifier, exponential back-off with jitter per failure class, single-flight by operation
+//   key ("party:create", "party:join:{id}") and a per-client retry budget. This file used to carry
+//   three retry loops of its own with three private classifiers; since 2026-10-07 it carries none
+//   (Docs/MultiplayerArchitecture/REVIEW_INVITE_AND_RESILIENCE.md §5.4). Non-retryable errors
+//   (Gone / Full / Fatal) propagate to the caller (AcceptInviteAsync), which logs and rethrows them
+//   for fail-fast recovery.
 //
 // LIFETIME:
 //   Pure C# - no MonoBehaviour.  Instantiated as a field on
@@ -69,11 +64,6 @@ namespace CosmicShore.Gameplay
         // Constants
         // ─────────────────────────────────────────────────────────────────────
 
-        private const int RATE_LIMIT_MAX_RETRIES  = 3;
-        private const int RATE_LIMIT_BASE_DELAY_MS = 2000;
-        private const int HOST_CONFLICT_MAX_RETRIES = 2;
-        private const int TRANSIENT_MAX_RETRIES   = 5;
-        private const int TRANSIENT_BASE_DELAY_MS = 1000;
 
         // Lobby player-property keys - written during session create/join so
         // other lobby members can see our display name, party info, etc.
@@ -84,7 +74,6 @@ namespace CosmicShore.Gameplay
         private const string MATCH_NAME_KEY      = "matchName";
         private const string JOINED_PARTY_KEY    = "joined_party";
         private const string INVITE_PAYLOADS_KEY = "invite_payloads";
-        private const string ACCEPTED_INVITE_KEY = "accepted_invite";
 
         /// <summary>
         /// Session player-property key a SPECTATOR sets to "1" on join. Read by
@@ -107,6 +96,7 @@ namespace CosmicShore.Gameplay
 
         private readonly HostConnectionDataSO _connectionData;
         private readonly GameDataSO _gameData;
+        private readonly UgsRequestPolicy _policy;
 
         /// <summary>
         /// UGS multiplayer service, resolved fresh at use time. Never cache
@@ -165,10 +155,11 @@ namespace CosmicShore.Gameplay
         /// of the active session reference (this service, HCS, game controllers,
         /// MultiplayerSetup) goes through the same field.
         /// </param>
-        public PartySessionService(HostConnectionDataSO connectionData, GameDataSO gameData)
+        public PartySessionService(HostConnectionDataSO connectionData, GameDataSO gameData, UgsRequestPolicy policy)
         {
             _connectionData = connectionData;
             _gameData = gameData;
+            _policy   = policy ?? UgsRequestPolicy.CreateDefault();
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -180,9 +171,10 @@ namespace CosmicShore.Gameplay
         /// <see cref="ActiveSession"/>.  No-op if a session is already active.
         ///
         /// <para>
-        /// Retries on host-conflict (NM still shutting down) and rate-limit (HTTP 429)
-        /// errors with exponential back-off.  Caller is responsible for shutting
-        /// down the local NetworkManager BEFORE calling this method.
+        /// Runs under <see cref="UgsRequestPolicy.ExecuteAsync{T}"/> (key <c>party:create</c>):
+        /// jittered back-off on rate-limit / transient failures, one retry on a host conflict (NM
+        /// still shutting down). Caller is responsible for shutting down the local NetworkManager
+        /// BEFORE calling this method.
         /// </para>
         /// </summary>
         /// <param name="maxPlayers">Maximum simultaneous players.</param>
@@ -198,53 +190,23 @@ namespace CosmicShore.Gameplay
                 PlayerProperties = BuildLocalPlayerProperties(),
             }.WithRelayNetwork();
 
-            for (int attempt = 0; ; attempt++)
-            {
-                try
-                {
-                    ActiveSession          = await _multiplayerService.CreateSessionAsync(opts).AsMainThread();
-                    CreatedAtUnscaledTime  = Time.unscaledTime;
-                    ActiveSession.PlayerLeaving += OnSessionPlayerLeaving;
-                    CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] Created party session {ActiveSession.Id} (maxPlayers={maxPlayers}).");
-                    return;
-                }
-                // Rate-limit is tested BEFORE host-conflict on purpose. IsRateLimitException
-                // is structural (SessionError.RateLimitExceeded / ErrorCode 429);
-                // IsHostConflictException is a loose message probe that matches ANY message
-                // containing "host", and its retry carries NO back-off - it loops straight
-                // round. So an exception matching both used to be retried three times with
-                // zero delay, which is the worst possible response to a 429. Ordering it
-                // this way cannot mis-route a genuine host conflict, because a host conflict
-                // is not a 429.
-                catch (Exception e) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(e))
-                {
-                    int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
-                    CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] Rate limited - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
-                    await UniTask.Delay(delay);
-                }
-                catch (Exception e) when (attempt < HOST_CONFLICT_MAX_RETRIES && IsHostConflictException(e))
-                {
-                    CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] Host conflict - retry {attempt + 1}/{HOST_CONFLICT_MAX_RETRIES}");
-                }
-                catch (Exception e) when (attempt < TRANSIENT_MAX_RETRIES && IsTransientSessionException(e))
-                {
-                    int delay = TRANSIENT_BASE_DELAY_MS * (1 << attempt);
-                    CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] Transient session error - retry {attempt + 1}/{TRANSIENT_MAX_RETRIES} in {delay}ms ({e.GetType().Name}): {e}");
-                    CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
-                    await UniTask.Delay(delay);
-                }
-            }
+            // Single-flight under "party:create": two callers racing to create collapse into one
+            // request and both observe the same session. The policy retries RateLimited / Transient
+            // / Benign failures with jittered back-off and a Conflict (NetworkManager still shutting
+            // down) exactly once; everything else propagates.
+            var session = await _policy.ExecuteAsync("party:create",
+                async () => await _multiplayerService.CreateSessionAsync(opts).AsMainThread());
+            if (ReferenceEquals(ActiveSession, session)) return; // the coalesced second caller
+            ActiveSession          = session;
+            CreatedAtUnscaledTime  = Time.unscaledTime;
+            ActiveSession.PlayerLeaving += OnSessionPlayerLeaving;
+            CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] Created party session {ActiveSession.Id} (maxPlayers={maxPlayers}).");
         }
 
         /// <summary>
         /// Joins an existing party session by its UGS session ID and sets
         /// <see cref="ActiveSession"/>.
         ///
-        /// <para>
-        /// The caller must ensure <paramref name="sessionId"/> is the real (non-PENDING)
-        /// Relay session id before calling - use
-        /// <see cref="AcceptanceSignalService.WaitForRealSessionIdAsync"/> to obtain it.
-        /// </para>
         /// </summary>
         /// <param name="sessionId">
         /// The UGS Relay session id published by the host after they call
@@ -257,36 +219,17 @@ namespace CosmicShore.Gameplay
         {
             var opts = new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties(asSpectator) };
 
-            // Retry transient join failures (HTTP 429 / SDK SessionException NRE /
-            // lobby-events 23006). Two clients accepting the same host's invite near-
-            // simultaneously can collide on the host's session state, so one join throws
-            // a transient error before the NM client even starts. Mirrors CreateAsync's
-            // retry loop + classifiers. Non-transient errors propagate to the caller
+            // Two clients accepting the same host's invite near-simultaneously can collide on the
+            // host's session state, so one join throws a transient error before the NM client even
+            // starts; the policy retries it. Non-retryable errors propagate to the caller
             // (HostConnectionService.AcceptInviteAsync), which logs and rethrows so
             // PartyInviteController fails fast. See Docs/PartySystem/ARCHITECTURE.md (Q5).
-            for (int attempt = 0; ; attempt++)
-            {
-                try
-                {
-                    ActiveSession = await _multiplayerService.JoinSessionByIdAsync(sessionId, opts).AsMainThread();
-                    ActiveSession.PlayerLeaving += OnSessionPlayerLeaving;
-                    CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] Joined party session {ActiveSession.Id}.");
-                    return;
-                }
-                catch (Exception e) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(e))
-                {
-                    int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
-                    CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] Join rate limited - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
-                    await UniTask.Delay(delay);
-                }
-                catch (Exception e) when (attempt < TRANSIENT_MAX_RETRIES && IsTransientSessionException(e))
-                {
-                    int delay = TRANSIENT_BASE_DELAY_MS * (1 << attempt);
-                    CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] Join transient error - retry {attempt + 1}/{TRANSIENT_MAX_RETRIES} in {delay}ms ({e.GetType().Name}): {e.Message}");
-                    CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
-                    await UniTask.Delay(delay);
-                }
-            }
+            var session = await _policy.ExecuteAsync($"party:join:{sessionId}",
+                async () => await _multiplayerService.JoinSessionByIdAsync(sessionId, opts).AsMainThread());
+            if (ReferenceEquals(ActiveSession, session)) return; // the coalesced second caller
+            ActiveSession = session;
+            ActiveSession.PlayerLeaving += OnSessionPlayerLeaving;
+            CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] Joined party session {ActiveSession.Id}.");
         }
 
         /// <summary>
@@ -321,6 +264,7 @@ namespace CosmicShore.Gameplay
         public async UniTask RefreshAsync()
         {
             if (ActiveSession == null) return;
+            UgsRequestTelemetry.Count(UgsRequestCounter.LobbyReads);
             await ActiveSession.RefreshAsync().AsMainThread();
         }
 
@@ -396,70 +340,7 @@ namespace CosmicShore.Gameplay
                 { MATCH_NAME_KEY,      new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
                 { JOINED_PARTY_KEY,    new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
                 { INVITE_PAYLOADS_KEY, new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
-                { ACCEPTED_INVITE_KEY, new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
             };
-        }
-
-        /// <summary>
-        /// True when <paramref name="e"/> is a UGS rate-limit (HTTP 429), in any of the
-        /// three shapes the SDK can hand us.
-        /// </summary>
-        /// <remarks>
-        /// <para><b>The structured check alone was a hole that could never match.</b> This
-        /// read <c>e is RequestFailedException rfe &amp;&amp; rfe.ErrorCode == 429</c>, which
-        /// looks like the strictest possible test and matched <i>nothing</i> on the paths
-        /// that actually rate-limit: <c>SessionException</c> derives from
-        /// <see cref="Exception"/>, <b>not</b> from <c>RequestFailedException</c>, in both
-        /// UGS Multiplayer 1.1.8 and 2.3.3. Worse, <c>LobbyConverter.ToSessionException</c>
-        /// builds it with the TWO-arg constructor
-        /// (<c>new SessionException(message, SessionError.RateLimitExceeded)</c>), so
-        /// <see cref="Exception.InnerException"/> is <c>null</c> too - the original
-        /// <c>LobbyServiceException</c>/429 lineage is discarded and only the message text
-        /// survives. So a rate-limited join matched neither this predicate nor
-        /// <see cref="IsTransientSessionException"/> (whose message probes are for the NRE
-        /// and 23006 families), both catch filters declined, and the exception escaped the
-        /// retry loop entirely - <c>PartyInviteController</c> logged it and bounced the
-        /// guest to its own solo menu. The 3-retry budget was unreachable.
-        /// </para>
-        /// <para><b>Order matters: structured first, message last.</b>
-        /// <see cref="SessionError.RateLimitExceeded"/> is the SDK's own classification and
-        /// cannot drift with wording or locale. The message probe stays only as the floor
-        /// for wrappers that lose the typed error, and is the one the sibling predicates in
-        /// <c>PresenceLobbyService</c>, <c>HostConnectionService</c> and
-        /// <c>MultiplayerSetup</c> rely on exclusively - which is why those three kept
-        /// working while this one did not.
-        /// </para>
-        /// <para>General rule: <b>a typed check that is narrower than the type it is
-        /// handed fails silently and looks rigorous doing it.</b> It never throws, it never
-        /// logs - the retry simply never happens.</para>
-        /// </remarks>
-        private static bool IsRateLimitException(Exception e) =>
-            (e is SessionException sex && sex.Error == SessionError.RateLimitExceeded) ||
-            (e is Unity.Services.Core.RequestFailedException rfe && rfe.ErrorCode == 429) ||
-            e.Message?.IndexOf("Too Many Requests", StringComparison.OrdinalIgnoreCase) >= 0;
-
-        private static bool IsHostConflictException(Exception e) =>
-            e.Message?.Contains("NetworkManager", StringComparison.OrdinalIgnoreCase) == true ||
-            e.Message?.Contains("host", StringComparison.OrdinalIgnoreCase) == true;
-
-        private static bool IsTransientSessionException(Exception e)
-        {
-            if (e is not SessionException) return false;
-
-            // NRE-flavored transient (null ref inside UGS SDK on lobby events subscription)
-            if (e.InnerException is NullReferenceException) return true;
-
-            var msg = e.Message ?? string.Empty;
-            if (msg.IndexOf("Object reference",        StringComparison.OrdinalIgnoreCase) >= 0) return true;
-
-            // Lobby-events / Wire-subscription transients (error code 23006).
-            // These originate in LobbyHandler.SubscribeToLobbyEventsAsync after the
-            // lobby is created server-side, so retrying CreateSessionAsync is safe.
-            if (msg.IndexOf("lobby service for events", StringComparison.OrdinalIgnoreCase) >= 0) return true;
-            if (msg.IndexOf("Error Code[23006]",        StringComparison.OrdinalIgnoreCase) >= 0) return true;
-            if (msg.IndexOf("valid Lobby ID",           StringComparison.OrdinalIgnoreCase) >= 0) return true;
-
-            return false;
         }
     }
 }

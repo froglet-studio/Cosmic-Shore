@@ -174,6 +174,53 @@ namespace CosmicShore.Utility
         /// domain list is: a play-mode session must never bake a setting into the asset.
         /// </summary>
         [NonSerialized] public AIDifficulty RequestedAIDifficulty = AIDifficultyRules.Default;
+        /// The HULLS teammates picked for their ally AI on the launch panel, parallel to
+        /// <see cref="RequestedAIDomains"/> (entry i is bot i). <see cref="VesselClassType.Random"/>
+        /// - and anything past the end of the list - means "no pick: draw from the card". Only
+        /// ally seats read it; an opponent seat flies <see cref="OpponentAIVesselClass"/> when
+        /// the card pins one (<see cref="AIHullSeating"/>). Host-side, [NonSerialized], same
+        /// lifetime as the domain list.
+        /// </summary>
+        [NonSerialized] public List<VesselClassType> RequestedAIVessels = new();
+
+        /// <summary>Replace the ally-hull picks (cleared when <paramref name="vessels"/> is null).</summary>
+        public void SetRequestedAIVessels(IReadOnlyList<VesselClassType> vessels)
+        {
+            RequestedAIVessels.Clear();
+            if (vessels != null) RequestedAIVessels.AddRange(vessels);
+        }
+
+        /// <summary>
+        /// The hull every OPPONENT AI flies this match (<see cref="SO_ArcadeGame.OpponentAIVessel"/>),
+        /// or <see cref="VesselClassType.Random"/> when the card pins none. Published by
+        /// <see cref="SyncFromArcadeGame"/> on the host - only the server spawns AI and settles
+        /// arena hulls, so no client ever needs it. Pre-launch config like
+        /// <see cref="AllowedVesselClasses"/>: deliberately NOT cleared by ResetRuntimeData().
+        /// </summary>
+        [NonSerialized] public VesselClassType OpponentAIVesselClass = VesselClassType.Random;
+
+        /// <summary>
+        /// Whether <paramref name="player"/> is an AI flying the card's pinned opponent hull on a
+        /// domain no human flies. Such a hull sits OUTSIDE arena seating: a grid of identical
+        /// opponents is the card's choice, and it must never bump a human or an ally off a hull.
+        /// </summary>
+        public bool IsPinnedOpponent(IPlayer player, VesselClassType hull)
+        {
+            if (!AIHullSeating.IsConcrete(OpponentAIVesselClass) || hull != OpponentAIVesselClass) return false;
+            if (player is not Player p || !p || !p.NetIsAI.Value) return false;
+            return AIHullSeating.IsOpponentSeat(OpponentAIVesselClass, p.NetDomain.Value, CollectHumanDomains());
+        }
+
+        /// <summary>Every domain at least one human in <see cref="Players"/> flies.</summary>
+        public HashSet<Domains> CollectHumanDomains()
+        {
+            var domains = new HashSet<Domains>();
+            if (Players == null) return domains;
+            foreach (var ip in Players)
+                if (ip is Player p && p && !p.NetIsAI.Value)
+                    domains.Add(p.NetDomain.Value);
+            return domains;
+        }
 
         /// <summary>
         /// Levels of ALL FOUR elements a trailing player/team gains per unit of score deficit
@@ -427,6 +474,9 @@ namespace CosmicShore.Utility
             // pilot-swap RPC, neither of which can see the card. Shipped to clients by the config
             // sync RPC so a guest's swap gesture knows whether it means anything here.
             IsArenaMatch = game.ArenaRules;
+
+            // The card's pinned opponent hull (Regatta: the Squirrel), host-side only.
+            OpponentAIVesselClass = game.OpponentAIVessel ? game.OpponentAIVessel.Class : VesselClassType.Random;
 
             // The card's per-hull starting element levels, published for the same reason as the
             // hull list and shipped to every client by the config sync RPC: element levels are
@@ -874,6 +924,7 @@ namespace CosmicShore.Utility
             RequestedAIBackfillCount = 0;
             RequestedAIDomains.Clear();
             RequestedAIDifficulty = AIDifficultyRules.Default;
+            RequestedAIVessels.Clear();
             RequestedDomainCount = 3;
             IsMaelstromMode = false;
 

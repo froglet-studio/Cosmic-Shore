@@ -8,6 +8,10 @@ Retune ONE Skim Race intensity's AI for the map that is in the scene now - the c
     python3 Tools/Build/skimrace_retune.py 2 --dry-run    # everything except writing the result
     python3 Tools/Build/skimrace_retune.py 2 --iters 4 --seeds 2 --final 6   # a quick, rough pass
 
+Tuned and judged ACROSS FRAME RATES (section 14): the races are spread over 16, 28 and 50 ms frames, with
+contacts tested on the game's 0.04 s fixed step (PHYSICS below), because a policy tuned at one frame rate
+raced 4-21% slower at the others.
+
 What it does, in order (Docs/SKIM_RACE_AI.md section 11):
 
  1. Reads that intensity's map fingerprint from MinigameSkimRace.unity, and checks the game's own C#
@@ -44,8 +48,12 @@ ROOT = os.path.dirname(os.path.dirname(HERE))
 AUTHOR = os.path.join(HERE, "author_skimrace_ai_config.py")
 RUN = os.path.join(HERE, "skimrace_sim_harness", "run.sh")
 GENERAL = "SkimRaceAIConfig"
-# How every shipped policy was last tuned and checked: 2 AI seats, 28 ms frames +-50% (section 6.12).
-PHYSICS = ["ph.Seats=2", "ph.Dt=0.028", "ph.DtJitter=0.5"]
+# How a policy is tuned and checked since 2026-10-06 (Docs/SKIM_RACE_AI.md section 14): 2 AI seats; the
+# races spread over 16, 28 and 50 ms frames (62, 36 and 20 fps), each +-50%, so the tuning fits every frame
+# rate players see rather than the one the editor happened to run at; and contacts tested on the game's
+# 0.04 s fixed step. Before that it was 28 ms frames alone with contacts tested every frame.
+PHYSICS = ["ph.Seats=2", "ph.Dt=0.028", "ph.DtJitter=0.5", "ph.PhysicsStep=0.04", "dts=0.016,0.028,0.05"]
+TUNING_CONDITIONS = "2 AI seats, 16/28/50 ms frames +-50%, contacts on the 0.04 s fixed step"
 FRESH_SEEDBASE = 99000  # the same fresh races tuneall's own final check uses
 
 sys.path.insert(0, HERE)
@@ -204,7 +212,7 @@ def main():
     comment = textwrap.wrap(
         f"Intensity {i}: retuned {date} by Tools/Build/skimrace_retune.py for map {fp} (tuneall {i} {args.seeds} "
         f"{args.iters} sigma=0.15 only=stated{' set=winner' if switches else ''} from {start['PolicyVersion']}, "
-        f"{len(best)} numbers searched; 2 AI seats, 28 ms frames +-50%). On {races} fresh races (seedbase "
+        f"{len(best)} numbers searched; {TUNING_CONDITIONS}). On {races} fresh races (seedbase "
         f"{FRESH_SEEDBASE}, cut at {limit} + 60 s) it finished {new_fin}/{races}, winner median {new_win:.1f} s; "
         f"the general policy ({general['PolicyVersion']}) on the same races: {gen_fin}/{races}, {gen_win:.1f} s.",
         width=104)

@@ -385,7 +385,7 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Deployment_ClaimsOnlyNormalSkimRace()
+        public void Deployment_ClaimsOnlyNormalSkimRaceAndRegatta()
         {
             var gd = ScriptableObject.CreateInstance<GameDataSO>();
             try
@@ -396,7 +396,13 @@ namespace CosmicShore.Tests
                 gd.IsTraining = true;
                 Assert.IsFalse(SkimRaceAIDeployment.Claims(gd), "the genetic trainer owns the seats while training");
                 gd.IsTraining = false;
+                gd.GameMode = GameModes.Regatta;
+                Assert.IsTrue(SkimRaceAIDeployment.Claims(gd), "Regatta's Squirrels fly the same pilot at rings");
+                Assert.IsInstanceOf<RegattaRingObjective>(SkimRaceObjective.For(gd));
+                gd.GameMode = GameModes.SkimRace;
+                Assert.IsInstanceOf<CrystalTrackObjective>(SkimRaceObjective.For(gd));
                 gd.GameMode = GameModes.Joust;
+                Assert.IsNull(SkimRaceObjective.For(gd));
                 Assert.IsFalse(SkimRaceAIDeployment.Claims(gd));
                 Assert.IsFalse(SkimRaceAIDeployment.Claims(null));
             }

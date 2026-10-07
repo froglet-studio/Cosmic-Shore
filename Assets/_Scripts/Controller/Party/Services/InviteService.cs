@@ -13,12 +13,12 @@
 //     3. ParseLine (internal static) can be tested independently without
 //        spinning up a UGS lobby.
 //
-// PENDING PROTOCOL:
-//   When the local player sends an invite before a Relay session exists (the
-//   lazy-creation model), the session id field carries the sentinel string
-//   "PENDING".  Once the host creates the Relay session, all outgoing payloads
-//   are patched via UpdatePayloadsWithRealSessionId.  Recipients poll and
-//   retry until the real id appears.
+// SESSION ID:
+//   Every invite carries the sender's REAL party session id - the eager per-user Relay
+//   design creates the session on menu entry, before any invite can be sent. The old
+//   lazy-creation "PENDING" sentinel protocol (sentinel id, republish once the session
+//   existed, recipients polling for it) was retired on 2026-10-07; nothing had written
+//   the sentinel since eager creation landed.
 //
 // PAYLOAD FORMAT (per invite line):
 //   targetPlayerId|localPlayerId|sessionId|localDisplayName|localAvatarId
@@ -62,12 +62,6 @@ namespace CosmicShore.Gameplay
         // Constants
         // ─────────────────────────────────────────────────────────────────────
 
-        /// <summary>
-        /// Placeholder session id written into payloads before the host's Relay
-        /// session is created.  Replaced by the real id via
-        /// <see cref="UpdatePayloadsWithRealSessionId"/> once the session is live.
-        /// </summary>
-        internal const string PENDING_SESSION_ID = "PENDING";
 
         /// <summary>
         /// Separator between the fields of one invite line.
@@ -86,7 +80,7 @@ namespace CosmicShore.Gameplay
         {
             /// <summary>Pre-built serialised invite line (targetId|senderPlayerId|sessionId|...).</summary>
             public string Payload;
-            /// <summary>Stored separately so UpdatePayloadsWithRealSessionId can patch it.</summary>
+            /// <summary>The session id the line carries - always the sender's real party session (eager per-user Relay).</summary>
             public string SessionId;
             public float  ExpiresAt;
         }
@@ -163,25 +157,6 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <inheritdoc/>
-        /// <remarks>
-        /// Patches only entries whose SessionId is <see cref="PENDING_SESSION_ID"/>.
-        /// The payload string is updated in-place by replacing the PENDING sentinel
-        /// with the real session id.
-        /// </remarks>
-        public int UpdatePayloadsWithRealSessionId(string realSessionId)
-        {
-            int patched = 0;
-            foreach (var entry in _entries.Values)
-            {
-                if (entry.SessionId != PENDING_SESSION_ID) continue;
-                entry.Payload   = entry.Payload.Replace(PENDING_SESSION_ID, realSessionId);
-                entry.SessionId = realSessionId;
-                patched++;
-            }
-            CSDebug.LogVerbose(CSLogChannel.Party, $"[InviteService] UpdatePayloadsWithRealSessionId - patched {patched}/{OutgoingCount} entries with {realSessionId}");
-            return patched;
-        }
 
         /// <inheritdoc/>
         public string SerializeAll()

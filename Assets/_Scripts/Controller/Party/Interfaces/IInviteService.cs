@@ -47,9 +47,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         /// <param name="targetPlayerId">UGS player ID of the recipient.</param>
         /// <param name="sessionId">
-        /// The party session ID to embed.  Pass <c>"PENDING"</c> before the Relay
-        /// session exists; call <see cref="UpdatePayloadsWithRealSessionId"/> once
-        /// the real ID is known.
+        /// The sender's party session ID to embed - always the real id (eager per-user Relay).
         /// </param>
         /// <param name="localPlayerId">Sender's UGS player ID.</param>
         /// <param name="localDisplayName">Sender's display name (stored in payload).</param>
@@ -77,19 +75,6 @@ namespace CosmicShore.Gameplay
         /// already-invited player.
         /// </summary>
         void RefreshTimeout(string targetPlayerId, float newExpiresAtUnscaledTime);
-
-        /// <summary>
-        /// Replaces the <c>"PENDING"</c> sentinel in all outgoing payloads with the
-        /// real Relay session ID, once the host has created the session.
-        /// </summary>
-        /// <param name="realSessionId">The live UGS session ID (not "PENDING").</param>
-        /// <returns>
-        /// How many entries were actually patched. Under the eager per-user Relay design every
-        /// invite is sent with a real id already, so this is normally 0 - and a 0 means there is
-        /// nothing to republish, which the caller must honour rather than writing the unchanged
-        /// composite back to the lobby on every refresh tick.
-        /// </returns>
-        int UpdatePayloadsWithRealSessionId(string realSessionId);
 
         /// <summary>
         /// Serialises all outgoing invites into a single newline-delimited string

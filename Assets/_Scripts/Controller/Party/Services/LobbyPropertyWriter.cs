@@ -1,6 +1,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // LobbyPropertyWriter.cs
-// Safe lobby property writes: mutex → refresh → set → save-with-retry.
+// Safe lobby property writes: mutex → refresh → set → save (retried by UgsRequestPolicy).
 //
 // WHY this class exists:
 //   Before extraction, HostConnectionService had five near-identical blocks that
@@ -29,8 +29,9 @@ using CosmicShore.Utility;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Serialises lobby property writes using a mutex and handles UGS rate-limit
-    /// retries (HTTP 429).
+    /// Serialises lobby property writes using a mutex; the save itself runs under the one
+    /// <see cref="UgsRequestPolicy"/> (jittered back-off, retry budget), with a lobby re-read
+    /// before each retry so a stale player index cannot defeat the second attempt.
     ///
     /// Owns two <see cref="SemaphoreSlim"/> mutexes:
     /// <list type="bullet">
@@ -51,6 +52,13 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public sealed class LobbyPropertyWriter
     {
+        private readonly UgsRequestPolicy _policy;
+
+        public LobbyPropertyWriter(UgsRequestPolicy policy)
+        {
+            _policy = policy ?? UgsRequestPolicy.CreateDefault();
+        }
+
         // ─────────────────────────────────────────────────────────────────────
         // Public mutexes
         //
@@ -84,11 +92,11 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Acquires <see cref="LobbyMutex"/>, refreshes the lobby to sync the
         /// SDK's internal player-index cache, calls <paramref name="setProperty"/>
-        /// to write the property value(s), then saves with retry.
+        /// to write the property value(s), then saves under the request policy.
         ///
         /// Use this for ALL property writes from outside the refresh cycle.
         /// Inside the refresh cycle (where the mutex is already held), call
-        /// <see cref="SaveWithRetryAsync"/> directly.
+        /// <see cref="SaveAsync"/> directly.
         /// </summary>
         /// <param name="lobby">
         /// The active presence lobby session.  Returns immediately if null.
@@ -110,9 +118,10 @@ namespace CosmicShore.Gameplay
                 // Refresh before writing - the SDK's player-index cache can be
                 // stale, causing SaveCurrentPlayerDataAsync to fail silently if
                 // the local player's index moved since the last refresh.
+                UgsRequestTelemetry.Count(UgsRequestCounter.LobbyReads);
                 await lobby.RefreshAsync().AsMainThread();
                 setProperty();
-                await SaveWithRetryAsync(lobby);
+                await SaveAsync(lobby);
             }
             catch (Exception e)
             {
@@ -125,56 +134,38 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Saves the local player's properties to the UGS backend with exponential
-        /// retry on rate-limit (HTTP 429) and index-out-of-range errors.
+        /// Saves the local player's properties to the UGS backend under
+        /// <see cref="UgsRequestPolicy.ExecuteAsync"/>: a 429 or a stale-index failure is retried
+        /// with jittered back-off out of the per-client budget, and every retry is preceded by a
+        /// lobby re-read so the SDK's player-index cache is current for the second attempt (the
+        /// stale index is the usual reason the first save failed - Docs/PresenceSystem/BUGS.md B1).
+        /// No single-flight key: two saves can carry different property sets, so they must never
+        /// coalesce. The caller serialises them through <see cref="LobbyMutex"/> instead.
         ///
         /// Can be called directly inside the refresh cycle (mutex already held),
         /// or indirectly via <see cref="WriteAsync"/> (which acquires the mutex).
         /// </summary>
-        /// <param name="lobby">
-        /// The active presence lobby session.  Must not be null.
-        /// </param>
-        /// <param name="maxRetries">Maximum retry attempts before giving up (default 3).</param>
-        /// <param name="baseDelayMs">Base delay in ms between retries (default 2000).</param>
-        public async UniTask SaveWithRetryAsync(ISession lobby, int maxRetries = 3, int baseDelayMs = 2000)
+        /// <param name="lobby">The active presence lobby session.  Must not be null.</param>
+        public async UniTask SaveAsync(ISession lobby)
         {
-            for (int attempt = 0; attempt <= maxRetries; attempt++)
+            bool firstAttempt = true;
+            await _policy.ExecuteAsync(null, async () =>
             {
-                try
+                if (!firstAttempt)
                 {
-                    await lobby.SaveCurrentPlayerDataAsync().AsMainThread();
-
-                    // Post-save refresh: keeps the SDK's cached state in sync with
-                    // the server.  Reduces the window where WebSocket deltas reference
-                    // stale player indices (root cause of harmless
-                    // ArgumentOutOfRangeException in LobbyPatcher).
-                    try { await lobby.RefreshAsync().AsMainThread(); }
-                    catch { /* polling corrects on next cycle */ }
-
-                    return;
+                    UgsRequestTelemetry.Count(UgsRequestCounter.LobbyReads);
+                    try { await lobby.RefreshAsync().AsMainThread(); } catch { /* best-effort resync before the retry */ }
                 }
-                catch (Exception e) when (attempt < maxRetries &&
-                    (e.Message.Contains("Too Many Requests") ||
-                     e.Message.Contains("Index was out of range")))
-                {
-                    // UGS rate-limits property writes to ~1/s per client.
-                    // Back off exponentially so a burst of rapid retries doesn't
-                    // consume the entire rate-limit budget.
-                    //
-                    // CSDebug.Log (info-level, release-stripped + runtime-muteable):
-                    // "Index was out of range" is the SDK stale-index defect (same
-                    // family as B1/B6 in Docs/PresenceSystem/BUGS.md), an SDK bug
-                    // we already classify as known-transient and retry. The "retry
-                    // X/3" message is diagnostic chatter, not a real failure
-                    // signal - final state is correct if any retry succeeds, and
-                    // a sustained failure propagates to the outer caller via the
-                    // `when` filter expiring at attempt == maxRetries.
-                    CSDebug.LogVerbose(CSLogChannel.Party,
-                        $"[LobbyPropertyWriter] Save failed ({e.GetType().Name}: {e.Message}) - retry {attempt + 1}/{maxRetries} in {baseDelayMs}ms");
-                    await UniTask.Delay(baseDelayMs);
-                    try { await lobby.RefreshAsync().AsMainThread(); } catch { /* best-effort */ }
-                }
-            }
+                firstAttempt = false;
+                await lobby.SaveCurrentPlayerDataAsync().AsMainThread();
+            });
+
+            // Post-save refresh: keeps the SDK's cached state in sync with the server. Reduces
+            // the window where WebSocket deltas reference stale player indices (root cause of
+            // the harmless ArgumentOutOfRangeException in LobbyPatcher).
+            UgsRequestTelemetry.Count(UgsRequestCounter.LobbyReads);
+            try { await lobby.RefreshAsync().AsMainThread(); }
+            catch { /* polling corrects on next cycle */ }
         }
     }
 }
