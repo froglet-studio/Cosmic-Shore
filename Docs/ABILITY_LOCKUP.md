@@ -762,7 +762,7 @@ per-vessel art or wiring for a human to supply.
 | Squirrel | 4/4 + 2 core | ✅ ensured at runtime; AUTHORED flowers re-homed. Charge = the joust (skull), Mass = boost ring (+ the standard cooldown veil), **Space = GENERATED** (skimmer-reach ring + steal count, built by the view), Time = skimming (+ `boostFill` as its gauge). Two non-elemental cards sit left of Charge: the **omni crystal** (emblem above, shielded-ring icon below) and the **drift** (no upper cell at all), chip **LT** |
 | Serpent | 1/4 | ✅ Time card bound (Solid Fuel Pellets — its four pips are the fuel tank); Charge/Mass/Space LOCKED. Its Charge card DOES draw the cooldown veil — a locked card has a plate, which is all the veil needs |
 | Manta · Rhino | 0/4 | ✅ four LOCKED cards — the row exists, the flowers dock, the slots read as undesigned. Blocked on ability DESIGN, not on this style |
-| Urchin | 0/4 | — no HUD prefab exists at all, so there is no view to ensure |
+| Urchin | 4/4 | ✅ ensured at runtime (2026-10-06, `author_urchin_hud.py`); ammo fill = the Charge card's gauge, binary riding indicator = the Mass card's, Track recharge = the Space card's veil |
 
 **Row ownership is why `EnsureAbilityLockup` runs BEFORE `view.Initialize`.** Per-vessel views
 capture their icons' rest scales during Initialize, and those scales are only right once the lockup
@@ -983,8 +983,8 @@ of rolling this style onto any further vessel.
 - **Bake tool.** A `FrogletTools > Vessels > Bake Ability Lockups` that writes the composed chrome
   into the prefab (the pattern `Bake Elemental Petal Bars Into All Vessel HUDs` already sets), so
   the authored state is inspectable. Runtime composition is the shipping path today.
-- **Urchin.** The only hull the lockup cannot reach: `UrchinHUDVariant.prefab` does not exist, so
-  there is no `VesselHUDView` to ensure. Its map is complete — it needs a HUD prefab, not a style.
+- ~~**Urchin.** The only hull the lockup cannot reach~~ — closed 2026-10-06: `UrchinHUDVariant.prefab` exists
+  (`Tools/Build/author_urchin_hud.py`). Its icons are placeholders.
 - **Gauges on the remaining hulls.** Dolphin, Manta, Rhino and Serpent bind no `gauge` yet. The
   Dolphin's four icons are already live gauges in their own right, so it may never want one; the
   other three are waiting on ability design anyway.
