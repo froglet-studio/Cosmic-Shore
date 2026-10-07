@@ -143,7 +143,7 @@ namespace CosmicShore.UI
                 {
                     hideFlags = HideFlags.HideInHierarchy
                 };
-                DontDestroyOnLoad(root);
+                Object.DontDestroyOnLoad(root);   // qualified: CosmicShore.Utility also has a DontDestroyOnLoad component
 
                 var canvas = root.GetComponent<Canvas>();
                 canvas.renderMode = RenderMode.ScreenSpaceOverlay;
