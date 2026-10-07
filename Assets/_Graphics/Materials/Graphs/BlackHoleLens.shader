@@ -58,6 +58,9 @@ Shader "CosmicShore/BlackHoleLens"
             #pragma multi_compile_instancing
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            // DecodeHDREnvironment (the sky cubemap's HDR decode) lives here, and Core.hlsl does not
+            // reach it - without this include the shader does not compile and draws magenta.
+            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/EntityLighting.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareOpaqueTexture.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
             #include "BlackHoleLens.hlsl"

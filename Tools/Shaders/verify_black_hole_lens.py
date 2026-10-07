@@ -27,12 +27,23 @@ A. EXECUTION (clang++). Assets/_Graphics/Materials/Graphs/BlackHoleLens.hlsl is 
     10. NEGATIVE CONTROL: rebuilt with BLACK_HOLE_LENS_STEP_FRACTION blown up (-D override of the
         file's own #ifndef dial), the physics tests FAIL — the integration step is what holds them.
 
-B. FRONT-END COMPILE (glslang, HLSL mode). The vertex and fragment stages of BlackHoleLens.shader,
-   with the shipped .hlsl included, against a declarations-only mock of the URP library it uses.
-   It proves the shader's OWN code type-checks; it proves nothing about URP itself.
+B. COMPILE. The vertex and fragment stages of BlackHoleLens.shader, with the shipped .hlsl included.
+   B1 (glslang, HLSL mode) against a declarations-only mock of the URP library, laid out FILE BY FILE
+      at the shader's own #include paths: a symbol is visible only if the shader includes the file
+      that really declares it. The first lens shipped calling DecodeHDREnvironment (core's
+      EntityLighting.hlsl) with only URP's Core.hlsl included; a single-blob mock declared everything
+      and passed, Unity failed the compile, and every hole drew magenta. Negative control: the
+      program with the EntityLighting include removed must FAIL here.
+   B2 (DXC) against the REAL URP + core ShaderLibrary - the graphics checkout that
+      Tools/Build/unity_refcompile fetches - for the D3D11, Vulkan and Metal API branches. This is
+      the compile that would have caught it; it needs dxc (on PATH or $DXC) and the checkout
+      ($URP_GRAPHICS_ROOT, else $UNITY_REFCOMPILE_CACHE/graphics, else
+      ${TMPDIR:-/tmp}/unity_refcompile_cache/graphics). Without them B2 says SKIPPED, loudly, and
+      --require-real turns that into a failure. Same negative control. The checkout is the 6000.0
+      graphics branch (URP 17.0); the project runs 17.3, so B2 is strong evidence, not the Editor.
 
 Exit 0 on pass. Needs clang++ and glslangValidator; no Unity.
-Usage:  python3 Tools/Shaders/verify_black_hole_lens.py [--keep]
+Usage:  python3 Tools/Shaders/verify_black_hole_lens.py [--keep] [--require-real]
 """
 
 import os
@@ -236,8 +247,12 @@ int main()
 }
 """
 
-URP_MOCK = r"""// Mock of the URP library surface BlackHoleLens.shader uses - declarations only, so glslang can
-// type-check the shader's OWN code. It proves nothing about the library itself.
+# The mock URP library, ONE FILE PER REAL INCLUDE PATH: each entry declares only what that real
+# file (or what it includes) declares, so the shader sees a symbol only when it includes its home.
+URP = "Packages/com.unity.render-pipelines.universal/ShaderLibrary/"
+CORE = "Packages/com.unity.render-pipelines.core/ShaderLibrary/"
+URP_MOCK = {
+    URP + "Core.hlsl": r"""// mock: URP Core.hlsl (+ Common, Input, UnityInput, SpaceTransforms, ShaderVariablesFunctions)
 #define CBUFFER_START(name) cbuffer name {
 #define CBUFFER_END };
 #define UNITY_VERTEX_INPUT_INSTANCE_ID uint instanceID : SV_InstanceID;
@@ -245,6 +260,10 @@ URP_MOCK = r"""// Mock of the URP library surface BlackHoleLens.shader uses - de
 #define UNITY_SETUP_INSTANCE_ID(v)
 #define UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o)
 #define UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i)
+#define TEXTURE2D(t) Texture2D t
+#define TEXTURECUBE(t) TextureCube t
+#define SAMPLER(s) SamplerState s
+#define SAMPLE_TEXTURECUBE_LOD(t, s, c, l) t.SampleLevel(s, c, l)
 float4x4 unity_ObjectToWorld;
 float4x4 unity_MatrixVP;
 float4x4 UNITY_MATRIX_V;
@@ -257,20 +276,32 @@ float3 TransformObjectToWorld(float3 p) { return mul(unity_ObjectToWorld, float4
 float4 TransformWorldToHClip(float3 p) { return mul(unity_MatrixVP, float4(p, 1.0)); }
 float4 ComputeScreenPos(float4 positionCS) { float4 o = positionCS * 0.5; o.xy = float2(o.x, o.y * _ProjectionParams.x) + o.w; o.zw = positionCS.zw; return o; }
 float LinearEyeDepth(float depth, float4 zBufferParam) { return 1.0 / (zBufferParam.z * depth + zBufferParam.w); }
-#define TEXTURECUBE(t) TextureCube t
-#define SAMPLER(s) SamplerState s
-#define SAMPLE_TEXTURECUBE_LOD(t, s, c, l) t.SampleLevel(s, c, l)
+// URP Input.hlsl: the sky reflection URP keeps of the skybox
 TEXTURECUBE(_GlossyEnvironmentCubeMap);
 SAMPLER(sampler_GlossyEnvironmentCubeMap);
 half4 _GlossyEnvironmentCubeMap_HDR;
-half3 DecodeHDREnvironment(half4 encoded, half4 instructions) { return encoded.rgb * instructions.x; }
-Texture2D _CameraOpaqueTexture;
-SamplerState sampler_CameraOpaqueTexture;
-Texture2D _CameraDepthTexture;
 SamplerState sampler_PointClamp;
+""",
+    CORE + "EntityLighting.hlsl": r"""// mock: core EntityLighting.hlsl - NOT reached from URP Core.hlsl
+half3 DecodeHDREnvironment(half4 encoded, half4 instructions) { return encoded.rgb * instructions.x; }
+""",
+    URP + "DeclareOpaqueTexture.hlsl": r"""// mock: URP DeclareOpaqueTexture.hlsl
+TEXTURE2D(_CameraOpaqueTexture);
+SAMPLER(sampler_CameraOpaqueTexture);
 float3 SampleSceneColor(float2 uv) { return _CameraOpaqueTexture.SampleLevel(sampler_CameraOpaqueTexture, uv, 0).rgb; }
+""",
+    URP + "DeclareDepthTexture.hlsl": r"""// mock: URP DeclareDepthTexture.hlsl
+TEXTURE2D(_CameraDepthTexture);
 float SampleSceneDepth(float2 uv) { return _CameraDepthTexture.SampleLevel(sampler_PointClamp, uv, 0).r; }
-"""
+""",
+}
+ENTITY_LIGHTING_INCLUDE = '#include "' + CORE + 'EntityLighting.hlsl"'
+
+# B2: the real library's API branches (Common.hlsl picks API/<x>.hlsl from these), and the defines
+# Unity's compiler sets that the library reads. INSTANCING_ON is left out: the stock URP library
+# itself does not compile under it outside Unity (the instancing array macros come from Unity).
+REAL_APIS = ("SHADER_API_D3D11", "SHADER_API_VULKAN", "SHADER_API_METAL")
+REAL_DEFINES = ["UNITY_VERSION=600030", "SHADER_TARGET=35"]
 
 
 def translate(src):
@@ -300,23 +331,64 @@ def build_and_run(work, main_src, flags, label):
     return run.returncode, run.stdout
 
 
+def write_mock_library(work):
+    for rel, text in URP_MOCK.items():
+        path = os.path.join(work, "mock", rel)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w") as f:
+            f.write(text)
+
+
 def glslang_compile(work, program, stage, entry):
-    body = program
-    for inc in ("Core.hlsl", "DeclareOpaqueTexture.hlsl", "DeclareDepthTexture.hlsl"):
-        body = body.replace(f'#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/{inc}"\n', "")
-    body = '#include "urp_mock.hlsl"\n' + body
-    body = re.sub(r"#pragma[^\n]*\n", "\n", body)
+    """B1: the shader's own #include lines resolve into the per-file mock library."""
+    body = re.sub(r"#pragma[^\n]*\n", "\n", program)
     path = os.path.join(work, f"lens_{stage}.hlsl")
     with open(path, "w") as f:
         f.write(body)
     cmd = ["glslangValidator", "-D", "-V", "--target-env", "vulkan1.1", "-S", stage, "-e", entry,
-           "-I" + work, "-o", os.devnull, path]
+           "-I" + os.path.join(work, "mock"), "-o", os.devnull, path]
     r = subprocess.run(cmd, capture_output=True, text=True)
     return r.returncode, (r.stdout + r.stderr).strip()
 
 
+def find_real_toolchain():
+    """B2's compiler and library: (dxc, graphics root) or (None, why)."""
+    dxc = os.environ.get("DXC") or shutil.which("dxc")
+    if not dxc or not os.path.exists(dxc):
+        return None, "dxc not found (put it on PATH or set $DXC)"
+    roots = [os.environ.get("URP_GRAPHICS_ROOT")]
+    if os.environ.get("UNITY_REFCOMPILE_CACHE"):
+        roots.append(os.path.join(os.environ["UNITY_REFCOMPILE_CACHE"], "graphics"))
+    roots.append(os.path.join(os.environ.get("TMPDIR") or "/tmp", "unity_refcompile_cache", "graphics"))
+    for root in roots:
+        if root and os.path.exists(os.path.join(root, URP, "Core.hlsl")):
+            return (dxc, root), None
+    return None, "no URP graphics checkout (run Tools/Build/unity_refcompile/run.sh once, or set $URP_GRAPHICS_ROOT)"
+
+
+def dxc_compile(work, toolchain, program, profile, entry, stage_define, api):
+    """B2: the shader against the REAL URP + core ShaderLibrary."""
+    dxc, root = toolchain
+    body = re.sub(r"#pragma[^\n]*\n", "\n", program)
+    path = os.path.join(work, f"lens_real_{profile}.hlsl")
+    with open(path, "w") as f:
+        f.write(body)
+    cmd = [dxc, "-T", profile, "-E", entry, "-HV", "2018", "-I", root, "-D", api, "-D", stage_define]
+    for d in REAL_DEFINES:
+        cmd += ["-D", d]
+    cmd += ["-Fo", os.devnull, path]
+    env = dict(os.environ)
+    libdir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(dxc))), "lib")
+    if os.path.isdir(libdir):
+        env["LD_LIBRARY_PATH"] = libdir + os.pathsep + env.get("LD_LIBRARY_PATH", "")
+    r = subprocess.run(cmd, capture_output=True, text=True, env=env)
+    errors = [line for line in (r.stdout + r.stderr).splitlines() if "error:" in line]
+    return r.returncode, errors
+
+
 def main():
     keep = "--keep" in sys.argv
+    require_real = "--require-real" in sys.argv
     for tool in ("clang++", "glslangValidator"):
         if shutil.which(tool) is None:
             print(f"{tool} not found", file=sys.stderr)
@@ -340,9 +412,8 @@ def main():
         print(f"\n10. negative control [integration step x31]: {'FIRED' if fired else 'DID NOT FIRE'} ({last})")
         ok &= fired
 
-        print("\nB. glslang front-end compile of BlackHoleLens.shader")
-        with open(os.path.join(work, "urp_mock.hlsl"), "w") as f:
-            f.write(URP_MOCK)
+        print("\nB1. glslang compile of BlackHoleLens.shader against the per-file URP mock")
+        write_mock_library(work)
         shutil.copy(HLSL, os.path.join(work, "BlackHoleLens.hlsl"))
         shader = open(SHADER).read()
         programs = re.findall(r"HLSLPROGRAM(.*?)ENDHLSL", shader, re.S)
@@ -357,6 +428,33 @@ def main():
                 ok = False
             else:
                 print(f"compiled {entry} [{stage}]")
+        assert ENTITY_LIGHTING_INCLUDE in prog, "the shader no longer includes EntityLighting.hlsl"
+        unlit = prog.replace(ENTITY_LIGHTING_INCLUDE, "")
+        rc, out = glslang_compile(work, unlit, "frag", frag)
+        fired = rc != 0 and "DecodeHDREnvironment" in out
+        print(f"B1 negative control [EntityLighting.hlsl include removed]: {'FIRED' if fired else 'DID NOT FIRE'}")
+        ok &= fired
+
+        print("\nB2. DXC compile of BlackHoleLens.shader against the REAL URP + core ShaderLibrary")
+        toolchain, why = find_real_toolchain()
+        if toolchain is None:
+            print(f"B2 SKIPPED: {why}" + (" - FAIL (--require-real)" if require_real else ""))
+            ok &= not require_real
+        else:
+            print(f"library: {toolchain[1]}")
+            for api in REAL_APIS:
+                for profile, entry, stage_define in (("vs_6_0", vert, "SHADER_STAGE_VERTEX"),
+                                                     ("ps_6_0", frag, "SHADER_STAGE_FRAGMENT")):
+                    rc, errors = dxc_compile(work, toolchain, prog, profile, entry, stage_define, api)
+                    if rc != 0:
+                        print(f"COMPILE FAIL {entry} [{api}, {profile}]\n  " + "\n  ".join(errors[:8]))
+                        ok = False
+                    else:
+                        print(f"compiled {entry} [{api}, {profile}]")
+            rc, errors = dxc_compile(work, toolchain, unlit, "ps_6_0", frag, "SHADER_STAGE_FRAGMENT", REAL_APIS[0])
+            fired = rc != 0 and any("DecodeHDREnvironment" in e for e in errors)
+            print(f"B2 negative control [EntityLighting.hlsl include removed]: {'FIRED' if fired else 'DID NOT FIRE'}")
+            ok &= fired
     finally:
         if keep:
             print("kept:", work)

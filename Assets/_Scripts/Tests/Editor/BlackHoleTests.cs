@@ -254,6 +254,25 @@ namespace CosmicShore.Tests
             Assert.AreEqual("CosmicShore/BlackHoleLens", material.shader.name, "BlackHoleLens.mat points at the wrong shader.");
         }
 
+        /// <summary>
+        /// The lens shader COMPILES in this Editor — the check the text assertions above cannot make.
+        /// The first lens shipped calling DecodeHDREnvironment without the include that declares it:
+        /// the file read correctly, a mock-library compile passed, and every hole drew a magenta quad.
+        /// </summary>
+        [Test]
+        public void Lens_ShaderCompilesAndTheLensIsDrawable()
+        {
+            var material = AssetDatabase.LoadAssetAtPath<Material>("Assets/Resources/" + BlackHoleLens.MaterialResourcePath + ".mat");
+            Assert.IsNotNull(material, "Assets/Resources/BlackHoleLens.mat is missing.");
+            var errors = ShaderUtil.GetShaderMessages(material.shader)
+                .Where(m => m.severity == UnityEditor.Rendering.ShaderCompilerMessageSeverity.Error)
+                .Select(m => $"{m.message} ({m.file}:{m.line}, {m.platform})")
+                .ToArray();
+            Assert.IsFalse(ShaderUtil.ShaderHasError(material.shader),
+                "CosmicShore/BlackHoleLens does not compile — every hole draws magenta:\n" + string.Join("\n", errors));
+            Assert.IsTrue(BlackHoleLens.IsDrawable(material, out string reason), reason);
+        }
+
         [Test]
         public void Config_LensEnclosesTheDiscAndTheDiscStartsAtOrOutsideThePhotonSphere()
         {

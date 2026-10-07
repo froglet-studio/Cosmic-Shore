@@ -43,8 +43,8 @@ namespace CosmicShore.Gameplay
         MaterialPropertyBlock _block;
 
         /// <summary>
-        /// The shared lens material, or null when it cannot be found (the hole then falls back to
-        /// a plain black sphere — never an invisible hole).
+        /// The shared lens material, or null when it cannot be drawn (the hole then falls back to
+        /// a plain black sphere — never an invisible hole, and never Unity's magenta error shader).
         /// </summary>
         public static Material SharedMaterial
         {
@@ -53,9 +53,9 @@ namespace CosmicShore.Gameplay
                 if (!s_materialResolved)
                 {
                     s_material = Resources.Load<Material>(MaterialResourcePath);
-                    if (s_material == null || s_material.shader == null || !s_material.shader.isSupported)
+                    if (!IsDrawable(s_material, out string reason))
                     {
-                        CSDebug.LogWarning("[BlackHole] Resources/BlackHoleLens.mat is missing or its shader is unsupported on this device; holes draw as plain black spheres.");
+                        CSDebug.LogWarning($"[BlackHole] The lens cannot draw: {reason}. Holes draw as plain black spheres.");
                         s_material = null;
                     }
                     s_materialResolved = true;
@@ -63,6 +63,53 @@ namespace CosmicShore.Gameplay
                 return s_material;
             }
         }
+
+        /// <summary>
+        /// Whether <paramref name="material"/> renders as the lens rather than as nothing or as
+        /// magenta. <c>Shader.isSupported</c> alone is not enough: a shader that FAILED TO COMPILE
+        /// still reports supported and draws as Unity's error shader, so in the Editor the compile
+        /// state is asked directly and its first error is handed back as the reason.
+        /// </summary>
+        public static bool IsDrawable(Material material, out string reason)
+        {
+            if (material == null)
+            {
+                reason = $"Resources/{MaterialResourcePath}.mat is missing";
+                return false;
+            }
+            var shader = material.shader;
+            if (shader == null)
+            {
+                reason = $"{material.name} has no shader";
+                return false;
+            }
+            if (!shader.isSupported)
+            {
+                reason = $"{shader.name} is not supported on this device";
+                return false;
+            }
+#if UNITY_EDITOR
+            if (UnityEditor.ShaderUtil.ShaderHasError(shader))
+            {
+                reason = $"{shader.name} failed to compile ({FirstCompileError(shader)})";
+                return false;
+            }
+#endif
+            reason = null;
+            return true;
+        }
+
+#if UNITY_EDITOR
+        static string FirstCompileError(Shader shader)
+        {
+            foreach (var message in UnityEditor.ShaderUtil.GetShaderMessages(shader))
+            {
+                if (message.severity == UnityEditor.Rendering.ShaderCompilerMessageSeverity.Error)
+                    return $"{message.message} at {message.file}:{message.line}";
+            }
+            return "see the shader's Inspector";
+        }
+#endif
 
         /// <summary>Build the lens under <paramref name="hole"/>. Null when the material is unavailable.</summary>
         internal static BlackHoleLens Create(BlackHole hole)
