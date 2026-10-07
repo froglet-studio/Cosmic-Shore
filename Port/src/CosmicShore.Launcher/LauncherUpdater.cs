@@ -15,9 +15,12 @@ namespace CosmicShore.Launcher
     /// <summary>
     /// Launcher versions, never applied on their own. <see cref="Check"/> says whether the selected
     /// branch has a newer launcher; the user presses UPDATE, or installs any branch, tag or commit.
-    /// A version is built from that revision's own source (exported with git archive, published
-    /// with the launcher's dotnet) into its own folder, so every installed version stays available
-    /// and USE switches between them - the running .exe is swapped and the launcher restarts.
+    /// The quick way is a release: the prisma-launcher workflow publishes Prisma.exe as a GitHub
+    /// release for every launcher change on bleeding-edge, and UPDATE downloads it (no .NET SDK, no
+    /// workspace, no zip). Any other revision is built from its own source (exported with git
+    /// archive, published with the launcher's dotnet). Each version gets its own folder, so every
+    /// installed one stays available and USE switches between them - the running .exe is swapped
+    /// and the launcher restarts.
     /// </summary>
     public sealed class LauncherUpdater
     {
@@ -26,6 +29,10 @@ namespace CosmicShore.Launcher
         public sealed record VersionInfo(string Commit, string Date, string Subject, string Source, string Dir)
         {
             public string Short => Commit.Length >= 7 ? Commit[..7] : Commit;
+            /// <summary>Set when this version is a published release: the .exe to download and its checksum.</summary>
+            public string? Download { get; init; }
+            public string? Sha256 { get; init; }
+            public long Size { get; init; }
         }
 
         readonly LauncherSettings _s;
@@ -36,6 +43,10 @@ namespace CosmicShore.Launcher
 
         public static string Commit { get; } = Meta("LauncherCommit");
         public static string Date { get; } = Meta("LauncherDate");
+        /// <summary>The launcher's source trees (git tree ids), which a shallow clone can compare without any history.</summary>
+        public static string Tree { get; } = NormTree(Meta("LauncherTree"));
+
+        static string NormTree(string t) => string.Join(",", t.Split(new[] { ';', '\n', '\r', ',', ' ', '-' }, StringSplitOptions.RemoveEmptyEntries));
         public static string Short => Commit.Length >= 7 ? Commit[..7] : "dev";
 
         static string Meta(string key) =>
@@ -48,12 +59,16 @@ namespace CosmicShore.Launcher
         public List<string> Changes { get; } = new();
         public bool Checking { get; private set; }
         public DateTime CheckedAt { get; private set; }
+        /// <summary>Why the last check could not answer (no network, a branch that is gone ...), shown under CHECK.</summary>
+        public string? CheckError { get; private set; }
 
         public bool Installing { get; private set; }
         public float Progress { get; private set; }
         public string Phase { get; private set; } = "";
         public string? Error { get; private set; }
         public bool Done { get; private set; }
+        /// <summary>The install in progress is a download of a published release (not a build from source).</summary>
+        public bool FromRelease { get; private set; }
 
         string Git => _tools.Git ?? "git";
 
@@ -69,28 +84,229 @@ namespace CosmicShore.Launcher
 
         string? GitOut(params string[] args) => ProcessRunner.Capture(Git, new[] { "-C", _ws.Dir }.Concat(args).ToArray());
 
-        /// <summary>Fetches the branch (unless told not to) and compares its newest launcher commit with this build's.</summary>
+        /// <summary>
+        /// Is there a newer launcher for the selected branch? Published releases answer first (they
+        /// need neither git nor a workspace); otherwise the branch is fetched and its launcher source
+        /// compared with this build's.
+        /// </summary>
         public async Task Check(bool fetch = true)
         {
-            if (Checking || !_ws.Exists || _tools.Git == null) return;
+            if (Checking) return;
             Checking = true;
+            CheckError = null;
             try
             {
-                if (fetch) await ProcessRunner.Run(Git, new[] { "-C", _ws.Dir, "fetch", "--quiet", "origin", _s.Branch }, null, null, CancellationToken.None, quiet: true);
-                var rev = "origin/" + _s.Branch;
-                var info = Describe(rev);
-                Changes.Clear();
-                if (info == null || info.Commit == Commit) { Available = null; return; }
-                if (Commit.Length > 0)
+                var releases = await Releases();
+                var mine = releases?.Where(r => r.branch == _s.Branch).ToList();
+                if (mine is { Count: > 0 })
                 {
-                    var log = GitOut(new[] { "log", "--format=%h  %s", "-n", "12", $"{Commit}..{rev}", "--" }.Concat(SourcePaths).ToArray());
-                    if (log != null) Changes.AddRange(log.Split('\n', StringSplitOptions.RemoveEmptyEntries));
-                    // This launcher is newer than the branch (someone runs a feature build): nothing to offer.
-                    if (log != null && Changes.Count == 0) { Available = null; return; }
+                    CheckRelease(mine);
+                    return;
                 }
-                Available = info with { Source = _s.Branch };
+                if (!_ws.Exists || _tools.Git == null)
+                {
+                    Available = null;
+                    CheckError = releases == null ? "Could not reach GitHub's releases." : $"No published launcher for {_s.Branch}; press START once so Prisma can build one from source.";
+                    return;
+                }
+                await CheckSource(fetch);
             }
+            catch (Exception e) { CheckError = e.Message; }
             finally { Checking = false; CheckedAt = DateTime.Now; }
+        }
+
+        void CheckRelease(List<Release> mine)
+        {
+            Changes.Clear();
+            var newest = mine[0];
+            int at = mine.FindIndex(r => r.commit == Commit);
+            if (newest.commit == Commit || (at < 0 && string.CompareOrdinal(newest.date, Date) < 0 && Commit.Length > 0)) { Available = null; return; }
+            // Everything published since the one running (or the newest's own list when it is unknown).
+            foreach (var r in at > 0 ? mine.Take(at) : mine.Take(1))
+                foreach (var c in r.changes) if (!Changes.Contains(c)) Changes.Add(c);
+            Available = new VersionInfo(newest.commit, newest.date, newest.changes.FirstOrDefault() ?? newest.tag, _s.Branch, "")
+                { Download = newest.url, Sha256 = newest.sha256, Size = newest.size };
+        }
+
+        async Task CheckSource(bool fetch)
+        {
+            if (fetch)
+            {
+                var f = await FetchBranch(_s.Branch, null);
+                if (f != null) { Available = null; CheckError = f; return; }
+            }
+            var rev = "origin/" + _s.Branch;
+            Changes.Clear();
+            var tree = TreeOf(rev);
+            if (tree == null) { Available = null; CheckError = $"{_s.Branch} has no launcher."; return; }
+            var info = Describe(rev) ?? Tip(rev);
+            if (info == null) { Available = null; return; }
+            if (Tree.Length > 0)
+            {
+                // Same source as this build: nothing to offer, whatever the commit ids say.
+                if (tree == Tree) { Available = null; return; }
+            }
+            else if (info.Commit == Commit) { Available = null; return; }
+            if (Commit.Length > 0)
+            {
+                var log = GitOut(new[] { "log", "--format=%h  %s", "-n", "12", $"{Commit}..{rev}", "--" }.Concat(SourcePaths).ToArray());
+                if (log != null) Changes.AddRange(log.Split('\n', StringSplitOptions.RemoveEmptyEntries));
+                // This launcher is newer than the branch (someone runs a feature build): nothing to offer.
+                if (Tree.Length == 0 && log != null && Changes.Count == 0) { Available = null; return; }
+            }
+            Available = info with { Source = _s.Branch };
+        }
+
+        /// <summary>
+        /// Fetches a branch INTO origin/BRANCH: a plain "fetch origin B" in a single-branch shallow
+        /// clone only fills FETCH_HEAD, so origin/B would stay stale or missing. Returns an error, or null.
+        /// </summary>
+        async Task<string?> FetchBranch(string branch, LogBuffer? log)
+        {
+            var r = await ProcessRunner.Run(Git, new[] { "-C", _ws.Dir, "fetch", "--quiet", "origin", $"+refs/heads/{branch}:refs/remotes/origin/{branch}" },
+                null, log, CancellationToken.None, _ws.GitEnv(), quiet: log == null);
+            if (r.ExitCode == 0) return null;
+            return r.StdErr.Contains("couldn't find remote ref") ? $"The branch {branch} is not on GitHub any more (merged and deleted?). Pick another in SETTINGS > SOURCE."
+                : "git fetch failed: " + r.StdErr.Split('\n').FirstOrDefault(l => l.Trim().Length > 0)?.Trim();
+        }
+
+        /// <summary>The launcher's source trees at <paramref name="rev"/>, in the form <see cref="Tree"/> uses.</summary>
+        string? TreeOf(string rev)
+        {
+            var ids = new List<string>();
+            foreach (var p in SourcePaths)
+            {
+                var id = GitOut("rev-parse", "--verify", "--quiet", $"{rev}:{p}");
+                if (id == null) return null;
+                ids.Add(id);
+            }
+            return string.Join(",", ids);
+        }
+
+        /// <summary>The commit <paramref name="rev"/> points at, for a shallow clone whose history does not reach the last launcher change.</summary>
+        VersionInfo? Tip(string rev)
+        {
+            var line = GitOut("log", "-1", "--format=%H|%cs|%s", rev);
+            if (string.IsNullOrWhiteSpace(line)) return null;
+            var p = line.Split('|', 3);
+            return p.Length < 3 ? null : new VersionInfo(p[0], p[1], p[2], rev, "");
+        }
+
+        // ------------------------------------------------------------------ releases
+
+        public const string ReleasePrefix = "prisma-launcher-";
+
+        /// <summary>One published launcher: its tag, the commit and date it was built from, the branch, and the .exe.</summary>
+        public sealed record Release(string tag, string commit, string date, string branch, string url, string sha256, long size, List<string> changes);
+
+        string Repo()
+        {
+            var m = System.Text.RegularExpressions.Regex.Match(_s.RemoteUrl, @"github\.com[/:]([^/]+)/([^/]+?)(\.git)?/?$");
+            return m.Success ? $"{m.Groups[1].Value}/{m.Groups[2].Value}" : "froglet-studio/Cosmic-Shore";
+        }
+
+        /// <summary>The published launchers for Windows, newest first; null when GitHub could not be asked.</summary>
+        async Task<List<Release>?> Releases()
+        {
+            if (!OperatingSystem.IsWindows()) return new(); // releases carry the Windows .exe only
+            try
+            {
+                using var http = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(20) };
+                http.DefaultRequestHeaders.UserAgent.ParseAdd("Prisma/" + Short);
+                http.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
+                var token = _ws.GitHubApiToken();
+                if (!string.IsNullOrWhiteSpace(token)) http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+                var resp = await http.GetAsync($"https://api.github.com/repos/{Repo()}/releases?per_page=60");
+                if (!resp.IsSuccessStatusCode && http.DefaultRequestHeaders.Authorization != null)
+                {
+                    // A stale credential must not hide a public repository's releases.
+                    http.DefaultRequestHeaders.Authorization = null;
+                    resp = await http.GetAsync($"https://api.github.com/repos/{Repo()}/releases?per_page=60");
+                }
+                if (!resp.IsSuccessStatusCode) return null;
+                return ParseReleases(await resp.Content.ReadAsStringAsync());
+            }
+            catch { return null; }
+        }
+
+        /// <summary>
+        /// Reads the releases list: a launcher release is tagged prisma-launcher-SHORT and its body
+        /// starts with an HTML comment holding its metadata (the workflow writes it), e.g.
+        /// &lt;!-- prisma-launcher {"commit":"..","date":"..","branch":"..","sha256":"..","changes":[..]} --&gt;
+        /// </summary>
+        public static List<Release> ParseReleases(string json)
+        {
+            var list = new List<Release>();
+            using var d = JsonDocument.Parse(json);
+            foreach (var r in d.RootElement.EnumerateArray())
+            {
+                try
+                {
+                    var tag = r.GetProperty("tag_name").GetString() ?? "";
+                    if (!tag.StartsWith(ReleasePrefix) || (r.TryGetProperty("draft", out var dr) && dr.GetBoolean())) continue;
+                    var body = r.TryGetProperty("body", out var b) ? b.GetString() ?? "" : "";
+                    var m = System.Text.RegularExpressions.Regex.Match(body, @"<!--\s*prisma-launcher\s+(\{.*?\})\s*-->", System.Text.RegularExpressions.RegexOptions.Singleline);
+                    if (!m.Success) continue;
+                    using var meta = JsonDocument.Parse(m.Groups[1].Value);
+                    var mr = meta.RootElement;
+                    string Str(string k) => mr.TryGetProperty(k, out var v) ? v.GetString() ?? "" : "";
+                    var asset = r.GetProperty("assets").EnumerateArray().FirstOrDefault(x => x.GetProperty("name").GetString() == "Prisma.exe");
+                    if (asset.ValueKind != JsonValueKind.Object) continue;
+                    var changes = mr.TryGetProperty("changes", out var ch) && ch.ValueKind == JsonValueKind.Array
+                        ? ch.EnumerateArray().Select(x => x.GetString() ?? "").Where(x => x.Length > 0).ToList() : new List<string>();
+                    list.Add(new Release(tag, Str("commit"), Str("date"), Str("branch"), asset.GetProperty("browser_download_url").GetString() ?? "",
+                        Str("sha256").ToLowerInvariant(), asset.TryGetProperty("size", out var sz) ? sz.GetInt64() : 0, changes));
+                }
+                catch { /* not one of ours */ }
+            }
+            // Newest first: by the commit date, then the order GitHub lists them (newest created first).
+            return list.Select((r, i) => (r, i)).OrderByDescending(x => x.r.date, StringComparer.Ordinal).ThenBy(x => x.i).Select(x => x.r).ToList();
+        }
+
+        /// <summary>Downloads a published launcher into its version folder (checking its SHA-256), then switches to it.</summary>
+        async Task InstallRelease(VersionInfo v, LogBuffer log)
+        {
+            FromRelease = true;
+            var dir = Path.Combine(VersionsDir, v.Short);
+            if (!File.Exists(Exe(dir)))
+            {
+                Phase = "Downloading";
+                var tmp = dir + ".partial";
+                if (Directory.Exists(tmp)) Directory.Delete(tmp, true);
+                Directory.CreateDirectory(tmp);
+                var exe = Path.Combine(tmp, "Prisma.exe");
+                log.Add(LogKind.Command, $"> download Prisma {v.Short} ({v.Date})");
+                using (var http = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromMinutes(20) })
+                {
+                    http.DefaultRequestHeaders.UserAgent.ParseAdd("Prisma/" + Short);
+                    using var resp = await http.GetAsync(v.Download, System.Net.Http.HttpCompletionOption.ResponseHeadersRead);
+                    resp.EnsureSuccessStatusCode();
+                    long total = resp.Content.Headers.ContentLength ?? v.Size;
+                    await using var src = await resp.Content.ReadAsStreamAsync();
+                    await using var dst = File.Create(exe);
+                    var buf = new byte[1 << 16];
+                    long got = 0; int n;
+                    while ((n = await src.ReadAsync(buf)) > 0)
+                    {
+                        await dst.WriteAsync(buf.AsMemory(0, n));
+                        got += n;
+                        if (total > 0) { Progress = 0.05f + 0.85f * got / total; Phase = $"Downloading  {got >> 20} / {total >> 20} MB"; }
+                    }
+                }
+                Phase = "Verifying";
+                if (!string.IsNullOrEmpty(v.Sha256))
+                {
+                    string actual;
+                    await using (var f = File.OpenRead(exe)) actual = Convert.ToHexString(await System.Security.Cryptography.SHA256.HashDataAsync(f)).ToLowerInvariant();
+                    if (actual != v.Sha256) throw new Exception("The download failed its checksum. Try again.");
+                }
+                if (Directory.Exists(dir)) Directory.Delete(dir, true);
+                Directory.Move(tmp, dir);
+                File.WriteAllText(Path.Combine(dir, "version.json"), JsonSerializer.Serialize(v with { Source = v.Source, Dir = "", Download = null, Sha256 = null }));
+            }
+            Progress = 0.94f;
+            Phase = "Installing";
+            Use(Installed().First(x => x.Commit == v.Commit), log);
         }
 
         /// <summary>The last commit at or before <paramref name="rev"/> that changed the launcher.</summary>
@@ -140,18 +356,33 @@ namespace CosmicShore.Launcher
         public async Task Install(string rev, LogBuffer log)
         {
             if (Installing) return;
-            Installing = true; Done = false; Error = null; Progress = 0;
+            Installing = true; Done = false; Error = null; Progress = 0; FromRelease = false;
             try
             {
+                // A published release of that branch or commit: a download, no build.
+                if (OperatingSystem.IsWindows())
+                {
+                    var rel = rev == _s.Branch && Available?.Download != null ? Available
+                        : (await Releases())?.Where(r => r.branch == rev || r.tag == rev || (rev.Length >= 7 && r.commit.StartsWith(rev, StringComparison.OrdinalIgnoreCase)))
+                            .Select(r => new VersionInfo(r.commit, r.date, r.changes.FirstOrDefault() ?? r.tag, rev, "") { Download = r.url, Sha256 = r.sha256, Size = r.size })
+                            .FirstOrDefault();
+                    if (rel?.Download != null) { await InstallRelease(rel with { Source = rev }, log); return; }
+                }
                 if (_tools.Git == null || _tools.Dotnet == null) throw new Exception("git and .NET are needed (press START once to set them up).");
                 if (!_ws.Exists) throw new Exception("No workspace yet: press START once.");
                 bool commit = System.Text.RegularExpressions.Regex.IsMatch(rev, "^[0-9a-fA-F]{7,40}$");
                 Phase = "Fetching " + (commit ? rev[..7] : rev);
                 // A branch or tag: fetch just that. A commit already here needs no network.
-                if (!commit || GitOut("cat-file", "-e", rev + "^{commit}") == null)
-                    await ProcessRunner.Run(Git, new[] { "-C", _ws.Dir, "fetch", "--quiet", "origin", commit ? "" : rev }.Where(x => x.Length > 0).ToArray(), null, log, CancellationToken.None);
+                if (!commit && GitOut("ls-remote", "--exit-code", "--heads", "origin", rev) != null)
+                {
+                    if (await FetchBranch(rev, log) is { } fe) throw new Exception(fe);
+                }
+                else if (!commit || GitOut("cat-file", "-e", rev + "^{commit}") == null)
+                    await ProcessRunner.Run(Git, new[] { "-C", _ws.Dir, "fetch", "--quiet", "origin", commit ? rev : "refs/tags/" + rev + ":refs/tags/" + rev }, null, log, CancellationToken.None, _ws.GitEnv());
                 string resolved = GitOut("rev-parse", "--verify", "--quiet", "origin/" + rev) != null ? "origin/" + rev : rev;
-                var info = Describe(resolved) ?? throw new Exception($"'{rev}' is not a branch, tag or commit that has the launcher.");
+                if (TreeOf(resolved) is not { } tree) throw new Exception($"'{rev}' is not a branch, tag or commit that has the launcher.");
+                // A shallow workspace may not reach the last commit that changed the launcher: build the tip then.
+                var info = Describe(resolved) ?? Tip(resolved) ?? throw new Exception($"'{rev}' could not be read.");
                 Progress = 0.08f;
 
                 var dir = Path.Combine(VersionsDir, info.Short);
@@ -162,7 +393,7 @@ namespace CosmicShore.Launcher
                     if (Directory.Exists(src)) Directory.Delete(src, true);
                     Directory.CreateDirectory(src);
                     var zip = src + ".zip";
-                    var r = await ProcessRunner.Run(Git, new[] { "-C", _ws.Dir, "archive", "--format=zip", "-o", zip, info.Commit }.Concat(SourcePaths).ToArray(), null, log, CancellationToken.None);
+                    var r = await ProcessRunner.Run(Git, new[] { "-C", _ws.Dir, "archive", "--format=zip", "-o", zip, resolved }.Concat(SourcePaths).ToArray(), null, log, CancellationToken.None);
                     if (r.ExitCode != 0) throw new Exception("git archive failed - see CONSOLE.");
                     ZipFile.ExtractToDirectory(zip, src);
                     File.Delete(zip);
@@ -177,7 +408,7 @@ namespace CosmicShore.Launcher
                         "publish", Path.Combine(src, "Port", "src", "CosmicShore.Launcher"), "-c", "Release",
                         "-r", RuntimeInformation.RuntimeIdentifier, "--self-contained",
                         "-p:PublishSingleFile=true", "-p:IncludeNativeLibrariesForSelfExtract=true", "-p:EnableCompressionInSingleFile=true",
-                        "-p:LauncherCommit=" + info.Commit, "-p:LauncherDate=" + info.Date, "-o", tmp,
+                        "-p:LauncherCommit=" + info.Commit, "-p:LauncherDate=" + info.Date, "-p:LauncherTree=" + tree.Replace(",", "-"), "-o", tmp,
                     }, null, log, CancellationToken.None, _tools.DotnetEnv(), onLine: l =>
                     {
                         lines++;

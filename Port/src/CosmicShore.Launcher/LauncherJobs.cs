@@ -104,7 +104,12 @@ namespace CosmicShore.Launcher
         public void Play() => Start("Start game", async ct =>
         {
             if (!await EnsureTools(ct)) return false;
-            if (_s.PullBeforePlay || !_ws.HasEngine)
+            // Unsaved edits in the workspace are what the user wants to try: build them as they are.
+            int pending = _ws.HasEngine ? _ws.PendingChanges() : 0;
+            if (pending > 0)
+                Log.Add(LogKind.Warn, $"Using the workspace as it is: it has {pending} unsaved change{(pending == 1 ? "" : "s")}, so {_s.Branch} was not pulled. " +
+                                      "Commit them to a branch or discard them on the GIT page to get the latest again.");
+            else if (_s.PullBeforePlay || !_ws.HasEngine)
                 if (!await SyncStep(ct)) return false;
             Step("Audio library");
             bool audio = _s.Audio && await _ws.FetchNatives(Log, ct);
@@ -166,7 +171,12 @@ namespace CosmicShore.Launcher
         public void BuildPhone(bool ios) => Start(ios ? "Build iOS" : "Build Android", async ct =>
         {
             if (!await EnsureTools(ct)) return false;
-            if (_s.PullBeforePlay || !_ws.HasEngine)
+            // Unsaved edits in the workspace are what the user wants to try: build them as they are.
+            int pending = _ws.HasEngine ? _ws.PendingChanges() : 0;
+            if (pending > 0)
+                Log.Add(LogKind.Warn, $"Using the workspace as it is: it has {pending} unsaved change{(pending == 1 ? "" : "s")}, so {_s.Branch} was not pulled. " +
+                                      "Commit them to a branch or discard them on the GIT page to get the latest again.");
+            else if (_s.PullBeforePlay || !_ws.HasEngine)
                 if (!await SyncStep(ct)) return false;
             bool xcode = ios && _s.Ios == IosMode.Xcode;
             Step(xcode ? "Exporting the Xcode project" : ios ? "Building the iOS app" : "Building the Android app (first run installs the Android SDK)");

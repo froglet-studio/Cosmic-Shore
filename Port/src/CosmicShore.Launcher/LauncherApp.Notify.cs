@@ -57,7 +57,7 @@ namespace CosmicShore.Launcher
                     string.Join("\n", problems.Take(2).Select(i => Trim(i.Message.Replace('\n', ' '), 70))), NoteKind.Warning,
                     ("CLEAN UP", () =>
                     {
-                        _chat.SetScope(ClaudeChat.Scope.Game);
+                        _chats.New();
                         _page = Page.Chat;
                         SendChat("Clean up the new problems from my last play run (prisma_tracks has them with counts):\n" +
                                  string.Join("\n", problems.Take(8).Select(i => $"- [{i.Kind}] {i.Message}")) +

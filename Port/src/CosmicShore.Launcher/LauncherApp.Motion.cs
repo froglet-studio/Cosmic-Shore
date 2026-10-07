@@ -103,6 +103,8 @@ namespace CosmicShore.Launcher
         {
             var fg = ImGui.GetForegroundDrawList();
             if (_updater.Installing || _updater.Done) { DrawInstall(size, dt); return; }
+            // An open Prisma keeps checking now and then, so UPDATE shows up without a restart.
+            if (!_args.Offline && !_updater.Checking && _updater.CheckedAt != default && (DateTime.Now - _updater.CheckedAt).TotalMinutes > 30) _ = _updater.Check();
 
             // the rail badge: pulses while a newer launcher waits on the branch
             if (_updater.Available != null)
@@ -199,7 +201,8 @@ namespace CosmicShore.Launcher
             for (int i = 6; i >= 1; i--) dl.AddCircleFilled(c, core * i / 6f + 8, Neon.U(Neon.Cyan, 0.06f * fade));
             CenterText(dl, Neon.Heading, 26, c.X, c.Y - 14, Neon.Mix(Neon.Space0, Neon.Ink, fade), $"{(int)(p * 100)}%");
             CenterText(dl, Neon.Heading, 20, c.X, c.Y + 168, Neon.Mix(Neon.Space0, Neon.Cyan, fade), _updater.Phase.ToUpperInvariant());
-            CenterText(dl, Neon.Small, 15, c.X, c.Y + 200, Neon.Mix(Neon.Space0, Neon.Dim, fade), "Building the launcher of " + ShortRev(_installRev.Length > 0 ? _installRev : _s.Branch) + " from its own source");
+            CenterText(dl, Neon.Small, 15, c.X, c.Y + 200, Neon.Mix(Neon.Space0, Neon.Dim, fade), (_updater.FromRelease ? "Downloading the published launcher of " + ShortRev(_installRev.Length > 0 ? _installRev : _s.Branch)
+                    : "Building the launcher of " + ShortRev(_installRev.Length > 0 ? _installRev : _s.Branch) + " from its own source"));
 
             if (_updater.Error != null && !_updater.Installing)
             {
@@ -236,9 +239,9 @@ namespace CosmicShore.Launcher
                     ImGui.SameLine(0, 10);
                 }
                 ImGui.PushFont(Neon.Small);
-                ImGui.TextColored(_updater.Available != null ? Neon.Lime : Neon.Dim,
+                ImGui.TextColored(_updater.Available != null ? Neon.Lime : _updater.CheckError != null ? Neon.Amber : Neon.Dim,
                     _updater.Available != null ? $"newer: {_updater.Available.Short} ({_updater.Available.Date})"
-                    : _updater.CheckedAt == default ? "not checked yet" : "up to date");
+                    : _updater.CheckError != null ? Trim(_updater.CheckError, 90) : _updater.CheckedAt == default ? "not checked yet" : "up to date");
                 ImGui.PopFont();
             });
             Row("Install version", () =>

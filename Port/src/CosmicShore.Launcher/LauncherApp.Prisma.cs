@@ -137,9 +137,10 @@ namespace CosmicShore.Launcher
             if (Milestones()?["checkpoints"] is not JsonArray arr) return;
             if (arr.OfType<JsonObject>().FirstOrDefault(x => x["id"]?.ToString() == id) is not { } c) return;
             if ((c["status"]?.ToString() ?? "todo") == "todo") SetMilestoneStatus(c, "in-progress");
-            _chat.SetScope(ClaudeChat.Scope.Milestone, id, c["title"]?.ToString() ?? "");
-            _s.ChatMode = 0; _dirty = true;
+            var chat = _chats.ForMilestone(id, c["title"]?.ToString() ?? "");
             _page = Page.Chat;
+            if (chat.Busy) return; // already running: just show it
+            _s.ChatMode = 0; _dirty = true;
             SendChat(c["prompt"]?.ToString() ?? $"Plan checkpoint {id}.", ClaudeChat.Mode.Plan);
         }
 
@@ -173,9 +174,10 @@ namespace CosmicShore.Launcher
                 ("CONTINUE", () =>
                 {
                     // Same conversation when it is still open; otherwise a fresh one told what was tried.
-                    bool same = _chat.CurrentScope == ClaudeChat.Scope.Milestone && _chat.Milestone == stop.Milestone;
-                    if (!same) _chat.SetScope(ClaudeChat.Scope.Milestone, stop.Milestone, stop.Title);
+                    var chat = _chats.ForMilestone(stop.Milestone, stop.Title);
+                    bool same = !chat.Empty;
                     _page = Page.Chat;
+                    if (chat.Busy) return;
                     SendChat("Continue where the last run stopped. Check what is already done before redoing anything, and keep to the exit criterion." +
                              (same ? "" : $"\nThe last run stopped {stop.Reason}. What it tried:\n{stop.Tried}"), (ClaudeChat.Mode)_s.ChatMode);
                 }),
@@ -186,6 +188,7 @@ namespace CosmicShore.Launcher
         {
             Page.Board => _board.Items.Count(i => i.State == PrismaBoard.Status.Suggested),
             Page.Tracks => _tracks.Open.Count(i => i.Kind is "crash" or "exception"),
+            Page.Git => _git.Last?.Changes.Count ?? 0,
             _ => 0,
         };
 
@@ -225,8 +228,9 @@ namespace CosmicShore.Launcher
             }
             IconAt("tbhelp", 40, IconHelp, "Take the tour", () => StartTour());
             IconAt("tbbell", 40, IconBell, "Notifications", () => _centerOpen = !_centerOpen, _notes.Count(n => !n.Seen));
-            IconAt("tbagent", 40, (d, c, col) => { d.AddCircleFilled(c, 5, Neon.U(_chat.Busy ? Neon.Amber : _chat.SignedIn == true || !string.IsNullOrWhiteSpace(_s.AnthropicApiKey) ? Neon.Lime : Neon.Dim)); },
-                _chat.Busy ? "Prisma Agent is working" : "Prisma Agent (powered by Claude)", () => _page = Page.Chat);
+            int running = _chats.Running;
+            IconAt("tbagent", 40, (d, c, col) => { d.AddCircleFilled(c, 5, Neon.U(running > 0 ? Neon.Amber : _chat.SignedIn == true || !string.IsNullOrWhiteSpace(_s.AnthropicApiKey) ? Neon.Lime : Neon.Dim)); },
+                running > 0 ? $"Prisma Agent: {running} chat{(running == 1 ? " is" : "s are")} working" : "Prisma Agent (powered by Claude)", () => _page = Page.Chat);
             // branch chip
             var branch = Trim(_s.Branch, 34);
             ImGui.PushFont(Neon.Small);
@@ -340,7 +344,7 @@ namespace CosmicShore.Launcher
             dl.AddText(Neon.Small, 12, p + new Vector2(w - 330, 8), Neon.U(Neon.Dim), $"{issue.Runs} run{(issue.Runs == 1 ? "" : "s")}  ·  last {issue.LastSeen.ToLocalTime():MMM d HH:mm}");
             ImGui.PushID(issue.Key);
             ImGui.SetCursorScreenPos(p + new Vector2(w - 190, 12));
-            if (SmallButton("FIX", 70, !_chat.Busy)) FixWithAgent(issue.Message, issue.Kind, issue.Runs);
+            if (SmallButton("FIX", 70, true)) FixWithAgent(issue.Message, issue.Kind, issue.Runs);
             ImGui.SameLine(0, 6);
             bool tracked = _board.Items.Any(i => i.IssueKey == issue.Key && i.State is not PrismaBoard.Status.Suggested and not PrismaBoard.Status.Dismissed);
             if (SmallButton(tracked ? "ON BOARD" : "TRACK", 100, !tracked))
@@ -449,9 +453,9 @@ namespace CosmicShore.Launcher
                     Trim($"{r.Seconds / 60:0.0} min  ·  {string.Join(" > ", r.Scenes.Take(5))}  ·  p95 {r.P95:0.0} ms  ·  {r.Exceptions} exc, {r.Errors} err, {r.Warnings} warn" + (r.Crashed ? "  ·  CRASHED" : ""), 130));
                 ImGui.PushID(r.Id);
                 ImGui.SetCursorScreenPos(p + new Vector2(w - 112, 10));
-                if (SmallButton("ANALYSE", 100, !_chat.Busy))
+                if (SmallButton("ANALYSE", 100, true))
                 {
-                    _chat.SetScope(ClaudeChat.Scope.Game);
+                    _chats.New();
                     _page = Page.Chat;
                     SendChat($"Analyse this play run in Prisma: {r.Report}. Compare it with the tracks (prisma_tracks), rank what needs fixing in the game, and suggest the fixes as board items (prisma_board_suggest).",
                         ClaudeChat.Mode.Plan);
@@ -463,7 +467,7 @@ namespace CosmicShore.Launcher
 
         void FixWithAgent(string message, string kind, int runs)
         {
-            _chat.SetScope(ClaudeChat.Scope.Game);
+            _chats.New();
             _page = Page.Chat;
             SendChat($"Fix this {kind} in Cosmic Shore - Prisma has seen it in {runs} run(s):\n{message}\n\nFind it in the tracks (prisma_tracks) and the game's code, reproduce it, fix it in the game, and prove the fix with the prisma tools. If its cause is in Prisma itself, say which milestone it belongs to instead.",
                 (ClaudeChat.Mode)_s.ChatMode);
@@ -591,10 +595,10 @@ namespace CosmicShore.Launcher
                 if (it.State != PrismaBoard.Status.Done && SmallButton(it.State == PrismaBoard.Status.Todo ? "START >" : "DONE >", 86, true))
                     MoveCard(it, it.State + 1);
                 ImGui.SameLine(0, 6);
-                if (it.Milestone == null && SmallButton("AGENT", 76, !_chat.Busy))
+                if (it.Milestone == null && SmallButton("AGENT", 76, true))
                 {
                     if (it.State == PrismaBoard.Status.Todo) MoveCard(it, PrismaBoard.Status.Doing, "handed to the Prisma Agent");
-                    _chat.SetScope(ClaudeChat.Scope.Game);
+                    _chats.New();
                     _page = Page.Chat;
                     SendChat($"Work on board item {it.Id} ({it.Type}): {it.Title}\n{it.Detail}\n\n" +
                              (it.Criterion.Length > 0 ? $"Acceptance criterion: {it.Criterion}\nRun that check (engine_smoke, game_* or a test) and show its result before saying the work is done. " : "Say how you proved it before saying it is done. ") +
@@ -661,7 +665,8 @@ namespace CosmicShore.Launcher
                 Trim($"{c["weeks"]} week{(c["weeks"]?.ToString() == "1" ? "" : "s")}  ·  {(deps.Count > 0 ? "needs " + string.Join(", ", deps) : "no dependencies")}  ·  {c["exit"]}", (int)((w - 360) / 6.6f)));
             ImGui.PushID(id);
             ImGui.SetCursorScreenPos(p + new Vector2(w - 300, 16));
-            if (status != "done" && SmallButton(status == "in-progress" ? "CONTINUE" : "START", 110, !_chat.Busy))
+            bool running = _chats.All.Any(x => x.Milestone == id && x.Busy);
+            if (status != "done" && SmallButton(running ? "OPEN" : status == "in-progress" ? "CONTINUE" : "START", 110, true))
                 StartMilestone(id);
             Neon.Tooltip(ready ? "Opens an engine session for this checkpoint in PLAN mode with its prompt." : "Its dependencies are not done yet - you can still start it.");
             ImGui.SameLine(0, 6);

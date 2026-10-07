@@ -94,6 +94,12 @@ namespace CosmicShore.Launcher
 
         static string ResolveDataDir()
         {
+            // A second, separate Prisma (and the launcher tests) can point everything elsewhere.
+            if (Environment.GetEnvironmentVariable("PRISMA_DATA_DIR") is { Length: > 0 } own)
+            {
+                Directory.CreateDirectory(own);
+                return own;
+            }
             var baseDir = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             if (string.IsNullOrEmpty(baseDir))
                 baseDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".local", "share");

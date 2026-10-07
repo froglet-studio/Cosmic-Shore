@@ -24,7 +24,7 @@ namespace CosmicShore.Launcher
     /// </summary>
     public sealed partial class LauncherApp
     {
-        enum Page { Play, Build, Project, Chat, Options, Console, Tracks, Board, Milestones }
+        enum Page { Play, Build, Project, Chat, Options, Console, Tracks, Board, Milestones, Git }
 
         public sealed record Args(string? Screenshot, int Frames, string? Page, bool Offline, string? Auto = null, string? UpdatedFrom = null, int Tour = -1);
 
@@ -33,7 +33,9 @@ namespace CosmicShore.Launcher
         readonly Toolchain _tools = new();
         readonly Workspace _ws;
         readonly LauncherJobs _jobs;
-        readonly ClaudeChat _chat;
+        readonly ChatStore _chats;
+        /// <summary>The conversation the AGENT page shows; the others keep running behind it.</summary>
+        ClaudeChat _chat => _chats.Active;
 
         IWindow _window = null!;
         GL _gl = null!;
@@ -64,15 +66,21 @@ namespace CosmicShore.Launcher
             _s = LauncherSettings.Load();
             _ws = new Workspace(_s, _tools);
             _jobs = new LauncherJobs(_s, _tools, _ws);
-            _chat = new ClaudeChat(_s, _tools);
+            _git = new SourceControl(_s, _tools, _ws);
+            _chats = new ChatStore(_s, _tools, c =>
+            {
+                c.MilestoneStopped += stop => _ui.Enqueue(() => OnMilestoneStopped(stop));
+                c.ReplyFinished += t => { if (_s.VoiceReplies && ReferenceEquals(c, _chats?.Active)) _voice?.Speak(t); };
+                c.Saved += () => _ui.Enqueue(() => OnChatRunEnded(c));
+            });
             _updater = new LauncherUpdater(_s, _tools, _ws);
             // A play session that ends is folded into the tracks, and Prisma says what it found.
             _jobs.GameExited += () => Task.Run(async () => { await Task.Delay(2000); IngestSessions(notify: true); });
-            _chat.MilestoneStopped += stop => _ui.Enqueue(() => OnMilestoneStopped(stop));
             if (args.Tour >= 0) _tour = args.Tour;
             var pageArg = args.Page?.Split(':');
             if (pageArg != null && Enum.TryParse<Page>(pageArg[0], true, out var p)) _page = p;
             if (pageArg is { Length: > 1 } && int.TryParse(pageArg[1], out var tab)) _projTab = tab;
+            if (pageArg is { Length: > 1 } && pageArg[1] == "usage") _usageOpen = true; // --page chat:usage (docs screenshots)
             else if (pageArg is { Length: > 1 }) { _open.Clear(); _open.Add(pageArg[1].ToUpperInvariant()); } // --page options:claude
             if (LauncherSettings.FirstRun) DetectExistingClone();
             for (int i = 0; i < _stars.Length; i++) _stars[i] = NewStar(randomDepth: true);
@@ -111,7 +119,7 @@ namespace CosmicShore.Launcher
             _window.Load += OnLoad;
             _window.Render += OnRender;
             _window.FramebufferResize += s => _gl?.Viewport(s);
-            _window.Closing += () => { _chat.Stop(); _s.Save(); _imgui?.Dispose(); };
+            _window.Closing += () => { _chats.StopAll(); _s.Save(); _imgui?.Dispose(); };
             _window.Run();
             _window.Dispose();
         }
@@ -286,6 +294,7 @@ namespace CosmicShore.Launcher
                 case Page.Tracks: DrawTracks(contentA, contentB); break;
                 case Page.Board: DrawBoard(contentA, contentB); break;
                 case Page.Milestones: DrawMilestones(contentA, contentB); break;
+                case Page.Git: DrawGit(contentA, contentB); break;
             }
             DrawStatusBar(size);
             ImGui.End();
@@ -387,6 +396,7 @@ namespace CosmicShore.Launcher
                 (Page.Build, "BUILD", Neon.IconPhone),
                 (Page.Project, "PROJECT", Neon.IconSliders),
                 (Page.Chat, "AGENT", Neon.IconChat),
+                (Page.Git, "GIT", IconBranch),
                 (Page.Tracks, "TRACKS", IconTracks),
                 (Page.Board, "BOARD", IconBoard),
                 (Page.Milestones, "MILESTONES", IconFlag),

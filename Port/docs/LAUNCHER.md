@@ -10,8 +10,12 @@ Source: `Port/src/CosmicShore.Launcher` (C#, Dear ImGui on our own Silk.NET wind
 
 ## Getting the .exe
 
-- Ready-made: `Port/dist/Prisma-Windows.zip` (one file, nothing to install).
-- Rebuild it: double-click `Port\build-launcher.bat`.
+- Ready-made: the repository's **Releases** page on GitHub has `Prisma.exe` (tags
+  `prisma-launcher-<commit>`): download it and run it, nothing to unzip or install. The
+  `prisma-launcher.yml` workflow publishes one for every launcher change on `bleeding-edge`.
+- From then on the app updates itself (UPDATE, below); `Port/dist/Prisma-Windows.zip` is only a
+  fallback for the very first copy.
+- Rebuild it yourself: double-click `Port\build-launcher.bat`.
 
 | Needed | Why | If missing |
 |---|---|---|
@@ -26,7 +30,8 @@ Source: `Port/src/CosmicShore.Launcher` (C#, Dear ImGui on our own Silk.NET wind
 | **PLAY** | Branch, **START**, and four quick toggles (fullscreen, audio, online, pull first). The small buttons beside them update without playing and open the workspace folder. |
 | **BUILD** | One card per phone platform. Each card has one choice and one button; everything else is under *Options*. |
 | **PROJECT** | The engine's own Project Settings (below). |
-| **AGENT** | The Prisma Agent, powered by Claude (below). |
+| **AGENT** | The Prisma Agent, powered by Claude: as many chats as you like, side by side (below). |
+| **GIT** | What the agent (or you) changed in the workspace, and getting it to GitHub (below). |
 | **TRACKS** | Every play run: performance per scene, features used, audio, every problem over time (below). |
 | **BOARD** | Bugs and tasks, with Prisma's suggestions (below). |
 | **MILESTONES** | The roadmap's checkpoints; START opens an engine session for one (below). |
@@ -139,15 +144,24 @@ Edits save as you make them. Commit the file to share them with the branch.
 
 ## Updating the launcher (and keeping old versions)
 
-The launcher never updates itself. When the selected branch has a newer launcher, an **UPDATE**
-badge pulses on the rail; click it to see what changed, then **UPDATE NOW** or **NOT NOW**. The
-new version is built from that branch's own source (no zip to download), the screen shows the
-build, and the launcher restarts into it.
+The launcher never updates itself without asking. When the selected branch has a newer launcher,
+an **UPDATE** badge pulses on the rail (Prisma checks at start and every 30 minutes); click it to
+see what changed, then **UPDATE NOW** or **NOT NOW**.
+
+- **Published release (the normal case):** for `bleeding-edge` (and the Prisma working branch) the
+  `prisma-launcher.yml` workflow has already built `Prisma.exe` and published it as a GitHub
+  release. UPDATE NOW downloads it (about 35 MB), checks its SHA-256 and restarts into it: no zip,
+  no .NET SDK, no workspace needed.
+- **Any other branch, tag or commit:** the version is built from that revision's own source in the
+  workspace (needs START once, for git and .NET).
+
+If a check cannot answer (offline, or the selected branch was merged and deleted), SETTINGS >
+ABOUT says why under CHECK.
 
 SETTINGS > ABOUT shows this launcher's version and lets you **INSTALL** any branch, tag or
-commit. Every version you install (and the one you had before) is kept, and **USE** switches
-between them, so testers can each run a different launcher. The zip in `dist/` is only for the
-first install.
+commit (a published one is downloaded, anything else built). Every version you install (and the
+one you had before) is kept, and **USE** switches between them, so testers can each run a
+different launcher.
 
 ## LOOK
 
@@ -169,20 +183,37 @@ warning and exception with its count, and the crash, branch and commit. They are
 
 The **Prisma Agent** works on the game (Cosmic Shore's code and content in `Assets/`) as it runs
 in Prisma, and it is refused any edit to Prisma itself (`Port/`) in every mode - engine work is
-what MILESTONES sessions are for. Every prompt starts with the tracks brief (the last runs, open
-problems, performance by scene), so "fix the crash from my last run" needs no explanation.
+what MILESTONES sessions are for. It does what you ask and nothing more: it reads TRACKS (every
+run Prisma recorded) only when your question is about a bug, a crash, performance or a run, and
+it does not go looking for engine problems on its own.
+
+**Chats.** The list on the left holds every conversation, the way Claude Code keeps sessions:
+**+ NEW CHAT** opens another, a click switches, the x deletes. Each chat has its own transcript,
+its own Claude Code session (resumed on the next message, also after Prisma restarts) and its own
+context, and several can work at once - a pulsing dot marks the ones that are. Milestone sessions
+are chats too (tagged ENGINE). FIX, AGENT and ANALYSE buttons elsewhere open a fresh chat for the
+job. Chats are kept in `%LOCALAPPDATA%\Prisma\chats`.
+
 The layout follows Claude Code: a bullet per message and tool call, each tool's result folded
-under it, to-do lists as checklists, the game's screenshots inline, and a status line (model,
-mode, context size, cost, and whether it runs on your plan or an API key).
+under it, to-do lists as checklists, the game's screenshots inline.
+
+**Usage**, as Claude Code shows it. The status line under the transcript reads model, mode,
+**context** (how full this chat's context window is), and on a Claude plan the **session** (5-hour)
+and **week** limits. Click it (or type `/usage`) for the card: a bar for the context (tokens of the
+model's window), one per plan limit with when it resets, and what the chats cost (on an API key
+that is your bill; on a plan it is list price for reference). Claude reports the limits with
+every reply, so they appear after the first one and are remembered.
+
+![USAGE](architecture/launcher_usage.png)
 
 - **Model** and **effort** on the bar (default / fable / opus / sonnet / haiku; low to max).
 - **PLAN**: Claude investigates (it may build, test and run the game) and answers with a plan
   card. **APPROVE + EDIT** or **APPROVE + AUTO** lets it build the plan; typing keeps planning.
-  **EDIT** edits engine files directly; **AUTO** may also run any command.
+  **EDIT** edits files directly; **AUTO** may also run any command. **CLEAR** starts this chat over.
 - **Chips**: RUN TESTS, SMOKE TEST (boots the game headless and reports every error), LAST
   SESSION, PARITY CHECK (compares one system with the Unity game, in plan mode).
-- **Commands**: `/clear /plan /edit /auto /model NAME /effort LEVEL /test /smoke /session`. Up
-  arrow recalls earlier messages.
+- **Commands**: `/new /clear /rename TITLE /usage /plan /edit /auto /model NAME /effort LEVEL /test /smoke /session`.
+  Up arrow recalls earlier messages.
 - **Voice** (Windows): the microphone dictates into the box; the speaker reads replies aloud.
 
 Runs the official **Claude Code** CLI in the workspace, so it reads (and, if allowed, edits) the
@@ -191,22 +222,44 @@ branch you are building. If it is not installed, the page offers INSTALL: it dow
 needed.
 
 **Which account pays.** With a Claude Pro or Max plan, leave the API key empty and press
-**SIGN IN** (SETTINGS > Claude, or on the CLAUDE page): a window opens for the browser sign-in,
+**SIGN IN** (SETTINGS > Claude, or on the AGENT page): a window opens for the browser sign-in,
 and chat then runs on your plan. An **API key** is only for pay-as-you-go billing from
 console.anthropic.com; when one is set it is used *instead of* the plan. Keys and tokens are shown
-as dots; SHOW reveals them to check a paste.
-
-- **ASK** - reads and plans, changes nothing.
-- **EDIT** - may edit files in the workspace.
-- **AUTO** - may also run commands.
+as dots; SHOW reveals them to check a paste. A key is stored only on this PC and passed only to
+the `claude` process.
 
 It is connected to the engine itself (the `prisma` tools, `Port/CLAUDE.md`): Claude can
 build the engine, start the game, take screenshots, click and type, and read or change live
 objects - so "start the game and check the score panel updates" is a request it can carry out
-and show you. Those tools never edit files, so ASK may use them too.
+and show you. Those tools never edit files, so PLAN may use them too.
 
-NEW starts a fresh conversation; otherwise each message continues the same session. A key is
-stored only on this PC and passed only to the `claude` process. Rebuild with START to try what it changed.
+## GIT - from the agent's edits to GitHub
+
+![GIT](architecture/launcher_git.png)
+
+The agent edits files in **Prisma's workspace**, which is not your own clone (it is a clone Prisma
+manages, or a worktree beside your clone - SETTINGS > SOURCE). Its edits stay there, uncommitted,
+until you decide; the agent does not commit or push unless you ask it to. A notification says when
+a chat changed files.
+
+- **Left:** where the workspace is (START leaves it *detached* at the branch you play), then every
+  changed file with its +/- lines and **which chat changed it**. Click a file for its diff;
+  **REVERT** (hover, click twice) puts one file back; **DISCARD ALL** (click twice) throws every
+  change away.
+- **SAVE TO GITHUB:** a branch name (suggested from the chat, e.g. `prisma/fix-score`), the author
+  (read from your git config, which GitHub Desktop sets) and a message (suggested from the chats
+  and files). **COMMIT** commits every change to that branch on this PC; **COMMIT + PUSH** also
+  sends it to GitHub; **OPEN PR** opens GitHub's pull-request page for it into your branch.
+- **Right:** the selected diff, and the history (amber commits are on this PC only).
+
+**In GitHub Desktop:** with *Beside my clone* the workspace shares your clone, so a commit here
+is a local branch in GitHub Desktop at once (you can push from there). With the managed clone,
+push here, then **Fetch origin** in GitHub Desktop and pick the branch. Pushing from Prisma uses
+git's own sign-in, or the GitHub token in SETTINGS > SOURCE (Contents: read & write).
+
+**START never throws edits away.** With unsaved changes in the workspace, START plays them as
+they are and skips pulling the branch (the CONSOLE says so); UPDATE refuses until they are
+committed or discarded.
 
 ## How START works
 
@@ -221,7 +274,10 @@ own clone: *Beside my clone* uses a git worktree next to it.
 ## Testing the launcher itself
 
 `Prisma --page build --screenshot out.png --frames 40` renders a page and exits
-(`--page project:1` opens a Project tab, `--page options:look` one settings section).
+(`--page project:1` opens a Project tab, `--page options:look` one settings section, `--page chat:usage` the usage card).
+`PRISMA_DATA_DIR` points all of Prisma's data (settings, chats, tracks, versions) at another
+folder - a second, separate Prisma, or the tests. `Port/tests/CosmicShore.Launcher.Tests` covers
+chats and their persistence, plan usage, the GIT page's git steps and release reading.
 `--auto launcher-update:REV` / `launcher-use:SHORT` exercise the version flow. `--auto play|update|android|ios` presses the button on
 its own and echoes the log; `--auto "chat:<message>"` sends one chat message;
 `--auto milestone:C1` presses a checkpoint's START.
