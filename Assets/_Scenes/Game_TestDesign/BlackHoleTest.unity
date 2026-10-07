@@ -130,6 +130,7 @@ GameObject:
   - component: {fileID: 998740151}
   - component: {fileID: 998740149}
   - component: {fileID: 998740150}
+  - component: {fileID: 998740152}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -196,6 +197,20 @@ AudioListener:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 998740148}
   m_Enabled: 1
+--- !u!114 &998740152
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 998740148}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5abf3c2bbfa8406cadd63206ae91e5f0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Gameplay.MouseOrbitCamera
+  config: {fileID: 11400000, guid: e92ee6f50a334bf0977a5ca124712a01, type: 2}
+  initialDistance: 300
 --- !u!4 &998740151
 Transform:
   m_ObjectHideFlags: 0

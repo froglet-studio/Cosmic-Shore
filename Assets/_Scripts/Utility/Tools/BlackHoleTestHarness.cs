@@ -58,7 +58,9 @@ namespace CosmicShore.Utility
                  "Resources, so the rig still runs if the scene reference is lost.")]
         [SerializeField] private BlackHoleTestConfigSO config;
 
-        [Tooltip("Camera framing the field. Falls back to Camera.main when empty.")]
+        [Tooltip("Camera framing the field. Falls back to Camera.main when empty. It is driven by a " +
+                 "MouseOrbitCamera (right-drag pan, left-drag orbit, wheel / middle-drag zoom), added at " +
+                 "runtime if the camera does not carry one.")]
         [SerializeField] private Camera viewCamera;
 
         Trail _trail;
@@ -75,6 +77,7 @@ namespace CosmicShore.Utility
         Vector3Int _counts;
         Vector3 _gaps;
         float _zoom;
+        MouseOrbitCamera _orbit;
 
         BlackHole _flyHole;
         float _flyDespawnX;
@@ -111,9 +114,11 @@ namespace CosmicShore.Utility
             _gaps = config.DefaultGaps;
             _zoom = config.DefaultZoom;
             if (viewCamera == null) viewCamera = Camera.main;
+            if (viewCamera != null && !viewCamera.TryGetComponent(out _orbit))
+                _orbit = viewCamera.gameObject.AddComponent<MouseOrbitCamera>();
 
             BuildUI();
-            ApplyZoom();
+            ApplyZoom(reframe: true, snap: true);
         }
 
         void Start()
@@ -130,6 +135,8 @@ namespace CosmicShore.Utility
 
         void Update()
         {
+            SyncZoomSliderFromCamera();
+
             if (_phase == FieldPhase.Ready) ReclaimHusks();
 
             // The fly-through hole retires itself once it is past the far edge.
@@ -439,19 +446,54 @@ namespace CosmicShore.Utility
         {
             _zoom = Mathf.Clamp01(value);
             if (_zoomSlider != null) _zoomSlider.SetValueWithoutNotify(_zoom);
-            ApplyZoom();
+            ApplyZoom(reframe: false, snap: false);
         }
 
-        void ApplyZoom()
+        /// <summary>Back to the home view: looking at the field's centre along +Z, at the slider's distance.</summary>
+        public void FrameView()
+        {
+            ApplyZoom(reframe: true, snap: false);
+        }
+
+        float FarDistance() => Mathf.Max(config.NearDistance + 1f,
+            Mathf.Max(Extents.x, Extents.y, Extents.z) * config.FarDistanceMultiplier);
+
+        float DistanceForZoom(float zoom01) => Mathf.Lerp(config.NearDistance, FarDistance(), zoom01);
+
+        /// <summary>
+        /// Frame the field. The camera's transform belongs to the <see cref="MouseOrbitCamera"/>, so
+        /// the harness only ever says WHERE home is and HOW FAR to sit: <paramref name="reframe"/>
+        /// re-homes on the field's centre and returns there (spawn, resize, F); otherwise only the
+        /// distance changes and the player's pan and angles are kept (the zoom slider).
+        /// </summary>
+        void ApplyZoom(bool reframe, bool snap)
         {
             if (viewCamera == null) return;
-            float largest = Mathf.Max(Extents.x, Extents.y, Extents.z);
-            float far = Mathf.Max(config.NearDistance + 1f, largest * config.FarDistanceMultiplier);
-            float dist = Mathf.Lerp(config.NearDistance, far, _zoom);
-            viewCamera.transform.position = new Vector3(0f, 0f, -dist);
-            viewCamera.transform.LookAt(Vector3.zero);
+            float dist = DistanceForZoom(_zoom);
+            if (_orbit != null)
+            {
+                _orbit.SetHome(Vector3.zero, dist);
+                if (reframe) _orbit.FrameHome(snap);
+                else _orbit.SetDistance(dist, snap);
+            }
+            else
+            {
+                viewCamera.transform.position = new Vector3(0f, 0f, -dist);
+                viewCamera.transform.LookAt(Vector3.zero);
+            }
             if (viewCamera.farClipPlane < dist + Extents.magnitude)
                 viewCamera.farClipPlane = dist + Extents.magnitude + 1000f;
+        }
+
+        /// <summary>The wheel and middle-drag zoom too; keep the slider showing where the camera is.</summary>
+        void SyncZoomSliderFromCamera()
+        {
+            if (_orbit == null || _zoomSlider == null) return;
+            float near = config.NearDistance, far = FarDistance();
+            float z = Mathf.Clamp01(Mathf.InverseLerp(near, far, _orbit.Distance));
+            if (Mathf.Abs(z - _zoom) < 1e-3f) return;
+            _zoom = z;
+            _zoomSlider.SetValueWithoutNotify(z);
         }
 
         // ── Diagnostics ──────────────────────────────────────────────────────
@@ -485,8 +527,13 @@ namespace CosmicShore.Utility
             SetReadout(
                 $"{state}   extents {Extents.x:F0} x {Extents.y:F0} x {Extents.z:F0}   " +
                 $"strength {s:F1}: horizon {config01.HorizonRadius(s):F1}, influence {config01.InfluenceRadius(s):F0}   " +
-                $"holes {BlackHoleRegistry.Count}, bodies {BlackHoleGravityField.BodyCount:N0}, captured {BlackHoleGravityField.CapturedTotal:N0}");
+                $"holes {BlackHoleRegistry.Count}, bodies {BlackHoleGravityField.BodyCount:N0}, captured {BlackHoleGravityField.CapturedTotal:N0}\n" +
+                CameraHint);
         }
+
+        /// <summary>The camera's controls, on the panel the operator is already reading. ASCII only.</summary>
+        const string CameraHint =
+            "<color=#9aa4b8>camera: RMB drag pan | LMB drag (or Alt+RMB) orbit | wheel / MMB drag zoom | WASD pan, Q/E turn, Shift fast | F frame</color>";
 
         void SetReadout(string text)
         {
@@ -513,7 +560,7 @@ namespace CosmicShore.Utility
         }
 
         const string Usage = "usage: bhtest <total> | bhtest shape cuboid|spheroid | bhtest spawn | bhtest hole [strength] | " +
-                             "bhtest fly [strength] [speed] | bhtest despawn | bhtest clear | bhtest zoom <0..1>";
+                             "bhtest fly [strength] [speed] | bhtest despawn | bhtest clear | bhtest zoom <0..1> | bhtest frame";
 
         string HandleCommand(string[] args)
         {
@@ -564,6 +611,9 @@ namespace CosmicShore.Utility
                 case "clear":
                     Clear();
                     return "field cleared";
+                case "frame":
+                    FrameView();
+                    return "framing the field";
                 case "zoom":
                     if (args.Length < 2 || !float.TryParse(args[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float z01))
                         return "usage: bhtest zoom <0..1>";
@@ -588,7 +638,7 @@ namespace CosmicShore.Utility
             canvas.sortingOrder = 100;   // below DiagnosticsHUD's 32760
 
             var panel = CreateRect("Panel", canvasGO.transform, new Vector2(0, 0), new Vector2(0, 0),
-                new Vector2(8, 148), new Vector2(620, 140));
+                new Vector2(8, 164), new Vector2(620, 156));
             var bg = panel.gameObject.AddComponent<Image>();
             bg.color = new Color(0.05f, 0.05f, 0.08f, 0.85f);
 
@@ -610,11 +660,12 @@ namespace CosmicShore.Utility
 
             // Row 3 — zoom.
             CreateLabel("zoom", panel, new Vector2(8, -72), 40);
-            _zoomSlider = CreateSlider(panel, new Vector2(52, -72), 400, _zoom, v => { _zoom = v; ApplyZoom(); });
+            _zoomSlider = CreateSlider(panel, new Vector2(52, -72), 400, _zoom, v => { _zoom = v; ApplyZoom(reframe: false, snap: false); });
+            CreateButton("Frame (F)", panel, new Vector2(460, -72), 90, FrameView);
 
             // Row 4 — readout.
             var readoutRT = CreateRect("Readout", panel, new Vector2(0, 1), new Vector2(0, 1),
-                new Vector2(8, -102), new Vector2(604, 32));
+                new Vector2(8, -102), new Vector2(604, 48));
             _readout = readoutRT.gameObject.AddComponent<Text>();
             _readout.font = _font;
             _readout.fontSize = 12;
@@ -652,7 +703,7 @@ namespace CosmicShore.Utility
             if (int.TryParse(_countInput.text, out int side)) _counts = new Vector3Int(Mathf.Max(1, side), Mathf.Max(1, side), Mathf.Max(1, side));
             if (float.TryParse(_gapInput.text, NumberStyles.Float, CultureInfo.InvariantCulture, out float gap))
                 _gaps = Vector3.one * Mathf.Max(0.01f, gap);
-            ApplyZoom();
+            ApplyZoom(reframe: true, snap: false);
             PublishStats();
         }
 

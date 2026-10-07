@@ -21,7 +21,7 @@
 | The ECS component every prism's companion entity carries | `_Scripts/Controller/ECS/Components/GravityBodyComponents.cs` (+ the prototype addition and the `SetGravityBody` / `ClearGravityBody` / `TryGetGravityBodyLookup` API in `PrismRenderService`) |
 | Console commands | `BlackHoleConsole.cs` (`blackhole`, alias `bh`) |
 | Tuning (the only tuning surface) | `BlackHoleConfigSO` → `Assets/Resources/BlackHoleConfig.asset` |
-| The test scene | `Assets/_Scenes/Game_TestDesign/BlackHoleTest.unity`, `BlackHoleTestHarness`, `BlackHoleTestConfigSO` → `Resources/BlackHoleTestConfig.asset`, FrogletTools ▸ Scene Setup ▸ **Setup Black Hole Test Scene** |
+| The test scene | `Assets/_Scenes/Game_TestDesign/BlackHoleTest.unity`, `BlackHoleTestHarness`, the mouse camera `MouseOrbitCamera` (`_Scripts/Controller/Camera/`, + `MouseOrbitCameraConfigSO` → `Resources/MouseOrbitCameraConfig.asset`, §7.1), `BlackHoleTestConfigSO` → `Resources/BlackHoleTestConfig.asset`, FrogletTools ▸ Scene Setup ▸ **Setup Black Hole Test Scene** |
 | Wirer / proof / gates | `Tools/Shaders/wire_prism_gravity_warp.py`, `Tools/Shaders/verify_prism_gravity_warp.py`, `PrismClockWiringValidator` (Specs + edges), `BlackHoleTests`, `BlackHolePhysicsTests` |
 | Log channel | `CSLogChannel.BlackHole` (FrogletTools ▸ Toolbox ▸ Logging), one line per second while a hole is live, including the idle case |
 
@@ -230,8 +230,33 @@ load Bootstrap Scene on Play**. Then:
 4. **Despawn holes** / **Clear**.
 
 Console: `bhtest <total>` (near-cube field), `bhtest shape cuboid|spheroid`, `bhtest hole [strength]`,
-`bhtest fly [strength] [speed]`, `bhtest despawn`, `bhtest clear`, `bhtest zoom <0..1>`; and the
-global `blackhole` commands work here too (e.g. `blackhole spawn 10 200 0 0 -40 0 0`).
+`bhtest fly [strength] [speed]`, `bhtest despawn`, `bhtest clear`, `bhtest zoom <0..1>`, `bhtest frame`;
+and the global `blackhole` commands work here too (e.g. `blackhole spawn 10 200 0 0 -40 0 0`).
+
+### 7.1 The mouse camera (`MouseOrbitCamera`)
+
+The scene's camera is a strategy-game mouse camera, Transport Fever style — it looks at a PIVOT from
+a distance, and the mouse moves the pivot, turns around it and dollies toward it:
+
+| Input | Does |
+|---|---|
+| **Right-drag** | Pan — the world moves with the cursor as if grabbed (exact at the pivot's depth: world-per-pixel is derived from the distance and the FOV) |
+| **Left-drag** on empty space, or **Alt + right-drag** | Orbit — yaw and pitch about the pivot, pitch held short of the poles; the cursor hides and locks while orbiting |
+| **Wheel** | Zoom toward the point under the cursor, which stays fixed on screen (exact: `pivot' = pivot + (p − pivot)(1 − new/old)`) |
+| **Middle-drag** up / down | Zoom in / out about the pivot |
+| **WASD** / **Q E** | Pan / turn; **Shift** = faster |
+| **F** or **Home** (or the **Frame (F)** button, `bhtest frame`) | Back to the home view of the field |
+
+A drag only starts from a press that is NOT on UI, so the panel's buttons and the DiagnosticsHUD still
+click; keys are ignored while a text field has focus, so typing a console command never flies the
+camera. Zoom is proportional (every notch is the same fraction of the distance at any range) and the
+whole camera eases on unscaled time, so it works while paused. The harness never writes the camera's
+transform — it says where home is (`SetHome` / `FrameHome`) and how far to sit (`SetDistance`, the
+zoom slider, which follows the wheel back). Bindings and speeds: `MouseOrbitCameraConfigSO` →
+`Resources/MouseOrbitCameraConfig.asset`; Transport Fever's own hand (left-drag pan, right-drag
+orbit) is a two-field swap there. Not a gameplay camera — vessels fly on `CustomCameraController`,
+which this does not touch. Math held by `MouseOrbitCameraTests` (pan anchoring, zoom-toward-cursor
+fixed point, viewport round trip, wheel scale, shipped bindings).
 
 ## 8. Stated limits of the simple version
 

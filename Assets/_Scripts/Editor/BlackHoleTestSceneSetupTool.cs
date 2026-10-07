@@ -128,6 +128,18 @@ namespace CosmicShore.Editor
             camera.farClipPlane = Mathf.Max(camera.farClipPlane, 20000f);
             camera.transform.SetPositionAndRotation(new Vector3(0f, 0f, -600f), Quaternion.identity);
             EditorUtility.SetDirty(camera);
+
+            // The mouse camera (RMB pan, LMB orbit, wheel / MMB zoom). The harness adds one at
+            // runtime if it is missing; authoring it keeps it visible and tunable in the scene.
+            if (!camera.TryGetComponent<MouseOrbitCamera>(out var orbit))
+                orbit = Undo.AddComponent<MouseOrbitCamera>(camera.gameObject);
+            var so = new SerializedObject(orbit);
+            var configProp = so.FindProperty("config");
+            if (configProp != null && configProp.objectReferenceValue == null)
+                configProp.objectReferenceValue = AssetDatabase.LoadAssetAtPath<MouseOrbitCameraConfigSO>(
+                    "Assets/Resources/" + MouseOrbitCamera.ConfigResourcePath + ".asset");
+            so.ApplyModifiedProperties();
+            EditorUtility.SetDirty(orbit);
             return camera;
         }
 
