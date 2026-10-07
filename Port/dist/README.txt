@@ -1,10 +1,8 @@
 Prisma - distributables
 
-Once you have any Prisma from 2026-10-07 or later, its UPDATE button downloads new versions by
-itself (from the "Prisma launcher release" workflow on GitHub) and restarts into them: no zip.
-A first copy: the newest run of that workflow (GitHub > Actions) has Prisma.exe as its artifact,
-or a release "Prisma <commit>" when the repository allows Actions to publish releases.
+The everyday way: in Unity, FrogletTools > Prisma > Launch Prisma. It builds Prisma.exe from
+your checkout (so it is always current after a pull) and opens it. Nothing to unzip.
 
-Prisma-Windows.zip  - the same launcher, for a first copy without the Releases page. Unzip, run
-    Prisma.exe, pick a branch, press START GAME. It builds the game from that branch's source,
-    so it is never stale. Rebuild it with ..\build-launcher.bat. Guide: ..\docs\LAUNCHER.md
+Prisma-Windows.zip  - the same launcher without Unity, or for a PC with no .NET SDK yet (Launch
+    Prisma uses it then by itself). Unzip, run Prisma.exe, pick a branch, press START GAME.
+    Rebuild it with ..\build-launcher.bat. Guide: ..\docs\LAUNCHER.md

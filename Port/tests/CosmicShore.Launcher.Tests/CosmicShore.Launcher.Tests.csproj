@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- Prisma.exe's own logic that needs no window: chats and their persistence, plan usage,
-       the GIT page's git operations, and reading launcher releases. -->
+       and the GIT page's git operations. -->
   <PropertyGroup>
     <IsPackable>false</IsPackable>
     <Nullable>enable</Nullable>

@@ -15,10 +15,8 @@ namespace CosmicShore.Launcher
     /// <summary>
     /// Launcher versions, never applied on their own. <see cref="Check"/> says whether the selected
     /// branch has a newer launcher; the user presses UPDATE, or installs any branch, tag or commit.
-    /// The quick way is a release: the prisma-launcher workflow publishes Prisma.exe as a GitHub
-    /// release for every launcher change on bleeding-edge, and UPDATE downloads it (no .NET SDK, no
-    /// workspace, no zip). Any other revision is built from its own source (exported with git
-    /// archive, published with the launcher's dotnet). Each version gets its own folder, so every
+    /// A version is built from that revision's own source (exported with git archive, published
+    /// with the launcher's dotnet). Each version gets its own folder, so every
     /// installed one stays available and USE switches between them - the running .exe is swapped
     /// and the launcher restarts.
     /// </summary>
@@ -29,12 +27,6 @@ namespace CosmicShore.Launcher
         public sealed record VersionInfo(string Commit, string Date, string Subject, string Source, string Dir)
         {
             public string Short => Commit.Length >= 7 ? Commit[..7] : Commit;
-            /// <summary>Set when this version is a published release: the .exe to download and its checksum.</summary>
-            public string? Download { get; init; }
-            public string? Sha256 { get; init; }
-            public long Size { get; init; }
-            /// <summary>The download is a workflow artifact (a zip GitHub hands out only with a token), not a release asset.</summary>
-            public bool Artifact { get; init; }
         }
 
         readonly LauncherSettings _s;
@@ -69,8 +61,6 @@ namespace CosmicShore.Launcher
         public string Phase { get; private set; } = "";
         public string? Error { get; private set; }
         public bool Done { get; private set; }
-        /// <summary>The install in progress is a download of a published release (not a build from source).</summary>
-        public bool FromRelease { get; private set; }
 
         string Git => _tools.Git ?? "git";
 
@@ -87,9 +77,8 @@ namespace CosmicShore.Launcher
         string? GitOut(params string[] args) => ProcessRunner.Capture(Git, new[] { "-C", _ws.Dir }.Concat(args).ToArray());
 
         /// <summary>
-        /// Is there a newer launcher for the selected branch? Published releases answer first (they
-        /// need neither git nor a workspace); otherwise the branch is fetched and its launcher source
-        /// compared with this build's.
+        /// Is there a newer launcher for the selected branch? The branch is fetched and its launcher
+        /// source compared with this build's.
         /// </summary>
         public async Task Check(bool fetch = true)
         {
@@ -98,38 +87,16 @@ namespace CosmicShore.Launcher
             CheckError = null;
             try
             {
-                var releases = await Releases();
-                var mine = releases?.Where(r => r.branch == _s.Branch).ToList();
-                // Where Actions may not create releases, the same .exe is the workflow run's artifact.
-                if (mine is not { Count: > 0 } && OperatingSystem.IsWindows()) mine = await Artifacts(_s.Branch);
-                if (mine is { Count: > 0 })
-                {
-                    CheckRelease(mine);
-                    return;
-                }
                 if (!_ws.Exists || _tools.Git == null)
                 {
                     Available = null;
-                    CheckError = releases == null ? "Could not reach GitHub's releases." : $"No published launcher for {_s.Branch}; press START once so Prisma can build one from source.";
+                    CheckError = "Press START once so Prisma has a workspace to build new versions from.";
                     return;
                 }
                 await CheckSource(fetch);
             }
             catch (Exception e) { CheckError = e.Message; }
             finally { Checking = false; CheckedAt = DateTime.Now; }
-        }
-
-        void CheckRelease(List<Release> mine)
-        {
-            Changes.Clear();
-            var newest = mine[0];
-            int at = mine.FindIndex(r => r.commit == Commit);
-            if (newest.commit == Commit || (at < 0 && string.CompareOrdinal(newest.date, Date) < 0 && Commit.Length > 0)) { Available = null; return; }
-            // Everything published since the one running (or the newest's own list when it is unknown).
-            foreach (var r in at > 0 ? mine.Take(at) : mine.Take(1))
-                foreach (var c in r.changes) if (!Changes.Contains(c)) Changes.Add(c);
-            Available = new VersionInfo(newest.commit, newest.date, newest.changes.FirstOrDefault() ?? newest.tag, _s.Branch, "")
-                { Download = newest.url, Sha256 = newest.sha256, Size = newest.size, Artifact = newest.artifact };
         }
 
         async Task CheckSource(bool fetch)
@@ -196,199 +163,6 @@ namespace CosmicShore.Launcher
             return p.Length < 3 ? null : new VersionInfo(p[0], p[1], p[2], rev, "");
         }
 
-        // ------------------------------------------------------------------ releases
-
-        public const string ReleasePrefix = "prisma-launcher-";
-
-        /// <summary>One published launcher: its tag, the commit and date it was built from, the branch, and the .exe.</summary>
-        public sealed record Release(string tag, string commit, string date, string branch, string url, string sha256, long size, List<string> changes, bool artifact = false);
-
-        string Repo()
-        {
-            var m = System.Text.RegularExpressions.Regex.Match(_s.RemoteUrl, @"github\.com[/:]([^/]+)/([^/]+?)(\.git)?/?$");
-            return m.Success ? $"{m.Groups[1].Value}/{m.Groups[2].Value}" : "froglet-studio/Cosmic-Shore";
-        }
-
-        /// <summary>The published launchers for Windows, newest first; null when GitHub could not be asked.</summary>
-        async Task<List<Release>?> Releases()
-        {
-            if (!OperatingSystem.IsWindows()) return new(); // releases carry the Windows .exe only
-            try
-            {
-                using var http = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(20) };
-                http.DefaultRequestHeaders.UserAgent.ParseAdd("Prisma/" + Short);
-                http.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
-                var token = _ws.GitHubApiToken();
-                if (!string.IsNullOrWhiteSpace(token)) http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-                var resp = await http.GetAsync($"https://api.github.com/repos/{Repo()}/releases?per_page=60");
-                if (!resp.IsSuccessStatusCode && http.DefaultRequestHeaders.Authorization != null)
-                {
-                    // A stale credential must not hide a public repository's releases.
-                    http.DefaultRequestHeaders.Authorization = null;
-                    resp = await http.GetAsync($"https://api.github.com/repos/{Repo()}/releases?per_page=60");
-                }
-                if (!resp.IsSuccessStatusCode) return null;
-                return ParseReleases(await resp.Content.ReadAsStringAsync());
-            }
-            catch { return null; }
-        }
-
-        System.Net.Http.HttpClient Api(bool auth)
-        {
-            var http = new System.Net.Http.HttpClient(new System.Net.Http.HttpClientHandler { AllowAutoRedirect = false }) { Timeout = TimeSpan.FromMinutes(20) };
-            http.DefaultRequestHeaders.UserAgent.ParseAdd("Prisma/" + Short);
-            http.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
-            if (auth && _ws.GitHubApiToken() is { Length: > 0 } token)
-                http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-            return http;
-        }
-
-        /// <summary>
-        /// The launcher builds the prisma-launcher workflow left as artifacts on <paramref name="branch"/>,
-        /// newest first. Listing them needs no token on a public repository; downloading one does.
-        /// The artifact is named prisma-launcher-COMMIT-DATE.
-        /// </summary>
-        async Task<List<Release>?> Artifacts(string branch)
-        {
-            try
-            {
-                using var http = Api(auth: false);
-                var runs = await http.GetAsync($"https://api.github.com/repos/{Repo()}/actions/workflows/prisma-launcher.yml/runs?branch={Uri.EscapeDataString(branch)}&status=success&per_page=8");
-                if (!runs.IsSuccessStatusCode) return null;
-                using var rd = JsonDocument.Parse(await runs.Content.ReadAsStringAsync());
-                var list = new List<Release>();
-                foreach (var run in rd.RootElement.GetProperty("workflow_runs").EnumerateArray())
-                {
-                    var arts = await http.GetAsync($"https://api.github.com/repos/{Repo()}/actions/runs/{run.GetProperty("id").GetInt64()}/artifacts");
-                    if (!arts.IsSuccessStatusCode) continue;
-                    var title = run.TryGetProperty("display_title", out var dt) ? dt.GetString() ?? "" : "";
-                    list.AddRange(ParseArtifacts(await arts.Content.ReadAsStringAsync(), branch, title));
-                    if (list.Count >= 3) break;
-                }
-                // One entry per launcher version, newest first.
-                return list.GroupBy(r => r.commit).Select(g => g.First()).OrderByDescending(r => r.date, StringComparer.Ordinal).ToList();
-            }
-            catch { return null; }
-        }
-
-        public static List<Release> ParseArtifacts(string json, string branch, string runTitle)
-        {
-            var list = new List<Release>();
-            using var d = JsonDocument.Parse(json);
-            foreach (var a in d.RootElement.GetProperty("artifacts").EnumerateArray())
-            {
-                var m = System.Text.RegularExpressions.Regex.Match(a.GetProperty("name").GetString() ?? "", @"^prisma-launcher-([0-9a-f]{40})-(\d{4}-\d{2}-\d{2})$");
-                if (!m.Success || (a.TryGetProperty("expired", out var ex) && ex.GetBoolean())) continue;
-                list.Add(new Release("artifact", m.Groups[1].Value, m.Groups[2].Value, branch, a.GetProperty("archive_download_url").GetString() ?? "", "",
-                    a.TryGetProperty("size_in_bytes", out var sz) ? sz.GetInt64() : 0, runTitle.Length > 0 ? new List<string> { runTitle } : new List<string>(), artifact: true));
-            }
-            return list;
-        }
-
-        /// <summary>
-        /// Reads the releases list: a launcher release is tagged prisma-launcher-SHORT and its body
-        /// starts with an HTML comment holding its metadata (the workflow writes it), e.g.
-        /// &lt;!-- prisma-launcher {"commit":"..","date":"..","branch":"..","sha256":"..","changes":[..]} --&gt;
-        /// </summary>
-        public static List<Release> ParseReleases(string json)
-        {
-            var list = new List<Release>();
-            using var d = JsonDocument.Parse(json);
-            foreach (var r in d.RootElement.EnumerateArray())
-            {
-                try
-                {
-                    var tag = r.GetProperty("tag_name").GetString() ?? "";
-                    if (!tag.StartsWith(ReleasePrefix) || (r.TryGetProperty("draft", out var dr) && dr.GetBoolean())) continue;
-                    var body = r.TryGetProperty("body", out var b) ? b.GetString() ?? "" : "";
-                    var m = System.Text.RegularExpressions.Regex.Match(body, @"<!--\s*prisma-launcher\s+(\{.*?\})\s*-->", System.Text.RegularExpressions.RegexOptions.Singleline);
-                    if (!m.Success) continue;
-                    using var meta = JsonDocument.Parse(m.Groups[1].Value);
-                    var mr = meta.RootElement;
-                    string Str(string k) => mr.TryGetProperty(k, out var v) ? v.GetString() ?? "" : "";
-                    var asset = r.GetProperty("assets").EnumerateArray().FirstOrDefault(x => x.GetProperty("name").GetString() == "Prisma.exe");
-                    if (asset.ValueKind != JsonValueKind.Object) continue;
-                    var changes = mr.TryGetProperty("changes", out var ch) && ch.ValueKind == JsonValueKind.Array
-                        ? ch.EnumerateArray().Select(x => x.GetString() ?? "").Where(x => x.Length > 0).ToList() : new List<string>();
-                    list.Add(new Release(tag, Str("commit"), Str("date"), Str("branch"), asset.GetProperty("browser_download_url").GetString() ?? "",
-                        Str("sha256").ToLowerInvariant(), asset.TryGetProperty("size", out var sz) ? sz.GetInt64() : 0, changes));
-                }
-                catch { /* not one of ours */ }
-            }
-            // Newest first: by the commit date, then the order GitHub lists them (newest created first).
-            return list.Select((r, i) => (r, i)).OrderByDescending(x => x.r.date, StringComparer.Ordinal).ThenBy(x => x.i).Select(x => x.r).ToList();
-        }
-
-        /// <summary>Downloads a published launcher into its version folder (checking its SHA-256), then switches to it.</summary>
-        async Task InstallRelease(VersionInfo v, LogBuffer log)
-        {
-            FromRelease = true;
-            var dir = Path.Combine(VersionsDir, v.Short);
-            if (!File.Exists(Exe(dir)))
-            {
-                Phase = "Downloading";
-                var tmp = dir + ".partial";
-                if (Directory.Exists(tmp)) Directory.Delete(tmp, true);
-                Directory.CreateDirectory(tmp);
-                var exe = Path.Combine(tmp, "Prisma.exe");
-                log.Add(LogKind.Command, $"> download Prisma {v.Short} ({v.Date})");
-                var file = v.Artifact ? Path.Combine(tmp, "artifact.zip") : exe;
-                if (v.Artifact && string.IsNullOrEmpty(_ws.GitHubApiToken()))
-                    throw new Exception("This version is a GitHub build artifact, which GitHub only hands out with a token: paste any GitHub token in SETTINGS > SOURCE.");
-                using (var api = Api(auth: v.Artifact))
-                using (var plain = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromMinutes(20) })
-                {
-                    plain.DefaultRequestHeaders.UserAgent.ParseAdd("Prisma/" + Short);
-                    var resp = await api.GetAsync(v.Download, System.Net.Http.HttpCompletionOption.ResponseHeadersRead);
-                    // Both kinds redirect to signed storage, which must be fetched WITHOUT the GitHub token.
-                    if ((int)resp.StatusCode is >= 300 and < 400 && resp.Headers.Location is { } loc)
-                    {
-                        resp.Dispose();
-                        resp = await plain.GetAsync(loc, System.Net.Http.HttpCompletionOption.ResponseHeadersRead);
-                    }
-                    using var _ = resp;
-                    if (!resp.IsSuccessStatusCode) throw new Exception($"GitHub answered {(int)resp.StatusCode} for the download" + (v.Artifact ? " (is the token still valid?)." : "."));
-                    long total = resp.Content.Headers.ContentLength ?? v.Size;
-                    await using var src = await resp.Content.ReadAsStreamAsync();
-                    await using var dst = File.Create(file);
-                    var buf = new byte[1 << 16];
-                    long got = 0; int n;
-                    while ((n = await src.ReadAsync(buf)) > 0)
-                    {
-                        await dst.WriteAsync(buf.AsMemory(0, n));
-                        got += n;
-                        if (total > 0) { Progress = 0.05f + 0.85f * got / total; Phase = $"Downloading  {got >> 20} / {total >> 20} MB"; }
-                    }
-                }
-                string? sha = v.Sha256;
-                if (v.Artifact)
-                {
-                    // The zip holds Prisma.exe and prisma-launcher.json (its checksum and change list).
-                    using (var z = System.IO.Compression.ZipFile.OpenRead(file))
-                    {
-                        (z.GetEntry("Prisma.exe") ?? throw new Exception("The artifact holds no Prisma.exe.")).ExtractToFile(exe, overwrite: true);
-                        if (z.GetEntry("prisma-launcher.json") is { } meta)
-                            using (var ms = meta.Open()) using (var md = JsonDocument.Parse(ms))
-                                sha = md.RootElement.TryGetProperty("sha256", out var sh) ? sh.GetString() : null;
-                    }
-                    File.Delete(file);
-                }
-                Phase = "Verifying";
-                if (!string.IsNullOrEmpty(sha))
-                {
-                    string actual;
-                    await using (var f = File.OpenRead(exe)) actual = Convert.ToHexString(await System.Security.Cryptography.SHA256.HashDataAsync(f)).ToLowerInvariant();
-                    if (actual != sha!.ToLowerInvariant()) throw new Exception("The download failed its checksum. Try again.");
-                }
-                if (Directory.Exists(dir)) Directory.Delete(dir, true);
-                Directory.Move(tmp, dir);
-                File.WriteAllText(Path.Combine(dir, "version.json"), JsonSerializer.Serialize(v with { Source = v.Source, Dir = "", Download = null, Sha256 = null, Artifact = false }));
-            }
-            Progress = 0.94f;
-            Phase = "Installing";
-            Use(Installed().First(x => x.Commit == v.Commit), log);
-        }
-
         /// <summary>The last commit at or before <paramref name="rev"/> that changed the launcher.</summary>
         VersionInfo? Describe(string rev)
         {
@@ -436,19 +210,9 @@ namespace CosmicShore.Launcher
         public async Task Install(string rev, LogBuffer log)
         {
             if (Installing) return;
-            Installing = true; Done = false; Error = null; Progress = 0; FromRelease = false;
+            Installing = true; Done = false; Error = null; Progress = 0;
             try
             {
-                // A published release of that branch or commit: a download, no build.
-                if (OperatingSystem.IsWindows())
-                {
-                    var rel = rev == _s.Branch && Available?.Download != null ? Available
-                        : ((await Releases()) ?? new()).Concat(await Artifacts(rev) ?? new())
-                            .Where(r => r.branch == rev || r.tag == rev || (rev.Length >= 7 && r.commit.StartsWith(rev, StringComparison.OrdinalIgnoreCase)))
-                            .Select(r => new VersionInfo(r.commit, r.date, r.changes.FirstOrDefault() ?? r.tag, rev, "") { Download = r.url, Sha256 = r.sha256, Size = r.size, Artifact = r.artifact })
-                            .FirstOrDefault();
-                    if (rel?.Download != null) { await InstallRelease(rel with { Source = rev }, log); return; }
-                }
                 if (_tools.Git == null || _tools.Dotnet == null) throw new Exception("git and .NET are needed (press START once to set them up).");
                 if (!_ws.Exists) throw new Exception("No workspace yet: press START once.");
                 bool commit = System.Text.RegularExpressions.Regex.IsMatch(rev, "^[0-9a-fA-F]{7,40}$");

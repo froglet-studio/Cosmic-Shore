@@ -201,8 +201,7 @@ namespace CosmicShore.Launcher
             for (int i = 6; i >= 1; i--) dl.AddCircleFilled(c, core * i / 6f + 8, Neon.U(Neon.Cyan, 0.06f * fade));
             CenterText(dl, Neon.Heading, 26, c.X, c.Y - 14, Neon.Mix(Neon.Space0, Neon.Ink, fade), $"{(int)(p * 100)}%");
             CenterText(dl, Neon.Heading, 20, c.X, c.Y + 168, Neon.Mix(Neon.Space0, Neon.Cyan, fade), _updater.Phase.ToUpperInvariant());
-            CenterText(dl, Neon.Small, 15, c.X, c.Y + 200, Neon.Mix(Neon.Space0, Neon.Dim, fade), (_updater.FromRelease ? "Downloading the published launcher of " + ShortRev(_installRev.Length > 0 ? _installRev : _s.Branch)
-                    : "Building the launcher of " + ShortRev(_installRev.Length > 0 ? _installRev : _s.Branch) + " from its own source"));
+            CenterText(dl, Neon.Small, 15, c.X, c.Y + 200, Neon.Mix(Neon.Space0, Neon.Dim, fade), "Building the launcher of " + ShortRev(_installRev.Length > 0 ? _installRev : _s.Branch) + " from its own source");
 
             if (_updater.Error != null && !_updater.Installing)
             {

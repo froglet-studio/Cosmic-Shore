@@ -9,7 +9,9 @@ edit `Assets/_Scripts`, because the engine compiles those files live.
 **The port never changes the Unity project.** Nothing under `Port/` is read by Unity, and the
 port only *reads* `Assets/`. A port branch may change, outside `Port/`, only `.gitignore`
 `Port/**` rules, `.github/workflows/prisma-*` and `.claude/skills/prisma*` (the legacy `froglet-*`
-names are still accepted). Check before every commit:
+names are still accepted), plus one editor-only file the port owns:
+`Assets/_Scripts/Editor/LaunchPrisma.cs` (**FrogletTools > Prisma > Launch Prisma**, which builds
+`Prisma.exe` from the checkout into `Library/Prisma` and opens it). Check before every commit:
 
 ```bash
 python3 Port/tools/check_unity_isolation.py        # or the MCP tool unity_isolation_check

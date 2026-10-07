@@ -10,13 +10,14 @@ Source: `Port/src/CosmicShore.Launcher` (C#, Dear ImGui on our own Silk.NET wind
 
 ## Getting the .exe
 
-- Ready-made: the `prisma-launcher.yml` workflow builds `Prisma.exe` for every launcher change on
-  `bleeding-edge`. It is a GitHub **release** (tags `prisma-launcher-<commit>`) when Actions may
-  write to the repository, and always the run's **artifact** (Actions > Prisma launcher release >
-  the newest run > *prisma-launcher-...*), which GitHub serves as a zip holding the .exe.
-- From then on the app updates itself (UPDATE, below); `Port/dist/Prisma-Windows.zip` is only a
-  fallback for the very first copy.
-- Rebuild it yourself: double-click `Port\build-launcher.bat`.
+- **From Unity (the everyday way): FrogletTools > Prisma > Launch Prisma.** It builds
+  `Prisma.exe` from the checkout the editor has open into `Library/Prisma` and opens it. After a
+  pull it rebuilds by itself (it compares the launcher's source files with the last build); a first
+  build takes a minute or two, later launches open at once. *Rebuild Prisma* forces a build, *Show
+  Prisma Folder* reveals the .exe. With no .NET 10 SDK yet it opens the copy in
+  `Port/dist/Prisma-Windows.zip` instead; press START in Prisma once (it installs its own SDK) and
+  later launches build from source. Source: `Assets/_Scripts/Editor/LaunchPrisma.cs`.
+- Without Unity: `Port/dist/Prisma-Windows.zip` (one file), or double-click `Port\build-launcher.bat`.
 
 | Needed | Why | If missing |
 |---|---|---|
@@ -147,26 +148,14 @@ Edits save as you make them. Commit the file to share them with the branch.
 
 The launcher never updates itself without asking. When the selected branch has a newer launcher,
 an **UPDATE** badge pulses on the rail (Prisma checks at start and every 30 minutes); click it to
-see what changed, then **UPDATE NOW** or **NOT NOW**.
-
-- **Published release (the normal case):** for `bleeding-edge` (and the Prisma working branch) the
-  `prisma-launcher.yml` workflow has already built `Prisma.exe` and published it as a GitHub
-  release. UPDATE NOW downloads it (about 35 MB), checks its SHA-256 and restarts into it: no zip,
-  no .NET SDK, no workspace needed.
-- **Where Actions may not publish releases** (the repository's *Workflow permissions* are
-  read-only - true for Cosmic Shore today), the same `Prisma.exe` is the workflow run's artifact.
-  UPDATE downloads that instead; GitHub hands artifacts out only with a token, so it uses the
-  GitHub token in SETTINGS > SOURCE (any token works on this public repository). A repository
-  admin can switch to token-free releases with *Settings > Actions > General > Workflow
-  permissions > Read and write*.
-- **Any other branch, tag or commit:** the version is built from that revision's own source in the
-  workspace (needs START once, for git and .NET).
-
-If a check cannot answer (offline, or the selected branch was merged and deleted), SETTINGS >
-ABOUT says why under CHECK.
+see what changed, then **UPDATE NOW** or **NOT NOW**. The new version is built from that branch's
+own source in the workspace (no zip to download), the screen shows the build, and the launcher
+restarts into it. If a check cannot answer (offline, or the selected branch was merged and
+deleted), SETTINGS > ABOUT says why under CHECK. Launching from Unity (above) needs none of this:
+it always builds what the checkout has.
 
 SETTINGS > ABOUT shows this launcher's version and lets you **INSTALL** any branch, tag or
-commit (a published one is downloaded, anything else built). Every version you install (and the
+commit. Every version you install (and the
 one you had before) is kept, and **USE** switches between them, so testers can each run a
 different launcher.
 
@@ -284,7 +273,7 @@ own clone: *Beside my clone* uses a git worktree next to it.
 (`--page project:1` opens a Project tab, `--page options:look` one settings section, `--page chat:usage` the usage card).
 `PRISMA_DATA_DIR` points all of Prisma's data (settings, chats, tracks, versions) at another
 folder - a second, separate Prisma, or the tests. `Port/tests/CosmicShore.Launcher.Tests` covers
-chats and their persistence, plan usage, the GIT page's git steps and release reading.
+chats and their persistence, plan usage and the GIT page's git steps.
 `--auto launcher-update:REV` / `launcher-use:SHORT` exercise the version flow. `--auto play|update|android|ios` presses the button on
 its own and echoes the log; `--auto "chat:<message>"` sends one chat message;
 `--auto milestone:C1` presses a checkpoint's START.
