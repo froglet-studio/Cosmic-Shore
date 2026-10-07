@@ -27,7 +27,26 @@ namespace CosmicShore.Mcp
         {
             var repo = Repo.Find(args.SkipWhile(a => a != "--repo").Skip(1).FirstOrDefault());
             if (repo == null) { Console.Error.WriteLine("prisma-mcp: no Cosmic Shore checkout found (run it inside one, or pass --repo DIR)"); return 1; }
+            // One prisma_bisect candidate (git bisect run calls this): the exit code is the verdict.
+            int step = Array.IndexOf(args, "--bisect-step");
+            if (step >= 0 && step + 1 < args.Length) return await Tools.BisectStep(repo, args[step + 1]);
             s_tools = new Tools(repo);
+            // One tool from a shell (CI): prisma-mcp --call engine_smoke '{"scene":"Menu_Main"}'.
+            // Prints the tool's text; exits 1 when the tool reports a failure.
+            int call = Array.IndexOf(args, "--call");
+            if (call >= 0 && call + 1 < args.Length)
+            {
+                var a = call + 2 < args.Length && args[call + 2].StartsWith("{") ? JsonNode.Parse(args[call + 2])!.AsObject() : new JsonObject();
+                try
+                {
+                    var content = await s_tools.Call(args[call + 1], a);
+                    var text = string.Join("\n", content.Select(c => c?["text"]?.ToString()).Where(t => t != null));
+                    Console.WriteLine(text);
+                    return text.StartsWith("FAIL") || text.StartsWith("build FAILED") || text.StartsWith("tests FAILED") ? 1 : 0;
+                }
+                catch (ToolException e) { Console.WriteLine(e.Message); return 1; }
+                finally { s_tools.Dispose(); }
+            }
             Console.Error.WriteLine($"prisma-mcp: serving {repo}");
             var stdout = new StreamWriter(Console.OpenStandardOutput(), new UTF8Encoding(false)) { AutoFlush = true, NewLine = "\n" };
             using var stdin = new StreamReader(Console.OpenStandardInput(), Encoding.UTF8);

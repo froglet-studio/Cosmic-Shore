@@ -333,8 +333,15 @@ namespace CosmicShore.Engine
 
         // ── Dispatch ─────────────────────────────────────────────────
 
+        /// <summary>
+        /// Observer for every trigger contact that starts, raised once per pair before dispatch.
+        /// The parity harness (Player/ParityRun) records contact events through it; null otherwise.
+        /// </summary>
+        public static Action<Collider, Collider> ContactStarted;
+
         static void Dispatch(Collider a, Collider b, bool enter)
         {
+            if (enter) ContactStarted?.Invoke(a, b);
             DispatchTo(a, b, enter);
             DispatchTo(b, a, enter);
         }

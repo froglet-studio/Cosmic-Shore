@@ -92,6 +92,7 @@
     <Compile Include="../CosmicShore.Player/SilkInputBridge.cs" Link="Player/SilkInputBridge.cs" />
     <Compile Include="../CosmicShore.Player/InputScript.cs" Link="Player/InputScript.cs" />
     <Compile Include="../CosmicShore.Player/FrameRecorder.cs" Link="Player/FrameRecorder.cs" />
+    <Compile Include="../CosmicShore.Player/ParityRun.cs" Link="Player/ParityRun.cs" />
     <Compile Include="../CosmicShore.Player/Inspector.cs" Link="Player/Inspector.cs" />
     <Compile Include="../CosmicShore.Player/ScriptTicker.cs" Link="Player/ScriptTicker.cs" />
     <!-- PlayerWindow's control port and run report: on phones nothing starts them, so they stay inert. -->

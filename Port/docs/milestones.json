@@ -27,8 +27,12 @@
       "dependsOn": [
         "C0"
       ],
-      "status": "todo",
-      "notes": [],
+      "status": "in-progress",
+      "notes": [
+        "2026-10-06 run stopped at the 80-turn limit; what it tried is board item T-1 (Prisma)",
+        "2026-10-06 engine side of (3)-(5) built; (1)-(2) need the separate Unity PR (board T-1, spec in Port/parity/README.md), so not done. Measured: input enters at IInputStatus via InputController.Update -> IInputStrategy.ProcessInput (6 strategies; 38 scripts also read Keyboard/Gamepad/Mouse/Touchscreen.current); nondeterminism: no Random.InitState at match start (~180 UnityEngine.Random draws), 7 unseeded new System.Random(), 17 Guid.NewGuid (board B-1). (3) engine_parity added (Port/src/Shared/ParityDiff.cs, ParityRun.cs, --replay/--parity-out/--random-golden): engine_parity {against:self} -> PASS, 15000 Random draws identical, boot-menu and skimrace-fly identical in state/events/transforms; engine_parity {case:skimrace-fly, golden_dir:planted} -> FAIL on all 3 planted differences (score, event order, 0.5 m transform); ParityDiffTests 13/13 pass. (4) .github/workflows/prisma-parity-ci.yml: build, engine tests, engine_smoke per enabled build scene via prisma-mcp --call (CLI checked: Bootstrap PASS, MinigameSkimRace PASS with 4 ignored direct-entry DI errors), engine_parity; not yet run on GitHub. (5) Port/tools/gen_parity_scoreboard.py -> docs/PARITY.md + docs/parity.json (--check passes): subsystems 0 Faithful / 25 Approximate / 7 Missing, shaders 0/10/67. engine_test: 1607 passed, 2 failed - the same 2 fail at bf0015838 without these changes (board B-2). unity_isolation_check ok.",
+        "2026-10-08 (Prisma) engine side extended and re-proven; status stays in-progress. Re-measured: input reaches the game at IInputStatus via InputController.Update -> currentStrategy.ProcessInput() (6 strategies), 36 scripts also read Keyboard/Gamepad/Mouse/Touchscreen.current; nondeterminism: no Random.InitState at match start (178 UnityEngine.Random draws), 7 unseeded System.Random, 10 Guid.NewGuid (board T-4). (3) events.jsonl now carries kind game (scene loads + 11 GameDataSO match events) and kind contact (vessel trigger contacts, TriggerPass.ContactStarted, sorted per step); the diff compares the kinds the golden carries. ParityDiffTests +3 (planted game event, planted contact, unclaimed kinds); engine_test: 1610 passed, 2 failed (the same 2 as at bf0015838, board B-2). Planted goldens (skimrace-fly): engine_parity golden_dir A -> FAIL state (score 37.9 vs 30.9), events (event 81 fmod reorder), transforms (0.5 m at 728.8 m, bar 0.0729 m); B -> FAIL event 154 game:OnMiniGameRoundEnd; C -> FAIL event 5 contact. engine_parity {against:self}: random PASS (5 seeds, 15000 draws), skimrace-fly state/events/transforms PASS, boot-menu events FAIL on Authentication load time 0.750 vs 0.800 s (engine nondeterminism, board B-1). engine_parity (vs Unity goldens): PASS, 9 channels MISSING (no goldens yet). engine_smoke Bootstrap PASS (0 errors), MinigameSkimRace PASS (4 ignored direct-entry DI errors). (4) CI skips the 2 B-2 tests by name; matrix = 36 enabled build scenes; not yet run on GitHub. (5) gen_parity_scoreboard.py --check passes (25 Approximate / 7 Missing subsystems; shaders 0/10/67). (1)-(2) remain: Unity PR spec in Port/parity/README.md, board T-3. unity_isolation_check ok."
+      ],
       "prompt": "Plan checkpoint C1 of Port/docs/ROADMAP.md. Design an input recorder/replayer that lives in the game's own code (a separate Unity PR - list exactly what it adds under Assets/_Scripts/Utility and why it cannot live in Port/), a Unity-side capture step that writes golden frames, scores, FMOD events and `Random` sequences for a set of seeds, and an `engine_parity` MCP tool that replays in Prisma and diffs against those goldens with the per-channel tolerances in docs/ARCHITECTURE_REVIEW_2026-10-06.md (C9). Include the GitHub Actions job that builds the port and runs engine_smoke for every build scene on each bleeding-edge push, and a generator for the parity scoreboard (docs/PARITY.md + JSON). Measure first: how input reaches the game today (InputScript, Input System devices) and which RNG sources make a match nondeterministic."
     },
     {
@@ -40,8 +44,10 @@
       "dependsOn": [
         "C1"
       ],
-      "status": "todo",
-      "notes": [],
+      "status": "in-progress",
+      "notes": [
+        "2026-10-08 status -> in-progress (Prisma)"
+      ],
       "prompt": "Add `prisma_bisect(good, bad, check)` to the MCP server: run `git bisect run` over commits that touch Port/ only, build each candidate in a scratch git worktree, and judge it with a replay diff (engine_parity) or an engine_smoke error signature. Prove it by planting a regression three commits back and finding it."
     },
     {
@@ -53,8 +59,10 @@
       "dependsOn": [
         "C1"
       ],
-      "status": "todo",
-      "notes": [],
+      "status": "in-progress",
+      "notes": [
+        "2026-10-08 status -> in-progress (Prisma)"
+      ],
       "prompt": "First session: plan the Shader Graph compiler for CosmicShore.Render - parse the .shadergraph/.shadersubgraph JSON, emit GLSL for the node types the project uses (census in docs/ARCHITECTURE_REVIEW_2026-10-06.md, D10), port the 30 custom HLSL functions once as a GLSL library, key material families by shader guid, and warn once for an unknown shader. Later sessions (repeat per item): the next hand-written .shader, ParticleSystem module or VFX Graph, ranked by how many on-screen objects use it in the 19 Steam modes; prove each with game_screenshot before/after and the parity diff. Record each item in ROADMAP.md."
     },
     {

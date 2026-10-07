@@ -154,6 +154,7 @@ namespace CosmicShore.Player
             long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
             CosmicShore.Engine.GameLoop.PhaseTiming = s_timing || SessionReport.Enabled;
             _boot.Tick(step);
+            ParityRun.AfterTick(_frameIndex);
             SessionReport.SimTime(System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds);
             if (s_timing && _frameIndex % 30 == 0)
                 Console.WriteLine($"[tick] simulation {(System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency:F1} ms (frame {_frameIndex})"

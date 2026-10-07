@@ -166,6 +166,8 @@ file's row marked done with the date and the measurement.
 **C1b - Bisect**
 > Add `prisma_bisect(good, bad, check)` to the MCP server: run `git bisect run` over commits that touch Port/ only, build each candidate in a scratch git worktree, and judge it with a replay diff (engine_parity) or an engine_smoke error signature. Prove it by planting a regression three commits back and finding it.
 
+Built 2026-10-08: `prisma_bisect` (`src/CosmicShore.Mcp/Bisect.cs`, verdicts in `src/Shared/Bisect.cs`, `BisectTests`); proof `python Port/tools/bisect_demo.py --check smoke|parity`. Evidence in docs/milestones.json.
+
 **C2 - Visual completeness**
 > First session: plan the Shader Graph compiler for CosmicShore.Render - parse the .shadergraph/.shadersubgraph JSON, emit GLSL for the node types the project uses (census in docs/ARCHITECTURE_REVIEW_2026-10-06.md, D10), port the 30 custom HLSL functions once as a GLSL library, key material families by shader guid, and warn once for an unknown shader. Later sessions (repeat per item): the next hand-written .shader, ParticleSystem module or VFX Graph, ranked by how many on-screen objects use it in the 19 Steam modes; prove each with game_screenshot before/after and the parity diff. Record each item in this file.
 
@@ -204,4 +206,4 @@ file's row marked done with the date and the measurement.
 |---|---|---|---|
 | M0 - runs the real game, builds, tooling, Claude bridge | done | 2026-10-05 | PR #959 |
 | C0 - foundations (architecture review) | done | 2026-10-06 | `ARCHITECTURE_REVIEW_2026-10-06.md` |
-| C1 | not started | | |
+| C1 - parity harness | in progress | 2026-10-08 | engine side done: `engine_parity` diffs state, Random, events (`fmod`, `game`, `contact`), transforms and frames; 5 planted differences caught; `prisma-parity-ci.yml` (36 build scenes); `PARITY.md`. Waiting on the Unity replay/capture PR (board T-3, spec `Port/parity/README.md`) for goldens and on CI's first GitHub run; the engine's self-diff drifts on the Authentication load time (B-1) |

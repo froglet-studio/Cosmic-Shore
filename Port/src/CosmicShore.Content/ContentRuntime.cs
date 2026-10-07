@@ -79,10 +79,16 @@ namespace CosmicShore.Content
             ChainImporter(typeof(Material), r => r.Guid == AssetLoader.BuiltinExtraGuid ? BuiltinMaterials.ForFileId(r.FileId) : null);
             ShaderProperties = new Shaders.ShaderPropertyCatalog(Db);
             Shader.PropertyCatalog = ShaderProperties.For;
+            ShaderGraphs = new Shaders.ShaderGraphCatalog(Db);
+            Shader.GraphCompiler = ShaderGraphs.For;
+            Shader.TextureByGuid = guid => Assets.Load<Texture>(new ObjRef(2800000, guid, 3));
         }
 
         /// <summary>The shaders' declared properties (what Material.HasProperty and unset-property reads answer from).</summary>
         public Shaders.ShaderPropertyCatalog ShaderProperties { get; }
+
+        /// <summary>The project's Shader Graphs compiled to GLSL (what the renderer draws an untranslated graph with).</summary>
+        public Shaders.ShaderGraphCatalog ShaderGraphs { get; }
 
         /// <summary>Adds an importer for <paramref name="type"/> in front of any already registered (first non-null wins).</summary>
         public void ChainImporter(Type type, Func<ObjRef, EngineObject> importer)

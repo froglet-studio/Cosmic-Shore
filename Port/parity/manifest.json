@@ -1,0 +1,7 @@
+{
+  "seeds": [0, 1, 42, 1337, 20261006],
+  "cases": [
+    { "name": "boot-menu", "replay": "replays/boot-menu.json" },
+    { "name": "skimrace-fly", "replay": "replays/skimrace-fly.json" }
+  ]
+}

@@ -32,6 +32,7 @@ the game uses that the engine lacks) belongs in `Port/src/CosmicShore.Engine` / 
 | `src/CosmicShore.Launcher` | `Prisma.exe` (Dear ImGui): play a branch, phone builds, Project Settings, Claude chat |
 | `src/CosmicShore.Mcp` | `prisma-mcp`: this engine as an MCP server for Claude Code |
 | `ProjectSettings/PrismaProject.json` | The engine's own Player/Scenes/Quality settings; empty fields inherit Unity's |
+| `parity/` | The parity harness (C1): replays, Unity goldens, C9 tolerances, scoreboard catalogue. `engine_parity` diffs; `tools/gen_parity_scoreboard.py` writes `docs/PARITY.md`. Read `parity/README.md` |
 | `tests/` | `CosmicShore.Tests` (engine, xunit, ~70 s, no GPU) · `CosmicShore.Tests.Ported` (the game's EditMode tests) |
 | `docs/ARCHITECTURE.md` | How it all fits; read the section for the area you touch |
 | `docs/ROADMAP.md` | The milestones (gameplay parity, then Unity-free development), checkpoints, open gaps and ready prompts. Pick work from here |
@@ -75,6 +76,13 @@ With the **prisma MCP server** (preferred - see below), the loop is tools:
    "key Enter", "hold W 60"), `game_wait`, `game_find`, `game_hierarchy`, `game_get` /
    `game_set`, `game_ui_at`, `game_dump_ui`, `game_logs`, `game_load_scene`.
 5. `game_stop`, then `engine_test` and `unity_isolation_check` before committing.
+
+When something that used to work is broken, `prisma_bisect` (good, bad, check) finds the commit:
+`git bisect run` over the commits that touch `Port/`, in a scratch worktree (your checkout never
+moves), each candidate built there and judged by an `engine_smoke` error `signature` (substring or
+`/regex/`) or a replay diff (`check: parity`, against the good commit's own replay). A candidate
+that does not build is skipped. One engine build per step, so it is slow; `Port/tools/bisect_demo.py`
+proves it on a planted regression.
 
 Without MCP, the same from a shell:
 

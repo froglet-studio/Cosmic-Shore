@@ -369,8 +369,15 @@ namespace CosmicShore.Engine.Audio.Fmod
         /// <summary>Original: the RuntimeManager MonoBehaviour singleton. The port has no component; this is a stand-in handle.</summary>
         public static object Instance => StudioSystem;
 
+        /// <summary>
+        /// Engine-only probe: every event start, by path, in order (the parity harness's FMOD
+        /// event channel). Not part of the FMOD API; null unless a harness is listening.
+        /// </summary>
+        public static System.Action<string> EventStarted;
+
         internal static void RecordStart(EventInstanceState state)
         {
+            EventStarted?.Invoke(state.Path ?? "(unresolved)");
             StartedTotal++;
             string key = state.Path ?? "(unresolved)";
             StartedByPath[key] = StartedByPath.TryGetValue(key, out var n) ? n + 1 : 1;
