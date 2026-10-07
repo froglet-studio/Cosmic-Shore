@@ -82,17 +82,26 @@ per-frame transform write under the **movers contract**, the same contract fauna
 and the builders keep: the transform, the spatial index and the render entity all see the prism where
 it actually is, and so does every collider and gameplay query.
 
-**The data is ECS, the loop is one job.** `GravityBody` (`IComponentData`, `IEnableableComponent`:
+**The data is ECS, the work is three chained Burst jobs.** `GravityBody` (`IComponentData`, `IEnableableComponent`:
 velocity, a capture index, two one-shot verdict flags) is on every prism's companion-entity
 PROTOTYPE, disabled — so admitting a prism is a non-structural `SetComponentData` +
 `SetComponentEnabled`, never an archetype move (the prototype pattern's whole point), and every
-prism outside a hole's reach is byte-for-byte what it was before the component existed. The per-frame
-work is ONE Burst `IJobParallelForTransform` over the admitted prisms' transforms — read the pose,
-step it through `BlackHolePhysics`, write the pose back, emit the render matrix and the index point —
-then ONE bulk render write (`PrismRenderService.SetTransformsBatch`, scheduled on the job) and ONE
-bulk index write (`PrismSpatialIndex.UpdatePositionsBatch`): the two halves of
-`Prism.NotifyPositionChanged` done for N prisms at once, exactly as the swarm and the builders do.
-Nothing per prism is managed except admission and the verdicts.
+prism outside a hole's reach is byte-for-byte what it was before the component existed. Per frame:
+
+1. `ReadPoseJob` (`IJobParallelForTransform`, **`ScheduleReadOnly`**): every admitted prism's world
+   pose into a `float4x4` array. Read-only transform access is NOT serialised per root hierarchy, so
+   this runs on every worker even when the whole field shares one parent.
+2. `IntegrateJob` (`IJobParallelFor`, batches of `IntegrateBatch` = 32): every body stepped through
+   `BlackHolePhysics` — substeps × wells, the expensive part — emitting the render matrix (the read
+   pose with its translation replaced), the index point and the verdict. Pure `Unity.Mathematics`;
+   no `UnityEngine` or managed call, so Burst compiles all of it.
+3. `WritePoseJob` (`IJobParallelForTransform`) writes the positions back to the transforms, scheduled
+   beside the bulk render write (`PrismRenderService.SetTransformsBatch`, which depends on the
+   integration only), then ONE bulk index write (`PrismSpatialIndex.UpdatePositionsBatch`).
+
+The render and index writes are the two halves of `Prism.NotifyPositionChanged` done for N prisms at
+once, exactly as the swarm and the builders do. Nothing per prism is managed except admission and
+the verdicts.
 
 **Admission** runs every `admissionInterval` (0.1 s): each hole asks `PrismSpatialIndex.QuerySphere`
 for the prisms inside its influence sphere, new ones are ranked nearest-first and admitted up to
@@ -113,9 +122,11 @@ exception). RELEASED: the body is disabled and the prism is static mass again. P
 the component (`ClearPrismStamps` → `ClearGravityBody`), so a reused prism never inherits the velocity
 of the one it replaced.
 
-Stated limitation: a `TransformAccessArray` job parallelises over ROOT transforms, so a field whose
-prisms all share one parent (the test lattice, a cell environment) integrates on one worker. Burst
-makes that cheap at the body budget; recorded, not fixed.
+Stated limit: Unity serialises a transform WRITE job per root hierarchy, so a field whose prisms all
+share one parent (the test lattice, a cell environment) runs `WritePoseJob` on one worker. That job
+is one position store per body; the read and the integration run on every worker. (The first
+version did everything in one `IJobParallelForTransform` and so integrated a one-parent field on a
+single worker. It was split on 2026-10-07.)
 
 ## 4. Vessels (`BlackHoleVesselPull`)
 
@@ -254,8 +265,22 @@ it: the shadow edge at 2.594 r_s (exact 2.598), Einstein deflection at b = 20/40
 of Schwarzschild's second-order value, rays passing above the shadow parallel to the disc (which never
 cross its plane in flat space) picking up the far side of the disc, Doppler asymmetry 9×, the ISCO gap,
 no light from inside the horizon, 4,000 random rays finite and in range, a seamless fade — and a
-negative control (a coarse step) that fails six of them. glslang front-end compiles both shader stages
-against a URP mock. **Nothing here has been seen on screen**; the look is a playtest away.
+negative control (a coarse step) that fails six of them. Both shader stages are then compiled twice:
+glslang against a URP mock laid out FILE BY FILE at the shader's own include paths, and DXC against
+the REAL URP + core ShaderLibrary (the graphics checkout `Tools/Build/unity_refcompile` fetches) for
+D3D11, Vulkan and Metal — each with a negative control that removes one include and must fail.
+
+**Incident (2026-10-07): the first lens drew a MAGENTA quad.** The fragment stage called
+`DecodeHDREnvironment`, which lives in core's `EntityLighting.hlsl`, while the shader included only
+URP's `Core.hlsl` + the two Declare* files — none of which reach it. Unity failed the compile and
+substituted its error shader. The offline check had passed because its mock was ONE blob that
+declared every symbol the shader used, so a missing include could not fail it. Fixed by the include;
+the verifier's mock is now per-file and the real-library DXC compile is the check that would have
+caught it (`--require-real` makes its absence a failure). And because a shader that fails to compile
+still reports `Shader.isSupported`, `BlackHoleLens.IsDrawable` also asks
+`ShaderUtil.ShaderHasError` in the Editor: a broken lens now falls back to the black sphere with the
+compiler's first error in a warning, never magenta, and `BlackHoleTests.Lens_ShaderCompilesAndTheLensIsDrawable`
+fails the edit-mode suite on it. **Nothing here has been seen on screen**; the look is a playtest away.
 Dials (`BlackHoleConfig`, Lens / Accretion disc headers): `lensRadiusMultiplier`, `lensFadeStart`,
 `lensSteps`, `diskInner/OuterMultiplier`, `diskBaseDensity`, `diskFeedPerCapture`, `diskFeedMax`,
 `diskFeedHalfLife`, `diskBrightness`, `diskPeakTemperature`, `diskDoppler`, `diskSpinSpeed`,
@@ -337,7 +362,8 @@ fixed point, viewport round trip, wheel scale, shipped bindings).
   they ARE warped (the map is correct on any mesh), so a burst near a hole visibly leans into it.
 - **No replication.** Each peer that spawns a hole runs it locally; prism bodies move on the machine
   that simulates them. Spawning is a console/test action today, not a networked game event.
-- **One worker per root** for the job (above). **Cell volume accounting** is not re-filed as prisms
+- **One worker per root** for the transform write-back only (above); the read and the integration
+  are parallel. **Cell volume accounting** is not re-filed as prisms
   cross cells (the Ark's `NotifyCellChanged` cadence would be the pattern if a mode needs it).
 - **The look is a playtest away.** The harness proves the map is the map, the normal is its
   derivative, nothing folds, nothing pops; whether spaghettification READS at these numbers is the

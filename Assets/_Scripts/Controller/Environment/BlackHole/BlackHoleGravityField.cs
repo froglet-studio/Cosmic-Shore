@@ -25,18 +25,28 @@ namespace CosmicShore.Gameplay
     /// and the builders keep. Colliders, the spatial index, the render entity and every gameplay
     /// query see the prism where it actually is.</para>
     ///
-    /// <para><b>The data is ECS, the loop is one job.</b> A body's state is the
+    /// <para><b>The data is ECS, the work is three chained Burst jobs.</b> A body's state is the
     /// <see cref="GravityBody"/> component on the prism's companion entity (on every prism's
     /// prototype, enabled on admission), so "which prisms are under gravity" is a question the
     /// entity world can answer and a pure-entity prism of the future is a body with nothing to
-    /// add. The per-frame work is ONE Burst <see cref="IJobParallelForTransform"/> over the
-    /// admitted prisms' transforms: read the pose, integrate through <see cref="BlackHolePhysics"/>,
-    /// write the pose back, emit the matrix and the point — then one bulk render write
-    /// (<see cref="PrismRenderService.SetTransformsBatch(NativeArray{PrismRenderHandle}, NativeArray{float4x4}, int, JobHandle)"/>)
-    /// and one bulk index write (<see cref="PrismSpatialIndex.UpdatePositionsBatch"/>), the two
-    /// halves of <c>Prism.NotifyPositionChanged</c> done for N prisms at once, the way the swarm
-    /// and the builders already do. Nothing per prism is managed except admission and the
-    /// verdicts.</para>
+    /// add. Per frame:
+    /// <list type="number">
+    /// <item><see cref="ReadPoseJob"/> — <see cref="IJobParallelForTransform"/> scheduled
+    /// READ-ONLY, so it runs on every worker even when all the prisms share one parent (a write
+    /// job is serialised per root hierarchy; a read-only one is not).</item>
+    /// <item><see cref="IntegrateJob"/> — <see cref="IJobParallelFor"/> in batches of
+    /// <see cref="IntegrateBatch"/>: every body stepped through <see cref="BlackHolePhysics"/>
+    /// (substeps × wells — the expensive part), emitting the render matrix, the index point and
+    /// the verdict. Pure <c>Unity.Mathematics</c>, no managed or UnityEngine call.</item>
+    /// <item><see cref="WritePoseJob"/> — the new positions back onto the transforms, alongside
+    /// the bulk render write
+    /// (<see cref="PrismRenderService.SetTransformsBatch(NativeArray{PrismRenderHandle}, NativeArray{float4x4}, int, JobHandle)"/>),
+    /// which depends on the integrate job only. Then one bulk index write
+    /// (<see cref="PrismSpatialIndex.UpdatePositionsBatch"/>).</item>
+    /// </list>
+    /// The render and index writes are the two halves of <c>Prism.NotifyPositionChanged</c> done
+    /// for N prisms at once, the way the swarm and the builders already do. Nothing per prism is
+    /// managed except admission and the verdicts.</para>
     ///
     /// <para><b>Admission is a spatial query, bounded.</b> Every admission interval each hole asks
     /// <see cref="PrismSpatialIndex.QuerySphere"/> for the prisms in its influence sphere; new
@@ -52,14 +62,24 @@ namespace CosmicShore.Gameplay
     /// documented exception. RELEASED (coasted clear of every influence sphere and slowed below
     /// the release speed) goes back to being static mass with its body disabled.</para>
     ///
-    /// One stated limitation: a <see cref="TransformAccessArray"/> job parallelises over ROOT
-    /// transforms, so a field whose prisms all share one parent (a test lattice, a cell
-    /// environment) integrates on one worker. Burst makes that cheap at the body budget; it is
-    /// recorded rather than fixed.
+    /// One stated limit: <see cref="WritePoseJob"/> writes transforms, and Unity serialises a
+    /// transform WRITE job per root hierarchy, so a field whose prisms all share one parent (a
+    /// test lattice, a cell environment) writes its poses on one worker. That job is one position
+    /// store per body; the read and the integration — the work — run on every worker.
     /// </summary>
     public static class BlackHoleGravityField
     {
         const int InitialCapacity = 1024;
+
+        /// <summary>Transforms per worker batch for the read-only pose read (a matrix copy each).</summary>
+        const int ReadBatch = 64;
+
+        /// <summary>
+        /// Bodies per worker batch for the integration: a body is up to MaxSubsteps × wells
+        /// accelerations, so batches stay small enough to spread a few thousand bodies over
+        /// every worker and large enough that scheduling is not the cost.
+        /// </summary>
+        public const int IntegrateBatch = 32;
         const string ConsumerName = "Black Hole";
 
         // SoA ledger of admitted bodies. Every array is index-aligned with _prisms and every
@@ -74,6 +94,7 @@ namespace CosmicShore.Gameplay
         static NativeArray<float3> _points;
         static NativeArray<byte> _verdicts;
         static NativeArray<int> _capturedBy;
+        static NativeArray<byte> _valid;
         static int _outputCapacity;
 
         static readonly List<Prism> _query = new();
@@ -147,7 +168,15 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            var job = new IntegrateJob
+            // 1. Read every pose, in parallel (read-only transform access is not root-bound).
+            var read = new ReadPoseJob
+            {
+                Poses = _matrices,
+                Valid = _valid,
+            }.ScheduleReadOnly(_transforms, ReadBatch);
+
+            // 2. Integrate every body, in parallel, in Burst.
+            var integrate = new IntegrateJob
             {
                 Wells = wells,
                 Params = new BlackHolePhysics.StepParams
@@ -159,18 +188,25 @@ namespace CosmicShore.Gameplay
                 },
                 DeltaTime = dt,
                 Entities = _entities.AsArray(),
+                Valid = _valid,
                 Bodies = bodies,
                 Matrices = _matrices,
                 Points = _points,
                 Verdicts = _verdicts,
                 CapturedBy = _capturedBy,
-            };
-            var handle = job.Schedule(_transforms);
+            }.Schedule(n, IntegrateBatch, read);
 
-            // The bulk render write completes the job before returning; its dependency chain is
-            // the job's, so the matrices are read only after they are written.
-            PrismRenderService.SetTransformsBatch(_handles.AsArray(), _matrices, n, handle);
-            handle.Complete();
+            // 3. Write the poses back to the transforms while the render write runs beside it:
+            // both depend on the integration only (the write-back reads points and verdicts, the
+            // render write reads matrices). SetTransformsBatch completes its own write.
+            var writeBack = new WritePoseJob
+            {
+                Points = _points,
+                Verdicts = _verdicts,
+                Valid = _valid,
+            }.Schedule(_transforms, integrate);
+            PrismRenderService.SetTransformsBatch(_handles.AsArray(), _matrices, n, integrate);
+            writeBack.Complete();
 
             var index = PrismSpatialIndex.Instance;
             if (index != null && index.IsAvailable)
@@ -332,36 +368,62 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        // ---------------- The job ----------------
+        // ---------------- The jobs ----------------
 
         /// <summary>
-        /// One body per transform: read the pose, step it, write the pose back, emit the render
-        /// matrix (the pose's matrix with its translation replaced — exact for a translation-only
-        /// change) and the index point. The verdict and the capturing well go to the main thread.
+        /// Every body's world pose, read-only (scheduled with <c>ScheduleReadOnly</c>, so it is not
+        /// serialised per root hierarchy). A dead transform is flagged, not read.
         /// </summary>
         [BurstCompile]
-        struct IntegrateJob : IJobParallelForTransform
+        struct ReadPoseJob : IJobParallelForTransform
+        {
+            [WriteOnly] public NativeArray<float4x4> Poses;
+            [WriteOnly] public NativeArray<byte> Valid;
+
+            public void Execute(int i, TransformAccess transform)
+            {
+                if (!transform.isValid)
+                {
+                    Poses[i] = float4x4.identity;
+                    Valid[i] = 0;
+                    return;
+                }
+                Poses[i] = transform.localToWorldMatrix;
+                Valid[i] = 1;
+            }
+        }
+
+        /// <summary>
+        /// One body per index: step it under every well, then emit the render matrix (the read
+        /// pose with its translation replaced — exact for a translation-only change), the index
+        /// point and the verdict. The verdict and the capturing well go to the main thread.
+        /// </summary>
+        [BurstCompile]
+        struct IntegrateJob : IJobParallelFor
         {
             public BlackHolePhysics.NativeWells Wells;
             public BlackHolePhysics.StepParams Params;
             public float DeltaTime;
 
             [ReadOnly] public NativeArray<Entity> Entities;
+            [ReadOnly] public NativeArray<byte> Valid;
             // Entities are unique per ledger slot, so parallel writes never alias.
             [NativeDisableParallelForRestriction] public ComponentLookup<GravityBody> Bodies;
 
-            [WriteOnly] public NativeArray<float4x4> Matrices;
+            /// <summary>In: the pose <see cref="ReadPoseJob"/> read. Out: the render matrix.</summary>
+            public NativeArray<float4x4> Matrices;
             [WriteOnly] public NativeArray<float3> Points;
             [WriteOnly] public NativeArray<byte> Verdicts;
             [WriteOnly] public NativeArray<int> CapturedBy;
 
-            public void Execute(int i, TransformAccess transform)
+            public void Execute(int i)
             {
                 var e = Entities[i];
-                if (!transform.isValid || e == Entity.Null || !Bodies.HasComponent(e))
+                if (Valid[i] == 0 || e == Entity.Null || !Bodies.HasComponent(e))
                 {
                     // A dead transform or entity: nothing to move, nothing to say. The main
-                    // thread's prune drops the slot; the bulk writers skip a null entity.
+                    // thread's prune drops the slot; the bulk writers skip a null entity, and
+                    // the write-back skips an invalid slot.
                     Matrices[i] = float4x4.identity;
                     Points[i] = float3.zero;
                     Verdicts[i] = (byte)BlackHolePhysics.Verdict.Free;
@@ -369,8 +431,7 @@ namespace CosmicShore.Gameplay
                     return;
                 }
 
-                Matrix4x4 lm = transform.localToWorldMatrix;
-                var m = new float4x4(lm.GetColumn(0), lm.GetColumn(1), lm.GetColumn(2), lm.GetColumn(3));
+                var m = Matrices[i];
                 float3 p = m.c3.xyz;
 
                 var body = Bodies[e];
@@ -384,14 +445,30 @@ namespace CosmicShore.Gameplay
                     : 0u;
                 Bodies[e] = body;
 
-                if (verdict != BlackHolePhysics.Verdict.Captured)
-                    transform.position = new Vector3(p.x, p.y, p.z);
-
                 m.c3 = new float4(p, 1f);
                 Matrices[i] = m;
                 Points[i] = p;
                 Verdicts[i] = (byte)verdict;
                 CapturedBy[i] = by;
+            }
+        }
+
+        /// <summary>
+        /// The integrated positions back onto the transforms. A captured body keeps its pose: it
+        /// is consumed on the main thread, and its implosion starts where it crossed in.
+        /// </summary>
+        [BurstCompile]
+        struct WritePoseJob : IJobParallelForTransform
+        {
+            [ReadOnly] public NativeArray<float3> Points;
+            [ReadOnly] public NativeArray<byte> Verdicts;
+            [ReadOnly] public NativeArray<byte> Valid;
+
+            public void Execute(int i, TransformAccess transform)
+            {
+                if (!transform.isValid || Valid[i] == 0) return;
+                if (Verdicts[i] == (byte)BlackHolePhysics.Verdict.Captured) return;
+                transform.position = Points[i];
             }
         }
 
@@ -415,6 +492,7 @@ namespace CosmicShore.Gameplay
             _points = new NativeArray<float3>(cap, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
             _verdicts = new NativeArray<byte>(cap, Allocator.Persistent);
             _capturedBy = new NativeArray<int>(cap, Allocator.Persistent);
+            _valid = new NativeArray<byte>(cap, Allocator.Persistent);
             _outputCapacity = cap;
         }
 
@@ -424,6 +502,7 @@ namespace CosmicShore.Gameplay
             if (_points.IsCreated) _points.Dispose();
             if (_verdicts.IsCreated) _verdicts.Dispose();
             if (_capturedBy.IsCreated) _capturedBy.Dispose();
+            if (_valid.IsCreated) _valid.Dispose();
             _outputCapacity = 0;
         }
 
