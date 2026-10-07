@@ -15,6 +15,7 @@ PREY
   split_on_attack       groups 1.5 s after a predator first comes within 20 u of a group, minus groups before
   flash_expansion       relative NND change around the attacked prey over the same window
   confusion_fail_share  share of contacts that failed on the confusion roll (crowd protects)
+  turn_rate_close/far   prey turn rate (deg/s) with a predator within 15 u vs none within 50 u (protean juking)
 PREDATORS
   encirclement          for each (prey-group centroid, >= 2 predators within 50 u): 1 - |mean unit vector from the
                         centroid to those predators|; reported with the null for the same predator counts drawn
@@ -115,7 +116,27 @@ def prey_metrics(rec, every=5):
                milling=_r(np.mean(mill)) if mill else None, groups=_r(np.mean(groups)),
                largest_share=_r(np.mean(largest)), nnd=_r(np.mean(nnd)))
     out.update(_attack_response(rec))
+    out.update(_juke(rec))
     return out
+
+
+def _juke(rec):
+    """Evasive turning: prey turn rate (deg/s) when the nearest predator is within 15 u vs when none is within 50 u,
+    and the prey's speed in both states. A protean escape is a sharp turn at close range, not a straight sprint."""
+    qp, qv, qa, pp, pa, dt = rec["qp"], rec["qv"], rec["qa"], rec["pp"], rec["pa"], rec["dt"]
+    close_t, far_t, close_v, far_v = [], [], [], []
+    for t in range(1, len(qp) - 1, 2):
+        a = qa[t] & qa[t + 1]
+        if not a.any() or not pa[t].any():
+            continue
+        d = np.sqrt(((qp[t][:, None] - pp[t][pa[t]][None]) ** 2).sum(-1)).min(1)
+        u0, u1 = _unit(qv[t]), _unit(qv[t + 1])
+        ang = np.degrees(np.arccos(np.clip((u0 * u1).sum(-1), -1, 1))) / dt
+        sp = np.linalg.norm(qv[t], axis=-1)
+        c, f = a & (d < 15), a & (d > 50)
+        close_t.extend(ang[c]); far_t.extend(ang[f]); close_v.extend(sp[c]); far_v.extend(sp[f])
+    return dict(turn_rate_close=_r(np.mean(close_t)) if close_t else None, turn_rate_far=_r(np.mean(far_t)) if far_t else None,
+                speed_close=_r(np.mean(close_v)) if close_v else None, speed_far=_r(np.mean(far_v)) if far_v else None)
 
 
 def _attack_response(rec, near=20.0, win=1.5):
