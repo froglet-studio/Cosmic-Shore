@@ -2231,12 +2231,12 @@ and `Exp.cs` (the molting-mode experiment).
 The lead asked for three tracks. With the in-game designed field swarm (`cece/swarm-fauna-game`), they give four distinct
 swarm fauna, each a different answer to "how much is designed":
 
-| # | species | composition (who lays / molts into what) | shape (where each tadpole goes) | perception | branch |
-|---|---|---|---|---|---|
-| 1 | **designed field swarm** (in game) | designed | designed attractor fields + boids | global slots | `cece/swarm-fauna-game` |
-| 2 | **peak hybrid shapeshifter** = posinfo2, FROZEN | designed (homeo-7) | learned MLP, BPTT | mixed: neighbours + body frame + element census | `results/posinfo2` |
-| 3 | **pure emergent swimmer** | learned | learned | local only: neighbours within R + self-secreted fields | `cece/swarm-x-emergent` |
-| 4 | **co-evolved predator and prey** | learned | learned, against each other | local | `cece/swarm-x-arms` |
+| # | species | composition (who lays / molts into what) | shape (where each tadpole goes) | perception | branch | result (2026-10-07) |
+|---|---|---|---|---|---|---|
+| 1 | **designed field swarm** (in game) | designed | designed attractor fields + boids | global slots | `cece/swarm-fauna-game` | shipping in game (rounds 6-8: SwarmSortCore, GPU-drawn members, predation, multi-domain) |
+| 2 | **peak hybrid shapeshifter** = posinfo2, FROZEN | designed (homeo-7) | learned MLP, BPTT | mixed: neighbours + body frame + element census | `results/posinfo2` | 51/52 transitions under 8, own 1.6-2.7, lossless, 5.2 ms, organic |
+| 3 | **pure emergent swimmer** | learned | learned | local only: neighbours within R + self-secreted fields | `cece/swarm-x-emergent` | jellyfish strict 8.9 (2/4 seeds under 8), no pulse, heal 0.69, lossless, organic, 14.6 ms |
+| 4 | **co-evolved predator and prey** | learned | learned, against each other (generation 0 behaviour-cloned from a designed script) | local | `cece/swarm-x-arms` | monotone race (0/560 cycles); prey school under selfish-herd selection (a9); satiety gate needed |
 
 **Species 2 is frozen as the reference.** posinfo2 (`results/posinfo2/rule.pt`, `posinfo2:` spec) is the peak hybrid
 optimised for the four-plan shapeshifting brief: 51/52 feasible transitions under the loss-8 bar at seeds 7/23/41/1000,
@@ -2294,3 +2294,26 @@ generations (does each newer generation beat older opponents, or do they cycle?)
 - **Economy:** without a designed satiety gate the open economy collapses: predators breed to 20-30 and eat the
   pond out in 2-4 minutes. A gate (no burst above 1.25x birth mass) keeps both species alive for 10 minutes.
 - **Cost:** 1.86 ms/step for 8 predators and 120 prey, numpy, one thread. Locality: local.
+
+
+## Species 3 result: the pure emergent swimmer (`cece/swarm-x-emergent`, `results/emergent/NOTE.md`)
+
+- **Close to the bar, not under it.** One MLP per tadpole, trained by BPTT, perceiving only neighbours within R = 8
+  and four chemicals the tadpoles themselves secrete into a fixed grid of water. No centroid, body frame, census,
+  quota, clock or attractor; death is a learned output, penalised and never masked. Published rule = run em_c step
+  750, seeds 7 / 23 / 41 / 1000:
+  - strict shape **8.94** (7.46 / 11.18 / 11.54 / 5.58: two seeds pass, two do not); static (best frame) 8.10;
+  - heal 0.69; **0 self-inflicted deaths** in 793k tadpole-steps; organic band in (jerk_rel 1.99, as evo's jellyfish
+    1.93); locality **local**; 14.6 ms/step at 280 tadpoles.
+- **The pulse never emerged.** Strict is worse than static (gain -0.85): the body holds a drifting jellyfish pose and
+  never cycles through the 8 frames, though it was trained against them at 64 steps per cycle.
+- **Size is uncontrolled.** Every body fills the world cap of 280 (plan 88). Capping lower made the shape worse.
+- **Stigmergy became load-bearing late.** Cutting every chemical costs +2.9 at step 750; before ~step 500 it cost
+  nothing.
+- **No global input would have bought it.** On the closest relative that has them, replacing headcount and element
+  census with consistent constants costs 0.03. The gap is persistence (seed spread 4.7-10.6), size, and the absent
+  pulse. What took the hybrid from ~7 to ~1.7 was positional information (posinfo2's body frame), which is a
+  body-wide reduction and not local.
+- **Verdict across the four species:** a local learned rule can GROW and KEEP a recognisable outline and heal it
+  with no deaths and organic motion, but holding a crisp plan, a headcount, or an animation still needs something
+  body-wide, designed or perceived. That is the same line round 3 drew, now measured from the pure side.
