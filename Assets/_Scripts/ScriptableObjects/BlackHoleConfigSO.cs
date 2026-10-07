@@ -167,6 +167,97 @@ namespace CosmicShore.ScriptableObjects
         [Min(0f)]
         [SerializeField] float warpResidencyMargin = 3f;
 
+        [Header("Lens (photons only — what the player sees of the hole, Docs/BLACK_HOLE.md §5.1)")]
+        [Tooltip("Master switch for the gravitational-lens visual. Off draws the plain black sphere " +
+                 "instead. The lens bends the opaque scene behind the hole, so while it is on the " +
+                 "main camera's opaque and depth textures are switched on (only while a hole is live).")]
+        [SerializeField] bool lensEnabled = true;
+
+        [Tooltip("How far around the hole the bending is drawn, in horizon radii. Light passing at b " +
+                 "is really deflected by ~2/b — it never reaches zero — so the bend is faded out over " +
+                 "the outer part of this radius (Lens Fade Start). Larger reaches farther, costs more " +
+                 "screen pixels.")]
+        [Range(6f, 120f)]
+        [SerializeField] float lensRadiusMultiplier = 30f;
+
+        [Tooltip("Where the bend starts fading back to the straight ray, as a fraction of the lens " +
+                 "radius. Inside it the ray trace is exact.")]
+        [Range(0.1f, 0.95f)]
+        [SerializeField] float lensFadeStart = 0.55f;
+
+        [Tooltip("Ray-march step budget per pixel. Rays near the photon sphere (1.5 horizon radii) " +
+                 "need the most; 128 traces one full loop around it.")]
+        [Range(16, 192)]
+        [SerializeField] int lensSteps = 128;
+
+        [Header("Accretion disc (photons only — fed by what the hole eats)")]
+        [Tooltip("The disc's inner edge, horizon radii. 3 is the innermost stable orbit (ISCO): gas " +
+                 "inside it plunges, which is the dark gap between the disc and the shadow.")]
+        [Range(1.5f, 10f)]
+        [SerializeField] float diskInnerMultiplier = 3f;
+
+        [Tooltip("The disc's outer edge, horizon radii.")]
+        [Range(4f, 60f)]
+        [SerializeField] float diskOuterMultiplier = 14f;
+
+        [Tooltip("Disc density with nothing being eaten — a starving hole's faint ring. 0 = no disc " +
+                 "until the hole has consumed something.")]
+        [Range(0f, 2f)]
+        [SerializeField] float diskBaseDensity = 0.12f;
+
+        [Tooltip("Density each consumed prism adds to the disc. The disc a hole shows is the mass it " +
+                 "has been FED: eating forms it in real time, starving lets it fade.")]
+        [Range(0f, 0.5f)]
+        [SerializeField] float diskFeedPerCapture = 0.03f;
+
+        [Tooltip("Ceiling on the fed density.")]
+        [Range(0f, 4f)]
+        [SerializeField] float diskFeedMax = 1.6f;
+
+        [Tooltip("Seconds for the fed density to halve once the hole stops eating.")]
+        [Min(0.1f)]
+        [SerializeField] float diskFeedHalfLife = 6f;
+
+        [Tooltip("Disc emission brightness (HDR). Above ~1 the hot side blooms.")]
+        [Range(0f, 20f)]
+        [SerializeField] float diskBrightness = 4f;
+
+        [Tooltip("Temperature of the hottest ring, kelvin. ~4,000 is orange, ~7,000 white-yellow, " +
+                 "~12,000 blue-white. The Doppler shift moves each side of the disc from here.")]
+        [Range(1500f, 30000f)]
+        [SerializeField] float diskPeakTemperature = 6500f;
+
+        [Tooltip("How much of the relativistic Doppler shift and beaming to apply, 0..1. At 1 the side " +
+                 "of the disc turning toward the camera is bluer and much brighter than the side " +
+                 "turning away — the lopsided glow of every real black hole image.")]
+        [Range(0f, 1f)]
+        [SerializeField] float diskDoppler = 1f;
+
+        [Tooltip("How fast the gas pattern turns, as a multiple of game time. The rotation is " +
+                 "Keplerian (inner gas laps the outer), in horizon-crossing time units.")]
+        [Range(0f, 50f)]
+        [SerializeField] float diskSpinSpeed = 6f;
+
+        [Tooltip("Scale of the gas streaks in the disc.")]
+        [Range(0.2f, 4f)]
+        [SerializeField] float diskNoiseScale = 1f;
+
+        public bool LensEnabled => lensEnabled;
+        public float LensRadiusMultiplier => Mathf.Clamp(lensRadiusMultiplier, 6f, 120f);
+        public float LensFadeStart => Mathf.Clamp(lensFadeStart, 0.1f, 0.95f);
+        public int LensSteps => Mathf.Clamp(lensSteps, 16, 192);
+        public float DiskInnerMultiplier => Mathf.Clamp(diskInnerMultiplier, 1.5f, 10f);
+        public float DiskOuterMultiplier => Mathf.Max(DiskInnerMultiplier + 0.5f, Mathf.Clamp(diskOuterMultiplier, 4f, 60f));
+        public float DiskBaseDensity => Mathf.Clamp(diskBaseDensity, 0f, 2f);
+        public float DiskFeedPerCapture => Mathf.Clamp(diskFeedPerCapture, 0f, 0.5f);
+        public float DiskFeedMax => Mathf.Clamp(diskFeedMax, 0f, 4f);
+        public float DiskFeedHalfLife => Mathf.Max(0.1f, diskFeedHalfLife);
+        public float DiskBrightness => Mathf.Clamp(diskBrightness, 0f, 20f);
+        public float DiskPeakTemperature => Mathf.Clamp(diskPeakTemperature, 1500f, 30000f);
+        public float DiskDoppler => Mathf.Clamp01(diskDoppler);
+        public float DiskSpinSpeed => Mathf.Clamp(diskSpinSpeed, 0f, 50f);
+        public float DiskNoiseScale => Mathf.Clamp(diskNoiseScale, 0.2f, 4f);
+
         public float GmPerStrength => Mathf.Max(0f, gmPerStrength);
         public float HorizonPerStrength => Mathf.Max(0.01f, horizonPerStrength);
         public float MinHorizonRadius => Mathf.Max(0.01f, minHorizonRadius);
@@ -223,6 +314,8 @@ namespace CosmicShore.ScriptableObjects
         public bool IsSane =>
             HorizonPerStrength > 0f && MinHorizonRadius > 0f &&
             WarpReachMultiplier > 1f && WarpStrength < 1f && WarpExponent >= 1f &&
-            InfluenceAccelerationFloor > 0f;
+            InfluenceAccelerationFloor > 0f &&
+            // The lens must enclose the disc, or the disc's outer rim is cut off by the billboard.
+            LensRadiusMultiplier > DiskOuterMultiplier && DiskOuterMultiplier > DiskInnerMultiplier;
     }
 }

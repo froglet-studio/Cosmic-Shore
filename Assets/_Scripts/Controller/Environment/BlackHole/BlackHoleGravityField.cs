@@ -81,6 +81,10 @@ namespace CosmicShore.Gameplay
         static readonly List<Prism> _evict = new();
         static float _nextAdmission;
 
+        // The hole behind each well slot this frame. A well index is NOT a holes-list index: the
+        // wells skip null holes, so a capture's well index is resolved through this table.
+        static readonly BlackHole[] _wellHoles = new BlackHole[BlackHolePhysics.NativeWells.Capacity];
+
         struct Candidate
         {
             public Prism Prism;
@@ -112,10 +116,12 @@ namespace CosmicShore.Gameplay
             EnsureAllocated();
 
             var wells = new BlackHolePhysics.NativeWells();
-            for (int i = 0; i < holes.Count && i < BlackHolePhysics.NativeWells.Capacity; i++)
+            System.Array.Clear(_wellHoles, 0, _wellHoles.Length);
+            for (int i = 0; i < holes.Count && wells.Count < BlackHolePhysics.NativeWells.Capacity; i++)
             {
                 var h = holes[i];
                 if (h == null) continue;
+                _wellHoles[wells.Count] = h;
                 wells.Add(h.ToWell(config));
             }
 
@@ -170,7 +176,7 @@ namespace CosmicShore.Gameplay
             if (index != null && index.IsAvailable)
                 index.UpdatePositionsBatch(_indexIds.AsArray(), _points, n);
 
-            ApplyVerdicts(holes, index);
+            ApplyVerdicts(index);
         }
 
         // ---------------- Admission ----------------
@@ -289,7 +295,7 @@ namespace CosmicShore.Gameplay
 
         // ---------------- Verdicts ----------------
 
-        static void ApplyVerdicts(IReadOnlyList<BlackHole> holes, PrismSpatialIndex index)
+        static void ApplyVerdicts(PrismSpatialIndex index)
         {
             for (int i = _prisms.Count - 1; i >= 0; i--)
             {
@@ -306,9 +312,10 @@ namespace CosmicShore.Gameplay
                     case BlackHolePhysics.Verdict.Captured:
                     {
                         int by = _capturedBy[i];
-                        Transform sink = by >= 0 && by < holes.Count && holes[by] != null
-                            ? holes[by].transform
-                            : p.transform;
+                        var hole = by >= 0 && by < _wellHoles.Length ? _wellHoles[by] : null;
+                        Transform sink = hole != null ? hole.transform : p.transform;
+                        // The mass joins the hole's accretion disc (Docs/BLACK_HOLE.md §5.1).
+                        if (hole != null) hole.NotifyCapture();
                         RemoveAt(i, clearComponent: true);
                         // Devastate: a shield is not an answer to a singularity. The suction's
                         // sink is the hole's own transform, so the debris converges on it as it

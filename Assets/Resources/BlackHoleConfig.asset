@@ -36,3 +36,18 @@ MonoBehaviour:
   warpSubdivision: 12
   warpMaxResidentPrisms: 32
   warpResidencyMargin: 3
+  lensEnabled: 1
+  lensRadiusMultiplier: 30
+  lensFadeStart: 0.55
+  lensSteps: 128
+  diskInnerMultiplier: 3
+  diskOuterMultiplier: 14
+  diskBaseDensity: 0.12
+  diskFeedPerCapture: 0.03
+  diskFeedMax: 1.6
+  diskFeedHalfLife: 6
+  diskBrightness: 4
+  diskPeakTemperature: 6500
+  diskDoppler: 1
+  diskSpinSpeed: 6
+  diskNoiseScale: 1

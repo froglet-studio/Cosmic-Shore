@@ -20,11 +20,13 @@ namespace CosmicShore.Gameplay
     /// registry; a hand-placed component registers itself at <c>OnEnable</c> with its serialized
     /// strength, so a scene can author one too.
     ///
-    /// The visual is built at runtime from primitives — the horizon as a black sphere (a horizon
-    /// absorbs all light; what the player SEES of a hole is the mass bending around it) and a
-    /// thin bright accretion disc in the spin plane, so a hole on a dark skybox still has a
-    /// signature. Both use the same runtime unlit material path <c>ToyFactory.AccentMaterial</c>
-    /// takes, for the same reason: there is no prefab to drift.
+    /// What the player SEES is the <see cref="BlackHoleLens"/> (Docs/BLACK_HOLE.md §5.1): a
+    /// per-pixel ray trace of the scene behind the hole bent through Schwarzschild spacetime —
+    /// the background distorted into arcs and an Einstein ring, the shadow (~2.6× the horizon),
+    /// and the accretion disc lensed over the top and bottom of the shadow. The disc is FED:
+    /// every prism the hole consumes adds to <see cref="DiskFeed"/>, which decays, so a hole that
+    /// is eating forms its disc in real time and a starving one fades. If the lens shader cannot
+    /// load, the hole falls back to a plain black sphere — never an invisible hole.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class BlackHole : MonoBehaviour
@@ -44,19 +46,14 @@ namespace CosmicShore.Gameplay
         [SerializeField] Vector3 spinAxis = Vector3.forward;
 
         const string HorizonName = "Horizon";
-        const string DiscName = "AccretionDisc";
-
-        /// <summary>Disc radius as a multiple of the horizon radius.</summary>
-        const float DiscRadiusMultiplier = 3.2f;
-        /// <summary>Disc thickness as a fraction of the horizon radius — a thin plane, not a lens.</summary>
-        const float DiscThickness = 0.06f;
 
         static Material s_horizonMaterial;
-        static Material s_discMaterial;
 
-        Transform _horizon;
-        Transform _disc;
+        Transform _horizon;     // fallback only: the lens draws the shadow itself
+        BlackHoleLens _lens;
+        bool _visualBuilt;
         float _weight;
+        float _diskFeed;
         bool _despawning;
         bool _registered;
 
@@ -78,6 +75,19 @@ namespace CosmicShore.Gameplay
 
         /// <summary>True from <see cref="BeginDespawn"/> until the object is destroyed.</summary>
         public bool IsDespawning => _despawning;
+
+        /// <summary>
+        /// Accretion-disc density this hole has been FED (on top of the config's base density):
+        /// rises with every prism it consumes, halves every <c>diskFeedHalfLife</c> seconds.
+        /// </summary>
+        public float DiskFeed => _diskFeed;
+
+        /// <summary>A prism crossed this hole's horizon: its mass joins the disc.</summary>
+        public void NotifyCapture()
+        {
+            var config = BlackHoleRegistry.Config;
+            _diskFeed = Mathf.Min(config.DiskFeedMax, _diskFeed + config.DiskFeedPerCapture);
+        }
 
         public float GM => BlackHoleRegistry.Config.GM(strength);
         public float HorizonRadius => BlackHoleRegistry.Config.HorizonRadius(strength);
@@ -171,35 +181,31 @@ namespace CosmicShore.Gameplay
                 _weight = Mathf.Min(1f, _weight + rate);
             }
 
-            if (_disc != null)
-                _disc.rotation = Quaternion.LookRotation(SpinAxis, OrthogonalTo(SpinAxis));
-        }
+            if (_diskFeed > 0f)
+                _diskFeed *= Mathf.Exp(-0.6931472f * dt / config.DiskFeedHalfLife);
 
-        static Vector3 OrthogonalTo(Vector3 axis)
-        {
-            var up = Mathf.Abs(Vector3.Dot(axis, Vector3.up)) < 0.9f ? Vector3.up : Vector3.right;
-            return Vector3.Cross(axis, up).normalized;
+            if (_horizon != null) _horizon.localScale = Vector3.one * (2f * HorizonRadius * _weight);
         }
 
         void ApplyScale()
         {
-            float r = HorizonRadius;
-            if (_horizon != null) _horizon.localScale = Vector3.one * (2f * r);
-            if (_disc != null)
-                _disc.localScale = new Vector3(2f * r * DiscRadiusMultiplier, 2f * r * DiscRadiusMultiplier, 2f * r * DiscThickness);
+            if (_horizon != null) _horizon.localScale = Vector3.one * (2f * HorizonRadius * _weight);
         }
 
+        /// <summary>
+        /// The lens when the config wants it and its shader loads; otherwise the plain black
+        /// sphere. Built once — a config change mid-hole takes effect on the next spawn.
+        /// </summary>
         void EnsureVisual()
         {
-            if (_horizon == null)
+            if (_visualBuilt) return;
+            _visualBuilt = true;
+            if (BlackHoleRegistry.Config.LensEnabled)
+                _lens = BlackHoleLens.Create(this);
+            if (_lens == null)
             {
                 var existing = transform.Find(HorizonName);
                 _horizon = existing != null ? existing : BuildSphere(HorizonName, HorizonMaterial());
-            }
-            if (_disc == null)
-            {
-                var existing = transform.Find(DiscName);
-                _disc = existing != null ? existing : BuildSphere(DiscName, DiscMaterial());
             }
         }
 
@@ -226,13 +232,6 @@ namespace CosmicShore.Gameplay
             if (s_horizonMaterial != null) return s_horizonMaterial;
             s_horizonMaterial = UnlitMaterial(Color.black, "BlackHoleHorizon");
             return s_horizonMaterial;
-        }
-
-        static Material DiscMaterial()
-        {
-            if (s_discMaterial != null) return s_discMaterial;
-            s_discMaterial = UnlitMaterial(new Color(1f, 0.72f, 0.35f, 1f), "BlackHoleAccretionDisc");
-            return s_discMaterial;
         }
 
         /// <summary>

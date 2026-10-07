@@ -169,6 +169,9 @@ namespace CosmicShore.Gameplay
             BlackHoleGravityField.Tick(_holes, config, dt);
             BlackHoleVesselPull.Tick(_holes, config, dt);
             BlackHoleWarp.Flush(_warpHoles, config);
+            // The lens reads the main camera's opaque + depth copies; keep them on the CURRENT main
+            // camera while any lens is live (a vessel spawn can swap it).
+            BlackHoleLens.CameraSupport.Maintain();
 
             if (CSDebug.IsVerbose(CSLogChannel.BlackHole) && Time.unscaledTime >= _nextReport)
             {

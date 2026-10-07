@@ -18,6 +18,7 @@
 | The vessel pull | `BlackHoleVesselPull.cs` |
 | The warp's CPU half — the bank + high-poly residency | `BlackHoleWarp.cs` |
 | The warp's GPU half | `_Graphics/Materials/Graphs/PrismGravityWarp.hlsl` |
+| The lens — what the hole LOOKS like (ray-traced background, shadow, lensed accretion disc) | `BlackHoleLens.cs`, `_Graphics/Materials/Graphs/BlackHoleLens.shader` + `BlackHoleLens.hlsl`, `Resources/BlackHoleLens.mat`, `Tools/Shaders/verify_black_hole_lens.py` (§5.1) |
 | The ECS component every prism's companion entity carries | `_Scripts/Controller/ECS/Components/GravityBodyComponents.cs` (+ the prototype addition and the `SetGravityBody` / `ClearGravityBody` / `TryGetGravityBodyLookup` API in `PrismRenderService`) |
 | Console commands | `BlackHoleConsole.cs` (`blackhole`, alias `bh`) |
 | Tuning (the only tuning surface) | `BlackHoleConfigSO` → `Assets/Resources/BlackHoleConfig.asset` |
@@ -193,6 +194,72 @@ the warp and `GravityWarpEdges` assert the warp's own feeders.
 OFF state published at `BeforeSceneLoad` and on teardown. A despawning hole keeps a falling weight
 until its ease completes, so the bend lets go instead of snapping; the field has already stopped
 pulling by then (only the photons ease — the split every §4.7 global keeps).
+
+## 5.1 The lens — what the player SEES (`BlackHoleLens` + `BlackHoleLens.shader` / `.hlsl`)
+
+A black hole is invisible; what is visible is everything behind it bent around it. The hole is drawn
+by a per-pixel **Schwarzschild ray trace** of the scene behind it, not by a sphere and a disc mesh
+(that was the first cut, and it read as a black ball with a yellow ring):
+
+- **The background distorts.** Each pixel near the hole follows its light ray backwards from the
+  eye through the hole's spacetime. A ray that escapes left along a BENT direction, and the pixel
+  shows what the scene has in THAT direction — prisms and the skybox smear into arcs, and a point
+  straight behind the hole becomes an Einstein ring.
+- **The shadow is ~2.6× the horizon.** Rays closer than the critical impact parameter
+  `b_c = (3√3/2) r_s ≈ 2.598 r_s` fall in, so the black disc on screen is the photon-capture
+  cross-section, not the horizon.
+- **The accretion disc is lensed.** A thin disc in the spin plane from the ISCO (3 r_s) outward. A ray
+  crossing it picks up its glow on EVERY crossing, which is why its far side shows ABOVE and BELOW the
+  shadow (its light bends over the top of the hole) and why a bright photon ring hugs the shadow. The
+  gas follows the Shakura–Sunyaev temperature profile (`T⁴ ∝ r⁻³(1 − √(r_in/r))` — a dark gap at the
+  ISCO, a hot inner ring), shifted by the relativistic Doppler factor of the orbiting gas
+  (`v = √(r_s / 2(r − r_s))`, half light speed at the ISCO) and by gravitational redshift: the side
+  turning toward the camera is bluer and ~9× brighter at 6 r_s, the side turning away redder — the
+  lopsided glow of every real black-hole image. Differentially rotating spiral streaks (Keplerian,
+  inner gas laps outer) make it visibly churn.
+- **The disc forms from what the hole eats.** Its density is `diskBaseDensity + DiskFeed`, and every
+  prism the hole consumes adds `diskFeedPerCapture` to `DiskFeed`, which halves every
+  `diskFeedHalfLife` seconds. A hole sat in a prism field builds its disc in real time as the mass
+  spirals in; a starving one fades back to a faint ring. (Emergent from the capture verdict the field
+  already produces — no new state anywhere but one float on the hole.)
+
+**The equation** is the null-geodesic Binet equation `u'' + u = (3/2) r_s u²`, integrated in 3D as a
+particle under the fictitious central force `x'' = −(3/2) h² x / |x|⁵` (units of r_s; it conserves `h`
+and traces exactly the photon's orbit) with **velocity Verlet** — first-order Euler at the same step
+put the shadow's edge 2% inside `b_c`, which the harness caught. Step = 8% of the current radius, so
+rays are fine near the photon sphere and coarse far out; 128 steps per pixel by default.
+
+**How it draws.** One camera-facing billboard per hole at the hole's CENTRE depth, sized to the lens
+(30 r_s by default), in the transparent queue — after URP copies the opaque scene. Anything in front
+of the hole occludes the billboard by the ordinary depth test and is drawn unbent; only what is
+behind it is lensed. The hole grows in on spawn and shrinks out on despawn (its effective horizon
+rides the same eased weight as the warp), so the shadow never pops. Per-hole numbers go through a
+`MaterialPropertyBlock` each frame — one renderer per hole, at most four; the clock-material law
+governs prisms, not this.
+
+**Camera textures.** The lens reads URP's opaque-scene copy and depth texture, which are OFF in
+`URP_Asset` (they cost a copy per frame). `BlackHoleLens.CameraSupport` turns them on for the MAIN
+camera only while a hole is live, follows the main camera if it changes, and restores the camera's
+own settings when the last hole goes. The project's opaque copy is 2× downsampled (asset-level, left
+alone), so the lensed background is slightly softer than the unbent scene.
+
+**Stated screen-space limits.** A bent ray that leaves the screen samples URP's sky reflection
+cubemap instead of the scene, so off-screen prisms are not lensed in; a bent ray that lands on
+something IN FRONT of the hole is rejected the same way (the copy cannot see past it). The bend is
+faded to the straight ray over the outer 45% of the lens radius — light at impact parameter `b` is
+really deflected by ~`2/b` at any distance, so a finite lens would otherwise draw a seam at its edge.
+
+**Proof.** `Tools/Shaders/verify_black_hole_lens.py` compiles the SHIPPED HLSL with clang++ and runs
+it: the shadow edge at 2.594 r_s (exact 2.598), Einstein deflection at b = 20/40/80 r_s within 0.8%
+of Schwarzschild's second-order value, rays passing above the shadow parallel to the disc (which never
+cross its plane in flat space) picking up the far side of the disc, Doppler asymmetry 9×, the ISCO gap,
+no light from inside the horizon, 4,000 random rays finite and in range, a seamless fade — and a
+negative control (a coarse step) that fails six of them. glslang front-end compiles both shader stages
+against a URP mock. **Nothing here has been seen on screen**; the look is a playtest away.
+Dials (`BlackHoleConfig`, Lens / Accretion disc headers): `lensRadiusMultiplier`, `lensFadeStart`,
+`lensSteps`, `diskInner/OuterMultiplier`, `diskBaseDensity`, `diskFeedPerCapture`, `diskFeedMax`,
+`diskFeedHalfLife`, `diskBrightness`, `diskPeakTemperature`, `diskDoppler`, `diskSpinSpeed`,
+`diskNoiseScale`; `lensEnabled` off falls back to the plain black sphere.
 
 ## 6. Console
 

@@ -228,6 +228,44 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Lens_MaterialShaderAndHlslShipTogether()
+        {
+            const string shaderPath = "Assets/_Graphics/Materials/Graphs/BlackHoleLens.shader";
+            const string lensHlslPath = "Assets/_Graphics/Materials/Graphs/BlackHoleLens.hlsl";
+            Assert.IsTrue(File.Exists(shaderPath), $"{shaderPath} is missing.");
+            Assert.IsTrue(File.Exists(lensHlslPath), $"{lensHlslPath} is missing.");
+
+            string shader = File.ReadAllText(shaderPath);
+            Assert.IsTrue(shader.Contains("Shader \"CosmicShore/BlackHoleLens\""), "the lens shader was renamed.");
+            Assert.IsTrue(shader.Contains("#include \"BlackHoleLens.hlsl\""), "the lens shader no longer includes the traced HLSL.");
+            Assert.IsTrue(shader.Contains("DeclareOpaqueTexture.hlsl") && shader.Contains("DeclareDepthTexture.hlsl"),
+                "the lens shader no longer reads the opaque and depth copies it bends.");
+            Assert.IsTrue(shader.Contains("\"Queue\" = \"Transparent"),
+                "the lens must draw in the transparent queue — after URP copies the opaque scene it bends.");
+
+            string hlsl = File.ReadAllText(lensHlslPath);
+            Assert.IsTrue(hlsl.Contains("void BlackHoleLensTrace("), "BlackHoleLens.hlsl lost its trace entry point.");
+
+            // The material the lens loads at runtime must point at THIS shader, from Resources (so a
+            // player build includes both).
+            var material = AssetDatabase.LoadAssetAtPath<Material>("Assets/Resources/" + BlackHoleLens.MaterialResourcePath + ".mat");
+            Assert.IsNotNull(material, "Assets/Resources/BlackHoleLens.mat is missing — every hole falls back to a black sphere.");
+            Assert.IsNotNull(material.shader, "BlackHoleLens.mat has no shader.");
+            Assert.AreEqual("CosmicShore/BlackHoleLens", material.shader.name, "BlackHoleLens.mat points at the wrong shader.");
+        }
+
+        [Test]
+        public void Config_LensEnclosesTheDiscAndTheDiscStartsAtOrOutsideThePhotonSphere()
+        {
+            var config = LoadConfig();
+            Assert.Greater(config.LensRadiusMultiplier, config.DiskOuterMultiplier,
+                "the lens radius must exceed the disc's outer edge, or the disc is cut off at the billboard's edge.");
+            Assert.GreaterOrEqual(config.DiskInnerMultiplier, 1.5f,
+                "a disc inside the photon sphere (1.5 r_s) is not a disc anything can orbit in.");
+            Assert.Less(config.LensFadeStart, 1f, "the bend must fade out before the lens edge, or the edge is a seam.");
+        }
+
+        [Test]
         public void TestScene_ExistsAndCarriesTheHarnessWiredToItsConfig()
         {
             Assert.IsTrue(File.Exists(TestScenePath), $"{TestScenePath} is missing — run FrogletTools > Scene Setup > Setup Black Hole Test Scene.");
