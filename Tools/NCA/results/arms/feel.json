@@ -214,5 +214,149 @@
     }
    }
   }
+ },
+ "a6burst75:0:0": {
+  "prey": {
+   "n": 109.333,
+   "speed": 2.62,
+   "jerk_rel": 1.154,
+   "coherence": 0.045,
+   "jitter": 1.118,
+   "stuck": 0.0,
+   "osc": 0.001,
+   "organic": {
+    "ok": true,
+    "checks": {
+     "jerk_rel": true,
+     "osc": true,
+     "stuck": true
+    }
+   }
+  },
+  "pred": {
+   "n": 8.0,
+   "speed": 5.075,
+   "jerk_rel": 0.384,
+   "coherence": 0.16,
+   "jitter": 1.025,
+   "stuck": 0.0,
+   "osc": 0.0,
+   "organic": {
+    "ok": true,
+    "checks": {
+     "jerk_rel": true,
+     "osc": true,
+     "stuck": true
+    }
+   }
+  }
+ },
+ "a6burst75:600:600": {
+  "prey": {
+   "n": 109.333,
+   "speed": 3.065,
+   "jerk_rel": 1.071,
+   "coherence": 0.169,
+   "jitter": 1.064,
+   "stuck": 0.0,
+   "osc": 0.002,
+   "organic": {
+    "ok": true,
+    "checks": {
+     "jerk_rel": true,
+     "osc": true,
+     "stuck": true
+    }
+   }
+  },
+  "pred": {
+   "n": 8.0,
+   "speed": 4.977,
+   "jerk_rel": 0.341,
+   "coherence": 0.043,
+   "jitter": 1.05,
+   "stuck": 0.0,
+   "osc": 0.0,
+   "organic": {
+    "ok": true,
+    "checks": {
+     "jerk_rel": true,
+     "osc": true,
+     "stuck": true
+    }
+   }
+  }
+ },
+ "a7conf1r20:0:0": {
+  "prey": {
+   "n": 96.667,
+   "speed": 2.802,
+   "jerk_rel": 1.112,
+   "coherence": 0.051,
+   "jitter": 1.125,
+   "stuck": 0.0,
+   "osc": 0.001,
+   "organic": {
+    "ok": true,
+    "checks": {
+     "jerk_rel": true,
+     "osc": true,
+     "stuck": true
+    }
+   }
+  },
+  "pred": {
+   "n": 8.0,
+   "speed": 5.443,
+   "jerk_rel": 0.32,
+   "coherence": -0.001,
+   "jitter": 1.105,
+   "stuck": 0.0,
+   "osc": 0.0,
+   "organic": {
+    "ok": true,
+    "checks": {
+     "jerk_rel": true,
+     "osc": true,
+     "stuck": true
+    }
+   }
+  }
+ },
+ "a7conf1r20:500:500": {
+  "prey": {
+   "n": 97.667,
+   "speed": 3.165,
+   "jerk_rel": 1.09,
+   "coherence": -0.006,
+   "jitter": 1.114,
+   "stuck": 0.0,
+   "osc": 0.001,
+   "organic": {
+    "ok": true,
+    "checks": {
+     "jerk_rel": true,
+     "osc": true,
+     "stuck": true
+    }
+   }
+  },
+  "pred": {
+   "n": 8.0,
+   "speed": 5.405,
+   "jerk_rel": 0.311,
+   "coherence": 0.147,
+   "jitter": 1.059,
+   "stuck": 0.0,
+   "osc": 0.0,
+   "organic": {
+    "ok": true,
+    "checks": {
+     "jerk_rel": true,
+     "osc": true,
+     "stuck": true
+    }
+   }
+  }
  }
 }

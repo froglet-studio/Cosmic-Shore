@@ -387,7 +387,7 @@ def curve(run):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("what", nargs="+", choices=["matrix", "curve", "behave", "eco", "perf", "player", "record", "all"])
+    ap.add_argument("what", nargs="+", choices=["matrix", "curve", "behave", "eco", "ecogate", "perf", "player", "record", "all"])
     ap.add_argument("--run", default=os.path.join(HERE, "runs", "arms_a1"))
     ap.add_argument("--every", type=int, default=200)
     ap.add_argument("--last", type=int, default=None)
@@ -432,6 +432,15 @@ def main():
             e = eco(snaps[gq]["thq"], snaps[gp]["thp"], confusion=a.confusion)
             ev["eco"][f"{a.prefix}{gp}:{gq}"] = e
             print("eco", gp, gq, {k: e[k] for k in ("final_prey", "final_pred", "births", "starved", "mass_residual_max")})
+    if "ecogate" in what:                 # designed economy knobs (policies unchanged): which one makes it persist?
+        ev.setdefault("eco", {})
+        for gp, gq in pairs:
+            for name, kn, mins in (("sated1.25", dict(sated=1.25), 5.0), ("split3", dict(pred_split=3.0), 5.0),
+                                   ("sated1.25+split3", dict(sated=1.25, pred_split=3.0), 5.0),
+                                   ("sated1.25", dict(sated=1.25), 10.0)):
+                e = eco(snaps[gq]["thq"], snaps[gp]["thp"], minutes=mins, confusion=a.confusion, **kn)
+                ev["eco"][f"{a.prefix}{gp}:{gq} {name} ({mins:.0f} min)"] = e
+                print("ecogate", gp, gq, name, mins, {k: e[k] for k in ("final_prey", "final_pred", "births", "starved")})
     if "perf" in what:
         ev["perf"] = perf(snaps[last]["thq"], snaps[last]["thp"])
         print("perf", ev["perf"])

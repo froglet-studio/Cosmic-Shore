@@ -4,7 +4,8 @@ began, and how long the victim had been inside the catcher's perception radius.
 
     python Tools/NCA/arms_telegraph.py
 """
-import sys, json; sys.path.insert(0,'.')
+import os, sys, json
+HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, HERE); os.chdir(HERE)
 import numpy as np, arms_eval as E, arms_sim as A
 sn=E.load_snaps('runs/arms_a3'); cfg=A.Cfg(); out={}
 for g in (0,1460):

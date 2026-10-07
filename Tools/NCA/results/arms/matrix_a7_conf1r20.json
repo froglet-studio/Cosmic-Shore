@@ -1,0 +1,133 @@
+{
+ "gens": [
+  0,
+  100,
+  200,
+  300,
+  400,
+  500
+ ],
+ "catch_per_min": [
+  [
+   49.0,
+   44.0,
+   37.75,
+   39.25,
+   40.25,
+   37.5
+  ],
+  [
+   46.25,
+   49.5,
+   41.25,
+   40.75,
+   42.5,
+   41.5
+  ],
+  [
+   47.75,
+   51.0,
+   45.25,
+   40.0,
+   38.5,
+   37.5
+  ],
+  [
+   50.25,
+   53.0,
+   52.0,
+   42.75,
+   34.75,
+   42.25
+  ],
+  [
+   51.0,
+   51.25,
+   46.75,
+   46.25,
+   41.0,
+   42.5
+  ],
+  [
+   49.25,
+   45.25,
+   44.5,
+   43.75,
+   37.5,
+   37.75
+  ]
+ ],
+ "sem": [
+  [
+   1.9,
+   1.32,
+   1.98,
+   1.0,
+   1.6,
+   1.93
+  ],
+  [
+   1.92,
+   1.96,
+   1.77,
+   2.34,
+   1.83,
+   2.14
+  ],
+  [
+   2.66,
+   3.06,
+   1.8,
+   2.83,
+   2.05,
+   2.47
+  ],
+  [
+   2.41,
+   2.5,
+   2.57,
+   2.57,
+   2.71,
+   2.68
+  ],
+  [
+   1.46,
+   1.87,
+   1.69,
+   1.3,
+   2.15,
+   1.49
+  ],
+  [
+   2.83,
+   1.77,
+   2.31,
+   2.58,
+   1.79,
+   2.49
+  ]
+ ],
+ "rows": "predator generation",
+ "cols": "prey generation",
+ "seeds": [
+  107919,
+  115838,
+  123757,
+  131676,
+  139595,
+  147514,
+  155433,
+  163352
+ ],
+ "secs": 30.0,
+ "newer_pred_gain": 0.7,
+ "newer_pred_gain_pos_share": 0.667,
+ "newer_prey_gain": 7.0,
+ "newer_prey_gain_pos_share": 0.933,
+ "intransitive_triples": 0,
+ "triples": 20,
+ "seconds": 16.7,
+ "note": "newer_pred_gain: mean over i>j of C[i,j]-C[j,j] (a newer predator vs an old prey, relative to that prey's contemporaries); newer_prey_gain: mean over j>i of C[i,i]-C[i,j] (how much a newer prey lowers an old predator's catch). Both positive = monotone progress on both sides.",
+ "run": "arms_a7",
+ "confusion": 1.0
+}

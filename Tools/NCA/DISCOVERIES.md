@@ -2262,3 +2262,25 @@ locality "local"); the 16-transition yardstick does not apply.
 other in an asymmetric arms race (different speed, size, perception). Success is measured as a play matrix across
 generations (does each newer generation beat older opponents, or do they cycle?), the behaviours that emerge
 (encircling, confusion, schooling, decoys), and whether a player finds the hunt readable.
+
+## Species 4 result: the co-evolved predator/prey arms race (`cece/swarm-x-arms`, `results/arms/NOTE.md`)
+
+- **The race is real and monotone.** In a 16-snapshot cross-generation matrix over 1460 generations, newer prey cut
+  older predators' catch in 98% of cells and newer predators beat older prey in 69%; 0 of 560 triples are
+  intransitive. A no-pool ablation did not cycle either, so the PFSP history pool was not shown to be needed once
+  the run starts from a sensible seed.
+- **Generation 0 had to be designed.** ES from random weights taught the prey to evade in ~40 generations but never
+  taught the predators to pursue: they disengaged (13 → 1 catch/min), and with PFSP they were out-caught 14x by a
+  one-line scripted pursuer. Both species therefore start from behaviour clones of pursue-and-burst and
+  flee-and-graze.
+- **What evolution added on top:**
+  - prey juking (close-range turn rate 76 → 327 deg/s);
+  - prey avoiding the membrane (time-share there 0.26 → 0.13);
+  - predators pinning prey on the membrane (catch ratio there 2.1 → 3.9x);
+  - predators that probe with short bursts and ignore an uncatchable 120 u/s vessel.
+- **What did not emerge, even in runs built to provoke it** (slower burst; strong or wide confusion): schooling,
+  encirclement, ambush and relays. The best answers in this world are an individual juke and the wall.
+- **Organic band:** the designed seed is too smooth (jerk_rel 0.16); every evolved pair is in the band.
+- **Economy:** without a designed satiety gate the open economy collapses: predators breed to 20-30 and eat the
+  pond out in 2-4 minutes. A gate (no burst above 1.25x birth mass) keeps both species alive for 10 minutes.
+- **Cost:** 1.86 ms/step for 8 predators and 120 prey, numpy, one thread. Locality: local.

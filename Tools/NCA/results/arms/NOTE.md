@@ -301,7 +301,46 @@ is within perception.
   - Predator: catches minus 0.25 × burn, per predator.
   - Prey: minus the share caught, plus 0.5 × net mass grazed.
 
-__A6A7__
+## Two follow-up hypotheses (warm-started from a3 g1460; each with its own matrix)
+
+**a6: "a lone burst too slow to catch forces encirclement"** (`pred_burst` 100 → 75 u/s, 600 generations,
+`matrix_a6_burst75.json`). The bestiary found that geometry, not speed, is how a slower pack catches a faster pilot.
+
+| | a6 g0 (a3 g1460 policies at burst 75) | a6 g600 |
+|---|---|---|
+| catch/min | 16 | 23 |
+| burst success | 0.05 | 0.14 |
+| victim encirclement (null) | 0.20 (0.42) | 0.20 (0.39) |
+| cooperative catches | 0.56 | 0.49 |
+| membrane catch ratio | 4.4 | **5.1** |
+| prey social share; nearest-neighbour distance | 0.20; 25 u | 0.29; 20 u |
+
+- **Rejected.** The predators adapted, with catches up 40%, but not by surrounding the prey. They leaned harder on
+  the membrane, which becomes the second predator: a wall cannot be juked past.
+- The prey answered by packing slightly tighter, but still with no school.
+- The matrix is flat and noisy: newer predators beat older prey in 67% of cells, and 2 of 35 triples are
+  intransitive. With catches this rare, 600 generations bought little.
+
+**a7: "confusion that bites at a looser spacing makes schooling pay"** (confusion 1.0, radius 10 → 20 u, 500
+generations, `matrix_a7_conf1r20.json`).
+
+| | a7 g0 | a7 g500 |
+|---|---|---|
+| catch/min | 42 | 39 |
+| confusion-fail share | 0.013 | 0.017 |
+| prey social share; global polarisation; milling | 0.20; 0.11; 0.28 | 0.20; 0.09; 0.24 |
+
+- **Rejected.** The prey did not school.
+- Their gains (newer prey cut older predators' catch in 93% of cells, by 7/min) came from the same solo juking.
+
+Across a3, a5, a6 and a7 the conclusion is consistent. **With a single shared policy per species and
+per-encounter fitness, the prey's best answer to a turn-limited pursuer is an individual juke, and the
+predators' best answer is the membrane.** Schooling and encirclement need a reason this world does not provide:
+- detection-based confusion (the predator loses its target among many, before contact);
+- many-eyes alarm (a neighbour's flight is information);
+- prey that cannot out-turn a single predator.
+Those are the next round's levers.
+
 
 ## What failed (all logs in this folder)
 
@@ -312,8 +351,8 @@ __A6A7__
    predators peaked at 25/min, then were out-raced (4/min by gen 150). The diagnosis: a scripted pursuer catches
    54/min from a2's g170 prey, the learned predators 3.8/min. **ES did not discover pursuit from scratch in
    ~200 generations.** Hence the designed seed.
-3. **No schooling, encirclement, ambush or relay emerged.** See above. Raising confusion to 1.0 (a5) did not
-   produce schooling.
+3. **No schooling, encirclement, ambush or relay emerged**, including in the three runs designed to provoke them:
+   a5 (confusion 1.0), a6 (slower burst) and a7 (confusion 1.0 at 20 u).
 4. **The open economy collapses** unless a designed satiety gate is added, and the evolved predators dwindle even
    with it.
 5. **Infrastructure**: a container restart killed a1 mid-run, because a background job does not survive an idle
@@ -350,8 +389,37 @@ How it ports to the game's Fauna:
 - **Next round**:
   1. **Train in the open economy, with the gate**, and fitness = persistence plus mass gained, so the predators
      stop outspending their intake.
-  2. **Give coordination a reason to exist**: a lone predator slower in burst (run a6 tests this), or prey that
-     out-turn a single pursuer even more.
-  3. **Give schooling a reason**: confusion that acts on detection, not only at contact (a7 tests a wider confusion
-     radius), or "many eyes" (shared alarm through the signal channel).
+  2. **Give coordination a reason to exist.** A slower burst alone did not (a6). Remove the wall as an ally (a
+     spherical pond with a soft, unbounded edge, or prey that read the membrane earlier), so the only "second
+     predator" left is a packmate.
+  3. **Give schooling a reason.** Contact-time confusion did not (a5, a7). Try confusion on DETECTION: the
+     predator's nearest-prey input jitters with the local prey density. Or "many eyes": an alarm a prey hears
+     through the signal channel. Both are perception rules, not rewards.
 
+
+## Files
+
+| file | what |
+|---|---|
+| `policy_a3_g1460_pred_and_prey.npz` | the recommended pair (`thp` predator, `thq` prey; arms_sim.mlp layout) |
+| `seed_g0_designed.npz` | generation 0: the behaviour clones of the scripted heuristics |
+| `policy_a5_conf1_g400.npz` | a5's final pair (confusion 1.0) |
+| `snaps_a3/`, `snaps_a4_nopool/`, `snaps_a6_burst75/`, `snaps_a7_conf1r20/` | the snapshots each matrix uses |
+| `matrix.json` (a3), `matrix_a4_nopool.json`, `matrix_a6_burst75.json`, `matrix_a7_conf1r20.json` | play matrices |
+| `eval.json` | curve, behaviours, economy, perf, player test, telegraph, locality |
+| `feel.json` | the organic band per species and pair |
+| `curve.png`, `matrix.png`, `eco_*.png` | figures |
+| `arms_viewer.html` | the shared Ecology viewer (`Tools/Ecology/common/viewer.py` template), 4 runs: g1460 and g0 encounters, plus a vessel fly-through of each. Pilot, chase, orbit and fly cameras. |
+| `encounter_g1460_g1460.json`, `vessel_g1460_g1460.json` | the recordings (viewer data contract; rebuild with `python Tools/Ecology/common/viewer.py out.html <json>...`) |
+| `encounter_*.gif`, `vessel_*.gif` | short GIFs (orange = predator, red = bursting, cyan = prey, white ring = a catch, triangle = vessel) |
+| `a1..a7_log.jsonl`, `a*_config.json` | every training run, failed ones included |
+
+Reproduce:
+
+```
+python Tools/NCA/arms_seed.py
+python Tools/NCA/arms_train.py --tag a3 --init runs/arms_seed.npz --gens 1460 --blocks 10 --pool_pairs 12 --secs 30 --sigma 0.02 --lr 0.005 --wd 0.0
+python Tools/NCA/arms_eval.py --run runs/arms_a3 all --gens 1460:1460,0:0
+python Tools/NCA/arms_eval.py --run runs/arms_a3 ecogate --gens 1460:1460   # the satiety-gate table (g0 row: --gens 0:0)
+python Tools/NCA/arms_telegraph.py; python Tools/NCA/arms_plots.py --run runs/arms_a3
+```
