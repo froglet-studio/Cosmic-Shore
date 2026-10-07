@@ -24,13 +24,22 @@ Branch `cece/swarm-x-arms`. Code: `Tools/NCA/arms_sim.py` (world + policies), `a
   - predators **ignore a vessel they cannot catch**: time-share within 40 u of it fell from 1.6% to 0.7% (the null
     is 0.8%).
 - **What did NOT emerge**: schooling, splitting or decoys in the prey, and encirclement, ambush or relay chases in
-  the predators. Each is measured, below, against its null.
+  the predators. Each is measured, below, against its null. Four follow-up runs were built to provoke them:
+  confusion 1.0 (a5), a slower burst (a6), confusion at 20 u (a7), and confusion on detection (a8). None produced a
+  school or a ring. a6 made the predators lean even harder on the wall (catch ratio 5.1x), and a8 moved the prey 13%
+  closer together.
 - **Feel**: every evolved pair is inside swarm_feel's organic band for both species. The designed seed is not: its
   jerk_rel is 0.16, machine-smooth straight lines.
 - **The open economy collapses without a designed satiety gate.** Predators breed from 8 to 20-30 and eat the prey
   to extinction in 2-4 minutes, then starve. A gate (a predator heavier than 1.25x its birth mass cannot burst)
   keeps both species alive for 10 minutes in all 4 seeds.
-- **Cost**: 1.86 ms/step for 8 predators and 120 prey, numpy, one thread.
+- **Cost**: 1.86 ms/step for 8 predators and 120 prey, numpy, one thread. Locality: local.
+- **Most FUN pair: predators g1460 vs prey g1460, with the satiety gate.**
+  - 46 catches/min, with 78% of bursts visibly juked.
+  - Every catch is telegraphed by a red burst, 0.8 s ahead.
+  - Organic feel, and it persists in the economy.
+  - Port: the predators become a new swarm fauna that hunts the tadpole school, keeping the gate, the burst tell and
+    the post-catch handling beat. Retrained on trail prisms, it becomes a baitable trail predator.
 
 ## Designed vs learned vs emergent (line by line)
 
@@ -66,7 +75,7 @@ Three phases:
    predators slowly regaining. In the matrix, predators after g900 catch the newest prey 35-51/min, against 21-31
    for predators from g200-800.
 
-Neither side collapsed in training. The lowest 20-generation mean was 19 catches/min; the highest share caught was
+Neither side collapsed in training. The lowest 20-generation mean was ~20 catches/min; the highest share caught was
 44%.
 
 ## The cross-generation play matrix (`matrix.json`, `matrix.png`)
@@ -94,7 +103,7 @@ ran 500 generations from the same seed with NO pool, only the current opponent:
 At this scale the race did not cycle WITHOUT the pool either. The likely reason: the policy space here is smooth
 and low-dimensional, and the seed already sits in a sensible basin. **Honest verdict**: the pool and PFSP were
 necessary to keep a2 engaged from scratch (where they still were not enough), but from the designed seed no
-evidence says they were needed. They cost about 30% of the evaluations.
+evidence says they were needed. They cost 55% of each generation's encounters (48 of 88).
 
 ## Behaviours, named and measured (`eval.json` → `behave`, 3 seeds × 60 s each)
 
