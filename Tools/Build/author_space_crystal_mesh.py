@@ -22,18 +22,23 @@ WHY THE NORMALS WERE WRONG
     Two smaller faults ride along: shape normals are per CONTROL POINT in FBX while this mesh is
     hard-edged (three normals per corner), and a single target linearly interpolates normals
     between its endpoints, which misses the true face normal mid-key by up to ~8 deg.
+    A fourth only showed in play: the importer normalizes each frame's TARGET normal
+    (base + delta) before re-deriving the delta, so any target that is not unit length is bent.
 
 WHAT THIS WRITES
     * Vertex MOTION is the artist's, unchanged: every in-between position lies exactly on the
       straight line of the original key, so piecewise-linear playback is identical to it.
     * The mesh is unwelded (one control point per polygon corner), so a per-control-point shape
       normal IS a per-corner normal and each face of each block carries its own exact delta.
-    * The 2nd-half keys' normal deltas are authored RELATIVE TO THE 1st-HALF END POSE, so the
-      sum Unity computes (base + full 1st + partial 2nd) is the correct normal, and the end
-      normal equals the base normal of the face that now occupies that slot: no pop on reset.
+    * The 2nd-half keys' normal deltas are authored against the 1st-HALF END POSE and scaled so
+      every target (base + delta) is UNIT length: delta = lam*t - a (see build_frames). The sum
+      Unity computes (base + full 1st + partial 2nd) then points along the true normal whether or
+      not the importer normalizes targets, and the end normal equals the base normal of the face
+      that now occupies that slot: no pop on reset.
       Consequence: the 2nd-half keys are only correct with their 1st-half key at 100.
       SpaceCrystalAnimator always drives them that way.
-    * IN_BETWEENS exact frames per key (FBX in-between targets) cap the mid-key error.
+    * IN_BETWEENS exact frames per key (FBX in-between targets) cap the mid-key error
+      (0.65 deg worst at 8 - run --report).
     * Geometry is converted into the target file's axis system and scaled so the crystal's
       outer radius matches the mesh it replaces - every prefab's scale and collider still fit.
     * The target keeps its guid, its Model/Geometry names and its object ids, so Unity's

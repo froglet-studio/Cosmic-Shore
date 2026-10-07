@@ -2784,6 +2784,31 @@ deleted 8. Use `-z`/`-0` (`git diff --name-only -z … | xargs -0`, or
 `while IFS= read -r -d ''`), and sanity-check the COUNT against the diffstat before believing a
 clean result.
 
+## 4.8d Technique: authoring blend-shape NORMALS into an FBX (the space crystal, 2026-10)
+
+Exporters (Blender writes all-zero shape normals) and Unity's *Calculate* mode both derive each
+key's normal delta against the BASE mesh, and Unity sums active keys. That is right for one key
+and wrong for keys meant to be STACKED (key B ramped while key A is held at 100): rotations do
+not add, and the space crystal's stacked half-spins were off by 20°/42° and popped on reset.
+`Tools/Build/author_space_crystal_mesh.py` is the worked fix. Four rules it paid for:
+
+- **Shape normals are per CONTROL POINT.** A hard-edged mesh needs one control point per polygon
+  corner (unweld it) before a shape normal can be per-face.
+- **The importer normalizes each frame's TARGET normal (`base + delta`) before re-deriving the
+  delta.** assimp does it (`NormalizeSafe` in its FBX converter) and Unity behaved the same in
+  play. So a delta authored for a stacked key as `t − a` (true normal minus the stacked-on pose)
+  gets bent wherever `|n0 + t − a| ≠ 1`, worst on faces that turn ACROSS the spin axis. In playtest
+  that showed up as "the big faces are perfect, the small side faces still snap". Author every
+  target UNIT length: `delta = λ·t − a` with `λ` the positive root of `|λ·t + (n0 − a)| = 1`; the
+  stacked sum is then `λ·t`, along the true normal, under either importer model.
+- **Validate against BOTH importer models** (raw deltas and normalized targets). A validator that
+  replays only the raw sum passed the broken file with 0.0005°.
+- **Reference = per-quad Newell normal, never one triangle's.** Linear shape keys twist quads
+  (14° here); the shading uses one normal per quad, so a triangle reference reports phantom
+  6–25° errors. Use assimp (`libassimp-dev` + a 20-line C++ dumper of `aiAnimMesh` normals) as the
+  independent reader; it normalizes targets, so it reproduces the Unity failure. Negative-control
+  it on the broken file.
+
 ## 4.9 Technique: answering "does every X actually carry Y?" THROUGH prefab nesting
 
 Origin: the crystal-capture rework (2026-08). The branch's whole payoff was routed through

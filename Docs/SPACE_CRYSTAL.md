@@ -176,14 +176,18 @@ squash is a visible problem.
 ## 6. Verification status
 
 - **Offline (done):** generator `--check` green, and negative-controlled: a corrupted byte fails
-  it, and so does `blendShapeNormalImportMode: 1`. assimp re-read with normals matching to 0.003°.
+  it, and so does `blendShapeNormalImportMode: 1`. assimp (a target-normalizing importer)
+  re-reads the shipped file with a 0.001° reset jump; the same check on the round-1 file reports
+  9.3° / 38.3°.
   `SpaceCrystalAnimator` compiled and run in a Roslyn harness, with blend-shape names resolved in
   shuffled order with a deformer prefix. The 2nd half is never non-zero without its 1st half at
   100, and collect lands on the end pose then shrinks to zero. A mutant that swaps the halves
   fails the harness. `Tools/Build/unity_refcompile` gives **0 errors in project code**.
 - **In editor, round 1 (2026-10-07, by hand):** big faces correct; the small side faces still
-  snapped at the reset. That was §2 fault 4, fixed by unit targets. Round 2 is not yet run.
-- **In editor (round 2 NOT yet run — the Unity CLI was unavailable in the session that made this):**
+  snapped at the reset. That was §2 fault 4, fixed by unit targets.
+- **In editor, round 2 (2026-10-07, by hand): confirmed fixed** — no swap on any face. Verified
+  by eye in play, not by the Unity CLI (unavailable in the session that made this).
+- **Still worth a look on the next editor pass:**
   1. Reimport `spacecrystalanim.fbx`. The inspector should list 4 blend shapes with no import
      warnings.
   2. Open `CrystalSpace.prefab` and scrub the 4 weights in the 1st→2nd order. The shading should
@@ -192,3 +196,18 @@ squash is a visible problem.
   3. Play any mode with space crystals. Watch the spin alternate 5-point / 3-point, and collect one
      (it should finish its spin and shrink).
   4. `CrystalTimeDandruff` (via `PrismManagers`) should look unchanged.
+
+## 7. Open rows (seen while shipping, not fixed here)
+
+Each row carries the evidence that raised it. None of these block the crystal.
+
+| # | Kind | Row | Evidence |
+|---|---|---|---|
+| R1 | inconsistency (pre-existing, unmasked) | **Clawfish heart sits 0.264 deeper than the seat rule allows (limit 0.25).** Its seat was derived from a heart size inflated 7% by a verifier bug (blend-shape deltas read as positions, fixed on this branch). Needs a fauna/ecology call: move the heart to the rule's seat, or revisit the slack. | `python3 Tools/Build/verify_fauna_heart_seat.py` → `FAIL: Clawfish … move it forward to -2.396`. Same result on the OLD mesh with the fixed measurement (1.322 vs 1.321 half-extent), so the new geometry is not the cause. `Docs/ECOSYSTEM.md` §45.3 / §46.2 own the seat. |
+| R2 | dead data | **17 flora prefabs override `inactiveCrystalMaterial` on their nested `CrystalSpace`**, a field `Crystal` no longer declares (it is `crystalModels[].inactiveMaterial`). Unity never prunes it, so it reads as live wiring. | `grep -rl "propertyPath: inactiveCrystalMaterial" Assets --include=*.prefab` → 17 files; `grep -rn inactiveCrystalMaterial Assets/_Scripts --include=*.cs` → 0. |
+| R3 | design question (report) | **`ActiveCrystalSpace` and `SpaceDandruff` still render the old `CrystalGraph` materials** (now `_spread: 0`), while `CrystalSpace` moved to the `SpreadFresnelShader` pair. Decide whether they should follow. | `ActiveCrystalSpace.prefab` → `ActiveSpaceCrystalMaterial`; `SpaceDandruff.prefab` → `SpaceCrystalMaterial`; both render `spacecrystalanim.fbx`. |
+| R4 | dead asset | **`Assets/_Models/SpaceCrystalExport1_7-17-25.controller` is unreferenced, and its default state's motion points at a clip guid no `.meta` owns.** Candidate for deletion. The export FBX beside it is NOT dead: it is the generator's source. | Controller guid → 0 referrers in `*.prefab`/`*.unity`/`*.asset`; `m_Motion` guid `805ddc892fe012e49a19e93db6d6a600` → 0 `.meta` owners. |
+| R5 | tool false positive | **`check_generated_assets.py` flags every NEW `.mat`** because its `m_Script` guid is URP's `AssetVersion` (a package script, not under `Assets/`). It should resolve package `.meta` files from the refcompile cache. | Finding on `TimeDandruffCrystalMaterial.mat`: `guid d0353a89… resolves to no asset`; the guid is owned by `graphics/Packages/com.unity.render-pipelines.universal/Editor/AssetVersion.cs.meta` in the cache, and 173 shipped `.mat` files carry it. |
+
+Kept on purpose: `Tools/Build/author_space_crystal_mesh.py` is a re-runnable generator (`--check`,
+`--report`) and the only correct way to bring a new Blender export in (§5a). It is not a one-off.

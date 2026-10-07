@@ -12,7 +12,7 @@ namespace CosmicShore.Gameplay
     /// lands every block on another block's slot. Both keys then snap to 0 on the same frame —
     /// invisible, because that pose is congruent to the rest pose — and the next spin starts.
     ///
-    /// The 2nd-half keys' normals are authored relative to the 1st-half END pose
+    /// The 2nd-half keys' normals are authored against the 1st-half END pose
     /// (<c>Tools/Build/author_space_crystal_mesh.py</c>), so they are only correct while their
     /// 1st-half key is at 100. Everything here drives them that way; do not ramp a 2nd-half key
     /// on its own.
