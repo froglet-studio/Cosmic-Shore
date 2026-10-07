@@ -49,7 +49,7 @@ def draw_panel(img, p, elem, dom, ox, size, scale, title):
 
 
 @torch.no_grad()
-def gif(rule, path, seed=7, grow=300, steps=128, every=2):
+def gif(rule, path, seed=7, grow=600, steps=128, every=2):
     T = sn.load_targets()["space"]
     L = sn.LossCfg()
     gen = sn.make_gen(seed)
@@ -117,7 +117,7 @@ def main():
                                  planar_excess=ev["emergent"]["planar_excess"]),
                     locality="local", band=sf.BAND,
                     compare=dict(posinfo2_space=p2.get("space"), posinfo2_mean=p2.get("mean"),
-                                 calibration={k: (v.get("mean") if isinstance(v, dict) else v) for k, v in cal.items()}))
+                                 calibration_space={k: v.get("space") for k, v in cal.items() if isinstance(v, dict) and "space" in v}))
         json.dump(feel, open(os.path.join(OUT, "feel.json"), "w"), indent=1)
     # viewer rollout: the rule grown from each plan's seed for 480 steps (no switch: one target)
     data, summary = sn.rollout(rule, 480, every=5, seed=7, switch_steps=0)

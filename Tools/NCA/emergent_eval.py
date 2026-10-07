@@ -99,7 +99,7 @@ def phase_slope(D, every):
 
 
 @torch.no_grad()
-def run_seed(model, plan="space", seed=7, grow=300, window=192, every=4, regrow=160, L=None):
+def run_seed(model, plan="space", seed=7, grow=600, window=192, every=4, regrow=160, L=None):
     L = L or sn.LossCfg()
     T = sn.load_targets()[plan]
     gen = sn.make_gen(seed)
@@ -229,7 +229,7 @@ def main():
     ap.add_argument("--rule", required=True)
     ap.add_argument("--seeds", default="7,23,41,1000")
     ap.add_argument("--locality", default="local")
-    ap.add_argument("--grow", type=int, default=300)
+    ap.add_argument("--grow", type=int, default=600)
     ap.add_argument("--out", default="")
     a = ap.parse_args()
     model = em.load_rule(a.rule)
