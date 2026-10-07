@@ -93,7 +93,7 @@ def main():
     ap.add_argument("--seeds", default="7,23,41,1000")
     ap.add_argument("--note", default="")
     a = ap.parse_args()
-    torch.set_num_threads(1)
+    torch.set_num_threads(1 if not a.skip_eval else 4)
     os.makedirs(OUT, exist_ok=True)
     rule = em.load_rule(a.rule)
     rule.eval()

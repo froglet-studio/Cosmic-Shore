@@ -1,0 +1,134 @@
+{
+ "cross": {
+  "mass": {
+   "mass": 58.38,
+   "space": 20.11,
+   "charge": 53.46,
+   "time": 68.92
+  },
+  "space": {
+   "mass": 69.32,
+   "space": 11.84,
+   "charge": 56.07,
+   "time": 74.28
+  },
+  "charge": {
+   "mass": 65.82,
+   "space": 31.11,
+   "charge": 42.17,
+   "time": 61.71
+  },
+  "time": {
+   "mass": 76.08,
+   "space": 42.52,
+   "charge": 73.53,
+   "time": 58.06
+  }
+ },
+ "census": {
+  "mass": {
+   "n": 150,
+   "target_n": 192,
+   "elements": [
+    37,
+    13,
+    79,
+    21
+   ],
+   "target_elements": [
+    19,
+    126,
+    25,
+    22
+   ],
+   "majority": "Space",
+   "domains": [
+    103,
+    47,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 0
+  },
+  "space": {
+   "n": 135,
+   "target_n": 88,
+   "elements": [
+    38,
+    2,
+    84,
+    11
+   ],
+   "target_elements": [
+    25,
+    2,
+    54,
+    7
+   ],
+   "majority": "Space",
+   "domains": [
+    84,
+    51,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 0
+  },
+  "charge": {
+   "n": 97,
+   "target_n": 179,
+   "elements": [
+    39,
+    1,
+    36,
+    21
+   ],
+   "target_elements": [
+    131,
+    1,
+    16,
+    31
+   ],
+   "majority": "Charge",
+   "domains": [
+    47,
+    50,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 1
+  },
+  "time": {
+   "n": 167,
+   "target_n": 76,
+   "elements": [
+    3,
+    1,
+    94,
+    69
+   ],
+   "target_elements": [
+    2,
+    3,
+    18,
+    53
+   ],
+   "majority": "Space",
+   "domains": [
+    78,
+    12,
+    77
+   ],
+   "deaths": 0,
+   "mutants": 1
+  }
+ },
+ "steps": 480,
+ "meta": {
+  "label": "Pure emergent swimmer (species 3)",
+  "step": 250,
+  "tag": "emergent",
+  "note": "ONE learned local rule, one animated target (the pulsing jellyfish). It perceives only neighbours within R and chemicals the tadpoles secrete; no census, frame, clock or designed composition. Rows other than the jellyfish show the same rule grown from another plan's seed mix. "
+ },
+ "rule": "rule.pt"
+}
