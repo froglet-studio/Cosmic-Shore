@@ -630,6 +630,15 @@ Stated, and only the editor can settle them:
 - **A wandering pad selection is put back** only while a gamepad is connected, so a mouse player
   never sees a selection highlight appear on the target.
 
+**Fixes from the first Breakwater run (2026-10-07).** Two ways the guide could fail to release:
+- **A one-thumb hull could not be steered from the keyboard.** `SingleStickMouseInputStrategy`
+  (the desktop scheme for every one-thumb hull) read no movement keys, so the Sparrow's steer step
+  could not pass on WASD. WASD now steers the same stick, and the one-thumb keyboard Steer label
+  reads "the mouse or WASD" (`Controller/IO/ONE_THUMB_MOUSE_CONTROLS.md` §3).
+- **A Lesson composed with no steps went to the Mentor without ending.** The guide waits on
+  `DrillRunner.AnyLessonEnded`, which only `CompleteLesson` and `Skip` raise. An empty composition
+  now completes, the same as a Lesson whose every step is skipped live (`drill_harness` §3b).
+
 ---
 
 ## 11. Still open

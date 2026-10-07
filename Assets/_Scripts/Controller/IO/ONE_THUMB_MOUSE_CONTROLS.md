@@ -219,12 +219,22 @@ lockup's control chips already speak.
 | Physical control | Publishes | Raises | Sparrow | Scarab |
 |---|---|---|---|---|
 | Mouse move | `EasedLeftJoystickPosition`, `LeftNormalizedJoystickPosition`, `XSum`/`YSum` | — | pitch / yaw / bank | pitch / yaw / bank |
+| **WASD** | the same stick, summed with the mouse's deflection and clamped to the unit circle | — | pitch / yaw / bank | pitch / yaw / bank |
 | **LMB** *or* Right Shift | `RightTriggerAnalog` | `RightStickAction`, `OnlyRight…`, `BothSticks…` | guns | throttle |
 | **RMB** *or* Left Shift | `LeftTriggerAnalog` | `LeftStickAction`, `OnlyLeft…`, `BothSticks…` | skybursts | drift |
 | **Space** | — | `Button1Action` (pad A) | Mass ability | place switch |
 | **R** | — | `Button2Action` (pad B) | Time ability | — |
 | Q *or* MMB | — | `Button3Action` (pad X) | — | — |
 | E | `Throttle` | `FlipAction` | — | — |
+
+**WASD steers the same stick (2026-10-07).** The scheme first read no movement keys at all, so
+engaging it — which happens the moment a one-thumb hull is flown on a desktop — silently took away
+the WASD steering the same hull has on `KeyboardInputStrategy`. Reported from the Breakwater
+microgame preview: *"the keyboard didn't fly the ship; left mouse fired the guns"*, which held the
+forced Lesson on its steer step. The keys are digital and are **added** to the mouse's published
+deflection (then clamped to the unit circle); they never touch the mouse stick's state, so letting
+go of a key leaves the mouse exactly where it was. The silent-mouse diagnostics still watch the
+**mouse's** share only, so WASD steering cannot hide a dead mouse delta.
 
 **The keys live in the QWER + Space cluster**, so one resting left hand reaches every one of them
 without the right hand leaving the mouse. They are assigned in **reverse priority order**: the two

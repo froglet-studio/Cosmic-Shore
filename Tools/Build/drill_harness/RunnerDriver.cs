@@ -262,6 +262,26 @@ static class RunnerDriver
         check(!r.HoldsExit, "runner: a party guest is never held");
         r.Stop();
 
+        // ── 3b. A Lesson composed EMPTY still ends - the first-login guide waits on that. ──
+        // This library has no one-thumb template, so every step is dropped at composition.
+        DrillProgressStore.ResetLocal();
+        DrillResume.Clear();
+        var thumb = new Vessel();
+        thumb.S.IsSingleStickControls = true;
+        thumb.S.VesselType = VesselClassType.Sparrow;
+        var oneThumb = ctx;
+        oneThumb.Vessel = thumb;
+        bool? anyEnded = null;
+        Action<bool> anyHandler = c => anyEnded = c;
+        DrillRunner.AnyLessonEnded += anyHandler;
+        r.Begin(oneThumb);
+        DrillRunner.AnyLessonEnded -= anyHandler;
+        check(anyEnded == true && r.Phase == DrillPhase.Mentor && !r.HoldsExit,
+              $"runner: an empty Lesson completes and raises AnyLessonEnded ({anyEnded}, {r.Phase})");
+        r.Stop();
+        DrillResume.Clear();
+        DrillProgressStore.ResetLocal();
+
         // ── 4. A vessel destroyed mid-run stops the runner. ──
         r.Begin(ctx);
         v.Destroyed = true;

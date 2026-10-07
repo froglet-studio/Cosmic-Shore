@@ -99,7 +99,7 @@ FLIGHT_LABELS = [
     ("Steer", "TwoThumb", False, "both sticks"), ("Steer", "TwoThumb", True, "WASD and PL;'"),
     ("Throttle", "TwoThumb", False, "the sticks"), ("Throttle", "TwoThumb", True, "A and '"),
     ("Drift", "TwoThumb", False, "both triggers"), ("Drift", "TwoThumb", True, "both Shift keys"),
-    ("Steer", "OneThumb", False, "the left stick"), ("Steer", "OneThumb", True, "the mouse"),
+    ("Steer", "OneThumb", False, "the left stick"), ("Steer", "OneThumb", True, "the mouse or WASD"),
 ]
 # No one-thumb Drift label on purpose: which control a one-thumb hull drifts on has not been
 # verified, and a missing label drops the drift step (an honest absence) where a guessed one

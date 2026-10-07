@@ -4319,3 +4319,27 @@ clipboard. Paste it back. What it settles:
 - Is the spotlight's **material/shader** `UI/Default` and supported, and is its CanvasRenderer
   culled or at zero inherited alpha?
 - Does a press at the **target centre** pass the dim and reach the Arcade button?
+
+## 🔴 Breakwater preview — one-thumb flight in the microgame window (`claude/fix-breakwater-preview-controls-3evnnj`, 2026-10-07) — NOT EDITOR-VERIFIED
+
+**Reported.** In the Breakwater card's preview (Sparrow), the keyboard did not fly the ship and LMB
+fired the guns, so the forced Lesson could not pass its steer step and the first-login guide never
+released.
+
+**Found and fixed offline.** LMB firing proves `SingleStickMouseInputStrategy` was engaged, and
+that scheme read **no movement keys**: WASD was dead by construction. WASD now steers the same stick
+(`ONE_THUMB_MOUSE_CONTROLS.md` §3), and the one-thumb Steer label reads "the mouse or WASD"
+(`Resources/DrillLibrary`). Separately, `DrillRunner.Begin` sent a Lesson composed with zero steps
+straight to the Mentor without raising `AnyLessonEnded`, so the guide would wait forever; it now
+completes like a Lesson whose every step is skipped live (`drill_harness` §3b, negative control
+confirmed). Gates: `unity_refcompile` OK, `drill_harness` 103/103, every `check_*.py`, both
+author scripts `--check`/`--self-test`.
+
+**Not settled.** Whether MOUSE MOVEMENT turns the ship in the preview. If it does not, the console
+carries an unconditional `[MouseFlight]` warning naming which link is dead.
+
+**To run.** Both resets, open Breakwater, tap into the window.
+- Hold **W** (or A/D) for a second: the ship turns and the steer step passes.
+- Move the **mouse**: the ship turns and the stick widget's knob moves.
+- Finish the Lesson: the dim lifts and Play enables.
+- Paste any `[MouseFlight]` or `[Drill]` console line.

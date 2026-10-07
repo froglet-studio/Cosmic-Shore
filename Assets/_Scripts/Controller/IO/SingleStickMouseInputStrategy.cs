@@ -44,6 +44,8 @@ namespace CosmicShore.Gameplay
     /// <list type="table">
     /// <item><term>Mouse move</term><description>the single stick — pitch, yaw, and the bank into
     /// the turn the transformer derives from it</description></item>
+    /// <item><term>WASD</term><description>the same stick, digitally, added to the mouse's
+    /// deflection - see <see cref="KeyboardStick"/></description></item>
     /// <item><term>LMB <i>or</i> Right Shift</term><description>the RIGHT trigger side
     /// (<c>RightStickAction</c> / <c>OnlyRightStickAction</c> / <c>BothSticksAction</c> +
     /// <c>RightTriggerAnalog</c>) — the Sparrow's guns, the Scarab's throttle</description></item>
@@ -193,7 +195,7 @@ namespace CosmicShore.Gameplay
 
             UpdateStick(pixelDelta);
             ProcessButtons(mouse, keyboard);
-            Publish();
+            Publish(KeyboardStick(keyboard));
             PerformSpeedAndDirectionalEffects();
 
             // DEAD LAST, and isolated. Everything above is flight input; everything here is a
@@ -229,9 +231,11 @@ namespace CosmicShore.Gameplay
 
             deltaPixelsSinceActive += pixelDelta.magnitude;
 
-            if (publishedDeflection.sqrMagnitude > 0f)
+            // The MOUSE's deflection, not the published one: WASD steering the vessel says nothing
+            // about whether the mouse can, and a dead mouse is still worth naming.
+            if (mouseDeflection.sqrMagnitude > 0f)
             {
-                deadFlightReported = true;      // it is steering - say nothing, ever
+                deadFlightReported = true;      // the mouse is steering - say nothing, ever
                 return;
             }
 
@@ -284,6 +288,10 @@ namespace CosmicShore.Gameplay
         /// <summary>The deflection <see cref="Publish"/> last handed the vessel — what the widget
         /// draws and what the diagnostic reports, so all three can never disagree.</summary>
         Vector2 publishedDeflection;
+
+        /// <summary>The mouse's share of <see cref="publishedDeflection"/>, before WASD is added -
+        /// what <see cref="WatchForDeadFlight"/> asks about.</summary>
+        Vector2 mouseDeflection;
 
         static bool widgetFaulted;
 
@@ -500,7 +508,28 @@ namespace CosmicShore.Gameplay
         // ------------------------------------------------------------------
         // Publish
 
-        void Publish()
+        /// <summary>
+        /// WASD as a second source for the ONE stick, read exactly as <see cref="KeyboardInputStrategy"/>
+        /// reads its left stick: D/A is x, W/S is y, each digital.
+        ///
+        /// <para><b>Why the keyboard steers here at all.</b> This scheme originally read no
+        /// movement keys, so engaging it - which happens the moment a one-thumb hull is flown on a
+        /// desktop - silently killed the WASD steering the same hull had on
+        /// <see cref="KeyboardInputStrategy"/>. A player who reached for the keys got a ship that
+        /// fired (the buttons are shared) and would not turn, which is indistinguishable from
+        /// broken flight, and it held the Breakwater microgame's forced Lesson on its steer step.
+        /// The mouse remains the precise control; the keys are the one every desktop player tries
+        /// first.</para>
+        /// </summary>
+        static Vector2 KeyboardStick(Keyboard keyboard)
+        {
+            if (keyboard == null) return Vector2.zero;
+            return new Vector2(
+                (keyboard.dKey.isPressed ? 1f : 0f) - (keyboard.aKey.isPressed ? 1f : 0f),
+                (keyboard.wKey.isPressed ? 1f : 0f) - (keyboard.sKey.isPressed ? 1f : 0f));
+        }
+
+        void Publish(Vector2 keys)
         {
             // InvertY is applied HERE, at the source, rather than to YSum the way DualStickMix
             // does it — because a one-thumb vessel never reads YSum. Its pitch, its hull puppetry
@@ -508,7 +537,12 @@ namespace CosmicShore.Gameplay
             // stick, so inverting the stick is what makes every consumer agree about which way the
             // player just pushed. YSum below is derived from the already-inverted value for the
             // same reason: one truth, published once.
-            Vector2 reported = MouseVirtualStick.Deflection(stick, Config.DeadZone);
+            // The two sources are SUMMED and clamped to the unit circle the mouse stick already
+            // lives on, so a key adds to a mouse deflection rather than replacing it, and holding
+            // both can never publish past full lock. The keys never touch the mouse stick's STATE:
+            // releasing them leaves the mouse exactly where it was.
+            mouseDeflection = MouseVirtualStick.Deflection(stick, Config.DeadZone);
+            Vector2 reported = Vector2.ClampMagnitude(mouseDeflection + keys, 1f);
             publishedDeflection = reported;
 
             Vector2 aimed = inputStatus.InvertYEnabled ? new Vector2(reported.x, -reported.y) : reported;
@@ -629,6 +663,7 @@ namespace CosmicShore.Gameplay
             fullSpeedStraightEffectsStarted = false;
             minimumSpeedStraightEffectsStarted = false;
             publishedDeflection = Vector2.zero;
+            mouseDeflection = Vector2.zero;
             deadFlightReported = false;
             deltaPixelsSinceActive = 0f;
         }
