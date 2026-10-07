@@ -394,6 +394,7 @@ def main():
     ap.add_argument("--gens", default="", help="comma list of generation pairs pred:prey for behave/record, e.g. 400:400,2000:2000")
     ap.add_argument("--out", default=OUT)
     ap.add_argument("--confusion", type=float, default=0.3)
+    ap.add_argument("--cfg", default="", help='JSON overrides of arms_sim.Cfg (behave/player/record/matrix), e.g. {"pred_burst": 75}')
     ap.add_argument("--prefix", default="", help="key prefix in eval.json / feel.json (e.g. a5:)")
     ap.add_argument("--matrix_name", default="matrix.json")
     a = ap.parse_args()
@@ -404,7 +405,7 @@ def main():
     snaps = load_snaps(a.run)
     last = max(snaps) if a.last is None else max(g for g in snaps if g <= a.last)
     pairs = [tuple(int(x) for x in p.split(":")) for p in a.gens.split(",") if p] or [(last, last)]
-    cfg = A.Cfg(confusion=a.confusion)
+    cfg = A.Cfg(confusion=a.confusion, **(json.loads(a.cfg) if a.cfg else {}))
     ev = json.load(open(os.path.join(a.out, "eval.json"))) if os.path.exists(os.path.join(a.out, "eval.json")) else {}
     if "curve" in what:
         ev["curve"] = curve(a.run)

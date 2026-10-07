@@ -105,6 +105,7 @@ def main():
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--w_burn", type=float, default=0.25)
     ap.add_argument("--pfsp", type=int, default=1)
+    ap.add_argument("--cfg", default="", help='JSON overrides of arms_sim.Cfg, e.g. {"pred_burst": 75}')
     ap.add_argument("--init", default="", help="npz with thq/thp to start from (arms_seed.py: the designed generation 0)")
     a = ap.parse_args()
     global W_BURN
@@ -112,7 +113,7 @@ def main():
 
     out = os.path.join(HERE, "runs", f"arms_{a.tag}")
     os.makedirs(os.path.join(out, "snaps"), exist_ok=True)
-    cfg = A.Cfg(confusion=a.confusion)
+    cfg = A.Cfg(confusion=a.confusion, **(json.loads(a.cfg) if a.cfg else {}))
     steps = int(round(a.secs / cfg.dt))
     ck = os.path.join(out, "state.npz")
     rng = np.random.default_rng(a.seed)
