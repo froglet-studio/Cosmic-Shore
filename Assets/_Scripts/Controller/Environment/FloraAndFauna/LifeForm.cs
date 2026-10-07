@@ -37,7 +37,8 @@ namespace CosmicShore.Gameplay
         [SerializeField] private bool autoInitialize = true;
 
         [Tooltip("Seconds between spindle rings on a JOUSTED death, where the structure " +
-                 "unravels from the heart outward instead of detonating (Docs/ECOSYSTEM.md §26). " +
+                 "withers outside-in, limb by limb back toward the heart, instead of detonating " +
+                 "(Docs/ECOSYSTEM.md §26, §26.10). " +
                  "The fauna counterpart is LightFaunaDataSO.witherRingInterval. 0 collapses the " +
                  "whole body in a single frame, which reads as a pop - keep it above zero.")]
         [SerializeField, Min(0.01f)] float witherRingInterval = 0.25f;
@@ -101,9 +102,9 @@ namespace CosmicShore.Gameplay
         /// (wither via spindles, crystal drop - mass conserved, continuity honored). Idempotent.
         ///
         /// The style is stamped BEFORE the death runs because the death READS it: a joust does
-        /// not detonate the plant. The jouster took the heart, so the structure comes apart
-        /// FROM THE HEART OUTWARD and its prisms stay standing as a skeleton
-        /// (Docs/ECOSYSTEM.md §26).
+        /// not detonate the plant. The jouster took the heart; the structure withers OUTSIDE-IN
+        /// back toward where it was and its prisms stay standing as a skeleton
+        /// (Docs/ECOSYSTEM.md §26, §26.10).
         /// </summary>
         /// <inheritdoc/>
         /// <remarks>The exact pair <see cref="Jousted"/> has always gated on - published so a
@@ -391,9 +392,11 @@ namespace CosmicShore.Gameplay
         /// The JOUSTED death (Docs/ECOSYSTEM.md §26): a vessel took this lifeform's heart, so
         /// the plant does not detonate. Its prisms are left standing as a skeleton - the frame
         /// of the thing that grew here, now ordinary cell mass the food web can graze - while
-        /// the soft tissue withers spindle by spindle FROM THE HEART OUTWARD, unravelling
-        /// around the hole the joust left. Exactly the mirror of the outside-in starvation
-        /// wither a creature does (see <see cref="LightFauna"/>).
+        /// the soft tissue withers spindle by spindle OUTSIDE-IN along the spindle tree, the
+        /// limbs nearest the crystal LAST. Every limb still standing therefore keeps an unbroken
+        /// path of limbs back to where the heart was at every instant of the wither: a plant
+        /// never shows a limb floating free of its crystal (Docs/ECOSYSTEM.md §26.10, which
+        /// retired the heart-outward order this used to run).
         ///
         /// <see cref="DieCoroutine"/> is what waits for it: the husk is destroyed only once
         /// every spindle has finished evaporating, so this needs no completion callback.
@@ -404,9 +407,12 @@ namespace CosmicShore.Gameplay
             // already on its way to whoever took it.
             Vector3 heart = crystal ? crystal.transform.position : transform.position;
 
-            // Isolate first: ForceWither recurses into child spindles and destroying a spindle
+            // Ordered BEFORE isolation, because the order is read off the spindle tree and
+            // isolation is what severs it. Deepest limb first, crystal-adjacent limbs last.
+            var spindles = Spindle.OrderOutsideIn(GetComponentsInChildren<Spindle>(true), heart);
+
+            // Isolate: ForceWither recurses into child spindles and destroying a spindle
             // destroys its children, either of which would collapse the plant in one step.
-            var spindles = GetComponentsInChildren<Spindle>(true).Where(s => s).ToList();
             foreach (var sp in spindles)
                 sp.IsolateForOrderedWither(transform);
 
@@ -415,10 +421,6 @@ namespace CosmicShore.Gameplay
             Transform skeletonParent = cell ? cell.transform : null;
             foreach (var hp in GetComponentsInChildren<HealthPrism>(true))
                 if (hp && !hp.destroyed) hp.LeaveAsSkeleton(skeletonParent);
-
-            spindles.Sort((a, b) =>
-                (a.transform.position - heart).sqrMagnitude.CompareTo(
-                (b.transform.position - heart).sqrMagnitude));
 
             // Can't animate while inactive (scene teardown) - the skeleton above already
             // conserved the mass, so collapse what's left in one step rather than throwing.

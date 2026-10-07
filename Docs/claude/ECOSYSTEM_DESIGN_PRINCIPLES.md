@@ -75,15 +75,18 @@ trio, and the traps).
   predation. It routes through the same sealed `Fauna.Die`, so the crystal drop and the wither
   are not bypassable. A subclass may override to add bookkeeping first (the worm colony re-links
   its chain), but an override that lets a creature survive losing its whole body breaks the rule.
-- **Starvation = wither-to-crystal, and a joust is that wither RUN BACKWARDS.** A starving creature
+- **Starvation = wither-to-crystal, and a joust takes the heart FIRST.** A starving creature
   withers from its extremity spindles inward — a shark's fins / a brittlestar's arms evaporate
-  *before* the core body (farthest-from-the-heart first, emergent from geometry) — and the heart is
-  the LAST thing standing, so its crystal becomes collectable by any vessel only when the wither
-  reaches the core. A **jousted** lifeform (the Squirrel's Crystal Joust, flora and fauna alike)
-  runs the identical geometry in the opposite direction: it never detonates, the heart is freed at
-  the strike and **auto-collected by the jouster**
-  (`ElementalCrystalImpactor.CollectBy`), and the spindles unravel *from the heart outward* around
-  the hole it left. Both leave the body prisms standing as a **skeleton** — ordinary cell mass the
+  *before* the core body (deepest in the spindle tree first, ties farthest-from-the-heart first) —
+  and the heart is the LAST thing standing, so its crystal becomes collectable by any vessel only
+  when the wither reaches the core. A **jousted** lifeform (the Squirrel's Crystal Joust, flora and
+  fauna alike) never detonates, the heart is freed at the strike and **auto-collected by the
+  jouster** (`ElementalCrystalImpactor.CollectBy`), and the spindles still wither *outside-in*, back
+  toward where the heart was. **Every standing spindle and prism of a lifeform always has a path of
+  standing spindles to its crystal** — in growth, under grazing, and through every death; a wither
+  never spends a limb before the limbs that hang off it (`Spindle.OrderOutsideIn`,
+  `Docs/ECOSYSTEM.md` §26.10, which retired the original heart-outward joust order). Both leave the
+  body prisms standing as a **skeleton** — ordinary cell mass the
   food web then grazes, so a creature's frame is conserved instead of dying with its husk (before
   this only the heart survived a death, which was passive mass removal hiding inside a death
   animation). Predation is neither: a devoured body suctions into the mouth, because there the mass
