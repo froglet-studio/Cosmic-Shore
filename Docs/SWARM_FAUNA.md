@@ -2060,7 +2060,9 @@ jobs.
 
 **What changed:**
 - **The pose is one function.** `SwarmBodyPose.PoseMatrix` is a scalar, Burst-compilable static function: field
-  reads, `MathF`, no `System.Numerics` method, no allocation. Two callers run it:
+  reads, `KernelMath` (never `MathF`: Burst cannot find `MathF`'s internal calls, and until 2026-10-07 this
+  job failed Burst compilation on `MathF.Sqrt` and ran managed; see `Docs/SUBSTRATE_FAUNA.md` §7.6), no
+  `System.Numerics` method, no allocation. Two callers run it:
   - **The game.** `SwarmPoseJob`, a `[BurstCompile] IJobParallelFor` in batches of 128, writes `float4x4`
     directly. It reads native copies of the published frame and of the shown-slot list, refreshed once per tick (two
     memcpys).

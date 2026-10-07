@@ -1,7 +1,9 @@
 // Round 11b-2 (Docs/SUBSTRATE_FAUNA.md §7): ONE agent's step as a static pure function over struct-of-arrays - the
 // research's fused kernel (kernels_nb.fused_step) plus the bestiary primitives - written so Burst compiles it: scalar
-// float maths, MathF, Span reads and writes, nothing else. No System.Numerics method or operator, no System.Math, no
-// allocation, no managed type (Tools/Build/substrate_harness/check_burst_substrate.py is the gate).
+// float maths through KernelMath, Span reads and writes, nothing else. No System.Numerics method or operator, no
+// System.Math, no MathF (Burst cannot find its internal calls - KernelMath forwards to Unity.Mathematics in Unity and
+// to MathF in the harness), no allocation, no managed type (Tools/Build/substrate_harness/check_burst_substrate.py is
+// the gate).
 //
 // The SAME function runs in three places: SubstrateCore's managed agent pass (the harness, Parallel.For over workers),
 // the game's [BurstCompile] SubstrateAgentJob (an IJobParallelFor per population, chained in population order), and
@@ -101,7 +103,7 @@ namespace CosmicShore.Gameplay
         public static float SeatMargin(float inner, float outer)
         {
             float w = outer - inner;
-            return MathF.Min(2f * 0.1f * MathF.Max(w, 50f), 0.25f * w);
+            return KernelMath.Min(2f * 0.1f * KernelMath.Max(w, 50f), 0.25f * w);
         }
 
         public static float PenWeight(float beyond, float soft) =>
@@ -111,7 +113,7 @@ namespace CosmicShore.Gameplay
 
         static float Lerp(float a, float b, float t) => a + (b - a) * t;
 
-        static float Len(float x, float y, float z) => MathF.Sqrt(x * x + y * y + z * z);
+        static float Len(float x, float y, float z) => KernelMath.Sqrt(x * x + y * y + z * z);
 
         static long Hash(long k) => unchecked(k * (long)0x9E3779B97F4A7C15) & 0x7FFFFFFFFFFFFFFF;
 
@@ -185,17 +187,17 @@ namespace CosmicShore.Gameplay
             // ── drives ──
             float hu = s.Hunger[i] + k.Metabolism * dt;   // above 1 = the stomach is empty and the reserve is burning
             s.Hunger[i] = hu;
-            float h = MathF.Min(1f, hu);
+            float h = KernelMath.Min(1f, hu);
             int pj = NearestPilot(s, w.NPil, px, py, pz, out float pd);
             float prox = Clamp(1f - pd / k.Sense, 0f, 1f);
             float threat = s.FThreat[i], alarm = s.FAlarm[i];
             float fe = s.Fear[i];
-            fe += dt * (k.FearGain * (prox * prox + 0.5f * MathF.Min(threat, 2f) + MathF.Min(alarm, 2f))) - dt * k.FearDecay * fe;
+            fe += dt * (k.FearGain * (prox * prox + 0.5f * KernelMath.Min(threat, 2f) + KernelMath.Min(alarm, 2f))) - dt * k.FearDecay * fe;
             fe = Clamp(fe, 0f, 1f); s.Fear[i] = fe;
             float calm = (1f - fe) * (1f - h);
             float cu = s.Curious[i] + dt * k.CuriosityRate * (calm * (1f - ph) - s.Curious[i]); s.Curious[i] = cu;
-            float capw = MathF.Min(1f, (k.Rs.WHunt + k.Rs.WRing) + ((k.Rg.WHunt + k.Rg.WRing) - (k.Rs.WHunt + k.Rs.WRing)) * ph);
-            float ag = Clamp(MathF.Max(h * 1.4f - 0.3f, k.AggrBase), 0f, 1f) * capw; s.Aggr[i] = ag;
+            float capw = KernelMath.Min(1f, (k.Rs.WHunt + k.Rs.WRing) + ((k.Rg.WHunt + k.Rg.WRing) - (k.Rs.WHunt + k.Rs.WRing)) * ph);
+            float ag = Clamp(KernelMath.Max(h * 1.4f - 0.3f, k.AggrBase), 0f, 1f) * capw; s.Aggr[i] = ag;
             bool resting = s.Rest[i] > 0f;
             if (k.Cling != 0 && s.Host[i] != 0)
             {
@@ -210,7 +212,7 @@ namespace CosmicShore.Gameplay
 
             // ── re-steer the 1/k slice, plus the attention LOD ──
             int fk = k.FracK > 1 ? k.FracK : 1;
-            bool st = ((i + w.Tick) % fk == 0) || pd < k.AttnR || MathF.Max(fe, ag) > k.AttnUrg || ramping || striking;
+            bool st = ((i + w.Tick) % fk == 0) || pd < k.AttnR || KernelMath.Max(fe, ag) > k.AttnUrg || ramping || striking;
             s.Steered[i] = st;
             bool freeze = false;
             if (st)
@@ -237,7 +239,7 @@ namespace CosmicShore.Gameplay
                             }
                         }
                 float cnt = (float)(c0 - 1.0);
-                float inv = 1f / MathF.Max(cnt, 1f);
+                float inv = 1f / KernelMath.Max(cnt, 1f);
                 float cenx = (float)(c1 - px) * inv, ceny = (float)(c2 - py) * inv, cenz = (float)(c3 - pz) * inv;
                 float alix = (float)(c4 - s.Vel[i].X) * inv, aliy = (float)(c5 - s.Vel[i].Y) * inv, aliz = (float)(c6 - s.Vel[i].Z) * inv;
                 float mph = cnt > 0f ? (float)(c7 - ph) * inv : ph;
@@ -245,7 +247,7 @@ namespace CosmicShore.Gameplay
                 // quorum target - a resting agent's target is the solitary end
                 if (k.QUp < 9f)
                 {
-                    float sig = k.QWDens * cnt / k.DensNorm + k.QWProx * prox + k.QWAlarm * MathF.Min(alarm, 2f) + k.QWClose * s.Closure[i];
+                    float sig = k.QWDens * cnt / k.DensNorm + k.QWProx * prox + k.QWAlarm * KernelMath.Min(alarm, 2f) + k.QWClose * s.Closure[i];
                     if (k.QWProvoke > 0f && pj >= 0 && pd < k.Sense)
                     {
                         // PROVOCATION (bestiary mobber): a slow pilot, or one at the roost
@@ -253,11 +255,11 @@ namespace CosmicShore.Gameplay
                         float rd = Len(s.Pilots[pj].Pos.X - s.Home[i].X, s.Pilots[pj].Pos.Y - s.Home[i].Y, s.Pilots[pj].Pos.Z - s.Home[i].Z);
                         if (pspd < k.SlowBelow || rd < k.RoostR) sig += k.QWProvoke;
                     }
-                    float sq = sig * MathF.Pow(h, k.QHunger);
+                    float sq = sig * KernelMath.Pow(h, k.QHunger);
                     float th = s.QTarget[i] > 0.5f ? k.QDown : k.QUp;
-                    float tg = 1f / (1f + MathF.Exp(-(sq - th) / k.QWidth));
+                    float tg = 1f / (1f + KernelMath.Exp(-(sq - th) / k.QWidth));
                     float qc = k.QContagion;
-                    if (cnt > 0f) tg = (1f - qc) * tg + qc * MathF.Max(tg, mph);
+                    if (cnt > 0f) tg = (1f - qc) * tg + qc * KernelMath.Max(tg, mph);
                     s.QTarget[i] = resting && k.RestHoldsPhase == 0 ? 0f : tg;
                 }
 
@@ -279,7 +281,7 @@ namespace CosmicShore.Gameplay
                 if (k.WAlarmClimb > 0f && role)
                 {
                     // the BULL: the herd's panic leads it UP the alarm gradient, to what spooked it - it does not flee
-                    float bm = 1f - (k.RampOnSight != 0 ? MathF.Max(ph, fe) : ph);
+                    float bm = 1f - (k.RampOnSight != 0 ? KernelMath.Max(ph, fe) : ph);
                     wFlee *= bm; wAlarm *= bm; wThreat *= bm;
                 }
 
@@ -297,9 +299,9 @@ namespace CosmicShore.Gameplay
                     if (k.SpacingSpring != 0)
                     {
                         // ONE signed spring along the neighbour-centroid axis: toward when sparse, away when crowded
-                        float sg = Clamp(1f - cnt / k.DensNorm / MathF.Max(crowd, 1e-3f), -1.5f, 1f);
+                        float sg = Clamp(1f - cnt / k.DensNorm / KernelMath.Max(crowd, 1e-3f), -1.5f, 1f);
                         float wsp = sg > 0f ? wCoh : wSep;
-                        float wspr = MathF.Abs(sg) * wsp;
+                        float wspr = KernelMath.Abs(sg) * wsp;
                         if (k.HasBody != 0) wspr *= 1f + att;   // research: an assembling member holds its school
                         Paint(I, s.Dirs, nd, (cenx - px) * sg, (ceny - py) * sg, (cenz - pz) * sg, wspr);
                     }
@@ -309,9 +311,9 @@ namespace CosmicShore.Gameplay
                 float tt = w.Tick * 0.05f;
                 float wsx = s.WSeed[i].X, wsy = s.WSeed[i].Y, wsz = s.WSeed[i].Z;
                 Paint(I, s.Dirs, nd,
-                      MathF.Sin(wsx + tt) + 0.6f * MathF.Sin(1.7f * wsz + tt * 2.1f),
-                      MathF.Sin(wsy + tt * 1.3f) + 0.6f * MathF.Sin(1.7f * wsy + tt * 2.1f),
-                      MathF.Sin(wsz + tt * 0.7f) + 0.6f * MathF.Sin(1.7f * wsx + tt * 2.1f), wWander);
+                      KernelMath.Sin(wsx + tt) + 0.6f * KernelMath.Sin(1.7f * wsz + tt * 2.1f),
+                      KernelMath.Sin(wsy + tt * 1.3f) + 0.6f * KernelMath.Sin(1.7f * wsy + tt * 2.1f),
+                      KernelMath.Sin(wsz + tt * 0.7f) + 0.6f * KernelMath.Sin(1.7f * wsx + tt * 2.1f), wWander);
                 bool creeping = false;
                 bool watched = false;
                 if (pj >= 0)
@@ -320,8 +322,8 @@ namespace CosmicShore.Gameplay
                     float pvx = s.Pilots[pj].Vel.X, pvy = s.Pilots[pj].Vel.Y, pvz = s.Pilots[pj].Vel.Z;
                     float tpx = ppx - px, tpy = ppy - py, tpz = ppz - pz;
                     float near = pd < k.Sense * 1.5f ? 1f : 0f;
-                    float sp = Clamp((pd - comfort) / MathF.Max(comfort, 1f), -1f, 1f);
-                    Paint(I, s.Dirs, nd, tpx * sp, tpy * sp, tpz * sp, wCurious * cu * MathF.Abs(sp) * near);
+                    float sp = Clamp((pd - comfort) / KernelMath.Max(comfort, 1f), -1f, 1f);
+                    Paint(I, s.Dirs, nd, tpx * sp, tpy * sp, tpz * sp, wCurious * cu * KernelMath.Abs(sp) * near);
                     float ld = Clamp(pd / 150f, 0f, k.HuntLeadMax);
                     Paint(I, s.Dirs, nd, tpx + pvx * ld, tpy + pvy * ld, tpz + pvz * ld, wHunt * ag * near);
                     // the ramp turns it to face your lead point, the strike drives at it (a bull's charge, a dive)
@@ -332,7 +334,7 @@ namespace CosmicShore.Gameplay
                         // JINK: the pilot points straight at it - break sideways off the pilot's line
                         float vn = Len(pvx, pvy, pvz);
                         float ux = pvx / vn, uy = pvy / vn, uz = pvz / vn;
-                        float on = MathF.Max(pd, 1e-6f);
+                        float on = KernelMath.Max(pd, 1e-6f);
                         float ox = -tpx / on, oy = -tpy / on, oz = -tpz / on;
                         float cj = ux * ox + uy * oy + uz * oz;
                         if (cj > k.JinkCos)
@@ -352,9 +354,9 @@ namespace CosmicShore.Gameplay
                         float an = Len(ax, ay, az);
                         if (an > 1e-9f) { ax /= an; ay /= an; az /= an; } else { ax = 0f; ay = 0f; az = 0f; }
                         float bx = fy * az - fz * ay, by = fz * ax - fx * az, bz = fx * ay - fy * ax;
-                        float ang = 2f * MathF.PI * ((i - k.Start) % k.RingRoles) / k.RingRoles;
+                        float ang = 2f * KernelMath.PI * ((i - k.Start) % k.RingRoles) / k.RingRoles;
                         if (holding) ang += HoldOrbit * w.Tick * w.Dt;   // the held ring circles the pilot
-                        float ca = MathF.Cos(ang), sa = MathF.Sin(ang);
+                        float ca = KernelMath.Cos(ang), sa = KernelMath.Sin(ang);
                         float slx = (ppx + fx * 40f) + ringR * (ca * ax + sa * bx);
                         float sly = (ppy + fy * 40f) + ringR * (ca * ay + sa * by);
                         float slz = (ppz + fz * 40f) + ringR * (ca * az + sa * bz);
@@ -396,7 +398,7 @@ namespace CosmicShore.Gameplay
                 s.Creeping[i] = creeping;
                 Paint(I, s.Dirs, nd, s.Home[i].X - px, s.Home[i].Y - py, s.Home[i].Z - pz, wHome * (1f - h) * (creeping ? 0f : 1f));
                 if (k.WAlarmClimb > 0f && role)
-                    Paint(I, s.Dirs, nd, s.GAlarm[i].X, s.GAlarm[i].Y, s.GAlarm[i].Z, k.WAlarmClimb * (k.RampOnSight != 0 ? MathF.Max(ph, fe) : ph));
+                    Paint(I, s.Dirs, nd, s.GAlarm[i].X, s.GAlarm[i].Y, s.GAlarm[i].Z, k.WAlarmClimb * (k.RampOnSight != 0 ? KernelMath.Max(ph, fe) : ph));
                 float mute = 1f;
                 if (k.HasBody != 0 && att > 0f)
                 {
@@ -414,7 +416,7 @@ namespace CosmicShore.Gameplay
                     // ramps over the soft width INSIDE the edge and is full AT it (PenSoftInside) - ramped outside it, the
                     // pen let a seated or chasing agent stand ~20 u beyond the edge, and only 51-89% of member-seconds were
                     // inside their pen in the showcase cell (Docs/SWARM_FAUNA.md §26.6)
-                    float soft = 0.1f * MathF.Max(k.BandOuter - k.BandInner, 50f);
+                    float soft = 0.1f * KernelMath.Max(k.BandOuter - k.BandInner, 50f);
                     Paint(I, s.Dirs, nd, -px, -py, -pz, PenWeight(r - k.BandOuter, soft));
                     Paint(I, s.Dirs, nd, px, py, pz, PenWeight(k.BandInner - r, soft));
                 }
@@ -429,7 +431,7 @@ namespace CosmicShore.Gameplay
                 {
                     float sc = cnt / k.DensNorm / k.NbrR;
                     float svx = (px - cenx) * sc, svy = (py - ceny) * sc, svz = (pz - cenz) * sc;
-                    PaintD(G, s.Dirs, nd, svx, svy, svz, wSep * MathF.Min(Len(svx, svy, svz), 2f) * (1f - att));
+                    PaintD(G, s.Dirs, nd, svx, svy, svz, wSep * KernelMath.Min(Len(svx, svy, svz), 2f) * (1f - att));
                 }
                 PaintD(G, s.Dirs, nd, -s.GAlarm[i].X, -s.GAlarm[i].Y, -s.GAlarm[i].Z, wAlarm * (0.3f + fe) * mute);
                 PaintD(G, s.Dirs, nd, -s.GThreat[i].X, -s.GThreat[i].Y, -s.GThreat[i].Z, wThreat * (0.3f + fe) * mute);
@@ -441,8 +443,8 @@ namespace CosmicShore.Gameplay
                     float dx = s.SlotGoal[i].X - px, dy = s.SlotGoal[i].Y - py, dz = s.SlotGoal[i].Z - pz;
                     float dn = Len(dx, dy, dz);
                     float turnB = Lerp(k.Rs.Turn, k.Rg.Turn, ph);
-                    float close = MathF.Min(MathF.Min(MathF.Max(dn - k.BodyWell, 0f) * 2f, 0.5f * turnB * dn), 150f);
-                    float idn = 1f / MathF.Max(dn, 1e-6f);
+                    float close = KernelMath.Min(KernelMath.Min(KernelMath.Max(dn - k.BodyWell, 0f) * 2f, 0.5f * turnB * dn), 150f);
+                    float idn = 1f / KernelMath.Max(dn, 1e-6f);
                     float vsx = s.SlotVel[i].X + dx * idn * close, vsy = s.SlotVel[i].Y + dy * idn * close, vsz = s.SlotVel[i].Z + dz * idn * close;
                     vstarN = Len(vsx, vsy, vsz);
                     Paint(I, s.Dirs, nd, vsx, vsy, vsz, 4f * att);
@@ -455,7 +457,7 @@ namespace CosmicShore.Gameplay
                 {
                     float c = curx * s.Dirs[d].X + cury * s.Dirs[d].Y + curz * s.Dirs[d].Z;
                     if (c > 0f) I[d] += k.Momentum * c;
-                    float e = I[d] * (1f - Clamp(G[d], 0f, 1f)) - 0.25f * MathF.Max(G[d] - 1f, 0f);
+                    float e = I[d] * (1f - Clamp(G[d], 0f, 1f)) - 0.25f * KernelMath.Max(G[d] - 1f, 0f);
                     I[d] = e;
                     if (e > mx) mx = e;
                 }
@@ -473,10 +475,10 @@ namespace CosmicShore.Gameplay
                     float ox = bl * curx + (1f - bl) * (vx / nn);
                     float oy = bl * cury + (1f - bl) * (vy / nn);
                     float oz = bl * curz + (1f - bl) * (vz / nn);
-                    float on = MathF.Max(Len(ox, oy, oz), 1e-9f);
+                    float on = KernelMath.Max(Len(ox, oy, oz), 1e-9f);
                     s.IDir[i].X = ox / on; s.IDir[i].Y = oy / on; s.IDir[i].Z = oz / on;
                 }
-                float urg = MathF.Max(wFlee > 0f ? fe : 0f, ag);
+                float urg = KernelMath.Max(wFlee > 0f ? fe : 0f, ag);
                 float speed = speed0 * (1f + (burst - 1f) * urg);
                 if (creeping) speed = k.CreepSpeed;
                 if (resting) speed *= k.RestSpeed;
@@ -487,7 +489,7 @@ namespace CosmicShore.Gameplay
                 {
                     // slow against a slow pilot, never slower than one that moves (the ring keeps station around it)
                     float hps = Len(s.Pilots[pj].Vel.X, s.Pilots[pj].Vel.Y, s.Pilots[pj].Vel.Z);
-                    speed = MathF.Min(speed, MathF.Max(HoldSpeed * k.Rs.Speed, 0.9f * hps));
+                    speed = KernelMath.Min(speed, KernelMath.Max(HoldSpeed * k.Rs.Speed, 0.9f * hps));
                 }
                 s.ISpeed[i] = speed;
             }
@@ -510,10 +512,10 @@ namespace CosmicShore.Gameplay
                 else { hx = s.IDir[i].X; hy = s.IDir[i].Y; hz = s.IDir[i].Z; }
                 float tx = s.IDir[i].X, ty = s.IDir[i].Y, tz = s.IDir[i].Z;
                 float c = Clamp(hx * tx + hy * ty + hz * tz, -1f, 1f);
-                float ang = MathF.Acos(c);
-                float kk = MathF.Min(1f, turn * dt / MathF.Max(ang, 1e-6f));
+                float ang = KernelMath.Acos(c);
+                float kk = KernelMath.Min(1f, turn * dt / KernelMath.Max(ang, 1e-6f));
                 float nx = hx + (tx - hx) * kk, ny = hy + (ty - hy) * kk, nz = hz + (tz - hz) * kk;
-                float nl = MathF.Max(Len(nx, ny, nz), 1e-9f);
+                float nl = KernelMath.Max(Len(nx, ny, nz), 1e-9f);
                 nx /= nl; ny /= nl; nz /= nl;
                 float ns = vs + Clamp(s.ISpeed[i] - vs, -acl * dt, acl * dt);
                 float vnx = nx * ns, vny = ny * ns, vnz = nz * ns;
