@@ -1,22 +1,23 @@
 # Species 3: the pure emergent swimmer (`cece/swarm-x-emergent`)
 
-**Headline (published `rule.pt` = run em_c step 550; `emergent_eval.py`, seeds 7 / 23 / 41 / held-out 1000):**
+**Headline (published `rule.pt` = run em_c step 750; `emergent_eval.py`, seeds 7 / 23 / 41 / held-out 1000):**
 
 | axis | result | bar / reference |
 |---|---|---|
-| SHAPE, strict (one fitted phase line over a 192-step window) | **10.28** (10.89 / 10.96 / 10.03 / 9.24) | four-plan bar 8; posinfo2's own plans 1.6-2.7. **Fails the bar.** |
-| SHAPE, static (the best single frame, held) | 9.26 (9.72 / 9.90 / 9.19 / 8.22) | at age 300-600 the same rule averages 8.0-8.1 (`ablation_chem.json`) |
-| ANIMATION gain (static - strict) | **-1.03: no pulse emerged** | > 0 would mean the body really cycles through the frames |
-| TEMPO | **none.** The fit reports 140 steps at every seed, but that is the phase fit settling on its slowest admissible line, not a cycle | trained period: 64 steps per cycle |
-| GROWTH | from 16 to 90% of its final size in 380-420 steps with no script; final size 280 (the world cap) at every seed | the plan has 88 |
-| REGROWTH (swarm_probe strike, ~1/3 removed, 160 steps) | heal **0.50** (0.56 / 0.27 / 0.52 / 0.67); half-healed in 100-160 steps; never 90% within 160 | posinfo2: 0.44-1.05; warm start: -0.13 |
-| LOSSLESS | **0 self-inflicted deaths** in 817k tadpole-steps (grow + window + regrow) | goal 0 (death is penalised in training, never masked) |
-| PERFORMANT | 16.2 ms/step at 280 tadpoles, 1 thread, Python/torch | posinfo2 5.2 ms at ~90-190 |
-| EMERGENT | **organic band IN** (jerk_rel 1.99, osc 0.072, stuck 0.000, planar excess 0.00); locality **local** | evo jellyfish row: jerk_rel 1.93, osc 0.041 |
+| SHAPE, strict (one fitted phase line over a 192-step window) | **8.94** (7.46 / 11.18 / 11.54 / 5.58): 2 of 4 seeds under 8 | four-plan bar 8; posinfo2's own plans 1.6-2.7. **Fails the bar on the mean.** |
+| SHAPE, static (the best single frame, held) | 8.10 (6.57 / 10.48 / 10.63 / 4.71) | at age 600 the same rule averages 8.0 (`ablation_chem.json`) |
+| ANIMATION gain (static - strict) | **-0.85: no pulse emerged** | > 0 would mean the body really cycles through the frames |
+| TEMPO | **none.** The fit reports 140-151 steps (cv 0.04), but that is the phase fit settling on a slow admissible line, not a cycle | trained period: 64 steps per cycle |
+| GROWTH | from 16 to 90% of its final size in 380-440 steps with no script; final size 280 (the world cap) at every seed | the plan has 88 |
+| REGROWTH (swarm_probe strike, ~1/3 removed, 160 steps) | heal **0.69** (0.66 / 0.53 / 0.63 / 0.93); half-healed in 60-130 steps; 90% only at seed 1000 | posinfo2: 0.44-1.05; warm start: -0.13 |
+| LOSSLESS | **0 self-inflicted deaths** in 793k tadpole-steps (grow + window + regrow) | goal 0 (death is penalised in training, never masked) |
+| PERFORMANT | 14.6 ms/step at 280 tadpoles, 1 thread, Python/torch | posinfo2 5.2 ms at ~90-190 |
+| EMERGENT | **organic band IN** (jerk_rel 1.99, osc 0.068, stuck 0.000, planar excess 0.00); locality **local** | evo jellyfish row: jerk_rel 1.93, osc 0.041 |
 
-**In one line:** a fully local learned rule grows a recognisable jellyfish from 16 tadpoles, keeps it (static 8-10) and
-heals about half a vessel strike, with zero deaths and evo-like organic motion. It does **not** get under the loss-8 bar
-(strict 10.3), and it does **not** swim: the animated cycle never emerged.
+**In one line:** a fully local learned rule grows a recognisable jellyfish from 16 tadpoles, keeps it (static 8.1 mean,
+4.7-10.6 by seed) and heals about two thirds of a vessel strike, with zero deaths and evo-like organic motion. It gets
+**close to, but not under, the loss-8 bar** (strict 8.9; 2 of 4 seeds pass), and it does **not** swim: the animated
+cycle never emerged. **By step 750 its self-secreted chemicals are load-bearing**: cutting them costs +2.9.
 
 ## What the model is
 
@@ -46,8 +47,8 @@ slot, quota or attractor.
 | velocity, facing, prism, Charge state, spindle, hatching, hidden channels | LEARNED (MLP) |
 | laying gate (whether a parent lays) | LEARNED (World.learned_lay; gradient through the straight-through child weight) |
 | death | LEARNED output, **penalised** (`w_survive` 60 on the death pull), never masked. It chose 0 deaths. |
-| secretion of each chemical | LEARNED (but unused, see below) |
-| composition (who is laid as what) | EMERGENT from breed-true laying. The seed is laid at the plan's mix and stays near it (grown 27 / 1 / 64 / 9% vs the plan's 28 / 2 / 61 / 8%). No quota or homeostat. |
+| secretion of each chemical | LEARNED; load-bearing by step 750 (see below) |
+| composition (who is laid as what) | EMERGENT from breed-true laying plus the learned per-tadpole laying gate. No quota or homeostat. It drifts: at step 550 the grown mix was 27 / 1 / 64 / 9% (plan 28 / 2 / 61 / 8%); at step 750 it is 39 / 1 / 56 / 5%, so Charge over-lays. |
 | body outline, the element and domain regions (orange Charge rim, Space bell and tentacles) | EMERGENT (from local rules; in the loss) |
 | headcount (fills the 280 cap) | EMERGENT (not in the loss except the one-sided floor at 88) |
 | healing after a strike | EMERGENT, partly trained (8% of pool samples are struck during training) |
@@ -68,33 +69,50 @@ It is about three times the plan's headcount, a big soft jellyfish rather than a
 everyone does the same thing slightly differently, nobody freezes, and nobody marches in step. **It does not pulse.**
 The bell stays at a frame-0/7-like pose, so this reads as a drifting jellyfish rather than a swimming one.
 
-Strike it with a vessel and the hole half-closes over 100-160 steps; the body grows back to the cap. Nothing ever dies.
+Strike it with a vessel and the hole half-closes within 60-130 steps; about two thirds of the damage is gone after 160, and the body grows back to the cap. Nothing ever dies.
 Seeded with another plan's mix, it still grows a jellyfish (every row of `summary.json` is closest to the jellyfish).
 The rule is a jellyfish attractor, as a one-target rule should be.
 
 ## The full yardstick, and what failed
 
-`eval.json` (step 550), `eval_step650.json`, `eval_warm_start.json` (step 0), `probe.json`, `feel.json`.
+`eval.json` (step 750), `eval_step550.json`, `eval_step650.json`, `eval_warm_start.json` (step 0), `probe.json`, `feel.json`.
 
-1. **SHAPE fails the bar: 10.3 strict / 9.3 static against 8.**
-   - At its best age the body is around 8: the static mean is 8.04 at age 300 and 8.09 at age 600, with seeds ranging
-     5.8 to 11.2.
-   - It drifts slowly while it sits at the 280 cap.
-   - Training took the local warm start from strict 15.5 to 10.3, and its regrowth from -0.13 to 0.50.
-   - Checkpoints are noisy: 2-seed strict scores ran 12.8 / 11.4 / 15.3 / 12.4 / 10.9 at steps 150-550, and step 650
-     scored 11.8 on four seeds.
+1. **SHAPE misses the bar on the mean: 8.9 strict / 8.1 static against 8.**
+   - Seeds 7 and 1000 pass: 7.5 and 5.6 strict.
+   - Seeds 23 and 41 do not: 11.2 and 11.5.
+   - Training took the local warm start from strict 15.5 to 8.9, and its regrowth from -0.13 to 0.69.
+   - Checkpoints are noisy:
+
+     | step | strict, 2 seeds (7 / 23) | strict, 4 seeds |
+     |---|---|---|
+     | 150 | 12.8 | |
+     | 250 | 11.4 | |
+     | 350 | 15.3 | |
+     | 450 | 12.4 | |
+     | 550 | 10.9 | 10.3 |
+     | 650 | | 11.8 |
+     | 750 | 9.3 | 8.9 |
+
+   - Run em_c's training sink fell from 19 to about 12.7 and was flattening at the end. Step 750 was the last snapshot
+     scored.
 2. **ANIMATION failed outright.**
    - The jellyfish frames differ by ~4 in divergence (bell open vs closed), so a real pulse would pay.
-   - The phase-free animated loss never produced a coherent oscillation in ~650 BPTT steps. Strict is worse than
-     static at every checkpoint and every seed.
+   - The phase-free animated loss never produced a coherent oscillation in 750 BPTT steps. Strict is worse than static
+     at every checkpoint and every seed.
    - A pulse needs a synchronised per-tadpole oscillator, plus the motion keyed to it. Neither exists in the warm start,
      and at this budget gradient descent did not find them from zero.
 3. **TEMPO: none to report** (see the table).
-4. **STIGMERGY was not used** (`ablation_chem.json`, `emergent_chem_ablate.py`).
-   - Cutting every chemical input changes the static loss by noise: 8.04 → 8.31 at age 300, 8.09 → 7.96 at age 600.
-   - The learned chemical input weights are ~20x smaller than the neighbour inputs.
-   - The channel is there and differentiable end to end, but it never became load-bearing. This answers idea 1
-     negatively, for this budget.
+4. **STIGMERGY became load-bearing late** (`ablation_chem.json`, `emergent_chem_ablate.py`). Cutting every chemical
+   input, at age 300 / 600:
+
+   | rule | as trained | chemicals cut |
+   |---|---|---|
+   | step 550 | 8.04 / 8.09 | 8.31 / 7.96 (noise) |
+   | step 750 | 10.6 / 8.03 | 12.2 / 10.88 (seed 41: 9.1 → 16.4) |
+
+   The learned chemical input weights are still ~17x smaller than the neighbour inputs, and the diffusion and decay rates
+   barely moved. So the channel is being picked up, weakly. This is the first sign that a self-secreted field can stand
+   in for what the global inputs carried.
 5. **Size is not controlled**: every body fills the 280 cap.
    - Capping is not the fix: re-running the warm start with capacity 100-200 made the shape worse (`runs/capdiag.py`).
    - The divergence prefers more tadpoles at the plan's spacing.
@@ -115,7 +133,7 @@ seeds 7 / 23 / 41.
 So **no single global input buys anything once the rule is consistent without it**: the census is worth 0.03. The
 mismatched half-ablations are worse only because the rule was trained on the joint signal. The gap to the bar is
 therefore not a missing census. It is:
-- **persistence**: the body is ~8 at age 300 and drifts after;
+- **persistence** (seed spread 4.7-10.6);
 - **size**: the cap;
 - **the absent pulse**: about 1 of strict loss.
 
@@ -127,24 +145,24 @@ not local.
 | | posinfo2 (hybrid) | emergent (this) |
 |---|---|---|
 | task | 4 plans + 12 switches | 1 plan, animated (relaxed) |
-| jellyfish shape | own 1.62-1.82 (static, at its native 88) | strict 10.3, static 9.3 (~8 at best age) |
+| jellyfish shape | own 1.62-1.82 (static, at its native 88) | strict 8.9, static 8.1 (seeds 4.7-10.6) |
 | animation | not asked | asked; not achieved |
-| composition | DESIGNED homeostat (quota, molting, majority guard) | emergent from breed-true laying; mix within ~3 points of the plan |
+| composition | DESIGNED homeostat (quota, molting, majority guard) | emergent from breed-true laying + learned gate; Charge drifts +11 points over the plan |
 | death | masked | learned and penalised; 0 deaths |
 | perception | neighbours + body frame + element census (**mixed**) | neighbours + self-secreted chemicals (**local**) |
 | headcount | exact (homeostat) | fills the 280 cap |
-| strike heal (jellyfish) | 0.95 | 0.50 |
-| feel (jellyfish row) | jerk_rel 2.02, osc 0.012, coherence 0.20, speed 0.10 | jerk_rel 1.99, osc 0.072, coherence 0.15, speed 0.18; nearer evo (1.93 / 0.041 / 0.12 / 0.17) |
-| cost | 5.2 ms/step | 16 ms/step (280 tadpoles + a 32³×4 grid) |
+| strike heal (jellyfish) | 0.95 | 0.69 |
+| feel (jellyfish row) | jerk_rel 2.02, osc 0.012, coherence 0.20, speed 0.10 | jerk_rel 1.99, osc 0.068, coherence 0.10, speed 0.19; nearer evo (1.93 / 0.041 / 0.12 / 0.17) |
+| cost | 5.2 ms/step | 14.6 ms/step (280 tadpoles + a 32³×4 grid) |
 
-posinfo2 is ~6x more accurate on the jellyfish, and it gets there with exactly the parts this brief forbids: a body
+posinfo2 is ~4-5x more accurate on the jellyfish, and it gets there with exactly the parts this brief forbids: a body
 frame and a designed composition controller. The pure rule is the more alive-looking of the two: faster and closer to
 evo's motion. But it is a bigger, blurrier jellyfish that does not pulse.
 
 ## Recommendation
 
-1. **Not yet a game creature on accuracy.** It is the first fully local, lossless, uncontrolled rule to hold a
-   recognisable plan near the bar. As "ambient jellyfish drift" it is viable today.
+1. **Close on accuracy, not there.** It is the first fully local, lossless, uncontrolled rule to hold a recognisable
+   plan at the bar on some seeds (2 of 4). As "ambient jellyfish drift" it is viable today.
 2. **For the pulse, give the rule an oscillator to learn WITH, not a clock to obey.** Two candidates:
    - a 2-channel rotation in the hidden state, initialised but trainable, so tadpoles start as oscillators and the
      loss only has to learn coupling and motion;
@@ -152,12 +170,13 @@ evo's motion. But it is a bigger, blurrier jellyfish that does not pulse.
      water.
 
    Then a birth-clock curriculum like particle_nca's swim2d: fresh seeds held to the clock for the first cycles.
-3. **For size**, a local satiety cue is the honest analogue of the census; the trained rule ignored the one it had.
+3. **For size**, a local satiety cue is the honest analogue of the census; the chemicals only started to matter at
+   step 750.
    Shape the secretion so concentration tracks the body (calib r = 0.83), or put a small explicit penalty on laying
    while the local chemical is high. The census ablation says size, not the mix, is what a global input would have
    carried.
-4. Compute: ~650 BPTT steps at 12-25 s each fit this night. The learning curve was still falling (training sink 19 →
-   11-13). A GPU or a longer CPU run of the same `emergent_train.py --stage anim` is the cheapest next step.
+4. Compute: 750 BPTT steps at 12-25 s each fit this night. The 4-seed score was still improving (10.3 at 550 → 8.9 at
+   750), and the chemicals had only just become useful. A GPU or a longer CPU run of the same `emergent_train.py --stage anim` is the cheapest next step.
 
 ## Files
 
@@ -166,16 +185,16 @@ evo's motion. But it is a bigger, blurrier jellyfish that does not pulse.
 - Here: `rule.pt`, `eval.json`, `probe.json`, `feel.json`, `summary.json` + `rollout.json` (`swarm_nca.rollout` +
   `pack`, as the GPU publisher writes; rows other than "space" are the same rule from another plan's seed), `swim.gif`
   (left: the swarm; right: the target frame at the fitted phase), `ablation_census.json`, `ablation_chem.json`,
-  `eval_warm_start.json`, `eval_step650.json`, `log.jsonl` + `config.json` (run em_c).
+  `eval_warm_start.json`, `eval_step550.json`, `eval_step650.json`, `log.jsonl` + `config.json` (run em_c).
 - Run history (logs in `runs/`, gitignored):
   - em_a: static stage from a noisy warm start; no progress, and killed by a container restart.
   - em_b: animated stage, lr 3e-4. It made the rule WORSE: it learned "never lay" (fixed by the body floor) and
     drifted to strict 19.
-  - em_c: animated stage, lr 1e-4 → 3e-5, body floor 5. Published.
+  - em_c: animated stage, lr 1e-4 → 3e-5, body floor 5. Published at step 750.
 - Reproduce:
 
   ```
   python Tools/NCA/emergent_train.py --run runs/em_c --stage anim --steps 1000 --init-solo 1 --lr 1e-4 --lr-end 3e-5 --min-body 88 --w-body 5
   ```
 
-  (stopped at step 650; step 550 published), then `python Tools/NCA/emergent_eval.py --rule <rule> --out eval.json`.
+  (stopped at step 750; step 750 published), then `python Tools/NCA/emergent_eval.py --rule <rule> --out eval.json`.

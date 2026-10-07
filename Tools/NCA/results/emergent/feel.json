@@ -1,35 +1,35 @@
 {
  "space": {
   "n": 280,
-  "speed": 0.179,
-  "jerk": 0.357,
-  "jerk_rel": 1.989,
+  "speed": 0.195,
+  "jerk": 0.39,
+  "jerk_rel": 2.002,
   "jerk_e": {
-   "Charge": 0.231,
-   "Mass": 0.312,
-   "Space": 0.32,
-   "Time": 1.353
+   "Charge": 0.308,
+   "Mass": 0.365,
+   "Space": 0.345,
+   "Time": 1.267
   },
-  "planar_frac": 0.298,
+  "planar_frac": 0.303,
   "flat_mean": 0.175,
   "planar_plan": 0.375,
-  "coherence": 0.144,
-  "jitter": 2.33,
-  "phase": 0.368,
+  "coherence": 0.093,
+  "jitter": 2.486,
+  "phase": 0.295,
   "stuck": 0.0,
-  "osc": 0.08
+  "osc": 0.068
  },
  "mean_over_seeds": {
-  "speed": 0.179,
-  "jerk": 0.357,
-  "jerk_rel": 1.986,
-  "planar_frac": 0.28,
+  "speed": 0.192,
+  "jerk": 0.382,
+  "jerk_rel": 1.991,
+  "planar_frac": 0.289,
   "planar_plan": 0.375,
-  "coherence": 0.147,
-  "jitter": 2.433,
-  "phase": 0.306,
+  "coherence": 0.102,
+  "jitter": 2.486,
+  "phase": 0.283,
   "stuck": 0.0,
-  "osc": 0.072
+  "osc": 0.068
  },
  "organic": {
   "ok": true,

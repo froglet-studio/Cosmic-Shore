@@ -1,39 +1,39 @@
 {
  "cross": {
   "mass": {
-   "mass": 60.79,
-   "space": 19.33,
-   "charge": 51.09,
-   "time": 65.49
+   "mass": 71.85,
+   "space": 33.78,
+   "charge": 58.62,
+   "time": 71.01
   },
   "space": {
-   "mass": 69.73,
-   "space": 7.44,
-   "charge": 54.37,
-   "time": 70.23
+   "mass": 73.4,
+   "space": 11.1,
+   "charge": 52.47,
+   "time": 72.9
   },
   "charge": {
-   "mass": 65.66,
-   "space": 20.94,
-   "charge": 48.86,
-   "time": 70.08
+   "mass": 72.9,
+   "space": 24.17,
+   "charge": 55.65,
+   "time": 72.23
   },
   "time": {
-   "mass": 66.96,
-   "space": 19.3,
-   "charge": 56.01,
-   "time": 62.56
+   "mass": 66.68,
+   "space": 23.32,
+   "charge": 50.95,
+   "time": 68.47
   }
  },
  "census": {
   "mass": {
-   "n": 280,
+   "n": 273,
    "target_n": 192,
    "elements": [
     87,
-    16,
-    137,
-    40
+    13,
+    122,
+    51
    ],
    "target_elements": [
     19,
@@ -43,21 +43,21 @@
    ],
    "majority": "Space",
    "domains": [
-    159,
-    121,
+    169,
+    104,
     0
    ],
    "deaths": 0,
-   "mutants": 1
+   "mutants": 0
   },
   "space": {
-   "n": 280,
+   "n": 278,
    "target_n": 88,
    "elements": [
-    75,
+    108,
     2,
-    178,
-    25
+    155,
+    13
    ],
    "target_elements": [
     25,
@@ -67,21 +67,21 @@
    ],
    "majority": "Space",
    "domains": [
-    148,
-    132,
+    162,
+    116,
     0
    ],
    "deaths": 0,
    "mutants": 0
   },
   "charge": {
-   "n": 157,
+   "n": 221,
    "target_n": 179,
    "elements": [
-    51,
+    70,
     1,
-    79,
-    26
+    113,
+    37
    ],
    "target_elements": [
     131,
@@ -91,21 +91,21 @@
    ],
    "majority": "Space",
    "domains": [
-    54,
-    103,
+    150,
+    71,
     0
    ],
    "deaths": 0,
    "mutants": 0
   },
   "time": {
-   "n": 246,
+   "n": 259,
    "target_n": 76,
    "elements": [
-    61,
-    7,
-    131,
-    47
+    89,
+    1,
+    123,
+    46
    ],
    "target_elements": [
     2,
@@ -115,18 +115,18 @@
    ],
    "majority": "Space",
    "domains": [
-    121,
-    18,
-    107
+    111,
+    12,
+    136
    ],
    "deaths": 0,
-   "mutants": 1
+   "mutants": 0
   }
  },
  "steps": 480,
  "meta": {
   "label": "Pure emergent swimmer (species 3)",
-  "step": 550,
+  "step": 750,
   "tag": "emergent",
   "note": "ONE learned local rule, one animated target (the pulsing jellyfish). It perceives only neighbours within R and chemicals the tadpoles secrete; no census, frame, clock or designed composition. Rows other than the jellyfish show the same rule grown from another plan's seed mix. "
  },

@@ -1,141 +1,141 @@
 {
  "space": {
-  "before": 10.28,
+  "before": 6.5,
   "n_before": 280,
-  "killed": 78,
-  "cut": 13.79,
-  "recovered": 11.83,
+  "killed": 101,
+  "cut": 21.05,
+  "recovered": 11.41,
   "n_after": 280,
-  "heal": 0.558,
-  "steps_to_half": 160,
+  "heal": 0.663,
+  "steps_to_half": 80,
   "steps_to_90pct": null,
   "traj": [
    [
     10,
-    13.55,
-    212
+    20.67,
+    187
    ],
    [
     20,
-    13.3,
-    220
+    19.76,
+    192
    ],
    [
     30,
-    13.17,
-    227
+    17.81,
+    201
    ],
    [
     40,
-    12.94,
-    238
+    16.39,
+    213
    ],
    [
     50,
-    12.79,
-    244
+    15.51,
+    218
    ],
    [
     60,
-    12.64,
-    256
+    14.5,
+    232
    ],
    [
     70,
-    12.36,
-    260
+    14.33,
+    240
    ],
    [
     80,
-    12.26,
-    266
+    13.45,
+    246
    ],
    [
     90,
-    12.14,
-    274
+    12.89,
+    254
    ],
    [
     100,
-    12.11,
-    280
+    12.74,
+    259
    ],
    [
     110,
-    12.18,
-    280
+    11.82,
+    266
    ],
    [
     120,
-    12.16,
-    280
+    11.34,
+    276
    ],
    [
     130,
-    12.18,
+    11.66,
     280
    ],
    [
     140,
-    12.17,
+    11.65,
     280
    ],
    [
     150,
-    12.12,
+    11.5,
     280
    ],
    [
     160,
-    11.83,
+    11.41,
     280
    ]
   ]
  },
  "per_seed": {
   "7": {
-   "before": 10.28,
+   "before": 6.5,
    "n_before": 280,
-   "killed": 78,
-   "cut": 13.79,
-   "recovered": 11.83,
+   "killed": 101,
+   "cut": 21.05,
+   "recovered": 11.41,
    "n_after": 280,
-   "heal": 0.558,
-   "steps_to_half": 160,
+   "heal": 0.663,
+   "steps_to_half": 80,
    "steps_to_90pct": null
   },
   "23": {
-   "before": 10.39,
+   "before": 10.46,
    "n_before": 280,
-   "killed": 83,
-   "cut": 18.73,
-   "recovered": 16.51,
+   "killed": 84,
+   "cut": 16.34,
+   "recovered": 13.2,
    "n_after": 280,
-   "heal": 0.266,
-   "steps_to_half": null,
+   "heal": 0.534,
+   "steps_to_half": 60,
    "steps_to_90pct": null
   },
   "41": {
-   "before": 9.57,
+   "before": 10.76,
    "n_before": 280,
-   "killed": 82,
-   "cut": 17.2,
-   "recovered": 13.27,
+   "killed": 85,
+   "cut": 22.25,
+   "recovered": 15.03,
    "n_after": 280,
-   "heal": 0.515,
-   "steps_to_half": 150,
+   "heal": 0.628,
+   "steps_to_half": 130,
    "steps_to_90pct": null
   },
   "1000": {
-   "before": 8.44,
+   "before": 5.3,
    "n_before": 280,
-   "killed": 69,
-   "cut": 13.03,
-   "recovered": 9.95,
+   "killed": 75,
+   "cut": 10.35,
+   "recovered": 5.68,
    "n_after": 280,
-   "heal": 0.671,
-   "steps_to_half": 100,
-   "steps_to_90pct": null
+   "heal": 0.925,
+   "steps_to_half": 60,
+   "steps_to_90pct": 160
   }
  },
  "note": "swarm_probe.strike (sphere of one RMS radius, ~a third of the body) on the grown jellyfish, then 160 steps of regrowth; scored as swarm_probe scores (best-frame divergence). Only the jellyfish: this rule has one target."
