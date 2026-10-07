@@ -21,8 +21,8 @@ namespace CosmicShore.UI
     /// </list>
     ///
     /// <para><b>Focus, not full screen.</b> Tapping the live window moves input from the UI to the
-    /// vessel (the AI hands over); tapping outside, Escape, or gamepad Start hands it back and the
-    /// AI resumes. Gamepad <b>B is deliberately NOT a release</b> — while flying, the pad belongs
+    /// vessel (the AI hands over); tapping outside (unless a flight scheme has locked the cursor),
+    /// Escape, or gamepad Start hands it back and the AI resumes. Gamepad <b>B is deliberately NOT a release</b> — while flying, the pad belongs
     /// to the vessel, and B doubling as "close the modal" is exactly the input double-driving this
     /// platform's focus gating exists to prevent (see <see cref="AnyHasFocus"/>).</para>
     ///
@@ -344,7 +344,13 @@ namespace CosmicShore.UI
             if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame)
                 return true;
 
-            if (PressedOutsideWindow(Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame,
+            // Not while a flight scheme holds the cursor. A locked cursor's position is the middle
+            // of the screen, not where the player is pointing, and its LEFT BUTTON is a flight
+            // control (the one-thumb mouse scheme's right trigger: the Sparrow's guns). Testing it
+            // here read every shot as "pressed outside the window" whenever the window sat off
+            // centre, and ended the flight. Escape still releases.
+            if (Cursor.lockState == CursorLockMode.None &&
+                PressedOutsideWindow(Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame,
                     Mouse.current?.position.ReadValue() ?? default))
                 return true;
 

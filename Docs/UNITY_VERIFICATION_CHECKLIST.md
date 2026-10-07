@@ -4335,7 +4335,16 @@ completes like a Lesson whose every step is skipped live (`drill_harness` §3b, 
 confirmed). Gates: `unity_refcompile` OK, `drill_harness` 103/103, every `check_*.py`, both
 author scripts `--check`/`--self-test`.
 
-**Not settled.** Whether MOUSE MOVEMENT turns the ship in the preview. If it does not, the console
+**First Editor run (2026-10-07): WASD steers, Lesson passes.** Two faults remain:
+- **LMB ended the flight.** The window's "tap outside to release" read the LEFT button at the
+  locked cursor's position (screen centre), so on an off-centre window every Sparrow shot released
+  focus. Fixed: `ModePreviewWindow.WantsRelease` skips the pointer test while the cursor is locked
+  (a flight scheme owns the mouse); Escape and pad Start still release. Re-test: LMB fires the guns
+  and the window stays focused; Escape still exits.
+- **Mouse movement still does not steer in the preview** (it does in matches, §7.1 of
+  `Controller/IO/ONE_THUMB_MOUSE_CONTROLS.md`). Cause not yet found; needs the console.
+
+**Originally not settled.** Whether MOUSE MOVEMENT turns the ship in the preview. If it does not, the console
 carries an unconditional `[MouseFlight]` warning naming which link is dead.
 
 **To run.** Both resets, open Breakwater, tap into the window.
