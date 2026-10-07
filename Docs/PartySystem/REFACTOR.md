@@ -152,6 +152,19 @@ transitions: add `WaitingForProfile` / `JoiningPresenceLobby` states to
 init progress instead of polling state. (Touches the presence-lobby join step —
 coordinate with `../PresenceSystem/REFACTOR.md`.)
 
+### D6. `Bootstrap.unity` overrides `connectionTimeoutSeconds` on the shared `PartyServices` prefab
+
+Found 2026-10-07 while nesting the transport timeouts (review §5.5): `PartyServices.prefab`
+serializes `PartyInviteController.connectionTimeoutSeconds = 10`, and `Bootstrap.unity`'s
+instance of it carries a `propertyPath: connectionTimeoutSeconds / value: 30` override — so the
+live connect wait is 30 s while the prefab (and now the C# initializer) say 10. CLAUDE.md's
+"a scene override always beats the prefab" shape: a reader of the prefab or the code gets the
+wrong number, and a retune of the prefab changes nothing in the real boot. **Action:** decide
+the one value (10 s already sits outside the new 10 s UTP connect window; 30 s is the more
+forgiving wait for a Relay handshake on a slow link), put it on the prefab or in a config SO,
+and DELETE the scene override — never re-author the same value into the scene. Reader-only
+check: `grep -n -A1 'propertyPath: connectionTimeoutSeconds' Assets/_Scenes/Bootstrap.unity`.
+
 ## Sequencing
 
 1. **Diagnostics first (DONE, commit `aaba872`).** NetDiag overlay

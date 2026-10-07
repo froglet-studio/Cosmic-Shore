@@ -65,6 +65,45 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Party request discipline — review Phases 0–1 (`Ys-bleeding-edge`, 2026-10-07)
+
+**What landed.** Five commits from `Docs/MultiplayerArchitecture/REVIEW_INVITE_AND_RESILIENCE.md`
+§7: `931dcd51` one UGS failure classifier (`UgsRequestPolicy.Classify`, replacing five private copies)
+plus the `ugs[...]` request counters on every NetDiag line; `0521b858` every UGS create / join / query /
+save routed through `UgsRequestPolicy.ExecuteAsync` (jittered back-off, per-client retry budget,
+single-flight on create/join; nine inline retry loops deleted); `d31e01b2` the PENDING acceptance
+handshake deleted (`AcceptanceSignalService`, the `accepted_invite` write per Accept, the per-tick
+acceptance scan); `12e2cb1b` `JoinTargetValidator` — Accept / Join / Spectate refuse a stale, full or
+offline target with a toast BEFORE the local host is torn down; `8a0eaa0d` UTP `MaxConnectAttempts`
+60 → 10 and `DisconnectTimeoutMS` 30 000 → 10 000 on `NetworkManager.prefab`, and
+`WaitForClientConnectionAsync` returns as soon as the client stops listening.
+
+**Proven without the editor.** `unity_refcompile`: 0 project errors in 95 assemblies on each commit
+(real Netcode 2.13.3 / Multiplayer Services 2.3.3 / UniTask / engine references). The shipped
+edit-mode tests executed headlessly against those assemblies: `UgsRequestPolicyTests` (77),
+`UgsRequestTelemetryTests` (5), `JoinTargetValidatorTests` (14), `PartyAcceptFlowPlayModeTests`
+(4) — all green; negative controls fail as expected. All textual gates green;
+`check_generated_assets.py` green on the prefab edit.
+
+**Needs the editor (MPPM, 1 host + 3 virtual players, `CSLogChannel.Party` verbose ON, read the
+`ugs[...]` field of any NetDiag line):**
+1. T1 — host invites P2/P3/P4 within 5 s, all accept within 10 s → roster 4/4 on all four screens
+   < 2 s after the last accept; `429/min=0`, `reset=0`.
+2. T2 — P2/P3/P4 press **Join** simultaneously → all seated, no bounce.
+3. T4 — party 4/4, a fifth client presses Join → toast "…party is full", its own session untouched
+   (no `EnsurePartySessionAsync` log), no scene reload.
+4. T10 — P2 accepts an invite whose sender left 2 s earlier → toast "…no longer online" /
+   "…no longer available", invite row cleared, no bounce.
+5. T8 — all four spam Invite / Cancel for 60 s → `429/min` may rise, `budget-out/min` may rise,
+   `reset=0`, `offline=0`, UI never stalls > 2 s.
+6. Timeout nest — kill the host's Relay reachability before a guest joins → the guest bounces within
+   ~12 s (transport gives up at 10 s), not after 30 s; mid-match, pull a client's network → the host
+   re-decides the ready gate / converts the vessel at ~10 s (was 30 s).
+7. Watch the Console for the retired `AcceptanceSignalService` / `[INVITE-SEND]` chatter: none
+   expected; any `UgsRequestPolicy` warning names a spent retry budget.
+
+---
+
 ### 🔴 Integration: multiplayer SDK bump + Skim Race AI + perf + Bug Hunt on one branch (`Ys-bleeding-edge`, 2026-10-06)
 
 **What landed.** `Ys-bleeding-edge` now carries, in merge commits and in this order: `bleeding-edge`

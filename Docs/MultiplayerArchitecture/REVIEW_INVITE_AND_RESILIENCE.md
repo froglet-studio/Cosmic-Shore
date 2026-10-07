@@ -57,9 +57,11 @@ Two smaller findings that each cause a visible class of "it just didn't work":
 
 4. **Timeouts are nested the wrong way round.** UTP will keep trying to connect for
    `MaxConnectAttempts 60 × ConnectTimeoutMS 1000 = 60 s` while `PartyInviteController` gives up at
-   **8 s** and starts tearing the client down — the late connect then races the shutdown (the B8
-   "phantom rejoin" shape). `DisconnectTimeoutMS 30000` means a dead peer holds the ready gate and
-   its vessel for 30 s before anyone is told. *(§3.3, §5.5)*
+   **10 s** (`PartyServices.prefab`; `Bootstrap.unity` overrides it to 30 s — the C# initializers
+   say 8 s and are not the shipped values, a correction made while implementing) and starts tearing
+   the client down — the late connect then races the shutdown (the B8 "phantom rejoin" shape).
+   `DisconnectTimeoutMS 30000` means a dead peer holds the ready gate and its vessel for 30 s before
+   anyone is told. *(§3.3, §5.5 — fixed in 8a0eaa0d)*
 
 5. **The legacy PENDING acceptance handshake still runs.** With eager sessions the host's session id
    is always real, yet every Accept still writes `accepted_invite` to the lobby (one of the 60
@@ -217,12 +219,12 @@ is exactly the 4-player accept storm.
 | UTP disconnect detection | **30 s** (heartbeat 500 ms) | `:101 / :98` |
 | NGO client buffer / spawn | 10 s / 10 s | `:59 / :71` |
 | NGO scene load | 120 s | `:70` |
-| PIC shutdown / connection / join-ready / spectate-ready | 2 / **8** / 10 / 45 s | `PartyInviteController.cs:45/48/51/269` |
+| PIC shutdown / connection / join-ready / spectate-ready | 5 / **10** (30 via `Bootstrap.unity`'s override) / 30 / 45 s | `PartyServices.prefab:83-85`, `Bootstrap.unity` (the C# initializers read 2 / 8 / 10 and were NOT the shipped values — corrected 2026-10-07) |
 | SceneLoader client follow | 90 s | `SceneLoader.cs:49` |
 | Lobby service (dashboard defaults) | active lifespan 30 s · disconnect removal **120 s** · host-migration 120 s | UGS Lobby *Config options* |
 
-The app-level wait (8 s) sits *inside* a transport that keeps retrying for 60 s: when PIC times out
-and tears down, UTP may complete the connect into a NetworkManager that is shutting down (B8's
+The app-level wait (10–30 s) sits *inside* a transport that keeps retrying for 60 s: when PIC times
+out and tears down, UTP may complete the connect into a NetworkManager that is shutting down (B8's
 phantom-rejoin shape; the B5/B14/B16 stray-NetworkObject family grew out of the same window).
 Inverted the other way, 30 s to notice a dead peer is three times the industry norm for a casual
 4-player game (8–12 s detection, with a *separate, longer* reconnection grace).
@@ -410,11 +412,11 @@ Rules the helper enforces, so no call site can get them wrong again:
 
 | Setting | Today | Proposed | Why |
 |---|---|---|---|
-| UTP `MaxConnectAttempts` × `ConnectTimeoutMS` | 60 × 1 000 = 60 s | 10 × 1 000 = **10 s** | transport window must end *before* the app gives up |
-| PIC `connectionTimeout` | 8 s | **12 s** | ≥ transport window + Relay handshake |
-| UTP `DisconnectTimeoutMS` | 30 000 | **10 000** | 8–12 s is the norm; heartbeat 500 ms already supports it |
+| UTP `MaxConnectAttempts` × `ConnectTimeoutMS` | 60 × 1 000 = 60 s | 10 × 1 000 = **10 s** (8a0eaa0d) | transport window must end *before* the app gives up |
+| PIC `connectionTimeout` | 10 s (30 s via the Bootstrap override) | kept | already ≥ the 10 s transport window; `WaitForClientConnectionAsync` now returns the moment the client stops listening instead of sitting out the remainder (8a0eaa0d) |
+| UTP `DisconnectTimeoutMS` | 30 000 | **10 000** (8a0eaa0d) | 8–12 s is the norm; heartbeat 500 ms already supports it. Trade-off until Phase 3's grace: a phone backgrounded > 10 s is now dropped where 30 s used to survive |
 | UTP `HeartbeatTimeoutMS` | 500 | 500 | fine |
-| PIC `joinReadyTimeout` | 10 s | 15 s | sits outside NGO `ClientConnectionBufferTimeout 10` + `SpawnTimeout 10` worst case |
+| PIC `joinReadyTimeout` | 30 s | kept | already outside NGO `ClientConnectionBufferTimeout 10` + `SpawnTimeout 10` worst case |
 | Reconnect grace (new, §5.6) | — | **45 s** in match · 30 s pre-match | deliberately *longer* than detection, *shorter* than lobby removal (120 s) |
 
 Also: `RecoverFromFailedTransitionAsync` must `ShutdownAsync` with a cancellation that aborts a
@@ -534,6 +536,16 @@ Phases 0–1 are the "stop the bleeding" set and need no design discussion. Phas
 makes four players feel instantaneous. Phase 3 is what "a client suddenly stops or loses network"
 actually needs.
 
+**Landed (2026-10-07, `Ys-bleeding-edge`):** Phase 0 in `931dcd51` (one classifier, counters; the
+review undercounted — there were FIVE classifier copies, and a test reflected into one by name);
+Phase 1 in `0521b858` (the executor; also fixed the classifier commit's single-flight, which could
+not serve two concurrent awaiters), `d31e01b2` (PENDING handshake deleted — REFACTOR.md D1 closed),
+`12e2cb1b` (`JoinTargetValidator` pre-flight before teardown, §3.7 / §5.8) and `8a0eaa0d` (UTP
+10 s connect window / 10 s disconnect, early exit on transport give-up). Verified without the
+Editor: `unity_refcompile` 0 project errors on every commit, the shipped edit-mode tests executed
+headlessly (policy, telemetry, validator, accept-flow), the textual gates. **Not yet run:** the
+4-player MPPM acceptance (§8 T1–T5, T8) — recorded in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
 ---
 
 ## 8. Four-player MPPM test plan
@@ -596,7 +608,7 @@ back; a fake-`ISession` roster test proving `PartyMembers` follows events withou
 | Eager create surface | `HostConnectionService.cs:1166` |
 | Only `PlayerLeaving` / `Deleted` subscribed | `PartySessionService.cs:207, :272`; `HostConnectionService.cs:2496`; `MultiplayerMiniGameControllerBase.cs:154-155` |
 | Client-side disconnect = host loss → bounce | `MultiplayerSetup.cs:498, :566`; `PartyInviteController.cs:571, :202, :253` |
-| PIC timeouts 2 / 8 / 10 / 45 s; `_transitioning` | `PartyInviteController.cs:45, :48, :51, :269, :24` |
+| PIC timeouts 5 / 10 (30 override) / 30 / 45 s; `_transitioning` | `PartyServices.prefab:83-85`, `Bootstrap.unity` (connectionTimeoutSeconds override), `PartyInviteController.cs` (spectate 45 s, `_transitioning`) |
 | Permanent AI takeover | `ServerPlayerVesselInitializer.cs:834, :844` |
 | Ready gate re-decided immediately | `ArcadeConfigSyncManager.cs:404`; `MultiplayerMiniGameControllerBase.cs:632` |
 | Boot-chain rerun; offline fallback after 3 × ≥15 s | `ReconnectService.cs:114`; `AuthenticationSceneController.cs:732` |
@@ -638,14 +650,14 @@ back; a fake-`ISession` roster test proving `PartyMembers` follows events withou
 | Layer | Name | Value | Nest rule |
 |---|---|---|---|
 | Lobby service | Active lifespan / disconnect removal / host-migration | 30 s / 120 s / 120 s | outermost; reconnect grace must be < 120 s |
-| UTP | Heartbeat / connect window / disconnect | 0.5 s / 60 s (→ 10 s) / 30 s (→ 10 s) | connect window < app connection timeout |
+| UTP | Heartbeat / connect window / disconnect | 0.5 s / 10 s / 10 s (were 60 s / 30 s until 8a0eaa0d) | connect window < app connection timeout |
 | NGO | Client buffer / spawn / scene load | 10 s / 10 s / 120 s | inside join-ready |
-| PIC | Shutdown / connection / join-ready / spectate-ready | 2 / 8 (→ 12) / 10 (→ 15) / 45 s | connection > UTP window; join-ready > buffer + spawn |
+| PIC | Shutdown / connection / join-ready / spectate-ready | 5 / 10 (30 via Bootstrap override) / 30 / 45 s — serialized on `PartyServices.prefab`, not the C# initializers | connection > UTP window; join-ready > buffer + spawn |
 | HCS | Invite expiry / creation grace / converge / refresh errors | 60 s / 4 s / 4 s / ×3 | invite expiry ≥ accept path worst case |
 | Scheduler | Base / boosted / boost window | 1.5 s / 0.75 s / 15 s (→ 20 s reconciliation only) | — |
-| Retry | LPW / PSS rate / PSS transient / PSS conflict | 3 × 2 s / 3 × 2^n s / 5 × 1·2^n s / 2 × 0 s (→ one policy) | one layer only |
+| Retry | one `UgsRequestPolicy` (since 0521b858): rate / transient / conflict | ≤3 × min(8 s, 1 s·2^n) jittered / ≤3 × min(4 s, 0.5 s·2^n) jittered / 1 × 250 ms; budget 10 per minute | one layer only |
 | Presence | Rejoin backoff | 3 → 60 s | — |
-| Boot | Attempts × wait → offline | 3 × ≥ 15 s | must never be reached by a 429 |
+| Boot | Attempts × wait → offline | 3 × ≥ 15 s | must never be reached by a 429 (counted as `offline` in the NetDiag snapshot since 931dcd51) |
 | Reachability | Poll | 5 s | hint only |
 | SceneLoader | Client follow | 90 s | > NGO scene load? **No — 90 < 120**: tighten NGO `LoadSceneTimeOut` to 60 s or raise follow to 150 s |
 | New | Reconnect grace (match / pre-match) | 45 s / 30 s | > detection (10 s), < lobby removal (120 s) |
