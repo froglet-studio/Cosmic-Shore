@@ -1301,3 +1301,35 @@ Better at every frame rate, most at 120 fps (−13.5 s), every race finished. Ke
 **A failure mode the retune did not touch.** In 1 of 100 I2 races (shipped and new alike) one AI gets stuck at
 20-22 of 30 crystals with 7 recoveries and never finishes within the cut, while its teammate finishes
 normally. It is a recovery-loop case, not a tuning number, and it is the same 1% before and after.
+
+**Easy and Medium on the new policies** (the handicap asset is unchanged: §10's reaction times and mistake
+chances). 21 races per cell spread over 16/28/50 ms frames, seat medians: I1 Hard about 65 s, **Medium 73.9 s,
+Easy 88.9 s**; I2 Hard about 79 s, **Medium 94.9 s, Easy 121.5 s**. The ladder §10 set (I1 75/86 s, I2 92/112 s
+at 28 ms frames) holds within a few seconds; Easy at I2 runs past the simulator's cut in a third of its races
+(the cut is the benchmark limit plus 60 s; the game has none), as it did before.
+
+**The general policy** (`skimrace-v2-general` → `skimrace-v3-general`; `run.sh tuneall 1,2,3,4 4 16 sigma=0.15
+final=20 only=stated` under the same conditions, 36 numbers re-fitted, about 2.5 hours; its own fresh-seed
+check finished 20/20 on every track, winner medians I1 57.6, I2 97.1, I3 175.0, I4 148.8 s). It is what
+intensity 3 flies, so the head to head is on I3:
+
+| I3, Hard (general policy) | 120 fps | 62 fps | 36 fps | 20 fps | 12 fps |
+|---|---|---|---|---|---|
+| shipped v2-general | 188.5 (20) | 185.3 (20) | 184.5 (20) | 185.0 (20) | 193.6 (20) |
+| new v3-general | 184.6 (20) | 183.4 (20) | 182.1 (20) | 181.0 (20) | **185.7** (20) |
+
+Better at every frame rate, every race finished. Kept.
+
+### 14.6 Where this leaves the AI (2026-10-07)
+
+- Every shipped policy is now tuned across 62 / 36 / 20 fps with the game's contact step, and checked at 120
+  and 12 fps as well. Against the previous files, on the same fresh races: level at 36-62 fps, better at 120 fps
+  and at 12 fps on every track, and I4 better everywhere. Nothing got slower beyond noise; no new failure mode
+  (the one-in-a-hundred stranded I2 seat predates this).
+- The planner stagger (§14.4) halves the editor's worst AI frame at 60+ fps; at Debug code optimization the
+  AI still costs the editor about 5 ms in a typical frame on I2 - Release optimization is the lever there.
+- The next measurement that matters is the one only the editor can give: a hand-played race's `frameMs` next
+  to its AI finish time (the recorder writes both). `Docs/UNITY_VERIFICATION_CHECKLIST.md`, the 2026-10-06
+  entry, lists the steps.
+- To redo any of this after a map or code change: `python3 Tools/Build/skimrace_retune.py <I>` (per intensity),
+  and for the general policy the `tuneall` line above, transcribed into `author_skimrace_ai_config.py`.

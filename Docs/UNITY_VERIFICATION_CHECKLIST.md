@@ -311,6 +311,34 @@ negative-controlled with CS1002 / CS0102 / CS0111), the repo's C# gates, and
 **First-pass tuning:** `touchNoseResponse` (prefab, per hull) — raise if the nose still trails the
 thumb, lower toward 1.5 if it feels twitchy. Touch curve `Ease` 75/25 (unchanged on bleeding-edge).
 
+### 🔴 Skim Race AI: planner stagger + retune across frame rates (`claude/confident-pascal-w76l2o`, 2026-10-06)
+
+**What landed.** (1) `SkimRaceDriver.TrackMpc` (intensity 2's planner) re-plans on a fixed grid of 1/TrackMpcHz
+with odd lanes offset by half a period, so two AI re-plan on different frames at 60+ fps: in an unoptimized
+build (the editor's Debug code optimization) the worst-10% frame for both AIs' thinking fell from 10.1 to
+6.1 ms at 16 ms frames; no help at 36 fps and below (`Docs/SKIM_RACE_AI.md` §14.4). (2) The I1, I2 and I4
+AI tuning files were retuned across 16/28/50 ms frames with the game's 0.04 s contact step
+(`skimrace-v5-i1`, `skimrace-v3-i2`, `skimrace-v2-i4`), and so was the general policy that intensity 3
+flies (`skimrace-v3-general`). Simulator, 2 AI on Hard, 20 races per cell: level at 36-62 fps, better at 120
+and 12 fps, I3 and I4 better at every frame rate (§14.5).
+(3) The simulator gained `dts=` (races spread over frame times) and `ph.PhysicsStep` (contacts on the fixed
+step). Out of editor: real-Unity-reference compile 0 errors in project code; gates green.
+
+**Verify in editor**
+- [ ] Compiles; the Skim Race tests still pass (`SkimRaceAITests`, `SkimRaceHandicapTests`,
+      `SkimRaceTrackFingerprintTests`, `SkimRaceTeamAssignmentTests`).
+- [ ] **Code Optimization = Release** (the bug icon, bottom right) for every timing below; note which one it was.
+- [ ] Profiler (CPU, Hierarchy, search `SkimRace`), Skim Race **intensity 2**, **two AI**, Hard, Game view
+      Stats showing 60+ fps: `SkimRace.Driver.TrackMpc` now has Calls = **1** on the frames it appears (it was 2),
+      and it appears on about twice as many frames. Note `SkimRace.Pilot.Update` Total ms on a frame with it.
+- [ ] Race the AI on Hard at I1, I2, I3 and I4 as before (you alone + 2 AI on separate teams), a few races each;
+      the recorder writes `BenchmarkResults/SkimRaceAI/manual_I<n>_*.jsonl` with each race's `frameMs`. Report
+      the AI winner times and the frame time together - that pair is the result; a time without its frame rate
+      cannot be compared with the simulator tables.
+- [ ] Nothing visibly odd in how the AI flies at I1 (the retune moved 23 numbers; the simulator saw no new
+      failure mode, 40/40 at 120 fps).
+- [ ] Optional, the real user test: you + a friend vs a 2-AI team on Hard (Add AI twice on one tile).
+
 ### 🔴 Skim Race AI teammates split the crystals (`claude/confident-pascal-w76l2o`, 2026-10-05)
 
 **What landed.** When two or more AI fly for one Skim Race team, `SkimRaceTeamPlan` gives each a DIFFERENT
