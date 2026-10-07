@@ -516,6 +516,20 @@ candidates are left, and one test separates them:
 Test: Jobs > Burst > Synchronous Compilation on, then `prof` in Debug. If the flag is still there, `prof`
 again in Release.
 
+**Tested (2026-10-08, 01:36-01:39): four `prof`s with Synchronous Compilation on, no Burst message in the
+Console.** In all four the game's jobs still ran managed (`managedJobMs` 1.33-1.87; workers ran
+`ShellContactQueryJob`, `CellVolumeSumJob`, `FindDensestRegionJob` without "(Burst)") while package jobs
+were Burst. So it is not a compile still in flight either. The `prof` JSON could not say which captures were
+Debug and which Release, so `prof` now records the run environment (Code Optimization, Burst, the job
+compiler, an attached debugger). Burst 1.8.29's source was read for what turns it off for one assembly. Its
+per-assembly editor list (`ProjectSettings/Burst_DisableAssembliesForEditorCompilation.json`) is not in the
+repository. No game or package code sets `JobsUtility.JobCompilerEnabled` or
+`BurstCompiler.Options.EnableBurstCompilation`. Its managed-debugger hooks switch on with
+`ManagedDebugger.isEnabled`, which is Debug code optimization.
+**Next:** the `burst` console command in Skim Race. Its probe job, compiled synchronously in Assembly-CSharp,
+reports `BURST` or `MANAGED` from how it actually ran, beside every switch above. If the local project has the
+per-assembly disable file (it would be untracked), that is the answer.
+
 ### 8.0i The AI seats no longer re-plan in the same frame (2026-10-07)
 
 The user's choice from §8.0h's list: stagger the seats. **Mechanism:** `SkimRaceReplanGate`, one per

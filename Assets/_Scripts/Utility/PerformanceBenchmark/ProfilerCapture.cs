@@ -458,6 +458,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             public List<FrameRow> spikeFrameTree = new();
             public int threadSampleStride = ThreadSampleStride, threadSampledFrames;
             public List<ThreadRow> threads = new();
+            /// <summary>The conditions of a live capture (null for one exported from the Profiler window,
+            /// which cannot know them): Code Optimization, Burst and its job compiler, an attached debugger.</summary>
+            public RunEnvironment environment;
             /// <summary>Main-thread ms/frame spent running C# jobs as managed code, and where.</summary>
             public float managedJobMs;
             public List<ManagedJobRow> managedJobs = new();
@@ -586,7 +589,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                     "not compiled it yet - the Editor compiles in the background after every script change or " +
                     "branch switch - or when Burst cannot compile it. Those rows, and the frame time, are several " +
                     "times too large. Capture again a minute later; if this note is still here, Burst is failing: " +
-                    "search the Console (or Editor.log) for \"Burst\". Seen 2026-10-07 for 15 hours on end.");
+                    "run the 'burst' console command and search the Console (or Editor.log) for \"Burst\". " +
+                    "Seen 2026-10-07 for 15 hours on end.");
             }
         }
 
@@ -883,6 +887,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             if (r.framesPickedBy == PlayerLoopName)
                 sb.AppendLine($"PlayerLoop ms:  avg {F(pl.avgMs)}  p50 {F(pl.p50Ms)}  p99 {F(pl.p99Ms)}  min {F(pl.minMs)}  max {F(pl.maxMs)}");
             sb.AppendLine($"typical frame {r.typicalFrame} ({F(r.typicalFrameMs)} ms) - spike frame {r.spikeFrame} ({F(r.spikeFrameMs)} ms) - picked by {r.framesPickedBy}");
+            if (r.environment != null) sb.AppendLine("environment " + r.environment.Describe());
             foreach (string note in r.notes) sb.AppendLine("note: " + note);
 
             sb.AppendLine();

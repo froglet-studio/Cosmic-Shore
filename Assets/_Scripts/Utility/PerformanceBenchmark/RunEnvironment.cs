@@ -38,6 +38,11 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         public string qualityLevel;
         /// <summary>Burst compilation switched on. Off makes every Burst job ~20× slower.</summary>
         public bool burstEnabled;
+        /// <summary>The job system's own Burst switch (<c>JobsUtility.JobCompilerEnabled</c>). Off runs every
+        /// job as managed code even with Burst enabled.</summary>
+        public bool jobCompilerEnabled;
+        /// <summary>A managed debugger (Rider, Visual Studio) is attached to this process.</summary>
+        public bool debuggerAttached;
         /// <summary>The Profiler was recording during the run, so script time includes its overhead.</summary>
         public bool profilerRecording;
         /// <summary>The application had focus. An unfocused Editor throttles its own frame rate.</summary>
@@ -70,6 +75,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 resolution = $"{Screen.width}x{Screen.height}",
                 fullScreenMode = Screen.fullScreenMode.ToString(),
                 burstEnabled = Unity.Burst.BurstCompiler.IsEnabled,
+                jobCompilerEnabled = Unity.Jobs.LowLevel.Unsafe.JobsUtility.JobCompilerEnabled,
+                debuggerAttached = System.Diagnostics.Debugger.IsAttached,
                 profilerRecording = UnityEngine.Profiling.Profiler.enabled,
                 focused = Application.isFocused,
             };
@@ -83,7 +90,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         /// <summary>One line for the report's .txt twin.</summary>
         public string Describe() =>
             $"{runtime} ({scriptingBackend}, code {codeOptimization}, {platform}, Unity {unityVersion}) · " +
-            $"{resolution} {fullScreenMode} · quality {qualityLevel} · Burst {(burstEnabled ? "on" : "OFF")} · " +
+            $"{resolution} {fullScreenMode} · quality {qualityLevel} · Burst {(burstEnabled ? "on" : "OFF")}" +
+            $"{(jobCompilerEnabled ? "" : " (job compiler OFF)")}{(debuggerAttached ? " · DEBUGGER ATTACHED" : "")} · " +
             $"Profiler {(profilerRecording ? "RECORDING" : "off")} · {(focused ? "focused" : "NOT FOCUSED")} · " +
             $"{gpu} ({graphicsApi}) · {cpu} ×{cpuCores} · {systemMemoryMB} MB";
     }

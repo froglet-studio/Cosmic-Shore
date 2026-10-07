@@ -65,6 +65,24 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 `burst` console command; `prof` records the run environment (`perf/performance-optimization`, 2026-10-08)
+
+**What landed** (`Docs/SKIM_RACE_AI.md` §8.0j): `BurstProbe` (DiagnosticsHUD `burst`) prints Burst's
+switches, an attached debugger and the Code Optimization, then runs a `[BurstCompile(CompileSynchronously =
+true)]` probe job via `Run()` and `Schedule()` and reports `BURST` / `MANAGED` from how it actually ran (a
+`[BurstDiscard]` marker). `RunEnvironment` gains `jobCompilerEnabled` and `debuggerAttached`. Live `prof`
+reports carry `environment`. The Froglet Engine compat gains `JobsUtility`.
+
+**Verified without the editor:** `ProfilerCaptureTests` 42/42 on .NET; unity_refcompile player, player-dev
+and editor configs, no errors in the changed files; the Froglet Engine live compile builds; gates pass.
+/verify-unity was not available.
+
+**Verify in editor:**
+1. The project compiles; Test Runner > EditMode: `ProfilerCaptureTests` pass.
+2. In Play mode, F7 console: `burst` prints one line ending in `probe job in Assembly-CSharp: Run() …,
+   Schedule() …`. On a healthy editor both say `BURST`.
+3. `prof`: the JSON has an `environment` block and the .txt an `environment` line.
+
 ### 🟡 Skim Race AI seats stagger their track-planner re-plans (`perf/performance-optimization`, 2026-10-07)
 
 **What landed** (`Docs/SKIM_RACE_AI.md` §8.0i): `SkimRaceReplanGate` (new), shared by every
