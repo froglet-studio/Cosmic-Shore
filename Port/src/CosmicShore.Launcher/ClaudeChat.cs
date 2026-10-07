@@ -182,6 +182,8 @@ namespace CosmicShore.Launcher
             "You never change Prisma itself (Port/); engine work happens in Prisma's MILESTONES sessions, so when a cause you meet is in the engine, say so in one line and carry on. " +
             "When a request is about a bug, a crash, performance or a play run, prisma_tracks has every run Prisma recorded (performance per scene, features, audio, each problem " +
             "with when it was first and last seen) and the prisma tools (engine_smoke, game_start, game_screenshot, game_logs ...) reproduce and prove a fix. " +
+            "For data and models without Unity: asset_datasets / asset_dataset (ScriptableObject data sets; edit a field with cs-asset set), asset_model / " +
+            "asset_model_preview (FBX as Unity imports it), asset_froglet_tools (the FrogletTools and their source). Scene and hierarchy edits go through cs-asset. " +
             "A board item's 'done when' is its acceptance test: run it and show the result before calling that work done. " +
             "Keep replies short; the user reads them in Prisma's chat panel." + WorkspaceNote;
 

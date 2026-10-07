@@ -59,6 +59,12 @@ namespace CosmicShore.AssetTool
                     "schema" => Scripts.Schema(pos.Skip(1).ToList()),
                     "serialization-audit" => SerializationAudit.Run(pos.Skip(1).ToList(), opts.ContainsKey("json")),
                     "addall" => Scripts.AddAll(),
+                    // Prisma's editor pages (TOOLS, DATA, MODELS) read these; JSON on stdout.
+                    "tools" => EditorData.Tools(),
+                    "datasets" => EditorData.Datasets(),
+                    "dataset" => EditorData.Dataset(Need(pos, 2)[1]),
+                    "model" => EditorData.Model(Need(pos, 2)[1]),
+                    "model-preview" => EditorData.ModelPreview(Need(pos, 2)[1], opts),
                     "list" => List(Need(pos, 2)),
                     "docs" => Docs(Need(pos, 2)),
                     "get" => Get(Need(pos, 3), opts),
@@ -118,6 +124,13 @@ namespace CosmicShore.AssetTool
                                             every change of that object's instance (overrides, additions,
                                             removals). Writes the prefab AND this file
   schema [path...]                          check the component serializer against every saved script
+
+Editor data (JSON on stdout, what Prisma's TOOLS / DATA / MODELS pages read):
+  tools                                     every FrogletTools menu item: category, importance, description, source
+  datasets                                  every ScriptableObject .asset, grouped by script type
+  dataset <file.asset>                      its fields: value, kind, type, header, tooltip, range (edit with set)
+  model <file.fbx>                          nodes, meshes, triangles, materials, blend shapes, bones, takes, import settings
+  model-preview <file.fbx> --out <png> [--size 512] [--yaw 145] [--pitch 20]  a shaded picture, drawn on the CPU
 
 <object>: &id | GameObject path (Canvas/Panel/Button) | unique GameObject name
           paths and names reach inside placed prefabs; there, set/add/create/delete/remove-component

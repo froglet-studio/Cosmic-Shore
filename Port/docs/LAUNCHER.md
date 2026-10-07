@@ -34,6 +34,7 @@ Source: `Port/src/CosmicShore.Launcher` (C#, Dear ImGui on our own Silk.NET wind
 | **PROJECT** | The engine's own Project Settings (below). |
 | **AGENT** | The Prisma Agent, powered by Claude: as many chats as you like, side by side (below). |
 | **GIT** | What the agent (or you) changed in the workspace, and getting it to GitHub (below). |
+| **EDITOR** | TOOLS (every FrogletTools tool, run by the agent), DATA (the data sets, editable) and MODELS (every FBX with a preview) (below). |
 | **TRACKS** | Every play run: performance per scene, features used, audio, every problem over time (below). |
 | **BOARD** | Bugs and tasks, with Prisma's suggestions (below). |
 | **MILESTONES** | The roadmap's checkpoints; START opens an engine session for one (below). |
@@ -257,6 +258,42 @@ git's own sign-in, or the GitHub token in SETTINGS > SOURCE (Contents: read & wr
 they are and skips pulling the branch (the CONSOLE says so); UPDATE refuses until they are
 committed or discarded.
 
+## EDITOR - tools, data sets, models
+
+Prisma's editor starts with what daily content work needs, for a game whose content already
+exists (`ROADMAP.md` § M2). There is no hierarchy or scene inspector: scene and prefab edits are
+the agent's job, through `cs-asset`. Everything on this page is read through the workspace's own
+`cs-asset`, built once per session (a minute or two the first time; **REBUILD** after a pull or a
+script edit), and every edit lands in the workspace, where GIT commits it.
+
+![TOOLS](architecture/launcher_editor_tools.png)
+
+**TOOLS** - every FrogletTools menu item in the project (95 on 2026-10-08), read from source: its
+category, importance (the dots), description, whether it is a window or one click, and whether it
+writes assets. Filter by category or search. **RUN WITH CLAUDE** opens a new agent chat that reads
+the tool's source and does its job on the project files without Unity - an audit gives you its
+report, a writer plans first (PLAN mode) - or says plainly when the job needs the running Unity
+editor. **SOURCE** opens the script, **DOCS** its documentation.
+
+![DATA](architecture/launcher_editor_data.png)
+
+**DATA** - every ScriptableObject data file (1,313 in 363 script types), by type. Pick a file to
+see its fields as Unity's inspector labels them, with the script's headers, tooltips (hover) and
+ranges. Toggles, numbers (sliders where the script has a `[Range]`), text, enums, vectors and
+colours are edited in place: each change is one `cs-asset set` that rewrites only that line. A
+reference shows the file it points at; click a data file or model to open it. Keys the script no
+longer has are amber (Unity ignores them). **ASK CLAUDE** starts a chat about the file.
+
+![MODELS](architecture/launcher_editor_models.png)
+
+**MODELS** - every FBX (66), by folder. Pick one for a preview (drawn on the CPU, a colour per
+submesh; **<** **>** turn it, **FRONT** faces it) and what Unity's importer makes of it: triangles,
+vertices, meshes and nodes, size, materials, blend shapes, skinning and bones, animation takes, the
+`.meta` import scale, and warnings. **ASK CLAUDE** starts a chat about the model.
+
+The agent has the same data through MCP: `asset_froglet_tools`, `asset_datasets`,
+`asset_dataset`, `asset_model`, `asset_model_preview`.
+
 ## How START works
 
 ```
@@ -270,7 +307,8 @@ own clone: *Beside my clone* uses a git worktree next to it.
 ## Testing the launcher itself
 
 `Prisma --page build --screenshot out.png --frames 40` renders a page and exits
-(`--page project:1` opens a Project tab, `--page options:look` one settings section, `--page chat:usage` the usage card).
+(`--page project:1` opens a Project tab, `--page options:look` one settings section, `--page chat:usage` the usage card,
+`--page editor:1:Assets/x.asset` an EDITOR tab with a data file or model open).
 `PRISMA_DATA_DIR` points all of Prisma's data (settings, chats, tracks, versions) at another
 folder - a second, separate Prisma, or the tests. `Port/tests/CosmicShore.Launcher.Tests` covers
 chats and their persistence, plan usage and the GIT page's git steps.

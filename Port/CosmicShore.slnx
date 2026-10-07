@@ -16,6 +16,7 @@
     <Project Path="src/CosmicShore.Render/CosmicShore.Render.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/CosmicShore.AssetTool.Tests/CosmicShore.AssetTool.Tests.csproj" />
     <Project Path="tests/CosmicShore.Launcher.Tests/CosmicShore.Launcher.Tests.csproj" />
     <Project Path="tests/CosmicShore.Tests.Ported/CosmicShore.Tests.Ported.csproj" />
     <Project Path="tests/CosmicShore.Tests/CosmicShore.Tests.csproj" />

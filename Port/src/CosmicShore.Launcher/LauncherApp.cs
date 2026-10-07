@@ -24,7 +24,7 @@ namespace CosmicShore.Launcher
     /// </summary>
     public sealed partial class LauncherApp
     {
-        enum Page { Play, Build, Project, Chat, Options, Console, Tracks, Board, Milestones, Git }
+        enum Page { Play, Build, Project, Chat, Options, Console, Tracks, Board, Milestones, Git, Editor }
 
         public sealed record Args(string? Screenshot, int Frames, string? Page, bool Offline, string? Auto = null, string? UpdatedFrom = null, int Tour = -1);
 
@@ -79,7 +79,8 @@ namespace CosmicShore.Launcher
             if (args.Tour >= 0) _tour = args.Tour;
             var pageArg = args.Page?.Split(':');
             if (pageArg != null && Enum.TryParse<Page>(pageArg[0], true, out var p)) _page = p;
-            if (pageArg is { Length: > 1 } && int.TryParse(pageArg[1], out var tab)) _projTab = tab;
+            if (pageArg is { Length: > 1 } && int.TryParse(pageArg[1], out var tab)) { _projTab = tab; _edTab = tab; }
+            if (pageArg is { Length: > 2 }) _edOpen = string.Join(":", pageArg.Skip(2)); // --page editor:1:Assets/x.asset opens that file (docs screenshots)
             if (pageArg is { Length: > 1 } && pageArg[1] == "usage") _usageOpen = true; // --page chat:usage (docs screenshots)
             else if (pageArg is { Length: > 1 }) { _open.Clear(); _open.Add(pageArg[1].ToUpperInvariant()); } // --page options:claude
             if (LauncherSettings.FirstRun) DetectExistingClone();
@@ -295,6 +296,7 @@ namespace CosmicShore.Launcher
                 case Page.Board: DrawBoard(contentA, contentB); break;
                 case Page.Milestones: DrawMilestones(contentA, contentB); break;
                 case Page.Git: DrawGit(contentA, contentB); break;
+                case Page.Editor: DrawEditor(contentA, contentB); break;
             }
             DrawStatusBar(size);
             ImGui.End();
@@ -397,6 +399,7 @@ namespace CosmicShore.Launcher
                 (Page.Project, "PROJECT", Neon.IconSliders),
                 (Page.Chat, "AGENT", Neon.IconChat),
                 (Page.Git, "GIT", IconBranch),
+                (Page.Editor, "EDITOR", IconCube),
                 (Page.Tracks, "TRACKS", IconTracks),
                 (Page.Board, "BOARD", IconBoard),
                 (Page.Milestones, "MILESTONES", IconFlag),

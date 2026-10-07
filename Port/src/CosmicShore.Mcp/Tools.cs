@@ -83,6 +83,22 @@ namespace CosmicShore.Mcp
                     ["criterion"] = P("string", "done when: a check anyone can run - a test that passes, an engine_smoke with no such error, a scene that stays clean for 3 runs, a measured number"),
                     ["priority"] = P("integer", "1 high, 2 normal, 3 low"),
                 }, "type", "title", "criterion"),
+            Tool("asset_froglet_tools", "The project's FrogletTools (Unity editor tools): menu path, category, importance, description, whether it writes assets, and its source file and method. Read a tool's source before doing its job without Unity.",
+                new JsonObject { ["filter"] = P("string", "only tools whose menu path, name or description contains this (case-insensitive)") }),
+            Tool("asset_datasets", "The project's ScriptableObject data files grouped by script type, with counts. Pass type to list that type's files.",
+                new JsonObject { ["type"] = P("string", "a script type name, e.g. SO_ArcadeGame, to list its files") }),
+            Tool("asset_dataset", "One ScriptableObject data file's fields: key, inspector label, kind (number, bool, text, enum, vector, color, ref, list, object), value, header, tooltip, range, and keys the script no longer has (stale). Edit a field with cs-asset set <file> &<fileId> <path> <value>.",
+                new JsonObject { ["path"] = P("string", "project-relative .asset path") }, "path"),
+            Tool("asset_model", "What Unity's importer makes of an FBX: nodes, meshes with vertex/triangle counts, submeshes, materials, blend shapes, bones, takes, bounds and the .meta import settings.",
+                new JsonObject { ["path"] = P("string", "project-relative .fbx path") }, "path"),
+            Tool("asset_model_preview", "A shaded picture of an FBX model, drawn on the CPU (no GPU needed): every mesh at its pose, a colour per submesh. yaw 180 looks at its front (Unity's +Z), 145 is a front three-quarter view.",
+                new JsonObject
+                {
+                    ["path"] = P("string", "project-relative .fbx path"),
+                    ["yaw"] = P("number", "degrees around the model, default 145"),
+                    ["pitch"] = P("number", "degrees above, default 20"),
+                    ["size"] = P("integer", "pixels, default 512"),
+                }, "path"),
             Tool("unity_isolation_check", "Fails if the branch changes anything outside Port/ that Unity would see. Run before committing.",
                 new JsonObject { ["base"] = P("string", "branch to diff against (default origin/bleeding-edge)") }),
             Tool("game_start", "Build (unless build=false) and start the player with its control port, then wait until it answers. On a Linux server without a display it runs under xvfb-run. Stops a previous player first.",
@@ -141,6 +157,39 @@ namespace CosmicShore.Mcp
             {
                 case "engine_build": return new JsonArray(Text(await Build(Str(a, "target", "player"))));
                 case "engine_test": return new JsonArray(Text(await Test(Str(a, "suite", "engine"), Str(a, "filter"))));
+                case "asset_froglet_tools":
+                {
+                    var json = await AssetCli("tools");
+                    var f = Str(a, "filter").ToLowerInvariant();
+                    var tools = JsonNode.Parse(json)!["tools"]!.AsArray()
+                        .Where(t => f.Length == 0 || $"{t!["menu"]} {t["name"]} {t["description"]}".ToLowerInvariant().Contains(f)).ToList();
+                    return new JsonArray(Text($"{tools.Count} tool(s)\n" + new JsonArray(tools.Select(t => t!.DeepClone()).ToArray()).ToJsonString()));
+                }
+                case "asset_datasets":
+                {
+                    var json = await AssetCli("datasets");
+                    var root = JsonNode.Parse(json)!;
+                    var type = Str(a, "type");
+                    if (type.Length > 0)
+                    {
+                        var t = root["types"]!.AsArray().FirstOrDefault(x => string.Equals(x!["type"]!.ToString(), type, StringComparison.OrdinalIgnoreCase));
+                        return new JsonArray(Text(t == null ? $"no data type '{type}'" : t.ToJsonString()));
+                    }
+                    var lines = root["types"]!.AsArray().Select(x => $"{x!["count"],5}  {x["type"]}  {x["script"]}");
+                    return new JsonArray(Text($"{root["files"]} data files\n" + string.Join('\n', lines)));
+                }
+                case "asset_dataset": return new JsonArray(Text(await AssetCli("dataset", Str(a, "path"))));
+                case "asset_model": return new JsonArray(Text(await AssetCli("model", Str(a, "path"))));
+                case "asset_model_preview":
+                {
+                    var png = Path.Combine(Path.GetTempPath(), "froglet-mcp", $"model-{DateTime.Now:HHmmss-fff}.png");
+                    var args = new List<string> { "model-preview", Str(a, "path"), "--out", png };
+                    foreach (var k in new[] { "yaw", "pitch", "size" }) if (Str(a, k).Length > 0) { args.Add("--" + k); args.Add(Str(a, k)); }
+                    await AssetCli(args.ToArray());
+                    var bytes = await File.ReadAllBytesAsync(png);
+                    File.Delete(png);
+                    return new JsonArray(new JsonObject { ["type"] = "image", ["data"] = Convert.ToBase64String(bytes), ["mimeType"] = "image/png" }, Text(Str(a, "path")));
+                }
                 case "unity_isolation_check":
                 {
                     var args = new List<string> { Path.Combine(_repo, "Port", "tools", "check_unity_isolation.py") };
@@ -405,6 +454,26 @@ namespace CosmicShore.Mcp
         }
 
         // ---- build & test ----------------------------------------------------------------------
+
+        bool _assetBuilt;
+
+        /// <summary>Runs cs-asset (built once per server run) from the repository root; its stdout, or a ToolException with its error.</summary>
+        async Task<string> AssetCli(params string[] args)
+        {
+            var proj = PortSrc("CosmicShore.AssetTool");
+            if (!_assetBuilt)
+            {
+                var b = await Run("dotnet", new[] { "build", proj, "-nologo", "-v", "q", "-clp:NoSummary" }, _repo, TimeSpan.FromMinutes(25));
+                if (b.ExitCode != 0) throw new ToolException("building cs-asset failed:\n" + string.Join('\n', b.Output.Split('\n').Where(l => l.Contains(": error ")).Distinct().Take(20)));
+                _assetBuilt = true;
+            }
+            var dll = Path.Combine(proj, "bin", "Debug", "net10.0", "cs-asset.dll");
+            var r = await Run("dotnet", new[] { dll }.Concat(args), _repo, TimeSpan.FromMinutes(5));
+            if (r.ExitCode != 0) throw new ToolException("cs-asset " + string.Join(' ', args) + ": " + r.Output.Trim());
+            // stdout and stderr arrive merged: the answer is the one JSON line; anything else is a note.
+            var lines = r.Output.Split('\n').Select(l => l.TrimEnd('\r'));
+            return lines.LastOrDefault(l => l.StartsWith('{')) ?? r.Output.Trim();
+        }
 
         async Task<string> Build(string target)
         {

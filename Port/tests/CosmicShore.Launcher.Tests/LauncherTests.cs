@@ -138,6 +138,19 @@ namespace CosmicShore.Launcher.Tests
         }
     }
 
+    public class EditorToolTests
+    {
+        // The same inputs and outputs as cs-asset's Text_written_by_set_reads_back_unchanged, which proves
+        // these quoted forms survive set -> dataset unchanged.
+        [Theory]
+        [InlineData("Plain words", "Plain words")]
+        [InlineData("Fly: fast, then 'stop' # now", "'Fly: fast, then ''stop'' # now'")]
+        [InlineData("Two\nlines with \"quotes\"", "\"Two\\nlines with \\\"quotes\\\"\"")]
+        [InlineData("", "''")]
+        [InlineData("-dash first", "'-dash first'")]
+        public void Text_is_quoted_for_cs_asset_set(string text, string yaml) => Assert.Equal(yaml, EditorTool.YamlScalar(text));
+    }
+
     public class SourceControlTests
     {
         static (SourceControl git, Workspace ws, string dir, string bare) Repo()

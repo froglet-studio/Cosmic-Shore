@@ -31,7 +31,8 @@ the game uses that the engine lacks) belongs in `Port/src/CosmicShore.Engine` / 
 | `src/CosmicShore.Render` | The OpenGL renderer (GL 3.3 / GL ES 3.0), post stack, uGUI and TMP drawing |
 | `src/CosmicShore.Player` | `CosmicShore.exe`: window, headless mode, scripted input, **control port** |
 | `src/CosmicShore.Mobile` · `src/CosmicShore.Build` | Phone player · `cs-build` (player data, APK/AAB, iOS) |
-| `src/CosmicShore.Launcher` | `Prisma.exe` (Dear ImGui): play a branch, phone builds, Project Settings, Claude chat |
+| `src/CosmicShore.Launcher` | `Prisma.exe` (Dear ImGui): play a branch, phone builds, Project Settings, agent chats, GIT, the EDITOR page (TOOLS, DATA, MODELS) |
+| `src/CosmicShore.AssetTool` | `cs-asset`: edit scenes/prefabs/assets without Unity, plus the JSON the EDITOR page and the `asset_*` MCP tools read (`EditorData.cs`) |
 | `src/CosmicShore.Mcp` | `prisma-mcp`: this engine as an MCP server for Claude Code |
 | `ProjectSettings/PrismaProject.json` | The engine's own Player/Scenes/Quality settings; empty fields inherit Unity's |
 | `tests/` | `CosmicShore.Tests` (engine, xunit, ~70 s, no GPU) · `CosmicShore.Tests.Ported` (the game's EditMode tests) |
@@ -67,6 +68,17 @@ a **done when** criterion, the check that proves it: `prisma_board_suggest` requ
 that came from the tracks is verified by them (not seen in 3 runs through its scene marks it MET; a
 relapse reopens it). Tools: `prisma_tracks` (read this before asking what is wrong), `prisma_board`,
 `prisma_board_suggest`. Code: `src/Shared/PrismaTracks.cs`, `src/Shared/PrismaBoard.cs`.
+
+## The editor (M2): tools, data sets, models - not a hierarchy
+
+Prisma's editor starts where the work is (`docs/ROADMAP.md` § M2, decided 2026-10-08): EDITOR >
+TOOLS (every FrogletTools tool, handed to the agent with its source), DATA (the ScriptableObject
+data sets, edited field by field through `cs-asset set`) and MODELS (each FBX as Unity imports it,
+with a CPU-drawn preview). There is no hierarchy or scene inspector: scene and prefab structure is
+edited by the agent through `cs-asset`. MCP: `asset_froglet_tools`, `asset_datasets`,
+`asset_dataset`, `asset_model`, `asset_model_preview`. Tests: `tests/CosmicShore.AssetTool.Tests`
+(cs-asset's editor commands) and `tests/CosmicShore.Launcher.Tests` (Prisma.exe's chats, usage, git
+and the DATA page's quoting).
 
 ## The loop
 

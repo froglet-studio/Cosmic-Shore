@@ -67,8 +67,9 @@ starts by measuring use in `Assets/`, and anything the game doesn't touch stays 
 11. **Crash and session telemetry.** Session reports now exist locally (`--session-report`).
     The next step is an opt-in upload from testers' machines, so Claude can triage a week of
     play tests at once.
-12. **Editor.** Everything in M2: hierarchy, inspector, prefab overrides, asset import, play
-    mode. The launcher's Dear ImGui shell is where it grows.
+12. **Editor.** Everything in M2, scoped by the 2026-10-08 decision below: FrogletTools, data
+    sets and models first; scene and hierarchy editing stay with the agent. The launcher's Dear
+    ImGui shell (its EDITOR page) is where it grows.
 
 ## External factors (and what each one changes)
 
@@ -101,8 +102,10 @@ C0 foundations (done Oct 6)
                                        |C7 performance --------------|
                                                G6 |C8 platforms (Win/Android/iOS/Deck)|
                                                                         |C9 blind test| = M1
-                                  |E1 editor groundwork (hierarchy/inspector, read-only)|
-                                                                                   |E2-E8 editor ---------------------|
+      |E1 Froglet tools ---------|   (started Oct 8, beside M1)
+      |E2 data sets ----|
+      |E3 models ---|
+                                                                                   |E4-E8 editor ---------------------|
                                                                                                                   |E9 cut-over| = M2
 ```
 
@@ -128,17 +131,30 @@ Strategy: **keep Unity's file formats** (YAML scenes, prefabs, `.meta` guids) as
 format throughout. Then Unity and the Froglet editor can edit the same project during the
 transition, and the cut-over is a decision, not a migration.
 
+**Scope decision (2026-10-08, the developer).** Most of Cosmic Shore's content already exists, so
+the editor starts where daily work happens - the tools, the data and the models - and **builds no
+hierarchy, scene inspector, prefab-override UI or asset browser**. Scene and prefab structure is
+the agent's job: `cs-asset` already creates, deletes, reparents and adds components, writes prefab
+overrides and applies them (byte-stable), and the `asset-surgery` skill covers the rest; Prisma
+shows the result in the running game. Measured that day: **95 FrogletTools** menu items (66 with
+`[FrogletTool]` metadata), **1,313 ScriptableObject data files** in **363 script types**, **66 FBX
+models**. E1-E3 do not depend on M1 and run beside it.
+
 | # | Checkpoint | Exit criterion | Weeks |
 |---|---|---|---|
-| **E1** | **Editor shell** (groundwork, can start in Dec) | The launcher gains a "Prisma Editor" mode: scene hierarchy, inspector (read-only), asset browser, embedded player view | 4 |
-| **E2** | **Edit and save** | Inspector edits, create/delete/reparent, prefab overrides and variants, saved through `cs-asset`'s writer; files byte-stable on round trip | 6 |
-| **E3** | **Play mode** | Play from the editor with an incremental script recompile (< 5 s); edit fields live | 4 |
-| **E4** | **Asset pipeline** | Import FBX, textures and audio with `.meta` generation and the import settings the game uses; GUIDs stable | 5 |
+| **E1** | **Froglet tools** (started 2026-10-08) | EDITOR > TOOLS lists every FrogletTools tool from its source (category, importance, description, docs) and hands any of them to the agent with that source; the top 20 by importance are either native in Prisma (a cs-asset command plus a card action) or a tested agent recipe in `docs/FROGLET_TOOLS.md`; every other tool is marked recipe, Unity-only (with the reason) or retired | 6 |
+| **E2** | **Data sets** (started 2026-10-08) | EDITOR > DATA shows every ScriptableObject data file with Unity's labels, headers, tooltips and ranges; edits every field kind the data uses (values, enums, vectors, colours, references picked from the project, list items added and removed) through `cs-asset set`, byte-stable; creates a new data file of a type with the script's defaults | 4 |
+| **E3** | **Models** (started 2026-10-08) | EDITOR > MODELS shows every FBX as Unity imports it (meshes, materials, blend shapes, bones, takes, import settings) with a preview; importing a new FBX writes its `.meta` with the settings the game's models use and a stable GUID, and the engine loads it in a prefab like the others | 4 |
+| **E4** | **Play mode** | Play from the editor with an incremental script recompile (< 5 s); data-set edits apply to the running game live | 4 |
 | **E5** | **Shaders** | Shader Graph JSON edited by a node editor (or by Claude via `asset-surgery`) and translated live; no Unity needed to add a material | 6 |
-| **E6** | **Froglet tools** | The 91 FrogletTools tools: the top 20 by use ported first (a FrogletTool attribute host on ImGui); the rest retired or ported on demand | 8 |
-| **E7** | **Animation + UI layout** | Animator controller editing and RectTransform layout editing with anchors and gizmos | 5 |
+| **E6** | **Textures and audio** | Import textures and audio with `.meta` generation and the import settings the game uses; GUIDs stable | 3 |
+| **E7** | **Animation + UI check** | Animator controllers and RectTransform layouts shown and checked against the game (anchors, overlaps at 3 aspect ratios); the agent edits them through cs-asset - no layout editor | 3 |
 | **E8** | **Profiler, tests, release** | Frame profiler, EditMode test runner, Steam upload (steamcmd), Android/iOS from the editor | 4 |
 | **E9** | **Cut-over (= M2)** | One 3-week cycle shipped without opening Unity; Unity kept read-only as the reference until M2 + 1 cycle | 3 |
+
+Dropped with the scope decision: the read-only hierarchy/inspector/asset-browser shell (old E1)
+and the edit-and-save UI for scenes and prefabs (old E2). If a scene job turns out to need eyes and
+hands, it comes back as a narrow tool for that job, not a general hierarchy.
 
 ### Decision gates
 
@@ -148,7 +164,7 @@ transition, and the cut-over is a decision, not a migration.
 | **G2** | 2026-12-15 | Online backend: UGS-over-REST or Steam + own backend |
 | **G3** | before any engine build ships to players | FMOD license, legal review, provenance rewrites done |
 | **G4** | after C9 | Ship the Steam build on the engine, or keep Unity for the runtime and start M2 anyway |
-| **G5** | after E3 | Is the editor good enough that the developer *prefers* it for scene work? If not, fix that before E4-E8 |
+| **G5** | after E3 | Do TOOLS, DATA and MODELS replace Unity for the developer's daily content work, with the agent doing scene edits? If not, fix that before E4-E8 |
 | **G6** | before C8 (~Mar 2027) | Graphics backend: a thin RHI (GL now, Metal later) or wgpu-native (Metal, Vulkan, D3D12 and GLES from one API; a new native dependency). Either way only `CosmicShore.Render` changes: `RenderBoundaryTests` keeps GL there |
 
 ## How to run each checkpoint (prompts)
@@ -184,8 +200,14 @@ file's row marked done with the date and the measurement.
 **C8 - Platforms**
 > Produce the Windows, Android and iOS builds from the launcher, run the platform checklist (boot, a full match, audio, input, suspend/resume) and log every failure as a session report. For gate G6, compare a thin RHI with a Metal backend against wgpu-native: what the renderer's GL calls map to, what changes in shaders, the effort, and the new dependency.
 
-**E1 - Editor shell**
-> Plan the Prisma Editor mode of the launcher: hierarchy, read-only inspector and asset browser over the engine's loaded scene, and the player embedded in a panel. Reuse ContentRuntime and the control-port model. List what Dear ImGui needs (docking branch?) and flag any new dependency.
+**E1 - Froglet tools**
+> Continue checkpoint E1. The TOOLS page (`src/CosmicShore.Launcher/LauncherApp.Editor.cs`) lists the FrogletTools that `cs-asset tools` reads from source (`src/CosmicShore.AssetTool/EditorData.cs`; MCP `asset_froglet_tools`). Take the next of the top 20 by importance that is not yet native or a recipe: read its source under Assets/, then either (a) port a reader as a cs-asset command plus a card action and prove it by comparing its output with what the Unity tool reports on the same files, (b) write a tested agent recipe for a writer in `docs/FROGLET_TOOLS.md` (cs-asset steps, what to check), or (c) mark it Unity-only with the reason. Never change Assets/.
+
+**E2 - Data sets**
+> Continue checkpoint E2. Measure with `asset_datasets` / `asset_dataset` which field kinds the 363 data types use that the DATA page cannot edit yet (references, list items, nested objects, flag enums, AnimationCurve, Gradient), rank them by how many files use them, and add editing for the top ones through `cs-asset set`: references picked from the project's assets of the field's type, list items added and removed. Then "new data file of this type" from the script's defaults (cs-asset already builds defaults from the C# type). Every write must round-trip byte-stable (`cs-asset roundtrip`).
+
+**E3 - Models**
+> Continue checkpoint E3. MODELS shows each FBX through `cs-asset model` / `model-preview` (MCP `asset_model`, `asset_model_preview`). Next: the materials each submesh gets (the `.meta` externalObjects remaps, shown with their colours), blend-shape sliders in the preview, then importing a new FBX - measure the ModelImporter settings across the 66 existing metas, write a new model's `.meta` with those and a stable GUID, and prove the engine loads it in a prefab like the others.
 
 **Session triage (any time)**
 > LAST SESSION (launcher chip) - or: "Read every session report in <sessions folder> from this week, group the problems by engine area, rank them by how often players hit them, and propose the top 5 fixes."
