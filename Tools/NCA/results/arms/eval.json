@@ -3100,6 +3100,1420 @@
      "grazed_per_prey": 0.992
     }
    ]
+  },
+  "a9herd:0:0": {
+   "seeds": [
+    11,
+    12,
+    13
+   ],
+   "secs": 60.0,
+   "mean": {
+    "prey": {
+     "polarisation_global": 0.106,
+     "polarisation_local": 0.531,
+     "social_share": 0.183,
+     "milling": 0.29,
+     "groups": 2.353,
+     "largest_share": 0.04,
+     "nnd": 25.511,
+     "split_on_attack": 0.625,
+     "flash_expansion": -0.101,
+     "attack_samples": 1.667,
+     "turn_rate_close": 327.042,
+     "turn_rate_far": 477.081,
+     "speed_close": 58.614,
+     "speed_far": 27.079
+    },
+    "pred": {
+     "victim_encirclement": 0.316,
+     "victim_encirclement_null": 0.409,
+     "victim_encirclement_samples": 20.333,
+     "cooperative_catch_share": 0.454,
+     "encirclement": 0.387,
+     "encirclement_null": 0.494,
+     "encirclement_samples": 0.667,
+     "opposed_share": 0.5,
+     "pred_spacing": 84.314,
+     "pack_share": 0.255,
+     "burst_bout_s": 0.57,
+     "burst_bouts": 242.333,
+     "burst_success": 0.215,
+     "relay_share": 0.5,
+     "relay_samples": 9.333,
+     "membrane_catch_share": 0.51,
+     "membrane_prey_share": 0.131,
+     "membrane_catch_ratio": 3.898,
+     "ambush_share": 0.0,
+     "converge_before": 0.151,
+     "converge_at": 1.317,
+     "lead_time_s": 1.933,
+     "lead_time_mean_s": 2.333,
+     "catches": 45.667,
+     "food_bias": 1.727
+    },
+    "catch_per_min": 45.667,
+    "confusion_fail_share": 0.0,
+    "grazed_per_prey": 0.962
+   },
+   "per_seed": [
+    {
+     "prey": {
+      "polarisation_global": 0.104,
+      "polarisation_local": 0.507,
+      "social_share": 0.208,
+      "milling": 0.287,
+      "groups": 2.958,
+      "largest_share": 0.04,
+      "nnd": 24.06,
+      "split_on_attack": null,
+      "flash_expansion": null,
+      "attack_samples": 0,
+      "turn_rate_close": 319.03,
+      "turn_rate_far": 496.526,
+      "speed_close": 58.889,
+      "speed_far": 25.287
+     },
+     "pred": {
+      "victim_encirclement": 0.315,
+      "victim_encirclement_null": 0.413,
+      "victim_encirclement_samples": 20,
+      "cooperative_catch_share": 0.526,
+      "encirclement": null,
+      "encirclement_null": null,
+      "encirclement_samples": 0,
+      "opposed_share": null,
+      "pred_spacing": 80.909,
+      "pack_share": 0.267,
+      "burst_bout_s": 0.57,
+      "burst_bouts": 244,
+      "burst_success": 0.164,
+      "relay_share": 0.6,
+      "relay_samples": 10,
+      "membrane_catch_share": 0.436,
+      "membrane_prey_share": 0.111,
+      "membrane_catch_ratio": 3.936,
+      "ambush_share": 0.0,
+      "converge_before": 0.197,
+      "converge_at": 1.343,
+      "lead_time_s": 1.75,
+      "lead_time_mean_s": 2.589,
+      "catches": 39,
+      "food_bias": 1.389
+     },
+     "catch_per_min": 39.0,
+     "confusion_fail_share": 0.0,
+     "grazed_per_prey": 1.007
+    },
+    {
+     "prey": {
+      "polarisation_global": 0.108,
+      "polarisation_local": 0.509,
+      "social_share": 0.24,
+      "milling": 0.294,
+      "groups": 3.1,
+      "largest_share": 0.049,
+      "nnd": 24.549,
+      "split_on_attack": 0.25,
+      "flash_expansion": -0.133,
+      "attack_samples": 4,
+      "turn_rate_close": 328.082,
+      "turn_rate_far": 470.737,
+      "speed_close": 58.89,
+      "speed_far": 28.208
+     },
+     "pred": {
+      "victim_encirclement": 0.342,
+      "victim_encirclement_null": 0.404,
+      "victim_encirclement_samples": 16,
+      "cooperative_catch_share": 0.372,
+      "encirclement": 0.54,
+      "encirclement_null": 0.458,
+      "encirclement_samples": 1,
+      "opposed_share": 1.0,
+      "pred_spacing": 83.599,
+      "pack_share": 0.24,
+      "burst_bout_s": 0.566,
+      "burst_bouts": 243,
+      "burst_success": 0.218,
+      "relay_share": 0.4,
+      "relay_samples": 10,
+      "membrane_catch_share": 0.5,
+      "membrane_prey_share": 0.138,
+      "membrane_catch_ratio": 3.627,
+      "ambush_share": 0.0,
+      "converge_before": 0.139,
+      "converge_at": 1.22,
+      "lead_time_s": 2.15,
+      "lead_time_mean_s": 2.207,
+      "catches": 44,
+      "food_bias": 1.848
+     },
+     "catch_per_min": 44.0,
+     "confusion_fail_share": 0.0,
+     "grazed_per_prey": 1.0
+    },
+    {
+     "prey": {
+      "polarisation_global": 0.105,
+      "polarisation_local": 0.576,
+      "social_share": 0.1,
+      "milling": null,
+      "groups": 1.0,
+      "largest_share": 0.031,
+      "nnd": 27.924,
+      "split_on_attack": 1.0,
+      "flash_expansion": -0.069,
+      "attack_samples": 1,
+      "turn_rate_close": 334.013,
+      "turn_rate_far": 463.979,
+      "speed_close": 58.064,
+      "speed_far": 27.742
+     },
+     "pred": {
+      "victim_encirclement": 0.291,
+      "victim_encirclement_null": 0.41,
+      "victim_encirclement_samples": 25,
+      "cooperative_catch_share": 0.463,
+      "encirclement": 0.234,
+      "encirclement_null": 0.529,
+      "encirclement_samples": 1,
+      "opposed_share": 0.0,
+      "pred_spacing": 88.435,
+      "pack_share": 0.257,
+      "burst_bout_s": 0.573,
+      "burst_bouts": 240,
+      "burst_success": 0.263,
+      "relay_share": 0.5,
+      "relay_samples": 8,
+      "membrane_catch_share": 0.593,
+      "membrane_prey_share": 0.143,
+      "membrane_catch_ratio": 4.131,
+      "ambush_share": 0.0,
+      "converge_before": 0.116,
+      "converge_at": 1.388,
+      "lead_time_s": 1.9,
+      "lead_time_mean_s": 2.202,
+      "catches": 54,
+      "food_bias": 1.943
+     },
+     "catch_per_min": 54.0,
+     "confusion_fail_share": 0.0,
+     "grazed_per_prey": 0.88
+    }
+   ]
+  },
+  "a9herd:250:250": {
+   "seeds": [
+    11,
+    12,
+    13
+   ],
+   "secs": 60.0,
+   "mean": {
+    "prey": {
+     "polarisation_global": 0.128,
+     "polarisation_local": 0.523,
+     "social_share": 0.34,
+     "milling": 0.247,
+     "groups": 3.378,
+     "largest_share": 0.059,
+     "nnd": 19.625,
+     "split_on_attack": -0.348,
+     "flash_expansion": 0.298,
+     "attack_samples": 5.333,
+     "turn_rate_close": 310.945,
+     "turn_rate_far": 446.636,
+     "speed_close": 59.636,
+     "speed_far": 33.022
+    },
+    "pred": {
+     "victim_encirclement": 0.328,
+     "victim_encirclement_null": 0.389,
+     "victim_encirclement_samples": 27.333,
+     "cooperative_catch_share": 0.521,
+     "encirclement": 0.316,
+     "encirclement_null": 0.359,
+     "encirclement_samples": 3.333,
+     "opposed_share": 0.194,
+     "pred_spacing": 75.961,
+     "pack_share": 0.288,
+     "burst_bout_s": 0.644,
+     "burst_bouts": 208.333,
+     "burst_success": 0.305,
+     "relay_share": 0.418,
+     "relay_samples": 15.667,
+     "membrane_catch_share": 0.433,
+     "membrane_prey_share": 0.14,
+     "membrane_catch_ratio": 3.086,
+     "ambush_share": 0.0,
+     "converge_before": 0.196,
+     "converge_at": 1.383,
+     "lead_time_s": 1.633,
+     "lead_time_mean_s": 1.928,
+     "catches": 53.333,
+     "food_bias": 2.049
+    },
+    "catch_per_min": 53.333,
+    "confusion_fail_share": 0.0,
+    "grazed_per_prey": 0.907
+   },
+   "per_seed": [
+    {
+     "prey": {
+      "polarisation_global": 0.136,
+      "polarisation_local": 0.531,
+      "social_share": 0.353,
+      "milling": 0.196,
+      "groups": 3.517,
+      "largest_share": 0.053,
+      "nnd": 19.264,
+      "split_on_attack": -0.4,
+      "flash_expansion": 0.436,
+      "attack_samples": 5,
+      "turn_rate_close": 303.699,
+      "turn_rate_far": 454.68,
+      "speed_close": 59.994,
+      "speed_far": 32.348
+     },
+     "pred": {
+      "victim_encirclement": 0.299,
+      "victim_encirclement_null": 0.366,
+      "victim_encirclement_samples": 22,
+      "cooperative_catch_share": 0.478,
+      "encirclement": 0.098,
+      "encirclement_null": 0.336,
+      "encirclement_samples": 3,
+      "opposed_share": 0.0,
+      "pred_spacing": 76.192,
+      "pack_share": 0.233,
+      "burst_bout_s": 0.668,
+      "burst_bouts": 195,
+      "burst_success": 0.287,
+      "relay_share": 0.333,
+      "relay_samples": 12,
+      "membrane_catch_share": 0.375,
+      "membrane_prey_share": 0.137,
+      "membrane_catch_ratio": 2.736,
+      "ambush_share": 0.0,
+      "converge_before": 0.15,
+      "converge_at": 1.214,
+      "lead_time_s": 1.6,
+      "lead_time_mean_s": 1.726,
+      "catches": 48,
+      "food_bias": 1.794
+     },
+     "catch_per_min": 48.0,
+     "confusion_fail_share": 0.0,
+     "grazed_per_prey": 0.937
+    },
+    {
+     "prey": {
+      "polarisation_global": 0.126,
+      "polarisation_local": 0.502,
+      "social_share": 0.346,
+      "milling": 0.291,
+      "groups": 3.6,
+      "largest_share": 0.07,
+      "nnd": 19.679,
+      "split_on_attack": -0.143,
+      "flash_expansion": 0.179,
+      "attack_samples": 7,
+      "turn_rate_close": 306.316,
+      "turn_rate_far": 437.139,
+      "speed_close": 59.216,
+      "speed_far": 34.522
+     },
+     "pred": {
+      "victim_encirclement": 0.385,
+      "victim_encirclement_null": 0.377,
+      "victim_encirclement_samples": 31,
+      "cooperative_catch_share": 0.585,
+      "encirclement": 0.531,
+      "encirclement_null": 0.365,
+      "encirclement_samples": 4,
+      "opposed_share": 0.25,
+      "pred_spacing": 72.404,
+      "pack_share": 0.298,
+      "burst_bout_s": 0.603,
+      "burst_bouts": 231,
+      "burst_success": 0.29,
+      "relay_share": 0.5,
+      "relay_samples": 16,
+      "membrane_catch_share": 0.389,
+      "membrane_prey_share": 0.145,
+      "membrane_catch_ratio": 2.688,
+      "ambush_share": 0.0,
+      "converge_before": 0.246,
+      "converge_at": 1.5,
+      "lead_time_s": 1.6,
+      "lead_time_mean_s": 2.119,
+      "catches": 54,
+      "food_bias": 2.361
+     },
+     "catch_per_min": 54.0,
+     "confusion_fail_share": 0.0,
+     "grazed_per_prey": 0.956
+    },
+    {
+     "prey": {
+      "polarisation_global": 0.122,
+      "polarisation_local": 0.536,
+      "social_share": 0.322,
+      "milling": 0.255,
+      "groups": 3.017,
+      "largest_share": 0.053,
+      "nnd": 19.931,
+      "split_on_attack": -0.5,
+      "flash_expansion": 0.278,
+      "attack_samples": 4,
+      "turn_rate_close": 322.82,
+      "turn_rate_far": 448.089,
+      "speed_close": 59.697,
+      "speed_far": 32.197
+     },
+     "pred": {
+      "victim_encirclement": 0.301,
+      "victim_encirclement_null": 0.425,
+      "victim_encirclement_samples": 29,
+      "cooperative_catch_share": 0.5,
+      "encirclement": 0.319,
+      "encirclement_null": 0.375,
+      "encirclement_samples": 3,
+      "opposed_share": 0.333,
+      "pred_spacing": 79.287,
+      "pack_share": 0.333,
+      "burst_bout_s": 0.661,
+      "burst_bouts": 199,
+      "burst_success": 0.337,
+      "relay_share": 0.421,
+      "relay_samples": 19,
+      "membrane_catch_share": 0.534,
+      "membrane_prey_share": 0.139,
+      "membrane_catch_ratio": 3.835,
+      "ambush_share": 0.0,
+      "converge_before": 0.192,
+      "converge_at": 1.434,
+      "lead_time_s": 1.7,
+      "lead_time_mean_s": 1.94,
+      "catches": 58,
+      "food_bias": 1.993
+     },
+     "catch_per_min": 58.0,
+     "confusion_fail_share": 0.0,
+     "grazed_per_prey": 0.827
+    }
+   ]
+  },
+  "a9herd:500:500": {
+   "seeds": [
+    11,
+    12,
+    13
+   ],
+   "secs": 60.0,
+   "mean": {
+    "prey": {
+     "polarisation_global": 0.163,
+     "polarisation_local": 0.624,
+     "social_share": 0.337,
+     "milling": 0.257,
+     "groups": 3.222,
+     "largest_share": 0.053,
+     "nnd": 19.865,
+     "split_on_attack": 0.68,
+     "flash_expansion": 0.017,
+     "attack_samples": 6.667,
+     "turn_rate_close": 318.214,
+     "turn_rate_far": 435.064,
+     "speed_close": 59.05,
+     "speed_far": 30.684
+    },
+    "pred": {
+     "victim_encirclement": 0.302,
+     "victim_encirclement_null": 0.378,
+     "victim_encirclement_samples": 19.333,
+     "cooperative_catch_share": 0.45,
+     "encirclement": 0.253,
+     "encirclement_null": 0.359,
+     "encirclement_samples": 5.333,
+     "opposed_share": 0.067,
+     "pred_spacing": 77.047,
+     "pack_share": 0.285,
+     "burst_bout_s": 0.666,
+     "burst_bouts": 197.333,
+     "burst_success": 0.253,
+     "relay_share": 0.207,
+     "relay_samples": 11.667,
+     "membrane_catch_share": 0.533,
+     "membrane_prey_share": 0.131,
+     "membrane_catch_ratio": 4.073,
+     "ambush_share": 0.0,
+     "converge_before": 0.204,
+     "converge_at": 1.44,
+     "lead_time_s": 1.683,
+     "lead_time_mean_s": 2.139,
+     "catches": 44.333,
+     "food_bias": 1.801
+    },
+    "catch_per_min": 44.333,
+    "confusion_fail_share": 0.0,
+    "grazed_per_prey": 0.924
+   },
+   "per_seed": [
+    {
+     "prey": {
+      "polarisation_global": 0.166,
+      "polarisation_local": 0.641,
+      "social_share": 0.321,
+      "milling": 0.248,
+      "groups": 2.925,
+      "largest_share": 0.05,
+      "nnd": 20.264,
+      "split_on_attack": 2.0,
+      "flash_expansion": -0.271,
+      "attack_samples": 2,
+      "turn_rate_close": 310.853,
+      "turn_rate_far": 425.365,
+      "speed_close": 59.578,
+      "speed_far": 31.896
+     },
+     "pred": {
+      "victim_encirclement": 0.279,
+      "victim_encirclement_null": 0.357,
+      "victim_encirclement_samples": 15,
+      "cooperative_catch_share": 0.326,
+      "encirclement": 0.238,
+      "encirclement_null": 0.336,
+      "encirclement_samples": 6,
+      "opposed_share": 0.0,
+      "pred_spacing": 87.793,
+      "pack_share": 0.215,
+      "burst_bout_s": 0.654,
+      "burst_bouts": 198,
+      "burst_success": 0.268,
+      "relay_share": 0.182,
+      "relay_samples": 11,
+      "membrane_catch_share": 0.542,
+      "membrane_prey_share": 0.137,
+      "membrane_catch_ratio": 3.957,
+      "ambush_share": 0.0,
+      "converge_before": 0.184,
+      "converge_at": 1.302,
+      "lead_time_s": 1.8,
+      "lead_time_mean_s": 2.23,
+      "catches": 48,
+      "food_bias": 1.874
+     },
+     "catch_per_min": 48.0,
+     "confusion_fail_share": 0.0,
+     "grazed_per_prey": 0.921
+    },
+    {
+     "prey": {
+      "polarisation_global": 0.163,
+      "polarisation_local": 0.621,
+      "social_share": 0.374,
+      "milling": 0.227,
+      "groups": 4.133,
+      "largest_share": 0.059,
+      "nnd": 18.879,
+      "split_on_attack": -0.143,
+      "flash_expansion": 0.32,
+      "attack_samples": 7,
+      "turn_rate_close": 320.487,
+      "turn_rate_far": 441.352,
+      "speed_close": 59.155,
+      "speed_far": 30.217
+     },
+     "pred": {
+      "victim_encirclement": 0.313,
+      "victim_encirclement_null": 0.376,
+      "victim_encirclement_samples": 17,
+      "cooperative_catch_share": 0.472,
+      "encirclement": 0.202,
+      "encirclement_null": 0.359,
+      "encirclement_samples": 5,
+      "opposed_share": 0.0,
+      "pred_spacing": 72.738,
+      "pack_share": 0.318,
+      "burst_bout_s": 0.659,
+      "burst_bouts": 196,
+      "burst_success": 0.204,
+      "relay_share": 0.25,
+      "relay_samples": 8,
+      "membrane_catch_share": 0.514,
+      "membrane_prey_share": 0.121,
+      "membrane_catch_ratio": 4.236,
+      "ambush_share": 0.0,
+      "converge_before": 0.2,
+      "converge_at": 1.528,
+      "lead_time_s": 1.7,
+      "lead_time_mean_s": 2.173,
+      "catches": 37,
+      "food_bias": 1.56
+     },
+     "catch_per_min": 37.0,
+     "confusion_fail_share": 0.0,
+     "grazed_per_prey": 1.005
+    },
+    {
+     "prey": {
+      "polarisation_global": 0.159,
+      "polarisation_local": 0.611,
+      "social_share": 0.316,
+      "milling": 0.295,
+      "groups": 2.608,
+      "largest_share": 0.051,
+      "nnd": 20.451,
+      "split_on_attack": 0.182,
+      "flash_expansion": 0.003,
+      "attack_samples": 11,
+      "turn_rate_close": 323.303,
+      "turn_rate_far": 438.475,
+      "speed_close": 58.418,
+      "speed_far": 29.94
+     },
+     "pred": {
+      "victim_encirclement": 0.314,
+      "victim_encirclement_null": 0.4,
+      "victim_encirclement_samples": 26,
+      "cooperative_catch_share": 0.553,
+      "encirclement": 0.318,
+      "encirclement_null": 0.382,
+      "encirclement_samples": 5,
+      "opposed_share": 0.2,
+      "pred_spacing": 70.611,
+      "pack_share": 0.322,
+      "burst_bout_s": 0.685,
+      "burst_bouts": 198,
+      "burst_success": 0.288,
+      "relay_share": 0.188,
+      "relay_samples": 16,
+      "membrane_catch_share": 0.542,
+      "membrane_prey_share": 0.134,
+      "membrane_catch_ratio": 4.027,
+      "ambush_share": 0.0,
+      "converge_before": 0.229,
+      "converge_at": 1.489,
+      "lead_time_s": 1.55,
+      "lead_time_mean_s": 2.015,
+      "catches": 48,
+      "food_bias": 1.968
+     },
+     "catch_per_min": 48.0,
+     "confusion_fail_share": 0.0,
+     "grazed_per_prey": 0.845
+    }
+   ]
+  },
+  "a9herd:750:750": {
+   "seeds": [
+    11,
+    12,
+    13
+   ],
+   "secs": 60.0,
+   "mean": {
+    "prey": {
+     "polarisation_global": 0.199,
+     "polarisation_local": 0.694,
+     "social_share": 0.3,
+     "milling": 0.245,
+     "groups": 2.511,
+     "largest_share": 0.055,
+     "nnd": 19.81,
+     "split_on_attack": 0.822,
+     "flash_expansion": -0.221,
+     "attack_samples": 3.0,
+     "turn_rate_close": 313.887,
+     "turn_rate_far": 408.94,
+     "speed_close": 58.725,
+     "speed_far": 35.505
+    },
+    "pred": {
+     "victim_encirclement": 0.34,
+     "victim_encirclement_null": 0.398,
+     "victim_encirclement_samples": 26.333,
+     "cooperative_catch_share": 0.503,
+     "encirclement": 0.28,
+     "encirclement_null": 0.336,
+     "encirclement_samples": 4.333,
+     "opposed_share": 0.122,
+     "pred_spacing": 78.365,
+     "pack_share": 0.277,
+     "burst_bout_s": 0.613,
+     "burst_bouts": 221.333,
+     "burst_success": 0.268,
+     "relay_share": 0.361,
+     "relay_samples": 16.0,
+     "membrane_catch_share": 0.408,
+     "membrane_prey_share": 0.152,
+     "membrane_catch_ratio": 2.698,
+     "ambush_share": 0.0,
+     "converge_before": 0.165,
+     "converge_at": 1.381,
+     "lead_time_s": 1.6,
+     "lead_time_mean_s": 2.141,
+     "catches": 53.333,
+     "food_bias": 1.912
+    },
+    "catch_per_min": 53.333,
+    "confusion_fail_share": 0.0,
+    "grazed_per_prey": 0.914
+   },
+   "per_seed": [
+    {
+     "prey": {
+      "polarisation_global": 0.198,
+      "polarisation_local": 0.718,
+      "social_share": 0.292,
+      "milling": 0.263,
+      "groups": 2.308,
+      "largest_share": 0.045,
+      "nnd": 19.147,
+      "split_on_attack": 1.5,
+      "flash_expansion": -0.321,
+      "attack_samples": 2,
+      "turn_rate_close": 326.704,
+      "turn_rate_far": 423.971,
+      "speed_close": 59.276,
+      "speed_far": 33.691
+     },
+     "pred": {
+      "victim_encirclement": 0.344,
+      "victim_encirclement_null": 0.409,
+      "victim_encirclement_samples": 21,
+      "cooperative_catch_share": 0.404,
+      "encirclement": 0.236,
+      "encirclement_null": 0.336,
+      "encirclement_samples": 2,
+      "opposed_share": 0.0,
+      "pred_spacing": 86.374,
+      "pack_share": 0.21,
+      "burst_bout_s": 0.618,
+      "burst_bouts": 213,
+      "burst_success": 0.258,
+      "relay_share": 0.357,
+      "relay_samples": 14,
+      "membrane_catch_share": 0.472,
+      "membrane_prey_share": 0.139,
+      "membrane_catch_ratio": 3.393,
+      "ambush_share": 0.0,
+      "converge_before": 0.092,
+      "converge_at": 1.26,
+      "lead_time_s": 1.65,
+      "lead_time_mean_s": 2.331,
+      "catches": 53,
+      "food_bias": 1.508
+     },
+     "catch_per_min": 53.0,
+     "confusion_fail_share": 0.0,
+     "grazed_per_prey": 0.951
+    },
+    {
+     "prey": {
+      "polarisation_global": 0.19,
+      "polarisation_local": 0.656,
+      "social_share": 0.332,
+      "milling": 0.236,
+      "groups": 3.008,
+      "largest_share": 0.071,
+      "nnd": 20.389,
+      "split_on_attack": 0.143,
+      "flash_expansion": -0.121,
+      "attack_samples": 7,
+      "turn_rate_close": 305.179,
+      "turn_rate_far": 397.539,
+      "speed_close": 59.201,
+      "speed_far": 37.093
+     },
+     "pred": {
+      "victim_encirclement": 0.318,
+      "victim_encirclement_null": 0.38,
+      "victim_encirclement_samples": 29,
+      "cooperative_catch_share": 0.547,
+      "encirclement": 0.305,
+      "encirclement_null": 0.336,
+      "encirclement_samples": 6,
+      "opposed_share": 0.167,
+      "pred_spacing": 76.685,
+      "pack_share": 0.296,
+      "burst_bout_s": 0.596,
+      "burst_bouts": 230,
+      "burst_success": 0.278,
+      "relay_share": 0.2,
+      "relay_samples": 15,
+      "membrane_catch_share": 0.291,
+      "membrane_prey_share": 0.147,
+      "membrane_catch_ratio": 1.979,
+      "ambush_share": 0.0,
+      "converge_before": 0.19,
+      "converge_at": 1.333,
+      "lead_time_s": 1.5,
+      "lead_time_mean_s": 1.947,
+      "catches": 55,
+      "food_bias": 2.295
+     },
+     "catch_per_min": 55.0,
+     "confusion_fail_share": 0.0,
+     "grazed_per_prey": 0.89
+    },
+    {
+     "prey": {
+      "polarisation_global": 0.209,
+      "polarisation_local": 0.709,
+      "social_share": 0.275,
+      "milling": 0.236,
+      "groups": 2.217,
+      "largest_share": 0.049,
+      "nnd": 19.894,
+      "split_on_attack": null,
+      "flash_expansion": null,
+      "attack_samples": 0,
+      "turn_rate_close": 309.779,
+      "turn_rate_far": 405.309,
+      "speed_close": 57.697,
+      "speed_far": 35.73
+     },
+     "pred": {
+      "victim_encirclement": 0.359,
+      "victim_encirclement_null": 0.406,
+      "victim_encirclement_samples": 29,
+      "cooperative_catch_share": 0.558,
+      "encirclement": 0.3,
+      "encirclement_null": 0.336,
+      "encirclement_samples": 5,
+      "opposed_share": 0.2,
+      "pred_spacing": 72.036,
+      "pack_share": 0.326,
+      "burst_bout_s": 0.624,
+      "burst_bouts": 221,
+      "burst_success": 0.267,
+      "relay_share": 0.526,
+      "relay_samples": 19,
+      "membrane_catch_share": 0.462,
+      "membrane_prey_share": 0.169,
+      "membrane_catch_ratio": 2.723,
+      "ambush_share": 0.0,
+      "converge_before": 0.214,
+      "converge_at": 1.551,
+      "lead_time_s": 1.65,
+      "lead_time_mean_s": 2.146,
+      "catches": 52,
+      "food_bias": 1.934
+     },
+     "catch_per_min": 52.0,
+     "confusion_fail_share": 0.0,
+     "grazed_per_prey": 0.9
+    }
+   ]
+  },
+  "a9herd:1000:1000": {
+   "seeds": [
+    11,
+    12,
+    13
+   ],
+   "secs": 60.0,
+   "mean": {
+    "prey": {
+     "polarisation_global": 0.255,
+     "polarisation_local": 0.775,
+     "social_share": 0.386,
+     "milling": 0.217,
+     "groups": 3.522,
+     "largest_share": 0.062,
+     "nnd": 17.395,
+     "split_on_attack": 0.0,
+     "flash_expansion": 0.148,
+     "attack_samples": 5.0,
+     "turn_rate_close": 298.716,
+     "turn_rate_far": 416.955,
+     "speed_close": 58.98,
+     "speed_far": 34.146
+    },
+    "pred": {
+     "victim_encirclement": 0.305,
+     "victim_encirclement_null": 0.392,
+     "victim_encirclement_samples": 24.333,
+     "cooperative_catch_share": 0.48,
+     "encirclement": 0.257,
+     "encirclement_null": 0.336,
+     "encirclement_samples": 3.667,
+     "opposed_share": 0.222,
+     "pred_spacing": 69.91,
+     "pack_share": 0.367,
+     "burst_bout_s": 0.581,
+     "burst_bouts": 232.333,
+     "burst_success": 0.267,
+     "relay_share": 0.542,
+     "relay_samples": 15.333,
+     "membrane_catch_share": 0.389,
+     "membrane_prey_share": 0.151,
+     "membrane_catch_ratio": 2.57,
+     "ambush_share": 0.0,
+     "converge_before": 0.21,
+     "converge_at": 1.524,
+     "lead_time_s": 1.567,
+     "lead_time_mean_s": 2.175,
+     "catches": 52.0,
+     "food_bias": 1.96
+    },
+    "catch_per_min": 52.0,
+    "confusion_fail_share": 0.0,
+    "grazed_per_prey": 0.907
+   },
+   "per_seed": [
+    {
+     "prey": {
+      "polarisation_global": 0.252,
+      "polarisation_local": 0.801,
+      "social_share": 0.373,
+      "milling": 0.205,
+      "groups": 3.333,
+      "largest_share": 0.059,
+      "nnd": 17.316,
+      "split_on_attack": 0.0,
+      "flash_expansion": 0.034,
+      "attack_samples": 6,
+      "turn_rate_close": 296.28,
+      "turn_rate_far": 413.046,
+      "speed_close": 59.238,
+      "speed_far": 34.327
+     },
+     "pred": {
+      "victim_encirclement": 0.322,
+      "victim_encirclement_null": 0.384,
+      "victim_encirclement_samples": 19,
+      "cooperative_catch_share": 0.373,
+      "encirclement": 0.316,
+      "encirclement_null": 0.336,
+      "encirclement_samples": 4,
+      "opposed_share": 0.5,
+      "pred_spacing": 71.132,
+      "pack_share": 0.376,
+      "burst_bout_s": 0.563,
+      "burst_bouts": 243,
+      "burst_success": 0.251,
+      "relay_share": 0.706,
+      "relay_samples": 17,
+      "membrane_catch_share": 0.434,
+      "membrane_prey_share": 0.148,
+      "membrane_catch_ratio": 2.941,
+      "ambush_share": 0.0,
+      "converge_before": 0.2,
+      "converge_at": 1.396,
+      "lead_time_s": 1.7,
+      "lead_time_mean_s": 2.365,
+      "catches": 53,
+      "food_bias": 1.924
+     },
+     "catch_per_min": 53.0,
+     "confusion_fail_share": 0.0,
+     "grazed_per_prey": 0.923
+    },
+    {
+     "prey": {
+      "polarisation_global": 0.255,
+      "polarisation_local": 0.741,
+      "social_share": 0.415,
+      "milling": 0.215,
+      "groups": 3.967,
+      "largest_share": 0.071,
+      "nnd": 17.293,
+      "split_on_attack": null,
+      "flash_expansion": null,
+      "attack_samples": 0,
+      "turn_rate_close": 301.167,
+      "turn_rate_far": 445.721,
+      "speed_close": 59.213,
+      "speed_far": 31.498
+     },
+     "pred": {
+      "victim_encirclement": 0.262,
+      "victim_encirclement_null": 0.416,
+      "victim_encirclement_samples": 36,
+      "cooperative_catch_share": 0.667,
+      "encirclement": 0.195,
+      "encirclement_null": 0.336,
+      "encirclement_samples": 1,
+      "opposed_share": 0.0,
+      "pred_spacing": 62.835,
+      "pack_share": 0.447,
+      "burst_bout_s": 0.614,
+      "burst_bouts": 219,
+      "burst_success": 0.32,
+      "relay_share": 0.421,
+      "relay_samples": 19,
+      "membrane_catch_share": 0.286,
+      "membrane_prey_share": 0.133,
+      "membrane_catch_ratio": 2.156,
+      "ambush_share": 0.0,
+      "converge_before": 0.257,
+      "converge_at": 1.796,
+      "lead_time_s": 1.5,
+      "lead_time_mean_s": 1.88,
+      "catches": 56,
+      "food_bias": 2.153
+     },
+     "catch_per_min": 56.0,
+     "confusion_fail_share": 0.0,
+     "grazed_per_prey": 0.889
+    },
+    {
+     "prey": {
+      "polarisation_global": 0.259,
+      "polarisation_local": 0.784,
+      "social_share": 0.369,
+      "milling": 0.23,
+      "groups": 3.267,
+      "largest_share": 0.056,
+      "nnd": 17.576,
+      "split_on_attack": 0.0,
+      "flash_expansion": 0.262,
+      "attack_samples": 9,
+      "turn_rate_close": 298.701,
+      "turn_rate_far": 392.098,
+      "speed_close": 58.489,
+      "speed_far": 36.613
+     },
+     "pred": {
+      "victim_encirclement": 0.331,
+      "victim_encirclement_null": 0.377,
+      "victim_encirclement_samples": 18,
+      "cooperative_catch_share": 0.4,
+      "encirclement": 0.259,
+      "encirclement_null": 0.336,
+      "encirclement_samples": 6,
+      "opposed_share": 0.167,
+      "pred_spacing": 75.764,
+      "pack_share": 0.278,
+      "burst_bout_s": 0.567,
+      "burst_bouts": 235,
+      "burst_success": 0.23,
+      "relay_share": 0.5,
+      "relay_samples": 10,
+      "membrane_catch_share": 0.447,
+      "membrane_prey_share": 0.171,
+      "membrane_catch_ratio": 2.612,
+      "ambush_share": 0.0,
+      "converge_before": 0.174,
+      "converge_at": 1.381,
+      "lead_time_s": 1.5,
+      "lead_time_mean_s": 2.279,
+      "catches": 47,
+      "food_bias": 1.804
+     },
+     "catch_per_min": 47.0,
+     "confusion_fail_share": 0.0,
+     "grazed_per_prey": 0.91
+    }
+   ]
+  },
+  "a9herd:1250:1250": {
+   "seeds": [
+    11,
+    12,
+    13
+   ],
+   "secs": 60.0,
+   "mean": {
+    "prey": {
+     "polarisation_global": 0.319,
+     "polarisation_local": 0.82,
+     "social_share": 0.524,
+     "milling": 0.165,
+     "groups": 4.678,
+     "largest_share": 0.082,
+     "nnd": 14.192,
+     "split_on_attack": 0.667,
+     "flash_expansion": -0.18,
+     "attack_samples": 1.333,
+     "turn_rate_close": 308.863,
+     "turn_rate_far": 410.074,
+     "speed_close": 59.405,
+     "speed_far": 34.666
+    },
+    "pred": {
+     "victim_encirclement": 0.221,
+     "victim_encirclement_null": 0.392,
+     "victim_encirclement_samples": 27.667,
+     "cooperative_catch_share": 0.571,
+     "encirclement": 0.401,
+     "encirclement_null": 0.349,
+     "encirclement_samples": 6.0,
+     "opposed_share": 0.495,
+     "pred_spacing": 69.249,
+     "pack_share": 0.369,
+     "burst_bout_s": 0.563,
+     "burst_bouts": 230.667,
+     "burst_success": 0.233,
+     "relay_share": 0.374,
+     "relay_samples": 16.333,
+     "membrane_catch_share": 0.457,
+     "membrane_prey_share": 0.156,
+     "membrane_catch_ratio": 2.927,
+     "ambush_share": 0.0,
+     "converge_before": 0.238,
+     "converge_at": 1.455,
+     "lead_time_s": 1.6,
+     "lead_time_mean_s": 2.064,
+     "catches": 48.333,
+     "food_bias": 1.847
+    },
+    "catch_per_min": 48.333,
+    "confusion_fail_share": 0.0,
+    "grazed_per_prey": 0.835
+   },
+   "per_seed": [
+    {
+     "prey": {
+      "polarisation_global": 0.322,
+      "polarisation_local": 0.821,
+      "social_share": 0.481,
+      "milling": 0.168,
+      "groups": 4.25,
+      "largest_share": 0.074,
+      "nnd": 14.924,
+      "split_on_attack": 1.0,
+      "flash_expansion": 0.038,
+      "attack_samples": 1,
+      "turn_rate_close": 306.518,
+      "turn_rate_far": 410.652,
+      "speed_close": 58.595,
+      "speed_far": 34.553
+     },
+     "pred": {
+      "victim_encirclement": 0.209,
+      "victim_encirclement_null": 0.351,
+      "victim_encirclement_samples": 18,
+      "cooperative_catch_share": 0.439,
+      "encirclement": 0.677,
+      "encirclement_null": 0.336,
+      "encirclement_samples": 1,
+      "opposed_share": 1.0,
+      "pred_spacing": 82.119,
+      "pack_share": 0.269,
+      "burst_bout_s": 0.565,
+      "burst_bouts": 235,
+      "burst_success": 0.17,
+      "relay_share": 0.222,
+      "relay_samples": 18,
+      "membrane_catch_share": 0.381,
+      "membrane_prey_share": 0.142,
+      "membrane_catch_ratio": 2.68,
+      "ambush_share": 0.0,
+      "converge_before": 0.192,
+      "converge_at": 1.297,
+      "lead_time_s": 1.5,
+      "lead_time_mean_s": 2.078,
+      "catches": 42,
+      "food_bias": 1.837
+     },
+     "catch_per_min": 42.0,
+     "confusion_fail_share": 0.0,
+     "grazed_per_prey": 0.833
+    },
+    {
+     "prey": {
+      "polarisation_global": 0.319,
+      "polarisation_local": 0.802,
+      "social_share": 0.589,
+      "milling": 0.164,
+      "groups": 5.492,
+      "largest_share": 0.096,
+      "nnd": 13.296,
+      "split_on_attack": 2.0,
+      "flash_expansion": -0.445,
+      "attack_samples": 1,
+      "turn_rate_close": 315.918,
+      "turn_rate_far": 409.431,
+      "speed_close": 59.898,
+      "speed_far": 35.023
+     },
+     "pred": {
+      "victim_encirclement": 0.231,
+      "victim_encirclement_null": 0.41,
+      "victim_encirclement_samples": 34,
+      "cooperative_catch_share": 0.667,
+      "encirclement": 0.347,
+      "encirclement_null": 0.336,
+      "encirclement_samples": 8,
+      "opposed_share": 0.375,
+      "pred_spacing": 59.14,
+      "pack_share": 0.439,
+      "burst_bout_s": 0.562,
+      "burst_bouts": 230,
+      "burst_success": 0.261,
+      "relay_share": 0.5,
+      "relay_samples": 16,
+      "membrane_catch_share": 0.462,
+      "membrane_prey_share": 0.166,
+      "membrane_catch_ratio": 2.776,
+      "ambush_share": 0.0,
+      "converge_before": 0.272,
+      "converge_at": 1.58,
+      "lead_time_s": 1.7,
+      "lead_time_mean_s": 2.148,
+      "catches": 52,
+      "food_bias": 1.833
+     },
+     "catch_per_min": 52.0,
+     "confusion_fail_share": 0.0,
+     "grazed_per_prey": 0.827
+    },
+    {
+     "prey": {
+      "polarisation_global": 0.316,
+      "polarisation_local": 0.836,
+      "social_share": 0.503,
+      "milling": 0.163,
+      "groups": 4.292,
+      "largest_share": 0.077,
+      "nnd": 14.356,
+      "split_on_attack": -1.0,
+      "flash_expansion": -0.134,
+      "attack_samples": 2,
+      "turn_rate_close": 304.154,
+      "turn_rate_far": 410.138,
+      "speed_close": 59.722,
+      "speed_far": 34.422
+     },
+     "pred": {
+      "victim_encirclement": 0.222,
+      "victim_encirclement_null": 0.414,
+      "victim_encirclement_samples": 31,
+      "cooperative_catch_share": 0.608,
+      "encirclement": 0.18,
+      "encirclement_null": 0.375,
+      "encirclement_samples": 9,
+      "opposed_share": 0.111,
+      "pred_spacing": 66.489,
+      "pack_share": 0.398,
+      "burst_bout_s": 0.561,
+      "burst_bouts": 227,
+      "burst_success": 0.269,
+      "relay_share": 0.4,
+      "relay_samples": 15,
+      "membrane_catch_share": 0.529,
+      "membrane_prey_share": 0.159,
+      "membrane_catch_ratio": 3.326,
+      "ambush_share": 0.0,
+      "converge_before": 0.249,
+      "converge_at": 1.489,
+      "lead_time_s": 1.6,
+      "lead_time_mean_s": 1.967,
+      "catches": 51,
+      "food_bias": 1.872
+     },
+     "catch_per_min": 51.0,
+     "confusion_fail_share": 0.0,
+     "grazed_per_prey": 0.845
+    }
+   ]
+  },
+  "a9herd:1500:1500": {
+   "seeds": [
+    11,
+    12,
+    13
+   ],
+   "secs": 60.0,
+   "mean": {
+    "prey": {
+     "polarisation_global": 0.329,
+     "polarisation_local": 0.861,
+     "social_share": 0.598,
+     "milling": 0.14,
+     "groups": 5.836,
+     "largest_share": 0.1,
+     "nnd": 13.119,
+     "split_on_attack": -1.667,
+     "flash_expansion": 0.95,
+     "attack_samples": 1.667,
+     "turn_rate_close": 296.526,
+     "turn_rate_far": 368.709,
+     "speed_close": 59.004,
+     "speed_far": 39.067
+    },
+    "pred": {
+     "victim_encirclement": 0.299,
+     "victim_encirclement_null": 0.388,
+     "victim_encirclement_samples": 19.0,
+     "cooperative_catch_share": 0.49,
+     "encirclement": 0.257,
+     "encirclement_null": 0.352,
+     "encirclement_samples": 9.0,
+     "opposed_share": 0.239,
+     "pred_spacing": 67.646,
+     "pack_share": 0.38,
+     "burst_bout_s": 0.635,
+     "burst_bouts": 199.667,
+     "burst_success": 0.208,
+     "relay_share": 0.392,
+     "relay_samples": 17.333,
+     "membrane_catch_share": 0.419,
+     "membrane_prey_share": 0.146,
+     "membrane_catch_ratio": 3.025,
+     "ambush_share": 0.0,
+     "converge_before": 0.344,
+     "converge_at": 1.472,
+     "lead_time_s": 1.7,
+     "lead_time_mean_s": 2.121,
+     "catches": 39.333,
+     "food_bias": 1.696
+    },
+    "catch_per_min": 39.333,
+    "confusion_fail_share": 0.015,
+    "grazed_per_prey": 0.864
+   },
+   "per_seed": [
+    {
+     "prey": {
+      "polarisation_global": 0.308,
+      "polarisation_local": 0.875,
+      "social_share": 0.619,
+      "milling": 0.129,
+      "groups": 6.35,
+      "largest_share": 0.092,
+      "nnd": 12.815,
+      "split_on_attack": null,
+      "flash_expansion": null,
+      "attack_samples": 0,
+      "turn_rate_close": 296.511,
+      "turn_rate_far": 382.124,
+      "speed_close": 58.717,
+      "speed_far": 36.802
+     },
+     "pred": {
+      "victim_encirclement": 0.374,
+      "victim_encirclement_null": 0.406,
+      "victim_encirclement_samples": 15,
+      "cooperative_catch_share": 0.484,
+      "encirclement": 0.44,
+      "encirclement_null": 0.336,
+      "encirclement_samples": 5,
+      "opposed_share": 0.6,
+      "pred_spacing": 63.374,
+      "pack_share": 0.401,
+      "burst_bout_s": 0.695,
+      "burst_bouts": 163,
+      "burst_success": 0.215,
+      "relay_share": 0.4,
+      "relay_samples": 15,
+      "membrane_catch_share": 0.469,
+      "membrane_prey_share": 0.12,
+      "membrane_catch_ratio": 3.91,
+      "ambush_share": 0.0,
+      "converge_before": 0.448,
+      "converge_at": 1.613,
+      "lead_time_s": 1.6,
+      "lead_time_mean_s": 2.194,
+      "catches": 32,
+      "food_bias": 1.458
+     },
+     "catch_per_min": 32.0,
+     "confusion_fail_share": 0.0,
+     "grazed_per_prey": 0.9
+    },
+    {
+     "prey": {
+      "polarisation_global": 0.341,
+      "polarisation_local": 0.858,
+      "social_share": 0.622,
+      "milling": 0.144,
+      "groups": 6.142,
+      "largest_share": 0.113,
+      "nnd": 12.916,
+      "split_on_attack": -0.333,
+      "flash_expansion": 0.659,
+      "attack_samples": 3,
+      "turn_rate_close": 299.354,
+      "turn_rate_far": 348.153,
+      "speed_close": 58.621,
+      "speed_far": 41.4
+     },
+     "pred": {
+      "victim_encirclement": 0.266,
+      "victim_encirclement_null": 0.369,
+      "victim_encirclement_samples": 19,
+      "cooperative_catch_share": 0.463,
+      "encirclement": 0.19,
+      "encirclement_null": 0.362,
+      "encirclement_samples": 17,
+      "opposed_share": 0.118,
+      "pred_spacing": 70.317,
+      "pack_share": 0.378,
+      "burst_bout_s": 0.562,
+      "burst_bouts": 241,
+      "burst_success": 0.183,
+      "relay_share": 0.176,
+      "relay_samples": 17,
+      "membrane_catch_share": 0.31,
+      "membrane_prey_share": 0.177,
+      "membrane_catch_ratio": 1.744,
+      "ambush_share": 0.0,
+      "converge_before": 0.34,
+      "converge_at": 1.35,
+      "lead_time_s": 1.4,
+      "lead_time_mean_s": 1.938,
+      "catches": 42,
+      "food_bias": 1.951
+     },
+     "catch_per_min": 42.0,
+     "confusion_fail_share": 0.045,
+     "grazed_per_prey": 0.868
+    },
+    {
+     "prey": {
+      "polarisation_global": 0.339,
+      "polarisation_local": 0.849,
+      "social_share": 0.554,
+      "milling": 0.147,
+      "groups": 5.017,
+      "largest_share": 0.095,
+      "nnd": 13.626,
+      "split_on_attack": -3.0,
+      "flash_expansion": 1.241,
+      "attack_samples": 2,
+      "turn_rate_close": 293.712,
+      "turn_rate_far": 375.851,
+      "speed_close": 59.675,
+      "speed_far": 39.0
+     },
+     "pred": {
+      "victim_encirclement": 0.258,
+      "victim_encirclement_null": 0.389,
+      "victim_encirclement_samples": 23,
+      "cooperative_catch_share": 0.523,
+      "encirclement": 0.14,
+      "encirclement_null": 0.359,
+      "encirclement_samples": 5,
+      "opposed_share": 0.0,
+      "pred_spacing": 69.247,
+      "pack_share": 0.361,
+      "burst_bout_s": 0.649,
+      "burst_bouts": 195,
+      "burst_success": 0.226,
+      "relay_share": 0.6,
+      "relay_samples": 20,
+      "membrane_catch_share": 0.477,
+      "membrane_prey_share": 0.14,
+      "membrane_catch_ratio": 3.421,
+      "ambush_share": 0.0,
+      "converge_before": 0.245,
+      "converge_at": 1.452,
+      "lead_time_s": 2.1,
+      "lead_time_mean_s": 2.232,
+      "catches": 44,
+      "food_bias": 1.68
+     },
+     "catch_per_min": 44.0,
+     "confusion_fail_share": 0.0,
+     "grazed_per_prey": 0.825
+    }
+   ]
   }
  },
  "eco": {
@@ -18560,6 +19974,5122 @@
    ],
    "mass_residual_max": 0.006103515625,
    "mass_total": 244.12188720703125
+  },
+  "a9herd:1500:1500 (5 min)": {
+   "cfg": {
+    "R_cell": 200.0,
+    "dt": 0.1,
+    "n_prey": 120,
+    "n_pred": 8,
+    "prey_v": 60.0,
+    "prey_acc": 300.0,
+    "prey_turn": 10.0,
+    "prey_R": 50.0,
+    "prey_r0": 5.0,
+    "prey_size": 2.5,
+    "pred_v": 45.0,
+    "pred_burst": 100.0,
+    "pred_acc": 150.0,
+    "pred_turn": 3.0,
+    "pred_R": 80.0,
+    "pred_r0": 14.0,
+    "pred_size": 5.0,
+    "stam_drain": 0.3333333333333333,
+    "stam_regen": 0.125,
+    "catch_r": 7.5,
+    "handle": 1.0,
+    "confusion": 0.3,
+    "conf_r": 10.0,
+    "G": 12,
+    "food_patches": 6,
+    "food_cap": 1.0,
+    "graze_rate": 0.08,
+    "graze_half": 0.3,
+    "regrow": 0.05,
+    "eco": true,
+    "m_prey": 1.0,
+    "m_pred": 4.0,
+    "prey_burn": [
+     0.004,
+     0.008
+    ],
+    "pred_burn": [
+     0.01,
+     0.03
+    ],
+    "cap_prey": 480,
+    "cap_pred": 48,
+    "pool0": 30.0,
+    "pred_split": 2.0,
+    "sated": 0.0,
+    "detect_conf": 0.0,
+    "detect_r": 15.0
+   },
+   "seeds": [
+    21,
+    22,
+    23,
+    24
+   ],
+   "minutes": 5.0,
+   "series": [
+    {
+     "t": 5.0,
+     "prey": [
+      117,
+      116,
+      115,
+      117
+     ],
+     "pred": [
+      8,
+      8,
+      8,
+      8
+     ],
+     "food": [
+      44.65999984741211,
+      48.310001373291016,
+      42.810001373291016,
+      47.41999816894531
+     ],
+     "pool": [
+      36.220001220703125,
+      36.75,
+      36.939998626708984,
+      36.38999938964844
+     ]
+    },
+    {
+     "t": 10.0,
+     "prey": [
+      111,
+      111,
+      110,
+      110
+     ],
+     "pred": [
+      8,
+      8,
+      8,
+      8
+     ],
+     "food": [
+      36.4900016784668,
+      39.70000076293945,
+      33.15999984741211,
+      39.790000915527344
+     ],
+     "pool": [
+      38.380001068115234,
+      39.54999923706055,
+      39.7599983215332,
+      39.83000183105469
+     ]
+    },
+    {
+     "t": 15.0,
+     "prey": [
+      106,
+      109,
+      105,
+      106
+     ],
+     "pred": [
+      8,
+      8,
+      8,
+      8
+     ],
+     "food": [
+      33.52000045776367,
+      36.540000915527344,
+      29.049999237060547,
+      36.220001220703125
+     ],
+     "pool": [
+      39.220001220703125,
+      41.040000915527344,
+      40.91999816894531,
+      40.90999984741211
+     ]
+    },
+    {
+     "t": 20.0,
+     "prey": [
+      101,
+      107,
+      99,
+      104
+     ],
+     "pred": [
+      9,
+      8,
+      8,
+      8
+     ],
+     "food": [
+      32.31999969482422,
+      34.27000045776367,
+      29.479999542236328,
+      35.33000183105469
+     ],
+     "pool": [
+      39.619998931884766,
+      41.84000015258789,
+      41.54999923706055,
+      41.209999084472656
+     ]
+    },
+    {
+     "t": 25.0,
+     "prey": [
+      98,
+      105,
+      96,
+      101
+     ],
+     "pred": [
+      8,
+      7,
+      9,
+      7
+     ],
+     "food": [
+      31.450000762939453,
+      32.45000076293945,
+      31.719999313354492,
+      35.119998931884766
+     ],
+     "pool": [
+      41.08000183105469,
+      43.70000076293945,
+      42.06999969482422,
+      43.060001373291016
+     ]
+    },
+    {
+     "t": 30.0,
+     "prey": [
+      93,
+      99,
+      90,
+      98
+     ],
+     "pred": [
+      8,
+      7,
+      9,
+      7
+     ],
+     "food": [
+      31.649999618530273,
+      30.040000915527344,
+      31.959999084472656,
+      33.9900016784668
+     ],
+     "pool": [
+      40.20000076293945,
+      42.380001068115234,
+      43.38999938964844,
+      45.209999084472656
+     ]
+    },
+    {
+     "t": 35.0,
+     "prey": [
+      91,
+      96,
+      84,
+      97
+     ],
+     "pred": [
+      9,
+      7,
+      9,
+      8
+     ],
+     "food": [
+      31.969999313354492,
+      29.979999542236328,
+      30.950000762939453,
+      32.66999816894531
+     ],
+     "pool": [
+      39.38999938964844,
+      40.810001373291016,
+      44.54999923706055,
+      45.619998931884766
+     ]
+    },
+    {
+     "t": 40.0,
+     "prey": [
+      90,
+      93,
+      80,
+      98
+     ],
+     "pred": [
+      9,
+      7,
+      11,
+      8
+     ],
+     "food": [
+      33.540000915527344,
+      29.56999969482422,
+      31.209999084472656,
+      32.310001373291016
+     ],
+     "pool": [
+      39.439998626708984,
+      38.880001068115234,
+      45.099998474121094,
+      45.22999954223633
+     ]
+    },
+    {
+     "t": 45.0,
+     "prey": [
+      86,
+      89,
+      79,
+      96
+     ],
+     "pred": [
+      9,
+      8,
+      11,
+      8
+     ],
+     "food": [
+      34.41999816894531,
+      30.959999084472656,
+      32.970001220703125,
+      31.5
+     ],
+     "pool": [
+      39.880001068115234,
+      37.2599983215332,
+      47.0099983215332,
+      45.15999984741211
+     ]
+    },
+    {
+     "t": 50.0,
+     "prey": [
+      84,
+      83,
+      76,
+      98
+     ],
+     "pred": [
+      9,
+      9,
+      11,
+      7
+     ],
+     "food": [
+      33.959999084472656,
+      32.02000045776367,
+      32.54999923706055,
+      30.75
+     ],
+     "pool": [
+      39.86000061035156,
+      35.790000915527344,
+      48.630001068115234,
+      46.59000015258789
+     ]
+    },
+    {
+     "t": 55.0,
+     "prey": [
+      84,
+      82,
+      74,
+      97
+     ],
+     "pred": [
+      8,
+      10,
+      10,
+      7
+     ],
+     "food": [
+      34.470001220703125,
+      33.08000183105469,
+      31.790000915527344,
+      28.25
+     ],
+     "pool": [
+      43.45000076293945,
+      35.630001068115234,
+      51.63999938964844,
+      44.88999938964844
+     ]
+    },
+    {
+     "t": 60.0,
+     "prey": [
+      83,
+      80,
+      65,
+      96
+     ],
+     "pred": [
+      9,
+      10,
+      11,
+      7
+     ],
+     "food": [
+      35.2599983215332,
+      33.36000061035156,
+      32.189998626708984,
+      29.040000915527344
+     ],
+     "pool": [
+      43.34000015258789,
+      37.459999084472656,
+      52.349998474121094,
+      44.619998931884766
+     ]
+    },
+    {
+     "t": 65.0,
+     "prey": [
+      80,
+      72,
+      58,
+      96
+     ],
+     "pred": [
+      9,
+      13,
+      11,
+      7
+     ],
+     "food": [
+      36.02000045776367,
+      33.13999938964844,
+      33.36000061035156,
+      30.770000457763672
+     ],
+     "pool": [
+      42.95000076293945,
+      37.540000915527344,
+      53.18000030517578,
+      42.060001373291016
+     ]
+    },
+    {
+     "t": 70.0,
+     "prey": [
+      80,
+      65,
+      53,
+      96
+     ],
+     "pred": [
+      9,
+      15,
+      12,
+      7
+     ],
+     "food": [
+      37.25,
+      33.56999969482422,
+      35.97999954223633,
+      33.15999984741211
+     ],
+     "pool": [
+      42.470001220703125,
+      39.22999954223633,
+      54.810001373291016,
+      40.65999984741211
+     ]
+    },
+    {
+     "t": 75.0,
+     "prey": [
+      77,
+      60,
+      51,
+      95
+     ],
+     "pred": [
+      9,
+      16,
+      12,
+      7
+     ],
+     "food": [
+      39.060001373291016,
+      36.20000076293945,
+      36.88999938964844,
+      33.529998779296875
+     ],
+     "pool": [
+      42.75,
+      40.75,
+      57.02000045776367,
+      39.84000015258789
+     ]
+    },
+    {
+     "t": 80.0,
+     "prey": [
+      74,
+      58,
+      44,
+      95
+     ],
+     "pred": [
+      8,
+      16,
+      14,
+      7
+     ],
+     "food": [
+      39.63999938964844,
+      36.43000030517578,
+      38.36000061035156,
+      33.709999084472656
+     ],
+     "pool": [
+      45.68000030517578,
+      43.380001068115234,
+      59.41999816894531,
+      40.130001068115234
+     ]
+    },
+    {
+     "t": 85.0,
+     "prey": [
+      71,
+      52,
+      38,
+      96
+     ],
+     "pred": [
+      9,
+      16,
+      15,
+      7
+     ],
+     "food": [
+      40.09000015258789,
+      37.72999954223633,
+      39.90999984741211,
+      31.110000610351562
+     ],
+     "pool": [
+      46.15999984741211,
+      46.04999923706055,
+      62.66999816894531,
+      39.58000183105469
+     ]
+    },
+    {
+     "t": 90.0,
+     "prey": [
+      67,
+      47,
+      34,
+      96
+     ],
+     "pred": [
+      10,
+      16,
+      15,
+      7
+     ],
+     "food": [
+      40.79999923706055,
+      39.72999954223633,
+      41.439998626708984,
+      29.389999389648438
+     ],
+     "pool": [
+      47.36000061035156,
+      48.970001220703125,
+      65.75,
+      37.79999923706055
+     ]
+    },
+    {
+     "t": 95.0,
+     "prey": [
+      66,
+      39,
+      27,
+      99
+     ],
+     "pred": [
+      9,
+      20,
+      15,
+      7
+     ],
+     "food": [
+      43.470001220703125,
+      41.33000183105469,
+      42.709999084472656,
+      28.450000762939453
+     ],
+     "pool": [
+      51.439998626708984,
+      52.0,
+      69.37999725341797,
+      36.11000061035156
+     ]
+    },
+    {
+     "t": 100.0,
+     "prey": [
+      62,
+      32,
+      25,
+      101
+     ],
+     "pred": [
+      9,
+      20,
+      15,
+      7
+     ],
+     "food": [
+      42.029998779296875,
+      43.29999923706055,
+      43.41999816894531,
+      28.06999969482422
+     ],
+     "pool": [
+      53.15999984741211,
+      58.220001220703125,
+      74.05000305175781,
+      33.75
+     ]
+    },
+    {
+     "t": 105.0,
+     "prey": [
+      58,
+      27,
+      25,
+      100
+     ],
+     "pred": [
+      10,
+      21,
+      15,
+      7
+     ],
+     "food": [
+      41.81999969482422,
+      44.400001525878906,
+      44.959999084472656,
+      28.209999084472656
+     ],
+     "pool": [
+      54.4900016784668,
+      63.040000915527344,
+      77.2300033569336,
+      31.3700008392334
+     ]
+    },
+    {
+     "t": 110.0,
+     "prey": [
+      65,
+      19,
+      23,
+      100
+     ],
+     "pred": [
+      10,
+      21,
+      16,
+      8
+     ],
+     "food": [
+      38.56999969482422,
+      46.209999084472656,
+      46.189998626708984,
+      28.219999313354492
+     ],
+     "pool": [
+      56.02000045776367,
+      67.26000213623047,
+      81.12000274658203,
+      29.190000534057617
+     ]
+    },
+    {
+     "t": 115.0,
+     "prey": [
+      68,
+      14,
+      18,
+      100
+     ],
+     "pred": [
+      10,
+      21,
+      16,
+      10
+     ],
+     "food": [
+      36.61000061035156,
+      49.22999954223633,
+      47.04999923706055,
+      28.469999313354492
+     ],
+     "pool": [
+      57.08000183105469,
+      71.87000274658203,
+      85.41000366210938,
+      28.219999313354492
+     ]
+    },
+    {
+     "t": 120.0,
+     "prey": [
+      68,
+      11,
+      12,
+      96
+     ],
+     "pred": [
+      10,
+      21,
+      17,
+      11
+     ],
+     "food": [
+      36.41999816894531,
+      52.209999084472656,
+      47.900001525878906,
+      29.8700008392334
+     ],
+     "pool": [
+      57.90999984741211,
+      78.8499984741211,
+      89.66999816894531,
+      27.959999084472656
+     ]
+    },
+    {
+     "t": 125.0,
+     "prey": [
+      66,
+      3,
+      10,
+      91
+     ],
+     "pred": [
+      12,
+      19,
+      17,
+      11
+     ],
+     "food": [
+      38.56999969482422,
+      54.09000015258789,
+      49.040000915527344,
+      30.56999969482422
+     ],
+     "pool": [
+      60.689998626708984,
+      88.13999938964844,
+      93.36000061035156,
+      27.979999542236328
+     ]
+    },
+    {
+     "t": 130.0,
+     "prey": [
+      63,
+      0,
+      9,
+      83
+     ],
+     "pred": [
+      13,
+      20,
+      17,
+      12
+     ],
+     "food": [
+      38.45000076293945,
+      56.16999816894531,
+      50.04999923706055,
+      31.989999771118164
+     ],
+     "pool": [
+      62.529998779296875,
+      92.58999633789062,
+      96.95999908447266,
+      27.610000610351562
+     ]
+    },
+    {
+     "t": 135.0,
+     "prey": [
+      51,
+      0,
+      8,
+      81
+     ],
+     "pred": [
+      13,
+      20,
+      16,
+      12
+     ],
+     "food": [
+      39.29999923706055,
+      57.83000183105469,
+      51.15999984741211,
+      34.04999923706055
+     ],
+     "pool": [
+      64.27999877929688,
+      97.36000061035156,
+      102.83999633789062,
+      28.290000915527344
+     ]
+    },
+    {
+     "t": 140.0,
+     "prey": [
+      46,
+      0,
+      7,
+      79
+     ],
+     "pred": [
+      15,
+      20,
+      16,
+      14
+     ],
+     "food": [
+      40.61000061035156,
+      59.119998931884766,
+      52.29999923706055,
+      36.5099983215332
+     ],
+     "pool": [
+      67.16999816894531,
+      102.5,
+      107.47000122070312,
+      30.770000457763672
+     ]
+    },
+    {
+     "t": 145.0,
+     "prey": [
+      37,
+      0,
+      5,
+      74
+     ],
+     "pred": [
+      17,
+      19,
+      16,
+      14
+     ],
+     "food": [
+      41.630001068115234,
+      60.119998931884766,
+      52.959999084472656,
+      34.90999984741211
+     ],
+     "pool": [
+      70.94000244140625,
+      109.75,
+      112.16000366210938,
+      33.11000061035156
+     ]
+    },
+    {
+     "t": 150.0,
+     "prey": [
+      31,
+      0,
+      1,
+      71
+     ],
+     "pred": [
+      17,
+      19,
+      15,
+      15
+     ],
+     "food": [
+      43.81999969482422,
+      60.900001525878906,
+      54.16999816894531,
+      33.0
+     ],
+     "pool": [
+      74.7300033569336,
+      115.06999969482422,
+      118.45999908447266,
+      35.220001220703125
+     ]
+    },
+    {
+     "t": 155.0,
+     "prey": [
+      28,
+      0,
+      0,
+      68
+     ],
+     "pred": [
+      17,
+      17,
+      14,
+      15
+     ],
+     "food": [
+      45.25,
+      61.5099983215332,
+      55.209999084472656,
+      33.790000915527344
+     ],
+     "pool": [
+      79.20999908447266,
+      124.16999816894531,
+      124.12000274658203,
+      36.79999923706055
+     ]
+    },
+    {
+     "t": 160.0,
+     "prey": [
+      22,
+      0,
+      0,
+      64
+     ],
+     "pred": [
+      17,
+      14,
+      14,
+      15
+     ],
+     "food": [
+      46.25,
+      61.97999954223633,
+      56.04999923706055,
+      33.779998779296875
+     ],
+     "pool": [
+      83.29000091552734,
+      134.6699981689453,
+      127.77999877929688,
+      39.099998474121094
+     ]
+    },
+    {
+     "t": 165.0,
+     "prey": [
+      17,
+      0,
+      0,
+      58
+     ],
+     "pred": [
+      17,
+      11,
+      13,
+      17
+     ],
+     "food": [
+      48.150001525878906,
+      62.349998474121094,
+      56.709999084472656,
+      35.54999923706055
+     ],
+     "pool": [
+      87.33999633789062,
+      144.19000244140625,
+      133.50999450683594,
+      41.29999923706055
+     ]
+    },
+    {
+     "t": 170.0,
+     "prey": [
+      10,
+      0,
+      0,
+      52
+     ],
+     "pred": [
+      18,
+      10,
+      12,
+      17
+     ],
+     "food": [
+      49.880001068115234,
+      62.630001068115234,
+      57.220001220703125,
+      37.70000076293945
+     ],
+     "pool": [
+      91.54000091552734,
+      149.44000244140625,
+      139.0,
+      44.380001068115234
+     ]
+    },
+    {
+     "t": 175.0,
+     "prey": [
+      3,
+      0,
+      0,
+      41
+     ],
+     "pred": [
+      17,
+      9,
+      9,
+      20
+     ],
+     "food": [
+      52.0,
+      62.86000061035156,
+      57.619998931884766,
+      39.869998931884766
+     ],
+     "pool": [
+      97.30999755859375,
+      154.27000427246094,
+      148.22999572753906,
+      47.88999938964844
+     ]
+    },
+    {
+     "t": 180.0,
+     "prey": [
+      0,
+      0,
+      0,
+      30
+     ],
+     "pred": [
+      16,
+      7,
+      9,
+      22
+     ],
+     "food": [
+      54.02000045776367,
+      63.029998779296875,
+      57.93000030517578,
+      41.790000915527344
+     ],
+     "pool": [
+      102.7699966430664,
+      160.69000244140625,
+      150.80999755859375,
+      52.439998626708984
+     ]
+    },
+    {
+     "t": 185.0,
+     "prey": [
+      0,
+      0,
+      0,
+      23
+     ],
+     "pred": [
+      16,
+      6,
+      8,
+      24
+     ],
+     "food": [
+      55.77000045776367,
+      63.16999816894531,
+      58.16999816894531,
+      43.90999984741211
+     ],
+     "pool": [
+      106.16999816894531,
+      164.61000061035156,
+      155.4499969482422,
+      57.22999954223633
+     ]
+    },
+    {
+     "t": 190.0,
+     "prey": [
+      0,
+      0,
+      0,
+      16
+     ],
+     "pred": [
+      16,
+      4,
+      7,
+      25
+     ],
+     "food": [
+      57.130001068115234,
+      63.27000045776367,
+      58.36000061035156,
+      46.849998474121094
+     ],
+     "pool": [
+      109.94999694824219,
+      170.36000061035156,
+      159.7100067138672,
+      63.29999923706055
+     ]
+    },
+    {
+     "t": 195.0,
+     "prey": [
+      0,
+      0,
+      0,
+      10
+     ],
+     "pred": [
+      16,
+      4,
+      6,
+      26
+     ],
+     "food": [
+      58.189998626708984,
+      63.349998474121094,
+      58.5099983215332,
+      49.56999969482422
+     ],
+     "pool": [
+      114.04000091552734,
+      171.57000732421875,
+      163.80999755859375,
+      69.36000061035156
+     ]
+    },
+    {
+     "t": 200.0,
+     "prey": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "pred": [
+      15,
+      3,
+      4,
+      25
+     ],
+     "food": [
+      59.0099983215332,
+      63.41999816894531,
+      58.619998931884766,
+      52.22999954223633
+     ],
+     "pool": [
+      120.08999633789062,
+      174.67999267578125,
+      169.3300018310547,
+      77.48999786376953
+     ]
+    },
+    {
+     "t": 205.0,
+     "prey": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "pred": [
+      15,
+      1,
+      3,
+      24
+     ],
+     "food": [
+      59.650001525878906,
+      63.470001220703125,
+      58.709999084472656,
+      54.779998779296875
+     ],
+     "pool": [
+      124.2699966430664,
+      179.11000061035156,
+      172.27999877929688,
+      84.95999908447266
+     ]
+    },
+    {
+     "t": 210.0,
+     "prey": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "pred": [
+      15,
+      1,
+      3,
+      24
+     ],
+     "food": [
+      60.150001525878906,
+      63.5,
+      58.779998779296875,
+      56.810001373291016
+     ],
+     "pool": [
+      128.58999633789062,
+      179.38999938964844,
+      173.17999267578125,
+      90.6500015258789
+     ]
+    },
+    {
+     "t": 215.0,
+     "prey": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "pred": [
+      14,
+      1,
+      3,
+      24
+     ],
+     "food": [
+      60.540000915527344,
+      63.529998779296875,
+      58.83000183105469,
+      58.38999938964844
+     ],
+     "pool": [
+      134.8800048828125,
+      179.67999267578125,
+      174.08999633789062,
+      96.79000091552734
+     ]
+    },
+    {
+     "t": 220.0,
+     "prey": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "pred": [
+      13,
+      1,
+      2,
+      21
+     ],
+     "food": [
+      60.84000015258789,
+      63.560001373291016,
+      58.869998931884766,
+      59.619998931884766
+     ],
+     "pool": [
+      141.0800018310547,
+      179.97999572753906,
+      176.94000244140625,
+      108.75
+     ]
+    },
+    {
+     "t": 225.0,
+     "prey": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "pred": [
+      12,
+      0,
+      1,
+      21
+     ],
+     "food": [
+      61.08000183105469,
+      63.58000183105469,
+      58.90999984741211,
+      60.56999969482422
+     ],
+     "pool": [
+      146.8000030517578,
+      182.05999755859375,
+      179.27999877929688,
+      114.54000091552734
+     ]
+    },
+    {
+     "t": 230.0,
+     "prey": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "pred": [
+      11,
+      0,
+      1,
+      20
+     ],
+     "food": [
+      61.2599983215332,
+      63.59000015258789,
+      58.93000030517578,
+      61.31999969482422
+     ],
+     "pool": [
+      152.17999267578125,
+      182.0500030517578,
+      179.5800018310547,
+      122.41000366210938
+     ]
+    },
+    {
+     "t": 235.0,
+     "prey": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "pred": [
+      7,
+      0,
+      1,
+      14
+     ],
+     "food": [
+      61.400001525878906,
+      63.599998474121094,
+      58.95000076293945,
+      61.88999938964844
+     ],
+     "pool": [
+      163.3000030517578,
+      182.0399932861328,
+      179.8800048828125,
+      139.44000244140625
+     ]
+    },
+    {
+     "t": 240.0,
+     "prey": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "pred": [
+      6,
+      0,
+      0,
+      11
+     ],
+     "food": [
+      61.5099983215332,
+      63.61000061035156,
+      58.970001220703125,
+      62.34000015258789
+     ],
+     "pool": [
+      167.3699951171875,
+      182.02999877929688,
+      182.0500030517578,
+      149.1699981689453
+     ]
+    },
+    {
+     "t": 245.0,
+     "prey": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "pred": [
+      4,
+      0,
+      0,
+      11
+     ],
+     "food": [
+      61.599998474121094,
+      63.619998931884766,
+      58.97999954223633,
+      62.70000076293945
+     ],
+     "pool": [
+      172.99000549316406,
+      182.02000427246094,
+      182.0399932861328,
+      152.35000610351562
+     ]
+    },
+    {
+     "t": 250.0,
+     "prey": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "pred": [
+      2,
+      0,
+      0,
+      10
+     ],
+     "food": [
+      61.66999816894531,
+      63.619998931884766,
+      58.9900016784668,
+      62.970001220703125
+     ],
+     "pool": [
+      178.02000427246094,
+      182.02000427246094,
+      182.02999877929688,
+      157.58999633789062
+     ]
+    },
+    {
+     "t": 255.0,
+     "prey": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "pred": [
+      0,
+      0,
+      0,
+      6
+     ],
+     "food": [
+      61.720001220703125,
+      63.619998931884766,
+      59.0,
+      63.18000030517578
+     ],
+     "pool": [
+      182.17999267578125,
+      182.00999450683594,
+      182.02999877929688,
+      168.1199951171875
+     ]
+    },
+    {
+     "t": 260.0,
+     "prey": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "pred": [
+      0,
+      0,
+      0,
+      2
+     ],
+     "food": [
+      61.7599983215332,
+      63.630001068115234,
+      59.0,
+      63.349998474121094
+     ],
+     "pool": [
+      182.13999938964844,
+      182.00999450683594,
+      182.02000427246094,
+      176.94000244140625
+     ]
+    },
+    {
+     "t": 265.0,
+     "prey": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "pred": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "food": [
+      61.790000915527344,
+      63.630001068115234,
+      59.0099983215332,
+      63.470001220703125
+     ],
+     "pool": [
+      182.11000061035156,
+      182.00999450683594,
+      182.02000427246094,
+      179.3300018310547
+     ]
+    },
+    {
+     "t": 270.0,
+     "prey": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "pred": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "food": [
+      61.810001373291016,
+      63.630001068115234,
+      59.0099983215332,
+      63.58000183105469
+     ],
+     "pool": [
+      182.08999633789062,
+      182.00999450683594,
+      182.00999450683594,
+      179.5500030517578
+     ]
+    },
+    {
+     "t": 275.0,
+     "prey": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "pred": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "food": [
+      61.83000183105469,
+      63.630001068115234,
+      59.0099983215332,
+      63.650001525878906
+     ],
+     "pool": [
+      182.07000732421875,
+      182.0,
+      182.00999450683594,
+      179.7899932861328
+     ]
+    },
+    {
+     "t": 280.0,
+     "prey": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "pred": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "food": [
+      61.849998474121094,
+      63.630001068115234,
+      59.0099983215332,
+      63.709999084472656
+     ],
+     "pool": [
+      182.0500030517578,
+      182.0,
+      182.00999450683594,
+      180.0500030517578
+     ]
+    },
+    {
+     "t": 285.0,
+     "prey": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "pred": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "food": [
+      61.86000061035156,
+      63.63999938964844,
+      59.0099983215332,
+      63.7599983215332
+     ],
+     "pool": [
+      182.0399932861328,
+      182.0,
+      182.00999450683594,
+      182.1699981689453
+     ]
+    },
+    {
+     "t": 290.0,
+     "prey": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "pred": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "food": [
+      61.869998931884766,
+      63.63999938964844,
+      59.02000045776367,
+      63.79999923706055
+     ],
+     "pool": [
+      182.02999877929688,
+      182.0,
+      182.0,
+      182.1300048828125
+     ]
+    },
+    {
+     "t": 295.0,
+     "prey": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "pred": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "food": [
+      61.880001068115234,
+      63.63999938964844,
+      59.02000045776367,
+      63.83000183105469
+     ],
+     "pool": [
+      182.02999877929688,
+      182.0,
+      182.0,
+      182.10000610351562
+     ]
+    },
+    {
+     "t": 300.0,
+     "prey": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "pred": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "food": [
+      61.880001068115234,
+      63.63999938964844,
+      59.02000045776367,
+      63.849998474121094
+     ],
+     "pool": [
+      182.02000427246094,
+      182.0,
+      182.0,
+      182.0800018310547
+     ]
+    }
+   ],
+   "final_prey": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "final_pred": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "prey_extinct": [
+    1,
+    1,
+    1,
+    1
+   ],
+   "pred_extinct": [
+    1,
+    1,
+    1,
+    1
+   ],
+   "births": [
+    [
+     45,
+     16
+    ],
+    [
+     27,
+     18
+    ],
+    [
+     15,
+     11
+    ],
+    [
+     81,
+     22
+    ]
+   ],
+   "starved": [
+    [
+     0,
+     24
+    ],
+    [
+     0,
+     26
+    ],
+    [
+     0,
+     19
+    ],
+    [
+     0,
+     30
+    ]
+   ],
+   "catches": [
+    165.0,
+    147.0,
+    135.0,
+    201.0
+   ],
+   "mass_residual_max": 0.0013427734375,
+   "mass_total": 244.12188720703125
+  },
+  "a9herd:1500:1500 sated1.25 (10 min)": {
+   "cfg": {
+    "R_cell": 200.0,
+    "dt": 0.1,
+    "n_prey": 120,
+    "n_pred": 8,
+    "prey_v": 60.0,
+    "prey_acc": 300.0,
+    "prey_turn": 10.0,
+    "prey_R": 50.0,
+    "prey_r0": 5.0,
+    "prey_size": 2.5,
+    "pred_v": 45.0,
+    "pred_burst": 100.0,
+    "pred_acc": 150.0,
+    "pred_turn": 3.0,
+    "pred_R": 80.0,
+    "pred_r0": 14.0,
+    "pred_size": 5.0,
+    "stam_drain": 0.3333333333333333,
+    "stam_regen": 0.125,
+    "catch_r": 7.5,
+    "handle": 1.0,
+    "confusion": 0.3,
+    "conf_r": 10.0,
+    "G": 12,
+    "food_patches": 6,
+    "food_cap": 1.0,
+    "graze_rate": 0.08,
+    "graze_half": 0.3,
+    "regrow": 0.05,
+    "eco": true,
+    "m_prey": 1.0,
+    "m_pred": 4.0,
+    "prey_burn": [
+     0.004,
+     0.008
+    ],
+    "pred_burn": [
+     0.01,
+     0.03
+    ],
+    "cap_prey": 480,
+    "cap_pred": 48,
+    "pool0": 30.0,
+    "pred_split": 2.0,
+    "sated": 1.25,
+    "detect_conf": 0.0,
+    "detect_r": 15.0
+   },
+   "seeds": [
+    21,
+    22,
+    23,
+    24
+   ],
+   "minutes": 10.0,
+   "series": [
+    {
+     "t": 5.0,
+     "prey": [
+      117,
+      116,
+      115,
+      117
+     ],
+     "pred": [
+      8,
+      8,
+      8,
+      8
+     ],
+     "food": [
+      44.65999984741211,
+      48.310001373291016,
+      42.810001373291016,
+      47.41999816894531
+     ],
+     "pool": [
+      36.220001220703125,
+      36.75,
+      36.939998626708984,
+      36.38999938964844
+     ]
+    },
+    {
+     "t": 10.0,
+     "prey": [
+      112,
+      110,
+      110,
+      110
+     ],
+     "pred": [
+      8,
+      8,
+      8,
+      8
+     ],
+     "food": [
+      36.47999954223633,
+      39.7400016784668,
+      33.0099983215332,
+      39.790000915527344
+     ],
+     "pool": [
+      38.2400016784668,
+      39.2599983215332,
+      39.599998474121094,
+      39.709999084472656
+     ]
+    },
+    {
+     "t": 15.0,
+     "prey": [
+      109,
+      108,
+      108,
+      106
+     ],
+     "pred": [
+      8,
+      8,
+      8,
+      8
+     ],
+     "food": [
+      32.119998931884766,
+      38.09000015258789,
+      28.90999984741211,
+      35.939998626708984
+     ],
+     "pool": [
+      39.15999984741211,
+      39.880001068115234,
+      40.5099983215332,
+      40.619998931884766
+     ]
+    },
+    {
+     "t": 20.0,
+     "prey": [
+      105,
+      108,
+      105,
+      103
+     ],
+     "pred": [
+      8,
+      8,
+      8,
+      8
+     ],
+     "food": [
+      31.280000686645508,
+      34.95000076293945,
+      27.889999389648438,
+      34.63999938964844
+     ],
+     "pool": [
+      38.880001068115234,
+      40.34000015258789,
+      40.880001068115234,
+      40.439998626708984
+     ]
+    },
+    {
+     "t": 25.0,
+     "prey": [
+      101,
+      104,
+      101,
+      101
+     ],
+     "pred": [
+      8,
+      6,
+      8,
+      8
+     ],
+     "food": [
+      30.729999542236328,
+      33.2400016784668,
+      29.309999465942383,
+      34.689998626708984
+     ],
+     "pool": [
+      38.5099983215332,
+      43.7599983215332,
+      41.2599983215332,
+      39.9900016784668
+     ]
+    },
+    {
+     "t": 30.0,
+     "prey": [
+      100,
+      103,
+      99,
+      98
+     ],
+     "pred": [
+      8,
+      6,
+      8,
+      8
+     ],
+     "food": [
+      30.520000457763672,
+      33.75,
+      29.81999969482422,
+      34.2400016784668
+     ],
+     "pool": [
+      37.70000076293945,
+      42.40999984741211,
+      41.11000061035156,
+      39.369998931884766
+     ]
+    },
+    {
+     "t": 35.0,
+     "prey": [
+      97,
+      102,
+      94,
+      96
+     ],
+     "pred": [
+      8,
+      6,
+      8,
+      8
+     ],
+     "food": [
+      30.809999465942383,
+      31.719999313354492,
+      30.200000762939453,
+      35.220001220703125
+     ],
+     "pool": [
+      37.099998474121094,
+      40.90999984741211,
+      41.709999084472656,
+      38.290000915527344
+     ]
+    },
+    {
+     "t": 40.0,
+     "prey": [
+      94,
+      102,
+      93,
+      97
+     ],
+     "pred": [
+      7,
+      6,
+      8,
+      8
+     ],
+     "food": [
+      31.389999389648438,
+      32.7599983215332,
+      28.780000686645508,
+      35.81999969482422
+     ],
+     "pool": [
+      37.619998931884766,
+      39.25,
+      41.75,
+      38.16999816894531
+     ]
+    },
+    {
+     "t": 45.0,
+     "prey": [
+      93,
+      102,
+      90,
+      98
+     ],
+     "pred": [
+      7,
+      6,
+      8,
+      8
+     ],
+     "food": [
+      32.2400016784668,
+      33.060001373291016,
+      28.709999084472656,
+      33.77000045776367
+     ],
+     "pool": [
+      35.65999984741211,
+      37.380001068115234,
+      40.66999816894531,
+      37.91999816894531
+     ]
+    },
+    {
+     "t": 50.0,
+     "prey": [
+      91,
+      102,
+      89,
+      104
+     ],
+     "pred": [
+      7,
+      6,
+      8,
+      8
+     ],
+     "food": [
+      34.68000030517578,
+      33.27000045776367,
+      29.68000030517578,
+      32.56999969482422
+     ],
+     "pool": [
+      34.63999938964844,
+      35.22999954223633,
+      39.70000076293945,
+      37.83000183105469
+     ]
+    },
+    {
+     "t": 55.0,
+     "prey": [
+      92,
+      99,
+      88,
+      102
+     ],
+     "pred": [
+      7,
+      6,
+      9,
+      8
+     ],
+     "food": [
+      33.16999816894531,
+      34.45000076293945,
+      30.610000610351562,
+      31.200000762939453
+     ],
+     "pool": [
+      34.66999816894531,
+      33.290000915527344,
+      39.349998474121094,
+      37.2599983215332
+     ]
+    },
+    {
+     "t": 60.0,
+     "prey": [
+      93,
+      99,
+      85,
+      105
+     ],
+     "pred": [
+      7,
+      6,
+      9,
+      7
+     ],
+     "food": [
+      31.770000457763672,
+      36.43000030517578,
+      31.219999313354492,
+      29.90999984741211
+     ],
+     "pool": [
+      33.439998626708984,
+      31.790000915527344,
+      38.7400016784668,
+      37.77000045776367
+     ]
+    },
+    {
+     "t": 65.0,
+     "prey": [
+      92,
+      95,
+      83,
+      107
+     ],
+     "pred": [
+      7,
+      6,
+      9,
+      7
+     ],
+     "food": [
+      31.829999923706055,
+      37.060001373291016,
+      32.68000030517578,
+      28.8799991607666
+     ],
+     "pool": [
+      32.099998474121094,
+      30.68000030517578,
+      39.40999984741211,
+      34.869998931884766
+     ]
+    },
+    {
+     "t": 70.0,
+     "prey": [
+      94,
+      94,
+      84,
+      108
+     ],
+     "pred": [
+      7,
+      6,
+      8,
+      7
+     ],
+     "food": [
+      30.93000030517578,
+      37.25,
+      33.27000045776367,
+      30.459999084472656
+     ],
+     "pool": [
+      31.149999618530273,
+      30.43000030517578,
+      41.689998626708984,
+      32.869998931884766
+     ]
+    },
+    {
+     "t": 75.0,
+     "prey": [
+      95,
+      93,
+      84,
+      110
+     ],
+     "pred": [
+      6,
+      6,
+      8,
+      7
+     ],
+     "food": [
+      31.110000610351562,
+      36.09000015258789,
+      30.709999084472656,
+      29.469999313354492
+     ],
+     "pool": [
+      31.579999923706055,
+      29.079999923706055,
+      41.349998474121094,
+      31.020000457763672
+     ]
+    },
+    {
+     "t": 80.0,
+     "prey": [
+      97,
+      93,
+      84,
+      108
+     ],
+     "pred": [
+      6,
+      6,
+      8,
+      7
+     ],
+     "food": [
+      31.309999465942383,
+      37.36000061035156,
+      29.389999389648438,
+      29.149999618530273
+     ],
+     "pool": [
+      29.510000228881836,
+      28.649999618530273,
+      40.5099983215332,
+      29.899999618530273
+     ]
+    },
+    {
+     "t": 85.0,
+     "prey": [
+      101,
+      96,
+      84,
+      107
+     ],
+     "pred": [
+      6,
+      7,
+      8,
+      7
+     ],
+     "food": [
+      31.5,
+      34.7400016784668,
+      30.170000076293945,
+      28.450000762939453
+     ],
+     "pool": [
+      28.5,
+      27.8799991607666,
+      39.95000076293945,
+      27.389999389648438
+     ]
+    },
+    {
+     "t": 90.0,
+     "prey": [
+      106,
+      99,
+      84,
+      109
+     ],
+     "pred": [
+      6,
+      7,
+      8,
+      7
+     ],
+     "food": [
+      29.959999084472656,
+      33.349998474121094,
+      29.93000030517578,
+      29.329999923706055
+     ],
+     "pool": [
+      26.25,
+      26.56999969482422,
+      39.099998474121094,
+      25.290000915527344
+     ]
+    },
+    {
+     "t": 95.0,
+     "prey": [
+      106,
+      100,
+      89,
+      108
+     ],
+     "pred": [
+      6,
+      7,
+      8,
+      7
+     ],
+     "food": [
+      30.739999771118164,
+      32.25,
+      29.670000076293945,
+      29.860000610351562
+     ],
+     "pool": [
+      25.670000076293945,
+      25.190000534057617,
+      38.0099983215332,
+      22.940000534057617
+     ]
+    },
+    {
+     "t": 100.0,
+     "prey": [
+      110,
+      104,
+      91,
+      109
+     ],
+     "pred": [
+      6,
+      7,
+      8,
+      7
+     ],
+     "food": [
+      29.40999984741211,
+      32.029998779296875,
+      30.540000915527344,
+      29.489999771118164
+     ],
+     "pool": [
+      24.030000686645508,
+      23.790000915527344,
+      37.36000061035156,
+      21.100000381469727
+     ]
+    },
+    {
+     "t": 105.0,
+     "prey": [
+      117,
+      108,
+      93,
+      111
+     ],
+     "pred": [
+      6,
+      6,
+      8,
+      7
+     ],
+     "food": [
+      29.559999465942383,
+      34.290000915527344,
+      29.56999969482422,
+      29.059999465942383
+     ],
+     "pool": [
+      23.059999465942383,
+      24.540000915527344,
+      36.9900016784668,
+      19.149999618530273
+     ]
+    },
+    {
+     "t": 110.0,
+     "prey": [
+      119,
+      115,
+      97,
+      111
+     ],
+     "pred": [
+      6,
+      6,
+      8,
+      7
+     ],
+     "food": [
+      30.809999465942383,
+      35.369998931884766,
+      28.65999984741211,
+      28.850000381469727
+     ],
+     "pool": [
+      22.950000762939453,
+      23.530000686645508,
+      35.84000015258789,
+      17.6200008392334
+     ]
+    },
+    {
+     "t": 115.0,
+     "prey": [
+      118,
+      119,
+      96,
+      109
+     ],
+     "pred": [
+      6,
+      6,
+      8,
+      7
+     ],
+     "food": [
+      27.610000610351562,
+      34.81999969482422,
+      29.15999984741211,
+      29.3700008392334
+     ],
+     "pool": [
+      21.969999313354492,
+      22.90999984741211,
+      35.459999084472656,
+      16.209999084472656
+     ]
+    },
+    {
+     "t": 120.0,
+     "prey": [
+      122,
+      120,
+      98,
+      112
+     ],
+     "pred": [
+      5,
+      6,
+      8,
+      7
+     ],
+     "food": [
+      27.34000015258789,
+      35.150001525878906,
+      27.93000030517578,
+      27.989999771118164
+     ],
+     "pool": [
+      21.75,
+      22.170000076293945,
+      35.22999954223633,
+      14.119999885559082
+     ]
+    },
+    {
+     "t": 125.0,
+     "prey": [
+      124,
+      120,
+      99,
+      115
+     ],
+     "pred": [
+      5,
+      6,
+      8,
+      7
+     ],
+     "food": [
+      27.100000381469727,
+      35.7599983215332,
+      27.209999084472656,
+      27.020000457763672
+     ],
+     "pool": [
+      19.649999618530273,
+      21.81999969482422,
+      34.11000061035156,
+      11.300000190734863
+     ]
+    },
+    {
+     "t": 130.0,
+     "prey": [
+      126,
+      121,
+      100,
+      119
+     ],
+     "pred": [
+      5,
+      6,
+      8,
+      7
+     ],
+     "food": [
+      28.0,
+      34.060001373291016,
+      27.260000228881836,
+      28.059999465942383
+     ],
+     "pool": [
+      17.8700008392334,
+      20.93000030517578,
+      33.29999923706055,
+      9.229999542236328
+     ]
+    },
+    {
+     "t": 135.0,
+     "prey": [
+      127,
+      124,
+      104,
+      123
+     ],
+     "pred": [
+      5,
+      6,
+      7,
+      8
+     ],
+     "food": [
+      28.0,
+      32.880001068115234,
+      26.450000762939453,
+      27.1299991607666
+     ],
+     "pool": [
+      16.309999465942383,
+      20.209999084472656,
+      34.11000061035156,
+      7.739999771118164
+     ]
+    },
+    {
+     "t": 140.0,
+     "prey": [
+      131,
+      123,
+      106,
+      125
+     ],
+     "pred": [
+      5,
+      6,
+      7,
+      8
+     ],
+     "food": [
+      27.010000228881836,
+      32.86000061035156,
+      27.31999969482422,
+      27.389999389648438
+     ],
+     "pool": [
+      14.649999618530273,
+      18.860000610351562,
+      32.130001068115234,
+      6.429999828338623
+     ]
+    },
+    {
+     "t": 145.0,
+     "prey": [
+      131,
+      122,
+      105,
+      121
+     ],
+     "pred": [
+      5,
+      6,
+      7,
+      8
+     ],
+     "food": [
+      25.469999313354492,
+      34.369998931884766,
+      29.31999969482422,
+      27.559999465942383
+     ],
+     "pool": [
+      12.359999656677246,
+      17.860000610351562,
+      31.190000534057617,
+      5.119999885559082
+     ]
+    },
+    {
+     "t": 150.0,
+     "prey": [
+      131,
+      120,
+      107,
+      121
+     ],
+     "pred": [
+      5,
+      7,
+      7,
+      8
+     ],
+     "food": [
+      26.670000076293945,
+      30.59000015258789,
+      29.270000457763672,
+      27.520000457763672
+     ],
+     "pool": [
+      10.510000228881836,
+      18.209999084472656,
+      30.3799991607666,
+      3.9600000381469727
+     ]
+    },
+    {
+     "t": 155.0,
+     "prey": [
+      128,
+      122,
+      108,
+      124
+     ],
+     "pred": [
+      5,
+      7,
+      6,
+      8
+     ],
+     "food": [
+      27.809999465942383,
+      29.770000457763672,
+      26.770000457763672,
+      26.579999923706055
+     ],
+     "pool": [
+      8.890000343322754,
+      17.530000686645508,
+      31.809999465942383,
+      2.3499999046325684
+     ]
+    },
+    {
+     "t": 160.0,
+     "prey": [
+      128,
+      119,
+      109,
+      130
+     ],
+     "pred": [
+      5,
+      7,
+      6,
+      8
+     ],
+     "food": [
+      27.65999984741211,
+      30.6299991607666,
+      27.09000015258789,
+      25.139999389648438
+     ],
+     "pool": [
+      5.989999771118164,
+      17.079999923706055,
+      29.760000228881836,
+      0.0
+     ]
+    },
+    {
+     "t": 165.0,
+     "prey": [
+      131,
+      120,
+      107,
+      126
+     ],
+     "pred": [
+      5,
+      7,
+      6,
+      8
+     ],
+     "food": [
+      28.790000915527344,
+      31.920000076293945,
+      28.1200008392334,
+      25.719999313354492
+     ],
+     "pool": [
+      4.03000020980835,
+      16.139999389648438,
+      27.93000030517578,
+      -0.0
+     ]
+    },
+    {
+     "t": 170.0,
+     "prey": [
+      131,
+      123,
+      108,
+      127
+     ],
+     "pred": [
+      5,
+      7,
+      6,
+      7
+     ],
+     "food": [
+      29.90999984741211,
+      31.309999465942383,
+      27.520000457763672,
+      25.270000457763672
+     ],
+     "pool": [
+      2.1700000762939453,
+      15.449999809265137,
+      25.829999923706055,
+      0.27000001072883606
+     ]
+    },
+    {
+     "t": 175.0,
+     "prey": [
+      133,
+      122,
+      108,
+      130
+     ],
+     "pred": [
+      5,
+      7,
+      6,
+      7
+     ],
+     "food": [
+      31.579999923706055,
+      30.75,
+      28.3700008392334,
+      23.239999771118164
+     ],
+     "pool": [
+      0.7300000190734863,
+      14.90999984741211,
+      24.190000534057617,
+      0.0
+     ]
+    },
+    {
+     "t": 180.0,
+     "prey": [
+      133,
+      122,
+      109,
+      128
+     ],
+     "pred": [
+      5,
+      7,
+      6,
+      7
+     ],
+     "food": [
+      30.780000686645508,
+      28.1299991607666,
+      28.100000381469727,
+      23.459999084472656
+     ],
+     "pool": [
+      0.0,
+      13.4399995803833,
+      22.6299991607666,
+      0.0
+     ]
+    },
+    {
+     "t": 185.0,
+     "prey": [
+      133,
+      124,
+      110,
+      129
+     ],
+     "pred": [
+      5,
+      7,
+      6,
+      7
+     ],
+     "food": [
+      28.200000762939453,
+      27.760000228881836,
+      27.700000762939453,
+      23.709999084472656
+     ],
+     "pool": [
+      0.0,
+      11.640000343322754,
+      21.84000015258789,
+      0.0
+     ]
+    },
+    {
+     "t": 190.0,
+     "prey": [
+      133,
+      124,
+      113,
+      132
+     ],
+     "pred": [
+      5,
+      7,
+      6,
+      7
+     ],
+     "food": [
+      25.850000381469727,
+      27.81999969482422,
+      27.450000762939453,
+      22.829999923706055
+     ],
+     "pool": [
+      -0.0,
+      9.539999961853027,
+      20.889999389648438,
+      0.0
+     ]
+    },
+    {
+     "t": 195.0,
+     "prey": [
+      133,
+      123,
+      114,
+      133
+     ],
+     "pred": [
+      5,
+      7,
+      6,
+      7
+     ],
+     "food": [
+      25.040000915527344,
+      27.299999237060547,
+      26.420000076293945,
+      20.5
+     ],
+     "pool": [
+      0.0,
+      7.039999961853027,
+      19.1200008392334,
+      0.0
+     ]
+    },
+    {
+     "t": 200.0,
+     "prey": [
+      131,
+      125,
+      112,
+      133
+     ],
+     "pred": [
+      5,
+      6,
+      6,
+      7
+     ],
+     "food": [
+      27.030000686645508,
+      27.760000228881836,
+      28.190000534057617,
+      21.780000686645508
+     ],
+     "pool": [
+      -0.0,
+      6.989999771118164,
+      17.81999969482422,
+      0.0
+     ]
+    },
+    {
+     "t": 205.0,
+     "prey": [
+      131,
+      125,
+      116,
+      132
+     ],
+     "pred": [
+      5,
+      6,
+      6,
+      7
+     ],
+     "food": [
+      25.40999984741211,
+      29.079999923706055,
+      28.670000076293945,
+      21.729999542236328
+     ],
+     "pool": [
+      0.0,
+      4.739999771118164,
+      16.850000381469727,
+      0.0
+     ]
+    },
+    {
+     "t": 210.0,
+     "prey": [
+      133,
+      128,
+      117,
+      134
+     ],
+     "pred": [
+      5,
+      6,
+      6,
+      7
+     ],
+     "food": [
+      24.3799991607666,
+      27.43000030517578,
+      27.520000457763672,
+      23.420000076293945
+     ],
+     "pool": [
+      0.0,
+      3.200000047683716,
+      16.030000686645508,
+      0.0
+     ]
+    },
+    {
+     "t": 215.0,
+     "prey": [
+      133,
+      131,
+      117,
+      136
+     ],
+     "pred": [
+      5,
+      6,
+      5,
+      7
+     ],
+     "food": [
+      25.18000030517578,
+      26.549999237060547,
+      26.600000381469727,
+      24.860000610351562
+     ],
+     "pool": [
+      0.0,
+      1.25,
+      17.579999923706055,
+      0.0
+     ]
+    },
+    {
+     "t": 220.0,
+     "prey": [
+      134,
+      129,
+      120,
+      134
+     ],
+     "pred": [
+      5,
+      6,
+      5,
+      7
+     ],
+     "food": [
+      23.309999465942383,
+      26.790000915527344,
+      25.280000686645508,
+      21.59000015258789
+     ],
+     "pool": [
+      0.0,
+      0.0,
+      14.989999771118164,
+      0.0
+     ]
+    },
+    {
+     "t": 225.0,
+     "prey": [
+      133,
+      128,
+      122,
+      135
+     ],
+     "pred": [
+      5,
+      6,
+      5,
+      7
+     ],
+     "food": [
+      23.829999923706055,
+      25.899999618530273,
+      24.770000457763672,
+      21.219999313354492
+     ],
+     "pool": [
+      0.0,
+      0.0,
+      12.869999885559082,
+      -0.0
+     ]
+    },
+    {
+     "t": 230.0,
+     "prey": [
+      135,
+      129,
+      121,
+      135
+     ],
+     "pred": [
+      5,
+      6,
+      5,
+      7
+     ],
+     "food": [
+      21.139999389648438,
+      23.690000534057617,
+      24.459999084472656,
+      22.299999237060547
+     ],
+     "pool": [
+      0.0,
+      0.0,
+      9.819999694824219,
+      0.0
+     ]
+    },
+    {
+     "t": 235.0,
+     "prey": [
+      134,
+      133,
+      123,
+      136
+     ],
+     "pred": [
+      5,
+      6,
+      5,
+      7
+     ],
+     "food": [
+      20.440000534057617,
+      22.510000228881836,
+      24.43000030517578,
+      21.389999389648438
+     ],
+     "pool": [
+      -0.0,
+      0.0,
+      7.639999866485596,
+      0.0
+     ]
+    },
+    {
+     "t": 240.0,
+     "prey": [
+      133,
+      133,
+      127,
+      138
+     ],
+     "pred": [
+      5,
+      6,
+      5,
+      7
+     ],
+     "food": [
+      19.540000915527344,
+      22.969999313354492,
+      24.360000610351562,
+      22.920000076293945
+     ],
+     "pool": [
+      0.0,
+      -0.0,
+      5.699999809265137,
+      0.0
+     ]
+    },
+    {
+     "t": 245.0,
+     "prey": [
+      133,
+      132,
+      132,
+      137
+     ],
+     "pred": [
+      5,
+      6,
+      5,
+      7
+     ],
+     "food": [
+      20.6200008392334,
+      21.719999313354492,
+      22.489999771118164,
+      22.139999389648438
+     ],
+     "pool": [
+      0.0,
+      0.0,
+      3.0999999046325684,
+      0.0
+     ]
+    },
+    {
+     "t": 250.0,
+     "prey": [
+      133,
+      131,
+      133,
+      135
+     ],
+     "pred": [
+      5,
+      6,
+      5,
+      7
+     ],
+     "food": [
+      19.959999084472656,
+      21.309999465942383,
+      23.15999984741211,
+      22.520000457763672
+     ],
+     "pool": [
+      0.0,
+      0.0,
+      0.9200000166893005,
+      -0.0
+     ]
+    },
+    {
+     "t": 255.0,
+     "prey": [
+      134,
+      131,
+      135,
+      137
+     ],
+     "pred": [
+      5,
+      6,
+      5,
+      7
+     ],
+     "food": [
+      19.84000015258789,
+      21.829999923706055,
+      20.770000457763672,
+      21.450000762939453
+     ],
+     "pool": [
+      -0.0,
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 260.0,
+     "prey": [
+      133,
+      130,
+      137,
+      135
+     ],
+     "pred": [
+      5,
+      6,
+      5,
+      7
+     ],
+     "food": [
+      22.040000915527344,
+      22.270000457763672,
+      19.670000076293945,
+      21.3700008392334
+     ],
+     "pool": [
+      -0.0,
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 265.0,
+     "prey": [
+      136,
+      126,
+      137,
+      137
+     ],
+     "pred": [
+      5,
+      7,
+      5,
+      7
+     ],
+     "food": [
+      21.770000457763672,
+      22.239999771118164,
+      20.389999389648438,
+      20.229999542236328
+     ],
+     "pool": [
+      0.0,
+      0.0,
+      0.0,
+      -0.0
+     ]
+    },
+    {
+     "t": 270.0,
+     "prey": [
+      138,
+      126,
+      135,
+      139
+     ],
+     "pred": [
+      5,
+      7,
+      5,
+      7
+     ],
+     "food": [
+      22.170000076293945,
+      22.520000457763672,
+      21.3700008392334,
+      22.530000686645508
+     ],
+     "pool": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 275.0,
+     "prey": [
+      138,
+      125,
+      135,
+      137
+     ],
+     "pred": [
+      5,
+      7,
+      5,
+      7
+     ],
+     "food": [
+      24.479999542236328,
+      23.510000228881836,
+      21.010000228881836,
+      22.149999618530273
+     ],
+     "pool": [
+      -0.0,
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 280.0,
+     "prey": [
+      141,
+      125,
+      140,
+      135
+     ],
+     "pred": [
+      5,
+      7,
+      5,
+      7
+     ],
+     "food": [
+      22.489999771118164,
+      24.559999465942383,
+      22.8799991607666,
+      21.93000030517578
+     ],
+     "pool": [
+      0.0,
+      0.0,
+      -0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 285.0,
+     "prey": [
+      142,
+      133,
+      141,
+      135
+     ],
+     "pred": [
+      5,
+      7,
+      5,
+      7
+     ],
+     "food": [
+      22.059999465942383,
+      23.559999465942383,
+      21.479999542236328,
+      22.459999084472656
+     ],
+     "pool": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 290.0,
+     "prey": [
+      141,
+      132,
+      143,
+      135
+     ],
+     "pred": [
+      5,
+      7,
+      5,
+      7
+     ],
+     "food": [
+      21.389999389648438,
+      24.389999389648438,
+      22.469999313354492,
+      22.200000762939453
+     ],
+     "pool": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 295.0,
+     "prey": [
+      140,
+      131,
+      144,
+      135
+     ],
+     "pred": [
+      5,
+      7,
+      4,
+      7
+     ],
+     "food": [
+      20.93000030517578,
+      24.15999984741211,
+      19.959999084472656,
+      21.770000457763672
+     ],
+     "pool": [
+      0.0,
+      0.0,
+      1.0700000524520874,
+      0.0
+     ]
+    },
+    {
+     "t": 300.0,
+     "prey": [
+      138,
+      127,
+      146,
+      134
+     ],
+     "pred": [
+      5,
+      7,
+      4,
+      7
+     ],
+     "food": [
+      21.950000762939453,
+      25.420000076293945,
+      19.809999465942383,
+      23.389999389648438
+     ],
+     "pool": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 305.0,
+     "prey": [
+      141,
+      126,
+      147,
+      134
+     ],
+     "pred": [
+      5,
+      7,
+      4,
+      7
+     ],
+     "food": [
+      19.3700008392334,
+      25.040000915527344,
+      19.0,
+      26.1200008392334
+     ],
+     "pool": [
+      0.0,
+      0.0,
+      -0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 310.0,
+     "prey": [
+      142,
+      125,
+      148,
+      133
+     ],
+     "pred": [
+      5,
+      7,
+      4,
+      7
+     ],
+     "food": [
+      19.860000610351562,
+      24.979999542236328,
+      18.84000015258789,
+      27.34000015258789
+     ],
+     "pool": [
+      -0.0,
+      0.0,
+      -0.0,
+      -0.0
+     ]
+    },
+    {
+     "t": 315.0,
+     "prey": [
+      141,
+      127,
+      150,
+      136
+     ],
+     "pred": [
+      5,
+      7,
+      3,
+      7
+     ],
+     "food": [
+      20.600000381469727,
+      24.959999084472656,
+      19.5,
+      26.5
+     ],
+     "pool": [
+      0.0,
+      0.0,
+      0.9800000190734863,
+      0.0
+     ]
+    },
+    {
+     "t": 320.0,
+     "prey": [
+      144,
+      128,
+      150,
+      133
+     ],
+     "pred": [
+      5,
+      8,
+      3,
+      7
+     ],
+     "food": [
+      21.100000381469727,
+      24.479999542236328,
+      18.1200008392334,
+      26.219999313354492
+     ],
+     "pool": [
+      0.0,
+      0.0,
+      -0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 325.0,
+     "prey": [
+      145,
+      128,
+      149,
+      133
+     ],
+     "pred": [
+      5,
+      8,
+      3,
+      7
+     ],
+     "food": [
+      20.75,
+      24.239999771118164,
+      17.3700008392334,
+      27.389999389648438
+     ],
+     "pool": [
+      0.0,
+      0.0,
+      0.0,
+      -0.0
+     ]
+    },
+    {
+     "t": 330.0,
+     "prey": [
+      148,
+      129,
+      151,
+      135
+     ],
+     "pred": [
+      5,
+      8,
+      3,
+      7
+     ],
+     "food": [
+      19.6200008392334,
+      25.75,
+      17.93000030517578,
+      28.1200008392334
+     ],
+     "pool": [
+      -0.0,
+      -0.0,
+      0.0,
+      -0.0
+     ]
+    },
+    {
+     "t": 335.0,
+     "prey": [
+      147,
+      126,
+      149,
+      134
+     ],
+     "pred": [
+      5,
+      8,
+      3,
+      7
+     ],
+     "food": [
+      21.139999389648438,
+      24.889999389648438,
+      18.56999969482422,
+      26.860000610351562
+     ],
+     "pool": [
+      -0.0,
+      0.0,
+      -0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 340.0,
+     "prey": [
+      145,
+      124,
+      151,
+      132
+     ],
+     "pred": [
+      5,
+      8,
+      3,
+      7
+     ],
+     "food": [
+      20.440000534057617,
+      26.559999465942383,
+      17.190000534057617,
+      24.100000381469727
+     ],
+     "pool": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 345.0,
+     "prey": [
+      145,
+      124,
+      151,
+      132
+     ],
+     "pred": [
+      4,
+      8,
+      3,
+      7
+     ],
+     "food": [
+      20.280000686645508,
+      30.110000610351562,
+      16.219999313354492,
+      23.8700008392334
+     ],
+     "pool": [
+      -0.0,
+      0.009999999776482582,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 350.0,
+     "prey": [
+      146,
+      121,
+      151,
+      135
+     ],
+     "pred": [
+      4,
+      8,
+      3,
+      7
+     ],
+     "food": [
+      19.110000610351562,
+      31.43000030517578,
+      17.209999084472656,
+      22.610000610351562
+     ],
+     "pool": [
+      0.0,
+      0.5299999713897705,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 355.0,
+     "prey": [
+      144,
+      123,
+      151,
+      135
+     ],
+     "pred": [
+      4,
+      8,
+      3,
+      7
+     ],
+     "food": [
+      18.770000457763672,
+      27.6299991607666,
+      16.8700008392334,
+      22.200000762939453
+     ],
+     "pool": [
+      0.0,
+      0.3100000023841858,
+      -0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 360.0,
+     "prey": [
+      142,
+      130,
+      151,
+      134
+     ],
+     "pred": [
+      4,
+      8,
+      3,
+      7
+     ],
+     "food": [
+      19.34000015258789,
+      25.809999465942383,
+      16.540000915527344,
+      21.34000015258789
+     ],
+     "pool": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 365.0,
+     "prey": [
+      143,
+      130,
+      155,
+      137
+     ],
+     "pred": [
+      4,
+      8,
+      3,
+      6
+     ],
+     "food": [
+      19.5,
+      26.850000381469727,
+      14.510000228881836,
+      22.209999084472656
+     ],
+     "pool": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 370.0,
+     "prey": [
+      144,
+      128,
+      156,
+      132
+     ],
+     "pred": [
+      4,
+      8,
+      3,
+      7
+     ],
+     "food": [
+      19.049999237060547,
+      27.350000381469727,
+      14.710000038146973,
+      23.770000457763672
+     ],
+     "pool": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 375.0,
+     "prey": [
+      144,
+      129,
+      156,
+      132
+     ],
+     "pred": [
+      4,
+      8,
+      3,
+      7
+     ],
+     "food": [
+      20.489999771118164,
+      26.549999237060547,
+      15.670000076293945,
+      24.170000076293945
+     ],
+     "pool": [
+      0.0,
+      0.33000001311302185,
+      0.0,
+      -0.0
+     ]
+    },
+    {
+     "t": 380.0,
+     "prey": [
+      146,
+      130,
+      156,
+      133
+     ],
+     "pred": [
+      4,
+      8,
+      3,
+      7
+     ],
+     "food": [
+      21.260000228881836,
+      24.43000030517578,
+      15.739999771118164,
+      25.0
+     ],
+     "pool": [
+      0.0,
+      -0.0,
+      -0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 385.0,
+     "prey": [
+      145,
+      131,
+      155,
+      130
+     ],
+     "pred": [
+      4,
+      8,
+      3,
+      7
+     ],
+     "food": [
+      20.549999237060547,
+      26.360000610351562,
+      15.859999656677246,
+      24.729999542236328
+     ],
+     "pool": [
+      0.0,
+      0.0,
+      -0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 390.0,
+     "prey": [
+      144,
+      129,
+      156,
+      129
+     ],
+     "pred": [
+      4,
+      8,
+      3,
+      7
+     ],
+     "food": [
+      22.450000762939453,
+      25.219999313354492,
+      15.40999984741211,
+      26.229999542236328
+     ],
+     "pool": [
+      0.0,
+      -0.0,
+      -0.0,
+      -0.0
+     ]
+    },
+    {
+     "t": 395.0,
+     "prey": [
+      144,
+      130,
+      156,
+      129
+     ],
+     "pred": [
+      4,
+      8,
+      3,
+      7
+     ],
+     "food": [
+      20.670000076293945,
+      25.81999969482422,
+      15.050000190734863,
+      25.030000686645508
+     ],
+     "pool": [
+      -0.0,
+      0.0,
+      -0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 400.0,
+     "prey": [
+      144,
+      131,
+      156,
+      128
+     ],
+     "pred": [
+      4,
+      8,
+      3,
+      7
+     ],
+     "food": [
+      19.110000610351562,
+      24.709999084472656,
+      15.800000190734863,
+      23.020000457763672
+     ],
+     "pool": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 405.0,
+     "prey": [
+      142,
+      131,
+      155,
+      128
+     ],
+     "pred": [
+      4,
+      8,
+      3,
+      7
+     ],
+     "food": [
+      18.229999542236328,
+      24.8799991607666,
+      18.059999465942383,
+      22.75
+     ],
+     "pool": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 410.0,
+     "prey": [
+      142,
+      131,
+      155,
+      127
+     ],
+     "pred": [
+      4,
+      8,
+      3,
+      8
+     ],
+     "food": [
+      18.139999389648438,
+      24.0,
+      19.540000915527344,
+      21.760000228881836
+     ],
+     "pool": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 415.0,
+     "prey": [
+      143,
+      133,
+      154,
+      129
+     ],
+     "pred": [
+      4,
+      8,
+      3,
+      8
+     ],
+     "food": [
+      18.8700008392334,
+      23.149999618530273,
+      18.540000915527344,
+      22.260000228881836
+     ],
+     "pool": [
+      0.0,
+      0.0,
+      -0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 420.0,
+     "prey": [
+      143,
+      128,
+      154,
+      129
+     ],
+     "pred": [
+      4,
+      8,
+      3,
+      8
+     ],
+     "food": [
+      18.489999771118164,
+      22.299999237060547,
+      17.59000015258789,
+      23.479999542236328
+     ],
+     "pool": [
+      0.0,
+      0.0,
+      0.0,
+      -0.0
+     ]
+    },
+    {
+     "t": 425.0,
+     "prey": [
+      143,
+      128,
+      152,
+      130
+     ],
+     "pred": [
+      4,
+      8,
+      3,
+      8
+     ],
+     "food": [
+      20.979999542236328,
+      24.3700008392334,
+      16.760000228881836,
+      25.559999465942383
+     ],
+     "pool": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 430.0,
+     "prey": [
+      143,
+      129,
+      151,
+      130
+     ],
+     "pred": [
+      4,
+      8,
+      3,
+      8
+     ],
+     "food": [
+      21.479999542236328,
+      25.06999969482422,
+      17.100000381469727,
+      26.790000915527344
+     ],
+     "pool": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 435.0,
+     "prey": [
+      143,
+      125,
+      150,
+      134
+     ],
+     "pred": [
+      4,
+      9,
+      3,
+      8
+     ],
+     "food": [
+      21.68000030517578,
+      26.989999771118164,
+      17.670000076293945,
+      25.209999084472656
+     ],
+     "pool": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 440.0,
+     "prey": [
+      145,
+      125,
+      150,
+      132
+     ],
+     "pred": [
+      4,
+      9,
+      3,
+      8
+     ],
+     "food": [
+      21.709999084472656,
+      28.5,
+      17.65999984741211,
+      25.440000534057617
+     ],
+     "pool": [
+      0.0,
+      0.03999999910593033,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 445.0,
+     "prey": [
+      146,
+      126,
+      150,
+      129
+     ],
+     "pred": [
+      4,
+      8,
+      3,
+      8
+     ],
+     "food": [
+      21.690000534057617,
+      30.260000228881836,
+      19.40999984741211,
+      24.3799991607666
+     ],
+     "pool": [
+      -0.0,
+      1.7300000190734863,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 450.0,
+     "prey": [
+      145,
+      125,
+      151,
+      127
+     ],
+     "pred": [
+      4,
+      8,
+      3,
+      8
+     ],
+     "food": [
+      21.1299991607666,
+      30.68000030517578,
+      20.700000762939453,
+      23.690000534057617
+     ],
+     "pool": [
+      -0.0,
+      1.2400000095367432,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 455.0,
+     "prey": [
+      144,
+      125,
+      151,
+      126
+     ],
+     "pred": [
+      4,
+      8,
+      3,
+      8
+     ],
+     "food": [
+      19.75,
+      29.760000228881836,
+      19.079999923706055,
+      24.350000381469727
+     ],
+     "pool": [
+      0.0,
+      0.3400000035762787,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 460.0,
+     "prey": [
+      145,
+      125,
+      151,
+      129
+     ],
+     "pred": [
+      4,
+      8,
+      3,
+      8
+     ],
+     "food": [
+      19.530000686645508,
+      29.649999618530273,
+      18.149999618530273,
+      24.1299991607666
+     ],
+     "pool": [
+      0.0,
+      0.3400000035762787,
+      0.0,
+      -0.0
+     ]
+    },
+    {
+     "t": 465.0,
+     "prey": [
+      146,
+      128,
+      151,
+      127
+     ],
+     "pred": [
+      4,
+      7,
+      3,
+      8
+     ],
+     "food": [
+      20.440000534057617,
+      30.309999465942383,
+      17.649999618530273,
+      24.18000030517578
+     ],
+     "pool": [
+      -0.0,
+      1.7699999809265137,
+      -0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 470.0,
+     "prey": [
+      147,
+      128,
+      149,
+      130
+     ],
+     "pred": [
+      4,
+      7,
+      3,
+      8
+     ],
+     "food": [
+      22.520000457763672,
+      26.81999969482422,
+      18.8700008392334,
+      23.020000457763672
+     ],
+     "pool": [
+      0.0,
+      0.75,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 475.0,
+     "prey": [
+      151,
+      128,
+      148,
+      132
+     ],
+     "pred": [
+      3,
+      7,
+      3,
+      7
+     ],
+     "food": [
+      21.280000686645508,
+      25.5,
+      18.1200008392334,
+      22.709999084472656
+     ],
+     "pool": [
+      0.0,
+      0.0,
+      0.0,
+      1.6100000143051147
+     ]
+    },
+    {
+     "t": 480.0,
+     "prey": [
+      152,
+      128,
+      151,
+      129
+     ],
+     "pred": [
+      3,
+      7,
+      3,
+      7
+     ],
+     "food": [
+      19.639999389648438,
+      23.770000457763672,
+      16.020000457763672,
+      25.040000915527344
+     ],
+     "pool": [
+      0.0,
+      0.0,
+      -0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 485.0,
+     "prey": [
+      154,
+      132,
+      150,
+      129
+     ],
+     "pred": [
+      3,
+      7,
+      3,
+      7
+     ],
+     "food": [
+      18.829999923706055,
+      22.329999923706055,
+      15.149999618530273,
+      25.84000015258789
+     ],
+     "pool": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 490.0,
+     "prey": [
+      154,
+      134,
+      150,
+      129
+     ],
+     "pred": [
+      3,
+      7,
+      3,
+      7
+     ],
+     "food": [
+      17.530000686645508,
+      22.549999237060547,
+      15.239999771118164,
+      25.75
+     ],
+     "pool": [
+      -0.0,
+      -0.0,
+      0.0,
+      -0.0
+     ]
+    },
+    {
+     "t": 495.0,
+     "prey": [
+      156,
+      132,
+      150,
+      129
+     ],
+     "pred": [
+      2,
+      7,
+      3,
+      7
+     ],
+     "food": [
+      17.729999542236328,
+      23.1200008392334,
+      15.789999961853027,
+      24.309999465942383
+     ],
+     "pool": [
+      0.0,
+      -0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 500.0,
+     "prey": [
+      156,
+      130,
+      149,
+      130
+     ],
+     "pred": [
+      2,
+      7,
+      3,
+      7
+     ],
+     "food": [
+      16.559999465942383,
+      22.459999084472656,
+      17.889999389648438,
+      23.920000076293945
+     ],
+     "pool": [
+      0.0,
+      0.0,
+      -0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 505.0,
+     "prey": [
+      156,
+      131,
+      152,
+      130
+     ],
+     "pred": [
+      2,
+      7,
+      3,
+      7
+     ],
+     "food": [
+      15.829999923706055,
+      22.43000030517578,
+      16.90999984741211,
+      23.010000228881836
+     ],
+     "pool": [
+      0.0,
+      0.0,
+      -0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 510.0,
+     "prey": [
+      157,
+      132,
+      151,
+      133
+     ],
+     "pred": [
+      2,
+      7,
+      3,
+      7
+     ],
+     "food": [
+      15.920000076293945,
+      23.020000457763672,
+      15.300000190734863,
+      21.969999313354492
+     ],
+     "pool": [
+      0.0,
+      -0.0,
+      -0.0,
+      -0.0
+     ]
+    },
+    {
+     "t": 515.0,
+     "prey": [
+      155,
+      135,
+      152,
+      137
+     ],
+     "pred": [
+      2,
+      7,
+      3,
+      7
+     ],
+     "food": [
+      16.90999984741211,
+      23.239999771118164,
+      15.729999542236328,
+      23.329999923706055
+     ],
+     "pool": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 520.0,
+     "prey": [
+      155,
+      135,
+      152,
+      135
+     ],
+     "pred": [
+      2,
+      7,
+      3,
+      7
+     ],
+     "food": [
+      16.360000610351562,
+      23.559999465942383,
+      17.229999542236328,
+      21.40999984741211
+     ],
+     "pool": [
+      0.0,
+      -0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 525.0,
+     "prey": [
+      155,
+      135,
+      151,
+      136
+     ],
+     "pred": [
+      2,
+      7,
+      3,
+      7
+     ],
+     "food": [
+      15.84000015258789,
+      23.979999542236328,
+      18.100000381469727,
+      20.469999313354492
+     ],
+     "pool": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 530.0,
+     "prey": [
+      155,
+      133,
+      151,
+      133
+     ],
+     "pred": [
+      2,
+      7,
+      3,
+      7
+     ],
+     "food": [
+      15.4399995803833,
+      23.270000457763672,
+      19.059999465942383,
+      21.260000228881836
+     ],
+     "pool": [
+      -0.0,
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 535.0,
+     "prey": [
+      155,
+      132,
+      154,
+      133
+     ],
+     "pred": [
+      2,
+      7,
+      3,
+      7
+     ],
+     "food": [
+      16.09000015258789,
+      23.530000686645508,
+      20.079999923706055,
+      20.579999923706055
+     ],
+     "pool": [
+      0.0,
+      0.0,
+      -0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 540.0,
+     "prey": [
+      156,
+      132,
+      153,
+      133
+     ],
+     "pred": [
+      2,
+      7,
+      3,
+      7
+     ],
+     "food": [
+      16.780000686645508,
+      25.59000015258789,
+      20.979999542236328,
+      21.559999465942383
+     ],
+     "pool": [
+      -0.0,
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 545.0,
+     "prey": [
+      158,
+      129,
+      154,
+      132
+     ],
+     "pred": [
+      2,
+      7,
+      3,
+      7
+     ],
+     "food": [
+      15.680000305175781,
+      25.989999771118164,
+      20.93000030517578,
+      21.81999969482422
+     ],
+     "pool": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 550.0,
+     "prey": [
+      159,
+      128,
+      153,
+      131
+     ],
+     "pred": [
+      2,
+      7,
+      3,
+      7
+     ],
+     "food": [
+      16.200000762939453,
+      27.299999237060547,
+      20.239999771118164,
+      21.34000015258789
+     ],
+     "pool": [
+      0.0,
+      -0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 555.0,
+     "prey": [
+      159,
+      126,
+      154,
+      134
+     ],
+     "pred": [
+      2,
+      7,
+      3,
+      7
+     ],
+     "food": [
+      15.210000038146973,
+      25.440000534057617,
+      19.579999923706055,
+      21.0
+     ],
+     "pool": [
+      0.0,
+      0.0,
+      -0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 560.0,
+     "prey": [
+      160,
+      126,
+      155,
+      133
+     ],
+     "pred": [
+      2,
+      7,
+      3,
+      7
+     ],
+     "food": [
+      15.079999923706055,
+      23.8700008392334,
+      19.420000076293945,
+      20.34000015258789
+     ],
+     "pool": [
+      -0.0,
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 565.0,
+     "prey": [
+      160,
+      127,
+      156,
+      132
+     ],
+     "pred": [
+      2,
+      7,
+      3,
+      7
+     ],
+     "food": [
+      15.109999656677246,
+      23.190000534057617,
+      20.219999313354492,
+      21.010000228881836
+     ],
+     "pool": [
+      0.0,
+      -0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 570.0,
+     "prey": [
+      160,
+      128,
+      156,
+      137
+     ],
+     "pred": [
+      2,
+      7,
+      3,
+      7
+     ],
+     "food": [
+      15.5600004196167,
+      20.600000381469727,
+      19.989999771118164,
+      20.579999923706055
+     ],
+     "pool": [
+      -0.0,
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 575.0,
+     "prey": [
+      160,
+      130,
+      156,
+      136
+     ],
+     "pred": [
+      2,
+      7,
+      3,
+      7
+     ],
+     "food": [
+      15.039999961853027,
+      20.34000015258789,
+      18.389999389648438,
+      20.049999237060547
+     ],
+     "pool": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 580.0,
+     "prey": [
+      159,
+      131,
+      159,
+      138
+     ],
+     "pred": [
+      2,
+      7,
+      3,
+      7
+     ],
+     "food": [
+      14.960000038146973,
+      20.549999237060547,
+      16.600000381469727,
+      20.110000610351562
+     ],
+     "pool": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 585.0,
+     "prey": [
+      159,
+      133,
+      160,
+      138
+     ],
+     "pred": [
+      2,
+      7,
+      3,
+      7
+     ],
+     "food": [
+      15.050000190734863,
+      21.309999465942383,
+      15.550000190734863,
+      19.860000610351562
+     ],
+     "pool": [
+      -0.0,
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 590.0,
+     "prey": [
+      159,
+      135,
+      159,
+      135
+     ],
+     "pred": [
+      1,
+      7,
+      3,
+      7
+     ],
+     "food": [
+      16.889999389648438,
+      19.90999984741211,
+      15.319999694824219,
+      20.40999984741211
+     ],
+     "pool": [
+      -0.0,
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 595.0,
+     "prey": [
+      158,
+      136,
+      160,
+      133
+     ],
+     "pred": [
+      1,
+      7,
+      3,
+      7
+     ],
+     "food": [
+      15.859999656677246,
+      20.059999465942383,
+      15.510000228881836,
+      20.729999542236328
+     ],
+     "pool": [
+      0.0,
+      -0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "t": 600.0,
+     "prey": [
+      161,
+      137,
+      158,
+      137
+     ],
+     "pred": [
+      1,
+      7,
+      3,
+      7
+     ],
+     "food": [
+      15.760000228881836,
+      21.1299991607666,
+      16.65999984741211,
+      19.6299991607666
+     ],
+     "pool": [
+      0.0,
+      0.0,
+      -0.0,
+      -0.0
+     ]
+    }
+   ],
+   "final_prey": [
+    161,
+    137,
+    158,
+    137
+   ],
+   "final_pred": [
+    1,
+    7,
+    3,
+    7
+   ],
+   "prey_extinct": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "pred_extinct": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "births": [
+    [
+     179,
+     0
+    ],
+    [
+     249,
+     5
+    ],
+    [
+     194,
+     2
+    ],
+    [
+     255,
+     3
+    ]
+   ],
+   "starved": [
+    [
+     0,
+     7
+    ],
+    [
+     0,
+     6
+    ],
+    [
+     0,
+     7
+    ],
+    [
+     0,
+     4
+    ]
+   ],
+   "catches": [
+    138.0,
+    232.0,
+    156.0,
+    238.0
+   ],
+   "mass_residual_max": 0.0027618408203125,
+   "mass_total": 244.12188720703125
   }
  },
  "player": {
@@ -18603,6 +25133,28 @@
     "prey_shadow_share": 0.29,
     "pred_closing_speed": 13.264,
     "catch_per_min": 66.0
+   },
+   "null_near_pred_40u": 0.008,
+   "null_near_prey_30u": 0.0034
+  },
+  "a9herd:1500:1500": {
+   "seen": {
+    "pred_near_share": 0.022,
+    "pred_targets_vessel_share": 0.036,
+    "contacts": 1.333,
+    "prey_near_share": 0.001,
+    "prey_shadow_share": 0.221,
+    "pred_closing_speed": 7.109,
+    "catch_per_min": 39.5
+   },
+   "unseen": {
+    "pred_near_share": 0.012,
+    "pred_targets_vessel_share": null,
+    "contacts": 0.0,
+    "prey_near_share": 0.005,
+    "prey_shadow_share": 0.201,
+    "pred_closing_speed": 13.401,
+    "catch_per_min": 47.5
    },
    "null_near_pred_40u": 0.008,
    "null_near_prey_30u": 0.0034

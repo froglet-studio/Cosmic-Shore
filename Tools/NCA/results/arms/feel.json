@@ -430,5 +430,257 @@
     }
    }
   }
+ },
+ "a9herd:0:0": {
+  "prey": {
+   "n": 98.0,
+   "speed": 2.754,
+   "jerk_rel": 1.098,
+   "coherence": 0.047,
+   "jitter": 1.114,
+   "stuck": 0.0,
+   "osc": 0.001,
+   "organic": {
+    "ok": true,
+    "checks": {
+     "jerk_rel": true,
+     "osc": true,
+     "stuck": true
+    }
+   }
+  },
+  "pred": {
+   "n": 8.0,
+   "speed": 5.477,
+   "jerk_rel": 0.319,
+   "coherence": 0.097,
+   "jitter": 1.072,
+   "stuck": 0.0,
+   "osc": 0.0,
+   "organic": {
+    "ok": true,
+    "checks": {
+     "jerk_rel": true,
+     "osc": true,
+     "stuck": true
+    }
+   }
+  }
+ },
+ "a9herd:250:250": {
+  "prey": {
+   "n": 91.333,
+   "speed": 3.008,
+   "jerk_rel": 1.067,
+   "coherence": 0.093,
+   "jitter": 1.084,
+   "stuck": 0.0,
+   "osc": 0.002,
+   "organic": {
+    "ok": true,
+    "checks": {
+     "jerk_rel": true,
+     "osc": true,
+     "stuck": true
+    }
+   }
+  },
+  "pred": {
+   "n": 8.0,
+   "speed": 5.428,
+   "jerk_rel": 0.281,
+   "coherence": 0.087,
+   "jitter": 1.094,
+   "stuck": 0.0,
+   "osc": 0.0,
+   "organic": {
+    "ok": true,
+    "checks": {
+     "jerk_rel": true,
+     "osc": true,
+     "stuck": true
+    }
+   }
+  }
+ },
+ "a9herd:500:500": {
+  "prey": {
+   "n": 97.667,
+   "speed": 2.874,
+   "jerk_rel": 1.053,
+   "coherence": 0.277,
+   "jitter": 1.037,
+   "stuck": 0.0,
+   "osc": 0.002,
+   "organic": {
+    "ok": true,
+    "checks": {
+     "jerk_rel": true,
+     "osc": true,
+     "stuck": true
+    }
+   }
+  },
+  "pred": {
+   "n": 8.0,
+   "speed": 5.374,
+   "jerk_rel": 0.286,
+   "coherence": 0.116,
+   "jitter": 1.069,
+   "stuck": 0.0,
+   "osc": 0.0,
+   "organic": {
+    "ok": true,
+    "checks": {
+     "jerk_rel": true,
+     "osc": true,
+     "stuck": true
+    }
+   }
+  }
+ },
+ "a9herd:750:750": {
+  "prey": {
+   "n": 93.667,
+   "speed": 3.427,
+   "jerk_rel": 0.971,
+   "coherence": 0.431,
+   "jitter": 0.945,
+   "stuck": 0.0,
+   "osc": 0.001,
+   "organic": {
+    "ok": true,
+    "checks": {
+     "jerk_rel": true,
+     "osc": true,
+     "stuck": true
+    }
+   }
+  },
+  "pred": {
+   "n": 8.0,
+   "speed": 5.39,
+   "jerk_rel": 0.291,
+   "coherence": 0.085,
+   "jitter": 1.074,
+   "stuck": 0.0,
+   "osc": 0.0,
+   "organic": {
+    "ok": true,
+    "checks": {
+     "jerk_rel": true,
+     "osc": true,
+     "stuck": true
+    }
+   }
+  }
+ },
+ "a9herd:1000:1000": {
+  "prey": {
+   "n": 93.667,
+   "speed": 3.393,
+   "jerk_rel": 1.029,
+   "coherence": 0.609,
+   "jitter": 0.849,
+   "stuck": 0.0,
+   "osc": 0.0,
+   "organic": {
+    "ok": true,
+    "checks": {
+     "jerk_rel": true,
+     "osc": true,
+     "stuck": true
+    }
+   }
+  },
+  "pred": {
+   "n": 8.0,
+   "speed": 5.426,
+   "jerk_rel": 0.308,
+   "coherence": 0.202,
+   "jitter": 1.033,
+   "stuck": 0.0,
+   "osc": 0.0,
+   "organic": {
+    "ok": true,
+    "checks": {
+     "jerk_rel": true,
+     "osc": true,
+     "stuck": true
+    }
+   }
+  }
+ },
+ "a9herd:1250:1250": {
+  "prey": {
+   "n": 93.333,
+   "speed": 3.537,
+   "jerk_rel": 1.01,
+   "coherence": 0.713,
+   "jitter": 0.733,
+   "stuck": 0.0,
+   "osc": 0.001,
+   "organic": {
+    "ok": true,
+    "checks": {
+     "jerk_rel": true,
+     "osc": true,
+     "stuck": true
+    }
+   }
+  },
+  "pred": {
+   "n": 8.0,
+   "speed": 5.367,
+   "jerk_rel": 0.305,
+   "coherence": 0.11,
+   "jitter": 1.083,
+   "stuck": 0.0,
+   "osc": 0.0,
+   "organic": {
+    "ok": true,
+    "checks": {
+     "jerk_rel": true,
+     "osc": true,
+     "stuck": true
+    }
+   }
+  }
+ },
+ "a9herd:1500:1500": {
+  "prey": {
+   "n": 102.333,
+   "speed": 3.846,
+   "jerk_rel": 0.944,
+   "coherence": 0.739,
+   "jitter": 0.652,
+   "stuck": 0.0,
+   "osc": 0.0,
+   "organic": {
+    "ok": true,
+    "checks": {
+     "jerk_rel": true,
+     "osc": true,
+     "stuck": true
+    }
+   }
+  },
+  "pred": {
+   "n": 8.0,
+   "speed": 5.354,
+   "jerk_rel": 0.293,
+   "coherence": 0.187,
+   "jitter": 1.055,
+   "stuck": 0.0,
+   "osc": 0.0,
+   "organic": {
+    "ok": true,
+    "checks": {
+     "jerk_rel": true,
+     "osc": true,
+     "stuck": true
+    }
+   }
+  }
  }
 }

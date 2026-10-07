@@ -2280,9 +2280,16 @@ generations (does each newer generation beat older opponents, or do they cycle?)
   - predators that probe with short bursts and ignore an uncatchable 120 u/s vessel.
 - **What did not emerge, even in runs built to provoke it** (slower burst; strong or wide confusion; confusion on
   detection): schooling, encirclement, ambush and relays. The best answers in this world are an individual juke and
-  the wall. Detection confusion moved the prey 13% closer together, and nothing more. The next lever is a population of
-  distinct prey genomes per pond with individual (selfish-herd) fitness: a shared policy scored on the species mean
-  cannot reward being the safer one in the middle.
+  the wall. Detection confusion moved the prey 13% closer together, and nothing more. That lever turned out to be
+  individual-level selection (a9, below).
+- **Schooling DOES emerge once prey selection acts on individuals** (run a9, the selfish herd). Four prey tribes
+  per pond share the base policy but carry opposite perturbations, and are scored on their own survival. Over 1500
+  generations:
+  - local polarisation 0.53 → 0.86, coherence 0.05 → 0.74, nearest-neighbour distance 25 → 13 u;
+  - the predators answered by packing (pack share 0.26 → 0.38);
+  - catches first rose (a costly selfish herd), then fell to 39/min as the schools tightened.
+  This is the recommended pair. The lesson: a shared policy scored on the species mean cannot discover grouping,
+  because nothing pays the individual for being in the middle.
 - **Organic band:** the designed seed is too smooth (jerk_rel 0.16); every evolved pair is in the band.
 - **Economy:** without a designed satiety gate the open economy collapses: predators breed to 20-30 and eat the
   pond out in 2-4 minutes. A gate (no burst above 1.25x birth mass) keeps both species alive for 10 minutes.

@@ -23,8 +23,12 @@ Branch `cece/swarm-x-arms`. Code: `Tools/NCA/arms_sim.py` (world + policies), `a
     grazing rose from 0.88 to 0.96 per prey per minute;
   - predators **ignore a vessel they cannot catch**: time-share within 40 u of it fell from 1.6% to 0.7% (the null
     is 0.8%).
-- **What did NOT emerge**: schooling, splitting or decoys in the prey, and encirclement, ambush or relay chases in
-  the predators. Each is measured, below, against its null. Four follow-up runs were built to provoke them:
+- **SCHOOLING EMERGES under individual-level (selfish-herd) prey selection** (run a9, 4 competing prey tribes per
+  pond). Local polarisation rose from 0.53 to 0.86 and feel coherence from 0.05 to 0.74, still climbing at the
+  last generation. The predators answered by packing. Under the species-mean fitness of every other run, the prey
+  never schooled.
+- **What did NOT emerge under species-mean fitness**: schooling, splitting or decoys in the prey, and encirclement,
+  ambush or relay chases in the predators. Each is measured, below, against its null. Four follow-up runs were built to provoke them:
   confusion 1.0 (a5), a slower burst (a6), confusion at 20 u (a7), and confusion on detection (a8). None produced a
   school or a ring. a6 made the predators lean even harder on the wall (catch ratio 5.1x), and a8 moved the prey 13%
   closer together.
@@ -34,12 +38,14 @@ Branch `cece/swarm-x-arms`. Code: `Tools/NCA/arms_sim.py` (world + policies), `a
   to extinction in 2-4 minutes, then starve. A gate (a predator heavier than 1.25x its birth mass cannot burst)
   keeps both species alive for 10 minutes in all 4 seeds.
 - **Cost**: 1.86 ms/step for 8 predators and 120 prey, numpy, one thread. Locality: local.
-- **Most FUN pair: predators g1460 vs prey g1460, with the satiety gate.**
-  - 46 catches/min, with 78% of bursts visibly juked.
-  - Every catch is telegraphed by a red burst, 0.8 s ahead.
-  - Organic feel, and it persists in the economy.
-  - Port: the predators become a new swarm fauna that hunts the tadpole school, keeping the gate, the burst tell and
-    the post-catch handling beat. Retrained on trail prisms, it becomes a baitable trail predator.
+- **Most FUN pair: a9 g1500 (selfish-herd prey that school, against predators that pack), with the satiety gate.**
+  - The swarm now has SHAPES a player can read: about 6 schools, local polarisation 0.86.
+  - The packs run in lines behind them, with every catch telegraphed by a red burst.
+  - 39 catches/min; organic for both species; it persists in the economy when gated.
+  - Its predators also take an interest in a passing vessel (2.2% time-share within 40 u, against a 0.8% null).
+  - The runner-up is a3 g1460 (solo jukers vs wall-pinners): more chases, but a gas of individuals.
+  - Port: the predators become a new swarm fauna that hunts the tadpole school, keeping the gate, the burst tell
+    and the post-catch handling beat. Retrained on trail prisms, it becomes a baitable trail predator.
 
 ## Designed vs learned vs emergent (line by line)
 
@@ -365,7 +371,62 @@ group keeps losing track.
 - **The first sign of cycling in any run.** Newer predators beat older prey in only 38% of cells, and 3 of 35 triples
   are intransitive. On a flat plateau, where neither side can gain, the race starts to wander.
 
-Across a3, a5, a6, a7 and a8 the conclusion is consistent. **With a single shared policy per species and
+### a9: the SELFISH HERD. Schooling emerges once prey selection acts on individuals (`arms_herd.py`)
+
+Every run above scored the prey policy on the species mean, so being the safer one in the middle could never pay.
+Hamilton's selfish herd needs individual-level selection.
+
+**The design:**
+- Each pond holds **4 prey tribes of 30**, interleaved at random. They share the base policy but carry opposite
+  perturbations (+e_a, -e_a, +e_b, -e_b).
+- A tribe's fitness is its own (share caught, net grazed).
+- The prey gradient comes from **within-pond** differences, so a variant that survives at its pond-mates' expense
+  wins.
+- Predators keep one shared policy (antithetic encounter pairs).
+- No pool. Physics and economy are unchanged from a3, warm-started from a3 g1460.
+
+Behaviour over the run (3 seeds × 60 s each):
+
+| metric | g0 | g250 | g500 | g750 | g1000 | g1250 | g1500 |
+|---|---|---|---|---|---|---|---|
+| catch/min | 46 | 53 | 44 | 53 | 52 | 48 | 39 |
+| prey local polarisation | 0.53 | 0.52 | 0.62 | 0.69 | 0.78 | 0.82 | 0.86 |
+| prey global polarisation | 0.11 | 0.13 | 0.16 | 0.20 | 0.26 | 0.32 | 0.33 |
+| prey feel coherence | 0.05 | 0.09 | 0.28 | 0.43 | 0.61 | 0.71 | 0.74 |
+| social share (≥ 2 neighbours in 15 u) | 0.18 | 0.34 | 0.34 | 0.30 | 0.39 | 0.52 | 0.60 |
+| nearest-neighbour distance (u) | 25.5 | 19.6 | 19.9 | 19.8 | 17.4 | 14.2 | 13.1 |
+| groups ≥ 3; largest share | 2.4; 0.04 | 3.4; 0.06 | 3.2; 0.05 | 2.5; 0.06 | 3.5; 0.06 | 4.7; 0.08 | 5.8; 0.10 |
+| confusion-fail share | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | 0.015 |
+| grazed per prey per min | 0.96 | 0.91 | 0.92 | 0.91 | 0.91 | 0.83 | 0.86 |
+| predator pack share; packmate distance | 0.26; 84 | 0.29; 76 | 0.28; 77 | 0.28; 78 | 0.37; 70 | 0.37; 69 | 0.38; 68 |
+| membrane catch ratio | 3.9 | 3.1 | 4.1 | 2.7 | 2.6 | 2.9 | 3.0 |
+| cooperative catches; victim coverage (null) | 0.45; 0.32 (0.41) | 0.52; 0.33 (0.39) | 0.45; 0.30 (0.38) | 0.50; 0.34 (0.40) | 0.48; 0.30 (0.39) | 0.57; 0.22 (0.39) | 0.49; 0.30 (0.39) |
+| organic band (prey / pred) | yes / yes | yes / yes | yes / yes | yes / yes | yes / yes | yes / yes | yes / yes |
+
+
+- **Schooling emerges, steadily, and is still climbing at the last generation.**
+  - Local polarisation rose from 0.53 to 0.86, global polarisation from 0.11 to 0.33 (a gas becoming a flock).
+  - Feel coherence rose from 0.05 to 0.74.
+  - Nearest-neighbour distance fell from 25.5 to 13.1 u, and social share rose from 0.18 to 0.60.
+  - Both species stay inside the organic band.
+- **First costly, then protective.**
+  - From g0 to g1000, catches RISE as the prey group (46 → 52-53/min): a loose group is a richer target. This is
+    the textbook selfish-herd signature, individually rational and collectively costly, and the opposite of what
+    the shared-fitness runs could find.
+  - By g1500 the schools are tight (nearest-neighbour distance 13 u), and catches FALL to 39/min, below the seed's
+    46. The contact-confusion rule fires for the first time (1.5% of contacts).
+  - The school has begun to pay the group back. That needs confirmation with more seeds and generations: the
+    matrix is still noise-level.
+- **The predators answer by packing.** Pack share rose from 0.26 to 0.38, and nearest-packmate distance fell from
+  84 to 68 u. They lean LESS on the wall: the membrane catch ratio fell from 3.9 to 3.0, because the prey
+  groups sit away from it. Encirclement still does not appear (cooperative catches ~0.5, victim coverage below null).
+- **The matrix is flat** (`matrix_a9_herd.json`, 7 snapshots: every cell 41-62/min). Newer predators beat older
+  prey in 48% of cells, newer prey beat older predators in 52%, and 6 of 35 triples are intransitive. The race is in a drifting
+  plateau. The behaviour changed, the scoreboard did not, which is exactly why the matrix alone would have missed
+  the result.
+- **Recording**: `school_a9_g1500.gif` and the viewer's run "selfish herd".
+
+Across a3, a5, a6, a7 and a8 (all with species-mean prey fitness) the conclusion is consistent. **With a single shared policy per species and
 per-encounter fitness, the prey's best answer to a turn-limited pursuer is an individual juke, and the
 predators' best answer is the membrane.** Schooling and encirclement need a reason this world does not provide:
 - detection-based confusion (the predator loses its target among many, before contact);
@@ -394,16 +455,23 @@ Those are the next round's levers.
 
 ## Recommendation
 
-**Most FUN pair: predators g1460 against prey g1460, with the satiety gate.** Not the strongest predators: P400
-and P800 kill twice as fast against their own prey. Why this pair:
-- **Most contested chases**: 242 bursts a minute, of which 78% visibly fail to a juke.
-- **A catch rate that leaves a school standing**: 46/min in the 200 u pond.
-- **Readable**: catches cluster at the membrane, where a player can see them pinned.
-- **Organic band** for both species.
-- **It survives the economy** once gated.
+**Most FUN pair: a9 g1500, selfish-herd prey against packing predators, with the satiety gate**
+(`policy_a9_selfish_herd_g1500.npz`; viewer run 1; `school_a9_g1500.gif`). Not the strongest predators: P400 and
+P800 of a3 kill twice as fast against their own prey. Why this pair:
+- **It reads as a swarm, not a gas.** About 6 schools of 10-12, local polarisation 0.86, coherence 0.74, still in
+  the organic band (prey jerk_rel 0.94). A player sees shapes turning together, not dots.
+- **The predators answer visibly.** They pack (pack share 0.38, up from 0.26) and run in lines behind a school.
+  Every catch is telegraphed by a red burst ~0.8 s ahead.
+- **A catch rate that leaves the schools standing**: 39/min in the 200 u pond, the lowest of any evolved pair. The
+  schools are starting to protect themselves.
+- **It notices the player.** Its predators come within 40 u of a passing vessel 2.2% of the time (null 0.8%) and
+  target it 3.6% of steps. The prey flee it.
+- **It survives the economy once gated**: 137-161 prey and 1-7 predators after 10 minutes, 4 seeds. Without the
+  gate it collapses like every other pair.
 
-If playtests want more payoff (more catches to interrupt), use **P1460 vs Q700**: 66/min, burst success 0.34,
-still organic.
+Runner-up: **a3 g1460 vs g1460** (solo jukers vs wall-pinners). It has the most contested chases (242 bursts a
+minute, 78% juked) and catches on the membrane, but it is a gas of individuals. If playtests want more payoff,
+use **P1460 vs Q700** of a3: 66/min, burst success 0.34.
 
 How it ports to the game's Fauna:
 - **One species as the swarm predator of the other.** Both MLPs are about 2.3k floats, and their inputs are local
@@ -430,9 +498,9 @@ How it ports to the game's Fauna:
        generations).
      - The prey already perceive their neighbours' velocities and signals, so "many eyes" information was available
        and went unused.
-     - The untried lever is a POPULATION of distinct prey genomes in each pond, with individual fitness (Hamilton's
-       selfish herd). A single shared policy scored on the species mean cannot reward being the safer one in the
-       middle, which is the classic origin of grouping.
+     - **Individual-level selection works (a9).** Continue it. Then add a payback for the group so that schooling
+       is also collectively worth it: detection confusion (a8's rule) together with selfish-herd selection. That
+       is the combination most likely to give a school that both forms and protects.
 
 
 ## Files
@@ -442,15 +510,16 @@ How it ports to the game's Fauna:
 | `policy_a3_g1460_pred_and_prey.npz` | the recommended pair (`thp` predator, `thq` prey; arms_sim.mlp layout) |
 | `seed_g0_designed.npz` | generation 0: the behaviour clones of the scripted heuristics |
 | `policy_a5_conf1_g400.npz` | a5's final pair (confusion 1.0) |
-| `snaps_a3/`, `snaps_a4_nopool/`, `snaps_a6_burst75/`, `snaps_a7_conf1r20/`, `snaps_a8_detect/` | the snapshots each matrix uses |
-| `matrix.json` (a3), `matrix_a4_nopool.json`, `matrix_a6_burst75.json`, `matrix_a7_conf1r20.json`, `matrix_a8_detect.json` | play matrices |
+| `policy_a9_selfish_herd_g1500.npz` | a9's final pair: the SCHOOLING prey and their packing predators |
+| `snaps_a3/`, `snaps_a4_nopool/`, `snaps_a6_burst75/`, `snaps_a7_conf1r20/`, `snaps_a8_detect/`, `snaps_a9_herd/` | the snapshots each matrix uses |
+| `matrix.json` (a3), `matrix_a4_nopool.json`, `matrix_a6_burst75.json`, `matrix_a7_conf1r20.json`, `matrix_a8_detect.json`, `matrix_a9_herd.json` | play matrices |
 | `eval.json` | curve, behaviours, economy, perf, player test, telegraph, locality |
 | `feel.json` | the organic band per species and pair |
 | `curve.png`, `matrix.png`, `eco_*.png` | figures |
-| `arms_viewer.html` | the shared Ecology viewer (`Tools/Ecology/common/viewer.py` template), 5 runs: the g1460 encounter, a vessel through g1460, the LIVING pond (g1460, open economy + satiety gate, 120 s, population on the HUD), the g0 encounter and a vessel through g0. Pilot, chase, orbit and fly cameras. |
-| `encounter_g1460_g1460.json`, `vessel_g1460_g1460.json`, `living_g1460.json` | the recordings (viewer data contract; rebuild with `python Tools/Ecology/common/viewer.py out.html <json>...`; `arms_living.py` re-records the living pond) |
+| `arms_viewer.html` | the shared Ecology viewer (`Tools/Ecology/common/viewer.py` template), 6 runs: the a9 SCHOOLING encounter (g1500), the g1460 encounter, a vessel through g1460, the LIVING pond (g1460, open economy + satiety gate, 120 s, population on the HUD), the g0 encounter and a vessel through g0. Pilot, chase, orbit and fly cameras. |
+| `school_a9_g1500.json`, `encounter_g1460_g1460.json`, `vessel_g1460_g1460.json`, `living_g1460.json` | the recordings (viewer data contract; rebuild with `python Tools/Ecology/common/viewer.py out.html <json>...`; `arms_living.py` re-records the living pond) |
 | `encounter_*.gif`, `vessel_*.gif` | short GIFs (orange = predator, red = bursting, cyan = prey, white ring = a catch, triangle = vessel) |
-| `a1..a8_log.jsonl`, `a*_config.json` | every training run, failed ones included |
+| `a1..a9_log.jsonl`, `a*_config.json` | every training run, failed ones included |
 
 Reproduce:
 
