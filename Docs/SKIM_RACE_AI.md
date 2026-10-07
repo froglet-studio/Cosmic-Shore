@@ -542,6 +542,22 @@ The 10-06 capture that ran Burst predates the Code Optimization record, so its m
 **Next:** `burst` in Release. If it is still MANAGED, close the editor, delete `Library/BurstCache`, reopen, and
 run `burst` again. If it is still MANAGED after that, read `Editor.log`.
 
+**Release (2026-10-08): the jobs DO compile as Burst, and then fail.** In Release the boot arena (Growing
+Garland) stops at "Building arena 42%" (`ArenaLoadProgress` counts prisms laid and grown). The Console fills
+(~674 entries) with two errors. One is `NullReferenceException ... thrown from a job compiled with Burst, which
+has limited exception support`. The other is `InvalidOperationException: The ComponentLookup<CosmicShore.ECS.
+PrismShieldMorphDirectionOverride> has been declared as [WriteOnly] in the job, but you are reading from it`.
+So Debug code optimization was what kept user jobs managed: Release runs them as Burst. And the source cannot
+produce the second error. No job in the project holds a `ComponentLookup` of that component (it is written
+only from the main thread, `PrismRenderService.SetShieldMorph*`), and no job field is `[WriteOnly]` except
+`ResolveHandlesJob.Entities`, a NativeArray. The jobs that run while prisms are laid (`InitCreatedJob`,
+`SetLookJob`, `WriteLocalToWorldJob`, `ResolveHandlesJob`) read and write only `MaterialMeshInfo`,
+`LocalToWorld`, `RenderBounds` and the Bright/Dark/Spread overrides. The lookup cache (`_lookups`) resets
+with the world. Running Burst code that does not match the current source is what a stale or corrupt Burst
+cache produces: old job layouts, wrong safety names, null pointers.
+**Next:** clean `Library/BurstCache` with the editor closed, then Release. If it still fails, read the stack
+traces in `Editor.log`. Until then, Debug keeps the game running, with the jobs managed.
+
 ### 8.0i The AI seats no longer re-plan in the same frame (2026-10-07)
 
 The user's choice from §8.0h's list: stagger the seats. **Mechanism:** `SkimRaceReplanGate`, one per
