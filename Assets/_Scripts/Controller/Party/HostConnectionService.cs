@@ -726,10 +726,10 @@ namespace CosmicShore.Gameplay
                 // Best-effort refresh to sync the SDK's player-index cache before
                 // SaveCurrentPlayerDataAsync. Without it the save can fail silently.
                 try { await _lobbyService.RefreshAsync(); }
-                catch { /* SaveWithRetryAsync handles stale state via its own retry */ }
+                catch { /* SaveAsync re-reads before any retry */ }
 
                 PublishInvitePayloadsToCurrentPlayer();
-                await _propertyWriter.SaveWithRetryAsync(_lobbyService.ActiveLobby);
+                await _propertyWriter.SaveAsync(_lobbyService.ActiveLobby);
 
                 CSDebug.LogVerbose(CSLogChannel.Party,
                     "[INVITE-SEND] SaveCurrentPlayerDataAsync completed - properties persisted");
@@ -2127,7 +2127,7 @@ namespace CosmicShore.Gameplay
             try
             {
                 PublishInvitePayloadsToCurrentPlayer();
-                await _propertyWriter.SaveWithRetryAsync(_lobbyService.ActiveLobby);
+                await _propertyWriter.SaveAsync(_lobbyService.ActiveLobby);
             }
             catch (Exception e)
             {
@@ -2289,7 +2289,7 @@ namespace CosmicShore.Gameplay
                 lobby.CurrentPlayer.SetProperty(PARTY_SESSION_KEY,
                     new PlayerProperty(currentSession ?? string.Empty, VisibilityPropertyOptions.Public));
 
-                await _propertyWriter.SaveWithRetryAsync(lobby);
+                await _propertyWriter.SaveAsync(lobby);
                 _publishedPartyCount     = currentCount;
                 _publishedMatchName      = currentMatch;
                 _publishedDisplayName    = currentName;

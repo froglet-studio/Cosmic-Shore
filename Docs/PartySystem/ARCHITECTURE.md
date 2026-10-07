@@ -128,19 +128,25 @@ and the two extracted services (`PartySessionService`,
 ### `PartySessionService` (pure C#, constructor-injected)
 
 Owns the Relay-backed UGS session lifecycle: `CreateAsync`,
-`JoinByIdAsync`, `LeaveAsync`. Both create and join run inside retry
-loops keyed on the ONE UGS failure classifier,
-`UgsRequestPolicy.Classify` (`Assets/_Scripts/Utility/UgsRequestPolicy.cs`,
-2026-10-07 — it replaced the three private predicates this table used to
-name, plus the copies in `PresenceLobbyService`, `HostConnectionService`,
-`MultiplayerSetup` and `BenignLobbyLogFilter`):
+`JoinByIdAsync`, `LeaveAsync`. It carries NO retry loop of its own: every
+UGS call runs under `UgsRequestPolicy.ExecuteAsync`
+(`Assets/_Scripts/Utility/UgsRequestPolicy.cs`, 2026-10-07 — one classifier,
+one executor, for this service and for `PresenceLobbyService`,
+`LobbyPropertyWriter` and `MultiplayerSetup`; the tunables live on
+`HostConnectionDataSO.UgsRequestPolicySettings`):
 
-| `UgsFailureClass` | Behavior |
+| `UgsFailureClass` | `ExecuteAsync` behaviour |
 |---|---|
-| `Conflict` (structured `SessionError.NetworkManager*` / `SessionConflict` / `LobbyAlreadyExists`, or a message naming `NetworkManager`) | Retry up to `HOST_CONFLICT_MAX_RETRIES`, no backoff. The retired probe matched ANY message containing "host". |
-| `RateLimited` (`SessionError.RateLimitExceeded`, HTTP 429, or the "Too Many Requests" text) | Retry up to `RATE_LIMIT_MAX_RETRIES` with exponential backoff |
-| `Transient` / `Benign` (SDK `SessionException` NRE, lobby-events 23006, the `SessionError.Unknown` stale-index family) | Retry up to `TRANSIENT_MAX_RETRIES` with exponential backoff |
-| `Gone`, `Full`, `Fatal`, `Cancelled` | Not retried — propagate |
+| `RateLimited` (`SessionError.RateLimitExceeded`, HTTP 429, or the "Too Many Requests" text) | up to `maxRetries` (3) retries, back-off `min(8 s, 1 s · 2^n)` jittered between half and full |
+| `Transient` / `Benign` (SDK `SessionException` NRE, lobby-events 23006, the `SessionError.Unknown` stale-index family, 5xx, socket errors) | up to 3 retries, back-off `min(4 s, 0.5 s · 2^n)` jittered |
+| `Conflict` (structured `SessionError.NetworkManager*` / `SessionConflict` / `LobbyAlreadyExists`, or a message naming `NetworkManager`) | exactly one retry after 250 ms. The retired probe matched ANY message containing "host" and retried twice with no pause. |
+| `Gone`, `Full`, `Fatal`, `Cancelled` | not retried — propagate as-is |
+
+Every retry spends one unit of a per-client budget (10 / rolling minute); when it is
+spent, the failure is thrown on its first occurrence and the layer degrades instead of
+hammering. `party:create` and `party:join:{id}` are **single-flight**: a second caller
+during an in-flight create or join awaits the same request. Property saves carry no
+key (two saves can differ) and are serialised by `LobbyMutex` instead.
 
 Non-transient errors propagate to `HostConnectionService.AcceptInviteAsync`,
 which logs and rethrows so `PartyInviteController` fails fast.
@@ -241,7 +247,8 @@ verification gate per commit.
 | User-facing flow controller | `Assets/_Scripts/Controller/Party/PartyInviteController.cs` |
 | Relay session lifecycle | `Assets/_Scripts/Controller/Party/Services/PartySessionService.cs` |
 | Netcode transitions | `Assets/_Scripts/Controller/Party/Services/NetworkTransitionService.cs` |
-| Lobby property writes (mutex + retry) | `Assets/_Scripts/Controller/Party/Services/LobbyPropertyWriter.cs` |
+| Lobby property writes (mutex; save under the request policy) | `Assets/_Scripts/Controller/Party/Services/LobbyPropertyWriter.cs` |
+| UGS failure classifier + retry executor | `Assets/_Scripts/Utility/UgsRequestPolicy.cs` (tests: `Assets/_Scripts/Tests/Editor/UgsRequestPolicyTests.cs`) |
 | Invite-receive detection | `Assets/_Scripts/Controller/Party/Services/InviteService.cs` |
 | Acceptance signal (sender ↔ receiver handshake) | `Assets/_Scripts/Controller/Party/Services/AcceptanceSignalService.cs` |
 | Refresh cadence (boost + base) | `Assets/_Scripts/Controller/Party/Services/LobbyRefreshScheduler.cs` |
@@ -385,13 +392,13 @@ predicate") — the matrix decides *what to do*, NetDiag only decides *what to l
 | Catch site | Failure class | Recovery |
 |---|---|---|
 | `RefreshPartyMembersAsync` benign Lobby-patcher noise | Spurious SDK NRE | Swallow silently (known SDK bug) |
-| `RefreshPartyMembersAsync` `RateLimitedException` | UGS rate limit | Set `_rateLimitBackoffUntil`, skip this tick, retry next interval. State unchanged. |
+| `RefreshPartyMembersAsync` `RateLimited` | UGS rate limit | Set `_rateLimitBackoffUntil`, skip this tick, retry next interval. State unchanged. |
 | `RefreshPartyMembersAsync` 404 / SessionNotFound | Server-side session deleted | Classify **definite**: call `LeavePartyKeepHostAsync` → fresh solo session. UI updates via `OnHostConnectionLost` + per-member `OnPartyMemberLeft`. |
 | `RefreshPartyMembersAsync` other `SessionException` | Transient | Log warning, increment `_consecutiveRefreshErrors`, retry next tick. After threshold (3), promote to definite. |
 | `PartySessionService.LeaveAsync` inner UGS throw | Session already gone | Already wrapped; ref cleared regardless. Caller ends in clean state. No change. |
 | `KickPartyMemberAsync` UGS throw | Dead session / disconnected target | Wrap in try/catch, log, state unchanged. Host can retry (target reappears on next refresh). |
-| `CreateAsync` host-conflict | Concurrent host on same account | Existing retry policy. No change. |
-| `CreateAsync` `RateLimitedException` | UGS rate limit | Existing backoff. No change. |
+| `CreateAsync` `Conflict` | NetworkManager still shutting down / concurrent create | One `UgsRequestPolicy` retry after 250 ms, then bubble. |
+| `CreateAsync` / `JoinByIdAsync` `RateLimited` | UGS rate limit | `UgsRequestPolicy` jittered back-off out of the per-client budget; never counts toward `ForceReset`. |
 | `CreateAsync` other | Permanent failure | Bubble to `EnsurePartySessionAsync`, which raises retry event for `BootStatusPanel`. User-visible recovery. |
 | `SendInviteAsync` UGS throw | Lobby gone / target offline | Wrap, log, return false. UI shows error toast (already wired). |
 | `AcceptInviteAsync` UGS throw on join | Inviter session gone | Caller (`PartyInviteController.AcceptInviteAsync`) catches → `RecoverFromFailedTransitionAsync`. |

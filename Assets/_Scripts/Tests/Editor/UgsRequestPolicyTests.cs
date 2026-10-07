@@ -546,6 +546,40 @@ namespace CosmicShore.Tests
             Assert.AreEqual(0, policy.InFlightCount, "the key must drain once the call completes");
         }
 
+        private static async UniTask<int> Consume(UniTask<int> task) => await task;
+
+        [Test]
+        public void SingleFlight_TwoConsumersAwaitingWhilePending_BothComplete()
+        {
+            // The case a Preserve()d UniTask cannot serve: both callers AWAIT the shared operation
+            // before it completes. A memoized UniTask forwards the second awaiter to the
+            // one-continuation core and throws; the completion source behind each key must not.
+            var policy = NewPolicy();
+            var gate = new UniTaskCompletionSource<int>();
+            int calls = 0;
+            var a = Consume(policy.ExecuteAsync("party:create", () => { calls++; return gate.Task; }));
+            var b = Consume(policy.ExecuteAsync("party:create", () => { calls++; return gate.Task; }));
+            Assert.AreEqual(1, calls);
+            Assert.AreEqual(UniTaskStatus.Pending, a.Status);
+            Assert.AreEqual(UniTaskStatus.Pending, b.Status);
+            gate.TrySetResult(5);
+            Assert.AreEqual(5, Run(a));
+            Assert.AreEqual(5, Run(b));
+            Assert.AreEqual(0, policy.InFlightCount);
+        }
+
+        [Test]
+        public void SingleFlight_AwaiterSeesTheRealException()
+        {
+            var policy = NewPolicy();
+            var gate = new UniTaskCompletionSource<int>();
+            var a = Consume(policy.ExecuteAsync("party:join:Z", () => gate.Task));
+            gate.TrySetException(new SessionException("gone", SessionError.SessionNotFound, null));
+            var ex = Assert.Throws<SessionException>(() => Run(a));
+            Assert.AreEqual(SessionError.SessionNotFound, ex.Error);
+            Assert.AreEqual(0, policy.InFlightCount);
+        }
+
         [Test]
         public void SingleFlight_DifferentKeys_DoNotCoalesce()
         {

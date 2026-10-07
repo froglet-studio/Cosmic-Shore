@@ -53,11 +53,14 @@ breakdown (C1-C8) lives in the project root `PLAN.md` plan file under
 retry policy is encoded inline in `CreateAsync` and `JoinByIdAsync`.
 Hard to test, hard to extend to other operations.
 
-**Outline.** Extract `SessionRetryPolicy` as a small testable strategy
-object. Make every method that does a UGS call accept the policy as a
-constructor dependency. The three classifiers
-(`IsHostConflictException`, `IsRateLimitException`,
-`IsTransientSessionException`) become methods on the policy.
+**Landed 2026-10-07 as `UgsRequestPolicy`** (`Assets/_Scripts/Utility/`), one
+step wider than this row planned: the strategy object serves
+`PresenceLobbyService`, `LobbyPropertyWriter` and `MultiplayerSetup` as well,
+because the measurement found the same three retry loops copied there (with
+fixed 2000 ms delays and a classifier that matched the bare word "host").
+Constructor-injected everywhere (AppManager); the three classifiers became
+`UgsRequestPolicy.Classify`; tests in `Tests/Editor/UgsRequestPolicyTests.cs`
+run headlessly against the compiled assemblies.
 
 **Pre-requisite signal.** Wait for NetDiag data from real MPPM runs to
 tell us how often the existing retries actually fire vs. fail through.

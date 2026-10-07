@@ -15,17 +15,20 @@ fourth (recovery) explicitly clears the stale session first.
 `ActiveSession` reads and writes a single backing field on `GameDataSO`, so there is one source of
 truth for "which session am I in" and it is never nulled outside an intentional leave.
 
-## One classifier, three retry loops
+## One classifier, one retry executor
 
-Both create and join run inside retry loops keyed on the one UGS failure classifier,
-`UgsRequestPolicy.Classify` (2026-10-07; it replaced three private predicates here and the copies in
-four other files) — each loop with its own policy:
+Both create and join run under `UgsRequestPolicy.ExecuteAsync` (2026-10-07; it replaced three retry
+loops and three private classifiers here, and their copies in four other files):
 
 | `UgsFailureClass` | Retries | Backoff | Covers |
 |---|---|---|---|
-| `Conflict` | up to 2 | none | `NetworkManager` still shutting down from a prior host |
-| `RateLimited` (HTTP 429) | up to 3 | exponential (2 s base) | UGS read/write rate limits |
-| `Transient` / `Benign` | up to 5 | exponential (1 s base) | SDK `SessionException` NRE, lobby-events 23006, the stale-index family |
+| `RateLimited` (HTTP 429) | up to 3 | `min(8 s, 1 s · 2^n)`, jittered half-to-full | UGS read/write rate limits |
+| `Transient` / `Benign` | up to 3 | `min(4 s, 0.5 s · 2^n)`, jittered | SDK `SessionException` NRE, lobby-events 23006, the stale-index family, 5xx |
+| `Conflict` | exactly 1 | 250 ms | `NetworkManager` still shutting down from a prior host |
+| `Gone` / `Full` / `Fatal` | none | — | propagate |
+
+Retries draw on a per-client budget (10 per rolling minute); `party:create` and `party:join:{id}`
+are single-flight, so two racing callers share one request.
 
 Non-transient errors propagate to `HostConnectionService.AcceptInviteAsync`, which logs and rethrows
 so `PartyInviteController` fails fast into its recovery path. A freshly-provisioned session can

@@ -16,7 +16,7 @@ theme:
 
 | Theme | Planned items |
 |---|---|
-| **Decomposition & maintainability** | Extract `PartyInviteController` into `TransitionVisualsCoordinator` / `ClientReadyGate` / `TransitionRecoveryService` (Refactor 1); `SessionRetryPolicy` strategy object (Refactor 2); event-driven `NetworkTransitionService` (Refactor 3); the cross-class `leave → reset → join` operation; `RefreshErrorPolicy` (D2); `GameDataSO` session-state split (D3); remove the dead `PENDING` sentinel protocol (D1) |
+| **Decomposition & maintainability** | Extract `PartyInviteController` into `TransitionVisualsCoordinator` / `ClientReadyGate` / `TransitionRecoveryService` (Refactor 1); ~~`SessionRetryPolicy`~~ (landed 2026-10-07 as `UgsRequestPolicy`) strategy object (Refactor 2); event-driven `NetworkTransitionService` (Refactor 3); the cross-class `leave → reset → join` operation; `RefreshErrorPolicy` (D2); `GameDataSO` session-state split (D3); remove the dead `PENDING` sentinel protocol (D1) |
 | **Test automation** | Automate accept / decline / leave / refresh-fail / auto-recovery as play-mode tests so exit criteria 6–8 stop depending on a manual MPPM pass (D4) |
 | **Rate-limit & SDK churn** | Coalesce startup property writes (TODO-8); ±10 % jitter on the refresh interval (P3); gate the online-panel diff on visibility (P7) |
 | **UX** | "Reconnecting…" indicator (P6); per-`NetDiag`-class toast messages (TODO-5); auto-dismiss stale invites on `SessionGone` (TODO-6); an invite-freshness timestamp (TODO-7) |

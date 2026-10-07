@@ -193,7 +193,7 @@ namespace CosmicShore.Gameplay
             lobby.CurrentPlayer.SetProperty(INVITE_PAYLOADS_KEY,
                 new PlayerProperty(composite, VisibilityPropertyOptions.Public));
 
-            await writer.SaveWithRetryAsync(lobby);
+            await writer.SaveAsync(lobby);
             CSDebug.LogVerbose(CSLogChannel.Party, $"[AcceptanceSignalService] Republished {invites.OutgoingCount} invite(s) with real session id {realSessionId}.");
         }
 

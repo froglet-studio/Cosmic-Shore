@@ -494,7 +494,7 @@ namespace CosmicShore.Core
                 resolution: Resolution.Lazy
             );
             builder.RegisterFactory(
-                _ => new LobbyPropertyWriter(),
+                c => new LobbyPropertyWriter(c.Resolve<UgsRequestPolicy>()),
                 lifetime: Lifetime.Singleton,
                 resolution: Resolution.Lazy
             );
@@ -525,13 +525,13 @@ namespace CosmicShore.Core
             );
 
             builder.RegisterFactory<IPresenceLobbyService>(
-                c => new PresenceLobbyService(hostConnectionData, c.Resolve<LobbyPropertyWriter>()),
+                c => new PresenceLobbyService(hostConnectionData, c.Resolve<LobbyPropertyWriter>(), c.Resolve<UgsRequestPolicy>()),
                 lifetime: Lifetime.Singleton,
                 resolution: Resolution.Lazy
             );
 
             builder.RegisterFactory<IPartySessionService>(
-                c => new PartySessionService(hostConnectionData, c.Resolve<GameDataSO>()),
+                c => new PartySessionService(hostConnectionData, c.Resolve<GameDataSO>(), c.Resolve<UgsRequestPolicy>()),
                 lifetime: Lifetime.Singleton,
                 resolution: Resolution.Lazy
             );

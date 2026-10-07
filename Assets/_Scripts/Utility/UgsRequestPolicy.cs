@@ -462,18 +462,22 @@ namespace CosmicShore.Utility
             if (call == null) throw new ArgumentNullException(nameof(call));
 
             bool coalesce = !string.IsNullOrEmpty(operationKey);
-            if (coalesce && _inFlight.TryGetValue(operationKey, out var existing) && existing is UniTask<T> inFlight)
+            if (coalesce && _inFlight.TryGetValue(operationKey, out var existing) && existing is UniTaskCompletionSource<T> inFlight)
             {
                 UgsRequestTelemetry.Count(UgsRequestCounter.Coalesced);
-                return inFlight;
+                return inFlight.Task;
             }
 
-            var task = RunAsync(operationKey, call, ct).Preserve();
-            // A call that completed synchronously has already run its finally; registering it
-            // now would leave a key that nothing ever removes.
-            if (coalesce && task.Status == UniTaskStatus.Pending)
-                _inFlight[operationKey] = task;
-            return task;
+            // A UniTaskCompletionSource, not Preserve(): a preserved UniTask memoizes the RESULT
+            // for re-reads after completion, but while it is still pending it forwards every
+            // awaiter to the one-continuation core underneath, so a second caller awaiting an
+            // in-flight operation would throw "already continuation registered". The completion
+            // source keeps a list of awaiters. Registered BEFORE the run starts so a call that
+            // completes synchronously removes its own key instead of leaving a stale one.
+            var completion = new UniTaskCompletionSource<T>();
+            if (coalesce) _inFlight[operationKey] = completion;
+            RunAsync(operationKey, call, ct, completion).Forget();
+            return completion.Task;
         }
 
         /// <summary>Result-less form of <see cref="ExecuteAsync{T}"/>.</summary>
@@ -483,7 +487,7 @@ namespace CosmicShore.Utility
             await ExecuteAsync<bool>(operationKey, async () => { await call(); return true; }, ct);
         }
 
-        private async UniTask<T> RunAsync<T>(string key, Func<UniTask<T>> call, CancellationToken ct)
+        private async UniTaskVoid RunAsync<T>(string key, Func<UniTask<T>> call, CancellationToken ct, UniTaskCompletionSource<T> completion)
         {
             string label = string.IsNullOrEmpty(key) ? "ugs" : key;
             try
@@ -494,7 +498,8 @@ namespace CosmicShore.Utility
                     UgsRequestTelemetry.Count(UgsRequestCounter.Requests);
                     try
                     {
-                        return await call();
+                        completion.TrySetResult(await call());
+                        return;
                     }
                     catch (Exception e) when (e is not OperationCanceledException)
                     {
@@ -524,9 +529,17 @@ namespace CosmicShore.Utility
                     }
                 }
             }
+            catch (OperationCanceledException oce)
+            {
+                completion.TrySetCanceled(oce.CancellationToken);
+            }
+            catch (Exception e)
+            {
+                completion.TrySetException(e);
+            }
             finally
             {
-                if (!string.IsNullOrEmpty(key))
+                if (!string.IsNullOrEmpty(key) && _inFlight.TryGetValue(key, out var mine) && ReferenceEquals(mine, completion))
                     _inFlight.Remove(key);
             }
         }
