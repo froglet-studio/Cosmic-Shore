@@ -596,3 +596,22 @@ not fully exact. A sealed mouth costs nothing.
 (`WormholeMouth.Live` filtered by `DomainLocked`/`Domain` is the roster one would read); an AI never
 uses one.
 
+### Playtest 1 (2026-10-08): "the Butterfly made no wormholes"
+
+Reported: no wormholes, and the gates looked like rings with no view through. A domain-locked mouth
+that judges its viewer to be of ANOTHER domain draws only its fresnel shell — which, from any angle,
+is a domain-coloured ring with nothing in it — so the report is what a pair SEALED against its own
+pilot looks like. The seal failed CLOSED: any viewer whose domain could not be resolved (no follow
+target, a camera rig that is not a `CustomCameraController`) was treated as a rival. Fixed three ways:
+
+- **Sealing fails open.** A mouth is sealed only on positive evidence: a resolved viewer domain that
+  is not the mouth's, and not the mouth's own pilot.
+- **The pair knows its pilot** (`WormholeMouth.Settings.Owner`). The owning Butterfly is always
+  carried and always sees through, whatever any domain read says.
+- **The lock follows the owner's LIVE domain** (and the rim repaints with it), instead of a domain
+  captured at placement — so a Butterfly that changes domain keeps a usable pair.
+
+Not yet re-tested. If it still reads as a ring: select the objects in the Hierarchy. The pair is named
+`FoldWormhole::<pilot>::A` / `::B`; a `FoldGate::<pilot>::A` object means the editor is still running
+the pre-wormhole scripts (check the Console for compile errors).
+

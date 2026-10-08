@@ -98,8 +98,18 @@ namespace CosmicShore.Gameplay
             public Color RimTint;
             /// <summary>Carry only vessels of <see cref="Domain"/>, and seal the view for every other.</summary>
             public bool DomainLocked;
-            /// <summary>The domain that owns the mouth (its rim colour, and its lock if locked).</summary>
+            /// <summary>The domain that owns the mouth (its rim colour, and its lock if locked) when
+            /// it has no <see cref="Owner"/>; with one, the owner's LIVE domain wins.</summary>
             public Domains Domain;
+            /// <summary>
+            /// The pilot whose mouth this is (a Butterfly's fold pair), or null (the cell's pair).
+            /// The owner is ALWAYS carried and always sees through, and the lock follows the owner's
+            /// domain as it is NOW — so a Butterfly that changes domain keeps its pair, and no
+            /// capture-time reading of a domain can lock the owner out of its own wormhole.
+            /// </summary>
+            public IVesselStatus Owner;
+            /// <summary>Theme the rim's domain hue is read from when the owner's domain changes.</summary>
+            public ThemeManagerDataContainerSO Theme;
         }
 
         static readonly Vector4 IdentityUV = new(1f, 1f, 0f, 0f);
@@ -166,7 +176,22 @@ namespace CosmicShore.Gameplay
         public bool IsRetiring => _retiring;
 
         /// <summary>The domain that owns the mouth (its rim's hue; its lock, if locked).</summary>
-        public Domains Domain => _settings.Domain;
+        public Domains Domain
+        {
+            get
+            {
+                var owner = _settings.Owner;
+                // IVesselStatus.Domain reads Player and logs when there is none; ask first.
+                return owner != null && owner.Player != null ? owner.Domain : _settings.Domain;
+            }
+        }
+
+        /// <summary>The pilot whose mouth this is, or null for an unowned (cell) mouth.</summary>
+        public IVesselStatus Owner => _settings.Owner;
+
+        // The domain the rim tint was last painted for, so an owner's domain change repaints it.
+        Domains _tintDomain;
+        bool _tintPainted;
 
         /// <summary>Does this mouth carry only its own domain?</summary>
         public bool DomainLocked => _settings.DomainLocked;
@@ -263,8 +288,11 @@ namespace CosmicShore.Gameplay
             if (vessel == null) return false;
             if (!_settings.DomainLocked) return true;
             var status = vessel.VesselStatus;
+            if (status == null) return false;
+            // The owner is never locked out of its own wormhole, whatever the domain reads say.
+            if (_settings.Owner != null && ReferenceEquals(status, _settings.Owner)) return true;
             // IVesselStatus.Domain reads Player and logs when there is none; ask first.
-            return status?.Player != null && status.Domain == _settings.Domain;
+            return status.Player != null && status.Domain == Domain;
         }
 
         void BuildEyes()
@@ -689,6 +717,14 @@ namespace CosmicShore.Gameplay
             _block.SetFloat(FlareId, _flare);
             // SetColor, not SetVector: the theme authors sRGB, and SetColor converts to the
             // project's linear space. Alpha 1 says "a tint is set"; 0 keeps the material's rim.
+            var domain = Domain;
+            if (_settings.Owner != null && (!_tintPainted || domain != _tintDomain))
+            {
+                // The owner's domain is live, so its hue is too.
+                _settings.RimTint = ToyFactory.DomainAccentColor(_settings.Theme, domain);
+                _tintDomain = domain;
+                _tintPainted = true;
+            }
             var tint = _settings.RimTint;
             _block.SetColor(RimTintId, new Color(tint.r, tint.g, tint.b, tint.a > 0f ? 1f : 0f));
             _block.SetFloat(SealedId, Sealed || !partner ? 1f : 0f);

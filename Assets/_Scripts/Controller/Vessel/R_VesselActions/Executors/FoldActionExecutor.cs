@@ -552,6 +552,10 @@ namespace CosmicShore.Gameplay
                 RimTint = ToyFactory.DomainAccentColor(_gameData.ThemeManagerData, domain),
                 DomainLocked = true,
                 Domain = domain,
+                // The pair follows THIS Butterfly: it is always carried and always sees through,
+                // and the lock (and the rim's hue) track its domain live.
+                Owner = _status,
+                Theme = _gameData.ThemeManagerData,
             }, _gameData.Players, so.GateRadius);
             return mouth;
         }

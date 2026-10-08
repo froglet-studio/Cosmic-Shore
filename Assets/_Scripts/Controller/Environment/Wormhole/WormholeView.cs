@@ -134,7 +134,12 @@ namespace CosmicShore.Gameplay
                 if (!m) continue;
                 m.ExactBlend = 0f;
                 m.PanoramaWanted = false;
-                m.Sealed = m.DomainLocked && !(knowsDomain && viewerDomain == m.Domain);
+                // Sealed only on POSITIVE evidence that this viewer may not use it: a known domain
+                // that is not the mouth's, and not the mouth's own pilot. A viewer we cannot place
+                // (no follow target yet, a menu rig) sees the view - failing closed here drew a
+                // pilot's own fold pair as a bare outline.
+                m.Sealed = m.DomainLocked && knowsDomain && viewerDomain != m.Domain
+                           && !(m.Owner != null && ReferenceEquals(_viewerStatus, m.Owner));
             }
 
             if (_mainView)

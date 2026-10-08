@@ -146,7 +146,10 @@ pair uses its spawnable's `domain` (Blue, the no-team colour); `_RimColor` is on
 mouth built with no tint. The transit flare uses the same hue.
 
 **Domain-locked pairs.** `WormholeMouth.Settings.DomainLocked` makes a mouth carry only vessels of
-its `Domain`. Such a mouth is **sealed** to a viewer whose camera follows a pilot of another domain
+its `Domain`. With an `Owner` (the fold's Butterfly) that domain is the owner's LIVE domain, and the
+owner is always carried and always sees through. Sealing (below) is decided only on positive evidence
+of a rival viewer — an unresolvable viewer sees the view (it used to fail closed, which drew a pilot's
+own pair as a bare ring). Such a mouth is **sealed** to a viewer whose camera follows a pilot of another domain
 (`WormholeView` decides per frame, `_WormholeSealed`): no view through, only a fresnel shell in the
 domain colour, interior clipped in colour and depth, and that viewer's own ship flies straight
 through it. A sealed mouth gets no exact render and asks for no panorama — it costs nothing. An
