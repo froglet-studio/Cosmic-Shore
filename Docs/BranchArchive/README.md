@@ -30,10 +30,24 @@ The audit found **505** remote branches; **363** had no commit since 2026-09-08.
 
 See **How to delete — step by step** below.
 
+## Branch cleanup policy (applies to every future cleanup)
+
+1. **Use the tool.** `Tools/BranchJanitor/branch-janitor.html` lists branches live from GitHub and applies the rules
+   below. Its `POLICY` block is where they are enforced; change the rules there.
+2. **Never delete:** `master`, `main`, `bleeding-edge`, `development`, `Ys-bleeding-edge`, `build/*`, `release/*`,
+   `archive/*`, any branch with a commit in the last 30 days, and any branch with an open pull request.
+3. **Large branches (11+ unique commits) are protected.** The tool locks them. Unlocking takes a deliberate
+   tick, and the branch's doc under `large/` must be read first. The 2026-10-08 audit kept all 56.
+4. **Write the evidence before deleting.** Every branch removed in a cleanup gets a doc here (commit messages,
+   files, patches) and an `archive/<branch>` tag on GitHub. The tool and the scripts create the tag automatically.
+
 ## How to delete — step by step
 
-GitHub refused deletes from the cloud session that wrote this archive (HTTP 403, it may only push its own branch),
-so a person with push rights runs these. Both scripts re-check every branch before touching it.
+**Easiest: the Branch Janitor page.** Open `Tools/BranchJanitor/branch-janitor.html` in a browser, paste a GitHub
+token, click **Load branches**, tick, then **Review and delete…**. It applies the policy above, saves an `archive/` tag
+for each branch, and re-checks each branch before deleting. Setup and token steps: `Tools/BranchJanitor/README.md`.
+
+**Or from a terminal**, with the two scripts in this folder:
 
 **Step 1 — get a clone with this archive in it.**
 
