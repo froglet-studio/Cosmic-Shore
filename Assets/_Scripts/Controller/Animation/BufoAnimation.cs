@@ -41,6 +41,13 @@ namespace CosmicShore.Gameplay
 
         protected override void PerformShipPuppetry(float pitch, float yaw, float roll, float throttle)
         {
+            // Pitch leans the OTHER way on this hull: playtest (2026-10-08) read the Grizzly's
+            // pitch puppetry as reversed against its turn. Every animated part sits in an
+            // identity frame under the hull (Grizzly -> OrientationHandle -> Ship_Wedge_Body),
+            // so this is a sign, not a missing composition term - yaw was not reported and is
+            // left as it was.
+            pitch = -pitch;
+
             var pitchScalar = pitch * exaggeratedAnimationScalar;
             var yawScalar = yaw * exaggeratedAnimationScalar;
             var rollScalar = roll * exaggeratedAnimationScalar;
