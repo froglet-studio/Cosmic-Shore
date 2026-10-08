@@ -88,6 +88,16 @@ No editor was available — nothing here has compiled in Unity.
 
 **First-pass tuning**: bloom radius 450 (`BLOOM_SCALE`), strip 1.2 petals/element, per-frame budget 48.
 
+**Round 2 (playtest: "prisms briefly lit, none affected"; asked for scoring + a dust look)**
+- The bloom now also carries `VesselCombatHitByCrystalBlast` → a strip scores a Debuff hit.
+- `ButterflyBloomDust` (new, on `AOEButterflyBloom.prefab`) fills the sphere with the capsule's motes
+  and puffs dust on every prism it changes.
+- Telemetry channel `[ButterflyBloom]` (Toolbox > Logging) logs `reached=N` + outcome tally per bloom.
+  The round-1 "nothing happened" could not be reproduced from source; this line is how the next run
+  answers it. The lit seen in round 1 is the bloom's pre-existing own-domain passthrough light.
+- Compiled outside Unity: the Prisma port's live build of `Assets/_Scripts` reports no errors in any
+  file this branch touched (its 4 errors are pre-existing engine gaps in WormholeMouth / NestedGyroidFlora).
+
 ### 🔴 Omni crystal: Fresnel body + triangle-only Shepard tone falling onto the surface (`claude/omnicrystal-shepard-triangles-v2`, 2026-10-08)
 
 **Landed** (`Docs/PALETTE.md §2.10`, generator `Tools/Build/author_omni_crystal_triangles.py --check`):

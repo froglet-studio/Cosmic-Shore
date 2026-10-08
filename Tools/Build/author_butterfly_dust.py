@@ -30,6 +30,11 @@ What this script writes, and why each piece is an asset rather than a hand edit:
                                 DUSTS every prism it engulfs with the capsule's own one-of-three
                                 roll, through an ExplosionScaleDustPrismEffect that holds the dust
                                 asset rather than restating its table.
+  bloom scoring + look          (2026-10-08, round 2) a strip SCORES: the bloom container also
+                                carries the Dolphin cone's shared VesselCombatHitByCrystalBlast
+                                reporter (Debuff class, owning machine only). And the bloom is
+                                DRAWN as the capsule's dust: ButterflyBloomDust on the prefab fills
+                                the sphere with the same motes and puffs on every prism it changed.
   Butterfly.prefab surgery      re-point the near instance, delete the far one, wire the dust
                                 field onto the mode executor.
   retirements                   the far-wing container and both wing-dissolve effects, which
@@ -71,6 +76,9 @@ BLOOM_WITHER = f"{FX}/Explosion Crystal Effects/ButterflyBloomWitherLifeformEffe
 BLOOM_CONT = f"{FX}/Effect Containers/Explosion Containers/ButterflyBloomExplosionImpactorDataContainer.asset"
 BLOOM_DUST = f"{FX}/Explosion Prism Effects/ButterflyBloomScaleDustPrismEffect.asset"
 BLOOM_DEBUFF = f"{FX}/Vessel Explosion Effects/ButterflyBloomDebuffByExplosionEffect.asset"
+# Shared with the Dolphin's crystal cone (authored by author_bends_assets.py): Debuff class,
+# requireDebuffableVictim + requireOwningMachine -- the bloom is replayed on server AND owner too.
+CRYSTAL_BLAST_HIT = f"{FX}/Vessel Explosion Effects/VesselCombatHitByCrystalBlast.asset"
 BLOOM_EFFECT = f"{FX}/Vessel Crystal Effects/ButterflyVesselExplosionByCrystalEffect.asset"
 VESSEL_CONT = f"{FX}/Effect Containers/VesselContainers/ButterflyImpactorDataContainer.asset"
 SQUIRREL_BLAST = f"{FX}/Vessel Crystal Effects/SquirrelVesselExplosionByCrystalEffect.asset"
@@ -83,6 +91,7 @@ SCRIPTS = {
         f"{A}/_Scripts/Controller/ImpactEffects/EffectsSO/Skimmer Crystal Effects/SkimmerNourishLifeformByCrystalEffectSO.cs",
     "ExplosionScaleDustPrismEffectSO":
         f"{A}/_Scripts/Controller/ImpactEffects/EffectsSO/Explosion Prism Effects/ExplosionScaleDustPrismEffectSO.cs",
+    "ButterflyBloomDust": f"{A}/_Scripts/Controller/Vessel/R_VesselActions/ButterflyBloomDust.cs",
 }
 EXISTING_SCRIPTS = {
     "SkimmerImpactorDataContainerSO": f"{A}/_Scripts/Controller/ImpactEffects/Containers/SkimmerImpactorDataContainerSO.cs",
@@ -263,8 +272,9 @@ out[BLOOM_DEBUFF] = so(sg["VesselElementalDebuffByExplosionEffectSO"], "Butterfl
     f"  cooldown: {BLOOM_STRIP_COOLDOWN:g}\n")
 out[BLOOM_DEBUFF + ".meta"] = asset_meta(bloom_debuff_g)
 
+crystal_blast_hit_g = meta_guid(CRYSTAL_BLAST_HIT)
 out[BLOOM_CONT] = so(sg["ExplosionImpactorDataContainerSO"], "ButterflyBloomExplosionImpactorDataContainer",
-    f"  vesselExplosionEffects:\n  - {ref(bloom_debuff_g)}\n"
+    f"  vesselExplosionEffects:\n  - {ref(bloom_debuff_g)}\n  - {ref(crystal_blast_hit_g)}\n"
     f"  explosionPrismEffects:\n  - {ref(bloom_dust_g)}\n  explosionCrystalEffects: []\n"
     f"  explosionLifeformCrystalEffects:\n  - {ref(bloom_wither_g)}\n")
 out[BLOOM_CONT + ".meta"] = asset_meta(bloom_cont_g)
@@ -295,6 +305,20 @@ bloom = warhead.replace("67128045173902331", "85076661060900822")
 bloom = bloom.replace("m_Name: AOEMissileWarhead", "m_Name: AOEButterflyBloom")
 bloom = bloom.replace(warhead_cont_g, bloom_cont_g)
 bloom = re.sub(r"(?m)^  ExplosionDuration: .*$", f"  ExplosionDuration: {BLOOM_SECONDS:g}", bloom)
+# The bloom drawn as the capsule's dust: one more component on the root, same material as the capsule.
+BLOOM_GO, BLOOM_DUST_FID = "8507666106090082200", "8507666106090082209"
+bloom = bloom.replace(f"  - component: {{fileID: 8507666106090082208}}\n",
+                      f"  - component: {{fileID: 8507666106090082208}}\n  - component: {{fileID: {BLOOM_DUST_FID}}}\n", 1)
+bloom = bloom.rstrip("\n") + "\n" + (
+    f"--- !u!114 &{BLOOM_DUST_FID}\nMonoBehaviour:\n  m_ObjectHideFlags: 0\n"
+    "  m_CorrespondingSourceObject: {fileID: 0}\n  m_PrefabInstance: {fileID: 0}\n"
+    f"  m_PrefabAsset: {{fileID: 0}}\n  m_GameObject: {{fileID: {BLOOM_GO}}}\n  m_Enabled: 1\n"
+    f"  m_EditorHideFlags: 0\n  m_Script: {{fileID: 11500000, guid: {sg['ButterflyBloomDust']}, type: 3}}\n"
+    "  m_Name: \n  m_EditorClassIdentifier: \n"
+    f"  particleMaterial: {{fileID: 2100000, guid: {meta_guid(PARTICLE_MAT)}, type: 2}}\n"
+    "  dustColor: {r: 1, g: 0.86, b: 0.52, a: 0.9}\n  bloomMotes: 2400\n"
+    "  moteSize: {x: 6, y: 14}\n  moteLifetime: 2.2\n  fallSpeed: 6\n"
+    "  motesPerDustedPrism: 5\n  puffSpeed: 10\n  puffSizeScale: 1.4\n  maxMotes: 12000\n")
 # the GameObject's fileID is what the crystal effect points at
 BLOOM_ROOT = re.search(r"--- !u!114 &(\d+)\nMonoBehaviour:(?:(?!--- !u!).)*?ExplosionDuration", bloom, re.S).group(1)
 out[BLOOM_PREFAB] = bloom
@@ -560,6 +584,11 @@ if not re.search(r"(?m)^  affectsPrisms: 0$", out[BLOOM_PREFAB]):
                   "a blast that damages mass itself, so the bloom's dust would never run")
 if ref(bloom_debuff_g) not in out[BLOOM_CONT] or ref(bloom_dust_g) not in out[BLOOM_CONT]:
     errors.append("the bloom container lost its strip or its dust")
+if ref(crystal_blast_hit_g) not in out[BLOOM_CONT]:
+    errors.append("the bloom container lost its combat-hit reporter -- a strip would score nothing")
+if f"guid: {sg['ButterflyBloomDust']}" not in out[BLOOM_PREFAB] or \
+        f"- component: {{fileID: {BLOOM_DUST_FID}}}" not in out[BLOOM_PREFAB]:
+    errors.append("AOEButterflyBloom lost its ButterflyBloomDust component -- the bloom would not read as dust")
 for rel in [DUST_PREFAB, BLOOM_PREFAB]:
     txt = out[rel]
     ids = re.findall(r"^--- !u!\d+ &(\d+)", txt, re.M)

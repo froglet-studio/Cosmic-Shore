@@ -249,6 +249,7 @@ nothing. It now carries the Butterfly's whole verb set at once:
 | Target | What the bloom does | Asset |
 |---|---|---|
 | **Opposing pilot** | **strips** all four elements — the petals are EJECTED as collectable crystals (`ElementalTransfer.Eject`, classed `Explosion`), priced as the Debuff verb: **1.2 petals per element** | `ButterflyBloomDebuffByExplosionEffect` |
+| Opposing pilot | **scores a combat hit** (Debuff class, 12 points) — the Dolphin cone's shared reporter: only if the victim could be debuffed, only on the owning machine (the bloom is replayed on server AND owner) | `VesselCombatHitByCrystalBlast` |
 | **Own-domain prism** | the dust's TEND roll: grow / dangerous / shielded (0.4 / 0.3 / 0.3), Diamond Dust at Space 5 | `ButterflyBloomScaleDustPrismEffect` |
 | **Opposing prism** | the dust's BLIGHT roll: destroyed / shrunk / stolen (1 / 1 / 1) | same |
 | Opposing lifeform heart | dies (unchanged) | `ButterflyBloomWitherLifeformEffect` |
@@ -271,6 +272,23 @@ calls it.
 
 **Own pilot is spared** (`affectSelf: 0`): the bloom strips rivals only. One bloom pays a victim
 once (`ExplosionImpactor._vesselsHit`).
+
+**It is drawn as the capsule's dust** (`ButterflyBloomDust` on the prefab, round 2). Same material
+(`fx_spark_oval`), same colour rule (`ButterflyDustField.ResolveMoteColour` — the shielded rim of
+the pilot's domain), same in-hold-out fade and downward drift as the Dust-mode motes, in two layers:
+the wavefront leaves **2400 motes** through the sphere at constant density (the count follows swept
+volume, r³, so the haze is as thick beside the hull as at the rim), and **every prism the dust
+changes releases a puff of 5 larger motes** where it stood — the eye goes straight to the mass that
+grew, shielded, went dangerous, shrank, was stolen or died. The particle object is detached from the
+blast and outlives it by one mote lifetime. Cosmetic only, private xorshift scatter.
+
+**Telemetry.** Turn on **FrogletTools > Toolbox > Logging > `[ButterflyBloom]`** and each bloom
+logs one line as it retires: `reached=N` (prisms the sweep queued) and the outcome tally (grow /
+danger / shield / super / untouched · destroy / shrink / steal / deflect · skipped). It separates
+"the sweep found nothing" (`reached=0`), "found prisms, dispatched nothing" (all-zero tally) and
+"changed things too subtly to see". The first playtest of round 1 reported exactly that ambiguity
+("prisms briefly turned lit, none seemed affected") — the lit is the bloom's long-standing
+own-domain passthrough light, not evidence the dust ran.
 
 ### 3.4 Time — Fold
 
@@ -413,7 +431,10 @@ Run **FrogletTools ▸ Vessels ▸ Create Butterfly Vessel**, read its report, t
    heart dies; your own lifeforms survive; **your own trail** keys grow / go dangerous / go shielded
    riding the wavefront outward; **an opponent's trail** keys vanish, shrink or turn your colour; an
    **opposing pilot** inside it sheds elemental crystals (their flowers drop ~1 petal per element and
-   collectable crystals fly out along the blast), and you do not. Run it twice on MPPM: the same keys
+   collectable crystals fly out along the blast), you do not, and **you score a hit** (Broadside-style
+   points / hit toast). The sphere fills with falling motes in your domain's shielded colour, and
+   every changed key puffs dust. If keys look unchanged, read the `[ButterflyBloom]` log line
+   before anything else. Run it twice on MPPM: the same keys
    do the same thing on both clients. With a dense arena in range, confirm no frame hitch beyond the
    ordinary debris (≤ 48 outcomes per frame).
 6. **Fold** (LT): the vessel stops, a ghost appears on the hull and travels; thumbs IN pull it to the
@@ -435,9 +456,11 @@ Run **FrogletTools ▸ Vessels ▸ Create Butterfly Vessel**, read its report, t
   sweep arm if wanted. The bloom's generic damage pass stays OFF (`affectsPrisms: 0`) — its
   mass outcome is the dust roll; turning it on would SKIP the dust sweep, which the generator's
   validation refuses.
-- **The bloom reports no combat hit.** It strips pilots but authors no `VesselCombatHitBy*`
-  reporter, so a strip scores nothing in Broadside-style modes and raises no hit toast. Add
-  `VesselCombatHitByCrystalBlast` (the Dolphin cone's reporter) to the bloom container if it should.
+- **A third peer never sees the bloom.** Crystal collection resolves on the server and is
+  REPLAYED to the owning client only (`NetworkCrystalManager.ReplayVesselCrystalEffects`), so the
+  bloom — and its dust on prisms — runs on those two machines. A third client's prisms do not change.
+  The Dolphin cone's prism damage has the same shape; fixing it is a crystal-replay change, not a
+  Butterfly one.
 - **`explosionPrismEffects` still never run on a blast that DOES damage mass** while the spatial
   index is up (the Burst pass does not dispatch them; only the Physics fallback does). No shipped
   blast authors any, so nothing is lost today.

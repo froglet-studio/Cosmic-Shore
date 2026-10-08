@@ -88,7 +88,7 @@ namespace CosmicShore.Gameplay
             // Captured BEFORE the outcome: a destroy or steal can retire/reparent the prism.
             Vector3 at = prism.transform.position;
             var velocity = PrismEffectHelper.ContactVelocity(impactor, status, at, 0f, 0f);
-            bool own = Apply(prismImpactee, status, velocity);
+            bool own = Apply(prismImpactee, status, velocity).IsTend();
 
             // The sound is the trigger's payload and its slots live on the Butterfly prefab's
             // dust capsule (ButterflyDustField), beside the SkimmerImpactor that ran this.
@@ -102,68 +102,71 @@ namespace CosmicShore.Gameplay
         /// which reads THIS asset's weights so the two can never roll from different tables.
         /// <paramref name="destroyVelocity"/> is the striker's velocity at the prism, used only by
         /// the opposing-domain DESTROY outcome (scaled by <c>restitution</c>, capped by
-        /// <c>debrisSpeedLimit</c>). Returns true when the prism was the pilot's own (tended),
-        /// false when it was opposing (blighted) or could not be touched.
+        /// <c>debrisSpeedLimit</c>). Returns what it did, so a caller can voice, draw or count it
+        /// (<see cref="ScaleDustOutcomeExtensions.IsTend"/> separates own from opposing mass).
         /// </summary>
-        public bool Apply(PrismImpactor prismImpactee, IVesselStatus status, Vector3 destroyVelocity)
+        public ScaleDustOutcome Apply(PrismImpactor prismImpactee, IVesselStatus status, Vector3 destroyVelocity)
         {
             var prism = prismImpactee != null ? prismImpactee.Prism : null;
-            if (status == null || !prism || prism.destroyed || prism.prismProperties == null) return false;
+            if (status == null || !prism || prism.destroyed || prism.prismProperties == null)
+                return ScaleDustOutcome.None;
 
             uint h = Roll(prism);
-            bool own = prism.Domain == status.Domain;
-            if (own) Tend(prism, status, h);
-            else Blight(prismImpactee, prism, status, h, destroyVelocity);
-            return own;
+            return prism.Domain == status.Domain
+                ? Tend(prism, status, h)
+                : Blight(prismImpactee, prism, status, h, destroyVelocity);
         }
 
-        void Tend(Prism prism, IVesselStatus status, uint h)
+        ScaleDustOutcome Tend(Prism prism, IVesselStatus status, uint h)
         {
             var kind = PrismKinds.Of(prism);
-            if (kind == PrismKind.SuperShielded) return;       // nothing the dust can add
+            if (kind == PrismKind.SuperShielded) return ScaleDustOutcome.Untouched;  // nothing to add
 
             if (kind == PrismKind.Plain && superShieldChance > 0f && Upgraded(status)
                 && Unit(h, 1) < superShieldChance)
             {
                 prism.ActivateSuperShield();
-                return;
+                return ScaleDustOutcome.SuperShielded;
             }
 
             // A tiered prism may only grow — see the class note.
             if (kind != PrismKind.Plain)
             {
                 Grow(prism, h);
-                return;
+                return ScaleDustOutcome.Grown;
             }
 
             switch (Pick(Unit(h, 2), growWeight, dangerWeight, shieldWeight))
             {
-                case 0: Grow(prism, h); break;
-                case 1: prism.MakeDangerous(); break;
-                case 2: prism.ActivateShield(); break;
+                case 0: Grow(prism, h); return ScaleDustOutcome.Grown;
+                case 1: prism.MakeDangerous(); return ScaleDustOutcome.Dangerous;
+                default: prism.ActivateShield(); return ScaleDustOutcome.Shielded;
             }
         }
 
-        void Blight(PrismImpactor impactee, Prism prism, IVesselStatus status, uint h,
-                    Vector3 destroyVelocity)
+        ScaleDustOutcome Blight(PrismImpactor impactee, Prism prism, IVesselStatus status, uint h,
+                                Vector3 destroyVelocity)
         {
-            int outcome = Pick(Unit(h, 3), destroyWeight, shrinkWeight, stealWeight);
-
             // An invulnerable prism only ever deflects, whatever was rolled.
-            if (prism.prismProperties.IsSuperShielded) outcome = 0;
+            if (prism.prismProperties.IsSuperShielded)
+            {
+                PrismEffectHelper.DamageProportional(status, impactee, destroyVelocity,
+                                                     restitution, debrisSpeedLimit);
+                return ScaleDustOutcome.Deflected;
+            }
 
-            switch (outcome)
+            switch (Pick(Unit(h, 3), destroyWeight, shrinkWeight, stealWeight))
             {
                 case 0:
                     PrismEffectHelper.DamageProportional(status, impactee, destroyVelocity,
                                                          restitution, debrisSpeedLimit);
-                    break;
+                    return ScaleDustOutcome.Destroyed;
                 case 1:
                     prism.GrowAlong(-prism.TargetScale * shrinkFraction);
-                    break;
-                case 2:
+                    return ScaleDustOutcome.Shrunk;
+                default:
                     PrismEffectHelper.Steal(impactee, status);
-                    break;
+                    return ScaleDustOutcome.Stolen;
             }
         }
 
@@ -243,5 +246,31 @@ namespace CosmicShore.Gameplay
             if (x < a + b) return 1;
             return 2;
         }
+    }
+
+    /// <summary>What the Butterfly's dust did to one prism (<see cref="SkimmerScaleDustPrismEffectSO.Apply"/>).</summary>
+    public enum ScaleDustOutcome
+    {
+        /// <summary>Nothing reachable — no pilot, or the prism was already gone.</summary>
+        None = 0,
+        /// <summary>Own super-shielded mass: the dust has nothing to add.</summary>
+        Untouched = 1,
+        Grown = 2,
+        Dangerous = 3,
+        Shielded = 4,
+        SuperShielded = 5,
+        Destroyed = 6,
+        Shrunk = 7,
+        Stolen = 8,
+        /// <summary>Opposing super-shielded mass: every roll is the shield's deflection.</summary>
+        Deflected = 9,
+    }
+
+    public static class ScaleDustOutcomeExtensions
+    {
+        /// <summary>True for the own-domain outcomes (the dust TENDED the pilot's mass).</summary>
+        public static bool IsTend(this ScaleDustOutcome outcome) =>
+            outcome is ScaleDustOutcome.Untouched or ScaleDustOutcome.Grown or ScaleDustOutcome.Dangerous
+                or ScaleDustOutcome.Shielded or ScaleDustOutcome.SuperShielded;
     }
 }

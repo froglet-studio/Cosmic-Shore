@@ -133,11 +133,16 @@ namespace CosmicShore.Gameplay
         HashSet<int> _prismEffectsSeen;
         Queue<(Prism prism, float laidAt)> _prismEffectsPending;
         static readonly List<Prism> s_prismEffectHits = new(256);
+        static bool s_warnedPrismEffectsNoIndex;
 
         /// <summary>Prism effect dispatches one blast may spend per frame; the remainder is
         /// deferred and drained like <c>_batchPending</c>. Same budget the Burst damage pass uses
         /// (PrismSpatialIndex.MAX_NEW_HITS_PER_FRAME) — both spawn debris per prism.</summary>
         const int MaxPrismEffectsPerFrame = 48;
+
+        /// <summary>Distinct prisms this blast's prism-effect sweep has reached so far (queued for
+        /// its effects). Telemetry: the bloom's dust reports it beside what it did to them.</summary>
+        public int PrismEffectsReached => _prismEffectsSeen?.Count ?? 0;
 
         public bool IsBatchProcessing => _useBatchProcessing;
 
@@ -166,7 +171,11 @@ namespace CosmicShore.Gameplay
 
         // A/B switch owned by the benchmark overlay; must not survive into a normal session.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void ResetForceLegacy() => ForceLegacyPhysics = false;
+        static void ResetForceLegacy()
+        {
+            ForceLegacyPhysics = false;
+            s_warnedPrismEffectsNoIndex = false;
+        }
 
         // --- ProfilerMarkers ---
         private static readonly ProfilerMarker s_onTriggerEnter = new("AOE.OnTriggerEnter");
@@ -911,7 +920,17 @@ namespace CosmicShore.Gameplay
             if (!DoesEffectExist(explosionImpactorDataContainer.explosionPrismEffects)) return;
 
             var registry = PrismSpatialIndex.Instance;
-            if (registry == null || !registry.IsAvailable) return;
+            if (registry == null || !registry.IsAvailable)
+            {
+                if (!s_warnedPrismEffectsNoIndex)
+                {
+                    s_warnedPrismEffectsNoIndex = true;
+                    CosmicShore.Utility.CSDebug.LogWarning(
+                        $"[ExplosionImpactor] '{name}' authors prism effects but the PrismSpatialIndex " +
+                        "is unavailable, so its sweep cannot reach a single prism. Reported once.", this);
+                }
+                return;
+            }
 
             _prismEffectsSeen ??= new HashSet<int>(256);
             _prismEffectsPending ??= new Queue<(Prism, float)>(256);

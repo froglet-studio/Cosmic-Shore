@@ -44,7 +44,14 @@ namespace CosmicShore.Gameplay
             var prism = prismImpactee != null ? prismImpactee.Prism : null;
             if (status == null || !prism) return;
 
-            dust.Apply(prismImpactee, status, impactor.BlastImpactVector(prism.transform.position));
+            // Captured BEFORE the outcome: a destroy or steal can retire/reparent the prism.
+            Vector3 at = prism.transform.position;
+            var outcome = dust.Apply(prismImpactee, status, impactor.BlastImpactVector(at));
+
+            // The bloom draws what it changed as the capsule's own dust (ButterflyBloomDust on
+            // AOEButterflyBloom.prefab), the way the capsule voices it through ButterflyDustField.
+            if (impactor.TryGetComponent(out ButterflyBloomDust bloomDust))
+                bloomDust.OnDusted(at, outcome);
         }
     }
 }
