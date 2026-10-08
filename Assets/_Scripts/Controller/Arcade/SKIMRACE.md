@@ -177,18 +177,70 @@ segmentSpawner.Initialize();
 - Segments positioned along Z-axis: `index * StraightLineLength` offset
 - Crystals are spawned as part of track segments (via `SpawnableWaypointTrack` waypoints)
 
-**Per-intensity waypoint tracks** (`SpawnableWaypointTrack` component in `MinigameSkimRace.unity`; the paired crystal anchors live on the scene's `CrystalManager`). Every loop is closed and begins near the shared player spawns at (700, ~0, −200) facing +Z. Waypoint count drives the auto crystal target (waypoints × laps), with laps authored per level via `CrystalCollisionTurnMonitor.lapsPerIntensity` so the long tracks don't run as many laps as the short ones:
+**Per-intensity waypoint tracks** (`SpawnableWaypointTrack` component in `MinigameSkimRace.unity`; the paired crystal anchors live on the scene's `CrystalManager`). Every loop is closed and begins near the shared player spawns at (700, ~0, −200) facing +Z. Crystals per lap (the waypoint count unless the track authors `crystalsPerLap`) drives the auto crystal target, with laps authored per level via `CrystalCollisionTurnMonitor.lapsPerIntensity` so the long tracks don't run as many laps as the short ones:
 
 | Intensity | Waypoints | Laps | Target | Spline | Shape |
 |---|---|---|---|---|---|
 | 1 | 8 | 3 | 24 | Linear | Flat octagon, radius 700 |
 | 2 | 10 | 3 | 30 | Catmull-Rom | Undulating tilted loop (±610 Y) |
 | 3 | 28 | 2 | 56 | Catmull-Rom | Dumbbell circuit: two sinusoidal lanes at z = ±60 running 2,770 units along X (amplitude ±20 Y, 2 periods, antiphase — they braid in side view and are ridden in opposite directions), joined by two flat circles (R = 360, centers (340, 0, 0) and (−3140, 0, 0), ~341° sweep). The east circle's far pole is pinned at (700, 0, 0) by the shared spawns, so the track extends west to x ≈ −3500 (lap ≈ 9,846 units, ~848 prisms). Crystal anchors: each lane peak/valley (8) + 3 per circle (14 total), advancing in traversal order from the pole. |
-| 4 | 27 | 2 | 54 | Linear | Complex 3D loop |
+| 4 | 111 (24 crystals/lap) | 2 | 48 | Catmull-Rom + ribbon normals | **Relativity** — six rose-petal lobes joined by six core passes that weave through the nucleus (§5a). Lap 11,083 u, 888 prisms |
+
+The target is **crystals per lap × laps**, where crystals per lap is `SpawnableWaypointTrack.crystalsPerLap[intensity]` when authored (> 0) and the waypoint count otherwise. I1–I3 author nothing there, so they keep waypoints × laps exactly as before; I4's waypoint list is a dense spline sample (111 points) carrying 24 crystal anchors, so it authors 24.
 
 `lapsPerIntensity` is a `List<int>` matched to the waypoint sets by index (index 0 = intensity 1), the same convention `SpawnableWaypointTrack.useSplinePerIntensity` uses. An entry ≤ 0, or an intensity the list doesn't cover, falls back to the scalar `optionalLaps` — so scenes authored before the list (e.g. Crystal Capture) keep their original single-value behavior.
 
 Note the target is a crystal *count*, not a literal lap counter — crystals respawn at the next anchor in traversal order, so "2 laps" means 2 passes' worth of anchors. Changing the resolved count outright (rather than the lap multiplier) is done in **FrogletTools ▸ Game Modes ▸ End Game Conditions**; SkimRace's entry there is `0` = auto, which is what routes through this table.
+
+### 5a. Intensity 4 — "Relativity"
+
+The ace track: one closed ribbon that threads the cell's nucleus **six times a lap**, so a pilot on
+any lobe keeps crossing pilots on every other one. Authored entirely by
+`Tools/Build/author_skimrace_relativity_track.py` (never hand-edit the I4 lists — re-run it;
+`--check` is the drift gate, `--report` prints the numbers).
+
+**Shape.** Six straight **core passes** are the six struts of a tensegrity icosahedron — two
+parallel struts per axis, X struts split along Z, Y along X, Z along Y — each running ±300 u
+through the nucleus cage. Struts never touch: perpendicular ones miss by 64 u, parallel ones by
+128 u, so every pass is a near-miss with three others. Each pair of consecutive passes is joined
+by a **rose-petal lobe** (`r = L + (R − L)·√sin 2θ`, apex ≈ 680 u out) that leaves along one axis
+and returns along a perpendicular one — a 270° turn. The petals point at six of the twelve
+cuboctahedron directions, three toward (1,1,1) and three toward (−1,−1,−1), visited alternately,
+so every pass through the nucleus flips you from one three-petal flower to the other. The strut
+order `X+ Z−↓ Y+ X−↓ Z+ Y−↓` (offset sign, ↓ = travelling negative) was picked by exhaustive search
+over all 1,408 valid orders: it is the one that is invariant under the 3-fold rotation about the
+diagonal *and* under inversion — the curve has S6 symmetry (a cyclohexane chair), every lobe is
+identical, and no lobe comes within 64 u of another strand.
+
+**Ribbon frame — the Escher part.** The ribbon lies flat in each lobe's plane. Consecutive lobe
+planes are perpendicular, so each core pass rolls the ribbon a quarter turn about the direction of
+travel: what was the floor on one lobe is a wall on the next — three orthogonal gravities, as in
+Escher's *Relativity*. The rolls alternate left/right (S6 is an improper symmetry, so a consistent
+handedness is impossible). This is authored as per-waypoint ribbon normals,
+`SpawnableWaypointTrack.waypointUps` (empty for I1–I3 = world up, unchanged), interpolated between
+waypoints exactly like the positions; world up would be undefined on a vertical pass anyway.
+
+**Start.** The knot is rigidly rotated so lobe 0's apex sits just ahead of the shared spawn stack
+(apex ≈ (678, 0, 12), heading +Z, ribbon horizontal): the grid lines up above and below the road,
+the first crystal is on the apex (a launch pickup), and the first turn dives into the nucleus.
+
+**Crystals.** One anchor every 1/24 of a lap (~462 u), phased so one sits on every core pass (on
+the strut, inside the weave — the pickup is a near-miss with the crossing struts) and every lobe
+apex: core, out-arm, apex, in-arm per lobe. 24 × 2 laps = **48**. The last crystal of a lap is
+lobe 0's out-arm, just after the sixth nucleus pass.
+
+**What the generator proves before it writes** (on the prisms as `Spawn` lays them — 12 u
+Catmull-Rom spacing, same up interpolation): strand clearance ≥ 60 u (measured 64.0), tightest
+turn radius ≥ 200 u (measured 204; the Squirrel turns a 143 u circle at 300 u/s before lag),
+spline within 3 u of the analytic curve (1.44), ribbon roll ≤ 25° between waypoints (22.3),
+laid up ⊥ forward, start alignment, 24 anchors on the ribbon with one per core pass, exactly six
+passes inside r = 120 per lap, lap length 10–12.5 k u. Negative controls: a mutated scene is named
+by `--check`; `CORE_GAP = 40` fails the clearance assert.
+
+**Numbers.** Lap 11,083 u, 111 waypoints, 888 prisms (I3: ~848), reach 679 u — the whole knot
+fits inside the radius-700 envelope the other intensities use. Two laps at the Squirrel's 300 u/s
+top speed take ~74 s, so a perfect race is ~75–80 s; a pilot who leaves the ribbon to cut a lobe
+loses the skim boost that makes 300 u/s possible.
 
 ### 6. Ready State & Countdown
 
@@ -467,7 +519,7 @@ ugsStatsManager.ReportSkimRaceStats(
 
 3. **Deterministic track**: All clients must produce identical tracks from the same seed + intensity. The `SegmentSpawner` uses `Random.InitState(seed)` before spawning to ensure determinism.
 
-4. **Crystal target resolution**: The crystal target is resolved by `CrystalCollisionTurnMonitor.GetCrystalCollisionCount()` in priority order: (1) `EndConditionOverridesSO` (FrogletTools ▸ Game Modes ▸ End Game Conditions) if its SkimRace count is non-zero, (2)`SpawnableWaypointTrack` waypoint count × `optionalLaps`, (3) default 39. There is no per-scene `CrystalCollisions` inspector field — that was removed on purpose; see the `/EndGameConditions` skill. The resolved target is synced to all clients via `NetworkCrystalCollisionTurnMonitor._netCrystalCollisions` NetworkVariable and published to `gameData.CrystalTargetCount`.
+4. **Crystal target resolution**: The crystal target is resolved by `CrystalCollisionTurnMonitor.GetCrystalCollisionCount()` in priority order: (1) `EndConditionOverridesSO` (FrogletTools ▸ Game Modes ▸ End Game Conditions) if its SkimRace count is non-zero, (2) the `SpawnableWaypointTrack`'s crystals per lap (`crystalsPerLap`, else its waypoint count) × laps (`lapsPerIntensity`, else `optionalLaps`), (3) default 39. There is no per-scene `CrystalCollisions` inspector field — that was removed on purpose; see the `/EndGameConditions` skill. The resolved target is synced to all clients via `NetworkCrystalCollisionTurnMonitor._netCrystalCollisions` NetworkVariable and published to `gameData.CrystalTargetCount`.
 
 5. **Comeback mechanics**: The `ElementalComebackSystem` is critical for competitive balance — it buffs losing players proportionally to their crystal deficit, preventing runaway victories. Configured via `SO_ElementalComebackProfile` with per-vessel, per-element weights.
 

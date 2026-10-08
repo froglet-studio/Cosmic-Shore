@@ -5088,3 +5088,38 @@ wave's start axis from the REAL imported rig. If it fails, nothing else below is
 
 The capture flourish still spins and flies the crystal into the hull as before (it owns the ROOT's
 rotation; the hop only touches the model child).
+
+---
+
+## 🔴 Skim Race intensity 4 is "Relativity" — six lobes through the nucleus (`cece/funny-hamilton-kniun4`, 2026-10-08) — NOT EDITOR-VERIFIED
+
+`Assets/_Scripts/Controller/Arcade/SKIMRACE.md` §5a. I4's track was replaced by a generated knot
+(`Tools/Build/author_skimrace_relativity_track.py`): six tensegrity core passes weaving through the
+nucleus cage 64 u apart, six rose-petal lobes, ribbon normals that roll a quarter turn per pass, 24
+crystals/lap × 2 = 48. Runtime: `SpawnableWaypointTrack.waypointUps` (per-waypoint ribbon normal,
+interpolated like the positions) and `crystalsPerLap` (the turn monitor's per-lap count; I1–I3 author
+none and are unchanged). No `unity` CLI in the authoring session, so `/verify-unity` did NOT run.
+Verified out of editor: `SpawnableWaypointTrack.cs` compiled by the card-art harness (Roslyn, Unity
+shim; all 29 cards still match), the generator's geometry asserts on the prisms as `Spawn` lays them,
+`--check` drift gate with negative controls, and the Skim Race AI simulator flying the new course.
+`CrystalCollisionTurnMonitor.cs` was NOT compiled (one-line call to the new public method).
+
+1. **Compile + import.** Open the project; no console errors. Open `MinigameSkimRace`, select
+   `SpawnableTrack`: the inspector shows *Ribbon Frame ▸ Waypoint Ups* (4 entries, the 4th with 111
+   vectors) and *Laps ▸ Crystals Per Lap* (0, 0, 0, 24). Set *Preview Intensity Level* to 3: the red
+   gizmo is a six-lobed knot through the nucleus.
+2. **Play I4 solo (Squirrel, 1 player + AI).** Expect: spawn just behind a lobe apex, the ribbon
+   horizontal under/over the grid, the first crystal on the apex ahead; the HUD target reads **48**
+   (not 222 — that would mean `crystalsPerLap` was not read). The first turn dives into the nucleus.
+3. **The roll.** Fly the first core pass: the ribbon rolls a quarter turn about your heading across
+   the pass, and the next lobe's floor is perpendicular to the last. No prism pops/flips at a
+   waypoint (the normals are interpolated; a flip would mean an up-vector sign slipped).
+4. **The weave.** Inside the cage, three other struts pass 64 u from yours; with 2+ racers, check
+   you can SEE a rival cross a perpendicular strut. Core crystals sit on the strut (35 u jitter).
+5. **I1–I3 unchanged.** One race each: same tracks, targets 24 / 30 / 56.
+6. **Mode preview.** Arcade ▸ Skim Race card, intensity 4 preview shows the knot (it reads the
+   re-baked `SkimRaceWaypointTrack.prefab`).
+7. **Feel (the only thing nothing offline can answer).** Is the 204 u apex turn at full boost a
+   good "ace" corner or a wall? Is the quarter-roll readable at speed? Is 48 the right count
+   (~75–80 s for a perfect race)? Tuning lever: `LOBE_R` / `CORE_GAP` / `ANCHORS_PER_LAP` in the
+   generator, then re-run it.

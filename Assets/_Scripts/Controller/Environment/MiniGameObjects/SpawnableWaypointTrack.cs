@@ -17,6 +17,21 @@ public class SpawnableWaypointTrack : SpawnableBase
     [Tooltip("Enable Catmull-Rom spline per intensity (0=linear, 1=spline). Matches waypoints list by index.")]
     [SerializeField] List<int> useSplinePerIntensity;
 
+    [Header("Ribbon Frame")]
+    [Tooltip("Optional per-intensity ribbon normals, parallel to the waypoints list: entry k is the " +
+             "'up' of the ribbon at waypoint k, interpolated between waypoints the same way the " +
+             "positions are (spline or linear). Lets a track roll its ribbon - a vertical leg, a " +
+             "quarter-turn through a pass - where world up is undefined or wrong. An intensity with " +
+             "no entry (or an empty one) keeps world up.")]
+    [SerializeField] List<CrystalPositionSet> waypointUps;
+
+    [Header("Laps")]
+    [Tooltip("Crystals one lap is worth, per intensity (index 0 = intensity 1). The turn monitor's " +
+             "auto target is this x laps. An entry <= 0, or an intensity the list does not cover, " +
+             "falls back to the waypoint count - which is right only when every waypoint carries " +
+             "one crystal anchor; a densely sampled spline sets the scene's anchor count here.")]
+    [SerializeField] List<int> crystalsPerLap;
+
     [Header("Block Settings")]
     [SerializeField] Prism prism;
     [SerializeField] Vector3 scale = new Vector3(5, 1, 5);
@@ -61,6 +76,74 @@ public class SpawnableWaypointTrack : SpawnableBase
                useSplinePerIntensity[index] != 0;
     }
 
+    /// <summary>
+    /// The authored ribbon normals for a 1-based intensity, or null for world up. A list whose
+    /// length does not match the waypoints is an authoring fault: reported, then ignored.
+    /// </summary>
+    private List<Vector3> ResolveUps(int intensity, List<Vector3> positions)
+    {
+        int index = intensity - 1;
+        if (waypointUps == null || index < 0 || index >= waypointUps.Count) return null;
+        var ups = waypointUps[index]?.positions;
+        if (ups == null || ups.Count == 0) return null;
+        if (ups.Count != positions.Count)
+        {
+            CSDebug.LogWarning($"[WaypointTrack] Intensity {intensity} has {ups.Count} ribbon normals for " +
+                               $"{positions.Count} waypoints - ignoring them and laying with world up.");
+            return null;
+        }
+        return ups;
+    }
+
+    /// <summary>Crystals one lap of the given 1-based intensity is worth (see <see cref="crystalsPerLap"/>).</summary>
+    public int CrystalsPerLap(int intensity)
+    {
+        int index = intensity - 1;
+        if (crystalsPerLap != null && index >= 0 && index < crystalsPerLap.Count && crystalsPerLap[index] > 0)
+            return crystalsPerLap[index];
+        return IsValidIntensityLevel(intensity) ? waypoints[index].positions.Count : 0;
+    }
+
+    /// <summary>
+    /// Pose of block <paramref name="i"/> of <paramref name="blocks"/> on <paramref name="segment"/>:
+    /// the one layout rule <see cref="Spawn"/> and <see cref="GetPreviewBlocks"/> share.
+    /// </summary>
+    private void ResolveBlockPose(List<Vector3> positions, List<Vector3> ups, int segment, int i, int blocks,
+        bool spline, out Vector3 position, out Quaternion rotation)
+    {
+        int segmentCount = positions.Count;
+        float t = (float)i / blocks;
+        Vector3 lookTarget;
+
+        if (spline)
+        {
+            position = GetSplinePoint(positions, segment, t);
+            lookTarget = i < blocks - 1
+                ? GetSplinePoint(positions, segment, (float)(i + 1) / blocks)
+                : GetSplinePoint(positions, (segment + 1) % segmentCount, 0f);
+        }
+        else
+        {
+            Vector3 startPos = positions[segment];
+            Vector3 endPos = positions[(segment + 1) % segmentCount];
+            position = Vector3.Lerp(startPos, endPos, t);
+            lookTarget = i < blocks - 1
+                ? Vector3.Lerp(startPos, endPos, (float)(i + 1) / blocks)
+                : endPos;
+        }
+
+        Vector3 up = Vector3.up;
+        if (ups != null)
+        {
+            Vector3 u = spline
+                ? GetSplinePoint(ups, segment, t)
+                : Vector3.Lerp(ups[segment], ups[(segment + 1) % segmentCount], t);
+            if (u.sqrMagnitude > 1e-6f) up = u;
+        }
+
+        rotation = SpawnPoint.LookRotation(position, lookTarget, up);
+    }
+
     private static Vector3 CatmullRom(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t)
     {
         float t2 = t * t;
@@ -101,14 +184,12 @@ public class SpawnableWaypointTrack : SpawnableBase
         int totalBlocks = 0;
 
         var positions = waypoints[intensityLevel - 1].positions;
+        var ups = ResolveUps(intensityLevel, positions);
         int segmentCount = positions.Count;
         bool spline = UseSpline(intensityLevel);
 
         for (int segment = 0; segment < segmentCount; segment++)
         {
-            Vector3 startPos = positions[segment];
-            Vector3 endPos = positions[(segment + 1) % positions.Count];
-
             // Density is per-segment so both short and long segments share the
             // same prism spacing. Falls back to the legacy fixed count when
             // prismSpacing is unset.
@@ -116,37 +197,8 @@ public class SpawnableWaypointTrack : SpawnableBase
 
             for (int i = 0; i < blocksThisSegment; i++)
             {
-                float t = (float)i / blocksThisSegment;
-
-                Vector3 position;
-                Vector3 lookTarget;
-
-                if (spline)
-                {
-                    position = GetSplinePoint(positions, segment, t);
-
-                    if (i < blocksThisSegment - 1)
-                    {
-                        lookTarget = GetSplinePoint(positions, segment, (float)(i + 1) / blocksThisSegment);
-                    }
-                    else
-                    {
-                        lookTarget = GetSplinePoint(positions, (segment + 1) % segmentCount, 0f);
-                    }
-                }
-                else
-                {
-                    position = Vector3.Lerp(startPos, endPos, t);
-
-                    if (i < blocksThisSegment - 1)
-                    {
-                        lookTarget = Vector3.Lerp(startPos, endPos, (float)(i + 1) / blocksThisSegment);
-                    }
-                    else
-                    {
-                        lookTarget = endPos;
-                    }
-                }
+                ResolveBlockPose(positions, ups, segment, i, blocksThisSegment, spline,
+                    out Vector3 position, out Quaternion rotation);
 
                 // Determine if this is a waypoint marker position
                 bool isWaypointMarker = markWaypoints && i == 0;
@@ -154,8 +206,6 @@ public class SpawnableWaypointTrack : SpawnableBase
                 Vector3 blockScale = isWaypointMarker ? scale * waypointScaleMultiplier : scale;
                 Prism blockPrism = (isWaypointMarker && waypointPrism != null) ? waypointPrism : prism;
                 Domains blockDomain = isWaypointMarker ? waypointDomain : trackDomain;
-
-                var rotation = SpawnPoint.LookRotation(position, lookTarget, Vector3.up);
 
                 var block = Instantiate(blockPrism, container.transform);
                 block.ChangeTeam(blockDomain);
@@ -218,41 +268,21 @@ public class SpawnableWaypointTrack : SpawnableBase
 
         intensityLevel = intensityLevelArg; // ResolveBlocksThisSegment may consult this
         var positions = waypoints[intensityLevelArg - 1].positions;
+        var ups = ResolveUps(intensityLevelArg, positions);
         int segmentCount = positions.Count;
         bool spline = UseSpline(intensityLevelArg);
 
         for (int segment = 0; segment < segmentCount; segment++)
         {
-            Vector3 startPos = positions[segment];
-            Vector3 endPos = positions[(segment + 1) % positions.Count];
-
             int blocksThisSegment = ResolveBlocksThisSegment(positions, segment, spline);
 
             for (int i = 0; i < blocksThisSegment; i++)
             {
-                float t = (float)i / blocksThisSegment;
-
-                Vector3 position;
-                Vector3 lookTarget;
-
-                if (spline)
-                {
-                    position = GetSplinePoint(positions, segment, t);
-                    lookTarget = i < blocksThisSegment - 1
-                        ? GetSplinePoint(positions, segment, (float)(i + 1) / blocksThisSegment)
-                        : GetSplinePoint(positions, (segment + 1) % segmentCount, 0f);
-                }
-                else
-                {
-                    position = Vector3.Lerp(startPos, endPos, t);
-                    lookTarget = i < blocksThisSegment - 1
-                        ? Vector3.Lerp(startPos, endPos, (float)(i + 1) / blocksThisSegment)
-                        : endPos;
-                }
+                ResolveBlockPose(positions, ups, segment, i, blocksThisSegment, spline,
+                    out Vector3 position, out Quaternion rotation);
 
                 bool isMarker = markWaypoints && i == 0;
                 Vector3 blockScale = isMarker ? scale * waypointScaleMultiplier : scale;
-                Quaternion rotation = SpawnPoint.LookRotation(position, lookTarget, Vector3.up);
 
                 yield return new PreviewBlock(position, rotation, blockScale, isMarker);
             }
