@@ -22,6 +22,33 @@ shapes + `ShapeDefinition` remain (SkimRace live; painting toy is the successor)
 `MultiplayerFreestyle (28)` is a separate multiplayer sandbox
 game scene and still exists.
 
+### Where the two party cards live (2026-10)
+
+**Multiplayer Freestyle** (`ArcadeGameMultiplayerFreestyle`, mode 28) is on the **Arena**
+screen: it is in `GameLists/ArenaGames.asset` (the Arena grid, which routes it to the
+`ArenaLaunchPanel` and its vessel carousel) and in the master `OrganicRematchGames.asset` (the
+guest's by-mode lookup), with `ArenaRules: 1`. Nothing scores and nothing ends it; the pilot
+picks any of the seven hulls the card lists (Dolphin, Manta, Rhino, Sparrow, Serpent,
+Squirrel, Grizzly), 1-3 humans (`MinPlayersAllowed: 1`, so a solo pilot can open it and a
+party joins), intensity 1-4 over a single Barren cell config. Its card background is a
+`/cardart` MODEL render (`CardBackgrounds/MultiplayerFreestyle.png`): six pilots looping
+through the bare Barren cell. Mode 28 is in `ProgressionConfig.alwaysUnlockedModes`. Its scene
+spawns **no AI** (`ServerPlayerVesselInitializer`, not the `WithAI` subclass), so an AI the
+host places with Add AI takes a lobby seat and never spawns.
+
+**Online Duel for the Cell** (`ArcadeGameOnlineDuelForTheCell`, mode 29) is on **no** grid,
+deliberately. It is a hard two-HUMAN mode: two rounds, and `OnlineDuelForTheCellController.
+SetupNewRound` swaps the two pilots' vessels through `gameData.Players[0]` and `[1]`. Its scene
+spawns no AI, so a solo pilot launching it from the Arena panel (which seats the card's
+`MinPlayersAllowed: 2` by placing a bot) would fly round 1 alone and throw an
+`ArgumentOutOfRangeException` at the round-2 swap. The launch modal has no "needs N humans"
+gate to stop that. It goes on the Arena roster once one of these lands: a humans-required
+Start gate on the card, or the scene moved to `ServerPlayerVesselInitializerWithAI` with the
+swap made AI-safe. Its `Vessels` list was repaired in the same change: it was still the
+pre-rename `Captains:` key pointing at six `SO_Captain` assets, which `FormerlySerializedAs`
+loads into a `List<SO_Vessel>` as type-mismatched nulls; it now names the same six class
+assets as the Freestyle card's original six.
+
 ---
 
 ## Scene Inventory

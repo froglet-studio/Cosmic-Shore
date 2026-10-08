@@ -1217,7 +1217,7 @@ authored headless (`author_dustup/tapestry/sirocco_assets.py`, `--check`) and ha
 the editor; their targets are reasoned, not measured. See `DUSTUP.md`, `TAPESTRY.md`, `SIROCCO.md`.
 
 **ARENA SEATING — six seats, one pilot per hull, and a human can take an AI teammate's ship.**
-One authored bit, `SO_ArcadeGame.ArenaRules` (on the four `ArenaGames` cards and nowhere else,
+One authored bit, `SO_ArcadeGame.ArenaRules` (on the five `ArenaGames` cards and nowhere else,
 published as `GameDataSO.IsArenaMatch`), carries three rules. Arena cards go to
 `MaxPlayersAllowed: 6`, but what the lobby offers is `SO_ArcadeGame.MaxSeats` =
 `min(MaxPlayersAllowed, distinct hulls listed)`, because **every hull is flown by exactly one

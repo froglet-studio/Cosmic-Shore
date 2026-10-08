@@ -86,7 +86,7 @@
    "prisms": 0,
    "tier": "COURSE",
    "track": null,
-   "triangles": 14032
+   "triangles": 8956
   },
   "Headlong": {
    "cell": "Skim Race Cell Config",
@@ -124,6 +124,14 @@
    ],
    "tier": "MONTAGE",
    "track": null
+  },
+  "MultiplayerFreestyle": {
+   "cell": "Barren Cell Config",
+   "environment": null,
+   "prisms": 309,
+   "tier": "MODEL",
+   "track": null,
+   "triangles": 28796
   },
   "Rampage": {
    "cell": "Rampage Cell Config 2",
@@ -259,5 +267,5 @@
   768,
   510
  ],
- "source_hash": "3d49eb29d45177276e45d2ebd13de7e4829922ce98c98ca7501d3d01017dcf0b"
+ "source_hash": "81799f04f9046b90cbe68649fa7edc0e5a4a34dd7bc25e7729dcbea97fde02e8"
 }

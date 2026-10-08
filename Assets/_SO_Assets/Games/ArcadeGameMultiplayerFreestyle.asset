@@ -19,7 +19,7 @@ MonoBehaviour:
     This is not a game; enjoy the toy.
   IconActive: {fileID: 21300000, guid: a0a884671f982ec41aa43688ff4c5c61, type: 3}
   IconInactive: {fileID: 21300000, guid: 735c0e18d396f9e44ae83b165805dc30, type: 3}
-  CardBackground: {fileID: 21300000, guid: 88a9b4cf2dc46a74a8f85cba135a5352, type: 3}
+  CardBackground: {fileID: 21300000, guid: 6dfee96aed7d4fbd8b5053db3717a87d, type: 3}
   GolfScoring: 0
   SceneName: MinigameFreestyleMultiplayer_Gameplay
   Vessels:
@@ -30,9 +30,10 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 8a288448ab55edc46ac841a5f2e53d83, type: 2}
   - {fileID: 11400000, guid: 6fbeef29c9430b94aabea2934640dc5a, type: 2}
   - {fileID: 11400000, guid: 312ea06c4539cdc46b027615a590c94b, type: 2}
-  MinPlayersAllowed: 2
+  MinPlayersAllowed: 1
   MaxPlayersAllowed: 3
   MinIntensity: 1
   MaxIntensity: 4
+  ArenaRules: 1
   ViewUserAction: 0
   PlayUserAction: 0

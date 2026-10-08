@@ -679,6 +679,9 @@ CAMERAS = {
     # since the bomb launch was tripled - eight rings round the nucleus, shot from a new side and
     # pulled back far enough to keep the whole lap in frame.
     "GrizzlyTime": (125, 34, 0.95, 42),
+    # Multiplayer Freestyle is the Barren cell's third card (with Joust / Tapestry): high and to
+    # the other side, so the loops read against open water rather than against a Hopf or a wake.
+    "MultiplayerFreestyle": (215, 26, 0.74, 44),
 }
 
 # Pilots in the shot: (domain, radius fraction, tilt, start angle, sweep). None = generic trio.
@@ -808,6 +811,42 @@ def recipe(stem, card_path, pal, ends):
                 fwd = v_sub(ahead, pt) if t < 1.0 else v_sub(pt, f(max(0.0, t - 1.0 / max(1, n))))
                 rows.append(prism(pt, fwd, v_norm(pt), key, dom))
         layers.append({"kind": "prisms", "rows": rows})
+        nucleus()
+    elif s == "MultiplayerFreestyle":
+        # MODEL tier: the scene's Cell is the bare Barren cell (its SegmentSpawner authors four
+        # spawnables at weight 0 and never initialises), so - as for Tapestry - what the card
+        # shows is what the pilots PUT there. Freestyle has no rule, no course and no score, so
+        # its signature act is the toy itself: a MIXED grid of six pilots (the card lists six
+        # hulls), each laying its trail in a loop-the-loop through open water - a prolate
+        # trochoid wound along a tilted arc round the nucleus, the one shape no course in the
+        # roster asks a pilot to fly.
+        tier = "MODEL"
+        rng = Rng(stable_seed(s))
+        rows = []
+        seg = R * 0.028
+        for k, dom in enumerate((JADE, RUBY, GOLD, JADE, RUBY, GOLD)):
+            rad = R * rng.range(0.42, 0.7)
+            tilt = rng.range(-0.8, 0.8)
+            a0 = 2 * math.pi * k / 6 + rng.range(-0.3, 0.3)
+            sweep = rng.range(1.0, 1.6)
+            loops = 1 + (k % 2)
+            # loop radius above L / (2 pi loops), so the curve really closes into loops
+            L = rad * sweep
+            b = L / (2 * math.pi * loops) * rng.range(1.25, 1.6)
+
+            def path(t, rad=rad, tilt=tilt, a0=a0, L=L, b=b, loops=loops):
+                phi = 2 * math.pi * loops * t
+                x = L * t - b * math.sin(phi)            # along the arc
+                y = b * (1 - math.cos(phi))              # out of the arc's plane
+                a = a0 + x / rad
+                ct, st = math.cos(tilt), math.sin(tilt)
+                p = [rad * math.cos(a), rad * math.sin(a) * st, rad * math.sin(a) * ct]
+                n = [0.0, ct, -st]                       # the tilted plane's normal
+                return v_add(p, v_mul(n, y))
+            length = L + 2 * math.pi * b * loops
+            vessel_trail(path, dom, length, seg, rows)
+        layers.append({"kind": "prisms", "rows": rows})
+        stage["vessels"] = []                            # the trails carry their own darts
         nucleus()
     elif s in ("Rampage", "Bends", "Bloomrush", "WreckingBall", "Tollway", "Sirocco"):
         tier = "MODEL"
@@ -1071,6 +1110,11 @@ def accents(s, layers, stage, cam, pal, R, card_path):
         for k in range(60):
             p = v_add(v_add(a, v_mul(v_sub(b, a), k / 59)), v_mul(rng.unit(), span * 0.03))
             glow(p, span * rng.range(0.006, 0.012), GOLD, 1.2, 0.55)
+    elif s == "MultiplayerFreestyle":
+        # The crystals the scene's NetworkCrystalManager keeps in the water - something to fly
+        # at, and nothing to score.
+        for k in range(8):
+            crystal(jitter(1.0), span * 0.014)
     elif s == "Tapestry":
         # Dust mode over the cut in the Ruby wake: the raid that made the gap.
         p = jitter(0.2)
