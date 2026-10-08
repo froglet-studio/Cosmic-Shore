@@ -53,27 +53,39 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void ScaleModel_IsTheWholeShadowAndUnderTheSignatureFilter()
+        public void ScaleModel_IsEveryHolesBallAndUnderTheSignatureFilter()
         {
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
             Assert.IsNotNull(prefab, $"{PrefabPath} is missing.");
             Assert.IsTrue(prefab.TryGetComponent<SpawnableBlackHole>(out var spawnable), "the prefab carries no SpawnableBlackHole.");
 
             spawnable.InvalidateCache();
-            var points = spawnable.GetSpawnPoints();
+            var trails = spawnable.GetTrailData();
             spawnable.InvalidateCache();
+
+            // One ball per hole: the sink at the origin, a dipole's source at its offset.
+            var centres = spawnable.IsDipole
+                ? new[] { Vector3.zero, spawnable.SourceOffset }
+                : new[] { Vector3.zero };
+            Assert.AreEqual(centres.Length, trails.Length, "the scale model does not draw one ball per hole.");
 
             // CellMiniatureBuilder keeps every sample below 64; at 64+ its densest-voxel filter
             // would keep only part of an evenly spread ball.
-            Assert.That(points.Length, Is.InRange(16, 63), "the scale model's plate count left the band the signature filter keeps whole.");
+            int total = 0;
+            foreach (var trail in trails) total += trail.Points.Length;
+            Assert.That(total, Is.InRange(16, 63), "the scale model's plate count left the band the signature filter keeps whole.");
 
-            // The shadow (3√3/2 r_s) is always wider than the horizon, and the horizon never
-            // shrinks below the config's floor.
-            float radius = points[0].Position.magnitude;
-            Assert.Greater(radius, BlackHoleRegistry.Config.MinHorizonRadius,
-                "the scale model sits inside the smallest horizon — it is meant to be the shadow.");
-            foreach (var point in points)
-                Assert.AreEqual(radius, point.Position.magnitude, radius * 1e-3f, "a scale-model plate is off the shadow sphere.");
+            for (int t = 0; t < trails.Length; t++)
+            {
+                var points = trails[t].Points;
+                float radius = (points[0].Position - centres[t]).magnitude;
+                // Never smaller than a shadow (3√3/2 r_s), and the horizon never shrinks below the floor.
+                Assert.Greater(radius, BlackHoleRegistry.Config.MinHorizonRadius,
+                    $"ball {t} sits inside the smallest horizon — it is meant to be the shadow or larger.");
+                foreach (var point in points)
+                    Assert.AreEqual(radius, (point.Position - centres[t]).magnitude, radius * 1e-3f,
+                        $"a plate of ball {t} is off its sphere.");
+            }
         }
     }
 }

@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: Black Hole Cell Config
   m_EditorClassIdentifier: 
   CellName: Black Hole
-  Description: Open water around one tiny black hole at the centre of the world - and
-    a warp field that shrinks you as you fly in, so the hole grows until it fills the
-    sky.
+  Description: A tiny black hole at the centre and a white hole above it, joined by
+    a wormhole. Fly in and you shrink as the hole grows to fill the sky; fall through
+    and the white hole throws you back out, growing as you climb away.
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
   Difficulty: 2
   CellEndGameScore: 0

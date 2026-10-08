@@ -40,7 +40,8 @@ Shader "CosmicShore/BlackHoleLens"
     {
         [Header(Written per hole by BlackHoleLens.cs through a MaterialPropertyBlock)]
         _BHHorizon ("Horizon radius r_s (world units), eased", Float) = 1
-        _BHLens ("Lens (radius in r_s, step budget, unused, bend fade start 0..1)", Vector) = (30, 128, 1, 0.55)
+        _BHLens ("Lens (radius in r_s, step budget, polarity +1 sink / -1 source, bend fade start 0..1)", Vector) = (30, 128, 1, 0.55)
+        _BHThroat ("Wormhole mouth radius at the centre (world units, 0 = none)", Float) = 0
     }
 
     SubShader
@@ -77,6 +78,7 @@ Shader "CosmicShore/BlackHoleLens"
             CBUFFER_START(UnityPerMaterial)
                 float _BHHorizon;
                 float4 _BHLens;
+                float _BHThroat;
             CBUFFER_END
 
             // The scene as the camera drew it up to the lens — opaques, skybox and transparents —
@@ -186,7 +188,9 @@ Shader "CosmicShore/BlackHoleLens"
 
                 float3 bent;
                 float escaped;
-                BlackHoleLensTrace(x0, d, lensR, (int)_BHLens.y, bent, escaped);
+                // _BHLens.z is the polarity: +1 a black hole, −1 a white hole (diverging, no shadow).
+                float polarity = _BHLens.z < 0.0 ? -1.0 : 1.0;
+                BlackHoleLensTraceSigned(x0, d, lensR, (int)_BHLens.y, polarity, bent, escaped);
 
                 float3 background = float3(0.0, 0.0, 0.0);
                 if (escaped > 0.5)
@@ -205,13 +209,18 @@ Shader "CosmicShore/BlackHoleLens"
                     if (onScreen > 0.0)
                     {
                         float sampleEye = LinearEyeDepth(SampleSceneDepth(uv), _ZBufferParams);
-                        float behind = step(holeEye - rs, sampleEye);
+                        // A wormhole mouth seated at the centre (Docs/BLACK_HOLE.md §12) is solid to
+                        // the lens: a bent ray that lands on it is something the copy cannot see past,
+                        // so it takes the sky — the mouth is seen only where it is, in place of the
+                        // shadow (the depth test above already shows it there), never in the rings.
+                        float front = _BHThroat > 0.0 ? holeEye + _BHThroat : holeEye - rs;
+                        float behind = step(front, sampleEye);
                         scene = lerp(sky, BlackHoleSceneColour(uv), onScreen * behind);
                     }
                     background = scene;
                 }
 
-                // The bent scene, or the shadow's black.
+                // The bent scene, or the shadow's black (a sink only; a source never captures).
                 return half4(background, 1.0);
             }
             ENDHLSL

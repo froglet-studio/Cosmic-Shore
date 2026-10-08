@@ -54,4 +54,15 @@ MonoBehaviour:
   strength: 1
   horizonRadius: 0
   spinAxis: {x: 0, y: 1, z: 0}
+  dipole: 1
+  sourceOffset: {x: 0, y: 500, z: 0}
+  seatWormhole: 1
+  wormholeMaterial: {fileID: 2100000, guid: 97a0b9d33f4289abcfc3b058a3ffb2d3, type: 2}
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  mouthBloomSeconds: 0.45
+  mouthExactRange: 2500
+  mouthExactFadeBand: 600
+  mouthExactRenderScale: 0.75
+  mouthPanoramaFaceSize: 256
   modelPlates: 48
+  modelDipoleBallFraction: 0.12

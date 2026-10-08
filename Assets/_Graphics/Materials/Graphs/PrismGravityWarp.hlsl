@@ -174,7 +174,9 @@ void PrismGravityWarpDeform_float(float3 Position, float3 Normal,
 
     float3 c = mul(M, float4(0.0, 0.0, 0.0, 1.0)).xyz;   // the prism's centre: its object origin
 
-    // The hole whose tide at the prism's centre is largest (SLOT SELECTION).
+    // The hole whose tide at the prism's centre is largest (SLOT SELECTION), by MAGNITUDE: a white
+    // hole (Docs/BLACK_HOLE.md §12) publishes a NEGATIVE k, and its tide is the black hole's
+    // negated — compression along the line to it, spreading across: antisymmetric.
     float bestTide = 0.0;
     float3 bestDir = float3(0.0, 0.0, 1.0);
     for (int i = 0; i < PRISM_GRAVITY_WARP_SLOTS; i++)
@@ -185,7 +187,7 @@ void PrismGravityWarpDeform_float(float3 Position, float3 Normal,
         float4 weight = _PrismGravityWarpWeight[i];
         float k = weight.x;
         float reach = weight.y;
-        if (!(k > 0.0) || !(slot.w > 0.0) || !(reach > 0.0)) continue;
+        if (!(abs(k) > 0.0) || !(slot.w > 0.0) || !(reach > 0.0)) continue;
 
         float3 rad = c - slot.xyz;
         float d = length(rad);
@@ -193,17 +195,17 @@ void PrismGravityWarpDeform_float(float3 Position, float3 Normal,
         if (d - slot.w >= reach) continue;        // beyond the reach: no tide drawn
 
         float tide = PrismGravityWarpTide(d, slot.w, k, reach);
-        if (tide <= bestTide) continue;
+        if (abs(tide) <= abs(bestTide)) continue;
         bestTide = tide;
         bestDir = rad / d;
     }
 
-    if (!(bestTide > 0.0))
+    if (!(abs(bestTide) > 0.0))
         return;                                   // no hole reaches this prism
 
-    // Ease into the ceiling: the physics while small, never past ln(maxStretch).
+    // Ease into the ceiling: the physics while small, never past ln(maxStretch) — in either sign.
     float ceiling = max(_PrismGravityWarpParams.x, 1e-3);
-    float eps = PrismGravityWarpCeiling(bestTide, ceiling);
+    float eps = sign(bestTide) * PrismGravityWarpCeiling(abs(bestTide), ceiling);
     float radial = exp(eps);                      // stretch along the line to the hole
     float across = exp(-0.5 * eps);               // squeeze across it — volume conserved
 

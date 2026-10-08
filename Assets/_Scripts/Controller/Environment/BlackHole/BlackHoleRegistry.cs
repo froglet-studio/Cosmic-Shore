@@ -76,7 +76,7 @@ namespace CosmicShore.Gameplay
         /// field should pull toward either.
         /// </summary>
         public static BlackHole Spawn(Vector3 position, float strength, Vector3 velocity = default, Vector3? spinAxis = null,
-            float horizonRadius = 0f)
+            float horizonRadius = 0f, HolePolarity polarity = HolePolarity.Sink)
         {
             Prune();
             var config = Config;
@@ -91,12 +91,12 @@ namespace CosmicShore.Gameplay
                 return null;
             }
 
-            var go = new GameObject($"[BlackHole {_nextId}]");
+            var go = new GameObject(polarity == HolePolarity.Source ? $"[WhiteHole {_nextId}]" : $"[BlackHole {_nextId}]");
             go.transform.position = position;
             var hole = go.AddComponent<BlackHole>();   // OnEnable registers it
-            hole.Configure(strength, velocity, spinAxis ?? Vector3.forward, horizonRadius);
+            hole.Configure(strength, velocity, spinAxis ?? Vector3.forward, horizonRadius, polarity);
             CSDebug.LogVerbose(CSLogChannel.BlackHole,
-                $"[BlackHole] spawned #{hole.Id} strength {strength:F1} size {horizonRadius:F1} at {position} GM {hole.GM:F0} " +
+                $"[BlackHole] spawned #{hole.Id} {polarity} strength {strength:F1} size {horizonRadius:F1} at {position} GM {hole.GM:F0} " +
                 $"horizon {hole.HorizonRadius:F1} influence {hole.InfluenceRadius:F0} velocity {velocity}");
             return hole;
         }

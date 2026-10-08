@@ -130,6 +130,10 @@ static Trace trace(float3 x0, float3 d, float lensR, int steps = 192)
 {
     Trace t; BlackHoleLensTrace(x0, d, lensR, steps, t.dir, t.escaped); return t;
 }
+static Trace traceSource(float3 x0, float3 d, float lensR, int steps = 192)
+{
+    Trace t; BlackHoleLensTraceSigned(x0, d, lensR, steps, -1.0f, t.dir, t.escaped); return t;
+}
 """
 
 HARNESS = COMMON + r"""
@@ -171,6 +175,31 @@ int main()
             CHECK(err < 0.03f, "deflection at b = %.0f: %.5f rad, expected %.5f (%.1f%% off)", b, angle, expected, err * 100);
             printf("3. deflection at b = %2.0f r_s: %.5f rad (Schwarzschild %.5f, %.2f%% off)\n", b, angle, expected, err * 100);
         }
+    }
+
+    // 3w. a WHITE HOLE (Docs/BLACK_HOLE.md §12): the same trace with the force negated — every ray
+    //     escapes (no shadow, even through the centre and from inside its horizon), and far out it is
+    //     bent AWAY from the hole by the sink's first-order angle, 2 r_s / b.
+    {
+        int captured = 0;
+        for (float b = 0.0f; b <= 6.0f; b += 0.05f) {
+            Trace t = traceSource(float3(-200, b, 0), float3(1,0,0), 250);
+            if (t.escaped < 0.5f || !std::isfinite(t.dir.x)) captured++;
+        }
+        Trace inside = traceSource(float3(0.5f, 0, 0), float3(1,0,0), 30);
+        CHECK(captured == 0, "%d rays were captured by a white hole", captured);
+        CHECK(inside.escaped > 0.5f, "an eye inside a white hole's horizon saw nothing escape");
+        const float bs[2] = { 40, 80 };
+        for (float b : bs) {
+            Trace t = traceSource(float3(-1500, b, 0), float3(1,0,0), 2000);
+            float angle = std::acos(std::min(1.0f, t.dir.x));
+            float expected = 2.0f / b - 15.0f * 3.14159265f / (16.0f * b * b);
+            float err = std::fabs(angle - expected) / expected;
+            CHECK(t.dir.y > 0.0f, "the white hole bent the ray at b = %.0f TOWARD itself", b);
+            CHECK(err < 0.04f, "white-hole deflection at b = %.0f: %.5f rad, expected %.5f (%.1f%% off)", b, angle, expected, err * 100);
+            printf("3w. white hole, b = %2.0f r_s: bent AWAY by %.5f rad (2/b - 15pi/16b^2 = %.5f, %.2f%% off)\n", b, angle, expected, err * 100);
+        }
+        printf("3w. white hole: no ray captured for b in [0, 6] r_s nor from inside its horizon\n");
     }
 
     // 4. inside the horizon

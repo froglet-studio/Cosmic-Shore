@@ -28,6 +28,12 @@
 // harness holds the two numbers that make it a black hole and not a lens: the capture threshold is
 // b_c = 2.598 r_s, and a ray passing far out at b is deflected by 2 r_s / b (Einstein's 4GM/c²b).
 //
+// POLARITY. A WHITE HOLE (Docs/BLACK_HOLE.md §12) is the same trace with the force NEGATED: light is
+// pushed away from it, so the lens DIVERGES — the background around it is thinned out and pushed
+// apart where the black hole's gathers it into arcs and rings — and no ray is ever captured, so there
+// is no shadow. Far out a ray at b is deflected by −2 r_s / b, the sink's bend reversed. The
+// polarity-free entry points below are the sink and stay byte-for-byte what they were.
+//
 // UNITS. Everything inside the trace is in units of the horizon radius r_s, centred on the hole.
 // The shader converts world → hole units on the way in and back to a world direction on the way
 // out, so the same trace serves a strength-1 hole and a strength-100 one.
@@ -70,10 +76,17 @@ float3 BlackHoleLensAccel(float3 x, float h2)
     return x * (-1.5 * h2 / (r2 * r2 * r));
 }
 
+// The same force with a polarity: +1 a black hole (attracts light), −1 a white hole (repels it).
+float3 BlackHoleLensAccelSigned(float3 x, float h2, float polarity)
+{
+    return BlackHoleLensAccel(x, h2) * polarity;
+}
+
 // Trace one ray backwards from the eye. x0: the eye in hole units; d: unit view direction.
 // Returns (by out): the escaping direction (unit, world-aligned) and whether it escaped (1) or
 // fell through the horizon (0) — the shadow.
-void BlackHoleLensTrace(float3 x0, float3 d, float lensR, int maxSteps, out float3 outDir, out float escaped)
+void BlackHoleLensTraceSigned(float3 x0, float3 d, float lensR, int maxSteps, float polarity,
+                              out float3 outDir, out float escaped)
 {
     outDir = d;
     escaped = 1.0;
@@ -86,14 +99,14 @@ void BlackHoleLensTrace(float3 x0, float3 d, float lensR, int maxSteps, out floa
     float3 v = d;
     float3 hv = cross(x, v);
     float h2 = dot(hv, hv);
-    float3 accel = BlackHoleLensAccel(x, h2);
+    float3 accel = BlackHoleLensAccelSigned(x, h2, polarity);
 
     for (int i = 0; i < BLACK_HOLE_LENS_MAX_STEPS; i++)
     {
         if (i >= maxSteps) break;
 
         float r = length(x);
-        if (r < 1.0)
+        if (polarity > 0.0 && r < 1.0)
         {
             escaped = 0.0;                        // through the horizon: no light from here
             return;
@@ -108,11 +121,17 @@ void BlackHoleLensTrace(float3 x0, float3 d, float lensR, int maxSteps, out floa
         float ds = max(BLACK_HOLE_LENS_STEP_FRACTION * r, 0.005) / max(length(v), 1e-4);
         float3 vHalf = v + accel * (0.5 * ds);
         x = x + vHalf * ds;
-        float3 accelNew = BlackHoleLensAccel(x, h2);
+        float3 accelNew = BlackHoleLensAccelSigned(x, h2, polarity);
         v = vHalf + accelNew * (0.5 * ds);
         accel = accelNew;
     }
     outDir = normalize(v);
+}
+
+// The black hole — the original entry point, which the harness executes.
+void BlackHoleLensTrace(float3 x0, float3 d, float lensR, int maxSteps, out float3 outDir, out float escaped)
+{
+    BlackHoleLensTraceSigned(x0, d, lensR, maxSteps, 1.0, outDir, escaped);
 }
 
 // Fade the bending to zero toward the lens's edge. Light passing at impact parameter b is really

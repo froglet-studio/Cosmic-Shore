@@ -123,6 +123,9 @@ namespace CosmicShore.Gameplay
         /// <summary>Captures since <see cref="ResetSecondCounters"/> (the verbose report's rate).</summary>
         public static int CapturedThisSecond { get; private set; }
 
+        /// <summary>Prisms carried through a dipole's throat since the last reset (session total).</summary>
+        public static int ThroatTransitsTotal { get; private set; }
+
         public static void ResetSecondCounters() => CapturedThisSecond = 0;
 
         /// <summary>True if the prism is currently a body (diagnostics, tests).</summary>
@@ -349,6 +352,20 @@ namespace CosmicShore.Gameplay
                     {
                         int by = _capturedBy[i];
                         var hole = by >= 0 && by < _wellHoles.Length ? _wellHoles[by] : null;
+
+                        // A DIPOLE's sink is a throat, not a singularity (Docs/BLACK_HOLE.md §12):
+                        // the body is carried through to the same point relative to the source
+                        // and stays a body — velocity and all — so it falls on inward, through
+                        // the source's centre, and the source drives it back out. Nothing is
+                        // consumed, so the dipole conserves the mass it moves.
+                        var throat = hole != null ? hole.Throat : null;
+                        if (throat != null && !throat.IsDespawning)
+                        {
+                            p.transform.position += throat.transform.position - hole.transform.position;
+                            ThroatTransitsTotal++;
+                            break;
+                        }
+
                         Transform sink = hole != null ? hole.transform : p.transform;
                         RemoveAt(i, clearComponent: true);
                         // Devastate: a shield is not an answer to a singularity. The suction's
@@ -546,6 +563,7 @@ namespace CosmicShore.Gameplay
             _nextAdmission = 0f;
             CapturedTotal = 0;
             CapturedThisSecond = 0;
+            ThroatTransitsTotal = 0;
             DisposeLedger();
             DisposeOutputs();
         }

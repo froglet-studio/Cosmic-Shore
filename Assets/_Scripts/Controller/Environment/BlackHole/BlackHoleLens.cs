@@ -38,6 +38,7 @@ namespace CosmicShore.Gameplay
 
         static readonly int HorizonId = Shader.PropertyToID("_BHHorizon");
         static readonly int LensId = Shader.PropertyToID("_BHLens");
+        static readonly int ThroatId = Shader.PropertyToID("_BHThroat");
 
         /// <summary>Icosahedron subdivisions of <see cref="LensSphere"/> (2 = 320 triangles).</summary>
         const int LensSphereSubdivisions = 2;
@@ -246,7 +247,9 @@ namespace CosmicShore.Gameplay
 
             _renderer.GetPropertyBlock(_block);
             _block.SetFloat(HorizonId, rs);
-            _block.SetVector(LensId, new Vector4(lensR, config.LensSteps, 1f, config.LensFadeStart));
+            // z: the polarity — +1 a black hole, −1 a white hole (Docs/BLACK_HOLE.md §12).
+            _block.SetVector(LensId, new Vector4(lensR, config.LensSteps, _hole.Sign, config.LensFadeStart));
+            _block.SetFloat(ThroatId, _hole.ThroatRadius);
             _renderer.SetPropertyBlock(_block);
         }
 

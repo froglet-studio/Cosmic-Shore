@@ -31,6 +31,7 @@
 | Tuning (the only tuning surface) | `BlackHoleConfigSO` → `Assets/Resources/BlackHoleConfig.asset` |
 | The test scene | **Not on bleeding-edge.** `BlackHoleTest.unity`, `BlackHoleTestHarness`, `BlackHoleTestConfigSO`, the scene setup tool and the mouse camera `MouseOrbitCamera` stayed on `claude/peaceful-rubin-hhw49n` when the black hole alone was brought over (§7) |
 | The Black Hole cell — a Cell Selector world that is one hole and nothing else (§11) | `SpawnableBlackHole.cs` + `BlackHoleCellAnchor.cs` (same folder), `_Prefabs/Spawnables/SpawnableBlackHole.prefab`, `_SO_Assets/Cell Configs/Black Hole Cell/`, Menu_Main's `Cell.CellConfigs[13]`; gate `BlackHoleCellTests` |
+| The dipole: the white hole (`HolePolarity.Source`), the throat (`BlackHole.Throat`), the wormhole seated in both centres, the warp poles (§12) | `BlackHole.cs`, `BlackHolePhysics.cs`, `BlackHoleGravityField.ApplyVerdicts`, `BlackHoleLens.hlsl` / `.shader` (`BlackHoleLensTraceSigned`, `_BHThroat`), `PrismGravityWarp.hlsl` (signed tides), `SpawnableBlackHole.cs`, `BlackHoleCellAnchor.cs`; gate `BlackHoleDipoleTests` |
 | Wirer / proof / gates | `Tools/Shaders/wire_prism_gravity_warp.py`, `Tools/Shaders/verify_prism_gravity_warp.py`, `PrismClockWiringValidator` (Specs + edges), `BlackHoleTests`, `BlackHolePhysicsTests` |
 | See the lens offline (renders the SHIPPED HLSL to a PNG from any viewpoint) | `Tools/Shaders/render_black_hole_lens.py` (§5.1); proof: `Tools/Shaders/verify_black_hole_lens.py` |
 | Log channel | `CSLogChannel.BlackHole` (FrogletTools ▸ Toolbox ▸ Logging), one line per second while a hole is live, including the idle case |
@@ -62,6 +63,7 @@ spawning between steps, and every fault they reported is fixed and recorded in t
 | 10 | The lens bends TRANSPARENTS too (shards, particles): its own after-transparents pass | §5.1 |
 | 11 | Merged with bleeding-edge (9,708 commits); `CSLogChannel.BlackHole` moved to bit 31 — the enum is now FULL | the merge commit |
 | 12 | The Black Hole cell: a Cell Selector world that is open water around one hole at the centre | §11 |
+| 13 | The warp field (`Docs/WARP_FIELD.md`) and the dipole: a white hole, the wormhole between them, mass carried through | §12 |
 
 **Untested in the editor, in priority order:** the after-transparents lens pass (`BlackHoleLensPass`,
 Render Graph) on every camera and the Scene view; the lens sky (`BlackHoleSky`) on a low quality
@@ -696,3 +698,61 @@ well in a satellite cell would pull the Ark; an authored Arkway `Cells` list can
 shows a ball → fly it → brief veil, then the hole at the centre with the lens; lay trail near it and
 watch it fall in; fly the selector again to any other world → the hole eases out with the suction and
 `BlackHoleRegistry.Count` returns to 0 (`blackhole list`). `BlackHoleCellTests` holds the wiring.
+
+## 12. The dipole: a white hole, and the wormhole between them
+
+The Black Hole cell's hole is half of a **dipole** (`SpawnableBlackHole.dipole`): a black hole at the
+centre (the SINK) and its antisymmetric twin, a white hole (the SOURCE), 500 u up the spin axis,
+joined by one of the Butterfly fold's wormholes (`Docs/WORMHOLES.md`). Fly in and you shrink as the
+hole grows (`Docs/WARP_FIELD.md` §4); reach its centre and you come out of the white hole, which
+throws you back out while you grow again. Prisms make the same trip.
+
+**A source is the sink with its sign flipped — everything that has a sign** (`HolePolarity`, `BlackHole.Sign`):
+
+| | Sink (black hole) | Source (white hole) |
+|---|---|---|
+| Gravity (`BlackHolePhysics.Acceleration`) | Paczyński–Wiita pull, `GM > 0` | the same magnitude, pushing: `Well.GM < 0` |
+| Horizon | captures (`Verdict.Captured`) | never captures; a body inside it is driven out (its push is strongest there) |
+| Frame dragging | Lense–Thirring about the spin axis | the same axis, turning the other way (`FrameDrag < 0`) |
+| Tides (`PrismGravityWarp.hlsl`) | stretched along the line to it, squeezed across | the tensor negated: FLATTENED along it, spread across; volume still conserved, the ceiling holds in both signs |
+| Lens (`BlackHoleLens.hlsl`) | focusing: arcs, an Einstein ring, a shadow of b_c = 2.6 r_s | diverging (the photon force negated): the background is thinned and pushed apart, nothing is captured, no shadow; far out a ray is bent AWAY by 2 r_s / b |
+| Fallback sphere (no lens) | black | white |
+| Wormhole rim | the material's own | white |
+| Vessels | pulled (`BlackHoleVesselPull`) | pushed — the same code, the signed acceleration |
+
+**The wormhole replaces the black sphere.** A `WormholeMouth` pair (no toll, no owner — a natural
+throat; every pilot rides) is seated in the two centres, each the size of the sink's shadow
+(3√3/2 r_s). The lens already leaves alone every pixel whose scene depth is in front of the hole's
+centre, and the opaque mouth covers exactly the disc it would have painted black — so where the
+shadow was, the player now sees out of the white hole, and flying in carries them there. The lens
+also treats a seated mouth as solid (`_BHThroat`): a bent ray that lands on it takes the sky, so the
+mouth's image is never smeared into the Einstein ring. Each hole's `ThroatRadius` carries the size.
+
+**Mass goes through, it is not destroyed.** The sink's `Throat` is the source: a prism the sink
+captures is translated to the same point inside the source's horizon, keeps its velocity, falls on
+through the source's centre and is driven back out (`BlackHoleGravityField.ApplyVerdicts`,
+`ThroatTransitsTotal`). A lone hole (the console's, Shift+B) still consumes as before.
+
+**Both are poles of the warp field** (`WarpFieldRuntime.AddPole`): you shrink toward either. The
+reach (350 u) is clear of the toy ring and the pole switches, and the two holes' influence spheres
+(~58 u at strength 1) are far apart, so the source never pushes mass back into the sink.
+
+**Retirement.** `BlackHoleCellAnchor` despawns both holes and withers both mouths (0.8 s) when the
+cell retires the world; the source's warp pole fades out with the field.
+
+**Gates.** `BlackHoleDipoleTests` (the source's push, no capture, reversed frame, the prefab's
+wiring, the toy-ring clearance, the two-pole field, the shader paths);
+`Tools/Shaders/verify_black_hole_lens.py` test 3w (no ray captured, bent away by 2/b − 15π/16b² to
+0.3%); `Tools/Shaders/verify_prism_gravity_warp.py` test 14 (the white hole's tide is the sink's
+negated, volume kept, the ceiling held).
+
+**Untested in the editor:** all of it. Verify: Black Hole cell → fly at the centre → the hole grows,
+its centre shows the view out of the white hole above → fly in → you come out of the white hole at a
+fraction of your size, pushed away, growing as you climb → lay trail near the sink and watch it come
+out of the source and be thrown clear; look at the white hole against prisms behind it — the
+background should spread away from it rather than ring around it.
+
+**Stated limits.** The source's lens has no counterpart to the shadow — a white hole's centre is its
+mouth. The exact physics of a white hole (time-reversed Schwarzschild) is not a repulsive mass; this
+is the antisymmetric GAME object the dipole needs, built by negating every signed quantity. Two
+holes' tides do not add (the stronger wins), as before.

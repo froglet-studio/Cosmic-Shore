@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CosmicShore.Utility;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -30,6 +31,12 @@ namespace CosmicShore.Gameplay
         static Transform _centre;
         static Vector3 _centreFallback;
         static object _owner;
+        // Further POLES of the same field (a dipole's other end, Docs/BLACK_HOLE.md §12): the field
+        // is read around each, and the scale at a point is the SMALLEST — the nearest pole wins.
+        // A pole keeps its LAST position once its transform is gone, so a pole retired with its
+        // world goes on shaping the field until the field itself has eased out — no pop.
+        static readonly List<Transform> _poles = new();
+        static readonly List<Vector3> _poleLast = new();
 
         // The eased weight is evaluated lazily from a start time, so the field needs no driver.
         static float _fromWeight;
@@ -76,7 +83,14 @@ namespace CosmicShore.Gameplay
             if (_field == null) return 1f;
             float w = Weight;
             if (w <= 0f || _field == null) return 1f;
-            float s = Mathf.Max(1e-4f, _field.ScaleAt(worldPosition - Centre));
+            float s = _field.ScaleAt(worldPosition - Centre);
+            for (int i = 0; i < _poles.Count; i++)
+            {
+                var pole = _poles[i];
+                if (pole) _poleLast[i] = pole.position;
+                s = Mathf.Min(s, _field.ScaleAt(worldPosition - _poleLast[i]));
+            }
+            s = Mathf.Max(1e-4f, s);
             return w >= 1f ? s : Mathf.Pow(s, w);
         }
 
@@ -88,6 +102,10 @@ namespace CosmicShore.Gameplay
         {
             if (field == null || owner == null) return;
             float current = Weight;
+            // A new world's field starts from its own centre: poles a previous world added (still
+            // easing out with it) belong to a world that is gone.
+            _poles.Clear();
+            _poleLast.Clear();
             _field = field;
             _centre = centre;
             _centreFallback = centre ? centre.position : Vector3.zero;
@@ -118,6 +136,27 @@ namespace CosmicShore.Gameplay
             CSDebug.LogVerbose(CSLogChannel.Ecology, "[WarpField] released, easing out.");
         }
 
+        /// <summary>
+        /// Read the live field around <paramref name="pole"/> as well (its position is read live).
+        /// For a field with several centres — a dipole's source as well as its sink; the scale at a
+        /// point is the smallest any pole gives it. Lives until <see cref="RemovePole"/>, its
+        /// transform's destruction, or the field's end.
+        /// </summary>
+        public static void AddPole(Transform pole)
+        {
+            if (!pole || _field == null || _poles.Contains(pole)) return;
+            _poles.Add(pole);
+            _poleLast.Add(pole.position);
+        }
+
+        public static void RemovePole(Transform pole)
+        {
+            int i = _poles.IndexOf(pole);
+            if (i < 0) return;
+            _poles.RemoveAt(i);
+            _poleLast.RemoveAt(i);
+        }
+
         static bool _sceneHooked;
 
         static void OnActiveSceneChanged(Scene from, Scene to) => Clear();
@@ -135,6 +174,8 @@ namespace CosmicShore.Gameplay
             _field = null;
             _centre = null;
             _owner = null;
+            _poles.Clear();
+            _poleLast.Clear();
             _fromWeight = _toWeight = 0f;
         }
 

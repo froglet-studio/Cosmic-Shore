@@ -69,24 +69,32 @@ is a candidate consumer — add it by multiplying its authored length by
 `WarpFieldRuntime.ScaleAt(position)`, nothing more. The 2022 version scaled only the player, two
 AI ships, the camera and the trail.
 
-## 4. The radial field and the tiny black hole
+## 4. The radial field, several poles, and the tiny black hole
 
 `RadialWarp`: `s(r) = clamp((r / referenceRadius)^exponent, minScale, maxScale)` from the owning
-cell's centre. The Black Hole cell ships `referenceRadius 1000`, `exponent 1`, `minScale 0.01`,
-`maxScale 1`, with a strength-1 hole (r_s = 2 u, shadow 5.2 u):
+cell's centre — and from every extra **pole** an environment registers
+(`WarpFieldRuntime.AddPole`); the scale at a point is the SMALLEST any pole gives it, so the nearest
+pole wins. A pole keeps its last position once its transform is gone, so a pole retired with its
+world shapes the field until the field itself has eased out (no pop); a new field starts with no
+poles. The Black Hole cell (`Docs/BLACK_HOLE.md` §11–§12) ships `referenceRadius 350`,
+`exponent 1`, `minScale 0.01`, `maxScale 1`, with poles at the black hole (the centre) and the white
+hole (500 u up the spin axis) — both reaches clear of the toy ring and the pole switches. With a
+strength-1 hole (r_s = 2 u, shadow and wormhole mouth 5.2 u):
 
-| r (u) | s | a 10 u hull is | hole shadow, angular radius | shadow ÷ hull |
+| r (u) | s | a 10 u hull is | shadow, angular radius | shadow ÷ hull |
 |---|---|---|---|---|
-| 1000 | 1.000 | 10 u | 0.3° | 0.5× |
-| 100 | 0.100 | 1 u | 3.0° | 5× |
-| 26 | 0.026 | 0.26 u | 11° | 20× |
-| 10 | 0.010 | 0.1 u | 27° | 52× |
+| 350 | 1.000 | 10 u | 0.9° | 1× |
+| 100 | 0.286 | 2.9 u | 3.0° | 2× |
+| 26 | 0.074 | 0.74 u | 11° | 7× |
+| 8 | 0.023 | 0.23 u | 33° | 23× |
+| 5.2 (the mouth) | 0.015 | 0.15 u | 45° | 35× |
 
 Because the vessel's world speed is proportional to `r`, a pilot holding a constant felt speed
-approaches EXPONENTIALLY (1000 → 26 u in ~60 s at a felt 60 u/s): the hole swells at a steady rate
-for as long as you fly at it, the way zooming into a fractal does. The hole's pull on vessels rides
-the velocity channel, which the transformer scales by `s`, so its escape rule holds in the
-pilot's frame (`Docs/BLACK_HOLE.md` §4).
+approaches EXPONENTIALLY (350 → 5.2 u in ~25 s at a felt 60 u/s): the hole swells at a steady rate
+for as long as you fly at it. At the mouth you are carried to the white hole, where the same table
+runs backwards — you come out at 1.5% scale and GROW as you climb away from it. The holes' push and
+pull on vessels ride the velocity channel, which the transformer scales by `s`, so the escape rule
+holds in the pilot's frame (`Docs/BLACK_HOLE.md` §4).
 
 ## 5. Verify in the editor (owed)
 

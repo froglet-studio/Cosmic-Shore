@@ -17,7 +17,7 @@ MonoBehaviour:
   fieldHeight: 200
   fieldMax: 300
   easeSeconds: 1.5
-  referenceRadius: 1000
+  referenceRadius: 350
   exponent: 1
   minScale: 0.01
   maxScale: 1

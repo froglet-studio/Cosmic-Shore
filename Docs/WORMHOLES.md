@@ -10,6 +10,11 @@ playtested and confirmed the same day).
 > The idea was prototyped as a standalone "Wormhole" Cell Selector world, which was retired once the
 > fold carried it: there is no wormhole cell, and `Tools/Build/author_wormholes.py --check` asserts
 > none is listed in Menu_Main.
+>
+> **A second placer (2026-10-08):** the Black Hole cell seats an untolled, ownerless pair in the
+> centres of its black hole and its white hole, each the size of the black hole's shadow — the sink's
+> mouth is what the player sees where the shadow was (`Docs/BLACK_HOLE.md` §12,
+> `SpawnableBlackHole.SeatWormhole`). It uses the fold's material and the fold's view numbers.
 
 Files:
 

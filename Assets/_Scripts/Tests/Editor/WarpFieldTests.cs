@@ -97,9 +97,10 @@ namespace CosmicShore.Tests
             float rs = BlackHoleRegistry.Config.HorizonRadius(strength, 0f);
 
             // "Tiny" against the world a player normally flies in: at the field's reference radius
-            // the shadow is a speck, and at the floor it is ~100x larger in the player's lengths.
+            // the shadow is a speck (under 2% of that radius), and toward the floor it is tens of
+            // times larger in the player's lengths.
             var warp = (RadialWarp)config.WarpField;
-            Assert.Less(rs * 2.6f, warp.ReferenceRadius * 0.01f,
+            Assert.Less(rs * 2.6f, warp.ReferenceRadius * 0.02f,
                 "the hole is not tiny next to the reference radius — it would not need the warp to look big.");
             Assert.LessOrEqual(warp.MinScale, 0.02f, "the floor is too high for the hole to grow much.");
         }

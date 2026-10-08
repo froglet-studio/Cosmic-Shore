@@ -54,9 +54,17 @@ namespace CosmicShore.Gameplay
                  "horizon.")]
         [SerializeField] Vector3 spinAxis = Vector3.forward;
 
+        [Tooltip("SINK: a black hole — pulls, swallows at the horizon, shadows its centre. SOURCE: its " +
+                 "antisymmetric twin, a white hole — the same strength REPELS prisms and vessels, nothing " +
+                 "ever crosses its horizon inward, its spacetime is dragged the other way, its tides " +
+                 "flatten instead of stretching, and its lens diverges light instead of focusing it " +
+                 "(Docs/BLACK_HOLE.md §12).")]
+        [SerializeField] HolePolarity polarity = HolePolarity.Sink;
+
         const string HorizonName = "Horizon";
 
         static Material s_horizonMaterial;
+        static Material s_sourceHorizonMaterial;
 
         Transform _horizon;     // fallback only: the lens draws the shadow itself
         BlackHoleLens _lens;
@@ -87,7 +95,28 @@ namespace CosmicShore.Gameplay
         /// <summary>True from <see cref="BeginDespawn"/> until the object is destroyed.</summary>
         public bool IsDespawning => _despawning;
 
-        public float GM => BlackHoleRegistry.Config.GM(strength);
+        public HolePolarity Polarity => polarity;
+        public bool IsSource => polarity == HolePolarity.Source;
+
+        /// <summary>+1 for a sink, −1 for a source: the sign every signed quantity of the hole carries.</summary>
+        public float Sign => IsSource ? -1f : 1f;
+
+        /// <summary>
+        /// The other pole of a DIPOLE (Docs/BLACK_HOLE.md §12), or null for a lone hole. A sink with a
+        /// throat does not destroy what it captures: a prism crossing its horizon is carried through
+        /// to the same point inside the throat's horizon and goes on from there.
+        /// </summary>
+        public BlackHole Throat { get; internal set; }
+
+        /// <summary>
+        /// Radius of the wormhole mouth seated at this hole's centre (world units; 0 = none). The
+        /// lens treats it as solid: a bent ray that lands on it falls back to the sky, so the mouth
+        /// is seen only where it is — in place of the shadow — and never smeared into the rings.
+        /// </summary>
+        public float ThroatRadius { get; internal set; }
+
+        /// <summary>SIGNED gravitational parameter: positive pulls (sink), negative pushes (source).</summary>
+        public float GM => Sign * BlackHoleRegistry.Config.GM(strength);
         /// <summary>The event-horizon radius in effect: <see cref="Size"/>, or derived from strength.</summary>
         public float HorizonRadius => BlackHoleRegistry.Config.HorizonRadius(strength, horizonRadius);
         public float InfluenceRadius => BlackHoleRegistry.Config.InfluenceRadius(strength, HorizonRadius);
@@ -99,21 +128,27 @@ namespace CosmicShore.Gameplay
             var p = transform.position;
             var axis = SpinAxis;
             float rs = config.HorizonRadius(strength, horizonRadius);
-            float gm = config.GM(strength);
+            float gm = config.GM(strength);   // magnitude; the sign is the polarity's
             return new BlackHolePhysics.Well
             {
                 Position = new Unity.Mathematics.float3(p.x, p.y, p.z),
-                GM = gm,
+                GM = Sign * gm,
                 Horizon = BlackHolePhysics.Horizon.Of(rs),
                 InfluenceRadius = config.InfluenceRadius(strength, rs),
                 SpinAxis = new Unity.Mathematics.float3(axis.x, axis.y, axis.z),
-                FrameDrag = BlackHolePhysics.FrameDragCoefficient(gm, rs, config.Spin),
+                // A source's frame turns the other way: the dipole is antisymmetric in its spin too.
+                FrameDrag = Sign * BlackHolePhysics.FrameDragCoefficient(gm, rs, config.Spin),
             };
         }
 
         /// <summary>Spawn-time configuration (the registry's path). Idempotent.</summary>
-        internal void Configure(float newStrength, Vector3 newVelocity, Vector3 newSpinAxis, float newHorizonRadius = 0f)
+        internal void Configure(float newStrength, Vector3 newVelocity, Vector3 newSpinAxis, float newHorizonRadius = 0f,
+            HolePolarity newPolarity = HolePolarity.Sink)
         {
+            polarity = newPolarity;
+            // OnEnable built the visual before this ran; a fallback sphere follows the polarity.
+            if (_horizon != null && _horizon.TryGetComponent<MeshRenderer>(out var horizonRenderer))
+                horizonRenderer.sharedMaterial = IsSource ? SourceHorizonMaterial() : HorizonMaterial();
             strength = Mathf.Max(0f, newStrength);
             horizonRadius = Mathf.Max(0f, newHorizonRadius);
             velocity = newVelocity;
@@ -209,7 +244,7 @@ namespace CosmicShore.Gameplay
             if (_lens == null)
             {
                 var existing = transform.Find(HorizonName);
-                _horizon = existing != null ? existing : BuildSphere(HorizonName, HorizonMaterial());
+                _horizon = existing != null ? existing : BuildSphere(HorizonName, IsSource ? SourceHorizonMaterial() : HorizonMaterial());
             }
         }
 
@@ -229,6 +264,14 @@ namespace CosmicShore.Gameplay
                 renderer.receiveShadows = false;
             }
             return go.transform;
+        }
+
+        /// <summary>The fallback for a SOURCE: white where a sink's is black — antisymmetric even without the lens.</summary>
+        static Material SourceHorizonMaterial()
+        {
+            if (s_sourceHorizonMaterial != null) return s_sourceHorizonMaterial;
+            s_sourceHorizonMaterial = UnlitMaterial(Color.white, "WhiteHoleHorizon");
+            return s_sourceHorizonMaterial;
         }
 
         static Material HorizonMaterial()
@@ -252,5 +295,14 @@ namespace CosmicShore.Gameplay
             }
             return new Material(shader) { color = color, name = materialName };
         }
+    }
+
+    /// <summary>Which way a hole's gravity points (Docs/BLACK_HOLE.md §12). Static values: serialized.</summary>
+    public enum HolePolarity
+    {
+        /// <summary>A black hole: pulls, captures at the horizon.</summary>
+        Sink = 0,
+        /// <summary>A white hole: the same strength, repelling; nothing enters its horizon.</summary>
+        Source = 1,
     }
 }
