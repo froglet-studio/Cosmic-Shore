@@ -4,80 +4,96 @@ using UnityEngine;
 namespace CosmicShore.Utility
 {
     /// <summary>
-    /// The pure geometry behind a crystal FUSING onto a vessel hull — the crystal's rigid plates
-    /// lifting off it and landing flush on the hull as if they had always been part of it
+    /// The pure geometry behind a crystal's faces coming off it and MATING with a vessel hull
     /// (<c>Controller/Environment/Crystals/CRYSTAL_HULL_FUSION.md</c>).
     ///
     /// Everything here is a function of meshes and numbers, with no scene access, so the parts
-    /// that decide WHERE a plate lands can be edit-mode tested without a vessel.
+    /// that decide WHAT flies and WHERE it lands can be edit-mode tested without a vessel.
     ///
-    /// ── A crystal is split into PLATES, not vertices ─────────────────────────────────────────
-    /// A plate is one connected solid of the crystal's mesh (vertices welded by POSITION, then
-    /// connected through shared triangles). The charge crystal is exactly 60 of them — 60
-    /// pentagonal prisms on one shell, every centroid at radius 0.9406 and every half-extent
-    /// 0.3660 in model units (measured off ChargeCrystalExport1_7-11-25.fbx). Moving each plate
-    /// RIGIDLY keeps every face planar, which is what lets the charge shader's crease-edge
-    /// discharge keep running on the hull: its edge data is baked per triangle in model-radius
-    /// fractions, so a rigidly moved (and uniformly scaled) plate carries its bolts with it.
+    /// ── A crystal is read as PANELS and FILLER ───────────────────────────────────────────────
+    /// A solid is one connected piece of the crystal's mesh (vertices welded by POSITION, then
+    /// connected through shared triangles); a face is a solid's triangles joined across welded
+    /// edges while nearly coplanar. Each solid's outermost face is its PANEL; the rest is filler.
+    /// The charge crystal is 60 pentagonal prisms (every centroid at radius 0.9406, every
+    /// half-extent 0.3660 model units, measured off ChargeCrystalExport1_7-11-25.fbx), so it reads
+    /// as 60 pentagon panels - the same panel/filler split the omni morph makes.
     ///
-    /// ── Spots are spread first, then plates are matched to them ───────────────────────────────
-    /// The contact spot is the outermost outward-facing hull vertex in the direction the crystal
+    /// ── Patches are spread first, then panels are matched to them ────────────────────────────
+    /// The contact patch is the outermost outward-facing hull vertex in the direction the crystal
     /// came from, read in the hull's NORMALISED space (each axis divided by its extent). From
-    /// there the remaining spots are farthest-point sampled over the skin, so they sit at
-    /// near-uniform spacing on any hull shape, and each plate is matched to a spot by an optimal
-    /// assignment against the direction it is wrapping toward. Mapping each plate's direction
-    /// straight onto the hull was tried first and measured against the shipped Squirrel: 9 of 60
-    /// plates landed on a spot another plate already held, crowded onto the wing tips.
+    /// there the remaining patches are farthest-point sampled over the skin, so they sit at
+    /// near-uniform spacing on any hull shape, and each panel is matched to a patch by an optimal
+    /// assignment. Mapping each panel's direction straight onto the hull was tried first and
+    /// measured against the shipped Squirrel: 9 of 60 landed on a spot another already held,
+    /// crowded onto the wing tips.
+    ///
+    /// ── A panel's corners land on the hull's own vertices ───────────────────────────────────
+    /// The panel is laid in the patch's tangent plane at the patch's size, then each corner snaps
+    /// to the nearest hull vertex facing the same way - so a landed face sits on the model's real
+    /// geometry, wearing its real normals.
     /// </summary>
     public static class CrystalHullFusionGeometry
     {
-        /// <summary>Weld tolerance for the plate grouping, in the crystal mesh's own units. The
-        /// charge crystal's edge-arc twin is fully unwelded (one vertex per triangle corner), so
-        /// position is the only thing that joins a plate's faces.</summary>
+        /// <summary>Weld tolerance for the solid and face grouping, in the crystal mesh's own units.
+        /// The charge crystal's edge-arc twin is fully unwelded (one vertex per triangle corner), so
+        /// position is the only thing that joins its triangles.</summary>
         public const float WeldGrid = 1e-4f;
 
-        /// <summary>A crystal mesh split into rigid plates, each vertex expressed in its plate's
-        /// own frame (z = the plate's outward radial from the crystal centre).</summary>
-        public sealed class PlateSet
+        /// <summary>
+        /// A crystal mesh read as PANELS: every solid contributes its outermost face (the one whose
+        /// normal best agrees with the solid's radial from the crystal centre) as the panel that
+        /// flies; every other face of that solid is FILLER that folds into it. On the charge crystal
+        /// that is 60 pentagon caps carried by 60 prisms whose side quads and inner caps are absorbed
+        /// first - the same panel/filler split the omni morph makes (SQUIRREL_CRYSTAL_MORPH.md §1).
+        /// </summary>
+        public sealed class PanelSet
         {
-            public int PlateCount;
-            /// <summary>Per mesh vertex: the plate it belongs to.</summary>
-            public int[] VertexPlate;
-            /// <summary>Per plate, mesh space.</summary>
-            public Vector3[] Centroids;
-            /// <summary>Per plate: unit direction from <see cref="Centre"/> to its centroid.</summary>
-            public Vector3[] Radials;
-            /// <summary>Per plate: the plate frame in mesh space (forward = radial).</summary>
-            public Quaternion[] Frames;
-            /// <summary>Per mesh vertex: position in its plate's frame.</summary>
-            public Vector3[] LocalPositions;
-            /// <summary>Per mesh vertex: normal in its plate's frame.</summary>
-            public Vector3[] LocalNormals;
+            /// <summary>One panel per solid.</summary>
+            public int PanelCount;
             /// <summary>The mesh's bounding-box centre.</summary>
             public Vector3 Centre;
             /// <summary>Furthest vertex from <see cref="Centre"/>, mesh units.</summary>
             public float Radius;
-            /// <summary>Mean, over plates, of the furthest in-plane (xy) vertex from the plate
-            /// centroid — the radius of the footprint a plate lays on the hull.</summary>
-            public float FootprintRadius;
-            /// <summary>Mean, over plates, of the plate's extent along its own radial.</summary>
-            public float Thickness;
+
+            /// <summary>Per panel: unit direction from <see cref="Centre"/> to its solid's centroid.</summary>
+            public Vector3[] Radials;
+            /// <summary>Per panel: mean of its corners, mesh space.</summary>
+            public Vector3[] PanelCentroids;
+            /// <summary>Per panel: the face's outward unit normal.</summary>
+            public Vector3[] PanelNormals;
+            /// <summary>Per panel: first entry in <see cref="Corners"/>.</summary>
+            public int[] CornerStart;
+            /// <summary>Per panel: number of distinct corners (5 for a pentagon).</summary>
+            public int[] CornerCount;
+            /// <summary>Per panel: the furthest corner from the panel centroid.</summary>
+            public float[] PanelRadius;
+            /// <summary>Every panel's distinct corners, flat, mesh space.</summary>
+            public Vector3[] Corners;
+
+            /// <summary>Per mesh vertex: the panel (solid) it belongs to.</summary>
+            public int[] VertexPanel;
+            /// <summary>Per mesh vertex: its corner within its panel, or -1 for filler.</summary>
+            public int[] VertexCorner;
         }
 
         /// <summary>
-        /// Splits a mesh into its connected solids. Returns null when the mesh has no triangles.
-        /// <paramref name="normals"/> may be null or short (the plate normals then default to
-        /// the plate's radial).
+        /// Splits a mesh into solids (welded by position, connected by triangles), groups each
+        /// solid's triangles into FACES (adjacent across a welded edge and within
+        /// <paramref name="coplanarDegrees"/> of each other's normal - 120 of the charge crystal's
+        /// 300 side quads are non-planar by 5.2 degrees, while its sharpest real crease is 57.5, see
+        /// <c>CrystalEdgeArcMeshBaker.CoplanarAngleDegrees</c>), and picks each solid's outermost
+        /// face as its panel. Returns null when the mesh has no triangles.
         /// </summary>
-        public static PlateSet BuildPlates(Vector3[] vertices, Vector3[] normals, IReadOnlyList<int[]> submeshTriangles)
+        public static PanelSet BuildPanels(Vector3[] vertices, IReadOnlyList<int[]> submeshTriangles,
+                                           float coplanarDegrees = 20f)
         {
             if (vertices == null || vertices.Length == 0 || submeshTriangles == null) return null;
-
             int vertexCount = vertices.Length;
 
-            // Weld by position: every vertex maps to a node, coincident vertices share one.
+            // Weld by position.
             var nodeOfKey = new Dictionary<Vector3Int, int>(vertexCount);
             var vertexNode = new int[vertexCount];
+            var nodePositions = new List<Vector3>();
             for (int v = 0; v < vertexCount; v++)
             {
                 var key = WeldKey(vertices[v]);
@@ -85,126 +101,569 @@ namespace CosmicShore.Utility
                 {
                     node = nodeOfKey.Count;
                     nodeOfKey.Add(key, node);
+                    nodePositions.Add(vertices[v]);
                 }
                 vertexNode[v] = node;
             }
 
-            var parent = new int[nodeOfKey.Count];
-            for (int i = 0; i < parent.Length; i++) parent[i] = i;
+            // Flatten the triangle list.
+            var tris = new List<int>();
+            foreach (var list in submeshTriangles)
+                if (list != null)
+                    for (int i = 0; i + 2 < list.Length; i += 3) { tris.Add(list[i]); tris.Add(list[i + 1]); tris.Add(list[i + 2]); }
+            int triangleCount = tris.Count / 3;
+            if (triangleCount == 0) return null;
 
-            bool anyTriangle = false;
-            foreach (var tris in submeshTriangles)
+            // Solids: connected components over welded nodes.
+            var nodeParent = Identity(nodeOfKey.Count);
+            for (int t = 0; t < triangleCount; t++)
             {
-                if (tris == null) continue;
-                for (int t = 0; t + 2 < tris.Length; t += 3)
-                {
-                    anyTriangle = true;
-                    int a = vertexNode[tris[t]];
-                    Union(parent, a, vertexNode[tris[t + 1]]);
-                    Union(parent, a, vertexNode[tris[t + 2]]);
-                }
-            }
-            if (!anyTriangle) return null;
-
-            // Roots → dense plate indices, in first-seen vertex order so the result is stable.
-            var plateOfRoot = new Dictionary<int, int>();
-            var vertexPlate = new int[vertexCount];
-            for (int v = 0; v < vertexCount; v++)
-            {
-                int root = Find(parent, vertexNode[v]);
-                if (!plateOfRoot.TryGetValue(root, out int plate))
-                {
-                    plate = plateOfRoot.Count;
-                    plateOfRoot.Add(root, plate);
-                }
-                vertexPlate[v] = plate;
+                int a = vertexNode[tris[3 * t]];
+                Union(nodeParent, a, vertexNode[tris[3 * t + 1]]);
+                Union(nodeParent, a, vertexNode[tris[3 * t + 2]]);
             }
 
-            int plateCount = plateOfRoot.Count;
+            var solidOfRoot = new Dictionary<int, int>();
+            var triangleSolid = new int[triangleCount];
+            for (int t = 0; t < triangleCount; t++)
+            {
+                int root = Find(nodeParent, vertexNode[tris[3 * t]]);
+                if (!solidOfRoot.TryGetValue(root, out int solid))
+                {
+                    solid = solidOfRoot.Count;
+                    solidOfRoot.Add(root, solid);
+                }
+                triangleSolid[t] = solid;
+            }
+            int solidCount = solidOfRoot.Count;
+
+            // Solid centroids (over welded nodes, so a duplicated corner is not over-weighted).
+            var solidSum = new Vector3[solidCount];
+            var solidNodes = new int[solidCount];
+            var nodeCounted = new bool[nodeOfKey.Count];
+            for (int t = 0; t < triangleCount; t++)
+                for (int c = 0; c < 3; c++)
+                {
+                    int node = vertexNode[tris[3 * t + c]];
+                    if (nodeCounted[node]) continue;
+                    nodeCounted[node] = true;
+                    solidSum[triangleSolid[t]] += nodePositions[node];
+                    solidNodes[triangleSolid[t]]++;
+                }
+
+            // Faces: triangles joined across a shared welded edge when nearly coplanar.
+            var triangleNormal = new Vector3[triangleCount];
+            var triangleArea = new float[triangleCount];
+            for (int t = 0; t < triangleCount; t++)
+            {
+                Vector3 a = vertices[tris[3 * t]];
+                Vector3 cross = Vector3.Cross(vertices[tris[3 * t + 1]] - a, vertices[tris[3 * t + 2]] - a);
+                triangleArea[t] = cross.magnitude * 0.5f;
+                Vector3 n = cross.sqrMagnitude > 1e-20f ? cross.normalized : Vector3.zero;
+                // Outward from its own solid, whatever the winding: the panel is chosen by which way
+                // a face LOOKS, and an inward-wound export must not pick the inner cap.
+                Vector3 triangleCentre = (a + vertices[tris[3 * t + 1]] + vertices[tris[3 * t + 2]]) / 3f;
+                Vector3 solidCentre = solidSum[triangleSolid[t]] / Mathf.Max(1, solidNodes[triangleSolid[t]]);
+                triangleNormal[t] = Vector3.Dot(n, triangleCentre - solidCentre) < 0f ? -n : n;
+            }
+
+            float coplanarCos = Mathf.Cos(coplanarDegrees * Mathf.Deg2Rad);
+            var faceParent = Identity(triangleCount);
+            var edgeOwner = new Dictionary<long, int>(triangleCount * 3);
+            for (int t = 0; t < triangleCount; t++)
+            {
+                for (int e = 0; e < 3; e++)
+                {
+                    int n0 = vertexNode[tris[3 * t + e]];
+                    int n1 = vertexNode[tris[3 * t + (e + 1) % 3]];
+                    if (n0 == n1) continue;
+                    long key = n0 < n1 ? ((long)n0 << 32) | (uint)n1 : ((long)n1 << 32) | (uint)n0;
+                    if (!edgeOwner.TryGetValue(key, out int other)) { edgeOwner[key] = t; continue; }
+                    if (Vector3.Dot(triangleNormal[t], triangleNormal[other]) >= coplanarCos)
+                        Union(faceParent, t, other);
+                }
+            }
+
             Vector3 min = vertices[0], max = vertices[0];
-            for (int v = 1; v < vertexCount; v++)
-            {
-                min = Vector3.Min(min, vertices[v]);
-                max = Vector3.Max(max, vertices[v]);
-            }
+            for (int v = 1; v < vertexCount; v++) { min = Vector3.Min(min, vertices[v]); max = Vector3.Max(max, vertices[v]); }
             Vector3 centre = (min + max) * 0.5f;
-
-            var centroids = new Vector3[plateCount];
-            var counts = new int[plateCount];
-            for (int v = 0; v < vertexCount; v++)
-            {
-                centroids[vertexPlate[v]] += vertices[v];
-                counts[vertexPlate[v]]++;
-            }
-
-            var radials = new Vector3[plateCount];
-            var frames = new Quaternion[plateCount];
-            for (int p = 0; p < plateCount; p++)
-            {
-                centroids[p] /= Mathf.Max(1, counts[p]);
-                Vector3 radial = centroids[p] - centre;
-                // A one-solid crystal has its only plate AT the centre - give it a direction
-                // anyway so the frame is defined; it simply lands facing forward.
-                radials[p] = radial.sqrMagnitude > 1e-12f ? radial.normalized : Vector3.forward;
-                frames[p] = FrameFor(radials[p]);
-            }
-
-            var local = new Vector3[vertexCount];
-            var localNormals = new Vector3[vertexCount];
-            var footprint = new float[plateCount];
-            var zMin = new float[plateCount];
-            var zMax = new float[plateCount];
-            for (int p = 0; p < plateCount; p++) { zMin[p] = float.MaxValue; zMax[p] = float.MinValue; }
-
             float radius = 0f;
-            bool haveNormals = normals != null && normals.Length == vertexCount;
-            for (int v = 0; v < vertexCount; v++)
-            {
-                int p = vertexPlate[v];
-                var inverse = Quaternion.Inverse(frames[p]);
-                Vector3 l = inverse * (vertices[v] - centroids[p]);
-                local[v] = l;
-                localNormals[v] = haveNormals ? (inverse * normals[v]).normalized : Vector3.forward;
+            for (int v = 0; v < vertexCount; v++) radius = Mathf.Max(radius, (vertices[v] - centre).magnitude);
 
-                footprint[p] = Mathf.Max(footprint[p], new Vector2(l.x, l.y).magnitude);
-                zMin[p] = Mathf.Min(zMin[p], l.z);
-                zMax[p] = Mathf.Max(zMax[p], l.z);
-                radius = Mathf.Max(radius, (vertices[v] - centre).magnitude);
+            var radials = new Vector3[solidCount];
+            for (int s = 0; s < solidCount; s++)
+            {
+                Vector3 r = solidSum[s] / Mathf.Max(1, solidNodes[s]) - centre;
+                radials[s] = r.sqrMagnitude > 1e-12f ? r.normalized : Vector3.forward;
             }
 
-            float meanFootprint = 0f, meanThickness = 0f;
-            for (int p = 0; p < plateCount; p++)
+            // Each face's area-weighted normal, then each solid's outermost face.
+            var faceNormalSum = new Dictionary<int, Vector3>();
+            for (int t = 0; t < triangleCount; t++)
             {
-                meanFootprint += footprint[p];
-                meanThickness += Mathf.Max(0f, zMax[p] - zMin[p]);
+                int face = Find(faceParent, t);
+                faceNormalSum.TryGetValue(face, out var sum);
+                faceNormalSum[face] = sum + triangleNormal[t] * triangleArea[t];
             }
 
-            return new PlateSet
+            var panelFace = new int[solidCount];
+            var panelScore = new float[solidCount];
+            for (int s = 0; s < solidCount; s++) { panelFace[s] = -1; panelScore[s] = float.MinValue; }
+            for (int t = 0; t < triangleCount; t++)
             {
-                PlateCount = plateCount,
-                VertexPlate = vertexPlate,
-                Centroids = centroids,
-                Radials = radials,
-                Frames = frames,
-                LocalPositions = local,
-                LocalNormals = localNormals,
+                int face = Find(faceParent, t);
+                int solid = triangleSolid[t];
+                Vector3 n = faceNormalSum[face].normalized;
+                float score = Vector3.Dot(n, radials[solid]);
+                if (score > panelScore[solid] || (face == panelFace[solid])) { panelScore[solid] = score; panelFace[solid] = face; }
+            }
+
+            // Corners of each panel, and which mesh vertices are panel corners.
+            var cornerStart = new int[solidCount];
+            var cornerCount = new int[solidCount];
+            var corners = new List<Vector3>();
+            var panelCentroids = new Vector3[solidCount];
+            var panelNormals = new Vector3[solidCount];
+            var panelRadius = new float[solidCount];
+            var cornerOfNode = new Dictionary<int, int>[solidCount];
+            for (int s = 0; s < solidCount; s++) cornerOfNode[s] = new Dictionary<int, int>();
+
+            for (int t = 0; t < triangleCount; t++)
+            {
+                int solid = triangleSolid[t];
+                if (Find(faceParent, t) != panelFace[solid]) continue;
+                for (int c = 0; c < 3; c++)
+                {
+                    int node = vertexNode[tris[3 * t + c]];
+                    if (!cornerOfNode[solid].ContainsKey(node)) cornerOfNode[solid].Add(node, cornerOfNode[solid].Count);
+                }
+            }
+
+            for (int s = 0; s < solidCount; s++)
+            {
+                cornerStart[s] = corners.Count;
+                cornerCount[s] = cornerOfNode[s].Count;
+                var ordered = new Vector3[cornerCount[s]];
+                foreach (var pair in cornerOfNode[s]) ordered[pair.Value] = nodePositions[pair.Key];
+                Vector3 mean = Vector3.zero;
+                foreach (var p in ordered) mean += p;
+                mean /= Mathf.Max(1, ordered.Length);
+                float r = 0f;
+                foreach (var p in ordered) r = Mathf.Max(r, (p - mean).magnitude);
+                corners.AddRange(ordered);
+                panelCentroids[s] = mean;
+                panelRadius[s] = r;
+                panelNormals[s] = panelFace[s] >= 0 ? faceNormalSum[panelFace[s]].normalized : radials[s];
+            }
+
+            var vertexPanel = new int[vertexCount];
+            var vertexCorner = new int[vertexCount];
+            for (int v = 0; v < vertexCount; v++) vertexCorner[v] = -1;
+            for (int t = 0; t < triangleCount; t++)
+            {
+                int solid = triangleSolid[t];
+                bool isPanel = Find(faceParent, t) == panelFace[solid];
+                for (int c = 0; c < 3; c++)
+                {
+                    int v = tris[3 * t + c];
+                    vertexPanel[v] = solid;
+                    if (isPanel) vertexCorner[v] = cornerOfNode[solid][vertexNode[v]];
+                }
+            }
+
+            return new PanelSet
+            {
+                PanelCount = solidCount,
                 Centre = centre,
                 Radius = radius,
-                FootprintRadius = meanFootprint / plateCount,
-                Thickness = meanThickness / plateCount,
+                Radials = radials,
+                PanelCentroids = panelCentroids,
+                PanelNormals = panelNormals,
+                CornerStart = cornerStart,
+                CornerCount = cornerCount,
+                PanelRadius = panelRadius,
+                Corners = corners.ToArray(),
+                VertexPanel = vertexPanel,
+                VertexCorner = vertexCorner,
             };
         }
 
-        /// <summary>A plate frame whose forward is <paramref name="radial"/>. The up hint only
-        /// fixes the twist, which nothing downstream depends on.</summary>
-        public static Quaternion FrameFor(Vector3 radial)
+        /// <summary>
+        /// The mesh a fusion actually draws, built once per crystal mesh: the crystal's FILLER
+        /// triangles copied verbatim (every channel), and each PANEL rebuilt as a subdivided fan so
+        /// it can bend over a curved hull. A flat pentagon of three triangles cannot lie on a curved
+        /// skin - measured on the Squirrel, a panel's corners sat a median 0.31 patch radii off the
+        /// surface - so the landing face needs interior vertices to conform.
+        ///
+        /// The panel keeps the charge discharge: each sub-triangle carries the
+        /// <c>CrystalEdgeArcMeshBaker</c> channel contract (TEXCOORD1 barycentric, TEXCOORD2 heights
+        /// in model-radius fractions with NEGATIVE = no bolt, TEXCOORD3 edge seed), with only the
+        /// segments of the panel's own outline marked as bolt edges.
+        /// </summary>
+        public sealed class FusionTemplate
         {
-            Vector3 up = Mathf.Abs(Vector3.Dot(radial, Vector3.up)) > 0.99f ? Vector3.right : Vector3.up;
-            return Quaternion.LookRotation(radial, up);
+            public Vector3[] Vertices;
+            public Vector3[] Normals;
+            public Vector3[] Bary;      // TEXCOORD1
+            public Vector3[] EdgeH;     // TEXCOORD2
+            public Vector3[] EdgeSeed;  // TEXCOORD3
+            public int[][] SubmeshTriangles;
+
+            /// <summary>Per vertex: its panel (solid).</summary>
+            public int[] VertexPanel;
+            /// <summary>Per vertex: its point within its panel's grid, or -1 for filler.</summary>
+            public int[] VertexPoint;
+
+            /// <summary>Per panel: first entry in <see cref="Points"/>.</summary>
+            public int[] PointStart;
+            /// <summary>Per panel: number of grid points.</summary>
+            public int[] PointCount;
+            /// <summary>Every panel's grid points in its own plane (x along <see cref="AxisU"/>,
+            /// y along <see cref="AxisV"/>, from the panel centroid), mesh units.</summary>
+            public Vector2[] Points;
+            /// <summary>Per panel: the plane's axes, mesh space.</summary>
+            public Vector3[] AxisU;
+            public Vector3[] AxisV;
         }
 
         /// <summary>
-        /// Picks the hull vertex a plate heading in <paramref name="normalisedDirection"/> lands on.
+        /// Builds the template. <paramref name="bary"/>/<paramref name="edgeH"/>/<paramref name="edgeSeed"/>
+        /// may be null (an unbaked crystal) - the filler then carries zeros, which the charge shader
+        /// reads as "no edge data" and simply draws the body.
+        /// </summary>
+        public static FusionTemplate BuildTemplate(PanelSet panels, Vector3[] vertices, Vector3[] normals,
+                                                   Vector3[] bary, Vector3[] edgeH, Vector3[] edgeSeed,
+                                                   IReadOnlyList<int[]> submeshTriangles, int subdivisions,
+                                                   float modelRadius)
+        {
+            if (panels == null || vertices == null || submeshTriangles == null) return null;
+            int n = Mathf.Max(1, subdivisions);
+            modelRadius = Mathf.Max(1e-6f, modelRadius);
+            bool haveNormals = normals != null && normals.Length == vertices.Length;
+            bool haveEdges = bary != null && edgeH != null && edgeSeed != null
+                             && bary.Length == vertices.Length && edgeH.Length == vertices.Length
+                             && edgeSeed.Length == vertices.Length;
+
+            var outV = new List<Vector3>(); var outN = new List<Vector3>();
+            var outB = new List<Vector3>(); var outH = new List<Vector3>(); var outS = new List<Vector3>();
+            var outPanel = new List<int>(); var outPoint = new List<int>();
+            var outTris = new List<int>[submeshTriangles.Count];
+
+            // Which submesh each panel's own triangles were in, and which way its faces wind.
+            int panelCount = panels.PanelCount;
+            var panelSubmesh = new int[panelCount];
+            var panelWindingSign = new float[panelCount];
+            for (int p = 0; p < panelCount; p++) panelWindingSign[p] = 1f;
+
+            for (int s = 0; s < submeshTriangles.Count; s++)
+            {
+                outTris[s] = new List<int>();
+                var tris = submeshTriangles[s];
+                if (tris == null) continue;
+                for (int t = 0; t + 2 < tris.Length; t += 3)
+                {
+                    int a = tris[t], b = tris[t + 1], c = tris[t + 2];
+                    int panel = panels.VertexPanel[a];
+                    bool isPanel = panels.VertexCorner[a] >= 0 && panels.VertexCorner[b] >= 0 && panels.VertexCorner[c] >= 0;
+                    if (isPanel)
+                    {
+                        panelSubmesh[panel] = s;
+                        Vector3 cross = Vector3.Cross(vertices[b] - vertices[a], vertices[c] - vertices[a]);
+                        if (cross.sqrMagnitude > 1e-20f)
+                            panelWindingSign[panel] = Vector3.Dot(cross, panels.PanelNormals[panel]) >= 0f ? 1f : -1f;
+                        continue;
+                    }
+
+                    foreach (int v in new[] { a, b, c })
+                    {
+                        outTris[s].Add(outV.Count);
+                        outV.Add(vertices[v]);
+                        outN.Add(haveNormals ? normals[v] : panels.PanelNormals[panel]);
+                        outB.Add(haveEdges ? bary[v] : Vector3.zero);
+                        outH.Add(haveEdges ? edgeH[v] : Vector3.zero);
+                        outS.Add(haveEdges ? edgeSeed[v] : Vector3.zero);
+                        outPanel.Add(panel);
+                        outPoint.Add(-1);
+                    }
+                }
+            }
+
+            var pointStart = new int[panelCount];
+            var pointCount = new int[panelCount];
+            var axisU = new Vector3[panelCount];
+            var axisV = new Vector3[panelCount];
+            var points = new List<Vector2>();
+
+            for (int p = 0; p < panelCount; p++)
+            {
+                Vector3 centroid = panels.PanelCentroids[p];
+                Vector3 normal = panels.PanelNormals[p];
+                int first = panels.CornerStart[p], count = panels.CornerCount[p];
+
+                Vector3 u = count > 0 ? panels.Corners[first] - centroid : Vector3.zero;
+                u -= Vector3.Dot(u, normal) * normal;
+                if (u.sqrMagnitude < 1e-12f) u = Vector3.Cross(normal, Mathf.Abs(normal.x) < 0.9f ? Vector3.right : Vector3.up);
+                u.Normalize();
+                Vector3 v = Vector3.Cross(normal, u);
+                axisU[p] = u;
+                axisV[p] = v;
+
+                // The outline, in order round the centroid.
+                var outline = new List<Vector2>(count);
+                for (int k = 0; k < count; k++)
+                {
+                    Vector3 d = panels.Corners[first + k] - centroid;
+                    outline.Add(new Vector2(Vector3.Dot(d, u), Vector3.Dot(d, v)));
+                }
+                outline.Sort((x, y) => Mathf.Atan2(x.y, x.x).CompareTo(Mathf.Atan2(y.y, y.x)));
+
+                pointStart[p] = points.Count;
+                var pointOf = new Dictionary<Vector2Int, int>();
+                int PointAt(Vector2 q)
+                {
+                    var key = new Vector2Int(Mathf.RoundToInt(q.x / WeldGrid), Mathf.RoundToInt(q.y / WeldGrid));
+                    if (pointOf.TryGetValue(key, out int id)) return id;
+                    id = pointOf.Count;
+                    pointOf.Add(key, id);
+                    points.Add(q);
+                    return id;
+                }
+                Vector3 To3(Vector2 q) => centroid + u * q.x + v * q.y;
+
+                for (int k = 0; count >= 3 && k < count; k++)
+                {
+                    Vector2 c0 = Vector2.zero, c1 = outline[k], c2 = outline[(k + 1) % count];
+                    Vector2 Grid(int i, int j) => c0 + (c1 - c0) * (i / (float)n) + (c2 - c0) * (j / (float)n);
+                    bool OnOutline(int i, int j) => i + j == n;
+
+                    void Emit(int i0, int j0, int i1, int j1, int i2, int j2)
+                    {
+                        Vector2 q0 = Grid(i0, j0), q1 = Grid(i1, j1), q2 = Grid(i2, j2);
+                        Vector3 p0 = To3(q0), p1 = To3(q1), p2 = To3(q2);
+                        if (Vector3.Dot(Vector3.Cross(p1 - p0, p2 - p0), normal) * panelWindingSign[p] < 0f)
+                        {
+                            (q1, q2) = (q2, q1); (p1, p2) = (p2, p1);
+                            (i1, i2) = (i2, i1); (j1, j2) = (j2, j1);
+                        }
+
+                        var corners3 = new[] { p0, p1, p2 };
+                        bool[] onOutline = { OnOutline(i0, j0), OnOutline(i1, j1), OnOutline(i2, j2) };
+                        float area2 = Vector3.Cross(p1 - p0, p2 - p0).magnitude;
+                        var heights = Vector3.zero;
+                        var seeds = Vector3.zero;
+                        for (int e = 0; e < 3; e++)
+                        {
+                            int j = (e + 1) % 3, l = (e + 2) % 3;
+                            float length = (corners3[l] - corners3[j]).magnitude;
+                            float h = length > 1e-9f ? area2 / length / modelRadius : 0f;
+                            bool bolt = onOutline[j] && onOutline[l];
+                            heights[e] = bolt ? h : -Mathf.Max(h, 1e-6f);
+                            seeds[e] = bolt ? Hash01(p * 131 + k * 17 + Mathf.Min(i0 + i1 + i2, 999)) : 0f;
+                        }
+
+                        int baseIndex = outV.Count;
+                        var ids = new[] { PointAt(q0), PointAt(q1), PointAt(q2) };
+                        for (int c = 0; c < 3; c++)
+                        {
+                            outV.Add(corners3[c]);
+                            outN.Add(normal);
+                            outB.Add(c == 0 ? Vector3.right : c == 1 ? Vector3.up : Vector3.forward);
+                            outH.Add(heights);
+                            outS.Add(seeds);
+                            outPanel.Add(p);
+                            outPoint.Add(ids[c]);
+                            outTris[panelSubmesh[p]].Add(baseIndex + c);
+                        }
+                    }
+
+                    for (int i = 0; i < n; i++)
+                        for (int j = 0; j < n - i; j++)
+                        {
+                            Emit(i, j, i + 1, j, i, j + 1);
+                            if (i + j + 2 <= n) Emit(i + 1, j, i + 1, j + 1, i, j + 1);
+                        }
+                }
+                pointCount[p] = points.Count - pointStart[p];
+            }
+
+            var submeshes = new int[outTris.Length][];
+            for (int s = 0; s < outTris.Length; s++) submeshes[s] = outTris[s].ToArray();
+
+            return new FusionTemplate
+            {
+                Vertices = outV.ToArray(),
+                Normals = outN.ToArray(),
+                Bary = outB.ToArray(),
+                EdgeH = outH.ToArray(),
+                EdgeSeed = outS.ToArray(),
+                SubmeshTriangles = submeshes,
+                VertexPanel = outPanel.ToArray(),
+                VertexPoint = outPoint.ToArray(),
+                PointStart = pointStart,
+                PointCount = pointCount,
+                Points = points.ToArray(),
+                AxisU = axisU,
+                AxisV = axisV,
+            };
+        }
+
+        static float Hash01(int x)
+        {
+            unchecked
+            {
+                uint h = (uint)x * 2654435761u;
+                h ^= h >> 15;
+                h *= 2246822519u;
+                h ^= h >> 13;
+                return (h & 0xFFFFFF) / 16777216f;
+            }
+        }
+
+        /// <summary>
+        /// A hull's skin, queryable for "the closest point on the surface to here". Triangles are
+        /// binned into a uniform grid by their bounding boxes, so a big low-poly triangle is found
+        /// from every cell it spans - on a coarse patch the nearest VERTEX can be far from the
+        /// nearest SURFACE, and a vertex index would miss exactly the flat panels that matter.
+        /// </summary>
+        public sealed class HullSurface
+        {
+            readonly Vector3[] _vertices;
+            readonly Vector3[] _normals;
+            readonly int[] _triangles;
+            readonly Vector3[] _faceNormals;
+            readonly Dictionary<Vector3Int, List<int>> _grid = new();
+            readonly int[] _stamp;
+            int _query;
+            readonly float _cell;
+
+            public HullSurface(Vector3[] vertices, Vector3[] normals, int[] triangles, float cellSize)
+            {
+                _vertices = vertices;
+                _normals = normals != null && normals.Length == vertices.Length ? normals : null;
+                _triangles = triangles;
+                _cell = Mathf.Max(1e-4f, cellSize);
+
+                int faces = triangles.Length / 3;
+                _faceNormals = new Vector3[faces];
+                _stamp = new int[faces];
+                for (int f = 0; f < faces; f++)
+                {
+                    Vector3 a = vertices[triangles[3 * f]], b = vertices[triangles[3 * f + 1]], c = vertices[triangles[3 * f + 2]];
+                    Vector3 cross = Vector3.Cross(b - a, c - a);
+                    _faceNormals[f] = cross.sqrMagnitude > 1e-20f ? cross.normalized : Vector3.zero;
+
+                    Vector3Int lo = Cell(Vector3.Min(a, Vector3.Min(b, c)));
+                    Vector3Int hi = Cell(Vector3.Max(a, Vector3.Max(b, c)));
+                    for (int x = lo.x; x <= hi.x; x++)
+                    for (int y = lo.y; y <= hi.y; y++)
+                    for (int z = lo.z; z <= hi.z; z++)
+                    {
+                        var key = new Vector3Int(x, y, z);
+                        if (!_grid.TryGetValue(key, out var list)) _grid[key] = list = new List<int>(8);
+                        list.Add(f);
+                    }
+                }
+            }
+
+            Vector3Int Cell(Vector3 p) => new(Mathf.FloorToInt(p.x / _cell), Mathf.FloorToInt(p.y / _cell), Mathf.FloorToInt(p.z / _cell));
+
+            /// <summary>
+            /// The closest point on the skin to <paramref name="point"/> within
+            /// <paramref name="maxDistance"/>, among surface whose normal agrees with
+            /// <paramref name="facing"/> (never through a thin wing to its underside), with the
+            /// skin's interpolated normal there and the corner of that triangle nearest the point.
+            /// </summary>
+            public bool TryProject(Vector3 point, Vector3 facing, float maxDistance,
+                                   out Vector3 surfacePoint, out Vector3 surfaceNormal, out int nearestVertex)
+            {
+                surfacePoint = point;
+                surfaceNormal = facing;
+                nearestVertex = -1;
+                _query++;
+
+                int reach = Mathf.CeilToInt(maxDistance / _cell);
+                var centre = Cell(point);
+                float bestSq = maxDistance * maxDistance;
+                bool found = false;
+
+                for (int x = -reach; x <= reach; x++)
+                for (int y = -reach; y <= reach; y++)
+                for (int z = -reach; z <= reach; z++)
+                {
+                    if (!_grid.TryGetValue(new Vector3Int(centre.x + x, centre.y + y, centre.z + z), out var list)) continue;
+                    foreach (int f in list)
+                    {
+                        if (_stamp[f] == _query) continue;
+                        _stamp[f] = _query;
+                        if (Vector3.Dot(_faceNormals[f], facing) < 0.2f) continue;
+
+                        int i0 = _triangles[3 * f], i1 = _triangles[3 * f + 1], i2 = _triangles[3 * f + 2];
+                        Vector3 q = ClosestPointOnTriangle(point, _vertices[i0], _vertices[i1], _vertices[i2], out Vector3 bc);
+                        float d = (q - point).sqrMagnitude;
+                        if (d >= bestSq) continue;
+
+                        bestSq = d;
+                        found = true;
+                        surfacePoint = q;
+                        Vector3 n = _normals != null
+                            ? _normals[i0] * bc.x + _normals[i1] * bc.y + _normals[i2] * bc.z
+                            : _faceNormals[f];
+                        surfaceNormal = n.sqrMagnitude > 1e-12f ? n.normalized : _faceNormals[f];
+                        nearestVertex = bc.x >= bc.y && bc.x >= bc.z ? i0 : bc.y >= bc.z ? i1 : i2;
+                    }
+                }
+                return found;
+            }
+        }
+
+        /// <summary>Closest point on triangle (a, b, c) to <paramref name="p"/>, with its barycentric
+        /// weights (Ericson, Real-Time Collision Detection §5.1.5).</summary>
+        public static Vector3 ClosestPointOnTriangle(Vector3 p, Vector3 a, Vector3 b, Vector3 c, out Vector3 bary)
+        {
+            Vector3 ab = b - a, ac = c - a, ap = p - a;
+            float d1 = Vector3.Dot(ab, ap), d2 = Vector3.Dot(ac, ap);
+            if (d1 <= 0f && d2 <= 0f) { bary = new Vector3(1, 0, 0); return a; }
+
+            Vector3 bp = p - b;
+            float d3 = Vector3.Dot(ab, bp), d4 = Vector3.Dot(ac, bp);
+            if (d3 >= 0f && d4 <= d3) { bary = new Vector3(0, 1, 0); return b; }
+
+            float vc = d1 * d4 - d3 * d2;
+            if (vc <= 0f && d1 >= 0f && d3 <= 0f)
+            {
+                float v = d1 / (d1 - d3);
+                bary = new Vector3(1 - v, v, 0);
+                return a + v * ab;
+            }
+
+            Vector3 cp = p - c;
+            float d5 = Vector3.Dot(ab, cp), d6 = Vector3.Dot(ac, cp);
+            if (d6 >= 0f && d5 <= d6) { bary = new Vector3(0, 0, 1); return c; }
+
+            float vb = d5 * d2 - d1 * d6;
+            if (vb <= 0f && d2 >= 0f && d6 <= 0f)
+            {
+                float w = d2 / (d2 - d6);
+                bary = new Vector3(1 - w, 0, w);
+                return a + w * ac;
+            }
+
+            float va = d3 * d6 - d5 * d4;
+            if (va <= 0f && d4 - d3 >= 0f && d5 - d6 >= 0f)
+            {
+                float w = (d4 - d3) / ((d4 - d3) + (d5 - d6));
+                bary = new Vector3(0, 1 - w, w);
+                return b + w * (c - b);
+            }
+
+            float denom = 1f / (va + vb + vc);
+            float vv = vb * denom, ww = vc * denom;
+            bary = new Vector3(1 - vv - ww, vv, ww);
+            return a + ab * vv + ac * ww;
+        }
+
+        /// <summary>
+        /// Picks the hull vertex a panel heading in <paramref name="normalisedDirection"/> lands on.
         ///
         /// The direction is in the hull's NORMALISED space (each axis divided by
         /// <paramref name="extents"/>), measured from <paramref name="centre"/>. Among vertices
@@ -213,7 +672,7 @@ namespace CosmicShore.Utility
         /// best-aligned vertex. Returns -1 only for an empty hull.
         ///
         /// <paramref name="stride"/> samples every n-th vertex — a 13k-vertex hull is far denser
-        /// than 60 plates need, and the pick runs once per pickup.
+        /// than 60 panels need, and the pick runs once per pickup.
         /// </summary>
         public static int SelectHullSpot(Vector3[] hullVertices, Vector3[] hullNormals, Vector3 centre,
                                          Vector3 extents, Vector3 normalisedDirection, float coneCos, int stride)
@@ -255,10 +714,10 @@ namespace CosmicShore.Utility
         /// sampling over the outward-facing vertices, seeded at <paramref name="first"/> (the
         /// contact). Each pick is the candidate furthest from every spot already taken, so the spots
         /// cover the whole skin at near-uniform spacing however the hull is shaped - a direction
-        /// map cannot promise that, and on the Squirrel it piled ten plates onto the wing tips.
+        /// map cannot promise that, and on the Squirrel it piled nine panels onto the wing tips.
         ///
         /// <paramref name="spacing"/> is the distance of the LAST pick from its nearest neighbour -
-        /// the minimum gap between spots, which is what sizes a plate so neighbours meet rather than
+        /// the minimum gap between spots, which is what sizes a panel so neighbours meet rather than
         /// overlap. Repeats are possible only when the hull has fewer candidates than spots.
         /// </summary>
         public static int[] FarthestPointSpots(Vector3[] hullVertices, Vector3[] hullNormals, Vector3 centre,
@@ -306,12 +765,12 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// The minimum-total-cost one-to-one assignment of rows to columns of a square
-        /// <paramref name="cost"/> matrix (Hungarian algorithm, O(n³) - 60 plates is ~0.2M steps,
+        /// <paramref name="cost"/> matrix (Hungarian algorithm, O(n³) - 60 panels is ~0.2M steps,
         /// once per pickup). Returns, per row, its column.
         ///
-        /// Plates use it to take spots: a greedy best-pair-first match leaves its last few plates
-        /// whatever is left, which on the Squirrel sent plates straight across the hull to the
-        /// opposite side; the optimum keeps every plate within ~85 degrees of where it was heading.
+        /// Panels use it to take patches: a greedy best-pair-first match leaves its last few panels
+        /// whatever is left, which on the Squirrel sent panels straight across the hull to the
+        /// opposite side; the optimum keeps every panel within ~85 degrees of where it was heading.
         /// </summary>
         public static int[] AssignMinCost(float[,] cost)
         {
@@ -364,35 +823,14 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// Where on the hull sphere a plate goes, given its direction on the CRYSTAL sphere and the
+        /// Where on the hull sphere a panel goes, given its direction on the CRYSTAL sphere and the
         /// pole the crystal landed at: the reflection through the plane normal to the pole. The
-        /// plate that touched the hull (radial = −pole) stays at the contact point, the plate on
-        /// the crystal's far side wraps to the hull's antipode, and every plate keeps its angular
+        /// panel that touched the hull (radial = −pole) stays at the contact point, the panel on
+        /// the crystal's far side wraps to the hull's antipode, and every panel keeps its angular
         /// distance from the contact — the crystal opens like a hand closing round the hull.
         /// </summary>
         public static Vector3 WrapDirection(Vector3 crystalRadial, Vector3 pole) =>
             crystalRadial - 2f * Vector3.Dot(crystalRadial, pole) * pole;
-
-        /// <summary>
-        /// Rotates unit vector <paramref name="from"/> toward <paramref name="to"/> along their
-        /// great circle. Unlike <see cref="Vector3.Slerp"/> the antipodal case is not arbitrary: it
-        /// turns about an axis built from <paramref name="axisHint"/>, so a plate starting exactly
-        /// opposite its target still takes a path the caller chose.
-        /// </summary>
-        public static Vector3 SlerpDirection(Vector3 from, Vector3 to, float t, Vector3 axisHint)
-        {
-            float dot = Mathf.Clamp(Vector3.Dot(from, to), -1f, 1f);
-            float angle = Mathf.Acos(dot);
-            if (angle < 1e-5f) return to;
-
-            Vector3 axis = Vector3.Cross(from, to);
-            if (axis.sqrMagnitude < 1e-10f)
-            {
-                axis = Vector3.Cross(from, axisHint);
-                if (axis.sqrMagnitude < 1e-10f) axis = Vector3.Cross(from, Mathf.Abs(from.x) < 0.9f ? Vector3.right : Vector3.up);
-            }
-            return Quaternion.AngleAxis(angle * Mathf.Rad2Deg * Mathf.Clamp01(t), axis.normalized) * from;
-        }
 
         /// <summary>Componentwise 1/extent, guarded so a flat axis does not divide by zero.</summary>
         public static Vector3 InverseExtents(Vector3 extents) => new(
@@ -404,6 +842,13 @@ namespace CosmicShore.Utility
             Mathf.RoundToInt(p.x / WeldGrid),
             Mathf.RoundToInt(p.y / WeldGrid),
             Mathf.RoundToInt(p.z / WeldGrid));
+
+        static int[] Identity(int n)
+        {
+            var parent = new int[n];
+            for (int i = 0; i < n; i++) parent[i] = i;
+            return parent;
+        }
 
         static int Find(int[] parent, int i)
         {

@@ -15,23 +15,19 @@ MonoBehaviour:
   entries:
   - vessel: 6
     element: 1
-    approachSeconds: 0.22
-    wrapSeconds: 0.34
-    holdSeconds: 0.24
-    sinkSeconds: 0.3
-    landRadiusFraction: 0.35
-    approachAcceleration: 2.4
-    approachPop: 0.25
-    approachSpinTurns: 1
-    tileFill: 1.1
-    flatten: 0.45
-    wrapLift: 0.3
-    wrapStagger: 0.4
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
     spotConeDegrees: 12
-    surfaceLift: 0.05
+    tileFill: 1.15
+    surfaceLift: 0.04
     flareGain: 2.6
-    clampPulse: 1.12
     arcBoost: 2
-    holdArcDuty: 0
-    sinkDepth: 1
+    mateArcDuty: 0
+    sinkDepth: 0.12
     convergeToDomainColour: 1

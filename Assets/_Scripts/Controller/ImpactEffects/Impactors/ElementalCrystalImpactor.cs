@@ -235,12 +235,12 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// The fusion draws the crystal's body from here on; the crystal itself is hidden and only
-        /// waits for the CLAMP beat - the moment the plates land flush - to play its pickup sound
-        /// there and leave the cell. No husk: the body is on the hull, not in the wake.
+        /// waits for the MATE beat - the moment its faces are down on the skin - to play its pickup
+        /// sound there and leave the cell. No husk: the body is on the hull, not in the wake.
         /// </summary>
         static async UniTaskVoid RetireIntoFusion(Crystal crystal, CrystalHullFusion fusion, IVesselStatus vesselStatus)
         {
-            await UniTask.WaitForSeconds(fusion.ClampDelaySeconds);
+            await UniTask.WaitForSeconds(fusion.MateDelaySeconds);
             if (crystal == null) return;
 
             if (fusion) crystal.transform.position = fusion.LandingWorldPosition;

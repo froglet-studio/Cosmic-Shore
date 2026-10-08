@@ -67,26 +67,27 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ### 🔴 Crystal → hull fusion: Squirrel × Charge (`cece/nice-babbage-j6sejq`, 2026-10-08)
 
-**What landed.** A Squirrel that collects a **charge** crystal no longer plays the generic capture
-(fly in, shrink, husk). The crystal is pulled onto the hull, opens, and its 60 plates slide round
-and lie flush over the whole hull, flare and crackle, then sink in, ending in the pilot's domain
-colour. Experiment for a per-(vessel, element) family. Record + tuning table:
-`Assets/_Scripts/Controller/Environment/Crystals/CRYSTAL_HULL_FUSION.md`. Also turns on Read/Write
-for the Squirrel FBX (bone weights for pinning plates to limbs). The `unity` CLI was not available
-in the authoring session, so `/verify-unity` did not run; compiled headless against real Unity
-references (player + editor) instead.
+**What landed.** A Squirrel that collects a **charge** crystal no longer plays the generic capture.
+The crystal's 60 prisms fold into their outer pentagons, which lift off, fly to the hull and lie ON
+its surface (subdivided and projected, bent over its curves, wearing its normals), crackle, then
+sink in, ending in the pilot's domain colour. Record + tuning table:
+`Assets/_Scripts/Controller/Environment/Crystals/CRYSTAL_HULL_FUSION.md`. Read/Write is on for the
+Squirrel FBX (bone weights). **The first push of this never ran** — the drawn charge mesh is
+unreadable, the fusion refused it and fell back to the old capture (§0 of the doc). The `unity`
+CLI was not available, so `/verify-unity` did not run; compiled headless against real Unity
+references (player + editor) and the geometry suite runs headless (40/40).
 
 **Verify in editor.**
-1. Squirrel, skim a charge crystal: crystal pulled to the hull side it came from → opens → plates
-   cover top, bottom and wings → flare + continuous edge discharge → sink. ~1.1 s. Domain colour,
-   not lime, by the clamp. Pickup SFX on the clamp; no husk spray.
-2. Pitch/yaw hard mid-fusion: wing plates stay on the wings.
-3. Squirrel + mass/space/time crystal, and any other vessel + charge crystal: old capture, unchanged.
-4. Clean console. `CrystalMorph` log channel → one `[CrystalHullFusion]` line per pickup.
-5. Run `CrystalHullFusionTests` (edit mode).
+1. Squirrel, skim a charge crystal: faces peel off → fly → come down onto top, underside and wings
+   → crackle → sink. ~1.2 s. Domain colour. Pickup SFX on landing; no husk spray.
+2. If it looks like the old capture, check the console for a `[CrystalHullFusion]` warning first.
+3. `playbackScale` 10 on `Resources/CrystalHullFusionConfig` to watch it slowly (back to 1 after).
+4. Pitch/yaw hard mid-fusion: wing faces stay on the wings.
+5. Squirrel + mass/space/time, and any other vessel + charge: old capture, unchanged.
+6. Run `CrystalHullFusionGeometryTests` + `CrystalHullFusionConfigTests`.
 
-**First-pass tuning** (`Resources/CrystalHullFusionConfig`): beats 0.22 / 0.34 / 0.24 / 0.30 s,
-`tileFill` 1.1, `flatten` 0.45, `wrapLift` 0.3, `wrapStagger` 0.4, `flareGain` 2.6.
+**First-pass tuning:** beats 0.16 / 0.42 / 0.30 / 0.30 s, `flightBow` 0.9, `flightStagger` 0.45,
+`tileFill` 1.15, `flareGain` 2.6.
 
 ---
 

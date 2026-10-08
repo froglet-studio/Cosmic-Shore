@@ -1,183 +1,197 @@
 # Crystal → hull fusion
 
-**The crystal does not fly into the vessel and vanish. It becomes part of the hull.**
+**The crystal's faces come off it and mate with the hull.**
 
 The generic elemental capture (`CrystalCaptureConfigSO`) snatches the crystal, sucks it into the
-hull centre, shrinks it to nothing and sprays a husk into the wake. It reads as "a thing
-disappeared". A fusion replaces that, per **(vessel, element) pair**, with the crystal visibly
-joining the hull:
+hull centre, shrinks it to nothing and sprays a husk into the wake. A fusion replaces that, per
+**(vessel, element) pair**, with the crystal visibly becoming part of the vessel. It is the hull
+counterpart of the Squirrel's omni morph (`R_VesselActions/SQUIRREL_CRYSTAL_MORPH.md`, the omni
+cage's panels landing on the boost ring's eight shields) and reads the crystal the same way:
+**panels fly, filler is absorbed.**
 
-1. **Approach** (0.22 s) — the crystal, still whole, is pulled onto the side of the hull it came
-   from, shrinking and turning with the vessel as it closes.
-2. **Wrap** (0.34 s) — it opens. Each of its rigid plates slides round the hull to its own spot:
-   the plate that touched stays at the contact, the plates on the crystal's far side wrap round to
-   the hull's far side. Plates near the contact move first. Colour carries from the pickup's lime
-   to the pilot's own domain crystal pair.
-3. **Hold** (0.24 s) — the plates sit flush on the skin, flare, and the charge discharge fires
-   on every edge continuously. The pickup sound plays here.
-4. **Sink** (0.30 s) — the plates flatten into the hull and dissolve.
+1. **Peel** (0.16 s) — each of the crystal's solids folds into its outer face, and the 60 faces
+   lift off the crystal, where it was taken.
+2. **Flight** (0.42 s) — every face flies to its own patch of the hull, swinging out over the patch
+   and coming straight DOWN onto it. Faces nearest the hull land first. Colour carries from the
+   pickup's lime to the pilot's domain crystal pair.
+3. **Mate** (0.30 s) — the faces lie ON the hull's surface, bent to its shape and wearing its
+   normals, flare, and the charge discharge runs continuously round each face's outline. The
+   pickup sound plays here.
+4. **Dissolve** (0.30 s) — they sink a hair into the skin and dissolve.
 
-**First and only pair today: Squirrel × Charge** — the experiment. Every other pair plays the
-generic capture, unchanged. Adding a pair is one entry in `Resources/CrystalHullFusionConfig`.
+**First and only pair today: Squirrel × Charge.** Every other pair plays the generic capture,
+unchanged. Adding a pair is one entry in `Resources/CrystalHullFusionConfig`.
 
 ---
 
-## 1. Why the charge crystal first
+## 0. History — why the first cut looked like nothing changed
 
-It is the one elemental crystal with **static geometry**: 60 pentagonal prisms on one shell, no
-blend shapes (Space pulses its blend shapes; Time flips its blocks). Measured off
-`ChargeCrystalExport1_7-11-25.fbx`: exactly 60 solids, 7 faces each, every centroid at radius
-0.9406 and every half-extent 0.3660 model units. So the crystal *already is* a set of plates; the
-fusion only has to move them.
+The first push (`c6e2c698`) moved whole prisms rigidly onto the hull. In play it looked "very
+similar to before", and the reason was not the design: **it never ran.** The charge crystal draws
+`CrystalEdgeArcMeshBaker`'s twin, which the baker uploads with `markNoLongerReadable: true`. The
+fusion checked `isReadable` on the drawn mesh, refused every charge crystal, warned ONCE, and fell
+back to the generic capture — which is, by construction, exactly what the pilot saw before.
 
-Plates are moved **rigidly** (plus a uniform-in-plane scale and a flatten along their own normal).
-A plate never deforms, so its faces stay planar and the charge shader's crease-edge bolts keep
-running on the hull: `CrystalEdgeArcMeshBaker` bakes that edge data per triangle in model-radius
-fractions, and a rigid plate carries it along.
+- Fixed by `CrystalEdgeArcMeshBaker.TryGetReadable`: a readable twin re-baked from the cached
+  source, identical channel for channel.
+- Lesson: **a fallback to the old effect is indistinguishable from the old effect.** When "it looks
+  the same" comes back, check the console for the one-time refusal before tuning anything.
 
-## 2. Where each plate lands
+The same playtest note named the target look: *faces come off and mate with the vessel model*, like
+the omni → octahedra morph. So the second cut moved from rigid prisms to faces.
 
-Two steps, and the order matters (`CrystalHullFusionGeometry`):
+## 1. What flies: panels and filler
 
-- **Spots first.** The contact spot is the outermost outward-facing hull vertex in the direction
-  the crystal came from (read in the hull's normalised space — each axis over its extent). From it,
-  the other 59 spots are **farthest-point sampled** over the outward-facing skin, so they sit at
-  near-uniform spacing on any hull shape.
-- **Then a match.** Each plate's target direction is its crystal radial reflected through the plane
-  normal to the contact (`WrapDirection`: contact plate → contact, far plate → antipode, everyone
-  keeps their angular distance). Plates are matched to spots by the **optimal assignment**
-  (Hungarian, cost `1 − cos`), not greedily.
+`CrystalHullFusionGeometry.BuildPanels`: a solid is a connected piece of the mesh (welded by
+position); a face is a solid's triangles joined across welded edges while within 20° of each other
+(120 of the charge crystal's 300 side quads are non-planar by 5.2°; its sharpest real crease is
+57.5°). Each solid's outermost face is its **panel**; the rest is **filler**, folded into the panel
+during the peel. Measured with the shipped code on the charge FBX: **60 panels, every one a
+pentagon**, radial alignment ≥ 0.9994.
 
-**Measured against the shipped Squirrel FBX** (offline port of the same algorithm, three approach
-directions):
+## 2. Where each face lands
 
-| Approach | Spot gap min / median | Plate → spot alignment, worst / median |
+- **Contact:** the outermost outward-facing hull vertex in the direction the crystal came from, in
+  the hull's normalised space.
+- **Patches:** the other 59 are farthest-point sampled over the outward-facing skin, so they sit at
+  near-uniform spacing.
+- **Match:** each face's target direction is its crystal radial reflected through the contact
+  (`WrapDirection`), and faces take patches by the optimal assignment (Hungarian, cost `1 − cos`).
+
+| Measured on the shipped Squirrel FBX | patch gap | face → patch turn (cos), worst / median |
 |---|---|---|
-| Mapping each plate's direction straight onto the hull (first attempt) | **0.00** / 0.24 — 9 of 60 plates on a spot another plate held, piled on the wing tips | — |
-| Spread + greedy match | 0.46 / 0.52 | **−0.94** (a plate crossing the whole hull) / 0.96 |
-| Spread + optimal match (shipped) | 0.46 / 0.52 | **+0.08** / 0.88 |
+| direction straight onto the hull (first attempt) | **0.00** — 9 of 60 on a taken spot, piled on the wing tips | — |
+| spread + greedy match | 0.46 | **−0.94** (a face crossing the whole hull) / 0.96 |
+| spread + optimal match (shipped) | 0.46–0.48 | **+0.07 – +0.19** / 0.89 |
 
-The hull units are the FBX's own (Squirrel extents 2.25 × 3.23 × 0.73). Plate footprint radius is
-`tileFill × gap / 2`, so neighbours meet at the tightest spacing (`tileFill` 1) or overlap into a
-continuous skin (1.1, shipped).
+## 3. How a face lands ON the hull
 
-## 3. The plates ride the bones
+A flat three-triangle pentagon cannot lie on the Squirrel: its corners sat a **median 0.31 patch
+radii off the skin**, and snapping corners to hull vertices left 36% unsnapped (the hull is coarse
+low-poly in its flat areas). So the drawn face is **rebuilt as a subdivided fan**
+(`FusionTemplate`, 4 levels: 51 points and 80 triangles per pentagon). Every point is laid in the
+patch's tangent plane at the patch's size, keeping the face's twist from the crystal, then
+**projected onto the closest point of the hull's own triangles** (`HullSurface` — triangles binned
+by their bounding boxes, so a big low-poly triangle is found from every cell it spans), wearing the
+hull's interpolated normal there.
 
-The Squirrel hull is skinned and puppeteered. At collection the hull is baked
-(`SkinnedMeshRenderer.BakeMesh`) in its current pose — element blend shapes included — and each
-plate's spot is pinned to the bone that dominates that vertex. During the wrap the path is planned
-against the baked hull and handed over to the live bone as the plate arrives; from the hold on, the
-plate is wherever its bone is. A plate on a wing stays on the wing while it flaps.
+Shipped code on the real meshes, three approach directions: **3,060 of 3,060 points projected**,
+median 0.15 patch radii from laid to surface. The subdivided face keeps the charge discharge: each
+sub-triangle carries the baker's channel contract with only the outline's segments marked as bolt
+edges.
 
-That needs the hull mesh **CPU-readable** (bone weights). This branch turns on Read/Write for
-`SquirrelVessel_CosmicShoresTest1.fbx` (`isReadable: 1`) — one more CPU copy of a 13k-vertex mesh.
-An unreadable hull still fuses, pinned to the renderer instead, and says so once.
+## 4. The faces ride the bones
 
-## 4. Hook and retirement
+The Squirrel hull is skinned and puppeteered. The hull is baked at collection; each point is pinned
+to the bone that dominates the hull vertex nearest it, against a snapshot of the bones at the bake,
+and follows that bone live. A face on a wing stays on the wing while it flaps. Needs the hull mesh
+CPU-readable: this branch sets `isReadable: 1` on `SquirrelVessel_CosmicShoresTest1.fbx`.
+
+The projection is spread over the peel (8 faces a frame) so the pickup frame pays only for the
+bake, the patch layout and the assignment.
+
+## 5. Hook and retirement
 
 `ElementalCrystalImpactor.RunCapture` → `TryFuseOntoHull`: if the config lists
-`(vesselStatus.VesselType, crystal element)`, `CrystalHullFusion.Begin` copies the crystal's models
-(mesh clone with every UV channel, shared materials, property block), lays out the fusion, hides
-the crystal's renderers and draws frame 0 the same frame. The crystal stays alive, hidden, until the
-**clamp**, when it is moved to the contact point, plays its pickup sound via
-`Crystal.Explode(SuppressHusk = true)` and leaves the cell (`DestroyCrystal`). No husk spray: the
-body is on the hull, not in the wake.
+`(vesselStatus.VesselType, crystal element)`, `CrystalHullFusion.Begin` builds the shells, lays the
+fusion out, hides the crystal's renderers and draws frame 0 the same frame. The crystal stays alive,
+hidden, until the **mate**, when it moves to the contact, plays its pickup sound via
+`Crystal.Explode(SuppressHusk = true)` and leaves the cell. Scoring and the element level land at
+contact, before any of this. The fusion is pure photons.
 
-Scoring and the element level are untouched — both land at contact, before any of this
-(`CollectBy`). The fusion is pure photons.
+Every refusal falls back to the generic capture and **warns once per reason**: no hull renderer, an
+empty bake, a crystal with no readable model.
 
-Every refusal falls back to the generic capture and is warned once per reason: no hull renderer,
-an empty bake, a crystal with no readable model.
+## 6. Why CPU and not the omni morph's shader stamp
 
-## 5. Why CPU and not a shader stamp
-
-`ScarabCrystalMorph` runs its geometry in the vertex stage off `_PrismClock`, per the prism
-clock-material law. This one does not, deliberately:
-
-- the target **moves** (a skinned hull at flight speed, bone by bone), so a stamped target in a UV
+- the target **moves** (a skinned hull at flight speed, bone by bone) — a target stamped into a UV
   channel would be stale the frame after it was written;
-- it is a **one-shot per pickup** (~1 s, ~2.9k vertices, 60 plate poses a frame), not a standing
-  per-prism cost — the law exists for the thousands of prisms, not for one crystal;
-- the charge shader is a hand-written `.shader`; leaving it untouched means no existing crystal
-  anywhere can change.
+- the charge shader already spends TEXCOORD1–3 on its discharge;
+- it is a **one-shot per pickup** (~1.2 s, ~16.7k vertices a frame), not a standing per-prism cost.
 
-## 6. Files
+## 7. Files
 
 | File | Role |
 |---|---|
-| `Controller/Environment/Crystals/CrystalHullFusion.cs` | runtime: adopt, plan, pose plates, write mesh + block |
-| `Utility/CrystalHullFusionGeometry.cs` | pure: plate split, contact spot, farthest-point spots, assignment, wrap |
+| `Controller/Environment/Crystals/CrystalHullFusion.cs` | runtime: shells, layout, deferred projection, per-frame pose, material |
+| `Utility/CrystalHullFusionGeometry.cs` | pure: panels, template, contact, patches, assignment, wrap, hull surface |
 | `ScriptableObjects/CrystalHullFusionConfigSO.cs` | per-(vessel, element) entries + beat timing |
 | `Resources/CrystalHullFusionConfig.asset` | the opt-in: Squirrel × Charge |
 | `ImpactEffects/Impactors/ElementalCrystalImpactor.cs` | `TryFuseOntoHull` / `RetireIntoFusion` |
-| `Environment/FlowField/Crystal.cs` | `TryGetDomainCrystalColors` (the pilot's crystal pair) |
+| `Utility/CrystalEdgeArcMeshBaker.cs` | `TryGetReadable` (the drawn charge mesh is unreadable) |
+| `Environment/FlowField/Crystal.cs` | `TryGetDomainCrystalColors` |
 | `_Models/Vessel Models/SquirrelVessel_CosmicShoresTest1.fbx.meta` | `isReadable: 1` |
-| `Tests/Editor/CrystalHullFusionTests.cs` | plates, spots, assignment, wrap, beats, shipped config |
+| `Tests/Editor/CrystalHullFusionGeometryTests.cs` | panels, template, surface, patches, assignment, wrap — also RUNS headless |
+| `Tests/Editor/CrystalHullFusionConfigTests.cs` | beats, slow motion, shipped opt-in |
+| `Tools/Build/crystal_morph_harness/` | now also builds and runs the geometry suite (stub extended) |
 
-## 7. Tuning knobs (`Resources/CrystalHullFusionConfig`, per entry)
+## 8. Tuning knobs (`Resources/CrystalHullFusionConfig`, per entry)
 
 | Knob | Shipped | What it does |
 |---|---|---|
-| `approachSeconds` / `wrapSeconds` / `holdSeconds` / `sinkSeconds` | 0.22 / 0.34 / 0.24 / 0.30 | the four beats (1.10 s total; generic capture is 0.44) |
-| `landRadiusFraction` | 0.35 | crystal size on landing, × hull mean half-extent |
-| `approachAcceleration` | 2.4 | pull curve exponent |
-| `approachPop` | 0.25 | swell at the start of the pull |
-| `approachSpinTurns` | 1 | whole turns on the way in (whole — the wrap is planned against the collect orientation) |
-| `tileFill` | 1.1 | plate footprint vs the gap to its neighbour |
-| `flatten` | 0.45 | landed plate thickness vs the crystal's prisms |
-| `wrapLift` | 0.3 | how far plates bow off the skin mid-wrap (normalised radius) |
-| `wrapStagger` | 0.4 | contact-first travelling open; 0 = all at once |
-| `spotConeDegrees` | 12 | cone the contact spot is searched in |
-| `surfaceLift` | 0.05 | gap to the skin in plate thicknesses (anti z-fight) |
-| `flareGain` | 2.6 | brightness at the clamp (hue kept) |
-| `clampPulse` | 1.12 | swell on the clamp |
-| `arcBoost` / `holdArcDuty` | 2 / 0 | charge discharge intensity × and silence during the hold |
-| `sinkDepth` | 1 | plate thicknesses sunk by the end |
-| `convergeToDomainColour` | on | lime pickup → pilot's domain crystal pair over the wrap |
+| `peelSeconds` / `flightSeconds` / `mateSeconds` / `dissolveSeconds` | 0.16 / 0.42 / 0.30 / 0.30 | the four beats (1.18 s; generic capture is 0.44) |
+| `playbackScale` | 1 | **slow motion for inspection** — 10 to watch faces land one by one; a test refuses it shipped above 1 |
+| `peelDistance` | 0.45 | how far faces lift off the crystal, crystal radii |
+| `flightBow` | 0.9 | how far out over its patch a face swings before coming down, hull mean half-extents |
+| `flightStagger` | 0.45 | nearest-first travelling landing; 0 = all at once |
+| `spotConeDegrees` | 12 | cone the contact is searched in |
+| `tileFill` | 1.15 | face size vs the gap to its neighbour (1 = just touching) |
+| `surfaceLift` | 0.04 | gap to the skin, face radii (anti z-fight) |
+| `flareGain` | 2.6 | brightness on landing (hue kept) |
+| `arcBoost` / `mateArcDuty` | 2 / 0 | discharge intensity × and silence while mated |
+| `sinkDepth` | 0.12 | face radii sunk by the end |
+| `convergeToDomainColour` | on | lime pickup → pilot's domain crystal pair over the flight |
 
-## 8. Cost
+## 9. Cost
 
-Per pickup, once: one `BakeMesh` (~13k vertices), farthest-point sampling of 60 spots over ≤4096
-candidates (~0.25M distance updates), a 60×60 Hungarian (~0.2M steps), one mesh clone. Per frame
-for 1.1 s: 60 plate poses and one vertex + normal upload of ~2.9k vertices. Not profiled in the
-editor yet — if a crowd of AI Squirrels in a crystal-heavy mode makes it show, the bake and the
-spot spread are the candidates to cache per hull pose.
+Pickup frame: one `BakeMesh` (~13k vertices), a 60-patch spread over ≤4096 candidates, a 60×60
+Hungarian, the hull-surface grid (~13.6k triangles binned) and one mesh build. Peel frames: 8 faces
+× 51 points projected per frame. Then ~1 s of 16.7k vertex writes a frame. Not profiled in the
+editor.
 
-## 9. Verification status
+## 10. Verification status
 
 - **Compiles** against real Unity 6000.0 references, player and editor configs
-  (`Tools/Build/unity_refcompile`), negative-controlled with a planted missing member in
-  `CrystalHullFusion.cs`. The new asset passes `check_generated_assets.py` (negative-controlled with
-  a misspelled key).
-- `AssignMinCost` matches brute force on 300 random matrices (n ≤ 7), run standalone.
-- The spot layout was simulated against the real Squirrel mesh (table in §2).
-- **Not yet seen in the editor.** Nothing visual here has been looked at.
+  (`Tools/Build/unity_refcompile`; the first cut's run was negative-controlled with a planted
+  missing member).
+- **Runs headless:** `bash Tools/Build/crystal_morph_harness/run.sh` — 40/40 (21 upstream + 19
+  fusion). Three planted defects each fail it: every template edge marked a bolt, the facing filter
+  removed, face normals inverted.
+- **Shipped geometry on the real meshes** (scratch driver over the FBX exports): numbers in §1–§3.
+- `AssignMinCost` matches brute force on 300 random matrices.
+- **Not yet seen in the editor.**
 
 ### In-editor verification
 
-1. Any scene with charge crystals (freestyle / a cell with lifeforms) → fly a **Squirrel** and skim
-   a **charge** crystal (the 60-plate one with the crackling edges).
-   - Expect: the crystal is pulled onto the hull side it came from, opens, its plates slide round
-     and lie flat over the whole hull (top, bottom, wings), flare and crackle, sink in. ~1.1 s.
-   - The plates should end in your **domain** colour, not lime.
-   - Pickup sound on the clamp, not at contact. No husk spray.
-2. Pitch/yaw hard during a fusion — plates on the wings should stay on the wings.
-3. Collect a **mass/space/time** crystal with the Squirrel, and a charge crystal with any other
-   vessel — the old capture, unchanged.
-4. Console: no warnings. Turn on **FrogletTools > Toolbox > Logging > CrystalMorph** to see one
-   `[CrystalHullFusion]` line per pickup (plate count, footprint scale, domain colour read).
-5. Tuning order if it reads wrong: timing first (§7 beats), then `tileFill` / `flatten` (how much
-   of the hull it covers and how flush), then `wrapLift` (plates clipping through the hull mid-wrap
-   → raise it).
+1. Squirrel, skim a **charge** crystal. Expect: the crystal's prisms fold into their outer
+   pentagons, which lift off and fly to the hull, come down onto it and lie ON it — bent over its
+   curves, on top, underside and wings — crackling round their outlines, then sink in. ~1.2 s.
+   Domain colour, not lime. Pickup SFX as they land. No husk spray.
+2. **If it looks like the old capture, check the console first** for a `[CrystalHullFusion]`
+   warning — every refusal falls back to exactly the old effect (§0).
+3. To study it, set `playbackScale` to 10 on the asset (and back to 1 before committing — a test
+   enforces it).
+4. Pitch/yaw hard mid-fusion: wing faces stay on the wings.
+5. Squirrel + mass/space/time crystal, and any other vessel + charge crystal: old capture, unchanged.
+6. **FrogletTools > Toolbox > Logging > CrystalMorph** → one `[CrystalHullFusion]` line per pickup
+   (faces, points, patch radius, domain colour read).
+7. Run `CrystalHullFusionGeometryTests` + `CrystalHullFusionConfigTests` (edit mode).
 
-## 10. Follow-ups / known limitations
+## 11. Follow-ups / known limitations
 
-- **Wrap paths are planned on the hull's bounding ellipsoid**, not its real surface. A plate bows
-  out by `wrapLift` mid-flight to clear the skin; on a deeply concave hull it can still cut a corner.
-- **The hull's charge blend shape glides while the plates sit on it** (the level-up lands at
-  contact). Plates are pinned to the pre-glide surface, so they may sit a hair off it by the sink —
-  the morph moves Squirrel vertices by a few percent.
-- **One fusion per pickup, no pooling.** A burst of pickups makes a burst of mesh clones.
-- **Other pairs.** The mechanism is generic over any crystal whose mesh splits into solids
-  (the omni cage is 122; Time is 30 blocks but animated — its fusion would need to sample the
-  animated pose first). Space is one connected body; it needs its own idea, not this one.
+- **Faces at a wing edge fold onto it.** Laid points past the edge project onto the edge line;
+  measured outline-edge stretch ranges 0.06–1.35 (median 0.79). A patch picker that keeps away from
+  silhouette edges would fix it.
+- **The hull's charge blend shape glides while the faces lie on it** (the level-up lands at
+  contact), so faces sit on the pre-glide surface — a few percent of a Squirrel vertex's travel.
+- **The face's crackle pattern changes on the peel's first frame** — the subdivided outline's
+  segments carry their own seeds, not the crystal's — and frame 0 is otherwise the crystal exactly.
+- **One fusion per pickup, no pooling**: a burst of pickups is a burst of 16.7k-vertex meshes.
+- **Two opt-in mechanisms for crystal retirements now exist** (§3.5 row from the 2026-10-08
+  reorient): the omni morph uses a per-vessel container slot
+  (`VesselImpactorDataContainerSO.OmniCrystalRetirement`), this uses a Resources table keyed by
+  (vessel, element), because elemental collection runs on the skimmer path, which has no such
+  slot. Worth unifying once a second hull or element shows which shape generalises.
+- **Other pairs.** The mechanism is generic over any crystal that splits into solids: the omni cage
+  is 122; Time is 30 blocks but animated (it would need the animated pose sampled first); Space is
+  one connected body and needs its own idea.

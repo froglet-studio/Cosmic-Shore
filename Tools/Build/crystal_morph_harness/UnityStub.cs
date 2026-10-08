@@ -43,6 +43,13 @@ namespace UnityEngine
         public static float Cos(float v) => (float)Math.Cos(v);
         public static float Atan2(float y, float x) => (float)Math.Atan2(y, x);
         public static int RoundToInt(float v) => (int)Math.Round(v, MidpointRounding.ToEven);
+        // Added for CrystalHullFusionGeometry (Controller/Environment/Crystals/CRYSTAL_HULL_FUSION.md).
+        public const float Deg2Rad = PI / 180f;
+        public const float Rad2Deg = 180f / PI;
+        public static float Acos(float v) => (float)Math.Acos(v);
+        public static float Tan(float v) => (float)Math.Tan(v);
+        public static int FloorToInt(float v) => (int)Math.Floor(v);
+        public static int CeilToInt(float v) => (int)Math.Ceiling(v);
         public static bool Approximately(float a, float b) =>
             Abs(b - a) < Max(1e-6f * Max(Abs(a), Abs(b)), float.Epsilon * 8f);
     }
@@ -52,6 +59,19 @@ namespace UnityEngine
         public float x, y;
         public Vector2(float x, float y) { this.x = x; this.y = y; }
         public static Vector2 zero => new(0f, 0f);
+        public static Vector2 operator +(Vector2 a, Vector2 b) => new(a.x + b.x, a.y + b.y);
+        public static Vector2 operator -(Vector2 a, Vector2 b) => new(a.x - b.x, a.y - b.y);
+        public static Vector2 operator *(Vector2 a, float s) => new(a.x * s, a.y * s);
+        public static Vector2 operator *(float s, Vector2 a) => new(a.x * s, a.y * s);
+    }
+
+    public struct Vector2Int : IEquatable<Vector2Int>
+    {
+        public int x, y;
+        public Vector2Int(int x, int y) { this.x = x; this.y = y; }
+        public bool Equals(Vector2Int o) => x == o.x && y == o.y;
+        public override bool Equals(object o) => o is Vector2Int v && Equals(v);
+        public override int GetHashCode() => HashCode.Combine(x, y);
     }
 
     public struct Vector3Int : IEquatable<Vector3Int>
@@ -72,9 +92,23 @@ namespace UnityEngine
         public static Vector3 up => new(0f, 1f, 0f);
         public static Vector3 right => new(1f, 0f, 0f);
         public static Vector3 forward => new(0f, 0f, 1f);
+        public static Vector3 back => new(0f, 0f, -1f);
+        public static Vector3 down => new(0f, -1f, 0f);
         public float sqrMagnitude => x * x + y * y + z * z;
         public float magnitude => (float)Math.Sqrt(sqrMagnitude);
         public Vector3 normalized { get { float m = magnitude; return m > 1e-5f ? this / m : zero; } }
+        public void Normalize() => this = normalized;
+        public float this[int i]
+        {
+            get => i == 0 ? x : i == 1 ? y : i == 2 ? z : throw new IndexOutOfRangeException();
+            set { if (i == 0) x = value; else if (i == 1) y = value; else if (i == 2) z = value; else throw new IndexOutOfRangeException(); }
+        }
+        public static Vector3 Scale(Vector3 a, Vector3 b) => new(a.x * b.x, a.y * b.y, a.z * b.z);
+        public static float Angle(Vector3 a, Vector3 b)
+        {
+            float d = (float)Math.Sqrt(a.sqrMagnitude * b.sqrMagnitude);
+            return d < 1e-15f ? 0f : (float)(Math.Acos(Math.Clamp(Dot(a, b) / d, -1f, 1f)) * 180.0 / Math.PI);
+        }
         public static Vector3 operator +(Vector3 a, Vector3 b) => new(a.x + b.x, a.y + b.y, a.z + b.z);
         public static Vector3 operator -(Vector3 a, Vector3 b) => new(a.x - b.x, a.y - b.y, a.z - b.z);
         public static Vector3 operator -(Vector3 a) => new(-a.x, -a.y, -a.z);

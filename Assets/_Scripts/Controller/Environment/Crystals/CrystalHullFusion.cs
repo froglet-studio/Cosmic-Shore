@@ -7,52 +7,86 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// A collected elemental crystal FUSING onto the collecting vessel's hull — the per-(vessel,
-    /// element) replacement for the generic capture flourish. The crystal is pulled in whole, opens,
-    /// and its rigid plates slide round the hull and lie flush on the skin, flare, then sink in.
-    /// Full record: <c>Controller/Environment/Crystals/CRYSTAL_HULL_FUSION.md</c>.
+    /// A collected elemental crystal's FACES coming off it and mating with the collecting vessel's
+    /// hull — the per-(vessel, element) replacement for the generic capture flourish, and the hull
+    /// counterpart of the Squirrel's omni morph (the omni cage's panels landing on the eight ring
+    /// shields, <c>SQUIRREL_CRYSTAL_MORPH.md</c>). Full record:
+    /// <c>Controller/Environment/Crystals/CRYSTAL_HULL_FUSION.md</c>.
+    ///
+    /// ── Panels and filler ─────────────────────────────────────────────────────────────────────
+    /// Every solid of the crystal gives up ONE face, its outermost (on the charge crystal: 60
+    /// pentagon caps). That face is a panel and flies; the solid's other faces are filler and fold
+    /// into it during the peel, so what leaves the crystal is a cloud of loose faces.
+    ///
+    /// ── A panel lands ON the hull's surface, bent to its shape ───────────────────────────────
+    /// Each panel takes a patch of the skin (patches farthest-point spread over the hull, panels
+    /// matched to them optimally). The panel is drawn as a SUBDIVIDED fan
+    /// (<see cref="CrystalHullFusionGeometry.FusionTemplate"/>); every point of it is laid in the
+    /// patch's tangent plane at the patch's size and then projected onto the closest point of the
+    /// hull's own triangles, wearing the hull's interpolated normal there. So the landed face lies
+    /// on the model's real surface with the model's real shading - it reads as part of the hull,
+    /// not as a tile on top of it. (A flat three-triangle pentagon cannot do this: on the Squirrel
+    /// its corners sat a median 0.31 patch radii off the skin.)
+    ///
+    /// ── Every point rides its own bone ────────────────────────────────────────────────────────
+    /// The hull is skinned and puppeteered. Targets are read off a bake of the hull taken at
+    /// collection and pinned to the bone that dominates the nearest hull vertex, so a face on a wing
+    /// stays on the wing while it flaps. That needs the hull mesh CPU-readable (bone weights); an
+    /// unreadable hull still fuses, pinned to the renderer. The projection is spread over the peel's
+    /// frames against the bake-time pose, so the pickup frame pays only for the layout.
     ///
     /// ── It draws the crystal's own geometry ───────────────────────────────────────────────────
-    /// Each crystal model's mesh is copied vertex for vertex (every UV channel included — the
-    /// charge crystal's crease-edge discharge data rides there) and drawn with the crystal's own
-    /// shared materials and property block, so frame 0 IS the crystal. Only positions and normals
-    /// are rewritten, per plate, as rigid transforms: a plate never deforms, so its faces stay
-    /// planar and the charge shader's bolts keep running along its edges on the hull.
+    /// The crystal's mesh is cloned vertex for vertex (every UV channel - the charge crystal's
+    /// crease-edge discharge rides there) and drawn with its own shared materials and property
+    /// block, so frame 0 IS the crystal. The DRAWN charge mesh is an uploaded, unreadable twin
+    /// (<see cref="CrystalEdgeArcMeshBaker"/>); the readable copy comes from
+    /// <see cref="CrystalEdgeArcMeshBaker.TryGetReadable"/>. The first cut of this class checked
+    /// <c>isReadable</c> on the drawn mesh, refused every charge crystal, and fell back to the
+    /// generic capture - which looked exactly like the effect it was meant to replace.
     ///
-    /// ── The plates ride the BONES, not the vessel root ────────────────────────────────────────
-    /// The hull is a skinned, puppeteered mesh. Each plate's spot is read off a bake of the hull
-    /// in the pose it had at collection, then pinned to the bone that dominates that vertex, so a
-    /// plate on a wing stays on the wing while it flaps. That needs the hull mesh CPU-readable
-    /// (bone weights); an unreadable hull still fuses, pinned to the renderer instead.
-    ///
-    /// ── Cost ──────────────────────────────────────────────────────────────────────────────────
-    /// Once per pickup: one <c>BakeMesh</c> of the hull, a farthest-point spread of 60 spots over
-    /// ≤4k candidate vertices, and a 60×60 optimal assignment. Per frame, for ~0.6-1 s: 60 plate poses and one vertex/normal
-    /// upload of the crystal's ~2.9k vertices. A one-shot, per pickup, not a standing cost — which
-    /// is why this is CPU rather than a shader stamp (the ScarabCrystalMorph route); see the doc §5.
+    /// ── Why CPU ───────────────────────────────────────────────────────────────────────────────
+    /// The target is a skinned hull at flight speed, so a target stamped into a UV channel (the
+    /// omni morph's GPU route) would be stale the frame after it was written, and the charge shader
+    /// already spends TEXCOORD1-3 on its discharge. This is a one-shot per pickup: ~1.2 s of ~16k
+    /// vertex writes a frame.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class CrystalHullFusion : MonoBehaviour
     {
-        // Every crystal shader exposes the tint pair and the dissolve (Crystal.cs drives them);
-        // only the charge shader exposes the discharge pair, and those writes are skipped elsewhere.
+        // Every crystal shader exposes the tint pair and the dissolve (Crystal.cs drives them); only
+        // the charge shader exposes the discharge pair, and those writes are skipped elsewhere.
         static readonly int OpacityId = Shader.PropertyToID("_opacity");
         static readonly int DullId = Shader.PropertyToID("_DullCrystalColor");
         static readonly int BrightId = Shader.PropertyToID("_BrightCrystalColor");
         static readonly int ArcIntensityId = Shader.PropertyToID("_ArcIntensity");
         static readonly int ArcDutyId = Shader.PropertyToID("_ArcDuty");
 
-        /// <summary>Hull vertices the spot search samples at most. The Squirrel's hull is ~13k.</summary>
+        /// <summary>Hull vertices the patch spread samples at most. The Squirrel's hull is ~13k.</summary>
         const int MaxSpotCandidates = 4096;
 
-        static readonly Dictionary<Mesh, CrystalHullFusionGeometry.PlateSet> s_plates = new();
+        /// <summary>Levels each fan triangle of a panel is cut into. 4 gives a pentagon 41 points and
+        /// 80 triangles - enough to bend over the Squirrel at its patch size (every point projected,
+        /// measured), few enough that 60 panels stay ~16k vertices.</summary>
+        const int PanelSubdivisions = 4;
+
+        /// <summary>How far a laid point may be from the skin and still be projected onto it, in
+        /// patch radii.</summary>
+        const float ProjectionReach = 1.5f;
+
+        /// <summary>Panels projected per frame during the peel; the rest are finished the frame the
+        /// flight starts.</summary>
+        const int PanelsPlannedPerFrame = 8;
+
+        static readonly Dictionary<Mesh, CrystalHullFusionGeometry.PanelSet> s_panels = new();
+        static readonly Dictionary<Mesh, CrystalHullFusionGeometry.FusionTemplate> s_templates = new();
         static readonly Dictionary<Mesh, int[]> s_dominantBones = new();
         static readonly HashSet<string> s_warned = new();
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void ResetCaches()
         {
-            s_plates.Clear();
+            s_panels.Clear();
+            s_templates.Clear();
             s_dominantBones.Clear();
             s_warned.Clear();
         }
@@ -63,9 +97,14 @@ namespace CosmicShore.Gameplay
             public MeshRenderer Renderer;
             public Mesh Mesh;
             public MaterialPropertyBlock Block;
-            public CrystalHullFusionGeometry.PlateSet Plates;
-            public int FirstPlate;
-            public Vector3[] Vertices;
+            public CrystalHullFusionGeometry.PanelSet Panels;
+            public CrystalHullFusionGeometry.FusionTemplate Template;
+            public int FirstPanel;
+            public int FirstPoint;
+            public float PanelScale;          // mesh units → world, at collection
+            public Vector3[] StartPositions;  // world, at collection
+            public Vector3[] StartNormals;    // world, at collection
+            public Vector3[] Vertices;        // written each frame, relative to this object
             public Vector3[] Normals;
             public Color StartDull, StartBright;
             public bool HasTint;
@@ -73,63 +112,77 @@ namespace CosmicShore.Gameplay
             public bool HasArcIntensity, HasArcDuty;
         }
 
-        struct Plate
+        struct Panel
         {
-            // Crystal-relative, in HULL space (rotation only), at collection scale.
-            public Vector3 Offset;
-            public Quaternion StartRotation;
-            /// <summary>Plate-local units → world units at collection.</summary>
-            public float StartScale;
-            public float LandScale;
-
-            // The spot, in hull space as baked.
-            public Vector3 TargetHull;
-            public Quaternion TargetRotationHull;
+            public int Shell;
+            public int Local;               // index within its shell's panel set
+            public Vector3 Lift;            // world offset the peel lifts the face by
+            public Vector3 StartCentroid;   // world, at collection
+            public Vector3 StartNormal;     // world, at collection
             public float Delay01;
+            public int FirstPoint;
+            public int PointCount;
 
-            // The same spot pinned to the bone that carries it.
-            public Transform Bone;
-            public Vector3 TargetBone;
-            public Quaternion TargetRotationBone;
-            public Vector3 NormalBone;
+            // The patch, in hull space as baked.
+            public Vector3 SpotPosition;
+            public Vector3 SpotNormal;
+            public Vector3 AxisU, AxisV;    // the panel's own axes laid on the patch
+            public float LaidScale;         // panel mesh units → patch world units
+            public int SpotBone;
+            public bool Planned;
+
+            // Written each frame.
+            public Vector3 Centroid;
+        }
+
+        struct Point
+        {
+            public Vector3 Start;           // world, at collection (before the peel's lift)
+            public int Bone;                // index into _bones
+            public Vector3 TargetLocal;     // on the skin, in that bone's frame
+            public Vector3 NormalLocal;
 
             // Written each frame.
             public Vector3 Position;
-            public Quaternion Rotation;
-            public Vector3 Scale;
+            public Vector3 Normal;
         }
 
         CrystalHullFusionConfigSO.Entry _entry;
         SkinnedMeshRenderer _hull;
         readonly List<Shell> _shells = new();
-        Plate[] _plates;
+        Panel[] _panels;
+        Point[] _points;
 
-        Vector3 _crystalCentreWorld;     // where the crystal was collected
-        Vector3 _landHull;               // where it lands, hull space
-        Vector3 _spinAxisHull;
-        Vector3 _hullCentre, _hullExtents;
-        Vector3 _invExtents;
-        float _footScale;                // plate-local units → world, landed
-        float _landedThickness;          // world units
+        // The hull as baked, for the panels still to be projected.
+        CrystalHullFusionGeometry.HullSurface _surface;
+        Vector3 _bakePosition;
+        Quaternion _bakeRotation;
+        Transform[] _bones;                 // last entry is the fallback (root bone / renderer)
+        Matrix4x4[] _boneWorldToLocalAtBake;
+        Quaternion[] _boneInverseRotationAtBake;
+        int[] _dominantBones;
+        int _planned;
+
+        Vector3 _landingWorld;
+        float _bowDistance;
+        float _patchRadius;
         Color _targetDull, _targetBright;
         bool _haveTargetColour;
         float _startTime;
 
-        /// <summary>Seconds from start to the clamp beat — when the pickup sound belongs.</summary>
-        public float ClampDelaySeconds => _entry.ClampSeconds;
+        /// <summary>Seconds from start until every face is down — when the pickup sound belongs.</summary>
+        public float MateDelaySeconds => _entry.MateSecondsFromStart;
 
-        /// <summary>Where the crystal touches the hull, live.</summary>
-        public Vector3 LandingWorldPosition => _hull ? HullToWorld(_landHull) : _crystalCentreWorld;
-
-        Vector3 HullToWorld(Vector3 p) => _hull.transform.position + _hull.transform.rotation * p;
+        /// <summary>The contact patch, in world space, as it was at collection.</summary>
+        public Vector3 LandingWorldPosition => _landingWorld;
 
         /// <summary>
         /// Starts a fusion of <paramref name="crystal"/> onto the hull of the vessel described by
         /// <paramref name="vesselStatus"/>, and hides the crystal's own renderers (it is still the
         /// caller's to retire). Returns null — leaving the crystal untouched, so the caller falls
-        /// back to the generic capture — whenever the fusion cannot land honestly, and every such
-        /// exit is warned ONCE per reason: they all look identical on screen (the old capture
-        /// plays) and the difference is not recoverable afterwards.
+        /// back to the generic capture — whenever the fusion cannot land honestly. Every such exit
+        /// is a WARNING, once per reason: on screen they all look like the old capture, so the
+        /// console is the only place the difference shows.
         /// </summary>
         public static CrystalHullFusion Begin(Crystal crystal, IVesselStatus vesselStatus,
                                               CrystalHullFusionConfigSO.Entry entry)
@@ -171,8 +224,8 @@ namespace CosmicShore.Gameplay
                 return null;
             }
 
-            // The crystal is now drawn by the fusion. It stays alive (hidden) so its owner can
-            // retire it on the clamp beat - the pickup sound and the cell bookkeeping are its own.
+            // The crystal is now drawn by the fusion. It stays alive (hidden) so its owner can retire
+            // it when the faces are down - the pickup sound and the cell bookkeeping are its own.
             foreach (var renderer in crystal.GetComponentsInChildren<Renderer>(true))
                 renderer.enabled = false;
 
@@ -181,9 +234,10 @@ namespace CosmicShore.Gameplay
 
             if (CSDebug.IsVerbose(CSLogChannel.CrystalMorph))
                 CSDebug.LogVerbose(CSLogChannel.CrystalMorph,
-                $"[CrystalHullFusion] {vesselStatus.VesselType}/{entry.element}: '{crystal.name}' " +
-                $"fusing {fusion._plates.Length} plates onto '{hull.name}' over {entry.TotalSeconds:F2}s " +
-                $"(footprint x{fusion._footScale:F3}, domain colour {(fusion._haveTargetColour ? "read" : "NOT FOUND")}).");
+                    $"[CrystalHullFusion] {vesselStatus.VesselType}/{entry.element}: '{crystal.name}' " +
+                    $"peeling {fusion._panels.Length} faces ({fusion._points.Length} points) onto '{hull.name}' " +
+                    $"over {entry.TotalSeconds:F2}s (patch radius {fusion._patchRadius:F2}, domain colour " +
+                    $"{(fusion._haveTargetColour ? "read" : "NOT FOUND")}).");
             return fusion;
         }
 
@@ -217,16 +271,17 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Copies each crystal model onto a child of this object — the crystal's mesh (cloned, so
-        /// every UV channel comes along), its shared materials and its property block, which is
-        /// where <c>Crystal.ApplyColorSetTint</c> paints the collectability colour.
+        /// Builds one shell per crystal model: the fusion template (filler copied, panels subdivided)
+        /// drawn with the model's shared materials and property block, which is where
+        /// <c>Crystal.ApplyColorSetTint</c> paints the collectability colour.
         /// </summary>
         bool AdoptShells(Crystal crystal)
         {
             var models = crystal.CrystalModels;
             if (models == null) return false;
 
-            int plateTotal = 0;
+            string refusal = null;
+            int panelTotal = 0, pointTotal = 0;
             for (int i = 0; i < models.Count; i++)
             {
                 var model = models[i]?.model;
@@ -234,17 +289,42 @@ namespace CosmicShore.Gameplay
                 if (!model.TryGetComponent<MeshFilter>(out var filter) || filter.sharedMesh == null) continue;
                 if (!model.TryGetComponent<MeshRenderer>(out var source)) continue;
 
-                var sourceMesh = filter.sharedMesh;
-                var plates = PlatesFor(sourceMesh);
-                if (plates == null) continue;
+                var drawn = filter.sharedMesh;
+                if (!CrystalEdgeArcMeshBaker.TryGetReadable(drawn, out var readable))
+                {
+                    refusal = $"'{drawn.name}' is not CPU-readable and was not made by CrystalEdgeArcMeshBaker, " +
+                              "so its faces cannot be read. Enable Read/Write on its model importer.";
+                    continue;
+                }
+
+                if (!TryGetTemplate(readable, out var panels, out var template))
+                {
+                    refusal = $"'{drawn.name}' has no triangles.";
+                    continue;
+                }
 
                 var shellObject = new GameObject($"Shell{i}");
                 shellObject.transform.SetParent(transform, false);
                 shellObject.layer = model.layer;
 
-                var mesh = Instantiate(sourceMesh);
-                mesh.name = $"{sourceMesh.name} (Fusion)";
+                var mesh = new Mesh
+                {
+                    name = $"{drawn.name} (Fusion)",
+                    hideFlags = HideFlags.DontSave,
+                    indexFormat = template.Vertices.Length > 65535
+                        ? UnityEngine.Rendering.IndexFormat.UInt32
+                        : UnityEngine.Rendering.IndexFormat.UInt16,
+                };
                 mesh.MarkDynamic();
+                mesh.vertices = template.Vertices;
+                mesh.normals = template.Normals;
+                mesh.SetUVs(1, template.Bary);
+                mesh.SetUVs(2, template.EdgeH);
+                mesh.SetUVs(3, template.EdgeSeed);
+                mesh.subMeshCount = template.SubmeshTriangles.Length;
+                for (int s = 0; s < template.SubmeshTriangles.Length; s++)
+                    mesh.SetTriangles(template.SubmeshTriangles[s], s, false);
+                mesh.RecalculateBounds();
                 shellObject.AddComponent<MeshFilter>().sharedMesh = mesh;
 
                 var renderer = shellObject.AddComponent<MeshRenderer>();
@@ -255,16 +335,21 @@ namespace CosmicShore.Gameplay
                 var block = new MaterialPropertyBlock();
                 source.GetPropertyBlock(block);
 
+                int vertexCount = template.Vertices.Length;
                 var shell = new Shell
                 {
                     Source = model.transform,
                     Renderer = renderer,
                     Mesh = mesh,
                     Block = block,
-                    Plates = plates,
-                    FirstPlate = plateTotal,
-                    Vertices = new Vector3[sourceMesh.vertexCount],
-                    Normals = new Vector3[sourceMesh.vertexCount],
+                    Panels = panels,
+                    Template = template,
+                    FirstPanel = panelTotal,
+                    FirstPoint = pointTotal,
+                    StartPositions = new Vector3[vertexCount],
+                    StartNormals = new Vector3[vertexCount],
+                    Vertices = new Vector3[vertexCount],
+                    Normals = new Vector3[vertexCount],
                 };
 
                 // Start colours: what the crystal is DRAWING, i.e. the block over the material.
@@ -281,47 +366,69 @@ namespace CosmicShore.Gameplay
                 if (shell.HasArcDuty) shell.BaseArcDuty = material.GetFloat(ArcDutyId);
 
                 _shells.Add(shell);
-                plateTotal += plates.PlateCount;
+                panelTotal += panels.PanelCount;
+                pointTotal += template.Points.Length;
             }
 
             if (_shells.Count > 0) return true;
 
             WarnOnce($"shells:{crystal.name}",
-                $"[CrystalHullFusion] '{crystal.name}' exposed no CPU-readable model with a MeshFilter " +
-                "and MeshRenderer, so there is nothing to fuse - the generic capture plays.");
+                $"[CrystalHullFusion] '{crystal.name}' exposed no model whose faces can be read " +
+                $"({refusal ?? "no model with a MeshFilter and a MeshRenderer"}) - the generic capture plays.");
             return false;
         }
 
-        static CrystalHullFusionGeometry.PlateSet PlatesFor(Mesh mesh)
+        static bool TryGetTemplate(Mesh mesh, out CrystalHullFusionGeometry.PanelSet panels,
+                                   out CrystalHullFusionGeometry.FusionTemplate template)
         {
-            if (s_plates.TryGetValue(mesh, out var cached)) return cached;
-            CrystalHullFusionGeometry.PlateSet plates = null;
-            if (mesh.isReadable)
+            if (s_templates.TryGetValue(mesh, out template))
             {
-                var triangles = new List<int[]>(mesh.subMeshCount);
-                for (int s = 0; s < mesh.subMeshCount; s++) triangles.Add(mesh.GetTriangles(s));
-                plates = CrystalHullFusionGeometry.BuildPlates(mesh.vertices, mesh.normals, triangles);
+                panels = s_panels[mesh];
+                return template != null;
             }
-            s_plates[mesh] = plates;
-            return plates;
+
+            var triangles = new List<int[]>(mesh.subMeshCount);
+            for (int s = 0; s < mesh.subMeshCount; s++) triangles.Add(mesh.GetTriangles(s));
+            var vertices = mesh.vertices;
+            panels = CrystalHullFusionGeometry.BuildPanels(vertices, triangles);
+
+            var bary = new List<Vector3>(); var edgeH = new List<Vector3>(); var edgeSeed = new List<Vector3>();
+            mesh.GetUVs(1, bary);
+            mesh.GetUVs(2, edgeH);
+            mesh.GetUVs(3, edgeSeed);
+            float modelRadius = Mathf.Max(mesh.bounds.extents.x, Mathf.Max(mesh.bounds.extents.y, mesh.bounds.extents.z));
+
+            template = panels == null ? null : CrystalHullFusionGeometry.BuildTemplate(panels, vertices, mesh.normals,
+                bary.Count == vertices.Length ? bary.ToArray() : null,
+                edgeH.Count == vertices.Length ? edgeH.ToArray() : null,
+                edgeSeed.Count == vertices.Length ? edgeSeed.ToArray() : null,
+                triangles, PanelSubdivisions, modelRadius);
+
+            s_panels[mesh] = panels;
+            s_templates[mesh] = template;
+            return template != null;
         }
 
         /// <summary>
-        /// Lays the whole fusion out against a bake of the hull taken THIS frame: where the crystal
-        /// lands, which hull spot each plate takes, the bone that will carry it, and the sizes.
+        /// Lays the fusion out against a bake of the hull taken THIS frame: each face's start in the
+        /// world, the patch it takes and how it is laid there, and a snapshot of the hull and its
+        /// bones so the projection of every point can be spread over the next frames.
         /// </summary>
         bool Plan(Crystal crystal, IVesselStatus vesselStatus, Mesh baked)
         {
             var hullVertices = baked.vertices;
             var hullNormals = baked.normals;
             var bounds = baked.bounds;
-            _hullCentre = bounds.center;
-            _hullExtents = bounds.extents;
-            _invExtents = CrystalHullFusionGeometry.InverseExtents(_hullExtents);
-            float hullMeanRadius = (_hullExtents.x + _hullExtents.y + _hullExtents.z) / 3f;
+            Vector3 hullCentre = bounds.center;
+            Vector3 hullExtents = bounds.extents;
+            Vector3 invExtents = CrystalHullFusionGeometry.InverseExtents(hullExtents);
+            float hullMeanRadius = (hullExtents.x + hullExtents.y + hullExtents.z) / 3f;
+            _bowDistance = hullMeanRadius * _entry.flightBow;
 
-            Quaternion hullRotation = _hull.transform.rotation;
-            Quaternion toHull = Quaternion.Inverse(hullRotation);
+            Transform hullTransform = _hull.transform;
+            _bakePosition = hullTransform.position;
+            _bakeRotation = hullTransform.rotation;
+            Quaternion toHull = Quaternion.Inverse(_bakeRotation);
 
             // The pose the crystal HAD when it was collected - a host respawn may already have moved
             // the transform this frame (Crystal.CollectPose).
@@ -329,115 +436,184 @@ namespace CosmicShore.Gameplay
             Matrix4x4 crystalWorld = Matrix4x4.TRS(pose.position, pose.rotation, crystal.CollectScale);
             Matrix4x4 worldToCrystal = crystal.transform.worldToLocalMatrix;
 
-            int plateCount = 0;
-            foreach (var shell in _shells) plateCount += shell.Plates.PlateCount;
-            _plates = new Plate[plateCount];
-
-            // Crystal centre and radius at collection, from the first shell (every model of a crystal
-            // shares the crystal's centre).
-            Matrix4x4 firstModel = ModelMatrix(crystalWorld, worldToCrystal, _shells[0].Source);
-            _crystalCentreWorld = firstModel.MultiplyPoint3x4(_shells[0].Plates.Centre);
-
-            // Where the crystal lands: the outermost hull spot facing the side it came from.
-            Vector3 toCrystalHull = toHull * (_crystalCentreWorld - HullToWorld(_hullCentre));
-            Vector3 pole = Vector3.Scale(toCrystalHull, _invExtents);
-            pole = pole.sqrMagnitude > 1e-10f ? pole.normalized : Vector3.up;
-
-            int stride = Mathf.Max(1, Mathf.CeilToInt(hullVertices.Length / (float)MaxSpotCandidates));
-            float coneCos = Mathf.Cos(_entry.spotConeDegrees * Mathf.Deg2Rad);
-            int landIndex = CrystalHullFusionGeometry.SelectHullSpot(hullVertices, hullNormals, _hullCentre,
-                _hullExtents, pole, coneCos, stride);
-            if (landIndex < 0) return false;
-
-            float landedRadius = hullMeanRadius * _entry.landRadiusFraction;
-            Vector3 landNormal = SafeNormal(hullNormals, landIndex, hullVertices[landIndex] - _hullCentre);
-            _landHull = hullVertices[landIndex] + landNormal * landedRadius;
-
-            _spinAxisHull = Vector3.Cross(pole, Mathf.Abs(pole.y) < 0.9f ? Vector3.up : Vector3.right).normalized;
-
-            // Pass 1 - each plate's start, and the direction it wraps toward: plates keep their
-            // angular distance from the contact, so the one that touched stays and the far side
-            // closes round the back. The crystal's sphere is read AS the hull's normalised sphere.
-            var wraps = new Vector3[plateCount];
-            for (int s = 0; s < _shells.Count; s++)
+            int panelCount = 0, pointCount = 0;
+            foreach (var shell in _shells)
             {
-                var shell = _shells[s];
-                var plates = shell.Plates;
-                Matrix4x4 model = ModelMatrix(crystalWorld, worldToCrystal, shell.Source);
-                Quaternion modelRotation = model.rotation;
-                float modelScale = UniformScale(model);
-                float landScale = landedRadius / Mathf.Max(1e-5f, plates.Radius);
+                panelCount += shell.Panels.PanelCount;
+                pointCount += shell.Template.Points.Length;
+            }
+            _panels = new Panel[panelCount];
+            _points = new Point[pointCount];
 
-                for (int p = 0; p < plates.PlateCount; p++)
+            Matrix4x4 firstModel = ModelMatrix(crystalWorld, worldToCrystal, _shells[0].Source);
+            Vector3 crystalCentre = firstModel.MultiplyPoint3x4(_shells[0].Panels.Centre);
+            float crystalRadius = _shells[0].Panels.Radius * UniformScale(firstModel);
+
+            // The contact patch: the outermost skin facing the side the crystal came from.
+            Vector3 pole = Vector3.Scale(toHull * (crystalCentre - (_bakePosition + _bakeRotation * hullCentre)), invExtents);
+            pole = pole.sqrMagnitude > 1e-10f ? pole.normalized : Vector3.up;
+            int stride = Mathf.Max(1, Mathf.CeilToInt(hullVertices.Length / (float)MaxSpotCandidates));
+            int contact = CrystalHullFusionGeometry.SelectHullSpot(hullVertices, hullNormals, hullCentre,
+                hullExtents, pole, Mathf.Cos(_entry.spotConeDegrees * Mathf.Deg2Rad), stride);
+            if (contact < 0) return false;
+            _landingWorld = _bakePosition + _bakeRotation * hullVertices[contact];
+
+            // Pass 1 - every face's start in the world and the direction it heads for on the hull
+            // (the crystal's sphere read as the hull's normalised one, reflected through the contact
+            // so the face nearest the hull stays nearest).
+            var wraps = new Vector3[panelCount];
+            for (int si = 0; si < _shells.Count; si++)
+            {
+                var shell = _shells[si];
+                var set = shell.Panels;
+                var template = shell.Template;
+                Matrix4x4 model = ModelMatrix(crystalWorld, worldToCrystal, shell.Source);
+                shell.PanelScale = UniformScale(model);
+
+                for (int v = 0; v < template.Vertices.Length; v++)
                 {
-                    int index = shell.FirstPlate + p;
-                    Vector3 radialHull = (toHull * (modelRotation * plates.Radials[p])).normalized;
+                    shell.StartPositions[v] = model.MultiplyPoint3x4(template.Vertices[v]);
+                    shell.StartNormals[v] = model.MultiplyVector(template.Normals[v]).normalized;
+                }
+
+                for (int p = 0; p < set.PanelCount; p++)
+                {
+                    int index = shell.FirstPanel + p;
+                    Vector3 radial = model.MultiplyVector(set.Radials[p]).normalized;
+                    Vector3 radialHull = (toHull * radial).normalized;
+                    Vector3 centroidMesh = set.PanelCentroids[p];
                     wraps[index] = CrystalHullFusionGeometry.WrapDirection(radialHull, pole);
-                    _plates[index] = new Plate
+
+                    _panels[index] = new Panel
                     {
-                        Offset = toHull * (model.MultiplyPoint3x4(plates.Centroids[p]) - _crystalCentreWorld),
-                        StartRotation = toHull * (modelRotation * plates.Frames[p]),
-                        StartScale = modelScale,
-                        LandScale = landScale,
-                        // Contact plate first, antipode last: the crystal opens from where it touched.
-                        Delay01 = 0.5f * (1f - Vector3.Dot(radialHull, -pole)),
+                        Shell = si,
+                        Local = p,
+                        Lift = radial * (crystalRadius * _entry.peelDistance),
+                        StartCentroid = model.MultiplyPoint3x4(centroidMesh),
+                        StartNormal = model.MultiplyVector(set.PanelNormals[p]).normalized,
+                        // The face nearest the hull lands first; the far side closes last.
+                        Delay01 = 0.5f * (1f + Vector3.Dot(radialHull, pole)),
+                        FirstPoint = shell.FirstPoint + template.PointStart[p],
+                        PointCount = template.PointCount[p],
                     };
+
+                    for (int k = 0; k < template.PointCount[p]; k++)
+                    {
+                        Vector2 q = template.Points[template.PointStart[p] + k];
+                        _points[shell.FirstPoint + template.PointStart[p] + k].Start = model.MultiplyPoint3x4(
+                            centroidMesh + template.AxisU[p] * q.x + template.AxisV[p] * q.y);
+                    }
                 }
             }
 
-            // Pass 2 - spots spread evenly over the skin from the contact, then the optimal match of
-            // plates to spots by how far each would have to turn (1 - cos).
-            var spots = CrystalHullFusionGeometry.FarthestPointSpots(hullVertices, hullNormals, _hullCentre,
-                landIndex, plateCount, stride, out float spacing);
-            var cost = new float[plateCount, plateCount];
-            for (int k = 0; k < plateCount; k++)
+            // Pass 2 - patches spread evenly over the skin from the contact, then the optimal match of
+            // faces to patches by how far each would have to turn (1 - cos).
+            var spots = CrystalHullFusionGeometry.FarthestPointSpots(hullVertices, hullNormals, hullCentre,
+                contact, panelCount, stride, out float spacing);
+            var cost = new float[panelCount, panelCount];
+            for (int k = 0; k < panelCount; k++)
             {
-                Vector3 q = Vector3.Scale(hullVertices[spots[k]] - _hullCentre, _invExtents);
+                Vector3 q = Vector3.Scale(hullVertices[spots[k]] - hullCentre, invExtents);
                 q = q.sqrMagnitude > 1e-12f ? q.normalized : pole;
-                for (int i = 0; i < plateCount; i++) cost[i, k] = 1f - Vector3.Dot(wraps[i], q);
+                for (int i = 0; i < panelCount; i++) cost[i, k] = 1f - Vector3.Dot(wraps[i], q);
             }
             var assignment = CrystalHullFusionGeometry.AssignMinCost(cost);
 
-            // Plate size: neighbours meet at the tightest spacing (tileFill 1), so a bigger hull gets
-            // bigger plates rather than gaps.
-            var firstPlates = _shells[0].Plates;
-            float footprintWorld = 0.5f * spacing * _entry.tileFill;
-            if (footprintWorld <= 1e-5f) footprintWorld = hullMeanRadius * 0.1f;
-            _footScale = footprintWorld / Mathf.Max(1e-5f, firstPlates.FootprintRadius);
-            _landedThickness = firstPlates.Thickness * _footScale * _entry.flatten;
+            _patchRadius = 0.5f * spacing * _entry.tileFill;
+            if (_patchRadius <= 1e-5f) _patchRadius = hullMeanRadius * 0.1f;
 
-            var dominantBones = DominantBones(_hull.sharedMesh);
-            var bones = _hull.bones;
-            Transform fallbackBone = _hull.rootBone ? _hull.rootBone : _hull.transform;
-
-            // Pass 3 - each plate's landed pose, pinned to the bone that carries its spot.
-            for (int i = 0; i < plateCount; i++)
+            // Snapshot the bones at the bake, so a panel projected two frames from now still pins
+            // against the pose its targets were read in.
+            _dominantBones = DominantBones(_hull.sharedMesh);
+            var bones = _hull.bones ?? new Transform[0];
+            _bones = new Transform[bones.Length + 1];
+            for (int b = 0; b < bones.Length; b++) _bones[b] = bones[b];
+            _bones[bones.Length] = _hull.rootBone ? _hull.rootBone : hullTransform;
+            _boneWorldToLocalAtBake = new Matrix4x4[_bones.Length];
+            _boneInverseRotationAtBake = new Quaternion[_bones.Length];
+            for (int b = 0; b < _bones.Length; b++)
             {
-                ref var plate = ref _plates[i];
-                int spot = spots[assignment[i]];
-
-                Vector3 normal = SafeNormal(hullNormals, spot, hullVertices[spot] - _hullCentre);
-                plate.TargetHull = hullVertices[spot] + normal * (_landedThickness * (0.5f + _entry.surfaceLift));
-                plate.TargetRotationHull =
-                    Quaternion.FromToRotation(plate.StartRotation * Vector3.forward, normal) * plate.StartRotation;
-
-                Transform bone = fallbackBone;
-                if (dominantBones != null && spot < dominantBones.Length)
-                {
-                    int boneIndex = dominantBones[spot];
-                    if (bones != null && boneIndex >= 0 && boneIndex < bones.Length && bones[boneIndex])
-                        bone = bones[boneIndex];
-                }
-
-                plate.Bone = bone;
-                plate.TargetBone = bone.InverseTransformPoint(HullToWorld(plate.TargetHull));
-                plate.TargetRotationBone = Quaternion.Inverse(bone.rotation) * (hullRotation * plate.TargetRotationHull);
-                plate.NormalBone = bone.InverseTransformDirection(hullRotation * normal);
+                if (!_bones[b]) continue;
+                _boneWorldToLocalAtBake[b] = _bones[b].worldToLocalMatrix;
+                _boneInverseRotationAtBake[b] = Quaternion.Inverse(_bones[b].rotation);
             }
+
+            // Pass 3 - lay each face on its patch (the projection itself is deferred).
+            for (int i = 0; i < panelCount; i++)
+            {
+                ref var panel = ref _panels[i];
+                int spot = spots[assignment[i]];
+                Vector3 spotNormal = SafeNormal(hullNormals, spot, hullVertices[spot] - hullCentre);
+                var shell = _shells[panel.Shell];
+
+                // The panel's own axes, carried onto the patch by the smallest turn that takes its
+                // normal to the skin's, so it keeps its twist from the crystal.
+                Quaternion turn = Quaternion.FromToRotation(toHull * panel.StartNormal, spotNormal);
+                Vector3 u = turn * (toHull * (shell.Source ? ModelRotation(crystalWorld, worldToCrystal, shell.Source) : Quaternion.identity)
+                                     * shell.Template.AxisU[panel.Local]);
+                u = (u - Vector3.Dot(u, spotNormal) * spotNormal).normalized;
+                if (u.sqrMagnitude < 0.5f) u = Vector3.Cross(spotNormal, Mathf.Abs(spotNormal.x) < 0.9f ? Vector3.right : Vector3.up).normalized;
+
+                panel.SpotPosition = hullVertices[spot];
+                panel.SpotNormal = spotNormal;
+                panel.AxisU = u;
+                panel.AxisV = Vector3.Cross(spotNormal, u);
+                panel.LaidScale = _patchRadius / Mathf.Max(1e-6f, shell.Panels.PanelRadius[panel.Local]);
+                panel.SpotBone = BoneIndexFor(spot);
+            }
+
+            _surface = new CrystalHullFusionGeometry.HullSurface(hullVertices, hullNormals, baked.triangles, _patchRadius);
 
             _haveTargetColour = _entry.convergeToDomainColour
                 && crystal.TryGetDomainCrystalColors(vesselStatus.Domain, out _targetBright, out _targetDull);
             return true;
+        }
+
+        int BoneIndexFor(int vertex)
+        {
+            int fallback = _bones.Length - 1;
+            if (_dominantBones == null || vertex < 0 || vertex >= _dominantBones.Length) return fallback;
+            int b = _dominantBones[vertex];
+            return b >= 0 && b < fallback && _bones[b] ? b : fallback;
+        }
+
+        /// <summary>
+        /// Projects one face's points onto the skin as baked and pins each to its bone. Runs during
+        /// the peel, a few faces a frame, against the bake-time snapshot.
+        /// </summary>
+        void PlanPanel(int index)
+        {
+            ref var panel = ref _panels[index];
+            if (panel.Planned) return;
+            panel.Planned = true;
+
+            var template = _shells[panel.Shell].Template;
+            int firstTemplatePoint = template.PointStart[panel.Local];
+            float lift = _entry.surfaceLift * _patchRadius;
+            float reach = ProjectionReach * _patchRadius;
+
+            for (int k = 0; k < panel.PointCount; k++)
+            {
+                Vector2 q = template.Points[firstTemplatePoint + k];
+                Vector3 laid = panel.SpotPosition + (panel.AxisU * q.x + panel.AxisV * q.y) * panel.LaidScale;
+
+                Vector3 surface, normal;
+                int bone;
+                if (_surface.TryProject(laid, panel.SpotNormal, reach, out surface, out normal, out int nearest))
+                    bone = BoneIndexFor(nearest);
+                else
+                {
+                    surface = laid;
+                    normal = panel.SpotNormal;
+                    bone = panel.SpotBone;
+                }
+
+                Vector3 worldAtBake = _bakePosition + _bakeRotation * (surface + normal * lift);
+                ref var point = ref _points[panel.FirstPoint + k];
+                point.Bone = bone;
+                point.TargetLocal = _boneWorldToLocalAtBake[bone].MultiplyPoint3x4(worldAtBake);
+                point.NormalLocal = _boneInverseRotationAtBake[bone] * (_bakeRotation * normal);
+            }
         }
 
         /// <summary>The model's world matrix with the crystal at its COLLECT pose rather than its
@@ -445,18 +621,21 @@ namespace CosmicShore.Gameplay
         static Matrix4x4 ModelMatrix(Matrix4x4 crystalWorld, Matrix4x4 worldToCrystal, Transform model) =>
             model ? crystalWorld * (worldToCrystal * model.localToWorldMatrix) : crystalWorld;
 
+        static Quaternion ModelRotation(Matrix4x4 crystalWorld, Matrix4x4 worldToCrystal, Transform model) =>
+            ModelMatrix(crystalWorld, worldToCrystal, model).rotation;
+
         static float UniformScale(Matrix4x4 m) =>
             (m.GetColumn(0).magnitude + m.GetColumn(1).magnitude + m.GetColumn(2).magnitude) / 3f;
 
         static Vector3 SafeNormal(Vector3[] normals, int index, Vector3 fallback)
         {
-            Vector3 n = normals != null && index < normals.Length ? normals[index] : fallback;
+            Vector3 n = normals != null && index >= 0 && index < normals.Length ? normals[index] : fallback;
             if (n.sqrMagnitude < 1e-10f) n = fallback;
             return n.sqrMagnitude > 1e-10f ? n.normalized : Vector3.up;
         }
 
         /// <summary>Per vertex, the bone with the greatest weight. Needs the mesh readable; null
-        /// otherwise, and every plate then rides the renderer instead.</summary>
+        /// otherwise, and every point then rides the renderer instead.</summary>
         static int[] DominantBones(Mesh mesh)
         {
             if (!mesh) return null;
@@ -483,8 +662,8 @@ namespace CosmicShore.Gameplay
             else
             {
                 WarnOnce($"bones:{mesh.name}",
-                    $"[CrystalHullFusion] '{mesh.name}' is not CPU-readable, so fused plates cannot be " +
-                    "pinned to the bones that carry them and will ride the renderer instead - a plate on " +
+                    $"[CrystalHullFusion] '{mesh.name}' is not CPU-readable, so fused faces cannot be " +
+                    "pinned to the bones that carry them and will ride the renderer instead - a face on " +
                     "a moving limb will drift off it. Enable Read/Write on the model importer.");
             }
             s_dominantBones[mesh] = dominant;
@@ -493,122 +672,118 @@ namespace CosmicShore.Gameplay
 
         void LateUpdate()
         {
-            if (!_hull || _plates == null) { Destroy(gameObject); return; }
+            if (!_hull || _panels == null) { Destroy(gameObject); return; }
 
             float elapsed = Time.time - _startTime;
             var phase = _entry.Resolve(elapsed, out float u);
             if (phase == CrystalHullFusionConfigSO.Phase.Done) { Destroy(gameObject); return; }
 
-            Transform hullTransform = _hull.transform;
-            Quaternion hullRotation = hullTransform.rotation;
-            Vector3 anchor = hullTransform.position;
+            // Spread the projection over the peel; whatever is left is finished before any face flies.
+            int budget = phase == CrystalHullFusionConfigSO.Phase.Peel ? PanelsPlannedPerFrame : int.MaxValue;
+            while (_planned < _panels.Length && budget-- > 0) PlanPanel(_planned++);
+            if (_planned >= _panels.Length) _surface = null; // the bake is spent - let it go
+
+            for (int b = 0; b < _bones.Length; b++)
+                if (!_bones[b]) { Destroy(gameObject); return; }
+
+            Vector3 anchor = _hull.transform.position;
             transform.SetPositionAndRotation(anchor, Quaternion.identity);
             transform.localScale = Vector3.one;
 
-            for (int i = 0; i < _plates.Length; i++)
-            {
-                ref var plate = ref _plates[i];
-                if (!plate.Bone) { Destroy(gameObject); return; }
-                PosePlate(ref plate, phase, u, hullRotation);
-            }
-
-            foreach (var shell in _shells) WriteShell(shell, anchor);
+            if (phase != CrystalHullFusionConfigSO.Phase.Peel) PosePoints(phase, u);
+            foreach (var shell in _shells) WriteShell(shell, phase, u, anchor);
             WriteMaterial(phase, u);
         }
 
-        void PosePlate(ref Plate plate, CrystalHullFusionConfigSO.Phase phase, float u, Quaternion hullRotation)
+        void PosePoints(CrystalHullFusionConfigSO.Phase phase, float u)
         {
             var e = _entry;
-            Vector3 boneTarget = plate.Bone.TransformPoint(plate.TargetBone);
-            Quaternion boneRotation = plate.Bone.rotation * plate.TargetRotationBone;
-            Vector3 landed = new(_footScale, _footScale, _footScale * e.flatten);
-
-            switch (phase)
+            for (int i = 0; i < _panels.Length; i++)
             {
-                case CrystalHullFusionConfigSO.Phase.Approach:
+                ref var panel = ref _panels[i];
+                var spotBone = _bones[panel.SpotBone];
+                Vector3 spotNormal = spotBone.rotation * (_boneInverseRotationAtBake[panel.SpotBone] * (_bakeRotation * panel.SpotNormal));
+                float f = phase == CrystalHullFusionConfigSO.Phase.Flight
+                    ? CrystalHullFusionConfigSO.Smooth(e.FaceFlightProgress(u, panel.Delay01))
+                    : 1f;
+                Vector3 centroid = Vector3.zero;
+
+                for (int k = 0; k < panel.PointCount; k++)
                 {
-                    // The crystal, whole, pulled in on an accelerating curve and turning WITH the
-                    // vessel (its orientation is held in hull space) so it lands in the orientation
-                    // the wrap was planned against. Whole turns only - see approachSpinTurns.
-                    float pull = Mathf.Pow(u, e.approachAcceleration);
-                    float pop = 1f + e.approachPop * Mathf.Sin(Mathf.PI * Mathf.Clamp01(u * 2.5f));
-                    float scale = Mathf.Lerp(plate.StartScale, plate.LandScale, CrystalHullFusionConfigSO.Smooth(u)) * pop;
-                    Quaternion spin = Quaternion.AngleAxis(e.approachSpinTurns * 360f * CrystalHullFusionConfigSO.Smooth(u), _spinAxisHull);
-                    Vector3 centre = Vector3.LerpUnclamped(_crystalCentreWorld, HullToWorld(_landHull), pull);
+                    ref var point = ref _points[panel.FirstPoint + k];
+                    var bone = _bones[point.Bone];
+                    Vector3 target = bone.TransformPoint(point.TargetLocal);
+                    Vector3 targetNormal = (bone.rotation * point.NormalLocal).normalized;
 
-                    plate.Position = centre + hullRotation * (spin * plate.Offset * (scale / plate.StartScale));
-                    plate.Rotation = hullRotation * (spin * plate.StartRotation);
-                    plate.Scale = Vector3.one * scale;
-                    break;
+                    switch (phase)
+                    {
+                        case CrystalHullFusionConfigSO.Phase.Flight:
+                        {
+                            // A quadratic curve whose last leg runs straight down the patch normal: the
+                            // face swings out over its patch and comes DOWN onto the skin, rather than
+                            // arriving edge-on or through the hull.
+                            Vector3 start = point.Start + panel.Lift;
+                            Vector3 control = target + spotNormal * _bowDistance;
+                            float g = 1f - f;
+                            point.Position = g * g * start + 2f * g * f * control + f * f * target;
+                            point.Normal = Vector3.Lerp(panel.StartNormal, targetNormal, f).normalized;
+                            break;
+                        }
+
+                        case CrystalHullFusionConfigSO.Phase.Mate:
+                            point.Position = target;
+                            point.Normal = targetNormal;
+                            break;
+
+                        default: // Dissolve - a hair into the skin.
+                            point.Position = target - targetNormal *
+                                (e.sinkDepth * _patchRadius * CrystalHullFusionConfigSO.EaseIn(u));
+                            point.Normal = targetNormal;
+                            break;
+                    }
+                    centroid += point.Position;
                 }
-
-                case CrystalHullFusionConfigSO.Phase.Wrap:
-                {
-                    float p = e.PlateWrapProgress(u, plate.Delay01);
-                    float s = CrystalHullFusionConfigSO.Smooth(p);
-
-                    // Slide round the hull in its NORMALISED space - a great circle there, bowed
-                    // outward mid-flight, is a path that hugs the skin instead of cutting through it.
-                    Vector3 startHull = _landHull + plate.Offset * (plate.LandScale / plate.StartScale);
-                    Vector3 qs = Vector3.Scale(startHull - _hullCentre, _invExtents);
-                    Vector3 qt = Vector3.Scale(plate.TargetHull - _hullCentre, _invExtents);
-                    float rs = qs.magnitude, rt = qt.magnitude;
-                    Vector3 dir = CrystalHullFusionGeometry.SlerpDirection(
-                        rs > 1e-6f ? qs / rs : Vector3.up, rt > 1e-6f ? qt / rt : Vector3.up, s, plate.Offset);
-                    float radius = Mathf.Lerp(rs, rt, s) + e.wrapLift * Mathf.Sin(Mathf.PI * s);
-                    Vector3 pathHull = _hullCentre + Vector3.Scale(dir * radius, _hullExtents);
-
-                    // The path is planned against the hull as baked; the bone has moved since. Hand
-                    // the plate over to the live bone as it arrives, so it lands ON the limb.
-                    Vector3 drift = boneTarget - HullToWorld(plate.TargetHull);
-                    plate.Position = HullToWorld(pathHull) + drift * s;
-
-                    Quaternion pathRotation = hullRotation * Quaternion.Slerp(plate.StartRotation, plate.TargetRotationHull, s);
-                    Quaternion correction = boneRotation * Quaternion.Inverse(hullRotation * plate.TargetRotationHull);
-                    plate.Rotation = Quaternion.Slerp(Quaternion.identity, correction, s) * pathRotation;
-                    plate.Scale = Vector3.Lerp(Vector3.one * plate.LandScale, landed, s);
-                    break;
-                }
-
-                case CrystalHullFusionConfigSO.Phase.Hold:
-                {
-                    float swell = 1f + (e.clampPulse - 1f) * Mathf.Sin(Mathf.PI * u);
-                    plate.Position = boneTarget;
-                    plate.Rotation = boneRotation;
-                    plate.Scale = landed * swell;
-                    break;
-                }
-
-                default: // Sink - flatten into the skin.
-                {
-                    float s = CrystalHullFusionConfigSO.EaseIn(u);
-                    Vector3 normal = plate.Bone.TransformDirection(plate.NormalBone).normalized;
-                    plate.Position = boneTarget - normal * (e.sinkDepth * _landedThickness * s);
-                    plate.Rotation = boneRotation;
-                    plate.Scale = new Vector3(landed.x * (1f - 0.15f * s), landed.y * (1f - 0.15f * s),
-                                              landed.z * Mathf.Lerp(1f, 0.1f, s));
-                    break;
-                }
+                panel.Centroid = centroid / Mathf.Max(1, panel.PointCount);
             }
         }
 
-        void WriteShell(Shell shell, Vector3 anchor)
+        void WriteShell(Shell shell, CrystalHullFusionConfigSO.Phase phase, float u, Vector3 anchor)
         {
-            var plates = shell.Plates;
-            var local = plates.LocalPositions;
-            var localNormals = plates.LocalNormals;
-            var vertexPlate = plates.VertexPlate;
+            var template = shell.Template;
+            var vertexPanel = template.VertexPanel;
+            var vertexPoint = template.VertexPoint;
+            bool peel = phase == CrystalHullFusionConfigSO.Phase.Peel;
+            float lift = CrystalHullFusionConfigSO.EaseOut(u);
+            float fold = CrystalHullFusionConfigSO.Smooth(u);
 
-            for (int v = 0; v < local.Length; v++)
+            for (int v = 0; v < vertexPanel.Length; v++)
             {
-                ref var plate = ref _plates[shell.FirstPlate + vertexPlate[v]];
-                Vector3 scale = plate.Scale;
-                shell.Vertices[v] = plate.Position + plate.Rotation * Vector3.Scale(scale, local[v]) - anchor;
+                ref var panel = ref _panels[shell.FirstPanel + vertexPanel[v]];
+                int k = vertexPoint[v];
 
-                // Inverse-transpose of a rotation times a diagonal scale: divide, rotate, renormalise.
-                Vector3 n = localNormals[v];
-                n = new Vector3(n.x / Mathf.Max(1e-5f, scale.x), n.y / Mathf.Max(1e-5f, scale.y), n.z / Mathf.Max(1e-5f, scale.z));
-                shell.Normals[v] = (plate.Rotation * n).normalized;
+                if (peel)
+                {
+                    // Every face lifts off along its solid's radial; the filler folds into its face's
+                    // centre as it goes, so what leaves the crystal is loose faces.
+                    Vector3 start = shell.StartPositions[v] + panel.Lift * lift;
+                    shell.Vertices[v] = (k >= 0 ? start
+                        : Vector3.Lerp(start, panel.StartCentroid + panel.Lift * lift, fold)) - anchor;
+                    shell.Normals[v] = shell.StartNormals[v];
+                    continue;
+                }
+
+                if (k >= 0)
+                {
+                    ref var point = ref _points[shell.FirstPoint + template.PointStart[panel.Local] + k];
+                    shell.Vertices[v] = point.Position - anchor;
+                    shell.Normals[v] = point.Normal;
+                }
+                else
+                {
+                    // Folded away: a degenerate point riding the face, drawing nothing.
+                    shell.Vertices[v] = panel.Centroid - anchor;
+                    shell.Normals[v] = shell.StartNormals[v];
+                }
             }
 
             shell.Mesh.vertices = shell.Vertices;
@@ -620,29 +795,28 @@ namespace CosmicShore.Gameplay
         {
             var e = _entry;
 
-            // Colour: the crystal's pair carried onto the pilot's over the wrap, so it has become
-            // theirs by the time it clamps.
+            // Colour: the crystal's pair carried onto the pilot's over the flight, so the faces are
+            // theirs by the time they touch the skin.
             float converge = phase switch
             {
-                CrystalHullFusionConfigSO.Phase.Approach => 0f,
-                CrystalHullFusionConfigSO.Phase.Wrap => CrystalHullFusionConfigSO.Smooth(u),
+                CrystalHullFusionConfigSO.Phase.Peel => 0f,
+                CrystalHullFusionConfigSO.Phase.Flight => CrystalHullFusionConfigSO.Smooth(u),
                 _ => 1f,
             };
-            float hold = Mathf.Lerp(e.flareGain, 1.4f, CrystalHullFusionConfigSO.EaseOut(u));
             float flare = phase switch
             {
-                CrystalHullFusionConfigSO.Phase.Approach => Mathf.Lerp(1f, 1.3f, u),
-                CrystalHullFusionConfigSO.Phase.Wrap => Mathf.Lerp(1.3f, 1.6f, u),
-                CrystalHullFusionConfigSO.Phase.Hold => hold,
+                CrystalHullFusionConfigSO.Phase.Peel => Mathf.Lerp(1f, 1.3f, u),
+                CrystalHullFusionConfigSO.Phase.Flight => Mathf.Lerp(1.3f, 1.6f, u),
+                CrystalHullFusionConfigSO.Phase.Mate => Mathf.Lerp(e.flareGain, 1.4f, CrystalHullFusionConfigSO.EaseOut(u)),
                 _ => Mathf.Lerp(1.4f, 1f, u),
             };
             float discharge = phase switch
             {
-                CrystalHullFusionConfigSO.Phase.Hold => 1f,
-                CrystalHullFusionConfigSO.Phase.Sink => 1f - CrystalHullFusionConfigSO.Smooth(u),
+                CrystalHullFusionConfigSO.Phase.Mate => 1f,
+                CrystalHullFusionConfigSO.Phase.Dissolve => 1f - CrystalHullFusionConfigSO.Smooth(u),
                 _ => 0f,
             };
-            float opacity = phase == CrystalHullFusionConfigSO.Phase.Sink ? 1f - CrystalHullFusionConfigSO.EaseIn(u) : 1f;
+            float opacity = phase == CrystalHullFusionConfigSO.Phase.Dissolve ? 1f - CrystalHullFusionConfigSO.EaseIn(u) : 1f;
 
             foreach (var shell in _shells)
             {
@@ -665,7 +839,7 @@ namespace CosmicShore.Gameplay
                 if (shell.HasArcIntensity)
                     block.SetFloat(ArcIntensityId, shell.BaseArcIntensity * Mathf.Lerp(1f, e.arcBoost, discharge));
                 if (shell.HasArcDuty)
-                    block.SetFloat(ArcDutyId, Mathf.Lerp(shell.BaseArcDuty, e.holdArcDuty, discharge));
+                    block.SetFloat(ArcDutyId, Mathf.Lerp(shell.BaseArcDuty, e.mateArcDuty, discharge));
                 block.SetFloat(OpacityId, opacity);
 
                 renderer.SetPropertyBlock(block);
