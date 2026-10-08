@@ -244,7 +244,7 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void FoldGateTarget_AFreshTargetAlwaysFitsItsOwnFootprint()
+        public void WormholeExactTarget_AFreshTargetAlwaysFitsItsOwnFootprint()
         {
             // The reuse rule and the allocation rule must agree, or a target is released the
             // frame after it was made. They disagreed at the 32-texel floor (a 64 target for a
@@ -254,19 +254,19 @@ namespace CosmicShore.Tests
                 for (int needW = 32; needW <= cap; needW++)
                     for (int needH = 32; needH <= cap; needH += 37)
                     {
-                        int w = CosmicShore.Gameplay.FoldGatePortalView.TargetSize(needW, cap);
-                        int h = CosmicShore.Gameplay.FoldGatePortalView.TargetSize(needH, cap);
-                        Assert.IsTrue(CosmicShore.Gameplay.FoldGatePortalView.TargetFits(w, h, needW, needH),
+                        int w = CosmicShore.Gameplay.WormholeGeometry.TargetSize(needW, cap);
+                        int h = CosmicShore.Gameplay.WormholeGeometry.TargetSize(needH, cap);
+                        Assert.IsTrue(CosmicShore.Gameplay.WormholeGeometry.TargetFits(w, h, needW, needH),
                             $"cap {cap}: a {w}x{h} target made for {needW}x{needH} is rejected");
                     }
         }
 
         [Test]
-        public void FoldGateTarget_ShrinksWhenGrosslyLarger_AndRegrowsWhenTooSmall()
+        public void WormholeExactTarget_ShrinksWhenGrosslyLarger_AndRegrowsWhenTooSmall()
         {
-            Assert.IsFalse(CosmicShore.Gameplay.FoldGatePortalView.TargetFits(1024, 1024, 64, 64), "a receding gate frees its big target");
-            Assert.IsFalse(CosmicShore.Gameplay.FoldGatePortalView.TargetFits(64, 64, 65, 40), "a target narrower than the footprint");
-            Assert.IsTrue(CosmicShore.Gameplay.FoldGatePortalView.TargetFits(96, 96, 70, 70), "a little headroom is kept");
+            Assert.IsFalse(CosmicShore.Gameplay.WormholeGeometry.TargetFits(1024, 1024, 64, 64), "a receding gate frees its big target");
+            Assert.IsFalse(CosmicShore.Gameplay.WormholeGeometry.TargetFits(64, 64, 65, 40), "a target narrower than the footprint");
+            Assert.IsTrue(CosmicShore.Gameplay.WormholeGeometry.TargetFits(96, 96, 70, 70), "a little headroom is kept");
         }
 
         [Test]

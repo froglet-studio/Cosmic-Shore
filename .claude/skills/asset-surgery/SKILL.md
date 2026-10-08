@@ -1035,6 +1035,12 @@ references, m_Script classes). Four things that cost time on the first run (2026
   With only a .NET 10 SDK, `depublicize()` dies with `IndexError: list index out of range` after a
   full ten-minute fetch, which reads as a broken tool. Install the 8.0 channel per-user (above) and
   point `DOTNET_ROOT` at it; `TMPDIR` decides where the ~550 MB cache lands.
+- **`check_generated_assets.py` needs the SAME `DOTNET_ROOT` and `TMPDIR` the compile ran with.**
+  Run it bare after a compile that used a per-user SDK and it says `no Roslyn tools in
+  <TMPDIR>/unity_refcompile_cache/tools - run run.sh first` — while the tools sit in that very
+  directory. It is not missing the cache; it cannot find `csc.dll` under the system
+  `DOTNET_ROOT`. Export both for the audit too (2026-10-08). Negative-control it the same way as
+  the compile: misspell one key in a changed asset, confirm `[field] 1` names it, restore.
 - **"218 errors" is not 218 errors.** Read the `ERRORS in project code:` line. The large bucket is
   files that `using` a UGS package no mirror carries (Multiplayer, Friends, Leaderboards); they are
   counted, not judged. Check your own files are not in that bucket (they would be unverified):
