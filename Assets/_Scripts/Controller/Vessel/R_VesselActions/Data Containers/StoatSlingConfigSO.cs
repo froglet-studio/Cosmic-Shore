@@ -54,6 +54,16 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Seconds from birth to annihilation.")]
         [SerializeField, Range(0.5f, 30f)] float lifetime = 4f;
 
+        [Header("Autopilot sling")]
+        [Tooltip("An autopilot slings when its target is at least this many degrees off the nose, to the side it wants to turn. 0 disables the AI sling.")]
+        [SerializeField, Range(0f, 180f)] float aiSlingMinTurnDegrees = 30f;
+
+        [Tooltip("Seconds between an autopilot's slings — one pair at a time, so roughly its lifetime.")]
+        [SerializeField, Range(0.5f, 20f)] float aiSlingIntervalSeconds = 3f;
+
+        [Tooltip("An autopilot does not sling at a target closer than this (world units) — a turn that short is the stick's.")]
+        [SerializeField, Min(0f)] float aiSlingMinDistance = 120f;
+
         [Header("Audio (FMOD) — slots shipped EMPTY, wire in the inspector")]
         [Tooltip("Played once when a squeeze begins (the wind-up). Empty = silent.")]
         [SerializeField] EventReference holdStartEvent;
@@ -70,6 +80,9 @@ namespace CosmicShore.ScriptableObjects
         public ElementalFloat HalfGapHorizons => halfGapHorizons;
         public float DriftSpeed => Mathf.Clamp(driftSpeed, 0f, 200f);
         public float Lifetime => Mathf.Clamp(lifetime, 0.5f, 30f);
+        public float AiSlingMinTurnDegrees => Mathf.Clamp(aiSlingMinTurnDegrees, 0f, 180f);
+        public float AiSlingIntervalSeconds => Mathf.Clamp(aiSlingIntervalSeconds, 0.5f, 20f);
+        public float AiSlingMinDistance => Mathf.Max(0f, aiSlingMinDistance);
         public EventReference HoldStartEvent => holdStartEvent;
         public EventReference SlingEvent => slingEvent;
     }

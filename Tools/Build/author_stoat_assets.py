@@ -24,6 +24,8 @@ WHAT IT MAKES (`R_VesselActions/STOAT.md`)
     materials, StoatHullBuilder hiding the Squirrel model's renderers), VesselCustomization's
     painted geometry moved onto it, and the root's VesselAnimation switched to StoatAnimation on
     the same fileID (STOAT.md section 2).
+    STAGE 3: SO_Class_Stoat (the SO_Vessel a card's Vessels list names a hull by; owned from the
+    start, the Squirrel's icons as placeholders) and its entry in SO_Classlist_All / _Classes.
     and one entry each in `Assets/_SO_Assets/Vessel Prefab Container.asset` and
     `Assets/DefaultNetworkPrefabs.asset`, the two lists that make a hull spawnable.
 
@@ -48,6 +50,14 @@ CONTAINER = os.path.join(ROOT, "Assets", "_SO_Assets", "Vessel Prefab Container.
 NETWORK_PREFABS = os.path.join(ROOT, "Assets", "DefaultNetworkPrefabs.asset")
 ACTIONS = os.path.join(ROOT, "Assets", "_SO_Assets", "VesselActions", "Stoat")
 MAP = os.path.join(ROOT, "Assets", "Resources", "ElementalAbilityMaps", "Stoat.asset")
+CLASSES = os.path.join(ROOT, "Assets", "_SO_Assets", "Classes")
+CLASS_ASSET = os.path.join(CLASSES, "SO_Class_Stoat.asset")
+CLASS_LISTS = [os.path.join(CLASSES, "SO_Classlist_All.asset"), os.path.join(CLASSES, "SO_Classlist_Classes.asset")]
+CLASS_GUID = "cc163188820f4e7a985561bc609da2e0"
+SO_VESSEL_SCRIPT = "0309a5343d820c14abd73b35f6fa50f1"
+# Placeholder art: the Squirrel's class icons (the hull it was cloned from) until the Stoat's land.
+SQUIRREL_ICON_ACTIVE = "5d8f022f56d65ef4fae2cea4428a990f"
+SQUIRREL_ICON_INACTIVE = "c7a15d77edb2723429254cf708d9d20c"
 
 STOAT_CLASS_ID = 14
 PREFAB_GUID = "599b396ff054448db5bccc9307dfb4c9"
@@ -412,6 +422,55 @@ def apply_hull(text: str) -> str:
     return text
 
 
+# ----------------------------------------------------------------------------- stage 3: the class asset
+def class_asset() -> str:
+    """SO_Class_Stoat - the SO_Vessel a card's Vessels list, the hangar and the class lists name a
+    hull by (CONTRACT.md 1.9). Butterfly-shaped; owned from the start so the prototype can be
+    picked; the Squirrel's icons stand in until the Stoat's art lands."""
+    return (
+        "%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n--- !u!114 &11400000\nMonoBehaviour:\n"
+        "  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {fileID: 0}\n  m_PrefabInstance: {fileID: 0}\n"
+        "  m_PrefabAsset: {fileID: 0}\n  m_GameObject: {fileID: 0}\n  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
+        f"  m_Script: {{fileID: 11500000, guid: {SO_VESSEL_SCRIPT}, type: 3}}\n"
+        "  m_Name: SO_Class_Stoat\n  m_EditorClassIdentifier: Assembly-CSharp::SO_Vessel\n"
+        f"  Class: {STOAT_CLASS_ID}\n  Name: Stoat\n"
+        "  Description: Never flies straight for long. The Stoat throws a wormhole pair across\n"
+        "    itself - attractor on one side, repulsor on the other - and goes where the pull\n"
+        "    throws it.\n"
+        "  PrimaryElement: 3\n  Element: {fileID: 0}\n"
+        "  InitialResourceLevels:\n    Mass: 0\n    Charge: 0\n    Space: 0\n    Time: 0\n"
+        f"  IconActive: {{fileID: 21300000, guid: {SQUIRREL_ICON_ACTIVE}, type: 3}}\n"
+        f"  IconInactive: {{fileID: 21300000, guid: {SQUIRREL_ICON_INACTIVE}, type: 3}}\n"
+        "  PreviewImage: {fileID: 0}\n  SquadImage: {fileID: 0}\n  TrailPreviewImage: {fileID: 0}\n"
+        "  CardSilohoutteActive: {fileID: 0}\n  CardSilohoutteInactive: {fileID: 0}\n"
+        "  Abilities: []\n  Games: []\n  TrainingGames: []\n"
+        "  gameplayParameter1:\n    LeftHandLabel: Casual\n    RightHandLabel: Challenging\n    Value: 0.6\n"
+        "  gameplayParameter2:\n    LeftHandLabel: Relaxing\n    RightHandLabel: Thrilling\n    Value: 0.7\n"
+        "  gameplayParameter3:\n    LeftHandLabel: Solo\n    RightHandLabel: Social\n    Value: 0.5\n"
+        "  isLocked: 0\n  ownedFromStart: 1\n  UnlockCost: 0\n"
+    )
+
+
+def class_meta() -> str:
+    return ("fileFormatVersion: 2\n"
+            f"guid: {CLASS_GUID}\n"
+            "NativeFormatImporter:\n  externalObjects: {}\n  mainObjectFileID: 11400000\n"
+            "  userData: \n  assetBundleName: \n  assetBundleVariant: \n")
+
+
+def class_list_entry() -> str:
+    return f"  - {{fileID: 11400000, guid: {CLASS_GUID}, type: 2}}\n"
+
+
+def register_class_list(text: str) -> str:
+    if CLASS_GUID in text:
+        return text
+    m = re.search(r"  VesselList:\n((?:  - \{fileID: 11400000, guid: [0-9a-f]{32}, type: 2\}\n)+)", text)
+    if not m:
+        raise RuntimeError("class list: VesselList not found")
+    return text[:m.end(1)] + class_list_entry() + text[m.end(1):]
+
+
 # ----------------------------------------------------------------------------- registrations
 def container_entry() -> str:
     return f"  - {{fileID: {ROOT_GO}, guid: {PREFAB_GUID}, type: 3}}\n"
@@ -525,6 +584,15 @@ def check(files: "dict[str, str]") -> "list[str]":
             errors.append(f"{rel_map}: vesselClass is not {STOAT_CLASS_ID}")
         if "    Input: 2\n" not in mp or "    Input: 6\n" not in mp:
             errors.append(f"{rel_map}: the sling (Input 2) and the hold (Input 6) must both be declared")
+    rel_class = os.path.relpath(CLASS_ASSET, ROOT)
+    if files.get(rel_class) != class_asset():
+        errors.append(f"{rel_class} is missing or not as authored (Class {STOAT_CLASS_ID}, owned from start)")
+    if f"guid: {CLASS_GUID}" not in files.get(rel_class + ".meta", ""):
+        errors.append(f"{rel_class}.meta does not carry guid {CLASS_GUID}")
+    for cl in CLASS_LISTS:
+        rel_cl = os.path.relpath(cl, ROOT)
+        if files.get(rel_cl, "").count(class_list_entry()) != 1:
+            errors.append(f"{rel_cl}: SO_Class_Stoat is not listed exactly once")
     sl = files.get(os.path.relpath(os.path.join(ACTIONS, "StoatSlingLeftAction.asset"), ROOT), "")
     sr = files.get(os.path.relpath(os.path.join(ACTIONS, "StoatSlingRightAction.asset"), ROOT), "")
     if sl and "  side: 0\n" not in sl:
@@ -535,7 +603,7 @@ def check(files: "dict[str, str]") -> "list[str]":
 
 
 def read_all() -> "dict[str, str]":
-    paths = [PREFAB, PREFAB + ".meta", DONOR, CONTAINER, NETWORK_PREFABS, MAP]
+    paths = [PREFAB, PREFAB + ".meta", DONOR, CONTAINER, NETWORK_PREFABS, MAP, CLASS_ASSET, CLASS_ASSET + ".meta"] + CLASS_LISTS
     for name in ("StoatSlingConfig", "StoatSlingLeftAction", "StoatSlingRightAction", "StoatHoldAction"):
         paths += [os.path.join(ACTIONS, name + ".asset"), os.path.join(ACTIONS, name + ".asset.meta")]
     files = {}
@@ -582,6 +650,8 @@ def self_test() -> int:
     fires("paint left on the Squirrel mesh", lambda f: f.__setitem__(rel, f[rel].replace(
         f"  _shipGeometries:\n  - {{fileID: {HULL_GO_ID}}}\n", f"  _shipGeometries:\n  - {{fileID: {SQUIRREL_MESH_GO}}}\n")))
     fires("animation reverted to the Manta's", lambda f: f.__setitem__(rel, f[rel].replace(STOAT_ANIMATION_SCRIPT, MANTA_ANIMATION_SCRIPT)))
+    fires("class asset missing from a class list", lambda f: f.__setitem__(os.path.relpath(CLASS_LISTS[0], ROOT),
+          f[os.path.relpath(CLASS_LISTS[0], ROOT)].replace(class_list_entry(), "")))
     # stage 2 is idempotent: applying it to the shipped prefab changes nothing
     idem = apply_hull(files[rel]) == files[rel]
     print(f"  stage 2 idempotent on the shipped prefab: {'yes' if idem else 'NO'}")
@@ -608,6 +678,17 @@ def main(argv) -> int:
         if after != before:
             write(PREFAB, after)
             print(f"stage 2: the procedural hull + StoatAnimation authored into {os.path.relpath(PREFAB, ROOT)}")
+        if not os.path.exists(CLASS_ASSET):
+            write(CLASS_ASSET, class_asset())
+            write(CLASS_ASSET + ".meta", class_meta())
+            print(f"stage 3: wrote {os.path.relpath(CLASS_ASSET, ROOT)}")
+        for cl in CLASS_LISTS:
+            with open(cl, encoding="utf-8", newline="") as f:
+                before = f.read().replace("\r\n", "\n")
+            after = register_class_list(before)
+            if after != before:
+                write(cl, after)
+                print(f"stage 3: registered SO_Class_Stoat in {os.path.relpath(cl, ROOT)}")
         for path, fn in ((CONTAINER, register_container), (NETWORK_PREFABS, register_network)):
             with open(path, encoding="utf-8", newline="") as f:
                 before = f.read().replace("\r\n", "\n")

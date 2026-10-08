@@ -187,6 +187,11 @@ namespace CosmicShore.Gameplay
         float _maxDistanceSquared;
 
         Vector3 _targetPosition;
+
+        /// <summary>Where the pilot WANTS to be this frame (the objective, the mode's external
+        /// target, a chased vessel) — read-only, for an ability that must aim the way the AI is
+        /// going (the Stoat's autopilot sling). Steering may differ (the drift look target).</summary>
+        public Vector3 TargetPosition => _targetPosition;
         // Live opponent the AI is chasing in player-seek (Joust) mode. Chosen by the
         // UpdatePlayerTarget coroutine; Update() reads its current position every frame.
         Transform _targetVesselTransform;

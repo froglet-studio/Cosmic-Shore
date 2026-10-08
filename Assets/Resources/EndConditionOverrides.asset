@@ -45,6 +45,7 @@ MonoBehaviour:
   headlongGateTarget: 24
   redlineGateTarget: 24
   grizzlyTimeGateTarget: 24
+  slingshotGateTarget: 16
   regattaGateTarget: 24
   hijackStealTarget: 750
   hexRaceCrystalCountBuild: 0
@@ -80,6 +81,7 @@ MonoBehaviour:
   headlongGateTargetBuild: 24
   redlineGateTargetBuild: 24
   grizzlyTimeGateTargetBuild: 24
+  slingshotGateTargetBuild: 16
   regattaGateTargetBuild: 24
   hijackStealTargetBuild: 750
   autoRestoreBuildValuesBeforeBuild: 1

@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using CosmicShore.Core;
+using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using FMODUnity;
@@ -52,6 +54,9 @@ namespace CosmicShore.Gameplay
         IVesselStatus _status;
         BlackHoleRegistry.Pair _pair;
         ToggleTranslationModeActionExecutor _stance;
+        readonly InputEvents?[] _boundInput = new InputEvents?[2];
+        readonly List<ShipActionSO> _bindScratch = new();
+        float _aiLastSlingTime = float.NegativeInfinity;
 
         /// <summary>The pair this hull slung last, alive or not; null before the first sling.</summary>
         public BlackHoleRegistry.Pair LastPair => _pair;
@@ -76,7 +81,9 @@ namespace CosmicShore.Gameplay
             if (_holds[i].Holding) return;
             _holds[i].Holding = true;
             _holds[i].HeldFor = 0f;
-            _holds[i].Hold01 = 0f;
+            // An autopilot presses and releases in one step (no frame to sample a squeeze in), so
+            // its fixed squeeze is the hold from the start.
+            _holds[i].Hold01 = config != null && _status != null && _status.AutoPilotEnabled ? config.AutopilotHold01 : 0f;
             if (config != null) PlayOneShot(config.HoldStartEvent);
         }
 
@@ -129,6 +136,58 @@ namespace CosmicShore.Gameplay
             bool autopilot = _status.AutoPilotEnabled;
             Track(Side.Left, input != null ? input.LeftTriggerAnalog : 0f, analog, autopilot);
             Track(Side.Right, input != null ? input.RightTriggerAnalog : 0f, analog, autopilot);
+
+            if (autopilot && MantaStingActionExecutor.IsSimAuthority(_status)) AutopilotSling();
+        }
+
+        /// <summary>
+        /// The sling an autopilot cannot press (the arcade rule: never assume an AI can use a
+        /// human's input). When the AI's target sits at least <c>aiSlingMinTurnDegrees</c> off the
+        /// nose on the hull's horizontal, and is far enough for a sling to matter, it lays the
+        /// pair with the ATTRACTOR on the side it wants to turn — a press and a release through
+        /// the REPLICATED path, so every peer runs the same sling a human's squeeze would have
+        /// (the Grizzly's autopilot bomb is the model). Simulating machine only.
+        /// </summary>
+        void AutopilotSling()
+        {
+            if (config.AiSlingMinTurnDegrees <= 0f) return;
+            if (Time.time - _aiLastSlingTime < config.AiSlingIntervalSeconds) return;
+            var ai = _status.AIPilot;
+            var hull = _status.Transform;
+            var handler = _status.ActionHandler;
+            if (!ai || !hull || !handler) return;
+            if (!StoatSlingMath.TryAutopilotSide(hull.InverseTransformPoint(ai.TargetPosition), config.AiSlingMinTurnDegrees,
+                    config.AiSlingMinDistance, out bool blackOnLeft)) return;
+            var side = blackOnLeft ? Side.Left : Side.Right;
+            if (!ResolveBoundInput(side, handler, out var ie)) return;
+            _aiLastSlingTime = Time.time;
+            handler.PerformShipControllerActionsReplicated(ie);   // the squeeze
+            handler.StopShipControllerActionsReplicated(ie);      // the sling
+        }
+
+        /// <summary>Which input event this side's sling is bound to on THIS vessel — read off the
+        /// binding maps and retried until it succeeds (they fill after executors initialize,
+        /// vessel contract rule 6).</summary>
+        bool ResolveBoundInput(Side side, R_VesselActionHandler handler, out InputEvents ie)
+        {
+            int i = (int)side;
+            if (_boundInput[i].HasValue) { ie = _boundInput[i].Value; return true; }
+            foreach (InputEvents candidate in System.Enum.GetValues(typeof(InputEvents)))
+            {
+                _bindScratch.Clear();
+                handler.CollectBoundActions(candidate, _bindScratch);
+                foreach (var action in _bindScratch)
+                    if (action is StoatSlingActionSO sling && sling.Side == side)
+                    {
+                        _boundInput[i] = candidate;
+                        _bindScratch.Clear();
+                        ie = candidate;
+                        return true;
+                    }
+            }
+            _bindScratch.Clear();
+            ie = default;
+            return false;
         }
 
         void Track(Side side, float rawAnalog, bool analog, bool autopilot)
@@ -156,6 +215,8 @@ namespace CosmicShore.Gameplay
         {
             _holds[0] = default;
             _holds[1] = default;
+            _boundInput[0] = null;
+            _boundInput[1] = null;
         }
     }
 }

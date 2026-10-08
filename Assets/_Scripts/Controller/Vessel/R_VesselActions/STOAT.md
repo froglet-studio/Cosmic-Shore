@@ -14,7 +14,8 @@ the repulsor, and that asymmetric push is the **slingshot**. Its second input is
 Status: **PROTOTYPE.** The prefab is a text clone of the Squirrel's (same flight model, colliders,
 HUD and camera) with the Squirrel's bindings replaced and its model HIDDEN: the drawn hull is the
 Stoat's own **procedural plated body** with the user's **bounding lope** (§2.1, §2.2), both picked in
-the Stoat Flight Studio viewer (round 2, Option 2). Its game is **Slingshot** (`Arcade/SLINGSHOT.md`). **Nothing here has been
+the Stoat Flight Studio viewer (round 2, Option 2). Its game is **Slingshot** (`GameModes.Slingshot = 64`, `Arcade/SLINGSHOT.md`): a two-lap circuit
+race where the sling is the only speed past cruise. **Nothing here has been
 run in the editor** — every proof below is offline (§5), the same standing as `Docs/BLACK_HOLE.md`
 §0.1. The black hole itself — the pull, the lens, the tides, the pair, the pass-through — is
 documented there and not repeated here.
@@ -42,6 +43,15 @@ every vessel. **Why the sling ends the stop:** while `IsTranslationRestricted`, 
 displaces a vessel only by modifiers flagged `ignoresTranslationRestriction` (the Sparrow's dodge),
 so a held-still Stoat would ignore its own pull; `ToggleTranslationModeActionExecutor.EndStance()`
 (the turn-end exit, through the controller so it replicates) is called on release instead.
+
+**The autopilot slings** (`AutopilotSling`, simulating machine only): when the AI's target
+(`AIPilot.TargetPosition`) is at least `aiSlingMinTurnDegrees` (30°) off the nose and
+`aiSlingMinDistance` (120 u) away, at most every `aiSlingIntervalSeconds` (3 s), it presses and
+releases the trigger on the target's side through `PerformShipControllerActionsReplicated` /
+`StopShipControllerActionsReplicated` — so every peer runs the same sling a human's squeeze would —
+at the fixed `autopilotHold01` squeeze (set at the press: an autopilot has no frame to sample a
+squeeze in). Never assume an AI can use a human's input (the arcade rule); the Grizzly's autopilot
+bomb is the model. `StoatSlingMath.TryAutopilotSide` is the pure choice.
 
 **It works while idle, deliberately.** The holes are laid in the hull's FRAME (position, forward,
 right, up), not thrown from its velocity, so a stopped Stoat is the ideal slinger: stop (X), squeeze,
@@ -142,6 +152,9 @@ error.
   `VesselPrismController`, no seed assembler, the fleet's `stationaryModeChanged` and
   `OnMiniGameTurnEnd` channels — the guids the Sparrow carries, `check_vessel_shared_channels.py`)
   added on the `ShipActions` object and in `ActionExecutorRegistry._executors`.
+- **`SO_Class_Stoat`** (stage 3; Class 14, owned from the start, the Squirrel's icons as
+  placeholders) in `SO_Classlist_All` and `SO_Classlist_Classes` — what a card's Vessels list and
+  the hangar name a hull by (CONTRACT.md §1.9); `arcade_mode_lib.VESSELS` knows it.
 - Registered in `Vessel Prefab Container.asset` and `DefaultNetworkPrefabs.asset`;
   `ToyVesselRoster.Default` lists it; `EnumIntegrityTests` locks 14 (and the count, which had not
   been bumped for the Butterfly).
@@ -191,8 +204,6 @@ either authored ability — the row reports them LOCKED rather than green, by de
 The ability row's icons and hints; the pair's
 network replication (the press/release edges round-trip, so a peer lays its OWN copy of the pair at
 the replicated pose, but the two copies are not one object); the annihilation / birth feel
-(`Docs/BLACK_HOLE.md` §11 "Not yet"); a touch binding; the hangar / arcade `SO_Class_Stoat` asset and class-list entry
-(CONTRACT.md §1.9 — the prototype is flown from the lava-lamp Vessel Changer, which reads
-`ToyVesselRoster.Default`); an AI that chooses to sling (the executor
+(`Docs/BLACK_HOLE.md` §11 "Not yet"); a touch binding (the executor
 answers the autopilot's squeeze, nothing presses for it); the "everything destructible" extension of
 the black hole itself.

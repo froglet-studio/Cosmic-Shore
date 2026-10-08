@@ -42,6 +42,22 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public static Vector3 PairAxis(bool blackOnLeft, Vector3 hullRight) => blackOnLeft ? hullRight : -hullRight;
 
+        /// <summary>
+        /// The autopilot's choice: given its target in the HULL's local frame, sling when the target
+        /// is at least <paramref name="minTurnDegrees"/> off the nose on the hull's horizontal and
+        /// <paramref name="minDistance"/> away, with the ATTRACTOR on the side it wants to turn
+        /// (target to the left, x &lt; 0, → black on the left). A target behind the hull counts as
+        /// a full turn toward its side.
+        /// </summary>
+        public static bool TryAutopilotSide(Vector3 targetLocal, float minTurnDegrees, float minDistance, out bool blackOnLeft)
+        {
+            blackOnLeft = targetLocal.x < 0f;
+            var flat = new Vector2(targetLocal.x, targetLocal.z);
+            if (flat.sqrMagnitude < 1e-6f || targetLocal.magnitude < minDistance) return false;
+            float offNose = Mathf.Abs(Mathf.Atan2(targetLocal.x, targetLocal.z)) * Mathf.Rad2Deg;
+            return offNose >= minTurnDegrees;
+        }
+
         /// <summary>The pair's midpoint: <paramref name="aheadHorizons"/> horizon radii ahead of the hull.</summary>
         public static Vector3 Midpoint(Vector3 hullPosition, Vector3 hullForward, float horizonRadius, float aheadHorizons)
             => hullPosition + hullForward * (Mathf.Max(0f, horizonRadius) * Mathf.Max(0f, aheadHorizons));

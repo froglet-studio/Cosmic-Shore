@@ -179,6 +179,13 @@ namespace CosmicShore.ScriptableObjects
         /// it) by the turn monitor for the finish line, so the two cannot drift.</summary>
         public const int DefaultGrizzlyTimeGateTarget = 24;
 
+        /// <summary>Slingshot RACE length used when <see cref="slingshotGateTarget"/> is 0 - gate
+        /// threadings, i.e. laps x rings. 16 = two laps of the shipped eight-gate circuit (the
+        /// Stoat cruises at 60 u/s, so two laps of the race shell is already a long race).
+        /// Read by <c>SlingshotController</c> both to size the circuit and (through it) by the
+        /// turn monitor for the finish line, so the two cannot drift.</summary>
+        public const int DefaultSlingshotGateTarget = 16;
+
         /// <summary>Regatta RACE length used when <see cref="regattaGateTarget"/> is 0 - gate
         /// threadings, i.e. laps x rings. 24 = three laps of the eight-ring circuit. The rings
         /// per lap are a property of the ARENA (RegattaCourse.RingsPerLap - the rails are laid
@@ -308,6 +315,11 @@ namespace CosmicShore.ScriptableObjects
                  "and the size of the circuit. 24 = three laps of eight. 0 uses the default.")]
         [Min(0)] public int grizzlyTimeGateTarget = 24;
 
+        [Tooltip("Slingshot: gate threadings that win the race - LAPS x RINGS, not rings. The " +
+                 "controller lays target/laps rings, so this one number is both the finish line " +
+                 "and the size of the circuit. 16 = two laps of eight. 0 uses the default.")]
+        [Min(0)] public int slingshotGateTarget = 16;
+
         [Tooltip("Regatta: gate threadings that win the race - LAPS x RINGS, not rings. The " +
                  "arena lays eight rings a lap with the rails threaded through them, so this " +
                  "must be a multiple of eight; the controller races laps = target / 8. 24 = " +
@@ -378,6 +390,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int headlongGateTargetBuild = 24;
         [Min(0)] public int redlineGateTargetBuild = 24;
         [Min(0)] public int grizzlyTimeGateTargetBuild = 24;
+        [Min(0)] public int slingshotGateTargetBuild = 16;
         [Min(0)] public int regattaGateTargetBuild = 24;
         [Min(0)] public int hijackStealTargetBuild = 750;
         [Min(0)] public int tollwayTollTargetBuild = 8;
@@ -605,6 +618,14 @@ namespace CosmicShore.ScriptableObjects
             grizzlyTimeGateTarget > 0 ? grizzlyTimeGateTarget : DefaultGrizzlyTimeGateTarget;
 
         /// <summary>
+        /// Slingshot race length ("thread N gates", i.e. laps x rings): the configured value when
+        /// &gt; 0, otherwise <see cref="DefaultSlingshotGateTarget"/>. Read by
+        /// <c>SlingshotController.AuthoredGateTarget</c>, which the turn monitor asks in turn.
+        /// </summary>
+        public int GetSlingshotGateTarget() =>
+            slingshotGateTarget > 0 ? slingshotGateTarget : DefaultSlingshotGateTarget;
+
+        /// <summary>
         /// Regatta race length ("thread N gates", i.e. laps x rings): the configured value when
         /// &gt; 0, otherwise <see cref="DefaultRegattaGateTarget"/>. Read by
         /// <c>RegattaController.AuthoredGateTarget</c>, which the turn monitor asks in turn.
@@ -725,6 +746,7 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.Headlong                  => headlongGateTarget > 0 ? headlongGateTarget : DefaultHeadlongGateTarget,
                 GameModes.Redline                   => redlineGateTarget > 0 ? redlineGateTarget : DefaultRedlineGateTarget,
                 GameModes.GrizzlyTime               => GetGrizzlyTimeGateTarget(),
+                GameModes.Slingshot                 => GetSlingshotGateTarget(),
                 GameModes.Regatta                   => regattaGateTarget > 0 ? regattaGateTarget : DefaultRegattaGateTarget,
                 GameModes.Hijack                    => hijackStealTarget > 0 ? hijackStealTarget : DefaultHijackStealTarget,
                 GameModes.Tollway                   => tollwayTollTarget > 0 ? tollwayTollTarget : DefaultTollwayTollTarget,
@@ -781,6 +803,7 @@ namespace CosmicShore.ScriptableObjects
             headlongGateTarget == headlongGateTargetBuild &&
             redlineGateTarget == redlineGateTargetBuild &&
             grizzlyTimeGateTarget == grizzlyTimeGateTargetBuild &&
+            slingshotGateTarget == slingshotGateTargetBuild &&
             regattaGateTarget == regattaGateTargetBuild &&
             hijackStealTarget == hijackStealTargetBuild &&
             tollwayTollTarget == tollwayTollTargetBuild &&
@@ -816,6 +839,7 @@ namespace CosmicShore.ScriptableObjects
             headlongGateTarget = headlongGateTargetBuild;
             redlineGateTarget = redlineGateTargetBuild;
             grizzlyTimeGateTarget = grizzlyTimeGateTargetBuild;
+            slingshotGateTarget = slingshotGateTargetBuild;
             regattaGateTarget = regattaGateTargetBuild;
             hijackStealTarget = hijackStealTargetBuild;
             tollwayTollTarget = tollwayTollTargetBuild;
@@ -852,6 +876,7 @@ namespace CosmicShore.ScriptableObjects
             headlongGateTargetBuild = headlongGateTarget;
             redlineGateTargetBuild = redlineGateTarget;
             grizzlyTimeGateTargetBuild = grizzlyTimeGateTarget;
+            slingshotGateTargetBuild = slingshotGateTarget;
             regattaGateTargetBuild = regattaGateTarget;
             hijackStealTargetBuild = hijackStealTarget;
             tollwayTollTargetBuild = tollwayTollTarget;

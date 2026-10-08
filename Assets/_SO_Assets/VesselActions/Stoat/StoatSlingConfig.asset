@@ -28,6 +28,9 @@ MonoBehaviour:
     Floor: 1.5
   driftSpeed: 20
   lifetime: 4
+  aiSlingMinTurnDegrees: 30
+  aiSlingIntervalSeconds: 3
+  aiSlingMinDistance: 120
   holdStartEvent:
     Guid:
       Data1: 0
