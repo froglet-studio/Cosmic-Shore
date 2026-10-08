@@ -193,6 +193,17 @@ def main():
                 pg.screenshot(path=os.path.join(a.shots, f"desktop_{mode}.png"))
             ctx.close()
 
+        # ---- scored populations: ?pop=scored builds the cell at the scored defaults ------------------------------
+        ctx, pg, errs = page(1024, 700, "?mode=cell&pop=scored&go=1&auto=1&seed=11")
+        pg.wait_for_timeout(1500)
+        sc = pg.evaluate("""(() => { const g = window.__eco.W.species.find(s => s.key === 'grazer');
+          let n = 0; for (let i = 0; i < g.alive.length; i++) n += g.alive[i] ? 1 : 0;
+          return { cap: g.alive.length, alive: n, picker: document.getElementById('pop').value }; })()""")
+        out["pop_scored"] = dict(errors=errs, **sc)
+        if errs: fails.append(f"pop=scored: page errors {errs[:3]}")
+        if sc["cap"] != 240 or sc["picker"] != "scored": fails.append(f"pop=scored: grazer cap {sc['cap']}, picker {sc['picker']} (want 240, scored)")
+        ctx.close()
+
         # ---- 4+5: whole cell, frame time, screenshots ------------------------------------------------------------
         ctx, pg, errs = page(1440, 900, "?mode=cell&go=1&auto=1&seed=7&debug=1")
         pg.wait_for_timeout(3000)

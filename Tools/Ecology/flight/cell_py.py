@@ -93,6 +93,13 @@ def _arena_cls():
         def grove(self, n, margin=0.0):
             return self._ball(n, 0.3 * self.R, 0.75 * self.R)
 
+        def step(self, dt):
+            # the page's arena (and FloraArena) record each pilot's previous position every step; the snap trap's
+            # ram / burn contacts are swept along prev -> pos, so a stale prev would sweep the whole flight path
+            for p in self.pilots:
+                p.prev = p.pos.copy()
+            super().step(dt)
+
         def speed_factor(self, p):             # the page slows only the player (its flight model); pilots keep speed
             return 1.0
 
@@ -135,7 +142,7 @@ def one(args):
         sps.append(_species(k, ar, seed, pop))
     ar.src = "arena"
     pilot = ar.add_pilot(dict(wander=Pilot.wanderer, hunter=Pilot.hunter)[policy]())
-    pilot.prev = pilot.pos.copy()
+    pilot.prev = pilot.pos.copy()         # the first step's sweep starts where the pilot is
     steps = int(round(minutes * 60 / DT))
     pops = {k: [] for k in keys}
     crys0 = {k: getattr(s, "crystals", 0) for k, s in zip(keys, sps)}

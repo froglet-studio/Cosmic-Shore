@@ -1,0 +1,13 @@
+wander  seed    7  hits/min  38.00    10.5 ms/step  residual 0  (19 s)
+wander  seed   23  hits/min  54.67    10.9 ms/step  residual 0  (39 s)
+wander  seed   41  hits/min   8.33    11.4 ms/step  residual 0  (59 s)
+wander  seed  101  hits/min  46.33    12.2 ms/step  residual 0  (81 s)
+wander  seed  202  hits/min  50.33     9.7 ms/step  residual 0  (99 s)
+wander  seed  303  hits/min  53.33    10.7 ms/step  residual 0  (118 s)
+hunter  seed    7  hits/min  19.00     9.9 ms/step  residual 0  (136 s)
+hunter  seed   23  hits/min  55.67    10.5 ms/step  residual 0  (154 s)
+hunter  seed   41  hits/min  36.33    10.0 ms/step  residual 0  (172 s)
+hunter  seed  101  hits/min  40.33    11.1 ms/step  residual 0  (192 s)
+hunter  seed  202  hits/min  22.00     9.2 ms/step  residual 0  (209 s)
+hunter  seed  303  hits/min  12.00    10.2 ms/step  residual 0  (227 s)
+wrote /home/claude/cosmic-shore/Tools/Ecology/flight/results/cell_js_minus_locust.json
