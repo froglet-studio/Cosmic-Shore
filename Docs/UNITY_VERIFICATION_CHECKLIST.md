@@ -65,6 +65,29 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Butterfly omni-crystal bloom: strips pilots, dusts prisms (`cece/awesome-hopper-rj9b50`, 2026-10-08)
+
+**Landed** (`R_VesselActions/BUTTERFLY.md §3.3a`, generator `Tools/Build/author_butterfly_dust.py --check`):
+the 900-unit bloom used to carry only a heart-kill. Its container now also authors
+`ButterflyBloomDebuffByExplosionEffect` (all four elements ejected as crystals, -0.12 each, priced by
+`author_combat_debuff_magnitudes.py`) and `ButterflyBloomScaleDustPrismEffect` (new
+`ExplosionScaleDustPrismEffectSO`, which calls the dust asset's new `Apply`). New dispatch path:
+`ExplosionImpactor.SweepPrismEffects` (spherical, `affectsPrisms: 0` blasts only, 48/frame).
+No editor was available — nothing here has compiled in Unity.
+
+**Verify in editor**
+1. Compile clean (new script `ExplosionScaleDustPrismEffectSO`; changed `ExplosionImpactor`,
+   `SkimmerScaleDustPrismEffectSO`).
+2. Freestyle, Butterfly, near your own trail: collect an omni crystal → own keys grow / go dangerous /
+   go shielded, rippling outward with the bloom.
+3. Same near an AI's trail → its keys vanish / shrink / turn your colour.
+4. An AI pilot inside the bloom → its element flowers drop ~1 petal each and crystals eject; yours
+   do not.
+5. Dust capsule unchanged (Dust mode over own/opposing trail behaves exactly as before).
+6. MPPM: same prisms reach the same outcome on both clients.
+
+**First-pass tuning**: bloom radius 450 (`BLOOM_SCALE`), strip 1.2 petals/element, per-frame budget 48.
+
 ### 🔴 Omni crystal: Fresnel body + triangle-only Shepard tone falling onto the surface (`claude/omnicrystal-shepard-triangles-v2`, 2026-10-08)
 
 **Landed** (`Docs/PALETTE.md §2.10`, generator `Tools/Build/author_omni_crystal_triangles.py --check`):

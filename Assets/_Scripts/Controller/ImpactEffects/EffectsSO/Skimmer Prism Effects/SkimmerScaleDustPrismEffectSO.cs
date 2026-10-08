@@ -5,7 +5,9 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// The Butterfly's dust on MASS. Every prism the dust capsule passes through gets ONE
-    /// outcome, rolled per contact (design record: <c>R_VesselActions/BUTTERFLY.md</c> §3.1):
+    /// outcome, rolled per contact (design record: <c>R_VesselActions/BUTTERFLY.md</c> §3.3) —
+    /// and so does every prism the omni-crystal BLOOM engulfs, through <see cref="Apply"/> and
+    /// <see cref="ExplosionScaleDustPrismEffectSO"/>, which reads this asset's weights:
     ///
     /// <list type="bullet">
     /// <item><b>Own domain</b> — the dust tends the garden: the prism GROWS along a rolled axis,
@@ -71,7 +73,8 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(0.05f, 0.9f)] float shrinkFraction = 0.35f;
 
         [Header("Destroy")]
-        [Tooltip("Debris speed as a multiple of the capsule's contact speed (proportional debris).")]
+        [Tooltip("Debris speed as a multiple of the striker's speed at the prism (proportional " +
+                 "debris) — the capsule's contact velocity, or the omni-crystal bloom's wavefront.")]
         [SerializeField] float restitution = 1f / 3f;
         [Tooltip("Ceiling on debris speed, real units.")]
         [SerializeField] float debrisSpeedLimit = 120f;
@@ -82,17 +85,36 @@ namespace CosmicShore.Gameplay
             var prism = prismImpactee != null ? prismImpactee.Prism : null;
             if (status == null || !prism || prism.destroyed || prism.prismProperties == null) return;
 
-            uint h = Roll(prism);
-            bool own = prism.Domain == status.Domain;
             // Captured BEFORE the outcome: a destroy or steal can retire/reparent the prism.
             Vector3 at = prism.transform.position;
-            if (own) Tend(prism, status, h);
-            else Blight(impactor, prismImpactee, prism, status, h);
+            var velocity = PrismEffectHelper.ContactVelocity(impactor, status, at, 0f, 0f);
+            bool own = Apply(prismImpactee, status, velocity);
 
             // The sound is the trigger's payload and its slots live on the Butterfly prefab's
             // dust capsule (ButterflyDustField), beside the SkimmerImpactor that ran this.
             if (impactor.TryGetComponent(out ButterflyDustField dust))
                 dust.PlayDustReach(own, at);
+        }
+
+        /// <summary>
+        /// The dust's outcome on ONE prism, independent of what delivered it — the capsule's
+        /// contact above, and the omni-crystal bloom (<see cref="ExplosionScaleDustPrismEffectSO"/>),
+        /// which reads THIS asset's weights so the two can never roll from different tables.
+        /// <paramref name="destroyVelocity"/> is the striker's velocity at the prism, used only by
+        /// the opposing-domain DESTROY outcome (scaled by <c>restitution</c>, capped by
+        /// <c>debrisSpeedLimit</c>). Returns true when the prism was the pilot's own (tended),
+        /// false when it was opposing (blighted) or could not be touched.
+        /// </summary>
+        public bool Apply(PrismImpactor prismImpactee, IVesselStatus status, Vector3 destroyVelocity)
+        {
+            var prism = prismImpactee != null ? prismImpactee.Prism : null;
+            if (status == null || !prism || prism.destroyed || prism.prismProperties == null) return false;
+
+            uint h = Roll(prism);
+            bool own = prism.Domain == status.Domain;
+            if (own) Tend(prism, status, h);
+            else Blight(prismImpactee, prism, status, h, destroyVelocity);
+            return own;
         }
 
         void Tend(Prism prism, IVesselStatus status, uint h)
@@ -122,8 +144,8 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        void Blight(SkimmerImpactor impactor, PrismImpactor impactee, Prism prism,
-                    IVesselStatus status, uint h)
+        void Blight(PrismImpactor impactee, Prism prism, IVesselStatus status, uint h,
+                    Vector3 destroyVelocity)
         {
             int outcome = Pick(Unit(h, 3), destroyWeight, shrinkWeight, stealWeight);
 
@@ -133,9 +155,7 @@ namespace CosmicShore.Gameplay
             switch (outcome)
             {
                 case 0:
-                    var velocity = PrismEffectHelper.ContactVelocity(
-                        impactor, status, prism.transform.position, 0f, 0f);
-                    PrismEffectHelper.DamageProportional(status, impactee, velocity,
+                    PrismEffectHelper.DamageProportional(status, impactee, destroyVelocity,
                                                          restitution, debrisSpeedLimit);
                     break;
                 case 1:
