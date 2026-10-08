@@ -16,14 +16,14 @@ MonoBehaviour:
   entries:
   - Element: 3
     AbilityLabel: Slingshot
-    AbilityDescription: 'Squeeze a trigger and let go: a black-white hole pair is laid
-      across the hull on its own horizontal, the BLACK hole on the side you pressed
-      (left trigger = black on the left, white on the right; the right trigger mirrors
-      it). The hull falls toward the black hole and is shoved off the white one - that
+    AbilityDescription: 'Squeeze a trigger and let go: a attractor-repulsor wormhole pair is laid
+      across the hull on its own horizontal, the ATTRACTOR on the side you pressed
+      (left trigger = attractor on the left, white on the right; the right trigger mirrors
+      it). The hull falls toward the attractor and is shoved off the white one - that
       asymmetric push IS the slingshot. The squeeze''s depth is the pair''s size (a tap
       is a nudge, a buried trigger is the ~90 degree swing); the pair drifts apart,
-      stops, falls back and annihilates on its own, and anything the black hole
-      swallows comes out of the white hole the point-reflected way (Docs/BLACK_HOLE.md
+      stops, falls back and annihilates on its own, and anything the attractor
+      swallows comes out of the repulsor the point-reflected way (Docs/BLACK_HOLE.md
       11). Works while idle. Space is reach: the half-gap between the holes is the
       Space-scaled number (StoatSlingConfigSO.halfGapHorizons, 4 -> 8 horizon radii at
       level 10, floored at 1.5, read live). PROTOTYPE - no level-5 upgrade designed.'
@@ -63,7 +63,7 @@ MonoBehaviour:
     AbilityLabel: (open design slot)
     AbilityDescription: 'NOT AUTHORED. Mass is size / volume, and the slung hole''s size
       already follows its strength; a Mass channel would have to own something the
-      squeeze does not (the pair''s lifetime, or how much the white hole emits). Pending
+      squeeze does not (the pair''s lifetime, or how much the repulsor emits). Pending
       sign-off.'
     Input: 0
     UnlockLevel: 5

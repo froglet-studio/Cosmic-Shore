@@ -149,10 +149,10 @@ namespace CosmicShore.Gameplay
                 string away = cam != null ? $" · {Vector3.Distance(cam.transform.position, h.transform.position):F0} u away" : "";
                 var pair = BlackHoleRegistry.PairOf(h);
                 string paired = pair != null ? $" · pair {pair.Lifetime - pair.Age:F1} s" : "";
-                _live[row].Bind(h, $"{(h.IsWhite ? "W" : "B")}#{h.Id}  strength {h.Strength:F1}  r_s {h.HorizonRadius:F1}{away}{paired}");
+                _live[row].Bind(h, $"{(h.IsWhite ? "R" : "A")}#{h.Id}  strength {h.Strength:F1}  r_s {h.HorizonRadius:F1}{away}{paired}");
                 row++;
             }
-            for (; row < LiveRows; row++) _live[row].Bind(null, row == 0 && BlackHoleRegistry.Count == 0 ? "no black holes live" : "");
+            for (; row < LiveRows; row++) _live[row].Bind(null, row == 0 && BlackHoleRegistry.Count == 0 ? "no wormholes live" : "");
 
             if (_status != null)
             {
@@ -191,7 +191,7 @@ namespace CosmicShore.Gameplay
         {
             var pair = BlackHoleRegistry.SpawnPairFromConfig(blackOnLeft);
             _statusText = pair != null
-                ? $"spawned pair B#{pair.Black.Id} / W#{pair.White.Id}: half-gap {pair.HalfGap0:F0} u, drift {pair.DriftSpeed:F0} u/s, " +
+                ? $"spawned pair A#{pair.Black.Id} / R#{pair.White.Id}: half-gap {pair.HalfGap0:F0} u, drift {pair.DriftSpeed:F0} u/s, " +
                   $"annihilates in {pair.Lifetime:F1} s"
                 : $"pair refused — needs 2 free of {Config.MaxBlackHoles} ({BlackHoleRegistry.Count} live), or the config is not sane";
             Refresh();
@@ -201,7 +201,7 @@ namespace CosmicShore.Gameplay
         {
             int n = BlackHoleRegistry.Count;
             BlackHoleRegistry.DespawnAll();
-            _statusText = $"despawning {n} black hole(s)";
+            _statusText = $"despawning {n} wormhole(s)";
             Refresh();
         }
 
@@ -293,7 +293,7 @@ namespace CosmicShore.Gameplay
             var title = Rect("Title", _panel, new Vector2(0, 1), Vector2.zero, new Vector2(PanelWidth, TitleH));
             title.gameObject.AddComponent<Image>().color = TitleBg;
             title.gameObject.AddComponent<DragHandle>().Init(_panel, _canvas);
-            var titleText = Label(title, "BLACK HOLE TOOL", new Vector2(Pad, 0), PanelWidth - 200, TitleH, 14, Color.white);
+            var titleText = Label(title, "WORMHOLE TOOL (attractor / repulsor)", new Vector2(Pad, 0), PanelWidth - 200, TitleH, 14, Color.white);
             titleText.fontStyle = FontStyle.Bold;
             _configButtonLabel = Button(title, "Config ▾", new Vector2(PanelWidth - 140, -3), 96, ButtonBg,
                 () => SetConfigShown(!_showConfig)).GetComponentInChildren<Text>();
@@ -314,15 +314,15 @@ namespace CosmicShore.Gameplay
             _caption = Label(_panel, "", new Vector2(Pad, y), PanelWidth - 2 * Pad, 34, 12, Dim);
             y -= 38f;
 
-            Button(_panel, "Spawn black", new Vector2(Pad, y), 104, SpawnBg, () => Spawn(HolePolarity.Black));
-            Button(_panel, "Spawn white", new Vector2(Pad + 110, y), 104, WhiteBg, () => Spawn(HolePolarity.White));
+            Button(_panel, "Attractor", new Vector2(Pad, y), 104, SpawnBg, () => Spawn(HolePolarity.Black));
+            Button(_panel, "Repulsor", new Vector2(Pad + 110, y), 104, WhiteBg, () => Spawn(HolePolarity.White));
             Button(_panel, "Despawn all", new Vector2(Pad + 220, y), 104, DangerBg, DespawnAll);
 #if UNITY_EDITOR
             Button(_panel, "Save asset", new Vector2(Pad + 330, y), 110, ButtonBg, SaveAsset);
 #endif
             y -= RowH + 4f;
-            Button(_panel, "Pair: black L / white R", new Vector2(Pad, y), 214, PairBg, () => SpawnPair(true));
-            Button(_panel, "Pair: white L / black R", new Vector2(Pad + 220, y), 214, PairBg, () => SpawnPair(false));
+            Button(_panel, "Pair: attractor L / repulsor R", new Vector2(Pad, y), 214, PairBg, () => SpawnPair(true));
+            Button(_panel, "Pair: repulsor L / attractor R", new Vector2(Pad + 220, y), 214, PairBg, () => SpawnPair(false));
             y -= RowH + 8f;
 
             // ── LIVE ──

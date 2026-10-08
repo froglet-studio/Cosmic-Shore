@@ -7,12 +7,17 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The Stoat's SLINGSHOT (<c>R_VesselActions/STOAT.md</c>): squeeze a trigger, let go, and a
-    /// black–white hole pair is laid across the hull on its own horizontal — the BLACK hole on the
-    /// side you pressed, the white hole on the other. The hull falls toward the black hole and is
-    /// shoved by the white one, and that asymmetric push is the slingshot; the squeeze's depth is
-    /// the pair's size. It works while the vessel is idle or stopped, deliberately: the holes are
-    /// laid in the hull's frame, not thrown from its velocity.
+    /// The Stoat's SLINGSHOT (<c>R_VesselActions/STOAT.md</c>): squeeze a trigger, let go, and an
+    /// attractor–repulsor WORMHOLE pair is laid across the hull on its own horizontal — the attractor
+    /// on the side you pressed, the repulsor on the other. The hull falls toward the attractor and is
+    /// shoved off the repulsor, and that asymmetric push is the slingshot; the squeeze's depth is the
+    /// pair's size. It can be slung from a standstill: the pair is laid in the hull's frame, not
+    /// thrown from its velocity, and a sling ends the hold-still stance so the pull can launch it.
+    ///
+    /// <para><b>Naming.</b> Player-facing these are WORMHOLES (attractor / repulsor). In code they
+    /// are still the black-hole system's types (<c>BlackHole</c> with <c>HolePolarity.Black</c> /
+    /// <c>White</c>) — the real wormhole mechanics are being built on <c>cece/charming-cerf-alf1j1</c>
+    /// on those same types, so a rename here would only collide with it.</para>
     ///
     /// <para><b>Why the hold is tracked per frame, not read at release.</b> The release edge is
     /// raised when the trigger crosses back below the deadzone, so it reads ~0 by the time
@@ -22,7 +27,7 @@ namespace CosmicShore.Gameplay
     ///
     /// <para><b>One pair per Stoat.</b> A new sling annihilates THIS hull's previous pair first, so
     /// a pilot can chain nudges without filling the registry's hole budget; other hulls' and the
-    /// tool's pairs are left alone. The pair is the black hole's — its drift, annihilation and
+    /// tool's pairs are left alone. The pair is the wormhole system's — its drift, annihilation and
     /// pass-through are <c>BlackHoleRegistry</c>'s — and so is its networking (none yet, Docs/BLACK_HOLE.md
     /// §11 "Not yet"): the holes exist on the machine that pressed the trigger. The press and
     /// release edges do round-trip through <c>R_VesselActionHandler</c>, so a peer runs this same
@@ -46,6 +51,7 @@ namespace CosmicShore.Gameplay
         readonly Hold[] _holds = new Hold[2];
         IVesselStatus _status;
         BlackHoleRegistry.Pair _pair;
+        ToggleTranslationModeActionExecutor _stance;
 
         /// <summary>The pair this hull slung last, alive or not; null before the first sling.</summary>
         public BlackHoleRegistry.Pair LastPair => _pair;
@@ -57,6 +63,7 @@ namespace CosmicShore.Gameplay
             _status = shipStatus;
             _holds[0] = default;
             _holds[1] = default;
+            _stance = TryGetComponent<ActionExecutorRegistry>(out var registry) ? registry.Get<ToggleTranslationModeActionExecutor>() : null;
             if (config == null)
                 CSDebug.LogError($"[Stoat] {name}: StoatSlingExecutor has no StoatSlingConfig — the triggers will sling nothing. " +
                                  "Wire Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset on the prefab.");
@@ -93,18 +100,25 @@ namespace CosmicShore.Gameplay
             var axis = StoatSlingMath.PairAxis(side == Side.Left, hull.right);
 
             if (_pair != null && _pair.IsAlive) BlackHoleRegistry.Annihilate(_pair);
-            // Spin about the hull's up so the frame drag turns on the plane the pair lies in.
-            _pair = BlackHoleRegistry.SpawnPair(midpoint, axis, strength, 0f, halfGap, config.DriftSpeed, config.Lifetime, hull.up);
-            if (_pair == null)
+            // A full budget is a normal answer here (another Stoat, the tool), so ask quietly first.
+            if (!BlackHoleRegistry.CanSpawn(2))
             {
                 CSDebug.LogVerbose(CSLogChannel.BlackHole,
-                    $"[Stoat] sling refused — needs two free of {bh.MaxBlackHoles} holes ({BlackHoleRegistry.Count} live).");
+                    $"[Stoat] sling refused — needs two free of {bh.MaxBlackHoles} wormholes ({BlackHoleRegistry.Count} live).");
                 return;
             }
+            // Spin about the hull's up so the frame drag turns on the plane the pair lies in. The pair
+            // is OWNED by this hull, so its pull moves this Stoat and no other vessel (§9 of the
+            // elemental economy: a vessel may not move an opposing vessel).
+            _pair = BlackHoleRegistry.SpawnPair(midpoint, axis, strength, 0f, halfGap, config.DriftSpeed, config.Lifetime, hull.up,
+                OwnerTransform());
+            if (_pair == null) return;
+            // A sling is a launch: leave the hold-still stance, which would otherwise ignore the pull.
+            if (_status.IsTranslationRestricted && _stance) _stance.EndStance();
             PlayOneShot(config.SlingEvent);
             CSDebug.LogVerbose(CSLogChannel.BlackHole,
                 $"[Stoat] {side} sling: hold {_holds[i].Hold01:F2} → strength {strength:F1} (r_s {rs:F1}), " +
-                $"black on the {(side == Side.Left ? "left" : "right")}, half-gap {halfGap:F1}");
+                $"attractor on the {(side == Side.Left ? "left" : "right")}, half-gap {halfGap:F1}");
         }
 
         void Update()
@@ -125,6 +139,10 @@ namespace CosmicShore.Gameplay
             _holds[i].Hold01 = StoatSlingMath.Hold01(rawAnalog, _holds[i].HeldFor, analog, config.HoldRampSeconds,
                 autopilot, config.AutopilotHold01);
         }
+
+        /// <summary>The transform <see cref="BlackHoleVesselPull"/> knows this vessel by (its
+        /// <c>VesselStatus</c>'s).</summary>
+        Transform OwnerTransform() => _status is Component c ? c.transform : _status.Transform;
 
         void PlayOneShot(EventReference reference)
         {

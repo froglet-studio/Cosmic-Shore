@@ -19,6 +19,11 @@ WHAT IT MAKES (`R_VesselActions/STOAT.md`)
           object and in the ActionExecutorRegistry, the stop executor wired to the hull's own
           VesselPrismController and the fleet's shared stationaryModeChanged / OnMiniGameTurnEnd
           channels (the same guids the Sparrow carries, which the shared-channel gate checks)
+    STAGE 2 (idempotent, runs on the committed prefab): the PROCEDURAL HULL - a StoatHull
+    GameObject under the root (Transform, MeshFilter, MeshRenderer with the body + domain
+    materials, StoatHullBuilder hiding the Squirrel model's renderers), VesselCustomization's
+    painted geometry moved onto it, and the root's VesselAnimation switched to StoatAnimation on
+    the same fileID (STOAT.md section 2).
     and one entry each in `Assets/_SO_Assets/Vessel Prefab Container.asset` and
     `Assets/DefaultNetworkPrefabs.asset`, the two lists that make a hull spawnable.
 
@@ -52,11 +57,28 @@ SHIP_ACTIONS_GO = "7850473780452578400"
 REGISTRY_ID = "9105512684531825410"
 SLING_EXECUTOR_ID = "5137264980012345601"
 STOP_EXECUTOR_ID = "5137264980012345602"
+ROOT_TRANSFORM_ID = "5928382658856804067"
+# The procedural hull (stage 2): a StoatHull GameObject under the root, renderer-only like the
+# Scarab's ScarabHull, painted by VesselCustomization in place of the Squirrel mesh it hides.
+HULL_GO_ID = "5137264980012345610"
+HULL_TRANSFORM_ID = "5137264980012345611"
+HULL_FILTER_ID = "5137264980012345612"
+HULL_RENDERER_ID = "5137264980012345613"
+HULL_BUILDER_ID = "5137264980012345614"
+SHIPS_LAYER = 8
+SQUIRREL_MESH_GO = "3168954648161338247"         # the Squirrel FBX mesh VesselCustomization painted
+SQUIRREL_MODEL_ROOT = "8301242790861813107"      # the FBX instance's root Transform (stripped)
+ANIMATION_ID = "5500781737155866732"             # the root's VesselAnimation component
+MANTA_ANIMATION_SCRIPT = "2116872444dccfd43a29513c3af008b7"  # what the Squirrel clone carried
 
 # Script guids (from the .cs.meta files).
 SLING_EXECUTOR_SCRIPT = "cf82f131a8df416cb205ab8055108b82"
 STOP_EXECUTOR_SCRIPT = "8c3f54abda8145ecabf7c85253cab9ed"    # ToggleTranslationModeActionExecutor
 PRISM_CONTROLLER_SCRIPT = "909fb5cbbca8c4549b5a9df56d837e55"  # VesselPrismController
+HULL_BUILDER_SCRIPT = "1c6aec6ea8ef44f1bef4884679d33d0a"   # StoatHullBuilder
+STOAT_ANIMATION_SCRIPT = "f8734be12714484eb93134990801178a"  # StoatAnimation
+BODY_MATERIAL = "54e78ce17120fe641904833c11bc1210"   # BlueBaseVesselMaterial  (slot 0, the plates)
+ACCENT_MATERIAL = "539a8c65974bf0b48aae77d83884c13b" # GreenAccentVesselMaterial (slot 1, repainted to the domain)
 # Asset guids (from the .asset.meta files).
 SLING_CONFIG = "e79a09360967428cb727002bd123383a"
 SLING_LEFT = "5c382e0def5b45d7b1230d75e8be082b"
@@ -216,6 +238,180 @@ def prefab_meta() -> str:
             "  assetBundleVariant: \n")
 
 
+# ----------------------------------------------------------------------------- stage 2: the hull
+def hull_blocks() -> str:
+    """The StoatHull GameObject: Transform under the root, MeshFilter (the builder fills it at
+    Awake), MeshRenderer with the body + domain materials, and the StoatHullBuilder pointing at
+    the Squirrel model it hides. Proportions are NOT serialized here - the builder's field
+    initializers are the shipped values (round 2, Option 2), so the C# is the one source."""
+    return (
+        f"--- !u!1 &{HULL_GO_ID}\n"
+        "GameObject:\n"
+        "  m_ObjectHideFlags: 0\n"
+        "  m_CorrespondingSourceObject: {fileID: 0}\n"
+        "  m_PrefabInstance: {fileID: 0}\n"
+        "  m_PrefabAsset: {fileID: 0}\n"
+        "  serializedVersion: 6\n"
+        "  m_Component:\n"
+        f"  - component: {{fileID: {HULL_TRANSFORM_ID}}}\n"
+        f"  - component: {{fileID: {HULL_FILTER_ID}}}\n"
+        f"  - component: {{fileID: {HULL_RENDERER_ID}}}\n"
+        f"  - component: {{fileID: {HULL_BUILDER_ID}}}\n"
+        f"  m_Layer: {SHIPS_LAYER}\n"
+        "  m_Name: StoatHull\n"
+        "  m_TagString: Untagged\n"
+        "  m_Icon: {fileID: 0}\n"
+        "  m_NavMeshLayer: 0\n"
+        "  m_StaticEditorFlags: 0\n"
+        "  m_IsActive: 1\n"
+        f"--- !u!4 &{HULL_TRANSFORM_ID}\n"
+        "Transform:\n"
+        "  m_ObjectHideFlags: 0\n"
+        "  m_CorrespondingSourceObject: {fileID: 0}\n"
+        "  m_PrefabInstance: {fileID: 0}\n"
+        "  m_PrefabAsset: {fileID: 0}\n"
+        f"  m_GameObject: {{fileID: {HULL_GO_ID}}}\n"
+        "  serializedVersion: 2\n"
+        "  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}\n"
+        "  m_LocalPosition: {x: 0, y: 0, z: 0}\n"
+        "  m_LocalScale: {x: 1, y: 1, z: 1}\n"
+        "  m_ConstrainProportionsScale: 0\n"
+        "  m_Children: []\n"
+        f"  m_Father: {{fileID: {ROOT_TRANSFORM_ID}}}\n"
+        "  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}\n"
+        f"--- !u!33 &{HULL_FILTER_ID}\n"
+        "MeshFilter:\n"
+        "  m_ObjectHideFlags: 0\n"
+        "  m_CorrespondingSourceObject: {fileID: 0}\n"
+        "  m_PrefabInstance: {fileID: 0}\n"
+        "  m_PrefabAsset: {fileID: 0}\n"
+        f"  m_GameObject: {{fileID: {HULL_GO_ID}}}\n"
+        "  m_Mesh: {fileID: 0}\n"
+        f"--- !u!23 &{HULL_RENDERER_ID}\n"
+        "MeshRenderer:\n"
+        "  m_ObjectHideFlags: 0\n"
+        "  m_CorrespondingSourceObject: {fileID: 0}\n"
+        "  m_PrefabInstance: {fileID: 0}\n"
+        "  m_PrefabAsset: {fileID: 0}\n"
+        f"  m_GameObject: {{fileID: {HULL_GO_ID}}}\n"
+        "  m_Enabled: 1\n"
+        "  m_CastShadows: 1\n"
+        "  m_ReceiveShadows: 1\n"
+        "  m_DynamicOccludee: 1\n"
+        "  m_StaticShadowCaster: 0\n"
+        "  m_MotionVectors: 1\n"
+        "  m_LightProbeUsage: 1\n"
+        "  m_ReflectionProbeUsage: 1\n"
+        "  m_RayTracingMode: 2\n"
+        "  m_RayTraceProcedural: 0\n"
+        "  m_RayTracingAccelStructBuildFlagsOverride: 0\n"
+        "  m_RayTracingAccelStructBuildFlags: 1\n"
+        "  m_SmallMeshCulling: 1\n"
+        "  m_RenderingLayerMask: 1\n"
+        "  m_RendererPriority: 0\n"
+        "  m_Materials:\n"
+        f"  - {{fileID: 2100000, guid: {BODY_MATERIAL}, type: 2}}\n"
+        f"  - {{fileID: 2100000, guid: {ACCENT_MATERIAL}, type: 2}}\n"
+        "  m_StaticBatchInfo:\n"
+        "    firstSubMesh: 0\n"
+        "    subMeshCount: 0\n"
+        "  m_StaticBatchRoot: {fileID: 0}\n"
+        "  m_ProbeAnchor: {fileID: 0}\n"
+        "  m_LightProbeVolumeOverride: {fileID: 0}\n"
+        "  m_ScaleInLightmap: 1\n"
+        "  m_ReceiveGI: 1\n"
+        "  m_PreserveUVs: 0\n"
+        "  m_IgnoreNormalsForChartDetection: 0\n"
+        "  m_ImportantGI: 0\n"
+        "  m_StitchLightmapSeams: 1\n"
+        "  m_SelectedEditorRenderState: 3\n"
+        "  m_MinimumChartSize: 4\n"
+        "  m_AutoUVMaxDistance: 0.5\n"
+        "  m_AutoUVMaxAngle: 89\n"
+        "  m_LightmapParameters: {fileID: 0}\n"
+        "  m_SortingLayerID: 0\n"
+        "  m_SortingLayer: 0\n"
+        "  m_SortingOrder: 0\n"
+        "  m_AdditionalVertexStreams: {fileID: 0}\n"
+        f"--- !u!114 &{HULL_BUILDER_ID}\n"
+        "MonoBehaviour:\n"
+        "  m_ObjectHideFlags: 0\n"
+        "  m_CorrespondingSourceObject: {fileID: 0}\n"
+        "  m_PrefabInstance: {fileID: 0}\n"
+        "  m_PrefabAsset: {fileID: 0}\n"
+        f"  m_GameObject: {{fileID: {HULL_GO_ID}}}\n"
+        "  m_Enabled: 1\n"
+        "  m_EditorHideFlags: 0\n"
+        f"  m_Script: {{fileID: 11500000, guid: {HULL_BUILDER_SCRIPT}, type: 3}}\n"
+        "  m_Name: \n"
+        "  m_EditorClassIdentifier: \n"
+        f"  legacyModelRoot: {{fileID: {SQUIRREL_MODEL_ROOT}}}\n"
+    )
+
+
+def animation_block() -> str:
+    """The root's VesselAnimation, switched from the Squirrel clone's MantaAnimationContoller to
+    StoatAnimation on the SAME fileID (so VesselStatus's reference to it holds). The base fields
+    keep their authored values; the Stoat fields are the user's lope (the C# initializers)."""
+    return (
+        f"--- !u!114 &{ANIMATION_ID}\n"
+        "MonoBehaviour:\n"
+        "  m_ObjectHideFlags: 0\n"
+        "  m_CorrespondingSourceObject: {fileID: 0}\n"
+        "  m_PrefabInstance: {fileID: 0}\n"
+        "  m_PrefabAsset: {fileID: 0}\n"
+        f"  m_GameObject: {{fileID: {ROOT_GO}}}\n"
+        "  m_Enabled: 1\n"
+        "  m_EditorHideFlags: 0\n"
+        f"  m_Script: {{fileID: 11500000, guid: {STOAT_ANIMATION_SCRIPT}, type: 3}}\n"
+        "  m_Name: \n"
+        "  m_EditorClassIdentifier: \n"
+        "  SkinnedMeshRenderer: {fileID: 0}\n"
+        "  SaveNewPositions: 1\n"
+        "  brakeThreshold: 0.65\n"
+        "  lerpAmount: 2\n"
+        "  smallLerpAmount: 0.7\n"
+        "  lopeAmplitude: 1.6\n"
+        "  lopeRate: 0.66\n"
+        "  lopeArch: 0.45\n"
+        "  lopeSquash: 0.2\n"
+        "  lopeSpeedLink: 0\n"
+        "  cruiseSpeed: 60\n"
+        "  spineArchLift: 0.35\n"
+        "  turnBendDegrees: 12\n"
+        "  headTurnDegrees: 18\n"
+        "  headNodDegrees: 14\n"
+        "  tailSwingDegrees: 28\n"
+        "  tailLift: 0.45\n"
+        "  legReachDegrees: 52\n"
+    )
+
+
+def apply_hull(text: str) -> str:
+    """Stage 2, idempotent: add the hull, point the paint at it, swap the animation. Runs on the
+    committed prefab (the clone stands down once it exists), so it re-checks its own anchors."""
+    if f"--- !u!1 &{HULL_GO_ID}\n" not in text:
+        # the root's children list gains the hull's transform
+        m = re.search(r"(--- !u!4 &%s\n(?:.*\n)*?  m_Children:\n)((?:  - \{fileID: -?\d+\}\n)*)" % ROOT_TRANSFORM_ID, text)
+        if not m:
+            raise RuntimeError("Stoat.prefab drifted: root Transform m_Children not found")
+        text = text[:m.end(2)] + f"  - {{fileID: {HULL_TRANSFORM_ID}}}\n" + text[m.end(2):]
+        # the documents go after the root Transform's document
+        end = re.search(r"--- !u!4 &%s\n(?:.*\n)*?(?=--- !u!)" % ROOT_TRANSFORM_ID, text)
+        text = text[:end.end()] + hull_blocks() + text[end.end():]
+    # the domain paint moves from the hidden Squirrel mesh to the hull
+    text = text.replace(f"  _shipGeometries:\n  - {{fileID: {SQUIRREL_MESH_GO}}}\n",
+                        f"  _shipGeometries:\n  - {{fileID: {HULL_GO_ID}}}\n")
+    # the animation component, swapped in place
+    m = re.search(r"--- !u!114 &%s\n(?:.*\n)*?(?=--- !u!)" % ANIMATION_ID, text)
+    if not m:
+        raise RuntimeError("Stoat.prefab drifted: the root's VesselAnimation component not found")
+    if STOAT_ANIMATION_SCRIPT not in m.group(0) and MANTA_ANIMATION_SCRIPT not in m.group(0):
+        raise RuntimeError("Stoat.prefab drifted: the root's VesselAnimation is neither the clone's nor the Stoat's")
+    text = text[:m.start()] + animation_block() + text[m.end():]
+    return text
+
+
 # ----------------------------------------------------------------------------- registrations
 def container_entry() -> str:
     return f"  - {{fileID: {ROOT_GO}, guid: {PREFAB_GUID}, type: 3}}\n"
@@ -295,6 +491,16 @@ def check(files: "dict[str, str]") -> "list[str]":
     except RuntimeError as e:
         want(False, str(e))
 
+    # stage 2: the hull
+    want(hull_blocks() in prefab, "the StoatHull GameObject (filter, renderer, builder) is not authored as expected")
+    want(re.search(r"--- !u!4 &%s\n(?:.*\n)*?  m_Children:\n(?:  - \{fileID: -?\d+\}\n)*  - \{fileID: %s\}\n"
+                   % (ROOT_TRANSFORM_ID, HULL_TRANSFORM_ID), prefab) is not None, "the hull is not a child of the root")
+    want(f"  _shipGeometries:\n  - {{fileID: {HULL_GO_ID}}}\n" in prefab,
+         "VesselCustomization does not paint the hull (the domain colour would land on the hidden Squirrel mesh)")
+    want(animation_block() in prefab, "the root's VesselAnimation is not StoatAnimation with the user's lope")
+    want(MANTA_ANIMATION_SCRIPT not in prefab, "the Squirrel clone's MantaAnimationContoller is still on the prefab")
+    want(f"  - component: {{fileID: {ANIMATION_ID}}}\n" in prefab, "the animation component left the root")
+
     rel_container = os.path.relpath(CONTAINER, ROOT)
     want_c = files.get(rel_container, "")
     if container_entry() not in want_c:
@@ -372,6 +578,14 @@ def self_test() -> int:
     fires("container entry missing", lambda f: f.__setitem__(os.path.relpath(CONTAINER, ROOT), f[os.path.relpath(CONTAINER, ROOT)].replace(container_entry(), "")))
     fires("network entry missing", lambda f: f.__setitem__(os.path.relpath(NETWORK_PREFABS, ROOT), f[os.path.relpath(NETWORK_PREFABS, ROOT)].replace(network_entry(), "")))
     fires("map lost the hold", lambda f: f.__setitem__(os.path.relpath(MAP, ROOT), f[os.path.relpath(MAP, ROOT)].replace("    Input: 6\n", "    Input: 0\n")))
+    fires("hull dropped", lambda f: f.__setitem__(rel, f[rel].replace(hull_blocks(), "")))
+    fires("paint left on the Squirrel mesh", lambda f: f.__setitem__(rel, f[rel].replace(
+        f"  _shipGeometries:\n  - {{fileID: {HULL_GO_ID}}}\n", f"  _shipGeometries:\n  - {{fileID: {SQUIRREL_MESH_GO}}}\n")))
+    fires("animation reverted to the Manta's", lambda f: f.__setitem__(rel, f[rel].replace(STOAT_ANIMATION_SCRIPT, MANTA_ANIMATION_SCRIPT)))
+    # stage 2 is idempotent: applying it to the shipped prefab changes nothing
+    idem = apply_hull(files[rel]) == files[rel]
+    print(f"  stage 2 idempotent on the shipped prefab: {'yes' if idem else 'NO'}")
+    ok &= idem
     print("self-test " + ("OK" if ok else "FAILED"))
     return 0 if ok else 1
 
@@ -388,6 +602,12 @@ def main(argv) -> int:
             print(f"wrote {os.path.relpath(PREFAB, ROOT)} (+ .meta) from Squirrel.prefab")
         else:
             print(f"{os.path.relpath(PREFAB, ROOT)} exists - the clone stands down (delete it to re-author)")
+        with open(PREFAB, encoding="utf-8", newline="") as f:
+            before = f.read().replace("\r\n", "\n")
+        after = apply_hull(before)
+        if after != before:
+            write(PREFAB, after)
+            print(f"stage 2: the procedural hull + StoatAnimation authored into {os.path.relpath(PREFAB, ROOT)}")
         for path, fn in ((CONTAINER, register_container), (NETWORK_PREFABS, register_network)):
             with open(path, encoding="utf-8", newline="") as f:
                 before = f.read().replace("\r\n", "\n")

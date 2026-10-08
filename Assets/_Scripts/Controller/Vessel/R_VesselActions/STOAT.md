@@ -1,13 +1,20 @@
 # STOAT — the slingshot vessel (prototype, 2026-10-08)
 
-`VesselClassType.Stoat = 14`. A two-thumb hull whose ONE ability lays a **black–white hole pair**
-across itself and lets gravity do the rest: the hull falls toward the black hole and is shoved off
-the white one, and that asymmetric push is the **slingshot**. Its second input is the Sparrow's
+> **Naming.** Player-facing, the Stoat lays **WORMHOLES**: an **attractor** (pulls) and a
+> **repulsor** (pushes), an attractor–repulsor pair. In code they are still the black-hole system's
+> types (`BlackHole`, `HolePolarity.Black` = attractor, `.White` = repulsor) because the real wormhole
+> mechanics are being built on `cece/charming-cerf-alf1j1` on those types (Docs/BLACK_HOLE.md, top).
+> What the Stoat flies with today is the PLACEHOLDER: the pull, the lens, the pass-through.
+
+`VesselClassType.Stoat = 14`. A two-thumb hull whose ONE ability lays an **attractor–repulsor wormhole pair**
+across itself and lets gravity do the rest: the hull falls toward the attractor and is shoved off
+the repulsor, and that asymmetric push is the **slingshot**. Its second input is the Sparrow's
 **stop**, verbatim — because the Stoat slings from a standstill.
 
-Status: **PROTOTYPE.** The hull is a text clone of the Squirrel's prefab (same mesh, same HUD, same
-flight model, same camera) with the Squirrel's bindings replaced; the stoat BODY and the stoat
-MOVEMENT are picked in the viewer (`Stoat Flight Studio`) and not built yet. **Nothing here has been
+Status: **PROTOTYPE.** The prefab is a text clone of the Squirrel's (same flight model, colliders,
+HUD and camera) with the Squirrel's bindings replaced and its model HIDDEN: the drawn hull is the
+Stoat's own **procedural plated body** with the user's **bounding lope** (§2.1, §2.2), both picked in
+the Stoat Flight Studio viewer (round 2, Option 2). Its game is **Slingshot** (`Arcade/SLINGSHOT.md`). **Nothing here has been
 run in the editor** — every proof below is offline (§5), the same standing as `Docs/BLACK_HOLE.md`
 §0.1. The black hole itself — the pull, the lens, the tides, the pair, the pass-through — is
 documented there and not repeated here.
@@ -18,8 +25,8 @@ documented there and not repeated here.
 |---|---|
 | **LT press** (`InputEvents.LeftStickAction`, 2) | the squeeze begins; a sound slot (`holdStartEvent`, empty) |
 | **LT held** | the trigger's depth (its hold time on keyboard / mouse / touch) is sampled every frame — that is the pair's SIZE |
-| **LT release** | the pair is slung: **black hole on the LEFT, white hole on the RIGHT**, on the hull's own horizontal, `aheadHorizons` horizon radii ahead; the previous pair this hull slung is annihilated first |
-| **RT** (`RightStickAction`, 1) | the mirror: black on the right, white on the left |
+| **LT release** | the pair is slung: **attractor on the LEFT, repulsor on the RIGHT**, on the hull's own horizontal, `aheadHorizons` horizon radii ahead; the previous pair this hull slung is annihilated first; if the hull was holding still (X) the stance ENDS — a sling is a launch |
+| **RT** (`RightStickAction`, 1) | the mirror: attractor on the right, repulsor on the left |
 | **X** (`Button1Action`, 6) | `StoatHoldAction` — `ToggleTranslationModeActionSO` in **Sparrow** mode: stop translating and stop laying prisms; press again to move |
 
 A light tap is a **nudge** (strength `minStrength` = 2, horizon radius 4 u); a buried trigger is the
@@ -27,6 +34,14 @@ A light tap is a **nudge** (strength `minStrength` = 2, horizon radius 4 u); a b
 counts. The pair lives `lifetime` = 4 s: the two holes drift apart at 20 u/s, stop at 2 s, fall back
 and annihilate (`BlackHolePairMath`). Whatever the black hole swallows comes out of the white hole
 the point-reflected way, including the hull's own prisms.
+
+**The pull moves only THIS Stoat.** A slung pair is owned (`BlackHole.OwnerVessel`), and
+`BlackHoleVesselPull` applies an owned hole only to its owner: a vessel may not move an opposing
+vessel (`Docs/ELEMENTAL_ECONOMY.md` §9, LOCKED). Prisms feel every hole; tool/console holes pull
+every vessel. **Why the sling ends the stop:** while `IsTranslationRestricted`, the transformer
+displaces a vessel only by modifiers flagged `ignoresTranslationRestriction` (the Sparrow's dodge),
+so a held-still Stoat would ignore its own pull; `ToggleTranslationModeActionExecutor.EndStance()`
+(the turn-end exit, through the controller so it replicates) is called on release instead.
 
 **It works while idle, deliberately.** The holes are laid in the hull's FRAME (position, forward,
 right, up), not thrown from its velocity, so a stopped Stoat is the ideal slinger: stop (X), squeeze,
@@ -50,6 +65,34 @@ Pure arithmetic in `StoatSlingMath` (`Hold01`, `Strength`, `PairAxis`, `Midpoint
 `BlackHolePairMath.Positions` puts the black hole at −axis. Spin axis = the hull's up, so the frame
 drag turns on the plane the pair lies in.
 
+## 2.1 The hull — plated, procedural (`StoatHullForm` + `StoatHullBuilder`)
+
+Round 2, Option 2 at fleet scale (the viewer's numbers ×1.6): five **diamond plates** (a four-sided
+cross-section, point up, so the spine reads as a ridge) tapering chest 0.45 → hip 0.26, a **wedge
+head**, tetrahedral ears, a **dorsal ridge** of fins on every other plate, a four-plate tail ending in
+a **crystal**, four strut legs — 8.0 u nose to crystal, 0.9 u wide. Flat-shaded throughout. **Slot 1
+(the domain colour) is the fins, the eyes and the tail crystal**; slot 0 is the plates.
+`StoatHullForm` is pure (the Butterfly/Scarab split): `Tools/Build/stoat_hull_harness/run.sh`
+compiles and runs the shipped file (topology across the four extremes, every element moves it,
+blend@1 == extreme, bounds hold all 16 corners, every face wound outward, size) and `--obj <dir>`
+exports the meshes. `StoatHullBuilder` sits on a `StoatHull` GameObject under the root (layer
+Ships), is what `VesselCustomization` paints, and switches off the Squirrel model's RENDERERS (its
+colliders stay). **Element morphs** (real geometry, `IProceduralElementMorphSource`): Charge —
+fins ×2.2, crystal ×1.8, eyes ×1.5; Mass — plates and head thicken ×1.35/×1.2; Space — body ×1.3,
+tail ×1.4; Time — legs ×1.8, ears ×1.6.
+
+## 2.2 The bounding lope — body-only (`StoatLopeMath` + `StoatAnimation`)
+
+The user's tuning: amplitude 1.00 (→ 1.6 u at the body's scale), rate 0.66 (one bound every 1.5 s),
+arch 0.45, stretch 0.20, speed link 0. **Body-only**: the drawn hull rises nose-up, arches long at
+the top, lands nose-down, bunched, legs reaching — while the vessel's transform, flight path and
+prism trail stay straight, so aim and the wake are steady. `StoatAnimation` replaced the Squirrel
+clone's `MantaAnimationContoller` on the same component (so `VesselStatus`'s reference holds); it
+writes transforms only (hull lift/pitch/stretch, plate arch and tilt, head nod/turn, tail lift and
+swing out of a turn, leg reach), the builder writes vertices only. The stick bends the spine into a
+turn (12°), turns the head (18°) and swings the tail out (28°). Poses are written directly, not
+through the base class's lerp (the Butterfly lesson: it eats a slow periodic motion).
+
 ## 3. The parts
 
 | File | Role |
@@ -61,7 +104,10 @@ drag turns on the plane the pair lies in.
 | `_SO_Assets/VesselActions/Stoat/` | `StoatSlingConfig`, `StoatSlingLeftAction` (side 0), `StoatSlingRightAction` (side 1), `StoatHoldAction` (stationaryMode 1 = Sparrow) |
 | `Resources/ElementalAbilityMaps/Stoat.asset` | Space = Slingshot (Input 2), Time = Hold Still (Input 6), Charge and Mass open — see §6 |
 | `_Prefabs/Spacevessels/Stoat.prefab` | authored by `Tools/Build/author_stoat_assets.py` from `Squirrel.prefab` (§4) |
-| `Tools/Build/author_stoat_assets.py` | the generator + `--check` + `--self-test` (seven negative controls) |
+| `StoatHullForm.cs`, `StoatHullBuilder.cs` (Vessel/) | the plated hull: pure geometry + morphs, and the emitter (§2.1) |
+| `StoatLopeMath.cs`, `StoatAnimation.cs` (Animation/) | the lope (pure) and the puppetry + morph plumbing (§2.2) |
+| `Tools/Build/stoat_hull_harness/` | compiles and RUNS the shipped hull form offline; `--obj` exports it |
+| `Tools/Build/author_stoat_assets.py` | the generator + `--check` + `--self-test` (ten negative controls); stage 2 authors the hull and the animation swap |
 
 **Why the hold is sampled per frame, not read at release.** The release edge is raised when the
 trigger drops back below the deadzone, so it reads ~0 by the time `Release` runs; sampling it there
@@ -100,7 +146,8 @@ error.
   `ToyVesselRoster.Default` lists it; `EnumIntegrityTests` locks 14 (and the count, which had not
   been bumped for the Butterfly).
 
-Kept, deliberately, as prototype debt: the Squirrel's mesh, HUD variant and four ability ICONS (the
+Kept, deliberately, as prototype debt: the Squirrel's model (hidden — its renderers off, its colliders
+live, so the Stoat's hit box is still the Squirrel's ~4 u box, not the 8 u body), HUD variant and four ability ICONS (the
 row will show the Squirrel's art until `author_hull_ability_rows.py` / the icon pass runs for the
 Stoat), its two executors (`SquirrelTubeActionExecutor` and the seed executor — unbound, inert), its
 camera settings SO (far clip 12000 — `check_vessel_camera_farclip.py`), its telemetry (the default,
@@ -141,7 +188,7 @@ either authored ability — the row reports them LOCKED rather than green, by de
 
 ## 7. Not yet
 
-The stoat body and movement (the viewer's picks); the ability row's icons and hints; the pair's
+The ability row's icons and hints; the pair's
 network replication (the press/release edges round-trip, so a peer lays its OWN copy of the pair at
 the replicated pose, but the two copies are not one object); the annihilation / birth feel
 (`Docs/BLACK_HOLE.md` §11 "Not yet"); a touch binding; the hangar / arcade `SO_Class_Stoat` asset and class-list entry

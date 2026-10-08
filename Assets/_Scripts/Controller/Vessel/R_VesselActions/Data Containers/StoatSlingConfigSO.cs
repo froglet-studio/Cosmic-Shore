@@ -7,13 +7,13 @@ namespace CosmicShore.ScriptableObjects
 {
     /// <summary>
     /// The Stoat's SLINGSHOT (<c>R_VesselActions/STOAT.md</c>): every number behind a trigger
-    /// squeeze that lays a black–white hole pair across the hull. The pair itself is the black
+    /// squeeze that lays a attractor–repulsor wormhole pair across the hull. The pair itself is the black
     /// hole's (<c>Docs/BLACK_HOLE.md</c> §11) — this file only decides how big, how far, how long.
     ///
     /// <para><b>Hold → size.</b> The trigger's depth (its hold time on a device without analog
     /// triggers) is the hole's STRENGTH between <see cref="MinStrength"/> and
     /// <see cref="MaxStrength"/>, raised to <see cref="HoldExponent"/> so a feathered tap stays a
-    /// nudge and only a buried trigger buys the full slingshot. Strength is the black hole's one
+    /// nudge and only a buried trigger buys the full slingshot. Strength is the attractor's one
     /// number: its horizon radius and its pull both follow from it.</para>
     ///
     /// <para><b>Geometry in horizon radii.</b> The midpoint sits <see cref="AheadHorizons"/>

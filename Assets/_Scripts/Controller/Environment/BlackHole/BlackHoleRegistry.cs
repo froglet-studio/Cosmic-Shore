@@ -118,6 +118,19 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// The quiet PROBE: could <paramref name="needed"/> more holes spawn right now? No log — a
+        /// vessel asks this every trigger release, and a full budget is a normal answer there, not a
+        /// fault (CLAUDE.md: a lookup must be askable as a question). <see cref="SpawnPair"/> stays
+        /// the loud DEMAND.
+        /// </summary>
+        public static bool CanSpawn(int needed)
+        {
+            Prune();
+            var config = Config;
+            return _holes.Count + needed <= config.MaxBlackHoles && config.IsSane;
+        }
+
+        /// <summary>
         /// Room for <paramref name="needed"/> more holes under the budget, with a sane config. Logs
         /// the refusal: the shader bank and the job's well list are both sized to the budget.
         /// </summary>
@@ -146,7 +159,7 @@ namespace CosmicShore.Gameplay
         /// Null when there is no room for two (nothing is spawned).
         /// </summary>
         public static Pair SpawnPair(Vector3 midpoint, Vector3 axis, float strength, float horizonRadius, float halfGap,
-            float driftSpeed, float lifetime, Vector3? spinAxis = null)
+            float driftSpeed, float lifetime, Vector3? spinAxis = null, Transform ownerVessel = null)
         {
             Prune();
             var config = Config;
@@ -165,6 +178,8 @@ namespace CosmicShore.Gameplay
             }
             black.Partner = white;
             white.Partner = black;
+            black.OwnerVessel = ownerVessel;
+            white.OwnerVessel = ownerVessel;
             var pair = new Pair
             {
                 Black = black, White = white, Midpoint = midpoint, Axis = a, HalfGap0 = halfGap,

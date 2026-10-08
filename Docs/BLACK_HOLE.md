@@ -11,6 +11,17 @@
 > nothing here has been run in the editor**; the gates it passed and the playtest it still needs
 > are in §9.
 
+> **Naming (2026-10-08): player-facing these are WORMHOLES.** A black hole is an **attractor
+> wormhole**, a white hole a **repulsor wormhole**, and a black–white pair an attractor–repulsor
+> wormhole pair — the Stoat's sling, the tool's buttons ("WORMHOLE TOOL", Attractor / Repulsor),
+> the console (`wormhole attractor|repulsor|pair`, alongside the old `blackhole` verbs). **The code
+> keeps its black-hole names** (`BlackHole`, `HolePolarity.Black/White`, `BlackHoleRegistry`): the
+> real wormhole mechanics — the dipole joined by a Butterfly-fold throat — are being built on
+> `cece/charming-cerf-alf1j1` on top of these same types, so a rename here would only collide with
+> it. What this file built is the PLACEHOLDER the Stoat flies with until that lands.
+> **Ownership:** a hole a vessel slung (`BlackHole.OwnerVessel`) pulls only that vessel — a vessel may
+> not move an opposing vessel (`Docs/ELEMENTAL_ECONOMY.md` §9, LOCKED). Tool/console/cell holes pull everyone.
+
 ## 0. Where everything is
 
 | What | Where |

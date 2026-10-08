@@ -13,7 +13,8 @@ namespace CosmicShore.Gameplay
     /// this. Editor and development builds only; the shell compiles empty in a release player
     /// (the <c>DiagnosticsHUD</c> pattern, Docs/CONDITIONAL_COMPILATION.md Pattern 1).
     ///
-    /// Commands (<c>blackhole</c>, aliases <c>bh</c> and <c>black hole …</c>):
+    /// Commands (<c>blackhole</c>, aliases <c>bh</c>, <c>wormhole</c> and <c>black hole …</c>). Player-facing
+    /// these are WORMHOLES: <c>attractor</c> = <c>spawn</c> (a black hole), <c>repulsor</c> = <c>white</c>:
     /// <code>
     ///   blackhole tool [on|off]                          open / close the Black Hole tool (no word = toggle)
     ///   blackhole config                                 open the tool on its config view
@@ -37,10 +38,12 @@ namespace CosmicShore.Gameplay
         const string StatsSection = "BlackHole";
         const string CommandName = "blackhole";
         const string Alias = "bh";
+        // Player-facing these are WORMHOLES — attractor (polarity Black) and repulsor (White).
+        const string WormholeName = "wormhole";
         // "black hole tool on" — the HUD splits on spaces, so the two-word name is its own command.
         const string TwoWordName = "black";
         const string Usage = "usage: blackhole tool [on|off] | config | spawn [<strength> [x y z] [vx vy vz]] | " +
-                             "white [<strength> [x y z]] | pair [left|right] | here <strength> | size <id> <r_s> | " +
+                             "attractor|repulsor [<strength> [x y z]] | white [<strength> [x y z]] | pair [left|right] | here <strength> | size <id> <r_s> | " +
                              "move <id> <vx> <vy> <vz> | strength <id> <v> | spin <id> <ax> <ay> <az> | list | despawn <id>|all";
         /// <summary>Where a spawn lands when no position is given: this far ahead of the camera.</summary>
         const float SpawnAheadDistance = 300f;
@@ -60,6 +63,7 @@ namespace CosmicShore.Gameplay
         {
             DiagnosticsHUD.RegisterCommand(CommandName, Handle);
             DiagnosticsHUD.RegisterCommand(Alias, Handle);
+            DiagnosticsHUD.RegisterCommand(WormholeName, Handle);
             DiagnosticsHUD.RegisterCommand(TwoWordName, HandleTwoWords);
             DiagnosticsHUD.SetStat(StatsSection, "holes", "none — cmd: blackhole tool on");
         }
@@ -68,6 +72,7 @@ namespace CosmicShore.Gameplay
         {
             DiagnosticsHUD.UnregisterCommand(CommandName);
             DiagnosticsHUD.UnregisterCommand(Alias);
+            DiagnosticsHUD.UnregisterCommand(WormholeName);
             DiagnosticsHUD.UnregisterCommand(TwoWordName);
             DiagnosticsHUD.ClearStats(StatsSection);
             if (_instance == this) _instance = null;
@@ -100,7 +105,7 @@ namespace CosmicShore.Gameplay
         }
 
         static string Describe(BlackHole h) =>
-            $"{(h.IsWhite ? "white" : "black")} #{h.Id} strength {h.Strength:F1} GM {h.GM:F0} horizon {h.HorizonRadius:F1} influence {h.InfluenceRadius:F0} " +
+            $"{(h.IsWhite ? "repulsor" : "attractor")} #{h.Id} strength {h.Strength:F1} GM {h.GM:F0} horizon {h.HorizonRadius:F1} influence {h.InfluenceRadius:F0} " +
             $"at ({h.transform.position.x:F0}, {h.transform.position.y:F0}, {h.transform.position.z:F0}) " +
             $"v ({h.Velocity.x:F1}, {h.Velocity.y:F1}, {h.Velocity.z:F1})";
 
@@ -129,6 +134,7 @@ namespace CosmicShore.Gameplay
                 case "config":
                     BlackHoleTool.SetOpen(true, showConfig: true);
                     return "black hole tool open on the config view";
+                case "attractor":
                 case "spawn":
                 {
                     if (args.Length == 1)
@@ -150,6 +156,7 @@ namespace CosmicShore.Gameplay
                     var hole = BlackHoleRegistry.Spawn(position, strength, velocity);
                     return hole == null ? "spawn refused (see console)" : "spawned " + Describe(hole);
                 }
+                case "repulsor":
                 case "white":
                 {
                     if (args.Length == 1)

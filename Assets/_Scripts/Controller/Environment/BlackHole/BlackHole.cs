@@ -96,6 +96,14 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public BlackHole Partner { get; internal set; }
 
+        /// <summary>
+        /// The vessel that slung this hole (the Stoat's wormhole pair), or null for an environmental
+        /// hole (the tool, the console, a cell). An owned hole pulls ONLY its owner: a vessel may not
+        /// move an opposing vessel (Docs/ELEMENTAL_ECONOMY.md §9, LOCKED), and a pair a pilot laid is
+        /// that pilot's act. Prisms feel every hole either way.
+        /// </summary>
+        public Transform OwnerVessel { get; internal set; }
+
         public float Strength => strength;
 
         /// <summary>The authored size (event-horizon radius, world units); 0 = derived from strength.</summary>

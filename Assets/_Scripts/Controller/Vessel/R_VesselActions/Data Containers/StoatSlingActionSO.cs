@@ -14,15 +14,22 @@ namespace CosmicShore.ScriptableObjects
     [CreateAssetMenu(fileName = "StoatSlingAction", menuName = "ScriptableObjects/Vessel Actions/Stoat Sling")]
     public sealed class StoatSlingActionSO : ShipActionSO
     {
-        [Tooltip("The trigger this asset is bound to. The BLACK hole lands on this side, the white hole on the other.")]
+        [Tooltip("The trigger this asset is bound to. The ATTRACTOR lands on this side, the repulsor on the other.")]
         [SerializeField] StoatSlingExecutor.Side side = StoatSlingExecutor.Side.Left;
 
         public StoatSlingExecutor.Side Side => side;
 
+        // Implicit-bool, never ?. — a destroyed executor is a Unity null that ?. would call into.
         public override void StartAction(ActionExecutorRegistry executors, IVesselStatus status)
-            => executors?.Get<StoatSlingExecutor>()?.BeginHold(side);
+        {
+            var exec = executors ? executors.Get<StoatSlingExecutor>() : null;
+            if (exec) exec.BeginHold(side);
+        }
 
         public override void StopAction(ActionExecutorRegistry executors, IVesselStatus status)
-            => executors?.Get<StoatSlingExecutor>()?.Release(side);
+        {
+            var exec = executors ? executors.Get<StoatSlingExecutor>() : null;
+            if (exec) exec.Release(side);
+        }
     }
 }

@@ -25,6 +25,11 @@ namespace CosmicShore.Gameplay
     /// owner's to write. Vessels are enumerated once a second (there is no vessel registry; the
     /// pull is live only while a hole is), never per frame.
     ///
+    /// <b>Ownership.</b> A hole a vessel slung (<see cref="BlackHole.OwnerVessel"/> — the Stoat's
+    /// wormhole pair) pulls only that vessel: a vessel may not move an opposing vessel
+    /// (Docs/ELEMENTAL_ECONOMY.md §9, LOCKED). An environmental hole (the tool, the console, a cell)
+    /// pulls every vessel.
+    ///
     /// <c>ModifyVelocity</c>'s weight curve starts at 1.5× for a fresh entry, and an entry given
     /// this frame's dt as its duration is consumed exactly once on steady frame times — so the
     /// shift handed over is <c>v_g / 1.5</c>. On a jittery frame an entry can survive into a
@@ -40,6 +45,7 @@ namespace CosmicShore.Gameplay
         static readonly List<VesselStatus> _vessels = new();
         static readonly Dictionary<int, Vector3> _pullByVessel = new();
         static readonly List<int> _stale = new();
+        static readonly Transform[] _wellOwners = new Transform[BlackHolePhysics.NativeWells.Capacity];
         static float _nextRefresh;
 
         /// <summary>Vessels this machine applied a pull to on the last tick (diagnostics).</summary>
@@ -67,10 +73,13 @@ namespace CosmicShore.Gameplay
             }
 
             var wells = new BlackHolePhysics.NativeWells();
+            int owned = 0;
             for (int i = 0; i < holes.Count && i < BlackHolePhysics.NativeWells.Capacity; i++)
             {
                 var h = holes[i];
                 if (h == null) continue;
+                _wellOwners[wells.Count] = h.OwnerVessel;
+                if (h.OwnerVessel != null) owned++;
                 wells.Add(h.ToWell(config));
             }
 
@@ -101,6 +110,9 @@ namespace CosmicShore.Gameplay
                 bool inside = false;
                 for (int w = 0; w < wells.Count; w++)
                 {
+                    // An owned hole (a pilot's slung pair) moves only its owner — never an opposing
+                    // vessel (Docs/ELEMENTAL_ECONOMY.md §9). Environmental holes move everyone.
+                    if (owned > 0 && _wellOwners[w] != null && _wellOwners[w] != vessel.transform) continue;
                     var well = wells[w];
                     float d = math.length(pos - well.Position);
                     if (d <= well.InfluenceRadius) inside = true;

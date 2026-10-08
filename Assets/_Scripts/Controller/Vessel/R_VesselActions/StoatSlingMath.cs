@@ -25,7 +25,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The black hole's strength for a squeeze: <paramref name="minStrength"/> at a touch,
+        /// The attractor's strength for a squeeze: <paramref name="minStrength"/> at a touch,
         /// <paramref name="maxStrength"/> fully buried, along <c>hold^exponent</c> so a light press
         /// stays a nudge.
         /// </summary>
@@ -37,7 +37,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// The pair's axis, which runs black → white (<c>BlackHolePairMath.Positions</c> puts the
-        /// black hole at −axis). The black hole lands on the PRESSED side: the left trigger wants
+        /// attractor at −axis). The attractor lands on the PRESSED side: the left trigger wants
         /// it on the left, so the axis points right; the right trigger mirrors it.
         /// </summary>
         public static Vector3 PairAxis(bool blackOnLeft, Vector3 hullRight) => blackOnLeft ? hullRight : -hullRight;
