@@ -210,11 +210,17 @@ namespace CosmicShore.Gameplay
         /// agent kernel. Off for every other species.</summary>
         public SubstrateSiegeParams Siege = new SubstrateSiegeParams();
 
+        /// <summary>The ARMS RACE (Docs/SUBSTRATE_FAUNA.md §11): with <see cref="SubstrateArmsParams.Role"/> set the
+        /// population is one side of a pond of the lab's co-evolved swarms (1 the schooling prey, 2 the packing predators),
+        /// moved by the lab's policies (<see cref="SubstrateArms"/>) instead of the agent kernel. Off for every other species.</summary>
+        public SubstrateArmsParams Arms = new SubstrateArmsParams();
+
         public SubstrateSpeciesParams Clone()
         {
             var c = (SubstrateSpeciesParams)MemberwiseClone();
             c.BodySlots = BodySlots != null ? (float[])BodySlots.Clone() : new float[0];
             c.Siege = Siege != null ? Siege.Clone() : new SubstrateSiegeParams();
+            c.Arms = Arms != null ? Arms.Clone() : new SubstrateArmsParams();
             return c;
         }
 
@@ -454,6 +460,7 @@ namespace CosmicShore.Gameplay
             ("pack", "stock0", "150: a hunter's body is a 12 u prism, and its body IS its stock"),
             ("locust", "scent_deposit", "0.2: locusts are the pack's prey - the food web the research had no second species for"),
             ("pack", "w_prey", "1.5: a hungry pack follows the locusts' scent and eats them (its body is theirs; mass moves, never vanishes)"),
+            ("pack", "prey_name", "locust: the food web the harness proves (Flatten counts the prey since the arms race, §11)"),
             ("pack", "strike_windup_s", "0.4 s: a hunter's bite lands only after its own intent has shown that long (bestiary pack.py WINDUP, lab fair burns 2026-10-05: unread pack burns 0.71 -> 1.00 read)"),
             ("lurker", "capacity", "16 (bestiary n=16)"),
             ("lurker", "starve_s", "120: a real lifeform starves (research 1e9)"),
@@ -601,6 +608,40 @@ namespace CosmicShore.Gameplay
             ("siege", "gregarious.speed", "120"),
             ("siege", "metabolism", "0.0015: the lab siege never ate; 150 mouths on the cell's scarce flora (SUBSTRATE_FAUNA.md §9.9 C4) need a slow burn - ~13 min from fed to starving"),
             ("siege", "starve_s", "120: a lurker's reserve"),
+
+            // ── the arms race (Docs/SUBSTRATE_FAUNA.md §11; lab Tools/NCA/arms_sim.py, run a9 g1500). Their base is the lab's
+            // world (SubstrateArmsParams defaults = arms_sim.Cfg, asserted by the harness); these are the substrate numbers ──
+            ("shoal", "n0", "120: the lab's n_prey"),
+            ("shoal", "capacity", "155: room to breed (the lab's gated economy held 130-180 prey over 10 min, NOTE.md) - what fills the cell's 1,024 slots"),
+            ("shoal", "solitary.size", "2.5: the lab's prey_size"),
+            ("shoal", "gregarious.size", "2.5"),
+            ("shoal", "solitary.aspect", "2: a 5 u tadpole"),
+            ("shoal", "gregarious.aspect", "2"),
+            ("shoal", "solitary.w_food", "0: the policy finds food on the pond's own grid; the kernel's food heading is never read"),
+            ("shoal", "gregarious.w_food", "0"),
+            ("shoal", "stock0", "18.75: the lab's prey mass as a 2.5 x 1.5 x 5 u body (its body IS its stock)"),
+            ("shoal", "birth_stock", "37.5: a prey splits at twice its birth mass (arms_sim eco)"),
+            ("shoal", "metabolism", "0.013: with hunger_per_vol 0.05 a prey eats 0.26 u^3/s - the lab's 0.86 birth masses grazed per prey per minute"),
+            ("shoal", "hunger_per_vol", "0.05"),
+            ("shoal", "starve_s", "60: ~2 min from a meal to starving"),
+            ("shoal", "contact_weight", "0: prey never burn; a vessel rams them (its proxy is there to be hit)"),
+            ("harrier", "n0", "8: the lab's n_pred - a pack a player can count"),
+            ("harrier", "capacity", "12"),
+            ("harrier", "solitary.speed", "45: the lab's pred_v cruise (a seed's first drift)"),
+            ("harrier", "gregarious.speed", "100: the lab's pred_burst"),
+            ("harrier", "solitary.size", "5: the lab's pred_size"),
+            ("harrier", "gregarious.size", "5"),
+            ("harrier", "solitary.aspect", "2.6: a long hunter, the pack's aspect"),
+            ("harrier", "gregarious.aspect", "4.5: the BURST stretches it into a streak at the same volume - the lab draws the burst red; this is the tell"),
+            ("harrier", "solitary.w_food", "0: the policy steers; the kernel's food heading is never read"),
+            ("harrier", "gregarious.w_food", "0"),
+            ("harrier", "stock0", "75: the lab's m_pred = 4 x m_prey"),
+            ("harrier", "birth_stock", "150: the lab's pred_split 2 - two to four prey of growth"),
+            ("harrier", "metabolism", "0.009: with the default hunger_per_vol 0.02 one prey (0.375 of hunger) holds the satiety gate shut ~30 s - the lab's gated intake"),
+            ("harrier", "starve_s", "90: ~3 min without a catch to starving"),
+            ("harrier", "prey_name", "shoal: the pond's prey (its catches are the lab's swept-contact rule, not the kernel's)"),
+            ("harrier", "strike_windup_s", "0.4 s: a burst turns dangerous only after it has shown that long - the pack's fair-burn rule (#1003)"),
+            ("harrier", "arms.role", "2: the predator side of the pond"),
         };
 
         /// <summary>The SIEGE (lab flight/src/70_siege.js; Docs/SUBSTRATE_FAUNA.md §10): a cloud of 150 that stalks the
@@ -619,6 +660,44 @@ namespace CosmicShore.Gameplay
 
         /// <summary>The siege's base: the substrate defaults (it has no research substrate set).</summary>
         public static SubstrateSpeciesParams SiegeBase() => new SubstrateSpeciesParams { Name = "siege" };
+
+        /// <summary>The SHOAL (Docs/SUBSTRATE_FAUNA.md §11): the lab's selfish-herd prey, 120 tadpole grazers that school.</summary>
+        public static SubstrateSpeciesParams GameShoal()
+        {
+            var p = ShoalBase();
+            p.N0 = 120; p.Capacity = 155;
+            p.Solitary.Size = 2.5f; p.Gregarious.Size = 2.5f;
+            p.Solitary.Aspect = 2f; p.Gregarious.Aspect = 2f; p.Solitary.WFood = 0f; p.Gregarious.WFood = 0f;
+            p.Stock0 = 18.75f; p.BirthStock = 37.5f; p.Metabolism = 0.013f; p.HungerPerVol = 0.05f; p.StarveS = 60f;
+            p.ContactWeight = 0f;
+            return p;
+        }
+
+        /// <summary>The HARRIERS (Docs/SUBSTRATE_FAUNA.md §11): the lab's packing predators, 8 sprinters that hunt the shoal.</summary>
+        public static SubstrateSpeciesParams GameHarrier()
+        {
+            var p = HarrierBase();
+            p.N0 = 8; p.Capacity = 12;
+            p.Solitary.Speed = 45f; p.Gregarious.Speed = 100f; p.Solitary.Size = 5f; p.Gregarious.Size = 5f;
+            p.Solitary.Aspect = 2.6f; p.Gregarious.Aspect = 4.5f; p.Solitary.WFood = 0f; p.Gregarious.WFood = 0f;
+            p.Stock0 = 75f; p.BirthStock = 150f; p.Metabolism = 0.009f; p.StarveS = 90f;
+            p.PreyName = "shoal"; p.StrikeWindupS = 0.4f;
+            p.Arms.Role = 2;
+            return p;
+        }
+
+        /// <summary>The lab's prey (arms_sim.Cfg): the substrate defaults plus the pond's world, role 1. Base of
+        /// <see cref="GameShoal"/>.</summary>
+        public static SubstrateSpeciesParams ShoalBase()
+        {
+            var p = new SubstrateSpeciesParams { Name = "shoal" };
+            p.Arms.Role = 1;
+            return p;
+        }
+
+        /// <summary>The lab's predator world: the substrate defaults plus the pond's world (its role is a game delta: the
+        /// base is the pond the shoal lives in).</summary>
+        public static SubstrateSpeciesParams HarrierBase() => new SubstrateSpeciesParams { Name = "harrier" };
 
         public static SubstrateSpeciesParams GameLocust()
         {
@@ -713,7 +792,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>Every species the game ships, in population order.</summary>
-        public static readonly string[] Names = { "locust", "pack", "lurker", "stampede", "mobber", "leech", "leviathan", "siege" };
+        public static readonly string[] Names = { "locust", "pack", "lurker", "stampede", "mobber", "leech", "leviathan", "siege", "shoal", "harrier" };
 
         /// <summary>Species with a research SUBSTRATE set (species.py) - asserted number for number (harness F).</summary>
         public static readonly string[] ResearchNames = { "locust", "pack", "lurker", "stampede", "leviathan" };
@@ -753,6 +832,14 @@ namespace CosmicShore.Gameplay
             ("leviathan", "leviathan.curious_r", "body_curious_r"), ("leviathan", "leviathan.curious_w", "body_curious"),
         };
 
+        /// <summary>A stable 16-bit code for a name (FNV-1a), so a changed prey shows up in Flatten across runs.</summary>
+        static float NameCode(string s)
+        {
+            uint h = 2166136261;
+            foreach (char c in s) { h ^= c; h *= 16777619; }
+            return h & 0xffff;
+        }
+
         /// <summary>Every number of a parameter set under one flat name space (research names, primitives, "solitary." /
         /// "gregarious." regime fields, body plan, and the derived "dive_period" = ramp + strike + rest).</summary>
         public static System.Collections.Generic.Dictionary<string, float> Flatten(SubstrateSpeciesParams p)
@@ -764,6 +851,11 @@ namespace CosmicShore.Gameplay
             var sg = p.Siege ?? new SubstrateSiegeParams();
             sg.Visit((f, v) => d["siege." + f] = v);
             d["siege.enabled"] = sg.Enabled ? 1f : 0f; d["siege.substeps"] = sg.Substeps; d["siege.food_pull"] = sg.FoodPull; d["siege.leash"] = sg.Leash;
+            var ar = p.Arms ?? new SubstrateArmsParams();
+            ar.Visit((f, v) => d["arms." + f] = v);
+            d["arms.role"] = ar.Role; d["arms.food_sigma"] = ar.FoodSigma; d["arms.sated_hunger"] = ar.SatedHunger;
+            d["arms.food_full"] = ar.FoodFull; d["arms.vessel_pad"] = ar.VesselPad; d["arms.eaten_timeout"] = ar.EatenTimeout;
+            d["prey_name"] = string.IsNullOrEmpty(p.PreyName) ? 0f : NameCode(p.PreyName);
             return d;
         }
 
@@ -777,6 +869,8 @@ namespace CosmicShore.Gameplay
             "leech" => game ? GameLeech() : LeechBase(),
             "leviathan" => game ? GameLeviathan() : Leviathan(),
             "siege" => game ? GameSiege() : SiegeBase(),
+            "shoal" => game ? GameShoal() : ShoalBase(),
+            "harrier" => game ? GameHarrier() : HarrierBase(),
             _ => throw new ArgumentException("no such substrate species: " + name),
         };
     }

@@ -1192,6 +1192,11 @@ namespace CosmicShore.Client
             var skimmerTrigger = skimmerGo.AddComponent<SphereCollider>();
             skimmerTrigger.isTrigger = true;
             skimmerTrigger.radius = 1f; // world reach = radius × localScale (= Scale.Value)
+            // Skimmer.prefab's own kinematic Rigidbody: trigger messages need a body on one side
+            // (prisms and crystals have none) and stay on the skimmer.
+            var skimmerBody = skimmerGo.AddComponent<Rigidbody>();
+            skimmerBody.isKinematic = true;
+            skimmerBody.useGravity = false;
 
             var skimmerImpactor = skimmerGo.AddComponent<SkimmerImpactor>();
             SetPrivateField(skimmerImpactor, "skimmer", nearFieldSkimmer);
@@ -1220,6 +1225,9 @@ namespace CosmicShore.Client
             // OmniCrystalImpactor resolves the vessel through this ImpactCollider.
             var contactBubble = go.AddComponent<SphereCollider>();
             contactBubble.radius = SkimRaceDirector.VesselContactRadius;
+            var vesselBody = go.AddComponent<Rigidbody>(); // the vessel prefabs' kinematic body
+            vesselBody.isKinematic = true;
+            vesselBody.useGravity = false;
 
             var networkVesselImpactor = go.AddComponent<NetworkVesselImpactor>();
             var vesselImpactor = go.AddComponent<VesselImpactor>();

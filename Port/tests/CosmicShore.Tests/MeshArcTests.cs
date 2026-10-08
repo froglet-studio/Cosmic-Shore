@@ -250,6 +250,7 @@ public class MeshColliderTriggerTests : IDisposable
         var trigger = probe.AddComponent<SphereCollider>();
         trigger.isTrigger = true;
         trigger.radius = 1f;
+        ContactRig.AddKinematicBody(probe); // a trigger pair needs a body on one side
 
         loop.Tick(0.02f);
         Assert.Empty(recorder.Enters);

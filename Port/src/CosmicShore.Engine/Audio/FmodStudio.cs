@@ -81,10 +81,12 @@ namespace CosmicShore.Engine.Audio.Fmod
         public bool isValid() => Path != null;
 
         public RESULT getPath(out string path) { path = Path; return Path == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK; }
-        public RESULT isOneshot(out bool oneshot) { oneshot = true; return Path == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK; }
+        // With a runtime installed these come from the banks (a looping event is NOT a one-shot,
+        // which FMODOneShotVolumeHelper checks); without one, a one-shot of length 0.
+        public RESULT isOneshot(out bool oneshot) { oneshot = FmodBackend.Current?.IsOneshot(Path) ?? true; return Path == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK; }
         public RESULT is3D(out bool is3D) { is3D = true; return Path == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK; }
-        public RESULT isSnapshot(out bool snapshot) { snapshot = false; return Path == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK; }
-        public RESULT getLength(out int length) { length = 0; return Path == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK; }
+        public RESULT isSnapshot(out bool snapshot) { snapshot = RuntimeManager.IsSnapshot(Path); return Path == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK; }
+        public RESULT getLength(out int length) { length = FmodBackend.Current?.GetLength(Path) ?? 0; return Path == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK; }
         public RESULT loadSampleData() => RESULT.OK;
         public RESULT unloadSampleData() => RESULT.OK;
 
@@ -186,8 +188,15 @@ namespace CosmicShore.Engine.Audio.Fmod
     public class StudioEventEmitter : MonoBehaviour
     {
         public EventReference EventReference;
-        public EmitterGameEvent PlayEvent = EmitterGameEvent.None;
-        public EmitterGameEvent StopEvent = EmitterGameEvent.None;
+        // FMOD 2.02's names (what the project's prefabs serialize: EventPlayTrigger/EventStopTrigger);
+        // data written under the older names still loads.
+        [CosmicShore.Engine.Serialization.FormerlySerializedAs("PlayEvent")]
+        public EmitterGameEvent EventPlayTrigger = EmitterGameEvent.None;
+        [CosmicShore.Engine.Serialization.FormerlySerializedAs("StopEvent")]
+        public EmitterGameEvent EventStopTrigger = EmitterGameEvent.None;
+        /// <summary>The pre-2.02 names, kept as the original keeps them.</summary>
+        public EmitterGameEvent PlayEvent { get => EventPlayTrigger; set => EventPlayTrigger = value; }
+        public EmitterGameEvent StopEvent { get => EventStopTrigger; set => EventStopTrigger = value; }
         public bool AllowFadeout = true;
         public bool TriggerOnce;
         public bool Preload;
@@ -206,12 +215,20 @@ namespace CosmicShore.Engine.Audio.Fmod
         protected virtual void Start() { HandleGameEvent(EmitterGameEvent.ObjectStart); }
         protected virtual void OnEnable() { HandleGameEvent(EmitterGameEvent.ObjectEnable); }
         protected virtual void OnDisable() { HandleGameEvent(EmitterGameEvent.ObjectDisable); }
-        protected virtual void OnDestroy() { HandleGameEvent(EmitterGameEvent.ObjectDestroy); if (_instance.isValid()) { _instance.stop(STOP_MODE.IMMEDIATE); _instance.release(); } }
+        // As the original: the destroy trigger runs, then the instance is only detached (a looping
+        // event with no stop trigger plays on) and a one-shot's handle is released.
+        protected virtual void OnDestroy()
+        {
+            HandleGameEvent(EmitterGameEvent.ObjectDestroy);
+            if (!_instance.isValid()) return;
+            RuntimeManager.DetachInstanceFromGameObject(_instance);
+            if (EventDescription.isOneshot(out bool oneshot) == RESULT.OK && oneshot) { _instance.release(); _instance.clearHandle(); }
+        }
 
         protected void HandleGameEvent(EmitterGameEvent gameEvent)
         {
-            if (PlayEvent == gameEvent && gameEvent != EmitterGameEvent.None) Play();
-            if (StopEvent == gameEvent && gameEvent != EmitterGameEvent.None) Stop();
+            if (EventPlayTrigger == gameEvent && gameEvent != EmitterGameEvent.None) Play();
+            if (EventStopTrigger == gameEvent && gameEvent != EmitterGameEvent.None) Stop();
         }
 
         public void Play()

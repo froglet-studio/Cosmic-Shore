@@ -388,10 +388,10 @@ void main(){
 
             if (tex != _batchTexture) { Flush(); _batchTexture = tex; }
             uint baseIndex = (uint)(_verts.Count / Floats);
-            var tf = rt;
+            var toWorld = rt.PointToWorld;
             foreach (var v in _mesh.vertices)
             {
-                var p = tf.TransformPoint(v.position);
+                var p = toWorld.Apply(v.position);
                 EngineColor vc = v.color;
                 vc = new EngineColor(vc.r * crColor.r, vc.g * crColor.g, vc.b * crColor.b, vc.a);
                 var lc = ColorSpace.Linear(vc);
@@ -426,9 +426,10 @@ void main(){
             uint baseIndex = (uint)(_verts.Count / Floats);
             var tf = text.transform;
             float canvasScale = tf.lossyScale.x;
+            var toWorld = tf.PointToWorld;
             foreach (var v in _text.Vertices)
             {
-                var p = tf.TransformPoint(new EngineVector3(v.X, v.Y, 0f));
+                var p = toWorld.Apply(new EngineVector3(v.X, v.Y, 0f));
                 var lc = ColorSpace.Linear(v.Color);
                 lc.W *= alpha;
                 var sdf = v.Sdf;

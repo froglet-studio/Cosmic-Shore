@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 namespace CosmicShore.Mcp
 {
     /// <summary>The engine's verbs as MCP tools. One player at a time, owned by this server (or attached by port).</summary>
-    public sealed class Tools : IDisposable
+    public sealed partial class Tools : IDisposable
     {
         public const string Instructions =
             "Prisma (the Cosmic Shore .NET port). Read Port/CLAUDE.md first. Loop: edit code -> engine_build -> engine_smoke -> " +
@@ -28,7 +28,10 @@ namespace CosmicShore.Mcp
         string? _gameLog;
         int _port;
 
-        public Tools(string repo) { _repo = repo; }
+        /// <summary>The parity harness (manifest, replays, tolerances) when it is not this checkout's own: a bisect judges old commits with today's harness.</summary>
+        readonly string? _parityRoot;
+
+        public Tools(string repo, string? parityRoot = null) { _repo = repo; _parityRoot = parityRoot; }
 
         string PortSrc(string project) => Path.Combine(_repo, "Port", "src", project);
 
@@ -65,8 +68,19 @@ namespace CosmicShore.Mcp
                     ["frames"] = P("integer", "frames to run at 60 Hz (default 1200 = 20 s of game time)"),
                     ["scene"] = P("string", "start in this scene instead of Bootstrap"),
                     ["expect"] = P("string", "scene that must be reached for a PASS (default: any)"),
+                    ["ignore"] = P("string", "'|'-separated substrings: errors and exceptions containing one are listed as ignored and do not fail the run (e.g. a scene entered without Bootstrap logs 'not found at injection time', as Unity's play-from-scene does)"),
                     ["build"] = P("boolean", "compile first (default true)"),
                 }),
+            Tool("engine_parity", "Parity harness (ROADMAP C1): replay each case in Port/parity/manifest.json in the engine and diff it against the Unity goldens in Port/parity/goldens with the C9 tolerances (Port/parity/tolerances.json) - state and Random exact, events in order within a step, transforms within 1e-4/0.1 deg for 10 s, frames by SSIM. Per channel PASS / FAIL (first divergence) / MISSING (no golden yet). Writes Port/parity/results/latest.json for the scoreboard.",
+                new JsonObject
+                {
+                    ["case"] = P("string", "one case name, 'random', or 'all' (default)"),
+                    ["against"] = new JsonObject { ["type"] = "string", ["enum"] = new JsonArray("goldens", "self"), ["description"] = "goldens (default): Unity's captures; self: run each case twice in the engine and diff the runs (determinism check)" },
+                    ["golden_dir"] = P("string", "diff against this directory instead (same layout as Port/parity/goldens), e.g. a planted difference"),
+                    ["frames"] = P("boolean", "also capture frames (needs a window; xvfb-run on a display-less Linux). Default false: frames channel MISSING"),
+                    ["build"] = P("boolean", "compile first (default true)"),
+                }),
+            BisectTool(),
             Tool("prisma_tracks", "Prisma's memory of play runs: the last runs, open problems (crashes, exceptions, errors, audio, performance) with how often and when they were seen, performance by scene over time. Read this first when asked about a problem in the game.",
                 new JsonObject
                 {
@@ -83,6 +97,23 @@ namespace CosmicShore.Mcp
                     ["criterion"] = P("string", "done when: a check anyone can run - a test that passes, an engine_smoke with no such error, a scene that stays clean for 3 runs, a measured number"),
                     ["priority"] = P("integer", "1 high, 2 normal, 3 low"),
                 }, "type", "title", "criterion"),
+            Tool("asset_froglet_tools", "The project's FrogletTools (Unity editor tools): menu path, category, importance, description, whether it writes assets, and its source file and method. Read a tool's source before doing its job without Unity.",
+                new JsonObject { ["filter"] = P("string", "only tools whose menu path, name or description contains this (case-insensitive)") }),
+            Tool("asset_datasets", "The project's ScriptableObject data files grouped by script type, with counts. Pass type to list that type's files.",
+                new JsonObject { ["type"] = P("string", "a script type name, e.g. SO_ArcadeGame, to list its files") }),
+            Tool("asset_dataset", "One ScriptableObject data file's fields: key, inspector label, kind (number, bool, text, enum, vector, color, ref, list, object), value, header, tooltip, range, and keys the script no longer has (stale). Edit a field with cs-asset set <file> &<fileId> <path> <value>.",
+                new JsonObject { ["path"] = P("string", "project-relative .asset path") }, "path"),
+            Tool("asset_model", "What Unity's importer makes of a model (FBX; .blend/.ma/.mb through Blender/Maya when installed): nodes, meshes with vertex/triangle counts, submeshes, materials, blend shapes, bones, takes, bounds, the .meta import settings, and the materials the game draws it with (usedBy: the prefabs that draw it; gameMaterials: per mesh, name, shader, colour).",
+                new JsonObject { ["path"] = P("string", "project-relative .fbx path") }, "path"),
+            Tool("asset_model_preview", "A shaded picture of a model (FBX; .blend/.ma/.mb when Blender/Maya is installed), drawn on the CPU (no GPU needed): every mesh at its pose, in the colours of the materials the game gives it (the prefabs that draw it; asset_model lists them as gameMaterials). yaw 180 looks at its front (Unity's +Z), 145 is a front three-quarter view.",
+                new JsonObject
+                {
+                    ["path"] = P("string", "project-relative .fbx path"),
+                    ["yaw"] = P("number", "degrees around the model, default 145"),
+                    ["pitch"] = P("number", "degrees above, default 20"),
+                    ["size"] = P("integer", "pixels, default 512"),
+                    ["colors"] = P("string", "game (default: the game's material colours) or submesh (one key colour per submesh)"),
+                }, "path"),
             Tool("unity_isolation_check", "Fails if the branch changes anything outside Port/ that Unity would see. Run before committing.",
                 new JsonObject { ["base"] = P("string", "branch to diff against (default origin/bleeding-edge)") }),
             Tool("game_start", "Build (unless build=false) and start the player with its control port, then wait until it answers. On a Linux server without a display it runs under xvfb-run. Stops a previous player first.",
@@ -121,6 +152,15 @@ namespace CosmicShore.Mcp
                 new JsonObject { ["x"] = P("number", "screenshot x"), ["y"] = P("number", "screenshot y (top-left origin)") }, "x", "y"),
             Tool("game_dump_ui", "A UI subtree with world rects, anchors, pivots, sizes and components.",
                 new JsonObject { ["name"] = P("string", "object name"), ["depth"] = P("integer", "levels (default 4)") }, "name"),
+            Tool("game_resize", "Render (and screenshot) at WxH whatever the window's size is; 'off' returns to the window's size. Screenshot coordinates follow it.",
+                new JsonObject { ["size"] = P("string", "WxH, or off") }, "size"),
+            Tool("game_ui_sweep", "C5 UI parity: every screen of the loaded scene (Menu_Main: each MenuScreens value, then each modal; elsewhere the HUD) at each resolution - frames/ui/<view>_<WxH>.png plus ui/<view>_<WxH>.jsonl (every active RectTransform's screen rect, text overflow and size) under dir, the parity golden layout engine_parity diffs.",
+                new JsonObject
+                {
+                    ["dir"] = P("string", "output directory (default: a temp folder)"),
+                    ["sizes"] = P("string", "comma-separated WxH (default 1920x1080,2560x1080,1024x768)"),
+                    ["views"] = P("string", "comma-separated view names to keep (default: all)"),
+                }),
             Tool("game_logs", "The player's recent console output.",
                 new JsonObject { ["lines"] = P("integer", "how many (default 200)"), ["grep"] = P("string", "only lines containing this") }),
             Tool("game_load_scene", "Load a scene by name or build index.",
@@ -141,6 +181,39 @@ namespace CosmicShore.Mcp
             {
                 case "engine_build": return new JsonArray(Text(await Build(Str(a, "target", "player"))));
                 case "engine_test": return new JsonArray(Text(await Test(Str(a, "suite", "engine"), Str(a, "filter"))));
+                case "asset_froglet_tools":
+                {
+                    var json = await AssetCli("tools");
+                    var f = Str(a, "filter").ToLowerInvariant();
+                    var tools = JsonNode.Parse(json)!["tools"]!.AsArray()
+                        .Where(t => f.Length == 0 || $"{t!["menu"]} {t["name"]} {t["description"]}".ToLowerInvariant().Contains(f)).ToList();
+                    return new JsonArray(Text($"{tools.Count} tool(s)\n" + new JsonArray(tools.Select(t => t!.DeepClone()).ToArray()).ToJsonString()));
+                }
+                case "asset_datasets":
+                {
+                    var json = await AssetCli("datasets");
+                    var root = JsonNode.Parse(json)!;
+                    var type = Str(a, "type");
+                    if (type.Length > 0)
+                    {
+                        var t = root["types"]!.AsArray().FirstOrDefault(x => string.Equals(x!["type"]!.ToString(), type, StringComparison.OrdinalIgnoreCase));
+                        return new JsonArray(Text(t == null ? $"no data type '{type}'" : t.ToJsonString()));
+                    }
+                    var lines = root["types"]!.AsArray().Select(x => $"{x!["count"],5}  {x["type"]}  {x["script"]}");
+                    return new JsonArray(Text($"{root["files"]} data files\n" + string.Join('\n', lines)));
+                }
+                case "asset_dataset": return new JsonArray(Text(await AssetCli("dataset", Str(a, "path"))));
+                case "asset_model": return new JsonArray(Text(await AssetCli("model", Str(a, "path"))));
+                case "asset_model_preview":
+                {
+                    var png = Path.Combine(Path.GetTempPath(), "froglet-mcp", $"model-{DateTime.Now:HHmmss-fff}.png");
+                    var args = new List<string> { "model-preview", Str(a, "path"), "--out", png };
+                    foreach (var k in new[] { "yaw", "pitch", "size", "colors" }) if (Str(a, k).Length > 0) { args.Add("--" + k); args.Add(Str(a, k)); }
+                    await AssetCli(args.ToArray());
+                    var bytes = await File.ReadAllBytesAsync(png);
+                    File.Delete(png);
+                    return new JsonArray(new JsonObject { ["type"] = "image", ["data"] = Convert.ToBase64String(bytes), ["mimeType"] = "image/png" }, Text(Str(a, "path")));
+                }
                 case "unity_isolation_check":
                 {
                     var args = new List<string> { Path.Combine(_repo, "Port", "tools", "check_unity_isolation.py") };
@@ -184,6 +257,8 @@ namespace CosmicShore.Mcp
                     return new JsonArray(Text(text));
                 }
                 case "engine_smoke": return new JsonArray(Text(await Smoke(a)));
+                case "engine_parity": return new JsonArray(Text(await Parity(a)));
+                case "prisma_bisect": return new JsonArray(Text(await Bisect(a)));
                 case "game_start": return new JsonArray(Text(await Start(a)));
                 case "game_attach":
                 {
@@ -215,6 +290,8 @@ namespace CosmicShore.Mcp
                     return new JsonArray(Text(Format(await Command("set", $"{Quote(Str(a, "object"))} {Str(a, "component")} {Str(a, "member")} {Str(a, "value")}"))));
                 case "game_ui_at": return new JsonArray(Text(Format(await Command("ui_at", $"{Str(a, "x")},{Str(a, "y")}"))));
                 case "game_dump_ui": return new JsonArray(Text(Format(await Command("dump_ui", Str(a, "name") + ":" + Int(a, "depth", 4)))));
+                case "game_resize": return new JsonArray(Text(Format(await Command("resize", Str(a, "size")))));
+                case "game_ui_sweep": return new JsonArray(Text(Format(await Command("ui_sweep", $"{Str(a, "dir")};{Str(a, "sizes")};{Str(a, "views")}"))));
                 case "game_logs":
                 {
                     var r = await Command("logs", Int(a, "lines", 200).ToString());
@@ -364,13 +441,18 @@ namespace CosmicShore.Mcp
             return "player stopped";
         }
 
-        async Task<string> Smoke(JsonObject a)
+        async Task<string> Smoke(JsonObject a) => (await SmokeRun(a)).Text;
+
+        /// <summary>A smoke run's report, plus what prisma_bisect judges: every error, exception, assert and crash text that was not ignored.</summary>
+        sealed record SmokeResult(string Text, bool Pass, bool BuildFailed, List<string> Problems);
+
+        async Task<SmokeResult> SmokeRun(JsonObject a)
         {
             var sb = new StringBuilder();
             if (Bool(a, "build", true))
             {
                 var b = await Build("player");
-                if (!b.StartsWith("build ok")) return "FAIL (build)\n" + b;
+                if (!b.StartsWith("build ok")) return new SmokeResult("FAIL (build)\n" + b, false, true, new List<string>());
             }
             var exe = Path.Combine(PortSrc("CosmicShore.Player"), "bin", "Debug", "net10.0", OperatingSystem.IsWindows() ? "CosmicShore.exe" : "CosmicShore");
             var report = Path.Combine(Path.GetTempPath(), "froglet-mcp", $"smoke-{DateTime.Now:HHmmss}.json");
@@ -380,12 +462,22 @@ namespace CosmicShore.Mcp
             var env = new Dictionary<string, string> { ["COSMIC_SHORE_NET"] = "off", ["COSMIC_SHORE_AUDIO"] = "off", ["COSMIC_SHORE_PROFILE"] = "smoke" };
             var r = await Run(exe, args, _repo, TimeSpan.FromMinutes(20), env);
             if (!File.Exists(report))
-                return $"FAIL (the player wrote no report; exit {r.ExitCode})\n" + string.Join('\n', r.Output.Split('\n').TakeLast(40));
+            {
+                var tail = r.Output.Split('\n').TakeLast(40).ToList();
+                return new SmokeResult($"FAIL (the player wrote no report; exit {r.ExitCode})\n" + string.Join('\n', tail), false, false, tail);
+            }
             using var doc = JsonDocument.Parse(await File.ReadAllTextAsync(report));
             var d = doc.RootElement;
             var scenes = d.GetProperty("scenes").EnumerateArray().Select(x => x.GetProperty("name").GetString() ?? "").ToList();
-            int errors = d.GetProperty("counts").GetProperty("errors").GetInt32();
-            int exceptions = d.GetProperty("counts").GetProperty("exceptions").GetInt32();
+            var ignore = Str(a, "ignore").Split('|', StringSplitOptions.RemoveEmptyEntries);
+            bool Ignored(JsonElement e) => ignore.Any(i => (e.GetProperty("message").GetString() ?? "").Contains(i, StringComparison.Ordinal));
+            // A scene entered without Bootstrap misses Bootstrap's singletons (as Unity's play-from-scene
+            // does): the caller names those known signatures, for errors and exceptions alike.
+            int ignoredErrors = d.GetProperty("errors").EnumerateArray().Where(Ignored).Sum(e => e.GetProperty("count").GetInt32());
+            int ignoredExceptions = d.GetProperty("exceptions").EnumerateArray().Where(Ignored).Sum(e => e.GetProperty("count").GetInt32());
+            int ignored = ignoredErrors + ignoredExceptions;
+            int errors = d.GetProperty("counts").GetProperty("errors").GetInt32() - ignoredErrors;
+            int exceptions = d.GetProperty("counts").GetProperty("exceptions").GetInt32() - ignoredExceptions;
             int warnings = d.GetProperty("counts").GetProperty("warnings").GetInt32();
             bool crashed = d.GetProperty("crash").ValueKind == JsonValueKind.String;
             string expect = Str(a, "expect");
@@ -395,16 +487,159 @@ namespace CosmicShore.Mcp
             double P(string k) => fr.TryGetProperty(k, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetDouble() : 0;
             sb.AppendLine((pass ? "PASS" : "FAIL") + (P("p50Ms") > 0 ? $"  -  tick p50 {P("p50Ms"):0.0} ms, p95 {P("p95Ms"):0.0} ms, worst {P("worstMs"):0.0} ms" : ""));
             sb.AppendLine($"{frames} frames in {d.GetProperty("seconds").GetDouble():0} s; scenes: {string.Join(" -> ", scenes)}" + (reached ? "" : $" (expected {expect})"));
-            sb.AppendLine($"{exceptions} exception(s), {errors} error(s), {warnings} warning(s)" + (crashed ? "; CRASHED" : ""));
+            sb.AppendLine($"{exceptions} exception(s), {errors} error(s){(ignored > 0 ? $" (+{ignored} ignored)" : "")}, {warnings} warning(s)" + (crashed ? "; CRASHED" : ""));
             if (crashed) sb.AppendLine(d.GetProperty("crash").GetString());
             foreach (var kind in new[] { "exceptions", "errors", "asserts", "warnings" })
                 foreach (var e in d.GetProperty(kind).EnumerateArray().Take(kind == "warnings" ? 10 : 25))
-                    sb.AppendLine($"  [{kind.TrimEnd('s')}] x{e.GetProperty("count").GetInt32()} {e.GetProperty("message").GetString()}");
+                    sb.AppendLine($"  [{(kind is "errors" or "exceptions" && Ignored(e) ? "ignored " + kind.TrimEnd('s') : kind.TrimEnd('s'))}] x{e.GetProperty("count").GetInt32()} {e.GetProperty("message").GetString()}");
             sb.AppendLine("report: " + report);
-            return sb.ToString().TrimEnd();
+            var problems = new[] { "exceptions", "errors", "asserts" }
+                .SelectMany(k => d.GetProperty(k).EnumerateArray().Where(e => k == "asserts" || !Ignored(e)))
+                .Select(e => e.GetProperty("message").GetString() ?? "").ToList();
+            if (crashed) problems.Add(d.GetProperty("crash").GetString() ?? "");
+            return new SmokeResult(sb.ToString().TrimEnd(), pass, false, problems);
+        }
+
+        // ---- parity -------------------------------------------------------------------------------
+
+        string PlayerExe() => Path.Combine(PortSrc("CosmicShore.Player"), "bin", "Debug", "net10.0", OperatingSystem.IsWindows() ? "CosmicShore.exe" : "CosmicShore");
+
+        static readonly Dictionary<string, string> QuietEnv = new() { ["COSMIC_SHORE_NET"] = "off", ["COSMIC_SHORE_AUDIO"] = "nrt", ["COSMIC_SHORE_PROFILE"] = "parity" };
+
+        async Task<RunResult> RunCase(string replay, string outDir, bool frames)
+        {
+            if (Directory.Exists(outDir)) Directory.Delete(outDir, true);
+            Directory.CreateDirectory(outDir);
+            var args = new List<string> { "--quiet", "--replay", replay, "--parity-out", outDir };
+            string file = PlayerExe();
+            if (!frames) args.Insert(0, "--headless");
+            else if (OperatingSystem.IsLinux() && string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DISPLAY")))
+            {
+                args.InsertRange(0, new[] { "-a", "-s", "-screen 0 1400x800x24", file });
+                file = "xvfb-run";
+            }
+            return await Run(file, args, _repo, TimeSpan.FromMinutes(30), QuietEnv);
+        }
+
+        async Task<RunResult> RunRandom(string outDir, IEnumerable<int> seeds)
+            => await Run(PlayerExe(), new[] { "--random-golden", outDir, "--seeds", string.Join(',', seeds) }, _repo, TimeSpan.FromMinutes(5), QuietEnv);
+
+        async Task<string> Parity(JsonObject a) => (await ParityRun(a)).Text;
+
+        /// <summary>A replay diff's report, plus what prisma_bisect judges: failed channels (a player that died counts as one) and the run's work folder.</summary>
+        sealed record ParityResult(string Text, int Fails, bool BuildFailed, string Work);
+
+        async Task<ParityResult> ParityRun(JsonObject a)
+        {
+            if (Bool(a, "build", true))
+            {
+                var b = await Build("player");
+                if (!b.StartsWith("build ok")) return new ParityResult("FAIL (build)\n" + b, 0, true, "");
+            }
+            var root = _parityRoot ?? Path.Combine(_repo, "Port", "parity");
+            var manifestPath = Path.Combine(root, "manifest.json");
+            if (!File.Exists(manifestPath)) return new ParityResult("FAIL: no " + manifestPath, 1, false, "");
+            var manifest = JsonNode.Parse(await File.ReadAllTextAsync(manifestPath))!.AsObject();
+            var tol = Prisma.Parity.Tolerances.Load(Path.Combine(root, "tolerances.json"));
+            bool self = Str(a, "against", "goldens") == "self";
+            bool custom = Str(a, "golden_dir").Length > 0;
+            string goldenRoot = custom ? Path.GetFullPath(Str(a, "golden_dir"), _repo) : Path.Combine(root, "goldens");
+            bool frames = Bool(a, "frames", false);
+            string want = Str(a, "case", "all");
+            var work = Path.Combine(Path.GetTempPath(), "froglet-mcp", "parity", DateTime.Now.ToString("yyyyMMdd-HHmmss"));
+            Directory.CreateDirectory(work);
+
+            var sb = new StringBuilder();
+            var results = new JsonObject();
+            int fails = 0, missing = 0, passes = 0;
+            void Add(string name, IEnumerable<Prisma.Parity.ChannelResult> rs)
+            {
+                var o = new JsonObject();
+                sb.AppendLine(name);
+                foreach (var r in rs)
+                {
+                    sb.AppendLine("  " + r);
+                    o[r.Channel] = new JsonObject { ["status"] = r.Status.ToString().ToLowerInvariant(), ["detail"] = r.Detail };
+                    if (r.Status == Prisma.Parity.ChannelStatus.Fail) fails++;
+                    else if (r.Status == Prisma.Parity.ChannelStatus.Missing) missing++;
+                    else passes++;
+                }
+                results[name] = o;
+            }
+
+            // Random: one golden per seed, independent of any case.
+            var seeds = (manifest["seeds"] as JsonArray)?.Select(x => x!.GetValue<int>()).ToList() ?? new List<int>();
+            if (seeds.Count > 0 && (want == "all" || want == "random"))
+            {
+                var mine = Path.Combine(work, "random");
+                var r = await RunRandom(mine, seeds);
+                if (r.ExitCode != 0) return new ParityResult("FAIL: the random golden run exited " + r.ExitCode + "\n" + string.Join('\n', r.Output.Split('\n').TakeLast(30)), 1, false, work);
+                string gold = Path.Combine(goldenRoot, "random");
+                if (self) await RunRandom(gold = Path.Combine(work, "random-0"), seeds);
+                Add("random", new[] { Prisma.Parity.ParityDiff.Random(gold, mine) });
+            }
+
+            foreach (var c in (manifest["cases"] as JsonArray ?? new JsonArray()).OfType<JsonObject>())
+            {
+                var name = c["name"]!.GetValue<string>();
+                if (want != "all" && want != name) continue;
+                var replay = Path.Combine(root, c["replay"]!.GetValue<string>());
+                var run = Path.Combine(work, name, "run");
+                var r = await RunCase(replay, run, frames);
+                if (r.ExitCode != 0)
+                {
+                    fails++;
+                    sb.AppendLine($"{name}\n  player exited {r.ExitCode}\n  " + string.Join("\n  ", r.Output.Split('\n').TakeLast(20)));
+                    results[name] = new JsonObject { ["run"] = new JsonObject { ["status"] = "fail", ["detail"] = "player exited " + r.ExitCode } };
+                    continue;
+                }
+                string gold = Path.Combine(goldenRoot, name);
+                if (self) await RunCase(replay, gold = Path.Combine(work, name, "run-0"), frames);
+                // Parity runs FMOD non-real-time with the banks; without the runtime the silent model
+                // answers every event description as a one-shot, so the FMOD channel is approximate.
+                if (File.Exists(Path.Combine(run, "run.json")) && (await File.ReadAllTextAsync(Path.Combine(run, "run.json"))).Contains("\"silent\""))
+                    sb.AppendLine($"{name}: audio silent (no FMOD runtime: python3 Port/tools/fetch_native.py) - FMOD descriptions approximate");
+                Add(name, new[]
+                {
+                    Prisma.Parity.ParityDiff.State(gold, run),
+                    Prisma.Parity.ParityDiff.Events(gold, run, tol),
+                    Prisma.Parity.ParityDiff.Transforms(gold, run, tol),
+                    Prisma.Parity.ParityDiff.Frames(gold, run, tol),
+                });
+            }
+            if (results.Count == 0) return new ParityResult($"FAIL: no case named '{want}'", 1, false, work);
+
+            // Only a full run against the real goldens feeds the scoreboard.
+            if (!self && !custom && want == "all")
+            {
+                Directory.CreateDirectory(Path.Combine(root, "results"));
+                var doc = new JsonObject { ["date"] = DateTime.UtcNow.ToString("yyyy-MM-dd"), ["cases"] = results };
+                await File.WriteAllTextAsync(Path.Combine(root, "results", "latest.json"), doc.ToJsonString(new JsonSerializerOptions { WriteIndented = true }) + "\n");
+            }
+            return new ParityResult($"{(fails > 0 ? "FAIL" : "PASS")}  -  {passes} channel(s) pass, {fails} fail, {missing} missing ({(self ? "engine vs engine" : "engine vs " + goldenRoot)})\n" + sb + "work: " + work, fails, false, work);
         }
 
         // ---- build & test ----------------------------------------------------------------------
+
+        bool _assetBuilt;
+
+        /// <summary>Runs cs-asset (built once per server run) from the repository root; its stdout, or a ToolException with its error.</summary>
+        async Task<string> AssetCli(params string[] args)
+        {
+            var proj = PortSrc("CosmicShore.AssetTool");
+            if (!_assetBuilt)
+            {
+                var b = await Run("dotnet", new[] { "build", proj, "-nologo", "-v", "q", "-clp:NoSummary" }, _repo, TimeSpan.FromMinutes(25));
+                if (b.ExitCode != 0) throw new ToolException("building cs-asset failed:\n" + string.Join('\n', b.Output.Split('\n').Where(l => l.Contains(": error ")).Distinct().Take(20)));
+                _assetBuilt = true;
+            }
+            var dll = Path.Combine(proj, "bin", "Debug", "net10.0", "cs-asset.dll");
+            var r = await Run("dotnet", new[] { dll }.Concat(args), _repo, TimeSpan.FromMinutes(5));
+            if (r.ExitCode != 0) throw new ToolException("cs-asset " + string.Join(' ', args) + ": " + r.Output.Trim());
+            // stdout and stderr arrive merged: the answer is the one JSON line; anything else is a note.
+            var lines = r.Output.Split('\n').Select(l => l.TrimEnd('\r'));
+            return lines.LastOrDefault(l => l.StartsWith('{')) ?? r.Output.Trim();
+        }
 
         async Task<string> Build(string target)
         {

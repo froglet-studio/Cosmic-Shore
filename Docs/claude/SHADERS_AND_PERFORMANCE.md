@@ -18,6 +18,7 @@
 - Watch for `Gfx.WaitForPresentOnGfxThread` bottlenecks — usually indicates GPU sync issues, not CPU
 - Static batching, object pooling, and draw call management are always priorities
 - Test with profiler before and after optimization changes — don't assume improvement
+- A `ProfilerRecorder` built from code **records nothing unless started**: `ProfilerRecorderOptions.Default` is `SumAllSamplesInFrame | WrapAround` and does NOT include `StartImmediately`, and the constructor does not start it. Pass `Default | StartImmediately` (or call `Start()`), and report "marker not found" separately from "no samples" — the Crystal Flip Wave Benchmark's first cut printed `n/a` for every stat and the two causes looked identical (`Docs/TIME_CRYSTAL.md` §7)
 - GPU instancing enabled on all prism and VFX materials
 - Prism scale/material/effect animation is GPU-clock-driven (the clock-material law, `Docs/PRISM_ANIMATION.md`) — the former CPU Jobs+Burst animation managers are deleted
 - Burst-compiled spatial queries replace Physics-based AOE prism damage (`PrismSpatialIndex` — see `Docs/SPATIAL_INDEX.md`)

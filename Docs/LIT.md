@@ -37,7 +37,7 @@ lands, which is a property of the producer, not of the state:
 | Echo Sight (Dolphin, Charge) | Cone | **pending** — what the next blast would sweep (a super-shield in it glows DANGER: the blast ends there) | everything | `EchoSightActionExecutor` |
 | Proximity fuze (Sparrow skyburst) | Sphere | **armed** — where this warhead will go off | everything | `Projectile.PublishFuzeLit` |
 | Explosion passthrough | any | **resolved** — the blast arrived and spared this | **own domain only** | `ExplosionImpactor.PublishLit` |
-| Bomb passage (Grizzly trigger bomb) | Cylinder wake / Sphere at rest | **live** — a bomb is inside this mass and has not gone off | everything | `GrizzlyBombVisual.PublishLit` |
+| Bomb passage (Grizzly trigger bomb) | Cylinder wake / Sphere when frozen | **live** — a bomb is inside this mass and has not gone off | everything | `GrizzlyBombVisual.PublishLit` |
 
 **A producer that wants to say TWO things about one force should look for a different CHANNEL, not a
 second light.** The fuze row was briefly paired with a prism *ripple* on the same round — a vertex

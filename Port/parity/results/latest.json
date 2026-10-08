@@ -1,0 +1,47 @@
+{
+  "date": "2026-10-07",
+  "cases": {
+    "random": {
+      "random": {
+        "status": "missing",
+        "detail": "no golden"
+      }
+    },
+    "boot-menu": {
+      "state": {
+        "status": "missing",
+        "detail": "no golden"
+      },
+      "events": {
+        "status": "missing",
+        "detail": "no golden"
+      },
+      "transforms": {
+        "status": "missing",
+        "detail": "no golden"
+      },
+      "frames": {
+        "status": "missing",
+        "detail": "no golden"
+      }
+    },
+    "skimrace-fly": {
+      "state": {
+        "status": "missing",
+        "detail": "no golden"
+      },
+      "events": {
+        "status": "missing",
+        "detail": "no golden"
+      },
+      "transforms": {
+        "status": "missing",
+        "detail": "no golden"
+      },
+      "frames": {
+        "status": "missing",
+        "detail": "no golden"
+      }
+    }
+  }
+}
