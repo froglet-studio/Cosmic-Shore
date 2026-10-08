@@ -70,6 +70,13 @@ a **done when** criterion, the check that proves it: `prisma_board_suggest` requ
 that came from the tracks is verified by them (not seen in 3 runs through its scene marks it MET; a
 relapse reopens it). Tools: `prisma_tracks` (read this before asking what is wrong), `prisma_board`,
 `prisma_board_suggest`. Code: `src/Shared/PrismaTracks.cs`, `src/Shared/PrismaBoard.cs`.
+Several writers share `board.json` (Prisma.exe and every `prisma-mcp`): a save re-reads it and merges
+card by card (`src/Shared/Workspace/BoardMerge.cs`, cards matched by `Uid`), Prisma pulls other writers'
+changes in once a second, and an unreadable file is copied to `board.json.corrupt-*` before anything
+replaces it. The scheduler's UI-free logic (quick add, TODAY/UPCOMING queries, repeat rules) lives in
+`src/Shared/Workspace/` - linked into the launcher, the MCP server and the tests, never a project of its
+own (the launcher's UPDATE builds only `CosmicShore.Launcher`, `Shared` and `Directory.Build.props`).
+Details, the quick-add syntax, Windows test steps and the roadmap: `docs/PRISMA_BOARD_SCHEDULER.md`.
 
 ## The editor (M2): tools, data sets, models - not a hierarchy
 
