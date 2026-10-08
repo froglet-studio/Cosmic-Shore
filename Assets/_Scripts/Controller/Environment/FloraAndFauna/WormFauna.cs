@@ -25,6 +25,9 @@ namespace CosmicShore.Gameplay
     ///    worm population (see <see cref="TickSeparation"/>). Both halves regrow their
     ///    missing ends by DIFFERENTIATING the wound segment (a state change of
     ///    existing mass), so mid-body kills multiply the problem.
+    ///  • A fed colony at full length REPRODUCES by fission: it splits itself at the
+    ///    middle through the same severance (see <see cref="TryFission"/>), gated by the
+    ///    cell's species cap — so the colony completes its lifecycle without a player.
     ///  • Optimal play emerges: chain end-kills faster than the cell's fauna production
     ///    cycle and you always face soft tissue; slower and every kill is armored.
     ///    Starve it (deny mass) and it digests itself tail-first.
@@ -68,6 +71,15 @@ namespace CosmicShore.Gameplay
         // before its first production.
         float _lastProductionTime;
         float _lastStarvationShed;
+
+        // Fission (natural reproduction, §23.10). Per colony, like Fauna's per-individual
+        // birth stamp; a split-born colony is a fresh individual and starts unstamped.
+        float _lastFissionTime = float.NegativeInfinity;
+
+        // Each fission half keeps one of the parent's capital ends plus at least one body
+        // member, so after its one regrowth cycle it is at least the 3-member colony
+        // BuildChain spawns. Binds only for a config whose MaxSegmentsPerWorm is under 4.
+        const int FissionMinSegmentsPerHalf = 2;
 
         // --- Attack state machine (souls-like grammar) ---
         //  Cruise → (pilot sensed in a hunt window) Pursue → (inside StrikeRange)
@@ -815,7 +827,9 @@ namespace CosmicShore.Gameplay
         ///   1. a HEAD, if it has none — a decapitated colony cannot feed, so a mouth comes
         ///      before length, and this is the only way a beheaded worm ever recovers;
         ///   2. a TAIL, if it has none — the stinger that makes its rear dangerous again;
-        ///   3. otherwise a BODY segment behind the head — the colony simply gets longer.
+        ///   3. otherwise a BODY segment behind the head — the colony simply gets longer;
+        ///   4. at full length (<see cref="WormColonyConfigSO.MaxSegmentsPerWorm"/>) a fed
+        ///      colony instead REPRODUCES by fission (<see cref="TryFission"/>).
         ///
         /// Same shape as the lattice flora colonies, which birth one plant per fauna-wave
         /// period (Docs/ECOSYSTEM.md §32.7): the cell's fauna cadence is the platform's
@@ -846,7 +860,12 @@ namespace CosmicShore.Gameplay
             // shot-off head on the next behavior tick (~1.5 s) instead of the next wave.
             _lastProductionTime = Time.time;
 
-            if (segments.Count >= config.MaxSegmentsPerWorm) return;
+            if (segments.Count >= config.MaxSegmentsPerWorm)
+            {
+                // Full length: a fed colony's next member is a whole new COLONY (fission).
+                if (!IsStarving) TryFission();
+                return;
+            }
 
             if (segments[0].Role != WormSegmentRole.Head)
                 GrowHead();
@@ -869,6 +888,42 @@ namespace CosmicShore.Gameplay
                 float period = cell ? cell.CurrentFaunaSpawnPeriod : 0f;
                 return period > 0f ? period : Mathf.Max(0.5f, config.FallbackProductionPeriodSeconds);
             }
+        }
+
+        /// <summary>
+        /// The colony's natural REPRODUCTION (Docs/ECOSYSTEM.md §23.10): a fed, complete colony
+        /// at full length splits at the middle of its chain into two colonies, through exactly
+        /// the severance a player's mid-body cut runs (<see cref="SpawnSplitColony"/>) minus the
+        /// dead member — so continuity, heredity, hearts (every member keeps its own), wither and
+        /// regrowth are the cut's, and segment totals are conserved. The front half keeps the head
+        /// and regrows a tail, the rear half keeps the tail and regrows a head, each on its own
+        /// next production cycle.
+        ///
+        /// Gated like <c>Fauna.TryReproduce</c> (which stays inert for the worm — its configs
+        /// author <c>FeedsPerOffspring 0</c>): sim authority only, a lineage config is required,
+        /// the cell's species cap (<see cref="Cell.IsFaunaAtCap"/>) and the species'
+        /// <c>ReproductionCooldownSeconds</c> both hold. The caller has already stamped the
+        /// production clock, so a refused fission still costs the cycle. A refusal is not a
+        /// fault and is silent: the colony simply holds at full length.
+        /// </summary>
+        void TryFission()
+        {
+            if (!IsSimAuthority) return;
+            var cfg = SourceConfig;
+            var host = cell;
+            if (!cfg || !host || host.IsFaunaAtCap(cfg)) return;
+            if (Time.time - _lastFissionTime < cfg.ReproductionCooldownSeconds) return;
+
+            int count = segments.Count;
+            int mid = count / 2;
+            if (mid < FissionMinSegmentsPerHalf || count - mid < FissionMinSegmentsPerHalf) return;
+            if (segments[0].Role != WormSegmentRole.Head ||
+                segments[count - 1].Role != WormSegmentRole.Tail) return;
+
+            _lastFissionTime = Time.time;
+            var rear = segments.GetRange(mid, count - mid);
+            segments.RemoveRange(mid, count - mid);
+            SpawnSplitColony(rear);
         }
 
         /// <summary>
@@ -992,6 +1047,9 @@ namespace CosmicShore.Gameplay
         /// behavior tick — the two bodies are interpenetrating at the instant of the cut,
         /// which is exactly where the falloff in <see cref="TickSeparation"/> is strongest,
         /// so they shoulder apart on the next frame instead of swimming home in convoy.
+        ///
+        /// Two callers, one path: a player's interior kill (<see cref="HandleSegmentDeath"/>)
+        /// and the colony's own fission at full length (<see cref="TryFission"/>).
         /// </summary>
         void SpawnSplitColony(List<WormSegmentFauna> rear)
         {

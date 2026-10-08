@@ -57,6 +57,63 @@ MonoBehaviour:
     - {fileID: 11400000, guid: a3d59c8e71b24f6a9c0e4d8b5f172c33, type: 2}
     - {fileID: 11400000, guid: e7f1b3a2c9d84e5fb6a08c7d4e392b55, type: 2}
     - {fileID: 11400000, guid: b9c4d7e2a1f34b8cd5e6f0a39b8d1c77, type: 2}
+  - Name: Piranha
+    ElementConfigs:
+    - {fileID: 11400000, guid: b8f6ead6f21447acb7ac74b9e8ccf1a3, type: 2}
+  - Name: Swarm
+    ElementConfigs:
+    - {fileID: 11400000, guid: e20c8e8ef02af26b9ce959fec6d4f293, type: 2}
+    - {fileID: 11400000, guid: b859f07e3048bdf21b251d3f01260a10, type: 2}
+    - {fileID: 11400000, guid: 294ab46e52e300bc36ccb3b4b9ab0640, type: 2}
+    - {fileID: 11400000, guid: 6ff4659cc12055a333f1812fd180cd90, type: 2}
+  - Name: Swarm Field
+    ElementConfigs:
+    - {fileID: 11400000, guid: 28519724a437c877b6752a1641782706, type: 2}
+    - {fileID: 11400000, guid: d88bd07d2da7f8606093b21d78ff85aa, type: 2}
+    - {fileID: 11400000, guid: 6039cd2e3e73e255bbc5cf2900e9e539, type: 2}
+    - {fileID: 11400000, guid: 73c428da018f80ae52c69a64177d1d81, type: 2}
+  - Name: Swarm Grid
+    ElementConfigs:
+    - {fileID: 11400000, guid: d6bc369b80d3e3c88bcb69113c633aea, type: 2}
+    - {fileID: 11400000, guid: 64313e5dbea7f4301ccaf835a03b821a, type: 2}
+    - {fileID: 11400000, guid: b9728461572d47dc24d01eb17fc7119f, type: 2}
+    - {fileID: 11400000, guid: d4a4bbb28aa5361ef80d728304542a5d, type: 2}
+  - Name: Swarm EvoFate
+    ElementConfigs:
+    - {fileID: 11400000, guid: 03a0ee7d9805800ab3d24b7e1a603c60, type: 2}
+    - {fileID: 11400000, guid: 006bca47a3bb370689c7188e2d50dc11, type: 2}
+    - {fileID: 11400000, guid: aada3ccd4801efbc3f4c25cdc10f174a, type: 2}
+    - {fileID: 11400000, guid: 8f142de0bfa977f1443ba2d8bc0a1ef8, type: 2}
+  - Name: Pack Hunter
+    ElementConfigs:
+    - {fileID: 11400000, guid: 025124ddfd18b749d5627878c0ce725d, type: 2}
+  - Name: Locust
+    ElementConfigs:
+    - {fileID: 11400000, guid: 0041612e53e080d7cc26a613653b5d25, type: 2}
+  - Name: Lurker
+    ElementConfigs:
+    - {fileID: 11400000, guid: 28b98f92c5ab881fb73e4e30dd1656d0, type: 2}
+  - Name: Stampede
+    ElementConfigs:
+    - {fileID: 11400000, guid: dd2e5563fb19b1f131c32fd6f42c87e6, type: 2}
+  - Name: Mobber
+    ElementConfigs:
+    - {fileID: 11400000, guid: c8301c6fbea30e1b947dfbf1d7dd5a66, type: 2}
+  - Name: Leech
+    ElementConfigs:
+    - {fileID: 11400000, guid: 0dc4cd8bebb3e9b0bdd797a122e4fc3d, type: 2}
+  - Name: Leviathan
+    ElementConfigs:
+    - {fileID: 11400000, guid: c2ad77e9604fb0d16e7047299446fd37, type: 2}
+  - Name: Fortress Builders
+    ElementConfigs:
+    - {fileID: 11400000, guid: cc9c79b6a49ca53c9a7f0b25427b484e, type: 2}
+  - Name: Thief Nest
+    ElementConfigs:
+    - {fileID: 11400000, guid: 11f7c68e59274e6d191c76d2fb55fc06, type: 2}
+  - Name: Wearer Builders
+    ElementConfigs:
+    - {fileID: 11400000, guid: a635d6272e1d571db605a90a6452c41f, type: 2}
   floraSpecies:
   - Name: Gyroid
     ElementConfigs:
@@ -130,6 +187,71 @@ MonoBehaviour:
     - {fileID: 11400000, guid: f030f2cceed64578930cd5c47c405595, type: 2}
     - {fileID: 11400000, guid: 52d54f8478ac41449607e8b2f81e602f, type: 2}
     - {fileID: 11400000, guid: e4ae88c4d7b4450a8c7b649336780938, type: 2}
+  - Name: Arbor
+    ElementConfigs:
+    - {fileID: 11400000, guid: 8142092b395852d6b70857945eddf051, type: 2}
+    - {fileID: 11400000, guid: 789fa0009f601288c6868e7d32c734f9, type: 2}
+    - {fileID: 11400000, guid: e800b105afc6ed81fbbe4da2fc221c5d, type: 2}
+    - {fileID: 11400000, guid: 636374a00e41c98762163631b2e60477, type: 2}
+  - Name: Coral
+    ElementConfigs:
+    - {fileID: 11400000, guid: 3acc68af7174ace900e563f3a84834ab, type: 2}
+    - {fileID: 11400000, guid: 831655e9ccb93345f7c24990f7735e88, type: 2}
+    - {fileID: 11400000, guid: 63904e33f924098b5fa6e08bbba75a1a, type: 2}
+    - {fileID: 11400000, guid: 508ddc60ff84ab16a84c22dd6d2fe007, type: 2}
+  - Name: Frond
+    ElementConfigs:
+    - {fileID: 11400000, guid: c7112dce6c9a0c61a56246667dc0e483, type: 2}
+    - {fileID: 11400000, guid: 7606669db01dffea0f7acfedcb455448, type: 2}
+    - {fileID: 11400000, guid: 1509c65ca7a236ce04c57cd8e0f86259, type: 2}
+    - {fileID: 11400000, guid: 2793ffd53f8be9f6e91f7023014245cf, type: 2}
+  - Name: Lantern
+    ElementConfigs:
+    - {fileID: 11400000, guid: 5f677807a75e4c3dd300c74c2c08845c, type: 2}
+    - {fileID: 11400000, guid: f9c6de2b9c6c7bac6b64b1ae759b74c1, type: 2}
+    - {fileID: 11400000, guid: 6a2756de008a569c5f02ba30dff53835, type: 2}
+    - {fileID: 11400000, guid: f3d94c9041756fb024d75b4adce9dc66, type: 2}
+  - Name: Reed
+    ElementConfigs:
+    - {fileID: 11400000, guid: 3984b71ff12f8dbcd72c010111f93450, type: 2}
+    - {fileID: 11400000, guid: d4d9ebab8b93bb75c7466b69f343d901, type: 2}
+    - {fileID: 11400000, guid: 2fc16005a219923d84c1d58712bf5732, type: 2}
+    - {fileID: 11400000, guid: 27fbcbd0e434e9398397e93e662ef4e8, type: 2}
+  - Name: Rosette
+    ElementConfigs:
+    - {fileID: 11400000, guid: 33a38252d4dd18ab0a6c516cdd28bef3, type: 2}
+    - {fileID: 11400000, guid: 04b1d963d27c8adea25bffd0d5503e80, type: 2}
+    - {fileID: 11400000, guid: 7e7887db26aa8d9a1049f723352d9c6c, type: 2}
+    - {fileID: 11400000, guid: 5d7daa34312764d9a00abf1e4e843844, type: 2}
+  - Name: Spire
+    ElementConfigs:
+    - {fileID: 11400000, guid: 25e619766581c4807de09c87fddf877c, type: 2}
+    - {fileID: 11400000, guid: 10859a22ceb9349219eabe30541f5341, type: 2}
+    - {fileID: 11400000, guid: f46966ea66e278b0ad293ccecc672c1d, type: 2}
+    - {fileID: 11400000, guid: 6771e101fe9fa81ae0161ecbffc4c901, type: 2}
+  - Name: Tendril
+    ElementConfigs:
+    - {fileID: 11400000, guid: 5b64944b81691f465735bd0a969e4d3a, type: 2}
+    - {fileID: 11400000, guid: a3180b4a6df35fe482db094cd9418b6b, type: 2}
+    - {fileID: 11400000, guid: c408a1b8caed658f2d12c55d7bb235a7, type: 2}
+    - {fileID: 11400000, guid: 000b83422a748f6434eaeeecc2be7400, type: 2}
+  - Name: Swarm Borromean
+    ElementConfigs:
+    - {fileID: 11400000, guid: d3e3605fbf12b6442910427f63b6e3b5, type: 2}
+    - {fileID: 11400000, guid: ba725d5d74c6d403c4ba8b2512d5e61e, type: 2}
+    - {fileID: 11400000, guid: 9b690c31d50dd62c84f46f9b37375f27, type: 2}
+  - Name: Gyroid Topiary
+    ElementConfigs:
+    - {fileID: 11400000, guid: 4e4d2aa57519f8c461f0955dd262a5ea, type: 2}
+  - Name: SchwarzP Topiary
+    ElementConfigs:
+    - {fileID: 11400000, guid: b9e2c6e7516a215009922f1d6150a05c, type: 2}
+  - Name: Physarum
+    ElementConfigs:
+    - {fileID: 11400000, guid: 12b51d6add1c03bbe313932be671dac7, type: 2}
+  - Name: Snap Trap
+    ElementConfigs:
+    - {fileID: 11400000, guid: b61248e2fe33d5cc91e5178d9cac74e3, type: 2}
   - Name: Nested Gyroid
     ElementConfigs:
     - {fileID: 11400000, guid: 6e701b36d4cf67162c0c8be83591d947, type: 2}
@@ -142,6 +264,103 @@ MonoBehaviour:
     - {fileID: 11400000, guid: 46383de74eda38d7fc0f12e180a2bef3, type: 2}
     - {fileID: 11400000, guid: 06f079efbc163df424ab2731dc9267eb, type: 2}
     - {fileID: 11400000, guid: 53ee29f1406fdd26f9c5fddefd961fe0, type: 2}
+  speciesDescriptions:
+  - Species: Tadpole
+    Description: "A small flock of tiny fish that hunt the densest mass, eat any team's trail and breed a new tadpole every 20 bites. Starves in about 90s without trail."
+  - Species: Brittlestar
+    Description: "A slow starfish with swaying, dangling arms that grazes loose mass. Easy prey for sharks; shoot its arms or joust it for its crystal. Starves in 30s without mass or trail."
+  - Species: Shark
+    Description: "An armoured hunter that ignores prisms and stalks other creatures in bursts, snapping its jaws. Drops a big crystal. Eats only grazers: release brittlestars or quadfish first."
+  - Species: QuadFish
+    Description: "A bending fish body with four stroking fin prisms. Schools and grazes mass for a quick, mid-size crystal. Starves in 30s without mass or trail."
+  - Species: Clawfish
+    Description: "A hollow, open-mouthed horn with two tail flukes; its heart sits just inside the mouth. Grazes mass. Starves in 30s without mass or trail."
+  - Species: Worm Colony
+    Description: "A segmented giant worm that hunts mass and lunges at ships with fanged jaws. Cut it in two and you get two worms; every segment drops a crystal. Sheds segments when starved."
+  - Species: Piranha
+    Description: "A fast pack of eight tiny, always-hungry fish that eat any team's trail and pull toward the middle of the cell. Charge crystals. Starves in 40s without trail."
+  - Species: Swarm
+    Description: "The SORT swarm: about 240 tadpoles that sort themselves into one animal per element (Charge pufferfish, Mass whale, Space jellyfish, Time dragonfly). Kill its main element and it molts into another. Eats flora only."
+  - Species: Swarm Field
+    Description: "The FIELD swarm model: designed attractor fields where every tadpole owns a slot, so the animal reads crisp and exact. Smaller bodies than the Sort swarm. Eats flora only."
+  - Species: Swarm Grid
+    Description: "The GRID swarm model: each tadpole reads only the morphogen at its own position, so the animal is looser and more organic than Field. Smaller bodies than Sort. Eats flora only."
+  - Species: Swarm EvoFate
+    Description: "The EVOFATE swarm model: a learned network moves every tadpole, with a light pull toward its chosen place. The most alive texture and the most expensive. Eats flora only."
+  - Species: Pack Hunter
+    Description: "Six long hunters that ring your ship, close in and strike together, then tire for 3s. They also hunt locusts by scent. Time crystals."
+  - Species: Locust
+    Description: "Lone, bobbing grazers that flip into a fast biting swarm when crowded and hungry, and breed from the plants they eat. Space crystals. Needs flora."
+  - Species: Lurker
+    Description: "Looks like a plant's crystal. It creeps toward you while you look away, freezes when you look, then gapes and snaps. Best among flora, which it mimics and eats."
+  - Species: Stampede
+    Description: "Grazing herds where every fourth animal is a bull that lowers its head and charges a nearby ship. Mass crystals. Needs flora."
+  - Species: Mobber
+    Description: "Roosting birds that mob a slow ship or one near their roost: they circle, dive and peck to drain you. Time crystals."
+  - Species: Leech
+    Description: "Drifting puddles that pounce on a ship within 140u, latch on and slowly drain it. Turn hard to fling them off. Charge crystals. Needs flora."
+  - Species: Leviathan
+    Description: "A shoal of grazers that assembles into a 120u manta when fed, opens its jaws and surges into a ship ahead of it. Space crystals. Falls apart unfed: needs flora."
+  - Species: Fortress Builders
+    Description: "48 workers that steal loose prisms and your trail to wall in their nest. A cut wall knits shut and defenders sting. Mass crystals. Fly a trail to feed them."
+  - Species: Thief Nest
+    Description: "Magpies that nest on a plant, tail your ship, snatch your fresh trail and fly it home to a visible hoard. Space crystals. Fly a trail near them."
+  - Species: Wearer Builders
+    Description: "Hearts that steal your trail and wear it as a body, fuse together, then rear and lunge. Ram one to strip the prisms back. Fly a trail to feed them."
+  - Species: Gyroid
+    Description: "A colony of 30-prism tiles of a saddle-shaped minimal surface, budding a neighbour about every 30s into one endless lattice. Space grows needles."
+  - Species: SchwarzP
+    Description: "A colony of 36-prism tiles of the cubic tube-and-chamber surface, budding into a lattice of pipes. Space tiles are five times wider."
+  - Species: Quasicrystal
+    Description: "A colony of 110-strut stars of a lattice that never repeats, budding outward. Space struts run long, Mass beams short."
+  - Species: Wall
+    Description: "A flat strip of square plates laid side by side out of its crystal: a living barrier. All four elements share one form."
+  - Species: Branching
+    Description: "A tree that grows toward the cell's crystal, forking two or three ways at up to 60 degrees, with up to 5,000 leaves."
+  - Species: Cacti
+    Description: "An upright trunk throwing five to nine right-angle arms per node, slowly crusted with chunky pads."
+  - Species: Pine
+    Description: "A trunk that whorls ten to thirteen level boughs per node, tier on tier, then flushes all its needles at once."
+  - Species: Nerve
+    Description: "A long, gently forking fibre of small cubes, up to 300 deep, that buds a second nerve beside its first leaf."
+  - Species: Mandelbulb
+    Description: "Fractal foliage: twisting plate helices traced over a Mandelbulb. Charge is a bead cage, Mass spiral bracts, Space a wire cage, Time an anemone. Takes minutes to grow out."
+  - Species: Coral Bloom
+    Description: "Long untwisted arcs that cross through a whole Mandelbulb shell: an open cage you see the fractal through. Takes minutes to grow out."
+  - Species: Watershed
+    Description: "A Mandelbulb's ridge-and-gully net, each curve running from a saddle to a peak or a pit, in rings that differ by element. Takes minutes to grow out."
+  - Species: Apollonia
+    Description: "Circles packed in circles (an Apollonian gasket) crowning a Mandelbulb's lobes and spiralling into its crystal. Takes minutes to grow out."
+  - Species: Arbor
+    Description: "The canopy tree: one trunk forking to ten tips, flaring whorls of five leaves and a big crown, about 280u tall."
+  - Species: Coral
+    Description: "A low thicket of three stems forking to fourteen stubby tips, with no leaves at all."
+  - Species: Frond
+    Description: "A fern of four arching, drooping stems lined with paired leaflets the whole way along."
+  - Species: Lantern
+    Description: "A hanging bell: one stem ending in a single big blossom head cupped downward."
+  - Species: Reed
+    Description: "Five straight upright blades with a pair of leaves near the top, the grass at a pool's edge."
+  - Species: Rosette
+    Description: "A ground carpet: one short stalk with eight steeply cupped leaves at every node."
+  - Species: Spire
+    Description: "A tall thin mast whose small whorls corkscrew up to a huge crown."
+  - Species: Tendril
+    Description: "A climber: three wandering stems fork to eight and trail long dangles, the longest reach per prism of any plant."
+  - Species: Swarm Borromean
+    Description: "The Swarm cell's pastures: Borromean membranes in its grazer bands. Mass grows in the inner band, Time in the middle (four pens), Space at the outer."
+  - Species: Gyroid Topiary
+    Description: "A clipped gyroid specimen for garden beds: 30-prism tiles with smaller leaves in Mass slabs, a colony that stops at eight instead of sprawling into a lattice."
+  - Species: SchwarzP Topiary
+    Description: "A clipped Schwarz-P specimen for garden beds: 36-prism tiles with smaller leaves in Mass slabs, a colony that stops at four instead of sprawling into a lattice."
+  - Species: Physarum
+    Description: "A slime-mould grove at the rim: five beating hearts cable together, danger pulses run down the cables, and your wake repels it."
+  - Species: Snap Trap
+    Description: "Venus flytraps in three clumps at the rim. Their jaws turn toward your path, glow, then snap shut on danger teeth."
+  - Species: Nested Gyroid
+    Description: "Seven nested gyroid sheets woven together by fibres: a solid 3D lattice rather than one surface. Each plant is one octagon tile on every sheet; the colony buds into neighbouring tiles about every 30s."
+  - Species: Borromean
+    Description: "One closed soap-film membrane spanning three interlocked rings, grown out from its crystal. Space spans twice as wide."
   vesselRoster: []
   stationSpacing: 90
   stationRadius: 12

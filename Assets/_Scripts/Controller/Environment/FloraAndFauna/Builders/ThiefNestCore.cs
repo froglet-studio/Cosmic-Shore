@@ -55,6 +55,11 @@ namespace CosmicShore.Gameplay
         public Vector3 CellCentre;
         /// <summary>Research ablations: Cold = any trail prism, never tails a ship; Bold = never veers off.</summary>
         public bool Cold, Bold;
+        /// <summary>GAME: the platform diet (<see cref="BuilderColonyParams.Diet"/>) - a pilot's wake outside the nucleus and
+        /// inside a mode's pen. On top of it the colour preference: another domain's wake always, the nest's own colour only
+        /// for a DESPERATE thief (<see cref="BuilderStomachParams.Desperate"/>) and only when no opposing wake is in reach.
+        /// Null = the research arena: no platform gate (the colour preference still holds).</summary>
+        public Func<Vector3, int, bool> Diet;
         public BuilderStomachParams Stomach = new()
         {
             Capacity = 20f, FounderFill = 0.6f, Metabolism = 0.02f, Torpor = 0.004f,
@@ -155,18 +160,34 @@ namespace CosmicShore.Gameplay
             Metabolised += BuilderRoost.Burn(Alive, Stomach, Cap, RoostRate, dt, RoostBug);
         }
 
-        /// <summary>A prism a thief may claim: live, unshielded, a vessel's trail, warm, loose, not this nest's colour.</summary>
+        /// <summary>A prism a thief may claim: live, unshielded, a vessel's trail, warm, loose, on the platform diet - and in
+        /// another domain, or in the nest's own colour while some thief is desperate (<see cref="_ownWanted"/>; which thief
+        /// may take it is <see cref="TakesColour"/>'s call in the scout).</summary>
         bool Wanted(int h)
         {
-            if (!_world.Alive(h) || _world.Shielded(h) || !_world.IsTrail(h)) return false;
-            if (_world.Domain(h) == Domain || !_world.Loose(h)) return false;
-            return P.Cold || _world.Age(h) <= P.Warm;
+            if (!_world.Alive(h) || _world.Shielded(h) || !_world.IsTrail(h) || !_world.Loose(h)) return false;
+            if (!P.Cold && _world.Age(h) > P.Warm) return false;
+            if (!_ownWanted && _world.Domain(h) == Domain) return false;
+            return P.Diet == null || P.Diet(_world.Position(h), _world.Domain(h));
         }
+
+        /// <summary>Some living thief is desperate this tick: the nest's own colour goes into the warm book (one O(Cap)
+        /// pass a tick, so a fed nest's book never carries mass no thief of it would take).</summary>
+        bool _ownWanted;
+
+        /// <summary>Thief <paramref name="i"/> is desperate: its own nest's colour is food (Docs/BUILDERS_AND_THIEVES.md §2.1).</summary>
+        bool Desperate(int i) => P.Stomach != null && P.Stomach.Desperate(Stomach[i]);
+
+        /// <summary>The colour preference: another domain's wake always; the nest's own only for a desperate thief - the
+        /// starvation fallback, like the cell's Frenzy turning fauna on their own colour (O(1)).</summary>
+        bool TakesColour(int i, int h) => _world.Domain(h) != Domain || Desperate(i);
 
         /// <summary>The nest's shared warm-wake book for this tick: one QuerySphere at the TAIL of each vessel in its territory.</summary>
         void GatherWarm(BuilderVessel[] vessels, int count)
         {
             _warm.Clear();
+            _ownWanted = false;
+            for (int i = 0; i < Cap && !_ownWanted; i++) _ownWanted = Alive[i] && Desperate(i);
             for (int v = 0; v < count; v++)
             {
                 if (Vector3.Distance(vessels[v].Pos, Nest) > P.Territory + P.Scout) continue;
@@ -294,23 +315,29 @@ namespace CosmicShore.Gameplay
                     }
                 }
                 int cl = Claim[i];
-                if (cl >= 0 && (!_world.Alive(cl) || !_world.IsTrail(cl) || _world.Domain(cl) == Domain
+                if (cl >= 0 && (!_world.Alive(cl) || !_world.IsTrail(cl) || !_world.Loose(cl) || !TakesColour(i, cl)
                                 || (!P.Cold && _world.Age(cl) > P.Warm + 1.5f)))
                 {
                     _book.Remove(cl); Claim[i] = cl = -1;
                 }
                 if (cl < 0 && _warm.Count > 0 && Vector3.Distance(Pos[i], Nest) < P.Territory + P.Scout)
                 {
-                    // the freshest unclaimed warm prism within scouting reach
-                    int best = -1; float bestAge = float.MaxValue;
+                    // the freshest unclaimed warm prism within scouting reach - another domain's WINS outright; the nest's
+                    // own colour is a second best, kept only by a desperate thief and taken only when no opposing wake is in reach
+                    bool desperate = Desperate(i);
+                    int best = -1, own = -1; float bestAge = float.MaxValue, ownAge = float.MaxValue;
                     for (int j = 0; j < _warm.Count; j++)
                     {
                         int h = _warm[j];
+                        bool mine = _world.Domain(h) == Domain;
+                        if (mine && (!desperate || best >= 0)) continue;
                         if (_book.Contains(h)) continue;
                         if (Vector3.DistanceSquared(_world.Position(h), Pos[i]) > P.Scout * P.Scout) continue;
                         float age = _world.Age(h);
-                        if (age < bestAge) { bestAge = age; best = h; }
+                        if (mine) { if (age < ownAge) { ownAge = age; own = h; } }
+                        else if (age < bestAge) { bestAge = age; best = h; }
                     }
+                    if (best < 0) { best = own; bestAge = ownAge; }
                     if (best >= 0)
                     {
                         Claim[i] = cl = best; _book.Add(best); ClaimAge[i] = bestAge;

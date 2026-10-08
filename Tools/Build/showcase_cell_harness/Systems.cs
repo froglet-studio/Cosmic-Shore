@@ -1555,6 +1555,7 @@ sealed class BuilderSystem : ICellSystem, IOccupancy
         {
             Capacity = Cell.F(k, "WorkerStomach"), Metabolism = Cell.F(k, "WorkerMetabolism"), Torpor = Cell.F(k, "WorkerMetabolism"),
             HungryBelow = Cell.F(k, "WorkerHungryBelow"), BirthAbove = Cell.F(k, "WorkerBirthAbove"), BirthCost = Cell.F(k, "WorkerBirthCost"),
+            OwnDomainBelow = Cell.F(k, "WorkerOwnDomainBelow"),
         },
     };
 
@@ -1569,6 +1570,7 @@ sealed class BuilderSystem : ICellSystem, IOccupancy
         {
             Capacity = Cell.F(k, "ThiefStomach"), Metabolism = Cell.F(k, "ThiefMetabolism"), Torpor = Cell.F(k, "ThiefTorpor"),
             HungryBelow = Cell.F(k, "ThiefHungryBelow"), BirthAbove = Cell.F(k, "ThiefBirthAbove"), BirthCost = Cell.F(k, "ThiefBirthCost"),
+            OwnDomainBelow = Cell.F(k, "ThiefOwnDomainBelow"),
         },
     };
 
@@ -1585,6 +1587,7 @@ sealed class BuilderSystem : ICellSystem, IOccupancy
         {
             Capacity = Cell.F(k, "WearerStomach"), FounderFill = 0.6f, Metabolism = Cell.F(k, "WearerMetabolism"), Torpor = Cell.F(k, "WearerMetabolism"),
             HungryBelow = Cell.F(k, "WearerHungryBelow"), BirthAbove = 0.9f, BirthCost = Cell.F(k, "WearerBirthCost"),
+            OwnDomainBelow = Cell.F(k, "WearerOwnDomainBelow"),
         },
     };
 
