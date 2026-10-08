@@ -229,12 +229,15 @@ namespace CosmicShore.Gameplay
             // A bake names the mesh it was solved on: find THAT one first, whatever else the vessel
             // is drawing at the moment (a larger effect mesh, a renderer an ability switched off), so
             // the runtime and the bake cannot disagree about which hull this is.
+            // Only a VISIBLE one, though: the Scarab hides the Sparrow model it was built on and draws
+            // a procedural hull instead, and faces landing on the hidden skin land on nothing.
             if (bakedKey)
             {
                 foreach (var candidate in root.GetComponentsInChildren<SkinnedMeshRenderer>(true))
-                    if (candidate && candidate.sharedMesh == bakedKey) return SkinnedRig(candidate);
+                    if (candidate && candidate.sharedMesh == bakedKey && Shown(candidate)) return SkinnedRig(candidate);
                 foreach (var candidate in root.GetComponentsInChildren<MeshFilter>(true))
-                    if (IsHullPart(candidate) && candidate.sharedMesh == bakedKey) return StaticRig(candidate);
+                    if (IsHullPart(candidate) && candidate.sharedMesh == bakedKey && Shown(candidate.GetComponent<MeshRenderer>()))
+                        return StaticRig(candidate);
             }
 
             var skinned = FindHullRenderer(root, requireActive);
@@ -251,6 +254,9 @@ namespace CosmicShore.Gameplay
                 bodyVertices = filter.sharedMesh.vertexCount;
             }
             return body ? StaticRig(body) : null;
+
+            bool Shown(Renderer renderer) =>
+                renderer && renderer.enabled && (!requireActive || renderer.gameObject.activeInHierarchy);
         }
 
         static HullRig SkinnedRig(SkinnedMeshRenderer skinned)
@@ -768,6 +774,18 @@ namespace CosmicShore.Gameplay
                     return null;
                 }
 
+                // Every pin the solution names must exist on THIS rig - a skinned renderer whose bones
+                // array is shorter than its mesh's bind poses would otherwise throw mid-pickup, after
+                // the crystal is already gone.
+                int pins = hull.Bones.Length;
+                if (!PinsFit(ready.Solution.Layout, pins, out int needed))
+                {
+                    WarnOnce($"pins:{vesselStatus.VesselType}:{entry.element}",
+                        $"[CrystalHullFusion] {vesselStatus.VesselType}/{entry.element}: the solution pins to transform " +
+                        $"#{needed}, but '{hull.Name}' has only {pins} - the generic capture plays. Re-run {BakeToolMenu}.");
+                    return null;
+                }
+
                 var go = new GameObject($"CrystalHullFusion_{crystal.name}") { layer = model.layer };
                 var fusion = go.AddComponent<CrystalHullFusion>();
                 fusion._entry = entry;
@@ -803,6 +821,14 @@ namespace CosmicShore.Gameplay
                         $"of radius {hullRadius:F1}, {(fusion._approachSeconds > 0f ? $"flying in {fusion._approachSeconds:F2}s first" : "peeling where taken")}).");
                 return fusion;
             }
+        }
+
+        static bool PinsFit(CrystalHullFusionGeometry.HullLayout layout, int pins, out int needed)
+        {
+            needed = -1;
+            foreach (int b in layout.PatchBone) needed = Mathf.Max(needed, b);
+            foreach (int b in layout.PointBone) needed = Mathf.Max(needed, b);
+            return needed < pins;
         }
 
         /// <summary>Clones the prototype and wears the crystal's own materials and property block,

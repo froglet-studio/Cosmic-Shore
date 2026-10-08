@@ -384,6 +384,23 @@ shipped Manta bake landed 115 of 1,860 points, and the same hull shrunk to 0.011
 `Solve` now normalises the hull to unit size and maps the pins and lengths back (schema 3; every
 bake reads stale until re-baked). Offline, the Manta hull at x1, x0.0001 and x1000 now lands 100%.
 
+**Third fleet playtest (2026-10-08, after re-baking): Grizzly, Sparrow and Scarab still not
+working; Serpent and Butterfly "don't collect crystals at all".** What was measured, in order:
+- *Serpent and Butterfly are not this feature.* The Serpent's near-field skimmer (`VacuumSkimmer`)
+  is an INACTIVE GameObject with its SphereCollider disabled and no `SkimmerImpactor`, so the Serpent
+  cannot skim-collect a crystal at all; the Butterfly skims with a dust skimmer that acts on lifeform
+  hearts only and has no fusion entry. Neither prefab is touched by this branch.
+- *Scarab* draws a PROCEDURAL hull (`ScarabHullBuilder`, `IProceduralHullSource`) and switches the
+  Sparrow model it was built on OFF at runtime — and the bake-mesh lookup did not ask whether the
+  renderer was shown, so its faces landed on the hidden Sparrow skin. The lookup now takes only a
+  shown renderer; on the Scarab it falls through to the procedural body and solves at runtime (one
+  warning). Its skimmer also runs `ScarabBallForgeBySkimmerCrystalEffect` on every crystal.
+- *Grizzly and Sparrow*: the bakes, the hull lookup, the rig's pin count (Sparrow's highest pin 64 of
+  65 bones, Grizzly's 7 of 8 parts), the vessel type, the skimmer wiring (both initialise their 60x
+  `DummySkimmer`, whose impactor reports to it), the physics layers and every crystal effect on both
+  sides were checked and are consistent. **Not yet explained.** Two silent exits now say so: a
+  crystal collected by a skimmer with no vessel, and a solution naming a pin the live rig lacks.
+
 ### The hulls
 
 | Vessels | Hull | How it is pinned |

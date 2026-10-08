@@ -3,6 +3,7 @@ using Cysharp.Threading.Tasks;
 using UnityEngine;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
 namespace CosmicShore.Gameplay
 {
     public class ElementalCrystalImpactor : CrystalImpactor
@@ -221,7 +222,19 @@ namespace CosmicShore.Gameplay
         /// </summary>
         bool TryFuseOntoHull(Crystal crystal, IVesselStatus vesselStatus)
         {
-            if (vesselStatus == null) return false;
+            if (vesselStatus == null)
+            {
+                // A skimmer the vessel never initialised (not its near- or far-field skimmer) still
+                // collects: the crystal gets no vessel, no score, no fusion. Said once, because it
+                // reads on screen as "the old capture".
+                if (!s_warnedNoVessel)
+                {
+                    s_warnedNoVessel = true;
+                    CSDebug.LogWarning($"[CrystalHullFusion] '{crystal.name}' was collected by a skimmer with no " +
+                        "vessel (one its VesselStatus never initialised) - no score, no hull fusion; the generic capture plays.");
+                }
+                return false;
+            }
             var config = CrystalHullFusionConfigSO.Load();
             if (!config || !config.TryGet(vesselStatus.VesselType, crystal.crystalProperties.Element, out var entry))
                 return false;
@@ -238,6 +251,8 @@ namespace CosmicShore.Gameplay
         /// waits for the MATE beat - the moment its faces are down on the skin - to play its pickup
         /// sound there and leave the cell. No husk: the body is on the hull, not in the wake.
         /// </summary>
+        static bool s_warnedNoVessel;
+
         static async UniTaskVoid RetireIntoFusion(Crystal crystal, CrystalHullFusion fusion, IVesselStatus vesselStatus)
         {
             await UniTask.WaitForSeconds(fusion.MateDelaySeconds);

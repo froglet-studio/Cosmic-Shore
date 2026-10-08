@@ -109,6 +109,12 @@ in from there. Fix: a far-collected crystal flies in whole to 2.5 hull radii fir
 points) — **re-bake all**, then re-test Grizzly, Sparrow, Serpent, Scarab and Manta. With
 **Logging > CrystalMorph** on, each pickup line now says how far out it was taken and whether it flew in.
 
+**Third fleet playtest:** Grizzly, Sparrow, Scarab still failing; Serpent/Butterfly don't collect at
+all (Serpent: its only skimmer is inactive with no impactor — pre-existing prefab wiring, not this
+branch). Scarab fixed (faces were landing on its hidden Sparrow model). Grizzly/Sparrow: cause still
+unknown after a full static trace (doc §12) — needs the console from one pickup with
+**Logging > CrystalMorph** on.
+
 **Verify in editor.**
 0. **Run the baker** (*Bake all*) → all 48 rows CURRENT (an UNRESOLVABLE row names the importer
    still missing Read/Write), four `<Element>_FusionTemplate.asset`, then **Validate & Push** in the window.
