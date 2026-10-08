@@ -46,6 +46,8 @@ static class Json
                 Laps = int.Parse(parts[2], CultureInfo.InvariantCulture),
                 Waypoints = ParsePts(parts[3]),
                 Anchors = ParsePts(parts[4]),
+                Ups = parts.Length > 5 ? ParsePts(parts[5]) : new List<Vector3>(),
+                CrystalsPerLap = parts.Length > 6 ? int.Parse(parts[6], CultureInfo.InvariantCulture) : 0,
             };
             result[def.Intensity] = def;
         }
@@ -73,6 +75,9 @@ class TrackDef
     public int Laps;
     public List<Vector3> Waypoints;
     public List<Vector3> Anchors;
+    public List<Vector3> Ups;       // ribbon normal per waypoint (SpawnableWaypointTrack.waypointUps); empty = world up
+    public int CrystalsPerLap;      // <= 0 = the waypoint count (SpawnableWaypointTrack.CrystalsPerLap)
+    public int Required => (CrystalsPerLap > 0 ? CrystalsPerLap : Waypoints.Count) * Laps;
 }
 
 class Physics
@@ -134,6 +139,7 @@ class TrackPrisms
     {
         var w = def.Waypoints;
         int n = w.Count;
+        var ups = def.Ups != null && def.Ups.Count == n ? def.Ups : null;
         for (int seg = 0; seg < n; seg++)
         {
             float len;
@@ -158,7 +164,14 @@ class TrackPrisms
                     pos = Vector3.Lerp(w[seg], w[(seg + 1) % n], t);
                     look = i < blocks - 1 ? Vector3.Lerp(w[seg], w[(seg + 1) % n], (float)(i + 1) / blocks) : w[(seg + 1) % n];
                 }
-                var rot = Quaternion.LookRotation((look - pos).normalized, Vector3.up);
+                // SpawnableWaypointTrack.ResolveBlockPose: the ribbon normal is interpolated like the position.
+                Vector3 up = Vector3.up;
+                if (ups != null)
+                {
+                    Vector3 u = def.Spline ? Spline(ups, seg, t) : Vector3.Lerp(ups[seg], ups[(seg + 1) % n], t);
+                    if (u.sqrMagnitude > 1e-6f) up = u;
+                }
+                var rot = Quaternion.LookRotation((look - pos).normalized, up);
                 Points.Add(pos);
                 Normals.Add(rot * Vector3.up);
                 Rotations.Add(rot);
@@ -334,7 +347,7 @@ static class Race
         Physics ph, int seed, float limit, bool trace = false)
     {
         var rng = new System.Random(seed);
-        int required = def.Waypoints.Count * def.Laps;
+        int required = def.Required;
         var obs = new Obstacles();
         var obsNear = new List<int>();
         var near = new List<int>();

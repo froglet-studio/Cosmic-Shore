@@ -12,7 +12,7 @@ the vessel through the same input channels a human uses. Code:
 | Scene | `MinigameSkimRace` (`GameModes.SkimRace = 33`), launched through the normal arcade path (`SyncFromArcadeGame` + `ConfigurePlayerCounts` + `InvokeGameLaunch`) |
 | Field | 2 seats: the host (human seat, left idle on its own domain) + one AI backfill seat. The AI is alone on its domain, so the domain target is the AI's own work |
 | Vessel | Squirrel (the card is Squirrel-only) |
-| Required crystals | `CrystalTargetCount` = waypoints x laps: I1 8x3 = **24**, I2 10x3 = 30, I3 28x2 = 56, I4 27x2 = 54 |
+| Required crystals | `CrystalTargetCount` = crystals per lap x laps (crystals per lap = `SpawnableWaypointTrack.crystalsPerLap`, else the waypoint count): I1 8x3 = **24**, I2 10x3 = 30, I3 28x2 = 56, I4 24x2 = 48 (Relativity, 2026-10-08; was 27x2 = 54 on the old 3D polyline) |
 | Crystal placement | Each player has ONE crystal in their domain; on pickup the manager moves it to the next authored anchor plus a random point on a 35 u sphere (`CrystalManager.GetSpawnPointAroundAnchor`). Randomisation is preserved; nothing is seeded for the AI |
 | Timer | The game's own race clock: `SkimRaceScoreTracker` accumulates from `OnMiniGameTurnStarted`; `SkimRaceController` writes it into the winners' `Score` when the domain reaches the target |
 | Success | The AI's domain wins, its collected count reaches the target, and the authoritative finish time is <= the intensity's limit (`SkimRaceRaceRecorder.Evaluate`) |
@@ -25,7 +25,7 @@ Geometry that bounds what is possible (route = anchor-to-anchor, top speed 300 u
 | 1 flat octagon | 24 | ~12,400 u | 41 s |
 | 2 tilted spline loop | 30 | ~15,200 u | 51 s |
 | 3 dumbbell | 56 | ~37,000 u | **124 s — 70 s is physically impossible for one pilot** |
-| 4 3D polyline | 54 | ~15,800 u | 53 s |
+| 4 Relativity knot (2026-10-08) | 48 | ~20,700 u (crystal chords; ribbon 22,166 u) | 69 s chords / 74 s on the ribbon |
 
 ## 2. The Squirrel, measured
 
