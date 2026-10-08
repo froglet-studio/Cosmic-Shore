@@ -3146,6 +3146,31 @@ never fold it into a fix for something else.
   are verifiable from the repo in about a minute, and ruling them out is itself a finding:
   if the branch's data is clean, the hole is in the reporter's *working tree*, which is a
   different conversation than a code bug.
+- **…and a fifth that the repo cannot show at all: a BRAND-NEW ScriptableObject type whose first
+  asset was written outside Unity can load as null in the playtester's editor with all four
+  checks passing.** The Butterfly bloom's `ExplosionScaleDustPrismEffectSO` asset did exactly
+  that three playtests running (`explosionPrismEffects[0] is empty`), and changing the asset's
+  bytes to force a re-import did NOT fix it — so "imported before its script compiled" was a
+  guess, not the cause, and the cause was never found because nobody looked at the asset in the
+  inspector. Two rules came out of it. **Ask for the inspector first**: one sentence from the
+  human ("select X — what does the inspector show?") names the cause, where each speculative fix
+  costs a full playtest round. **Prefer a field on something already proven to load**: the fix
+  that worked moved the reference onto a MonoBehaviour on the blast prefab (a new script too, but
+  a component), pointing at an EXISTING-type asset the game already loaded elsewhere — and an
+  `IExplosionPrismPayload` seam on the impactor took the place of the container slot. When a new
+  SO type is unavoidable, have the human open its first asset once before the playtest.
+- **The Prisma port is a real compile of `Assets/_Scripts`, available in about a minute.**
+  `Port/src/CosmicShore.Player` live-compiles the game's own source against the port's Unity API
+  surface, so `dotnet build Port/src/CosmicShore.Player` binds method bodies — not the
+  syntax-only Roslyn pass §0.05 of `/ship` warns about. No SDK in the container? `curl -sSL
+  https://dot.net/v1/dotnet-install.sh | bash -s -- --channel 10.0 --install-dir /opt/dotnet`
+  works through the agent proxy. The build is RED on bleeding-edge for reasons outside your diff
+  (engine gaps: on 2026-10-08, `Graphics.CopyTexture` in `WormholeMouth.cs` and
+  `Physics.OverlapBoxNonAlloc` in `NestedGyroidFlora.cs`), so filter the error list to the files
+  you touched rather than reading "N errors" as yours, and confirm the synced copy of each new file
+  is under `Port/src/CosmicShore.Live/obj/live-src/`. It caught nothing on the bloom branch and
+  that is the point: "no errors in any touched file" is evidence a Roslyn syntax pass cannot give.
+  It does NOT exercise Unity's asset loader — the null-loading asset above compiled cleanly here.
 - **A feature can be dead in several places at once, and fixing the first one makes the
   SYMPTOM stop while the feature stays dead.** The Dolphin's shard toggle had an unwired SO
   reference (the error you could see), a bus whose two broadcast bodies were commented out,
