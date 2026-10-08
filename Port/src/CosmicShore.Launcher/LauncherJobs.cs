@@ -14,7 +14,7 @@ namespace CosmicShore.Launcher
     /// game, build a phone package. The UI reads <see cref="Stage"/>/<see cref="Progress"/> each
     /// frame and can cancel. Everything here runs off the UI thread.
     /// </summary>
-    public sealed class LauncherJobs
+    public sealed partial class LauncherJobs
     {
         readonly LauncherSettings _s;
         readonly Toolchain _tools;
@@ -43,6 +43,43 @@ namespace CosmicShore.Launcher
         {
             Commit = _ws.Commit();
             Scenes = _ws.BuildScenes();
+            HeadSha = _ws.HeadSha();
+        }
+
+        /// <summary>The workspace's commit, and the branch tip on GitHub when last checked (ls-remote).</summary>
+        public string? HeadSha { get; private set; }
+        public string? RemoteTip { get; private set; }
+        public string? RemoteTipBranch { get; private set; }
+        /// <summary>Counts successful syncs: the EDITOR rebuilds its tools when this moves.</summary>
+        public int SyncCount { get; private set; }
+        DateTime _remoteChecked;
+        bool _remoteChecking;
+
+        /// <summary>
+        /// True when Prisma's own copy is not at the tip of the branch it plays: the editor tools
+        /// and the game would run older code than GitHub has.
+        /// </summary>
+        public bool Behind(string branch) =>
+            RemoteTip != null && HeadSha != null && RemoteTipBranch == branch && !string.Equals(RemoteTip, HeadSha, StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>Reads the branch tip from GitHub at most once a minute (or at once when <paramref name="now"/>).</summary>
+        public void CheckRemote(string branch, bool now = false)
+        {
+            if (_remoteChecking || Busy || !_ws.Exists || _tools.Git == null) return;
+            if (!now && RemoteTipBranch == branch && (DateTime.Now - _remoteChecked).TotalSeconds < 60) return;
+            _remoteChecking = true;
+            _remoteChecked = DateTime.Now;
+            Task.Run(async () =>
+            {
+                try
+                {
+                    HeadSha ??= _ws.HeadSha();
+                    var tip = await _ws.RemoteTip(branch, CancellationToken.None);
+                    RemoteTip = tip; RemoteTipBranch = branch;
+                }
+                catch { /* offline: no banner */ }
+                finally { _remoteChecking = false; }
+            });
         }
 
         public void Cancel() => _cts?.Cancel();
@@ -130,7 +167,7 @@ namespace CosmicShore.Launcher
                 Log.Add(LogKind.Error, $"{_s.Branch}'s engine has no model viewer yet: play a branch that has Port/src/CosmicShore.Player/ModelViewer.cs.");
                 return false;
             }
-            if (!await BuildPlayer(ct)) return false;
+            if (!await EnsurePlayerBuilt(ct, _s.ReleaseBuild ? "Release" : "Debug")) return false;
             Step("Opening the model viewer", 1);
             var psi = new ProcessStartInfo(PlayerExe)
             {
@@ -278,15 +315,16 @@ namespace CosmicShore.Launcher
             bool ok = await _ws.Sync(_s.Branch, Log, (p, what) => Step(what, p), ct);
             RefreshLocalState();
             if (ok && Commit != null) Log.Add(LogKind.Success, $"{_s.Branch} @ {Commit.Sha} - {Commit.Subject}");
+            if (ok) { SyncCount++; CheckRemote(_s.Branch, now: true); }
             return ok;
         }
 
         int _projectsBuilt;
-        async Task<bool> BuildPlayer(CancellationToken ct)
+        async Task<bool> BuildPlayer(CancellationToken ct, string? config = null)
         {
             _projectsBuilt = 0;
             Step("Compiling the engine and the game", 0);
-            string cfg = _s.ReleaseBuild ? "Release" : "Debug";
+            string cfg = config ?? (_s.ReleaseBuild ? "Release" : "Debug");
             var r = await ProcessRunner.Run(_tools.Dotnet!, new[] { "build", _ws.PlayerProject, "-c", cfg, "-nologo", "-v:minimal", "-clp:NoSummary" },
                 _ws.Dir, Log, ct, _tools.DotnetEnv(), line =>
                 {
@@ -294,7 +332,31 @@ namespace CosmicShore.Launcher
                     if (line.Contains(" -> ")) { _projectsBuilt++; Step("Compiling the engine and the game", Math.Min(0.95f, _projectsBuilt / 8f)); }
                 });
             if (r.ExitCode != 0) { Log.Add(LogKind.Error, "Build failed - the compiler messages above say why."); return false; }
+            try { File.WriteAllText(BuildStamp(cfg), BuiltFrom() ?? ""); } catch (IOException) { }
             return true;
+        }
+
+        string BuildStamp(string cfg) => Path.Combine(Path.GetDirectoryName(PlayerExeFor(cfg))!, ".prisma-built-from");
+
+        /// <summary>What the workspace holds right now: its commit, or null when it has unsaved changes (then nothing is "already built").</summary>
+        string? BuiltFrom() => _ws.PendingChanges() == 0 ? _ws.HeadSha() : null;
+
+        /// <summary>
+        /// Builds the player unless this configuration was already built from the workspace's
+        /// current commit with no unsaved changes since: VIEW IN ENGINE and the TIME page start in
+        /// seconds on a second run. A workspace with edits always builds (dotnet build is
+        /// incremental, so that stays quick too).
+        /// </summary>
+        async Task<bool> EnsurePlayerBuilt(CancellationToken ct, string config)
+        {
+            var from = BuiltFrom();
+            if (from != null && File.Exists(PlayerExeFor(config)))
+            {
+                string stamp = "";
+                try { stamp = File.ReadAllText(BuildStamp(config)).Trim(); } catch (IOException) { }
+                if (stamp == from) { Log.Add(LogKind.Info, $"Player ({config}) already built from {from[..7]}: no build needed."); return true; }
+            }
+            return await BuildPlayer(ct, config);
         }
 
         void PhoneProgress(string line)
@@ -303,8 +365,10 @@ namespace CosmicShore.Launcher
             if (m.Success) Progress = float.Parse(m.Groups[1].Value) / float.Parse(m.Groups[2].Value);
         }
 
-        public string PlayerExe =>
-            Path.Combine(_ws.Dir, "Port", "src", "CosmicShore.Player", "bin", _s.ReleaseBuild ? "Release" : "Debug", "net10.0",
+        public string PlayerExe => PlayerExeFor(_s.ReleaseBuild ? "Release" : "Debug");
+
+        public string PlayerExeFor(string config) =>
+            Path.Combine(_ws.Dir, "Port", "src", "CosmicShore.Player", "bin", config, "net10.0",
                 OperatingSystem.IsWindows() ? "CosmicShore.exe" : "CosmicShore");
 
         bool LaunchGame(bool audio)

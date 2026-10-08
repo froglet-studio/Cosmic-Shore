@@ -1,0 +1,1023 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 19e09dc329e44f5e88e55214333b9996, type: 3}
+  m_Name: CrystalHullFusionConfig
+  m_EditorClassIdentifier: 
+  entries:
+  - vessel: 1
+    element: 1
+    bake: {fileID: 11400000, guid: 3bf34f3eb2bd9a54ea3708d853d71cd5, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 1
+    element: 2
+    bake: {fileID: 11400000, guid: 7b278ce3da40d42409ebb60633ac7978, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 1
+    element: 3
+    bake: {fileID: 11400000, guid: 4b683bee2105708499c0a01d987e9fd7, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 1
+    element: 4
+    bake: {fileID: 11400000, guid: a6f32c5b1c6acb340baa4281da984fdc, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 2
+    element: 1
+    bake: {fileID: 11400000, guid: 544b80707c1cceb4095f27b9cb2ca69e, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 2
+    element: 2
+    bake: {fileID: 11400000, guid: f5f3602007af45a439ab4ffd99b0c55f, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 2
+    element: 3
+    bake: {fileID: 11400000, guid: abafe9d55fa277241ba8dbec9f973fe0, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 2
+    element: 4
+    bake: {fileID: 11400000, guid: fd2a68f3a74c55341878208781037c05, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 3
+    element: 1
+    bake: {fileID: 11400000, guid: 50461fa4c3cc456408e327543fdf5dda, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 3
+    element: 2
+    bake: {fileID: 11400000, guid: 9f0416a37fcb8a146a96ac70beaf10f6, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 3
+    element: 3
+    bake: {fileID: 11400000, guid: 08f80458f6145af43bd05a9b299d1869, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 3
+    element: 4
+    bake: {fileID: 11400000, guid: 01b6e02034f8fb440a355971e8f66696, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 4
+    element: 1
+    bake: {fileID: 11400000, guid: 74d26cfa882803b4ca163a94d29a40c4, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 4
+    element: 2
+    bake: {fileID: 11400000, guid: 914ae4d9ac53268458470223ceff231c, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 4
+    element: 3
+    bake: {fileID: 11400000, guid: 649b1daed59b51c458fbde1a510b97d7, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 4
+    element: 4
+    bake: {fileID: 11400000, guid: 047d9c1b52e0c8142abf2fabe02c4d47, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 5
+    element: 1
+    bake: {fileID: 11400000, guid: 13a7804ff477d0e40ab7bebf8ccd98d3, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 5
+    element: 2
+    bake: {fileID: 11400000, guid: c4b8cd4f214b35646b7c6fe094757c0e, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 5
+    element: 3
+    bake: {fileID: 11400000, guid: 3622bebc444b35e43a2a0a1bd97c1bf7, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 5
+    element: 4
+    bake: {fileID: 11400000, guid: 5994c434f0010e947b2b6ccfc9f7c99d, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 6
+    element: 1
+    bake: {fileID: 11400000, guid: 7d32ad4d63a127345a5311a30ea2ccaf, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 6
+    element: 2
+    bake: {fileID: 11400000, guid: 3d2e4d9c38db0d34b9f5761317ac55c1, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 6
+    element: 3
+    bake: {fileID: 11400000, guid: e47fe070b929b464b83c889294c5fa49, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 6
+    element: 4
+    bake: {fileID: 11400000, guid: a38b290ed6ae8704fa2d6fae8b906dd0, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 7
+    element: 1
+    bake: {fileID: 11400000, guid: b4d2fde0d0876f647af029d896212621, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 7
+    element: 2
+    bake: {fileID: 11400000, guid: 06e41859811e56d408d224d639fdf77e, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 7
+    element: 3
+    bake: {fileID: 11400000, guid: f751196f48d5591498a76caf027dd4bd, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 7
+    element: 4
+    bake: {fileID: 11400000, guid: 622abc31dfefb7348b7c4130d2495d59, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 8
+    element: 1
+    bake: {fileID: 11400000, guid: 0c2316a1a9c0ecf48bb00c6557bae674, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 8
+    element: 2
+    bake: {fileID: 11400000, guid: dc477a04d40a1f44d9455bf2b132cbfc, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 8
+    element: 3
+    bake: {fileID: 11400000, guid: 8fb7dc3bf8b581048a417874d62110bc, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 8
+    element: 4
+    bake: {fileID: 11400000, guid: 348a7b8d0d8445344957a950b4da09ef, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 9
+    element: 1
+    bake: {fileID: 11400000, guid: 5047a381bd6bd8a4e8f8c2831048e335, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 9
+    element: 2
+    bake: {fileID: 11400000, guid: d2d10614b27dc634d88310beb88a62f9, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 9
+    element: 3
+    bake: {fileID: 11400000, guid: d30e0186436f816498f4a4d48009bbb3, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 9
+    element: 4
+    bake: {fileID: 11400000, guid: 8afdb50372374d9409bf2f655133dc6d, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 10
+    element: 1
+    bake: {fileID: 11400000, guid: a828e0f4240b5d54e8a4aa29c016ea12, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 10
+    element: 2
+    bake: {fileID: 11400000, guid: 575c19f614465874093e38511814afe5, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 10
+    element: 3
+    bake: {fileID: 11400000, guid: d1e933c4656c206418a92161279c07a1, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 10
+    element: 4
+    bake: {fileID: 11400000, guid: 6c3ee77c905306545a1a59c343285ee9, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 11
+    element: 1
+    bake: {fileID: 11400000, guid: 5dc417aaffeab4244ad1bb36f4728391, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 11
+    element: 2
+    bake: {fileID: 11400000, guid: 121cd8353f7524641911d85b4cd897e3, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 11
+    element: 3
+    bake: {fileID: 11400000, guid: ef446e5f90c24454baf2ff9623d9dadd, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 11
+    element: 4
+    bake: {fileID: 11400000, guid: 3f4fed7fe1b640a4e8d0c99158647953, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 12
+    element: 1
+    bake: {fileID: 11400000, guid: 4192efabb5233404e909ded48bd59dc9, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 12
+    element: 2
+    bake: {fileID: 11400000, guid: 6a9d7c49096c6f34ebfabef9b23c058d, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 12
+    element: 3
+    bake: {fileID: 11400000, guid: ce58afc9405fa4348ac23c11472349a2, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1
+  - vessel: 12
+    element: 4
+    bake: {fileID: 11400000, guid: dbcc09a2cab30fa4e99815b38a1908dc, type: 2}
+    approachStandoff: 2.5
+    approachSeconds: 0.22
+    peelSeconds: 0.16
+    flightSeconds: 0.42
+    mateSeconds: 0.3
+    dissolveSeconds: 0.3
+    playbackScale: 1
+    peelDistance: 0.45
+    flightBow: 0.9
+    flightStagger: 0.45
+    spotConeDegrees: 12
+    tileFill: 1.15
+    surfaceLift: 0.04
+    flareGain: 2.6
+    arcBoost: 2
+    mateArcDuty: 0
+    sinkDepth: 0.12
+    convergeToDomainColour: 1

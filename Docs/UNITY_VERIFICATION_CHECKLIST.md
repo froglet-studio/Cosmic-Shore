@@ -102,6 +102,90 @@ all three configs; `StoatSlingTests` and the bumped `EnumIntegrityTests` are WRI
 `lifetime 4`. The ~90° swing is the design target, not a measured result — expect to move `maxStrength`
 and `aheadHorizons` first.
 
+---
+
+### 🟡 Crystal → hull fusion: every hull × every element (`cece/nice-babbage-j6sejq`, 2026-10-08)
+
+**What landed.** A Squirrel that collects a **charge** crystal no longer plays the generic capture.
+The crystal's 60 prisms fold into their outer pentagons, which lift off, fly to the hull and lie ON
+its surface (subdivided and projected, bent over its curves, wearing its normals), crackle, then
+sink in, ending in the pilot's domain colour. Record + tuning table:
+`Assets/_Scripts/Controller/Environment/Crystals/CRYSTAL_HULL_FUSION.md`. Read/Write is on for the
+Squirrel FBX (bone weights). **The first push of this never ran** — the drawn charge mesh is
+unreadable, the fusion refused it and fell back to the old capture (§0 of the doc). The `unity`
+CLI was not available, so `/verify-unity` did not run; compiled headless against real Unity
+references (player + editor) and the geometry suite runs headless (42/42). **The second push was
+too slow to see** (all the projection on the main thread during the pickup); the layout is now
+built once per hull on a worker thread at vessel spawn, and a pickup costs ~2 ms (doc §0, §9).
+
+**Bake (third push, 2026-10-08):** the fusion is now solved at EDIT TIME by
+**FrogletTools > Vessels > Bake Crystal Hull Fusions** into
+`Assets/_SO_Assets/CrystalHullFusion/Squirrel_Charge_HullFusionBake.asset`. **Baked and pushed
+(`22fba704`) and play-tested working.** Bake reads 60 × 31 points, 1,860/1,860 on the skin. Still
+open: steps 3–6 below (wing flap, other pairs unchanged, tests) and a Profiler read.
+
+**The fleet (fourth push, 2026-10-08) — NOT baked, NOT played.** 48 entries: 12 hulls × Charge /
+Mass / Space / Time (the Butterfly's hull is generated at runtime and keeps the old capture). New:
+static multi-part hulls (Rhino, Urchin, Grizzly) pinned part-by-part; the Mass shells' scale band
+frozen on the fusion; Space/Time (opaque) shrink instead of fading; Space/Time peel from the pose
+they are holding; one shared template mesh per element. Bake schema → 2, so the Squirrel × Charge
+bake reads STALE until re-baked. Read/Write turned on for every hull FBX and the Mass/Space/Time
+crystal FBXs. Offline: all 40 crystal × hull-FBX pairs solve with every point on the skin (doc
+§12). `/verify-unity` did not run (no `unity` CLI); compiled headless against Unity references
+(player + editor, negative-controlled), geometry suite 45/45.
+
+**First fleet playtest (2026-10-08):** Charge/Space/Time worked on Squirrel and Dolphin. **Mass**
+"shrank to a point" on both: fixed (the band freeze was being discarded every frame, doc §12), and
+the outer shell now flies while the three shrinking shells fade. **Grizzly** "didn't work at all":
+cause unconfirmed; hardened (hull found by the bake's own mesh, a lost pin no longer ends the
+fusion). Re-test Mass on any hull and anything on the Grizzly; if the Grizzly still plays the old
+capture, the console's `[CrystalMorph] [HullFusion]` warning names why.
+
+**Second fleet playtest:** Mass ✅, Urchin ✅, Manta ✅; Grizzly and Sparrow still read as the old
+capture. Cause measured: their 60x DummySkimmers collect crystals 30 units out, so the faces streaked
+in from there. Fix: a far-collected crystal flies in whole to 2.5 hull radii first, then peels (doc
+§12). Also: bake schema 3 (unit-size solve; the Manta family's bakes had landed only 115 of 1,860
+points) — **re-bake all**, then re-test Grizzly, Sparrow, Serpent, Scarab and Manta. With
+**Logging > CrystalMorph** on, each pickup line now says how far out it was taken and whether it flew in.
+
+**Third fleet playtest:** Grizzly, Sparrow, Scarab still failing; Serpent/Butterfly don't collect at
+all (Serpent: its only skimmer is inactive with no impactor — pre-existing prefab wiring, not this
+branch). Scarab fixed (faces were landing on its hidden Sparrow model). Grizzly/Sparrow: cause still
+unknown after a full static trace (doc §12) — needs the console from one pickup with
+**Logging > CrystalMorph** on.
+
+**Fourth playtest:** Sparrow fades the Mass shells and the crystals vanish — the fusion runs, its
+faces were drawn off-screen (sizes and pole read off the renderer's transform; now off the posed
+hull). Failures now log an error and fall back whole. Logs are prefixed `[CrystalMorph] [HullFusion]`.
+
+**Fifth playtest:** Sparrow ✅. Grizzly: its crystals were taken by a nested skimmer its vessel never
+initialises — no fusion, **no score, no element buff** (pre-existing). Crystals now ignore a skimmer with
+no vessel. Re-test Grizzly: fusion plays AND the element bar rises on pickup.
+
+**Ship pass (2026-10-08):** Grizzly ✅ (user). The skimmer guard was NARROWED: an uninitialised skimmer
+stands aside only when its vessel has an initialised one — the Termite, Falcon and Shrike initialise
+NONE, and the unnarrowed guard would have stopped them collecting crystals at all. **Re-test:** Termite
+(or Falcon/Shrike) still collects crystals (generic capture, as before); Grizzly still fuses; Scarab
+(not re-tested since its fix) fuses on its procedural hull after one `[CrystalMorph] [HullFusion]`
+stale warning. Per-hull status: `CRYSTAL_HULL_FUSION.md` §13.
+
+**Verify in editor.**
+0. **Run the baker** (*Bake all*) → all 48 rows CURRENT (an UNRESOLVABLE row names the importer
+   still missing Read/Write), four `<Element>_FusionTemplate.asset`, then **Validate & Push** in the window.
+1. Squirrel, skim a charge crystal — **no hitch** (Profiler: `CrystalHullFusion.Begin`/`.Frame`): faces peel off → fly → come down onto top, underside and wings
+   → crackle → sink. ~1.2 s. Domain colour. Pickup SFX on landing; no husk spray.
+2. If it looks like the old capture, check the console for a `[CrystalMorph] [HullFusion]` warning first.
+3. `playbackScale` 10 on `Resources/CrystalHullFusionConfig` to watch it slowly (back to 1 after).
+4. Pitch/yaw hard mid-fusion: wing faces stay on the wings.
+5. Each element on a skinned hull, a static hull (Rhino: pitch hard, wing faces ride the wing) and
+   the Serpent. Mass: faces must not fly off across the sky and must fade. Space/Time: shrink into
+   the skin at the end; mid-spin / mid-wave pickups peel from where the blocks were. Butterfly: old capture.
+6. Run `CrystalHullFusionGeometryTests` + `CrystalHullFusionConfigTests` + `CrystalHullFusionBakeTests`
+   (the last is inconclusive until the bake exists, and fails if it goes stale).
+
+**First-pass tuning:** beats 0.16 / 0.42 / 0.30 / 0.30 s, `flightBow` 0.9, `flightStagger` 0.45,
+`tileFill` 1.15, `flareGain` 2.6.
+
 ### 🔴 Rhino: elemental-crystal pickups no longer explode (`cece/keen-ptolemy-t3nzug`, 2026-10-08)
 
 **Landed** (`_Scripts/Controller/Vessel/R_VesselActions/RHINO_ENERGY_SWORD.md` § Crystal burst):
@@ -330,32 +414,54 @@ latter including `WormholeTollTests.cs`): 0 errors in project code — a compile
 
 ---
 
-### 🔴 The Time crystal holds still; its flip wave hops between its 12 vertices (`cece/eager-lovelace-i4o8jk`, 2026-10-08) — NOT EDITOR-VERIFIED
+### 🔴 The omni crystal's 30 rhombi run the Time crystal's flip wave (`cece/zen-archimedes-ednrpo`, 2026-10-08) — NOT EDITOR-VERIFIED
 
-`CrystalTime.prefab` (and its variant `CrystalTimeDandruff`) no longer carries `JustRotate`. In its
-place `TimeCrystalVertexHop` snaps the model child to a random rotation of the icosahedral group on
-the frame the 2 s flip-wave loop wraps, so the next wave starts from another of the 12 five-fold
-vertices while the crystal never visibly turns. The snap is only invisible because the shape at the
-loop seam is the fully symmetric bind pose — proved from the FBX by
-`python3 Tools/Build/measure_time_crystal_wave.py` (and `--self-test`). The symmetry frame is read at
-runtime from Unity's own import of the five first-ring bones, so no axis-conversion assumption ships.
+Slot 0 of `Crystal.prefab` is now `OmniCrystalBody.prefab` (a flat copy of `TrucatedOctahedron.prefab`
+with its MeshRenderer re-classed as a SkinnedMeshRenderer, authored by
+`author_omni_crystal_triangles.py`), and the Crystal root carries `CrystalFlipWave` with `skinRhombi` on:
+at runtime `RhombusSkinBaker` gives the 30 rhombi bones and the Time profile flips them. Out of editor: the
+real C# skinned the shipped omni mesh and ran the wave under all 48 axis conversions (30 plates, still body
+moves by 0, rest pose exact, rigid, seam exact); the synthetic baker test ran unmodified. Design:
+`Docs/TIME_CRYSTAL.md` §5, `Docs/PALETTE.md` §2.10.
 
-#### 1. Run the edit-mode suite's `TimeCrystalVertexHopTests`
+#### 1. Run `CrystalFlipWaveTests.OmniCrystalPrefab_TurnsItsThirtyRhombi_AndLeavesTheBodyStill`
 
-All six pass offline against faithful math stubs. The seventh,
-`CrystalTimePrefab_ResolvesItsWaveAxis_FromTheImportedRig`, only runs in the editor: it resolves the
-wave's start axis from the REAL imported rig. If it fails, nothing else below is worth checking.
+It is the first time Unity imports `OmniCrystalBody.prefab` (a hand-authored SkinnedMeshRenderer) - if the
+prefab shows a "Missing" component or the omni body is invisible, stop here.
 
-#### 2. Watch a Time crystal for ~10 s in any scene that spawns one
+#### 2. Look at an omni crystal for ~10 s (Skim Race, any arcade cell)
 
-- The crystal itself never turns: no tumble, and no jump/pop/twitch at any moment.
-- Each wave starts from a different vertex from the one before it (12 possible), never the same one twice in a row.
-- No `TimeCrystalVertexHop` error in the console.
+- The 30 rhombi flip in a wave from one vertex to the opposite one, a new vertex each loop; the boxes,
+  pentagons and triangles hold still; the Shepard triangles and the pentagon discharges look as before.
+- The omni appears at once on respawn (no new fade), wears its team colours on a team crystal, and bursts
+  into its husk on collect as before.
 
-#### 3. Capture one (Elemental capture / skim)
+#### 3. Forge one into a Scarab ball and into a Squirrel ring
 
-The capture flourish still spins and flies the crystal into the hull as before (it owns the ROOT's
-rotation; the hop only touches the model child).
+The forge still folds the whole body onto the target. A rhombus caught mid-flip settles flat as the fold
+begins (it is read at rest) - check that this reads as part of the fold, not a pop.
+
+---
+
+### 🟡 The Time crystal's flip wave is procedural and starts from a new vertex every loop (`cece/zen-archimedes-ednrpo`, 2026-10-08) — LOOK CONFIRMED IN GAME, TESTS NOT YET RUN
+
+Supersedes the vertex-hop entry (`cece/eager-lovelace-i4o8jk`) that stood here. `CrystalTime.prefab` (and
+its variant `CrystalTimeDandruff`) no longer has an Animator: the model's Animator is a removed component,
+`CrystalTimeAnimController` is deleted, and `CrystalFlipWave` poses the 30 plate bones from
+`TimeCrystalFlipWaveProfile.asset` (generated from the old take by
+`python3 Tools/Build/author_time_crystal_flip_wave.py`). `TimeCrystalExport.fbx` is now **Read/Write
+enabled**. Out of editor: the shipped C# compiled with Roslyn and executed against the FBX (0.42 % of the
+radius, 48/48 axis conversions, negative controls), 11 of the 13 edit-mode tests executed unmodified.
+**2026-10-08: inspected in game by the designer - "looks great".** Design record: `Docs/TIME_CRYSTAL.md`.
+
+#### 1. Run `CrystalFlipWaveTests` in the edit-mode suite (still open)
+
+`CrystalTimePrefab_IsWiredForTheProceduralWave` and **`ProceduralWave_MatchesTheImportedTake_FrameByFrame`**
+(FBX parity - prints the worst error; expect about 0.4–0.9 % of the radius) only run in the Editor.
+
+#### 2. Profile a crowd (still open)
+
+`FrogletTools > Benchmarks > Crystal Flip Wave Benchmark` - see `Docs/TIME_CRYSTAL.md` §7.
 
 ---
 
@@ -465,6 +571,51 @@ gates; both generators' `--check` green; `render_card_backgrounds --check` green
    near-hairpins. AI Grizzlies still complete laps at the new speeds.
 9. **Other projectiles** — Sparrow / Grizzly cannon / Urchin rounds still end and return to their
    pools exactly as before (`HoldAtFlightEnd` defaults off).
+
+---
+
+### 🔴 Grizzly trigger bombs, fourth pass — constant velocity, unlimited range, stop on a hull; sea-mine look (`cece/funny-lamport-bkzvtc`, 2026-10-08) — NOT EDITOR-VERIFIED
+
+Design ask (said of "the rhino's bombs" — the trigger bombs are the Grizzly's): *"the bombs are
+stopping due to a friction of some sort. they should continue with constant velocity and no
+limitations on distance until frozen by use of the trigger or hitting another vessel. make the bomb
+look better too."* Full doc: `R_VesselActions/GRIZZLY_TRIGGER_BOMBS.md`.
+
+What changed:
+- **Shared code (`Projectile.cs`, `ProjectileImpactor.cs`):** `Projectile.HoldAtFlightEnd` is
+  replaced by `Projectile.Cruises` — no `cos(πt/2T)` ease-out and no lifetime (default false, reset
+  per flight; the bomb was its only user). New per-flight `VesselStruck` event, raised by the
+  impactor for every hull before the domain rule. `Freeze()` now latches `FlightHalted`, so a freeze
+  from inside a sweep stops at the contact point (the cannon's freeze is unaffected — its loop is
+  already cancelled). The move loop clamps `ApplyFlightGrowth`'s flight fraction to 1 (a cruising round outlives its nominal lifetime).
+- **Bombs:** fired cruising; `GrizzlyTriggerBombConfig.projectileTime` retired (asset key removed);
+  any vessel but the firer's own stops the bomb (Frozen, not detonated); `sweptVesselDetection` on.
+- **Look (`GrizzlyBombVisual` + generator):** a tumbling 12-spike crown (generated mesh, radial
+  normals so the core shader's `_Spread` push keeps it seated) that snaps out when armed; a ping
+  ring that collapses inward when armed; the comet streak now uses `Resources/BallTrail.mat`
+  (`CosmicShore/BallTrail`) tinted per shot; an arming flash. Throw-based pulse rates retired.
+
+What ran out of editor: `unity_refcompile` **player** and **editor** configs — RESULT OK, no errors
+in project code (only the three unfetchable service packages' errors, none in changed files; the
+new `GrizzlyBombSpikeMeshTests` were gated and compiled); `author_grizzly_bomb_assets.py --check`
+(watched failing on the stale prefab before the re-run) and `author_grizzly_time_assets.py --check`
+green; `check_abstract_member_implementations`, `check_conditional_compilation`,
+`check_enum_member_references`, `check_switch_label_collisions`, `check_self_referential_locals`,
+`check_console_logging`, `check_using_directives`, `check_elemental_floats` green. Nothing was RUN:
+no edit-mode tests executed, no play mode.
+
+1. **Compiles; edit-mode suite green** — `GrizzlyTriggerBombTests`, `GrizzlyBombSpikeMeshTests`.
+   No missing scripts on `GrizzlyBomb.prefab`; no pink comet or ring (missing shader).
+2. **No friction** — an unfrozen bomb holds its launch speed and keeps going; 10 s later it is still
+   flying and the trigger still freezes it.
+3. **Stops on a vessel** — fired into an AI's hull it stops AT the hull (not past it), armed, and
+   does not go off; pull + release blows it. The firing Grizzly's own hull never stops it.
+4. **Look** — in flight: a small tumbling spiked mine, ring pings, braided plasma comet in the
+   bomb's danger shade. Frozen: spikes snap out, flash, wide strobing halo, ring collapsing inward.
+5. **Other projectiles** — Sparrow / Grizzly cannon / Urchin rounds still ease out and end exactly
+   as before (`Cruises` defaults off); the cannon's own freeze-and-detonate still works.
+6. **Tuning** — the look's dials are on `GrizzlyBomb.prefab`'s `GrizzlyBombVisual`, authored by
+   `Tools/Build/author_grizzly_bomb_assets.py` (edit there, re-run, `--check`).
 
 ---
 
@@ -5210,7 +5361,7 @@ field on `Serpent.prefab` to opt out.
 
 1. Project compiles with zero errors. Run the `CosmicShore.Tests.EditMode`
    suite — `ShipModifierTests` gained two cases pinning the new flag.
-2. `MinigameFreestyleMultiplayer_Gameplay` (or Menu_Main freestyle), Sparrow.
+2. Menu_Main freestyle, Sparrow.
    **Flying** roll first: boost + full left stick → rolls and strafes, once per
    press. This must be **unchanged** — it is the regression risk.
 3. Toggle the stationary/turret stance. Boost + full left stick → **rolls and

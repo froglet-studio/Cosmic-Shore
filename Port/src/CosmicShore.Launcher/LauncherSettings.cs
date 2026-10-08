@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System;
 using System.IO;
 using System.Text.Json;
@@ -79,12 +80,24 @@ namespace CosmicShore.Launcher
         public string ClaudeEffort { get; set; } = "";
         public bool VoiceReplies { get; set; }
         public string ClaudePath { get; set; } = "";
+        /// <summary>Blender's executable for .blend models (empty = search like Unity does). Exported to cs-asset as PRISMA_BLENDER.</summary>
+        public string BlenderPath { get; set; } = "";
+        /// <summary>Maya's mayapy for .ma/.mb models (empty = search). Exported as PRISMA_MAYAPY.</summary>
+        public string MayaPyPath { get; set; } = "";
         public int ChatMode { get; set; }
-        // A milestone run's budget (each message is one run): agentic turns, wall-clock minutes,
-        // and an optional dollar cap. A run that hits one stops and leaves what it tried on the board.
-        public int MilestoneMaxTurns { get; set; } = 80;
-        public int MilestoneMaxMinutes { get; set; } = 60;
-        public double MilestoneMaxUsd { get; set; }
+
+        // TIME page: the benchmark's scenes and run shape, and local multiplayer.
+        public List<string> BenchScenes { get; set; } = new();
+        public int BenchFrames { get; set; } = 1800;
+        public int BenchRuns { get; set; } = 1;
+        public bool BenchHeadless { get; set; }
+        public bool BenchVSync { get; set; }
+        /// <summary>0 the default GC, 1 SustainedLowLatency, 2 both (A/B).</summary>
+        public int BenchGc { get; set; }
+        public string BenchSize { get; set; } = "1920x1080";
+        public int MpPlayers { get; set; } = 2;
+        public string MpScene { get; set; } = "";
+        public string MpSize { get; set; } = "960x540";
 
         // Toolchain
         public string DotnetPath { get; set; } = "";

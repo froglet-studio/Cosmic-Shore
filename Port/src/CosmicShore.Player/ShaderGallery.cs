@@ -10,7 +10,8 @@ namespace CosmicShore.Player
 {
     /// <summary>
     /// <c>--shader-gallery FRAME[:LEGEND]</c>: at FRAME, one real project material per first-party
-    /// Shader Graph that no hand-tuned family covers, each on a sphere in a grid in front of a
+    /// Shader Graph that no hand-tuned family covers (and per hand-translated .shader; only those with
+    /// COSMIC_SHORE_GALLERY=hand), each on a sphere in a grid in front of a
     /// camera of its own (every other camera is switched off), so the same frame of two builds
     /// compares shader by shader. The legend (cell → graph → material) goes to the console and
     /// LEGEND. A proof harness for C2: what the graph compiler draws, before and after.
@@ -36,12 +37,18 @@ namespace CosmicShore.Player
                 var guid = m.Groups[1].Value;
                 if (CosmicShore.Render.MaterialFamilies.ByGuid.ContainsKey(guid)) continue;
                 var graph = db.PathOf(guid);
-                if (graph == null || !graph.EndsWith(".shadergraph", StringComparison.OrdinalIgnoreCase)) continue;
+                if (graph == null) continue;
+                bool hand = graph.EndsWith(".shader", StringComparison.OrdinalIgnoreCase) && CosmicShore.Content.Shaders.HandShaders.Has(guid);
+                if (!hand && !graph.EndsWith(".shadergraph", StringComparison.OrdinalIgnoreCase)) continue;
+                // COSMIC_SHORE_GALLERY=hand: only the hand-translated .shader files.
+                if (!hand && Environment.GetEnvironmentVariable("COSMIC_SHORE_GALLERY") == "hand") continue;
                 var rel = db.ProjectRelative(graph);
                 if (!byGraph.ContainsKey(rel)) byGraph[rel] = (rel, db.GuidOf(mat), db.ProjectRelative(mat));
             }
 
             foreach (var other in Camera.allCameras) other.enabled = false;
+            // The scene's screen-space UI would cover the grid.
+            foreach (var canvas in CosmicShore.Engine.Object.FindObjectsByType<Canvas>(FindObjectsSortMode.None)) canvas.enabled = false;
             var root = new GameObject("ShaderGallery");
             root.transform.position = new Vector3(0, 20000, 0);
             int n = byGraph.Count, cols = Math.Max(1, (int)Math.Ceiling(Math.Sqrt(n * 16.0 / 9.0)));

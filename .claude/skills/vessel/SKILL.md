@@ -192,6 +192,25 @@ applies to new abilities, new resources on the meter list, and anything that add
     (trigger sphere, kinematic rigidbody, `ImpactCollider`, container, layer 7) and skim nothing,
     silently, because the reference points at a disabled twin. Run **Audit Vessel Skimmers**
     first; never conclude from the prefab looking right.
+    **The CRYSTAL side never asked** (until 2026-10-08): `ElementalCrystalImpactor.AcceptImpactee`
+    took a crystal from ANY `SkimmerImpactor`, initialised or not, so an uninitialised skimmer
+    collected it with `VesselStatus == null` — no score, no element level, no hull fusion, and on
+    screen just "the old capture". The Grizzly's nested x30 `Skimmer.prefab` beat its initialised
+    `DummySkimmer` to every crystal that way; `DefersToItsVesselsSkimmer` now makes such a skimmer
+    stand aside when its vessel HAS an initialised one. The Termite, Falcon and Shrike list NO
+    near-field skimmer at all (`_nearFieldSkimmer: {fileID: 0}`), so they still collect crediting
+    nobody — `Docs/ElementalAbilitySystem/BACKLOG.md`. A pickup "with no vessel" is now a one-time
+    `[CrystalMorph] [HullFusion]` warning, which is how this was found after four rounds of reading
+    the prefabs had not found it.
+11b. **A skinned renderer's TRANSFORM is not its bind space — never size or aim anything off it.**
+    `lossyScale`, `InverseTransformPoint` and `position` on a `SkinnedMeshRenderer` describe a node
+    the bones may not agree with: the Sparrow model carries a node moved 185 units, the Manta family
+    a 100x node scale folded into its bind poses (its bind-pose mesh is 0.011 units across). Bones
+    are right by construction, so read world sizes and directions off points pinned THROUGH them
+    (`bone.localToWorldMatrix × bindpose × p`). A hull fusion that used the renderer transform drew
+    its faces off-screen on the Sparrow while the identical code worked on the Squirrel — and a
+    solver with absolute tolerances landed 6% of its points on the 0.011-unit Manta mesh until it
+    solved at unit size (`CRYSTAL_HULL_FUSION.md` §12).
 12. **Before removing a "redundant" writer, enumerate ALL writers of that meter.** A resource can
     be fed by both `ResourceSystem`'s per-second `resourceGainRate` and an action executor, and
     an executor's own cooldown can block its path entirely — so deleting the passive trickle
@@ -476,6 +495,16 @@ applies to new abilities, new resources on the meter list, and anything that add
     time-to-target figure, read the movement loop for a shaping factor** — and when you write a
     new one, write the derivation next to it so the next sweep can check it in one line rather
     than re-deriving it from the integral.
+    **Corollary — a pilot reports this ease-out as FRICTION.** *"The bombs are stopping due to a
+    friction of some sort"* was this loop: every round in the fleet decelerates to rest, so a
+    projectile meant to coast reads as dragged. The opt-out is per flight, `Projectile.Cruises`
+    (constant velocity, no lifetime — set it AFTER `Gun.FireGun`, because the loop's first step
+    runs inside the fire call). Nothing else may be expected to stop a cruising round, so its
+    owner must own every retirement path (turn end, disable, re-init) — the Grizzly trigger bomb
+    is the reference (`GRIZZLY_TRIGGER_BOMBS.md`). To STOP a round on a hull rather than hit it,
+    listen to `Projectile.VesselStruck` and `Freeze()` it from the handler: `Freeze` latches
+    `FlightHalted`, so the sweep that raised the event halts at the contact instead of finishing
+    the frame's step past it. (Grizzly trigger bombs, 2026-10-08.)
 
 35. **A derivation that collapses two facts into one is a statement about the cases that existed
     when it was written — and it goes on compiling after you add the case that separates them.**
@@ -597,6 +626,19 @@ applies to new abilities, new resources on the meter list, and anything that add
     asset-writing tool cannot perform, so it is the one a checklist has to carry — and enumerate
     the whole set by asking which lists name a vessel, not by reading the list of lists somebody
     wrote down last time.** (Butterfly, 2026-09-22.)
+
+41. **`Custom/SpreadFresnelShader` MOVES your geometry — one WORLD unit along every normal.** Its
+    `_Spread` property defaults to `(1,1,1)` and `DangerProjectileMaterial` (every Grizzly round,
+    `ExplodableProjectile`, `ProjectileFX`) authors no value, so the vertex stage pushes each vertex
+    `normal × _Spread / objectScale` — a constant world unit whatever the object's scale. Two
+    consequences. **A visible size is the authored scale + 2**: the trigger bomb's doc table said
+    2.5–5 and the screen showed 4.5–7 (rule 4b again — nothing chose that number). And **any
+    geometry you add on this material must carry RADIAL normals**, or the push tears it: flat-shaded
+    faces separate along their own normals, and true cone normals bloat a spike sideways by a full
+    unit. The bomb's spike crown uses the sphere's own normal at each vertex, so the whole spike rides
+    the sphere's push and stays seated (`GrizzlyBombVisual.SpikeMesh`, `GrizzlyBombSpikeMeshTests`).
+    Before sizing anything against a fresnel-shaded body, read the material's `_Spread`; absent means
+    one unit. (Grizzly trigger bombs, 2026-10-08.)
 
 ### 4.x Placing prisms from a vessel ability — shield sizing
 

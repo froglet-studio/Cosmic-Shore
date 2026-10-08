@@ -388,6 +388,7 @@ upstream and the measuring branch touched no `Tools/Build/` file at all.
 | Ecology | Measure Cell Environment Baselines | Per-cell prism baselines the phase thresholds ride on. |
 | Validation | Validate Lifeform Crystals | Every lifeform drops exactly one elemental crystal. |
 | Vessels | Audit Vessel Ability Rows / Elemental Morphs, Wire & Bake Petal Bars, Plan Rig Swap | Vessel HUD + model wiring. |
+| Vessels | **Bake Crystal Hull Fusions** | Solves, at edit time, where each elemental crystal's faces land on each vessel hull (`Resources/CrystalHullFusionConfig` entries) and bakes the answer into a `CrystalHullFusionBakeSO` per entry (plus one shared `<Element>_FusionTemplate.asset` mesh per element), so a pickup in game does no geometry. Skinned and static multi-part hulls alike; 12 hulls × 4 elements. Lists every entry CURRENT / MISSING / STALE / UNRESOLVABLE with the reason; Validate fails on anything not current. **Keeper** — re-run whenever a hull or crystal model, an entry's `tileFill`/`surfaceLift` or the solver changes (the game warns once and solves at runtime until it is). Doc: `Assets/_Scripts/Controller/Environment/Crystals/CRYSTAL_HULL_FUSION.md` §4. |
 | Performance | Performance Benchmark, Prism Grid Benchmark, Texture Memory, Scene Object Counter | Frame cost and memory. |
 | Scene Setup | Setup Freestyle Toybox, Setup Prism Grid Explosion Scene | Scene scaffolding. |
 | Scene Setup | **Setup Black Hole Test Scene** | Builds or repairs `BlackHoleTest.unity` and its two config assets (`BlackHoleTestConfig`, `BlackHoleConfig`). Keeper (idempotent — the scene and both assets are committed, so in the normal case it only repairs). WRITER: records every path it writes. See `Docs/BLACK_HOLE.md` §7. |
@@ -416,6 +417,7 @@ upstream and the measuring branch touched no `Tools/Build/` file at all.
 | Pending Tool Changes window | `Assets/_Scripts/Editor/FrogletTools/FrogletToolShipWindow.cs` |
 | git CLI wrapper (quoting-safe, no wildcards) | `Assets/_Scripts/Editor/FrogletTools/FrogletGit.cs` |
 | Prefab kit window | `Assets/_Scripts/Editor/FrogletTools/GameModePrefabKitWindow.cs` |
+| Crystal hull fusion baker | `Assets/_Scripts/Editor/CrystalHullFusionBaker.cs` |
 | AI Training window | `Assets/_Scripts/Utility/AITraining/Editor/TrainingEditorWindow.cs` |
 | GameCanvas Unifier (window / engine) | `Assets/_Scripts/Editor/FrogletTools/GameCanvasUnifierWindow.cs`, `GameCanvasUnifier.cs` |
 | Prefab kit validation | `Assets/_Scripts/Editor/FrogletTools/KitValidator.cs` |

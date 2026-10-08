@@ -68,7 +68,7 @@ namespace CosmicShore.Mcp
                     ["frames"] = P("integer", "frames to run at 60 Hz (default 1200 = 20 s of game time)"),
                     ["scene"] = P("string", "start in this scene instead of Bootstrap"),
                     ["expect"] = P("string", "scene that must be reached for a PASS (default: any)"),
-                    ["ignore"] = P("string", "'|'-separated substrings: errors containing one are listed as ignored and do not fail the run (e.g. a scene entered without Bootstrap logs 'not found at injection time', as Unity's play-from-scene does)"),
+                    ["ignore"] = P("string", "'|'-separated substrings: errors and exceptions containing one are listed as ignored and do not fail the run (e.g. a scene entered without Bootstrap logs 'not found at injection time', as Unity's play-from-scene does)"),
                     ["build"] = P("boolean", "compile first (default true)"),
                 }),
             Tool("engine_parity", "Parity harness (ROADMAP C1): replay each case in Port/parity/manifest.json in the engine and diff it against the Unity goldens in Port/parity/goldens with the C9 tolerances (Port/parity/tolerances.json) - state and Random exact, events in order within a step, transforms within 1e-4/0.1 deg for 10 s, frames by SSIM. Per channel PASS / FAIL (first divergence) / MISSING (no golden yet). Writes Port/parity/results/latest.json for the scoreboard.",
@@ -471,9 +471,13 @@ namespace CosmicShore.Mcp
             var scenes = d.GetProperty("scenes").EnumerateArray().Select(x => x.GetProperty("name").GetString() ?? "").ToList();
             var ignore = Str(a, "ignore").Split('|', StringSplitOptions.RemoveEmptyEntries);
             bool Ignored(JsonElement e) => ignore.Any(i => (e.GetProperty("message").GetString() ?? "").Contains(i, StringComparison.Ordinal));
-            int ignored = d.GetProperty("errors").EnumerateArray().Where(Ignored).Sum(e => e.GetProperty("count").GetInt32());
-            int errors = d.GetProperty("counts").GetProperty("errors").GetInt32() - ignored;
-            int exceptions = d.GetProperty("counts").GetProperty("exceptions").GetInt32();
+            // A scene entered without Bootstrap misses Bootstrap's singletons (as Unity's play-from-scene
+            // does): the caller names those known signatures, for errors and exceptions alike.
+            int ignoredErrors = d.GetProperty("errors").EnumerateArray().Where(Ignored).Sum(e => e.GetProperty("count").GetInt32());
+            int ignoredExceptions = d.GetProperty("exceptions").EnumerateArray().Where(Ignored).Sum(e => e.GetProperty("count").GetInt32());
+            int ignored = ignoredErrors + ignoredExceptions;
+            int errors = d.GetProperty("counts").GetProperty("errors").GetInt32() - ignoredErrors;
+            int exceptions = d.GetProperty("counts").GetProperty("exceptions").GetInt32() - ignoredExceptions;
             int warnings = d.GetProperty("counts").GetProperty("warnings").GetInt32();
             bool crashed = d.GetProperty("crash").ValueKind == JsonValueKind.String;
             string expect = Str(a, "expect");
@@ -487,10 +491,10 @@ namespace CosmicShore.Mcp
             if (crashed) sb.AppendLine(d.GetProperty("crash").GetString());
             foreach (var kind in new[] { "exceptions", "errors", "asserts", "warnings" })
                 foreach (var e in d.GetProperty(kind).EnumerateArray().Take(kind == "warnings" ? 10 : 25))
-                    sb.AppendLine($"  [{(kind == "errors" && Ignored(e) ? "ignored error" : kind.TrimEnd('s'))}] x{e.GetProperty("count").GetInt32()} {e.GetProperty("message").GetString()}");
+                    sb.AppendLine($"  [{(kind is "errors" or "exceptions" && Ignored(e) ? "ignored " + kind.TrimEnd('s') : kind.TrimEnd('s'))}] x{e.GetProperty("count").GetInt32()} {e.GetProperty("message").GetString()}");
             sb.AppendLine("report: " + report);
             var problems = new[] { "exceptions", "errors", "asserts" }
-                .SelectMany(k => d.GetProperty(k).EnumerateArray().Where(e => k != "errors" || !Ignored(e)))
+                .SelectMany(k => d.GetProperty(k).EnumerateArray().Where(e => k == "asserts" || !Ignored(e)))
                 .Select(e => e.GetProperty("message").GetString() ?? "").ToList();
             if (crashed) problems.Add(d.GetProperty("crash").GetString() ?? "");
             return new SmokeResult(sb.ToString().TrimEnd(), pass, false, problems);
