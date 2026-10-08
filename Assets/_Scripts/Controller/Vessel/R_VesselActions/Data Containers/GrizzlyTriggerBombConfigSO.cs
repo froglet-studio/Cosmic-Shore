@@ -15,10 +15,11 @@ namespace CosmicShore.Gameplay
     ///   pull    -> freeze the bomb where it is
     ///   release -> detonate it - and a Grizzly inside its own blast is LAUNCHED AWAY FROM IT
     ///
-    /// <b>Only the trigger detonates a bomb.</b> It never goes off on a clock or on contact: it
-    /// flies THROUGH prisms (lighting them as it passes - LIT, Docs/LIT.md) and, if nobody
-    /// freezes it, eases to rest at the end of its throw and hangs there, live, until the
-    /// trigger blows it (design ask, 2026-10-08).
+    /// <b>Only the trigger detonates a bomb.</b> It never goes off on a clock or on contact. It
+    /// CRUISES - constant velocity, no drag, no range limit (<see cref="Projectile.Cruises"/>) -
+    /// THROUGH prisms (lighting them as it passes - LIT, Docs/LIT.md) until the trigger freezes it
+    /// or it touches another vessel, which freezes it too; the next release blows it (design
+    /// asks, 2026-10-08).
     ///
     /// <b>Pressure is the commitment.</b> One number - the peak pressure - sets the ammo spent,
     /// the bomb's visible size and the blast's size together, so a feather tap is a cheap pop
@@ -48,10 +49,8 @@ namespace CosmicShore.Gameplay
         float maxAmmoCost = 0.35f;
 
         [Header("Projectile")]
-        [SerializeField, Tooltip("Muzzle speed ADDED to the hull's own velocity, u/s. The flight eases to rest over the throw (Projectile's cos(pi t / 2T)), so it leaves faster than the Grizzly and the Grizzly catches it near the end.")]
+        [SerializeField, Tooltip("Muzzle speed ADDED to the hull's own velocity, u/s. The bomb then CRUISES at that velocity - no drag, no range limit - until the trigger or another vessel freezes it, so it always leaves faster than the Grizzly that fired it.")]
         float projectileSpeed = 90f;
-        [SerializeField, Tooltip("The THROW, seconds: how long the bomb flies before it eases to rest. It is not a fuse - a bomb nobody freezes hangs where it stopped, live, until the trigger detonates it. Range = (muzzle + inherited speed) x 2T / pi.")]
-        float projectileTime = 3f;
         [SerializeField, Tooltip("Visible bomb scale of a minimum bomb. Small on purpose: a bomb is a little hot thing that becomes a huge blast (design ask, 2026-10-08).")]
         float minProjectileScale = 2.5f;
         [SerializeField, Tooltip("Visible bomb scale of a maximum bomb - still small; the glow halo (GrizzlyBombVisual) carries the read.")]
@@ -108,7 +107,6 @@ namespace CosmicShore.Gameplay
         public float MinAmmoCost => minAmmoCost;
         public float MaxAmmoCost => maxAmmoCost;
         public float ProjectileSpeed => projectileSpeed;
-        public float ProjectileTime => projectileTime;
         public float SideYawDegrees => sideYawDegrees;
         public AOEExplosion[] AoePrefabs => aoePrefabs;
         public float MinBlastScale => minBlastScale;

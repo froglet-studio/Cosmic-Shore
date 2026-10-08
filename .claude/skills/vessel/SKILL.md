@@ -495,6 +495,16 @@ applies to new abilities, new resources on the meter list, and anything that add
     time-to-target figure, read the movement loop for a shaping factor** — and when you write a
     new one, write the derivation next to it so the next sweep can check it in one line rather
     than re-deriving it from the integral.
+    **Corollary — a pilot reports this ease-out as FRICTION.** *"The bombs are stopping due to a
+    friction of some sort"* was this loop: every round in the fleet decelerates to rest, so a
+    projectile meant to coast reads as dragged. The opt-out is per flight, `Projectile.Cruises`
+    (constant velocity, no lifetime — set it AFTER `Gun.FireGun`, because the loop's first step
+    runs inside the fire call). Nothing else may be expected to stop a cruising round, so its
+    owner must own every retirement path (turn end, disable, re-init) — the Grizzly trigger bomb
+    is the reference (`GRIZZLY_TRIGGER_BOMBS.md`). To STOP a round on a hull rather than hit it,
+    listen to `Projectile.VesselStruck` and `Freeze()` it from the handler: `Freeze` latches
+    `FlightHalted`, so the sweep that raised the event halts at the contact instead of finishing
+    the frame's step past it. (Grizzly trigger bombs, 2026-10-08.)
 
 35. **A derivation that collapses two facts into one is a statement about the cases that existed
     when it was written — and it goes on compiling after you add the case that separates them.**
@@ -616,6 +626,19 @@ applies to new abilities, new resources on the meter list, and anything that add
     asset-writing tool cannot perform, so it is the one a checklist has to carry — and enumerate
     the whole set by asking which lists name a vessel, not by reading the list of lists somebody
     wrote down last time.** (Butterfly, 2026-09-22.)
+
+41. **`Custom/SpreadFresnelShader` MOVES your geometry — one WORLD unit along every normal.** Its
+    `_Spread` property defaults to `(1,1,1)` and `DangerProjectileMaterial` (every Grizzly round,
+    `ExplodableProjectile`, `ProjectileFX`) authors no value, so the vertex stage pushes each vertex
+    `normal × _Spread / objectScale` — a constant world unit whatever the object's scale. Two
+    consequences. **A visible size is the authored scale + 2**: the trigger bomb's doc table said
+    2.5–5 and the screen showed 4.5–7 (rule 4b again — nothing chose that number). And **any
+    geometry you add on this material must carry RADIAL normals**, or the push tears it: flat-shaded
+    faces separate along their own normals, and true cone normals bloat a spike sideways by a full
+    unit. The bomb's spike crown uses the sphere's own normal at each vertex, so the whole spike rides
+    the sphere's push and stays seated (`GrizzlyBombVisual.SpikeMesh`, `GrizzlyBombSpikeMeshTests`).
+    Before sizing anything against a fresnel-shaded body, read the material's `_Spread`; absent means
+    one unit. (Grizzly trigger bombs, 2026-10-08.)
 
 ### 4.x Placing prisms from a vessel ability — shield sizing
 
