@@ -20,7 +20,9 @@ cage's panels landing on the boost ring's eight shields) and reads the crystal t
 4. **Dissolve** (0.30 s) — they sink a hair into the skin and dissolve.
 
 **Every hull × every element (48 pairs), since 2026-10-08** — all twelve vessels with a hull
-model, each with the Charge, Mass, Space and Time crystal. The **Butterfly** keeps the generic
+model, each with the Charge, Mass, Space and Time crystal. **Nine of them fuse in play today**; the
+Termite, Falcon and Shrike initialise no skimmer and the Serpent's is switched off, so their
+crystals never reach the fusion with a vessel (§13). The **Butterfly** keeps the generic
 capture: its hull mesh is generated at runtime, so there is no asset to solve against. The fleet
 work — static hulls, animated crystals, three shader families — is §12. A pair is one entry in
 `Resources/CrystalHullFusionConfig`; Squirrel × Charge was the first and the reference.
@@ -75,8 +77,10 @@ pentagon**, radial alignment ≥ 0.9994.
 
 ## 2. Where each face lands
 
-- **Contact:** the outermost outward-facing hull vertex in the direction the crystal came from, in
-  the hull's normalised space.
+- **Contact:** the outermost outward-facing hull vertex in the direction the crystal came from. At
+  EDIT time the patches are spread in the hull's normalised mesh space; at PICKUP, which face takes
+  which patch is decided in the WORLD, off the posed patches (§12, fourth playtest) - the renderer's
+  transform is never consulted.
 - **Patches:** the other 59 are farthest-point sampled over the outward-facing skin, so they sit at
   near-uniform spacing.
 - **Match:** each face's target direction is its crystal radial reflected through the contact
@@ -121,8 +125,8 @@ whose faces differ.
 
 Bind pose, not a runtime pose: pinning a point through `bindposes[b]` is the skinning identity
 itself, so `bone.localToWorldMatrix × local` puts it on the posed hull wherever the puppetry has the
-bone. A face on a wing stays on the wing while it flaps. Bone index `bones.Length` is the renderer
-(bind-pose mesh space is its local space).
+bone. A face on a wing stays on the wing while it flaps. Bone index `bones.Length` is the rig's own
+space: the skinned renderer, or a static hull's body (§12 "The hulls").
 
 ### The bake
 
@@ -178,9 +182,12 @@ hidden, until the **mate**, when it moves to the contact, plays its pickup sound
 `Crystal.Explode(SuppressHusk = true)` and leaves the cell. Scoring and the element level land at
 contact, before any of this. The fusion is pure photons.
 
-Every refusal falls back to the generic capture and **warns once per reason**: no hull renderer, an
-empty bake, a crystal with no readable model, a layout the worker could not build. A layout still
-building is not a fault: that pickup plays the generic capture with a verbose line.
+Every refusal falls back to the generic capture and **warns once per reason**: no hull, an empty or
+stale bake, a crystal with no readable model, a layout the worker could not build, a solution naming
+a pin the live rig lacks, a crystal collected by a skimmer with no vessel. A THROW anywhere in the
+start or a frame is an ERROR with its stack, once, and the crystal is handed back whole. A layout
+still building is not a fault: that pickup plays the generic capture with a verbose line. Every line
+is prefixed `[CrystalMorph] [HullFusion]`.
 
 ## 6. Why CPU and not the omni morph's shader stamp
 
@@ -255,9 +262,10 @@ areas. Solved at edit time, exactness costs nothing anyone waits for.
 - **Compiles** against real Unity 6000.0 references, player and editor configs
   (`Tools/Build/unity_refcompile`; the first cut's run was negative-controlled with a planted
   missing member).
-- **Runs headless:** `bash Tools/Build/crystal_morph_harness/run.sh` — 45/45 (21 upstream + 24
-  fusion, incl. the layout builder, `Solve` through a bind pose, the face anchors and `AnchorMap`;
-  a transposed rotation planted in `AnchorMap` fails it). Three planted defects each fail it: every template edge marked a bolt, the facing filter
+- **Runs headless:** `bash Tools/Build/crystal_morph_harness/run.sh` — 47/47 (21 upstream + 26
+  fusion, incl. the layout builder, `Solve` through a bind pose, the face anchors, `AnchorMap` and
+  the unit-size solve at x0.001 and x1000; a transposed rotation planted in `AnchorMap` and the
+  normalisation removed from `Solve` each fail it). Three planted defects each fail it: every template edge marked a bolt, the facing filter
   removed, face normals inverted.
 - **Shipped geometry on the real meshes** (scratch driver over the FBX exports): numbers in §1–§3.
 - `AssignMinCost` matches brute force on 300 random matrices.
@@ -320,6 +328,18 @@ areas. Solved at edit time, exactness costs nothing anyone waits for.
   (`VesselImpactorDataContainerSO.OmniCrystalRetirement`), this uses a Resources table keyed by
   (vessel, element), because elemental collection runs on the skimmer path, which has no such
   slot. Worth unifying once a second hull or element shows which shape generalises.
+- **The Scarab's bake is misleading.** It is solved on the Sparrow model the Scarab hides at runtime
+  (`ScarabHullBuilder` draws a procedural hull), so the window reads CURRENT while the game always
+  finds it stale and solves on the procedural body instead — and the stale warning tells the reader
+  to re-run the tool, which cannot help. Either bake procedural hulls through
+  `IProceduralHullSource.BuildPreviewPieces` (the Butterfly would come with it) or have the tool
+  report such hulls as "solved at runtime" and drop their bakes.
+- **The bakes are 16 MB of YAML** (`du -sh Assets/_SO_Assets/CrystalHullFusion`): the four shared
+  templates are 4 MB, and each of the 48 bakes carries its layout (`PointLocal`, `PointNormalLocal`,
+  per point) as YAML vectors, ~240 KB each. Packing the layout into a mesh, as the template already
+  is, would cut that by roughly 3x.
+- **`FindHullRenderer` is public with one caller, `FindHull`** (`grep -rn "FindHullRenderer(" Assets
+  --include=*.cs`). Keep it if a tool needs "the element-shape hull" alone; otherwise make it private.
 - **The Butterfly has no fusion.** Its `Hull` MeshFilter is authored empty and filled at runtime;
   a fusion for it would need the solve run on the generated mesh (the runtime fallback could, if
   the generator's output were stable).
@@ -461,3 +481,19 @@ every face lands on the skin, all 40 pairs:**
 
 The hulls span a 350× range of model units (Squirrel mean radius 2.1, Rhino 729); the layout is
 solved in normalised hull space and comes out the same shape at every scale.
+
+## 13. Status by hull (2026-10-08, after the fifth playtest)
+
+Measured, not assumed: a hull fuses only if (a) its bake resolves and (b) a skimmer its VesselStatus
+INITIALISES collects the crystal. (b) is read off each prefab's `_nearFieldSkimmer` and the
+`SkimmerImpactor` that reports to it.
+
+| Hull | Fuses | Evidence |
+|---|---|---|
+| Squirrel, Dolphin, Manta, Urchin, Sparrow, Grizzly | yes | play-tested by the user, all four elements on Squirrel/Dolphin; `HullFusion` log line on Sparrow |
+| Rhino | yes, not re-tested since schema 3 | reported fine in the third playtest |
+| Scarab | expected yes (runtime-solved), **not re-tested** | its procedural hull has no asset; the bake (on the hidden Sparrow model) always reads stale, and the runtime solves on the procedural body |
+| Termite, Falcon, Shrike | **no** | `_nearFieldSkimmer` is unset on all three, so no skimmer is ever initialised: crystals are collected with NO vessel - no fusion, and (pre-existing, not this branch) no score or element level. Their entries stay in the config for the day the skimmer is wired. |
+| Serpent | **no** | its only skimmer (`VacuumSkimmer`) is inactive, collider disabled, no impactor - it does not collect crystals at all (pre-existing) |
+| Butterfly | no entry | hull generated at runtime |
+

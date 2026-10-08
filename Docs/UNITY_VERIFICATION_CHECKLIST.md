@@ -123,6 +123,13 @@ hull). Failures now log an error and fall back whole. Logs are prefixed `[Crysta
 initialises — no fusion, **no score, no element buff** (pre-existing). Crystals now ignore a skimmer with
 no vessel. Re-test Grizzly: fusion plays AND the element bar rises on pickup.
 
+**Ship pass (2026-10-08):** Grizzly ✅ (user). The skimmer guard was NARROWED: an uninitialised skimmer
+stands aside only when its vessel has an initialised one — the Termite, Falcon and Shrike initialise
+NONE, and the unnarrowed guard would have stopped them collecting crystals at all. **Re-test:** Termite
+(or Falcon/Shrike) still collects crystals (generic capture, as before); Grizzly still fuses; Scarab
+(not re-tested since its fix) fuses on its procedural hull after one `[CrystalMorph] [HullFusion]`
+stale warning. Per-hull status: `CRYSTAL_HULL_FUSION.md` §13.
+
 **Verify in editor.**
 0. **Run the baker** (*Bake all*) → all 48 rows CURRENT (an UNRESOLVABLE row names the importer
    still missing Read/Write), four `<Element>_FusionTemplate.asset`, then **Validate & Push** in the window.

@@ -69,17 +69,6 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// A CPU-READABLE copy of a mesh a renderer is drawing, for a caller that has to read or
-        /// rewrite its vertices (a crystal fusing onto a hull). A readable mesh is returned as is; a
-        /// baked twin <see cref="GetOrBake"/> uploaded (and so dropped the CPU copy of) is re-baked
-        /// once from its source, identical channel for channel, and cached. False for an unreadable
-        /// mesh this baker did not make.
-        ///
-        /// It exists because the drawn twin is DELIBERATELY unreadable: a reader that only checks
-        /// <c>isReadable</c> on what the renderer holds refuses every charge crystal, and a refusal
-        /// that falls back to an older effect looks, on screen, exactly like that effect.
-        /// </summary>
-        /// <summary>
         /// The mesh (and plate filter) a drawn twin was baked FROM - the FBX mesh asset a crystal
         /// prefab references. An edit-time bake keyed by that asset can then be recognised from a
         /// live crystal, which only holds the twin. A mesh this baker did not make is its own source.
@@ -99,6 +88,17 @@ namespace CosmicShore.Utility
             return true; // not a twin this baker made: the mesh is its own source
         }
 
+        /// <summary>
+        /// A CPU-READABLE copy of a mesh a renderer is drawing, for a caller that has to read or
+        /// rewrite its vertices (a crystal fusing onto a hull). A readable mesh is returned as is; a
+        /// baked twin <see cref="GetOrBake"/> uploaded (and so dropped the CPU copy of) is re-baked
+        /// once from its source, identical channel for channel, and cached. False for an unreadable
+        /// mesh this baker did not make.
+        ///
+        /// It exists because the drawn twin is DELIBERATELY unreadable: a reader that only checks
+        /// <c>isReadable</c> on what the renderer holds refuses every charge crystal, and a refusal
+        /// that falls back to an older effect looks, on screen, exactly like that effect.
+        /// </summary>
         public static bool TryGetReadable(Mesh displayed, out Mesh readable)
         {
             readable = null;

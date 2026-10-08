@@ -577,3 +577,35 @@ Rows only, opened by the §3.6 pass; nothing here was changed on that branch.
   or pilot handover) where no SOAP release is ever raised. Moving the HUD to the raw channels would
   light ability chips for presses the handler refused and leave them lit across a pause. Before
   acting, decide which semantics the HUD wants; if it is the filtered one, delete the TODO instead.
+
+## From the crystal hull fusion branch (`cece/nice-babbage-j6sejq`, 2026-10-08)
+
+Rows only, opened by the ship pass; nothing here was changed on that branch except where a row says so.
+The census command for the first three is one script over each vessel prefab's `_nearFieldSkimmer`
+and the `SkimmerImpactor` whose `skimmer:` field points at it (recorded in
+`Assets/_Scripts/Controller/Environment/Crystals/CRYSTAL_HULL_FUSION.md` §13).
+
+- **[inconsistency, prefab wiring] Termite, Falcon and Shrike initialise NO skimmer.** Measured:
+  `grep -n "_nearFieldSkimmer\|_farFieldSkimmer" Assets/_Prefabs/Spacevessels/{Termite,Falcon,Shrike}.prefab`
+  → `{fileID: 0}` for both on all three. `VesselController.Initialize` only initialises those two, and
+  `SkimmerImpactor.isInitialized => skimmer != null && skimmer.IsInitialized`, so every skimmer on
+  these hulls is inert: no prism skim effects, and an elemental crystal is collected with NO vessel
+  (`ElementalCrystalImpactor.CollectBy` → `skimmer.VesselStatus == null`) — no score
+  (`OnCrystalCollected` is skipped), no element level, no hull fusion. The fix is to point
+  `_nearFieldSkimmer` at each hull's nested Skimmer (the Manta's is the stripped
+  `874579554510349383`); confirm first that these three hulls are meant to be flyable.
+- **[report] The Serpent cannot collect a crystal.** Its `_nearFieldSkimmer` is `VacuumSkimmer`, a
+  GameObject with `m_IsActive: 0`, its SphereCollider `m_Enabled: 0`, and no `SkimmerImpactor` or
+  `ImpactCollider` at all, so nothing on the Serpent can take an elemental crystal (play-tested
+  2026-10-08: crystals hit the hull and are not collected). Whether the Serpent SHOULD collect by
+  skimming is a design question; wiring it is a prefab change.
+- **[cleanup] The Grizzly's nested `Skimmer.prefab` instance (x30) is never initialised.** It used to
+  take every crystal the Grizzly touched with no vessel (no score, no element level) — fixed on this
+  branch by `ElementalCrystalImpactor.DefersToItsVesselsSkimmer`, which makes it stand aside for the
+  initialised `DummySkimmer`. The instance itself is now dead weight on the prefab; delete it or list
+  it as the far-field skimmer.
+- **[inconsistency] `GrizzlyImpactorDataContainer.vesselCrystalEffects` holds a dangling reference**
+  (`guid: dcf9d69a52b65c1438af3861b7c89e07`, no `.meta` anywhere on `origin/bleeding-edge`; the probe
+  was controlled against `Skimmer.cs.meta`, which it finds). Every omni-crystal impact on a Grizzly
+  walks a null slot. Also: `vesselElementalCrystalEffects` is a serialized key on the Grizzly and
+  Sparrow containers that no C# reads (`git grep -n vesselElementalCrystalEffects -- '*.cs'` → empty).

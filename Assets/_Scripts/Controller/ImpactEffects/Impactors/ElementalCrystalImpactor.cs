@@ -58,14 +58,30 @@ namespace CosmicShore.Gameplay
             if (Crystal && Crystal.IsEmbedded) return;
             if (impactee is not SkimmerImpactor skimmerImpactor) return;
 
-            // A skimmer its vessel never initialised has no one to credit, and taking the crystal
-            // with it spends it on nobody: no score, no element level, no hull fusion. The Grizzly
-            // carries one - a nested Skimmer prefab its VesselStatus does not list beside the
-            // DummySkimmer it does - and it was winning the race to every crystal. Leave the crystal
-            // for the skimmer that belongs to a vessel (measured 2026-10-08, CRYSTAL_HULL_FUSION.md §12).
-            if (!skimmerImpactor.Skimmer || skimmerImpactor.Skimmer.VesselStatus == null) return;
+            if (DefersToItsVesselsSkimmer(skimmerImpactor)) return;
 
             CollectBy(skimmerImpactor);
+        }
+
+        /// <summary>
+        /// A skimmer its vessel never initialised has no one to credit, and taking the crystal with
+        /// it spends it on nobody: no score, no element level, no hull fusion. The Grizzly carries one
+        /// - a nested Skimmer prefab its VesselStatus does not list beside the DummySkimmer it does -
+        /// and it was winning the race to every crystal (measured 2026-10-08, CRYSTAL_HULL_FUSION.md
+        /// §12). Such a skimmer stands aside ONLY when its vessel has a skimmer that WILL take the
+        /// crystal; a hull that initialised none (the Termite, Falcon and Shrike list no near-field
+        /// skimmer at all) keeps collecting as it always has, rather than leaving the crystal in the
+        /// world.
+        /// </summary>
+        static bool DefersToItsVesselsSkimmer(SkimmerImpactor skimmerImpactor)
+        {
+            var skimmer = skimmerImpactor.Skimmer;
+            if (!skimmer || skimmer.VesselStatus != null) return false;
+            var vessel = skimmerImpactor.GetComponentInParent<VesselStatus>();
+            if (!vessel) return false;
+            return IsLive(vessel.NearFieldSkimmer) || IsLive(vessel.FarFieldSkimmer);
+
+            bool IsLive(Skimmer candidate) => candidate && candidate != skimmer && candidate.VesselStatus != null;
         }
 
         /// <summary>
