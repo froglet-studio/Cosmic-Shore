@@ -109,6 +109,7 @@ class ConfigH:
     blowup_factor: float = 20.0
     seed: int = 0
     threads: int = 1
+    pool_cache: str = ""        # local file (NOT the shared folder: 0.5 GB) the pool is saved to every 100 pool steps
     device: str = "cpu"         # cuda on a GPU box (the run's files are device-free: load with map_location)
 
 
@@ -116,7 +117,7 @@ def train(cfg: ConfigH, out_dir: str, resume: bool = False):
     os.makedirs(out_dir, exist_ok=True)
     start = 0
     if resume:
-        cfg = ConfigH(**{**asdict(cfg), **json.load(open(os.path.join(out_dir, "config.json"))), "threads": cfg.threads})
+        cfg = ConfigH(**{**asdict(cfg), **json.load(open(os.path.join(out_dir, "config.json"))), "threads": cfg.threads, "pool_cache": cfg.pool_cache})
         start = json.load(open(os.path.join(out_dir, "state.json")))["step"]
     else:
         with open(os.path.join(out_dir, "config.json"), "w") as f:
@@ -152,7 +153,10 @@ def train(cfg: ConfigH, out_dir: str, resume: bool = False):
         for _ in range(start):
             sched.step()
         log = list(np.load(os.path.join(out_dir, "loss.npy")))[:start + 1]
-        if start >= cfg.clock_steps:                                 # the pool is not saved: regrow it
+        if start >= cfg.clock_steps and cfg.pool_cache and os.path.isfile(cfg.pool_cache):
+            pool = torch.load(cfg.pool_cache, map_location=dev).float()
+            print(f"[hyb] pool loaded from {cfg.pool_cache}", flush=True)
+        elif start >= cfg.clock_steps:                               # no cached pool: regrow it
             with torch.no_grad():
                 for b in range(0, NF * P, 32):
                     n = min(32, NF * P - b)
@@ -245,6 +249,8 @@ def train(cfg: ConfigH, out_dir: str, resume: bool = False):
                     pool[f * P:(f + 1) * P] = xd[pick]
         else:
             pool[idx] = xd
+            if cfg.pool_cache and step % 100 == 0:
+                torch.save(pool.half().cpu(), cfg.pool_cache + ".tmp"); os.replace(cfg.pool_cache + ".tmp", cfg.pool_cache)
         log.append(L)
         if step % 25 == 0:
             good = ({k: v.clone() for k, v in ca.state_dict().items()}, __import__("copy").deepcopy(opt.state_dict()), step)
