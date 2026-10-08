@@ -460,10 +460,16 @@ pure and unit-tested) and picks one of three: **RIDE** (the strand threads the n
 160 u so the pilot launches rather than slips), **REVERSE** (the ring is back the way it came: the
 ride's direction is the pilot's FACING, so the AI swings its nose round, aiming behind AND to one
 side so AIPilot's cross product cannot vanish dead astern) or **LEAVE** (Slip, then the platform's
-gate aiming flies it at the ring). It taps the chain spikes whenever the prism underfoot is a
-rival's colour and the spike ability's own ammo cost is covered, so a hostile lane is converted
-instead of crawled at 20 u/s; a dry hostile crawl leaves the strand unless the ring is within
-80 u. A parked ride (under 6 u/s for 5 s) Slips. In free flight it lays a **Track Projector** rail
+gate aiming flies it at the ring). It taps the chain spikes only at mass the volley can CONVERT:
+the prism underfoot is a rival's colour, it is not super-shielded
+(`UrchinAutopilotDriver.IsConvertible`; `PrismTeamManager.Steal` refuses super-shielded prisms,
+so a volley there would only spend the meter), and the spike ability's own ammo cost is covered.
+That way a hostile lane is converted instead of crawled at 20 u/s. A crawl is DRY
+(`UrchinRailAssessment.IsDryCrawl`) when the ride is slowed on hostile mass and either the spikes
+cannot pay or the mass is super-shielded. Super-shielded mass is always dry, however full the
+meter, because spiking it changes nothing. A hostile ride the Time-5 Slipstream grinds at full
+pace is not a crawl. A dry crawl leaves the strand unless the ring is within 80 u
+(`UrchinAutopilotConfig.DryCrawlArc`). A parked ride (under 6 u/s for 5 s) Slips. In free flight it lays a **Track Projector** rail
 on a long straight shot - nose within 8 degrees of the ring, the ring 3+ track lengths away, and
 the flight line along the ring's axis so the launch goes through the mouth. Every control is found
 by capability on the vessel's own bindings and pressed replicated; every read is the host's own
