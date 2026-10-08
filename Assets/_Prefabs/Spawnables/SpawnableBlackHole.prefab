@@ -51,7 +51,7 @@ MonoBehaviour:
   layAcrossFrames: 0
   layBudgetMsPerFrame: 6
   intensityLevel: 1
-  strength: 10
+  strength: 1
   horizonRadius: 0
   spinAxis: {x: 0, y: 1, z: 0}
   modelPlates: 48

@@ -49,6 +49,14 @@ namespace CosmicShore.Utility
                  "honor it; fixed structures (e.g. SpawnableAtlantis) ignore it.")]
         [Min(1)] public int EnvironmentIntensity = 1;
 
+        [Header("Warp field")]
+        [Tooltip("Optional scalar warp field centred on the cell (Docs/WARP_FIELD.md). While this world " +
+                 "is live, every length a player observes - vessel size and speed, camera distance, the " +
+                 "prisms a vessel lays and their spacing - is multiplied by the field's value at that " +
+                 "vessel. A RadialWarp shrinks players toward the centre, so whatever sits there appears " +
+                 "to grow. Empty = no warp (every scale is exactly 1).")]
+        public WarpFieldSO WarpField;
+
         [Header("Sensing")]
         [Tooltip("Optional override for the cell's mass-SENSING radius - prism registration " +
                  "(ContainsPosition) and the density grids fauna seek mass with - independent of " +
