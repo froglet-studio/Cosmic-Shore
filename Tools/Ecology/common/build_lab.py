@@ -26,6 +26,7 @@ VIEWERS = [  # (published name, source relative to Tools/Ecology, id of the view
     ("nca.html", "flight/creatures/nca_gallery.html", "hud"),
     ("species.html", "../NCA/results/four_species.html", "top"),
     ("arms.html", "../NCA/results/arms/arms_viewer.html", "ui"),
+    ("hybrid.html", "../NCA/hybrid_viewer/hybrid.html", "hud"),
 ]
 
 PREFIX = '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'

@@ -24,7 +24,8 @@ export(a.model, os.path.join(HERE, "weights.json"), note=a.note)
 subprocess.run([sys.executable, os.path.join(CREATURES, "build_nca_creature.py"), "--weights", os.path.join(HERE, "weights.json"),
                 "--out", os.path.join(HERE, "nca_hybrid.js"), "--global", "NcaHybrid"], check=True)
 src = open(os.path.join(HERE, "hybrid_src.html"), encoding="utf-8").read()
-js = open(os.path.join(HERE, "nca_hybrid.js"), encoding="utf-8").read().replace("</script", "<\\/script")
+mods = [os.path.join(HERE, "nca_hybrid.js")] + [os.path.join(CREATURES, n) for n in ("nca_creature.js", "nca_whale.js", "nca_jelly.js")]
+js = "\n".join(open(m, encoding="utf-8").read() for m in mods).replace("</script", "<\\/script")
 for k in ("/*__NCA__*/", "/*__GENOME__*/", "/*__NOTE__*/"):
     assert src.count(k) == 1, k
 out = src.replace("/*__NCA__*/", js).replace("/*__GENOME__*/[13, 14, 15]", json.dumps(list(GENOME))).replace("/*__NOTE__*/''", json.dumps(a.note))

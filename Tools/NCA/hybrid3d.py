@@ -265,7 +265,7 @@ def train(cfg: ConfigH, out_dir: str, resume: bool = False):
                       open(os.path.join(out_dir, "status.json"), "w"), indent=1)
             print(f"[hyb] {'clock' if clock else 'pool '} {step:5d} loss {L:.5f} " +
                   " ".join(f"{f[0]}={p:.4f}" for f, p in zip(FORMS, per)) + f" g={float(gl):.3f} {spi:.2f}s/it", flush=True)
-        if step % 50 == 0 or step == cfg.steps:
+        if step % 25 == 0 or step == cfg.steps:
             torch.save({k: v.cpu() for k, v in ca.state_dict().items()}, os.path.join(out_dir, "model.tmp")); os.replace(os.path.join(out_dir, "model.tmp"), os.path.join(out_dir, "model.pt"))
             torch.save(opt.state_dict(), os.path.join(out_dir, "opt.tmp")); os.replace(os.path.join(out_dir, "opt.tmp"), os.path.join(out_dir, "opt.pt"))
             np.save(os.path.join(out_dir, "loss.npy"), np.array(log))

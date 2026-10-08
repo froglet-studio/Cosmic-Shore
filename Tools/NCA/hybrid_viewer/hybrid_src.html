@@ -33,7 +33,15 @@
 <body>
 <div id="hud">
   <h1>Hybrid creatures</h1>
+  <div class="row"><button id="mGenome">One rule, three genomes</button><button id="mRules">Two rules, one body</button></div>
   <div id="say">One 3D cellular automaton has learned three animals. Every cell carries a three-part <b>genome</b> saying which animal it belongs to, and keeps it alive like any other part of the body. It was <b>never trained on mixtures</b>, so every hybrid below is the rule improvising.</div>
+  <div id="rulesUi" style="display:none;flex-direction:column;gap:7px">
+    <div class="row"><span class="lbl">Pair</span><span id="pairs" class="row"></span></div>
+    <div class="row"><span class="lbl">Border</span><input id="border" type="range" min="-12" max="12" step="1" value="0"><span id="borderv">centre</span></div>
+    <div class="row"><span class="lbl">Blend</span><input id="width" type="range" min="0" max="24" step="1" value="12"><span id="widthv">12 cells</span></div>
+    <div class="row"><button id="rseed">Grow from one cell</button><button id="rswap">Swap ends</button></div>
+  </div>
+  <div id="genomeUi" style="display:flex;flex-direction:column;gap:7px">
   <div class="row"><span class="lbl">Brush</span><span id="forms" class="row"></span></div>
   <div class="row"><span class="lbl">Grow</span>
     <button id="seed1" title="One seed cell carrying the brush genome">One seed</button>
@@ -45,6 +53,7 @@
     <button id="infect" title="Rewrite the genome of the head-end half to the brush form (the tissue is untouched)">Rewrite half</button>
     <button id="splice" title="Grow the brush animal separately and swap it in for one half of this body">Splice half</button>
     <button id="split" title="Cut the body through the middle and pull the halves apart">Split in two</button>
+  </div>
   </div>
   <div class="row"><span class="lbl">Click</span>
     <button id="tcut" class="on">Cut</button><button id="tpaint">Paint genome</button>
@@ -127,6 +136,67 @@
     }
   }
 
+  // ---- Two rules, one body: the separately trained lizard / whale / jelly rules, each cell running one of them (or a
+  // blend of two) by where it sits along the body axis. No training: the chimera is whatever the two rules negotiate.
+  const RULES = {};
+  function rulesOf(k) {
+    if (RULES[k]) return RULES[k];
+    const C = { lizard: window.NcaCreature, whale: window.NcaWhale, jelly: window.NcaJelly }[k];
+    const c = new C({ seed: 1, wasm: false }); RULES[k] = c._w; return c._w;
+  }
+  const asRaw = (w, D, H, W) => ({ channel_n: 16, hidden: 128, fire_rate: 0.5, D, H, W, w1: [Array.from(w.w1)], b1: Array.from(w.b1), w2: [Array.from(w.w2)], b2: Array.from(w.b2) });
+  let PENDING = null;
+  class RuleField extends Hybrid {
+    constructor(o) { PENDING = o.rules; super(o); this.seedCode = [1, 1, 1]; this.border = 0; this.width = 12; this.genomeColours = false; this._gfield(); }
+    _initWasm() {
+      const { C, HID, N } = this, F = 4 * C, mod = this._wasm, rules = PENDING;
+      let off = (mod.heapBase + 15) & ~15;
+      const take = (b) => { const p = off; off = (off + b + 15) & ~15; return p; };
+      const R = rules.map(() => ({ w1: take(4 * F * HID), b1: take(4 * HID), w2: take(4 * HID * C), b2: take(4 * C) }));
+      const pK = take(4 * 108), pd = take(12), pq = take(4 * N), ppre = take(N), ps = take(4 * N * C), pns = take(4 * N * C);
+      const mem = new WebAssembly.Memory({ initial: Math.ceil(off / 65536) + 1 });
+      const inst = new WebAssembly.Instance(mod.module, { env: { memory: mem } }), buf = mem.buffer;
+      rules.forEach((w, r) => {
+        const w1t = new Float32Array(buf, R[r].w1, F * HID), w2t = new Float32Array(buf, R[r].w2, HID * C);
+        for (let h = 0; h < HID; h++) for (let c = 0; c < C; c++) for (let k = 0; k < 4; k++) w1t[(k * C + c) * HID + h] = w.w1[h * F + 4 * c + k];
+        for (let c = 0; c < C; c++) for (let h = 0; h < HID; h++) w2t[h * C + c] = w.w2[c * HID + h];
+        new Float32Array(buf, R[r].b1, HID).set(w.b1); new Float32Array(buf, R[r].b2, C).set(w.b2);
+      });
+      new Float32Array(buf, pK, 108).set(this._K); new Int32Array(buf, pd, 3).set([this.D, this.H, this.W]);
+      this._mem = mem; this._kern = inst.exports.nca_cells; this._R = null; this._RW = R;
+      Object.assign(this, { _KPtr: pK, _dimsPtr: pd, _qPtr: pq, _prePtr: ppre, _sPtr: ps, _nsPtr: pns });
+      this._q = new Int32Array(buf, pq, N); this._qcap = 32; this._qs = new Int32Array(32); this._snapRow = new Float32Array(32 * C * 2);
+      this.pre = new Uint8Array(buf, ppre, N); this.s = new Float32Array(buf, ps, N * C); this.ns = new Float32Array(buf, pns, N * C);
+    }
+    _gfield() {   // g[x] = weight of rule B at grid column x
+      const W = this.W, g = this._g || (this._g = new Float32Array(W)), c = W / 2 + this.border, w = this.width;
+      for (let x = 0; x < W; x++) g[x] = w < 1 ? (x >= c ? 1 : 0) : Math.min(1, Math.max(0, (x - (c - w / 2)) / w));
+    }
+    _run(r, list, n) {
+      if (!n) return;
+      this._q.set(list.subarray(0, n));
+      const P = this._RW[r];
+      this._kern(this._sPtr, this._nsPtr, this._prePtr, this._qPtr, n, P.w1, P.b1, P.w2, P.b2, this._KPtr, this._dimsPtr);
+    }
+    _flush() {
+      const nb = this._qn; if (nb === 0) return;
+      this._qn = 0; this.cellUpdates += nb;
+      const q = this._qs; q.set(this._q.subarray(0, nb));
+      const W = this.W, g = this._g, C = this.C, ns = this.ns;
+      const A = new Int32Array(nb), B = new Int32Array(nb), M = new Int32Array(nb); let na = 0, nbb = 0, nm = 0;
+      for (let k = 0; k < nb; k++) { const i = q[k], v = g[i % W]; if (v <= 0) A[na++] = i; else if (v >= 1) B[nbb++] = i; else M[nm++] = i; }
+      this._run(0, A, na); this._run(1, B, nbb);
+      if (nm) {
+        const S = this._snapRow;                                   // ns rows before: [nm][C]; after A: [nm][C] at +nm*C
+        for (let k = 0; k < nm; k++) for (let c = 0; c < C; c++) S[k * C + c] = ns[M[k] * C + c];
+        this._run(0, M, nm);
+        for (let k = 0; k < nm; k++) for (let c = 0; c < C; c++) { const o = M[k] * C + c; S[(nm + k) * C + c] = ns[o] - S[k * C + c]; ns[o] = S[k * C + c]; }
+        this._run(1, M, nm);
+        for (let k = 0; k < nm; k++) { const t = g[M[k] % W]; for (let c = 0; c < C; c++) { const o = M[k] * C + c, base = S[k * C + c], dB = ns[o] - base; ns[o] = base + (1 - t) * S[(nm + k) * C + c] + t * dB; } }
+      }
+    }
+  }
+
   const W = () => innerWidth, H = () => innerHeight;
   const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
   renderer.setPixelRatio(Math.min(2, devicePixelRatio || 1)); renderer.setSize(W(), H());
@@ -139,7 +209,15 @@
 
   const q = new URLSearchParams(location.search);
   const wasm = q.get('wasm') !== '0';
-  const cr = new Hybrid({ seed: 7, scale: 0.5, position: [0, 0, 0], forward: [1, 0], offset: [0, 0], budgetMs: 10, stepsPerSecond: 24, wasm, respawn: false, alphaThreshold: 0.3 });
+  const MODE = q.get('mode') === 'rules' ? 'rules' : 'genome';
+  let pair = (q.get('pair') || 'whale-jelly').split('-');
+  const base = { seed: 7, scale: 0.5, position: [0, 0, 0], forward: [1, 0], offset: [0, 0], budgetMs: 10, stepsPerSecond: 24, wasm, respawn: false, alphaThreshold: 0.3 };
+  let cr;
+  if (MODE === 'rules') {
+    const D = 24, Hh = 56, Ww = 72;
+    cr = new RuleField(Object.assign({}, base, { weights: asRaw(rulesOf(pair[0]), D, Hh, Ww), rules: [rulesOf(pair[0]), rulesOf(pair[1])] }));
+    cr.border = +(q.get('border') || 0); cr.width = +(q.get('width') ?? 12); cr._gfield();
+  } else cr = new Hybrid(base);
   const mesh = cr.mesh(THREE, { capacity: 16000 }); scene.add(mesh);
   grid.position.y = -cr.D * cr.scale * 0.5 - 1;
   window.cr = cr;
@@ -246,7 +324,12 @@
     else { paint(hit.point.toArray(), r * 1.3); const c = FC[brush]; flash(hit.point, r * 1.3, new THREE.Color(c[0], c[1], c[2])); }
   });
   renderer.domElement.addEventListener('wheel', e => { dist = Math.max(12, Math.min(80, dist * (1 + Math.sign(e.deltaY) * 0.08))); e.preventDefault(); }, { passive: false });
-  addEventListener('resize', () => { cam.aspect = W() / H(); cam.updateProjectionMatrix(); renderer.setSize(W(), H()); });
+  function frameView() {   // keep the body clear of the panel: on wide screens shift the view centre right of the HUD
+    cam.aspect = W() / H(); renderer.setSize(W(), H());
+    if (W() > 760) cam.setViewOffset(W(), H(), -Math.min(240, W() * 0.2), 0, W(), H()); else cam.clearViewOffset();
+    cam.updateProjectionMatrix();
+  }
+  addEventListener('resize', frameView); frameView();
 
   const meter = document.querySelectorAll('#meter i'), spark = document.getElementById('spark'), sx = spark.getContext('2d');
   function drawSpark() {
@@ -259,10 +342,29 @@
       sx.stroke();
     }
   }
+  const go = (m, extra) => { const u = new URLSearchParams(location.search); u.set('mode', m); for (const k in extra || {}) u.set(k, extra[k]); location.search = u.toString(); };
+  document.getElementById('mGenome').onclick = () => go('genome');
+  document.getElementById('mRules').onclick = () => go('rules');
+  document.getElementById(MODE === 'rules' ? 'mRules' : 'mGenome').classList.add('on');
+  if (MODE === 'rules') {
+    document.getElementById('rulesUi').style.display = 'flex'; document.getElementById('genomeUi').style.display = 'none';
+    document.getElementById('meter').style.display = spark.style.display = 'none'; document.querySelector('.legend').style.display = 'none';
+    cgen.style.display = 'none'; tpaint.style.display = 'none';
+    document.getElementById('say').innerHTML = 'The separately trained animals are two different rules. Here every cell runs the <b>' + pair[0] + '</b> rule at one end of the body and the <b>' + pair[1] + '</b> rule at the other, blended across the border. Nothing was trained for this: the body is whatever the two rules negotiate. Move the border while it lives.';
+    const pr = document.getElementById('pairs');
+    for (const p of ['whale-jelly', 'jelly-whale', 'lizard-jelly', 'lizard-whale']) { const b = document.createElement('button'); b.textContent = p.replace('-', ' | '); if (p === pair.join('-')) b.classList.add('on'); b.onclick = () => go('rules', { pair: p }); pr.appendChild(b); }
+    const be = document.getElementById('border'), bv = document.getElementById('borderv'), we = document.getElementById('width'), wv = document.getElementById('widthv');
+    be.value = cr.border; we.value = cr.width;
+    const lab = () => { bv.textContent = cr.border == 0 ? 'centre' : (cr.border > 0 ? '+' : '') + cr.border; wv.textContent = cr.width < 1 ? 'sharp' : cr.width + ' cells'; };
+    be.oninput = () => { cr.border = +be.value; cr._gfield(); lab(); }; we.oninput = () => { cr.width = +we.value; cr._gfield(); lab(); }; lab();
+    document.getElementById('rseed').onclick = () => { const [z, y, x] = mid(); restart(() => cr.edit((s) => { s.fill(0); const i = (z * cr.H + y) * cr.W + x; for (let c = 3; c < cr.C; c++) s[i * cr.C + c] = 1; })); say('Grown from one cell under two rules.'); };
+    document.getElementById('rswap').onclick = () => go('rules', { pair: pair[1] + '-' + pair[0] });
+  }
   const stats = document.getElementById('stats');
-  if (NOTE) document.getElementById('say').insertAdjacentHTML('beforeend', ' <span style="opacity:.8">' + NOTE + '</span>');
+  if (NOTE && MODE !== 'rules') document.getElementById('say').insertAdjacentHTML('beforeend', ' <span style="opacity:.8">' + NOTE + '</span>');
   brush = q.get('form') || 'whale';
-  ({ seed: seedOne, mix: seedMix, twins }[q.get('start') || 'seed'] || seedOne)();
+  if (MODE === 'rules') document.getElementById('rseed').onclick();
+  else ({ seed: seedOne, mix: seedMix, twins }[q.get('start') || 'seed'] || seedOne)();
   let last = performance.now(), fps = 60, msA = 0, lastCensus = -1;
   window.__hybrid = () => ({ steps: cr.steps, census: cr.census(), backend: cr.backend });
   function frame(now) {
@@ -272,7 +374,7 @@
       lastCensus = cr.steps; const c = cr.census(); history.push(c); if (history.length > 400) history.splice(0, history.length - 400);
       meter.forEach((m, k) => { m.style.width = (100 * c.frac[k]).toFixed(1) + '%'; });
       drawSpark();
-      stats.textContent = `${c.n} cells | step ${cr.steps - t0step} | lizard ${(100 * c.frac[0]).toFixed(0)}% whale ${(100 * c.frac[1]).toFixed(0)}% jelly ${(100 * c.frac[2]).toFixed(0)}% | ${msA.toFixed(1)} ms (${cr.backend}) ${fps.toFixed(0)} fps`;
+      stats.textContent = MODE === 'rules' ? `${c.n} cells | step ${cr.steps - t0step} | ${msA.toFixed(1)} ms (${cr.backend}) ${fps.toFixed(0)} fps` : `${c.n} cells | step ${cr.steps - t0step} | lizard ${(100 * c.frac[0]).toFixed(0)}% whale ${(100 * c.frac[1]).toFixed(0)}% jelly ${(100 * c.frac[2]).toFixed(0)}% | ${msA.toFixed(1)} ms (${cr.backend}) ${fps.toFixed(0)} fps`;
     }
     msA = 0.9 * msA + 0.1 * (cr.lastStepMs || 0); fps = 0.95 * fps + 0.05 / Math.max(dt, 1e-3);
     if (orbit && !drag) ang += dt * 0.12;
