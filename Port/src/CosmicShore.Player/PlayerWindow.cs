@@ -59,6 +59,20 @@ namespace CosmicShore.Player
         /// <summary>--fullscreen: open full-screen at the desktop's resolution (F11 still toggles).</summary>
         public static bool StartFullscreen;
 
+        /// <summary>--check-shaders: link every project Shader Graph on this context, print the result, exit (code = failures).</summary>
+        public static bool CheckShaders;
+
+        /// <summary>--shader-gallery FRAME[:LEGEND]: lay out the compiled-graph gallery at FRAME (0 = off).</summary>
+        public static int GalleryFrame;
+        public static string GalleryLegend;
+
+        /// <summary>
+        /// --hidden: an invisible window (GL still runs). Frames render at <c>--size</c> through the
+        /// control port's virtual-resolution target, so screenshots and <c>ui_sweep</c> work with
+        /// nothing on the desktop to close.
+        /// </summary>
+        public static bool StartHidden;
+
         public void Run()
         {
             var options = WindowOptions.Default with
@@ -71,6 +85,7 @@ namespace CosmicShore.Player
                 PreferredDepthBufferBits = 24,
             };
             if (StartFullscreen) options = options with { WindowState = WindowState.Fullscreen };
+            if (StartHidden) options = options with { IsVisible = false };
             // COSMIC_SHORE_GLES=1 runs the desktop player on an OpenGL ES 3.0 context — the exact
             // render path a phone takes, so the mobile build can be checked without one.
             if (Environment.GetEnvironmentVariable("COSMIC_SHORE_GLES") == "1")
@@ -124,8 +139,15 @@ namespace CosmicShore.Player
             _present = new PresentPass(_gl);
             _scene3d = new FrameTarget(_gl);
             _sceneRenderer = new SceneRenderer(_gl, _textures);
+            if (CheckShaders)
+            {
+                Environment.ExitCode = ShaderCheck.Run((g, es) => GraphProgramCache.TryLink(_gl, g, es));
+                _window.Close();
+                return;
+            }
             _skybox = new SkyboxPass(_gl);
             _post = new PostPass(_gl);
+            if (SessionReport.Enabled && GpuTimer.Supported) _gpu = new GpuTimer(_gl, "textures", "clear", "sky", "collect", "post", "ui", "present", "opaque", "transparent");
             _textures.External = t => t is RenderTexture rt && _rt.TryGetValue(rt, out var target) ? target.Out.Color : 0u;
             Camera.RenderRequested = cam => { if (cam != null && cam.targetTexture != null) RenderToTexture(cam, force: true); };
 
@@ -137,6 +159,7 @@ namespace CosmicShore.Player
             // headless run never gets here and stays on the MeshRenderer path, like -nographics.
             SystemInfo.supportsComputeShaders = true;
             if (Control != null) { Control.Quit = () => _window.Close(); Control.FrameMs = () => _lastFrameMs; }
+            if (StartHidden && Control != null) Control.VirtualSize = (_width, _height);
             _boot = new PlayerBoot();
             SessionReport.Log = _boot.Log;
             SessionReport.Frame = () => _frameIndex;
@@ -150,10 +173,12 @@ namespace CosmicShore.Player
             _inputBridge.BeforeTick();
             BeforeTick?.Invoke(step);
             _script.BeforeTick(_frameIndex);
+            if (GalleryFrame > 0 && _frameIndex == GalleryFrame) ShaderGallery.Build(GalleryLegend);
             Control?.BeforeTick(_frameIndex);
             long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
             CosmicShore.Engine.GameLoop.PhaseTiming = s_timing || SessionReport.Enabled;
             _boot.Tick(step);
+            ParityRun.AfterTick(_frameIndex);
             SessionReport.SimTime(System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds);
             if (s_timing && _frameIndex % 30 == 0)
                 Console.WriteLine($"[tick] simulation {(System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency:F1} ms (frame {_frameIndex})"
@@ -174,6 +199,11 @@ namespace CosmicShore.Player
         }
 
         double _lastFrameMs;
+        // GPU time per render pass for the session report (desktop GL, --session-report only). A pass's
+        // time is GPU wall time, so while the frame is CPU-bound it includes the GPU waiting for
+        // the pass's commands: read it next to cpu.renderP50Ms.
+        GpuTimer _gpu;
+        Action<int> _gpuSceneSplit;
         static readonly bool s_timing = Environment.GetEnvironmentVariable("COSMIC_SHORE_RENDER_TIMING") == "1";
         readonly System.Diagnostics.Stopwatch _frameClock = System.Diagnostics.Stopwatch.StartNew();
 
@@ -182,8 +212,12 @@ namespace CosmicShore.Player
             _lastFrameMs = _frameClock.Elapsed.TotalMilliseconds;
             SessionReport.FrameTime(_lastFrameMs);
             _frameClock.Restart();
-            int w = _window.FramebufferSize.X, h = _window.FramebufferSize.Y;
-            if (w <= 0 || h <= 0) return;
+            int winW = _window.FramebufferSize.X, winH = _window.FramebufferSize.Y;
+            if (winW <= 0 || winH <= 0) return;
+            // The control port's `resize WxH`: the game sees (and captures) that resolution
+            // whatever the desktop allows; the window shows it scaled.
+            var vs = Control?.VirtualSize;
+            int w = vs?.w ?? winW, h = vs?.h ?? winH;
             Screen.width = w;
             Screen.height = h;
             if (_frameIndex + 1 < RenderFrom && !_shots.ContainsKey(_frameIndex + 1) && !FrameRecorder.Wants(_frameIndex + 1) && Control is not { WantsFrame: true })
@@ -197,18 +231,32 @@ namespace CosmicShore.Player
                 return;
             }
             long r0 = System.Diagnostics.Stopwatch.GetTimestamp();
+            if (_gpu?.BeginFrame() is { } gpuMs) SessionReport.GpuTime(_gpu.Passes, gpuMs);
+            _gpu?.Begin(0);
             _frame.Ensure(w, h);
             // Enabled cameras aimed at a RenderTexture draw every frame (the preview window, the
             // connecting panel's arena view) before the screen camera, as the original does.
             foreach (var cam in Camera.allCameras)
                 if (cam.targetTexture != null) RenderToTexture(cam, force: false);
+            _gpu?.Begin(1);
             Render3D(w, h);
+            _gpu?.Begin(5);
             _frame.Bind();
             _gl.ClearStencil(0);
             _gl.Clear(ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
 
             _ui.Render(w, h);
-            _present.Draw(_frame.Color, w, h);
+            _gpu?.Begin(6);
+            if (vs != null)
+            {
+                EnsureVirtual(w, h);
+                _present.Draw(_frame.Color, w, h, _virtualFbo);
+                _gl.BindFramebuffer(FramebufferTarget.ReadFramebuffer, _virtualFbo);
+                _gl.BindFramebuffer(FramebufferTarget.DrawFramebuffer, 0);
+                _gl.BlitFramebuffer(0, 0, w, h, 0, 0, winW, winH, ClearBufferMask.ColorBufferBit, BlitFramebufferFilter.Linear);
+            }
+            else _present.Draw(_frame.Color, w, h);
+            _gpu?.EndFrame();
             // CPU time spent issuing the frame's GL work (the GPU's own time needs timer queries).
             SessionReport.RenderTime(System.Diagnostics.Stopwatch.GetElapsedTime(r0).TotalMilliseconds);
 
@@ -245,13 +293,18 @@ namespace CosmicShore.Player
             if (cam != null && cam.isActiveAndEnabled)
             {
                 post = PostSettings.For(cam, _volumes);
+                _gpu?.Begin(2);
                 _skybox.Draw(cam);
+                _gpu?.Begin(3);
+                _sceneRenderer.GpuPass = _gpu == null ? null : _gpuSceneSplit ??= p => _gpu.Begin(7 + p);
                 _sceneRenderer.Render(cam, sw, sh);
+                _sceneRenderer.GpuPass = null;
                 float tanY = MathF.Tan(cam.fieldOfView * 0.5f * MathF.PI / 180f);
                 post.TanHalfFovY = tanY;
                 post.TanHalfFovX = tanY * cam.aspect;
             }
             else post.Panini = false;
+            _gpu?.Begin(4);
             _scene3d.Resolve();
             _post.Draw(_scene3d.Color, w, h, _frame.Fbo, post);
         }
@@ -301,10 +354,29 @@ namespace CosmicShore.Player
             finally { _inFrame = false; }
         }
 
+        uint _virtualFbo, _virtualColor;
+        int _virtualW, _virtualH;
+
+        /// <summary>The 8-bit sRGB frame at the virtual resolution (present target and read-back source).</summary>
+        unsafe void EnsureVirtual(int w, int h)
+        {
+            if (_virtualFbo != 0 && w == _virtualW && h == _virtualH) return;
+            if (_virtualFbo != 0) { _gl.DeleteFramebuffer(_virtualFbo); _gl.DeleteTexture(_virtualColor); }
+            _virtualW = w; _virtualH = h;
+            _virtualColor = _gl.GenTexture();
+            _gl.BindTexture(TextureTarget.Texture2D, _virtualColor);
+            _gl.TexImage2D(TextureTarget.Texture2D, 0, InternalFormat.Rgba8, (uint)w, (uint)h, 0, PixelFormat.Rgba, PixelType.UnsignedByte, null);
+            _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
+            _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
+            _virtualFbo = _gl.GenFramebuffer();
+            _gl.BindFramebuffer(FramebufferTarget.Framebuffer, _virtualFbo);
+            _gl.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0, TextureTarget.Texture2D, _virtualColor, 0);
+        }
+
         unsafe void Capture(string path, int w, int h)
         {
             var pixels = new byte[w * h * 4];
-            _gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+            _gl.BindFramebuffer(FramebufferTarget.Framebuffer, Control?.VirtualSize != null && _virtualFbo != 0 ? _virtualFbo : 0u);
             fixed (byte* p = pixels)
                 _gl.ReadPixels(0, 0, (uint)w, (uint)h, PixelFormat.Rgba, PixelType.UnsignedByte, p);
             CosmicShore.Client.MiniPng.Write(path, pixels, w, h, flipY: true);

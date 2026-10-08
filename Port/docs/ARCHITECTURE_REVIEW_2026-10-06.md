@@ -425,6 +425,9 @@ write a general solver in-house.**
   gate. TCP is its first implementation.
 - Netcode's own transport interface is not available to vendor: Netcode 2.5.0 and Unity Transport
   2.6.0 are under the UCL (B4).
+- **Landed 2026-10-08:** `INetTransport` / `INetTransportFactory`
+  (`src/CosmicShore.Engine/Networking/Wire/INetTransport.cs`), with `NetSocket` as the TCP
+  implementation and `NetDriver.TransportFactory` as the one place a backend plugs in.
 
 The UGS boundary, stated explicitly (the G2 columns are candidates, not commitments):
 

@@ -370,7 +370,7 @@ public class TriggerPassTests
     }
 
     [Fact]
-    public void BoxAndSphere_Overlap_TreatsBoxAsWorldAabb()
+    public void BoxAndSphere_Overlap_UnrotatedBox()
     {
         using var loop = new GameLoop();
         var goBox = new GameObject("box");
@@ -382,7 +382,7 @@ public class TriggerPassTests
         var (goSphere, _, _) = ContactRig.MakeProbe("sphere", new Vector3(1.5f, 0f, 0f), radius: 1f);
 
         loop.Tick(Dt);
-        Assert.Single(boxRecorder.Events); // closest AABB point (1,0,0) is 0.5 from center → inside r=1
+        Assert.Single(boxRecorder.Events); // closest box point (1,0,0) is 0.5 from center → inside r=1
 
         goSphere.transform.position = new Vector3(2.5f, 0f, 0f);
         loop.Tick(Dt);

@@ -18,12 +18,25 @@ namespace CosmicShore.Engine.UI
         [SerializeField] protected bool m_ChildForceExpandHeight = true;
         [SerializeField] protected bool m_ChildControlWidth = true;
         [SerializeField] protected bool m_ChildControlHeight = true;
+        [SerializeField] protected bool m_ChildScaleWidth;
+        [SerializeField] protected bool m_ChildScaleHeight;
+        [SerializeField] protected bool m_ReverseArrangement;
 
         public float spacing { get => m_Spacing; set => SetProperty(ref m_Spacing, value); }
         public bool childForceExpandWidth { get => m_ChildForceExpandWidth; set => SetProperty(ref m_ChildForceExpandWidth, value); }
         public bool childForceExpandHeight { get => m_ChildForceExpandHeight; set => SetProperty(ref m_ChildForceExpandHeight, value); }
         public bool childControlWidth { get => m_ChildControlWidth; set => SetProperty(ref m_ChildControlWidth, value); }
         public bool childControlHeight { get => m_ChildControlHeight; set => SetProperty(ref m_ChildControlHeight, value); }
+        /// <summary>Size and place children by their size times their local scale on X.</summary>
+        public bool childScaleWidth { get => m_ChildScaleWidth; set => SetProperty(ref m_ChildScaleWidth, value); }
+        /// <summary>Size and place children by their size times their local scale on Y.</summary>
+        public bool childScaleHeight { get => m_ChildScaleHeight; set => SetProperty(ref m_ChildScaleHeight, value); }
+        /// <summary>Lay the children out last-to-first along the main axis.</summary>
+        public bool reverseArrangement { get => m_ReverseArrangement; set => SetProperty(ref m_ReverseArrangement, value); }
+
+        /// <summary>The child's local scale on the axis when the group uses child scale there, else 1.</summary>
+        float ScaleOf(RectTransform child, int axis)
+            => (axis == 0 ? m_ChildScaleWidth : m_ChildScaleHeight) ? (axis == 0 ? child.localScale.x : child.localScale.y) : 1f;
 
         /// <summary>Accumulates this group's min/preferred/flexible inputs along one axis.</summary>
         protected void CalcAlongAxis(int axis, bool isVertical)
@@ -41,6 +54,8 @@ namespace CosmicShore.Engine.UI
             {
                 GetChildSizes(child, axis, controlSize, childForceExpandSize,
                     out float min, out float preferred, out float flexible);
+                float scale = ScaleOf(child, axis);
+                min *= scale; preferred *= scale; flexible *= scale;
 
                 if (alongOtherAxis)
                 {
@@ -82,18 +97,20 @@ namespace CosmicShore.Engine.UI
                 {
                     GetChildSizes(child, axis, controlSize, childForceExpandSize,
                         out float min, out float preferred, out float flexible);
+                    float scale = ScaleOf(child, axis);
 
-                    float requiredSpace = Mathf.Clamp(innerSize, min, flexible > 0f ? size : preferred);
+                    // Sizes here are the space the child occupies (its size x scale).
+                    float requiredSpace = Mathf.Clamp(innerSize, min * scale, flexible > 0f ? size : preferred * scale);
                     float startOffset = GetStartOffset(axis, requiredSpace);
                     if (controlSize)
                     {
-                        SetChildAlongAxis(child, axis, startOffset, requiredSpace);
+                        SetChildAlongAxisWithScale(child, axis, startOffset, scale != 0f ? requiredSpace / scale : 0f, scale);
                     }
                     else
                     {
-                        float childExtent = axis == 0 ? child.sizeDelta.x : child.sizeDelta.y;
+                        float childExtent = (axis == 0 ? child.sizeDelta.x : child.sizeDelta.y) * scale;
                         float offsetInCell = (requiredSpace - childExtent) * alignmentOnAxis;
-                        SetChildAlongAxis(child, axis, startOffset + offsetInCell);
+                        SetChildAlongAxisWithScale(child, axis, startOffset + offsetInCell, scale);
                     }
                 }
             }
@@ -116,22 +133,25 @@ namespace CosmicShore.Engine.UI
                     minMaxLerp = Mathf.Clamp01(
                         (size - GetTotalMinSize(axis)) / (GetTotalPreferredSize(axis) - GetTotalMinSize(axis)));
 
-                foreach (var child in rectChildren)
+                for (int k = 0; k < rectChildren.Count; k++)
                 {
+                    var child = rectChildren[m_ReverseArrangement ? rectChildren.Count - 1 - k : k];
                     GetChildSizes(child, axis, controlSize, childForceExpandSize,
                         out float min, out float preferred, out float flexible);
+                    float scale = ScaleOf(child, axis);
 
-                    float childSize = Mathf.Lerp(min, preferred, minMaxLerp);
-                    childSize += flexible * itemFlexibleMultiplier;
+                    // childSize is the space the child occupies along the run (its size x scale).
+                    float childSize = Mathf.Lerp(min * scale, preferred * scale, minMaxLerp);
+                    childSize += flexible * scale * itemFlexibleMultiplier;
                     if (controlSize)
                     {
-                        SetChildAlongAxis(child, axis, pos, childSize);
+                        SetChildAlongAxisWithScale(child, axis, pos, scale != 0f ? childSize / scale : 0f, scale);
                     }
                     else
                     {
-                        float childExtent = axis == 0 ? child.sizeDelta.x : child.sizeDelta.y;
+                        float childExtent = (axis == 0 ? child.sizeDelta.x : child.sizeDelta.y) * scale;
                         float offsetInCell = (childSize - childExtent) * alignmentOnAxis;
-                        SetChildAlongAxis(child, axis, pos + offsetInCell);
+                        SetChildAlongAxisWithScale(child, axis, pos + offsetInCell, scale);
                     }
                     pos += childSize + spacing;
                 }

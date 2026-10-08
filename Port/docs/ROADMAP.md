@@ -28,7 +28,7 @@ starts by measuring use in `Assets/`, and anything the game doesn't touch stays 
 | Rendering | GL 3.3 / GLES 3.0; MSAA, ACES, bloom, Panini, skybox, skinning, ECS prism mass, LOD-free culling | `docs/ARCHITECTURE.md` §7 |
 | Shaders | **19 of 81** Shader Graph / `.shader` assets have a dedicated translation; the rest render through generic material-family fallbacks. The graphs use 85 node types and 30 custom HLSL functions, so a compiler covers them (C2) | name scan of `Port/src` vs `Assets`; node census in the review response (D10) |
 | Particles / VFX | **Not drawn.** 26 prefabs carry a ParticleSystem; 2 VFX Graphs; 1 Timeline. The swarm/substrate fauna's member hearts (procedural instancing from GPU buffers) are not drawn either | §13 known gaps |
-| Physics | Triggers and queries only; **no contact solver**. 17 scripts use Rigidbody (velocity, kinematic, gravity, torque; no joints or forces), 1 uses OnCollisionEnter | ARCHITECTURE §13; census in the review response (E13) |
+| Physics | Triggers and queries over spheres, oriented boxes and capsules; a contact pass for dynamic spheres (the Astro League ball) fires `OnCollision*`. **No general solver** and no physics library: the census needs none | ARCHITECTURE §13.1 (census, C3) |
 | Animation | Animator, blend trees, FBX takes; **Animation Rigging is data only** | |
 | Audio | FMOD Studio runtime, real banks, buses, VCAs | |
 | Networking | Netcode model over TCP; LAN parties work. **No internet relay, no real UGS** | PROGRESS §Known gaps 1 |
@@ -182,8 +182,24 @@ file's row marked done with the date and the measurement.
 **C1b - Bisect**
 > Add `prisma_bisect(good, bad, check)` to the MCP server: run `git bisect run` over commits that touch Port/ only, build each candidate in a scratch git worktree, and judge it with a replay diff (engine_parity) or an engine_smoke error signature. Prove it by planting a regression three commits back and finding it.
 
+Built 2026-10-08: `prisma_bisect` (`src/CosmicShore.Mcp/Bisect.cs`, verdicts in `src/Shared/Bisect.cs`, `BisectTests`); proof `python Port/tools/bisect_demo.py --check smoke|parity`. Evidence in docs/milestones.json.
+
 **C2 - Visual completeness**
 > First session: plan the Shader Graph compiler for CosmicShore.Render - parse the .shadergraph/.shadersubgraph JSON, emit GLSL for the node types the project uses (census in docs/ARCHITECTURE_REVIEW_2026-10-06.md, D10), port the 30 custom HLSL functions once as a GLSL library, key material families by shader guid, and warn once for an unknown shader. Later sessions (repeat per item): the next hand-written .shader, ParticleSystem module or VFX Graph, ranked by how many on-screen objects use it in the 19 Steam modes; prove each with game_screenshot before/after and the parity diff. Record each item in this file.
+
+C2 items (each: what, where, proof).
+
+| Date | Item | Where | Proof |
+|---|---|---|---|
+| 2026-10-08 | Shader Graph reader: v2+ object streams and v1 (`JSONnodeData`) files, sub-graphs resolved by guid | `src/CosmicShore.Content/Shaders/ShaderGraphAsset.cs`, `ShaderGraphCatalog.cs` | `ShaderGraphCompilerTests`: all 56 graphs + 31 sub-graphs parse |
+| 2026-10-08 | Graph-to-GLSL compiler: 99 node types (2,810 instances), sub-graphs inlined, custom functions called into the library | `ShaderGraphCompiler.cs`, `ShaderGraphNodes.cs` (formulas from com.unity.shadergraph 17.3) | every graph compiles; `CosmicShore --check-shaders`: 56 of 56 link as GLSL 3.30 and GLSL ES 3.00 (RTX 5060) |
+| 2026-10-08 | The 30 custom HLSL functions ported once | `src/CosmicShore.Render/Glsl/ShaderGraphLibrary.glsl` (embedded) | coverage test: every Custom Function call is defined |
+| 2026-10-08 | Families keyed by shader guid; unknown shader warns once; compiled graphs draw | `MaterialFamilies.cs`, `GraphProgramCache.cs`, `SceneRenderer.Classify` | `RenamedShader_KeepsItsFamily`, `UnknownShader_WarnsOnce_BuiltinsNever`; `--shader-gallery` before/after: the 38 non-family graphs went from flat Lit/Unlit to their graphs; SkimRace replay frames 1100/1500 byte-identical before/after (no regression) |
+| 2026-10-08 | Ranking input and coverage report | session report `render.shaders` (scene, shader, route, avg/peak instances); `cs-asset shadergraph-census` → `parity/shaders.json` → scoreboard | scoreboard shaders 10/67 → 54 Approximate / 23 Missing |
+
+Route order in `Classify`: guid family → the older property heuristics (`_DarkColor`/`_BrightColor` ...) → compiled graph → generic fallback (warns). In Menu_Main and SkimRace every on-screen graph still takes a family or a heuristic (session report), so the compiler shows in other modes and the gallery first.
+
+Next items, by on-screen use (rank with `render.shaders` from each mode's report): the heuristic-matched graphs move to the compiler one at a time once a golden shows the compiled one closer (ShepardGraph, DynamicFresnelGraph pair, ChargeCrystal, SuctionGraph); the hand-written `.shader` files that warned in play (`ForcefieldCrackleCapsule`, `ProjectileChargeField`, the `Builtin/211` particle shader); then ParticleSystem, VFX Graph, Timeline.
 
 **C3 - Physics**
 > Measure every Rigidbody and OnCollision* use in Assets/_Scripts (17 + 1 at last count). For each, say what contact behaviour it needs. Implement only that in CosmicShore.Engine physics, plus oriented boxes, with tests, and verify with replays that scores match Unity. Never write a general solver: if AstroLeague's ball needs mesh contacts or PhysX-like friction, propose binding BepuPhysics v2 for contacts only behind the trigger/query API, and flag the dependency before adding it.
@@ -226,4 +242,4 @@ file's row marked done with the date and the measurement.
 |---|---|---|---|
 | M0 - runs the real game, builds, tooling, Claude bridge | done | 2026-10-05 | PR #959 |
 | C0 - foundations (architecture review) | done | 2026-10-06 | `ARCHITECTURE_REVIEW_2026-10-06.md` |
-| C1 | not started | | |
+| C1 - parity harness | in progress | 2026-10-08 | engine side done: `engine_parity` diffs state, Random, events (`fmod`, `game`, `contact`), transforms and frames; 5 planted differences caught; `prisma-parity-ci.yml` (36 build scenes); `PARITY.md`. Waiting on the Unity replay/capture PR (board T-3, spec `Port/parity/README.md`) for goldens and on CI's first GitHub run; the engine's self-diff drifts on the Authentication load time (B-1) |
