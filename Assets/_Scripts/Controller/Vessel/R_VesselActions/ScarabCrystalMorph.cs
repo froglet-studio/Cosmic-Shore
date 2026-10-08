@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using UnityEngine;
 
@@ -35,9 +33,8 @@ namespace CosmicShore.Gameplay
     /// exactly when the ball comes up behind them.
     ///
     /// The tail is a dissolve, not a cross-fade of two different-looking things. It exists because
-    /// the two are drawn by different shaders in different queues and no amount of matched colour
-    /// changes that: the ball is OPAQUE and z-writing (<c>BlockGraph</c>), the crystal is four
-    /// alpha-blended, non-z-writing shells in the transparent queue (<c>ShepardGraph</c>). So the
+    /// the two are drawn by different shaders and no amount of matched colour changes that: the
+    /// ball is <c>BlockGraph</c>, the crystal's body is <c>OmniCrystalFresnelShader</c>. So the
     /// object that WINS is the real one, and the crystal simply stops contributing to it.
     ///
     /// ── Three things are carried across, not just position ────────────────────────────────────
@@ -46,17 +43,15 @@ namespace CosmicShore.Gameplay
     ///    blended by <c>CrystalMorphNormal</c>). Without it the morph lands with the CAGE's normals
     ///    on the ball's facets, and since both shaders shade from <c>(1 − N·V)⁴</c> the shape would
     ///    be right and the shading nonsense.
-    /// 3. <b>Colour</b> — <c>_DullCrystalColor</c>/<c>_BrightCrystalColor</c> converge on the ball's
-    ///    own <c>_DarkColor</c>/<c>_BrightColor</c>, read off the ball's LIVE property block rather
-    ///    than a theme lookup, because the ball animates that pair every frame through its domain
-    ///    phase. Both graphs compose the pair through the same <c>FresnelColors</c> subgraph at
-    ///    power 4, so matching the pair is matching the shading.
+    /// 3. <b>Colour</b> — the body's <c>_DarkColor</c>/<c>_BrightColor</c> converge on the ball's
+    ///    own pair, read off the ball's LIVE property block rather than a theme lookup, because the
+    ///    ball animates that pair every frame through its domain phase; and the body's colour
+    ///    FORMULA converges on BlockGraph's in the shader (<see cref="CrystalMorphRunner"/>).
     ///
     /// ── What makes it seamless at both ends ───────────────────────────────────────────────────
     /// • <b>It draws the crystal's own renderers.</b> Mesh, shared materials and property block are
-    ///   copied off the live crystal, so frame 0 IS the crystal — including the Shepard shells' band
-    ///   animation and the collectability tint. A rebuilt look-alike would pop on the one frame that
-    ///   has to be free.
+    ///   copied off the live crystal, so frame 0 IS the crystal — body, falling tone triangles and
+    ///   tint. A rebuilt look-alike would pop on the one frame that has to be free.
     /// • <b>It ends ON the real ball.</b> The target is read from the ball's own shipped hull mesh
     ///   at its own radius, so there is no second authority to drift from: retune the ball's
     ///   subdivision or size and the animation follows for free.
@@ -74,35 +69,20 @@ namespace CosmicShore.Gameplay
     /// animate (<c>Docs/PRISM_ANIMATION.md §4</c>) — applied to a hand-off.
     ///
     /// Cost: one Mesh build per forge (the cage's ~2.9k distinct points cast once each against 320
-    /// facets, by best-fit facet with a barycentric verify) and ONE stamp. The geometry then runs
-    /// entirely in the vertex stage off <c>_PrismClock</c>; the only per-frame writes are uniforms —
-    /// the colour convergence and the tail opacity, a handful of property-block values per shell.
+    /// facets, by best-fit facet with a barycentric verify) and ONE stamp. Adoption, colour,
+    /// overlays, hand-off and dissolve are <see cref="CrystalMorphRunner"/>'s, shared with the
+    /// Squirrel's ring morph.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class ScarabCrystalMorph : MonoBehaviour
+    public sealed class ScarabCrystalMorph : CrystalMorphRunner
     {
-        static readonly int MorphId = Shader.PropertyToID("_CrystalMorph");
-        static readonly int OpacityId = Shader.PropertyToID("_Opacity");
-        // ShepardGraph's pair — the crystal's base body and its fresnel rim.
-        static readonly int DullCrystalId = Shader.PropertyToID("_DullCrystalColor");
-        static readonly int BrightCrystalId = Shader.PropertyToID("_BrightCrystalColor");
-
         AstroLeagueBall _ball;
-        CrystalMorphConfigSO _config;
-        readonly List<Renderer> _shells = new();
-        readonly List<MaterialPropertyBlock> _blocks = new();
-        readonly List<Color> _startDull = new();
-        readonly List<Color> _startBright = new();
-        Color _targetDull, _targetBright;
-        bool _haveTargetColour;
-        Mesh _mesh;
-        float _startTime;
-        float _morphSeconds;
-        bool _handedOff;
+
+        protected override string Owner => "Scarab";
 
         /// <summary>
-        /// Stands a morph up in the pose the crystal HAD WHEN IT WAS SPENT, wearing its shells, and
-        /// stamps it to close onto <paramref name="ball"/>'s hull. Runs on EVERY peer — the ball
+        /// Stands a morph up in the pose the crystal HAD WHEN IT WAS SPENT, wearing its renderers,
+        /// and stamps it to close onto <paramref name="ball"/>'s hull. Runs on EVERY peer — the ball
         /// replicates <see cref="CrystalForgeOrigin"/> and each peer starts its own copy.
         ///
         /// Returns null whenever it cannot land honestly, and every one of those exits is NAMED,
@@ -145,18 +125,17 @@ namespace CosmicShore.Gameplay
 
             var morph = go.AddComponent<ScarabCrystalMorph>();
             morph._ball = ball;
-            morph._config = CrystalMorphConfigSO.Instance;
 
-            if (!morph.AdoptShells(crystal))
+            if (!morph.Adopt(crystal))
             {
-                CSDebug.LogWarning($"[ScarabCrystalMorph] '{crystal.name}' exposed no drawable shell " +
+                CSDebug.LogWarning($"[ScarabCrystalMorph] '{crystal.name}' exposed no drawable body " +
                                    "(a model with a MeshFilter AND a MeshRenderer), so there is " +
                                    "nothing to morph — the ball falls back to its birth bloom.");
                 Destroy(go);
                 return null;
             }
 
-            if (!morph.Stamp(crystal))
+            if (!morph.StampOntoBall(crystal))
             {
                 Destroy(go);
                 return null;
@@ -165,25 +144,10 @@ namespace CosmicShore.Gameplay
             CSDebug.LogVerbose(CSLogChannel.CrystalMorph,
                 $"[CrystalMorph] Scarab: '{crystal.name}' at {origin.Position} closing onto a " +
                 $"{ball.name} hull of {hull.triangles.Length / 3} facets over " +
-                $"{morph._morphSeconds:F2}s + {morph._config.duration - morph._morphSeconds:F2}s of " +
-                $"dissolve ({morph._shells.Count} shells, {morph._mesh.vertexCount} morph vertices, " +
-                $"colour target {(morph._haveTargetColour ? "read" : "NOT FOUND")}).");
+                $"{morph.MorphSeconds:F2}s + {morph.Config.duration - morph.MorphSeconds:F2}s of " +
+                $"dissolve ({morph.Census}, {morph.MorphVertexCount} morph vertices, colour target " +
+                $"{(morph.HasTargetColour ? "read" : "NOT FOUND")}).");
             return morph;
-        }
-
-        /// <summary>
-        /// Finds the spent crystal on THIS peer, by the id the forge stamped. Resolved through the
-        /// cell containing the pose the crystal was spent in rather than a global registry, because
-        /// <c>CellRuntimeDataSO</c> is where crystals are actually indexed — and looked up from the
-        /// COLLECT pose rather than the crystal's current position, which on a remote peer is
-        /// usually its next home already.
-        /// </summary>
-        static Crystal ResolveCrystal(in CrystalForgeOrigin origin)
-        {
-            var cell = Cell.FindCellContaining(origin.Position) ?? Cell.FindNearestActiveCell(origin.Position);
-            var runtime = cell != null ? cell.RuntimeData : null;
-            if (runtime == null) return null;
-            return runtime.TryGetCrystalById(origin.CrystalId, out var crystal) ? crystal : null;
         }
 
         /// <summary>Local scale that reproduces <paramref name="worldScale"/> under
@@ -200,80 +164,10 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Copies the crystal's model renderers onto this object — one child per shell, sharing the
-        /// crystal's meshes, its shared materials and its property block.
-        ///
-        /// Nothing is cloned and nothing is re-authored: the omni crystal's cage is its slot-0 body
-        /// (its triangle-only tone shells are a different mesh and are left out, see below), and any
-        /// reconstruction of it would be a second authority for the crystal's look. This is also why the copy takes
-        /// the property BLOCK — <c>Crystal.ApplyColorSetTint</c> paints the collectability colour
-        /// there, over the shared material, so a copy that skipped it would start on a visibly
-        /// different crystal.
+        /// Resolves the ball's hull into this object's frame, bakes the morph mesh and stamps it.
+        /// Returns false, named, when the hull cannot be measured or the cage cannot be read.
         /// </summary>
-        bool AdoptShells(Crystal crystal)
-        {
-            var models = crystal.CrystalModels;
-            if (models == null) return false;
-
-            Mesh first = null;
-            for (int i = 0; i < models.Count; i++)
-            {
-                var model = models[i]?.model;
-                if (model == null) continue;
-                if (!model.TryGetComponent<MeshFilter>(out var filter) || filter.sharedMesh == null) continue;
-                if (!model.TryGetComponent<MeshRenderer>(out var source)) continue;
-
-                // ONE morph mesh drives every shell, so only shells drawing shell 0's cage can fold.
-                // On the omni crystal that is by design not all of them: slot 0 is the whole-model
-                // body, and slots 1-4 are Mass's Shepard-tone shells and rim drawn on the TRIANGLES alone
-                // (Docs/PALETTE.md §2.10). Those overlays are not the cage, so they are left out of
-                // the fold — they leave with the crystal — and that is expected, not a fault.
-                if (first == null) first = filter.sharedMesh;
-                else if (filter.sharedMesh != first)
-                {
-                    CSDebug.LogVerbose(CSLogChannel.CrystalMorph,
-                        $"[CrystalMorph] Scarab: '{crystal.name}' shell {i} draws " +
-                        $"'{filter.sharedMesh.name}', not the cage '{first.name}' — left out of the fold.");
-                    continue;
-                }
-
-                var shell = new GameObject($"Shell{i}");
-                shell.transform.SetParent(transform, false);
-                shell.transform.SetLocalPositionAndRotation(model.transform.localPosition,
-                                                            model.transform.localRotation);
-                shell.transform.localScale = model.transform.localScale;
-
-                shell.AddComponent<MeshFilter>().sharedMesh = filter.sharedMesh;
-                var renderer = shell.AddComponent<MeshRenderer>();
-                renderer.sharedMaterials = source.sharedMaterials;
-                renderer.shadowCastingMode = source.shadowCastingMode;
-                renderer.receiveShadows = source.receiveShadows;
-                shell.layer = model.layer;
-
-                var block = new MaterialPropertyBlock();
-                source.GetPropertyBlock(block);
-                renderer.SetPropertyBlock(block);
-
-                // The colour this shell STARTS at, so the convergence below is a lerp from what it
-                // is actually drawing rather than from the shader's default.
-                var mat = source.sharedMaterial;
-                _startDull.Add(mat != null && mat.HasProperty(DullCrystalId)
-                    ? mat.GetColor(DullCrystalId) : Color.white);
-                _startBright.Add(mat != null && mat.HasProperty(BrightCrystalId)
-                    ? mat.GetColor(BrightCrystalId) : Color.white);
-
-                _shells.Add(renderer);
-                _blocks.Add(block);
-            }
-            return _shells.Count > 0;
-        }
-
-        /// <summary>
-        /// Resolves the ball's hull into this object's frame, bakes the morph mesh and writes the
-        /// ONE stamp that runs the whole animation. Returns false, named, when the hull cannot be
-        /// measured or the cage cannot be read.
-        /// </summary>
-        bool Stamp(Crystal crystal)
+        bool StampOntoBall(Crystal crystal)
         {
             // The hull is read in the frame the ball DRAWS it in, then brought into this object's
             // local space — the mesh's targets have to live in the same frame as its vertices.
@@ -289,126 +183,41 @@ namespace CosmicShore.Gameplay
                 return false;
             }
 
-            var source = _shells[0].GetComponent<MeshFilter>().sharedMesh;
-            _mesh = CrystalMorphMeshBuilder.TryBuild(source, in target,
-                                                     _config.phaseNear, _config.phaseFar,
-                                                     out string diagnosis);
-            if (_mesh == null)
+            var mesh = CrystalMorphMeshBuilder.TryBuild(SourceMesh, in target,
+                                                        Config.phaseNear, Config.phaseFar,
+                                                        out string diagnosis);
+            if (mesh == null)
             {
                 CSDebug.LogError($"[ScarabCrystalMorph] cannot morph '{crystal.name}': {diagnosis}");
                 return false;
             }
 
-            for (int i = 0; i < _shells.Count; i++)
-                _shells[i].GetComponent<MeshFilter>().sharedMesh = _mesh;
-
-            _haveTargetColour = _ball.TryGetShellColours(out _targetDull, out _targetBright);
-            if (!_haveTargetColour)
-                CSDebug.LogWarning("[ScarabCrystalMorph] the ball exposed no _DarkColor/_BrightColor " +
-                                   "pair, so the morph will land in the CRYSTAL's colours and the " +
-                                   "hand-off will show a colour change. The ball only carries that " +
-                                   "pair when it is drawing with the prism fresnel material.");
-
             // Photons only: the ball is live, strikeable mass from the frame it was forged.
             _ball.SetMorphStandIn(true);
-
-            _startTime = PrismClock.Now;
-            _morphSeconds = _config.duration * Mathf.Clamp01(_config.morphFraction);
-
-            // The shader's window is the GEOMETRY half only, so the LAST staggered solid has landed
-            // by the time the dissolve starts. Handing it the whole duration instead would leave the
-            // late struts short of the surface at the very moment the ball comes up behind them.
-            var morph = new Vector3(_startTime, _morphSeconds, Mathf.Clamp01(_config.stagger));
-            for (int i = 0; i < _shells.Count; i++)
-            {
-                _shells[i].GetPropertyBlock(_blocks[i]);
-                _blocks[i].SetVector(MorphId, morph);
-                _blocks[i].SetFloat(OpacityId, 1f);
-                _shells[i].SetPropertyBlock(_blocks[i]);
-            }
+            Stamp(mesh);
             return true;
         }
 
-        void LateUpdate()
+        protected override bool TryReadTargetColours(out Color dark, out Color bright)
         {
-            if (_ball == null) { Destroy(gameObject); return; }
-
-            float elapsed = PrismClock.Now - _startTime;
-            float g = Mathf.Clamp01(elapsed / Mathf.Max(1e-4f, _morphSeconds));
-
-            // Colour convergence, finished BEFORE the hand-off so the two surfaces are already the
-            // same colour when they overlap. The ball animates its own pair every frame, so the
-            // TARGET is re-read rather than snapshotted — otherwise the morph converges on the
-            // colour the ball wore a third of a second ago.
-            if (!_handedOff)
-            {
-                if (_ball.TryGetShellColours(out var dark, out var bright))
-                {
-                    _targetDull = dark;
-                    _targetBright = bright;
-                    _haveTargetColour = true;
-                }
-
-                if (_haveTargetColour)
-                {
-                    float c = Mathf.Clamp01(g / Mathf.Clamp01(_config.colourBlendFraction <= 0f
-                        ? 1f : _config.colourBlendFraction));
-                    c = c * c * (3f - 2f * c);
-                    for (int i = 0; i < _shells.Count; i++)
-                    {
-                        if (!_shells[i]) continue;
-                        _shells[i].GetPropertyBlock(_blocks[i]);
-                        _blocks[i].SetColor(DullCrystalId, Color.Lerp(_startDull[i], _targetDull, c));
-                        _blocks[i].SetColor(BrightCrystalId, Color.Lerp(_startBright[i], _targetBright, c));
-                        _shells[i].SetPropertyBlock(_blocks[i]);
-                    }
-                }
-            }
-
-            // The hand-off happens where the two states are EQUIVALENT: the geometry has landed on
-            // the hull, the normals have landed on its facets, and the colours have landed on the
-            // ball's pair. The ball takes over the surface there and the crystal's shells DISSOLVE
-            // off the top of it.
-            if (!_handedOff && elapsed >= _morphSeconds)
-            {
-                Release();
-                _handedOff = true;
-                CSDebug.LogVerbose(CSLogChannel.CrystalMorph,
-                    $"[CrystalMorph] Scarab: geometry landed at {elapsed:F2}s — the ball is now " +
-                    "drawing itself; dissolving the crystal's shells off it.");
-            }
-
-            if (_handedOff)
-            {
-                float tail = Mathf.Max(1e-4f, _config.duration - _morphSeconds);
-                float d = Mathf.Clamp01((elapsed - _morphSeconds) / tail);
-                SetOpacity(1f - (d * d * (3f - 2f * d)));
-                if (d >= 1f) Destroy(gameObject);
-            }
+            if (_ball != null) return _ball.TryGetShellColours(out dark, out bright);
+            dark = bright = default;
+            return false;
         }
 
-        void SetOpacity(float opacity)
-        {
-            for (int i = 0; i < _shells.Count; i++)
-            {
-                if (!_shells[i]) continue;
-                _shells[i].GetPropertyBlock(_blocks[i]);
-                _blocks[i].SetFloat(OpacityId, Mathf.Clamp01(opacity));
-                _shells[i].SetPropertyBlock(_blocks[i]);
-            }
-        }
+        protected override void HandOff() => ReleaseHold();
 
         /// <summary>Hands rendering back to the ball. Idempotent, and called from teardown too — an
         /// unreleased hold would leave the ball invisible for the rest of its life.</summary>
-        void Release()
+        protected override void ReleaseHold()
         {
             if (_ball != null) _ball.SetMorphStandIn(false);
         }
 
-        void OnDestroy()
+        protected override void LateUpdate()
         {
-            Release();
-            if (_mesh) Destroy(_mesh);
+            if (_ball == null) { Destroy(gameObject); return; }
+            base.LateUpdate();
         }
     }
 }

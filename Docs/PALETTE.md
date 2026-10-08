@@ -556,9 +556,11 @@ shader.
 
 **The body is slot 0, and that is load-bearing.** Everything that wants "the crystal's shape" reads
 `crystalModels[0]` (`ElementCrystalModelBuilder`, `SpawnMatrixToy`'s element visual), and the
-Scarab's crystal→ball forge (`ScarabCrystalMorph.AdoptShells`) builds its morph mesh from shell 0 and
-folds every shell drawing that same mesh. The triangle shells are a different mesh, so the forge
-leaves them out (a verbose `CrystalMorph`-channel line, not a warning: it is the design).
+vessel retirements (`CrystalMorphRunner.Adopt` — the Scarab's crystal→ball forge and the Squirrel's
+crystal→ring morph) build their morph mesh from slot 0 and fold every model drawing that same mesh.
+The triangle shells and rim are a different mesh, so they are OVERLAYS: they fade over
+`CrystalMorphConfig.overlayFadeFraction` of the geometry window while the cage opens (a verbose
+`CrystalMorph`-channel line names each one, not a warning: it is the design).
 
 **The body wears the elemental crystals' Fresnel look on the omni's own shader.**
 `OmniCrystalFresnelShader` is `SpreadFresnelShader`'s displacement and colour transcribed verbatim,
@@ -1005,6 +1007,27 @@ Machine validation covers structure and colorimetry; only a playtest covers *loo
 
 ## 7. Follow-ups
 
+- **Squirrel crystal morph — rows from its ship pass, 2026-10-08 (`SQUIRREL_CRYSTAL_MORPH.md`).**
+  - **`OmniCrystalFresnelShader.PrismFresnelColor` is a second transcription of BlockGraph's
+    colour** (FresnelColors → FresnelPower4, back-face branch `(d+1)·0.2`). If either subgraph
+    changes, the morph's last frame stops matching the prism and nothing fails. Fix: move the
+    formula into an HLSL include both a Custom Function in FresnelColors and the omni shader call,
+    or gate it (a check that re-reads the two subgraphs' node values — power 4, the 0.2, the
+    Greater-than-0 branch — and fails when they move). Debt this branch created.
+  - **`CrystalMorphRunner.ResolveCrystal` falls back to `Crystal.Active` by `Id`.** For a
+    manager-less local mint (the conveyor toy) ids may not be unique, so the morph could adopt a
+    DIFFERENT omni's renderers — the same look today, a wrong one if those crystals ever differ.
+    Measure first: what `Id` do manager-less mints carry, and are two ever live at once?
+  - **The pentagons' charge discharge leaves on the pickup frame** under any vessel retirement.
+    `OmniCrystalChargeEdges` (merged the same day) is a plain child, not a `crystalModels` slot, so
+    `CrystalMorphRunner.Adopt` never sees it, and `OmniChargeEdgesShader` has no `_Opacity` to fade
+    it by. If the playtest reads it as a pop: give the shader an `_Opacity` multiplier on its additive
+    output and have `Adopt` also take `Crystal`'s accent children as overlays. A report until seen.
+  - **The ring's prisms are unhidden by reference at teardown** with no life check; harmless while
+    nothing else that draws from the boost pool hides a prism (`SetOwnerHidden` callers today:
+    the swarm and substrate fauna, neither uses the boost pool). A report, not a fix — revisit if
+    a boost-pool consumer ever calls `SetOwnerHidden`.
+
 - **Omni crystal (§2.10) — rows from its ship pass, 2026-10-08.**
   - **A TEAM omni's husks fade in place instead of drifting.** After a domain change
     `Crystal.LerpCrystalMaterialCoroutine` overwrites each model's `explodingMaterial` with the team
@@ -1025,9 +1048,8 @@ Machine validation covers structure and colorimetry; only a playtest covers *loo
   - **The Fresnel family is outside §2.2's collectability tint** (`FindColorPropertyNames` wants
     `_Dull*`; the family names `_DarkColor`) — Space, Time and now the omni show authored colours.
     One decision for all three crystals. A report: the current look is the approved one.
-  - **`CrystalMorph.hlsl`'s header claims every crystal material carries the node** (line ~43).
-    False for the Fresnel family: Space and Time do not, and the omni body carries it only because
-    `OmniCrystalFresnelShader` reimplements the path. Prose to correct, owned by the morph's doc.
+  - ~~**`CrystalMorph.hlsl`'s header claims every crystal material carries the node**~~ — corrected
+    2026-10-08 (Squirrel crystal morph): the header now names the two shaders that carry it.
   - **A domain change on the omni now SNAPS colour instead of lerping it** — the lerp only runs
     when source and target share a `FindColorPropertyNames` pair (`canLerp`), and the Fresnel pair
     is not one. The old ShepardGraph team crystals cross-faded over 1-2 s. Report; decide with the

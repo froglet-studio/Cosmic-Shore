@@ -65,6 +65,35 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Squirrel omni-crystal morph: the crystal becomes its eight shielded ring prisms (`cece/dreamy-fermat-szo9ck`, 2026-10-08)
+
+**Landed** (`_Scripts/Controller/Vessel/R_VesselActions/SQUIRREL_CRYSTAL_MORPH.md`): a Squirrel's omni
+pickup no longer sprays the husk — the one-layer body's 64 panels land 1:1 on the 64 faces of the
+boost ring's eight shields, the tone triangles fade, and the ring is revealed already full-size.
+Shared `CrystalMorphRunner` now also drives the Scarab forge (its colour convergence was a no-op on
+the one-layer body and now works). `OmniCrystalFresnelShader` blends its colour formula onto
+BlockGraph's per face on the morph weight.
+
+**Not opened in Unity** — no editor in the session. Offline: census on the shipped FBX (64 = 8 × 8),
+21/21 geometry tests run headlessly (`Tools/Build/crystal_morph_harness/run.sh`, four injected
+defects caught), HLSL verifier, SPIR-V compile of the body shader, `unity_refcompile` player + editor
+0 project errors.
+
+**Verify in editor** — the steps are `SQUIRREL_CRYSTAL_MORPH.md` §6 (no husk; plates land on the
+ring; no grow-in after; ring skimmable mid-morph; second pickup inside 0.15 s fades with a named
+warning; other hulls unchanged; Scarab forge re-check; MPPM two peers). Inspect at 20× by setting
+`Resources/CrystalMorphConfig.duration` to 9.
+
+**First-pass tuning:** `overlayFadeFraction 0.3`, `panelPhaseStart/End 0.55/1`, `fillerPhase 0`,
+`targetGraceSeconds 1.5`, `ringCaptureRadius 60` — starting points, not settled.
+
+**Merged after it:** the pentagons' charge discharge (`OmniCrystalChargeEdges`, the entry below) is a
+plain child, not a `crystalModels` slot, so the morph does not adopt it — on a Squirrel pickup the
+bolts leave with the crystal on the pickup frame while the body morphs. Look for whether that reads as
+a pop; adopting it as a fading overlay is a follow-up (`Docs/PALETTE.md` §7).
+
+---
+
 ### 🔴 Omni crystal: charge edge discharge on the pentagons (`cece/wonderful-planck-qqj3kd`, 2026-10-08)
 
 **Landed** (`Docs/PALETTE.md §2.10`, generator `Tools/Build/author_omni_crystal_triangles.py --check`):
@@ -94,6 +123,8 @@ makes); `check_generated_assets.py` audits the new prefab/material clean (negati
 5. Collect an omni: the replacement appears at once with its bolts; only the body/tone husks burst
    (no extra pentagon husk).
 6. `CrystalEdgeArcMeshBakerTests` pass in the Test Runner.
+
+---
 
 ### 🔴 Omni crystal: Fresnel body + triangle-only Shepard tone falling onto the surface (`claude/omnicrystal-shepard-triangles-v2`, 2026-10-08)
 

@@ -4389,7 +4389,10 @@ Three rules came out of it and generalize:
 Everything above describes the shared retirement, and it is what every crystal does unless the
 thing that spent it says otherwise. A vessel may replace the husk burst with its own animation that
 carries the crystal's **own body** onto whatever the pickup made — the Scarab's crystal closing
-into the ball its skimmer forged (`R_VesselActions/SCARAB_CRYSTAL_MORPH.md`). Two retirements
+into the ball its skimmer forged (`R_VesselActions/SCARAB_CRYSTAL_MORPH.md`), and the Squirrel's
+crystal becoming the eight shielded prisms of its boost ring, panel for face
+(`R_VesselActions/SQUIRREL_CRYSTAL_MORPH.md`, authored per hull in
+`VesselImpactorDataContainerSO.OmniCrystalRetirement`). Two retirements
 drawing the same body would overlap, so the collector suppresses the spray through
 `Crystal.ExplodeParams.SuppressHusk`.
 
