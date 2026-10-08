@@ -202,6 +202,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 351d0e02c9461619694212b4a2006244, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  dust: {fileID: 11400000, guid: 0ae756518d2f043fdd8f3b596892867c, type: 2}
   particleMaterial: {fileID: 2100000, guid: f8fd41b2ddff19348bcba2a701321e1f, type: 2}
   dustColor: {r: 1, g: 0.86, b: 0.52, a: 0.9}
   bloomMotes: 2400

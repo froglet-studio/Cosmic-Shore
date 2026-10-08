@@ -27,6 +27,19 @@ namespace CosmicShore.Gameplay
         }
     }
 
+    /// <summary>
+    /// A component on a blast PREFAB that acts on each prism the blast's prism-effect sweep
+    /// reaches (<see cref="ExplosionImpactor"/>, a blast with <c>affectsPrisms</c> OFF). The
+    /// sibling of the container's <c>explosionPrismEffects</c>, for a payload that belongs to one
+    /// blast prefab and needs its own per-blast state beside the outcome — the Butterfly bloom's
+    /// dust (<see cref="ButterflyBloomDust"/>) applies the capsule's roll AND draws a puff where
+    /// it landed. Same once-per-blast ledger, same per-frame budget, same identity test.
+    /// </summary>
+    public interface IExplosionPrismPayload
+    {
+        void OnPrismReached(ExplosionImpactor blast, PrismImpactor prism);
+    }
+
     [RequireComponent(typeof(AOEExplosion))]
     public class ExplosionImpactor : ImpactorBase
     {
@@ -186,9 +199,12 @@ namespace CosmicShore.Gameplay
         private static readonly ProfilerMarker s_onTriggerSkipped = new("AOE.OnTriggerEnter.Skipped");
         private static readonly ProfilerMarker s_processBatch = new("AOE.ProcessBatchFrame");
 
+        IExplosionPrismPayload[] _prismPayloads;
+
         void Awake()
         {
             explosion ??= GetComponent<AOEExplosion>();
+            _prismPayloads = GetComponents<IExplosionPrismPayload>();
             if (_trailBlockLayer < 0)
                 _trailBlockLayer = LayerMask.NameToLayer("TrailBlocks");
         }
@@ -902,10 +918,11 @@ namespace CosmicShore.Gameplay
         /// Blast → PRISM EFFECTS, for a blast that does not touch mass itself
         /// (<see cref="AOEExplosion.AffectsPrisms"/> OFF). Such a blast never starts the Burst
         /// prism pass and its trigger declines every prism (see <see cref="AcceptImpactee"/>), so
-        /// without this the container's <c>explosionPrismEffects</c> could never run — which is
+        /// without this the container's <c>explosionPrismEffects</c> — and any
+        /// <see cref="IExplosionPrismPayload"/> component on the blast — could never run, which is
         /// exactly how the Butterfly's omni-crystal bloom shipped: a 900-unit blast that changed
-        /// nothing. With the generic damage/shield pass off, the authored effects ARE the blast's
-        /// whole payload on mass, and each prism gets them once.
+        /// nothing. With the generic damage/shield pass off, those payloads ARE the blast's whole
+        /// effect on mass, and each prism gets them once.
         ///
         /// A blast that DOES affect prisms is deliberately not swept: its mass is already decided
         /// by the batch pass, and dispatching effects on top would be a second outcome per prism.
@@ -920,9 +937,8 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void SweepPrismEffects(Vector3 centre, float radius)
         {
-            if (!explosionImpactorDataContainer || radius <= 0f) return;
+            if (radius <= 0f || !HasPrismPayload) return;
             if (explosion == null || explosion.AffectsPrisms) return;
-            if (!DoesEffectExist(explosionImpactorDataContainer.explosionPrismEffects)) return;
 
             var registry = PrismSpatialIndex.Instance;
             if (registry == null || !registry.IsAvailable)
@@ -954,11 +970,18 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>Dispatch up to <see cref="MaxPrismEffectsPerFrame"/> deferred prism effects.</summary>
+        /// <summary>Does this blast carry anything to do to a prism it reaches — container
+        /// effects or an <see cref="IExplosionPrismPayload"/> component?</summary>
+        bool HasPrismPayload =>
+            (explosionImpactorDataContainer && DoesEffectExist(explosionImpactorDataContainer.explosionPrismEffects))
+            || _prismPayloads is { Length: > 0 };
+
         void DrainPrismEffects()
         {
             if (_prismEffectsPending == null || _prismEffectsPending.Count == 0) return;
+            if (!HasPrismPayload) { _prismEffectsPending.Clear(); return; }
             var effects = explosionImpactorDataContainer ? explosionImpactorDataContainer.explosionPrismEffects : null;
-            if (!DoesEffectExist(effects)) { _prismEffectsPending.Clear(); return; }
+            int effectCount = DoesEffectExist(effects) ? effects.Length : 0;
 
             int budget = MaxPrismEffectsPerFrame;
             while (budget > 0 && _prismEffectsPending.Count > 0)
@@ -972,13 +995,21 @@ namespace CosmicShore.Gameplay
 
                 budget--;
                 bool ran = false;
-                for (int e = 0; e < effects.Length; e++)
+                for (int e = 0; e < effectCount; e++)
                 {
                     if (IsEffectSlotEmpty(effects[e], explosionImpactorDataContainer,
                             nameof(ExplosionImpactorDataContainerSO.explosionPrismEffects), e))
                         continue;
                     effects[e].Execute(this, prismImpactor);
                     ran = true;
+                }
+                if (_prismPayloads != null)
+                {
+                    for (int k = 0; k < _prismPayloads.Length; k++)
+                    {
+                        _prismPayloads[k].OnPrismReached(this, prismImpactor);
+                        ran = true;
+                    }
                 }
                 if (ran) PrismEffectsDispatched++;
             }

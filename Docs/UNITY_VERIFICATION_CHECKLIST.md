@@ -106,6 +106,12 @@ pull; log now prints `dispatched=N`. Verify: select
 inspector shows a `Dust` field (not "script cannot be loaded"); a bloom logs `dispatched` ≈ `reached`
 with a non-zero tally, and dust puffs appear on changed prisms.
 
+**Round 4 (same: `reached=858 dispatched=0`, slot still empty after the forced re-import)** — the
+separate SO type is retired: `ExplosionScaleDustPrismEffectSO` + `ButterflyBloomScaleDustPrismEffect`
+deleted, container `explosionPrismEffects: []`, and `ButterflyBloomDust` (an `IExplosionPrismPayload`)
+now applies the capsule's dust asset itself. Verify: no "explosionPrismEffects[0] is empty" error;
+`[ButterflyBloom]` logs `dispatched` ≈ `reached` with a non-zero tally; puffs on changed prisms.
+
 ### 🔴 Omni crystal: Fresnel body + triangle-only Shepard tone falling onto the surface (`claude/omnicrystal-shepard-triangles-v2`, 2026-10-08)
 
 **Landed** (`Docs/PALETTE.md §2.10`, generator `Tools/Build/author_omni_crystal_triangles.py --check`):

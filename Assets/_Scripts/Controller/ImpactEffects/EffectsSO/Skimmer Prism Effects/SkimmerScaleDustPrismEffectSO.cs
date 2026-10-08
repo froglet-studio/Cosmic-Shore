@@ -7,7 +7,7 @@ namespace CosmicShore.Gameplay
     /// The Butterfly's dust on MASS. Every prism the dust capsule passes through gets ONE
     /// outcome, rolled per contact (design record: <c>R_VesselActions/BUTTERFLY.md</c> §3.3) —
     /// and so does every prism the omni-crystal BLOOM engulfs, through <see cref="Apply"/> and
-    /// <see cref="ExplosionScaleDustPrismEffectSO"/>, which reads this asset's weights:
+    /// <see cref="ButterflyBloomDust"/>, which reads this asset's weights:
     ///
     /// <list type="bullet">
     /// <item><b>Own domain</b> — the dust tends the garden: the prism GROWS along a rolled axis,
@@ -98,7 +98,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// The dust's outcome on ONE prism, independent of what delivered it — the capsule's
-        /// contact above, and the omni-crystal bloom (<see cref="ExplosionScaleDustPrismEffectSO"/>),
+        /// contact above, and the omni-crystal bloom (<see cref="ButterflyBloomDust"/>),
         /// which reads THIS asset's weights so the two can never roll from different tables.
         /// <paramref name="destroyVelocity"/> is the striker's velocity at the prism, used only by
         /// the opposing-domain DESTROY outcome (scaled by <c>restitution</c>, capped by

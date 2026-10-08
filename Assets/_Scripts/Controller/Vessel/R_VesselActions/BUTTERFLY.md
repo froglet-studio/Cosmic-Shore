@@ -250,12 +250,13 @@ nothing. It now carries the Butterfly's whole verb set at once:
 |---|---|---|
 | **Opposing pilot** | **strips** all four elements — the petals are EJECTED as collectable crystals (`ElementalTransfer.Eject`, classed `Explosion`), priced as the Debuff verb: **1.2 petals per element** | `ButterflyBloomDebuffByExplosionEffect` |
 | Opposing pilot | **scores a combat hit** (Debuff class, 12 points) — the Dolphin cone's shared reporter: only if the victim could be debuffed, only on the owning machine (the bloom is replayed on server AND owner) | `VesselCombatHitByCrystalBlast` |
-| **Own-domain prism** | the dust's TEND roll: grow / dangerous / shielded (0.4 / 0.3 / 0.3), Diamond Dust at Space 5 | `ButterflyBloomScaleDustPrismEffect` |
+| **Own-domain prism** | the dust's TEND roll: grow / dangerous / shielded (0.4 / 0.3 / 0.3), Diamond Dust at Space 5 | `ButterflyBloomDust` (prefab component) |
 | **Opposing prism** | the dust's BLIGHT roll: destroyed / shrunk / stolen (1 / 1 / 1) | same |
 | Opposing lifeform heart | dies (unchanged) | `ButterflyBloomWitherLifeformEffect` |
 
-**The prism half owns no table.** `ExplosionScaleDustPrismEffectSO` holds the dust's own
-`ButterflyScaleDustPrismEffect` asset and calls its `Apply`, so the bloom and the capsule roll from
+**The prism half owns no table.** `ButterflyBloomDust` (on the bloom prefab, an
+`IExplosionPrismPayload`) holds the dust's own `ButterflyScaleDustPrismEffect` asset and calls its
+`Apply`, so the bloom and the capsule roll from
 one set of weights and one deterministic per-prism hash — retune the dust and the bloom follows. The
 blast only supplies the DESTROY outcome's striker velocity: its own impact vector at the prism, so
 debris leaves along the wavefront (still × `restitution`, capped at `debrisSpeedLimit`).
@@ -263,7 +264,8 @@ debris leaves along the wavefront (still × `restitution`, capped at `debrisSpee
 **How a non-destructive blast reaches prisms at all.** The bloom authors `affectsPrisms: 0`, so it
 never runs the Burst damage pass and its trigger declines prisms — which is also why its
 `explosionPrismEffects` could never have fired. `ExplosionImpactor.SweepPrismEffects` is the new
-path: for a blast with `affectsPrisms` OFF that authors prism effects, it queries
+path: for a blast with `affectsPrisms` OFF that carries prism effects (container entries or an
+`IExplosionPrismPayload` component), it queries
 `PrismSpatialIndex.QuerySphere` over each frame's wavefront, dispatches each prism once (instance-id
 ledger), at most 48 per frame (the Burst pass's own budget), and drains the remainder after the
 visual — identity-checked by `TimeCreated` so a pooled prism re-issued in the meantime is skipped. A
@@ -296,11 +298,21 @@ loaded as null in that editor, so no effect ever ran. The branch's data was clea
 null-slot causes (slot names a real guid · the guid has a `.meta` · the asset's script guid resolves
 to the `.cs` · the class derives from the slot's type), which puts the fault in the editor's import:
 the asset arrived in the SAME pull as its brand-new script and was imported before that script
-compiled. The asset's bytes now change (its `m_EditorClassIdentifier` is spelled out), which forces
-a re-import on the next pull. The log line now also prints `dispatched=N`, so `reached > 0,
-dispatched = 0` names this failure directly. **General lesson for generators: a new
-ScriptableObject type and its first asset in one pull can import out of order on the receiving
-editor, and nothing on the branch can show it.**
+compiled. The asset's bytes were changed to force a re-import, and the log gained `dispatched=N`.
+
+**Round 3: that theory was wrong.** After the forced re-import the same editor logged `reached=858
+dispatched=0` and the same empty slot. The cause stayed invisible from the branch — all four checks
+still pass — so the dependency was REMOVED rather than chased a fourth time: the
+`ExplosionScaleDustPrismEffectSO` type and its asset are deleted, the container's
+`explosionPrismEffects` is empty again, and the bloom's prism dust is applied by
+`ButterflyBloomDust` itself, through the new `IExplosionPrismPayload` seam on `ExplosionImpactor`.
+That component and the dust asset it references both demonstrably load in that editor (the motes
+drew; the capsule dusts). **The open question for whoever next adds a ScriptableObject type by
+generator: a brand-new SO class whose first asset was written outside Unity loaded as null in a
+playtester's editor, three runs in a row, with every repo-side reason for a null slot ruled out.
+Selecting that asset in the inspector would have named the cause; nobody did. Prefer a
+serialized field on a component that already loads, and when a new SO type is unavoidable, have
+the human open its asset once before the playtest.**
 
 ### 3.4 Time — Fold
 
@@ -394,8 +406,8 @@ screen is unchanged apart from the row itself.
 | Dust (mass) | `ImpactEffects/EffectsSO/Skimmer Prism Effects/SkimmerScaleDustPrismEffectSO.cs` |
 | Dust (pilot) | `ImpactEffects/EffectsSO/Vessel Skimmer Effects/VesselElementalDebuffBySkimmerEffectSO.cs` (`biteScale`) |
 | Dust (lifeform) | `ImpactEffects/EffectsSO/Skimmer Crystal Effects/SkimmerWitherLifeformByCrystalEffectSO.cs` (opposing), `SkimmerNourishLifeformByCrystalEffectSO.cs` (ally) |
-| Omni-crystal bloom | `_Prefabs/Projectile/AOEButterflyBloom.prefab` + `ButterflyVesselExplosionByCrystalEffect.asset` + `ButterflyBloomExplosionImpactorDataContainer.asset` (strip `ButterflyBloomDebuffByExplosionEffect`, dust `ButterflyBloomScaleDustPrismEffect`, heart-kill `ButterflyBloomWitherLifeformEffect`) |
-| Bloom → prisms | `ImpactEffects/EffectsSO/Explosion Prism Effects/ExplosionScaleDustPrismEffectSO.cs`, `ExplosionImpactor.SweepPrismEffects` |
+| Omni-crystal bloom | `_Prefabs/Projectile/AOEButterflyBloom.prefab` + `ButterflyVesselExplosionByCrystalEffect.asset` + `ButterflyBloomExplosionImpactorDataContainer.asset` (strip `ButterflyBloomDebuffByExplosionEffect`, hit `VesselCombatHitByCrystalBlast`, heart-kill `ButterflyBloomWitherLifeformEffect`) |
+| Bloom → prisms + look | `R_VesselActions/ButterflyBloomDust.cs` (`IExplosionPrismPayload`), `ExplosionImpactor.SweepPrismEffects` |
 | Replicated element levels | `R_VesselActionHandler.NetElementLevels`, `R_VesselElementalAbilityHandler.ReplicatedLevel`, `ElementalFloat.EvaluateReplicated` |
 | Dust assets (generated) | `Tools/Build/author_butterfly_dust.py` (`--check`) |
 | The new skimmer arm | `ImpactEffects/EffectsSO/Abstract Effect Types/SkimmerLifeformCrystalEffectSO.cs` |

@@ -28,8 +28,11 @@ What this script writes, and why each piece is an asset rather than a hand edit:
                                 pilots' elements -- a VesselElementalDebuffByExplosionEffect on all
                                 four, whose petals are ejected as collectable crystals -- and (b)
                                 DUSTS every prism it engulfs with the capsule's own one-of-three
-                                roll, through an ExplosionScaleDustPrismEffect that holds the dust
-                                asset rather than restating its table.
+                                roll, applied by ButterflyBloomDust on the bloom prefab, which holds
+                                the dust asset rather than restating its table. (Round 1-3 routed it
+                                through a separate ExplosionScaleDustPrismEffect container asset;
+                                in the playtester's editor that asset loaded as NULL three times
+                                running with clean branch data, so it is retired and deleted below.)
   bloom scoring + look          (2026-10-08, round 2) a strip SCORES: the bloom container also
                                 carries the Dolphin cone's shared VesselCombatHitByCrystalBlast
                                 reporter (Debuff class, owning machine only). And the bloom is
@@ -74,7 +77,16 @@ DUST_DEBUFF = f"{FX}/Vessel Skimmer Effects/ButterflyScaleDustDebuffBySkimmerEff
 DUST_COMBAT = f"{FX}/Vessel Skimmer Effects/ButterflyCombatHitBySkimmerEffect.asset"
 BLOOM_WITHER = f"{FX}/Explosion Crystal Effects/ButterflyBloomWitherLifeformEffect.asset"
 BLOOM_CONT = f"{FX}/Effect Containers/Explosion Containers/ButterflyBloomExplosionImpactorDataContainer.asset"
-BLOOM_DUST = f"{FX}/Explosion Prism Effects/ButterflyBloomScaleDustPrismEffect.asset"
+# Retired 2026-10-08 (loaded as null in the editor; the bloom's prism dust now lives on
+# ButterflyBloomDust). Deleted here so a stale checkout converges.
+RETIRED_BLOOM_DUST = [
+    f"{FX}/Explosion Prism Effects/ButterflyBloomScaleDustPrismEffect.asset",
+    f"{FX}/Explosion Prism Effects/ButterflyBloomScaleDustPrismEffect.asset.meta",
+    f"{FX}/Explosion Prism Effects.meta",
+    f"{A}/_Scripts/Controller/ImpactEffects/EffectsSO/Explosion Prism Effects/ExplosionScaleDustPrismEffectSO.cs",
+    f"{A}/_Scripts/Controller/ImpactEffects/EffectsSO/Explosion Prism Effects/ExplosionScaleDustPrismEffectSO.cs.meta",
+    f"{A}/_Scripts/Controller/ImpactEffects/EffectsSO/Explosion Prism Effects.meta",
+]
 BLOOM_DEBUFF = f"{FX}/Vessel Explosion Effects/ButterflyBloomDebuffByExplosionEffect.asset"
 # Shared with the Dolphin's crystal cone (authored by author_bends_assets.py): Debuff class,
 # requireDebuffableVictim + requireOwningMachine -- the bloom is replayed on server AND owner too.
@@ -89,8 +101,6 @@ SCRIPTS = {
         f"{A}/_Scripts/Controller/ImpactEffects/EffectsSO/Skimmer Prism Effects/SkimmerScaleDustPrismEffectSO.cs",
     "SkimmerNourishLifeformByCrystalEffectSO":
         f"{A}/_Scripts/Controller/ImpactEffects/EffectsSO/Skimmer Crystal Effects/SkimmerNourishLifeformByCrystalEffectSO.cs",
-    "ExplosionScaleDustPrismEffectSO":
-        f"{A}/_Scripts/Controller/ImpactEffects/EffectsSO/Explosion Prism Effects/ExplosionScaleDustPrismEffectSO.cs",
     "ButterflyBloomDust": f"{A}/_Scripts/Controller/Vessel/R_VesselActions/ButterflyBloomDust.cs",
 }
 EXISTING_SCRIPTS = {
@@ -251,17 +261,10 @@ out[BLOOM_WITHER] = so(sg["ExplosionWitherLifeformByCrystalEffectSO"], "Butterfl
     "  faunaOnly: 0\n  sparesOwnDomain: 1\n  onLifeformJousted: {fileID: 0}\n")
 out[BLOOM_WITHER + ".meta"] = asset_meta(bloom_wither_g)
 
-# The bloom on MASS: the capsule's own roll, read off the dust asset (never a second table).
-bloom_dust_g = g("asset/ButterflyBloomScaleDustPrismEffect")
-# The class identifier is spelled out (Unity 6 writes it this way) for a second reason: the first
-# cut shipped this asset in the SAME pull as its brand-new script, and at least one editor imported
-# the asset before the script compiled -- the container's slot then loaded as null and the bloom
-# dusted nothing (playtest 2026-10-08, "explosionPrismEffects[0] is empty"). Changing the asset's
-# bytes forces a re-import on the next pull, when the script already exists.
-out[BLOOM_DUST] = so(sg["ExplosionScaleDustPrismEffectSO"], "ButterflyBloomScaleDustPrismEffect",
-    f"  dust: {ref(dust_prism_g)}\n",
-    class_id="Assembly-CSharp::CosmicShore.Gameplay.ExplosionScaleDustPrismEffectSO")
-out[BLOOM_DUST + ".meta"] = asset_meta(bloom_dust_g)
+# The bloom on MASS is NOT a container entry: ButterflyBloomDust (an IExplosionPrismPayload on the
+# prefab, below) holds the dust asset and applies the capsule's own roll. Retire the old asset.
+for rel in RETIRED_BLOOM_DUST:
+    if exists(rel): deletions.append(rel)
 
 # The bloom on PILOTS: strip all four elements. The MAGNITUDE belongs to
 # author_combat_debuff_magnitudes.py (priced as the Debuff verb, ten points to the petal), so it is
@@ -281,7 +284,7 @@ out[BLOOM_DEBUFF + ".meta"] = asset_meta(bloom_debuff_g)
 crystal_blast_hit_g = meta_guid(CRYSTAL_BLAST_HIT)
 out[BLOOM_CONT] = so(sg["ExplosionImpactorDataContainerSO"], "ButterflyBloomExplosionImpactorDataContainer",
     f"  vesselExplosionEffects:\n  - {ref(bloom_debuff_g)}\n  - {ref(crystal_blast_hit_g)}\n"
-    f"  explosionPrismEffects:\n  - {ref(bloom_dust_g)}\n  explosionCrystalEffects: []\n"
+    "  explosionPrismEffects: []\n  explosionCrystalEffects: []\n"
     f"  explosionLifeformCrystalEffects:\n  - {ref(bloom_wither_g)}\n")
 out[BLOOM_CONT + ".meta"] = asset_meta(bloom_cont_g)
 
@@ -321,6 +324,7 @@ bloom = bloom.rstrip("\n") + "\n" + (
     f"  m_PrefabAsset: {{fileID: 0}}\n  m_GameObject: {{fileID: {BLOOM_GO}}}\n  m_Enabled: 1\n"
     f"  m_EditorHideFlags: 0\n  m_Script: {{fileID: 11500000, guid: {sg['ButterflyBloomDust']}, type: 3}}\n"
     "  m_Name: \n  m_EditorClassIdentifier: \n"
+    f"  dust: {ref(dust_prism_g)}\n"
     f"  particleMaterial: {{fileID: 2100000, guid: {meta_guid(PARTICLE_MAT)}, type: 2}}\n"
     "  dustColor: {r: 1, g: 0.86, b: 0.52, a: 0.9}\n  bloomMotes: 2400\n"
     "  moteSize: {x: 6, y: 14}\n  moteLifetime: 2.2\n  fallSpeed: 6\n"
@@ -588,8 +592,10 @@ if CHARGE_BITE_REST * CHARGE_BITE_FLOOR <= 0:
 if not re.search(r"(?m)^  affectsPrisms: 0$", out[BLOOM_PREFAB]):
     errors.append("AOEButterflyBloom must author affectsPrisms: 0 -- the prism-effect sweep skips "
                   "a blast that damages mass itself, so the bloom's dust would never run")
-if ref(bloom_debuff_g) not in out[BLOOM_CONT] or ref(bloom_dust_g) not in out[BLOOM_CONT]:
-    errors.append("the bloom container lost its strip or its dust")
+if ref(bloom_debuff_g) not in out[BLOOM_CONT]:
+    errors.append("the bloom container lost its strip")
+if f"  dust: {ref(dust_prism_g)}" not in out[BLOOM_PREFAB]:
+    errors.append("ButterflyBloomDust lost its dust asset -- the bloom would change no prism")
 if ref(crystal_blast_hit_g) not in out[BLOOM_CONT]:
     errors.append("the bloom container lost its combat-hit reporter -- a strip would score nothing")
 if f"guid: {sg['ButterflyBloomDust']}" not in out[BLOOM_PREFAB] or \

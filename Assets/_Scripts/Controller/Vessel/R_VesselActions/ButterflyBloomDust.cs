@@ -6,9 +6,18 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The omni-crystal bloom drawn as the Butterfly's DUST, so the bloom and the capsule read as
-    /// one verb. Lives on <c>AOEButterflyBloom.prefab</c> beside the <see cref="AOEExplosion"/>.
+    /// The omni-crystal bloom's DUST: what the bloom does to every prism it reaches, and how it
+    /// looks, so the bloom and the capsule read as one verb. Lives on
+    /// <c>AOEButterflyBloom.prefab</c> beside the <see cref="AOEExplosion"/>.
     /// Design record: <c>R_VesselActions/BUTTERFLY.md</c> §3.3a.
+    ///
+    /// <para><b>The outcome is the capsule's own.</b> As an <see cref="IExplosionPrismPayload"/>
+    /// it is handed each prism the blast's sweep reaches (once per blast, 48 a frame) and calls
+    /// <see cref="SkimmerScaleDustPrismEffectSO.Apply"/> on the dust's OWN asset — the same weights,
+    /// the same per-prism hash, the same Diamond Dust gate — with the blast's impact vector as the
+    /// destroy velocity. Nothing is restated. (This replaced a separate
+    /// <c>ExplosionScaleDustPrismEffectSO</c> container asset that loaded as null in the editor and
+    /// left the bloom dusting nothing; see BUTTERFLY.md §3.3a.)</para>
     ///
     /// <para><b>Two layers of motes, both the capsule's motes.</b> Same material, same colour rule
     /// (<see cref="ButterflyDustField.ResolveMoteColour"/> — the shielded rim of the pilot's
@@ -18,24 +27,30 @@ namespace CosmicShore.Gameplay
     /// constant density through the whole sphere (the emitted count follows the swept VOLUME,
     /// r³, not the radius), so the sphere fills with a falling haze rather than a shell that
     /// races off-screen.</item>
-    /// <item><b>A puff on every prism the dust changed</b> — <see cref="OnDusted"/>, called by
-    /// <see cref="ExplosionScaleDustPrismEffectSO"/> per outcome, so the eye is led to exactly the
-    /// mass that grew, shielded, went dangerous, shrank, was stolen or died.</item>
+    /// <item><b>A puff on every prism the dust changed</b>, so the eye is led to exactly the mass
+    /// that grew, shielded, went dangerous, shrank, was stolen or died.</item>
     /// </list>
     ///
     /// <para>The particle object is DETACHED from the blast: the blast's transform scales to the
     /// bloom's full diameter and is destroyed the frame its sweep ends, and the motes must outlive
     /// it and fade (continuity of existence). It retires itself one mote lifetime later.</para>
     ///
-    /// <para>Cosmetic only, and per machine: nothing here touches an outcome, and its scatter uses
-    /// a private hash rather than <c>UnityEngine.Random</c> (vessel contract rule 18).</para>
+    /// <para>The motes are cosmetic and per machine; their scatter uses a private hash rather than
+    /// <c>UnityEngine.Random</c> (vessel contract rule 18).</para>
     ///
     /// <para><b>Telemetry.</b> On retirement it reports, on <see cref="CSLogChannel.ButterflyBloom"/>,
     /// how many prisms the sweep reached and what the dust did to them, by outcome.</para>
     /// </summary>
     [RequireComponent(typeof(AOEExplosion))]
-    public sealed class ButterflyBloomDust : MonoBehaviour
+    public sealed class ButterflyBloomDust : MonoBehaviour, IExplosionPrismPayload
     {
+        [Header("Dust")]
+        [Tooltip("The Dust-mode capsule's own effect asset (ButterflyScaleDustPrismEffect). Its " +
+                 "weights, grow/shrink fractions, debris tuning and Diamond Dust gate ARE the " +
+                 "bloom's — nothing is restated here. Empty = the bloom changes no prism (reported " +
+                 "once).")]
+        [SerializeField] SkimmerScaleDustPrismEffectSO dust;
+
         [Header("Look")]
         [Tooltip("Particle material for the motes. Author the SAME material as the dust capsule " +
                  "(ButterflyDustField) so the two read as one dust. A missing one falls back to " +
@@ -91,6 +106,7 @@ namespace CosmicShore.Gameplay
         uint _rng;
         readonly int[] _tally = new int[10];
         static bool s_warnedNoMaterial;
+        static bool s_warnedNoDust;
 
         void Awake()
         {
@@ -139,14 +155,48 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The dust just changed <paramref name="outcome"/> on the prism that stood at
-        /// <paramref name="position"/>: release a puff there and count it. Called by
-        /// <see cref="ExplosionScaleDustPrismEffectSO"/>.
+        /// The blast reached <paramref name="prismImpactee"/>: roll the capsule's dust on it, then
+        /// puff where it stood.
         /// </summary>
-        public void OnDusted(Vector3 position, ScaleDustOutcome outcome)
+        public void OnPrismReached(ExplosionImpactor blast, PrismImpactor prismImpactee)
+        {
+            if (!dust)
+            {
+                if (!s_warnedNoDust)
+                {
+                    s_warnedNoDust = true;
+                    CSDebug.LogError("[ButterflyBloomDust] no Scale Dust asset wired — the bloom " +
+                                     "changes no prism. Wire ButterflyScaleDustPrismEffect on " +
+                                     "AOEButterflyBloom.prefab.", this);
+                }
+                return;
+            }
+
+            var status = blast ? blast.SourceVessel?.VesselStatus : null;
+            var prism = prismImpactee ? prismImpactee.Prism : null;
+            if (status == null || !prism) { Count(ScaleDustOutcome.None); return; }
+
+            // Captured BEFORE the outcome: a destroy or steal can retire/reparent the prism.
+            Vector3 at = prism.transform.position;
+            OnDusted(at, dust.Apply(prismImpactee, status, blast.BlastImpactVector(at)));
+        }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetWarnings() => s_warnedNoMaterial = s_warnedNoDust = false;
+
+        void Count(ScaleDustOutcome outcome)
         {
             int slot = (int)outcome;
             if (slot >= 0 && slot < _tally.Length) _tally[slot]++;
+        }
+
+        /// <summary>
+        /// The dust changed <paramref name="outcome"/> on the prism that stood at
+        /// <paramref name="position"/>: release a puff there and count it.
+        /// </summary>
+        void OnDusted(Vector3 position, ScaleDustOutcome outcome)
+        {
+            Count(outcome);
             if (outcome == ScaleDustOutcome.None || !_particles || motesPerDustedPrism <= 0) return;
 
             var emit = new ParticleSystem.EmitParams();

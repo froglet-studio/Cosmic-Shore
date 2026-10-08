@@ -15,8 +15,7 @@ MonoBehaviour:
   vesselExplosionEffects:
   - {fileID: 11400000, guid: f76debf588f341e2c6844598456fcef3, type: 2}
   - {fileID: 11400000, guid: fb13e2c96ac07b6d086178c042518dcf, type: 2}
-  explosionPrismEffects:
-  - {fileID: 11400000, guid: 12bb167b46557fd633b1dace8aa77ef3, type: 2}
+  explosionPrismEffects: []
   explosionCrystalEffects: []
   explosionLifeformCrystalEffects:
   - {fileID: 11400000, guid: 1b7398a9f586fb5d3cfe979f406a7501, type: 2}
