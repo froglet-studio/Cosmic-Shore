@@ -349,6 +349,8 @@ namespace CosmicShore.Gameplay
         ///            place (<see cref="IsCompanionShell"/>).
         ///   SPACE  - a SkinnedMeshRenderer spinning its blocks on blend shapes.
         ///   TIME   - a SkinnedMeshRenderer on a CHILD of the model, flipping its blocks on bones.
+        ///   OMNI   - a SkinnedMeshRenderer whose rhombi were given bones at runtime; it draws
+        ///            <see cref="RhombusSkinBaker"/>'s twin, read here as the FBX mesh it was skinned from.
         /// </summary>
         public static bool TryResolveCrystal(Crystal crystal, out Mesh drawn, out Mesh source, out int plateCorners,
                                              out GameObject model, out Renderer renderer)
@@ -386,7 +388,7 @@ namespace CosmicShore.Gameplay
             if (!best) return false;
 
             if (renderer is SkinnedMeshRenderer skin)
-                drawn = source = skin.sharedMesh;
+                drawn = source = RhombusSkinBaker.SourceOf(skin.sharedMesh);
             else
             {
                 drawn = best.GetComponent<MeshFilter>().sharedMesh;

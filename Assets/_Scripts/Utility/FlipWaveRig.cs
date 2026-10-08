@@ -84,8 +84,11 @@ namespace CosmicShore.Utility
         /// <summary>
         /// Builds a rig for <paramref name="renderer"/>, whose bones must be at rest. <paramref name="frame"/>
         /// is the model's root: the space Unity's FBX conversion leaves coordinate-aligned.
+        /// <paramref name="stillBone"/>, when given, carries geometry that never moves (the omni crystal's
+        /// body round its rhombi, <see cref="RhombusSkinBaker"/>); every OTHER bone must carry one plate.
         /// </summary>
-        public static bool TryBuild(SkinnedMeshRenderer renderer, Transform frame, out FlipWaveRig rig, out string problem)
+        public static bool TryBuild(SkinnedMeshRenderer renderer, Transform frame, out FlipWaveRig rig, out string problem,
+                                    Transform stillBone = null)
         {
             rig = null;
             if (!renderer || !frame)
@@ -103,7 +106,7 @@ namespace CosmicShore.Utility
 
             if (!ShapeByMesh.TryGetValue(mesh, out var shape))
             {
-                if (!TryMeasureShape(mesh, rendererBones, frame, out shape, out problem)) return false;
+                if (!TryMeasureShape(mesh, rendererBones, frame, stillBone, out shape, out problem)) return false;
                 ShapeByMesh[mesh] = shape;
             }
             foreach (int b in shape.Bones)
@@ -118,7 +121,8 @@ namespace CosmicShore.Utility
             return true;
         }
 
-        static bool TryMeasureShape(Mesh mesh, Transform[] rendererBones, Transform frame, out Shape shape, out string problem)
+        static bool TryMeasureShape(Mesh mesh, Transform[] rendererBones, Transform frame, Transform stillBone,
+                                    out Shape shape, out string problem)
         {
             shape = null;
             if (!mesh.isReadable)
@@ -148,6 +152,7 @@ namespace CosmicShore.Utility
                     return false;
                 }
                 int b = w.boneIndex0;
+                if (stillBone && rendererBones[b] == stillBone) continue;
                 if (!rendererBones[b])
                 {
                     problem = $"mesh '{mesh.name}' skins vertex {v} to missing bone {b}";

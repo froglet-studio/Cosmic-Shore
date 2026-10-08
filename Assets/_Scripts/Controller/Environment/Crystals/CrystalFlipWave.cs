@@ -11,6 +11,10 @@ namespace CosmicShore.Gameplay
     /// from one fixed vertex, and was only made to wander by snapping the whole model to a random
     /// symmetry of the shell each loop.
     ///
+    /// The omni crystal's 30 rhombi - the Time element's shapes on the crystal that carries every element -
+    /// run the same wave on the same profile: its body is a static mesh, so <see cref="skinRhombi"/> has
+    /// <see cref="RhombusSkinBaker"/> give those plates bones first and leaves every other plate still.
+    ///
     /// The math is <see cref="FlipWave"/>, the bone writes are <see cref="FlipWaveRig"/>, and the motion is a
     /// <see cref="FlipWaveProfileSO"/>; <c>TimeCrystalFlipWaveProfile.asset</c> is generated from the take and
     /// the edit-mode parity test holds this component to it. Design record: <c>Docs/TIME_CRYSTAL.md</c>.
@@ -23,8 +27,11 @@ namespace CosmicShore.Gameplay
         static readonly ProfilerMarker UpdateMarker = new("CrystalFlipWave.LateUpdate");
 
         [Header("Model")]
-        [Tooltip("The imported model's root (the TimeCrystalExport instance). Its local space is the frame the plates are measured in, and its one SkinnedMeshRenderer carries a plate per bone (the mesh must be Read/Write enabled). Never the crystal root, whose rotation belongs to the capture flourish.")]
+        [Tooltip("The model's root: the TimeCrystalExport instance on the Time crystal, OmniCrystalBody on the omni crystal. Its local space is the frame the plates are measured in, and its one SkinnedMeshRenderer carries a plate per bone (the mesh must be Read/Write enabled). Never the crystal root, whose rotation belongs to the capture flourish.")]
         [SerializeField] Transform model;
+
+        [Tooltip("The model draws a STATIC exploded mesh (the omni crystal's body): give its rhombic plates bones at runtime (RhombusSkinBaker) and flip those, leaving every other plate still. Off for a model whose plates are already skinned one bone each (the Time crystal).")]
+        [SerializeField] bool skinRhombi;
 
         [Header("Motion")]
         [Tooltip("When each ring turns and how. TimeCrystalFlipWaveProfile is generated from the artist's take.")]
@@ -58,7 +65,9 @@ namespace CosmicShore.Gameplay
             }
             plates = skinned[0];
 
-            if (!FlipWaveRig.TryBuild(plates, model, out rig, out string problem))
+            string problem = null;
+            if ((skinRhombi && !RhombusSkinBaker.TryDress(plates, out problem))
+                || !FlipWaveRig.TryBuild(plates, model, out rig, out problem, skinRhombi ? plates.transform : null))
             {
                 CSDebug.LogError($"CrystalFlipWave on '{name}': {problem}. Was the model re-exported? Re-run Tools/Build/author_time_crystal_flip_wave.py. The crystal will hold still.", this);
                 enabled = false;

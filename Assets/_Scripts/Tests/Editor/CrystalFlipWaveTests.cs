@@ -23,6 +23,7 @@ namespace CosmicShore.Tests
         const string PrefabPath = "Assets/_Prefabs/Environment/CrystalTime.prefab";
         const string FbxPath = "Assets/_Models/TimeCrystalExport.fbx";
         const string ProfilePath = "Assets/_SO_Assets/Environment/TimeCrystalFlipWaveProfile.asset";
+        const string OmniPrefabPath = "Assets/_Prefabs/Environment/Crystal.prefab";
         const string TakeName = "TimeCrystalArmature|TimeSequenceAnimFinal.001";
         const int TakeFrames = 51;
         const float TakeFps = 25f;
@@ -255,6 +256,104 @@ namespace CosmicShore.Tests
                 Assert.AreEqual(30, rig.PlateCount);
                 Assert.AreEqual(12, rig.StartCount);
                 Assert.AreEqual(5, rig.RingCount);
+            }
+            finally
+            {
+                Object.DestroyImmediate(instance);
+            }
+        }
+
+        // ------------------------------------------------------------------ the omni crystal's rhombi
+
+        /// <summary>A slab: the 2D outline at <paramref name="centre"/> in the XY plane, extruded 0.1 along Z.</summary>
+        static void AddSlab(List<Vector3> verts, List<int> tris, Vector3 centre, params Vector2[] outline)
+        {
+            int k = outline.Length, b = verts.Count;
+            foreach (var o in outline) verts.Add(centre + new Vector3(o.x, o.y, 0.05f));
+            foreach (var o in outline) verts.Add(centre + new Vector3(o.x, o.y, -0.05f));
+            for (int i = 1; i < k - 1; i++)
+            {
+                tris.AddRange(new[] { b, b + i, b + i + 1 });
+                tris.AddRange(new[] { b + k, b + k + i + 1, b + k + i });
+            }
+            for (int i = 0; i < k; i++)
+            {
+                int j = (i + 1) % k;
+                tris.AddRange(new[] { b + i, b + k + i, b + k + j, b + i, b + k + j, b + j });
+            }
+        }
+
+        [Test]
+        public void RhombusSkin_BonesOnlyTheRhombi_AndDrawsTheSourceAtRest()
+        {
+            var verts = new List<Vector3>();
+            var tris = new List<int>();
+            AddSlab(verts, tris, new Vector3(0f, 0f, 1f), new Vector2(0.5f, 0f), new Vector2(0f, 0.3f), new Vector2(-0.5f, 0f), new Vector2(0f, -0.3f)); // rhombus
+            AddSlab(verts, tris, new Vector3(2f, 0f, 1f), new Vector2(0.3f, 0.3f), new Vector2(-0.3f, 0.3f), new Vector2(-0.3f, -0.3f), new Vector2(0.3f, -0.3f)); // square
+            AddSlab(verts, tris, new Vector3(-2f, 0f, 1f), new Vector2(0.3f, 0f), new Vector2(-0.2f, 0.25f), new Vector2(-0.2f, -0.25f)); // triangle
+            var source = new Mesh { name = "Plates" };
+            source.SetVertices(verts);
+            source.SetTriangles(tris, 0);
+
+            var skin = RhombusSkinBaker.Bake(source, out var problem);
+            try
+            {
+                Assert.IsNotNull(skin, problem);
+                Assert.AreEqual(1, skin.PlateCentroids.Length, "exactly the one rhombus gets a bone - not the square, not the triangle");
+                Assert.AreEqual(0f, (skin.PlateCentroids[0] - new Vector3(0f, 0f, 1f)).magnitude, 1e-5f);
+                var weights = skin.Mesh.boneWeights;
+                var bindposes = skin.Mesh.bindposes;
+                Assert.AreEqual(2, bindposes.Length);
+                for (int v = 0; v < verts.Count; v++)
+                {
+                    Assert.AreEqual(v < 8 ? 1 : 0, weights[v].boneIndex0, $"vertex {v} is on the wrong bone");
+                    Assert.AreEqual(1f, weights[v].weight0, 1e-6f);
+                    // At rest bone 0 is the renderer and bone 1 sits at the centroid, so bindpose then bone
+                    // puts every vertex back exactly where the source draws it.
+                    var bone = weights[v].boneIndex0 == 0 ? Matrix4x4.identity : Matrix4x4.Translate(skin.PlateCentroids[0]);
+                    Assert.AreEqual(0f, ((bone * bindposes[weights[v].boneIndex0]).MultiplyPoint3x4(verts[v]) - verts[v]).magnitude, 1e-5f);
+                }
+                CollectionAssert.AreEqual(source.vertices, skin.Mesh.vertices, "the twin must keep the source's vertex order");
+            }
+            finally
+            {
+                if (skin != null) Object.DestroyImmediate(skin.Mesh);
+                Object.DestroyImmediate(source);
+            }
+        }
+
+        [Test]
+        public void OmniCrystalPrefab_TurnsItsThirtyRhombi_AndLeavesTheBodyStill()
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(OmniPrefabPath);
+            Assert.IsNotNull(prefab, $"{OmniPrefabPath} not found");
+            Assert.IsTrue(prefab.TryGetComponent(out CrystalFlipWave wave), "the omni Crystal has no CrystalFlipWave");
+            var serialized = new SerializedObject(wave);
+            Assert.IsTrue(serialized.FindProperty("skinRhombi").boolValue, "CrystalFlipWave.skinRhombi is off on the omni");
+            Assert.IsTrue(serialized.FindProperty("profile").objectReferenceValue as FlipWaveProfileSO, "the omni's CrystalFlipWave has no profile");
+
+            var instance = Object.Instantiate(prefab);
+            try
+            {
+                var frame = new SerializedObject(instance.GetComponent<CrystalFlipWave>()).FindProperty("model").objectReferenceValue as Transform;
+                Assert.IsTrue(frame, "CrystalFlipWave.model is unassigned");
+                Assert.IsTrue(frame.TryGetComponent(out SkinnedMeshRenderer body), "the omni body is not a SkinnedMeshRenderer - its rhombi cannot turn");
+                Assert.AreSame(instance.GetComponent<Crystal>().CrystalModels[0].model, frame.gameObject, "the flip wave must drive crystalModels slot 0, the body");
+                var source = body.sharedMesh;
+
+                Assert.IsTrue(RhombusSkinBaker.TryDress(body, out var problem), problem);
+                Assert.AreSame(source, RhombusSkinBaker.SourceOf(body.sharedMesh), "the twin must resolve back to the FBX mesh it was skinned from");
+                Assert.AreEqual(31, body.bones.Length, "the still body plus one bone per rhombus");
+                Assert.IsTrue(FlipWaveRig.TryBuild(body, frame, out var rig, out problem, body.transform), problem);
+                Assert.AreEqual(30, rig.PlateCount);
+                Assert.AreEqual(12, rig.StartCount);
+                Assert.AreEqual(5, rig.RingCount);
+                for (int s = 0; s < rig.StartCount; s++)
+                    CollectionAssert.AreEqual(new[] { 5, 5, 10, 5, 5 },
+                        Enumerable.Range(0, 5).Select(r => Enumerable.Range(0, 30).Count(p => rig.RingOf(s, p) == r)).ToArray(), $"rings from vertex {s}");
+
+                Assert.IsTrue(RhombusSkinBaker.TryDress(body, out problem), "dressing twice must be a no-op: " + problem);
+                Assert.AreEqual(31, body.bones.Length, "a second dress grew more bones");
             }
             finally
             {

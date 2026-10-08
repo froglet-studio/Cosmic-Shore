@@ -375,6 +375,35 @@ latter including `WormholeTollTests.cs`): 0 errors in project code — a compile
 
 ---
 
+### 🔴 The omni crystal's 30 rhombi run the Time crystal's flip wave (`cece/zen-archimedes-ednrpo`, 2026-10-08) — NOT EDITOR-VERIFIED
+
+Slot 0 of `Crystal.prefab` is now `OmniCrystalBody.prefab` (a flat copy of `TrucatedOctahedron.prefab`
+with its MeshRenderer re-classed as a SkinnedMeshRenderer, authored by
+`author_omni_crystal_triangles.py`), and the Crystal root carries `CrystalFlipWave` with `skinRhombi` on:
+at runtime `RhombusSkinBaker` gives the 30 rhombi bones and the Time profile flips them. Out of editor: the
+real C# skinned the shipped omni mesh and ran the wave under all 48 axis conversions (30 plates, still body
+moves by 0, rest pose exact, rigid, seam exact); the synthetic baker test ran unmodified. Design:
+`Docs/TIME_CRYSTAL.md` §5, `Docs/PALETTE.md` §2.10.
+
+#### 1. Run `CrystalFlipWaveTests.OmniCrystalPrefab_TurnsItsThirtyRhombi_AndLeavesTheBodyStill`
+
+It is the first time Unity imports `OmniCrystalBody.prefab` (a hand-authored SkinnedMeshRenderer) - if the
+prefab shows a "Missing" component or the omni body is invisible, stop here.
+
+#### 2. Look at an omni crystal for ~10 s (Skim Race, any arcade cell)
+
+- The 30 rhombi flip in a wave from one vertex to the opposite one, a new vertex each loop; the boxes,
+  pentagons and triangles hold still; the Shepard triangles and the pentagon discharges look as before.
+- The omni appears at once on respawn (no new fade), wears its team colours on a team crystal, and bursts
+  into its husk on collect as before.
+
+#### 3. Forge one into a Scarab ball and into a Squirrel ring
+
+The forge still folds the whole body onto the target. A rhombus caught mid-flip settles flat as the fold
+begins (it is read at rest) - check that this reads as part of the fold, not a pop.
+
+---
+
 ### 🟡 The Time crystal's flip wave is procedural and starts from a new vertex every loop (`cece/zen-archimedes-ednrpo`, 2026-10-08) — LOOK CONFIRMED IN GAME, TESTS NOT YET RUN
 
 Supersedes the vertex-hop entry (`cece/eager-lovelace-i4o8jk`) that stood here. `CrystalTime.prefab` (and
