@@ -942,8 +942,10 @@ namespace CosmicShore.Gameplay
         /// The platform diet the cores ask about every forage candidate (Docs/BUILDERS_AND_THIEVES.md §2.1):
         /// <see cref="Cell.IsPreyForHerbivore"/> - ANY domain's mass outside the nucleus, nothing inside it, nothing outside
         /// a mode's pen; the cores already refuse shielded mass (<see cref="Fauna.IsShieldedMass"/> via IBuilderWorld.Shielded).
-        /// Never "not my colour": a colony spawned in the pilot's domain (a Spawn Matrix release, the controlling-colour
-        /// spawn) starved on that test. Not <c>Fauna.IsPreyForMe</c>: the species band is where a
+        /// Colour-blind on purpose: the cores layer the colour preference on top (another domain's mass always, the colony's
+        /// own only for a member below <see cref="BuilderStomachParams.OwnDomainBelow"/>, and only when no opposing candidate
+        /// is in reach), so a colony spawned in the pilot's domain (a Spawn Matrix release, the controlling-colour spawn)
+        /// still feeds before it starves. Not <c>Fauna.IsPreyForMe</c>: the species band is where a
         /// colony LIVES - its members forage the cell, and the fortress applies its own widened forage band in the core.
         /// </summary>
         bool OnPlatformDiet(SVector3 position, int preyDomain)

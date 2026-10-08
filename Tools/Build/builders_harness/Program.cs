@@ -198,7 +198,7 @@ static partial class Program
     {
         int[] seeds = { 7, 23, 41, 101, 202, 303 };
         Console.WriteLine("B1. fortress repair after a cut (run_fortress.py: 150 s of building, 3 cutting passes, 5 min; the shipped");
-        Console.WriteLine("    defaults: a 30% defender caste, TryReserve 3.6 u, any domain is forage - the game gates it on the platform diet). Research t50 / t90:");
+        Console.WriteLine("    defaults: a 30% defender caste, TryReserve 3.6 u, arena mass is another domain - own colour is a starvation fallback, D1). Research t50 / t90:");
         Console.WriteLine("    round 1: none 39.5 / 90.4, gap 15.8 / 43.6, alarm 6.8 / 41.1, both 6.4 / 61.6 (trail 97-98%);");
         Console.WriteLine("    round 3 (run_defend_vs_mend.py, both): defence on 17.8 / 70.0, off 5.6 / 38.5, caste 30% 5.6 / 41.3");
         var sum = new Dictionary<BuilderMendRule, (float t50, float t90, string healed, float trail, int sites)>();
@@ -421,57 +421,94 @@ static partial class Program
     // ═════════════════════════════════════════════════════════════════════════════════ WEARERS
 
     /// <summary>
-    /// The platform diet (Docs/BUILDERS_AND_THIEVES.md §2.1): every species feeds on a pilot of its OWN colour (a Spawn
-    /// Matrix release, the controlling-colour spawn - the old "not my domain" test starved them), and the glue's Diet gate
-    /// (Cell.IsPreyForHerbivore in the game: nothing inside the nucleus) is obeyed - the negative control proves it fires.
+    /// The diet and the colour preference (Docs/BUILDERS_AND_THIEVES.md §2.1). Opposing-domain mass is always food; the
+    /// colony's OWN colour is the starvation fallback - taken only by a DESPERATE member (stomach under OwnDomainBelow, the
+    /// cell's Frenzy shape on a stomach) and only when no opposing candidate is in reach. For each species: (a) a well-fed
+    /// member leaves its own colour alone, (b) a desperate one takes it (a colony sharing the pilot's colour still feeds),
+    /// (c) a desperate one offered both takes the OPPOSING prism even though its own is nearer / fresher; and the glue's
+    /// Diet gate (Cell.IsPreyForHerbivore in the game: nothing inside the nucleus) is obeyed - the negative control.
     /// </summary>
     static void Diet()
     {
-        Console.WriteLine("\nD1. the platform diet: a colony of the pilot's own colour feeds; a Diet that refuses is obeyed");
-        const int Own = 1;
-        foreach (bool refuse in new[] { false, true })
+        Console.WriteLine("\nD1. the diet: opposing colour always, own colour only when desperate and nothing opposing is in reach");
+        Func<Vector3, int, bool> refuse = (_, _) => false;
+        string[] names = { "fortress", "thief", "wearer" };
+        Console.WriteLine("    first take (- none, O own colour, X opposing):  fed+own  desperate+own  desperate+both  refusing Diet");
+        for (int sp = 0; sp < 3; sp++)
         {
-            Func<Vector3, int, bool> diet = refuse ? (_, _) => false : null;
-            string tag = refuse ? "diet refuses (inside the nucleus)" : "same domain as the pilot";
-            int fort, thief, wear;
-            {
-                var ar = new Arena(31);
-                var col = new BuilderColonyCore(ar, new BuilderColonyParams { Founders = 1, MaxWorkers = 1, Containment = ar.R * 0.95f, Diet = diet },
-                                                new Vector3(400, 0, 0), Own, 1, 31);
-                ar.Lay(col.Pos[0] + new Vector3(1, 0, 0), 6f, Own, true);
-                ar.Rebuild();
-                var vs = new BuilderVessel[1];
-                for (int st = 0; st < 40; st++) { col.Step(Dt, vs, 0); ar.Step(Dt); }
-                fort = col.Pickups + col.Eaten;
-            }
-            {
-                var ar = new Arena(32);
-                var core = new ThiefNestCore(ar, new ThiefParams { Founders = 1, MaxThieves = 1, Stomach = null, Diet = diet },
-                                             new Vector3(600, 0, 0), Own, 2, 32);
-                int prism = ar.Lay(core.Pos[0] + new Vector3(1, 0, 0), 10f, Own, true);
-                ar.Rebuild();
-                var pilot = ar.AddPilot(new Pilot { Policy = "wander", Domain = Own });
-                pilot.Pos = ar.Pos[prism] + new Vector3(0, 0, 60); pilot.Vel = new Vector3(0, 0, 120);
-                var vs = new BuilderVessel[2];
-                for (int st = 0; st < 3 && core.Carry[0] < 0; st++) { int n = ar.Vessels(vs); core.Step(Dt, vs, n); ar.Step(Dt); }
-                thief = core.Steals;
-            }
-            {
-                var ar = new WearArena(33);
-                var core = new WearerCore(ar, new WearerParams { Founders = 1, MaxHearts = 1, Containment = ar.R * 0.95f, Diet = diet },
-                                          new Vector3(300, 0, 0), Own, 3, 33);
-                for (int i = 0; i < 12; i++) ar.Lay(core.Pos[0] + ar.Rng.Normal3(10f), 6f, Own, true);
-                ar.Rebuild();
-                var vs = new BuilderVessel[1];
-                for (int st = 0; st < 60; st++) { core.Step(Dt, vs, 0); ar.Step(Dt); }
-                wear = core.WornSteals;
-            }
-            Console.WriteLine($"    {tag}: fortress took {fort}, thief snatched {thief}, wearer wore {wear}");
-            if (!refuse)
-                Check(fort > 0 && thief > 0 && wear > 0, "every species feeds on mass of its own colour (lifecycle: feed, then breed)");
-            else
-                Check(fort == 0 && thief == 0 && wear == 0, "a Diet that refuses is obeyed by all three species (the gate fires)");
+            char fedOwn = DietRun(sp, desperate: false, own: true, opp: false, diet: null);
+            char despOwn = DietRun(sp, desperate: true, own: true, opp: false, diet: null);
+            char despBoth = DietRun(sp, desperate: true, own: true, opp: true, diet: null);
+            char denied = DietRun(sp, desperate: true, own: true, opp: true, diet: refuse);
+            Console.WriteLine($"    {names[sp],-46} {fedOwn,7}  {despOwn,13}  {despBoth,14}  {denied,13}");
+            Check(fedOwn == '-', $"{names[sp]}: a well-fed member leaves mass of its own colour alone");
+            Check(despOwn == 'O', $"{names[sp]}: a desperate member eats its own colour before starving (a same-colour colony still feeds)");
+            Check(despBoth == 'X', $"{names[sp]}: a desperate member offered both takes the OPPOSING prism (its own is nearer / fresher)");
+            Check(denied == '-', $"{names[sp]}: a Diet that refuses is obeyed (the gate fires)");
         }
+    }
+
+    /// <summary>
+    /// One member of species <paramref name="sp"/> (0 fortress, 1 thief, 2 wearer, domain 1) next to a prism of its own colour
+    /// (nearer, and for the thief fresher) and/or one of another domain (2). Returns which it took first: '-' none, 'O' own,
+    /// 'X' opposing, '?' both in one step. Taken = eaten, carried, worn or built.
+    /// </summary>
+    static char DietRun(int sp, bool desperate, bool own, bool opp, Func<Vector3, int, bool> diet)
+    {
+        const int Own = 1, Other = 2;
+        float fill = desperate ? 0.15f : 1f;
+        int ownH = -1, oppH = -1;
+        Arena ar;
+        Action step;
+        if (sp == 0)
+        {
+            ar = new Arena(31);
+            var col = new BuilderColonyCore(ar, new BuilderColonyParams { Founders = 1, MaxWorkers = 1, Containment = ar.R * 0.95f, Diet = diet },
+                                            new Vector3(400, 0, 0), Own, 1, 31);
+            col.Stomach[0] = 40f * fill;   // BuilderColonyParams' default stomach holds 40
+            if (opp) oppH = ar.Lay(col.Pos[0] + new Vector3(20, 0, 0), 6f, Other, true);
+            if (own) ownH = ar.Lay(col.Pos[0] + new Vector3(1, 0, 0), 6f, Own, true);
+            ar.Rebuild();
+            var vs = new BuilderVessel[1];
+            step = () => { col.Step(Dt, vs, 0); ar.Step(Dt); };
+        }
+        else if (sp == 1)
+        {
+            ar = new Arena(32);
+            var core = new ThiefNestCore(ar, new ThiefParams { Founders = 1, MaxThieves = 1, Diet = diet },
+                                         new Vector3(600, 0, 0), Own, 2, 32);
+            core.Stomach[0] = 20f * fill;                        // ThiefParams' default stomach holds 20
+            var at = core.Pos[0];
+            if (opp) { oppH = ar.Lay(at + new Vector3(3, 0, 0), 10f, Other, true); ar.Step(Dt); }   // the opposing wake is OLDER
+            if (own) ownH = ar.Lay(at + new Vector3(1, 0, 0), 10f, Own, true);
+            ar.Rebuild();
+            var pilot = ar.AddPilot(new Pilot { Policy = "wander", Domain = Own });
+            pilot.Pos = at + new Vector3(0, 0, 60); pilot.Vel = new Vector3(0, 0, 120);
+            var vs = new BuilderVessel[2];
+            step = () => { int n = ar.Vessels(vs); core.Step(Dt, vs, n); ar.Step(Dt); };
+        }
+        else
+        {
+            var wa = new WearArena(33); ar = wa;
+            var core = new WearerCore(wa, new WearerParams { Founders = 1, MaxHearts = 1, Containment = wa.R * 0.95f, Diet = diet },
+                                      new Vector3(300, 0, 0), Own, 3, 33);
+            core.Stomach[0] = 30f * fill;                        // WearerParams' default stomach holds 30
+            if (opp) oppH = ar.Lay(core.Pos[0] + new Vector3(25, 0, 0), 6f, Other, true);
+            if (own) ownH = ar.Lay(core.Pos[0] + new Vector3(6, 0, 0), 6f, Own, true);
+            ar.Rebuild();
+            var vs = new BuilderVessel[1];
+            step = () => { core.Step(Dt, vs, 0); wa.Step(Dt); };
+        }
+        bool Taken(int h) => h >= 0 && (!ar.AliveL[h] || ar.Carried.Contains(h) || ar.Built.ContainsKey(h));
+        for (int st = 0; st < 60; st++)
+        {
+            step();
+            bool o = Taken(ownH), x = Taken(oppH);
+            if (o && x) return '?';
+            if (o) return 'O';
+            if (x) return 'X';
+        }
+        return '-';
     }
 
     // ═════════════════════════════════════════════════════════════════════════════════ WEARERS

@@ -73,8 +73,10 @@ namespace CosmicShore.Gameplay
         public float HeartSize = 2f;
         public float Containment = 1140f;
         public Vector3 CellCentre;
-        /// <summary>GAME: the platform diet (<see cref="BuilderColonyParams.Diet"/>) - ANY domain's loose mass outside the
-        /// nucleus and inside a mode's pen. Null = the research arena (every domain).</summary>
+        /// <summary>GAME: the platform diet (<see cref="BuilderColonyParams.Diet"/>) - loose mass outside the nucleus and
+        /// inside a mode's pen. On top of it the colour preference: another domain's mass always, the colony's own colour
+        /// only for a DESPERATE heart (<see cref="BuilderStomachParams.Desperate"/>) and only when no opposing candidate is
+        /// in the same query. Null = the research arena: no platform gate (the colour preference still holds).</summary>
         public Func<Vector3, int, bool> Diet;
         public BuilderStomachParams Stomach = new()
         {
@@ -304,8 +306,15 @@ namespace CosmicShore.Gameplay
         bool Stealable(int h) =>
             _world.Alive(h) && !_world.Shielded(h) && !_claimed.Contains(h) && _world.Loose(h) && OnDiet(h);
 
-        /// <summary>The platform diet, any domain - never "not my colour" (a colony sharing the pilot's colour must feed).</summary>
+        /// <summary>The platform diet (colour-blind: the colour preference is <see cref="TakesColour"/>).</summary>
         bool OnDiet(int h) => P.Diet == null || P.Diet(_world.Position(h), _world.Domain(h));
+
+        /// <summary>Heart <paramref name="k"/> is desperate: its own colony's colour is food (Docs/BUILDERS_AND_THIEVES.md §2.1).</summary>
+        bool Desperate(int k) => P.Stomach.Desperate(Stomach[k]);
+
+        /// <summary>The colour preference: another domain's mass always; the colony's own only for a desperate heart - the
+        /// starvation fallback, like the cell's Frenzy turning fauna on their own colour (O(1)).</summary>
+        bool TakesColour(int k, int h) => _world.Domain(h) != Domain || Desperate(k);
 
         /// <summary>Can a heart of radius <paramref name="R"/> ever touch prism <paramref name="h"/>? The integrator clamps a leader
         /// to the containment sphere, so a prism farther out than Containment + the steal reach (R + 3) is out of reach for good -
@@ -451,7 +460,8 @@ namespace CosmicShore.Gameplay
             Intent[k] = 0f;
             if (has && dist < P.FleeRange) return BuilderMath.Unit(Pos[k] - tgt.Pos) * sp * 1.2f;   // turned on: flee
             int g = Goal[k];
-            if (g >= 0 && (!_world.Alive(g) || _world.Shielded(g) || !_world.Loose(g) || !OnDiet(g) || !Reachable(g, R)))
+            if (g >= 0 && (!_world.Alive(g) || _world.Shielded(g) || !_world.Loose(g) || !OnDiet(g) || !TakesColour(k, g)
+                           || !Reachable(g, R)))
             {
                 _claimed.Remove(g); Goal[k] = g = -1;
             }
@@ -459,16 +469,23 @@ namespace CosmicShore.Gameplay
             {
                 Queries++;
                 int n = _world.QuerySphere(Pos[k], P.Sense, _q);
-                int best = -1; float bd = float.MaxValue;
+                // another domain's mass WINS outright; the colony's own colour is a second best in the same pass, kept only
+                // by a desperate heart and taken only when the query held no opposing candidate
+                bool desperate = Desperate(k);
+                int best = -1, own = -1; float bd = float.MaxValue, od = float.MaxValue;
                 for (int j = 0; j < n; j++)
                 {
                     int i = _q[j];
+                    bool mine = _world.Domain(i) == Domain;
+                    if (mine && (!desperate || best >= 0)) continue;
                     if (!Stealable(i) || !Reachable(i, R)) continue;
                     var ip = _world.Position(i);
                     if (has && Vector3.Distance(ip, tgt.Pos) < P.KeepOff) continue;   // never closer than ~90 u to the pilot
                     float d = Vector3.DistanceSquared(ip, Pos[k]) * (_world.IsTrail(i) ? P.TrailPreference : 1f);
-                    if (d < bd) { bd = d; best = i; }
+                    if (mine) { if (d < od) { od = d; own = i; } }
+                    else if (d < bd) { bd = d; best = i; }
                 }
+                if (best < 0) best = own;
                 if (best >= 0) { Goal[k] = g = best; _claimed.Add(best); }
             }
             if (g >= 0)
