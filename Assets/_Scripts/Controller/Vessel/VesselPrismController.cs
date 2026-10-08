@@ -138,6 +138,47 @@ namespace CosmicShore.Gameplay
         /// the mass. Read-only on purpose: the controller owns what goes in.
         /// </summary>
         public Trail SecondaryTrail => Trail2;
+
+        /// <summary>
+        /// The THIRD ribbon: prisms an ability lays at a stated pose through <see cref="LayAt"/>
+        /// (the Tether's auto-anchors). Its own <see cref="Trail"/> rather than an append to
+        /// <see cref="Trail"/>, because a ride walks a ribbon in index order — anchors planted
+        /// ahead of the hull, alternating sides, interleaved with the wake behind it would make
+        /// any rider of this vessel's wake jump between the two. Empty on every vessel that never
+        /// calls <see cref="LayAt"/>. Read-only on purpose: the controller owns what goes in.
+        /// </summary>
+        public Trail AnchorTrail => _anchorTrail;
+        readonly Trail _anchorTrail = new Trail();
+
+        /// <summary>
+        /// Whether a lay is allowed right now, by the same switches the wake obeys: an ability's
+        /// <see cref="StopSpawn"/>, the painting pen, the device-tier hold, and riding. Speed is
+        /// the caller's own business (the wake's 3 u/s floor is about spacing, not permission).
+        /// </summary>
+        public bool CanLay =>
+            spawnerEnabled && !trailPenUp && !tierHold && (vesselStatus == null || !vesselStatus.IsAttached);
+
+        /// <summary>
+        /// Lay ONE prism of this vessel's own trail at a stated pose, into <see cref="AnchorTrail"/>.
+        ///
+        /// This is the wake's own lay — same pool (<see cref="SpawnPrismType"/>), same owner, team,
+        /// clearance wait, danger and shield rules, same <see cref="OnBlockSpawned"/> event — with
+        /// only the pose and size supplied by the caller instead of derived from the vessel. Trail
+        /// prisms are not network objects: every peer lays every vessel's trail locally from
+        /// replicated motion, so a caller that runs on every peer (an executor driven by
+        /// replicated state) gets exactly the replication a wake prism has.
+        /// </summary>
+        /// <returns>The laid prism, or null when the channel is unwired or the factory failed
+        /// (both already logged).</returns>
+        public Prism LayAt(Vector3 position, Quaternion rotation, Vector3 scale)
+        {
+            if (!_onPrismSpawnedEventChannel)
+            {
+                CSDebug.LogError("[PrismSpawner] Prism spawn event channel is not assigned.");
+                return null;
+            }
+            return Lay(position, rotation, scale, widened: false, _anchorTrail);
+        }
         /// <summary>
         /// The AUTHORED z extent of a trail prism — <see cref="BaseScale"/>.z alone.
         ///
@@ -421,6 +462,16 @@ namespace CosmicShore.Gameplay
                         + vesselStatus.ShipTransform.right * xShift;
             Quaternion rot = vesselStatus.blockRotation;
 
+            Lay(pos, rot, scale, widened, trail);
+        }
+
+        /// <summary>
+        /// Everything a lay does once its pose and size are known — the tail of
+        /// <see cref="CreateBlock"/>, moved here unchanged so <see cref="LayAt"/> runs the very same
+        /// steps rather than a copy that drifts.
+        /// </summary>
+        Prism Lay(Vector3 pos, Quaternion rot, Vector3 scale, bool widened, Trail trail)
+        {
             // --- Ask factory to spawn Interactive prism (pooled) ---
             var ret = _onPrismSpawnedEventChannel.RaiseEvent(new PrismEventData
             {
@@ -434,7 +485,7 @@ namespace CosmicShore.Gameplay
             if (!ret.SpawnedObject || !ret.SpawnedObject.TryGetComponent(out Prism prism))
             {
                 CSDebug.LogError("[PrismSpawner] Factory returned null or missing Prism component.");
-                return;
+                return null;
             }
 
             // Target scale (also sent in event; set here for gameplay logic)
@@ -531,6 +582,7 @@ namespace CosmicShore.Gameplay
 
             // Events
             OnBlockSpawned?.Invoke(prism);
+            return prism;
         }
 
         public List<Prism> GetLastTwoBlocks()
@@ -590,6 +642,7 @@ namespace CosmicShore.Gameplay
         {
             Trail.Clear();
             Trail2.Clear();
+            _anchorTrail.Clear();
         }
 
         protected virtual Vector3 ApplyBoostScale(Vector3 scale)

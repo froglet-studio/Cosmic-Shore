@@ -617,6 +617,28 @@ applies to new abilities, new resources on the meter list, and anything that add
     the whole set by asking which lists name a vessel, not by reading the list of lists somebody
     wrote down last time.** (Butterfly, 2026-09-22.)
 
+41. **A vessel prefab CLONED on disk carries its donor's Netcode identity, and two fleet-wide
+    tests count the fleet by hand.** Netcode keys its prefab table on `GlobalObjectIdHash` alone,
+    and Unity regenerates it only in `NetworkObject.OnValidate` — so a `cp Squirrel.prefab
+    New.prefab` ships the Squirrel's hash and only one of the two can ever spawn. Compute it
+    instead: `XXHash32("GlobalObjectId_V1-1-<prefab guid>-<NetworkObject fileID>-0")` (seed 0;
+    verified against the Squirrel, Dolphin, Sparrow and Manta), zero
+    `InScenePlacedSourceGlobalObjectIdHash`, list the prefab in `DefaultNetworkPrefabs.asset` by
+    the root GAMEOBJECT fileID (the prefab container keys by the root TRANSFORM), and run
+    `python3 Tools/Build/check_network_prefab_hashes.py` (`--self-test`). Then update the hand
+    counts: `EnumIntegrityTests.VesselClassType_HasExpectedMemberCount` (it asserted 14 while the
+    enum held 15 from the Butterfly until the Tether fixed it) and the transformer set in
+    `OneThumbVesselCoverageTests` if the clone gets a new transformer subclass — that test SKIPS a
+    prefab whose transformer it does not know rather than failing it. (Tether, 2026-10-08.)
+42. **An ability that lays prisms at a pose it chooses goes through
+    `VesselPrismController.LayAt`, not a hand copy of `CreateBlock`.** `LayAt` is the wake's own
+    lay (same pool, owner, team, clearance wait, danger/shield rules, `OnBlockSpawned`) into the
+    controller's `AnchorTrail`, a separate ribbon so a rider of the wake is never routed through
+    them; `CanLay` carries the wake's switches. Trail prisms are not network objects — an
+    executor that lays on every peer from replicated state gets exactly a wake prism's
+    replication. A force on the vector model goes through `ComputeExternalAcceleration` /
+    `NoseConvergence` / `PostVectorIntegrate`, never a fifth `MoveShip` (`TETHER.md` §7).
+
 ### 4.x Placing prisms from a vessel ability — shield sizing
 
 An ability that BUILDS with prisms (the Scarab's switch dais, the Urchin's track, a boost ring)
