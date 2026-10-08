@@ -819,6 +819,7 @@ class Thief(Guild):
     size = 2.2; color = (0.75, 0.75, 1.0); threat = True
     diet = (1 << FLORA) | (1 << SKEL)    # nectar + scavenging (round 1 of iteration: nectar alone starved them)
     leash = 900.0                         # territory: a thief never tails a ship beyond this from its nest (iter 3)
+    hoard_target = 0; hoard_r = 120.0      # round 2: raid only while the nest holds < hoard_target hoard prisms
     feed_fix = False                      # round 2: starving thieves go home; the larder feeds a thief to e_max
 
     def extra_init(self):
@@ -879,7 +880,13 @@ class Thief(Guild):
         for kk in np.flatnonzero(far & (tc >= 0)):
             w.excl[tc[kk]] = 0; self.tclaim[idx[kk]] = -1
         tc = self.tclaim[idx]
-        look = free[(tc[free] < 0) & (dp[free] < 700) & ~far[free]]
+        # round 2: a magpie raids only while its nest's hoard is short (hoard_target prisms; 0 = always)
+        if self.hoard_target > 0 and len(self.nests):
+            stock = np.array([len(w.within(q, self.hoard_r, 1 << HOARD)) for q in self.nests])
+            want = stock[self.nest_of[idx]] < self.hoard_target
+        else:
+            want = np.ones(len(idx), bool)
+        look = free[(tc[free] < 0) & (dp[free] < 700) & ~far[free] & want[free]]
         if len(look):
             got = w.nearest(P[look], 400.0, 1 << TRAIL, tmin=w.t - 1.5)
             for kk, j in zip(look, got):
@@ -899,11 +906,11 @@ class Thief(Guild):
         # round 2: a STARVING thief stops tailing and goes home to its larder (before: it tailed a nearby pilot
         # until it starved, and only ever ate at the nest while under 40% of e_birth, so it never bred)
         starving = (self.st[idx] < 0.4 * self.e_birth) if self.feed_fix else np.zeros(len(idx), bool)
-        tail = free[(tc[free] < 0) & (dp[free] < 700) & ~far[free] & ~starving[free]]
+        tail = free[(tc[free] < 0) & (dp[free] < 700) & ~far[free] & ~starving[free] & want[free]]
         if len(tail) and len(w.pilots):
             PPv = w.pilot_pos(); PVv = np.array([p.vel for p in w.pilots])
             des[tail] = unit(PPv[k[tail]] - unit(PVv[k[tail]]) * 70.0 - P[tail]) * 150.0
-        home_ = free[(tc[free] < 0) & ((dp[free] >= 700) | far[free] | starving[free])]
+        home_ = free[(tc[free] < 0) & ((dp[free] >= 700) | far[free] | starving[free] | ~want[free])]
         if len(home_):
             hv = nest[home_] - P[home_]
             hungry = self.st[idx[home_]] < 0.4 * self.e_birth

@@ -88,7 +88,8 @@ def eco_metrics(rows, cell, burn=300.0):
         ch.append(abs(flo[a + step] - flo[a]) / max(flo[a], 1.0))
         frozen.append(max(ch) < 0.01)
     freeze = float(np.mean(frozen)) if frozen else 1.0
-    cap = cell.cfg["n_plants"] * cell.cfg["plant_cap"] * 8.0
+    # saturation against the plants that exist at each sample (round 2: recruitment adds plants)
+    cap = np.array([r.get("plants", cell.cfg["n_plants"]) for r in R], float) * cell.cfg["plant_cap"] * 8.0
     flora_sat = float(np.mean(flo >= 0.95 * cap))
     # breathing: the flora and the grazer+locust totals' number of 10%-reversals (peaks and troughs)
     def reversals(x, frac=0.1):

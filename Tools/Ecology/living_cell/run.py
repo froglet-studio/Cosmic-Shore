@@ -160,7 +160,9 @@ NOFIX = dict(traps=False, fortress=False, physarum=False)
 CONTROLS = {
     "persistence": (dict(pack_metab=0.25), "", lambda s: s["eco"]["n_extinct"] > 0),
     "diversity": (dict(NOFIX, species=("grazer",)), "", lambda s: s["eco"]["shannon_min"] < 0.8),
-    "freeze": (dict(species=()), "", lambda s: s["eco"]["freeze_frac"] > 0.3 or s["eco"]["flora_saturated"] > 0.3),
+    # round 2: the cell now seeds flora at its grazed level, so a fauna-less cell is still GROWING at minute 12;
+    # the planted failure starts it near its cap (the state it would reach), where nothing moves any more
+    "freeze": (dict(species=(), flora_seed_frac=0.9), "", lambda s: s["eco"]["freeze_frac"] > 0.3 or s["eco"]["flora_saturated"] > 0.3),
     "audit": (dict(), "leak_birth", lambda s: s["eco"]["audit_max"] > 1.0),
     "shield": (dict(), "eat_shield", lambda s: s["eco"]["shield_eaten"] > 0),
     "continuity": (dict(expand_r=120.0, ahead_r=150.0, absorb_r=160.0), "", lambda s: s["eco"]["pop_ins"] + s["eco"]["pop_outs"] > 0),

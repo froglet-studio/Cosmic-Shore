@@ -237,3 +237,14 @@ R15 = {
 # THE ROUND-2 CELL: B15 with lurkers off thieves and a thief COLONY limit of 25 per nest (75): like the fortress's
 # 64 workers, a nest's size is part of the species design, and it is what stops the cell filling with tailers.
 FINAL2 = dict(B15, thief_cap=75)
+
+# r2_final (FINAL2, 4 seeds x 45 min): ecosystem goals met (0 extinctions, packs/lurkers off their caps - lurker
+# 7% of samples at its 300 backstop, soil flat at -13% of input, thieves breed 787 / starve 615) but the PLAYER
+# numbers fell: quiet 0.33 (round 1: 0.60), steals 21/min (2.2), enc 1.14 (1.76). 75 fed thieves tail the pilots.
+# R16: a magpie raids only while its nest's hoard is short (hoard_target), and smaller colonies.
+R16 = {
+    "r16_t30": dict(FINAL2, thief_cap=30),
+    "r16_hoard20": dict(FINAL2, **{"thief.hoard_target": 20}),
+    "r16_hoard10_t45": dict(FINAL2, thief_cap=45, **{"thief.hoard_target": 10}),
+    "r16_hoard10": dict(FINAL2, **{"thief.hoard_target": 10}),
+}
