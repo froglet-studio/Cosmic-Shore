@@ -385,6 +385,7 @@ bug to fix.
 | `.github/workflows/tag-internal-build.yml` | Tags `bleeding-edge` every Friday |
 | `.github/workflows/build-branch-ci.yml` | Verifies what landed on `build/**`, autofix |
 | `.github/workflows/unity-ci.yml` | Tiered compile verification (inert, needs a runner) |
+| `.github/workflows/branch-cleanup.yml` | Deletes inactive branches on request (report / dry-run / delete), monthly report. Never touches `master`, `development`, `build/*`. Rules: `Tools/BranchJanitor/policy.json`, background: `Docs/BranchArchive/README.md` |
 | `Tools/CI/validate_project.py` | The static checks |
 | `Tools/CI/test_validate_project.py` | Self-test for the above, 16 cases |
 
