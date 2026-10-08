@@ -1053,6 +1053,14 @@ references, m_Script classes). What cost time on the first runs (2026-10-06 to 1
   `IndexError: list index out of range` after the full ten-minute fetch. Any SDK from 8.0 works now
   (8.0 and 10.0 verified). Install a channel per-user (above) and point `DOTNET_ROOT` at it;
   `TMPDIR` decides where the ~550 MB cache lands.
+- **A warm run takes ~30 s, and the `cached` lines are the evidence.** Count them
+  (`grep -c ' cached$'`): about 86 package assemblies should come from the cache. Until 2026-10-08
+  NONE ever did, so every run recompiled them all. A stub DLL rebuilt each run sat in every
+  package's fingerprint. Nobody noticed, because a cache that never hits looks exactly like a cache.
+  A cold count after a warm one means an input moved (a new SDK, a re-fetch). Runs that share a
+  cache take turns (`waiting for another unity_refcompile run`). Before that lock, a player run and
+  an editor run launched together rewrote the shared DLLs under each other, and `Unity.Entities`
+  "failed" with 53 false project errors downstream.
 - **`check_generated_assets.py` needs the SAME `DOTNET_ROOT` and `TMPDIR` the compile ran with.**
   Run it bare after a compile that used a per-user SDK and it says `no Roslyn tools in
   <TMPDIR>/unity_refcompile_cache/tools - run run.sh first` — while the tools sit in that very

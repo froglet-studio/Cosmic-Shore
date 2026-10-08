@@ -142,8 +142,9 @@ so run this tool before it.
 
 ## Editor reference gaps (`EDITOR_REFERENCE_GAPS` in `build.py`)
 
-Compiled together on bleeding-edge (2026-10-08), the 320 loose Editor-folder scripts give 37 errors in
-10 files, and none of them is the code's fault: Unity 6 editor API that the 2021.1 `UnityEditor`
+Compiled together on bleeding-edge (2026-10-08), the 322 loose Editor-folder scripts give 37 errors in
+10 files, and none of them is the code's fault. Both numbers move with the tree: the run prints the
+first (`editor config: + N Editor-folder script(s)`) and lists the second, so re-read them there. Unity 6 editor API that the 2021.1 `UnityEditor`
 reference lacks, and the test framework, which is not fetched.
 
 | Gap | Errors | Files |
@@ -162,4 +163,9 @@ it gets an entry: add one only for documented Unity API, with the version that i
 
 ## Known issues (open)
 
-None known.
+- **`check_generated_assets.py` audits committed changes only.** It lists assets with
+  `git diff --name-status <base>...HEAD` (`changed_assets()`; re-grep, ~line 607), while `build.py`'s
+  `changed_since()` counts uncommitted and untracked files too. So an audit run before committing
+  reports `audited 0 added + 0 modified` and passes without having read your assets. Fix: reuse
+  `changed_since()` and read changed assets from the working tree. The audit's base-relative
+  "new findings only" filter needs the base blob, which `git show <merge-base>:<path>` still gives.
