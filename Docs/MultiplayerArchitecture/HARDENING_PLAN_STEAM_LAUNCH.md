@@ -175,6 +175,19 @@ That is **3,918 lines of harness we do not have to write.**
 > the public `NetworkManager` API — roughly 150 lines for a 2–4 client fixture — and keep the
 > package version as the reference implementation.
 
+> **Measured 2026-10-08: neither route reaches the party layer here.** The project's tests compile
+> into `Assembly-CSharp-Editor`, and an asmdef (the only thing `testables` can feed) cannot
+> reference `Assembly-CSharp`. The time-travel helpers lean on NGO internals visible only to NGO's
+> own named test assemblies. **The decisive finding:** the code under test reads
+> `NetworkManager.Singleton` at **161 sites in 54 runtime files**. Two `NetworkManager`s in one
+> process share one `Singleton`, so the 150-line fallback hits the same wall: every gameplay path
+> would talk to whichever registered last. The route taken instead is **one process per player**,
+> on Prisma (`Port/`). It runs the real `Assets/_Scripts`, Netcode's model over TCP, and a shared
+> session directory standing in for Lobby + Relay. Tool: `Tools/Build/prisma_party_scenarios/`. Its
+> README lists what a pass there does not prove: the Unity runtime, UGS's exact error shapes, and
+> UTP timings. It sits between L1 and L2: L2's shape (processes), with L1's property (no human,
+> one command).
+
 **What L1 buys, that nothing else can:** every one of the 21 party bugs becomes a test that runs
 in CI in seconds, with no human, no second machine, and no MPPM. Invite, accept, join-direct,
 spectate, leave-mid-match, host loss, ready-gate-with-a-leaver, AI takeover, score survival — all

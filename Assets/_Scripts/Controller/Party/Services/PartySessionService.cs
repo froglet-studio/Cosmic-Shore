@@ -340,7 +340,7 @@ namespace CosmicShore.Gameplay
         private Dictionary<string, PlayerProperty> BuildLocalPlayerProperties(bool asSpectator = false)
         {
             int partyCount = _connectionData.PartyMembers != null ? _connectionData.PartyMembers.Count : 0;
-            // Displayed party size, not transport capacity - see PresenceLobbyService.
+            // The party size, which is also the session's seat count (B25) - see PresenceLobbyService.
             int partyMax   = _connectionData.MaxPartySlots;
 
             return new Dictionary<string, PlayerProperty>

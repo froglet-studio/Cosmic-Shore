@@ -278,6 +278,31 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public PartyStateMachine StateMachine => _stateMachine;
 
+        /// <summary>The party data this service writes (roster, online list, flags). Read-only use:
+        /// SOAP single-writer - this service is the writer (PartyConsoleCommand reads it).</summary>
+        public HostConnectionDataSO ConnectionData => connectionData;
+
+        /// <summary>True while this machine runs the offline loopback session (party layer stood down).</summary>
+        public bool IsOfflineSession => _gameData != null && _gameData.IsOfflineSession;
+
+        /// <summary>
+        /// The one log for a failed accept / direct join / spectate, before the caller rethrows. A full
+        /// party is a designed outcome since B25 (the session's MaxPlayers refuses the fifth player) and
+        /// PartyInviteController already toasts and warns it, so only a real fault is an error here.
+        /// </summary>
+        static void LogJoinFailure(string what, Exception e)
+        {
+            if (UgsRequestPolicy.Classify(e) == UgsFailureClass.Full)
+                CSDebug.LogVerbose(CSLogChannel.Party, $"[HostConnectionService] {what}: the party is full ({e.Message}).");
+            else
+                CSDebug.LogError(
+                    $"[HostConnectionService] {what} error ({e.GetType().Name}): {e}" +
+                    (e.InnerException != null
+                        ? $" - inner ({e.InnerException.GetType().Name}): {e.InnerException}"
+                        : string.Empty));
+            CSDebug.LogVerbose(CSLogChannel.Party, $"[HostConnectionService] NetDiag: class={NetworkDiagnostics.ClassifyException(e)} | {NetworkDiagnostics.GetSnapshot()}");
+        }
+
         // ─────────────────────────────────────────────────────────────────────
         // Guard predicates - derive from authoritative state (state machine,
         // lobby service ref, NetworkManager) rather than a separate boolean.
@@ -856,12 +881,7 @@ namespace CosmicShore.Gameplay
                 // client. Log the full exception and rethrow so PIC's catch recovers
                 // immediately (fail fast) and the real cause is visible.
                 // See Docs/PartySystem/ARCHITECTURE.md (Error-handling matrix).
-                CSDebug.LogError(
-                    $"[HostConnectionService] AcceptInvite error ({e.GetType().Name}): {e}" +
-                    (e.InnerException != null
-                        ? $" - inner ({e.InnerException.GetType().Name}): {e.InnerException}"
-                        : string.Empty));
-                CSDebug.LogVerbose(CSLogChannel.Party, $"[HostConnectionService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
+                LogJoinFailure("AcceptInvite", e);
                 throw;
             }
         }
@@ -945,12 +965,7 @@ namespace CosmicShore.Gameplay
             }
             catch (Exception e)
             {
-                CSDebug.LogError(
-                    $"[HostConnectionService] JoinPartyDirect error ({e.GetType().Name}): {e}" +
-                    (e.InnerException != null
-                        ? $" - inner ({e.InnerException.GetType().Name}): {e.InnerException}"
-                        : string.Empty));
-                CSDebug.LogVerbose(CSLogChannel.Party, $"[HostConnectionService] NetDiag: class={NetworkDiagnostics.ClassifyException(e)} | {NetworkDiagnostics.GetSnapshot()}");
+                LogJoinFailure("JoinPartyDirect", e);
                 throw;
             }
         }
@@ -999,12 +1014,7 @@ namespace CosmicShore.Gameplay
             catch (Exception e)
             {
                 connectionData.IsSpectating = false;
-                CSDebug.LogError(
-                    $"[HostConnectionService] JoinAsSpectator error ({e.GetType().Name}): {e}" +
-                    (e.InnerException != null
-                        ? $" - inner ({e.InnerException.GetType().Name}): {e.InnerException}"
-                        : string.Empty));
-                CSDebug.LogVerbose(CSLogChannel.Party, $"[HostConnectionService] NetDiag: class={NetworkDiagnostics.ClassifyException(e)} | {NetworkDiagnostics.GetSnapshot()}");
+                LogJoinFailure("JoinAsSpectator", e);
                 throw;
             }
         }
@@ -2263,8 +2273,8 @@ namespace CosmicShore.Gameplay
             {
                 lobby.CurrentPlayer.SetProperty(PARTY_COUNT_KEY,
                     new PlayerProperty(currentCount.ToString(), VisibilityPropertyOptions.Public));
-                // Displayed party size (4), not transport capacity (6) - publishing the
-                // capacity is what made every remote row read "1/6".
+                // The party size - 4, the only size since B25 (the session is created with
+                // exactly that many seats, so the published max and the real one cannot disagree).
                 lobby.CurrentPlayer.SetProperty(PARTY_MAX_KEY,
                     new PlayerProperty(connectionData.MaxPartySlots.ToString(), VisibilityPropertyOptions.Public));
                 lobby.CurrentPlayer.SetProperty(MATCH_NAME_KEY,

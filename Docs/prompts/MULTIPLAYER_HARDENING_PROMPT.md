@@ -42,8 +42,10 @@ and a compile as a precondition.
   change fits inside them.
 - Preserve the invariants listed in `ROADMAP.md` § "Genuinely strong": single-writer SOAP,
   `.AsMainThread()` at every UGS/Netcode await, `PartyStateMachine` as the only lifecycle
-  authority, `NetworkSceneObjectGuard.Sweep` before every join, the 6-transport / 4-displayed slot
-  split, every catch mapping to a named recovery.
+  authority, `NetworkSceneObjectGuard.Sweep` before every join, **one party size, 4, enforced by
+  the party session's own seat count** (B25 — this line used to protect "the 6-transport /
+  4-displayed slot split", which was the defect itself and is gone), every catch mapping to a
+  named recovery.
 - Branch and push per the repo's git rules. Do not open a PR unless asked.
 
 ---

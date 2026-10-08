@@ -1898,4 +1898,6 @@ can no longer be spectated; `JoinTargetValidator` refuses that before teardown.
 
 **Evidence.** Read from code on `Ys-bleeding-edge` 280c0475: the call-site table above
 (`grep -rn 'HasOpenSlots\|HasOpenDisplaySlots\|PartyDisplaySlots\|MaxPartySlots' Assets/_Scripts`).
-The capacity split itself is pinned by `PartyInviteSystemTests.FourMembers_PartyIsFullByTheGameRule_TransportKeepsHeadroom`.
+The capacity split was pinned by `PartyInviteSystemTests.FourMembers_PartyIsFullByTheGameRule_TransportKeepsHeadroom`,
+deleted with the split; the one size is pinned by `HostConnectionDataSOTests.MaxPartySlots_IsFour` /
+`HasOpenSlots_CountsEachPlayerOnce` and `JoinTargetValidatorTests.Spectate_FullParty_IsPartyFull`.

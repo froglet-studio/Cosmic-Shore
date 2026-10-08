@@ -70,8 +70,10 @@ Two smaller findings that each cause a visible class of "it just didn't work":
 
 What is **right** and must not move: the two-level model, eager per-user Relay, single-writer SOAP,
 `.AsMainThread()` at every await, `PartyStateMachine` as the only lifecycle authority,
-`NetworkSceneObjectGuard.Sweep` before every join, the `maxPartySlots 6 / partyDisplaySlots 4`
-split, and "every catch maps to a named recovery". *(§9)*
+`NetworkSceneObjectGuard.Sweep` before every join, ~~the `maxPartySlots 6 / partyDisplaySlots 4`
+split~~ **one party size, 4, enforced by the session's seat count** (2026-10-08: the split was
+the defect behind B25 — see `Docs/PartySystem/BUGS.md`), and "every catch maps to a named
+recovery". *(§9)*
 
 ---
 
@@ -103,7 +105,7 @@ and the Google SRE book *Handling Overload* (retry budgets, retry at one layer).
 ```
  UGS Lobby (presence lobby, 100 players, no Relay)   <- discovery + invite carrier (player properties)
       |  polled every 1.5 s / 0.75 s boosted; converge query every 4 s
- UGS Sessions + Relay (party session, 6 transport slots / 4 shown)  <- eager, one per user ("Always InParty")
+ UGS Sessions + Relay (party session, 4 seats - B25)               <- eager, one per user ("Always InParty")
       |  polled every tick too (RefreshAsync); PlayerLeaving/Deleted subscribed
  Netcode for GameObjects 2.13.3 host/client over UTP+Relay          <- NetworkManager.prefab, approval on
       |  OnClientDisconnect / OnTransportFailure
@@ -461,15 +463,18 @@ Join-direct path is the rejoin).
 
 `PartyMembers` is rebuilt from the party session's `Players` on its `PlayerJoined / PlayerLeft /
 PlayerPropertiesChanged`, and from `ConnectedClients` **only** while in a match. The `joined_party`
-scan goes. Keep `maxPartySlots 6 / partyDisplaySlots 4` as is — headroom is cheap insurance and the
-UI already reads the display number.
+scan goes. ~~Keep `maxPartySlots 6 / partyDisplaySlots 4` as is — headroom is cheap insurance and the
+UI already reads the display number.~~ **Superseded 2026-10-08 (B25):** the headroom was what let
+two simultaneous Joins seat a fifth player, because no check of the 4 ran where the seat is granted.
+There is one size, `maxPartySlots = 4`, the session is created with 4 seats, and `HasOpenSlots`
+counts distinct player ids — the flicker the spare seats used to absorb.
 
 ### 5.8 UI contract for the two buttons (and Accept)
 
 | Control | Enabled when | While in flight | Result states |
 |---|---|---|---|
-| **Invite** | target online · target not in a match that disallows joins · `HasOpenDisplaySlots` · no outstanding invite to this target (60 s) | disabled + spinner ("Inviting…") | "Sent ✓" (60 s) → auto-flips to member on `PlayerJoined`; "Declined"; "Expired" |
-| **Join** | target `HasJoinableSession` · `partyCount < partyDisplaySlots` (push-fresh) · no `join:*` in flight | disabled + "Joining…" with **Cancel** (cancels the single-flight token; own session untouched until validation passed) | success → lobby; `Full` → "Party is full"; `Gone` → "Party no longer available"; `Transient` → "Couldn't reach the party — try again"; timeout → same |
+| **Invite** | target online · target not in a match that disallows joins · `HasOpenSlots` (was `HasOpenDisplaySlots` before B25) · no outstanding invite to this target (60 s) | disabled + spinner ("Inviting…") | "Sent ✓" (60 s) → auto-flips to member on `PlayerJoined`; "Declined"; "Expired" |
+| **Join** | target `HasJoinableSession` · `partyCount < partyMax` (push-fresh; the session's 4 seats are the authority since B25) · no `join:*` in flight | disabled + "Joining…" with **Cancel** (cancels the single-flight token; own session untouched until validation passed) | success → lobby; `Full` → "Party is full"; `Gone` → "Party no longer available"; `Transient` → "Couldn't reach the party — try again"; timeout → same |
 | **Accept** (notification) | invite not expired · sender still online & joinable (push-fresh) | disabled + "Joining…" | as Join; stale invite auto-dismisses on sender `PlayerLeft` / `partyCount` full |
 | **Spectate** | match in progress · spectator slot | disabled + "Connecting…" (≤ 45 s) | as Join |
 
