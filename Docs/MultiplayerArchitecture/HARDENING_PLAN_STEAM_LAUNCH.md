@@ -60,9 +60,9 @@ two different things, and only one of them is a matchmaking problem.
 | **~100** | **The design ceiling** | `PRESENCE_LOBBY` is created with max 100. At 100 CCU the lobby is full and the 101st player has no discovery at all. |
 | **>100** | Needs sharding or query-based discovery | Not a tuning problem — an architecture change. Roadmap item, not launch. |
 
-**The honest launch read.** If the first week is tens of concurrent players, **the ceiling is not
-the problem — the read rate is.** Fix the request volume and the 100-player ceiling is comfortably
-beyond the launch. Plan the shard, do not build it yet.
+**The honest launch read.** The owner's week-one estimate is **10–40 concurrent** (decided
+2026-10-08), which lands squarely in the band where **the read rate is the problem and the ceiling
+is not**. So: Phase 2 is a launch blocker, and sharding is not. Plan the shard, do not build it.
 
 ---
 
@@ -308,9 +308,16 @@ a QA failure, and `verdict` is directly assertable — a soak run passes or fail
 `UgsRequestPolicy` already counts in-flight operations and classifies every failure into eight
 classes — **the counters are nearly free**; they need surfacing, not inventing.
 
-### 6.5 What I need from you
+### 6.5 Decided with the owner, 2026-10-08
 
-Four things, roughly in order of how much they unblock:
+| Question | Answer | What it changes |
+|---|---|---|
+| Crash/exception reporter | **Unity Cloud Diagnostics** | P0.5 is a package + a toggle, not an integration. Lowest friction since UGS is already wired |
+| Week-one CCU | **10–40** | **Phase 2 is a genuine P0, not comfort.** Shared lobby write pressure starts in this band and one player's spam degrades everyone's invites. The 100-player ceiling is NOT a launch concern |
+| CI host | **A Windows box with a Unity licence** | The headless runner in §5.4 is real work with a home, not a hypothetical |
+| Start where | **Block 1 — observability** | Done in part; see §10 |
+
+The original four asks, for the record:
 
 1. **A crash/exception reporter choice** for player builds. Unity Cloud Diagnostics is the
    zero-friction option since UGS is already wired; Sentry and Backtrace are the better products.
@@ -424,6 +431,47 @@ Not "no bugs" — this layer will always have some. The measurable version:
 - CI is red when any of that stops being true.
 
 ---
+
+---
+
+## 10. Landed so far
+
+**Block 1, partly done (2026-10-08).** Measuring first shrank it: two of its three parts already
+existed.
+
+| Part | State |
+|---|---|
+| **The counters** | **Already done before this plan was written.** `UgsRequestTelemetry` carries 14 counters — `Requests`, `LobbyReads`, `Retries`, `Coalesced`, `BudgetExhausted`, the eight failure classes, `PresenceForceReset`, `OfflineFallback` — with `InLastMinute`, `Total`, `Describe` and `Reset`, instrumented at the real call sites in `UgsRequestPolicy`, `LobbyPropertyWriter`, `PresenceLobbyService`, `PartySessionService` and `HostConnectionService`. Nothing to build |
+| **The session record + timeline + `net` command** | **Landed.** `NetSessionRecord` (the schema as a DTO), `NetSessionRecorder` (the timeline and the JSON writer), `NetSessionConsoleCommand` (`net`, `net dump`, `net reset`, `net mark <text>`), plus `NetSessionRecorderTests` |
+| **RNSM + Network Simulator** | **Not done, and deliberately not written blind.** `RuntimeNetStatsMonitor` is a `MonoBehaviour` in an `autoReferenced` assembly, so it needs no asmdef edit and can be added at runtime — but it displays nothing without an authored `NetStatsMonitorConfiguration`, and the simulator needs a preset asset. Writing C# that expects unauthored assets is the "ship a placeholder" trap, so both are listed as Editor tasks below |
+
+**What the recorder deliberately does not do:** count anything. `UgsRequestTelemetry` owns every
+counter; a second counter here would be a second place to forget, and the two would disagree the
+first time somebody added a call site. The recorder reads that owner and adds the one thing it has
+no opinion about — **when** things happened, in order. `net reset` resets both owners, because a
+measurement that starts with yesterday's counters and today's timeline is worse than none.
+
+**Proof.** The three shipped source files were compiled and **run** against engine shims (the real
+`UgsRequestTelemetry.cs` included, unmodified; the `UgsFailureClass` shim's member values checked
+against the real enum). 12 checks pass, including the two that are easy to get wrong: a record
+built at zero duration reports `lobbyReadsPerSecond` as **0, not Infinity** — an Infinity
+serialises and then poisons every later average — and an offline fallback counts toward the verdict
+**only when the device was online**, because a player with no wifi going offline is correct
+behaviour and B24's shape is the other one. All gates green, all four files parse clean.
+**`/verify-unity` did NOT run — no Unity in the authoring container.**
+
+### The Editor tasks this leaves
+
+1. Author a `NetStatsMonitorConfiguration` (RTT, packet loss, bandwidth in/out) and attach
+   `RuntimeNetStatsMonitor` behind the same dev gate as `DiagnosticsHUD`.
+2. Author a `NetworkSimulatorPreset` set and wire the simulator — this is what makes §5's failure
+   tests deterministic.
+3. Assign the recorder's providers once, wherever role and offline state are known
+   (`MultiplayerSetup` / `OfflineModeService`): `RoleProvider`, `OfflineProvider`,
+   `DeviceOnlineProvider`, and call `MarkOfflineFallback(deviceWasOnline)` from the one place that
+   sets `IsOfflineSession`.
+4. Add `Mark(...)` calls at the lifecycle points in §6.3's example timeline. Until then the record
+   carries counters and a verdict but a thin timeline.
 
 *Measured, not asserted: file sizes from `wc -l`; test counts from `grep -c '\[Test\]'`; the
 harness API from `com.unity.netcode.gameobjects@2.13.3/Tests/Runtime/TestHelpers/`; the read-rate

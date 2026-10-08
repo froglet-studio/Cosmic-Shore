@@ -210,7 +210,27 @@ risk is lobby write pressure, not matchmaking.
 
 **If week one is tens of concurrent players, the ceiling is not the problem — the read rate is.**
 
-## Ask the owner for these four
+## Already decided with the owner (2026-10-08) — do not re-ask
+
+| Question | Answer |
+|---|---|
+| Crash/exception reporter | **Unity Cloud Diagnostics** — package + toggle, since UGS is wired |
+| Week-one CCU | **10–40**, so **Block 5 (push instead of poll) is a launch blocker**, and sharding is not |
+| CI host | **A Windows box with a Unity licence** is available — build the headless runner for real |
+| Where to start | **Block 1**, which is partly landed — see "Block 1 status" below |
+
+### Block 1 status
+
+The counters already existed (`UgsRequestTelemetry`, 14 of them, instrumented at the real call
+sites), so Block 1 shrank on measurement. **Landed:** `NetSessionRecord`, `NetSessionRecorder`,
+`NetSessionConsoleCommand` (`net` / `net dump` / `net reset` / `net mark`) and
+`NetSessionRecorderTests` — compiled and run against shims, 12 checks green, `/verify-unity` not
+run. **Still to do, in the Editor, because they need authored assets:** the
+`NetStatsMonitorConfiguration` + `RuntimeNetStatsMonitor` attach, the `NetworkSimulatorPreset` set,
+assigning the recorder's three providers, and adding `Mark(...)` at the lifecycle points. Do not
+write the RNSM wiring blind — the component displays nothing without its configuration asset.
+
+## The original asks, for the record
 
 1. **A crash/exception reporter** for player builds (Unity Cloud Diagnostics is lowest friction
    since UGS is wired; Sentry/Backtrace are better products). *The only item here I would call
