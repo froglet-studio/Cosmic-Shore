@@ -170,9 +170,10 @@ CONTROLS = {
 }
 
 
-def controls(minutes=12.0, seeds=(1, 2)):
-    """Each control is the RECOMMENDED cell (rounds.FINAL) with one planted failure."""
-    from .rounds import FINAL
+def controls(minutes=12.0, seeds=(1, 2), cfg_name="FINAL", tag="controls"):
+    """Each control is the RECOMMENDED cell (rounds.FINAL; round 2: FINAL2) with one planted failure."""
+    from . import rounds
+    FINAL = getattr(rounds, cfg_name)
     jobs, keys = [], []
     for name, (cfg, bug, _) in CONTROLS.items():
         for s in seeds:
@@ -200,7 +201,7 @@ def controls(minutes=12.0, seeds=(1, 2)):
             print("clean cell fires:", {n: f for n, f in v["fires"].items() if f} or "nothing")
         else:
             print(k, "FIRED" if v["fired"] else "did NOT fire")
-    save("controls.json", out)
+    save(f"{tag}.json", out)
     return out
 
 
@@ -269,6 +270,11 @@ if __name__ == "__main__":
         baseline(minutes=mins)
     elif what == "controls":
         controls()
+    elif what == "controls2":
+        controls(cfg_name="FINAL2", tag="r2_controls")
+    elif what == "final2":
+        from .rounds import FINAL2
+        baseline(seeds=(1, 2, 3, 4), minutes=float(sys.argv[2]) if len(sys.argv) > 2 else 45.0, cfg=FINAL2, label="r2_final")
     elif what == "final":
         from .rounds import FINAL
         baseline(seeds=(1, 2, 3, 4), minutes=float(sys.argv[2]) if len(sys.argv) > 2 else 45.0, cfg=FINAL, label="final")

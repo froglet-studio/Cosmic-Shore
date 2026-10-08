@@ -228,3 +228,12 @@ R15 = {
     "r15_lurkthief_m08": dict(B15, pack_metab=0.08, **{"lurker.prey_names": ("grazer", "locust", "thief")}),
     "r15_lurkthief_rec05": dict(B15, flora_recruit=0.5, **{"lurker.prey_names": ("grazer", "locust", "thief")}),
 }
+
+# R15 result (45 min): with no thief predator thieves sit at their 150 nest cap 44% of the time (steals 37/min,
+# quiet 0.28 - a cell of tailing magpies); with lurkers taking them, seed 3 loses its thieves by minute 16 in two
+# variants (that seed's nests sit away from the pilots' routes, so its thieves are trail-starved first). Lurkers
+# follow the herbivore base up (150-300 by minute 44): recruitment turns the trail pump into standing biomass, and
+# every level above it grows with it. Pack metabolism 0.10 keeps packs at 32-64.
+# THE ROUND-2 CELL: B15 with lurkers off thieves and a thief COLONY limit of 25 per nest (75): like the fortress's
+# 64 workers, a nest's size is part of the species design, and it is what stops the cell filling with tailers.
+FINAL2 = dict(B15, thief_cap=75)
