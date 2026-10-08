@@ -1,0 +1,23 @@
+{
+  "init3d": "Tools/NCA/results/lizard3d_swim/model.pt",
+  "genome_w": 1.0,
+  "per_form": 2,
+  "damage_per_form": 1,
+  "pool_per_form": 128,
+  "frames": 8,
+  "period": 8,
+  "window": 5,
+  "min_seed_check": 64,
+  "clock_steps": 500,
+  "clock_min_iter": 96,
+  "clock_max_iter": 128,
+  "lr": 0.002,
+  "lr_drop_step": 3000,
+  "steps": 4000,
+  "min_iter": 64,
+  "max_iter": 96,
+  "fire_rate": 0.5,
+  "blowup_factor": 20.0,
+  "seed": 0,
+  "threads": 2
+}
