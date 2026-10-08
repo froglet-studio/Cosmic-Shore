@@ -506,6 +506,7 @@ namespace CosmicShore.Launcher
             y += 74;
             DrawCloneBranch(dl, new Vector2(x0, y), colW);
             y += 50;
+            y += DrawBehindBanner(dl, new Vector2(x0, y), colW);
 
             // START
             ImGui.SetCursorScreenPos(new Vector2(x0, y));
@@ -566,6 +567,49 @@ namespace CosmicShore.Launcher
                 float lx = i == 0 ? p.X - 8 : i == steps.Length - 1 ? p.X - ts.X + 8 : p.X - ts.X * 0.5f;
                 dl.AddText(Neon.Small, 15, new Vector2(lx, p.Y + 14), Neon.U(done || now ? Neon.Ink : Neon.Dim), steps[i]);
             }
+        }
+
+        // ---- is Prisma's own copy behind its branch?
+
+        int _pendingSeen = -1;
+        DateTime _pendingChecked;
+
+        /// <summary>
+        /// A banner when Prisma's workspace is not at the tip of its branch on GitHub (so TOOLS, DATA,
+        /// MODELS and PLAY run older code), with UPDATE. Unsaved changes in the workspace block the
+        /// update, and the banner says so instead of offering it: they are never thrown away.
+        /// Returns the height it used (0 when up to date).
+        /// </summary>
+        float DrawBehindBanner(ImDrawListPtr dl, Vector2 p, float w)
+        {
+            _jobs.CheckRemote(_s.Branch);
+            if (!_jobs.Behind(_s.Branch)) return 0;
+            if ((DateTime.Now - _pendingChecked).TotalSeconds > 10 && !_jobs.Busy)
+            {
+                _pendingChecked = DateTime.Now;
+                Task.Run(() => _pendingSeen = _ws.PendingChanges());
+            }
+            const float h = 40;
+            dl.AddRectFilled(p, p + new Vector2(w, h), Neon.U(Neon.Amber, 0.12f), 8);
+            dl.AddRect(p, p + new Vector2(w, h), Neon.U(Neon.Amber, 0.55f), 8, ImDrawFlags.None, 1.2f);
+            string head = _jobs.HeadSha?[..Math.Min(7, _jobs.HeadSha.Length)] ?? "?";
+            string tip = _jobs.RemoteTip?[..Math.Min(7, _jobs.RemoteTip.Length)] ?? "?";
+            ImGui.PushFont(Neon.Small);
+            dl.AddText(Neon.Small, 13, p + new Vector2(12, 4), Neon.U(Neon.Amber), $"Prisma's copy is behind {Trim(_s.Branch, 40)}: it has #{head}, GitHub has #{tip}.");
+            string sub = _pendingSeen > 0
+                ? $"{_pendingSeen} unsaved change{(_pendingSeen == 1 ? "" : "s")} in Prisma's copy block the update: commit or discard them on GIT first."
+                : "The editor tools and the game run the older code until you update.";
+            dl.AddText(Neon.Small, 13, p + new Vector2(12, 21), Neon.U(Neon.Dim), sub);
+            ImGui.PopFont();
+            ImGui.SetCursorScreenPos(new Vector2(p.X + w - 112, p.Y + 6));
+            if (_pendingSeen > 0)
+            {
+                if (SmallButton("GIT", 104, true)) _page = Page.Git;
+            }
+            else if (SmallButton(_jobs.Busy && _jobs.JobName == "Update workspace" ? "UPDATING" : "UPDATE", 104, !_jobs.Busy && !_jobs.GameRunning))
+                _jobs.Update();
+            Neon.Tooltip(_jobs.GameRunning ? "Close the game first." : "Fetch the branch's tip into Prisma's own copy (your Unity checkout is not touched).");
+            return h + 12;
         }
 
         // ---- following the branch Unity / GitHub Desktop has checked out

@@ -43,6 +43,43 @@ namespace CosmicShore.Launcher
         {
             Commit = _ws.Commit();
             Scenes = _ws.BuildScenes();
+            HeadSha = _ws.HeadSha();
+        }
+
+        /// <summary>The workspace's commit, and the branch tip on GitHub when last checked (ls-remote).</summary>
+        public string? HeadSha { get; private set; }
+        public string? RemoteTip { get; private set; }
+        public string? RemoteTipBranch { get; private set; }
+        /// <summary>Counts successful syncs: the EDITOR rebuilds its tools when this moves.</summary>
+        public int SyncCount { get; private set; }
+        DateTime _remoteChecked;
+        bool _remoteChecking;
+
+        /// <summary>
+        /// True when Prisma's own copy is not at the tip of the branch it plays: the editor tools
+        /// and the game would run older code than GitHub has.
+        /// </summary>
+        public bool Behind(string branch) =>
+            RemoteTip != null && HeadSha != null && RemoteTipBranch == branch && !string.Equals(RemoteTip, HeadSha, StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>Reads the branch tip from GitHub at most once a minute (or at once when <paramref name="now"/>).</summary>
+        public void CheckRemote(string branch, bool now = false)
+        {
+            if (_remoteChecking || Busy || !_ws.Exists || _tools.Git == null) return;
+            if (!now && RemoteTipBranch == branch && (DateTime.Now - _remoteChecked).TotalSeconds < 60) return;
+            _remoteChecking = true;
+            _remoteChecked = DateTime.Now;
+            Task.Run(async () =>
+            {
+                try
+                {
+                    HeadSha ??= _ws.HeadSha();
+                    var tip = await _ws.RemoteTip(branch, CancellationToken.None);
+                    RemoteTip = tip; RemoteTipBranch = branch;
+                }
+                catch { /* offline: no banner */ }
+                finally { _remoteChecking = false; }
+            });
         }
 
         public void Cancel() => _cts?.Cancel();
@@ -278,6 +315,7 @@ namespace CosmicShore.Launcher
             bool ok = await _ws.Sync(_s.Branch, Log, (p, what) => Step(what, p), ct);
             RefreshLocalState();
             if (ok && Commit != null) Log.Add(LogKind.Success, $"{_s.Branch} @ {Commit.Sha} - {Commit.Subject}");
+            if (ok) { SyncCount++; CheckRemote(_s.Branch, now: true); }
             return ok;
         }
 

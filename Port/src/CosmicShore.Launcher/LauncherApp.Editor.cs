@@ -50,6 +50,15 @@ namespace CosmicShore.Launcher
             }
             Neon.Tooltip("Rebuild the editor tools from the workspace (after a pull or an agent's script edit) and reload this page.");
 
+            // An update moved the workspace: rebuild the tools from its code and reload the page.
+            if (_jobs.SyncCount != _edSyncSeen)
+            {
+                if (_edSyncSeen >= 0) { Ed.Invalidate(); _edTools = null; _edTypes = null; _edData = null; _edModel = null; _edModels = null; }
+                _edSyncSeen = _jobs.SyncCount;
+            }
+            var bannerH = DrawBehindBanner(ImGui.GetWindowDrawList(), new Vector2(a.X, a.Y + 64), b.X - a.X);
+            a.Y += bannerH;
+
             var ca = new Vector2(a.X, a.Y + 70);
             ImGui.SetCursorScreenPos(ca);
             ImGui.PushItemWidth(320);
@@ -566,6 +575,7 @@ namespace CosmicShore.Launcher
         // ------------------------------------------------------------------ MODELS
 
         List<string>? _edModels;
+        int _edSyncSeen = -1;
         string? _edModelPath;
         JsonDocument? _edModel;
         bool _edModelLoading, _edPreviewLoading;
