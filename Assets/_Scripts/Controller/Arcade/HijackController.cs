@@ -111,11 +111,11 @@ namespace CosmicShore.Gameplay
                  "hatch is a no-op.")]
         [SerializeField, Min(1f)] float aiSlippedRailCooldown = 10f;
 
-        // The Urchin's controls, from Resources/ElementalAbilityMaps/Urchin.asset. Named rather
-        // than looked up: the AI drives exactly two of the four, and a binding sweep that
-        // silently found nothing would read as an AI that simply never used its weapon.
-        const InputEvents SpikeControl = InputEvents.RightStickAction;   // Charge - Chain Spikes
-        const InputEvents SlipControl = InputEvents.Button2Action;       // Time  - Slip
+        // The Urchin's kit (spike, slip), shared with Skein. Controls are found by CAPABILITY on
+        // the vessel's own bindings, and the spike's meter and cost are read off its ability SO,
+        // so a re-bound or retuned Urchin cannot leave this AI pressing a dead trigger.
+        UrchinAutopilotDriver _urchinAI;
+        UrchinAutopilotDriver UrchinAI => _urchinAI ??= new UrchinAutopilotDriver();
 
         [Header("Ownership Sync")]
         [Tooltip("Seconds between ownership flushes. Prism changes are coalesced per prism and " +
@@ -128,6 +128,12 @@ namespace CosmicShore.Gameplay
                  "enough for the real change to arrive from its owner, so a confirmed steal never " +
                  "flickers; short enough that a steal that never happened does not linger.")]
         [SerializeField, Min(0f)] float ownershipGraceSeconds = 0.5f;
+
+        [Tooltip("Yard prisms checked per frame for a shield change. Shields raise no event, so " +
+                 "the ownership table sweeps for them round-robin (two bool reads per prism); at " +
+                 "4096 a peak 9,930-prism yard is covered every ~3 frames, well inside the flush " +
+                 "cadence the change then waits for.")]
+        [SerializeField, Min(64)] int shieldSweepBudget = 4096;
 
         /// <summary>Entries per ownership RPC. 512 packed ints is 2 KB - well inside one
         /// transport payload, so a big late-join snapshot goes as several plain messages rather
@@ -173,7 +179,8 @@ namespace CosmicShore.Gameplay
             // players started a match already on the board).
             if (IsServer) ZeroStealCounters();
 
-            _ownership = new HijackOwnershipLedger(IsServer, IsLocallyAuthoritative, ownershipGraceSeconds);
+            _ownership = new HijackOwnershipLedger(IsServer, IsLocallyAuthoritative, SimulatesRivalOf,
+                                                   ownershipGraceSeconds, shieldSweepBudget);
             _nextOwnershipFlush = 0f;
 
             // Every client pulls the table once, not just a late joiner: early in a match it is
@@ -193,10 +200,11 @@ namespace CosmicShore.Gameplay
         // ── Replicated prism ownership ───────────────────────────────────────
 
         /// <summary>
-        /// Keeps the yard's prisms showing the SERVER's ownership on every peer - which is what
-        /// makes ride speed (<c>TrailFollower</c> reads the prism it is on), the objective arrow
-        /// and the AI's rail choice (both read <see cref="HijackYard"/>, which reads the table)
-        /// agree between machines. See <see cref="HijackOwnershipLedger"/> for who is believed
+        /// Keeps the yard's prisms showing the SERVER's ownership and shield state on every peer -
+        /// which is what makes ride speed (<c>TrailFollower</c> reads the prism it is on), what a
+        /// steal does (a shield takes the hit instead of the prism), the objective arrow and the
+        /// AI's rail choice (both read <see cref="HijackYard"/>, which reads the table) agree
+        /// between machines. See <see cref="HijackOwnershipLedger"/> for who is believed
         /// and why; this method is the per-frame driver and the wire.
         /// </summary>
         void LateUpdate()
@@ -243,7 +251,16 @@ namespace CosmicShore.Gameplay
         /// test as <c>StatsManager.OwnsAttacker</c>. Cached per frame: a spike cascade asks this
         /// once per prism it flips.
         /// </summary>
-        bool IsLocallyAuthoritative(Domains domain)
+        bool IsLocallyAuthoritative(Domains domain) => (AuthorityMask() & (1 << (int)domain)) != 0;
+
+        /// <summary>
+        /// Does this machine simulate a pilot of any domain OTHER than
+        /// <paramref name="domain"/> - someone whose steal could have broken a shield that
+        /// domain's owner laid? Same per-frame mask as <see cref="IsLocallyAuthoritative"/>.
+        /// </summary>
+        bool SimulatesRivalOf(Domains domain) => (AuthorityMask() & ~(1 << (int)domain)) != 0;
+
+        int AuthorityMask()
         {
             if (_authorityMaskFrame != Time.frameCount)
             {
@@ -260,7 +277,7 @@ namespace CosmicShore.Gameplay
                     }
                 }
             }
-            return (_authorityMask & (1 << (int)domain)) != 0;
+            return _authorityMask;
         }
 
         static int[] Chunk(int[] packed, int offset)
@@ -279,9 +296,11 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// CLIENT → SERVER: this client's own steals. The server accepts each only in the
-        /// SENDER's domain - taken from the server's copy of the Player that owns the RPC, never
-        /// from the payload - and re-broadcasts what it accepted on its next flush.
+        /// CLIENT → SERVER: this client's own changes - steals, shields on its own mass, shields
+        /// it broke on a rival's. The server accepts each only if the SENDER could have caused
+        /// it - the sender's domain is taken from the server's copy of the Player that owns the
+        /// RPC, never from the payload - applies the shield rule against its own table, and
+        /// re-broadcasts what landed on its next flush.
         /// </summary>
         [ServerRpc(RequireOwnership = false)]
         void ReportOwnership_ServerRpc(int[] packed, ServerRpcParams rpcParams = default)
@@ -292,7 +311,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// CLIENT → SERVER: send me every prism that has changed hands so far. Answered to the
+        /// CLIENT → SERVER: send me every prism that has changed hands or armour so far. Answered to the
         /// asker only; deltas after it ride the normal broadcast, in order behind it.
         /// </summary>
         [ServerRpc(RequireOwnership = false)]
@@ -402,7 +421,6 @@ namespace CosmicShore.Gameplay
                 int excludedRail = -1;
                 float excludedUntil = 0f;
                 float nextRetarget = 0f;
-                float nextSpike = 0f;
                 // Stamped NOW, not 0: the stall test is Time.time - movingSince, and a zero
                 // seed makes the very first attached frame read as several minutes parked.
                 float movingSince = Time.time;
@@ -452,7 +470,7 @@ namespace CosmicShore.Gameplay
                         if (self.Speed >= aiParkedSpeed) movingSince = Time.time;
                         else if (Time.time - movingSince > aiStuckSeconds)
                         {
-                            Slip(self);
+                            UrchinAI.TrySlip(captured);
                             excludedRail = rail;
                             excludedUntil = Time.time + aiSlippedRailCooldown;
                             rail = -1;
@@ -461,7 +479,7 @@ namespace CosmicShore.Gameplay
                             return centre;
                         }
 
-                        TrySpike(self, ref nextSpike, IsHostileUnderfoot(yard, self, domain));
+                        if (IsHostileUnderfoot(yard, self, domain)) SpikeVolley(captured);
 
                         // Keep the nose down-rail: the ride constrains position, never attitude,
                         // so where the AI looks is what it launches along.
@@ -483,8 +501,7 @@ namespace CosmicShore.Gameplay
                             // Airborne: the cluster ahead is what the volley is for. Rolling it:
                             // ask what is actually underfoot, or a raider on an emptied burr
                             // spends its whole meter on its own mass.
-                            TrySpike(self, ref nextSpike,
-                                     !self.IsAttached || IsHostileUnderfoot(yard, self, domain));
+                            if (!self.IsAttached || IsHostileUnderfoot(yard, self, domain)) SpikeVolley(captured);
                             Vector3 through = range > 1e-3f ? (burr - pos) / range : selfTf.forward;
                             return burr + through * aiThroughDistance;
                         }
@@ -505,6 +522,7 @@ namespace CosmicShore.Gameplay
 
         void DisarmRaiders()
         {
+            _urchinAI?.Clear();
             var players = gameData != null ? gameData.Players : null;
             if (players == null) return;
             foreach (var p in players)
@@ -572,45 +590,12 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Tap the chain-spike trigger, if the mass in front is worth spending a volley on and the
-        /// meter can pay for it. Press and release in the same call: the Urchin's trigger is
-        /// tap-for-shotgun / hold-for-burst, and an AI that held it would charge a burst it never
-        /// released.
+        /// Tap the chain-spike trigger through the shared Urchin driver, at this mode's authored
+        /// cadence and ammo floor. The driver owns the per-pilot interval, so the press-and-release
+        /// is one call and can never charge a burst it does not release.
         /// </summary>
-        void TrySpike(IVesselStatus status, ref float nextSpike, bool hostileUnderfoot)
-        {
-            if (!hostileUnderfoot || Time.time < nextSpike) return;
-
-            var handler = status.ActionHandler;
-            if (handler == null) return;
-            if (!HasSpikeAmmo(status)) return;
-
-            nextSpike = Time.time + aiSpikeIntervalSeconds;
-            handler.PerformShipControllerActionsReplicated(SpikeControl);
-            handler.StopShipControllerActionsReplicated(SpikeControl);
-        }
-
-        /// <summary>
-        /// True while the vessel's spike meter is above the floor. Reads the FIRST resource, which
-        /// is the ammo meter <c>GunVesselTransformer.SlideActions</c> recharges - a named index
-        /// would be a second place the Urchin's meter order has to be kept in step, and the wrong
-        /// one silently reads a different resource rather than failing.
-        /// </summary>
-        bool HasSpikeAmmo(IVesselStatus status)
-        {
-            var resources = status.ResourceSystem?.Resources;
-            if (resources == null || resources.Count == 0) return true;   // no meter: never gate
-            var ammo = resources[0];
-            return ammo.MaxAmount <= 0f || ammo.CurrentAmount / ammo.MaxAmount >= aiMinSpikeAmmo;
-        }
-
-        static void Slip(IVesselStatus status)
-        {
-            var handler = status.ActionHandler;
-            if (handler == null) return;
-            handler.PerformShipControllerActionsReplicated(SlipControl);
-            handler.StopShipControllerActionsReplicated(SlipControl);
-        }
+        void SpikeVolley(IPlayer pilot) =>
+            UrchinAI.TrySpike(pilot, aiSpikeIntervalSeconds, aiMinSpikeAmmo);
 
         // ── Server-authoritative game end (the Rampage/Salvo shape) ──────────
 

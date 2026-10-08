@@ -5,7 +5,7 @@
 # ASSERTED. Exit code is non-zero on any failure. Docs/SUBSTRATE_FAUNA.md §6.
 #
 #   bash Tools/Build/substrate_harness/run.sh            # every asserted test
-#   bash Tools/Build/substrate_harness/run.sh pack       # one group: fidelity | pack | locust | lurker | ledger | job | index | kernel | bench
+#   bash Tools/Build/substrate_harness/run.sh pack       # one group: fidelity | pack | locust | lurker | ledger | job | index | kernel | bench | siege | arms
 #   bash Tools/Build/substrate_harness/run.sh export     # rewrite game_params.json (the species assets' source)
 #   bash Tools/Build/substrate_harness/run.sh emotion <jobs.txt>   # the emotion-probe export (Tools/Build/emotion_range, SWARM_FAUNA.md §27)
 #
@@ -24,7 +24,7 @@ ls "$REFDIR"/*.dll | sed 's/^/-r:/' > "$OUT/refs.rsp"
 SUB="$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Substrate"
 SW="$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm"
 # the substrate publishes the swarm's instance contract (SwarmInstance, SwarmJobState) and reuses its index ledger (SwarmEntryLedger)
-CORE=("$SUB/SubstrateSpecies.cs" "$SUB/SubstrateFields.cs" "$SUB/SubstrateKernel.cs" "$SUB/SubstrateCore.cs" "$SUB/SubstrateTickJob.cs"
+CORE=("$SUB/SubstrateSpecies.cs" "$SUB/SubstrateFields.cs" "$SUB/SubstrateKernel.cs" "$SUB/SubstrateCore.cs" "$SUB/SubstrateSiege.cs" "$SUB/SubstrateArms.cs" "$SUB/SubstrateArmsPolicy.cs" "$SUB/SubstrateTickJob.cs"
       "$SW/ISwarmCore.cs" "$SW/SwarmFieldCore.cs" "$SW/SwarmTickJob.cs" "$SW/SwarmPrismSync.cs")
 # the kernel the game Burst-compiles stays inside what Burst compiles (Burst cannot run here: a textual gate, with a
 # negative control - the pre-11c managed step in ReferenceStep.cs must fail it)
@@ -38,7 +38,7 @@ python3 "$HERE/check_burst_substrate.py" "$SUB/SubstrateKernel.cs" "$SUB/Substra
   "${CORE[@]}" || { echo "FAIL: the substrate core does not compile against netstandard2.1 (Unity's API profile)" >&2; exit 1; }
 "$DOTNET" "$CSC" -nologo -langversion:9.0 -nostdlib -noconfig -optimize+ "@$OUT/refs.rsp" -nowarn:CS0649 \
   -target:exe -main:SubstrateHarness -out:"$OUT/substrate.exe" "${CORE[@]}" "$HERE/ReferenceStep.cs" "$HERE/Program.cs" \
-  "$HERE/LodHarness.cs" "${LOD[@]}" "$HERE/EmotionSubstrate.cs"
+  "$HERE/LodHarness.cs" "$HERE/SiegeHarness.cs" "$HERE/ArmsHarness.cs" "${LOD[@]}" "$HERE/EmotionSubstrate.cs"
 V=$(ls "$DOTNET_ROOT"/shared/Microsoft.NETCore.App | head -1)
 printf '{"runtimeOptions":{"tfm":"net8.0","framework":{"name":"Microsoft.NETCore.App","version":"%s"}}}' "$V" > "$OUT/substrate.runtimeconfig.json"
 exec "$DOTNET" "$OUT/substrate.exe" "$HERE/research_params.json" "${1:-all}" "${@:2}"

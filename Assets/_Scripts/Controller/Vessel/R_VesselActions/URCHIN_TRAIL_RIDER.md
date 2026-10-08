@@ -50,7 +50,6 @@ Attaching is **two flags and no reparenting**:
 
 ```
 contact  →  VesselAttachPrismEffectSO      sets IVesselStatus.IsAttached + .AttachedPrism
-            (+ GunsActive, see below)
               │
               ▼
          GunVesselTransformer.MoveShip     edge-detects the flag
@@ -109,14 +108,6 @@ platform given** (see `CLAUDE.md` § Impact Effects). Squirrel / Dolphin / Sparr
 `VesselChangeSpeedByPrismEffectSO`; Rhino and Serpent do not. `UrchinImpactorDataContainer` does
 not list one either, so the Urchin currently takes **no speed penalty from any prism**, danger
 prisms included. That is an open item, not a design position.
-
-## Attaching arms the guns
-
-`VesselAttachPrismEffectSO` also sets `vesselStatus.GunsActive = true` (`armGunsOnAttach`,
-default on). The Urchin's loop is *ride to reach enemy mass, then convert it*, so an attach that
-leaves the guns cold makes the ride a movement option with no payoff. This was lost in the
-vessel-layer port and is restored **in the effect** rather than in the transformer, so it lands on
-whatever attaches, not just on the Urchin.
 
 ## What was broken, and what each break looked like
 
@@ -1109,6 +1100,26 @@ the editor yet.
 | The cradle — shader | `_Graphics/Materials/Graphs/PrismCradle.hlsl` (`PrismCradleDeform`: Position, Normal → OutPosition, OutNormal — nothing else), spliced LAST on BlockGraph + ExplodingBlockGraph by `Tools/Shaders/wire_prism_cradle.py`; proven by `Tools/Shaders/verify_prism_cradle.py`. It is the LAST node on the vertex chain and `PrismClockWiringValidator` asserts both of its feeders, because a second morph spliced after it would ripple the very vertices the drape had just closed onto the hull and re-open the hole — so any future member of the family goes in FRONT of this one |
 | The cradle — tuning | `ScriptableObjects/PrismCradleConfigSO.cs` → `Assets/Resources/PrismCradleConfig.asset` |
 
+## Layered prismscapes — riding THROUGH a stack (2026-10, Docs/ECOSYSTEM.md §58.4)
+
+The surface kernel's ground rule is "nearest prism centre", which cannot hold a sheet in a stack of
+nested sheets whose layers lie closer together than their plates lie apart (the nested gyroid: an
+in-sheet roll under that rule wandered over five of seven sheets). A structure that is a stack now says so
+(`ILayeredPrismscape.TryGetStackCoordinate`, implemented by `NestedGyroidFlora`), and while the ground
+belongs to one, `BlockscapeFollower`:
+
+- treats every structure sharing the ground's `ILayeredPrismscape.LayerSpace` as ONE stack - the nested gyroid's
+  plants are tiles of one colony frame, so the ride holds its sheet from one plant onto the next;
+
+- keeps the ground on the SAME layer; the next strut/sheet (stack ±1/±2) becomes eligible only while the
+  pilot pitches toward it past `layerClimbDeadzone` (0.35);
+- scores candidates to their HOVER point, so a climb hands over halfway between riding heights;
+- carries the rider along the normal at `layerClimbFraction` (0.6) of crawl speed and releases the hover
+  spring while a layer exists ahead (pitching out of the outer skin keeps you on the skin).
+
+`PrismscapeTopology.DimensionOf` reports such a structure as **Volume**. Every other prismscape rides
+exactly as before. Gate: `Tools/Build/nested_gyroid_harness/run.sh` (ride model + negative control).
+
 ## Tuning knobs
 
 | Knob | Where | Value |
@@ -1137,7 +1148,6 @@ the editor yet.
 | `detachSpeedDecayRate` | `GunVesselTransformer` (C# default **36**) | u/s bleed-off of the speed carried off a ride. The kicked 360 → the 65 cruise takes ~8 s. A RATE, so it does not scale itself: left at the old 12 the same glide would run 25 s, which reads as a permanent speed bonus rather than as momentum. Constant-rate, so the glide has a readable slope and lands rather than trailing off. Only ever removes EXCESS. |
 | `endLaunchSpeedKick` | `GunVesselTransformer` (C# default **1.2**) | What running OUT of ribbon multiplies the grind speed by on the way into free flight. Along the exit TANGENT only — every launch in the game is aimed by geometry, so a lateral impulse would throw the pilot off the thing the arena aimed them at. 1 restores the old behaviour. Does NOT apply to a Slip or to a trail cleared under the rider: those are letting go, not being thrown. |
 | `endLaunchReattachGrace` | `GunVesselTransformer` (C# default **0.35**) | Seconds after an end-of-ribbon launch during which THAT ribbon cannot re-latch. Scoped to the one trail, so the next rail you aim for still takes you. |
-| `armGunsOnAttach` | `VesselAttachPrismEffect.asset` | on |
 | `drapeReach` | `Resources/PrismCradleConfig.asset` | **6** u past the hull's SURFACE at which the drape reaches zero — the width of the lip the mass rises into, not a cutoff (the falloff is C1 at both ends, so there is no seam there to widen away from). Mass INSIDE the hull is fully wrapped whatever this says. |
 | `drapeExponent` | `Resources/PrismCradleConfig.asset` | **1.5** — the silkiness. 1 is a broad soft drape that starts rising a long way out; larger pulls the fabric tight against the hull with a longer flat tail. Floored at 1: below that the falloff's derivative diverges at the far edge and puts a crease exactly where the effect is supposed to vanish without one. |
 | `maxStrength` | `Resources/PrismCradleConfig.asset` | **1** — the ceiling the eased strength runs to. The map is affine in it, so 0.5 is the same drape at half depth, never a differently-shaped one. THE dial for "the effect is too strong"; never tone it down with the reach, which decides WHICH mass is involved rather than how far it goes. |
@@ -1371,9 +1381,15 @@ this list.
 - **The ghost is collider-only.** The hull does not visually phase, so a slip currently reads as
   "nothing happened" until you fly through a prism. A dissolve on the hull material would make the
   ability legible; continuity of existence applies (fade, do not blink).
-- **No AI path.** `AIPilot` has no notion of attaching, so an AI Urchin never rides. It will
-  attach on incidental contact and then sit on the ribbon at zero throttle, which is worth
-  checking before shipping AI-backfilled Urchin matches.
+- ~~**No AI path.**~~ **Landed:** `UrchinAutopilotDriver` (#975) chooses the rail for every mode
+  that seats an AI Urchin — Skein, Hijack and (Regatta follow-up) Regatta: ride it, reverse onto
+  it, or Slip off it, plus the parked-ride escape. Whether the pilot is CRAWLING is asked of the
+  ride itself through **`TrailFollower.IsCrawlTerrain(prism)`** — the same
+  `GetTerrainAwareBlockSpeed` rule the ride applies, so a Time-5 Slipstream (hostile mass at
+  friendly speed) is not a crawl and an autopilot cannot disagree with the speed it is riding at.
+  A crawl over SUPER-SHIELDED mass (Regatta's rails) is always "dry" — no spike can convert it —
+  so the AI leaves a rival's rail unless the ring is a short crawl away (`REGATTA.md` §6). A
+  CLOSED trail (`Trail.IsLoop`, Regatta's lanes) is walked with wrap-around, as the ride wraps.
 
 ---
 

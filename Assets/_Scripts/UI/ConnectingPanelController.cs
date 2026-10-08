@@ -174,13 +174,13 @@ namespace CosmicShore.UI
                 statusText.text =
                     $"{statusBaseText}{new string('.', dots)}\n" +
                     $"<size=70%>BUILDING ARENA  {PrismTrailBuilder.LayProgress:P0}  " +
-                    $"({PrismTrailBuilder.LayDoneCount:N0} / {PrismTrailBuilder.LayQueuedCount:N0})  ·  {_dotTimer:F0}s</size>";
+                    $"({PrismTrailBuilder.LayDoneCount:N0} / {PrismTrailBuilder.LayQueuedCount:N0})  -  {_dotTimer:F0}s</size>";
             }
             else if (PrismTrailBuilder.GrowRemainingCount > 0)
             {
                 statusText.text =
                     $"{statusBaseText}{new string('.', dots)}\n" +
-                    $"<size=70%>GROWING ARENA  ({PrismTrailBuilder.GrowRemainingCount:N0} settling)  ·  {_dotTimer:F0}s</size>";
+                    $"<size=70%>GROWING ARENA  ({PrismTrailBuilder.GrowRemainingCount:N0} settling)  -  {_dotTimer:F0}s</size>";
             }
             else if (_waitingForPeers && playerRoster)
             {

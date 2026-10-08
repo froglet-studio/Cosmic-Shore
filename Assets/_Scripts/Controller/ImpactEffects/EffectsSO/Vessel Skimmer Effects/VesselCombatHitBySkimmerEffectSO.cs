@@ -81,7 +81,10 @@ namespace CosmicShore.Gameplay
             if (victimStatus.Domain == shooterStatus.Domain) return;
 
             // See the class doc: a replicated contact is observed everywhere, so exactly one
-            // machine may speak for it.
+            // machine may speak for it. IsDecidedHere is the same predicate the projectile and
+            // blast reporters and every authoritative petal transfer use (hull ownership), so the
+            // overtake's steal and this score are decided on one machine.
+            if (!ElementalTransfer.IsDecidedHere(shooterStatus)) return;
             if (requireOwningMachine && shooterStatus.Player is { IsNetworkOwner: false }) return;
 
             if (requireFasterThanVictim && shooterStatus.Speed <= victimStatus.Speed) return;

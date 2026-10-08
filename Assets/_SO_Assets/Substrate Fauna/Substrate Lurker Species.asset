@@ -172,6 +172,79 @@ MonoBehaviour:
     GulpRestS: 4
     RampTurns: 0
     RingHoldSeconds: 0
+    StrikeWindupS: 0
+    Siege:
+      Enabled: 0
+      Stalk: 430
+      Detect: 640
+      Cruise: 120
+      Sprint: 270
+      Dive: 330
+      R0: 300
+      R1: 130
+      EscMargin: 45
+      Lunge: 35
+      SeatCos: 0.97
+      Corona: 1.35
+      Quorum: 0.5
+      TGather: 3
+      TGatherMax: 5
+      TClose: 2.6
+      THold: 1.3
+      TDive: 1.6
+      TScatter: 1.6
+      PGather: 0.6
+      PClose: 0.8
+      TCool: 10
+      TCoolEsc: 6
+      BiteGap: 0.25
+      FollowGather: 100
+      FollowClose: 25
+      Lead: 0.6
+      GlowDelay: 0.4
+      PredictS: 0.35
+      SwerveR: 70
+      SepR: 14
+      SepW: 90
+      SepWDive: 20
+      Accel: 520
+      AccelDive: 900
+      RoamJitter: 30
+      RoamCohesion: 0.8
+      ContactPad: 4
+      MinMembers: 12
+      FirstCool: 2
+      Substeps: 3
+      FoodPull: 150
+      Leash: 300
+    Arms:
+      Role: 0
+      PondR: 200
+      PreyV: 60
+      PreyAcc: 300
+      PreyTurn: 10
+      PreyR: 50
+      PreyR0: 5
+      PreySize: 2.5
+      PredV: 45
+      PredBurst: 100
+      PredAcc: 150
+      PredTurn: 3
+      PredR: 80
+      PredR0: 14
+      PredSize: 5
+      StamDrain: 0.33333334
+      StamRegen: 0.125
+      CatchR: 7.5
+      Handle: 1
+      Confusion: 0.3
+      ConfR: 10
+      G: 12
+      FoodSigma: 30
+      SatedHunger: 0.3
+      FoodFull: 1
+      VesselPad: 4
+      EatenTimeout: 3
   seedCount: 8
   seedSpread: 30
   seedAtFlora: 1

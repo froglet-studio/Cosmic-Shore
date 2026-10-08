@@ -8,7 +8,7 @@ What it owns:
   * the .meta of every script in Assets/.../FloraAndFauna/Substrate/ and of that folder (stable guids, one owner each);
   * SubstrateAgent.prefab - a substrate agent's PROXY: author_swarm_fauna.tadpole_prefab()'s body (TadPoleFauna's
     spindle + body prism, network layer and authored crystal stripped) with SubstrateAgentFauna in the member's place;
-  * Substrate{Pack,Locust,Lurker,Stampede,Mobber,Leech,Leviathan}Fauna.prefab - the heartless, bodiless population
+  * Substrate{Pack,Locust,Lurker,Stampede,Mobber,Leech,Leviathan,Siege,Shoal,Harrier}Fauna.prefab - the heartless, bodiless population
     anchors (SubstrateFauna), one per species;
   * Assets/_SO_Assets/Substrate Fauna/: the seven SubstrateSpeciesSO assets - every species number is copied from
     Tools/Build/substrate_harness/game_params.json, which the substrate harness asserts IS the research parameter set
@@ -29,9 +29,15 @@ THE POPULATIONS (radii from the cell centre; the swarm's own shells are 470-620 
     stampede  Mass   690-840u   sector +X: 4 herds; the alarm flips them, the bulls climb it and charge
     leech     Charge 690-840u   sector +120 deg: puddles at the flora; pounce, latch, ride, sip a 0.25 drain
     leviathan Space  690-840u   sector -120 deg: a grazer school that assembles into a manta and gulps
+  §10-11:
+    siege     Time   690-1080u  a 150-strong cloud that stalks the nearest pilot, closes a shell and dives
+    shoal     Time   690-840u   sector +Y 15 deg: the arms race's pond - 120 fish schooling with the lab's evolved policy
+    harrier   Charge 690-840u   the same pond: 8 sprinters hunting the shoal as a pack (the lab's evolved predators)
 
 The proxies are the substrate harness's measured ProxyCaps (test Q) and sum to the pre-11-11 39 (78 colliders): the
-four new species were fitted by re-dividing the substrate's share, never by raising the cell's 1,200 ceiling.
+four new species were fitted by re-dividing the substrate's share, never by raising the cell's 1,200 ceiling. The arms
+race's 10 (ArmsHarness.cs ArmsProxyCaps, group arms A5) are spent from the cell's spare instead: 1,192 of 1,200 with the
+pond's plant heart and the threat grove.
 """
 import argparse
 import hashlib
@@ -54,7 +60,7 @@ PREFAB_DIR = swarm.PREFAB_DIR
 GAME_PARAMS = os.path.join(HERE, "substrate_harness", "game_params.json")
 SCRIPTS = ["SubstrateSpecies", "SubstrateFields", "SubstrateCore", "SubstrateTickJob", "SubstrateSpeciesSO",
            "SubstrateAgentFauna", "SubstrateMemberRenderer", "SubstrateCellHost", "SubstrateFauna",
-           "SubstrateKernel", "SubstrateAgentJob"]
+           "SubstrateKernel", "SubstrateAgentJob", "SubstrateSiege", "SubstrateArms", "SubstrateArmsPolicy"]
 
 ROOT_MB_FID = "6630180297114401201"     # SubstrateFauna on each anchor prefab
 ROOT_GO_FID = "6630180297114401202"
@@ -72,7 +78,7 @@ SPECIES = [
     dict(key="pack", title="Pack Hunter", element="Time", band=(690, 1080), seed=0, spread=40, at_flora=1,
          engage=260, proxies=7, bites=4, spawns=7),
     dict(key="locust", title="Locust", element="Space", band=(910, 1080), seed=0, spread=80, at_flora=1,
-         engage=140, proxies=12, bites=16, spawns=8),
+         engage=140, proxies=8, bites=16, spawns=8),
     dict(key="lurker", title="Lurker", element="Mass", band=(470, 620), seed=8, spread=30, at_flora=1,
          engage=160, proxies=3, bites=4, spawns=4),
     # round 11-11: the rest of the bestiary (Docs/SUBSTRATE_FAUNA.md §9). The 620-690 gap between the swarm's inner and
@@ -86,8 +92,25 @@ SPECIES = [
          engage=140, proxies=4, bites=4, spawns=4, sector=((-0.5, 0, 0.866), 55)),
     dict(key="leviathan", title="Leviathan", element="Space", band=(690, 840), seed=0, spread=60, at_flora=0,
          engage=200, proxies=4, bites=4, spawns=4, sector=((-0.5, 0, -0.866), 55)),
+    # Docs/SUBSTRATE_FAUNA.md §10: the SIEGE (lab flight/src/70_siege.js). Its phase machine stalks whichever pilot is
+    # nearest, so its band is only where it hatches and grazes (the pack's 690-1080, Time like the lab's siege crystal);
+    # it is not penned. One cloud of 150 at the anchor (the lab's spread 70). Its 4 proxies came from the locust (12 -> 8:
+    # still 100% of a storm's contacts with the tick job's dangerous-soonest rule, harness group Q).
+    dict(key="siege", title="Siege", element="Time", band=(690, 1080), seed=0, spread=70, at_flora=0,
+         engage=200, proxies=4, bites=6, spawns=4),
+    # Docs/SUBSTRATE_FAUNA.md §11: the ARMS RACE (lab Tools/NCA/arms_*.py, run a9 g1500). One pond of radius 200 at the
+    # middle shell's +Y pole (SubstrateArms.PondCentre: the sector axis at the band's middle), clear of the three 55-degree
+    # sector pens (35 degrees off the pole at their nearest). The shoal hatches at the pond's own plants (the Middle
+    # region's pond pen, author_swarm_fauna.py); the harriers hatch as one pack in the pen. Their proxies are SPENT from
+    # the cell's spare colliders (substrate_harness ArmsHarness.cs ArmsProxyCaps, group arms A5), not re-divided from 39.
+    dict(key="shoal", title="Shoal", element="Time", band=(690, 840), seed=0, spread=40, at_flora=1,
+         engage=100, proxies=6, bites=8, spawns=6, sector=((0, 1, 0), 15), arms=True),
+    dict(key="harrier", title="Harrier", element="Charge", band=(690, 840), seed=0, spread=25, at_flora=0,
+         engage=200, proxies=4, bites=4, spawns=4, clusters=1, sector=((0, 1, 0), 15), arms=True),
 ]
 NEW_SPECIES = ("stampede", "mobber", "leech", "leviathan")
+ARMS_SPECIES = ("shoal", "harrier")
+ARMS_HARNESS = os.path.join(HERE, "substrate_harness", "ArmsHarness.cs")
 # the danger-prism effect a collision-free contact (a leech's sip) is applied through
 DANGER_EFFECT_GUID = "c7ccaca885824b24b716b12148d77ce1"   # VesselElementalDebuffByDangerPrismEffect.asset
 HARNESS = os.path.join(HERE, "substrate_harness", "Program.cs")
@@ -302,11 +325,29 @@ def verify(out, params):
     sp = re.search(r"public sealed class SubstrateSpeciesParams\s*\{(.*?)public SubstrateSpeciesParams Clone", cs, re.S).group(1)
     sp = re.sub(r"///.*", "", sp)
     sp_fields = []
-    for decl in re.findall(r"public\s+(?:float\[\]|float|int|bool|string|SubstrateRegime)\s+([^;]+);", sp):
+    for decl in re.findall(r"public\s+(?:float\[\]|float|int|bool|string|SubstrateRegime|SubstrateSiegeParams|SubstrateArmsParams)\s+([^;]+);", sp):
         sp_fields += [re.match(r"\s*(\w+)", part).group(1) for part in decl.split(",")]
+    # the siege's tunables (Docs/SUBSTRATE_FAUNA.md §10), nested under Siege
+    sg = open(os.path.join(SCRIPT_DIR, "SubstrateSiege.cs")).read()
+    sg = re.search(r"public sealed class SubstrateSiegeParams\s*\{(.*?)public SubstrateSiegeParams Clone", sg, re.S).group(1)
+    sg = re.sub(r"///.*", "", sg)
+    siege_fields = []
+    for decl in re.findall(r"public\s+(?:float|int|bool)\s+([^;]+);", sg):
+        siege_fields += [re.match(r"\s*(\w+)", part).group(1) for part in decl.split(",")]
+    # the arms race's pond (Docs/SUBSTRATE_FAUNA.md §11), nested under Arms
+    ar = open(os.path.join(SCRIPT_DIR, "SubstrateArms.cs")).read()
+    ar = re.search(r"public sealed class SubstrateArmsParams\s*\{(.*?)public SubstrateArmsParams Clone", ar, re.S).group(1)
+    ar = re.sub(r"///.*", "", ar)
+    arms_fields = []
+    for decl in re.findall(r"public\s+(?:float|int|bool)\s+([^;]+);", ar):
+        arms_fields += [re.match(r"\s*(\w+)", part).group(1) for part in decl.split(",")]
     for k, p in params.items():
+        if list(p.get("Arms", {}).keys()) != arms_fields:
+            problems.append(f"game_params.json {k}.Arms: fields {list(p.get('Arms', {}).keys())} != SubstrateArmsParams {arms_fields}")
         if list(p.keys()) != sp_fields:
             problems.append(f"game_params.json {k}: fields {list(p.keys())} != SubstrateSpeciesParams {sp_fields}")
+        if list(p.get("Siege", {}).keys()) != siege_fields:
+            problems.append(f"game_params.json {k}.Siege: fields {list(p.get('Siege', {}).keys())} != SubstrateSiegeParams {siege_fields}")
         for reg in ("Solitary", "Gregarious"):
             if list(p[reg].keys()) != regime_fields:
                 problems.append(f"game_params.json {k}.{reg}: fields differ from SubstrateRegime {regime_fields}")
@@ -361,12 +402,15 @@ def verify(out, params):
     # (substrate_harness ProxyCaps, test Q: each cap still engages) and they sum to the pre-11-11 share (39 = 78 colliders)
     caps = {k: (int(c), float(e)) for k, c, e in
             re.findall(r'\("(\w+)", (\d+), ([\d.]+)f\)', open(HARNESS).read().split("ProxyCaps =", 1)[1].split("};", 1)[0])}
+    caps.update({k: (int(c), float(e)) for k, c, e in
+                 re.findall(r'\("(\w+)", (\d+), ([\d.]+)f\)', open(ARMS_HARNESS).read().split("ArmsProxyCaps =", 1)[1].split("};", 1)[0])})
     for sp_ in SPECIES:
         if caps.get(sp_["key"]) != (sp_["proxies"], float(sp_["engage"])):
             problems.append(f"{sp_['key']}: proxies {sp_['proxies']} within {sp_['engage']} u != the harness's measured cap "
                             f"{caps.get(sp_['key'])} (substrate_harness/Program.cs ProxyCaps)")
-    if sum(sp_["proxies"] for sp_ in SPECIES) != 39:
-        problems.append(f"substrate proxies sum to {sum(sp_['proxies'] for sp_ in SPECIES)}, not the pre-11-11 share of 39 "
+    base39 = sum(sp_["proxies"] for sp_ in SPECIES if not sp_.get("arms"))
+    if base39 != 39:
+        problems.append(f"substrate proxies (bar the arms race's) sum to {base39}, not the pre-11-11 share of 39 "
                         "(the four new species are fitted by re-dividing it - the 1,200 ceiling is never raised)")
     # placement: the new four sit off the builders' and the wearer's bands, inside the swarm's outer shell (so off the
     # threat grove's rim, which author_threat_flora.py keeps beyond it), and never share a (shell, sector) pen
@@ -393,6 +437,43 @@ def verify(out, params):
             ang = math.degrees(math.acos(max(-1.0, min(1.0, sum(x * y for x, y in zip(va, vb)) / (na * nb)))))
             if ang < ha + hb:
                 problems.append(f"{a['key']} and {b['key']}: sectors overlap ({ang:.0f} deg apart < {ha} + {hb})")
+    # the arms race (Docs/SUBSTRATE_FAUNA.md §11): one pond, so both sides share ONE pen exactly (SubstrateArms pairs the
+    # prey with the predator that names it); the pond is clear of the other middle-shell sectors and of the builders, and
+    # the pond pen's flora stands inside the pond (the shoal's food grid masks everything past 0.95 of its radius)
+    arms = [sp_ for sp_ in SPECIES if sp_.get("arms")]
+    if [a["key"] for a in arms] != list(ARMS_SPECIES):
+        problems.append(f"the arms race is the shoal and the harriers, got {[a['key'] for a in arms]}")
+    else:
+        shoal, harrier = arms
+        if params["harrier"]["PreyName"] != "shoal" or params["harrier"]["Arms"]["Role"] != 2 or params["shoal"]["Arms"]["Role"] != 1:
+            problems.append("the harriers hunt the shoal (prey role 1, predator role 2, PreyName shoal)")
+        if shoal["band"] != harrier["band"] or shoal["sector"] != harrier["sector"]:
+            problems.append("the shoal and the harriers must share one pen (one pond)")
+        (va, ha) = shoal["sector"]
+        for sp_ in new:
+            if "sector" not in sp_ or not (sp_["band"][0] < shoal["band"][1] and shoal["band"][0] < sp_["band"][1]):
+                continue
+            (vb, hb) = sp_["sector"]
+            na, nb = sum(x * x for x in va) ** 0.5, sum(x * x for x in vb) ** 0.5
+            ang = math.degrees(math.acos(max(-1.0, min(1.0, sum(x * y for x, y in zip(va, vb)) / (na * nb)))))
+            if ang < ha + hb:
+                problems.append(f"the pond's pen overlaps the {sp_['key']} sector ({ang:.0f} deg apart < {ha} + {hb})")
+        for b in builders.SPECIES:
+            if shoal["band"][0] < b["band"][1] and shoal["band"][1] > b["band"][0]:
+                problems.append(f"the pond's band {shoal['band']} overlaps the {b['key']} band {b['band']}")
+        K = params["shoal"]["Arms"]
+        mid = 0.5 * (shoal["band"][0] + shoal["band"][1])
+        n = sum(x * x for x in va) ** 0.5
+        pond_pens = [pn for r in swarm.REGIONS for pn in r.get("pens", [])
+                     if pn[0] is not None and abs(sum(a * b for a, b in zip(pn[0], va)) / (n * sum(x * x for x in pn[0]) ** 0.5) - 1) < 1e-9]
+        if len(pond_pens) != 1:
+            problems.append(f"no single planting pen on the pond's axis {va} (author_swarm_fauna Middle pens): {pond_pens}")
+        else:
+            _, half, plo, phi = pond_pens[0]
+            far = max(math.sqrt(r * r + mid * mid - 2 * r * mid * math.cos(math.radians(a))) for r in (plo, phi) for a in (0, half))
+            if far > 0.95 * K["PondR"] - 2 * K["FoodSigma"]:
+                problems.append(f"the pond pen reaches {far:.0f} u from the pond's centre (> 0.95 R - 2 sigma = "
+                                f"{0.95 * K['PondR'] - 2 * K['FoodSigma']:.0f} u): its plants would sit on the pond's edge")
     # every population at its full pool fits the cell's one core (SubstrateCore capacity: AddPopulation refuses past it)
     total = sum(params[sp_["key"]]["Capacity"] for sp_ in SPECIES)
     if total > CELL_CAPACITY:
@@ -416,7 +497,7 @@ def main():
     args = ap.parse_args()
     out, params = emit()
     problems = verify(out, params)
-    print("Substrate fauna - seven populations on the Living Ecology substrate (rounds 11b, 11-11)\n")
+    print(f"Substrate fauna - {len(SPECIES)} populations on the Living Ecology substrate (rounds 11b, 11-11, §10-11)\n")
     for s in SPECIES:
         p = params[s["key"]]
         sec = f", sector {s['sector'][1]} deg about {s['sector'][0]}" if "sector" in s else ""

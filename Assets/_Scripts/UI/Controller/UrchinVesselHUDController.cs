@@ -20,6 +20,8 @@ namespace CosmicShore.UI
     /// <item><b>Riding</b> (the Mass card's gauge) — polled; see <see cref="Update"/>.</item>
     /// <item><b>Track recharge</b> (the Space card's veil) — a cooldown is a CLOCK with no event
     /// behind it, so it is polled too. It is the only feedback a refused Track press gets.</item>
+    /// <item><b>Spike charge</b> (a ring around the Charge icon) — the hold-to-charge burst's
+    /// progress, read off the vessel's OWN spike executor. Also a clock, also polled.</item>
     /// </list>
     /// </summary>
     public class UrchinVesselHUDController : VesselHUDController
@@ -36,6 +38,10 @@ namespace CosmicShore.UI
                  "an unwired HUD is visible in the inspector; drives the Space card's recharge veil.")]
         [SerializeField] UrchinTrackActionExecutor trackExecutor;
 
+        [Tooltip("This vessel's Chain Spikes executor. Serialized rather than type-searched so " +
+                 "an unwired HUD is visible in the inspector; drives the Charge card's charge ring.")]
+        [SerializeField] UrchinSpikeActionExecutor spikeExecutor;
+
         IVesselStatus _status;
         ResourceSystem _resources;
 
@@ -50,6 +56,9 @@ namespace CosmicShore.UI
             // cannot strand the previous pilot's handler on this resource system.
             Unbind();
             _status = null;
+
+            // A hold in progress belongs to the previous pilot; never carry its ring across.
+            if (view) view.SetSpikeCharge(false, 0f);
 
             // A HUD is for a human at this machine. An AI or a remote replica carries the same
             // components and must not drive local UI. Player-guarded because both flags are
@@ -101,8 +110,8 @@ namespace CosmicShore.UI
         /// Riding is polled rather than pushed because <c>IVesselStatus.IsAttached</c> is a
         /// plain flag with no change event — it is written by an impact effect and cleared by
         /// the Slip ability, neither of which raises anything. Cheap (one bool read) and honest;
-        /// if a change event is ever added, move this onto it. The track's recharge is polled for
-        /// the same reason: a cooldown is a clock, not an event.
+        /// if a change event is ever added, move this onto it. The track's recharge and the spike
+        /// charge are polled for the same reason: each is a clock, not an event.
         /// </summary>
         void Update()
         {
@@ -113,6 +122,11 @@ namespace CosmicShore.UI
             // The fleet's clockwise depleting veil on the Space plate.
             if (trackExecutor)
                 View?.SetAbilityCooldown(Element.Space, trackExecutor.CooldownRemaining01);
+
+            // The hold-to-charge burst. Armed, not merely charging: below the minimum hold a
+            // release is a tap the press already paid for, and the ring would promise a burst.
+            if (spikeExecutor && view)
+                view.SetSpikeCharge(spikeExecutor.IsChargeArmed, spikeExecutor.ChargeProgress01);
         }
     }
 }

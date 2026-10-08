@@ -34,18 +34,20 @@ assumed from the one you happened to fly.
 ## 1. The fleet facts a multi-hull card is designed against
 
 Measured off the shipped prefabs and assets (2026-09-15; re-measure before trusting -
-`Tools/Build/regatta_balance.py` reads them by key and prints them):
+`Tools/Build/regatta_balance.py` reads them by key and prints them). The autopilot column was
+re-read 2026-10-06 after #974 (per-hull AI boost policies, `Assets/_Scripts/Controller/AI/AI_BOOST.md`),
+#975 (the Urchin autopilot driver) and the Regatta Squirrel pilot:
 
 | hull | cruise → top | speed source | autopilot can use it? | vs shielded / super-shielded mass |
 |---|---|---|---|---|
 | Manta | 180 → 720 (×1.3 Time 10) | Soar (free; costs yaw) | YES (`MantaAnalogTurnBoostExecutor` drive) | ram = slow |
 | Dolphin | 68 → 347 | drift-charge → discharge; skims for seed energy | yes (`ChargeBoostAIPolicySO`: discharges on the straight; off in Bends/Rampage/Broadside) | ram = slow + half charge |
 | Rhino | 50 → 1200 | ramp on a straight stick | yes, by the gesture | **energised sword pops super-shield**; no slow wired |
-| Urchin | 65 → 300 on its OWN-colour rail (20 on a rival's; Time-5 Slipstream 300) | riding, no resource | rides (aim it down the rail) | rides the shell's envelope |
-| Squirrel | 60 → 300 | skim energy (+0.1/contact, decays 0.3/s) | no | ram **resets** the boost |
+| Urchin | 65 → 300 on its OWN-colour rail (20 on a rival's; Time-5 Slipstream 300) | riding, no resource | `UrchinAutopilotDriver` (`Resources/UrchinAutopilotConfig.asset`) in **Skein, Hijack and Regatta** (Regatta since #986): ride / reverse / leave per rail, Slip off a wrong or parked rail, Chain Spikes only on CONVERTIBLE hostile mass (`IsConvertible` skips super-shielded prisms, so Regatta's super-shielded rival lanes are left, not spiked), Track Projector on a long lined-up leg (Skein, Regatta; never Hijack). Hijack uses only the driver's spike and Slip presses, with its own `ChooseRail` and its own yard-table hostile test. Broadside and every other card: steering only (aim down the rail; `ram: 1` holds the grind at full speed) | rides the shell's envelope |
+| Squirrel | 60 → 300 | skim energy (+0.1/contact, decays 0.3/s) | yes, two ways: in **Skim Race and Regatta** the seat flies `SkimRacePilot` (`SkimRaceAIDeployment`; Regatta via `RegattaRingObjective`); elsewhere `SkimRingAIPolicySO` lays the Boost Ring ahead on a dead-straight leg while skim boost is low and holds the stick centred through it (off in Skim Race/Joust/Astro League; `requireAIPlayer`, so never in the menu lava-lamp). Ring prisms land on the simulating machine only | ram **resets** the boost |
 | Serpent | 60 → 160 (×1.6 Time 10, duration too) | 4 charges × 3 s, regen 3.6 s | yes (`PelletBoostAIPolicySO`: stacks pellets on straights) | no slow wired |
 | Sparrow | 35 → 135 (×1.5 Time 10) | indefinite boost (free) | yes (`HoldBoostAIPolicySO`: holds on straights; off in Dog Fight/Wildlife Liberation) | ram = slow |
-| Scarab | 216 → 324 (Time 1→1.5) | throttle ceiling | throttle (always full) + Time-5 Snap Dash (`SnapDashAIPolicySO`) | no slow wired |
+| Scarab | 216 → 324 (Time 1→1.5) | throttle ceiling | throttle (always full) + Time-5 Snap Dash (`SnapDashAIPolicySO`; off in the ball modes Astro League/Scramble/Tollway) | no slow wired |
 
 Three things every row above teaches:
 
@@ -120,6 +122,9 @@ Three things the Rhino cost Broadside, each of which a future model will meet ag
 | **Roster** | `g.register_arena_card(card)` - master + `ArenaGames`, never `ArcadeGames`. `check_gamelist_scenes.py` reports the arena grid's coverage. |
 | **Domains** | 2..3 unless the mode has a fixed team shape; a fixed shape (`MaxDomainsAllowed = 2`) excludes the card from the Maelstrom. |
 | **AI templates** | `vesselClass: 0` (Random) in the scene's `aiInitializeDatas`, so `PickAIVesselType` draws the bot's hull from the card and a bot grid is a mixed grid too. **That was true of the templates and FALSE of the draw until 2026-09**: `PickAIVesselType` read the roster through `gameList`, a per-scene `[SerializeField]` that Regatta, Broadside and Dog Fight all leave null, so it fell through to a hardcoded Sparrow and both arena grids were eight identical hulls. It now reads `GameDataSO.AllowedVesselClasses` (published by `SyncFromArcadeGame`, deliberately not cleared by `ResetRuntimeData()`), with unbuilt hulls skipped rather than drawn-and-failed. *A per-scene serialized reference is a per-scene chance to forget - when the fact is already published on a shared runtime object, read it there.* |
+| **Opponent AI hull** | `SO_ArcadeGame.OpponentAIVessel` pins the hull of every AI on a domain NO human flies (Regatta: the Squirrel, until the racing AI drives every hull). Pinned opponents sit outside arena seating - never in the AI used-set, skipped by `ResolveArenaUniqueHull` - so they never bump a human or an ally. One pure answer for "opponent or ally", read by the lobby, the backfill and the backstop: `AIHullSeating`. Leave it empty for the card's mixed draw. |
+| **Ally hulls** | On any arena card, an ally AI's chip on the launch panel shows its hull and a teammate taps it to step it (auto -> card hulls -> auto). Host-arbitrated (`ArcadeConfigSyncManager.RequestAllyVesselCycle`), replicated in `LobbySnapshot.AiV0..AiV5`, launched as `GameDataSO.RequestedAIVessels` (entry i = bot i). Nothing per-card to author. |
+| **A racing AI for a hull** | A hull whose speed is an ability needs a driver (§1). For the Squirrel in a race mode the driver exists: `SkimRacePilot` flies any `SkimRaceObjective` (course polyline + target + progress). Skim Race is `CrystalTrackObjective`; Regatta is `RegattaRingObjective` (the domain's rail + the next ring). A new race mode adds an objective and a `SkimRaceObjective.For` case, never a second pilot. |
 | **Starting elements** | One row per (hull, intensity) the model moves off rest; a hull at rest gets NO row (the platform default is rest; a row of zeros says the card decided it). `Intensity 0` = every rung; a rung-specific row wins. Levels are normalized (`-0.5..1`, since nothing above 10 is held). |
 | **Preview** | `Vessel: -1` - the carousel's pick flies the preview. |
 | **Toasts** | The tutorial is "what does MY hull do here"; an idle hint per verb family, not per hull. |
@@ -171,7 +176,7 @@ fire petals on a handicapped hull, white on a helped one), and everything about 
 - Assume every hull on the card carries the same optional components. Arena seating hands LIVE
   hulls between pilots (`PilotSwap` → `VesselController.ChangePlayer`), which runs a hand-over
   path against every hull on the card rather than the one a vessel spawned as — and the Urchin
-  ships with **no HUD controller** (`vesselHUDController: {fileID: 0}`). An unguarded dereference
-  there threw halfway through a swap and left the human's hull reading the AI's stick. A
+  shipped with **no HUD controller** (`vesselHUDController: {fileID: 0}`, until #973 wired one on
+  2026-10-06). An unguarded dereference there threw halfway through a swap and left the human's hull reading the AI's stick. A
   hull-handover path must tolerate every optional component the hull's own `Initialize` tolerates
   (`Docs/HomeHub/ARCHITECTURE.md` §3.9, third playtest).

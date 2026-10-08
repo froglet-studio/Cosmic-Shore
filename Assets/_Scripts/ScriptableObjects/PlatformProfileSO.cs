@@ -73,10 +73,12 @@ namespace CosmicShore.ScriptableObjects
                  "from the same baked animation. Radius, and so every gameplay reader of it, is untouched.")]
         [SerializeField, Range(-1, 4)] int membraneMaxSubdivisions = -1;
 
-        [Tooltip("Ceiling on a Butterfly fold-gate window's render resolution, as a fraction of the " +
-                 "gameplay camera's (FoldGatePortalView). The window renders only its own footprint, so " +
-                 "this only bites when a gate fills the screen - the approach and the carry through. " +
-                 "1 = no cap beyond the gate's own portalWindowRenderScale.")]
+        [Tooltip("Ceiling on a wormhole mouth's EXACT-view render resolution, as a fraction of the " +
+                 "gameplay camera's (WormholeView - every Butterfly fold's wormhole pair; the field keeps " +
+                 "its fold-gate name so the shipped tier assets need no migration). " +
+                 "The view renders only the mouth's own footprint, so this only bites when a mouth fills " +
+                 "the screen - the approach and the carry through. 1 = no cap beyond the mouth's own " +
+                 "render scale.")]
         [SerializeField, Range(0.1f, 1f)] float foldGateWindowMaxRenderScale = 1f;
 
         [Header("Content: trails (applied at runtime on this tier)")]

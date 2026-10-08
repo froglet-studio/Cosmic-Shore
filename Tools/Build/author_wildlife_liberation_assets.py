@@ -109,7 +109,6 @@ EXISTING = {
     "IconActive":         "576d21301c622e9489beb58263f393cb",
     "IconInactive":       "ebb26aeda98ffe840ad60e7ab88c8a28",
     "CardBackground":     "d158c4fd34d94218a67750ebf3d7190c",
-    "PreviewClip":        "4fb5927c0dce75b4298b94514abc0150",
     # fauna prefabs
     "TadpolePrefab":      "c7fd418d426de8740ac888dcc23a5d24",
     "QuadFishPrefab":     "19615ed0c903b1041973d70593d4b0a3",
@@ -162,7 +161,6 @@ PALETTE = {
 PRISM_FILEID = 4563009547826722997
 MEMBRANE_FILEID = 346633111830028674
 CYTOPLASM_FILEID = 639495419069806261
-PREVIEW_FILEID = 241334157148977051
 
 # The kill target - the race metric, summed PER DOMAIN. The 25%/50% milestone rungs are
 # fractions of this (so 8 and 15), and moving it moves the whole progress ladder.
@@ -380,7 +378,6 @@ emit("Assets/_SO_Assets/Games/ArcadeGameWildlifeLiberation.asset",
   IconActive: {{fileID: 21300000, guid: {EXISTING['IconActive']}, type: 3}}
   IconInactive: {{fileID: 21300000, guid: {EXISTING['IconInactive']}, type: 3}}
   CardBackground: {{fileID: 21300000, guid: {EXISTING['CardBackground']}, type: 3}}
-  PreviewClip: {{fileID: {PREVIEW_FILEID}, guid: {EXISTING['PreviewClip']}, type: 3}}
   GolfScoring: 1
   SceneName: MinigameWildlifeLiberation
   Vessels:
@@ -897,9 +894,12 @@ if _quarter_deficit_levels < 1.0:
         f"quarter-of-target deficit - under one whole level the comeback does nothing. Rescale "
         f"COMEBACK_RATE with the target (>= {4.0 / WILDLIFE_KILL_TARGET:.3f}).")
 
+# No `PreviewClip`: SO_Game.PreviewClip is RETIRED (arcade_mode_lib.RETIRED_CARD_KEYS). This set
+# listed it, which is how the card kept emitting a dead key - pointing at a video - with the
+# key-validation below waving it through.
 SO_BASE = {"CellName", "Description", "Icon", "Difficulty", "CellEndGameScore", "Mode",
            "IsMultiplayer", "DisplayName", "IconActive", "IconInactive", "CardBackground",
-           "PreviewClip", "GolfScoring", "SceneName"}
+           "GolfScoring", "SceneName"}
 for asset_path, cs_path in CHECKS:
     keys = set(re.findall(r"^  (\w+):", files[asset_path], re.M)) - {
         "m_ObjectHideFlags", "m_CorrespondingSourceObject", "m_PrefabInstance", "m_PrefabAsset",
