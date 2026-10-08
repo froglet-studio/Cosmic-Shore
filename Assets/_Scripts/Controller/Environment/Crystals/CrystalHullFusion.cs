@@ -128,7 +128,7 @@ namespace CosmicShore.Gameplay
         CrystalHullFusionGeometry.HullLayout _layout;
         Transform[] _bones;                 // the rig's pins, then its space
         Matrix4x4[] _boneToWorld;
-        float _hullScale;
+        float _patchRadiusWorld;            // a landed face's radius on the posed hull
 
         MeshRenderer _renderer;
         Mesh _mesh;
@@ -623,7 +623,7 @@ namespace CosmicShore.Gameplay
                 catch (Exception e)
                 {
                     WarnOnce($"prewarm:{vesselStatus.VesselType}",
-                        $"[CrystalHullFusion] prewarming {vesselStatus.VesselType} failed ({e.Message}) - its " +
+                        $"[CrystalMorph] [HullFusion] prewarming {vesselStatus.VesselType} failed ({e.Message}) - its " +
                         "crystals will play the generic capture until a pickup readies the fusion.");
                 }
             }
@@ -648,13 +648,13 @@ namespace CosmicShore.Gameplay
                     why = "its template mesh is not CPU-readable";
                 }
                 WarnOnce($"stale:{bake.name}",
-                    $"[CrystalHullFusion] '{bake.name}' is STALE ({why}). Solving {entry.vessel}/{entry.element} " +
+                    $"[CrystalMorph] [HullFusion] '{bake.name}' is STALE ({why}). Solving {entry.vessel}/{entry.element} " +
                     $"at runtime on a worker instead - re-run {BakeToolMenu} and push its output.");
             }
             else
             {
                 WarnOnce($"unbaked:{entry.vessel}:{entry.element}",
-                    $"[CrystalHullFusion] {entry.vessel}/{entry.element} has no bake. Solving it at runtime on a " +
+                    $"[CrystalMorph] [HullFusion] {entry.vessel}/{entry.element} has no bake. Solving it at runtime on a " +
                     $"worker instead - run {BakeToolMenu} and push its output.");
             }
 
@@ -662,7 +662,7 @@ namespace CosmicShore.Gameplay
             if (job.Failure != null)
             {
                 WarnOnce($"job:{hull.Name}:{source.name}",
-                    $"[CrystalHullFusion] cannot solve {entry.vessel}/{entry.element}: {job.Failure} - the generic capture plays.");
+                    $"[CrystalMorph] [HullFusion] cannot solve {entry.vessel}/{entry.element}: {job.Failure} - the generic capture plays.");
                 return false;
             }
             if (!job.Done) return false;
@@ -754,7 +754,7 @@ namespace CosmicShore.Gameplay
                 if (hull == null)
                 {
                     WarnOnce($"nohull:{vesselStatus.VesselType}",
-                        $"[CrystalHullFusion] {vesselStatus.VesselType} has no visible hull mesh under its " +
+                        $"[CrystalMorph] [HullFusion] {vesselStatus.VesselType} has no visible hull mesh under its " +
                         "VesselAnimation, so there is nothing to fuse onto - the generic capture plays.");
                     return null;
                 }
@@ -762,7 +762,7 @@ namespace CosmicShore.Gameplay
                 if (!TryResolveCrystal(crystal, out var drawn, out var source, out int plates, out var model, out var renderer))
                 {
                     WarnOnce($"mesh:{crystal.name}",
-                        $"[CrystalHullFusion] '{crystal.name}' has no model with a mesh to fuse - the generic capture plays.");
+                        $"[CrystalMorph] [HullFusion] '{crystal.name}' has no model with a mesh to fuse - the generic capture plays.");
                     return null;
                 }
 
@@ -770,7 +770,7 @@ namespace CosmicShore.Gameplay
                 {
                     if (CSDebug.IsVerbose(CSLogChannel.CrystalMorph))
                         CSDebug.LogVerbose(CSLogChannel.CrystalMorph,
-                            $"[CrystalHullFusion] no solution ready for {entry.vessel}/{entry.element} yet - this pickup plays the generic capture.");
+                            $"[CrystalMorph] [HullFusion] no solution ready for {entry.vessel}/{entry.element} yet - this pickup plays the generic capture.");
                     return null;
                 }
 
@@ -781,45 +781,65 @@ namespace CosmicShore.Gameplay
                 if (!PinsFit(ready.Solution.Layout, pins, out int needed))
                 {
                     WarnOnce($"pins:{vesselStatus.VesselType}:{entry.element}",
-                        $"[CrystalHullFusion] {vesselStatus.VesselType}/{entry.element}: the solution pins to transform " +
+                        $"[CrystalMorph] [HullFusion] {vesselStatus.VesselType}/{entry.element}: the solution pins to transform " +
                         $"#{needed}, but '{hull.Name}' has only {pins} - the generic capture plays. Re-run {BakeToolMenu}.");
                     return null;
                 }
 
-                var go = new GameObject($"CrystalHullFusion_{crystal.name}") { layer = model.layer };
-                var fusion = go.AddComponent<CrystalHullFusion>();
-                fusion._entry = entry;
-                fusion._hull = hull;
-                fusion._solution = ready.Solution;
-                fusion._layout = ready.Solution.Layout;
-                fusion.Adopt(ready.Prototype, renderer);
-                fusion.Plan(crystal, vesselStatus, model.transform, renderer);
-
-                // The crystal is now drawn by the fusion. It stays alive (hidden) so its owner can
-                // retire it when the faces are down - the pickup sound and the cell bookkeeping are its own.
-                // Its other fadeable shells (the Mass crystal's three shrinking ones) stay where they are
-                // and fade out while the faces fly; the tint block is the fusion's from here on.
-                crystal.BeginCaptureVisual();
-                var companions = new List<Renderer>();
-                foreach (var r in crystal.GetComponentsInChildren<Renderer>(true))
+                // Everything from here can fail on a hull nobody has flown it on; a failure must say
+                // what it was and hand the crystal back to the generic capture whole, never leave it
+                // hidden with nothing drawn - that reads as "the crystal just disappears".
+                GameObject go = null;
+                var hidden = new List<Renderer>();
+                try
                 {
-                    if (IsCompanionShell(r, renderer)) companions.Add(r);
-                    else r.enabled = false;
+                    go = new GameObject($"CrystalHullFusion_{crystal.name}") { layer = model.layer };
+                    var fusion = go.AddComponent<CrystalHullFusion>();
+                    fusion._entry = entry;
+                    fusion._hull = hull;
+                    fusion._solution = ready.Solution;
+                    fusion._layout = ready.Solution.Layout;
+                    fusion.Adopt(ready.Prototype, renderer);
+                    fusion.Plan(crystal, vesselStatus, model.transform, renderer);
+
+                    // The crystal is now drawn by the fusion. It stays alive (hidden) so its owner can
+                    // retire it when the faces are down - the pickup sound and the cell bookkeeping are its own.
+                    // Its other fadeable shells (the Mass crystal's three shrinking ones) stay where they are
+                    // and fade out while the faces fly; the tint block is the fusion's from here on.
+                    crystal.BeginCaptureVisual();
+                    var companions = new List<Renderer>();
+                    foreach (var r in crystal.GetComponentsInChildren<Renderer>(true))
+                    {
+                        if (IsCompanionShell(r, renderer)) companions.Add(r);
+                        else if (r.enabled) { r.enabled = false; hidden.Add(r); }
+                    }
+                    fusion.AdoptCompanions(companions);
+
+                    fusion._startTime = Time.time;
+                    fusion.Frame(); // frame 0 is drawn THIS frame (a throw here reaches the catch below)
+
+                    if (CSDebug.IsVerbose(CSLogChannel.CrystalMorph))
+                        CSDebug.LogVerbose(CSLogChannel.CrystalMorph,
+                            $"[CrystalMorph] [HullFusion] {vesselStatus.VesselType}/{entry.element}: '{crystal.name}' " +
+                            $"peeling {fusion._faces.Length} faces onto '{hull.Name}' over {entry.TotalSeconds:F2}s " +
+                            $"({(entry.bake && ready.Prototype == entry.bake.TemplateMesh ? "baked" : "runtime-solved")}, " +
+                            $"domain colour {(fusion._haveTargetColour ? "read" : "NOT FOUND")}, " +
+                            $"taken {(fusion._crystalCentreStart - fusion.HullCentreWorld(out float hullRadius)).magnitude:F1} from a hull " +
+                            $"of radius {hullRadius:F1}, {(fusion._approachSeconds > 0f ? $"flying in {fusion._approachSeconds:F2}s first" : "peeling where taken")}).");
+
+                    return fusion;
                 }
-                fusion.AdoptCompanions(companions);
-
-                fusion._startTime = Time.time;
-                fusion.LateUpdate(); // frame 0 is drawn THIS frame - the crystal is already hidden
-
-                if (CSDebug.IsVerbose(CSLogChannel.CrystalMorph))
-                    CSDebug.LogVerbose(CSLogChannel.CrystalMorph,
-                        $"[CrystalHullFusion] {vesselStatus.VesselType}/{entry.element}: '{crystal.name}' " +
-                        $"peeling {fusion._faces.Length} faces onto '{hull.Name}' over {entry.TotalSeconds:F2}s " +
-                        $"({(entry.bake && ready.Prototype == entry.bake.TemplateMesh ? "baked" : "runtime-solved")}, " +
-                        $"domain colour {(fusion._haveTargetColour ? "read" : "NOT FOUND")}, " +
-                        $"taken {(fusion._crystalCentreStart - fusion.HullCentreWorld(out float hullRadius)).magnitude:F1} from a hull " +
-                        $"of radius {hullRadius:F1}, {(fusion._approachSeconds > 0f ? $"flying in {fusion._approachSeconds:F2}s first" : "peeling where taken")}).");
-                return fusion;
+                catch (Exception e)
+                {
+                    foreach (var r in hidden) if (r) r.enabled = true;
+                    // The shells it had started fading are the crystal's again, not the fusion's to hide.
+                    if (go && go.TryGetComponent<CrystalHullFusion>(out var failed)) failed._companions = null;
+                    if (go) Destroy(go);
+                    ReportFailure($"begin:{vesselStatus.VesselType}:{entry.element}",
+                        $"{vesselStatus.VesselType}/{entry.element} failed to start ({e.GetType().Name}: {e.Message}) - " +
+                        "the generic capture plays.", e);
+                    return null;
+                }
             }
         }
 
@@ -929,9 +949,28 @@ namespace CosmicShore.Gameplay
             for (int b = 0; b < _bones.Length; b++)
                 _boneToWorld[b] = _bones[b] ? _bones[b].localToWorldMatrix : hullTransform.localToWorldMatrix;
 
-            Vector3 lossy = hullTransform.lossyScale;
-            _hullScale = (Mathf.Abs(lossy.x) + Mathf.Abs(lossy.y) + Mathf.Abs(lossy.z)) / 3f;
-            _bowDistance = layout.HullMeanRadius * _hullScale * _entry.flightBow;
+            // Every world-space size and direction is read off the POSED hull - the patches pinned
+            // through their own bones - never off the hull renderer's transform. A skinned renderer's
+            // transform need not be where its bind space is (the Sparrow model carries a node moved
+            // 185 units, and the Manta family a 100x node scale folded into its bind poses), so its
+            // lossyScale and InverseTransformPoint can put the bow, the sink and the pole anywhere.
+            var patchWorld = new Vector3[layout.PatchCount];
+            for (int k = 0; k < patchWorld.Length; k++)
+                patchWorld[k] = _boneToWorld[layout.PatchBone[k]].MultiplyPoint3x4(layout.PatchPositionLocal[k]);
+            Vector3 hullCentre = HullCentreWorld(out float hullRadius);
+            float patchRadiusSum = 0f;
+            for (int k = 0; k < patchWorld.Length; k++)
+            {
+                float far = 0f;
+                for (int j = 0; j < layout.PointsPerPatch; j++)
+                {
+                    int at = k * layout.PointsPerPatch + j;
+                    far = Mathf.Max(far, (_boneToWorld[layout.PointBone[at]].MultiplyPoint3x4(layout.PointLocal[at]) - patchWorld[k]).magnitude);
+                }
+                patchRadiusSum += far;
+            }
+            _patchRadiusWorld = patchRadiusSum / Mathf.Max(1, patchWorld.Length);
+            _bowDistance = hullRadius * _entry.flightBow;
 
             var pose = crystal.CollectPose;
             Matrix4x4 crystalWorld = Matrix4x4.TRS(pose.position, pose.rotation, crystal.CollectScale);
@@ -958,9 +997,15 @@ namespace CosmicShore.Gameplay
             float crystalRadius = solution.CrystalRadius * (modelWorld.GetColumn(0).magnitude
                 + modelWorld.GetColumn(1).magnitude + modelWorld.GetColumn(2).magnitude) / 3f;
 
-            // The pole: where the crystal is, seen from the hull's centre, in normalised hull space.
-            Vector3 pole = Vector3.Scale(hullTransform.InverseTransformPoint(crystalCentre) - layout.HullCentre, layout.InvExtents);
-            pole = pole.sqrMagnitude > 1e-10f ? pole.normalized : Vector3.up;
+            // The pole: where the crystal is, seen from the posed hull's centre, in the world.
+            Vector3 pole = crystalCentre - hullCentre;
+            pole = pole.sqrMagnitude > 1e-10f ? pole.normalized : hullTransform.up;
+            var patchDirection = new Vector3[patchWorld.Length];
+            for (int k = 0; k < patchWorld.Length; k++)
+            {
+                Vector3 d = patchWorld[k] - hullCentre;
+                patchDirection[k] = d.sqrMagnitude > 1e-12f ? d.normalized : pole;
+            }
 
             int perFace = solution.PointsPerFace;
             _faces = new Face[count];
@@ -975,9 +1020,8 @@ namespace CosmicShore.Gameplay
                 // The radial is the block's SLOT - a flipping block turns about its own centre and
                 // stays on it - so it is read through the model, not through the block's pose.
                 Vector3 radial = modelWorld.MultiplyVector(solution.FaceRadial[i]).normalized;
-                Vector3 radialHull = hullTransform.InverseTransformDirection(radial).normalized;
-                Vector3 wrap = CrystalHullFusionGeometry.WrapDirection(radialHull, pole);
-                for (int k = 0; k < count; k++) cost[i, k] = 1f - Vector3.Dot(wrap, layout.PatchDirection[k]);
+                Vector3 wrap = CrystalHullFusionGeometry.WrapDirection(radial, pole);
+                for (int k = 0; k < count; k++) cost[i, k] = 1f - Vector3.Dot(wrap, patchDirection[k]);
 
                 Matrix4x4 m = faceWorld[i];
                 Vector3 centroid = solution.FaceCentroid[i];
@@ -987,7 +1031,7 @@ namespace CosmicShore.Gameplay
                     StartCentroid = m.MultiplyPoint3x4(centroid),
                     StartNormal = m.MultiplyVector(solution.FaceNormal[i]).normalized,
                     // The face nearest the hull lands first; the far side closes last.
-                    Delay01 = 0.5f * (1f + Vector3.Dot(radialHull, pole)),
+                    Delay01 = 0.5f * (1f + Vector3.Dot(radial, pole)),
                 };
                 if (_faces[i].Delay01 < bestDelay) { bestDelay = _faces[i].Delay01; _contactFace = i; }
 
@@ -1006,7 +1050,6 @@ namespace CosmicShore.Gameplay
             // there, and its faces streaking 30 units into the ship read as the old capture. It flies
             // in whole first, to a standoff that keeps pace with the hull, and peels beside it.
             _crystalCentreStart = crystalCentre;
-            Vector3 hullCentre = HullCentreWorld(out float hullRadius);
             _standoffDistance = _entry.approachStandoff * hullRadius;
             Vector3 fromHull = crystalCentre - hullCentre;
             if (hullRadius > 0f && fromHull.magnitude > _standoffDistance)
@@ -1101,7 +1144,7 @@ namespace CosmicShore.Gameplay
             if (!mesh.isReadable)
             {
                 WarnOnce($"anchors:{mesh.name}",
-                    $"[CrystalHullFusion] '{mesh.name}' is not CPU-readable, so its faces leave from their REST " +
+                    $"[CrystalMorph] [HullFusion] '{mesh.name}' is not CPU-readable, so its faces leave from their REST " +
                     "pose rather than the pose the crystal is holding - enable Read/Write on its model importer.");
                 return null;
             }
@@ -1177,10 +1220,9 @@ namespace CosmicShore.Gameplay
         /// <summary>The approach's offset this frame: nothing for a crystal taken near the hull;
         /// otherwise the way from where it was taken to the standoff beside the hull NOW, eased in
         /// over the approach and held (tracking the hull) through the peel and the flight's start.</summary>
-        Vector3 Carry(float approach01)
+        Vector3 Carry(float approach01, Vector3 centre)
         {
             if (_approachSeconds <= 0f) return Vector3.zero;
-            Vector3 centre = HullCentreWorld(out _);
             Vector3 standoff = centre + _hull.Space.rotation * _approachDirLocal * _standoffDistance;
             return (standoff - _crystalCentreStart) * CrystalHullFusionConfigSO.Smooth(approach01);
         }
@@ -1188,6 +1230,21 @@ namespace CosmicShore.Gameplay
         // ══ Per frame ═════════════════════════════════════════════════════════════════════════
 
         void LateUpdate()
+        {
+            try
+            {
+                Frame();
+            }
+            catch (Exception e)
+            {
+                ReportFailure($"frame:{(_entry != null ? _entry.vessel.ToString() : "?")}:{(_entry != null ? _entry.element.ToString() : "?")}",
+                    $"{(_entry != null ? $"{_entry.vessel}/{_entry.element}" : "a fusion")} failed mid-flight " +
+                    $"({e.GetType().Name}: {e.Message}) - it is removed.", e);
+                Destroy(gameObject);
+            }
+        }
+
+        void Frame()
         {
             if (_hull == null || !_hull.Space || _faces == null) { Destroy(gameObject); return; }
 
@@ -1209,16 +1266,18 @@ namespace CosmicShore.Gameplay
 
             using (s_frameMarker.Auto())
             {
-                Vector3 anchor = _hull.Space.position;
-                transform.SetPositionAndRotation(anchor, Quaternion.identity);
-                transform.localScale = Vector3.one;
-
                 // One native read per bone, then every point is managed matrix maths.
                 // A pin destroyed mid-fusion (a hull part an ability removed) holds its last pose:
                 // only the faces on it stop following, the fusion does not end.
                 for (int b = 0; b < _bones.Length; b++)
                     if (_bones[b]) _boneToWorld[b] = _bones[b].localToWorldMatrix;
-                _carry = Carry(approach01);
+
+                // The mesh is written relative to the posed hull's centre (float precision far
+                // from the origin), never the renderer's transform, which can sit anywhere.
+                Vector3 anchor = HullCentreWorld(out _);
+                transform.SetPositionAndRotation(anchor, Quaternion.identity);
+                transform.localScale = Vector3.one;
+                _carry = Carry(approach01, anchor);
 
                 // The approach draws the crystal whole: the peel's first frame, carried.
                 var drawn = phase == CrystalHullFusionConfigSO.Phase.Approach ? CrystalHullFusionConfigSO.Phase.Peel : phase;
@@ -1237,7 +1296,7 @@ namespace CosmicShore.Gameplay
             int perFace = layout.PointsPerPatch;
             bool dissolving = phase == CrystalHullFusionConfigSO.Phase.Dissolve;
             float sink = dissolving
-                ? e.sinkDepth * layout.PatchRadius * _hullScale * CrystalHullFusionConfigSO.EaseIn(u)
+                ? e.sinkDepth * _patchRadiusWorld * CrystalHullFusionConfigSO.EaseIn(u)
                 : 0f;
             // An opaque shader has nothing to fade, so its faces dissolve by drawing in to nothing.
             float shrink = dissolving && _opacityId < 0 ? CrystalHullFusionConfigSO.EaseIn(u) : 0f;
@@ -1387,6 +1446,13 @@ namespace CosmicShore.Gameplay
             if (_companions != null)
                 foreach (var shell in _companions)
                     if (shell) shell.enabled = false;
+        }
+
+        /// <summary>A fault is an ERROR, loud, once per key - with the stack, which is what finds it.</summary>
+        static void ReportFailure(string key, string message, Exception e)
+        {
+            if (!s_warned.Add(key)) return;
+            CSDebug.LogError($"[CrystalMorph] [HullFusion] {message}\n{e}");
         }
 
         static void WarnOnce(string key, string message)

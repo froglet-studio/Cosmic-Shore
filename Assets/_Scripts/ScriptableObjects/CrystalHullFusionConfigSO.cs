@@ -205,7 +205,7 @@ namespace CosmicShore.ScriptableObjects
             if (!_cached && !_warnedMissing)
             {
                 _warnedMissing = true;
-                CSDebug.LogWarning($"[CrystalHullFusion] Resources/{ResourcePath} is missing - no " +
+                CSDebug.LogWarning($"[CrystalMorph] [HullFusion] Resources/{ResourcePath} is missing - no " +
                     "vessel will fuse a crystal onto its hull; every pickup plays the generic capture. " +
                     $"Restore it, or create one via Assets > Create > ScriptableObjects > {nameof(CrystalHullFusionConfigSO)}.");
             }

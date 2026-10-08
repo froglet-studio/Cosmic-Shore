@@ -284,7 +284,7 @@ areas. Solved at edit time, exactness costs nothing anyone waits for.
    pentagons, which lift off and fly to the hull, come down onto it and lie ON it — bent over its
    curves, on top, underside and wings — crackling round their outlines, then sink in. ~1.2 s.
    Domain colour, not lime. Pickup SFX as they land. No husk spray.
-2. **If it looks like the old capture, check the console first** for a `[CrystalHullFusion]`
+2. **If it looks like the old capture, check the console first** for a `[CrystalMorph] [HullFusion]`
    warning — every refusal falls back to exactly the old effect (§0).
 3. To study it, set `playbackScale` to 10 on the asset (and back to 1 before committing — a test
    enforces it).
@@ -295,7 +295,7 @@ areas. Solved at edit time, exactness costs nothing anyone waits for.
    and must fade at the end. **Space / Time**: faces shrink into the skin at the end (opaque, no
    fade). **Time** mid-wave and **Space** mid-spin: frame 0 of the peel shows each block where it
    WAS, not snapped back to rest. Butterfly: the old capture, unchanged.
-6. **FrogletTools > Toolbox > Logging > CrystalMorph** → one `[CrystalHullFusion]` line per pickup
+6. **FrogletTools > Toolbox > Logging > CrystalMorph** → one `[CrystalMorph] [HullFusion]` line per pickup
    (faces, points, patch radius, domain colour read).
 7. Run `CrystalHullFusionGeometryTests` + `CrystalHullFusionConfigTests` (edit mode).
 
@@ -401,6 +401,20 @@ working; Serpent and Butterfly "don't collect crystals at all".** What was measu
   sides were checked and are consistent. **Not yet explained.** Two silent exits now say so: a
   crystal collected by a skimmer with no vessel, and a solution naming a pin the live rig lacks.
 
+**Fourth playtest (2026-10-08): on the Sparrow the Mass inner shells FADE and every crystal
+"just disappears"; the console (filtered on `[CrystalMorph]`) showed nothing from this feature.**
+The fade is only ever done by the fusion, so `Begin` ran and hid the crystal; the faces were drawn
+where nobody could see them. Every world-space size and direction the fusion used was read off the
+hull renderer's TRANSFORM - `lossyScale` for the flight bow and the sink, `InverseTransformPoint`
+for the pole, `position` for the mesh anchor - and a skinned renderer's transform need not be its
+bind space (the Sparrow model carries a node moved 185 units; the Manta family a 100x node scale).
+All of them are now read off the POSED hull: the patches through their own pins give the centre,
+the radius, a landed face's radius and every patch's direction, in the world. Two more changes:
+- a throw anywhere in `Begin` or a frame is an ERROR, once, with its stack, and `Begin` hands the
+  crystal back whole to the generic capture instead of leaving it hidden with nothing drawn;
+- every line this feature logs is prefixed `[CrystalMorph] [HullFusion]` - they were
+  `[CrystalHullFusion]`, so a console filtered on the channel's own tag hid all of them, on every hull.
+
 ### The hulls
 
 | Vessels | Hull | How it is pinned |
@@ -415,7 +429,7 @@ vessel at that moment. Only an unbaked entry falls back to "element-shape skin, 
 skin, else largest mesh renderer". And a pin that is destroyed mid-fusion holds its last pose
 instead of ending the fusion (it used to `Destroy` the whole thing). Both came out of the Grizzly
 reading "didn't work at all" in the first fleet playtest, cause **not yet confirmed** — the
-console's one-time `[CrystalHullFusion]` warning names it if it is still there.
+console's one-time `[CrystalMorph] [HullFusion]` warning names it if it is still there.
 
 The fingerprint grew a part count; the runtime check is the key mesh (skinned mesh or body mesh),
 the total vertex count across parts and the part count. The edit-time content hash covers every

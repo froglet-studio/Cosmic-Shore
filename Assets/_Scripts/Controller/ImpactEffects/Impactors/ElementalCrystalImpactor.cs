@@ -230,7 +230,7 @@ namespace CosmicShore.Gameplay
                 if (!s_warnedNoVessel)
                 {
                     s_warnedNoVessel = true;
-                    CSDebug.LogWarning($"[CrystalHullFusion] '{crystal.name}' was collected by a skimmer with no " +
+                    CSDebug.LogWarning($"[CrystalMorph] [HullFusion] '{crystal.name}' was collected by a skimmer with no " +
                         "vessel (one its VesselStatus never initialised) - no score, no hull fusion; the generic capture plays.");
                 }
                 return false;

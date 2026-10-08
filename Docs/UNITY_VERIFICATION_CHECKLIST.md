@@ -100,7 +100,7 @@ crystal FBXs. Offline: all 40 crystal × hull-FBX pairs solve with every point o
 the outer shell now flies while the three shrinking shells fade. **Grizzly** "didn't work at all":
 cause unconfirmed; hardened (hull found by the bake's own mesh, a lost pin no longer ends the
 fusion). Re-test Mass on any hull and anything on the Grizzly; if the Grizzly still plays the old
-capture, the console's `[CrystalHullFusion]` warning names why.
+capture, the console's `[CrystalMorph] [HullFusion]` warning names why.
 
 **Second fleet playtest:** Mass ✅, Urchin ✅, Manta ✅; Grizzly and Sparrow still read as the old
 capture. Cause measured: their 60x DummySkimmers collect crystals 30 units out, so the faces streaked
@@ -115,12 +115,16 @@ branch). Scarab fixed (faces were landing on its hidden Sparrow model). Grizzly/
 unknown after a full static trace (doc §12) — needs the console from one pickup with
 **Logging > CrystalMorph** on.
 
+**Fourth playtest:** Sparrow fades the Mass shells and the crystals vanish — the fusion runs, its
+faces were drawn off-screen (sizes and pole read off the renderer's transform; now off the posed
+hull). Failures now log an error and fall back whole. Logs are prefixed `[CrystalMorph] [HullFusion]`.
+
 **Verify in editor.**
 0. **Run the baker** (*Bake all*) → all 48 rows CURRENT (an UNRESOLVABLE row names the importer
    still missing Read/Write), four `<Element>_FusionTemplate.asset`, then **Validate & Push** in the window.
 1. Squirrel, skim a charge crystal — **no hitch** (Profiler: `CrystalHullFusion.Begin`/`.Frame`): faces peel off → fly → come down onto top, underside and wings
    → crackle → sink. ~1.2 s. Domain colour. Pickup SFX on landing; no husk spray.
-2. If it looks like the old capture, check the console for a `[CrystalHullFusion]` warning first.
+2. If it looks like the old capture, check the console for a `[CrystalMorph] [HullFusion]` warning first.
 3. `playbackScale` 10 on `Resources/CrystalHullFusionConfig` to watch it slowly (back to 1 after).
 4. Pitch/yaw hard mid-fusion: wing faces stay on the wings.
 5. Each element on a skinned hull, a static hull (Rhino: pitch hard, wing faces ride the wing) and
