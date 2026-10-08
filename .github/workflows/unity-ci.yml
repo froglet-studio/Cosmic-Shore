@@ -224,6 +224,13 @@ jobs:
           python3 Tools/Build/check_console_logging.py --self-test
           python3 Tools/Build/check_console_logging.py
 
+      # .junie/skills must stay a symlink to .claude/skills (see AGENTS.md).
+      - name: Check .junie/skills is a link, not a copy
+        run: |
+          set -euo pipefail
+          python3 Tools/Build/check_junie_skills.py --self-test
+          python3 Tools/Build/check_junie_skills.py
+
       - name: Check prism shader wiring
         run: |
           set -euo pipefail
