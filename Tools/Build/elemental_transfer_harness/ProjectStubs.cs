@@ -33,12 +33,22 @@ namespace CosmicShore.Gameplay
     public interface IVessel { Transform Transform { get; } IVesselStatus VesselStatus { get; } }
 
     // Assets/_Scripts/Controller/Vessel/ResourceSystem.cs - the transfer surface under test
+    // The BODIES are instrumentation (the signatures are the shipped ones): each element answers
+    // its Settles petals to an accrual and records what it was asked and granted, so the driver
+    // can see which elements a take touched and what a steal paid.
     public class ResourceSystem : MonoBehaviour
     {
         public const float PetalNormalized = 0.1f;
+        public readonly int[] Settles = new int[6];
+        public readonly int[] Asked = new int[6];
+        public readonly int[] Granted = new int[6];
         public float TakeableLevel(Element element) => 0f;
-        public int AccrueElementalLoss(Element element, float normalizedAmount, ElementalDebuffSources source) => 0;
-        public void GrantPetals(Element element, int petals) { }
+        public int AccrueElementalLoss(Element element, float normalizedAmount, ElementalDebuffSources source)
+        {
+            Asked[(int)element]++;
+            return Settles[(int)element];
+        }
+        public void GrantPetals(Element element, int petals) { Granted[(int)element] += petals; }
         public void ClearPendingElementalLoss() { }
         public void ApplyElementalEffect(Element element, float magnitude, float duration,
             ElementalDebuffSources source = ElementalDebuffSources.Other) { }

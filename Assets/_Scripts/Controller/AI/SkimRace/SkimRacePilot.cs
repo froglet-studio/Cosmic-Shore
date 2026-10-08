@@ -21,8 +21,9 @@ namespace CosmicShore.Gameplay
     /// turn that restarts without a reload.
     ///
     /// <b>Input-only contract (do not relax).</b> Actuation is the vessel's <c>IInputStatus</c>
-    /// sticks — the same four channels every dual-stick input strategy writes — and the hull's own
-    /// bound drift control through <c>PerformShipControllerActions</c>. It reads the vessel's
+    /// sticks — the same four channels every dual-stick input strategy writes — its left trigger
+    /// (the drift's depth, see <see cref="DriftTriggerPull"/>) and the hull's own bound drift and
+    /// Boost Ring controls through <c>PerformShipControllerActions</c>. It reads the vessel's
     /// pose, speed, boost, the commanded rotation and the authoritative crystal registry; it never
     /// writes a transform, speed, course, rigidbody, crystal, score or timer.
     ///
@@ -59,10 +60,23 @@ namespace CosmicShore.Gameplay
         SkimRaceAction _held;
 
         // drift actuation
-        bool _driftResolved;
-        bool _hasDriftInput;
-        InputEvents _driftInput;
+        InputEvents _driftInput;   // the control the held drift was pressed on - released on the same one
         bool _driftHeld;
+
+        /// <summary>
+        /// How far the pilot pulls the left trigger while its drift is held: all the way. A
+        /// deliberate choice, and the only one that does not make the race depend on the host's
+        /// hardware. On a PAD device the Squirrel's drift is analog -
+        /// <c>VesselTransformer.GetTriggerSum</c> scales it by <c>LeftTriggerAnalog</c> - while on
+        /// every other device (keyboard, mouse, touch) a started drift is simply full depth. An AI
+        /// has no physical trigger, so before this the same pilot drifted at depth 0 (inert, but
+        /// still reporting <c>IsDrifting</c>) on a PC with a controller plugged in and at full
+        /// depth on one without. Full pull is the depth every device agrees on, it is what the
+        /// driver's on/off drift decision means (enter at a sharp heading error, leave once
+        /// straightened), and it is a human's buried trigger - inside the input-only contract.
+        /// Not a config field for the same reason: a partial pull would only take effect on a pad.
+        /// </summary>
+        const float DriftTriggerPull = 1f;
 
         // sensing state
         Vector3 _lastForward;
@@ -370,6 +384,9 @@ namespace CosmicShore.Gameplay
 
             if (a.Drift && !_driftHeld) PressDrift();
             else if (!a.Drift && _driftHeld) ReleaseDrift();
+            // Written every frame like the sticks, so a neutral frame (a stationary hull) cannot
+            // leave a held drift at depth 0 when flight resumes.
+            input.LeftTriggerAnalog = _driftHeld ? DriftTriggerPull : 0f;
 
             if (_ringPressed) { ReleaseRing(); }
             if (a.Ring) PressRing();
@@ -383,34 +400,31 @@ namespace CosmicShore.Gameplay
             input.YSum = 0f;
             input.YDiff = 0f;
             input.XDiff = 0f;
+            input.LeftTriggerAnalog = 0f;
         }
+
+        // The drift and the Boost Ring are asked for by ability TYPE at every press, never cached:
+        // the handler answers for the device the hull is being driven by (on the Squirrel both
+        // abilities live only in the touch and gamepad override maps, on different controls), and
+        // the answer is only good for that device. A press is a handful of dictionary probes at
+        // decision rate, and each release goes to the control its own press used.
 
         void PressDrift()
         {
-            if (!_driftResolved)
-            {
-                _driftResolved = true;
-                var handler = _status.ActionHandler;
-                _hasDriftInput = handler != null && handler.TryGetInputForAction<DriftActionSO>(out _driftInput);
-            }
-            if (!_hasDriftInput) return;
+            var handler = _status.ActionHandler;
+            if (handler == null || !handler.TryGetInputForAction<DriftActionSO>(out _driftInput)) return;
             _vessel.PerformShipControllerActions(_driftInput);
             _driftHeld = true;
         }
 
-        bool _ringResolved, _hasRingInput, _ringPressed;
+        bool _ringPressed;
         InputEvents _ringInput;
 
         /// <summary>The Boost Ring through the hull's own bound control (press now, release next frame).</summary>
         void PressRing()
         {
-            if (!_ringResolved)
-            {
-                _ringResolved = true;
-                var handler = _status.ActionHandler;
-                _hasRingInput = handler != null && handler.TryGetInputForAction<SquirrelTubeActionSO>(out _ringInput);
-            }
-            if (!_hasRingInput) return;
+            var handler = _status.ActionHandler;
+            if (handler == null || !handler.TryGetInputForAction<SquirrelTubeActionSO>(out _ringInput)) return;
             _vessel.PerformShipControllerActions(_ringInput);
             _ringPressed = true;
         }
@@ -418,14 +432,14 @@ namespace CosmicShore.Gameplay
         void ReleaseRing()
         {
             _ringPressed = false;
-            if (_vessel != null && _hasRingInput) _vessel.StopShipControllerActions(_ringInput);
+            if (_vessel != null) _vessel.StopShipControllerActions(_ringInput);
         }
 
         void ReleaseDrift()
         {
             if (!_driftHeld) return;
             _driftHeld = false;
-            if (_vessel != null && _hasDriftInput)
+            if (_vessel != null)
                 _vessel.StopShipControllerActions(_driftInput);
         }
 

@@ -117,10 +117,10 @@ namespace CosmicShore.Engine.Audio.Fmod
             return RESULT.OK;
         }
 
+        /// <summary>Starts the instance. On one already playing FMOD restarts it, and so does this (recorded again).</summary>
         public RESULT start()
         {
             if (State == null) return RESULT.ERR_INVALID_HANDLE;
-            if (State.Started && !State.Stopped) return RESULT.OK;
             State.Started = true; State.Stopped = false;
             RuntimeManager.RecordStart(State);
             FmodBackend.Current?.Start(State);
@@ -131,6 +131,7 @@ namespace CosmicShore.Engine.Audio.Fmod
         {
             if (State == null) return RESULT.ERR_INVALID_HANDLE;
             State.Stopped = true;
+            RuntimeManager.RecordStop(State, mode);
             FmodBackend.Current?.Stop(State, mode);
             return RESULT.OK;
         }
@@ -252,8 +253,9 @@ namespace CosmicShore.Engine.Audio.Fmod
         {
             if (reference.IsNull)
                 throw new System.ArgumentException("EventReference is null.", nameof(reference));
-            AudioStats.Created(reference.Path ?? reference.ToString());
-            var state = new EventInstanceState { Path = reference.Path };
+            string path = string.IsNullOrEmpty(reference.Path) ? FmodGuids.PathOf(reference.Guid) : reference.Path;
+            AudioStats.Created(path ?? reference.ToString());
+            var state = new EventInstanceState { Path = path };
             FmodBackend.Current?.Create(state, reference);
             return new EventInstance { State = state };
         }
@@ -349,7 +351,8 @@ namespace CosmicShore.Engine.Audio.Fmod
             return new VCA { State = state };
         }
 
-        public static EventDescription GetEventDescription(EventReference reference) => new() { Path = reference.Path ?? string.Empty };
+        public static EventDescription GetEventDescription(EventReference reference)
+            => new() { Path = string.IsNullOrEmpty(reference.Path) ? FmodGuids.PathOf(reference.Guid) ?? string.Empty : reference.Path };
         public static EventDescription GetEventDescription(string path) => new() { Path = path };
 
         /// <summary>Studio system (global parameters, bus/VCA lookups).</summary>
@@ -369,14 +372,55 @@ namespace CosmicShore.Engine.Audio.Fmod
         /// <summary>Original: the RuntimeManager MonoBehaviour singleton. The port has no component; this is a stand-in handle.</summary>
         public static object Instance => StudioSystem;
 
+        /// <summary>
+        /// Engine-only probe: every event start, by path, in order. Not part of the FMOD API; null
+        /// unless something is listening. <see cref="EventRecorded"/> carries the full sequence.
+        /// </summary>
+        public static System.Action<string> EventStarted;
+
+        /// <summary>
+        /// Engine-only probe: the parity harness's FMOD channel (Port/parity/README.md) as
+        /// (kind, name) in call order. "fmod": an event start or restart, name = path.
+        /// "fmod-stop": an explicit stop(), name = "PATH|ALLOWFADEOUT" or "PATH|IMMEDIATE".
+        /// "fmod-snapshot": a mixer snapshot, "start:PATH" / "stop:PATH", or
+        /// "start:mixer:MIXER/SNAPSHOT" for a Unity AudioMixer transition. A snapshot is never
+        /// written as "fmod" or "fmod-stop".
+        /// </summary>
+        public static System.Action<string, string> EventRecorded;
+
+        public const string Unresolved = "(unresolved)";
+
+        /// <summary>True for an FMOD snapshot path (or one the runtime says is a snapshot).</summary>
+        public static bool IsSnapshot(string path)
+            => path != null && (path.StartsWith("snapshot:/", System.StringComparison.Ordinal)
+                                || FmodBackend.Current?.IsSnapshot(path) == true);
+
         internal static void RecordStart(EventInstanceState state)
         {
+            string key = state.Path ?? Unresolved;
+            if (IsSnapshot(state.Path)) EventRecorded?.Invoke("fmod-snapshot", "start:" + key);
+            else
+            {
+                EventStarted?.Invoke(key);
+                EventRecorded?.Invoke("fmod", key);
+            }
             StartedTotal++;
-            string key = state.Path ?? "(unresolved)";
             StartedByPath[key] = StartedByPath.TryGetValue(key, out var n) ? n + 1 : 1;
             StartedInstances.Add(state);
             if (StartedInstances.Count > StartedLogCapacity) StartedInstances.RemoveRange(0, StartedLogCapacity / 2);
         }
+
+        internal static void RecordStop(EventInstanceState state, STOP_MODE mode)
+        {
+            if (EventRecorded == null) return;
+            string key = state.Path ?? Unresolved;
+            if (IsSnapshot(state.Path)) EventRecorded("fmod-snapshot", "stop:" + key);
+            else EventRecorded("fmod-stop", key + "|" + mode);
+        }
+
+        /// <summary>A Unity AudioMixer snapshot transition (the other mixer the game carries).</summary>
+        public static void RecordMixerSnapshot(string mixer, string snapshot)
+            => EventRecorded?.Invoke("fmod-snapshot", $"start:mixer:{mixer}/{snapshot}");
 
         /// <summary>Clears buses, the started log, and the failure seam (test isolation).</summary>
         public static void ResetForTests()

@@ -68,16 +68,19 @@ namespace CosmicShore.Gameplay
         void ExecuteElementalCrystalImpact_ClientRpc(CrystalImpactData data) =>
             vesselImpactor.ExecuteElementalCrystalImpact(data);
 
-        // ── Combat petal ejection (IElementalLossRelay) ──────────────────────
+        // ── Combat petal transfer (IElementalLossRelay) ──────────────────────
         //
         // Element levels are OWNER state: NetElementLevels is owner-write, and a take from any
-        // other copy of this hull changes nothing anybody reads. So a combat eject is settled
-        // here, on the owner, as the shooter's owner saw the hit (ElementalTransfer type doc):
+        // other copy of this hull changes nothing anybody reads. So a combat take is settled
+        // here, on the owner, as the attacker's owner saw the hit (ElementalTransfer type doc):
         //
-        //   shooter's owner ──RelayEjectToOwner──> [owner here?] settle
-        //                   └─CombatEject_ServerRpc─> [server owns it?] settle
-        //                                          └─CombatEject_ClientRpc ─(owner only)─> settle
-        //   settle ── mint locally ── PublishEject_ServerRpc ── PublishEject_ClientRpc ─(not owner)─> mint
+        //   attacker's owner ──RelayTakeToOwner──> [owner here?] settle
+        //                    └─CombatTake_ServerRpc─> [server owns it?] settle
+        //                                          └─CombatTake_ClientRpc ─(owner only)─> settle
+        //   EJECT: settle ── mint locally ── PublishEject_ServerRpc ── PublishEject_ClientRpc ─(not owner)─> mint
+        //   STEAL: settle ── payee.RelayGrantToOwner ──> [payee owned here?] grant
+        //                                            └─GrantSteal_ServerRpc─> [server owns it?] grant
+        //                                                                  └─GrantSteal_ClientRpc ─(owner only)─> grant
         //
         // The ServerRpc + targeted ClientRpc pair is the ExecuteJoust shape above, narrowed to one
         // recipient with ClientRpcParams (MultiplayerMiniGameControllerBase does the same). Every
@@ -86,57 +89,104 @@ namespace CosmicShore.Gameplay
         public bool IsNetworked => IsSpawned;
         public bool IsOwnedHere => IsSpawned && IsOwner;
 
-        public int RelayEjectToOwner(float normalizedAmountPerElement, Vector3 impactVelocity,
-                                     ElementalDebuffSources source)
+        public int RelayTakeToOwner(ElementalTransferForm form, int elementMask, float normalizedAmountPerElement,
+                                    Vector3 impactVelocity, ElementalDebuffSources source, IElementalLossRelay payee)
         {
-            if (normalizedAmountPerElement <= 0f) return 0;
-            if (IsOwner) return SettleEjectAsOwner(normalizedAmountPerElement, impactVelocity, source);
+            if (normalizedAmountPerElement <= 0f || elementMask == 0) return 0;
 
-            CombatEject_ServerRpc(normalizedAmountPerElement, impactVelocity, source);
+            // A steal pays a hull that this relay can name on the wire. Anything else - an eject, or
+            // a steal whose payee is not a network hull - ejects, the conserving fallback
+            // ElementalTransfer.Apply also takes when a steal has nobody to pay.
+            var payeeImpactor = form == ElementalTransferForm.Steal ? payee as NetworkVesselImpactor : null;
+            bool steal = payeeImpactor != null && payeeImpactor.IsSpawned;
+
+            if (IsOwner)
+                return SettleTakeAsOwner(steal, elementMask, normalizedAmountPerElement, impactVelocity, source,
+                                         steal ? payeeImpactor : null);
+
+            if (steal)
+                CombatSteal_ServerRpc(elementMask, normalizedAmountPerElement, source, payeeImpactor);
+            else
+                CombatEject_ServerRpc(elementMask, normalizedAmountPerElement, impactVelocity, source);
             return 0;
         }
 
-        // RequireOwnership = false: the CALLER is the shooter's owner, which by construction does
-        // not own this hull. The server only forwards; the owner's AccrueElementalLoss still
-        // clamps the take to what is held and honours a ward.
+        // RequireOwnership = false on every forwarding ServerRpc here: the CALLER is the attacker's
+        // owner (or, for a grant, the victim's), which by construction does not own this hull. The
+        // server only forwards; the owner's AccrueElementalLoss still clamps the take to what is
+        // held and honours a ward.
         [ServerRpc(RequireOwnership = false)]
-        void CombatEject_ServerRpc(float normalizedAmountPerElement, Vector3 impactVelocity,
+        void CombatEject_ServerRpc(int elementMask, float normalizedAmountPerElement, Vector3 impactVelocity,
                                    ElementalDebuffSources source)
         {
             // The server owns every AI hull and the host's own; settle without a further hop.
             if (IsOwner)
             {
-                SettleEjectAsOwner(normalizedAmountPerElement, impactVelocity, source);
+                SettleTakeAsOwner(false, elementMask, normalizedAmountPerElement, impactVelocity, source, null);
                 return;
             }
 
-            CombatEject_ClientRpc(normalizedAmountPerElement, impactVelocity, source, new ClientRpcParams
-            {
-                Send = new ClientRpcSendParams { TargetClientIds = new[] { OwnerClientId } }
-            });
+            CombatEject_ClientRpc(elementMask, normalizedAmountPerElement, impactVelocity, source, ToOwner());
         }
 
         [ClientRpc]
-        void CombatEject_ClientRpc(float normalizedAmountPerElement, Vector3 impactVelocity,
+        void CombatEject_ClientRpc(int elementMask, float normalizedAmountPerElement, Vector3 impactVelocity,
                                    ElementalDebuffSources source, ClientRpcParams rpcParams = default)
         {
             // Ownership can move while the RPC is in flight (Hijack's swap). The pilot who was
             // shot no longer flies this hull, and its levels are no longer this machine's to publish.
             if (!IsOwner) return;
-            SettleEjectAsOwner(normalizedAmountPerElement, impactVelocity, source);
+            SettleTakeAsOwner(false, elementMask, normalizedAmountPerElement, impactVelocity, source, null);
         }
 
-        int SettleEjectAsOwner(float normalizedAmountPerElement, Vector3 impactVelocity,
-                               ElementalDebuffSources source)
+        [ServerRpc(RequireOwnership = false)]
+        void CombatSteal_ServerRpc(int elementMask, float normalizedAmountPerElement, ElementalDebuffSources source,
+                                   NetworkBehaviourReference payeeRef)
         {
-            var victim = vesselImpactor ? vesselImpactor.Vessel?.VesselStatus : null;
+            if (IsOwner)
+            {
+                SettleStealFromWire(elementMask, normalizedAmountPerElement, source, payeeRef);
+                return;
+            }
+
+            CombatSteal_ClientRpc(elementMask, normalizedAmountPerElement, source, payeeRef, ToOwner());
+        }
+
+        [ClientRpc]
+        void CombatSteal_ClientRpc(int elementMask, float normalizedAmountPerElement, ElementalDebuffSources source,
+                                   NetworkBehaviourReference payeeRef, ClientRpcParams rpcParams = default)
+        {
+            if (!IsOwner) return;   // ownership moved in flight, as above
+            SettleStealFromWire(elementMask, normalizedAmountPerElement, source, payeeRef);
+        }
+
+        void SettleStealFromWire(int elementMask, float normalizedAmountPerElement, ElementalDebuffSources source,
+                                 NetworkBehaviourReference payeeRef)
+        {
+            // A payee that despawned in flight cannot be paid; the take then ejects so the petals
+            // stay in play rather than vanishing.
+            payeeRef.TryGet(out NetworkVesselImpactor payee);
+            SettleTakeAsOwner(payee != null, elementMask, normalizedAmountPerElement, Vector3.zero, source, payee);
+        }
+
+        int SettleTakeAsOwner(bool steal, int elementMask, float normalizedAmountPerElement, Vector3 impactVelocity,
+                              ElementalDebuffSources source, NetworkVesselImpactor payee)
+        {
+            var victim = VesselStatusHere;
             if (victim == null) return 0;
 
-            uint packed = ElementalTransfer.SettleEjectAll(victim, normalizedAmountPerElement, source);
+            uint packed = ElementalTransfer.SettleTake(victim, elementMask, normalizedAmountPerElement, source);
             if (packed == 0u) return 0;   // warded, empty, or still accruing toward a whole petal
 
-            ElementalTransfer.EjectSettled(victim, packed, impactVelocity);
-            PublishEject_ServerRpc(packed, impactVelocity);
+            if (steal && payee != null)
+            {
+                payee.RelayGrantToOwner(packed);
+            }
+            else
+            {
+                ElementalTransfer.EjectSettled(victim, packed, impactVelocity);
+                PublishEject_ServerRpc(packed, impactVelocity);
+            }
             return ElementalTransfer.TotalPetals(packed);
         }
 
@@ -150,9 +200,50 @@ namespace CosmicShore.Gameplay
         void PublishEject_ClientRpc(uint packedPetals, Vector3 impactVelocity)
         {
             if (IsOwner) return;   // the owner minted its own when it settled
-            var victim = vesselImpactor ? vesselImpactor.Vessel?.VesselStatus : null;
-            ElementalTransfer.EjectSettled(victim, packedPetals, impactVelocity);
+            ElementalTransfer.EjectSettled(VesselStatusHere, packedPetals, impactVelocity);
         }
+
+        /// <summary>The PAY half of a relayed steal: this hull is the thief, and the victim's owner
+        /// has settled what came loose. Granted on this hull's owner only, because a grant to any
+        /// other copy is overwritten by the owner's NetElementLevels.</summary>
+        public void RelayGrantToOwner(uint packedPetals)
+        {
+            if (packedPetals == 0u) return;
+            if (IsOwner)
+            {
+                ElementalTransfer.GrantSettled(VesselStatusHere, packedPetals);
+                return;
+            }
+            GrantSteal_ServerRpc(packedPetals);
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        void GrantSteal_ServerRpc(uint packedPetals)
+        {
+            if (IsOwner)
+            {
+                ElementalTransfer.GrantSettled(VesselStatusHere, packedPetals);
+                return;
+            }
+            GrantSteal_ClientRpc(packedPetals, ToOwner());
+        }
+
+        [ClientRpc]
+        void GrantSteal_ClientRpc(uint packedPetals, ClientRpcParams rpcParams = default)
+        {
+            // Ownership moved in flight (Hijack's swap): the pilot who stole no longer flies this
+            // hull. The petals already left the victim, so this is the one case that does not
+            // conserve; it needs an ownership swap inside one round trip.
+            if (!IsOwner) return;
+            ElementalTransfer.GrantSettled(VesselStatusHere, packedPetals);
+        }
+
+        IVesselStatus VesselStatusHere => vesselImpactor ? vesselImpactor.Vessel?.VesselStatus : null;
+
+        ClientRpcParams ToOwner() => new ClientRpcParams
+        {
+            Send = new ClientRpcSendParams { TargetClientIds = new[] { OwnerClientId } }
+        };
 
         void OnValidate()
         {

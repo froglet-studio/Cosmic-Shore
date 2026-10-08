@@ -2948,6 +2948,44 @@ avoids the bite; hovering gets dived on; the cloud stays in its band when idle a
 hold; it feeds and breeds. **FAIL:** a burn from a member that was not glowing · a dive with no hold first · no
 visible gap · the cloud follows you across the cell · proxies or colliders over budget · the cloud dwindles or starves
 
+### QA-ARMS-1 ⬜ — the arms race: a schooling shoal and a pack of harriers that hunt it
+
+**Source:** branch `claude/arms-race-port`, ported from the lab's arms race (`Tools/NCA/arms_*.py`, run a9 generation
+1500, on `cece/gifted-curie-x2cpd0`). Only the headless harnesses have run (`Tools/Build/substrate_harness/run.sh arms`
+replays the lab's states input for input and its behaviour runs metric for metric; `run.sh all`; the author `--check`s);
+it has never been opened in the editor. Reference: `Docs/SUBSTRATE_FAUNA.md` §11. Tunables: the `Arms` block of
+`Substrate Shoal Species.asset` and `Substrate Harrier Species.asset`.
+
+**Why it matters:** this is the first creature behaviour that was evolved rather than written. It only lands if the
+schools visibly school, the pack visibly hunts together, and the burst is a fair warning before a burn.
+
+1. **Find the pond.** Open the Swarm cell (Unity 2021.3.9f1) and fly to the top of the middle shell: straight up (+Y)
+   from the cell centre, about 765 u out. The pond has no visible edge: it is the sphere ~400 u across that the fish
+   and harriers never leave, with two Time plants near its middle, ~120 small Time-coloured fish and 8 larger
+   Charge-coloured harriers. Say whether the invisible edge reads as odd when they turn along it.
+2. **The shoal schools.** Watch from just outside the pond for a minute. Fish should travel in tight groups heading the
+   same way (neighbours ~13 u apart), not a buzzing cloud. They graze near the plants but keep moving.
+3. **The harriers hunt as a pack.** Harriers cruise spread out (~65 u apart). When they go for a school, two or more
+   should close on it from different sides, then sprint. A sprinting harrier stretches into a long streak.
+4. **The school answers.** When harriers close in, the school swerves and splits round them. Catches happen (the fish
+   is sucked into the harrier and leaves a crystal) but most attacks on a tight school should fail.
+5. **The burst is the warning.** Hover inside the pond. Harriers will treat you as prey. A harrier must be streaking
+   (bursting) for at least 0.4 s before touching it burns petals; touching a cruising harrier or any fish must never
+   burn. Expect regular burns while you hover.
+6. **Speed is safety.** Fly straight through the pond at cruise speed. You should rarely or never be burned: the
+   harriers' burst (100 u/s) is slower than you. Ram through a school: fish die and drop crystals.
+7. **Budgets.** Physics debugger with your ship in the pond: at most 6 shoal proxies and 4 harrier proxies, colliders
+   under 1,200 in total.
+8. **It lives.** Leave the cell running 10+ minutes, then come back: the shoal still near 120-155 fish, harriers 8-12,
+   none starving, new fish appearing as they graze. Ram 30 fish and check the shoal recovers. If the shoal thins out,
+   the pond's two plants are not regrowing fast enough (say so; the fix is more plants in the pond's pen).
+
+**PASS:** schools that move as aligned groups; harriers that converge together and burst; the school swerves and most
+attacks fail; only a harrier that has been bursting for 0.4 s burns; a cruising ship gets through; budgets hold; both
+species are alive after 10 minutes. **FAIL:** a shapeless cloud of fish · harriers that hunt one by one · a burn from a
+fish or a cruising harrier · a burn the instant a harrier starts its burst · fish or harriers outside the pond · the
+shoal or the harriers die out · proxies or colliders over budget.
+
 ### QA-SWARM-ROUND11-14 ⬜ — the balance pass: sated swarms live, swarms keep to their bands, packs survive a ram
 
 **Source:** branch `overnight/balance`. Only the headless showcase harness (`Tools/Build/showcase_cell_harness/run.sh all`,

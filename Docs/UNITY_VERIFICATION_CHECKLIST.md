@@ -142,6 +142,62 @@ no vessel. Re-test Grizzly: fusion plays AND the element bar rises on pickup.
 
 ---
 
+### 🔴 Ability presses run the same actions on every machine — the device travels with the press (`claude/relaxed-heisenberg-t7utre`, 2026-10-06)
+
+No editor and no `unity` CLI in the authoring session, so `/verify-unity` did NOT run. Out of
+editor: `Tools/Build/unity_refcompile/run.sh` compiled the branch against the real Netcode 2.5.0
+source with 0 errors in project code (negative control: a wrong-arity call planted in the
+ClientRpc fails with CS7036). `Tools/Build/peer_press_harness/run.py` ran the SHIPPED
+`R_VesselActionHandler` as an owner copy and a peer copy over all 13 shipped vessels' maps: the
+pre-fix handler ran something different on the peer for 72 of 825 presses (Squirrel, Manta, Rhino)
+and stranded 48 holds across a device switch (bleeding-edge's handler: 72 and 24); this branch: 0 and 0, the 4 shipped
+`CarriedInputDeviceTests` pass, and `--self-test` catches each of the three mechanisms removed.
+Full record: `Assets/_Scripts/Controller/Vessel/R_VesselActions/SQUIRREL_DRIFT.md` §11.
+
+**What landed**
+
+1. `InputStatus.ActiveInputDevice` is an owner-write NetworkVariable (was a local field, so each
+   machine saw a remote pilot as whatever ITS OWN hardware was).
+2. `R_VesselActionHandler`'s press/release RPCs carry the device as one byte; every peer resolves
+   with it. A release resolves with the device its press recorded. This supersedes bleeding-edge's
+   `7e5c950e4` (a second ledger of started action lists), which the merge removed: it still refused
+   the Squirrel's and Rhino's releases at the live-device gate (`SQUIRREL_DRIFT.md` §11).
+
+**Verify in editor** (the Touch half needs a phone build — the editor and every MPPM player read
+`SystemInfo.deviceType` as Desktop)
+
+0. Edit-mode: `CarriedInputDeviceTests` (4) and `DeviceAwareActionLookupTests` pass.
+1. Phone build + PC host, both Squirrels: each pilot's drift lays its drift trail, and each Boost
+   Ring appears, on the OTHER screen too (before: refused there).
+2. Same pair, Mantas: the phone pilot's both-thumbs boost reads as a straight boost on the PC; the
+   PC pad pilot's one-trigger turn shows its flared trail on the phone.
+3. Same pair, Rhinos: the PC pilot's shield swipe shows on the phone.
+4. Phone + Bluetooth pad: hold a touch drift, touch the pad, release — the drift ends on both screens.
+5. Two desktop players (MPPM is fine): presses, AI abilities (Tollway, Waystation, Butterfly modes,
+   Skim Race AI drift) behave as before; no console errors.
+
+---
+
+### 🔴 Rhino: elemental-crystal pickups no longer explode (`cece/keen-ptolemy-t3nzug`, 2026-10-08)
+
+**Landed** (`_Scripts/Controller/Vessel/R_VesselActions/RHINO_ENERGY_SWORD.md` § Crystal burst):
+`RhinoSwordCrystalBurstEffectSO` no longer spawns an `AOESlowExplosion` at the crystal. The sword
+capsule overlaps the hull, so every elemental crystal the Rhino flew through (ejected petals, dropped
+hearts) reached this effect and detonated. The effect now only kicks the blade burst + energy drain.
+The explosion fields were removed from the SO and from `RhinoSwordCrystalBurstEffect.asset`. The
+Rhino's OMNI-crystal vessel blast (`RhinoVesselExplosionByCrystalEffect`) is untouched.
+
+**Not opened in Unity** (no editor/`unity` CLI in the session). Offline: `unity_refcompile` player
+config reports 0 errors in project code.
+
+**Verify in editor:**
+1. Rhino in a mode with lifeforms (or Menu_Main freestyle): fly through an elemental crystal. The crystal
+   is collected (petal gained), the blade bursts and the energy meter drains, and **no explosion spawns**.
+2. Fly through an omni crystal: the Rhino's vessel crystal blast still fires (unchanged).
+3. The inspector on `RhinoSwordCrystalBurstEffect.asset` shows no fields, and the console is clean.
+
+---
+
 ### 🔴 Squirrel omni-crystal morph: the crystal becomes its eight shielded ring prisms (`cece/dreamy-fermat-szo9ck`, 2026-10-08)
 
 **Landed** (`_Scripts/Controller/Vessel/R_VesselActions/SQUIRREL_CRYSTAL_MORPH.md`): a Squirrel's omni
@@ -3339,6 +3395,9 @@ reinstated exactly this slowdown and was undone.
    drift entry its trail must continue toward the crystal while the hull swings off-axis. If the
    trail follows the nose, the `Course` re-aim in `SyncExternalWrites` regressed — this was a live
    bug in the Scarab's first-pass transformer and is the reason that method exists.
+   ⚠ *Corrected 2026-10-06:* not in Skim Race — its Squirrel AI seats belong to `SkimRacePilot`,
+   whose shipped configs never drift (`UseDrift: 0`). Watch an `AIPilot`-flown Squirrel, Dolphin
+   or Scarab in another mode (`SQUIRREL_DRIFT.md` §8 step 5 / §10).
 7. **Menu vessel swap preserves speed** on Squirrel, Dolphin and Scarab. Freestyle at speed →
    vessel changer → swap. The new hull must inherit the speed, not drop to a stop
    (`SetInitialSpeed` → the external-write re-seed).
@@ -4954,6 +5013,48 @@ The **Rhino's energised sword** lands a Strike and drains nothing — it is now 
 verb with no drain path. Arming it is a Rhino kit decision (a skimmer drain SO on the sword's
 container), not a number, so it is reported rather than done.
 
+## 🔴 AI Squirrel drift / Boost Ring on a PC — device-aware autopilot lookup (`claude/kind-edison-nvml7l`, 2026-10-06) — NOT EDITOR-VERIFIED
+
+**What landed.** `R_VesselActionHandler.TryGetInputForAction<T>` / `TryGetBoundAction<T>` now answer
+for the vessel's ACTIVE device, through the same `TryGetPressedActions` rule the press gate uses
+(active override map first, then unshadowed shared entries). Before, they swept shared → touch →
+gamepad regardless of device, so on the Squirrel — drift and ring bound only in the override maps —
+the Skim Race AI was handed the touch controls (12 / 11), which every PC device refuses: no AI
+drift or ring on Windows. `SkimRacePilot` now asks at every press and holds `LeftTriggerAnalog = 1`
+while its drift is held, so an AI drift is full depth on a pad device as well as on keyboard/touch
+(the deliberate depth choice; `SQUIRREL_DRIFT.md` §10). HUD control hints use
+`CollectBoundActions`/`HasBinding`, which are untouched.
+
+**Compiled? Not by Unity.** `/verify-unity` could not run (no editor, no `unity` binary, no
+`Library/` in the session). Out of editor: Roslyn found no structural errors in the changed files;
+the shipped `DeviceAwareActionLookupTests` compiled against the extracted shipped lookup methods
+and RAN 8/8 against the real `Squirrel.prefab`, with three negative controls each failing its test;
+a harness ran the shipped `SkimRacePilot` actuation through the shipped press path on all five
+devices (pre-fix code: drift/ring start on Touch only; fixed code: on every device). The six
+standing gates and `check_ai_no_state_writes.py` (+ `--self-test`) pass.
+
+**Verify:**
+1. Run `DeviceAwareActionLookupTests` and `AimTelegraphBindingTests` in the Test Runner.
+2. Temporarily set `UseDrift: 1` on `Resources/SkimRaceAIConfig_I1.asset` (do not commit — the
+   shipped policy keeps drift off; see note). Skim Race I1 with AI seats, **no pad**: AIs drift on
+   sharp turns (hull swings off the travel line, trail curves).
+3. Same with a **pad connected**: identical drift depth; the AI's `InputStatus.LeftTriggerAnalog`
+   reads 1 while drifting, 0 otherwise.
+4. Optional, same way with `UseLaunchRing: 1`: AIs lay Boost Rings ahead of themselves on a PC.
+5. HUD unchanged: your own Squirrel's ability row and control chips, on pad and keyboard. Fly a
+   Dolphin vs AI in The Bends (aim telegraph), a Tollway and a Waystation match — the AI presses
+   there are shared-map bindings and must behave exactly as before. The AI boost policies resolve
+   their ability through the same lookup: an `AIPilot` Squirrel outside Skim Race must still lay
+   Boost Rings (`SkimRingAIPolicySO`), on a PC and on a handheld.
+6. Revert step 2 (and 4).
+
+**Note — the shipped Skim Race AI never asks to drift.** All four `SkimRaceAIConfig*.asset` ship
+`UseDrift: 0` / `UseLaunchRing: 0`, so in a normal match nothing changes on screen. That setting was
+never measured against a working drift (the simulator does not model drift; PC benchmarks had the
+press refused) — whether to turn it on is a benchmark question.
+
+---
+
 ## 🔴 Nested Gyroid flora + the Urchin's layered ride (`cece/happy-clarke-e0xu4y`, 2026-10-06) — NOT EDITOR-VERIFIED
 
 No Unity Editor or `unity` CLI was available in the authoring session, so `/verify-unity` did **not** run.
@@ -5334,3 +5435,45 @@ What changed (authored by `Tools/Build/author_mass_crystal_look.py --check`, plu
    blue-white); free Mass reads mostly DARK with lime confined to face edges and silhouettes. The
    omni crystal's falling triangles look exactly as before. Tune in
    `Tools/Build/author_mass_crystal_look.py` (`RIM_POWER`, `INACTIVE_COLORS`), then re-run it.
+
+---
+
+## 🔴 Skim Race intensity 4 is "Relativity" — five distinct lobes, a snaking pass, markers at crystals only (`cece/funny-hamilton-kniun4`, 2026-10-08) — NOT EDITOR-VERIFIED
+
+`Assets/_Scripts/Controller/Arcade/SKIMRACE.md` §5a. I4's track was replaced by a generated knot
+(`Tools/Build/author_skimrace_relativity_track.py`): five chords crossing the nucleus cage 130-185 u
+from the centre, five lobes each with its own reach (701-1,069 u) and apex turn (215-405 u), pass 4
+bowing 110 u against the lap's turn (right, left, right), ribbon normals that roll onto each lobe's
+plane through the passes, 26 crystals/lap × 2 = 52, and the wide marker blocks ONLY at the 26
+crystal anchors. (Two earlier versions on this branch were reworked in review: a symmetric six-lobe
+knot — repetitive curvature, piled-up centre — then markers on every waypoint and one-way turning.)
+Runtime: `SpawnableWaypointTrack.waypointUps` (per-waypoint ribbon normal), `crystalsPerLap` (the
+turn monitor's per-lap count) and `markedWaypoints` (which waypoints get a marker block); I1–I3
+author none of them and are unchanged. No `unity` CLI in the authoring session, so `/verify-unity`
+did NOT run. Verified out of editor: `SpawnableWaypointTrack.cs` compiled by the card-art harness
+(Roslyn, Unity shim; all 29 cards still match), the generator's geometry asserts on the prisms as
+`Spawn` lays them, `--check` drift gate with negative controls, `SkimRaceRelativityTrackTests`
+compiled against stubs, and the Skim Race AI simulator flying the new course.
+`CrystalCollisionTurnMonitor.cs` was NOT compiled (one-line call to the new public method).
+
+1. **Compile + import.** Open the project; no console errors. Open `MinigameSkimRace`, select
+   `SpawnableTrack`: the inspector shows *Waypoint Ups* (4th entry 182 vectors), *Crystals Per Lap*
+   (0, 0, 0, 26) and *Marked Waypoints* (three empty entries, the 4th with 26 indices). Set
+   *Preview Intensity Level* to 3: the red gizmo is a five-lobed knot. Run
+   `SkimRaceRelativityTrackTests`.
+2. **Play I4 solo (Squirrel, 1 player + AI).** Expect: spawn just behind a lobe apex, the ribbon
+   horizontal under/over the grid, the first crystal just past the apex; the HUD target reads **52**
+   (not 364 — that would mean `crystalsPerLap` was not read).
+3. **Markers.** Wide marker blocks appear only where a crystal spawns (26 a lap), never as a run of
+   wide blocks along the ribbon. A crystal always appears within ~35 u of a marker.
+4. **The snake.** Pass 4 (the fourth trip through the nucleus): after lobe 3's right-hand turn the
+   ribbon bows LEFT round a neighbouring chord, then right into lobe 4. The pass's crystal sits on
+   the bow's apex.
+5. **The weave.** Inside the cage the five chords cross at five different places (≥ 139 u apart,
+   none nearer the centre than 130 u); with 2+ racers, check you can SEE a rival cut across.
+6. **I1–I3 unchanged.** One race each: same tracks, same markers on every waypoint, targets 24 / 30 / 56.
+7. **Mode preview.** Arcade ▸ Skim Race card, intensity 4 preview shows the knot with 26 markers
+   (it reads the re-baked `SkimRaceWaypointTrack.prefab`).
+8. **Feel.** Does each lobe feel like its own corner, does the snake break the one-way rhythm, is
+   the core readable? Is 52 crystals the right length (~82 s for a perfect race)? Levers: the
+   `PASSES` / `LOBES` / `SNAKE` tables in the generator, then re-run it.

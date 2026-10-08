@@ -1047,11 +1047,20 @@ package at its locked source, then binds ALL of `Assembly-CSharp` (method bodies
 a player build would; `Tools/Build/unity_refcompile/README.md` says exactly what it does and does not
 prove. Then `python3 Tools/Build/check_generated_assets.py` audits every changed `.asset` / `.prefab`
 / `.unity` against the schema that compile wrote (serialized keys, enum values, guid/fileID
-references, m_Script classes). Four things that cost time on the first run (2026-10-06):
-- **`DOTNET_ROOT` must hold a net8.0 REFERENCE PACK** (`packs/Microsoft.NETCore.App.Ref/8.*/ref/net8.0`).
-  With only a .NET 10 SDK, `depublicize()` dies with `IndexError: list index out of range` after a
-  full ten-minute fetch, which reads as a broken tool. Install the 8.0 channel per-user (above) and
-  point `DOTNET_ROOT` at it; `TMPDIR` decides where the ~550 MB cache lands.
+references, m_Script classes). What cost time on the first runs (2026-10-06 to 10-08):
+- **`DOTNET_ROOT` must hold a .NET SDK, 8.0 or newer** (a runtime alone has no reference pack, and
+  the tool says so). Until 2026-10-08 it had to be 8.0 exactly: a .NET 10-only `DOTNET_ROOT` died with
+  `IndexError: list index out of range` after the full ten-minute fetch. Any SDK from 8.0 works now
+  (8.0 and 10.0 verified). Install a channel per-user (above) and point `DOTNET_ROOT` at it;
+  `TMPDIR` decides where the ~550 MB cache lands.
+- **A warm run takes ~30 s, and the `cached` lines are the evidence.** Count them
+  (`grep -c ' cached$'`): about 86 package assemblies should come from the cache. Until 2026-10-08
+  NONE ever did, so every run recompiled them all. A stub DLL rebuilt each run sat in every
+  package's fingerprint. Nobody noticed, because a cache that never hits looks exactly like a cache.
+  A cold count after a warm one means an input moved (a new SDK, a re-fetch). Runs that share a
+  cache take turns (`waiting for another unity_refcompile run`). Before that lock, a player run and
+  an editor run launched together rewrote the shared DLLs under each other, and `Unity.Entities`
+  "failed" with 53 false project errors downstream.
 - **`check_generated_assets.py` needs the SAME `DOTNET_ROOT` and `TMPDIR` the compile ran with.**
   Run it bare after a compile that used a per-user SDK and it says `no Roslyn tools in
   <TMPDIR>/unity_refcompile_cache/tools - run run.sh first` — while the tools sit in that very
@@ -1062,43 +1071,49 @@ references, m_Script classes). Four things that cost time on the first run (2026
   files that `using` a UGS package no mirror carries (Multiplayer, Friends, Leaderboards); they are
   counted, not judged. Check your own files are not in that bucket (they would be unverified):
   grep the run's `report.json` for each file you changed.
-- **`--config editor` reports false `CS0118 'Editor' is a namespace but is used like a type`** in
-  untouched runtime `#if UNITY_EDITOR` files whenever the branch changed an Editor-folder file
-  declaring `namespace CosmicShore.Editor` (123 files do). That config compiles changed
-  Editor-folder files INTO the runtime compilation; Unity keeps them in Assembly-CSharp-Editor,
-  which runtime code cannot see. The summary line says "(0 in files changed since …)" - believe it.
-- **`--config editor` only sees Editor-folder files that are COMMITTED.** It picks them with
-  `git diff --name-only <changed-base>...HEAD`, so a test you edited but have not committed is
-  silently left out and the run is green without having compiled it. Read the
-  `editor config: + N Editor-folder file(s) changed since …` line and confirm your file is named;
-  if not, commit first and re-run (2026-10-06: `SkimRaceAITests.cs` was missing until committed).
+- **`--config editor` compiles the Editor-folder scripts as their own `Assembly-CSharp-Editor`**,
+  referencing the runtime, as Unity does. Before 2026-10-08 it merged the changed ones INTO the
+  runtime compilation, so any branch touching one of the 123 `namespace CosmicShore.Editor` files got
+  false `CS0118 'Editor' is a namespace but is used like a type` errors in untouched runtime
+  `#if UNITY_EDITOR` files. A run from an older checkout still does. Only the CHANGED Editor files
+  gate, and the working tree counts (uncommitted and untracked files too), so run it before you
+  commit; the run names them after `gated: the N changed since …`. Until 2026-10-08 only COMMITTED
+  files counted, and an edited test passed green without being compiled (`SkimRaceAITests.cs`,
+  2026-10-06). The errors listed for unchanged files (37 on 2026-10-08) are reference-set artifacts
+  (2021.1 `UnityEditor`, no test framework). `EDITOR_REFERENCE_GAPS` in `build.py` matches each one, so they stay unverified
+  even in a file your branch changes. A Unity 6 editor API your branch starts using reads as an error
+  until it gets an entry there.
 - **`check_generated_assets.py` needs `DOTNET_ROOT` exported too, and lies about why when it
   is not.** Without it the audit says `no Roslyn tools in …/tools - run run.sh first` even though
   `run.sh` just populated that folder — it looks for `csc.dll` under `$DOTNET_ROOT`, not under the
   cache. Export the same `DOTNET_ROOT`/`PATH`/`TMPDIR` you gave `run.sh`. It also audits only what
   is COMMITTED since the base (`audited 0 added + 0 modified` on an uncommitted tree is not a pass).
+- **`check_generated_assets.py` reports only findings that are NEW against the base's copy of the
+  asset — so a negative control must inject a defect the BASE never had.** Re-adding a key you just
+  removed (a retired field's `minExplosionScale: 60`, still present in the base asset) is suppressed
+  as pre-existing and the audit stays green, which reads as "the audit is blind". Commit a key the
+  base never carried (`negativeControlKey: 1`), confirm `[field] 1` names it, then
+  `git reset --hard` back (2026-10-08, Rhino crystal-burst field removal).
 - **`--config editor` puts a test's `LogAssert` in the "unverified" bucket, not the error count.**
   `UnityEngine.TestTools.LogAssert` lives in the test-framework DLL, which is not among its
   references, so a new edit-mode test that uses it reports `CS0103 'LogAssert'` under *unverified*.
-  Confirm the same call already compiles in an existing test (`GameObjectExtensionTests` uses
-  `LogAssert.Expect(LogType.Error, new Regex(...))`) rather than reading it as a defect — and do
+  It is an `EDITOR_REFERENCE_GAPS` entry, so a typo such as `LogAsert` still fails the run. Do
   read the bucket, because everything ELSE in your test file was bound for real.
-- **A planted `CS0103` (undefined name) is reported as *unverified*, not as an error (2026-10-08).**
-  While any package reference is unavailable, the tool buckets name-not-found diagnostics, so a
-  negative control built on an undefined method call leaves `ERRORS in project code: 0` and moves
-  the unverified count from 0 to 1. Read BOTH numbers: green means "0 errors AND 0 unverified".
-  A control on a missing MEMBER of a known type (`gameData.NoSuchMember()`, CS1061) is the sharper
-  plant if you want it to land in the error count.
 - **Files that `using` an unobtainable UGS package are bucketed, so your edits in them are not
   gated.** `HostConnectionService`, the party services, `MultiplayerSetup` and `GameDataSO` all
   `using Unity.Services.Multiplayer`. Every method body is still BOUND, so the diagnostics exist
   in `report.json` - intersect them with your diff's changed lines (parse `@@ +a,n @@` from
   `git diff -U0 <base>...HEAD -- <file>` and look for any error at those line numbers). Zero hits
   on changed lines is the evidence; "the run was green" is not.
-- **Negative-control both tools before quoting them**: plant a call to a missing member in a file
-  you changed (the compile must fail with that file tagged `[CHANGED-TONIGHT]`), and misspell one
-  key in an asset you changed (the audit must name the file and the key). Restore, then
-  `git status --short` the paths. Both discriminated on their first try here.
+- **Negative-control both tools before quoting them**: plant a call to a missing member, or a
+  misspelt name, in a file you changed. Until 2026-10-08 a missing NAME (`CS0103`, `CS0246`) never
+  gated: three packages always fail, and missing-type errors were all bucketed while any had, so such
+  a plant only moved the *unverified* count (the 2026-10-08 bug-hunt records describe exactly that).
+  Now only a name a failed package declares is bucketed; still read both numbers. The compile must
+  fail with that file tagged
+  `[CHANGED-TONIGHT]`. For the asset audit, misspell one key in an asset you changed (the audit
+  must name the file and the key). Restore, then `git status --short` the paths. Both discriminated
+  on their first try here.
 
 **But a REAL type check of the files you actually wrote is still available, and it is worth the
 20 minutes** on new code (as opposed to a small edit inside a large existing file). Build a stub
@@ -1798,11 +1813,21 @@ tiny constraint interface). Compile it together with the REAL subject files it t
 driver that reflects over `[Test]` methods, and you have executed the shipped assertions against
 the shipped code. This is what makes the body-level blindness above survivable: the 2026-08-24
 table says the no-stubs pass proves nothing inside a method, and a whole-file test harness proves
-everything inside every method the suite covers. Two mechanics that cost a cycle each:
+everything inside every method the suite covers. Three mechanics that cost a cycle each:
 
 - **`rm` the output assembly before every rebuild.** A failed build leaves the previous `.dll` in
   place, the driver runs it, and a *broken* file reports the previous run's "7 passed" — the exact
   false green a gate exists to prevent.
+- **…and `rm` every GENERATED SOURCE too, and abort when its generator fails.** A harness that
+  extracts the shipped methods into `Foo.g.cs` and then compiles has two artefacts that can go
+  stale, not one. If the extractor hard-fails (as it should, on a signature it cannot find) and the
+  build line runs anyway, the compiler happily reuses the PREVIOUS `Foo.g.cs` and the run reports a
+  pass for code that is no longer the tree. It happened re-verifying a branch after merging the
+  base: the extractor read its "pre-fix" side from `git show HEAD:`, which stopped being pre-fix the
+  moment the fix was committed, so it failed — and the merged-tree "re-verification" printed ALL OK
+  for the pre-merge code. So: delete generated sources and outputs first, chain the generator with
+  `|| exit`, and pin any "before" side of a before/after harness to a COMMIT (`<fix>^`, the merge
+  base), never to `HEAD`, which moves under you.
 - **Run from the PROJECT ROOT**, not the harness directory: Unity runs edit-mode tests with cwd =
   project root, so every `File.Exists("Assets/...")` in the suite is project-relative and fails
   everywhere else. Four passing tests read as four failures until you notice.
@@ -1829,6 +1854,37 @@ If the deliberate error does not fire, the file is not in the build — add it t
 list and start over. Treat "I added a file to the harness" as requiring this check every time; the
 failure mode is a green build that proves nothing, which is the exact thing a harness exists to
 rule out.
+
+### Technique: run a NetworkBehaviour as TWO MACHINES — partial class + an RPC router
+
+A question about REPLICATION ("does every peer run the same thing for this press?") is invisible
+to any single-machine test and normally needs an MPPM session or two devices. When the replication
+is by RE-EXECUTION (an RPC carries an input and each peer resolves it itself), it can be answered
+out of editor from the shipped file, in seconds:
+
+- **Two edits to the real file, nothing else.** Make the class `partial`, and cut its `[ServerRpc]`
+  methods out (signature regex + brace-match, HARD-FAIL if absent). A generated partial supplies
+  same-signature replacements that loop over a `List<Self> Copies` and call each copy's REAL
+  `[ClientRpc]` method — the owner's own copy included, as Netcode does. Everything the RPCs
+  resolve and run is the shipped code; the generator re-derives the signature from the file, so
+  one driver runs an OLD revision (`git show <rev>:path`) and the new one alike — which is the
+  repro and the proof in one tool.
+- **One object per machine, each with its OWN view of the replicated state** (here: a fake input
+  status per copy, so the peer can disagree with the owner about the device). Actions are
+  recorders that log into the status passed to them, so "what did each machine run" is a list
+  compare. Feed it every shipped prefab's data, parsed from YAML, not a hand-built case.
+- **Give every mechanism of the fix its own scenario, or its negative control cannot fire.** The
+  2026-10 press fix had two release mechanisms that back each other up on the ordinary networked
+  path (the owner sends the pressed device; every copy also prefers its own record). Removing
+  either one alone changed NOTHING there — the harness looked blind. Only adding the path each
+  covers alone (the non-networked single machine; a peer that joined mid-hold and never ran the
+  press) made each removal fail. **A mutation that does not fire may mean a sibling covers it, not
+  that the harness cannot see** — find the scenario where it is the only cover before concluding
+  either way. Ship the mutations as `--self-test`.
+- It proves what each machine RESOLVES and RUNS, never Netcode itself (delivery, ordering,
+  ownership) — say so. Worked example: `Tools/Build/peer_press_harness/` (`R_VesselActionHandler`,
+  `R_VesselActions/SQUIRREL_DRIFT.md` §11).
+
 ### Technique: gate a DTO round-trip BY REFLECTION, not field by field
 
 A payload struct that crosses the wire through a hand-written DTO (Unity Netcode's

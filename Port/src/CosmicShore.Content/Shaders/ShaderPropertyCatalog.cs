@@ -65,36 +65,17 @@ namespace CosmicShore.Content.Shaders
         public static IReadOnlyList<KeyValuePair<string, object>> ParseGraph(string text)
         {
             var result = new List<KeyValuePair<string, object>>();
-            var bytes = System.Text.Encoding.UTF8.GetBytes(text);
-            var reader = new Utf8JsonReader(bytes, new JsonReaderOptions { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip, AllowMultipleValues = true });
-            while (true)
+            ShaderGraphAsset graph;
+            try { graph = ShaderGraphAsset.Parse(text); }
+            catch (InvalidDataException) { return result; } // a v1 graph (no GraphData object) declares nothing we read
+            foreach (var p in graph.Properties)
             {
-                JsonDocument doc;
-                try
-                {
-                    if (!reader.Read()) break;
-                    if (reader.TokenType != JsonTokenType.StartObject) continue;
-                    doc = JsonDocument.ParseValue(ref reader);
-                }
-                catch (JsonException) { break; }
-                using (doc)
-                {
-                    var root = doc.RootElement;
-                    if (!root.TryGetProperty("m_Type", out var type) || type.ValueKind != JsonValueKind.String) continue;
-                    var t = type.GetString();
-                    if (t == null || !t.EndsWith("ShaderProperty", StringComparison.Ordinal)) continue;
-                    string reference = Str(root, "m_OverrideReferenceName");
-                    if (string.IsNullOrEmpty(reference)) reference = Str(root, "m_DefaultReferenceName");
-                    if (string.IsNullOrEmpty(reference)) continue;
-                    object value = root.TryGetProperty("m_Value", out var v) ? GraphValue(v, t) : null;
-                    result.Add(new KeyValuePair<string, object>(reference, value));
-                }
+                if (string.IsNullOrEmpty(p.Reference)) continue;
+                object value = p.Value.ValueKind != JsonValueKind.Undefined ? GraphValue(p.Value, p.Type) : null;
+                result.Add(new KeyValuePair<string, object>(p.Reference, value));
             }
             return result;
         }
-
-        static string Str(JsonElement e, string name)
-            => e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() : null;
 
         static object GraphValue(JsonElement v, string type)
         {

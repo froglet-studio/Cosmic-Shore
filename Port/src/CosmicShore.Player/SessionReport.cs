@@ -51,6 +51,8 @@ namespace CosmicShore.Player
             CosmicShore.Engine.GameLoop.PhaseTiming = true; // cheap: a timestamp per loop phase
             SceneManager.activeSceneChanged += (_, next) =>
             {
+                CloseSteadyWindow();
+                s_sceneFrame = 0;
                 s_currentScene = next?.name ?? "";
                 s_scenes.Add((s_currentScene, Frame(), (DateTime.UtcNow - s_start).TotalSeconds));
             };
@@ -62,6 +64,7 @@ namespace CosmicShore.Player
         {
             if (s_path == null || ms <= 0) return;
             s_frames++;
+            if (++s_sceneFrame == 30) OpenSteadyWindow();
             long alloc = GC.GetTotalAllocatedBytes(false);
             if (s_frames == 30) // steady state starts after the first frames' loading
                 (s_steady0, s_steadyPause0, s_steadyGc0, s_steadyGc1, s_steadyGc2) =
@@ -87,6 +90,89 @@ namespace CosmicShore.Player
 
         /// <summary>One frame's render CPU time (collect, draw submission, post, UI, present).</summary>
         public static void RenderTime(double ms) { if (s_path != null && ms > 0) s_renderBuckets[Math.Min(200, (int)(ms * 2))]++; }
+
+        // Per-scene steady state: loop phases from a scene's 30th frame until it is left. The
+        // whole-run phase averages include loading, and a scene load runs inside an async
+        // continuation, so its whole cost lands in the `tasks` phase there.
+        sealed class SteadyScene
+        {
+            public int Frames, Gc0;
+            public double PauseMs;
+            public readonly Dictionary<string, long> Ticks = new(), Alloc = new();
+        }
+        static readonly Dictionary<string, SteadyScene> s_steadyScenes = new();
+        static Dictionary<string, long> s_ticksAt, s_allocAt;
+        static string s_steadyScene;
+        static int s_sceneFrame, s_timedAt, s_gcAt;
+        static TimeSpan s_pauseAt;
+
+        static void OpenSteadyWindow()
+        {
+            if (CosmicShore.Engine.GameLoop.Current is not { } loop) return;
+            s_steadyScene = s_currentScene;
+            s_ticksAt = new Dictionary<string, long>(loop.PhaseTotals);
+            s_allocAt = new Dictionary<string, long>(loop.PhaseAllocations);
+            (s_timedAt, s_gcAt, s_pauseAt) = (loop.TimedFrames, GC.CollectionCount(0), GC.GetTotalPauseDuration());
+        }
+
+        static void CloseSteadyWindow()
+        {
+            if (s_ticksAt == null || CosmicShore.Engine.GameLoop.Current is not { } loop) return;
+            if (!s_steadyScenes.TryGetValue(s_steadyScene, out var s)) s_steadyScenes[s_steadyScene] = s = new SteadyScene();
+            s.Frames += loop.TimedFrames - s_timedAt;
+            s.Gc0 += GC.CollectionCount(0) - s_gcAt;
+            s.PauseMs += (GC.GetTotalPauseDuration() - s_pauseAt).TotalMilliseconds;
+            foreach (var kv in loop.PhaseTotals)
+                s.Ticks[kv.Key] = s.Ticks.GetValueOrDefault(kv.Key) + kv.Value - s_ticksAt.GetValueOrDefault(kv.Key);
+            foreach (var kv in loop.PhaseAllocations)
+                s.Alloc[kv.Key] = s.Alloc.GetValueOrDefault(kv.Key) + kv.Value - s_allocAt.GetValueOrDefault(kv.Key);
+            s_ticksAt = s_allocAt = null;
+        }
+
+        static object Steady() => s_steadyScenes.Where(kv => kv.Value.Frames > 0).Select(kv =>
+        {
+            int n = kv.Value.Frames;
+            return new
+            {
+                scene = kv.Key,
+                frames = n,
+                gcPer100Frames = Math.Round(kv.Value.Gc0 * 100.0 / n, 1),
+                gcPauseMsPerFrame = Math.Round(kv.Value.PauseMs / n, 3),
+                phaseAvgMs = kv.Value.Ticks.ToDictionary(p => p.Key, p => Math.Round(p.Value * 1000.0 / System.Diagnostics.Stopwatch.Frequency / n, 3)),
+                phaseAvgKB = kv.Value.Alloc.ToDictionary(p => p.Key, p => Math.Round(p.Value / 1024.0 / n, 1)),
+            };
+        }).ToList();
+
+        static readonly int[] s_gpuBuckets = new int[201];
+        static readonly Dictionary<string, double> s_gpuPassMs = new();
+        static int s_gpuFrames;
+
+        /// <summary>
+        /// One frame's GPU time per render pass, from timer queries (desktop GL; read a few frames
+        /// after the frame was drawn). Like the CPU figures, frames before the 30th are loading.
+        /// </summary>
+        public static void GpuTime(string[] passes, double[] ms)
+        {
+            if (s_path == null || s_frames <= 30) return;
+            double total = 0;
+            for (int i = 0; i < passes.Length; i++)
+            {
+                total += ms[i];
+                s_gpuPassMs.TryGetValue(passes[i], out double sum);
+                s_gpuPassMs[passes[i]] = sum + ms[i];
+            }
+            s_gpuFrames++;
+            s_gpuBuckets[Math.Min(200, (int)(total * 2))]++;
+        }
+
+        static object Gpu() => new
+        {
+            timerQueries = s_gpuFrames > 0,
+            frames = s_gpuFrames,
+            p50Ms = Percentile(s_gpuBuckets, 0.50),
+            p95Ms = Percentile(s_gpuBuckets, 0.95),
+            passAvgMs = s_gpuPassMs.ToDictionary(kv => kv.Key, kv => Math.Round(kv.Value / Math.Max(1, s_gpuFrames), 3)),
+        };
 
         static object Cpu()
         {
@@ -158,6 +244,25 @@ namespace CosmicShore.Player
             };
         }
 
+        /// <summary>
+        /// What the scene pass drew per shader and scene (C2's ranking input): <c>route</c> is
+        /// family (hand-tuned), compiled (Shader Graph compiler) or fallback (untranslated, drawn
+        /// as generic Lit/Unlit); <c>avgInstances</c> is per frame the shader was on screen.
+        /// </summary>
+        static object RenderStats()
+        {
+            var rows = CosmicShore.Render.ShaderDrawStats.Snapshot();
+            return new
+            {
+                shaders = rows.Take(200).Select(r => new
+                {
+                    scene = r.Scene, shader = r.Shader, guid = r.Guid, path = r.Path, route = r.Route,
+                    frames = r.Frames, avgInstances = r.Frames > 0 ? Math.Round((double)r.Instances / r.Frames, 1) : 0, peakInstances = r.Peak,
+                }).ToList(),
+                untranslatedWarnings = CosmicShore.Render.MaterialFamilies.WarnedCount,
+            };
+        }
+
         /// <summary>The vessel classes flying at the end of the run (by their root object's name).</summary>
         static List<string> Vessels()
         {
@@ -174,6 +279,7 @@ namespace CosmicShore.Player
         {
             if (s_path == null || s_written) return;
             s_written = true;
+            CloseSteadyWindow();
             try
             {
                 double total = (DateTime.UtcNow - s_start).TotalSeconds;
@@ -216,6 +322,7 @@ namespace CosmicShore.Player
                         over33Ms = s_buckets.Skip(66).Sum(),
                     },
                     cpu = Cpu(),
+                    gpu = Gpu(),
                     memory = Memory(),
                     scenes,
                     perScene = s_sceneBuckets.Where(kv => kv.Value.Sum() > 0).Select(kv => new
@@ -226,9 +333,11 @@ namespace CosmicShore.Player
                         p95Ms = Percentile(kv.Value, 0.95),
                         over33Ms = kv.Value.Skip(66).Sum(),
                     }).ToList(),
+                    steady = Steady(),
                     modes = s_scenes.Select(x => x.scene).Where(n => n.StartsWith("Minigame", StringComparison.Ordinal)).Distinct().ToList(),
                     vessels = Vessels(),
                     audio = Audio(),
+                    render = RenderStats(),
                     counts = new { errors = Log?.Errors ?? 0, exceptions = Log?.Exceptions ?? 0, warnings = Log?.Warnings ?? 0 },
                     exceptions = Problems("Exception"),
                     errors = Problems("Error"),
