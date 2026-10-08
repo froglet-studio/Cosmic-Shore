@@ -241,12 +241,9 @@ namespace CosmicShore.Tests
         // ---- ui: rect dumps (C5) --------------------------------------------------------------------
 
         const string UiDump =
-            "{\"path\":\"Canvas\",\"x0\":0,\"y0\":0,\"x1\":1920,\"y1\":1080,\"kind\":\"none\"}
-" +
-            "{\"path\":\"Canvas/Title\",\"x0\":760,\"y0\":900,\"x1\":1160,\"y1\":980,\"kind\":\"text\",\"alpha\":1,\"text\":\"COSMIC SHORE\",\"fontSize\":48,\"overflow\":false,\"lines\":1}
-" +
-            "{\"path\":\"Canvas/Item#1\",\"x0\":10,\"y0\":10,\"x1\":110,\"y1\":60,\"kind\":\"image\",\"alpha\":1}
-";
+            "{\"path\":\"Canvas\",\"x0\":0,\"y0\":0,\"x1\":1920,\"y1\":1080,\"kind\":\"none\"}\n" +
+            "{\"path\":\"Canvas/Title\",\"x0\":760,\"y0\":900,\"x1\":1160,\"y1\":980,\"kind\":\"text\",\"alpha\":1,\"text\":\"COSMIC SHORE\",\"fontSize\":48,\"overflow\":false,\"lines\":1}\n" +
+            "{\"path\":\"Canvas/Item#1\",\"x0\":10,\"y0\":10,\"x1\":110,\"y1\":60,\"kind\":\"image\",\"alpha\":1}\n";
 
         void WriteUi(string dir, string body)
         {
@@ -286,8 +283,7 @@ namespace CosmicShore.Tests
             Assert.Contains("font size golden 48 vs 44", ParityDiff.Ui(Golden, Run, _tol).Detail);
             WriteUi(Run, UiDump.Replace("Canvas/Item#1", "Canvas/Item"));
             Assert.Contains("Canvas/Item#1 is active in the golden, not in the run", ParityDiff.Ui(Golden, Run, _tol).Detail);
-            WriteUi(Run, UiDump + "{\"path\":\"Canvas/Extra\",\"x0\":0,\"y0\":0,\"x1\":1,\"y1\":1,\"kind\":\"none\"}
-");
+            WriteUi(Run, UiDump + "{\"path\":\"Canvas/Extra\",\"x0\":0,\"y0\":0,\"x1\":1,\"y1\":1,\"kind\":\"none\"}\n");
             Assert.Contains("Canvas/Extra is active in the run, not in the golden", ParityDiff.Ui(Golden, Run, _tol).Detail);
         }
     }
