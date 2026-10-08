@@ -375,32 +375,54 @@ latter including `WormholeTollTests.cs`): 0 errors in project code — a compile
 
 ---
 
-### 🔴 The Time crystal holds still; its flip wave hops between its 12 vertices (`cece/eager-lovelace-i4o8jk`, 2026-10-08) — NOT EDITOR-VERIFIED
+### 🔴 The omni crystal's 30 rhombi run the Time crystal's flip wave (`cece/zen-archimedes-ednrpo`, 2026-10-08) — NOT EDITOR-VERIFIED
 
-`CrystalTime.prefab` (and its variant `CrystalTimeDandruff`) no longer carries `JustRotate`. In its
-place `TimeCrystalVertexHop` snaps the model child to a random rotation of the icosahedral group on
-the frame the 2 s flip-wave loop wraps, so the next wave starts from another of the 12 five-fold
-vertices while the crystal never visibly turns. The snap is only invisible because the shape at the
-loop seam is the fully symmetric bind pose — proved from the FBX by
-`python3 Tools/Build/measure_time_crystal_wave.py` (and `--self-test`). The symmetry frame is read at
-runtime from Unity's own import of the five first-ring bones, so no axis-conversion assumption ships.
+Slot 0 of `Crystal.prefab` is now `OmniCrystalBody.prefab` (a flat copy of `TrucatedOctahedron.prefab`
+with its MeshRenderer re-classed as a SkinnedMeshRenderer, authored by
+`author_omni_crystal_triangles.py`), and the Crystal root carries `CrystalFlipWave` with `skinRhombi` on:
+at runtime `RhombusSkinBaker` gives the 30 rhombi bones and the Time profile flips them. Out of editor: the
+real C# skinned the shipped omni mesh and ran the wave under all 48 axis conversions (30 plates, still body
+moves by 0, rest pose exact, rigid, seam exact); the synthetic baker test ran unmodified. Design:
+`Docs/TIME_CRYSTAL.md` §5, `Docs/PALETTE.md` §2.10.
 
-#### 1. Run the edit-mode suite's `TimeCrystalVertexHopTests`
+#### 1. Run `CrystalFlipWaveTests.OmniCrystalPrefab_TurnsItsThirtyRhombi_AndLeavesTheBodyStill`
 
-All six pass offline against faithful math stubs. The seventh,
-`CrystalTimePrefab_ResolvesItsWaveAxis_FromTheImportedRig`, only runs in the editor: it resolves the
-wave's start axis from the REAL imported rig. If it fails, nothing else below is worth checking.
+It is the first time Unity imports `OmniCrystalBody.prefab` (a hand-authored SkinnedMeshRenderer) - if the
+prefab shows a "Missing" component or the omni body is invisible, stop here.
 
-#### 2. Watch a Time crystal for ~10 s in any scene that spawns one
+#### 2. Look at an omni crystal for ~10 s (Skim Race, any arcade cell)
 
-- The crystal itself never turns: no tumble, and no jump/pop/twitch at any moment.
-- Each wave starts from a different vertex from the one before it (12 possible), never the same one twice in a row.
-- No `TimeCrystalVertexHop` error in the console.
+- The 30 rhombi flip in a wave from one vertex to the opposite one, a new vertex each loop; the boxes,
+  pentagons and triangles hold still; the Shepard triangles and the pentagon discharges look as before.
+- The omni appears at once on respawn (no new fade), wears its team colours on a team crystal, and bursts
+  into its husk on collect as before.
 
-#### 3. Capture one (Elemental capture / skim)
+#### 3. Forge one into a Scarab ball and into a Squirrel ring
 
-The capture flourish still spins and flies the crystal into the hull as before (it owns the ROOT's
-rotation; the hop only touches the model child).
+The forge still folds the whole body onto the target. A rhombus caught mid-flip settles flat as the fold
+begins (it is read at rest) - check that this reads as part of the fold, not a pop.
+
+---
+
+### 🟡 The Time crystal's flip wave is procedural and starts from a new vertex every loop (`cece/zen-archimedes-ednrpo`, 2026-10-08) — LOOK CONFIRMED IN GAME, TESTS NOT YET RUN
+
+Supersedes the vertex-hop entry (`cece/eager-lovelace-i4o8jk`) that stood here. `CrystalTime.prefab` (and
+its variant `CrystalTimeDandruff`) no longer has an Animator: the model's Animator is a removed component,
+`CrystalTimeAnimController` is deleted, and `CrystalFlipWave` poses the 30 plate bones from
+`TimeCrystalFlipWaveProfile.asset` (generated from the old take by
+`python3 Tools/Build/author_time_crystal_flip_wave.py`). `TimeCrystalExport.fbx` is now **Read/Write
+enabled**. Out of editor: the shipped C# compiled with Roslyn and executed against the FBX (0.42 % of the
+radius, 48/48 axis conversions, negative controls), 11 of the 13 edit-mode tests executed unmodified.
+**2026-10-08: inspected in game by the designer - "looks great".** Design record: `Docs/TIME_CRYSTAL.md`.
+
+#### 1. Run `CrystalFlipWaveTests` in the edit-mode suite (still open)
+
+`CrystalTimePrefab_IsWiredForTheProceduralWave` and **`ProceduralWave_MatchesTheImportedTake_FrameByFrame`**
+(FBX parity - prints the worst error; expect about 0.4–0.9 % of the radius) only run in the Editor.
+
+#### 2. Profile a crowd (still open)
+
+`FrogletTools > Benchmarks > Crystal Flip Wave Benchmark` - see `Docs/TIME_CRYSTAL.md` §7.
 
 ---
 
