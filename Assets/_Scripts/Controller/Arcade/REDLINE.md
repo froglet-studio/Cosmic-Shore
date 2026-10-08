@@ -175,7 +175,7 @@ lead 480 / through 320) are sized to the 237 u circle rather than inherited from
 | absolute safety floor / mouth / present cap | same, per intensity | 178–90 u; 110–88–72–**44**; 50–80 |
 | AI commit / lead / through | scene → `GateRaceController` | 420 / 480 / 320 |
 | detection clamp | scene → `maxPlausibleSpeed` | **1400** (a Time-10 Manta's 30 fps step is 31 u; the inherited 400 rejected it within a unit) |
-| autopilot boost band | `Manta.prefab` → `MantaAnalogTurnBoostExecutor.aiBoostStickBand` | 0.35 |
+| autopilot boost band | `MantaAnalogTurnBoostExecutor.aiBoostStickBand` (code default; not stored on `Manta.prefab` until it is next saved) | 0.35 |
 | autopilot Yastri band | `MantaAnalogTurnBoostExecutor.aiYastriStickBand` (code default; the prefab has no entry until it is next saved) | 0.75 |
 | comeback rate | `ArcadeGameRedline.asset` | **0.35** (six gates behind buys 2.1 levels — and a Time level IS speed on this hull) |
 | course shell | scene → `courseOuterRadius` / `courseInnerRadiusFallback` | 1080 / 480 |
@@ -230,7 +230,7 @@ and irrelevant: the card's `Vessels` list clamps every AI to the Manta
   first-flight check is still unrecorded.
 - **The autopilot drive is new to the whole fleet's AI Manta**, not just this mode — a
   lava-lamp Manta now Soars on straights. If the menu reads too fast, the dial is
-  `aiBoostStickBand` on `Manta.prefab` (0 disables the drive), and the pivot's is
+  `aiBoostStickBand` on the Manta's `MantaAnalogTurnBoostExecutor` (0 disables the drive), and the pivot's is
   `aiYastriStickBand` (1 disables it).
 - **Level 4's third corner is a knife-edge by design** (§4). If play-test wants three
   unambiguous hairpins, the lever is a NINTH gate per lap (27-gate race), not the profile.
