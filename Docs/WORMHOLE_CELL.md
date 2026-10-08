@@ -160,3 +160,15 @@ destination, exactly where its ring gates used to stand — from `ButterflyFoldA
 (`BUTTERFLY_FOLD.md` § "The gates became wormholes"). The arriving Butterfly sits at the centre of the
 destination mouth; it is drawn through that mouth (the interior rule in §3), and it flies out
 without being taken back because a mouth only takes a step that starts outside it.
+
+## 8. Follow-ups and recorded debt (ship pass, 2026-10-08 — rows, not fixes)
+
+| # | Kind | What | Evidence | Blocking question |
+|---|---|---|---|---|
+| W1 | **verify** | The fold pair's first playtest reported rings with no view and no transit; the fix (`cf99303f2`: fail-open sealing, `Settings.Owner`) is untested. | `BUTTERFLY_FOLD.md` § "Playtest 1" | Does a fold now show `FoldWormhole::<pilot>::A/B` with a view through? If it still shows rings, is the object named `FoldGate::…` (stale scripts) or `FoldWormhole::…` (new code misbehaving)? |
+| W2 | inconsistency (created) | `WormholeMouth.MakeEye` sets `allowMSAA = false` BEFORE `OffscreenCameraSetup.AdoptGameCameraImage`, which copies `Camera.main.allowMSAA` over it. No cost today (URP takes the MSAA count from the target texture, `antiAliasing = 1`), but the line does not do what it reads as. `ScopePipView` has the right order (Adopt, then `allowMSAA = false`). | `grep -n "allowMSAA" WormholeMouth.cs OffscreenCameraSetup.cs ScopePipView.cs` | none — swap the two lines |
+| W3 | inconsistency (left) | `PlatformProfileSO.foldGateWindowMaxRenderScale` now caps the wormhole exact views; the name describes a retired system. Kept to avoid migrating the tier assets. | its tooltip says so | rename with `[FormerlySerializedAs]` + re-save the profile set, or leave? |
+| W4 | dead surface (walked past) | `CustomCameraController.PendingPortalShift` is public with zero readers (it was before this branch too). | `grep -rn PendingPortalShift Assets` → the declaration only | delete? |
+| W5 | incompleteness (report) | With no `CopyTextureSupport.DifferentTypes` the panorama never captures, so beyond exact range a mouth shows `_VoidColor`. No device in the shipped tiers is known to lack it — unmeasured. | `WormholeMouth.EnsurePanorama` | does any target device report no `DifferentTypes`? |
+| W6 | incompleteness (report) | No HUD marker for a standing fold pair, and no AI uses one (carried over from the ring gates). | `BUTTERFLY_FOLD.md` § Follow-ups | design, not cleanup |
+
