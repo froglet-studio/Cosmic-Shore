@@ -8,7 +8,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ---
 
-## Overnight sweep 2026-10-08 — handoff rows 23-68
+## Overnight sweep 2026-10-08 — handoff rows 23-71
 
 - **Branch:** `cece/loving-shannon-hxpdy0`, one fix per commit (each commit message carries the
   symptom, root cause and fix in full - read it with `git show <hash>`).
@@ -30,7 +30,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
   (`check_enum_member_references --check`, `check_using_directives --check`,
   `check_conditional_compilation`, `check_self_referential_locals --all`,
   `check_console_logging`) pass. Playtest steps are in the handoff under "Playtest items for rows
-  23-68".
+  23-71".
 - **Prefab edit:** row 35 removed an added component from `GameCanvas.prefab` by YAML (the
   `m_AddedComponents` entry, its MonoBehaviour block and the now-unreferenced stripped GameObject
   stub). No scene references either fileID. Open the prefab once in the Editor to confirm it
@@ -88,6 +88,9 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 | `9429df4a` | fix(scoring): legacy metric scorers keep a value per player, not one shared value |
 | `52e9ef9e` | fix(stats): LifeFormsInCell has one writer, so a flora death is counted once |
 | `52824cb1` | fix(ui): two more non-ASCII UI glyphs that the ALDRICH font renders as tofu |
+| `2bb134f6` | chore(enums): give seven serialized enums explicit values (repo rule) |
+| `b8ccdb3c` | fix(undertow): the winner banner names the teammate who contributed most |
+| `20236b4e` | docs(party): correct the IsPartyClient comment about IsPartyHost |
 
 ---
 

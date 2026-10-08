@@ -4201,6 +4201,17 @@ Fixed with three pieces that only work together:
 Fail-safe by construction: if the broadcast never arrives, the cell warns on every attempt and
 never silently starts a spawner on the wrong arena.
 
+**And the second pass must not undo the first (2026-10-08).** When the first crystal lands inside
+`InitDelayMs` (OnClientReady fires there; ~20 scenes spawn on it), `InitilizePostFirstCellItem`
+completes the WHOLE bootstrap - lazy `Initialize()`, cytoplasm, spawner - a second before
+`OnInitializeGame` runs `Initialize()` again. That second pass used to clear `spawnedLifeForms`,
+`trackedBlocks`, the live flora/fauna counts, the colony frontiers and every cell binding under a
+spawner that was already planting, so the cell forgot its first wave. `Initialize()` now returns
+after rebinding the runtime and refreshing stats once `postInitilized` is set (the config is sticky
+and the visuals and grids already exist). A destroyed cell also retires its six static colony books
+in `OnDestroy` (they could never be cleared after the unload, because every `Clear(cell)` returns
+at its `!cell` guard).
+
 **Rule for any future per-intensity cell:** a choice that is sticky AND derived from replicated
 state must be gated on that state having replicated. `Cell.IntensityIndex` also floors at 1 and
 warns when the selected intensity exceeds the authored config count — a mode offering four

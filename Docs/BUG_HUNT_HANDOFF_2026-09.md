@@ -93,8 +93,11 @@ Confidence scale:
 | 66 | **Legacy metric scorers are per-player** (Duel totals included the opponent's numbers). | `BaseScoring` + 7 scorers, `BaseScoreTracker` |
 | 67 | **`LifeFormsInCell` has one writer** (StatsManager double-decremented each flora death). | `StatsManager` |
 | 68 | **Two more tofu glyphs** (`×` in the resolution dropdown, `·` in the connecting status line). | `GameSettingsPanelController`, `ConnectingPanelController` |
+| 69 | **Seven serialized enums carry explicit values** (assigned in declaration order, so nothing serialized moves). | `StatModuleSO`, `AICinematicBehavior`, `CameraSettingsSO`, `ShapeDefinition`, `SpawnableLSystem`, `RewardData` |
+| 70 | **Undertow's winner banner names the teammate who contributed most** (the representative is ordered with the rule's kill weighting). | `UndertowController` |
+| 71 | **`IsPartyClient`'s comment no longer claims `IsPartyHost` is never written.** | `ArcadeConfigSyncManager` |
 
-Rows 23-68 shipped on `cece/loving-shannon-hxpdy0` (the 2026-10-08 overnight sweep). **None of them has been run in Unity.** Each compiled clean against the real 6000.0 references with `Tools/Build/unity_refcompile` in the player config (0 errors, 0 unverified - the gate was negative-controlled: a planted undefined call shows up as 1 *unverified*, so read both numbers; the seven changed files that `using` the unobtainable UGS Multiplayer package were checked line by line against the report) and, for the changed tests, the editor config; all five textual gates pass. Per-fix reports: [`BugHunt/FIX_LOG.md`](BugHunt/FIX_LOG.md) § "Overnight sweep 2026-10-08".
+Rows 23-71 shipped on `cece/loving-shannon-hxpdy0` (the 2026-10-08 overnight sweep). **None of them has been run in Unity.** Each compiled clean against the real 6000.0 references with `Tools/Build/unity_refcompile` in the player config (0 errors, 0 unverified - the gate was negative-controlled: a planted undefined call shows up as 1 *unverified*, so read both numbers; the seven changed files that `using` the unobtainable UGS Multiplayer package were checked line by line against the report) and, for the changed tests, the editor config; all five textual gates pass. Per-fix reports: [`BugHunt/FIX_LOG.md`](BugHunt/FIX_LOG.md) § "Overnight sweep 2026-10-08".
 
 ### Playtest items for the shipped fixes
 - **Squirrel ring (#6):** fly Menu_Main freestyle → an arcade game → back, 2-3 round trips, then
@@ -161,7 +164,7 @@ Rows 23-68 shipped on `cece/loving-shannon-hxpdy0` (the 2026-10-08 overnight swe
   joins or leaves the party. Also let an invite time out, then re-invite. No stuck or doubled
   invites, and no hang on the invite button (a hang would mean a lock deadlock).
 
-### Playtest items for rows 23-68 (overnight sweep, none run in Unity)
+### Playtest items for rows 23-71 (overnight sweep, none run in Unity)
 - **Crystal payout (35):** finish any match and note the wallet before and after - it must rise by the placement payout ONCE, the GameEnd sound and reveal toast play once, and only one crystals-earned event is sent.
 - **Party pause (37):** host plus one client in any arcade mode. Host presses Escape: the client keeps flying normally and the host's AI keep moving. Client presses Escape: other vessels keep moving on the client's screen. A solo match still freezes on pause.
 - **Play Again fade (29):** Skim Race / Bloomrush → finish → Play Again, host and client, three times. The screen must fade in every time and the arena should be built (not popping) when it does.
@@ -219,13 +222,10 @@ Nothing open at this tier. Everything found by the 2026-10-08 sweep that was sma
 | Item | Where | Fix |
 |---|---|---|
 | Hangar UNLOCK button live while the hangar quest is locked (dormant behind the developer unlock) | `HangarVesselDetailView.RefreshLockState` / `OnUnlockClicked` | require `IsVesselHangarUnlocked()` for `interactable`, show LOCKED |
-| Undertow banner names the wrong representative on a tie | Undertow `winnerRep` orders by `CombatPoints + LifeformsKilled` without `killPoints` | weight as the rule does |
 | `DailyRewardCard` never flips back at midnight | `DailyRewardCard.Update` (`secondsUntilMidnight > 0` always true); credits the legacy CatalogManager | retire with the legacy inventory |
 | `TrainingGameProgressSystem.ReportProgress` NREs on first call | reads `Progress` without `LoadProgress()`; hangar training is dead (§5) | retire with hangar training |
 | Legacy `UnityEngine.Input` in unreachable code | `PhoneFlipDetector` (disabled in Menu_Main; `DeviceOrientationHandler` covers it), `ArcadeProfileWidget` (no referrer), `CaptureScreenShot` (`#if UNITY_EDITOR`, no referrer) | delete or port to `Accelerometer.current` / `Keyboard.current` if revived |
 | `??=` on serialized impactor fields | `NetworkVesselImpactor`, `VesselImpactor`, `MineImpactor`, `PrismImpactor`, `CrystalImpactor` | latent: every asset assigns them; use explicit Unity-null tests if one ever ships unassigned |
-| Serialized enums without explicit values | `StatModuleSO.ValueFormatType`, `AICinematicBehaviorType`, `CameraSettingsSO.CameraMode`, `ShapePreset`, `LSystemPreset`, `RewardData.RewardType` / `RewardRarity` | add static values (repo rule); no reorder hazard today |
-| Stale comment | `ArcadeConfigSyncManager.IsPartyClient` says `IsPartyHost` is written only by tests; `HostConnectionService` writes it | fix the comment |
 | AI objective distance: `sqr` vs linear | `AIPilot.cs:~755` | **Deliberately NOT fixed** — the behaviour is tuned around it. Change only with a playtest. |
 
 ## 5. Follow-ups from the scene cleanup (#5)
