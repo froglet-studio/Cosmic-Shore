@@ -1081,6 +1081,25 @@ Machine validation covers structure and colorimetry; only a playtest covers *loo
     when source and target share a `FindColorPropertyNames` pair (`canLerp`), and the Fresnel pair
     is not one. The old ShepardGraph team crystals cross-faded over 1-2 s. Report; decide with the
     tint row above, since the same name change fixes both.
+- **Mass crystal (§2.2 note) — rows from its ship pass, 2026-10-08 (`author_mass_crystal_look.py`).**
+  - **Charge is now the only crystal the collectability tint reaches.** Mass joined the
+    `_DarkColor` family above (`grep -l _DullCrystalColor` over the five crystals' default/inactive
+    materials hits Charge's alone), so Charge alone still crosses blue → lime on `PrismClock` and is
+    dimmed by `ElementalCrystalDimming`; Mass, Space, Time and the omni snap on a material swap. An
+    inconsistency, so a fix — but it is the omni row's decision above, now covering four crystals.
+  - **`ShepardGraph` (259 nodes) survives only for the four `ExplodingMassCrystalMaterial`s**, because
+    `Impact`'s `_velocity` shatter exists nowhere else on this family (`grep -l 71fa8220…` over
+    `*.mat` = those four). Adding the push to `OmniShepardFresnelShader` — the same option the
+    team-omni husk row above names — would let the Mass husks move onto it and retire the graph.
+    Debt this branch created.
+  - **`TadPoleFauna`'s nested `CrystalMass` carries six modifications aimed at fileIDs the prefab
+    no longer has** (`3149521958298771703` ×3 scale, `4323021697783372696` ×3 renderer flags;
+    neither id appears in `CrystalMass.prefab`). Unity never prunes an unresolvable modification
+    (CLAUDE.md, Audit Cell-Owned Visuals). Inert; walked past, not removed, so this branch's diff
+    stayed the swap revert alone.
+  - **`ActiveCrystalMass` and the Hilbert-maze `SpawnedSegments` reuse the Mass shell materials**,
+    so they took the new look too (and the exploding-material repoint). Intended — one Mass look —
+    but nobody has looked at the maze with it. A report.
 - **Omni pentagon charge edges (§2.10) — rows from its ship pass, 2026-10-08.**
   - **A THIRD transcription of `SpreadFresnelDisplace`.** `OmniChargeEdgesShader` copies the body's
     `_Spread` vertex push (it has to match it vertex for vertex or the overlay fails the depth test),
