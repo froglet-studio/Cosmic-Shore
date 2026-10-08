@@ -593,15 +593,18 @@ namespace CosmicShore.Gameplay
         /// and <c>_allowRecord</c> is false on clients, so a client's steals scored exactly
         /// nothing.
         ///
-        /// IDENTITY COMES FROM OWNERSHIP: the server credits the RoundStats of the Player
-        /// object the RPC arrived on. **Only the stealer's half travels.** The victim's
-        /// PrismsRemaining/VolumeRemaining cannot be debited here without trusting a
-        /// client-supplied name, so on a client-side steal the victim's remaining-mass tally
-        /// drifts. That is a deliberate trade (an untrusted name is worse than a soft tally)
-        /// and is recorded in Docs/ScoringSystem/BUGS.md.
+        /// THE THIEF'S IDENTITY COMES FROM OWNERSHIP: the server credits the RoundStats of the
+        /// Player object the RPC arrived on, never a name. **The victim's identity is a
+        /// client-supplied name** (<paramref name="victimName"/>), and the server debits that
+        /// player's PrismsRemaining/VolumeRemaining with it. That is a deliberate trade, recorded
+        /// in Docs/ScoringSystem/BUGS.md B19: without the name a client-side steal never debited
+        /// the victim (the server's own detection returns at StatsManager's OwnsAttacker gate
+        /// before the debit), and those tallies feed cell control and volume scoring. A forged
+        /// name can only lower the remaining-mass tally of a player who is actually on the
+        /// roster, and only by the volume the credit half already takes on trust.
         /// </summary>
         [ServerRpc]
-        public void ReportPrismStolen_ServerRpc(float volume)
+        public void ReportPrismStolen_ServerRpc(float volume, FixedString64Bytes victimName)
         {
             using var _ = CosmicShore.Utility.PerformanceBenchmark.NetMarkers.RpcDispatch.Auto();
             CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
@@ -610,6 +613,11 @@ namespace CosmicShore.Gameplay
             if (volume < 0f) return;
 
             StatsManager.CreditPrismSteal(RoundStats, volume);
+
+            var victim = victimName.ToString();
+            if (string.IsNullOrEmpty(victim) || gameData == null) return;
+            if (gameData.TryGetRoundStats(victim, out IRoundStats victimStats))
+                StatsManager.DebitPrismSteal(victimStats, volume);
         }
 
         /// <summary>
