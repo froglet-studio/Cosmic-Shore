@@ -73,6 +73,9 @@ namespace CosmicShore.Player
         /// </summary>
         public static bool StartHidden;
 
+        /// <summary>--position X,Y: the window's top-left on the desktop (null = the platform's choice).</summary>
+        public static (int x, int y)? StartPosition;
+
         public void Run()
         {
             var options = WindowOptions.Default with
@@ -86,6 +89,7 @@ namespace CosmicShore.Player
             };
             if (StartFullscreen) options = options with { WindowState = WindowState.Fullscreen };
             if (StartHidden) options = options with { IsVisible = false };
+            if (StartPosition is { } pos) options = options with { Position = new Vector2D<int>(pos.x, pos.y) };
             // COSMIC_SHORE_GLES=1 runs the desktop player on an OpenGL ES 3.0 context — the exact
             // render path a phone takes, so the mobile build can be checked without one.
             if (Environment.GetEnvironmentVariable("COSMIC_SHORE_GLES") == "1")
@@ -168,6 +172,22 @@ namespace CosmicShore.Player
             _tmp.Fonts = _boot.Runtime.Fonts;
         }
 
+        double _titleAt;
+
+        /// <summary>
+        /// The window title doubles as a network stats monitor: with several players tiled on one
+        /// desktop it says which one is which and how its link is doing (docs/MULTIPLAYER.md §6.4).
+        /// </summary>
+        void UpdateNetTitle()
+        {
+            if (_window is not IWindow w || ModelViewer.Path != null) return;
+            double now = Environment.TickCount64 / 1000.0;
+            if (now - _titleAt < 1.0) return;
+            _titleAt = now;
+            var title = CosmicShore.Engine.Networking.NetStats.Title(Environment.GetEnvironmentVariable("COSMIC_SHORE_PROFILE"));
+            if (w.Title != title) w.Title = title;
+        }
+
         void OnUpdate(double dt)
         {
             float step = Scripted ? 1f / 60f : (float)Math.Min(dt, 0.1);
@@ -181,6 +201,7 @@ namespace CosmicShore.Player
                 ModelViewer.Tick(step);
             }
             Control?.BeforeTick(_frameIndex);
+            UpdateNetTitle();
             long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
             CosmicShore.Engine.GameLoop.PhaseTiming = s_timing || SessionReport.Enabled;
             _boot.Tick(step);

@@ -71,8 +71,12 @@ namespace CosmicShore.Player
             // Every transport runs behind the network simulator (off unless COSMIC_SHORE_NET_SIM or `do netsim`).
             if (CosmicShore.Engine.Networking.NetDriver.Enabled) CosmicShore.Engine.Networking.NetSimulator.Install();
             if (CosmicShore.Engine.Networking.NetDriver.Enabled)
+            {
                 CosmicShore.Engine.Networking.MultiplayerService.Instance =
                     new CosmicShore.Engine.Networking.DirectoryMultiplayerService(CosmicShore.Engine.Networking.DirectoryMultiplayerService.DefaultDirectory);
+                // Session-service faults (off unless COSMIC_SHORE_NET_FAULT or `do netfault`): docs/MULTIPLAYER.md §6.3.
+                CosmicShore.Engine.Networking.NetFaults.Install();
+            }
             // The game's own verbose log channels (CSDebug.VerboseChannels - the Froglet Toolbox
             // Logging tab in the editor): COSMIC_SHORE_LOG_CHANNELS=Party,Boot. Only a Debug
             // (development) build compiles LogVerbose in.

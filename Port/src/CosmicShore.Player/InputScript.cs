@@ -144,6 +144,10 @@ namespace CosmicShore.Player
                     case "party": Inspector.Party(arg.Trim()); break;
                     // netsim SPEC: the network simulator (docs/MULTIPLAYER.md §6.2), e.g. "4g", "latency=80", "down", "off".
                     case "netsim": Console.WriteLine(CosmicShore.Engine.Networking.NetSimulator.Apply(arg)); break;
+                    // net [reset|json|capture N [PATH]]: the netcode's traffic and RTT (docs/MULTIPLAYER.md §6.4).
+                    case "net": Console.WriteLine(CosmicShore.Engine.Networking.NetStats.Command(arg)); break;
+                    // netfault SPEC: session-service faults (docs/MULTIPLAYER.md §6.3), e.g. "full", "ratelimit=3", "down", "off".
+                    case "netfault": Console.WriteLine(CosmicShore.Engine.Networking.NetFaults.Apply(arg)); break;
                     case "domain": Inspector.Domain(arg.Trim()); break;
                     case "arcade": Inspector.Arcade(arg.Trim()); break;
                     case "score": Inspector.Score(arg.Trim()); break;

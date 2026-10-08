@@ -204,19 +204,48 @@ a scene still delivers on schedule.
 
 ### 6.3 Step 3: session-service faults
 
-Faults the directory session service can be told to raise, so the game's error paths
-(`UgsRequestPolicy`, the offline fallback, the party's full-lobby message) run without a real
-outage: `full` (next join reports a full session), `ratelimit` (next N calls raise a 429-shaped
-`SessionException`), `relayfail` (allocation fails), `down` (every call fails until cleared),
-`slow=MS` (every call waits).
+`NetFaults` (`Wire/NetFaults.cs`) wraps the session service (whichever backend: the directory
+stand-in today, UGS later), so the game's error paths (`UgsRequestPolicy`, the offline fallback,
+the party's full-lobby message) run without a real outage. Set at launch with
+`COSMIC_SHORE_NET_FAULT=SPEC` or live with `do netfault SPEC`:
+
+| Token | Effect | Error |
+|---|---|---|
+| `full[=N]` | The next N joins find the session full | `SessionException(Unknown, "Session is full.")`, the stand-in's own full shape |
+| `ratelimit[=N]` | The next N calls of any kind fail | `RateLimitExceeded` (429) |
+| `relayfail[=N]` | The next N creates or joins fail | `NetworkSetupFailed` |
+| `down` / `up` | Every call fails until `up`. Leaving and deleting still work, so no session is stranded | `Unknown`, "Service Unavailable" |
+| `slow=MS` | Every call waits MS first | none |
+| `off` | Clear everything | |
+
+`do netfault` with no spec prints what is armed and what has been raised. A bad spec changes
+nothing. The error shapes are the stand-in's reading of the SDK's: only an MPPM run against real
+UGS confirms them.
 
 ### 6.4 Step 2: stats and capture
 
-`NetDriver` counts, per peer and in total: frames and bytes in and out by message kind, RPC calls
-by method name, NetworkVariable updates, spawns and despawns, and round-trip time from the
-existing `TimePing`/`TimePong` clock exchange. `do net` prints it. The debug overlay shows it.
-`do net capture N` writes N frames of per-frame counters to JSON, and the session report gains a
-`net` block.
+`NetStats` (`Wire/NetStats.cs`) counts what `NetDriver` hands the transport and what it receives:
+per peer and in total, bytes and messages in and out, by message kind (`NetVar`, `Transform`,
+`Rpc`, `Spawn`...) and RPCs by method name, plus one-second rates and their peaks. Round-trip
+time comes from the driver's clock ping, now once a second: the client measures it, and sends its
+latest sample inside its next ping so the host knows every member's RTT. Each peer shows a smoothed
+RTT (weight 1/4), the last sample and the minimum. Counters reset when a session starts.
+
+| Where | What |
+|---|---|
+| `do net` | The report: role, rates, per-peer RTT and traffic, kinds out/in, top RPCs |
+| `do net json` | The same, structured (what the MULTIPLAYER panel and `net_stats mode=json` read) |
+| `do net reset` | Zero the counters |
+| `do net capture N [PATH]` | N frames of per-frame bytes/messages/RTT to JSON (a temp file by default): the Network Profiler's raw data |
+| Window title | `Cosmic Shore · PilotB · CLIENT · rtt 28 ms · in 5.7 KB/s out 4.4 KB/s · sim ...`, once a second: tiled windows say who is who and how each link is doing |
+| Session report | A `net` block (the summary above) when the run was networked |
+
+First measurement (2026-10-08, two players in Menu_Main, the lava-lamp vessels flying): about
+5 KB/s each way; `NetVar` messages outnumber `Transform` ~7 to 1. That makes variable traffic, not
+transforms, the first place to look when bandwidth matters (§3).
+
+Reading RTT: two headless players on one machine at `--realtime` see ~18-30 ms, which is the
+frames each side takes to read a message (the driver polls once a frame), not the network.
 
 ### 6.5 Step 4: the Launcher's MULTIPLAYER panel and MCP tools
 
@@ -243,8 +272,8 @@ argument, and TCP treats both channels as reliable).
 | Doc | This file | Done 2026-10-08 | |
 | 0 | Real-time pacing, API gaps, save-path fallback | Done 2026-10-08 | `RealtimePacerTests` 4/4; 1200 headless frames: 11.9 s unpaced, 28.3 s with `--realtime`; player builds (it did not: 19 missing `SessionError` codes) |
 | 1 | Network simulator | Done 2026-10-08 | `SimulatedTransportTests` 14/14; the 7 transport contract checks pass behind a bad line (latency 5, jitter 10, loss 20%) over TCP and loopback; `NetDriverTransportTests` approves a real TCP client behind 40 ms each way in >= 80 ms; 5 repeat runs stable |
-| 2 | Stats, `do net`, capture | Planned | |
-| 3 | Session-service faults | Planned | |
+| 2 | Stats, `do net`, capture, window-title monitor | Done 2026-10-08 | `NetStatsTests` 8/8. Two real players: traffic, kinds and RPC names on both; localhost RTT 27.7 ms (min 18); `netsim latency=100` on the guest read 238 ms on both ends (28 + 200) |
+| 3 | Session-service faults | Done 2026-10-08 | `NetFaultsTests` 10/10. Two real players: `netfault full` refused the guest's join with the game's "That party is full." and bounced it to its menu (host stayed 1/4; the next join seated it); `ratelimit=3` raised 3 and the party survived |
 | 4 | Launcher MULTIPLAYER panel, MCP tools | Planned | |
 | 5 | Reliable-UDP transport, unreliable transforms | Planned | |
 | G2 | UGS backend (Auth, Lobby, Relay protocol) | After gate G2 | |

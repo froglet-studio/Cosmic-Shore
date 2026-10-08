@@ -159,6 +159,13 @@ namespace CosmicShore.Player
                     case "--record" when i + 1 < args.Length:
                         if (!FrameRecorder.TryAdd(args[++i])) Console.WriteLine($"[player] --record expects DIR:FROM-TO[:EVERY], got '{args[i]}'");
                         break;
+                    case "--position" when i + 1 < args.Length:
+                    {
+                        // --position X,Y: where the window opens (the MULTIPLAYER panel tiles its players).
+                        var xy = args[++i].Split(',');
+                        if (xy.Length == 2 && int.TryParse(xy[0], out int px) && int.TryParse(xy[1], out int py)) PlayerWindow.StartPosition = (px, py);
+                        break;
+                    }
                     case "--size" when i + 1 < args.Length:
                     {
                         var wh = args[++i].Split('x');

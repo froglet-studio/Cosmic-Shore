@@ -49,6 +49,8 @@ namespace CosmicShore.Engine.Networking
             ClientConnected, ClientDisconnected, TimePing, TimePong,
         }
 
+        static NetDriver() => NetStats.KindName = b => ((Msg)b).ToString();
+
         sealed class ClientConn
         {
             public ulong Id;
@@ -97,6 +99,7 @@ namespace CosmicShore.Engine.Networking
             s_server = true;
             s_timeBase = Now;
             s_nextClientId = 1;
+            NetStats.Reset(); // the stats describe this session
             Console.WriteLine($"[net] hosting on port {s_sock.ListenPort}");
             return true;
         }
@@ -110,6 +113,7 @@ namespace CosmicShore.Engine.Networking
             s_clientPaused = false;
             s_connectPayload = payload ?? Array.Empty<byte>();
             s_timeBase = Now;
+            NetStats.Reset();
             s_sock = TransportFactory.Connect(address, port, 10000);
             Console.WriteLine($"[net] connecting to {address}:{port}");
         }
@@ -160,6 +164,7 @@ namespace CosmicShore.Engine.Networking
             foreach (var nt in s_transforms)
                 if (nt != null && nt.IsSpawned && !IsTransformAuthority(nt)) nt.PortInterpolate(now);
             CheckSceneEventTimeouts();
+            NetStats.EndFrame(now);
         }
 
         /// <summary>Post-late update: at the tick rate send dirty variables, authoritative transforms and clock pings.</summary>
@@ -175,8 +180,11 @@ namespace CosmicShore.Engine.Networking
             SendTransforms();
             if (!s_server && s_clientAccepted && (s_pingTimer -= 1f / tickRate) <= 0f)
             {
-                s_pingTimer = 2f;
-                var w = Begin(Msg.TimePing); w.Write(Now); SendRaw(0, End());
+                s_pingTimer = 1f;
+                // The client's latest RTT sample rides along, so the host's stats show every member's.
+                double rtt = -1;
+                foreach (var p in NetStats.Peers) if (p.ClientId == NetStats.ServerPeer) rtt = p.LastRttMs;
+                var w = Begin(Msg.TimePing); w.Write(Now); w.Write(rtt); SendRaw(0, End());
             }
         }
 
@@ -196,7 +204,19 @@ namespace CosmicShore.Engine.Networking
 
         static byte[] End() { s_w.Flush(); return s_ms.ToArray(); }
 
-        static void SendRaw(int peer, byte[] bytes) => s_sock?.Send(peer, bytes);
+        static void SendRaw(int peer, byte[] bytes)
+        {
+            if (s_sock == null) return;
+            NetStats.Sent(StatsPeer(peer), bytes);
+            s_sock.Send(peer, bytes);
+        }
+
+        /// <summary>The id the stats file a transport peer under: its client id, the server, or a unique pending id.</summary>
+        static ulong StatsPeer(int peer)
+        {
+            if (!s_server) return NetStats.ServerPeer;
+            return s_byPeer.TryGetValue(peer, out var c) && c.Approved ? c.Id : NetStats.PendingPeer - (ulong)peer;
+        }
 
         /// <summary>Server → one client; held until the client has its snapshot.</summary>
         static void ToClient(ClientConn c, byte[] bytes)
@@ -213,6 +233,7 @@ namespace CosmicShore.Engine.Networking
 
         static void Handle(NetEvent e)
         {
+            if (e.Kind == NetEventKind.Data) NetStats.Received(StatsPeer(e.Peer), e.Payload);
             if (s_server) HandleServer(e);
             else HandleClient(e);
         }
@@ -247,6 +268,7 @@ namespace CosmicShore.Engine.Networking
                 case Msg.TimePing:
                 {
                     double t = r.ReadDouble();
+                    if (r.BaseStream.Length - r.BaseStream.Position >= 8) NetStats.RttReport(c.Id, r.ReadDouble());
                     var w = Begin(Msg.TimePong); w.Write(t); w.Write(ServerNow()); SendRaw(c.Peer, End());
                     break;
                 }
@@ -270,6 +292,7 @@ namespace CosmicShore.Engine.Networking
                 s_sock.Disconnect(c.Peer);
                 return;
             }
+            NetStats.Rekey(NetStats.PendingPeer - (ulong)c.Peer, id);
             c.Id = id;
             c.Approved = true;
             c.Approval = response;
@@ -462,6 +485,7 @@ namespace CosmicShore.Engine.Networking
                 {
                     double sent = r.ReadDouble(), server = r.ReadDouble(), now = Now;
                     s_clientOffset = server + (now - sent) * 0.5 - now;
+                    NetStats.RttSample(NetStats.ServerPeer, (now - sent) * 1000.0);
                     break;
                 }
             }
