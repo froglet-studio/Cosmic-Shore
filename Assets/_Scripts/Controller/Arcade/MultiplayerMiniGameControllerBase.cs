@@ -191,7 +191,11 @@ namespace CosmicShore.Gameplay
                 using (LoadInsights.Measure(LoadInsightCategory.ScriptedDelay,
                            $"InitDelayMs gate before InitializeGame ({InitDelayMs}ms)", isWait: true))
                 {
-                    await UniTask.Delay(InitDelayMs, DelayType.UnscaledDeltaTime);
+                    // Bound to this controller: destroyed inside the wait (a client bounced by host
+                    // loss, a quick quit), InitializeGame would otherwise fire into the NEXT scene's
+                    // listeners and the server branch would run on a dead controller.
+                    await UniTask.Delay(InitDelayMs, DelayType.UnscaledDeltaTime,
+                        cancellationToken: this.GetCancellationTokenOnDestroy());
                 }
 
                 CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-7] [MultiplayerMiniGameBase] Calling gameData.InitializeGame(). Players.Count={gameData.Players.Count}");
