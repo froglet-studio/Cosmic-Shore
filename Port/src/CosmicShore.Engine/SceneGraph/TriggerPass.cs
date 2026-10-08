@@ -17,8 +17,11 @@ namespace CosmicShore.Engine
     ///
     /// Semantics (original-engine contract, minimal subset):
     ///   • A pair produces trigger events iff at least one collider has
-    ///     <see cref="Collider.isTrigger"/> (no Rigidbody requirement — the port has no
-    ///     rigidbodies). Two non-trigger colliders are ignored entirely.
+    ///     <see cref="Collider.isTrigger"/> AND at least one has a Rigidbody (its own or an
+    ///     ancestor's, kinematic or not), as in the original engine: two static colliders
+    ///     never message each other, however they overlap (Menu_Main parks 256 pooled trigger
+    ///     prisms at the origin - 32,640 pairs a step before this rule). Two non-trigger
+    ///     colliders are ignored entirely.
     ///   • Both sides receive the callback: every MonoBehaviour on each collider's own
     ///     GameObject — and, when the collider belongs to a Rigidbody on another (ancestor)
     ///     GameObject, on that Rigidbody's GameObject too, as the original engine routes it —
@@ -196,6 +199,7 @@ namespace CosmicShore.Engine
                 }
             }
 
+            long t5 = System.Diagnostics.Stopwatch.GetTimestamp();
             // 4. Enters, in discovery order.
             foreach (var pair in _discovered)
             {
@@ -208,6 +212,7 @@ namespace CosmicShore.Engine
             //    including a pair that entered this step (the original engine reports the
             //    first Stay in the same simulation step as the Enter). Only behaviours that
             //    declare OnTriggerStay are visited, and nothing is allocated per pair.
+            long t6 = System.Diagnostics.Stopwatch.GetTimestamp();
             int stays = _activePairs.Count;
             for (int p = 0; p < stays && p < _activePairs.Count; p++)
             {
@@ -217,8 +222,15 @@ namespace CosmicShore.Engine
                 DispatchStay(b, a);
             }
 
+            long t7 = System.Diagnostics.Stopwatch.GetTimestamp();
             // 6. Collision messages, after the triggers.
             DispatchContacts();
+            long t8 = System.Diagnostics.Stopwatch.GetTimestamp();
+            // Dispatch runs game code (OnTrigger*/OnCollision*): its time is the game's, not the broadphase's.
+            GameLoop.AddPhase("  trig.exits", t5 - t4);
+            GameLoop.AddPhase("  trig.enters", t6 - t5);
+            GameLoop.AddPhase("  trig.stays", t7 - t6);
+            GameLoop.AddPhase("  trig.contacts", t8 - t7);
         }
 
         /// <summary>Exact-test one (earlier, later) registration-order pair (≥1 side is a trigger).</summary>
@@ -248,6 +260,8 @@ namespace CosmicShore.Engine
             if (_shapes.Length < n) { _shapes = new PhysicsShape[Math.Max(n, _shapes.Length * 2)]; _order = new int[_shapes.Length]; }
             for (int i = 0; i < n; i++)
                 if (!ShapeMath.TryBuild(_live[i], out _shapes[i])) _shapes[i].Kind = ShapeKind.None; // no shape (a mesh collider without a mesh)
+            if (_hasBody.Length < _shapes.Length) _hasBody = new sbyte[_shapes.Length];
+            Array.Clear(_hasBody, 0, n);
             ClassifyBodies();
         }
 
@@ -280,12 +294,24 @@ namespace CosmicShore.Engine
                     if (Mathf.Abs(sa.Center.y - se.Center.y) > sa.Extents.y + se.Extents.y) continue;
                     if (Mathf.Abs(sa.Center.z - se.Center.z) > sa.Extents.z + se.Extents.z) continue;
                     if (solid) { NoteSolidPair(a, e); continue; }
+                    if (!HasBody(a) && !HasBody(e)) continue; // static against static: no trigger messages
                     int lo = Math.Min(a, e), hi = Math.Max(a, e);
                     _candidates.Add(((long)lo << 32) | (uint)hi);
                 }
                 _sweepActive.Add(e);
             }
             _candidates.Sort();
+        }
+
+        // Per live index this step: 0 not looked up yet, 1 no Rigidbody, 2 has one. Looked up only
+        // for colliders in an AABB-touching pair (attachedRigidbody walks the ancestors).
+        sbyte[] _hasBody = Array.Empty<sbyte>();
+
+        bool HasBody(int i)
+        {
+            ref var f = ref _hasBody[i];
+            if (f == 0) f = _live[i].attachedRigidbody is not null ? (sbyte)2 : (sbyte)1;
+            return f == 2;
         }
 
         /// <summary>The exact tests, over the frame's resolved shapes.</summary>

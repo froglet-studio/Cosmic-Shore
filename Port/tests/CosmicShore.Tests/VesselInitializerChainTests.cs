@@ -224,6 +224,7 @@ static class MenuSwapRig
         {
             template.Root.AddComponent<NetworkObject>();
             template.Root.AddComponent<SphereCollider>().radius = 1f;
+            ContactRig.AddKinematicBody(template.Root); // as the vessel prefabs: toys' triggers need it
         }
         rig.PrefabContainer = C6Fixture.MakePrefabContainer(
             rig.MantaTemplate.Root.transform, rig.DolphinTemplate.Root.transform);

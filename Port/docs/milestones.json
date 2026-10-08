@@ -48,9 +48,10 @@
       "dependsOn": [
         "C1"
       ],
-      "status": "in-progress",
+      "status": "done",
       "notes": [
-        "2026-10-08 status -> in-progress (Prisma)"
+        "2026-10-08 status -> in-progress (Prisma)",
+        "2026-10-08 status -> done. Exit criterion run: python3 Port/tools/bisect_demo.py --check smoke -> 'PASS: prisma_bisect found the plant 98388c739b (HEAD~3) in 3 step(s); the commit outside Port/ was never tested' (2.9 min, 0 skipped; verify bad = the plant's '[bisect-plant]' signature, verify good = PASS). An earlier attempt failed only because a commit landed in the source checkout while the demo was cloning it."
       ],
       "prompt": "Add `prisma_bisect(good, bad, check)` to the MCP server: run `git bisect run` over commits that touch Port/ only, build each candidate in a scratch git worktree, and judge it with a replay diff (engine_parity) or an engine_smoke error signature. Prove it by planting a regression three commits back and finding it."
     },
@@ -84,7 +85,8 @@
       "status": "in-progress",
       "notes": [
         "2026-10-08 status -> in-progress (Prisma)",
-        "2026-10-08 run stopped at the 80-turn limit; what it tried is board item T-5 (Prisma)"
+        "2026-10-08 run stopped at the 80-turn limit; what it tried is board item T-5 (Prisma)",
+        "2026-10-08 Trigger pairs now need a Rigidbody on one side (own or ancestor, kinematic or not), the original engine's rule; ARCHITECTURE.md's 'triggers fire with no Rigidbody' deviation is gone. Test rigs that stood in for vessel/skimmer prefabs gained the kinematic body those prefabs carry (ContactRig, ToyRig, MenuSwapRig, the CLI rounds, SkimRaceSim); new test TwoStaticColliders_NeverMessageEachOther_ButABodyOnEitherSideDoes. Engine tests 1681/1681. Still open for C3: the layer collision matrix for trigger pairs, and Unity goldens to diff replays against (Port/parity/goldens is empty, so engine_parity reports 17 channels MISSING)."
       ],
       "prompt": "Measure every Rigidbody and OnCollision* use in Assets/_Scripts (17 + 1 at last count). For each, say what contact behaviour it needs. Implement only that in CosmicShore.Engine physics, plus oriented boxes, with tests, and verify with replays that scores match Unity. Never write a general solver: if AstroLeague's ball needs mesh contacts or PhysX-like friction, propose binding BepuPhysics v2 for contacts only behind the trigger/query API, and flag the dependency before adding it."
     },
@@ -148,7 +150,8 @@
       "status": "in-progress",
       "notes": [
         "2026-10-08 status -> in-progress (Prisma)",
-        "2026-10-08 run stopped at the 80-turn limit; what it tried is board item T-6 (Prisma)"
+        "2026-10-08 run stopped at the 80-turn limit; what it tried is board item T-6 (Prisma)",
+        "2026-10-08 Measured headless Menu_Main (1500 frames, --session-report): the `tasks` phase allocates 0 KB/frame now (the 279-728 KB figure is gone); the cost was the trigger pass - 256 pooled SpawnablePrism trigger boxes parked at the origin, no Rigidbody, 32,640 pairs and their OnTriggerStay every step (trig.pairs 9.6 ms, trig.stays 11.4 ms; new trig.exits/enters/stays/contacts markers). With the Rigidbody rule: fixed phase 24.9 -> 0.55 ms avg, sim p95 100 -> 4 ms, fixed-phase allocations 113.6 -> 0.2 KB/frame, steady GC pause 0.13 -> 0.02 ms/frame. engine_smoke MinigameJoust_Gameplay 512 s -> 15 s for 900 frames. Pre-existing smoke failures, unchanged by this: Freestyle (collection modified during enumeration; gameData not injected when entered directly), Joust (ThemeManagerDataContainerSO.GetTeamTransparentBlockMaterial NRE), AstroLeague (AstroLeagueBall.CreateParticles NRE). Not yet done for C7: GTX 1060 frame times against Unity, load times, GPU timer comparison, SustainedLowLatency A/B."
       ],
       "prompt": "Profile the heaviest mode at intensity 4 from its session report (cpu.phaseAvgMs, memory.phaseAvgKB, steady GC) and dotnet-trace; add GPU timer queries to the report on desktop GL. Rank the top 5 costs against the GTX 1060 budget (16.6 ms). Fix the largest one per session, proving each with before/after numbers from the same replay. Known leads: the async `tasks` phase allocates 279-728 KB/frame in Menu_Main (steady GC up to 1.9 ms/frame); loading allocates ~2.5 GB."
     },

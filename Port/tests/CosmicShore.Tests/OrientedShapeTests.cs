@@ -58,6 +58,7 @@ public class OrientedShapeTests
         var goB = new GameObject("b");
         goB.transform.position = new Vector3(3.5f, 0.5f, 0f);
         goB.AddComponent<BoxCollider>();
+        ContactRig.AddKinematicBody(goB); // a trigger pair needs a body on one side
         loop.Tick(Dt);
         Assert.Empty(recorder.Events);
 
@@ -99,6 +100,7 @@ public class OrientedShapeTests
 
         var go = new GameObject("capsule");
         var capsule = go.AddComponent<CapsuleCollider>();
+        ContactRig.AddKinematicBody(go);
         capsule.radius = 0.25f;
         capsule.height = 4f;
         capsule.direction = 0; // along X: segment x in [-1.75, 1.75]

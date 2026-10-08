@@ -77,15 +77,29 @@ class RecordingCrystalManager : CrystalManager
 /// <summary>Shared rig builders for the contact-arc tests.</summary>
 static class ContactRig
 {
-    /// <summary>GameObject with a SphereCollider + TriggerRecorder at a world position.</summary>
+    /// <summary>A kinematic, gravity-free Rigidbody, as the vessel and skimmer prefabs carry.</summary>
+    public static Rigidbody AddKinematicBody(GameObject go)
+    {
+        var rb = go.AddComponent<Rigidbody>();
+        rb.isKinematic = true;
+        rb.useGravity = false;
+        return rb;
+    }
+
+    /// <summary>
+    /// GameObject with a SphereCollider + TriggerRecorder at a world position. It carries a
+    /// kinematic Rigidbody unless <paramref name="body"/> is false: the original engine sends
+    /// trigger messages only when one side of the pair has a body, as a vessel or projectile does.
+    /// </summary>
     public static (GameObject go, SphereCollider collider, TriggerRecorder recorder) MakeProbe(
-        string name, Vector3 position, float radius = 1f, bool isTrigger = false)
+        string name, Vector3 position, float radius = 1f, bool isTrigger = false, bool body = true)
     {
         var go = new GameObject(name);
         go.transform.position = position;
         var collider = go.AddComponent<SphereCollider>();
         collider.radius = radius;
         collider.isTrigger = isTrigger;
+        if (body) AddKinematicBody(go);
         var recorder = go.AddComponent<TriggerRecorder>();
         return (go, collider, recorder);
     }
@@ -152,6 +166,7 @@ static class ContactRig
         V19Rig.Set(impactor, "networkVesselImpactor", net);
 
         go.AddComponent<SphereCollider>().radius = 1f;
+        AddKinematicBody(go); // as every Spacevessels/*.prefab carries: triggers need a body on one side
         var impactCollider = go.AddComponent<ImpactCollider>();
         V19Rig.Set(impactCollider, "impactorObject", impactor);
         return (impactor, status, go);
@@ -182,6 +197,7 @@ static class ContactRig
         if (container != null) V19Rig.Set(impactor, "skimmerImpactorDataContainer", container);
 
         go.AddComponent<SphereCollider>().radius = 1f;
+        AddKinematicBody(go); // Skimmer.prefab's kinematic Rigidbody
         var impactCollider = go.AddComponent<ImpactCollider>();
         V19Rig.Set(impactCollider, "impactorObject", impactor);
 
@@ -344,6 +360,7 @@ public class TriggerPassTests
             trigger.isTrigger = true;
             trigger.radius = 2f;
             goT.AddComponent<JournalingTriggerRecorder>().Label = "T";
+            ContactRig.AddKinematicBody(goT); // a trigger pair needs a body on one side
 
             var goA = new GameObject("A");
             goA.transform.position = new Vector3(1f, 0f, 0f);
@@ -367,6 +384,27 @@ public class TriggerPassTests
         {
             JournalingTriggerRecorder.Journal.Clear();
         }
+    }
+
+    [Fact]
+    public void TwoStaticColliders_NeverMessageEachOther_ButABodyOnEitherSideDoes()
+    {
+        // The original engine sends trigger messages only when one side has a Rigidbody (its
+        // own or an ancestor's): Menu_Main's 256 pooled trigger prisms stacked at the origin
+        // must stay silent, as they are in Unity.
+        using var loop = new GameLoop();
+        var (_, _, a) = ContactRig.MakeProbe("a", Vector3.zero, isTrigger: true, body: false);
+        var (goB, _, b) = ContactRig.MakeProbe("b", new Vector3(0.5f, 0f, 0f), isTrigger: true, body: false);
+        loop.Tick(Dt);
+        Assert.Empty(a.Events);
+        Assert.Empty(b.Events);
+
+        // A body on a PARENT counts (the collider belongs to that body), and the pair enters.
+        var parent = new GameObject("body-parent");
+        ContactRig.AddKinematicBody(parent);
+        goB.transform.SetParent(parent.transform, true);
+        loop.Tick(Dt);
+        Assert.Contains(a.Events, e => e.evt == "enter");
     }
 
     [Fact]
