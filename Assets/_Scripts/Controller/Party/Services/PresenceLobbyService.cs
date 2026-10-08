@@ -245,9 +245,14 @@ namespace CosmicShore.Gameplay
             // never leaves us lobby-less, then release the one we were holding.
             try
             {
-                var joined = await _multiplayerService.JoinSessionByIdAsync(
-                    canonicalId,
-                    new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() }).AsMainThread();
+                // Through the policy like the converge query above and the join path below: counted
+                // in the ugs[...] telemetry, held to the retry budget, and single-flight on the same
+                // "presence:join:{id}" key, so a converge and a JoinOrCreate racing to the canonical
+                // lobby send one join between them.
+                var joined = await _policy.ExecuteAsync($"presence:join:{canonicalId}",
+                    async () => await _multiplayerService.JoinSessionByIdAsync(
+                        canonicalId,
+                        new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() }).AsMainThread());
 
                 await DeleteOwnLobbyQuietlyAsync();   // releases the previous _activeLobby
                 _activeLobby = joined;
