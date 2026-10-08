@@ -828,7 +828,7 @@ public class VesselTransformer : MonoBehaviour
         /// </summary>
         private float GetTriggerSum()
         {
-            if (InputStatus == null)
+            if (InputStatus == null || !AnalogTriggerDrift)
                 return 0f;
 
             if (InputStatus.ActiveInputDevice == InputDeviceType.Gamepad)
@@ -894,6 +894,17 @@ public class VesselTransformer : MonoBehaviour
             RollScaler = _driftBaseRotations.z * effectiveMult;
             Grip = effectiveDamp;
         }
+
+        /// <summary>
+        /// Whether this hull's analog TRIGGERS feed the fleet drift at all. True for every vessel
+        /// that existed before the seam (so <see cref="GetTriggerSum"/> is unchanged for them);
+        /// false for a hull that spends both triggers on something else — the Tether's long
+        /// tether — where a squeeze must never also arm a drift tier. With it false the trigger
+        /// sum reads 0, so no drift blend ever starts: exactly the no-drift path, not a new one.
+        /// Stated in CODE rather than as a prefab bool, so an inspector click cannot quietly hand
+        /// such a hull a drift underneath its own mechanic.
+        /// </summary>
+        protected virtual bool AnalogTriggerDrift => true;
 
         // ----------------------------- Movement Logic -----------------------------
         protected virtual void Pitch()
@@ -1120,6 +1131,49 @@ public class VesselTransformer : MonoBehaviour
             return Mathf.Min(speedNow, ceiling);
         }
 
+        /// <summary>
+        /// VECTOR MODEL ONLY. World-space velocity change this frame from a force that is NOT along
+        /// the nose — a tether, a tow, a current. Already multiplied by dt, like
+        /// <see cref="ComputeNoseAcceleration"/>. Runs after grip and thrust, before
+        /// <see cref="ShapeSpeed"/>.
+        ///
+        /// The vector model had no door for a lateral force: grip only rotates momentum TOWARD the
+        /// nose, thrust only pushes ALONG it, and <see cref="ShapeSpeed"/> changes only magnitude,
+        /// so anything that bends the path from outside the hull would otherwise have to fork
+        /// <c>MoveShip</c> — the mistake that already gives the fleet four transformers.
+        ///
+        /// Default is exactly <see cref="Vector3.zero"/>; adding a float zero is an identity on
+        /// every component, so every existing vector-model hull is BIT-IDENTICAL. A force applied
+        /// here is rotated back toward the nose by the next frame's grip — a hull that needs it to
+        /// persist off-nose also lowers <see cref="NoseConvergence"/>.
+        /// </summary>
+        /// <param name="velocity">Momentum after this frame's grip and nose thrust.</param>
+        protected virtual Vector3 ComputeExternalAcceleration(Vector3 velocity, float dt) => Vector3.zero;
+
+        /// <summary>
+        /// VECTOR MODEL ONLY. How much of the remaining angle between momentum and the NOSE grip
+        /// closes this frame: 1 snaps momentum onto the nose (the fleet default — you fly where you
+        /// point), 0 leaves momentum's direction alone.
+        ///
+        /// The default body is the drift expression this seam was extracted from, verbatim, so
+        /// every existing hull is bit-identical: 1 outside a drift, blending toward the active
+        /// tier's grip inside one.
+        /// </summary>
+        protected virtual float NoseConvergence(float dt)
+        {
+            float driftAmount = DriftBlend01();
+            return driftAmount > 0f
+                ? Mathf.Clamp01(Mathf.Lerp(1f, GripFraction(dt), driftAmount))
+                : 1f;
+        }
+
+        /// <summary>
+        /// VECTOR MODEL ONLY. Runs once per frame AFTER the position update — the one point where
+        /// a hull can enforce a POSITION constraint (a rigid line's max distance) that a velocity
+        /// alone cannot hold exactly. Default does nothing, so every existing hull is untouched.
+        /// </summary>
+        protected virtual void PostVectorIntegrate(float dt) { }
+
         /// <summary>Fraction of the remaining nose-ward angle that grip closes this frame.
         /// Frame-rate independent (<c>1 − e^(−k·dt)</c>) rather than the scalar path's raw
         /// <c>k·dt</c>: at 60 fps the two differ by ~0.4% at the Squirrel's authored grip, so this
@@ -1217,10 +1271,7 @@ public class VesselTransformer : MonoBehaviour
             float speedNow = _velocity.magnitude;
             if (speedNow > 1e-4f)
             {
-                float driftAmount = DriftBlend01();
-                float convergence = driftAmount > 0f
-                    ? Mathf.Clamp01(Mathf.Lerp(1f, GripFraction(dt), driftAmount))
-                    : 1f;
+                float convergence = NoseConvergence(dt);
                 _velocity = Vector3.Slerp(_velocity / speedNow, transform.forward, convergence) * speedNow;
             }
             else
@@ -1232,6 +1283,10 @@ public class VesselTransformer : MonoBehaviour
             //    whole point of the model: mid-drift the engine pushes where you POINT, so aiming
             //    out of a slide and squeezing is how you recover.
             _velocity += transform.forward * ComputeNoseAcceleration(dt);
+
+            // 2b) EXTERNAL FORCE — a pull that is not along the nose (the Tether's lines). Zero
+            //     for every other hull, and adding an exact zero leaves _velocity bit-identical.
+            _velocity += ComputeExternalAcceleration(_velocity, dt);
 
             // 3) Magnitude policy (drift overshoot ceiling; the Scarab replaces this entirely).
             //    speedNow is still the pre-thrust magnitude here — grip preserves magnitude — and
@@ -1258,6 +1313,9 @@ public class VesselTransformer : MonoBehaviour
             _lastPublishedCourse = VesselStatus.Course;
 
             transform.position += (effectiveSpeed * VesselStatus.Course + velocityShift) * dt;
+
+            // 4) Position constraint (the Tether's rigid line). A no-op on every other hull.
+            PostVectorIntegrate(dt);
         }
 
         void MoveShipScalar()
