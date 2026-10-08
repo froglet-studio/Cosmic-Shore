@@ -11,12 +11,12 @@ namespace CosmicShore.Gameplay
     /// the strength, which is what the console's one-number spawn does). It moves
     /// itself along <see cref="Velocity"/> (a hole can be driven through a prism field), spins
     /// about <see cref="SpinAxis"/> (which only the frame dragging reads),
-    /// and eases its warp weight in on spawn and out on despawn so the GPU bend never pops.
+    /// and eases its warp weight in on spawn and out on despawn so the drawn tidal stretch never pops.
     ///
     /// It does nothing to the world by itself. <see cref="BlackHoleRegistry"/> owns the list of
     /// live holes and runs the three things a hole does to its surroundings each frame — pull
     /// prism bodies (<see cref="BlackHoleGravityField"/>), pull vessels
-    /// (<see cref="BlackHoleVesselPull"/>), bend what is drawn (<see cref="BlackHoleWarp"/>) —
+    /// (<see cref="BlackHoleVesselPull"/>), stretch what is drawn by its tides (<see cref="BlackHoleWarp"/>) —
     /// so a hole is a record the systems read, never a system of its own. Spawn through the
     /// registry; a hand-placed component registers itself at <c>OnEnable</c> with its serialized
     /// strength, so a scene can author one too.
@@ -45,11 +45,13 @@ namespace CosmicShore.Gameplay
         [SerializeField] float horizonRadius = 0f;
 
         [Tooltip("World-space velocity the hole travels at, u/s. Zero is a hole parked where it was " +
-                 "spawned; a moving hole drags the mass it passes along with it.")]
+                 "spawned. A moving hole does not drag mass along — it pulls: mass it passes is deflected, " +
+                 "slingshot, set orbiting or swallowed by the potential, the way a real one does.")]
         [SerializeField] Vector3 velocity = Vector3.zero;
 
-        [Tooltip("Axis the hole's spacetime rotates about (frame dragging). Mass is swept into orbits " +
-                 "in the plane perpendicular to it.")]
+        [Tooltip("Axis the hole spins about. Its spacetime is dragged around this axis (Lense-Thirring, " +
+                 "strength set by BlackHoleConfig.spin), so infalling mass winds up about it near the " +
+                 "horizon.")]
         [SerializeField] Vector3 spinAxis = Vector3.forward;
 
         const string HorizonName = "Horizon";
@@ -95,18 +97,17 @@ namespace CosmicShore.Gameplay
         public BlackHolePhysics.Well ToWell(BlackHoleConfigSO config)
         {
             var p = transform.position;
-            var v = velocity;
             var axis = SpinAxis;
             float rs = config.HorizonRadius(strength, horizonRadius);
+            float gm = config.GM(strength);
             return new BlackHolePhysics.Well
             {
                 Position = new Unity.Mathematics.float3(p.x, p.y, p.z),
-                Velocity = new Unity.Mathematics.float3(v.x, v.y, v.z),
-                GM = config.GM(strength),
+                GM = gm,
                 Horizon = BlackHolePhysics.Horizon.Of(rs),
                 InfluenceRadius = config.InfluenceRadius(strength, rs),
                 SpinAxis = new Unity.Mathematics.float3(axis.x, axis.y, axis.z),
-                FrameDragging = config.FrameDragging,
+                FrameDrag = BlackHolePhysics.FrameDragCoefficient(gm, rs, config.Spin),
             };
         }
 

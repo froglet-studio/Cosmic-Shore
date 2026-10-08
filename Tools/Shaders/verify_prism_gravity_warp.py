@@ -1,41 +1,41 @@
 #!/usr/bin/env python3
 """
-Prove the SHIPPED PrismGravityWarp.hlsl does what Docs/BLACK_HOLE.md §5 says it does, by compiling
-the file itself with clang++ and RUNNING it (/asset-surgery §4.5c) — the same harness shape as
-verify_prism_cradle.py. Nothing here is a transcription of the shader; the file under Assets/ is
-translated mechanically (HLSL -> C++ spelling only) and executed under a real non-uniform model
-matrix.
+Prove the SHIPPED PrismGravityWarp.hlsl draws SPAGHETTIFICATION as the physics says it is
+(Docs/BLACK_HOLE.md §5), by compiling the file itself with clang++ and RUNNING it (/asset-surgery
+§4.5c) under a real non-uniform model matrix. Nothing here is a transcription of the shader; the
+file under Assets/ is translated mechanically (HLSL -> C++ spelling only) and executed.
 
-The warp is a TIDAL STRETCH: every vertex within the reach of a hole's horizon slides along its
-own radius toward the singularity by a strain that is largest at the horizon and zero at the
-reach. Near faces move more than far faces, so a prism elongates along the radial and squeezes
-across it — spaghettification.
+The stretch is the general-relativistic tidal tensor for radial free fall, (GM/r³)·diag(2,−1,−1),
+applied to each prism about its own centre for a response time τ: log-stretch ε = GM·τ²/r³ along
+the line to the hole and −ε/2 across it (the bank carries GM·τ² as one coefficient K).
 
-What it proves, each on randomized inputs:
+What it proves:
 
-  1. IDENTITY with no live slot (count 0): bit-identical pass-through. "A match with no hole in
-     it costs nothing and changes nothing."
-  2. IDENTITY beyond the reach: a vertex farther than r_s + reach from the hole is bit-identical.
-  3. THE PULL: an affected vertex moves TOWARD the hole, never away, and never crosses the centre
-     (f > 0) — and at the horizon with strain w it lands at exactly (1 - w) of its distance.
-  4. NO FOLD: f is strictly increasing in d along any ray, so two vertices at different radii keep
-     their order and the prism never turns inside out.
-  5. RADIAL PURITY: the displacement is exactly along the vertex's own radius, so the direction
-     from the hole is bit-preserved — what makes the analytic normal derivable at all.
-  6. TIDAL STRETCH: inside the shell the radial stretch a = f'(d) exceeds the tangential stretch
-     b = f/d (strictly, wherever the falloff is not flat) — the theorem the header states, which
-     is the physical claim "spaghettification" rests on.
-  7. THE NORMAL IS THE MAP'S DERIVATIVE: a CONVERGENCE test, not a tolerance. Halving the test
-     patch must QUARTER the error (an exact first derivative's signature); a wrong Jacobian
-     plateaus (test 11).
-  8. NO SEAM AT THE FAR EDGE: sweeping a vertex through s = reach, neither the position nor the
-     normal jumps.
-  9. STRAIN IS AFFINE: f = d - d·k·w is affine in w at fixed geometry, so the eased spawn/despawn
-     is a blend of the MAP and never a differently-shaped warp.
- 10. DOMINANT SLOT: with two holes live, a vertex is warped by the one with the greater authority
-     (w × k), and only by that one.
- 11. NEGATIVE CONTROL: rebuilt with the Jacobian's RADIAL term neutered (-D override of the file's
-     own #ifndef dial), test 7's error STOPS CONVERGING — so the analytic normal is what holds it.
+  1. IDENTITY with no live slot (count 0): bit-identical pass-through.
+  2. IDENTITY beyond the reach: a prism whose centre is past r_s + reach is bit-identical.
+  3. THE CENTRE STAYS PUT: the prism's own centre maps to itself — tides deform, the gravity field
+     (not this file) moves mass.
+  4. THE TIDAL TENSOR: measured log-stretches equal +K/d³ along the radial and −K/(2d³) across it,
+     at d = 1.5, 2, 3 and 5 horizon radii — the trace-free 2 : −1 : −1 tensor, number for number —
+     out to 3 r_s at the SHIPPED reach (the fade touches only the outer half of the shell).
+  5. 1/r³, STRONGEST AT THE HORIZON: the stretch falls strictly with distance, doubling the distance
+     divides it by 8, and a hole with twice the mass and twice the horizon stretches a prism at
+     the same multiple of its horizon 4× LESS (ε_h ∝ 1/M²: small holes shred, big ones swallow).
+  6. VOLUME IS CONSERVED, at every strength including the ceiling.
+  7. NO FOLD, A CEILING: every stretch is positive and the length never exceeds the configured
+     maximum, however small the hole — a prism at a tiny horizon is a needle, not a line.
+ 7b. THE CEILING BENDS ONLY NEAR ITSELF: at the shipped ceiling, a tide of half of it is drawn within
+     1.5% of the law and a quarter within 0.1%, and the drawn stretch never falls as the tide grows.
+  8. ONE AFFINE MAP PER PRISM: the image of a midpoint is the midpoint of the images, so flat faces
+     stay flat and the authored 24-triangle prism is exact (no high-poly residency needed).
+  9. THE NORMAL IS THE INVERSE TRANSPOSE: on every face of a rotated, non-uniformly scaled prism,
+     the output normal is perpendicular to the stretched face.
+ 10. THE EASE IS LINEAR IN THE LOG: half the coefficient (a half-eased spawn) is half the stretch.
+ 11. NO SEAM AT THE REACH: as a prism's centre crosses r_s + reach the stretch has already faded
+     to nothing.
+ 12. DOMINANT SLOT: with two holes live, the one with the larger tide at the prism stretches it.
+ 13. NEGATIVE CONTROL: rebuilt with the normal correction switched off (-D override of the file's
+     own #ifndef dial), test 9 FAILS — the inverse transpose is what holds it.
 
 Exit 0 on pass. Needs clang++; nothing else, and no Unity.
 Usage:  python3 Tools/Shaders/verify_prism_gravity_warp.py [--keep]
@@ -88,7 +88,7 @@ static inline float max(float a,float b){return a>b?a:b;}
 static inline float abs(float a){return a<0?-a:a;}
 static inline float3 operator-(float3 a){return float3(-a.x,-a.y,-a.z);}
 static inline float smoothstep(float e0,float e1,float x){float t=saturate((x-e0)/(e1-e0));return t*t*(3.0f-2.0f*t);}
-using std::pow;
+using std::pow; using std::sqrt; using std::exp;
 
 // HLSL matrix convention as Unity uses it: mul(M, v) is M * column(v);
 // mul(v, M) is row(v) * M.  m[row][col].
@@ -123,7 +123,7 @@ float4x4 g_objectToWorld, g_worldToObject;
 static int failures = 0;
 #define CHECK(cond, ...) do { if (!(cond)) { failures++; printf("FAIL: "); printf(__VA_ARGS__); printf("\n"); } } while (0)
 
-static std::mt19937 rng(20261007);
+static std::mt19937 rng(20261008);
 static float rnd(float a, float b) { return a + (b - a) * (rng() / (float)rng.max()); }
 static float3 rndDir() { for(;;){ float3 v(rnd(-1,1),rnd(-1,1),rnd(-1,1)); float l=length(v); if(l>0.1f) return v/l; } }
 
@@ -133,6 +133,7 @@ static void rotationMatrix(float3 axis, float angle, float R[3][3]) {
     float M[3][3] = {{t*x*x+c, t*x*y-s*z, t*x*z+s*y},{t*x*y+s*z, t*y*y+c, t*y*z-s*x},{t*x*z-s*y, t*y*z+s*x, t*z*z+c}};
     for(int i=0;i<3;i++)for(int j=0;j<3;j++)R[i][j]=M[i][j];
 }
+// A prism at world centre t, rotated, scaled non-uniformly (the shipped prisms are 3 x 1 x 6).
 static void setModel(float3 t, float3 axis, float angle, float3 s) {
     float R[3][3]; rotationMatrix(axis, angle, R);
     float4x4 M{}, Mi{};
@@ -143,351 +144,246 @@ static void setModel(float3 t, float3 axis, float angle, float3 s) {
     Mi.m[3][0]=Mi.m[3][1]=Mi.m[3][2]=0; Mi.m[3][3]=1;
     g_objectToWorld = M; g_worldToObject = Mi;
 }
-static void setIdentity() {
-    for(int i=0;i<4;i++)for(int j=0;j<4;j++){ g_objectToWorld.m[i][j]=(i==j); g_worldToObject.m[i][j]=(i==j); }
-}
 static float3 toWorld(float3 p){ return mul(g_objectToWorld, float4(p,1)).xyz(); }
 static float3 toObject(float3 p){ return mul(g_worldToObject, float4(p,1)).xyz(); }
-static float3 xformDir(float3 d){ return mul(g_objectToWorld, float4(d,0)).xyz(); }
 static float3 normalToWorld(float3 n){ float3 w = mul(n, (float3x3)g_worldToObject); return w / length(w); }
 
-static const float RS    = 20.0f;   // a strength-10 hole's horizon at the shipped config
-static const float REACH = 100.0f;  // (warpReachMultiplier 6 - 1) x r_s
-static const float EXPO  = 2.0f;
-static const float W     = 0.6f;    // the shipped warpStrength
+static const float RS = 20.0f;          // a strength-10 hole's horizon at the shipped config
+static const float GM = 20000.0f;       // its GM (gmPerStrength 2000 x 10)
+static const float TAU = 0.9f;          // the shipped tidalResponseSeconds
+static const float K = GM * TAU * TAU;  // what the bank carries: GM·τ²
+static const float REACH = 100.0f;      // (warpReachMultiplier 6 - 1) x r_s
+static const float LN_MAX = 2.4849066f; // ln(maxTidalStretch 12)
 
-static void setBank(int count, float3 U0, float rs0, float w0, float reach0,
-                    float3 U1 = float3(0,0,0), float rs1 = 0, float w1 = 0, float reach1 = 0,
-                    float expo = EXPO) {
-    _PrismGravityWarpCentre[0] = float4(U0, rs0); _PrismGravityWarpWeight[0] = float4(w0, reach0, 0, 0);
-    _PrismGravityWarpCentre[1] = float4(U1, rs1); _PrismGravityWarpWeight[1] = float4(w1, reach1, 0, 0);
+static void setBank(int count, float3 U0, float rs0, float k0, float reach0, float lnMax = LN_MAX,
+                    float3 U1 = float3(0,0,0), float rs1 = 0, float k1 = 0, float reach1 = 0) {
+    _PrismGravityWarpCentre[0] = float4(U0, rs0); _PrismGravityWarpWeight[0] = float4(k0, reach0, 0, 0);
+    _PrismGravityWarpCentre[1] = float4(U1, rs1); _PrismGravityWarpWeight[1] = float4(k1, reach1, 0, 0);
     _PrismGravityWarpCentre[2] = float4(0,0,0,0); _PrismGravityWarpWeight[2] = float4(0,0,0,0);
     _PrismGravityWarpCentre[3] = float4(0,0,0,0); _PrismGravityWarpWeight[3] = float4(0,0,0,0);
-    _PrismGravityWarpParams = float4(expo, (float)count, 0.0f, 0.0f);
+    _PrismGravityWarpParams = float4(lnMax, (float)count, 0.0f, 0.0f);
 }
 
-struct Vtx { float3 pObj; float3 nObj; };
-static float3 faceNormal(int f) {
-    switch (f) { case 0: return float3(1,0,0); case 1: return float3(-1,0,0);
-                 case 2: return float3(0,1,0); case 3: return float3(0,-1,0);
-                 case 4: return float3(0,0,1); default: return float3(0,0,-1); }
+// Run the shipped function on an object-space point (+ a normal), return world space.
+static float3 mapWorld(float3 pObj, float3 nObj = float3(0,0,1)) {
+    float3 op, on; PrismGravityWarpDeform_float(pObj, nObj, op, on); return toWorld(op);
 }
-static void faceAxes(int f, float3 &u, float3 &v) {
-    const float3 right(1,0,0), up(0,1,0), fwd(0,0,1);
-    switch (f) {
-        case 0: u = up;    v = fwd;   break;
-        case 1: u = fwd;   v = up;    break;
-        case 2: u = fwd;   v = right; break;
-        case 3: u = right; v = fwd;   break;
-        case 4: u = right; v = up;    break;
-        default: u = up;   v = right; break;
-    }
+// The stretch the shipped map applies along world direction dir (unit) about centre c.
+static float stretchAlong(float3 c, float3 dir, float L = 0.5f) {
+    float3 img = mapWorld(toObject(c + dir * L));
+    return length(img - c) / L;
 }
-static std::vector<Vtx> prismVerts(int n) {
-    std::vector<Vtx> out;
-    for (int f = 0; f < 6; f++) {
-        float3 nrm = faceNormal(f), u, v; faceAxes(f, u, v);
-        float3 c = nrm * 0.5f;
-        for (int j = 0; j <= n; j++) for (int i = 0; i <= n; i++) {
-            float su = (float)i / n, sv = (float)j / n;
-            Vtx x; x.nObj = nrm;
-            x.pObj = c + u * ((su - 0.5f)) + v * ((sv - 0.5f));
-            out.push_back(x);
-        }
-    }
-    return out;
-}
+static float3 anyPerp(float3 n) { float3 a = std::fabs(n.x) < 0.9f ? float3(1,0,0) : float3(0,1,0); float3 p = cross(n, a); return p / length(p); }
 
-struct Out { float3 pObj, nObj, pW, nW; };
-static Out run(const Vtx& x) {
-    Out r;
-    PrismGravityWarpDeform_float(x.pObj, x.nObj, r.pObj, r.nObj);
-    r.pW = toWorld(r.pObj);
-    r.nW = normalToWorld(r.nObj);
-    return r;
-}
-static bool identical(const Vtx& x, const Out& r) {
-    return r.pObj.x == x.pObj.x && r.pObj.y == x.pObj.y && r.pObj.z == x.pObj.z
-        && r.nObj.x == x.nObj.x && r.nObj.y == x.nObj.y && r.nObj.z == x.nObj.z;
-}
-
-// Shared by test 7 and the negative control: the convergence sweep of the differential-normal
-// test over LEVELS patch sizes. Returns the worst 1-dot per level and the trial count.
-static const int LEVELS = 4;
-static const float FRACS[LEVELS] = { 0.02f, 0.01f, 0.005f, 0.0025f };
-static int convergenceSweep(float worst[LEVELS], int trials, bool nonUniformModel) {
-    const float3 SCALE(3, 1, 6);
-    int tested = 0;
-    for (int k = 0; k < LEVELS; k++) worst[k] = 0;
-    for (int trial = 0; trial < trials; trial++) {
-        if (nonUniformModel) setModel(float3(rnd(-20,20),rnd(-20,20),rnd(-20,20)), rndDir(), rnd(0, 6.28f), SCALE);
-        else setIdentity();
-        int f = rng() % 6;
-        float3 nrm = faceNormal(f), u, v; faceAxes(f, u, v);
-        float3 c = nrm * 0.5f + u * rnd(-0.45f, 0.45f) + v * rnd(-0.45f, 0.45f);
-        float3 cw = toWorld(c);
-        // The hole somewhere that puts this patch inside the shell, near the horizon, or past the reach.
-        float3 U = cw + rndDir() * rnd(RS + 1.0f, RS + REACH + 10.0f);
-        setBank(1, U, RS, rnd(0.2f, W), REACH);
-
-        Vtx mid; mid.pObj = c; mid.nObj = nrm;
-        Out rm = run(mid);
-        if (identical(mid, rm)) continue;
-
-        float d = length(cw - U);
-        float unit = std::max(length(xformDir(u)), length(xformDir(v)));
-
-        float e[LEVELS]; bool usable = true;
-        for (int k = 0; k < LEVELS && usable; k++) {
-            float eps = FRACS[k] * d / unit;
-            float3 moved[3], flat[3];
-            for (int i = 0; i < 3; i++) {
-                float a = 2.0944f * i;
-                Vtx x; x.nObj = nrm;
-                x.pObj = c + u * (eps * std::cos(a)) + v * (eps * std::sin(a));
-                flat[i] = toWorld(x.pObj);
-                moved[i] = run(x).pW;
-            }
-            float3 g = cross(moved[1] - moved[0], moved[2] - moved[0]);
-            float3 g0 = cross(flat[1] - flat[0], flat[2] - flat[0]);
-            float gl = length(g), gl0 = length(g0);
-            if (!(gl > 1e-16f) || !(gl0 > 1e-16f) || gl / gl0 < 0.01f) { usable = false; break; }
-            e[k] = 1.0f - dot(g / gl, rm.nW);
-        }
-        if (!usable) continue;
-        tested++;
-        for (int k = 0; k < LEVELS; k++) worst[k] = std::max(worst[k], e[k]);
-    }
-    return tested;
+// A prism at distance d from a hole at the origin, along a random direction; returns that direction.
+static float3 placePrism(float d) {
+    float3 n = rndDir();
+    setModel(n * d, rndDir(), rnd(0, 6.28f), float3(3, 1, 6));
+    return n;
 }
 """
 
 HARNESS = COMMON + r"""
 int main()
 {
-    const float3 SCALE(3, 1, 6);   // a trail slab
-
-    // ---------------- 1. identity with no live slot ----------------
+    // 1. no live slot
     {
-        int bad = 0, tested = 0;
-        auto vs = prismVerts(3);
-        for (int trial = 0; trial < 150; trial++) {
-            setModel(float3(rnd(-50,50),rnd(-50,50),rnd(-50,50)), rndDir(), rnd(0, 6.28f), SCALE);
-            setBank(0, float3(rnd(-5,5),rnd(-5,5),rnd(-5,5)), RS, W, REACH);
-            for (const Vtx& x : vs) { tested++; if (!identical(x, run(x))) bad++; }
+        setBank(0, float3(0,0,0), RS, K, REACH);
+        float3 n = placePrism(1.5f * RS); (void)n;
+        bool same = true;
+        for (int i = 0; i < 50; i++) {
+            float3 p(rnd(-0.5f,0.5f), rnd(-0.5f,0.5f), rnd(-0.5f,0.5f)), nn = rndDir(), op, on;
+            PrismGravityWarpDeform_float(p, nn, op, on);
+            same &= op.x == p.x && op.y == p.y && op.z == p.z && on.x == nn.x && on.y == nn.y && on.z == nn.z;
         }
-        CHECK(bad == 0, "identity with count 0 broken on %d of %d vertices", bad, tested);
-        printf("1. count 0 -> bit-identical pass-through: %s (%d vertices)\n", bad == 0 ? "ok" : "BROKEN", tested);
+        CHECK(same, "a vertex moved with no hole live");
+        printf("1. no live slot: bit-identical\n");
     }
 
-    // ---------------- 2. identity beyond the reach ----------------
+    // 2. beyond the reach
     {
-        int bad = 0, tested = 0;
-        auto vs = prismVerts(3);
-        for (int trial = 0; trial < 200; trial++) {
-            setModel(float3(0,0,0), rndDir(), rnd(0, 6.28f), SCALE);
-            float3 U = rndDir() * rnd(RS + REACH + 8.0f, RS + REACH + 200.0f);
-            setBank(1, U, RS, W, REACH);
-            for (const Vtx& x : vs) {
-                if (length(toWorld(x.pObj) - U) < RS + REACH) continue;
-                tested++;
-                if (!identical(x, run(x))) bad++;
+        setBank(1, float3(0,0,0), RS, K, REACH);
+        placePrism(RS + REACH + 0.5f);
+        bool same = true;
+        for (int i = 0; i < 50; i++) {
+            float3 p(rnd(-0.5f,0.5f), rnd(-0.5f,0.5f), rnd(-0.5f,0.5f)), nn = rndDir(), op, on;
+            PrismGravityWarpDeform_float(p, nn, op, on);
+            same &= op.x == p.x && op.y == p.y && op.z == p.z && on.x == nn.x && on.y == nn.y && on.z == nn.z;
+        }
+        CHECK(same, "a prism past the reach was touched");
+        printf("2. prism centre past r_s + reach: bit-identical\n");
+    }
+
+    // 3. the centre stays put
+    {
+        setBank(1, float3(0,0,0), RS, K, REACH);
+        float worst = 0;
+        for (int i = 0; i < 200; i++) {
+            placePrism(rnd(RS, RS + REACH));
+            float3 c = toWorld(float3(0,0,0));
+            worst = std::max(worst, length(mapWorld(float3(0,0,0)) - c));
+        }
+        CHECK(worst < 1e-3f, "a prism's centre moved by %.2g", worst);
+        printf("3. the prism's centre maps to itself (worst %.2g u over 200 prisms)\n", worst);
+    }
+
+    // 4. the tidal tensor, number for number — at the SHIPPED reach out to 3 r_s (the window is exactly 1
+    //    across the inner half of the shell), and with the fade pushed away at 5 r_s; a high ceiling so
+    //    the soft minimum is the identity and the law itself is what is measured
+    {
+        const float SMALL_K = 0.25f * RS * RS * RS;    // eps(1.5 r_s) = 0.074: well under the ceiling
+        const float ds[4] = { 1.5f, 2.0f, 3.0f, 5.0f };
+        float worst = 0;
+        for (float m : ds) {
+            setBank(1, float3(0,0,0), RS, SMALL_K, m <= 3.0f ? REACH : 1e7f, 13.8f);
+            float d = m * RS;
+            float3 n = placePrism(d);
+            float3 c = toWorld(float3(0,0,0));
+            // A long probe: the map is affine, so length costs no accuracy and buys float headroom
+            // (ε is 0.002 at 5 r_s, on a prism 100 u from the origin).
+            float er = std::log(stretchAlong(c, n, 4.0f));
+            float et = std::log(stretchAlong(c, anyPerp(n), 4.0f));
+            float expect = SMALL_K / (d * d * d);
+            float relR = std::fabs(er - expect) / expect, relT = std::fabs(-et - 0.5f * expect) / (0.5f * expect);
+            worst = std::max(worst, std::max(relR, relT));
+            printf("4. d = %.1f r_s: radial log-stretch %.5f (GM tau^2/d^3 = %.5f), transverse %.5f (-half = %.5f)\n",
+                   m, er, expect, et, -0.5f * expect);
+        }
+        CHECK(worst < 3e-3f, "the stretch is not the tidal tensor (worst relative error %.3g)", worst);
+    }
+
+    // 5. 1/r^3, strongest at the horizon, eps_h ~ 1/M^2
+    {
+        const float SMALL_K = 0.25f * RS * RS * RS;
+        setBank(1, float3(0,0,0), RS, SMALL_K, 1e7f, 13.8f);
+        float prev = 1e9f; bool falls = true;
+        for (float m = 1.0f; m <= 6.0f; m += 0.25f) {
+            float3 n = placePrism(m * RS);
+            float e = std::log(stretchAlong(toWorld(float3(0,0,0)), n));
+            falls &= e < prev; prev = e;
+        }
+        float3 n1 = placePrism(2.0f * RS); float e1 = std::log(stretchAlong(toWorld(float3(0,0,0)), n1));
+        float3 n2 = placePrism(4.0f * RS); float e2 = std::log(stretchAlong(toWorld(float3(0,0,0)), n2));
+        // twice the mass and twice the horizon: K doubles, and the prism sits at the same 1.5 r_s
+        setBank(1, float3(0,0,0), RS, K, REACH);
+        float3 nA = placePrism(1.5f * RS); float eA = std::log(stretchAlong(toWorld(float3(0,0,0)), nA));
+        setBank(1, float3(0,0,0), 2.0f * RS, 2.0f * K, 2.0f * REACH);
+        float3 nB = placePrism(3.0f * RS); float eB = std::log(stretchAlong(toWorld(float3(0,0,0)), nB));
+        CHECK(falls, "the stretch does not fall strictly with distance");
+        CHECK(std::fabs(e1 / e2 - 8.0f) < 0.05f, "doubling the distance divided the stretch by %.3f, not 8", e1 / e2);
+        CHECK(std::fabs(eA / eB - 4.0f) < 0.3f, "a hole twice as massive stretched %.2fx less at 1.5 r_s, not 4x", eA / eB);
+        printf("5. falls strictly from the horizon; 2x distance -> /%.3f; 2x the mass -> %.2fx less at the same r/r_s\n", e1 / e2, eA / eB);
+    }
+
+    // 6 + 7. volume conserved, no fold, the ceiling holds — from mild to absurd strength
+    {
+        float worstVol = 0, longest = 0; bool positive = true;
+        const float ks[4] = { K, 10.0f * K, 1000.0f * K, 1e6f * K };
+        for (float k : ks) {
+            setBank(1, float3(0,0,0), RS, k, REACH);
+            for (int i = 0; i < 100; i++) {
+                float3 n = placePrism(rnd(RS, RS + 0.5f * REACH));
+                float3 c = toWorld(float3(0,0,0));
+                float3 a = mapWorld(toObject(c + float3(1,0,0))) - c;
+                float3 b = mapWorld(toObject(c + float3(0,1,0))) - c;
+                float3 e = mapWorld(toObject(c + float3(0,0,1))) - c;
+                float vol = dot(cross(a, b), e);
+                positive &= vol > 0;
+                worstVol = std::max(worstVol, std::fabs(vol - 1.0f));
+                longest = std::max(longest, stretchAlong(c, n));
             }
         }
-        CHECK(tested > 2000, "too few beyond-reach samples (%d)", tested);
-        CHECK(bad == 0, "identity beyond the reach broken on %d of %d vertices", bad, tested);
-        printf("2. vertex past r_s + reach -> untouched: %s (%d vertices)\n", bad == 0 ? "ok" : "BROKEN", tested);
+        CHECK(worstVol < 2e-3f, "volume changed by up to %.3g", worstVol);
+        CHECK(positive, "the stretch folded a prism (non-positive volume)");
+        CHECK(longest <= 12.0f * 1.0005f, "a prism was drawn %.3fx long, past the 12x ceiling", longest);
+        CHECK(longest > 11.5f, "the ceiling is never approached (longest %.2fx) - the strong end is not being exercised", longest);
+        printf("6. volume conserved to %.2g at every strength\n7. never folds; longest %.3fx against the 12x ceiling\n", worstVol, longest);
     }
 
-    // ---------------- 3. the pull: toward, never past the centre, (1-w) at the horizon ----------------
+    // 7b. the ceiling bends only near itself: at the shipped ceiling (ln 12), half of it is drawn within 1.5%
+    //     of the law and a quarter within 0.1%; and the drawn stretch never falls as the tide grows
     {
-        int tested = 0, away = 0, crossed = 0;
-        float worstHorizon = 0;
-        for (int trial = 0; trial < 300; trial++) {
-            setModel(float3(rnd(-20,20),rnd(-20,20),rnd(-20,20)), rndDir(), rnd(0, 6.28f), SCALE);
-            float3 U = toWorld(float3(0,0,0)) + rndDir() * rnd(0.0f, RS + REACH - 1.0f);
-            setBank(1, U, RS, W, REACH);
-            auto vs = prismVerts(4);
-            for (const Vtx& x : vs) {
-                float3 pw = toWorld(x.pObj);
-                float d = length(pw - U);
-                if (!(d > 1e-3f) || d >= RS + REACH) continue;
-                Out r = run(x);
-                tested++;
-                float f = length(r.pW - U);
-                if (f > d + 1e-4f) away++;
-                if (dot(r.pW - U, pw - U) <= 0.0f) crossed++;
-            }
-            // Exactly at the horizon the strain is w: f = (1 - w) r_s.
-            float3 dir = rndDir();
-            Vtx h; h.pObj = toObject(U + dir * RS); h.nObj = float3(0,1,0);
-            float fh = length(run(h).pW - U);
-            worstHorizon = std::max(worstHorizon, std::fabs(fh - (1.0f - W) * RS));
+        float3 n = placePrism(2.0f * RS); float3 c = toWorld(float3(0,0,0));
+        const float d = 2.0f * RS, d3 = d * d * d;
+        setBank(1, float3(0,0,0), RS, 0.5f * LN_MAX * d3, REACH);  float half = std::log(stretchAlong(c, n, 4.0f));
+        setBank(1, float3(0,0,0), RS, 0.25f * LN_MAX * d3, REACH); float quarter = std::log(stretchAlong(c, n, 4.0f));
+        float relHalf = 1.0f - half / (0.5f * LN_MAX), relQuarter = 1.0f - quarter / (0.25f * LN_MAX);
+        CHECK(relHalf >= 0.0f && relHalf < 0.016f, "at half the ceiling the drawn stretch is %.2f%% under the law", 100.0f * relHalf);
+        CHECK(relQuarter >= 0.0f && relQuarter < 0.0015f, "at a quarter of the ceiling the drawn stretch is %.3f%% under the law", 100.0f * relQuarter);
+        float prev = 0; bool monotone = true;
+        for (float f = 0.05f; f < 1e5f; f *= 1.3f) {
+            setBank(1, float3(0,0,0), RS, f * LN_MAX * d3, REACH);
+            float e = std::log(stretchAlong(c, n, 4.0f));
+            monotone &= e >= prev - 1e-5f; prev = e;
         }
-        CHECK(tested > 5000, "too few pull samples (%d)", tested);
-        CHECK(away == 0, "%d vertices moved AWAY from the hole", away);
-        CHECK(crossed == 0, "%d vertices crossed the centre to the far side", crossed);
-        CHECK(worstHorizon < 2e-3f, "horizon vertex not at (1 - w) r_s: worst err %g", worstHorizon);
-        printf("3. pull (%d samples): always toward the hole, never through it; horizon lands at (1-w) r_s (err %.2e)\n",
-               tested, worstHorizon);
+        CHECK(monotone, "the drawn stretch fell while the tide grew - the ceiling is not monotone");
+        printf("7b. the ceiling: %.2f%% under the law at half of it, %.3f%% at a quarter; monotone to 1e5x\n",
+               100.0f * relHalf, 100.0f * relQuarter);
     }
 
-    // ---------------- 4. no fold ----------------
+    // 8. one affine map per prism
     {
-        int tested = 0, folded = 0;
-        for (int trial = 0; trial < 400; trial++) {
-            setModel(float3(rnd(-20,20),rnd(-20,20),rnd(-20,20)), rndDir(), rnd(0, 6.28f), SCALE);
-            float3 U = toWorld(rndDir() * 0.4f);
-            float w = rnd(0.1f, 0.95f);
-            setBank(1, U, RS, w, REACH);
-            float3 dir = rndDir();
-            float prevF = -1e30f;
-            for (float d = 0.5f; d <= RS + REACH + 5.0f; d += 0.25f) {
-                float3 pw = U + dir * d;
-                Vtx x; x.pObj = toObject(pw); x.nObj = float3(0,1,0);
-                float f = length(run(x).pW - U);
-                tested++;
-                if (f <= prevF) folded++;
-                prevF = f;
-            }
+        setBank(1, float3(0,0,0), RS, K, REACH);
+        float worst = 0;
+        for (int i = 0; i < 200; i++) {
+            placePrism(rnd(RS, RS + REACH));
+            float3 p(rnd(-0.5f,0.5f), rnd(-0.5f,0.5f), rnd(-0.5f,0.5f)), q(rnd(-0.5f,0.5f), rnd(-0.5f,0.5f), rnd(-0.5f,0.5f));
+            float3 mid = mapWorld((p + q) * 0.5f), avg = (mapWorld(p) + mapWorld(q)) * 0.5f;
+            worst = std::max(worst, length(mid - avg));
         }
-        CHECK(tested > 100000, "too few fold samples (%d)", tested);
-        CHECK(folded == 0, "the map FOLDS in %d places (f not strictly increasing in d)", folded);
-        printf("4. no fold (%d samples along %d rays, strain up to 0.95): f strictly increasing in d\n", tested, 400);
+        CHECK(worst < 1e-3f, "the map is not affine across a prism (midpoint off by %.2g)", worst);
+        printf("8. affine across each prism (midpoint error %.2g u): flat faces stay flat, 24 triangles are exact\n", worst);
     }
 
-    // ---------------- 5. radial purity ----------------
+    // 9. the normal is the inverse transpose
     {
-        float worstDrift = 0; int tested = 0;
-        auto vs = prismVerts(4);
-        for (int trial = 0; trial < 200; trial++) {
-            setModel(float3(rnd(-20,20),rnd(-20,20),rnd(-20,20)), rndDir(), rnd(0, 6.28f), SCALE);
-            float3 U = toWorld(rndDir() * rnd(0.0f, 0.8f)) + rndDir() * rnd(RS * 0.5f, RS + REACH * 0.5f);
-            setBank(1, U, RS, rnd(0.2f, W), REACH);
-            for (const Vtx& x : vs) {
-                float3 pw = toWorld(x.pObj);
-                float d = length(pw - U);
-                if (!(d > 0.5f) || d > RS + REACH) continue;
-                Out r = run(x);
-                tested++;
-                float3 d0 = (pw - U) / d, d1 = (r.pW - U) / length(r.pW - U);
-                worstDrift = std::max(worstDrift, 1.0f - dot(d0, d1));
-            }
+        setBank(1, float3(0,0,0), RS, 10.0f * K, REACH);
+        float worst = 0;
+        for (int i = 0; i < 300; i++) {
+            placePrism(rnd(RS, RS + 0.5f * REACH));
+            int f = rng() % 6;
+            float3 nObj = f==0?float3(1,0,0):f==1?float3(-1,0,0):f==2?float3(0,1,0):f==3?float3(0,-1,0):f==4?float3(0,0,1):float3(0,0,-1);
+            float3 u = std::fabs(nObj.x) > 0.5f ? float3(0,1,0) : float3(1,0,0);
+            float3 v = cross(nObj, u);
+            float3 base = nObj * 0.5f;
+            float3 op, on; PrismGravityWarpDeform_float(base, nObj, op, on);
+            float3 nW = normalToWorld(on);
+            float3 du = mapWorld(base + u * 0.3f, nObj) - toWorld(op);
+            float3 dv = mapWorld(base + v * 0.3f, nObj) - toWorld(op);
+            worst = std::max(worst, std::max(std::fabs(dot(nW, du / length(du))), std::fabs(dot(nW, dv / length(dv)))));
         }
-        CHECK(tested > 2000, "too few radial-purity samples (%d)", tested);
-        CHECK(worstDrift < 1e-5f, "displacement is not radial: worst direction drift 1-dot = %g", worstDrift);
-        printf("5. radial purity (%d samples): direction from the hole bit-preserved (worst 1-dot %.2e)\n",
-               tested, worstDrift);
+        CHECK(worst < 1e-3f, "the output normal is not perpendicular to the stretched face (worst |cos| %.3g)", worst);
+        printf("9. normal perpendicular to every stretched face (worst |cos| %.2g)\n", worst);
     }
 
-    // ---------------- 6. tidal stretch: radial a exceeds tangential b inside the shell ----------------
+    // 10. the ease is linear in the log
     {
-        // Measured from the shipped map by finite difference along a ray, against f/d: wherever the
-        // falloff is not flat (strictly between the horizon and the reach) the radial stretch must
-        // exceed the tangential one. This is the theorem the header states and the look rests on.
-        setIdentity();
-        float3 U(0,0,0);
-        setBank(1, U, RS, W, REACH);
-        float3 dir = rndDir();
-        int tested = 0, notStretched = 0; float minRatio = 1e30f, maxRatio = 0;
-        const float h = 0.01f;
-        for (float d = RS + 2.0f; d < RS + REACH - 2.0f; d += 0.5f) {
-            auto f_at = [&](float dd) {
-                Vtx x; x.pObj = U + dir * dd; x.nObj = float3(0,1,0);
-                return length(run(x).pW - U);
-            };
-            float a = (f_at(d + h) - f_at(d - h)) / (2 * h);
-            float b = f_at(d) / d;
-            tested++;
-            float ratio = a / b;
-            minRatio = std::min(minRatio, ratio); maxRatio = std::max(maxRatio, ratio);
-            if (!(a > b)) notStretched++;
-        }
-        CHECK(tested > 100, "too few tidal samples (%d)", tested);
-        CHECK(notStretched == 0, "radial stretch did not exceed tangential at %d of %d radii", notStretched, tested);
-        printf("6. tidal stretch (%d radii): a/b in [%.3f, %.3f] > 1 everywhere inside the shell — spaghettification\n",
-               tested, minRatio, maxRatio);
+        const float SMALL_K = 0.25f * RS * RS * RS;
+        float3 n = placePrism(2.0f * RS); float3 c = toWorld(float3(0,0,0));
+        setBank(1, float3(0,0,0), RS, SMALL_K, 1e7f, 13.8f);       float full = std::log(stretchAlong(c, n));
+        setBank(1, float3(0,0,0), RS, 0.5f * SMALL_K, 1e7f, 13.8f); float half = std::log(stretchAlong(c, n));
+        CHECK(std::fabs(half / full - 0.5f) < 2e-3f, "half the coefficient gave %.4f of the stretch, not 0.5", half / full);
+        printf("10. half-eased: %.4f of the full log-stretch\n", half / full);
     }
 
-    // ---------------- 7. the normal is the map's DERIVATIVE ----------------
+    // 11. no seam at the reach
     {
-        float worst[LEVELS];
-        int tested = convergenceSweep(worst, 4000, true);
-        CHECK(tested > 1500, "too few differential-normal trials (%d)", tested);
-        CHECK(worst[LEVELS-1] < 0.02f, "the returned normal does not approach the deformed surface: "
-              "worst 1-dot at the finest patch = %g", worst[LEVELS-1]);
-        for (int k = 1; k < LEVELS; k++)
-            CHECK(worst[k] < 0.40f * worst[k-1],
-                  "halving the patch did not quarter the error (%g -> %g) — the returned normal is "
-                  "not the map's derivative", worst[k-1], worst[k]);
-        printf("7. analytic normal == d(map) (%d trials): worst 1-dot", tested);
-        for (int k = 0; k < LEVELS; k++) printf("  %.4gxd:%.3g", FRACS[k], worst[k]);
-        printf("  (quartering => exact derivative)\n");
+        setBank(1, float3(0,0,0), RS, 1000.0f * K, REACH);
+        float3 n = placePrism(RS + REACH - 0.05f);
+        float justInside = stretchAlong(toWorld(float3(0,0,0)), n);
+        CHECK(std::fabs(justInside - 1.0f) < 1e-3f, "just inside the reach the prism is still %.4fx long - a seam", justInside);
+        printf("11. 0.05 u inside the reach the stretch is %.6fx (faded out, no seam)\n", justInside);
     }
 
-    // ---------------- 8. no seam at the far edge ----------------
+    // 12. dominant slot
     {
-        setModel(float3(0,0,0), float3(0,0,1), 0.3f, SCALE);
-        float3 U = toWorld(float3(0,0,0));
-        setBank(1, U, RS, W, REACH);
-        float3 dir = normalToWorld(float3(0,1,0));
-        const float step = 0.002f;
-        float worstPos = 0, worstNrm = 0;
-        float3 prevP(0,0,0), prevN(0,0,0); bool have = false;
-        for (float s = REACH - 1.0f; s <= REACH + 1.0f; s += step) {
-            float3 pw = U + dir * (RS + s);
-            Vtx x; x.pObj = toObject(pw); x.nObj = float3(0,1,0);
-            Out r = run(x);
-            if (have) {
-                worstPos = std::max(worstPos, length(r.pW - prevP) - step);
-                worstNrm = std::max(worstNrm, 1.0f - dot(r.nW, prevN));
-            }
-            prevP = r.pW; prevN = r.nW; have = true;
-        }
-        CHECK(worstPos < 1e-3f, "position seam at the reach: %g u of jump beyond the %g u step", worstPos, step);
-        CHECK(worstNrm < 1e-5f, "normal seam at the reach: worst 1-dot between adjacent samples = %g", worstNrm);
-        printf("8. no seam at s = reach: worst excess position jump %.2e u, worst normal 1-dot %.2e\n",
-               worstPos, worstNrm);
-    }
-
-    // ---------------- 9. strain is affine ----------------
-    {
-        float worstLinear = 0; int tested = 0;
-        for (int trial = 0; trial < 300; trial++) {
-            setModel(float3(rnd(-10,10),rnd(-10,10),rnd(-10,10)), rndDir(), rnd(0, 6.28f), SCALE);
-            float3 U = toWorld(rndDir() * 0.3f);
-            float3 dir = rndDir();
-            float d = rnd(RS * 0.5f, RS + REACH * 0.9f);
-            float3 pw = U + dir * d;
-            Vtx x; x.pObj = toObject(pw); x.nObj = float3(0,1,0);
-            setBank(1, U, RS, 0.8f, REACH);  float f1 = length(run(x).pW - U);
-            setBank(1, U, RS, 0.2f, REACH);  float fq = length(run(x).pW - U);
-            tested++;
-            worstLinear = std::max(worstLinear, std::fabs((fq - d) * 4.0f - (f1 - d)));
-        }
-        CHECK(worstLinear < 2e-3f, "the map is not affine in the strain (worst err %g)", worstLinear);
-        printf("9. strain affine (%d trials): the eased spawn is a blend of the MAP (worst err %.2e)\n",
-               tested, worstLinear);
-    }
-
-    // ---------------- 10. dominant slot ----------------
-    {
-        setIdentity();
-        float3 pw(0, 0.5f, 0);
-        Vtx x; x.pObj = pw; x.nObj = float3(0,1,0);
-        // Hole A close (near its horizon, high authority), hole B far out in its shell: A must win.
-        float3 A = pw + float3(0, RS + 2.0f, 0);
-        float3 B = pw - float3(0, RS + REACH - 5.0f, 0);
-        setBank(2, B, RS, W, REACH, A, RS, W, REACH);
-        Out r = run(x);
-        float dA = length(pw - A), fA = length(r.pW - A);
-        CHECK(fA < dA - 1e-3f, "dominant slot: the vertex was not pulled toward the NEAR hole");
-        CHECK(std::fabs(dot((r.pW - A) / fA, (pw - A) / dA) - 1.0f) < 1e-5f, "dominant slot: the vertex left the near hole's radial");
-        // Same pair, but the near hole faded almost out: the far one must take over.
-        setBank(2, B, RS, W, REACH, A, RS, 0.001f, REACH);
-        Out r2 = run(x);
-        CHECK(length(r2.pW - r.pW) > 1e-3f, "dominant slot: authority (w x k) is not what selects the slot");
-        printf("10. two holes live: the greater authority (w x k) warps the vertex, and only it\n");
+        float3 U0(0,0,0), U1(1000,0,0);
+        setBank(2, U0, RS, K, REACH, LN_MAX, U1, RS, K, REACH);
+        setModel(float3(1.3f * RS, 0, 0), float3(0,1,0), 0.3f, float3(3,1,6));   // much nearer hole 0
+        float3 c = toWorld(float3(0,0,0));
+        float alongNear = stretchAlong(c, float3(1,0,0)), across = stretchAlong(c, float3(0,1,0));
+        CHECK(alongNear > 1.2f && across < 1.0f, "the nearer hole did not set the stretch (along %.3f, across %.3f)", alongNear, across);
+        printf("12. two holes: the nearer one's tide stretches the prism (x%.2f along, x%.2f across)\n", alongNear, across);
     }
 
     if (failures) { printf("\n%d FAILURE(S)\n", failures); return 1; }
@@ -496,19 +392,26 @@ int main()
 }
 """
 
-# The negative control drives the SAME differential-normal sweep with the Jacobian's RADIAL term
-# neutered via the shipped file's own #ifndef dial: clamping the radial stretch to >= 1 leaves
-# only the tangential correction. It must BREAK test 7 — otherwise that test was passing by luck.
+# The negative control runs test 9 with the normal correction switched off via the shipped file's
+# own #ifndef dial. It must FAIL — otherwise test 9 passes for some reason other than the
+# inverse transpose.
 CONTROL_MAIN = COMMON + r"""
 int main()
 {
-    float worst[LEVELS];
-    int tested = convergenceSweep(worst, 3000, false);
-    printf("radial Jacobian neutered, %d trials: worst 1-dot", tested);
-    for (int k = 0; k < LEVELS; k++) printf("  %.4gxd:%.3g", FRACS[k], worst[k]);
-    bool plateaus = worst[LEVELS-1] > 0.02f && worst[LEVELS-1] > 0.40f * worst[LEVELS-2];
-    printf("  -> %s\n", plateaus ? "PLATEAUS (control fires)" : "converged anyway (control failed)");
-    return plateaus ? 0 : 1;
+    setBank(1, float3(0,0,0), RS, 10.0f * K, REACH);
+    float worst = 0;
+    for (int i = 0; i < 300; i++) {
+        placePrism(rnd(RS, RS + 0.5f * REACH));
+        float3 nObj(0,0,1), u(1,0,0), v(0,1,0), base(0,0,0.5f), op, on;
+        PrismGravityWarpDeform_float(base, nObj, op, on);
+        float3 nW = normalToWorld(on);
+        float3 du = mapWorld(base + u * 0.3f, nObj) - toWorld(op);
+        float3 dv = mapWorld(base + v * 0.3f, nObj) - toWorld(op);
+        worst = std::max(worst, std::max(std::fabs(dot(nW, du / length(du))), std::fabs(dot(nW, dv / length(dv)))));
+    }
+    bool fired = worst > 0.05f;
+    printf("normal correction off: worst |cos| %.3g -> %s\n", worst, fired ? "FIRES" : "did not fire");
+    return fired ? 0 : 1;
 }
 """
 
@@ -524,7 +427,7 @@ def translate(src):
     assert "float3 Position, float3 Normal," in out, \
         "the entry point's signature is not (Position, Normal) — the harness and the wirer disagree"
     for name in ("_PrismGravityWarpCentre", "_PrismGravityWarpWeight", "_PrismGravityWarpParams",
-                 "PRISM_GRAVITY_WARP_SLOTS", "PRISM_GRAVITY_WARP_MIN_RADIAL"):
+                 "PRISM_GRAVITY_WARP_SLOTS", "PRISM_GRAVITY_WARP_NORMAL_CORRECTION"):
         assert name in out, f"{name} missing from the shipped HLSL"
     return out
 
@@ -564,11 +467,11 @@ def main():
             print("\nFAILED", file=sys.stderr)
             return 1
 
-        print("\n11. negative control (radial Jacobian term neutered via -D):")
-        rc = build_and_run(work, CONTROL_MAIN, ["-DPRISM_GRAVITY_WARP_MIN_RADIAL=1.0"], "control")
+        print("\n13. negative control (normal correction switched off via -D):")
+        rc = build_and_run(work, CONTROL_MAIN, ["-DPRISM_GRAVITY_WARP_NORMAL_CORRECTION=0"], "control")
         if rc is None or rc != 0:
-            print("\nFAILED: the negative control did not fire — the analytic normal's radial "
-                  "term is not what makes test 7 pass", file=sys.stderr)
+            print("\nFAILED: the negative control did not fire — the inverse transpose is not "
+                  "what makes test 9 pass", file=sys.stderr)
             return 1
 
         print("\nAll gravity-warp properties hold for the shipped file.")

@@ -2,10 +2,14 @@
 
 > A black hole is spawned with ONE number — its strength — anywhere in any scene, from the
 > DiagnosticsHUD console (`blackhole spawn 10`). It pulls every prism in reach into orbit or into
-> the singularity, pulls vessels (which can out-run it), and bends what is drawn around its
-> horizon. The physics is a simulation (live gameplay data under the movers contract); the bend is
-> a §4.7 global-uniform vertex map (photons only). Status: **simple version, 2026-10-07 — nothing
-> here has been run in the editor**; the gates it passed and the playtest it still needs are in §9.
+> the singularity, pulls vessels (which can out-run it), drags space around with its spin, and
+> spaghettifies what comes near its horizon. **Everything it does is physics, approximated — no
+> painted glow, no disc, no invented swirl**: a Paczyński–Wiita pull, Lense–Thirring frame
+> dragging, the general-relativistic tidal tensor, and a Schwarzschild ray trace for the lens. The
+> motion is a simulation (live gameplay data under the movers contract); the stretch is a §4.7
+> global-uniform vertex map (photons only). Status: **built 2026-10-07, made physical 2026-10-08 —
+> nothing here has been run in the editor**; the gates it passed and the playtest it still needs
+> are in §9.
 
 ## 0. Where everything is
 
@@ -16,8 +20,8 @@
 | The registry + the ONE driver (`LateUpdate`, order 29500) | `BlackHoleRegistry.cs` |
 | The prism MOVER — admission, the job, the bulk writes, captures | `BlackHoleGravityField.cs` |
 | The vessel pull | `BlackHoleVesselPull.cs` |
-| The warp's CPU half — the bank + high-poly residency | `BlackHoleWarp.cs` |
-| The warp's GPU half | `_Graphics/Materials/Graphs/PrismGravityWarp.hlsl` |
+| Spaghettification's CPU half — the global bank | `BlackHoleWarp.cs` |
+| Spaghettification's GPU half — the tidal tensor, one affine map per prism | `_Graphics/Materials/Graphs/PrismGravityWarp.hlsl` |
 | The lens — what the hole LOOKS like (ray-traced background and shadow; no painted disc) | `BlackHoleLens.cs`, `_Graphics/Materials/Graphs/BlackHoleLens.shader` + `BlackHoleLens.hlsl`, `Resources/BlackHoleLens.mat`, `Tools/Shaders/verify_black_hole_lens.py` (§5.1) |
 | The ECS component every prism's companion entity carries | `_Scripts/Controller/ECS/Components/GravityBodyComponents.cs` (+ the prototype addition and the `SetGravityBody` / `ClearGravityBody` / `TryGetGravityBodyLookup` API in `PrismRenderService`) |
 | Console commands | `BlackHoleConsole.cs` (`blackhole`, alias `bh`) |
@@ -35,7 +39,7 @@ turns `S` into the two numbers the physics needs — the gravitational parameter
 and the event-horizon radius `r_s = max(minHorizon, S × horizonPerStrength)` — and a third it derives
 from them, the influence radius (where the pull falls below an acceleration floor). Every frame the
 registry's driver does three things with the live holes, in this order: moves the prism bodies
-inside their influence spheres (§3), pulls the vessels (§4), publishes the warp bank (§5). A prism
+inside their influence spheres (§3), pulls the vessels (§4), publishes the tidal bank (§5). A prism
 whose centre crosses a horizon is consumed into the singularity; a vessel inside one is held. That is
 the whole feature; everything below is how each part keeps the project's laws.
 
@@ -48,14 +52,30 @@ makes near-horizon mass SPIRAL IN rather than orbit forever the way `1/r` would 
 `r_s` is floored (`PoleGuardFraction`, a quarter of the horizon): a body crossing the horizon is
 captured on that step, so the floor only bounds its last kick before it vanishes.
 
-**Frame dragging — a Lense–Thirring-style coupling.** A rotating hole drags the inertial frame around
-it. The dragged frame at distance `d` turns at `frameDragging × Ω_circular(d)` about the hole's spin
-axis (and travels with the hole), and every body is viscously coupled to it at `frameDragCoupling` per
-second. With the fraction near 1, mass at rest is swept into orbits and the far field "keeps turning";
-below 1 it spirals in. Without it every body at rest falls on a radial line — correct and dull. With
-more than one hole the DOMINANT well's frame is used (the one pulling hardest at that point), for the
-same reason the warp picks one slot: two frames about two centres do not add up to a frame about
-anything.
+**Frame dragging — Lense–Thirring.** A rotating hole drags space around with it: a body with no
+angular momentum of its own is carried around the spin axis at the frame's angular velocity
+
+```
+ω(r) = 2GJ / (c² r³) = a* · c · r_s² / (2 r³),      c = √(2GM / r_s)
+```
+
+— `a*` the dimensionless spin (`spin`, 0 = Schwarzschild, ≤ 0.998), `c` the light speed the
+horizon implies (`r_s = 2GM/c²`), so `ω(r_s) = a*·c/(2 r_s)`, falling as `1/r³`. It is applied the
+way GR applies it: the dragged frame ADVECTS the position (`p += (v + ω × r)·h`), it does not push
+the velocity. A body at rest therefore falls almost radially far out and is WOUND around the hole
+only as it nears the horizon — the infall twists the way the hole spins, and still ends inside it.
+`ω` is held at its horizon value inside the horizon (where the body is captured anyway). With more
+than one hole the DOMINANT well's frame is used (the one pulling hardest at that point): two frames
+about two centres do not add up to a frame about anything. A hole's own velocity drags nothing — a
+moving hole pulls; it does not tow the space around it. (The first version coupled every body
+viscously to a frame turning at a fraction of the CIRCULAR speed, which swept mass at rest into
+orbit from hundreds of units out. That is a fluid's swirl, not gravity; retired 2026-10-08, §10.)
+
+**Orbits come from angular momentum, as they do in reality.** A hole spawned at rest in a field at
+rest swallows a column of mass that falls straight in, wound near the end. Mass ORBITS when it has
+sideways motion relative to the hole: a moving hole (`blackhole move`, the test scene's fly-through,
+`spawnVelocity`) gives every body it reaches exactly that, so a hole driven through a field leaves a
+wake of captured, orbiting and flung mass.
 
 **Every body is a test particle.** No mass appears in any equation because trajectories do not
 depend on it (the equivalence principle). So a heavy prism and a light one fly the same path, there is
@@ -70,10 +90,15 @@ up to `maxSubsteps`, so the pole is integrated rather than jumped.
 across the arena forever, and a field with no holes left goes quiet. There is no decay, TTL or culler:
 the only ways a prism leaves the simulation are a horizon or settling.
 
-Design numbers at the shipped config (`gmPerStrength 20000`, `horizonPerStrength 2`): a strength-10
-hole has `GM = 2×10⁵`, `r_s = 20`, circular speed ~45 u/s at 100 u and escape speed ~70 u/s there — a
-cruising Squirrel (54 u/s) is caught at that range, a boosting vessel is not. The influence radius is
-`r_s + √(GM / a_floor)` = ~600 u at the 0.6 u/s² floor, capped at 900. Strength 50 is a cell-eater.
+Design numbers at the shipped config (`gmPerStrength 2000`, `horizonPerStrength 2`, `spin 0.9`): a
+strength-10 hole has `GM = 2×10⁴`, `r_s = 20`, the innermost stable orbit at 60 u (circular speed
+27 u/s there), circular speed ~18 u/s at 100 u and escape speed ~22 u/s there — a cruising vessel
+gets away; mass at rest does not. The influence radius is `r_s + √(GM / a_floor)` = ~200 u at the
+0.6 u/s² floor, capped at 900. The implied light speed is `√(2 × gmPerStrength / horizonPerStrength)`
+= 44.7 u/s for every strength (it is a property of the config's ratio, not of a hole) — a unit, not a
+speed limit: nothing in the game is capped by it, and it enters only the frame-drag rate. The frame
+turns at 1.0 rad/s at the horizon of a strength-10 hole, 0.13 rad/s at 2 r_s, 0.04 at 3 r_s; a
+strength-20 hole turns half as fast at its own (twice as large) horizon.
 
 ## 3. The prism mover (`BlackHoleGravityField`) — live gameplay data, not animation
 
@@ -113,8 +138,8 @@ can destroy it, so pulling it would pile it unkillable at the singularity), a pr
 (its transform is not final), one with no index slot, one whose entity was born on a non-Prism
 prototype (debris, husks — their flight is a clock stamp), and a creature's or a plant's body prism
 (`HealthPrism` — posed by its rig every frame; pulling it alone would tear the body off a creature
-that keeps swimming, see §8). A body starts at rest; the frame dragging
-gives it its swirl.
+that keeps swimming, see §8). A body starts at rest; it orbits only with the angular momentum
+it is given (a moving hole), and the frame dragging winds its infall (§2).
 
 **Two verdicts leave the set.** CAPTURED (the centre crossed a horizon): the prism is consumed through
 `Prism.Consume(hole.transform, Domains.Blue, "Black Hole", devastate: true)` — devastate because a
@@ -151,62 +176,89 @@ entry given this frame's `dt` as its duration is consumed exactly once on steady
 shift handed over is `v_g / 1.5`; on a jittery frame an entry can survive into a second application
 at ~0.5× — bounded noise, the price of the sanctioned channel over a direct position write.
 
-## 5. The warp (`BlackHoleWarp` + `PrismGravityWarp.hlsl`) — photons only, a §4.7 global
+## 5. Spaghettification (`BlackHoleWarp` + `PrismGravityWarp.hlsl`) — photons only, a §4.7 global
 
-Mass near a horizon is drawn tidally stretched toward the singularity: the face of a prism nearer
-the hole is pulled harder than the face farther from it, so the prism elongates along the radial
-and squeezes across it — spaghettification. It is the hole's signature on screen (the horizon is a
-black sphere; what the player SEES is the mass bending around it), it sits on top of the field,
-and it changes nothing a gameplay query can read.
-
-**Legality, in the two lines a reviewer will ask for.** (1) "Where is the hole relative to this
-prism" is live, per-frame data — the hole moves and the prisms move — so it can never be a per-prism
-stamp, and a per-prism CPU material write is what the law forbids; the sanctioned shape is a GLOBAL
-uniform (§4.7): O(1) writes per frame that every prism reads. (2) The high-poly residency swap near a
-horizon is a STATE CHANGE (final at the instant it is applied, like a shield engaging), performed
-strictly outside the volume the warp can move anything (`warpResidencyMargin`), budgeted
-(`warpMaxResidentPrisms` 32 × `warpSubdivision` 12 → 55k triangles, nearest-to-horizon first, since
-the field decays with distance), through the platform's shared-mesh handoff and `HighPolyPrismMesh`.
-The prism-morph skill's five admission questions: live data (yes — a global); bounded residency (yes);
-smooth motion (a radial field on a dense mesh); closed-form map with an analytic derivative (below);
-gameplay state unchanged (yes — the FIELD moves mass, the warp moves photons; they are separate
-systems so the bend can be tuned or switched off without touching the physics).
-
-**The map**, with `U` the centre, `r_s` the horizon, `d = |p − U|`, `s = d − r_s`:
+A body near a hole is pulled harder on its near side than its far side, so it is STRETCHED along the
+line to the hole and SQUEEZED across it. The tidal tensor a freely falling body feels near a
+Schwarzschild hole, in its own frame, is exactly
 
 ```
-p' = U + dir · f(d),      f(d) = d · (1 − g(d)),      g(d) = w · k(s)
-k(s) = (1 − smoothstep(0, 1, s / reach))^e    (k = 1 inside the horizon, 0 at the reach)
+T = (GM / r³) · diag(+2, −1, −1)          radial, transverse, transverse
 ```
 
-A STRAIN form — the displacement is a fraction of the distance, not an absolute offset (the skill's
-finding (c)): the centre is a fixed point, the map is singularity-free, and a hole twice the size
-warps twice the mass twice as far, which is what "stronger hole" should mean on screen. The price is
-`w < 1`, which the config clamps (`warpStrength` ≤ 0.95). It never folds (`f' = (1 − g) − d·g' ≥ 1 − g > 0`)
-and never crosses the centre (`f > 0`). And the tidal claim is a theorem of the map, not a tuning:
-the radial stretch `a = f'(d)` exceeds the tangential stretch `b = f/d = 1 − g` wherever the falloff is
-not flat, because `g' ≤ 0`. The normal is the analytic inverse-transpose,
-`n' = normalize(dir·(n·dir)/a + (n − dir·(n·dir))/b)`, proven by CONVERGENCE RATE (halving the patch
-quarters the error) with a negative control that neuters the radial term and plateaus.
+— a textbook GR result (the Riemann components in a radially infalling orthonormal frame): finite at
+the horizon, falling as `1/r³`, trace-free. A body that yields to that tide for a response time `τ`
+(`tidalResponseSeconds` — how soft it is) is drawn with the log-stretch
+
+```
+ε = GM · τ² / r³,      radial × e^ε,      transverse × e^(−ε/2)
+```
+
+applied to each prism as ONE affine map about its own centre (its object origin), along the line from
+the hole to that centre. So:
+
+- **Strongest at the horizon** (`ε_h = GM·τ²/r_s³`), 8× weaker at twice the distance.
+- **Volume is conserved exactly** (`e^ε · e^(−ε/2) · e^(−ε/2) = 1`) — tides deform, they do not compress.
+- **Small holes shred harder.** `r_s` grows with the mass, so `ε_h ∝ 1/M²`, as in reality — a
+  stellar-mass hole spaghettifies you outside its horizon, a supermassive one swallows you whole.
+- **It never folds**: every stretch is positive. **The centre stays put**: tides deform, and the
+  gravity field (§3) is what moves mass — this is not a second pull.
+- **One affine map per prism** keeps flat faces flat, so the authored 24-triangle prism is exact —
+  **no high-poly mesh, no residency, no per-frame spatial query**. The normal is the map's inverse
+  transpose, also exact.
+
+At the shipped config (`τ` 0.9 s, strength 10, `r_s` 20) a prism is drawn ×6.4 long and ×0.40 wide at
+the horizon (the law says ×7.6; the ceiling below takes the rest), ×1.8 long at 1.5 r_s, ×1.3 at
+2 r_s and ×1.08 at 3 r_s. A strength-5 hole draws needles at its horizon (at the ×12 ceiling) and
+×2.7 at 2 r_s; a strength-40 hole only ×1.13 at its horizon.
+
+**Two shaping terms, both confined to where the physics is not visible.** The **ceiling**
+`maxTidalStretch` eases ε into `C = ln(maxStretch)` through a 4-norm soft minimum,
+`ε' = ε / (1 + (ε/C)⁴)^¼` — the law to 0.1% up to a quarter of the ceiling and 1.5% at half of it, and
+never past it — so the horizon of a tiny hole draws a long needle, not a line to infinity. The
+**reach** `warpReachMultiplier` bounds which prisms are evaluated at all: the tide is drawn exactly
+across the inner half of the shell and fades (C1) to zero across the outer half, where it is already
+≤ 1/43 of the horizon's at the shipped reach (6 r_s). The transverse squeeze always keeps ε'/2, so
+volume stays conserved through both.
+
+**Legality, in the line a reviewer will ask for.** "Where is the hole relative to this prism" is
+live, per-frame data — the hole moves and the prisms move — so it can never be a per-prism stamp,
+and a per-prism CPU material write is what the law forbids; the sanctioned shape is a GLOBAL uniform
+(§4.7): O(1) writes per frame that every prism reads. The prism-morph skill's admission questions:
+live data (yes — a global); residency (none needed — affine per prism); closed-form map with an
+analytic normal (above); gameplay state unchanged (yes — the FIELD moves mass, this moves photons;
+two systems, so the stretch can be tuned or switched off without touching the physics).
+
+**Superseded 2026-10-08.** The first cut slid every VERTEX toward the singularity by a fraction of its
+distance (`p' = U + dir·d·(1 − w·k(s))`, on a 32 × s12 high-poly residency). That was a second, invented
+pull on top of the real one, and its falloff — flat at the horizon — put the stretch's maximum
+mid-reach and ZERO at the horizon, the opposite of a tide (§10).
 
 **Splice order.** The node sits IMMEDIATELY BEFORE the cradle on both live graphs (BlockGraph,
 ExplodingBlockGraph; SuctionGraph excluded — consumed mass is drawn by the implosion carrier): the
-cradle must stay LAST (its header says why), and the warp must see every earlier stage's position.
+cradle must stay LAST (its header says why), and the stretch must see every earlier stage's position.
 A separate node rather than a map kind inside `PrismCradle.hlsl`, with the skill's "one node, many
 map kinds" rule weighed: the black hole is a world object, the cradle is one vessel's ride feel, the
 two never legitimately fight over a vertex, and the structural morph walk
 (`Tools/Shaders/prism_vertex_chain.py`) already lets every sibling wirer see past any number of
-morphs — all sixteen `wire_*.py --check` pass with the warp in place. Cost: one integer compare per
-vertex when no hole is live. The wirer finds its anchor STRUCTURALLY (the morph that feeds the vertex
-blocks), never by name; `PrismClockWiringValidator`'s `CradleEdges` now assert the cradle is fed by
-the warp and `GravityWarpEdges` assert the warp's own feeders.
+morphs. Its signature `(Position, Normal) → (OutPosition, OutNormal)` did not change in the re-cut,
+so neither did the wiring. Cost: one integer compare per vertex when no hole is live; with one live,
+a few transforms, two square roots and two exps per vertex. The wirer finds its anchor STRUCTURALLY
+(the morph that feeds the vertex blocks), never by name; `PrismClockWiringValidator`'s `CradleEdges`
+assert the cradle is fed by the node and `GravityWarpEdges` assert the node's own feeders.
 
 **The bank**: `_PrismGravityWarpCentre[4]` (xyz centre, w horizon), `_PrismGravityWarpWeight[4]`
-(x strain, eased by the hole's `WarpWeight`; y reach), `_PrismGravityWarpParams` (exponent, live count
-— the master sentinel). File-scope, outside every CBUFFER, published once per frame by the one driver,
-OFF state published at `BeforeSceneLoad` and on teardown. A despawning hole keeps a falling weight
-until its ease completes, so the bend lets go instead of snapping; the field has already stopped
-pulling by then (only the photons ease — the split every §4.7 global keeps).
+(x `GM·τ²`, eased by the hole's `WarpWeight`; y reach), `_PrismGravityWarpParams` (ln of the stretch
+ceiling, live count — the master sentinel). File-scope, outside every CBUFFER, published once per
+frame by the one driver, OFF state published at `BeforeSceneLoad` and on teardown. A despawning hole
+keeps a falling weight until its ease completes, so the stretch lets go instead of snapping; the
+field has already stopped pulling by then (only the photons ease — the split every §4.7 global
+keeps). With more than one hole, the hole with the larger tide at a prism's centre stretches it.
+
+**Stated imprecision.** Entities Graphics culls by a prism's authored bounds, which a per-frame global
+cannot grow, so a prism stretched ×N whose bounds are just off-screen can lose a needle tip that
+should show. The tensor is the radial-free-fall frame's; an orbiting prism feels the same tensor to
+the accuracy that matters on screen.
 
 ## 5.1 The lens — what the player SEES (`BlackHoleLens` + `BlackHoleLens.shader` / `.hlsl`)
 
@@ -224,7 +276,7 @@ nothing else — the shadow and the bent background:
   cross-section, not the horizon.
 
 **There is no accretion disc, by decision (2026-10-07).** What orbits and spirals into the hole is the
-REAL mass — the prisms the gravity field moves (§3) and the warp spaghettifies (§5) — so the "disc"
+REAL mass — the prisms the gravity field moves (§3) and the tides spaghettify (§5) — so the "disc"
 a player sees is the hole's own swirl of matter, not a painting. A synthetic disc was built into the
 lens (a thin Shakura–Sunyaev disc in the spin plane, relativistic Doppler beaming and redshift,
 Keplerian spiral streaks, its density fed by every capture) and went through two rounds in the
@@ -320,13 +372,14 @@ blackhole here <strength>                        spawn at the camera
 blackhole size <id> <r_s>                        resize a live hole (event-horizon radius; 0 = from strength)
 blackhole move <id> <vx> <vy> <vz>               set a hole's velocity (drive it through mass)
 blackhole strength <id> <value>                  retune a live hole's pull
-blackhole spin <id> <ax> <ay> <az>               set its frame-dragging axis
+blackhole spin <id> <ax> <ay> <az>               set its spin axis (Lense–Thirring frame dragging)
 blackhole list                                   every live hole and its numbers
 blackhole despawn <id> | all                     eased release, then destroy
 bh ...  /  black hole ...                        aliases ("black hole tool on" works as typed)
 ```
 
-The HUD's `BlackHole` section shows live holes, bodies, captures, warp residents and pulled vessels.
+The HUD's `BlackHole` section shows live holes, bodies, captures, how many holes are stretching
+prisms, and pulled vessels.
 
 ### 6.1 The Black Hole tool (`BlackHoleTool`, `BlackHoleToolModel`)
 
@@ -346,7 +399,7 @@ what is on the asset is what spawns — from the tool, or from `blackhole spawn`
 - **LIVE HOLES** lists each hole with **Retune** (apply the current spawn strength and size to it)
   and **Despawn**.
 - **Config ▾** opens a second panel, docked to the left, with EVERY other field of the asset —
-  physics, budgets, vessels, warp, lens — grouped by its `[Header]`, a slider wherever the field has a
+  physics, budgets, vessels, spaghettification, lens — grouped by its `[Header]`, a slider wherever the field has a
   `[Range]`, an input otherwise, clamped to its own `[Range]` / `[Min]`; hovering a label shows the
   field's `[Tooltip]`. It is generated from the SO by reflection (`BlackHoleToolModel.EditableFields`),
   so a field added to the config appears here with no change to the tool. **Select asset** (Editor)
@@ -361,11 +414,13 @@ project's next save otherwise.
 Horizon Radius** in the tool (or `blackhole size <id> <r_s>` on a live one) for one hole, or
 **horizonPerStrength** / **minHorizonRadius** for every hole that derives its size from strength.
 What the player sees scales from r_s: the shadow is ~2.6 r_s, the lens bends out to
-**lensRadiusMultiplier** r_s, and the warp reaches **warpReachMultiplier** r_s.
+**lensRadiusMultiplier** r_s, and spaghettification is evaluated out to **warpReachMultiplier** r_s.
+How hard a hole of a given size shreds is `GM·τ²/r_s³` — a bigger hole at the same strength stretches
+LESS at its horizon (§5).
 
 **Proof.** `Tools/Build/black_hole_tool_harness/run.sh` compiles the SHIPPED `BlackHoleConfigSO.cs`
 and `BlackHoleToolModel.cs` (with a handful of `UnityEngine` stubs — the engine's reference DLLs have
-no method bodies) and runs them: the tool reaches all 33 config fields, every number is bounded, the
+no method bodies) and runs them: the tool reaches all 29 config fields, every number is bounded, the
 asset, the SO and the tool agree key for key and the asset loads through the model sane, the size
 helpers, the clamping, the labels and the switch — and two negative controls (a config with an
 unsupported field, an asset with a renamed key) fire. `BlackHoleToolTests` (edit mode) checks the
@@ -383,11 +438,13 @@ load Bootstrap Scene on Play**. Then:
    randomly rotated; the Cuboid/Spheroid button toggles the cut, `side`/`gap` resize it). Wait for
    **ready** — prisms register with the spatial index behind a budget, and only indexed prisms can
    be pulled.
-2. **Hole at centre** (strength from the field) — the field orbits (frame dragging), warps near the
-   horizon, and the inner mass spirals in and is consumed. The readout shows bodies / captured.
+2. **Hole at centre** (strength from the field) — the mass at rest falls in, wound the way the hole
+   spins as it nears the horizon, spaghettified on the way, and is consumed. The readout shows
+   bodies / captured.
 3. **Fly-through** — a strength-8 hole starts 150 u outside the field's −X edge and crosses it at
-   60 u/s, dragging mass along, bending what it passes, swallowing what it reaches, and retires
-   itself past the far edge.
+   60 u/s: relative to the hole, every prism it reaches is moving sideways, so this is where ORBITS
+   happen — mass is swung around, captured or flung, stretched as it passes the horizon — and it
+   retires itself past the far edge.
 4. **Despawn holes** / **Clear**.
 
 Console: `bhtest <total>` (near-cube field), `bhtest shape cuboid|spheroid`, `bhtest hole [strength]`,
@@ -428,18 +485,22 @@ fixed point, viewport round trip, wheel scale, shipped bindings).
   whole-body force on its locomotion — an ecology change (`/ecology`, the LOCKED principles) for a
   follow-up, not a per-prism one. Trails, cell environments and freestyle mass are all bodies.
 - **Pure-entity debris is not a body.** Explosion fragments fly on the clock stamp and are not pulled;
-  they ARE warped (the map is correct on any mesh), so a burst near a hole visibly leans into it.
+  they ARE stretched (each fragment about the prism it came from), so a burst near a hole is drawn
+  out toward it.
 - **No replication.** Each peer that spawns a hole runs it locally; prism bodies move on the machine
   that simulates them. Spawning is a console/test action today, not a networked game event.
 - **One worker per root** for the transform write-back only (above); the read and the integration
   are parallel. **Cell volume accounting** is not re-filed as prisms
   cross cells (the Ark's `NotifyCellChanged` cadence would be the pattern if a mode needs it).
-- **The look is a playtest away.** The harness proves the map is the map, the normal is its
-  derivative, nothing folds, nothing pops; whether spaghettification READS at these numbers is the
-  playtest's answer. If it comes back too subtle, the three budgets are `warpStrength` (how far),
-  `warpReachMultiplier` (how much mass) and `warpExponent` (where in the shell it concentrates) — and
-  the physics has its own: `frameDragging` for how much it orbits vs. plunges, `gmPerStrength` for
-  how hard it pulls.
+- **The look is a playtest away.** The harness proves the stretch is the tidal tensor, the normal is
+  its inverse transpose, nothing folds, nothing pops; whether spaghettification READS at these numbers
+  is the playtest's answer. The dials, all physical: `tidalResponseSeconds` (τ — how soft a prism is;
+  the stretch goes as τ²), `maxTidalStretch` (the needle a tiny hole draws), `warpReachMultiplier`
+  (how far out the tide is evaluated — it is invisible past ~3 r_s anyway); `spin` (how hard the
+  infall winds); `gmPerStrength` / `horizonPerStrength` (how hard it pulls and how big it is — and
+  since tides go as `GM/r_s³`, a smaller horizon at the same pull shreds much harder).
+- **Release damping is the one non-physical term.** Mass a hole flung clear is damped back to rest
+  outside every influence sphere, so the field settles instead of coasting forever (§2).
 
 ## 9. Verification record (2026-10-07)
 
@@ -496,6 +557,27 @@ Evidence, all run on the final tree:
 - The 8 Python C# gates: OK.
 - The Burst gates' negative control: the pre-fix kernels fail on the new `MathF.` rule.
 
+### 9.2 Third round (2026-10-08): made physical
+
+The artificial frame-drag swirl became Lense–Thirring advection (§2) and the vertex slide became the
+GR tidal stretch (§5); the slide's high-poly residency and its five config fields
+(`warpStrength`, `warpExponent`, `warpSubdivision`, `warpMaxResidentPrisms`, `warpResidencyMargin`)
+and the swirl's two (`frameDragging`, `frameDragCoupling`) are gone; `spin`, `tidalResponseSeconds` and
+`maxTidalStretch` are new. Nothing has been run in the editor (no `/verify-unity` in this session).
+Evidence, on the final tree:
+
+- `verify_prism_gravity_warp.py`: thirteen properties hold on the SHIPPED HLSL under clang++ — identity
+  ×2, centre fixed, the tensor measured number for number at 1.5–5 r_s (`+ε`, `−ε/2`, to 0.03%), `1/r³`
+  and `ε_h ∝ 1/M²` (4.00×), volume to 4e-5 at every strength, no fold, the ceiling reached and never
+  passed, the ceiling within 1.5% of the law at half of it, affine (flat faces flat), the normal
+  perpendicular to every stretched face (4e-5), linear ease, no seam, dominant slot — and the negative
+  control (normal correction off) fires at |cos| 0.95.
+- `BlackHolePhysicsTests`: the frame-drag claims rewritten for Lense–Thirring — `ω(r_s) = a*·c/(2r_s)`,
+  `1/r³`, held inside the horizon, zero with no spin and on the axis, and a body released at rest is
+  wound the way the hole spins and still captured, where a non-rotating hole's infall stays radial.
+  `BlackHoleTests`: the config's tidal law and its sanity. Written; to be run in the editor.
+- The rest of this round's gates are listed in its commit message.
+
 ## 10. Rejected alternatives (so they are not proposed again)
 
 - **A painted accretion disc** (thermal glow, Doppler beaming, fed by captures). Built, fixed once,
@@ -511,7 +593,13 @@ Evidence, all run on the final tree:
   re-aiming it reads as the ship steering itself. The velocity-shift channel is the sanctioned push.
 - **A map kind inside `PrismCradle.hlsl`** — considered against the skill's rule; a separate node won
   on ownership (world object vs. one vessel's feel) now that the morph walk is structural (§5).
-- **An absolute-offset warp** (`f = d − A·k`): the displacement would not scale with the hole, and a
-  strong hole's horizon would look no different from a weak one's. The strain form scales (§5).
-- **Summing the fields of two holes in the shader.** Not a radial field about anything; the analytic
-  normal stops being the derivative. One authority per vertex, like the cradle.
+- **A per-vertex slide toward the singularity** (the first cut, a radial strain `p' = U + dir·d·(1 − g)`,
+  and before it an absolute-offset form `f = d − A·k`). Both are a second pull that gravity does not
+  exert, and the strain's falloff put the stretch's maximum mid-reach and zero at the horizon. The tide
+  is affine per prism, exact on 24 triangles, and strongest where it should be (§5).
+- **A viscous swirl as "frame dragging"** (every body coupled to a frame turning at a fraction of the
+  circular speed). It swept mass at rest into orbit from far out — a whirlpool, not a spinning hole.
+  Lense–Thirring falls as `1/r³` and advects position; orbits come from angular momentum (§2).
+- **Summing the tides of two holes in the shader.** The tensors do add, but two stretch axes do not make
+  one stretch about a single axis, and the per-prism map would stop being a pure stretch. The larger
+  tide wins, as the larger pull wins in the integrator.

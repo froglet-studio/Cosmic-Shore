@@ -17,8 +17,7 @@ MonoBehaviour:
   minHorizonRadius: 1.5
   influenceAccelerationFloor: 0.6
   maxInfluenceRadius: 900
-  frameDragging: 0.8
-  frameDragCoupling: 0.6
+  spin: 0.9
   releaseDamping: 1.5
   releaseSpeed: 0.75
   maxSubsteps: 8
@@ -29,13 +28,10 @@ MonoBehaviour:
   vesselPullScale: 1
   maxVesselPullSpeed: 90
   warpEnabled: 1
-  warpStrength: 0.6
+  tidalResponseSeconds: 0.9
+  maxTidalStretch: 12
   warpReachMultiplier: 6
-  warpExponent: 2
   warpEaseSeconds: 0.5
-  warpSubdivision: 12
-  warpMaxResidentPrisms: 32
-  warpResidencyMargin: 3
   lensEnabled: 1
   lensRadiusMultiplier: 30
   lensFadeStart: 0.55

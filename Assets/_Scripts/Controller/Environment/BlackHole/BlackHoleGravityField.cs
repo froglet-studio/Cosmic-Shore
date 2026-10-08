@@ -181,7 +181,6 @@ namespace CosmicShore.Gameplay
                 Wells = wells,
                 Params = new BlackHolePhysics.StepParams
                 {
-                    FrameDragCoupling = config.FrameDragCoupling,
                     ReleaseDamping = config.ReleaseDamping,
                     ReleaseSpeed = config.ReleaseSpeed,
                     MaxSubsteps = config.MaxSubsteps,
@@ -278,7 +277,8 @@ namespace CosmicShore.Gameplay
 
         static bool TryAdmit(Prism p)
         {
-            // A body starts at REST relative to the world; the frame dragging gives it its swirl.
+            // A body starts at REST relative to the world: it orbits only with the angular momentum a
+            // moving hole gives it, and the frame dragging winds its infall (Docs/BLACK_HOLE.md §2).
             // Seating the component is the one structural-free write admission makes.
             if (!PrismRenderService.SetGravityBody(in p.RenderHandle, new GravityBody(), enabled: true))
                 return false;

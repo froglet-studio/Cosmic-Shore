@@ -465,16 +465,23 @@ The family is defined by four axes. A new member is a choice on each:
   over, outside rises to meet. The first member, and the reference implementation of the
   high-poly swap, the residency contract and the global-uniform bank.
 - **GRAVITY WARP** (black hole, `Docs/PRISM_ANIMATION.md` §4.7.4, `Docs/BLACK_HOLE.md` §5) —
-  *a placed world object · pucker toward a point (a radial STRAIN) · proximity to a horizon ·
-  32 × s12*. Mass near a black hole's horizon is drawn tidally stretched toward the singularity.
-  **Built 2026-10-07, not yet playtested.** Two things it added to the family: a member whose
-  SOURCE is not a vessel and whose source also MOVES the prisms (through the ordinary movers
-  contract, a separate system with a separate budget — the morph never reads anything the field
-  did not already make true); and a second node on the vertex chain, spliced immediately BEFORE
-  the cradle (the cradle stays last), anchored structurally on "the morph that feeds the vertex
-  blocks" — the rule-1 exception taken deliberately on ownership grounds, with all sixteen sibling
-  wirers passing. Its harness adds a *tidal* property (radial stretch > tangential stretch,
-  a theorem of `g' ≤ 0`) to the cradle's ten.
+  *a placed world object · the GR tidal stretch, one affine map per prism · proximity to a horizon ·
+  no residency*. Mass near a black hole's horizon is drawn spaghettified: log-stretch
+  `ε = GM·τ²/r³` along the line to the hole, `−ε/2` across it (the trace-free tidal tensor),
+  about each prism's own centre. **Built 2026-10-07, re-cut 2026-10-08, not yet playtested.** It
+  LEFT the residency half of the family on the re-cut: the first version was a per-vertex radial
+  STRAIN (`p' = U + dir·d·(1 − w·k(s))`, 32 × s12 residents), which slid mass toward the singularity
+  a second time on top of the real pull and — with `k` flat at the horizon — put the stretch's peak
+  mid-reach and ZERO at the horizon. The physics is one affine map per prism, which the authored
+  24-triangle prism draws exactly, so the dense mesh, the residency and its budget all went. **The
+  finding that transfers: before picking a per-vertex map, ask whether the effect is affine per
+  prism — if it is, the budget is zero and the normal is exact.** What it still adds to the family:
+  a SOURCE that is not a vessel and that also MOVES the prisms (through the movers contract, a
+  separate system — the morph never reads anything the field did not already make true); and a
+  second node on the vertex chain, spliced immediately BEFORE the cradle (the cradle stays last),
+  anchored structurally, all sixteen sibling wirers passing. Its harness measures the tensor number
+  for number, volume conservation, the ceiling, `ε_h ∝ 1/M²` and the inverse-transpose normal, with a
+  negative control that switches the normal correction off.
 
 **A neighbour, not a member: the Rhino sword's SLICE** (`Docs/PRISM_ANIMATION.md` §4.10). It is
 the admission test's question 1 answered "no" and still wanting the dense mesh — every input (the

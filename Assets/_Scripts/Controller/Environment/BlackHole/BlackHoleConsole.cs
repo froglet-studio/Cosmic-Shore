@@ -81,7 +81,7 @@ namespace CosmicShore.Gameplay
             DiagnosticsHUD.SetStat(StatsSection, "holes", n == 0
                 ? "none — cmd: blackhole tool on"
                 : $"{n} live, {BlackHoleGravityField.BodyCount:N0} bodies, {BlackHoleGravityField.CapturedTotal:N0} captured, " +
-                  $"{BlackHoleWarp.ResidentPrismCount} warp residents, {BlackHoleVesselPull.PulledVesselCount} vessels pulled");
+                  $"{BlackHoleWarp.LiveSlotCount} stretching, {BlackHoleVesselPull.PulledVesselCount} vessels pulled");
         }
 
         static bool TryFloat(string s, out float v) =>

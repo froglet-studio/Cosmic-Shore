@@ -16,12 +16,17 @@ namespace CosmicShore.Gameplay
     /// <c>a = -GM / (r - r_s)^2 r̂</c>; the pole at the horizon is floored so a body that is
     /// about to be captured is integrated rather than flung to infinity by one bad step.</para>
     ///
-    /// <para><b>Frame dragging is a Lense-Thirring-style coupling</b>: a rotating hole drags the
-    /// inertial frame around it, and mass is viscously coupled to that rotating frame. The frame
-    /// turns at a fraction of the local circular-orbit rate, so with the fraction near 1 mass at
-    /// rest is swept into orbits (the far field "keeps rotating"), and below 1 it spirals in.
-    /// It is what gives a static prism field angular momentum; without it every body at rest
-    /// falls on a radial line, which is correct and dull.</para>
+    /// <para><b>Frame dragging is Lense-Thirring</b>: a hole with dimensionless spin <c>a*</c> turns
+    /// the local inertial frame at <c>ω(r) = 2GJ / (c² r³) = a*·c·r_s² / (2 r³)</c> (weak-field Kerr,
+    /// with <c>c² = 2GM / r_s</c> from the horizon's own definition), about its spin axis. It is
+    /// strong only within a few horizon radii — <c>1/r³</c> — and it twists, it does not swirl:
+    /// a body's POSITION is advected by the frame (<c>dx/dt = v + ω × r</c>) while gravity acts on
+    /// <c>v</c>, which is exactly the kinematics of a zero-angular-momentum body (its angular
+    /// velocity is ω). So mass at rest falls in nearly radially and winds up only in its last few
+    /// horizon radii, as it does around a real spinning hole; mass that ARRIVES with angular
+    /// momentum (a moving hole, a moving prism) orbits, slingshots or plunges by the potential.
+    /// The first version coupled every body viscously to a frame turning at 80% of the local
+    /// ORBITAL rate at every radius — an invented swirl, removed 2026-10-08 (Docs/BLACK_HOLE.md §2).</para>
     ///
     /// Every body is a test particle. There is no mass in any equation below because
     /// trajectories do not depend on it.
@@ -33,8 +38,6 @@ namespace CosmicShore.Gameplay
         public struct Well
         {
             public float3 Position;
-            /// <summary>The hole's own velocity, u/s — the dragged frame moves with the hole.</summary>
-            public float3 Velocity;
             /// <summary>Gravitational parameter GM, u^3/s^2.</summary>
             public float GM;
             /// <summary>Event-horizon radius r_s, u. Inside it a body is captured.</summary>
@@ -43,8 +46,11 @@ namespace CosmicShore.Gameplay
             public float InfluenceRadius;
             /// <summary>Unit axis the dragged frame rotates about (right-hand rule).</summary>
             public float3 SpinAxis;
-            /// <summary>Frame rotation as a fraction of the local circular-orbit angular rate.</summary>
-            public float FrameDragging;
+            /// <summary>
+            /// Lense-Thirring coefficient, u^3/s: the frame turns at <c>FrameDrag / r³</c> rad/s.
+            /// <see cref="FrameDragCoefficient"/> builds it from GM, r_s and the spin.
+            /// </summary>
+            public float FrameDrag;
         }
 
         /// <summary>
@@ -104,23 +110,45 @@ namespace CosmicShore.Gameplay
         public static float IscoRadius(in Horizon h) => 3f * h.Radius;
 
         /// <summary>
-        /// Velocity of the dragged frame at <paramref name="p"/>: the hole's own motion plus a
-        /// rotation about its spin axis at <see cref="Well.FrameDragging"/> × the local circular
-        /// angular rate. Zero rotation on the axis itself (there is no tangent there).
+        /// The speed of light the horizon implies: <c>r_s = 2GM / c²</c>, so <c>c = √(2GM / r_s)</c>.
+        /// The game's numbers are free to choose GM and r_s; this keeps every relativistic
+        /// formula consistent with the pair it was given.
+        /// </summary>
+        public static float LightSpeed(float gm, float horizonRadius) =>
+            math.sqrt(2f * math.max(gm, 0f) / math.max(horizonRadius, 1e-3f));
+
+        /// <summary>
+        /// The Lense-Thirring coefficient <c>K</c> of a hole with dimensionless spin
+        /// <paramref name="spin"/> (a*, 0 = Schwarzschild, ≤ 0.998): the frame turns at
+        /// <c>ω(r) = K / r³</c> with <c>K = 2GJ/c² = a*·c·r_s² / 2</c>.
+        /// </summary>
+        public static float FrameDragCoefficient(float gm, float horizonRadius, float spin) =>
+            math.clamp(spin, 0f, 0.998f) * LightSpeed(gm, horizonRadius) * horizonRadius * horizonRadius * 0.5f;
+
+        /// <summary>
+        /// Angular velocity of the dragged frame at distance <paramref name="d"/>, rad/s —
+        /// <c>FrameDrag / d³</c>, evaluated no closer than the horizon (inside it a body is
+        /// captured, and the weak-field law is not asked to describe what it cannot).
+        /// </summary>
+        public static float FrameAngularVelocity(float d, in Well w) =>
+            w.FrameDrag <= 0f ? 0f : w.FrameDrag / math.pow(math.max(d, w.Horizon.Radius), 3f);
+
+        /// <summary>
+        /// Velocity of the dragged frame at <paramref name="p"/>: a rotation about the spin axis at
+        /// <see cref="FrameAngularVelocity"/>. Zero on the axis itself (there is no tangent there)
+        /// and zero for a non-rotating hole. A moving hole drags nothing along with it — it pulls.
         /// </summary>
         public static float3 FrameVelocity(in float3 p, in Well w)
         {
             float3 r = p - w.Position;
             float d = math.length(r);
-            if (!(d > 1e-6f) || w.FrameDragging <= 0f) return w.Velocity;
-            float omega = w.FrameDragging * CircularSpeed(d, w.GM, w.Horizon) / d;
-            return w.Velocity + math.cross(w.SpinAxis, r) * omega;
+            if (!(d > 1e-6f) || w.FrameDrag <= 0f) return float3.zero;
+            return math.cross(w.SpinAxis, r) * FrameAngularVelocity(d, w);
         }
 
         /// <summary>Everything one integration step reads besides the wells.</summary>
         public struct StepParams
         {
-            public float FrameDragCoupling;
             public float ReleaseDamping;
             public float ReleaseSpeed;
             public int MaxSubsteps;
@@ -137,8 +165,9 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Advance one test body by <paramref name="dt"/> under every well in
         /// <paramref name="wells"/>. Semi-implicit Euler, substepped near a horizon so the pole is
-        /// integrated and not jumped. Returns the verdict; <paramref name="capturedBy"/> names the
-        /// well on capture.
+        /// integrated and not jumped. Gravity (every well, summed) acts on the velocity; the
+        /// dominant well's dragged frame advects the position (Lense-Thirring, see the class
+        /// summary). Returns the verdict; <paramref name="capturedBy"/> names the well on capture.
         ///
         /// A body outside EVERY well's influence sphere is damped toward rest and released once it
         /// is slower than the release speed — so mass a hole flung clear settles instead of
@@ -194,20 +223,16 @@ namespace CosmicShore.Gameplay
                     a += ai;
                 }
 
-                // Frame dragging: a viscous coupling toward the dominant well's rotating frame.
-                // Dominant rather than summed, for the same reason the warp picks one slot: two
-                // frames rotating about two centres do not add up to a frame about anything.
-                if (dominant >= 0 && prm.FrameDragCoupling > 0f)
-                {
-                    float3 vf = FrameVelocity(p, wells[dominant]);
-                    a += (vf - v) * prm.FrameDragCoupling;
-                }
-
                 if (!inside && prm.ReleaseDamping > 0f)
                     v *= math.exp(-prm.ReleaseDamping * h);
 
                 v += a * h;
-                p += v * h;
+
+                // Frame dragging advects the POSITION (a zero-angular-momentum body turns with the
+                // frame at ω). Dominant well rather than summed: two frames rotating about two
+                // centres do not add up to a frame about anything.
+                float3 frame = dominant >= 0 ? FrameVelocity(p, wells[dominant]) : float3.zero;
+                p += (v + frame) * h;
             }
 
             if (!inside && math.lengthsq(v) < prm.ReleaseSpeed * prm.ReleaseSpeed)

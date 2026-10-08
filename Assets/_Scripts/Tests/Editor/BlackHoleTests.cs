@@ -191,12 +191,12 @@ namespace CosmicShore.Tests
         {
             var config = LoadConfig();
             Assert.IsTrue(config.IsSane, "BlackHoleConfig is not sane: the registry refuses every spawn and the shader treats the bank as OFF.");
-            Assert.Less(config.WarpStrength, 1f,
-                "BlackHoleConfig.WarpStrength is 1 or more — the horizon would map onto the centre and the map folds.");
             Assert.Greater(config.WarpReachMultiplier, 1f,
-                "BlackHoleConfig.WarpReachMultiplier is 1 or less — the warp has no shell to bend.");
-            Assert.GreaterOrEqual(config.WarpExponent, 1f,
-                "BlackHoleConfig.WarpExponent below 1 puts a crease at exactly the reach.");
+                "BlackHoleConfig.WarpReachMultiplier is 1 or less — the tide has no shell to fade across.");
+            Assert.Greater(config.MaxTidalStretch, 1f,
+                "BlackHoleConfig.MaxTidalStretch is 1 or less — the ceiling would forbid any stretch at all.");
+            Assert.GreaterOrEqual(config.TidalResponseSeconds, 0f);
+            Assert.That(config.Spin, Is.InRange(0f, 0.998f), "a* outside [0, 0.998] is not a black hole.");
             Assert.LessOrEqual(config.MaxBlackHoles, BlackHoleWarp.Slots,
                 "BlackHoleConfig.MaxBlackHoles exceeds the warp bank — a hole past the bank pulls mass the shader cannot bend around.");
 
@@ -211,19 +211,23 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Config_ResidencySwapIsInvisibleAndBudgeted()
+        public void Config_TidesAreTheTidalTensor()
         {
+            // The coefficient the bank publishes is GM·τ², so the log-stretch is GM·τ²/d³: strongest
+            // at the horizon, 8× weaker at twice the distance, and — because the horizon grows with
+            // the mass — weaker at a big hole's horizon than at a small one's (Docs/BLACK_HOLE.md §5).
             var config = LoadConfig();
-            Assert.Greater(config.WarpResidencyMargin, 0f,
-                "BlackHoleConfig.WarpResidencyMargin is 0 — the mesh swap would happen at exactly the reach, " +
-                "a coin toss whether the geometry change is visible.");
-            Assert.Greater(config.WarpMaxResidentPrisms, 0,
-                "BlackHoleConfig.WarpMaxResidentPrisms is 0 — the warp only ever runs on the authored 24-triangle prism.");
-            Assert.LessOrEqual(config.WarpMaxResidentPrisms, 64,
-                "BlackHoleConfig.WarpMaxResidentPrisms is above 64 — 'a handful of prisms' is what makes the high-poly swap affordable.");
-            long tris = (long)config.WarpMaxResidentPrisms * config.WarpSubdivision * config.WarpSubdivision * 2 * 6;
-            Assert.Less(tris, 200000,
-                $"The warp residency budget is {tris} triangles — lower WarpMaxResidentPrisms or WarpSubdivision.");
+            float gm = config.GM(10f), rs = config.HorizonRadius(10f);
+            float tau = config.TidalResponseSeconds;
+            Assert.AreEqual(gm * tau * tau / (rs * rs * rs), config.TidalLogStretch(gm, rs), 1e-4f);
+            if (tau > 0f)
+            {
+                float atHorizon = config.TidalLogStretch(gm, rs);
+                Assert.AreEqual(atHorizon / 8f, config.TidalLogStretch(gm, 2f * rs), atHorizon * 1e-4f);
+                Assert.Greater(config.TidalLogStretch(config.GM(10f), config.HorizonRadius(10f)),
+                    config.TidalLogStretch(config.GM(40f), config.HorizonRadius(40f)),
+                    "a bigger hole stretches harder at its own horizon — tides at the horizon scale as 1/M².");
+            }
             Assert.Greater(config.MaxBodies, 0, "BlackHoleConfig.MaxBodies is 0 — no prism can ever be pulled.");
         }
 

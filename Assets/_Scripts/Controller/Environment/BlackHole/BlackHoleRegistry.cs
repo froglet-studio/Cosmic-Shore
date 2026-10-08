@@ -72,7 +72,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Spawn a hole of <paramref name="strength"/> at <paramref name="position"/>. Returns
         /// null (with a warning) past the config's hole budget — the shader bank and the job's
-        /// well list are both sized to it, and a hole the warp cannot bend around is not one the
+        /// well list are both sized to it, and a hole whose tides the shader cannot draw is not one the
         /// field should pull toward either.
         /// </summary>
         public static BlackHole Spawn(Vector3 position, float strength, Vector3 velocity = default, Vector3? spinAxis = null,
@@ -209,10 +209,10 @@ namespace CosmicShore.Gameplay
                 _nextReport = Time.unscaledTime + 1f;
                 if (_holes.Count == 0)
                 {
-                    if (BlackHoleGravityField.BodyCount > 0 || BlackHoleWarp.ResidentPrismCount > 0)
+                    if (BlackHoleGravityField.BodyCount > 0 || BlackHoleWarp.IsActive)
                         CSDebug.LogVerbose(CSLogChannel.BlackHole,
                             $"[BlackHole] idle: no holes live; {BlackHoleGravityField.BodyCount} bodies coasting to release, " +
-                            $"{BlackHoleWarp.ResidentPrismCount} warp residents releasing");
+                            $"{BlackHoleWarp.LiveSlotCount} holes still easing their stretch out");
                 }
                 else
                 {
@@ -225,7 +225,7 @@ namespace CosmicShore.Gameplay
                         sb.Append($"#{h.Id} S{h.Strength:F1} rs {h.HorizonRadius:F1} inf {h.InfluenceRadius:F0} w {h.WarpWeight:F2} at {h.transform.position}; ");
                     }
                     sb.Append($"bodies {BlackHoleGravityField.BodyCount} (captured {BlackHoleGravityField.CapturedThisSecond}/s, " +
-                              $"total {BlackHoleGravityField.CapturedTotal}), warp residents {BlackHoleWarp.ResidentPrismCount}, " +
+                              $"total {BlackHoleGravityField.CapturedTotal}), stretching holes {BlackHoleWarp.LiveSlotCount}, " +
                               $"vessels pulled {BlackHoleVesselPull.PulledVesselCount}");
                     CSDebug.LogVerbose(CSLogChannel.BlackHole, sb.ToString());
                 }
@@ -282,9 +282,8 @@ namespace CosmicShore.Gameplay
             void OnDisable()
             {
                 // A teardown, not a domain reload: the prisms are still alive here, so hand every
-                // body and every resident its own state back rather than orphaning it.
+                // body its own state back rather than orphaning it, and stop the stretch.
                 BlackHoleGravityField.ReleaseAll();
-                BlackHoleWarp.ReleaseAllResidents();
                 BlackHoleWarp.PublishOff();
                 if (_driver == this) _driver = null;
             }

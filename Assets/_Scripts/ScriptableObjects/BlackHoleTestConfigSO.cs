@@ -83,7 +83,7 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] private float flyMargin = 150f;
 
         [Tooltip("Spin axis for holes spawned by this rig. +Z (toward the camera) makes the frame " +
-                 "dragging swirl the field in the camera's own plane, where it reads best.")]
+                 "dragging wind the infall in the camera's own plane, where it reads best.")]
         [SerializeField] private Vector3 spinAxis = Vector3.forward;
 
         [Header("Camera")]

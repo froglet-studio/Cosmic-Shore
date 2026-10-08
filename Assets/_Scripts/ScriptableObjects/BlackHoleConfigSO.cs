@@ -15,9 +15,9 @@ namespace CosmicShore.ScriptableObjects
     /// simulated at all) follows from GM and r_s plus the acceleration floor below which a pull is
     /// not worth a body.
     ///
-    /// The field moves mass (live gameplay data — the movers contract) and the WARP bends what is
-    /// drawn (a §4.7 global uniform, photons only); the two halves are tuned separately below and
-    /// the second never changes anything the first simulates.
+    /// The field moves mass (live gameplay data — the movers contract) and SPAGHETTIFICATION draws
+    /// what its tides do to that mass (a §4.7 global uniform, photons only); the two halves are tuned
+    /// separately below and the second never changes anything the first simulates.
     ///
     /// Place the asset at <c>Resources/BlackHoleConfig</c>. With no asset the defaults below
     /// apply, so a spawn works with nothing authored.
@@ -56,19 +56,14 @@ namespace CosmicShore.ScriptableObjects
         [Min(1f)]
         [SerializeField] float maxInfluenceRadius = 900f;
 
-        [Tooltip("Frame dragging (Lense-Thirring): how fast the hole's rotating spacetime carries mass " +
-                 "around it, as a fraction of the local circular-orbit angular rate. 0 = a static hole " +
-                 "(everything at rest falls straight in); 1 = the dragged frame co-rotates at orbital " +
-                 "speed, so mass is swept into orbits and the far field keeps turning instead of " +
-                 "plunging. Between the two mass spirals in.")]
-        [Range(0f, 1.5f)]
-        [SerializeField] float frameDragging = 0.8f;
-
-        [Tooltip("How quickly a body's velocity is coupled to the dragged frame, 1/s. The drag is a " +
-                 "viscous coupling toward the frame's velocity (not an impulse), so this is the " +
-                 "relaxation rate. 0 disables the coupling even with frameDragging set.")]
-        [Min(0f)]
-        [SerializeField] float frameDragCoupling = 0.6f;
+        [Tooltip("The hole's dimensionless SPIN a* (Kerr): 0 = non-rotating (Schwarzschild), 0.998 = the " +
+                 "astrophysical limit. A spinning hole drags the local inertial frame around its spin " +
+                 "axis at ω = a*·c·r_s²/(2r³) (Lense-Thirring, c² = 2GM/r_s) — a 1/r³ effect, so mass " +
+                 "falling from rest comes in nearly radially and winds up only within a few horizon " +
+                 "radii. Lasting orbits need angular momentum the mass brings with it (a moving hole, a " +
+                 "moving prism), exactly as around a real hole.")]
+        [Range(0f, 0.998f)]
+        [SerializeField] float spin = 0.9f;
 
         [Tooltip("Damping applied to a body's velocity once it is OUTSIDE every hole's influence, 1/s. " +
                  "A body a hole has flung clear decelerates at this rate and is released from the " +
@@ -122,52 +117,38 @@ namespace CosmicShore.ScriptableObjects
         [Min(0f)]
         [SerializeField] float maxVesselPullSpeed = 90f;
 
-        [Header("Warp (photons only — Docs/PRISM_ANIMATION.md §4.7)")]
-        [Tooltip("Master switch for the GPU warp. Off publishes an empty bank, which makes the shader's " +
-                 "first branch return the untouched vertex.")]
+        [Header("Spaghettification (photons only — Docs/BLACK_HOLE.md §5)")]
+        [Tooltip("Master switch for the tidal stretch. Off publishes an empty bank, which makes the " +
+                 "shader's first branch return the untouched vertex.")]
         [SerializeField] bool warpEnabled = true;
 
-        [Tooltip("The tidal STRAIN at the horizon: the fraction of its distance a vertex AT the " +
-                 "horizon is pulled toward the singularity. Near faces are pulled more than far faces, " +
-                 "so a prism elongates along the radial and squeezes tangentially — spaghettification. " +
-                 "Clamped below 1: at 1 the horizon maps onto the centre and the map folds.")]
-        [Range(0f, 0.95f)]
-        [SerializeField] float warpStrength = 0.6f;
+        [Tooltip("How soft prisms are to tides, seconds. The stretch is the tidal tensor of general " +
+                 "relativity for radial free fall, (GM/r³)·diag(2, −1, −1), acting for this long on a " +
+                 "body: log-stretch ε = GM·τ²/r³ along the radial and −ε/2 across it — volume is " +
+                 "conserved, the stretch is strongest at the horizon and falls as 1/r³, and a SMALLER " +
+                 "hole shreds harder at its horizon than a big one (ε(r_s) ∝ 1/M², as in reality). " +
+                 "0 = rigid prisms, no stretch.")]
+        [Range(0f, 3f)]
+        [SerializeField] float tidalResponseSeconds = 0.9f;
 
-        [Tooltip("How far beyond the horizon the warp reaches, as a multiple of the horizon radius. At " +
-                 "that distance the displacement, its derivative and the normal correction are all " +
-                 "exactly zero — it is the width of the warped shell, not a cutoff.")]
+        [Tooltip("Ceiling on how many times longer a prism can be drawn than it is, so a prism at the " +
+                 "horizon of a tiny hole is a long needle rather than a line to infinity. The stretch " +
+                 "eases into it through a soft minimum — the physics to 1.5% up to half the ceiling — " +
+                 "and never clips.")]
+        [Range(1.5f, 30f)]
+        [SerializeField] float maxTidalStretch = 12f;
+
+        [Tooltip("How far beyond the horizon the stretch is computed, as a multiple of the horizon " +
+                 "radius. The tide is drawn exactly across the inner half of that shell and faded " +
+                 "smoothly to zero across the outer half, where the 1/r³ tide is already ≤ 1/43 of the " +
+                 "horizon's (at 6) — so no prism beyond pays for it and none pops at the edge.")]
         [Min(1.01f)]
         [SerializeField] float warpReachMultiplier = 6f;
 
-        [Tooltip("Shaping power of the warp's falloff. 1 is a broad gradient from the horizon to the " +
-                 "reach; larger concentrates the bending at the horizon with a long flat tail. " +
-                 "Floored at 1, where the falloff's derivative stops being finite at the far edge.")]
-        [Range(1f, 6f)]
-        [SerializeField] float warpExponent = 2f;
-
-        [Tooltip("Seconds the warp takes to reach full strength after a spawn, and to let go after a " +
-                 "despawn. A bare on/off would snap every vertex in the shell on one frame.")]
+        [Tooltip("Seconds the stretch takes to reach full strength after a spawn, and to let go after a " +
+                 "despawn. A bare on/off would snap every prism in the shell on one frame.")]
         [Min(0f)]
         [SerializeField] float warpEaseSeconds = 0.5f;
-
-        [Header("Warp geometry residency")]
-        [Tooltip("Quads per face axis on the high-poly prism the warp swaps in near a hole (the " +
-                 "cradle's HighPolyPrismMesh, shared with it): 12 is 1,728 triangles against the " +
-                 "authored 24. A bend is only as smooth as the surface it moves.")]
-        [Range(2, 32)]
-        [SerializeField] int warpSubdivision = 12;
-
-        [Tooltip("Hard ceiling on how many prisms may hold the high-poly mesh across every hole. The " +
-                 "nearest prisms to a horizon win; everything else warps at the authored mesh's " +
-                 "resolution — coarse, never wrong.")]
-        [Min(0)]
-        [SerializeField] int warpMaxResidentPrisms = 32;
-
-        [Tooltip("Extra world units beyond the warp reach at which a prism becomes resident, so the " +
-                 "mesh swap happens strictly OUTSIDE the volume the warp can move anything.")]
-        [Min(0f)]
-        [SerializeField] float warpResidencyMargin = 3f;
 
         [Header("Lens (photons only — what the player sees of the hole, Docs/BLACK_HOLE.md §5.1)")]
         [Tooltip("Master switch for the gravitational-lens visual. Off draws the plain black sphere " +
@@ -234,8 +215,7 @@ namespace CosmicShore.ScriptableObjects
         public float MinHorizonRadius => Mathf.Max(0.01f, minHorizonRadius);
         public float InfluenceAccelerationFloor => Mathf.Max(0.0001f, influenceAccelerationFloor);
         public float MaxInfluenceRadius => Mathf.Max(1f, maxInfluenceRadius);
-        public float FrameDragging => Mathf.Clamp(frameDragging, 0f, 1.5f);
-        public float FrameDragCoupling => Mathf.Max(0f, frameDragCoupling);
+        public float Spin => Mathf.Clamp(spin, 0f, 0.998f);
         public float ReleaseDamping => Mathf.Max(0f, releaseDamping);
         public float ReleaseSpeed => Mathf.Max(0.01f, releaseSpeed);
         public int MaxSubsteps => Mathf.Clamp(maxSubsteps, 1, 16);
@@ -246,13 +226,10 @@ namespace CosmicShore.ScriptableObjects
         public float VesselPullScale => Mathf.Max(0f, vesselPullScale);
         public float MaxVesselPullSpeed => Mathf.Max(0f, maxVesselPullSpeed);
         public bool WarpEnabled => warpEnabled;
-        public float WarpStrength => Mathf.Clamp(warpStrength, 0f, 0.95f);
+        public float TidalResponseSeconds => Mathf.Clamp(tidalResponseSeconds, 0f, 3f);
+        public float MaxTidalStretch => Mathf.Clamp(maxTidalStretch, 1.5f, 30f);
         public float WarpReachMultiplier => Mathf.Max(1.01f, warpReachMultiplier);
-        public float WarpExponent => Mathf.Clamp(warpExponent, 1f, 6f);
         public float WarpEaseSeconds => Mathf.Max(0f, warpEaseSeconds);
-        public int WarpSubdivision => Mathf.Clamp(warpSubdivision, 2, 32);
-        public int WarpMaxResidentPrisms => Mathf.Max(0, warpMaxResidentPrisms);
-        public float WarpResidencyMargin => Mathf.Max(0f, warpResidencyMargin);
 
         /// <summary>Gravitational parameter of a hole of the given strength.</summary>
         public float GM(float strength) => Mathf.Max(0f, strength) * GmPerStrength;
@@ -297,13 +274,21 @@ namespace CosmicShore.ScriptableObjects
             Mathf.Max(MinHorizonRadius, horizonRadius) * (WarpReachMultiplier - 1f);
 
         /// <summary>
+        /// The tidal log-stretch ε at distance <paramref name="d"/> from a hole of gravitational
+        /// parameter <paramref name="gm"/>: <c>GM·τ²/d³</c> (radial ×e^ε, transverse ×e^(−ε/2)), before
+        /// the shader's fade and ceiling — what the warp publishes as <c>GM·τ²</c> per hole.
+        /// </summary>
+        public float TidalLogStretch(float gm, float d) =>
+            Mathf.Max(0f, gm) * TidalResponseSeconds * TidalResponseSeconds / Mathf.Max(d * d * d, 1e-6f);
+
+        /// <summary>
         /// The shape the shader and the integrator can actually run: a positive horizon, a reach
-        /// beyond it, a strain below the fold. An insane asset degrades to "off" rather than to a
-        /// divide by zero.
+        /// beyond it, a stretch ceiling above 1. An insane asset degrades to "off" rather than to
+        /// a divide by zero.
         /// </summary>
         public bool IsSane =>
             HorizonPerStrength > 0f && MinHorizonRadius > 0f &&
-            WarpReachMultiplier > 1f && WarpStrength < 1f && WarpExponent >= 1f &&
+            WarpReachMultiplier > 1f && MaxTidalStretch > 1f && TidalResponseSeconds >= 0f &&
             InfluenceAccelerationFloor > 0f;
     }
 }

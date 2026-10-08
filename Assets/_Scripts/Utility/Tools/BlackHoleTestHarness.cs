@@ -507,7 +507,7 @@ namespace CosmicShore.Utility
             DiagnosticsHUD.SetStat(StatsSection, "holes", $"{BlackHoleRegistry.Count} live");
             DiagnosticsHUD.SetStat(StatsSection, "bodies", $"{BlackHoleGravityField.BodyCount:N0} under gravity");
             DiagnosticsHUD.SetStat(StatsSection, "captured", $"{BlackHoleGravityField.CapturedTotal:N0}");
-            DiagnosticsHUD.SetStat(StatsSection, "warp", $"{BlackHoleWarp.ResidentPrismCount} residents");
+            DiagnosticsHUD.SetStat(StatsSection, "warp", $"{BlackHoleWarp.LiveSlotCount} holes stretching");
             UpdateReadout();
         }
 

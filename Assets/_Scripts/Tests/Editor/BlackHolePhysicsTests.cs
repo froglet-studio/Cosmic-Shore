@@ -10,25 +10,24 @@ namespace CosmicShore.Tests
     /// <see cref="BlackHolePhysics"/> is the one statement of the physics the gravity job, the
     /// vessel pull and this file share, so these tests exercise the code, not a copy of it.
     /// Each test is a claim the design makes about what a hole DOES — captured, orbits, escapes,
-    /// swirls, settles — stated as the integrator's own output.
+    /// winds an infall the way it spins, settles — stated as the integrator's own output.
     /// </summary>
     public class BlackHolePhysicsTests
     {
         const float GM = 200000f;   // strength 10 at the shipped config
         const float RS = 20f;
 
-        static BlackHolePhysics.Well Well(float3 position, float gm = GM, float rs = RS, float dragging = 0f,
-            float3 velocity = default, float influence = 2000f)
+        static BlackHolePhysics.Well Well(float3 position, float gm = GM, float rs = RS, float spin = 0f,
+            float influence = 2000f)
         {
             return new BlackHolePhysics.Well
             {
                 Position = position,
-                Velocity = velocity,
                 GM = gm,
                 Horizon = BlackHolePhysics.Horizon.Of(rs),
                 InfluenceRadius = influence,
                 SpinAxis = new float3(0f, 0f, 1f),
-                FrameDragging = dragging,
+                FrameDrag = BlackHolePhysics.FrameDragCoefficient(gm, rs, spin),
             };
         }
 
@@ -39,10 +38,9 @@ namespace CosmicShore.Tests
             return w;
         }
 
-        static BlackHolePhysics.StepParams Params(float coupling = 0f, float damping = 0f, float releaseSpeed = 0.5f) =>
+        static BlackHolePhysics.StepParams Params(float damping = 0f, float releaseSpeed = 0.5f) =>
             new()
             {
-                FrameDragCoupling = coupling,
                 ReleaseDamping = damping,
                 ReleaseSpeed = releaseSpeed,
                 MaxSubsteps = 8,
@@ -128,7 +126,7 @@ namespace CosmicShore.Tests
         [Test]
         public void Step_ACircularOrbitOutsideTheIscoStaysBound()
         {
-            // Stable circular orbit at 8 r_s: speed from the pseudo-potential, no dragging, no damping.
+            // Stable circular orbit at 8 r_s: speed from the pseudo-potential, no spin, no damping.
             var h = BlackHolePhysics.Horizon.Of(RS);
             float d = 8f * RS;
             float vc = BlackHolePhysics.CircularSpeed(d, GM, h);
@@ -183,35 +181,75 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Step_FrameDraggingSweepsABodyAtRestIntoARotation()
+        public void FrameAngularVelocity_IsLenseThirring()
         {
-            // Dragging at the full circular rate with a strong coupling: a body at rest acquires
-            // tangential velocity about the spin axis (+Z), i.e. it starts to ORBIT instead of
-            // falling on a radial line.
-            var wells = Wells(Well(float3.zero, dragging: 1f));
-            var prm = Params(coupling: 2f);
-            float3 p = new float3(200f, 0f, 0f), v = float3.zero;
-            for (int i = 0; i < 60; i++)
-                BlackHolePhysics.Step(ref p, ref v, in wells, in prm, 1f / 60f, out _);
-            // cross(+Z, +X) = +Y: the dragged frame moves +Y at +X.
-            Assert.Greater(v.y, 1f, "frame dragging did not give the body tangential velocity");
-            Assert.Greater(math.abs(v.y), math.abs(v.x) * 0.5f, "the swirl is too weak next to the radial fall");
-            Assert.AreEqual(0f, v.z, 1e-4f, "nothing moves along the spin axis");
+            // c is the speed whose escape radius is the horizon (r_s = 2GM/c²) ...
+            float c = BlackHolePhysics.LightSpeed(GM, RS);
+            Assert.AreEqual(math.sqrt(2f * GM / RS), c, 1e-3f);
+            Assert.AreEqual(RS, 2f * GM / (c * c), 1e-3f, "the horizon is not 2GM/c² for the derived light speed");
+
+            // ... and the frame turns at ω = 2GJ/(c²r³) = a*·c·r_s²/(2r³): a*·c/(2r_s) at the horizon,
+            var w = Well(float3.zero, spin: 0.9f);
+            float atHorizon = BlackHolePhysics.FrameAngularVelocity(RS, w);
+            Assert.AreEqual(0.9f * c / (2f * RS), atHorizon, atHorizon * 1e-4f);
+            // falling as 1/r³ (twice as far turns 8× slower),
+            Assert.AreEqual(atHorizon / 8f, BlackHolePhysics.FrameAngularVelocity(2f * RS, w), atHorizon * 1e-5f);
+            Assert.AreEqual(atHorizon / 125f, BlackHolePhysics.FrameAngularVelocity(5f * RS, w), atHorizon * 1e-5f);
+            // and held at the horizon's value inside it (a body there is captured, not swirled to infinity).
+            Assert.AreEqual(atHorizon, BlackHolePhysics.FrameAngularVelocity(0.25f * RS, w), atHorizon * 1e-5f);
+
+            // A non-rotating hole drags nothing; a* is capped at Thorne's 0.998.
+            Assert.AreEqual(0f, BlackHolePhysics.FrameDragCoefficient(GM, RS, 0f));
+            Assert.AreEqual(0f, BlackHolePhysics.FrameAngularVelocity(RS, Well(float3.zero)));
+            Assert.AreEqual(BlackHolePhysics.FrameDragCoefficient(GM, RS, 0.998f),
+                BlackHolePhysics.FrameDragCoefficient(GM, RS, 5f), 1e-3f);
         }
 
         [Test]
-        public void FrameVelocity_IsZeroWithNoDraggingAndCarriesTheHolesOwnMotion()
+        public void FrameVelocity_TurnsAboutTheSpinAxisAndNothingElse()
         {
-            var moving = Well(float3.zero, velocity: new float3(5f, 0f, 0f));
-            var vf = BlackHolePhysics.FrameVelocity(new float3(100f, 0f, 0f), moving);
-            Assert.AreEqual(5f, vf.x, 1e-5f, "with no dragging the frame moves with the hole and nothing else");
-            Assert.AreEqual(0f, vf.y, 1e-5f);
-            // On the spin axis itself there is no tangent: only the hole's motion.
-            var spinning = Well(float3.zero, dragging: 1f, velocity: new float3(5f, 0f, 0f));
-            var onAxis = BlackHolePhysics.FrameVelocity(new float3(0f, 0f, 100f), spinning);
-            Assert.AreEqual(5f, onAxis.x, 1e-5f);
-            Assert.AreEqual(0f, onAxis.y, 1e-5f);
-            Assert.AreEqual(0f, onAxis.z, 1e-5f);
+            var spinning = Well(float3.zero, spin: 0.9f);
+            // On the equator: a pure rotation about +Z at ω(r), cross(+Z, +X) = +Y.
+            float3 p = new float3(100f, 0f, 0f);
+            var vf = BlackHolePhysics.FrameVelocity(p, spinning);
+            float expect = BlackHolePhysics.FrameAngularVelocity(100f, spinning) * 100f;
+            Assert.AreEqual(0f, vf.x, 1e-6f);
+            Assert.AreEqual(expect, vf.y, expect * 1e-4f);
+            Assert.AreEqual(0f, vf.z, 1e-6f);
+            // On the spin axis there is no tangent, and a hole with no spin turns nothing.
+            Assert.AreEqual(0f, math.length(BlackHolePhysics.FrameVelocity(new float3(0f, 0f, 100f), spinning)), 1e-6f);
+            Assert.AreEqual(0f, math.length(BlackHolePhysics.FrameVelocity(p, Well(float3.zero))), 1e-6f);
+        }
+
+        [Test]
+        public void Step_ASpinningHoleTwistsAnInfallButStillSwallowsIt()
+        {
+            // A body released at rest at 3 r_s. Around a non-rotating hole it falls on a straight
+            // radial line; around a spinning one the dragged frame winds it the way the hole turns
+            // (+Y at +X for spin about +Z) — and it is captured either way: frame dragging bends
+            // the fall, it does not hold a body up.
+            float FallAngle(float spin, out bool captured)
+            {
+                var wells = Wells(Well(float3.zero, spin: spin));
+                var prm = Params();
+                float3 p = new float3(3f * RS, 0f, 0f), v = float3.zero, lastFree = p;
+                captured = false;
+                for (int i = 0; i < 600; i++)
+                {
+                    var verdict = BlackHolePhysics.Step(ref p, ref v, in wells, in prm, 1f / 60f, out _);
+                    if (verdict == BlackHolePhysics.Verdict.Captured) { captured = true; break; }
+                    lastFree = p;
+                    Assert.AreEqual(0f, lastFree.z, 1e-4f, "nothing moves along the spin axis");
+                }
+                return math.atan2(lastFree.y, lastFree.x);
+            }
+
+            float still = FallAngle(0f, out bool capturedStill);
+            float spun = FallAngle(0.9f, out bool capturedSpun);
+            Assert.IsTrue(capturedStill, "a body at rest beside a non-rotating hole was not swallowed");
+            Assert.IsTrue(capturedSpun, "frame dragging held a body up instead of bending its fall");
+            Assert.AreEqual(0f, still, 1e-6f, "a non-rotating hole bent a radial fall");
+            Assert.Greater(spun, 0.05f, "the spinning hole did not wind the infall in its own sense of rotation");
         }
 
         [Test]
