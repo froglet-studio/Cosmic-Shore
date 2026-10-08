@@ -146,10 +146,11 @@ namespace CosmicShore.Gameplay
         /// coils' reach. A coiled body is a third the size of a swimming one, so it can reach a plant by the wall that
         /// <see cref="TandavaDirectorSettings.RoamRadius"/> (the wall less the swimming body's reach) keeps it off.</summary>
         public float CoilRoamRadius;
-        /// <summary>Its own LUNGE pose's index (-1: it lunges in its strike pose, <see cref="FeedPlanIndex"/>) - the
-        /// Antlion's, charging with its jaws held wide, danger-plate teeth on their inner edges.</summary>
+        /// <summary>Its own LUNGE (charge) pose's index (-1: it lunges in its strike pose, <see cref="FeedPlanIndex"/>) - the
+        /// Many-Headed Serpent's every head reared back, the Antlion's jaws held wide, danger plates on the weapon.</summary>
         public int LungePlanIndex = -1;
-        /// <summary>The same jaws SNAPPED shut (-1: none): committed as they reach the pilot.</summary>
+        /// <summary>The strike that ends it (-1: none), committed as the weapon reaches the pilot: every head thrown
+        /// forward at once, or the jaws SNAPPED shut.</summary>
         public int SnapPlanIndex = -1;
         /// <summary>Where its jaws meet in <see cref="LungePlanIndex"/> (world units along the body axes from its centre):
         /// what a lunge aims at the pilot.</summary>
@@ -228,10 +229,10 @@ namespace CosmicShore.Gameplay
         public float LungeLead = 0.35f;
         /// <summary>Its mouth this close to the pilot (world): it has struck, and the lunge ends.</summary>
         public float LungeReach = 40f;
-        /// <summary>A form with snapping jaws (<see cref="TandavaForm.SnapPlanIndex"/>) slams them shut when they come this
-        /// close to the pilot (world) - a beat before it reaches - or this long before a lunge runs out, and holds them shut
-        /// this long: a snap reads whether it catches the pilot or not.</summary>
-        public float SnapReach = 150f, SnapLeadSeconds = 0.5f, SnapHoldSeconds = 1f;
+        /// <summary>A form with a strike pose of its own (<see cref="TandavaForm.SnapPlanIndex"/>: the heads thrown, the jaws
+        /// snapped) commits it when its weapon comes this close to the pilot (world) - a beat before it reaches - or this
+        /// long before a lunge runs out, and holds it this long: a strike reads whether it lands or not.</summary>
+        public float SnapReach = 150f, SnapLeadSeconds = 0.5f, SnapHoldSeconds = 1.3f;
         /// <summary>Its turn while its jaws snap shut, x the config's TurnPerStep: barely, it is committed to the bite.</summary>
         public float TurnSnap = 0.3f;
 

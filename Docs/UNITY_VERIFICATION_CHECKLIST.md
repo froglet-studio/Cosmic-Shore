@@ -4462,8 +4462,21 @@ compiled headless (`unity_refcompile`, player config) and run in the swarm harne
 3. **Stung.** Let it catch you: a snap that closes on your hull stings and slows it (the danger-plate teeth).
 4. **On a client.** In a networked match the client's Antlion wears the same wide and snapped poses at the same moments
    (the plan index is replicated), and swims the same committed line while snapping.
-5. **Nothing else moved.** The serpents' lunges look as before (their strike pose); every other swarm in the game (the
-   Swarm cell, Brood Rush) moves as before - the new well-clip multiplier is empty for them.
+5. **Nothing else moved.** The Great Serpent's lunge looks as before (its strike pose); every other swarm in the game
+   (the Swarm cell, Brood Rush) moves as before - the new well-clip multiplier is empty for them.
+
+### QA-TANDAVA-20 — the seventh pass: the Many-Headed Serpent lunges with all its heads (`TANDAVA.md` §0)
+
+Plans and the harness; one C# number (`TandavaDirectorSettings.SnapHoldSeconds` 1 -> 1.3, the Antlion's snap too) and
+doc comments. Headless only: harness T1-T19 pass, `unity_refcompile` 0 project errors; never seen in the Editor.
+
+1. **The charge.** Loiter about 250 u off a Many-Headed Serpent: it turns on you with every head REARED back over its
+   collar, necks bowed, heads looking at you, their hoods glowing as danger plates.
+2. **The strike.** As it comes within about 150 u, every neck shoots forward together and the heads close on a ring
+   round the bite point, snouts in; the strike holds about 1.3 s, and it barely turns while it does. Check all three
+   variants: the ten-headed one throws ten heads with no necks crossing.
+3. **Stung.** Let a strike land: the hood plates sting and slow the hull.
+4. **The Antlion** still snaps as QA-TANDAVA-19 describes, its jaws now held shut a little longer (1.3 s).
 
 
 **What landed.** A new arena card, `GameModes.Tandava = 62` (Rhino / Squirrel / Sparrow, every pilot on ONE

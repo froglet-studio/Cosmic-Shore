@@ -401,6 +401,10 @@ MANY_HEADED = {
 HEAD_WORDS = {5: "Five", 7: "Seven", 10: "Ten"}
 
 
+STRIKE_REACH = 0.9         # the strike throws the heads' ring this far out (x the neck's reach) ahead of the collar:
+                           # ~45 u past the reared heads, a thrust their tadpoles (~48 u/s at the top) land in a second
+STRIKE_HOOD_GAP = 2.6      # plan voxels between neighbouring heads' hood plates round the strike ring
+REAR_RISE, REAR_BACK = 0.8, 0.3    # reared: each head this far up its fan line, its neck bowed this far back (x the neck)
 MH_COIL_INNER = 10.5       # the Many-Headed Serpent's innermost turn (its coil lies under its heads, round nothing)
 MH_COIL_DROP = 7.0         # its coil lies this far below the collar: the necks rise from it like a rearing cobra's
 MH_BEND_R = 9.0            # the S-bend down to it (its arcs no tighter than the rings allow)
@@ -424,6 +428,18 @@ def _many_headed_coil(kind, length):
     return _coil_frame(pts, [(min(xs) + max(xs)) / 2, 0.0, (min(zs) + max(zs)) / 2])
 
 
+def _quad_at_arc(a, b, c, frac):
+    """The point `frac` of the way ALONG a quadratic Bezier a-b-c by arc length."""
+    pts = [[(1 - u) ** 2 * a[q] + 2 * (1 - u) * u * b[q] + u * u * c[q] for q in range(3)] for u in (i / 64 for i in range(65))]
+    acc = _arc_table(pts)
+    return _along(pts, acc, frac * acc[-1])
+
+
+def _strike_angle(phi0, fan, n):
+    """A head's place round the strike ring: its fan angle spread evenly round the whole ring, in order."""
+    return phi0 / (fan / 2) * math.pi * (n - 1) / n
+
+
 def many_headed(v, pose="travel"):
     """THE MANY-HEADED SERPENT: a serpent's body whose front widens into a collar from which N necks (Space rods)
     rise in a fan, each ending in a head (two Mass units, the snout ahead) with two Charge hood plates behind it - the
@@ -432,11 +448,17 @@ def many_headed(v, pose="travel"):
     Feeding, every head DIPS to the food: the necks sweep forward and the heads close into a ring round the mouth, each
     snout pointing in - so the tadpoles that bite are where the plant is (a fan held up behind the food bit nothing:
     the 2026-10-06 harness run ended 20 of 24 meals bare). The hood plates leave the heads to orbit outside them as
-    danger-tier guards."""
+    danger-tier guards.
+
+    LUNGING it strikes with ALL its heads (the prompter, 2026-10-08): it charges with every head REARED back over its
+    collar like a cocked cobra (`rear`), and as they reach the pilot every neck shoots forward together and the heads
+    converge on a ring round the bite point (`strike`), snouts in. In both, each head keeps its two hood plates, turned
+    to danger plates: a strike that lands stings."""
     p = MANY_HEADED[v]
     n = p["heads"]
-    feed = pose != "travel"   # the heads close round the food in the strike pose and in every coil
-    settle = FEED_SETTLE if feed else 1.0
+    lunge = pose in ("rear", "strike")
+    feed = pose != "travel" and not lunge   # the heads close round the food in the strike pose and in every coil
+    settle = FEED_SETTLE if pose != "travel" else 1.0
     wv = (36.0, 0.2, 3.0, settle)
     length = (p["nb"] + p["nt"] - 1) * SPACING
     frame = _wave_frame(length, wv)
@@ -448,10 +470,14 @@ def many_headed(v, pose="travel"):
     fan = math.radians(p["fan"])
     dphi = fan / (n - 1)
     collar = max(3.4, 2.4 / (2 * math.sin(dphi / 2)))   # roots on an arc wide enough to keep neighbouring necks apart
-    sway = 0.0 if feed else 0.07
+    sway = 0.0 if feed else 0.03 if lunge else 0.07
     reach = collar + (p["neck"] + 1.2) * SPACING
     mouth = [reach * 0.8 + 3.0, reach * 0.3, 0.0]        # the feed pose's: in front of the collar, a little up
     head_ring = max(6.0, MIN_GAP * 1.3 * n / (2 * math.pi) + 2.4)   # the heads' ring round it (snouts 2.4 inside)
+    spread = p.get("plate", 2.6)
+    # the strike: the heads on a ring round the bite point, far out ahead, each wide enough for its flared hood
+    bite = [reach * STRIKE_REACH + 4.0, reach * 0.15, 0.0]
+    strike_ring = max(6.0, n * (2 * spread + STRIKE_HOOD_GAP) / (2 * math.pi))
     hoods = []
     for k in range(n):
         phi0 = -fan / 2 + dphi * k                       # 0 = straight up; the fan spreads across the top
@@ -477,7 +503,28 @@ def many_headed(v, pose="travel"):
             a, b_, c_ = (1 - t) ** 2, 2 * (1 - t) * t, t * t
             return [a * root[q] + b_ * ctrl[q] + c_ * end[q] for q in range(3)]
 
-        neck_pt = feed_pt if feed else travel_pt
+        def rear_pt(f, j, phi0=phi0, k=k):
+            # cocked: up and back from the collar, the head at the top drawn back over the collar, looking ahead
+            root = travel_pt(f, 0.0)
+            c = _spine_frame(0.0, length, f, wv)[0]
+            r = radial(f, phi0, k)
+            L = (p["neck"] + 1.2) * SPACING
+            ctrl = add(add(root, mul(r, 0.65 * L)), [-REAR_BACK * L, 0.0, 0.0])   # up and back...
+            end = add(c, mul(r, collar + REAR_RISE * L))                          # ...the head over it, looking ahead
+            return _quad_at_arc(root, ctrl, end, min(1.0, j / (p["neck"] + 1.2)))   # even along the S, not bunched at its hook
+
+        def strike_pt(f, j, phi0=phi0, k=k):
+            # thrown: from the collar out to the head's place on the ring round the bite point (in the fan's order round
+            # the ring, evenly, so no two necks cross)
+            root = travel_pt(f, 0.0)
+            ctrl = travel_pt(f, 0.55 * (p["neck"] + 1.2))
+            th = _strike_angle(phi0, fan, n)
+            end = add(bite, [0.0, strike_ring * math.cos(th), strike_ring * math.sin(th)])
+            t = min(1.0, j / (p["neck"] + 1.2))
+            a, b_, c_ = (1 - t) ** 2, 2 * (1 - t) * t, t * t
+            return [a * root[q] + b_ * ctrl[q] + c_ * end[q] for q in range(3)]
+
+        neck_pt = feed_pt if feed else rear_pt if pose == "rear" else strike_pt if pose == "strike" else travel_pt
         for j in range(1, p["neck"] + 1):
             units.append(_unit_at(SPACE, 0, 0, lambda f, j=j, neck_pt=neck_pt: neck_pt(f, j),
                                   lambda f, j=j, neck_pt=neck_pt: sub(neck_pt(f, j + 0.5), neck_pt(f, j))))
@@ -489,11 +536,27 @@ def many_headed(v, pose="travel"):
         def fwd(f, neck_pt=neck_pt, head=head):
             if feed:
                 return unit(sub(mouth, head(f)))           # every snout points at the food
+            if pose == "strike":
+                return unit(sub(add(bite, [6.0, 0.0, 0.0]), head(f)))   # every snout at the bite, just ahead
+            if pose == "rear":
+                return [1.0, 0.0, 0.0]                     # cocked, every head looks straight ahead
             return unit(add(sub(neck_pt(f, tip), neck_pt(f, tip - 1)), [1.2, 0.0, 0.0]))
         units.append(_unit_at(MASS, 0, 0, head, fwd))
         units.append(_unit_at(MASS, 1, 0, lambda f, head=head, fwd=fwd: add(head(f), mul(fwd(f), 2.4)), fwd))
         # two hood plates per head, flared either side of its neck's fan direction (a cobra's hood, in pairs)
-        spread = p.get("plate", 2.6)
+        if lunge:
+            for flare in (-1.0, 1.0):
+                def lplate(f, k=k, flare=flare, phi0=phi0, head=head, fwd=fwd):
+                    h, fw = head(f), fwd(f)
+                    if pose == "strike":   # flanking the head along the ring
+                        th = _strike_angle(phi0, fan, n)
+                        out, across = [0.0, math.cos(th), math.sin(th)], [0.0, -math.sin(th), math.cos(th)]
+                    else:
+                        out = radial(f, phi0, k)
+                        across = unit(cross(fw, out))
+                    return add(add(h, mul(fw, -1.3)), add(mul(out, 1.0), mul(across, spread * flare)))
+                hoods.append(_unit_at(CHARGE, 0, 1, lplate, lambda f, fwd=fwd: fwd(f)))   # DANGER: the strike stings
+            continue
         for flare in (-1.0, 1.0):
             def plate(f, k=k, flare=flare, phi0=phi0):
                 h = travel_pt(f, tip)
@@ -508,6 +571,8 @@ def many_headed(v, pose="travel"):
     if feed:
         hoods = _guard_ring(hoods, mouth, [1.0, 0.0, 0.0], head_ring + 7.0, 1 if v == 7 else -1)
         return units + hoods, mouth
+    if lunge:
+        return units + hoods, add(bite, [3.0, 0.0, 0.0])   # what the lunge aims at the pilot: just ahead of the heads
     return units + hoods, None
 
 
@@ -838,9 +903,10 @@ def coils_of(form):
 
 
 def lunges_of(form):
-    """A form's own LUNGE poses, when it has them (the others lunge in their strike pose): the Antlion charges with its
-    jaws held wide (`gape`) and snaps them shut (`snap`) as they reach the pilot."""
-    return ("gape", "snap") if form == 3 else ()
+    """A form's own LUNGE poses - (the charge, the strike) - when it has them (the Great Serpent lunges in its strike
+    pose): the Many-Headed Serpent charges every head reared (`rear`) and throws them all at the pilot (`strike`); the
+    Antlion charges with its jaws held wide (`gape`) and snaps them shut (`snap`) as they reach the pilot."""
+    return ("gape", "snap") if form == 3 else ("rear", "strike") if form == 1 else ()
 
 
 def plan_keys():
@@ -856,8 +922,8 @@ def plan_keys():
 
 
 def split_key(key):
-    """(variant key, pose): pose is "travel", "feed", "gape", "snap" or one of COILS."""
-    for pose in ("feed", "gape", "snap") + COILS:
+    """(variant key, pose): pose is "travel", "feed", one of a form's lunges_of, or one of COILS."""
+    for pose in ("feed", "gape", "snap", "rear", "strike") + COILS:
         if key.endswith("_" + pose):
             return key[:-len(pose) - 1], pose
     return key, "travel"

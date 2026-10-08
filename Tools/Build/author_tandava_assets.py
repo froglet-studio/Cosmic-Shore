@@ -12,8 +12,8 @@ Every pilot flies on ONE domain against it, in a Squirrel, a Sparrow or a Rhino.
 
 What this script owns (one owner per file; the folders below are this script's alone):
 
-  * the 45 form plans (every variant's travel plan, its strike pose, each serpent's three meal coils and the Antlion's
-    two lunge poses - jaws wide, jaws snapped shut), baked by
+  * the 51 form plans (every variant's travel plan, its strike pose, each serpent's three meal coils, and two lunge
+    poses each for the Many-Headed Serpent - heads reared, heads thrown - and the Antlion - jaws wide, jaws shut), baked by
     Tools/Build/tandava_plans.py (it validates them; this script refuses to write a plan
     that fails) - Assets/_SO_Assets/Swarm Fauna/Tandava/SwarmPlan_tandava_<key>.json;
   * the swarm: TandavaSwarmFaunaConfig.asset (the Swarm cell's sort config with Tandava's numbers and the scripted plan
@@ -290,9 +290,9 @@ def build_forms():
             vs.append(dict(name=name, plan=PLAN_KEYS.index(key), feed=PLAN_KEYS.index(key + "_feed") if feeds else -1,
                            coils=[PLAN_KEYS.index(c) for c in coils], coil_mouths=[wv(PLANS[c]["mouth"]) for c in coils],
                            coil_roam=MEMBRANE_RADIUS * 0.97 - max(plan_reach(PLANS[c]) for c in coils) if coils else 0.0,
-                           lunge=PLAN_KEYS.index(f"{key}_gape") if lunge else -1,
-                           snap=PLAN_KEYS.index(f"{key}_snap") if lunge else -1,
-                           lunge_mouth=wv(PLANS[f"{key}_gape"]["mouth"]) if lunge else [0.0, 0.0, 0.0],
+                           lunge=PLAN_KEYS.index(lunge[0]) if lunge else -1,      # the charge
+                           snap=PLAN_KEYS.index(lunge[1]) if lunge else -1,       # the strike, as it reaches the pilot
+                           lunge_mouth=wv(PLANS[lunge[0]]["mouth"]) if lunge else [0.0, 0.0, 0.0],
                            mouth=wv(p["mouth"]) if "mouth" in p else [0.0, 0.0, 0.0],
                            feed_mouth=wv(PLANS[key + "_feed"]["mouth"]) if feeds else [0.0, 0.0, 0.0],
                            halo=wv(p["ring"]["centre"]) if "ring" in p else [0.0, 0.0, 0.0],
@@ -816,8 +816,9 @@ for f in FORM_ROWS:
             errors.append(f"{v['name']}: a form that eats needs a strike pose and only those do")
         if (len(v["coils"]) == 3) != (f["name"] in ("Great Serpent", "Many-Headed Serpent")) or len(v["coil_mouths"]) != len(v["coils"]):
             errors.append(f"{v['name']}: the two serpents (and only they) roll up to eat, in three formations, each with its mouth")
-        if (v["lunge"] >= 0) != (f["name"] == "Antlion") or (v["snap"] >= 0) != (v["lunge"] >= 0):
-            errors.append(f"{v['name']}: the Antlion (and only it) lunges in its own poses - its jaws held wide, then snapped shut")
+        if (v["lunge"] >= 0) != (f["name"] in ("Many-Headed Serpent", "Antlion")) or (v["snap"] >= 0) != (v["lunge"] >= 0):
+            errors.append(f"{v['name']}: the Many-Headed Serpent and the Antlion (and only they) lunge in their own poses - "
+                          "a charge (heads reared / jaws wide) and a strike")
         if v["coils"] and not ROAM_RADIUS <= v["coil_roam"] < MEMBRANE_RADIUS * 0.97:
             errors.append(f"{v['name']}: it may roll up {v['coil_roam']:.0f} u out - not between the swimming body's {ROAM_RADIUS:.0f} "
                           f"and the wall's {MEMBRANE_RADIUS * 0.97:.0f}")
@@ -1031,8 +1032,8 @@ periods = [int(x) for x in re.findall(r"(?m)^  - (\d+)$", sw.split("ScriptedPlan
 if periods != [PLANS[k]["frameSteps"] for k in PLAN_KEYS]:
     errors.append(f"swarm config's ScriptedPlanPeriods {periods} are not the plans' own frame steps")
 clips = [float(x) for x in re.findall(r"(?m)^  - ([\d.]+)$", sw.split("ScriptedPlanWellClip:\n")[1])[:len(PLAN_KEYS)]]
-if clips != [float(PLANS[k].get("wellClip", 1.0)) for k in PLAN_KEYS] or sum(c != 1.0 for c in clips) != 6:
-    errors.append(f"swarm config's ScriptedPlanWellClip {clips} are not the plans' own (1, the Antlion's six lunge poses more)")
+if clips != [float(PLANS[k].get("wellClip", 1.0)) for k in PLAN_KEYS] or sum(c != 1.0 for c in clips) != 12:
+    errors.append(f"swarm config's ScriptedPlanWellClip {clips} are not the plans' own (1, the twelve lunge poses more)")
 if SEED_MEMBERS * DENSITY < max(v["n"] for v in FORM_ROWS[0]["variants"]):
     errors.append("the seed is smaller than a Great Serpent: it would hatch as a young serpent")
 

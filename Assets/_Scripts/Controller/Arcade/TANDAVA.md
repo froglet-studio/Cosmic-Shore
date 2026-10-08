@@ -53,12 +53,24 @@ which raises the phase ladder's biggest-body term.
 of its own, `antlion_N_gape` and `antlion_N_snap` (45 plans in all): it CHARGES with its jaws held wide (0.8 rad past
 shut), six of its bristles riding their inner edges as danger-plate TEETH, and when its jaws come within 150 u of the
 pilot - or half a second before the lunge runs out - the director commits the shut pose and the jaws SLAM closed, held
-1 s (`TandavaDirectorSettings.SnapReach`, `SnapLeadSeconds`, `SnapHoldSeconds`; a `Snapped` event). While they snap it
+1 s (1.3 s since the seventh pass) (`TandavaDirectorSettings.SnapReach`, `SnapLeadSeconds`, `SnapHoldSeconds`; a `Snapped` event). While they snap it
 barely turns (`TurnSnap` 0.3): committed to the bite, its long jaws close instead of trailing a hard turn. A snap reads
 whether it catches the pilot or not, and one that closes on a pilot stings it (the teeth are danger plates). For the jaws
 to move fast enough, the two lunge poses pull their members 5x harder than the shipped clip
 (`SwarmSortParams.PlanWellClip`, §8): at the shipped clip a jaw swings at about 10 u/s and a "snap" reads as a drift.
 Harness T19: every lunge it finishes ends in a snap, and the live jaws close 22-32 u per snap.
+
+**The seventh pass (2026-10-08)**: "make the many-headed serpent lunge with all its heads". The same charge-then-strike
+the Antlion's jaws use, generalised (`tandava_plans.lunges_of`: each form's (charge, strike) poses; 51 plans): the
+Many-Headed Serpent CHARGES with every head REARED back over its collar like a cocked cobra (`many_headed_N_rear` - each
+neck bowed up and back, the head at the top looking ahead), and as its heads reach the pilot it STRIKES with them all
+(`many_headed_N_strike`): every neck thrown forward at once, the heads on a ring round the bite point ~45 u ahead of
+where they reared, snouts in, in the fan's order round the ring so no two necks cross. In both poses each head keeps its
+two hood plates, turned to DANGER plates (10 / 14 / 20 by variant): a strike that lands stings. Both pull 5x
+(`PlanWellClip`), and the strike is held 1.3 s (`SnapHoldSeconds`, up from 1 for the Antlion too) - the heads' tadpoles
+top out near 48 u/s (`SortVMaxScale` 3), so the thrust is sized to land in about a second. The Great Serpent still
+lunges in its strike pose. Harness T19 (now both forms): every lunge each variant finishes ends in its strike; the live
+heads reach 28-36 u further, the Antlion's jaws close 28-38 u.
 
 ## 1. The pitch
 
@@ -168,7 +180,7 @@ THREAT (0..1) is the larger of two readings, smoothed (rising in 0.25 s, falling
 |---|---|---|---|---|
 | Calm | below 0.2 | 1.0 - **60 u/s** | 1.0 | the best plant, a plant spoiled by half by a nearby pilot |
 | Wary | 0.3 | 1.5 - **90 u/s** | 1.6 | hurries, and avoids plants near pilots (spoiled by 90%) |
-| **Lunging** | 0.25, HEALTHY (body 70%+ of its form), a pilot within 380 u, 6 s since the last | 2.4 - **144 u/s** | 3.0 | turns on the nearest pilot and charges it JAWS first, wearing its strike pose (the Antlion: its jaws held wide, then SNAPPED shut as they reach the pilot - the sixth pass) - the guard plates out round its mouth are the weapon (a pilot who touches one is stung and slowed). Aimed 0.35 s ahead of the pilot; it ends when the jaws are within 40 u, after 2.5 s, or when the pilot is out of reach |
+| **Lunging** | 0.25, HEALTHY (body 70%+ of its form), a pilot within 380 u, 6 s since the last | 2.4 - **144 u/s** | 3.0 | turns on the nearest pilot and charges it JAWS first, wearing its strike pose (the Many-Headed Serpent: every head reared, then all of them STRUCK at the pilot - the seventh pass; the Antlion: its jaws held wide, then SNAPPED shut as they reach the pilot - the sixth pass) - the guard plates out round its mouth are the weapon (a pilot who touches one is stung and slowed). Aimed 0.35 s ahead of the pilot; it ends when the jaws are within 40 u, after 2.5 s, or when the pilot is out of reach |
 | Fleeing | 0.65 (out below 0.4, at least 4 s), only HURT (body under 70%) | 2.1 - **126 u/s** | 2.5 | bolts AWAY from the pilots, weighted by how near each is; cornered at the wall, it runs along it |
 | Feeding | - | 0.5 (it holds station) | 1.0 | see §3.4. It neither lunges nor bolts from pilots it merely sees: its guards are out |
 
@@ -354,7 +366,7 @@ policies.
 | T15 | no clock: the shipped settings carry `MatchSeconds` 0, and twenty minutes alone end nothing |
 | T16 | a form change READS fast: Great Serpent -> Seven-Headed at 60% coverage in 1.0 s (3.5 s at the research's member speeds) |
 | T17 | aggression does not starve it: a pilot loitering 250 u off it for 120 s is charged 8 times, and it still eats 4 meals |
-| T19 | the Antlion's jaws SNAP: every variant charges wearing its gape pose and ends every lunge it finishes in a snap (3 of 3); the live jaws close 22-32 u in the snap (at least half each plan's open-to-shut difference); six danger-plate teeth ride the jaws |
+| T19 | its own lunge STRIKES: every Many-Headed and Antlion variant charges in its charge pose (heads reared / jaws wide) and ends every lunge it finishes in its strike; the live heads thrust 28-36 u, the live jaws close 28-38 u (at least half each plan's difference); danger plates ride the weapon (2 per head; the Antlion's 6 teeth) |
 | T18 | it eats ROLLED UP: every serpent meal in a coil (12 of 12), every formation used, never the same twice running; the Great Serpent coiled round its plant eats 3.4x as fast as its strike pose and finishes a meal in 2.5 s (10.7 s); the free run 125 s against 170 s (the A/B: `NoCoils`, or `TANDAVA_NOCOIL=1` for every test) |
 
 What it is not: the game's bites are prism queries against real plants, its pilots are people and its kills are

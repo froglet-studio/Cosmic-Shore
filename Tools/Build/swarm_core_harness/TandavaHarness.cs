@@ -100,13 +100,15 @@ static class TandavaHarness
         "great_serpent_1", "great_serpent_1_feed", "great_serpent_1_coil", "great_serpent_1_wrap", "great_serpent_1_eight",
         "great_serpent_2", "great_serpent_2_feed", "great_serpent_2_coil", "great_serpent_2_wrap", "great_serpent_2_eight",
         "great_serpent_3", "great_serpent_3_feed", "great_serpent_3_coil", "great_serpent_3_wrap", "great_serpent_3_eight",
-        "many_headed_5", "many_headed_5_feed", "many_headed_5_coil", "many_headed_5_wrap", "many_headed_5_eight",
-        "many_headed_7", "many_headed_7_feed", "many_headed_7_coil", "many_headed_7_wrap", "many_headed_7_eight",
-        "many_headed_10", "many_headed_10_feed", "many_headed_10_coil", "many_headed_10_wrap", "many_headed_10_eight",
+        "many_headed_5", "many_headed_5_feed", "many_headed_5_coil", "many_headed_5_wrap", "many_headed_5_eight", "many_headed_5_rear", "many_headed_5_strike",
+        "many_headed_7", "many_headed_7_feed", "many_headed_7_coil", "many_headed_7_wrap", "many_headed_7_eight", "many_headed_7_rear", "many_headed_7_strike",
+        "many_headed_10", "many_headed_10_feed", "many_headed_10_coil", "many_headed_10_wrap", "many_headed_10_eight", "many_headed_10_rear", "many_headed_10_strike",
         "dancer_1", "dancer_2", "dancer_3",
         "antlion_1", "antlion_1_feed", "antlion_1_gape", "antlion_1_snap", "antlion_2", "antlion_2_feed", "antlion_2_gape", "antlion_2_snap",
         "antlion_3", "antlion_3_feed", "antlion_3_gape", "antlion_3_snap",
     };
+    /// <summary>Each form's own lunge poses, (the charge, the strike) - tandava_plans.lunges_of.</summary>
+    static readonly (string charge, string strike)?[] Lunges = { null, ("_rear", "_strike"), null, ("_gape", "_snap") };
     /// <summary>The meal formations the two serpents roll up in (tandava_plans.COILS).</summary>
     static readonly string[] Coils = { "coil", "wrap", "eight" };
     static readonly string[][] Variants =
@@ -200,9 +202,9 @@ static class TandavaHarness
                     form.CoilMouths = Coils.Select(c => b.Mouth[$"{key}_{c}"]).ToArray();
                     form.CoilRoamRadius = TandavaArena.MembraneRadius * 0.97f - Coils.Max(c => b.Reach[$"{key}_{c}"]);
                 }
-                if (b.Ix.TryGetValue(key + "_gape", out int gape))
+                if (Lunges[f] is { } l)
                 {
-                    form.LungePlanIndex = gape; form.SnapPlanIndex = b.Ix[key + "_snap"]; form.LungeMouth = b.Mouth[key + "_gape"];
+                    form.LungePlanIndex = b.Ix[key + l.charge]; form.SnapPlanIndex = b.Ix[key + l.strike]; form.LungeMouth = b.Mouth[key + l.charge];
                 }
                 form.Bank = BankShare[f] * StomachCapacity;
                 form.MealVolume = MealVolume;
@@ -214,6 +216,7 @@ static class TandavaHarness
     }
 
     static float[] _wellClip;
+    static int MANY_HEADS(string key) => int.Parse(key.Substring(key.LastIndexOf('_') + 1));
 
     static SwarmSortParams Params(SwarmPlanData[] plans)
     {
@@ -599,7 +602,9 @@ static class TandavaHarness
             bool twins = true, mouths = true, rings = true;
             foreach (var key in Variants[0].Concat(Variants[1]).Concat(Variants[3]))
             {
-                var poses = new[] { "_feed" }.Concat(Variants[3].Contains(key) ? new[] { "_gape", "_snap" } : Coils.Select(c => "_" + c));
+                int fk = Array.FindIndex(Variants, vs => vs.Contains(key));
+                var poses = new[] { "_feed" }.Concat(fk == 3 ? Array.Empty<string>() : Coils.Select(c => "_" + c))
+                                             .Concat(Lunges[fk] is { } lp ? new[] { lp.charge, lp.strike } : Array.Empty<string>());
                 foreach (var pose in poses)
                 {
                     twins &= Mix(b.Plans[b.Ix[key]]).SequenceEqual(Mix(b.Plans[b.Ix[key + pose]]));
@@ -608,8 +613,8 @@ static class TandavaHarness
                 mouths &= b.Mouth.ContainsKey(key);
             }
             foreach (var key in Variants[2]) rings &= b.Ring.ContainsKey(key);
-            Check(b.Plans.Length == 45, "45 plans: 4 forms x 3 variants, a strike pose for each variant of the three forms that eat, " +
-                                        "three coils for each serpent and two lunge poses (jaws wide, jaws shut) for each Antlion");
+            Check(b.Plans.Length == 51, "51 plans: 4 forms x 3 variants, a strike pose for each variant of the three forms that eat, " +
+                                        "three coils for each serpent, and two lunge poses each for the Many-Headed Serpent and the Antlion");
             Check(twins, "every pose carries exactly its travel plan's element counts (a pose commit is a re-sort, never a molt)");
             Check(mouths && rings, "every eating plan bakes its mouth, every dance plan its halo");
             bool grows = true;
@@ -617,7 +622,7 @@ static class TandavaHarness
                 grows &= Variants[f].Min(k => b.Plans[b.Ix[k]].N) >= Variants[f - 1].Max(k => b.Plans[b.Ix[k]].N);
             Check(grows, "every variant of a form is at least as big as every variant of the one before (a commit only grows the body)");
             bool danger = true;
-            foreach (var key in Keys.Where(k => k.EndsWith("_feed") || k.EndsWith("_gape") || k.EndsWith("_snap") || Coils.Any(c => k.EndsWith("_" + c))))
+            foreach (var key in Keys.Where(k => k.EndsWith("_feed") || Lunges.Any(l => l is { } p && (k.EndsWith(p.charge) || k.EndsWith(p.strike))) || Coils.Any(c => k.EndsWith("_" + c))))
             {
                 var p = b.Plans[b.Ix[key]];
                 int charge = Enumerable.Range(0, p.N).Count(u => p.Elem[u] == 0);
@@ -806,9 +811,11 @@ static class TandavaHarness
                 if (s.D.Mood == TandavaMood.Lunging)
                 {
                     if (lunge < 0) lunge = s.Now;
-                    // it aims its JAWS (the feed pose's mouth) at the pilot, led by the pilot's velocity
-                    var jawsAim = s.D.Goal + TandavaDirectorCore.InBody(State(s), s.D.Form.FeedMouth);
-                    bool at = Vector3.Distance(jawsAim, pilot.At) < 80f, bared = c.PlanIx == s.D.Form.FeedPlanIndex || s.Now - lunge <= 0.3f;
+                    // it aims its JAWS (its lunge pose's mouth, or the strike pose's) at the pilot, led by the pilot's velocity
+                    var f = s.D.Form;
+                    var jawsAim = s.D.Goal + TandavaDirectorCore.InBody(State(s), f.LungePlanIndex >= 0 ? f.LungeMouth : f.FeedMouth);
+                    bool at = Vector3.Distance(jawsAim, pilot.At) < 80f, bared = c.PlanIx == f.FeedPlanIndex || c.PlanIx == f.LungePlanIndex ||
+                                                                               c.PlanIx == f.SnapPlanIndex || s.Now - lunge <= 0.3f;
                     if ((!at || !bared) && why == null) why = $" (at {s.Now:F1} s: jaws aimed {Vector3.Distance(jawsAim, pilot.At):F0} u from it, plan {Keys[c.PlanIx]}, pilot {Vector3.Distance(pilot.At, me):F0} u off)";
                     toward &= at && bared; towardSamples++;
                 }
@@ -1070,90 +1077,83 @@ static class TandavaHarness
             Check(mealOn <= 6f && mealOn < mealOff, $"a Great Serpent meal takes {mealOn:F1} s (<= 6 s; {mealOff:F1} s in the strike pose)");
         }
 
-        // ── T19: the Antlion's jaws SNAP at the pilot it lunges at (the prompter, 2026-10-08: "make the antlion jaws snap
-        // at pilots when it lunges") - it charges jaws wide, and they slam shut as they reach the pilot
-        Console.WriteLine("T19 the Antlion snaps");
-        foreach (var key in Variants[3])
-        {
-            var gapePlan = b.Plans[b.Ix[key + "_gape"]];
-            var snapPlan = b.Plans[b.Ix[key + "_snap"]];
-            // how wide the jaws (the Antlion's only Time units) stand: twice their mean distance off their own midline -
-            // a measure a straggling tadpole cannot swing
-            float Spread(IEnumerable<Vector3> jaw)
+        // ── T19: its own lunge - the Antlion's jaws SNAP at the pilot (the prompter, 2026-10-08: "make the antlion jaws
+        // snap at pilots when it lunges"), the Many-Headed Serpent STRIKES with all its heads ("make the many-headed serpent
+        // lunge with all its heads"). It charges in one pose and, as it reaches the pilot, commits the other
+        Console.WriteLine("T19 the lunge strikes");
+        foreach (int f in new[] { 1, 3 })
+            foreach (var key in Variants[f])
             {
-                var zs = jaw.Select(q => q.Z).ToArray(); if (zs.Length == 0) return 0f;
-                float mid = zs.Average(); return 2f * zs.Average(z => MathF.Abs(z - mid)) * UnitScale;
-            }
-            float PlanSpread(SwarmPlanData pl) => Spread(Enumerable.Range(0, pl.N).Where(u => pl.Elem[u] == 3).Select(u => pl.P[0][u]));
-            float wide = PlanSpread(gapePlan), shut = PlanSpread(snapPlan);
-            // its TEETH: danger plates riding the jaws (within 11 u of a jaw unit), as against the guards ringing them
-            int teeth = Enumerable.Range(0, snapPlan.N).Count(u => snapPlan.Elem[u] == 0 && snapPlan.Tier[u] == 1 &&
-                Enumerable.Range(0, snapPlan.N).Any(w => snapPlan.Elem[w] == 3 && Vector3.Distance(snapPlan.P[0][u], snapPlan.P[0][w]) * UnitScale < 11f)) / Density;
-            if (Environment.GetEnvironmentVariable("TANDAVA_DIAG") == "4")
-            {
-                var c0 = MakeCore(b, b.Ix[key], Vector3.Zero, 5, fed: true);
-                Step(c0, 80);
-                foreach (var (pose, steps) in new[] { ("_gape", 25), ("_snap", 25), ("_gape", 25) })
+                var (cKey, sKey) = Lunges[f].Value;
+                var chargePlan = b.Plans[b.Ix[key + cKey]];
+                var strikePlan = b.Plans[b.Ix[key + sKey]];
+                // the measure, in the body's frame about its centre: the Antlion's jaws (its only Time units) - how wide
+                // they stand, twice their mean distance off their own midline; the Many-Headed Serpent's heads (its only
+                // Charge units are their hood plates) - how far out ahead of the body they reach. Means: a straggler
+                // cannot swing either
+                int elem = f == 3 ? 3 : 0;
+                float Measure(IEnumerable<Vector3> q)
                 {
-                    c0.RequestPose(b.Ix[key + pose]);
-                    for (int q = 0; q < steps; q++)
+                    var a = q.ToArray(); if (a.Length == 0) return 0f;
+                    if (f == 1) return a.Average(p => p.X) * UnitScale;
+                    float mid = a.Average(p => p.Z); return 2f * a.Average(p => MathF.Abs(p.Z - mid)) * UnitScale;
+                }
+                float PlanMeasure(SwarmPlanData pl) => Measure(Enumerable.Range(0, pl.N).Where(u => pl.Elem[u] == elem).Select(u => pl.P[0][u]));
+                float charged = PlanMeasure(chargePlan), struck = PlanMeasure(strikePlan);
+                // the weapon: danger plates on the jaws (the Antlion's teeth, within 11 u of a jaw unit) or on the heads
+                int danger = Enumerable.Range(0, strikePlan.N).Count(u => strikePlan.Elem[u] == 0 && strikePlan.Tier[u] == 1 &&
+                    (f == 1 || Enumerable.Range(0, strikePlan.N).Any(w => strikePlan.Elem[w] == 3 && Vector3.Distance(strikePlan.P[0][u], strikePlan.P[0][w]) * UnitScale < 11f))) / Density;
+                int wantDanger = f == 3 ? 6 : 2 * MANY_HEADS(key);
+                // the form alone, healthy and lightly fed, its bank out of reach, with a pilot loitering in lunge range
+                var forms = BuildForms(b, new[] { f == 0 ? 0 : 0, f == 1 ? Array.IndexOf(Variants[1], key) : 0, 0, f == 3 ? Array.IndexOf(Variants[3], key) : 0 });
+                var form = forms[f]; form.Role = TandavaFormRole.Final; form.Bank = 1e9f;
+                var s = new Sim { B = b, Rng = new Random(71), Forms = new List<TandavaForm> { form } };
+                s.C = MakeCore(b, form.PlanIndex, TandavaArena.Hatch, 71, fed: false);
+                s.C.Stomach[1] = 0.15f * StomachCapacity;
+                s.D = new TandavaDirectorCore(s.Forms, DirectorSettings(), 71);
+                s.Plants = LayPlants(71);
+                RunFor(s, 8f);   // it grows whole
+                var pilot = new Pilot { At = s.C.Anchor * UnitScale + new Vector3(0f, 250f, 0f) };
+                s.Pilots.Add(pilot);
+                int charging = 0, striking = 0, ended = 0, endedStruck = 0; bool struckThis = false;
+                var was = TandavaMood.Calm; float atStrike = 0f, best = 0f, cocked = float.NaN; bool inStrike = false;
+                var swings = new List<float>();
+                RunFor(s, 40f, x =>
+                {
+                    var me = x.C.Anchor * UnitScale;
+                    var want = me + Vector3.Normalize(pilot.At - me + new Vector3(0f, 1f, 0f)) * 250f;
+                    var to = want - pilot.At; float dd = to.Length();
+                    pilot.Vel = dd > 5f ? to / dd * MathF.Min(150f, dd * 4f) : Vector3.Zero;
+                    var c = x.C;
+                    float m = Measure(Enumerable.Range(0, c.Cap)
+                        .Where(i => c.Active[i] && c.Hatched[i] && c.EffectiveElement(i) == elem && (f == 1 || Vector3.Dot(c.Pos[i] - c.Anchor, c.BX) > 0f))
+                        .Select(i => { var d = c.Pos[i] - c.Anchor; return new Vector3(Vector3.Dot(d, c.BX), 0f, Vector3.Dot(d, c.BZ)); }));
+                    bool lunging = x.D.Mood == TandavaMood.Lunging;
+                    if (lunging && was != TandavaMood.Lunging) { struckThis = false; cocked = float.NaN; }
+                    if (!lunging && was == TandavaMood.Lunging) { ended++; if (struckThis || x.D.Snapping) endedStruck++; }
+                    if (lunging && x.D.Snapping) struckThis = true;
+                    was = x.D.Mood;
+                    if (lunging && !x.D.Snapping && c.PlanIx == x.D.Form.LungePlanIndex)
                     {
-                        Step(c0);
-                        var zs = Enumerable.Range(0, c0.Cap).Where(i => c0.Active[i] && c0.Hatched[i] && c0.EffectiveElement(i) == 3 && Vector3.Dot(c0.Pos[i] - c0.Anchor, c0.BX) > 0f)
-                                           .Select(i => Vector3.Dot(c0.Pos[i] - c0.Anchor, c0.BZ)).ToArray();
-                        float m = zs.Average();
-                        if (q % 2 == 1) Console.WriteLine($"      still {pose} +{q + 1} steps: spread {2f * zs.Average(z => MathF.Abs(z - m)) * UnitScale:F0} (plan {c0.PlanIx})");
+                        charging++;   // the charge's extreme: the heads drawn furthest back, the jaws spread widest
+                        cocked = float.IsNaN(cocked) ? m : f == 1 ? MathF.Min(cocked, m) : MathF.Max(cocked, m);
                     }
-                }
+                    if (x.D.Snapping)
+                    {
+                        if (!inStrike) { inStrike = true; atStrike = float.IsNaN(cocked) ? m : cocked; best = m; }
+                        best = f == 1 ? MathF.Max(best, m) : MathF.Min(best, m);   // the heads go OUT; the jaws come IN
+                        if (c.PlanIx == x.D.Form.SnapPlanIndex) striking++;
+                    }
+                    else if (inStrike) { swings.Add(MathF.Abs(best - atStrike)); inStrike = false; }
+                });
+                float swing = swings.Count > 0 ? swings.Average() : 0f;
+                Console.WriteLine($"    {key}: {(f == 1 ? "heads reach" : "jaws stand")} {charged:F0} u charging, {struck:F0} u striking in the plans; " +
+                                  $"the live {(f == 1 ? "heads" : "jaws")} swing {swing:F0} u a strike over {ended} lunges; {danger} danger plates on the weapon");
+                Check(danger >= wantDanger, $"{key}: {danger} danger plates ride its {(f == 1 ? "heads" : "jaws")} (>= {wantDanger})");
+                Check(ended >= 2 && endedStruck == ended && charging > 0 && striking > 0,
+                      $"{key}: every lunge it finished ({endedStruck} of {ended}) charged in one pose and ended in the strike");
+                Check(swing >= 0.5f * MathF.Abs(struck - charged), $"{key}: the live strike swings {swing:F0} u (at least half the plans' {MathF.Abs(struck - charged):F0})");
             }
-            // a lone Antlion, healthy and lightly fed (the feast far off), with a pilot loitering in lunge range
-            var forms = BuildForms(b, new[] { 0, 0, 0, Array.IndexOf(Variants[3], key) });
-            var s = new Sim { B = b, Rng = new Random(71), Forms = new List<TandavaForm> { forms[3] } };
-            s.C = MakeCore(b, forms[3].PlanIndex, TandavaArena.Hatch, 71, fed: false);
-            s.C.Stomach[1] = 0.15f * StomachCapacity;
-            s.D = new TandavaDirectorCore(s.Forms, DirectorSettings(), 71);
-            s.Plants = LayPlants(71);
-            RunFor(s, 8f);   // it grows whole
-            var pilot = new Pilot { At = s.C.Anchor * UnitScale + new Vector3(0f, 250f, 0f) };
-            s.Pilots.Add(pilot);
-            int lunges = 0, snaps = 0, gaped = 0, closed = 0, ended = 0, endedSnapped = 0; bool snappedThis = false; float widest = 0f;
-            var was = TandavaMood.Calm; float lungeAt = -1f, snapAt = -1f, atSnap = 0f, after = float.MaxValue;
-            var lens = new List<float>(); var drops = new List<float>();
-            RunFor(s, 40f, x =>
-            {
-                var me = x.C.Anchor * UnitScale;
-                var want = me + Vector3.Normalize(pilot.At - me + new Vector3(0f, 1f, 0f)) * 250f;
-                var to = want - pilot.At; float dd = to.Length();
-                pilot.Vel = dd > 5f ? to / dd * MathF.Min(150f, dd * 4f) : Vector3.Zero;
-                var c = x.C;
-                float spread = Spread(Enumerable.Range(0, c.Cap)
-                    .Where(i => c.Active[i] && c.Hatched[i] && c.EffectiveElement(i) == 3 && Vector3.Dot(c.Pos[i] - c.Anchor, c.BX) > 0f)
-                    .Select(i => { var d = c.Pos[i] - c.Anchor; return new Vector3(0f, 0f, Vector3.Dot(d, c.BZ)); }));
-                bool lunging = x.D.Mood == TandavaMood.Lunging;
-                if (Environment.GetEnvironmentVariable("TANDAVA_DIAG") == "3" && (lunging || x.D.Snapping || x.Now - lungeAt < 4f) && lungeAt >= 0f)
-                    Console.WriteLine($"      {x.Now:F1} s {x.D.Mood} snap {x.D.Snapping} plan {Keys[x.C.PlanIx]} spread {spread:F0}");
-                if (lunging && was != TandavaMood.Lunging) { lunges++; lungeAt = x.Now; widest = 0f; snappedThis = false; }
-                if (!lunging && was == TandavaMood.Lunging) { ended++; if (snappedThis || x.D.Snapping) endedSnapped++; }
-                if (lunging && x.D.Snapping) snappedThis = true;
-                was = x.D.Mood;
-                if (lunging && !x.D.Snapping) { widest = MathF.Max(widest, spread); if (x.C.PlanIx == x.D.Form.LungePlanIndex) gaped++; }
-                if (x.D.Snapping)
-                {
-                    if (snapAt < 0f) { snaps++; snapAt = x.Now; atSnap = widest; after = spread; }
-                    after = MathF.Min(after, spread);
-                    if (x.C.PlanIx == x.D.Form.SnapPlanIndex) closed++;
-                }
-                else if (snapAt >= 0f) { drops.Add(atSnap - after); snapAt = -1f; }
-                if (lunging) lens.Add(x.Now - lungeAt);
-            });
-            float meanDrop = drops.Count > 0 ? drops.Average() : 0f;
-            Console.WriteLine($"    {key}: jaws {wide:F0} u wide, {shut:F0} u shut in the plans; {lunges} lunges, {snaps} snaps, " +
-                              $"the live jaws closing {meanDrop:F0} u a snap; {teeth} teeth");
-            Check(teeth >= 6, $"{key}: six danger-plate teeth ride the jaws ({teeth} plan units)");
-            Check(ended >= 2 && endedSnapped == ended && gaped > 0 && closed > 0,
-                  $"{key}: every lunge it finished ({endedSnapped} of {ended}) charged jaws wide and ended in a snap");
-            Check(meanDrop >= 0.5f * (wide - shut), $"{key}: the live jaws slam shut by {meanDrop:F0} u a snap (at least half the plans' {wide - shut:F0})");
-        }
 
         Console.WriteLine(_fail == 0 ? "\ntandava: OK" : $"\ntandava: {_fail} FAILED");
         return _fail;
