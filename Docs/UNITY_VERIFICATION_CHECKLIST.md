@@ -65,6 +65,36 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Omni crystal: charge edge discharge on the pentagons (`cece/wonderful-planck-qqj3kd`, 2026-10-08)
+
+**Landed** (`Docs/PALETTE.md §2.10`, generator `Tools/Build/author_omni_crystal_triangles.py --check`):
+a sixth child of `Crystal.prefab`, `OmniCrystalChargeEdges` (NOT a `crystalModels` slot), draws the
+charge crystal's crease-edge plasma on the omni's 12 pentagonal prisms only, additively, via the new
+`OmniChargeEdgesShader` + `OmniChargeEdges.mat`. C#: `CrystalEdgeArcMeshBaker` gains a plate filter
+(`plateCorners`), `CrystalEdgeArcs` exposes it, new `CrystalAccentTint`, and
+`Crystal.ModelMaterialSettled`. **Verified offline, not in Unity** (no editor/`unity` CLI in the
+session): the real baker + the new `CrystalEdgeArcMeshBakerTests` executed in a Roslyn harness (6/6,
+both negative controls fire); on the shipped omni model the filter keeps 192 triangles / 180 crease
+edges (12 x 16 / 12 x 15); the `ChargeCrystal.hlsl` refactor is bitwise identical under clang over
+200k samples; both shaders front-end compile under glslang (URP mocked); `unity_refcompile` reports 0
+project errors in the player AND editor configs (the test's one `LogAssert` call is "unverified" there,
+since the test-framework DLL is not in its references - the same call `GameObjectExtensionTests`
+makes); `check_generated_assets.py` audits the new prefab/material clean (negative-controlled).
+
+1. Console after import: no shader errors on `OmniChargeEdgesShader` or `ChargeCrystal` (the charge
+   crystal now calls the factored-out `ChargeCrystalDischarge`; it must look exactly as before).
+2. Play any scene with a free omni crystal (Skim Race): bolts crackle along the PENTAGONS' edges
+   only — the pentagon rims and the short side edges — never across a face, and never on the boxes or
+   triangles. No z-fighting shimmer on the pentagon faces (the overlay must not draw the faces).
+3. The bolts read like the charge crystal's (compare a `CrystalCharge` side by side): thin, white-hot
+   heads, lime tails, a faint idle shimmer on the pentagon wireframe. If they are invisible, check the
+   console for `[CrystalEdgeArcMeshBaker] ... no plate with exactly 10 corners`.
+4. Skim Race team crystals (domain-owned): bolt tails turn the domain colour about 1 s after the
+   crystal does (the moment its body snaps), not lime.
+5. Collect an omni: the replacement appears at once with its bolts; only the body/tone husks burst
+   (no extra pentagon husk).
+6. `CrystalEdgeArcMeshBakerTests` pass in the Test Runner.
+
 ### 🔴 Omni crystal: Fresnel body + triangle-only Shepard tone falling onto the surface (`claude/omnicrystal-shepard-triangles-v2`, 2026-10-08)
 
 **Landed** (`Docs/PALETTE.md §2.10`, generator `Tools/Build/author_omni_crystal_triangles.py --check`):
