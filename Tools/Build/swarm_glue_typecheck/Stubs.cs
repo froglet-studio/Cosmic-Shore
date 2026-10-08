@@ -83,7 +83,14 @@ namespace Unity.Profiling
 namespace FMODUnity
 {
     public struct EventReference { public bool IsNull => true; }
-    public class StudioEventEmitter : UnityEngine.MonoBehaviour { public EventReference EventReference; public void Play() { } }
+    // The real one is Assets/Plugins/FMOD/src/RuntimeUtils.cs; only the members the swarm glue reads.
+    public enum EmitterGameEvent { None = 0, ObjectStart = 1, ObjectDestroy = 2 }
+    public class StudioEventEmitter : UnityEngine.MonoBehaviour
+    {
+        public EventReference EventReference;
+        public EmitterGameEvent EventStopTrigger = EmitterGameEvent.None;
+        public void Play() { }
+    }
 }
 
 namespace CosmicShore.Data
