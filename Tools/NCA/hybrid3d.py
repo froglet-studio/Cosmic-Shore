@@ -289,9 +289,24 @@ def bench(threads=1, iters=40):
     print(f"{threads} thr: {(time.time() - t) / iters * 80:.2f} s per 80-step training iteration (batch 6)")
 
 
+def export(model, out, grid=(24, 56, 72), note=""):
+    """weights.json in nca3d's format (nca_creature.js / build_nca_creature.py read it), on the probe/viewer grid."""
+    sd = torch.load(model, map_location="cpu")
+    data = {"channel_n": 16, "hidden": 128, "fire_rate": 0.5,
+            **{k: sd[k].numpy().round(6).tolist() for k in ("w1", "b1", "w2", "b2")},
+            "D": grid[0], "H": grid[1], "W": grid[2], "frames": 8, "period": 8,
+            "perception_order": "per-channel [identity, sobel_x, sobel_y, sobel_z] -> index 4*c+k",
+            "target": "lizard + whale + jelly in one rule (3D), form = genome channels 13-15 " + note,
+            "genome": {"channels": list(GENOME), "forms": list(FORMS)},
+            "experiment": "hybrid3d", "axes": "D=up (world y), H=world z, W=world x"}
+    with open(out, "w") as f:
+        json.dump(data, f)
+
+
 def main():
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
+    e = sub.add_parser("export"); e.add_argument("--model", required=True); e.add_argument("--out", required=True); e.add_argument("--note", default="")
     b = sub.add_parser("bench"); b.add_argument("--threads", type=int, default=1)
     t = sub.add_parser("train")
     t.add_argument("--out", required=True)
@@ -301,6 +316,8 @@ def main():
     a = ap.parse_args()
     if a.cmd == "bench":
         bench(a.threads)
+    elif a.cmd == "export":
+        export(a.model, a.out, note=a.note)
     else:
         kw = {k: getattr(a, k) for k in asdict(ConfigH())}
         train(ConfigH(**kw), a.out, a.resume)
