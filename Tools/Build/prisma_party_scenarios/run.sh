@@ -55,9 +55,8 @@ git -C "$REPO" worktree remove --force "$WT" >/dev/null 2>&1 || rm -rf "$WT"
 git -C "$REPO" worktree prune
 git -C "$REPO" worktree add --detach --quiet "$WT" HEAD
 rm -rf "$WT/Assets/_Scripts" && cp -a "$REPO/Assets/_Scripts" "$WT/Assets/_Scripts"
-echo "prisma_party_scenarios: engine gap-fill + wall-clock pacing (worktree only)"
+echo "prisma_party_scenarios: engine gap-fill (worktree only; a no-op once the port has the members)"
 python3 "$HERE/../prisma_edit_mode_tests/gapfill.py" "$WT"
-python3 "$HERE/pace_headless.py" "$WT"
 
 echo "prisma_party_scenarios: building the player against this checkout's Assets/_Scripts"
 rm -rf "$PLAYER" "$LOGS" "$NET" "$HOMES"; mkdir -p "$LOGS" "$NET" "$HOMES"
@@ -74,11 +73,11 @@ SPEC="$WORK/instances.json"
 echo "{" > "$SPEC"
 for k in "${!LABELS[@]}"; do
   L="${LABELS[$k]}"; PORT=$((BASE_PORT + k + 1))
-  # .NET returns "" for LocalApplicationData when the XDG folder does not exist yet, which turns
-  # the port's save path RELATIVE - into the current directory. Create it, and launch from $WORK.
+  # The engine falls back to ~/.local/share when .NET reports no LocalApplicationData
+  # (LocalDataPath.cs); creating the folder keeps each pilot's saves under its own HOME either way.
   mkdir -p "$HOMES/$L/.local/share"
   HOME="$HOMES/$L" XDG_DATA_HOME="$HOMES/$L/.local/share" COSMIC_SHORE_PROJECT="$WT" COSMIC_SHORE_PROFILE="party$L" COSMIC_SHORE_NET_DIR="$NET" \
-    COSMIC_SHORE_AUDIO=off COSMIC_SHORE_HEADLESS_REALTIME=1 nohup dotnet "$PLAYER/CosmicShore.dll" --headless --verbose --control-port "$PORT" \
+    COSMIC_SHORE_AUDIO=off nohup dotnet "$PLAYER/CosmicShore.dll" --headless --realtime --verbose --control-port "$PORT" \
     > "$LOGS/$L.log" 2>&1 < /dev/null &
   PIDS+=($!)
   SEP=","; [ "$k" -eq $((${#LABELS[@]} - 1)) ] && SEP=""

@@ -93,14 +93,16 @@ its game clock ~200× ahead of the session directory and the TCP links, which bo
 clock. Game-time timers then fire early against them. Run 3 showed this: an invite's 60 s lifetime
 lapsed before the guest had polled it, and the Accept met a withdrawn invite.
 
-Unity has no such mode. So `pace_headless.py` makes each frame that finishes early sleep out the
-rest of its 1/60 s. A late frame is caught up, but only up to a quarter second of debt, so a long
+Unity has no such mode. So every instance runs with the engine's `--realtime` flag
+(`Port/src/CosmicShore.Engine/SceneGraph/RealtimePacer.cs`, `Port/docs/MULTIPLAYER.md` §6.1): each
+frame that finishes early sleeps out the rest of its 1/60 s. A late frame is caught up, but only up to a quarter second of debt, so a long
 load is not followed by a burst of compressed time. Without this, a pass can depend on how busy
 the machine was.
 
 ## Touches nothing committed
 
 `run.sh` makes a `git worktree` of HEAD and copies this checkout's `Assets/_Scripts` over it. It
-fills the engine's API gaps (`../prisma_edit_mode_tests/gapfill.py`) and applies the pacing
-(`pace_headless.py`) in that worktree only, per Port/CLAUDE.md (the engine changes only in a port
-session). It removes the worktree on exit.
+fills any engine API gaps (`../prisma_edit_mode_tests/gapfill.py`) in that worktree only. Every
+gap it knew of on 2026-10-08 has since landed in the engine, so it currently changes nothing. It
+removes the worktree on exit. (The pacing was a worktree patch, `pace_headless.py`, until the engine
+gained `--realtime`.)
