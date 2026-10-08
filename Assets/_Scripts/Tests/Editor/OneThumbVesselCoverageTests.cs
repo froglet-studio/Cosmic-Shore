@@ -93,6 +93,7 @@ namespace CosmicShore.Tests
                 [GuidOf("SingleStickVesselTransformer")] = "SingleStickVesselTransformer",
                 [GuidOf("ScarabVesselTransformer")] = "ScarabVesselTransformer",
                 [GuidOf("GunVesselTransformer")] = "GunVesselTransformer",
+                [GuidOf("FlailVesselTransformer")] = "FlailVesselTransformer",
             };
 
             foreach (var path in Directory.GetFiles(VesselDir, "*.prefab"))

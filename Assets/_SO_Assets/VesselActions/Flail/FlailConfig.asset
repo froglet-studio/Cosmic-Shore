@@ -1,0 +1,62 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2bf15339683845e98e9482396a18efee, type: 3}
+  m_Name: FlailConfig
+  m_EditorClassIdentifier: 
+  dials:
+    sandboxCruise: 380
+    gameCruise: 70
+    restLen: 120
+    maxLen: 340
+    payOut: 520
+    reelIn: 1100
+    reelSpinCap: 1.6
+    ballDrag: 0.35
+    ballMass: 0.4
+    ballR: 17
+    maxBall: 2600
+    tug: 0.2
+    minShip: 0.6
+    crack: 0.6
+    smashSpeed: 700
+    whiteHotSpeed: 1300
+    plough: 0.9
+    ploughHot: 0.97
+    chipKeep: 0.8
+    chipsToBreak: 3
+    skid: 7
+    skidSeconds: 0.3
+    lockKeep: 1
+    lockSpin: 220
+    lockMax: 2.2
+    yank: 0.5
+  hitStopMinSeconds: 0.03
+  hitStopMaxSeconds: 0.09
+  hitStopTimeScale: 0.05
+  shakeMin: 0.35
+  shakeMax: 1.8
+  shakeSeconds: 0.22
+  chipShakeFraction: 0.35
+  hapticFloor01: 0.45
+  debrisRestitution: 0.33333334
+  debrisSpeedLimit: 200
+  comboGraceSeconds: 0.4
+  readyMargin: 1.05
+  readyFlickerHz: 14
+  ballVisualScale: 1.25
+  chainLinks: 12
+  chainWidthFraction: 0.18
+  gaugeRadiusScale: 1.45
+  ironColor: {r: 0.1, g: 0.09, b: 0.09, a: 1}
+  goldColor: {r: 1, g: 0.72, b: 0.18, a: 1}
+  whiteHotColor: {r: 1, g: 0.97, b: 0.9, a: 1}
+  skidTrailSeconds: 0.6
