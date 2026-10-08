@@ -234,6 +234,17 @@ namespace CosmicShore.Gameplay
                     return;
                 }
 
+                // The id arrives from a RequireOwnership = false RPC, so it is a claim, not a fact:
+                // a pilot may only swap THEIR OWN hull. Without this a client could name any
+                // player's NetworkObjectId, despawn that ship (the host's included) and be handed
+                // ownership of the replacement via SpawnWithOwnership(ownerClientId). The host's
+                // own path passes netPlayer.OwnerClientId, so it always passes.
+                if (player.OwnerClientId != ownerClientId)
+                {
+                    CSDebug.LogWarning($"[MenuServerVesselInit] Client {ownerClientId} asked to swap player {playerNetId}, owned by {player.OwnerClientId} - refused.");
+                    return;
+                }
+
                 var oldVessel = player.Vessel;
                 if (!oldVessel.IsAlive())
                 {
