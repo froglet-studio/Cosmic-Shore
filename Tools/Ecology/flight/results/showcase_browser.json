@@ -2,7 +2,7 @@
  "mode": "showcase",
  "trace": [
   {
-   "t": 4.599999999999993,
+   "t": 3.63333333333333,
    "species": [
     "grazer",
     "locust",
@@ -23,14 +23,70 @@
    "by": {},
    "crystals": 0,
    "swarm": "space",
+   "swarmState": "lunge",
+   "morphs": 0,
+   "lizard": 1121,
+   "siege": "roam",
+   "siegeEvents": 0
+  },
+  {
+   "t": 7.066666666666651,
+   "species": [
+    "grazer",
+    "locust",
+    "stampede",
+    "mobber",
+    "thief",
+    "pack",
+    "lurker",
+    "leviathan",
+    "fortress",
+    "snaptrap",
+    "siege"
+   ],
+   "agents": 2501,
+   "petals": 20,
+   "burned": 0,
+   "gained": 0,
+   "by": {},
+   "crystals": 0,
+   "swarm": "space",
+   "swarmState": "retreat",
+   "morphs": 0,
+   "lizard": 1156,
+   "siege": "roam",
+   "siegeEvents": 0
+  },
+  {
+   "t": 10.166666666666641,
+   "species": [
+    "grazer",
+    "locust",
+    "stampede",
+    "mobber",
+    "thief",
+    "pack",
+    "lurker",
+    "leviathan",
+    "fortress",
+    "snaptrap",
+    "siege"
+   ],
+   "agents": 2502,
+   "petals": 20,
+   "burned": 0,
+   "gained": 0,
+   "by": {},
+   "crystals": 0,
+   "swarm": "space",
    "swarmState": "stalk",
    "morphs": 0,
-   "lizard": 1142,
+   "lizard": 1143,
    "siege": "roam",
    "siegeEvents": 0
   },
   {
-   "t": 8.899999999999979,
+   "t": 13.46666666666663,
    "species": [
     "grazer",
     "locust",
@@ -53,12 +109,12 @@
    "swarm": "space",
    "swarmState": "roam",
    "morphs": 0,
-   "lizard": 1151,
+   "lizard": 1148,
    "siege": "roam",
    "siegeEvents": 0
   },
   {
-   "t": 12.699999999999966,
+   "t": 16.56666666666665,
    "species": [
     "grazer",
     "locust",
@@ -81,12 +137,12 @@
    "swarm": "space",
    "swarmState": "roam",
    "morphs": 0,
-   "lizard": 1137,
+   "lizard": 1138,
    "siege": "roam",
    "siegeEvents": 0
   },
   {
-   "t": 15.799999999999955,
+   "t": 19.766666666666808,
    "species": [
     "grazer",
     "locust",
@@ -101,83 +157,21 @@
     "siege"
    ],
    "agents": 2502,
-   "petals": 16,
-   "burned": 4,
+   "petals": 20,
+   "burned": 0,
    "gained": 0,
-   "by": {
-    "lurker": 4
-   },
-   "crystals": 1,
+   "by": {},
+   "crystals": 0,
    "swarm": "space",
    "swarmState": "roam",
    "morphs": 0,
-   "lizard": 1145,
-   "siege": "roam",
-   "siegeEvents": 0
-  },
-  {
-   "t": 19.166666666666778,
-   "species": [
-    "grazer",
-    "locust",
-    "stampede",
-    "mobber",
-    "thief",
-    "pack",
-    "lurker",
-    "leviathan",
-    "fortress",
-    "snaptrap",
-    "siege"
-   ],
-   "agents": 2502,
-   "petals": 16,
-   "burned": 4,
-   "gained": 0,
-   "by": {
-    "lurker": 4
-   },
-   "crystals": 1,
-   "swarm": "space",
-   "swarmState": "roam",
-   "morphs": 0,
-   "lizard": 1145,
-   "siege": "roam",
-   "siegeEvents": 0
-  },
-  {
-   "t": 22.833333333333627,
-   "species": [
-    "grazer",
-    "locust",
-    "stampede",
-    "mobber",
-    "thief",
-    "pack",
-    "lurker",
-    "leviathan",
-    "fortress",
-    "snaptrap",
-    "siege"
-   ],
-   "agents": 2502,
-   "petals": 16,
-   "burned": 4,
-   "gained": 0,
-   "by": {
-    "lurker": 4
-   },
-   "crystals": 1,
-   "swarm": "space",
-   "swarmState": "roam",
-   "morphs": 0,
-   "lizard": 1141,
+   "lizard": 1135,
    "siege": "roam",
    "siegeEvents": 0
   }
  ],
  "siege_near": {
-  "t": 24.233333333333697,
+  "t": 21.266666666666882,
   "species": [
    "grazer",
    "locust",
@@ -192,25 +186,23 @@
    "siege"
   ],
   "agents": 2502,
-  "petals": 16,
-  "burned": 4,
+  "petals": 20,
+  "burned": 0,
   "gained": 0,
-  "by": {
-   "lurker": 4
-  },
-  "crystals": 1,
+  "by": {},
+  "crystals": 0,
   "swarm": "space",
   "swarmState": "roam",
   "morphs": 0,
-  "lizard": 1123,
+  "lizard": 1154,
   "siege": "roam",
   "siegeEvents": 0
  },
  "perf": {
   "frame_ms": 100,
-  "cpu_ms": 61.40000000002328,
-  "sim_ms": 38.59999999997672,
-  "render_ms": 22.29999999998836
+  "cpu_ms": 61.200000000186265,
+  "sim_ms": 37.799999999813735,
+  "render_ms": 22.5
  },
  "errors": [],
  "fails": []
