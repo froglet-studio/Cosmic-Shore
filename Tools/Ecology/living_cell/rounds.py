@@ -128,3 +128,19 @@ R10 = {
     "r10_scav_nocap_h3": dict(FINAL, **SCAV, **NOCAP, **{"pack.switch_ref": 20.0, "lurker.switch_ref": 20.0}),
     "r10_scav_nocap_h3_m08": dict(FINAL, **SCAV, **NOCAP, pack_metab=0.08, **{"pack.switch_ref": 20.0, "lurker.switch_ref": 20.0}),
 }
+
+# R10 result: worse. Carrion partition starved grazers (190 vs 300) and with them the lurkers; thieves were not
+# helped (31 births / 130 starved). Diagnosis (instrumented run, scratch): thieves live near pilots, as AGENTS,
+# and a thief there tails the pilot until it starves - it only ate at its nest while under 40% of e_birth, so a
+# fed thief never reached e_birth and NEVER BRED. Packs: 1326 of 1331 kills were MICRO (near pilots); packs
+# drift to the pilots' prey crowd, convert every 3 kills into a pup and eat the prey out once uncapped.
+# R11: thief.feed_fix (a starving thief goes home; the larder feeds it to e_max at imax) and a pack that eats
+# only part of a kill (pack.eff): the rest stays as a carcass (SKEL, scavenger food) - lower conversion lifts
+# the prey's equilibrium off the paradox-of-enrichment knife edge, in both LOD levels at once.
+B11 = dict(FINAL, **GRAZED, **{"thief.feed_fix": True})
+R11 = {
+    "r11_base": B11,
+    "r11_eff05_nocap": dict(B11, **NOCAP, **{"pack.eff": 0.5}),
+    "r11_eff03_nocap": dict(B11, **NOCAP, **{"pack.eff": 0.3}),
+    "r11_eff04_m06_nocap": dict(B11, **NOCAP, pack_metab=0.06, **{"pack.eff": 0.4}),
+}
