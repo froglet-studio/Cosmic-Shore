@@ -62,6 +62,22 @@ the server records, everyone reads. Reach for it whenever a peer
 knows something the server cannot see — and prefer replicated STATE over an announcement whenever a
 peer that looks LATER still needs the answer.
 
+**Every `InputStatus` field is owner-write state — including `ActiveInputDevice`, since 2026-10.**
+`InputStatus` lives on the Player, and every peer runs `InputController.Initialize` for every
+player, which picks a strategy from THAT machine's hardware. So a field that stays local describes
+the watching machine, not the pilot: until the device replicated, a phone treated a PC pilot as
+Touch and a PC treated a phone pilot as Keyboard, and every replica-side reader of it (the per-device
+ability maps, the Manta's trigger-turn trail, trigger depth in `VesselTransformer`) simulated the
+wrong device.
+
+**Ability presses replicate by RE-EXECUTION, and a press carries what it was resolved against.**
+`R_VesselActionHandler` sends owner → server → every peer which INPUT was pressed, and each peer
+resolves it to actions itself — so whatever that resolution depends on must arrive WITH the press,
+not via separately replicated state: a NetworkVariable and an RPC are not ordered against each other.
+The press and release RPCs carry the device as one byte; a release resolves with its press's device.
+`Tools/Build/peer_press_harness/run.py` runs the shipped handler as two machines over every shipped
+vessel's maps (`R_VesselActions/SQUIRREL_DRIFT.md` §11).
+
 **`IPlayer.IsLocalUser` vs `IPlayer.IsLocalPilot`.** `IsLocalUser` (= `IsMultiplayerOwner`) is the networked path's "locally-owned, non-AI player". `IsLocalPilot` is broader by exactly one case: the legacy NON-NETWORKED single-player spawn path (`PlayerSpawner` → `InitializeForSinglePlayerMode`, used today only by the `BenchmarkStressTest` scene) never network-spawns its Player, so `IsSpawned` is false there and `IsLocalUser` reports false for a human. **Anything that must hold in EVERY game mode binds on `IsLocalPilot`**, so a mode cannot escape a platform system by choosing the other spawn path — the prism occlusion corridor is the reference case.
 
 **Player identity resolution** (`Player.OnNetworkSpawn()`):

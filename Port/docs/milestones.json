@@ -27,8 +27,16 @@
       "dependsOn": [
         "C0"
       ],
-      "status": "todo",
-      "notes": [],
+      "status": "done",
+      "notes": [
+        "2026-10-06 run stopped at the 80-turn limit; what it tried is board item T-1 (Prisma)",
+        "2026-10-06 engine side of (3)-(5) built; (1)-(2) need the separate Unity PR (board T-1, spec in Port/parity/README.md), so not done. Measured: input enters at IInputStatus via InputController.Update -> IInputStrategy.ProcessInput (6 strategies; 38 scripts also read Keyboard/Gamepad/Mouse/Touchscreen.current); nondeterminism: no Random.InitState at match start (~180 UnityEngine.Random draws), 7 unseeded new System.Random(), 17 Guid.NewGuid (board B-1). (3) engine_parity added (Port/src/Shared/ParityDiff.cs, ParityRun.cs, --replay/--parity-out/--random-golden): engine_parity {against:self} -> PASS, 15000 Random draws identical, boot-menu and skimrace-fly identical in state/events/transforms; engine_parity {case:skimrace-fly, golden_dir:planted} -> FAIL on all 3 planted differences (score, event order, 0.5 m transform); ParityDiffTests 13/13 pass. (4) .github/workflows/prisma-parity-ci.yml: build, engine tests, engine_smoke per enabled build scene via prisma-mcp --call (CLI checked: Bootstrap PASS, MinigameSkimRace PASS with 4 ignored direct-entry DI errors), engine_parity; not yet run on GitHub. (5) Port/tools/gen_parity_scoreboard.py -> docs/PARITY.md + docs/parity.json (--check passes): subsystems 0 Faithful / 25 Approximate / 7 Missing, shaders 0/10/67. engine_test: 1607 passed, 2 failed - the same 2 fail at bf0015838 without these changes (board B-2). unity_isolation_check ok.",
+        "2026-10-08 (Prisma) engine side extended and re-proven; status stays in-progress. Re-measured: input reaches the game at IInputStatus via InputController.Update -> currentStrategy.ProcessInput() (6 strategies), 36 scripts also read Keyboard/Gamepad/Mouse/Touchscreen.current; nondeterminism: no Random.InitState at match start (178 UnityEngine.Random draws), 7 unseeded System.Random, 10 Guid.NewGuid (board T-4). (3) events.jsonl now carries kind game (scene loads + 11 GameDataSO match events) and kind contact (vessel trigger contacts, TriggerPass.ContactStarted, sorted per step); the diff compares the kinds the golden carries. ParityDiffTests +3 (planted game event, planted contact, unclaimed kinds); engine_test: 1610 passed, 2 failed (the same 2 as at bf0015838, board B-2). Planted goldens (skimrace-fly): engine_parity golden_dir A -> FAIL state (score 37.9 vs 30.9), events (event 81 fmod reorder), transforms (0.5 m at 728.8 m, bar 0.0729 m); B -> FAIL event 154 game:OnMiniGameRoundEnd; C -> FAIL event 5 contact. engine_parity {against:self}: random PASS (5 seeds, 15000 draws), skimrace-fly state/events/transforms PASS, boot-menu events FAIL on Authentication load time 0.750 vs 0.800 s (engine nondeterminism, board B-1). engine_parity (vs Unity goldens): PASS, 9 channels MISSING (no goldens yet). engine_smoke Bootstrap PASS (0 errors), MinigameSkimRace PASS (4 ignored direct-entry DI errors). (4) CI skips the 2 B-2 tests by name; matrix = 36 enabled build scenes; not yet run on GitHub. (5) gen_parity_scoreboard.py --check passes (25 Approximate / 7 Missing subsystems; shaders 0/10/67). (1)-(2) remain: Unity PR spec in Port/parity/README.md, board T-3. unity_isolation_check ok.",
+        "2026-10-08 status -> done (Prisma)",
+        "2026-10-08 status -> todo (Prisma)",
+        "2026-10-08 status -> in-progress (Prisma)",
+        "2026-10-08 status -> done (Prisma)"
+      ],
       "prompt": "Plan checkpoint C1 of Port/docs/ROADMAP.md. Design an input recorder/replayer that lives in the game's own code (a separate Unity PR - list exactly what it adds under Assets/_Scripts/Utility and why it cannot live in Port/), a Unity-side capture step that writes golden frames, scores, FMOD events and `Random` sequences for a set of seeds, and an `engine_parity` MCP tool that replays in Prisma and diffs against those goldens with the per-channel tolerances in docs/ARCHITECTURE_REVIEW_2026-10-06.md (C9). Include the GitHub Actions job that builds the port and runs engine_smoke for every build scene on each bleeding-edge push, and a generator for the parity scoreboard (docs/PARITY.md + JSON). Measure first: how input reaches the game today (InputScript, Input System devices) and which RNG sources make a match nondeterministic."
     },
     {
@@ -40,8 +48,11 @@
       "dependsOn": [
         "C1"
       ],
-      "status": "todo",
-      "notes": [],
+      "status": "done",
+      "notes": [
+        "2026-10-08 status -> in-progress (Prisma)",
+        "2026-10-08 status -> done. Exit criterion run: python3 Port/tools/bisect_demo.py --check smoke -> 'PASS: prisma_bisect found the plant 98388c739b (HEAD~3) in 3 step(s); the commit outside Port/ was never tested' (2.9 min, 0 skipped; verify bad = the plant's '[bisect-plant]' signature, verify good = PASS). An earlier attempt failed only because a commit landed in the source checkout while the demo was cloning it."
+      ],
       "prompt": "Add `prisma_bisect(good, bad, check)` to the MCP server: run `git bisect run` over commits that touch Port/ only, build each candidate in a scratch git worktree, and judge it with a replay diff (engine_parity) or an engine_smoke error signature. Prove it by planting a regression three commits back and finding it."
     },
     {
@@ -53,8 +64,13 @@
       "dependsOn": [
         "C1"
       ],
-      "status": "todo",
-      "notes": [],
+      "status": "in-progress",
+      "notes": [
+        "2026-10-08 status -> in-progress (Prisma)",
+        "2026-10-08 run stopped at the 80-turn limit; what it tried is board item T-3 (Prisma)",
+        "2026-10-08 Shader Graph compiler built (still in-progress: .shader files, particles, VFX Graph, Timeline and SSIM goldens remain). Reader + compiler (Port/src/CosmicShore.Content/Shaders), 30 custom functions ported once (Render/Glsl/ShaderGraphLibrary.glsl), families keyed by guid + warn-once (Render/MaterialFamilies.cs), compiled graphs drawn (Render/GraphProgramCache.cs). Evidence: dotnet test --filter ShaderGraphCompilerTests|ShaderPropertyCatalogTests -> 13/13 pass (all 56 graphs + 31 sub-graphs parse, 99 node types all emitted, 30/30 functions ported, every graph compiles); CosmicShore --check-shaders -> '56 of 56 graphs linked (9 with approximations), desktop and ES; 0 failed' on RTX 5060; cs-asset shadergraph-census -> 95 first-party shaders: 9 family, 49 compiled, 37 missing (hand-written .shader); scoreboard shaders 10/67 -> 54 Approximate/23 Missing; --shader-gallery before/after shows the 38 non-family graphs drawn by their graphs; SkimRace replay frames 1100 and 1500 byte-identical before/after. Full engine suite in a HEAD+changes worktree: 1623 pass, 2 fail that also fail at HEAD (AstroLeague golden goal, PrefabInstanceEditing byte replay). Exit criterion not run: no Unity goldens yet.",
+        "2026-10-08 run stopped at the 80-turn limit; what it tried is board item T-7 (Prisma)"
+      ],
       "prompt": "First session: plan the Shader Graph compiler for CosmicShore.Render - parse the .shadergraph/.shadersubgraph JSON, emit GLSL for the node types the project uses (census in docs/ARCHITECTURE_REVIEW_2026-10-06.md, D10), port the 30 custom HLSL functions once as a GLSL library, key material families by shader guid, and warn once for an unknown shader. Later sessions (repeat per item): the next hand-written .shader, ParticleSystem module or VFX Graph, ranked by how many on-screen objects use it in the 19 Steam modes; prove each with game_screenshot before/after and the parity diff. Record each item in ROADMAP.md."
     },
     {
@@ -66,8 +82,12 @@
       "dependsOn": [
         "C1"
       ],
-      "status": "todo",
-      "notes": [],
+      "status": "in-progress",
+      "notes": [
+        "2026-10-08 status -> in-progress (Prisma)",
+        "2026-10-08 run stopped at the 80-turn limit; what it tried is board item T-5 (Prisma)",
+        "2026-10-08 Trigger pairs now need a Rigidbody on one side (own or ancestor, kinematic or not), the original engine's rule; ARCHITECTURE.md's 'triggers fire with no Rigidbody' deviation is gone. Test rigs that stood in for vessel/skimmer prefabs gained the kinematic body those prefabs carry (ContactRig, ToyRig, MenuSwapRig, the CLI rounds, SkimRaceSim); new test TwoStaticColliders_NeverMessageEachOther_ButABodyOnEitherSideDoes. Engine tests 1681/1681. Still open for C3: the layer collision matrix for trigger pairs, and Unity goldens to diff replays against (Port/parity/goldens is empty, so engine_parity reports 17 channels MISSING)."
+      ],
       "prompt": "Measure every Rigidbody and OnCollision* use in Assets/_Scripts (17 + 1 at last count). For each, say what contact behaviour it needs. Implement only that in CosmicShore.Engine physics, plus oriented boxes, with tests, and verify with replays that scores match Unity. Never write a general solver: if AstroLeague's ball needs mesh contacts or PhysX-like friction, propose binding BepuPhysics v2 for contacts only behind the trigger/query API, and flag the dependency before adding it."
     },
     {
@@ -79,8 +99,10 @@
       "dependsOn": [
         "C1"
       ],
-      "status": "todo",
-      "notes": [],
+      "status": "in-progress",
+      "notes": [
+        "2026-10-08 status -> in-progress (Prisma)"
+      ],
       "prompt": "Plan checkpoint C4 (Audio parity) of Port/docs/ROADMAP.md. Its exit criterion: Every replay's FMOD event sequence matches Unity's, including mixer snapshots Measure what Cosmic Shore actually uses first, then propose the smallest set of engine changes that meets the criterion, how each is proven, and the order."
     },
     {
@@ -92,8 +114,11 @@
       "dependsOn": [
         "C1"
       ],
-      "status": "todo",
-      "notes": [],
+      "status": "in-progress",
+      "notes": [
+        "2026-10-08 status -> in-progress (Prisma)",
+        "2026-10-08 run stopped at the 80-turn limit; what it tried is board item T-4 (Prisma)"
+      ],
       "prompt": "For every screen in Menu_Main and the in-game HUD, capture the engine at 1920x1080, 2560x1080 and 1024x768, then list layout differences against the Unity goldens with game_ui_at / game_dump_ui evidence. Fix in the engine's RectTransform/layout/TMP code. Separately, plan the clean-room TMP SDF rewrite from docs/LEGAL_REVIEW.md."
     },
     {
@@ -105,8 +130,11 @@
       "dependsOn": [
         "C1"
       ],
-      "status": "todo",
-      "notes": [],
+      "status": "in-progress",
+      "notes": [
+        "2026-10-08 status -> in-progress (Prisma)",
+        "2026-10-08 Pre-G2 part done: INetTransport/INetTransportFactory seam (src/CosmicShore.Engine/Networking/Wire/INetTransport.cs). NetSocket is the TCP implementation; NetDriver opens transports only through NetDriver.TransportFactory (default TcpTransportFactory); wire protocol unchanged. Tests: NetTransportContractTests (7 checks x {tcp, loopback}), NetDriverTransportTests (7, the handshake over the loopback and over real TCP), NetWireTests; `dotnet test` on those = Passed 24/24, 4 runs. engine_build player = ok, 0 warnings, right after the change; engine_smoke (build:false) = PASS, Bootstrap -> Authentication, 0 errors; unity_isolation_check = ok. The full engine_test and a fresh player build could not run at the end: other sessions' in-flight edits in this worktree (tests/ParityDiffTests.cs, Audio/Fmod.cs) do not compile. Not done: a two-process LAN Bloomrush regression run (no scripted harness). Exit criterion NOT met: internet relay, Steam auth/achievements, cloud save and leaderboards wait for gate G2 (2026-12-15); the post-G2 work is on the board."
+      ],
       "prompt": "Before G2: put an `INetTransport` seam between NetDriver and NetSocket (TCP stays the first implementation) with tests. After G2: implement the chosen backend from the boundary table in docs/ARCHITECTURE_REVIEW_2026-10-06.md (F14): transport over the internet with relay, Steam auth/achievements via Steamworks.NET, cloud save and leaderboards. Prove it with two machines in different networks (or two GitHub runners) completing a Bloomrush match.",
       "gate": "G2 (online backend decision, 2026-12-15) must be decided first"
     },
@@ -119,8 +147,12 @@
       "dependsOn": [
         "C2"
       ],
-      "status": "todo",
-      "notes": [],
+      "status": "in-progress",
+      "notes": [
+        "2026-10-08 status -> in-progress (Prisma)",
+        "2026-10-08 run stopped at the 80-turn limit; what it tried is board item T-6 (Prisma)",
+        "2026-10-08 Measured headless Menu_Main (1500 frames, --session-report): the `tasks` phase allocates 0 KB/frame now (the 279-728 KB figure is gone); the cost was the trigger pass - 256 pooled SpawnablePrism trigger boxes parked at the origin, no Rigidbody, 32,640 pairs and their OnTriggerStay every step (trig.pairs 9.6 ms, trig.stays 11.4 ms; new trig.exits/enters/stays/contacts markers). With the Rigidbody rule: fixed phase 24.9 -> 0.55 ms avg, sim p95 100 -> 4 ms, fixed-phase allocations 113.6 -> 0.2 KB/frame, steady GC pause 0.13 -> 0.02 ms/frame. engine_smoke MinigameJoust_Gameplay 512 s -> 15 s for 900 frames. Pre-existing smoke failures (unchanged by the rule): Freestyle and AstroLeague were engine gaps, fixed the same day (Container.InjectGameObject walks a snapshot; AddComponent<ParticleSystem> adds its ParticleSystemRenderer) and both smoke PASS; Joust entered directly still NREs in ThemeManagerDataContainerSO.GetTeamTransparentBlockMaterial (TeamMaterialSets is filled by Bootstrap's ThemeManager) - a play-from-scene assumption of the game, not an engine gap. Not yet done for C7: GTX 1060 frame times against Unity, load times, GPU timer comparison, SustainedLowLatency A/B."
+      ],
       "prompt": "Profile the heaviest mode at intensity 4 from its session report (cpu.phaseAvgMs, memory.phaseAvgKB, steady GC) and dotnet-trace; add GPU timer queries to the report on desktop GL. Rank the top 5 costs against the GTX 1060 budget (16.6 ms). Fix the largest one per session, proving each with before/after numbers from the same replay. Known leads: the async `tasks` phase allocates 279-728 KB/frame in Menu_Main (steady GC up to 1.9 ms/frame); loading allocates ~2.5 GB."
     },
     {
@@ -160,52 +192,55 @@
     {
       "id": "E1",
       "milestone": "M2",
-      "title": "Editor shell",
-      "exit": "The launcher gains a \"Prisma Editor\" mode: scene hierarchy, inspector (read-only), asset browser, embedded player view",
-      "weeks": 4,
+      "title": "Froglet tools",
+      "exit": "EDITOR > TOOLS lists every FrogletTools tool from its source (category, importance, description, docs) and hands any of them to the agent with that source; the top 20 by importance are either native in Prisma (a cs-asset command plus a card action) or a tested agent recipe in `docs/FROGLET_TOOLS.md`; every other tool is marked recipe, Unity-only (with the reason) or retired",
+      "weeks": 6,
       "dependsOn": [],
-      "status": "todo",
-      "notes": [],
-      "prompt": "Plan the Prisma Editor mode of the launcher: hierarchy, read-only inspector and asset browser over the engine's loaded scene, and the player embedded in a panel. Reuse ContentRuntime and the control-port model. List what Dear ImGui needs (docking branch?) and flag any new dependency."
+      "status": "in-progress",
+      "notes": [
+        "2026-10-08 status -> in-progress. Scope decision: tools, data sets and models first; no hierarchy/inspector (the agent does scene work through cs-asset). Built: cs-asset tools (all 95 FrogletTools from source: category, importance, description, docs, file, method, window/action, writer/reader), MCP asset_froglet_tools, and Prisma's EDITOR > TOOLS page (cards by category, RUN WITH CLAUDE hands a tool's source to a new agent chat, SOURCE, DOCS). Next: the top 20 native or as recipes."
+      ],
+      "prompt": "Continue checkpoint E1. The TOOLS page (`src/CosmicShore.Launcher/LauncherApp.Editor.cs`) lists the FrogletTools that `cs-asset tools` reads from source (`src/CosmicShore.AssetTool/EditorData.cs`; MCP `asset_froglet_tools`). Take the next of the top 20 by importance that is not yet native or a recipe: read its source under Assets/, then either (a) port a reader as a cs-asset command plus a card action and prove it by comparing its output with what the Unity tool reports on the same files, (b) write a tested agent recipe for a writer in `docs/FROGLET_TOOLS.md` (cs-asset steps, what to check), or (c) mark it Unity-only with the reason. Never change Assets/."
     },
     {
       "id": "E2",
       "milestone": "M2",
-      "title": "Edit and save",
-      "exit": "Inspector edits, create/delete/reparent, prefab overrides and variants, saved through `cs-asset`'s writer; files byte-stable on round trip",
-      "weeks": 6,
-      "dependsOn": [
-        "E1"
+      "title": "Data sets",
+      "exit": "EDITOR > DATA shows every ScriptableObject data file with Unity's labels, headers, tooltips and ranges; edits every field kind the data uses (values, enums, vectors, colours, references picked from the project, list items added and removed) through `cs-asset set`, byte-stable; creates a new data file of a type with the script's defaults",
+      "weeks": 4,
+      "dependsOn": [],
+      "status": "in-progress",
+      "notes": [
+        "2026-10-08 status -> in-progress. Built: cs-asset datasets (1,313 data files in 363 script types) and dataset FILE (fields in file order with Unity's labels, [Header]/[Tooltip]/[Range], enum options, reference paths, stale keys), MCP asset_datasets / asset_dataset, and EDITOR > DATA: browse by type, edit toggles, numbers (sliders for [Range]), text, enums, vectors and colours through cs-asset set (dry run on ArcadeGameScurry.asset changed only the edited line); references open the data file or model they point at. Not yet: picking references, list add/remove, new data file."
       ],
-      "status": "todo",
-      "notes": [],
-      "prompt": "Plan checkpoint E2 (Edit and save) of Port/docs/ROADMAP.md. Its exit criterion: Inspector edits, create/delete/reparent, prefab overrides and variants, saved through `cs-asset`'s writer; files byte-stable on round trip Measure what Cosmic Shore actually uses first, then propose the smallest set of engine changes that meets the criterion, how each is proven, and the order."
+      "prompt": "Continue checkpoint E2. Measure with `asset_datasets` / `asset_dataset` which field kinds the 363 data types use that the DATA page cannot edit yet (references, list items, nested objects, flag enums, AnimationCurve, Gradient), rank them by how many files use them, and add editing for the top ones through `cs-asset set`: references picked from the project's assets of the field's type, list items added and removed. Then \"new data file of this type\" from the script's defaults (cs-asset already builds defaults from the C# type). Every write must round-trip byte-stable (`cs-asset roundtrip`)."
     },
     {
       "id": "E3",
       "milestone": "M2",
+      "title": "Models",
+      "exit": "EDITOR > MODELS shows every FBX as Unity imports it (meshes, materials, blend shapes, bones, takes, import settings) with a preview; importing a new FBX writes its `.meta` with the settings the game's models use and a stable GUID, and the engine loads it in a prefab like the others",
+      "weeks": 4,
+      "dependsOn": [],
+      "status": "in-progress",
+      "notes": [
+        "2026-10-08 status -> in-progress. Built: cs-asset model FILE (nodes, meshes, triangles, submeshes, materials, blend shapes, bones, takes, bounds, .meta import settings) and model-preview (CPU-shaded PNG, ~0.4 s, no GPU), MCP asset_model / asset_model_preview, and EDITOR > MODELS (all 66 FBX by folder, preview turnable in 45-degree steps, the facts above). Not yet: material remaps with colours, blend-shape sliders, importing a new FBX.",
+        "2026-10-08 Built: the game's materials on every model (ModelMaterialUsage: the prefab renderers whose m_Mesh names the model's meshes; 39 of the 66 FBX are drawn by a prefab renderer; Manta's comes from Manta.prefab), shown as swatches and used by the CPU preview; a 24-view drag turntable (~1.2 s); VIEW IN ENGINE (player --view-model: content only, no scene, orbit camera, Tab cycles the prefabs' materials); .blend/.ma/.mb imported through the installed Blender/Maya with Unity's export settings (DccModelConverter, cached FBX; shield1.blend -> 636 triangles with Blender 4.2.3). Tests: AssetTool.Tests A_model_shows_the_materials..., A_turntable_sheet..., A_Maya_file_imports_through_mayapy_and_is_cached, A_Blender_file_* (negative control: a wrong triangle count fails)."
+      ],
+      "prompt": "Continue checkpoint E3. MODELS shows each model (FBX, and .blend/.ma/.mb through the installed Blender/Maya, `DccModelConverter`) through `cs-asset model` / `model-preview` (MCP `asset_model`, `asset_model_preview`), in the game's material colours (`ModelMaterialUsage`: the prefabs that draw it), with a drag turntable and VIEW IN ENGINE (`--view-model`). Next: blend-shape sliders in the preview and the viewer, then importing a new FBX - measure the ModelImporter settings across the 66 existing metas, write a new model's `.meta` with those and a stable GUID, and prove the engine loads it in a prefab like the others."
+    },
+    {
+      "id": "E4",
+      "milestone": "M2",
       "title": "Play mode",
-      "exit": "Play from the editor with an incremental script recompile (< 5 s); edit fields live",
+      "exit": "Play from the editor with an incremental script recompile (< 5 s); data-set edits apply to the running game live",
       "weeks": 4,
       "dependsOn": [
         "E2"
       ],
       "status": "todo",
       "notes": [],
-      "prompt": "Plan checkpoint E3 (Play mode) of Port/docs/ROADMAP.md. Its exit criterion: Play from the editor with an incremental script recompile (< 5 s); edit fields live Measure what Cosmic Shore actually uses first, then propose the smallest set of engine changes that meets the criterion, how each is proven, and the order."
-    },
-    {
-      "id": "E4",
-      "milestone": "M2",
-      "title": "Asset pipeline",
-      "exit": "Import FBX, textures and audio with `.meta` generation and the import settings the game uses; GUIDs stable",
-      "weeks": 5,
-      "dependsOn": [
-        "E2"
-      ],
-      "status": "todo",
-      "notes": [],
-      "prompt": "Plan checkpoint E4 (Asset pipeline) of Port/docs/ROADMAP.md. Its exit criterion: Import FBX, textures and audio with `.meta` generation and the import settings the game uses; GUIDs stable Measure what Cosmic Shore actually uses first, then propose the smallest set of engine changes that meets the criterion, how each is proven, and the order."
+      "prompt": "Plan checkpoint E4 (Play mode) of Port/docs/ROADMAP.md. Its exit criterion: Play from the editor with an incremental script recompile (< 5 s); data-set edits apply to the running game live Measure what Cosmic Shore actually uses first, then propose the smallest set of engine changes that meets the criterion, how each is proven, and the order."
     },
     {
       "id": "E5",
@@ -214,7 +249,7 @@
       "exit": "Shader Graph JSON edited by a node editor (or by Claude via `asset-surgery`) and translated live; no Unity needed to add a material",
       "weeks": 6,
       "dependsOn": [
-        "E4"
+        "E3"
       ],
       "status": "todo",
       "notes": [],
@@ -223,28 +258,28 @@
     {
       "id": "E6",
       "milestone": "M2",
-      "title": "Froglet tools",
-      "exit": "The 91 FrogletTools tools: the top 20 by use ported first (a FrogletTool attribute host on ImGui); the rest retired or ported on demand",
-      "weeks": 8,
+      "title": "Textures and audio",
+      "exit": "Import textures and audio with `.meta` generation and the import settings the game uses; GUIDs stable",
+      "weeks": 3,
       "dependsOn": [
         "E3"
       ],
       "status": "todo",
       "notes": [],
-      "prompt": "Plan checkpoint E6 (Froglet tools) of Port/docs/ROADMAP.md. Its exit criterion: The 91 FrogletTools tools: the top 20 by use ported first (a FrogletTool attribute host on ImGui); the rest retired or ported on demand Measure what Cosmic Shore actually uses first, then propose the smallest set of engine changes that meets the criterion, how each is proven, and the order."
+      "prompt": "Plan checkpoint E6 (Textures and audio) of Port/docs/ROADMAP.md. Its exit criterion: Import textures and audio with `.meta` generation and the import settings the game uses; GUIDs stable Measure what Cosmic Shore actually uses first, then propose the smallest set of engine changes that meets the criterion, how each is proven, and the order."
     },
     {
       "id": "E7",
       "milestone": "M2",
-      "title": "Animation + UI layout",
-      "exit": "Animator controller editing and RectTransform layout editing with anchors and gizmos",
-      "weeks": 5,
+      "title": "Animation + UI check",
+      "exit": "Animator controllers and RectTransform layouts shown and checked against the game (anchors, overlaps at 3 aspect ratios); the agent edits them through cs-asset - no layout editor",
+      "weeks": 3,
       "dependsOn": [
-        "E3"
+        "E4"
       ],
       "status": "todo",
       "notes": [],
-      "prompt": "Plan checkpoint E7 (Animation + UI layout) of Port/docs/ROADMAP.md. Its exit criterion: Animator controller editing and RectTransform layout editing with anchors and gizmos Measure what Cosmic Shore actually uses first, then propose the smallest set of engine changes that meets the criterion, how each is proven, and the order."
+      "prompt": "Plan checkpoint E7 (Animation + UI check) of Port/docs/ROADMAP.md. Its exit criterion: Animator controllers and RectTransform layouts shown and checked against the game (anchors, overlaps at 3 aspect ratios); the agent edits them through cs-asset - no layout editor Measure what Cosmic Shore actually uses first, then propose the smallest set of engine changes that meets the criterion, how each is proven, and the order."
     },
     {
       "id": "E8",
@@ -253,7 +288,7 @@
       "exit": "Frame profiler, EditMode test runner, Steam upload (steamcmd), Android/iOS from the editor",
       "weeks": 4,
       "dependsOn": [
-        "E3"
+        "E4"
       ],
       "status": "todo",
       "notes": [],

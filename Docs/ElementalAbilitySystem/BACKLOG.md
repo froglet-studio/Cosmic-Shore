@@ -555,3 +555,25 @@ measurement attached is worse than no row.
   `SweptCylinder` (the `SweepCrystals` doc stacked on the narrowphase struct's) and `CSDebug.cs:40`
   (the `CSLogChannel` usage note stacked on `CSLogChannelLabelAttribute`'s). Move each down onto
   its member or delete it. *Shape: a member inserted between a doc and its declaration.*
+
+---
+
+## From the cross-peer press branch (`claude/relaxed-heisenberg-t7utre`, 2026-10-08)
+
+Rows only, opened by the §3.6 pass; nothing here was changed on that branch.
+
+- **[inconsistency, one-line fix] `R_VesselActionHandler.PerformShipControllerActionsReplicated`'s
+  summary says "`AIPilot` is the only one today".** Measured 2026-10-08 (`grep -rln
+  "PerformShipControllerActionsReplicated(" Assets/_Scripts --include=*.cs`): seven callers —
+  `AIPilot`, `UrchinAutopilotDriver`, `ButterflyAutopilotModeDriver`, `WaystationController`,
+  `BroadsideController`, `TollwayController`, `GrizzlyTriggerBombExecutor`. The rest of that summary
+  (the replicate-when-the-output-is-photons rule) is still right; only the census is stale. Fix by
+  dropping the census rather than updating it — a count in a doc comment is the shape that rotted.
+- **[report, needs a decision] The handler's `TODO - Unnecessary events added. OnInputEventStarted,
+  OnInputEventStopped … Use _onButtonPressed and _onButtonReleased` is probably WRONG about its own
+  premise.** One subscriber (`VesselHUDController`, `+=` at :139-140). The two events are not
+  copies of the SOAP channels: `OnInputEventStarted` fires only after `OnButtonPressed`'s autopilot /
+  suppressed / muted filters, and `OnInputEventStopped` also fires from `ReleaseHeldInputs` (a pause
+  or pilot handover) where no SOAP release is ever raised. Moving the HUD to the raw channels would
+  light ability chips for presses the handler refused and leave them lit across a pause. Before
+  acting, decide which semantics the HUD wants; if it is the filtered one, delete the TODO instead.

@@ -559,7 +559,8 @@ instead of +30. A client can also score a hit its own screen showed missing.
 **Root cause.** `StatsManager.CombatHitLanded` assumed a client's round "does not exist on the
 server at all", because projectiles are not networked. The round is not, but the PRESS is:
 `R_VesselActionHandler` sends it owner → `SendButtonPressed_ServerRpc` →
-`SendButtonPressed_ClientRpc` → `PerformShipControllerActions` on every peer, the host included.
+`SendButtonPressed_ClientRpc` → every peer runs the press (`StartPressedActions`, against the
+device the press carries), the host included.
 `FireGunActionExecutor` / `FullAutoActionExecutor` have no ownership check, so the host spawns its
 own copy of the client's round. When that copy connects, the reporter (`VesselCombatHitByProjectile`
 / `…ByExplosion`) raises with the client's name, and the server branch credits

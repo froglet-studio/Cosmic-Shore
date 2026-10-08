@@ -89,6 +89,12 @@ namespace CosmicShore.Player
             Runtime = new ContentRuntime(root, new[] { GameAssembly, typeof(DG.Tweening.DOTween).Assembly });
             Runtime.Install();
 
+            if (NoScene)
+            {
+                // --view-model: content only - no game code runs, nothing else is in the picture.
+                Console.WriteLine($"[player] content ready (no scene) in {sw.ElapsedMilliseconds} ms");
+                return;
+            }
             // A player build runs RuntimeInitializeOnLoadMethod(BeforeSceneLoad) before the first scene.
             RuntimeInitialize.Run(GameAssembly, RuntimeInitializeLoadType.SubsystemRegistration);
             RuntimeInitialize.Run(GameAssembly, RuntimeInitializeLoadType.AfterAssembliesLoaded);
@@ -101,6 +107,9 @@ namespace CosmicShore.Player
             RuntimeInitialize.Run(GameAssembly, RuntimeInitializeLoadType.AfterSceneLoad);
             Console.WriteLine($"[player] booted into '{scene}' in {sw.ElapsedMilliseconds} ms");
         }
+
+        /// <summary>Boot content only: no RuntimeInitialize, no root scopes, no first scene (the model viewer).</summary>
+        public bool NoScene { get; set; }
 
         /// <summary>A headless run is silent unless COSMIC_SHORE_AUDIO asks otherwise (Unity's -nographics).</summary>
         public bool Headless { get; set; }

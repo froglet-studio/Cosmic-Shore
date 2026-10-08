@@ -15,7 +15,10 @@ namespace CosmicShore.Engine.Audio.Fmod
         public const string LibraryName = "fmodstudio";
 
         // ── Output types (FMOD_OUTPUTTYPE) the port uses ──
-        public const int OutputAutodetect = 0, OutputNoSound = 2, OutputWavWriter = 3;
+        public const int OutputAutodetect = 0, OutputNoSound = 2, OutputWavWriter = 3, OutputNoSoundNrt = 4;
+
+        // FMOD_STUDIO_INIT_SYNCHRONOUS_UPDATE: no Studio thread, so a non-real-time run is deterministic.
+        const uint StudioInitSynchronousUpdate = 0x4;
 
         [StructLayout(LayoutKind.Sequential)] struct Vec { public float x, y, z; }
         [StructLayout(LayoutKind.Sequential)] struct Attr3D { public Vec position, velocity, forward, up; }
@@ -40,6 +43,9 @@ namespace CosmicShore.Engine.Audio.Fmod
             [DllImport(LibraryName)] public static extern int FMOD_Studio_System_SetParameterByName(IntPtr system, [MarshalAs(UnmanagedType.LPUTF8Str)] string name, float value, int ignoreSeekSpeed);
             [DllImport(LibraryName)] public static extern int FMOD_Studio_EventDescription_CreateInstance(IntPtr description, out IntPtr instance);
             [DllImport(LibraryName)] public static extern int FMOD_Studio_EventDescription_GetPath(IntPtr description, byte[] path, int size, out int retrieved);
+            [DllImport(LibraryName)] public static extern int FMOD_Studio_EventDescription_IsOneshot(IntPtr description, out int oneshot);
+            [DllImport(LibraryName)] public static extern int FMOD_Studio_EventDescription_IsSnapshot(IntPtr description, out int snapshot);
+            [DllImport(LibraryName)] public static extern int FMOD_Studio_EventDescription_GetLength(IntPtr description, out int length);
             [DllImport(LibraryName)] public static extern int FMOD_Studio_EventInstance_Start(IntPtr instance);
             [DllImport(LibraryName)] public static extern int FMOD_Studio_EventInstance_Stop(IntPtr instance, int mode);
             [DllImport(LibraryName)] public static extern int FMOD_Studio_EventInstance_Release(IntPtr instance);
@@ -129,7 +135,7 @@ namespace CosmicShore.Engine.Audio.Fmod
             if (output == OutputWavWriter && !string.IsNullOrEmpty(wavPath))
                 extra = _wavPath = Marshal.StringToHGlobalAnsi(wavPath);
             // 1024 virtual channels (the Unity integration's default), studio + core flags normal.
-            r = N.FMOD_Studio_System_Initialize(_system, 1024, 0, 0, extra);
+            r = N.FMOD_Studio_System_Initialize(_system, 1024, output == OutputNoSoundNrt ? StudioInitSynchronousUpdate : 0, 0, extra);
             if (r != 0) { Error = $"FMOD_Studio_System_Initialize failed (FMOD_RESULT {r}, output {output})"; return false; }
             Output = output;
             return true;
@@ -191,6 +197,26 @@ namespace CosmicShore.Engine.Audio.Fmod
         }
 
         bool Get(EventInstanceState s, out IntPtr i) => _instances.TryGetValue(s, out i);
+
+        IntPtr DescriptionOf(string path) => string.IsNullOrEmpty(path) ? IntPtr.Zero : Description(new EventReference { Path = path });
+
+        public bool? IsOneshot(string path)
+        {
+            var d = DescriptionOf(path);
+            return d != IntPtr.Zero && N.FMOD_Studio_EventDescription_IsOneshot(d, out int v) == 0 ? v != 0 : null;
+        }
+
+        public bool? IsSnapshot(string path)
+        {
+            var d = DescriptionOf(path);
+            return d != IntPtr.Zero && N.FMOD_Studio_EventDescription_IsSnapshot(d, out int v) == 0 ? v != 0 : null;
+        }
+
+        public int? GetLength(string path)
+        {
+            var d = DescriptionOf(path);
+            return d != IntPtr.Zero && N.FMOD_Studio_EventDescription_GetLength(d, out int v) == 0 ? v : null;
+        }
 
         public void Start(EventInstanceState s) { if (Get(s, out var i)) N.FMOD_Studio_EventInstance_Start(i); }
         public void Stop(EventInstanceState s, STOP_MODE mode) { if (Get(s, out var i)) N.FMOD_Studio_EventInstance_Stop(i, (int)mode); }

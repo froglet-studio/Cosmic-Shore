@@ -827,6 +827,11 @@ namespace CosmicShore.Cli
             // Trigger-only-ship contact bubble: pairs with the ball's non-trigger sphere in the
             // engine trigger pass → AstroLeagueBall.OnTriggerEnter (its verbatim Serpent/Sparrow path).
             var contactBubble = go.AddComponent<SphereCollider>();
+            // The vessel prefabs carry a kinematic, gravity-free Rigidbody; trigger messages need a
+            // body on one side (crystals and prisms have none), as in the original engine.
+            var vesselBody = go.AddComponent<Rigidbody>();
+            vesselBody.isKinematic = true;
+            vesselBody.useGravity = false;
             contactBubble.isTrigger = true;
             contactBubble.radius = contactRadius;
 

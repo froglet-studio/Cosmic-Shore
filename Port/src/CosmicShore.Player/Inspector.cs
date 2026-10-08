@@ -381,6 +381,19 @@ namespace CosmicShore.Player
                 }
                 return;
             }
+            if (arg.StartsWith("intensity ", StringComparison.Ordinal) && int.TryParse(arg[10..].Trim(), out int intensity))
+            {
+                // What the modal's intensity button does (clamped to the card's range), so a
+                // replay can fly a mode at a fixed intensity without hunting the row's pixels.
+                var select = typeof(CosmicShore.UI.ArcadeGameConfigureModal).GetMethod("HandleIntensitySelected", Any);
+                foreach (var m in CosmicShore.Engine.Object.FindObjectsByType<CosmicShore.UI.ArcadeGameConfigureModal>(FindObjectsSortMode.None))
+                {
+                    if (!m.isActiveAndEnabled) continue;
+                    Console.WriteLine($"[arcade] intensity {intensity}");
+                    select?.Invoke(m, new object[] { intensity });
+                }
+                return;
+            }
             if (arg == "ready")
             {
                 // The in-game HUD's Ready button (MiniGameHUD wires it to OnReadyClicked).
