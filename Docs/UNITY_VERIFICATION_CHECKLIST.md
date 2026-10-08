@@ -513,6 +513,51 @@ gates; both generators' `--check` green; `render_card_backgrounds --check` green
 
 ---
 
+### 🔴 Grizzly trigger bombs, fourth pass — constant velocity, unlimited range, stop on a hull; sea-mine look (`cece/funny-lamport-bkzvtc`, 2026-10-08) — NOT EDITOR-VERIFIED
+
+Design ask (said of "the rhino's bombs" — the trigger bombs are the Grizzly's): *"the bombs are
+stopping due to a friction of some sort. they should continue with constant velocity and no
+limitations on distance until frozen by use of the trigger or hitting another vessel. make the bomb
+look better too."* Full doc: `R_VesselActions/GRIZZLY_TRIGGER_BOMBS.md`.
+
+What changed:
+- **Shared code (`Projectile.cs`, `ProjectileImpactor.cs`):** `Projectile.HoldAtFlightEnd` is
+  replaced by `Projectile.Cruises` — no `cos(πt/2T)` ease-out and no lifetime (default false, reset
+  per flight; the bomb was its only user). New per-flight `VesselStruck` event, raised by the
+  impactor for every hull before the domain rule. `Freeze()` now latches `FlightHalted`, so a freeze
+  from inside a sweep stops at the contact point (the cannon's freeze is unaffected — its loop is
+  already cancelled). The move loop clamps `ApplyFlightGrowth`'s flight fraction to 1 (a cruising round outlives its nominal lifetime).
+- **Bombs:** fired cruising; `GrizzlyTriggerBombConfig.projectileTime` retired (asset key removed);
+  any vessel but the firer's own stops the bomb (Frozen, not detonated); `sweptVesselDetection` on.
+- **Look (`GrizzlyBombVisual` + generator):** a tumbling 12-spike crown (generated mesh, radial
+  normals so the core shader's `_Spread` push keeps it seated) that snaps out when armed; a ping
+  ring that collapses inward when armed; the comet streak now uses `Resources/BallTrail.mat`
+  (`CosmicShore/BallTrail`) tinted per shot; an arming flash. Throw-based pulse rates retired.
+
+What ran out of editor: `unity_refcompile` **player** and **editor** configs — RESULT OK, no errors
+in project code (only the three unfetchable service packages' errors, none in changed files; the
+new `GrizzlyBombSpikeMeshTests` were gated and compiled); `author_grizzly_bomb_assets.py --check`
+(watched failing on the stale prefab before the re-run) and `author_grizzly_time_assets.py --check`
+green; `check_abstract_member_implementations`, `check_conditional_compilation`,
+`check_enum_member_references`, `check_switch_label_collisions`, `check_self_referential_locals`,
+`check_console_logging`, `check_using_directives`, `check_elemental_floats` green. Nothing was RUN:
+no edit-mode tests executed, no play mode.
+
+1. **Compiles; edit-mode suite green** — `GrizzlyTriggerBombTests`, `GrizzlyBombSpikeMeshTests`.
+   No missing scripts on `GrizzlyBomb.prefab`; no pink comet or ring (missing shader).
+2. **No friction** — an unfrozen bomb holds its launch speed and keeps going; 10 s later it is still
+   flying and the trigger still freezes it.
+3. **Stops on a vessel** — fired into an AI's hull it stops AT the hull (not past it), armed, and
+   does not go off; pull + release blows it. The firing Grizzly's own hull never stops it.
+4. **Look** — in flight: a small tumbling spiked mine, ring pings, braided plasma comet in the
+   bomb's danger shade. Frozen: spikes snap out, flash, wide strobing halo, ring collapsing inward.
+5. **Other projectiles** — Sparrow / Grizzly cannon / Urchin rounds still ease out and end exactly
+   as before (`Cruises` defaults off); the cannon's own freeze-and-detonate still works.
+6. **Tuning** — the look's dials are on `GrizzlyBomb.prefab`'s `GrizzlyBombVisual`, authored by
+   `Tools/Build/author_grizzly_bomb_assets.py` (edit there, re-run, `--check`).
+
+---
+
 ### 🔴 Mass crystal — one geometry in every state, Space/Time colour contrast (`cece/lucid-ride-4arncr`, 2026-10-08) — NOT EDITOR-VERIFIED
 
 Asked for: *"the blue inactive mass crystal looks correct except its colors should reflect the
