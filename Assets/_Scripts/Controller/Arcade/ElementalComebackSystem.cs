@@ -202,6 +202,14 @@ namespace CosmicShore.Gameplay
                 }
 
                 var vesselType = player.Vessel.VesselStatus.VesselType;
+
+                // The CARD's per-hull starting elements (SO_ArcadeGame.StartingElements, seeded by
+                // VesselController.Initialize at spawn) win over the comeback profile's optional
+                // initial levels. Every arena scene authors a profile, and most author all zeros,
+                // so without this the handicap table (Regatta, Broadside) was erased the instant
+                // the race went live - on every machine.
+                if (gameData.TryGetStartingElements(vesselType, out _)) continue;
+
                 var config = comebackProfile.GetConfig(vesselType);
 
                 ApplyInitialValues(rs, config);

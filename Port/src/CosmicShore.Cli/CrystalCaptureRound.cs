@@ -864,6 +864,11 @@ namespace CosmicShore.Cli
             // Contact rig (CT1): non-trigger contact bubble + impactor routing. Crystal
             // triggers pair with this collider in the engine trigger pass.
             var contactBubble = go.AddComponent<SphereCollider>();
+            // The vessel prefabs carry a kinematic, gravity-free Rigidbody; trigger messages need a
+            // body on one side (crystals and prisms have none), as in the original engine.
+            var vesselBody = go.AddComponent<Rigidbody>();
+            vesselBody.isKinematic = true;
+            vesselBody.useGravity = false;
             contactBubble.radius = contactRadius;
 
             var networkVesselImpactor = go.AddComponent<NetworkVesselImpactor>();

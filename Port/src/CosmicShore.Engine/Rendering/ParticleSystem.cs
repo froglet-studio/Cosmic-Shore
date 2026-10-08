@@ -19,7 +19,10 @@ namespace CosmicShore.Engine
     /// isPlaying and stop actions behave) while the particles themselves are drawn by the
     /// render arc. Modules are proxy structs over shared per-system state, as in the
     /// original: <c>var main = ps.main; main.startSize = 2;</c> writes through.
+    /// Adding one adds its ParticleSystemRenderer, as the original does (AstroLeagueBall builds
+    /// its sparks with AddComponent and styles GetComponent&lt;ParticleSystemRenderer&gt;()).
     /// </summary>
+    [RequireComponent(typeof(ParticleSystemRenderer))]
     public class ParticleSystem : Component
     {
         [Serializable]

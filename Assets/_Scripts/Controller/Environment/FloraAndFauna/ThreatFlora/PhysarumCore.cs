@@ -256,6 +256,34 @@ namespace CosmicShore.Gameplay
             return k;
         }
 
+        /// <summary>
+        /// A BUDDED sclerotium joins: it brings no mass. The network raised it because its reserve already held a whole
+        /// beat shell (<see cref="BudParent"/>), and the daughter lays that shell from the reserve through
+        /// <see cref="SpendOnHeartBody"/> like every other shell, so the birth itself leaves the ledger untouched.
+        /// </summary>
+        public int AddBud(Vector3 position) => AddHeart(position, 0f);
+
+        int _budNext;
+
+        /// <summary>
+        /// The living heart that buds next, or -1 while the reserve cannot pay a whole beat shell (P.ShellVolume - the
+        /// one body a daughter does not share with the network). Parents take turns: no RNG draw, so the sim's stream
+        /// is the same whether or not anything buds. The caller owns the cadence (ThreatGrove: BudRetrySeconds).
+        /// </summary>
+        public int BudParent()
+        {
+            if (P.ShellVolume <= 0f || Reserve < P.ShellVolume) return -1;
+            int n = HeartAlive.Count;
+            for (int i = 0; i < n; i++)
+            {
+                int k = (_budNext + i) % n;
+                if (!HeartAlive[k]) continue;
+                _budNext = k + 1;
+                return k;
+            }
+            return -1;
+        }
+
         /// <summary>The heart was taken: it stops beating, stops climbing, and its agents freeze (physarum.py cut).</summary>
         public void KillHeart(int k)
         {
@@ -559,7 +587,10 @@ namespace CosmicShore.Gameplay
                 if (!Tube[v] && Inside[v] && S[v] > P.On) _cand.Add(v);
             if (_cand.Count == 0) return;
             _cand.Sort((x, y) => S[y].CompareTo(S[x]));
-            int k = (int)Math.Min(_cand.Count, Math.Floor(Reserve / P.TubeVolume));
+            // GAME: the network keeps one beat shell in reserve (ShellVolume; 0 in the research). It re-lays a heart's
+            // lost shell prism and buds a daughter (BudParent); only the surplus extends the cables. Without it every
+            // pass spends the reserve to under one tube and a sclerotium can never bud (harness P7).
+            int k = (int)Math.Min(_cand.Count, Math.Floor(Math.Max(0.0, Reserve - P.ShellVolume) / P.TubeVolume));
             if (P.MaxTubes > 0) k = Math.Min(k, P.MaxTubes - TubeCount);
             for (int i = 0; i < k; i++)
             {

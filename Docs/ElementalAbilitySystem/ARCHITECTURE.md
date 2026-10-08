@@ -337,15 +337,11 @@ oversights:
   made that false): `Urchin.prefab` wires `R_VesselActionHandler._executors` to an
   `ActionExecutorRegistry`, and `RightStickAction(1)` / `LeftStickAction(2)` / `Button2Action(7)`
   are bound. The abilities are exercisable.
-- **STILL OPEN — the HUD.** `UrchinVesselHUDController`/`UrchinVesselHUDView` exist and compile,
-  but **no `UrchinHUDVariant.prefab` exists**, `Urchin.prefab` carries
-  `vesselHUDController: {fileID: 0}`, and no asset references either script — so the pair is
-  unreferenced code and the Urchin ships with **0/4 ability icons**. Every other vessel wires a
-  `<Vessel>HUDVariant.prefab` into its vessel prefab (Dolphin 35 references, Sparrow 76). The
-  view is designed to add an **ammo** fill and a deliberately **binary** riding indicator on top
-  of the fleet-standard four-icon row (the base class owns the row, in charge → mass → space →
-  time order). Authoring the prefab is the remaining work; **FrogletTools > Vessels > Wire Vessel
-  Ability Row** creates and binds the row once a HUD prefab exists to run it against.
+- **LANDED 2026-10-06 — the HUD.** `UrchinHUDVariant.prefab` (a variant of `VesselHUDPrefab`)
+  binds 4/4 ability icons in charge → mass → space → time order plus the view's ammo fill
+  (Charge gauge) and binary riding indicator (Mass gauge); `Urchin.prefab` nests it and wires
+  `vesselHUDController` to `UrchinVesselHUDController`, which also pushes the Track recharge
+  veil onto the Space card. Authored by `Tools/Build/author_urchin_hud.py` (`--check`); icons are placeholders.
 
 Mechanics for what those four icons will label: `_Scripts/Controller/Vessel/R_VesselActions/`
 `URCHIN_CHAIN_SPIKES.md` and `URCHIN_TRAIL_RIDER.md`.

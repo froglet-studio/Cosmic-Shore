@@ -19,7 +19,9 @@ namespace CosmicShore.Gameplay
     /// <para><b>The opponent branch is now a permanent STEAL, not a decaying debuff.</b> A contact
     /// verb is the one kind of hit where the attacker is physically there to take what they knocked
     /// loose, so the petals move straight onto the overtaker's own levels
-    /// (<see cref="ElementalTransfer.Steal"/>): the victim is permanently poorer and the jouster
+    /// (<see cref="ElementalTransfer.ApplyAllAuthoritative"/> with
+    /// <see cref="ElementalTransferForm.Steal"/>, settled on the victim's owner and paid on the
+    /// thief's): the victim is permanently poorer and the jouster
     /// permanently richer until somebody takes it off THEM. Nothing decays, so a match is a running
     /// ledger rather than a series of four-second inconveniences.</para>
     ///
@@ -69,10 +71,10 @@ namespace CosmicShore.Gameplay
                  "the Rhino's sword. Scales the opponent branch ONLY: the ally buff keeps " +
                  "mirroring the base magnitude, so a friendly overtake can never out-pay an " +
                  "enemy one. Read through the thief's REPLICATED integer level " +
-                 "(R_VesselElementalAbilityHandler.ReplicatedLevel): the steal runs on the " +
-                 "victim's machine as well as the thief's, element levels never replicate, and " +
-                 "two peers disagreeing about the multiplier is two peers disagreeing about how " +
-                 "many petals left the victim.")]
+                 "(R_VesselElementalAbilityHandler.ReplicatedLevel). The steal is now decided " +
+                 "once, on the thief's owner (ElementalTransfer.ApplyAllAuthoritative), so only " +
+                 "one machine computes it; the replicated read is kept so the size of a steal " +
+                 "never depends on which copy of the thief a machine is looking at.")]
         [SerializeField] private ElementalFloat stealScale = new(1f);
 
         [Header("When it lands")]
@@ -155,11 +157,19 @@ namespace CosmicShore.Gameplay
                 // takes a positive amount, since how much moves has no sign.
                 // How much moves is the priced magnitude times the THIEF's element scale,
                 // snapshotted once per steal so all four elements move at one rate.
+                //
+                // AUTHORITATIVE: both hulls are replicated, so PhysX raises this overlap on EVERY
+                // peer, and each peer used to take from its own copy of the victim and pay its own
+                // copy of the thief. Only the victim's owner's take and only the thief's owner's
+                // pay counted, and the two were decided independently, so a joust could take a
+                // petal nobody received or pay one nobody lost. Now the thief's owner decides
+                // (the same machine VesselCombatHitBySkimmerEffectSO scores on), the victim's owner
+                // settles, and the settled petals are granted on the thief's owner.
                 var thief = impacteeVessel.VesselStatus;
                 float amount = -debuffMagnitude * StealScale(thief);
-                for (int i = 0; i < AllElements.Length; i++)
-                    ElementalTransfer.Steal(overtakenStatus, thief, AllElements[i],
-                                            amount, ElementalDebuffSources.VesselContact);
+                ElementalTransfer.ApplyAllAuthoritative(ElementalTransferForm.Steal, overtakenStatus, thief,
+                                                        amount, Vector3.zero,
+                                                        ElementalDebuffSources.VesselContact);
             }
 
             // Friendly buff audio: all four elements are buffed at once, so play a

@@ -447,6 +447,41 @@ namespace CosmicShore.Gameplay
             return centre + offset / d * RandomBandRadius(inner, outer);
         }
 
+        /// <summary>
+        /// A point in the cell's open water - volume-uniform between just outside the nucleus and
+        /// just inside the membrane. For a placement that has no band, no planting site and no
+        /// mass to steer by (an unbanded creature released into an empty cell), so it lands
+        /// somewhere in the cell instead of on the crystal or the centre.
+        /// </summary>
+        public static Vector3 RandomPointInCytoplasm(Cell host)
+        {
+            if (!host) return Vector3.zero;
+            float membrane = host.MembraneRadius;
+            if (membrane <= 0f) return host.transform.position;
+
+            float nucleus = Mathf.Max(host.NucleusWorldRadius, host.NucleusVisualWorldRadius);
+            float outer = membrane * 0.85f;
+            float inner = Mathf.Min(Mathf.Max(nucleus * 1.15f, membrane * 0.2f), outer * 0.9f);
+            return host.transform.position
+                   + UnityEngine.Random.onUnitSphere * RandomBandRadius(inner, outer);
+        }
+
+        /// <summary>
+        /// Plant one flora of this species where the species naturally grows. When the cell's
+        /// authored environment prepared ground (a garden's beds, trellis feet and hanging baskets
+        /// - <see cref="FloraPlantingSite"/>), the plant roots THERE, oriented to the bed;
+        /// otherwise its own <c>Plant()</c> disperses it through its planting band (threat flora
+        /// pick their grove site, Borromean honours its pens). Same spawn path either way - a
+        /// garden gets no privileged spawner, only better-chosen ground.
+        /// </summary>
+        public static Flora PlantFlora(Cell host, FloraConfigurationSO floraCfg, Domains? excluded)
+        {
+            if (!host || !floraCfg) return null;
+            return host.TryTakePlantingSite(floraCfg.PreferredSites, out var pos, out var up)
+                ? SpawnFlora(host, floraCfg.FloraPrefab, excluded, floraCfg, pos, up)
+                : SpawnFlora(host, floraCfg.FloraPrefab, excluded, floraCfg);
+        }
+
         /// <summary>How far a banded creature may be born from its own initial goal.</summary>
         protected const float BandSpawnJitter = 40f;
 
@@ -457,7 +492,7 @@ namespace CosmicShore.Gameplay
         /// <paramref name="fallbackPosition"/> exactly as before, so every existing biome is
         /// untouched.
         /// </summary>
-        protected static Fauna SpawnFaunaBanded(Cell host, FaunaConfigurationSO cfg, Domains color,
+        public static Fauna SpawnFaunaBanded(Cell host, FaunaConfigurationSO cfg, Domains color,
             Vector3 fallbackGoal, Vector3? fallbackPosition = null)
         {
             if (!host || !cfg || !cfg.FaunaPrefab) return null;

@@ -65,7 +65,7 @@ namespace CosmicShore.Utility
 
         public static void SetAvailableProfiles(string availableProfiles)
         {
-            PlayerPrefs.SetString(availableProfiles, availableProfiles);
+            PlayerPrefs.SetString(AVAILABLE_PROFILES_KEY, availableProfiles);
         }
     }
 }

@@ -299,6 +299,13 @@ namespace CosmicShore.Gameplay
         bool _warnedCourseMissing;
         int _litGate = -1;
 
+        // The race beats as toasts (halfway, lead change, home stretch, final lap). A local
+        // poll over the replicated gate counts, run on every peer - see DomainRaceToasts.
+        DomainRaceToasts _raceToasts;
+
+        /// <summary>Gates from home at which the leading domain's HOME STRETCH beat fires.</summary>
+        const int HomeStretchGates = 3;
+
         /// <summary>Per-pilot detection state, on the machine that simulates that pilot.</summary>
         class PilotRun
         {
@@ -676,6 +683,30 @@ namespace CosmicShore.Gameplay
             _litGate = next;
         }
 
+        /// <summary>
+        /// True for a mode whose domain score is the SUM of its pilots' gates (Regatta) rather
+        /// than its lead runner's: the race beats then measure a team against its own pilots'
+        /// combined courses instead of one pilot's (see <see cref="DomainRaceToasts"/>). False
+        /// for every other gate race, whose arithmetic is unchanged.
+        /// </summary>
+        protected virtual bool RaceToastsSumTeams => false;
+
+        /// <summary>
+        /// Feed the race beats. The FINAL LAP threshold is where the last lap's first gate
+        /// falls - the race length of a course one lap shorter - so it means the same thing on
+        /// a plain circuit (Headlong, Redline) and behind a lead-in (Breakwater), and an open
+        /// chain (Switchback, Skein) simply never has one.
+        /// </summary>
+        void TickRaceToasts()
+        {
+            _raceToasts ??= new DomainRaceToasts(rule,
+                RaceToastsSumTeams ? DomainRaceToasts.CountPilots : null);
+            int finalLapAt = LapsPerRace > 1
+                ? RaceLengthFor(_rings.Count, LeadInGates, LapsPerRace - 1)
+                : 0;
+            _raceToasts.Tick(gameData, HomeStretchGates, finalLapAt);
+        }
+
         // ── Detection ─────────────────────────────────────────────────────
 
         /// <summary>
@@ -719,6 +750,7 @@ namespace CosmicShore.Gameplay
             }
 
             LightLocalNextGate();
+            TickRaceToasts();
 
             float maxStep = maxPlausibleSpeed * Time.deltaTime * 2f + 5f;
             float maxStepSqr = maxStep * maxStep;

@@ -105,6 +105,7 @@ static class Program
             case "switchback":
             case "headlong":
             case "redline":
+            case "grizzlytime":
             case "regattaGates":
             {
                 int intensity = layer.GetProperty("intensity").GetInt32();
@@ -114,6 +115,7 @@ static class Program
                     "switchback" => SwitchbackCourse.Generate(seed, Apply(SwitchbackCourseSettings.ForIntensity(intensity), layer)),
                     "headlong" => HeadlongCircuit.Generate(seed, Apply(HeadlongCircuitSettings.ForIntensity(intensity), layer)),
                     "redline" => HeadlongCircuit.Generate(seed, Apply(RedlineCourse.ForIntensity(intensity), layer)),
+                    "grizzlytime" => HeadlongCircuit.Generate(seed, Apply(GrizzlyTimeCourse.ForIntensity(intensity), layer)),
                     _ => RegattaCourse.BuildGates(seed, intensity),
                 };
                 if (gates == null || gates.Count == 0) { UnityEngine.Debug.LogError($"{kind}: course generator returned no gates"); return 0; }

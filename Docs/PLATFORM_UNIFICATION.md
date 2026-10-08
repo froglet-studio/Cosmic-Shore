@@ -1,12 +1,13 @@
 # One codebase for Windows, iOS and Android — diagnosis and plan
 
-**Status (2026-10-08): diagnosis (§1) and inventory (§2) done. Steps 1 (Android build plumbing,
-with the store-readiness settings, §3.9), 2 (touch controls), 3 (device tiers), 4 (render tier),
-5 (content tier) and 6 (platform-agnostic fixes) landed on this branch, awaiting editor/device
-verification (`Docs/UNITY_VERIFICATION_CHECKLIST.md`, top six entries). The
-whole branch's runtime C# compiles with 0 project errors against real Unity references
-(`Tools/Build/unity_refcompile`, §3.7). Device measurements are
-deferred, not a gate (owner's call).**
+**Status (2026-10-08): diagnosis (§1) and inventory (§2) done. Steps 2 (touch controls), 3 (device
+tiers), 4 (render tier), 5 (content tier) and 6 (platform-agnostic fixes) are in bleeding-edge
+(PR #977, merged 2026-10-06). Step 1 (Android build plumbing) and the store-readiness settings
+(§3.9) follow on `claude/serene-edison-lfv24f`. All of it awaits editor/device verification
+(`Docs/UNITY_VERIFICATION_CHECKLIST.md`, the six `claude/serene-edison-lfv24f` entries). The
+runtime C# compiles with 0 project errors against real Unity references
+(`Tools/Build/unity_refcompile`, §3.7). Device measurements are deferred, not a gate (owner's
+call).**
 
 ### Decisions recorded (2026-10-05, project owner)
 
@@ -155,7 +156,7 @@ The vessels' `_touchActionOverrides` are unchanged in net; touch and pad bind th
 | Skybox → baked 4096×2048 panorama (`StaticSkyPanorama.shader`, `Resources/StaticHyperSeaSkybox.mat`), post-processing only on the presenting camera, FXAA Low | `PerfStripRuntime.cs` (stomps every camera's clear/post/AA) | in `Resources`, so it ships on every platform even unused; second writer of camera AA beside `GraphicsSettingsApplier` |
 | `CapsuleMembrane` (2,562 instanced capsules) → `MeshMembrane` (one 642-vertex icosphere) | 13 cell configs | Barren and Skim Race configs are shared by ~10 modes the strip doesn't ship |
 | Skim Race intensity 3 → own larger membrane + `IntensityWise` | `MinigameSkimRace.unity` | also changes Skim Race's life spawner on every platform (a food-web change) |
-| Butterfly fold-gate window renders only its footprint (crop + RT quantize) | `FoldGatePortalView.cs` + `FoldGatePortal.shader` | crop is platform-agnostic; must merge with the shader. Resolution cap 0.5 is `PerfStrip`-gated |
+| Butterfly fold-gate window renders only its footprint (crop + RT quantize) — *the window is retired (2026-10-08); the same crop and sizing rules (`WormholeGeometry.Crop` / `TargetSize` / `TargetFits`) now serve the wormhole mouths' exact views, under the same `foldGateWindowMaxRenderScale` tier cap* | `FoldGatePortalView.cs` + `FoldGatePortal.shader` | crop is platform-agnostic; must merge with the shader. Resolution cap 0.5 is `PerfStrip`-gated |
 | Graphics settings menu disabled; target fps −1 → 240 | `GraphicsSettingsApplier.cs`, `BootstrapConfig.asset` | the strip turns OFF the very hook bleeding-edge already has for per-tier render settings |
 
 ### 2.4 CPU / content cuts
@@ -463,7 +464,14 @@ fixed on this branch before the PR:
   next tick). Accepted: the run is ending.
 - **Pre-existing, found in passing (task suggested):** AI Squirrels never drift on a PC -
   `SkimRacePilot` resolves the drift's TOUCH input, which the PC's gamepad/keyboard overrides reject.
+  **Fixed on `claude/kind-edison-nvml7l` (2026-10-06):** the autopilot lookup now resolves against
+  the active device, and the Skim Race pilot holds its own left trigger at full pull while drifting,
+  so its drift is full depth on a pad device too - `AIPilot`'s drifts elsewhere still read trigger 0
+  on a pad (the §2.2 row above). The shipped Skim Race policy keeps `UseDrift: 0`, so nothing changes
+  on screen until that is turned on. `SQUIRREL_DRIFT.md` §10.
 - **Tooling (task suggested):** `unity_refcompile --config editor` false positives, recorded in its README.
+  Fixed 2026-10-08: the editor config now compiles Editor-folder scripts as a separate
+  Assembly-CSharp-Editor (no more false CS0118), and the tool runs on any .NET SDK from 8.0 up.
 
 ### 3.9 Store readiness (2026-10-08) and Step 1
 
@@ -511,7 +519,7 @@ Each step is its own PR into bleeding-edge, and each leaves Windows unchanged un
 | # | Step | Touches | Windows | iOS | Android |
 |---|---|---|---|---|---|
 | 0 | **Measure** (deferred, not a gate). Development builds on the Samsung and the iPhone; `DiagnosticsHUD` bound verdict + main-thread ms; Garrett's branch on the same Samsung; exact model. | nothing | — | — | — |
-| 1 | ✅ *(landed on this branch 2026-10-08, unverified in editor; see §3.9)* **Android build plumbing.** Your two Gradle commits (`0f6b38ba5`, `359ad3d1b`; the namespace fix lives OUTSIDE the EDM4U block, the durable version of the same fix Garrett made inside it). Then decide: ARM64-only, R8 minify + Garrett's `proguard-user.txt` keep rules (the WorkManager crash came from Unity Ads, which your branch removes). Graphics APIs stay Auto (decided). | ProjectSettings (Android only), `Assets/Plugins/Android/*` | none | none | builds |
+| 1 | ✅ *(landed 2026-10-08 on the follow-up branch, unverified in editor; see §3.9)* **Android build plumbing.** Your two Gradle commits (`0f6b38ba5`, `359ad3d1b`; the namespace fix lives OUTSIDE the EDM4U block, the durable version of the same fix Garrett made inside it). Then decide: ARM64-only, R8 minify + Garrett's `proguard-user.txt` keep rules (the WorkManager crash came from Unity Ads, which your branch removes). Graphics APIs stay Auto (decided). | ProjectSettings (Android only), `Assets/Plugins/Android/*` | none | none | builds |
 | 2 | ✅ *(landed on this branch, unverified in editor)* **Touch controls into bleeding-edge, ungated.** `TouchInputStrategy` (physical-size stick + dead zone, one-thumb mirror, re-zero on lift, throttle carry, events on lift only, 75/25 curve) + touch-only vessel tuning (`touchNoseResponse`, gated to the local human pilot) + the ability-dispatch hardening (§2.2). Not the Squirrel `boostLoopEvent` clear, and not the gamepad half of the binary-drift change (reverted at ship review, §2.2). | `Controller/IO`, `VesselTransformer`, Squirrel/Butterfly prefabs | none intended: the touch changes are touch-only; the ability-subscription reconcile runs on every device and only re-asserts the subscription the pause state already implies | **new controls** | **new controls** |
 | 3 | ✅ *(landed on this branch, unverified in editor; see §3.4)* **Device tier foundation.** `DeviceTierClassifier`, `PlatformProfileSO` ×3, dev override, a `CSLogChannel` for it, and a mobile branch in `SettingsAutoDetector` that reads the tier. `Desktop` profile = today's behaviour. | `System/`, `Controller/Settings` | identical | correct tier | correct tier |
 | 4 | ✅ *(landed on this branch, unverified in editor; see §3.5)* **Render tier.** MobileLow: HDR off, 4x MSAA, baked sky, membrane capped at 642 capsules, fold-gate window capped at 0.5 — each a `PlatformProfileSO` field. Everywhere: the fold-gate window renders only its footprint. | `_Graphics`, profile, `CapsuleMembrane`, `FoldGatePortalView` | fold-gate footprint only | none | per `MobileLow` |

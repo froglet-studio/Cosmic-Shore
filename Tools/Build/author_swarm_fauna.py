@@ -50,6 +50,7 @@ assert os.path.isdir(os.path.join(REPO, "Assets")), REPO
 sys.path.insert(0, HERE)
 import swarm_plans  # noqa: E402
 import author_builders  # noqa: E402  round 11e: the builder colonies live in this cell (their own generator)
+import author_nca_creatures  # noqa: E402  the NCA lizard lives in this cell's middle shell (its own generator)
 
 A = lambda *p: os.path.join(REPO, "Assets", *p)
 SWARM_DIR = A("_SO_Assets", "Swarm Fauna")
@@ -96,7 +97,7 @@ TOTAL_SWARMS = 3          # ROUND 7: three big sort swarms (Docs/SWARM_FAUNA.md 
 MAX_SPAWNS_PER_FRAME = 24 # cell-wide budget of PROXY Instantiates per frame (round 7: births are free, proxies are not)
 PLAN_DENSITY = 5          # ROUND 7: tadpoles per plan unit - the whale is 960, the pufferfish 895, the jellyfish 440
 ENGAGE_RADIUS = 160       # world units around a vessel inside which a member is a real GameObject (a proxy)
-MAX_PROXIES = 160         # per swarm: the nearest members win
+MAX_PROXIES = 155         # per swarm: the nearest members win (160 until 2026-10-08: trimmed to hold the 1,200 ceiling, §14.3)
 BITERS_PER_STEP = 24      # bites per tick per swarm - the one main-thread cost that scales with appetite
 PRISM_SCALE = 1.0
 MULTI_DOMAIN = 1          # ROUND 9 (Docs/SWARM_FAUNA.md §17): the Swarm cell's swarms grow regional LINEAGES (food colours nothing)
@@ -124,7 +125,7 @@ ELEMENT_ID = {"Charge": 1, "Mass": 2, "Space": 3, "Time": 4}
 # Middle swarm (penned to 690-840) does not graze. The Middle forest is also 9-12 plants (was 6-10, +2 always-on hearts,
 # 1,194 of the 1,200 colliders): three sector pens (stampede, leech, leviathan) each cover a fifth of the shell, and at 6
 # plants one pen in six held none even with SpreadPlanting. pens (FloraConfigurationSO.PlantingPens): each new Middle plant
-# roots in whichever of those four pens holds the fewest - spread over the whole 625-840 shell, a sector or the gap still
+# roots in whichever of those pens holds the fewest (five since the arms race's pond, Docs/SUBSTRATE_FAUNA.md §11) - spread over the whole 625-840 shell, a sector or the gap still
 # came up empty in one seed in four (12-seed sweep), and the population penned there starved.
 # FLORA_INSET (round 11-14, Docs/SWARM_FAUNA.md §26.6): a plant roots this far INSIDE the pen it feeds (radially, and
 # FLORA_INSET_DEG inside a sector's half-angle). A grazer seats at its plant (seed spread 30-40 u) and its food points are
@@ -135,14 +136,17 @@ REGIONS = [
     dict(key="Inner", band=(470, 620), start="Mass", plan="whale", model="Sort", swarms=1,
          flora="Borromean", food="Mass", floor=2, cap=3, flora_band=(470 + FLORA_INSET, 620 - FLORA_INSET)),
     dict(key="Middle", band=(690, 840), start="Charge", plan="pufferfish", model="Sort", swarms=1,
-         flora="Borromean", food="Time", floor=9, cap=12, flora_band=(625 + FLORA_INSET // 2, 840 - FLORA_INSET),
+         flora="Borromean", food="Time", floor=10, cap=13, flora_band=(625 + FLORA_INSET // 2, 840 - FLORA_INSET),
          # (axis about the cell centre or None, half-angle deg, inner u, outer u): the three grazer sector pens of
          # author_substrate_fauna (stampede +X, leech +120, leviathan -120) and the mobbers' roost gap - each inset by
          # FLORA_INSET inside the population's pen (the gap is 60 u deep, so half that)
          pens=[((1, 0, 0), 55 - FLORA_INSET_DEG, 690 + FLORA_INSET, 840 - FLORA_INSET),
                ((-0.5, 0, 0.866), 55 - FLORA_INSET_DEG, 690 + FLORA_INSET, 840 - FLORA_INSET),
                ((-0.5, 0, -0.866), 55 - FLORA_INSET_DEG, 690 + FLORA_INSET, 840 - FLORA_INSET),
-               (None, 0, 625 + FLORA_INSET // 2, 685 - FLORA_INSET // 2)]),
+               (None, 0, 625 + FLORA_INSET // 2, 685 - FLORA_INSET // 2),
+               # Docs/SUBSTRATE_FAUNA.md §11: the arms race's POND at the +Y pole (its 15-degree pen, inset as the
+               # sectors are); floor/cap +1 so the other four pens keep their two plants each (+1 always-on heart)
+               ((0, 1, 0), 15 - FLORA_INSET_DEG, 690 + FLORA_INSET, 840 - FLORA_INSET)]),
     dict(key="Outer", band=(910, 1080), start="Space", plan="jellyfish", model="Sort", swarms=1,
          flora="Borromean", food="Space", floor=3, cap=5, flora_band=(910 + FLORA_INSET, 1080 - FLORA_INSET)),
 ]
@@ -647,7 +651,10 @@ def model(plans):
     # round 11b-2: the substrate's bodies are BindVirtualMass volume in LiveVolume, so the ladder sees them
     tot["substrate_bodies"] = substrate().body_volume()
     tot["builder_bodies"] = author_builders.body_volume()
-    tot["colliders_engaged"] = tot["hearts"] + tot["proxy_colliders"] + tot["builder_colliders"]
+    # the NCA creatures (Docs/NCA_CREATURES.md): a heart + at most one hit prism each; bodies are BindVirtualMass
+    tot["nca_colliders"] = author_nca_creatures.colliders()
+    tot["nca_bodies"] = author_nca_creatures.body_volume()
+    tot["colliders_engaged"] = tot["hearts"] + tot["proxy_colliders"] + tot["builder_colliders"] + tot["nca_colliders"]
     return rows, tot, eggs
 
 
@@ -658,7 +665,8 @@ def ladder(tot):
     prisms = tot["prisms"] + MAX_PROXIES * TOTAL_SWARMS
     # round 11c: plus the substrate populations' bodies (their entries are BindVirtualMass: LiveVolume counts them);
     # round 11-10: plus the builder colonies' member bodies (the same BindVirtualMass entries, author_builders.body_volume)
-    volume = tot["volume"] + tot["bodies"] + tot.get("substrate_bodies", 0.0) + tot.get("builder_bodies", 0.0)
+    volume = (tot["volume"] + tot["bodies"] + tot.get("substrate_bodies", 0.0) + tot.get("builder_bodies", 0.0)
+              + tot.get("nca_bodies", 0.0))
     return {
         "RestlessEnter": rt(prisms * RESTLESS_ENTER, 100),
         "RestlessExit": rt(prisms * RESTLESS_EXIT, 100),
@@ -697,6 +705,7 @@ def profile_asset():
     faunas = "".join(f"  - {{fileID: 11400000, guid: {guid(rel(cell_path(fauna_name(r))))}, type: 2}}\n" for r in REGIONS)
     faunas += substrate().profile_entries()   # round 11b: the substrate populations (author_substrate_fauna.py owns them)
     faunas += author_builders.profile_entries()   # round 11e: the fortress colony and the thief nest
+    faunas += author_nca_creatures.cell_profile_entries()   # the NCA lizard (author_nca_creatures.py owns it)
     return SO_HEADER % (SO_SCRIPT["profile"], f"{PREFIX} Cell Spawn Profile") + (
         "  FloraExcludeLocalDomain: 0\n  FloraSpawnVolumeCeiling: 12000\n  FloraInitialDelaySeconds: 0\n"
         "  FloraSpawnIntervalSeconds: 0\n  FloraPopulationScale: 1\n  FloraPlantBudgetScale: 1\n"
@@ -710,8 +719,8 @@ def profile_asset():
 
 
 # Round 11g (Docs/ELEMENTAL_ECONOMY.md §4.1): the demo cell plays the TUNED petal burn - one petal
-# per element per danger contact instead of five - while every other cell keeps what shipped
-# (CellConfigDataSO.PetalBurnRule defaults to Shipped = 0). Flip it here: 0 = Shipped, 1 = Tuned.
+# per element per danger contact instead of five. Since 2026-10-08 every cell does (Garrett: Tuned
+# everywhere; CellConfigDataSO.PetalBurnRule defaults to Tuned = 1). Kept explicit here: 0 = Shipped, 1 = Tuned.
 PETAL_BURN_RULE = 1
 
 # Round 11h (QA-SWARM-ROUND11-13): the demo cell STARTS HOSTILE. Every creature wears the cell's

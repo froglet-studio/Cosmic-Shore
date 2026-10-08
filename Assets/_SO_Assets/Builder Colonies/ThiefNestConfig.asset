@@ -53,6 +53,7 @@ MonoBehaviour:
   WorkerHungryBelow: 0.35
   WorkerBirthAbove: 0.9
   WorkerBirthCost: 16
+  WorkerOwnDomainBelow: 0.25
   ThiefFounders: 6
   MaxThieves: 18
   ThiefSpeed: 150
@@ -68,6 +69,7 @@ MonoBehaviour:
   ThiefHungryBelow: 0.4
   ThiefBirthAbove: 0.9
   ThiefBirthCost: 8
+  ThiefOwnDomainBelow: 0.25
   WearerFounders: 16
   MaxWearerHearts: 24
   WearerSpeed: 95
@@ -88,3 +90,4 @@ MonoBehaviour:
   WearerMetabolism: 0.01
   WearerHungryBelow: 0.3
   WearerBirthCost: 10
+  WearerOwnDomainBelow: 0.25

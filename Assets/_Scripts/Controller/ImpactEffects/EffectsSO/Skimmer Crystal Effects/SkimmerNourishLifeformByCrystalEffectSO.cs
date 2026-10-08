@@ -56,7 +56,13 @@ namespace CosmicShore.Gameplay
             s_lastRefresh[id] = now;
             Prune(now);
 
-            if (lifeform.Nourish()) onLifeformRefreshed?.Raise(pilot.PlayerName);
+            if (!lifeform.Nourish()) return;
+            onLifeformRefreshed?.Raise(pilot.PlayerName);
+
+            // The refresh's voice, on the Butterfly's dust capsule (ButterflyDustField) beside the
+            // SkimmerImpactor that ran this; any other adopter stays silent here.
+            if (impactor.TryGetComponent(out ButterflyDustField dust))
+                dust.PlayHeartNourish(embeddedCrystal.transform.position);
         }
 
         void Prune(float now)

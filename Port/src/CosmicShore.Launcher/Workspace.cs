@@ -39,7 +39,7 @@ namespace CosmicShore.Launcher
         public string PlayerProject => Path.Combine(Dir, "Port", "src", "CosmicShore.Player", "CosmicShore.Player.csproj");
         public string BuildProject => Path.Combine(Dir, "Port", "src", "CosmicShore.Build", "CosmicShore.Build.csproj");
 
-        Dictionary<string, string> GitEnv()
+        public Dictionary<string, string> GitEnv()
         {
             var env = new Dictionary<string, string>
             {
@@ -78,6 +78,18 @@ namespace CosmicShore.Launcher
                 .ToList();
         }
 
+        /// <summary>
+        /// The workspace's uncommitted changes (the agent's edits, or anything changed by hand), as
+        /// "git status" counts them: 0 when clean or when there is no workspace yet. Ignored build
+        /// output does not count.
+        /// </summary>
+        public int PendingChanges()
+        {
+            if (!Exists || _tools.Git == null) return 0;
+            var r = ProcessRunner.Run(_tools.Git, new[] { "-C", Dir, "status", "--porcelain=v1", "-uall" }, null, null, CancellationToken.None, quiet: true).GetAwaiter().GetResult();
+            return r.ExitCode != 0 ? 0 : r.StdOut.Split('\n', StringSplitOptions.RemoveEmptyEntries).Length;
+        }
+
         /// <summary>Brings the workspace to the tip of <paramref name="branch"/>. Reports 0..1 through <paramref name="progress"/>.</summary>
         public async Task<bool> Sync(string branch, LogBuffer log, Action<float, string> progress, CancellationToken ct)
         {
@@ -90,6 +102,10 @@ namespace CosmicShore.Launcher
                 float offset = m.Groups[1].Value switch { "Receiving objects" => 0f, "Resolving deltas" => 0.7f, _ => 0.8f };
                 progress(offset + pct * weight, m.Groups[1].Value);
             }
+
+            // Checking out throws uncommitted work away: never do it to edits nobody saved.
+            if (PendingChanges() is var pending and > 0)
+                return Fail(log, $"The workspace has {pending} unsaved change{(pending == 1 ? "" : "s")} (the agent's edits, or yours). Commit them to a branch or discard them on the GIT page, then update.");
 
             if (_s.Workspace == WorkspaceMode.WorktreeOfMyClone)
             {

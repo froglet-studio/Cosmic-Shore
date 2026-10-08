@@ -253,9 +253,18 @@ namespace CosmicShore.UI
             {
                 dataService.SetAvatarId(id);      // do CloudSave inside this
             }
+            else if (dataService != null)
+            {
+                // Not loaded yet (offline boot, or before the cloud profile arrives). The pick used
+                // to be dropped entirely - the grid highlighted it while Home, Profile and the
+                // in-match avatar kept the old one, under a warning that claimed it was cached.
+                // Apply it to this session's profile; it is not written to the cloud.
+                dataService.ApplyAvatarIdLocally(id);
+                CSDebug.LogWarning("[ProfileIconSelectView] Profile not loaded yet - avatar applied for this session only, not saved to the cloud.");
+            }
             else
             {
-                CSDebug.LogWarning("[ProfileIconSelectView] profileService is null or not initialized. Avatar cached locally only.");
+                CSDebug.LogWarning("[ProfileIconSelectView] No profile service - avatar not applied.");
             }
             
         }

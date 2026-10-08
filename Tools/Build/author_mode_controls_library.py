@@ -2,16 +2,21 @@
 """
 Author Resources/ModeControlsLibrary.asset from data the modes ALREADY carry.
 
-Each previewable mode gets one entry so its per-mode fields (Abilities filter,
-Vessel override, ShowAbilityRows) have a home. The entry's Rows start EMPTY:
-"how you win" lives in the launch panel's OBJECTIVE BOX (bound from the mode's
+"How you win" lives in the launch panel's OBJECTIVE BOX (bound from the mode's
 ModePreview ObjectiveText/ObjectiveMetric), not in the CONTROLS section — an
 objective row here would say the same thing twice on one card.
 
-This script previously SEEDED one objective row per mode; it now RETIRES them.
-It removes exactly the row it once owned — the one whose headline equals that
-mode's current ObjectiveText — and passes every hand-authored row, Abilities,
-Vessel and ShowAbilityRows value through untouched.
+This script previously SEEDED one entry (with one objective row) per previewable
+mode; it now RETIRES those rows. It removes exactly the row it once owned — the
+one whose headline equals that mode's current ObjectiveText — and passes every
+hand-authored row, Abilities, Vessel and ShowAbilityRows value through untouched.
+
+It no longer ADDS entries. An entry with no rows, no filter and no vessel is
+what ModeControlsLibrarySO.EntryFor already answers for a mode with NO entry
+(except that it would shadow DefaultRows), so seeding one per preview bought
+nothing and made --check fail every time a new mode shipped a preview. A mode
+gets an entry when someone has something to say in it - added in the inspector,
+then left alone by this script.
 
 Usage:
     python3 Tools/Build/author_mode_controls_library.py            # write
@@ -49,8 +54,10 @@ def yaml_quote(s):
 
 def parse_entries(text):
     """Existing Entries as raw blocks, keyed by mode id. Preserves hand-authored fields."""
-    m = re.search(r'^  Entries:\s*(\[\]\s*)?$', text, re.M)
-    if m:
+    # `[ \t]` rather than `\s`: `\s*` crosses the newline, so `Entries:\s*$` matched EVERY
+    # populated list too, reported it empty, and a write rebuilt the list from scratch -
+    # deleting every hand-authored Abilities filter and Vessel override in the asset.
+    if re.search(r'^  Entries:[ \t]*\[\][ \t]*$', text, re.M):
         return {}, []
     entries, order = {}, []
     block = re.search(r'^  Entries:\n((?:  - .*\n(?:    .*\n)*)+)', text, re.M)
@@ -76,30 +83,18 @@ def strip_owned_row(raw, obj):
     return stripped
 
 
-def build_entry(mode, existing_raw):
-    if existing_raw is not None:
-        return existing_raw
-    return ('  - Mode: ' + str(mode) + '\n'
-            + '    Rows: []\n'
-            + '    ShowAbilityRows: 1\n'
-            + '    Abilities: []\n'
-            + '    Vessel: -1\n')
-
-
 def main():
     check = '--check' in sys.argv
     text = open(ASSET, encoding='utf-8').read()
     objs = objectives()
     existing, order = parse_entries(text)
 
-    modes = order + [m for m in sorted(objs) if m not in existing]
-    blocks = []
-    for mode in modes:
-        raw = existing.get(mode)
-        if raw is None and mode not in objs:
-            continue
-        entry = build_entry(mode, raw)
-        blocks.append(strip_owned_row(entry, objs.get(mode)))
+    # Existing entries only, in their authored order (the module docstring says why this no
+    # longer seeds one per previewable mode).
+    blocks = [strip_owned_row(existing[mode], objs.get(mode)) for mode in order]
+    if not blocks:
+        print('no entries; nothing to retire.')
+        return 0
 
     head = text.split('  Entries:')[0]
     updated = head + '  Entries:\n' + ''.join(blocks)

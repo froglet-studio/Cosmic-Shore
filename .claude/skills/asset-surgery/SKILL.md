@@ -393,7 +393,7 @@ its GameObject lists it in `m_Component`.
   offsets, tested against seven known meshes: zero hits). So you cannot hand-author a prefab
   reference to a bone inside a nested model prefab. Do not burn the session
   reverse-engineering it: add a serialized NAME and resolve it in `Awake`, which also survives
-  a re-export — the ids do not. This is the same choice the project's own `ResolvePart` makes.
+  a re-export — the ids do not. This is the same choice the project's own `ResolvePart` makes. **Nor can you BORROW one** by renaming a node to match a name whose id another FBX already records (two manta FBXes sharing `manta` → one id made it look safe): tried on the omni crystal's triangle shells (2026-10), Unity did not reproduce the id and the shells rendered nothing. When a hand-authored prefab must draw an FBX mesh, BAKE it into a native `Mesh` `.asset` from a generator (donor-clone `Assets/_Models/Testing/Prism.asset`'s layout; `Tools/Build/author_omni_crystal_triangles.py` is the worked example) — its reference is `{fileID: 4300000, guid: <own meta>, type: 2}`, deterministic by construction.
 - **A nested prefab instance is reachable TWO ways, and needs both when its parent is PLAIN.**
   `m_TransformParent` in the instance's modification block always, PLUS an entry in the parent
   Transform's `m_Children` **iff that parent is a plain (non-stripped) Transform**. The
@@ -454,6 +454,23 @@ reports**. Unity prefabs carry pre-existing dangling references — `Dolphin.pre
 a `view: {fileID: 257326519381942953}` pointing at nothing since before this session — and
 a checker run only on your output reports that as damage you caused. The signal you want is
 "document count fell by exactly the N I removed, and the dangling set is **unchanged**".
+
+### Technique: REVERTING a nested instance's component swap (added + removed components)
+
+A swap made on a nested prefab instance (here: four lifeforms removed `CrystalMass`'s shell
+MeshRenderers and added SkinnedMeshRenderer + `SpaceCrystalAnimator` per shell) lives in FOUR places,
+and all four must go together: the `m_AddedComponents` entries (3 lines each; the target line may
+wrap), the added components' own documents, the `m_RemovedComponents` entries for the source's
+components (empty list → `m_RemovedComponents: []`), and every `m_Modifications` entry that pointed
+a source field at an added component (`crystalModels.Array.data[i].spaceCrystalAnimator`). Then
+drop the `--- !u!1 &id stripped` GameObject docs that existed only so the added components had an
+owner — but only once nothing references them (loop until no orphan remains). Assert no surviving
+`{fileID: id}` names a dropped document. `Tools/Build/author_mass_crystal_look.py` is the worked
+example and keeps the result held under `--check`. **Splitting on `"\n--- "` loses the file's final
+newline when the LAST document is one you drop** — the newline belonged to it. Restore it
+explicitly (`if text.endswith("\n") and not out.endswith("\n")`) and diff the output's tail; a
+missing final newline is a one-line diff noise on every future edit and the tell that a splitter
+was wrong.
 
 ### Technique: ADDING a nested prefab instance (and referencing a component inside it)
 
@@ -1030,24 +1047,73 @@ package at its locked source, then binds ALL of `Assembly-CSharp` (method bodies
 a player build would; `Tools/Build/unity_refcompile/README.md` says exactly what it does and does not
 prove. Then `python3 Tools/Build/check_generated_assets.py` audits every changed `.asset` / `.prefab`
 / `.unity` against the schema that compile wrote (serialized keys, enum values, guid/fileID
-references, m_Script classes). Four things that cost time on the first run (2026-10-06):
-- **`DOTNET_ROOT` must hold a net8.0 REFERENCE PACK** (`packs/Microsoft.NETCore.App.Ref/8.*/ref/net8.0`).
-  With only a .NET 10 SDK, `depublicize()` dies with `IndexError: list index out of range` after a
-  full ten-minute fetch, which reads as a broken tool. Install the 8.0 channel per-user (above) and
-  point `DOTNET_ROOT` at it; `TMPDIR` decides where the ~550 MB cache lands.
+references, m_Script classes). What cost time on the first runs (2026-10-06 to 10-08):
+- **`DOTNET_ROOT` must hold a .NET SDK, 8.0 or newer** (a runtime alone has no reference pack, and
+  the tool says so). Until 2026-10-08 it had to be 8.0 exactly: a .NET 10-only `DOTNET_ROOT` died with
+  `IndexError: list index out of range` after the full ten-minute fetch. Any SDK from 8.0 works now
+  (8.0 and 10.0 verified). Install a channel per-user (above) and point `DOTNET_ROOT` at it;
+  `TMPDIR` decides where the ~550 MB cache lands.
+- **A warm run takes ~30 s, and the `cached` lines are the evidence.** Count them
+  (`grep -c ' cached$'`): about 86 package assemblies should come from the cache. Until 2026-10-08
+  NONE ever did, so every run recompiled them all. A stub DLL rebuilt each run sat in every
+  package's fingerprint. Nobody noticed, because a cache that never hits looks exactly like a cache.
+  A cold count after a warm one means an input moved (a new SDK, a re-fetch). Runs that share a
+  cache take turns (`waiting for another unity_refcompile run`). Before that lock, a player run and
+  an editor run launched together rewrote the shared DLLs under each other, and `Unity.Entities`
+  "failed" with 53 false project errors downstream.
+- **`check_generated_assets.py` needs the SAME `DOTNET_ROOT` and `TMPDIR` the compile ran with.**
+  Run it bare after a compile that used a per-user SDK and it says `no Roslyn tools in
+  <TMPDIR>/unity_refcompile_cache/tools - run run.sh first` — while the tools sit in that very
+  directory. It is not missing the cache; it cannot find `csc.dll` under the system
+  `DOTNET_ROOT`. Export both for the audit too (2026-10-08). Negative-control it the same way as
+  the compile: misspell one key in a changed asset, confirm `[field] 1` names it, restore.
 - **"218 errors" is not 218 errors.** Read the `ERRORS in project code:` line. The large bucket is
   files that `using` a UGS package no mirror carries (Multiplayer, Friends, Leaderboards); they are
   counted, not judged. Check your own files are not in that bucket (they would be unverified):
   grep the run's `report.json` for each file you changed.
-- **`--config editor` reports false `CS0118 'Editor' is a namespace but is used like a type`** in
-  untouched runtime `#if UNITY_EDITOR` files whenever the branch changed an Editor-folder file
-  declaring `namespace CosmicShore.Editor` (123 files do). That config compiles changed
-  Editor-folder files INTO the runtime compilation; Unity keeps them in Assembly-CSharp-Editor,
-  which runtime code cannot see. The summary line says "(0 in files changed since …)" - believe it.
-- **Negative-control both tools before quoting them**: plant a call to a missing member in a file
-  you changed (the compile must fail with that file tagged `[CHANGED-TONIGHT]`), and misspell one
-  key in an asset you changed (the audit must name the file and the key). Restore, then
-  `git status --short` the paths. Both discriminated on their first try here.
+- **`--config editor` compiles the Editor-folder scripts as their own `Assembly-CSharp-Editor`**,
+  referencing the runtime, as Unity does. Before 2026-10-08 it merged the changed ones INTO the
+  runtime compilation, so any branch touching one of the 123 `namespace CosmicShore.Editor` files got
+  false `CS0118 'Editor' is a namespace but is used like a type` errors in untouched runtime
+  `#if UNITY_EDITOR` files. A run from an older checkout still does. Only the CHANGED Editor files
+  gate, and the working tree counts (uncommitted and untracked files too), so run it before you
+  commit; the run names them after `gated: the N changed since …`. Until 2026-10-08 only COMMITTED
+  files counted, and an edited test passed green without being compiled (`SkimRaceAITests.cs`,
+  2026-10-06). The errors listed for unchanged files (37 on 2026-10-08) are reference-set artifacts
+  (2021.1 `UnityEditor`, no test framework). `EDITOR_REFERENCE_GAPS` in `build.py` matches each one, so they stay unverified
+  even in a file your branch changes. A Unity 6 editor API your branch starts using reads as an error
+  until it gets an entry there.
+- **`check_generated_assets.py` needs `DOTNET_ROOT` exported too, and lies about why when it
+  is not.** Without it the audit says `no Roslyn tools in …/tools - run run.sh first` even though
+  `run.sh` just populated that folder — it looks for `csc.dll` under `$DOTNET_ROOT`, not under the
+  cache. Export the same `DOTNET_ROOT`/`PATH`/`TMPDIR` you gave `run.sh`. It also audits only what
+  is COMMITTED since the base (`audited 0 added + 0 modified` on an uncommitted tree is not a pass).
+- **`check_generated_assets.py` reports only findings that are NEW against the base's copy of the
+  asset — so a negative control must inject a defect the BASE never had.** Re-adding a key you just
+  removed (a retired field's `minExplosionScale: 60`, still present in the base asset) is suppressed
+  as pre-existing and the audit stays green, which reads as "the audit is blind". Commit a key the
+  base never carried (`negativeControlKey: 1`), confirm `[field] 1` names it, then
+  `git reset --hard` back (2026-10-08, Rhino crystal-burst field removal).
+- **`--config editor` puts a test's `LogAssert` in the "unverified" bucket, not the error count.**
+  `UnityEngine.TestTools.LogAssert` lives in the test-framework DLL, which is not among its
+  references, so a new edit-mode test that uses it reports `CS0103 'LogAssert'` under *unverified*.
+  It is an `EDITOR_REFERENCE_GAPS` entry, so a typo such as `LogAsert` still fails the run. Do
+  read the bucket, because everything ELSE in your test file was bound for real.
+- **Files that `using` an unobtainable UGS package are bucketed, so your edits in them are not
+  gated.** `HostConnectionService`, the party services, `MultiplayerSetup` and `GameDataSO` all
+  `using Unity.Services.Multiplayer`. Every method body is still BOUND, so the diagnostics exist
+  in `report.json` - intersect them with your diff's changed lines (parse `@@ +a,n @@` from
+  `git diff -U0 <base>...HEAD -- <file>` and look for any error at those line numbers). Zero hits
+  on changed lines is the evidence; "the run was green" is not.
+- **Negative-control both tools before quoting them**: plant a call to a missing member, or a
+  misspelt name, in a file you changed. Until 2026-10-08 a missing NAME (`CS0103`, `CS0246`) never
+  gated: three packages always fail, and missing-type errors were all bucketed while any had, so such
+  a plant only moved the *unverified* count (the 2026-10-08 bug-hunt records describe exactly that).
+  Now only a name a failed package declares is bucketed; still read both numbers. The compile must
+  fail with that file tagged
+  `[CHANGED-TONIGHT]`. For the asset audit, misspell one key in an asset you changed (the audit
+  must name the file and the key). Restore, then `git status --short` the paths. Both discriminated
+  on their first try here.
 
 **But a REAL type check of the files you actually wrote is still available, and it is worth the
 20 minutes** on new code (as opposed to a small edit inside a large existing file). Build a stub
@@ -1388,6 +1454,20 @@ It is the cheapest way to make a look call honestly without an editor, and it ca
 failures (a term that never reaches the screen, an effect too faint to read at its real pixel size).
 State plainly that it is a render of the MATH, not a capture — it proves the shape, not the
 compile, the render state or the bloom.
+
+### Trap: a SEE-THROUGH shell on a Fresnel ramp washes to its BRIGHT colour — the back faces did it
+
+`lerp(bright, dark, (1 + N·V) / 2)` (`SpreadFresnelShader` and its transcriptions) is built for an
+OPAQUE body: the only faces you see face you, so the ramp spans dark centre → bright silhouette. Put
+it on a transparent `Cull Off` / `ZWrite Off` shell and every BACK face is drawn too, with N·V < 0 —
+the bright half of the ramp. Compiling the fragment with clang over a sphere (§4.5c): **76% of a
+back face reads bright vs 26% of a front face**, so the Mass crystal's shells read "too white" /
+"too lime" on the same colour pair the opaque Space and Time crystals wear well. Tuning the colours
+cannot fix it. Measure N·V on the camera side (`rim = 1 − |N·V|`, `_FaceForward` on
+`OmniShepardFresnelShader`) and shape it with a power (`_RimPower`); ship both as OPT-INS whose
+defaults reproduce the old formula, and PROVE that with the harness (max |Δ| 6e-8) so every other
+material on the shader is untouched. Whenever a look complaint is "washed out" on a transparent
+mesh, count the back faces before touching a colour.
 
 ### Technique: MEASURE a prefab's real size offline (transform tree + nested instances + FBX bounds)
 
@@ -1733,11 +1813,21 @@ tiny constraint interface). Compile it together with the REAL subject files it t
 driver that reflects over `[Test]` methods, and you have executed the shipped assertions against
 the shipped code. This is what makes the body-level blindness above survivable: the 2026-08-24
 table says the no-stubs pass proves nothing inside a method, and a whole-file test harness proves
-everything inside every method the suite covers. Two mechanics that cost a cycle each:
+everything inside every method the suite covers. Three mechanics that cost a cycle each:
 
 - **`rm` the output assembly before every rebuild.** A failed build leaves the previous `.dll` in
   place, the driver runs it, and a *broken* file reports the previous run's "7 passed" — the exact
   false green a gate exists to prevent.
+- **…and `rm` every GENERATED SOURCE too, and abort when its generator fails.** A harness that
+  extracts the shipped methods into `Foo.g.cs` and then compiles has two artefacts that can go
+  stale, not one. If the extractor hard-fails (as it should, on a signature it cannot find) and the
+  build line runs anyway, the compiler happily reuses the PREVIOUS `Foo.g.cs` and the run reports a
+  pass for code that is no longer the tree. It happened re-verifying a branch after merging the
+  base: the extractor read its "pre-fix" side from `git show HEAD:`, which stopped being pre-fix the
+  moment the fix was committed, so it failed — and the merged-tree "re-verification" printed ALL OK
+  for the pre-merge code. So: delete generated sources and outputs first, chain the generator with
+  `|| exit`, and pin any "before" side of a before/after harness to a COMMIT (`<fix>^`, the merge
+  base), never to `HEAD`, which moves under you.
 - **Run from the PROJECT ROOT**, not the harness directory: Unity runs edit-mode tests with cwd =
   project root, so every `File.Exists("Assets/...")` in the suite is project-relative and fails
   everywhere else. Four passing tests read as four failures until you notice.
@@ -1764,6 +1854,37 @@ If the deliberate error does not fire, the file is not in the build — add it t
 list and start over. Treat "I added a file to the harness" as requiring this check every time; the
 failure mode is a green build that proves nothing, which is the exact thing a harness exists to
 rule out.
+
+### Technique: run a NetworkBehaviour as TWO MACHINES — partial class + an RPC router
+
+A question about REPLICATION ("does every peer run the same thing for this press?") is invisible
+to any single-machine test and normally needs an MPPM session or two devices. When the replication
+is by RE-EXECUTION (an RPC carries an input and each peer resolves it itself), it can be answered
+out of editor from the shipped file, in seconds:
+
+- **Two edits to the real file, nothing else.** Make the class `partial`, and cut its `[ServerRpc]`
+  methods out (signature regex + brace-match, HARD-FAIL if absent). A generated partial supplies
+  same-signature replacements that loop over a `List<Self> Copies` and call each copy's REAL
+  `[ClientRpc]` method — the owner's own copy included, as Netcode does. Everything the RPCs
+  resolve and run is the shipped code; the generator re-derives the signature from the file, so
+  one driver runs an OLD revision (`git show <rev>:path`) and the new one alike — which is the
+  repro and the proof in one tool.
+- **One object per machine, each with its OWN view of the replicated state** (here: a fake input
+  status per copy, so the peer can disagree with the owner about the device). Actions are
+  recorders that log into the status passed to them, so "what did each machine run" is a list
+  compare. Feed it every shipped prefab's data, parsed from YAML, not a hand-built case.
+- **Give every mechanism of the fix its own scenario, or its negative control cannot fire.** The
+  2026-10 press fix had two release mechanisms that back each other up on the ordinary networked
+  path (the owner sends the pressed device; every copy also prefers its own record). Removing
+  either one alone changed NOTHING there — the harness looked blind. Only adding the path each
+  covers alone (the non-networked single machine; a peer that joined mid-hold and never ran the
+  press) made each removal fail. **A mutation that does not fire may mean a sibling covers it, not
+  that the harness cannot see** — find the scenario where it is the only cover before concluding
+  either way. Ship the mutations as `--self-test`.
+- It proves what each machine RESOLVES and RUNS, never Netcode itself (delivery, ordering,
+  ownership) — say so. Worked example: `Tools/Build/peer_press_harness/` (`R_VesselActionHandler`,
+  `R_VesselActions/SQUIRREL_DRIFT.md` §11).
+
 ### Technique: gate a DTO round-trip BY REFLECTION, not field by field
 
 A payload struct that crosses the wire through a hand-written DTO (Unity Netcode's
@@ -2377,6 +2498,42 @@ derivation attached, and re-running the harness after any shader edit re-checks 
 ratio in the harness, so a later change to the motion that widens the envelope fails there
 rather than as prisms popping at the screen edge.
 
+**Prove a shader REFACTOR behaviour-neutral by compiling BOTH revisions into one binary.**
+Factoring a term out of a shipped function (2026-10: `ChargeCrystalDischarge` out of
+`ChargeCrystalSurface`) is the change most likely to be "obviously the same" and least likely to be
+checked. `git show HEAD:<file>.hlsl > old.hlsl`, translate old and new through the same `SUBS`, wrap
+them in `namespace OLD { … }` / `namespace NEW { … }` (strip the include guard first, or the second
+copy compiles to nothing), and `memcmp` the two entry points over a few hundred thousand random
+inputs — include the degenerate ones (here: an all-zero barycentric, the unbaked fail-safe). Then
+assert the extracted term equals the old function with the rest zeroed out, and negative-control
+by perturbing one expression in `NEW` (it must report thousands of mismatches). Zero bitwise
+mismatches is a stronger claim than "it compiles and looks right", and costs ten minutes.
+
+**A NEW URP `.shader` can be front-end compiled with the repo's own glslang mock.**
+`Tools/Shaders/verify_prism_slice.py` exports `URP_MOCK` and `glslang_compile(work, include,
+program, stage, entry, defines)`; import it, append the few URP functions your pass calls that the
+mock lacks (`TransformObjectToHClip`, `ComputeFogFactor`, `MixFogColor`, `#define half float`), copy
+any `Assets/...` include into the work dir at the same relative path, and compile every
+`HLSLPROGRAM` vertex+fragment with and without `INSTANCING_ON`. It proves the shader's OWN code
+type-checks, nothing about URP; negative-control it (drop an argument from a call) before quoting.
+
+**A hand-written URP `.shader` can be compiled by a REAL HLSL compiler — Microsoft's DXC — with
+no substitutions at all.** The clang shim above rewrites the language (`out` params, constructors,
+scalar overloads) and the glslang mock compiles a GLSL translation; DXC compiles the HLSL as written,
+so `out` params, swizzles, `clip`, `Texture2DArray` and an `#include` of a shared `.hlsl` all behave
+exactly as on device. The Linux release downloads and runs in this container (2026-10, wormhole
+corridor change):
+`curl -sSL -o dxc.tgz https://github.com/microsoft/DirectXShaderCompiler/releases/download/v1.8.2407/linux_dxc_2024_07_31.x86_64.tar.gz`,
+untar into scratch, run as `LD_LIBRARY_PATH=<dir>/lib <dir>/bin/dxc -T ps_6_0 -E frag -HV 2018 -I <stubdir>
+-I Assets/_Graphics/Materials/Graphs pass0.hlsl -Fo /dev/null` (the `bin/dxc` binary needs `lib/` on the
+loader path or it fails to start). Build each pass's file as `HLSLINCLUDE` + that pass's `HLSLPROGRAM`
+with the `#pragma` lines dropped (entry names come from `#pragma vertex/fragment`), and swap the URP
+`Core.hlsl` include for a ~15-line stub: `CBUFFER_START/END`, `TEXTURE2D[_ARRAY]`, `SAMPLER`,
+`SAMPLE_TEXTURE2D[_ARRAY]`, `_WorldSpaceCameraPos`, `_ScreenParams`, `_ProjectionParams`, `_Time`,
+`UNITY_MATRIX_V/P`, `TransformObjectToWorld`, `TransformWorldToHClip`. Compile vertex AND fragment of
+every pass (`vs_6_0`/`ps_6_0`), then negative-control it (delete one global the pass reads — DXC must
+name it). Like the glslang route it proves the shader's own code and its includes, nothing about URP.
+
 **Reuse an existing harness's shim for a DIFFERENT function in the same file — do not write a
 second one.** `Tools/Shaders/verify_prism_shard3d.py` exposes `SHIM`, `translate()` and
 `clang_cmd()` as module members, so a scratch script can `import verify_prism_shard3d as H`,
@@ -2645,6 +2802,27 @@ that would otherwise cost a round-trip to a human at the editor:
 - **Mesh size and orientation**: decompress `Geometry → Vertices`, take bounds; identify a
   mesh's "nose" by comparing cross-section extents near each end of its long axis (the
   radially-symmetric end is the nose, the asymmetric one is the fins).
+- **"When does this block start moving?" is NOT "the first key that differs".** An eased curve
+  often carries a key at t=0 and the next one much later with a sub-degree difference (the Time
+  crystal's `89`: −270.00 at 0 s, −269.46 at 0.64 s), so a `diff(values) > ε` scan reports motion
+  from t=0 when nothing visible happens for 0.6 s. Sample the curve on a fine grid and threshold
+  the VISIBLE quantity (1° of rotation, a few mm of translation) against the value at the instant
+  you care about. The first reading said "no still window at the loop seam" and would have killed
+  a correct design.
+- **A snap to a symmetry of an IMPORTED model needs the frame Unity actually produced, and a
+  Z-up FBX has no anchor in this repo.** Unity's conversion permutes and signs axes, and for a
+  shape whose symmetry has two coordinate-aligned orientations (the icosahedron's
+  (0,±1,±φ) vs (0,±φ,±1) families) the SIGN decides which one you get — so a hard-coded group is
+  wrong for half the possible conversions and nothing offline tells you which half. Resolve it at
+  RUNTIME from something the import cannot reinterpret: named bones (sub-asset fileIDs are not
+  derivable, names are), whose rest positions in the model root's local space name a symmetry axis
+  — `TimeCrystalVertexHop` snaps the first-ring bones' centroid onto the nearest of the 24
+  candidate five-fold axes, which fixes axis AND orientation in one step. Do not reach for
+  `Mesh.vertices`: an `isReadable: 0` mesh has none in a player. Then PROVE the resolver against
+  every conversion it could face: export the FBX's bone heads and mesh, apply all **48** signed
+  axis permutations in a Roslyn harness, run the shipped resolver on each, and assert it recovers
+  the true axis and that every group element leaves the converted mesh congruent (48/48, 6e-7
+  here). Negative-control with a tilted frame and the wrong bone set.
 
 ## 4.8b Technique: prove a runtime VISUAL claim offline, by walking to the authored value
 
@@ -2778,6 +2956,31 @@ have no spaces. A deleted-asset guid sweep reported "1 file, 0 references" for a
 deleted 8. Use `-z`/`-0` (`git diff --name-only -z … | xargs -0`, or
 `while IFS= read -r -d ''`), and sanity-check the COUNT against the diffstat before believing a
 clean result.
+
+## 4.8d Technique: authoring blend-shape NORMALS into an FBX (the space crystal, 2026-10)
+
+Exporters (Blender writes all-zero shape normals) and Unity's *Calculate* mode both derive each
+key's normal delta against the BASE mesh, and Unity sums active keys. That is right for one key
+and wrong for keys meant to be STACKED (key B ramped while key A is held at 100): rotations do
+not add, and the space crystal's stacked half-spins were off by 20°/42° and popped on reset.
+`Tools/Build/author_space_crystal_mesh.py` is the worked fix. Four rules it paid for:
+
+- **Shape normals are per CONTROL POINT.** A hard-edged mesh needs one control point per polygon
+  corner (unweld it) before a shape normal can be per-face.
+- **The importer normalizes each frame's TARGET normal (`base + delta`) before re-deriving the
+  delta.** assimp does it (`NormalizeSafe` in its FBX converter) and Unity behaved the same in
+  play. So a delta authored for a stacked key as `t − a` (true normal minus the stacked-on pose)
+  gets bent wherever `|n0 + t − a| ≠ 1`, worst on faces that turn ACROSS the spin axis. In playtest
+  that showed up as "the big faces are perfect, the small side faces still snap". Author every
+  target UNIT length: `delta = λ·t − a` with `λ` the positive root of `|λ·t + (n0 − a)| = 1`; the
+  stacked sum is then `λ·t`, along the true normal, under either importer model.
+- **Validate against BOTH importer models** (raw deltas and normalized targets). A validator that
+  replays only the raw sum passed the broken file with 0.0005°.
+- **Reference = per-quad Newell normal, never one triangle's.** Linear shape keys twist quads
+  (14° here); the shading uses one normal per quad, so a triangle reference reports phantom
+  6–25° errors. Use assimp (`libassimp-dev` + a 20-line C++ dumper of `aiAnimMesh` normals) as the
+  independent reader; it normalizes targets, so it reproduces the Unity failure. Negative-control
+  it on the broken file.
 
 ## 4.9 Technique: answering "does every X actually carry Y?" THROUGH prefab nesting
 
@@ -3059,6 +3262,31 @@ never fold it into a fix for something else.
   are verifiable from the repo in about a minute, and ruling them out is itself a finding:
   if the branch's data is clean, the hole is in the reporter's *working tree*, which is a
   different conversation than a code bug.
+- **…and a fifth that the repo cannot show at all: a BRAND-NEW ScriptableObject type whose first
+  asset was written outside Unity can load as null in the playtester's editor with all four
+  checks passing.** The Butterfly bloom's `ExplosionScaleDustPrismEffectSO` asset did exactly
+  that three playtests running (`explosionPrismEffects[0] is empty`), and changing the asset's
+  bytes to force a re-import did NOT fix it — so "imported before its script compiled" was a
+  guess, not the cause, and the cause was never found because nobody looked at the asset in the
+  inspector. Two rules came out of it. **Ask for the inspector first**: one sentence from the
+  human ("select X — what does the inspector show?") names the cause, where each speculative fix
+  costs a full playtest round. **Prefer a field on something already proven to load**: the fix
+  that worked moved the reference onto a MonoBehaviour on the blast prefab (a new script too, but
+  a component), pointing at an EXISTING-type asset the game already loaded elsewhere — and an
+  `IExplosionPrismPayload` seam on the impactor took the place of the container slot. When a new
+  SO type is unavoidable, have the human open its first asset once before the playtest.
+- **The Prisma port is a real compile of `Assets/_Scripts`, available in about a minute.**
+  `Port/src/CosmicShore.Player` live-compiles the game's own source against the port's Unity API
+  surface, so `dotnet build Port/src/CosmicShore.Player` binds method bodies — not the
+  syntax-only Roslyn pass §0.05 of `/ship` warns about. No SDK in the container? `curl -sSL
+  https://dot.net/v1/dotnet-install.sh | bash -s -- --channel 10.0 --install-dir /opt/dotnet`
+  works through the agent proxy. The build is RED on bleeding-edge for reasons outside your diff
+  (engine gaps: on 2026-10-08, `Graphics.CopyTexture` in `WormholeMouth.cs` and
+  `Physics.OverlapBoxNonAlloc` in `NestedGyroidFlora.cs`), so filter the error list to the files
+  you touched rather than reading "N errors" as yours, and confirm the synced copy of each new file
+  is under `Port/src/CosmicShore.Live/obj/live-src/`. It caught nothing on the bloom branch and
+  that is the point: "no errors in any touched file" is evidence a Roslyn syntax pass cannot give.
+  It does NOT exercise Unity's asset loader — the null-loading asset above compiled cleanly here.
 - **A feature can be dead in several places at once, and fixing the first one makes the
   SYMPTOM stop while the feature stays dead.** The Dolphin's shard toggle had an unwired SO
   reference (the error you could see), a bus whose two broadcast bodies were commented out,
@@ -3353,6 +3581,21 @@ never fold it into a fix for something else.
   While you are there, print the human-readable NAME of the object you resolved
   (`m_Name`) — "attached to GameObject 2842750437815966001" is unreviewable, "attached to
   `chargeShell`" catches this bug by eye in one second.
+- **Adding a property to a shader SUBSCRIBES it to every component that already drives that name —
+  sweep the WRITERS of each name you add, not just the readers of each name you drop.** The mirror
+  of the bullet below, and it shipped (2026-10, omni crystal): the new omni shaders honoured
+  lowercase `_opacity` "so the crystal blooms in", which wired them to `FadeIn`, whose curve is slow
+  and back-loaded (under 10% for the first second, full at 2.9 s at 60 fps). The old ShepardGraph
+  shells only had uppercase `_Opacity`, so the omni had always appeared at once; the playtest report
+  was "the new crystal takes longer to appear" in Skim Race. Before giving a shader a property
+  name, `grep -rn 'PropertyToID("<name>")'` and read what each writer DOES with it, at what rate.
+- **A domain/team material set is an index-wise CLONE of a base set, so re-authoring a prefab's
+  per-slot materials without the base set leaves its team version on the old ones.** `ThemeManager`
+  builds each domain's crystal materials by `new Material(BaseMaterialSet.CrystalMaterialN)`, and
+  `Crystal.ChangeDomain` swaps slot N to that clone — so a prefab rebuilt around new materials still
+  turns into the OLD geometry the moment a domain owns it (the omni's team version ran a Shepard band
+  on its body: the "scaling issues" report). When a prefab's slot materials change, grep
+  `GetTeam*Material(` and the base set's fields, and repoint both in the same change.
 - **Replacing a SHADER is an API change: sweep for every property the old one exposed.**
   Shader properties are a public surface driven from C# by string name
   (`Shader.PropertyToID`, `SetFloat`, `SetColor`, MaterialPropertyBlock), and dropping one

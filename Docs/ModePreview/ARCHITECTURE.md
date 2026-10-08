@@ -138,6 +138,11 @@ it samples an authored `EnvironmentPrefab` — pure generation math, no prisms. 
   existed for editor preview — via `ModePreviewTrackModel.BuildWaypointLays`, with domains
   cycling the playable triad per waypoint segment (matching `SegmentSpawner`'s live painting).
   **If the scene's track is retuned, re-bake the prefab and re-run the author script.**
+  Intensity 4 ("Relativity") is the exception that needs no hand re-bake:
+  `Tools/Build/author_skimrace_relativity_track.py` writes the scene's track AND this bake in one
+  pass (ribbon normals, crystals per lap and marked waypoints included) and refuses to write if the
+  two component bodies would differ; `GetPreviewBlocks` honours all three fields, so the card's
+  model shows the rolled ribbon and only the crystal markers.
 
 Two knock-on rules the track added:
 

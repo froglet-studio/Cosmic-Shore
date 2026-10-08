@@ -6,8 +6,9 @@ Mini re-implementation of Unity's script-compilation pipeline (enough of it to t
   * evaluates includePlatforms/excludePlatforms, defineConstraints and versionDefines for the
     chosen configuration (player = StandaloneWindows64 / IL2CPP / NET Standard 2.1, the project's
     shipped target; see DEFINES below);
-  * assigns loose Assets scripts to Assembly-CSharp-firstpass / Assembly-CSharp (Editor folders
-    excluded in the player configuration);
+  * assigns loose Assets scripts to Assembly-CSharp-firstpass / Assembly-CSharp; Editor-folder
+    scripts are excluded in the player configurations, and in the editor configuration go to
+    Assembly-CSharp-Editor(-firstpass), which references the runtime assemblies;
   * resolves name and GUID references, auto-referenced asmdefs and precompiled managed DLLs
     (PluginImporter .meta: platform, isExplicitlyReferenced, defineConstraints);
   * runs Roslyn source generators labelled RoslynAnalyzer for the asmdef that owns them and every
@@ -88,11 +89,17 @@ CONFIGS = {
     "player-dev": ["ENABLE_IL2CPP", "DEVELOPMENT_BUILD", "ENABLE_PROFILER", "UNITY_ASSERTIONS", "DEBUG", "TRACE"],
     # APPROXIMATE editor compile of the project's runtime code: UNITY_EDITOR branches type-checked
     # against the newest non-publicized UnityEditor obtainable (2021.1 - see README), plus the
-    # Editor-folder files changed since --changed-base (with NUnit). Packages stay player-compiled.
+    # Editor-folder scripts in their own Assembly-CSharp-Editor (with NUnit), gated on the ones changed
+    # since --changed-base (see EDITOR_PREDEFINED). Packages stay player-compiled.
     "editor": ["ENABLE_MONO", "UNITY_EDITOR", "UNITY_EDITOR_64", "UNITY_EDITOR_WIN", "ENABLE_PROFILER",
                "UNITY_ASSERTIONS", "DEBUG", "TRACE", "ENABLE_UNITY_COLLECTIONS_CHECKS", "UNITY_INCLUDE_TESTS"],
 }
 PLAYER_PLATFORM = "WindowsStandalone64"
+# Unity's predefined EDITOR assemblies, for loose scripts under an Editor/ folder (Plugins/ and
+# Standard Assets/ ones go to -firstpass). They reference the runtime assemblies, never the other way
+# round. Only the editor config fills them; it gates on errors in the Editor-folder files changed
+# since --changed-base and lists the rest's, which are compiled only so the changed ones bind.
+EDITOR_PREDEFINED = ("Assembly-CSharp-Editor-firstpass", "Assembly-CSharp-Editor")
 
 
 # --- helpers -----------------------------------------------------------------------------------
@@ -355,16 +362,50 @@ def owner_of(path, owners, stop):
 
 
 # --- compile -----------------------------------------------------------------------------------
+def version_key(name):
+    """Numeric sort key for a version directory name: "10.0.12" sorts after "8.0.31" (a plain string
+    sort puts it first, and picked .NET 8 over 10 whenever both were installed)."""
+    return tuple(int(x) for x in re.findall(r"\d+", name))
+
+
 def csc_path():
-    c = sorted(glob.glob(os.path.join(DOTNET_ROOT, "sdk", "*", "Roslyn", "bincore", "csc.dll")))
+    c = sorted(glob.glob(os.path.join(DOTNET_ROOT, "sdk", "*", "Roslyn", "bincore", "csc.dll")),
+               key=lambda p: version_key(p.split(os.sep)[-4]))
     if not c:
         sys.exit("csc.dll not found under %s/sdk (set DOTNET_ROOT)" % DOTNET_ROOT)
     return c[-1]
 
 
+def netcore_toolchain():
+    """(reference-pack dir, runtime version, tfm) for building and running the helper tools
+    (Depublicize, Diagnose, Schema). Any .NET SDK from 8.0 up will do: the tools are compiled against
+    the newest Microsoft.NETCore.App reference pack the newest installed runtime can run."""
+    shared = os.path.join(DOTNET_ROOT, "shared", "Microsoft.NETCore.App")
+    runtimes = sorted((r for r in (os.listdir(shared) if os.path.isdir(shared) else []) if version_key(r)),
+                      key=version_key)
+    if not runtimes:
+        sys.exit("no .NET runtime under %s (DOTNET_ROOT=%s): install a .NET SDK, 8.0 or newer" % (shared, DOTNET_ROOT))
+    rt = runtimes[-1]
+    packs = sorted(glob.glob(os.path.join(DOTNET_ROOT, "packs", "Microsoft.NETCore.App.Ref", "*", "ref", "net*.0")),
+                   key=lambda p: version_key(p.split(os.sep)[-3]))
+    usable = [p for p in packs if version_key(p.split(os.sep)[-3])[:1] <= version_key(rt)[:1]]
+    if not usable:
+        sys.exit("no Microsoft.NETCore.App reference pack that runtime %s can run under %s/packs (found: %s): "
+                 "install a .NET SDK, not only a runtime" % (rt, DOTNET_ROOT, ", ".join(packs) or "none"))
+    return usable[-1], rt, os.path.basename(usable[-1])
+
+
 def base_refs():
-    ns = sorted(glob.glob(os.path.join(DOTNET_ROOT, "packs", "NETStandard.Library.Ref", "*", "ref", "netstandard2.1",
-                                       "netstandard.dll")))[-1]
+    """netstandard 2.1 (Unity's API profile) + the NETStandard 2.0 facades. netstandard.dll comes from
+    the SDK's NETStandard.Library.Ref pack when the SDK bundles one (8.0 does, 10.0 does not), else
+    from the nuget copy fetch.py caches."""
+    sdk = sorted(glob.glob(os.path.join(DOTNET_ROOT, "packs", "NETStandard.Library.Ref", "*", "ref", "netstandard2.1",
+                                        "netstandard.dll")), key=lambda p: version_key(p.split(os.sep)[-4]))
+    nuget = os.path.join(CACHE, "nuget", "netstandard.library.ref.2.1.0", "ref", "netstandard2.1", "netstandard.dll")
+    ns = (sdk[-1:] + [nuget])[0]
+    if not os.path.exists(ns):
+        sys.exit("netstandard.dll 2.1 not found: no NETStandard.Library.Ref pack under %s/packs and no %s - "
+                 "rerun fetch.py (needs network once)" % (DOTNET_ROOT, nuget))
     fac = os.path.join(CACHE, "nuget", "netstandard.library.2.0.3", "build", "netstandard2.0", "ref")
     refs = [ns] + [p for p in glob.glob(os.path.join(fac, "*.dll")) if os.path.basename(p) != "netstandard.dll"]
     return refs
@@ -380,6 +421,30 @@ UGUI_ALIASES = ["Unity.ugui", "UnityEngine.UI", "Unity.TextMeshPro", "GUID:2bafa
                 "GUID:6055be8ebefd69e48b49212b09b47b2f", "GUID:6546d7765b4165b40850b3667f981c26"]
 
 
+def depublicize_tool():
+    """Build (cached per toolchain) Depublicize/Program.cs - the Mono.Cecil rewriter, also the engine index."""
+    cecil = os.path.join(CACHE, "packages", "com.unity.nuget.mono-cecil@1.11.6", "Mono.Cecil.dll")
+    tool_src = os.path.join(HERE, "Depublicize", "Program.cs")
+    tools = os.path.join(CACHE, "tools")
+    dll = os.path.join(tools, "Depublicize.dll")
+    ref, rt, tfm = netcore_toolchain()
+    fp = fingerprint([tool_src, cecil, csc_path(), ref, rt])
+    stamp = dll + ".stamp"
+    if os.path.exists(dll) and os.path.exists(stamp) and open(stamp).read() == fp:
+        return dll
+    os.makedirs(tools, exist_ok=True)
+    cmd = [os.path.join(DOTNET_ROOT, "dotnet"), csc_path(), "-nologo", "-noconfig", "-nostdlib", "-langversion:latest",
+           "-r:" + cecil, "-out:" + dll, tool_src] + ["-r:" + x for x in glob.glob(os.path.join(ref, "*.dll"))]
+    r = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    if r.returncode != 0:
+        sys.exit("Depublicize tool failed to build:\n" + r.stdout)
+    shutil.copyfile(cecil, os.path.join(tools, "Mono.Cecil.dll"))
+    json.dump({"runtimeOptions": {"tfm": tfm, "framework": {"name": "Microsoft.NETCore.App", "version": rt}}},
+              open(os.path.join(tools, "Depublicize.runtimeconfig.json"), "w"))
+    open(stamp, "w").write(fp)
+    return dll
+
+
 def depublicize():
     """Build (once, cached) the de-publicized copies of the Unity 6 reference DLLs - see
     Depublicize/Program.cs. Rebuilt whenever overrides.txt or the tool changes."""
@@ -388,31 +453,22 @@ def depublicize():
     cecil = os.path.join(CACHE, "packages", "com.unity.nuget.mono-cecil@1.11.6", "Mono.Cecil.dll")
     tool_src = os.path.join(HERE, "Depublicize", "Program.cs")
     ovr = os.path.join(HERE, "depublicize_overrides.txt")
-    tools = os.path.join(CACHE, "tools")
     out = os.path.join(CACHE, "engine_refs")
     stage = os.path.join(CACHE, "engine_refs_in")
-    fp = fingerprint([tool_src, ovr, cecil])
+    dll = depublicize_tool()
+    # the output depends on the inputs' content, not on which .NET built the tool or where the inputs
+    # sit: a new SDK or a fresh checkout must not rewrite the engine references (that would recompile
+    # every cached package assembly)
+    fp = content_fingerprint([tool_src, ovr, cecil])
     stamp = os.path.join(out, ".stamp")
     if os.path.exists(stamp) and open(stamp).read() == fp:
         return out
-    os.makedirs(tools, exist_ok=True)
     os.makedirs(stage, exist_ok=True)
     for p in glob.glob(os.path.join(src, "*.dll")):
         b = os.path.basename(p).replace("-publicized", "")
         if b.startswith("UnityEngine") or b == "Unity.TextMeshPro.dll":
             if not b.startswith("UnityEngine.SpatialTracking") and not b.startswith("UnityEngine.XR.Legacy"):
                 shutil.copyfile(p, os.path.join(stage, b))
-    ref = sorted(glob.glob(os.path.join(DOTNET_ROOT, "packs", "Microsoft.NETCore.App.Ref", "*", "ref", "net8.0")))[-1]
-    rt = sorted(os.listdir(os.path.join(DOTNET_ROOT, "shared", "Microsoft.NETCore.App")))[-1]
-    dll = os.path.join(tools, "Depublicize.dll")
-    cmd = [os.path.join(DOTNET_ROOT, "dotnet"), csc_path(), "-nologo", "-noconfig", "-nostdlib", "-langversion:latest",
-           "-r:" + cecil, "-out:" + dll, tool_src] + ["-r:" + x for x in glob.glob(os.path.join(ref, "*.dll"))]
-    r = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-    if r.returncode != 0:
-        sys.exit("Depublicize tool failed to build:\n" + r.stdout)
-    shutil.copyfile(cecil, os.path.join(tools, "Mono.Cecil.dll"))
-    json.dump({"runtimeOptions": {"tfm": "net8.0", "framework": {"name": "Microsoft.NETCore.App", "version": rt}}},
-              open(os.path.join(tools, "Depublicize.runtimeconfig.json"), "w"))
     if os.path.isdir(out):
         shutil.rmtree(out)
     r = subprocess.run([os.path.join(DOTNET_ROOT, "dotnet"), dll, stage, out, oracle, ovr],
@@ -451,12 +507,11 @@ def diagnose_tool():
     src = os.path.join(HERE, "Diagnose", "Program.cs")
     dll = os.path.join(tools, "Diagnose.dll")
     stamp = dll + ".stamp"
-    fp = fingerprint([src, csc_path()])
+    ref, rt, tfm = netcore_toolchain()
+    fp = fingerprint([src, csc_path(), ref, rt])
     if os.path.exists(stamp) and open(stamp).read() == fp:
         return dll
     bincore = os.path.dirname(csc_path())
-    ref = sorted(glob.glob(os.path.join(DOTNET_ROOT, "packs", "Microsoft.NETCore.App.Ref", "*", "ref", "net8.0")))[-1]
-    rt = sorted(os.listdir(os.path.join(DOTNET_ROOT, "shared", "Microsoft.NETCore.App")))[-1]
     os.makedirs(tools, exist_ok=True)
     for b in ("Microsoft.CodeAnalysis.dll", "Microsoft.CodeAnalysis.CSharp.dll"):
         shutil.copyfile(os.path.join(bincore, b), os.path.join(tools, b))
@@ -466,7 +521,7 @@ def diagnose_tool():
     r = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
     if r.returncode != 0:
         sys.exit("Diagnose tool failed to build:\n" + r.stdout)
-    json.dump({"runtimeOptions": {"tfm": "net8.0", "framework": {"name": "Microsoft.NETCore.App", "version": rt}}},
+    json.dump({"runtimeOptions": {"tfm": tfm, "framework": {"name": "Microsoft.NETCore.App", "version": rt}}},
               open(os.path.join(tools, "Diagnose.runtimeconfig.json"), "w"))
     open(stamp, "w").write(fp)
     return dll
@@ -483,6 +538,18 @@ def engine_refs():
     d = depublicize()
     out = [p for p in sorted(glob.glob(os.path.join(d, "UnityEngine*.dll"))) if os.path.basename(p) != "UnityEngine.UI.dll"]
     return out, {"UnityEngine.UI": os.path.join(d, "UnityEngine.UI.dll"), "Unity.TextMeshPro": os.path.join(d, "Unity.TextMeshPro.dll")}
+
+
+def content_fingerprint(paths):
+    """fingerprint() on file CONTENT, not path and mtime: a checkout, a rebase or another worktree's
+    copy of the same file must not invalidate what was built from it (and, through the engine
+    references, every cached package assembly)."""
+    h = hashlib.sha1()
+    for p in paths:
+        h.update(os.path.basename(p).encode())
+        with open(p, "rb") as f:
+            h.update(hashlib.sha1(f.read()).digest())
+    return h.hexdigest()
 
 
 def fingerprint(items):
@@ -503,6 +570,52 @@ MISSING_CODES = {"CS0246", "CS0234", "CS0103", "CS1069", "CS0012", "CS0538"}
 # In a file that uses an unobtainable package, these are cascades of its unresolved types too
 # (`out var x` from an unknown TryGetValue -> CS0165, `unknown.Count > 0` -> CS0019, ...).
 UNOBTAINABLE_CASCADE_CODES = MISSING_CODES | {"CS0165", "CS0019", "CS1061"}
+# Editor config: errors that are the 2021.1 UnityEditor reference (the newest non-publicized one
+# obtainable) or the unfetched test framework, not the code. Matched on the whole message, so a typo
+# on the same type still gates. Add an entry only for documented Unity API, naming where it came from.
+EDITOR_REFERENCE_GAPS = [
+    (r"'MaterialProperty' does not contain a definition for 'propertyType'", "MaterialProperty.propertyType, Unity 6"),
+    (r"name 'NamedBuildTarget'", "UnityEditor.Build.NamedBuildTarget, 2021.2"),
+    (r"'PlayerSettings' does not contain a definition for '[GS]etScriptingDefineSymbols'",
+     "PlayerSettings.Get/SetScriptingDefineSymbols(NamedBuildTarget), 2021.2"),
+    (r"name 'PrefabStageUtility' does not exist", "UnityEditor.SceneManagement.PrefabStageUtility (out of Experimental), 2021.2"),
+    (r"'EditorUtility' does not contain a definition for 'EntityIdToObject'", "EditorUtility.EntityIdToObject, 6000.2"),
+    (r"name 'TestTools' does not exist in the namespace 'UnityEditor'", "com.unity.test-framework (not fetched)"),
+    (r"name 'LogAssert' does not exist", "UnityEngine.TestTools.LogAssert, com.unity.test-framework (not fetched)"),
+]
+_DECLARED_TYPE = re.compile(r"\b(?:class|struct|interface|enum|record)\s+(\w+)|\bdelegate\s+[^;{(=]*?\b(\w+)\s*(?:<[^>]*>)?\s*\(")
+
+
+def declared_names(files):
+    """(type names, namespaces) declared in these sources - what a dependent cannot see while the
+    assembly they compile into has failed."""
+    types, namespaces = set(), set()
+    for f in files:
+        try:
+            txt = open(f, encoding="utf-8-sig", errors="replace").read()
+        except OSError:
+            continue
+        types.update(m.group(1) or m.group(2) for m in _DECLARED_TYPE.finditer(txt))
+        for ns in re.findall(r"\bnamespace\s+([\w.]+)", txt):
+            parts = ns.split(".")
+            namespaces.update(".".join(parts[:i]) for i in range(1, len(parts) + 1))
+    return types, namespaces
+
+
+def names_failed_package(msg, failed, types, namespaces):
+    """Can this missing-type error stem from a failed package? Only if the name it cannot find is
+    one that package declares (or, CS0012, it names the package's assembly). Anything else - a typo,
+    a type from an Editor folder - is a real error, however many packages failed."""
+    if any("assembly '%s," % k in msg for k in failed):
+        return True
+    m = re.search(r"'([^']+)' does not exist in the namespace '([^']+)'", msg)
+    if m and m.group(2) + "." + m.group(1) in namespaces:
+        return True
+    m = re.search(r"'([^']+)'", msg)
+    if not m:
+        return False
+    name = re.sub(r"<.*", "", m.group(1))
+    return name in namespaces or name.split(".")[-1] in types
 
 LEARN_0507 = re.compile(r"overriding 'public' inherited member '([^']+)'")
 LEARN_0122 = re.compile(r"error CS0122: '([^']+)' is inaccessible due to its protection level")
@@ -516,7 +629,7 @@ def engine_index():
     global _INDEX
     if _INDEX is None:
         tsv = os.path.join(CACHE, "engine_refs_index.tsv")
-        dll = os.path.join(CACHE, "tools", "Depublicize.dll")
+        dll = depublicize_tool()
         subprocess.run([os.path.join(DOTNET_ROOT, "dotnet"), dll, "--index", os.path.join(CACHE, "engine_refs_in"), tsv],
                        check=True)
         _INDEX = [l.rstrip("\n").split("\t") for l in open(tsv)]
@@ -578,7 +691,43 @@ def learn(errs):
     return bool(new)
 
 
+def changed_since(base):
+    """Absolute paths of the .cs files changed since `base` (from the merge-base, as `base...HEAD`),
+    uncommitted and untracked ones INCLUDED: the tool is run before a commit (CLAUDE.md: verify every
+    C# change before committing it), so the working tree is what it judges. They decide what gates in
+    the Editor folders and what is tagged [CHANGED-TONIGHT]."""
+    def git(*a):
+        r = subprocess.run(["git"] + list(a), cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+        return r.stdout if r.returncode == 0 else ""
+    mb = git("merge-base", base, "HEAD").strip()
+    if not mb:
+        print("[build] WARNING: --changed-base %s not found - only untracked files count as changed" % base)
+    names = (git("diff", "-z", "--name-only", mb, "--", "*.cs") if mb else "") \
+        + git("ls-files", "-z", "--others", "--exclude-standard", "--", "*.cs")
+    return {os.path.join(ROOT, x) for x in names.split("\0") if x}
+
+
+def lock_shared_state():
+    """One run at a time per cache and per output root. The engine references, the helper tools and
+    the shared package assemblies are rewritten in place, and a run reading them mid-write fails at
+    random (seen: Unity.Entities "FAILED: 2 errors" while a parallel run rebuilt the references)."""
+    import fcntl
+    held = []
+    out_root = os.path.join(os.environ.get("TMPDIR", "/tmp"), "unity_refcompile_out")
+    for d in dict.fromkeys(os.path.realpath(x) for x in (CACHE, out_root)):
+        os.makedirs(d, exist_ok=True)
+        f = open(os.path.join(d, ".build.lock"), "w")
+        try:
+            fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            print("[build] waiting for another unity_refcompile run using %s" % d, flush=True)
+            fcntl.flock(f, fcntl.LOCK_EX)
+        held.append(f)
+    return held
+
+
 def main():
+    _locks = lock_shared_state()  # noqa: F841 (held until the process exits)
     for attempt in range(8):
         rc = run_once()
         if rc != 3:
@@ -613,11 +762,8 @@ def run_once():
     pkg_out = os.path.join(out_root, "_packages")
     os.makedirs(pkg_out, exist_ok=True)
     editor = args.config == "editor"
-    editor_included = []
-    changed_files = set()
-    r = subprocess.run(["git", "diff", "--name-only", args.changed_base + "...HEAD", "--", "*.cs"], cwd=ROOT,
-                       stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
-    changed_files = {os.path.join(ROOT, x) for x in r.stdout.split()}
+    editor_files = []   # editor config: every loose Editor-folder script (Assembly-CSharp-Editor and -firstpass)
+    changed_files = changed_since(args.changed_base)
     os.makedirs(out, exist_ok=True)
     apply_source_patches()
     roots, versions = package_roots()
@@ -643,14 +789,21 @@ def run_once():
             continue
         head = open(sp, encoding="utf-8").read(2048)
         if n.startswith("UnityEngine."):
-            # engine-module stub: compiled up front and added to every assembly's engine references
-            edll = os.path.join(out, n + ".dll")
-            r = subprocess.run([os.path.join(DOTNET_ROOT, "dotnet"), csc_path(), "-nologo", "-noconfig", "-nostdlib",
-                                "-target:library", "-langversion:9.0", "-out:" + edll, sp]
-                               + ["-r:" + x for x in base_refs() + eng], stdout=subprocess.PIPE,
-                               stderr=subprocess.STDOUT, text=True)
-            if r.returncode != 0:
-                sys.exit("engine stub %s failed:\n%s" % (n, r.stdout))
+            # engine-module stub: added to every assembly's engine references, so it is built once into
+            # the shared package directory. A fresh copy per run and per config (as it was) changed
+            # every package's fingerprint, and no package assembly was ever served from the cache.
+            edll = os.path.join(pkg_out, n + ".dll")
+            srefs = base_refs() + eng
+            fp = content_fingerprint([sp]) + fingerprint(srefs)
+            stamp = edll + ".stamp"
+            if not (os.path.exists(edll) and os.path.exists(stamp) and open(stamp).read() == fp):
+                r = subprocess.run([os.path.join(DOTNET_ROOT, "dotnet"), csc_path(), "-nologo", "-noconfig", "-nostdlib",
+                                    "-target:library", "-langversion:9.0", "-deterministic", "-out:" + edll, sp]
+                                   + ["-r:" + x for x in srefs], stdout=subprocess.PIPE,
+                                   stderr=subprocess.STDOUT, text=True)
+                if r.returncode != 0:
+                    sys.exit("engine stub %s failed:\n%s" % (n, r.stdout))
+                open(stamp, "w").write(fp)
             eng.append(edll)
             engine_stubs.append(n)
             continue
@@ -664,8 +817,7 @@ def run_once():
     # assign sources
     assets = os.path.join(ROOT, "Assets")
     firstpass_roots = [os.path.join(assets, d) + os.sep for d in ("Plugins", "Standard Assets", "Pro Standard Assets")]
-    pre = {"Assembly-CSharp-firstpass": Asm("Assembly-CSharp-firstpass", assets, "predefined"),
-           "Assembly-CSharp": Asm("Assembly-CSharp", assets, "predefined")}
+    pre = {n: Asm(n, assets, "predefined") for n in ("Assembly-CSharp-firstpass", "Assembly-CSharp") + EDITOR_PREDEFINED}
     editor_skipped = 0
     for kind, root, p in sources:
         o = owner_of(p, owners, root)
@@ -676,15 +828,20 @@ def run_once():
             continue  # package scripts outside any asmdef are not compiled by Unity
         rel = os.path.relpath(p, assets).split(os.sep)
         if "Editor" in rel[:-1]:
-            if editor and p in changed_files:
-                pre["Assembly-CSharp"].files.append(p)
-                editor_included.append(p)
+            if editor:
+                # ALL of them, as Unity compiles them: a changed one needs its unchanged neighbours
+                # (FrogletTool, FrogletEditorPalette, ...) to bind. Only the changed ones are gated.
+                firstpass = any(p.startswith(r) for r in firstpass_roots)
+                pre["Assembly-CSharp-Editor-firstpass" if firstpass else "Assembly-CSharp-Editor"].files.append(p)
+                editor_files.append(p)
                 continue
             editor_skipped += 1
             continue
         tgt = "Assembly-CSharp-firstpass" if any(p.startswith(r) for r in firstpass_roots) else "Assembly-CSharp"
         pre[tgt].files.append(p)
     pre["Assembly-CSharp"].refs = ["Assembly-CSharp-firstpass"]
+    pre["Assembly-CSharp-Editor-firstpass"].refs = ["Assembly-CSharp-firstpass"]
+    pre["Assembly-CSharp-Editor"].refs = ["Assembly-CSharp-firstpass", "Assembly-CSharp", "Assembly-CSharp-Editor-firstpass"]
 
     # precompiled managed DLLs
     auto_dlls, named_dlls, analyzers = [], {}, []
@@ -717,13 +874,15 @@ def run_once():
 
     live = {n: a for n, a in allasm.items()
             if a.excluded_reason is None and (a.files or getattr(a, "dlls", None))}
-    # predefined assemblies reference every auto-referenced asmdef
-    for pn in ("Assembly-CSharp-firstpass", "Assembly-CSharp"):
-        extra = [n for n, a in live.items() if a.origin not in ("predefined",) and a.auto]
-        pre[pn].refs = pre[pn].refs + extra
+    # predefined assemblies reference every auto-referenced asmdef, and an EMPTY predefined assembly
+    # does not exist (Unity creates none), so it is not a reference either
+    extra = [n for n, a in live.items() if a.origin not in ("predefined",) and a.auto]
+    for pn in pre:
+        pre[pn].refs = [r for r in pre[pn].refs if r not in pre or r in live] + extra
 
-    # drop transitively-unneeded assemblies: compile only what Assembly-CSharp needs
-    need, stack = set(), ["Assembly-CSharp"]
+    # drop transitively-unneeded assemblies: compile only what Assembly-CSharp (and, in the editor
+    # config, the editor assemblies) needs
+    need, stack = set(), ["Assembly-CSharp"] + [n for n in EDITOR_PREDEFINED if n in live]
     missing = {}
     while stack:
         n = stack.pop()
@@ -758,19 +917,16 @@ def run_once():
 
     csc = csc_path()
     nsrefs = base_refs()
-    changed = set()
-    try:
-        r = subprocess.run(["git", "diff", "--name-only", args.changed_base + "...HEAD", "--", "*.cs"], cwd=ROOT,
-                           stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
-        changed = {os.path.join(ROOT, x) for x in r.stdout.split()}
-    except Exception:
-        pass
+    changed = changed_files
 
     outputs = {}
     results = {}
+    editor_changed = [p for p in editor_files if p in changed_files]
+    editor_unchanged = set(editor_files) - set(editor_changed)
     if editor:
-        print("[build] editor config: + %d Editor-folder file(s) changed since %s: %s" % (
-            len(editor_included), args.changed_base, ", ".join(os.path.relpath(x, ROOT) for x in editor_included) or "none"))
+        print("[build] editor config: + %d Editor-folder script(s) as %s; gated: the %d changed since %s: %s" % (
+            len(editor_files), " + ".join(n for n in EDITOR_PREDEFINED if n in live) or "-", len(editor_changed),
+            args.changed_base, ", ".join(os.path.relpath(x, ROOT) for x in editor_changed) or "none"))
     print("[build] config=%s, %d assemblies to compile (of %d discovered), %d Editor-folder scripts skipped"
           % (args.config, len(order), len(allasm), editor_skipped))
 
@@ -791,6 +947,7 @@ def run_once():
         return res
 
     relearn = False
+    rsps = {}   # Assets assembly -> the .rsp it was compiled from
     for n in order:
         a = live[n]
         if getattr(a, "dlls", None):
@@ -811,6 +968,13 @@ def run_once():
         # A package assembly that failed (a reference-set artifact, listed in the summary) is left
         # out and its dependents still compile; Assets errors that stem from it name its types.
         refs += [x for d in trans if d in outputs for x in outputs[d]]
+        # An editor assembly is instead BOUND against the source of a failed Assets reference
+        # (Diagnose --source-ref): compiled without it, one runtime error would read as dozens of
+        # missing types in the changed Editor files. Dependency order, as Diagnose takes them.
+        source_refs = [d for d in order if d in blocked and d in rsps] if n in EDITOR_PREDEFINED else []
+        blocked = [d for d in blocked if d not in source_refs]
+        if source_refs:
+            print("[build] %-55s binding against the SOURCE of failed reference(s): %s" % (n, ", ".join(source_refs)))
         if blocked:
             print("[build] %-55s compiling WITHOUT failed reference(s): %s" % (n, ", ".join(blocked[:6])))
         if a.override:
@@ -849,6 +1013,23 @@ def run_once():
             f.write('-out:"%s"\n' % dll)
             for s in sorted(a.files):
                 f.write('"%s"\n' % s)
+        if not a.origin.startswith("package:"):
+            rsps[n] = rsp
+        if source_refs:
+            # nothing to emit (a reference has no DLL): full diagnostics are the whole result
+            d = subprocess.run([os.path.join(DOTNET_ROOT, "dotnet"), diagnose_tool(), rsp]
+                               + [x for sr in source_refs for x in ("--source-ref", rsps[sr])],
+                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            errs = [l for l in d.stdout.splitlines() if ": error " in l]
+            if d.returncode == 0 and not errs:
+                results[n] = ("bound", [])
+                print("[build] %-55s ok (%d files, bound only - no DLL while a reference failed)" % (n, len(a.files)))
+            else:
+                results[n] = ("FAILED", errs or d.stdout.splitlines()[-20:])
+                print("[build] %-55s FAILED: %d errors (%s)" % (n, len(results[n][1]), a.origin))
+            if args.only and n == args.only:
+                break
+            continue
         r = subprocess.run([os.path.join(DOTNET_ROOT, "dotnet"), csc, "@" + rsp], stdout=subprocess.PIPE,
                            stderr=subprocess.STDOUT, text=True)
         errs = [l for l in r.stdout.splitlines() if ": error " in l]
@@ -889,7 +1070,8 @@ def run_once():
         for k in pkg_failed:
             errs = results[k][1]
             print("[build]   %s (%d errors), e.g. %s" % (k, len(errs), re.sub(r"^.*?: error ", "", errs[0])[:150] if errs else ""))
-    real, unobtainable, unverified = [], [], []
+    real, unobtainable, unverified, editor_context = [], [], [], []
+    failed_types, failed_namespaces = declared_names([f for k in pkg_failed for f in live[k].files])
     for k in failed:
         if k in pkg_failed:
             continue
@@ -900,13 +1082,19 @@ def run_once():
                 continue
             path, code = m.group(1), m.group(2)
             src = open(path, encoding="utf-8-sig", errors="replace").read() if os.path.exists(path) else ""
-            if code in UNOBTAINABLE_CASCADE_CODES and any(re.search(r"^\s*using\s+" + re.escape(ns) + r"\b", src, re.M) for ns in UNOBTAINABLE_NAMESPACES):
+            if path in editor_unchanged:
+                # compiled only so the changed Editor files bind; against UnityEditor 2021.1 and without
+                # the (unfetched) test framework, an unchanged one is not evidence either way
+                editor_context.append((k, e))
+            elif code in UNOBTAINABLE_CASCADE_CODES and any(re.search(r"^\s*using\s+" + re.escape(ns) + r"\b", src, re.M) for ns in UNOBTAINABLE_NAMESPACES):
                 unobtainable.append((k, e))
             elif editor and code in ("CS0115", "CS0117", "CS1061") and re.search(r"'(OnValidate|Reset)'|\.(OnValidate|Reset)\(\)", m.group(3)):
                 # the uGUI/engine reference DLLs are PLAYER builds: their #if UNITY_EDITOR members
                 # (UIBehaviour.OnValidate/Reset) do not exist in them
                 unverified.append((k, e))
-            elif code in MISSING_CODES and pkg_failed:
+            elif editor and any(re.search(rx, m.group(3)) for rx, _ in EDITOR_REFERENCE_GAPS):
+                unverified.append((k, e))
+            elif code in MISSING_CODES and names_failed_package(m.group(3), pkg_failed, failed_types, failed_namespaces):
                 unverified.append((k, e))
             else:
                 real.append((k, e))
@@ -922,21 +1110,28 @@ def run_once():
     show("ERRORS in project code", real, args.max_errors)
     show("missing-type errors in files using a package that cannot be fetched (%s)" % ", ".join(UNOBTAINABLE_NAMESPACES),
          unobtainable, 0 if args.quiet_buckets else args.max_errors)
-    show("unverified: missing types while a referenced package failed, or editor-only members absent from the player-build reference DLLs", unverified,
+    show("unverified: types a failed package declares, editor-only members absent from the player-build reference DLLs, "
+         "or Unity 6 editor API / the test framework absent from the editor references (EDITOR_REFERENCE_GAPS)", unverified,
          0 if args.quiet_buckets else args.max_errors)
+    if editor:
+        show("unverified: errors in Editor-folder files NOT changed since %s (compiled as context for the changed ones; "
+             "UnityEditor 2021.1, no test framework)" % args.changed_base, editor_context,
+             0 if args.quiet_buckets else args.max_errors)
     n_changed = sum(1 for _, e in real if e.split("(")[0] in changed)
     stubbed = [k for k in need if live[k].origin == "stub"] + engine_stubs
     print("[build] stubbed assemblies: %s" % (", ".join(sorted(stubbed)) or "none"))
     unresolved = sorted({r for v in missing.values() for r in v})
     print("[build] unresolved asmdef references (Unity would also skip these): %s" % (", ".join(unresolved) or "none"))
-    json.dump({"real": real, "unobtainable": unobtainable, "unverified": unverified, "package_failed": pkg_failed},
+    json.dump({"real": real, "unobtainable": unobtainable, "unverified": unverified, "editor_context": editor_context,
+               "package_failed": pkg_failed},
               open(os.path.join(out, "buckets.json"), "w"), indent=1)
     if real:
         print("[build] RESULT: FAILED - %d error(s) in project code (%d in files changed since %s)"
               % (len(real), n_changed, args.changed_base))
         return 1
     print("[build] RESULT: OK - no errors in project code (%d assemblies; %d unobtainable-package and %d unverified "
-          "missing-type errors listed above)" % (len(order), len(unobtainable), len(unverified)))
+          "missing-type errors%s listed above)" % (len(order), len(unobtainable), len(unverified),
+                                                   ", %d in unchanged Editor files," % len(editor_context) if editor else ""))
     return 0
 
 

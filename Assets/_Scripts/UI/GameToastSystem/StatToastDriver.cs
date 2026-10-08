@@ -11,8 +11,8 @@ namespace CosmicShore.UI
     /// Posts the per-player STAT toasts - "X collected a crystal", "X landed a rocket",
     /// "X bent a rival" - by watching the replicated <see cref="IRoundStats"/> of every player
     /// during an active turn. Every stat it reads (crystals, missile hits, debuff hits, hostile
-    /// prisms destroyed, lifeform kills) is a server-written NetworkVariable on the persistent
-    /// Player object, so the SAME toast fires on every peer with nothing extra crossing the
+    /// prisms destroyed, lifeform kills, prisms stolen) is a server-written NetworkVariable on
+    /// the persistent Player object, so the SAME toast fires on every peer with nothing extra crossing the
     /// wire - the reason this is a poll over RoundStats rather than a post at the credit site,
     /// which runs on the owner's machine (and the host's) and nowhere else.
     ///
@@ -53,6 +53,7 @@ namespace CosmicShore.UI
             new(GameToastSituation.BendLanded,               s => s.DebuffHitsLanded),
             new(GameToastSituation.PrismsDestroyedMilestone, s => s.HostilePrismsDestroyed),
             new(GameToastSituation.LifeformKilled,           s => s.LifeformsKilled),
+            new(GameToastSituation.PrismsStolenMilestone,    s => s.PrismStolen),
         };
 
         private readonly List<(Watch watch, int everyN)> _active = new();

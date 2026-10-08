@@ -26,6 +26,12 @@ namespace CosmicShore.Gameplay
     /// (<see cref="SpreadWingsActionSO.MassModeWidth"/> → <c>ReplicatedLevel</c>) — so this is the
     /// one elemental trail dial in the fleet that does not diverge across peers
     /// (<c>trailVolume</c> still does).</para>
+    ///
+    /// <para><b>The camera follows the mode.</b> Mass mode drops the follow camera to directly
+    /// behind the hull (<see cref="SpreadWingsActionSO.MassModeCameraHeight"/>, 0 by default);
+    /// Dust mode keeps the authored height. Eased on the same blend as the HUD's Mass card, and
+    /// written only to the player rig while it is framing THIS vessel — the one place this
+    /// executor does something on a single machine, because a camera is presentation.</para>
     /// </summary>
     public sealed class SpreadWingsActionExecutor : ShipActionExecutorBase
     {
@@ -56,6 +62,7 @@ namespace CosmicShore.Gameplay
         float _width = 1f;
         float _massBlend = 1f;
         bool _warnedNoDust;
+        CustomCameraController _camera;
 
         /// <summary>True while the dust capsule is live.</summary>
         public bool IsDustMode => _dustMode;
@@ -103,6 +110,7 @@ namespace CosmicShore.Gameplay
                 prisms.ForceShielded = false;
             }
             if (dustField) dustField.SetActive(false);
+            if (IsFramedBy(_camera)) _camera.FollowHeightScale = 1f;
         }
 
         public void Press(SpreadWingsActionSO so, IVesselStatus status)
@@ -175,6 +183,35 @@ namespace CosmicShore.Gameplay
 
             prisms.WidthMultiplier = _width;
             prisms.ForceShielded = !_dustMode && so.ShieldsInMassMode(_status);
+
+            var cam = PlayerCamera();
+            if (IsFramedBy(cam))
+                cam.FollowHeightScale = Mathf.Lerp(1f, so.MassModeCameraHeight, _massBlend);
+        }
+
+        /// <summary>
+        /// The player's follow rig, resolved once. Null without a <c>CameraManager</c> (tool
+        /// scenes) — a designed state, the camera simply keeps its authored height.
+        /// </summary>
+        CustomCameraController PlayerCamera()
+        {
+            if (_camera) return _camera;
+            var rig = CameraManager.Instance ? CameraManager.Instance.GetCloseCamera() : null;
+            if (rig) rig.TryGetComponent(out _camera);
+            return _camera;
+        }
+
+        /// <summary>
+        /// True while <paramref name="cam"/> is following THIS vessel — the local pilot's own
+        /// Butterfly, or one being spectated or previewed. Any other vessel's Butterfly must not
+        /// move the camera, and a rig that has moved on was already reset by its own
+        /// <c>SetFollowTarget</c>.
+        /// </summary>
+        bool IsFramedBy(CustomCameraController cam)
+        {
+            if (!cam || _status == null) return false;
+            var target = _status.CameraFollowTarget;   // VesselController.Initialize always sets it
+            return target && cam.FollowTarget == target;
         }
     }
 }

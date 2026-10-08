@@ -15,13 +15,16 @@ namespace CosmicShore.Utility
     /// <c>PrismDestructionSight.hlsl</c>, once per prism, off a handful of shader globals this
     /// class writes once per frame.
     ///
-    /// <para><b>Producers.</b> THREE today, each saying the same sentence at a different moment in
-    /// a force's life — pending, armed, resolved:</para>
+    /// <para><b>Producers.</b> FOUR today, each saying the same sentence at a different moment in
+    /// a force's life — pending, armed, live, resolved:</para>
     /// <list type="bullet">
     ///   <item><b>Echo Sight</b> (Dolphin, Charge) — the volume its next crystal blast WOULD
     ///   sweep. The pilot's own is the <see cref="PublishAimed"/> channel; rivals' ride the bank.</item>
     ///   <item><b>Proximity fuze</b> (Sparrow skyburst) — the sphere an armed warhead will
     ///   detonate inside.</item>
+    ///   <item><b>Bomb passage</b> (Grizzly trigger bomb) — the mass a live bomb is sliding
+    ///   through, which it never touches: only the trigger detonates it, so without a light it
+    ///   reads as a clip. <c>GrizzlyBombVisual.PublishLit</c>.</item>
     ///   <item><b>Explosion passthrough</b> — a blast that ARRIVED and spared what it touched.
     ///   This one REPLACED the 2-second temporary shield that used to stand in for it, so it is
     ///   the only producer that removes code rather than adding it; see <c>Docs/LIT.md</c> for why

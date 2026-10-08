@@ -33,6 +33,7 @@ WHAT IT CHECKS (per changed asset; modified files report only findings their bas
     deleted   no asset references the guid of a file deleted since the base
     swarm     the Swarm cell is in the Cell Selector's CellConfigs, its config points at its spawn
               profile, and every new fauna/flora config-data asset is listed by a spawn profile
+              or a Spawn Matrix row (the bench-only configs spawn nowhere else)
 
     The schema (fields, bases, enums) comes from Roslyn binding Assembly-CSharp exactly as
     Tools/Build/unity_refcompile builds it - run that first (this script says so if you did not).
@@ -145,15 +146,21 @@ def build_guid_index(tree):
 # schema (Roslyn, via Tools/Build/unity_refcompile/Schema)
 # --------------------------------------------------------------------------------------------
 def load_schema(rsp):
-    csc = sorted(glob.glob(os.path.join(DOTNET_ROOT, "sdk", "*", "Roslyn", "bincore", "csc.dll")))
+    sys.path.insert(0, os.path.join(ROOT, "Tools", "Build", "unity_refcompile"))
+    import build as refcompile  # noqa: E402  (the toolchain helpers; importing has no side effects)
     tools = os.path.join(CACHE, "tools")
-    if not csc or not os.path.exists(os.path.join(tools, "Microsoft.CodeAnalysis.dll")):
+    if not os.path.exists(os.path.join(tools, "Microsoft.CodeAnalysis.dll")):
         return None, "no Roslyn tools in %s - run `bash Tools/Build/unity_refcompile/run.sh` first" % tools
+    try:
+        csc, (ref, rt, tfm) = refcompile.csc_path(), refcompile.netcore_toolchain()
+    except SystemExit as e:  # no SDK / no usable reference pack: the message says which
+        return None, str(e.code)
     dll = os.path.join(tools, "Schema.dll")
-    fp = hashlib.sha1(open(SCHEMA_SRC, "rb").read()).hexdigest()
+    # rebuilt when the source or the .NET it targets changes (a runtimeconfig naming an uninstalled
+    # runtime cannot start)
+    fp = hashlib.sha1(open(SCHEMA_SRC, "rb").read() + (ref + rt).encode()).hexdigest()
     if not os.path.exists(dll + ".stamp") or open(dll + ".stamp").read() != fp:
-        ref = sorted(glob.glob(os.path.join(DOTNET_ROOT, "packs", "Microsoft.NETCore.App.Ref", "*", "ref", "net8.0")))[-1]
-        r = subprocess.run([os.path.join(DOTNET_ROOT, "dotnet"), csc[-1], "-nologo", "-noconfig", "-nostdlib",
+        r = subprocess.run([os.path.join(DOTNET_ROOT, "dotnet"), csc, "-nologo", "-noconfig", "-nostdlib",
                             "-langversion:latest", "-out:" + dll, SCHEMA_SRC,
                             "-r:" + os.path.join(tools, "Microsoft.CodeAnalysis.dll"),
                             "-r:" + os.path.join(tools, "Microsoft.CodeAnalysis.CSharp.dll")]
@@ -161,8 +168,7 @@ def load_schema(rsp):
                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
         if r.returncode != 0:
             return None, "Schema tool failed to build:\n" + r.stdout
-        rt = sorted(os.listdir(os.path.join(DOTNET_ROOT, "shared", "Microsoft.NETCore.App")))[-1]
-        json.dump({"runtimeOptions": {"tfm": "net8.0", "framework": {"name": "Microsoft.NETCore.App", "version": rt}}},
+        json.dump({"runtimeOptions": {"tfm": tfm, "framework": {"name": "Microsoft.NETCore.App", "version": rt}}},
                   open(os.path.join(tools, "Schema.runtimeconfig.json"), "w"))
         open(dll + ".stamp", "w").write(fp)
     out = os.path.join(os.path.dirname(rsp), "schema.json")
@@ -508,6 +514,7 @@ class Audit:
 # --------------------------------------------------------------------------------------------
 SWARM_CELL = "Assets/_SO_Assets/Cell Configs/Swarm Cell/Swarm Cell Config.asset"
 SWARM_PROFILE = "Assets/_SO_Assets/Cell Configs/Swarm Cell/Swarm Cell Spawn Profile.asset"
+SPAWN_MATRIX_TOY = "Assets/_SO_Assets/Toys/Toy_SpawnMatrix.asset"
 CELL_SELECTOR_SCENE = "Assets/_Scenes/Menu_Main.unity"
 
 
@@ -556,6 +563,30 @@ def check_swarm(audit, changed):
                     for r in (d.data.get(k) or []):
                         if isinstance(r, dict) and r.get("guid"):
                             listed.add(r["guid"])
+    # ...and every spawn profile already in the tree: a MODIFIED config (a generator re-tuning a
+    # biome's species) is listed by a profile nobody touched, which the changed-files scan
+    # above cannot see. Read straight from the profiles' list blocks, through the tree so a
+    # self-test overlay still applies.
+    so_root = os.path.join(ROOT, "Assets", "_SO_Assets")
+    for dirpath, _, names in os.walk(so_root):
+        for name in names:
+            if not name.endswith(".asset"):
+                continue
+            rel = os.path.relpath(os.path.join(dirpath, name), ROOT)
+            if not tree.exists(rel):
+                continue
+            text = tree.read(rel)
+            for key in ("SupportedFaunas:", "SupportedFloras:"):
+                if key not in text:
+                    continue
+                block = re.match(r"(?:\n  [- ] .*)*", text.split(key, 1)[1])
+                listed.update(re.findall(r"guid: ([0-9a-f]{32})", block.group(0)))
+    # The Spawn Matrix toy is the other way a config spawns: its species rows release one exact
+    # config on demand, and some configs exist ONLY for it (the bench swarm models in
+    # Swarm Fauna/Bench/, authored by author_spawn_matrix_roster.py).
+    if tree.exists(SPAWN_MATRIX_TOY):
+        listed.update(re.findall(r"^    - \{fileID: 11400000, guid: ([0-9a-f]{32}), type: 2\}$",
+                                 tree.read(SPAWN_MATRIX_TOY), re.M))
     for rel in changed:
         if not rel.endswith(".asset") or not tree.exists(rel):
             continue
@@ -565,8 +596,8 @@ def check_swarm(audit, changed):
         cls = audit.class_of(rel, docs[0])
         for k, etype in lists.items():
             if cls and audit.schema.derives(cls, etype) and meta_guid(tree, rel) not in listed:
-                out.append(("swarm", rel, "is a %s (%s) but no spawn profile's %s lists it - it never spawns"
-                            % (etype.split(".")[-1], cls, k)))
+                out.append(("swarm", rel, "is a %s (%s) but neither a spawn profile's %s nor a Spawn "
+                            "Matrix row lists it - it never spawns" % (etype.split(".")[-1], cls, k)))
     return out
 
 
@@ -728,7 +759,10 @@ def self_test(schema, base):
         ("yaml", "broken YAML", sub(cfg, "  UnitScale: 2\n", "  UnitScale: [2\n")),
         ("yaml", "missing %TAG header", sub(cfg, "%TAG !u! tag:unity3d.com,2011:\n", "")),
         ("meta", "duplicate guid", {"Assets/_SO_Assets/Swarm Fauna/Dup.asset.meta": tree0.read(cfg + ".meta")}),
-        ("swarm", "species config dropped from the spawn profile", sub(SWARM_PROFILE, first_member, "")),
+        # Dropped from BOTH: a Spawn Matrix row is a spawn path too, and every Swarm-cell species is on it.
+        ("swarm", "species config dropped from the spawn profile and the Spawn Matrix",
+         {**sub(SWARM_PROFILE, first_member, ""),
+          SPAWN_MATRIX_TOY: tree0.read(SPAWN_MATRIX_TOY).replace("  " + first_member, "")}),
         ("swarm", "Swarm cell removed from the Cell Selector", sub(CELL_SELECTOR_SCENE, "guid: " + cell_guid, "guid: " + "f" * 32)),
     ]
     ok = True

@@ -1354,7 +1354,7 @@ Shared `MultiplayerHUD`. The player sees: team jousts-remaining in the RoundTime
 Shared `MultiplayerHUD`. Team crystals-remaining in the RoundTime rings; team crystal totals in the panels; an **off-screen objective arrow pointing at the next crystal in your team's color**; the one mode confirmed to have the **connecting panel** wired; comeback-system toast (its driver *is* in the scene). **Elapsed race time is not shown during the race** — only on the end cards. The only SkimRace-specific UI class left is `SkimRaceHUDView`, an empty extension-point subclass that the scene doesn't even reference.
 
 ### Crystal Capture
-Shared `MultiplayerHUD`. Team crystals-remaining + team panels; **deliberately no mode toasts**; **no objective arrow** (no provider case exists for the mode — the runtime-created indicator stays hidden). Same end-game shape. Scene detail: like Joust it replaces the prefab scoreboard with a scene-level one (with a documented footgun: the Play Again button must be re-targeted or it silently no-ops).
+Shared `MultiplayerHUD`. Team crystals-remaining + team panels; ~~**deliberately no mode toasts**~~ [Edit 2026-10-06: `GameToastConfig_Scurry.asset` (gameMode 35) authors one crystal-milestone toast, situation 80 "**{0}** has collected {1} crystals", every 10 crystals]; ~~**no objective arrow** (no provider case exists for the mode — the runtime-created indicator stays hidden)~~ [Edit 2026-10-06: #964 added a `GameModes.Scurry` case in `MiniGameHUD.CreateObjectiveProviderForGameMode` - `RampageObjectiveProvider`, the nearest collectable manager-spawned crystal]. Same end-game shape. Scene detail: like Joust it replaces the prefab scoreboard with a scene-level one (with a documented footgun: the Play Again button must be re-targeted or it silently no-ops).
 
 ### Freestyle in Menu_Main (the "lava lamp")
 `Assets/_Scripts/UI/MenuMiniGameHUD.cs`; hierarchy `Menu_Main → UI_Refactored → Game UI`. The entire freestyle HUD is:
@@ -1435,8 +1435,8 @@ HUD prefab variants exist at `Assets/_Prefabs/UI Elements/VesselHUD/` for **Dolp
 | Volume/Pause button + domain hex gauge | **Universal (gameplay + menu)** | The one cross-context element |
 | Connecting panel | Shared class | Confirmed wired only in SkimRace ⚠ |
 | Pre-game cinematic + SKIP | Shared, runtime-created | |
-| Toast feed | SkimRace-fork modes only | Per-mode copy SOs; Crystal Capture deliberately silent |
-| Objective arrow | Shared class, per-mode provider | None for Crystal Capture / Freestyle |
+| Toast feed | SkimRace-fork modes only | Per-mode copy SOs; Crystal Capture has one crystal-milestone toast every 10 crystals (`GameToastConfig_Scurry`) |
+| Objective arrow | Shared class, per-mode provider | None for Freestyle (Crystal Capture/Scurry gained one in #964, 2026-10-06) |
 | End reveal (slang toast) + Scoreboard + crystal rewards | All modes, one implementation | Per-mode text via `ScoringRuleSO` |
 | Pause menu | Shared (gameplay + menu) | Two forked prefabs — §4.3 |
 | Vessel HUD reparent pipeline | Shared | Three duplicate implementations |
@@ -1870,7 +1870,7 @@ Every distinct screen/state to capture for full visual coverage. Recommended: ca
 - [ ] Domain panels: your ally panel (with teammates' avatars) + 1 and 2 opposing panels (3-team match)
 - [ ] The panels rebuilding on a **mid-match join** (+ "{name} joined" toast)
 - [ ] Toast feed: Joust's joust line (team-colored names), the 60s idle hint, "{name} disconnected"; **Joust's feed position specifically** (drift may put it off-screen)
-- [ ] Objective arrow: on-screen-target hidden state, edge-clamped arrow, with distance label (SkimRace crystal; Joust nearest-opponent) — and Crystal Capture showing **no arrow**
+- [ ] Objective arrow: on-screen-target hidden state, edge-clamped arrow, with distance label (SkimRace crystal; Joust nearest-opponent) — and Crystal Capture (Scurry) pointing at the nearest crystal (it showed **no arrow** until #964, 2026-10-06)
 - [ ] A joust hit moment (explosion VFX — documents the absence of hit markers/damage numbers)
 - [ ] Touch device: the on-screen state as shipped (thumb cursors are self-disabled — capture what IS there)
 - [ ] Gamepad vs keyboard vs touch: control-hint glyph sets on the vessel HUD (Xbox, PS, keyboard text, touch = hidden)

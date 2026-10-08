@@ -2074,6 +2074,7 @@ MonoBehaviour:
     Cooldown: 4.3
   OnCellItemsUpdated: {fileID: 11400000, guid: 0da8a5ebddfaa83418cecd539efd19dd, type: 2}
   actionExecutorRegistry: {fileID: 3871735532039758911}
+  boostPolicy: {fileID: 11400000, guid: b89486e2a081497ea892fbc75e50a2bc, type: 2}
 --- !u!114 &6776027772320837218
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3526,6 +3527,18 @@ MonoBehaviour:
   - input: 7
     image: {fileID: 3512818663123036916}
   abilityIcons:
+  - element: 1
+    icon: {fileID: 6703333440390559263}
+    upgradedSprite: {fileID: 0}
+    gauge: {fileID: 0}
+  - element: 2
+    icon: {fileID: 0}
+    upgradedSprite: {fileID: 0}
+    gauge: {fileID: 0}
+  - element: 3
+    icon: {fileID: 6703333440390559283}
+    upgradedSprite: {fileID: 0}
+    gauge: {fileID: 0}
   - element: 4
     icon: {fileID: 5867477772541908519}
     upgradedSprite: {fileID: 0}
@@ -5245,3 +5258,27 @@ MonoBehaviour:
       Data3: 0
       Data4: 0
     Path: 
+--- !u!114 &6703333440390559263 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7710000000000002015, guid: af7b78e6bb3a8394f88f24bb0e31667a,
+    type: 3}
+  m_PrefabInstance: {fileID: 4033090122440962496}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &6703333440390559283 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7710000000000002035, guid: af7b78e6bb3a8394f88f24bb0e31667a,
+    type: 3}
+  m_PrefabInstance: {fileID: 4033090122440962496}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

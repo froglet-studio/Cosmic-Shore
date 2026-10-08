@@ -21,8 +21,9 @@ namespace CosmicShore.Gameplay
     /// sized from the variant's own authored heart, so the row shows the real size difference
     /// between the four before you touch any of them;</item>
     /// <item>a variant spawns that exact lifeform live into the containing cell through the
-    /// canonical spawn paths (SpawnFlora / SpawnFaunaWithDomain + AssignLineage), on a runtime
-    /// CLONE of the config - the authored assets are never mutated.</item>
+    /// cell spawner's own placement calls (PlantFlora / SpawnFaunaBanded), so it lands where the
+    /// species lives - its band, its grove, its planting sites - rather than at the toy; on a
+    /// runtime CLONE of the config - the authored assets are never mutated.</item>
     /// </list>
     ///
     /// A hangar station releases an <b>AI-piloted vessel of that class in the player's own
@@ -291,6 +292,10 @@ namespace CosmicShore.Gameplay
             return model;
         }
 
+        const string FrozenNotice =
+            "Growth frozen: this cell holds so much prism mass that it is at Frenzy, so new plants " +
+            "stay seed prisms. Clear mass (graze, joust, abilities) or start a fresh Barren cell.";
+
         // The last lifeform a shell press released, so the window can turn its picture onto it.
         Transform _lastShellRelease;
 
@@ -303,8 +308,9 @@ namespace CosmicShore.Gameplay
                 options.Add(new ToyShellOption
                 {
                     Label = captured.Name,
+                    Description = _def.DescriptionOf(captured.Name),
                     Accent = Definition ? Definition.AccentColor : Color.white,
-                    Expand = () => BuildShellVariants(captured.ElementConfigs, null),
+                    Expand = () => BuildShellVariants(captured.Name, captured.ElementConfigs, null),
                     BuildPreview = parent => BuildShellSpeciesPreview(captured.ElementConfigs, null, null, parent),
                 });
             }
@@ -320,8 +326,9 @@ namespace CosmicShore.Gameplay
                 options.Add(new ToyShellOption
                 {
                     Label = captured.Name,
+                    Description = _def.DescriptionOf(captured.Name),
                     Accent = Definition ? Definition.AccentColor : Color.white,
-                    Expand = () => BuildShellVariants(null, captured.ElementConfigs),
+                    Expand = () => BuildShellVariants(captured.Name, null, captured.ElementConfigs),
                     BuildPreview = parent => BuildShellSpeciesPreview(null, captured.ElementConfigs, null, parent),
                 });
             }
@@ -332,10 +339,21 @@ namespace CosmicShore.Gameplay
         /// A species' element row - one option per element the species actually expresses, which
         /// is the whole matrix (a lifeform is its species and its element and nothing else).
         /// </summary>
-        List<ToyShellOption> BuildShellVariants(FaunaConfigurationSO[] faunaConfigs,
+        List<ToyShellOption> BuildShellVariants(string species, FaunaConfigurationSO[] faunaConfigs,
             FloraConfigurationSO[] floraConfigs)
         {
             var options = new List<ToyShellOption>();
+
+            // Frenzy freezes flora growth cell-wide (the ecology's one growth brake), and a Barren
+            // cell has no grazers to bring it back down, so a flora row released into a frozen cell
+            // sits as seed prisms for good. The rows say so - the layer is re-asked after every
+            // press, so the notice appears on the press that crosses the line.
+            bool floraFrozen = floraConfigs != null &&
+                               Cell.FindCellContaining(transform.position) is { } host &&
+                               !host.FloraGrowingEnabled;
+            string frozenDescription = floraFrozen
+                ? (_def ? _def.DescriptionOf(species) + "\n\n" : "") + FrozenNotice
+                : "";
 
             foreach (var element in Elements)
             {
@@ -348,12 +366,15 @@ namespace CosmicShore.Gameplay
 
                 var capturedElement = element;
                 System.Action release;
-                if (capturedFauna) release = () => _lastShellRelease = SpawnFaunaVariant(capturedFauna, ShellReleasePoint);
-                else               release = () => _lastShellRelease = SpawnFloraVariant(capturedFlora, ShellReleasePoint);
+                if (capturedFauna) release = () => _lastShellRelease = SpawnFaunaVariant(capturedFauna);
+                else               release = () => _lastShellRelease = SpawnFloraVariant(capturedFlora);
 
                 options.Add(new ToyShellOption
                 {
                     Label = element.ToString(),
+                    Detail = capturedFlora && floraFrozen ? "Growth frozen" : "",
+                    // Empty unless frozen: the layer then shows the species row's own description.
+                    Description = capturedFlora ? frozenDescription : "",
                     Accent = Definition ? Definition.AccentColor : Color.white,
                     // A lifeform is SPAWNED: it is released into the cell and lives there on its
                     // own terms, so "Switch" would name a thing this press does not do.
@@ -364,11 +385,19 @@ namespace CosmicShore.Gameplay
                         capturedFlora ? new[] { capturedFlora } : null,
                         capturedElement, parent),
                     // The picture turns onto what was released, so the player sees the creature
-                    // bloom in where it landed rather than being told it did. Fauna disperse as a
-                    // wave around their anchor and flora root around the station, so the watch
-                    // radius is the dispersal, not one body.
+                    // bloom in where it landed rather than being told it did. A release now lands
+                    // where the species lives (its band, its grove, open water), often far from
+                    // the toy, so the picture follows the first one released and frames it.
                     WatchAfterApply = () => _lastShellRelease,
                     WatchRadius = _def ? _def.StationRadius * 3f : 0f,
+                    // Spawn stays armed: each press releases more of this variant, into the
+                    // population it already has when that can take them (see LineageFor).
+                    Repeatable = true,
+                    // Where this variant LIVES once released - Navigate takes the player there
+                    // rather than back to the bench.
+                    WorldAnchor = () => ReleaseAnchor(capturedFauna ? capturedFauna : capturedFlora),
+                    WorldAnchorRadius = _def ? _def.StationRadius * 3f : 0f,
+                    Payload = capturedFauna ? capturedFauna : capturedFlora,
                 });
             }
 
@@ -401,9 +430,9 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Where a shell release lands: the first matrix layer's origin - the same outward radial
-        /// a station would have sat on, so a creature released from the menu arrives where one
-        /// released from the bench arrives, rather than inside the toy.
+        /// Where a companion released from the shell menu lands: the first matrix layer's origin -
+        /// the same outward radial a hangar station would have sat on. (Lifeforms no longer use
+        /// it: they land where their species lives, see SpawnFaunaVariant / SpawnFloraVariant.)
         /// </summary>
         Vector3 ShellReleasePoint => LayerOrigin(1);
 
@@ -472,6 +501,18 @@ namespace CosmicShore.Gameplay
             return origin
                    + transform.right * (spacing * (col - (cols - 1) * 0.5f))
                    + transform.up * (spacing * ((rows - 1) * 0.5f - row));
+        }
+
+        /// <summary>
+        /// A species row wraps into a grid once it outgrows <see cref="SpawnMatrixToyDefinitionSO.SpeciesPerRow"/>:
+        /// with every flora and fauna registered (40+ species) a single row would be a wall
+        /// over two kilometres wide that no pass could take in.
+        /// </summary>
+        Vector3 SpeciesGridPosition(Vector3 origin, int index, int count)
+        {
+            int cols = Mathf.Clamp(_def.SpeciesPerRow, 1, Mathf.Max(1, count));
+            int rows = Mathf.CeilToInt(count / (float)cols);
+            return GridPosition(origin, index, cols, rows);
         }
 
         protected override void OnActivated(IVesselStatus localVessel)
@@ -651,7 +692,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < species.Count; i++)
             {
                 var entry = species[i];
-                Vector3 pos = GridPosition(origin, i, species.Count, 1);
+                Vector3 pos = SpeciesGridPosition(origin, i, species.Count);
                 // The station IS its creature: a mini model of the species, anonymous sphere
                 // only when the prefab carries no visible geometry.
                 bool built = AddSpeciesModel(entry.ElementConfigs, null, _def.StationRadius, out var model);
@@ -673,7 +714,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < species.Count; i++)
             {
                 var entry = species[i];
-                Vector3 pos = GridPosition(origin, i, species.Count, 1);
+                Vector3 pos = SpeciesGridPosition(origin, i, species.Count);
                 bool built = AddSpeciesModel(null, entry.ElementConfigs, _def.StationRadius, out var model);
                 var station = CreateStation(_branchGrid.transform, pos, entry.Name,
                     _def.StationRadius, Definition.AccentColor, bodySphere: !built, model: model);
@@ -765,9 +806,9 @@ namespace CosmicShore.Gameplay
                 AddElementCrystalVisual(station.transform, element, heartScale);
 
                 if (faunaCfg)
-                    station.OnVesselPassed = () => SpawnFaunaVariant(faunaCfg, pos);
+                    station.OnVesselPassed = () => SpawnFaunaVariant(faunaCfg);
                 else
-                    station.OnVesselPassed = () => SpawnFloraVariant(floraCfg, pos);
+                    station.OnVesselPassed = () => SpawnFloraVariant(floraCfg);
             }
         }
 
@@ -808,84 +849,105 @@ namespace CosmicShore.Gameplay
 
         // ── Pass 4: release ──────────────────────────────────────────────────
 
-        Transform SpawnFaunaVariant(FaunaConfigurationSO config, Vector3 position)
+        // How far an UNBANDED population is jittered around its one feeding ground - the cell
+        // spawner's own wave jitter (RandomLifeSpawner.FaunaSpawnJitter), so a bench release
+        // arrives as the same loose group a spawner wave does.
+        const float UnbandedReleaseJitter = 150f;
+
+        /// <summary>
+        /// Release a population of this exact variant where the species LIVES, not at the toy.
+        ///
+        /// <para>Placement is the cell spawner's own (<see cref="CellLifeSpawnerBase.SpawnFaunaBanded"/>):
+        /// a BANDED species (the swarms, the substrate species, the builders) is scattered one
+        /// point per creature through its own band and inside the cell's pens - the room the
+        /// Swarm cell would have hatched it in. An unbanded species (tadpole, shark, piranha …)
+        /// hatches as a group on the cell's densest mass, which is what it would forage; in an
+        /// EMPTY cell (the Barren cell, where single species are inspected) there is no mass,
+        /// and the old fallback - the crystal / the cell centre - is where every release piled
+        /// up, so it hatches at a fresh random point in the cell's open water instead.</para>
+        /// </summary>
+        Transform SpawnFaunaVariant(FaunaConfigurationSO config)
         {
             // Outward-layered stations can sit beyond the membrane - resolve the cell from the
-            // TOY's position (always inside) and spawn the creature at the station.
+            // TOY's position (always inside).
             var cell = Cell.FindCellContaining(transform.position);
             if (!cell)
             {
-                CSDebug.LogWarning("[SpawnMatrix] No cell contains the station - cannot spawn fauna.");
+                CSDebug.LogWarning("[SpawnMatrix] No cell contains the toy - cannot spawn fauna.");
                 return null;
             }
 
-            // Runtime clone so the authored asset is never mutated; the clone IS the lineage
-            // config, so reproduction inherits the variant identity too.
-            var clone = Instantiate(config);
-            clone.name = config.name;
-            // The matrix is the tuning BENCH: a station spawns the EXACT variant it shows, so
-            // the cell's element spread must not re-roll it here.
-            clone.SpreadElements = false;
+            // A POPULATION, not an individual - the same seed-floor count the cell spawner uses.
+            int count = Mathf.Max(1, config.PopulationSize);
+            var clone = (FaunaConfigurationSO)LineageFor(config, count,
+                c => cell.GetLiveFaunaCount((FaunaConfigurationSO)c),
+                c => cell.ResolveFaunaCap((FaunaConfigurationSO)c),
+                out bool joined);
 
-            // Spawn INTO THE FOOD, not at the station. The variant stations are layered
-            // outward and can sit hundreds of units BEYOND the membrane; a creature
-            // hatched out there starts in empty space with nothing to graze, which
-            // defeats the bench's whole purpose (watching the variant feed, breed and
-            // fight). Hatch on the cell's densest sensed mass instead - the same target
-            // the cell spawner and every forager seek - which also falls back to the
-            // cell anchor when the cell is empty. Flora still plant AT their station:
-            // a rooted structure is placed deliberately, a creature roams anyway.
-            Vector3 anchor = cell.GetDensestRegionAnyDomain();
+            // Joining a live population: hatch beside it (an unbanded group should read as ONE
+            // group, not two). A new one goes to the densest mass. In an EMPTY cell (the Barren
+            // inspection cell) the pilot's own trail is the only food there will ever be, so it
+            // hatches a short way ahead of the pilot - where it is seen and can start grazing -
+            // rather than at a random point it would wither in before anything reached it.
+            Vector3 goal = joined && TryFindLineageMember(cell, clone, out var member) ? member
+                : cell.TryGetDensestRegionAnyDomain(out var densest) ? densest
+                : TryPointAheadOfPilot(cell, out var ahead) ? ahead
+                : CellLifeSpawnerBase.RandomPointInCytoplasm(cell);
 
-            // A POPULATION, not an individual - the same seed-floor count the cell spawner
-            // uses, jittered around the anchor so the group disperses like a spawner wave.
             Domains domain = Context?.GameData?.LocalPlayer?.Vessel?.VesselStatus?.Domain ?? cell.ControllingDomain;
-            int count = Mathf.Max(1, clone.PopulationSize);
             int spawned = 0;
             Transform first = null;
             for (int i = 0; i < count; i++)
             {
-                Vector3 pos = anchor + Random.insideUnitSphere * (_def.StationRadius * 2.5f);
-                // Config in - SpawnFaunaWithDomain binds the lineage and resolves replication
-                // for us (B5: a release that skipped it left un-spawned NetworkObjects behind).
-                var fauna = CellLifeSpawnerBase.SpawnFaunaWithDomain(
-                    cell, clone.FaunaPrefab, anchor, domain, pos, clone);
+                // Banded species ignore both fallbacks and take their own point in their band.
+                var fauna = CellLifeSpawnerBase.SpawnFaunaBanded(cell, clone, domain, goal,
+                    goal + Random.insideUnitSphere * UnbandedReleaseJitter);
                 if (!fauna) continue;
                 if (!first) first = fauna.transform;
+                RecordRelease(config, fauna.transform);
                 spawned++;
             }
             if (CSDebug.IsVerbose(CSLogChannel.ToyBox))
                 CSDebug.LogVerbose(CSLogChannel.ToyBox,
-                    $"[SpawnMatrix] Spawned {spawned}/{count} x {clone.name} ({domain}) " +
-                    $"on the cell's densest mass at {anchor} (station was at {position})");
+                    $"[SpawnMatrix] Spawned {spawned}/{count} x {clone.name} ({domain}) into " +
+                    (joined ? "its live population; " : "a new population; ") +
+                    (clone.BandOuterRadius > 0f
+                        ? $"scattered through its band {clone.BandInnerRadius:0}-{clone.BandOuterRadius:0}"
+                        : $"around {goal}"));
             return first;
         }
 
-        Transform SpawnFloraVariant(FloraConfigurationSO config, Vector3 position)
+        /// <summary>
+        /// Release a population of this exact variant where the species GROWS: each plant goes
+        /// through the cell spawner's own planting call (<see cref="CellLifeSpawnerBase.PlantFlora"/>),
+        /// so it takes a prepared planting site when the cell has one and otherwise disperses
+        /// through its own planting band - threat flora root in their grove, the Swarm
+        /// Borromean bands honour their pens. It used to be pinned around the station, which
+        /// clumped every plant at the toy and, for the threat flora, put them outside the
+        /// grove their whole behaviour is built around.
+        /// </summary>
+        Transform SpawnFloraVariant(FloraConfigurationSO config)
         {
             var cell = Cell.FindCellContaining(transform.position);
             if (!cell)
             {
-                CSDebug.LogWarning("[SpawnMatrix] No cell contains the station - cannot spawn flora.");
+                CSDebug.LogWarning("[SpawnMatrix] No cell contains the toy - cannot spawn flora.");
                 return null;
             }
 
-            var clone = Instantiate(config);
-            clone.name = config.name;
-            // Bench semantics - see SpawnFaunaVariant.
-            clone.SpreadElements = false;
-
-            // A POPULATION (InitialSpawnCount), rooted AT the station so the tester sees it
-            // grow right where they flew - Plant() would otherwise disperse it across the cell.
-            int count = Mathf.Max(1, clone.InitialSpawnCount);
+            int count = Mathf.Max(1, config.InitialSpawnCount);
+            var clone = (FloraConfigurationSO)LineageFor(config, count,
+                c => cell.GetLiveFloraCount((FloraConfigurationSO)c),
+                c => cell.ResolveFloraCap((FloraConfigurationSO)c),
+                out bool joined);
             int spawned = 0;
             Transform first = null;
             for (int i = 0; i < count; i++)
             {
-                Vector3 pos = position + Random.insideUnitSphere * (_def.StationRadius * 3f);
-                var flora = CellLifeSpawnerBase.SpawnFlora(cell, clone.FloraPrefab, null, clone, pos);
+                var flora = CellLifeSpawnerBase.PlantFlora(cell, clone, null);
                 if (!flora) continue;
                 if (!first) first = flora.transform;
+                RecordRelease(config, flora.transform);
                 spawned++;
             }
 
@@ -894,11 +956,133 @@ namespace CosmicShore.Gameplay
             // spawn sits as seed prisms until mass is cleared - say so instead of looking broken.
             string growth = cell.FloraGrowingEnabled
                 ? "growing (from seed prisms - watch them build)"
-                : "FROZEN - cell is at Frenzy; clear prism mass (graze/joust/ability) and growth resumes";
+                : FrozenNotice;
             if (CSDebug.IsVerbose(CSLogChannel.ToyBox))
                 CSDebug.LogVerbose(CSLogChannel.ToyBox,
-                    $"[SpawnMatrix] Spawned {spawned}/{count} x {clone.name} at {position}; growth: {growth}");
+                    $"[SpawnMatrix] Planted {spawned}/{count} x {clone.name} in its own band, into " +
+                    (joined ? "its live population" : "a new population") + $"; growth: {growth}");
             return first;
+        }
+
+        // ── Populations ──────────────────────────────────────────────────────
+
+        // The runtime lineage config each variant is releasing into, keyed by the AUTHORED asset.
+        // A population IS a config instance: the cell counts, caps and breeds live lifeforms per
+        // SourceConfig reference (Cell.RegisterLiveFauna / liveFloraCounts), so reusing one clone
+        // is what makes a second press join the first press's population.
+        readonly Dictionary<ScriptableObject, ScriptableObject> _lineages = new();
+
+        // What each variant has released, newest last - for Navigate and the window's watch.
+        readonly Dictionary<ScriptableObject, List<Transform>> _releases = new();
+
+        /// <summary>
+        /// The lineage a release of <paramref name="incoming"/> more should join: the variant's
+        /// current one when it can take them all (no cap, or live + incoming within the cap),
+        /// otherwise a NEW population - a fresh runtime clone, so the authored asset is never
+        /// mutated and the clone's own count and cap start empty. One-anchor species (swarms,
+        /// builder colonies, substrate packs: cap 1) therefore found a new population on every
+        /// press, which is the only honest answer: none of them can grow an anchor after it seeds.
+        /// </summary>
+        ScriptableObject LineageFor(ScriptableObject authored, int incoming,
+            System.Func<ScriptableObject, int> liveCount, System.Func<ScriptableObject, int> cap,
+            out bool joined)
+        {
+            if (_lineages.TryGetValue(authored, out var current) && current)
+            {
+                int live = liveCount(current);
+                int limit = cap(current);
+                if (limit <= 0 || live + incoming <= limit)
+                {
+                    joined = live > 0;
+                    return current;
+                }
+            }
+
+            var clone = Instantiate(authored);
+            clone.name = authored.name;
+            // The matrix is the tuning BENCH: a station spawns the EXACT variant it shows, so
+            // the cell's element spread must not re-roll it here.
+            switch (clone)
+            {
+                case FaunaConfigurationSO f: f.SpreadElements = false; break;
+                case FloraConfigurationSO fl: fl.SpreadElements = false; break;
+            }
+            _lineages[authored] = clone;
+            joined = false;
+            return clone;
+        }
+
+        static bool TryFindLineageMember(Cell cell, FaunaConfigurationSO lineage, out Vector3 position)
+        {
+            var live = cell.LiveFauna;
+            for (int i = live.Count - 1; i >= 0; i--)
+            {
+                var f = live[i];
+                if (f && f.SourceConfig == lineage)
+                {
+                    position = f.transform.position;
+                    return true;
+                }
+            }
+            position = default;
+            return false;
+        }
+
+        // How far ahead of the pilot an unbanded release hatches in an empty cell: clear of the
+        // hull (the group jitters ±UnbandedReleaseJitter around it), close enough to be in view.
+        const float PilotHatchDistance = 220f;
+
+        bool TryPointAheadOfPilot(Cell cell, out Vector3 point)
+        {
+            point = default;
+            var vessel = Context?.GameData?.LocalPlayer?.Vessel?.Transform;
+            if (!vessel || !cell.IsInsideMembrane(vessel.position)) return false;
+            point = vessel.position + vessel.forward * PilotHatchDistance;
+            if (!cell.IsInsideMembrane(point)) point = vessel.position;
+            return true;
+        }
+
+        // Navigate's target for a population that is a BODY rather than one creature (a swarm, a
+        // substrate pack, a builder colony): its anchor GameObject can sit far from where its
+        // members actually are (a stampede's herds are seeded across its whole sector), so the
+        // window is pointed at this marker, moved onto the population's live centre on each ask.
+        Transform _navigateMarker;
+
+        /// <summary>
+        /// Where this variant's newest release IS: the creature or plant itself, or for a
+        /// population body (<see cref="IMacroPopulation"/>) the body's live centre.
+        /// </summary>
+        Transform ReleaseAnchor(ScriptableObject authored)
+        {
+            var made = LatestRelease(authored);
+            if (!made) return null;
+            if (!made.TryGetComponent(out IMacroPopulation body)) return made;
+
+            if (!_navigateMarker)
+            {
+                _navigateMarker = new GameObject("SpawnMatrix NavigateMarker").transform;
+                _navigateMarker.SetParent(transform, false);
+            }
+            var c = body.MacroCentre;
+            _navigateMarker.position = new Vector3(c.X, c.Y, c.Z);
+            return _navigateMarker;
+        }
+
+        void RecordRelease(ScriptableObject authored, Transform made)
+        {
+            if (!authored || !made) return;
+            if (!_releases.TryGetValue(authored, out var list)) _releases[authored] = list = new List<Transform>();
+            list.RemoveAll(t => !t);
+            list.Add(made);
+        }
+
+        /// <summary>The newest still-living thing this variant released, or null.</summary>
+        Transform LatestRelease(ScriptableObject authored)
+        {
+            if (!authored || !_releases.TryGetValue(authored, out var list)) return null;
+            for (int i = list.Count - 1; i >= 0; i--)
+                if (list[i]) return list[i];
+            return null;
         }
 
         /// <summary>

@@ -25,6 +25,12 @@ namespace CosmicShore.Engine.Audio.Fmod
         void SetGlobalParameter(string name, float value);
         void SetListener(int index, in ATTRIBUTES_3D attributes);
         void Update();
+
+        // An event's static description from the loaded banks; null when this backend cannot say
+        // (the silent model then answers: a one-shot, a snapshot by path prefix, length 0).
+        bool? IsOneshot(string path) => null;
+        bool? IsSnapshot(string path) => null;
+        int? GetLength(string path) => null;
     }
 
     public static class FmodBackend

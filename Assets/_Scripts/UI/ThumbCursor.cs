@@ -68,11 +68,16 @@ namespace CosmicShore.UI
 
         void Update()
         {
+            // Suspended (see InitializeCoroutine): nothing sets initialized, so stay inert. Without
+            // this the first frame - before the coroutine disables the component - read the touch
+            // count and the player's input status, and threw on every spawn.
+            if (!initialized) return;
+
             // TODO - Can't have LocalPlayer as static
             // if (initialized && !Player.LocalPlayer.Vessel.VesselStatus.AutoPilotEnabled)
             // TEMP
             {
-                if (Input.touches.Length == 0)
+                if (UnityEngine.InputSystem.EnhancedTouch.Touch.activeTouches.Count == 0)
                 {
                     transform.position = LeftThumb ? Vector2.Lerp(transform.position, inputStatus.LeftJoystickHome, .2f) : Vector2.Lerp(transform.position, inputStatus.RightJoystickHome, .2f);
                     image.sprite = InactiveImage;

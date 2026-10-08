@@ -53,6 +53,12 @@ namespace CosmicShore.Data
         /// that covers everything.</summary>
         Other = 8,
 
+        /// <summary>Threading another domain's wormhole (<c>WormholeMouth.LevyToll</c>, the
+        /// Butterfly's fold pair): the mouth carries anyone, but strips a rival's petals at its
+        /// surface as crystals. A place's rule rather than a weapon, so only an "everything" ward
+        /// stops it.</summary>
+        WormholeToll = 16,
+
         /// <summary>Every source, including classes added after a grant was authored.</summary>
         All = ~0,
     }

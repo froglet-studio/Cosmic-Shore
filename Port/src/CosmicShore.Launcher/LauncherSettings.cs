@@ -35,6 +35,10 @@ namespace CosmicShore.Launcher
         public string Branch { get; set; } = "bleeding-edge";
         public WorkspaceMode Workspace { get; set; } = WorkspaceMode.Managed;
         public string MyClonePath { get; set; } = "";
+        /// <summary>The clone Unity has open (Launch Prisma passes it with --clone): PLAY follows its branch.</summary>
+        public string UnityClonePath { get; set; } = "";
+        /// <summary>PLAY's branch follows the branch Unity / GitHub Desktop has checked out, until another is picked.</summary>
+        public bool FollowClone { get; set; } = true;
         /// <summary>Optional GitHub token (read-only is enough) for testers whose git has no stored sign-in.</summary>
         public string GitHubToken { get; set; } = "";
         public string ManagedPath { get; set; } = "";
@@ -94,6 +98,12 @@ namespace CosmicShore.Launcher
 
         static string ResolveDataDir()
         {
+            // A second, separate Prisma (and the launcher tests) can point everything elsewhere.
+            if (Environment.GetEnvironmentVariable("PRISMA_DATA_DIR") is { Length: > 0 } own)
+            {
+                Directory.CreateDirectory(own);
+                return own;
+            }
             var baseDir = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             if (string.IsNullOrEmpty(baseDir))
                 baseDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".local", "share");

@@ -142,7 +142,7 @@ them toward the next layer, never back through the last.
 | pass | layer | what blooms |
 |---|---|---|
 | the toy | 1.5 | the **KINGDOM** row — Fauna, Flora, Vessels (station radius ×1.5, so the first row you meet is the biggest thing in the corridor) |
-| Fauna / Flora | 3.5 | that kingdom's **SPECIES** row, one station per registered species |
+| Fauna / Flora | 3.5 | that kingdom's **SPECIES** grid, one station per registered species, `speciesPerRow` wide |
 | Vessels | 3.5 | the **HANGAR** row, one mini hull per class |
 | a species | 5.5 | its **VARIANT** row — one station per ELEMENT, four of them |
 | a variant | — | that exact lifeform spawns live into the cell |
@@ -166,12 +166,65 @@ shark row reads big, a SchwarzP row small). A lifeform is its species and its el
 else — there is no level, so there are no level rows (`Docs/ECOSYSTEM.md` §40).
 
 **Lifeform release.** A variant spawns a POPULATION (fauna `PopulationSize` / flora
-`InitialSpawnCount`) through the canonical cell spawn paths, on a runtime CLONE of its per-element
-config (`_SO_Assets/Lifeforms/`) with `SpreadElements` off — the station spawns the EXACT variant
-it shows, and the authored assets are never mutated. Fauna hatch on the cell's densest mass (a
-creature released into empty space beyond the membrane has nothing to graze); flora root AT the
-station via `Flora.SetPlantPositionOverride`. Every spawn logs, including the cell's Frenzy
-growth-freeze state.
+`InitialSpawnCount`) on a runtime CLONE of its per-element config with `SpreadElements` off — the
+station spawns the EXACT variant it shows, and the authored assets are never mutated. **It lands
+where the species lives, never at the toy**, through the cell spawner's own placement calls:
+
+- **Fauna** go through `CellLifeSpawnerBase.SpawnFaunaBanded`. A banded species (the Swarm
+  swarms, the seven substrate species, the builders) is scattered one point per creature through
+  its own band and inside the cell's pens. An unbanded one hatches as a group (±150 u, the spawner
+  wave jitter) on the cell's densest mass; when the cell holds no mass at all
+  (`Cell.TryGetDensestRegionAnyDomain` is false — the Barren cell), 220 u ahead of the pilot,
+  whose trail is the only food such a cell will ever have, else on a random point in open water
+  (`CellLifeSpawnerBase.RandomPointInCytoplasm`) - never on the crystal, which is where every
+  release used to pile up.
+- **Flora** go through `CellLifeSpawnerBase.PlantFlora` (the call `RandomLifeSpawner` plants with):
+  a prepared planting site when the cell has one, otherwise the species' own `Plant()` dispersal
+  through its planting band — threat flora pick their grove site, the Swarm Borromean bands honour
+  their pens. Flora used to be pinned around the station, which clumped them at the toy.
+
+**Repeat presses grow a population, then found a new one.** The cell counts, caps and breeds
+lifeforms per config INSTANCE, so each variant keeps ONE runtime clone as its current lineage
+(`SpawnMatrixToy.LineageFor`). A press joins it while it can take the whole release (no
+`MaxLivePopulation`, or live + incoming within the cap) - an unbanded group hatches beside a live
+member so it reads as one group - and otherwise starts a fresh clone, a new population with its
+own count and cap. One-anchor species (swarms, builder colonies, substrate packs; cap 1) cannot
+grow an anchor after it seeds, so each press founds a new population. In the Toy Box window the
+Spawn button stays armed after a press (`ToyShellOption.Repeatable`).
+
+**Navigate goes to what you spawned.** A variant row's `WorldAnchor` is the newest still-living
+thing it released (for a population body - a swarm, substrate pack or builder colony,
+`IMacroPopulation` - a marker moved onto its live `MacroCentre`, because a stampede's herds or a
+mobber's roosts are seeded across a whole sector, far from their anchor GameObject), and the window's Navigate takes the player to the SELECTED row's live anchor
+before falling back to the toy (`ToyConfigureModal.ResolveDestination`; the arrow is
+`ToyNavigationBeacon.PointAt(Transform, …)`). That rule is generic: any toy row with a live
+`WorldAnchor` is where Navigate goes while that row is selected.
+
+Every spawn logs on the ToyBox channel. When the cell is at Frenzy (flora growth frozen
+cell-wide - a Barren cell has no grazers to bring it back down), the flora element rows say
+"Growth frozen" and their description explains it, so a plant that stays a seed prism does not read
+as a broken species.
+
+**Descriptions.** Every species row has an authored description (`speciesDescriptions`, read by
+`SpawnMatrixToyDefinitionSO.DescriptionOf`) shown in the Toy Box while that species or one of its
+elements is picked: what distinguishes it and, where it matters in Barren, what it eats. The
+generator owns the list for EVERY row, including rows other generators own, and its `--check`
+fails on a row without one. The entries are keyed `Species:` rather than `Name:` because other
+generators find their rows by `- Name: <row>` across the whole file.
+
+**The roster** (`faunaSpecies` / `floraSpecies`) holds every spawnable species: the original
+Lifeforms set, the generator-owned rows (Borromean, Mandelbulb family), and the rows
+`Tools/Build/author_spawn_matrix_roster.py` owns — piranha, the Swarm cell's life forms (swarm,
+the bench-only FIELD / GRID / EVOFATE swarm models and Sort's Time element, pack hunter, locust, lurker, stampede, mobber, leech, leviathan, fortress builders, thief nest,
+wearer builders, Swarm Borromean, physarum, snap trap), the Hesperides gyroid and Schwarz-P topiaries and the Arbor/Coral/Frond/Lantern/Reed/
+Rosette/Spire/Tendril flora sets. Most Swarm-cell species express one element, so their variant
+row has one station. Run the generator with `--check` after touching any of those configs. With
+47 species a kingdom's species row wraps into a grid of `speciesPerRow` (6) columns.
+
+**Inspecting one species on its own:** Cell Selector ▸ **Barren** (no environment, empty spawn
+profile, so nothing seeds itself), then Spawn Matrix ▸ kingdom ▸ species ▸ element. Barren has no
+food until you add it: grazers and swarms need flora, the pack hunter needs locusts, fortress and
+wearer builders need loose prisms, the thief nest needs fresh vessel trail.
 
 **Vessel release.** A hangar station calls
 `MenuServerPlayerVesselInitializer.RequestSpawnAiCompanion(class, domain, pose)` — the menu's
@@ -1173,11 +1226,13 @@ colours mean something when they do appear.
 **Two wearers sit outside the toybox**, and both say something about the SWITCH rather than about
 the pilot. The Scarab's placed switch is the first: the domain colour names the domain the switch
 *belongs* to rather than one it grants (`SCARAB.md` §5 — whose colour it is decides who it pays).
-The Butterfly's **fold gate** is the second, one notch further out: there the colour names **who
-may thread it** (`BUTTERFLY_FOLD.md` § "Every fold leaves a PAIR OF GATES standing"). A gate
-declines a pilot who is not already in its domain and can never put anyone into one, so it is a
-gate on use rather than a grant. Nothing in either case changes a pilot's domain, so the two
-readings never share a screen; both are listed in the test's allow-list with their reason. Do not
+The Butterfly's **fold gate** was the second, one notch further out: there the colour named **who
+may thread it** (`BUTTERFLY_FOLD.md` § "Every fold leaves a PAIR OF GATES standing"). **The gates
+became wormholes on 2026-10-08** (`BUTTERFLY_FOLD.md` § "The gates became wormholes") and are no
+longer switch RINGS — a mouth is a sphere whose rim wears the domain's hue, outside this vocabulary
+and off the test's allow-list — but the reading is unchanged: the colour says who may use it, a mouth
+declines a pilot who is not already in its domain, and it can never put anyone into one. Nothing in
+either case changes a pilot's domain, so the two readings never share a screen. Do not
 add a toybox wearer without settling which reading wins. It draws in the **live** per-domain prism material —
 the same asset the dais prisms it pays out are laid in, so the two cannot drift — reached by
 injecting `GameDataSO` into `PlaceSwitchActionExecutor` (the vessel is DI-injected on spawn, the

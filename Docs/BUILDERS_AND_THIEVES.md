@@ -24,7 +24,7 @@ skeleton or loose cell mass. It keeps its own collider, its own spatial-index en
 | Mending | alarm + gap (both), gap gain 2.5, alarm gain 1, scar gain 3 | round 1 / round 2 |
 | Defence | alarm radius 110 u, strike at 0.6, **defender caste 0.3** | round 3 (`run_defend_vs_mend.py`) |
 | Thieves | **6 founders**, cap 18, free 150 u/s, **laden 75 u/s**, warm wake 1.5 s, spot 700 u, scout 400 u | `thief.py` (+ GAME founders) |
-| Stomachs (GAME) | worker 40 / 0.02 per s; thief 20 / 0.02 per s active, **0.004 per s roosting** | this round |
+| Stomachs (GAME) | worker 40 / 0.02 per s; thief 20 / 0.02 per s active, **0.004 per s roosting**; own colour is food only below **0.25** of capacity (§2.1) | this round |
 
 **The defender caste.** The 6.4 s "a cut wall knits shut" headline is round 1's, before workers defended. With
 round 3's defence code, every idle worker answering the alarm slows repair to t50 17.8 s. A 30% caste brings it
@@ -46,10 +46,45 @@ of these hold:
 
 - it is live;
 - it is **not shielded or super-shielded** (shielded mass is never a target or food);
-- it is not the colony's own domain;
 - it is not built by ANY colony, and not carried by anyone (`BuilderRegistry`);
 - it is not living tissue (a flora or fauna body prism);
-- it is inside the forage band.
+- it is inside the forage band;
+- it is on the **platform diet**: the glue binds each core's `Diet` (on `BuilderColonyParams`, `ThiefParams`,
+  `WearerParams`) to `BuilderColonyFauna.OnPlatformDiet` → `Cell.IsPreyForHerbivore` - any domain's mass outside
+  the nucleus, nothing inside it, nothing outside a mode's pen (a cell with no nucleus keeps the platform's legacy
+  opposing-domain rule, like every grazer);
+- it is **another domain's**, or the deciding member is **desperate** (the colour preference, below).
+
+**The colour preference: steal from other teams; your own colour is the starvation fallback (2026-10).** Opposing-
+domain mass is always food. The colony's OWN colour is food only to a member whose stomach is below
+`OwnDomainBelow` x Capacity (`BuilderStomachParams.OwnDomainBelow`, default **0.25**, clamped to `HungryBelow` by
+`BuilderStomachParams.Desperate` so a fed member never takes it), and even then an opposing candidate WINS whenever
+the same search holds one. This is the cell's Frenzy shape applied to a stomach: fauna turn on their own colour only
+once the cell is overfull (`CellAggressionLevel.Level2`, any-colour centroid), and a builder turns on its own colour
+only once it is about to starve. Authored per species on `BuilderColonyConfigSO` - `WorkerOwnDomainBelow`,
+`ThiefOwnDomainBelow`, `WearerOwnDomainBelow`, all 0.25 against hungry marks of 0.35 / 0.4 / 0.3 - by
+`author_builders.py`, whose `--check` refuses a value outside `(0, HungryBelow)`.
+
+| Species | Unit that owns the hunger | Where the preference is applied (one existing query, O(1) more per candidate) |
+|---|---|---|
+| Fortress | each worker | `ForageTarget`: own colour is skipped unless the worker is desperate AND no opposing candidate has been seen yet; it is kept as a second best and returned only when the query held no opposing prism. A goal that stops being acceptable is dropped. A desperate worker is always hungry, so it EATS what it takes. |
+| Thief nest | each thief | `GatherWarm` adds own-colour wake to the nest's shared warm book only while some thief is desperate (one O(Cap) pass a tick); the scout keeps the freshest opposing wake and falls back to the freshest own-colour wake only for a desperate thief with no opposing wake in reach. It hoards it; the larder feeds it. |
+| Wearer | the creature's leader heart (the one that steals) | `Thieve`: the same second-best pass as the fortress over the heart's existing query. It wears what it takes and eats its body's outermost prism. |
+
+**Why not a hard "not my colour" test, and why not "any colour".** PORT.md's predicate skipped the colony's own
+domain outright (`SkipOwnDomain`, the thieves' and wearers' `Domain != Domain`). A colony always wears the spawning
+domain - a Spawn Matrix release spawns in the local pilot's domain, the spawner in the cell's controlling colour - so
+the one pilot it shares a cell with was never food and the colony could not complete its lifecycle (feed, then breed)
+before dying. The first fix (2026-10-06) made every colour food, which fed the colony but made a same-colour colony
+graze its own team as readily as the opposing one; stealing is the species' behaviour, so own colour is now the
+fallback only. The diet is the platform's one rule (`Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md`, "No domain
+asymmetry"), not a per-species copy, and the preference reads the colony's colour, not a team's. It is not
+`Fauna.IsPreyForMe`: the species band is where a colony LIVES, while its members forage the cell (the fortress keeps
+its own widened forage band in the core). Ownership tests are unchanged - a built, carried, hoarded or worn prism that
+changes domain still reads as taken back (an own-colour prism cannot change domain by a same-colour pilot's steal, so
+only a death or a raid's touch frees it). Harness D1 asserts, for each species, that a fed member leaves its own
+colour alone, a desperate one eats it, a desperate one offered both takes the opposing prism although its own is
+nearer (thief: fresher), and that a refusing `Diet` is obeyed (the negative control).
 
 **Pickup** is `Prism.Steal(colonyName, colonyDomain, superSteal: false)`.
 
@@ -185,7 +220,7 @@ Run with a private `TMPDIR`. Shared `/tmp` races with other workers' harnesses.
 
 ```
 export DOTNET_ROOT=/usr/lib/dotnet TMPDIR=<private dir>
-bash Tools/Build/builders_harness/run.sh            # all; or: fortress | thieves | wearers | exp
+bash Tools/Build/builders_harness/run.sh            # all; or: fortress | thieves | wearers | diet | exp
 bash Tools/Build/swarm_glue_typecheck/run.sh        # cores + glue against the stubs (netstandard2.1, C# 9)
 python3 Tools/Build/author_builders.py --check
 python3 Tools/Build/author_swarm_fauna.py --check
@@ -216,6 +251,7 @@ SAME core files the game compiles. Its asserted results:
 | T4 founded nest vs full colony, first minute | 39% (≤ 60%); blooms (births); rate grows | |
 | T4 45 min, a ship 2 min in every 6 | no seed extinct (6/8/6/9 alive) | 3 of 4 extinct |
 | T5 shielded trail | 0 snatched | |
+| D1 diet + colour preference | in all three species: fed + own colour → nothing taken; desperate + own → own taken; desperate + both (own nearer / fresher) → the OPPOSING prism first; a refusing `Diet` → nothing. Two planted mutations (no preference; no desperation gate) each fail 3 checks | |
 | Mass audit | 0 in every run | 0 |
 | Thief cost | 0.012 ms/step | |
 
@@ -287,8 +323,9 @@ Hurt it fast and it MOULTS, shedding its outer layer back to whoever it was stol
   prism-entity bodies, proxies near a vessel, every death through a proxy's sealed `Die`. The worn body is NOT
   lifeform tissue: it is stolen mass. When a leader dies, its body falls loose (still the colony's domain) and its
   riders split off.
-- **The one predicate.** A heart steals a prism only if it is alive, unshielded, not its own domain, unclaimed and
-  `Loose`. `Loose` excludes built, carried and worn prisms, living tissue and grove tissue
+- **The one predicate.** A heart steals a prism only if it is alive, unshielded, unclaimed, `Loose` and on the
+  platform diet, and either another domain's or taken by a DESPERATE leader heart (stomach under
+  `WearerOwnDomainBelow`) with no opposing candidate in the same query (§2.1, the colour preference). `Loose` excludes built, carried and worn prisms, living tissue and grove tissue
   (`ThreatGrove.IsGroveTissue`, merged from 9261700ee). A worn prism that becomes shielded, changes domain or dies
   leaves the body that tick.
 

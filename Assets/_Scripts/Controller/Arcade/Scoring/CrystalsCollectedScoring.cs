@@ -69,7 +69,7 @@ namespace CosmicShore.Gameplay
                 _ => 0
             };*/
             
-            Score = roundStats.CrystalsCollected * scoreMultiplier;
+            SetScore(roundStats, roundStats.CrystalsCollected * scoreMultiplier);
             ScoreTracker.CalculateTotalScore(roundStats.Name);
         }
     }

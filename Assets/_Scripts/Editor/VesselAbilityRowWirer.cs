@@ -20,11 +20,15 @@ namespace CosmicShore.Editor
     /// Four-Icon Ability Row (LOCKED structure)").
     ///
     /// <para>Because that contract is fleet-wide, so is this tool. It was the Dolphin's private
-    /// wirer until 2026-08-17; nothing about the row's geometry was ever Dolphin-specific, and the
-    /// Rhino still reports <b>0/4 icons</b> against the audit (the Serpent binds 1/4, Time only). Pointing this
-    /// at one of them creates the whole row from nothing, correctly placed and correctly bound —
-    /// which is the entire mechanical half of bringing a vessel into compliance. The remaining half
-    /// is design (authoring that vessel's `ElementalAbilityMapSO`), which no tool can do.</para>
+    /// wirer until 2026-08-17; nothing about the row's geometry was ever Dolphin-specific. Pointing
+    /// this at a vessel with no row creates the whole row from nothing, correctly placed and
+    /// correctly bound — which is the entire mechanical half of bringing a vessel into compliance.
+    /// The remaining half is design (authoring that vessel's `ElementalAbilityMapSO`), which no tool
+    /// can do. (The Rhino, Serpent and Scarab rows were NOT built by this window: since 2026-10-06
+    /// (#971) they are authored headless by <c>Tools/Build/author_hull_ability_rows.py</c>, Rhino at
+    /// this tool's fleet bands, and each binds all four slots, with Rhino Charge/Space and Serpent
+    /// Mass bound icon-less as open design slots. Re-author those three by re-running that script
+    /// (its <c>--check</c> is the drift gate).)</para>
     ///
     /// <para><b>The layout is not a judgement call.</b> Four buttons parented to the HUD root sharing
     /// one Y band, at four equal X bands across the lower right, each holding an 80×80 icon. The
