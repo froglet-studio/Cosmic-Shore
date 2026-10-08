@@ -9,12 +9,14 @@ namespace CosmicShore.Tests
     /// guards is the one a naive "dash when close" rule gets wrong: the steal window is only open
     /// for the dash's own duration, so a dash must be fired when the CONTACT lands inside it and
     /// the dash's sideways travel closes the miss - early is a bump, late is a bump, too far is a
-    /// miss. Shipped juke numbers: 80 u/s over 0.5 s.
+    /// miss. The numbers below are the shipped Scarab.prefab juke (JukeSpeed 80 u/s,
+    /// JukeDurationSeconds 0.5), which the controller reads live off ScarabJukeController and
+    /// passes into the planner; the planner itself takes them as arguments.
     /// </summary>
     public class ScarabScrambleJukePlannerTests
     {
-        const float Speed = 80f;
-        const float Window = 0.5f;
+        const float Speed = 80f;   // ScarabJukeController.JukeSpeed on Scarab.prefab
+        const float Window = 0.5f; // ScarabJukeController.JukeDurationSeconds on Scarab.prefab
         const float MinLead = 0.1f;
         const float Contact = 10f;
 

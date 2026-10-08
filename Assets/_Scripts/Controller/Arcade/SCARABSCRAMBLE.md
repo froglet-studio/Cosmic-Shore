@@ -178,9 +178,11 @@ the window opens where it is read with no RPC. The geometry is pure and unit-tes
 
 - **Steal.** It fires for any rival-domain loose ball (not studded in the nucleus) when two things
   hold. First, the constant-velocity closest approach must fall inside the steal window, between
-  `aiStealMinLeadSeconds` (0.1) and `aiStealWindowSeconds` (0.5). Second, the dash's own sideways
+  `aiStealMinLeadSeconds` (0.1) and the juke's own `JukeDurationSeconds` (0.5 on `Scarab.prefab`).
+  Second, the dash's own sideways
   travel by that moment must close the miss to within the hull radius plus the ball's live radius.
-  The sideways travel is the transformer's `v·(cos(πs/T)/2+1)` curve integrated, `v·(t + T/2π·sin(πt/T))`.
+  The sideways travel is the transformer's `v·(cos(πs/T)/2+1)` curve integrated, `v·(t + T/2π·sin(πt/T))`,
+  with `v` = `JukeSpeed` (80) and `T` = `JukeDurationSeconds`.
   A dash any earlier closes the window before contact (a bump, not a steal). A dash at a ball
   dead ahead would overshoot it, so for that ball the AI waits until the travel matches the miss.
   This check runs while escorting too, so the AI also steals balls that cross its line.
@@ -195,9 +197,11 @@ while the roll is live or the juke is spent. The juke's cooldown ships at 0, so 
 cadence is one dash per roll (0.5 s), the same as a human's. The plate keeps its own
 CHARGE-scaled cooldown (2.5 s at rest), so a back-to-back dash dodges but does not punch twice.
 
-The knobs are serialized on the controller (Bends-style), not on `ScarabScrambleSettingsSO`. The
-scene does not serialize them yet, so the C# defaults are the shipped values until the next scene
-save writes them out.
+The dash's duration and speed are not mode knobs. `TryAIJuke` reads them live off the hull's
+`ScarabJukeController.JukeDurationSeconds` / `JukeSpeed`, so retuning the juke on `Scarab.prefab`
+retunes the AI's plan with it, and nothing can drift. The remaining six knobs are serialized on
+the controller (Bends-style), not on `ScarabScrambleSettingsSO`. The scene does not serialize them
+yet, so the C# defaults are the shipped values until the next scene save writes them out.
 
 ## Known limitations / follow-ups
 
@@ -244,14 +248,12 @@ save writes them out.
   treat the first real Editor compile as the authority.
 - **The AI jukes, steals and blasts, but the tuning is a model, not a playtest** (2026-10).
   `ArmRollers` now calls `ScarabJukeController.TryAutopilotDash`, the committed-dash entry
-  Wrecking Ball, Undertow and Broadside already use. See **AI** below for the two triggers. Three
+  Wrecking Ball, Undertow and Broadside already use. See **AI** above for the two triggers. Two
   things are unmeasured. (1) How often the steal actually converts: the plate fires on the same
   dash, and it can throw the rival ball off the line before the hull arrives. Either result is
   legitimate defence, but only a playtest gives the ratio. (2) Whether the escort dash helps or
-  just looks busy. (3) `aiStealWindowSeconds` (0.5) and `aiDashLateralSpeed` (80) are copies of
-  the juke's private `jukeDurationSeconds` / `jukeSpeed` on `Scarab.prefab`. Retune either on the
-  prefab and these copies go stale with nothing failing. The fix is two read-only getters on
-  `ScarabJukeController` (outside this mode's files).
+  just looks busy. The dash's window and speed are read off the juke itself
+  (`JukeDurationSeconds` / `JukeSpeed`), not copied, so they cannot go stale.
 - **No disarmed-ball visual**: an enemy-touched ball looks identical to an armed one. A
   future flicker/dim needs a replicated arming bit; deferred.
 - **No forge-exclusion zone around hoop mouths**: a crystal spawning at a hoop is a

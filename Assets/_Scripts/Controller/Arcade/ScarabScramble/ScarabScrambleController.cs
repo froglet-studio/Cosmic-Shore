@@ -65,23 +65,15 @@ namespace CosmicShore.Gameplay
         [SerializeField] CellRuntimeDataSO cellData;
 
         // The AI's juke knobs are controller fields (Bends-style), not ScarabScrambleSettingsSO
-        // rows: two of them mirror the Scarab prefab's own juke rather than describing the court.
-        // The scene does not serialize them yet, so these defaults ARE the shipped values.
+        // rows. The dash's own duration and speed are NOT knobs here: they are read live off the
+        // hull's ScarabJukeController (JukeDurationSeconds / JukeSpeed), so retuning the prefab
+        // retunes the AI's plan. The scene does not serialize these yet, so the defaults ARE the
+        // shipped values.
         [Header("AI Jukes")]
         [Tooltip("An AI with no ball of its own hunts the nearest RIVAL ball within this " +
                  "distance (world units) to juke-steal it, when that ball is nearer than the " +
                  "nearest forge crystal. 0 = never hunt; the AI still steals opportunistically.")]
         [SerializeField, Min(0f)] float aiStealHuntRange = 260f;
-
-        [Tooltip("Seconds a committed dash keeps the juke-steal window open. MIRRORS " +
-                 "ScarabJukeController.jukeDurationSeconds on Scarab.prefab (0.5) - the AI " +
-                 "dashes only when the closest approach to a rival ball lands inside it.")]
-        [SerializeField, Min(0.05f)] float aiStealWindowSeconds = 0.5f;
-
-        [Tooltip("Peak lateral speed of a committed dash. MIRRORS " +
-                 "ScarabJukeController.jukeSpeed on Scarab.prefab (80). With the window it " +
-                 "predicts how far sideways the dash carries the hull by the moment of contact.")]
-        [SerializeField, Min(0f)] float aiDashLateralSpeed = 80f;
 
         [Tooltip("The AI never steal-dashes at a ball it would reach sooner than this " +
                  "(seconds): a contact that close happens with or without the dash, and the " +
@@ -590,6 +582,10 @@ namespace CosmicShore.Gameplay
             if (status == null) return;
             Vector3 course = status.Course;
             Vector3 selfVel = course * status.Speed;
+            // The dash's own numbers, read off THIS hull's juke so the plan can never drift
+            // from what the dash actually does.
+            float window = juke.JukeDurationSeconds;
+            float dashSpeed = juke.JukeSpeed;
 
             var live = AstroLeagueBall.Live;
             for (int i = 0; i < live.Count; i++)
@@ -598,7 +594,7 @@ namespace CosmicShore.Gameplay
                 if (!IsRivalBall(ball, self.Domain)) continue;
                 if (!ScarabScrambleJukePlanner.ShouldStealDash(
                         selfPos, selfVel, ball.transform.position, ball.Velocity,
-                        aiStealWindowSeconds, aiStealMinLeadSeconds, aiDashLateralSpeed,
+                        window, aiStealMinLeadSeconds, dashSpeed,
                         aiStealHullRadius + ball.BallWorldRadius(), out Vector3 stealShove))
                     continue;
                 juke.TryAutopilotDash(stealShove);
@@ -607,7 +603,7 @@ namespace CosmicShore.Gameplay
 
             if (escortedBall == null) return;
             float fullDash = ScarabScrambleJukePlanner.DashDisplacement(
-                aiStealWindowSeconds, aiDashLateralSpeed, aiStealWindowSeconds);
+                window, dashSpeed, window);
             if (ScarabScrambleJukePlanner.ShouldEscortDash(
                     selfPos, course, aim, escortedBall.transform.position,
                     aiEscortDashMinDistance, aiEscortDashMaxAngleDegrees, fullDash,
