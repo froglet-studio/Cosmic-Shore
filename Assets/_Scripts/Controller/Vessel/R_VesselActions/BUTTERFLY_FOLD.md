@@ -373,7 +373,7 @@ a route it does not need.
 
 | field | shipped | what it is |
 |---|---|---|
-| `gateRadius` | 55 | mouth radius; the ring is drawn at exactly this |
+| `gateRadius` | 33 | mouth radius; the ring is drawn at exactly this |
 | `minGateSeparation` | 300 | shortest fold worth leaving gates for |
 | `gateExitClearance` | 40 | minimum depth of the near zone the arming latch reads (the zone is at least one `gateRadius` deep). It used to also push an arriving pilot this far past the far plane; a transit now carries the pilot through exactly, so there is no push |
 | `portalWindowRange` | 2500 | furthest the camera may be for a gate to show the far side; also the range over which the second render is paid |
@@ -583,7 +583,7 @@ sees their ship through the mouth rather than hidden behind an opaque sphere. It
 being taken back because a mouth only takes a step that STARTS outside it — the ring gates' arming
 latch, now pure geometry (`WormholeGeometry.SegmentEntersBall`).
 
-**Tuning (`ButterflyFoldAction.asset`).** `gateRadius` 55 is the sphere radius. `minGateSeparation`
+**Tuning (`ButterflyFoldAction.asset`).** `gateRadius` 33 is the sphere radius (was 55; cut to 60% on 2026-10-08). `minGateSeparation`
 300 (and never under 2.5 radii, so two mouths cannot touch). `portalWindowRange` 2500 is the exact-view
 range and the new `portalWindowFadeBand` 600 its crossfade to the panorama; `portalWindowRenderScale`
 0.75; new `panoramaFaceSize` 256; new `wormholeMaterial` → `Assets/_Graphics/Materials/Wormhole.mat`.

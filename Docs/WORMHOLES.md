@@ -169,7 +169,7 @@ An unpaired mouth (one withering away, `WormholeMouth.Retire`) is still **sealed
 and its first playtest sealed the Butterfly against its own pair (`BUTTERFLY_FOLD.md` § "Playtest
 1"). The fail-open rule and `Settings.Owner` that fixed it carry straight over to the toll.
 
-**Laying a pair.** The fold builds a domain-tolled pair (radius `gateRadius` 55) at the two ends of
+**Laying a pair.** The fold builds a domain-tolled pair (radius `gateRadius` 33) at the two ends of
 every fold — origin and destination, exactly where its ring gates used to stand — once the arrival
 pose has replicated, and only when the two ends are at least `minGateSeparation` (300, never under
 2.5 radii) apart; the previous pair withers out first (`BUTTERFLY_FOLD.md` § "The gates became
