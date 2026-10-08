@@ -11,8 +11,7 @@ trainings finish - add a row, run this, and the same runtime grows them):
   * <Species>NcaConfig.asset - the NcaCreatureConfigSO every individual reads (every gameplay number);
   * Nca<Species>Fauna.prefab - the creature: one GameObject with NcaCreatureFauna (its heart is provisioned from the
     element at spawn, its body is the NCA's voxels drawn as prism entities - no authored mesh, no collider);
-  * Nca<Species> <Element> Fauna Config Data.asset x4 - the FaunaConfigurationSOs (one per element) a spawn profile
-    or the Spawn Matrix lists;
+  * (pending the Spawn Matrix, PR #962) Nca<Species> <Element> Fauna Config Data.asset x4 - one per element;
   * the .meta of every script, asset and prefab (stable guids, one owner each).
 And for the Swarm demo cell (author_swarm_fauna.py composes these through cell_profile_entries / colliders):
   * Swarm <Band> Nca<Species> Fauna Config Data.asset - the cell's population of the species, penned in a band
@@ -390,10 +389,10 @@ def emit():
                 (prefab_path(sp), prefab(sp), PREFAB_META)):
             out[path] = text
             out[path + ".meta"] = meta % guid(rel(path))
-        for element, eid in ELEMENTS:
-            path = element_config_path(sp, element)
-            out[path] = fauna_config(sp, os.path.basename(path)[:-6], eid, 1, SPECIES_CAP)
-            out[path + ".meta"] = ASSET_META % guid(rel(path))
+        # The four per-element configs (element_config_path) are NOT authored yet: check_generated_assets.py fails a
+        # FaunaConfigurationSO no spawn profile lists, and the one list that would take them - the Spawn Matrix
+        # roster (PR #962, Tools/Build/author_spawn_matrix_roster.py) - is not merged. When it is: emit them here
+        # with fauna_config(sp, name, element_id, 1, SPECIES_CAP) and add the lizard to that roster.
         if sp.get("swarm"):
             sw = sp["swarm"]
             path = swarm_config_path(sp)
