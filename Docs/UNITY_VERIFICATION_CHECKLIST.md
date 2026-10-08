@@ -5255,7 +5255,7 @@ field on `Serpent.prefab` to opt out.
 
 1. Project compiles with zero errors. Run the `CosmicShore.Tests.EditMode`
    suite — `ShipModifierTests` gained two cases pinning the new flag.
-2. `MinigameFreestyleMultiplayer_Gameplay` (or Menu_Main freestyle), Sparrow.
+2. Menu_Main freestyle, Sparrow.
    **Flying** roll first: boost + full left stick → rolls and strafes, once per
    press. This must be **unchanged** — it is the regression risk.
 3. Toggle the stationary/turret stance. Boost + full left stick → **rolls and

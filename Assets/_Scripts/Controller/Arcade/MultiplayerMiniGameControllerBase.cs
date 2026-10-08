@@ -843,9 +843,10 @@ namespace CosmicShore.Gameplay
             gameData.ResetPlayers();
 
             // A rematch is a new GAME, so the round/turn counters start from zero on EVERY peer.
-            // This in-place path (Cellular Duel is the one mode that does not reload the scene)
-            // reset the scores but not these two, so the rematch started with the previous game's
-            // RoundsPlayed: it ended early, and OnlineDuelForTheCellController.SetupNewRound saw
+            // This in-place path (OnlineDuelForTheCellController, which CoOp Wildlife Blitz runs
+            // on, does not reload the scene) reset the scores but not these two, so the rematch
+            // started with the previous game's RoundsPlayed: it ended early, and
+            // OnlineDuelForTheCellController.SetupNewRound saw
             // RoundsPlayed > 0 on the first round and swapped vessels straight away (BH-1.6).
             // Only the two counters - GameDataSO.ResetRuntimeDataForReplay also clears
             // GameConfigSynced and the spawn poses, which a live multiplayer session must keep.
