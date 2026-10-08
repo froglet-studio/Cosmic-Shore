@@ -530,8 +530,13 @@ leaves them out (a verbose `CrystalMorph`-channel line, not a warning: it is the
 `OmniCrystalFresnelShader` is `SpreadFresnelShader`'s displacement and colour transcribed verbatim,
 **plus** the two things only the omni needs: the `CrystalMorph` vertex/normal path the Scarab forge
 stamps (`_CrystalMorph`, TEXCOORD2/3, the `_PrismClock` global — a pass-through until stamped), and a
-screen-door dissolve on `_Opacity × _opacity`, which gives the body `FadeIn`'s bloom-in and the
-forge's tail. It is self-contained on purpose: the elemental shader is not touched. Unity shaders have
+screen-door dissolve on `_Opacity` for the forge's tail. **Neither omni shader reads `FadeIn`'s
+lowercase `_opacity`, on purpose.** `FadeIn`'s curve is slow and back-loaded (rate 0.001 per frame,
+growing ×(1+dt): under 10% for the first second, half at 2.25 s, full at 2.9 s at 60 fps), and the
+omni has always appeared at once on respawn because its ShepardGraph shells only had `_Opacity`.
+Wiring `_opacity` in made a collected crystal's replacement visibly lag in Skim Race (playtest,
+2026-10-08), so it was taken back out; the omni also does not take the capture dissolve, exactly as
+before this branch. It is self-contained on purpose: the elemental shader is not touched. Unity shaders have
 no inheritance (`UsePass` reuses a whole pass but cannot add to one), so the "base class" for a shader
 family is a shared `.hlsl` include — folding both shaders onto one is the follow-up once this one is
 verified in the editor. The body's materials are clones of `LimeCrystalFresnelMaterial` /

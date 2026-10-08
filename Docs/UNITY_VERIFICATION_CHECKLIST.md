@@ -86,7 +86,8 @@ No Unity CLI in the authoring container, so none of this has been opened in the 
    rotated or offset against the body, the mesh bake's axis conversion is wrong (see the generator).
    A faint stationary triangle rim (`OmniShepardTrianglesRim`) sits at the outer radius, so no
    shell visibly pops in where it is born.
-4. The omni blooms in (dithered) when it appears, instead of popping.
+4. In Skim Race, a collected crystal's replacement appears at once (no slow fade-in) - the omni
+   shaders deliberately ignore FadeIn's `_opacity`.
 5. Scarab: forge an omni crystal — the body folds onto the ball and dissolves; the triangle shells
    just leave with the crystal. No warnings in the console.
 6. A toy/matrix that shows the omni's shape (`SpawnMatrixToy`, `ElementCrystalModelBuilder`)

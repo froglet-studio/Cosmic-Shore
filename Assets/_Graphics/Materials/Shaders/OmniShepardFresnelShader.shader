@@ -10,8 +10,8 @@
 // (rising when _Start < _Stop, falling otherwise), the mesh is scaled by s about the origin when
 // _ScaleDistance is on, and Alpha = (1.05 - s) * _Opacity, clipped at 0.01.
 //
-// _opacity (lowercase) is the crystal-wide channel FadeIn blooms in and the capture dissolve
-// fades out on; it multiplies the alpha, so the triangles arrive and leave with the body.
+// Like the body, it does NOT read FadeIn's lowercase _opacity: the omni appears at once on respawn
+// (see OmniCrystalFresnelShader for why).
 Shader "Custom/OmniShepardFresnelShader"
 {
     Properties
@@ -23,7 +23,6 @@ Shader "Custom/OmniShepardFresnelShader"
         _Period ("Period", Float) = 3
         [Toggle] _ScaleDistance ("Scale Distance", Float) = 1
         _Opacity ("Opacity", Range(0, 1)) = 1
-        [HideInInspector] _opacity ("FadeIn Opacity", Float) = 1
     }
 
     SubShader
@@ -57,7 +56,6 @@ Shader "Custom/OmniShepardFresnelShader"
             float _Period;
             float _ScaleDistance;
             float _Opacity;
-            float _opacity;
 
             struct appdata
             {
@@ -99,7 +97,7 @@ Shader "Custom/OmniShepardFresnelShader"
 
             half4 frag (v2f i) : SV_Target
             {
-                float alpha = (1.05 - i.s) * _Opacity * saturate(_opacity);
+                float alpha = (1.05 - i.s) * _Opacity;
                 clip(alpha - 0.01);
 
                 // The body's colour, verbatim (OmniCrystalFresnelShader / SpreadFresnelShader).
