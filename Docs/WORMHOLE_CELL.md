@@ -1,0 +1,132 @@
+# The Wormhole cell
+
+A Cell Selector world whose environment is **two spheres that are one place**. Fly into either and
+you come out of the other, still flying the way you were. Each sphere shows, from every side, what
+lies beyond the other one — so you see where you are going before you go, and the transit itself has
+nothing on screen to give it away.
+
+Files:
+
+| What | Where |
+|---|---|
+| The model (pure maths, tested) | `Assets/_Scripts/Controller/Environment/Wormhole/WormholeGeometry.cs` |
+| A mouth: sphere, attached cameras, transit detection | `…/Wormhole/WormholeMouth.cs` |
+| The per-frame driver: render budget, which camera is looking, the straddling ship | `…/Wormhole/WormholeView.cs` |
+| The cell environment (a `SpawnableBase`) and all tuning | `…/Wormhole/SpawnableWormholePair.cs`, `Assets/_Prefabs/Spawnables/SpawnableWormholes.prefab` |
+| The surface shader / material | `Assets/_Graphics/Materials/Graphs/Wormhole.shader`, `Assets/_Graphics/Materials/Wormhole.mat` |
+| The cell | `Assets/_SO_Assets/Cell Configs/Wormhole Cell/Wormhole Cell Config.asset`, appended to Menu_Main's `Cell.CellConfigs` |
+| Generator + gate for every asset above | `Tools/Build/author_wormhole_cell.py` (`--check`) |
+| Tests | `Assets/_Scripts/Tests/Editor/WormholeGeometryTests.cs` |
+| Camera carry | `CustomCameraController.CarryThroughSphere` |
+| Ribbon cut + carry on every peer | `TeleportContinuity` → `WormholeMouth.TryResolveTransit` |
+
+## 1. The model — two balls with one interior
+
+The inside of mouth A **is** the inside of mouth B, displaced by a pure translation `Δ = B − A`.
+
+- **A transit is a translation.** A vessel whose step enters ball A is moved by `Δ` and is then
+  inside ball B at exactly the offset it had inside A. Rotation, heading and speed are untouched —
+  a wormhole moves you, it does not fly you. A step that clips the ball and leaves again in one
+  frame still went through; a step that *starts* inside never counts, which is the whole arming
+  rule (a pilot just carried into B must fly out of it before B can take them back) — geometric,
+  no clock.
+- **The view through A** is the world seen from the viewer's own vantage carried by `Δ`, with
+  everything between that vantage and ball B removed. The removal is one oblique near plane,
+  tangent to ball B at its point nearest the vantage, so **all of ball B is kept**: a ship carried
+  into B is visible through A on the very frame it moved. The approximation is a sliver beside B's
+  near cap, outside the ball but beyond the plane — it only shows for something hugging the far
+  mouth on the viewer's side.
+- **It holds from every side** because nothing in the model has a facing: the view is re-derived
+  from wherever the viewer is, every frame.
+
+Why not "rays continue through the chord"? Because then the ball interiors are skipped, and a ship
+entering A's front surface would reappear at B's *back* surface — through the window it visibly
+jumps a whole diameter away from the camera (shrinks by 2–3× for a chase camera). The shared
+interior keeps it continuous.
+
+## 2. What the surface shows — two cameras on every mouth
+
+The surface of A shows the place around **B**, so it is fed by B's cameras.
+
+**The exact eye — the player-camera cheat, and the reason the transit is seamless.** Each frame,
+for the nearest on-screen mouths, `WormholeView` renders the world from the gameplay camera's pose
+carried through the pair, with that camera's own projection (field of view copied live, so the
+speed tunnel narrows it too), clipped by the plane above, and **cropped to the sphere's footprint on
+screen**. The shader samples that picture at its own screen position (the `FoldGatePortal`
+arithmetic), so every pixel is exactly what the player would see if the two mouths were one place,
+near things included. It is valid only for the camera it was rendered for, so the surface uses it
+only while that camera is drawing (`_WormholeMainView`).
+
+**The panorama eye — "viewing in all directions".** Each mouth's second camera sits at its centre
+and captures its surroundings as six 90° faces into a six-slice texture array, one face per frame
+while its partner is on screen. The partner's surface projects it back out in every direction: the
+view ray is continued from the entry point as if it had come out of the far mouth, assumed to end on
+a proxy sphere `_ProxyRadius` (material, default 600) from the capture point, and the panorama is
+sampled in that direction. Any camera can use it — the menu's preview cameras, the editor's scene
+view — at any distance, at the cost of parallax for things nearer than the proxy.
+
+The two crossfade by distance: exact inside `exactRange` (1500), fading to panorama across
+`exactFadeBand` (400). The face table lives in **three** places — `WormholeGeometry.FaceRotation`
+(the camera's pose), `FaceOf`/`FaceUV` (C#), and the shader's `SamplePanorama` — and
+`WormholeGeometryTests.Panorama_FaceUV_IsWhereTheFaceCameraSeesTheDirection` is the contract between
+them. The array is ours end to end, so no cubemap orientation convention is involved.
+
+## 3. The transit, frame by frame
+
+1. **Nose in.** The hull crosses A's sphere. A's surface hides the part inside the ball; the exact
+   render draws the ship *carried through* for that one render, so the nose appears inside B through
+   the window as it disappears into A (`WormholeView.Straddles`, the fold gate's trick for a sphere).
+2. **The jump.** The owner's detector (`WormholeMouth.Update`) sees the step enter the ball and
+   writes the pose `+Δ` through `IVessel.SetPose`, which replicates. On every peer
+   `VesselTransformer.SetPose` → `TeleportContinuity` resolves it as a wormhole transit
+   (`WormholeMouth.TryResolveTransit`): ribbons are cut on the two spheres, and the active camera is
+   told to `CarryThroughSphere`.
+3. **The carry.** The camera keeps framing the ship *through* A (its follow point is the ship
+   mapped back by `Δ`). While the ship's tail still sticks out of B's near face, the gameplay
+   camera's render draws the ship mapped back too, so the tail is still in front of A.
+4. **The hand-over.** When the camera itself reaches A — within `WormholeGeometry.Clearance` of the
+   surface — it is moved by `Δ` with its smoothing state. The SAME clearance is where a mouth stops
+   drawing for a camera (the shader clips it), so the camera lands just inside B's clearance, where B
+   has just stopped drawing and the world beyond is seen directly — the picture it was already
+   looking at through A.
+
+If the ship turns so its framed point is no longer seen through A, or the carry runs past six
+seconds, the camera is handed across at once (the fold gate's rules).
+
+## 4. Cost
+
+Per frame, at most **two exact renders** (`WormholeView.MaxExactRendersPerFrame`), each the size of
+its sphere's footprint at `exactRenderScale` (0.75) of the screen — capped per device tier by
+`PlatformProfileSO.FoldGateWindowMaxRenderScale`, the Butterfly window's ceiling — plus **one
+panorama face per mouth** whose partner is on screen and not already fully exact (256², per
+`panoramaFaceSize`). No shadows, no MSAA, no post on any of them: the sphere is composited into the
+world and the gameplay camera's post runs over it once. A mouth nobody can see costs nothing.
+No colliders and no prisms: the environment build is instant.
+
+## 5. The cell
+
+`Wormhole Cell Config` — Barren's membrane, nucleus and cytoplasm; the **Blob Cell spawn profile**
+every authored freestyle world populates from; `EnvironmentPrefab` = `SpawnableWormholes`. The
+environment lays no prisms, so `PhaseThresholds` are the Blob deltas over a **zero** baseline
+(Restless 700 / 11,200 volume, Frenzy 3,600 / 57,600), read by the generator off the Caldera's
+authored ladder (`Docs/ECOSYSTEM.md` §18's rule). Mouths: A at `(0, 0, 620)` beside the nucleus, B at
+`(−700, 450, −480)` out by the membrane — different surroundings, so each window is unmistakably
+somewhere else — radius 70.
+
+The Cell Selector thumbnail is real: `SpawnableWormholePair.GenerateTrailData` emits both shells and a
+dotted throat for `CellMiniatureBuilder` to sample. Those points are never laid.
+
+## 6. Known limits
+
+- **The exact view is for the player's camera only.** Every other camera (preview, scene view,
+  spectator rigs that are not the active `CustomCameraController`) sees the panorama.
+- **Only the followed ship gets the straddle treatment.** Another pilot's hull half-way into a
+  mouth is cut by the sphere, as a rival at a fold gate is.
+- **A ship that turns round inside the shared interior and leaves by the face it came in** comes out
+  of B's near face — the model has one interior and two exteriors, and the exterior is the one of the
+  ball you are physically in. The camera carry then hands over early.
+- **Panorama parallax.** Things nearer the far mouth than the proxy slide against the background in
+  the panorama; inside `exactRange` this never shows.
+- **No recursion.** Every mouth is hidden inside every wormhole render (each samples targets those
+  renders draw into), so A is never seen *through* B.
+- **The transit sound ships empty** (`transitEvent`) per the FMOD convention.

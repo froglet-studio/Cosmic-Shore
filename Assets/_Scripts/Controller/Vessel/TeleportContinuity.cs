@@ -25,6 +25,11 @@ namespace CosmicShore.Gameplay
     /// (<c>CustomCameraController.CarryThroughPortal</c>) — which is what makes a transit
     /// seamless from the pilot's own seat.</para>
     ///
+    /// <para><b>Through a wormhole</b> (<see cref="WormholeMouth.TryResolveTransit"/>) the same two
+    /// things happen on spheres instead of rings: the cut is made on the near and far mouths, and
+    /// the camera is carried through the near sphere
+    /// (<c>CustomCameraController.CarryThroughSphere</c>).</para>
+    ///
     /// <para><b>Every trail, not only the marked ones.</b> <see cref="VesselTailAndJets"/> scopes
     /// its COLOUR work to the tail/jet markers so it never fights a trail somebody else paints
     /// (the Rhino's blade tracers). A cut is a different kind of operation: it copies whatever
@@ -61,6 +66,15 @@ namespace CosmicShore.Gameplay
                 arriveAt = farMouth;
                 CarryCameras(vessel, near, from, farMouth - nearMouth);
             }
+            else if (WormholeMouth.TryResolveTransit(from, to, out var mouth, out var entry, out var exit))
+            {
+                // Through a wormhole the cut is made on the two SPHERES: the old ribbon runs into
+                // the near mouth, the new one starts at the same spot on the far one (inside it,
+                // where only the view through the near mouth can see it).
+                departAt = entry;
+                arriveAt = exit;
+                CarryCamerasThroughSphere(vessel, mouth, exit - entry);
+            }
 
             CutRibbons(vessel, departAt, arriveAt, speed);
         }
@@ -84,6 +98,19 @@ namespace CosmicShore.Gameplay
             Vector3 exitNormal = near.Axis * (side >= 0f ? 1f : -1f);
 
             controller.CarryThroughPortal(vessel, near.Centre, exitNormal, near.RingRadius, shift);
+        }
+
+        /// <summary>
+        /// The wormhole counterpart of <see cref="CarryCameras"/>: the camera keeps framing the
+        /// ship through the near sphere and is moved across when it reaches it
+        /// (<c>CustomCameraController.CarryThroughSphere</c>).
+        /// </summary>
+        static void CarryCamerasThroughSphere(Transform vessel, WormholeMouth near, Vector3 shift)
+        {
+            var manager = CameraManager.Instance;
+            if (manager == null) return;
+            if (manager.GetActiveController() is not CustomCameraController controller) return;
+            controller.CarryThroughSphere(vessel, near.Centre, near.Radius, shift);
         }
 
         static void CutRibbons(Transform vessel, Vector3 departAt, Vector3 arriveAt, float speed)

@@ -4656,3 +4656,39 @@ own branches (it used to jump around the membrane by straight-line distance).
 Starvation: fins / arms before the core body, the heart collectable only once the wither reaches
 the core. Joust: heart taken at the strike, body unravels from the heart outward. If either reads
 wrong on a creature whose prefab nests its spindles oddly, report the prefab.
+
+---
+
+## 🔴 The Wormhole cell (`cece/relaxed-tesla-tpksuj`, 2026-10-08) — NOT EDITOR-VERIFIED
+
+`Docs/WORMHOLE_CELL.md`. New Cell Selector world: two sphere mouths (`SpawnableWormholes.prefab`,
+`WormholeMouth`, `WormholeView`, `Wormhole.shader`), a sphere camera carry
+(`CustomCameraController.CarryThroughSphere`) and a wormhole branch in `TeleportContinuity`. All
+assets are hand-authored by `Tools/Build/author_wormhole_cell.py` (`--check` green); C# compiled
+against Unity reference assemblies offline; nothing has been run in the editor.
+
+### 1. It is in the selector and it builds
+Menu_Main → fly the Cell Selector → the **Wormhole** station shows a scale model of two dotted
+spheres joined by a dotted throat. Fly it: the world swaps, and two spheres bloom in (~1.5 s), one
+beside the nucleus, one out by the membrane. No console errors, no magenta (shader import).
+
+### 2. The view holds from every side
+Circle a mouth at a few hundred units, then close in from several directions (above, below, behind).
+It should always read as a hole onto the OTHER mouth's surroundings (the nucleus close up through the
+outer mouth, the membrane through the inner one), registering with the world as you move — not a
+picture pasted on a ball. Back off past ~1500–1900 u: it should crossfade to the panorama without a
+pop (things near the far mouth may shift slightly — expected).
+
+### 3. The transit is seamless
+Fly straight into a mouth with the chase camera: the ship should go INTO the picture and keep
+flying in it, the camera following it through with no cut and no flash of the inside of a sphere.
+Repeat entering off-centre, near the rim, and very fast (boost). You come out of the other mouth
+still flying the same heading and speed. Fly straight back in: it should take you back.
+
+### 4. Other cameras
+The Scene view and any preview camera show the panorama (not a smeared copy of the game view).
+
+### 5. Cost
+Profile with both mouths on screen: at most two exact renders + up to two 256² panorama faces per
+frame (`WormholeMouth.RenderExact` / `RenderNextPanoramaFace`). Report anything above that.
+

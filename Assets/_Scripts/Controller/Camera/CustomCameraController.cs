@@ -97,6 +97,7 @@ namespace CosmicShore.Gameplay
         private Vector3 _carryNormal;         // the near plane's normal, pointing to the exit side
         private float _carryRadius;           // the near mouth's radius
         private float _carryDeadline;
+        private bool _carryBall;              // the mouth is a wormhole SPHERE, not a gate's disc
 
         /// <summary>
         /// Longest a carry may last. Not a gameplay clock — nothing is added or removed by it —
@@ -151,17 +152,49 @@ namespace CosmicShore.Gameplay
             // for the camera to trail through the mouth, so hand it across outright.
             if (PlacementAnchor.HasValue) { ShiftCamera(shift); return true; }
 
+            BeginCarry(nearCentre, exitNormal, mouthRadius, shift, ball: false);
+            return true;
+        }
+
+        /// <summary>
+        /// The ship this camera follows has just been carried into a wormhole mouth — the sphere
+        /// at <paramref name="centre"/> — and out of its partner, displaced by
+        /// <paramref name="shift"/>. Follow it through rather than cutting: keep framing the ship
+        /// through the near sphere (whose surface shows exactly the view from the far side —
+        /// <see cref="WormholeView"/>) and move across when the camera itself reaches the sphere.
+        ///
+        /// <para>Identity-guarded exactly as <see cref="CarryThroughPortal"/> is. A sphere has no
+        /// "side": crossing is reaching it, within the clearance at which its surface stops drawing
+        /// for this camera (<see cref="WormholeGeometry.Clearance"/>) — the two share one number, so
+        /// the camera lands just inside the far mouth's own clearance, where that mouth has just
+        /// stopped drawing and the world beyond it is seen directly.</para>
+        /// </summary>
+        public bool CarryThroughSphere(Transform subject, Vector3 centre, float radius, Vector3 shift)
+        {
+            if (!_followTarget || !subject) return false;
+            if (_followTarget != subject && !_followTarget.IsChildOf(subject)) return false;
+            if (shift.sqrMagnitude < 1e-6f) return false;
+
+            if (_carrying) FinishCarry();
+            if (PlacementAnchor.HasValue) { ShiftCamera(shift); return true; }
+
+            BeginCarry(centre, Vector3.forward, radius, shift, ball: true);
+            return true;
+        }
+
+        private void BeginCarry(Vector3 nearCentre, Vector3 exitNormal, float mouthRadius, Vector3 shift, bool ball)
+        {
             _carryShift = shift;
             _carryCentre = nearCentre;
             _carryNormal = exitNormal.sqrMagnitude > 1e-6f ? exitNormal.normalized : Vector3.forward;
             _carryRadius = Mathf.Max(0.01f, mouthRadius);
+            _carryBall = ball;
             _carryDeadline = Time.time + MaxCarrySeconds;
             _carrying = true;
 
             // Already through (rear view, or a camera that sits level with the ship): move now.
             if (CameraHasCrossed()) FinishCarry();
             else PublishCarryToCorridor();
-            return true;
         }
 
         private bool CameraHasCrossed()
@@ -169,6 +202,11 @@ namespace CosmicShore.Gameplay
             // "At the plane" counts as through: a camera within its own near clip of the mouth
             // would clip the window it is looking through and show the near side for a frame.
             float nearClip = Camera ? Camera.nearClipPlane : 0.3f;
+            if (_carryBall)
+            {
+                float reach = _carryRadius + WormholeGeometry.Clearance(nearClip);
+                return (transform.position - _carryCentre).sqrMagnitude <= reach * reach;
+            }
             return Vector3.Dot(transform.position - _carryCentre, _carryNormal) >= -nearClip * 2f;
         }
 
@@ -181,6 +219,11 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private bool ShipVisibleThroughMouth(Vector3 framed)
         {
+            // Through a sphere: the ship is seen through it while the line of sight to where the
+            // ship is framed still passes through the ball (or the ship is framed inside it).
+            if (_carryBall)
+                return WormholeGeometry.SegmentHitsBall(transform.position, framed, _carryCentre, _carryRadius);
+
             float dCam = Vector3.Dot(transform.position - _carryCentre, _carryNormal);
             float dShip = Vector3.Dot(framed - _carryCentre, _carryNormal);
             if (dShip <= 0f) return true;                    // ship not yet beyond - nothing to lose

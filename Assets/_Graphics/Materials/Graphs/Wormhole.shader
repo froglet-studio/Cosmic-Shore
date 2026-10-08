@@ -1,0 +1,272 @@
+// Wormhole.shader — the SURFACE of a wormhole mouth (WormholeMouth.cs).
+//
+// PURPOSE. A wormhole is two spheres whose insides are one place: fly into one and you come out of
+// the other (WormholeGeometry.cs states the model). For that to be seamless the sphere must show,
+// from every side, what lies beyond the OTHER mouth — so the pilot flies into the place they see.
+// This surface paints that picture from two sources, both rendered by cameras attached to the mouths:
+//
+//   EXACT VIEW (the player's camera, carried through the pair). WormholeView renders the world from
+//   the gameplay camera's own pose displaced by the pair's translation, with that camera's own
+//   projection, clipped at the far ball and cropped to this sphere's footprint on screen, into
+//   _WormholeExactTex. This surface samples it at its own SCREEN position (the FoldGatePortal
+//   arithmetic, written out), so each pixel is exactly what the camera would see through it —
+//   near things included. Valid only while the camera it was rendered for is drawing, which is what
+//   the global _WormholeMainView says (1 for the gameplay camera, 0 for every other one).
+//
+//   PANORAMA (all directions). The PARTNER mouth's camera captures its surroundings as six 90° faces
+//   (_WormholePanorama, a 2D array, face table in WormholeGeometry.FaceOf/FaceUV — mirrored in
+//   SamplePanorama below). The view ray is continued from the entry point as if it had come out of
+//   the far mouth, assumed to end on a proxy sphere _ProxyRadius from the capture point, and the
+//   panorama is sampled in that direction (WormholeGeometry.ParallaxDirection). Any camera can use
+//   it, from any distance, at the cost of parallax for things nearer than the proxy.
+//
+//   The two are crossfaded by _WormholeExactBlend (WormholeView: 1 inside the mouth's exact range,
+//   fading to 0 across the band past it). At blend 1 the panorama is never sampled.
+//
+// HDR IN, NOT TONEMAPPED. Both pictures are rendered with post-processing OFF into HDR targets and
+// written straight into the gameplay camera's colour buffer, so its own post stack runs over the
+// sphere exactly once, with the rest of the frame.
+//
+// A CAMERA INSIDE A MOUTH DOES NOT DRAW IT. Within _WormholeClearance of the surface (a few near
+// clips, WormholeGeometry.Clearance) the fragment is dropped, so a camera carried through sees the
+// world beyond the far mouth directly instead of the inside of a sphere — and the carry hands over at
+// that same distance, so the hand-over is a change of frame with nothing on screen to show it.
+//
+// RENDER STATE. Opaque, ZWrite On, Cull Back: from outside the sphere covers its whole footprint;
+// from inside, its back faces are culled (and the clearance drops the rest).
+//
+// COST. One screen-space fetch, or one array fetch, per fragment; a small rim term. The real cost is
+// the renders that fill the two textures, which WormholeView budgets.
+
+Shader "CosmicShore/Wormhole"
+{
+    Properties
+    {
+        [HDR] _RimColor ("Rim Colour", Color) = (0.45, 0.75, 1.6, 1)
+        _RimPower ("Rim Power", Range(0.5, 16)) = 6
+        _RimIntensity ("Rim Intensity", Range(0, 4)) = 0.35
+        _RimDarken ("Rim Darkening", Range(0, 1)) = 0.25
+        _FlareIntensity ("Transit Flare", Range(0, 8)) = 2.5
+        _ProxyRadius ("Panorama Proxy Distance", Float) = 600
+        [HDR] _VoidColor ("Void Colour (before the first capture)", Color) = (0.01, 0.015, 0.04, 1)
+    }
+
+    SubShader
+    {
+        Tags
+        {
+            "RenderType"     = "Opaque"
+            "Queue"          = "Geometry"
+            "RenderPipeline" = "UniversalPipeline"
+            "IgnoreProjector"= "True"
+        }
+
+        HLSLINCLUDE
+        #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+
+        CBUFFER_START(UnityPerMaterial)
+            float4 _RimColor;
+            float _RimPower;
+            float _RimIntensity;
+            float _RimDarken;
+            float _FlareIntensity;
+            float _ProxyRadius;
+            float4 _VoidColor;
+        CBUFFER_END
+
+        // PER RENDERER (WormholeMouth.ApplySurface, through a MaterialPropertyBlock).
+        float4 _WormholeSphere;          // xyz centre, w world radius
+        float4 _WormholeExactUV;         // screen uv -> exact target uv: uv * xy + zw
+        float _WormholeExactBlend;       // 0 panorama .. 1 exact
+        float _WormholePanoramaReady;    // the partner's six faces have all been captured
+        float _WormholeFlare;            // 1 on a transit, decaying
+
+        // GLOBAL (WormholeView).
+        float _WormholeMainView;         // 1 while the gameplay camera is drawing
+        float _WormholeClearance;        // world units; a camera this close to the surface is IN it
+
+        // Dropped for a camera inside (or at) the mouth — shared by every pass so depth and colour
+        // always agree.
+        void ClipForInsideCamera()
+        {
+            float dist = distance(_WorldSpaceCameraPos, _WormholeSphere.xyz);
+            clip(dist - (_WormholeSphere.w + max(_WormholeClearance, 0.0)));
+        }
+        ENDHLSL
+
+        Pass
+        {
+            Name "Wormhole"
+            Tags { "LightMode" = "SRPDefaultUnlit" }
+
+            ZWrite On
+            ZTest LEqual
+            Cull Back
+
+            HLSLPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            #pragma target 3.5
+            #pragma require 2darray
+
+            TEXTURE2D(_WormholeExactTex);
+            SAMPLER(sampler_WormholeExactTex);
+            TEXTURE2D_ARRAY(_WormholePanorama);
+            SAMPLER(sampler_WormholePanorama);
+
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+            };
+
+            struct Varyings
+            {
+                float4 positionCS : SV_POSITION;
+                float4 screenPos  : TEXCOORD0;
+                float3 positionWS : TEXCOORD1;
+            };
+
+            Varyings vert (Attributes input)
+            {
+                Varyings output;
+                output.positionWS = TransformObjectToWorld(input.positionOS.xyz);
+                output.positionCS = TransformWorldToHClip(output.positionWS);
+
+                // ComputeScreenPos, written out: xy in [0, w] with the render-target flip applied.
+                float4 o = output.positionCS * 0.5;
+                o.xy = float2(o.x, o.y * _ProjectionParams.x) + o.w;
+                o.zw = output.positionCS.zw;
+                output.screenPos = o;
+                return output;
+            }
+
+            // WormholeGeometry.FaceOf + FaceUV, written out: the face is the direction's largest
+            // component; right = cross(up, forward) is the face camera's own right.
+            half3 SamplePanorama(float3 dir)
+            {
+                float3 a = abs(dir);
+                float slice;
+                float3 f;
+                float3 u;
+                if (a.x >= a.y && a.x >= a.z)
+                {
+                    bool p = dir.x >= 0.0;
+                    slice = p ? 0.0 : 1.0;
+                    f = float3(p ? 1.0 : -1.0, 0.0, 0.0);
+                    u = float3(0.0, 1.0, 0.0);
+                }
+                else if (a.y >= a.z)
+                {
+                    bool p = dir.y >= 0.0;
+                    slice = p ? 2.0 : 3.0;
+                    f = float3(0.0, p ? 1.0 : -1.0, 0.0);
+                    u = float3(0.0, 0.0, p ? -1.0 : 1.0);
+                }
+                else
+                {
+                    bool p = dir.z >= 0.0;
+                    slice = p ? 4.0 : 5.0;
+                    f = float3(0.0, 0.0, p ? 1.0 : -1.0);
+                    u = float3(0.0, 1.0, 0.0);
+                }
+                float3 r = cross(u, f);
+                float z = max(dot(dir, f), 1e-5);
+                float2 uv = float2(dot(dir, r), dot(dir, u)) / z * 0.5 + 0.5;
+                return SAMPLE_TEXTURE2D_ARRAY(_WormholePanorama, sampler_WormholePanorama, uv, slice).rgb;
+            }
+
+            // WormholeGeometry.ParallaxDirection: continue the ray from the entry point (relative to
+            // this centre == relative to the partner's) to a proxy sphere about the capture point.
+            float3 ParallaxDirection(float3 rel, float3 viewDir, float proxy)
+            {
+                float b = dot(rel, viewDir);
+                float c = dot(rel, rel) - proxy * proxy;
+                float t = -b + sqrt(max(b * b - c, 0.0));
+                return rel + viewDir * max(t, 0.0);
+            }
+
+            half4 frag (Varyings input) : SV_Target
+            {
+                ClipForInsideCamera();
+
+                float3 centre = _WormholeSphere.xyz;
+                float radius = max(_WormholeSphere.w, 1e-4);
+                float3 viewDir = normalize(input.positionWS - _WorldSpaceCameraPos);
+                float3 rel = input.positionWS - centre;
+                float3 normal = rel / max(length(rel), 1e-5);
+
+                float exact = saturate(_WormholeExactBlend) * step(0.5, _WormholeMainView);
+
+                half3 colour = _VoidColor.rgb;
+                if (exact < 0.999)
+                {
+                    half3 pano = _VoidColor.rgb;
+                    if (_WormholePanoramaReady > 0.5)
+                    {
+                        float proxy = max(_ProxyRadius, radius * 1.01);
+                        pano = SamplePanorama(ParallaxDirection(rel, viewDir, proxy));
+                    }
+                    colour = pano;
+                }
+                if (exact > 0.001)
+                {
+                    float2 uv = input.screenPos.xy / max(input.screenPos.w, 1e-5);
+                    uv = uv * _WormholeExactUV.xy + _WormholeExactUV.zw;
+                    half3 seen = SAMPLE_TEXTURE2D(_WormholeExactTex, sampler_WormholeExactTex, uv).rgb;
+                    colour = lerp(colour, seen, exact);
+                }
+
+                // The rim: the only thing on the surface that is the mouth itself rather than the
+                // place beyond it — a faint darkening and glow at the silhouette, punched up for a
+                // moment on every transit.
+                float rim = pow(1.0 - saturate(dot(normal, -viewDir)), max(_RimPower, 0.5));
+                float glow = _RimIntensity + saturate(_WormholeFlare) * _FlareIntensity;
+                colour = colour * (1.0 - rim * saturate(_RimDarken)) + _RimColor.rgb * (rim * glow);
+
+                return half4(colour, 1.0);
+            }
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "DepthOnly"
+            Tags { "LightMode" = "DepthOnly" }
+
+            ZWrite On
+            ColorMask R
+            Cull Back
+
+            HLSLPROGRAM
+            #pragma vertex vertDepth
+            #pragma fragment fragDepth
+            #pragma target 3.5
+
+            struct AttributesDepth
+            {
+                float4 positionOS : POSITION;
+            };
+
+            struct VaryingsDepth
+            {
+                float4 positionCS : SV_POSITION;
+            };
+
+            VaryingsDepth vertDepth (AttributesDepth input)
+            {
+                VaryingsDepth output;
+                output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
+                return output;
+            }
+
+            half fragDepth (VaryingsDepth input) : SV_Target
+            {
+                ClipForInsideCamera();
+                return input.positionCS.z;
+            }
+            ENDHLSL
+        }
+    }
+
+    Fallback Off
+}
