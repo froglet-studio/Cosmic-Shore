@@ -122,6 +122,10 @@ namespace CosmicShore.Gameplay
             }
             ResetReadyGate();
             ResetRematchVotes();
+
+            // A replay fade still armed (the vessel never readied) must not outlive this
+            // controller: GameDataSO does, and the next scene's OnClientReady would call into it.
+            gameData.OnClientReady.OnRaised -= FadeFromBlackOnReplay;
             
             UnsubscribeFromSessionEvents();
             
@@ -164,6 +168,25 @@ namespace CosmicShore.Gameplay
         {
             try
             {
+                // On replay scene reload, fade in once the player vessel is ready.
+                // Runs on ALL machines (server + clients) since each needs to fade their own overlay.
+                //
+                // Subscribed BEFORE the InitDelayMs wait, not after it: on a reload the persistent
+                // human Players are re-processed at the vessel initializer's OnNetworkSpawn and the
+                // host's vessel spawns after preSpawnDelayMs (~200 ms; a client's pair lands after
+                // postSpawnDelayMs too), so OnClientReady fires inside the 1000 ms window.
+                // Subscribed after it, the fade was missed and Play Again left the screen black.
+                // The fade itself still waits for InitializeGame below, so it never reveals the
+                // scene earlier than before.
+                _replayGameInitialized = false;
+                _replayFadeDeferred = false;
+                if (gameData.IsReplayReload)
+                {
+                    gameData.IsReplayReload = false;
+                    gameData.OnClientReady.OnRaised -= FadeFromBlackOnReplay;
+                    gameData.OnClientReady.OnRaised += FadeFromBlackOnReplay;
+                }
+
                 CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-7] [MultiplayerMiniGameBase] InitializeAfterDelay - waiting {InitDelayMs}ms, IsServer={IsServer}");
                 using (LoadInsights.Measure(LoadInsightCategory.ScriptedDelay,
                            $"InitDelayMs gate before InitializeGame ({InitDelayMs}ms)", isWait: true))
@@ -178,12 +201,12 @@ namespace CosmicShore.Gameplay
                     gameData.InitializeGame();
                 }
 
-                // On replay scene reload, fade in once the player vessel is ready.
-                // Runs on ALL machines (server + clients) since each needs to fade their own overlay.
-                if (gameData.IsReplayReload)
+                // The replay fade-in, if OnClientReady already arrived during the wait.
+                _replayGameInitialized = true;
+                if (_replayFadeDeferred)
                 {
-                    gameData.IsReplayReload = false;
-                    gameData.OnClientReady.OnRaised += FadeFromBlackOnReplay;
+                    _replayFadeDeferred = false;
+                    RevealAfterReplayReload();
                 }
 
                 if (!IsServer)
@@ -776,10 +799,26 @@ namespace CosmicShore.Gameplay
                 _sceneLoader?.ArmClientMenuReturnWatchdog("Return to menu (host-driven)");
         }
 
+        // Play Again (scene reload): OnClientReady can arrive before InitializeGame has run, and
+        // the fade waits for whichever of the two comes second.
+        bool _replayGameInitialized;
+        bool _replayFadeDeferred;
+
         private void FadeFromBlackOnReplay()
         {
             gameData.OnClientReady.OnRaised -= FadeFromBlackOnReplay;
 
+            if (!_replayGameInitialized)
+            {
+                _replayFadeDeferred = true;
+                return;
+            }
+
+            RevealAfterReplayReload();
+        }
+
+        private void RevealAfterReplayReload()
+        {
             // Play Again reloads bypass SceneLoader.LoadSceneAsync entirely, so
             // neither host nor clients would ever take the scheduled scene-change
             // GC on repeated replays. This runs on every peer with the overlay
