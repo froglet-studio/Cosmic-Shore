@@ -6,20 +6,20 @@ using UnityEngine;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// The Flail's chain physics, flown at the SHIPPED defaults (a fresh <see cref="FlailDials"/>,
+    /// The Thresher's chain physics, flown at the SHIPPED defaults (a fresh <see cref="ThresherDials"/>,
     /// whose field initializers are the same numbers the config asset embeds).
     ///
     /// The four the vessel was specified against come first: a lazy turn stays under smash speed,
     /// a snap-then-reel crack exceeds it, the ship is never dragged below <c>minShip</c>, and the
     /// lock never stalls. The rest pin the rules a later pass is most likely to "simplify" away.
-    /// The same file is also compiled and RUN offline by <c>Tools/Build/flail_chain_harness</c>,
+    /// The same file is also compiled and RUN offline by <c>Tools/Build/thresher_chain_harness</c>,
     /// which prints the feel table these assertions are drawn from.
     /// </summary>
-    public class FlailChainSolverTests
+    public class ThresherChainSolverTests
     {
         const float Dt = 1f / 60f;
 
-        static FlailChainSettings Defaults() => new FlailDials().ToSettings();
+        static ThresherChainSettings Defaults() => new ThresherDials().ToSettings();
 
         /// <summary>A minimal stand-in for the flight model: the ship flies along its nose at a
         /// speed that eases toward <paramref name="cruise"/> exactly like the vector model's nose
@@ -34,14 +34,14 @@ namespace CosmicShore.Tests
             public float MinShipSpeedSeen = float.MaxValue;
             public int Cracks;
 
-            public readonly FlailChainSolver Solver;
+            public readonly ThresherChainSolver Solver;
             readonly float _cruise;
 
-            public Pilot(FlailChainSettings s, float cruise)
+            public Pilot(ThresherChainSettings s, float cruise)
             {
                 _cruise = cruise;
                 Speed = cruise;
-                Solver = new FlailChainSolver(s);
+                Solver = new ThresherChainSolver(s);
                 Solver.Reset(Position, Forward, Forward * Speed);
             }
 
@@ -55,7 +55,7 @@ namespace CosmicShore.Tests
                     Forward = Rotate(Forward, yawDegPerSec * Dt);
                     float thrust = Speed + (_cruise - Speed) * (1.5f * Dt);
                     var r = Solver.Step(Position, Forward * thrust, payOut, _cruise, Dt);
-                    if (Solver.Mode == FlailMode.Pivot)
+                    if (Solver.Mode == ThresherMode.Pivot)
                         Forward = r.ShipVelocity.normalized;   // the transformer faces the orbit tangent
                     Speed = r.ShipVelocity.magnitude;
                     Position += r.ShipVelocity * Dt;
@@ -89,9 +89,9 @@ namespace CosmicShore.Tests
         // Hard turn (120 deg/s, the Squirrel-derived hull's full-stick rate) for turnSeconds, then a
         // short snap back. The snap ALONE does not reach smash speed — the negative control below
         // pins that — so what these cases prove is that the RELEASE (the reel-in) is the crack.
-        // The window is real: Tools/Build/flail_chain_harness prints the whole turn x snap grid,
+        // The window is real: Tools/Build/thresher_chain_harness prints the whole turn x snap grid,
         // and long snaps (0.3 s+) on a short turn land well under smash. That is recorded in
-        // FLAIL.md as the timing a pilot has to learn, not hidden by a friendlier test case.
+        // THRESHER.md as the timing a pilot has to learn, not hidden by a friendlier test case.
         [TestCase(0.8f, 0.1f)]
         [TestCase(1.2f, 0.1f)]
         [TestCase(1.2f, 0.2f)]
@@ -148,7 +148,7 @@ namespace CosmicShore.Tests
         public void Ship_FloorNeverSpeedsUpAPilotWhoWasAlreadySlower()
         {
             var s = Defaults();
-            var solver = new FlailChainSolver(s);
+            var solver = new ThresherChainSolver(s);
             Vector3 before = Vector3.forward * 5f;
             Vector3 after = solver.ApplyShipFloor(before, Vector3.forward * 2f, s.CruiseSpeed);
             Assert.AreEqual(5f, after.magnitude, 1e-4f,
@@ -169,7 +169,7 @@ namespace CosmicShore.Tests
 
             p.Solver.Plant();
             p.Fly(s.SkidSeconds + 0.05f, 0f, payOut: holdPayOut);
-            Assert.AreEqual(FlailMode.Pivot, p.Solver.Mode, "The skid must end in a pivot.");
+            Assert.AreEqual(ThresherMode.Pivot, p.Solver.Mode, "The skid must end in a pivot.");
 
             float lastLock = p.Solver.LockSpeed;
             for (int second = 0; second < 4; second++)
@@ -189,7 +189,7 @@ namespace CosmicShore.Tests
         {
             // The stall case: no tangential speed at all at the moment of hooking on.
             var s = Defaults();
-            var solver = new FlailChainSolver(s);
+            var solver = new ThresherChainSolver(s);
             solver.Reset(Vector3.zero, Vector3.forward, Vector3.zero);
             solver.BallPosition = new Vector3(0f, 0f, s.RestLength);   // dead ahead
             solver.BallVelocity = Vector3.zero;
@@ -203,7 +203,7 @@ namespace CosmicShore.Tests
                 vel = r.ShipVelocity;
                 pos += vel * Dt;
             }
-            Assert.AreEqual(FlailMode.Pivot, solver.Mode);
+            Assert.AreEqual(ThresherMode.Pivot, solver.Mode);
             Assert.Greater(vel.magnitude, s.MinShipFraction * s.CruiseSpeed * 0.9f, "Radial entry must still orbit.");
             Assert.LessOrEqual((pos - solver.Pivot).magnitude, solver.Length + 1e-2f, "The ship stays on the chain.");
         }
@@ -215,7 +215,7 @@ namespace CosmicShore.Tests
         {
             var s = Defaults();
             s.ReelSpinCap = 100f;   // isolate the conservation law from the per-change cap
-            var solver = new FlailChainSolver(s);
+            var solver = new ThresherChainSolver(s);
             solver.Reset(Vector3.zero, Vector3.forward, Vector3.zero);
             float r0 = s.MaxLength;
             solver.BallPosition = new Vector3(0f, 0f, -r0);
@@ -228,7 +228,7 @@ namespace CosmicShore.Tests
         public void ReelIn_SpinMultiplierIsCappedPerChange()
         {
             var s = Defaults();
-            var solver = new FlailChainSolver(s);
+            var solver = new ThresherChainSolver(s);
             solver.Reset(Vector3.zero, Vector3.forward, Vector3.zero);
             solver.BallPosition = new Vector3(0f, 0f, -s.MaxLength);
             solver.BallVelocity = new Vector3(20f, 0f, 0f);
@@ -240,7 +240,7 @@ namespace CosmicShore.Tests
         public void PayOut_SpendsSpinBySqrtOfLengthRatio()
         {
             var s = Defaults();
-            var solver = new FlailChainSolver(s);
+            var solver = new ThresherChainSolver(s);
             solver.Reset(Vector3.zero, Vector3.forward, Vector3.zero);
             float l0 = s.RestLength, l1 = s.RestLength * 2f;
             solver.BallPosition = new Vector3(0f, 0f, -l0);
@@ -275,15 +275,15 @@ namespace CosmicShore.Tests
         public void Plough_HotterBallKeepsMore_AndChipsKeepChipKeep()
         {
             var s = Defaults();
-            float atSmash = FlailChainSolver.KeepAfterHit(s.SmashSpeed, s);
-            float whiteHot = FlailChainSolver.KeepAfterHit(s.WhiteHotSpeed, s);
-            float slow = FlailChainSolver.KeepAfterHit(s.SmashSpeed * 0.5f, s);
+            float atSmash = ThresherChainSolver.KeepAfterHit(s.SmashSpeed, s);
+            float whiteHot = ThresherChainSolver.KeepAfterHit(s.WhiteHotSpeed, s);
+            float slow = ThresherChainSolver.KeepAfterHit(s.SmashSpeed * 0.5f, s);
             Assert.AreEqual(s.PloughKeep, atSmash, 1e-5f);
             Assert.AreEqual(s.PloughKeepHot, whiteHot, 1e-5f);
             Assert.Greater(whiteHot, atSmash);
             Assert.AreEqual(s.ChipKeep, slow, 1e-5f);
-            Assert.IsFalse(FlailChainSolver.IsSmash(s.SmashSpeed * 0.99f, s));
-            Assert.IsTrue(FlailChainSolver.IsSmash(s.SmashSpeed, s));
+            Assert.IsFalse(ThresherChainSolver.IsSmash(s.SmashSpeed * 0.99f, s));
+            Assert.IsTrue(ThresherChainSolver.IsSmash(s.SmashSpeed, s));
         }
 
         [Test]
@@ -293,10 +293,10 @@ namespace CosmicShore.Tests
             var p = new Pilot(s, s.CruiseSpeed);
             p.Solver.Plant();
             p.Fly(1f, 0f, payOut: false);
-            Assert.AreEqual(FlailMode.Pivot, p.Solver.Mode);
+            Assert.AreEqual(ThresherMode.Pivot, p.Solver.Mode);
             Vector3 shipVelocity = p.Forward * p.Speed;
             p.Solver.Release(shipVelocity);
-            Assert.AreEqual(FlailMode.Free, p.Solver.Mode);
+            Assert.AreEqual(ThresherMode.Free, p.Solver.Mode);
             Assert.AreEqual(s.Yank * p.Speed, p.Solver.BallSpeed, 1e-3f);
         }
 
@@ -304,7 +304,7 @@ namespace CosmicShore.Tests
         public void Dials_ScaleSpeedsAndLengthsButNotRates()
         {
             var s = Defaults();
-            float k = new FlailDials().Scale;
+            float k = new ThresherDials().Scale;
             Assert.AreEqual(120f * k, s.RestLength, 1e-4f);
             Assert.AreEqual(700f * k, s.SmashSpeed, 1e-4f);
             Assert.AreEqual(0.35f, s.BallDrag, 1e-6f, "Drag is a rate (1/s) and must not be scaled.");

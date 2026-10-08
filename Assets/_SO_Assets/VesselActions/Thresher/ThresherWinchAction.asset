@@ -10,6 +10,6 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6b8d52db9a8e45488c7393a259272dd0, type: 3}
-  m_Name: FlailPlantAction
+  m_Name: ThresherWinchAction
   m_EditorClassIdentifier: 
-  control: 1
+  control: 0

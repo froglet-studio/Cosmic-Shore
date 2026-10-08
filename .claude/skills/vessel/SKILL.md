@@ -618,7 +618,7 @@ applies to new abilities, new resources on the meter list, and anything that add
     wrote down last time.** (Butterfly, 2026-09-22.)
 
 41. **A vessel made by COPYING another prefab on disk inherits four things that are silently
-    wrong, and the registration list is longer than the setup tool's.** The Flail (2026-10-08) is
+    wrong, and the registration list is longer than the setup tool's.** The Thresher (2026-10-08) is
     a YAML clone of the Squirrel and hit each one:
     - **`GlobalObjectIdHash`** is the source's verbatim, so only one of the two can ever spawn
       (Netcode keys on the hash alone). Compute it as
@@ -630,7 +630,7 @@ applies to new abilities, new resources on the meter list, and anything that add
     - **Tests that enumerate `VesselClassType`** fail for a new member with no data:
       `CrystalHullFusionConfigTests` needs four `CrystalHullFusionConfig` entries (a hull that
       draws the source's mesh may reuse the source's bakes — `Matches` keys on mesh + tuning),
-      `EnumIntegrityTests` counts members (it was already one behind when the Flail landed), and
+      `EnumIntegrityTests` counts members (it was already one behind when the Thresher landed), and
       `OneThumbVesselCoverageTests` must be told a new transformer type exists or it skips the hull.
       `grep -rln "GetValues(typeof(VesselClassType))" Assets/_Scripts` before committing.
     - **Stale keys travel with the copy.** The Squirrel's camera asset carried seven fields

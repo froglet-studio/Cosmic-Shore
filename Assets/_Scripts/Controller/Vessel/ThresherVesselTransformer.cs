@@ -3,12 +3,12 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The Flail's flight: an ordinary two-stick vector-model flyer towing a wrecking ball.
+    /// The Thresher's flight: an ordinary two-stick vector-model flyer towing a wrecking ball.
     ///
     /// It inherits <see cref="VesselTransformer"/> and overrides SEAMS, never <c>MoveShip</c>, so
     /// the danger-prism slow, knockback, the speed tunnel and every future fleet-wide change reach
-    /// it for free. The chain is solved by <see cref="FlailExecutor"/> (which owns the pure
-    /// <see cref="FlailChainSolver"/>) and enters the move step through exactly one door,
+    /// it for free. The chain is solved by <see cref="ThresherExecutor"/> (which owns the pure
+    /// <see cref="ThresherChainSolver"/>) and enters the move step through exactly one door,
     /// <see cref="ComputeExternalAcceleration"/>, in the same frame and order as thrust.
     ///
     /// Two modes:
@@ -29,11 +29,11 @@ namespace CosmicShore.Gameplay
     /// freeze every peer's world on this client), so there the executor freezes THIS hull and its
     /// ball instead: <see cref="Update"/> skips the frame outright.
     /// </summary>
-    public class FlailVesselTransformer : VesselTransformer
+    public class ThresherVesselTransformer : VesselTransformer
     {
-        [Header("Flail")]
+        [Header("Thresher")]
         [Tooltip("The executor that owns the chain. Lives on the ShipActions object, next to the ActionExecutorRegistry.")]
-        [SerializeField] FlailExecutor flail;
+        [SerializeField] ThresherExecutor thresher;
 
         [Tooltip("While orbiting a planted ball, how fast the hull turns to face the orbit's tangent (1/s). " +
                  "High, because on release the ship flies off along the nose: the lag is the angle a release " +
@@ -44,12 +44,12 @@ namespace CosmicShore.Gameplay
         Vector3 _lastShipVelocity;
         bool _wasPivoting;
 
-        bool Pivoting => flail && flail.IsPivoting;
+        bool Pivoting => thresher && thresher.IsPivoting;
 
         protected override void Update()
         {
             // Local hit-stop (multiplayer): the hull and its ball hold still for a few frames.
-            if (flail && flail.IsVesselFrozen) return;
+            if (thresher && thresher.IsVesselFrozen) return;
             base.Update();
         }
 
@@ -99,14 +99,14 @@ namespace CosmicShore.Gameplay
 
         protected override Vector3 ComputeExternalAcceleration(Vector3 velocity, float dt)
         {
-            if (!flail) return Vector3.zero;
+            if (!thresher) return Vector3.zero;
 
-            Vector3 shaped = flail.StepChain(transform.position, velocity, ComputeThrottleTarget(), dt);
+            Vector3 shaped = thresher.StepChain(transform.position, velocity, ComputeThrottleTarget(), dt);
             _lastShipVelocity = shaped;
 
             // Towing: turn the hull with the tug (see the class docs) — the same minimal rotation
             // applied to the commanded rotation, so the pilot's next stick input starts from it.
-            if (!flail.IsPivoting && velocity.sqrMagnitude > 1e-4f && shaped.sqrMagnitude > 1e-4f)
+            if (!thresher.IsPivoting && velocity.sqrMagnitude > 1e-4f && shaped.sqrMagnitude > 1e-4f)
             {
                 Quaternion bend = Quaternion.FromToRotation(velocity, shaped);
                 transform.rotation = bend * transform.rotation;

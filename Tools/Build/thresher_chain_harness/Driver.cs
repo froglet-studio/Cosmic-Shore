@@ -1,4 +1,4 @@
-// Runs the SHIPPED FlailChainSolverTests (compiled from its real path) and prints the feel table
+// Runs the SHIPPED ThresherChainSolverTests (compiled from its real path) and prints the feel table
 // the assertions are drawn from. Exit 1 on any failure, so it is usable as a gate.
 using System;
 using System.Linq;
@@ -15,7 +15,7 @@ public static class Driver
     public static int Main(string[] args)
     {
         int failed = 0, passed = 0;
-        foreach (var m in typeof(FlailChainSolverTests).GetMethods(BindingFlags.Public | BindingFlags.Instance))
+        foreach (var m in typeof(ThresherChainSolverTests).GetMethods(BindingFlags.Public | BindingFlags.Instance))
         {
             var cases = m.GetCustomAttributes<TestCaseAttribute>().ToList();
             bool isTest = m.GetCustomAttribute<TestAttribute>() != null;
@@ -27,7 +27,7 @@ public static class Driver
                 try
                 {
                     var args2 = m.GetParameters().Select((p, i) => Convert.ChangeType(a[i], p.ParameterType)).ToArray();
-                    m.Invoke(new FlailChainSolverTests(), args2);
+                    m.Invoke(new ThresherChainSolverTests(), args2);
                     passed++; Console.WriteLine("PASS " + name);
                 }
                 catch (TargetInvocationException e) { failed++; Console.WriteLine("FAIL " + name + ": " + e.InnerException?.Message); }
@@ -43,8 +43,8 @@ public static class Driver
 
     static void FeelTable()
     {
-        var s = new FlailDials().ToSettings();
-        Console.WriteLine($"\nscale {new FlailDials().Scale:F4}  cruise {s.CruiseSpeed}  smash {s.SmashSpeed:F1}  white-hot {s.WhiteHotSpeed:F1}  " +
+        var s = new ThresherDials().ToSettings();
+        Console.WriteLine($"\nscale {new ThresherDials().Scale:F4}  cruise {s.CruiseSpeed}  smash {s.SmashSpeed:F1}  white-hot {s.WhiteHotSpeed:F1}  " +
                           $"rest {s.RestLength:F1}  max {s.MaxLength:F1}  ballR {s.BallRadius:F2}  maxBall {s.MaxBallSpeed:F1}");
 
         Console.WriteLine("\nsteady turn, 4 s — peak ball speed (x smash)");
@@ -74,8 +74,8 @@ public static class Driver
 
     sealed class Sim
     {
-        public FlailChainSolver S; public Vector3 P, F = Vector3.forward; public float V, Peak, Cruise;
-        public Sim(FlailChainSettings st) { S = new FlailChainSolver(st); Cruise = V = st.CruiseSpeed; S.Reset(P, F, F * V); }
+        public ThresherChainSolver S; public Vector3 P, F = Vector3.forward; public float V, Peak, Cruise;
+        public Sim(ThresherChainSettings st) { S = new ThresherChainSolver(st); Cruise = V = st.CruiseSpeed; S.Reset(P, F, F * V); }
         public void Fly(float sec, float yaw, bool pay)
         {
             for (int i = 0; i < Mathf.RoundToInt(sec / Dt); i++)
@@ -83,18 +83,18 @@ public static class Driver
                 F = Rot(F, yaw * Dt);
                 float th = V + (Cruise - V) * 1.5f * Dt;
                 var r = S.Step(P, F * th, pay, Cruise, Dt);
-                if (S.Mode == FlailMode.Pivot) F = r.ShipVelocity.normalized;
+                if (S.Mode == ThresherMode.Pivot) F = r.ShipVelocity.normalized;
                 V = r.ShipVelocity.magnitude; P += r.ShipVelocity * Dt;
                 Peak = Mathf.Max(Peak, S.BallSpeed);
             }
         }
     }
 
-    static float Turn(FlailChainSettings s, float rate, bool pay) { var m = new Sim(s); m.Fly(1f, 0, pay); m.Peak = 0; m.Fly(4f, rate, pay); return m.Peak; }
-    static (float, float) Snap(FlailChainSettings s, float t, float back)
+    static float Turn(ThresherChainSettings s, float rate, bool pay) { var m = new Sim(s); m.Fly(1f, 0, pay); m.Peak = 0; m.Fly(4f, rate, pay); return m.Peak; }
+    static (float, float) Snap(ThresherChainSettings s, float t, float back)
     {
         var m = new Sim(s); m.Fly(1f, 0, true); m.Peak = 0; m.Fly(t, 120f, true); m.Fly(0.1f, back, true);
         float pre = m.Peak; m.Fly(0.5f, 0, false); return (pre, m.Peak);
     }
-    static float Lock(FlailChainSettings s, float t, bool pay) { var m = new Sim(s); m.Fly(0.5f, 0, false); m.S.Plant(); m.Fly(t, 0, pay); return m.V; }
+    static float Lock(ThresherChainSettings s, float t, bool pay) { var m = new Sim(s); m.Fly(0.5f, 0, false); m.S.Plant(); m.Fly(t, 0, pay); return m.V; }
 }

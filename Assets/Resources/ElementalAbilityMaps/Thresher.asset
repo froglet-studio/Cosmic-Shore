@@ -10,17 +10,17 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4b3f2a8c8f344355b16a4d4296ae3f98, type: 3}
-  m_Name: Flail
+  m_Name: Thresher
   m_EditorClassIdentifier:
   vesselClass: 14
   entries:
   - Element: 1
     AbilityLabel: (open design slot)
-    AbilityDescription: 'Charge mapping not yet designed for the Flail (prototype). The hull''s
+    AbilityDescription: 'Charge mapping not yet designed for the Thresher (prototype). The hull''s
       two trigger abilities - WINCH on the right trigger (hold to let chain out, release to
       reel in and crack) and PLANT on the left (hold to plant the ball and swing round it) -
       are live but deliberately unassigned to any element pending design approval; see
-      R_VesselActions/FLAIL.md for the candidate dials (ball mass, chain reach, spin-up rate,
+      R_VesselActions/THRESHER.md for the candidate dials (ball mass, chain reach, spin-up rate,
       smash speed).'
     Input: 0
     UnlockLevel: 5
@@ -30,11 +30,11 @@ MonoBehaviour:
     UpgradeDescription: 
   - Element: 2
     AbilityLabel: (open design slot)
-    AbilityDescription: 'Mass mapping not yet designed for the Flail (prototype). The hull''s
+    AbilityDescription: 'Mass mapping not yet designed for the Thresher (prototype). The hull''s
       two trigger abilities - WINCH on the right trigger (hold to let chain out, release to
       reel in and crack) and PLANT on the left (hold to plant the ball and swing round it) -
       are live but deliberately unassigned to any element pending design approval; see
-      R_VesselActions/FLAIL.md for the candidate dials (ball mass, chain reach, spin-up rate,
+      R_VesselActions/THRESHER.md for the candidate dials (ball mass, chain reach, spin-up rate,
       smash speed).'
     Input: 0
     UnlockLevel: 5
@@ -44,11 +44,11 @@ MonoBehaviour:
     UpgradeDescription: 
   - Element: 3
     AbilityLabel: (open design slot)
-    AbilityDescription: 'Space mapping not yet designed for the Flail (prototype). The hull''s
+    AbilityDescription: 'Space mapping not yet designed for the Thresher (prototype). The hull''s
       two trigger abilities - WINCH on the right trigger (hold to let chain out, release to
       reel in and crack) and PLANT on the left (hold to plant the ball and swing round it) -
       are live but deliberately unassigned to any element pending design approval; see
-      R_VesselActions/FLAIL.md for the candidate dials (ball mass, chain reach, spin-up rate,
+      R_VesselActions/THRESHER.md for the candidate dials (ball mass, chain reach, spin-up rate,
       smash speed).'
     Input: 0
     UnlockLevel: 5
@@ -58,11 +58,11 @@ MonoBehaviour:
     UpgradeDescription: 
   - Element: 4
     AbilityLabel: (open design slot)
-    AbilityDescription: 'Time mapping not yet designed for the Flail (prototype). The hull''s
+    AbilityDescription: 'Time mapping not yet designed for the Thresher (prototype). The hull''s
       two trigger abilities - WINCH on the right trigger (hold to let chain out, release to
       reel in and crack) and PLANT on the left (hold to plant the ball and swing round it) -
       are live but deliberately unassigned to any element pending design approval; see
-      R_VesselActions/FLAIL.md for the candidate dials (ball mass, chain reach, spin-up rate,
+      R_VesselActions/THRESHER.md for the candidate dials (ball mass, chain reach, spin-up rate,
       smash speed).'
     Input: 0
     UnlockLevel: 5

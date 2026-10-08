@@ -654,7 +654,7 @@ GameObject:
   - component: {fileID: 8100000000000000081}
   - component: {fileID: 8100000000000000083}
   m_Layer: 0
-  m_Name: Flail
+  m_Name: Thresher
   m_TagString: Player_Ship
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -839,7 +839,7 @@ MonoBehaviour:
   vesselHUDController: {fileID: 5649393235309590662}
   boostMultiplier: 1
   inertia: 1
-  _name: Flail
+  _name: Thresher
   vesselType: 14
   _nearFieldSkimmer: {fileID: 708149374973573223}
   _farFieldSkimmer: {fileID: 0}
@@ -883,7 +883,7 @@ MonoBehaviour:
   RotationThrottleScaler: 0
   restrictedTurnMultiplier: 3
   touchNoseResponse: 9
-  flail: {fileID: 7788112233445566780}
+  thresher: {fileID: 7788112233445566780}
   pivotFacingRate: 25
 --- !u!114 &874579555101021522
 MonoBehaviour:
@@ -1632,7 +1632,7 @@ GameObject:
   - component: {fileID: 7788112233445566779}
   - component: {fileID: 7788112233445566780}
   m_Layer: 0
-  m_Name: FlailExecutor
+  m_Name: ThresherExecutor
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

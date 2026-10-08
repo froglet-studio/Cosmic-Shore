@@ -1,7 +1,7 @@
-# Flail — the wrecking-ball prototype
+# Thresher — the wrecking-ball prototype
 
 **Status: PROTOTYPE, flyable from Toy Box > Vessel Changer, not yet opened in Unity by anyone.**
-`VesselClassType.Flail = 14`. A small, nimble two-stick ship towing a heavy wrecking ball on a
+`VesselClassType.Thresher = 14`. A small, nimble two-stick ship towing a heavy wrecking ball on a
 chain. Turn hard and the ball whips round; snap the turn back and wind the chain in, and it cracks
 through prisms. Damage scales with how fast the **ball** is moving at contact, never the ship.
 
@@ -23,7 +23,7 @@ The bindings are the Squirrel's slots (the Squirrel's drift is on LT and its tub
 plumbing changed. Keyboard: Left/Right Shift; one-thumb mouse: LMB/RMB (they raise the same events).
 The triggers are read as press/release EDGES only — the analog depth is not used.
 
-## 2. Physics (`FlailChainSolver`, pure C#)
+## 2. Physics (`ThresherChainSolver`, pure C#)
 
 - **Ball**: a point mass with drag (`ballDrag`), integrated freely each frame.
 - **Rope**: a position-based **max-distance** constraint between ship and ball. When the ball
@@ -51,12 +51,12 @@ The triggers are read as press/release EDGES only — the analog depth is not us
 
 ### How the flight model is reached
 
-`FlailVesselTransformer : VesselTransformer` overrides **seams**, never `MoveShip`, so the danger
+`ThresherVesselTransformer : VesselTransformer` overrides **seams**, never `MoveShip`, so the danger
 slow, knockback, the speed tunnel and every fleet-wide change still reach it. Two seams were added
 to `VesselTransformer` for it, both **default-off and bit-identical for every other vessel**
 (adding `Vector3.zero` and returning the extracted drift expression unchanged):
 
-| Seam | Default | Flail |
+| Seam | Default | Thresher |
 |---|---|---|
 | `ComputeExternalAcceleration(velocity, dt)` | `Vector3.zero` | Steps the chain; returns `shipVelocity_after_rope − velocity`. While towing, the hull is ALSO turned by the same rotation — grip snaps momentum onto the nose every frame, so a tug that did not turn the nose would be erased next frame. |
 | `NoseConvergence(dt)` | the drift-grip expression it was extracted from | 0 while pivoting (the solver owns the velocity) |
@@ -68,7 +68,7 @@ hit-stop). These are the same two seams the Gibbon prototype (`cece/hopeful-bard
 720507e) introduced, re-cut here; that branch is unmerged, so whichever lands second should adopt the
 other's copy verbatim.
 
-## 3. Dials (`FlailConfig.asset` → `FlailDials`)
+## 3. Dials (`ThresherConfig.asset` → `ThresherDials`)
 
 Scale factor `k = gameCruise / sandboxCruise = 70 / 380 = 0.1842`. Every speed and length is ×k;
 rates (1/s) and shares are unscaled, which leaves every TIME in the mechanic — how long a reel
@@ -104,7 +104,7 @@ Feel dials on the same asset: hit-stop 30 → 90 ms by heat (`hitStopMin/MaxSeco
 scale 0.05, shake 0.35 → 1.8 for 0.22 s, haptic floor 0.45, debris restitution 1/3 with a 200 u/s
 ceiling, combo grace 0.4 s, READY margin 1.05 × smash, flicker 14 Hz, and the colours.
 
-### Measured feel (from `Tools/Build/flail_chain_harness`, 60 Hz, defaults)
+### Measured feel (from `Tools/Build/thresher_chain_harness`, 60 Hz, defaults)
 
 Peak ball speed as a multiple of smash speed:
 
@@ -138,7 +138,7 @@ Lock from cruise, orbit speed × cruise (RT up / RT held): 0.5 s 1.02/1.11, 1 s 
    the ball falls slack into the middle. The sandbox's turn-radius-to-chain ratio is unknown; if it
    flew wider, `maxLen` or the hull's turn rate is the first thing to tune.
 
-## 4. Smashing, feedback, look (`FlailExecutor`)
+## 4. Smashing, feedback, look (`ThresherExecutor`)
 
 - **Sweep, never colliders**: every frame the ball's path (start → end of the step) is swept as a
   sphere through `PrismSpatialIndex.QuerySegment` and refined against each prism's bounding sphere,
@@ -155,7 +155,7 @@ Lock from cruise, orbit speed × cruise (RT up / RT held): 0.5 s 1.02/1.11, 1 s 
 - **Hit-stop**: one per whip (on the combo's first smash), 30 → 90 ms by heat, local pilot only.
   SOLO sessions drop `Time.timeScale` to 0.05 (the AstroLeague ball's pattern, restoring to
   constants so a pause is never clobbered). MULTIPLAYER never touches `Time.timeScale`; the hull and
-  its ball freeze instead (`FlailVesselTransformer.Update` skips the frame).
+  its ball freeze instead (`ThresherVesselTransformer.Update` skips the frame).
 - **Shake** (`CustomCameraController.Shake`) scaled by heat, full on the first hit of a whip and
   0.6× after; small on a chip. **Haptic**: `HapticController.PlaySkim(lerp(0.45, 1, heat))` — the
   reward feel; no new feel was added (Docs/HAPTICS.md).
@@ -168,7 +168,7 @@ Lock from cruise, orbit speed × cruise (RT up / RT held): 0.5 s 1.02/1.11, 1 s 
   MaterialPropertyBlock); a 12-link cosmetic verlet chain pinned to the hull and the ball that goes
   slack and flickers gold for READY; a gauge ring around the ball that fills clockwise toward smash
   speed; a gold skid trail while planting.
-- **Camera**: `FlailCameraSettingsSO` sits at `(0, 8, -55)` (the Squirrel's is `-17`; the asset
+- **Camera**: `ThresherCameraSettingsSO` sits at `(0, 8, -55)` (the Squirrel's is `-17`; the asset
   authors no `mode`, so `FixedCamera` places the lens at exactly this offset), so the
   reeled-in ball (22 u back) is in front of the lens. At full let-out the ball trails past the
   camera when flying straight and swings into view on a turn.
@@ -185,27 +185,27 @@ Peers can disagree on a marginal smash by a frame of drift. Untested in MPPM.
 
 | File | What |
 |---|---|
-| `Controller/Vessel/FlailChainSolver.cs` | Pure physics + `FlailDials` (the defaults, one source) |
-| `Controller/Vessel/FlailVesselTransformer.cs` | Seam overrides: tug, pivot, facing, hit-stop freeze |
+| `Controller/Vessel/ThresherChainSolver.cs` | Pure physics + `ThresherDials` (the defaults, one source) |
+| `Controller/Vessel/ThresherVesselTransformer.cs` | Seam overrides: tug, pivot, facing, hit-stop freeze |
 | `Controller/Vessel/VesselTransformer.cs` | +`ComputeExternalAcceleration`, +`NoseConvergence` (default-off) |
-| `R_VesselActions/Executors/FlailExecutor.cs` | Sweep, smash, chip, feedback, visuals |
-| `R_VesselActions/Data Containers/FlailActionSO.cs` | Trigger routing (`Winch` / `Plant`) |
-| `R_VesselActions/Data Containers/FlailConfigSO.cs` | Every dial |
-| `_SO_Assets/VesselActions/Flail/*.asset` | `FlailConfig`, `FlailWinchAction`, `FlailPlantAction` |
-| `_Prefabs/Spacevessels/Flail.prefab` | Squirrel clone (§7) |
-| `_SO_Assets/Camera/FlailCameraSettingsSO.asset` | Pulled-back chase camera |
-| `Resources/ElementalAbilityMaps/Flail.asset` | Four OPEN design slots |
-| `Tests/Editor/FlailChainSolverTests.cs` | 23 cases incl. the four specified |
-| `Tools/Build/flail_chain_harness/` | Runs the shipped solver + tests offline and prints §3's tables |
+| `R_VesselActions/Executors/ThresherExecutor.cs` | Sweep, smash, chip, feedback, visuals |
+| `R_VesselActions/Data Containers/ThresherActionSO.cs` | Trigger routing (`Winch` / `Plant`) |
+| `R_VesselActions/Data Containers/ThresherConfigSO.cs` | Every dial |
+| `_SO_Assets/VesselActions/Thresher/*.asset` | `ThresherConfig`, `ThresherWinchAction`, `ThresherPlantAction` |
+| `_Prefabs/Spacevessels/Thresher.prefab` | Squirrel clone (§7) |
+| `_SO_Assets/Camera/ThresherCameraSettingsSO.asset` | Pulled-back chase camera |
+| `Resources/ElementalAbilityMaps/Thresher.asset` | Four OPEN design slots |
+| `Tests/Editor/ThresherChainSolverTests.cs` | 23 cases incl. the four specified |
+| `Tools/Build/thresher_chain_harness/` | Runs the shipped solver + tests offline and prints §3's tables |
 | `Tools/Build/check_network_prefab_hashes.py` | Gate from the Gibbon branch: no two prefabs share a `GlobalObjectIdHash` |
 
 ## 7. The prefab
 
-`Flail.prefab` is a YAML clone of `Squirrel.prefab` with: the transformer script swapped to
-`FlailVesselTransformer` (`singleTriggerDrift` off, cruise 15 + 110 × XDiff, `flail` wired); the
-Squirrel tube executor's GameObject repurposed as `FlailExecutor` (the registry lists only it); the
-drift-trail executor deleted; both override lists (gamepad 2/1, touch 12/11) rebound to the Flail
-actions; `vesselType 14`, `_name Flail`; a fresh `GlobalObjectIdHash` (1887398589, computed as
+`Thresher.prefab` is a YAML clone of `Squirrel.prefab` with: the transformer script swapped to
+`ThresherVesselTransformer` (`singleTriggerDrift` off, cruise 15 + 110 × XDiff, `thresher` wired); the
+Squirrel tube executor's GameObject repurposed as `ThresherExecutor` (the registry lists only it); the
+drift-trail executor deleted; both override lists (gamepad 2/1, touch 12/11) rebound to the Thresher
+actions; `vesselType 14`, `_name Thresher`; a fresh `GlobalObjectIdHash` (1887398589, computed as
 `XXHash32("GlobalObjectId_V1-1-<guid>-<NetworkObject fileID>-0")`, the formula verified by
 reproducing Squirrel's 2256742461) with `InScenePlacedSourceGlobalObjectIdHash` zeroed. Registered
 in `Vessel Prefab Container.asset`, `DefaultNetworkPrefabs.asset` and `ToyVesselRoster.Default`.
@@ -213,8 +213,8 @@ in `Vessel Prefab Container.asset`, `DefaultNetworkPrefabs.asset` and `ToyVessel
 **Crystal hull fusion**: `Resources/CrystalHullFusionConfig.asset` carries four `vessel: 14` entries
 that are copies of the Squirrel's, pointing at the Squirrel's bakes with identical tuning. That is a
 valid bake, not a placeholder: `CrystalHullFusionBakeSO.Matches` keys on the hull MESH and the
-entry's `tileFill`/`surfaceLift`, and the Flail draws the Squirrel's mesh. Re-running FrogletTools >
-Vessels > Bake Crystal Hull Fusions writes `Flail_*_HullFusionBake.asset` and repoints them, which is
+entry's `tileFill`/`surfaceLift`, and the Thresher draws the Squirrel's mesh. Re-running FrogletTools >
+Vessels > Bake Crystal Hull Fusions writes `Thresher_*_HullFusionBake.asset` and repoints them, which is
 equally correct. (`CrystalHullFusionConfigTests` requires four entries for every hull but the
 Butterfly, so a new class with none fails it.)
 
@@ -232,7 +232,7 @@ gone; its tube lookup is null-guarded), `SquirrelVesselTelemetry`, `DriftAudioCo
 
 ## In-editor verification
 
-1. **Toy Box > Vessel Changer → Flail.** Expected: the hull swaps in with a dark ball 22 u behind on
+1. **Toy Box > Vessel Changer → Thresher.** Expected: the hull swaps in with a dark ball 22 u behind on
    a chain, in front of the camera. Console clean.
 2. **Lazy flying** (gentle turns, RT up): ball stays iron-dark, gauge ring under a quarter, no
    smashes; at most chips on rival mass. Own trail untouched.
@@ -258,7 +258,7 @@ ball swings or falls slack), then `smashSpeed`, then `crack` / `reelSpinCap`.
 - **Element design (gate)**: four open slots. Candidate parameters, not approved: Mass → `ballMass`
   (heavier ball, harder tug, bigger plough), Space → `maxLen`/`ballR` (reach), Time → `reelIn` /
   `lockSpin` (rate), Charge → `smashSpeed`/`plough` (threat). Needs Garrett's call.
-- **HUD**: a Flail HUD (gauge = ball speed / smash, READY pip, combo) to replace the Squirrel's.
+- **HUD**: a Thresher HUD (gauge = ball speed / smash, READY pip, combo) to replace the Squirrel's.
 - **Art/audio**: real ball/chain art; the four FMOD events.
 - **Virtual (swarm) prisms** are not swept (`QuerySegmentVirtualIds` + `ResolvePrism`), so the ball
   passes through swarm fauna members.
@@ -266,12 +266,12 @@ ball swings or falls slack), then `smashSpeed`, then `crack` / `reelSpinCap`.
   verb.
 - **AI**: no AI abilities are authored (both triggers are holds).
 - **Random spawns**: `VesselSpawner.SpawnShip(Random)` picks from every enum member with a prefab, so
-  the single-player Random path can now hand out the Flail prototype (as it would any new hull).
+  the single-player Random path can now hand out the Thresher prototype (as it would any new hull).
 - **Debt walked past (not fixed here)**: the Squirrel prefab this was cloned from carries 152
   `check_generated_assets.py` findings (stale nested-prefab overrides, unresolved script guids,
   `R_VesselElementStatsHandler.cs` declaring `R_ShipElementStatsHandler` — on all 14 vessel
   prefabs), and `SquirrelCameraSettingsSO` carries seven keys `CameraSettingsSO` no longer has.
-  Measured by auditing an untouched Squirrel copy in a base worktree: the Flail's 152 are
+  Measured by auditing an untouched Squirrel copy in a base worktree: the Thresher's 152 are
   byte-identical, so none were introduced here. The camera copy was cleaned; the prefab was not.
 - **Gibbon id clash**: the Gibbon branch still claims `VesselClassType = 13`, which the Butterfly
   took; it will need 15 (or whatever is next) when it is rebased.

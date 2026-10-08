@@ -3,15 +3,15 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Every dial of the Flail: the chain physics (embedded <see cref="FlailDials"/>, in sandbox
+    /// Every dial of the Thresher: the chain physics (embedded <see cref="ThresherDials"/>, in sandbox
     /// units and scaled by its own <c>gameCruise / sandboxCruise</c>), the impact feel, and the look.
-    /// One asset per hull; read by <see cref="FlailExecutor"/>. See <c>FLAIL.md</c>.
+    /// One asset per hull; read by <see cref="ThresherExecutor"/>. See <c>THRESHER.md</c>.
     /// </summary>
-    [CreateAssetMenu(fileName = "FlailConfig", menuName = "ScriptableObjects/Vessel Actions/Flail Config")]
-    public sealed class FlailConfigSO : ScriptableObject
+    [CreateAssetMenu(fileName = "ThresherConfig", menuName = "ScriptableObjects/Vessel Actions/Thresher Config")]
+    public sealed class ThresherConfigSO : ScriptableObject
     {
-        [Tooltip("The chain physics, authored in the 2D sandbox's units. See FlailDials.")]
-        [SerializeField] FlailDials dials = new FlailDials();
+        [Tooltip("The chain physics, authored in the 2D sandbox's units. See ThresherDials.")]
+        [SerializeField] ThresherDials dials = new ThresherDials();
 
         [Header("Impact - hit-stop (one per whip, on its first smash)")]
         [Tooltip("Hit-stop for a ball that only just reached smash speed (seconds).")]
@@ -65,7 +65,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("Skid-trail lifetime while planting (seconds).")]
         [SerializeField, Min(0f)] float skidTrailSeconds = 0.6f;
 
-        public FlailDials Dials => dials;
+        public ThresherDials Dials => dials;
         public float HitStopMinSeconds => hitStopMinSeconds;
         public float HitStopMaxSeconds => Mathf.Max(hitStopMinSeconds, hitStopMaxSeconds);
         public float HitStopTimeScale => hitStopTimeScale;

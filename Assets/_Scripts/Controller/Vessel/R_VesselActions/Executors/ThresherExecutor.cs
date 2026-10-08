@@ -13,10 +13,10 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The Flail's wrecking ball: owns the chain (<see cref="FlailChainSolver"/>), smashes prisms
+    /// The Thresher's wrecking ball: owns the chain (<see cref="ThresherChainSolver"/>), smashes prisms
     /// along the ball's swept path, and draws and voices all of it.
     ///
-    /// <b>One step per frame, from inside the move step.</b> <see cref="FlailVesselTransformer"/>
+    /// <b>One step per frame, from inside the move step.</b> <see cref="ThresherVesselTransformer"/>
     /// calls <see cref="StepChain"/> through the base transformer's external-acceleration seam, so
     /// the rope is resolved in the same frame and order as thrust. If no transformer stepped it this
     /// frame (a hull whose transformer is switched off — a remote replica in a pilot swap), the
@@ -40,10 +40,10 @@ namespace CosmicShore.Gameplay
     /// peer, and the hull's motion replicates; each peer runs the same chain from the same inputs.
     /// A peer's ball can differ by a frame of drift, so its smashes can differ at the margin.
     /// </summary>
-    public sealed class FlailExecutor : ShipActionExecutorBase
+    public sealed class ThresherExecutor : ShipActionExecutorBase
     {
-        [Tooltip("Every Flail dial: chain physics, impact feel, look.")]
-        [SerializeField] FlailConfigSO config;
+        [Tooltip("Every Thresher dial: chain physics, impact feel, look.")]
+        [SerializeField] ThresherConfigSO config;
 
         [Header("Audio (LOCKED FMOD convention: ship EMPTY, never a borrowed event)")]
         [Tooltip("Heavy thud on a smash.")]
@@ -63,8 +63,8 @@ namespace CosmicShore.Gameplay
 
         IVesselStatus _status;
         ActionExecutorRegistry _registry;
-        FlailChainSolver _solver;
-        FlailChainSettings _settings;
+        ThresherChainSolver _solver;
+        ThresherChainSettings _settings;
         bool _seeded;
         bool _payOut;
         bool _plantHeld;
@@ -88,8 +88,8 @@ namespace CosmicShore.Gameplay
 
         // ------------------------------------------------------------------ public surface
 
-        public bool IsPivoting => _solver != null && _solver.Mode == FlailMode.Pivot;
-        public FlailMode Mode => _solver?.Mode ?? FlailMode.Free;
+        public bool IsPivoting => _solver != null && _solver.Mode == ThresherMode.Pivot;
+        public ThresherMode Mode => _solver?.Mode ?? ThresherMode.Free;
         /// <summary>True while a MULTIPLAYER hit-stop is holding this hull and its ball still.</summary>
         public bool IsVesselFrozen => Time.unscaledTime < _freezeUntilUnscaled;
         public bool IsReady { get; private set; }
@@ -115,8 +115,8 @@ namespace CosmicShore.Gameplay
 
         void RebuildSolver()
         {
-            _settings = config ? config.Dials.ToSettings() : new FlailDials().ToSettings();
-            if (_solver == null) _solver = new FlailChainSolver(_settings);
+            _settings = config ? config.Dials.ToSettings() : new ThresherDials().ToSettings();
+            if (_solver == null) _solver = new ThresherChainSolver(_settings);
             else _solver.Settings = _settings;
         }
 
@@ -136,7 +136,7 @@ namespace CosmicShore.Gameplay
         {
             if (_solver == null) return;
             _plantHeld = false;
-            bool wasPivot = _solver.Mode == FlailMode.Pivot;
+            bool wasPivot = _solver.Mode == ThresherMode.Pivot;
             _solver.Release(_lastShipVelocity);
             if (wasPivot) PlayAt(yankEvent, _lastShipPosition);
         }
@@ -170,7 +170,7 @@ namespace CosmicShore.Gameplay
         // ------------------------------------------------------------------ the step
 
         /// <summary>
-        /// One chain step. Called by <see cref="FlailVesselTransformer"/> from inside its move
+        /// One chain step. Called by <see cref="ThresherVesselTransformer"/> from inside its move
         /// step; returns the ship's velocity after the rope (towing) or the orbit (pivot).
         /// </summary>
         public Vector3 StepChain(Vector3 shipPosition, Vector3 shipVelocity, float shipCruise, float dt)
@@ -184,11 +184,11 @@ namespace CosmicShore.Gameplay
             _lastShipVelocity = result.ShipVelocity;
 
             if (result.Planted) PlayAt(plantEvent, _solver.Pivot);
-            if (_solver.Mode != FlailMode.Pivot)
+            if (_solver.Mode != ThresherMode.Pivot)
                 SweepAndSmash(result.BallFrom, _solver.BallPosition);
 
             UpdateCombo(dt);
-            IsReady = _payOut && _solver.Mode == FlailMode.Free &&
+            IsReady = _payOut && _solver.Mode == ThresherMode.Free &&
                       _solver.PredictReelCrackSpeed(shipPosition, result.ShipVelocity)
                           >= _settings.SmashSpeed * (config ? config.ReadyMargin : 1f);
             return result.ShipVelocity;
@@ -263,10 +263,10 @@ namespace CosmicShore.Gameplay
 
                 Vector3 at = from + ab * _hits[i].t;
                 float speed = _solver.BallSpeed;
-                if (FlailChainSolver.IsSmash(speed, _settings))
+                if (ThresherChainSolver.IsSmash(speed, _settings))
                 {
                     Smash(prism, at, speed);
-                    _solver.RegisterHit(FlailChainSolver.KeepAfterHit(speed, _settings));
+                    _solver.RegisterHit(ThresherChainSolver.KeepAfterHit(speed, _settings));
                 }
                 else if (prism.Domain != _status.Domain)
                 {
@@ -286,7 +286,7 @@ namespace CosmicShore.Gameplay
                          debrisSpeedLimit: config ? config.DebrisSpeedLimit : 200f);
             _chips.Remove(prism);
 
-            float heat = FlailChainSolver.Heat01(speed, _settings);
+            float heat = ThresherChainSolver.Heat01(speed, _settings);
             _combo++;
             _coolTime = 0f;
 
@@ -343,7 +343,7 @@ namespace CosmicShore.Gameplay
         void UpdateCombo(float dt)
         {
             if (_combo == 0) return;
-            if (FlailChainSolver.IsSmash(_solver.BallSpeed, _settings)) { _coolTime = 0f; return; }
+            if (ThresherChainSolver.IsSmash(_solver.BallSpeed, _settings)) { _coolTime = 0f; return; }
             _coolTime += dt;
             if (_coolTime >= (config ? config.ComboGraceSeconds : 0.4f)) _combo = 0;
         }
@@ -436,7 +436,7 @@ namespace CosmicShore.Gameplay
             var ballMat = BallMaterialOrFallback();
             if (!lineMat || !ballMat) return;   // headless: no graphics, no visuals
 
-            _root = new GameObject($"FlailVisuals::{name}");
+            _root = new GameObject($"ThresherVisuals::{name}");
             _mpb = new MaterialPropertyBlock();
 
             // The ball: a heavy core plus six studs, so it reads as a chunky wrecking ball and its
@@ -511,7 +511,7 @@ namespace CosmicShore.Gameplay
             var shader = Shader.Find("Sprites/Default");
             if (!shader) shader = Shader.Find("Universal Render Pipeline/Unlit");
             if (!shader) return null;
-            s_lineMaterial = new Material(shader) { name = "FlailLine (runtime)", renderQueue = 3000 };
+            s_lineMaterial = new Material(shader) { name = "ThresherLine (runtime)", renderQueue = 3000 };
             return s_lineMaterial;
         }
 
@@ -522,7 +522,7 @@ namespace CosmicShore.Gameplay
             var shader = Shader.Find("Universal Render Pipeline/Unlit");
             if (!shader) shader = Shader.Find("Sprites/Default");
             if (!shader) return null;
-            s_ballMaterial = new Material(shader) { name = "FlailBall (runtime)" };
+            s_ballMaterial = new Material(shader) { name = "ThresherBall (runtime)" };
             return s_ballMaterial;
         }
 
@@ -548,7 +548,7 @@ namespace CosmicShore.Gameplay
             Vector3 ship = _status.Transform.position;
             Vector3 ballPos = _solver.BallPosition;
             float speed = _solver.BallSpeed;
-            float heat = FlailChainSolver.Heat01(speed, _settings);
+            float heat = ThresherChainSolver.Heat01(speed, _settings);
             float r = _settings.BallRadius * config.BallVisualScale;
 
             // Ball: position, roll, heat colour.
@@ -591,7 +591,7 @@ namespace CosmicShore.Gameplay
             // Skid trail while planting.
             if (_skid)
             {
-                _skid.emitting = _solver.Mode == FlailMode.Skidding;
+                _skid.emitting = _solver.Mode == ThresherMode.Skidding;
                 _skid.startWidth = r * 1.4f;
                 _skid.endWidth = 0f;
                 _skid.startColor = config.GoldColor;
@@ -611,7 +611,7 @@ namespace CosmicShore.Gameplay
                 Color ember = Color.Lerp(config.IronColor, new Color(0.55f, 0.12f, 0.03f), warm);
                 return Color.Lerp(ember, config.GoldColor, warm * warm);
             }
-            return Color.Lerp(config.GoldColor, config.WhiteHotColor, FlailChainSolver.Heat01(speed, _settings));
+            return Color.Lerp(config.GoldColor, config.WhiteHotColor, ThresherChainSolver.Heat01(speed, _settings));
         }
 
         void StepChainVisual(Vector3 a, Vector3 b, float dt)
@@ -691,7 +691,7 @@ namespace CosmicShore.Gameplay
                 float size = r * 2.2f * (1f + 0.08f * Mathf.Min(_combo, 12)) * _comboShownScale;
                 _comboLabel.fontSize = size;
                 _comboLabel.color = Color.Lerp(config.GoldColor, config.WhiteHotColor,
-                                               FlailChainSolver.Heat01(_solver.BallSpeed, _settings));
+                                               ThresherChainSolver.Heat01(_solver.BallSpeed, _settings));
                 _comboLabel.transform.position = ballPos + Vector3.up * (r * 3f);
                 var cam = Camera.main;
                 if (cam)

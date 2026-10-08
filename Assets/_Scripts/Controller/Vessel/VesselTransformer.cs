@@ -1272,7 +1272,7 @@ public class VesselTransformer : MonoBehaviour
             _velocity += transform.forward * ComputeNoseAcceleration(dt);
 
             // 2b) EXTERNAL FORCE — the one thing thrust and grip together cannot express: a pull
-            //     that is not along the nose (the Flail's chain). Zero for every vessel that does
+            //     that is not along the nose (the Thresher's chain). Zero for every vessel that does
             //     not override it, and adding an exact zero leaves _velocity bit-identical.
             _velocity += ComputeExternalAcceleration(_velocity, dt);
 

@@ -10,7 +10,7 @@ One silently wins and the other can never spawn.
 
 Caught once already: Gibbon.prefab (branch cece/hopeful-bardeen-rmqhmd, where this gate was
 written) was authored by copying Squirrel.prefab and carried its hash verbatim, which would have
-made one of the two unspawnable. Flail.prefab is the same kind of copy and is the first such prefab
+made one of the two unspawnable. Thresher.prefab is the same kind of copy and is the first such prefab
 to land on bleeding-edge alongside this gate.
 
 READ THE FIELD NAME, NOT A SUBSTRING. `InScenePlacedSourceGlobalObjectIdHash` ENDS with the same

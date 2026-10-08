@@ -1,4 +1,4 @@
-// REAL maths, not type-check stubs: FlailChainSolver is pure arithmetic over Vector3/Mathf, so a
+// REAL maths, not type-check stubs: ThresherChainSolver is pure arithmetic over Vector3/Mathf, so a
 // faithful Vector3 + Mathf lets the SHIPPED solver and the SHIPPED edit-mode tests be executed
 // here rather than transcribed. The NUnit half is the minimum the test file uses.
 using System;

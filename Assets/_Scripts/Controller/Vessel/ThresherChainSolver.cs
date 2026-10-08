@@ -3,11 +3,11 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Every number the Flail's chain physics reads, in GAME units (already scaled from the 2D
-    /// sandbox by <c>FlailConfigSO.ToSettings</c>). A plain struct so the solver and its tests need
+    /// Every number the Thresher's chain physics reads, in GAME units (already scaled from the 2D
+    /// sandbox by <c>ThresherConfigSO.ToSettings</c>). A plain struct so the solver and its tests need
     /// no ScriptableObject and no scene.
     /// </summary>
-    public struct FlailChainSettings
+    public struct ThresherChainSettings
     {
         // Chain
         public float RestLength, MaxLength, PayOutRate, ReelInRate, ReelSpinCap;
@@ -24,7 +24,7 @@ namespace CosmicShore.Gameplay
     }
 
     /// <summary>
-    /// The Flail's dials, authored in the units of the 2D browser sandbox the mechanic was tuned
+    /// The Thresher's dials, authored in the units of the 2D browser sandbox the mechanic was tuned
     /// in, so every number here can be read side by side with that sandbox. <see cref="ToSettings"/>
     /// scales every speed and length by <c>gameCruise / sandboxCruise</c>. Rates (1/s) and
     /// dimensionless shares are unscaled — scaling lengths and speeds by the same factor leaves
@@ -35,12 +35,12 @@ namespace CosmicShore.Gameplay
     /// an instance and the edit-mode tests construct a fresh one.
     /// </summary>
     [System.Serializable]
-    public sealed class FlailDials
+    public sealed class ThresherDials
     {
         [Header("Scale")]
         [Tooltip("Cruise speed of the 2D sandbox the dials were tuned in (u/s). Every speed and length below is in SANDBOX units.")]
         [SerializeField] float sandboxCruise = 380f;
-        [Tooltip("This game's cruise for the Flail (u/s): its throttle target at neutral sticks " +
+        [Tooltip("This game's cruise for the Thresher (u/s): its throttle target at neutral sticks " +
                  "(DefaultMinimumSpeed + 0.5 x DefaultThrottleScaler on the prefab). The scale factor is gameCruise / sandboxCruise.")]
         [SerializeField] float gameCruise = 70f;
 
@@ -107,10 +107,10 @@ namespace CosmicShore.Gameplay
         public float GameCruise => gameCruise;
         public int ChipsToBreak => chipsToBreak;
 
-        public FlailChainSettings ToSettings()
+        public ThresherChainSettings ToSettings()
         {
             float k = Scale;
-            return new FlailChainSettings
+            return new ThresherChainSettings
             {
                 RestLength = restLen * k,
                 MaxLength = Mathf.Max(restLen, maxLen) * k,
@@ -141,7 +141,7 @@ namespace CosmicShore.Gameplay
     }
 
     /// <summary>What the ball is doing. Values are explicit per the enum-serialization rule.</summary>
-    public enum FlailMode
+    public enum ThresherMode
     {
         /// <summary>Towed: the ball swings on the chain behind a free-flying ship.</summary>
         Free = 0,
@@ -151,8 +151,8 @@ namespace CosmicShore.Gameplay
         Pivot = 2,
     }
 
-    /// <summary>One frame's answer from <see cref="FlailChainSolver.Step"/>.</summary>
-    public struct FlailStepResult
+    /// <summary>One frame's answer from <see cref="ThresherChainSolver.Step"/>.</summary>
+    public struct ThresherStepResult
     {
         /// <summary>The ship's world velocity for this frame, after the rope's tug (Free/Skidding)
         /// or the orbit (Pivot). The transformer integrates the hull along exactly this.</summary>
@@ -166,9 +166,9 @@ namespace CosmicShore.Gameplay
     }
 
     /// <summary>
-    /// The Flail's chain: a heavy point-mass ball on a max-distance rope behind a nimble ship.
+    /// The Thresher's chain: a heavy point-mass ball on a max-distance rope behind a nimble ship.
     /// PURE C# — no MonoBehaviour, no scene, no physics engine — so every rule below is pinned by
-    /// edit-mode tests (<c>FlailChainSolverTests</c>) rather than by feel alone.
+    /// edit-mode tests (<c>ThresherChainSolverTests</c>) rather than by feel alone.
     ///
     /// <b>The rope</b> is a position-based max-distance constraint, mass-weighted: when the ball
     /// is past the chain's length the overshoot is split between the two bodies, the ship taking
@@ -178,30 +178,30 @@ namespace CosmicShore.Gameplay
     /// the ball round. The ship can never be dragged below <c>MinShipFraction × cruise</c>.
     ///
     /// <b>Length changes conserve spin.</b> Reeling in keeps <c>v_tangential × r</c> constant
-    /// (the ice skater pulling her arms in), capped at <see cref="FlailChainSettings.ReelSpinCap"/>
+    /// (the ice skater pulling her arms in), capped at <see cref="ThresherChainSettings.ReelSpinCap"/>
     /// per change so a long frame cannot fling the ball; paying out SPENDS spin by
     /// <c>sqrt(oldL/newL)</c>. Wind out, whip, release the trigger: the reel-in is the crack.
     ///
-    /// <b>The snap.</b> On the frame a slack chain goes taut, <see cref="FlailChainSettings.CrackShare"/>
+    /// <b>The snap.</b> On the frame a slack chain goes taut, <see cref="ThresherChainSettings.CrackShare"/>
     /// of the radial speed the rope just cancelled is thrown sideways into the ball — the whip
     /// crack you get from turning one way and snapping back.
     ///
     /// <b>The lock.</b> <see cref="Plant"/> skids the ball to a stop over
-    /// <see cref="FlailChainSettings.SkidSeconds"/>, then it is a fixed pivot and the ship orbits
+    /// <see cref="ThresherChainSettings.SkidSeconds"/>, then it is a fixed pivot and the ship orbits
     /// it on the chain at the speed it hooked on with, spinning up toward
-    /// <see cref="FlailChainSettings.LockMaxSpeed"/>. <see cref="Release"/> flings the ship off on
+    /// <see cref="ThresherChainSettings.LockMaxSpeed"/>. <see cref="Release"/> flings the ship off on
     /// its tangent and yanks the ball after it.
     /// </summary>
-    public sealed class FlailChainSolver
+    public sealed class ThresherChainSolver
     {
-        public FlailChainSettings Settings;
+        public ThresherChainSettings Settings;
 
         public Vector3 BallPosition;
         public Vector3 BallVelocity;
         public float Length;
-        public FlailMode Mode { get; private set; }
+        public ThresherMode Mode { get; private set; }
         public Vector3 Pivot { get; private set; }
-        /// <summary>The ship's orbital speed while <see cref="FlailMode.Pivot"/>.</summary>
+        /// <summary>The ship's orbital speed while <see cref="ThresherMode.Pivot"/>.</summary>
         public float LockSpeed { get; private set; }
         /// <summary>True while the rope is holding the ball (or the ship, in a pivot) at full length.</summary>
         public bool IsTaut { get; private set; }
@@ -215,7 +215,7 @@ namespace CosmicShore.Gameplay
         /// first and then snap.</summary>
         public const float SlackTolerance = 0.02f;
 
-        public FlailChainSolver(FlailChainSettings settings) => Settings = settings;
+        public ThresherChainSolver(ThresherChainSettings settings) => Settings = settings;
 
         public float BallSpeed => BallVelocity.magnitude;
 
@@ -226,7 +226,7 @@ namespace CosmicShore.Gameplay
             Length = Settings.RestLength;
             BallPosition = shipPosition + back * Length;
             BallVelocity = shipVelocity;
-            Mode = FlailMode.Free;
+            Mode = ThresherMode.Free;
             LockSpeed = 0f;
             _skidTime = 0f;
             _wasSlack = false;
@@ -239,19 +239,19 @@ namespace CosmicShore.Gameplay
         /// becomes the pivot once the skid is spent.</summary>
         public void Plant()
         {
-            if (Mode != FlailMode.Free) return;
-            Mode = FlailMode.Skidding;
+            if (Mode != ThresherMode.Free) return;
+            Mode = ThresherMode.Skidding;
             _skidTime = 0f;
         }
 
         /// <summary>Left trigger up: the ship flies off on its current velocity and, if the ball
-        /// was the pivot, the ball is yanked after it at <see cref="FlailChainSettings.Yank"/> of
+        /// was the pivot, the ball is yanked after it at <see cref="ThresherChainSettings.Yank"/> of
         /// the ship's speed.</summary>
         public void Release(Vector3 shipVelocity)
         {
-            if (Mode == FlailMode.Pivot)
+            if (Mode == ThresherMode.Pivot)
                 BallVelocity = Vector3.ClampMagnitude(shipVelocity * Settings.Yank, Settings.MaxBallSpeed);
-            Mode = FlailMode.Free;
+            Mode = ThresherMode.Free;
             LockSpeed = 0f;
             _wasSlack = false;
         }
@@ -265,13 +265,13 @@ namespace CosmicShore.Gameplay
         /// reels it in. <paramref name="shipCruise"/> is the ship's current throttle target — the
         /// tug's floor is a fraction of it, so the floor follows the pilot's own throttle.
         /// </summary>
-        public FlailStepResult Step(Vector3 shipPosition, Vector3 shipVelocity, bool payOut,
+        public ThresherStepResult Step(Vector3 shipPosition, Vector3 shipVelocity, bool payOut,
                                     float shipCruise, float dt)
         {
-            var result = new FlailStepResult { ShipVelocity = shipVelocity, BallFrom = BallPosition };
+            var result = new ThresherStepResult { ShipVelocity = shipVelocity, BallFrom = BallPosition };
             if (dt <= 0f) return result;
 
-            if (Mode == FlailMode.Pivot)
+            if (Mode == ThresherMode.Pivot)
             {
                 result.ShipVelocity = StepPivot(shipPosition, shipVelocity, payOut, dt);
                 result.BallFrom = BallPosition;
@@ -289,7 +289,7 @@ namespace CosmicShore.Gameplay
             result.BallFrom = BallPosition;
 
             // 2) BALL — drag (plus the skid brake while planting), then a free step.
-            float damping = Settings.BallDrag + (Mode == FlailMode.Skidding ? Settings.SkidRate : 0f);
+            float damping = Settings.BallDrag + (Mode == ThresherMode.Skidding ? Settings.SkidRate : 0f);
             BallVelocity *= Mathf.Exp(-damping * dt);
             Vector3 ballNext = BallPosition + BallVelocity * dt;
             Vector3 shipNext = shipPosition + shipVelocity * dt;
@@ -334,7 +334,7 @@ namespace CosmicShore.Gameplay
             _wasSlack = dist < Length * (1f - SlackTolerance);
 
             // 4) SKID — a planted ball becomes the pivot once the skid is spent.
-            if (Mode == FlailMode.Skidding)
+            if (Mode == ThresherMode.Skidding)
             {
                 _skidTime += dt;
                 if (_skidTime >= Settings.SkidSeconds)
@@ -348,9 +348,9 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>The ship's share of the rope's overshoot: inverse-mass weighting with the
-        /// ship's mass taken as 1, scaled by <see cref="FlailChainSettings.Tug"/> — the fraction of
+        /// ship's mass taken as 1, scaled by <see cref="ThresherChainSettings.Tug"/> — the fraction of
         /// the yank the ship's engine fails to absorb.</summary>
-        public static float ShipShare(in FlailChainSettings s)
+        public static float ShipShare(in ThresherChainSettings s)
             => Mathf.Clamp01(s.Tug * s.BallMass / (1f + s.BallMass));
 
         /// <summary>
@@ -370,7 +370,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Spin bookkeeping for a change of chain length, relative to the ship.
         /// Reeling IN a taut chain keeps <c>v_t × r</c> constant (multiplier capped at
-        /// <see cref="FlailChainSettings.ReelSpinCap"/> per change) and pulls the ball onto the new
+        /// <see cref="ThresherChainSettings.ReelSpinCap"/> per change) and pulls the ball onto the new
         /// radius; paying OUT a taut chain spends spin by <c>sqrt(oldL/newL)</c>. A slack chain is
         /// not touching the ball, so neither does anything to it.
         /// </summary>
@@ -405,7 +405,7 @@ namespace CosmicShore.Gameplay
 
         void BeginPivot(Vector3 shipPosition, Vector3 shipVelocity)
         {
-            Mode = FlailMode.Pivot;
+            Mode = ThresherMode.Pivot;
             Pivot = BallPosition;
             BallVelocity = Vector3.zero;
 
@@ -482,11 +482,11 @@ namespace CosmicShore.Gameplay
         /// The READY cue: the ball's speed if the right trigger were released NOW and the chain
         /// reeled all the way in, by spin conservation from the current length. Deliberately
         /// ignores the snap crack and the ship's own turning — so it UNDERESTIMATES during a fast
-        /// snap (a known weakness, recorded in FLAIL.md).
+        /// snap (a known weakness, recorded in THRESHER.md).
         /// </summary>
         public float PredictReelCrackSpeed(Vector3 shipPosition, Vector3 shipVelocity)
         {
-            if (Mode != FlailMode.Free) return BallSpeed;
+            if (Mode != ThresherMode.Free) return BallSpeed;
             Vector3 r = BallPosition - shipPosition;
             float dist = r.magnitude;
             if (dist < 1e-5f) return BallSpeed;
@@ -498,19 +498,19 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>How white-hot a ball at <paramref name="speed"/> is: 0 at smash speed, 1 at
-        /// <see cref="FlailChainSettings.WhiteHotSpeed"/>.</summary>
-        public static float Heat01(float speed, in FlailChainSettings s)
+        /// <see cref="ThresherChainSettings.WhiteHotSpeed"/>.</summary>
+        public static float Heat01(float speed, in ThresherChainSettings s)
             => Mathf.Clamp01(Mathf.InverseLerp(s.SmashSpeed, Mathf.Max(s.SmashSpeed + 1e-3f, s.WhiteHotSpeed), speed));
 
         /// <summary>True when a hit at <paramref name="speed"/> smashes rather than chips.</summary>
-        public static bool IsSmash(float speed, in FlailChainSettings s) => speed >= s.SmashSpeed;
+        public static bool IsSmash(float speed, in ThresherChainSettings s) => speed >= s.SmashSpeed;
 
         /// <summary>
         /// The fraction of its speed the ball keeps after one hit: <c>PloughKeep</c> for a smash
         /// at smash speed rising to <c>PloughKeepHot</c> when white-hot (a hotter ball ploughs
         /// further), <c>ChipKeep</c> for a chip.
         /// </summary>
-        public static float KeepAfterHit(float speed, in FlailChainSettings s)
+        public static float KeepAfterHit(float speed, in ThresherChainSettings s)
             => IsSmash(speed, s)
                 ? Mathf.Lerp(s.PloughKeep, s.PloughKeepHot, Heat01(speed, s))
                 : s.ChipKeep;
@@ -519,7 +519,7 @@ namespace CosmicShore.Gameplay
         /// path order, so a long row costs the ball speed one prism at a time.</summary>
         public void RegisterHit(float keep)
         {
-            if (Mode == FlailMode.Pivot) return;
+            if (Mode == ThresherMode.Pivot) return;
             BallVelocity *= Mathf.Clamp01(keep);
         }
     }
