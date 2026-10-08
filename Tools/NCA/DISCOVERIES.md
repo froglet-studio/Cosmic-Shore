@@ -2346,3 +2346,35 @@ the lab, plus run files from the swarm-exp E/F/H and solo runs. All are merged n
   was 2.4e-3 at step 3250). Weights in `results/{whale,jelly}3d_swim/weights.json`; re-exported to
   `Ecology/flight/creatures/nca_{whale,jelly}.js`; gallery and showcase headless checks pass.
 
+
+## Hybrid creatures (2026-10-08, branch `claude/hybrid-creatures`, lab page `hybrid.html`)
+
+Goal (Garrett): 3D NCA bodies that show EMERGENT hybrids between their learned forms (a whale-jelly chimera
+whose winner is anyone's guess, two-headed lizards), the way the 2D lizard healed into more than one lizard.
+Nothing below is trained on mixtures; every hybrid is the rule extrapolating.
+
+**H1. Two rules, one body (`hybrid_rulemix.py`, no training).** The whale and jelly rules were both
+fine-tuned from the 3D lizard, so they share a basin. A cell runs update `(1-g) A + g B` with `g` a ramp
+along the swim axis (16 cells wide). Over 3000 steps (`results/hybrid3d/rulemix_*.png`):
+- whale|jelly: jelly bell fused to a whale with a fluke; never settles (1.1k -> 2.45k cells, keeps reshaping).
+- jelly|whale: stable at ~1.36k cells from step ~600 on.
+- lizard|jelly: a lizard under a bell, then the jelly takes the whole body at ~1000 steps (cells 1.04k -> 1.54k).
+- lizard|whale: whale body with a lizard front; shrinks to ~500 then holds at ~790 cells.
+- Negative: a uniform 50/50 or 75/25 WEIGHT blend overgrows without bound (cancerous); 25/75 is a finless whale.
+The live page runs this with two weight sets in the WASM kernel (cells in the ramp run both and blend).
+
+**H2. One rule, three genomes (`hybrid3d.py`).** One 16/128 rule (the game kernel's layout) learns lizard,
+whale and jelly; channels 13-15 are a one-hot genome set in the seed, ordinary state otherwise. Common grid
+22x44x44 (each run's seed cell on the common seed). Warm start lizard3d, batch 2 per form, 1 cut per form.
+- With the genome loss at 0.1 x 0.01 the rule ignored the genome after growth (step-1000 probe: mean genome
+  ~0.2-0.3 in every pure animal; rewriting half a whale's genome to jelly did nothing). Raised to 1.0 at step
+  1000: genome error 0.22 -> 0.02 by step 2200, pure animals 89-94% their own code.
+- Step-2000 probe (`results/hybrid3d/probe_02000_*`, 1000 steps each, `hybrid_probe.py`):
+  - blended seed whale/jelly: 25% and 50% jelly grow a whale, 75% grows a jelly (a tipping point between).
+  - blended seed lizard/whale 50/50: a lizard that grows a whale tail, 66/31 and still growing. Lizard/jelly 50/50: lizard.
+  - splice (whale-state half + jelly-state half): jelly wins (99.6%). Lizard+jelly: lizard wins. Lizard+whale: holds 64/35.
+  - twin seeds whale+jelly 14 cells apart: one body, 88% jelly with whale streamers. Two lizard seeds: twin lizards.
+  - a lizard cut in half and pulled apart regrows as a lizard/jelly chimera (57/43): jelly tissue from no jelly cells.
+  - a whale cut in half gains 14% jelly; repeated wounds every 400 steps shrink the splice to 307 cells.
+- CPU only (~3 s/it, 3 threads). This thread's VM is reclaimed when the session idles; training only
+  advanced while a turn was live. The RTX 3080 on Gbox ran 33 s/it because Unity shared its memory.
