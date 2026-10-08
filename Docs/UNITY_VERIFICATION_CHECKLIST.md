@@ -69,12 +69,16 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 **Landed** (`Docs/PALETTE.md §2.10`, generator `Tools/Build/author_omni_crystal_triangles.py --check`):
 `Crystal.prefab` slot 0 = whole omni model on the new, self-contained `OmniCrystalFresnelShader`
-(the elemental crystals' SpreadFresnel look, plus CrystalMorph + a screen-door dissolve); slots 1-3 = Shepard shells drawing only the 20 triangles
-(`Assets/_Models/OmniCrystalTriangles.asset`, a mesh baked from `MassCrystalExport3ExpandedTri`),
-sweeping from 2x the crystal's radius down onto its surface. `SpreadFresnelShader` is NOT touched
+(the elemental crystals' SpreadFresnel look, plus CrystalMorph + the forge's `_Opacity` dissolve);
+slots 1-3 = Shepard shells and slot 4 = a stationary rim, drawing only the 20 triangles
+(`Assets/_Models/OmniCrystalTriangles.asset`, a mesh baked from `MassCrystalExport3ExpandedTri`) on
+`OmniShepardFresnelShader` (the body's colour formula and pair), sweeping from 2x the crystal's radius
+down onto its surface. `OriginalMaterialSet` now points team crystals at those five materials;
+`ThemeManager` paints them in domain colours (`SO_MaterialSet.CrystalMaterial4` added). `SpreadFresnelShader` is NOT touched
 (the omni shader compiles to SPIR-V offline). One C# edit:
-`ScarabCrystalMorph.AdoptShells` skips the triangle shells on a verbose channel instead of warning.
-No Unity CLI in the authoring container, so none of this has been opened in the editor.
+`ScarabCrystalMorph.AdoptShells` skips the triangle shells on a verbose channel instead of warning;
+`ThemeManager` / `ThemeManagerDataContainerSO` / `SO_MaterialSet` gained slot 4 + Fresnel painting.
+Compiled against Unity reference assemblies (`unity_refcompile`, 0 project errors); not opened in the editor.
 
 **Verify in editor**
 1. Console after import: no shader errors on `OmniCrystalFresnelShader` (it includes

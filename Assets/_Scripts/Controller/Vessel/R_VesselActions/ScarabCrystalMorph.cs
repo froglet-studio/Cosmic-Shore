@@ -225,7 +225,7 @@ namespace CosmicShore.Gameplay
 
                 // ONE morph mesh drives every shell, so only shells drawing shell 0's cage can fold.
                 // On the omni crystal that is by design not all of them: slot 0 is the whole-model
-                // body, and slots 1-3 are Mass's Shepard-tone shells drawn on the TRIANGLES alone
+                // body, and slots 1-4 are Mass's Shepard-tone shells and rim drawn on the TRIANGLES alone
                 // (Docs/PALETTE.md §2.10). Those overlays are not the cage, so they are left out of
                 // the fold — they leave with the crystal — and that is expected, not a fault.
                 if (first == null) first = filter.sharedMesh;

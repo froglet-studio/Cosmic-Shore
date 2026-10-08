@@ -971,6 +971,34 @@ Machine validation covers structure and colorimetry; only a playtest covers *loo
 
 ## 7. Follow-ups
 
+- **Omni crystal (§2.10) — rows from its ship pass, 2026-10-08.**
+  - **A TEAM omni's husks fade in place instead of drifting.** After a domain change
+    `Crystal.LerpCrystalMaterialCoroutine` overwrites each model's `explodingMaterial` with the team
+    material (`crystalModels[i].explodingMaterial = targetMaterial`, `Crystal.cs` ~:841), and
+    `Impact.HandleImpact` animates the husk on `_velocity` + `_Opacity`. Both omni shaders honour
+    `_Opacity` but neither declares `_velocity` (`grep -c _velocity` = 0 in each), so a free omni's
+    husks (on `CrystalMaterial`) drift and a team omni's fade without moving. Fix is one of: keep
+    `explodingMaterial` when the target material cannot drive a husk, or add CrystalGraph's
+    `n · dot(_velocity, n)` push to `OmniCrystalFresnelShader`. A fix, not a report.
+  - **Five husks per omni collect** (one per `crystalModels` entry, `Crystal.Explode`), up from
+    four, since the rim became slot 4 — all on `CrystalMaterial`, so they overlap as one. Measure
+    the pooled-husk cost before deciding whether `Explode` should spawn one husk per crystal.
+  - **The omni shader transcribes `SpreadFresnelShader`** (displacement + colour, verbatim) rather
+    than including it — deliberate on the test branch, so the elemental crystals were untouched.
+    Once verified in the editor, fold both onto one `SpreadFresnelCore.hlsl` (the refactor was
+    built and proved equivalent once: fragment SPIR-V identical after inlining) so a look change
+    lands in one place. Debt this branch created.
+  - **The Fresnel family is outside §2.2's collectability tint** (`FindColorPropertyNames` wants
+    `_Dull*`; the family names `_DarkColor`) — Space, Time and now the omni show authored colours.
+    One decision for all three crystals. A report: the current look is the approved one.
+  - **`CrystalMorph.hlsl`'s header claims every crystal material carries the node** (line ~43).
+    False for the Fresnel family: Space and Time do not, and the omni body carries it only because
+    `OmniCrystalFresnelShader` reimplements the path. Prose to correct, owned by the morph's doc.
+  - **A domain change on the omni now SNAPS colour instead of lerping it** — the lerp only runs
+    when source and target share a `FindColorPropertyNames` pair (`canLerp`), and the Fresnel pair
+    is not one. The old ShepardGraph team crystals cross-faded over 1-2 s. Report; decide with the
+    tint row above, since the same name change fixes both.
+
 - The inactive palettes (`CosmicWaveColorSetSO`, `PastelColorSetSO`) still carry the old
   flat shielded values **and the old inverted danger rim**. They are dead assets today; if
   either is ever wired up, run §5 against it first.

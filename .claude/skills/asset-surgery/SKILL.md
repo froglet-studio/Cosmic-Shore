@@ -3404,6 +3404,21 @@ never fold it into a fix for something else.
   While you are there, print the human-readable NAME of the object you resolved
   (`m_Name`) — "attached to GameObject 2842750437815966001" is unreviewable, "attached to
   `chargeShell`" catches this bug by eye in one second.
+- **Adding a property to a shader SUBSCRIBES it to every component that already drives that name —
+  sweep the WRITERS of each name you add, not just the readers of each name you drop.** The mirror
+  of the bullet below, and it shipped (2026-10, omni crystal): the new omni shaders honoured
+  lowercase `_opacity` "so the crystal blooms in", which wired them to `FadeIn`, whose curve is slow
+  and back-loaded (under 10% for the first second, full at 2.9 s at 60 fps). The old ShepardGraph
+  shells only had uppercase `_Opacity`, so the omni had always appeared at once; the playtest report
+  was "the new crystal takes longer to appear" in Skim Race. Before giving a shader a property
+  name, `grep -rn 'PropertyToID("<name>")'` and read what each writer DOES with it, at what rate.
+- **A domain/team material set is an index-wise CLONE of a base set, so re-authoring a prefab's
+  per-slot materials without the base set leaves its team version on the old ones.** `ThemeManager`
+  builds each domain's crystal materials by `new Material(BaseMaterialSet.CrystalMaterialN)`, and
+  `Crystal.ChangeDomain` swaps slot N to that clone — so a prefab rebuilt around new materials still
+  turns into the OLD geometry the moment a domain owns it (the omni's team version ran a Shepard band
+  on its body: the "scaling issues" report). When a prefab's slot materials change, grep
+  `GetTeam*Material(` and the base set's fields, and repoint both in the same change.
 - **Replacing a SHADER is an API change: sweep for every property the old one exposed.**
   Shader properties are a public surface driven from C# by string name
   (`Shader.PropertyToID`, `SetFloat`, `SetColor`, MaterialPropertyBlock), and dropping one

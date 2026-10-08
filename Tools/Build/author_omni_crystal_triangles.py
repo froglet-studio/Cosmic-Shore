@@ -14,7 +14,7 @@ Before this, `Crystal.prefab` ran the Shepard shader over FOUR copies of the
 WHOLE omni model, so the tone dragged the entire crystal - squares and pentagons
 included - through every pulse, and the crystal had no body of its own: the one
 static shell (`ActiveMassCrystalMaterial 3`) resolves to alpha 0.02..0.07, a
-ghost. What ships now is a BODY plus THREE tone shells:
+ghost. What ships now is a BODY, THREE tone shells and a stationary RIM:
 
     slot 0      the body - the whole omni model, static, on OmniCrystalFresnelShader
                 (the elemental crystals' SpreadFresnel look + the Scarab morph path)
@@ -26,9 +26,9 @@ ghost. What ships now is a BODY plus THREE tone shells:
 and OriginalMaterialSet's CrystalMaterial..CrystalMaterial4 point at those five
 per-slot materials, so a TEAM crystal is the same crystal in its domain colours.
 
-Four slots exactly, because `ThemeManagerDataContainerSO.GetTeamCrystalMaterial`
-answers indices 0..3 and warns past them; a fifth model would be a warning on
-every domain-owned activation and would silently reuse slot 0's team material.
+Five slots, and the fifth is real: `ThemeManagerDataContainerSO.GetTeamCrystalMaterial`
+answers indices 0..4 (SO_MaterialSet.CrystalMaterial4 was added for the rim), so a
+team crystal paints every slot. Past 4 it still warns and reuses slot 0's material.
 
 WHAT THIS SCRIPT OWNS - the things that must not be typed by hand (the body and
 tone materials too; see the materials block below):
