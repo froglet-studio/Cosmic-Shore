@@ -167,7 +167,9 @@ namespace CosmicShore.Gameplay
             if (leftJustReleased)
                 inputStatus.OnButtonReleased.Raise(InputEvents.LeftStickAction);
             if (rightJustPressed)
+            {
                 inputStatus.OnButtonPressed.Raise(InputEvents.RightStickAction);
+            }
             if (rightJustReleased)
                 inputStatus.OnButtonReleased.Raise(InputEvents.RightStickAction);
 

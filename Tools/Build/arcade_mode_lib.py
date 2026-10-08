@@ -72,9 +72,9 @@ CELL_VISUALS = {
 MEMBRANE_RADIUS = 1200.0
 
 # ── Vessel data assets (SO_Class_*), by class - every PLAYABLE hull ─────────
-# An ARENA card lists several of these in its Vessels; an arcade card exactly one. Grizzly,
-# Termite, Falcon and Shrike are not here because they are not shipped playable kits
-# (Grizzly's prefab carries no R_VesselActions and a disabled AI).
+# An ARENA card lists several of these in its Vessels; an arcade card exactly one. Termite,
+# Falcon and Shrike are not here because they are not shipped playable kits. The Grizzly joined
+# with Grizzly Time (2026-10): its kit was restored on grizzly-v2 and its AIPilot enabled.
 VESSELS = {
     "Manta":    "b0e6ec5495dbfb6419332830d585f364",
     "Dolphin":  "c0f30e9f09616874780edc0a375ce686",
@@ -85,6 +85,7 @@ VESSELS = {
     "Sparrow":  "7b7053dd065edb54baa3b831b90f4985",
     "Scarab":   "b136d82d275e0f8ea1feef29f0d416a4",
     "Butterfly": "fe4abf38579d7f84baf16a532ed4a015",
+    "Grizzly":  "312ea06c4539cdc46b027615a590c94b",
 }
 
 # VesselClassType enum ids (Assets/_Scripts/Data/Enums/VesselClassType.cs) - a card's
