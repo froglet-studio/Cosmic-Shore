@@ -25,9 +25,10 @@
 // Requires the camera's opaque and depth textures, which the project has OFF in URP_Asset;
 // BlackHoleLens.cs switches them on per camera (UniversalAdditionalCameraData) only while a hole is
 // live, and restores them after. Two screen-space limits, stated: a bent ray that leaves the
-// screen samples the sky reflection cubemap instead (so off-screen PRISMS are not lensed in), and a
-// bent ray that lands on something IN FRONT of the hole is rejected the same way (the copy cannot
-// see what that object hides).
+// screen samples THE SCENE'S OWN SKYBOX instead (RenderSettings.skybox, rendered by BlackHoleSky.cs
+// into six faces — so off-screen PRISMS are not lensed in, but the sky is the real one), and a bent
+// ray that lands on something IN FRONT of the hole is rejected the same way (the copy cannot see what
+// that object hides).
 Shader "CosmicShore/BlackHoleLens"
 {
     Properties
@@ -64,9 +65,6 @@ Shader "CosmicShore/BlackHoleLens"
             #pragma multi_compile_instancing
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            // DecodeHDREnvironment (the sky cubemap's HDR decode) lives here, and Core.hlsl does not
-            // reach it - without this include the shader does not compile and draws magenta.
-            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/EntityLighting.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareOpaqueTexture.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
             #include "BlackHoleLens.hlsl"
@@ -75,6 +73,21 @@ Shader "CosmicShore/BlackHoleLens"
                 float _BHHorizon;
                 float4 _BHLens;
             CBUFFER_END
+
+            // The sky: the scene's own skybox in six faces (BlackHoleSky.cs; face layout in
+            // BlackHoleSkyFaceUV). Per-frame globals, outside the material's CBUFFER. _BlackHoleSkyReady
+            // is 0 until the first render lands — an unbound array must not be read as a sky.
+            TEXTURE2D_ARRAY(_BlackHoleSky);
+            SAMPLER(sampler_BlackHoleSky);
+            float _BlackHoleSkyReady;
+
+            float3 BlackHoleSkyColour(float3 dir)
+            {
+                if (_BlackHoleSkyReady < 0.5) return float3(0.0, 0.0, 0.0);
+                float face;
+                float2 uv = BlackHoleSkyFaceUV(dir, face);
+                return SAMPLE_TEXTURE2D_ARRAY_LOD(_BlackHoleSky, sampler_BlackHoleSky, uv, face, 0).rgb;
+            }
 
             struct Attributes
             {
@@ -166,10 +179,8 @@ Shader "CosmicShore/BlackHoleLens"
                 {
                     float3 dirOut = BlackHoleLensFadeDir(d, bent, b, lensR, _BHLens.w);
 
-                    // The sky in that direction: the reflection cubemap URP keeps of the skybox.
-                    float3 sky = DecodeHDREnvironment(
-                        SAMPLE_TEXTURECUBE_LOD(_GlossyEnvironmentCubeMap, sampler_GlossyEnvironmentCubeMap, dirOut, 0),
-                        _GlossyEnvironmentCubeMap_HDR);
+                    // The sky in that direction: the scene's own skybox (BlackHoleSky.cs).
+                    float3 sky = BlackHoleSkyColour(dirOut);
 
                     // The scene in that direction, if it is on screen and BEHIND the hole. A sample
                     // that lands on something in front of the hole is something the copy cannot

@@ -19,6 +19,13 @@ A. EXECUTION (clang++). Assets/_Graphics/Materials/Graphs/BlackHoleLens.hlsl is 
         inside the fade start — no seam where the lens ends.
      7. NEGATIVE CONTROL: rebuilt with BLACK_HOLE_LENS_STEP_FRACTION blown up (-D override of the
         file's own #ifndef dial), the physics tests FAIL — the integration step is what holds them.
+     8. THE SKY IS THE ONE BlackHoleSky.cs RENDERS: a ray bent off the screen samples the scene's own
+        skybox, which BlackHoleSky.cs draws into six faces, face i a 90-degree camera along its
+        FaceForward[i] with FaceUp[i] up. Its table is READ FROM THE C# FILE, each face's projection
+        is rebuilt the way Unity builds it (rows right, up, -forward; Matrix4x4.Perspective(90, 1)),
+        and the shipped BlackHoleSkyFaceUV must land every direction — random, on the axes, on the
+        cube's edges and corners — on the same face at the same uv, inside 0..1. Negative control:
+        the same check against a table with one face's up vector flipped must FAIL.
 
    There is no accretion disc to test: a painted disc (thermal, Doppler-shifted, fed by captures)
    was built, read in the editor as a disc slicing through the hole, and was removed on 2026-10-07.
@@ -29,7 +36,8 @@ B. COMPILE. The vertex and fragment stages of BlackHoleLens.shader, with the shi
       that really declares it. The first lens shipped calling DecodeHDREnvironment (core's
       EntityLighting.hlsl) with only URP's Core.hlsl included; a single-blob mock declared everything
       and passed, Unity failed the compile, and every hole drew magenta. Negative control: the
-      program with the EntityLighting include removed must FAIL here.
+      program with its DeclareOpaqueTexture include removed must FAIL here (SampleSceneColor). (The
+      lens no longer decodes an HDR environment cubemap — its sky is BlackHoleSky's linear array.)
    B2 (DXC) against the REAL URP + core ShaderLibrary - the graphics checkout that
       Tools/Build/unity_refcompile fetches - for the D3D11, Vulkan and Metal API branches. This is
       the compile that would have caught it; it needs dxc (on PATH or $DXC) and the checkout
@@ -52,6 +60,7 @@ import tempfile
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 HLSL = os.path.join(ROOT, "Assets/_Graphics/Materials/Graphs/BlackHoleLens.hlsl")
 SHADER = os.path.join(ROOT, "Assets/_Graphics/Materials/Graphs/BlackHoleLens.shader")
+SKY_CS = os.path.join(ROOT, "Assets/_Scripts/Controller/Environment/BlackHole/BlackHoleSky.cs")
 
 SHIM = r"""// Minimal HLSL->C++ shim so the SHIPPED BlackHoleLens.hlsl compiles and runs under clang++.
 #pragma once
@@ -63,6 +72,11 @@ struct float3 {
     float3(){}
     float3(float a):x(a),y(a),z(a){}
     float3(float a,float b,float c):x(a),y(b),z(c){}
+};
+struct float2 {
+    float x=0,y=0;
+    float2(){}
+    float2(float a,float b):x(a),y(b){}
 };
 struct float4 {
     float x=0,y=0,z=0,w=0;
@@ -103,6 +117,7 @@ using std::pow; using std::log; using std::sqrt; using std::cos; using std::sin;
 """
 
 COMMON = r"""#include "shipped.h"
+#include "sky_table.h"
 #include <cstdio>
 #include <random>
 static int failures = 0;
@@ -193,6 +208,46 @@ int main()
         printf("6. fade: straight at the lens edge, exactly traced inside the fade start\n");
     }
 
+    // 8. the sky faces: the shipped lookup against BlackHoleSky.cs's own table (SKY_TABLE, injected)
+    {
+        int wrongFace = 0, wrongUV = 0, outside = 0, n = 0;
+        float worst = 0;
+        std::mt19937 rng(8);
+        std::uniform_real_distribution<float> U(-1.0f, 1.0f);
+        auto check = [&](float3 d) {
+            d = normalize(d);
+            // The render side, as Unity builds it from the C# table: view rows (right, up, -forward),
+            // Matrix4x4.Perspective(90, 1, n, f): clip.x = view.x, clip.y = view.y, clip.w = -view.z.
+            int expectFace = 0; float best = -2;
+            for (int i = 0; i < 6; i++) { float f = dot(d, SKY_FWD[i]); if (f > best + 1e-6f) { best = f; expectFace = i; } }
+            float3 F = SKY_FWD[expectFace], Up = SKY_UP[expectFace], R = cross(Up, F);
+            float vx = dot(R, d), vy = dot(Up, d), vz = -dot(F, d);
+            float eu = 0.5f + 0.5f * vx / -vz, ev = 0.5f + 0.5f * vy / -vz;
+            float face; float2 uv = BlackHoleSkyFaceUV(d, face);
+            n++;
+            // A direction exactly on an edge belongs to either face; both are correct there.
+            bool tie = false;
+            for (int i = 0; i < 6; i++) if (i != expectFace && std::fabs(dot(d, SKY_FWD[i]) - best) < 1e-5f) tie |= (int)face == i;
+            if ((int)face != expectFace && !tie) { wrongFace++; return; }
+            if (tie) { F = SKY_FWD[(int)face]; Up = SKY_UP[(int)face]; R = cross(Up, F);
+                       vx = dot(R, d); vy = dot(Up, d); vz = -dot(F, d); eu = 0.5f + 0.5f * vx / -vz; ev = 0.5f + 0.5f * vy / -vz; }
+            float err = std::max(std::fabs(uv.x - eu), std::fabs(uv.y - ev));
+            worst = std::max(worst, err);
+            if (err > 1e-5f) wrongUV++;
+            if (uv.x < -1e-6f || uv.x > 1 + 1e-6f || uv.y < -1e-6f || uv.y > 1 + 1e-6f) outside++;
+        };
+        for (int i = 0; i < 20000; i++) check(float3(U(rng), U(rng), U(rng)));
+        for (int i = 0; i < 6; i++) check(SKY_FWD[i]);
+        for (int a = -1; a <= 1; a += 2) for (int b = -1; b <= 1; b += 2) {
+            check(float3(a, b, 0)); check(float3(a, 0, b)); check(float3(0, a, b));
+            for (int c = -1; c <= 1; c += 2) check(float3(a, b, c));
+        }
+        CHECK(wrongFace == 0, "%d of %d directions sampled from the wrong sky face", wrongFace, n);
+        CHECK(wrongUV == 0, "%d of %d directions sampled the wrong place on their face (worst %.3g)", wrongUV, n, worst);
+        CHECK(outside == 0, "%d directions fell outside their face", outside);
+        printf("8. sky faces: %d directions land on the face and uv BlackHoleSky.cs renders (worst %.2g)\n", n, worst);
+    }
+
     if (failures) { printf("\n%d FAILURE(S)\n", failures); return 1; }
     printf("\nall properties hold\n");
     return 0;
@@ -216,6 +271,8 @@ URP_MOCK = {
 #define TEXTURECUBE(t) TextureCube t
 #define SAMPLER(s) SamplerState s
 #define SAMPLE_TEXTURECUBE_LOD(t, s, c, l) t.SampleLevel(s, c, l)
+#define TEXTURE2D_ARRAY(t) Texture2DArray t
+#define SAMPLE_TEXTURE2D_ARRAY_LOD(t, s, c, i, l) t.SampleLevel(s, float3(c, i), l)
 float4x4 unity_ObjectToWorld;
 float4x4 unity_MatrixVP;
 float4x4 UNITY_MATRIX_V;
@@ -249,7 +306,7 @@ TEXTURE2D(_CameraDepthTexture);
 float SampleSceneDepth(float2 uv) { return _CameraDepthTexture.SampleLevel(sampler_PointClamp, uv, 0).r; }
 """,
 }
-ENTITY_LIGHTING_INCLUDE = '#include "' + CORE + 'EntityLighting.hlsl"'
+OPAQUE_INCLUDE = '#include "' + URP + 'DeclareOpaqueTexture.hlsl"'
 
 # B2: the real library's API branches (Common.hlsl picks API/<x>.hlsl from these), and the defines
 # Unity's compiler sets that the library reads. INSTANCING_ON is left out: the stock URP library
@@ -266,10 +323,35 @@ def translate(src):
     out = re.sub(r"\bout float (\w+)", r"float &\1", out)
     out = re.sub(r"\.a\b", ".w", out)
     assert "void BlackHoleLensTrace(" in out, "entry point missing"
-    for name in ("BlackHoleLensFadeDir", "BlackHoleLensEntry",
+    for name in ("BlackHoleLensFadeDir", "BlackHoleLensEntry", "BlackHoleSkyFaceUV",
                  "BLACK_HOLE_LENS_MAX_STEPS", "BLACK_HOLE_LENS_STEP_FRACTION"):
         assert name in out, f"{name} missing from the shipped HLSL"
     return out
+
+
+def sky_table_header():
+    """BlackHoleSky.cs's face table, read from the C# source itself, as C++ constants. Under
+    -DSKY_TABLE_MUTATE face 2's up vector is flipped: the negative control for test 8."""
+    src = open(SKY_CS).read()
+
+    def vectors(name):
+        block = re.search(name + r"\s*=\s*\{(.*?)\};", src, re.S)
+        assert block, f"BlackHoleSky.cs no longer declares {name}"
+        triples = re.findall(r"new\(\s*([-\d.]+)f\s*,\s*([-\d.]+)f\s*,\s*([-\d.]+)f\s*\)", block.group(1))
+        assert len(triples) == 6, f"BlackHoleSky.cs's {name} has {len(triples)} entries, not 6"
+        return [tuple(float(c) for c in t) for t in triples]
+
+    fwd, up = vectors("FaceForward"), vectors("FaceUp")
+    row = lambda v: "float3(%g, %g, %g)" % v
+    mutated = list(up)
+    mutated[2] = tuple(-c for c in mutated[2])
+    return ("#pragma once\n// generated from BlackHoleSky.cs by verify_black_hole_lens.py\n"
+            "static const float3 SKY_FWD[6] = { " + ", ".join(map(row, fwd)) + " };\n"
+            "#ifndef SKY_TABLE_MUTATE\n"
+            "static const float3 SKY_UP[6] = { " + ", ".join(map(row, up)) + " };\n"
+            "#else\n"
+            "static const float3 SKY_UP[6] = { " + ", ".join(map(row, mutated)) + " };\n"
+            "#endif\n")
 
 
 def build_and_run(work, main_src, flags, label):
@@ -352,6 +434,8 @@ def main():
     try:
         with open(os.path.join(work, "shim.h"), "w") as f:
             f.write(SHIM)
+        with open(os.path.join(work, "sky_table.h"), "w") as f:
+            f.write(sky_table_header())
         with open(os.path.join(work, "shipped.h"), "w") as f:
             f.write('#pragma once\n#include "shim.h"\n' + translate(open(HLSL).read()))
 
@@ -364,6 +448,11 @@ def main():
         fired = rc is not None and rc != 0
         last = out.strip().splitlines()[-1] if out.strip() else "(no output)"
         print(f"\n7. negative control [integration step x31]: {'FIRED' if fired else 'DID NOT FIRE'} ({last})")
+        ok &= fired
+
+        rc, out = build_and_run(work, HARNESS, ["-DSKY_TABLE_MUTATE"], "sky_control")
+        fired = rc is not None and rc != 0 and "sky face" in out
+        print(f"8. negative control [BlackHoleSky.cs face 2 up flipped]: {'FIRED' if fired else 'DID NOT FIRE'}")
         ok &= fired
 
         print("\nB1. glslang compile of BlackHoleLens.shader against the per-file URP mock")
@@ -382,11 +471,11 @@ def main():
                 ok = False
             else:
                 print(f"compiled {entry} [{stage}]")
-        assert ENTITY_LIGHTING_INCLUDE in prog, "the shader no longer includes EntityLighting.hlsl"
-        unlit = prog.replace(ENTITY_LIGHTING_INCLUDE, "")
+        assert OPAQUE_INCLUDE in prog, "the shader no longer includes DeclareOpaqueTexture.hlsl"
+        unlit = prog.replace(OPAQUE_INCLUDE, "")
         rc, out = glslang_compile(work, unlit, "frag", frag)
-        fired = rc != 0 and "DecodeHDREnvironment" in out
-        print(f"B1 negative control [EntityLighting.hlsl include removed]: {'FIRED' if fired else 'DID NOT FIRE'}")
+        fired = rc != 0 and "SampleSceneColor" in out
+        print(f"B1 negative control [DeclareOpaqueTexture.hlsl include removed]: {'FIRED' if fired else 'DID NOT FIRE'}")
         ok &= fired
 
         print("\nB2. DXC compile of BlackHoleLens.shader against the REAL URP + core ShaderLibrary")
@@ -406,8 +495,8 @@ def main():
                     else:
                         print(f"compiled {entry} [{api}, {profile}]")
             rc, errors = dxc_compile(work, toolchain, unlit, "ps_6_0", frag, "SHADER_STAGE_FRAGMENT", REAL_APIS[0])
-            fired = rc != 0 and any("DecodeHDREnvironment" in e for e in errors)
-            print(f"B2 negative control [EntityLighting.hlsl include removed]: {'FIRED' if fired else 'DID NOT FIRE'}")
+            fired = rc != 0 and any("SampleSceneColor" in e for e in errors)
+            print(f"B2 negative control [DeclareOpaqueTexture.hlsl include removed]: {'FIRED' if fired else 'DID NOT FIRE'}")
             ok &= fired
     finally:
         if keep:

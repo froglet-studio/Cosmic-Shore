@@ -19,6 +19,10 @@ namespace CosmicShore.Gameplay
     /// The per-frame write is fine here and would not be on a prism: this is one renderer per hole
     /// (at most four), not mass — the clock-material law governs prisms, and a hole is not one.
     ///
+    /// <para><b>The sky.</b> A ray bent off the screen shows the scene's OWN skybox, which
+    /// <see cref="BlackHoleSky"/> renders into six faces while any lens is live — never URP's baked
+    /// environment reflection, which is Unity's default sky until the scene's lighting is generated.</para>
+    ///
     /// <para><b>The camera textures.</b> The lens reads URP's opaque-scene copy and depth texture,
     /// which the project has OFF in <c>URP_Asset</c> (they cost a copy every frame). Rather than
     /// switching them on for every scene, <see cref="CameraSupport"/> turns them on for the MAIN
@@ -212,8 +216,17 @@ namespace CosmicShore.Gameplay
             return s_sphere;
         }
 
-        void OnEnable() => CameraSupport.Acquire();
-        void OnDisable() => CameraSupport.Release();
+        void OnEnable()
+        {
+            CameraSupport.Acquire();
+            BlackHoleSky.Acquire();
+        }
+
+        void OnDisable()
+        {
+            CameraSupport.Release();
+            BlackHoleSky.Release();
+        }
 
         void LateUpdate()
         {

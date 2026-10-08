@@ -36,6 +36,8 @@ MonoBehaviour:
   lensRadiusMultiplier: 30
   lensFadeStart: 0.55
   lensSteps: 128
+  lensSkyResolution: 1024
+  lensSkyFacesPerFrame: 1
   spawnStrength: 10
   spawnHorizonRadius: 0
   spawnPosition: {x: 0, y: 0, z: 0}

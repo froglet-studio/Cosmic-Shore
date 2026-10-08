@@ -127,4 +127,41 @@ float3 BlackHoleLensFadeDir(float3 d, float3 bent, float b, float lensR, float f
     return l > 1e-6 ? m / l : d;
 }
 
+// THE SKY A BENT RAY SEES when it leaves the screen: the scene's OWN skybox (RenderSettings.skybox),
+// rendered by BlackHoleSky.cs into six 90° faces of a texture array. This is where on that array a
+// world direction d lands: the face whose axis is nearest d (its major axis), and the face's own
+// perspective coordinates, (d·right, d·up) / (d·forward) mapped to 0..1.
+//
+// The face ORDER and BASES are a contract with BlackHoleSky.cs, which renders face i as a camera
+// looking along forward[i] with up[i] (right = cross(up, forward), Unity's camera convention):
+//     0 +X (up +Y)   1 −X (up +Y)   2 +Y (up −Z)   3 −Y (up +Z)   4 +Z (up +Y)   5 −Z (up +Y)
+// verify_black_hole_lens.py reads BlackHoleSky.cs's table and checks this function against it, so the
+// two cannot drift. (URP's _GlossyEnvironmentCubeMap, which the lens read before, is the BAKED
+// environment reflection: in a scene whose lighting was never regenerated it is Unity's DEFAULT sky,
+// 128 px — and the lens drew that sky warped around the hole, seamed against the real one.)
+float2 BlackHoleSkyFaceUV(float3 d, out float face)
+{
+    float3 a = float3(abs(d.x), abs(d.y), abs(d.z));
+    float3 fwd, right, up;
+    if (a.x >= a.y && a.x >= a.z)
+    {
+        if (d.x >= 0.0) { face = 0.0; fwd = float3(1, 0, 0);  right = float3(0, 0, -1); up = float3(0, 1, 0); }
+        else            { face = 1.0; fwd = float3(-1, 0, 0); right = float3(0, 0, 1);  up = float3(0, 1, 0); }
+    }
+    else if (a.y >= a.z)
+    {
+        if (d.y >= 0.0) { face = 2.0; fwd = float3(0, 1, 0);  right = float3(1, 0, 0);  up = float3(0, 0, -1); }
+        else            { face = 3.0; fwd = float3(0, -1, 0); right = float3(1, 0, 0);  up = float3(0, 0, 1); }
+    }
+    else
+    {
+        if (d.z >= 0.0) { face = 4.0; fwd = float3(0, 0, 1);  right = float3(1, 0, 0);  up = float3(0, 1, 0); }
+        else            { face = 5.0; fwd = float3(0, 0, -1); right = float3(-1, 0, 0); up = float3(0, 1, 0); }
+    }
+    float w = max(dot(d, fwd), 1e-6);
+    float u = dot(d, right) / w;
+    float v = dot(d, up) / w;
+    return float2(u * 0.5 + 0.5, v * 0.5 + 0.5);
+}
+
 #endif // BLACK_HOLE_LENS_INCLUDED

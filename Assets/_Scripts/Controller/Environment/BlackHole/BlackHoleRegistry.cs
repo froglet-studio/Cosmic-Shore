@@ -186,6 +186,8 @@ namespace CosmicShore.Gameplay
             // The lens reads the main camera's opaque + depth copies; keep them on the CURRENT main
             // camera while any lens is live (a vessel spawn can swap it).
             BlackHoleLens.CameraSupport.Maintain();
+            // ...and the sky a ray bent off-screen sees: the scene's own skybox, kept current.
+            BlackHoleSky.Maintain(config);
 
             if (CSDebug.IsVerbose(CSLogChannel.BlackHole) && Time.unscaledTime >= _nextReport)
             {

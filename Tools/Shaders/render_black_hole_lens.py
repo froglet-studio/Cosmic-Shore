@@ -8,7 +8,7 @@ HLSL -> C++ step, compiled with clang++, and every pixel runs the shipped BlackH
 BlackHoleLensFadeDir, composited exactly as BlackHoleLens.shader's fragment stage does (the bent
 scene, or the shadow's black). What is NOT the game's: the background. The shader bends the
 camera's opaque copy of the scene; here the bent ray samples a stand-in - a procedural sky (blue
-zenith, pale horizon, brown ground, like the test scene's skybox) and a field of dark-blue "prisms"
+zenith, pale horizon, brown ground — a stand-in, not the game's HyperSea sky) and a field of dark-blue "prisms"
 around the hole - because the point is the bend, not the scene.
 
 Display transform = the project's: linear HDR, NO tonemapper (DefaultVolumeProfile: Tonemapping

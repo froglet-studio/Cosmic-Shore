@@ -173,6 +173,19 @@ namespace CosmicShore.ScriptableObjects
         [Range(16, 192)]
         [SerializeField] int lensSteps = 128;
 
+        [Tooltip("Resolution of each of the six faces of the SKY the lens bends — the scene's own skybox " +
+                 "(Lighting > Environment > Skybox Material), rendered for rays bent off the screen. " +
+                 "Higher is sharper stars at the lens's outer edge; each face costs one skybox draw of " +
+                 "this size.")]
+        [Range(128, 2048)]
+        [SerializeField] int lensSkyResolution = 1024;
+
+        [Tooltip("How many of the sky's six faces are re-rendered each frame, round-robin, so an animated " +
+                 "skybox stays in step with the real one. 0 = render once (and again whenever the skybox " +
+                 "material or the resolution changes).")]
+        [Range(0, 6)]
+        [SerializeField] int lensSkyFacesPerFrame = 1;
+
         [Header("Spawn (the Black Hole tool — blackhole tool on)")]
         [Tooltip("Strength of a hole the tool spawns: its PULL. GM = strength x Gm Per Strength. With " +
                  "Spawn Horizon Radius at 0 the strength also sets the size.")]
@@ -209,6 +222,8 @@ namespace CosmicShore.ScriptableObjects
         public float LensRadiusMultiplier => Mathf.Clamp(lensRadiusMultiplier, 6f, 120f);
         public float LensFadeStart => Mathf.Clamp(lensFadeStart, 0.1f, 0.95f);
         public int LensSteps => Mathf.Clamp(lensSteps, 16, 192);
+        public int LensSkyResolution => Mathf.Clamp(lensSkyResolution, 128, 2048);
+        public int LensSkyFacesPerFrame => Mathf.Clamp(lensSkyFacesPerFrame, 0, 6);
 
         public float GmPerStrength => Mathf.Max(0f, gmPerStrength);
         public float HorizonPerStrength => Mathf.Max(0.01f, horizonPerStrength);

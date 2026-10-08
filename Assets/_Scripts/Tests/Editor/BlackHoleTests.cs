@@ -328,6 +328,55 @@ namespace CosmicShore.Tests
                 "the lens paints an accretion disc again — the hole is its shadow and the lensed scene only.");
         }
 
+        /// <summary>
+        /// A ray bent off the screen shows the scene's OWN skybox (BlackHoleSky), never URP's baked
+        /// environment reflection — which is Unity's default sky until a scene's lighting is generated,
+        /// and was drawn warped around a HyperSea hole, seamed against the real sky at the lens's rim.
+        /// </summary>
+        [Test]
+        public void Lens_SkyIsTheScenesOwnSkyboxNotTheBakedReflection()
+        {
+            string shader = File.ReadAllText("Assets/_Graphics/Materials/Graphs/BlackHoleLens.shader");
+            string hlsl = File.ReadAllText("Assets/_Graphics/Materials/Graphs/BlackHoleLens.hlsl");
+            Assert.IsFalse(shader.Contains("_GlossyEnvironmentCubeMap") || shader.Contains("unity_SpecCube0"),
+                "the lens samples URP's baked environment reflection again — the default sky until lighting is generated.");
+            Assert.IsTrue(shader.Contains("_BlackHoleSky") && shader.Contains("BlackHoleSkyFaceUV"),
+                "the lens no longer samples the sky BlackHoleSky renders.");
+            Assert.IsTrue(hlsl.Contains("float2 BlackHoleSkyFaceUV("), "BlackHoleLens.hlsl lost the sky's face lookup.");
+        }
+
+        /// <summary>
+        /// Each sky face is a real camera view (Unity's worldToCameraMatrix for a camera at the origin
+        /// looking along the face's axis with its up vector) — not a mirror image — and the cube it
+        /// draws the skybox on faces its centre. The face table itself is checked against the shader's
+        /// sampling by Tools/Shaders/verify_black_hole_lens.py.
+        /// </summary>
+        [Test]
+        public void Sky_FacesAreCameraViewsAndTheCubeFacesItsCentre()
+        {
+            for (int face = 0; face < BlackHoleSky.FaceCount; face++)
+            {
+                var rotation = Quaternion.LookRotation(BlackHoleSky.FaceForward[face], BlackHoleSky.FaceUp[face]);
+                var unity = Matrix4x4.Scale(new Vector3(1f, 1f, -1f)) * Matrix4x4.TRS(Vector3.zero, rotation, Vector3.one).inverse;
+                var ours = BlackHoleSky.FaceView(face);
+                for (int i = 0; i < 16; i++)
+                    Assert.AreEqual(unity[i], ours[i], 1e-5f, $"sky face {face}'s view is not Unity's camera view along its axis (element {i}).");
+                Assert.AreEqual(1f, Vector3.Dot(Vector3.Cross(BlackHoleSky.FaceUp[face], BlackHoleSky.FaceForward[face]),
+                    Vector3.Cross(BlackHoleSky.FaceUp[face], BlackHoleSky.FaceForward[face])), 1e-5f, $"sky face {face}'s basis is not orthonormal.");
+            }
+
+            var cube = BlackHoleSky.Cube();
+            var vertices = cube.vertices;
+            var triangles = cube.triangles;
+            Assert.AreEqual(36, triangles.Length, "the sky cube is not 12 triangles.");
+            for (int t = 0; t < triangles.Length; t += 3)
+            {
+                Vector3 a = vertices[triangles[t]], b = vertices[triangles[t + 1]], c = vertices[triangles[t + 2]];
+                Assert.Less(Vector3.Dot(Vector3.Cross(b - a, c - a), a + b + c), 0f,
+                    $"sky cube triangle {t / 3} faces outward — a back-face-culling skybox would not draw from inside it.");
+            }
+        }
+
         [Test]
         public void TestScene_ExistsAndCarriesTheHarnessWiredToItsConfig()
         {
@@ -336,6 +385,10 @@ namespace CosmicShore.Tests
             Assert.IsTrue(scene.Contains("CosmicShore.Utility.BlackHoleTestHarness"), "BlackHoleTest.unity carries no BlackHoleTestHarness.");
             Assert.IsTrue(scene.Contains("CosmicShore.Gameplay.ThemeManager"), "BlackHoleTest.unity carries no ThemeManager — the first laid prism would NRE.");
             Assert.IsTrue(scene.Contains("PrismManagers"), "BlackHoleTest.unity carries no PrismManagers instance.");
+            string hyperSea = AssetDatabase.AssetPathToGUID("Assets/_Graphics/Skyboxes/HyperSeaSkybox.mat");
+            Assert.IsFalse(string.IsNullOrEmpty(hyperSea), "HyperSeaSkybox.mat is missing.");
+            Assert.IsTrue(scene.Contains($"m_SkyboxMaterial: {{fileID: 2100000, guid: {hyperSea}, type: 2}}"),
+                "BlackHoleTest.unity's skybox is not the HyperSea sky — the hole would sit in Unity's default sky.");
 
             var testConfig = AssetDatabase.LoadAssetAtPath<BlackHoleTestConfigSO>("Assets/Resources/BlackHoleTestConfig.asset");
             Assert.IsNotNull(testConfig, "Assets/Resources/BlackHoleTestConfig.asset is missing.");

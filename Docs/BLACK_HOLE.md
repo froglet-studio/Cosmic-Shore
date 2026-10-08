@@ -22,7 +22,7 @@
 | The vessel pull | `BlackHoleVesselPull.cs` |
 | Spaghettification's CPU half — the global bank | `BlackHoleWarp.cs` |
 | Spaghettification's GPU half — the tidal tensor, one affine map per prism | `_Graphics/Materials/Graphs/PrismGravityWarp.hlsl` |
-| The lens — what the hole LOOKS like (ray-traced background and shadow; no painted disc) | `BlackHoleLens.cs`, `_Graphics/Materials/Graphs/BlackHoleLens.shader` + `BlackHoleLens.hlsl`, `Resources/BlackHoleLens.mat`, `Tools/Shaders/verify_black_hole_lens.py` (§5.1) |
+| The lens — what the hole LOOKS like (ray-traced background and shadow; no painted disc) | `BlackHoleLens.cs`, `BlackHoleSky.cs` (the scene's own skybox in six faces, for rays bent off-screen), `_Graphics/Materials/Graphs/BlackHoleLens.shader` + `BlackHoleLens.hlsl`, `Resources/BlackHoleLens.mat`, `Tools/Shaders/verify_black_hole_lens.py` (§5.1) |
 | The ECS component every prism's companion entity carries | `_Scripts/Controller/ECS/Components/GravityBodyComponents.cs` (+ the prototype addition and the `SetGravityBody` / `ClearGravityBody` / `TryGetGravityBodyLookup` API in `PrismRenderService`) |
 | Console commands | `BlackHoleConsole.cs` (`blackhole`, alias `bh`) |
 | The Black Hole tool — one Spawn button at the configured position, live holes, every config field (§6.1) | `BlackHoleTool.cs` (uGUI) + `BlackHoleToolModel.cs` (pure: fields, bounds, switch); `blackhole tool on`; proof `Tools/Build/black_hole_tool_harness/run.sh`, `BlackHoleToolTests` |
@@ -323,9 +323,29 @@ camera only while a hole is live, follows the main camera if it changes, and res
 own settings when the last hole goes. The project's opaque copy is 2× downsampled (asset-level, left
 alone), so the lensed background is slightly softer than the unbent scene.
 
-**Stated screen-space limits.** A bent ray that leaves the screen samples URP's sky reflection
-cubemap instead of the scene, so off-screen prisms are not lensed in; a bent ray that lands on
-something IN FRONT of the hole is rejected the same way (the copy cannot see past it). The bend is
+**The sky a bent ray sees off-screen is the scene's own skybox** (`BlackHoleSky.cs`). Whatever
+Lighting ▸ Environment ▸ Skybox Material names (`RenderSettings.skybox`) is drawn into six 90° faces
+of a texture array (`lensSkyResolution`, 1024 by default) — all six when a lens first appears and
+whenever the skybox or the resolution changes, then `lensSkyFacesPerFrame` (1) per frame, round-robin,
+so an animated sky like the HyperSea's stays in step — and the shader samples it by direction
+(`BlackHoleSkyFaceUV`). Nothing is rendered while no hole is live; a scene with no skybox is black
+space. The face table is a contract between the C# and the HLSL, and the verifier reads it out of
+`BlackHoleSky.cs` and checks the shader against it (property 8, with a negative control).
+
+**Incident (2026-10-08): Unity's default sky warped around a HyperSea hole.** The lens used to sample
+URP's `_GlossyEnvironmentCubeMap`. That is the BAKED environment reflection: Generate Lighting
+rebuilds it, changing the Skybox Material does not, and a scene that was never baked carries Unity's
+DEFAULT sky in it at 128 px. So in `BlackHoleTest` — skybox switched to the HyperSea, lighting never
+generated — the lens drew the default sky's pale horizon bent around the hole, and the edge of the
+lens sphere showed as a curved seam wherever that sky met the real one. Realtime reflection probes
+were not the fix: they are off at the Very Low, Low and Medium quality levels. The scene and its
+setup tool now also carry the HyperSea sky (the tool replaces only a missing or built-in default
+skybox). Prisms' ambient light and reflections still come from the baked environment — Lighting ▸
+**Generate Lighting** brings those to the HyperSea too; the lens no longer depends on it.
+
+**Stated screen-space limits.** A bent ray that leaves the screen samples the sky above instead of
+the scene, so off-screen prisms are not lensed in; a bent ray that lands on something IN FRONT of the
+hole is rejected the same way (the copy cannot see past it). The bend is
 faded to the straight ray over the outer 45% of the lens radius — light at impact parameter `b` is
 really deflected by ~`2/b` at any distance, so a finite lens would otherwise draw a seam at its edge.
 
@@ -339,8 +359,10 @@ renders another version of the file — the way to compare a change before and a
 **Proof.** `Tools/Shaders/verify_black_hole_lens.py` compiles the SHIPPED HLSL with clang++ and runs
 it: the shadow edge at 2.594 r_s (exact 2.598), Einstein deflection at b = 20/40/80 r_s within 0.8%
 of Schwarzschild's second-order value, no light from inside the horizon, 4,000 random rays (eyes
-inside and outside the lens) finite with unit escape directions, a seamless fade — and a negative
-control: a coarse step fails five of them. Both shader stages are then compiled twice:
+inside and outside the lens) finite with unit escape directions, a seamless fade, 20,000 directions
+landing on the sky face and texel `BlackHoleSky.cs` renders — and two negative controls: a coarse step
+fails five of them, and a sky table with one face's up vector flipped fails the sky property. Both
+shader stages are then compiled twice:
 glslang against a URP mock laid out FILE BY FILE at the shader's own include paths, and DXC against
 the REAL URP + core ShaderLibrary (the graphics checkout `Tools/Build/unity_refcompile` fetches) for
 D3D11, Vulkan and Metal — each with a negative control that removes one include and must fail.

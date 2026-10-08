@@ -15,7 +15,9 @@ namespace CosmicShore.Editor
     ///      prism prefab (Dolphin), and <c>Assets/Resources/BlackHoleConfig.asset</c> if missing,
     ///   2. creates/opens <c>Assets/_Scenes/Game_TestDesign/BlackHoleTest.unity</c>, and
     ///   3. populates it with the minimum the rig needs: a plain Main Camera, a Directional Light,
-    ///      an instance of <c>PrismManagers.prefab</c>, a ThemeManager, and the harness.
+    ///      an instance of <c>PrismManagers.prefab</c>, a ThemeManager, and the harness, and
+    ///   4. gives it the game's HyperSea sky (Lighting ▸ Environment ▸ Skybox Material) when it has
+    ///      none or Unity's built-in default — a skybox someone authored is kept.
     ///
     /// A KEEPER (idempotent — safe to re-run; existing objects are reused), the same shape as
     /// <see cref="PrismGridTestSceneSetupTool"/>. Both the scene and the config are committed, so
@@ -34,6 +36,7 @@ namespace CosmicShore.Editor
 
         const string PrismPrefabPath = "Assets/_Prefabs/Trails/Prisms With Pools/Dolphin Prism.prefab";
         const string PrismManagersPrefabPath = "Assets/_Prefabs/Environment/PrismManagers.prefab";
+        const string SkyboxPath = "Assets/_Graphics/Skyboxes/HyperSeaSkybox.mat";
 
         [MenuItem("FrogletTools/Scene Setup/Setup Black Hole Test Scene")]
         [FrogletTool(FrogletToolCategory.SceneSetup, Importance = 2,
@@ -106,6 +109,7 @@ namespace CosmicShore.Editor
             string managersReport = EnsurePrismManagers(scene);
             EnsureThemeManager(scene, config);
             EnsureHarness(scene, config, camera);
+            EnsureSkybox();
 
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene, ScenePath);
@@ -114,6 +118,25 @@ namespace CosmicShore.Editor
             return existed
                 ? $"Updated existing scene. PrismManagers: {managersReport}."
                 : $"Created new scene. PrismManagers: {managersReport}.";
+        }
+
+        /// <summary>
+        /// The HyperSea sky, unless the scene already names one of its own: no skybox, or Unity's
+        /// built-in default (which a new scene gets), is replaced; anything authored is kept. The
+        /// black hole's lens bends exactly this material (BlackHoleSky).
+        /// </summary>
+        static void EnsureSkybox()
+        {
+            var current = RenderSettings.skybox;
+            if (current != null && !AssetDatabase.GetAssetPath(current).StartsWith("Resources/unity_builtin"))
+                return;
+            var hyperSea = AssetDatabase.LoadAssetAtPath<Material>(SkyboxPath);
+            if (hyperSea == null)
+            {
+                CSDebug.LogWarning($"[BlackHoleTestSceneSetup] {SkyboxPath} is missing; the scene keeps its skybox.");
+                return;
+            }
+            RenderSettings.skybox = hyperSea;
         }
 
         static Camera EnsureCamera(Scene scene)
