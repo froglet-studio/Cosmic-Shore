@@ -71,6 +71,7 @@ namespace CosmicShore.Gameplay
         static readonly int FlareId = Shader.PropertyToID("_WormholeFlare");
         static readonly int RimTintId = Shader.PropertyToID("_WormholeRimTint");
         static readonly int SealedId = Shader.PropertyToID("_WormholeSealed");
+        static readonly int CorridorId = Shader.PropertyToID("_WormholeCorridor");
 
         /// <summary>
         /// Everything a mouth is built with, copied at <see cref="Build"/>. A struct rather than a
@@ -220,6 +221,14 @@ namespace CosmicShore.Gameplay
 
         /// <summary>How much of this frame the surface shows the exact view, 0..1.</summary>
         public float ExactBlend { get; set; }
+
+        /// <summary>
+        /// Does the surface dissolve inside the camera→ship occlusion corridor this frame? True for
+        /// every mouth — a mouth must never hide the pilot's ship, least of all the one a fold has just
+        /// laid around it — except the one the gameplay camera is being carried through, whose exact
+        /// view is what shows the ship (<see cref="WormholeView"/> clears it there).
+        /// </summary>
+        public bool HonorsOcclusionCorridor { get; set; } = true;
 
         /// <summary>Set by <see cref="WormholeView"/> when something on screen is looking through
         /// the PARTNER, i.e. at this mouth's panorama.</summary>
@@ -782,6 +791,7 @@ namespace CosmicShore.Gameplay
             // Sealed only while unpaired (withering away): anyone may thread a live pair, so
             // everyone is shown the view through it.
             _block.SetFloat(SealedId, !partner ? 1f : 0f);
+            _block.SetFloat(CorridorId, HonorsOcclusionCorridor ? 1f : 0f);
             _renderer.SetPropertyBlock(_block);
         }
 
