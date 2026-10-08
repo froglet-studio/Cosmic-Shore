@@ -36,6 +36,34 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void ShippedEntries_ResolveToAReadableHullAndCrystal()
+        {
+            // An entry the tool cannot resolve or read bakes nothing and plays the generic capture
+            // forever; the usual cause is a model importer without Read/Write.
+            var config = CrystalHullFusionConfigSO.Load();
+            Assert.IsNotNull(config);
+            foreach (var entry in config.Entries)
+            {
+                if (entry == null) continue;
+                Assert.IsTrue(CrystalHullFusionBaker.TryResolve(entry, out var hull, out var drawn, out _, out _, out string why),
+                    $"{entry.vessel} × {entry.element}: {why}");
+                Assert.IsNotNull(CrystalHullFusion.CaptureSolveInput(hull, drawn, entry, out why), $"{entry.vessel} × {entry.element}: {why}");
+            }
+        }
+
+        [Test]
+        public void StaticHull_IsTheBodyAndEveryPartUnderIt()
+        {
+            // The Rhino flies a body plus wings and engines as separate MeshRenderers - no skin.
+            var entry = new CrystalHullFusionConfigSO.Entry { vessel = CosmicShore.Data.VesselClassType.Rhino };
+            Assert.IsTrue(CrystalHullFusionBaker.TryResolve(entry, out var hull, out _, out _, out _, out string why), why);
+            Assert.IsNull(hull.Skinned, "the Rhino has no skinned hull");
+            Assert.Greater(hull.PartCount, 1, "the wings and engines are part of the hull");
+            Assert.AreEqual(hull.PartCount + 1, hull.Bones.Length, "one pin per part, then the body's space");
+            Assert.AreSame(hull.Space, hull.Parts[0].transform, "the body leads and IS the hull's space");
+        }
+
+        [Test]
         public void Solve_IsDeterministic_SoAnUnchangedInputBakesAnUnchangedAsset()
         {
             var config = CrystalHullFusionConfigSO.Load();

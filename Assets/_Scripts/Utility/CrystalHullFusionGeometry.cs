@@ -750,6 +750,10 @@ namespace CosmicShore.Utility
             public Vector3[] FaceRadial, FaceCentroid, FaceNormal, FaceAxisU, FaceAxisV;
             /// <summary>Per face × point (<c>face * PointsPerFace + k</c>), in the face's own plane.</summary>
             public Vector2[] FacePoints;
+            /// <summary>Per face × <see cref="AnchorsPerFace"/>: three of its corners as indices
+            /// into the crystal mesh, and where they sit in that mesh at rest.</summary>
+            public int[] FaceAnchor;
+            public Vector3[] FaceAnchorRest;
 
             public HullLayout Layout;
 
@@ -804,6 +808,24 @@ namespace CosmicShore.Utility
             var centroids = new Vector3[faces];
             for (int i = 0; i < faces; i++) centroids[i] = panels.PanelCentroids[i];
 
+            // Three corners of every face, as indices into the crystal mesh, so a pickup can read
+            // where an ANIMATED crystal's face is right now (AnchorMap) rather than where it rests.
+            var anchors = new int[faces * AnchorsPerFace];
+            for (int a = 0; a < anchors.Length; a++) anchors[a] = -1;
+            for (int v = 0; v < panels.VertexPanel.Length; v++)
+            {
+                int corner = panels.VertexCorner[v];
+                if (corner < 0 || corner >= AnchorsPerFace) continue;
+                int slot = panels.VertexPanel[v] * AnchorsPerFace + corner;
+                if (anchors[slot] < 0) anchors[slot] = v;
+            }
+            var anchorRest = new Vector3[anchors.Length];
+            for (int a = 0; a < anchors.Length; a++)
+            {
+                if (anchors[a] < 0) { failure = $"face {a / AnchorsPerFace} has fewer than {AnchorsPerFace} corners"; return null; }
+                anchorRest[a] = input.CrystalVertices[anchors[a]];
+            }
+
             return new FusionSolution
             {
                 FaceCount = faces,
@@ -816,6 +838,8 @@ namespace CosmicShore.Utility
                 FaceAxisU = template.AxisU,
                 FaceAxisV = template.AxisV,
                 FacePoints = points,
+                FaceAnchor = anchors,
+                FaceAnchorRest = anchorRest,
                 Layout = layout,
                 Vertices = template.Vertices,
                 Normals = template.Normals,
@@ -826,6 +850,49 @@ namespace CosmicShore.Utility
                 VertexPanel = template.VertexPanel,
                 VertexPoint = template.VertexPoint,
             };
+        }
+
+        /// <summary>Corners per face that pin its pose: three non-collinear points fix a rigid frame.</summary>
+        public const int AnchorsPerFace = 3;
+
+        /// <summary>
+        /// The rigid map taking a face from its rest pose to where its three anchors are NOW - how
+        /// a pickup reads an animated crystal (the Time crystal's blocks flip on bones, the Space
+        /// crystal's spin on blend shapes) instead of snapping every face back to rest on frame 0.
+        /// The frame is the anchors' centroid, the first edge and the face normal, so a blend-shape
+        /// pose that squeezes a face slightly still yields a pure rotation + translation. Identity
+        /// when either triangle is degenerate.
+        /// </summary>
+        public static Matrix4x4 AnchorMap(Vector3 restA, Vector3 restB, Vector3 restC,
+                                          Vector3 nowA, Vector3 nowB, Vector3 nowC)
+        {
+            if (!TryAnchorFrame(restA, restB, restC, out var ro, out var rx, out var ry, out var rz) ||
+                !TryAnchorFrame(nowA, nowB, nowC, out var no, out var nx, out var ny, out var nz))
+                return Matrix4x4.identity;
+
+            // R = [nx ny nz] · [rx ry rz]ᵀ, t = no − R·ro.
+            var m = Matrix4x4.identity;
+            for (int r = 0; r < 3; r++)
+                for (int c = 0; c < 3; c++)
+                    m[r, c] = nx[r] * rx[c] + ny[r] * ry[c] + nz[r] * rz[c];
+            Vector3 t = no - m.MultiplyVector(ro);
+            m[0, 3] = t.x;
+            m[1, 3] = t.y;
+            m[2, 3] = t.z;
+            return m;
+        }
+
+        static bool TryAnchorFrame(Vector3 a, Vector3 b, Vector3 c, out Vector3 origin, out Vector3 x, out Vector3 y, out Vector3 z)
+        {
+            origin = (a + b + c) / 3f;
+            x = b - a;
+            z = Vector3.Cross(b - a, c - a);
+            y = default;
+            if (x.sqrMagnitude < 1e-16f || z.sqrMagnitude < 1e-20f) return false;
+            x = x.normalized;
+            z = z.normalized;
+            y = Vector3.Cross(z, x);
+            return true;
         }
 
         /// <summary>

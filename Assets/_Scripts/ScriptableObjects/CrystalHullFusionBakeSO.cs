@@ -11,25 +11,35 @@ namespace CosmicShore.ScriptableObjects
     /// matches faces to patches and clones <see cref="TemplateMesh"/>. Record:
     /// <c>Controller/Environment/Crystals/CRYSTAL_HULL_FUSION.md</c> §4.
     ///
-    /// The solution is a property of two ASSETS (the hull mesh in its bind pose and the crystal
-    /// mesh), so it is fingerprinted against both. A bake whose fingerprint no longer matches is
-    /// STALE: the runtime says so once, names the tool, and falls back to solving on a worker
-    /// thread — correct, just not free.
+    /// The solution is a property of two ASSETS (the hull in its bind pose and the crystal mesh),
+    /// so it is fingerprinted against both. A bake whose fingerprint no longer matches is STALE:
+    /// the runtime says so once, names the tool, and falls back to solving on a worker thread —
+    /// correct, just not free.
+    ///
+    /// The drawn mesh depends on the CRYSTAL alone, so every vessel's bake for one element points
+    /// at the same shared template (<c>&lt;Element&gt;_FusionTemplate.asset</c>); a bake itself
+    /// carries only its hull's layout.
     /// </summary>
     [CreateAssetMenu(fileName = "HullFusionBake", menuName = "ScriptableObjects/" + nameof(CrystalHullFusionBakeSO))]
     public class CrystalHullFusionBakeSO : ScriptableObject
     {
         /// <summary>Bump when the solver or this layout changes meaning; every older bake reads stale.</summary>
-        public const int CurrentSchema = 1;
+        /// <remarks>2: static multi-part hulls, the per-face crystal anchors, shared per-element templates.</remarks>
+        public const int CurrentSchema = 2;
 
         [Header("Fingerprint - what this was solved against")]
         [Tooltip("Solver version the bake was made with. Older than the code's = stale.")]
         [SerializeField] int schema;
 
-        [Tooltip("The hull mesh (the vessel's element-shape SkinnedMeshRenderer), in its bind pose.")]
+        [Tooltip("The mesh naming the hull: the vessel's element-shape SkinnedMeshRenderer mesh, or a " +
+                 "static hull's body mesh.")]
         [SerializeField] Mesh hullMesh;
+        [Tooltip("Vertices across every hull part.")]
         [SerializeField] int hullVertexCount;
-        [Tooltip("ContentHash of the hull's vertices and triangles - catches a re-export that keeps the count.")]
+        [Tooltip("1 for a skinned hull; a static hull's body plus every mesh part under it.")]
+        [SerializeField] int hullPartCount;
+        [Tooltip("ContentHash of the hull's bind-pose vertices and triangles, every part placed in the " +
+                 "hull's space - catches a re-export that keeps the count, or a part moved on the prefab.")]
         [SerializeField] uint hullHash;
 
         [Tooltip("The crystal model's SOURCE mesh (the FBX mesh, before the edge-arc twin is baked from it).")]
@@ -45,7 +55,8 @@ namespace CosmicShore.ScriptableObjects
 
         [Header("Solution")]
         [Tooltip("The faces as drawn: the crystal's filler plus every face cut into its fan, with the " +
-                 "charge discharge channels in UV1-3 and (face, point) packed into UV0.")]
+                 "charge discharge channels in UV1-3 and (face, point) packed into UV0. Shared by every " +
+                 "vessel's bake for this element.")]
         [SerializeField] Mesh templateMesh;
         [SerializeField] CrystalHullFusionGeometry.FusionSolution solution;
 
@@ -63,14 +74,15 @@ namespace CosmicShore.ScriptableObjects
         /// hashes are checked at edit time (the tool and its test), where reading every vertex is
         /// free; at runtime a re-export that keeps the count is the one thing this does not catch.
         /// </summary>
-        public bool Matches(Mesh hull, Mesh crystalSource, int plateCorners, CrystalHullFusionConfigSO.Entry entry,
-                            int faceSubdivisions, out string why)
+        public bool Matches(Mesh hull, int hullVertices, int hullParts, Mesh crystalSource, int plateCorners,
+                            CrystalHullFusionConfigSO.Entry entry, int faceSubdivisions, out string why)
         {
             why = null;
             if (schema != CurrentSchema) why = $"solved by schema {schema}, the code is at {CurrentSchema}";
             else if (!templateMesh || solution == null || solution.Layout == null) why = "it holds no solution";
             else if (hull != hullMesh) why = $"it was solved for hull '{Name(hullMesh)}', the vessel draws '{Name(hull)}'";
-            else if (hull.vertexCount != hullVertexCount) why = $"'{Name(hull)}' has {hull.vertexCount} vertices, the bake {hullVertexCount}";
+            else if (hullParts != hullPartCount) why = $"the hull has {hullParts} mesh part(s), the bake {hullPartCount}";
+            else if (hullVertices != hullVertexCount) why = $"the hull has {hullVertices} vertices, the bake {hullVertexCount}";
             else if (crystalSource != crystalSourceMesh || plateCorners != crystalPlateCorners)
                 why = $"it was solved for crystal '{Name(crystalSourceMesh)}', the pickup draws '{Name(crystalSource)}'";
             else if (crystalSource.vertexCount != crystalVertexCount)
@@ -85,13 +97,14 @@ namespace CosmicShore.ScriptableObjects
 
 #if UNITY_EDITOR
         /// <summary>Editor-only: written by the bake tool, never at runtime.</summary>
-        public void EditorWrite(Mesh hull, uint hullContentHash, Mesh crystalSource, int plateCorners, uint crystalContentHash,
-                                CrystalHullFusionConfigSO.Entry entry, int faceSubdivisions, Mesh template,
-                                CrystalHullFusionGeometry.FusionSolution solved)
+        public void EditorWrite(Mesh hull, int hullVertices, int hullParts, uint hullContentHash, Mesh crystalSource,
+                                int plateCorners, uint crystalContentHash, CrystalHullFusionConfigSO.Entry entry,
+                                int faceSubdivisions, Mesh template, CrystalHullFusionGeometry.FusionSolution solved)
         {
             schema = CurrentSchema;
             hullMesh = hull;
-            hullVertexCount = hull ? hull.vertexCount : 0;
+            hullVertexCount = hullVertices;
+            hullPartCount = hullParts;
             hullHash = hullContentHash;
             crystalSourceMesh = crystalSource;
             crystalPlateCorners = plateCorners;

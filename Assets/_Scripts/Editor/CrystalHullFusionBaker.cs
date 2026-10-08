@@ -26,6 +26,10 @@ namespace CosmicShore.Editor
     /// <c>CrystalHullFusionBakeTests</c> all report a stale bake, and the game warns once and falls
     /// back to solving at runtime until it is re-baked. Idempotent: an unchanged input bakes an
     /// unchanged asset (the template mesh is rewritten in place, keeping its file ID).
+    ///
+    /// The drawn template depends on the crystal alone, so it is written ONCE per element
+    /// (<c>&lt;Element&gt;_FusionTemplate.asset</c>) and every vessel's bake for that element points
+    /// at it - twelve hulls do not ship twelve copies of the same 10k-vertex mesh.
     /// </summary>
     public class CrystalHullFusionBaker : EditorWindow
     {
@@ -169,7 +173,7 @@ namespace CosmicShore.Editor
 
         /// <summary>The entry's hull (from the vessel prefab) and crystal (from the element set),
         /// resolved exactly as the runtime resolves them. Null hull = unresolvable, with why.</summary>
-        public static bool TryResolve(CrystalHullFusionConfigSO.Entry entry, out SkinnedMeshRenderer hull,
+        public static bool TryResolve(CrystalHullFusionConfigSO.Entry entry, out CrystalHullFusion.HullRig hull,
                                       out Mesh drawn, out Mesh source, out int plates, out string why)
         {
             hull = null;
@@ -181,8 +185,8 @@ namespace CosmicShore.Editor
             var vessel = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
             if (!vessel) { why = $"no vessel prefab at {prefabPath}"; return false; }
             var animation = vessel.GetComponentInChildren<VesselAnimation>(true);
-            hull = CrystalHullFusion.FindHullRenderer(animation ? animation.transform : vessel.transform, requireActive: false);
-            if (!hull) { why = $"{entry.vessel} has no SkinnedMeshRenderer hull"; return false; }
+            hull = CrystalHullFusion.FindHull(animation ? animation.transform : vessel.transform, requireActive: false);
+            if (hull == null) { why = $"{entry.vessel} has no hull mesh (a runtime-generated hull has nothing to solve against)"; return false; }
 
             var set = ElementalCrystalSetSO.Load();
             var crystal = set ? set.GetPrefab(entry.element) : null;
@@ -207,13 +211,13 @@ namespace CosmicShore.Editor
             var bake = entry.bake;
             if (!bake) return new Status(BakeState.Missing, "No bake - the game solves this at runtime on a worker thread.");
 
-            if (!bake.Matches(hull.sharedMesh, source, plates, entry, CrystalHullFusion.FaceSubdivisions, out why))
+            if (!bake.Matches(hull.KeyMesh, hull.VertexCount, hull.PartCount, source, plates, entry,
+                    CrystalHullFusion.FaceSubdivisions, out why))
                 return new Status(BakeState.Stale, why);
 
-            var hullMesh = hull.sharedMesh;
-            if (hullMesh.isReadable &&
-                CrystalHullFusionGeometry.ContentHash(hullMesh.vertices, hullMesh.triangles) != bake.HullHash)
-                return new Status(BakeState.Stale, $"'{hullMesh.name}' was re-exported with the same vertex count but different geometry");
+            if (CrystalHullFusion.TryCaptureHull(hull, out var hullVertices, out _, out var hullTriangles, out _, out _, out _) &&
+                CrystalHullFusionGeometry.ContentHash(hullVertices, hullTriangles) != bake.HullHash)
+                return new Status(BakeState.Stale, $"'{hull.Name}' was re-exported, or a part moved, with the same vertex count");
             if (source.isReadable &&
                 CrystalHullFusionGeometry.ContentHash(source.vertices, source.triangles) != bake.CrystalHash)
                 return new Status(BakeState.Stale, $"'{source.name}' was re-exported with the same vertex count but different geometry");
@@ -284,11 +288,13 @@ namespace CosmicShore.Editor
                 AssetDatabase.CreateAsset(bake, path);
             }
 
-            // The template mesh is a sub-asset, rewritten IN PLACE when it exists so its file ID - and
-            // every reference to it - survives a re-bake.
-            var fresh = CrystalHullFusion.BuildTemplateMesh(solution, $"{entry.vessel}_{entry.element}_FusionTemplate");
-            var template = bake.TemplateMesh;
-            if (template && AssetDatabase.GetAssetPath(template) == path)
+            // The template mesh is the element's shared asset, rewritten IN PLACE when it exists so its
+            // file ID - and every bake's reference to it - survives a re-bake. Every vessel's solve of
+            // one crystal builds the same template, so the rewrite is idempotent across the fleet.
+            string templatePath = $"{BakeFolder}/{entry.element}_FusionTemplate.asset";
+            var fresh = CrystalHullFusion.BuildTemplateMesh(solution, $"{entry.element}_FusionTemplate");
+            var template = AssetDatabase.LoadAssetAtPath<Mesh>(templatePath);
+            if (template)
             {
                 EditorUtility.CopySerialized(fresh, template);
                 DestroyImmediate(fresh);
@@ -296,14 +302,19 @@ namespace CosmicShore.Editor
             else
             {
                 template = fresh;
-                AssetDatabase.AddObjectToAsset(template, bake);
+                AssetDatabase.CreateAsset(template, templatePath);
             }
+            EditorUtility.SetDirty(template);
+            FrogletToolChangeLedger.Record(ToolName, templatePath);
 
-            var hullMesh = hull.sharedMesh;
-            bake.EditorWrite(hullMesh, CrystalHullFusionGeometry.ContentHash(input.HullVertices, input.HullTriangles),
+            // A schema-1 bake carried its template as a sub-asset; drop it now the shared one is used.
+            foreach (var stale in AssetDatabase.LoadAllAssetRepresentationsAtPath(path))
+                if (stale is Mesh) Object.DestroyImmediate(stale, true);
+
+            bake.EditorWrite(hull.KeyMesh, hull.VertexCount, hull.PartCount,
+                CrystalHullFusionGeometry.ContentHash(input.HullVertices, input.HullTriangles),
                 source, plates, CrystalHullFusionGeometry.ContentHash(source.vertices, source.triangles),
                 entry, CrystalHullFusion.FaceSubdivisions, template, solution);
-            EditorUtility.SetDirty(template);
             EditorUtility.SetDirty(bake);
             FrogletToolChangeLedger.Record(ToolName, path);
 

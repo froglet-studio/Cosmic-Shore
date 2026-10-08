@@ -190,6 +190,12 @@ namespace UnityEngine
 
         public static Matrix4x4 identity => new() { _m = Ident() };
 
+        public float this[int row, int column]
+        {
+            get => M[row, column];
+            set { var m = M; m[row, column] = value; _m = m; }
+        }
+
         public static Matrix4x4 TRS(Vector3 pos, Quaternion q, Vector3 s)
         {
             Vector3 cx = q * new Vector3(s.x, 0f, 0f);

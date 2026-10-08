@@ -65,7 +65,7 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
-### 🟡 Crystal → hull fusion: Squirrel × Charge (`cece/nice-babbage-j6sejq`, 2026-10-08)
+### 🟡 Crystal → hull fusion: every hull × every element (`cece/nice-babbage-j6sejq`, 2026-10-08)
 
 **What landed.** A Squirrel that collects a **charge** crystal no longer plays the generic capture.
 The crystal's 60 prisms fold into their outer pentagons, which lift off, fly to the hull and lie ON
@@ -85,14 +85,27 @@ built once per hull on a worker thread at vessel spawn, and a pickup costs ~2 ms
 (`22fba704`) and play-tested working.** Bake reads 60 × 31 points, 1,860/1,860 on the skin. Still
 open: steps 3–6 below (wing flap, other pairs unchanged, tests) and a Profiler read.
 
+**The fleet (fourth push, 2026-10-08) — NOT baked, NOT played.** 48 entries: 12 hulls × Charge /
+Mass / Space / Time (the Butterfly's hull is generated at runtime and keeps the old capture). New:
+static multi-part hulls (Rhino, Urchin, Grizzly) pinned part-by-part; the Mass shells' scale band
+frozen on the fusion; Space/Time (opaque) shrink instead of fading; Space/Time peel from the pose
+they are holding; one shared template mesh per element. Bake schema → 2, so the Squirrel × Charge
+bake reads STALE until re-baked. Read/Write turned on for every hull FBX and the Mass/Space/Time
+crystal FBXs. Offline: all 40 crystal × hull-FBX pairs solve with every point on the skin (doc
+§12). `/verify-unity` did not run (no `unity` CLI); compiled headless against Unity references
+(player + editor, negative-controlled), geometry suite 45/45.
+
 **Verify in editor.**
-0. **Run the baker** (*Bake all*) → Squirrel × Charge CURRENT, then **Validate & Push** in the window.
+0. **Run the baker** (*Bake all*) → all 48 rows CURRENT (an UNRESOLVABLE row names the importer
+   still missing Read/Write), four `<Element>_FusionTemplate.asset`, then **Validate & Push** in the window.
 1. Squirrel, skim a charge crystal — **no hitch** (Profiler: `CrystalHullFusion.Begin`/`.Frame`): faces peel off → fly → come down onto top, underside and wings
    → crackle → sink. ~1.2 s. Domain colour. Pickup SFX on landing; no husk spray.
 2. If it looks like the old capture, check the console for a `[CrystalHullFusion]` warning first.
 3. `playbackScale` 10 on `Resources/CrystalHullFusionConfig` to watch it slowly (back to 1 after).
 4. Pitch/yaw hard mid-fusion: wing faces stay on the wings.
-5. Squirrel + mass/space/time, and any other vessel + charge: old capture, unchanged.
+5. Each element on a skinned hull, a static hull (Rhino: pitch hard, wing faces ride the wing) and
+   the Serpent. Mass: faces must not fly off across the sky and must fade. Space/Time: shrink into
+   the skin at the end; mid-spin / mid-wave pickups peel from where the blocks were. Butterfly: old capture.
 6. Run `CrystalHullFusionGeometryTests` + `CrystalHullFusionConfigTests` + `CrystalHullFusionBakeTests`
    (the last is inconclusive until the bake exists, and fails if it goes stale).
 

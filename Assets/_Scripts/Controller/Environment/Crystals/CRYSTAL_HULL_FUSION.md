@@ -19,8 +19,11 @@ cage's panels landing on the boost ring's eight shields) and reads the crystal t
    pickup sound plays here.
 4. **Dissolve** (0.30 s) — they sink a hair into the skin and dissolve.
 
-**First and only pair today: Squirrel × Charge.** Every other pair plays the generic capture,
-unchanged. Adding a pair is one entry in `Resources/CrystalHullFusionConfig`.
+**Every hull × every element (48 pairs), since 2026-10-08** — all twelve vessels with a hull
+model, each with the Charge, Mass, Space and Time crystal. The **Butterfly** keeps the generic
+capture: its hull mesh is generated at runtime, so there is no asset to solve against. The fleet
+work — static hulls, animated crystals, three shader families — is §12. A pair is one entry in
+`Resources/CrystalHullFusionConfig`; Squirrel × Charge was the first and the reference.
 
 ---
 
@@ -135,6 +138,11 @@ keeper WRITER) runs `Solve` for every config entry and writes
 - a **fingerprint** — hull and crystal mesh references, vertex counts, content hashes, the entry's
   `tileFill`/`surfaceLift`, the face subdivision and a solver schema number.
 
+Since schema 2 the template mesh is NOT a sub-asset: it depends on the crystal alone, so it is
+written once per element as `<Element>_FusionTemplate.asset` and every vessel's bake for that
+element points at it (twelve hulls would otherwise ship twelve copies of the same 10k-vertex mesh,
+~1.4 MB each for Charge). A bake carries only its hull's layout.
+
 Re-baking an unchanged input writes an unchanged asset: the solve is deterministic (tested) and the
 template mesh is rewritten in place, keeping its file ID. The window lists every entry as
 CURRENT / MISSING / STALE / UNRESOLVABLE with the reason, its Validate step fails on anything not
@@ -154,8 +162,10 @@ spawns. A pickup that beats the worker plays the generic capture.
 The content hashes are checked at edit time only (the window and `CrystalHullFusionBakeTests`): a
 re-export that keeps both vertex counts is the one change the runtime check does not see.
 
-Needs the hull mesh CPU-readable for the bake and the fallback: `isReadable: 1` on
-`SquirrelVessel_CosmicShoresTest1.fbx`. The bake's own template mesh is readable by construction.
+Needs every hull and crystal mesh CPU-readable for the bake and the fallback: `isReadable: 1` on
+every vessel hull FBX and on the Mass, Space and Time crystal FBXs (§12). The Space and Time
+crystals also need it at RUNTIME, to read the pose they are holding (§12). The bake's own template
+mesh is readable by construction.
 
 ## 5. Hook and retirement
 
@@ -186,19 +196,19 @@ building is not a fault: that pickup plays the generic capture with a verbose li
 | `Controller/Environment/Crystals/CrystalHullFusion.cs` | runtime: bake or worker fallback, per-pickup match, per-frame pose, material; the capture/resolve/mesh helpers the baker shares |
 | `Editor/CrystalHullFusionBaker.cs` | **FrogletTools > Vessels > Bake Crystal Hull Fusions** — solve at edit time, write the bake, Validate & Push |
 | `ScriptableObjects/CrystalHullFusionBakeSO.cs` | the baked solution + template mesh + fingerprint |
-| `_SO_Assets/CrystalHullFusion/<Vessel>_<Element>_HullFusionBake.asset` | the tool's output — **not on this branch until the tool has been run and its output pushed** |
-| `Tests/Editor/CrystalHullFusionBakeTests.cs` | shipped bakes current (stale fails, missing inconclusive); the solve is deterministic |
+| `_SO_Assets/CrystalHullFusion/<Vessel>_<Element>_HullFusionBake.asset` + `<Element>_FusionTemplate.asset` | the tool's output — **not on this branch until the tool has been run and its output pushed** (only Squirrel × Charge's schema-1 bake is, and it now reads stale) |
+| `Tests/Editor/CrystalHullFusionBakeTests.cs` | shipped bakes current (stale fails, missing inconclusive); every entry resolves to a readable hull and crystal; the Rhino is a multi-part static rig; the solve is deterministic |
 | `Utility/CrystalHullFusionGeometry.cs` | pure: `Solve` — panels, template, patches, layout, assignment, wrap, hull surface, content hash |
 | `ScriptableObjects/CrystalHullFusionConfigSO.cs` | per-(vessel, element) entries + beat timing |
-| `Resources/CrystalHullFusionConfig.asset` | the opt-in: Squirrel × Charge |
+| `Resources/CrystalHullFusionConfig.asset` | the opt-in: 12 hulls × 4 elements |
 | `ImpactEffects/Impactors/ElementalCrystalImpactor.cs` | `TryFuseOntoHull` / `RetireIntoFusion` |
 | `Utility/CrystalEdgeArcMeshBaker.cs` | `TryGetReadable` (the drawn charge mesh is unreadable), `TryGetSource` (a live crystal names the asset a bake is keyed by) |
 | `Environment/FlowField/Crystal.cs` | `TryGetDomainCrystalColors` |
-| `_Models/Vessel Models/SquirrelVessel_CosmicShoresTest1.fbx.meta` | `isReadable: 1` |
+| `_Models/Vessel Models/*.fbx.meta` (every hull) + `_Models/{Mass,Time}Crystal*.fbx.meta`, `spacecrystalanim.fbx.meta` | `isReadable: 1` (§12) |
 | `Tests/Editor/CrystalHullFusionGeometryTests.cs` | panels, template, surface, layout, patches, assignment, wrap — also RUNS headless |
 | `Controller/Animation/VesselAnimation.cs` | `Initialize` → `CrystalHullFusion.Prewarm` |
 | `Environment/FlowField/CrystalEdgeArcs.cs` | `PlateCorners` (so a prefab reader asks for the same twin) |
-| `Tests/Editor/CrystalHullFusionConfigTests.cs` | beats, slow motion, shipped opt-in |
+| `Tests/Editor/CrystalHullFusionConfigTests.cs` | beats, slow motion, every hull × every element listed once (Butterfly none) |
 | `Tools/Build/crystal_morph_harness/` | now also builds and runs the geometry suite (stub extended) |
 
 ## 8. Tuning knobs (`Resources/CrystalHullFusionConfig`, per entry)
@@ -244,8 +254,9 @@ areas. Solved at edit time, exactness costs nothing anyone waits for.
 - **Compiles** against real Unity 6000.0 references, player and editor configs
   (`Tools/Build/unity_refcompile`; the first cut's run was negative-controlled with a planted
   missing member).
-- **Runs headless:** `bash Tools/Build/crystal_morph_harness/run.sh` — 43/43 (21 upstream + 22
-  fusion, incl. the layout builder and `Solve` through a bind pose). Three planted defects each fail it: every template edge marked a bolt, the facing filter
+- **Runs headless:** `bash Tools/Build/crystal_morph_harness/run.sh` — 45/45 (21 upstream + 24
+  fusion, incl. the layout builder, `Solve` through a bind pose, the face anchors and `AnchorMap`;
+  a transposed rotation planted in `AnchorMap` fails it). Three planted defects each fail it: every template edge marked a bolt, the facing filter
   removed, face normals inverted.
 - **Shipped geometry on the real meshes** (scratch driver over the FBX exports): numbers in §1–§3.
 - `AssignMinCost` matches brute force on 300 random matrices.
@@ -254,13 +265,19 @@ areas. Solved at edit time, exactness costs nothing anyone waits for.
   the skin**, template 10,440 vertices, patch radius 0.260 (offline 0.263) - so the headless
   harness's numbers are Unity's numbers. Not yet confirmed: the wing-flap step, MPPM, and a
   Profiler read of `CrystalHullFusion.Begin` / `.Frame`.
+- **The fleet (2026-10-08): solved offline, NOT yet baked or played.** All 40 (crystal × hull FBX)
+  pairs over the assimp exports — 4 crystals × the 10 hull files the 12 vessels draw — solve with
+  **every point on the skin** (table in §12). The static-rig capture, the shader-family handling and
+  the animated-crystal pose read are Unity-side and unexercised until the tool runs.
 
 ### In-editor verification
 
-0. **Bake first:** **FrogletTools > Vessels > Bake Crystal Hull Fusions** → *Bake all*. Expect
-   `Squirrel × Charge` to go CURRENT with `60 faces × 31 points` and `0 of 1860 off the skin` (or
-   close). Then **Validate & Push** in the same window, which commits only the bake asset and the
-   config. `CrystalHullFusionBakeTests` should then pass rather than report inconclusive.
+0. **Bake first:** **FrogletTools > Vessels > Bake Crystal Hull Fusions** → *Bake all*. Expect all
+   48 rows CURRENT — Charge `60 × 31`, Mass `60 × 19`, Space `60 × 25`, Time `30 × 25` — each with
+   `0 of N off the skin` (or close), and four `<Element>_FusionTemplate.asset` files. Then
+   **Validate & Push** in the same window, which commits only the bakes, the templates and the
+   config. `CrystalHullFusionBakeTests` should then pass rather than report inconclusive. A row
+   reading UNRESOLVABLE names the model importer that still needs Read/Write.
 1. Squirrel, skim a **charge** crystal. The frame must NOT hitch; turn on the Profiler and look
    for `CrystalHullFusion.Begin` / `.Frame` if it does. Expect: the crystal's prisms fold into their outer
    pentagons, which lift off and fly to the hull, come down onto it and lie ON it — bent over its
@@ -271,7 +288,12 @@ areas. Solved at edit time, exactness costs nothing anyone waits for.
 3. To study it, set `playbackScale` to 10 on the asset (and back to 1 before committing — a test
    enforces it).
 4. Pitch/yaw hard mid-fusion: wing faces stay on the wings.
-5. Squirrel + mass/space/time crystal, and any other vessel + charge crystal: old capture, unchanged.
+5. Every element on a skinned hull (Squirrel/Manta/Dolphin), a static hull (Rhino/Urchin/Grizzly)
+   and the Serpent: faces land and stay on the skin; on the Rhino, pitch hard - faces on a wing ride
+   the wing. **Mass**: the faces must NOT fly off across the sky (that is the shell band unfrozen)
+   and must fade at the end. **Space / Time**: faces shrink into the skin at the end (opaque, no
+   fade). **Time** mid-wave and **Space** mid-spin: frame 0 of the peel shows each block where it
+   WAS, not snapped back to rest. Butterfly: the old capture, unchanged.
 6. **FrogletTools > Toolbox > Logging > CrystalMorph** → one `[CrystalHullFusion]` line per pickup
    (faces, points, patch radius, domain colour read).
 7. Run `CrystalHullFusionGeometryTests` + `CrystalHullFusionConfigTests` (edit mode).
@@ -288,10 +310,8 @@ areas. Solved at edit time, exactness costs nothing anyone waits for.
 - **One fusion per pickup, no pooling**: a burst of pickups is a burst of 10.4k-vertex meshes.
 - **The layout is solved on the hull's BIND pose** (element shapes at zero). A hull whose charge
   shape has grown sits a few percent off the solved skin.
-- **Prewarm runs only from `VesselAnimation.Initialize`.** Overrides that do not call the base
-  (`ButterflyAnimation`, `ScarabAnimation`, `UrchinAnimation`, `RiptideAnimation`,
-  `SparrowAnimationController` — unchecked) would load on their first pickup instead; with a bake
-  that costs one cheap read, without one the first pickup plays the generic capture.
+- **Prewarm runs from `VesselAnimation.Initialize`.** Every override calls the base (checked
+  2026-10-08: Butterfly, Riptide, Scarab, Sparrow, Urchin), so every vessel prewarms.
 - **The baker finds the hull at `Assets/_Prefabs/Spacevessels/<Vessel>.prefab`.** A vessel whose
   prefab lives elsewhere reads UNRESOLVABLE in the window with that path named.
 - **Two opt-in mechanisms for crystal retirements now exist** (§3.5 row from the 2026-10-08
@@ -299,6 +319,65 @@ areas. Solved at edit time, exactness costs nothing anyone waits for.
   (`VesselImpactorDataContainerSO.OmniCrystalRetirement`), this uses a Resources table keyed by
   (vessel, element), because elemental collection runs on the skimmer path, which has no such
   slot. Worth unifying once a second hull or element shows which shape generalises.
-- **Other pairs.** The mechanism is generic over any crystal that splits into solids: the omni cage
-  is 122; Time is 30 blocks but animated (it would need the animated pose sampled first); Space is
-  one connected body and needs its own idea.
+- **The Butterfly has no fusion.** Its `Hull` MeshFilter is authored empty and filled at runtime;
+  a fusion for it would need the solve run on the generated mesh (the runtime fallback could, if
+  the generator's output were stable).
+- **Space's spin is linear blend shapes**, so a block caught mid-spin is slightly squeezed; the
+  anchor frame (centroid, first edge, normal) turns that into a pure rotation + translation. Exact
+  for Time's bones.
+- **A static hull's patches can land on any part** — a jet, a gun, the Grizzly's projectile mesh.
+  If an ability hides a part, faces on it ride the hidden part for the 1.2 s.
+
+## 12. The fleet: every hull × every element (2026-10-08)
+
+### The crystals
+
+Measured with `BuildPanels` on each crystal FBX (assimp export), then confirmed by the full solve:
+
+| Crystal | Drawn by | Faces that fly | Template (verts) | Shader family → what the fusion does |
+|---|---|---|---|---|
+| Charge | MeshRenderer (edge-arc twin) | 60 pentagons | 10,440 | `_Dull/_BrightCrystalColor` tint, `_opacity` fade, discharge |
+| Mass | 4 nested MeshRenderer shells, one mesh | 60 triangles | 6,120 | `OmniShepardFresnelShader`: its band SCALES the mesh about the object origin — the fusion's origin is the hull — so `_ScaleDistance` 0 and `_Start = _Stop = 0.05` (alpha 1); fade on `_Opacity`; rim `_BrightColor` converges, `_DarkColor` held |
+| Space | SkinnedMeshRenderer, blend-shape spin | 60 kites | 8,280 | `SpreadFresnelShader`, OPAQUE: no fade property, so the faces **shrink to their centroids** through the dissolve |
+| Time | SkinnedMeshRenderer on a CHILD of the model, 30 bones | 30 rhombi | 4,140 | `SpreadFresnelShader`, as Space |
+
+The earlier notes here ("Space is one connected body", "Time would need the animated pose sampled
+first") were both wrong or are now done: Space's deltoidal hexecontahedron is 60 separate kite
+prisms, and the animated pose is read (below). Every crystal is ONE face shape, so the solver's
+one-landed-grid-per-patch rule held for all four with no change.
+
+**Animated crystals leave from the pose they hold.** The solve records three corners of every face
+(`FaceAnchor` / `FaceAnchorRest`). At pickup, only those anchors are skinned — blend-shape deltas
+(Space's spin), then bone matrices (Time's flip wave) — exactly as the renderer would, and
+`CrystalHullFusionGeometry.AnchorMap` turns each face's three into a rigid map from rest. A block
+caught mid-flip peels from mid-flip. A `BakeMesh` + measured-scale version was written first and
+discarded: its scale would have been measured off edge lengths that Space's linear blend shapes
+shrink mid-spin. The skin needs the crystal mesh readable at runtime (warns once if not).
+
+### The hulls
+
+| Vessels | Hull | How it is pinned |
+|---|---|---|
+| Squirrel, Manta, Termite, Falcon, Shrike, Dolphin, Serpent, Sparrow, Scarab | skinned (`FindHullRenderer`) | bones + bind poses, as authored |
+| Rhino, Urchin, Grizzly | **static**: a body MeshRenderer + wings / engines / jets / guns / fins as separate MeshRenderers, no skin | `HullRig`: the largest mesh renderer is the BODY and the rig's space; every mesh part under it (in hierarchy order, regardless of active state, so prefab and instance list the same transforms) is a rigid "bone" whose bind pose is the inverse of where it sat against the body when solved. A puppeted Rhino wing carries its patches. |
+| Butterfly | runtime-generated mesh | none — no entry |
+
+The fingerprint grew a part count; the runtime check is the key mesh (skinned mesh or body mesh),
+the total vertex count across parts and the part count. The edit-time content hash covers every
+part placed in the body's space, so moving a part on the prefab reads stale.
+
+### Offline solve, every pair
+
+Every crystal against every hull FBX the fleet draws (`scratchpad` driver over assimp exports;
+the static hulls exported whole, parts placed by the FBX's own node transforms). **Every point of
+every face lands on the skin, all 40 pairs:**
+
+| | points per pair | projected | solve (warm .NET) |
+|---|---|---|---|
+| Charge × 10 hulls | 1,860 | 100% | 21–154 ms |
+| Mass × 10 hulls | 1,140 | 100% | 11–23 ms |
+| Space × 10 hulls | 1,500 | 100% | 12–38 ms |
+| Time × 10 hulls | 750 | 100% | 8–26 ms |
+
+The hulls span a 350× range of model units (Squirrel mean radius 2.1, Rhino 729); the layout is
+solved in normalised hull space and comes out the same shape at every scale.

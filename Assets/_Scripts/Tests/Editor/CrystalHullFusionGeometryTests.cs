@@ -296,6 +296,24 @@ namespace CosmicShore.Tests
             Assert.AreEqual(4, solution.FaceCount);
             Assert.AreEqual(solution.FaceCount * solution.PointsPerFace, solution.FacePoints.Length);
             Assert.AreEqual(solution.Vertices.Length, solution.VertexPanel.Length);
+
+            // Every face is pinned by three DISTINCT corners of its own panel, read off the mesh.
+            int anchorsPerFace = CrystalHullFusionGeometry.AnchorsPerFace;
+            Assert.AreEqual(solution.FaceCount * anchorsPerFace, solution.FaceAnchor.Length);
+            for (int i = 0; i < solution.FaceCount; i++)
+            {
+                var a = solution.FaceAnchorRest[i * anchorsPerFace];
+                var b = solution.FaceAnchorRest[i * anchorsPerFace + 1];
+                var c = solution.FaceAnchorRest[i * anchorsPerFace + 2];
+                Assert.Greater(Vector3.Cross(b - a, c - a).sqrMagnitude, 1e-8f, $"face {i}'s anchors are collinear");
+                for (int k = 0; k < anchorsPerFace; k++)
+                {
+                    int v = solution.FaceAnchor[i * anchorsPerFace + k];
+                    Assert.AreEqual(verts[v], solution.FaceAnchorRest[i * anchorsPerFace + k]);
+                    Assert.Less(Mathf.Abs(Vector3.Dot(verts[v] - solution.FaceCentroid[i], solution.FaceNormal[i])), 1e-4f,
+                        $"face {i}'s anchor {k} is not on the face");
+                }
+            }
             float lift = solution.Layout.PatchRadius * 0.04f;
             for (int i = 0; i < solution.Layout.PointLocal.Length; i++)
             {
@@ -450,6 +468,39 @@ namespace CosmicShore.Tests
             var assignment = CrystalHullFusionGeometry.AssignMinCost(cost);
             Assert.AreEqual(1, assignment[0]);
             Assert.AreEqual(0, assignment[1]);
+        }
+
+        [Test]
+        public void AnchorMap_RecoversARigidMotion()
+        {
+            // A block flipped on its bone, as the Time crystal's are mid-wave: the map read off three
+            // anchors must carry EVERY point of the face, not just the anchors.
+            var a = new Vector3(1f, 0f, 2f);
+            var b = new Vector3(2f, 0.5f, 2f);
+            var c = new Vector3(1.2f, 1.5f, 2.3f);
+            var other = new Vector3(1.7f, 1.1f, 2.1f);
+            var pose = Matrix4x4.TRS(new Vector3(-3f, 4f, 0.5f),
+                Quaternion.LookRotation(new Vector3(0.3f, -0.8f, 0.5f), new Vector3(1f, 0.2f, 0f)), Vector3.one);
+
+            var map = CrystalHullFusionGeometry.AnchorMap(a, b, c,
+                pose.MultiplyPoint3x4(a), pose.MultiplyPoint3x4(b), pose.MultiplyPoint3x4(c));
+
+            foreach (var p in new[] { a, b, c, other })
+                Assert.Less((map.MultiplyPoint3x4(p) - pose.MultiplyPoint3x4(p)).magnitude, 1e-4f);
+            var n = new Vector3(0.2f, -0.4f, 0.9f).normalized;
+            Assert.Less((map.MultiplyVector(n) - pose.MultiplyVector(n)).magnitude, 1e-4f, "normals turn with the face");
+        }
+
+        [Test]
+        public void AnchorMap_IsIdentityAtRest_AndForADegenerateFace()
+        {
+            var a = new Vector3(1f, 0f, 2f);
+            var b = new Vector3(2f, 0.5f, 2f);
+            var c = new Vector3(1.2f, 1.5f, 2.3f);
+            var p = new Vector3(0.4f, -2f, 7f);
+            Assert.Less((CrystalHullFusionGeometry.AnchorMap(a, b, c, a, b, c).MultiplyPoint3x4(p) - p).magnitude, 1e-4f);
+            // A collapsed pose (a blend shape shrinking a block to a point) must not throw the face away.
+            Assert.Less((CrystalHullFusionGeometry.AnchorMap(a, b, c, a, a, a).MultiplyPoint3x4(p) - p).magnitude, 1e-6f);
         }
 
         [Test]

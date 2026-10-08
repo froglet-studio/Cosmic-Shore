@@ -43,13 +43,31 @@ namespace CosmicShore.Gameplay
     [DisallowMultipleComponent]
     public sealed class CrystalHullFusion : MonoBehaviour
     {
-        // Every crystal shader exposes the tint pair and the dissolve (Crystal.cs drives them); only
-        // the charge shader exposes the discharge pair, and those writes are skipped elsewhere.
+        // The four elementals are drawn by three shader families, and the fusion speaks to each in
+        // its own properties - a write a material has no property for is skipped:
+        //   CHARGE  (ChargeCrystal)            tint _Dull/_BrightCrystalColor, dissolve _opacity,
+        //                                      discharge _ArcIntensity/_ArcDuty.
+        //   MASS    (OmniShepardFresnelShader) colour _BrightColor/_DarkColor, dissolve _Opacity, and a
+        //                                      VERTEX scale band (_Start/_Stop/_ScaleDistance) that
+        //                                      scales the mesh about its object origin - the fusion's
+        //                                      origin is the hull, so the band is frozen (Adopt).
+        //   SPACE / TIME (SpreadFresnelShader) colour _BrightColor/_DarkColor, OPAQUE - no dissolve
+        //                                      property, so the faces shrink into the skin instead.
         static readonly int OpacityId = Shader.PropertyToID("_opacity");
+        static readonly int ShepardOpacityId = Shader.PropertyToID("_Opacity");
         static readonly int DullId = Shader.PropertyToID("_DullCrystalColor");
         static readonly int BrightId = Shader.PropertyToID("_BrightCrystalColor");
+        static readonly int FresnelBrightId = Shader.PropertyToID("_BrightColor");
+        static readonly int FresnelDarkId = Shader.PropertyToID("_DarkColor");
         static readonly int ArcIntensityId = Shader.PropertyToID("_ArcIntensity");
         static readonly int ArcDutyId = Shader.PropertyToID("_ArcDuty");
+        static readonly int BandStartId = Shader.PropertyToID("_Start");
+        static readonly int BandStopId = Shader.PropertyToID("_Stop");
+        static readonly int BandScaleId = Shader.PropertyToID("_ScaleDistance");
+
+        /// <summary>Where a Shepard band is frozen for a fusion: alpha = (1.05 - s), so 0.05 draws the
+        /// faces at full opacity, and the dissolve then rides <c>_Opacity</c>.</summary>
+        const float FrozenShepardBand = 0.05f;
 
         /// <summary>Levels each fan triangle of a face is cut into. 3 gives a pentagon 31 points and
         /// 45 triangles; every point still lands on the Squirrel's skin (measured). Part of a bake's
@@ -80,7 +98,7 @@ namespace CosmicShore.Gameplay
         }
 
         static readonly Dictionary<CrystalHullFusionBakeSO, Ready> s_baked = new();
-        static readonly Dictionary<(Mesh hull, Mesh crystal, int plates), Job> s_jobs = new();
+        static readonly Dictionary<(Mesh hull, int hullVertices, Mesh crystal, int plates), Job> s_jobs = new();
         static readonly HashSet<string> s_warned = new();
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -89,6 +107,7 @@ namespace CosmicShore.Gameplay
             s_baked.Clear();
             s_jobs.Clear();
             s_warned.Clear();
+            s_anchorSkins.Clear();
         }
 
         struct Face
@@ -104,10 +123,10 @@ namespace CosmicShore.Gameplay
         }
 
         CrystalHullFusionConfigSO.Entry _entry;
-        SkinnedMeshRenderer _hull;
+        HullRig _hull;
         CrystalHullFusionGeometry.FusionSolution _solution;
         CrystalHullFusionGeometry.HullLayout _layout;
-        Transform[] _bones;                 // the hull's bones, then the renderer itself
+        Transform[] _bones;                 // the rig's pins, then its space
         Matrix4x4[] _boneToWorld;
         float _hullScale;
 
@@ -128,6 +147,9 @@ namespace CosmicShore.Gameplay
         float _bowDistance;
         Color _startDull, _startBright, _targetDull, _targetBright;
         bool _hasTint, _haveTargetColour;
+        int _tintDullId, _tintBrightId;     // the crystal pair, or the fresnel pair
+        bool _tintHoldsDull;                // fresnel: the dark body stays dark, only the rim converges
+        int _opacityId;                     // -1: an opaque shader, so the faces shrink away instead
         float _baseArcIntensity, _baseArcDuty;
         bool _hasArcIntensity, _hasArcDuty;
         float _startTime;
@@ -140,7 +162,7 @@ namespace CosmicShore.Gameplay
         {
             get
             {
-                if (_layout == null || _faces == null || !_hull) return transform.position;
+                if (_layout == null || _faces == null || !_hull?.Space) return transform.position;
                 int patch = _faces[_contactFace].Patch;
                 var bone = _bones[_layout.PatchBone[patch]];
                 return bone ? bone.TransformPoint(_layout.PatchPositionLocal[patch]) : transform.position;
@@ -148,6 +170,105 @@ namespace CosmicShore.Gameplay
         }
 
         // ══ Shared with the bake tool ═════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// The hull a fusion lands on, as a RIG: a space the layout is solved in and the transforms
+        /// every landed point is pinned to. Two shapes of hull fly in the fleet, and both reduce to
+        /// skinning:
+        ///
+        ///   SKINNED (Squirrel, Manta, Dolphin, Serpent, Sparrow, Scarab...) - the renderer's bones
+        ///     and bind poses, as authored; the renderer itself is the last pin.
+        ///   STATIC  (Rhino, Urchin, Grizzly) - a body MeshRenderer and every mesh part under it
+        ///     (wings, jets, guns, shrouds), each a rigid "bone" whose bind pose is where it sat
+        ///     against the body when the layout was solved. A puppeted wing carries its patches with it.
+        ///
+        /// <see cref="FindHull"/> resolves it identically from the vessel PREFAB (the bake) and from a
+        /// live vessel (a pickup), so a bake's bone indices name the same transforms in both.
+        /// </summary>
+        public sealed class HullRig
+        {
+            /// <summary>The space the layout lives in: the skinned renderer, or the static body.</summary>
+            public Transform Space;
+            /// <summary>Every pin, indexed as the solution's bone indices; the last is <see cref="Space"/>.</summary>
+            public Transform[] Bones;
+            /// <summary>The mesh that names this hull in a bake's fingerprint: the skinned mesh, or the body's.</summary>
+            public Mesh KeyMesh;
+            /// <summary>Vertices across every part - the cheap runtime check that the parts are the bake's.</summary>
+            public int VertexCount;
+            public int PartCount;
+            /// <summary>Non-null for a skinned hull.</summary>
+            public SkinnedMeshRenderer Skinned;
+            /// <summary>A static hull's parts, body first. Null for a skinned hull.</summary>
+            public MeshFilter[] Parts;
+
+            public string Name => Space ? Space.name : "(none)";
+        }
+
+        /// <summary>
+        /// The vessel's hull under <paramref name="root"/>: its skinned hull
+        /// (<see cref="FindHullRenderer"/>) when it has one, else its largest mesh renderer as the
+        /// BODY plus every mesh part under that body. Null when there is neither - the Butterfly's
+        /// hull mesh is generated at runtime and has no asset to solve against.
+        /// </summary>
+        public static HullRig FindHull(Transform root, bool requireActive = true)
+        {
+            if (!root) return null;
+            var skinned = FindHullRenderer(root, requireActive);
+            if (skinned)
+            {
+                var bones = skinned.bones ?? Array.Empty<Transform>();
+                var pins = new Transform[bones.Length + 1];
+                Array.Copy(bones, pins, bones.Length);
+                pins[bones.Length] = skinned.transform;
+                return new HullRig
+                {
+                    Space = skinned.transform,
+                    Bones = pins,
+                    KeyMesh = skinned.sharedMesh,
+                    VertexCount = skinned.sharedMesh.vertexCount,
+                    PartCount = 1,
+                    Skinned = skinned,
+                };
+            }
+
+            MeshFilter body = null;
+            int bodyVertices = -1;
+            foreach (var filter in root.GetComponentsInChildren<MeshFilter>(!requireActive))
+            {
+                if (!IsHullPart(filter)) continue;
+                if (requireActive && (!filter.gameObject.activeInHierarchy || !filter.GetComponent<MeshRenderer>().enabled)) continue;
+                if (filter.sharedMesh.vertexCount <= bodyVertices) continue;
+                body = filter;
+                bodyVertices = filter.sharedMesh.vertexCount;
+            }
+            if (!body) return null;
+
+            // Parts are taken regardless of their active or enabled state, in hierarchy order, so the
+            // prefab the bake read and the live vessel always list the SAME transforms at the same
+            // indices - a part an ability hides mid-flight does not renumber the rest.
+            var parts = new List<MeshFilter>();
+            foreach (var filter in body.GetComponentsInChildren<MeshFilter>(true))
+                if (IsHullPart(filter)) parts.Add(filter);
+
+            var rig = new HullRig
+            {
+                Space = body.transform,
+                Bones = new Transform[parts.Count + 1],
+                KeyMesh = body.sharedMesh,
+                PartCount = parts.Count,
+                Parts = parts.ToArray(),
+            };
+            for (int p = 0; p < parts.Count; p++)
+            {
+                rig.Bones[p] = parts[p].transform;
+                rig.VertexCount += parts[p].sharedMesh.vertexCount;
+            }
+            rig.Bones[parts.Count] = body.transform;
+            return rig;
+
+            static bool IsHullPart(MeshFilter filter) =>
+                filter && filter.sharedMesh && filter.TryGetComponent<MeshRenderer>(out _);
+        }
 
         /// <summary>
         /// The hull is the renderer the vessel's ELEMENT display lives on — the skinned mesh carrying
@@ -182,11 +303,18 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// The mesh a crystal (prefab or instance) DRAWS, the source asset it was baked from, and
-        /// the model it is on. On an instance the filter already holds <see cref="CrystalEdgeArcs"/>'
-        /// twin; on a prefab the baker hands back the same cached twin every instance draws.
+        /// the renderer drawing it (<paramref name="model"/> is that renderer's GameObject - the
+        /// space the mesh lives in). The first crystal model with a mesh wins:
+        ///
+        ///   CHARGE - a MeshRenderer whose filter holds <see cref="CrystalEdgeArcs"/>' twin on an
+        ///            instance; on a prefab the baker hands back the same cached twin.
+        ///   MASS   - four nested MeshRenderer shells of ONE mesh, told apart only by their shader's
+        ///            scale band, which the fusion freezes (<see cref="Adopt"/>) - so the first will do.
+        ///   SPACE  - a SkinnedMeshRenderer spinning its blocks on blend shapes.
+        ///   TIME   - a SkinnedMeshRenderer on a CHILD of the model, flipping its blocks on bones.
         /// </summary>
         public static bool TryResolveCrystal(Crystal crystal, out Mesh drawn, out Mesh source, out int plateCorners,
-                                             out GameObject model, out MeshRenderer renderer)
+                                             out GameObject model, out Renderer renderer)
         {
             drawn = source = null;
             plateCorners = 0;
@@ -199,23 +327,33 @@ namespace CosmicShore.Gameplay
             {
                 var candidate = data?.model;
                 if (candidate == null) continue;
-                if (!candidate.TryGetComponent<MeshFilter>(out var filter) || filter.sharedMesh == null) continue;
-                if (!candidate.TryGetComponent<MeshRenderer>(out renderer)) continue;
 
-                drawn = filter.sharedMesh;
-                if (drawn.name.EndsWith(CrystalEdgeArcMeshBaker.BakedSuffix))
-                    CrystalEdgeArcMeshBaker.TryGetSource(drawn, out source, out plateCorners);
+                if (candidate.TryGetComponent<MeshFilter>(out var filter) && filter.sharedMesh &&
+                    candidate.TryGetComponent<MeshRenderer>(out var meshRenderer))
+                {
+                    drawn = filter.sharedMesh;
+                    if (drawn.name.EndsWith(CrystalEdgeArcMeshBaker.BakedSuffix))
+                        CrystalEdgeArcMeshBaker.TryGetSource(drawn, out source, out plateCorners);
+                    else
+                    {
+                        source = drawn;
+                        if (candidate.TryGetComponent<CrystalEdgeArcs>(out var arcs))
+                        {
+                            plateCorners = arcs.PlateCorners;
+                            var baked = CrystalEdgeArcMeshBaker.GetOrBake(source, plateCorners);
+                            if (baked != null) drawn = baked;
+                        }
+                    }
+                    renderer = meshRenderer;
+                }
                 else
                 {
-                    source = drawn;
-                    if (candidate.TryGetComponent<CrystalEdgeArcs>(out var arcs))
-                    {
-                        plateCorners = arcs.PlateCorners;
-                        var baked = CrystalEdgeArcMeshBaker.GetOrBake(source, plateCorners);
-                        if (baked != null) drawn = baked;
-                    }
+                    var skinned = candidate.GetComponentInChildren<SkinnedMeshRenderer>(true);
+                    if (!skinned || !skinned.sharedMesh) continue;
+                    drawn = source = skinned.sharedMesh;
+                    renderer = skinned;
                 }
-                model = candidate;
+                model = renderer.gameObject;
                 return source != null;
             }
             return false;
@@ -227,17 +365,12 @@ namespace CosmicShore.Gameplay
         /// vertex) and the crystal's drawn mesh with its discharge channels. Null, named, when either
         /// mesh cannot be read.
         /// </summary>
-        public static CrystalHullFusionGeometry.SolveInput CaptureSolveInput(SkinnedMeshRenderer hull, Mesh drawnCrystal,
+        public static CrystalHullFusionGeometry.SolveInput CaptureSolveInput(HullRig hull, Mesh drawnCrystal,
             CrystalHullFusionConfigSO.Entry entry, out string failure)
         {
-            failure = null;
-            var hullMesh = hull ? hull.sharedMesh : null;
-            if (!hullMesh) { failure = "the hull renderer has no mesh"; return null; }
-            if (!hullMesh.isReadable)
-            {
-                failure = $"'{hullMesh.name}' is not CPU-readable - enable Read/Write on its model importer";
+            if (!TryCaptureHull(hull, out var hullVertices, out var hullNormals, out var hullTriangles,
+                                out var dominantBones, out var bindPoses, out failure))
                 return null;
-            }
             if (!CrystalEdgeArcMeshBaker.TryGetReadable(drawnCrystal, out var crystal))
             {
                 failure = $"'{(drawnCrystal ? drawnCrystal.name : "(none)")}' is not CPU-readable and was not made by " +
@@ -266,16 +399,77 @@ namespace CosmicShore.Gameplay
                 CrystalTriangles = crystalTriangles,
                 CrystalModelRadius = Mathf.Max(extents.x, Mathf.Max(extents.y, extents.z)),
 
-                HullVertices = hullMesh.vertices,
-                HullNormals = hullMesh.normals,
-                HullTriangles = hullMesh.triangles,
-                HullDominantBones = DominantBones(hullMesh),
-                HullBindPoses = hullMesh.bindposes,
+                HullVertices = hullVertices,
+                HullNormals = hullNormals,
+                HullTriangles = hullTriangles,
+                HullDominantBones = dominantBones,
+                HullBindPoses = bindPoses,
 
                 TileFill = entry.tileFill,
                 SurfaceLift = entry.surfaceLift,
                 Subdivisions = FaceSubdivisions,
             };
+        }
+
+        /// <summary>
+        /// The hull in its bind pose as one triangle soup in <see cref="HullRig.Space"/>, with each
+        /// vertex's pin and every pin's bind pose (rig space → pin space). A skinned hull is its mesh
+        /// asset as authored. A static hull's parts are carried into the body's space through where
+        /// they sit against it NOW (the prefab's rest pose, for a bake), and each part's bind pose is
+        /// the inverse of that placement - so a landed point rides its part, wherever it moves.
+        /// </summary>
+        public static bool TryCaptureHull(HullRig hull, out Vector3[] vertices, out Vector3[] normals, out int[] triangles,
+                                          out int[] dominantBones, out Matrix4x4[] bindPoses, out string failure)
+        {
+            vertices = normals = null;
+            triangles = dominantBones = null;
+            bindPoses = null;
+            failure = null;
+            if (hull == null || !hull.KeyMesh) { failure = "there is no hull mesh"; return false; }
+
+            if (hull.Skinned)
+            {
+                var mesh = hull.KeyMesh;
+                if (!mesh.isReadable) { failure = Unreadable(mesh); return false; }
+                vertices = mesh.vertices;
+                normals = mesh.normals;
+                triangles = mesh.triangles;
+                dominantBones = DominantBones(mesh);
+                bindPoses = mesh.bindposes;
+                return true;
+            }
+
+            var allVertices = new List<Vector3>(hull.VertexCount);
+            var allNormals = new List<Vector3>(hull.VertexCount);
+            var allTriangles = new List<int>();
+            var allBones = new List<int>(hull.VertexCount);
+            bindPoses = new Matrix4x4[hull.Parts.Length];
+            Matrix4x4 spaceFromWorld = hull.Space.worldToLocalMatrix;
+            for (int p = 0; p < hull.Parts.Length; p++)
+            {
+                var mesh = hull.Parts[p].sharedMesh;
+                if (!mesh.isReadable) { failure = Unreadable(mesh); return false; }
+
+                Matrix4x4 place = spaceFromWorld * hull.Parts[p].transform.localToWorldMatrix;
+                Matrix4x4 placeNormal = place.inverse.transpose;
+                bindPoses[p] = place.inverse;
+
+                int offset = allVertices.Count;
+                foreach (var v in mesh.vertices) { allVertices.Add(place.MultiplyPoint3x4(v)); allBones.Add(p); }
+                var partNormals = mesh.normals;
+                for (int v = 0; v < mesh.vertexCount; v++)
+                    allNormals.Add(v < partNormals.Length ? placeNormal.MultiplyVector(partNormals[v]).normalized : Vector3.up);
+                foreach (int t in mesh.triangles) allTriangles.Add(offset + t);
+            }
+
+            vertices = allVertices.ToArray();
+            normals = allNormals.ToArray();
+            triangles = allTriangles.ToArray();
+            dominantBones = allBones.ToArray();
+            return true;
+
+            static string Unreadable(Mesh mesh) =>
+                $"'{mesh.name}' is not CPU-readable - enable Read/Write on its model importer";
         }
 
         /// <summary>
@@ -344,12 +538,12 @@ namespace CosmicShore.Gameplay
             {
                 try
                 {
-                    SkinnedMeshRenderer hull = null;
+                    HullRig hull = null;
                     foreach (var entry in config.Entries)
                     {
                         if (entry == null || entry.vessel != vesselStatus.VesselType) continue;
-                        if (!hull) hull = FindHullRenderer(animationRoot);
-                        if (!hull) return;
+                        hull ??= FindHull(animationRoot);
+                        if (hull == null) return;
 
                         var set = ElementalCrystalSetSO.Load();
                         var prefab = set ? set.GetPrefab(entry.element) : null;
@@ -371,14 +565,14 @@ namespace CosmicShore.Gameplay
         /// worker fallback is started (or polled) and this answers false until it lands - with a
         /// reason when it never will.
         /// </summary>
-        static bool TryGetReady(SkinnedMeshRenderer hull, Mesh drawn, Mesh source, int plates,
+        static bool TryGetReady(HullRig hull, Mesh drawn, Mesh source, int plates,
                                 CrystalHullFusionConfigSO.Entry entry, out Ready ready)
         {
             ready = null;
             var bake = entry.bake;
             if (bake)
             {
-                if (bake.Matches(hull.sharedMesh, source, plates, entry, FaceSubdivisions, out string why))
+                if (bake.Matches(hull.KeyMesh, hull.VertexCount, hull.PartCount, source, plates, entry, FaceSubdivisions, out string why))
                 {
                     ready = FromBake(bake);
                     if (ready != null) return true;
@@ -398,7 +592,7 @@ namespace CosmicShore.Gameplay
             var job = GetOrStartJob(hull, drawn, source, plates, entry);
             if (job.Failure != null)
             {
-                WarnOnce($"job:{hull.name}:{source.name}",
+                WarnOnce($"job:{hull.Name}:{source.name}",
                     $"[CrystalHullFusion] cannot solve {entry.vessel}/{entry.element}: {job.Failure} - the generic capture plays.");
                 return false;
             }
@@ -441,10 +635,10 @@ namespace CosmicShore.Gameplay
             return cached;
         }
 
-        static Job GetOrStartJob(SkinnedMeshRenderer hull, Mesh drawn, Mesh source, int plates,
+        static Job GetOrStartJob(HullRig hull, Mesh drawn, Mesh source, int plates,
                                  CrystalHullFusionConfigSO.Entry entry)
         {
-            var key = (hull.sharedMesh, source, plates);
+            var key = (hull.KeyMesh, hull.VertexCount, source, plates);
             if (s_jobs.TryGetValue(key, out var job)) return job;
 
             job = new Job();
@@ -487,12 +681,12 @@ namespace CosmicShore.Gameplay
             using (s_beginMarker.Auto())
             {
                 var animation = vesselStatus.VesselAnimation;
-                var hull = animation ? FindHullRenderer(animation.transform) : null;
-                if (!hull)
+                var hull = animation ? FindHull(animation.transform) : null;
+                if (hull == null)
                 {
                     WarnOnce($"nohull:{vesselStatus.VesselType}",
-                        $"[CrystalHullFusion] {vesselStatus.VesselType} has no visible SkinnedMeshRenderer " +
-                        "under its VesselAnimation, so there is no hull to fuse onto - the generic capture plays.");
+                        $"[CrystalHullFusion] {vesselStatus.VesselType} has no visible hull mesh under its " +
+                        "VesselAnimation, so there is nothing to fuse onto - the generic capture plays.");
                     return null;
                 }
 
@@ -518,7 +712,7 @@ namespace CosmicShore.Gameplay
                 fusion._solution = ready.Solution;
                 fusion._layout = ready.Solution.Layout;
                 fusion.Adopt(ready.Prototype, renderer);
-                fusion.Plan(crystal, vesselStatus, model.transform);
+                fusion.Plan(crystal, vesselStatus, model.transform, renderer);
 
                 // The crystal is now drawn by the fusion. It stays alive (hidden) so its owner can
                 // retire it when the faces are down - the pickup sound and the cell bookkeeping are its own.
@@ -531,7 +725,7 @@ namespace CosmicShore.Gameplay
                 if (CSDebug.IsVerbose(CSLogChannel.CrystalMorph))
                     CSDebug.LogVerbose(CSLogChannel.CrystalMorph,
                         $"[CrystalHullFusion] {vesselStatus.VesselType}/{entry.element}: '{crystal.name}' " +
-                        $"peeling {fusion._faces.Length} faces onto '{hull.name}' over {entry.TotalSeconds:F2}s " +
+                        $"peeling {fusion._faces.Length} faces onto '{hull.Name}' over {entry.TotalSeconds:F2}s " +
                         $"({(entry.bake && ready.Prototype == entry.bake.TemplateMesh ? "baked" : "runtime-solved")}, " +
                         $"domain colour {(fusion._haveTargetColour ? "read" : "NOT FOUND")}).");
                 return fusion;
@@ -539,8 +733,9 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>Clones the prototype and wears the crystal's own materials and property block,
-        /// which is where <c>Crystal.ApplyColorSetTint</c> paints the collectability colour.</summary>
-        void Adopt(Mesh prototype, MeshRenderer source)
+        /// which is where <c>Crystal.ApplyColorSetTint</c> paints the collectability colour - then
+        /// reads which of the three shader families it is wearing (see the property IDs above).</summary>
+        void Adopt(Mesh prototype, Renderer source)
         {
             _mesh = Instantiate(prototype);
             _mesh.hideFlags = HideFlags.DontSave;
@@ -556,10 +751,27 @@ namespace CosmicShore.Gameplay
             source.GetPropertyBlock(_block);
 
             var material = source.sharedMaterial;
-            bool materialTint = material && material.HasProperty(DullId) && material.HasProperty(BrightId);
-            _hasTint = materialTint || (_block.HasColor(DullId) && _block.HasColor(BrightId));
-            _startDull = _block.HasColor(DullId) ? _block.GetColor(DullId) : materialTint ? material.GetColor(DullId) : Color.white;
-            _startBright = _block.HasColor(BrightId) ? _block.GetColor(BrightId) : materialTint ? material.GetColor(BrightId) : Color.white;
+            bool Has(int id) => material && material.HasProperty(id);
+
+            // The Mass shells' band scales the mesh about the object origin every frame; this object's
+            // origin is the hull, so a live band would fling the faces across the sky. Pin it.
+            if (Has(BandScaleId)) _block.SetFloat(BandScaleId, 0f);
+            if (Has(BandStartId) && Has(BandStopId))
+            {
+                _block.SetFloat(BandStartId, FrozenShepardBand);
+                _block.SetFloat(BandStopId, FrozenShepardBand);
+            }
+
+            bool crystalPair = Has(DullId) && Has(BrightId);
+            bool fresnelPair = !crystalPair && Has(FresnelBrightId) && Has(FresnelDarkId);
+            _tintDullId = fresnelPair ? FresnelDarkId : DullId;
+            _tintBrightId = fresnelPair ? FresnelBrightId : BrightId;
+            _tintHoldsDull = fresnelPair;
+            _hasTint = crystalPair || fresnelPair || (_block.HasColor(DullId) && _block.HasColor(BrightId));
+            _startDull = _block.HasColor(_tintDullId) ? _block.GetColor(_tintDullId) : Has(_tintDullId) ? material.GetColor(_tintDullId) : Color.white;
+            _startBright = _block.HasColor(_tintBrightId) ? _block.GetColor(_tintBrightId) : Has(_tintBrightId) ? material.GetColor(_tintBrightId) : Color.white;
+
+            _opacityId = Has(OpacityId) ? OpacityId : Has(ShepardOpacityId) ? ShepardOpacityId : -1;
             _hasArcIntensity = material && material.HasProperty(ArcIntensityId);
             _hasArcDuty = material && material.HasProperty(ArcDutyId);
             if (_hasArcIntensity) _baseArcIntensity = material.GetFloat(ArcIntensityId);
@@ -568,19 +780,17 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// The per-pickup half: each face's start in the world, and which patch it takes. The
-        /// crystal is read at its COLLECT pose (a host respawn may already have moved it). The hull's
-        /// layout lives in its bind-pose mesh space, which is the renderer's local space.
+        /// crystal is read at its COLLECT pose (a host respawn may already have moved it), and an
+        /// ANIMATED crystal is read at the pose it is holding (<see cref="ReadFacePoses"/>), so a
+        /// block caught mid-flip leaves from where it is. The hull's layout lives in the rig's space.
         /// </summary>
-        void Plan(Crystal crystal, IVesselStatus vesselStatus, Transform model)
+        void Plan(Crystal crystal, IVesselStatus vesselStatus, Transform model, Renderer crystalRenderer)
         {
             var solution = _solution;
             var layout = _layout;
-            Transform hullTransform = _hull.transform;
+            Transform hullTransform = _hull.Space;
 
-            var bones = _hull.bones ?? Array.Empty<Transform>();
-            _bones = new Transform[bones.Length + 1];
-            Array.Copy(bones, _bones, bones.Length);
-            _bones[bones.Length] = hullTransform;
+            _bones = _hull.Bones;
             _boneToWorld = new Matrix4x4[_bones.Length];
 
             Vector3 lossy = hullTransform.lossyScale;
@@ -591,6 +801,11 @@ namespace CosmicShore.Gameplay
             Matrix4x4 crystalWorld = Matrix4x4.TRS(pose.position, pose.rotation, crystal.CollectScale);
             Matrix4x4 modelWorld = crystalWorld * (crystal.transform.worldToLocalMatrix * model.localToWorldMatrix);
 
+            int count = solution.FaceCount;
+            var faceWorld = new Matrix4x4[count];
+            var facePoses = ReadFacePoses(crystalRenderer, solution);
+            for (int i = 0; i < count; i++) faceWorld[i] = facePoses != null ? modelWorld * facePoses[i] : modelWorld;
+
             int vertexCount = solution.Vertices.Length;
             _startPositions = new Vector3[vertexCount];
             _startNormals = new Vector3[vertexCount];
@@ -598,8 +813,9 @@ namespace CosmicShore.Gameplay
             _normals = new Vector3[vertexCount];
             for (int v = 0; v < vertexCount; v++)
             {
-                _startPositions[v] = modelWorld.MultiplyPoint3x4(solution.Vertices[v]);
-                _startNormals[v] = modelWorld.MultiplyVector(solution.Normals[v]).normalized;
+                Matrix4x4 m = faceWorld[solution.VertexPanel[v]];
+                _startPositions[v] = m.MultiplyPoint3x4(solution.Vertices[v]);
+                _startNormals[v] = m.MultiplyVector(solution.Normals[v]).normalized;
             }
 
             Vector3 crystalCentre = modelWorld.MultiplyPoint3x4(solution.CrystalCentre);
@@ -610,7 +826,6 @@ namespace CosmicShore.Gameplay
             Vector3 pole = Vector3.Scale(hullTransform.InverseTransformPoint(crystalCentre) - layout.HullCentre, layout.InvExtents);
             pole = pole.sqrMagnitude > 1e-10f ? pole.normalized : Vector3.up;
 
-            int count = solution.FaceCount;
             int perFace = solution.PointsPerFace;
             _faces = new Face[count];
             _pointStart = new Vector3[count * perFace];
@@ -621,17 +836,20 @@ namespace CosmicShore.Gameplay
             float bestDelay = float.MaxValue;
             for (int i = 0; i < count; i++)
             {
+                // The radial is the block's SLOT - a flipping block turns about its own centre and
+                // stays on it - so it is read through the model, not through the block's pose.
                 Vector3 radial = modelWorld.MultiplyVector(solution.FaceRadial[i]).normalized;
                 Vector3 radialHull = hullTransform.InverseTransformDirection(radial).normalized;
                 Vector3 wrap = CrystalHullFusionGeometry.WrapDirection(radialHull, pole);
                 for (int k = 0; k < count; k++) cost[i, k] = 1f - Vector3.Dot(wrap, layout.PatchDirection[k]);
 
+                Matrix4x4 m = faceWorld[i];
                 Vector3 centroid = solution.FaceCentroid[i];
                 _faces[i] = new Face
                 {
                     Lift = radial * (crystalRadius * _entry.peelDistance),
-                    StartCentroid = modelWorld.MultiplyPoint3x4(centroid),
-                    StartNormal = modelWorld.MultiplyVector(solution.FaceNormal[i]).normalized,
+                    StartCentroid = m.MultiplyPoint3x4(centroid),
+                    StartNormal = m.MultiplyVector(solution.FaceNormal[i]).normalized,
                     // The face nearest the hull lands first; the far side closes last.
                     Delay01 = 0.5f * (1f + Vector3.Dot(radialHull, pole)),
                 };
@@ -640,7 +858,7 @@ namespace CosmicShore.Gameplay
                 for (int k = 0; k < perFace; k++)
                 {
                     Vector2 q = solution.FacePoints[i * perFace + k];
-                    _pointStart[i * perFace + k] = modelWorld.MultiplyPoint3x4(
+                    _pointStart[i * perFace + k] = m.MultiplyPoint3x4(
                         centroid + solution.FaceAxisU[i] * q.x + solution.FaceAxisV[i] * q.y);
                 }
             }
@@ -652,11 +870,148 @@ namespace CosmicShore.Gameplay
                 && crystal.TryGetDomainCrystalColors(vesselStatus.Domain, out _targetBright, out _targetDull);
         }
 
+        /// <summary>A skinned crystal's anchor corners, read once per (mesh, solution): each
+        /// anchor's rest position, its blend-shape deltas and its bone weights.</summary>
+        sealed class AnchorSkin
+        {
+            public int[] Shapes;            // blend shapes that move any anchor
+            public float[] ShapeFullWeight; // each shape's last frame weight (100 for an FBX key)
+            public Vector3[][] ShapeDelta;  // per shape, per anchor
+            public BoneWeight[] Weights;    // per anchor; null = not bone-skinned
+            public Matrix4x4[] BindPoses;
+        }
+
+        static readonly Dictionary<(Mesh, CrystalHullFusionGeometry.FusionSolution), AnchorSkin> s_anchorSkins = new();
+
+        /// <summary>
+        /// Per face, the rigid map from its rest pose to the pose a SKINNED crystal is holding right
+        /// now (mesh space), read off the face's three anchor corners. Only the anchors are skinned -
+        /// blend shapes (the Space crystal's spin) and bones (the Time crystal's flip wave) exactly as
+        /// the renderer would - so this is a few dozen vertices per pickup, and exact rather than
+        /// measured. Null - every face at rest - for a static crystal (charge, mass) or an unreadable mesh.
+        /// </summary>
+        static Matrix4x4[] ReadFacePoses(Renderer renderer, CrystalHullFusionGeometry.FusionSolution solution)
+        {
+            if (renderer is not SkinnedMeshRenderer skinned || solution.FaceAnchor == null) return null;
+            const int per = CrystalHullFusionGeometry.AnchorsPerFace;
+            var anchors = solution.FaceAnchor;
+            var rest = solution.FaceAnchorRest;
+            if (rest == null || rest.Length != anchors.Length || anchors.Length != solution.FaceCount * per) return null;
+
+            var mesh = skinned.sharedMesh;
+            var skin = GetAnchorSkin(mesh, solution);
+            if (skin == null) return null;
+
+            var live = new Vector3[anchors.Length];
+            for (int a = 0; a < anchors.Length; a++) live[a] = rest[a];
+            for (int s = 0; s < skin.Shapes.Length; s++)
+            {
+                float w = skinned.GetBlendShapeWeight(skin.Shapes[s]) / skin.ShapeFullWeight[s];
+                if (Mathf.Approximately(w, 0f)) continue;
+                var delta = skin.ShapeDelta[s];
+                for (int a = 0; a < anchors.Length; a++) live[a] += delta[a] * w;
+            }
+
+            var bones = skinned.bones;
+            if (skin.Weights != null && bones is { Length: > 0 })
+            {
+                // Mesh space at bind is the renderer's local space, so the skinned point is brought
+                // back into it through the renderer: at rest this is the identity.
+                Matrix4x4 toLocal = skinned.transform.worldToLocalMatrix;
+                for (int a = 0; a < anchors.Length; a++)
+                {
+                    var bw = skin.Weights[a];
+                    Vector3 p = live[a];
+                    Vector3 world = Skin(bw.boneIndex0, bw.weight0) + Skin(bw.boneIndex1, bw.weight1)
+                                  + Skin(bw.boneIndex2, bw.weight2) + Skin(bw.boneIndex3, bw.weight3);
+                    float total = bw.weight0 + bw.weight1 + bw.weight2 + bw.weight3;
+                    if (total > 1e-6f) live[a] = toLocal.MultiplyPoint3x4(world / total);
+
+                    Vector3 Skin(int bone, float weight) =>
+                        weight > 0f && bone >= 0 && bone < bones.Length && bone < skin.BindPoses.Length && bones[bone]
+                            ? (bones[bone].localToWorldMatrix * skin.BindPoses[bone]).MultiplyPoint3x4(p) * weight
+                            : Vector3.zero;
+                }
+            }
+
+            var poses = new Matrix4x4[solution.FaceCount];
+            for (int f = 0; f < solution.FaceCount; f++)
+            {
+                int o = f * per;
+                poses[f] = CrystalHullFusionGeometry.AnchorMap(rest[o], rest[o + 1], rest[o + 2], live[o], live[o + 1], live[o + 2]);
+            }
+            return poses;
+        }
+
+        static AnchorSkin GetAnchorSkin(Mesh mesh, CrystalHullFusionGeometry.FusionSolution solution)
+        {
+            if (!mesh) return null;
+            var key = (mesh, solution);
+            if (s_anchorSkins.TryGetValue(key, out var skin)) return skin;
+            s_anchorSkins[key] = null;
+            if (!mesh.isReadable)
+            {
+                WarnOnce($"anchors:{mesh.name}",
+                    $"[CrystalHullFusion] '{mesh.name}' is not CPU-readable, so its faces leave from their REST " +
+                    "pose rather than the pose the crystal is holding - enable Read/Write on its model importer.");
+                return null;
+            }
+
+            var anchors = solution.FaceAnchor;
+            foreach (int a in anchors)
+                if (a < 0 || a >= mesh.vertexCount) return null;
+
+            var shapes = new List<int>();
+            var fullWeights = new List<float>();
+            var deltas = new List<Vector3[]>();
+            var frame = new Vector3[mesh.vertexCount];
+            for (int s = 0; s < mesh.blendShapeCount; s++)
+            {
+                int last = mesh.GetBlendShapeFrameCount(s) - 1;
+                if (last < 0) continue;
+                mesh.GetBlendShapeFrameVertices(s, last, frame, null, null);
+                var perAnchor = new Vector3[anchors.Length];
+                bool moves = false;
+                for (int a = 0; a < anchors.Length; a++)
+                {
+                    perAnchor[a] = frame[anchors[a]];
+                    moves |= perAnchor[a].sqrMagnitude > 0f;
+                }
+                if (!moves) continue;
+                shapes.Add(s);
+                fullWeights.Add(Mathf.Max(1e-4f, mesh.GetBlendShapeFrameWeight(s, last)));
+                deltas.Add(perAnchor);
+            }
+
+            BoneWeight[] weights = null;
+            var bindPoses = mesh.bindposes;
+            if (bindPoses is { Length: > 0 })
+            {
+                var all = mesh.boneWeights;
+                if (all.Length == mesh.vertexCount)
+                {
+                    weights = new BoneWeight[anchors.Length];
+                    for (int a = 0; a < anchors.Length; a++) weights[a] = all[anchors[a]];
+                }
+            }
+
+            skin = new AnchorSkin
+            {
+                Shapes = shapes.ToArray(),
+                ShapeFullWeight = fullWeights.ToArray(),
+                ShapeDelta = deltas.ToArray(),
+                Weights = weights,
+                BindPoses = bindPoses,
+            };
+            s_anchorSkins[key] = skin;
+            return skin;
+        }
+
         // ══ Per frame ═════════════════════════════════════════════════════════════════════════
 
         void LateUpdate()
         {
-            if (!_hull || _faces == null) { Destroy(gameObject); return; }
+            if (_hull == null || !_hull.Space || _faces == null) { Destroy(gameObject); return; }
 
             float elapsed = Time.time - _startTime;
             var phase = _entry.Resolve(elapsed, out float u);
@@ -664,7 +1019,7 @@ namespace CosmicShore.Gameplay
 
             using (s_frameMarker.Auto())
             {
-                Vector3 anchor = _hull.transform.position;
+                Vector3 anchor = _hull.Space.position;
                 transform.SetPositionAndRotation(anchor, Quaternion.identity);
                 transform.localScale = Vector3.one;
 
@@ -688,9 +1043,12 @@ namespace CosmicShore.Gameplay
             var e = _entry;
             var layout = _layout;
             int perFace = layout.PointsPerPatch;
-            float sink = phase == CrystalHullFusionConfigSO.Phase.Dissolve
+            bool dissolving = phase == CrystalHullFusionConfigSO.Phase.Dissolve;
+            float sink = dissolving
                 ? e.sinkDepth * layout.PatchRadius * _hullScale * CrystalHullFusionConfigSO.EaseIn(u)
                 : 0f;
+            // An opaque shader has nothing to fade, so its faces dissolve by drawing in to nothing.
+            float shrink = dissolving && _opacityId < 0 ? CrystalHullFusionConfigSO.EaseIn(u) : 0f;
 
             for (int i = 0; i < _faces.Length; i++)
             {
@@ -729,6 +1087,12 @@ namespace CosmicShore.Gameplay
                     centroid += _pointPosition[p];
                 }
                 face.Centroid = centroid / Mathf.Max(1, perFace);
+                if (shrink > 0f)
+                    for (int k = 0; k < perFace; k++)
+                    {
+                        int p = i * perFace + k;
+                        _pointPosition[p] = Vector3.LerpUnclamped(_pointPosition[p], face.Centroid, shrink);
+                    }
             }
         }
 
@@ -806,17 +1170,18 @@ namespace CosmicShore.Gameplay
                 Color dull = _startDull, bright = _startBright;
                 if (_haveTargetColour)
                 {
-                    dull = Color.Lerp(dull, _targetDull, converge);
+                    if (!_tintHoldsDull) dull = Color.Lerp(dull, _targetDull, converge);
                     bright = Color.Lerp(bright, _targetBright, converge);
                 }
-                _block.SetColor(DullId, dull.ScaleRGB(flare));
-                _block.SetColor(BrightId, bright.ScaleRGB(flare));
+                // A fresnel crystal's dark body is what gives its rim contrast; only the rim flares.
+                _block.SetColor(_tintDullId, _tintHoldsDull ? dull : dull.ScaleRGB(flare));
+                _block.SetColor(_tintBrightId, bright.ScaleRGB(flare));
             }
             if (_hasArcIntensity)
                 _block.SetFloat(ArcIntensityId, _baseArcIntensity * Mathf.Lerp(1f, e.arcBoost, discharge));
             if (_hasArcDuty)
                 _block.SetFloat(ArcDutyId, Mathf.Lerp(_baseArcDuty, e.mateArcDuty, discharge));
-            _block.SetFloat(OpacityId, opacity);
+            if (_opacityId >= 0) _block.SetFloat(_opacityId, opacity);
             _renderer.SetPropertyBlock(_block);
         }
 

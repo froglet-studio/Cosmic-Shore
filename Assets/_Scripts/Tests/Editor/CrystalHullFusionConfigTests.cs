@@ -8,7 +8,7 @@ namespace CosmicShore.Tests
     /// <summary>
     /// The beat sequence and the shipped opt-in of a crystal fusing onto a hull
     /// (CRYSTAL_HULL_FUSION.md): the pickup sound must wait for the faces to be down, slow motion
-    /// must slow every beat alike and never ship, and only the pair under test may fuse.
+    /// must slow every beat alike and never ship, and every hull with a model fuses every element.
     /// </summary>
     public class CrystalHullFusionConfigTests
     {
@@ -66,14 +66,34 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void ShippedConfig_FusesChargeOntoTheSquirrel()
+        public void ShippedConfig_FusesEveryElementOntoEveryHull_OnceEach()
         {
             var config = Resources.Load<CrystalHullFusionConfigSO>(CrystalHullFusionConfigSO.ResourcePath);
             Assert.IsNotNull(config, "Resources/CrystalHullFusionConfig is the opt-in - without it nothing fuses");
-            Assert.IsTrue(config.TryGet(VesselClassType.Squirrel, Element.Charge, out var entry));
-            Assert.Greater(entry.TotalSeconds, 0f);
-            Assert.IsFalse(config.TryGet(VesselClassType.Squirrel, Element.Mass, out _),
-                "only the pair under test fuses; every other pickup keeps the generic capture");
+
+            var elements = new[] { Element.Charge, Element.Mass, Element.Space, Element.Time };
+            foreach (VesselClassType vessel in System.Enum.GetValues(typeof(VesselClassType)))
+            {
+                if (vessel is VesselClassType.Any or VesselClassType.Random) continue;
+                foreach (var element in elements)
+                {
+                    bool listed = config.TryGet(vessel, element, out var entry);
+                    // The Butterfly's hull mesh is generated at runtime: there is no asset to solve
+                    // against, so it keeps the generic capture (CRYSTAL_HULL_FUSION.md §12).
+                    if (vessel == VesselClassType.Butterfly)
+                        Assert.IsFalse(listed, "the Butterfly has no hull asset to fuse onto");
+                    else
+                    {
+                        Assert.IsTrue(listed, $"{vessel} x {element} has no fusion");
+                        Assert.Greater(entry.TotalSeconds, 0f);
+                    }
+                }
+            }
+
+            var seen = new System.Collections.Generic.HashSet<(VesselClassType, Element)>();
+            foreach (var entry in config.Entries)
+                Assert.IsTrue(seen.Add((entry.vessel, entry.element)),
+                    $"{entry.vessel} x {entry.element} is listed twice - only the first would ever play");
         }
     }
 }
