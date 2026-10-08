@@ -31,6 +31,7 @@ from .structures import Flora, SnapTraps, Fortress, Physarum
 DEFAULT = dict(
     N0=60000.0,
     n_plants=150, plant_cap=40, flora_r=0.03, N_half=20000.0, shield_frac=0.12,
+    flora_seed_frac=0.6, flora_recruit=0.0, flora_N_ref=60000.0,
     grazer_n=900, locust_n=250, pack_n=24, thief_n=60, lurker_n=20,
     grazer_cap=2600, locust_cap=1200, pack_cap=40, thief_cap=220, lurker_cap=40,
     pack_metab=0.04, pack_attack=6.0e-4,
@@ -54,10 +55,11 @@ class Cell:
         w = self.w = World(seed=seed, N0=cfg["N0"])
         w.bug = bug
         self.flora = Flora(w, n_plants=cfg["n_plants"], cap=cfg["plant_cap"], r=cfg["flora_r"], N_half=cfg["N_half"],
-                           shield_frac=cfg["shield_frac"])
+                           shield_frac=cfg["shield_frac"], seed_frac=cfg["flora_seed_frac"],
+                           recruit=cfg["flora_recruit"], N_ref=cfg["flora_N_ref"])
         self.guilds = {}
         for name in cfg["species"]:
-            g = SPECIES[name](w, dict(cap=cfg[f"{name}_cap"]))
+            g = SPECIES[name](w, dict(cap=cfg[f"{name}_cap"], capacity=max(SPECIES[name].capacity, cfg[f"{name}_cap"] + 20)))
             self.guilds[name] = g
         if "pack" in self.guilds:
             self.guilds["pack"].metab = cfg["pack_metab"]; self.guilds["pack"].a_attack = cfg["pack_attack"]

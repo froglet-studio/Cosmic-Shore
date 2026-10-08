@@ -31,6 +31,14 @@ from .world import K_HERB, FLORA, TRAIL, SKEL, HOARD, K_GRAZE, K_LOCUST, flock_t
 SQ2 = math.sqrt(2.0)
 
 
+def count_within(P, Q, r):
+    """How many points of Q lie within r of each point of P (packs x prey: both small in micro)."""
+    if len(P) == 0 or len(Q) == 0:
+        return np.zeros(len(P), np.int64)
+    d2 = ((P[:, None, :] - Q[None, :, :]) ** 2).sum(-1)
+    return (d2 < r * r).sum(1)
+
+
 def unit(v):
     n = np.linalg.norm(v, axis=-1, keepdims=True)
     return v / np.maximum(n, 1e-9)
@@ -621,16 +629,34 @@ class Pack(Guild):
     predator = True; prey_names = ("grazer", "locust", "thief")
     a_attack, h_handle = 6.0e-4, 40.0
     hunt_below = 0.6; catch_r = 10.0; prey_sense = 300.0
+    hunt_prey_below = 0.0
+    handle_micro = 0.0
+    search_nb = False
     hunger_gate = True     # a pack stalks a PILOT only while hungry and with no prey in range (iteration 1)
+    switch_ref = 0.0       # >0: Holling III. Macro: rate x Np/(Np+switch_ref). Micro: a hunter commits to a chase
+                           # only with >= switch_ref/4 prey inside prey_sense (round 2; 0 = off, the R8 cell)
 
     def extra_init(self):
         C = self.capacity
         self.stamina = np.full(C, 3.0); self.cool = np.zeros(C); self.closure = np.zeros(C)
         self.weave = self.w.rng.uniform(0, 6.28, C); self.strikes = 0; self.prey_kills = 0
         self.heading = np.zeros((C, 3)); self.mode = np.zeros(C, np.int8); self.stalking = np.zeros(C, bool)
+        self.handle = np.zeros(C)
 
     def on_spawn(self, idx, from_macro=False):
-        self.stamina[idx] = 3.0; self.cool[idx] = 0.0
+        self.stamina[idx] = 3.0; self.cool[idx] = 0.0; self.handle[idx] = 0.0
+
+    eff = 1.0      # round 2: the share of a kill the pack eats; the rest stays as a CARCASS (skeleton prism)
+
+    def carcass(self, v, at):
+        """A kill of volume v: the pack keeps eff * v, the remainder is left where the prey died as carrion
+        (a SKEL prism - scavengers' food). Conserved: nothing is lost."""
+        if self.eff >= 1.0 or v <= 0:
+            return v
+        keep = self.eff * v
+        self.w.add(np.asarray(at, float).copy(), v - keep, 0, SKEL)
+        self.carrion = getattr(self, "carrion", 0.0) + (v - keep)
+        return keep
 
     def hop_weight(self, r, q, food, guilds):
         tot_r = sum(g.cnt[r] for g in guilds.values() if g.name in self.prey_names)
@@ -643,6 +669,15 @@ class Pack(Guild):
         des = np.zeros_like(P)
         # --- prey: hungry hunters chase the nearest prey agent
         hungry = self.st[idx] < self.hunt_below * self.e_max
+        # round 2: a hunter keeps hunting PREY up to hunt_prey_below (>= e_birth / e_max, so a fed pack can
+        # breed); pilots are still stalked only below hunt_below. Default = hunt_below (the R8 cell).
+        hp = self.hunt_prey_below if self.hunt_prey_below > 0 else self.hunt_below
+        hungry_prey = self.st[idx] < hp * self.e_max
+        # round 2: HANDLING TIME in micro (the macro level's h_handle): a pack that just killed stays on the
+        # carcass, eating, for handle_micro s - neither hunting nor stalking. 0 = off (the R8 cell).
+        self.handle[idx] = np.maximum(0.0, self.handle[idx] - dt)
+        eating = self.handle[idx] > 0
+        hungry = hungry & ~eating; hungry_prey = hungry_prey & ~eating
         preyP, preyRef = [], []
         for g in w.guild_list:
             if g.name in self.prey_names:
@@ -651,9 +686,12 @@ class Pack(Guild):
         self.prey_near = np.zeros(n, bool)
         preyP = np.concatenate(preyP) if preyP else np.zeros((0, 3))
         chase = np.zeros(n, bool); self.prey_near = np.zeros(n, bool); self._dprey = np.full(n, np.inf)
-        if len(preyP) and hungry.any():
+        if len(preyP) and hungry_prey.any():
             j, dj = nearest_point(P, preyP, self.prey_sense)
-            chase = hungry & (j >= 0); self.prey_near = j >= 0; self._dprey = dj
+            chase = hungry_prey & (j >= 0); self.prey_near = j >= 0; self._dprey = dj
+            if self.switch_ref > 0:
+                dens = count_within(P, preyP, self.prey_sense)
+                chase &= dens >= self.switch_ref / 4.0
             # a pack goes for whichever is nearer: the prey, or a pilot (iter 5: grazers crowd every pilot)
             dp0, _ = w.dist_to_pilots(P)
             chase &= ~(dp0 < dj)
@@ -662,7 +700,8 @@ class Pack(Guild):
                 g, i = preyRef[j[kk]]
                 if g.alive[i]:
                     v = g.kill_agent(i, by="predator", to=self)
-                    self.st[idx[kk]] += v; self.prey_kills += 1
+                    self.st[idx[kk]] += self.carcass(v, preyP[j[kk]]); self.prey_kills += 1
+                    self.handle[idx[kk]] = self.handle_micro
         # --- pilots: the encirclement (B's pack, unchanged rule) for hunters not chasing prey
         dp, k = w.dist_to_pilots(P)
         if len(w.pilots):
@@ -708,6 +747,7 @@ class Pack(Guild):
             near = d < 250
             cen = np.where(near.any(1)[:, None], (near[:, :, None] * P[None]).sum(1) / np.maximum(near.sum(1, keepdims=True), 1), P)
             des[roam] = unit(cen[roam] - P[roam] + w.rng.normal(0, 40, (roam.sum(), 3))) * 40.0
+        des[eating] = 0.0                       # on the carcass
         des += flock_terms(P, V, 30.0, 30.0, 30.0)[3] * 60
         self.cool[idx] = np.maximum(0, self.cool[idx] - dt)
         V = steer(V, des, 260.0, dt)
@@ -720,28 +760,39 @@ class Pack(Guild):
         for r in rs:
             c = int(self.cnt[r])
             m = self.S[r] / c
-            if m > self.hunt_below * self.e_max:
+            hp = self.hunt_prey_below if self.hunt_prey_below > 0 else self.hunt_below
+            if m > hp * self.e_max:
                 continue
-            prey = [g for g in guilds.values() if g.name in self.prey_names and g.cnt[r] > 0 and not g.hot[r]]
-            Np = sum(int(g.cnt[r]) for g in prey)
+            # round 2: a hunting pack searches its prey_sense (~300 u), i.e. its region AND the six around it
+            # (search_nb); round 1 only saw its own 200-u region and almost never met prey (macro kills ~0)
+            regs = [r] + (list(w.rnb[r]) if self.search_nb else [])
+            prey = [(g, q) for q in regs for g in guilds.values()
+                    if g.name in self.prey_names and g.cnt[q] > 0 and not g.hot[q]]
+            Np = sum(int(g.cnt[q]) for g, q in prey)
             if Np == 0:
                 continue
             rate = self.a_attack * Np * c / (1.0 + self.a_attack * self.h_handle * Np)
+            if self.switch_ref > 0:
+                # Holling III (round 2): attack efficiency falls when prey is scarce - the hunter switches to
+                # searching / resting instead of grinding the last prey of a region to zero (a prey refuge).
+                # The micro rule counts prey in a prey_sense sphere; the searched regions hold vol/sphere of that.
+                rate *= Np / (Np + self.switch_ref * len(regs) * w.L ** 3 / (4.0 / 3.0 * math.pi * self.prey_sense ** 3))
             kills = min(Np, w.rng.poisson(rate * dt))
             for _ in range(kills):
-                cw = np.array([g.cnt[r] for g in prey], float)
-                g = prey[w.rng.choice(len(prey), p=cw / cw.sum())]
-                if g.cnt[r] == 0:
-                    continue
-                gm = g.S[r] / g.cnt[r]; gm2 = g.S2[r] / g.cnt[r]
-                g.cnt[r] -= 1; g.S[r] -= gm; g.S2[r] -= gm2
-                if g.cnt[r] == 0:
-                    gm += g.S[r]; g.S[r] = 0.0; g.S2[r] = 0.0
+                cw = np.array([g.cnt[q] for g, q in prey], float)
+                if cw.sum() <= 0:
+                    break
+                g, q = prey[w.rng.choice(len(prey), p=cw / cw.sum())]
+                gm = g.S[q] / g.cnt[q]; gm2 = g.S2[q] / g.cnt[q]
+                g.cnt[q] -= 1; g.S[q] -= gm; g.S2[q] -= gm2
+                if g.cnt[q] == 0:
+                    gm += g.S[q]; g.S[q] = 0.0; g.S2[q] = 0.0
                 g.killed += 1; w.crystals += 1
                 v = g.body + max(gm, 0.0)
+                v = self.carcass(v, w.rcen_all[q] + w.rng.uniform(-0.5, 0.5, 3) * w.L)
                 gg = v / self.cnt[r]
                 self.S2[r] += 2 * gg * self.S[r] + self.cnt[r] * gg * gg; self.S[r] += v
-                self.prey_kills += 1
+                self.prey_kills += 1; self.macro_kills = getattr(self, "macro_kills", 0) + 1
         self.macro_tail(rs, dt)
         self.macro_hops(rs, dt, food, guilds)
 
@@ -768,6 +819,8 @@ class Thief(Guild):
     size = 2.2; color = (0.75, 0.75, 1.0); threat = True
     diet = (1 << FLORA) | (1 << SKEL)    # nectar + scavenging (round 1 of iteration: nectar alone starved them)
     leash = 900.0                         # territory: a thief never tails a ship beyond this from its nest (iter 3)
+    hoard_target = 0; hoard_r = 120.0      # round 2: raid only while the nest holds < hoard_target hoard prisms
+    feed_fix = False                      # round 2: starving thieves go home; the larder feeds a thief to e_max
 
     def extra_init(self):
         C = self.capacity
@@ -827,7 +880,13 @@ class Thief(Guild):
         for kk in np.flatnonzero(far & (tc >= 0)):
             w.excl[tc[kk]] = 0; self.tclaim[idx[kk]] = -1
         tc = self.tclaim[idx]
-        look = free[(tc[free] < 0) & (dp[free] < 700) & ~far[free]]
+        # round 2: a magpie raids only while its nest's hoard is short (hoard_target prisms; 0 = always)
+        if self.hoard_target > 0 and len(self.nests):
+            stock = np.array([len(w.within(q, self.hoard_r, 1 << HOARD)) for q in self.nests])
+            want = stock[self.nest_of[idx]] < self.hoard_target
+        else:
+            want = np.ones(len(idx), bool)
+        look = free[(tc[free] < 0) & (dp[free] < 700) & ~far[free] & want[free]]
         if len(look):
             got = w.nearest(P[look], 400.0, 1 << TRAIL, tmin=w.t - 1.5)
             for kk, j in zip(look, got):
@@ -844,20 +903,33 @@ class Thief(Guild):
                 w.dom[j] = 1; self.carry[i] = j; self.tclaim[i] = -1
                 self.steals += 1; self.stolen_vol += w.vol[j]
                 w.hit(int(k[kk]), self.name, "steal", float(w.vol[j]))
-        tail = free[(tc[free] < 0) & (dp[free] < 700) & ~far[free]]
+        # round 2: a STARVING thief stops tailing and goes home to its larder (before: it tailed a nearby pilot
+        # until it starved, and only ever ate at the nest while under 40% of e_birth, so it never bred)
+        starving = (self.st[idx] < 0.4 * self.e_birth) if self.feed_fix else np.zeros(len(idx), bool)
+        tail = free[(tc[free] < 0) & (dp[free] < 700) & ~far[free] & ~starving[free] & want[free]]
         if len(tail) and len(w.pilots):
             PPv = w.pilot_pos(); PVv = np.array([p.vel for p in w.pilots])
             des[tail] = unit(PPv[k[tail]] - unit(PVv[k[tail]]) * 70.0 - P[tail]) * 150.0
-        home_ = free[(tc[free] < 0) & ((dp[free] >= 700) | far[free])]
+        home_ = free[(tc[free] < 0) & ((dp[free] >= 700) | far[free] | starving[free] | ~want[free])]
         if len(home_):
             hv = nest[home_] - P[home_]
             hungry = self.st[idx[home_]] < 0.4 * self.e_birth
-            graze = has[home_] & ~hungry
+            if self.feed_fix:
+                # go home while the larder has food; graze on the way / when it is empty
+                hl = np.array([len(w.within(nest[kk], 60.0, 1 << HOARD)) > 0 for kk in home_], bool) if hungry.any() else np.zeros(len(home_), bool)
+                graze = has[home_] & ~(hungry & hl)
+                hungry = hungry | ((self.st[idx[home_]] < self.e_max - 3.0) & (np.linalg.norm(hv, axis=1) < 30))
+            else:
+                graze = has[home_] & ~hungry
             des[home_] = np.where(graze[:, None], unit(0.5 * food[home_] + 0.02 * hv + 0.3 * w.rng.normal(size=hv.shape)) * 30.0,
                                   unit(hv + w.rng.normal(0, 30, hv.shape)) * 30.0)
             # larder: a hungry thief at the nest eats one hoard prism
             for kk in home_[hungry & (np.linalg.norm(hv, axis=1) < 30)]:
                 i = idx[kk]
+                if self.feed_fix:
+                    if self.chew[i] > 0:
+                        continue
+                    self.chew[i] = 3.0 / self.imax         # one 3-vol hoard prism per 12 s = imax
                 h = w.within(nest[kk], 60.0, 1 << HOARD)
                 h = h[w.excl[h] == 0] if len(h) else h
                 if len(h):
@@ -915,6 +987,8 @@ class Lurker(Guild):
     size = 4.0; color = (0.75, 1.0, 0.45); threat = True
     predator = True; prey_names = ("grazer", "locust")
     a_attack, h_handle = 1.5e-4, 20.0
+    switch_ref = 0.0
+    search_nb = False        # an ambusher eats only what walks into ITS region
     creep_r = 350.0          # creep toward a pilot's line only at ambush range (B used 600 in a 450-u grove; iter 3)
 
     def extra_init(self):
@@ -1008,7 +1082,10 @@ class Lurker(Guild):
         return (self.lunge[idx] <= 0) & (self.gape[idx] <= 0)
 
     macro_step = Pack.macro_step
+    eff = 1.0
+    carcass = Pack.carcass
     hunt_below = 0.8
+    hunt_prey_below = 0.0
 
     def threat_agents(self):
         a = np.flatnonzero(self.alive)

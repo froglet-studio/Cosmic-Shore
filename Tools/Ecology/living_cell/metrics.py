@@ -50,7 +50,7 @@ class EcoRecorder:
         b = cell.biomass()
         self.rows.append(dict(t=round(w.t, 1), census=cell.census(), bio={k: round(v, 1) for k, v in b.items()},
                               N=round(w.N, 1), prisms=int(w.alive[:w.n].sum()), audit=float(w.audit()),
-                              hits=len(w.events), crystals=w.crystals))
+                              hits=len(w.events), crystals=w.crystals, plants=int(cell.flora.n), laid=round(w.laid, 1)))
 
 
 def shannon(shares):
@@ -88,7 +88,8 @@ def eco_metrics(rows, cell, burn=300.0):
         ch.append(abs(flo[a + step] - flo[a]) / max(flo[a], 1.0))
         frozen.append(max(ch) < 0.01)
     freeze = float(np.mean(frozen)) if frozen else 1.0
-    cap = cell.cfg["n_plants"] * cell.cfg["plant_cap"] * 8.0
+    # saturation against the plants that exist at each sample (round 2: recruitment adds plants)
+    cap = np.array([r.get("plants", cell.cfg["n_plants"]) for r in R], float) * cell.cfg["plant_cap"] * 8.0
     flora_sat = float(np.mean(flo >= 0.95 * cap))
     # breathing: the flora and the grazer+locust totals' number of 10%-reversals (peaks and troughs)
     def reversals(x, frac=0.1):
@@ -107,6 +108,19 @@ def eco_metrics(rows, cell, burn=300.0):
         return n
     herb = C.get("grazer", 0) + C.get("locust", 0)
     audit = max(abs(r["audit"]) for r in rows)
+    # round 9: is a CAP doing the work? fraction of samples each guild spends within 5% of its cap
+    capf = {}
+    for n in ("grazer", "locust", "pack", "thief", "lurker"):
+        if n in C and n in cell.guilds:
+            capf[n] = round(float(np.mean(C[n] >= 0.95 * cell.guilds[n].cap)), 3)
+    # round 9: does the soil level off? N's slope over the last half of the run vs the pilots' trail input
+    half = [r for r in rows if r["t"] >= rows[-1]["t"] / 2] or rows
+    span = max(half[-1]["t"] - half[0]["t"], 1.0)
+    n_slope = (half[-1]["N"] - half[0]["N"]) / span
+    lay = (half[-1].get("laid", 0.0) - half[0].get("laid", 0.0)) / span
+    n_level = dict(slope_vol_s=round(float(n_slope), 2), trail_in_vol_s=round(float(lay), 2),
+                   frac_of_input=round(float(n_slope / lay), 3) if lay > 0 else None,
+                   N_end=round(float(rows[-1]["N"])), plants_end=rows[-1].get("plants"))
     return dict(
         shannon_mean=round(float(H.mean()), 3), shannon_min=round(float(H.min()), 3),
         shannon_max_possible=round(math.log(len(names)), 3),
@@ -115,6 +129,7 @@ def eco_metrics(rows, cell, burn=300.0):
         reversals=dict(flora=reversals(flo), herbivores=reversals(np.asarray(herb, float)) if np.ndim(herb) else 0,
                        pack=reversals(C["pack"]) if "pack" in C else 0),
         audit_max=float(audit), shield_eaten=int(cell.w.shield_eaten),
+        cap_frac=capf, soil=n_level,
         final_census=R[-1]["census"], final_bio=R[-1]["bio"],
         biomass_share_mean={n: round(float(B[:, i].mean() / B.sum(1).mean()), 3) for i, n in enumerate(names)},
     )

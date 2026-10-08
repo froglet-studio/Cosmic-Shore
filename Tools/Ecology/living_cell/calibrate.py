@@ -23,8 +23,11 @@ import numpy as np
 from .cell import Cell
 from .run import RES, save
 
-DIALS = [("grazer.F_half", 250.0), ("locust.F_half", 250.0), ("thief.F_half", 300.0),
-         ("pack.a_attack", 6.0e-4), ("lurker.a_attack", 1.5e-4),
+# Round 2: thieves are NOT fitted. The calibration runs have no pilots, so the micro thieves lose their real food
+# (stolen trail) and starve; fitting the macro thief to that taught it to starve (thief.F_half 1200 in round 1,
+# 9600 in the first round-2 fit). Thieves keep their hand-set F_half (300).
+SKIP = ("thief",)
+DIALS = [("grazer.F_half", 250.0), ("locust.F_half", 250.0), ("pack.a_attack", 6.0e-4), ("lurker.a_attack", 1.5e-4),
          ("grazer.hop", 0.003), ("locust.hop", 0.006), ("pack.hop", 0.004)]
 
 
@@ -47,16 +50,18 @@ def error(micro, cfg, minutes, seeds):
         mac = p.map(macro_traj, [(s, cfg, minutes) for s in seeds])
     err = []
     for sp in micro[0][0]:
+        if sp in SKIP:
+            continue
         for k in range(1, len(micro[0])):
             mi = np.mean([m[k][sp] for m in micro]); ma = np.mean([m[k][sp] for m in mac])
             err.append(abs(math.log((ma + 5) / (mi + 5))))
     return float(np.mean(err)), mac
 
 
-def main(cfg_name="CONS"):
+def main(cfg_name="CONS", cons_file="consistency.json", out_file="calibrate.json"):
     from . import rounds
     base = dict(getattr(rounds, cfg_name))
-    cons = json.load(open(os.path.join(RES, "consistency.json")))
+    cons = json.load(open(os.path.join(RES, cons_file)))
     micro_runs = [x for x in cons["runs"] if x["mode"] == "micro"]
     seeds = [x["seed"] for x in micro_runs]
     minutes = len(micro_runs[0]["rows"]) * 0.5
@@ -85,10 +90,10 @@ def main(cfg_name="CONS"):
         gap[sp] = dict(micro_end=round(float(mi), 1), macro_end=round(float(ma), 1), rel=round(float(abs(ma - mi) / max(mi, 1)), 3))
     out = dict(cfg=cfg_name, fitted={k: float(v) for k, v in cur.items()}, err_start=log[0]["err"], err_end=round(best, 4),
                gap_end=gap, log=log)
-    save("calibrate.json", out)
+    save(out_file, out)
     print(json.dumps({k: v for k, v in out.items() if k != "log"}, indent=1))
     return out
 
 
 if __name__ == "__main__":
-    main(sys.argv[1] if len(sys.argv) > 1 else "CONS")
+    main(*(sys.argv[1:4] if len(sys.argv) > 1 else ["CONS"]))

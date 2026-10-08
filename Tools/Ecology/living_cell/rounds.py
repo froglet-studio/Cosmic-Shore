@@ -95,3 +95,162 @@ R8 = {
 
 # The recommended cell after R8: per-species macro diets (= the micro diets). 0 extinctions in 3 seeds x 30 min.
 FINAL = dict(R8["r8_own_diets"])
+
+# ==========================================================================================================
+# ROUND 2 OF DIRECTION G (2026-10-08): the four open items of the first pass.
+#   1. thieves starve out (3/4 seeds by ~35 min): seed flora at its GRAZED level, not 60% of its cap
+#   2. packs / lurkers end at their caps: is the cap doing the work?
+#   3. soil N grows linearly with the pilots' trail: a sink that is not a timer (plant recruitment)
+#   4. the macro rates were fitted before R8's diet fix: refit
+# R9: the opening transient. Post-crash levels read off results/final.json (minutes 3-10): flora ~5-7k vol
+# (13% of the 48k cap), grazers 300-500, locusts 150-300.
+GRAZED = dict(flora_seed_frac=0.13, grazer_n=400, locust_n=250)
+R9 = {
+    "r9_grazed": dict(FINAL, **GRAZED),
+    "r9_bloom": dict(FINAL, flora_seed_frac=0.13, grazer_n=150, locust_n=100),
+    "r9_grazed_recruit": dict(FINAL, **GRAZED, flora_recruit=0.05),
+    "r9_grazed_nocap": dict(FINAL, **GRAZED, pack_cap=300, lurker_cap=180),   # diagnostic: where food alone stops them
+}
+
+# R9 result: the opening crash is gone (flora 6k -> 2-3k -> 6k instead of 29k -> 4k) but thieves STILL fall
+# 45 -> ~5 by minute 30 (births 28 vs 135 starved). The crash was not the cause. Their own food is stolen trail,
+# ~3 steals/min x 3 vol = 0.15 vol/s for the whole population, against 45 x 0.025 = 1.1 vol/s of metabolism:
+# the trail niche feeds ~6 thieves. Their fallback food (flora, skeletons) is the grazers' food, and the
+# grazers out-eat them. And without caps (r9_grazed_nocap) packs overshoot to 230 and EAT THE PREY OUT
+# (grazers + locusts extinct in seed 3): the pack cap was holding off a predator-prey collapse.
+# R10: (i) partition the carrion - grazers eat plants only, thieves are the scavengers (skeletons + stolen trail
+# + larder); (ii) a real brake on packs instead of the cap: higher metabolism and/or Holling III switching.
+SCAV = dict(GRAZED, **{"grazer.diet": _F, "grazer.macro_mask": _F})
+NOCAP = dict(pack_cap=300, lurker_cap=180)
+R10 = {
+    "r10_scav": dict(FINAL, **SCAV),
+    "r10_scav_nocap_m08": dict(FINAL, **SCAV, **NOCAP, pack_metab=0.08),
+    "r10_scav_nocap_h3": dict(FINAL, **SCAV, **NOCAP, **{"pack.switch_ref": 20.0, "lurker.switch_ref": 20.0}),
+    "r10_scav_nocap_h3_m08": dict(FINAL, **SCAV, **NOCAP, pack_metab=0.08, **{"pack.switch_ref": 20.0, "lurker.switch_ref": 20.0}),
+}
+
+# R10 result: worse. Carrion partition starved grazers (190 vs 300) and with them the lurkers; thieves were not
+# helped (31 births / 130 starved). Diagnosis (instrumented run, scratch): thieves live near pilots, as AGENTS,
+# and a thief there tails the pilot until it starves - it only ate at its nest while under 40% of e_birth, so a
+# fed thief never reached e_birth and NEVER BRED. Packs: 1326 of 1331 kills were MICRO (near pilots); packs
+# drift to the pilots' prey crowd, convert every 3 kills into a pup and eat the prey out once uncapped.
+# R11: thief.feed_fix (a starving thief goes home; the larder feeds it to e_max at imax) and a pack that eats
+# only part of a kill (pack.eff): the rest stays as a carcass (SKEL, scavenger food) - lower conversion lifts
+# the prey's equilibrium off the paradox-of-enrichment knife edge, in both LOD levels at once.
+B11 = dict(FINAL, **GRAZED, **{"thief.feed_fix": True})
+R11 = {
+    "r11_base": B11,
+    "r11_eff05_nocap": dict(B11, **NOCAP, **{"pack.eff": 0.5}),
+    "r11_eff03_nocap": dict(B11, **NOCAP, **{"pack.eff": 0.3}),
+    "r11_eff04_m06_nocap": dict(B11, **NOCAP, pack_metab=0.06, **{"pack.eff": 0.4}),
+}
+
+# R11 result: THIEVES FIXED - 400-630 births per 3 runs (was 28), no thief extinction in any seed; they now reach
+# their 150 cap in some seeds (steals 13-33/min, quiet down to 0.33-0.40: a thief tailing you is an active
+# threat). Packs with eff < 1 NEVER BRED (0-1 births, stuck at 24): the hunger gate stopped them hunting at
+# 0.6 e_max = 54, under e_birth = 70, so only a lucky big kill ever lifted a pack over e_birth. That is the
+# lifecycle rule broken by a threshold; with eff = 1 it was hidden. Soil: N still climbs at 40-85% of input.
+# R12: hunters hunt PREY up to 0.85 e_max (above e_birth; pilots are still stalked only below 0.6), packs eat
+# thieves again (a thief population that breeds now needs a predator), and plant recruitment as the soil sink.
+B12 = dict(B11, **NOCAP, **{"pack.hunt_prey_below": 0.85, "pack.prey_names": ("grazer", "locust", "thief")})
+R12 = {
+    "r12_eff05": dict(B12, **{"pack.eff": 0.5}),
+    "r12_eff035": dict(B12, **{"pack.eff": 0.35}),
+    "r12_eff05_rec05": dict(B12, flora_recruit=0.5, **{"pack.eff": 0.5}),
+    "r12_eff05_rec2": dict(B12, flora_recruit=2.0, **{"pack.eff": 0.5}),
+}
+
+# R12 result: COLLAPSE in every seed (prey extinct by minute 3, packs 24 -> 110 then starve out). Lifting the
+# prey-hunting threshold switched on MACRO predation, which had been silently OFF: far packs sat at a mean
+# stomach of ~55 (just above the 54 hunt gate) and almost never hunted (diag: 5 of 1331 kills were macro).
+# The calibration's "pack.a_attack is inert" finding was this. The fitted a_attack was never exercised -> refit.
+CAL2_BASE = dict(B12, **{"pack.eff": 0.5})
+# micro design of the pack rules (all-micro, no pilots): handling time = the macro h_handle (40 s)
+H = {"pack.handle_micro": 40.0}
+M13 = {
+    "m_h40": dict(CAL2_BASE, **H),
+    "m_h40_sw": dict(CAL2_BASE, **H, **{"pack.switch_ref": 20.0}),
+    "m_h40_e35": dict(CAL2_BASE, **H, **{"pack.eff": 0.35}),
+    "m_h40_sw_e35": dict(CAL2_BASE, **H, **{"pack.switch_ref": 20.0, "pack.eff": 0.35}),
+}
+M13b = {
+    "m_h40_e35": M13["m_h40_e35"],
+    "m_h40_sw_e35": M13["m_h40_sw_e35"],
+    "m_h40_sw_e25": dict(CAL2_BASE, **H, **{"pack.switch_ref": 20.0, "pack.eff": 0.25}),
+    "m_h40_sw_e35_m06": dict(CAL2_BASE, **H, pack_metab=0.06, **{"pack.switch_ref": 20.0, "pack.eff": 0.35}),
+}
+
+# M13 (all-micro design runs, results in this file's history / DISCOVERIES): with a 40-s handling time packs stop
+# eating the prey out; Holling III switching (commit only with >= 5 prey within 300 u) leaves sparse prey a refuge;
+# a pack that keeps 35% of a kill and burns 0.06/s grows slowly and is food-limited (24 -> ~60 in 32 min with
+# grazers 130-260, never at a cap). Without switching the prey crashes once (minute 24-28) in one seed.
+PACK2 = dict(pack_metab=0.06, **{"pack.handle_micro": 40.0, "pack.switch_ref": 20.0, "pack.eff": 0.35, "pack.search_nb": True})
+# (search_nb: the first refit could not keep far packs alive at ANY attack rate - 65 kills in 10 min at 100x -
+# because a far pack only saw prey in its own 200-u region; a hunting pack's 300-u sense spans its neighbours.)
+CAL2 = dict(B12, **PACK2)        # the model the macro rates are refitted to
+
+# The round-2 refit (calibrate.py CAL2 -> results/r2_calibrate.json; micro truth r2_consistency.json, 3 seeds x
+# 15 min all-micro): mean log error 0.95 -> 0.18. End gaps: lurker 4%, locust 46%, pack 71% (far packs 11 vs 38),
+# grazer 94% (far grazers 369 vs 191). Thieves excluded (no pilots = no trail in the fit).
+FIT2 = {"grazer.F_half": 62.5, "locust.F_half": 125.0, "pack.a_attack": 0.0048, "lurker.a_attack": 0.0192,
+        "grazer.hop": 0.012, "locust.hop": 0.000375, "pack.hop": 0.008}
+B13 = dict(B12, **PACK2, **FIT2)
+R13 = {
+    "r13_base": B13,
+    "r13_rec1": dict(B13, flora_recruit=1.0),
+    "r13_rec3": dict(B13, flora_recruit=3.0),
+    "r13_rec1_e45": dict(B13, flora_recruit=1.0, **{"pack.eff": 0.45}),
+}
+
+# R13 result: plant recruitment levels the soil (rec 1.0: N flat at ~64k, plants 150 -> 323; rec 3.0 draws N DOWN).
+# No guild touches a cap any more. But (1) packs that eat thieves wipe them out in 2 of 3 seeds (~370 thieves eaten
+# per 3 runs; R11 without thief predation lost none), and (2) packs still climb 24 -> 100-157 at minute 30 without
+# levelling: prey stays plentiful (grazers 200-450) so a pack's kill rate is handling-limited, not food-limited.
+# R14: packs off thieves again; pack metabolism 0.06 / 0.10 / 0.14 (a costlier hunter levels off lower).
+B14 = dict(B13, flora_recruit=1.0, **{"pack.prey_names": ("grazer", "locust")})
+R14 = {
+    "r14_m06": B14,
+    "r14_m10": dict(B14, pack_metab=0.10),
+    "r14_m14": dict(B14, pack_metab=0.14),
+    "r14_m10_thiefprey": dict(B14, pack_metab=0.10, **{"pack.prey_names": ("grazer", "locust", "thief")}),
+}
+
+# R14 result: pack metabolism is the pack dial - 0.06 climbs to 77-133 by minute 30, 0.10 levels at 36-51, 0.14
+# declines to 12-17. Without pack predation thieves are pilot-fed and climb to their 150 cap (steals 26/min, quiet
+# 0.37: a tailing thief is an active threat); with it they sink to 2-3 in 2 of 3 seeds. Lurkers, fed by the bigger
+# herbivore base that recruitment grows, now reach 120-180 (their cap) by minute 30.
+# R15 (45 min): packs at 0.10; lurkers' backstop raised to 300 to see where food stops them; LURKERS take thieves
+# (an ambusher at the flowers a thief grazes - partial, short-range predation instead of the packs' pursuit).
+B15 = dict(B14, pack_metab=0.10, lurker_cap=300)
+R15 = {
+    "r15_base": B15,
+    "r15_lurkthief": dict(B15, **{"lurker.prey_names": ("grazer", "locust", "thief")}),
+    "r15_lurkthief_m08": dict(B15, pack_metab=0.08, **{"lurker.prey_names": ("grazer", "locust", "thief")}),
+    "r15_lurkthief_rec05": dict(B15, flora_recruit=0.5, **{"lurker.prey_names": ("grazer", "locust", "thief")}),
+}
+
+# R15 result (45 min): with no thief predator thieves sit at their 150 nest cap 44% of the time (steals 37/min,
+# quiet 0.28 - a cell of tailing magpies); with lurkers taking them, seed 3 loses its thieves by minute 16 in two
+# variants (that seed's nests sit away from the pilots' routes, so its thieves are trail-starved first). Lurkers
+# follow the herbivore base up (150-300 by minute 44): recruitment turns the trail pump into standing biomass, and
+# every level above it grows with it. Pack metabolism 0.10 keeps packs at 32-64.
+# THE ROUND-2 CELL: B15 with lurkers off thieves and a thief COLONY limit of 25 per nest (75): like the fortress's
+# 64 workers, a nest's size is part of the species design, and it is what stops the cell filling with tailers.
+FINAL2 = dict(B15, thief_cap=75)
+
+# r2_final (FINAL2, 4 seeds x 45 min): ecosystem goals met (0 extinctions, packs/lurkers off their caps - lurker
+# 7% of samples at its 300 backstop, soil flat at -13% of input, thieves breed 787 / starve 615) but the PLAYER
+# numbers fell: quiet 0.33 (round 1: 0.60), steals 21/min (2.2), enc 1.14 (1.76). 75 fed thieves tail the pilots.
+# R16: a magpie raids only while its nest's hoard is short (hoard_target), and smaller colonies.
+R16 = {
+    "r16_t30": dict(FINAL2, thief_cap=30),
+    "r16_hoard20": dict(FINAL2, **{"thief.hoard_target": 20}),
+    "r16_hoard10_t45": dict(FINAL2, thief_cap=45, **{"thief.hoard_target": 10}),
+    "r16_hoard10": dict(FINAL2, **{"thief.hoard_target": 10}),
+}
+
+# R16 result: raiding only while the nest's hoard is short (10 prisms) halves the tailing (steals 21 -> 14/min,
+# quiet 0.33 -> 0.46, median hits 1.6/min) with no thief extinction; smaller colonies (30, or 45 with the hoard
+# rule) gain a little more quiet but lose a colony in one seed. Thieves sit at their colony size in every variant:
+# with a pilot to rob they are never food-limited, so the nest size is what sets their number (stated, not hidden).
+FINAL2 = dict(FINAL2, **{"thief.hoard_target": 10})

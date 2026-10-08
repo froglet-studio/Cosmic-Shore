@@ -125,6 +125,12 @@ def eco_table(runs):
                 cv={k: round(float(np.mean([e["cv"].get(k, 0) for e in E])), 3) for k in E[0]["cv"]},
                 audit_max=float(max(e["audit_max"] for e in E)), shield_eaten=int(sum(e["shield_eaten"] for e in E)),
                 pop_ins=int(sum(r["continuity"]["pop_ins"] for r in runs)), pop_outs=int(sum(r["continuity"]["pop_outs"] for r in runs)),
+                cap_frac={k: round(float(np.mean([e["cap_frac"].get(k, 0) for e in E])), 3) for k in E[0].get("cap_frac", {})},
+                soil_frac_of_input=round(float(np.mean([e["soil"]["frac_of_input"] or 0 for e in E])), 3) if "soil" in E[0] else None,
+                N_end=round(float(np.mean([e["soil"]["N_end"] for e in E]))) if "soil" in E[0] else None,
+                plants_end=round(float(np.mean([e["soil"]["plants_end"] or 0 for e in E]))) if "soil" in E[0] else None,
+                births={k: int(np.sum([r["stats"]["births"].get(k, 0) for r in runs])) for k in runs[0]["stats"]["births"]},
+                starved={k: int(np.sum([r["stats"]["starved"].get(k, 0) for r in runs])) for k in runs[0]["stats"]["starved"]},
                 cost_ms=round(float(np.mean([r["cost_ms"]["mean"] for r in runs])), 2),
                 cost_p95=round(float(np.max([r["cost_ms"]["p95"] for r in runs])), 2))
 
@@ -154,7 +160,9 @@ NOFIX = dict(traps=False, fortress=False, physarum=False)
 CONTROLS = {
     "persistence": (dict(pack_metab=0.25), "", lambda s: s["eco"]["n_extinct"] > 0),
     "diversity": (dict(NOFIX, species=("grazer",)), "", lambda s: s["eco"]["shannon_min"] < 0.8),
-    "freeze": (dict(species=()), "", lambda s: s["eco"]["freeze_frac"] > 0.3 or s["eco"]["flora_saturated"] > 0.3),
+    # round 2: the cell now seeds flora at its grazed level, so a fauna-less cell is still GROWING at minute 12;
+    # the planted failure starts it near its cap (the state it would reach), where nothing moves any more
+    "freeze": (dict(species=(), flora_seed_frac=0.9), "", lambda s: s["eco"]["freeze_frac"] > 0.3 or s["eco"]["flora_saturated"] > 0.3),
     "audit": (dict(), "leak_birth", lambda s: s["eco"]["audit_max"] > 1.0),
     "shield": (dict(), "eat_shield", lambda s: s["eco"]["shield_eaten"] > 0),
     "continuity": (dict(expand_r=120.0, ahead_r=150.0, absorb_r=160.0), "", lambda s: s["eco"]["pop_ins"] + s["eco"]["pop_outs"] > 0),
@@ -164,9 +172,10 @@ CONTROLS = {
 }
 
 
-def controls(minutes=12.0, seeds=(1, 2)):
-    """Each control is the RECOMMENDED cell (rounds.FINAL) with one planted failure."""
-    from .rounds import FINAL
+def controls(minutes=12.0, seeds=(1, 2), cfg_name="FINAL", tag="controls"):
+    """Each control is the RECOMMENDED cell (rounds.FINAL; round 2: FINAL2) with one planted failure."""
+    from . import rounds
+    FINAL = getattr(rounds, cfg_name)
     jobs, keys = [], []
     for name, (cfg, bug, _) in CONTROLS.items():
         for s in seeds:
@@ -194,7 +203,7 @@ def controls(minutes=12.0, seeds=(1, 2)):
             print("clean cell fires:", {n: f for n, f in v["fires"].items() if f} or "nothing")
         else:
             print(k, "FIRED" if v["fired"] else "did NOT fire")
-    save("controls.json", out)
+    save(f"{tag}.json", out)
     return out
 
 
@@ -233,7 +242,7 @@ def _consist(a):
                 births={k: g.births for k, g in c.guilds.items()}, starved={k: g.starved for k, g in c.guilds.items()})
 
 
-def consistency(seeds=(1, 2, 3), minutes=6.0, cfg=None):
+def consistency(seeds=(1, 2, 3), minutes=6.0, cfg=None, tag="consistency"):
     """The same cell (no pilots, no structures) run all-MACRO (every region a cohort) and all-MICRO (every
     region expanded into individuals). What the one-cohort-per-region simplification costs is the gap."""
     cfg = cfg or {}
@@ -252,7 +261,7 @@ def consistency(seeds=(1, 2, 3), minutes=6.0, cfg=None):
     out["gap"]["flora"] = dict(macro_end=round(float(fm[:, -1].mean())), micro_end=round(float(fi[:, -1].mean())),
                                rel_gap_mean=round(float(np.mean(np.abs(fm.mean(0) - fi.mean(0)) / np.maximum(fi.mean(0), 1))), 3))
     print(json.dumps(out["gap"], indent=1))
-    save("consistency.json", out)
+    save(f"{tag}.json", out)
     return out
 
 
@@ -263,6 +272,11 @@ if __name__ == "__main__":
         baseline(minutes=mins)
     elif what == "controls":
         controls()
+    elif what == "controls2":
+        controls(cfg_name="FINAL2", tag="r2_controls")
+    elif what == "final2":
+        from .rounds import FINAL2
+        baseline(seeds=(1, 2, 3, 4), minutes=float(sys.argv[2]) if len(sys.argv) > 2 else 45.0, cfg=FINAL2, label="r2_final")
     elif what == "final":
         from .rounds import FINAL
         baseline(seeds=(1, 2, 3, 4), minutes=float(sys.argv[2]) if len(sys.argv) > 2 else 45.0, cfg=FINAL, label="final")
@@ -271,7 +285,8 @@ if __name__ == "__main__":
         iterate({k: dict(FINAL, **v) for k, v in LOD.items()}, minutes=15.0, seeds=(1, 2), tag="lod")
     elif what == "consistency":
         import importlib
-        consistency(cfg=getattr(importlib.import_module("living_cell.rounds"), sys.argv[2]) if len(sys.argv) > 2 else None)
+        consistency(cfg=getattr(importlib.import_module("living_cell.rounds"), sys.argv[2]) if len(sys.argv) > 2 else None,
+                    minutes=float(sys.argv[3]) if len(sys.argv) > 3 else 6.0, tag=sys.argv[4] if len(sys.argv) > 4 else "consistency")
     elif what == "iterate":
         import importlib
         mod = importlib.import_module("living_cell.rounds")
