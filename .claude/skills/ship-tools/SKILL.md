@@ -141,9 +141,16 @@ Those belong in `Docs/TOOLING.md`'s tool index; scaffolding does not.
 Order matters: **output first, retirement second.** Deleting the tool while its output is
 still uncommitted strands the output with nothing left that could reproduce it.
 
+## 7.5 Fire CI once (skipped by `check`)
+
+After the last push of this run, dispatch `unity-ci.yml` with `mode: static` on the branch,
+exactly as `/ship` §5.5 says. A `claude/**` branch fires no CI on its own push; this is the
+one dispatch. Fire-and-forget — do not wait on it. If nothing was pushed, fire nothing.
+
 ## 8. Report
 
 - Every tool: name, menu path, READER/WRITER, and its state from §3.
+- Whether the §7.5 CI dispatch went out (or was refused, with the manual route).
 - Which commit carries the output, and what §5 checked on it.
 - What was retired, and what was kept with the reason.
 - Anything a human must still do (an unrun tool, an unsaved editor), stated as a blocker.
