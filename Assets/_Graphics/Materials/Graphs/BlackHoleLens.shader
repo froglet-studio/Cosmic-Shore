@@ -1,4 +1,4 @@
-// BlackHoleLens.shader — the black hole's gravitational lens and accretion disc (Docs/BLACK_HOLE.md
+// BlackHoleLens.shader — the black hole's gravitational lens and its shadow (Docs/BLACK_HOLE.md
 // §5.1). Everything that decides where a light ray goes lives in BlackHoleLens.hlsl, which
 // Tools/Shaders/verify_black_hole_lens.py compiles with clang++ and executes; this file is the URP
 // plumbing around it, and the verifier front-end compiles it with glslang against a URP mock.
@@ -12,9 +12,9 @@
 // a hard edge, and from inside it, or with the hole behind the camera, it could not be seen at all.)
 // In the transparent queue — after URP has copied the opaque scene into _CameraOpaqueTexture —
 // each pixel traces its light ray backwards around the hole and paints what that ray sees: the
-// opaque scene in the BENT direction (prisms and the skybox smeared into arcs and rings), black
-// where the ray fell through the horizon (the shadow), plus the accretion disc's glow every time
-// the ray crossed it.
+// opaque scene in the BENT direction (prisms and the skybox smeared into arcs and rings), or black
+// where the ray fell through the horizon (the shadow). There is no painted accretion disc: what
+// orbits the hole is the real mass the gravity field moves.
 //
 // WHAT IS LENSED. Only what is BEHIND the hole: a pixel whose opaque scene depth is in front of the
 // hole's centre is left alone (discarded, the scene shows through unbent). The quad got that from
@@ -35,9 +35,6 @@ Shader "CosmicShore/BlackHoleLens"
         [Header(Written per hole by BlackHoleLens.cs through a MaterialPropertyBlock)]
         _BHHorizon ("Horizon radius r_s (world units), eased", Float) = 1
         _BHLens ("Lens (radius in r_s, step budget, unused, bend fade start 0..1)", Vector) = (30, 128, 1, 0.55)
-        _BHSpin ("Spin axis (world xyz)", Vector) = (0, 0, 1, 0)
-        _BHDisk ("Disc (inner r_s, outer r_s, density, brightness)", Vector) = (3, 14, 0.15, 3)
-        _BHDisk2 ("Disc (peak temperature K, Doppler 0..1, phase time, noise scale)", Vector) = (7000, 1, 0, 1)
     }
 
     SubShader
@@ -77,9 +74,6 @@ Shader "CosmicShore/BlackHoleLens"
             CBUFFER_START(UnityPerMaterial)
                 float _BHHorizon;
                 float4 _BHLens;
-                float4 _BHSpin;
-                float4 _BHDisk;
-                float4 _BHDisk2;
             CBUFFER_END
 
             struct Attributes
@@ -163,11 +157,9 @@ Shader "CosmicShore/BlackHoleLens"
                 float2 pixelUV = GetNormalizedScreenSpaceUV(input.positionCS);
                 if (LinearEyeDepth(SampleSceneDepth(pixelUV), _ZBufferParams) < holeEye) discard;
 
-                float3 axis = normalize(_BHSpin.xyz + float3(0.0, 0.0, 1e-6));
                 float3 bent;
                 float escaped;
-                float4 diskLight;
-                BlackHoleLensTrace(x0, d, lensR, (int)_BHLens.y, axis, _BHDisk, _BHDisk2, bent, escaped, diskLight);
+                BlackHoleLensTrace(x0, d, lensR, (int)_BHLens.y, bent, escaped);
 
                 float3 background = float3(0.0, 0.0, 0.0);
                 if (escaped > 0.5)
@@ -194,10 +186,8 @@ Shader "CosmicShore/BlackHoleLens"
                     background = scene;
                 }
 
-                // The disc's light rolled off by its brightest channel (hue kept), then over the
-                // background it lets through — the project has no tonemapper to do it later.
-                float3 colour = BlackHoleDiskTonemap(diskLight.rgb) + (1.0 - diskLight.a) * background;
-                return half4(colour, 1.0);
+                // The bent scene, or the shadow's black.
+                return half4(background, 1.0);
             }
             ENDHLSL
         }

@@ -18,13 +18,13 @@
 | The vessel pull | `BlackHoleVesselPull.cs` |
 | The warp's CPU half — the bank + high-poly residency | `BlackHoleWarp.cs` |
 | The warp's GPU half | `_Graphics/Materials/Graphs/PrismGravityWarp.hlsl` |
-| The lens — what the hole LOOKS like (ray-traced background, shadow, lensed accretion disc) | `BlackHoleLens.cs`, `_Graphics/Materials/Graphs/BlackHoleLens.shader` + `BlackHoleLens.hlsl`, `Resources/BlackHoleLens.mat`, `Tools/Shaders/verify_black_hole_lens.py` (§5.1) |
+| The lens — what the hole LOOKS like (ray-traced background and shadow; no painted disc) | `BlackHoleLens.cs`, `_Graphics/Materials/Graphs/BlackHoleLens.shader` + `BlackHoleLens.hlsl`, `Resources/BlackHoleLens.mat`, `Tools/Shaders/verify_black_hole_lens.py` (§5.1) |
 | The ECS component every prism's companion entity carries | `_Scripts/Controller/ECS/Components/GravityBodyComponents.cs` (+ the prototype addition and the `SetGravityBody` / `ClearGravityBody` / `TryGetGravityBodyLookup` API in `PrismRenderService`) |
 | Console commands | `BlackHoleConsole.cs` (`blackhole`, alias `bh`) |
 | Tuning (the only tuning surface) | `BlackHoleConfigSO` → `Assets/Resources/BlackHoleConfig.asset` |
 | The test scene | `Assets/_Scenes/Game_TestDesign/BlackHoleTest.unity`, `BlackHoleTestHarness`, the mouse camera `MouseOrbitCamera` (`_Scripts/Controller/Camera/`, + `MouseOrbitCameraConfigSO` → `Resources/MouseOrbitCameraConfig.asset`, §7.1), `BlackHoleTestConfigSO` → `Resources/BlackHoleTestConfig.asset`, FrogletTools ▸ Scene Setup ▸ **Setup Black Hole Test Scene** |
 | Wirer / proof / gates | `Tools/Shaders/wire_prism_gravity_warp.py`, `Tools/Shaders/verify_prism_gravity_warp.py`, `PrismClockWiringValidator` (Specs + edges), `BlackHoleTests`, `BlackHolePhysicsTests` |
-| See the lens offline (renders the SHIPPED HLSL to a PNG, any disc dial as a flag) | `Tools/Shaders/render_black_hole_lens.py` (§5.1); proof: `Tools/Shaders/verify_black_hole_lens.py` |
+| See the lens offline (renders the SHIPPED HLSL to a PNG from any viewpoint) | `Tools/Shaders/render_black_hole_lens.py` (§5.1); proof: `Tools/Shaders/verify_black_hole_lens.py` |
 | Log channel | `CSLogChannel.BlackHole` (FrogletTools ▸ Toolbox ▸ Logging), one line per second while a hole is live, including the idle case |
 
 ## 1. What it is, in one paragraph
@@ -211,7 +211,8 @@ pulling by then (only the photons ease — the split every §4.7 global keeps).
 
 A black hole is invisible; what is visible is everything behind it bent around it. The hole is drawn
 by a per-pixel **Schwarzschild ray trace** of the scene behind it, not by a sphere and a disc mesh
-(that was the first cut, and it read as a black ball with a yellow ring):
+(that was the first cut, and it read as a black ball with a yellow ring). It is two things and
+nothing else — the shadow and the bent background:
 
 - **The background distorts.** Each pixel near the hole follows its light ray backwards from the
   eye through the hole's spacetime. A ray that escapes left along a BENT direction, and the pixel
@@ -220,44 +221,19 @@ by a per-pixel **Schwarzschild ray trace** of the scene behind it, not by a sphe
 - **The shadow is ~2.6× the horizon.** Rays closer than the critical impact parameter
   `b_c = (3√3/2) r_s ≈ 2.598 r_s` fall in, so the black disc on screen is the photon-capture
   cross-section, not the horizon.
-- **The accretion disc is lensed.** A thin disc in the spin plane from the ISCO (3 r_s) outward. A ray
-  crossing it picks up its glow on EVERY crossing, which is why its far side shows ABOVE and BELOW the
-  shadow (its light bends over the top of the hole) and why a bright photon ring hugs the shadow. The
-  gas follows the Shakura–Sunyaev temperature profile (`T⁴ ∝ r⁻³(1 − √(r_in/r))` — a dark gap at the
-  ISCO, a hot inner ring), shifted by the relativistic Doppler factor of the orbiting gas
-  (`v = √(r_s / 2(r − r_s))`, half light speed at the ISCO) and by gravitational redshift: the side
-  turning toward the camera is bluer and ~9× brighter at 6 r_s, the side turning away redder — the
-  lopsided glow of every real black-hole image. Differentially rotating spiral streaks (Keplerian,
-  inner gas laps outer) make it visibly churn.
-- **The disc forms from what the hole eats.** Its density is `diskBaseDensity + DiskFeed`, and every
-  prism the hole consumes adds `diskFeedPerCapture` to `DiskFeed`, which halves every
-  `diskFeedHalfLife` seconds. A hole sat in a prism field builds its disc in real time as the mass
-  spirals in; a starving one fades back to a faint ring. (Emergent from the capture verdict the field
-  already produces — no new state anywhere but one float on the hole.)
-- **The disc is translucent where it is cool, and its colour survives to the screen.** Opacity is
-  Beer–Lambert through the gas column, `α = 1 − e^−τ`, with `τ ∝ density × clump × √flux`: the hot
-  inner disc is optically thick, the cool outer disc thin, and no feed level turns it into a solid
-  plate (the clump noise is contrast-stretched, so a fed disc shows gaps and dense streaks). The
-  disc's light goes through `BlackHoleDiskTonemap`, which rolls the brightest channel off toward 1
-  above a knee (0.6) and scales the other two with it — the project has NO tonemapper
-  (`DefaultVolumeProfile`: Tonemapping None), so without it the final blit clips HDR per channel,
-  which drags every colour toward yellow and then white.
-- **Its colour is its temperature.** `diskPeakTemperature` (default **10,000 K**: white-hot, the
-  approaching side blue-white) sets the hottest ring; the Shakura–Sunyaev profile cools the outer
-  edge to ~0.56× that. Real accretion discs are far hotter than 10,000 K, and every blackbody that
-  hot looks white to blue-white, so that is the realistic range; 6,500 K gives the warm white /
-  orange of *Interstellar* (an artistic choice there, too).
 
-**Incident (2026-10-07): the "yellowish light disc".** The first in-editor look showed a large,
-flat peach-to-tan oval around the hole. It was the disc, rendered wrong three ways at once: its
-opacity was a clamp, `saturate(density × noise)`, so a disc fed to the cap (2,518 captures pin
-`DiskFeed` at `diskFeedMax`) sat at α = 1 everywhere — measured 1.000 all round its hottest ring and
-0.62 even at 12 r_s — which erased its streaks and let its dim ~3,700 K orange outer ring cover the
-scene; the HDR emission (brightness 4) was clipped per channel, so 3–8 r_s became a flat white plate
-and the dim orange read as beige/tan (`#efcbae` → `#ab8564`, exactly the screenshot); and the peak
-temperature was 6,500 K, warm by choice. All three are fixed above, and `Tools/Shaders/render_black_hole_lens.py`
-renders the shipped HLSL offline — it reproduced the screenshot from the pre-fix file before the fix
-was written, which is how the diagnosis was confirmed.
+**There is no accretion disc, by decision (2026-10-07).** What orbits and spirals into the hole is the
+REAL mass — the prisms the gravity field moves (§3) and the warp spaghettifies (§5) — so the "disc"
+a player sees is the hole's own swirl of matter, not a painting. A synthetic disc was built into the
+lens (a thin Shakura–Sunyaev disc in the spin plane, relativistic Doppler beaming and redshift,
+Keplerian spiral streaks, its density fed by every capture) and went through two rounds in the
+editor: first as a flat peach-to-tan plate (its opacity was a clamp, so a fed disc sat at α = 1, and
+with no tonemapper its HDR glow was clipped per channel — fixed with Beer–Lambert opacity and a
+hue-preserving roll-off), then, correctly rendered, seen edge-on as a bright line slicing through
+the shadow. That second look is what a real disc does, and it is not what this hole should be: it
+was removed — shader, feed (`BlackHole.DiskFeed` / `NotifyCapture`), the eleven `disk*` config
+fields, its verifier properties and its renderer flags. `BlackHoleTests.Lens_HasNoPaintedAccretionDisc`
+keeps it from creeping back; if a disc is ever wanted again, the commit history has it whole.
 
 **The equation** is the null-geodesic Binet equation `u'' + u = (3/2) r_s u²`, integrated in 3D as a
 particle under the fictitious central force `x'' = −(3/2) h² x / |x|⁵` (units of r_s; it conserves `h`
@@ -303,20 +279,15 @@ really deflected by ~`2/b` at any distance, so a finite lens would otherwise dra
 **Seeing it without the editor.** `python3 Tools/Shaders/render_black_hole_lens.py --out lens.png`
 renders the SHIPPED HLSL (translated by the verifier's mechanical HLSL→C++ step, compiled with
 clang++) through the shader's own composite and the project's display transform, against a
-stand-in background (procedural sky, a dark-blue prism field). Every disc dial is a flag
-(`--temp`, `--density`, `--brightness`, `--doppler`, …), and `--hlsl` renders another version of the
-file — the way to compare a change before and after.
+stand-in background (procedural sky, a dark-blue prism field), from any viewpoint (`--dist`,
+`--yaw`, `--pitch`, `--fov`; `--dist` below the lens radius renders from inside it), and `--hlsl`
+renders another version of the file — the way to compare a change before and after.
 
 **Proof.** `Tools/Shaders/verify_black_hole_lens.py` compiles the SHIPPED HLSL with clang++ and runs
 it: the shadow edge at 2.594 r_s (exact 2.598), Einstein deflection at b = 20/40/80 r_s within 0.8%
-of Schwarzschild's second-order value, rays passing above the shadow parallel to the disc (which never
-cross its plane in flat space) picking up the far side of the disc, Doppler asymmetry 9×, the ISCO gap,
-no light from inside the horizon, 4,000 random rays finite and in range, a seamless fade; a fed disc
-that keeps its streaks (α 0.33–0.91 round the hottest ring, never a plate), an outer disc less than
-half as opaque as the hot ring, a roll-off that keeps hue and stays ≤ 1 (3,700 K × 4 shows G/R 0.57,
-orange, where the per-channel clip gives 1.00, yellow) — and negative controls: a coarse step fails
-six of them, a roll-off that never engages fails the hue property, and the pre-fix disc fails all
-three disc properties. Both shader stages are then compiled twice:
+of Schwarzschild's second-order value, no light from inside the horizon, 4,000 random rays (eyes
+inside and outside the lens) finite with unit escape directions, a seamless fade — and a negative
+control: a coarse step fails five of them. Both shader stages are then compiled twice:
 glslang against a URP mock laid out FILE BY FILE at the shader's own include paths, and DXC against
 the REAL URP + core ShaderLibrary (the graphics checkout `Tools/Build/unity_refcompile` fetches) for
 D3D11, Vulkan and Metal — each with a negative control that removes one include and must fail.
@@ -332,10 +303,8 @@ still reports `Shader.isSupported`, `BlackHoleLens.IsDrawable` also asks
 `ShaderUtil.ShaderHasError` in the Editor: a broken lens now falls back to the black sphere with the
 compiler's first error in a warning, never magenta, and `BlackHoleTests.Lens_ShaderCompilesAndTheLensIsDrawable`
 fails the edit-mode suite on it. **Nothing here has been seen on screen**; the look is a playtest away.
-Dials (`BlackHoleConfig`, Lens / Accretion disc headers): `lensRadiusMultiplier`, `lensFadeStart`,
-`lensSteps`, `diskInner/OuterMultiplier`, `diskBaseDensity`, `diskFeedPerCapture`, `diskFeedMax`,
-`diskFeedHalfLife`, `diskBrightness`, `diskPeakTemperature`, `diskDoppler`, `diskSpinSpeed`,
-`diskNoiseScale`; `lensEnabled` off falls back to the plain black sphere.
+Dials (`BlackHoleConfig`, Lens header): `lensRadiusMultiplier`, `lensFadeStart`, `lensSteps`;
+`lensEnabled` off falls back to the plain black sphere.
 
 ## 6. Console
 
@@ -479,6 +448,10 @@ Evidence, all run on the final tree:
 - The Burst gates' negative control: the pre-fix kernels fail on the new `MathF.` rule.
 
 ## 10. Rejected alternatives (so they are not proposed again)
+
+- **A painted accretion disc** (thermal glow, Doppler beaming, fed by captures). Built, fixed once,
+  and removed (§5.1): edge-on it is a bright line slicing through the shadow. The hole is its shadow
+  and the bent scene; the matter around it is the real prisms it moves and spaghettifies.
 
 - **A Rigidbody per prism / Unity physics gravity.** Prisms have no Rigidbody by design (the spatial
   index is THE spatial store; physics is structurally blind to fresh prisms). A force field through

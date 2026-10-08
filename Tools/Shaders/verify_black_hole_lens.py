@@ -5,38 +5,23 @@ the same shape as verify_prism_slice.py:
 
 A. EXECUTION (clang++). Assets/_Graphics/Materials/Graphs/BlackHoleLens.hlsl is translated
    mechanically (HLSL -> C++ spelling only) and RUN. Nothing here re-implements the shader.
-     1. MISS: a ray that never comes within the lens radius is returned bit-identical, escaped,
-        with no disc light.
+     1. MISS: a ray that never comes within the lens radius is returned bit-identical and escaped.
      2. THE SHADOW: rays are captured below, and escape above, the critical impact parameter
         b_c = (3*sqrt(3)/2) r_s = 2.598 r_s — the black disc on screen is ~2.6x the horizon,
         which is what makes the image a black hole and not a black ball.
      3. EINSTEIN DEFLECTION: far out, a ray at impact parameter b is bent toward the hole by
         2 r_s / b + (15 pi / 16)(r_s / b)^2 (Schwarzschild to second order) — within 3%, at
         b = 20, 40 and 80 r_s.
-     4. THE DISC OVER THE TOP: a ray parallel to the disc plane, passing ABOVE the shadow, would
-        never cross the plane in flat space — bent, it crosses it behind the hole and picks up the
-        FAR side of the disc. That is the Interstellar image.
-     5. DOPPLER: the side of the disc turning toward the camera is brighter (by more than 3x at
-        r = 6 r_s) and bluer than the side turning away; with Doppler off both sides are equal.
-     6. THE ISCO GAP AND THE OUTER EDGE: no disc light inside the inner edge or past the outer
-        edge; light where the gas is hottest.
-     7. INSIDE THE HORIZON: an eye inside r_s sees nothing escape.
-     8. SANITY over random rays: escaped directions are unit length, colours finite, alpha <= 1.
-     9. FADE: the bend is exactly the straight ray at the lens edge and exactly the traced ray
+     4. INSIDE THE HORIZON: an eye inside r_s sees nothing escape.
+     5. SANITY over random rays (eyes inside and outside the lens): escaped directions are unit
+        length and finite.
+     6. FADE: the bend is exactly the straight ray at the lens edge and exactly the traced ray
         inside the fade start — no seam where the lens ends.
-    10. A FED DISC KEEPS ITS STREAKS: at the hottest ring, with the disc fed to the cap
-        (density 1.72), opacity still varies with the gas around the ring and never reaches a solid
-        plate; unfed (0.12) the disc is faint. (The first disc clamped its opacity, so a fed disc
-        sat at alpha = 1 and read as a flat plate in the editor.)
-    11. THE COOL OUTER DISC IS THIN: at 12 r_s the fed disc is less than half as opaque as at the
-        hottest ring, so its dim ~4,000 K light tints the scene instead of covering it.
-    12. HUE KEPT ON SCREEN: BlackHoleDiskTonemap is the identity at or below its knee, keeps the
-        channel ratios (the temperature's colour) above it, never exceeds 1 and rises with the
-        input. A bright 3,700 K orange stays orange, where the per-channel clip the project's
-        final blit applies (no tonemapper) turns it yellow — the "yellowish light disc".
-    13. NEGATIVE CONTROLS: rebuilt with BLACK_HOLE_LENS_STEP_FRACTION blown up (-D override of the
-        file's own #ifndef dial), the physics tests FAIL — the integration step is what holds them;
-        rebuilt with BLACK_HOLE_DISK_KNEE blown up (the roll-off never engages), 12 FAILS.
+     7. NEGATIVE CONTROL: rebuilt with BLACK_HOLE_LENS_STEP_FRACTION blown up (-D override of the
+        file's own #ifndef dial), the physics tests FAIL — the integration step is what holds them.
+
+   There is no accretion disc to test: a painted disc (thermal, Doppler-shifted, fed by captures)
+   was built, read in the editor as a disc slicing through the hole, and was removed on 2026-10-07.
 
 B. COMPILE. The vertex and fragment stages of BlackHoleLens.shader, with the shipped .hlsl included.
    B1 (glslang, HLSL mode) against a declarations-only mock of the URP library, laid out FILE BY FILE
@@ -124,14 +109,11 @@ static int failures = 0;
 #define CHECK(cond, ...) do { if (!(cond)) { failures++; printf("FAIL: "); printf(__VA_ARGS__); printf("\n"); } } while (0)
 static float lum(float3 c){ return 0.2126f*c.x + 0.7152f*c.y + 0.0722f*c.z; }
 
-struct Trace { float3 dir; float escaped; float4 disk; };
-static Trace trace(float3 x0, float3 d, float lensR, float4 disk, float4 disk2, float3 axis = float3(0,0,1), int steps = 192)
+struct Trace { float3 dir; float escaped; };
+static Trace trace(float3 x0, float3 d, float lensR, int steps = 192)
 {
-    Trace t; BlackHoleLensTrace(x0, d, lensR, steps, axis, disk, disk2, t.dir, t.escaped, t.disk); return t;
+    Trace t; BlackHoleLensTrace(x0, d, lensR, steps, t.dir, t.escaped); return t;
 }
-static const float4 NO_DISK(3, 14, 0, 1);
-static const float4 DISK(3, 14, 1, 1);
-static const float4 DISK2(6500, 1, 0, 1);
 """
 
 HARNESS = COMMON + r"""
@@ -140,10 +122,10 @@ int main()
     // 1. miss
     {
         float3 d(1,0,0);
-        Trace t = trace(float3(-100, 50, 0), d, 30, DISK, DISK2);
+        Trace t = trace(float3(-100, 50, 0), d, 30);
         bool same = t.dir.x == d.x && t.dir.y == d.y && t.dir.z == d.z;
-        CHECK(same && t.escaped == 1.0f && t.disk.w == 0.0f, "a ray outside the lens was touched");
-        printf("1. ray outside the lens: bit-identical, escaped, no disc light: %s\n", same ? "ok" : "BROKEN");
+        CHECK(same && t.escaped == 1.0f, "a ray outside the lens was touched");
+        printf("1. ray outside the lens: bit-identical, escaped: %s\n", same ? "ok" : "BROKEN");
     }
 
     // 2. the shadow: capture threshold at b_c = 2.598
@@ -151,7 +133,7 @@ int main()
         const float bc = 2.5980762f;
         float lastCaptured = -1, firstEscaped = 99; int wrong = 0;
         for (float b = 2.30f; b <= 2.90f; b += 0.002f) {
-            Trace t = trace(float3(-200, b, 0), float3(1,0,0), 250, NO_DISK, DISK2);
+            Trace t = trace(float3(-200, b, 0), float3(1,0,0), 250);
             if (t.escaped < 0.5f) { lastCaptured = std::max(lastCaptured, b); if (b > bc + 0.05f) wrong++; }
             else { firstEscaped = std::min(firstEscaped, b); if (b < bc - 0.05f) wrong++; }
         }
@@ -164,7 +146,7 @@ int main()
     {
         const float bs[3] = { 20, 40, 80 };
         for (float b : bs) {
-            Trace t = trace(float3(-1500, b, 0), float3(1,0,0), 2000, NO_DISK, DISK2);
+            Trace t = trace(float3(-1500, b, 0), float3(1,0,0), 2000);
             float angle = std::acos(std::min(1.0f, t.dir.x));
             float expected = 2.0f / b + 15.0f * 3.14159265f / (16.0f * b * b);
             float err = std::fabs(angle - expected) / expected;
@@ -175,52 +157,14 @@ int main()
         }
     }
 
-    // 4. the far side of the disc appears over the top of the shadow
+    // 4. inside the horizon
     {
-        float hits = 0;
-        for (float zb = 3.2f; zb <= 6.0f; zb += 0.4f) {
-            Trace t = trace(float3(-200, 0, zb), float3(1,0,0), 250, DISK, DISK2);
-            if (t.disk.w > 0.05f) hits++;
-        }
-        CHECK(hits >= 5, "only %.0f of 8 rays passing above the shadow picked up the far disc", hits);
-        printf("4. rays parallel to the disc, passing ABOVE the shadow (they never cross the plane in flat space): %.0f / 8 see the far side of the disc\n", hits);
-    }
-
-    // 5. Doppler: approaching side brighter and bluer
-    {
-        float3 xi(6, 0, 0), axis(0, 0, 1);   // gas here orbits toward +y
-        float4 toward = BlackHoleDiskEmission(xi, float3(0,-1,0), axis, DISK, DISK2);   // light travels +y
-        float4 away   = BlackHoleDiskEmission(xi, float3(0, 1,0), axis, DISK, DISK2);
-        float lt = lum(toward.xyz()), la = lum(away.xyz());
-        float blueT = toward.z / std::max(toward.x, 1e-6f), blueA = away.z / std::max(away.x, 1e-6f);
-        CHECK(lt > 3.0f * la, "approaching side only %.2fx brighter", lt / std::max(la, 1e-9f));
-        CHECK(blueT > blueA, "approaching side is not bluer (b/r %.3f vs %.3f)", blueT, blueA);
-        float4 flat2(6500, 0, 0, 1);
-        float4 t0 = BlackHoleDiskEmission(xi, float3(0,-1,0), axis, DISK, flat2);
-        float4 a0 = BlackHoleDiskEmission(xi, float3(0, 1,0), axis, DISK, flat2);
-        CHECK(std::fabs(lum(t0.xyz()) - lum(a0.xyz())) < 1e-5f, "with Doppler off the two sides differ");
-        printf("5. Doppler at r = 6: approaching side %.1fx brighter and bluer (b/r %.2f vs %.2f); equal with Doppler off\n", lt / la, blueT, blueA);
-    }
-
-    // 6. the ISCO gap and the outer edge
-    {
-        float3 axis(0,0,1);
-        float4 inGap = BlackHoleDiskEmission(float3(2.95f, 0, 0), float3(0,0,-1), axis, DISK, DISK2);
-        float4 past  = BlackHoleDiskEmission(float3(14.5f, 0, 0), float3(0,0,-1), axis, DISK, DISK2);
-        float4 hot   = BlackHoleDiskEmission(float3(4.08f, 0, 0), float3(0,0,-1), axis, DISK, DISK2);
-        CHECK(inGap.w == 0.0f && past.w == 0.0f, "disc light inside the ISCO or past the outer edge");
-        CHECK(hot.w > 0.0f && lum(hot.xyz()) > 0.0f, "no light at the hottest ring");
-        printf("6. no disc inside r_in or past r_out; the hottest ring (1.36 r_in) glows\n");
-    }
-
-    // 7. inside the horizon
-    {
-        Trace t = trace(float3(0.5f, 0, 0), float3(1,0,0), 30, NO_DISK, DISK2);
+        Trace t = trace(float3(0.5f, 0, 0), float3(1,0,0), 30);
         CHECK(t.escaped < 0.5f, "an eye inside the horizon saw a ray escape");
-        printf("7. eye inside the horizon: nothing escapes\n");
+        printf("4. eye inside the horizon: nothing escapes\n");
     }
 
-    // 8. sanity over random rays
+    // 5. sanity over random rays, eyes inside and outside the lens
     {
         std::mt19937 rng(20261008);
         auto rnd = [&](float a, float b){ return a + (b - a) * (rng() / (float)rng.max()); };
@@ -230,87 +174,23 @@ int main()
             if (length(eye) < 2) continue;
             float3 target(rnd(-6,6), rnd(-6,6), rnd(-6,6));
             float3 d = normalize(target - eye);
-            float3 axis = normalize(float3(rnd(-1,1), rnd(-1,1), rnd(-1,1)) + float3(0,0,1e-3f));
-            float4 dk(3, 14, rnd(0, 2), rnd(0, 10));
-            float4 dk2(rnd(2000, 20000), rnd(0,1), rnd(0, 500), rnd(0.2f, 4));
-            Trace t = trace(eye, d, 30, dk, dk2, axis, 128);
+            Trace t = trace(eye, d, 30, 128);
             n++;
-            bool finite = std::isfinite(t.disk.x) && std::isfinite(t.disk.y) && std::isfinite(t.disk.z) && std::isfinite(t.disk.w);
-            if (!finite || t.disk.w > 1.0001f || t.disk.w < 0 || (t.escaped > 0.5f && std::fabs(length(t.dir) - 1) > 1e-3f)) bad++;
+            bool finite = std::isfinite(t.dir.x) && std::isfinite(t.dir.y) && std::isfinite(t.dir.z);
+            if (!finite || (t.escaped > 0.5f && std::fabs(length(t.dir) - 1) > 1e-3f)) bad++;
         }
-        CHECK(bad == 0, "%d of %d random rays produced a non-finite colour, alpha out of range or a non-unit direction", bad, n);
-        printf("8. %d random rays: finite colour, alpha in [0,1], unit escape direction\n", n);
+        CHECK(bad == 0, "%d of %d random rays produced a non-finite or non-unit direction", bad, n);
+        printf("5. %d random rays: finite, unit escape direction\n", n);
     }
 
-    // 9. fade
+    // 6. fade
     {
         float3 d(1,0,0), bent = normalize(float3(1, -0.4f, 0));
         float3 atEdge = BlackHoleLensFadeDir(d, bent, 30, 30, 0.55f);
         float3 inside = BlackHoleLensFadeDir(d, bent, 10, 30, 0.55f);
         CHECK(atEdge.x == d.x && atEdge.y == d.y && atEdge.z == d.z, "the bend is not zero at the lens edge");
         CHECK(std::fabs(dot(inside, bent) - 1) < 1e-6f, "the bend is not the traced ray inside the fade start");
-        printf("9. fade: straight at the lens edge, exactly traced inside the fade start\n");
-    }
-
-    // 10. a fed disc keeps its streaks; an unfed one is faint
-    {
-        float3 axis(0,0,1);
-        float4 fed(3, 14, 1.72f, 4), unfed(3, 14, 0.12f, 4);
-        float lo = 1, hi = 0, unfedHi = 0;
-        for (int k = 0; k < 720; k++) {
-            float a = k * 6.2831853f / 720;
-            float3 xi(4.08f * std::cos(a), 4.08f * std::sin(a), 0);
-            float wf = BlackHoleDiskEmission(xi, float3(0,0,-1), axis, fed, DISK2).w;
-            lo = std::min(lo, wf); hi = std::max(hi, wf);
-            unfedHi = std::max(unfedHi, BlackHoleDiskEmission(xi, float3(0,0,-1), axis, unfed, DISK2).w);
-        }
-        CHECK(hi < 0.97f, "the fed disc is a solid plate at its hottest ring (alpha %.3f)", hi);
-        CHECK(hi - lo > 0.25f, "the fed disc's opacity barely varies with the gas (%.3f..%.3f): no streaks", lo, hi);
-        CHECK(unfedHi < 0.2f, "the unfed disc is not faint (alpha up to %.3f)", unfedHi);
-        printf("10. fed disc at the hottest ring: alpha %.2f..%.2f (streaks, no plate); unfed: alpha <= %.2f\n", lo, hi, unfedHi);
-    }
-
-    // 11. the cool outer disc is optically thin
-    {
-        float3 axis(0,0,1);
-        float4 fed(3, 14, 1.72f, 4);
-        float hot = 0, cool = 0;
-        for (int k = 0; k < 720; k++) {
-            float a = k * 6.2831853f / 720;
-            hot  += BlackHoleDiskEmission(float3(4.08f * std::cos(a), 4.08f * std::sin(a), 0), float3(0,0,-1), axis, fed, DISK2).w;
-            cool += BlackHoleDiskEmission(float3(12.0f * std::cos(a), 12.0f * std::sin(a), 0), float3(0,0,-1), axis, fed, DISK2).w;
-        }
-        hot /= 720; cool /= 720;
-        CHECK(cool < 0.5f * hot, "the outer disc (12 r_s, mean alpha %.3f) is not thinner than the hot ring (%.3f)", cool, hot);
-        printf("11. fed disc mean alpha: hottest ring %.2f, 12 r_s %.2f (thin, tints the scene)\n", hot, cool);
-    }
-
-    // 12. hue kept on screen
-    {
-        int bad = 0;
-        float3 low(0.3f, 0.2f, 0.1f), atKnee(0.6f, 0.4f, 0.2f);
-        float3 l2 = BlackHoleDiskTonemap(low), k2 = BlackHoleDiskTonemap(atKnee);
-        CHECK(l2.x == low.x && l2.y == low.y && l2.z == low.z && k2.x == atKnee.x && k2.y == atKnee.y,
-              "the roll-off touches light at or below its knee");
-        const float temps[4] = { 3700, 5000, 6500, 10000 };
-        for (float T : temps) {
-            float3 c = BlackHoleBlackbody(T);
-            float prev = 0;
-            for (float s = 0.5f; s <= 20.0f; s *= 1.25f) {
-                float3 in = c * s, o = BlackHoleDiskTonemap(in);
-                float m = std::max(o.x, std::max(o.y, o.z));
-                if (m > 1.0f + 1e-6f || m < prev - 1e-6f) bad++;
-                if (std::fabs(o.y / o.x - in.y / in.x) > 1e-4f || std::fabs(o.z / o.x - in.z / in.x) > 1e-4f) bad++;
-                prev = m;
-            }
-        }
-        CHECK(bad == 0, "%d roll-off samples exceed 1, fall with rising input, or move the hue", bad);
-        float3 orange = BlackHoleBlackbody(3700) * 4.0f;
-        float3 shown = BlackHoleDiskTonemap(orange);
-        float3 clipped(std::min(orange.x, 1.0f), std::min(orange.y, 1.0f), std::min(orange.z, 1.0f));
-        CHECK(shown.y / shown.x < 0.75f, "a bright 3700 K orange left the roll-off yellow (G/R %.2f)", shown.y / shown.x);
-        printf("12. roll-off: identity below the knee, hue kept, <= 1; 3700 K x4 shows G/R %.2f (orange) where a per-channel clip gives %.2f (yellow)\n",
-               shown.y / shown.x, clipped.y / clipped.x);
+        printf("6. fade: straight at the lens edge, exactly traced inside the fade start\n");
     }
 
     if (failures) { printf("\n%d FAILURE(S)\n", failures); return 1; }
@@ -386,7 +266,7 @@ def translate(src):
     out = re.sub(r"\bout float (\w+)", r"float &\1", out)
     out = re.sub(r"\.a\b", ".w", out)
     assert "void BlackHoleLensTrace(" in out, "entry point missing"
-    for name in ("BlackHoleDiskEmission", "BlackHoleLensFadeDir", "BlackHoleLensEntry",
+    for name in ("BlackHoleLensFadeDir", "BlackHoleLensEntry",
                  "BLACK_HOLE_LENS_MAX_STEPS", "BLACK_HOLE_LENS_STEP_FRACTION"):
         assert name in out, f"{name} missing from the shipped HLSL"
     return out
@@ -483,12 +363,7 @@ def main():
         rc, out = build_and_run(work, HARNESS, ["-DBLACK_HOLE_LENS_STEP_FRACTION=2.5"], "control")
         fired = rc is not None and rc != 0
         last = out.strip().splitlines()[-1] if out.strip() else "(no output)"
-        print(f"\n13. negative control [integration step x31]: {'FIRED' if fired else 'DID NOT FIRE'} ({last})")
-        ok &= fired
-
-        rc, out = build_and_run(work, HARNESS, ["-DBLACK_HOLE_DISK_KNEE=1e9"], "control_knee")
-        fired = rc is not None and rc != 0 and "roll-off" in out
-        print(f"13. negative control [roll-off never engages]: {'FIRED' if fired else 'DID NOT FIRE'}")
+        print(f"\n7. negative control [integration step x31]: {'FIRED' if fired else 'DID NOT FIRE'} ({last})")
         ok &= fired
 
         print("\nB1. glslang compile of BlackHoleLens.shader against the per-file URP mock")

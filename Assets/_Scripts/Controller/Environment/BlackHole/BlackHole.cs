@@ -9,7 +9,7 @@ namespace CosmicShore.Gameplay
     /// number — its <see cref="Strength"/> — from which the config derives everything the physics
     /// needs: the gravitational parameter, the event horizon, the influence radius. It moves
     /// itself along <see cref="Velocity"/> (a hole can be driven through a prism field), spins
-    /// about <see cref="SpinAxis"/> (which only the frame dragging and the accretion disc read),
+    /// about <see cref="SpinAxis"/> (which only the frame dragging reads),
     /// and eases its warp weight in on spawn and out on despawn so the GPU bend never pops.
     ///
     /// It does nothing to the world by itself. <see cref="BlackHoleRegistry"/> owns the list of
@@ -22,11 +22,10 @@ namespace CosmicShore.Gameplay
     ///
     /// What the player SEES is the <see cref="BlackHoleLens"/> (Docs/BLACK_HOLE.md §5.1): a
     /// per-pixel ray trace of the scene behind the hole bent through Schwarzschild spacetime —
-    /// the background distorted into arcs and an Einstein ring, the shadow (~2.6× the horizon),
-    /// and the accretion disc lensed over the top and bottom of the shadow. The disc is FED:
-    /// every prism the hole consumes adds to <see cref="DiskFeed"/>, which decays, so a hole that
-    /// is eating forms its disc in real time and a starving one fades. If the lens shader cannot
-    /// load, the hole falls back to a plain black sphere — never an invisible hole.
+    /// the background distorted into arcs and an Einstein ring, and the shadow (~2.6× the
+    /// horizon). There is no painted accretion disc: what orbits and spirals in is the real mass
+    /// the gravity field moves. If the lens shader cannot load, the hole falls back to a plain
+    /// black sphere — never an invisible hole.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class BlackHole : MonoBehaviour
@@ -41,8 +40,8 @@ namespace CosmicShore.Gameplay
                  "spawned; a moving hole drags the mass it passes along with it.")]
         [SerializeField] Vector3 velocity = Vector3.zero;
 
-        [Tooltip("Axis the hole's spacetime rotates about (frame dragging) and the normal of its " +
-                 "accretion disc. Mass is swept into orbits in the plane perpendicular to it.")]
+        [Tooltip("Axis the hole's spacetime rotates about (frame dragging). Mass is swept into orbits " +
+                 "in the plane perpendicular to it.")]
         [SerializeField] Vector3 spinAxis = Vector3.forward;
 
         const string HorizonName = "Horizon";
@@ -53,7 +52,6 @@ namespace CosmicShore.Gameplay
         BlackHoleLens _lens;
         bool _visualBuilt;
         float _weight;
-        float _diskFeed;
         bool _despawning;
         bool _registered;
 
@@ -75,19 +73,6 @@ namespace CosmicShore.Gameplay
 
         /// <summary>True from <see cref="BeginDespawn"/> until the object is destroyed.</summary>
         public bool IsDespawning => _despawning;
-
-        /// <summary>
-        /// Accretion-disc density this hole has been FED (on top of the config's base density):
-        /// rises with every prism it consumes, halves every <c>diskFeedHalfLife</c> seconds.
-        /// </summary>
-        public float DiskFeed => _diskFeed;
-
-        /// <summary>A prism crossed this hole's horizon: its mass joins the disc.</summary>
-        public void NotifyCapture()
-        {
-            var config = BlackHoleRegistry.Config;
-            _diskFeed = Mathf.Min(config.DiskFeedMax, _diskFeed + config.DiskFeedPerCapture);
-        }
 
         public float GM => BlackHoleRegistry.Config.GM(strength);
         public float HorizonRadius => BlackHoleRegistry.Config.HorizonRadius(strength);
@@ -122,7 +107,7 @@ namespace CosmicShore.Gameplay
             ApplyScale();
         }
 
-        /// <summary>Retune a live hole. Its horizon, influence and disc follow immediately.</summary>
+        /// <summary>Retune a live hole. Its horizon, influence and lens follow immediately.</summary>
         public void SetStrength(float newStrength)
         {
             strength = Mathf.Max(0f, newStrength);
@@ -180,9 +165,6 @@ namespace CosmicShore.Gameplay
             {
                 _weight = Mathf.Min(1f, _weight + rate);
             }
-
-            if (_diskFeed > 0f)
-                _diskFeed *= Mathf.Exp(-0.6931472f * dt / config.DiskFeedHalfLife);
 
             if (_horizon != null) _horizon.localScale = Vector3.one * (2f * HorizonRadius * _weight);
         }

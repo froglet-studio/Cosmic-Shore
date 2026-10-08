@@ -9,8 +9,8 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// What the player SEES of a black hole (Docs/BLACK_HOLE.md §5.1): the scene behind it bent
-    /// around it — the gravitational lens — the shadow, and the accretion disc lensed over the top
-    /// and bottom of the shadow. The work is all in <c>BlackHoleLens.shader</c> /
+    /// around it — the gravitational lens — and the shadow. No painted accretion disc: what orbits
+    /// the hole is the real mass the gravity field moves. The work is all in <c>BlackHoleLens.shader</c> /
     /// <c>BlackHoleLens.hlsl</c> (a per-pixel Schwarzschild ray trace); this component is the
     /// carrier: the lens SPHERE around the hole, sized to the lens (the shader draws its far side,
     /// so the lens is right from every viewpoint, including from inside it), and one
@@ -32,9 +32,6 @@ namespace CosmicShore.Gameplay
 
         static readonly int HorizonId = Shader.PropertyToID("_BHHorizon");
         static readonly int LensId = Shader.PropertyToID("_BHLens");
-        static readonly int SpinId = Shader.PropertyToID("_BHSpin");
-        static readonly int DiskId = Shader.PropertyToID("_BHDisk");
-        static readonly int Disk2Id = Shader.PropertyToID("_BHDisk2");
 
         /// <summary>Icosahedron subdivisions of <see cref="LensSphere"/> (2 = 320 triangles).</summary>
         const int LensSphereSubdivisions = 2;
@@ -230,16 +227,9 @@ namespace CosmicShore.Gameplay
             transform.localScale = Vector3.one * Mathf.Max(2f * lensR * rs, 1e-3f);
             transform.localRotation = Quaternion.identity;
 
-            var axis = _hole.SpinAxis;
-            float density = config.DiskBaseDensity + _hole.DiskFeed;
-
             _renderer.GetPropertyBlock(_block);
             _block.SetFloat(HorizonId, rs);
             _block.SetVector(LensId, new Vector4(lensR, config.LensSteps, 1f, config.LensFadeStart));
-            _block.SetVector(SpinId, new Vector4(axis.x, axis.y, axis.z, 0f));
-            _block.SetVector(DiskId, new Vector4(config.DiskInnerMultiplier, config.DiskOuterMultiplier, density, config.DiskBrightness));
-            _block.SetVector(Disk2Id, new Vector4(config.DiskPeakTemperature, config.DiskDoppler,
-                Time.time * config.DiskSpinSpeed, config.DiskNoiseScale));
             _renderer.SetPropertyBlock(_block);
         }
 

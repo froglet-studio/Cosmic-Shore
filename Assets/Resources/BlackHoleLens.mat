@@ -27,9 +27,6 @@ Material:
     m_Floats:
     - _BHHorizon: 1
     m_Colors:
-    - _BHDisk: {r: 3, g: 14, b: 0.15, a: 3}
-    - _BHDisk2: {r: 7000, g: 1, b: 0, a: 1}
     - _BHLens: {r: 30, g: 128, b: 1, a: 0.55}
-    - _BHSpin: {r: 0, g: 0, b: 1, a: 0}
   m_BuildTextureStacks: []
   m_AllowLocalizedText: 1

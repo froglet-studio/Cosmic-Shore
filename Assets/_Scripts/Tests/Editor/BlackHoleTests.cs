@@ -300,14 +300,28 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Config_LensEnclosesTheDiscAndTheDiscStartsAtOrOutsideThePhotonSphere()
+        public void Config_LensEnclosesTheShadowAndFadesBeforeItsEdge()
         {
             var config = LoadConfig();
-            Assert.Greater(config.LensRadiusMultiplier, config.DiskOuterMultiplier,
-                "the lens radius must exceed the disc's outer edge, or the disc is cut off at the billboard's edge.");
-            Assert.GreaterOrEqual(config.DiskInnerMultiplier, 1.5f,
-                "a disc inside the photon sphere (1.5 r_s) is not a disc anything can orbit in.");
+            // The shadow is the photon-capture cross-section, b_c = (3√3/2) r_s ≈ 2.6 r_s; the bend
+            // must still be exact (inside the fade start) well outside it.
+            Assert.Greater(config.LensRadiusMultiplier * config.LensFadeStart, 2.6f * 2f,
+                "the lens fades its bend out too close to the shadow — the Einstein ring would be flattened.");
             Assert.Less(config.LensFadeStart, 1f, "the bend must fade out before the lens edge, or the edge is a seam.");
+        }
+
+        /// <summary>
+        /// There is no painted accretion disc (Docs/BLACK_HOLE.md §5.1): what orbits the hole is the
+        /// real mass the gravity field moves. A synthetic disc was built, read in the editor as a
+        /// disc slicing through the hole, and was removed — this keeps it from creeping back.
+        /// </summary>
+        [Test]
+        public void Lens_HasNoPaintedAccretionDisc()
+        {
+            string shader = File.ReadAllText("Assets/_Graphics/Materials/Graphs/BlackHoleLens.shader");
+            string hlsl = File.ReadAllText("Assets/_Graphics/Materials/Graphs/BlackHoleLens.hlsl");
+            Assert.IsFalse(shader.Contains("_BHDisk") || hlsl.Contains("BlackHoleDiskEmission"),
+                "the lens paints an accretion disc again — the hole is its shadow and the lensed scene only.");
         }
 
         [Test]

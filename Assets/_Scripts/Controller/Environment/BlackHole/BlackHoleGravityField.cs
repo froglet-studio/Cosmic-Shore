@@ -350,8 +350,6 @@ namespace CosmicShore.Gameplay
                         int by = _capturedBy[i];
                         var hole = by >= 0 && by < _wellHoles.Length ? _wellHoles[by] : null;
                         Transform sink = hole != null ? hole.transform : p.transform;
-                        // The mass joins the hole's accretion disc (Docs/BLACK_HOLE.md §5.1).
-                        if (hole != null) hole.NotifyCapture();
                         RemoveAt(i, clearComponent: true);
                         // Devastate: a shield is not an answer to a singularity. The suction's
                         // sink is the hole's own transform, so the debris converges on it as it
