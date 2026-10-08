@@ -127,6 +127,10 @@ namespace CosmicShore.Gameplay
         /// <summary>The planted orbit's speed as a fraction of its cap; 0 when not planted.</summary>
         public float Spin01 => IsPivoting && _settings.LockMaxSpeed > 0f ? Mathf.Clamp01(_solver.LockSpeed / _settings.LockMaxSpeed) : 0f;
         public int Combo => _combo;
+        /// <summary>The ball's colour this frame (LINEAR; a UI consumer converts with .gamma).</summary>
+        public Color BallColorNow => config && _solver != null ? BallColor(out _) : Color.white;
+        /// <summary>The READY lime (LINEAR).</summary>
+        public Color ReadyColorNow => config ? ReadyColor() : Color.green;
 
         public override void Initialize(IVesselStatus shipStatus)
         {

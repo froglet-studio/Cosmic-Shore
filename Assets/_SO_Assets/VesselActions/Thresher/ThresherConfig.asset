@@ -39,27 +39,6 @@ MonoBehaviour:
     lockSpin: 220
     lockMax: 2.2
     yank: 0.5
-  hitStopMinSeconds: 0.03
-  hitStopMaxSeconds: 0.09
-  hitStopTimeScale: 0.05
-  shakeMin: 0.35
-  shakeMax: 1.8
-  shakeSeconds: 0.22
-  chipShakeFraction: 0.35
-  hapticFloor01: 0.45
-  debrisRestitution: 0.33333334
-  debrisSpeedLimit: 200
-  comboGraceSeconds: 0.4
-  readyMargin: 1.05
-  readyFlickerHz: 14
-  ballVisualScale: 1.25
-  chainLinks: 12
-  chainWidthFraction: 0.18
-  gaugeRadiusScale: 1.45
-  ironColor: {r: 0.1, g: 0.09, b: 0.09, a: 1}
-  goldColor: {r: 1, g: 0.72, b: 0.18, a: 1}
-  whiteHotColor: {r: 1, g: 0.97, b: 0.9, a: 1}
-  skidTrailSeconds: 0.6
   explosionSizeMultiplier:
     Enabled: 1
     Value: 1
