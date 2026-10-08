@@ -1,6 +1,7 @@
 # The Wormhole cell
 
-A Cell Selector world whose environment is **two spheres that are one place**. Fly into either and
+A Cell Selector world whose environment is **two spheres that are one place** — and, since
+2026-10-08, the same component is what every **Butterfly fold** leaves behind (§7). Fly into either and
 you come out of the other, still flying the way you were. Each sphere shows, from every side, what
 lies beyond the other one — so you see where you are going before you go, and the transit itself has
 nothing on screen to give it away.
@@ -75,7 +76,10 @@ them. The array is ours end to end, so no cubemap orientation convention is invo
 
 1. **Nose in.** The hull crosses A's sphere. A's surface hides the part inside the ball; the exact
    render draws the ship *carried through* for that one render, so the nose appears inside B through
-   the window as it disappears into A (`WormholeView.Straddles`, the fold gate's trick for a sphere).
+   the window as it disappears into A. This is one case of a general rule: **during a mouth's exact
+   render, every vessel it may carry that is in or cut by its ball is drawn at its mapped position on
+   the far side** (`WormholeView.MoveInteriorVessels`) — the balls are one place, so a vessel inside
+   either is seen through either.
 2. **The jump.** The owner's detector (`WormholeMouth.Update`) sees the step enter the ball and
    writes the pose `+Δ` through `IVessel.SetPose`, which replicates. On every peer
    `VesselTransformer.SetPose` → `TeleportContinuity` resolves it as a wormhole transit
@@ -120,8 +124,9 @@ dotted throat for `CellMiniatureBuilder` to sample. Those points are never laid.
 
 - **The exact view is for the player's camera only.** Every other camera (preview, scene view,
   spectator rigs that are not the active `CustomCameraController`) sees the panorama.
-- **Only the followed ship gets the straddle treatment.** Another pilot's hull half-way into a
-  mouth is cut by the sphere, as a rival at a fold gate is.
+- **Only the followed ship's TAIL is drawn back after a transit.** Every carriable vessel inside a
+  ball is seen through that ball, but the part of another pilot's hull still sticking out of the far
+  mouth's near face is clipped from the near mouth's window until it is inside.
 - **A ship that turns round inside the shared interior and leaves by the face it came in** comes out
   of B's near face — the model has one interior and two exteriors, and the exterior is the one of the
   ball you are physically in. The camera carry then hands over early.
@@ -130,3 +135,25 @@ dotted throat for `CellMiniatureBuilder` to sample. Those points are never laid.
 - **No recursion.** Every mouth is hidden inside every wormhole render (each samples targets those
   renders draw into), so A is never seen *through* B.
 - **The transit sound ships empty** (`transitEvent`) per the FMOD convention.
+
+## 7. The rim, domains, and the Butterfly's fold pairs
+
+**The rim wears a domain's hue.** The only part of the surface that is the mouth itself is the
+fresnel rim, and it is painted in the owning domain's colour — the theme's
+`ToyFactory.DomainAccentColor`, passed per renderer (`_WormholeRimTint`) and lifted by the material's
+`_DomainRimBoost` (2) so it blooms in that hue rather than reading as a pale wash. The cell's open
+pair uses its spawnable's `domain` (Blue, the no-team colour); `_RimColor` is only the fallback for a
+mouth built with no tint. The transit flare uses the same hue.
+
+**Domain-locked pairs.** `WormholeMouth.Settings.DomainLocked` makes a mouth carry only vessels of
+its `Domain`. Such a mouth is **sealed** to a viewer whose camera follows a pilot of another domain
+(`WormholeView` decides per frame, `_WormholeSealed`): no view through, only a fresnel shell in the
+domain colour, interior clipped in colour and depth, and that viewer's own ship flies straight
+through it. A sealed mouth gets no exact render and asks for no panorama — it costs nothing. An
+unpaired mouth (one withering away, `WormholeMouth.Retire`) is sealed too.
+
+**The Butterfly's fold** builds a domain-locked pair at the two ends of every fold — origin and
+destination, exactly where its ring gates used to stand — from `ButterflyFoldAction.asset`
+(`BUTTERFLY_FOLD.md` § "The gates became wormholes"). The arriving Butterfly sits at the centre of the
+destination mouth; it is drawn through that mouth (the interior rule in §3), and it flies out
+without being taken back because a mouth only takes a step that starts outside it.

@@ -18,17 +18,13 @@ namespace CosmicShore.Gameplay
     /// starts again where the vessel ARRIVED. Continuity of existence both ways: nothing laid
     /// blinks out, and nothing is drawn that was not flown.</para>
     ///
-    /// <para><b>Through a Butterfly fold gate the cut is made AT THE MOUTHS</b>
-    /// (<see cref="FoldGate.TryResolveTransit"/>): the old ribbon runs into the near ring and the
-    /// new one runs out of the far ring, so a tail reads as passing through the portal. And the
-    /// camera following the vessel is carried through the pair rather than cut to the other side
-    /// (<c>CustomCameraController.CarryThroughPortal</c>) — which is what makes a transit
-    /// seamless from the pilot's own seat.</para>
-    ///
-    /// <para><b>Through a wormhole</b> (<see cref="WormholeMouth.TryResolveTransit"/>) the same two
-    /// things happen on spheres instead of rings: the cut is made on the near and far mouths, and
-    /// the camera is carried through the near sphere
-    /// (<c>CustomCameraController.CarryThroughSphere</c>).</para>
+    /// <para><b>Through a wormhole the cut is made AT THE MOUTHS</b>
+    /// (<see cref="WormholeMouth.TryResolveTransit"/> — the Wormhole cell's pair, and the pair
+    /// every Butterfly fold leaves): the old ribbon runs into the near sphere and the new one
+    /// starts at the same spot on the far one, so a tail reads as passing through. And the camera
+    /// following the vessel is carried through the near sphere rather than cut to the other side
+    /// (<c>CustomCameraController.CarryThroughSphere</c>) — which is what makes a transit seamless
+    /// from the pilot's own seat.</para>
     ///
     /// <para><b>Every trail, not only the marked ones.</b> <see cref="VesselTailAndJets"/> scopes
     /// its COLOUR work to the tail/jet markers so it never fights a trail somebody else paints
@@ -60,52 +56,29 @@ namespace CosmicShore.Gameplay
             Vector3 departAt = from;
             Vector3 arriveAt = to;
 
-            if (FoldGate.TryResolveTransit(from, to, out var near, out var nearMouth, out var farMouth))
+            if (WormholeMouth.TryResolveTransit(from, to, out var mouth, out var entry, out var exit))
             {
-                departAt = nearMouth;
-                arriveAt = farMouth;
-                CarryCameras(vessel, near, from, farMouth - nearMouth);
-            }
-            else if (WormholeMouth.TryResolveTransit(from, to, out var mouth, out var entry, out var exit))
-            {
-                // Through a wormhole the cut is made on the two SPHERES: the old ribbon runs into
-                // the near mouth, the new one starts at the same spot on the far one (inside it,
-                // where only the view through the near mouth can see it).
+                // The cut is made on the two SPHERES: the old ribbon runs into the near mouth, the
+                // new one starts at the same spot on the far one (inside it, where only the view
+                // through the near mouth can see it).
                 departAt = entry;
                 arriveAt = exit;
-                CarryCamerasThroughSphere(vessel, mouth, exit - entry);
+                CarryCameras(vessel, mouth, exit - entry);
             }
 
             CutRibbons(vessel, departAt, arriveAt, speed);
         }
 
         /// <summary>
-        /// Carry the gameplay camera through the portal if it is following this vessel. Asked of
-        /// the ACTIVE controller only — the player's rig, the death camera and the replay camera
-        /// are all <see cref="CustomCameraController"/>s, and whichever one is on screen is the one
-        /// whose picture must not cut. The controller's own identity guard ignores the call if it
-        /// is following somebody else.
+        /// Carry the gameplay camera through the near sphere if it is following this vessel: it
+        /// keeps framing the ship through the mouth and is moved across when it reaches it
+        /// (<c>CustomCameraController.CarryThroughSphere</c>). Asked of the ACTIVE controller only —
+        /// the player's rig, the death camera and the replay camera are all
+        /// <see cref="CustomCameraController"/>s, and whichever one is on screen is the one whose
+        /// picture must not cut. The controller's own identity guard ignores the call if it is
+        /// following somebody else.
         /// </summary>
-        static void CarryCameras(Transform vessel, FoldGate near, Vector3 from, Vector3 shift)
-        {
-            var manager = CameraManager.Instance;
-            if (manager == null) return;
-            if (manager.GetActiveController() is not CustomCameraController controller) return;
-
-            // Which side of the mouth the vessel went out on. It is on that side of BOTH planes
-            // (the map is a translation), so reading it off the near plane is exact.
-            float side = FoldGateGeometry.Axial(from, near.Centre, near.Axis);
-            Vector3 exitNormal = near.Axis * (side >= 0f ? 1f : -1f);
-
-            controller.CarryThroughPortal(vessel, near.Centre, exitNormal, near.RingRadius, shift);
-        }
-
-        /// <summary>
-        /// The wormhole counterpart of <see cref="CarryCameras"/>: the camera keeps framing the
-        /// ship through the near sphere and is moved across when it reaches it
-        /// (<c>CustomCameraController.CarryThroughSphere</c>).
-        /// </summary>
-        static void CarryCamerasThroughSphere(Transform vessel, WormholeMouth near, Vector3 shift)
+        static void CarryCameras(Transform vessel, WormholeMouth near, Vector3 shift)
         {
             var manager = CameraManager.Instance;
             if (manager == null) return;

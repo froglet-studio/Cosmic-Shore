@@ -20,8 +20,12 @@ namespace CosmicShore.Gameplay
     /// slot. Those points are never instantiated.</para>
     ///
     /// <para><b>The tuning lives here</b>, on the prefab — the environment-prefab pattern every
-    /// other cell world follows. The mouths read it live, so an inspector change in play reaches
-    /// both ends at once.</para>
+    /// other cell world follows. It is copied into each mouth when the world is built
+    /// (<see cref="WormholeMouth.Settings"/>), so a change takes effect on the next build.</para>
+    ///
+    /// <para><b>An OPEN pair.</b> These mouths carry every pilot; the rim wears this spawnable's
+    /// <c>domain</c> (Blue, the platform's no-team colour) — the same hue rule as the Butterfly's
+    /// domain-locked fold pairs, with the neutral domain.</para>
     /// </summary>
     public sealed class SpawnableWormholePair : SpawnableBase
     {
@@ -93,14 +97,6 @@ namespace CosmicShore.Gameplay
                                                 "the scale model. Never spawned.")]
         int modelThroatPoints = 40;
 
-        public Material SurfaceMaterial => surfaceMaterial;
-        public float ExactRange => exactRange;
-        public float ExactFadeBand => exactFadeBand;
-        public float ExactRenderScale => exactRenderScale;
-        public int PanoramaFaceSize => panoramaFaceSize;
-        public float BloomSeconds => bloomSeconds;
-        public FMODUnity.EventReference TransitEvent => transitEvent;
-
         /// <summary>
         /// Build the two mouths under one container and pair them. Called on the prefab ASSET by
         /// the Cell (as every environment is), which parents the container to itself at the cell's
@@ -129,8 +125,26 @@ namespace CosmicShore.Gameplay
             go.transform.SetParent(parent, false);
             go.transform.localPosition = localPosition;
             var mouth = go.AddComponent<WormholeMouth>();
-            mouth.Build(this, players, mouthRadius);
+            mouth.Build(MouthSettings(), players, mouthRadius);
             return mouth;
+        }
+
+        WormholeMouth.Settings MouthSettings()
+        {
+            var theme = gameData ? gameData.ThemeManagerData : null;
+            return new WormholeMouth.Settings
+            {
+                SurfaceMaterial = surfaceMaterial,
+                BloomSeconds = bloomSeconds,
+                ExactRange = exactRange,
+                ExactFadeBand = exactFadeBand,
+                ExactRenderScale = exactRenderScale,
+                PanoramaFaceSize = panoramaFaceSize,
+                TransitEvent = transitEvent,
+                RimTint = ToyFactory.DomainAccentColor(theme, domain),
+                DomainLocked = false,
+                Domain = domain,
+            };
         }
 
         // ---- the scale model's points (never laid) -------------------------------------------

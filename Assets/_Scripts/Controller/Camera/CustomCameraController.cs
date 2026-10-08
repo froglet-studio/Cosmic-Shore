@@ -71,7 +71,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// The world point the camera frames this frame: the placement anchor if one is set, else
         /// the follow target's own position — seen through a portal the camera has not reached yet
-        /// while one is being carried (<see cref="CarryThroughPortal"/>).
+        /// while one is being carried (<see cref="CarryThroughSphere"/>).
         /// </summary>
         private Vector3 FollowPoint =>
             PlacementAnchor ?? (_followTarget ? _followTarget.position - PortalShift : Vector3.zero);
@@ -81,23 +81,22 @@ namespace CosmicShore.Gameplay
 
         // --- Portal carry ---------------------------------------------------------------------
         //
-        // A portal moves the SHIP the instant it crosses, but a chase camera is tens to hundreds
+        // A wormhole moves the SHIP the instant it enters, but a chase camera is tens to hundreds
         // of units behind it (the Butterfly's is 207). Moving the camera on the same frame is a
         // cut — the whole picture changes around a ship that has not visibly moved — and letting
         // the teleport guard snap it is the same cut with the smoothing state thrown away too.
-        // So the camera follows the ship THROUGH the portal instead: it keeps framing where the
+        // So the camera follows the ship THROUGH the mouth instead: it keeps framing where the
         // ship WOULD be had the two mouths been one (the ship's position mapped back through the
         // pair), and it is itself moved across on the frame IT reaches the near mouth. Until
-        // then the pilot sees their own ship through the gate's window (FoldGatePortalView),
-        // which is rendered from exactly the far-side vantage this camera is about to take — so
-        // the hand-over is a change of frame with nothing on screen to show it.
+        // then the pilot sees their own ship through the mouth's exact view (WormholeView), which
+        // is rendered from exactly the far-side vantage this camera is about to take — so the
+        // hand-over is a change of frame with nothing on screen to show it. (The Butterfly's
+        // original ring gates used a planar version of this; they became wormholes.)
         private bool _carrying;
-        private Vector3 _carryShift;          // far mouth - near mouth, the portal's translation
-        private Vector3 _carryCentre;         // the near mouth
-        private Vector3 _carryNormal;         // the near plane's normal, pointing to the exit side
+        private Vector3 _carryShift;          // far mouth - near mouth, the pair's translation
+        private Vector3 _carryCentre;         // the near mouth's centre
         private float _carryRadius;           // the near mouth's radius
         private float _carryDeadline;
-        private bool _carryBall;              // the mouth is a wormhole SPHERE, not a gate's disc
 
         /// <summary>
         /// Longest a carry may last. Not a gameplay clock — nothing is added or removed by it —
@@ -123,27 +122,31 @@ namespace CosmicShore.Gameplay
         public Vector3 CarryMouthCentre => _carryCentre;
 
         /// <summary>
-        /// The ship this camera follows has just been carried through a portal from the mouth at
-        /// <paramref name="nearCentre"/> to one displaced by <paramref name="shift"/>. Follow it
-        /// through rather than cutting.
+        /// The ship this camera follows has just been carried into a wormhole mouth — the sphere
+        /// at <paramref name="centre"/> — and out of its partner, displaced by
+        /// <paramref name="shift"/>. Follow it through rather than cutting: keep framing the ship
+        /// through the near sphere (whose surface shows exactly the view from the far side —
+        /// <see cref="WormholeView"/>) and move across when the camera itself reaches the sphere.
         ///
         /// <para><b>Identity-guarded</b>: a camera that is not following
         /// <paramref name="subject"/> (or one of its children) ignores the call, so a transit may
         /// ask every camera without knowing which one is the player's. Returns whether this
         /// camera took the carry.</para>
         ///
-        /// <para>A camera already on the exit side of the mouth — the rear view sits AHEAD of the
-        /// ship, so it went through first — is simply moved across now, which is the same
-        /// hand-over one frame earlier.</para>
+        /// <para>A sphere has no "side": crossing is reaching it, within the clearance at which its
+        /// surface stops drawing for this camera (<see cref="WormholeGeometry.Clearance"/>) — the
+        /// two share one number, so the camera lands just inside the far mouth's own clearance,
+        /// where that mouth has just stopped drawing and the world beyond it is seen directly. A
+        /// camera already there — the rear view sits AHEAD of the ship — is moved across at once,
+        /// which is the same hand-over one frame earlier.</para>
         /// </summary>
-        public bool CarryThroughPortal(Transform subject, Vector3 nearCentre, Vector3 exitNormal,
-                                       float mouthRadius, Vector3 shift)
+        public bool CarryThroughSphere(Transform subject, Vector3 centre, float radius, Vector3 shift)
         {
             if (!_followTarget || !subject) return false;
             if (_followTarget != subject && !_followTarget.IsChildOf(subject)) return false;
             if (shift.sqrMagnitude < 1e-6f) return false;
 
-            // A carry already in flight is finished first: two portals in a row compose, and the
+            // A carry already in flight is finished first: two wormholes in a row compose, and the
             // camera must be in the first one's far frame before it can follow the ship into the
             // second.
             if (_carrying) FinishCarry();
@@ -152,88 +155,36 @@ namespace CosmicShore.Gameplay
             // for the camera to trail through the mouth, so hand it across outright.
             if (PlacementAnchor.HasValue) { ShiftCamera(shift); return true; }
 
-            BeginCarry(nearCentre, exitNormal, mouthRadius, shift, ball: false);
-            return true;
-        }
-
-        /// <summary>
-        /// The ship this camera follows has just been carried into a wormhole mouth — the sphere
-        /// at <paramref name="centre"/> — and out of its partner, displaced by
-        /// <paramref name="shift"/>. Follow it through rather than cutting: keep framing the ship
-        /// through the near sphere (whose surface shows exactly the view from the far side —
-        /// <see cref="WormholeView"/>) and move across when the camera itself reaches the sphere.
-        ///
-        /// <para>Identity-guarded exactly as <see cref="CarryThroughPortal"/> is. A sphere has no
-        /// "side": crossing is reaching it, within the clearance at which its surface stops drawing
-        /// for this camera (<see cref="WormholeGeometry.Clearance"/>) — the two share one number, so
-        /// the camera lands just inside the far mouth's own clearance, where that mouth has just
-        /// stopped drawing and the world beyond it is seen directly.</para>
-        /// </summary>
-        public bool CarryThroughSphere(Transform subject, Vector3 centre, float radius, Vector3 shift)
-        {
-            if (!_followTarget || !subject) return false;
-            if (_followTarget != subject && !_followTarget.IsChildOf(subject)) return false;
-            if (shift.sqrMagnitude < 1e-6f) return false;
-
-            if (_carrying) FinishCarry();
-            if (PlacementAnchor.HasValue) { ShiftCamera(shift); return true; }
-
-            BeginCarry(centre, Vector3.forward, radius, shift, ball: true);
-            return true;
-        }
-
-        private void BeginCarry(Vector3 nearCentre, Vector3 exitNormal, float mouthRadius, Vector3 shift, bool ball)
-        {
             _carryShift = shift;
-            _carryCentre = nearCentre;
-            _carryNormal = exitNormal.sqrMagnitude > 1e-6f ? exitNormal.normalized : Vector3.forward;
-            _carryRadius = Mathf.Max(0.01f, mouthRadius);
-            _carryBall = ball;
+            _carryCentre = centre;
+            _carryRadius = Mathf.Max(0.01f, radius);
             _carryDeadline = Time.time + MaxCarrySeconds;
             _carrying = true;
 
             // Already through (rear view, or a camera that sits level with the ship): move now.
             if (CameraHasCrossed()) FinishCarry();
             else PublishCarryToCorridor();
+            return true;
         }
 
         private bool CameraHasCrossed()
         {
-            // "At the plane" counts as through: a camera within its own near clip of the mouth
-            // would clip the window it is looking through and show the near side for a frame.
+            // "At the surface" counts as through: a camera within its own near clip of the sphere
+            // would clip the mouth it is looking through and show the near side for a frame.
             float nearClip = Camera ? Camera.nearClipPlane : 0.3f;
-            if (_carryBall)
-            {
-                float reach = _carryRadius + WormholeGeometry.Clearance(nearClip);
-                return (transform.position - _carryCentre).sqrMagnitude <= reach * reach;
-            }
-            return Vector3.Dot(transform.position - _carryCentre, _carryNormal) >= -nearClip * 2f;
+            float reach = _carryRadius + WormholeGeometry.Clearance(nearClip);
+            return (transform.position - _carryCentre).sqrMagnitude <= reach * reach;
         }
 
         /// <summary>
-        /// Would the pilot still see their ship THROUGH the mouth from here? The line from the
-        /// camera to where the ship is framed must pierce the near plane inside the ring. Once it
-        /// does not — the ship turned hard, or went through near the rim and the camera is
-        /// trailing wide — continuing the carry would leave the pilot looking at a ring with no
+        /// Would the pilot still see their ship THROUGH the mouth from here? The line of sight to
+        /// where the ship is framed must still pass through the ball (or the ship is framed inside
+        /// it). Once it does not — the ship turned hard, or went in near the rim and the camera is
+        /// trailing wide — continuing the carry would leave the pilot looking at a mouth with no
         /// ship in it, so the camera is handed across instead.
         /// </summary>
-        private bool ShipVisibleThroughMouth(Vector3 framed)
-        {
-            // Through a sphere: the ship is seen through it while the line of sight to where the
-            // ship is framed still passes through the ball (or the ship is framed inside it).
-            if (_carryBall)
-                return WormholeGeometry.SegmentHitsBall(transform.position, framed, _carryCentre, _carryRadius);
-
-            float dCam = Vector3.Dot(transform.position - _carryCentre, _carryNormal);
-            float dShip = Vector3.Dot(framed - _carryCentre, _carryNormal);
-            if (dShip <= 0f) return true;                    // ship not yet beyond - nothing to lose
-            if (dCam >= 0f) return true;                     // camera through - handled elsewhere
-            float t = dCam / (dCam - dShip);
-            Vector3 pierce = Vector3.Lerp(transform.position, framed, t);
-            Vector3 rel = pierce - _carryCentre;
-            Vector3 lateral = rel - Vector3.Dot(rel, _carryNormal) * _carryNormal;
-            return lateral.sqrMagnitude <= _carryRadius * _carryRadius;
-        }
+        private bool ShipVisibleThroughMouth(Vector3 framed) =>
+            WormholeGeometry.SegmentHitsBall(transform.position, framed, _carryCentre, _carryRadius);
 
         private void TickCarry(Vector3 framed)
         {
@@ -243,10 +194,10 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Move the camera through the portal: its pose and its smoothing state together, by the
-        /// portal's own translation. The pair shares one axis, so the map has no rotation — the
-        /// camera keeps its orientation and its SmoothDamp velocity exactly, which is what makes
-        /// the frame after the hand-over continue the frame before it.
+        /// Move the camera through the wormhole: its pose and its smoothing state together, by the
+        /// pair's own translation. The map has no rotation, so the camera keeps its orientation and
+        /// its SmoothDamp velocity exactly, which is what makes the frame after the hand-over
+        /// continue the frame before it.
         /// </summary>
         private void FinishCarry()
         {

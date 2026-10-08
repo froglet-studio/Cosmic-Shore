@@ -27,6 +27,17 @@
 // written straight into the gameplay camera's colour buffer, so its own post stack runs over the
 // sphere exactly once, with the rest of the frame.
 //
+// THE RIM WEARS THE DOMAIN. The only part of the surface that is the mouth itself rather than the place
+// beyond it is the fresnel rim, and it is painted in the owning domain's hue (_WormholeRimTint, per
+// renderer, from the theme's domain colour; _RimColor is only the fallback for a mouth built with no
+// tint). _DomainRimBoost lifts the theme's LDR colour so the rim blooms in that hue instead of reading
+// as a pale wash.
+//
+// SEALED (_WormholeSealed = 1): a domain-locked mouth seen by a viewer who may not thread it — a Butterfly
+// rival — shows NO view through it, because a view through is a promise you can go there. It draws only a
+// fresnel shell in the domain colour and clips its interior (colour and depth alike), so a rival sees a
+// domain-coloured bubble they will fly straight through. An unpaired mouth (one withering away) is sealed too.
+//
 // A CAMERA INSIDE A MOUTH DOES NOT DRAW IT. Within _WormholeClearance of the surface (a few near
 // clips, WormholeGeometry.Clearance) the fragment is dropped, so a camera carried through sees the
 // world beyond the far mouth directly instead of the inside of a sphere — and the carry hands over at
@@ -42,13 +53,17 @@ Shader "CosmicShore/Wormhole"
 {
     Properties
     {
-        [HDR] _RimColor ("Rim Colour", Color) = (0.45, 0.75, 1.6, 1)
+        [HDR] _RimColor ("Rim Colour (fallback when no domain tint is set)", Color) = (0.45, 0.75, 1.6, 1)
+        _DomainRimBoost ("Domain Rim Boost", Range(0, 8)) = 2
         _RimPower ("Rim Power", Range(0.5, 16)) = 6
         _RimIntensity ("Rim Intensity", Range(0, 4)) = 0.35
         _RimDarken ("Rim Darkening", Range(0, 1)) = 0.25
         _FlareIntensity ("Transit Flare", Range(0, 8)) = 2.5
         _ProxyRadius ("Panorama Proxy Distance", Float) = 600
         [HDR] _VoidColor ("Void Colour (before the first capture)", Color) = (0.01, 0.015, 0.04, 1)
+        _SealedRimPower ("Sealed Rim Power", Range(0.5, 8)) = 2.5
+        _SealedRimCutoff ("Sealed Rim Cutoff", Range(0, 1)) = 0.2
+        _SealedIntensity ("Sealed Rim Intensity", Range(0, 8)) = 1.5
     }
 
     SubShader
@@ -72,6 +87,10 @@ Shader "CosmicShore/Wormhole"
             float _FlareIntensity;
             float _ProxyRadius;
             float4 _VoidColor;
+            float _DomainRimBoost;
+            float _SealedRimPower;
+            float _SealedRimCutoff;
+            float _SealedIntensity;
         CBUFFER_END
 
         // PER RENDERER (WormholeMouth.ApplySurface, through a MaterialPropertyBlock).
@@ -80,6 +99,8 @@ Shader "CosmicShore/Wormhole"
         float _WormholeExactBlend;       // 0 panorama .. 1 exact
         float _WormholePanoramaReady;    // the partner's six faces have all been captured
         float _WormholeFlare;            // 1 on a transit, decaying
+        float4 _WormholeRimTint;         // rgb the domain's hue (linear); a = 1 when set
+        float _WormholeSealed;           // 1 = this viewer may not thread it: outline only
 
         // GLOBAL (WormholeView).
         float _WormholeMainView;         // 1 while the gameplay camera is drawing
@@ -91,6 +112,23 @@ Shader "CosmicShore/Wormhole"
         {
             float dist = distance(_WorldSpaceCameraPos, _WormholeSphere.xyz);
             clip(dist - (_WormholeSphere.w + max(_WormholeClearance, 0.0)));
+        }
+
+        // The rim's colour: the owning domain's hue when the mouth was given one.
+        float3 RimColour()
+        {
+            return _WormholeRimTint.a > 0.5 ? _WormholeRimTint.rgb * _DomainRimBoost : _RimColor.rgb;
+        }
+
+        // A sealed mouth keeps only its fresnel shell; everything inside the cutoff is dropped, in
+        // the depth pass as well as the colour pass. Returns the shell's strength.
+        float SealedShell(float3 positionWS)
+        {
+            float3 n = normalize(positionWS - _WormholeSphere.xyz);
+            float3 toEye = normalize(_WorldSpaceCameraPos - positionWS);
+            float s = pow(1.0 - saturate(dot(n, toEye)), max(_SealedRimPower, 0.5));
+            clip(s - _SealedRimCutoff);
+            return s;
         }
         ENDHLSL
 
@@ -189,6 +227,13 @@ Shader "CosmicShore/Wormhole"
             {
                 ClipForInsideCamera();
 
+                if (_WormholeSealed > 0.5)
+                {
+                    float shell = SealedShell(input.positionWS);
+                    float lit = _SealedIntensity * shell + saturate(_WormholeFlare) * _FlareIntensity;
+                    return half4(RimColour() * lit, 1.0);
+                }
+
                 float3 centre = _WormholeSphere.xyz;
                 float radius = max(_WormholeSphere.w, 1e-4);
                 float3 viewDir = normalize(input.positionWS - _WorldSpaceCameraPos);
@@ -217,11 +262,11 @@ Shader "CosmicShore/Wormhole"
                 }
 
                 // The rim: the only thing on the surface that is the mouth itself rather than the
-                // place beyond it — a faint darkening and glow at the silhouette, punched up for a
-                // moment on every transit.
+                // place beyond it — a faint darkening and a glow in the DOMAIN's hue at the
+                // silhouette, punched up for a moment on every transit.
                 float rim = pow(1.0 - saturate(dot(normal, -viewDir)), max(_RimPower, 0.5));
                 float glow = _RimIntensity + saturate(_WormholeFlare) * _FlareIntensity;
-                colour = colour * (1.0 - rim * saturate(_RimDarken)) + _RimColor.rgb * (rim * glow);
+                colour = colour * (1.0 - rim * saturate(_RimDarken)) + RimColour() * (rim * glow);
 
                 return half4(colour, 1.0);
             }
@@ -250,18 +295,21 @@ Shader "CosmicShore/Wormhole"
             struct VaryingsDepth
             {
                 float4 positionCS : SV_POSITION;
+                float3 positionWS : TEXCOORD0;
             };
 
             VaryingsDepth vertDepth (AttributesDepth input)
             {
                 VaryingsDepth output;
-                output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
+                output.positionWS = TransformObjectToWorld(input.positionOS.xyz);
+                output.positionCS = TransformWorldToHClip(output.positionWS);
                 return output;
             }
 
             half fragDepth (VaryingsDepth input) : SV_Target
             {
                 ClipForInsideCamera();
+                if (_WormholeSealed > 0.5) SealedShell(input.positionWS);
                 return input.positionCS.z;
             }
             ENDHLSL

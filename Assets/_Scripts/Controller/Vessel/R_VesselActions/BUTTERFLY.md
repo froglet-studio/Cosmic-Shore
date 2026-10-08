@@ -336,8 +336,7 @@ screen is unchanged apart from the row itself.
 | Replicated element levels | `R_VesselActionHandler.NetElementLevels`, `R_VesselElementalAbilityHandler.ReplicatedLevel`, `ElementalFloat.EvaluateReplicated` |
 | Dust assets (generated) | `Tools/Build/author_butterfly_dust.py` (`--check`) |
 | The new skimmer arm | `ImpactEffects/EffectsSO/Abstract Effect Types/SkimmerLifeformCrystalEffectSO.cs` |
-| Fold gate | `R_VesselActions/FoldGate.cs`, `R_VesselActions/FoldGateGeometry.cs` |
-| Fold gate offline proof | `Tools/Build/foldgate_harness/` (compiles and RUNS the shipped geometry) |
+| Fold wormhole (replaced the ring gates 2026-10-08) | `Controller/Environment/Wormhole/WormholeMouth.cs`, `WormholeView.cs`, `WormholeGeometry.cs` (+ `WormholeGeometryTests`); tuning on `ButterflyFoldAction.asset` |
 | HUD | `UI/Controller/ButterflyHUDController.cs`, `UI/View/ButterflyHUDView.cs` |
 | HUD row + icons (authored) | `Tools/Build/author_butterfly_ability_row.py`, `Tools/Build/author_butterfly_icon_placeholders.py` |
 | Design record | `Assets/Resources/ElementalAbilityMaps/Butterfly.asset` |
@@ -419,8 +418,8 @@ Run **FrogletTools ▸ Vessels ▸ Create Butterfly Vessel**, read its report, t
   - `SpreadWingsActionExecutor` — `massModeEvent`, `dustModeEvent` (the RT switch, only on a press
     or release that actually changed the mode).
   - `FoldActionExecutor` — `foldEngageEvent`, `foldDepartEvent`, `foldArriveEvent`,
-    `gatesOpenEvent`, `gateThreadEvent` (the last handed to each `FoldGate` at build, since a gate
-    is AddComponent'd at runtime and has no inspector). A PEER voices the arrival once the
+    `gatesOpenEvent`, `gateThreadEvent` (the last handed to each `WormholeMouth` at build, since a
+    mouth is AddComponent'd at runtime and has no inspector). A PEER voices the arrival once the
     replicated pose is seen, not at the origin.
   - `ButterflyDustField` on `Components/ButterflyDustSkimmer.prefab` — `scaleDustBiteEvent`
     (Charge; played by `VesselElementalDebuffBySkimmerEffectSO` after its per-victim cooldown),
@@ -438,5 +437,5 @@ Run **FrogletTools ▸ Vessels ▸ Create Butterfly Vessel**, read its report, t
 - **No card icons.** `SO_Class_Butterfly` authors no `IconActive`/`IconInactive`, so
   `check_vessel_class_icons.py` is red on this hull. The Scarab's fix
   (`Tools/Build/render_scarab_card_icons.py`) is the pattern.
-- **A standing fold gate has no HUD marker** (its open/thread sounds now have slots, above), and an AI never threads one
+- **A standing fold wormhole has no HUD marker** (its open/thread sounds now have slots, above), and an AI never threads one
   (`BUTTERFLY_FOLD.md` § Follow-ups).

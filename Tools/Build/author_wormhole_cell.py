@@ -13,6 +13,12 @@ Emits, deterministically (guid = md5 of a stable name, so a re-run never re-mint
   ...and appends that config to Menu_Main's Cell.CellConfigs - the Cell Selector authors no list
   of its own, it reads the cell's rotation (CellSelectorToy.BuildOptions).
 
+  It also wires the BUTTERFLY's fold onto the same material: every fold leaves a domain-locked
+  wormhole pair (they replaced the ring gates - BUTTERFLY_FOLD.md § "The gates became wormholes"),
+  so ButterflyFoldAction.asset gains wormholeMaterial / portalWindowFadeBand / panoramaFaceSize
+  and loses the two ring-only keys (gateExitClearance, portalWindowFadeSeconds). Tuning values a
+  designer may change are only ADDED when absent; the material reference is enforced.
+
 The cell is open water with the shared freestyle population (the Blob Cell spawn profile every
 authored freestyle world uses) and NO prisms in its environment, so its PhaseThresholds are the
 Blob deltas over a zero baseline - the same rule every freestyle world is authored on
@@ -45,6 +51,10 @@ PREFAB = A("_Prefabs", "Spawnables", "SpawnableWormholes.prefab")
 CELL_DIR = A("_SO_Assets", "Cell Configs", "Wormhole Cell")
 CONFIG = os.path.join(CELL_DIR, "Wormhole Cell Config.asset")
 MENU_SCENE = A("_Scenes", "Menu_Main.unity")
+FOLD_ACTION = A("_SO_Assets", "VesselActions", "Butterfly", "ButterflyFoldAction.asset")
+FOLD_ACTION_SCRIPT = A("_Scripts", "Controller", "Vessel", "R_VesselActions", "Data Containers", "FoldActionSO.cs")
+FOLD_RETIRED_KEYS = ("gateExitClearance", "portalWindowFadeSeconds")
+FOLD_ADDED_DEFAULTS = (("portalWindowFadeBand", "600"), ("panoramaFaceSize", "256"))
 
 # References INTO existing assets - each is resolved and asserted below, never trusted.
 CELL_CONFIG_SCRIPT = A("_Scripts", "Utility", "DataContainers", "CellConfigDataSO.cs")
@@ -161,11 +171,15 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
+    - _DomainRimBoost: 2
     - _FlareIntensity: 2.5
     - _ProxyRadius: 600
     - _RimDarken: 0.25
     - _RimIntensity: 0.35
     - _RimPower: 6
+    - _SealedIntensity: 1.5
+    - _SealedRimCutoff: 0.2
+    - _SealedRimPower: 2.5
     m_Colors:
     - _RimColor: {{r: 0.45, g: 0.75, b: 1.6, a: 1}}
     - _VoidColor: {{r: 0.01, g: 0.015, b: 0.04, a: 1}}
@@ -451,6 +465,38 @@ def scene_patch(text, guid):
     return out
 
 
+# ── The Butterfly's fold: its pair is a wormhole now ─────────────────────────────
+
+def fold_patch(text):
+    """ButterflyFoldAction.asset as it should be: retired ring keys gone, wormhole keys present."""
+    for key in FOLD_RETIRED_KEYS:
+        text = re.sub(rf"^  {key}: [^\n]*\n", "", text, flags=re.M)
+    material = f"{{fileID: 2100000, guid: {guid_for('material')}, type: 2}}"
+    anchor = re.search(r"^  portalWindowRenderScale: [^\n]*\n", text, re.M)
+    assert anchor, "ButterflyFoldAction.asset has no portalWindowRenderScale to anchor on"
+    insert = ""
+    for key, value in FOLD_ADDED_DEFAULTS:
+        if not re.search(rf"^  {key}: ", text, re.M):
+            insert += f"  {key}: {value}\n"
+    if re.search(r"^  wormholeMaterial: ", text, re.M):
+        text = re.sub(r"^  wormholeMaterial: [^\n]*\n", f"  wormholeMaterial: {material}\n", text, flags=re.M)
+    else:
+        insert += f"  wormholeMaterial: {material}\n"
+    return text[:anchor.end()] + insert + text[anchor.end():]
+
+
+def fold_problems(text):
+    problems = []
+    keys = set(re.findall(r"^  ([A-Za-z]\w*):", text.split("m_EditorClassIdentifier:")[1], re.M))
+    want = fields(FOLD_ACTION_SCRIPT)
+    for k in sorted(keys - want):
+        problems.append(f"ButterflyFoldAction.asset key '{k}' is not a field of FoldActionSO")
+    for k in ("wormholeMaterial", "portalWindowFadeBand", "panoramaFaceSize"):
+        if k not in keys:
+            problems.append(f"ButterflyFoldAction.asset does not author '{k}'")
+    return problems
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true")
@@ -458,6 +504,9 @@ def main():
 
     out = outputs()
     problems = validate(out)
+    fold_now = read(FOLD_ACTION)
+    fold_want = fold_patch(fold_now)
+    problems += fold_problems(fold_want)
     size, listed = scene_state()
     L = ladder()
     print("Wormhole cell - two mouths, no prisms; Blob spawn profile; ladder = Blob deltas over 0:")
@@ -467,6 +516,8 @@ def main():
         drift = [p for p, t in out.items() if not os.path.exists(p) or read(p) != t]
         if not listed:
             drift.append(f"{MENU_SCENE} (Cell.CellConfigs, size {size})")
+        if fold_now != fold_want:
+            drift.append(FOLD_ACTION)
         if drift or problems:
             print("FAIL")
             for p in problems:
@@ -474,7 +525,8 @@ def main():
             for d in drift:
                 print(f"  - differs from what this script authors: {os.path.relpath(d, REPO) if os.path.isabs(d) else d}")
             return 1
-        print("OK - every asset matches, and the Wormhole cell is in the Cell Selector.")
+        print("OK - every asset matches, the Wormhole cell is in the Cell Selector, and the "
+              "Butterfly's fold lays wormholes.")
         return 0
 
     if problems:
@@ -488,6 +540,10 @@ def main():
         with open(path, "w", encoding="utf-8", newline="\n") as fh:
             fh.write(text)
     print(f"wrote {len(out)} files")
+    if fold_now != fold_want:
+        with open(FOLD_ACTION, "w", encoding="utf-8", newline="\n") as fh:
+            fh.write(fold_want)
+        print("  Butterfly fold: ButterflyFoldAction.asset wired to the wormhole material")
 
     if listed:
         print("  Cell Selector: already listed in Menu_Main")

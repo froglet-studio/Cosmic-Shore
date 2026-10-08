@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CosmicShore.Data;
 using CosmicShore.Utility;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -43,6 +44,14 @@ namespace CosmicShore.Gameplay
     /// vessel's own step, like a gate's. A prism laid inside the ball is ordinary mass in the shared
     /// interior — visible through either mouth's exact view, hidden from outside behind both
     /// surfaces.</para>
+    ///
+    /// <para><b>Two owners, one component.</b> The Wormhole CELL lays a permanent, open pair
+    /// (<see cref="SpawnableWormholePair"/>); the Butterfly's FOLD lays a domain-locked pair at
+    /// each end of every fold (<c>FoldActionExecutor</c>, <c>BUTTERFLY_FOLD.md</c> § "The gates
+    /// became wormholes"). A <see cref="Settings.DomainLocked"/> mouth carries only vessels of its
+    /// <see cref="Domain"/>, and to a viewer of any other domain it is SEALED — a fresnel outline in
+    /// the domain's colour with no view through it, because a view through is a promise you can go
+    /// there. Either way the rim wears <see cref="Settings.RimTint"/>, the domain's hue.</para>
     /// </summary>
     public sealed class WormholeMouth : MonoBehaviour
     {
@@ -60,11 +69,40 @@ namespace CosmicShore.Gameplay
         static readonly int PanoramaId = Shader.PropertyToID("_WormholePanorama");
         static readonly int PanoramaReadyId = Shader.PropertyToID("_WormholePanoramaReady");
         static readonly int FlareId = Shader.PropertyToID("_WormholeFlare");
+        static readonly int RimTintId = Shader.PropertyToID("_WormholeRimTint");
+        static readonly int SealedId = Shader.PropertyToID("_WormholeSealed");
+
+        /// <summary>
+        /// Everything a mouth is built with, copied at <see cref="Build"/>. A struct rather than a
+        /// reference to its owner, because two very different owners build mouths (the cell's
+        /// environment prefab and the Butterfly's fold) and neither should be a type the other
+        /// has to know about.
+        /// </summary>
+        public struct Settings
+        {
+            /// <summary>The sphere's material (CosmicShore/Wormhole).</summary>
+            public Material SurfaceMaterial;
+            /// <summary>Seconds to bloom in from nothing; also the default wither on retire.</summary>
+            public float BloomSeconds;
+            /// <summary>Furthest the player's camera may be for an exact view.</summary>
+            public float ExactRange;
+            /// <summary>Distance past <see cref="ExactRange"/> over which it fades to the panorama.</summary>
+            public float ExactFadeBand;
+            /// <summary>Exact view resolution as a fraction of the gameplay camera's.</summary>
+            public float ExactRenderScale;
+            /// <summary>Texels per side of each panorama face.</summary>
+            public int PanoramaFaceSize;
+            /// <summary>FMOD event at the exit of a transit. Empty = silence.</summary>
+            public FMODUnity.EventReference TransitEvent;
+            /// <summary>The rim's hue — the owning domain's colour (sRGB, as the theme authors it).</summary>
+            public Color RimTint;
+            /// <summary>Carry only vessels of <see cref="Domain"/>, and seal the view for every other.</summary>
+            public bool DomainLocked;
+            /// <summary>The domain that owns the mouth (its rim colour, and its lock if locked).</summary>
+            public Domains Domain;
+        }
 
         static readonly Vector4 IdentityUV = new(1f, 1f, 0f, 0f);
-
-        /// <summary>Texel step the exact target is sized in, as the Butterfly window's is.</summary>
-        const int TexelQuantum = 32;
 
         /// <summary>How far toward the vantage the clip plane is pulled from the far ball, so
         /// geometry lying on the plane does not flicker between kept and clipped.</summary>
@@ -76,8 +114,10 @@ namespace CosmicShore.Gameplay
 
         const float FootprintPadPixels = 3f;
 
-        SpawnableWormholePair _def;
+        Settings _settings;
         IReadOnlyList<IPlayer> _players;
+        bool _retiring;
+        float _retireSeconds = 0.5f;
         float _radius = 1f;
         float _bloom;
         float _flare;
@@ -120,17 +160,35 @@ namespace CosmicShore.Gameplay
         public float Radius => _radius * _bloom * Mathf.Abs(transform.lossyScale.x);
 
         /// <summary>True once the sphere has fully bloomed — only then does it carry anyone.</summary>
-        public bool IsOpen => _bloom >= 1f && _partner && _partner._bloom >= 1f;
+        public bool IsOpen => !_retiring && _bloom >= 1f && _partner && _partner._bloom >= 1f;
+
+        /// <summary>True once <see cref="Retire"/> has run — a closing mouth is never a passage.</summary>
+        public bool IsRetiring => _retiring;
+
+        /// <summary>The domain that owns the mouth (its rim's hue; its lock, if locked).</summary>
+        public Domains Domain => _settings.Domain;
+
+        /// <summary>Does this mouth carry only its own domain?</summary>
+        public bool DomainLocked => _settings.DomainLocked;
+
+        /// <summary>Who this mouth may carry — and draw carried through in a view of it.</summary>
+        public IReadOnlyList<IPlayer> Players => _players;
+
+        /// <summary>
+        /// Set each frame by <see cref="WormholeView"/>: the viewer on this machine may not thread
+        /// this mouth, so it shows no view through — only its domain-coloured outline.
+        /// </summary>
+        public bool Sealed { get; set; }
 
         /// <summary>The sphere's own renderer, hidden by <see cref="WormholeView"/> inside every
         /// wormhole render (its surface samples the very targets those renders draw into).</summary>
         public MeshRenderer Surface => _renderer;
 
         /// <summary>Furthest a viewer may be for this mouth to get an exact view.</summary>
-        public float ExactRange => _def ? _def.ExactRange : 0f;
+        public float ExactRange => _settings.ExactRange;
 
         /// <summary>Distance over which the exact view crossfades to the panorama.</summary>
-        public float ExactFadeBand => _def ? _def.ExactFadeBand : 1f;
+        public float ExactFadeBand => Mathf.Max(1f, _settings.ExactFadeBand);
 
         /// <summary>How much of this frame the surface shows the exact view, 0..1.</summary>
         public float ExactBlend { get; set; }
@@ -145,9 +203,9 @@ namespace CosmicShore.Gameplay
         // ---- build ---------------------------------------------------------------------------
 
         /// <summary>Lay the mouth. Call immediately after AddComponent; it blooms in from nothing.</summary>
-        public void Build(SpawnableWormholePair definition, IReadOnlyList<IPlayer> players, float radius)
+        public void Build(Settings settings, IReadOnlyList<IPlayer> players, float radius)
         {
-            _def = definition;
+            _settings = settings;
             _players = players;
             _radius = Mathf.Max(1f, radius);
             _bloom = 0f;
@@ -156,7 +214,7 @@ namespace CosmicShore.Gameplay
             surface.transform.SetParent(transform, false);
             surface.AddComponent<MeshFilter>().sharedMesh = SharedSphereMesh();
             _renderer = surface.AddComponent<MeshRenderer>();
-            _renderer.sharedMaterial = definition ? definition.SurfaceMaterial : null;
+            _renderer.sharedMaterial = settings.SurfaceMaterial;
             _renderer.shadowCastingMode = ShadowCastingMode.Off;
             _renderer.receiveShadows = false;
             _renderer.lightProbeUsage = LightProbeUsage.Off;
@@ -165,8 +223,7 @@ namespace CosmicShore.Gameplay
             _block = new MaterialPropertyBlock();
 
             if (!_renderer.sharedMaterial)
-                CSDebug.LogWarning($"[Wormhole] {name}: no surface material on " +
-                                   $"{(definition ? definition.name : "its definition")} - the mouth " +
+                CSDebug.LogWarning($"[Wormhole] {name}: built with no surface material - the mouth " +
                                    "will carry pilots but draw nothing.", this);
 
             // GPU resources only exist in play: an edit-mode environment build (an editor tool
@@ -185,6 +242,31 @@ namespace CosmicShore.Gameplay
             b._partner = a;
         }
 
+        /// <summary>
+        /// Wither this mouth away over <paramref name="seconds"/> and destroy it — the only removal
+        /// path, and only ever caused by a player's act (a Butterfly folding again replaces its
+        /// pair) or by the world it belongs to going away. It unpairs at once, so a half-retired
+        /// pair can never carry anyone, and an unpaired mouth reads as sealed while it shrinks.
+        /// </summary>
+        public void Retire(float seconds)
+        {
+            if (_retiring) return;
+            _retiring = true;
+            _retireSeconds = Mathf.Max(0.05f, seconds);
+            if (_partner && _partner._partner == this) _partner._partner = null;
+            _partner = null;
+        }
+
+        /// <summary>Would this mouth carry <paramref name="vessel"/>? Its domain, if it is locked.</summary>
+        public bool CanCarry(IVessel vessel)
+        {
+            if (vessel == null) return false;
+            if (!_settings.DomainLocked) return true;
+            var status = vessel.VesselStatus;
+            // IVesselStatus.Domain reads Player and logs when there is none; ask first.
+            return status?.Player != null && status.Domain == _settings.Domain;
+        }
+
         void BuildEyes()
         {
             _exactEye = MakeEye("ExactEye", out _exactEyeData);
@@ -197,7 +279,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// A camera attached to this mouth: never tagged MainCamera, left DISABLED and stepped by
         /// hand into a render target — outside the speed tunnel, the graphics-settings push and
-        /// <c>Camera.main</c> by construction (the Butterfly window's reasoning, REAR_VIEW.md
+        /// <c>Camera.main</c> by construction (the off-screen camera rules, REAR_VIEW.md
         /// §3.1.1). No post-processing: its picture is composited INTO the world and the gameplay
         /// camera's own post runs over it once, with everything else.
         /// </summary>
@@ -228,9 +310,17 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
+            if (_retiring)
+            {
+                _bloom = Mathf.MoveTowards(_bloom, 0f, Time.deltaTime / _retireSeconds);
+                ApplyBloom();
+                if (_bloom <= 0f) Destroy(gameObject);
+                return;
+            }
+
             if (_bloom < 1f)
             {
-                float seconds = _def ? Mathf.Max(0.01f, _def.BloomSeconds) : 1f;
+                float seconds = Mathf.Max(0.01f, _settings.BloomSeconds);
                 _bloom = Mathf.MoveTowards(_bloom, 1f, Time.deltaTime / seconds);
                 ApplyBloom();
             }
@@ -251,6 +341,7 @@ namespace CosmicShore.Gameplay
                 // Only the machine that OWNS a vessel decides that vessel moved: the pose write
                 // replicates, so a peer acting too would be two machines teleporting one ship.
                 if (!vessel.IsNetworkOwner) continue;
+                if (!CanCarry(vessel)) continue;
 
                 Vector3 cur = vessel.Transform.position;
                 bool first = !_lastPos.TryGetValue(vessel, out var prev);
@@ -291,8 +382,8 @@ namespace CosmicShore.Gameplay
             _flare = 1f;
             partner._flare = 1f;
 
-            if (_def && !_def.TransitEvent.IsNull && CosmicShore.Core.AudioSystem.Instance)
-                CosmicShore.Core.AudioSystem.Instance.PlaySFXEvent(_def.TransitEvent, now);
+            if (!_settings.TransitEvent.IsNull && CosmicShore.Core.AudioSystem.Instance)
+                CosmicShore.Core.AudioSystem.Instance.PlaySFXEvent(_settings.TransitEvent, now);
         }
 
         void PruneDead()
@@ -455,21 +546,20 @@ namespace CosmicShore.Gameplay
 
         bool EnsureExactTarget(Camera view, Rect footprint, float maxRenderScale)
         {
-            float scale = Mathf.Min(_def ? _def.ExactRenderScale : 0.75f, maxRenderScale);
-            int capW = Mathf.Max(TexelQuantum, Mathf.RoundToInt(view.pixelWidth * scale));
-            int capH = Mathf.Max(TexelQuantum, Mathf.RoundToInt(view.pixelHeight * scale));
-            int needW = Mathf.Clamp(Mathf.CeilToInt(footprint.width * view.pixelWidth * scale), TexelQuantum, capW);
-            int needH = Mathf.Clamp(Mathf.CeilToInt(footprint.height * view.pixelHeight * scale), TexelQuantum, capH);
+            float scale = Mathf.Min(Mathf.Clamp(_settings.ExactRenderScale, 0.25f, 1f), maxRenderScale);
+            int capW = Mathf.Max(WormholeGeometry.TexelQuantum, Mathf.RoundToInt(view.pixelWidth * scale));
+            int capH = Mathf.Max(WormholeGeometry.TexelQuantum, Mathf.RoundToInt(view.pixelHeight * scale));
+            int needW = Mathf.Clamp(Mathf.CeilToInt(footprint.width * view.pixelWidth * scale), WormholeGeometry.TexelQuantum, capW);
+            int needH = Mathf.Clamp(Mathf.CeilToInt(footprint.height * view.pixelHeight * scale), WormholeGeometry.TexelQuantum, capH);
             var format = TargetFormat(view);
 
-            // The Butterfly window's sizing rules, shared rather than restated.
             bool fits = _exactTex != null && _exactFormat == format
-                        && FoldGatePortalView.TargetFits(_exactTex.width, _exactTex.height, needW, needH);
+                        && WormholeGeometry.TargetFits(_exactTex.width, _exactTex.height, needW, needH);
             if (_exactTex != null && !fits) ReleaseExact();
             if (_exactTex != null) return true;
 
-            _exactTex = new RenderTexture(FoldGatePortalView.TargetSize(needW, capW),
-                                          FoldGatePortalView.TargetSize(needH, capH), 24, format)
+            _exactTex = new RenderTexture(WormholeGeometry.TargetSize(needW, capW),
+                                          WormholeGeometry.TargetSize(needH, capH), 24, format)
             {
                 name = $"{name} ExactView",
                 antiAliasing = 1,
@@ -538,7 +628,7 @@ namespace CosmicShore.Gameplay
             // A 2D target copied into an array slice is a copy between texture TYPES.
             if ((SystemInfo.copyTextureSupport & CopyTextureSupport.DifferentTypes) == 0) return false;
 
-            int size = _def ? _def.PanoramaFaceSize : 256;
+            int size = Mathf.Clamp(_settings.PanoramaFaceSize, 64, 1024);
             var format = TargetFormat(view);
             if (_panorama != null && _panorama.width == size && _panoramaFormat == format)
                 return true;
@@ -597,6 +687,11 @@ namespace CosmicShore.Gameplay
             if (ready) _block.SetTexture(PanoramaId, partner._panorama);
             _block.SetFloat(PanoramaReadyId, ready ? 1f : 0f);
             _block.SetFloat(FlareId, _flare);
+            // SetColor, not SetVector: the theme authors sRGB, and SetColor converts to the
+            // project's linear space. Alpha 1 says "a tint is set"; 0 keeps the material's rim.
+            var tint = _settings.RimTint;
+            _block.SetColor(RimTintId, new Color(tint.r, tint.g, tint.b, tint.a > 0f ? 1f : 0f));
+            _block.SetFloat(SealedId, Sealed || !partner ? 1f : 0f);
             _renderer.SetPropertyBlock(_block);
         }
 
@@ -615,7 +710,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// HDR only when the PIPELINE renders HDR too — a device tier that turned the URP asset's
-        /// HDR off must not pay for HDR targets here (the Butterfly window's rule).
+        /// HDR off must not pay for HDR targets here.
         /// </summary>
         static RenderTextureFormat TargetFormat(Camera view)
         {

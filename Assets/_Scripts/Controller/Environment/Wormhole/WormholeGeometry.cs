@@ -110,8 +110,8 @@ namespace CosmicShore.Gameplay
         /// Narrow a projection to a sub-rectangle of its viewport (0..1), the window's own
         /// footprint: x' = (x − c·w) / h for the rectangle's NDC centre c and half-extent h — a
         /// rewrite of rows 0 and 1 against the w row, so depth and an oblique near plane are
-        /// untouched and culling follows the crop. The same arithmetic as the Butterfly window
-        /// (<c>FoldGatePortalView.CropProjection</c>).
+        /// untouched and culling follows the crop. (The arithmetic the Butterfly's retired fold-gate
+        /// window introduced.)
         /// </summary>
         public static Matrix4x4 Crop(Matrix4x4 projection, Rect footprint)
         {
@@ -123,6 +123,41 @@ namespace CosmicShore.Gameplay
             projection.SetRow(1, (projection.GetRow(1) - row3 * cy) / hy);
             return projection;
         }
+
+        // ---- sizing the exact view's render target -------------------------------------------
+
+        /// <summary>The exact target is sized in steps of this many texels, so a footprint growing
+        /// a few pixels a frame does not reallocate it every frame.</summary>
+        public const int TexelQuantum = 32;
+
+        /// <summary>Headroom a reallocated target takes over the footprint it was sized for, so an
+        /// approaching mouth grows into it instead of reallocating at every step.</summary>
+        const float GrowHeadroom = 1.25f;
+
+        /// <summary>A target this many times larger than the footprint needs (on both axes) is
+        /// reallocated smaller — the receding mouth stops paying for the size it had up close.</summary>
+        const float ShrinkSlack = 1.6f;
+
+        static int Quantize(float texels) =>
+            Mathf.Max(TexelQuantum, Mathf.CeilToInt(texels / TexelQuantum) * TexelQuantum);
+
+        /// <summary>The side a freshly allocated target takes for a footprint needing
+        /// <paramref name="need"/> texels: quantized, with grow headroom, never above the cap.</summary>
+        public static int TargetSize(int need, int cap) => Mathf.Min(cap, Quantize(need * GrowHeadroom));
+
+        /// <summary>
+        /// Whether an existing target still serves a footprint: it covers it, and is not grossly
+        /// larger on both axes. The shrink bound is QUANTIZED exactly as the allocation is — a raw
+        /// <c>need * ShrinkSlack</c> bound rejected the target <see cref="TargetSize"/> had just made
+        /// for the same footprint (need 32 → a 64 target → 64 > 51.2), so a distant window, whose
+        /// footprint sits on the 32-texel floor, reallocated its target every frame. Since Quantize
+        /// only rounds up, <c>TargetSize(n) ≤ Quantize(n × ShrinkSlack)</c> for every n, so a fresh
+        /// target always fits the footprint it was sized for. (Carried over from the Butterfly's
+        /// retired fold-gate window, with its tests.)
+        /// </summary>
+        public static bool TargetFits(int width, int height, int needW, int needH) =>
+            width >= needW && height >= needH
+            && (width <= Quantize(needW * ShrinkSlack) || height <= Quantize(needH * ShrinkSlack));
 
         // ---- the panorama: six 90° faces, one table shared with Wormhole.shader ------------------
 

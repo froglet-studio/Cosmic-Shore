@@ -25,11 +25,15 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
+    - _DomainRimBoost: 2
     - _FlareIntensity: 2.5
     - _ProxyRadius: 600
     - _RimDarken: 0.25
     - _RimIntensity: 0.35
     - _RimPower: 6
+    - _SealedIntensity: 1.5
+    - _SealedRimCutoff: 0.2
+    - _SealedRimPower: 2.5
     m_Colors:
     - _RimColor: {r: 0.45, g: 0.75, b: 1.6, a: 1}
     - _VoidColor: {r: 0.01, g: 0.015, b: 0.04, a: 1}

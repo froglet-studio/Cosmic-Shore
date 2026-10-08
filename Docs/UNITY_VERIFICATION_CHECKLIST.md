@@ -4692,3 +4692,27 @@ The Scene view and any preview camera show the panorama (not a smeared copy of t
 Profile with both mouths on screen: at most two exact renders + up to two 256² panorama faces per
 frame (`WormholeMouth.RenderExact` / `RenderNextPanoramaFace`). Report anything above that.
 
+---
+
+## 🔴 Butterfly fold gates → wormholes; domain-hued rims (`cece/relaxed-tesla-tpksuj`, 2026-10-08) — NOT EDITOR-VERIFIED
+
+`BUTTERFLY_FOLD.md` § "The gates became wormholes", `Docs/WORMHOLE_CELL.md` §7. `FoldGate`,
+`FoldGateGeometry`, `FoldGatePortalView` and `FoldGatePortal.shader/.mat` are deleted; every fold now
+leaves a domain-locked `WormholeMouth` pair. Compiled offline against Unity references; not run.
+
+### 1. A fold leaves a wormhole
+Fly the Butterfly, fold. Two spheres bloom (~0.45 s): one where you left, one around where you
+arrived. Your ship is visible through the destination sphere while it sits inside it, and flying on
+does not send you back. Fold again: the old pair withers away before the new one blooms.
+
+### 2. It carries your domain, and only your domain
+Fly into either mouth: you come out of the other, seamlessly (same checks as the Wormhole cell §3).
+A teammate (same domain) can do the same. Spectate / play a RIVAL domain: the mouths show only a
+coloured bubble outline in the Butterfly's colour with no view through, and flying into one does
+nothing — you pass straight through.
+
+### 3. Rims are the domain's hue
+On both the fold pairs and the Wormhole cell's pair (Blue), the fresnel rim and the transit flare are
+the domain colour, not white. Check each domain (Jade, Ruby, Gold, Blue). If the hue is too faint or
+too hot, tune `_DomainRimBoost` / `_RimIntensity` on `Wormhole.mat`.
+

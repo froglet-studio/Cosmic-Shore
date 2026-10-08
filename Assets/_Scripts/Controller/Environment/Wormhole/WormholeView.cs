@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CosmicShore.Data;
 using CosmicShore.Utility;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -16,8 +17,15 @@ namespace CosmicShore.Gameplay
     /// on screen and not already fully covered by its exact view — a 90° square at the authored
     /// face size. No shadows, no anti-aliasing, no post
     /// (the gameplay camera's own post runs over the composited sphere, once). A mouth the player
-    /// cannot see costs nothing. This is the Butterfly window's cost model
-    /// (<see cref="FoldGatePortalView"/>), widened to a sphere the player can see two of.</para>
+    /// cannot see costs nothing — and neither does a SEALED one (below), which shows no view
+    /// through. This is the Butterfly's retired fold-gate window's cost model, widened to a sphere
+    /// the player can see two of.</para>
+    ///
+    /// <para><b>Who may look through.</b> A domain-locked mouth (a Butterfly's fold pair) shows
+    /// its view only to a viewer whose camera follows a pilot of its domain — the pilot whose
+    /// fold it is and their team. To anyone else it is <see cref="WormholeMouth.Sealed"/>: a
+    /// domain-coloured outline with no view through, because a view through is a promise you can
+    /// go there (the fold gate's rule, kept).</para>
     ///
     /// <para><b>Which camera is looking.</b> The exact view is valid only for the camera it was
     /// rendered for, so the surface uses it only while THAT camera is drawing:
@@ -25,13 +33,16 @@ namespace CosmicShore.Gameplay
     /// camera and to 0 for every other one — the mouths' own eyes, preview cameras, the editor's
     /// scene view — which see the panorama instead.</para>
     ///
-    /// <para><b>A ship straddling a surface is drawn on both sides</b>, the fold gate's trick
-    /// for a sphere. Before a transit its nose is inside the near ball, which the surface hides,
-    /// so the exact render draws the ship carried through (its nose then sits inside the far
-    /// ball, which the window shows). After a transit the camera is still on the near side and
-    /// the ship's TAIL still sticks out of the far ball's near face, so the gameplay camera's
-    /// render draws the ship carried back. Each move brackets a single render and is undone
-    /// before anything else runs.</para>
+    /// <para><b>A ship in the shared interior is seen through either mouth.</b> The two balls are
+    /// one place, so a vessel inside (or straddling) ball M is, to a viewer looking through M, a
+    /// vessel inside the partner's ball — and M's exact render draws every vessel M may carry that
+    /// is in or cut by M at its mapped position on the far side. That is what shows a nose
+    /// disappearing into a mouth in the window, and what shows a Butterfly that has just folded,
+    /// sitting at the centre of the destination mouth laid around it, THROUGH that mouth rather
+    /// than hidden behind it. After a transit the camera is still on the near side and the ship's
+    /// TAIL still sticks out of the far ball's near face, so the gameplay camera's render draws the
+    /// followed ship carried back. Each move brackets a single render and is undone before anything
+    /// else runs.</para>
     /// </summary>
     public static class WormholeView
     {
@@ -45,6 +56,10 @@ namespace CosmicShore.Gameplay
         static readonly List<WormholeMouth> Candidates = new();
         static readonly List<WormholeMouth> OnScreen = new();
         static readonly List<bool> HiddenScratch = new();
+        static readonly List<Transform> MovedRoots = new();
+        static readonly List<Vector3> MovedSaved = new();
+        static readonly Dictionary<Transform, float> HullRadii = new();
+        static readonly List<Transform> DeadRadii = new();
 
         static GameObject _host;
         static Camera _mainView;
@@ -52,6 +67,10 @@ namespace CosmicShore.Gameplay
         static Transform _subjectKey;
         static Transform _subjectRoot;
         static float _subjectRadius;
+
+        // Whose domain is looking: the pilot the gameplay camera follows.
+        static Transform _viewerKey;
+        static VesselStatus _viewerStatus;
 
         // The borrowed pose for the gameplay camera's render during a carry.
         static WormholeMouth _carriedMouth;
@@ -66,6 +85,9 @@ namespace CosmicShore.Gameplay
             _subjectKey = null;
             _subjectRoot = null;
             _subjectRadius = 0f;
+            _viewerKey = null;
+            _viewerStatus = null;
+            HullRadii.Clear();
             _carriedMouth = null;
             _mainMoved = false;
             Shader.SetGlobalFloat(MainViewId, 0f);
@@ -105,12 +127,14 @@ namespace CosmicShore.Gameplay
             var view = controller != null && controller.Camera ? controller.Camera : Camera.main;
             _mainView = view && view.isActiveAndEnabled ? view : null;
 
+            bool knowsDomain = TryResolveViewerDomain(controller, out var viewerDomain);
             for (int i = 0; i < live.Count; i++)
             {
                 var m = live[i];
                 if (!m) continue;
                 m.ExactBlend = 0f;
                 m.PanoramaWanted = false;
+                m.Sealed = m.DomainLocked && !(knowsDomain && viewerDomain == m.Domain);
             }
 
             if (_mainView)
@@ -137,7 +161,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < live.Count; i++)
             {
                 var m = live[i];
-                if (!m || !m.Partner) continue;
+                if (!m || !m.Partner || m.Sealed) continue;
                 float r = m.Radius;
                 if (r <= 0f) continue;
                 if (!GeometryUtility.TestPlanesAABB(FrustumPlanes, new Bounds(m.Centre, Vector3.one * (2f * r))))
@@ -161,7 +185,7 @@ namespace CosmicShore.Gameplay
                 for (int i = 0; i < live.Count; i++)
                 {
                     var m = live[i];
-                    if (!m || !m.Partner || (m.Centre - mouth).sqrMagnitude > 1f) continue;
+                    if (!m || !m.Partner || m.Sealed || (m.Centre - mouth).sqrMagnitude > 1f) continue;
                     _carriedMouth = m;
                     if (!Candidates.Contains(m)) Candidates.Add(m);
                     break;
@@ -222,20 +246,13 @@ namespace CosmicShore.Gameplay
             if (PrismOcclusionCorridor.Target)
                 PrismOcclusionCorridor.PublishTargetPosition(PrismOcclusionCorridor.ViewTargetPosition + delta);
 
-            // A ship whose nose is already inside this ball is drawn on the far side for this
-            // render, so the nose appears in the window as it disappears into the sphere.
-            bool moved = false;
-            Vector3 saved = default;
-            if (Straddles(m))
-            {
-                saved = _subjectRoot.position;
-                _subjectRoot.position = saved + delta;
-                moved = true;
-            }
+            // Every vessel this mouth may carry that is in or cut by its ball is in the shared
+            // interior, so for this render it is drawn where the far side has it.
+            MoveInteriorVessels(m, delta);
 
             bool ok = m.RenderExact(view, tierScale);
 
-            if (moved) _subjectRoot.position = saved;
+            RestoreInteriorVessels();
             PrismOcclusionCorridor.RepublishTarget();
             RestoreMouths();
             return ok;
@@ -288,6 +305,78 @@ namespace CosmicShore.Gameplay
                 _subjectRadius = PrismOcclusionCorridor.MeasureCircumscribedRadius(_subjectRoot);
         }
 
+        static void MoveInteriorVessels(WormholeMouth m, Vector3 delta)
+        {
+            MovedRoots.Clear();
+            MovedSaved.Clear();
+            var players = m.Players;
+            if (players == null) return;
+            Vector3 c = m.Centre;
+            float r = m.Radius;
+            for (int i = 0; i < players.Count; i++)
+            {
+                var vessel = players[i]?.Vessel;
+                if (vessel == null || !m.CanCarry(vessel)) continue;
+                var root = vessel.Transform;
+                if (!root || MovedRoots.Contains(root)) continue;
+                float reach = r + HullRadius(root);
+                Vector3 p = root.position;
+                if ((p - c).sqrMagnitude >= reach * reach) continue;
+                MovedRoots.Add(root);
+                MovedSaved.Add(p);
+                root.position = p + delta;
+            }
+        }
+
+        static void RestoreInteriorVessels()
+        {
+            for (int i = 0; i < MovedRoots.Count; i++)
+                if (MovedRoots[i]) MovedRoots[i].position = MovedSaved[i];
+            MovedRoots.Clear();
+            MovedSaved.Clear();
+        }
+
+        /// <summary>A vessel's hull radius (the occlusion corridor's own measurement), cached;
+        /// re-asked while it reads zero, since a hull measured before its art is on answers 0.</summary>
+        static float HullRadius(Transform root)
+        {
+            if (HullRadii.TryGetValue(root, out var r) && r > 0f) return r;
+            r = PrismOcclusionCorridor.MeasureCircumscribedRadius(root);
+            if (HullRadii.Count > 64) PruneRadii();
+            HullRadii[root] = r;
+            return r;
+        }
+
+        static void PruneRadii()
+        {
+            DeadRadii.Clear();
+            foreach (var key in HullRadii.Keys) if (!key) DeadRadii.Add(key);
+            for (int i = 0; i < DeadRadii.Count; i++) HullRadii.Remove(DeadRadii[i]);
+        }
+
+        /// <summary>
+        /// The domain of the pilot the gameplay camera is following — the only domain whose locked
+        /// mouths show this viewer a view through. A spectator's camera follows somebody else's
+        /// ship and so sees THAT pilot's mouths, which is what they are watching.
+        /// </summary>
+        static bool TryResolveViewerDomain(CustomCameraController controller, out Domains domain)
+        {
+            domain = Domains.Blue;
+            var target = controller != null ? controller.FollowTarget : null;
+            if (!target) return false;
+            if (target != _viewerKey)
+            {
+                _viewerKey = target;
+                _viewerStatus = target.GetComponentInParent<VesselStatus>();
+            }
+            if (_viewerStatus == null) return false;
+            // IVesselStatus.Domain reads Player and logs when there is none; ask first.
+            IVesselStatus status = _viewerStatus;
+            if (status.Player == null) return false;
+            domain = status.Domain;
+            return true;
+        }
+
         /// <summary>Is the followed ship's hull cut by this mouth's sphere?</summary>
         static bool Straddles(WormholeMouth m)
         {
@@ -338,8 +427,8 @@ namespace CosmicShore.Gameplay
             return manager.GetActiveController() as CustomCameraController;
         }
 
-        /// <summary>The device tier's ceiling on an off-screen view's render scale — the same
-        /// ceiling the Butterfly window answers to (1 = none).</summary>
+        /// <summary>The device tier's ceiling on an exact view's render scale —
+        /// <c>PlatformProfileSO.FoldGateWindowMaxRenderScale</c> (1 = none).</summary>
         static float TierMaxRenderScale
         {
             get
