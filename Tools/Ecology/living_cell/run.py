@@ -68,7 +68,8 @@ def run_cell(seed=1, cfg=None, minutes=30.0, pilots=("explore", "wander"), burn=
                           traps=None if not c.traps else dict(catches=c.traps.catches, snaps_pilot=c.traps.snaps_pilot, fired=c.traps.fired,
                                                                buds=c.traps.buds, n=len(c.traps.heart)),
                           physarum=None if not c.phys else dict(digested=round(c.phys.digested, 1), tubes=c.phys.n_tubes(),
-                                                                 burns=c.phys.burns, reserve=round(c.phys.reserve, 1))),
+                                                                 burns=c.phys.burns, reserve=round(c.phys.reserve, 1),
+                                                                 spores=getattr(c.phys, "spores", 0))),
                wall_s=round(time.time() - t_wall, 1))
     if keep_series:
         out["series"] = eco.rows
@@ -277,6 +278,11 @@ if __name__ == "__main__":
     elif what == "final2":
         from .rounds import FINAL2
         baseline(seeds=(1, 2, 3, 4), minutes=float(sys.argv[2]) if len(sys.argv) > 2 else 45.0, cfg=FINAL2, label="r2_final")
+    elif what == "controls3":
+        controls(cfg_name="FINAL3", tag="r3_controls")
+    elif what == "final3":
+        from .rounds import FINAL3
+        baseline(seeds=(1, 2, 3, 4), minutes=float(sys.argv[2]) if len(sys.argv) > 2 else 45.0, cfg=FINAL3, label="r3_final")
     elif what == "final":
         from .rounds import FINAL
         baseline(seeds=(1, 2, 3, 4), minutes=float(sys.argv[2]) if len(sys.argv) > 2 else 45.0, cfg=FINAL, label="final")

@@ -270,3 +270,9 @@ R17 = {
     "r17_r1t2f": dict(B17, **{"thief.raiders": 1, "lurker.territory": 2, "thief.F_half": 600.0}),
     "r17_r2t2f_q": dict(B17, **{"thief.raiders": 2, "lurker.territory": 2, "thief.F_half": 400.0}),
 }
+# r3_iterate (3 seeds x 30 min, all 0 extinctions): physarum alone (r17_phys) digests 1,467-3,251 vol (round 2:
+# 19-523) and keeps a 1,150-1,810 reserve, but quiet stays 0.48 and thieves sit at their 75 cap 67% of the time.
+# With 2 raiders per nest + lurker territory 2 + nectar F_half 600 (r17_r2t2f): quiet 0.654, every cap_frac 0,
+# steals 1.6/min (round 1 2.2, round 2 12.3), thieves breed 197 / starve 156. 1 raider: quiet the same, thieves back
+# on the cap 12%. F_half 400: more encounters (1.78/min) but thieves on the cap 20%. -> FINAL3 = r17_r2t2f.
+FINAL3 = R17["r17_r2t2f"]
