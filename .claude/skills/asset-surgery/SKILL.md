@@ -1072,6 +1072,12 @@ references, m_Script classes). What cost time on the first runs (2026-10-06 to 1
   packages.unity.com, and then they compile like everything else and the `unobtainable` bucket is
   `(none)`, with 0 errors. Where that host is blocked, the bucket holds about 218 errors. Each of them
   names a type those packages declare, or is a CS0165/CS0019 cascade of one.
+- **"Not reachable from this sandbox" in a tool's docs describes the sandbox that wrote it.** Re-probe
+  before you design around it (`curl -s -o /dev/null -w '%{http_code}' <url>`). `fetch.py` said
+  packages.unity.com was unreachable, and the bucket built on that claim held 218 errors from the
+  tool's first day.
+  On 2026-10-06 the host answered 200 and all five packages compiled cleanly against the reference
+  set, so the whole bucket turned out to be a fetch-source gap, not a Unity one.
 - **`--config editor` compiles the Editor-folder scripts as their own `Assembly-CSharp-Editor`**,
   referencing the runtime, as Unity does. Before 2026-10-08 it merged the changed ones INTO the
   runtime compilation, so any branch touching one of the 123 `namespace CosmicShore.Editor` files got

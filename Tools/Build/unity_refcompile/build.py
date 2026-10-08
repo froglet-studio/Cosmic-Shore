@@ -31,6 +31,7 @@ import shutil
 import struct
 import subprocess
 import sys
+import tempfile
 from concurrent.futures import ThreadPoolExecutor
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -583,8 +584,8 @@ EDITOR_REFERENCE_GAPS = [
 _DECLARED_TYPE = re.compile(r"\b(?:class|struct|interface|enum|record)\s+(\w+)|\bdelegate\s+[^;{(=]*?\b(\w+)\s*(?:<[^>]*>)?\s*\(")
 # Comments and string/char literals, blanked before _DECLARED_TYPE reads a file: package docs say "the
 # class to ..." and "an interface for ...", and every such word would otherwise read as a declared type
-# (32 in the five registry-only packages: `instance`, `property`, `range`, `version`, ...), so a local
-# misspelled as one of them would be bucketed instead of gated.
+# (20 in the five registry-only packages: `instance`, `property`, `range`, `version`, ...; 14 in the three
+# that fail: `value`, `type`, `var`, ...), so a local misspelled as one of them was bucketed, not gated.
 _NOT_CODE = re.compile(r'//[^\n]*|/\*.*?\*/|@"(?:[^"]|"")*"|"(?:\\.|[^"\\\n])*"|\'(?:\\.|[^\'\\\n])+\'', re.S)
 
 
@@ -663,8 +664,9 @@ def write_snapshot(packages, path=UNOBTAINABLE_SNAPSHOT):
 
 
 def self_test():
-    """Bucketing fixtures (no dotnet, no cache): an error in a file that uses a package this run could
-    not fetch is bucketed only when it names a type that package declares, or is a cascade of one."""
+    """Bucketing fixtures (no dotnet, no cache): an error goes to the unobtainable bucket only when it
+    names a type that a package this run could not fetch declares, or is a cascade of one; and the
+    committed snapshot matches packages-lock.json and declares what the project uses."""
     asms = {"Unity.Services.Multiplayer"}
     types = {"ISession", "ISessionInfo", "IReadOnlyPlayer", "MultiplayerService", "PlayerProperty"}
     namespaces = {"Unity", "Unity.Services", "Unity.Services.Multiplayer"}
@@ -720,7 +722,6 @@ def self_test():
                    (False, "CS0246", nf % "ISesion")]
     bad += [(want, code, msg) for want, code, msg in snap_cases if names_absent_package(code, msg, s_asms, s_types, s_ns) != want]
     # declared_names reads code, not prose: a word after `class` in a comment or a string is not a type
-    import tempfile
     with tempfile.NamedTemporaryFile("w", suffix=".cs", delete=False) as f:
         f.write('// the class to call\n/* an interface for it */ var s = "class Fake"; var v = @"enum ""Junk""";\n'
                 "char q = '\"'; namespace N.M { public class Real {} enum E { X } delegate void D(int x); }\n")

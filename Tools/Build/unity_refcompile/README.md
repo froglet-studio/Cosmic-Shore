@@ -214,3 +214,12 @@ it gets an entry: add one only for documented Unity API, with the version that i
   reports `audited 0 added + 0 modified` and passes without having read your assets. Fix: reuse
   `changed_since()` and read changed assets from the working tree. The audit's base-relative
   "new findings only" filter needs the base blob, which `git show <merge-base>:<path>` still gives.
+- **Burst is still needle-mirror's `1.6.0-pre.2` substitute, although the locked `1.8.29` is now
+  reachable.** fetch.py falls back to packages.unity.com only when needle-mirror has NO tag for a
+  package. Burst has an older tag there, so `NEAREST_TAG` keeps substituting it. On 2026-10-08,
+  `curl -s https://packages.unity.com/com.unity.burst` listed 146 versions, 1.8.29 among them. Fix:
+  try the registry tarball at the locked version before `NEAREST_TAG`, and keep the substitute as the
+  fallback. Done when Burst compiles at 1.8.29 against the 6000.0 references with the player run
+  still at 0 project errors. If it needs engine API those references lack, keep the substitute and
+  say so here. SRP 17.3 and ugui 2.0 are builtin packages that the registry does not carry (checked
+  the same day), so they stay as they are.
