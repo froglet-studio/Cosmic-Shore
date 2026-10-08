@@ -274,6 +274,37 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Solve_InTheHullsBindPose_PinsEveryPointThroughItsBindPose()
+        {
+            var (verts, normals, tris) = Ring(4);
+            FlatSkinArrays(out var hv, out var hn, out var ht);
+            // One bone whose bind pose moves mesh space by (0, 0, -2): a point pinned to it must read
+            // 2 lower in that bone's space than in the mesh.
+            var bind = Matrix4x4.Translate(new Vector3(0f, 0f, -2f));
+            var dominant = new int[hv.Length];
+
+            var solution = CrystalHullFusionGeometry.Solve(new CrystalHullFusionGeometry.SolveInput
+            {
+                CrystalVertices = verts, CrystalNormals = normals, CrystalTriangles = new List<int[]> { tris },
+                CrystalModelRadius = 2.2f,
+                HullVertices = hv, HullNormals = hn, HullTriangles = ht,
+                HullDominantBones = dominant, HullBindPoses = new[] { bind },
+                Subdivisions = 2,
+            }, out string failure);
+
+            Assert.IsNotNull(solution, failure);
+            Assert.AreEqual(4, solution.FaceCount);
+            Assert.AreEqual(solution.FaceCount * solution.PointsPerFace, solution.FacePoints.Length);
+            Assert.AreEqual(solution.Vertices.Length, solution.VertexPanel.Length);
+            float lift = solution.Layout.PatchRadius * 0.04f;
+            for (int i = 0; i < solution.Layout.PointLocal.Length; i++)
+            {
+                Assert.AreEqual(0, solution.Layout.PointBone[i], "every point rides the one bone");
+                Assert.AreEqual(lift - 2f, solution.Layout.PointLocal[i].z, 1e-4f, "pinned through the bind pose");
+            }
+        }
+
+        [Test]
         public void Layout_RefusesFacesOfDifferentShapes()
         {
             var (verts, normals, tris) = Ring(2);

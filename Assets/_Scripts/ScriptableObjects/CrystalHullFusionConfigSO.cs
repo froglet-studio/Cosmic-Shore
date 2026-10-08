@@ -43,6 +43,12 @@ namespace CosmicShore.ScriptableObjects
             [Tooltip("The crystal element this fusion plays for.")]
             public Element element = Element.Charge;
 
+            [Header("Bake")]
+            [Tooltip("The edit-time solution for this pair - written by FrogletTools > Vessels > Bake " +
+                     "Crystal Hull Fusions. With a current bake a pickup does no geometry at all. Empty " +
+                     "or stale, the game solves it on a worker thread at runtime instead (and says so).")]
+            public CrystalHullFusionBakeSO bake;
+
             [Header("Timing (seconds)")]
             [Tooltip("Solids fold into their outer faces and the faces lift off the crystal.")]
             [Min(0.01f)] public float peelSeconds = 0.16f;

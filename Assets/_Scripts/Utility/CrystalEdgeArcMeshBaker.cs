@@ -79,6 +79,26 @@ namespace CosmicShore.Utility
         /// <c>isReadable</c> on what the renderer holds refuses every charge crystal, and a refusal
         /// that falls back to an older effect looks, on screen, exactly like that effect.
         /// </summary>
+        /// <summary>
+        /// The mesh (and plate filter) a drawn twin was baked FROM - the FBX mesh asset a crystal
+        /// prefab references. An edit-time bake keyed by that asset can then be recognised from a
+        /// live crystal, which only holds the twin. A mesh this baker did not make is its own source.
+        /// </summary>
+        public static bool TryGetSource(Mesh displayed, out Mesh source, out int plateCorners)
+        {
+            source = displayed;
+            plateCorners = 0;
+            if (displayed == null) return false;
+            foreach (var entry in s_cache)
+            {
+                if (entry.Value != displayed) continue;
+                source = entry.Key.source;
+                plateCorners = entry.Key.plateCorners;
+                return source != null;
+            }
+            return true; // not a twin this baker made: the mesh is its own source
+        }
+
         public static bool TryGetReadable(Mesh displayed, out Mesh readable)
         {
             readable = null;

@@ -79,14 +79,22 @@ references (player + editor) and the geometry suite runs headless (42/42). **The
 too slow to see** (all the projection on the main thread during the pickup); the layout is now
 built once per hull on a worker thread at vessel spawn, and a pickup costs ~2 ms (doc §0, §9).
 
+**Bake (third push, 2026-10-08):** the fusion is now solved at EDIT TIME by
+**FrogletTools > Vessels > Bake Crystal Hull Fusions** into
+`Assets/_SO_Assets/CrystalHullFusion/Squirrel_Charge_HullFusionBake.asset`. **The bake has not been
+run** — it needs Unity's own import of the two models. Until it is, the game solves on a worker
+thread and warns once.
+
 **Verify in editor.**
+0. **Run the baker** (*Bake all*) → Squirrel × Charge CURRENT, then **Validate & Push** in the window.
 1. Squirrel, skim a charge crystal — **no hitch** (Profiler: `CrystalHullFusion.Begin`/`.Frame`): faces peel off → fly → come down onto top, underside and wings
    → crackle → sink. ~1.2 s. Domain colour. Pickup SFX on landing; no husk spray.
 2. If it looks like the old capture, check the console for a `[CrystalHullFusion]` warning first.
 3. `playbackScale` 10 on `Resources/CrystalHullFusionConfig` to watch it slowly (back to 1 after).
 4. Pitch/yaw hard mid-fusion: wing faces stay on the wings.
 5. Squirrel + mass/space/time, and any other vessel + charge: old capture, unchanged.
-6. Run `CrystalHullFusionGeometryTests` + `CrystalHullFusionConfigTests`.
+6. Run `CrystalHullFusionGeometryTests` + `CrystalHullFusionConfigTests` + `CrystalHullFusionBakeTests`
+   (the last is inconclusive until the bake exists, and fails if it goes stale).
 
 **First-pass tuning:** beats 0.16 / 0.42 / 0.30 / 0.30 s, `flightBow` 0.9, `flightStagger` 0.45,
 `tileFill` 1.15, `flareGain` 2.6.

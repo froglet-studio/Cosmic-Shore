@@ -555,6 +555,7 @@ namespace CosmicShore.Utility
         /// charge crystal is the same pentagon, cut by the same template, so one landed grid per
         /// patch serves all 60 faces.
         /// </summary>
+        [System.Serializable]
         public sealed class HullLayout
         {
             public Vector3 HullCentre;
@@ -697,6 +698,164 @@ namespace CosmicShore.Utility
                 }
             }
             return layout;
+        }
+
+        // ══ The whole solve, one entry point ═════════════════════════════════════════════════
+
+        /// <summary>
+        /// Everything one (hull, crystal) fusion needs, as plain arrays. The hull is given in its
+        /// BIND POSE - the mesh asset's own vertices and the bind poses that take mesh space into
+        /// each bone's space - so the answer is a property of the two ASSETS and comes out
+        /// identical whether the editor bake or a runtime worker computes it.
+        /// </summary>
+        public sealed class SolveInput
+        {
+            public Vector3[] CrystalVertices, CrystalNormals;
+            /// <summary>The charge discharge channels (TEXCOORD1-3); null for an unbaked crystal.</summary>
+            public Vector3[] CrystalBary, CrystalEdgeH, CrystalEdgeSeed;
+            public List<int[]> CrystalTriangles;
+            public float CrystalModelRadius;
+
+            public Vector3[] HullVertices, HullNormals;
+            public int[] HullTriangles;
+            /// <summary>Per hull vertex, its heaviest bone; null pins everything to the renderer.</summary>
+            public int[] HullDominantBones;
+            /// <summary>The hull mesh's bind poses (mesh space → bone space), one per bone.</summary>
+            public Matrix4x4[] HullBindPoses;
+
+            public float TileFill = 1.15f;
+            public float SurfaceLift = 0.04f;
+            public int Subdivisions = 3;
+        }
+
+        /// <summary>
+        /// The solved fusion: which mesh the faces are drawn with, where each face starts on the
+        /// crystal, and where every point of it lands on the hull. Serializable so an editor bake
+        /// can ship it (<c>CrystalHullFusionBakeSO</c>); the big per-vertex arrays are NOT
+        /// serialized here - the bake carries them in its template mesh, where they cost a fraction
+        /// of the YAML.
+        ///
+        /// Bone indices index the hull renderer's <c>bones</c>; index <c>bones.Length</c> is the
+        /// renderer's own transform (bind-pose mesh space is the renderer's local space).
+        /// </summary>
+        [System.Serializable]
+        public sealed class FusionSolution
+        {
+            public int FaceCount;
+            public int PointsPerFace;
+            public Vector3 CrystalCentre;
+            public float CrystalRadius;
+
+            /// <summary>Per face, crystal model space.</summary>
+            public Vector3[] FaceRadial, FaceCentroid, FaceNormal, FaceAxisU, FaceAxisV;
+            /// <summary>Per face × point (<c>face * PointsPerFace + k</c>), in the face's own plane.</summary>
+            public Vector2[] FacePoints;
+
+            public HullLayout Layout;
+
+            // The drawn mesh, per vertex - carried by the bake's mesh asset, not by this object.
+            [System.NonSerialized] public Vector3[] Vertices, Normals, Bary, EdgeH, EdgeSeed;
+            [System.NonSerialized] public int[][] SubmeshTriangles;
+            [System.NonSerialized] public int[] VertexPanel, VertexPoint;
+        }
+
+        /// <summary>
+        /// Cuts the crystal into faces, builds the drawn template and lays every face on the hull.
+        /// Pure - the editor bake runs it synchronously, the runtime fallback on a worker thread.
+        /// </summary>
+        public static FusionSolution Solve(SolveInput input, out string failure)
+        {
+            failure = null;
+            var panels = BuildPanels(input.CrystalVertices, input.CrystalTriangles);
+            if (panels == null) { failure = "the crystal mesh has no triangles"; return null; }
+
+            var template = BuildTemplate(panels, input.CrystalVertices, input.CrystalNormals,
+                input.CrystalBary, input.CrystalEdgeH, input.CrystalEdgeSeed, input.CrystalTriangles,
+                input.Subdivisions, input.CrystalModelRadius);
+            if (template == null) { failure = "the crystal could not be cut into faces"; return null; }
+
+            int boneCount = input.HullBindPoses?.Length ?? 0;
+            var toBone = new Matrix4x4[boneCount + 1];
+            for (int b = 0; b < boneCount; b++) toBone[b] = input.HullBindPoses[b];
+            toBone[boneCount] = Matrix4x4.identity; // the renderer itself
+
+            var layout = BuildHullLayout(new HullLayoutInput
+            {
+                HullVertices = input.HullVertices,
+                HullNormals = input.HullNormals,
+                HullTriangles = input.HullTriangles,
+                DominantBones = input.HullDominantBones,
+                FallbackBone = boneCount,
+                HullToWorld = Matrix4x4.identity,
+                BoneWorldToLocal = toBone,
+                Panels = panels,
+                Template = template,
+                TileFill = input.TileFill,
+                SurfaceLift = input.SurfaceLift,
+            }, out failure);
+            if (layout == null) return null;
+
+            int faces = panels.PanelCount, perFace = layout.PointsPerPatch;
+            var points = new Vector2[faces * perFace];
+            for (int i = 0; i < faces; i++)
+                for (int k = 0; k < perFace; k++)
+                    points[i * perFace + k] = template.Points[template.PointStart[i] + k];
+
+            var centroids = new Vector3[faces];
+            for (int i = 0; i < faces; i++) centroids[i] = panels.PanelCentroids[i];
+
+            return new FusionSolution
+            {
+                FaceCount = faces,
+                PointsPerFace = perFace,
+                CrystalCentre = panels.Centre,
+                CrystalRadius = panels.Radius,
+                FaceRadial = panels.Radials,
+                FaceCentroid = centroids,
+                FaceNormal = panels.PanelNormals,
+                FaceAxisU = template.AxisU,
+                FaceAxisV = template.AxisV,
+                FacePoints = points,
+                Layout = layout,
+                Vertices = template.Vertices,
+                Normals = template.Normals,
+                Bary = template.Bary,
+                EdgeH = template.EdgeH,
+                EdgeSeed = template.EdgeSeed,
+                SubmeshTriangles = template.SubmeshTriangles,
+                VertexPanel = template.VertexPanel,
+                VertexPoint = template.VertexPoint,
+            };
+        }
+
+        /// <summary>
+        /// A stable fingerprint of a mesh's geometry, so a bake can tell it was solved against THIS
+        /// mesh and not a re-export that happens to keep the vertex count. Order-sensitive and
+        /// quantised to 1e-4 so float noise from a re-import does not read as a change.
+        /// </summary>
+        public static uint ContentHash(Vector3[] vertices, int[] triangles)
+        {
+            unchecked
+            {
+                uint h = 2166136261u;
+                void Mix(int x) { h ^= (uint)x; h *= 16777619u; }
+                if (vertices != null)
+                {
+                    Mix(vertices.Length);
+                    foreach (var v in vertices)
+                    {
+                        Mix(Mathf.RoundToInt(v.x * 1e4f));
+                        Mix(Mathf.RoundToInt(v.y * 1e4f));
+                        Mix(Mathf.RoundToInt(v.z * 1e4f));
+                    }
+                }
+                if (triangles != null)
+                {
+                    Mix(triangles.Length);
+                    foreach (int t in triangles) Mix(t);
+                }
+                return h;
+            }
         }
 
         /// <summary>

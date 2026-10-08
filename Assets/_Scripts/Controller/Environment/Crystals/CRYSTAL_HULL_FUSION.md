@@ -56,6 +56,11 @@ Lesson: **an effect that does its expensive work in the window it animates in is
 however correct it is** — the expense eats the window. Anything that depends only on assets
 (here: two meshes) is a cache, built before it is needed.
 
+**The fourth cut moves it out of the game.** If the answer depends only on two ASSETS, the cheapest
+cache is an asset: **FrogletTools > Vessels > Bake Crystal Hull Fusions** solves it at edit time
+and ships the answer (§4). The worker of the third cut stays only as the fallback for a missing or
+stale bake.
+
 ## 1. What flies: panels and filler
 
 `CrystalHullFusionGeometry.BuildPanels`: a solid is a connected piece of the mesh (welded by
@@ -97,31 +102,66 @@ of cells at a time and stops as soon as nothing outside can be closer. The subdi
 sub-triangle carries the baker's channel contract with only the outline's segments marked as bolt
 edges.
 
-## 4. The faces ride the bones — and the layout is built once, off the main thread
+## 4. Solved at edit time, pinned to the bones
 
-The Squirrel hull is skinned and puppeteered. The hull is baked at collection; each point is pinned
-to the bone that dominates the hull vertex nearest it, against a snapshot of the bones at the bake,
-and follows that bone live. A face on a wing stays on the wing while it flaps. Needs the hull mesh
-CPU-readable: this branch sets `isReadable: 1` on `SquirrelVessel_CosmicShoresTest1.fbx`.
+### The solve is a property of two assets
 
-Where the faces land depends only on the two meshes, so it is a `HullLayout` built **once per
-(hull mesh, crystal mesh)**: patches farthest-point spread from the hull's top, and on each patch
-ONE landed grid (face 0's pentagon, scaled), every point projected and pinned to its bone. Point `k`
-of a patch is where point `k` of ANY face lands — the charge crystal's 60 faces are one pentagon cut
-by one template, and the build refuses (named) a crystal whose faces differ. A pickup only matches
-faces to patches.
+Where the faces land depends only on the **hull mesh in its bind pose** and the **crystal mesh** —
+never on the pickup — so `CrystalHullFusionGeometry.Solve` takes exactly those, as plain arrays:
+the hull's own vertices, normals and triangles, its bind poses (mesh space → each bone's space) and
+each vertex's heaviest bone; the crystal's vertices and discharge channels. It cuts the crystal into
+faces, builds the drawn template, spreads one patch per face over the hull and lays ONE landed grid
+on each patch (face 0's pentagon, scaled) with every point projected onto the skin and pinned
+through its bone's bind pose. Point `k` of a patch is where point `k` of ANY face lands — the charge
+crystal's 60 faces are one pentagon cut by one template, and the solve refuses (named) a crystal
+whose faces differ.
 
-It is built on a **worker thread** (`Task.Run`) from plain arrays the main thread captured — the
-hull bake, the bone matrices at the bake, the crystal's vertex channels — and touches no
-`UnityEngine.Object`. The main thread never awaits it; it polls a volatile `Ready`, so none of the
-UniTask main-thread hazards in `Docs/THREADING.md` apply. `VesselAnimation.Initialize` calls
-`CrystalHullFusion.Prewarm`, so the layout is building from the moment a listed vessel spawns. A
-pickup that beats it plays the generic capture (verbose line on the `CrystalMorph` channel).
+Bind pose, not a runtime pose: pinning a point through `bindposes[b]` is the skinning identity
+itself, so `bone.localToWorldMatrix × local` puts it on the posed hull wherever the puppetry has the
+bone. A face on a wing stays on the wing while it flaps. Bone index `bones.Length` is the renderer
+(bind-pose mesh space is its local space).
+
+### The bake
+
+**FrogletTools > Vessels > Bake Crystal Hull Fusions** (`Editor/CrystalHullFusionBaker.cs`, a
+keeper WRITER) runs `Solve` for every config entry and writes
+`Assets/_SO_Assets/CrystalHullFusion/<Vessel>_<Element>_HullFusionBake.asset`
+(`CrystalHullFusionBakeSO`), pointing the entry's `bake` at it. The asset holds:
+
+- the **solution** — per face start data and the hull layout (~1.9k points);
+- the **template mesh** as a sub-asset — the faces as drawn, the charge discharge in UV1-3 and the
+  (face, point) bookkeeping packed into the UV0 the charge shader never reads, so the per-vertex
+  arrays ride the mesh's compact encoding instead of thousands of YAML lines;
+- a **fingerprint** — hull and crystal mesh references, vertex counts, content hashes, the entry's
+  `tileFill`/`surfaceLift`, the face subdivision and a solver schema number.
+
+Re-baking an unchanged input writes an unchanged asset: the solve is deterministic (tested) and the
+template mesh is rewritten in place, keeping its file ID. The window lists every entry as
+CURRENT / MISSING / STALE / UNRESOLVABLE with the reason, its Validate step fails on anything not
+current, and it ships through the standard Validate & Push panel.
+
+### At runtime
+
+With a current bake a pickup does no geometry: it reads the bake (once per session), matches faces
+to patches, clones the template mesh. A bake whose cheap fingerprint no longer matches — another
+hull, another crystal, a retuned entry, a newer solver — is **stale**: the game warns once naming
+the tool, and runs the same `Solve` on a **worker thread** from arrays captured on the main thread
+(no `UnityEngine.Object` off it; the main thread polls a volatile flag, never awaits —
+`Docs/THREADING.md`). A missing bake does the same. `VesselAnimation.Initialize` calls
+`CrystalHullFusion.Prewarm`, which loads the bake — or starts the worker — the moment a listed vessel
+spawns. A pickup that beats the worker plays the generic capture.
+
+The content hashes are checked at edit time only (the window and `CrystalHullFusionBakeTests`): a
+re-export that keeps both vertex counts is the one change the runtime check does not see.
+
+Needs the hull mesh CPU-readable for the bake and the fallback: `isReadable: 1` on
+`SquirrelVessel_CosmicShoresTest1.fbx`. The bake's own template mesh is readable by construction.
 
 ## 5. Hook and retirement
 
 `ElementalCrystalImpactor.RunCapture` → `TryFuseOntoHull`: if the config lists
-`(vesselStatus.VesselType, crystal element)` and the pair's layout is ready, `CrystalHullFusion.Begin`
+`(vesselStatus.VesselType, crystal element)` and the pair's solution is ready (baked, or the fallback
+has landed), `CrystalHullFusion.Begin`
 clones the prototype mesh, matches faces to patches, hides the crystal's renderers and draws frame 0
 the same frame. The crystal stays alive,
 hidden, until the **mate**, when it moves to the contact, plays its pickup sound via
@@ -143,12 +183,16 @@ building is not a fault: that pickup plays the generic capture with a verbose li
 
 | File | Role |
 |---|---|
-| `Controller/Environment/Crystals/CrystalHullFusion.cs` | runtime: prewarm + worker layout cache, per-pickup match, per-frame pose, material |
-| `Utility/CrystalHullFusionGeometry.cs` | pure: panels, template, contact, patches, assignment, wrap, hull surface |
+| `Controller/Environment/Crystals/CrystalHullFusion.cs` | runtime: bake or worker fallback, per-pickup match, per-frame pose, material; the capture/resolve/mesh helpers the baker shares |
+| `Editor/CrystalHullFusionBaker.cs` | **FrogletTools > Vessels > Bake Crystal Hull Fusions** — solve at edit time, write the bake, Validate & Push |
+| `ScriptableObjects/CrystalHullFusionBakeSO.cs` | the baked solution + template mesh + fingerprint |
+| `_SO_Assets/CrystalHullFusion/<Vessel>_<Element>_HullFusionBake.asset` | the tool's output — **not on this branch until the tool has been run and its output pushed** |
+| `Tests/Editor/CrystalHullFusionBakeTests.cs` | shipped bakes current (stale fails, missing inconclusive); the solve is deterministic |
+| `Utility/CrystalHullFusionGeometry.cs` | pure: `Solve` — panels, template, patches, layout, assignment, wrap, hull surface, content hash |
 | `ScriptableObjects/CrystalHullFusionConfigSO.cs` | per-(vessel, element) entries + beat timing |
 | `Resources/CrystalHullFusionConfig.asset` | the opt-in: Squirrel × Charge |
 | `ImpactEffects/Impactors/ElementalCrystalImpactor.cs` | `TryFuseOntoHull` / `RetireIntoFusion` |
-| `Utility/CrystalEdgeArcMeshBaker.cs` | `TryGetReadable` (the drawn charge mesh is unreadable) |
+| `Utility/CrystalEdgeArcMeshBaker.cs` | `TryGetReadable` (the drawn charge mesh is unreadable), `TryGetSource` (a live crystal names the asset a bake is keyed by) |
 | `Environment/FlowField/Crystal.cs` | `TryGetDomainCrystalColors` |
 | `_Models/Vessel Models/SquirrelVessel_CosmicShoresTest1.fbx.meta` | `isReadable: 1` |
 | `Tests/Editor/CrystalHullFusionGeometryTests.cs` | panels, template, surface, layout, patches, assignment, wrap — also RUNS headless |
@@ -179,33 +223,42 @@ building is not a fault: that pickup plays the generic capture with a verbose li
 Measured with the shipped geometry on the real meshes (warm .NET; the Editor's Mono is slower, so
 read the ratios):
 
-- **Vessel spawn (main thread, once per pair):** one `BakeMesh`, the bone weights read, arrays
-  copied — a few ms.
-- **Worker (once per pair):** face cut ~50 ms + hull layout ~50 ms.
-- **Pickup (main thread):** ~2 ms — 10.4k start positions, 60×60 Hungarian, a prototype clone.
-- **Frame (main thread):** ~0.25 ms of maths + one 10.4k-vertex upload, for ~1.2 s.
+| | Baked (shipped path) | Missing / stale bake (fallback) |
+|---|---|---|
+| edit time | `Solve` ~0.1 s per entry, once | — |
+| vessel spawn (main) | read the bake's arrays out of its mesh, once per session | capture arrays, a few ms |
+| worker | — | `Solve` ~0.1 s, once per pair |
+| pickup (main) | ~2 ms: 10.4k start positions, 60×60 Hungarian, a mesh clone | the same, once the worker has landed |
+| frame (main) | ~0.25 ms of maths + one 10.4k-vertex upload, for ~1.2 s | the same |
 
 `ProfilerMarker`s: `CrystalHullFusion.Prewarm`, `.Begin`, `.Frame`. If a pickup still hitches,
-those three name the culprit.
+those three name the culprit; the remaining per-pickup cost is the assignment and the start poses,
+and per frame the vertex upload.
 
 A fast "nearest vertices, then their triangles" query was tried for the projection and rejected:
 it missed 6–11% of points and landed the rest up to 0.95 patch radii off on the Squirrel's coarse
-areas. Once the layout is cached and off-thread, exactness costs nothing anyone waits for.
+areas. Solved at edit time, exactness costs nothing anyone waits for.
 
 ## 10. Verification status
 
 - **Compiles** against real Unity 6000.0 references, player and editor configs
   (`Tools/Build/unity_refcompile`; the first cut's run was negative-controlled with a planted
   missing member).
-- **Runs headless:** `bash Tools/Build/crystal_morph_harness/run.sh` — 42/42 (21 upstream + 21
-  fusion, incl. the layout builder). Three planted defects each fail it: every template edge marked a bolt, the facing filter
+- **Runs headless:** `bash Tools/Build/crystal_morph_harness/run.sh` — 43/43 (21 upstream + 22
+  fusion, incl. the layout builder and `Solve` through a bind pose). Three planted defects each fail it: every template edge marked a bolt, the facing filter
   removed, face normals inverted.
 - **Shipped geometry on the real meshes** (scratch driver over the FBX exports): numbers in §1–§3.
 - `AssignMinCost` matches brute force on 300 random matrices.
-- **Not yet seen in the editor.**
+- **Not yet seen in the editor, and the bake has not been run** — it needs Unity's own import of
+  the two models, which only the editor has. Until it is run the game takes the fallback path and
+  says so once in the console.
 
 ### In-editor verification
 
+0. **Bake first:** **FrogletTools > Vessels > Bake Crystal Hull Fusions** → *Bake all*. Expect
+   `Squirrel × Charge` to go CURRENT with `60 faces × 31 points` and `0 of 1860 off the skin` (or
+   close). Then **Validate & Push** in the same window, which commits only the bake asset and the
+   config. `CrystalHullFusionBakeTests` should then pass rather than report inconclusive.
 1. Squirrel, skim a **charge** crystal. The frame must NOT hitch; turn on the Profiler and look
    for `CrystalHullFusion.Begin` / `.Frame` if it does. Expect: the crystal's prisms fold into their outer
    pentagons, which lift off and fly to the hull, come down onto it and lie ON it — bent over its
@@ -231,12 +284,14 @@ areas. Once the layout is cached and off-thread, exactness costs nothing anyone 
 - **The face's crackle pattern changes on the peel's first frame** — the subdivided outline's
   segments carry their own seeds, not the crystal's — and frame 0 is otherwise the crystal exactly.
 - **One fusion per pickup, no pooling**: a burst of pickups is a burst of 10.4k-vertex meshes.
-- **The layout is read off the hull as it was when the vessel SPAWNED** (its element shapes at
-  spawn levels). A hull whose charge shape has grown since sits a few percent off the cached skin.
+- **The layout is solved on the hull's BIND pose** (element shapes at zero). A hull whose charge
+  shape has grown sits a few percent off the solved skin.
 - **Prewarm runs only from `VesselAnimation.Initialize`.** Overrides that do not call the base
   (`ButterflyAnimation`, `ScarabAnimation`, `UrchinAnimation`, `RiptideAnimation`,
-  `SparrowAnimationController` — unchecked) would build on their first pickup instead; irrelevant
-  until one of them gets an entry.
+  `SparrowAnimationController` — unchecked) would load on their first pickup instead; with a bake
+  that costs one cheap read, without one the first pickup plays the generic capture.
+- **The baker finds the hull at `Assets/_Prefabs/Spacevessels/<Vessel>.prefab`.** A vessel whose
+  prefab lives elsewhere reads UNRESOLVABLE in the window with that path named.
 - **Two opt-in mechanisms for crystal retirements now exist** (§3.5 row from the 2026-10-08
   reorient): the omni morph uses a per-vessel container slot
   (`VesselImpactorDataContainerSO.OmniCrystalRetirement`), this uses a Resources table keyed by
