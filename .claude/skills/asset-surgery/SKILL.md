@@ -1047,9 +1047,9 @@ package at its locked source, then binds ALL of `Assembly-CSharp` (method bodies
 a player build would; `Tools/Build/unity_refcompile/README.md` says exactly what it does and does not
 prove. Then `python3 Tools/Build/check_generated_assets.py` audits every changed `.asset` / `.prefab`
 / `.unity` against the schema that compile wrote (serialized keys, enum values, guid/fileID
-references, m_Script classes). Four things that cost time on the first run (2026-10-06):
+references, m_Script classes). What cost time on the first runs (2026-10-06 to 10-08):
 - **`DOTNET_ROOT` must hold a .NET SDK, 8.0 or newer** (a runtime alone has no reference pack, and
-  the tool says so). Until 2026-10-06 it had to be 8.0 exactly: a .NET 10-only `DOTNET_ROOT` died with
+  the tool says so). Until 2026-10-08 it had to be 8.0 exactly: a .NET 10-only `DOTNET_ROOT` died with
   `IndexError: list index out of range` after the full ten-minute fetch. Any SDK from 8.0 works now
   (8.0 and 10.0 verified). Install a channel per-user (above) and point `DOTNET_ROOT` at it;
   `TMPDIR` decides where the ~550 MB cache lands.
@@ -1064,20 +1064,17 @@ references, m_Script classes). Four things that cost time on the first run (2026
   counted, not judged. Check your own files are not in that bucket (they would be unverified):
   grep the run's `report.json` for each file you changed.
 - **`--config editor` compiles the Editor-folder scripts as their own `Assembly-CSharp-Editor`**,
-  referencing the runtime, as Unity does. Before 2026-10-06 it merged the changed ones INTO the
+  referencing the runtime, as Unity does. Before 2026-10-08 it merged the changed ones INTO the
   runtime compilation, so any branch touching one of the 123 `namespace CosmicShore.Editor` files got
   false `CS0118 'Editor' is a namespace but is used like a type` errors in untouched runtime
   `#if UNITY_EDITOR` files. A run from an older checkout still does. Only the CHANGED Editor files
   gate, and the working tree counts (uncommitted and untracked files too), so run it before you
-  commit. The ~36 errors listed for unchanged ones are reference-set artifacts (2021.1 `UnityEditor`, no
-  test framework). `EDITOR_REFERENCE_GAPS` in `build.py` matches each one, so they stay unverified
+  commit; the run names them after `gated: the N changed since …`. Until 2026-10-08 only COMMITTED
+  files counted, and an edited test passed green without being compiled (`SkimRaceAITests.cs`,
+  2026-10-06). The errors listed for unchanged files (37 on 2026-10-08) are reference-set artifacts
+  (2021.1 `UnityEditor`, no test framework). `EDITOR_REFERENCE_GAPS` in `build.py` matches each one, so they stay unverified
   even in a file your branch changes. A Unity 6 editor API your branch starts using reads as an error
   until it gets an entry there.
-- **`--config editor` only sees Editor-folder files that are COMMITTED.** It picks them with
-  `git diff --name-only <changed-base>...HEAD`, so a test you edited but have not committed is
-  silently left out and the run is green without having compiled it. Read the
-  `editor config: + N Editor-folder file(s) changed since …` line and confirm your file is named;
-  if not, commit first and re-run (2026-10-06: `SkimRaceAITests.cs` was missing until committed).
 - **`check_generated_assets.py` needs `DOTNET_ROOT` exported too, and lies about why when it
   is not.** Without it the audit says `no Roslyn tools in …/tools - run run.sh first` even though
   `run.sh` just populated that folder — it looks for `csc.dll` under `$DOTNET_ROOT`, not under the
@@ -1092,15 +1089,8 @@ references, m_Script classes). Four things that cost time on the first run (2026
 - **`--config editor` puts a test's `LogAssert` in the "unverified" bucket, not the error count.**
   `UnityEngine.TestTools.LogAssert` lives in the test-framework DLL, which is not among its
   references, so a new edit-mode test that uses it reports `CS0103 'LogAssert'` under *unverified*.
-  Confirm the same call already compiles in an existing test (`GameObjectExtensionTests` uses
-  `LogAssert.Expect(LogType.Error, new Regex(...))`) rather than reading it as a defect — and do
+  It is an `EDITOR_REFERENCE_GAPS` entry, so a typo such as `LogAsert` still fails the run. Do
   read the bucket, because everything ELSE in your test file was bound for real.
-- **A planted `CS0103` (undefined name) is reported as *unverified*, not as an error (2026-10-08).**
-  While any package reference is unavailable, the tool buckets name-not-found diagnostics, so a
-  negative control built on an undefined method call leaves `ERRORS in project code: 0` and moves
-  the unverified count from 0 to 1. Read BOTH numbers: green means "0 errors AND 0 unverified".
-  A control on a missing MEMBER of a known type (`gameData.NoSuchMember()`, CS1061) is the sharper
-  plant if you want it to land in the error count.
 - **Files that `using` an unobtainable UGS package are bucketed, so your edits in them are not
   gated.** `HostConnectionService`, the party services, `MultiplayerSetup` and `GameDataSO` all
   `using Unity.Services.Multiplayer`. Every method body is still BOUND, so the diagnostics exist
@@ -1108,9 +1098,11 @@ references, m_Script classes). Four things that cost time on the first run (2026
   `git diff -U0 <base>...HEAD -- <file>` and look for any error at those line numbers). Zero hits
   on changed lines is the evidence; "the run was green" is not.
 - **Negative-control both tools before quoting them**: plant a call to a missing member, or a
-  misspelt name, in a file you changed. Until 2026-10-06 a missing NAME (`CS0103`, `CS0246`) never
-  gated: three packages always fail, and missing-type errors were all bucketed while any had. Now only
-  a name a failed package declares is bucketed. The compile must fail with that file tagged
+  misspelt name, in a file you changed. Until 2026-10-08 a missing NAME (`CS0103`, `CS0246`) never
+  gated: three packages always fail, and missing-type errors were all bucketed while any had, so such
+  a plant only moved the *unverified* count (the 2026-10-08 bug-hunt records describe exactly that).
+  Now only a name a failed package declares is bucketed; still read both numbers. The compile must
+  fail with that file tagged
   `[CHANGED-TONIGHT]`. For the asset audit, misspell one key in an asset you changed (the audit
   must name the file and the key). Restore, then `git status --short` the paths. Both discriminated
   on their first try here.
