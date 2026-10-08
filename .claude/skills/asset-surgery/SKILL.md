@@ -1047,11 +1047,20 @@ package at its locked source, then binds ALL of `Assembly-CSharp` (method bodies
 a player build would; `Tools/Build/unity_refcompile/README.md` says exactly what it does and does not
 prove. Then `python3 Tools/Build/check_generated_assets.py` audits every changed `.asset` / `.prefab`
 / `.unity` against the schema that compile wrote (serialized keys, enum values, guid/fileID
-references, m_Script classes). Four things that cost time on the first run (2026-10-06):
-- **`DOTNET_ROOT` must hold a net8.0 REFERENCE PACK** (`packs/Microsoft.NETCore.App.Ref/8.*/ref/net8.0`).
-  With only a .NET 10 SDK, `depublicize()` dies with `IndexError: list index out of range` after a
-  full ten-minute fetch, which reads as a broken tool. Install the 8.0 channel per-user (above) and
-  point `DOTNET_ROOT` at it; `TMPDIR` decides where the ~550 MB cache lands.
+references, m_Script classes). What cost time on the first runs (2026-10-06 to 10-08):
+- **`DOTNET_ROOT` must hold a .NET SDK, 8.0 or newer** (a runtime alone has no reference pack, and
+  the tool says so). Until 2026-10-08 it had to be 8.0 exactly: a .NET 10-only `DOTNET_ROOT` died with
+  `IndexError: list index out of range` after the full ten-minute fetch. Any SDK from 8.0 works now
+  (8.0 and 10.0 verified). Install a channel per-user (above) and point `DOTNET_ROOT` at it;
+  `TMPDIR` decides where the ~550 MB cache lands.
+- **A warm run takes ~30 s, and the `cached` lines are the evidence.** Count them
+  (`grep -c ' cached$'`): about 86 package assemblies should come from the cache. Until 2026-10-08
+  NONE ever did, so every run recompiled them all. A stub DLL rebuilt each run sat in every
+  package's fingerprint. Nobody noticed, because a cache that never hits looks exactly like a cache.
+  A cold count after a warm one means an input moved (a new SDK, a re-fetch). Runs that share a
+  cache take turns (`waiting for another unity_refcompile run`). Before that lock, a player run and
+  an editor run launched together rewrote the shared DLLs under each other, and `Unity.Entities`
+  "failed" with 53 false project errors downstream.
 - **`check_generated_assets.py` needs the SAME `DOTNET_ROOT` and `TMPDIR` the compile ran with.**
   Run it bare after a compile that used a per-user SDK and it says `no Roslyn tools in
   <TMPDIR>/unity_refcompile_cache/tools - run run.sh first` — while the tools sit in that very
@@ -1062,16 +1071,18 @@ references, m_Script classes). Four things that cost time on the first run (2026
   files that `using` a UGS package no mirror carries (Multiplayer, Friends, Leaderboards); they are
   counted, not judged. Check your own files are not in that bucket (they would be unverified):
   grep the run's `report.json` for each file you changed.
-- **`--config editor` reports false `CS0118 'Editor' is a namespace but is used like a type`** in
-  untouched runtime `#if UNITY_EDITOR` files whenever the branch changed an Editor-folder file
-  declaring `namespace CosmicShore.Editor` (123 files do). That config compiles changed
-  Editor-folder files INTO the runtime compilation; Unity keeps them in Assembly-CSharp-Editor,
-  which runtime code cannot see. The summary line says "(0 in files changed since …)" - believe it.
-- **`--config editor` only sees Editor-folder files that are COMMITTED.** It picks them with
-  `git diff --name-only <changed-base>...HEAD`, so a test you edited but have not committed is
-  silently left out and the run is green without having compiled it. Read the
-  `editor config: + N Editor-folder file(s) changed since …` line and confirm your file is named;
-  if not, commit first and re-run (2026-10-06: `SkimRaceAITests.cs` was missing until committed).
+- **`--config editor` compiles the Editor-folder scripts as their own `Assembly-CSharp-Editor`**,
+  referencing the runtime, as Unity does. Before 2026-10-08 it merged the changed ones INTO the
+  runtime compilation, so any branch touching one of the 123 `namespace CosmicShore.Editor` files got
+  false `CS0118 'Editor' is a namespace but is used like a type` errors in untouched runtime
+  `#if UNITY_EDITOR` files. A run from an older checkout still does. Only the CHANGED Editor files
+  gate, and the working tree counts (uncommitted and untracked files too), so run it before you
+  commit; the run names them after `gated: the N changed since …`. Until 2026-10-08 only COMMITTED
+  files counted, and an edited test passed green without being compiled (`SkimRaceAITests.cs`,
+  2026-10-06). The errors listed for unchanged files (37 on 2026-10-08) are reference-set artifacts
+  (2021.1 `UnityEditor`, no test framework). `EDITOR_REFERENCE_GAPS` in `build.py` matches each one, so they stay unverified
+  even in a file your branch changes. A Unity 6 editor API your branch starts using reads as an error
+  until it gets an entry there.
 - **`check_generated_assets.py` needs `DOTNET_ROOT` exported too, and lies about why when it
   is not.** Without it the audit says `no Roslyn tools in …/tools - run run.sh first` even though
   `run.sh` just populated that folder — it looks for `csc.dll` under `$DOTNET_ROOT`, not under the
@@ -1086,25 +1097,23 @@ references, m_Script classes). Four things that cost time on the first run (2026
 - **`--config editor` puts a test's `LogAssert` in the "unverified" bucket, not the error count.**
   `UnityEngine.TestTools.LogAssert` lives in the test-framework DLL, which is not among its
   references, so a new edit-mode test that uses it reports `CS0103 'LogAssert'` under *unverified*.
-  Confirm the same call already compiles in an existing test (`GameObjectExtensionTests` uses
-  `LogAssert.Expect(LogType.Error, new Regex(...))`) rather than reading it as a defect — and do
+  It is an `EDITOR_REFERENCE_GAPS` entry, so a typo such as `LogAsert` still fails the run. Do
   read the bucket, because everything ELSE in your test file was bound for real.
-- **A planted `CS0103` (undefined name) is reported as *unverified*, not as an error (2026-10-08).**
-  While any package reference is unavailable, the tool buckets name-not-found diagnostics, so a
-  negative control built on an undefined method call leaves `ERRORS in project code: 0` and moves
-  the unverified count from 0 to 1. Read BOTH numbers: green means "0 errors AND 0 unverified".
-  A control on a missing MEMBER of a known type (`gameData.NoSuchMember()`, CS1061) is the sharper
-  plant if you want it to land in the error count.
 - **Files that `using` an unobtainable UGS package are bucketed, so your edits in them are not
   gated.** `HostConnectionService`, the party services, `MultiplayerSetup` and `GameDataSO` all
   `using Unity.Services.Multiplayer`. Every method body is still BOUND, so the diagnostics exist
   in `report.json` - intersect them with your diff's changed lines (parse `@@ +a,n @@` from
   `git diff -U0 <base>...HEAD -- <file>` and look for any error at those line numbers). Zero hits
   on changed lines is the evidence; "the run was green" is not.
-- **Negative-control both tools before quoting them**: plant a call to a missing member in a file
-  you changed (the compile must fail with that file tagged `[CHANGED-TONIGHT]`), and misspell one
-  key in an asset you changed (the audit must name the file and the key). Restore, then
-  `git status --short` the paths. Both discriminated on their first try here.
+- **Negative-control both tools before quoting them**: plant a call to a missing member, or a
+  misspelt name, in a file you changed. Until 2026-10-08 a missing NAME (`CS0103`, `CS0246`) never
+  gated: three packages always fail, and missing-type errors were all bucketed while any had, so such
+  a plant only moved the *unverified* count (the 2026-10-08 bug-hunt records describe exactly that).
+  Now only a name a failed package declares is bucketed; still read both numbers. The compile must
+  fail with that file tagged
+  `[CHANGED-TONIGHT]`. For the asset audit, misspell one key in an asset you changed (the audit
+  must name the file and the key). Restore, then `git status --short` the paths. Both discriminated
+  on their first try here.
 
 **But a REAL type check of the files you actually wrote is still available, and it is worth the
 20 minutes** on new code (as opposed to a small edit inside a large existing file). Build a stub

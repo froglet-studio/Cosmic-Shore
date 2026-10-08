@@ -11,7 +11,11 @@ prisma-* CI workflows and the prisma* Claude Code skills.
 """
 import argparse, subprocess, sys
 
-ALLOWED = {".gitignore"}            # only Port/** un-ignore lines; checked below
+ALLOWED = {".gitignore",             # only Port/** un-ignore lines; checked below
+           # The one Unity-side file the port owns: FrogletTools > Prisma > Launch Prisma, an
+           # editor-only menu that builds and opens Prisma from the checkout (writes only Library/).
+           "Assets/_Scripts/Editor/LaunchPrisma.cs", "Assets/_Scripts/Editor/LaunchPrisma.cs.meta",
+           "Docs/TOOLING.md"}                # that tool's rows in the FrogletTools index
 # CI that builds ONLY Port/ (never imports or edits the Unity project) is part of the port.
 PORT_CI_PREFIX = (".github/workflows/prisma-", ".github/workflows/froglet-")  # froglet-: before the rename
 # Agent guidance for the engine (a Claude Code skill) is tooling, never read by Unity.

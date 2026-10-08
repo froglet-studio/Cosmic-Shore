@@ -3,6 +3,7 @@ using Cysharp.Threading.Tasks;
 using UnityEngine;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
 namespace CosmicShore.Gameplay
 {
     public class ElementalCrystalImpactor : CrystalImpactor
@@ -57,7 +58,30 @@ namespace CosmicShore.Gameplay
             if (Crystal && Crystal.IsEmbedded) return;
             if (impactee is not SkimmerImpactor skimmerImpactor) return;
 
+            if (DefersToItsVesselsSkimmer(skimmerImpactor)) return;
+
             CollectBy(skimmerImpactor);
+        }
+
+        /// <summary>
+        /// A skimmer its vessel never initialised has no one to credit, and taking the crystal with
+        /// it spends it on nobody: no score, no element level, no hull fusion. The Grizzly carries one
+        /// - a nested Skimmer prefab its VesselStatus does not list beside the DummySkimmer it does -
+        /// and it was winning the race to every crystal (measured 2026-10-08, CRYSTAL_HULL_FUSION.md
+        /// §12). Such a skimmer stands aside ONLY when its vessel has a skimmer that WILL take the
+        /// crystal; a hull that initialised none (the Termite, Falcon and Shrike list no near-field
+        /// skimmer at all) keeps collecting as it always has, rather than leaving the crystal in the
+        /// world.
+        /// </summary>
+        static bool DefersToItsVesselsSkimmer(SkimmerImpactor skimmerImpactor)
+        {
+            var skimmer = skimmerImpactor.Skimmer;
+            if (!skimmer || skimmer.VesselStatus != null) return false;
+            var vessel = skimmerImpactor.GetComponentInParent<VesselStatus>();
+            if (!vessel) return false;
+            return IsLive(vessel.NearFieldSkimmer) || IsLive(vessel.FarFieldSkimmer);
+
+            bool IsLive(Skimmer candidate) => candidate && candidate != skimmer && candidate.VesselStatus != null;
         }
 
         /// <summary>
@@ -112,6 +136,10 @@ namespace CosmicShore.Gameplay
         {
             var crystal = Crystal;
             if (crystal == null) return;
+
+            // A (vessel, element) pair with its own fusion replaces this whole flourish: the
+            // crystal joins the hull instead of flying into it and dissolving.
+            if (TryFuseOntoHull(crystal, vesselStatus)) return;
 
             var cfg = CaptureConfig;
             var vesselTransform = vesselStatus?.VesselTransformer ? vesselStatus.VesselTransformer.transform : null;
@@ -206,6 +234,61 @@ namespace CosmicShore.Gameplay
             // A zero-length absorb still owes the payoff.
             if (!burstFired) FireHuskBurst(crystal, cfg, vesselStatus, baseScale);
 
+            crystal.DestroyCrystal();
+        }
+
+        /// <summary>
+        /// Hands the crystal to a <see cref="CrystalHullFusion"/> when
+        /// <see cref="CrystalHullFusionConfigSO"/> lists this (vessel, element) pair. False -
+        /// leaving the crystal untouched for the generic capture - when no entry exists or the
+        /// fusion cannot be laid out on this hull (it names why, once).
+        /// </summary>
+        bool TryFuseOntoHull(Crystal crystal, IVesselStatus vesselStatus)
+        {
+            if (vesselStatus == null)
+            {
+                // A skimmer the vessel never initialised (not its near- or far-field skimmer) still
+                // collects: the crystal gets no vessel, no score, no fusion. Said once, because it
+                // reads on screen as "the old capture".
+                if (!s_warnedNoVessel)
+                {
+                    s_warnedNoVessel = true;
+                    CSDebug.LogWarning($"[CrystalMorph] [HullFusion] '{crystal.name}' was collected by a skimmer with no " +
+                        "vessel (one its VesselStatus never initialised) - no score, no hull fusion; the generic capture plays.");
+                }
+                return false;
+            }
+            var config = CrystalHullFusionConfigSO.Load();
+            if (!config || !config.TryGet(vesselStatus.VesselType, crystal.crystalProperties.Element, out var entry))
+                return false;
+
+            var fusion = CrystalHullFusion.Begin(crystal, vesselStatus, entry);
+            if (!fusion) return false;
+
+            RetireIntoFusion(crystal, fusion, vesselStatus).Forget();
+            return true;
+        }
+
+        /// <summary>
+        /// The fusion draws the crystal's body from here on; the crystal itself is hidden and only
+        /// waits for the MATE beat - the moment its faces are down on the skin - to play its pickup
+        /// sound there and leave the cell. No husk: the body is on the hull, not in the wake.
+        /// </summary>
+        static bool s_warnedNoVessel;
+
+        static async UniTaskVoid RetireIntoFusion(Crystal crystal, CrystalHullFusion fusion, IVesselStatus vesselStatus)
+        {
+            await UniTask.WaitForSeconds(fusion.MateDelaySeconds);
+            if (crystal == null) return;
+
+            if (fusion) crystal.transform.position = fusion.LandingWorldPosition;
+            crystal.Explode(new Crystal.ExplodeParams
+            {
+                Course = vesselStatus?.Course ?? crystal.transform.forward,
+                Speed = vesselStatus?.Speed ?? 0f,
+                PlayerName = vesselStatus != null ? vesselStatus.PlayerName : string.Empty,
+                SuppressHusk = true,
+            });
             crystal.DestroyCrystal();
         }
 

@@ -340,6 +340,14 @@ public class RequireComponentTests : IDisposable
     public void Dispose() { GameObject.EnforceRequireComponent = false; _loop.Dispose(); }
 
     [Fact]
+    public void AddingAParticleSystem_AddsItsRenderer()
+    {
+        var go = new GameObject("sparks");
+        go.AddComponent<ParticleSystem>();
+        Assert.NotNull(go.GetComponent<ParticleSystemRenderer>());
+    }
+
+    [Fact]
     public void AddComponent_AddsRequiredSiblings_Once()
     {
         var go = new GameObject("rc");

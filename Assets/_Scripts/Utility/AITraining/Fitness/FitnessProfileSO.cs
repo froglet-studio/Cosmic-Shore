@@ -150,7 +150,6 @@ namespace CosmicShore.Utility.AITraining
                 case GameModes.Salvo: ApplySalvoDefaults(); break;
                 case GameModes.BroodRush: ApplyNucleusRushDefaults(); break;
                 case GameModes.AstroLeague: ApplyAstroLeagueDefaults(); break;
-                case GameModes.MultiplayerFreestyle: ApplyFreestyleDefaults(); break;
                 default: ApplyRacingDefaults(); break;
             }
         }
@@ -296,20 +295,6 @@ namespace CosmicShore.Utility.AITraining
                 new() { Kind = ComponentKind.VolumeDestroyedFriendlyPenalty, Weight = 80f,  Label = "FriendlyFire" },
                 new() { Kind = ComponentKind.CrystalCollection,              Weight = 10f,  Label = "Crystals" },
                 new() { Kind = ComponentKind.TimePenalty,                    Weight = 0.5f, Label = "TimePenalty" },
-            };
-        }
-
-        public void ApplyFreestyleDefaults()
-        {
-            Description = "Freestyle / exploration recipe: rewards distance, ability use, and " +
-                          "high-speed time so the AI flies expressively rather than sitting still.";
-            Entries = new List<Entry>
-            {
-                new() { Kind = ComponentKind.DistanceTravelled, Weight = 1f,   Label = "Distance" },
-                new() { Kind = ComponentKind.HighSpeedTime,     Weight = 5f,   Label = "FastTime" },
-                new() { Kind = ComponentKind.BoostUseBonus,     Weight = 3f,   Label = "Boost" },
-                new() { Kind = ComponentKind.AbilityUseBonus,   Weight = 2f,   Label = "Abilities" },
-                new() { Kind = ComponentKind.SurvivalBonus,     Weight = 0.5f, Label = "Survived" },
             };
         }
 
