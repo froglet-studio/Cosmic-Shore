@@ -52,6 +52,8 @@ one fired.
 8. **PR** with what & why, verification status ("not compiled" plus what a human must still
    check in-editor), the **Tool output** line from §2.5, and follow-ups. Do not subscribe to
    watch CI.
+9. **Fire CI once** — `/ship` §5.5: dispatch `unity-ci.yml` with `mode: static` on the
+   branch. Not trimmed by fast mode; it is the branch's only pre-merge CI.
 
 ## What you skip
 

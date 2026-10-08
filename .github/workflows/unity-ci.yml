@@ -6,6 +6,14 @@
 #              actually produce a player. ~20-40 min.
 #   il2cpp   - Full IL2CPP release build. Weekly. The only tier that catches AOT/generic failures
 #              and native link errors, i.e. the ones that only appear in a shipping build.
+#   static   - The ubuntu static checks alone (no Unity runner). What a pull request gets, and what
+#              the /ship commands dispatch for a claude/** branch.
+#
+# claude/** BRANCHES DO NOT TRIGGER CI ON THEIR OWN. Agent sessions push often and open many
+# pull requests, so a pull_request event whose head is claude/** skips every job here. CI for such
+# a branch fires only when (a) it lands on bleeding-edge (bleeding-edge-guard.yml and
+# prisma-parity-ci.yml run on that push) or (b) a /ship, /ship-quick, /ship-deep or /ship-tools
+# command dispatches this workflow on it with mode=static (.claude/skills/ship/SKILL.md, section 5.5).
 #
 # RUNNER IS NOT DECIDED YET. The `unity` job is SKIPPED until the repository variable
 # UNITY_RUNNER_LABEL is set, and then targets whatever label it names. Skipping (rather than
@@ -54,7 +62,7 @@ on:
       mode:
         description: 'Tier to run'
         type: choice
-        options: [compile, mono, il2cpp]
+        options: [static, compile, mono, il2cpp]
         default: compile
 
 # Read-only by default. Nothing here writes to the repo.
@@ -71,6 +79,10 @@ jobs:
   #  Decide which tier this invocation is
   # ──────────────────────────────────────────────
   resolve:
+    # claude/** heads never run CI from a pull_request event (push/synchronize/open alike); the
+    # /ship commands dispatch it instead. Every other job needs this one, so they skip with it -
+    # a skipped check, not a pending one.
+    if: github.event_name != 'pull_request' || !startsWith(github.head_ref, 'claude/')
     runs-on: ubuntu-latest
     outputs:
       mode: ${{ steps.pick.outputs.mode }}
@@ -90,7 +102,11 @@ jobs:
           SCHEDULE="${{ github.event.schedule }}"
           PROCEED=true
 
-          if   [[ "$EVENT" == "workflow_dispatch" ]]; then MODE="${{ inputs.mode }}"; REF=""
+          if   [[ "$EVENT" == "workflow_dispatch" ]]; then
+            MODE="${{ inputs.mode }}"; REF=""
+            # static = the ubuntu checks only; the Unity runner is not taken. This is the tier
+            # the /ship commands dispatch for a claude/** branch.
+            if [[ "$MODE" == "static" ]]; then PROCEED=false; fi
 
           # A pull request keeps the FREE static checks (the conditional-
           # compilation job, ubuntu, seconds) but does NOT take the Unity runner.
