@@ -1,36 +1,36 @@
 {
  "lizard": {
-  "adult": 1136,
-  "bitten": 679,
-  "after_6s": 1163,
-  "seed_2s": 229,
-  "seed_16s": 1143,
-  "grown_at_s": 5.516499999999998,
-  "swim_moved": 94.1,
+  "adult": 1147,
+  "bitten": 628,
+  "after_6s": 1156,
+  "seed_2s": 232,
+  "seed_16s": 1149,
+  "grown_at_s": 5.633200000000004,
+  "swim_moved": 96.6,
   "backend": "wasm-simd",
-  "steps": 722
+  "steps": 723
  },
  "whale": {
-  "adult": 542,
-  "bitten": 479,
-  "after_6s": 554,
-  "seed_2s": 182,
-  "seed_16s": 538,
-  "grown_at_s": 4.966499999999998,
-  "swim_moved": 76.2,
+  "adult": 537,
+  "bitten": 490,
+  "after_6s": 545,
+  "seed_2s": 189,
+  "seed_16s": 541,
+  "grown_at_s": 5.566399999999988,
+  "swim_moved": 75.9,
   "backend": "wasm-simd",
-  "steps": 766
+  "steps": 711
  },
  "jelly": {
-  "adult": 1040,
-  "bitten": 907,
-  "after_6s": 984,
-  "seed_2s": 235,
-  "seed_16s": 1025,
-  "grown_at_s": 6.599799999999996,
-  "swim_moved": 54.4,
+  "adult": 1030,
+  "bitten": 882,
+  "after_6s": 981,
+  "seed_2s": 185,
+  "seed_16s": 1037,
+  "grown_at_s": 6.866399999999989,
+  "swim_moved": 93.7,
   "backend": "wasm-simd",
-  "steps": 496
+  "steps": 700
  },
  "errors": [],
  "fails": []

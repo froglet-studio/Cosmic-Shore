@@ -1265,7 +1265,7 @@ Files: `hgrid_core.py` (grid geometry, splat/sample, `PlanFields` 47 channels + 
 (`FieldBoid`, `OracleField`, `HSwarm`), `hgrid_hybrid.py`, `hgrid_vote.py`, `hgrid_nca.py`,
 `hgrid_e2e.py`, `hgrid_chain.py`, `hgrid_eval.py`, `hgrid_seeds.py`; results `hgrid/{oracle,hybrid_g2,e2e}`
 (summary, rollout, probe, chain, rule_e2e.pt), NOTE.md (recommendation never completed: "(to be
-completed)"). 9 commits 6bdcce00..2b2c68e9, 12:58-15:07 UTC.
+completed)"). **Update 2026-10-08: completed on the branch and merged; see "Salvaged results (2026-10-08)".** 9 commits 6bdcce00..2b2c68e9, 12:58-15:07 UTC.
 
 #### Discoveries
 
@@ -1371,7 +1371,7 @@ Files: `evo_model.py` (`EvoRule` = G2 + genome; fitness helpers incl. batched pr
 `evo_search.py` (CMA-ES), `evo_compact.py` (no-NN rule, track b), `evo_motion.py`, `evo_publish.py`;
 results `evo/` (NOTE interim 13:35, genome.json/.npy, robust.json, evo_log.jsonl, probe, summary, rollout)
 and `evo/compact/` (same + log). 4 commits 5a8e9264..a7e859af, 12:55-14:15 UTC. The final NOTE (stage 2,
-compact track write-up) was never written.
+compact track write-up) was never written. **Update 2026-10-08: stages 3-4 and the final NOTE existed on the branch and are now merged; see "Salvaged results (2026-10-08)".**
 
 #### Discoveries
 
@@ -1788,7 +1788,7 @@ own-plan divergences are 12-32). Only the designed field model passes tier 1 (`c
      (push 0.8), never parting ahead of the predator.
    - Kills and crowd numbers moved without a trend: G2 kills 22/15/19/23; p1 at step 1375 killed 11/10/8/17.
    - p2 (`c32d1d62`) raised the predator input gain ×3 ("so the zero-init columns matter sooner") and strengthened
-     the reaction objective. No p2 result is committed.
+     the reaction objective. No p2 result is committed. **Update 2026-10-08: the p2 result was on the branch and is now merged; see "Salvaged results (2026-10-08)".**
    - **Why it matters:** gradient-learned avoidance through 7 zero-initialised input columns is slow. Every
      successful "parting" behaviour in the portfolio is DESIGNED: field, creature's shell, and the game core. In the
      game core a ship pass touched 0-2% of members with reaction on, against 3-5% inert.
@@ -2317,3 +2317,32 @@ generations (does each newer generation beat older opponents, or do they cycle?)
 - **Verdict across the four species:** a local learned rule can GROW and KEEP a recognisable outline and heal it
   with no deaths and organic motion, but holding a crisp plan, a headcount, or an animation still needs something
   body-wide, designed or perceived. That is the same line round 3 drew, now measured from the pure side.
+
+## Salvaged results (2026-10-08)
+
+A sweep of every `cece/*` branch against the lab found three branches whose final results never reached
+the lab, plus run files from the swarm-exp E/F/H and solo runs. All are merged now; the branches stay.
+
+- **evo, stages 3-4 (`cece/swarm-x-evo`, `results/evo/NOTE.md`, headline = `stage4/`).** The frozen G2 MLP
+  plus a 111-float evolved genome (composition homeostat on laying, egg-element choice, a predation-aware
+  "fear" brake on breeding, per-element swirl, output re-weighting) reaches **8/8 on the yardstick and
+  16/16 held-out seeds at 8/8** (G2: 5/8, mean 4.25), switches under grazing 32/32, liveliness 0.48 -> 0.90.
+  Strike heal traded away (0.43 at stage 2 -> 0.08). Takeaway: the win came from behaviours backprop had
+  no actuator for, switched on by evolution, not from new weights.
+- **play p2 (`cece/swarm-x-play`, `results/play/NOTE.md`).** The published rule (p2 step 1500) **opens a
+  tunnel in front of an approaching predator and seals it behind**: kills per pass 13.4 -> 3.6, danger-zone
+  crowding halves, and a zeroed-input control proves it is learned. Strike heal about 4x G2 (excess
+  2.99 -> 0.76). Cost: switching lost (strict 4/8 on all seeds). This overturns the note above that every
+  successful parting behaviour was designed.
+- **hgrid recommendation (`cece/swarm-x-hgrid`, `results/hgrid/NOTE.md`).** Ship the two-level split: a
+  designed composition field (wanted counts per element x slot; classes with room breed, misfits starve to
+  crystals) over a learned body. Bolted onto G2 with no retraining it lifts G2 from 4.25 to 6.75 tests
+  (4-seed mean). Also merged: the morph-wave designed plan switch (7/8), e2e step-1050 weights, 4-seed table.
+- **swarm-exp E/F/H and solo run files.** NOTEs, logs, rollouts and checkpoints for e1-e6(b), f2, f3, f5,
+  f7, h1, h2 and the four solo specialists now sit in `results/swarm_coevo_*`; f2 and f5 take their later
+  checkpoints (step 2000 and 5000). Scores were already recorded above.
+- **P7b whale / P7c jellyfish finished.** Resumed from the overnight checkpoints and trained to the end:
+  whale step 6000 (final loss 3.7e-4, was 4.5e-4 at the shipped step 4850), jellyfish step 5600 (1.7e-3,
+  was 2.4e-3 at step 3250). Weights in `results/{whale,jelly}3d_swim/weights.json`; re-exported to
+  `Ecology/flight/creatures/nca_{whale,jelly}.js`; gallery and showcase headless checks pass.
+
