@@ -216,6 +216,7 @@ building is not a fault: that pickup plays the generic capture with a verbose li
 | Knob | Shipped | What it does |
 |---|---|---|
 | `peelSeconds` / `flightSeconds` / `mateSeconds` / `dissolveSeconds` | 0.16 / 0.42 / 0.30 / 0.30 | the four beats (1.18 s; generic capture is 0.44) |
+| `approachStandoff` / `approachSeconds` | 2.5 / 0.22 | a crystal taken farther than 2.5 hull radii from the hull's centre first flies in WHOLE to that distance (tracking the hull) and peels there (§12) |
 | `playbackScale` | 1 | **slow motion for inspection** — 10 to watch faces land one by one; a test refuses it shipped above 1 |
 | `peelDistance` | 0.45 | how far faces lift off the crystal, crystal radii |
 | `flightBow` | 0.9 | how far out over its patch a face swings before coming down, hull mean half-extents |
@@ -363,6 +364,25 @@ need lived only in that seed block (the tint is rewritten every frame). Fixed: t
 fusion's own and is never re-read. *A block a component owns must not be round-tripped through the
 renderer — the read-back returns what the renderer had, not what you meant.* The same playtest
 asked for the outer shell to fly and the other three to fade, which is what ships now.
+
+**Second fleet playtest (2026-10-08): Mass works; Grizzly and Sparrow still read as the old
+capture; Urchin and Manta good.** Not static-vs-skinned (Urchin is static, Manta skinned). Measured:
+the two failing hulls are the only ones whose near-field skimmer is a 60x `DummySkimmer` — a
+collection REACH of 30 units, against 10 for Dolphin and Manta and under 1 for Squirrel. The fusion
+peeled where the crystal was taken, so its faces streaked 30 units into the ship in 0.42 s: the
+old capture's silhouette exactly. A far-collected crystal now **flies in whole first**
+(`approachStandoff` 2.5 hull radii, `approachSeconds` 0.22), to a standoff that keeps pace with the
+hull, and peels beside it. The hull's centre and radius are read off the POSED patches through the
+pin matrices, so the test is honest for skinned and static hulls at any mesh scale. The
+per-pickup `CrystalMorph` line now prints how far out the crystal was taken and whether it flew in.
+Serpent (reach 25) and Scarab (15) take the same path. *A reported "it plays the old effect" can be
+the new effect seen from too far away.*
+
+**The Manta family's bakes were mostly off the skin.** Their bind-pose mesh is 0.011 units across
+(a 100x node scale folded into the bind poses), and the surface query's tolerances are absolute: the
+shipped Manta bake landed 115 of 1,860 points, and the same hull shrunk to 0.011 offline landed 3.3%.
+`Solve` now normalises the hull to unit size and maps the pins and lengths back (schema 3; every
+bake reads stale until re-baked). Offline, the Manta hull at x1, x0.0001 and x1000 now lands 100%.
 
 ### The hulls
 

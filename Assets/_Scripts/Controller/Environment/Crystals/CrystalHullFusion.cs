@@ -154,13 +154,20 @@ namespace CosmicShore.Gameplay
         bool _hasArcIntensity, _hasArcDuty;
         float _startTime;
 
+        // The approach: a crystal collected far from the hull flies in whole before it peels.
+        float _approachSeconds;             // 0 = it peels where it was taken
+        Vector3 _approachDirLocal;          // hull centre -> crystal, in the hull's rotation
+        float _standoffDistance;            // world
+        Vector3 _crystalCentreStart;        // world, at collection
+        Vector3 _carry;                     // world offset applied to every start this frame
+
         Renderer[] _companions;             // crystal shells fading in place, then hidden
         MaterialPropertyBlock[] _companionBlocks;
         int[] _companionOpacityId;
         float[] _companionStartOpacity;
 
         /// <summary>Seconds from start until every face is down — when the pickup sound belongs.</summary>
-        public float MateDelaySeconds => _entry.MateSecondsFromStart;
+        public float MateDelaySeconds => _approachSeconds + _entry.MateSecondsFromStart;
 
         /// <summary>The contact patch, live, in world space.</summary>
         public Vector3 LandingWorldPosition
@@ -791,7 +798,9 @@ namespace CosmicShore.Gameplay
                         $"[CrystalHullFusion] {vesselStatus.VesselType}/{entry.element}: '{crystal.name}' " +
                         $"peeling {fusion._faces.Length} faces onto '{hull.Name}' over {entry.TotalSeconds:F2}s " +
                         $"({(entry.bake && ready.Prototype == entry.bake.TemplateMesh ? "baked" : "runtime-solved")}, " +
-                        $"domain colour {(fusion._haveTargetColour ? "read" : "NOT FOUND")}).");
+                        $"domain colour {(fusion._haveTargetColour ? "read" : "NOT FOUND")}, " +
+                        $"taken {(fusion._crystalCentreStart - fusion.HullCentreWorld(out float hullRadius)).magnitude:F1} from a hull " +
+                        $"of radius {hullRadius:F1}, {(fusion._approachSeconds > 0f ? $"flying in {fusion._approachSeconds:F2}s first" : "peeling where taken")}).");
                 return fusion;
             }
         }
@@ -860,20 +869,13 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>The companion shells fade over the peel and the flight - gone by the time the
-        /// faces are down, which is when the crystal itself is retired.</summary>
-        void FadeCompanions(CrystalHullFusionConfigSO.Phase phase, float u)
+        /// <summary>The companion shells fade over the approach, the peel and the flight - gone by
+        /// the time the faces are down, which is when the crystal itself is retired.</summary>
+        void FadeCompanions(float elapsed)
         {
             if (_companions == null || _companions.Length == 0) return;
-            var e = _entry;
-            float span = e.peelSeconds + e.flightSeconds;
-            float done = phase switch
-            {
-                CrystalHullFusionConfigSO.Phase.Peel => u * e.peelSeconds,
-                CrystalHullFusionConfigSO.Phase.Flight => e.peelSeconds + u * e.flightSeconds,
-                _ => span,
-            };
-            float keep = 1f - CrystalHullFusionConfigSO.Smooth(span > 0f ? done / span : 1f);
+            float span = _approachSeconds + (_entry.peelSeconds + _entry.flightSeconds) * _entry.Scale;
+            float keep = 1f - CrystalHullFusionConfigSO.Smooth(span > 0f ? elapsed / span : 1f);
             for (int c = 0; c < _companions.Length; c++)
             {
                 var shell = _companions[c];
@@ -973,6 +975,19 @@ namespace CosmicShore.Gameplay
 
             var assignment = CrystalHullFusionGeometry.AssignMinCost(cost);
             for (int i = 0; i < count; i++) _faces[i].Patch = assignment[i];
+
+            // A crystal taken far from the hull (a 60x skimmer reaches 30 units out) would peel out
+            // there, and its faces streaking 30 units into the ship read as the old capture. It flies
+            // in whole first, to a standoff that keeps pace with the hull, and peels beside it.
+            _crystalCentreStart = crystalCentre;
+            Vector3 hullCentre = HullCentreWorld(out float hullRadius);
+            _standoffDistance = _entry.approachStandoff * hullRadius;
+            Vector3 fromHull = crystalCentre - hullCentre;
+            if (hullRadius > 0f && fromHull.magnitude > _standoffDistance)
+            {
+                _approachSeconds = _entry.approachSeconds * _entry.Scale;
+                _approachDirLocal = Quaternion.Inverse(hullTransform.rotation) * fromHull.normalized;
+            }
 
             _haveTargetColour = _entry.convergeToDomainColour
                 && crystal.TryGetDomainCrystalColors(vesselStatus.Domain, out _targetBright, out _targetDull);
@@ -1115,6 +1130,35 @@ namespace CosmicShore.Gameplay
             return skin;
         }
 
+        /// <summary>The posed hull's centre and mean radius in the world, read off its patches
+        /// through this frame's pin matrices - true for a skinned and a static hull alike, whatever
+        /// scale their mesh space carries.</summary>
+        Vector3 HullCentreWorld(out float meanRadius)
+        {
+            var layout = _layout;
+            int count = layout.PatchCount;
+            Vector3 centre = Vector3.zero;
+            for (int k = 0; k < count; k++)
+                centre += _boneToWorld[layout.PatchBone[k]].MultiplyPoint3x4(layout.PatchPositionLocal[k]);
+            centre /= Mathf.Max(1, count);
+            float sum = 0f;
+            for (int k = 0; k < count; k++)
+                sum += (_boneToWorld[layout.PatchBone[k]].MultiplyPoint3x4(layout.PatchPositionLocal[k]) - centre).magnitude;
+            meanRadius = sum / Mathf.Max(1, count);
+            return centre;
+        }
+
+        /// <summary>The approach's offset this frame: nothing for a crystal taken near the hull;
+        /// otherwise the way from where it was taken to the standoff beside the hull NOW, eased in
+        /// over the approach and held (tracking the hull) through the peel and the flight's start.</summary>
+        Vector3 Carry(float approach01)
+        {
+            if (_approachSeconds <= 0f) return Vector3.zero;
+            Vector3 centre = HullCentreWorld(out _);
+            Vector3 standoff = centre + _hull.Space.rotation * _approachDirLocal * _standoffDistance;
+            return (standoff - _crystalCentreStart) * CrystalHullFusionConfigSO.Smooth(approach01);
+        }
+
         // ══ Per frame ═════════════════════════════════════════════════════════════════════════
 
         void LateUpdate()
@@ -1122,8 +1166,20 @@ namespace CosmicShore.Gameplay
             if (_hull == null || !_hull.Space || _faces == null) { Destroy(gameObject); return; }
 
             float elapsed = Time.time - _startTime;
-            var phase = _entry.Resolve(elapsed, out float u);
-            if (phase == CrystalHullFusionConfigSO.Phase.Done) { Destroy(gameObject); return; }
+            float approach01 = 1f;
+            CrystalHullFusionConfigSO.Phase phase;
+            float u;
+            if (elapsed < _approachSeconds)
+            {
+                approach01 = elapsed / _approachSeconds;
+                phase = CrystalHullFusionConfigSO.Phase.Approach;
+                u = approach01;
+            }
+            else
+            {
+                phase = _entry.Resolve(elapsed - _approachSeconds, out u);
+                if (phase == CrystalHullFusionConfigSO.Phase.Done) { Destroy(gameObject); return; }
+            }
 
             using (s_frameMarker.Auto())
             {
@@ -1131,17 +1187,20 @@ namespace CosmicShore.Gameplay
                 transform.SetPositionAndRotation(anchor, Quaternion.identity);
                 transform.localScale = Vector3.one;
 
-                if (phase != CrystalHullFusionConfigSO.Phase.Peel)
-                {
-                    // One native read per bone, then every point is managed matrix maths.
-                    // A pin destroyed mid-fusion (a hull part an ability removed) holds its last pose:
-                    // only the faces on it stop following, the fusion does not end.
-                    for (int b = 0; b < _bones.Length; b++)
-                        if (_bones[b]) _boneToWorld[b] = _bones[b].localToWorldMatrix;
-                    PosePoints(phase, u);
-                }
-                WriteMesh(phase, u, anchor);
-                WriteMaterial(phase, u);
+                // One native read per bone, then every point is managed matrix maths.
+                // A pin destroyed mid-fusion (a hull part an ability removed) holds its last pose:
+                // only the faces on it stop following, the fusion does not end.
+                for (int b = 0; b < _bones.Length; b++)
+                    if (_bones[b]) _boneToWorld[b] = _bones[b].localToWorldMatrix;
+                _carry = Carry(approach01);
+
+                // The approach draws the crystal whole: the peel's first frame, carried.
+                var drawn = phase == CrystalHullFusionConfigSO.Phase.Approach ? CrystalHullFusionConfigSO.Phase.Peel : phase;
+                float drawnU = phase == CrystalHullFusionConfigSO.Phase.Approach ? 0f : u;
+                if (drawn != CrystalHullFusionConfigSO.Phase.Peel) PosePoints(drawn, drawnU);
+                WriteMesh(drawn, drawnU, anchor);
+                FadeCompanions(elapsed);
+                WriteMaterial(drawn, drawnU);
             }
         }
 
@@ -1181,7 +1240,7 @@ namespace CosmicShore.Gameplay
                         // A quadratic curve whose last leg runs straight down the patch normal: the
                         // face swings out over its patch and comes DOWN onto the skin, rather than
                         // arriving edge-on or through the hull.
-                        Vector3 start = _pointStart[p] + face.Lift;
+                        Vector3 start = _pointStart[p] + face.Lift + _carry;
                         Vector3 control = target + spotNormal * _bowDistance;
                         _pointPosition[p] = g * g * start + 2f * g * f * control + f * f * target;
                         _pointNormal[p] = Vector3.Lerp(face.StartNormal, targetNormal, f).normalized;
@@ -1222,8 +1281,8 @@ namespace CosmicShore.Gameplay
                     // Every face lifts off along its solid's radial; the filler folds into its face's
                     // centre as it goes, so what leaves the crystal is loose faces.
                     ref var face = ref _faces[i];
-                    Vector3 start = _startPositions[v] + face.Lift * lift;
-                    _vertices[v] = (k >= 0 ? start : Vector3.Lerp(start, face.StartCentroid + face.Lift * lift, fold)) - anchor;
+                    Vector3 start = _startPositions[v] + face.Lift * lift + _carry;
+                    _vertices[v] = (k >= 0 ? start : Vector3.Lerp(start, face.StartCentroid + face.Lift * lift + _carry, fold)) - anchor;
                     _normals[v] = _startNormals[v];
                 }
                 else if (k >= 0)
@@ -1270,7 +1329,6 @@ namespace CosmicShore.Gameplay
             };
             float opacity = phase == CrystalHullFusionConfigSO.Phase.Dissolve ? 1f - CrystalHullFusionConfigSO.EaseIn(u) : 1f;
 
-            FadeCompanions(phase, u);
             if (!_renderer) return;
             // The block is OURS and persistent: Adopt seeded it with the crystal's own block and the
             // frozen Shepard band. Re-reading it from the renderer each frame (as this once did) read

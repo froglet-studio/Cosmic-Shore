@@ -102,6 +102,13 @@ cause unconfirmed; hardened (hull found by the bake's own mesh, a lost pin no lo
 fusion). Re-test Mass on any hull and anything on the Grizzly; if the Grizzly still plays the old
 capture, the console's `[CrystalHullFusion]` warning names why.
 
+**Second fleet playtest:** Mass ✅, Urchin ✅, Manta ✅; Grizzly and Sparrow still read as the old
+capture. Cause measured: their 60x DummySkimmers collect crystals 30 units out, so the faces streaked
+in from there. Fix: a far-collected crystal flies in whole to 2.5 hull radii first, then peels (doc
+§12). Also: bake schema 3 (unit-size solve; the Manta family's bakes had landed only 115 of 1,860
+points) — **re-bake all**, then re-test Grizzly, Sparrow, Serpent, Scarab and Manta. With
+**Logging > CrystalMorph** on, each pickup line now says how far out it was taken and whether it flew in.
+
 **Verify in editor.**
 0. **Run the baker** (*Bake all*) → all 48 rows CURRENT (an UNRESOLVABLE row names the importer
    still missing Read/Write), four `<Element>_FusionTemplate.asset`, then **Validate & Push** in the window.

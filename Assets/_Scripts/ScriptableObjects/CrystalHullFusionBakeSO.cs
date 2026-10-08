@@ -24,8 +24,9 @@ namespace CosmicShore.ScriptableObjects
     public class CrystalHullFusionBakeSO : ScriptableObject
     {
         /// <summary>Bump when the solver or this layout changes meaning; every older bake reads stale.</summary>
-        /// <remarks>2: static multi-part hulls, the per-face crystal anchors, shared per-element templates.</remarks>
-        public const int CurrentSchema = 2;
+        /// <remarks>2: static multi-part hulls, the per-face crystal anchors, shared per-element templates.
+        /// 3: the hull is solved at unit size (the Manta family's 0.011-unit bind-pose mesh landed 6%).</remarks>
+        public const int CurrentSchema = 3;
 
         [Header("Fingerprint - what this was solved against")]
         [Tooltip("Solver version the bake was made with. Older than the code's = stale.")]

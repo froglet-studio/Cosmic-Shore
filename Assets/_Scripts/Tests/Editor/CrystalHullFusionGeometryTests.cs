@@ -274,6 +274,39 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Solve_IsScaleInvariant_ATinyHullLandsLikeAUnitOne([Values(1e-3f, 1e3f)] float scale)
+        {
+            // The Manta family's bind-pose mesh is 0.011 units across, and at that size the surface
+            // query's absolute tolerances let only 3.3% of points land. The solve normalises the hull,
+            // so a scaled hull must land exactly the same layout, scaled.
+            var (verts, normals, tris) = Ring(4);
+            FlatSkinArrays(out var hv, out var hn, out var ht);
+            var scaled = new Vector3[hv.Length];
+            for (int v = 0; v < hv.Length; v++) scaled[v] = hv[v] * scale;
+
+            CrystalHullFusionGeometry.FusionSolution Run(Vector3[] hull) => CrystalHullFusionGeometry.Solve(
+                new CrystalHullFusionGeometry.SolveInput
+                {
+                    CrystalVertices = verts, CrystalNormals = normals, CrystalTriangles = new List<int[]> { tris },
+                    CrystalModelRadius = 2.2f,
+                    HullVertices = hull, HullNormals = hn, HullTriangles = ht,
+                    HullBindPoses = new Matrix4x4[0],
+                    Subdivisions = 2,
+                }, out _);
+
+            var unit = Run(hv);
+            var small = Run(scaled);
+            Assert.IsNotNull(unit);
+            Assert.IsNotNull(small);
+            Assert.AreEqual(unit.Layout.Projected, small.Layout.Projected, "the same points land at any scale");
+            Assert.AreEqual(unit.Layout.PatchRadius * scale, small.Layout.PatchRadius, Mathf.Abs(unit.Layout.PatchRadius * scale) * 1e-3f);
+            Assert.AreEqual(unit.Layout.HullMeanRadius * scale, small.Layout.HullMeanRadius, Mathf.Abs(unit.Layout.HullMeanRadius * scale) * 1e-3f);
+            for (int i = 0; i < unit.Layout.PointLocal.Length; i++)
+                Assert.Less((unit.Layout.PointLocal[i] * scale - small.Layout.PointLocal[i]).magnitude,
+                    unit.Layout.PatchRadius * scale * 1e-3f, $"point {i} is pinned in true (scaled) units");
+        }
+
+        [Test]
         public void Solve_InTheHullsBindPose_PinsEveryPointThroughItsBindPose()
         {
             var (verts, normals, tris) = Ring(4);

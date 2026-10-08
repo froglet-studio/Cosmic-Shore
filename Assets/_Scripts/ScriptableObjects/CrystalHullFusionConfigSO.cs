@@ -31,7 +31,7 @@ namespace CosmicShore.ScriptableObjects
         public const string ResourcePath = "CrystalHullFusionConfig";
 
         /// <summary>Which beat of the fusion a given elapsed time falls in.</summary>
-        public enum Phase { Peel = 0, Flight = 1, Mate = 2, Dissolve = 3, Done = 4 }
+        public enum Phase { Peel = 0, Flight = 1, Mate = 2, Dissolve = 3, Done = 4, Approach = 5 }
 
         [Serializable]
         public class Entry
@@ -48,6 +48,17 @@ namespace CosmicShore.ScriptableObjects
                      "Crystal Hull Fusions. With a current bake a pickup does no geometry at all. Empty " +
                      "or stale, the game solves it on a worker thread at runtime instead (and says so).")]
             public CrystalHullFusionBakeSO bake;
+
+            [Header("Approach")]
+            [Tooltip("How far from the hull's centre the faces peel, in hull radii (measured on the " +
+                     "posed hull). A crystal collected farther out than this - the Sparrow and Grizzly " +
+                     "skim crystals 30 units away - first flies in WHOLE to this distance, keeping pace " +
+                     "with the hull, and peels there; nearer, it peels where it was taken.")]
+            [Min(1f)] public float approachStandoff = 2.5f;
+
+            [Tooltip("Seconds a far-collected crystal takes to fly in to the standoff before it peels. " +
+                     "Added in front of the four beats only when the crystal was that far out.")]
+            [Min(0.01f)] public float approachSeconds = 0.22f;
 
             [Header("Timing (seconds)")]
             [Tooltip("Solids fold into their outer faces and the faces lift off the crystal.")]
@@ -117,7 +128,7 @@ namespace CosmicShore.ScriptableObjects
                      "crystal's own colour the whole way.")]
             public bool convergeToDomainColour = true;
 
-            float Scale => Mathf.Max(1f, playbackScale);
+            public float Scale => Mathf.Max(1f, playbackScale);
 
             /// <summary>Total wall-clock length of the fusion.</summary>
             public float TotalSeconds => (peelSeconds + flightSeconds + mateSeconds + dissolveSeconds) * Scale;

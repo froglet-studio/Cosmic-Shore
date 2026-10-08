@@ -783,14 +783,23 @@ namespace CosmicShore.Utility
             for (int b = 0; b < boneCount; b++) toBone[b] = input.HullBindPoses[b];
             toBone[boneCount] = Matrix4x4.identity; // the renderer itself
 
+            // The layout is solved on a hull of UNIT size and mapped back. Bind-pose mesh units run
+            // from 0.011 (the Manta family, a 100x FBX node scale baked into its bind poses) to 729
+            // (the Rhino), and the surface query's tolerances are absolute: at 0.011 only 3.3% of
+            // the points found the skin (measured, and matching the shipped Manta bake's 115/1860).
+            float unit = NormalisingScale(input.HullVertices);
+            var unitHull = new Vector3[input.HullVertices.Length];
+            for (int v = 0; v < unitHull.Length; v++) unitHull[v] = input.HullVertices[v] * unit;
+
             var layout = BuildHullLayout(new HullLayoutInput
             {
-                HullVertices = input.HullVertices,
+                HullVertices = unitHull,
                 HullNormals = input.HullNormals,
                 HullTriangles = input.HullTriangles,
                 DominantBones = input.HullDominantBones,
                 FallbackBone = boneCount,
-                HullToWorld = Matrix4x4.identity,
+                // Unit space back to mesh space, so every pin lands in true bone-local units.
+                HullToWorld = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, Vector3.one / unit),
                 BoneWorldToLocal = toBone,
                 Panels = panels,
                 Template = template,
@@ -798,6 +807,11 @@ namespace CosmicShore.Utility
                 SurfaceLift = input.SurfaceLift,
             }, out failure);
             if (layout == null) return null;
+            // The layout's own lengths are mesh-space quantities at runtime.
+            layout.HullCentre /= unit;
+            layout.InvExtents *= unit;
+            layout.HullMeanRadius /= unit;
+            layout.PatchRadius /= unit;
 
             int faces = panels.PanelCount, perFace = layout.PointsPerPatch;
             var points = new Vector2[faces * perFace];
@@ -850,6 +864,22 @@ namespace CosmicShore.Utility
                 VertexPanel = template.VertexPanel,
                 VertexPoint = template.VertexPoint,
             };
+        }
+
+        /// <summary>
+        /// 1 / the hull's mean vertex distance from its bounding-box centre: the factor that makes a
+        /// hull unit-sized for the solve. 1 for an empty or degenerate hull.
+        /// </summary>
+        public static float NormalisingScale(Vector3[] vertices)
+        {
+            if (vertices is not { Length: > 0 }) return 1f;
+            Vector3 min = vertices[0], max = vertices[0];
+            foreach (var v in vertices) { min = Vector3.Min(min, v); max = Vector3.Max(max, v); }
+            Vector3 centre = (min + max) * 0.5f;
+            double sum = 0;
+            foreach (var v in vertices) sum += (v - centre).magnitude;
+            float mean = (float)(sum / vertices.Length);
+            return mean > 1e-20f && !float.IsInfinity(mean) ? 1f / mean : 1f;
         }
 
         /// <summary>Corners per face that pin its pose: three non-collinear points fix a rigid frame.</summary>
