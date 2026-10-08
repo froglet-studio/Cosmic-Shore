@@ -188,3 +188,29 @@ PACK2 = dict(pack_metab=0.06, **{"pack.handle_micro": 40.0, "pack.switch_ref": 2
 # (search_nb: the first refit could not keep far packs alive at ANY attack rate - 65 kills in 10 min at 100x -
 # because a far pack only saw prey in its own 200-u region; a hunting pack's 300-u sense spans its neighbours.)
 CAL2 = dict(B12, **PACK2)        # the model the macro rates are refitted to
+
+# The round-2 refit (calibrate.py CAL2 -> results/r2_calibrate.json; micro truth r2_consistency.json, 3 seeds x
+# 15 min all-micro): mean log error 0.95 -> 0.18. End gaps: lurker 4%, locust 46%, pack 71% (far packs 11 vs 38),
+# grazer 94% (far grazers 369 vs 191). Thieves excluded (no pilots = no trail in the fit).
+FIT2 = {"grazer.F_half": 62.5, "locust.F_half": 125.0, "pack.a_attack": 0.0048, "lurker.a_attack": 0.0192,
+        "grazer.hop": 0.012, "locust.hop": 0.000375, "pack.hop": 0.008}
+B13 = dict(B12, **PACK2, **FIT2)
+R13 = {
+    "r13_base": B13,
+    "r13_rec1": dict(B13, flora_recruit=1.0),
+    "r13_rec3": dict(B13, flora_recruit=3.0),
+    "r13_rec1_e45": dict(B13, flora_recruit=1.0, **{"pack.eff": 0.45}),
+}
+
+# R13 result: plant recruitment levels the soil (rec 1.0: N flat at ~64k, plants 150 -> 323; rec 3.0 draws N DOWN).
+# No guild touches a cap any more. But (1) packs that eat thieves wipe them out in 2 of 3 seeds (~370 thieves eaten
+# per 3 runs; R11 without thief predation lost none), and (2) packs still climb 24 -> 100-157 at minute 30 without
+# levelling: prey stays plentiful (grazers 200-450) so a pack's kill rate is handling-limited, not food-limited.
+# R14: packs off thieves again; pack metabolism 0.06 / 0.10 / 0.14 (a costlier hunter levels off lower).
+B14 = dict(B13, flora_recruit=1.0, **{"pack.prey_names": ("grazer", "locust")})
+R14 = {
+    "r14_m06": B14,
+    "r14_m10": dict(B14, pack_metab=0.10),
+    "r14_m14": dict(B14, pack_metab=0.14),
+    "r14_m10_thiefprey": dict(B14, pack_metab=0.10, **{"pack.prey_names": ("grazer", "locust", "thief")}),
+}
