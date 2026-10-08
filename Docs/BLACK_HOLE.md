@@ -317,18 +317,24 @@ was cut off at a hard edge close up and lost entirely from inside. *Why not a fu
 effect:* it would shade every pixel of every camera for every hole; the sphere shades only the
 lens's own footprint, with the same per-pixel trace, and needs no renderer feature.
 
-**Camera textures.** The lens reads URP's opaque-scene copy and depth texture, which are OFF in
-`URP_Asset` (they cost a copy per frame). `BlackHoleLens.CameraSupport` turns them on for EVERY
-enabled game camera while a hole is live and restores each camera's own settings when the last hole
-goes. **Every camera, not `Camera.main` (incident, 2026-10-08):** in the real game the vessel's camera
-(CameraManager's `CM PlayerCam`, its own Unity Camera) is Untagged in Bootstrap, so while flying in
-lava-lamp freestyle `Camera.main` was the menu's camera. Only that one got the copies; the vessel
-camera's lens sampled an empty opaque texture, so the whole lens sphere (30 r_s) drew BLACK and only
-rays bent off-screen (the sky) showed, as a ring — and from inside the sphere, as a sliver at the
-edge. The same mistake put "ahead of the camera" ahead of the wrong camera, so spawning now measures
-from `BlackHoleLens.ViewCamera()`: the last base game camera URP finished rendering to the screen —
-the image actually on screen. The project's opaque copy is 2× downsampled (asset-level, left
-alone), so the lensed background is slightly softer than the unbent scene.
+**What it bends: everything drawn before it — opaques, skybox AND transparents.** `BlackHoleLensPass`
+(injected from script into every base game camera and the Scene view while a lens is live — no
+renderer feature, no asset edit) copies the camera colour AFTER the transparents into
+`_BlackHoleSceneColor` (full resolution, MSAA resolved) and draws the lens from it; the lens shader's
+pass is `LightMode = BlackHoleLens`, which URP's own passes never draw. **Incident (2026-10-08): the
+snow shards were not bent.** The lens used to draw at Transparent+50 from URP's `_CameraOpaqueTexture`,
+which is copied BEFORE any transparent — the cytoplasm's snow shards (`SnowMaterial`: alpha-blended,
+queue 3000, no depth write) were never in it, and the lens, which paints every pixel of its sphere,
+covered the ones already drawn behind it: a ball 30 r_s across with no shards in it.
+`BlackHoleTests.Lens_MaterialShaderAndHlslShipTogether` now fails if the lens reads the opaque copy
+again. The lens still reads the DEPTH texture (to leave opaque mass in front of the hole unbent),
+which is OFF in `URP_Asset`: `BlackHoleLens.CameraSupport` turns it on for EVERY enabled game camera
+while a hole is live and restores each camera's own setting when the last hole goes. **Every camera,
+not `Camera.main` (incident, 2026-10-08):** in the real game the vessel's camera (CameraManager's `CM
+PlayerCam`, its own Unity Camera) is Untagged in Bootstrap, so while flying in lava-lamp freestyle
+`Camera.main` was the menu's camera; only it was patched, and the vessel camera's lens drew BLACK. The
+same mistake put "ahead of the camera" ahead of the wrong camera, so spawning measures from
+`BlackHoleLens.ViewCamera()`: the last base game camera URP finished rendering to the screen.
 
 **The sky a bent ray sees off-screen is the scene's own skybox** (`BlackHoleSky.cs`). Whatever
 Lighting ▸ Environment ▸ Skybox Material names (`RenderSettings.skybox`) is drawn into six 90° faces
@@ -351,8 +357,10 @@ skybox). Prisms' ambient light and reflections still come from the baked environ
 **Generate Lighting** brings those to the HyperSea too; the lens no longer depends on it.
 
 **Stated screen-space limits.** A bent ray that leaves the screen samples the sky above instead of
-the scene, so off-screen prisms are not lensed in; a bent ray that lands on something IN FRONT of the
-hole is rejected the same way (the copy cannot see past it). The bend is
+the scene, so off-screen prisms and shards are not lensed in; a bent ray that lands on OPAQUE mass in
+front of the hole is rejected the same way (the copy cannot see past it). A TRANSPARENT in front of
+the hole (a shard between you and it) has no depth, so it is in the copy and bent with the
+background rather than drawn over the lens. The bend is
 faded to the straight ray over the outer 45% of the lens radius — light at impact parameter `b` is
 really deflected by ~`2/b` at any distance, so a finite lens would otherwise draw a seam at its edge.
 

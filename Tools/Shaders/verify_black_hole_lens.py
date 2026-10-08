@@ -36,8 +36,9 @@ B. COMPILE. The vertex and fragment stages of BlackHoleLens.shader, with the shi
       that really declares it. The first lens shipped calling DecodeHDREnvironment (core's
       EntityLighting.hlsl) with only URP's Core.hlsl included; a single-blob mock declared everything
       and passed, Unity failed the compile, and every hole drew magenta. Negative control: the
-      program with its DeclareOpaqueTexture include removed must FAIL here (SampleSceneColor). (The
-      lens no longer decodes an HDR environment cubemap — its sky is BlackHoleSky's linear array.)
+      program with its DeclareDepthTexture include removed must FAIL here (SampleSceneDepth). (The
+      lens no longer decodes an HDR environment cubemap — its sky is BlackHoleSky's linear array —
+      nor reads URP's opaque copy: it bends BlackHoleLensPass's after-transparents copy.)
    B2 (DXC) against the REAL URP + core ShaderLibrary - the graphics checkout that
       Tools/Build/unity_refcompile fetches - for the D3D11, Vulkan and Metal API branches. This is
       the compile that would have caught it; it needs dxc (on PATH or $DXC) and the checkout
@@ -272,6 +273,7 @@ URP_MOCK = {
 #define SAMPLER(s) SamplerState s
 #define SAMPLE_TEXTURECUBE_LOD(t, s, c, l) t.SampleLevel(s, c, l)
 #define TEXTURE2D_ARRAY(t) Texture2DArray t
+#define SAMPLE_TEXTURE2D_LOD(t, s, c, l) t.SampleLevel(s, c, l)
 #define SAMPLE_TEXTURE2D_ARRAY_LOD(t, s, c, i, l) t.SampleLevel(s, float3(c, i), l)
 float4x4 unity_ObjectToWorld;
 float4x4 unity_MatrixVP;
@@ -292,6 +294,7 @@ TEXTURECUBE(_GlossyEnvironmentCubeMap);
 SAMPLER(sampler_GlossyEnvironmentCubeMap);
 half4 _GlossyEnvironmentCubeMap_HDR;
 SamplerState sampler_PointClamp;
+SamplerState sampler_LinearClamp;   // core GlobalSamplers.hlsl, which URP's Core.hlsl includes
 """,
     CORE + "EntityLighting.hlsl": r"""// mock: core EntityLighting.hlsl - NOT reached from URP Core.hlsl
 half3 DecodeHDREnvironment(half4 encoded, half4 instructions) { return encoded.rgb * instructions.x; }
@@ -306,7 +309,7 @@ TEXTURE2D(_CameraDepthTexture);
 float SampleSceneDepth(float2 uv) { return _CameraDepthTexture.SampleLevel(sampler_PointClamp, uv, 0).r; }
 """,
 }
-OPAQUE_INCLUDE = '#include "' + URP + 'DeclareOpaqueTexture.hlsl"'
+DEPTH_INCLUDE = '#include "' + URP + 'DeclareDepthTexture.hlsl"'
 
 # B2: the real library's API branches (Common.hlsl picks API/<x>.hlsl from these), and the defines
 # Unity's compiler sets that the library reads. INSTANCING_ON is left out: the stock URP library
@@ -471,11 +474,11 @@ def main():
                 ok = False
             else:
                 print(f"compiled {entry} [{stage}]")
-        assert OPAQUE_INCLUDE in prog, "the shader no longer includes DeclareOpaqueTexture.hlsl"
-        unlit = prog.replace(OPAQUE_INCLUDE, "")
+        assert DEPTH_INCLUDE in prog, "the shader no longer includes DeclareDepthTexture.hlsl"
+        unlit = prog.replace(DEPTH_INCLUDE, "")
         rc, out = glslang_compile(work, unlit, "frag", frag)
-        fired = rc != 0 and "SampleSceneColor" in out
-        print(f"B1 negative control [DeclareOpaqueTexture.hlsl include removed]: {'FIRED' if fired else 'DID NOT FIRE'}")
+        fired = rc != 0 and "SampleSceneDepth" in out
+        print(f"B1 negative control [DeclareDepthTexture.hlsl include removed]: {'FIRED' if fired else 'DID NOT FIRE'}")
         ok &= fired
 
         print("\nB2. DXC compile of BlackHoleLens.shader against the REAL URP + core ShaderLibrary")
@@ -495,8 +498,8 @@ def main():
                     else:
                         print(f"compiled {entry} [{api}, {profile}]")
             rc, errors = dxc_compile(work, toolchain, unlit, "ps_6_0", frag, "SHADER_STAGE_FRAGMENT", REAL_APIS[0])
-            fired = rc != 0 and any("SampleSceneColor" in e for e in errors)
-            print(f"B2 negative control [DeclareOpaqueTexture.hlsl include removed]: {'FIRED' if fired else 'DID NOT FIRE'}")
+            fired = rc != 0 and any("SampleSceneDepth" in e for e in errors)
+            print(f"B2 negative control [DeclareDepthTexture.hlsl include removed]: {'FIRED' if fired else 'DID NOT FIRE'}")
             ok &= fired
     finally:
         if keep:

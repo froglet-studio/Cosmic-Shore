@@ -23,11 +23,13 @@ namespace CosmicShore.Gameplay
     /// <see cref="BlackHoleSky"/> renders into six faces while any lens is live — never URP's baked
     /// environment reflection, which is Unity's default sky until the scene's lighting is generated.</para>
     ///
-    /// <para><b>The camera textures.</b> The lens reads URP's opaque-scene copy and depth texture,
-    /// which the project has OFF in <c>URP_Asset</c> (they cost a copy every frame). Rather than
-    /// switching them on for every scene, <see cref="CameraSupport"/> turns them on for every
-    /// enabled game camera only while at least one lens is live, and restores each camera's own
-    /// settings when the last hole goes.</para>
+    /// <para><b>What it bends.</b> <see cref="BlackHoleLensPass"/> copies the camera's colour AFTER the
+    /// transparents and draws the lens from that copy, so alpha-blended mass (the snow shards,
+    /// particles) behind the hole is bent with everything else. The lens also reads URP's depth
+    /// texture (to leave opaque mass in front of the hole unbent), which the project has OFF in
+    /// <c>URP_Asset</c>; <see cref="CameraSupport"/> turns it on for every enabled game camera only
+    /// while at least one lens is live, and restores each camera's own setting when the last hole
+    /// goes.</para>
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class BlackHoleLens : MonoBehaviour
@@ -220,12 +222,14 @@ namespace CosmicShore.Gameplay
         {
             CameraSupport.Acquire();
             BlackHoleSky.Acquire();
+            BlackHoleLensPass.Acquire();
         }
 
         void OnDisable()
         {
             CameraSupport.Release();
             BlackHoleSky.Release();
+            BlackHoleLensPass.Release();
         }
 
         void LateUpdate()
@@ -261,19 +265,19 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Keeps the opaque and depth textures on for EVERY enabled game camera while any lens is
-        /// live, and restores each camera's own settings when the last one goes. Every camera,
-        /// not one: the lens draws in whichever camera sees it, and a camera without the copies
-        /// samples black — which is what the vessel camera did in lava-lamp freestyle while only
-        /// <c>Camera.main</c> (the menu's) was patched: the whole 30 r_s lens sphere painted black,
-        /// with only the off-screen rays (the sky) showing as a ring. Owner-restores-only: it never
-        /// clears a value it did not set. Also tracks <see cref="LastScreenCamera"/> for
-        /// <see cref="ViewCamera"/>.
+        /// Keeps the depth texture on for EVERY enabled game camera while any lens is live, and
+        /// restores each camera's own setting when the last one goes. Every camera, not one: the
+        /// lens draws in whichever camera sees it. (While only <c>Camera.main</c> — the menu's — was
+        /// patched, the vessel camera in lava-lamp freestyle had no scene copy and painted the whole
+        /// 30 r_s lens sphere black.) The colour the lens bends is <see cref="BlackHoleLensPass"/>'s
+        /// own after-transparents copy, so the opaque copy is no longer switched on. Owner-restores-
+        /// only: it never clears a value it did not set. Also tracks <see cref="LastScreenCamera"/>
+        /// for <see cref="ViewCamera"/>.
         /// </summary>
         internal static class CameraSupport
         {
             static int s_users;
-            static readonly Dictionary<Camera, (CameraOverrideOption color, CameraOverrideOption depth)> s_patched = new();
+            static readonly Dictionary<Camera, CameraOverrideOption> s_patched = new();
             static readonly List<Camera> s_stale = new();
             static Camera[] s_buffer = new Camera[8];
 
@@ -308,8 +312,7 @@ namespace CosmicShore.Gameplay
                     if (cam == null || cam.cameraType != CameraType.Game || s_patched.ContainsKey(cam)) continue;
                     var data = cam.GetUniversalAdditionalCameraData();
                     if (data == null || data.renderType != CameraRenderType.Base) continue;
-                    s_patched[cam] = (data.requiresColorOption, data.requiresDepthOption);
-                    data.requiresColorOption = CameraOverrideOption.On;
+                    s_patched[cam] = data.requiresDepthOption;
                     data.requiresDepthOption = CameraOverrideOption.On;
                 }
 
@@ -327,8 +330,7 @@ namespace CosmicShore.Gameplay
                     if (kv.Key == null) continue;
                     var data = kv.Key.GetUniversalAdditionalCameraData();
                     if (data == null) continue;
-                    data.requiresColorOption = kv.Value.color;
-                    data.requiresDepthOption = kv.Value.depth;
+                    data.requiresDepthOption = kv.Value;
                 }
                 s_patched.Clear();
             }

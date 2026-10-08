@@ -242,10 +242,13 @@ namespace CosmicShore.Tests
             string shader = File.ReadAllText(shaderPath);
             Assert.IsTrue(shader.Contains("Shader \"CosmicShore/BlackHoleLens\""), "the lens shader was renamed.");
             Assert.IsTrue(shader.Contains("#include \"BlackHoleLens.hlsl\""), "the lens shader no longer includes the traced HLSL.");
-            Assert.IsTrue(shader.Contains("DeclareOpaqueTexture.hlsl") && shader.Contains("DeclareDepthTexture.hlsl"),
-                "the lens shader no longer reads the opaque and depth copies it bends.");
-            Assert.IsTrue(shader.Contains("\"Queue\" = \"Transparent"),
-                "the lens must draw in the transparent queue — after URP copies the opaque scene it bends.");
+            Assert.IsTrue(shader.Contains("DeclareDepthTexture.hlsl") && shader.Contains("_BlackHoleSceneColor"),
+                "the lens shader no longer reads the depth texture and BlackHoleLensPass's scene copy.");
+            Assert.IsTrue(shader.Contains($"\"LightMode\" = \"{BlackHoleLensPass.LightModeName}\""),
+                "the lens pass must carry LightMode BlackHoleLens — drawn by BlackHoleLensPass AFTER the transparents, " +
+                "so the shards and particles behind the hole are in what it bends (URP's own passes would draw it before them).");
+            Assert.IsFalse(shader.Contains("SampleSceneColor") || shader.Contains("DeclareOpaqueTexture"),
+                "the lens reads URP's opaque copy again — taken before the transparents, it has no shards in it.");
             Assert.IsTrue(shader.Contains("Cull Front") && shader.Contains("ZTest Always"),
                 "the lens draws the FAR side of its sphere with its own depth test — a camera-facing quad or a " +
                 "hardware depth test cuts the lens off up close and loses it from inside.");

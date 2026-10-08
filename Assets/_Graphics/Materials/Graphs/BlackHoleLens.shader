@@ -10,10 +10,14 @@
 // INSIDE the lens. (The first version drew a camera-facing quad at the hole's centre depth; a quad
 // covers the lens's true screen footprint only from far away, so close up the lens was cut off at
 // a hard edge, and from inside it, or with the hole behind the camera, it could not be seen at all.)
-// In the transparent queue — after URP has copied the opaque scene into _CameraOpaqueTexture —
-// each pixel traces its light ray backwards around the hole and paints what that ray sees: the
-// opaque scene in the BENT direction (prisms and the skybox smeared into arcs and rings), or black
-// where the ray fell through the horizon (the shadow). There is no painted accretion disc: what
+// Drawn by BlackHoleLensPass.cs AFTER the transparents, from its copy of the camera colour
+// (_BlackHoleSceneColor: opaques, skybox AND transparents — the snow shards, particles), each pixel
+// traces its light ray backwards around the hole and paints what that ray sees: the scene in the
+// BENT direction (prisms, shards and the skybox smeared into arcs and rings), or black where the ray
+// fell through the horizon (the shadow). The pass's LightMode is BlackHoleLens, so URP's own passes
+// never draw it. (It first drew in the transparent queue from URP's _CameraOpaqueTexture, a copy
+// taken BEFORE any transparent: the shards were never bent, and the lens painted over the ones
+// behind it — a 30 r_s ball with no shards in it.) There is no painted accretion disc: what
 // orbits the hole is the real mass the gravity field moves.
 //
 // WHAT IS LENSED. Only what is BEHIND the hole: a pixel whose opaque scene depth is in front of the
@@ -22,9 +26,10 @@
 // test is made in the shader against the depth texture (ZTest Always), which is also what lets the
 // sphere draw when its far side is behind other geometry or past the far plane.
 //
-// Requires the camera's opaque and depth textures, which the project has OFF in URP_Asset;
-// BlackHoleLens.cs switches them on per camera (UniversalAdditionalCameraData) only while a hole is
-// live, and restores them after. Two screen-space limits, stated: a bent ray that leaves the
+// Requires the camera's depth texture, which the project has OFF in URP_Asset; BlackHoleLens.cs
+// switches it on per camera (UniversalAdditionalCameraData) only while a hole is live, and restores
+// it after. A transparent IN FRONT of the hole has no depth, so it is in the copy and bent with the
+// background (stated limit; opaque mass in front stays unbent). Two screen-space limits, stated: a bent ray that leaves the
 // screen samples THE SCENE'S OWN SKYBOX instead (RenderSettings.skybox, rendered by BlackHoleSky.cs
 // into six faces — so off-screen PRISMS are not lensed in, but the sky is the real one), and a bent
 // ray that lands on something IN FRONT of the hole is rejected the same way (the copy cannot see what
@@ -51,7 +56,8 @@ Shader "CosmicShore/BlackHoleLens"
         Pass
         {
             Name "BlackHoleLens"
-            Tags { "LightMode" = "UniversalForward" }
+            // Drawn only by BlackHoleLensPass (after the transparents), never by URP's own passes.
+            Tags { "LightMode" = "BlackHoleLens" }
 
             ZWrite Off
             ZTest Always      // depth is tested in the fragment stage against the hole's centre
@@ -65,7 +71,6 @@ Shader "CosmicShore/BlackHoleLens"
             #pragma multi_compile_instancing
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareOpaqueTexture.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
             #include "BlackHoleLens.hlsl"
 
@@ -73,6 +78,15 @@ Shader "CosmicShore/BlackHoleLens"
                 float _BHHorizon;
                 float4 _BHLens;
             CBUFFER_END
+
+            // The scene as the camera drew it up to the lens — opaques, skybox and transparents —
+            // copied by BlackHoleLensPass.cs (sampler_LinearClamp comes with URP's Core.hlsl).
+            TEXTURE2D(_BlackHoleSceneColor);
+
+            float3 BlackHoleSceneColour(float2 uv)
+            {
+                return SAMPLE_TEXTURE2D_LOD(_BlackHoleSceneColor, sampler_LinearClamp, uv, 0).rgb;
+            }
 
             // The sky: the scene's own skybox in six faces (BlackHoleSky.cs; face layout in
             // BlackHoleSkyFaceUV). Per-frame globals, outside the material's CBUFFER. _BlackHoleSkyReady
@@ -192,7 +206,7 @@ Shader "CosmicShore/BlackHoleLens"
                     {
                         float sampleEye = LinearEyeDepth(SampleSceneDepth(uv), _ZBufferParams);
                         float behind = step(holeEye - rs, sampleEye);
-                        scene = lerp(sky, SampleSceneColor(uv), onScreen * behind);
+                        scene = lerp(sky, BlackHoleSceneColour(uv), onScreen * behind);
                     }
                     background = scene;
                 }
