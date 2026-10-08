@@ -483,6 +483,40 @@ What ships is a body plus a three-shell tone chain and a stationary rim, authore
 | 2 | triangles only | `OmniShepardTriangles 1` / `…Inactive 1` | 0.833 → 0.667 |
 | 3 | triangles only | `OmniShepardTriangles 2` / `…Inactive 2` | 0.667 → 0.500 |
 | 4 | triangles only, **stationary** | `OmniShepardTrianglesRim` / `…RimInactive` | 1.03 → 0.98, unscaled |
+| child, not a slot | **pentagons only** (the body's mesh, filtered at runtime) | `OmniChargeEdges` (`OmniChargeEdgesShader`, additive) | — |
+
+**Charge's pentagons carry the charge crystal's EDGE DISCHARGE (2026-10-08).** The charge crystal's
+signature is its plasma crackling vertex to vertex along crease edges (`ChargeCrystal.hlsl`), so the
+omni's 12 pentagonal prisms now wear exactly that. `OmniCrystalChargeEdges.prefab` is the body's own
+mesh at the body's own pose; `CrystalEdgeArcs` (`plateCorners: 10` — a pentagonal prism has 10
+corners) swaps it for a twin that `CrystalEdgeArcMeshBaker` filters to the 10-corner plates and
+edge-bakes, and `OmniChargeEdgesShader` ADDS `ChargeCrystalDischarge` — the very term the charge
+crystal adds to its own body, factored out of `ChargeCrystalSurface` (bitwise-identical, 200k
+samples) — over the body. Measured on the shipped model through the real C# baker: **192 triangles =
+12 prisms × 16, 180 crease edges = 12 × 15** (rims and side edges; every fan diagonal suppressed),
+and the boxes and triangles contribute nothing. Its arc dials are cloned from `ChargeCrystalMaterial`
+by the generator (one element, one look — retune the charge crystal and `--check` names
+`OmniChargeEdges.mat` as drifted); the dials are model-radius fractions of the SOURCE mesh, and the
+omni's pentagon edge is 0.285 of its radius against the charge crystal's 0.277, so the same numbers
+give the same bolt-to-edge proportion. Three decisions worth keeping:
+
+1. **It is a plain child, not a sixth `crystalModels` slot.** A slot would burst into a husk of its
+   own on every collect, need a `CrystalMaterial5` in every material set, and make
+   `GetTeamCrystalMaterial` warn — for an overlay that has no body to burst.
+2. **Its bolt halo still follows the domain.** The charge crystal's halo is the crystal's own bright
+   colour, so a team omni's bolts should be in its domain colour, not lime. `CrystalAccentTint` copies
+   the body's `_BrightColor` into the overlay's property block on enable and on
+   `Crystal.ModelMaterialSettled` (raised when a model's material swap lands) — nothing per frame, and
+   it lands on the same frame the Fresnel body snaps (`LerpCrystalMaterialCoroutine` only lerps a `_BrightColor`/`_DullColor` pair, and the Fresnel family names its pair `_BrightColor`/`_DarkColor` — see "Not reached by §2.2's tint" below).
+3. **It reproduces the body's vertex push.** The body moves every vertex `_Spread` (0.01) world units
+   along its normal; an overlay that did not would sit behind the face it decorates and fail the depth
+   test. `OmniChargeEdgesShader` transcribes the push (its `_Spread` is copied from `OmniCrystalBody`)
+   and takes the remaining tie with `Offset -1, -1`. Fail-safe: an unbaked mesh contributes exactly
+   zero, so a failed bake leaves the omni as it was.
+
+Not done, deliberately: the Scarab forge folds only the body (the overlay leaves with the crystal,
+like the triangle shells), and the toy builders show `crystalModels[0]` alone, so a toy omni has no
+discharge — same as it has no Shepard tone.
 
 **Body and triangles are ONE colour system.** The triangles are on `OmniShepardFresnelShader`, the
 body's own family: the body's colour formula verbatim — `lerp(_BrightColor, _DarkColor, (1 + N·V)/2)`,
@@ -984,6 +1018,11 @@ Machine validation covers structure and colorimetry; only a playtest covers *loo
     manager-less local mint (the conveyor toy) ids may not be unique, so the morph could adopt a
     DIFFERENT omni's renderers — the same look today, a wrong one if those crystals ever differ.
     Measure first: what `Id` do manager-less mints carry, and are two ever live at once?
+  - **The pentagons' charge discharge leaves on the pickup frame** under any vessel retirement.
+    `OmniCrystalChargeEdges` (merged the same day) is a plain child, not a `crystalModels` slot, so
+    `CrystalMorphRunner.Adopt` never sees it, and `OmniChargeEdgesShader` has no `_Opacity` to fade
+    it by. If the playtest reads it as a pop: give the shader an `_Opacity` multiplier on its additive
+    output and have `Adopt` also take `Crystal`'s accent children as overlays. A report until seen.
   - **The ring's prisms are unhidden by reference at teardown** with no life check; harmless while
     nothing else that draws from the boost pool hides a prism (`SetOwnerHidden` callers today:
     the swarm and substrate fauna, neither uses the boost pool). A report, not a fix — revisit if
@@ -1015,6 +1054,20 @@ Machine validation covers structure and colorimetry; only a playtest covers *loo
     when source and target share a `FindColorPropertyNames` pair (`canLerp`), and the Fresnel pair
     is not one. The old ShepardGraph team crystals cross-faded over 1-2 s. Report; decide with the
     tint row above, since the same name change fixes both.
+- **Omni pentagon charge edges (§2.10) — rows from its ship pass, 2026-10-08.**
+  - **A THIRD transcription of `SpreadFresnelDisplace`.** `OmniChargeEdgesShader` copies the body's
+    `_Spread` vertex push (it has to match it vertex for vertex or the overlay fails the depth test),
+    so the push now lives in `SpreadFresnelShader`, `OmniCrystalFresnelShader` and here. Fold it into
+    the `SpreadFresnelCore.hlsl` row above when that lands — the overlay is the consumer that BREAKS
+    (sinks behind the face) if the body's push changes without it. Debt this branch created.
+  - **`CrystalEdgeArcMeshBaker.GetOrBake` re-bakes and RE-LOGS on every call after a failure.** It
+    caches `null` for an unreadable mesh or a plate filter that matches nothing, then skips the cache
+    hit because of its `cached != null` guard (there for destroyed meshes), so every pooled crystal's
+    `Awake` repeats the bake attempt and the `LogError`. Pre-existing for the unreadable case; the new
+    no-plate case inherits it. A fix: cache a failure sentinel separately from fake-null.
+  - **`CrystalAccentTint` follows the body at SETTLE only.** Correct today, because the Fresnel pair
+    snaps (row above). If that row is fixed and the body starts cross-fading, the bolt halo will hold
+    its old colour for the whole fade and snap at the end — fix both together.
 
 - The inactive palettes (`CosmicWaveColorSetSO`, `PastelColorSetSO`) still carry the old
   flat shielded values **and the old inverted danger rim**. They are dead assets today; if

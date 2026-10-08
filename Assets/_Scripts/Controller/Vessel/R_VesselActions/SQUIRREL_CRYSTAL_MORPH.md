@@ -225,5 +225,8 @@ Inspection: set `duration` to 9 (20×) on the asset; every other timing is a fra
   morph plays behind a chase camera. The panels-first-from-the-front reading may want
   `panelPhaseStart` lowered (faces land earlier) or the ring's `initialOffset` lengthened — tune it
   watching, not here.
+- **The pentagons' charge bolts** (`OmniCrystalChargeEdges`, merged after this branch) are a plain
+  child of the crystal, not a model slot, and have no `_Opacity` — so they leave on the pickup frame
+  instead of fading with the other overlays. Row in `Docs/PALETTE.md` §7.
 - **Other hulls** can take the slot one at a time: a new `VesselOmniCrystalRetirementSO` subclass
   plus a `CrystalMorphRunner` subclass that supplies the target.
