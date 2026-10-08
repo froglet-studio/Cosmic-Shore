@@ -201,7 +201,7 @@ on any lobe keeps crossing pilots on the others. Authored entirely by
 tables at the top of that script, `PASSES` and `LOBES`.
 
 **Core passes.** Five straight chords through the nucleus cage. Each starts from a strut of a
-tensegrity icosahedron, is tilted off its axis by up to ~16° and pushed **130–185 u** from the
+tensegrity icosahedron, is tilted 6–17° off its axis and pushed **130–185 u** from the
 centre, so the five chords cross the cage at five different places — string art, not a knot on the
 centre point. Strands never come within 119 u of each other.
 
@@ -271,6 +271,30 @@ is named by `--check`.
 
 **Numbers.** Lap 12,345 u, 182 waypoints, 1,015 prisms, reach 1,069 u. Two laps of crystal chords
 are ~23,500 u (78 s at the Squirrel's 300 u/s top speed); the ribbon is 24,700 u (82 s).
+
+**Follow-ups (measured 2026-10-08, not done on the Relativity branch).**
+
+- **I3 marks waypoints that carry no crystal — the same defect review found on I4.** The scene's
+  I3 track has 28 waypoints and its `CrystalManager` 14 anchors, so 14 of its 28 wide marker blocks
+  sit where no crystal appears. Fix shape: author I3's `markedWaypoints` entry with the 14 waypoints
+  nearest its anchors (the I4 generator's knot-at-anchor layout is the model). Its target is
+  unaffected (still `crystalsPerLap` unset → 28 × 2 = 56, i.e. four passes of the 14 anchors) — say
+  whether that is intended before touching it. *Inconsistency → a fix.*
+- **The layout rule now has three copies.** `SpawnableWaypointTrack.ResolveBlockPose` (C#), the
+  generator's `lay()` (Python, used to validate before writing) and
+  `skimrace_sim_harness/Sim.cs`'s `TrackPrisms` (C#, the AI simulator) all re-implement "Catmull-Rom
+  at 12 u, up interpolated like the position, marker on `i == 0` of a marked waypoint". The
+  edit-mode tests cross-check the first against the generator's numbers; nothing cross-checks the
+  sim. A change to one that misses the others makes the generator validate, or the AI train on, a
+  track the game does not lay. Candidate: have the sim compile `SpawnableWaypointTrack`'s pose code
+  (the card-art harness already compiles the file against a shim). *Debt this branch created.*
+- **Prisma (`Port/`) is a snapshot behind.** `Port/src/.../SpawnableWaypointTrack.cs` and its
+  `CrystalCollisionTurnMonitor` predate `lapsPerIntensity`, and know none of `waypointUps`,
+  `crystalsPerLap` or `markedWaypoints`; run in the port, I4 would lay world-up prisms with a
+  marker on all 182 waypoints and a target of 182 × `optionalLaps`. Port it with the next
+  arcade-content pass.
+- **The I4 AI benchmark limit (70 s) is below the course's physical floor** (~78 s on crystal
+  chords): a product decision, recorded in `Docs/SKIM_RACE_AI.md` §6.12.
 
 ### 6. Ready State & Countdown
 
@@ -519,6 +543,9 @@ ugsStatsManager.ReportSkimRaceStats(
 | Crystal turn monitor | `NetworkCrystalCollisionTurnMonitor.cs` | `_Scripts/Controller/Arcade/TurnMonitors/` |
 | Base crystal monitor | `CrystalCollisionTurnMonitor.cs` | `_Scripts/Controller/Arcade/TurnMonitors/` |
 | Track spawner | `SegmentSpawner.cs` | `_Scripts/Controller/Environment/MiniGameObjects/` |
+| Waypoint track (per-intensity waypoints, ribbon normals, crystals per lap, marked waypoints) | `SpawnableWaypointTrack.cs` | `_Scripts/Controller/Environment/MiniGameObjects/` |
+| I4 "Relativity" generator (scene track + crystal anchors + preview bake; `--check`, `--report`) | `author_skimrace_relativity_track.py` | `Tools/Build/` |
+| I4 layout tests (on the baked preview prefab) | `SkimRaceRelativityTrackTests.cs` | `_Scripts/Tests/Editor/` |
 | End-game sequencer | `EndGameSequencer.cs` (shared) | `_Scripts/Utility/DataContainers/` |
 | In-game HUD | `SkimRaceHUD.cs` | `_Scripts/UI/` |
 | HUD view | `SkimRaceHUDView.cs` | `_Scripts/UI/` |
