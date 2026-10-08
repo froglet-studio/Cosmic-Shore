@@ -583,6 +583,14 @@ namespace CosmicShore.Gameplay
                 // Presence lobby joined - transient state, immediately creates solo Relay session.
                 // Transition flips IsInitialized to true (replaces the old _initialized boolean).
                 _stateMachine.TryTransition(PartyState.InPresenceLobby);
+
+                // JoinOrCreateAsync swallows its own failures and leaves the lobby null. The
+                // backoff rejoin (BH-2.2) was only reachable from the refresh watchdog, which
+                // never runs without a lobby, so a boot-time join failure left the online list
+                // empty and invites dead for the whole session. Arm it here - AFTER the transition,
+                // because TryPresenceRejoin stands down while !IsInitialized.
+                if (_lobbyService.ActiveLobby == null && !(_gameData != null && _gameData.IsOfflineSession))
+                    SchedulePresenceRejoin();
                 CSDebug.LogVerbose(CSLogChannel.Party,
                     $"[HostConnectionService] Presence lobby joined - lobby: {_lobbyService.ActiveLobby?.Id ?? "NULL"}, " +
                     $"localId: {connectionData.LocalPlayerId}");
