@@ -1,0 +1,338 @@
+{
+ "g2:results/evo/genome.npy bite=1/every=2": {
+  "every": 2,
+  "bite": 1,
+  "eat_per_step": 0.5,
+  "switch_tests_passed_of_8_seeds": {
+   "mass": 0,
+   "space": 0,
+   "charge": 0,
+   "time": 0
+  },
+  "mean_switches": 0.0,
+  "eaten_mean": {
+   "mass": 400.0,
+   "space": 400.0,
+   "charge": 400.0,
+   "time": 400.0
+  },
+  "never_flipped": {
+   "mass": 8,
+   "space": 8,
+   "charge": 8,
+   "time": 8
+  }
+ },
+ "base:- bite=1/every=2": {
+  "every": 2,
+  "bite": 1,
+  "eat_per_step": 0.5,
+  "switch_tests_passed_of_8_seeds": {
+   "mass": 1,
+   "space": 0,
+   "charge": 0,
+   "time": 2
+  },
+  "mean_switches": 0.375,
+  "eaten_mean": {
+   "mass": 245.2,
+   "space": 81.2,
+   "charge": 290.5,
+   "time": 330.9
+  },
+  "never_flipped": {
+   "mass": 7,
+   "space": 0,
+   "charge": 0,
+   "time": 8
+  }
+ },
+ "g2:results/evo/genome.npy bite=4/every=2": {
+  "every": 2,
+  "bite": 4,
+  "eat_per_step": 2.0,
+  "switch_tests_passed_of_8_seeds": {
+   "mass": 0,
+   "space": 0,
+   "charge": 0,
+   "time": 0
+  },
+  "mean_switches": 0.0,
+  "eaten_mean": {
+   "mass": 400.0,
+   "space": 369.0,
+   "charge": 400.0,
+   "time": 400.0
+  },
+  "never_flipped": {
+   "mass": 8,
+   "space": 2,
+   "charge": 8,
+   "time": 8
+  }
+ },
+ "base:- bite=4/every=2": {
+  "every": 2,
+  "bite": 4,
+  "eat_per_step": 2.0,
+  "switch_tests_passed_of_8_seeds": {
+   "mass": 0,
+   "space": 0,
+   "charge": 0,
+   "time": 2
+  },
+  "mean_switches": 0.25,
+  "eaten_mean": {
+   "mass": 250.0,
+   "space": 89.0,
+   "charge": 312.5,
+   "time": 330.0
+  },
+  "never_flipped": {
+   "mass": 6,
+   "space": 0,
+   "charge": 0,
+   "time": 7
+  }
+ },
+ "g2:results/evo/genome.npy bite=10/every=2": {
+  "every": 2,
+  "bite": 10,
+  "eat_per_step": 5.0,
+  "switch_tests_passed_of_8_seeds": {
+   "mass": 0,
+   "space": 0,
+   "charge": 0,
+   "time": 0
+  },
+  "mean_switches": 0.0,
+  "eaten_mean": {
+   "mass": 400.0,
+   "space": 347.5,
+   "charge": 400.0,
+   "time": 400.0
+  },
+  "never_flipped": {
+   "mass": 8,
+   "space": 2,
+   "charge": 8,
+   "time": 8
+  }
+ },
+ "base:- bite=10/every=2": {
+  "every": 2,
+  "bite": 10,
+  "eat_per_step": 5.0,
+  "switch_tests_passed_of_8_seeds": {
+   "mass": 1,
+   "space": 0,
+   "charge": 0,
+   "time": 1
+  },
+  "mean_switches": 0.25,
+  "eaten_mean": {
+   "mass": 236.1,
+   "space": 88.8,
+   "charge": 311.2,
+   "time": 329.4
+  },
+  "never_flipped": {
+   "mass": 5,
+   "space": 0,
+   "charge": 1,
+   "time": 7
+  }
+ },
+ "g2:results/evo/genome.npy bite=25/every=2": {
+  "every": 2,
+  "bite": 25,
+  "eat_per_step": 12.5,
+  "switch_tests_passed_of_8_seeds": {
+   "mass": 0,
+   "space": 4,
+   "charge": 0,
+   "time": 0
+  },
+  "mean_switches": 0.5,
+  "eaten_mean": {
+   "mass": 400.0,
+   "space": 271.9,
+   "charge": 400.0,
+   "time": 400.0
+  },
+  "never_flipped": {
+   "mass": 8,
+   "space": 0,
+   "charge": 8,
+   "time": 8
+  }
+ },
+ "base:- bite=25/every=2": {
+  "every": 2,
+  "bite": 25,
+  "eat_per_step": 12.5,
+  "switch_tests_passed_of_8_seeds": {
+   "mass": 1,
+   "space": 0,
+   "charge": 0,
+   "time": 1
+  },
+  "mean_switches": 0.25,
+  "eaten_mean": {
+   "mass": 227.9,
+   "space": 96.9,
+   "charge": 287.5,
+   "time": 321.2
+  },
+  "never_flipped": {
+   "mass": 5,
+   "space": 0,
+   "charge": 0,
+   "time": 7
+  }
+ },
+ "g2:results/evo/stage4/genome.npy bite=1/every=2": {
+  "every": 2,
+  "bite": 1,
+  "eat_per_step": 0.5,
+  "switch_tests_passed_of_8_seeds": {
+   "mass": 0,
+   "space": 0,
+   "charge": 0,
+   "time": 0
+  },
+  "mean_switches": 0.0,
+  "eaten_mean": {
+   "mass": 400.0,
+   "space": 400.0,
+   "charge": 400.0,
+   "time": 400.0
+  },
+  "never_flipped": {
+   "mass": 8,
+   "space": 8,
+   "charge": 8,
+   "time": 8
+  }
+ },
+ "g2:results/evo/stage3/genome.npy bite=1/every=2": {
+  "every": 2,
+  "bite": 1,
+  "eat_per_step": 0.5,
+  "switch_tests_passed_of_8_seeds": {
+   "mass": 0,
+   "space": 0,
+   "charge": 0,
+   "time": 0
+  },
+  "mean_switches": 0.0,
+  "eaten_mean": {
+   "mass": 400.0,
+   "space": 400.0,
+   "charge": 400.0,
+   "time": 400.0
+  },
+  "never_flipped": {
+   "mass": 8,
+   "space": 8,
+   "charge": 8,
+   "time": 8
+  }
+ },
+ "g2:results/evo/stage4/genome.npy bite=4/every=2": {
+  "every": 2,
+  "bite": 4,
+  "eat_per_step": 2.0,
+  "switch_tests_passed_of_8_seeds": {
+   "mass": 8,
+   "space": 8,
+   "charge": 8,
+   "time": 8
+  },
+  "mean_switches": 4.0,
+  "eaten_mean": {
+   "mass": 170.5,
+   "space": 176.0,
+   "charge": 232.5,
+   "time": 217.5
+  },
+  "never_flipped": {
+   "mass": 0,
+   "space": 0,
+   "charge": 0,
+   "time": 0
+  }
+ },
+ "g2:results/evo/stage3/genome.npy bite=4/every=2": {
+  "every": 2,
+  "bite": 4,
+  "eat_per_step": 2.0,
+  "switch_tests_passed_of_8_seeds": {
+   "mass": 0,
+   "space": 0,
+   "charge": 0,
+   "time": 0
+  },
+  "mean_switches": 0.0,
+  "eaten_mean": {
+   "mass": 400.0,
+   "space": 400.0,
+   "charge": 400.0,
+   "time": 400.0
+  },
+  "never_flipped": {
+   "mass": 8,
+   "space": 8,
+   "charge": 8,
+   "time": 8
+  }
+ },
+ "g2:results/evo/stage4/genome.npy bite=10/every=2": {
+  "every": 2,
+  "bite": 10,
+  "eat_per_step": 5.0,
+  "switch_tests_passed_of_8_seeds": {
+   "mass": 8,
+   "space": 8,
+   "charge": 8,
+   "time": 8
+  },
+  "mean_switches": 4.0,
+  "eaten_mean": {
+   "mass": 176.2,
+   "space": 183.8,
+   "charge": 225.0,
+   "time": 217.5
+  },
+  "never_flipped": {
+   "mass": 0,
+   "space": 0,
+   "charge": 0,
+   "time": 0
+  }
+ },
+ "g2:results/evo/stage3/genome.npy bite=10/every=2": {
+  "every": 2,
+  "bite": 10,
+  "eat_per_step": 5.0,
+  "switch_tests_passed_of_8_seeds": {
+   "mass": 0,
+   "space": 0,
+   "charge": 0,
+   "time": 0
+  },
+  "mean_switches": 0.0,
+  "eaten_mean": {
+   "mass": 400.0,
+   "space": 400.0,
+   "charge": 400.0,
+   "time": 400.0
+  },
+  "never_flipped": {
+   "mass": 8,
+   "space": 8,
+   "charge": 8,
+   "time": 8
+  }
+ }
+}

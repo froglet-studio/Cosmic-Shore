@@ -1,0 +1,122 @@
+{
+ "base:-": {
+  "passed": 4.333,
+  "heal": 0.039,
+  "live": 0.482,
+  "live_time": 0.214,
+  "passed_list": [
+   5,
+   4,
+   4,
+   4,
+   4,
+   4,
+   5,
+   5,
+   5,
+   4,
+   4,
+   4
+  ]
+ },
+ "g2:results/evo/stage1/genome.npy": {
+  "passed": 7.917,
+  "heal": -0.198,
+  "live": 0.477,
+  "live_time": 0.204,
+  "passed_list": [
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   7,
+   8,
+   8,
+   8
+  ]
+ },
+ "g2:results/evo/stage2/genome.npy": {
+  "passed": 8.0,
+  "heal": 0.433,
+  "live": 0.642,
+  "live_time": 0.254,
+  "passed_list": [
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8
+  ]
+ },
+ "g2:results/evo/stage3/genome.npy": {
+  "passed": 8.0,
+  "heal": 0.119,
+  "live": 0.902,
+  "live_time": 0.616,
+  "passed_list": [
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8
+  ]
+ },
+ "g2:results/evo/stage4/genome.npy": {
+  "passed": 8.0,
+  "heal": 0.075,
+  "live": 0.9,
+  "live_time": 0.616,
+  "passed_list": [
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8
+  ]
+ },
+ "compact:results/evo/compact/genome.npy": {
+  "passed": 7.75,
+  "heal": 0.414,
+  "live": 0.33,
+  "live_time": 0.166,
+  "passed_list": [
+   7,
+   8,
+   8,
+   8,
+   7,
+   7,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8
+  ]
+ }
+}

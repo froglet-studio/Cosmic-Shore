@@ -100,14 +100,14 @@ def main():
         rob["best"] = robust(pool, g, seeds)
         print("held-out", rob["best"])
         if a.ablate and MODEL == "g2":
-            for sw in ("sw_lay", "sw_egg", "sw_lock", "sw_out", "sw_swirl"):
+            for sw in ("sw_lay", "sw_egg", "sw_lock", "sw_out", "sw_swirl", "sw_fear"):
                 if em.gene(g, sw) <= 0:
                     continue
                 g2 = g.copy(); g2[em.SLICES[sw]] = -1.0
                 rob[f"without_{sw}"] = robust(pool, g2, seeds)
                 print(sw, "off", rob[f"without_{sw}"])
             g0 = g.copy()
-            for sw in ("sw_lay", "sw_egg", "sw_lock", "sw_out", "sw_swirl"):
+            for sw in ("sw_lay", "sw_egg", "sw_lock", "sw_out", "sw_swirl", "sw_fear"):
                 g0[em.SLICES[sw]] = -1.0
             rob["base_g2_all_off"] = robust(pool, g0, seeds)
             print("all off (G2)", rob["base_g2_all_off"])

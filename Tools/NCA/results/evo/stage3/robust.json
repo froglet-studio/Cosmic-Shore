@@ -19,51 +19,51 @@
    8,
    8
   ],
-  "mean_fitness": 8.189
+  "mean_fitness": 8.19
  },
  "without_sw_lay": {
-  "mean_passed": 6.312,
+  "mean_passed": 5.875,
   "passed": [
-   6,
    7,
    6,
    5,
    6,
-   7,
    6,
    6,
-   7,
-   7,
-   7,
    6,
    5,
-   8,
+   5,
    6,
-   6
+   7,
+   7,
+   5,
+   6,
+   6,
+   5
   ],
-  "mean_fitness": 6.438
+  "mean_fitness": 5.981
  },
  "without_sw_egg": {
-  "mean_passed": 7.438,
+  "mean_passed": 7.75,
   "passed": [
    8,
-   8,
-   8,
-   7,
-   8,
-   7,
-   7,
    7,
    7,
    8,
    7,
    8,
-   7,
-   7,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
    8,
    7
   ],
-  "mean_fitness": 7.598
+  "mean_fitness": 7.927
  },
  "without_sw_out": {
   "mean_passed": 8.0,
@@ -85,31 +85,9 @@
    8,
    8
   ],
-  "mean_fitness": 8.181
+  "mean_fitness": 8.185
  },
  "without_sw_swirl": {
-  "mean_passed": 7.938,
-  "passed": [
-   8,
-   8,
-   8,
-   8,
-   8,
-   8,
-   8,
-   8,
-   8,
-   7,
-   8,
-   8,
-   8,
-   8,
-   8,
-   8
-  ],
-  "mean_fitness": 8.146
- },
- "without_sw_fear": {
   "mean_passed": 8.0,
   "passed": [
    8,
@@ -129,7 +107,7 @@
    8,
    8
   ],
-  "mean_fitness": 8.189
+  "mean_fitness": 8.218
  },
  "base_g2_all_off": {
   "mean_passed": 4.25,
