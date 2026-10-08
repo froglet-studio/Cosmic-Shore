@@ -564,7 +564,8 @@ class Physarum:
         """Once a second: refresh the food list, lay / resorb tubes, digest, pay upkeep."""
         w = self.w
         f = w.within(self.c, self.Rg, K_DIGEST)
-        f = f[~w.shield[f] & (w.excl[f] == 0)] if len(f) else f
+        sh = w.shield[f] if w.bug != "eat_shield" else np.zeros(len(f), bool)   # control hook: the shield ignored
+        f = f[~sh & (w.excl[f] == 0)] if len(f) else f
         self.food_idx = f; self.food_vox = self.vox(w.pos[f]) if len(f) else np.zeros((0, 3), np.int64)
         tube = self.vox_prism >= 0
         # resorb tubes that faded, or whose prism someone else removed (a pilot's ram)

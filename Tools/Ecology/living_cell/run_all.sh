@@ -33,4 +33,8 @@ python3 -m living_cell.run iterate R15 45 1,2,3 r2_iterate > $L/r2_iter_R15.log 
 python3 -m living_cell.run iterate R16 30 1,2,3 r2_iterate > $L/r2_iter_R16.log 2>&1
 python3 -m living_cell.run final2                 > $L/r2_final.log 2>&1          # FINAL2, 4 seeds x 45 min
 python3 -m living_cell.run controls2              > $L/r2_controls.log 2>&1
+# ---- ROUND 3 (2026-10-08, branch cece/eco-living-cell-r3): quiet time back, physarum fed. ~1.5 h on 4 cores.
+python3 -m living_cell.run iterate R17 30 1,2,3 r3_iterate > $L/r3_iter_R17.log 2>&1
+python3 -m living_cell.run final3                 > $L/r3_final.log 2>&1          # FINAL3, 4 seeds x 45 min
+python3 -m living_cell.run controls3              > $L/r3_controls.log 2>&1
 echo ALLDONE

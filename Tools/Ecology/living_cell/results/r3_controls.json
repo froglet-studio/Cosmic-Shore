@@ -1,0 +1,840 @@
+{
+ "persistence": {
+  "fired": true,
+  "eco": {
+   "shannon_mean": 1.816,
+   "shannon_min": 1.773,
+   "n_extinct": 1,
+   "n_unrecovered": 1,
+   "extinct": [
+    [
+     "pack"
+    ],
+    []
+   ],
+   "freeze_frac": 0.0,
+   "flora_saturated": 0.0,
+   "reversals": [
+    {
+     "flora": 0,
+     "herbivores": 0,
+     "pack": 0
+    },
+    {
+     "flora": 0,
+     "herbivores": 0,
+     "pack": 0
+    }
+   ],
+   "cv": {
+    "grazer": 0.108,
+    "locust": 0.211,
+    "pack": 0.857,
+    "thief": 0.142,
+    "lurker": 0.091,
+    "fortress": 0.0,
+    "snaptrap": 0.027,
+    "physarum": 0.032
+   },
+   "audit_max": 2.3020256776362658e-06,
+   "shield_eaten": 0,
+   "pop_ins": 0,
+   "pop_outs": 0,
+   "cap_frac": {
+    "grazer": 0.0,
+    "locust": 0.0,
+    "pack": 0.0,
+    "thief": 0.0,
+    "lurker": 0.0
+   },
+   "soil_frac_of_input": 0.269,
+   "N_end": 69100,
+   "plants_end": 212,
+   "births": {
+    "grazer": 3262,
+    "locust": 3008,
+    "pack": 0,
+    "thief": 55,
+    "lurker": 390
+   },
+   "starved": {
+    "grazer": 1728,
+    "locust": 1937,
+    "pack": 47,
+    "thief": 55,
+    "lurker": 333
+   },
+   "cost_ms": 15.59,
+   "cost_p95": 32.44
+  },
+  "player": {
+   "enc_per_min": 1.45,
+   "variety": 2.25,
+   "variety_entropy_bits": 1.002,
+   "quiet_frac": 0.663,
+   "hits_per_min": 2.5,
+   "damage_per_min": 1.31,
+   "steals_per_min": 1.2,
+   "emotion_distinct": 2.5,
+   "emotion_entropy_bits": 0.897,
+   "threat_range": 0.31,
+   "threat_peak": 0.337,
+   "active_encounters": 7.25,
+   "species_sighted": 7.75,
+   "n_flights": 4,
+   "replay_jaccard": 0.739,
+   "replay_species_tv": 0.503,
+   "replay_emotion_tv": 0.228
+  }
+ },
+ "diversity": {
+  "fired": true,
+  "eco": {
+   "shannon_mean": 0.669,
+   "shannon_min": 0.572,
+   "n_extinct": 6,
+   "n_unrecovered": 6,
+   "extinct": [
+    [
+     "fortress",
+     "snaptrap",
+     "physarum"
+    ],
+    [
+     "fortress",
+     "snaptrap",
+     "physarum"
+    ]
+   ],
+   "freeze_frac": 0.0,
+   "flora_saturated": 0.0,
+   "reversals": [
+    {
+     "flora": 0,
+     "herbivores": 0,
+     "pack": 0
+    },
+    {
+     "flora": 0,
+     "herbivores": 0,
+     "pack": 0
+    }
+   ],
+   "cv": {
+    "grazer": 0.065,
+    "fortress": 0.0,
+    "snaptrap": 0.0,
+    "physarum": 0.0
+   },
+   "audit_max": 3.0665250960737467e-07,
+   "shield_eaten": 0,
+   "pop_ins": 0,
+   "pop_outs": 0,
+   "cap_frac": {
+    "grazer": 0.0
+   },
+   "soil_frac_of_input": -0.077,
+   "N_end": 60308,
+   "plants_end": 158,
+   "births": {
+    "grazer": 3182
+   },
+   "starved": {
+    "grazer": 3061
+   },
+   "cost_ms": 3.85,
+   "cost_p95": 13.88
+  },
+  "player": {
+   "enc_per_min": 0.0,
+   "variety": 0.0,
+   "variety_entropy_bits": 0.0,
+   "quiet_frac": 1.0,
+   "hits_per_min": 0.0,
+   "damage_per_min": 0.0,
+   "steals_per_min": 0.0,
+   "emotion_distinct": 1.75,
+   "emotion_entropy_bits": 0.067,
+   "threat_range": 0.032,
+   "threat_peak": 0.062,
+   "active_encounters": 0.0,
+   "species_sighted": 1.0,
+   "n_flights": 4,
+   "replay_jaccard": 0.0,
+   "replay_species_tv": 0.0,
+   "replay_emotion_tv": 0.011
+  }
+ },
+ "freeze": {
+  "fired": true,
+  "eco": {
+   "shannon_mean": 0.552,
+   "shannon_min": 0.54,
+   "n_extinct": 2,
+   "n_unrecovered": 2,
+   "extinct": [
+    [
+     "physarum"
+    ],
+    [
+     "physarum"
+    ]
+   ],
+   "freeze_frac": 1.0,
+   "flora_saturated": 1.0,
+   "reversals": [
+    {
+     "flora": 0,
+     "herbivores": 0,
+     "pack": 0
+    },
+    {
+     "flora": 0,
+     "herbivores": 0,
+     "pack": 0
+    }
+   ],
+   "cv": {
+    "fortress": 0.0,
+    "snaptrap": 0.0,
+    "physarum": 0.0
+   },
+   "audit_max": 2.0649167709052563e-07,
+   "shield_eaten": 0,
+   "pop_ins": 0,
+   "pop_outs": 0,
+   "cap_frac": {},
+   "soil_frac_of_input": 0.004,
+   "N_end": 56209,
+   "plants_end": 150,
+   "births": {},
+   "starved": {},
+   "cost_ms": 4.6,
+   "cost_p95": 9.42
+  },
+  "player": {
+   "enc_per_min": 1.4,
+   "variety": 1.25,
+   "variety_entropy_bits": 0.148,
+   "quiet_frac": 0.927,
+   "hits_per_min": 0.05,
+   "damage_per_min": 0.05,
+   "steals_per_min": 0.0,
+   "emotion_distinct": 2.5,
+   "emotion_entropy_bits": 0.769,
+   "threat_range": 0.422,
+   "threat_peak": 0.423,
+   "active_encounters": 7.0,
+   "species_sighted": 2.0,
+   "n_flights": 4,
+   "replay_jaccard": 0.267,
+   "replay_species_tv": 0.071,
+   "replay_emotion_tv": 0.075
+  }
+ },
+ "audit": {
+  "fired": true,
+  "eco": {
+   "shannon_mean": 1.986,
+   "shannon_min": 1.94,
+   "n_extinct": 0,
+   "n_unrecovered": 0,
+   "extinct": [
+    [],
+    []
+   ],
+   "freeze_frac": 0.0,
+   "flora_saturated": 0.0,
+   "reversals": [
+    {
+     "flora": 0,
+     "herbivores": 0,
+     "pack": 0
+    },
+    {
+     "flora": 1,
+     "herbivores": 1,
+     "pack": 0
+    }
+   ],
+   "cv": {
+    "grazer": 0.137,
+    "locust": 0.158,
+    "pack": 0.131,
+    "thief": 0.075,
+    "lurker": 0.206,
+    "fortress": 0.0,
+    "snaptrap": 0.017,
+    "physarum": 0.042
+   },
+   "audit_max": 34661.99999740429,
+   "shield_eaten": 0,
+   "pop_ins": 0,
+   "pop_outs": 0,
+   "cap_frac": {
+    "grazer": 0.0,
+    "locust": 0.0,
+    "pack": 0.0,
+    "thief": 0.241,
+    "lurker": 0.041
+   },
+   "soil_frac_of_input": 1.08,
+   "N_end": 81338,
+   "plants_end": 284,
+   "births": {
+    "grazer": 5058,
+    "locust": 4154,
+    "pack": 71,
+    "thief": 71,
+    "lurker": 1597
+   },
+   "starved": {
+    "grazer": 1069,
+    "locust": 1522,
+    "pack": 11,
+    "thief": 32,
+    "lurker": 1077
+   },
+   "cost_ms": 18.05,
+   "cost_p95": 38.08
+  },
+  "player": {
+   "enc_per_min": 1.25,
+   "variety": 2.25,
+   "variety_entropy_bits": 0.933,
+   "quiet_frac": 0.499,
+   "hits_per_min": 6.45,
+   "damage_per_min": 2.39,
+   "steals_per_min": 1.6,
+   "emotion_distinct": 3.25,
+   "emotion_entropy_bits": 1.144,
+   "threat_range": 0.485,
+   "threat_peak": 0.504,
+   "active_encounters": 6.25,
+   "species_sighted": 7.5,
+   "n_flights": 4,
+   "replay_jaccard": 0.562,
+   "replay_species_tv": 0.34,
+   "replay_emotion_tv": 0.167
+  }
+ },
+ "shield": {
+  "fired": true,
+  "eco": {
+   "shannon_mean": 1.882,
+   "shannon_min": 1.833,
+   "n_extinct": 0,
+   "n_unrecovered": 0,
+   "extinct": [
+    [],
+    []
+   ],
+   "freeze_frac": 0.0,
+   "flora_saturated": 0.0,
+   "reversals": [
+    {
+     "flora": 0,
+     "herbivores": 0,
+     "pack": 1
+    },
+    {
+     "flora": 0,
+     "herbivores": 0,
+     "pack": 0
+    }
+   ],
+   "cv": {
+    "grazer": 0.048,
+    "locust": 0.252,
+    "pack": 0.042,
+    "thief": 0.077,
+    "lurker": 0.106,
+    "fortress": 0.0,
+    "snaptrap": 0.033,
+    "physarum": 0.036
+   },
+   "audit_max": 8.905190043151379e-07,
+   "shield_eaten": 109,
+   "pop_ins": 0,
+   "pop_outs": 0,
+   "cap_frac": {
+    "grazer": 0.0,
+    "locust": 0.0,
+    "pack": 0.0,
+    "thief": 0.0,
+    "lurker": 0.0
+   },
+   "soil_frac_of_input": 0.154,
+   "N_end": 66345,
+   "plants_end": 204,
+   "births": {
+    "grazer": 3270,
+    "locust": 2918,
+    "pack": 27,
+    "thief": 57,
+    "lurker": 324
+   },
+   "starved": {
+    "grazer": 1600,
+    "locust": 1611,
+    "pack": 8,
+    "thief": 48,
+    "lurker": 279
+   },
+   "cost_ms": 15.72,
+   "cost_p95": 33.63
+  },
+  "player": {
+   "enc_per_min": 2.0,
+   "variety": 3.25,
+   "variety_entropy_bits": 1.466,
+   "quiet_frac": 0.643,
+   "hits_per_min": 2.2,
+   "damage_per_min": 1.255,
+   "steals_per_min": 1.5,
+   "emotion_distinct": 3.0,
+   "emotion_entropy_bits": 1.015,
+   "threat_range": 0.474,
+   "threat_peak": 0.502,
+   "active_encounters": 10.0,
+   "species_sighted": 7.75,
+   "n_flights": 4,
+   "replay_jaccard": 0.675,
+   "replay_species_tv": 0.264,
+   "replay_emotion_tv": 0.149
+  }
+ },
+ "continuity": {
+  "fired": true,
+  "eco": {
+   "shannon_mean": 1.792,
+   "shannon_min": 1.706,
+   "n_extinct": 0,
+   "n_unrecovered": 0,
+   "extinct": [
+    [],
+    []
+   ],
+   "freeze_frac": 0.0,
+   "flora_saturated": 0.0,
+   "reversals": [
+    {
+     "flora": 0,
+     "herbivores": 1,
+     "pack": 0
+    },
+    {
+     "flora": 0,
+     "herbivores": 1,
+     "pack": 0
+    }
+   ],
+   "cv": {
+    "grazer": 0.087,
+    "locust": 0.351,
+    "pack": 0.719,
+    "thief": 0.059,
+    "lurker": 0.462,
+    "fortress": 0.0,
+    "snaptrap": 0.0,
+    "physarum": 0.028
+   },
+   "audit_max": 5.823676474392414e-08,
+   "shield_eaten": 0,
+   "pop_ins": 1147,
+   "pop_outs": 1478,
+   "cap_frac": {
+    "grazer": 0.0,
+    "locust": 0.0,
+    "pack": 0.0,
+    "thief": 0.0,
+    "lurker": 0.0
+   },
+   "soil_frac_of_input": -0.347,
+   "N_end": 58782,
+   "plants_end": 166,
+   "births": {
+    "grazer": 2055,
+    "locust": 1862,
+    "pack": 1,
+    "thief": 52,
+    "lurker": 208
+   },
+   "starved": {
+    "grazer": 1736,
+    "locust": 884,
+    "pack": 44,
+    "thief": 20,
+    "lurker": 232
+   },
+   "cost_ms": 9.66,
+   "cost_p95": 28.82
+  },
+  "player": {
+   "enc_per_min": 1.95,
+   "variety": 4.0,
+   "variety_entropy_bits": 1.76,
+   "quiet_frac": 0.815,
+   "hits_per_min": 1.1,
+   "damage_per_min": 0.855,
+   "steals_per_min": 0.8,
+   "emotion_distinct": 2.75,
+   "emotion_entropy_bits": 0.975,
+   "threat_range": 0.572,
+   "threat_peak": 0.572,
+   "active_encounters": 9.75,
+   "species_sighted": 7.5,
+   "n_flights": 4,
+   "replay_jaccard": 0.718,
+   "replay_species_tv": 0.329,
+   "replay_emotion_tv": 0.262
+  }
+ },
+ "variety": {
+  "fired": true,
+  "eco": {
+   "shannon_mean": 0.071,
+   "shannon_min": -0.0,
+   "n_extinct": 8,
+   "n_unrecovered": 8,
+   "extinct": [
+    [
+     "pack",
+     "fortress",
+     "snaptrap",
+     "physarum"
+    ],
+    [
+     "pack",
+     "fortress",
+     "snaptrap",
+     "physarum"
+    ]
+   ],
+   "freeze_frac": 0.0,
+   "flora_saturated": 0.0,
+   "reversals": [
+    {
+     "flora": 0,
+     "herbivores": 0,
+     "pack": 0
+    },
+    {
+     "flora": 0,
+     "herbivores": 0,
+     "pack": 0
+    }
+   ],
+   "cv": {
+    "pack": 1.565,
+    "fortress": 0.0,
+    "snaptrap": 0.0,
+    "physarum": 0.0
+   },
+   "audit_max": 1.525040715932846e-08,
+   "shield_eaten": 0,
+   "pop_ins": 0,
+   "pop_outs": 0,
+   "cap_frac": {
+    "pack": 0.0
+   },
+   "soil_frac_of_input": -1.421,
+   "N_end": 24888,
+   "plants_end": 150,
+   "births": {
+    "pack": 0
+   },
+   "starved": {
+    "pack": 120
+   },
+   "cost_ms": 2.08,
+   "cost_p95": 7.06
+  },
+  "player": {
+   "enc_per_min": 0.2,
+   "variety": 1.0,
+   "variety_entropy_bits": 0.0,
+   "quiet_frac": 0.603,
+   "hits_per_min": 5.9,
+   "damage_per_min": 5.9,
+   "steals_per_min": 0.0,
+   "emotion_distinct": 3.75,
+   "emotion_entropy_bits": 1.47,
+   "threat_range": 0.789,
+   "threat_peak": 0.801,
+   "active_encounters": 1.0,
+   "species_sighted": 1.0,
+   "n_flights": 4,
+   "replay_jaccard": 0.0,
+   "replay_species_tv": 0.0,
+   "replay_emotion_tv": 0.105
+  }
+ },
+ "quiet": {
+  "fired": true,
+  "eco": {
+   "shannon_mean": 0.687,
+   "shannon_min": 0.66,
+   "n_extinct": 6,
+   "n_unrecovered": 6,
+   "extinct": [
+    [
+     "fortress",
+     "snaptrap",
+     "physarum"
+    ],
+    [
+     "fortress",
+     "snaptrap",
+     "physarum"
+    ]
+   ],
+   "freeze_frac": 0.0,
+   "flora_saturated": 0.0,
+   "reversals": [
+    {
+     "flora": 0,
+     "herbivores": 0,
+     "pack": 0
+    },
+    {
+     "flora": 0,
+     "herbivores": 0,
+     "pack": 0
+    }
+   ],
+   "cv": {
+    "pack": 0.0,
+    "fortress": 0.0,
+    "snaptrap": 0.0,
+    "physarum": 0.0
+   },
+   "audit_max": 0.0,
+   "shield_eaten": 0,
+   "pop_ins": 0,
+   "pop_outs": 0,
+   "cap_frac": {
+    "pack": 0.0
+   },
+   "soil_frac_of_input": -1.565,
+   "N_end": 22796,
+   "plants_end": 150,
+   "births": {
+    "pack": 0
+   },
+   "starved": {
+    "pack": 0
+   },
+   "cost_ms": 12.91,
+   "cost_p95": 22.87
+  },
+  "player": {
+   "enc_per_min": 0.2,
+   "variety": 1.0,
+   "variety_entropy_bits": 0.0,
+   "quiet_frac": 0.0,
+   "hits_per_min": 39.3,
+   "damage_per_min": 39.3,
+   "steals_per_min": 0.0,
+   "emotion_distinct": 1.5,
+   "emotion_entropy_bits": 0.062,
+   "threat_range": 0.441,
+   "threat_peak": 0.882,
+   "active_encounters": 1.0,
+   "species_sighted": 1.0,
+   "n_flights": 4,
+   "replay_jaccard": 0.0,
+   "replay_species_tv": 0.0,
+   "replay_emotion_tv": 0.017
+  }
+ },
+ "emotion_range": {
+  "fired": true,
+  "eco": {
+   "shannon_mean": 0.669,
+   "shannon_min": 0.572,
+   "n_extinct": 6,
+   "n_unrecovered": 6,
+   "extinct": [
+    [
+     "fortress",
+     "snaptrap",
+     "physarum"
+    ],
+    [
+     "fortress",
+     "snaptrap",
+     "physarum"
+    ]
+   ],
+   "freeze_frac": 0.0,
+   "flora_saturated": 0.0,
+   "reversals": [
+    {
+     "flora": 0,
+     "herbivores": 0,
+     "pack": 0
+    },
+    {
+     "flora": 0,
+     "herbivores": 0,
+     "pack": 0
+    }
+   ],
+   "cv": {
+    "grazer": 0.065,
+    "fortress": 0.0,
+    "snaptrap": 0.0,
+    "physarum": 0.0
+   },
+   "audit_max": 3.0665250960737467e-07,
+   "shield_eaten": 0,
+   "pop_ins": 0,
+   "pop_outs": 0,
+   "cap_frac": {
+    "grazer": 0.0
+   },
+   "soil_frac_of_input": -0.077,
+   "N_end": 60308,
+   "plants_end": 158,
+   "births": {
+    "grazer": 3182
+   },
+   "starved": {
+    "grazer": 3061
+   },
+   "cost_ms": 3.7,
+   "cost_p95": 13.99
+  },
+  "player": {
+   "enc_per_min": 0.0,
+   "variety": 0.0,
+   "variety_entropy_bits": 0.0,
+   "quiet_frac": 1.0,
+   "hits_per_min": 0.0,
+   "damage_per_min": 0.0,
+   "steals_per_min": 0.0,
+   "emotion_distinct": 1.75,
+   "emotion_entropy_bits": 0.067,
+   "threat_range": 0.032,
+   "threat_peak": 0.062,
+   "active_encounters": 0.0,
+   "species_sighted": 1.0,
+   "n_flights": 4,
+   "replay_jaccard": 0.0,
+   "replay_species_tv": 0.0,
+   "replay_emotion_tv": 0.011
+  }
+ },
+ "clean": {
+  "fires": {
+   "persistence": false,
+   "diversity": false,
+   "freeze": false,
+   "audit": false,
+   "shield": false,
+   "continuity": false,
+   "variety": false,
+   "quiet": false,
+   "emotion_range": false
+  },
+  "eco": {
+   "shannon_mean": 1.879,
+   "shannon_min": 1.849,
+   "n_extinct": 0,
+   "n_unrecovered": 0,
+   "extinct": [
+    [],
+    []
+   ],
+   "freeze_frac": 0.0,
+   "flora_saturated": 0.0,
+   "reversals": [
+    {
+     "flora": 0,
+     "herbivores": 1,
+     "pack": 0
+    },
+    {
+     "flora": 0,
+     "herbivores": 1,
+     "pack": 0
+    }
+   ],
+   "cv": {
+    "grazer": 0.106,
+    "locust": 0.175,
+    "pack": 0.064,
+    "thief": 0.07,
+    "lurker": 0.1,
+    "fortress": 0.0,
+    "snaptrap": 0.037,
+    "physarum": 0.031
+   },
+   "audit_max": 1.8151476979255676e-06,
+   "shield_eaten": 0,
+   "pop_ins": 0,
+   "pop_outs": 0,
+   "cap_frac": {
+    "grazer": 0.0,
+    "locust": 0.0,
+    "pack": 0.0,
+    "thief": 0.0,
+    "lurker": 0.0
+   },
+   "soil_frac_of_input": 0.198,
+   "N_end": 67242,
+   "plants_end": 197,
+   "births": {
+    "grazer": 2998,
+    "locust": 2763,
+    "pack": 27,
+    "thief": 60,
+    "lurker": 300
+   },
+   "starved": {
+    "grazer": 1601,
+    "locust": 1631,
+    "pack": 9,
+    "thief": 46,
+    "lurker": 270
+   },
+   "cost_ms": 15.29,
+   "cost_p95": 32.88
+  },
+  "player": {
+   "enc_per_min": 2.1,
+   "variety": 3.5,
+   "variety_entropy_bits": 1.557,
+   "quiet_frac": 0.679,
+   "hits_per_min": 2.45,
+   "damage_per_min": 1.295,
+   "steals_per_min": 1.75,
+   "emotion_distinct": 2.5,
+   "emotion_entropy_bits": 1.012,
+   "threat_range": 0.301,
+   "threat_peak": 0.326,
+   "active_encounters": 10.5,
+   "species_sighted": 7.75,
+   "n_flights": 4,
+   "replay_jaccard": 0.635,
+   "replay_species_tv": 0.303,
+   "replay_emotion_tv": 0.058
+  }
+ },
+ "replay": {
+  "fired": true,
+  "distances": [
+   {
+    "jaccard_dist": 0.0,
+    "species_tv": 0.0,
+    "emotion_tv": 0.0
+   },
+   {
+    "jaccard_dist": 0.0,
+    "species_tv": 0.0,
+    "emotion_tv": 0.0
+   }
+  ]
+ }
+}

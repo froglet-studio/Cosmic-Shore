@@ -276,3 +276,6 @@ R17 = {
 # steals 1.6/min (round 1 2.2, round 2 12.3), thieves breed 197 / starve 156. 1 raider: quiet the same, thieves back
 # on the cap 12%. F_half 400: more encounters (1.78/min) but thieves on the cap 20%. -> FINAL3 = r17_r2t2f.
 FINAL3 = R17["r17_r2t2f"]
+# r3_final (FINAL3, 4 seeds x 45 min): 0 extinctions, quiet 0.58 (round 2 0.38, round 1 0.60), steals 1.5/min,
+# thief at its limit 14% (round 2 91%), physarum digests 1,760-6,402 vol and ends with 876-1,904 in reserve
+# (round 2: 19-523 / 4-8). Cost 17.3 ms (round 2 12.7). r3_controls: all 10 fire, clean fires none.

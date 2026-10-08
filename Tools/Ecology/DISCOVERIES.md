@@ -1646,3 +1646,70 @@ magpie that raids only while its nest's hoard is short (`thief.hoard_target` 10;
 2. **A sink for long sessions** (see item 3): pilots harvesting flora would close the ledger without a timer.
 3. **Physarum feeding** (above).
 4. The far grazers run ~2x the near ones at minute 15 (fit end gap 94%): a grazer-specific far-level fix.
+
+## Living cell, round 3 (branch `cece/eco-living-cell-r3`, 2026-10-08)
+
+**Question.** Round 2 fixed the ecosystem but cost the pilot their quiet time (0.60 → 0.38), and the physarum
+was barely eating (round 2's open items 1 and 3). Garrett's rule: every species must be able to feed and breed.
+
+**Where the noise came from** (probe, FINAL2 seed 2, 25 min, share of pilot-time with an active threat inside
+300 u): tailing/carrying thieves 31%, gaping lurkers 21%, physarum 6%, snap-traps 4%. Thieves sat on their colony
+limit of 75; lurkers climbed 45 → 113.
+
+**Why the physarum starved.** Its grove was placed "far from the fortress", which in every seed had no plants in
+it, and it laid its whole 5,000-vol reserve as ~495 tubes in the first minute. From then on it had ~5 vol in the
+bank and could not lay a single new tube toward food (4 vol digested in 14 min).
+
+**Changes** (all switches default off, so earlier rounds replay unchanged):
+- Physarum (`structures.Physarum`): germinates on the richest digestible patch (`phys_site="food"`); never lays a
+  tube from below a 2,000-vol reserve floor (`keep`) unless the tube lands on food; and, when starving (reserve
+  < 30% of the floor and income < half its upkeep over 3 minutes), **sporulates**: resorbs its whole network into
+  the sclerotium and re-germinates on the best food patch, carrying its mass (audit unchanged). Tested by forcing
+  starvation on the old bare site: it moved at minute 5 and digested 450 vol in the next minute.
+- Thieves: a nest sends at most `raiders`=2 magpies out at once (claiming or carrying); the rest graze at home.
+  Nectar made easier (`F_half` 1200 → 600) so the stay-at-homes can still breed.
+- Lurkers: `territory`=2: a lurker only breeds where its 200-u region holds fewer than 2 (macro: cohort < 2).
+
+**Iterate** (R17, 3 seeds × 30 min, `results/r3_iterate.json`, all 0 extinctions):
+
+| config | quiet | enc/min | steals/min | caps hit (frac of samples) | physarum digested |
+|---|---|---|---|---|---|
+| r17_phys (physarum only) | 0.48 | 1.43 | 8.2 | thief 0.67 | 1,467-3,251 |
+| **r17_r2t2f** (+2 raiders, territory 2, F_half 600) | **0.65** | 1.66 | 1.6 | none | 1,092-3,767 |
+| r17_r1t2f (1 raider) | 0.66 | 1.61 | 0.8 | thief 0.12 | 761-2,547 |
+| r17_r2t2f_q (F_half 400) | 0.65 | 1.78 | 1.4 | thief 0.20 | 1,875-3,512 |
+
+**Final** (FINAL3 = r17_r2t2f, 4 seeds × 45 min, `results/r3_final.json`), against round 2's final:
+
+| | round 1 | round 2 | **round 3** |
+|---|---|---|---|
+| extinctions | thieves 3/4 | 0 | **0** |
+| quiet | 0.60 | 0.38 | **0.58** |
+| encounters/min | - | 1.10 | 1.37 |
+| hits/min | - | ~3 | 3.1 |
+| steals/min | 2.2 | 12.3 | **1.5** |
+| thief at colony limit | - | 91% | **14%** |
+| lurker at backstop | - | 7% | 0.6% |
+| physarum digested (45 min) | - | 19-523 | **1,760-6,402** |
+| physarum reserve at end | - | 4-8 | **876-1,904** |
+| Shannon mean / min | - | 1.87 / 1.53 | 1.86 / 1.74 |
+| soil slope (frac of trail input) | - | 2% | -17% |
+| audit max | - | 9e-6 | 1.1e-5 |
+| pop-ins | - | 0 | 0 |
+| cost ms mean (p95) | - | 12.7 (28.6) | 17.3 (40.5) |
+
+Thieves breed 416 / starve 317; lurkers 7,309 / 6,305 (boom and bust, CV 0.76, never extinct). Encounters are now
+snap-traps 162, lurkers 100, fortress 55, packs 7. No physarum sporulated in the final: on food it never starved.
+
+**Controls** (`results/r3_controls.json`): all 10 fire, the clean cell fires none. Two had to follow the physarum. The *freeze* control (no fauna, flora
+seeded near cap) stopped firing because the fed physarum now grazes the flora down; it now also removes the
+physarum. The *shield* control fired in round 2 on 2 incidental bites; the physarum's food list now honours the
+`eat_shield` bug hook too, so the planted failure is exercised by a real eater.
+
+### What would still move the numbers
+
+1. Cost went up 4.6 ms mean (the physarum lays ~500-700 tubes on food instead of ~350 on bare ground, and runs more
+   digest checks). Lowering `tube_cap` or the grid size is the lever if the game budget needs it.
+2. Lurkers boom and bust (CV 0.76). Territory 3 smooths less; a lurker that rests (lower metabolism while settled)
+   would be the next thing to try.
+3. Still open from round 2: the long-session mass sink (pilots harvesting flora) and the far-grazer gap.
