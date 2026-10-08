@@ -798,6 +798,16 @@ namespace CosmicShore.Gameplay
         bool _embedded;
 
         /// <summary>
+        /// The sweep loops' one exit test. An EMBEDDED round has stopped where it struck but has
+        /// not raised <c>FlightEnded</c> yet (<see cref="EmbedAndRetire"/> defers that by the
+        /// dwell), so <c>_flightEndRaised</c> alone let a spike that had visibly stopped keep
+        /// dispatching the rest of that frame's hits - stealing and chain-firing from inside the
+        /// prism it stuck in - then step on to the segment's end and run the fuze test
+        /// (URCHIN_BACKLOG U4).
+        /// </summary>
+        bool FlightHalted => _flightEndRaised || _embedded;
+
+        /// <summary>
         /// Halts this round where it struck and leaves it standing in the prism for
         /// <paramref name="dwellSeconds"/>, then fades it out and returns it to the pool.
         /// This is the modern <c>TrailBlockImpactEffects.Stop</c> — the Urchin spike sticking
@@ -908,7 +918,7 @@ namespace CosmicShore.Gameplay
                     if (sweptVesselDetection)
                     {
                         SweepVesselsAlong(sweepFrom, t.position);
-                        if (_flightEndRaised) return;
+                        if (FlightHalted) return;
                     }
 
                     if (!sweptPrismDetection && HasVirtualPrisms())
@@ -917,7 +927,7 @@ namespace CosmicShore.Gameplay
                         // creature that is only data, Docs/SWARM_FAUNA.md §19) has no collider, so the index's own
                         // virtual entries are swept for (and join the same dispatch) explicitly
                         SweepPrismsAlong(sweepFrom, t.position, virtualOnly: true);
-                        if (_flightEndRaised) return;
+                        if (FlightHalted) return;
                     }
 
                     if (sweptPrismDetection)
@@ -928,7 +938,8 @@ namespace CosmicShore.Gameplay
                         // (RaiseFlightEnded + ReturnToFactory). Returning rather than
                         // breaking is deliberate: the loop's tail would otherwise fire the
                         // end effects a second time on an instance already back in the pool.
-                        if (_flightEndRaised)
+                        // An embedded round has stopped too, and owns its own retirement.
+                        if (FlightHalted)
                             return;
                     }
 
@@ -1872,8 +1883,8 @@ namespace CosmicShore.Gameplay
                 projectileImpactor.AcceptImpacteeFromSweep(impactor);
 
                 // A stopping impact ran the whole end-of-flight path from inside that call;
-                // the shot rests here.
-                if (_flightEndRaised) return;
+                // the shot rests here. So does one that EMBEDDED in this prism.
+                if (FlightHalted) return;
             }
 
             // Pierced everything it met — finish the frame's step.
@@ -2000,7 +2011,7 @@ namespace CosmicShore.Gameplay
 
                     // A vessel impact can end the flight (the skyburst detonates on its direct
                     // hit); the shot rests where it landed.
-                    if (_flightEndRaised) return;
+                    if (FlightHalted) return;
                 }
 
                 transform.position = to;

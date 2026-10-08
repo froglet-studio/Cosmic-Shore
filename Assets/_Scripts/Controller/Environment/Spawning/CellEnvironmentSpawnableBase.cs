@@ -167,7 +167,15 @@ namespace CosmicShore.Gameplay
             // cached list whole for the miniature builder and the planting model.
             var lays = PrismLayDecimation.Apply(_cachedLays);
 
-            var trail = new Trail();
+            // DECLARED VOLUME, not the container's 1D default. Every authored world that keeps
+            // this base lay puts its whole structure (shells, plates, ribs, burrs - tens of
+            // thousands of prisms) into ONE container, and PrismscapeTopology.DimensionOf reads
+            // a container's declared dimension before any census - so the default Trail made a
+            // rider try to rail-grind a 3D world in index order (URCHIN_BACKLOG U5). Volume
+            // routes to the boundary (face) ride, which is also what Surface would do. A world
+            // that genuinely lays ribbons (Skein, Regatta rails, Switchyard, Breakwater)
+            // overrides this method and declares its own per-trail dimension.
+            var trail = new Trail { Dimension = PrismscapeDimension.Volume };
 
             // Streamed + batched at play time (tens of thousands of prisms; laying the 25k
             // geodesic shells in one frame measured ~95s). Behind a game load the arena-ready

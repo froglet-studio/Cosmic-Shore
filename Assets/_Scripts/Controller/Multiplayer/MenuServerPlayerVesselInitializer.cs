@@ -52,8 +52,35 @@ namespace CosmicShore.Gameplay
 
         bool _isSwapping;
 
-        /// <summary>Whether a vessel swap is currently in progress.</summary>
-        public bool IsSwapping => _isSwapping;
+        // CLIENT half of the latch. A party client's swap runs on the server, so `_isSwapping`
+        // never rises on the client - and between the server despawning the old hull and
+        // ReplaceVesselForPlayer_ClientRpc binding the new one, the client's player.Vessel is a
+        // destroyed controller while IsSwapping read false. Every caller that waits on IsSwapping
+        // (the vessel changer, the mode preview) then went on to read that dead vessel or fire
+        // a second swap from it (URCHIN_BACKLOG U13). The latch holds until the local player is
+        // bound to a DIFFERENT, live vessel, or until the deadline - the server refuses a swap it
+        // cannot spawn without telling the client, and then the old vessel simply stays.
+        IVessel _clientSwapFrom;
+        float _clientSwapDeadline;
+        const float ClientSwapTimeoutSeconds = 5f;
+
+        /// <summary>
+        /// Whether a vessel swap is in progress: from the request until the new vessel is BOUND
+        /// to the player, on the server and on a requesting client alike.
+        /// </summary>
+        public bool IsSwapping => _isSwapping || ClientSwapPending();
+
+        bool ClientSwapPending()
+        {
+            if (_clientSwapFrom == null) return false;
+
+            var current = gameData != null ? gameData.LocalPlayer?.Vessel : null;
+            bool rebound = current.IsAlive() && !ReferenceEquals(current, _clientSwapFrom);
+            if (rebound || Time.unscaledTime >= _clientSwapDeadline)
+                _clientSwapFrom = null;
+
+            return _clientSwapFrom != null;
+        }
 
         // Menu vessels spawn with destroyWithScene=false so a joining client's vessel
         // survives the client's Single-mode Menu_Main scene-synchronize, which would
@@ -135,10 +162,12 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void RequestSwap(VesselClassType targetClass)
         {
-            if (_isSwapping) return;
+            if (IsSwapping) return;
 
+            // IsAlive, not `== null`: IVessel is an interface, so a reference compare sails past
+            // a vessel a failed swap already destroyed and throws on its VesselStatus below.
             var localPlayer = gameData.LocalPlayer;
-            if (localPlayer?.Vessel == null) return;
+            if (localPlayer == null || !localPlayer.Vessel.IsAlive()) return;
 
             var currentClass = localPlayer.Vessel.VesselStatus.VesselType;
             if (targetClass == currentClass) return;
@@ -164,7 +193,9 @@ namespace CosmicShore.Gameplay
             }
             else
             {
-                // Client path: send RPC to server
+                // Client path: latch until the new vessel is bound here, then ask the server.
+                _clientSwapFrom = localPlayer.Vessel;
+                _clientSwapDeadline = Time.unscaledTime + ClientSwapTimeoutSeconds;
                 clientPlayerVesselInitializer.RequestVesselSwap_ServerRpc(
                     netPlayer.NetworkObjectId,
                     targetClass,
@@ -204,7 +235,7 @@ namespace CosmicShore.Gameplay
                 }
 
                 var oldVessel = player.Vessel;
-                if (oldVessel == null)
+                if (!oldVessel.IsAlive())
                 {
                     CSDebug.LogError($"[MenuServerVesselInit] Player {playerNetId} has no vessel to swap.");
                     return;
