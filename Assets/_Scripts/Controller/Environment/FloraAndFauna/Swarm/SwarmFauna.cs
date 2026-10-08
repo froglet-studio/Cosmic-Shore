@@ -509,6 +509,10 @@ namespace CosmicShore.Gameplay
             if (config.SwarmLoopEvent.IsNull) return;
             _loop = gameObject.AddComponent<FMODUnity.StudioEventEmitter>();
             _loop.EventReference = config.SwarmLoopEvent;
+            // A runtime-added emitter defaults to EventStopTrigger None, and FMOD's OnDestroy only
+            // DETACHES a looping instance - it keeps playing at its last position forever. Every
+            // prefab-authored loop (shark, brittlestar, tadpole, crystals) stops on ObjectDestroy.
+            _loop.EventStopTrigger = FMODUnity.EmitterGameEvent.ObjectDestroy;
             gameObject.AddComponent<CosmicShore.Gameplay.Audio.EmitterSfxVolumeBinder>();
             _loop.Play();
         }
@@ -1187,6 +1191,9 @@ namespace CosmicShore.Gameplay
 
         void ReleaseBodyEntities()
         {
+            // FIRST: the pose job reads the handle arrays and writes _matrices, so nothing it
+            // touches may be destroyed or disposed while it can still be in flight.
+            CompletePose();
             if (_handles.IsCreated)
             {
                 for (int i = 0; i < _cap; i++)
@@ -1199,7 +1206,6 @@ namespace CosmicShore.Gameplay
             if (_shownHandles.IsCreated) _shownHandles.Dispose();
             if (_restyleHandles.IsCreated) _restyleHandles.Dispose();
             if (_lookScratch.IsCreated) _lookScratch.Dispose();
-            CompletePose();
             if (_matrices.IsCreated) _matrices.Dispose();
             if (_instNative.IsCreated) _instNative.Dispose();
             if (_shownNative.IsCreated) _shownNative.Dispose();

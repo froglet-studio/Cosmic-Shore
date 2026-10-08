@@ -256,6 +256,13 @@ namespace CosmicShore.UI
         /// </summary>
         public void OnClickResumeGameButton()
         {
+            // Opened through the networked path below: time was never frozen, so resume the same way.
+            if (!PauseSystem.Paused)
+            {
+                OnClickMultiplayerResumeGameButton();
+                return;
+            }
+
             PauseSystem.TogglePauseGame(false);
             Hide();
 
@@ -268,12 +275,35 @@ namespace CosmicShore.UI
         /// </summary>
         public void OnClickPauseGameButton()
         {
+            // GameCanvas wires its Volume / Pause button (and so Escape / Start, which invoke that
+            // button) here in every live mode; only three retired scenes override it to the
+            // multiplayer handler. Freezing Time.timeScale in a match other peers are in stopped
+            // the HOST's physics, AI and server timers under every client - and on a client froze
+            // every other vessel on its screen. With anyone else connected, pause only the local
+            // pilot's input; a solo match (host plus AI) keeps the real pause.
+            if (InNetworkedSession())
+            {
+                OnClickMultiplayerPauseButton();
+                return;
+            }
+
             PauseSystem.TogglePauseGame(true);
             Show();
 
             wasLocalPlayerInputPausedBefore = gameData.LocalPlayer.InputStatus.Paused;
             if (!wasLocalPlayerInputPausedBefore)
                 _ = TogglePlayerPauseWithDelay(true);
+        }
+
+        /// <summary>
+        /// True when another peer shares this session: this machine is a client, or a host with a
+        /// second connected client. <c>ConnectedClientsIds</c> is server-only, so the client test
+        /// short-circuits before it.
+        /// </summary>
+        static bool InNetworkedSession()
+        {
+            var nm = NetworkManager.Singleton;
+            return nm != null && nm.IsListening && (!nm.IsServer || nm.ConnectedClientsIds.Count > 1);
         }
 
         /// <summary>
