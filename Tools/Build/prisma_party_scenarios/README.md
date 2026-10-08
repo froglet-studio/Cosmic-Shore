@@ -31,7 +31,7 @@ the arcade card the screen had selected for gamepad navigation. It asserts on wh
 | T5-accept | single-flight | A double-tapped Accept starts one accept flow. The second press finds the invite already consumed, so the controller's own Accept guard is not exercised here |
 | **T2b** | **B25** | Two Joins on a 3/4 party, Run pressed on both consoles behind a barrier (skew < 1 ms): the host ends at **4/4**, one joiner is seated, the other is back in its own menu with "That party is full." `refused_by` says whether the loser passed the pre-flight, which means the session's 4 seats refused it — the race B25 is about — or was stopped by the pre-flight |
 | kick / leave | — | The member lands in its own working menu, and the host recounts |
-| T2 | B5 / T2 | Two Joins at once with room for both: both are seated |
+| T2 | B5 / T2 | Two Joins at once with room for both: both are seated. Every race starts only once each racer's row shows the host's real N/M (B29: polled presence lags, and the pre-flight refuses on the stale number) |
 | T5-join | single-flight | A double-tapped Join starts ONE direct join. `second_tap_stopped_by` records which layer stopped the second press. If it lands first, the controller's `_transitioning` guard ignores it (run 6); if it lands after, the transition fade, which blocks raycasts, means it never ran (run 7) |
 | launch | — | The party of four launches Bloomrush together |
 | T4 | B20 | Three press the HUD's Ready button (once it shows) and the fourth leaves: the host's gate goes 3/4 → 3/3 and the countdown starts |

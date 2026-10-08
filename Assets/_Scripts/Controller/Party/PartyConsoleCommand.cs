@@ -22,7 +22,7 @@
 //
 // SUBCOMMANDS (names are display names, matched case-insensitively; spaces allowed)
 //   party                    one line of key=value state (see Describe) - what a scenario asserts on
-//   party online             the online list as this machine sees it
+//   party online             the online list as this machine sees it: Name(joinable N/M) per row
 //   party invite <name>      HostConnectionService.SendInviteAsync         (the Invite button)
 //   party cancel <name>      HostConnectionService.CancelInviteAsync       (the ✕ on a pending row)
 //   party accept             PartyInviteController.AcceptInviteAsync      (the invite toast's Accept)
@@ -143,7 +143,12 @@ namespace CosmicShore.Gameplay
             if (data.OnlinePlayers == null || data.OnlinePlayers.Count == 0) return "party online: nobody";
             var sb = new StringBuilder("party online:");
             foreach (var p in data.OnlinePlayers)
-                sb.Append(' ').Append(Token(p.DisplayName)).Append(p.HasJoinableSession ? "(joinable)" : "");
+            {
+                sb.Append(' ').Append(Token(p.DisplayName));
+                // The row's own N/M, as polled presence reports it - the number a person reads before
+                // pressing Join, and the one the pre-flight refuses on.
+                if (p.HasJoinableSession) sb.Append("(joinable ").Append(p.PartyMemberCount).Append('/').Append(p.PartyMaxSlots).Append(')');
+            }
             return sb.ToString();
         }
 

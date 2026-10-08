@@ -41,8 +41,14 @@ def host_at(n):
 
 
 def wait_joinable(inst, host, timeout_s=180):
-    until(lambda: f"{host.name}(joinable)" in (console(inst, "party online") or ""), timeout_s,
-          f"{inst} to see {host.name} as joinable", step=2)
+    """Wait until `inst`'s online row for `host` shows the host's REAL member count - what a person
+    reads on the row before pressing Join. Polled presence lags the roster by up to two refresh
+    intervals, and the pre-flight refuses on the stale number (a 2/4 party read as "full" right
+    after a kick and a leave failed T2 once), so racing before the row agrees tests the lag, not
+    the race."""
+    count = party(host)["members"]
+    until(lambda: f"{host.name}(joinable {count})" in (console(inst, "party online") or ""), timeout_s,
+          f"{inst} to see {host.name} as joinable at {count}", step=2)
 
 
 def count(lines, needle):
@@ -263,10 +269,22 @@ class Session:
         # the arcade card lobby after the other three pressed Start.
         C, A, D, E = self.C, self.A, self.D, self.E
         for g in (A, D, E):
+            sent = C.log_mark()
             console(C, f"party invite {g.name}")
-            wait_party(g, lambda s: s.get("invite") == C.name, f"{g}'s invite")
-            console(g, "party accept")
-            wait_party(g, lambda s: s.get("role") == "client", f"{g} seated")
+            try:
+                wait_party(g, lambda s: s.get("invite") == C.name, f"{g}'s invite")
+                console(g, "party accept")
+                wait_party(g, lambda s: s.get("role") == "client", f"{g} seated")
+            except TimeoutError as e:
+                # Seen in 3 of 10 full runs, never in an instrumented repro: right after a host drop,
+                # the bounced member's first invite is cleared by its own expiry check on the next
+                # refresh tick. Still a FAIL - named, so nobody re-diagnoses it from scratch.
+                log = C.log_since(sent)
+                if count(log, "RemoveExpired - 1 expired") and count(log, "(reason: timeout)"):
+                    raise TimeoutError(
+                        "KNOWN-OPEN: the new host's invite expired on send after the host drop "
+                        "(MULTIPLAYER_HARDENING_PROMPT.md, Block 3 status, defect 5). " + str(e)) from None
+                raise
         wait_party(C, host_at(4), "the new host to count 4")
         mark = C.log_mark()
         C.do(f"arcade {MATCH_MODE}")

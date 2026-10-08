@@ -275,7 +275,11 @@ reaches this layer:
   - One command plays **14 scenarios** and writes `results.json`.
   - The game clock is paced to the wall, and no key event is ever sent to the game.
 
-**Run 6: 14/14 passed.** Runs 7â€“8, on the Block 4 tree: T4-lobby failed in run 8 on an open, intermittent defect (see Defect 5 below). Everything else passed.
+**Run 6: 14/14 passed.** Later runs, on the Block 4 tree:
+- **Run 8: 13/14.** T4-lobby hit open defect 5.
+- **One instrumented run failed T2** on stale presence (defect 4, B29), and the scenarios now
+  wait for the row's real count.
+- **The last instrumented run: 14/14.**
 - **T1 accept.**
 - **T5 single-flight.** A double-tapped Join starts ONE direct join. The second press is stopped
   either by the controller's `_transitioning` guard (run 6) or by the transition fade, which blocks
@@ -311,11 +315,13 @@ error shapes, and UTP timings. So the tickets read "passed on Prisma" and stay ð
    `NetworkDiagnostics.ClassifyException` has no Full label. It is the log classifier, kept
    separate from `UgsRequestPolicy.Classify` on purpose. Proposal: derive the NetDiag label from the
    policy's class.
-4. **Not fixed: a possible false "party is no longer available".** A new host's invite carries its
-   new session id at once, but its presence `partySession` property updates only on its next
-   refresh tick. A guest who accepts inside that gap is refused by the pre-flight's
-   `SessionChanged` check. This was seen once, after a host drop. The pre-flight cannot tell a
-   stale invite from stale presence without a timestamp.
+4. **Not fixed, B29: the pre-flight refuses on stale presence.**
+   - **Count:** a 2/4 party read as "full" right after a kick and a leave.
+   - **Session:** a new host's invite was refused as "no longer available" because its presence
+     still carried the old session.
+
+   Polled presence lags by up to two refresh intervals. Block 5 is the cure. The scenarios now
+   wait until each racer's row shows the real count.
 5. **Open, intermittent, and unexplained.** After T7 (host killed mid-match), the bounced member's
    first outgoing invite is sometimes cleared by its own expiry check on the very next refresh
    tick (runs 3, 4 and 8 of 8). The guest then cannot accept, and the pre-flight sees the stale
@@ -324,8 +330,10 @@ error shapes, and UTP timings. So the tickets read "passed on Prisma" and stay ð
      run 8).
    - An instrumented 3-instance repro of the same sequence passed.
    - If this is game code, a player whose host just dropped sends an invite that vanishes.
-   - Next step: catch it on an instrumented full run (`[DIAG-INVITE]` lines on `now` /
-     `expiresAt`).
+   - Hit in 3 of 10 full runs. It never recurred on the two instrumented full runs (both 14/14).
+     The instrumentation added `[DIAG-INVITE]` warnings on `now` / `expiresAt` in
+     `InviteService.AddOrRefresh` / `RemoveExpired`, in the throwaway worktree only.
+   - T4-lobby now labels it `KNOWN-OPEN` when it happens. It is still a FAIL, never hidden.
 
 **Harness faults found and fixed along the way:**
 - Ready was pressed through the controller before the HUD showed the button.

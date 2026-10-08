@@ -149,6 +149,8 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
   DiagnosticsHUD console (`party`, `party online`, `invite` / `cancel` / `kick <name>`, `accept`,
   `decline`, `join` / `spectate <name>`, `leave`).
   - Each subcommand calls the method its button calls.
+  - `party online` prints each joinable row's own N/M, as polled presence reports it (added later
+    the same day; B29).
   - `party` prints one `key=value` state line, including `members`, `conns`, `humans` and
     `spectators`.
   - It self-registers. In a release player it is a no-op, because `DiagnosticsHUD.RegisterCommand`

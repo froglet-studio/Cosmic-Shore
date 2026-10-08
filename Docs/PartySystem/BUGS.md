@@ -36,6 +36,7 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B26 | A late online success could still build a Relay session over a live OFFLINE host: the §4.2 invariant was checked only at entry | Fixed 2026-10-08 (re-checked under the mutex and after the shutdown); L1 test + negative control | 🟡 |
 | B27 | A late sign-in re-joined the presence lobby of an OFFLINE session | Fixed 2026-10-08; L1 test + negative control | 🟡 |
 | B28 | The boot gate's in-attempt retry was unbounded, so "three attempts" was a minimum and the offline fallback could arrive minutes late | Fixed 2026-10-08 (bounded by the per-attempt timeout) | 🟡 |
+| B29 | The Join/Accept pre-flight refuses on STALE presence: a party that just shrank reads as "full", and a host that just re-created its session reads as "no longer available" | Open - found by the five-process runs 2026-10-08; the cure is Block 5 (push instead of poll) | 🔴 |
 
 *(The table used to list only seven of these. B8 and B11–B16 had entries below
 but no index row, so the index read as "seven bugs, two of them red" while the
@@ -1973,4 +1974,29 @@ offline host.
 **Evidence.** Compile only (`unity_refcompile`). This path needs a hanging UGS, which no harness
 here can produce. QA: boot with UGS blocked at the firewall but the NIC up. The offline notice
 must arrive within five attempt timeouts: three Relay waits plus two bounded retries, 75 s at the 15 s floor.
+
+---
+
+## B29 — The Join/Accept pre-flight refuses on stale presence 🔴 (found by the five-process runs 2026-10-08; open)
+
+**Shape.** `JoinTargetValidator`, the zero-request pre-flight from review Phase 1c, decides from
+the target's **polled presence**. A host publishes `partyCount` and `partySession` on its own
+refresh tick, and a guest reads them on its tick. The guest's view can therefore be up to two
+refresh intervals old. A refusal made on it is a false refusal, and a person sees it as a toast
+for a party they could have joined:
+
+- **Count.** Right after a kick and a leave, B's party was really 2/4. A's row still read 4/4, and
+  A's Join was refused with "PilotB's party is full." (instrumented run, T2.)
+- **Session.** Right after a host drop, the new host's invite carried its new session id. Its
+  presence still carried the old one, and the guest's Accept was refused with "…party is no
+  longer available." (runs 3 and 4, `SessionChanged`.)
+
+**Why it is not simply relaxed.** A refusal here is what saves a player's own session from a
+doomed teardown. The validator cannot tell "the invite is stale" from "presence is stale" without
+a fresher source. Its count check is advisory anyway: since B25 the session's own seat count is
+the authority, so a false "full" costs the player a retry and nothing else.
+
+**Cure.** Block 5 (push instead of poll) shrinks the window this rides on. Until then the
+scenarios wait until each racer's row shows the host's real count before pressing Join
+(`wait_joinable`), as a person reads the row.
 
