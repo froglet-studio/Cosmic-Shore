@@ -17,6 +17,7 @@ None), so the final blit clips each channel at 1, then sRGB.
     python3 Tools/Shaders/render_black_hole_lens.py --out lens.png
     python3 Tools/Shaders/render_black_hole_lens.py --dist 12 --out inside.png      # inside the lens
     python3 Tools/Shaders/render_black_hole_lens.py --hlsl other.hlsl --out other.png
+    python3 Tools/Shaders/render_black_hole_lens.py --white --out white.png          # a WHITE hole (§11)
 
 Defaults match Resources/BlackHoleConfig.asset (lens 30 r_s, fade from 0.55, 128 steps), seen from
 the side. A reader tool: it writes only the PNG it is given.
@@ -70,6 +71,7 @@ int main(int argc, char** argv)
     float lensR = std::atof(argv[7]), fadeStart = std::atof(argv[8]); int steps = std::atoi(argv[9]);
     float fieldR = std::atof(argv[10]);
     FILE* out = std::fopen(argv[11], "wb");
+    int white = std::atoi(argv[12]); float coreBright = std::atof(argv[13]), coreSkyMix = std::atof(argv[14]);
 
     float3 eye(dist * std::cos(pitch) * std::sin(yaw), dist * std::sin(pitch), -dist * std::cos(pitch) * std::cos(yaw));
     float3 fwd = normalize(float3(0, 0, 0) - eye);
@@ -90,7 +92,14 @@ int main(int argc, char** argv)
                 BlackHoleLensTrace(eye, d, lensR, steps, bent, escaped);
                 float3 bg(0, 0, 0);
                 if (escaped > 0.5f) bg = background(BlackHoleLensFadeDir(d, bent, b, lensR, fadeStart), fwd, field, 0.0f);
-                colour = bg;   // the bent scene, or the shadow's black
+                else if (white) {
+                    // BlackHoleLens.shader's white core, exactly: the sky along the crossing line under a
+                    // glow that is white-hot at the centre and gone at the core's rim (b_c = 2.598).
+                    float t = std::min(1.0f, b / 2.598f);
+                    float glow = (1.0f - t) * (1.0f - t);
+                    bg = background(bent, fwd, field, 0.0f) * coreSkyMix + float3(1, 1, 1) * (coreBright * glow);
+                }
+                colour = bg;   // the bent scene, the shadow's black, or the white hole's core
             }
             // prisms in front of the hole are not lensed: the depth test draws them over the lens
             float3 fd = d;
@@ -138,7 +147,7 @@ def render(args, out_png):
         raw = os.path.join(work, "image.f32")
         a = args
         cmd = [binary, a.size, a.size, a.dist, a.yaw, a.pitch, a.fov,
-               a.lens, a.fade, a.steps, a.field, raw]
+               a.lens, a.fade, a.steps, a.field, raw, 1 if a.white else 0, a.core_brightness, a.core_sky_mix]
         subprocess.run([str(c) for c in cmd], check=True)
         data = array.array("f")
         with open(raw, "rb") as f:
@@ -165,6 +174,9 @@ def main():
     p.add_argument("--fade", default="0.55")
     p.add_argument("--steps", default="128")
     p.add_argument("--field", default="14.4", help="radius of the stand-in prism field, r_s")
+    p.add_argument("--white", action="store_true", help="render a WHITE hole: the core emits instead of the shadow")
+    p.add_argument("--core-brightness", default="4", help="white core HDR brightness (BlackHoleConfig.whiteCoreBrightness)")
+    p.add_argument("--core-sky-mix", default="0.8", help="emitted sky share in the core (BlackHoleConfig.whiteCoreSkyMix)")
     args = p.parse_args()
     if shutil.which("clang++") is None:
         sys.exit("clang++ not found")

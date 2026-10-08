@@ -19,6 +19,11 @@ A. EXECUTION (clang++). Assets/_Graphics/Materials/Graphs/BlackHoleLens.hlsl is 
         inside the fade start — no seam where the lens ends.
      7. NEGATIVE CONTROL: rebuilt with BLACK_HOLE_LENS_STEP_FRACTION blown up (-D override of the
         file's own #ifndef dial), the physics tests FAIL — the integration step is what holds them.
+     9. A RAY THAT FELL THROUGH reports the line it crossed the horizon on: unit and finite — what a
+        WHITE hole paints its core from (the light comes out along it). A ray well inside the shadow
+        (b < 1 r_s) crosses still heading the way it came; one near the shadow's edge may loop the
+        photon sphere first and cross heading back, which is what puts the sky from BEHIND the eye at
+        the core's rim. A ray aimed dead at the centre crosses along itself.
      8. THE SKY IS THE ONE BlackHoleSky.cs RENDERS: a ray bent off the screen samples the scene's own
         skybox, which BlackHoleSky.cs draws into six faces, face i a 90-degree camera along its
         FaceForward[i] with FaceUp[i] up. Its table is READ FROM THE C# FILE, each face's projection
@@ -207,6 +212,37 @@ int main()
         CHECK(atEdge.x == d.x && atEdge.y == d.y && atEdge.z == d.z, "the bend is not zero at the lens edge");
         CHECK(std::fabs(dot(inside, bent) - 1) < 1e-6f, "the bend is not the traced ray inside the fade start");
         printf("6. fade: straight at the lens edge, exactly traced inside the fade start\n");
+    }
+
+    // 9. a captured ray's crossing direction (the white hole's core reads it)
+    {
+        Trace head = trace(float3(-30, 0, 0), float3(1, 0, 0), 30);
+        CHECK(head.escaped < 0.5f, "a ray aimed at the centre escaped");
+        CHECK(std::fabs(head.dir.x - 1) < 1e-5f && std::fabs(head.dir.y) < 1e-5f, "a ray aimed at the centre did not cross along itself");
+        std::mt19937 rng(9);
+        std::uniform_real_distribution<float> U(-1.0f, 1.0f);
+        int captured = 0, bad = 0, straight = 0, turned = 0;
+        for (int i = 0; i < 2000; i++) {
+            float3 d = normalize(float3(1, 0.08f * U(rng), 0.08f * U(rng)));     // b < 2.4 r_s from 30 r_s out
+            float3 x0(-30, 0, 0);
+            Trace t = trace(x0, d, 30);
+            if (t.escaped > 0.5f) continue;
+            captured++;
+            float len = length(t.dir);
+            bool finite = std::isfinite(t.dir.x) && std::isfinite(t.dir.y) && std::isfinite(t.dir.z);
+            if (!finite || std::fabs(len - 1) > 1e-4f) bad++;
+            // A ray well inside the shadow (b < 1 r_s) falls nearly straight: it crosses still heading
+            // the way it came. Nearer the shadow's edge a ray loops the photon sphere first and can
+            // cross heading back — physical, and what makes the core's rim show the sky behind the eye.
+            float b = length(cross(x0, d));
+            if (b < 1.0f) { straight++; if (dot(t.dir, d) < 0.9f) bad++; }
+            else if (dot(t.dir, d) < 0) turned++;
+        }
+        CHECK(captured > 1500, "only %d of 2000 near-axis rays were captured", captured);
+        CHECK(straight > 200, "only %d rays inside b = 1 r_s", straight);
+        CHECK(bad == 0, "%d captured rays reported a non-unit or non-finite crossing direction, or a straight-in ray that turned", bad);
+        printf("9. %d captured rays: crossing direction unit and finite; %d inside b = 1 r_s cross heading the way they came, %d near the edge looped first\n",
+               captured, straight, turned);
     }
 
     // 8. the sky faces: the shipped lookup against BlackHoleSky.cs's own table (SKY_TABLE, injected)

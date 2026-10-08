@@ -186,6 +186,19 @@ namespace CosmicShore.ScriptableObjects
         [Range(0, 6)]
         [SerializeField] int lensSkyFacesPerFrame = 1;
 
+        [Tooltip("A WHITE hole's core (Docs/BLACK_HOLE.md §11): how bright the white at its centre is, in HDR " +
+                 "units (the project has no tonemapper, so anything above 1 clips to pure white). The glow " +
+                 "falls off toward the core's rim — the photon-capture radius, ~2.6 r_s — where the emitted " +
+                 "light shows through.")]
+        [Range(0f, 16f)]
+        [SerializeField] float whiteCoreBrightness = 4f;
+
+        [Tooltip("How much of the EMITTED light shows in a white hole's core: the sky that fell into its " +
+                 "paired black hole, coming out the far side (the backward-traced ray continues through the " +
+                 "tunnel into the sky). 0 = a pure white core, 1 = the sky at full strength under the glow.")]
+        [Range(0f, 2f)]
+        [SerializeField] float whiteCoreSkyMix = 0.8f;
+
         [Header("Spawn (the Black Hole tool — B, or blackhole tool on; Shift+B spawns)")]
         [Tooltip("Strength of a hole the tool spawns: its PULL. GM = strength x Gm Per Strength. With " +
                  "Spawn Horizon Radius at 0 the strength also sets the size.")]
@@ -223,6 +236,31 @@ namespace CosmicShore.ScriptableObjects
                  "around it, in the plane perpendicular to it.")]
         [SerializeField] Vector3 spawnSpinAxis = Vector3.forward;
 
+        [Header("Pair (a black hole and a white hole born together — Docs/BLACK_HOLE.md §11)")]
+        [Tooltip("How far AHEAD of the camera (or the vessel) the pair's midpoint is placed, in horizon radii " +
+                 "of the spawned holes. 0 puts the midpoint level with the camera, the holes straight out to " +
+                 "its left and right.")]
+        [Range(0f, 50f)]
+        [SerializeField] float pairAheadHorizons = 3f;
+
+        [Tooltip("Each hole's distance from the pair's midpoint at birth, in horizon radii — the black hole " +
+                 "to one side, the white hole to the other, on the camera's (the vessel's) own horizontal. " +
+                 "Nearer than ~3 the vessel between them sits inside both shadows.")]
+        [Range(1.5f, 30f)]
+        [SerializeField] float pairHalfGapHorizons = 4f;
+
+        [Tooltip("How fast each hole drifts AWAY from the midpoint at birth, u/s. They decelerate uniformly, " +
+                 "stop at half the lifetime, fall back together and annihilate at the end of it; the pair " +
+                 "is widest by driftSpeed x lifetime / 4 beyond its birth gap.")]
+        [Range(0f, 200f)]
+        [SerializeField] float pairDriftSpeed = 20f;
+
+        [Tooltip("Seconds from the pair's birth to its annihilation (the two holes meet again and ease " +
+                 "out together). Mass the black hole swallowed and the white hole emitted is already " +
+                 "on its way by then.")]
+        [Range(0.5f, 30f)]
+        [SerializeField] float pairLifetime = 5f;
+
         public float SpawnStrength => Mathf.Max(0f, spawnStrength);
         public float SpawnHorizonRadius => Mathf.Max(0f, spawnHorizonRadius);
         public bool SpawnAheadOfCamera => spawnAheadOfCamera;
@@ -237,6 +275,12 @@ namespace CosmicShore.ScriptableObjects
         public int LensSteps => Mathf.Clamp(lensSteps, 16, 192);
         public int LensSkyResolution => Mathf.Clamp(lensSkyResolution, 128, 2048);
         public int LensSkyFacesPerFrame => Mathf.Clamp(lensSkyFacesPerFrame, 0, 6);
+        public float WhiteCoreBrightness => Mathf.Clamp(whiteCoreBrightness, 0f, 16f);
+        public float WhiteCoreSkyMix => Mathf.Clamp(whiteCoreSkyMix, 0f, 2f);
+        public float PairAheadHorizons => Mathf.Clamp(pairAheadHorizons, 0f, 50f);
+        public float PairHalfGapHorizons => Mathf.Clamp(pairHalfGapHorizons, 1.5f, 30f);
+        public float PairDriftSpeed => Mathf.Clamp(pairDriftSpeed, 0f, 200f);
+        public float PairLifetime => Mathf.Clamp(pairLifetime, 0.5f, 30f);
 
         public float GmPerStrength => Mathf.Max(0f, gmPerStrength);
         public float HorizonPerStrength => Mathf.Max(0.01f, horizonPerStrength);

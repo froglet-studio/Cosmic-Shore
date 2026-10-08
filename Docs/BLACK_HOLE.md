@@ -54,8 +54,10 @@ spawning between steps, and every fault they reported is fixed and recorded in t
 | 9 | Every camera gets the lens's depth texture; the on-screen camera, not `Camera.main`, places spawns | §5.1 |
 | 10 | The lens bends TRANSPARENTS too (shards, particles): its own after-transparents pass | §5.1 |
 | 11 | Merged with bleeding-edge (9,708 commits); `CSLogChannel.BlackHole` moved to bit 31 — the enum is now FULL | the merge commit |
+| 12 | WHITE holes and black–white PAIRS: the radial law reversed, the horizon emitting, captured mass passed through to the partner, the pair drifting apart and annihilating; tool buttons, N/M keys, `blackhole white|pair`, `bhtest pair` | §11 |
 
-**Untested in the editor, in priority order:** the after-transparents lens pass (`BlackHoleLensPass`,
+**Untested in the editor, in priority order:** white holes and pairs (§11 — the repulsion on a vessel,
+the pass-through of captured prisms, the core's look, the drift and annihilation); the after-transparents lens pass (`BlackHoleLensPass`,
 Render Graph) on every camera and the Scene view; the lens sky (`BlackHoleSky`) on a low quality
 level; Shift+B in lava-lamp freestyle with a vessel flying; the edit-mode suites `BlackHoleTests`,
 `BlackHolePhysicsTests`, `BlackHoleToolTests` (written, never run).
@@ -444,6 +446,8 @@ blackhole move <id> <vx> <vy> <vz>               set a hole's velocity (drive it
 blackhole strength <id> <value>                  retune a live hole's pull
 blackhole spin <id> <ax> <ay> <az>               set its spin axis (Lense–Thirring frame dragging)
 blackhole list                                   every live hole and its numbers
+blackhole white [<strength> [x y z]]            spawn a WHITE hole (§11) the same way as spawn
+blackhole pair [left|right]                      spawn a black–white pair across the camera, black on that side (default left)
 blackhole despawn <id> | all                     eased release, then destroy
 bh ...  /  black hole ...                        aliases ("black hole tool on" works as typed)
 ```
@@ -466,8 +470,9 @@ what is on the asset is what spawns — from the tool, or from `blackhole spawn`
   **Spawn Velocity** (u/s, world space; zero parks it) and **Spawn Spin Axis** (world). A caption
   shows what those make: r_s, the shadow (~2.6 r_s), the lens radius, the position and how far it is
   from the camera, GM and the influence radius.
-- **Spawn** spawns from exactly those values (`BlackHoleRegistry.SpawnFromConfig`, placement in
-  `SpawnPoint`) — no preset buttons: to put a hole somewhere else, fly there or change the position.
+- **Spawn black** / **Spawn white** spawn from exactly those values (`BlackHoleRegistry.SpawnFromConfig`,
+  placement in `SpawnPoint`); the two **Pair** buttons lay a black–white pair across the camera, black
+  on the left or the right (§11), from the **Pair** rows (ahead, half-gap, drift, lifetime).
   **Despawn all**; **Save asset** (Editor) writes the asset to disk.
 - **LIVE HOLES** lists each hole with **Retune** (apply the current spawn strength and size to it)
   and **Despawn**.
@@ -507,7 +512,8 @@ Editor and development builds, any scene, ignored while a text field has focus:
 | Key | Does |
 |---|---|
 | **B** | Open / close the Black Hole tool (in the Editor it also selects `Resources/BlackHoleConfig` in the Inspector) |
-| **Shift+B** | Spawn a hole from the config right now — ahead of the camera — without opening anything |
+| **Shift+B** | Spawn a hole from the config right now — ahead of the camera — without opening anything (Shift also boosts while flying) |
+| **N** / **M** | Spawn a black–white PAIR across the camera — black on the LEFT (N) or the RIGHT (M); N sits left of M on the keyboard. The Stoat's sling, from any vessel (§11) |
 | `blackhole tool on` / `off` | The same as B, from the DiagnosticsHUD console (`blackhole config` opens the config view) |
 
 **In the test scene** (`BlackHoleTest.unity`, Bootstrap-on-Play off): Play → **Spawn field** → wait for
@@ -697,3 +703,55 @@ Evidence, on the final tree:
 - **Summing the tides of two holes in the shader.** The tensors do add, but two stretch axes do not make
   one stretch about a single axis, and the per-prism map would stop being a pure stretch. The larger
   tide wins, as the larger pull wins in the integrator.
+
+## 11. White holes and black–white pairs (2026-10-08)
+
+**A white hole is the same spacetime run the other way.** Outside the horizon the Schwarzschild
+geometry is identical, so a white hole bends light exactly as a black hole does and raises the same
+tides; what differs is the horizon: nothing can enter it and everything inside it comes out. In this
+project that is one sign — `HolePolarity` on `BlackHole`, `Well.Polarity` in the physics:
+
+| | Black | White |
+|---|---|---|
+| Radial law (§2) | `a = −GM/(r − r_s)²` toward it | the same magnitude AWAY from it |
+| Frame dragging (§2) | ω about the spin axis | −ω (angular momentum flips under time reversal) |
+| Capture | a body at r ≤ r_s is captured | never — a body inside the horizon is one it is emitting, and the pole guard's floor gives it the kick out |
+| Tides (§5) | `GM·τ²/r³` stretch along the radial | the same (tides are even under time reversal) — an emitted body starts a needle and relaxes as it leaves: the capture movie backwards |
+| Lens (§5.1) | the same bending; rays through the horizon draw the SHADOW | the same bending; rays through the horizon draw the CORE |
+| Vessels (§4) | pulled | pushed, through the same channel |
+
+**The core.** For a ray the backward trace pushed through the horizon, the trace now reports the
+line it crossed on; a black hole paints black, a white hole paints the light that came OUT along that
+line. What comes out is what fell into its paired black hole from the far side — the sky continues
+through the tunnel — so the core samples the scene's own skybox (`BlackHoleSky`) in the crossing
+direction, under a glow that is white-hot at the core's centre and gone at its rim (the photon-capture
+radius, 2.6 r_s): `core = sky(crossing) × whiteCoreSkyMix + whiteCoreBrightness × (1 − b/b_c)²`. With
+HDR on and no tonemapper, a brightness above 1 clips to pure white at the centre. Stated
+approximation: the emitted light is the SKY behind the black hole, not the prisms around it (that would
+need a camera render per hole); the lensed background outside the core is the real scene.
+
+**A pair** (`BlackHoleRegistry.SpawnPair`, `BlackHolePairMath`): a black hole and a white hole born
+together, `pairHalfGapHorizons` either side of a midpoint along one axis, both drifting outward at
+`pairDriftSpeed`, decelerating to a stop at half of `pairLifetime`, falling back and meeting again at
+the end of it — the half-gap is the parabola `s(t) = s0 + v·t − (v/T)·t²` — when they ANNIHILATE: both
+ease out through their warp weight. Paired holes have no velocity of their own (the registry moves
+them), and if one is despawned alone the other goes too. From a camera (the tool's Pair buttons, N/M,
+`blackhole pair`): the midpoint `pairAheadHorizons` ahead, the holes on the camera's own horizontal
+to its left and right. A vessel between them is pulled toward the black hole and pushed from the white
+one — the sling toward the black hole's side. A pair takes two of the four hole slots.
+
+**Pass-through.** A prism captured by a black hole WITH a partner is not consumed: it comes out of the
+white hole at the point reflection of its entry (relative to each centre), with the velocity it went
+in with — which points outward there — at least 1.05 r_s from the white centre, and stays a body under
+the field, now repelled; `BlackHoleGravityField.EmittedTotal` counts them. A lone black hole still
+consumes. The prism's own notify (index + queued render matrix) moves it, the mover's contract.
+
+**Proof.** `BlackHolePhysicsTests`: a white hole repels with the black hole's magnitude and turns its
+frame the other way, an unset polarity reads as black (every pre-existing well still pulls), a white
+hole never captures and pushes a body at its horizon past its influence sphere, the pair's half-gap
+is widest at half-life and back at birth at the end, the exit is the point reflection with the entry
+velocity outward. `verify_black_hole_lens.py` property 9: 2,000 captured rays report a unit, finite,
+inward crossing direction. `render_black_hole_lens.py --white` renders the core offline.
+
+**Not yet:** a flash at annihilation and a thump at birth (the Stoat's feel pass, FMOD slots shipped
+empty); the pair's AI/network replication (pairs exist on the machine that spawned them, like holes).

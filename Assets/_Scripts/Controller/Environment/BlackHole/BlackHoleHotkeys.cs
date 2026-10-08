@@ -14,15 +14,22 @@ namespace CosmicShore.Gameplay
     ///                   <c>BlackHoleConfig</c> asset in the Inspector, so the next spawn's values are
     ///                   one click away in either place);
     ///   <b>Shift+B</b>  spawns a hole from the config right now — ahead of the camera you are
-    ///                   looking through (your vessel's, while flying) — without opening anything.
+    ///                   looking through (your vessel's, while flying) — without opening anything;
+    ///   <b>N</b>        spawns a black–white PAIR across that camera, black on the LEFT;
+    ///   <b>M</b>        the same pair, black on the RIGHT — N sits left of M on the keyboard.
+    ///                   The Stoat's sling, from any vessel (Docs/BLACK_HOLE.md §11).
     /// Ignored while a text field has focus, so typing a console command never fires them. Editor
     /// and development builds only, like the tool itself: the class compiles empty in a release
-    /// player. Auto-spawned once per play session; B is bound nowhere else in the project.
+    /// player. Auto-spawned once per play session. B, N and M are bound nowhere else in the project
+    /// (keyboard flight uses WASD, Q/E, R, P/;, L/', Space and Shift — so Shift+B also boosts while
+    /// flying; N and M do not).
     /// </summary>
     public sealed class BlackHoleHotkeys : MonoBehaviour
     {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         const Key ToolKey = Key.B;
+        const Key PairBlackLeftKey = Key.N;
+        const Key PairBlackRightKey = Key.M;
 
         static BlackHoleHotkeys s_instance;
 
@@ -38,7 +45,19 @@ namespace CosmicShore.Gameplay
         void Update()
         {
             var kb = Keyboard.current;
-            if (kb == null || !kb[ToolKey].wasPressedThisFrame || TextFieldHasFocus()) return;
+            if (kb == null || TextFieldHasFocus()) return;
+
+            bool pairLeft = kb[PairBlackLeftKey].wasPressedThisFrame, pairRight = kb[PairBlackRightKey].wasPressedThisFrame;
+            if (pairLeft || pairRight)
+            {
+                var pair = BlackHoleRegistry.SpawnPairFromConfig(blackOnLeft: pairLeft);
+                if (pair == null)
+                    CSDebug.LogWarning($"[BlackHole] {(pairLeft ? "N" : "M")}: pair refused — needs two free of {BlackHoleRegistry.Config.MaxBlackHoles} " +
+                                       $"({BlackHoleRegistry.Count} live), or BlackHoleConfig is not sane.");
+                return;
+            }
+
+            if (!kb[ToolKey].wasPressedThisFrame) return;
 
             if (kb.shiftKey.isPressed)
             {

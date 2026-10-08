@@ -41,6 +41,8 @@ Shader "CosmicShore/BlackHoleLens"
         [Header(Written per hole by BlackHoleLens.cs through a MaterialPropertyBlock)]
         _BHHorizon ("Horizon radius r_s (world units), eased", Float) = 1
         _BHLens ("Lens (radius in r_s, step budget, unused, bend fade start 0..1)", Vector) = (30, 128, 1, 0.55)
+        _BHWhite ("1 = a WHITE hole: the core emits instead of the shadow", Float) = 0
+        _BHCore ("White core (brightness HDR, sky mix, 0, 0)", Vector) = (4, 0.8, 0, 0)
     }
 
     SubShader
@@ -77,6 +79,8 @@ Shader "CosmicShore/BlackHoleLens"
             CBUFFER_START(UnityPerMaterial)
                 float _BHHorizon;
                 float4 _BHLens;
+                float _BHWhite;
+                float4 _BHCore;
             CBUFFER_END
 
             // The scene as the camera drew it up to the lens — opaques, skybox and transparents —
@@ -189,7 +193,18 @@ Shader "CosmicShore/BlackHoleLens"
                 BlackHoleLensTrace(x0, d, lensR, (int)_BHLens.y, bent, escaped);
 
                 float3 background = float3(0.0, 0.0, 0.0);
-                if (escaped > 0.5)
+                if (escaped < 0.5 && _BHWhite > 0.5)
+                {
+                    // A WHITE hole (Docs/BLACK_HOLE.md §11): light comes OUT of the horizon. The
+                    // backward trace crossed it travelling along `bent`; that is the line the light
+                    // came out on, carrying what fell into the paired black hole from the far side —
+                    // the sky continues through the tunnel. White-hot at the core's centre (b → 0),
+                    // the emitted sky showing through toward its rim (b → b_c = 2.598 r_s).
+                    float t = saturate(b / 2.598);
+                    float glow = (1.0 - t) * (1.0 - t);
+                    background = BlackHoleSkyColour(bent) * _BHCore.y + _BHCore.x * glow;
+                }
+                else if (escaped > 0.5)
                 {
                     float3 dirOut = BlackHoleLensFadeDir(d, bent, b, lensR, _BHLens.w);
 
@@ -211,7 +226,7 @@ Shader "CosmicShore/BlackHoleLens"
                     background = scene;
                 }
 
-                // The bent scene, or the shadow's black.
+                // The bent scene, the shadow's black, or the white hole's core.
                 return half4(background, 1.0);
             }
             ENDHLSL

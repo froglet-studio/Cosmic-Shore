@@ -72,7 +72,10 @@ float3 BlackHoleLensAccel(float3 x, float h2)
 
 // Trace one ray backwards from the eye. x0: the eye in hole units; d: unit view direction.
 // Returns (by out): the escaping direction (unit, world-aligned) and whether it escaped (1) or
-// fell through the horizon (0) — the shadow.
+// fell through the horizon (0) — the shadow. For a ray that fell through, outDir is the direction
+// it was travelling as it crossed the horizon: a BLACK hole paints that pixel black, a WHITE hole
+// (the same trace — the spacetime outside the horizon is the same) paints the light that comes
+// OUT along that line, the sky that fell into its paired black hole (BlackHoleLens.shader).
 void BlackHoleLensTrace(float3 x0, float3 d, float lensR, int maxSteps, out float3 outDir, out float escaped)
 {
     outDir = d;
@@ -95,7 +98,8 @@ void BlackHoleLensTrace(float3 x0, float3 d, float lensR, int maxSteps, out floa
         float r = length(x);
         if (r < 1.0)
         {
-            escaped = 0.0;                        // through the horizon: no light from here
+            escaped = 0.0;                        // through the horizon: no light from here (black)
+            outDir = normalize(v);                // ...or, for a white hole, the line the light comes out along
             return;
         }
         if (r > lensR && dot(x, v) > 0.0)

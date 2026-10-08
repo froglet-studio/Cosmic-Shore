@@ -49,7 +49,8 @@ namespace CosmicShore.Tests
             // velocity and spin, and the vectors are rows the tool writes straight through to the asset.
             CollectionAssert.AreEqual(
                 new[] { "spawnStrength", "spawnHorizonRadius", "spawnAheadOfCamera", "spawnDistanceHorizons",
-                        "spawnPosition", "spawnVelocity", "spawnSpinAxis" },
+                        "spawnPosition", "spawnVelocity", "spawnSpinAxis",
+                        "pairAheadHorizons", "pairHalfGapHorizons", "pairDriftSpeed", "pairLifetime" },
                 BlackHoleToolModel.SpawnFieldNames);
             var fields = BlackHoleToolModel.EditableFields(typeof(BlackHoleConfigSO));
             var config = ScriptableObject.CreateInstance<BlackHoleConfigSO>();

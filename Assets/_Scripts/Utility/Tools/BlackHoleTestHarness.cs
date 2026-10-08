@@ -387,6 +387,19 @@ namespace CosmicShore.Utility
             return _flyHole;
         }
 
+        /// <summary>A black–white pair across the field's centre: black at −X, white at +X (§11).</summary>
+        public BlackHoleRegistry.Pair SpawnCentrePair(float strength)
+        {
+            if (_phase != FieldPhase.Ready)
+                Warn($"Field is {_phase.ToString().ToLowerInvariant()}: only {IndexedCount():N0} of {_requested:N0} prisms are indexed and can be pulled.");
+            var bh = BlackHoleRegistry.Config;
+            float rs = bh.HorizonRadius(strength, 0f);
+            var pair = BlackHoleRegistry.SpawnPair(Vector3.zero, Vector3.right, strength, 0f, rs * bh.PairHalfGapHorizons,
+                bh.PairDriftSpeed, bh.PairLifetime, config.SpinAxis);
+            PublishStats();
+            return pair;
+        }
+
         public void DespawnHoles()
         {
             BlackHoleRegistry.DespawnAll();
@@ -560,7 +573,7 @@ namespace CosmicShore.Utility
         }
 
         const string Usage = "usage: bhtest <total> | bhtest shape cuboid|spheroid | bhtest spawn | bhtest hole [strength] | " +
-                             "bhtest fly [strength] [speed] | bhtest despawn | bhtest clear | bhtest zoom <0..1> | bhtest frame";
+                             "bhtest pair [strength] | bhtest fly [strength] [speed] | bhtest despawn | bhtest clear | bhtest zoom <0..1> | bhtest frame";
 
         string HandleCommand(string[] args)
         {
@@ -594,6 +607,15 @@ namespace CosmicShore.Utility
                         return Usage;
                     var hole = SpawnCentreHole(strength);
                     return hole == null ? "spawn refused (see console)" : $"hole #{hole.Id} strength {strength:F1} at the centre";
+                }
+                case "pair":
+                {
+                    float strength = config.CentreStrength;
+                    if (args.Length > 1 && !float.TryParse(args[1], NumberStyles.Float, CultureInfo.InvariantCulture, out strength))
+                        return Usage;
+                    var pair = SpawnCentrePair(strength);
+                    return pair == null ? "pair refused (see console)"
+                        : $"pair B#{pair.Black.Id}/W#{pair.White.Id} strength {strength:F1} across the centre, annihilates in {pair.Lifetime:F1} s";
                 }
                 case "fly":
                 {
@@ -653,10 +675,11 @@ namespace CosmicShore.Utility
 
             // Row 2 — actions.
             CreateButton("Spawn field", panel, new Vector2(8, -40), 100, Spawn);
-            CreateButton("Hole at centre", panel, new Vector2(114, -40), 110, () => SpawnCentreHole(StrengthFromInput()));
-            CreateButton("Fly-through", panel, new Vector2(230, -40), 100, () => FlyThrough(config.FlyStrength, config.FlySpeed));
-            CreateButton("Despawn holes", panel, new Vector2(336, -40), 110, DespawnHoles);
-            CreateButton("Clear", panel, new Vector2(452, -40), 70, Clear);
+            CreateButton("Hole at centre", panel, new Vector2(114, -40), 104, () => SpawnCentreHole(StrengthFromInput()));
+            CreateButton("Pair at centre", panel, new Vector2(224, -40), 104, () => SpawnCentrePair(StrengthFromInput()));
+            CreateButton("Fly-through", panel, new Vector2(334, -40), 90, () => FlyThrough(config.FlyStrength, config.FlySpeed));
+            CreateButton("Despawn", panel, new Vector2(430, -40), 80, DespawnHoles);
+            CreateButton("Clear", panel, new Vector2(516, -40), 70, Clear);
 
             // Row 3 — zoom.
             CreateLabel("zoom", panel, new Vector2(8, -72), 40);

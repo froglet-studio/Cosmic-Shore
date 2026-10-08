@@ -38,6 +38,8 @@ namespace CosmicShore.Gameplay
 
         static readonly int HorizonId = Shader.PropertyToID("_BHHorizon");
         static readonly int LensId = Shader.PropertyToID("_BHLens");
+        static readonly int WhiteId = Shader.PropertyToID("_BHWhite");
+        static readonly int CoreId = Shader.PropertyToID("_BHCore");
 
         /// <summary>Icosahedron subdivisions of <see cref="LensSphere"/> (2 = 320 triangles).</summary>
         const int LensSphereSubdivisions = 2;
@@ -247,6 +249,9 @@ namespace CosmicShore.Gameplay
             _renderer.GetPropertyBlock(_block);
             _block.SetFloat(HorizonId, rs);
             _block.SetVector(LensId, new Vector4(lensR, config.LensSteps, 1f, config.LensFadeStart));
+            // A white hole: the same lens, its horizon emitting instead of swallowing (§11).
+            _block.SetFloat(WhiteId, _hole.IsWhite ? 1f : 0f);
+            _block.SetVector(CoreId, new Vector4(config.WhiteCoreBrightness, config.WhiteCoreSkyMix, 0f, 0f));
             _renderer.SetPropertyBlock(_block);
         }
 

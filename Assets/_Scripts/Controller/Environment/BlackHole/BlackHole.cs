@@ -4,8 +4,18 @@ using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {
+    /// <summary>Which way a hole's horizon runs (Docs/BLACK_HOLE.md §11). Serialized: keep the values.</summary>
+    public enum HolePolarity
+    {
+        /// <summary>Pulls, captures, draws the shadow.</summary>
+        Black = 0,
+        /// <summary>Repels with the same magnitude, emits, draws a white-hot core.</summary>
+        White = 1,
+    }
+
     /// <summary>
-    /// One black hole in the HyperSea (Docs/BLACK_HOLE.md). A spawned object with two authored
+    /// One black hole in the HyperSea (Docs/BLACK_HOLE.md) — or, with <see cref="Polarity"/> White,
+    /// one WHITE hole: the same object with its radial law reversed (§11). A spawned object with two authored
     /// numbers — its <see cref="Strength"/> (the pull: the gravitational parameter and, with it, the
     /// influence radius) and its <see cref="Size"/> (the event-horizon radius; 0 derives it from
     /// the strength, which is what the console's one-number spawn does). It moves
@@ -32,6 +42,12 @@ namespace CosmicShore.Gameplay
     public sealed class BlackHole : MonoBehaviour
     {
         [Header("Black hole")]
+        [Tooltip("Black: pulls, captures, draws the shadow. White: repels with the same magnitude, turns its " +
+                 "frame the other way, never captures, and draws a white-hot core that emits the sky behind " +
+                 "its paired black hole. The lens's bending and the tidal stretch are the same either way — " +
+                 "the spacetime outside the horizon is the same.")]
+        [SerializeField] HolePolarity polarity = HolePolarity.Black;
+
         [Tooltip("The hole's PULL. GM and the influence radius scale from it (BlackHoleConfigSO); with " +
                  "Horizon Radius at 0 so does the size. 10 is a modest hole; 50 swallows a cell's worth " +
                  "of mass.")]
@@ -57,6 +73,7 @@ namespace CosmicShore.Gameplay
         const string HorizonName = "Horizon";
 
         static Material s_horizonMaterial;
+        static Material s_whiteCoreMaterial;
 
         Transform _horizon;     // fallback only: the lens draws the shadow itself
         BlackHoleLens _lens;
@@ -67,6 +84,17 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Registry id (1-based, never reused within a session). 0 until registered.</summary>
         public int Id { get; internal set; }
+
+        public HolePolarity Polarity => polarity;
+        public bool IsWhite => polarity == HolePolarity.White;
+
+        /// <summary>
+        /// The other half of this hole's PAIR (a white hole's black hole and vice versa), or null for
+        /// a lone hole. A black hole with a partner hands what it captures to it instead of
+        /// consuming it (Docs/BLACK_HOLE.md §11); the registry keeps the two drifting and annihilates
+        /// them together.
+        /// </summary>
+        public BlackHole Partner { get; internal set; }
 
         public float Strength => strength;
 
@@ -108,16 +136,19 @@ namespace CosmicShore.Gameplay
                 InfluenceRadius = config.InfluenceRadius(strength, rs),
                 SpinAxis = new Unity.Mathematics.float3(axis.x, axis.y, axis.z),
                 FrameDrag = BlackHolePhysics.FrameDragCoefficient(gm, rs, config.Spin),
+                Polarity = IsWhite ? -1f : 1f,
             };
         }
 
         /// <summary>Spawn-time configuration (the registry's path). Idempotent.</summary>
-        internal void Configure(float newStrength, Vector3 newVelocity, Vector3 newSpinAxis, float newHorizonRadius = 0f)
+        internal void Configure(float newStrength, Vector3 newVelocity, Vector3 newSpinAxis, float newHorizonRadius = 0f,
+            HolePolarity newPolarity = HolePolarity.Black)
         {
             strength = Mathf.Max(0f, newStrength);
             horizonRadius = Mathf.Max(0f, newHorizonRadius);
             velocity = newVelocity;
             spinAxis = newSpinAxis;
+            polarity = newPolarity;
             EnsureVisual();
             ApplyScale();
         }
@@ -209,7 +240,7 @@ namespace CosmicShore.Gameplay
             if (_lens == null)
             {
                 var existing = transform.Find(HorizonName);
-                _horizon = existing != null ? existing : BuildSphere(HorizonName, HorizonMaterial());
+                _horizon = existing != null ? existing : BuildSphere(HorizonName, IsWhite ? WhiteCoreMaterial() : HorizonMaterial());
             }
         }
 
@@ -236,6 +267,14 @@ namespace CosmicShore.Gameplay
             if (s_horizonMaterial != null) return s_horizonMaterial;
             s_horizonMaterial = UnlitMaterial(Color.black, "BlackHoleHorizon");
             return s_horizonMaterial;
+        }
+
+        /// <summary>The white hole's fallback when the lens cannot draw: a plain white sphere.</summary>
+        static Material WhiteCoreMaterial()
+        {
+            if (s_whiteCoreMaterial != null) return s_whiteCoreMaterial;
+            s_whiteCoreMaterial = UnlitMaterial(Color.white, "WhiteHoleCore");
+            return s_whiteCoreMaterial;
         }
 
         /// <summary>

@@ -28,6 +28,16 @@ namespace CosmicShore.Gameplay
     /// The first version coupled every body viscously to a frame turning at 80% of the local
     /// ORBITAL rate at every radius — an invented swirl, removed 2026-10-08 (Docs/BLACK_HOLE.md §2).</para>
     ///
+    /// <para><b>A WHITE hole is the same spacetime run the other way</b> (Docs/BLACK_HOLE.md §11):
+    /// outside the horizon the Schwarzschild geometry is identical, so the lens and the tides are
+    /// the black hole's; what differs is the horizon. Nothing can enter it and everything inside it
+    /// comes out. In this integrator that is the SIGN of the radial law (<see cref="Well.Polarity"/>):
+    /// a white hole repels with the same magnitude the black hole pulls, its frame turns the other
+    /// way (angular momentum flips under time reversal), and it never captures — a body at its
+    /// horizon is one it is emitting, and the pole guard's floor gives that body the kick out. A
+    /// black hole PAIRED with a white one hands what it captures to its partner, which emits it
+    /// (<see cref="BlackHolePairMath"/>).</para>
+    ///
     /// Every body is a test particle. There is no mass in any equation below because
     /// trajectories do not depend on it.
     /// </summary>
@@ -51,7 +61,16 @@ namespace CosmicShore.Gameplay
             /// <see cref="FrameDragCoefficient"/> builds it from GM, r_s and the spin.
             /// </summary>
             public float FrameDrag;
+            /// <summary>
+            /// +1 (or 0, the default of an unset well) = a BLACK hole: pulls, captures. −1 = a WHITE
+            /// hole: repels with the same magnitude, turns its frame the other way, never captures.
+            /// Read through <see cref="PolaritySign"/>, which maps the unset 0 to black.
+            /// </summary>
+            public float Polarity;
         }
+
+        /// <summary>+1 for a black hole (including an unset <see cref="Well.Polarity"/>), −1 for a white one.</summary>
+        public static float PolaritySign(in Well w) => w.Polarity < 0f ? -1f : 1f;
 
         /// <summary>
         /// A horizon radius with its pole guard, so the two numbers that must agree live in one
@@ -78,7 +97,10 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public const float PoleGuardFraction = 0.25f;
 
-        /// <summary>Paczynski-Wiita acceleration of a test body at <paramref name="p"/> toward the well.</summary>
+        /// <summary>
+        /// Paczynski-Wiita acceleration of a test body at <paramref name="p"/>: toward a black hole,
+        /// away from a white one with the same magnitude.
+        /// </summary>
         public static float3 Acceleration(in float3 p, in Well w)
         {
             float3 r = p - w.Position;
@@ -86,7 +108,7 @@ namespace CosmicShore.Gameplay
             if (!(d > 1e-6f)) return float3.zero;        // dead centre: no direction to pull along
             float gap = math.max(d - w.Horizon.Radius, w.Horizon.MinGap);
             float mag = w.GM / (gap * gap);
-            return r * (-mag / d);
+            return r * (-mag * PolaritySign(w) / d);
         }
 
         /// <summary>Escape speed at distance <paramref name="d"/> under the pseudo-Newtonian potential.</summary>
@@ -135,15 +157,16 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Velocity of the dragged frame at <paramref name="p"/>: a rotation about the spin axis at
-        /// <see cref="FrameAngularVelocity"/>. Zero on the axis itself (there is no tangent there)
-        /// and zero for a non-rotating hole. A moving hole drags nothing along with it — it pulls.
+        /// <see cref="FrameAngularVelocity"/>, the other way round a white hole. Zero on the axis
+        /// itself (there is no tangent there) and zero for a non-rotating hole. A moving hole drags
+        /// nothing along with it — it pulls.
         /// </summary>
         public static float3 FrameVelocity(in float3 p, in Well w)
         {
             float3 r = p - w.Position;
             float d = math.length(r);
             if (!(d > 1e-6f) || w.FrameDrag <= 0f) return float3.zero;
-            return math.cross(w.SpinAxis, r) * FrameAngularVelocity(d, w);
+            return math.cross(w.SpinAxis, r) * (FrameAngularVelocity(d, w) * PolaritySign(w));
         }
 
         /// <summary>Everything one integration step reads besides the wells.</summary>
@@ -211,7 +234,9 @@ namespace CosmicShore.Gameplay
                     var w = wells[i];
                     float3 r = p - w.Position;
                     float d = math.length(r);
-                    if (d <= w.Horizon.Radius)
+                    // Only a black hole captures: a body inside a WHITE horizon is one it is emitting,
+                    // and the repulsion (floored at the pole guard) carries it out.
+                    if (d <= w.Horizon.Radius && PolaritySign(w) > 0f)
                     {
                         capturedBy = i;
                         return Verdict.Captured;

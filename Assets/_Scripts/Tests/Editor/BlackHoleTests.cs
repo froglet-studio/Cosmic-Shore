@@ -211,6 +211,32 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Config_PairAndWhiteCoreAreSane()
+        {
+            var config = LoadConfig();
+            Assert.Greater(config.PairLifetime, 0f, "a pair must live for some time before it annihilates.");
+            Assert.GreaterOrEqual(config.PairHalfGapHorizons, 1.5f, "paired holes born nearer than 1.5 r_s overlap their shadows.");
+            Assert.GreaterOrEqual(config.PairDriftSpeed, 0f);
+            Assert.GreaterOrEqual(config.WhiteCoreBrightness, 0f);
+            Assert.GreaterOrEqual(config.WhiteCoreSkyMix, 0f);
+            Assert.GreaterOrEqual(config.MaxBlackHoles, 2, "a pair needs two holes of the budget.");
+        }
+
+        /// <summary>
+        /// The lens draws a WHITE hole (§11) with the same trace — the horizon emits instead of
+        /// swallowing — so the shader carries the switch and the core's dials.
+        /// </summary>
+        [Test]
+        public void Lens_DrawsTheWhiteHolesCore()
+        {
+            string shader = File.ReadAllText("Assets/_Graphics/Materials/Graphs/BlackHoleLens.shader");
+            Assert.IsTrue(shader.Contains("float _BHWhite;") && shader.Contains("float4 _BHCore;"),
+                "the lens shader lost the white hole's switch or core dials.");
+            Assert.IsTrue(shader.Contains("escaped < 0.5 && _BHWhite > 0.5"),
+                "a white hole's core must be drawn where the black hole draws its shadow (a ray that fell through the horizon).");
+        }
+
+        [Test]
         public void Config_TidesAreTheTidalTensor()
         {
             // The coefficient the bank publishes is GM·τ², so the log-stretch is GM·τ²/d³: strongest

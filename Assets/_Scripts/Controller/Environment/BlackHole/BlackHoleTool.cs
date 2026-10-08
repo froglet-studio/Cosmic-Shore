@@ -20,7 +20,8 @@ namespace CosmicShore.Gameplay
     /// <c>BlackHoleConfig</c>'s Spawn section — strength (the pull), size (the event-horizon
     /// radius; 0 derives it from the strength), where (ahead of the camera, or a world position),
     /// velocity, spin axis — and
-    /// <b>Spawn</b> spawns from exactly those
+    /// <b>Spawn black</b> / <b>Spawn white</b> spawn from exactly those, and the two <b>Pair</b>
+    /// buttons lay a black–white pair across the camera (§11)
     /// (<see cref="BlackHoleRegistry.SpawnFromConfig"/>), so what is on the asset is what you get,
     /// from the tool or from <c>blackhole spawn</c> with no strength. <b>Config</b> opens every
     /// other field of the asset — physics, budgets, vessels, warp, lens — drawn from the SO's own
@@ -78,6 +79,8 @@ namespace CosmicShore.Gameplay
         static readonly Color TitleBg = new(0.14f, 0.18f, 0.26f, 0.97f);
         static readonly Color ButtonBg = new(0.25f, 0.3f, 0.4f, 0.95f);
         static readonly Color SpawnBg = new(0.18f, 0.42f, 0.28f, 0.95f);
+        static readonly Color WhiteBg = new(0.55f, 0.55f, 0.6f, 0.95f);
+        static readonly Color PairBg = new(0.3f, 0.3f, 0.5f, 0.95f);
         static readonly Color DangerBg = new(0.45f, 0.2f, 0.2f, 0.95f);
         static readonly Color FieldBg = new(0.12f, 0.15f, 0.2f, 0.95f);
         static readonly Color Accent = new(0.49f, 0.76f, 1f, 1f);
@@ -144,7 +147,9 @@ namespace CosmicShore.Gameplay
                 var h = holes[i];
                 if (h == null || h.IsDespawning) continue;
                 string away = cam != null ? $" · {Vector3.Distance(cam.transform.position, h.transform.position):F0} u away" : "";
-                _live[row].Bind(h, $"#{h.Id}  strength {h.Strength:F1}  r_s {h.HorizonRadius:F1}{away}");
+                var pair = BlackHoleRegistry.PairOf(h);
+                string paired = pair != null ? $" · pair {pair.Lifetime - pair.Age:F1} s" : "";
+                _live[row].Bind(h, $"{(h.IsWhite ? "W" : "B")}#{h.Id}  strength {h.Strength:F1}  r_s {h.HorizonRadius:F1}{away}{paired}");
                 row++;
             }
             for (; row < LiveRows; row++) _live[row].Bind(null, row == 0 && BlackHoleRegistry.Count == 0 ? "no black holes live" : "");
@@ -173,12 +178,22 @@ namespace CosmicShore.Gameplay
                   (config.SpawnAheadOfCamera ? " (no main camera)" : "");
 
         // ── actions ──
-        void Spawn()
+        void Spawn(HolePolarity polarity)
         {
-            var hole = BlackHoleRegistry.SpawnFromConfig();
+            var hole = BlackHoleRegistry.SpawnFromConfig(polarity);
             _statusText = hole != null
-                ? $"spawned #{hole.Id}: strength {hole.Strength:F1}, r_s {hole.HorizonRadius:F1} u, at {Fmt(hole.transform.position)}{FromCamera(hole.transform.position)}"
+                ? $"spawned {(hole.IsWhite ? "white" : "black")} #{hole.Id}: strength {hole.Strength:F1}, r_s {hole.HorizonRadius:F1} u, at {Fmt(hole.transform.position)}{FromCamera(hole.transform.position)}"
                 : $"spawn refused — {BlackHoleRegistry.Count}/{Config.MaxBlackHoles} live, or the config is not sane";
+            Refresh();
+        }
+
+        void SpawnPair(bool blackOnLeft)
+        {
+            var pair = BlackHoleRegistry.SpawnPairFromConfig(blackOnLeft);
+            _statusText = pair != null
+                ? $"spawned pair B#{pair.Black.Id} / W#{pair.White.Id}: half-gap {pair.HalfGap0:F0} u, drift {pair.DriftSpeed:F0} u/s, " +
+                  $"annihilates in {pair.Lifetime:F1} s"
+                : $"pair refused — needs 2 free of {Config.MaxBlackHoles} ({BlackHoleRegistry.Count} live), or the config is not sane";
             Refresh();
         }
 
@@ -299,11 +314,15 @@ namespace CosmicShore.Gameplay
             _caption = Label(_panel, "", new Vector2(Pad, y), PanelWidth - 2 * Pad, 34, 12, Dim);
             y -= 38f;
 
-            Button(_panel, "Spawn", new Vector2(Pad, y), 200, SpawnBg, Spawn);
-            Button(_panel, "Despawn all", new Vector2(Pad + 206, y), 110, DangerBg, DespawnAll);
+            Button(_panel, "Spawn black", new Vector2(Pad, y), 104, SpawnBg, () => Spawn(HolePolarity.Black));
+            Button(_panel, "Spawn white", new Vector2(Pad + 110, y), 104, WhiteBg, () => Spawn(HolePolarity.White));
+            Button(_panel, "Despawn all", new Vector2(Pad + 220, y), 104, DangerBg, DespawnAll);
 #if UNITY_EDITOR
-            Button(_panel, "Save asset", new Vector2(Pad + 322, y), 118, ButtonBg, SaveAsset);
+            Button(_panel, "Save asset", new Vector2(Pad + 330, y), 110, ButtonBg, SaveAsset);
 #endif
+            y -= RowH + 4f;
+            Button(_panel, "Pair: black L / white R", new Vector2(Pad, y), 214, PairBg, () => SpawnPair(true));
+            Button(_panel, "Pair: white L / black R", new Vector2(Pad + 220, y), 214, PairBg, () => SpawnPair(false));
             y -= RowH + 8f;
 
             // ── LIVE ──

@@ -37,6 +37,7 @@ namespace CosmicShore.Gameplay
         static readonly List<BlackHole> _fading = new();
         static readonly List<BlackHole> _warpHoles = new();
         static readonly List<BlackHole> _stale = new();
+        static readonly List<Pair> _pairs = new();
         static int _nextId = 1;
         static BlackHoleConfigSO _config;
         static bool _configResolved;
@@ -46,6 +47,29 @@ namespace CosmicShore.Gameplay
         public static IReadOnlyList<BlackHole> Holes => _holes;
 
         public static int Count => _holes.Count;
+
+        /// <summary>Live black–white pairs, oldest first (Docs/BLACK_HOLE.md §11).</summary>
+        public static IReadOnlyList<Pair> Pairs => _pairs;
+
+        /// <summary>
+        /// A black hole and its white hole, born together, drifting apart and back along one axis
+        /// and annihilating when they meet (<see cref="BlackHolePairMath"/>). The registry moves both
+        /// each frame — paired holes have no velocity of their own.
+        /// </summary>
+        public sealed class Pair
+        {
+            public BlackHole Black { get; internal set; }
+            public BlackHole White { get; internal set; }
+            public Vector3 Midpoint { get; internal set; }
+            /// <summary>Unit axis from the black hole to the white hole.</summary>
+            public Vector3 Axis { get; internal set; }
+            public float HalfGap0 { get; internal set; }
+            public float DriftSpeed { get; internal set; }
+            public float Lifetime { get; internal set; }
+            public float Age { get; internal set; }
+            public bool IsAlive => Black != null && White != null && !Black.IsDespawning && !White.IsDespawning;
+            public float HalfGap => BlackHolePairMath.HalfGap(HalfGap0, DriftSpeed, Lifetime, Age);
+        }
 
         /// <summary>
         /// Tuning. Falls back to the SO's defaults when no <c>Resources/BlackHoleConfig</c> asset
@@ -76,29 +100,164 @@ namespace CosmicShore.Gameplay
         /// field should pull toward either.
         /// </summary>
         public static BlackHole Spawn(Vector3 position, float strength, Vector3 velocity = default, Vector3? spinAxis = null,
-            float horizonRadius = 0f)
+            float horizonRadius = 0f, HolePolarity polarity = HolePolarity.Black)
         {
             Prune();
             var config = Config;
-            if (_holes.Count >= config.MaxBlackHoles)
+            if (!HasRoom(1, config)) return null;
+
+            string kind = polarity == HolePolarity.White ? "WhiteHole" : "BlackHole";
+            var go = new GameObject($"[{kind} {_nextId}]");
+            go.transform.position = position;
+            var hole = go.AddComponent<BlackHole>();   // OnEnable registers it
+            hole.Configure(strength, velocity, spinAxis ?? Vector3.forward, horizonRadius, polarity);
+            CSDebug.LogVerbose(CSLogChannel.BlackHole,
+                $"[BlackHole] spawned {kind} #{hole.Id} strength {strength:F1} size {horizonRadius:F1} at {position} GM {hole.GM:F0} " +
+                $"horizon {hole.HorizonRadius:F1} influence {hole.InfluenceRadius:F0} velocity {velocity}");
+            return hole;
+        }
+
+        /// <summary>
+        /// Room for <paramref name="needed"/> more holes under the budget, with a sane config. Logs
+        /// the refusal: the shader bank and the job's well list are both sized to the budget.
+        /// </summary>
+        static bool HasRoom(int needed, BlackHoleConfigSO config)
+        {
+            if (_holes.Count + needed > config.MaxBlackHoles)
             {
-                CSDebug.LogWarning($"[BlackHole] Spawn refused: {_holes.Count} holes live and BlackHoleConfig.maxBlackHoles is {config.MaxBlackHoles}.");
-                return null;
+                CSDebug.LogWarning($"[BlackHole] Spawn refused: {_holes.Count} holes live, {needed} more wanted, and " +
+                                   $"BlackHoleConfig.maxBlackHoles is {config.MaxBlackHoles}.");
+                return false;
             }
             if (!config.IsSane)
             {
                 CSDebug.LogWarning("[BlackHole] Spawn refused: BlackHoleConfig is not sane (see BlackHoleConfigSO.IsSane).");
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Spawn a black–white PAIR (Docs/BLACK_HOLE.md §11): the black hole <paramref name="halfGap"/>
+        /// along −<paramref name="axis"/> from <paramref name="midpoint"/>, the white hole the same
+        /// along +axis, both of <paramref name="strength"/> and <paramref name="horizonRadius"/>. They
+        /// drift apart at <paramref name="driftSpeed"/>, stop, come back and annihilate after
+        /// <paramref name="lifetime"/> seconds; what the black hole captures the white hole emits.
+        /// Null when there is no room for two (nothing is spawned).
+        /// </summary>
+        public static Pair SpawnPair(Vector3 midpoint, Vector3 axis, float strength, float horizonRadius, float halfGap,
+            float driftSpeed, float lifetime, Vector3? spinAxis = null)
+        {
+            Prune();
+            var config = Config;
+            if (!HasRoom(2, config)) return null;
+
+            var a = axis.sqrMagnitude > 1e-8f ? axis.normalized : Vector3.right;
+            halfGap = Mathf.Max(0f, halfGap);
+            BlackHolePairMath.Positions(midpoint, a, halfGap, out var blackPos, out var whitePos);
+            var black = Spawn(blackPos, strength, Vector3.zero, spinAxis, horizonRadius, HolePolarity.Black);
+            if (black == null) return null;
+            var white = Spawn(whitePos, strength, Vector3.zero, spinAxis, horizonRadius, HolePolarity.White);
+            if (white == null)
+            {
+                black.BeginDespawn();
                 return null;
             }
-
-            var go = new GameObject($"[BlackHole {_nextId}]");
-            go.transform.position = position;
-            var hole = go.AddComponent<BlackHole>();   // OnEnable registers it
-            hole.Configure(strength, velocity, spinAxis ?? Vector3.forward, horizonRadius);
+            black.Partner = white;
+            white.Partner = black;
+            var pair = new Pair
+            {
+                Black = black, White = white, Midpoint = midpoint, Axis = a, HalfGap0 = halfGap,
+                DriftSpeed = Mathf.Max(0f, driftSpeed), Lifetime = Mathf.Max(0.01f, lifetime), Age = 0f,
+            };
+            _pairs.Add(pair);
             CSDebug.LogVerbose(CSLogChannel.BlackHole,
-                $"[BlackHole] spawned #{hole.Id} strength {strength:F1} size {horizonRadius:F1} at {position} GM {hole.GM:F0} " +
-                $"horizon {hole.HorizonRadius:F1} influence {hole.InfluenceRadius:F0} velocity {velocity}");
-            return hole;
+                $"[BlackHole] pair #{black.Id}/#{white.Id} at {midpoint} axis {a} half-gap {halfGap:F1} drift {driftSpeed:F1} u/s " +
+                $"lifetime {lifetime:F1} s (widest {BlackHolePairMath.MaxHalfGap(halfGap, driftSpeed, lifetime):F1})");
+            return pair;
+        }
+
+        /// <summary>
+        /// A pair from the config's Spawn and Pair sections, laid across the camera on screen (the
+        /// vessel's while flying): the midpoint <see cref="BlackHoleConfigSO.PairAheadHorizons"/>
+        /// horizon radii ahead, the holes <see cref="BlackHoleConfigSO.PairHalfGapHorizons"/> to
+        /// either side on the camera's own horizontal — the black hole on the LEFT when
+        /// <paramref name="blackOnLeft"/>, else on the right. What the Black Hole tool's Spawn Pair
+        /// button, the P key and <c>blackhole pair</c> do, and what the Stoat's triggers will do from
+        /// the vessel. Without a camera the pair lies along world +X at the spawn position.
+        /// </summary>
+        public static Pair SpawnPairFromConfig(bool blackOnLeft)
+        {
+            var config = Config;
+            var cam = BlackHoleLens.ViewCamera();
+            float rs = config.HorizonRadius(config.SpawnStrength, config.SpawnHorizonRadius);
+            Vector3 midpoint, right;
+            if (cam != null)
+            {
+                var t = cam.transform;
+                midpoint = t.position + t.forward * (rs * config.PairAheadHorizons);
+                right = t.right;
+            }
+            else
+            {
+                midpoint = config.SpawnPosition;
+                right = Vector3.right;
+            }
+            // The axis runs black → white: black on the left means the axis points right.
+            var axis = blackOnLeft ? right : -right;
+            return SpawnPair(midpoint, axis, config.SpawnStrength, config.SpawnHorizonRadius, rs * config.PairHalfGapHorizons,
+                config.PairDriftSpeed, config.PairLifetime, config.SpawnSpinAxis);
+        }
+
+        /// <summary>Annihilate a pair now: both holes ease out together. The pair is forgotten.</summary>
+        public static void Annihilate(Pair pair)
+        {
+            if (pair == null) return;
+            if (pair.Black != null && !pair.Black.IsDespawning) pair.Black.BeginDespawn();
+            if (pair.White != null && !pair.White.IsDespawning) pair.White.BeginDespawn();
+            _pairs.Remove(pair);
+        }
+
+        /// <summary>Annihilate every live pair (the Stoat chains by annihilating the last pair before its next).</summary>
+        public static void AnnihilateAllPairs()
+        {
+            for (int i = _pairs.Count - 1; i >= 0; i--) Annihilate(_pairs[i]);
+        }
+
+        /// <summary>The pair a hole belongs to, or null.</summary>
+        public static Pair PairOf(BlackHole hole)
+        {
+            if (hole == null) return null;
+            for (int i = 0; i < _pairs.Count; i++)
+                if (_pairs[i].Black == hole || _pairs[i].White == hole) return _pairs[i];
+            return null;
+        }
+
+        /// <summary>
+        /// Age every pair, move its holes along their axis, and annihilate the ones whose lifetime
+        /// is spent — or whose halves lost each other (one despawned alone: the other goes too).
+        /// </summary>
+        static void TickPairs(float dt)
+        {
+            for (int i = _pairs.Count - 1; i >= 0; i--)
+            {
+                var pair = _pairs[i];
+                if (!pair.IsAlive)
+                {
+                    Annihilate(pair);
+                    continue;
+                }
+                pair.Age += dt;
+                if (BlackHolePairMath.IsSpent(pair.Lifetime, pair.Age))
+                {
+                    CSDebug.LogVerbose(CSLogChannel.BlackHole, $"[BlackHole] pair #{pair.Black.Id}/#{pair.White.Id} annihilated after {pair.Age:F1} s");
+                    Annihilate(pair);
+                    continue;
+                }
+                BlackHolePairMath.Positions(pair.Midpoint, pair.Axis, pair.HalfGap, out var blackPos, out var whitePos);
+                pair.Black.transform.position = blackPos;
+                pair.White.transform.position = whitePos;
+            }
         }
 
         /// <summary>
@@ -121,12 +280,12 @@ namespace CosmicShore.Gameplay
         /// or at the spawn position), velocity, spin — what the Black Hole tool's Spawn button,
         /// Shift+B and <c>blackhole spawn</c> with no strength do. Null when refused (see <see cref="Spawn"/>).
         /// </summary>
-        public static BlackHole SpawnFromConfig()
+        public static BlackHole SpawnFromConfig(HolePolarity polarity = HolePolarity.Black)
         {
             var config = Config;
             var cam = BlackHoleLens.ViewCamera();
             return Spawn(SpawnPoint(config, cam != null ? cam.transform : null), config.SpawnStrength,
-                config.SpawnVelocity, config.SpawnSpinAxis, config.SpawnHorizonRadius);
+                config.SpawnVelocity, config.SpawnSpinAxis, config.SpawnHorizonRadius, polarity);
         }
 
         /// <summary>Begin a hole's despawn (eased warp release, then destroy). False if no such id.</summary>
@@ -146,6 +305,7 @@ namespace CosmicShore.Gameplay
                 if (hole != null) hole.BeginDespawn();
             }
             _holes.Clear();
+            _pairs.Clear();
         }
 
         public static BlackHole Find(int id)
@@ -195,6 +355,11 @@ namespace CosmicShore.Gameplay
             var config = Config;
             float dt = Time.deltaTime;
 
+            // Pairs first: their holes' positions for this frame, and any annihilation, before the
+            // field reads the wells.
+            TickPairs(dt);
+            if (_pairs.Count > 0) Prune();
+
             BlackHoleGravityField.Tick(_holes, config, dt);
             BlackHoleVesselPull.Tick(_holes, config, dt);
             BlackHoleWarp.Flush(_warpHoles, config);
@@ -222,11 +387,11 @@ namespace CosmicShore.Gameplay
                     {
                         var h = _holes[i];
                         if (h == null) continue;
-                        sb.Append($"#{h.Id} S{h.Strength:F1} rs {h.HorizonRadius:F1} inf {h.InfluenceRadius:F0} w {h.WarpWeight:F2} at {h.transform.position}; ");
+                        sb.Append($"{(h.IsWhite ? "W" : "B")}#{h.Id} S{h.Strength:F1} rs {h.HorizonRadius:F1} inf {h.InfluenceRadius:F0} w {h.WarpWeight:F2} at {h.transform.position}; ");
                     }
-                    sb.Append($"bodies {BlackHoleGravityField.BodyCount} (captured {BlackHoleGravityField.CapturedThisSecond}/s, " +
-                              $"total {BlackHoleGravityField.CapturedTotal}), stretching holes {BlackHoleWarp.LiveSlotCount}, " +
-                              $"vessels pulled {BlackHoleVesselPull.PulledVesselCount}");
+                    sb.Append($"pairs {_pairs.Count}; bodies {BlackHoleGravityField.BodyCount} (captured {BlackHoleGravityField.CapturedThisSecond}/s, " +
+                              $"total {BlackHoleGravityField.CapturedTotal}, emitted {BlackHoleGravityField.EmittedTotal}), " +
+                              $"stretching holes {BlackHoleWarp.LiveSlotCount}, vessels pulled {BlackHoleVesselPull.PulledVesselCount}");
                     CSDebug.LogVerbose(CSLogChannel.BlackHole, sb.ToString());
                 }
                 BlackHoleGravityField.ResetSecondCounters();
@@ -261,6 +426,7 @@ namespace CosmicShore.Gameplay
             _fading.Clear();
             _warpHoles.Clear();
             _stale.Clear();
+            _pairs.Clear();
             _nextId = 1;
             _configResolved = false;
             _driver = null;

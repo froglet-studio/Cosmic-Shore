@@ -91,11 +91,12 @@ namespace CosmicShore.Gameplay
     public static class BlackHoleToolModel
     {
         /// <summary>
-        /// The config fields the tool's SPAWN rows show, in order (BlackHoleConfigSO's Spawn
-        /// section). Every other serialized field is in the config view.
+        /// The config fields the tool's SPAWN rows show, in order (BlackHoleConfigSO's Spawn and
+        /// Pair sections). Every other serialized field is in the config view.
         /// </summary>
         public static readonly string[] SpawnFieldNames =
-            { "spawnStrength", "spawnHorizonRadius", "spawnAheadOfCamera", "spawnDistanceHorizons", "spawnPosition", "spawnVelocity", "spawnSpinAxis" };
+            { "spawnStrength", "spawnHorizonRadius", "spawnAheadOfCamera", "spawnDistanceHorizons", "spawnPosition", "spawnVelocity", "spawnSpinAxis",
+              "pairAheadHorizons", "pairHalfGapHorizons", "pairDriftSpeed", "pairLifetime" };
 
         /// <summary>
         /// Every field of <paramref name="type"/> Unity serializes (public, or <c>[SerializeField]</c>,

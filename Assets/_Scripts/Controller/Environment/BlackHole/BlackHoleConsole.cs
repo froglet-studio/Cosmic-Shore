@@ -17,7 +17,9 @@ namespace CosmicShore.Gameplay
     /// <code>
     ///   blackhole tool [on|off]                          open / close the Black Hole tool (no word = toggle)
     ///   blackhole config                                 open the tool on its config view
-    ///   blackhole spawn                                  spawn from the config's Spawn section, at its spawn position
+    ///   blackhole spawn                                  spawn a black hole from the config's Spawn section
+    ///   blackhole white [&lt;strength&gt; [x y z]]           spawn a WHITE hole (§11) the same way
+    ///   blackhole pair [left|right]                      spawn a black–white pair across the camera (black on that side)
     ///   blackhole spawn &lt;strength&gt; [x y z] [vx vy vz]   spawn at (x,y,z) — default: ahead of the camera
     ///   blackhole here &lt;strength&gt;                        spawn at the main camera's position
     ///   blackhole size &lt;id&gt; &lt;r_s&gt;                        resize a hole (event-horizon radius; 0 = from strength)
@@ -38,8 +40,8 @@ namespace CosmicShore.Gameplay
         // "black hole tool on" — the HUD splits on spaces, so the two-word name is its own command.
         const string TwoWordName = "black";
         const string Usage = "usage: blackhole tool [on|off] | config | spawn [<strength> [x y z] [vx vy vz]] | " +
-                             "here <strength> | size <id> <r_s> | move <id> <vx> <vy> <vz> | strength <id> <v> | " +
-                             "spin <id> <ax> <ay> <az> | list | despawn <id>|all";
+                             "white [<strength> [x y z]] | pair [left|right] | here <strength> | size <id> <r_s> | " +
+                             "move <id> <vx> <vy> <vz> | strength <id> <v> | spin <id> <ax> <ay> <az> | list | despawn <id>|all";
         /// <summary>Where a spawn lands when no position is given: this far ahead of the camera.</summary>
         const float SpawnAheadDistance = 300f;
 
@@ -98,7 +100,7 @@ namespace CosmicShore.Gameplay
         }
 
         static string Describe(BlackHole h) =>
-            $"#{h.Id} strength {h.Strength:F1} GM {h.GM:F0} horizon {h.HorizonRadius:F1} influence {h.InfluenceRadius:F0} " +
+            $"{(h.IsWhite ? "white" : "black")} #{h.Id} strength {h.Strength:F1} GM {h.GM:F0} horizon {h.HorizonRadius:F1} influence {h.InfluenceRadius:F0} " +
             $"at ({h.transform.position.x:F0}, {h.transform.position.y:F0}, {h.transform.position.z:F0}) " +
             $"v ({h.Velocity.x:F1}, {h.Velocity.y:F1}, {h.Velocity.z:F1})";
 
@@ -147,6 +149,35 @@ namespace CosmicShore.Gameplay
                     TryVector(args, 5, out var velocity);
                     var hole = BlackHoleRegistry.Spawn(position, strength, velocity);
                     return hole == null ? "spawn refused (see console)" : "spawned " + Describe(hole);
+                }
+                case "white":
+                {
+                    if (args.Length == 1)
+                    {
+                        var w0 = BlackHoleRegistry.SpawnFromConfig(HolePolarity.White);
+                        return w0 == null ? "spawn refused (budget full, or config not sane)" : "spawned " + Describe(w0);
+                    }
+                    if (!TryFloat(args[1], out float wStrength) || wStrength < 0f)
+                        return Usage;
+                    Vector3 wPosition;
+                    if (!TryVector(args, 2, out wPosition))
+                    {
+                        var cam = BlackHoleLens.ViewCamera();
+                        wPosition = cam != null
+                            ? cam.transform.position + cam.transform.forward * SpawnAheadDistance
+                            : Vector3.zero;
+                    }
+                    var white = BlackHoleRegistry.Spawn(wPosition, wStrength, Vector3.zero, null, 0f, HolePolarity.White);
+                    return white == null ? "spawn refused (see console)" : "spawned " + Describe(white);
+                }
+                case "pair":
+                {
+                    bool blackOnLeft = args.Length < 2 || args[1].ToLowerInvariant() != "right";
+                    var pair = BlackHoleRegistry.SpawnPairFromConfig(blackOnLeft);
+                    return pair == null
+                        ? "pair refused (needs two free holes, or config not sane)"
+                        : $"spawned pair: black #{pair.Black.Id} on the {(blackOnLeft ? "left" : "right")}, white #{pair.White.Id} on the " +
+                          $"{(blackOnLeft ? "right" : "left")}; half-gap {pair.HalfGap0:F0} u, drift {pair.DriftSpeed:F0} u/s, annihilates in {pair.Lifetime:F1} s";
                 }
                 case "here":
                 {

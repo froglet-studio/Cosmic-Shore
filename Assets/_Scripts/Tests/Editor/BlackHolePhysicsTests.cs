@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using NUnit.Framework;
 using Unity.Mathematics;
+using UnityEngine;
 using CosmicShore.Gameplay;
 
 namespace CosmicShore.Tests
@@ -250,6 +251,96 @@ namespace CosmicShore.Tests
             Assert.IsTrue(capturedSpun, "frame dragging held a body up instead of bending its fall");
             Assert.AreEqual(0f, still, 1e-6f, "a non-rotating hole bent a radial fall");
             Assert.Greater(spun, 0.05f, "the spinning hole did not wind the infall in its own sense of rotation");
+        }
+
+        static BlackHolePhysics.Well White(float3 position, float gm = GM, float rs = RS, float spin = 0f, float influence = 2000f)
+        {
+            var w = Well(position, gm, rs, spin, influence);
+            w.Polarity = -1f;
+            return w;
+        }
+
+        [Test]
+        public void WhiteHole_RepelsWithTheBlackHolesMagnitudeAndTurnsItsFrameTheOtherWay()
+        {
+            var p = new float3(100f, 0f, 0f);
+            var black = Well(float3.zero, spin: 0.9f);
+            var white = White(float3.zero, spin: 0.9f);
+            var aB = BlackHolePhysics.Acceleration(p, black);
+            var aW = BlackHolePhysics.Acceleration(p, white);
+            Assert.Less(aB.x, 0f, "the black hole pulls");
+            Assert.Greater(aW.x, 0f, "the white hole pushes");
+            Assert.AreEqual(math.length(aB), math.length(aW), 1e-3f, "the same magnitude, reversed");
+            var fB = BlackHolePhysics.FrameVelocity(p, black);
+            var fW = BlackHolePhysics.FrameVelocity(p, white);
+            Assert.AreEqual(-fB.y, fW.y, 1e-4f, "a white hole's frame turns the other way (angular momentum flips under time reversal)");
+            // An unset polarity is a black hole: every well authored before white holes existed still pulls.
+            var unset = Well(float3.zero);
+            unset.Polarity = 0f;
+            Assert.AreEqual(1f, BlackHolePhysics.PolaritySign(unset));
+        }
+
+        [Test]
+        public void WhiteHole_NeverCapturesAndCarriesABodyAtItsHorizonOut()
+        {
+            // A body born just outside a white horizon — the emitted end of a tunnel — is pushed out
+            // past the influence sphere and released; nothing is ever captured by a white hole.
+            var wells = Wells(White(float3.zero, influence: 120f));
+            var prm = Params(damping: 0f, releaseSpeed: 0.01f);
+            float3 p = new float3(RS * 1.05f, 0f, 0f), v = float3.zero;
+            var verdict = BlackHolePhysics.Verdict.Free;
+            float farthest = 0f;
+            for (int i = 0; i < 2000 && verdict == BlackHolePhysics.Verdict.Free; i++)
+            {
+                verdict = BlackHolePhysics.Step(ref p, ref v, in wells, in prm, 1f / 60f, out _);
+                Assert.AreNotEqual(BlackHolePhysics.Verdict.Captured, verdict, "a white hole captured a body");
+                farthest = math.max(farthest, math.length(p));
+            }
+            Assert.Greater(farthest, 120f, "the white hole did not push the body past its influence sphere");
+            Assert.Greater(v.x, 0f, "the body is not moving away");
+            // Even a body INSIDE the white horizon is not captured: it is being emitted.
+            float3 pin = new float3(0.5f * RS, 0f, 0f), vin = float3.zero;
+            Assert.AreNotEqual(BlackHolePhysics.Verdict.Captured, BlackHolePhysics.Step(ref pin, ref vin, in wells, in prm, 1f / 60f, out _));
+            Assert.Greater(pin.x, 0.5f * RS, "a body inside the white horizon was not pushed outward");
+        }
+
+        [Test]
+        public void Pair_DriftsApartStopsAtHalfLifeAndMeetsAgainAtTheEnd()
+        {
+            const float s0 = 80f, drift = 20f, life = 5f;
+            Assert.AreEqual(s0, BlackHolePairMath.HalfGap(s0, drift, life, 0f), 1e-5f, "born at the birth gap");
+            Assert.AreEqual(s0 + 0.25f * drift * life, BlackHolePairMath.HalfGap(s0, drift, life, 0.5f * life), 1e-4f, "widest at half the lifetime");
+            Assert.AreEqual(BlackHolePairMath.MaxHalfGap(s0, drift, life), BlackHolePairMath.HalfGap(s0, drift, life, 0.5f * life), 1e-4f);
+            Assert.AreEqual(s0, BlackHolePairMath.HalfGap(s0, drift, life, life), 1e-4f, "back at the birth gap at the end: they meet and annihilate");
+            // Monotone out, then monotone back.
+            float prev = s0;
+            for (float t = 0.1f; t <= 0.5f * life; t += 0.1f) { float g = BlackHolePairMath.HalfGap(s0, drift, life, t); Assert.GreaterOrEqual(g, prev - 1e-5f); prev = g; }
+            for (float t = 0.5f * life + 0.1f; t <= life; t += 0.1f) { float g = BlackHolePairMath.HalfGap(s0, drift, life, t); Assert.LessOrEqual(g, prev + 1e-5f); prev = g; }
+            Assert.IsFalse(BlackHolePairMath.IsSpent(life, life - 0.01f));
+            Assert.IsTrue(BlackHolePairMath.IsSpent(life, life));
+            BlackHolePairMath.Positions(new Vector3(10f, 0f, 0f), Vector3.right * 3f, 50f, out var black, out var white);
+            Assert.AreEqual(new Vector3(-40f, 0f, 0f), black, "the black hole sits −axis from the midpoint");
+            Assert.AreEqual(new Vector3(60f, 0f, 0f), white, "the white hole sits +axis from the midpoint");
+        }
+
+        [Test]
+        public void Pair_ABodyThatFellInComesOutTheWhiteHoleThePointReflectedWayOutward()
+        {
+            // Entry at the black horizon at P, moving with v (v·P < 0: inward). Exit at −P from the
+            // white centre with the same v — which is outward there — at least 1.05 r_s out.
+            var blackC = new Vector3(0f, 0f, 0f);
+            var whiteC = new Vector3(500f, 0f, 0f);
+            var entry = blackC + new Vector3(0f, RS, 0f);                 // came in from above
+            var v = new Vector3(3f, -40f, 0f);                            // moving down into it
+            var exit = BlackHolePairMath.ExitPosition(entry, blackC, whiteC, RS, Vector3.right);
+            var rel = exit - whiteC;
+            Assert.AreEqual(0f, rel.x, 1e-4f);
+            Assert.Less(rel.y, 0f, "the point reflection: in from above, out below");
+            Assert.AreEqual(BlackHolePairMath.EmitRadiusFraction * RS, rel.magnitude, 1e-3f, "born just outside the white horizon");
+            Assert.Greater(Vector3.Dot(v, rel.normalized), 0f, "the entry velocity points OUT of the white hole at the exit");
+            // A capture dead on the centre has no direction: the fallback axis is used, at the emit radius.
+            var centreExit = BlackHolePairMath.ExitPosition(blackC, blackC, whiteC, RS, Vector3.right);
+            Assert.AreEqual(whiteC + Vector3.right * (BlackHolePairMath.EmitRadiusFraction * RS), centreExit);
         }
 
         [Test]
