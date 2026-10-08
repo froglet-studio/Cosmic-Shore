@@ -593,6 +593,46 @@ back; a fake-`ISession` roster test proving `PartyMembers` follows events withou
 
 ---
 
+## 10. Re-check after the 2026-10-08 bleeding-edge merge
+
+`Ys-bleeding-edge` took 251 upstream commits (afd66621) on 2026-10-08, merged twice in parallel by
+two sessions (dcead731 landed; the other was folded in as 226448c0). The Phase 0-1 work was then
+re-checked against the merged tree, and the multiplayer test suites were **executed** for the first
+time - not just compiled - on Prisma's engine (`Tools/Build/prisma_edit_mode_tests/run.sh`).
+
+**What ran, on 280c0475 + the runner commit:**
+
+| Check | Result |
+|---|---|
+| `unity_refcompile` player config | 0 project errors, 0 unverified (95 assemblies) |
+| `unity_refcompile` editor config | 0 errors in files changed since the merge base |
+| `check_ugs_request_discipline.py` (new, b1aa0a0c) | OK, 1933 files; negative control on the pre-merge tree reports the 2 bypasses + 6 scaled waits below |
+| Edit-mode suites on Prisma's engine, 35 files | **549 / 559 pass.** Every party, presence, invite, lobby, spectator, UGS-policy, join-validator, bootstrap and app-state suite is green (detail below) |
+| Other `check_*.py` gates | 25 / 27; the two red ones fail identically on bleeding-edge (row F6) |
+
+Multiplayer suites, all green: UgsRequestPolicy 72, UgsRequestTelemetry 5, JoinTargetValidator 14,
+PartyInviteSystem 96, PartyInviteController 8, PartyInviteData 7, PartyPlayerData 11, PartyRoster 12,
+PartyAcceptFlow 4, SpectatorSession 10, ArcadeLobbySnapshot 5, HostConnectionDataSO 17,
+ServerPlayerVesselInitializerWithAI 15, DisconnectNotice 5, ApplicationStateMachine 30,
+ApplicationLifecycleManager 11, BootstrapConfigSO 9, NetworkExplodeParams 2, EcologyNetworkAuthority 4,
+IRoundStatsCleanup 11.
+
+**Findings.**
+
+| # | Finding | Status |
+|---|---|---|
+| F1 | **Nothing enforces the 4-player party size.** The session holds 6 (transport headroom); every 4-check runs on the joining/inviting client against polled data; two Joins on a 3/4 party inside one presence refresh seat a fifth. `SendInviteAsync`'s backstop checks 6. | 🟡 fixed 2026-10-08 (one party size, 4: the session's seat count, so UGS refuses a fifth) - **B25**, needs the MPPM retest |
+| F2 | Two UGS calls still bypassed `UgsRequestPolicy` after Phase 1a: the canonical-lobby converge join, and the party session's name/avatar save. Neither had a retry loop, which is what the Phase 1 census counted. | ✅ fixed b1aa0a0c, and gated (R1) |
+| F3 | Upstream c2825eb4 moved every backend wait to unscaled time (Menu_Main screens set `timeScale = 0`). The policy's own back-off was already unscaled; two settle waits lost the flag in conflict resolution and got it back. | ✅ in the merge, gated (R5) |
+| F4 | The landed merge dcead731 dropped upstream 1b5c4522 (InitializeAfterDelay is cancelled when its controller is destroyed - the host-loss bounce raised InitializeGame into the next scene), dropped the thumb controls' inert-until-initialised guard, and declared `MainMenu_To_Authenticating_Succeeds_Reconnect` twice (CS0111 - the whole editor test assembly would not compile). | ✅ fixed 226448c0 |
+| F5 | Three `PartyInviteSystemTests` asserted `HasOpenSlots == false` at 4 members - the rule from before the capacity split - so they failed against the shipped design (in Unity too). | ✅ fixed 280c0475; negative-controlled |
+| F6 | Upstream's own red gates: `check_fauna_replication_seam` (a heuristic false positive on the NCA lizard's `HealthBlock` hit prism, which carries no NetworkObject) and `check_vessel_on_vessel_motion` (`VesselImpulseByExplosionEffectSO` from the Grizzly merge moves an opposing vessel). | open, upstream's - not multiplayer defects |
+| F7 | Prisma's live build of this branch does not compile: 11 engine API gaps, nine from upstream gameplay code and two (`SessionError.TransportComponentMissing/TransportInvalid`) from this review's own classifier. Filled in a throwaway worktree for the test run (`gapfill.py`); belongs in a port session. | open, port |
+| F8 | Non-multiplayer failures in the run, each pre-existing on bleeding-edge's and the pre-merge branch's assets: SparrowCombatTier 2 (rocket costs 25 prisms where the test wants 50; the rocket-blast hit effect is wired into a container the SkyBurst prefab does not use), RaceRankToastDriver 4 (the driver posts NewRaceLeader as well as Overtake when a pass takes the lead). Harness, not game: SceneTransitionManager 3 (main-thread identity on NUnit's thread), AppManagerBootstrap 1 (Unity-Editor-only "Destroy may not be called from edit mode"). | open, owners of those systems |
+
+**Re-run it:** `bash Tools/Build/prisma_edit_mode_tests/run.sh` (needs the .NET 10 SDK; the script
+header says how to install it). It tests this checkout's `Assets/_Scripts`, committed or not.
+
 ## Appendix A — Evidence anchors
 
 | Claim | Where |

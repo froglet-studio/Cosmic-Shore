@@ -341,7 +341,7 @@ namespace CosmicShore.Gameplay
         {
             int partyCount = _connectionData.PartyMembers != null ? _connectionData.PartyMembers.Count : 0;
             // Displayed party size, not transport capacity - see PresenceLobbyService.
-            int partyMax   = _connectionData.PartyDisplaySlots;
+            int partyMax   = _connectionData.MaxPartySlots;
 
             return new Dictionary<string, PlayerProperty>
             {

@@ -106,7 +106,12 @@ Then write these eight, in order. Each one closes a 🟡 ticket, so each is a te
 verification:
 
 1. Accept → guest is a client, host roster has 2, both agree. *(T1)*
-2. Two guests join-direct simultaneously → both seated, order irrelevant. *(T2, B5)*
+2. Two guests join-direct simultaneously into a party with room for both → both seated. *(T2, B5)*
+2b. Two guests join-direct simultaneously into a **3/4** party → the party ends at **4/4, not 5/4**.
+   *(B25, fixed 2026-10-08.)* Test 2 alone passes on exactly the case that breaks. Assert the
+   host's live member count is `MaxPartySlots` (4), not the published `partyCount`; the session is
+   created with exactly 4 seats, so the second join must fail with UGS's full-lobby error and the
+   loser bounce with "That party is full.".
 3. Guest leaves mid-match → vessel keeps flying under AI, score survives on the scoreboard. *(B21)*
 4. Guest leaves at the ready screen → remaining two proceed within a tick. *(B20)*
 5. Double-tap Accept/Join → exactly one operation reaches UGS (exercises single-flight). *(T3)*
@@ -210,7 +215,27 @@ risk is lobby write pressure, not matchmaking.
 
 **If week one is tens of concurrent players, the ceiling is not the problem — the read rate is.**
 
-## Ask the owner for these four
+## Already decided with the owner (2026-10-08) — do not re-ask
+
+| Question | Answer |
+|---|---|
+| Crash/exception reporter | **Unity Cloud Diagnostics** — package + toggle, since UGS is wired |
+| Week-one CCU | **10–40**, so **Block 5 (push instead of poll) is a launch blocker**, and sharding is not |
+| CI host | **A Windows box with a Unity licence** is available — build the headless runner for real |
+| Where to start | **Block 1**, which is partly landed — see "Block 1 status" below |
+
+### Block 1 status
+
+The counters already existed (`UgsRequestTelemetry`, 14 of them, instrumented at the real call
+sites), so Block 1 shrank on measurement. **Landed:** `NetSessionRecord`, `NetSessionRecorder`,
+`NetSessionConsoleCommand` (`net` / `net dump` / `net reset` / `net mark`) and
+`NetSessionRecorderTests` — compiled and run against shims, 12 checks green, `/verify-unity` not
+run. **Still to do, in the Editor, because they need authored assets:** the
+`NetStatsMonitorConfiguration` + `RuntimeNetStatsMonitor` attach, the `NetworkSimulatorPreset` set,
+assigning the recorder's three providers, and adding `Mark(...)` at the lifecycle points. Do not
+write the RNSM wiring blind — the component displays nothing without its configuration asset.
+
+## The original asks, for the record
 
 1. **A crash/exception reporter** for player builds (Unity Cloud Diagnostics is lowest friction
    since UGS is wired; Sentry/Backtrace are better products). *The only item here I would call

@@ -151,6 +151,11 @@ edit-mode tests executed headlessly against those assemblies: `UgsRequestPolicyT
    re-decides the ready gate / converts the vessel at ~10 s (was 30 s).
 7. Watch the Console for the retired `AcceptanceSignalService` / `[INVITE-SEND]` chatter: none
    expected; any `UgsRequestPolicy` warning names a spent retry budget.
+8. **Party size is 4, enforced by the session (B25, 2026-10-08).** Party at 3/4; two other clients
+   press **Join** on it at the same moment → exactly one is seated, the other bounces to its own
+   menu with "That party is full." (a warning, not a red error). Party at 4/4 → the Invite button is
+   disabled, Join and Spectate both refuse with "…'s party is full." before anything is torn down.
+   The lobby and every online row read `x/4`, never `x/6`.
 
 ---
 

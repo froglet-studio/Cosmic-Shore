@@ -58,8 +58,12 @@ to a fresh local host on any failure) with `HostConnectionService.JoinPartyDirec
 as the join step: `IPartySessionService.JoinByIdAsync(target.PartySessionId)`,
 `IsPartyHost = false`, the roster seeded with the target, `PartyState.InParty`, and
 `joined_party` published so the host's admit-scan sees the member (B8). The UI's
-`PARTY FULL` state is advisory; the session's own `MaxPlayers` is the authority and a full
-session fails the join, which bounces.
+`PARTY FULL` state is advisory; the session's own `MaxPlayers` - the party size, **4** - is the
+authority, and a full session fails the join, which bounces with "That party is full."
+(`PartyInviteController`, the policy's `Full` class). **A spectator takes one of those four seats
+too**: a full party cannot be spectated, and `JoinTargetValidator` refuses it before the local
+host is torn down (2026-10-08 - before that, the party session held 6 and a full party could be
+watched).
 
 ## 4. Spectate
 

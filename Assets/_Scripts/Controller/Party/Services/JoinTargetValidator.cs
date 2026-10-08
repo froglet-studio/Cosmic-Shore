@@ -95,15 +95,13 @@ namespace CosmicShore.Gameplay
                 message = $"{name}'s party is no longer available.";
                 return JoinTargetVerdict.SessionChanged;
             }
-            if (asSpectator)
+            if (asSpectator && !target.IsInMatch)
             {
-                if (!target.IsInMatch)
-                {
-                    message = $"{name} is not in a match to spectate.";
-                    return JoinTargetVerdict.NotInMatch;
-                }
-                return JoinTargetVerdict.Ok;
+                message = $"{name} is not in a match to spectate.";
+                return JoinTargetVerdict.NotInMatch;
             }
+            // Players and spectators alike: a spectator joins the party's session, whose seat count
+            // IS the party size, so a full party has no seat to watch from either.
             if (target.PartyMaxSlots > 0 && target.PartyMemberCount >= target.PartyMaxSlots)
             {
                 message = $"{name}'s party is full.";

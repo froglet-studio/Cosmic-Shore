@@ -257,6 +257,14 @@ namespace CosmicShore.Gameplay
             {
                 CSDebug.LogVerbose(CSLogChannel.Party, "[PartyInviteController] Accept flow cancelled.");
             }
+            catch (Exception e) when (UgsRequestPolicy.Classify(e) == UgsFailureClass.Full)
+            {
+                // The party filled between our pre-flight and the join (two players pressing Join
+                // on a 3/4 party): the session's seat count IS the party size, so UGS refused us.
+                // An expected refusal, not a fault - back to our own menu with the reason.
+                await UniTask.Yield(PlayerLoopTiming.Update);
+                await BounceToSoloMenuAsync("That party is full.");
+            }
             catch (Exception e)
             {
                 // Timeout / cancel continuations can land on the thread pool.
@@ -433,6 +441,14 @@ namespace CosmicShore.Gameplay
             catch (OperationCanceledException)
             {
                 CSDebug.LogVerbose(CSLogChannel.Party, $"[PartyInviteController] {label} cancelled.");
+            }
+            catch (Exception e) when (UgsRequestPolicy.Classify(e) == UgsFailureClass.Full)
+            {
+                // The party filled between our pre-flight and the join (two players pressing Join
+                // on a 3/4 party): the session's seat count IS the party size, so UGS refused us.
+                // An expected refusal, not a fault - back to our own menu with the reason.
+                await UniTask.Yield(PlayerLoopTiming.Update);
+                await BounceToSoloMenuAsync("That party is full.");
             }
             catch (Exception e)
             {

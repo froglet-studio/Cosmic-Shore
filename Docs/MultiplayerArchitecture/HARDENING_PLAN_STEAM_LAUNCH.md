@@ -60,9 +60,9 @@ two different things, and only one of them is a matchmaking problem.
 | **~100** | **The design ceiling** | `PRESENCE_LOBBY` is created with max 100. At 100 CCU the lobby is full and the 101st player has no discovery at all. |
 | **>100** | Needs sharding or query-based discovery | Not a tuning problem — an architecture change. Roadmap item, not launch. |
 
-**The honest launch read.** If the first week is tens of concurrent players, **the ceiling is not
-the problem — the read rate is.** Fix the request volume and the 100-player ceiling is comfortably
-beyond the launch. Plan the shard, do not build it yet.
+**The honest launch read.** The owner's week-one estimate is **10–40 concurrent** (decided
+2026-10-08), which lands squarely in the band where **the read rate is the problem and the ceiling
+is not**. So: Phase 2 is a launch blocker, and sharding is not. Plan the shard, do not build it.
 
 ---
 
@@ -77,6 +77,7 @@ Each phase is independently shippable, has a gate, and the gate is a **run**, no
 | P0.1 | **Verify Phases 0–1 with 4 players** (the whole landed refactor: request policy, handshake deletion, pre-flight, timeout nest) | The largest body of unverified change in the layer. Everything below builds on it | `QA-NET-RATE-LIMIT-RETEST` + review §8 T1–T5, T8: 0 × 429, 0 × `ForceReset`, 0 offline fallbacks over 10 min |
 | P0.2 | **Offline mode, properly tested** | Steam requirement; zero tests; a player with no connection must reach a playable game every time | `QA-NET-OFFLINE-MODE` green on a **player build**, plus the new L1 offline tests (§5.1) |
 | P0.3 | **Clear the 7 🟡 party bugs** (B18–B23 + B24) | Each is a "the game is broken" report: can't leave, black screen, stranded ready gate, lost score, dead Scoreboard exit, lobby doesn't follow the host | One dated run per bug, per its own QA item |
+| P0.3b | **B25 — nothing enforced the four-player party size** | 🟡 fixed 2026-10-08, needs the MPPM retest. There is now ONE party size, 4 (`MaxPartySlots`): the party session is created with 4 seats, so UGS itself refuses a fifth join; the race's loser bounces with "That party is full."; `HasOpenSlots` counts distinct ids; a full party also refuses Spectate. `PartyDisplaySlots` and the 6-seat transport capacity are gone | The L1 test 2b above, plus `UNITY_VERIFICATION_CHECKLIST.md` Phases 0-1 step 8 |
 | P0.4 | **Phase 2 — push instead of poll** | This is the single highest-value change in the layer. It removes the cause of B1, B6 and B24 rather than their symptoms, and it is what makes 10+ CCU safe | GETs ≤ **4/min/client** at rest; invite visible < 1 s p95; no `LobbyPatcher` lines in a 30 min 4-client run |
 | P0.5 | **Crash/exception reporting from player builds** | Without it, a Steam launch is blind. An unhandled exception in the party layer on someone's machine must reach you | One deliberate test exception from a player build appears in the dashboard |
 
@@ -87,7 +88,7 @@ Each phase is independently shippable, has a gate, and the gate is a **run**, no
 | P1.1 | **Phase 3 — reconnection grace** | Today an 8-second Wi-Fi blip permanently converts your ship to AI and dumps you in a menu. Every part needed already exists and none are wired: `PartyState.Reconnecting`, `ISession.ReconnectAsync()`, a 120 s lobby retention window, `NetUgsPlayerId` as a stable slot identity, and an approval-payload token |
 | P1.2 | **Host-loss resilience → true migration** | A host drop currently ends the party; the clean-reform half is done (B10). Keeping four people together through one disconnect is a retention feature |
 | P1.3 | **The 90 s / 120 s timeout inversion** | `SceneLoader`'s client follow (90 s) sits *inside* NGO's scene-load timeout (120 s). Wrong way round: a lost scene load reports as a follow failure before NGO ever gives up. Tighten NGO to 60 s or raise the follow to 150 s |
-| P1.4 | **One roster** | Three disagreeing views of party membership (§7 of the diagram). The flicker they produce is why `maxPartySlots` carries spare seats — a transport parameter widened to hide a reconciliation artefact |
+| P1.4 | **One roster** | Three disagreeing views of party membership (§7 of the diagram). The flicker they produce is why `maxPartySlots` carries spare seats — a transport parameter widened to hide a reconciliation artefact *(2026-10-08: the spare seats are gone - one party size, 4, which is the session's seat count; `HasOpenSlots` counts distinct ids instead. B25.)* |
 | P1.5 | **Invite scan cost** | O(n²) across the lobby. Irrelevant at 4, measurable at 40. Phase 2's event subscription removes most of it |
 
 ### P2 — Scale and polish. Only if the numbers say so.
@@ -182,7 +183,15 @@ of them are "server + 2 clients, do a thing, assert the state on all three".
 **Write these first, in this order** (each maps to a 🟡 bug, so each one closes a ticket):
 
 1. Accept → the guest is a client, the host's roster has 2, both agree. *(T1)*
-2. Two guests join-direct simultaneously → both seated, order irrelevant. *(T2, B5)*
+2. Two guests join-direct simultaneously, into a party with **room for both** → both seated,
+   order irrelevant. *(T2, B5)*
+2b. **Two guests join-direct simultaneously into a 3/4 party → the party ends at 4/4, not 5/4.**
+   *(B25.)* Test 2 as first written passes on exactly the case that breaks, which is why B25 names
+   it: the failure needs the party to be **exactly one short** and both joins inside one
+   presence-refresh window. Both pre-flights read `3/4` and pass; since 2026-10-08 the session
+   holds exactly **4**, so UGS refuses the second join. Assert the host's live member count is
+   `MaxPartySlots` (4), not the published `partyCount`, and that the loser is back in its own
+   menu with "That party is full.".
 3. Guest leaves mid-match → vessel keeps flying under AI, score survives on the scoreboard. *(B21)*
 4. Guest leaves at the ready screen → the remaining two proceed within a tick. *(B20)*
 5. Double-tap Accept/Join → exactly one operation. *(T3, and the single-flight path)*
@@ -308,9 +317,16 @@ a QA failure, and `verdict` is directly assertable — a soak run passes or fail
 `UgsRequestPolicy` already counts in-flight operations and classifies every failure into eight
 classes — **the counters are nearly free**; they need surfacing, not inventing.
 
-### 6.5 What I need from you
+### 6.5 Decided with the owner, 2026-10-08
 
-Four things, roughly in order of how much they unblock:
+| Question | Answer | What it changes |
+|---|---|---|
+| Crash/exception reporter | **Unity Cloud Diagnostics** | P0.5 is a package + a toggle, not an integration. Lowest friction since UGS is already wired |
+| Week-one CCU | **10–40** | **Phase 2 is a genuine P0, not comfort.** Shared lobby write pressure starts in this band and one player's spam degrades everyone's invites. The 100-player ceiling is NOT a launch concern |
+| CI host | **A Windows box with a Unity licence** | The headless runner in §5.4 is real work with a home, not a hypothetical |
+| Start where | **Block 1 — observability** | Done in part; see §10 |
+
+The original four asks, for the record:
 
 1. **A crash/exception reporter choice** for player builds. Unity Cloud Diagnostics is the
    zero-friction option since UGS is already wired; Sentry and Backtrace are the better products.
@@ -424,6 +440,47 @@ Not "no bugs" — this layer will always have some. The measurable version:
 - CI is red when any of that stops being true.
 
 ---
+
+---
+
+## 10. Landed so far
+
+**Block 1, partly done (2026-10-08).** Measuring first shrank it: two of its three parts already
+existed.
+
+| Part | State |
+|---|---|
+| **The counters** | **Already done before this plan was written.** `UgsRequestTelemetry` carries 14 counters — `Requests`, `LobbyReads`, `Retries`, `Coalesced`, `BudgetExhausted`, the eight failure classes, `PresenceForceReset`, `OfflineFallback` — with `InLastMinute`, `Total`, `Describe` and `Reset`, instrumented at the real call sites in `UgsRequestPolicy`, `LobbyPropertyWriter`, `PresenceLobbyService`, `PartySessionService` and `HostConnectionService`. Nothing to build |
+| **The session record + timeline + `net` command** | **Landed.** `NetSessionRecord` (the schema as a DTO), `NetSessionRecorder` (the timeline and the JSON writer), `NetSessionConsoleCommand` (`net`, `net dump`, `net reset`, `net mark <text>`), plus `NetSessionRecorderTests` |
+| **RNSM + Network Simulator** | **Not done, and deliberately not written blind.** `RuntimeNetStatsMonitor` is a `MonoBehaviour` in an `autoReferenced` assembly, so it needs no asmdef edit and can be added at runtime — but it displays nothing without an authored `NetStatsMonitorConfiguration`, and the simulator needs a preset asset. Writing C# that expects unauthored assets is the "ship a placeholder" trap, so both are listed as Editor tasks below |
+
+**What the recorder deliberately does not do:** count anything. `UgsRequestTelemetry` owns every
+counter; a second counter here would be a second place to forget, and the two would disagree the
+first time somebody added a call site. The recorder reads that owner and adds the one thing it has
+no opinion about — **when** things happened, in order. `net reset` resets both owners, because a
+measurement that starts with yesterday's counters and today's timeline is worse than none.
+
+**Proof.** The three shipped source files were compiled and **run** against engine shims (the real
+`UgsRequestTelemetry.cs` included, unmodified; the `UgsFailureClass` shim's member values checked
+against the real enum). 12 checks pass, including the two that are easy to get wrong: a record
+built at zero duration reports `lobbyReadsPerSecond` as **0, not Infinity** — an Infinity
+serialises and then poisons every later average — and an offline fallback counts toward the verdict
+**only when the device was online**, because a player with no wifi going offline is correct
+behaviour and B24's shape is the other one. All gates green, all four files parse clean.
+**`/verify-unity` did NOT run — no Unity in the authoring container.**
+
+### The Editor tasks this leaves
+
+1. Author a `NetStatsMonitorConfiguration` (RTT, packet loss, bandwidth in/out) and attach
+   `RuntimeNetStatsMonitor` behind the same dev gate as `DiagnosticsHUD`.
+2. Author a `NetworkSimulatorPreset` set and wire the simulator — this is what makes §5's failure
+   tests deterministic.
+3. Assign the recorder's providers once, wherever role and offline state are known
+   (`MultiplayerSetup` / `OfflineModeService`): `RoleProvider`, `OfflineProvider`,
+   `DeviceOnlineProvider`, and call `MarkOfflineFallback(deviceWasOnline)` from the one place that
+   sets `IsOfflineSession`.
+4. Add `Mark(...)` calls at the lifecycle points in §6.3's example timeline. Until then the record
+   carries counters and a verdict but a thin timeline.
 
 *Measured, not asserted: file sizes from `wc -l`; test counts from `grep -c '\[Test\]'`; the
 harness API from `com.unity.netcode.gameobjects@2.13.3/Tests/Runtime/TestHelpers/`; the read-rate
