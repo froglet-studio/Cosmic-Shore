@@ -173,9 +173,12 @@ namespace CosmicShore.Gameplay
             // ReferenceEquals, not Unity's null: the sibling impactor is being destroyed in this
             // same teardown, which Unity's == would report as null, but its fields are still ours
             // to read.
-            int reached = ReferenceEquals(_impactor, null) ? -1 : _impactor.PrismEffectsReached;
+            bool hasImpactor = !ReferenceEquals(_impactor, null);
+            int reached = hasImpactor ? _impactor.PrismEffectsReached : -1;
+            int dispatched = hasImpactor ? _impactor.PrismEffectsDispatched : -1;
             CSDebug.LogVerbose(CSLogChannel.ButterflyBloom,
-                $"[ButterflyBloom] r={_fullRadius:F0} domain={_domain} reached={reached} | own: " +
+                $"[ButterflyBloom] r={_fullRadius:F0} domain={_domain} reached={reached} " +
+                $"dispatched={dispatched} | own: " +
                 $"grow {T(ScaleDustOutcome.Grown)}, danger {T(ScaleDustOutcome.Dangerous)}, " +
                 $"shield {T(ScaleDustOutcome.Shielded)}, super {T(ScaleDustOutcome.SuperShielded)}, " +
                 $"untouched {T(ScaleDustOutcome.Untouched)} | opposing: " +

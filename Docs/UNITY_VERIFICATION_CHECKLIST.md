@@ -98,6 +98,14 @@ No editor was available — nothing here has compiled in Unity.
 - Compiled outside Unity: the Prisma port's live build of `Assets/_Scripts` reports no errors in any
   file this branch touched (its 4 errors are pre-existing engine gaps in WormholeMouth / NestedGyroidFlora).
 
+**Round 3 (playtest: dust visuals good, still no prism outcomes; log `reached=617`, all-zero tally,
+`explosionPrismEffects[0] is empty`)** — the dust asset failed to load in the editor (imported before
+its new script compiled; branch data verified clean). Asset bytes changed to force a re-import on
+pull; log now prints `dispatched=N`. Verify: select
+`Assets/_SO_Assets/Effects/Explosion Prism Effects/ButterflyBloomScaleDustPrismEffect.asset` → the
+inspector shows a `Dust` field (not "script cannot be loaded"); a bloom logs `dispatched` ≈ `reached`
+with a non-zero tally, and dust puffs appear on changed prisms.
+
 ### 🔴 Omni crystal: Fresnel body + triangle-only Shepard tone falling onto the surface (`claude/omnicrystal-shepard-triangles-v2`, 2026-10-08)
 
 **Landed** (`Docs/PALETTE.md §2.10`, generator `Tools/Build/author_omni_crystal_triangles.py --check`):

@@ -164,13 +164,13 @@ def prefab_meta(gd):
             f"  userData: \n  assetBundleName: \n  assetBundleVariant: \n")
 
 
-def so(script_guid, name, body):
+def so(script_guid, name, body, class_id=""):
     return ("%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n--- !u!114 &11400000\nMonoBehaviour:\n"
             "  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {fileID: 0}\n"
             "  m_PrefabInstance: {fileID: 0}\n  m_PrefabAsset: {fileID: 0}\n"
             "  m_GameObject: {fileID: 0}\n  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
             f"  m_Script: {{fileID: 11500000, guid: {script_guid}, type: 3}}\n"
-            f"  m_Name: {name}\n  m_EditorClassIdentifier: \n" + body)
+            f"  m_Name: {name}\n  m_EditorClassIdentifier: {class_id}\n" + body)
 
 
 def ref(gd):
@@ -253,8 +253,14 @@ out[BLOOM_WITHER + ".meta"] = asset_meta(bloom_wither_g)
 
 # The bloom on MASS: the capsule's own roll, read off the dust asset (never a second table).
 bloom_dust_g = g("asset/ButterflyBloomScaleDustPrismEffect")
+# The class identifier is spelled out (Unity 6 writes it this way) for a second reason: the first
+# cut shipped this asset in the SAME pull as its brand-new script, and at least one editor imported
+# the asset before the script compiled -- the container's slot then loaded as null and the bloom
+# dusted nothing (playtest 2026-10-08, "explosionPrismEffects[0] is empty"). Changing the asset's
+# bytes forces a re-import on the next pull, when the script already exists.
 out[BLOOM_DUST] = so(sg["ExplosionScaleDustPrismEffectSO"], "ButterflyBloomScaleDustPrismEffect",
-    f"  dust: {ref(dust_prism_g)}\n")
+    f"  dust: {ref(dust_prism_g)}\n",
+    class_id="Assembly-CSharp::CosmicShore.Gameplay.ExplosionScaleDustPrismEffectSO")
 out[BLOOM_DUST + ".meta"] = asset_meta(bloom_dust_g)
 
 # The bloom on PILOTS: strip all four elements. The MAGNITUDE belongs to

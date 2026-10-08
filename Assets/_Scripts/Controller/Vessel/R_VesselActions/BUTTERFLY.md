@@ -290,6 +290,18 @@ danger / shield / super / untouched · destroy / shrink / steal / deflect · ski
 ("prisms briefly turned lit, none seemed affected") — the lit is the bloom's long-standing
 own-domain passthrough light, not evidence the dust ran.
 
+**Round 2's answer (2026-10-08).** The log read `reached=617` with an all-zero tally, beside
+`explosionPrismEffects[0] is empty`: the sweep worked, but `ButterflyBloomScaleDustPrismEffect`
+loaded as null in that editor, so no effect ever ran. The branch's data was clean on all four
+null-slot causes (slot names a real guid · the guid has a `.meta` · the asset's script guid resolves
+to the `.cs` · the class derives from the slot's type), which puts the fault in the editor's import:
+the asset arrived in the SAME pull as its brand-new script and was imported before that script
+compiled. The asset's bytes now change (its `m_EditorClassIdentifier` is spelled out), which forces
+a re-import on the next pull. The log line now also prints `dispatched=N`, so `reached > 0,
+dispatched = 0` names this failure directly. **General lesson for generators: a new
+ScriptableObject type and its first asset in one pull can import out of order on the receiving
+editor, and nothing on the branch can show it.**
+
 ### 3.4 Time — Fold
 
 Hold to stop, watch a ghost reach out along the heading you arrived on, release to be there — and

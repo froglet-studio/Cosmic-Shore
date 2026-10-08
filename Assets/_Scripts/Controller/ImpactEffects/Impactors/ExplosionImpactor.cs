@@ -144,6 +144,10 @@ namespace CosmicShore.Gameplay
         /// its effects). Telemetry: the bloom's dust reports it beside what it did to them.</summary>
         public int PrismEffectsReached => _prismEffectsSeen?.Count ?? 0;
 
+        /// <summary>Of those, how many had at least one effect actually run on them. Reached but
+        /// not dispatched means every slot was empty or failed to load.</summary>
+        public int PrismEffectsDispatched { get; private set; }
+
         public bool IsBatchProcessing => _useBatchProcessing;
 
         /// <summary>True while budget-deferred damage is still waiting to resolve.</summary>
@@ -200,6 +204,7 @@ namespace CosmicShore.Gameplay
             _virtualHeartsPending?.Clear();
             _prismEffectsSeen?.Clear();
             _prismEffectsPending?.Clear();
+            PrismEffectsDispatched = 0;
             if (ForceLegacyPhysics) return;
 
             // A blast that does not touch mass never starts the prism pass at all. ONE gate here
@@ -966,13 +971,16 @@ namespace CosmicShore.Gameplay
                 if (!prism.TryGetComponent(out PrismImpactor prismImpactor)) continue;
 
                 budget--;
+                bool ran = false;
                 for (int e = 0; e < effects.Length; e++)
                 {
                     if (IsEffectSlotEmpty(effects[e], explosionImpactorDataContainer,
                             nameof(ExplosionImpactorDataContainerSO.explosionPrismEffects), e))
                         continue;
                     effects[e].Execute(this, prismImpactor);
+                    ran = true;
                 }
+                if (ran) PrismEffectsDispatched++;
             }
         }
 
