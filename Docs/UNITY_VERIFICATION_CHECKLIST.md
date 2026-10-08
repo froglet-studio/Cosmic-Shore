@@ -103,6 +103,90 @@ is a starting guess, the long-tether set is the sandbox's × 80/380):
 
 ---
 
+### 🟡 Crystal → hull fusion: every hull × every element (`cece/nice-babbage-j6sejq`, 2026-10-08)
+
+**What landed.** A Squirrel that collects a **charge** crystal no longer plays the generic capture.
+The crystal's 60 prisms fold into their outer pentagons, which lift off, fly to the hull and lie ON
+its surface (subdivided and projected, bent over its curves, wearing its normals), crackle, then
+sink in, ending in the pilot's domain colour. Record + tuning table:
+`Assets/_Scripts/Controller/Environment/Crystals/CRYSTAL_HULL_FUSION.md`. Read/Write is on for the
+Squirrel FBX (bone weights). **The first push of this never ran** — the drawn charge mesh is
+unreadable, the fusion refused it and fell back to the old capture (§0 of the doc). The `unity`
+CLI was not available, so `/verify-unity` did not run; compiled headless against real Unity
+references (player + editor) and the geometry suite runs headless (42/42). **The second push was
+too slow to see** (all the projection on the main thread during the pickup); the layout is now
+built once per hull on a worker thread at vessel spawn, and a pickup costs ~2 ms (doc §0, §9).
+
+**Bake (third push, 2026-10-08):** the fusion is now solved at EDIT TIME by
+**FrogletTools > Vessels > Bake Crystal Hull Fusions** into
+`Assets/_SO_Assets/CrystalHullFusion/Squirrel_Charge_HullFusionBake.asset`. **Baked and pushed
+(`22fba704`) and play-tested working.** Bake reads 60 × 31 points, 1,860/1,860 on the skin. Still
+open: steps 3–6 below (wing flap, other pairs unchanged, tests) and a Profiler read.
+
+**The fleet (fourth push, 2026-10-08) — NOT baked, NOT played.** 48 entries: 12 hulls × Charge /
+Mass / Space / Time (the Butterfly's hull is generated at runtime and keeps the old capture). New:
+static multi-part hulls (Rhino, Urchin, Grizzly) pinned part-by-part; the Mass shells' scale band
+frozen on the fusion; Space/Time (opaque) shrink instead of fading; Space/Time peel from the pose
+they are holding; one shared template mesh per element. Bake schema → 2, so the Squirrel × Charge
+bake reads STALE until re-baked. Read/Write turned on for every hull FBX and the Mass/Space/Time
+crystal FBXs. Offline: all 40 crystal × hull-FBX pairs solve with every point on the skin (doc
+§12). `/verify-unity` did not run (no `unity` CLI); compiled headless against Unity references
+(player + editor, negative-controlled), geometry suite 45/45.
+
+**First fleet playtest (2026-10-08):** Charge/Space/Time worked on Squirrel and Dolphin. **Mass**
+"shrank to a point" on both: fixed (the band freeze was being discarded every frame, doc §12), and
+the outer shell now flies while the three shrinking shells fade. **Grizzly** "didn't work at all":
+cause unconfirmed; hardened (hull found by the bake's own mesh, a lost pin no longer ends the
+fusion). Re-test Mass on any hull and anything on the Grizzly; if the Grizzly still plays the old
+capture, the console's `[CrystalMorph] [HullFusion]` warning names why.
+
+**Second fleet playtest:** Mass ✅, Urchin ✅, Manta ✅; Grizzly and Sparrow still read as the old
+capture. Cause measured: their 60x DummySkimmers collect crystals 30 units out, so the faces streaked
+in from there. Fix: a far-collected crystal flies in whole to 2.5 hull radii first, then peels (doc
+§12). Also: bake schema 3 (unit-size solve; the Manta family's bakes had landed only 115 of 1,860
+points) — **re-bake all**, then re-test Grizzly, Sparrow, Serpent, Scarab and Manta. With
+**Logging > CrystalMorph** on, each pickup line now says how far out it was taken and whether it flew in.
+
+**Third fleet playtest:** Grizzly, Sparrow, Scarab still failing; Serpent/Butterfly don't collect at
+all (Serpent: its only skimmer is inactive with no impactor — pre-existing prefab wiring, not this
+branch). Scarab fixed (faces were landing on its hidden Sparrow model). Grizzly/Sparrow: cause still
+unknown after a full static trace (doc §12) — needs the console from one pickup with
+**Logging > CrystalMorph** on.
+
+**Fourth playtest:** Sparrow fades the Mass shells and the crystals vanish — the fusion runs, its
+faces were drawn off-screen (sizes and pole read off the renderer's transform; now off the posed
+hull). Failures now log an error and fall back whole. Logs are prefixed `[CrystalMorph] [HullFusion]`.
+
+**Fifth playtest:** Sparrow ✅. Grizzly: its crystals were taken by a nested skimmer its vessel never
+initialises — no fusion, **no score, no element buff** (pre-existing). Crystals now ignore a skimmer with
+no vessel. Re-test Grizzly: fusion plays AND the element bar rises on pickup.
+
+**Ship pass (2026-10-08):** Grizzly ✅ (user). The skimmer guard was NARROWED: an uninitialised skimmer
+stands aside only when its vessel has an initialised one — the Termite, Falcon and Shrike initialise
+NONE, and the unnarrowed guard would have stopped them collecting crystals at all. **Re-test:** Termite
+(or Falcon/Shrike) still collects crystals (generic capture, as before); Grizzly still fuses; Scarab
+(not re-tested since its fix) fuses on its procedural hull after one `[CrystalMorph] [HullFusion]`
+stale warning. Per-hull status: `CRYSTAL_HULL_FUSION.md` §13.
+
+**Verify in editor.**
+0. **Run the baker** (*Bake all*) → all 48 rows CURRENT (an UNRESOLVABLE row names the importer
+   still missing Read/Write), four `<Element>_FusionTemplate.asset`, then **Validate & Push** in the window.
+1. Squirrel, skim a charge crystal — **no hitch** (Profiler: `CrystalHullFusion.Begin`/`.Frame`): faces peel off → fly → come down onto top, underside and wings
+   → crackle → sink. ~1.2 s. Domain colour. Pickup SFX on landing; no husk spray.
+2. If it looks like the old capture, check the console for a `[CrystalMorph] [HullFusion]` warning first.
+3. `playbackScale` 10 on `Resources/CrystalHullFusionConfig` to watch it slowly (back to 1 after).
+4. Pitch/yaw hard mid-fusion: wing faces stay on the wings.
+5. Each element on a skinned hull, a static hull (Rhino: pitch hard, wing faces ride the wing) and
+   the Serpent. Mass: faces must not fly off across the sky and must fade. Space/Time: shrink into
+   the skin at the end; mid-spin / mid-wave pickups peel from where the blocks were. Butterfly: old capture.
+6. Run `CrystalHullFusionGeometryTests` + `CrystalHullFusionConfigTests` + `CrystalHullFusionBakeTests`
+   (the last is inconclusive until the bake exists, and fails if it goes stale).
+
+**First-pass tuning:** beats 0.16 / 0.42 / 0.30 / 0.30 s, `flightBow` 0.9, `flightStagger` 0.45,
+`tileFill` 1.15, `flareGain` 2.6.
+
+---
+
 ### 🔴 Rhino: elemental-crystal pickups no longer explode (`cece/keen-ptolemy-t3nzug`, 2026-10-08)
 
 **Landed** (`_Scripts/Controller/Vessel/R_VesselActions/RHINO_ENERGY_SWORD.md` § Crystal burst):
@@ -5211,7 +5295,7 @@ field on `Serpent.prefab` to opt out.
 
 1. Project compiles with zero errors. Run the `CosmicShore.Tests.EditMode`
    suite — `ShipModifierTests` gained two cases pinning the new flag.
-2. `MinigameFreestyleMultiplayer_Gameplay` (or Menu_Main freestyle), Sparrow.
+2. Menu_Main freestyle, Sparrow.
    **Flying** roll first: boost + full left stick → rolls and strafes, once per
    press. This must be **unchanged** — it is the regression risk.
 3. Toggle the stationary/turret stance. Boost + full left stick → **rolls and

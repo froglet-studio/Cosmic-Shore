@@ -192,6 +192,25 @@ applies to new abilities, new resources on the meter list, and anything that add
     (trigger sphere, kinematic rigidbody, `ImpactCollider`, container, layer 7) and skim nothing,
     silently, because the reference points at a disabled twin. Run **Audit Vessel Skimmers**
     first; never conclude from the prefab looking right.
+    **The CRYSTAL side never asked** (until 2026-10-08): `ElementalCrystalImpactor.AcceptImpactee`
+    took a crystal from ANY `SkimmerImpactor`, initialised or not, so an uninitialised skimmer
+    collected it with `VesselStatus == null` — no score, no element level, no hull fusion, and on
+    screen just "the old capture". The Grizzly's nested x30 `Skimmer.prefab` beat its initialised
+    `DummySkimmer` to every crystal that way; `DefersToItsVesselsSkimmer` now makes such a skimmer
+    stand aside when its vessel HAS an initialised one. The Termite, Falcon and Shrike list NO
+    near-field skimmer at all (`_nearFieldSkimmer: {fileID: 0}`), so they still collect crediting
+    nobody — `Docs/ElementalAbilitySystem/BACKLOG.md`. A pickup "with no vessel" is now a one-time
+    `[CrystalMorph] [HullFusion]` warning, which is how this was found after four rounds of reading
+    the prefabs had not found it.
+11b. **A skinned renderer's TRANSFORM is not its bind space — never size or aim anything off it.**
+    `lossyScale`, `InverseTransformPoint` and `position` on a `SkinnedMeshRenderer` describe a node
+    the bones may not agree with: the Sparrow model carries a node moved 185 units, the Manta family
+    a 100x node scale folded into its bind poses (its bind-pose mesh is 0.011 units across). Bones
+    are right by construction, so read world sizes and directions off points pinned THROUGH them
+    (`bone.localToWorldMatrix × bindpose × p`). A hull fusion that used the renderer transform drew
+    its faces off-screen on the Sparrow while the identical code worked on the Squirrel — and a
+    solver with absolute tolerances landed 6% of its points on the 0.011-unit Manta mesh until it
+    solved at unit size (`CRYSTAL_HULL_FUSION.md` §12).
 12. **Before removing a "redundant" writer, enumerate ALL writers of that meter.** A resource can
     be fed by both `ResourceSystem`'s per-second `resourceGainRate` and an action executor, and
     an executor's own cooldown can block its path entirely — so deleting the passive trickle
