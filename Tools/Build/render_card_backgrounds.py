@@ -682,6 +682,9 @@ CAMERAS = {
     # Multiplayer Freestyle is the Barren cell's third card (with Joust / Tapestry): high and to
     # the other side, so the loops read against open water rather than against a Hopf or a wake.
     "MultiplayerFreestyle": (215, 26, 0.74, 44),
+    # Online Duel for the Cell is the Barren cell's fourth card: low and side-on, so the two
+    # braided walls cross the nucleus rather than ring it.
+    "OnlineDuelForTheCell": (300, 16, 0.85, 46),
 }
 
 # Pilots in the shot: (domain, radius fraction, tilt, start angle, sweep). None = generic trio.
@@ -847,6 +850,38 @@ def recipe(stem, card_path, pal, ends):
             vessel_trail(path, dom, length, seg, rows)
         layers.append({"kind": "prisms", "rows": rows})
         stage["vessels"] = []                            # the trails carry their own darts
+        nucleus()
+    elif s == "OnlineDuelForTheCell":
+        # MODEL tier: the Duel's scene is the bare Barren cell too (its SegmentSpawner, like
+        # Freestyle's, never initialises), and the mode is a two-pilot tug of war for the cell's
+        # MASS - "your trail is your weapon and your wall", the most volume standing wins. So
+        # the card is exactly two pilots, Jade and Ruby, each winding a heavy wall of trail
+        # round the nucleus in the opposite hand, braided through each other - and one gap
+        # torn out of the Ruby wall where the Jade pilot cut through it.
+        tier = "MODEL"
+        rows = []
+        seg = R * 0.034
+        for dom, hand, phase in ((JADE, 1.0, 0.0), (RUBY, -1.0, math.pi)):
+            turns, rad, rise = 1.6, R * 0.52, R * 0.5
+
+            def path(t, hand=hand, phase=phase, turns=turns, rad=rad, rise=rise):
+                a = phase + hand * 2 * math.pi * turns * t
+                r = rad * (0.8 + 0.2 * math.cos(3 * math.pi * t))
+                return [r * math.cos(a), rise * (t - 0.5), r * math.sin(a)]
+            length = 2 * math.pi * turns * rad
+            if dom == RUBY:
+                cut = []
+                vessel_trail(path, dom, length, seg, cut)
+                n = len(cut) - 3                          # the dart is the last three rows
+                lo, hi = int(n * 0.52), int(n * 0.6)
+                rows.extend(cut[:lo] + cut[hi:])
+                gap = path(0.56)
+            else:
+                vessel_trail(path, dom, length, seg, rows)
+        layers.append({"kind": "prisms", "rows": rows})
+        layers.append({"kind": "sphere", "c": gap, "r": R * 0.05, "base": [0.05, 0.25, 0.2],
+                       "rim": [0.2, 1.3, 1.0], "emissive": [0.15, 0.9, 0.7], "alpha": 0.35, "unbound": True})
+        stage["vessels"] = []                            # the walls carry their own darts
         nucleus()
     elif s in ("Rampage", "Bends", "Bloomrush", "WreckingBall", "Tollway", "Sirocco"):
         tier = "MODEL"

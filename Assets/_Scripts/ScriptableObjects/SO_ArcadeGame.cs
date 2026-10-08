@@ -61,6 +61,23 @@ namespace CosmicShore.ScriptableObjects
             }
         }
 
+        [Header("Humans required")]
+        [Tooltip("The fewest HUMAN pilots this card can launch with. 0 (the default) = no rule: " +
+                 "the card's MinPlayersAllowed is met with AI as usual. Set it on a mode whose " +
+                 "scene seats no AI and whose rules need real opponents (Online Duel for the " +
+                 "Cell swaps two humans' vessels between rounds). Start stays dead until the " +
+                 "party holds this many humans; AI seats never count toward it.")]
+        [Min(0)] public int MinHumansRequired;
+
+        [Tooltip("Shown under the dead Start button while the party is short of " +
+                 "MinHumansRequired. Empty = a generic prompt.")]
+        public string HumansRequiredPrompt;
+
+        /// <summary>How many more humans the party needs before this card may start (0 = enough).
+        /// Counts HUMANS only - the caller passes the party's human count, never the seat count,
+        /// because an AI seat cannot stand in for the opponent a humans-only mode needs.</summary>
+        public int HumansMissing(int humansInParty) => Mathf.Max(0, MinHumansRequired - Mathf.Max(0, humansInParty));
+
         [Header("Briefing")]
         [Tooltip("Short play tips shown one at a time under the description on the launch panel. " +
                  "Empty is fine - the panel then shows the description alone rather than an " +

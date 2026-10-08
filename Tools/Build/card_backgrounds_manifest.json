@@ -133,6 +133,14 @@
    "track": null,
    "triangles": 28796
   },
+  "OnlineDuelForTheCell": {
+   "cell": "Barren Cell Config",
+   "environment": null,
+   "prisms": 242,
+   "tier": "MODEL",
+   "track": null,
+   "triangles": 6040
+  },
   "Rampage": {
    "cell": "Rampage Cell Config 2",
    "environment": null,
@@ -267,5 +275,5 @@
   768,
   510
  ],
- "source_hash": "81799f04f9046b90cbe68649fa7edc0e5a4a34dd7bc25e7729dcbea97fde02e8"
+ "source_hash": "facbf0504e74ccc3bb7d907bc93b47bf6391bb912404334fa8b80f538044bbe0"
 }

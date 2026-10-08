@@ -23,9 +23,20 @@ namespace CosmicShore.Tests
         const string ArcadeRoster = "Assets/_SO_Assets/Games/GameLists/ArcadeGames.asset";
         const string ArenaRoster = "Assets/_SO_Assets/Games/GameLists/ArenaGames.asset";
 
-        // The one card with no genre, and correctly so: Maelstrom draws OTHER modes, so it has
-        // no kind of its own to advertise.
-        static readonly HashSet<GameModes> Genreless = new() { GameModes.Maelstrom };
+        // The cards with no genre, and correctly so: Maelstrom draws OTHER modes, so it has no
+        // kind of its own to advertise, and Multiplayer Freestyle is a toy with no rule or score.
+        static readonly HashSet<GameModes> Genreless = new() { GameModes.Maelstrom, GameModes.MultiplayerFreestyle };
+
+        [Test]
+        public void MultiplayerFreestyle_IsGenreless_EvenWithItsPreviewMetric()
+        {
+            // Its preview definition carries ScoringMetric.Crystals (0), which alone reads as a race.
+            Assert.IsFalse(ModeGenre.TryElementsFor(GameModes.MultiplayerFreestyle, ScoringMetric.Crystals,
+                                                    out var first, out var second),
+                "Multiplayer Freestyle has no rule or score; its card must draw no genre petal.");
+            Assert.AreEqual(Element.None, first);
+            Assert.AreEqual(Element.None, second);
+        }
 
         [Test]
         public void EveryScoringMetric_HasAGenre()

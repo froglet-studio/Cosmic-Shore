@@ -1073,6 +1073,11 @@ namespace CosmicShore.UI
                                        _addAiArmed && !IsClientMode && !_weeklyChallengeLocked);
 
             RefreshAIPreviewChips(total - humans);
+
+            // The party's human count moves here (a guest joins or leaves), and a humans-only
+            // card's Start gate reads it - so the gate is re-decided on every roster redraw.
+            if (_selectedGame && _selectedGame.MinHumansRequired > 0)
+                RefreshStartAvailability();
         }
 
         /// <summary>
@@ -1848,6 +1853,15 @@ namespace CosmicShore.UI
         /// Arena's vessel gate cannot disagree about it: both conditions are read here, and every
         /// path that could change either calls this rather than the panel directly.
         /// </summary>
+        /// <summary>Humans the open card still needs before it may start
+        /// (<see cref="SO_ArcadeGame.MinHumansRequired"/>); 0 for every card that sets no rule.</summary>
+        int HumansMissing => _selectedGame ? _selectedGame.HumansMissing(CurrentPartyHumanCount) : 0;
+
+        string HumansRequiredReason =>
+            _selectedGame && !string.IsNullOrEmpty(_selectedGame.HumansRequiredPrompt)
+                ? _selectedGame.HumansRequiredPrompt
+                : "INVITE MORE PILOTS";
+
         void RefreshStartAvailability()
         {
             if (!_activePanel) return;
@@ -1855,6 +1869,15 @@ namespace CosmicShore.UI
             if (RequiresVesselConfirmation && !_vesselConfirmed)
             {
                 _activePanel.SetStartAvailable(false, "SELECT A VESSEL");
+                return;
+            }
+
+            // A humans-only card (SO_ArcadeGame.MinHumansRequired) - e.g. the Duel, whose scene
+            // seats no AI and swaps two humans' hulls between rounds. Counted on HUMANS: an AI
+            // seat placed to meet MinPlayersAllowed never spawns in such a scene.
+            if (HumansMissing > 0)
+            {
+                _activePanel.SetStartAvailable(false, HumansRequiredReason);
                 return;
             }
 
@@ -2708,6 +2731,14 @@ namespace CosmicShore.UI
             {
                 CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
                     "[ArcadeConfigModal] Start refused - no vessel confirmed yet.");
+                return;
+            }
+
+            // And for a humans-only card: refused until the party holds enough humans.
+            if (HumansMissing > 0)
+            {
+                CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
+                    $"[ArcadeConfigModal] Start refused - card needs {_selectedGame.MinHumansRequired} human pilots.");
                 return;
             }
 

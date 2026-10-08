@@ -123,6 +123,35 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void HumansMissing_CountsHumansOnly_AndIsZeroWithNoRule()
+        {
+            var card = UnityEngine.ScriptableObject.CreateInstance<SO_ArcadeGame>();
+            try
+            {
+                Assert.AreEqual(0, card.HumansMissing(1), "a card with no rule (the default 0) never blocks Start");
+                card.MinHumansRequired = 2;
+                Assert.AreEqual(1, card.HumansMissing(1), "one human of two: one more to invite");
+                Assert.AreEqual(0, card.HumansMissing(2));
+                Assert.AreEqual(0, card.HumansMissing(3));
+                Assert.AreEqual(2, card.HumansMissing(0));
+            }
+            finally { UnityEngine.Object.DestroyImmediate(card); }
+        }
+
+        [Test]
+        public void EveryHumansOnlyCard_CanSeatTheHumansItRequires()
+        {
+            foreach (var path in Directory.GetFiles("Assets/_SO_Assets/Games", "*.asset"))
+            {
+                var card = AssetDatabase.LoadAssetAtPath<SO_ArcadeGame>(path.Replace('\\', '/'));
+                if (card == null || card.MinHumansRequired <= 0) continue;
+                Assert.LessOrEqual(card.MinHumansRequired, card.MaxSeats,
+                    $"{path} requires {card.MinHumansRequired} humans but seats {card.MaxSeats}: " +
+                    "its Start could never come alive.");
+            }
+        }
+
+        [Test]
         public void NoArcadeCard_PlaysByArenaRules()
         {
             // ArenaRules caps seats at the hull count, so on a one-hull arcade card it would cap

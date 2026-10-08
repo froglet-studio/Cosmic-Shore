@@ -19,7 +19,7 @@ MonoBehaviour:
     with the most mass wins.
   IconActive: {fileID: 21300000, guid: ff915aad644c07144a1d02cc4723b015, type: 3}
   IconInactive: {fileID: 21300000, guid: 1917088452678c8449563992f4132c7e, type: 3}
-  CardBackground: {fileID: 21300000, guid: 78575ccdc916fca45960791606e128c9, type: 3}
+  CardBackground: {fileID: 21300000, guid: b4102441e30d4057b619b60b986a1868, type: 3}
   GolfScoring: 0
   SceneName: MinigameDuelForCellMultiplayer_Gameplay
   Vessels:
@@ -33,5 +33,8 @@ MonoBehaviour:
   MaxPlayersAllowed: 2
   MinIntensity: 1
   MaxIntensity: 2
+  ArenaRules: 1
+  MinHumansRequired: 2
+  HumansRequiredPrompt: INVITE A PILOT TO DUEL
   ViewUserAction: 0
   PlayUserAction: 0

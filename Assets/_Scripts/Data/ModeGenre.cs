@@ -72,6 +72,14 @@ namespace CosmicShore.Data
                     primary = Element.Mass;
                     secondary = Element.Space;
                     return true;
+
+                // GENRELESS, like the Maelstrom: Multiplayer Freestyle has no rule, no score and
+                // no end - "this is not a game; enjoy the toy". Its preview definition still
+                // carries ScoringMetric 0 (Crystals), so without this row the fallback would
+                // badge a toy as a RACE.
+                case GameModes.MultiplayerFreestyle:
+                    primary = Element.None;
+                    return false;
             }
 
             if (metric.HasValue) return TryElementForMetric(metric.Value, out primary);
