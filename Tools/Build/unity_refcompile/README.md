@@ -153,3 +153,23 @@ so run this tool before it.
   raises `IndexError: list index out of range` (`build.py`, the `Microsoft.NETCore.App.Ref/*/ref/net8.0`
   glob) after the full fetch. Workaround: point `DOTNET_ROOT` at an 8.0 install. Fix: accept any
   installed ref pack, or say which one is missing.
+- **The unobtainable-package bucket is per FILE, not per error, so it hides misspellings.** Any
+  CS0246/CS0234/CS0103/CS1069/CS0012/CS0538/CS0165/CS0019/CS1061 in a file that `using`s one of
+  `UNOBTAINABLE_NAMESPACES` goes to that bucket. A misspelled local or a missing member in those
+  files reports `RESULT: OK`. Measured 2026-10-08: 15 runtime files (the multiplayer setup and the
+  party services, a LOCKED system). Until it is fixed, intersect `report.json` with your diff's
+  changed lines there (asset-surgery skill). Fix: give those packages' names a source the way
+  `test_framework_declarations.tsv` does, or bucket only expressions of an error type (Roslyn API
+  in `Diagnose/`). Done when a CS0103 planted in `Controller/Party/Services/PartySessionService.cs`
+  fails the run.
+- **Package assemblies are NOT reused between runs, despite the "compiled once" claim above.**
+  Measured 2026-10-08 over four consecutive runs (player x3, player-dev) on one cache: every run
+  printed 0 `cached`, 86 `ok` and 4 `FAILED`. Suspect, not proven: the engine stub
+  (`stubs/UnityEngine.UnityConsentModule.cs`) is recompiled into the per-tree `out/` on every run,
+  and `fingerprint()` hashes each reference's size:mtime, so every assembly that sees the engine
+  gets a new stamp. Measure first: diff two runs' `.stamp` inputs for one package (e.g.
+  `Unity.Mathematics`). Done when a second identical run prints `cached` for every package.
+- **`test_framework_declarations.tsv` is from com.unity.test-framework 1.4.6, not the locked
+  1.6.0** (1.6.0 is builtin and unmirrored). A name 1.6.0 added would gate in a changed Editor
+  test until the file is regenerated. Re-run the command in its header whenever the lock moves or
+  a newer tag is mirrored.

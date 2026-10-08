@@ -1098,6 +1098,15 @@ references, m_Script classes). Four things that cost time on the first run (2026
   only the unverified count moved. Now a missing-type error is unverified only when it names
   something a failed (or, for an Editor test, unfetched) assembly declares, and a misspelled local
   or type gates. If you are reading an older run log, still read BOTH numbers.
+- **Before narrowing one of refcompile's buckets, list everything the old rule was absorbing, in
+  every config.** "0 unverified before and after" on today's tree proves only today's tree. The
+  CS0103 fix above passed that test in the player config, and still would have gated every new
+  edit-mode test's `LogAssert`. That case shows up only in `--config editor` on a branch that
+  commits an Editor test, and this branch had none. It was found in this skill's own trap list,
+  not in any run. Grep the skills and `Docs/` for the bucket's name, turn each documented
+  beneficiary into a `--self-test` fixture, and prove the live ones with a throwaway commit in a
+  scratch worktree (`git worktree add --detach`, commit the probe there, run that tree's
+  `run.sh --changed-base <your HEAD>`).
 - **Files that `using` an unobtainable UGS package are bucketed, so your edits in them are not
   gated.** `HostConnectionService`, the party services, `MultiplayerSetup` and `GameDataSO` all
   `using Unity.Services.Multiplayer`. Every method body is still BOUND, so the diagnostics exist
