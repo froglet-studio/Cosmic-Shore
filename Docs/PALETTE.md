@@ -522,9 +522,11 @@ shader.
 
 **The body is slot 0, and that is load-bearing.** Everything that wants "the crystal's shape" reads
 `crystalModels[0]` (`ElementCrystalModelBuilder`, `SpawnMatrixToy`'s element visual), and the
-Scarab's crystal→ball forge (`ScarabCrystalMorph.AdoptShells`) builds its morph mesh from shell 0 and
-folds every shell drawing that same mesh. The triangle shells are a different mesh, so the forge
-leaves them out (a verbose `CrystalMorph`-channel line, not a warning: it is the design).
+vessel retirements (`CrystalMorphRunner.Adopt` — the Scarab's crystal→ball forge and the Squirrel's
+crystal→ring morph) build their morph mesh from slot 0 and fold every model drawing that same mesh.
+The triangle shells and rim are a different mesh, so they are OVERLAYS: they fade over
+`CrystalMorphConfig.overlayFadeFraction` of the geometry window while the cage opens (a verbose
+`CrystalMorph`-channel line names each one, not a warning: it is the design).
 
 **The body wears the elemental crystals' Fresnel look on the omni's own shader.**
 `OmniCrystalFresnelShader` is `SpreadFresnelShader`'s displacement and colour transcribed verbatim,
@@ -991,9 +993,8 @@ Machine validation covers structure and colorimetry; only a playtest covers *loo
   - **The Fresnel family is outside §2.2's collectability tint** (`FindColorPropertyNames` wants
     `_Dull*`; the family names `_DarkColor`) — Space, Time and now the omni show authored colours.
     One decision for all three crystals. A report: the current look is the approved one.
-  - **`CrystalMorph.hlsl`'s header claims every crystal material carries the node** (line ~43).
-    False for the Fresnel family: Space and Time do not, and the omni body carries it only because
-    `OmniCrystalFresnelShader` reimplements the path. Prose to correct, owned by the morph's doc.
+  - ~~**`CrystalMorph.hlsl`'s header claims every crystal material carries the node**~~ — corrected
+    2026-10-08 (Squirrel crystal morph): the header now names the two shaders that carry it.
   - **A domain change on the omni now SNAPS colour instead of lerping it** — the lerp only runs
     when source and target share a `FindColorPropertyNames` pair (`canLerp`), and the Fresnel pair
     is not one. The old ShepardGraph team crystals cross-faded over 1-2 s. Report; decide with the

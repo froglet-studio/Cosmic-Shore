@@ -1,11 +1,20 @@
 // The omni crystal's BODY: SpreadFresnelShader's look (transcribed below, unchanged),
 // plus the two things only the omni needs. Docs/PALETTE.md §2.10.
 //
-//  1. The CrystalMorph vertex path. The Scarab's crystal->ball forge (ScarabCrystalMorph) bakes a
-//     morph mesh with each vertex's destination in TEXCOORD2 and its destination normal in
-//     TEXCOORD3, then stamps _CrystalMorph = (start, duration, stagger) once against the
-//     _PrismClock global. Duration 0 (every material's default) is a pass-through, so an
-//     unstamped crystal draws exactly what SpreadFresnelShader draws.
+//  1. The CrystalMorph vertex path. A vessel's bespoke retirement (ScarabCrystalMorph: the
+//     crystal closing onto the ball it forged; SquirrelCrystalMorph: the crystal becoming the
+//     eight shielded prisms of its boost ring) bakes a morph mesh with each vertex's destination
+//     in TEXCOORD2 and its destination normal in TEXCOORD3, then stamps
+//     _CrystalMorph = (start, duration, stagger) once against the _PrismClock global. Duration 0
+//     (every material's default) is a pass-through, so an unstamped crystal draws exactly what
+//     SpreadFresnelShader draws.
+//  1b. The COLOUR FORMULA travels with the shape. Both targets draw with BlockGraph, whose face
+//     colour is lerp(_DarkColor, _BrightColor, (1 - N.V)^4) (FresnelColors -> FresnelPower4),
+//     while this body draws lerp(_BrightColor, _DarkColor, (1 + N.V) / 2). The runner converges
+//     the colour PAIR onto the target's, but the same pair through two different formulas is
+//     still two different surfaces - so each face also blends from this formula to the prism's
+//     on its own morph weight (CrystalMorphEase, the schedule its position runs on). At weight 0
+//     - every unstamped crystal - the blend is lerp(a, b, 0) and the body is bit-identical.
 //  2. A dissolve for the forge's tail, on _Opacity. This pass is opaque (ZWrite On), so coverage
 //     is spent as a screen-door clip rather than blending (Docs/PRISM_ANIMATION.md §4.7). At
 //     coverage 1 nothing is clipped.
@@ -95,8 +104,27 @@ Shader "Custom/OmniCrystalFresnelShader"
             {
                 float3 worldNormal : TEXCOORD0;
                 float3 worldPos : TEXCOORD1;
+                // This vertex's morph progress, constant across a face (the phase is per solid or
+                // per panel), so the colour formula hands over face by face with the geometry.
+                float morphEase : TEXCOORD2;
                 float4 vertex : SV_POSITION;
             };
+
+            // The TARGET's face colour - BlockGraph's FresnelColors subgraph, transcribed:
+            //   d = N.V (world); x = d > 0 ? d : (d + 1) * 0.2   (FresnelPower4's back-face branch)
+            //   f = (1 - x)^4;   colour = lerp(_DarkColor, _BrightColor, f)
+            // DistanceSpreadAndColors' far-distance tint is not carried: at pickup range it is
+            // 0.3-2.5% of its range (_SqrDistance 100000 = 316 u), and the runner's dissolve tail
+            // is what absorbs a residue that small.
+            half4 PrismFresnelColor(float3 worldPos, float3 worldNormal)
+            {
+                float3 viewDir = normalize(_WorldSpaceCameraPos - worldPos);
+                float d = dot(normalize(worldNormal), viewDir);
+                float x = d > 0.0 ? d : (d + 1.0) * 0.2;
+                float f = (1.0 - x) * (1.0 - x);
+                f *= f;
+                return lerp(_DarkColor, _BrightColor, f);
+            }
 
             v2f vert (appdata v)
             {
@@ -108,6 +136,7 @@ Shader "Custom/OmniCrystalFresnelShader"
                 CrystalMorph_float(SpreadFresnelDisplace(v.vertex.xyz, v.normal), v.morphTarget,
                                    _PrismClock, _CrystalMorph, positionOS);
                 CrystalMorphNormal_float(v.normal, v.morphNormal, _PrismClock, _CrystalMorph, normalOS);
+                CrystalMorphEase_float(v.morphTarget, _PrismClock, _CrystalMorph, o.morphEase);
                 v.vertex.xyz = positionOS;
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.worldNormal = normalize(mul((float3x3)UNITY_MATRIX_M, normalOS));
@@ -123,7 +152,8 @@ Shader "Custom/OmniCrystalFresnelShader"
                 float coverage = saturate(_Opacity);
                 float n = frac(52.9829189 * frac(dot(i.vertex.xy, float2(0.06711056, 0.00583715))));
                 clip(coverage - (n * 0.998 + 0.001));
-                return SpreadFresnelColor(i.worldPos, i.worldNormal);
+                half4 body = SpreadFresnelColor(i.worldPos, i.worldNormal);
+                return lerp(body, PrismFresnelColor(i.worldPos, i.worldNormal), i.morphEase);
             }
             ENDCG
         }
