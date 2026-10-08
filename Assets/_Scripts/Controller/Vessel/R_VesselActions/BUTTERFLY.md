@@ -240,6 +240,81 @@ growth axis.
 raise a **super-shield** instead. It is deliberately rare — super-shielded mass is invulnerable to
 everything but an energised Rhino blade.
 
+### 3.3a The omni-crystal bloom (2026-10-08)
+
+Collecting an omni crystal sets off a **900-unit bloom** (`AOEButterflyBloom.prefab`, radius 450,
+0.6 s). It shipped carrying only the heart-kill below, so in play it was a huge flash that changed
+nothing. It now carries the Butterfly's whole verb set at once:
+
+| Target | What the bloom does | Asset |
+|---|---|---|
+| **Opposing pilot** | **strips** all four elements — the petals are EJECTED as collectable crystals (`ElementalTransfer.Eject`, classed `Explosion`), priced as the Debuff verb: **1.2 petals per element** | `ButterflyBloomDebuffByExplosionEffect` |
+| Opposing pilot | **scores a combat hit** (Debuff class, 12 points) — the Dolphin cone's shared reporter: only if the victim could be debuffed, only on the owning machine (the bloom is replayed on server AND owner) | `VesselCombatHitByCrystalBlast` |
+| **Own-domain prism** | the dust's TEND roll: grow / dangerous / shielded (0.4 / 0.3 / 0.3), Diamond Dust at Space 5 | `ButterflyBloomDust` (prefab component) |
+| **Opposing prism** | the dust's BLIGHT roll: destroyed / shrunk / stolen (1 / 1 / 1) | same |
+| Opposing lifeform heart | dies (unchanged) | `ButterflyBloomWitherLifeformEffect` |
+
+**The prism half owns no table.** `ButterflyBloomDust` (on the bloom prefab, an
+`IExplosionPrismPayload`) holds the dust's own `ButterflyScaleDustPrismEffect` asset and calls its
+`Apply`, so the bloom and the capsule roll from
+one set of weights and one deterministic per-prism hash — retune the dust and the bloom follows. The
+blast only supplies the DESTROY outcome's striker velocity: its own impact vector at the prism, so
+debris leaves along the wavefront (still × `restitution`, capped at `debrisSpeedLimit`).
+
+**How a non-destructive blast reaches prisms at all.** The bloom authors `affectsPrisms: 0`, so it
+never runs the Burst damage pass and its trigger declines prisms — which is also why its
+`explosionPrismEffects` could never have fired. `ExplosionImpactor.SweepPrismEffects` is the new
+path: for a blast with `affectsPrisms` OFF that carries prism effects (container entries or an
+`IExplosionPrismPayload` component), it queries
+`PrismSpatialIndex.QuerySphere` over each frame's wavefront, dispatches each prism once (instance-id
+ledger), at most 48 per frame (the Burst pass's own budget), and drains the remainder after the
+visual — identity-checked by `TimeCreated` so a pooled prism re-issued in the meantime is skipped. A
+blast that DOES damage mass is not swept (its mass is already decided), and only the SPHERICAL frame
+calls it.
+
+**Own pilot is spared** (`affectSelf: 0`): the bloom strips rivals only. One bloom pays a victim
+once (`ExplosionImpactor._vesselsHit`).
+
+**It is drawn as the capsule's dust** (`ButterflyBloomDust` on the prefab, round 2). Same material
+(`fx_spark_oval`), same colour rule (`ButterflyDustField.ResolveMoteColour` — the shielded rim of
+the pilot's domain), same in-hold-out fade and downward drift as the Dust-mode motes, in two layers:
+the wavefront leaves **2400 motes** through the sphere at constant density (the count follows swept
+volume, r³, so the haze is as thick beside the hull as at the rim), and **every prism the dust
+changes releases a puff of 5 larger motes** where it stood — the eye goes straight to the mass that
+grew, shielded, went dangerous, shrank, was stolen or died. The particle object is detached from the
+blast and outlives it by one mote lifetime. Cosmetic only, private xorshift scatter.
+
+**Telemetry.** Turn on **FrogletTools > Toolbox > Logging > `[ButterflyBloom]`** and each bloom
+logs one line as it retires: `reached=N` (prisms the sweep queued), `dispatched=N` (prisms a payload
+actually ran on) and the outcome tally (grow / danger / shield / super / untouched · destroy /
+shrink / steal / deflect · skipped). It separates "the sweep found nothing" (`reached=0`), "found
+prisms, dispatched nothing" (`dispatched=0`) and
+"changed things too subtly to see". The first playtest of round 1 reported exactly that ambiguity
+("prisms briefly turned lit, none seemed affected") — the lit is the bloom's long-standing
+own-domain passthrough light, not evidence the dust ran.
+
+**Round 2's answer (2026-10-08).** The log read `reached=617` with an all-zero tally, beside
+`explosionPrismEffects[0] is empty`: the sweep worked, but `ButterflyBloomScaleDustPrismEffect`
+loaded as null in that editor, so no effect ever ran. The branch's data was clean on all four
+null-slot causes (slot names a real guid · the guid has a `.meta` · the asset's script guid resolves
+to the `.cs` · the class derives from the slot's type), which puts the fault in the editor's import:
+the asset arrived in the SAME pull as its brand-new script and was imported before that script
+compiled. The asset's bytes were changed to force a re-import, and the log gained `dispatched=N`.
+
+**Round 3: that theory was wrong.** After the forced re-import the same editor logged `reached=858
+dispatched=0` and the same empty slot. The cause stayed invisible from the branch — all four checks
+still pass — so the dependency was REMOVED rather than chased a fourth time: the
+`ExplosionScaleDustPrismEffectSO` type and its asset are deleted, the container's
+`explosionPrismEffects` is empty again, and the bloom's prism dust is applied by
+`ButterflyBloomDust` itself, through the new `IExplosionPrismPayload` seam on `ExplosionImpactor`.
+That component and the dust asset it references both demonstrably load in that editor (the motes
+drew; the capsule dusts). **The open question for whoever next adds a ScriptableObject type by
+generator: a brand-new SO class whose first asset was written outside Unity loaded as null in a
+playtester's editor, three runs in a row, with every repo-side reason for a null slot ruled out.
+Selecting that asset in the inspector would have named the cause; nobody did. Prefer a
+serialized field on a component that already loads, and when a new SO type is unavoidable, have
+the human open its asset once before the playtest.**
+
 ### 3.4 Time — Fold
 
 Hold to stop, watch a ghost reach out along the heading you arrived on, release to be there — and
@@ -332,7 +407,8 @@ screen is unchanged apart from the row itself.
 | Dust (mass) | `ImpactEffects/EffectsSO/Skimmer Prism Effects/SkimmerScaleDustPrismEffectSO.cs` |
 | Dust (pilot) | `ImpactEffects/EffectsSO/Vessel Skimmer Effects/VesselElementalDebuffBySkimmerEffectSO.cs` (`biteScale`) |
 | Dust (lifeform) | `ImpactEffects/EffectsSO/Skimmer Crystal Effects/SkimmerWitherLifeformByCrystalEffectSO.cs` (opposing), `SkimmerNourishLifeformByCrystalEffectSO.cs` (ally) |
-| Omni-crystal bloom | `_Prefabs/Projectile/AOEButterflyBloom.prefab` + `ButterflyVesselExplosionByCrystalEffect.asset` + `ButterflyBloomExplosionImpactorDataContainer.asset` |
+| Omni-crystal bloom | `_Prefabs/Projectile/AOEButterflyBloom.prefab` + `ButterflyVesselExplosionByCrystalEffect.asset` + `ButterflyBloomExplosionImpactorDataContainer.asset` (strip `ButterflyBloomDebuffByExplosionEffect`, hit `VesselCombatHitByCrystalBlast`, heart-kill `ButterflyBloomWitherLifeformEffect`) |
+| Bloom → prisms + look | `R_VesselActions/ButterflyBloomDust.cs` (`IExplosionPrismPayload`), `ExplosionImpactor.SweepPrismEffects` |
 | Replicated element levels | `R_VesselActionHandler.NetElementLevels`, `R_VesselElementalAbilityHandler.ReplicatedLevel`, `ElementalFloat.EvaluateReplicated` |
 | Dust assets (generated) | `Tools/Build/author_butterfly_dust.py` (`--check`) |
 | The new skimmer arm | `ImpactEffects/EffectsSO/Abstract Effect Types/SkimmerLifeformCrystalEffectSO.cs` |
@@ -376,8 +452,16 @@ Run **FrogletTools ▸ Vessels ▸ Create Butterfly Vessel**, read its report, t
 5b. **Dust on the living.** Dust an opposing pilot (debuff lands; bigger at high Charge), an opposing
    creature or plant (it dies and drops its crystal), and one of your own (nothing visible changes —
    its starvation clock resets).
-5c. **Omni crystal.** Collect one: a large bloom; any opposing lifeform heart inside it dies; your
-   own lifeforms and all prisms survive.
+5c. **Omni crystal.** Collect one: a large bloom (radius ~450). Inside it: any opposing lifeform
+   heart dies; your own lifeforms survive; **your own trail** keys grow / go dangerous / go shielded
+   riding the wavefront outward; **an opponent's trail** keys vanish, shrink or turn your colour; an
+   **opposing pilot** inside it sheds elemental crystals (their flowers drop ~1 petal per element and
+   collectable crystals fly out along the blast), you do not, and **you score a hit** (Broadside-style
+   points / hit toast). The sphere fills with falling motes in your domain's shielded colour, and
+   every changed key puffs dust. If keys look unchanged, read the `[ButterflyBloom]` log line
+   before anything else. Run it twice on MPPM: the same keys
+   do the same thing on both clients. With a dense arena in range, confirm no frame hitch beyond the
+   ordinary debris (≤ 48 outcomes per frame).
 6. **Fold** (LT): the vessel stops, a ghost appears on the hull and travels; thumbs IN pull it to the
    cell core, thumbs OUT to the membrane, hands off leaves it at half radius; `YDiff` rolls the
    whole frame; release teleports you. Confirm the Time card's veil sweeps and a second press inside
@@ -390,12 +474,21 @@ Run **FrogletTools ▸ Vessels ▸ Create Butterfly Vessel**, read its report, t
 
 ## 9. Follow-ups
 
-- **The omni-crystal bloom kills opposing LIFEFORM hearts only.** "Destroys opposing domain
-  crystals" was read as the crystals that belong to an opposing domain in play — the hearts of its
-  flora and fauna. Opposing **team crystals** (`TeamCrystalImpactor`) are not in the blast's sweep
+- **The bloom does not touch opposing TEAM crystals.** (It now strips pilots and dusts prisms —
+  §3.3a.) "Destroys opposing domain crystals" was read as the hearts of an opposing domain's flora
+  and fauna. Opposing **team crystals** (`TeamCrystalImpactor`) are not in the blast's sweep
   (`ExplosionImpactor.SweepCrystals` picks up OMNI crystals only) and are untouched; that needs a new
-  sweep arm if wanted. The bloom is **non-destructive to prisms** (`destructive: 0` on
-  `AOEButterflyBloom.prefab`) — one field if it should also clear mass.
+  sweep arm if wanted. The bloom's generic damage pass stays OFF (`affectsPrisms: 0`) — its
+  mass outcome is the dust roll; turning it on would SKIP the dust sweep, which the generator's
+  validation refuses.
+- **A third peer never sees the bloom.** Crystal collection resolves on the server and is
+  REPLAYED to the owning client only (`NetworkCrystalManager.ReplayVesselCrystalEffects`), so the
+  bloom — and its dust on prisms — runs on those two machines. A third client's prisms do not change.
+  The Dolphin cone's prism damage has the same shape; fixing it is a crystal-replay change, not a
+  Butterfly one.
+- **`explosionPrismEffects` still never run on a blast that DOES damage mass** while the spatial
+  index is up (the Burst pass does not dispatch them; only the Physics fallback does). No shipped
+  blast authors any, so nothing is lost today.
 - **`R_VesselActionHandler.NetElementLevels` replicates element levels fleet-wide** (one ushort per
   vessel, owner-written only on change). Only the Butterfly reads it today
   (`ElementalFloat.EvaluateReplicated`). Every other skimmer effect that scales on a level still reads

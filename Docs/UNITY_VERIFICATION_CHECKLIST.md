@@ -126,6 +126,39 @@ makes); `check_generated_assets.py` audits the new prefab/material clean (negati
 
 ---
 
+### 🟡 Butterfly omni-crystal bloom: strips pilots, scores a hit, dusts prisms (`cece/awesome-hopper-rj9b50`, 2026-10-08)
+
+**Landed** (`R_VesselActions/BUTTERFLY.md §3.3a`, generator `Tools/Build/author_butterfly_dust.py --check`):
+the 900-unit bloom used to carry only a heart-kill. Its container now also carries
+`ButterflyBloomDebuffByExplosionEffect` (all four elements ejected as crystals, -0.12 each, priced by
+`author_combat_debuff_magnitudes.py`) and the shared `VesselCombatHitByCrystalBlast` reporter. Its
+prism outcome — the Dust-mode capsule's own one-of-three roll — is applied by `ButterflyBloomDust` on
+`AOEButterflyBloom.prefab`, an `IExplosionPrismPayload` dispatched by the new
+`ExplosionImpactor.SweepPrismEffects` (spherical, `affectsPrisms: 0` blasts only, 48/frame). The same
+component draws the bloom as the capsule's motes and puffs on every changed prism, and logs a
+per-bloom tally on `[ButterflyBloom]`.
+
+**Confirmed in editor (playtest, 2026-10-08):** the dust look; prism outcomes (after round 4).
+
+**Still to verify**
+1. An AI pilot inside the bloom sheds elemental crystals (~1 petal per element), and you score a
+   Debuff hit (points + hit toast). Your own pilot is untouched.
+2. The Dust-mode capsule behaves exactly as before (own trail grows / danger / shield; opposing trail
+   destroyed / shrunk / stolen).
+3. MPPM: host and owning client reach the same prism outcomes (a third client sees no bloom — known,
+   BUTTERFLY.md §9).
+
+**History.** Rounds 1-3 routed the prism outcome through a separate `ExplosionScaleDustPrismEffectSO`
+container asset; in the playtester's editor it loaded as null three times running
+(`explosionPrismEffects[0] is empty`, `reached=858 dispatched=0`) with every repo-side cause of a
+null slot ruled out, and a forced re-import did not help. Round 4 deleted that type and moved the
+outcome onto the prefab component, which fixed it. Root cause of the null load is still unknown.
+
+**First-pass tuning**: bloom radius 450 (`BLOOM_SCALE`), strip 1.2 petals/element, 2400 bloom motes,
+5 motes per changed prism, per-frame budget 48.
+
+---
+
 ### 🔴 Omni crystal: Fresnel body + triangle-only Shepard tone falling onto the surface (`claude/omnicrystal-shepard-triangles-v2`, 2026-10-08)
 
 **Landed** (`Docs/PALETTE.md §2.10`, generator `Tools/Build/author_omni_crystal_triangles.py --check`):

@@ -224,14 +224,22 @@ namespace CosmicShore.Gameplay
         /// point of light: the base is the darker half of the pair and reads as dim smoke.
         /// Blue (no team) and a missing palette fall back to the authored dust colour.
         /// </summary>
-        Color ResolveMoteColour(Domains domain)
+        Color ResolveMoteColour(Domains domain) => ResolveMoteColour(_gameData, domain, dustColor);
+
+        /// <summary>
+        /// The one mote colour rule, shared with the omni-crystal bloom's dust
+        /// (<see cref="ButterflyBloomDust"/>) so the two read as the same dust: the shielded rim of
+        /// <paramref name="domain"/>, at <paramref name="fallback"/>'s alpha; Blue or no palette
+        /// returns <paramref name="fallback"/>.
+        /// </summary>
+        internal static Color ResolveMoteColour(GameDataSO gameData, Domains domain, Color fallback)
         {
-            var colorSet = _gameData?.ThemeManagerData?.ColorSet;
+            var colorSet = gameData && gameData.ThemeManagerData ? gameData.ThemeManagerData.ColorSet : null;
             if (domain == Domains.Blue || colorSet == null ||
                 !colorSet.TryGetPrismKindColors(domain, PrismKind.Shielded, out var rim, out _))
-                return dustColor;
+                return fallback;
 
-            rim.a = dustColor.a;
+            rim.a = fallback.a;
             return rim;
         }
 
