@@ -58,6 +58,13 @@ namespace CosmicShore.Gameplay
             if (Crystal && Crystal.IsEmbedded) return;
             if (impactee is not SkimmerImpactor skimmerImpactor) return;
 
+            // A skimmer its vessel never initialised has no one to credit, and taking the crystal
+            // with it spends it on nobody: no score, no element level, no hull fusion. The Grizzly
+            // carries one - a nested Skimmer prefab its VesselStatus does not list beside the
+            // DummySkimmer it does - and it was winning the race to every crystal. Leave the crystal
+            // for the skimmer that belongs to a vessel (measured 2026-10-08, CRYSTAL_HULL_FUSION.md §12).
+            if (!skimmerImpactor.Skimmer || skimmerImpactor.Skimmer.VesselStatus == null) return;
+
             CollectBy(skimmerImpactor);
         }
 

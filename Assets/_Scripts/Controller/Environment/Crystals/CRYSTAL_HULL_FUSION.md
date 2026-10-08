@@ -415,6 +415,17 @@ the radius, a landed face's radius and every patch's direction, in the world. Tw
 - every line this feature logs is prefixed `[CrystalMorph] [HullFusion]` - they were
   `[CrystalHullFusion]`, so a console filtered on the channel's own tag hid all of them, on every hull.
 
+**Fifth playtest: Sparrow WORKS** (`taken 13.8 from a hull of radius 4.1, flying in 0.22s first` -
+the posed-hull sizing was the fix). **Grizzly** logged the new warning: *collected by a skimmer with
+no vessel*. The Grizzly carries two skimmers - the 60x `DummySkimmer` its VesselStatus initialises,
+and a nested `Skimmer.prefab` at 30x it never does - and the crystal side accepted ANY
+`SkimmerImpactor`, so the uninitialised one took the crystal: no vessel, so no fusion, no score
+(`OnCrystalCollected` needs the vessel) and no element level. A pre-existing gameplay bug the
+fusion's warning surfaced. `ElementalCrystalImpactor.AcceptImpactee` now leaves a crystal to a
+skimmer that belongs to a vessel; the Grizzly's DummySkimmer, identical to the Sparrow's, collects it.
+*Every earlier Grizzly theory in this section was wrong; the one that held came from a log line
+written to name the exit, not from reading code.*
+
 ### The hulls
 
 | Vessels | Hull | How it is pinned |

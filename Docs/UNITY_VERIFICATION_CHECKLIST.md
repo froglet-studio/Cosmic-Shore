@@ -119,6 +119,10 @@ unknown after a full static trace (doc §12) — needs the console from one pick
 faces were drawn off-screen (sizes and pole read off the renderer's transform; now off the posed
 hull). Failures now log an error and fall back whole. Logs are prefixed `[CrystalMorph] [HullFusion]`.
 
+**Fifth playtest:** Sparrow ✅. Grizzly: its crystals were taken by a nested skimmer its vessel never
+initialises — no fusion, **no score, no element buff** (pre-existing). Crystals now ignore a skimmer with
+no vessel. Re-test Grizzly: fusion plays AND the element bar rises on pickup.
+
 **Verify in editor.**
 0. **Run the baker** (*Bake all*) → all 48 rows CURRENT (an UNRESOLVABLE row names the importer
    still missing Read/Write), four `<Element>_FusionTemplate.asset`, then **Validate & Push** in the window.
