@@ -1,9 +1,9 @@
-# Branch archive — small inactive branches
+# Branch archive — inactive branches
 
 Snapshot taken **2026-10-08** from `froglet-studio/Cosmic-Shore`. Covers every remote branch whose last commit is
-older than 2026-09-08 **and** that carries **1–3 commits not present in `bleeding-edge` or `master`**.
+older than 2026-09-08 **and** that carries **1–10 commits not present in `bleeding-edge` or `master`**: small (1–3) under [`small/`](small/), medium (4–10) under [`medium/`](medium/).
 
-Each branch has its own file under [`small/`](small/). Each one lists those unmerged commits in full (message, files, and the patch for code/doc/text files,
+Each branch has its own file. Each one lists those unmerged commits in full (message, files, and the patch for code/doc/text files,
 capped at 150 lines per commit). Unity scene/prefab/asset YAML and binaries are listed by name and size only.
 The commit SHAs stay recoverable from this doc only while the branch or a tag still points at them —
 if a branch here matters, tag it (`git tag archive/<name> origin/<branch>`) before deleting it.
@@ -16,7 +16,7 @@ The audit found **505** remote branches; **363** had no commit since 2026-09-08.
 |---|---|---|
 | Already merged (every commit is in `bleeding-edge` or `master`) | 114 | **108 to delete**, script below. The other 6 are kept, see next table. |
 | Small unmerged work (1–3 commits) | 141 | Archived in this folder, one file per branch. Not deleted. |
-| Medium unmerged work (4–10 commits) | 51 | Not archived yet. Not deleted. |
+| Medium unmerged work (4–10 commits) | 51 | Archived in this folder, one file per branch. Not deleted. |
 | Large unmerged work (11+ commits) | 56 | Not archived yet. Not deleted. |
 | `master` | 1 | Trunk. Keep. |
 
@@ -28,11 +28,63 @@ The audit found **505** remote branches; **363** had no commit since 2026-09-08.
 | `build/android`, `build/windows` | Release pipeline: robot-owned snapshots Unity Build Automation reads, force-moved by `sync-build-branches.yml`. |
 | `claude/shape-signs-face-player-INiJp`, `claude/loving-fermi-DVWsY`, `claude/qa-backlog-7mvlsr` | Each still has an **open** pull request (#130, #530, #799). Their work is merged, so the PRs are stale, but deleting the branch closes the PR. Close the PRs first, then delete. |
 
-**Deleting the 108:** [`delete_merged_inactive_branches.sh`](delete_merged_inactive_branches.sh). The cloud session that wrote this archive could
-not delete them, because GitHub returned HTTP 403 for every push except to its own branch. Run the script from a clone with push rights. It
-re-checks each branch and skips any that has gained new commits since the audit.
+See **How to delete — step by step** below.
 
-## Index
+## How to delete — step by step
+
+GitHub refused deletes from the cloud session that wrote this archive (HTTP 403, it may only push its own branch),
+so a person with push rights runs these. Both scripts re-check every branch before touching it.
+
+**Step 1 — get a clone with this archive in it.**
+
+```bash
+git clone https://github.com/froglet-studio/Cosmic-Shore.git   # or cd into your existing clone
+cd Cosmic-Shore
+git fetch origin
+git checkout claude/trusting-curie-bn6rrn                       # until this branch is merged; afterwards bleeding-edge
+```
+
+**Step 2 — make sure you can delete branches.** `git push origin --delete <some-throwaway-branch>` must work for you
+(org owner / admin, or write access with no branch-protection rule covering these names). If you get `403` or
+`protected branch`, ask an org owner to run the scripts instead.
+
+**Step 3 — delete the 108 already-merged branches (nothing is lost).**
+
+```bash
+bash Docs/BranchArchive/delete_merged_inactive_branches.sh
+```
+
+Skips any branch that gained a commit not in `bleeding-edge`/`master` since the audit. Never touches `master`,
+`development`, `build/android`, `build/windows` (not in its list).
+
+**Step 4 — decide on the archived small/medium branches.** Skim the index below and the per-branch files. If you
+want to keep or finish one, remove its line from the `branches=( … )` list in
+`archive_and_delete_inactive_branches.sh` before running it.
+
+**Step 5 — tag and delete the 163 archived branches (192 written up, minus 29 with open PRs).**
+
+```bash
+bash Docs/BranchArchive/archive_and_delete_inactive_branches.sh
+```
+
+For each branch it pushes a tag `archive/<branch>` pointing at the branch tip, and only deletes the branch if
+that tag push succeeded. The commits stay recoverable forever via the tag:
+
+```bash
+git fetch origin --tags
+git checkout -b <branch> archive/<branch>        # bring a deleted branch back
+```
+
+**Step 6 — the branches that still have open pull requests** (29 archived ones: #60, #81, #85, #89, #91, #347, #378, #379, #406, #419, #425, #427, #444, #466, #491, #499, #507, #534, #543, #569, #607, #618, #630, #712, #713, #763, #781, #796, #797; and the three
+merged ones: #130, #530, #799). The scripts leave them alone. On GitHub, open each PR, close it (or merge it if it
+is still wanted), then use the **Delete branch** button GitHub shows on the closed PR.
+
+**Step 7 — check.** `git fetch origin --prune && git branch -r | wc -l` — it should drop from 505 by roughly
+108 + the number of archived branches you deleted.
+
+Not covered here: the 56 **large** branches (11+ unmerged commits) and `master` — decide those separately.
+
+## Index — small branches (1–3 unmerged commits)
 
 
 | # | Branch | Last commit | Author | Unmerged commits | Open PR | Last commit message |
@@ -178,3 +230,60 @@ re-checks each branch and skips any that has gained new commits since the audit.
 | 139 | [`claude/9-slice-sprite-kit-tp0g7t`](small/claude__9-slice-sprite-kit-tp0g7t.md) | 2026-08-25 | Claude | 1 | #796 | feat(ui): 9-slice sprite kit for the corner-sliver shape language (T7) |
 | 140 | [`claude/sparrow-crystal-sound-bug-bnocj6`](small/claude__sparrow-crystal-sound-bug-bnocj6.md) | 2026-08-26 | Claude | 1 | — | fix(audio): stop the Time crystal sounding through a muted SFX setting |
 | 141 | [`claude/tool-codex-listing-vucv91`](small/claude__tool-codex-listing-vucv91.md) | 2026-08-28 | Claude | 3 | — | docs(codex): finish the Tool→Toy rename in prose |
+
+## Index — medium branches (4–10 unmerged commits)
+
+
+| # | Branch | Last commit | Author | Unmerged commits | Open PR | Last commit message |
+|---|---|---|---|---|---|---|
+| 1 | [`Sharks-and-worms`](medium/Sharks-and-worms.md) | 2025-03-05 | Garrett Milliron | 4 | — | snow changer changes |
+| 2 | [`camera-test-branch`](medium/camera-test-branch.md) | 2025-07-04 | Shombith03 | 4 | — | docs: update camera migration review |
+| 3 | [`codex/review-cameramigrationreview.md-and-fix-issues`](medium/codex__review-cameramigrationreview.md-and-fix-issues.md) | 2025-07-04 | Shombith03 | 4 | — | docs: update camera migration review |
+| 4 | [`ftue-implementation`](medium/ftue-implementation.md) | 2025-07-18 | Yash Sadhukhan | 6 | — | Revert "AI Pilot of Manta Working" |
+| 5 | [`claude/build-mobile-apk-RcGXY`](medium/claude__build-mobile-apk-RcGXY.md) | 2026-02-26 | Claude | 8 | #89 | Fix CS0234: fully qualify System.Environment to avoid CosmicShore.Environment co |
+| 6 | [`claude/fix-unit-tests-VWkMs`](medium/claude__fix-unit-tests-VWkMs.md) | 2026-02-26 | Claude | 5 | — | Consolidate all scene names into SceneNameListSO as single source of truth |
+| 7 | [`claude/test-friend-system-Zm5wJ`](medium/claude__test-friend-system-Zm5wJ.md) | 2026-03-02 | Yash Sadhukhan | 5 | — | Merge branch 'claude/test-friend-system-Zm5wJ' of https://github.com/froglet-stu |
+| 8 | [`claude/fix-hex-race-multiplayer-6mQs3`](medium/claude__fix-hex-race-multiplayer-6mQs3.md) | 2026-03-03 | Claude | 4 | — | fix(build): restore CosmicShore.Gameplay using for CameraManager in SceneLoader |
+| 9 | [`claude/game-trailer-camera-tool-f9zK9`](medium/claude__game-trailer-camera-tool-f9zK9.md) | 2026-03-03 | Claude | 7 | #347 | Fix trailer recorder: wrong playback speed and flipped video |
+| 10 | [`claude/add-skimmer-effect-Mpmcs`](medium/claude__add-skimmer-effect-Mpmcs.md) | 2026-03-04 | Claude | 4 | — | Fix element drain coroutine host and stale state issues |
+| 11 | [`claude/fix-hex-race-spawning-SuO1L`](medium/claude__fix-hex-race-spawning-SuO1L.md) | 2026-03-04 | Claude | 7 | — | fix(vessel): guard VesselPrismController.CreateBlock against destroyed object |
+| 12 | [`claude/fix-hex-race-spawning-wPmI9`](medium/claude__fix-hex-race-spawning-wPmI9.md) | 2026-03-04 | Claude | 6 | — | fix(multiplayer): pre-despawn vessels on server before scene transition |
+| 13 | [`claude/fix-menu-main-relay-host-e1JYI`](medium/claude__fix-menu-main-relay-host-e1JYI.md) | 2026-03-04 | Claude | 4 | — | fix(party): route SendInviteAsync through TransitionToPartyHostAsync |
+| 14 | [`claude/polish-ui-gdc-launch-SoMFm`](medium/claude__polish-ui-gdc-launch-SoMFm.md) | 2026-03-05 | Claude | 7 | #379 | Consolidate tip system into single SO_GameModeTips list asset |
+| 15 | [`claude/merge-dev-fix-menu-PsCnG`](medium/claude__merge-dev-fix-menu-PsCnG.md) | 2026-03-06 | Shombith03 | 8 | #378 | Merge branch 'development' into claude/merge-dev-fix-menu-PsCnG |
+| 16 | [`claude/add-mobile-performance-manager-IUiaA`](medium/claude__add-mobile-performance-manager-IUiaA.md) | 2026-03-07 | Claude | 5 | — | Fix mobile build: wrap BenchmarkSessionSummary in UNITY_EDITOR guard |
+| 17 | [`claude/sparrow-missile-mechanics-zCche`](medium/claude__sparrow-missile-mechanics-zCche.md) | 2026-03-07 | Braden Hamilton | 10 | — | Fix Sparrow Fix animaitons |
+| 18 | [`claude/fix-elemental-ui-bar-DQk6H`](medium/claude__fix-elemental-ui-bar-DQk6H.md) | 2026-03-19 | Shombith03 | 4 | #419 | Merge branch 'development' into claude/fix-elemental-ui-bar-DQk6H |
+| 19 | [`claude/fix-sparrow-prefab-L020w`](medium/claude__fix-sparrow-prefab-L020w.md) | 2026-03-19 | Braden Hamilton | 8 | — | Set Up Missile shooting animations |
+| 20 | [`claude/add-needlethread-dolphin-scripts-GVgoI`](medium/claude__add-needlethread-dolphin-scripts-GVgoI.md) | 2026-03-24 | Claude | 10 | #427 | Fix DartBoard distribution: instantiate independent spawnable copies |
+| 21 | [`claude/fix-game-modes-Offj3`](medium/claude__fix-game-modes-Offj3.md) | 2026-04-03 | Claude | 6 | #466 | Revert "fix(cell): defer OnInitializeGame subscription for DI injection timing" |
+| 22 | [`claude/fix-duel-cell-screen-urdHA`](medium/claude__fix-duel-cell-screen-urdHA.md) | 2026-04-06 | Claude | 5 | — | fix(ui): clear ArcadeGameConfigSO state on modal close and game launch |
+| 23 | [`claude/fix-gyroid-overflow-crash-LoOGN`](medium/claude__fix-gyroid-overflow-crash-LoOGN.md) | 2026-04-21 | Claude | 6 | — | fix(prism): swap shield material immediately instead of over 0.8s |
+| 24 | [`2DExplosion-Restore`](medium/2DExplosion-Restore.md) | 2026-04-22 | xghest | 9 | — | Merge branch 'development' into 2DExplosion-Restore |
+| 25 | [`claude/fix-shipactionso-reference-ICex7`](medium/claude__fix-shipactionso-reference-ICex7.md) | 2026-04-29 | Claude | 5 | — | fix(bootstrap): fix stale manager references on fast enter play mode |
+| 26 | [`claude/lifeforms-gameplay-mechanics-drfdw`](medium/claude__lifeforms-gameplay-mechanics-drfdw.md) | 2026-04-29 | Claude | 6 | — | fix(flora): drop dead FloraGrowingEnabled gates resurrected by merge |
+| 27 | [`claude/fix-profile-avatar-selection-FlM5n`](medium/claude__fix-profile-avatar-selection-FlM5n.md) | 2026-05-01 | Claude | 5 | #507 | fix(ui): subscribe ProfileModal in Awake; re-enable navbar on every nav |
+| 28 | [`claude/ai-training-tool-S3xw3`](medium/claude__ai-training-tool-S3xw3.md) | 2026-05-05 | Claude | 5 | — | fix(ai-training): launch on OnClientReady, not AppState.MainMenu |
+| 29 | [`claude/density-partitioning-sync-6OXTO`](medium/claude__density-partitioning-sync-6OXTO.md) | 2026-05-09 | Claude | 6 | — | fix(gameplay): symmetric Cell.AddBlock/RemoveBlock via add-time domain |
+| 30 | [`claude/align-brittlestar-falcon-ZY8cd`](medium/claude__align-brittlestar-falcon-ZY8cd.md) | 2026-05-15 | Claude | 9 | — | fix(brittlestar): repair BrittleStarBoostActionExecutor initialization and boost |
+| 31 | [`claude/new-vessel-creation-f55WE`](medium/claude__new-vessel-creation-f55WE.md) | 2026-05-15 | Claude | 9 | — | feat(vessel): add SetGuns method to FullAutoActionExecutor |
+| 32 | [`app-shell-polish-v2`](medium/app-shell-polish-v2.md) | 2026-05-20 | dbrutus | 5 | — | Merge branch 'app-shell-polish-v2' of https://github.com/froglet-studio/Cosmic-S |
+| 33 | [`elemental-restore`](medium/elemental-restore.md) | 2026-05-22 | xghest | 4 | — | Merge branch 'bleeding-edge' into elemental-restore |
+| 34 | [`claude/serene-cannon-iSydG`](medium/claude__serene-cannon-iSydG.md) | 2026-06-01 | Claude | 5 | — | feat(splats): add no-Bootstrap splat sandbox scene as fallback path |
+| 35 | [`claude/sleepy-fermi-Hj1SH`](medium/claude__sleepy-fermi-Hj1SH.md) | 2026-06-03 | Shombith03 | 4 | #534 | Add sprite atlas + add meta files |
+| 36 | [`claude/intelligent-lovelace-dxtorn`](medium/claude__intelligent-lovelace-dxtorn.md) | 2026-06-11 | Claude | 8 | #543 | fix(input): sign-extend HID logical min/max (Nimbus reports 129..127 = -127..127 |
+| 37 | [`codex/controller-configurator`](medium/codex__controller-configurator.md) | 2026-06-15 | Todd VanTongeren | 9 | — | Add controller configurator |
+| 38 | [`codex/bulk-filaments`](medium/codex__bulk-filaments.md) | 2026-06-27 | Todd VanTongeren | 6 | #569 | Checkpoint Bulk Filaments visuals and startup recovery |
+| 39 | [`feature/arcade-sparrow-tag`](medium/feature__arcade-sparrow-tag.md) | 2026-06-29 | Claude | 4 | — | fix(arcade): auto-set SparrowTag match duration to 120s in scene builder |
+| 40 | [`claude/vessels-review-completion-5weidk`](medium/claude__vessels-review-completion-5weidk.md) | 2026-07-13 | Claude | 9 | — | refactor(vessels): four-icon contract binds to existing HUD icons — no visible |
+| 41 | [`claude/analytics-attribution-viability-vwkunw`](medium/claude__analytics-attribution-viability-vwkunw.md) | 2026-07-15 | Claude | 5 | — | feat(analytics): Windows-first export/import UX |
+| 42 | [`claude/restore-urchin-grizzly-hmdfu`](medium/claude__restore-urchin-grizzly-hmdfu.md) | 2026-07-16 | Claude | 6 | — | Address review findings: real detonation, watcher allocs, HUD stub cleanup |
+| 43 | [`claude/skimmers-shielded-prisms-hek21c`](medium/claude__skimmers-shielded-prisms-hek21c.md) | 2026-07-24 | Claude | 9 | #618 | fix(collision): shrink hull to visible silhouette in shielded narrowphase |
+| 44 | [`claude/dolphin-explosion-prism-coverage-qtbstp`](medium/claude__dolphin-explosion-prism-coverage-qtbstp.md) | 2026-07-31 | Claude | 4 | — | Merge remote-tracking branch 'origin/bleeding-edge' into claude/dolphin-explosio |
+| 45 | [`claude/steam-early-access-checklist-qyun5c`](medium/claude__steam-early-access-checklist-qyun5c.md) | 2026-08-04 | Claude | 4 | — | docs(economy): entitlement-based credit model and its evolution path |
+| 46 | [`claude/energy-sword-rework-retry-tko3o7`](medium/claude__energy-sword-rework-retry-tko3o7.md) | 2026-08-12 | Claude | 4 | — | Merge remote-tracking branch 'origin/bleeding-edge' into claude/energy-sword-rew |
+| 47 | [`claude/ship-safeguards-tool-cleanup-fn6lk6`](medium/claude__ship-safeguards-tool-cleanup-fn6lk6.md) | 2026-08-12 | Claude | 6 | #712 | merge: bleeding-edge — keep both checklist entries, correct three verified-fal |
+| 48 | [`claude/canvas-resolution-ppu-migration-azv16k`](medium/claude__canvas-resolution-ppu-migration-azv16k.md) | 2026-08-25 | Claude | 9 | #781 | docs(ui): close T2's open criteria, add T10, and allow shared-section edits |
+| 49 | [`claude/tmp-font-assets-setup-9z96he`](medium/claude__tmp-font-assets-setup-9z96he.md) | 2026-08-25 | Claude | 8 | #797 | feat(ui): T5 re-derived against Style Foundation v0.3 |
+| 50 | [`claude/uithemeso-color-audit-0zfqjz`](medium/claude__uithemeso-color-audit-0zfqjz.md) | 2026-08-25 | Shombith | 6 | — | refactor(ui): make UIThemeSO 25 fields and nothing else, and prove the reference |
+| 51 | [`cece/funny-edison-v3z7hq`](medium/cece__funny-edison-v3z7hq.md) | 2026-08-26 | Claude | 4 | — | fix(squirrel): the morph starts where the crystal WAS, and carries its normals |
