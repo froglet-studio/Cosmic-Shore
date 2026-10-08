@@ -17,6 +17,14 @@ below (push-based presence, reconnection, observability) are specified there.
 
 ## How to use this
 
+> **For the launch programme, start with
+> [`HARDENING_PLAN_STEAM_LAUNCH.md`](HARDENING_PLAN_STEAM_LAUNCH.md)** (2026-10-08) — the ordered
+> P0/P1/P2 queue to a Steam launch, the scale ladder (what breaks at 1, 4, 10, 40 and 100 CCU), the
+> four-level test strategy, the diagnosis/JSON schema, and the measured refactor list. Its
+> executable form is [`../prompts/MULTIPLAYER_HARDENING_PROMPT.md`](../prompts/MULTIPLAYER_HARDENING_PROMPT.md).
+> This file stays the live queue; that one is the programme.
+
+
 - The **invariants** are guardrails — keep them true. A change that breaks one is a regression, not a
   feature. They mirror the locked decisions in `../PartySystem/ARCHITECTURE.md`.
 - The **risks** are the prioritized queue. Pick the highest unchecked item. Each has a one-line
