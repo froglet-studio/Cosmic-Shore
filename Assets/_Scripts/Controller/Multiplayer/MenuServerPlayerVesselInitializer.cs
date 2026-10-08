@@ -285,7 +285,7 @@ namespace CosmicShore.Gameplay
                 ActivateAutopilot(player);
 
                 // 5. Wait for replication, then notify all non-host clients
-                await UniTask.Delay(postSpawnDelayMs, cancellationToken: ct);
+                await UniTask.Delay(postSpawnDelayMs, DelayType.UnscaledDeltaTime, cancellationToken: ct);
                 NotifyClientsOfSwap(player, newVessel);
 
             }

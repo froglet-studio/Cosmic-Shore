@@ -1031,7 +1031,7 @@ namespace CosmicShore.Gameplay
             var clearTask = ClearJoinedPartyAsync();
             int winner = await UniTask.WhenAny(
                 clearTask,
-                UniTask.Delay(TimeSpan.FromSeconds(CLEAR_JOINED_PARTY_TIMEOUT_SECONDS)));
+                UniTask.Delay(TimeSpan.FromSeconds(CLEAR_JOINED_PARTY_TIMEOUT_SECONDS), DelayType.UnscaledDeltaTime));
             if (winner != 0)
                 CSDebug.LogWarning(
                     "[HostConnectionService] ClearJoinedParty did not complete within " +
@@ -1135,7 +1135,7 @@ namespace CosmicShore.Gameplay
 
                     if ((connectionData.PartyMembers?.Count ?? 0) < before) break;
                     if (i < RECONCILE_MAX_ATTEMPTS - 1)
-                        await UniTask.Delay(RECONCILE_RETRY_DELAY_MS);
+                        await UniTask.Delay(RECONCILE_RETRY_DELAY_MS, DelayType.UnscaledDeltaTime);
                 }
             }
             finally
