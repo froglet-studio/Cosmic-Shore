@@ -50,8 +50,14 @@ here** — the split Dog Fight established.
    `IRoundStats.StrikeHitsLanded` carries it. *An else-arm in a tally is the same trap the enum's
    own doc already records for pricing.*
 
-**The Serpent is deliberately not on the card.** It has no anti-vessel verb authored at all (0/4
-abilities). Listing it would seat a pilot who cannot score; giving it one is a `/vessel` job.
+**The Serpent is deliberately not on the card.** When this mode shipped it had no anti-vessel verb
+at all. It has one now: the **Sniper Shot** (`SniperShotActionExecutor.StripVessels`,
+`SniperShotAction.asset` `vesselStripPerElement: 0.1`) ejects elements from every opposing pilot in
+the round's cone. But the round raises **no combat-hit report** (no `VesselCombatHit*` effect and
+no `CombatHitClass`), so in this mode it would still score **0**. Listing the Serpent today would
+still seat a pilot who cannot score. Seating it needs a hit report on the round and a balance row
+in `broadside_balance.py`. *Re-checked 2026-10-08.* The kit is no longer what is missing, so
+whether to seat it is a design call.
 
 ## The fleet table
 
@@ -66,7 +72,7 @@ Measured off the shipped prefabs and containers, 2026-09-16.
 | Squirrel | joust | ❌ paid `Jousts` only | yes — the joust is landed by arriving |
 | Rhino | energised sword | ❌ damaged + spun, reported nothing | yes — same |
 | Urchin | chain spikes | ❌ **container empty** | yes — a replicated trigger tap |
-| ~~Serpent~~ | — | — | **not on the card** |
+| ~~Serpent~~ | Sniper Shot strips elements (added after this table) | ❌ no hit report | **not on the card** |
 
 ## Balance
 
@@ -373,7 +379,9 @@ a volley, and everything about feel.
 - **Connect fractions are estimates** (above). The first playtest should correct them.
 - **The Dolphin is the weakest seat** at 4.8 min to target: its cone is gated on a crystal run
   rather than on the fight. Its Time row already buys it the maximum the platform allows.
-- **No Serpent.**
+- **No Serpent.** This is a design call now, not a missing kit. The Sniper Shot strips elements from
+  rivals but reports no combat hit, so it would score nothing here. See *The Serpent is
+  deliberately not on the card* above.
 - **The Rhino's sword is the one verb whose drain is still authored nowhere.** Every other
   scoring class now bites in proportion to its price; a Strike is covered by the per-weapon
   table, and the only Strike asset in the fleet is the Squirrel's overtake, which gates on being

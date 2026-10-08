@@ -270,7 +270,7 @@ namespace CosmicShore.Gameplay
 
             while (UnityEngine.Time.unscaledTime < deadline)
             {
-                await UniTask.Delay(400);
+                await UniTask.Delay(400, DelayType.UnscaledDeltaTime);
                 pollCount++;
 
                 var lobby = lobbyService.ActiveLobby;

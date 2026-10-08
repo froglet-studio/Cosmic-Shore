@@ -67,9 +67,12 @@ namespace CosmicShore.Gameplay
     ///
     /// <para>Grazing FREES a site, so a plant eaten back regrows into its own vacancies
     /// from the heart outward instead of staying a permanent stub - the live-prism budget
-    /// rule every flora family follows. The LIMB is left standing when its plate is eaten
-    /// and is re-used when the plate grows back, so grazing can never mint a second
-    /// spindle on one bond.</para>
+    /// rule every flora family follows. Every limb hangs off its parent's limb in the
+    /// spindle tree, so a limb whose plate is eaten STAYS STANDING while anything still grows
+    /// beyond it, and is re-used when the plate grows back - grazing can never cut the outer
+    /// plant off from its crystal, nor mint a second spindle on one bond. A limb with no plate
+    /// and nothing beyond it withers, and its parent follows if that leaves it bare, so a plant
+    /// is always eaten back from the outside in (Docs/ECOSYSTEM.md §26.10).</para>
     /// </summary>
     public class BorromeanFlora : Flora
     {
@@ -111,8 +114,8 @@ namespace CosmicShore.Gameplay
         BorromeanSurfaceData.SurfaceTable _table = BorromeanSurfaceData.Anchor;
 
         // Which prism occupies each site, and the limb that carries it. Indexed by site, so a
-        // grazed site is simply a null the next grow tick refills - and the limb survives that,
-        // because a branch whose leaf was eaten is still a branch.
+        // grazed site is simply a null the next grow tick refills - and the limb survives that
+        // while anything hangs off it, because a branch whose leaf was eaten is still a branch.
         HealthPrism[] _occupant;
         Spindle[] _limb;
         readonly Dictionary<HealthPrism, int> _siteOf = new();
@@ -256,6 +259,15 @@ namespace CosmicShore.Gameplay
                 StretchToBond(limb, bond.magnitude);
             }
 
+            // The limb hangs off its PARENT'S limb in the spindle tree (or off the heart). The
+            // limbs are flat siblings under the plant root, so without this link no limb knows
+            // anything grows from it: graze an inner plate and its limb evaporated at once while
+            // every limb beyond it stood on, rooted at nothing - a plant cut off from its own
+            // crystal. Linked, a limb stands for as long as it carries a plate OR anything
+            // hangs off it, and an ordered wither spends it only after its whole subtree. The
+            // parent gate in Grow guarantees the parent's plate - and so its limb - is standing.
+            limb.AttachToParent(parent >= 0 ? _limb[parent] : null);
+
             HealthPrism prism = EnvironmentPrismPool.Get(healthPrism, pos, rot);
             if (!prism) return false;
 
@@ -351,8 +363,9 @@ namespace CosmicShore.Gameplay
             // Free the site BEFORE the base call: the base may decide this plant is dead, and
             // a freed site costs nothing either way, where a site left claimed by a prism that
             // no longer exists is a permanent hole the plant could never regrow into. The LIMB
-            // is deliberately left standing - a branch whose leaf was eaten is still a branch,
-            // and keeping it is also what stops a regrowth minting a second spindle on one bond.
+            // is the spindle's own business: it stays standing while a limb hangs off it (a
+            // branch whose leaf was eaten is still a branch, and re-using it is what stops a
+            // regrowth minting a second spindle on one bond) and withers when nothing does.
             if (healthPrism && _siteOf.TryGetValue(healthPrism, out int site))
             {
                 _siteOf.Remove(healthPrism);

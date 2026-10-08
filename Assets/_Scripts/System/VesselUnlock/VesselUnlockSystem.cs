@@ -56,6 +56,16 @@ namespace CosmicShore.Core
 
             if (vessel.UnlockCost > 0)
             {
+                // The crystal wallet always persists, but the UNLOCK only persists while the
+                // progression backend gate is open (PersistUnlockToCloud returns early, and
+                // ApplyStarterUnlocks re-locks the hull on the next launch). Spending here with
+                // the gate closed took the crystals for good and gave the vessel for one session.
+                if (!ProgressionBackendGate.CloudEnabled)
+                {
+                    CSDebug.LogWarning($"[VesselUnlockSystem] Purchase of {vessel.Name} refused: the progression backend gate is closed, so the unlock could not be saved but the crystals would be.");
+                    return false;
+                }
+
                 var service = PlayerDataService.Instance;
                 if (service == null || !service.TrySpendCrystals(vessel.UnlockCost, "vessel_unlock"))
                     return false;

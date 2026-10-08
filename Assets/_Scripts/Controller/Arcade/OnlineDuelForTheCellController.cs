@@ -17,9 +17,27 @@ namespace CosmicShore.Gameplay
                     ChangeOwnershipOfVessels();
                 
                 gameData.SwapVessels();
+
+                // SetupNewRound only ever runs on the SERVER (InitializeAfterDelay's server branch,
+                // the round-end and replay paths), so the exchange above used to happen on the host
+                // alone: ownership moved to the client while the client's Player.Vessel still named
+                // its old hull - now host-owned - and the hull it now owned was bound to the host's
+                // Player. Every peer has to apply the exchange, as PilotSwap.ApplyLocal does.
+                if (IsServer)
+                    SwapVessels_ClientRpc();
             }
             
             base.SetupNewRound();
+        }
+
+        [ClientRpc]
+        void SwapVessels_ClientRpc()
+        {
+            if (IsServer) return;   // applied synchronously above, in order with the round setup
+            if (gameData.Players == null || gameData.Players.Count < 2) return;
+            // Two players: the exchange is symmetric, so the order of this peer's roster does not
+            // matter.
+            gameData.SwapVessels();
         }
         
         protected override void OnResetForReplay()

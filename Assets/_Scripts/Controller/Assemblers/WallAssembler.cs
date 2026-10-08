@@ -96,10 +96,18 @@ namespace CosmicShore.Gameplay
             StartBonding();
         }
 
+        // The search loop's handle. StopBonding has to be able to end it: the inner search loop
+        // never read isStopped, so after every Serpent cloak (CloakSeedWallActionExecutor ->
+        // StopSeedCompletely -> StopBonding) the loop kept searching every ~2 s for the life of
+        // the prism - stamping WallAssemblers onto, resizing and pulling every prism within 40u,
+        // enemy trails included - and a repeated StartBonding stacked a second loop.
+        Coroutine _lookForMates;
+
         public override void StartBonding()
         {
             isStopped = false;
-            StartCoroutine(LookForMates());
+            if (_lookForMates != null) StopCoroutine(_lookForMates);
+            _lookForMates = StartCoroutine(LookForMates());
         }
 
         //the following method calculates rotation using SiteType. Is is similiar to "Quaternion CalculateRotation(BondMate mate)"
@@ -275,7 +283,7 @@ namespace CosmicShore.Gameplay
         {
             while (!isStopped)
             {
-                while (true)
+                while (!isStopped)
                 {
                     if (Prism == null)
                     {
@@ -573,6 +581,7 @@ namespace CosmicShore.Gameplay
         public override void StopBonding()
         {
             isStopped = true;
+            if (_lookForMates != null) { StopCoroutine(_lookForMates); _lookForMates = null; }
             if (updateTopMate != null) { StopCoroutine(updateTopMate); updateTopMate = null; }
             if (updateBottomMate != null) { StopCoroutine(updateBottomMate); updateBottomMate = null; }
 

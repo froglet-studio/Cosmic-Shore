@@ -93,8 +93,12 @@ needs no per-mode code. It is a LOCAL poll over replicated RoundStats on every p
 the top has no leader; a lead change is announced only once the leader is past the quarter beat
 and at most every 8 s. `GateRaceController` passes a 3-gate home stretch and, on a lapped
 course, the first gate of the last lap (`RaceLengthFor(rings, leadIn, laps - 1)`). This is the
-gate-threaded hook Waystation's note below said the platform lacked — Regatta and Waystation
-post these beats too, but their generator-owned configs do not author them yet.
+gate-threaded hook Waystation's config once said the platform lacked — Regatta and Waystation
+post these beats too, and their generators author them (Regatta 129-132, Waystation 129-131).
+**Regatta's beats read the TEAM SUM** (`RegattaScoringRuleSO.DomainValue`) against one pilot's
+course length, so with two or more pilots on a team the halfway / home-stretch / final-lap beats
+fire before any one pilot is there; its templates say "{1}/{2} gates" rather than "gate {1}/{2}"
+for that reason.
 
 Joust points are read from `RoundStatsList` at display time (StatsManager has already
 recorded the joust locally when the post arrives, so the count includes the new point).
@@ -111,9 +115,9 @@ recorded the joust locally when the post arrives, so the count includes the new 
 | `GameToastConfig_Bends` | Bends (42) | `{0} bent a rival! ({1}/{3})` (every debuff landed), the quarter / half / lead-change milestones, `Comeback system is on` |
 | `GameToastConfig_BroodRush` | BroodRush (38) | `{0} brood hatched - {1}/{2}` |
 | `GameToastConfig_WreckingBall` | WreckingBall (54) | `{0} has wrecked {1} prisms` (`everyN` 250), the lead-change beat, two idle hints (forge a ball / dash beside the forest), `Comeback system is on` — authored by `author_wrecking_ball_assets.py` |
-| `GameToastConfig_Regatta` | Regatta (56) | two idle hints (the rail in your colour is the racing line; ride it / skim it / fly beside it), `Comeback system is on` — authored by `author_regatta_assets.py` |
+| `GameToastConfig_Regatta` | Regatta (56) | two idle hints (the rail in your colour is the racing line; ride it / skim it / fly beside it), `Comeback system is on`, and the shared race beats halfway / lead change / home stretch / final lap (129-132, `{1}/{2} gates` — a team tally) — authored by `author_regatta_assets.py` |
 | `GameToastConfig_Broadside` | Broadside (57) | `{0} landed a hit!` (every hit), the quarter / half / lead-change milestones, two idle hints that name the VERB rather than the hull (seven hulls share four verbs, and a hint per hull is seven hints nobody reads), `Comeback system is on` — authored by `author_broadside_assets.py` |
-| `GameToastConfig_Waystation` | Waystation (58) | TWO IDLE HINTS AND NOTHING ELSE (thread every ring around you; hold the fold and aim at the next cluster). The absence is the decision: the gate-race platform has NO gate-threaded hook, so a milestone or lead-change situation would have no poster — and an enum member nothing raises reads exactly like a feature. An idle hint needs no poster at all, which is why Regatta authored only hints too. Authored by `author_waystation_assets.py` |
+| `GameToastConfig_Waystation` | Waystation (58) | two idle hints (thread every ring around you; hold the fold and aim at the next cluster) and the shared race beats halfway / lead change / home stretch (129-131, `ring {1}/{2}`, Skein's voice). No final lap: one pass of clusters, so `DomainRaceFinalLap` never fires here. It shipped with hints only while the gate-race platform had no gate-threaded hook; `DomainRaceToasts` is that hook. Authored by `author_waystation_assets.py` |
 | `GameToastConfig_Dustup` | Dustup (59) | the quarter / half / lead-change milestones, one idle hint (get ABOVE a rival — the dust hangs below you) |
 | `GameToastConfig_Tapestry` | Tapestry (60) | the lead-change beat, two idle hints (Mass mode paints a wide wake that is score; behind? Dust mode raids their painting) |
 | `GameToastConfig_Sirocco` | Sirocco (61) | `{0} has eroded {1} prisms` (`everyN` 100), the lead-change beat, one idle hint (Dust mode, low and long over the forest) |

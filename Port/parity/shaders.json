@@ -1035,14 +1035,6 @@
       "approximations": []
     },
     {
-      "path": "Assets/_Graphics/Materials/Graphs/FoldGatePortal.shader",
-      "guid": "4bbb3a527bac48b9aa0f4efe6de383f3",
-      "name": "CosmicShore/FoldGatePortal",
-      "route": "missing",
-      "why": "hand-written .shader: no translation yet",
-      "approximations": []
-    },
-    {
       "path": "Assets/_Graphics/Materials/Graphs/ForcefieldCrackle.shader",
       "guid": "0d2382aa91a61b6220c03dc1763fd26f",
       "name": "Shader Graphs/ForcefieldCrackle",
@@ -1301,6 +1293,14 @@
       "approximations": []
     },
     {
+      "path": "Assets/_Graphics/Materials/Graphs/Wormhole.shader",
+      "guid": "1b0aa366a170fb99b7d63b228298811a",
+      "name": "CosmicShore/Wormhole",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
       "path": "Assets/_Graphics/Materials/Lifeform_World_Shader Graphs/CreatureTextureGraph.shadergraph",
       "guid": "4a2897f9dfc7e5645aee8db7ca02c177",
       "name": "Shader Graphs/CreatureTextureGraph",
@@ -1416,6 +1416,30 @@
       "path": "Assets/_Graphics/Materials/Shaders/HyperSeaSkybox.shader",
       "guid": "a8f4e2b6c9d1357024681acf3b5d7e90",
       "name": "CosmicShore/HyperSeaSkybox",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/OmniChargeEdgesShader.shader",
+      "guid": "fea45e80b3e94b3e34515f9ff6446e87",
+      "name": "Custom/OmniChargeEdgesShader",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/OmniCrystalFresnelShader.shader",
+      "guid": "554d96e9b67505208a3fbf0acb165350",
+      "name": "Custom/OmniCrystalFresnelShader",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/OmniShepardFresnelShader.shader",
+      "guid": "b55e562cd5045859607550ce7ba8267f",
+      "name": "Custom/OmniShepardFresnelShader",
       "route": "missing",
       "why": "hand-written .shader: no translation yet",
       "approximations": []

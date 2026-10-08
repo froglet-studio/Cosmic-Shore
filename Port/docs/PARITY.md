@@ -9,7 +9,7 @@ Last parity run against Unity goldens: 2026-10-07 (boot-menu, random, skimrace-f
 | | Faithful | Approximate | Missing |
 |---|---|---|---|
 | Subsystems | 0 | 26 | 6 |
-| Shaders | 0 | 54 | 24 |
+| Shaders | 0 | 54 | 27 |
 
 ## Subsystems
 
@@ -69,7 +69,6 @@ Last parity run against Unity goldens: 2026-10-07 (boot-menu, random, skimrace-f
 | Shader Graphs/ExplodingBlockGraph | `Assets/_Graphics/Materials/Graphs/ExplodingBlockGraph.shadergraph` | Approximate | hand-tuned family; frames not yet compared per shader (C2) |
 | Shader Graphs/ExplodingCrystalGraph | `Assets/_Graphics/Materials/Graphs/ExplodingCrystalGraph.shadergraph` | Approximate | Shader Graph compiler; frames not yet compared per shader (C2) |
 | Shader Graphs/ExplosionGraph | `Assets/_Graphics/Materials/Graphs/ExplosionGraph.shadergraph` | Approximate | Shader Graph compiler; frames not yet compared per shader (C2) |
-| CosmicShore/FoldGatePortal | `Assets/_Graphics/Materials/Graphs/FoldGatePortal.shader` | Missing | hand-written .shader: no translation yet |
 | Shader Graphs/ForceFieldGraph | `Assets/_Graphics/Materials/Graphs/ForceFieldGraph.shadergraph` | Approximate | Shader Graph compiler; frames not yet compared per shader (C2) |
 | Shader Graphs/ForcefieldCrackle | `Assets/_Graphics/Materials/Graphs/ForcefieldCrackle.shader` | Approximate | hand-tuned family; frames not yet compared per shader (C2) |
 | Shader Graphs/ForcefieldCrackleCapsule | `Assets/_Graphics/Materials/Graphs/ForcefieldCrackleCapsule.shader` | Missing | hand-written .shader: no translation yet |
@@ -101,6 +100,7 @@ Last parity run against Unity goldens: 2026-10-07 (boot-menu, random, skimrace-f
 | Shader Graphs/VesselGraph | `Assets/_Graphics/Materials/Graphs/VesselGraph.shadergraph` | Approximate | hand-tuned family; frames not yet compared per shader (C2) |
 | Shader Graphs/VesselTextureGraph | `Assets/_Graphics/Materials/Graphs/VesselTextureGraph.shadergraph` | Approximate | Shader Graph compiler; frames not yet compared per shader (C2) |
 | Shader Graphs/WispGraph | `Assets/_Graphics/Materials/Graphs/WispGraph.shadergraph` | Approximate | Shader Graph compiler; frames not yet compared per shader (C2) |
+| CosmicShore/Wormhole | `Assets/_Graphics/Materials/Graphs/Wormhole.shader` | Missing | hand-written .shader: no translation yet |
 | Shader Graphs/CreatureTextureGraph | `Assets/_Graphics/Materials/Lifeform_World_Shader Graphs/CreatureTextureGraph.shadergraph` | Approximate | Shader Graph compiler; frames not yet compared per shader (C2) |
 | Shader Graphs/WorldSpaceDesign10_Graph | `Assets/_Graphics/Materials/Lifeform_World_Shader Graphs/WorldSpaceDesign10_Graph.shadergraph` | Approximate | Shader Graph compiler; frames not yet compared per shader (C2) |
 | Shader Graphs/WorldSpaceDesign11_Graph | `Assets/_Graphics/Materials/Lifeform_World_Shader Graphs/WorldSpaceDesign11_Graph.shadergraph` | Approximate | Shader Graph compiler; frames not yet compared per shader (C2) |
@@ -116,6 +116,9 @@ Last parity run against Unity goldens: 2026-10-07 (boot-menu, random, skimrace-f
 | Shader Graphs/WorldSpaceDesign9_Graph | `Assets/_Graphics/Materials/Lifeform_World_Shader Graphs/WorldSpaceDesign9_Graph.shadergraph` | Approximate | Shader Graph compiler; frames not yet compared per shader (C2) |
 | Custom/TransparentPerlinDistortion | `Assets/_Graphics/Materials/Shaders/DistortionShader.shader` | Missing | hand-written .shader: no translation yet |
 | CosmicShore/HyperSeaSkybox | `Assets/_Graphics/Materials/Shaders/HyperSeaSkybox.shader` | Missing | hand-written .shader: no translation yet |
+| Custom/OmniChargeEdgesShader | `Assets/_Graphics/Materials/Shaders/OmniChargeEdgesShader.shader` | Missing | hand-written .shader: no translation yet |
+| Custom/OmniCrystalFresnelShader | `Assets/_Graphics/Materials/Shaders/OmniCrystalFresnelShader.shader` | Missing | hand-written .shader: no translation yet |
+| Custom/OmniShepardFresnelShader | `Assets/_Graphics/Materials/Shaders/OmniShepardFresnelShader.shader` | Missing | hand-written .shader: no translation yet |
 | Shapes_Shader_Pack | `Assets/_Graphics/Materials/Shaders/Shapes_Shader_ST.shader` | Missing | hand-written .shader: no translation yet |
 | Custom/SpreadFresnelShader | `Assets/_Graphics/Materials/Shaders/SpreadFresnelShader.shader` | Missing | hand-written .shader: no translation yet |
 | Sprite Shaders Ultimate/Standard SSU | `Assets/_Graphics/Materials/Shaders/Standard SSU.shader` | Missing | hand-written .shader: no translation yet |

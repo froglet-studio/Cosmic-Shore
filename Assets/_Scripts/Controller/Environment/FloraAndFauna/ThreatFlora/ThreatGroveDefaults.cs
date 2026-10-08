@@ -57,7 +57,8 @@ namespace CosmicShore.Gameplay
         }
 
         // ── the physarum network ─────────────────────────────────────────────────────────────────────────────
-        public const int Sclerotia = 5;             // research DEFAULTS n_hearts
+        public const int Sclerotia = 5;             // research DEFAULTS n_hearts: the seed floor
+        public const int SclerotiumCap = 8;         // hearts bud from the reserve up to this (collider budget, §5)
         public static readonly Vector3 TubeLeaf = new Vector3(3.6f, 3.6f, 12f);
         public static readonly Vector3 ShellLeaf = new Vector3(6f, 6f, 6f);
         public const int ShellPrisms = 6;           // the sclerotium's beat shell: an octahedron of prisms

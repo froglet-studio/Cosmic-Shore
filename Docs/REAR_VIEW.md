@@ -72,6 +72,12 @@ itself from `EffectiveOffset` — the authored `followOffset` with **z mirrored*
 `followOffset` itself. The controller's existing look-at-the-target rotation then points the
 camera back down the ship's forward axis for free.
 
+`EffectiveOffset` also scales the offset's height by `FollowHeightScale` (1 unless a vessel sets
+it — the Butterfly drops it to 0 in Mass mode, `R_VesselActions/BUTTERFLY.md` §2.0). That is not a
+third vantage and does not break the ordering rule below: like a zoom writing the distance, it
+changes the OFFSET the vantages are built from, so the rear view composes with it and mirrors the
+scaled offset (`FollowHeightScaleTests.ComposesWithTheRearView`).
+
 | vessel | authored offset | rear vantage |
 |---|---|---|
 | Urchin | `(0, 0.83, −6.67)` | `(0, 0.83, +6.67)` |
@@ -161,9 +167,11 @@ resolves `CameraManager`'s active controller and never sees it, `ApplyCameraGrap
 `SetBackgroundColor` reach only the managed cameras, and `Camera.main` skips it twice over. That is
 the `ConnectingArenaPreview` shape, and `ScopePipView` is the second user of it.
 `FoldGatePortalView` (the Butterfly's fold-gate window, `R_VesselActions/BUTTERFLY_FOLD.md`
-§ "Seamless transit") is the third, and the one that deliberately renders WITHOUT post-processing:
+§ "Seamless transit") was the third, and the one that deliberately rendered WITHOUT post-processing:
 its picture is composited INTO the world and post-processed by the gameplay camera with everything
-else, so tonemapping it itself would tonemap it twice.
+else, so tonemapping it itself would tonemap it twice. **It is retired (2026-10-08):** the fold's
+gates became wormholes, and the same carve-out — post OFF for the same reason — now lives on the two
+cameras every wormhole mouth carries (`WormholeMouth` / `WormholeView`, `Docs/WORMHOLES.md`).
 
 It is posed from the vessel itself — the eye at `1.05 ×` the measured circumscribing hull radius
 past the nose, aimed along the same forward the shot is cast along — so the window cannot become a

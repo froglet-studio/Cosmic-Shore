@@ -229,8 +229,10 @@ namespace CosmicShore.Gameplay
                     prism.prismProperties.IsShielded = false;
                 prism.DeactivateShields();
 
-                var shield = prism.gameObject.GetComponent<PrismStellatedOctahedronShield>()
-                             ?? prism.gameObject.AddComponent<PrismStellatedOctahedronShield>();
+                // TryGetComponent, never `GetComponent() ?? AddComponent()`: a missing component is
+                // a fake-null object in the Editor, so the coalesce never added one there.
+                if (!prism.gameObject.TryGetComponent(out PrismStellatedOctahedronShield shield))
+                    shield = prism.gameObject.AddComponent<PrismStellatedOctahedronShield>();
                 // This runs during the track's spawn window, so honour the same birth rule
                 // PrismStateManager applies: a shield engaged before the prism has ever been
                 // on screen must SNAP. The morph is invisible by construction there (the

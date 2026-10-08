@@ -27,6 +27,27 @@
           "date": "2026-10-05"
         }
       }
+    },
+    "2026-10-08-akouroshm.md": {
+      "submitted_hash": "2837cde45e4cf01944864f77509507ed18f445dbf2bcc6eb19b84d5e9d7a5fe8",
+      "applied_hash": "2837cde45e4cf01944864f77509507ed18f445dbf2bcc6eb19b84d5e9d7a5fe8",
+      "items": {
+        "QA-STATE-RESET": {
+          "verdict": "PASS",
+          "row": "c7836d7e442fc287",
+          "date": "2026-10-08"
+        },
+        "QA-MENU-VEIL-PAUSE": {
+          "verdict": "FAIL",
+          "row": "076e3adbbaec4999",
+          "date": "2026-10-08"
+        },
+        "QA-AI-SKIMRACE": {
+          "verdict": "PASS",
+          "row": "944f115b04643f18",
+          "date": "2026-10-08"
+        }
+      }
     }
   }
 }

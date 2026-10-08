@@ -316,6 +316,7 @@ namespace CosmicShore.Gameplay
         public void StartVessel()
         {
             ToggleStationaryMode(false);
+            VesselStatus.ResourceSystem.MarkSpawned();   // the burn's spawn grace runs from the go, not the countdown
             VesselStatus.VesselPrismController.StartSpawn();
         }
 

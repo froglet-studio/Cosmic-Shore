@@ -520,3 +520,67 @@ rung's own target. Measured 7.4x-9.3x on the shipped arenas (targets 1,200 / 1,2
 
 **Verification.** Both are compile-by-inspection + traced call paths; engine verification pending
 (MPPM, 1 host + 1 client — see RAMPAGE.md's checklist).
+
+## B19 — a remote client's steal never debited the victim (the trade the RPC now makes)
+
+**Symptom.** A client's Urchin converts 20 of a rival's trail prisms: the client is credited
+(`PrismStolen`, `VolumeStolen`, its own `PrismsRemaining` / `VolumeRemaining` all rise) but the
+rival's `PrismsRemaining` / `VolumeRemaining` do not fall. Those two tallies feed cell control and
+volume scoring, so every client-side steal minted mass out of nothing.
+
+**Root cause.** Two paths, and the debit was on neither for a remote thief. The server's own
+detection (`StatsManager.PrismStolen`) returns at `OwnsAttacker(thief)` before the victim debit, so
+that it does not double-credit a steal the client will report itself. The client's report
+(`Player.ReportPrismStolen_ServerRpc(float volume)`) carried only the thief's half, because the
+thief's identity comes from RPC ownership and the RPC had no victim to name. `Player.cs`'s docstring
+claimed the trade was recorded here; it was not (URCHIN_BACKLOG U2).
+
+**Fix — and the trade it makes.** The RPC now carries the victim's name
+(`ReportPrismStolen_ServerRpc(float volume, FixedString64Bytes victimName)`) and the server debits
+that player through `StatsManager.DebitPrismSteal`, the twin of `CreditPrismSteal`; the server-local
+path uses the same two helpers, so each steal is credited and debited exactly once on either path.
+**The victim's name is client-supplied and therefore trusted.** That was previously judged worse
+than a soft tally; it is accepted now because the alternative inflates a scored stat on every
+client steal, and the blast radius of a forged name is bounded: it must name a rostered player, it
+can only LOWER that player's remaining-mass tally, and only by the volume the credit half already
+takes on trust. The thief's identity still never comes from a name.
+
+**Verification.** Compiled against the Unity reference assemblies; engine verification pending
+(MPPM, 1 host + 1 client: steal ~20 of the host's trail prisms with the client's Urchin and
+confirm the host's `PrismsRemaining` / `VolumeRemaining` fall by the same count/volume the client
+gains; then steal with the host and confirm the client's tallies move exactly once, not twice).
+
+## B20 — a client's combat hit was scored twice (the host's replay of the round was credited too)
+
+**Symptom.** In Dog Fight (and every mode that prices a Sparrow round or an Urchin spike), one
+bullet a client lands on a host can score +2 instead of +1, and a rocket's centre-punch +60
+instead of +30. A client can also score a hit its own screen showed missing.
+
+**Root cause.** `StatsManager.CombatHitLanded` assumed a client's round "does not exist on the
+server at all", because projectiles are not networked. The round is not, but the PRESS is:
+`R_VesselActionHandler` sends it owner → `SendButtonPressed_ServerRpc` →
+`SendButtonPressed_ClientRpc` → `PerformShipControllerActions` on every peer, the host included.
+`FireGunActionExecutor` / `FullAutoActionExecutor` have no ownership check, so the host spawns its
+own copy of the client's round. When that copy connects, the reporter (`VesselCombatHitByProjectile`
+/ `…ByExplosion`) raises with the client's name, and the server branch credits
+`TryGetRoundStats(client)` directly. The client's own copy connects too and arrives through
+`Player.ReportCombatHit_ServerRpc`, which credits the same `RoundStats` again. Nothing deduplicates
+the two: `VesselCombatHitLatch` is per machine, and the RPC calls `CombatHitScoring.Credit`
+without touching the server's latch. The client-side name check only ever filtered the reverse
+case (a client replaying the host's or an AI's round). The skimmer reporter and the Dolphin/Scarab
+crystal blasts already gated on the shooter's owner (`requireOwningMachine`), so they were never
+affected. Neither were the host's own shots or the AI's.
+
+**Fix.** One rule, the one the petal drain already follows (`Docs/ELEMENTAL_ECONOMY.md §7`):
+**a hit is decided on the machine that owns the shooter.** All three reporters return before the
+latch unless `ElementalTransfer.IsDecidedHere(shooter)`, which is true offline or on the owner of
+the shooter's hull (the client for its own shots, the server for the host and every AI). The
+server branch of `CombatHitLanded` also returns unless `OwnsAttacker(hit.ShooterName)`, the same
+second line B17 uses for environment kills. AI and offline scoring are unchanged: the server owns
+every AI, and an unspawned hull is always decided here.
+
+**Verification.** Compiled against the Unity reference assemblies (player + editor configs). The
+predicate is covered by `ElementalTransferRouteTests.AHitIsDecidedOnlyOnTheShootersOwner` and by
+harness T10, which is negative-controlled. Engine verification is pending (MPPM, 1 host + 1
+client, Dog Fight): the client lands single bullets on a stationary host, and each one is +1 on
+both machines' domain panels, never +2. `DOGFIGHT.md` verification step 9.

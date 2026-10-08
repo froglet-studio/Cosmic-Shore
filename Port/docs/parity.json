@@ -17,7 +17,7 @@
     "shaders": {
       "Faithful": 0,
       "Approximate": 54,
-      "Missing": 24
+      "Missing": 27
     }
   },
   "subsystems": [
@@ -604,13 +604,6 @@
       "test": "ShaderGraphCompilerTests, --check-shaders"
     },
     {
-      "path": "Assets/_Graphics/Materials/Graphs/FoldGatePortal.shader",
-      "name": "CosmicShore/FoldGatePortal",
-      "status": "Missing",
-      "why": "hand-written .shader: no translation yet",
-      "test": ""
-    },
-    {
       "path": "Assets/_Graphics/Materials/Graphs/ForceFieldGraph.shadergraph",
       "name": "Shader Graphs/ForceFieldGraph",
       "status": "Approximate",
@@ -828,6 +821,13 @@
       "test": "ShaderGraphCompilerTests, --check-shaders"
     },
     {
+      "path": "Assets/_Graphics/Materials/Graphs/Wormhole.shader",
+      "name": "CosmicShore/Wormhole",
+      "status": "Missing",
+      "why": "hand-written .shader: no translation yet",
+      "test": ""
+    },
+    {
       "path": "Assets/_Graphics/Materials/Lifeform_World_Shader Graphs/CreatureTextureGraph.shadergraph",
       "name": "Shader Graphs/CreatureTextureGraph",
       "status": "Approximate",
@@ -928,6 +928,27 @@
     {
       "path": "Assets/_Graphics/Materials/Shaders/HyperSeaSkybox.shader",
       "name": "CosmicShore/HyperSeaSkybox",
+      "status": "Missing",
+      "why": "hand-written .shader: no translation yet",
+      "test": ""
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/OmniChargeEdgesShader.shader",
+      "name": "Custom/OmniChargeEdgesShader",
+      "status": "Missing",
+      "why": "hand-written .shader: no translation yet",
+      "test": ""
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/OmniCrystalFresnelShader.shader",
+      "name": "Custom/OmniCrystalFresnelShader",
+      "status": "Missing",
+      "why": "hand-written .shader: no translation yet",
+      "test": ""
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/OmniShepardFresnelShader.shader",
+      "name": "Custom/OmniShepardFresnelShader",
       "status": "Missing",
       "why": "hand-written .shader: no translation yet",
       "test": ""

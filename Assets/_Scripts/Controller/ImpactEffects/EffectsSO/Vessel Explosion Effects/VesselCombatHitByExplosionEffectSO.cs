@@ -16,10 +16,12 @@ namespace CosmicShore.Gameplay
     /// so for a clean centre-punch both effects fire for one rocket and exactly one of them
     /// scores.
     ///
-    /// <b>Authority.</b> The blast is instantiated by the machine that owned the projectile, so
-    /// like the direct-hit effect this runs on the shooter's machine alone and raises
-    /// unconditionally; <c>StatsManager.CombatHitLanded</c> arbitrates server-vs-client
-    /// attribution.
+    /// <b>Authority.</b> The blast is instantiated by whichever machine flew the projectile, and a
+    /// human's press is replicated, so every peer detonates its own copy. Like the direct-hit
+    /// effect, this therefore reports only on the machine that OWNS the shooter
+    /// (<see cref="ElementalTransfer.IsDecidedHere"/>). Before Oct 2026 it raised on every copy,
+    /// and the server credited its replay of a client's rocket on top of the client's own
+    /// <c>ReportCombatHit_ServerRpc</c>.
     /// </summary>
     [CreateAssetMenu(
         fileName = "VesselCombatHitByExplosionEffect",
@@ -66,7 +68,11 @@ namespace CosmicShore.Gameplay
                  "the server's own copy, once from the client's forwarded RPC - and the " +
                  "per-machine VesselCombatHitLatch cannot see across machines to stop it. " +
                  "IsNetworkOwner (not IsLocalUser) is the test, because an AI's vessel is " +
-                 "server-owned and its hits must still be recorded.")]
+                 "server-owned and its hits must still be recorded. Since Oct 2026 every blast " +
+                 "is gated on the shooter's owner regardless (ElementalTransfer.IsDecidedHere), " +
+                 "because a replicated press puts EVERY blast on more than one machine; this " +
+                 "field is kept because the mode generators author it, and in a spawned match it " +
+                 "adds nothing to that gate.")]
         [SerializeField] bool requireOwningMachine = false;
 
         public override void Execute(VesselImpactor impactor, ExplosionImpactor impactee)
@@ -80,7 +86,10 @@ namespace CosmicShore.Gameplay
             // scores for nobody, which is correct: nobody fired it.
             if (victimStatus == null || shooterStatus == null) return;
 
-            // Exactly one machine may report a blast that exists on several. See the field.
+            // Exactly one machine may report a blast that exists on several: the shooter's owner,
+            // the machine CombatHitDrain settles from (see the class doc). The field below is the
+            // older, opt-in form of the same rule and is kept because the mode generators author it.
+            if (!ElementalTransfer.IsDecidedHere(shooterStatus)) return;
             if (requireOwningMachine && shooterStatus.Player is { IsNetworkOwner: false }) return;
 
             // The score follows the effect: no drain, no point. Asked about THIS blast's own debuff
