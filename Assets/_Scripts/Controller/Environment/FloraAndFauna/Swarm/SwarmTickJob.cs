@@ -74,6 +74,9 @@ namespace CosmicShore.Gameplay
         /// <summary>Round 10 bestiary: Mass, Space and Time members strike with danger plates too (SWARM_FAUNA.md §18).</summary>
         public bool Bestiary;
         public float HuntEnter = 0.2f, LurkCalm = 0.05f;
+        /// <summary>Ticks a pack hunter must show its startle above HuntEnter before its plate goes up (the lab's fair
+        /// burns WINDUP, 0.4 s). 0 = strike on the tick it crosses (round 10).</summary>
+        public int HuntWindupTicks;
         /// <summary>Ticks a locust shimmer holds before the dangerous quarter of the cloud moves on.</summary>
         public int LocustPhaseTicks = 20;
         /// <summary>World radius around a vessel inside which a member becomes a real proxy.</summary>
@@ -168,10 +171,16 @@ namespace CosmicShore.Gameplay
         /// fact - and a member hovering at a band edge flickered.</item>
         /// <item>Space locust: a quarter of the cloud at a time, the quarter moving every LocustPhaseTicks (stateless).</item>
         /// <item>Time pack hunter: strikes above HuntEnter until below min(DangerExit, HuntEnter) - the hysteresis can no
-        /// longer invert if a designer sets the exit above the entry.</item>
+        /// longer invert if a designer sets the exit above the entry. With HuntWindupTicks it first WINDS UP: states
+        /// 4 + n count the ticks its startle has shown above HuntEnter, and the plate goes up on the HuntWindupTicks-th
+        /// (lab fair burns: a bite never lands in the same moment as its telegraph). A dip holds the count; startle
+        /// below 0.4 x HuntEnter (the lab's 0.2 against 0.5) resets it.</item>
         /// </list>
         /// A NaN or negative startle reads as calm. Returns the new state; the plate is up iff it is 2.
         /// </summary>
+        /// <summary>A pack hunter's wind-up resets once its startle falls below this fraction of HuntEnter.</summary>
+        public const float HuntWindupResetFrac = 0.4f;
+
         public static byte StrikeState(int eff, int slot, long tick, float st, byte state, SwarmTickSettings s)
         {
             if (!(st >= 0f)) st = 0f;
@@ -194,7 +203,16 @@ namespace CosmicShore.Gameplay
                 case 2 when s.Bestiary:
                     return ((slot * 7919L + tick / Math.Max(1, s.LocustPhaseTicks)) & 3L) == 0L ? (byte)2 : (byte)0;
                 case 3 when s.Bestiary:
-                    return state == 2 ? (st < MathF.Min(s.DangerExit, s.HuntEnter) ? (byte)0 : (byte)2) : (st > s.HuntEnter ? (byte)2 : (byte)0);
+                {
+                    if (state == 2) return st < MathF.Min(s.DangerExit, s.HuntEnter) ? (byte)0 : (byte)2;
+                    int wound = state >= 4 ? state - 4 : 0;
+                    if (st > s.HuntEnter)
+                    {
+                        wound++;
+                        return wound >= s.HuntWindupTicks ? (byte)2 : (byte)(4 + Math.Min(wound, 250));
+                    }
+                    return wound > 0 && st >= HuntWindupResetFrac * s.HuntEnter ? state : (byte)0;
+                }
                 default:
                     return 0;
             }

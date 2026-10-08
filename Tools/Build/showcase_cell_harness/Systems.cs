@@ -393,7 +393,7 @@ sealed class SwarmSystem : ICellSystem, IOccupancy
 
     bool Lineages => Cell.F(_cfg, "MultiDomain") > 0.5f && Cell.F(_cfg, "Model") == 2f;
 
-    /// <summary>SwarmFauna.BuildTickSettings (Bestiary / HuntEnter / LurkCalm / LocustPhaseSeconds are not in the asset:
+    /// <summary>SwarmFauna.BuildTickSettings (Bestiary / HuntEnter / HuntWindupSeconds / LurkCalm / LocustPhaseSeconds are not in the asset:
     /// the SO's own field defaults apply, as Unity does for a missing key - SwarmFaunaConfigSO.cs).</summary>
     SwarmTickSettings TickSettings()
     {
@@ -405,6 +405,7 @@ sealed class SwarmSystem : ICellSystem, IOccupancy
             DangerEnter = Cell.F(_cfg, "DangerEnter"), DangerExit = Cell.F(_cfg, "DangerExit"),
             Bestiary = true, HuntEnter = 0.2f, LurkCalm = 0.05f,
             LocustPhaseTicks = Math.Max(1, (int)MathF.Round(2f * _hz)),
+            HuntWindupTicks = Math.Max(0, (int)MathF.Round(0.4f * _hz)),   // SwarmFaunaConfigSO.HuntWindupSeconds
             EngageRadius = _engage, MaxEngaged = (int)Cell.F(_cfg, "MaxProxies"),
             MultiDomain = Lineages,
         };
