@@ -73,7 +73,7 @@ namespace CosmicShore.Launcher
         /// <summary>Raised on the chat thread when a milestone run stops short (never for the user's own STOP).</summary>
         public event Action<SessionStop>? MilestoneStopped;
 
-        // Why a run ended early, as "at the 80-turn limit" (a budget) - set by the result event or the watchdog.
+        // Why a run ended early, as "at the turn limit" - set by the result event.
         volatile string? _stopReason;
         volatile string? _lastError;
         volatile bool _userStopped;
@@ -209,7 +209,6 @@ namespace CosmicShore.Launcher
             _stopReason = null;
             _lastError = null;
             _userStopped = false;
-            System.Threading.Timer? watchdog = null;
             try
             {
                 var psi = new ProcessStartInfo(Cli!)
@@ -229,17 +228,6 @@ namespace CosmicShore.Launcher
                 if (model.Length > 0 && model != "default") { psi.ArgumentList.Add("--model"); psi.ArgumentList.Add(model); }
                 var effort = _s.ClaudeEffort?.Trim() ?? "";
                 if (effort.Length > 0 && effort != "default") { psi.ArgumentList.Add("--effort"); psi.ArgumentList.Add(effort); }
-                if (milestone)
-                {
-                    // Engine work runs unattended for long stretches: give each run a budget.
-                    psi.ArgumentList.Add("--max-turns");
-                    psi.ArgumentList.Add(Math.Max(1, _s.MilestoneMaxTurns).ToString(System.Globalization.CultureInfo.InvariantCulture));
-                    if (_s.MilestoneMaxUsd > 0)
-                    {
-                        psi.ArgumentList.Add("--max-budget-usd");
-                        psi.ArgumentList.Add(_s.MilestoneMaxUsd.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture));
-                    }
-                }
                 psi.ArgumentList.Add("--disallowedTools");
                 foreach (var d in CurrentScope == Scope.Game ? EngineDenies : UnityDenies) psi.ArgumentList.Add(d);
                 foreach (var dir in new[] { extraDir, Path.Combine(LauncherSettings.DataDir, "tracks") })
@@ -254,13 +242,6 @@ namespace CosmicShore.Launcher
                 if (!string.IsNullOrWhiteSpace(_s.AnthropicApiKey)) psi.Environment["ANTHROPIC_API_KEY"] = _s.AnthropicApiKey.Trim();
 
                 _proc = Process.Start(psi)!;
-                var proc = _proc;
-                if (milestone && _s.MilestoneMaxMinutes > 0)
-                    watchdog = new System.Threading.Timer(_ =>
-                    {
-                        _stopReason = $"at the {_s.MilestoneMaxMinutes}-minute limit";
-                        try { if (!proc.HasExited) proc.Kill(entireProcessTree: true); } catch { }
-                    }, null, TimeSpan.FromMinutes(_s.MilestoneMaxMinutes), System.Threading.Timeout.InfiniteTimeSpan);
                 _proc.StandardInput.Write(text);
                 _proc.StandardInput.Close();
                 var err = _proc.StandardError.ReadToEndAsync();
@@ -282,7 +263,6 @@ namespace CosmicShore.Launcher
             catch (Exception ex) { Add(ChatRole.Error, ex.Message); exit = -1; }
             finally
             {
-                watchdog?.Dispose();
                 if (milestone && !_userStopped && (_stopReason != null || exit != 0))
                 {
                     string reason = _stopReason ?? (_lastError is { } le ? "after an error: " + (le.Length > 90 ? le[..89] + "..." : le) : $"after claude exited with {exit}");
@@ -388,8 +368,8 @@ namespace CosmicShore.Launcher
                                 ContextWindow = cw.GetInt64();
                     string sub = root.TryGetProperty("subtype", out var st) && st.ValueKind == JsonValueKind.String ? st.GetString() ?? "" : "";
                     // A run that ends on a limit says so in subtype (error_max_turns, error_max_budget_usd ...), with no result text.
-                    if (sub == "error_max_turns") _stopReason = $"at the {_s.MilestoneMaxTurns}-turn limit";
-                    else if (sub.StartsWith("error_max_budget", StringComparison.Ordinal)) _stopReason = $"at the ${_s.MilestoneMaxUsd:0.##} budget";
+                    if (sub == "error_max_turns") _stopReason = "at the turn limit";
+                    else if (sub.StartsWith("error_max_budget", StringComparison.Ordinal)) _stopReason = "at the budget limit";
                     else if (root.TryGetProperty("is_error", out var ie) && ie.ValueKind == JsonValueKind.True)
                     {
                         string? text = root.TryGetProperty("result", out var res) ? res.ToString()

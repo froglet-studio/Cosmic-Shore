@@ -1,0 +1,300 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace CosmicShore.Launcher
+{
+    /// <summary>One benchmark run of one scene: what its session report measured.</summary>
+    public sealed class BenchResult
+    {
+        public string Scene { get; set; } = "";
+        public int Run { get; set; }
+        public bool Ok { get; set; }
+        public string? Problem { get; set; }
+        public double Seconds { get; set; }
+        public int Frames { get; set; }
+        public double P50Ms { get; set; }
+        public double P95Ms { get; set; }
+        public double P99Ms { get; set; }
+        public double WorstMs { get; set; }
+        public int Over33 { get; set; }
+        public double SimP50Ms { get; set; }
+        public double SimP95Ms { get; set; }
+        public double RenderP50Ms { get; set; }
+        /// <summary>GPU time per frame from timer queries; null when the driver gave none (headless, GLES).</summary>
+        public double? GpuP50Ms { get; set; }
+        /// <summary>Seconds from start until the scene was running (content load included).</summary>
+        public double LoadSec { get; set; }
+        public double HeapMB { get; set; }
+        public double KbPerFrameP95 { get; set; }
+        public double GcPauseMsPerFrame { get; set; }
+        public int Exceptions { get; set; }
+        public int Errors { get; set; }
+        public string Report { get; set; } = "";
+    }
+
+    /// <summary>A TIME page benchmark: its settings, machine, commit and every run's results.</summary>
+    public sealed class BenchSession
+    {
+        public DateTime Started { get; set; }
+        public string Branch { get; set; } = "";
+        public string Commit { get; set; } = "";
+        public string Machine { get; set; } = "";
+        public string Gpu { get; set; } = "";
+        public int Frames { get; set; }
+        public bool Headless { get; set; }
+        public bool VSync { get; set; }
+        public string Size { get; set; } = "";
+        public List<BenchResult> Results { get; set; } = new();
+        public string File { get; set; } = "";
+    }
+
+    public sealed partial class LauncherJobs
+    {
+        public static string BenchDir => Path.Combine(LauncherSettings.DataDir, "bench");
+
+        /// <summary>
+        /// The parity replays (Port/parity/manifest.json) as benchmark items, "replay:NAME": recorded
+        /// input from Bootstrap through the menu into a match, so the run times real play rather than
+        /// an empty scene entered directly.
+        /// </summary>
+        public List<string> BenchReplays()
+        {
+            var manifest = Path.Combine(_ws.Dir, "Port", "parity", "manifest.json");
+            try
+            {
+                using var doc = JsonDocument.Parse(File.ReadAllText(manifest));
+                return doc.RootElement.GetProperty("cases").EnumerateArray()
+                    .Select(c => "replay:" + c.GetProperty("name").GetString()).ToList();
+            }
+            catch (Exception e) when (e is IOException or JsonException or KeyNotFoundException or InvalidOperationException) { return new List<string>(); }
+        }
+
+        /// <summary>The benchmark running or last run (results fill in as each run closes).</summary>
+        public BenchSession? Bench { get; private set; }
+
+        /// <summary>Saved benchmarks, newest first.</summary>
+        public static List<BenchSession> BenchHistory()
+        {
+            var list = new List<BenchSession>();
+            if (!Directory.Exists(BenchDir)) return list;
+            foreach (var f in new DirectoryInfo(BenchDir).GetFiles("bench-*.json").OrderByDescending(f => f.Name).Take(30))
+                try
+                {
+                    var b = JsonSerializer.Deserialize<BenchSession>(File.ReadAllText(f.FullName));
+                    if (b != null) { b.File = f.FullName; list.Add(b); }
+                }
+                catch (Exception e) when (e is JsonException or IOException) { }
+            return list;
+        }
+
+        /// <summary>
+        /// TIME > BENCHMARK: builds the Release player, then runs every scene (each run its own
+        /// game process, entered directly, for a fixed number of frames with vsync off by default)
+        /// and closes it when the frames are done. Each run's session report becomes a row; the
+        /// session is saved under bench/ so the next run can be compared with it.
+        /// </summary>
+        public void Benchmark(IReadOnlyList<string> scenes, int frames, int runs, bool headless, bool vsync, string size) => Start("Benchmark", async ct =>
+        {
+            if (scenes.Count == 0) { Log.Add(LogKind.Error, "Pick at least one scene to time."); return false; }
+            if (!await EnsureTools(ct)) return false;
+            if (!await EnsurePlayerBuilt(ct, "Release")) return false;
+            var exe = PlayerExeFor("Release");
+            Directory.CreateDirectory(BenchDir);
+            var stamp = DateTime.Now;
+            var session = new BenchSession
+            {
+                Started = stamp, Branch = _s.Branch, Commit = Commit?.Sha ?? "", Machine = Environment.MachineName,
+                Frames = frames, Headless = headless, VSync = vsync, Size = size,
+                File = Path.Combine(BenchDir, $"bench-{stamp:yyyyMMdd-HHmmss}.json"),
+            };
+            Bench = session;
+            int total = scenes.Count * runs, done = 0;
+            foreach (var scene in scenes)
+                for (int run = 1; run <= runs; run++)
+                {
+                    ct.ThrowIfCancellationRequested();
+                    Step($"Timing {scene} ({run}/{runs})", (float)done / total);
+                    var report = Path.Combine(BenchDir, $"run-{stamp:yyyyMMdd-HHmmss}-{Safe(scene)}-{run}.json");
+                    var args = new List<string> { "--session-report", report };
+                    if (scene.StartsWith("replay:", StringComparison.Ordinal))
+                    {
+                        // A replay sets its own scene, seed and length.
+                        var name = scene["replay:".Length..];
+                        args.AddRange(new[] { "--replay", Path.Combine(_ws.Dir, "Port", "parity", "replays", name + ".json"),
+                                              "--parity-out", Path.Combine(BenchDir, "parity-" + Safe(name)) });
+                    }
+                    else args.AddRange(new[] { "--scene", scene, "--frames", frames.ToString() });
+                    if (headless) args.Add("--headless");
+                    else { args.Add("--size"); args.Add(size); }
+                    if (!vsync) args.Add("--no-vsync");
+                    // PLAY's own save slot: it has already been through the login prompts, so a replay
+                    // gets from Bootstrap into its match (a fresh slot stops at the prompts).
+                    var psi = PlayerStart(exe, args, audio: false, network: false, profile: string.IsNullOrWhiteSpace(_s.Profile) ? null : _s.Profile.Trim());
+                    var result = new BenchResult { Scene = scene, Run = run, Report = report };
+                    var sw = Stopwatch.StartNew();
+                    using (var p = Process.Start(psi)!)
+                    {
+                        p.OutputDataReceived += (_, e) => { };
+                        p.ErrorDataReceived += (_, e) => { if (e.Data != null) Log.Add(LogKind.Output, "[bench] " + e.Data); };
+                        p.BeginOutputReadLine();
+                        p.BeginErrorReadLine();
+                        // Generous: software GL can run a few frames a second.
+                        var limit = TimeSpan.FromSeconds(120 + Math.Max(frames, 6000) / 10.0);
+                        while (!p.WaitForExit(250))
+                        {
+                            if (ct.IsCancellationRequested || sw.Elapsed > limit)
+                            {
+                                try { p.Kill(entireProcessTree: true); } catch (InvalidOperationException) { }
+                                result.Problem = ct.IsCancellationRequested ? "cancelled" : $"did not finish in {limit.TotalSeconds:0} s";
+                                break;
+                            }
+                        }
+                    }
+                    ReadReport(result);
+                    session.Results.Add(result);
+                    done++;
+                    Log.Add(result.Ok ? LogKind.Info : LogKind.Warn,
+                        $"{scene} run {run}: " + (result.Ok ? $"p50 {result.P50Ms:0.0} ms, p95 {result.P95Ms:0.0} ms, load {result.LoadSec:0.0} s" : result.Problem));
+                    if (ct.IsCancellationRequested) break;
+                }
+            session.Gpu = GpuOf(session.Results.FirstOrDefault()?.Report);
+            File.WriteAllText(session.File, JsonSerializer.Serialize(session, new JsonSerializerOptions { WriteIndented = true }));
+            Log.Add(LogKind.Success, $"Benchmark saved: {session.File}");
+            return session.Results.Any(r => r.Ok);
+        });
+
+        static string Safe(string name) => string.Concat(name.Select(c => char.IsLetterOrDigit(c) ? c : '_'));
+
+        static void ReadReport(BenchResult r)
+        {
+            if (!File.Exists(r.Report)) { r.Problem ??= "the game wrote no report (it crashed or never started)"; return; }
+            try
+            {
+                using var doc = JsonDocument.Parse(File.ReadAllText(r.Report));
+                var d = doc.RootElement;
+                double N(JsonElement o, string k) => o.TryGetProperty(k, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetDouble() : 0;
+                r.Seconds = N(d, "seconds");
+                if (d.TryGetProperty("frames", out var f))
+                {
+                    r.Frames = (int)N(f, "presented"); r.P50Ms = N(f, "p50Ms"); r.P95Ms = N(f, "p95Ms");
+                    r.P99Ms = N(f, "p99Ms"); r.WorstMs = N(f, "worstMs"); r.Over33 = (int)N(f, "over33Ms");
+                }
+                if (d.TryGetProperty("cpu", out var c)) { r.SimP50Ms = N(c, "simP50Ms"); r.SimP95Ms = N(c, "simP95Ms"); r.RenderP50Ms = N(c, "renderP50Ms"); }
+                if (d.TryGetProperty("gpu", out var g) && g.TryGetProperty("timerQueries", out var tq) && tq.ValueKind == JsonValueKind.True && N(g, "frames") > 0)
+                    r.GpuP50Ms = N(g, "p50Ms");
+                if (d.TryGetProperty("memory", out var m)) { r.HeapMB = N(m, "heapMB"); r.KbPerFrameP95 = N(m, "kbPerFrameP95"); r.GcPauseMsPerFrame = N(m, "steadyGcPauseMsPerFrame"); }
+                if (d.TryGetProperty("scenes", out var sc) && sc.ValueKind == JsonValueKind.Array && sc.GetArrayLength() > 0)
+                {
+                    var first = sc[0];
+                    // loadMs where the player measures it; else when the scene started running.
+                    r.LoadSec = first.TryGetProperty("loadMs", out var lm) && lm.ValueKind == JsonValueKind.Number ? lm.GetDouble() / 1000 : N(first, "enteredAtSecond");
+                }
+                if (d.TryGetProperty("counts", out var counts)) { r.Exceptions = (int)N(counts, "exceptions"); r.Errors = (int)N(counts, "errors"); }
+                bool crashed = d.TryGetProperty("crash", out var cr) && cr.ValueKind == JsonValueKind.String;
+                if (crashed) r.Problem = "crashed: " + cr.GetString();
+                r.Ok = !crashed && r.Frames > 0 && r.Problem == null;
+            }
+            catch (Exception e) when (e is JsonException or IOException or InvalidOperationException)
+            {
+                r.Problem ??= "unreadable report: " + e.Message;
+            }
+        }
+
+        static string GpuOf(string? report)
+        {
+            try
+            {
+                if (report == null || !File.Exists(report)) return "";
+                using var doc = JsonDocument.Parse(File.ReadAllText(report));
+                return doc.RootElement.TryGetProperty("machine", out var m) && m.TryGetProperty("gpu", out var g) ? g.GetString() ?? "" : "";
+            }
+            catch (Exception e) when (e is JsonException or IOException) { return ""; }
+        }
+
+        // ---------------------------------------------------------------- local multiplayer
+
+        readonly List<(int player, Process proc)> _locals = new();
+
+        /// <summary>The local multiplayer instances still running.</summary>
+        public int LocalPlayersRunning { get { lock (_locals) return _locals.Count(l => !l.proc.HasExited); } }
+
+        /// <summary>
+        /// TIME > MULTIPLAYER: N game windows on this machine, each its own player (profile
+        /// player1..N, so each has its own save and name), networking on. They find each other the
+        /// way two PCs on a LAN do: through the shared local session directory, so one hosts a
+        /// party or match and the others join it from the game's own menus. Only player 1 plays
+        /// sound. Each writes a session report under sessions/.
+        /// </summary>
+        public void LaunchLocalPlayers(int players, string? scene, string size) => Start("Local multiplayer", async ct =>
+        {
+            players = Math.Clamp(players, 2, 6);
+            if (!await EnsureTools(ct)) return false;
+            string cfg = _s.ReleaseBuild ? "Release" : "Debug";
+            if (!await EnsurePlayerBuilt(ct, cfg)) return false;
+            StopLocalPlayers();
+            Step($"Starting {players} players", 1);
+            var exe = PlayerExeFor(cfg);
+            bool audio = _s.Audio && await _ws.FetchNatives(Log, ct);
+            for (int i = 1; i <= players; i++)
+            {
+                var args = new List<string> { "--size", size };
+                if (!string.IsNullOrWhiteSpace(scene)) { args.Add("--scene"); args.Add(scene!); }
+                var report = Path.Combine(SessionsDir, $"session-{DateTime.Now:yyyyMMdd-HHmmss}-p{i}.json");
+                Directory.CreateDirectory(SessionsDir);
+                args.Add("--session-report"); args.Add(report);
+                var psi = PlayerStart(exe, args, audio: audio && i == 1, network: true, profile: "player" + i);
+                var p = new Process { StartInfo = psi, EnableRaisingEvents = true };
+                int n = i;
+                p.OutputDataReceived += (_, e) => { if (e.Data != null) Log.Add(LogKind.Output, $"[P{n}] {e.Data}"); };
+                p.ErrorDataReceived += (_, e) => { if (e.Data != null) Log.Add(LogKind.Output, $"[P{n}] {e.Data}"); };
+                p.Exited += (_, _) => Log.Add(LogKind.Info, $"Player {n} closed.");
+                p.Start();
+                p.BeginOutputReadLine();
+                p.BeginErrorReadLine();
+                lock (_locals) _locals.Add((i, p));
+                // A moment apart, so player 1 is up first and the windows do not all fight for the GPU at once.
+                await Task.Delay(1500, ct);
+            }
+            Log.Add(LogKind.Success, $"{players} players running. Host a party or match in one window and join it from the others.");
+            return true;
+        });
+
+        public void StopLocalPlayers()
+        {
+            lock (_locals)
+            {
+                foreach (var (_, p) in _locals)
+                    try { if (!p.HasExited) p.Kill(entireProcessTree: true); } catch (InvalidOperationException) { }
+                _locals.Clear();
+            }
+        }
+
+        /// <summary>How the launcher starts any game process: the workspace's project, its .NET, and the run's choices.</summary>
+        ProcessStartInfo PlayerStart(string exe, IEnumerable<string> args, bool audio, bool network, string? profile)
+        {
+            var psi = new ProcessStartInfo(exe)
+            {
+                WorkingDirectory = Path.Combine(_ws.Dir, "Port"),
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true,
+            };
+            foreach (var a in args) psi.ArgumentList.Add(a);
+            foreach (var kv in _tools.DotnetEnv()) psi.Environment[kv.Key] = kv.Value;
+            psi.Environment["COSMIC_SHORE_PROJECT"] = _ws.Dir;
+            if (!audio) psi.Environment["COSMIC_SHORE_AUDIO"] = "off";
+            if (!network) psi.Environment["COSMIC_SHORE_NET"] = "off";
+            if (_s.MobileRenderPath) psi.Environment["COSMIC_SHORE_GLES"] = "1";
+            if (!string.IsNullOrWhiteSpace(profile)) psi.Environment["COSMIC_SHORE_PROFILE"] = profile;
+            psi.Environment["COSMIC_SHORE_BRANCH"] = _s.Branch;
+            return psi;
+        }
+    }
+}

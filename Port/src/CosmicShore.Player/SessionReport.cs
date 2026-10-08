@@ -21,10 +21,12 @@ namespace CosmicShore.Player
         static string s_path;
         static DateTime s_start;
         static readonly List<(string scene, int frame, double seconds)> s_scenes = new();
-        static readonly int[] s_buckets = new int[201]; // frame ms histogram, 0.5 ms buckets to 100 ms
+        // Time histograms: 0.1 ms buckets to 100 ms (a fast simulation tick is well under 0.5 ms).
+        const int TimeBuckets = 1001, PerMs = 10;
+        static readonly int[] s_buckets = new int[TimeBuckets]; // frame ms histogram
         static int s_frames;
         static readonly Dictionary<string, int[]> s_sceneBuckets = new();
-        static readonly int[] s_simBuckets = new int[201], s_renderBuckets = new int[201];
+        static readonly int[] s_simBuckets = new int[TimeBuckets], s_renderBuckets = new int[TimeBuckets];
         static long s_alloc0, s_allocLast, s_worstAlloc;
         static readonly int[] s_allocBuckets = new int[1025]; // per-frame allocation, 8 KB buckets to 8 MB
         static int s_gc0, s_gc1, s_gc2;
@@ -75,21 +77,21 @@ namespace CosmicShore.Player
                 s_allocBuckets[Math.Min(s_allocBuckets.Length - 1, (int)((alloc - s_allocLast) / 8192))]++;
             }
             s_allocLast = alloc;
-            int bucket = Math.Min(s_buckets.Length - 1, (int)(ms * 2));
+            int bucket = Math.Min(s_buckets.Length - 1, (int)(ms * PerMs));
             s_buckets[bucket]++;
             if (s_frames > 30) // per scene, after the first frames' loading
             {
-                if (!s_sceneBuckets.TryGetValue(s_currentScene, out var sb)) s_sceneBuckets[s_currentScene] = sb = new int[201];
+                if (!s_sceneBuckets.TryGetValue(s_currentScene, out var sb)) s_sceneBuckets[s_currentScene] = sb = new int[TimeBuckets];
                 sb[bucket]++;
             }
             if (ms > s_worstMs && s_frames > 30) s_worstMs = ms; // the first frames are loading
         }
 
         /// <summary>One frame's simulation (engine tick) CPU time.</summary>
-        public static void SimTime(double ms) { if (s_path != null && ms > 0) s_simBuckets[Math.Min(200, (int)(ms * 2))]++; }
+        public static void SimTime(double ms) { if (s_path != null && ms > 0) s_simBuckets[Math.Min(TimeBuckets - 1, (int)(ms * PerMs))]++; }
 
         /// <summary>One frame's render CPU time (collect, draw submission, post, UI, present).</summary>
-        public static void RenderTime(double ms) { if (s_path != null && ms > 0) s_renderBuckets[Math.Min(200, (int)(ms * 2))]++; }
+        public static void RenderTime(double ms) { if (s_path != null && ms > 0) s_renderBuckets[Math.Min(TimeBuckets - 1, (int)(ms * PerMs))]++; }
 
         // Per-scene steady state: loop phases from a scene's 30th frame until it is left. The
         // whole-run phase averages include loading, and a scene load runs inside an async
@@ -143,7 +145,7 @@ namespace CosmicShore.Player
             };
         }).ToList();
 
-        static readonly int[] s_gpuBuckets = new int[201];
+        static readonly int[] s_gpuBuckets = new int[TimeBuckets];
         static readonly Dictionary<string, double> s_gpuPassMs = new();
         static int s_gpuFrames;
 
@@ -162,7 +164,7 @@ namespace CosmicShore.Player
                 s_gpuPassMs[passes[i]] = sum + ms[i];
             }
             s_gpuFrames++;
-            s_gpuBuckets[Math.Min(200, (int)(total * 2))]++;
+            s_gpuBuckets[Math.Min(TimeBuckets - 1, (int)(total * PerMs))]++;
         }
 
         static object Gpu() => new
@@ -204,8 +206,8 @@ namespace CosmicShore.Player
             return new
             {
                 allocatedMB = Math.Round(allocated / 1048576.0, 1),
-                kbPerFrameP50 = Percentile(s_allocBuckets, 0.50) * 16, // bucket index / 2 * 8 KB
-                kbPerFrameP95 = Percentile(s_allocBuckets, 0.95) * 16,
+                kbPerFrameP50 = Rank(s_allocBuckets, 0.50) * 8, // 8 KB buckets
+                kbPerFrameP95 = Rank(s_allocBuckets, 0.95) * 8,
                 worstFrameKB = Math.Round(s_worstAlloc / 1024.0, 1),
                 heapMB = Math.Round(GC.GetTotalMemory(false) / 1048576.0, 1),
                 gcGen0 = g0 - s_gc0, gcGen1 = g1 - s_gc1, gcGen2 = g2 - s_gc2,
@@ -221,13 +223,17 @@ namespace CosmicShore.Player
 
         static double Percentile(double p) => Percentile(s_buckets, p);
 
-        static double Percentile(int[] buckets, double p)
+        /// <summary>The p-th percentile of a time histogram, in ms (0.1 ms resolution).</summary>
+        static double Percentile(int[] buckets, double p) => Math.Round(Rank(buckets, p) / (double)PerMs, 1);
+
+        /// <summary>The bucket index holding the p-th percentile (0 for an empty histogram).</summary>
+        static int Rank(int[] buckets, double p)
         {
             int total = buckets.Sum();
             if (total == 0) return 0;
             int want = (int)Math.Ceiling(total * p), seen = 0;
-            for (int i = 0; i < buckets.Length; i++) if ((seen += buckets[i]) >= want) return i / 2.0;
-            return 100;
+            for (int i = 0; i < buckets.Length; i++) if ((seen += buckets[i]) >= want) return i;
+            return buckets.Length - 1;
         }
 
         static object Audio()
@@ -319,7 +325,7 @@ namespace CosmicShore.Player
                         p95Ms = Percentile(0.95),
                         p99Ms = Percentile(0.99),
                         worstMs = Math.Round(s_worstMs, 1),
-                        over33Ms = s_buckets.Skip(66).Sum(),
+                        over33Ms = s_buckets.Skip(33 * PerMs).Sum(),
                     },
                     cpu = Cpu(),
                     gpu = Gpu(),
@@ -331,7 +337,7 @@ namespace CosmicShore.Player
                         frames = kv.Value.Sum(),
                         p50Ms = Percentile(kv.Value, 0.50),
                         p95Ms = Percentile(kv.Value, 0.95),
-                        over33Ms = kv.Value.Skip(66).Sum(),
+                        over33Ms = kv.Value.Skip(33 * PerMs).Sum(),
                     }).ToList(),
                     steady = Steady(),
                     modes = s_scenes.Select(x => x.scene).Where(n => n.StartsWith("Minigame", StringComparison.Ordinal)).Distinct().ToList(),

@@ -24,7 +24,7 @@ namespace CosmicShore.Launcher
     /// </summary>
     public sealed partial class LauncherApp
     {
-        enum Page { Play, Build, Project, Chat, Options, Console, Tracks, Board, Git, Editor }
+        enum Page { Play, Build, Project, Chat, Options, Console, Tracks, Board, Git, Editor, Time }
 
         public sealed record Args(string? Screenshot, int Frames, string? Page, bool Offline, string? Auto = null, string? UpdatedFrom = null, int Tour = -1, string? ClonePathArg = null);
 
@@ -49,6 +49,7 @@ namespace CosmicShore.Launcher
         Page _page = Page.Play;
         bool _toolsScanned;
         bool _autoFired;
+        bool _closeWhenDone;
         bool _dirty;
         double _saveTimer;
         int _frame;
@@ -240,6 +241,14 @@ namespace CosmicShore.Launcher
                         if (pick != null) _updater.Use(pick, _jobs.Log);
                         break;
                     case "ingest": Task.Run(() => IngestSessions(notify: true)); break;
+                    case var bn when bn.StartsWith("bench:"):
+                        // bench:SceneA,SceneB[:frames] - presses TIME > RUN (headless, so it works on a server).
+                        _page = Page.Time;
+                        var bp = bn["bench:".Length..].Split(':');
+                        _jobs.Benchmark(bp[0].Split(',', StringSplitOptions.RemoveEmptyEntries), bp.Length > 1 && int.TryParse(bp[1], out var bf) ? bf : 300,
+                            1, headless: true, vsync: false, _s.BenchSize);
+                        _closeWhenDone = true;
+                        break;
                     case "claude-install":
                         _page = Page.Chat;
                         Task.Run(() => _chat.Install(_jobs.Log));
@@ -264,6 +273,8 @@ namespace CosmicShore.Launcher
                 _window.Close();
             }
             else if (_args.Screenshot == null && _args.Frames > 0 && _frame >= _args.Frames) _window.Close();
+            // --auto bench: the launcher closes too once the last run is saved, so a script can wait on it.
+            if (_closeWhenDone && !_jobs.Busy) _window.Close();
         }
 
         void DrawFrame(float dt)
@@ -293,6 +304,7 @@ namespace CosmicShore.Launcher
                 case Page.Board: DrawBoard(contentA, contentB); break;
                 case Page.Git: DrawGit(contentA, contentB); break;
                 case Page.Editor: DrawEditor(contentA, contentB); break;
+                case Page.Time: DrawTime(contentA, contentB); break;
             }
             DrawStatusBar(size);
             ImGui.End();
@@ -396,12 +408,13 @@ namespace CosmicShore.Launcher
                 (Page.Chat, "AGENT", Neon.IconChat),
                 (Page.Git, "GIT", IconBranch),
                 (Page.Editor, "EDITOR", IconCube),
+                (Page.Time, "TIME", IconClock),
                 (Page.Tracks, "TRACKS", IconTracks),
                 (Page.Board, "BOARD", IconBoard),
                 (Page.Options, "SETTINGS", Neon.IconGear),
                 (Page.Console, "CONSOLE", Neon.IconTerminal),
             };
-            const float itemH = 60, step = 63;
+            const float itemH = 56, step = 58; // 12 pages fit an 800 px window
             float y = mb.Y + 18;
             // The selection glides between items rather than jumping.
             if (_railY < 0) _railY = _railTarget;
@@ -423,11 +436,11 @@ namespace CosmicShore.Launcher
                 var col = on ? Neon.Cyan : hov ? Neon.Ink : Neon.Dim;
                 if (on) _railTarget = a.Y;
                 if (hov && !on) Neon.ChamferFill(dl, a, b, 8, Neon.U(Neon.Ink, 0.04f));
-                it.icon(dl, new Vector2((a.X + b.X) * 0.5f, a.Y + 22), Neon.U(col));
+                it.icon(dl, new Vector2((a.X + b.X) * 0.5f, a.Y + 20), Neon.U(col));
                 ImGui.PushFont(Neon.Small);
                 float tw = ImGui.CalcTextSize(it.name).X;
                 ImGui.PopFont();
-                dl.AddText(Neon.Small, 11, new Vector2((a.X + b.X - tw * 11f / 14f) * 0.5f, a.Y + 41), Neon.U(col), it.name);
+                dl.AddText(Neon.Small, 11, new Vector2((a.X + b.X - tw * 11f / 14f) * 0.5f, a.Y + 38), Neon.U(col), it.name);
                 int badge = RailBadge(it.page);
                 if (badge > 0 && !on)
                 {

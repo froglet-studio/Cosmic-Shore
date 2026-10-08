@@ -34,6 +34,7 @@ Source: `Port/src/CosmicShore.Launcher` (C#, Dear ImGui on our own Silk.NET wind
 | **AGENT** | The Prisma Agent, powered by Claude: as many chats as you like, side by side (below). |
 | **GIT** | What the agent (or you) changed in the workspace, and getting it to GitHub (below). |
 | **EDITOR** | TOOLS (every FrogletTools tool, run by the agent), DATA (the data sets, editable) and MODELS (every model in the game's colours; VIEW IN ENGINE) (below). |
+| **TIME** | Benchmarks (timed runs of scenes and replays that close themselves, with a results table against the last run) and local multiplayer (2-4 game windows that join each other) (below). |
 | **TRACKS** | Every play run: performance per scene, features used, audio, every problem over time (below). |
 | **BOARD** | Bugs and tasks, with Prisma's suggestions (below). |
 | **SETTINGS** | Folded sections: Game, Source, Look, Claude, Advanced, Toolchain, About (versions). |
@@ -53,6 +54,29 @@ The two dots at the bottom of the rail are git and .NET (hover for versions). Th
 bottom shows what is happening, a progress bar and CANCEL. The title bar shows the branch, the
 agent's state (green: ready on your Claude plan), the notification bell and **?** (the tour).
 The first start shows a one-minute tour of every page; **?** replays it.
+
+## TIME - benchmarks and local multiplayer
+
+**BENCHMARK** times the game on this machine. Tick scenes and replays (REPLAY rows are the parity
+harness's recorded inputs, `Port/parity/manifest.json`: they fly a real match, so they measure
+gameplay rather than an idle scene), pick the length (10 s to 2 min at 60 fps), how many runs of
+each (the median is kept), WINDOW (rendered, so GPU time counts) or HEADLESS (simulation only), the
+window size and VSync. **RUN** builds the Release player if the workspace changed since the last
+build, then starts one game per scene and run; each closes itself when its frames are done, writes
+its session report, and the next one starts. Replays play in PLAY's save slot, so log in once from
+PLAY first (a fresh slot stops at the birth-year prompt).
+
+RESULTS shows one row per scene: frame time at the 50th and 95th percentile and the worst frame,
+frames over 33 ms, the simulation's 95th percentile, GPU time, load time, GC pause per frame and
+the frame count, each with its change against the previous benchmark on the same machine (green
+faster, red slower). Every benchmark is kept in `%LOCALAPPDATA%\Prisma\bench` and can be picked
+from the history list. `Prisma --auto bench:Menu_Main,MinigameSkimRace:600` runs a headless
+benchmark unattended and closes Prisma when it is saved.
+
+**MULTIPLAYER** opens 2, 3 or 4 game windows on this PC, each in its own save slot (`player1`,
+`player2` ...) with networking on and sound only in the first. They share one session folder, so
+a party or match hosted in one window shows up in the others: host in one, join from the rest.
+Start them at Bootstrap (log in, menu) or straight into a scene. **CLOSE** closes them all.
 
 ## TRACKS - Prisma's memory of every run
 
@@ -314,4 +338,4 @@ own clone: *Beside my clone* uses a git worktree next to it.
 folder - a second, separate Prisma, or the tests. `Port/tests/CosmicShore.Launcher.Tests` covers
 chats and their persistence, plan usage and the GIT page's git steps.
 `--auto launcher-update:REV` / `launcher-use:SHORT` exercise the version flow. `--auto play|update|android|ios` presses the button on
-its own and echoes the log; `--auto "chat:<message>"` sends one chat message;
+its own and echoes the log; `--auto "chat:<message>"` sends one chat message; `--auto bench:A,B[:frames]` runs a headless benchmark and exits;
