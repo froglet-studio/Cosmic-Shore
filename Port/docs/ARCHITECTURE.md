@@ -247,7 +247,11 @@ host endpoint.
 - Leaderboards and Analytics: in memory.
 
 **Turning it off:** `COSMIC_SHORE_NET=off` keeps everything in one process. A second player on one
-machine runs with `COSMIC_SHORE_PROFILE=b`.
+machine runs with `COSMIC_SHORE_PROFILE=b`. A headless player in a multiplayer run needs
+`--realtime`, which keeps its game clock on the wall clock (`RealtimePacer`).
+
+**The plan, the backends and the test tools** (simulator, stats, faults, the Launcher's
+MULTIPLAYER panel, the UDP transport) are in `MULTIPLAYER.md`.
 
 ---
 

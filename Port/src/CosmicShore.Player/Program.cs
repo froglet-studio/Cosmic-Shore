@@ -11,7 +11,7 @@ namespace CosmicShore.Player
     ///
     ///   CosmicShore [--scene NAME] [--size WxH] [--screenshot out.png] [--frames N]
     ///               [--shot FRAME:out.png]... [--do FRAME:ACTION]...
-    ///   CosmicShore --headless [--frames N] [--scene NAME] [--quiet] [--do FRAME:ACTION]...
+    ///   CosmicShore --headless [--realtime] [--frames N] [--scene NAME] [--quiet] [--do FRAME:ACTION]...
     ///   CosmicShore [--headless] --replay FILE --parity-out DIR     (parity harness, see ParityRun)
     ///   CosmicShore --random-golden DIR --seeds S1,S2,...
     ///   CosmicShore --train [train|replay|eval] [--episodes N] [--repeats K] [--scenario NAME] [--train-out DIR]
@@ -21,7 +21,10 @@ namespace CosmicShore.Player
     /// --do scripts input (see <see cref="InputScript"/>); --shot captures extra frames.
     ///
     /// --headless ticks the engine with no window at a fixed 60 Hz for N frames (default
-    /// 600) and prints a scene/log summary — the fast loop for chasing boot problems.
+    /// 600) and prints a scene/log summary — the fast loop for chasing boot problems. --realtime (or
+    /// COSMIC_SHORE_HEADLESS_REALTIME=1) paces those ticks to the wall clock, which a multiplayer run
+    /// needs: other processes, the session folder and the sockets all run on wall time
+    /// (<see cref="RealtimePacer"/>, docs/MULTIPLAYER.md §6.1).
     ///
     /// --train runs the game's own AI genetic training headless (see <see cref="TrainingHost"/>);
     /// "replay" re-scores the generation the session asset scored in Unity and reports the disparity.
@@ -31,6 +34,9 @@ namespace CosmicShore.Player
     /// </summary>
     public static class Program
     {
+        /// <summary>--realtime: a headless run keeps game time on the wall clock.</summary>
+        static bool s_realtime = RealtimePacer.RequestedByEnvironment;
+
         /// <summary>
         /// Quality from the engine's own Project Settings (Port/ProjectSettings/PrismaProject.json),
         /// before environment variables and arguments, which override it for one run.
@@ -77,6 +83,7 @@ namespace CosmicShore.Player
                     case "--screenshot" when i + 1 < args.Length: screenshot = args[++i]; break;
                     case "--frames" when i + 1 < args.Length: int.TryParse(args[++i], out frames); break;
                     case "--headless": headless = true; break;
+                    case "--realtime": s_realtime = true; break;
                     case "--render-from" when i + 1 < args.Length: int.TryParse(args[++i], out PlayerWindow.RenderFrom); break;
                     case "--quiet": quiet = true; break;
                     case "--yaml-roundtrip" when i + 2 < args.Length:
@@ -240,6 +247,7 @@ namespace CosmicShore.Player
             string lastScene = SceneManager.GetActiveScene().name;
             int frameNow = 0;
             SessionReport.Frame = () => frameNow;
+            var pacer = s_realtime && train == null ? new RealtimePacer(1.0 / 60.0) : null;
             for (int f = 0; f < frames && !quit; f++)
             {
                 frameNow = f;
@@ -252,6 +260,7 @@ namespace CosmicShore.Player
                 double tickMs = System.Diagnostics.Stopwatch.GetElapsedTime(tickStart).TotalMilliseconds;
                 SessionReport.FrameTime(tickMs); // headless: a frame is one simulation tick
                 SessionReport.SimTime(tickMs);
+                pacer?.AfterTick();
                 if (train != null)
                 {
                     train.Poll(f);

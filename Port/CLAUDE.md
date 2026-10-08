@@ -39,6 +39,7 @@ the game uses that the engine lacks) belongs in `Port/src/CosmicShore.Engine` / 
 | `tests/` | `CosmicShore.Tests` (engine, xunit, ~70 s, no GPU) · `CosmicShore.Tests.Ported` (the game's EditMode tests) |
 | `docs/ARCHITECTURE.md` | How it all fits; read the section for the area you touch |
 | `docs/ROADMAP.md` | The milestones (gameplay parity, then Unity-free development), checkpoints, open gaps and ready prompts. Pick work from here |
+| `docs/MULTIPLAYER.md` | Online play and its test tools: licensing (why NGO's code is not used), backends (UGS from our engine, own servers, Steam), the network simulator, stats, faults, the MULTIPLAYER panel, the UDP transport. Read before touching `Networking/` |
 | `docs/ARCHITECTURE_REVIEW_2026-10-06.md` | The architecture review's 20 items: what was checked, decided (with reasons) and measured. Read it before reopening one of those questions |
 
 ## Who works where

@@ -39,7 +39,7 @@ namespace CosmicShore.Engine.Networking
         public static string DefaultDirectory
             => Environment.GetEnvironmentVariable("COSMIC_SHORE_NET_DIR") is { Length: > 0 } d
                 ? d
-                : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CosmicShore-sessions");
+                : LocalDataPath.Combine("CosmicShore-sessions");
 
         // ── Records ─────────────────────────────────────────────────
 
