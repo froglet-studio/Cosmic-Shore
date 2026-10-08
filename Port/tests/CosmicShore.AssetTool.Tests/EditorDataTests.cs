@@ -278,6 +278,67 @@ namespace CosmicShore.AssetTool.Tests
             Assert.InRange(m.GetProperty("bounds").GetProperty("size")[0].GetDouble(), 1.9, 2.0);
         }
 
+        /// <summary>
+        /// The vessels' elemental hull morphs: --shapes poses the preview with them (the picture
+        /// changes, the JSON echoes the weights), a name the mesh lacks changes nothing, and the
+        /// model's takes are the clips the engine viewer plays.
+        /// </summary>
+        [Fact]
+        public void Blend_shapes_pose_the_preview_and_the_takes_import_as_clips()
+        {
+            const string fbx = "Assets/_Models/Vessel Models/dolphin_shapekey_with_animations.fbx";
+            var db = new AssetDatabase(Root);
+            var model = db.LoadModel(db.GuidOf(Path.Combine(Root, fbx))!);
+            Assert.NotNull(model);
+            var mesh = model.Meshes.First(m => m.Mesh != null && m.Mesh.blendShapeCount > 0);
+            var posed = EditorData.Posed(model, new System.Collections.Generic.Dictionary<string, float> { ["mass"] = 100 });
+            Assert.True(posed.ContainsKey(mesh));
+            Assert.Contains(posed[mesh].Zip(mesh.Mesh.vertices), p => (p.First - p.Second).magnitude > 1e-3f);
+            Assert.Empty(EditorData.Posed(model, new System.Collections.Generic.Dictionary<string, float> { ["no such shape"] = 100 }));
+
+            var dir = Temp();
+            byte[] Shot(string name, string shapes)
+            {
+                var png = Path.Combine(dir, name);
+                var o = new System.Collections.Generic.Dictionary<string, string> { ["out"] = png, ["size"] = "96" };
+                if (shapes != null) o["shapes"] = shapes;
+                using var doc = Capture(() => EditorData.ModelPreview(fbx, o));
+                if (shapes != null) Assert.Equal(100, doc.RootElement.GetProperty("shapes").GetProperty(shapes.Split('=')[0]).GetDouble());
+                return File.ReadAllBytes(png);
+            }
+            var plain = Shot("plain.png", null);
+            Assert.NotEqual(plain, Shot("mass.png", "mass=100"));
+            Assert.Equal(plain, Shot("none.png", "nothing=100"));
+            Directory.Delete(dir, true);
+
+            var takes = FbxAnimationImporter.ListClips(model);
+            Assert.Equal(10, takes.Count);
+            var clip = FbxAnimationImporter.ImportClip(model, takes[0].FileId);
+            Assert.NotNull(clip);
+            Assert.True(clip.length > 0);
+            Assert.Contains(clip.Bindings, b => b.Attribute.StartsWith("blendShape.", StringComparison.Ordinal));
+        }
+
+        /// <summary>SETTINGS' Blender/Maya paths reach cs-asset as PRISMA_BLENDER / PRISMA_MAYAPY, ahead of any search.</summary>
+        [Fact]
+        public void A_configured_Blender_or_Maya_path_wins_and_Maya_reads_its_version_from_the_folder()
+        {
+            var dir = Temp();
+            var fake = Path.Combine(dir, "my-blender");
+            File.WriteAllText(fake, "");
+            var old = Environment.GetEnvironmentVariable("PRISMA_BLENDER");
+            try
+            {
+                Environment.SetEnvironmentVariable("PRISMA_BLENDER", fake);
+                Assert.Equal(fake, Prisma.DccLocator.FindBlender());
+                Assert.Equal(fake, DccModelConverter.FindBlender());
+            }
+            finally { Environment.SetEnvironmentVariable("PRISMA_BLENDER", old); Directory.Delete(dir, true); }
+            Assert.Equal("2025", Prisma.DccLocator.MayaVersion("/usr/autodesk/maya2025/bin/mayapy"));
+            Assert.Equal("2024", Prisma.DccLocator.MayaVersion(@"C:/Program Files/Autodesk/Maya2024/bin/mayapy.exe"));
+            Assert.Null(Prisma.DccLocator.MayaVersion("/opt/tools/mayapy"));
+        }
+
         [Fact]
         public void Preview_draws_the_model_into_the_frame()
         {

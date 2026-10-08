@@ -138,7 +138,7 @@ Editor data (JSON on stdout, what Prisma's TOOLS / DATA / MODELS pages read):
   dataset <file.asset>                      its fields: value, kind, type, header, tooltip, range (edit with set)
   model <file.fbx>                          nodes, meshes, triangles, materials, blend shapes, bones, takes, import settings,
                                             and the game's materials (the prefabs that draw it: usedBy, gameMaterials)
-  model-preview <file.fbx> --out <png> [--size 512] [--yaw 145] [--pitch 20] [--colors game|submesh] [--turntable N]
+  model-preview <file.fbx> --out <png> [--size 512] [--yaw 145] [--pitch 20] [--colors game|submesh] [--turntable N] [--shapes ""A=50;B=100""]
                                             a shaded picture drawn on the CPU, in the game's material colours;
                                             --turntable: N views around it in one sheet, 6 to a row
 

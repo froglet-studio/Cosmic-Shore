@@ -596,8 +596,15 @@ namespace CosmicShore.Launcher
         float _edAngle = 145;
         readonly Dictionary<string, (uint tex, Vector2 size)> _edTex = new();
 
+        // Blend-shape weights for the preview (0-100), by shape name; reset with each model.
+        readonly Dictionary<string, float> _edShapes = new(StringComparer.Ordinal);
+
+        string ShapeSpec() => string.Join(";", _edShapes.Where(kv => kv.Value > 0).OrderBy(kv => kv.Key, StringComparer.Ordinal)
+            .Select(kv => kv.Key + "=" + kv.Value.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)));
+
         void SelectModel(string path)
         {
+            if (_edModelPath != path) _edShapes.Clear();
             _edModelPath = path;
             _edModel?.Dispose();
             _edModel = null;
@@ -626,7 +633,8 @@ namespace CosmicShore.Launcher
             if (path == null) return;
             var full = Ed.FullPath(path);
             long stamp = File.Exists(full) ? File.GetLastWriteTimeUtc(full).Ticks : 0;
-            var key = Convert.ToHexString(System.Security.Cryptography.SHA1.HashData(System.Text.Encoding.UTF8.GetBytes($"{path}|{stamp}|tt24")))[..16];
+            string shapes = ShapeSpec();
+            var key = Convert.ToHexString(System.Security.Cryptography.SHA1.HashData(System.Text.Encoding.UTF8.GetBytes($"{path}|{stamp}|tt24|{shapes}")))[..16];
             var png = Path.Combine(PreviewDir, key + ".png");
             var meta = png + ".json";
             if (File.Exists(png) && File.Exists(meta)) { _edSheet = ReadSheet(File.ReadAllText(meta)); _edPreviewFile = png; return; }
@@ -637,11 +645,13 @@ namespace CosmicShore.Launcher
                 try
                 {
                     Directory.CreateDirectory(PreviewDir);
-                    var (ok, stdout, err) = await Ed.Run("model-preview", path, "--out", png, "--size", "320", "--turntable", "24", "--yaw", "145");
+                    var args = new List<string> { "model-preview", path, "--out", png, "--size", "320", "--turntable", "24", "--yaw", "145" };
+                    if (shapes.Length > 0) { args.Add("--shapes"); args.Add(shapes); }
+                    var (ok, stdout, err) = await Ed.Run(args.ToArray());
                     if (ok)
                     {
                         File.WriteAllText(meta, stdout);
-                        if (_edModelPath == path) { _edSheet = ReadSheet(stdout); _edPreviewFile = png; }
+                        if (_edModelPath == path && ShapeSpec() == shapes) { _edSheet = ReadSheet(stdout); _edPreviewFile = png; }
                     }
                     else EdNote(err.Split('\n').FirstOrDefault(l => l.Trim().Length > 0) ?? "preview failed", "");
                 }
@@ -812,6 +822,7 @@ namespace CosmicShore.Launcher
             Fact("File", $"{S("sizeKB")} KB  ·  guid {Trim(S("guid"), 12)}");
             if (m.TryGetProperty("discardedPolygons", out var dp) && dp.GetInt32() > 0) Fact("Discarded", $"{dp.GetInt32()} degenerate polygons");
             foreach (var w in m.GetProperty("warnings").EnumerateArray()) { ImGui.PushFont(Neon.Small); ImGui.TextColored(Neon.Amber, Glyphs(w.GetString() ?? "")); ImGui.PopFont(); }
+            DrawShapeSliders(m);
             if (m.TryGetProperty("gameMaterials", out var gm) && gm.ValueKind == JsonValueKind.Array) DrawGameMaterials(m, gm);
             ImGui.Dummy(new Vector2(0, 8));
             ImGui.PushFont(Neon.Strong); ImGui.TextColored(Neon.Cyan, "MESHES"); ImGui.PopFont();
@@ -823,6 +834,35 @@ namespace CosmicShore.Launcher
                 ImGui.TextColored(Neon.Dim, $"   {mesh.GetProperty("triangles").GetInt32():N0} tris  ·  {mesh.GetProperty("submeshes")} submesh  ·  " +
                                             (mesh.GetProperty("skinned").GetBoolean() ? $"skinned, {mesh.GetProperty("bones")} bones  ·  " : "") +
                                             (shapes.Count > 0 ? $"shapes: {string.Join(", ", shapes)}" : ""));
+            }
+            ImGui.PopFont();
+        }
+
+        /// <summary>
+        /// A slider per blend shape (the elemental hull morphs, the crystals' spins): letting go
+        /// re-renders the turntable with those weights. VIEW IN ENGINE has the same sliders live.
+        /// </summary>
+        void DrawShapeSliders(JsonElement m)
+        {
+            var names = m.GetProperty("meshes").EnumerateArray()
+                .SelectMany(x => x.TryGetProperty("blendShapes", out var b) ? b.EnumerateArray().Select(n => n.GetString() ?? "") : Enumerable.Empty<string>())
+                .Where(n => n.Length > 0).Distinct().ToList();
+            if (names.Count == 0) return;
+            ImGui.Dummy(new Vector2(0, 8));
+            ImGui.PushFont(Neon.Strong); ImGui.TextColored(Neon.Cyan, "BLEND SHAPES"); ImGui.PopFont();
+            ImGui.SameLine(0, 12);
+            if (SmallButton("ZERO", 70, _edShapes.Values.Any(v => v > 0) && !_edPreviewLoading)) { _edShapes.Clear(); RenderPreview(); }
+            ImGui.PushFont(Neon.Small);
+            foreach (var n in names)
+            {
+                ImGui.PushID("shape" + n);
+                float w = _edShapes.TryGetValue(n, out var cur) ? cur : 0;
+                ImGui.TextColored(Neon.Ink, Trim(Glyphs(n), 28)); ImGui.SameLine(200);
+                ImGui.PushItemWidth(Math.Max(120, ImGui.GetContentRegionAvail().X - 8));
+                if (ImGui.SliderFloat("##w", ref w, 0, 100, "%.0f")) _edShapes[n] = w;
+                if (ImGui.IsItemDeactivatedAfterEdit()) RenderPreview();
+                ImGui.PopItemWidth();
+                ImGui.PopID();
             }
             ImGui.PopFont();
         }

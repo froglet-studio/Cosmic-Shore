@@ -25,5 +25,6 @@
 
   <ItemGroup>
     <Compile Include="../Shared/PrismaProjectSettings.cs" Link="Shared/PrismaProjectSettings.cs" />
+    <Compile Include="../Shared/DccLocator.cs" Link="Shared/DccLocator.cs" />
   </ItemGroup>
 </Project>

@@ -14,9 +14,10 @@ namespace CosmicShore.Player
     /// materials the game gives it (<see cref="ModelMaterialUsage"/>: the prefab that draws its
     /// meshes), on a turntable. Drag to turn it, wheel to zoom, right-drag to pan, F to frame it,
     /// R to reset, Space to stop or start the spin, Tab to show the next prefab's materials
-    /// (0 is the model's own). No game scene loads: nothing else is in the picture.
+    /// (0 is the model's own). Blend-shape sliders, the animation takes and the controls are on
+    /// screen (<c>ModelViewer.Ui.cs</c>). No game scene loads: nothing else is in the picture.
     /// </summary>
-    static class ModelViewer
+    static partial class ModelViewer
     {
         /// <summary>The model to show (project-relative or full); null when not viewing.</summary>
         public static string Path;
@@ -88,9 +89,11 @@ namespace CosmicShore.Player
             RenderSettings.sun = light;
             RenderSettings.ambientSkyColor = new Color(0.45f, 0.47f, 0.52f, 1f);
 
+            BuildUi(go, guid);
             ApplySource();
-            Console.WriteLine($"[viewer] {db.ProjectRelative(full)}: {s_renderers.Count} renderers, radius {s_radius:G3}; "
-                              + "drag to turn, wheel to zoom, right-drag to pan, F frame, R reset, Space spin, Tab materials");
+            Console.WriteLine($"[viewer] {db.ProjectRelative(full)}: {s_renderers.Count} renderers, radius {s_radius:G3}, "
+                              + $"{s_shapes.Count} blend shapes, {s_takes.Count} takes; drag to turn, wheel to zoom, right-drag to pan, "
+                              + "F frame, R reset, Space spin, Tab materials, T take, P pause, B zero shapes, H help");
         }
 
         static void ApplySource()
@@ -110,6 +113,7 @@ namespace CosmicShore.Player
             string label = prefab == null ? "the model's own materials" : "materials from " + content.Db.ProjectRelative(prefab);
             Console.WriteLine($"[viewer] showing {label}");
             SetTitle?.Invoke($"Prisma model viewer - {System.IO.Path.GetFileName(Path)} - {label}");
+            RefreshInfo();
         }
 
         static Material s_default;
@@ -135,9 +139,10 @@ namespace CosmicShore.Player
             var pos = mouse != null ? (Vector3)mouse.position.ReadValue() : Vector3.zero;
             var d = pos - s_lastMouse;
             s_lastMouse = pos;
+            bool onUi = TickUi(dt, mouse, keys);
             if (mouse != null)
             {
-                if (mouse.leftButton.isPressed) { s_yaw += d.x * 0.35f; s_pitch = Math.Clamp(s_pitch - d.y * 0.35f, -89f, 89f); s_spin = false; }
+                if (mouse.leftButton.isPressed && !onUi) { s_yaw += d.x * 0.35f; s_pitch = Math.Clamp(s_pitch - d.y * 0.35f, -89f, 89f); s_spin = false; }
                 if (mouse.rightButton.isPressed || mouse.middleButton.isPressed)
                 {
                     var rot = Quaternion.Euler(s_pitch, s_yaw, 0f);

@@ -80,6 +80,10 @@ namespace CosmicShore.Launcher
         public string ClaudeEffort { get; set; } = "";
         public bool VoiceReplies { get; set; }
         public string ClaudePath { get; set; } = "";
+        /// <summary>Blender's executable for .blend models (empty = search like Unity does). Exported to cs-asset as PRISMA_BLENDER.</summary>
+        public string BlenderPath { get; set; } = "";
+        /// <summary>Maya's mayapy for .ma/.mb models (empty = search). Exported as PRISMA_MAYAPY.</summary>
+        public string MayaPyPath { get; set; } = "";
         public int ChatMode { get; set; }
 
         // TIME page: the benchmark's scenes and run shape, and local multiplayer.

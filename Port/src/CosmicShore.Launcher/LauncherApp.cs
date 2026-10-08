@@ -164,6 +164,7 @@ namespace CosmicShore.Launcher
             (_froglet, _frogletSize) = Texture("froglet.png");
             SetIcon();
 
+            Task.Run(() => _tools.DetectDcc(_s));
             Task.Run(() =>
             {
                 _tools.Detect(_s);
@@ -1099,8 +1100,13 @@ namespace CosmicShore.Launcher
                 StatusRow("git", _tools.Git != null, _tools.Git != null ? $"{_tools.GitVersion}" : "not found - install GitHub Desktop");
                 StatusRow(".NET SDK", _tools.Dotnet != null, _tools.Dotnet != null ? _tools.DotnetSdk ?? "" : "installed automatically on START");
                 if (OperatingSystem.IsWindows()) StatusRow("VC++ runtime", _tools.VcRuntime, _tools.VcRuntime ? "present" : "missing - aka.ms/vs/17/release/vc_redist.x64.exe");
+                // Blender / Maya: only .blend and .ma/.mb models need them, so missing is a note, not a fault.
+                DccRow("Blender", _tools.Blender, _tools.BlenderVersion, ".blend models", () => _s.BlenderPath, v => _s.BlenderPath = v,
+                       OperatingSystem.IsWindows() ? "blender.exe|blender.exe" : null);
+                DccRow("Maya", _tools.MayaPy, _tools.MayaVersion, ".ma/.mb models", () => _s.MayaPyPath, v => _s.MayaPyPath = v,
+                       OperatingSystem.IsWindows() ? "mayapy.exe|mayapy.exe" : null);
                 ImGui.Dummy(new Vector2(0, 4));
-                if (SmallButton("RESCAN", 120, !_jobs.Busy)) Task.Run(() => { _tools.Detect(_s); _jobs.RefreshLocalState(); });
+                if (SmallButton("RESCAN", 120, !_jobs.Busy)) Task.Run(() => { _tools.Detect(_s); _tools.DetectDcc(_s); _jobs.RefreshLocalState(); });
                 ImGui.SameLine();
                 if (SmallButton("INSTALL .NET", 160, !_jobs.Busy && _tools.Dotnet == null)) _jobs.InstallDotnet();
                 ImGui.SameLine();
@@ -1212,6 +1218,45 @@ namespace CosmicShore.Launcher
             ImGui.Dummy(total);
             ImGui.PopFont();
         }
+
+        /// <summary>A DCC application's row: found (version, path) or not, with BROWSE and CLEAR for the path.</summary>
+        void DccRow(string name, string? exe, string? version, string forWhat, Func<string> get, Action<string> set, string? filter)
+        {
+            string detail = exe != null
+                ? $"{(version != null ? version + "  ·  " : "")}{Trim(exe, 60)}"
+                : $"not found - only needed for {forWhat}; install it or BROWSE to it";
+            var dl = ImGui.GetWindowDrawList();
+            var p = ImGui.GetCursorScreenPos();
+            dl.AddCircleFilled(p + new Vector2(34, 12), 5, Neon.U(exe != null ? Neon.Lime : Neon.Dim));
+            ImGui.SetCursorScreenPos(p + new Vector2(48, 0));
+            ImGui.TextColored(Neon.Ink, name);
+            ImGui.SameLine(220);
+            ImGui.PushFont(Neon.Small);
+            ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 2);
+            ImGui.TextColored(Neon.Dim, detail);
+            ImGui.PopFont();
+            ImGui.SetCursorScreenPos(new Vector2(p.X + 220, ImGui.GetCursorScreenPos().Y + 2));
+            ImGui.PushID("dcc" + name);
+            if (SmallButton("BROWSE", 110, filter != null && !_dccBrowsing))
+            {
+                _dccBrowsing = true;
+                Task.Run(() =>
+                {
+                    try
+                    {
+                        var picked = FilePicker.Open($"Where is {name}?", filter!);
+                        if (picked != null) { set(picked); _dirty = true; _tools.DetectDcc(_s); _edSyncSeen = -1; }
+                    }
+                    finally { _dccBrowsing = false; }
+                });
+            }
+            if (filter == null) Neon.Tooltip("Type the path in launcher.json (BlenderPath / MayaPyPath) on this system, or put it on PATH.");
+            ImGui.SameLine(0, 6);
+            if (SmallButton("CLEAR", 90, get().Length > 0)) { set(""); _dirty = true; Task.Run(() => _tools.DetectDcc(_s)); }
+            ImGui.PopID();
+        }
+
+        bool _dccBrowsing;
 
         void StatusRow(string name, bool ok, string detail)
         {

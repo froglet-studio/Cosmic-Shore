@@ -476,14 +476,15 @@ namespace CosmicShore.AssetTool
             catch { return false; }
         }
 
-        static IEnumerable<(DVec3 a, DVec3 b, DVec3 c, int sub, ImportedMesh mesh)> Triangles(ImportedModel model)
+        /// <param name="posed">Vertices to use instead of a mesh's own (its blend shapes applied), or null.</param>
+        static IEnumerable<(DVec3 a, DVec3 b, DVec3 c, int sub, ImportedMesh mesh)> Triangles(ImportedModel model, IReadOnlyDictionary<ImportedMesh, CosmicShore.Engine.Vector3[]> posed = null)
         {
             foreach (var im in model.Meshes)
             {
                 var mesh = im.Mesh;
                 if (mesh == null) continue;
                 var mat = im.Node?.ModelMatrix ?? DMat4.Identity;
-                var v = mesh.vertices;
+                var v = posed != null && posed.TryGetValue(im, out var pv) ? pv : mesh.vertices;
                 var w = new DVec3[v.Length];
                 for (int i = 0; i < v.Length; i++) w[i] = mat.Point(new DVec3(v[i].x, v[i].y, v[i].z));
                 for (int s = 0; s < mesh.subMeshCount; s++)
@@ -494,10 +495,10 @@ namespace CosmicShore.AssetTool
             }
         }
 
-        static (DVec3 lo, DVec3 hi) Bounds(ImportedModel model)
+        static (DVec3 lo, DVec3 hi) Bounds(ImportedModel model, IReadOnlyDictionary<ImportedMesh, CosmicShore.Engine.Vector3[]> posed = null)
         {
             double[] lo = { double.MaxValue, double.MaxValue, double.MaxValue }, hi = { double.MinValue, double.MinValue, double.MinValue };
-            foreach (var (a, b, c, _, _) in Triangles(model))
+            foreach (var (a, b, c, _, _) in Triangles(model, posed))
                 foreach (var p in new[] { a, b, c })
                     for (int k = 0; k < 3; k++) { lo[k] = Math.Min(lo[k], p[k]); hi[k] = Math.Max(hi[k], p[k]); }
             if (lo[0] > hi[0]) return (default, default);
@@ -526,11 +527,70 @@ namespace CosmicShore.AssetTool
             // --turntable N: N views around the model in one sheet (6 to a row) for drag-to-turn.
             int frames = opts.TryGetValue("turntable", out var tt) ? Math.Clamp(int.Parse(tt, CultureInfo.InvariantCulture), 2, 72) : 0;
             int cols = Math.Min(frames, 6);
-            var png = frames > 0 ? RenderTurntable(model, size, frames, cols, yaw, pitch, colorOf) : Render(model, size, yaw, pitch, colorOf);
+            // --shapes "Name=50;Other=100": blend-shape weights (0-100, as a SkinnedMeshRenderer takes them).
+            var weights = opts.TryGetValue("shapes", out var sw) ? ParseShapes(sw) : new Dictionary<string, float>();
+            var posed = weights.Count > 0 ? Posed(model, weights) : null;
+            var png = frames > 0 ? RenderTurntable(model, size, frames, cols, yaw, pitch, colorOf, posed) : Render(model, size, yaw, pitch, colorOf, posed);
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(outPath))!);
             File.WriteAllBytes(outPath, png);
             return Write(new { path = Rel(full), @out = Path.GetFullPath(outPath), size, colors = colorOf != null ? "game" : "submesh",
-                               frames = Math.Max(1, frames), cols = Math.Max(1, cols), yaw, step = frames > 0 ? 360.0 / frames : 0 });
+                               frames = Math.Max(1, frames), cols = Math.Max(1, cols), yaw, step = frames > 0 ? 360.0 / frames : 0,
+                               shapes = weights });
+        }
+
+        static Dictionary<string, float> ParseShapes(string spec)
+        {
+            var d = new Dictionary<string, float>(StringComparer.Ordinal);
+            foreach (var part in spec.Split(';', StringSplitOptions.RemoveEmptyEntries))
+            {
+                int eq = part.LastIndexOf('=');
+                if (eq <= 0 || !float.TryParse(part[(eq + 1)..], NumberStyles.Float, CultureInfo.InvariantCulture, out var w))
+                    throw new ArgumentException($"--shapes: '{part}' is not NAME=WEIGHT");
+                d[part[..eq].Trim()] = w;
+            }
+            return d;
+        }
+
+        /// <summary>
+        /// Each mesh's vertices with the named blend shapes at their weights (0-100), as the engine's
+        /// skinning applies them: a shape's frames are its key weights, and a weight between two keys
+        /// blends their deltas (below the first key it scales the first delta). Unknown names are ignored.
+        /// </summary>
+        public static Dictionary<ImportedMesh, CosmicShore.Engine.Vector3[]> Posed(ImportedModel model, IReadOnlyDictionary<string, float> weights)
+        {
+            var result = new Dictionary<ImportedMesh, CosmicShore.Engine.Vector3[]>();
+            foreach (var im in model.Meshes)
+            {
+                var mesh = im.Mesh;
+                if (mesh == null || mesh.blendShapeCount == 0) continue;
+                var v = (CosmicShore.Engine.Vector3[])mesh.vertices.Clone();
+                bool any = false;
+                for (int sh = 0; sh < mesh.blendShapeCount; sh++)
+                {
+                    if (!weights.TryGetValue(mesh.GetBlendShapeName(sh), out var w) || w == 0) continue;
+                    int frames = mesh.GetBlendShapeFrameCount(sh);
+                    if (frames == 0) continue;
+                    var d0 = new CosmicShore.Engine.Vector3[v.Length];
+                    var d1 = new CosmicShore.Engine.Vector3[v.Length];
+                    int hi = 0;
+                    while (hi < frames - 1 && mesh.GetBlendShapeFrameWeight(sh, hi) < w) hi++;
+                    float whi = mesh.GetBlendShapeFrameWeight(sh, hi);
+                    mesh.GetBlendShapeFrameVertices(sh, hi, d1, null, null);
+                    float k1, k0 = 0;
+                    if (hi == 0) k1 = whi != 0 ? w / whi : 0;
+                    else
+                    {
+                        float wlo = mesh.GetBlendShapeFrameWeight(sh, hi - 1);
+                        mesh.GetBlendShapeFrameVertices(sh, hi - 1, d0, null, null);
+                        float t = whi != wlo ? (w - wlo) / (whi - wlo) : 1;
+                        k1 = t; k0 = 1 - t;
+                    }
+                    for (int i = 0; i < v.Length; i++) v[i] += d1[i] * k1 + d0[i] * k0;
+                    any = true;
+                }
+                if (any) result[im] = v;
+            }
+            return result;
         }
 
         static readonly (double r, double g, double b)[] Palette =
@@ -540,8 +600,8 @@ namespace CosmicShore.AssetTool
 
         /// <param name="colorOf">The colour of a mesh's submesh (the game's material), or null for the key palette.</param>
         public static byte[] Render(ImportedModel model, int size, double yaw, double pitch,
-                                    Func<ImportedMesh, int, (double r, double g, double b)?> colorOf = null)
-            => Png(RenderRgba(model, size, yaw, pitch, colorOf, sphereFit: false), size, size);
+                                    Func<ImportedMesh, int, (double r, double g, double b)?> colorOf = null, IReadOnlyDictionary<ImportedMesh, CosmicShore.Engine.Vector3[]> posed = null)
+            => Png(RenderRgba(model, size, yaw, pitch, colorOf, sphereFit: false, posed), size, size);
 
         /// <summary>
         /// <paramref name="frames"/> views turning once around the model (frame k at yaw + k*360/frames),
@@ -549,13 +609,13 @@ namespace CosmicShore.AssetTool
         /// so the size holds still while it turns. Prisma's MODELS page drags through them.
         /// </summary>
         public static byte[] RenderTurntable(ImportedModel model, int size, int frames, int cols, double yaw, double pitch,
-                                             Func<ImportedMesh, int, (double r, double g, double b)?> colorOf = null)
+                                             Func<ImportedMesh, int, (double r, double g, double b)?> colorOf = null, IReadOnlyDictionary<ImportedMesh, CosmicShore.Engine.Vector3[]> posed = null)
         {
             int rows = (frames + cols - 1) / cols, w = size * cols, h = size * rows;
             var sheet = new byte[w * h * 4];
             System.Threading.Tasks.Parallel.For(0, frames, k =>
             {
-                var cell = RenderRgba(model, size, (yaw + k * 360.0 / frames) % 360, pitch, colorOf, sphereFit: true);
+                var cell = RenderRgba(model, size, (yaw + k * 360.0 / frames) % 360, pitch, colorOf, sphereFit: true, posed);
                 int cx = k % cols * size, cy = k / cols * size;
                 for (int y = 0; y < size; y++) Buffer.BlockCopy(cell, y * size * 4, sheet, ((cy + y) * w + cx) * 4, size * 4);
             });
@@ -563,17 +623,17 @@ namespace CosmicShore.AssetTool
         }
 
         static byte[] RenderRgba(ImportedModel model, int size, double yaw, double pitch,
-                                 Func<ImportedMesh, int, (double r, double g, double b)?> colorOf, bool sphereFit)
+                                 Func<ImportedMesh, int, (double r, double g, double b)?> colorOf, bool sphereFit, IReadOnlyDictionary<ImportedMesh, CosmicShore.Engine.Vector3[]> posed = null)
         {
             int ss = 2, n = size * ss;
-            var (lo, hi) = Bounds(model);
+            var (lo, hi) = Bounds(model, posed);
             var center = (lo + hi) * 0.5;
             double radius = Math.Max(1e-6, (hi - lo).Length * 0.5);
             // View: rotate the world so the camera looks down -Z from the front-right, above.
             var view = DMat4.RotX(pitch) * DMat4.RotY(-yaw) * DMat4.Translate(-center);
             // Fit what the camera actually sees: the model's extent on screen after turning it.
             double sx0 = double.MaxValue, sx1 = double.MinValue, sy0 = double.MaxValue, sy1 = double.MinValue;
-            foreach (var (a0, b0, c0, _, _) in Triangles(model))
+            foreach (var (a0, b0, c0, _, _) in Triangles(model, posed))
                 foreach (var q in new[] { view.Point(a0), view.Point(b0), view.Point(c0) })
                 { sx0 = Math.Min(sx0, q.X); sx1 = Math.Max(sx1, q.X); sy0 = Math.Min(sy0, q.Y); sy1 = Math.Max(sy1, q.Y); }
             double span = Math.Max(Math.Max(sx1 - sx0, sy1 - sy0), radius * 1e-3);
@@ -592,7 +652,7 @@ namespace CosmicShore.AssetTool
                 }
             var key = new DVec3(-0.45, 0.65, -0.6).Normalized;   // from the camera's upper left
             var rim = new DVec3(0.6, 0.2, 0.75).Normalized;      // from behind
-            foreach (var (a0, b0, c0, sub, im) in Triangles(model))
+            foreach (var (a0, b0, c0, sub, im) in Triangles(model, posed))
             {
                 var a = view.Point(a0); var b = view.Point(b0); var c = view.Point(c0);
                 var nrm = DVec3.Cross(b - a, c - a).Normalized;

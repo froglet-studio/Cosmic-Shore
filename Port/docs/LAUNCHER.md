@@ -300,7 +300,8 @@ longer has are amber (Unity ignores them). **ASK CLAUDE** starts a chat about th
 files, tagged BLENDER / MAYA. Unity cannot read those two either: its importer runs the installed
 Blender or Maya in the background to export an FBX. Prisma does the same (Unity's own export
 settings), keeps the FBX until the file changes, and says so plainly when the application is not
-installed (`PRISMA_BLENDER` / `PRISMA_MAYAPY` point at one that is not where Prisma looks).
+installed. SETTINGS > TOOLCHAIN shows whether Blender and Maya were found, their version and path,
+with **BROWSE** to point at one Prisma did not find (passed on as `PRISMA_BLENDER` / `PRISMA_MAYAPY`).
 
 Pick a model for a preview **in the colours the game draws it with**: the materials come from the
 prefabs that draw its meshes (Manta's model from `Manta.prefab`, VesselGraph's `_Color1`), not from
@@ -308,12 +309,18 @@ the model file, whose own materials are usually placeholders. **Drag across the 
 (24 views rendered once, about a second), **<** **>** step, **FRONT** faces it. Beside it: what
 Unity's importer makes of it (triangles, vertices, meshes and nodes, size, materials, blend shapes,
 skinning and bones, animation takes, the `.meta` import scale, warnings) and **IN THE GAME** - the
-prefabs that draw it and each mesh's materials with shader and colour swatch.
+prefabs that draw it and each mesh's materials with shader and colour swatch. A model with blend
+shapes (the vessels' Mass / Charge / Space / Time hull morphs, the crystals' spins) gets a **BLEND
+SHAPES** slider each: let go and the turntable is drawn again with those weights; **ZERO** resets them.
 
 **VIEW IN ENGINE** opens the model in Prisma's own renderer - the real shaders, not the CPU
 picture - on a turntable: drag to turn, wheel to zoom, right-drag to pan, **F** frame, **R** reset,
-**Space** stop/start the spin, **Tab** the next prefab's materials (and the model's own). No game
-scene loads, so it opens in seconds once the player is built (`CosmicShore --view-model FILE`).
+**Space** stop/start the spin, **Tab** the next prefab's materials (and the model's own). On screen:
+the model, whose colours are shown and its size (top left), the controls (bottom left, **H** hides
+them), a live slider per blend shape (top right, drag; **B** zeroes them) and its animation takes
+(bottom right: **T** plays the next take, **P** pauses, drag the bar to scrub; a take that moves the
+hull morphs moves their sliders too). No game scene loads, and the player is only rebuilt when the
+workspace changed since the last build, so it opens in seconds (`CosmicShore --view-model FILE`).
 **ASK CLAUDE** starts a chat about the model.
 
 The agent has the same data through MCP: `asset_froglet_tools`, `asset_datasets`,
