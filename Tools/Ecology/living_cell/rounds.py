@@ -214,3 +214,17 @@ R14 = {
     "r14_m14": dict(B14, pack_metab=0.14),
     "r14_m10_thiefprey": dict(B14, pack_metab=0.10, **{"pack.prey_names": ("grazer", "locust", "thief")}),
 }
+
+# R14 result: pack metabolism is the pack dial - 0.06 climbs to 77-133 by minute 30, 0.10 levels at 36-51, 0.14
+# declines to 12-17. Without pack predation thieves are pilot-fed and climb to their 150 cap (steals 26/min, quiet
+# 0.37: a tailing thief is an active threat); with it they sink to 2-3 in 2 of 3 seeds. Lurkers, fed by the bigger
+# herbivore base that recruitment grows, now reach 120-180 (their cap) by minute 30.
+# R15 (45 min): packs at 0.10; lurkers' backstop raised to 300 to see where food stops them; LURKERS take thieves
+# (an ambusher at the flowers a thief grazes - partial, short-range predation instead of the packs' pursuit).
+B15 = dict(B14, pack_metab=0.10, lurker_cap=300)
+R15 = {
+    "r15_base": B15,
+    "r15_lurkthief": dict(B15, **{"lurker.prey_names": ("grazer", "locust", "thief")}),
+    "r15_lurkthief_m08": dict(B15, pack_metab=0.08, **{"lurker.prey_names": ("grazer", "locust", "thief")}),
+    "r15_lurkthief_rec05": dict(B15, flora_recruit=0.5, **{"lurker.prey_names": ("grazer", "locust", "thief")}),
+}

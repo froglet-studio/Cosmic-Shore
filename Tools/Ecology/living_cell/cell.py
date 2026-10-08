@@ -59,7 +59,7 @@ class Cell:
                            recruit=cfg["flora_recruit"], N_ref=cfg["flora_N_ref"])
         self.guilds = {}
         for name in cfg["species"]:
-            g = SPECIES[name](w, dict(cap=cfg[f"{name}_cap"]))
+            g = SPECIES[name](w, dict(cap=cfg[f"{name}_cap"], capacity=max(SPECIES[name].capacity, cfg[f"{name}_cap"] + 20)))
             self.guilds[name] = g
         if "pack" in self.guilds:
             self.guilds["pack"].metab = cfg["pack_metab"]; self.guilds["pack"].a_attack = cfg["pack_attack"]
