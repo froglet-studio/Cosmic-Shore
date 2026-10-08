@@ -48,8 +48,6 @@ namespace CosmicShore.Utility
     /// </summary>
     public readonly struct FlipSample : System.IEquatable<FlipSample>
     {
-        public static readonly FlipSample Rest = new(0f, 1f, 0f, 0f);
-
         /// <summary>Equal to no sample, NaN included - marks a plate whose pose must be rewritten.</summary>
         public static readonly FlipSample Unwritten = new(float.NaN, float.NaN, float.NaN, float.NaN);
 

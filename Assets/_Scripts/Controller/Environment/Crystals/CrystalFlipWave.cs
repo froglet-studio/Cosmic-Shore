@@ -69,7 +69,7 @@ namespace CosmicShore.Gameplay
             if ((skinRhombi && !RhombusSkinBaker.TryDress(plates, out problem))
                 || !FlipWaveRig.TryBuild(plates, model, out rig, out problem, skinRhombi ? plates.transform : null))
             {
-                CSDebug.LogError($"CrystalFlipWave on '{name}': {problem}. Was the model re-exported? Re-run Tools/Build/author_time_crystal_flip_wave.py. The crystal will hold still.", this);
+                CSDebug.LogError($"CrystalFlipWave on '{name}': {problem}. Was the model re-exported, or its import made unreadable? See Docs/TIME_CRYSTAL.md for the generator that re-checks it. The crystal will hold still.", this);
                 enabled = false;
                 return;
             }

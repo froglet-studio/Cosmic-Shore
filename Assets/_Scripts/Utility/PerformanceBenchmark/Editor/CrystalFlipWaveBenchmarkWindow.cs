@@ -25,7 +25,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
     ///
     /// It reads per-frame samples from ProfilerRecorders - main thread, <c>CrystalFlipWave.LateUpdate</c>
     /// (summed over every crystal in a frame), the Animator's PlayerLoop update and skinned-mesh update - and
-    /// reports the median and 95th percentile of each. A stat this Unity version does not expose reads n/a.
+    /// reports the median and 95th percentile of each. A stat this Unity version does not expose reads "not
+    /// found"; one that exists but never fired (the flip wave in a legacy run) reads "no samples".
     ///
     /// READER tool: it spawns into the open play-mode scene and destroys what it spawned, and writes no asset,
     /// so it carries no ledger or ship panel. Instructions: Docs/TIME_CRYSTAL.md §7.
@@ -55,7 +56,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             public Placement Placement;
             public int Count;
             public int Frames;
-            public readonly Dictionary<string, (double median, double p95)?> Stats = new();
+            /// <summary>Per stat: the line's value text - a median / p95 pair, "not found" or "no samples".</summary>
+            public readonly Dictionary<string, string> Stats = new();
         }
 
         [SerializeField] int count = 100;
@@ -252,24 +254,33 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             foreach (var handle in handles)
             {
                 if (ProfilerRecorderHandle.GetDescription(handle).Name != stat) continue;
+                // Default (SumAllSamplesInFrame | WrapAroundWhenCapacityReached) does NOT include
+                // StartImmediately, and the constructor - unlike ProfilerRecorder.StartNew - does not start
+                // the recorder: without the flag it records nothing and every stat reads empty.
                 return new ProfilerRecorder(handle, 5000,
-                    ProfilerRecorderOptions.Default | ProfilerRecorderOptions.SumAllSamplesInFrame);
+                    ProfilerRecorderOptions.Default | ProfilerRecorderOptions.StartImmediately);
             }
             return default;
         }
 
-        static (double median, double p95)? Summarise(ProfilerRecorder recorder)
+        /// <summary>
+        /// The stat's line value. "not found" (this Unity exposes no stat by that name) and "no samples" (found,
+        /// but it never fired - the flip wave in a legacy run) are reported apart, so a recorder that never
+        /// started cannot pass for a stat that does not exist.
+        /// </summary>
+        static string Summarise(ProfilerRecorder recorder)
         {
-            if (!recorder.Valid || recorder.Count == 0)
+            if (!recorder.Valid) return "not found";
+            if (recorder.Count == 0)
             {
-                if (recorder.Valid) recorder.Dispose();
-                return null;
+                recorder.Dispose();
+                return "no samples";
             }
             var ms = new List<double>(recorder.Count);
             for (int i = 0; i < recorder.Count; i++) ms.Add(recorder.GetSample(i).Value * 1e-6);   // ns -> ms
             recorder.Dispose();
             ms.Sort();
-            return (ms[ms.Count / 2], ms[Mathf.Min(ms.Count - 1, (int)(0.95 * ms.Count))]);
+            return $"{ms[ms.Count / 2],8:F3} / {ms[Mathf.Min(ms.Count - 1, (int)(0.95 * ms.Count))],8:F3}";
         }
 
         void Teardown()
@@ -297,10 +308,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
                 sb.AppendLine();
                 sb.AppendLine($"{r.Mode}, {r.Count} crystals, {r.Placement}, {r.Frames} frames");
                 foreach (var (label, _) in Stats)
-                {
-                    var value = r.Stats.TryGetValue(label, out var v) ? v : null;
-                    sb.AppendLine(value is { } s ? $"  {label,-16} {s.median,8:F3} / {s.p95,8:F3}" : $"  {label,-16}      n/a");
-                }
+                    sb.AppendLine($"  {label,-16} {(r.Stats.TryGetValue(label, out var v) ? v : "not run")}");
             }
             return sb.ToString();
         }

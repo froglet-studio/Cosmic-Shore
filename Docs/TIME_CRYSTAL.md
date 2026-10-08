@@ -165,7 +165,8 @@ skinning are measured.
    sampled frames, and reports per-frame **median / 95th percentile** in ms for: the main thread,
    `CrystalFlipWave.LateUpdate` (summed over every crystal), the Animator update
    (`PreLateUpdate.DirectorUpdateAnimationBegin`/`End`) and the skinned-mesh update
-   (`PostLateUpdate.UpdateAllSkinnedMeshes`). A stat this Unity version does not expose reads n/a.
+   (`PostLateUpdate.UpdateAllSkinnedMeshes`). A stat this Unity version does not expose reads
+   `not found`; one that exists but never fired (the flip wave in a legacy run) reads `no samples`.
 3. Run it again with **Placement: Behind Camera**. Nothing is drawn: the procedural wave does no work and
    its skinning is culled, while the legacy Animator kept animating off screen. That is the
    case the old `AlwaysAnimate` cost the most.
