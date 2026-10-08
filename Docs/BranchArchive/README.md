@@ -32,8 +32,9 @@ See **How to delete — step by step** below.
 
 ## Branch cleanup policy (applies to every future cleanup)
 
-1. **Use the tool.** `Tools/BranchJanitor/branch-janitor.html` lists branches live from GitHub and applies the rules
-   below. Its `POLICY` block is where they are enforced; change the rules there.
+1. **Use the tools.** The **Branch cleanup** workflow (`.github/workflows/branch-cleanup.yml`) and the page
+   `Tools/BranchJanitor/branch-janitor.html` both apply the rules below. The rules live in
+   `Tools/BranchJanitor/policy.json` (the page carries a copy in its `POLICY` block; change both together).
 2. **Never delete:** `master`, `main`, `bleeding-edge`, `development`, `Ys-bleeding-edge`, `build/*`, `release/*`,
    `archive/*`, any branch with a commit in the last 30 days, and any branch with an open pull request.
 3. **Large branches (11+ unique commits) are protected.** The tool locks them. Unlocking takes a deliberate
@@ -43,7 +44,12 @@ See **How to delete — step by step** below.
 
 ## How to delete — step by step
 
-**Easiest: the Branch Janitor page.** Open `Tools/BranchJanitor/branch-janitor.html` in a browser, paste a GitHub
+**Easiest: the Branch cleanup workflow.** GitHub ▸ Actions ▸ **Branch cleanup** ▸ Run workflow. Paste the branch
+names, pick `dry-run` to check them, then run again with `delete`. It uses the repo's own Actions token (no personal
+token), saves an `archive/<branch>` tag for each branch, and skips anything the policy locks. Claude can also start it
+for you from a chat through the GitHub connector. It runs a report-only listing on the 1st of every month.
+
+**Or the Branch Janitor page.** Open `Tools/BranchJanitor/branch-janitor.html` in a browser, paste a GitHub
 token, click **Load branches**, tick, then **Review and delete…**. It applies the policy above, saves an `archive/` tag
 for each branch, and re-checks each branch before deleting. Setup and token steps: `Tools/BranchJanitor/README.md`.
 

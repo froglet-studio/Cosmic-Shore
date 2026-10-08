@@ -1,5 +1,14 @@
 # Branch Janitor
 
+Two ways to clean up branches, same rules (`policy.json`):
+
+- **Branch cleanup workflow** (recommended): GitHub ▸ Actions ▸ *Branch cleanup* ▸ Run workflow. Modes `report`,
+  `dry-run`, `delete`; paste branch names; tick `allow_large` only on purpose. Needs no personal token. Runs
+  `branch_cleanup.py`. A report-only run happens on the 1st of every month (see the run's summary page).
+- **Branch Janitor page** (below): a browser page for picking branches visually, using your own token.
+
+---
+
 A single HTML page that lists every branch in `froglet-studio/Cosmic-Shore`, sorts the inactive ones into
 groups, and deletes the ones you tick. It talks to GitHub directly from your browser. There is no server and
 nothing to install.
@@ -39,8 +48,8 @@ clone that has push rights.
 
 ## What it never deletes
 
-These rules live in the `POLICY` block at the top of the HTML. Change them there and commit, so everyone uses
-the same rules.
+These rules live in `policy.json` (used by the workflow) and the `POLICY` block at the top of the HTML. Change both
+together and commit, so everyone uses the same rules.
 
 | Rule | Default | Why |
 |---|---|---|
