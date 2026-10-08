@@ -29,11 +29,11 @@ MonoBehaviour:
   initialControllingDomain: 1
   conservedFaunaStomach: 1
   PhaseThresholds:
-    RestlessEnter: 2500
-    RestlessExit: 1800
-    FrenzyEnter: 17200
-    FrenzyExit: 15200
-    RestlessEnterVolume: 75000
-    RestlessExitVolume: 56000
-    FrenzyEnterVolume: 534000
-    FrenzyExitVolume: 470000
+    RestlessEnter: 2600
+    RestlessExit: 1900
+    FrenzyEnter: 18100
+    FrenzyExit: 16000
+    RestlessEnterVolume: 78000
+    RestlessExitVolume: 58000
+    FrenzyEnterVolume: 557000
+    FrenzyExitVolume: 490000

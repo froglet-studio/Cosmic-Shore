@@ -125,7 +125,7 @@ ELEMENT_ID = {"Charge": 1, "Mass": 2, "Space": 3, "Time": 4}
 # Middle swarm (penned to 690-840) does not graze. The Middle forest is also 9-12 plants (was 6-10, +2 always-on hearts,
 # 1,194 of the 1,200 colliders): three sector pens (stampede, leech, leviathan) each cover a fifth of the shell, and at 6
 # plants one pen in six held none even with SpreadPlanting. pens (FloraConfigurationSO.PlantingPens): each new Middle plant
-# roots in whichever of those four pens holds the fewest - spread over the whole 625-840 shell, a sector or the gap still
+# roots in whichever of those pens holds the fewest (five since the arms race's pond, Docs/SUBSTRATE_FAUNA.md §11) - spread over the whole 625-840 shell, a sector or the gap still
 # came up empty in one seed in four (12-seed sweep), and the population penned there starved.
 # FLORA_INSET (round 11-14, Docs/SWARM_FAUNA.md §26.6): a plant roots this far INSIDE the pen it feeds (radially, and
 # FLORA_INSET_DEG inside a sector's half-angle). A grazer seats at its plant (seed spread 30-40 u) and its food points are
@@ -136,14 +136,17 @@ REGIONS = [
     dict(key="Inner", band=(470, 620), start="Mass", plan="whale", model="Sort", swarms=1,
          flora="Borromean", food="Mass", floor=2, cap=3, flora_band=(470 + FLORA_INSET, 620 - FLORA_INSET)),
     dict(key="Middle", band=(690, 840), start="Charge", plan="pufferfish", model="Sort", swarms=1,
-         flora="Borromean", food="Time", floor=9, cap=12, flora_band=(625 + FLORA_INSET // 2, 840 - FLORA_INSET),
+         flora="Borromean", food="Time", floor=10, cap=13, flora_band=(625 + FLORA_INSET // 2, 840 - FLORA_INSET),
          # (axis about the cell centre or None, half-angle deg, inner u, outer u): the three grazer sector pens of
          # author_substrate_fauna (stampede +X, leech +120, leviathan -120) and the mobbers' roost gap - each inset by
          # FLORA_INSET inside the population's pen (the gap is 60 u deep, so half that)
          pens=[((1, 0, 0), 55 - FLORA_INSET_DEG, 690 + FLORA_INSET, 840 - FLORA_INSET),
                ((-0.5, 0, 0.866), 55 - FLORA_INSET_DEG, 690 + FLORA_INSET, 840 - FLORA_INSET),
                ((-0.5, 0, -0.866), 55 - FLORA_INSET_DEG, 690 + FLORA_INSET, 840 - FLORA_INSET),
-               (None, 0, 625 + FLORA_INSET // 2, 685 - FLORA_INSET // 2)]),
+               (None, 0, 625 + FLORA_INSET // 2, 685 - FLORA_INSET // 2),
+               # Docs/SUBSTRATE_FAUNA.md §11: the arms race's POND at the +Y pole (its 15-degree pen, inset as the
+               # sectors are); floor/cap +1 so the other four pens keep their two plants each (+1 always-on heart)
+               ((0, 1, 0), 15 - FLORA_INSET_DEG, 690 + FLORA_INSET, 840 - FLORA_INSET)]),
     dict(key="Outer", band=(910, 1080), start="Space", plan="jellyfish", model="Sort", swarms=1,
          flora="Borromean", food="Space", floor=3, cap=5, flora_band=(910 + FLORA_INSET, 1080 - FLORA_INSET)),
 ]
