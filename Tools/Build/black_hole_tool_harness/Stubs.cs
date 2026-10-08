@@ -8,6 +8,7 @@ namespace UnityEngine
 {
     public class Object { }
     public class ScriptableObject : Object { }
+    public class Material : Object { }
     public class MonoBehaviour : Object { }
 
     [AttributeUsage(AttributeTargets.Field)] public sealed class SerializeField : Attribute { }
@@ -25,6 +26,7 @@ namespace UnityEngine
         public static float Min(float a, float b) => a < b ? a : b;
         public static float Clamp(float v, float min, float max) => v < min ? min : v > max ? max : v;
         public static int Clamp(int v, int min, int max) => v < min ? min : v > max ? max : v;
+        public static float Clamp01(float v) => v < 0f ? 0f : v > 1f ? 1f : v;
         public static float Sqrt(float f) => (float)Math.Sqrt(f);
         public static float Round(float f) => (float)Math.Round(f);
         public static float Abs(float f) => Math.Abs(f);

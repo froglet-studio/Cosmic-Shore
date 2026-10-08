@@ -110,6 +110,15 @@ turning round mid-animation starts from where it is (no jump). When its world re
 Selector), it annihilates inside the suction (0.9 s). `lifetimeSeconds` (0 = until retired) ends it
 on its own. Console: `blackhole annihilate [seconds]`.
 
+## 5.1 A second opener: the Stoat's sling and the tool (claude/peaceful-rubin-hhw49n)
+
+On the branch this one was taken from, the crystal wormhole is the second of two **pair styles**
+(`Docs/BLACK_HOLE.md` §13): with `BlackHoleConfig.crystalPairs` on, the Stoat's trigger sling and the
+Black Hole tool's Pair buttons open one through `BlackHoleRegistry.SpawnCrystalPair` — the same
+`CrystalWormhole.Open`, sling-tuned (form 0.6 s, stand 0.05 s, annihilate 3.35 s), the throat sized by
+the squeeze. A slung pair is OWNED: its wells pull only the slinger and its mouths carry only the
+slinger's player.
+
 ## 6. What is open
 
 - **Forming it with crystals.** The fiction is that players open a wormhole with space crystals; the

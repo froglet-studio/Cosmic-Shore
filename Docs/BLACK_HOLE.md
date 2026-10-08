@@ -767,3 +767,43 @@ sense. What it added to this engine stays and is documented there: polarity (`Ho
 GM), smooth wells (`softening`: Plummer gravity, no frame dragging, softened tides, the graded lens),
 `Amplitude`, the throat that carries captured mass through, and the felt pull on vessels. A lone black
 hole (the console's, Shift+B) is unchanged.
+
+## 13. Two pair styles, one switch (2026-10-08)
+
+Both branches' pairs now run on one engine, and **`BlackHoleConfig.crystalPairs`** picks which one
+every pair spawn lays: the Stoat's sling, the tool's Pair buttons, N/M and `blackhole pair`.
+
+| | `crystalPairs` off: the DRIFT pair (§11, this branch) | `crystalPairs` on: the CRYSTAL wormhole (§12, charming-cerf) |
+|---|---|---|
+| Wells | horizon holes: Paczyński–Wiita, frame dragging, capture | smooth (Plummer) wells, no horizon, no frame dragging |
+| Look | the attractor's shadow + Einstein ring; the repulsor's lens diverges under a white-hot core | the graded lens (one throat wide), seamless mouths — no edge anywhere |
+| Vessel pull | the physical pull into the 90 u/s channel | the felt law in the hull's cruise (k 4, ceiling 1.3 × cruise, reach 12 throats) |
+| Prisms through the pair | emitted at the point reflection just outside the repulsor | carried by pure translation into the repulsor's core |
+| The pilot | not carried (held at the pull ceiling inside the horizon) | carried through either mouth, by pure translation |
+| Life | drift apart, stop, fall back, annihilate (`StoatSlingConfig.lifetime`, 4 s) | form 0.6 s, stand 0.05 s, spiral and annihilate 3.35 s (`crystal*Seconds`, = 4 s) |
+
+**Geometry is shared:** midpoint `aheadHorizons` ahead of the hull, the attractor `halfGapHorizons`
+to the pressed trigger's side, strength from the squeeze. The crystal style's throat is the size dial
+a drift pair's horizon is (`horizonPerStrength × strength`), so a full squeeze opens a 24 u throat,
+close to the crystal cell's ~26 u. **Ownership is shared:** both wells carry `OwnerVessel` (the pull
+moves only the slinger), and a slung crystal pair's mouths carry only the slinger's own player — a
+vessel may not move an opposing vessel (`Docs/ELEMENTAL_ECONOMY.md` §9). A tool-spawned crystal pair
+is environmental: its mouths carry every pilot in the scene when it opens. One pair per Stoat either
+way: a new sling ends the last one (a crystal pair annihilates over `crystalReplaceSeconds`, 0.4 s).
+
+**Where the switch is:** the Black Hole tool's **Pair style** button (spawn section), the generated
+row in its Config view, `blackhole style drift|crystal`, or the asset. It edits the config live, like
+every field the tool edits, so the Stoat's next sling follows it. Ships OFF (the drift pair) until a
+crystal sling has been flown in the editor.
+
+**Built for it:** `BlackHoleRegistry.SpawnCrystalPair` (opens `CrystalWormhole` on a host object
+that `CrystalPairHost` destroys once the pair is gone — the crystal cell's host is its environment,
+so `CrystalWormhole` never tidies its host), `CrystalSettings` (the config's Crystal Pair section),
+`SpawnStyledPairFromConfig` (the camera pairs), and a `Reference` field kind in the tool model so the
+config can hold the mouth material (shown by name, edited on the asset). Tests: `BlackHoleToolTests`
+`PairStyle_*` (ships as drift with the seamless mouth wired; equal sling lives; throat = horizon) and
+`ToolModel_AnAssetReferenceIsShownNotUnsupported`; `black_hole_tool_harness` covers the 56 fields.
+
+**Fly both before choosing:** the web studio (`Docs/Studios/StoatFlightStudio.html`, live copy with
+the shared decision log at https://claude.ai/artifact/Busc3KW6DmVzbsiA2qxoHc) flies the Stoat on a
+gamepad through the game's own stick mix with either style, and compares them split-screen.

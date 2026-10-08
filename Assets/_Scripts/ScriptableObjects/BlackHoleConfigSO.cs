@@ -261,6 +261,86 @@ namespace CosmicShore.ScriptableObjects
         [Range(0.5f, 30f)]
         [SerializeField] float pairLifetime = 5f;
 
+        [Header("Pair style (Docs/BLACK_HOLE.md §13)")]
+        [Tooltip("Which wormhole pair every pair spawn lays — the Stoat's sling, the tool's Pair buttons, N/M and " +
+                 "`blackhole pair`. OFF: the DRIFT pair (this branch, §11): a black attractor with a shadow and a " +
+                 "white-hot repulsor, the physical pull, drifting apart and annihilating over pairLifetime (the " +
+                 "Stoat's own sling life on StoatSlingConfig). ON: the CRYSTAL wormhole (charming-cerf, §12): two " +
+                 "smooth wells with the graded lens and the felt pull, seamless mouths that carry the pilot through, " +
+                 "formed and annihilated along CrystalWormhole.Curve with the Crystal Pair numbers below.")]
+        [SerializeField] bool crystalPairs = false;
+
+        [Header("Crystal pair (crystalPairs on — Docs/CRYSTAL_WORMHOLE.md)")]
+        [Tooltip("Seconds a crystal pair takes to FORM out of nothing at its midpoint, spiralling apart. The " +
+                 "crystal cell ships 6 s; a sling has to be live almost at once.")]
+        [Range(0.05f, 10f)]
+        [SerializeField] float crystalFormSeconds = 0.6f;
+
+        [Tooltip("Seconds it STANDS at full strength between forming and annihilating.")]
+        [Range(0.01f, 30f)]
+        [SerializeField] float crystalStandSeconds = 0.05f;
+
+        [Tooltip("Seconds it takes to ANNIHILATE: the poles spiral together, beat against each other and cancel. " +
+                 "The crystal cell ships 9 s. Form + stand + annihilate = 4 s matches the drift pair's sling life.")]
+        [Range(0.1f, 15f)]
+        [SerializeField] float crystalAnnihilateSeconds = 3.35f;
+
+        [Tooltip("Seconds a vessel's standing crystal pair takes to annihilate when its next sling replaces it — " +
+                 "short, so a chained sling is not waiting on the last one's spiral.")]
+        [Range(0.05f, 5f)]
+        [SerializeField] float crystalReplaceSeconds = 0.4f;
+
+        [Tooltip("Graded lens strength A (< 1, so the image never folds): the attractor magnifies what is behind " +
+                 "it by up to 1/(1−A), the repulsor shrinks it by 1/(1+A). The lens is one throat wide.")]
+        [Range(0f, 0.9f)]
+        [SerializeField] float crystalLensStrength = 0.6f;
+
+        [Tooltip("Felt pull on vessels, k: Sign · k · cruise² · R_throat · r / (r² + R_throat²)^1.5, in the hull's " +
+                 "own cruise speed (Docs/CRYSTAL_WORMHOLE.md §3). The throat is the size dial a drift pair's horizon " +
+                 "is (horizonPerStrength × strength).")]
+        [Min(0f)]
+        [SerializeField] float crystalFeltStrength = 4f;
+
+        [Tooltip("The felt pull's ceiling, × the hull's cruise speed.")]
+        [Min(0f)]
+        [SerializeField] float crystalFeltCap = 1.3f;
+
+        [Tooltip("How far the felt pull reaches, in throat radii.")]
+        [Min(1f)]
+        [SerializeField] float crystalFeltReach = 12f;
+
+        [Tooltip("Turns the poles spiral through on the way in (CrystalWormhole.Curve).")]
+        [Range(0f, 10f)]
+        [SerializeField] float crystalSpiralTurns = 2.5f;
+
+        [Tooltip("Amplitude beats on the way in, quickening.")]
+        [Range(0f, 20f)]
+        [SerializeField] float crystalBeatCycles = 7f;
+
+        [Tooltip("How deep each beat swings the poles' amplitudes against each other (anti-phase).")]
+        [Range(0f, 1f)]
+        [SerializeField] float crystalBeatDepth = 0.5f;
+
+        [Tooltip("The seamless mouth's material (WormholeSeamless.mat). Without it the pair warps space but " +
+                 "carries no one.")]
+        [SerializeField] Material crystalMouthMaterial;
+
+        [Tooltip("Within this distance a mouth renders its exact view (else a panorama), world units.")]
+        [Min(0f)]
+        [SerializeField] float crystalMouthExactRange = 2500f;
+
+        [Tooltip("The band over which the exact view fades to the panorama, world units.")]
+        [Min(1f)]
+        [SerializeField] float crystalMouthExactFadeBand = 600f;
+
+        [Tooltip("Render scale of a mouth's exact view.")]
+        [Range(0.1f, 1f)]
+        [SerializeField] float crystalMouthExactRenderScale = 0.75f;
+
+        [Tooltip("Face size of a mouth's panorama, pixels.")]
+        [Range(32, 1024)]
+        [SerializeField] int crystalMouthPanoramaFaceSize = 256;
+
         public float SpawnStrength => Mathf.Max(0f, spawnStrength);
         public float SpawnHorizonRadius => Mathf.Max(0f, spawnHorizonRadius);
         public bool SpawnAheadOfCamera => spawnAheadOfCamera;
@@ -281,6 +361,26 @@ namespace CosmicShore.ScriptableObjects
         public float PairHalfGapHorizons => Mathf.Clamp(pairHalfGapHorizons, 1.5f, 30f);
         public float PairDriftSpeed => Mathf.Clamp(pairDriftSpeed, 0f, 200f);
         public float PairLifetime => Mathf.Clamp(pairLifetime, 0.5f, 30f);
+
+        /// <summary>The pair style (§13): false = the drift pair, true = the crystal wormhole. Settable: the
+        /// tool's style switch and <c>blackhole style</c> flip it live, like every other field the tool edits.</summary>
+        public bool CrystalPairs { get => crystalPairs; set => crystalPairs = value; }
+        public float CrystalFormSeconds => Mathf.Clamp(crystalFormSeconds, 0.05f, 10f);
+        public float CrystalStandSeconds => Mathf.Clamp(crystalStandSeconds, 0.01f, 30f);
+        public float CrystalAnnihilateSeconds => Mathf.Clamp(crystalAnnihilateSeconds, 0.1f, 15f);
+        public float CrystalReplaceSeconds => Mathf.Clamp(crystalReplaceSeconds, 0.05f, 5f);
+        public float CrystalLensStrength => Mathf.Clamp(crystalLensStrength, 0f, 0.9f);
+        public float CrystalFeltStrength => Mathf.Max(0f, crystalFeltStrength);
+        public float CrystalFeltCap => Mathf.Max(0f, crystalFeltCap);
+        public float CrystalFeltReach => Mathf.Max(1f, crystalFeltReach);
+        public float CrystalSpiralTurns => Mathf.Clamp(crystalSpiralTurns, 0f, 10f);
+        public float CrystalBeatCycles => Mathf.Clamp(crystalBeatCycles, 0f, 20f);
+        public float CrystalBeatDepth => Mathf.Clamp01(crystalBeatDepth);
+        public Material CrystalMouthMaterial => crystalMouthMaterial;
+        public float CrystalMouthExactRange => Mathf.Max(0f, crystalMouthExactRange);
+        public float CrystalMouthExactFadeBand => Mathf.Max(1f, crystalMouthExactFadeBand);
+        public float CrystalMouthExactRenderScale => Mathf.Clamp(crystalMouthExactRenderScale, 0.1f, 1f);
+        public int CrystalMouthPanoramaFaceSize => Mathf.Clamp(crystalMouthPanoramaFaceSize, 32, 1024);
 
         public float GmPerStrength => Mathf.Max(0f, gmPerStrength);
         public float HorizonPerStrength => Mathf.Max(0.01f, horizonPerStrength);

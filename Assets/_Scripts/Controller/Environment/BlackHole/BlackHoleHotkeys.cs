@@ -50,8 +50,7 @@ namespace CosmicShore.Gameplay
             bool pairLeft = kb[PairBlackLeftKey].wasPressedThisFrame, pairRight = kb[PairBlackRightKey].wasPressedThisFrame;
             if (pairLeft || pairRight)
             {
-                var pair = BlackHoleRegistry.SpawnPairFromConfig(blackOnLeft: pairLeft);
-                if (pair == null)
+                if (BlackHoleRegistry.SpawnStyledPairFromConfig(attractorOnLeft: pairLeft) == null)
                     CSDebug.LogWarning($"[BlackHole] {(pairLeft ? "N" : "M")}: pair refused — needs two free of {BlackHoleRegistry.Config.MaxBlackHoles} " +
                                        $"({BlackHoleRegistry.Count} live), or BlackHoleConfig is not sane.");
                 return;

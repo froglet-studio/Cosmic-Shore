@@ -16,6 +16,8 @@ namespace CosmicShore.Gameplay
         Int = 2,
         Bool = 3,
         Vector3 = 4,
+        /// <summary>An asset reference (a material): shown by name, edited on the asset.</summary>
+        Reference = 5,
     }
 
     /// <summary>
@@ -137,6 +139,7 @@ namespace CosmicShore.Gameplay
                     : f.FieldType == typeof(int) ? BlackHoleToolFieldKind.Int
                     : f.FieldType == typeof(bool) ? BlackHoleToolFieldKind.Bool
                     : f.FieldType == typeof(Vector3) ? BlackHoleToolFieldKind.Vector3
+                    : typeof(UnityEngine.Object).IsAssignableFrom(f.FieldType) ? BlackHoleToolFieldKind.Reference
                     : BlackHoleToolFieldKind.Unsupported;
 
                 bool hasRange = range != null;

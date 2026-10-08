@@ -28,6 +28,10 @@ namespace CosmicShore.Gameplay
     /// (<see cref="StoatSlingMath.Peak"/>): the latest one is no better than reading at release,
     /// because a let-go trigger sweeps back down through several frames before the edge fires.</para>
     ///
+    /// <para><b>Two styles, one switch</b> (<c>BlackHoleConfig.crystalPairs</c>, Docs/BLACK_HOLE.md §13): the
+    /// DRIFT pair (this branch's) or the CRYSTAL wormhole (charming-cerf's), laid with the same geometry —
+    /// flipped live from the Black Hole tool or <c>blackhole style</c>.</para>
+    ///
     /// <para><b>One pair per Stoat.</b> A new sling annihilates THIS hull's previous pair first, so
     /// a pilot can chain nudges without filling the registry's hole budget; other hulls' and the
     /// tool's pairs are left alone. The pair is the wormhole system's — its drift, annihilation and
@@ -54,13 +58,16 @@ namespace CosmicShore.Gameplay
         readonly Hold[] _holds = new Hold[2];
         IVesselStatus _status;
         BlackHoleRegistry.Pair _pair;
+        CrystalWormhole _crystal;
         ToggleTranslationModeActionExecutor _stance;
         readonly InputEvents?[] _boundInput = new InputEvents?[2];
         readonly List<ShipActionSO> _bindScratch = new();
         float _aiLastSlingTime = float.NegativeInfinity;
 
-        /// <summary>The pair this hull slung last, alive or not; null before the first sling.</summary>
+        /// <summary>The drift pair this hull slung last, alive or not; null before the first one.</summary>
         public BlackHoleRegistry.Pair LastPair => _pair;
+        /// <summary>The crystal pair this hull slung last (the crystal style, Docs/BLACK_HOLE.md §13); null before the first.</summary>
+        public CrystalWormhole LastCrystal => _crystal;
         public bool IsHolding(Side side) => _holds[(int)side].Holding;
         public float Hold01(Side side) => _holds[(int)side].Hold01;
 
@@ -107,7 +114,9 @@ namespace CosmicShore.Gameplay
             var midpoint = StoatSlingMath.Midpoint(hull.position, hull.forward, rs, config.AheadHorizons);
             var axis = StoatSlingMath.PairAxis(side == Side.Left, hull.right);
 
+            // One pair per Stoat, of either style: the new sling ends this hull's last one first.
             if (_pair != null && _pair.IsAlive) BlackHoleRegistry.Annihilate(_pair);
+            if (_crystal && !_crystal.IsGone && !_crystal.IsAnnihilating) _crystal.Annihilate(bh.CrystalReplaceSeconds);
             // A full budget is a normal answer here (another Stoat, the tool), so ask quietly first.
             if (!BlackHoleRegistry.CanSpawn(2))
             {
@@ -118,9 +127,22 @@ namespace CosmicShore.Gameplay
             // Spin about the hull's up so the frame drag turns on the plane the pair lies in. The pair
             // is OWNED by this hull, so its pull moves this Stoat and no other vessel (§9 of the
             // elemental economy: a vessel may not move an opposing vessel).
-            _pair = BlackHoleRegistry.SpawnPair(midpoint, axis, strength, 0f, halfGap, config.DriftSpeed, config.Lifetime, hull.up,
-                OwnerTransform());
-            if (_pair == null) return;
+            if (bh.CrystalPairs)
+            {
+                // The CRYSTAL style (charming-cerf's wormhole): the same geometry and size dial (the throat is
+                // the horizon a drift pair of this strength would have); its mouths carry this pilot alone.
+                var riders = new List<IPlayer>(1);
+                if (_status.Player != null) riders.Add(_status.Player);
+                _crystal = BlackHoleRegistry.SpawnCrystalPair(midpoint, axis, halfGap,
+                    BlackHoleRegistry.CrystalSettings(strength, 0f, hull.up, riders), OwnerTransform());
+                if (_crystal == null) return;
+            }
+            else
+            {
+                _pair = BlackHoleRegistry.SpawnPair(midpoint, axis, strength, 0f, halfGap, config.DriftSpeed, config.Lifetime, hull.up,
+                    OwnerTransform());
+                if (_pair == null) return;
+            }
             // A sling is a launch: leave the hold-still stance, which would otherwise ignore the pull.
             if (_status.IsTranslationRestricted && _stance) _stance.EndStance();
             PlayOneShot(config.SlingEvent);

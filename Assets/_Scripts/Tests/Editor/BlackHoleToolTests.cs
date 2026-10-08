@@ -176,5 +176,50 @@ namespace CosmicShore.Tests
                     if (!systemsBefore.Contains(es)) Object.DestroyImmediate(es.gameObject);
             }
         }
+
+        // ------------------------------------------------------------------ the pair style (§13)
+
+        [Test]
+        public void PairStyle_ShipsAsTheDriftPairWithTheCrystalMouthWired()
+        {
+            var asset = AssetDatabase.LoadAssetAtPath<BlackHoleConfigSO>(ConfigAssetPath);
+            Assert.IsNotNull(asset, ConfigAssetPath + " is missing.");
+            Assert.IsFalse(asset.CrystalPairs, "the shipped pair style must stay the drift pair until a crystal sling is playtested.");
+            Assert.IsNotNull(asset.CrystalMouthMaterial, "crystalMouthMaterial is unwired: a crystal pair would warp space but carry no one.");
+            Assert.AreEqual("Assets/_Graphics/Materials/WormholeSeamless.mat", AssetDatabase.GetAssetPath(asset.CrystalMouthMaterial),
+                "the crystal pair's mouths must be the seamless ones (Docs/CRYSTAL_WORMHOLE.md §2.2).");
+        }
+
+        [Test]
+        public void PairStyle_ACrystalSlingLivesAsLongAsADriftSling()
+        {
+            // The two styles are compared in play (and in the Stoat Flight Studio) on the same clock:
+            // form + stand + annihilate = the drift pair's sling life.
+            var config = AssetDatabase.LoadAssetAtPath<BlackHoleConfigSO>(ConfigAssetPath);
+            var sling = AssetDatabase.LoadAssetAtPath<StoatSlingConfigSO>("Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset");
+            Assert.IsNotNull(sling, "StoatSlingConfig.asset is missing.");
+            float crystal = config.CrystalFormSeconds + config.CrystalStandSeconds + config.CrystalAnnihilateSeconds;
+            Assert.AreEqual(sling.Lifetime, crystal, 0.01f, "a crystal sling and a drift sling no longer live equally long.");
+        }
+
+        [Test]
+        public void PairStyle_TheThroatIsTheSizeDialAHorizonIs()
+        {
+            var config = BlackHoleRegistry.Config;
+            var settings = BlackHoleRegistry.CrystalSettings(12f, 0f, Vector3.up, null);
+            Assert.AreEqual(config.HorizonRadius(12f, 0f), settings.ThroatRadius, 1e-5f,
+                "a crystal pair of strength S must open a throat the size of the horizon a drift pair of S has.");
+            Assert.AreEqual(config.CrystalStandSeconds, settings.LifetimeSeconds, 1e-6f,
+                "the crystal pair must annihilate on its own (LifetimeSeconds 0 would stand it forever).");
+            Assert.Greater(settings.LifetimeSeconds, 0f);
+        }
+
+        [Test]
+        public void ToolModel_AnAssetReferenceIsShownNotUnsupported()
+        {
+            var field = BlackHoleToolModel.EditableFields(typeof(BlackHoleConfigSO)).FirstOrDefault(f => f.Name == "crystalMouthMaterial");
+            Assert.IsNotNull(field, "crystalMouthMaterial is not a serialized config field.");
+            Assert.AreEqual(BlackHoleToolFieldKind.Reference, field.Kind);
+        }
     }
 }

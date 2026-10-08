@@ -43,7 +43,7 @@ namespace CosmicShore.Gameplay
         // "black hole tool on" — the HUD splits on spaces, so the two-word name is its own command.
         const string TwoWordName = "black";
         const string Usage = "usage: blackhole tool [on|off] | config | spawn [<strength> [x y z] [vx vy vz]] | " +
-                             "attractor|repulsor [<strength> [x y z]] | white [<strength> [x y z]] | pair [left|right] | here <strength> | size <id> <r_s> | " +
+                             "attractor|repulsor [<strength> [x y z]] | white [<strength> [x y z]] | pair [left|right] | style [drift|crystal] | here <strength> | size <id> <r_s> | " +
                              "move <id> <vx> <vy> <vz> | strength <id> <v> | spin <id> <ax> <ay> <az> | list | despawn <id>|all | annihilate [seconds]";
         /// <summary>Where a spawn lands when no position is given: this far ahead of the camera.</summary>
         const float SpawnAheadDistance = 300f;
@@ -180,11 +180,24 @@ namespace CosmicShore.Gameplay
                 case "pair":
                 {
                     bool blackOnLeft = args.Length < 2 || args[1].ToLowerInvariant() != "right";
-                    var pair = BlackHoleRegistry.SpawnPairFromConfig(blackOnLeft);
-                    return pair == null
-                        ? "pair refused (needs two free holes, or config not sane)"
-                        : $"spawned pair: black #{pair.Black.Id} on the {(blackOnLeft ? "left" : "right")}, white #{pair.White.Id} on the " +
-                          $"{(blackOnLeft ? "right" : "left")}; half-gap {pair.HalfGap0:F0} u, drift {pair.DriftSpeed:F0} u/s, annihilates in {pair.Lifetime:F1} s";
+                    string spawned = BlackHoleRegistry.SpawnStyledPairFromConfig(blackOnLeft);
+                    return spawned == null ? "pair refused (needs two free holes, or config not sane)" : "spawned " + spawned;
+                }
+                case "style":
+                {
+                    // The pair style (Docs/BLACK_HOLE.md §13): what the Stoat's sling, the tool's Pair buttons,
+                    // N/M and `blackhole pair` lay.
+                    var config = BlackHoleRegistry.Config;
+                    if (args.Length >= 2)
+                    {
+                        string want = args[1].ToLowerInvariant();
+                        if (want == "drift") config.CrystalPairs = false;
+                        else if (want == "crystal") config.CrystalPairs = true;
+                        else return "usage: blackhole style [drift|crystal]";
+                    }
+                    return config.CrystalPairs
+                        ? "pair style: crystal wormhole (charming-cerf) — `blackhole style drift` for the drift pair"
+                        : "pair style: drift pair (this branch) — `blackhole style crystal` for the crystal wormhole";
                 }
                 case "here":
                 {

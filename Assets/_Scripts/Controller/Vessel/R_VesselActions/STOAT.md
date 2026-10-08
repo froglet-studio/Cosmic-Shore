@@ -4,7 +4,8 @@
 > **repulsor** (pushes), an attractor–repulsor pair. In code they are still the black-hole system's
 > types (`BlackHole`, `HolePolarity.Sink` = attractor, `.Source` = repulsor — the names `cece/charming-cerf-alf1j1`
 > chose, adopted when that branch was merged here). The real wormhole mechanics are built there on those
-> types; both pair styles now live side by side here (Docs/BLACK_HOLE.md §13, `StoatSlingConfig.pairStyle`).
+> types; both pair styles now live side by side here, switched by `BlackHoleConfig.crystalPairs` (Docs/BLACK_HOLE.md §13 —
+> the Black Hole tool's Pair style button, or `blackhole style drift|crystal`).
 > What the Stoat flies with today is the PLACEHOLDER: the pull, the lens, the pass-through.
 
 `VesselClassType.Stoat = 14`. A two-thumb hull whose ONE ability lays an **attractor–repulsor wormhole pair**

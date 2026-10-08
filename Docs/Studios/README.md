@@ -28,9 +28,12 @@ half cruise). LT/RT squeeze-and-release slings a wormhole pair with either style
   reach 12 throats); the graded lens `α = A·u·e^(−u²/2)` (A 0.6, w = throat); seamless mouths (soft
   edge 0.65) that show the world carried by Δ and carry the pilot through by a pure translation.
 
+In the game the same choice is one switch, `BlackHoleConfig.crystalPairs` (`Docs/BLACK_HOLE.md` §13): the
+Black Hole tool's **Pair style** button (press B), or `blackhole style drift|crystal`.
+
 The throat is mapped to the same size dial as the horizon (2 u per strength), so a full squeeze lays a
-24 u throat — close to the crystal cell's shipped ~26 u. B's life is sling-tuned here (0.6 s form,
-3.4 s annihilate = A's 4 s); the button "Their cell's 6 s / 9 s" restores the shipped spawnable's.
+24 u throat — close to the crystal cell's shipped ~26 u. B's life is sling-tuned as `BlackHoleConfig`
+ships it (0.6 s form, 0.05 s stand, 3.35 s annihilate = A's 4 s); the button "Their cell's 6 s / 9 s" restores the shipped spawnable's.
 
 **Compare** is a split screen: each pair in its own corner of the field, 1,280 u apart, each half
 rendered with only its own wells under one orbit. **Runs** records finish times per pair on each

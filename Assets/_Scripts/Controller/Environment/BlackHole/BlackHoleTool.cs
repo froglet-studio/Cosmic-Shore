@@ -93,7 +93,7 @@ namespace CosmicShore.Gameplay
         Canvas _canvas;
         GameObject _canvasGO;
         RectTransform _panel, _configRoot;
-        Text _configButtonLabel, _caption, _status, _hint;
+        Text _configButtonLabel, _caption, _status, _hint, _pairStyleLabel;
         string _statusText = "ready — values come from the BlackHoleConfig asset";
         float _spawnSectionBottom;
         readonly List<Binding> _bindings = new();
@@ -138,6 +138,11 @@ namespace CosmicShore.Gameplay
                     $"lens {config.LensRadiusMultiplier * rs:F0} u\n" +
                     $"{SpawnWhere(config, rs)} · pull GM {config.GM(strength):N0} · " +
                     $"influence {config.InfluenceRadius(strength, rs):F0} u";
+
+            if (_pairStyleLabel != null)
+                _pairStyleLabel.text = config.CrystalPairs
+                    ? "Pair style: CRYSTAL wormhole (charming-cerf)  ·  click for DRIFT pair"
+                    : "Pair style: DRIFT pair (this branch)  ·  click for CRYSTAL wormhole";
 
             var holes = BlackHoleRegistry.Holes;
             var cam = BlackHoleLens.ViewCamera();
@@ -189,11 +194,22 @@ namespace CosmicShore.Gameplay
 
         void SpawnPair(bool blackOnLeft)
         {
-            var pair = BlackHoleRegistry.SpawnPairFromConfig(blackOnLeft);
-            _statusText = pair != null
-                ? $"spawned pair A#{pair.Black.Id} / R#{pair.White.Id}: half-gap {pair.HalfGap0:F0} u, drift {pair.DriftSpeed:F0} u/s, " +
-                  $"annihilates in {pair.Lifetime:F1} s"
+            string spawned = BlackHoleRegistry.SpawnStyledPairFromConfig(blackOnLeft);
+            _statusText = spawned != null
+                ? "spawned " + spawned
                 : $"pair refused — needs 2 free of {Config.MaxBlackHoles} ({BlackHoleRegistry.Count} live), or the config is not sane";
+            Refresh();
+        }
+
+        /// <summary>The pair-style switch (Docs/BLACK_HOLE.md §13): drift pair ⇄ crystal wormhole, live on the
+        /// config like every field the tool edits — the Stoat's next sling and the Pair buttons follow it.</summary>
+        void TogglePairStyle()
+        {
+            var config = Config;
+            config.CrystalPairs = !config.CrystalPairs;
+            _statusText = config.CrystalPairs
+                ? "pair style: CRYSTAL wormhole (charming-cerf) — smooth wells, graded lens, seamless mouths, felt pull"
+                : "pair style: DRIFT pair (this branch) — black attractor, white-hot repulsor, physical pull";
             Refresh();
         }
 
@@ -321,6 +337,8 @@ namespace CosmicShore.Gameplay
             Button(_panel, "Save asset", new Vector2(Pad + 330, y), 110, ButtonBg, SaveAsset);
 #endif
             y -= RowH + 4f;
+            _pairStyleLabel = Button(_panel, "", new Vector2(Pad, y), PanelWidth - 2 * Pad, PairBg, TogglePairStyle).GetComponentInChildren<Text>();
+            y -= RowH + 2f;
             Button(_panel, "Pair: attractor L / repulsor R", new Vector2(Pad, y), 214, PairBg, () => SpawnPair(true));
             Button(_panel, "Pair: repulsor L / attractor R", new Vector2(Pad + 220, y), 214, PairBg, () => SpawnPair(false));
             y -= RowH + 8f;

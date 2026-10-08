@@ -224,6 +224,100 @@ namespace CosmicShore.Gameplay
                 config.PairDriftSpeed, config.PairLifetime, config.SpawnSpinAxis);
         }
 
+        /// <summary>
+        /// The settings a CRYSTAL pair (§13) is opened with: the config's Crystal Pair section, a throat of
+        /// the size dial a drift pair's horizon is (<see cref="BlackHoleConfigSO.HorizonRadius"/>), and the
+        /// pilots its mouths may carry. A pilot's sling passes only that pilot (a vessel may not move an
+        /// opposing vessel — Docs/ELEMENTAL_ECONOMY.md §9); an environmental pair passes everyone.
+        /// </summary>
+        public static CrystalWormhole.Settings CrystalSettings(float strength, float horizonRadius, Vector3 spinAxis,
+            IReadOnlyList<IPlayer> riders)
+        {
+            var config = Config;
+            return new CrystalWormhole.Settings
+            {
+                Strength = strength,
+                ThroatRadius = config.HorizonRadius(strength, horizonRadius),
+                LensStrength = config.CrystalLensStrength,
+                FeltStrength = config.CrystalFeltStrength,
+                FeltCap = config.CrystalFeltCap,
+                FeltReach = config.CrystalFeltReach,
+                SpinAxis = spinAxis,
+                MouthMaterial = config.CrystalMouthMaterial,
+                Players = riders,
+                MouthExactRange = config.CrystalMouthExactRange,
+                MouthExactFadeBand = config.CrystalMouthExactFadeBand,
+                MouthExactRenderScale = config.CrystalMouthExactRenderScale,
+                MouthPanoramaFaceSize = config.CrystalMouthPanoramaFaceSize,
+                FormSeconds = config.CrystalFormSeconds,
+                AnnihilateSeconds = config.CrystalAnnihilateSeconds,
+                LifetimeSeconds = config.CrystalStandSeconds,
+                SpiralTurns = config.CrystalSpiralTurns,
+                BeatCycles = config.CrystalBeatCycles,
+                BeatDepth = config.CrystalBeatDepth,
+            };
+        }
+
+        /// <summary>
+        /// Lay a CRYSTAL pair (§13 — charming-cerf's crystal wormhole) where <see cref="SpawnPair"/> lays a
+        /// drift pair: the attractor <paramref name="halfGap"/> along −<paramref name="axis"/> from
+        /// <paramref name="midpoint"/>, the repulsor along +axis. It forms out of nothing, stands, and
+        /// annihilates on its own (<see cref="CrystalWormhole"/>); its host object goes with it
+        /// (<see cref="CrystalPairHost"/>). An <paramref name="ownerVessel"/> makes both wells pull only
+        /// that vessel. Null when there is no room for two (logged, as <see cref="SpawnPair"/>).
+        /// </summary>
+        public static CrystalWormhole SpawnCrystalPair(Vector3 midpoint, Vector3 axis, float halfGap,
+            CrystalWormhole.Settings settings, Transform ownerVessel = null)
+        {
+            Prune();
+            if (!HasRoom(2, Config)) return null;
+            var a = axis.sqrMagnitude > 1e-8f ? axis.normalized : Vector3.right;
+            halfGap = Mathf.Max(settings.ThroatRadius, halfGap);    // never closer than a throat apart
+            var host = new GameObject("[CrystalPair]");
+            host.transform.position = midpoint;
+            var wormhole = CrystalWormhole.Open(host, -a * halfGap, a * halfGap, settings);
+            if (wormhole == null)
+            {
+                Object.Destroy(host);
+                return null;
+            }
+            host.AddComponent<CrystalPairHost>().Bind(wormhole);
+            if (wormhole.Attractor) wormhole.Attractor.OwnerVessel = ownerVessel;
+            if (wormhole.Repulsor) wormhole.Repulsor.OwnerVessel = ownerVessel;
+            CSDebug.LogVerbose(CSLogChannel.BlackHole,
+                $"[BlackHole] crystal pair at {midpoint} axis {a} half-gap {halfGap:F1} throat {settings.ThroatRadius:F1} " +
+                $"strength {settings.Strength:F1} owner {(ownerVessel ? ownerVessel.name : "none")}");
+            return wormhole;
+        }
+
+        /// <summary>
+        /// What the tool's Pair buttons, N/M and <c>blackhole pair</c> lay: a pair of the configured STYLE
+        /// (<see cref="BlackHoleConfigSO.CrystalPairs"/>), across the camera — the attractor on the left when
+        /// <paramref name="attractorOnLeft"/>. Returns a one-line description, or null when refused.
+        /// </summary>
+        public static string SpawnStyledPairFromConfig(bool attractorOnLeft)
+        {
+            var config = Config;
+            if (!config.CrystalPairs)
+            {
+                var pair = SpawnPairFromConfig(attractorOnLeft);
+                return pair == null ? null
+                    : $"drift pair: attractor #{pair.Black.Id} on the {(attractorOnLeft ? "left" : "right")}, repulsor #{pair.White.Id}; " +
+                      $"half-gap {pair.HalfGap0:F0} u, drift {pair.DriftSpeed:F0} u/s, annihilates in {pair.Lifetime:F1} s";
+            }
+            var cam = BlackHoleLens.ViewCamera();
+            float rs = config.HorizonRadius(config.SpawnStrength, config.SpawnHorizonRadius);
+            Vector3 midpoint = cam != null ? cam.transform.position + cam.transform.forward * (rs * config.PairAheadHorizons) : config.SpawnPosition;
+            Vector3 right = cam != null ? cam.transform.right : Vector3.right;
+            // An environmental pair carries every pilot in the scene at the moment it opens.
+            var riders = new List<IPlayer>(Object.FindObjectsByType<Player>(FindObjectsSortMode.None));
+            var wormhole = SpawnCrystalPair(midpoint, attractorOnLeft ? right : -right, rs * config.PairHalfGapHorizons,
+                CrystalSettings(config.SpawnStrength, config.SpawnHorizonRadius, config.SpawnSpinAxis, riders));
+            return wormhole == null ? null
+                : $"crystal pair: attractor #{wormhole.Attractor.Id} on the {(attractorOnLeft ? "left" : "right")}, repulsor #{wormhole.Repulsor.Id}; " +
+                  $"forms in {config.CrystalFormSeconds:F1} s, stands {config.CrystalStandSeconds:F1} s, annihilates over {config.CrystalAnnihilateSeconds:F1} s";
+        }
+
         /// <summary>Annihilate a pair now: both holes ease out together. The pair is forgotten.</summary>
         public static void Annihilate(Pair pair)
         {

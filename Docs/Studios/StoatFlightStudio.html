@@ -195,6 +195,7 @@
         </div>
         <label class="check"><input type="checkbox" id="portal"> <span id="portalLabel">Carry the Stoat through the pair</span></label>
         <p class="src" id="portalSrc"></p>
+        <p class="src">In the game the same switch is <b>Black Hole tool ▸ Pair style</b> (press B), <code>blackhole style crystal</code>, or <code>BlackHoleConfig.crystalPairs</code>.</p>
       </div>
 
       <div class="card" id="runsCard">
@@ -209,7 +210,7 @@
         <p class="src">BlackHoleConfig: GM = strength × 20,000; pull on the owner only (ELEMENTAL_ECONOMY §9).</p>
         <div class="btns"><button class="pick" type="button" data-reset="A">Reset to shipped</button></div></details>
       <details class="card" id="grp-B"><summary>Pair B tuning <small>charming-cerf</small></summary><div class="rows"></div>
-        <p class="src">Felt pull k·cruise²·R<sub>t</sub>·r/(r²+R<sub>t</sub>²)<sup>1.5</sup>; lens α = A·u·e<sup>−u²/2</sup>, u = b/w, shipped w = the throat (lens width 1). Life is sling-tuned here; their crystal cell ships 6 s to form, 9 s to annihilate.</p>
+        <p class="src">Felt pull k·cruise²·R<sub>t</sub>·r/(r²+R<sub>t</sub>²)<sup>1.5</sup>; lens α = A·u·e<sup>−u²/2</sup>, u = b/w, shipped w = the throat (lens width 1). Life is sling-tuned as <code>BlackHoleConfig</code> ships it for the Stoat (0.6 s + 0.05 s + 3.35 s = the drift pair's 4 s); their crystal cell ships 6 s to form, 9 s to annihilate.</p>
         <div class="btns"><button class="pick" type="button" data-reset="B">Reset</button><button class="pick" type="button" id="theirLife">Their cell's 6 s / 9 s</button></div></details>
       <details class="card" id="grp-flight"><summary>Flight & course</summary><div class="rows"></div>
         <div class="rowsel">
@@ -250,7 +251,7 @@
     // A: this branch (BlackHoleConfig + the sling's drift-pair life)
     pullScale: 1, maxPull: 90, driftSpeed: 20, lifetime: 4, releaseDamping: 1.5,
     // B: charming-cerf crystal wormhole (felt law, lens, life curve)
-    feltK: 4, feltCap: 1.3, feltReach: 12, lensA: 0.6, lensWidth: 1, formS: 0.6, annihilateS: 3.4, spiralTurns: 2.5, beatDepth: 0.5, beatCycles: 7, softEdge: 0.65,
+    feltK: 4, feltCap: 1.3, feltReach: 12, lensA: 0.6, lensWidth: 1, formS: 0.6, standS: 0.05, annihilateS: 3.35, spiralTurns: 2.5, beatDepth: 0.5, beatCycles: 7, softEdge: 0.65,
     // the Stoat's flight (prefab: throttle scaler 60, pitch/yaw 120, roll 130)
     cruise: 60, pitchYaw: 120, roll: 130,
     // StoatLopeMath.Defaults
@@ -275,7 +276,8 @@
     ['B', 'lensA', 'Lens A', 0, 0.95, 0.01],
     ['B', 'lensWidth', 'Lens width (× throat)', 0.5, 6, 0.1],
     ['B', 'formS', 'Form (s)', 0.1, 8, 0.1],
-    ['B', 'annihilateS', 'Annihilate (s)', 0.5, 12, 0.1],
+    ['B', 'standS', 'Stand (s)', 0.01, 10, 0.01],
+    ['B', 'annihilateS', 'Annihilate (s)', 0.5, 12, 0.05],
     ['B', 'spiralTurns', 'Spiral turns', 0, 5, 0.1],
     ['B', 'beatDepth', 'Beat depth', 0, 1, 0.05],
     ['B', 'beatCycles', 'Beat cycles', 0, 14, 0.5],
@@ -476,7 +478,7 @@
       this.t = 0; this.alive = true; this.frozen = false; this.loop = false;
       this.att = new V3(); this.rep = new V3(); this.ampA = 1; this.ampR = 1; this.update(0);
     }
-    life() { return this.style === 'A' ? P.lifetime : P.formS + P.annihilateS; }
+    life() { return this.style === 'A' ? P.lifetime : P.formS + P.standS + P.annihilateS; }
     update(dt) {
       if (!this.frozen) this.t += dt;
       if (this.t >= this.life()) { if (this.loop) this.t = 0; else { this.alive = false; return; } }
@@ -484,7 +486,7 @@
         const T = P.lifetime, v = P.driftSpeed, t = this.t, h = this.h0 + v * t - (v / T) * t * t;
         this.att.copy(this.mid).addScaledVector(this.axis, -h); this.rep.copy(this.mid).addScaledVector(this.axis, h); this.ampA = this.ampR = 1;
       } else {
-        const p = this.t < P.formS ? 1 - this.t / P.formS : (this.t - P.formS) / P.annihilateS, c = curveB(p);
+        const t = this.t, p = t < P.formS ? 1 - t / P.formS : t < P.formS + P.standS ? 0 : (t - P.formS - P.standS) / P.annihilateS, c = curveB(p);
         tv.copy(this.axis).multiplyScalar(this.h0 * c.sep).applyAxisAngle(this.up, c.angle);
         this.att.copy(this.mid).sub(tv); this.rep.copy(this.mid).add(tv); this.ampA = c.ampA; this.ampR = c.ampR;
       }
@@ -1197,7 +1199,7 @@
   function changedText(keys) { const parts = []; for (const k of keys) if (Math.abs(P[k] - SHIPPED[k]) > 1e-9) parts.push(k + ' ' + P[k]); return parts.length ? ' (changed: ' + parts.join(', ') + ')' : ' (shipped numbers)'; }
   const SLING_KEYS = ['minStrength', 'maxStrength', 'holdExponent', 'aheadHorizons', 'halfGapHorizons', 'holdRamp'];
   const A_KEYS = ['pullScale', 'maxPull', 'driftSpeed', 'lifetime', 'releaseDamping'];
-  const B_KEYS = ['feltK', 'feltCap', 'feltReach', 'lensA', 'lensWidth', 'formS', 'annihilateS', 'spiralTurns', 'beatDepth', 'beatCycles', 'softEdge'];
+  const B_KEYS = ['feltK', 'feltCap', 'feltReach', 'lensA', 'lensWidth', 'formS', 'standS', 'annihilateS', 'spiralTurns', 'beatDepth', 'beatCycles', 'softEdge'];
   function currentChoice(topic) {
     switch (topic) {
       case 'Wormhole style': return style === 'A' ? 'Pair A: the drift pair (this branch)' : 'Pair B: the crystal wormhole (charming-cerf)';
