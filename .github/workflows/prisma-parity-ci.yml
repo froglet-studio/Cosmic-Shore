@@ -125,7 +125,10 @@ jobs:
       - name: engine_smoke ${{ matrix.scene }}
         run: |
           chmod +x Port/src/CosmicShore.Player/bin/Debug/net10.0/CosmicShore Port/src/CosmicShore.Mcp/bin/Debug/net10.0/prisma-mcp
-          if [ "${{ matrix.scene }}" = "Bootstrap" ]; then IGNORE=""; else IGNORE="not found at injection time"; fi
+          # Entered directly, a scene lacks Bootstrap's singletons, as in Unity's play-from-scene: the
+          # DI misses, the captains Squad reads (Menu_Main) and ThemeManager's team materials (Joust,
+          # Scurry). Bootstrap boots the real chain and must stay clean.
+          if [ "${{ matrix.scene }}" = "Bootstrap" ]; then IGNORE=""; else IGNORE="not found at injection time|CosmicShore.Core.Squad..ctor|GameModeProgressionService.Start|ThemeManagerDataContainerSO.GetTeamTransparentBlockMaterial"; fi
           Port/src/CosmicShore.Mcp/bin/Debug/net10.0/prisma-mcp --repo . --call engine_smoke \
             "{\"scene\":\"${{ matrix.scene }}\",\"frames\":900,\"build\":false,\"ignore\":\"$IGNORE\"}" | tee smoke.txt
           status=${PIPESTATUS[0]}

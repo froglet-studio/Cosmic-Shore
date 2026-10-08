@@ -408,6 +408,32 @@ public class TriggerPassTests
     }
 
     [Fact]
+    public void TheLayerMatrix_SilencesTriggerPairs_AndIncludeLayersOverridesIt()
+    {
+        // Unity filters trigger messages through the Layer Collision Matrix as it does contacts:
+        // the project turns Skimmers (7) off against Skimmers, so two vessels' skim triggers never
+        // message each other.
+        using var loop = new GameLoop(); // a fresh world resets the physics settings: set the matrix after it
+        bool was = Physics.GetIgnoreLayerCollision(7, 7);
+        Physics.IgnoreLayerCollision(7, 7, true);
+        try
+        {
+            var (goA, colA, a) = ContactRig.MakeProbe("a", Vector3.zero, isTrigger: true);
+            var (goB, _, b) = ContactRig.MakeProbe("b", new Vector3(0.5f, 0f, 0f), isTrigger: true);
+            goA.layer = 7; goB.layer = 7;
+            loop.Tick(Dt);
+            Assert.Empty(a.Events);
+            Assert.Empty(b.Events);
+
+            // includeLayers on either collider wins over the matrix.
+            colA.includeLayers = 1 << 7;
+            loop.Tick(Dt);
+            Assert.Contains(a.Events, e => e.evt == "enter");
+        }
+        finally { Physics.IgnoreLayerCollision(7, 7, was); }
+    }
+
+    [Fact]
     public void BoxAndSphere_Overlap_UnrotatedBox()
     {
         using var loop = new GameLoop();
