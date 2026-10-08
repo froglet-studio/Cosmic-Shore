@@ -11165,40 +11165,8 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 2140965332117826991}
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 3708656379894223299, guid: 358e11ad6d037a24998bd295142ff242,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1236851152098518310}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 358e11ad6d037a24998bd295142ff242, type: 3}
---- !u!1 &1259559001432499751 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 3708656379894223299, guid: 358e11ad6d037a24998bd295142ff242,
-    type: 3}
-  m_PrefabInstance: {fileID: 2453636514716022756}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &1236851152098518310
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1259559001432499751}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 86cfe17c56c343bf83a92cca9b1618f5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Utility.EndGameSequencer
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  messageSet: {fileID: 0}
-  toastCanvasGroup: {fileID: 0}
-  gameOverCounterText: {fileID: 0}
-  revealDuration: 3
-  toastInDuration: 0.45
-  toastOutDuration: 0.35
-  toastPunchScale: 1.15
-  randomizeVesselBehavior: 1
-  vesselBehavior: 0
 --- !u!1 &1462904225399142908 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 3909219916716576280, guid: 358e11ad6d037a24998bd295142ff242,
