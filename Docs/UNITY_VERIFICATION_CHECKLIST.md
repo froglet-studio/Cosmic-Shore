@@ -2372,7 +2372,7 @@ Element map: `Docs/ElementalAbilitySystem/FLEET_MAPS.md` §2 Urchin.
   (`Button2Action`). All four L5 upgrades gate on
   `R_VesselElementalAbilityHandler.IsUpgradeActive(element)` — the replicated unlock bit — never a
   raw local level read.
-- **Scoring.** `Player.ReportPrismStolen_ServerRpc(float volume)` + `StatsManager.CreditPrismSteal`.
+- **Scoring.** `Player.ReportPrismStolen_ServerRpc(float volume, FixedString64Bytes victimName)` + `StatsManager.CreditPrismSteal` / `DebitPrismSteal` (BUGS.md B19).
   `StatsManager.PrismStolen` opened with `if (!_allowRecord) return;` and `_allowRecord` is false
   on clients, so **a client's steals scored nothing** — a gap that predates the Urchin and affects
   every steal source in the game. Only the stealer's half travels (identity comes from RPC

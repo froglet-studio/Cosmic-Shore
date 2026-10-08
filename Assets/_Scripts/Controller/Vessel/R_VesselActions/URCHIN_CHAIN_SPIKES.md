@@ -551,10 +551,11 @@ Nothing below can be checked without play mode; the depth curve is a pure functi
     client's own `PrismStolen` / `VolumeStolen` on the scoreboard. Before
     `Player.ReportPrismStolen_ServerRpc` this was **zero** — `StatsManager.PrismStolen` opened
     with `if (!_allowRecord) return;` and `_allowRecord` is false on clients, so a client's steals
-    scored nothing at all, for every steal source in the game. Note the **victim's**
-    remaining-mass tally still drifts on a client-side steal: only the stealer's half travels,
-    because identity on the far side comes from RPC ownership and debiting the victim would mean
-    trusting a client-supplied name.
+    scored nothing at all, for every steal source in the game. The **victim's** remaining-mass
+    tally must fall by the same count and volume: the RPC now carries the victim's name and the
+    server debits it (`StatsManager.DebitPrismSteal`, the trade recorded in
+    `Docs/ScoringSystem/BUGS.md` B19). A victim whose `PrismsRemaining` does not move means the
+    debit half is stranded again.
 
 ## Follow-ups
 
