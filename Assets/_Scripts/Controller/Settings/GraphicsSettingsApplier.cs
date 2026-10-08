@@ -11,8 +11,9 @@ namespace CosmicShore.Core
     /// main camera. This is the ONLY place that touches engine graphics state, so the rest of the
     /// settings system stays pure data (CLAUDE.md ▸ Config Separation).
     ///
-    /// Note: in the Editor, mutating the URP asset's renderScale/msaaSampleCount dirties the asset
-    /// (Unity quirk shared by the project's existing quality tiers). In a build it is in-memory only.
+    /// Note: in the Editor, mutating the URP asset's renderScale/msaaSampleCount/upscalingFilter/HDR
+    /// changes the asset itself; <c>UrpAssetPlayModeRestore</c> (Editor) puts the authored values
+    /// back when Play ends. In a build it is in-memory only.
     /// </summary>
     public static class GraphicsSettingsApplier
     {
@@ -50,6 +51,14 @@ namespace CosmicShore.Core
                 urp.renderScale = Mathf.Clamp(s.RenderScalePercent / 100f, 0.25f, 2f);
                 urp.msaaSampleCount = MsaaSampleCount(s.AntiAliasing);
                 urp.upscalingFilter = ToUpscalingFilter(s.Upscaling);
+
+                // A device tier may turn HDR off (MobileLow: half the colour bandwidth, and room for
+                // 4x MSAA in tile memory). Only ever OFF: a tier that does not ask leaves the URP
+                // asset's authored value alone, so Desktop and MobileHigh render exactly as before.
+                // Docs/PLATFORM_UNIFICATION.md, Step 4.
+                var profile = PlatformProfile.Current;
+                if (profile && profile.DisableHdr)
+                    urp.supportsHDR = false;
             }
 
             ApplyCameraAntiAliasing(Camera.main, s.AntiAliasing);

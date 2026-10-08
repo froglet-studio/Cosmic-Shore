@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4bdd00a5ac0148148cfbd42312f56f3d, type: 3}
+  m_Name: PlatformProfile_Desktop
+  m_EditorClassIdentifier: 
+  useCapabilityHeuristic: 1
+  preset: 0
+  pixelBudget: 1300000
+  minRenderScalePercent: 50
+  upscalingWhenScaled: 1
+  antiAliasing: 1
+  maxTargetFrameRate: 60
+  disableHdr: 0
+  skyboxReplacements: []
+  membraneMaxSubdivisions: -1
+  foldGateWindowMaxRenderScale: 1
+  menuAutopilotLaysNoTrail: 0
+  freestyleCellPrismBudget: 0
+  freestyleCellPrismResume: 0
+  skimRaceTrail:
+    raceBudget: 0
+    floorPerVessel: 1
+    ceilingPerVessel: 1
+  joustTrail:
+    raceBudget: 0
+    floorPerVessel: 1
+    ceilingPerVessel: 1
+  deactivateMenuWhileFlying: 0
+  quietScoreGlow: 0
+  disableCytoplasm: 0
+  wanderwayBudget:
+    poolSize: -1
+    prismBudgetPerScene: -1
+    aheadTargetScenes: -1
+    maxCrystalsPerScene: -1
+    lifeformScenes: -1
+    maxConcurrentArrivals: -1

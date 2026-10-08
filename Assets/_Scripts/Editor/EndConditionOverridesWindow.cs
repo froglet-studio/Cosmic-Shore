@@ -110,6 +110,9 @@ namespace CosmicShore.Editor
                 EndConditionOverridesSO.DefaultBroadsidePointsPerPilot + " PER PILOT (the race target scales with team size: x1 / x1.6 / x2.2 / x2.8).\n" +
                 "  • Scarab Scramble: goals a DOMAIN needs to win (race to N) - a forged ball " +
                 "through any hoop, default " + EndConditionOverridesSO.DefaultScarabScrambleGoalTarget + ".\n" +
+                "  • Astro League: goals a DOMAIN needs to end the match EARLY (mercy rule) - " +
+                "the match is otherwise timed with golden-goal overtime, default " +
+                EndConditionOverridesSO.DefaultAstroLeagueGoalLimit + ".\n" +
                 "  • Salvo: hostile prisms destroyed to win (race to N), default " +
                 EndConditionOverridesSO.DefaultSalvoPrismTarget + ".\n" +
                 "  • Switchback: gates in the course - both the length a pilot must thread " +
@@ -123,6 +126,21 @@ namespace CosmicShore.Editor
                 "and the number of breakwaters laid, measured against a domain's LEAD RUNNER. " +
                 "Also sizes the arena, so raising it adds mass as well as distance. Default " +
                 EndConditionOverridesSO.DefaultBreakwaterStationTarget + ".\n" +
+                "  • Breakwater laps: how many times the circuit is flown. The start gate is " +
+                "threaded once and the rest every lap, so the race is 1 + (stations - 1) x laps " +
+                "CROSSINGS (shown under Effective now) and laps cost no arena mass. Default " +
+                EndConditionOverridesSO.DefaultBreakwaterLaps + ".\n" +
+                "  • Skein: rings in the Urchin cable course - both how many a pilot must thread " +
+                "and how many the arena and the controller lay, measured against a domain's LEAD " +
+                "RUNNER. The rings must close on the finish collar after a whole number of cable " +
+                "laps, so this also sets the ring SPACING; Tools/Build/skein_budget.py proves the " +
+                "spacing and the intensity-1 next-ring-on-screen promise at the default only. " +
+                "Default " + EndConditionOverridesSO.DefaultSkeinRingTarget + ".\n" +
+                "  • Headlong: gate THREADINGS (laps x rings) a DOMAIN's lead runner needs to " +
+                "finish the Rhino circuit; the controller lays target/laps rings (laps is the " +
+                "scene's HeadlongController.laps, 3), rounded UP to a whole lap, so this is also " +
+                "the size of the circuit. Default " +
+                EndConditionOverridesSO.DefaultHeadlongGateTarget + ".\n" +
                 "  • Hijack: prisms a DOMAIN must STEAL to win (race to N) - ownership flips, " +
                 "not destruction, so the same prism can pay both sides all match. Default " +
                 EndConditionOverridesSO.DefaultHijackStealTarget + ".\n" +
@@ -168,10 +186,14 @@ namespace CosmicShore.Editor
             int df  = Mathf.Max(0, EditorGUILayout.IntField("Dog Fight - Point Target", _config.dogFightPointTarget));
             int bd  = Mathf.Max(0, EditorGUILayout.IntField("The Bends - Bend Target", _config.bendsPointTarget));
             int ss  = Mathf.Max(0, EditorGUILayout.IntField("Scarab Scramble - Goal Target", _config.scarabScrambleGoalTarget));
+            int al  = Mathf.Max(0, EditorGUILayout.IntField("Astro League - Goal Limit (mercy)", _config.astroLeagueGoalLimit));
             int sv  = Mathf.Max(0, EditorGUILayout.IntField("Salvo - Prism Target", _config.salvoPrismTarget));
             int sw  = Mathf.Max(0, EditorGUILayout.IntField("Switchback - Gate Target", _config.switchbackGateTarget));
             int ws  = Mathf.Max(0, EditorGUILayout.IntField("Waystation - Ring Target", _config.waystationRingTarget));
             int bw  = Mathf.Max(0, EditorGUILayout.IntField("Breakwater - Station Target", _config.breakwaterStationTarget));
+            int bl  = Mathf.Max(0, EditorGUILayout.IntField("Breakwater - Laps", _config.breakwaterLaps));
+            int sk  = Mathf.Max(0, EditorGUILayout.IntField("Skein - Ring Target", _config.skeinRingTarget));
+            int hl  = Mathf.Max(0, EditorGUILayout.IntField("Headlong - Gate Target (laps x rings)", _config.headlongGateTarget));
             int hj  = Mathf.Max(0, EditorGUILayout.IntField("Hijack - Steal Target", _config.hijackStealTarget));
             int tw  = Mathf.Max(0, EditorGUILayout.IntField("Tollway - Toll Target", _config.tollwayTollTarget));
             int rl  = Mathf.Max(0, EditorGUILayout.IntField("Redline - Gate Target (laps x rings)", _config.redlineGateTarget));
@@ -197,10 +219,14 @@ namespace CosmicShore.Editor
                     _config.dogFightPointTarget = df;
                     _config.bendsPointTarget = bd;
                     _config.scarabScrambleGoalTarget = ss;
+                    _config.astroLeagueGoalLimit = al;
                     _config.salvoPrismTarget = sv;
                     _config.switchbackGateTarget = sw;
                     _config.waystationRingTarget = ws;
                     _config.breakwaterStationTarget = bw;
+                    _config.breakwaterLaps = bl;
+                    _config.skeinRingTarget = sk;
+                    _config.headlongGateTarget = hl;
                     _config.hijackStealTarget = hj;
                     _config.tollwayTollTarget = tw;
                     _config.redlineGateTarget = rl;
@@ -230,10 +256,15 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Dog Fight", df > 0 ? df.ToString() : EndConditionOverridesSO.DefaultDogFightPointTarget + " (default)");
             EditorGUILayout.LabelField("The Bends", bd > 0 ? bd.ToString() : EndConditionOverridesSO.DefaultBendsPointTarget + " (default)");
             EditorGUILayout.LabelField("Scarab Scramble", ss > 0 ? ss.ToString() : EndConditionOverridesSO.DefaultScarabScrambleGoalTarget + " (default)");
+            EditorGUILayout.LabelField("Astro League", al > 0 ? al.ToString() : EndConditionOverridesSO.DefaultAstroLeagueGoalLimit + " (default)");
             EditorGUILayout.LabelField("Salvo", sv > 0 ? sv.ToString() : EndConditionOverridesSO.DefaultSalvoPrismTarget + " (default)");
             EditorGUILayout.LabelField("Switchback", sw > 0 ? sw.ToString() : EndConditionOverridesSO.DefaultSwitchbackGateTarget + " (default)");
             EditorGUILayout.LabelField("Waystation", ws > 0 ? ws.ToString() : EndConditionOverridesSO.DefaultWaystationRingTarget + " (default)");
             EditorGUILayout.LabelField("Breakwater", bw > 0 ? bw.ToString() : EndConditionOverridesSO.DefaultBreakwaterStationTarget + " (default)");
+            EditorGUILayout.LabelField("Breakwater laps", bl > 0 ? bl.ToString() : EndConditionOverridesSO.DefaultBreakwaterLaps + " (default)");
+            EditorGUILayout.LabelField("Breakwater crossings", _config.GetBreakwaterCrossingTarget() + " (1 + (stations - 1) x laps)");
+            EditorGUILayout.LabelField("Skein", sk > 0 ? sk.ToString() : EndConditionOverridesSO.DefaultSkeinRingTarget + " (default)");
+            EditorGUILayout.LabelField("Headlong", hl > 0 ? hl.ToString() : EndConditionOverridesSO.DefaultHeadlongGateTarget + " (default)");
             EditorGUILayout.LabelField("Hijack", hj > 0 ? hj.ToString() : EndConditionOverridesSO.DefaultHijackStealTarget + " (default)");
             EditorGUILayout.LabelField("Tollway", tw > 0 ? tw.ToString() : EndConditionOverridesSO.DefaultTollwayTollTarget + " (default)");
             EditorGUILayout.LabelField("Redline", rl > 0 ? rl.ToString() : EndConditionOverridesSO.DefaultRedlineGateTarget + " (default)");
@@ -284,10 +315,14 @@ namespace CosmicShore.Editor
                    "Dog Fight: " + Fmt(_config.dogFightPointTargetBuild, "default " + EndConditionOverridesSO.DefaultDogFightPointTarget) + "\n" +
                    "The Bends: " + Fmt(_config.bendsPointTargetBuild, "default " + EndConditionOverridesSO.DefaultBendsPointTarget) + "\n" +
                    "Scarab Scramble: " + Fmt(_config.scarabScrambleGoalTargetBuild, "default " + EndConditionOverridesSO.DefaultScarabScrambleGoalTarget) + "\n" +
+                   "Astro League: " + Fmt(_config.astroLeagueGoalLimitBuild, "default " + EndConditionOverridesSO.DefaultAstroLeagueGoalLimit) + "\n" +
                    "Salvo: " + Fmt(_config.salvoPrismTargetBuild, "default " + EndConditionOverridesSO.DefaultSalvoPrismTarget) + "\n" +
                    "Switchback: " + Fmt(_config.switchbackGateTargetBuild, "default " + EndConditionOverridesSO.DefaultSwitchbackGateTarget) + "\n" +
                    "Waystation: " + Fmt(_config.waystationRingTargetBuild, "default " + EndConditionOverridesSO.DefaultWaystationRingTarget) + "\n" +
                    "Breakwater: " + Fmt(_config.breakwaterStationTargetBuild, "default " + EndConditionOverridesSO.DefaultBreakwaterStationTarget) + "\n" +
+                   "Breakwater laps: " + Fmt(_config.breakwaterLapsBuild, "default " + EndConditionOverridesSO.DefaultBreakwaterLaps) + "\n" +
+                   "Skein: " + Fmt(_config.skeinRingTargetBuild, "default " + EndConditionOverridesSO.DefaultSkeinRingTarget) + "\n" +
+                   "Headlong: " + Fmt(_config.headlongGateTargetBuild, "default " + EndConditionOverridesSO.DefaultHeadlongGateTarget) + "\n" +
                    "Hijack: " + Fmt(_config.hijackStealTargetBuild, "default " + EndConditionOverridesSO.DefaultHijackStealTarget) + "\n" +
                    "Tollway: " + Fmt(_config.tollwayTollTargetBuild, "default " + EndConditionOverridesSO.DefaultTollwayTollTarget) + "\n" +
                    "Redline: " + Fmt(_config.redlineGateTargetBuild, "default " + EndConditionOverridesSO.DefaultRedlineGateTarget) + "\n" +

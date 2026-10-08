@@ -194,6 +194,10 @@ OWNED_ELSEWHERE = {
     "Coral Bloom": ("species", "Tools/Build/author_mandelbulb_flora_assets.py"),
     "Watershed": ("species", "Tools/Build/author_mandelbulb_flora_assets.py"),
     "Apollonia": ("species", "Tools/Build/author_mandelbulb_flora_assets.py"),
+    # The nested gyroid: a colony species whose seed floor / cap its own generator authors
+    # (Docs/ECOSYSTEM.md §58.9). Its configs sit in no SpawnProfile today; registered so an
+    # adopting cell's copy stands down by name rather than being re-modelled here.
+    "Nested Gyroid": ("species", "Tools/Build/author_nested_gyroid_flora_assets.py"),
 }
 
 

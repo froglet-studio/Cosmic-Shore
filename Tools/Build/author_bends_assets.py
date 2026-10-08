@@ -34,6 +34,8 @@ import hashlib
 import os
 import re
 import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import arcade_mode_lib as aml  # noqa: E402  - card background + retired-key checks
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 CHECK_ONLY = "--check" in sys.argv
@@ -83,10 +85,7 @@ EXISTING = {
     "IconActive":         "1dc25875d7cbd3e478fc5a133e65eedb",
     "IconInactive":       "fa9b62abd1b217b4ba3d7c5a4a2c0916",
     "CardBackground":     "587d2203114c8004c9985d0112c89585",
-    "PreviewClip":        "4396864d799a6154bb82e5346ac0093b",
 }
-
-PREVIEW_FILEID = 241334157148977051
 
 # The Cell component's fileID in the donor scene - the controller's arenaCell reference.
 DONOR_CELL_FILEID = 1700000065
@@ -286,8 +285,7 @@ emit("Assets/_SO_Assets/Games/ArcadeGameBends.asset",
     four seconds of being worse at all of it. Three bends and your domain takes it.
   IconActive: {{fileID: 21300000, guid: {EXISTING['IconActive']}, type: 3}}
   IconInactive: {{fileID: 21300000, guid: {EXISTING['IconInactive']}, type: 3}}
-  CardBackground: {{fileID: 21300000, guid: {EXISTING['CardBackground']}, type: 3}}
-  PreviewClip: {{fileID: {PREVIEW_FILEID}, guid: {EXISTING['PreviewClip']}, type: 3}}
+  CardBackground: {{fileID: 21300000, guid: {aml.card_background('Bends')}, type: 3}}
   GolfScoring: 1
   SceneName: MinigameBends
   Vessels:
@@ -298,7 +296,6 @@ emit("Assets/_SO_Assets/Games/ArcadeGameBends.asset",
   MaxDomainsAllowed: 3
   MinIntensity: 1
   MaxIntensity: 4
-  CallToActionTargetType: 404
   ViewUserAction: 0
   PlayUserAction: 0
   ComebackRatePerScoreDeficit: {COMEBACK_RATE}
@@ -324,18 +321,6 @@ emit("Assets/_SO_Assets/Games/ArcadeGameBends.asset.meta",
 # A scene that shares a donor's arena has to be checked against the donor MOVING, which is why
 # the asserts below are exact-match rather than fuzzy: if Rampage re-authors its controller
 # block, this fails loudly instead of silently producing a scene with a half-wired controller.
-scene = read("Assets/_Scenes/Multiplayer Scenes/MinigameRampage.unity")
-
-# 6a. turn monitor script swap. The field set is identical (base TurnMonitor fields only), so
-# the swap is the guid and nothing else - both monitors read their target from
-# EndConditionOverridesSO rather than from a serialized field, per the /EndGameConditions rule.
-scene, n = re.subn(EXISTING["RampagePrismTurnMonitor"], G_SCRIPT["BendsPointTurnMonitor"], scene)
-assert n == 1, f"turn monitor guid appeared {n} times"
-
-# 6b. controller script swap + its serialized field block
-scene, n = re.subn(EXISTING["RampageController"], G_SCRIPT["BendsController"], scene)
-assert n == 1, f"controller guid appeared {n} times"
-
 OLD_FIELDS = f"  rule: {{fileID: 11400000, guid: {EXISTING['RampageScoringRule']}, type: 2}}\n"
 NEW_FIELDS = f"""  rule: {{fileID: 11400000, guid: {G_ASSET['BendsScoringRule']}, type: 2}}
   arenaCell: {{fileID: {DONOR_CELL_FILEID}}}
@@ -349,9 +334,31 @@ NEW_FIELDS = f"""  rule: {{fileID: 11400000, guid: {G_ASSET['BendsScoringRule']}
   aiAimHumanFocus: 3
   aiAimMaxRange: 2400
 """
-assert scene.count(OLD_FIELDS) == 1, "controller field block not found in donor scene"
-scene = scene.replace(OLD_FIELDS, NEW_FIELDS)
 
+
+def clone_scene() -> str:
+    scene = read("Assets/_Scenes/Multiplayer Scenes/MinigameRampage.unity")
+
+    # 6a. turn monitor script swap. The field set is identical (base TurnMonitor fields only), so
+    # the swap is the guid and nothing else - both monitors read their target from
+    # EndConditionOverridesSO rather than from a serialized field, per the /EndGameConditions rule.
+    scene, n = re.subn(EXISTING["RampagePrismTurnMonitor"], G_SCRIPT["BendsPointTurnMonitor"], scene)
+    assert n == 1, f"turn monitor guid appeared {n} times"
+
+    # 6b. controller script swap + its serialized field block
+    scene, n = re.subn(EXISTING["RampageController"], G_SCRIPT["BendsController"], scene)
+    assert n == 1, f"controller guid appeared {n} times"
+
+    assert scene.count(OLD_FIELDS) == 1, "controller field block not found in donor scene"
+    scene = scene.replace(OLD_FIELDS, NEW_FIELDS)
+    return scene
+
+
+# The clone is a one-shot: once MinigameBends.unity is committed the Editor owns its fileIDs and
+# Netcode GlobalObjectIdHash values (re-cloning would stamp Rampage's hashes into a second scene),
+# so the committed scene is adopted and the checks below run on it. See aml.committed_scene.
+scene, _scene_errors = aml.committed_scene("Assets/_Scenes/Multiplayer Scenes/MinigameBends.unity",
+                                           clone_scene, authored_blocks=(NEW_FIELDS,))
 emit("Assets/_Scenes/Multiplayer Scenes/MinigameBends.unity", scene)
 emit("Assets/_Scenes/Multiplayer Scenes/MinigameBends.unity.meta",
      scene_meta(G_ASSET["MinigameBends.unity"]))
@@ -410,7 +417,7 @@ emit(END_PATH, endcond)
 
 
 # ══ VALIDATE EVERYTHING BEFORE WRITING ANYTHING ═════════════════════════════
-errors = []
+errors = list(_scene_errors) + aml.check_cards(files)
 
 # The comeback rate is meaningless without the target next to it - see COMEBACK_RATE. A quarter
 # of the way behind must buy at least one whole element level, or the mode ships with a dead
@@ -493,11 +500,7 @@ if errors:
     sys.exit(1)
 
 if CHECK_ONLY:
-    changed = []
-    for rel, content in files.items():
-        full = os.path.join(ROOT, rel)
-        if not os.path.exists(full) or read(rel) != content:
-            changed.append(rel)
+    changed = aml.drift(files)
     if changed:
         print(f"--check: {len(changed)} file(s) differ from the authored output:")
         for c in sorted(changed):

@@ -93,13 +93,13 @@ What the script authors, and where:
 | `.cs.meta` for every new script | beside the script | `g.script_meta(path, guid("script/<Name>"))`; folders too (`g.folder_meta`) |
 | Scoring rule | `_SO_Assets/Scoring Rules/<Mode>ScoringRule.asset` | `metric:` + `golfRules:` + the rule's own fields |
 | Settings | `_SO_Assets/Games/<Mode>Settings.asset` | |
-| Arcade card | `_SO_Assets/Games/ArcadeGame<Mode>.asset` | `Mode`, `DisplayName`, `Description`, card art, `GolfScoring`, `SceneName`, `Vessels`, min/max players + domains + intensity, `ComebackRatePerScoreDeficit`. **Do not emit retired keys** (`CallToActionTargetType`, `PreviewClip`) - a generator is the second place a schema change has to land, and the older ones still emit them. |
+| Arcade card | `_SO_Assets/Games/ArcadeGame<Mode>.asset` | `Mode`, `DisplayName`, `Description`, card art, `GolfScoring`, `SceneName`, `Vessels`, min/max players + domains + intensity, `ComebackRatePerScoreDeficit`. **Do not emit retired keys** (`CallToActionTargetType`, `PreviewClip`) - a generator is the second place a schema change has to land. `lib.card_errors` rejects both (and a non-render `CardBackground`); `Generator.finish` runs it, a standalone generator calls `lib.check_cards` itself. |
 | Cell configs + spawn profiles + species forks | `_SO_Assets/Cell Configs/<Mode> Cell/` | only when forked (§1) |
-| Toasts | `_SO_Assets/Game Toasts/GameToastConfig_<Mode>.asset` + `g.register_toast_config` | stat toasts (80-84) are free; milestones need a controller to post them |
+| Toasts | `_SO_Assets/Game Toasts/GameToastConfig_<Mode>.asset` + `g.register_toast_config` | stat toasts (80-85) are free; the shared race beats (128-132: quarter, halfway, lead change, home stretch, final lap) come from ticking `DomainRaceToasts` in the controller (every `GateRaceController` mode already does; Rampage/Salvo/Hijack added it in #976); mode-specific milestones need the controller to post them |
 | Preview | `_SO_Assets/Mode Previews/ModePreview_<Mode>.asset` + `g.register_preview` | `PreviewCellsByIntensity` when the arena differs per intensity; spawn block = the scene's (author_preview_spawns checks it) |
-| Scene | `_Scenes/Multiplayer Scenes/Minigame<Mode>.unity` | CLONE the nearest sibling's scene and swap guids / blocks with `lib.swap_guid` / `lib.replace_block`, which assert the donor still matches. A donor that moves fails the generator LOUDLY instead of producing a half-wired scene. |
+| Scene | `_Scenes/Multiplayer Scenes/Minigame<Mode>.unity` | CLONE the nearest sibling's scene and swap guids / blocks with `lib.swap_guid` / `lib.replace_block`, which assert the donor still matches - on FIRST bring-up. Wrap the clone in `lib.committed_scene(rel, build_clone, authored_blocks)`: once the scene is committed it is adopted as-is (the Editor owns its fileIDs and `GlobalObjectIdHash`es), the clone stands down even when its donor asserts fire, and every block the generator still authors must appear verbatim in the committed scene. Bends, Switchback, Hijack and Salvo use it. |
 | Plus the registries | `g.register_arcade_card` (master roster + Arcade grid), `g.register_always_unlocked`, `g.register_build_scene`, `g.set_end_condition` | |
-| **Card background** | `_Graphics/ARCADE/CardBackgrounds/<Mode>.png` + the card's `CardBackground` | NOT authored by the mode's generator and never hand-painted: **run the `/cardart` skill** once the card is on a roster. It renders the mode's own intensity-2 arena offline (the shipped generator COMPILED AND RUN, a course generator, or a model read off the controller's settings), imports it and rewires the card. A mode with an `EnvironmentPrefab` needs no code; anything else is one `recipe()` branch - an unknown card makes the renderer RAISE, so a new mode cannot ship on a legacy backdrop by omission. |
+| **Card background** | `_Graphics/ARCADE/CardBackgrounds/<Mode>.png` + the card's `CardBackground` | NOT authored by the mode's generator and never hand-painted: **run the `/cardart` skill** once the card is on a roster. It renders the mode's own intensity-2 arena offline (the shipped generator COMPILED AND RUN, a course generator, or a model read off the controller's settings), imports it and rewires the card. The generator emits `lib.card_background("<Mode>")` for the field. A mode with an `EnvironmentPrefab` needs no code; anything else is one `recipe()` branch - an unknown card makes the renderer RAISE, so a new mode cannot ship on a legacy backdrop by omission. |
 | **Genre petal** | `ModeGenre` (`_Scripts/Data/ModeGenre.cs`) | a mode's genre falls back to its METRIC, so most modes need nothing; add a mode row only when the mode is not the genre its metric implies (`Docs/HomeHub/ARCHITECTURE.md` §3.7) |
 
 Validate in the script before `g.finish`: the comeback assert, every donor guid gone from the
@@ -109,11 +109,17 @@ worth more than a creature). Then run it, run it again with `--check` (must pass
 it fail once**: mutate an authored file, `--check` must name it, re-run to restore. A gate
 nobody has watched fail is a gate nobody should trust.
 
-**The card's `CardBackground` is owned by `/cardart`, not by the mode generator** - once the renderer has rewired a card, a generator that re-emits the whole card with `arcade_mode_lib.CARD_ART`'s legacy placeholder silently puts the old backdrop back on every re-run, and `render_card_backgrounds.py --check` then fails on a card nobody touched. Read the field back off the existing asset and emit that (`EXISTING['CardBackground']` in Broadside/Regatta/Undertow/Wrecking Ball, `butterfly_games_common.card_background` for the Butterfly four); fall back to the placeholder only on first bring-up. Waystation shipped without this and clobbered its rendered card the first time its generator ran after `/cardart`. General rule: *a generator that rewrites a whole asset owns every field in it unless it reads back the ones another tool owns.*
+**The card's `CardBackground` is owned by `/cardart`, not by the mode generator** - once the renderer has rewired a card, a generator that re-emits the whole card with `arcade_mode_lib.CARD_ART`'s legacy placeholder silently puts the old backdrop back on every re-run, and `render_card_backgrounds.py --check` then fails on a card nobody touched. Emit `arcade_mode_lib.card_background("<Mode>")`: it returns the guid of the mode's `/cardart` PNG `.meta` (`CardBackgrounds/<Mode>.png`), and falls back to the placeholder only on first bring-up, before `/cardart` has run. The value comes from the RENDER, not from the card, so a card that drifts back to the placeholder fails `--check` instead of being copied forward - the older approach (read `EXISTING['CardBackground']` back off the card; `butterfly_games_common.card_background`, now unused) copied a drifted card forward, and twelve generators that skipped even that emitted the placeholder outright until #969 (2026-10); Waystation clobbered its rendered card the first time its generator ran after `/cardart`. Tollway and Wildlife Liberation are standalone and pin their render guid in `EXISTING['CardBackground']`; prefer the helper in anything new. General rule: *a generator that rewrites a whole asset owns every field in it unless it derives the ones another tool owns from that tool's output.*
 
 **A spent one-shot must STAND DOWN, not abort** - a scene clone that asserts on its donor's
 exact text is right today and is the `author_dogfight_assets.py` trap the day the donor moves;
 when the scene is committed and the donor drifts, guard the clone and keep the checks below it live.
+`lib.committed_scene` is that guard; Wildlife Liberation (standalone) carries its own equivalent.
+**State of the family, measured 2026-10-06 on bleeding-edge:** all 25 `author_*_assets.py`
+scripts (21 mode generators + the Borromean, Mandelbulb, Manta-kit and Urchin kits) pass
+`--check`, after #969 (shared card/scene/drift helpers, 17 generators repaired) and #967 (Wildlife
+Liberation's spent clone guarded, Tollway's flora families). `author_urchin_assets.py --check`
+validates but does not diff against disk - read its output before calling it a drift gate.
 
 **The PREVIEW definition is a COPY of scene values, so it goes stale on a scene edit, not only at
 bring-up.** `ModePreview_<Mode>.asset` mirrors the scene's `ServerPlayerVesselInitializer` spawn
@@ -134,6 +140,7 @@ changes, diff the list's entry count against the mode's intensity count.
 
 ```
 python3 Tools/Build/author_<mode>_assets.py --check
+python3 Tools/Build/arcade_mode_lib.py --self-test        # the shared card / scene / drift checks still fire
 python3 Tools/Build/check_switch_label_collisions.py
 python3 Tools/Build/check_enum_member_references.py
 python3 Tools/Build/check_console_logging.py

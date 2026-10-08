@@ -90,6 +90,14 @@ namespace CosmicShore.Gameplay.Audio
             "releaseEvent is assigned.")]
         bool attachReleaseEventToShip = true;
 
+        [SerializeField, Min(0f), Tooltip(
+            "Minimum time (seconds) the drift must be held to count as a " +
+            "real drift. Shorter taps cut the whole drift event on let-go " +
+            "(stopped immediately, no release one-shot, no tail), so " +
+            "spamming the trigger stays quiet. 0 = always play the full " +
+            "release.")]
+        float minHoldForReleaseSound = 1f;
+
         [SerializeField, Tooltip(
             "When true, the main drift event's drift_amount parameter is " +
             "ramped to 1 during the release phase, in addition to firing " +
@@ -187,6 +195,27 @@ namespace CosmicShore.Gameplay.Audio
             "when restrictToVesselClass is true. Defaults to Squirrel.")]
         VesselClassType targetVesselClass = VesselClassType.Squirrel;
 
+        [Header("Haptics")]
+        [SerializeField, Tooltip(
+            "Play the drift rumble (HapticController.PlayDrift) while drifting. " +
+            "Local human pilot only.")]
+        bool driftHaptics = true;
+
+        [SerializeField, Tooltip(
+            "One vibration when the drift trigger is pressed and one when it " +
+            "is let go (HapticController.PlayDriftEngage / PlayDriftRelease).")]
+        bool driftKickHaptics = true;
+
+        [SerializeField, Range(0.06f, 0.5f), Tooltip(
+            "Seconds between drift rumble pulses. Keep at or above the ~90 ms " +
+            "clip length (Docs/HAPTICS.md - cadence floor).")]
+        float driftHapticInterval = 0.1f;
+
+        [SerializeField, Range(0f, 1f), Tooltip(
+            "Rumble strength at the lightest drift (single trigger / feathered " +
+            "pull). Scales up to 1 at full drift depth.")]
+        float driftHapticFloor01 = 0.3f;
+
         [Header("Debug")]
         [SerializeField] bool debugLog = false;
 
@@ -202,6 +231,9 @@ namespace CosmicShore.Gameplay.Audio
         DriftPhase _phase = DriftPhase.Idle;
         float _smoothedAmount;
         float _releaseTimer;
+        float _driftStartTime;
+        float _hapticTimer;
+        bool _hapticWasDrifting;
         bool _classGateChecked;
         bool _classGatePass;
 
@@ -278,6 +310,8 @@ namespace CosmicShore.Gameplay.Audio
             float dt = Time.deltaTime;
             bool drifting = _status.IsDrifting;
 
+            TickHaptics(drifting, dt);
+
             switch (_phase)
             {
                 case DriftPhase.Idle:
@@ -303,6 +337,49 @@ namespace CosmicShore.Gameplay.Audio
                     }
                     break;
             }
+        }
+
+        /// <summary>
+        /// Drift haptics: a kick on trigger press, a kick on let-go, and (optionally) the drift
+        /// rumble while held, strength following drift depth. Independent of the FMOD phase so
+        /// it still works if the drift event is missing or fails to start.
+        /// </summary>
+        void TickHaptics(bool drifting, float dt)
+        {
+            if (_status.Player == null || !_status.IsLocalUser)
+            {
+                _hapticWasDrifting = false;
+                return;
+            }
+
+            bool pressed = drifting && !_hapticWasDrifting;
+            bool released = !drifting && _hapticWasDrifting;
+            _hapticWasDrifting = drifting;
+
+            if (driftKickHaptics)
+            {
+                if (pressed) HapticController.PlayDriftEngage();
+                else if (released) HapticController.PlayDriftRelease();
+            }
+
+            if (!driftHaptics || !drifting)
+            {
+                _hapticTimer = 0f;
+                return;
+            }
+
+            // Let the press kick land before the rumble starts.
+            if (pressed && driftKickHaptics)
+            {
+                _hapticTimer = driftHapticInterval;
+                return;
+            }
+
+            _hapticTimer -= dt;
+            if (_hapticTimer > 0f) return;
+            _hapticTimer = driftHapticInterval;
+
+            HapticController.PlayDrift(Mathf.Lerp(driftHapticFloor01, 1f, ComputeTargetAmount()));
         }
 
         void BeginActive()
@@ -367,6 +444,7 @@ namespace CosmicShore.Gameplay.Audio
 
             _phase = DriftPhase.Active;
             _releaseTimer = 0f;
+            _driftStartTime = Time.time;
 
             if (debugLog && CSDebug.IsVerbose(CSLogChannel.Audio))
                 CSDebug.LogVerbose(CSLogChannel.Audio, $"[DriftAudioController] '{name}' drift START (amount={_smoothedAmount:F2}).", this);
@@ -389,13 +467,29 @@ namespace CosmicShore.Gameplay.Audio
 
             // Fire the one-shot 'trigger off' event independently. Done
             // here (not in TickRelease) so it triggers exactly once per
-            // drift cycle on the rising edge of release.
+            // drift cycle on the rising edge of release. Skipped for short
+            // taps so trigger spam doesn't stack release SFX.
+            float heldFor = Time.time - _driftStartTime;
+            if (heldFor < minHoldForReleaseSound)
+            {
+                // Short tap: cut the whole drift event (no release one-shot,
+                // no tail) so trigger spam stays quiet.
+                StopAndRelease(stopMode: FMOD.Studio.STOP_MODE.IMMEDIATE);
+                ResetAfterRelease();
+
+                if (debugLog && CSDebug.IsVerbose(CSLogChannel.Audio))
+                    CSDebug.LogVerbose(CSLogChannel.Audio,
+                        $"[DriftAudioController] '{name}' drift tap ({heldFor:F2}s) - drift event cut, no release SFX.",
+                        this);
+                return;
+            }
+
             FireReleaseOneShot();
 
             if (debugLog && CSDebug.IsVerbose(CSLogChannel.Audio))
                 CSDebug.LogVerbose(CSLogChannel.Audio,
-                    $"[DriftAudioController] '{name}' drift END - fired " +
-                    $"trigger-off one-shot" +
+                    $"[DriftAudioController] '{name}' drift END after {heldFor:F2}s - " +
+                    "fired trigger-off one-shot" +
                     (driveParamToOneOnRelease
                         ? $" + ramping drift_amount to 1 over {releaseHoldSeconds:F2}s"
                         : "") + ".",

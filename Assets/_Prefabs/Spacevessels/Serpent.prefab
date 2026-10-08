@@ -1752,6 +1752,7 @@ GameObject:
   - component: {fileID: 8100000000000000083}
   - component: {fileID: 5511220033445566779}
   - component: {fileID: 3901220300006001}
+  - component: {fileID: 8900000000000004003}
   m_Layer: 0
   m_Name: Serpent
   m_TagString: Player_Ship
@@ -2073,6 +2074,7 @@ MonoBehaviour:
     Cooldown: 4.3
   OnCellItemsUpdated: {fileID: 11400000, guid: 0da8a5ebddfaa83418cecd539efd19dd, type: 2}
   actionExecutorRegistry: {fileID: 3871735532039758911}
+  boostPolicy: {fileID: 11400000, guid: b89486e2a081497ea892fbc75e50a2bc, type: 2}
 --- !u!114 &6776027772320837218
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3074,6 +3076,57 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _trails: []
+--- !u!114 &8900000000000004003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86d0449d8c3c8498592cf0c29f6fd9e7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Gameplay.Audio.ShipAudioController
+  engineEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  additionalEngineLayers: []
+  speedParameterName: Speed
+  tiltParameterName: Tilt Acel
+  maxShipVelocity: 100
+  paramAtZeroVelocity: 40
+  paramAtMaxVelocity: 100
+  velocitySmoothing: 6
+  maxTiltRate: 180
+  paramAtMaxTilt: 100
+  paramAtMinTilt: -100
+  paramAtZeroTilt: 0
+  pitchWeight: 1
+  yawWeight: 1
+  tiltSmoothing: 8
+  driftSlowdownMultiplier: 0.6
+  driftSmoothingRate: 8
+  onlyAudibleToController: 1
+  forceAttachToListener: 0
+  tieVolumeToSFXSlider: 1
+  baseVolumeMultiplier: 1
+  driveElementalParams: 1
+  chargeParameterName: Charge
+  massParameterName: Mass
+  spaceParameterName: Space
+  timeParameterName: Time
+  elementSourceMin: 0
+  elementSourceMax: 1
+  elementParamAtMin: 0
+  elementParamAtMax: 1
+  elementSmoothing: 6
+  extraParameters: []
+  debugLog: 0
 --- !u!1001 &3665705013408833945
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3474,6 +3527,18 @@ MonoBehaviour:
   - input: 7
     image: {fileID: 3512818663123036916}
   abilityIcons:
+  - element: 1
+    icon: {fileID: 6703333440390559263}
+    upgradedSprite: {fileID: 0}
+    gauge: {fileID: 0}
+  - element: 2
+    icon: {fileID: 0}
+    upgradedSprite: {fileID: 0}
+    gauge: {fileID: 0}
+  - element: 3
+    icon: {fileID: 6703333440390559283}
+    upgradedSprite: {fileID: 0}
+    gauge: {fileID: 0}
   - element: 4
     icon: {fileID: 5867477772541908519}
     upgradedSprite: {fileID: 0}
@@ -5193,3 +5258,27 @@ MonoBehaviour:
       Data3: 0
       Data4: 0
     Path: 
+--- !u!114 &6703333440390559263 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7710000000000002015, guid: af7b78e6bb3a8394f88f24bb0e31667a,
+    type: 3}
+  m_PrefabInstance: {fileID: 4033090122440962496}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &6703333440390559283 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7710000000000002035, guid: af7b78e6bb3a8394f88f24bb0e31667a,
+    type: 3}
+  m_PrefabInstance: {fileID: 4033090122440962496}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

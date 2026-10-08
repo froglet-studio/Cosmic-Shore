@@ -66,6 +66,24 @@ MonoBehaviour:
     - {fileID: 11400000, guid: b859f07e3048bdf21b251d3f01260a10, type: 2}
     - {fileID: 11400000, guid: 294ab46e52e300bc36ccb3b4b9ab0640, type: 2}
     - {fileID: 11400000, guid: 6ff4659cc12055a333f1812fd180cd90, type: 2}
+  - Name: Swarm Field
+    ElementConfigs:
+    - {fileID: 11400000, guid: 28519724a437c877b6752a1641782706, type: 2}
+    - {fileID: 11400000, guid: d88bd07d2da7f8606093b21d78ff85aa, type: 2}
+    - {fileID: 11400000, guid: 6039cd2e3e73e255bbc5cf2900e9e539, type: 2}
+    - {fileID: 11400000, guid: 73c428da018f80ae52c69a64177d1d81, type: 2}
+  - Name: Swarm Grid
+    ElementConfigs:
+    - {fileID: 11400000, guid: d6bc369b80d3e3c88bcb69113c633aea, type: 2}
+    - {fileID: 11400000, guid: 64313e5dbea7f4301ccaf835a03b821a, type: 2}
+    - {fileID: 11400000, guid: b9728461572d47dc24d01eb17fc7119f, type: 2}
+    - {fileID: 11400000, guid: d4a4bbb28aa5361ef80d728304542a5d, type: 2}
+  - Name: Swarm EvoFate
+    ElementConfigs:
+    - {fileID: 11400000, guid: 03a0ee7d9805800ab3d24b7e1a603c60, type: 2}
+    - {fileID: 11400000, guid: 006bca47a3bb370689c7188e2d50dc11, type: 2}
+    - {fileID: 11400000, guid: aada3ccd4801efbc3f4c25cdc10f174a, type: 2}
+    - {fileID: 11400000, guid: 8f142de0bfa977f1443ba2d8bc0a1ef8, type: 2}
   - Name: Pack Hunter
     ElementConfigs:
     - {fileID: 11400000, guid: 025124ddfd18b749d5627878c0ce725d, type: 2}
@@ -96,24 +114,6 @@ MonoBehaviour:
   - Name: Wearer Builders
     ElementConfigs:
     - {fileID: 11400000, guid: a635d6272e1d571db605a90a6452c41f, type: 2}
-  - Name: Swarm Field
-    ElementConfigs:
-    - {fileID: 11400000, guid: 28519724a437c877b6752a1641782706, type: 2}
-    - {fileID: 11400000, guid: d88bd07d2da7f8606093b21d78ff85aa, type: 2}
-    - {fileID: 11400000, guid: 6039cd2e3e73e255bbc5cf2900e9e539, type: 2}
-    - {fileID: 11400000, guid: 73c428da018f80ae52c69a64177d1d81, type: 2}
-  - Name: Swarm Grid
-    ElementConfigs:
-    - {fileID: 11400000, guid: d6bc369b80d3e3c88bcb69113c633aea, type: 2}
-    - {fileID: 11400000, guid: 64313e5dbea7f4301ccaf835a03b821a, type: 2}
-    - {fileID: 11400000, guid: b9728461572d47dc24d01eb17fc7119f, type: 2}
-    - {fileID: 11400000, guid: d4a4bbb28aa5361ef80d728304542a5d, type: 2}
-  - Name: Swarm EvoFate
-    ElementConfigs:
-    - {fileID: 11400000, guid: 03a0ee7d9805800ab3d24b7e1a603c60, type: 2}
-    - {fileID: 11400000, guid: 006bca47a3bb370689c7188e2d50dc11, type: 2}
-    - {fileID: 11400000, guid: aada3ccd4801efbc3f4c25cdc10f174a, type: 2}
-    - {fileID: 11400000, guid: 8f142de0bfa977f1443ba2d8bc0a1ef8, type: 2}
   floraSpecies:
   - Name: Gyroid
     ElementConfigs:
@@ -240,18 +240,24 @@ MonoBehaviour:
     - {fileID: 11400000, guid: d3e3605fbf12b6442910427f63b6e3b5, type: 2}
     - {fileID: 11400000, guid: ba725d5d74c6d403c4ba8b2512d5e61e, type: 2}
     - {fileID: 11400000, guid: 9b690c31d50dd62c84f46f9b37375f27, type: 2}
-  - Name: Physarum
-    ElementConfigs:
-    - {fileID: 11400000, guid: 12b51d6add1c03bbe313932be671dac7, type: 2}
-  - Name: Snap Trap
-    ElementConfigs:
-    - {fileID: 11400000, guid: b61248e2fe33d5cc91e5178d9cac74e3, type: 2}
   - Name: Gyroid Topiary
     ElementConfigs:
     - {fileID: 11400000, guid: 4e4d2aa57519f8c461f0955dd262a5ea, type: 2}
   - Name: SchwarzP Topiary
     ElementConfigs:
     - {fileID: 11400000, guid: b9e2c6e7516a215009922f1d6150a05c, type: 2}
+  - Name: Physarum
+    ElementConfigs:
+    - {fileID: 11400000, guid: 12b51d6add1c03bbe313932be671dac7, type: 2}
+  - Name: Snap Trap
+    ElementConfigs:
+    - {fileID: 11400000, guid: b61248e2fe33d5cc91e5178d9cac74e3, type: 2}
+  - Name: Nested Gyroid
+    ElementConfigs:
+    - {fileID: 11400000, guid: 6e701b36d4cf67162c0c8be83591d947, type: 2}
+    - {fileID: 11400000, guid: 37a51388051823a65d85d7fe8cc8c150, type: 2}
+    - {fileID: 11400000, guid: 77b554ddd8defe5c3d8afd3fcd35efd8, type: 2}
+    - {fileID: 11400000, guid: a48efe19a5a79b73d175370a963e90d2, type: 2}
   - Name: Borromean
     ElementConfigs:
     - {fileID: 11400000, guid: e61deb54b42a17dc301eedd9cf2a3b2a, type: 2}
@@ -275,6 +281,12 @@ MonoBehaviour:
     Description: "A fast pack of eight tiny, always-hungry fish that eat any team's trail and pull toward the middle of the cell. Charge crystals. Starves in 40s without trail."
   - Species: Swarm
     Description: "The SORT swarm: about 240 tadpoles that sort themselves into one animal per element (Charge pufferfish, Mass whale, Space jellyfish, Time dragonfly). Kill its main element and it molts into another. Eats flora only."
+  - Species: Swarm Field
+    Description: "The FIELD swarm model: designed attractor fields where every tadpole owns a slot, so the animal reads crisp and exact. Smaller bodies than the Sort swarm. Eats flora only."
+  - Species: Swarm Grid
+    Description: "The GRID swarm model: each tadpole reads only the morphogen at its own position, so the animal is looser and more organic than Field. Smaller bodies than Sort. Eats flora only."
+  - Species: Swarm EvoFate
+    Description: "The EVOFATE swarm model: a learned network moves every tadpole, with a light pull toward its chosen place. The most alive texture and the most expensive. Eats flora only."
   - Species: Pack Hunter
     Description: "Six long hunters that ring your ship, close in and strike together, then tire for 3s. They also hunt locusts by scent. Time crystals."
   - Species: Locust
@@ -295,12 +307,6 @@ MonoBehaviour:
     Description: "Magpies that nest on a plant, tail your ship, snatch your fresh trail and fly it home to a visible hoard. Space crystals. Fly a trail near them."
   - Species: Wearer Builders
     Description: "Hearts that steal your trail and wear it as a body, fuse together, then rear and lunge. Ram one to strip the prisms back. Fly a trail to feed them."
-  - Species: Swarm Field
-    Description: "The FIELD swarm model: designed attractor fields where every tadpole owns a slot, so the animal reads crisp and exact. Smaller bodies than the Sort swarm. Eats flora only."
-  - Species: Swarm Grid
-    Description: "The GRID swarm model: each tadpole reads only the morphogen at its own position, so the animal is looser and more organic than Field. Smaller bodies than Sort. Eats flora only."
-  - Species: Swarm EvoFate
-    Description: "The EVOFATE swarm model: a learned network moves every tadpole, with a light pull toward its chosen place. The most alive texture and the most expensive. Eats flora only."
   - Species: Gyroid
     Description: "A colony of 30-prism tiles of a saddle-shaped minimal surface, budding a neighbour about every 30s into one endless lattice. Space grows needles."
   - Species: SchwarzP
@@ -343,17 +349,18 @@ MonoBehaviour:
     Description: "A climber: three wandering stems fork to eight and trail long dangles, the longest reach per prism of any plant."
   - Species: Swarm Borromean
     Description: "The Swarm cell's pastures: Borromean membranes in its grazer bands. Mass grows in the inner band, Time in the middle (four pens), Space at the outer."
-  - Species: Physarum
-    Description: "A slime-mould grove at the rim: five beating hearts cable together, danger pulses run down the cables, and your wake repels it."
-  - Species: Snap Trap
-    Description: "Venus flytraps in three clumps at the rim. Their jaws turn toward your path, glow, then snap shut on danger teeth."
   - Species: Gyroid Topiary
     Description: "A clipped gyroid specimen for garden beds: 30-prism tiles with smaller leaves in Mass slabs, a colony that stops at eight instead of sprawling into a lattice."
   - Species: SchwarzP Topiary
     Description: "A clipped Schwarz-P specimen for garden beds: 36-prism tiles with smaller leaves in Mass slabs, a colony that stops at four instead of sprawling into a lattice."
+  - Species: Physarum
+    Description: "A slime-mould grove at the rim: five beating hearts cable together, danger pulses run down the cables, and your wake repels it."
+  - Species: Snap Trap
+    Description: "Venus flytraps in three clumps at the rim. Their jaws turn toward your path, glow, then snap shut on danger teeth."
+  - Species: Nested Gyroid
+    Description: "Seven nested gyroid sheets woven together by fibres: a solid 3D lattice rather than one surface. Each plant is one octagon tile on every sheet; the colony buds into neighbouring tiles about every 30s."
   - Species: Borromean
     Description: "One closed soap-film membrane spanning three interlocked rings, grown out from its crystal. Space spans twice as wide."
   vesselRoster: []
   stationSpacing: 90
   stationRadius: 12
-  speciesPerRow: 6

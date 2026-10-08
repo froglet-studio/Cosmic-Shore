@@ -253,6 +253,9 @@ DESCRIPTIONS = {
                       "Mass slabs, a colony that stops at eight instead of sprawling into a lattice.",
     "SchwarzP Topiary": "A clipped Schwarz-P specimen for garden beds: 36-prism tiles with smaller leaves "
                         "in Mass slabs, a colony that stops at four instead of sprawling into a lattice.",
+    "Nested Gyroid": "Seven nested gyroid sheets woven together by fibres: a solid 3D lattice rather than "
+                     "one surface. Each plant is one octagon tile on every sheet; the colony buds into "
+                     "neighbouring tiles about every 30s.",
     "Borromean": "One closed soap-film membrane spanning three interlocked rings, grown out from its "
                  "crystal. Space spans twice as wide.",
 }
@@ -356,13 +359,18 @@ def main():
         toy = upsert(toy, "floraSpecies", name, row_text(name, paths))
 
     # author_borromean_flora_assets.py re-appends its "Borromean" row at the END of the flora
-    # list on every run; keep it last so both generators agree on the file byte-for-byte.
+    # list on every run, and author_nested_gyroid_flora_assets.py splices "Nested Gyroid"
+    # immediately before it; keep both in that order at the end so every generator agrees on
+    # the file byte-for-byte.
     start, end = section_bounds(toy, "floraSpecies")
     section = toy[start:end]
-    m = re.search(r"^  - Name: Borromean\n(?:    .*\n)+", section, re.M)
-    if m:
-        section = section[:m.start()] + section[m.end():] + m.group(0)
-        toy = toy[:start] + section + toy[end:]
+    tail = ""
+    for owned in ("Nested Gyroid", "Borromean"):
+        m = re.search(rf"^  - Name: {re.escape(owned)}\n(?:    .*\n)+", section, re.M)
+        if m:
+            section = section[:m.start()] + section[m.end():]
+            tail += m.group(0)
+    toy = toy[:start] + section + tail + toy[end:]
 
     # One description per row, in roster order, kept between floraSpecies and vesselRoster (the
     # definition's field order, so a Unity re-save does not move it).

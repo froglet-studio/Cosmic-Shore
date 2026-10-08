@@ -203,9 +203,9 @@ namespace CosmicShore.Gameplay
         /// Copies the crystal's model renderers onto this object — one child per shell, sharing the
         /// crystal's meshes, its shared materials and its property block.
         ///
-        /// Nothing is cloned and nothing is re-authored: an omni crystal draws four coincident copies
-        /// of one cage, each showing a different band of a travelling wave, and any reconstruction of
-        /// that would be a second authority for the crystal's look. This is also why the copy takes
+        /// Nothing is cloned and nothing is re-authored: the omni crystal's cage is its slot-0 body
+        /// (its triangle-only tone shells are a different mesh and are left out, see below), and any
+        /// reconstruction of it would be a second authority for the crystal's look. This is also why the copy takes
         /// the property BLOCK — <c>Crystal.ApplyColorSetTint</c> paints the collectability colour
         /// there, over the shared material, so a copy that skipped it would start on a visibly
         /// different crystal.
@@ -223,18 +223,17 @@ namespace CosmicShore.Gameplay
                 if (!model.TryGetComponent<MeshFilter>(out var filter) || filter.sharedMesh == null) continue;
                 if (!model.TryGetComponent<MeshRenderer>(out var source)) continue;
 
-                // ONE morph mesh drives every shell, so every shell has to be the same cage — which
-                // an omni crystal's four are by construction (four coincident copies of one model,
-                // differing only in which band of the travelling wave each renders). A crystal built
-                // any other way would be silently drawn as shell 0's geometry, so it is dropped and
-                // named instead.
+                // ONE morph mesh drives every shell, so only shells drawing shell 0's cage can fold.
+                // On the omni crystal that is by design not all of them: slot 0 is the whole-model
+                // body, and slots 1-4 are Mass's Shepard-tone shells and rim drawn on the TRIANGLES alone
+                // (Docs/PALETTE.md §2.10). Those overlays are not the cage, so they are left out of
+                // the fold — they leave with the crystal — and that is expected, not a fault.
                 if (first == null) first = filter.sharedMesh;
                 else if (filter.sharedMesh != first)
                 {
-                    CSDebug.LogWarning($"[ScarabCrystalMorph] '{crystal.name}' shell {i} draws " +
-                                       $"'{filter.sharedMesh.name}', not the first shell's " +
-                                       $"'{first.name}' — the morph carries one mesh, so this shell " +
-                                       "is left out.");
+                    CSDebug.LogVerbose(CSLogChannel.CrystalMorph,
+                        $"[CrystalMorph] Scarab: '{crystal.name}' shell {i} draws " +
+                        $"'{filter.sharedMesh.name}', not the cage '{first.name}' — left out of the fold.");
                     continue;
                 }
 

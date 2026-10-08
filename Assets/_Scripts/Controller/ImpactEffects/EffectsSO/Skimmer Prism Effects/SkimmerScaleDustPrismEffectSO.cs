@@ -83,8 +83,16 @@ namespace CosmicShore.Gameplay
             if (status == null || !prism || prism.destroyed || prism.prismProperties == null) return;
 
             uint h = Roll(prism);
-            if (prism.Domain == status.Domain) Tend(prism, status, h);
+            bool own = prism.Domain == status.Domain;
+            // Captured BEFORE the outcome: a destroy or steal can retire/reparent the prism.
+            Vector3 at = prism.transform.position;
+            if (own) Tend(prism, status, h);
             else Blight(impactor, prismImpactee, prism, status, h);
+
+            // The sound is the trigger's payload and its slots live on the Butterfly prefab's
+            // dust capsule (ButterflyDustField), beside the SkimmerImpactor that ran this.
+            if (impactor.TryGetComponent(out ButterflyDustField dust))
+                dust.PlayDustReach(own, at);
         }
 
         void Tend(Prism prism, IVesselStatus status, uint h)

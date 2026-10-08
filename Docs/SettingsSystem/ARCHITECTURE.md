@@ -98,6 +98,21 @@ then VRAM) → a `QualityPresetSetting` + sensible display/CPU defaults. For acc
 the in-scene **Benchmark**, which measures real frame cost via the author's
 `PerformanceBenchmarkRunner` and saves a full report.
 
+**Device tiers (2026-10-05).** `RecommendSettings` first asks the device's `PlatformProfileSO`
+(`PlatformProfile.Current`, resolved once per session from `Resources/PlatformProfiles` - see
+`Docs/PLATFORM_UNIFICATION.md` §3). A profile with `useCapabilityHeuristic` on gets exactly the
+heuristic above (`RecommendByCapability`): **Desktop and MobileHigh, so Windows and iPhones are
+unchanged**. MobileLow turns it off and gets its own authored recommendation
+(`RecommendFromProfile`: preset, pixel budget, upscaler, AA, frame cap), because the core-count
+score ranked a budget 8-core Android phone above an iPhone. `DisplayGraphicsSettings` settings v3
+re-seeds a MobileLow device's saved graphics once, only while they still equal the old heuristic's
+output (i.e. the player never touched them). FrogletTools ▸ Performance ▸ **Device Tier** shows the
+tier and why, and simulates another tier from the next Play. The same profile carries the tier's
+render choices (HDR, baked sky, membrane and fold-gate caps - §3.5 of the plan) and content choices
+(menu/freestyle trail policy, the Skim Race / Joust trail cap, menu teardown while flying, the HUD
+glow, cytoplasm, the Wanderway budget - §3.6); each is read by the system that owns it, and every
+field's default is "no change".
+
 ## Benchmark scene
 
 - **The scene:** `BenchmarkStressTest.unity` (Singleplayer Scenes) is committed to the repo — there is exactly ONE and it is never re-created (the one-shot

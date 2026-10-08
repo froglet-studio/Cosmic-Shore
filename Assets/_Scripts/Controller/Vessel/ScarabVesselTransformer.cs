@@ -161,6 +161,28 @@ namespace CosmicShore.Gameplay
             if (VesselStatus == null) return;
             if (!VesselStatus.ElementalAbilityHandler.IsUpgradeActive(Element.Time)) return;
 
+            FireSnapDash();
+        }
+
+        /// <summary>
+        /// The Snap Dash for a pilot with no trigger to double-tap: an autopilot reads as holding the
+        /// throttle permanently (<see cref="ReadThrottle01"/>), so it can never produce the two
+        /// rising edges the human gesture is. Same TIME-5 gate, read at the moment of use, and the
+        /// same impulse; pacing is the caller's (<c>SnapDashAIPolicySO</c>). Refused for a vessel
+        /// that is not on autopilot, so it can never fire on top of a human's own double-tap.
+        /// Returns whether the dash fired.
+        /// </summary>
+        public bool TryAutopilotSnapDash()
+        {
+            if (VesselStatus == null || !VesselStatus.AutoPilotEnabled) return false;
+            if (VesselStatus.ElementalAbilityHandler?.IsUpgradeActive(Element.Time) != true) return false;
+
+            FireSnapDash();
+            return true;
+        }
+
+        void FireSnapDash()
+        {
             Vector3 course = VesselStatus.Course.sqrMagnitude > 1e-4f
                 ? VesselStatus.Course
                 : transform.forward;

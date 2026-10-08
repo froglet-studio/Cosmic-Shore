@@ -1445,6 +1445,7 @@ namespace CosmicShore.Gameplay
             // daughters into lattice that no longer exists (the Cell Selector swaps worlds in
             // the very scene this colony ships in). Keyed by cell, so this touches no other.
             GyroidColonyFrontier.Clear(this);
+            NestedGyroidColony.Clear(this);
             SchwarzPColonyFrontier.Clear(this);
             SchwarzPTileRegistry.Clear(this);
             QuasicrystalColonyFrontier.Clear(this);
@@ -1728,6 +1729,7 @@ namespace CosmicShore.Gameplay
             // daughters into lattice that no longer exists (the Cell Selector swaps worlds in
             // the very scene this colony ships in). Keyed by cell, so this touches no other.
             GyroidColonyFrontier.Clear(this);
+            NestedGyroidColony.Clear(this);
             SchwarzPColonyFrontier.Clear(this);
             SchwarzPTileRegistry.Clear(this);
             QuasicrystalColonyFrontier.Clear(this);
@@ -2531,6 +2533,7 @@ namespace CosmicShore.Gameplay
             liveFloraCounts.Clear();
             liveFauna.Clear();
             GyroidColonyFrontier.Clear(this);
+            NestedGyroidColony.Clear(this);
             SchwarzPColonyFrontier.Clear(this);
             SchwarzPTileRegistry.Clear(this);
             QuasicrystalColonyFrontier.Clear(this);
@@ -2673,6 +2676,7 @@ namespace CosmicShore.Gameplay
             // daughters into lattice that no longer exists (the Cell Selector swaps worlds in
             // the very scene this colony ships in). Keyed by cell, so this touches no other.
             GyroidColonyFrontier.Clear(this);
+            NestedGyroidColony.Clear(this);
             SchwarzPColonyFrontier.Clear(this);
             SchwarzPTileRegistry.Clear(this);
             QuasicrystalColonyFrontier.Clear(this);

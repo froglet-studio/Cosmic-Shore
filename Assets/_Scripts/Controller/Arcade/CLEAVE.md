@@ -605,9 +605,10 @@ at a fixed point in the race. A lead change after the first milestone posts `Cle
 
 The two rung situations are `CleaveQuarterCut` / `CleaveHalfCut` — renamed from `…QuarterPeeled` /
 `…HalfPeeled` with this branch, because "peeled" described ONE of the four arenas (you do not peel
-a wide wavy road). All three renames of these two values have been free for the same reason: no
-`GameToastConfigSO` authors them yet, so nothing serialized points at any old name. Toast copy is
-still unauthored, so **right now the shake IS the milestone feedback**.
+a wide wavy road). All three renames of these two values were free for the same reason: no
+`GameToastConfigSO` authored them yet, so nothing serialized pointed at any old name. That is no
+longer true: since #976 (2026-10-06) `GameToastConfig_Cleave.asset` authors all three, so a rename
+now has to move the config too. The shake and the toast land together.
 
 ## Spawning outside the arena
 
@@ -943,14 +944,17 @@ generators, which proves what they EMIT; it proves nothing about how any of it l
   on rungs 1 or 2 has to state its prism count before it is authored, and the lever if it needs to
   come down is a road's LANE count or the Panes' `GapScaleI1`, not the prism dial (which is now
   fleet-wide across the mode).
-- **Toast copy is unauthored.** The three `GameToastSituation` values exist but no
-  `GameToastConfigSO` authors a definition, so they are silently skipped (which is how a mode opts
-  out). Author `GameToastConfig_Cleave.asset` with `{0}`=domain, `{1}`=prisms destroyed,
-  `{2}`=target to make them visible.
+- **Toast copy is first-pass.** Since #976 (2026-10-06) `GameToastConfig_Cleave.asset` (registered
+  in `GameToastLibrary`) authors the three milestone situations (50 quarter, 51 halfway, 52 lead
+  change; `{0}`=domain, `{1}`=prisms destroyed, `{2}`=target), the prisms-destroyed stat toast (83)
+  and the comeback toast (30). The copy has not been read in play.
 - **`wildlife_cage_budget.py` still carries the doubled jitter factor** — see above. Out of scope
   here, but it is a live tuning defect in Wildlife Liberation's cell.
-- **No objective-arrow provider**: like Rampage, `MiniGameHUD.CreateObjectiveProviderForGameMode`
-  has no Cleave case — the arena surrounds you, so there is no single point to aim at.
+- **Objective arrow**: `HostileMassObjectiveProvider` — the densest mass hostile to the pilot's
+  domain (`Cell.GetExplosionTarget`, the query the AI's raid beat uses), resampled every 1.5 s.
+  The arena surrounds you, so the arrow answers "where is there still a lot of it", not "where
+  is it". Its grid omits mass wearing your own colour, so it leans toward the other two-thirds
+  of the triad-painted arena.
 - **No UGS stats reporter yet**, and no dedicated end-game controller — the shared scoreboard
   handles it.
 - **Danger placement is a first pass in all four arenas** (pane rims, swell crests, twistband

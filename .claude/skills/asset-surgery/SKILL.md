@@ -393,7 +393,7 @@ its GameObject lists it in `m_Component`.
   offsets, tested against seven known meshes: zero hits). So you cannot hand-author a prefab
   reference to a bone inside a nested model prefab. Do not burn the session
   reverse-engineering it: add a serialized NAME and resolve it in `Awake`, which also survives
-  a re-export — the ids do not. This is the same choice the project's own `ResolvePart` makes.
+  a re-export — the ids do not. This is the same choice the project's own `ResolvePart` makes. **Nor can you BORROW one** by renaming a node to match a name whose id another FBX already records (two manta FBXes sharing `manta` → one id made it look safe): tried on the omni crystal's triangle shells (2026-10), Unity did not reproduce the id and the shells rendered nothing. When a hand-authored prefab must draw an FBX mesh, BAKE it into a native `Mesh` `.asset` from a generator (donor-clone `Assets/_Models/Testing/Prism.asset`'s layout; `Tools/Build/author_omni_crystal_triangles.py` is the worked example) — its reference is `{fileID: 4300000, guid: <own meta>, type: 2}`, deterministic by construction.
 - **A nested prefab instance is reachable TWO ways, and needs both when its parent is PLAIN.**
   `m_TransformParent` in the instance's modification block always, PLUS an entry in the parent
   Transform's `m_Children` **iff that parent is a plain (non-stripped) Transform**. The
@@ -1022,7 +1022,43 @@ CSC=$(ls "$PWD"/dotnet/sdk/*/Roslyn/bincore/csc.dll | head -1)
 Do NOT conclude "no compiler here" from a missing `dotnet` on `PATH` — that was the state of
 a 2026-08 remote session that then nearly shipped on inspection alone. There are also no Unity
 managed DLLs in such a container (no `Library/`, no `UnityEngine.dll` anywhere on disk), so a
-**whole-assembly** type check is impossible and the no-stubs filter below is the fallback.
+**whole-assembly** type check used to be impossible and the no-stubs filter below was the fallback.
+
+**Since 2026-10 a whole-assembly check against REAL Unity references exists: run it first.**
+`bash Tools/Build/unity_refcompile/run.sh` fetches the 6000.0 engine reference DLLs and every
+package at its locked source, then binds ALL of `Assembly-CSharp` (method bodies included) the way
+a player build would; `Tools/Build/unity_refcompile/README.md` says exactly what it does and does not
+prove. Then `python3 Tools/Build/check_generated_assets.py` audits every changed `.asset` / `.prefab`
+/ `.unity` against the schema that compile wrote (serialized keys, enum values, guid/fileID
+references, m_Script classes). Four things that cost time on the first run (2026-10-06):
+- **`DOTNET_ROOT` must hold a net8.0 REFERENCE PACK** (`packs/Microsoft.NETCore.App.Ref/8.*/ref/net8.0`).
+  With only a .NET 10 SDK, `depublicize()` dies with `IndexError: list index out of range` after a
+  full ten-minute fetch, which reads as a broken tool. Install the 8.0 channel per-user (above) and
+  point `DOTNET_ROOT` at it; `TMPDIR` decides where the ~550 MB cache lands.
+- **`check_generated_assets.py` needs the SAME `DOTNET_ROOT` and `TMPDIR` the compile ran with.**
+  Run it bare after a compile that used a per-user SDK and it says `no Roslyn tools in
+  <TMPDIR>/unity_refcompile_cache/tools - run run.sh first` — while the tools sit in that very
+  directory. It is not missing the cache; it cannot find `csc.dll` under the system
+  `DOTNET_ROOT`. Export both for the audit too (2026-10-08). Negative-control it the same way as
+  the compile: misspell one key in a changed asset, confirm `[field] 1` names it, restore.
+- **"218 errors" is not 218 errors.** Read the `ERRORS in project code:` line. The large bucket is
+  files that `using` a UGS package no mirror carries (Multiplayer, Friends, Leaderboards); they are
+  counted, not judged. Check your own files are not in that bucket (they would be unverified):
+  grep the run's `report.json` for each file you changed.
+- **`--config editor` reports false `CS0118 'Editor' is a namespace but is used like a type`** in
+  untouched runtime `#if UNITY_EDITOR` files whenever the branch changed an Editor-folder file
+  declaring `namespace CosmicShore.Editor` (123 files do). That config compiles changed
+  Editor-folder files INTO the runtime compilation; Unity keeps them in Assembly-CSharp-Editor,
+  which runtime code cannot see. The summary line says "(0 in files changed since …)" - believe it.
+- **`--config editor` only sees Editor-folder files that are COMMITTED.** It picks them with
+  `git diff --name-only <changed-base>...HEAD`, so a test you edited but have not committed is
+  silently left out and the run is green without having compiled it. Read the
+  `editor config: + N Editor-folder file(s) changed since …` line and confirm your file is named;
+  if not, commit first and re-run (2026-10-06: `SkimRaceAITests.cs` was missing until committed).
+- **Negative-control both tools before quoting them**: plant a call to a missing member in a file
+  you changed (the compile must fail with that file tagged `[CHANGED-TONIGHT]`), and misspell one
+  key in an asset you changed (the audit must name the file and the key). Restore, then
+  `git status --short` the paths. Both discriminated on their first try here.
 
 **But a REAL type check of the files you actually wrote is still available, and it is worth the
 20 minutes** on new code (as opposed to a small edit inside a large existing file). Build a stub
@@ -2620,6 +2656,27 @@ that would otherwise cost a round-trip to a human at the editor:
 - **Mesh size and orientation**: decompress `Geometry → Vertices`, take bounds; identify a
   mesh's "nose" by comparing cross-section extents near each end of its long axis (the
   radially-symmetric end is the nose, the asymmetric one is the fins).
+- **"When does this block start moving?" is NOT "the first key that differs".** An eased curve
+  often carries a key at t=0 and the next one much later with a sub-degree difference (the Time
+  crystal's `89`: −270.00 at 0 s, −269.46 at 0.64 s), so a `diff(values) > ε` scan reports motion
+  from t=0 when nothing visible happens for 0.6 s. Sample the curve on a fine grid and threshold
+  the VISIBLE quantity (1° of rotation, a few mm of translation) against the value at the instant
+  you care about. The first reading said "no still window at the loop seam" and would have killed
+  a correct design.
+- **A snap to a symmetry of an IMPORTED model needs the frame Unity actually produced, and a
+  Z-up FBX has no anchor in this repo.** Unity's conversion permutes and signs axes, and for a
+  shape whose symmetry has two coordinate-aligned orientations (the icosahedron's
+  (0,±1,±φ) vs (0,±φ,±1) families) the SIGN decides which one you get — so a hard-coded group is
+  wrong for half the possible conversions and nothing offline tells you which half. Resolve it at
+  RUNTIME from something the import cannot reinterpret: named bones (sub-asset fileIDs are not
+  derivable, names are), whose rest positions in the model root's local space name a symmetry axis
+  — `TimeCrystalVertexHop` snaps the first-ring bones' centroid onto the nearest of the 24
+  candidate five-fold axes, which fixes axis AND orientation in one step. Do not reach for
+  `Mesh.vertices`: an `isReadable: 0` mesh has none in a player. Then PROVE the resolver against
+  every conversion it could face: export the FBX's bone heads and mesh, apply all **48** signed
+  axis permutations in a Roslyn harness, run the shipped resolver on each, and assert it recovers
+  the true axis and that every group element leaves the converted mesh congruent (48/48, 6e-7
+  here). Negative-control with a tilted frame and the wrong bone set.
 
 ## 4.8b Technique: prove a runtime VISUAL claim offline, by walking to the authored value
 
@@ -2753,6 +2810,31 @@ have no spaces. A deleted-asset guid sweep reported "1 file, 0 references" for a
 deleted 8. Use `-z`/`-0` (`git diff --name-only -z … | xargs -0`, or
 `while IFS= read -r -d ''`), and sanity-check the COUNT against the diffstat before believing a
 clean result.
+
+## 4.8d Technique: authoring blend-shape NORMALS into an FBX (the space crystal, 2026-10)
+
+Exporters (Blender writes all-zero shape normals) and Unity's *Calculate* mode both derive each
+key's normal delta against the BASE mesh, and Unity sums active keys. That is right for one key
+and wrong for keys meant to be STACKED (key B ramped while key A is held at 100): rotations do
+not add, and the space crystal's stacked half-spins were off by 20°/42° and popped on reset.
+`Tools/Build/author_space_crystal_mesh.py` is the worked fix. Four rules it paid for:
+
+- **Shape normals are per CONTROL POINT.** A hard-edged mesh needs one control point per polygon
+  corner (unweld it) before a shape normal can be per-face.
+- **The importer normalizes each frame's TARGET normal (`base + delta`) before re-deriving the
+  delta.** assimp does it (`NormalizeSafe` in its FBX converter) and Unity behaved the same in
+  play. So a delta authored for a stacked key as `t − a` (true normal minus the stacked-on pose)
+  gets bent wherever `|n0 + t − a| ≠ 1`, worst on faces that turn ACROSS the spin axis. In playtest
+  that showed up as "the big faces are perfect, the small side faces still snap". Author every
+  target UNIT length: `delta = λ·t − a` with `λ` the positive root of `|λ·t + (n0 − a)| = 1`; the
+  stacked sum is then `λ·t`, along the true normal, under either importer model.
+- **Validate against BOTH importer models** (raw deltas and normalized targets). A validator that
+  replays only the raw sum passed the broken file with 0.0005°.
+- **Reference = per-quad Newell normal, never one triangle's.** Linear shape keys twist quads
+  (14° here); the shading uses one normal per quad, so a triangle reference reports phantom
+  6–25° errors. Use assimp (`libassimp-dev` + a 20-line C++ dumper of `aiAnimMesh` normals) as the
+  independent reader; it normalizes targets, so it reproduces the Unity failure. Negative-control
+  it on the broken file.
 
 ## 4.9 Technique: answering "does every X actually carry Y?" THROUGH prefab nesting
 
@@ -3328,6 +3410,21 @@ never fold it into a fix for something else.
   While you are there, print the human-readable NAME of the object you resolved
   (`m_Name`) — "attached to GameObject 2842750437815966001" is unreviewable, "attached to
   `chargeShell`" catches this bug by eye in one second.
+- **Adding a property to a shader SUBSCRIBES it to every component that already drives that name —
+  sweep the WRITERS of each name you add, not just the readers of each name you drop.** The mirror
+  of the bullet below, and it shipped (2026-10, omni crystal): the new omni shaders honoured
+  lowercase `_opacity` "so the crystal blooms in", which wired them to `FadeIn`, whose curve is slow
+  and back-loaded (under 10% for the first second, full at 2.9 s at 60 fps). The old ShepardGraph
+  shells only had uppercase `_Opacity`, so the omni had always appeared at once; the playtest report
+  was "the new crystal takes longer to appear" in Skim Race. Before giving a shader a property
+  name, `grep -rn 'PropertyToID("<name>")'` and read what each writer DOES with it, at what rate.
+- **A domain/team material set is an index-wise CLONE of a base set, so re-authoring a prefab's
+  per-slot materials without the base set leaves its team version on the old ones.** `ThemeManager`
+  builds each domain's crystal materials by `new Material(BaseMaterialSet.CrystalMaterialN)`, and
+  `Crystal.ChangeDomain` swaps slot N to that clone — so a prefab rebuilt around new materials still
+  turns into the OLD geometry the moment a domain owns it (the omni's team version ran a Shepard band
+  on its body: the "scaling issues" report). When a prefab's slot materials change, grep
+  `GetTeam*Material(` and the base set's fields, and repoint both in the same change.
 - **Replacing a SHADER is an API change: sweep for every property the old one exposed.**
   Shader properties are a public surface driven from C# by string name
   (`Shader.PropertyToID`, `SetFloat`, `SetColor`, MaterialPropertyBlock), and dropping one

@@ -10,7 +10,7 @@ namespace CosmicShore.ScriptableObjects
     /// Crystal Capture (how many crystals / jousts end a turn) and for Maelstrom / Maelstrom
     /// (how many placement points a domain needs to win the whole shuffle - "race to N").
     ///
-    /// Authored ONLY through <c>Tools &gt; Cosmic Shore &gt; End Game Conditions</c>
+    /// Authored ONLY through <c>FrogletTools &gt; Game Modes &gt; End Game Conditions</c>
     /// (the <c>EndConditionOverridesWindow</c> editor tool) - there are intentionally no
     /// per-scene inspector override fields anymore. The turn monitors / <c>MaelstromDataSO</c>
     /// load this asset from <c>Resources/EndConditionOverrides</c> at runtime.
@@ -61,6 +61,8 @@ namespace CosmicShore.ScriptableObjects
         public const int DefaultBendsPointTarget = 3;
         /// <summary>Scarab Scramble goal target used when <see cref="scarabScrambleGoalTarget"/> is 0 (auto/default).</summary>
         public const int DefaultScarabScrambleGoalTarget = 10;
+        /// <summary>Astro League mercy-rule goal limit used when <see cref="astroLeagueGoalLimit"/> is 0 (auto/default).</summary>
+        public const int DefaultAstroLeagueGoalLimit = 5;
         /// <summary>Salvo hostile-prism target used when <see cref="salvoPrismTarget"/> is 0 (auto/default).</summary>
         public const int DefaultSalvoPrismTarget = 700;
         /// <summary>Hijack steal target used when <see cref="hijackStealTarget"/> is 0 (auto/default).</summary>
@@ -149,15 +151,19 @@ namespace CosmicShore.ScriptableObjects
         /// stations already laid.</summary>
         public const int DefaultBreakwaterLaps = 2;
 
-        /// <summary>Skein course length used when <see cref="skeinRingTarget"/> is 0. Read by
-        /// BOTH SkeinRingTurnMonitor (the target) and SkeinController (how many rings to lay), so
-        /// the course and the number counting it cannot drift.</summary>
+        /// <summary>Skein course length used when <see cref="skeinRingTarget"/> is 0. Read
+        /// through <c>SkeinController.AuthoredGateTarget</c> by <c>RaceGateTurnMonitor</c> (the
+        /// target), by <c>SkeinController</c> (how many rings to lay) and by
+        /// <c>SpawnableSkein</c> (the ring count its cable is built and re-rolled for), so the
+        /// course, the arena and the number counting it cannot drift. Must equal
+        /// <c>SkeinCourseSettings.ForIntensity</c>'s GateCount and skein_budget.py's GATE_COUNT,
+        /// the count the ring spacing is proven at.</summary>
         public const int DefaultSkeinRingTarget = 24;
 
         /// <summary>Headlong RACE length used when <see cref="headlongGateTarget"/> is 0 - gate
         /// threadings, i.e. laps x rings. 24 = three laps of the shipped eight-gate circuit.
-        /// Read by <c>HeadlongGateTurnMonitor</c> for the target and by <c>HeadlongController</c>
-        /// to size the circuit, so the two cannot drift.</summary>
+        /// Read by <c>RaceGateTurnMonitor</c> (through the controller) for the target and by
+        /// <c>HeadlongController</c> to size the circuit, so the two cannot drift.</summary>
         public const int DefaultHeadlongGateTarget = 24;
 
         /// <summary>Redline RACE length used when <see cref="redlineGateTarget"/> is 0 - gate
@@ -233,6 +239,11 @@ namespace CosmicShore.ScriptableObjects
                  "crystals and continuous play, 10 reads as a 3-5 minute party match. " +
                  "0 = default (10).")]
         [Min(0)] public int scarabScrambleGoalTarget = 10;
+        [Tooltip("Astro League: goals a DOMAIN needs to end the match early (the mercy rule). " +
+                 "The match is otherwise TIMED (AstroLeagueSettingsSO.matchDurationSeconds), with " +
+                 "golden-goal overtime on a tie, so this caps a blowout rather than setting the " +
+                 "length. 0 = default (5).")]
+        [Min(0)] public int astroLeagueGoalLimit = 5;
         [Tooltip("Salvo: hostile prisms (the Boneyard's wreckage, rival trails, fauna bodies) a " +
                  "domain must destroy between them to win (race to N), summed across that " +
                  "domain's players. Lower than Rampage's target because the Sparrow's salvos " +
@@ -344,6 +355,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int dogFightPointTargetBuild = 90;
         [Min(0)] public int bendsPointTargetBuild = 3;
         [Min(0)] public int scarabScrambleGoalTargetBuild = 10;
+        [Min(0)] public int astroLeagueGoalLimitBuild = 5;
         [Min(0)] public int salvoPrismTargetBuild = 700;
         [Min(0)] public int switchbackGateTargetBuild = 20;
         [Min(0)] public int breakwaterStationTargetBuild = 15;
@@ -486,6 +498,14 @@ namespace CosmicShore.ScriptableObjects
             scarabScrambleGoalTarget > 0 ? scarabScrambleGoalTarget : DefaultScarabScrambleGoalTarget;
 
         /// <summary>
+        /// Astro League mercy-rule goal limit: the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultAstroLeagueGoalLimit"/>. Resolved once by AstroLeagueController on the
+        /// server and replicated to clients as GameDataSO.GoalTargetCount.
+        /// </summary>
+        public int GetAstroLeagueGoalLimit() =>
+            astroLeagueGoalLimit > 0 ? astroLeagueGoalLimit : DefaultAstroLeagueGoalLimit;
+
+        /// <summary>
         /// Salvo prism target ("race to N" hostile prisms destroyed): the configured value when
         /// &gt; 0, otherwise <see cref="DefaultSalvoPrismTarget"/>. Compared against a DOMAIN's
         /// summed destruction count, so teammates pool.
@@ -513,8 +533,10 @@ namespace CosmicShore.ScriptableObjects
         public int GetWaystationRingTarget() =>
             waystationRingTarget > 0 ? waystationRingTarget : DefaultWaystationRingTarget;
 
-        /// <summary>Skein course length ("thread all N rings"). Read twice on purpose - by
-        /// SkeinRingTurnMonitor for the target and by SkeinController for how many to lay.</summary>
+        /// <summary>Skein course length ("thread all N rings"). Read on purpose by every party
+        /// that needs it - <c>RaceGateTurnMonitor</c> for the target (through the controller),
+        /// <c>SkeinController</c> for how many to lay, <c>SpawnableSkein</c> for the ring count
+        /// its cable is built for.</summary>
         public int GetSkeinRingTarget() =>
             skeinRingTarget > 0 ? skeinRingTarget : DefaultSkeinRingTarget;
 
@@ -542,10 +564,12 @@ namespace CosmicShore.ScriptableObjects
         public int GetBreakwaterCrossingTarget() =>
             BreakwaterCourseSettings.CrossingTarget(GetBreakwaterStationTarget(), GetBreakwaterLaps());
 
+        /// <summary>
         /// Headlong race length ("thread N gates", i.e. laps x rings): the configured value when
         /// &gt; 0, otherwise <see cref="DefaultHeadlongGateTarget"/>. Read twice on purpose - by
-        /// <c>HeadlongGateTurnMonitor</c> for the target and by <c>HeadlongController</c> to size
-        /// the circuit - so the finish line and the course cannot drift apart.
+        /// <c>RaceGateTurnMonitor</c> (through <c>HeadlongController.AuthoredGateTarget</c>) for
+        /// the target and by <c>HeadlongController</c> to size the circuit - so the finish line
+        /// and the course cannot drift apart.
         /// </summary>
         public int GetHeadlongGateTarget() =>
             headlongGateTarget > 0 ? headlongGateTarget : DefaultHeadlongGateTarget;
@@ -670,6 +694,8 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.DogFight                  => dogFightPointTarget > 0 ? dogFightPointTarget : DefaultDogFightPointTarget,
                 GameModes.Bends                     => bendsPointTarget > 0 ? bendsPointTarget : DefaultBendsPointTarget,
                 GameModes.ScarabScramble            => scarabScrambleGoalTarget > 0 ? scarabScrambleGoalTarget : DefaultScarabScrambleGoalTarget,
+                // Mercy-rule cap on a TIMED match: the most goals a match can race to.
+                GameModes.AstroLeague               => GetAstroLeagueGoalLimit(),
                 GameModes.Salvo                     => salvoPrismTarget > 0 ? salvoPrismTarget : DefaultSalvoPrismTarget,
                 GameModes.Switchback                => switchbackGateTarget > 0 ? switchbackGateTarget : DefaultSwitchbackGateTarget,
                 GameModes.Waystation                => waystationRingTarget > 0 ? waystationRingTarget : DefaultWaystationRingTarget,
@@ -723,6 +749,7 @@ namespace CosmicShore.ScriptableObjects
             dogFightPointTarget == dogFightPointTargetBuild &&
             bendsPointTarget == bendsPointTargetBuild &&
             scarabScrambleGoalTarget == scarabScrambleGoalTargetBuild &&
+            astroLeagueGoalLimit == astroLeagueGoalLimitBuild &&
             salvoPrismTarget == salvoPrismTargetBuild &&
             switchbackGateTarget == switchbackGateTargetBuild &&
             waystationRingTarget == waystationRingTargetBuild &&
@@ -756,6 +783,7 @@ namespace CosmicShore.ScriptableObjects
             dogFightPointTarget = dogFightPointTargetBuild;
             bendsPointTarget = bendsPointTargetBuild;
             scarabScrambleGoalTarget = scarabScrambleGoalTargetBuild;
+            astroLeagueGoalLimit = astroLeagueGoalLimitBuild;
             salvoPrismTarget = salvoPrismTargetBuild;
             switchbackGateTarget = switchbackGateTargetBuild;
             waystationRingTarget = waystationRingTargetBuild;
@@ -790,6 +818,7 @@ namespace CosmicShore.ScriptableObjects
             dogFightPointTargetBuild = dogFightPointTarget;
             bendsPointTargetBuild = bendsPointTarget;
             scarabScrambleGoalTargetBuild = scarabScrambleGoalTarget;
+            astroLeagueGoalLimitBuild = astroLeagueGoalLimit;
             salvoPrismTargetBuild = salvoPrismTarget;
             switchbackGateTargetBuild = switchbackGateTarget;
             waystationRingTargetBuild = waystationRingTarget;
