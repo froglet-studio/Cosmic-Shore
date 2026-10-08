@@ -106,7 +106,11 @@ Then write these eight, in order. Each one closes a 🟡 ticket, so each is a te
 verification:
 
 1. Accept → guest is a client, host roster has 2, both agree. *(T1)*
-2. Two guests join-direct simultaneously → both seated, order irrelevant. *(T2, B5)*
+2. Two guests join-direct simultaneously into a party with room for both → both seated. *(T2, B5)*
+2b. Two guests join-direct simultaneously into a **3/4** party → the party ends at **4/4, not 5/4**.
+   *(B25, 🔴 open.)* Test 2 alone passes on exactly the case that breaks. Assert the host's
+   live member count against `PartyDisplaySlots` (4), not the published `partyCount`, and note the
+   session itself is created at `MaxPartySlots` (6).
 3. Guest leaves mid-match → vessel keeps flying under AI, score survives on the scoreboard. *(B21)*
 4. Guest leaves at the ready screen → remaining two proceed within a tick. *(B20)*
 5. Double-tap Accept/Join → exactly one operation reaches UGS (exercises single-flight). *(T3)*
