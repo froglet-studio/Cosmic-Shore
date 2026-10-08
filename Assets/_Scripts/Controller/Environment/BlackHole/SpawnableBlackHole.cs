@@ -85,6 +85,12 @@ namespace CosmicShore.Gameplay
                                  "Players list). The fold reads the same list.")]
         GameDataSO gameData;
 
+        [SerializeField, Min(1f), Tooltip("Mouth radius in multiples of the sink's shadow (3√3/2 r_s). Above 1 " +
+                                          "the portal covers the shadow AND the inner rings, so as you fall in " +
+                                          "the portal's own view is what fills the screen — not lensing soup — " +
+                                          "and you are through about a second after it does.")]
+        float mouthToShadow = 2.5f;
+
         [SerializeField, Min(0.01f), Tooltip("Seconds a mouth takes to bloom in.")]
         float mouthBloomSeconds = 0.45f;
 
@@ -103,6 +109,19 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(32, 1024), Tooltip("Texels per side of each panorama face.")]
         int mouthPanoramaFaceSize = 256;
 
+        [Header("Felt pull on vessels (BlackHole.vesselFelt*, Docs/BLACK_HOLE.md §12)")]
+        [SerializeField, Min(0f), Tooltip("k: how hard both poles pull/push VESSELS, measured in each hull's own " +
+                                          "cruise speed and the throat — felt acceleration = k · cruise² · R_throat " +
+                                          "· s / r². 0 = the physical pull (a hole this small is barely felt).")]
+        float vesselFeltStrength = 3f;
+
+        [SerializeField, Min(0f), Tooltip("The felt pull's ceiling, × cruise. 1.3: the white hole holds off any " +
+                                          "hull at cruise (boost through), the black hole carries one in at 2.3× cruise.")]
+        float vesselFeltCap = 1.3f;
+
+        [SerializeField, Min(1f), Tooltip("How far each pole's felt pull reaches, in throat radii.")]
+        float vesselFeltReach = 12f;
+
         [Header("Scale model")]
         [SerializeField, Range(16, 63), Tooltip("Plates in the Cell Selector's scale model (split between " +
                                                 "the two holes of a dipole). Kept under 64 so " +
@@ -115,6 +134,10 @@ namespace CosmicShore.Gameplay
         float modelDipoleBallFraction = 0.12f;
 
         public bool IsDipole => dipole;
+        public float MouthToShadow => seatWormhole ? mouthToShadow : 1f;
+        public float VesselFeltStrength => vesselFeltStrength;
+        public float VesselFeltCap => vesselFeltCap;
+        public float VesselFeltReach => vesselFeltReach;
         public Vector3 SourceOffset => sourceOffset;
         public float Strength => strength;
 
@@ -206,6 +229,10 @@ namespace CosmicShore.Gameplay
             anchor.BindSource(source);
 
             if (seatWormhole) SeatWormhole(container.transform, sink, source, anchor);
+
+            // After the mouths: the felt law is measured from the throat they set.
+            sink.ConfigureFeltVesselLaw(vesselFeltStrength, vesselFeltCap, vesselFeltReach);
+            source.ConfigureFeltVesselLaw(vesselFeltStrength, vesselFeltCap, vesselFeltReach);
             return container;
         }
 
@@ -218,9 +245,9 @@ namespace CosmicShore.Gameplay
             if (players == null)
                 CSDebug.LogWarning("[BlackHole] The dipole's wormhole has no GameData - its mouths will carry no one.");
 
-            // Each mouth is the size of the sink's SHADOW, so the sink's mouth covers exactly the disc
-            // the lens would have painted black (Docs/BLACK_HOLE.md §12).
-            float radius = sink.HorizonRadius * ShadowPerHorizon;
+            // Each mouth is mouthToShadow × the sink's SHADOW: it covers the disc the lens would have
+            // painted black and the strongest rings around it (Docs/BLACK_HOLE.md §12).
+            float radius = sink.HorizonRadius * ShadowPerHorizon * mouthToShadow;
             var sinkMouth = BuildMouth(container, sink.transform.localPosition, "Wormhole (sink)", players, radius,
                 rim: default);                  // the material's own rim
             var sourceMouth = BuildMouth(container, source.transform.localPosition, "Wormhole (source)", players, radius,

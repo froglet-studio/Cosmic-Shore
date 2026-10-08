@@ -79,22 +79,25 @@ world shapes the field until the field itself has eased out (no pop); a new fiel
 poles. The Black Hole cell (`Docs/BLACK_HOLE.md` §11–§12) ships `referenceRadius 350`,
 `exponent 1`, `minScale 0.01`, `maxScale 1`, with poles at the black hole (the centre) and the white
 hole (500 u up the spin axis) — both reaches clear of the toy ring and the pole switches. With a
-strength-1 hole (r_s = 2 u, shadow and wormhole mouth 5.2 u):
+strength-2 hole (r_s = 4 u, shadow 10.4 u) and its 26 u wormhole mouth (2.5 × the shadow):
 
-| r (u) | s | a 10 u hull is | shadow, angular radius | shadow ÷ hull |
+| r (u) | s | a 10 u hull is | the mouth, angular radius | mouth ÷ hull |
 |---|---|---|---|---|
-| 350 | 1.000 | 10 u | 0.9° | 1× |
-| 100 | 0.286 | 2.9 u | 3.0° | 2× |
-| 26 | 0.074 | 0.74 u | 11° | 7× |
-| 8 | 0.023 | 0.23 u | 33° | 23× |
-| 5.2 (the mouth) | 0.015 | 0.15 u | 45° | 35× |
+| 350 | 1.000 | 10 u | 4° | 3× |
+| 150 | 0.429 | 4.3 u | 10° | 6× |
+| 78 | 0.223 | 2.2 u | 19° | 12× |
+| 52 | 0.149 | 1.5 u | 30° | 17× |
+| 26 (the mouth) | 0.074 | 0.74 u | 90° | 35× |
+
+The ratio at the mouth is `referenceRadius / hull` whatever the mouth's size — the warp is
+scale-free — so a bigger portal costs the growth nothing.
 
 Because the vessel's world speed is proportional to `r`, a pilot holding a constant felt speed
-approaches EXPONENTIALLY (350 → 5.2 u in ~25 s at a felt 60 u/s): the hole swells at a steady rate
+approaches EXPONENTIALLY (350 → 26 u in ~15 s at a felt 60 u/s, faster with the sink's current): the hole swells at a steady rate
 for as long as you fly at it. At the mouth you are carried to the white hole, where the same table
-runs backwards — you come out at 1.5% scale and GROW as you climb away from it. The holes' push and
-pull on vessels ride the velocity channel, which the transformer scales by `s`, so the escape rule
-holds in the pilot's frame (`Docs/BLACK_HOLE.md` §4).
+runs backwards — you come out at ~7% scale and GROW as you climb away from it. The holes' push and
+pull on vessels is a FELT law measured in each hull's cruise speed and in its own frame
+(`Docs/BLACK_HOLE.md` §12): the sink carries you in, the white hole must be boosted through.
 
 ## 5. Verify in the editor (owed)
 

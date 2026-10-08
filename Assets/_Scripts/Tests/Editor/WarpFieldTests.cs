@@ -96,12 +96,13 @@ namespace CosmicShore.Tests
             float strength = new SerializedObject(hole).FindProperty("strength").floatValue;
             float rs = BlackHoleRegistry.Config.HorizonRadius(strength, 0f);
 
-            // "Tiny" against the world a player normally flies in: at the field's reference radius
-            // the shadow is a speck (under 2% of that radius), and toward the floor it is tens of
-            // times larger in the player's lengths.
+            // "Tiny" against the world a player normally flies in: the portal (the mouth seated on the
+            // hole, mouthToShadow × its shadow) is under a tenth of the field's reference radius, so
+            // from where everything is its true size it is a speck — and it is the warp that grows it.
             var warp = (RadialWarp)config.WarpField;
-            Assert.Less(rs * 2.6f, warp.ReferenceRadius * 0.02f,
-                "the hole is not tiny next to the reference radius — it would not need the warp to look big.");
+            float mouth = rs * SpawnableBlackHole.ShadowPerHorizon * hole.MouthToShadow;
+            Assert.Less(mouth, warp.ReferenceRadius * 0.1f,
+                "the portal is not tiny next to the reference radius — it would not need the warp to look big.");
             Assert.LessOrEqual(warp.MinScale, 0.02f, "the floor is too high for the hole to grow much.");
         }
     }

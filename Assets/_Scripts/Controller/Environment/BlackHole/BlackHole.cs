@@ -61,6 +61,25 @@ namespace CosmicShore.Gameplay
                  "(Docs/BLACK_HOLE.md §12).")]
         [SerializeField] HolePolarity polarity = HolePolarity.Sink;
 
+        [Header("Felt pull on vessels (0 = the physical pull)")]
+        [Tooltip("How hard VESSELS feel this hole, in the vessel's own frame (Docs/BLACK_HOLE.md §12): " +
+                 "felt acceleration = Sign · k · cruise² · R_throat · s(r) / r², where cruise is the hull's own " +
+                 "unboosted speed and s the warp field's local scale. Inverse-square when nothing is warped; " +
+                 "under a radial warp it falls as 1/r, so it is felt across the whole shrinking approach rather " +
+                 "than in its last few units. 0 = vessels feel the hole's physical Paczynski-Wiita pull instead.")]
+        [Min(0f)]
+        [SerializeField] float vesselFeltStrength = 0f;
+
+        [Tooltip("The felt pull's ceiling, in multiples of the hull's own cruise speed. Above 1 a source " +
+                 "holds off a hull at cruise — it has to boost through — and a sink carries one into it at " +
+                 "(1 + this) × cruise.")]
+        [Min(0f)]
+        [SerializeField] float vesselFeltCap = 1.3f;
+
+        [Tooltip("How far the felt pull reaches, in throat radii (the seated mouth's; the shadow's without one).")]
+        [Min(1f)]
+        [SerializeField] float vesselFeltReach = 12f;
+
         const string HorizonName = "Horizon";
 
         static Material s_horizonMaterial;
@@ -114,6 +133,23 @@ namespace CosmicShore.Gameplay
         /// is seen only where it is — in place of the shadow — and never smeared into the rings.
         /// </summary>
         public float ThroatRadius { get; internal set; }
+
+        /// <summary>The felt-pull law's strength k (0 = vessels feel the physical pull). See the field's tooltip.</summary>
+        public float VesselFeltStrength => vesselFeltStrength;
+        /// <summary>The felt pull's ceiling, × the hull's cruise speed.</summary>
+        public float VesselFeltCap => vesselFeltCap;
+        /// <summary>The felt pull's reach, world units: <c>vesselFeltReach</c> throat radii.</summary>
+        public float VesselFeltReach => vesselFeltReach * FeltThroatRadius;
+        /// <summary>The radius the felt law is measured from: the seated mouth's, else the shadow's.</summary>
+        public float FeltThroatRadius => ThroatRadius > 0f ? ThroatRadius : HorizonRadius * 2.598076f;
+
+        /// <summary>Switch vessels to the felt law (the dipole's holes). k = 0 restores the physical pull.</summary>
+        internal void ConfigureFeltVesselLaw(float strengthK, float capCruises, float reachThroats)
+        {
+            vesselFeltStrength = Mathf.Max(0f, strengthK);
+            vesselFeltCap = Mathf.Max(0f, capCruises);
+            vesselFeltReach = Mathf.Max(1f, reachThroats);
+        }
 
         /// <summary>SIGNED gravitational parameter: positive pulls (sink), negative pushes (source).</summary>
         public float GM => Sign * BlackHoleRegistry.Config.GM(strength);

@@ -718,11 +718,11 @@ throws you back out while you grow again. Prisms make the same trip.
 | Lens (`BlackHoleLens.hlsl`) | focusing: arcs, an Einstein ring, a shadow of b_c = 2.6 r_s | diverging (the photon force negated): the background is thinned and pushed apart, nothing is captured, no shadow; far out a ray is bent AWAY by 2 r_s / b |
 | Fallback sphere (no lens) | black | white |
 | Wormhole rim | the material's own | white |
-| Vessels | pulled (`BlackHoleVesselPull`) | pushed — the same code, the signed acceleration |
+| Vessels (the FELT law, below) | a current that carries every hull in, up to 2.3× its cruise | a headwind no hull beats at cruise — you boost through |
 
 **The wormhole replaces the black sphere.** A `WormholeMouth` pair (no toll, no owner — a natural
-throat; every pilot rides) is seated in the two centres, each the size of the sink's shadow
-(3√3/2 r_s). The lens already leaves alone every pixel whose scene depth is in front of the hole's
+throat; every pilot rides) is seated in the two centres, each `mouthToShadow` (2.5) × the sink's
+shadow (3√3/2 r_s) — 26 u on the shipped strength-2 hole. The lens already leaves alone every pixel whose scene depth is in front of the hole's
 centre, and the opaque mouth covers exactly the disc it would have painted black — so where the
 shadow was, the player now sees out of the white hole, and flying in carries them there. The lens
 also treats a seated mouth as solid (`_BHThroat`): a bent ray that lands on it takes the sky, so the
@@ -735,7 +735,7 @@ through the source's centre and is driven back out (`BlackHoleGravityField.Apply
 
 **Both are poles of the warp field** (`WarpFieldRuntime.AddPole`): you shrink toward either. The
 reach (350 u) is clear of the toy ring and the pole switches, and the two holes' influence spheres
-(~58 u at strength 1) are far apart, so the source never pushes mass back into the sink.
+(~82 u at strength 2) are far apart, so the source never pushes mass back into the sink.
 
 **Retirement.** `BlackHoleCellAnchor` despawns both holes and withers both mouths (0.8 s) when the
 cell retires the world; the source's warp pole fades out with the field.
@@ -745,6 +745,35 @@ wiring, the toy-ring clearance, the two-pole field, the shader paths);
 `Tools/Shaders/verify_black_hole_lens.py` test 3w (no ray captured, bent away by 2/b − 15π/16b² to
 0.3%); `Tools/Shaders/verify_prism_gravity_warp.py` test 14 (the white hole's tide is the sink's
 negated, volume kept, the ceiling held).
+
+**The felt pull on vessels (playtest 1, 2026-10-08: "not sure one was attractive and one repulsive").**
+The physical Paczyński–Wiita pull of a hole this small is felt only in the last ~1.5 mouth radii —
+under the warp that is a second or two before the transit, so the two poles read the same. The
+dipole's holes therefore pull VESSELS by a separate, stated law (`BlackHole.vesselFeltStrength` > 0;
+prisms keep the physical pull):
+
+    felt acceleration = Sign · k · cruise² · R_throat · s(r) / max(r, R_throat)²
+
+measured in the hull's OWN cruise speed (`VesselTransformer.CruiseSpeed` = MinimumSpeed +
+ThrottleScaler) and in the vessel's own frame (the transformer scales the channel by `s`). Unwarped it
+is inverse-square; under the radial warp (`s ∝ r`) it falls as 1/r, so it is felt from ~6 mouth radii
+out, across the whole shrinking approach. Its ceiling is `vesselFeltCap` (1.3) × cruise, raised past
+the transformer's shared 100 u/s for this channel only. Measured in the hull's own speed because the
+fleet's cruise spans 35 → 216 u/s: one fixed force is a wall to a Sparrow and a breeze to a Manta.
+Shipped k = 3, cap 1.3, reach 12 throats (312 u, clear of the toys and pole switches). Modelled
+offline and asserted on the shipped law and numbers (`BlackHoleDipoleTests.FeltLaw_TheSinkCarriesYouIn_TheSourceMustBeBoostedThrough`):
+
+| hull cruise | sink: top speed, fill → through | source at cruise | source boosting 2× |
+|---|---|---|---|
+| 35 | 2.3× cruise, ~2.1 s | held off at the reach | through in ~20 s |
+| 60 | 2.3× cruise, ~1.2 s | held off | ~11 s |
+| 180 | 2.3× cruise, ~0.4 s | held off | ~4 s |
+
+"Fill → through" is from the portal filling the screen (its disc at the camera's 35° half-FOV) to the
+transit: the bigger mouth means it is the portal's own view, not lensing, that fills the screen, and
+the sink's current means you are through a second or so later. A hull carried through the sink keeps
+its inward current, crosses the white hole's interior and is thrown out of its far face. The Scarab's
+speed is not throttle-driven, so its cruise reads 25 and it feels a gentler pole than the rest.
 
 **Untested in the editor:** all of it. Verify: Black Hole cell → fly at the centre → the hole grows,
 its centre shows the view out of the white hole above → fly in → you come out of the white hole at a

@@ -96,8 +96,86 @@ namespace CosmicShore.Tests
                 Mathf.Min((source - Vector3.up * ToyRadius).magnitude, (source + Vector3.up * ToyRadius).magnitude));
             Assert.Greater(nearestToy, reach, "the source's warp reach covers a toy or a pole switch.");
             Assert.Greater(ToyRadius, reach, "the sink's warp reach covers the toy ring.");
+            float throat = BlackHoleRegistry.Config.HorizonRadius(hole.Strength, 0f)
+                           * SpawnableBlackHole.ShadowPerHorizon * hole.MouthToShadow;
+            Assert.Greater(nearestToy, hole.VesselFeltReach * throat, "the source's felt push reaches a toy or a pole switch.");
+            Assert.Greater(ToyRadius, hole.VesselFeltReach * throat, "the sink's felt pull reaches the toy ring.");
             Assert.Greater(source.magnitude, 2f * BlackHoleRegistry.Config.InfluenceRadius(hole.Strength),
                 "the two holes' influence spheres overlap — the source would push mass back into the sink.");
+        }
+
+        [Test]
+        public void FeltLaw_IsInverseSquareUnwarped_OneOverRUnderTheWarp_SignedAndHeldInsideTheThroat()
+        {
+            const float k = 3f, cruise = 60f, throat = 26f;
+            float3 centre = float3.zero;
+            float At(float d, float sign, float warp) =>
+                math.length(BlackHoleVesselPull.FeltAcceleration(new float3(d, 0f, 0f), centre, sign, k, cruise, throat, warp));
+
+            Assert.AreEqual(4f, At(100f, 1f, 1f) / At(200f, 1f, 1f), 1e-3f, "unwarped, the felt law is not inverse-square.");
+            // Under a radial warp s = d/R the felt pull falls as 1/d.
+            const float R = 350f;
+            Assert.AreEqual(2f, At(100f, 1f, 100f / R) / At(200f, 1f, 200f / R), 1e-3f, "under the warp the felt law is not 1/r.");
+            Assert.AreEqual(At(throat, 1f, 1f), At(throat * 0.3f, 1f, 1f), 1e-3f, "inside the throat the pull is not held at its surface value.");
+
+            var pull = BlackHoleVesselPull.FeltAcceleration(new float3(100f, 0f, 0f), centre, +1f, k, cruise, throat, 1f);
+            var push = BlackHoleVesselPull.FeltAcceleration(new float3(100f, 0f, 0f), centre, -1f, k, cruise, throat, 1f);
+            Assert.Less(pull.x, 0f, "the sink's felt law does not pull in.");
+            Assert.AreEqual(0f, math.length(pull + push), 1e-4f, "the source's felt law is not the sink's negated.");
+        }
+
+        /// <summary>
+        /// The playtest contract, run on the SHIPPED law and the SHIPPED numbers: a pilot flying straight
+        /// at a pole under the cell's warp. The black hole carries a hull at cruise into its mouth faster
+        /// than it flies; the white hole turns back a hull at cruise and lets a boosting one through.
+        /// For a slow, a middling and a fast hull — the law is measured in the hull's own cruise.
+        /// </summary>
+        [Test]
+        public void FeltLaw_TheSinkCarriesYouIn_TheSourceMustBeBoostedThrough()
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
+            Assert.IsTrue(prefab.TryGetComponent<SpawnableBlackHole>(out var hole));
+            var config = AssetDatabase.LoadAssetAtPath<CellConfigDataSO>(CellConfigPath);
+            var warp = (RadialWarp)config.WarpField;
+            float throat = BlackHoleRegistry.Config.HorizonRadius(hole.Strength, 0f)
+                           * SpawnableBlackHole.ShadowPerHorizon * hole.MouthToShadow;
+
+            foreach (float cruise in new[] { 35f, 60f, 180f })
+            {
+                var sink = Approach(+1f, cruise, cruise, hole, warp, throat);
+                Assert.IsTrue(sink.through, $"a hull at cruise {cruise} never reached the black hole's mouth.");
+                Assert.Greater(sink.topSpeed, 1.8f * cruise,
+                    $"the black hole did not accelerate a hull at cruise {cruise} through (top {sink.topSpeed / cruise:F2}x).");
+
+                Assert.IsFalse(Approach(-1f, cruise, cruise, hole, warp, throat).through,
+                    $"a hull at cruise {cruise} flew into the white hole without boosting — it is not a challenge.");
+                Assert.IsTrue(Approach(-1f, 2.5f * cruise, cruise, hole, warp, throat).through,
+                    $"a hull boosting at 2.5x cruise ({cruise}) could not get through the white hole.");
+            }
+        }
+
+        /// <summary>A straight radial approach in felt units, integrated the way BlackHoleVesselPull and the transformer do.</summary>
+        static (bool through, float topSpeed) Approach(float sign, float engine, float cruise, SpawnableBlackHole hole,
+            RadialWarp warp, float throat)
+        {
+            const float dt = 1f / 120f;
+            float reach = hole.VesselFeltReach * throat;
+            float r = Mathf.Min(reach * 1.2f, warp.ReferenceRadius), vg = 0f, top = 0f;
+            for (float t = 0f; t < 90f; t += dt)
+            {
+                if (r <= throat) return (true, top);
+                float s = warp.ScaleAt(new Vector3(r, 0f, 0f));
+                if (r < reach)
+                    vg -= BlackHoleVesselPull.FeltAcceleration(new float3(r, 0f, 0f), float3.zero, sign,
+                        hole.VesselFeltStrength, cruise, throat, s).x * dt;   // radial, inward positive
+                else
+                    vg *= Mathf.Exp(-1.5f * dt);
+                vg = Mathf.Clamp(vg, -hole.VesselFeltCap * cruise, hole.VesselFeltCap * cruise);
+                top = Mathf.Max(top, engine + vg);
+                r -= (engine + vg) * s * dt;
+                if (r > reach * 3f) break;
+            }
+            return (false, top);
         }
 
         [Test]

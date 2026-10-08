@@ -52,6 +52,30 @@ namespace CosmicShore.Gameplay
             return vessel != null && _pullByVessel.TryGetValue(vessel.GetInstanceID(), out pull);
         }
 
+        /// <summary>Floor on the cruise speed the felt law is measured in (a hull with no throttle speed).</summary>
+        const float MinCruise = 20f;
+
+        // The hole behind each well this tick, in well order (felt law parameters live on the hole).
+        static readonly BlackHole[] _wellHoles = new BlackHole[BlackHolePhysics.NativeWells.Capacity];
+
+        /// <summary>
+        /// The felt acceleration of a vessel at <paramref name="p"/> toward (sink) or away from
+        /// (source) a hole at <paramref name="centre"/>: <c>sign · k · cruise² · R_t · s / max(d, R_t)²</c>.
+        /// Inverse-square when nothing is warped (s = 1); under a radial warp (s ∝ d) it falls as 1/d.
+        /// Inside the throat it is held at its surface value — that is the wormhole's interior. In
+        /// FELT units (the transformer scales the velocity channel by s); pure, and tested.
+        /// </summary>
+        public static float3 FeltAcceleration(float3 p, float3 centre, float sign, float k, float cruise,
+            float throatRadius, float warp)
+        {
+            float3 r = p - centre;
+            float d = math.length(r);
+            if (!(d > 1e-4f)) return float3.zero;
+            float de = math.max(d, math.max(throatRadius, 1e-3f));
+            float mag = k * cruise * cruise * throatRadius * warp / (de * de);
+            return r * (-sign * mag / d);
+        }
+
         public static void Tick(IReadOnlyList<BlackHole> holes, BlackHoleConfigSO config, float dt)
         {
             PulledVesselCount = 0;
@@ -67,10 +91,12 @@ namespace CosmicShore.Gameplay
             }
 
             var wells = new BlackHolePhysics.NativeWells();
+            for (int i = 0; i < _wellHoles.Length; i++) _wellHoles[i] = null;
             for (int i = 0; i < holes.Count && i < BlackHolePhysics.NativeWells.Capacity; i++)
             {
                 var h = holes[i];
                 if (h == null) continue;
+                _wellHoles[wells.Count] = h;
                 wells.Add(h.ToWell(config));
             }
 
@@ -99,10 +125,28 @@ namespace CosmicShore.Gameplay
 
                 float3 a = float3.zero;
                 bool inside = false;
+                float cap = maxSpeed;
+                float cruise = Mathf.Max(MinCruise, transformer.CruiseSpeed);
+                float warp = WarpFieldRuntime.ScaleAt(p);
                 for (int w = 0; w < wells.Count; w++)
                 {
                     var well = wells[w];
+                    var hole = _wellHoles[w];
                     float d = math.length(pos - well.Position);
+                    if (hole != null && hole.VesselFeltStrength > 0f)
+                    {
+                        // The FELT law (Docs/BLACK_HOLE.md §12): measured in the hull's own cruise
+                        // speed and the hole's throat, in the vessel's own frame — so a source is a
+                        // headwind every hull has to boost through and a sink a current that carries
+                        // every hull in, and under a warp it is felt across the whole approach. The
+                        // config's vesselPullScale is for the physical pull only, so it is divided out.
+                        if (d > hole.VesselFeltReach) continue;
+                        inside = true;
+                        cap = Mathf.Max(cap, hole.VesselFeltCap * cruise);
+                        a += FeltAcceleration(pos, well.Position, hole.Sign, hole.VesselFeltStrength,
+                            cruise, hole.FeltThroatRadius, warp) / math.max(scale, 1e-4f);
+                        continue;
+                    }
                     if (d <= well.InfluenceRadius) inside = true;
                     a += BlackHolePhysics.Acceleration(pos, well);
                 }
@@ -115,7 +159,7 @@ namespace CosmicShore.Gameplay
                 pull += dv;
                 if (!inside && config.ReleaseDamping > 0f)
                     pull *= Mathf.Exp(-config.ReleaseDamping * dt);
-                pull = Vector3.ClampMagnitude(pull, maxSpeed);
+                pull = Vector3.ClampMagnitude(pull, cap);
 
                 if (pull.sqrMagnitude < 1e-4f)
                 {
@@ -124,7 +168,10 @@ namespace CosmicShore.Gameplay
                 }
 
                 _pullByVessel[key] = pull;
-                transformer.ModifyVelocity(pull / FreshModifierWeight, dt);
+                // A felt pull above the transformer's own ceiling raises it for this entry, or a fast
+                // hull's headwind would be clipped to the 100 u/s every shove shares.
+                transformer.ModifyVelocity(pull / FreshModifierWeight, dt, false,
+                    cap > transformer.VelocityModifierCeiling ? cap : 0f);
                 PulledVesselCount++;
             }
 

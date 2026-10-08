@@ -1478,5 +1478,13 @@ public class VesselTransformer : MonoBehaviour
         /// <summary>The ceiling every displacement shares unless a live one raises it
         /// (<see cref="ShipVelocityModifier.ceiling"/>), u/s.</summary>
         public float VelocityModifierCeiling => velocityModifierMax;
+
+        /// <summary>
+        /// The hull's unboosted full-throttle speed, u/s: <see cref="MinimumSpeed"/> + <see cref="ThrottleScaler"/>
+        /// (the fleet table's "cruise" for every hull whose speed comes from its throttle). A
+        /// yardstick for anything that must feel the same to a slow hull and a fast one — a black
+        /// hole's felt pull is measured in it (Docs/BLACK_HOLE.md §12).
+        /// </summary>
+        public float CruiseSpeed => Mathf.Max(0f, MinimumSpeed) + Mathf.Max(0f, ThrottleScaler);
     }
 }
