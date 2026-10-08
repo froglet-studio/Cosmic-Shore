@@ -710,8 +710,8 @@ def profile_asset():
 
 
 # Round 11g (Docs/ELEMENTAL_ECONOMY.md §4.1): the demo cell plays the TUNED petal burn - one petal
-# per element per danger contact instead of five - while every other cell keeps what shipped
-# (CellConfigDataSO.PetalBurnRule defaults to Shipped = 0). Flip it here: 0 = Shipped, 1 = Tuned.
+# per element per danger contact instead of five. Since 2026-10-08 every cell does (Garrett: Tuned
+# everywhere; CellConfigDataSO.PetalBurnRule defaults to Tuned = 1). Kept explicit here: 0 = Shipped, 1 = Tuned.
 PETAL_BURN_RULE = 1
 
 # Round 11h (QA-SWARM-ROUND11-13): the demo cell STARTS HOSTILE. Every creature wears the cell's

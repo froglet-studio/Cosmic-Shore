@@ -746,6 +746,10 @@ namespace CosmicShore.Gameplay
         /// <summary>During the ring hold a hunter's phase is held at or below this fraction of its danger phase.</summary>
         public const float HoldPhase = 0.4f;
 
+        /// <summary>A bite wind-up (<see cref="SubstrateSpeciesParams.StrikeWindupS"/>) resets once phase falls to this
+        /// fraction of the danger phase (bestiary pack.py: intent below 0.2 against the 0.5 it shows at).</summary>
+        public const float WindupResetFrac = 0.4f;
+
         void RingHoldClock(SubstratePopulation pop)
         {
             var P = pop.P;
@@ -850,6 +854,23 @@ namespace CosmicShore.Gameplay
                 }
                 else if (!riding && Rest[i] > 0f) Rest[i] = MathF.Max(0f, Rest[i] - dt);   // a daze with no posture clock
 
+                // the BITE WIND-UP (lab fair burns, bestiary pack.py WINDUP): a biter with no ramp shows its intent -
+                // aggressive at the gregarious end - for StrikeWindupS before its bite may land. The clock (this agent's
+                // Ramp slot, unused without a ramp) runs while the intent shows, holds through a dip, and resets once
+                // the agent is spent or its phase falls to WindupResetFrac x DangerPhase (the lab's 0.2 against 0.5; a ring
+                // hold caps phase exactly there, so held hunters wind up afresh, together, after the release)
+                bool windup = !needRamp && P.StrikeWindupS > 0f;
+                if (windup)
+                {
+                    bool shows = Aggr[i] > 0.5f && Phase[i] > P.DangerPhase;
+                    if (riding || Rest[i] > 0f || Phase[i] <= WindupResetFrac * P.DangerPhase || Aggr[i] < 0.2f) Ramp[i] = 0f;
+                    else if (shows)
+                    {
+                        if (Ramp[i] <= 0f) { pop.Windups++; Events.Add(new SubstrateEvent { Kind = SubstrateEventKind.Windup, Index = i }); }
+                        Ramp[i] += dt;
+                    }
+                }
+
                 // danger: an aggressive agent at the gregarious end that is not spent (research harm = aggr > 0.5), or a
                 // TRAMPLER - fast and running into the pilot (research trample; the bestiary's closing test); a ramped
                 // role must have finished its windup; an assembled body member burns to touch
@@ -858,7 +879,8 @@ namespace CosmicShore.Gameplay
                 if (!riding && Rest[i] <= 0f)
                 {
                     // a ramped role's strike IS its harm (a bull's charge, a mobber's dive); anyone else bites by aggression
-                    now = needRamp ? Ramp[i] >= P.RampS : Aggr[i] > 0.5f && Phase[i] > P.DangerPhase;
+                    now = needRamp ? Ramp[i] >= P.RampS : Aggr[i] > 0.5f && Phase[i] > P.DangerPhase
+                                                          && (!windup || Ramp[i] >= P.StrikeWindupS - 1e-4f);
                     if (!now && P.Solitary.Trample + (P.Gregarious.Trample - P.Solitary.Trample) * Phase[i] > 0.5f)
                         now = Trampling(i, P.TrampleClose);
                 }

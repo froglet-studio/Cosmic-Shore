@@ -199,6 +199,11 @@ namespace CosmicShore.Gameplay
         /// at or below SubstrateCore.HoldPhase x <see cref="DangerPhase"/>, so no one strikes), then all strike together. A pilot that breaks the ring (closure
         /// below <see cref="QDown"/>) resets the hold: the ring re-forms rather than striking. Docs/SUBSTRATE_FAUNA.md §7.7.</summary>
         public float RingHoldSeconds = 0f;
+        /// <summary>BITE WIND-UP (lab fair burns, bestiary pack.py / stampede.py WINDUP): a biter without a ramp must show
+        /// its intent - aggressive at the gregarious end - for this many seconds before its bite may land, so a strike
+        /// never lands in the same moment as its telegraph. Ignored where <see cref="RampS"/> is set (the ramp is
+        /// that species' wind-up). 0 = off, the research step bit for bit.</summary>
+        public float StrikeWindupS = 0f;
 
         public SubstrateSpeciesParams Clone()
         {
@@ -253,6 +258,7 @@ namespace CosmicShore.Gameplay
             f("gulp_ramp_s", GulpRampS); f("gulp_s", GulpS); f("gulp_speed", GulpSpeed); f("gulp_rest_s", GulpRestS);
             f("ramp_turns", RampTurns);
             f("ring_hold_s", RingHoldSeconds);
+            f("strike_windup_s", StrikeWindupS);
         }
     }
 
@@ -442,6 +448,7 @@ namespace CosmicShore.Gameplay
             ("pack", "stock0", "150: a hunter's body is a 12 u prism, and its body IS its stock"),
             ("locust", "scent_deposit", "0.2: locusts are the pack's prey - the food web the research had no second species for"),
             ("pack", "w_prey", "1.5: a hungry pack follows the locusts' scent and eats them (its body is theirs; mass moves, never vanishes)"),
+            ("pack", "strike_windup_s", "0.4 s: a hunter's bite lands only after its own intent has shown that long (bestiary pack.py WINDUP, lab fair burns 2026-10-05: unread pack burns 0.71 -> 1.00 read)"),
             ("lurker", "capacity", "16 (bestiary n=16)"),
             ("lurker", "starve_s", "120: a real lifeform starves (research 1e9)"),
             ("lurker", "birth_stock", "100: a real lifeform breeds from food (research 1e9)"),
@@ -595,6 +602,7 @@ namespace CosmicShore.Gameplay
             p.StaminaS = 3f; p.RestS = 3f; p.WRestRetreat = 1.5f; p.RestTogether = true;
             p.StarveS = 60f; p.BirthStock = 300f; p.Stock0 = 150f;
             p.PreyName = "locust"; p.WPrey = 1.5f;
+            p.StrikeWindupS = 0.4f;
             return p;
         }
 
@@ -686,6 +694,7 @@ namespace CosmicShore.Gameplay
             ("stampede", "stampede.charge_accel", "strike_accel"), ("stampede", "stampede.rest_s", "rest_s"),
             ("stampede", "stampede.bull_every", "charge_every"), ("stampede", "stampede.lead_clip", "hunt_lead_max"),
             ("stampede", "stampede.closing", "trample_close"), ("stampede", "stampede.n", "capacity"),
+            ("pack", "pack.WINDUP", "strike_windup_s"),
             ("mobber", "mobber.MAXV", "gregarious.speed"), ("mobber", "mobber.DIVE_V", "strike_speed"),
             ("mobber", "mobber.PULL", "ramp_s"), ("mobber", "mobber.dive_s", "stamina_s"),
             ("mobber", "mobber.period", "dive_period"), ("mobber", "mobber.provoke_r", "sense"),

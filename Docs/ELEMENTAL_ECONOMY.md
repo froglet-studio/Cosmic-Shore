@@ -215,10 +215,25 @@ species, 3 pilot styles × 6 seeds × 3 min, starting at 20 petals.
 - **Tuned spares skill.** A skilled pilot loses 0.22 petals/min. A careless one still loses 3.25.
 - **Most burns were readable either way:** 92-93% were telegraphed. A strike counts as telegraphed
   when the striker showed intent > 0.5 for ≥ 0.25 s before contact.
-- **The lab recommends Tuned.** Garrett has not chosen yet, so the shipped value stays and only the
-  demo cell plays Tuned.
+- **The lab recommends Tuned.** ~~Garrett has not chosen yet, so the shipped value stays and only the
+  demo cell plays Tuned.~~ **Decided 2026-10-08: Tuned everywhere.** `CellConfigDataSO.PetalBurnRule`
+  defaults to Tuned, so every cell plays 1 petal per element per contact, and so does a scene with no live
+  cell. Shipped stays available per cell. `check_elemental_economy.py` §5 requires every cell on Tuned.
 
 QA: `QA-SWARM-ROUND11-7` (Docs/QA/QA_BACKLOG.md).
+
+**Fair burns (Oct 2026).** Two fixes from the lab's fair-burns pass (lab `Tools/Ecology/DISCOVERIES.md`, "Fair
+burns", 2026-10-05) took the unread burns left to zero there. Both work the same under Shipped and Tuned.
+- **1 s spawn grace.** A danger contact in the first second after a vessel spawns does nothing (no burn, no
+  sting, no cooldown started). The clock is `ResourceSystem.SpawnedAt`, stamped by `ResetForPlay` and by the go of
+  `StartVessel`. Tune it on the effect asset: `Spawn Grace Seconds` (0 = off).
+- **0.4 s wind-up.** A pack hunter's bite, and a pufferfish's puff, lands only after its own intent has shown for
+  0.4 s, so a strike never lands in the same moment as its telegraph. Substrate pack:
+  `SubstrateSpeciesParams.StrikeWindupS` (Docs/SUBSTRATE_FAUNA.md §9.1). Swarm pack hunter and pufferfish:
+  `SwarmFaunaConfigSO.HuntWindupSeconds` / `PuffWindupSeconds`. It composes with the pack's ring hold (6 s,
+  decided 2026-10-08): held hunters wind up together after the release.
+
+QA: `QA-FAIR-BURNS-1` (Docs/QA/QA_BACKLOG.md).
 
 ## 5. Every hull can now fight for it
 

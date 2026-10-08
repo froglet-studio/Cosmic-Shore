@@ -73,6 +73,13 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>When this vessel last spawned (<see cref="Time.time"/>): ResetForPlay and StartVessel stamp it.
+        /// The danger-prism burn reads it for its spawn grace (VesselElementalDebuffByDangerPrismEffectSO).
+        /// Never spawned = negative infinity, so no grace.</summary>
+        public float SpawnedAt { get; private set; } = float.NegativeInfinity;
+
+        public void MarkSpawned() => SpawnedAt = Time.time;
+
         public void Reset()
         {
             for (int i = 0; i < Resources.Count; i++)

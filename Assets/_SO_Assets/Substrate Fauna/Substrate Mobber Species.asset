@@ -172,6 +172,7 @@ MonoBehaviour:
     GulpRestS: 4
     RampTurns: 3
     RingHoldSeconds: 0
+    StrikeWindupS: 0
   seedCount: 0
   seedSpread: 30
   seedAtFlora: 1
