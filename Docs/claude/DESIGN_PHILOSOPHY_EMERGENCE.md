@@ -194,9 +194,10 @@ ones.
   `AddSwitchRing` takes no raw `Color` or `Material` at all). **Two wearers sit outside
   the toybox, and both are a claim about the SWITCH rather than about the pilot**:
   `ScarabSwitch`, where the colour names the domain the switch *belongs* to rather than
-  one it grants, and the Butterfly's `FoldGate`, one notch further out, where it names
+  one it grants, and the Butterfly's fold pair, one notch further out, where it names
   **who may thread it** — a gate declines a pilot who is not already in its domain and
-  can never put anyone into one. Nothing in either case changes a pilot's domain, so the
+  can never put anyone into one. (The pair was a `FoldGate` ring and is now a domain-locked
+  wormhole whose rim wears the domain's hue — same reading, no longer a switch ring.) Nothing in either case changes a pilot's domain, so the
   two readings of a domain-coloured ring never share a screen;
   `ToySwitchVocabularyTests` holds the allow-list in both directions.
   **The cone is no longer part of this vocabulary** — as a BODY (one you fly at, rather

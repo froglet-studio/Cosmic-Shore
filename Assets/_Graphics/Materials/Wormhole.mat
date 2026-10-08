@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: FoldGatePortal
-  m_Shader: {fileID: 4800000, guid: 4bbb3a527bac48b9aa0f4efe6de383f3, type: 3}
+  m_Name: Wormhole
+  m_Shader: {fileID: 4800000, guid: 1b0aa366a170fb99b7d63b228298811a, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -19,14 +19,23 @@ Material:
   m_CustomRenderQueue: -1
   stringTagMap: {}
   disabledShaderPasses: []
-  m_LockedProperties: 
+  m_LockedProperties:
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _EdgeSoftness: 0.04
-    - _PortalBlend: 1
-    m_Colors: []
+    - _DomainRimBoost: 2
+    - _FlareIntensity: 2.5
+    - _ProxyRadius: 600
+    - _RimDarken: 0.25
+    - _RimIntensity: 0.35
+    - _RimPower: 6
+    - _SealedIntensity: 1.5
+    - _SealedRimCutoff: 0.2
+    - _SealedRimPower: 2.5
+    m_Colors:
+    - _RimColor: {r: 0.45, g: 0.75, b: 1.6, a: 1}
+    - _VoidColor: {r: 0.01, g: 0.015, b: 0.04, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocalizedText: 1

@@ -128,9 +128,39 @@ corner it did not ask for.
 
 ## 6. AI
 
-The platform's gate-race AI (two-waypoint approach, latched side) plus one override: an
-**attached** AI aims down its own rail (`TryOverrideAim`, Skein's), because the rail passes
-through every ring and fighting its curve is the only way to lose it. The AI templates are
+The platform's gate-race AI (two-waypoint approach, latched side) plus one override for the one
+hull that ATTACHES: an AI **Urchin** flies its kit through the shared `UrchinAutopilotDriver`
+(#975, the driver Skein and Hijack use), called from `RegattaController.TryOverrideAim` exactly
+the way `SkeinController` calls it — Regatta's own course logic (the same `_course` ring through
+the same lap-wrapping `RingIndexFor`) supplies the objective:
+
+- **Attached, on its own rail:** every lane threads every ring (a ring's capture radius, 0.8 of a
+  54–110 u mouth, always contains a lane 22 u off the spine), so the driver RIDES and aims down the
+  rail's tangent — hold the throttle, let the cable drive.
+- **Attached, the wrong way round the loop:** the ring threads BEHIND, so it REVERSES (the ride's
+  direction is the pilot's facing) instead of riding most of a lap backwards.
+- **Attached to a RIVAL's rail:** the braid puts the three lanes 22 u apart, so an AI latches
+  whichever it touches. A rival's lane crawls at 20 u/s, and — unlike Skein's plain cable —
+  Regatta's rails are **super-shielded**, so no spike can convert them (`PrismTeamManager.Steal`
+  refuses a super-shielded prism). The driver therefore treats the crawl as always "dry"
+  (`UrchinRailAssessment.IsDryCrawl`, convertible = `UrchinAutopilotDriver.IsConvertible`) and
+  **Slips off** unless the ring is within `DryCrawlArc` (80 u), and it **never spikes** the rail —
+  a volley there would only spend the meter. With the **Time-5 Slipstream** a rival's lane rides at
+  full pace (`TrailFollower.IsCrawlTerrain` is false), is not a crawl, and is ridden.
+- **A stall** (a reversal caught in the throttle deadband) is Slipped after `ParkedSeconds`.
+- **The lanes are CLOSED loops**, so the rail walk wraps past the seam exactly as the ride does
+  (`UrchinRailAssessment.Scan(..., loop: Trail.IsLoop)`). Skein's and Hijack's rails are open and
+  walk exactly as before; without the wrap a pilot just before a Regatta lane's seam would have read
+  the ring beyond it as unreachable and slipped off its own lane.
+- **Free:** the platform's gate aiming flies it at the ring (crystal detour included), and on a
+  long, straight, lined-up shot it lays a **Track Projector** rail at the ring (`TryProjectTrackToward`).
+
+Before this, an attached AI aimed down whatever rail it had latched — right on its own lane, but a
+pilot on a rival's lane crawled at 20 u/s for the rest of the race. **Unmeasured:** after a Slip the
+pilot flies back at the ring through the braid and may re-latch a rival's lane (1.5 s
+`MinSlipIntervalSeconds` bounds the loop); how often an AI Urchin ends up on its own lane is a
+playtest number. Every other hull is untouched — none attaches, and the driver finds every
+control by capability. `AIPilot` is unchanged. The AI templates are
 `Random`, so the bot grid draws its hulls from the card. The Manta's boost has an autopilot
 drive and the Rhino's ramp engages off a straight stick an AI naturally holds; every other
 hull's AI now spends its boost through a per-hull **AI boost policy**
@@ -193,8 +223,30 @@ Everything by `Tools/Build/author_regatta_assets.py` (`--check` passes; `--check
 fail on a mutated cell config). The card is registered in the **master roster and `ArenaGames`**
 (`arcade_mode_lib.register_arena_card`), never `ArcadeGames`. The scene is a clone of
 `MinigameRedline` with the controller, rule, field block, IntensityWise cell list and AI templates
-swapped. Toasts: two idle hints (`RegattaRailHint` 110, `RegattaLaneHint` 111) and the comeback
-line. Preview: four cells by intensity, `Vessel: -1` (the carousel's pick flies).
+swapped. Preview: four cells by intensity, `Vessel: -1` (the carousel's pick flies).
+
+**Toasts** (`GameToastConfig_Regatta.asset`, authored by the generator): two idle hints
+(`RegattaRailHint` 110, `RegattaLaneHint` 111), the comeback line, and — since #985 — the four
+shared **race beats** that `GateRaceController`'s `DomainRaceToasts` posts for every gate race,
+in the gate-race family's voice (`{0}` leading domain, `{1}` its score, `{2}` the target):
+
+| situation | id | template |
+|---|---|---|
+| `DomainRaceHalf` | 129 | `{0} is halfway home - {1}/{2} gates` |
+| `DomainRaceLeadChanged` | 130 | `{0} takes the lead - {1}/{2} gates` |
+| `DomainRaceHomeStretch` | 131 | `{0} is on the home stretch - {1}/{2} gates` |
+| `DomainRaceFinalLap` | 132 | `{0} is on the final lap` |
+
+No Quarter (128); no gate race authors it. **Regatta's score is a TEAM SUM**, so the beats are
+measured against the leading team's combined courses, not one pilot's: `RegattaController`
+sets `RaceToastsSumTeams`, and `DomainRaceToasts` then scales the target, the 3-gate home
+stretch and the final-lap mark by that team's pilot count (`DomainRaceToasts.Evaluate`,
+`CountPilots` over the replicated RoundStats). A two-pilot team is "halfway home" at 24 of 48
+gates and on the final lap at 32 — `{2}` reads 48. Before this, the beats compared the summed
+score with one pilot's 24-gate course, so a pair each a quarter of the way round was announced
+halfway, and with two or more pilots per team halfway, home stretch and final lap all fired
+early. Every other gate race passes no counter and its arithmetic is unchanged
+(`DomainRaceToastsTests.OnePilot_MatchesTheUnscaledThresholds`).
 
 Measurement chain: `Tools/Build/regatta_course_harness/run.sh` compiles the three pure course
 files against a UnityEngine math stub with Roslyn and RUNS them (the four shipped seeds plus the
@@ -240,6 +292,21 @@ on a Sparrow), and a guest's own hull carries the same levels as the host's repl
   chip follows; tap another team's and confirm nothing changes. In the race, the domain boxes
   climb by every pilot's gates, the race ends when the first pilot finishes lap three, and the
   scoreboard puts the higher team total first.
+- **AI Urchin rail choice (2026-10, #975 follow-up) — NOT EDITOR-VERIFIED.** §6. The pure half
+  (`UrchinRailAssessment`) was compiled with Roslyn against a math stub and the whole
+  `UrchinRailAssessmentTests` file RUN through a minimal NUnit shim: 20/20 pass, the 13
+  pre-existing tests included (the loop-aware `Scan` rewrite changed no open-rail answer). Two
+  negative controls discriminated: restoring the old "hostile and no ammo" dry-crawl rule fails
+  three cases, and disabling the loop wrap fails both closed-rail tests. `RegattaController`, the
+  driver, `TrailFollower.IsCrawlTerrain` and `Trail.IsLoop` compile against real Unity references
+  (`Tools/Build/unity_refcompile`, player and editor configs: 0 project errors; a planted missing
+  member in a changed file failed the player run as expected). First editor run: solo Regatta, Jade, with one ally AI stepped
+  to the **Urchin** on the launch panel. Watch it from the spectator/pilot-swap view: on its own
+  (Jade) lane it rides through ring after ring at ~300 u/s; when it latches a Ruby or Gold lane it
+  lets go within ~0.25–1.5 s (a short ghost flicker = Slip) rather than crawling at 20 u/s, and no
+  spikes fly at the rail; if it latches its own lane facing backwards it swings round within a
+  second. Then give that ally a Time-5 start (or collect to Time 5) and confirm it now RIDES a
+  rival's lane at full pace instead of slipping.
 - **The residual 5–6× spread is real.** The lever the user named — starting elements — reaches
   five hulls by ~1.5×. **This used to read "and the Rhino not at all", which was half wrong and
   is now wholly stale.** `RampBoostActionExecutor` has always read `Multiplier(Element.Time)` and
