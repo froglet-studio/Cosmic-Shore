@@ -77,7 +77,7 @@ Each phase is independently shippable, has a gate, and the gate is a **run**, no
 | P0.1 | **Verify Phases 0–1 with 4 players** (the whole landed refactor: request policy, handshake deletion, pre-flight, timeout nest) | The largest body of unverified change in the layer. Everything below builds on it | `QA-NET-RATE-LIMIT-RETEST` + review §8 T1–T5, T8: 0 × 429, 0 × `ForceReset`, 0 offline fallbacks over 10 min |
 | P0.2 | **Offline mode, properly tested** | Steam requirement; zero tests; a player with no connection must reach a playable game every time | `QA-NET-OFFLINE-MODE` green on a **player build**, plus the new L1 offline tests (§5.1) |
 | P0.3 | **Clear the 7 🟡 party bugs** (B18–B23 + B24) | Each is a "the game is broken" report: can't leave, black screen, stranded ready gate, lost score, dead Scoreboard exit, lobby doesn't follow the host | One dated run per bug, per its own QA item |
-| P0.3b | **B25 — nothing enforces the four-player party size** | 🔴 open, diagnosed 2026-10-08. Two Joins inside one refresh window on a 3/4 party seat a fifth: every check of the GAME's size (4) runs on the *joining* client against *polled* data, while the session holds the *transport* size (6) and nothing on the **host** compares the live count with `PartyDisplaySlots`. A 4-seat card then launches with five humans. At 10–40 CCU simultaneous joins are ordinary | The L1 test 2b above, plus a host-side authoritative check |
+| P0.3b | **B25 — nothing enforced the four-player party size** | 🟡 fixed 2026-10-08, needs the MPPM retest. There is now ONE party size, 4 (`MaxPartySlots`): the party session is created with 4 seats, so UGS itself refuses a fifth join; the race's loser bounces with "That party is full."; `HasOpenSlots` counts distinct ids; a full party also refuses Spectate. `PartyDisplaySlots` and the 6-seat transport capacity are gone | The L1 test 2b above, plus `UNITY_VERIFICATION_CHECKLIST.md` Phases 0-1 step 8 |
 | P0.4 | **Phase 2 — push instead of poll** | This is the single highest-value change in the layer. It removes the cause of B1, B6 and B24 rather than their symptoms, and it is what makes 10+ CCU safe | GETs ≤ **4/min/client** at rest; invite visible < 1 s p95; no `LobbyPatcher` lines in a 30 min 4-client run |
 | P0.5 | **Crash/exception reporting from player builds** | Without it, a Steam launch is blind. An unhandled exception in the party layer on someone's machine must reach you | One deliberate test exception from a player build appears in the dashboard |
 
@@ -188,9 +188,10 @@ of them are "server + 2 clients, do a thing, assert the state on all three".
 2b. **Two guests join-direct simultaneously into a 3/4 party → the party ends at 4/4, not 5/4.**
    *(B25.)* Test 2 as first written passes on exactly the case that breaks, which is why B25 names
    it: the failure needs the party to be **exactly one short** and both joins inside one
-   presence-refresh window. Both pre-flights read `3/4` and pass; both
-   `JoinSessionByIdAsync` calls succeed because the session holds **6**. Assert the host's live
-   member count against `PartyDisplaySlots`, not the published `partyCount`.
+   presence-refresh window. Both pre-flights read `3/4` and pass; since 2026-10-08 the session
+   holds exactly **4**, so UGS refuses the second join. Assert the host's live member count is
+   `MaxPartySlots` (4), not the published `partyCount`, and that the loser is back in its own
+   menu with "That party is full.".
 3. Guest leaves mid-match → vessel keeps flying under AI, score survives on the scoreboard. *(B21)*
 4. Guest leaves at the ready screen → the remaining two proceed within a tick. *(B20)*
 5. Double-tap Accept/Join → exactly one operation. *(T3, and the single-flight path)*
