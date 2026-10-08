@@ -528,3 +528,29 @@ measurement attached is worse than no row.
   text onto the omni card at runtime, keeping its font and material — but the authored position is
   now a lie a reader will believe. Either author it under a `BlastTallyButton` host at the view
   root, or leave it and say so in the wirer's comment. No prefab was edited on this branch.
+
+## From the Butterfly omni-crystal bloom branch (`cece/awesome-hopper-rj9b50`, 2026-10-08)
+
+- **`ExplosionImpactorDataContainerSO.explosionPrismEffects` has no producer.** Measured:
+  `grep -rl explosionPrismEffects Assets --include=*.asset` → 8 containers, all `explosionPrismEffects: []`;
+  no concrete `ExplosionPrismEffectSO` subclass exists after this branch retired its only one. Its
+  consumers are the Physics fallback in `ExplosionImpactor.AcceptImpactee`, the new
+  `SweepPrismEffects` (affectsPrisms-OFF blasts), and a never-assigned private field on
+  `PrismImpactor` (`PrismImpactor.cs:16`). The Burst batch path never runs it at all, so an
+  affectsPrisms-ON blast that authored one would run it only when the spatial index is down.
+  DEBT this branch WALKED PAST (and widened: the sweep is a second consumer). Decide: either keep
+  it as the container half of `IExplosionPrismPayload` and make the batch path honour it, or
+  retire the field and the dead `PrismImpactor` copy. *Shape (`/refactor` §3): a consumer with no
+  producer, read by two paths that disagree about when it runs.*
+
+- **Why the Butterfly bloom's `ExplosionScaleDustPrismEffectSO` asset loaded as null is UNKNOWN.**
+  Three playtests, every repo-side cause ruled out, a forced re-import did not help; the fix routed
+  around it (`BUTTERFLY.md §3.3a`). The next new SO type authored by a generator may hit it again.
+  To measure: author a throwaway new SO type + asset by script, have a human pull it and select the
+  asset before entering play mode, and record what the inspector says. *Report, not a fix.*
+
+- **Two pre-existing orphaned doc comments** (a `/// </summary>` immediately followed by
+  `/// <summary>`, both present at merge base `2cf25d8e`): `ExplosionImpactor.cs` above
+  `SweptCylinder` (the `SweepCrystals` doc stacked on the narrowphase struct's) and `CSDebug.cs:40`
+  (the `CSLogChannel` usage note stacked on `CSLogChannelLabelAttribute`'s). Move each down onto
+  its member or delete it. *Shape: a member inserted between a doc and its declaration.*
