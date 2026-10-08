@@ -184,9 +184,9 @@ segmentSpawner.Initialize();
 | 1 | 8 | 3 | 24 | Linear | Flat octagon, radius 700 |
 | 2 | 10 | 3 | 30 | Catmull-Rom | Undulating tilted loop (±610 Y) |
 | 3 | 28 | 2 | 56 | Catmull-Rom | Dumbbell circuit: two sinusoidal lanes at z = ±60 running 2,770 units along X (amplitude ±20 Y, 2 periods, antiphase — they braid in side view and are ridden in opposite directions), joined by two flat circles (R = 360, centers (340, 0, 0) and (−3140, 0, 0), ~341° sweep). The east circle's far pole is pinned at (700, 0, 0) by the shared spawns, so the track extends west to x ≈ −3500 (lap ≈ 9,846 units, ~848 prisms). Crystal anchors: each lane peak/valley (8) + 3 per circle (14 total), advancing in traversal order from the pole. |
-| 4 | 111 (24 crystals/lap) | 2 | 48 | Catmull-Rom + ribbon normals | **Relativity** — six rose-petal lobes joined by six core passes that weave through the nucleus (§5a). Lap 11,083 u, 888 prisms |
+| 4 | 171 (25 crystals/lap) | 2 | 50 | Catmull-Rom + ribbon normals | **Relativity** — five lobes, each its own shape, joined by five chords that cross the nucleus cage at five different places (§5a). Lap 11,954 u, 1,026 prisms |
 
-The target is **crystals per lap × laps**, where crystals per lap is `SpawnableWaypointTrack.crystalsPerLap[intensity]` when authored (> 0) and the waypoint count otherwise. I1–I3 author nothing there, so they keep waypoints × laps exactly as before; I4's waypoint list is a dense spline sample (111 points) carrying 24 crystal anchors, so it authors 24.
+The target is **crystals per lap × laps**, where crystals per lap is `SpawnableWaypointTrack.crystalsPerLap[intensity]` when authored (> 0) and the waypoint count otherwise. I1–I3 author nothing there, so they keep waypoints × laps exactly as before; I4's waypoint list is a dense spline sample (171 points) carrying 25 crystal anchors, so it authors 25.
 
 `lapsPerIntensity` is a `List<int>` matched to the waypoint sets by index (index 0 = intensity 1), the same convention `SpawnableWaypointTrack.useSplinePerIntensity` uses. An entry ≤ 0, or an intensity the list doesn't cover, falls back to the scalar `optionalLaps` — so scenes authored before the list (e.g. Crystal Capture) keep their original single-value behavior.
 
@@ -194,53 +194,60 @@ Note the target is a crystal *count*, not a literal lap counter — crystals res
 
 ### 5a. Intensity 4 — "Relativity"
 
-The ace track: one closed ribbon that threads the cell's nucleus **six times a lap**, so a pilot on
-any lobe keeps crossing pilots on every other one. Authored entirely by
+The ace track: one closed ribbon that threads the cell's nucleus **five times a lap**, so a pilot
+on any lobe keeps crossing pilots on the others. Authored entirely by
 `Tools/Build/author_skimrace_relativity_track.py` (never hand-edit the I4 lists — re-run it;
-`--check` is the drift gate, `--report` prints the numbers).
+`--check` is the drift gate, `--report` prints the numbers). The design lives in two readable
+tables at the top of that script, `PASSES` and `LOBES`.
 
-**Shape.** Six straight **core passes** are the six struts of a tensegrity icosahedron — two
-parallel struts per axis, X struts split along Z, Y along X, Z along Y — each running ±300 u
-through the nucleus cage. Struts never touch: perpendicular ones miss by 64 u, parallel ones by
-128 u, so every pass is a near-miss with three others. Each pair of consecutive passes is joined
-by a **rose-petal lobe** (`r = L + (R − L)·√sin 2θ`, apex ≈ 680 u out) that leaves along one axis
-and returns along a perpendicular one — a 270° turn. The petals point at six of the twelve
-cuboctahedron directions, three toward (1,1,1) and three toward (−1,−1,−1), visited alternately,
-so every pass through the nucleus flips you from one three-petal flower to the other. The strut
-order `X+ Z−↓ Y+ X−↓ Z+ Y−↓` (offset sign, ↓ = travelling negative) was picked by exhaustive search
-over all 1,408 valid orders: it is the one that is invariant under the 3-fold rotation about the
-diagonal *and* under inversion — the curve has S6 symmetry (a cyclohexane chair), every lobe is
-identical, and no lobe comes within 64 u of another strand.
+**Core passes.** Five straight chords through the nucleus cage. Each starts from a strut of a
+tensegrity icosahedron, is tilted off its axis by up to ~16° and pushed **130–185 u** from the
+centre, so the five chords cross the cage at five different places — string art, not a knot on the
+centre point. Strands never come within 119 u of each other.
 
-**Ribbon frame — the Escher part.** The ribbon lies flat in each lobe's plane. Consecutive lobe
-planes are perpendicular, so each core pass rolls the ribbon a quarter turn about the direction of
-travel: what was the floor on one lobe is a wall on the next — three orthogonal gravities, as in
-Escher's *Relativity*. The rolls alternate left/right (S6 is an improper symmetry, so a consistent
-handedness is impossible). This is authored as per-waypoint ribbon normals,
-`SpawnableWaypointTrack.waypointUps` (empty for I1–I3 = world up, unchanged), interpolated between
-waypoints exactly like the positions; world up would be undefined on a vertical pass anyway.
+**Lobes.** One petal per pair of consecutive passes, and every one is different:
+
+| Lobe | Reach | Apex turn radius | Character |
+|---|---|---|---|
+| 0 (start) | 701 u | 215 u | the hairpin — tight, pointed, the start apex |
+| 1 | 1,069 u | 405 u | the sweeper — the widest, slowest-turning lobe, bowed out of its plane |
+| 2 | 984 u | 342 u | long and round |
+| 3 | 803 u | 250 u | short, apex skewed early (the turn tightens as you enter) |
+| 4 | 880 u | 298 u | medium, apex skewed late |
+
+**History — why it looks like this.** The first Relativity (2026-10-08, morning) was fully
+symmetric (S6): six identical rose petals and six struts all within 64 u of the centre. Review
+rejected it: *"too much repetition of curvature and piled up too much in the center."* The tables
+were then found by a cross-entropy search over pass offsets/tilts/lengths and lobe reach,
+fullness, warp and skew, holding every constraint below while pulling the lobes' turn radii and
+reaches onto a ladder. The generator now ASSERTS both review points: lobe reaches must span
+≥ 200 u and lobe turn radii ≥ 60 u, and no pass may come within 100 u of the centre. (The
+symmetric placeholder fails both variety asserts — watched.)
+
+**Ribbon frame — the Escher part.** The ribbon lies flat in each lobe's plane (its floor). Each
+core pass rolls the ribbon about the direction of travel onto the next lobe's floor: here **2°,
+74°, −74°, 75° and 12°** — some passes keep the floor, others turn it into a wall, as in Escher's
+*Relativity*. Authored as per-waypoint ribbon normals, `SpawnableWaypointTrack.waypointUps`
+(empty for I1–I3 = world up, unchanged), interpolated between waypoints exactly like the positions.
 
 **Start.** The knot is rigidly rotated so lobe 0's apex sits just ahead of the shared spawn stack
-(apex ≈ (678, 0, 12), heading +Z, ribbon horizontal): the grid lines up above and below the road,
-the first crystal is on the apex (a launch pickup), and the first turn dives into the nucleus.
+(apex ≈ (701, 0, 0), heading +Z, ribbon horizontal): the grid lines up above and below the road,
+the first crystal is ~70 u past the apex, and the hairpin dives into the nucleus.
 
-**Crystals.** One anchor every 1/24 of a lap (~462 u), phased so one sits on every core pass (on
-the strut, inside the weave — the pickup is a near-miss with the crossing struts) and every lobe
-apex: core, out-arm, apex, in-arm per lobe. 24 × 2 laps = **48**. The last crystal of a lap is
-lobe 0's out-arm, just after the sixth nucleus pass.
+**Crystals.** One anchor on every core pass (its point of closest approach to the centre — the
+pickup is inside the weave) and each pass-to-pass span divided evenly at ~470 u, so a long lobe
+carries more crystals than a short one: 25 per lap × 2 = **50**.
 
 **What the generator proves before it writes** (on the prisms as `Spawn` lays them — 12 u
-Catmull-Rom spacing, same up interpolation): strand clearance ≥ 60 u (measured 64.0), tightest
-turn radius ≥ 200 u (measured 204; the Squirrel turns a 143 u circle at 300 u/s before lag),
-spline within 3 u of the analytic curve (1.44), ribbon roll ≤ 25° between waypoints (22.3),
-laid up ⊥ forward, start alignment, 24 anchors on the ribbon with one per core pass, exactly six
-passes inside r = 120 per lap, lap length 10–12.5 k u. Negative controls: a mutated scene is named
-by `--check`; `CORE_GAP = 40` fails the clearance assert.
+Catmull-Rom spacing, same up interpolation): strand clearance ≥ 100 u (measured 119.4), tightest
+turn radius ≥ 200 u (209; the Squirrel turns a 143 u circle at 300 u/s before lag), centre miss
+≥ 100 u (130), lobe reach spread ≥ 200 u (368), lobe turn spread ≥ 60 u (190), spline within 3 u
+of the analytic curve (1.50), ribbon roll ≤ 25° between waypoints (14.1), laid up ⊥ forward,
+start alignment, every anchor on the ribbon with one per core pass, exactly five passes inside
+r = 330 per lap, lap 10.5–13.5 k u. A mutated scene is named by `--check`.
 
-**Numbers.** Lap 11,083 u, 111 waypoints, 888 prisms (I3: ~848), reach 679 u — the whole knot
-fits inside the radius-700 envelope the other intensities use. Two laps at the Squirrel's 300 u/s
-top speed take ~74 s, so a perfect race is ~75–80 s; a pilot who leaves the ribbon to cut a lobe
-loses the skim boost that makes 300 u/s possible.
+**Numbers.** Lap 11,954 u, 171 waypoints, 1,026 prisms, reach 1,069 u. Two laps of crystal
+chords are ~22,700 u (76 s at the Squirrel's 300 u/s top speed); the ribbon is 23,900 u (80 s).
 
 ### 6. Ready State & Countdown
 

@@ -132,7 +132,7 @@ POLICIES = {
     # calibrated sim, second round uncapped). Makes the 54-crystal sequence COMPLETABLE (sim 40/40,
     # median ~152 s) - it does NOT meet the 70 s benchmark. Docs/SKIM_RACE_AI.md 6.2.
     # I4 became Relativity (2026-10-08): this policy, unchanged, completes it (sim 40/40, median
-    # ~150 s); a 16-generation re-tune on the new course was within noise and was not shipped (6.12).
+    # ~151 s); a 16-generation re-tune was within noise and was not shipped (6.12).
     "SkimRaceAIConfig_I4": {
         "PolicyVersion": "skimrace-v1-i4",
         "LookaheadSeconds": 0.562,

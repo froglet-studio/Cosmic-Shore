@@ -12,7 +12,7 @@ the vessel through the same input channels a human uses. Code:
 | Scene | `MinigameSkimRace` (`GameModes.SkimRace = 33`), launched through the normal arcade path (`SyncFromArcadeGame` + `ConfigurePlayerCounts` + `InvokeGameLaunch`) |
 | Field | 2 seats: the host (human seat, left idle on its own domain) + one AI backfill seat. The AI is alone on its domain, so the domain target is the AI's own work |
 | Vessel | Squirrel (the card is Squirrel-only) |
-| Required crystals | `CrystalTargetCount` = crystals per lap x laps (crystals per lap = `SpawnableWaypointTrack.crystalsPerLap`, else the waypoint count): I1 8x3 = **24**, I2 10x3 = 30, I3 28x2 = 56, I4 24x2 = 48 (Relativity, 2026-10-08; was 27x2 = 54 on the old 3D polyline) |
+| Required crystals | `CrystalTargetCount` = crystals per lap x laps (crystals per lap = `SpawnableWaypointTrack.crystalsPerLap`, else the waypoint count): I1 8x3 = **24**, I2 10x3 = 30, I3 28x2 = 56, I4 25x2 = 50 (Relativity, 2026-10-08; was 27x2 = 54 on the old 3D polyline) |
 | Crystal placement | Each player has ONE crystal in their domain; on pickup the manager moves it to the next authored anchor plus a random point on a 35 u sphere (`CrystalManager.GetSpawnPointAroundAnchor`). Randomisation is preserved; nothing is seeded for the AI |
 | Timer | The game's own race clock: `SkimRaceScoreTracker` accumulates from `OnMiniGameTurnStarted`; `SkimRaceController` writes it into the winners' `Score` when the domain reaches the target |
 | Success | The AI's domain wins, its collected count reaches the target, and the authoritative finish time is <= the intensity's limit (`SkimRaceRaceRecorder.Evaluate`) |
@@ -25,7 +25,7 @@ Geometry that bounds what is possible (route = anchor-to-anchor, top speed 300 u
 | 1 flat octagon | 24 | ~12,400 u | 41 s |
 | 2 tilted spline loop | 30 | ~15,200 u | 51 s |
 | 3 dumbbell | 56 | ~37,000 u | **124 s — 70 s is physically impossible for one pilot** |
-| 4 Relativity knot (2026-10-08) | 48 | ~20,700 u (crystal chords; ribbon 22,166 u) | 69 s chords / 74 s on the ribbon |
+| 4 Relativity knot (2026-10-08) | 50 | ~22,700 u (crystal chords; ribbon 23,900 u) | 76 s chords / 80 s on the ribbon |
 
 ## 2. The Squirrel, measured
 
@@ -386,31 +386,33 @@ gain is. Tuned values the code does not read under these switches (`Level*`, `Ca
 
 ### 6.12 Intensity 4 replaced by Relativity (2026-10-08)
 
-I4's course is now **Relativity** (`SKIMRACE.md` §5a): six rose-petal lobes joined by six core
-passes that weave through the nucleus 64 u apart, the ribbon rolling a quarter turn per pass
-(authored per-waypoint normals), 24 crystals/lap x 2 = 48, crystal anchors ON the ribbon with one
-on every core pass. Everything in §6.2 and §6.7-6.8 about I4 describes the OLD 3D polyline. The
-simulator lays the new course from the scene, normals included (`run.sh` exports `waypointUps` and
-`crystalsPerLap`; `Sim.cs` interpolates the normals exactly as `ResolveBlockPose` does).
+I4's course is now **Relativity** (`SKIMRACE.md` §5a): five lobes of different reach and turn
+radius (215-405 u apex turns) joined by five chords that cross the nucleus cage 130-185 u from
+the centre, the ribbon rolling onto each lobe's plane through the passes (authored per-waypoint
+normals), 25 crystals/lap x 2 = 50, anchors ON the ribbon with one on every core pass. Everything
+in §6.2 and §6.7-6.8 about I4 describes the OLD 3D polyline. The simulator lays the new course
+from the scene, normals included (`run.sh` exports `waypointUps` and `crystalsPerLap`; `Sim.cs`
+interpolates the normals exactly as `ResolveBlockPose` does).
 
-Measured (calibrated physics `ph.Dt=0.026 ph.DtJitter=0.5`, `limit=120`, the same 40 fresh seeds,
-`seedbase=99000`; a race is cut at 180 s):
+Measured, shipped `skimrace-v1-i4` policy (tuned on the old polyline, unchanged), calibrated
+physics `ph.Dt=0.026 ph.DtJitter=0.5`, `limit=120`, 40 fresh seeds (`seedbase=99000`), a race cut
+at 180 s:
 
-| Policy | 1 AI seat | 2 AI seats (every seat finished) |
+| Course | 1 AI seat | 2 AI seats |
 |---|---|---|
-| shipped `skimrace-v1-i4` (tuned on the old polyline) | 40/40, median 150.4 s, worst 173 s | 7/40; first finisher median 150.7 s |
-| CEM, 16 gens x 24 x 8 seeds from it, sigma 0.12 | 39/40, median 145.7 s | 11/40; first finisher median 142.2 s |
+| final Relativity (five varied lobes) | 40/40, median 151.2 s, worst 172.9 s | every seat finished in 4/40; first finisher median 149.0 s |
+| first Relativity (six symmetric lobes, rejected in review) | 40/40, median 150.4 s | 7/40; first finisher median 150.7 s |
 
-Crystal placement was also varied (anchors lifted 0 / 12 / 24 u off the ribbon along its normal,
-24 seeds, shipped policy): median 146 / 150 / 161 s - no gain, anchors stay on the ribbon. The tune
-is within noise of the shipped policy and loses a race, so **no policy change shipped**: the
-shipped I4 policy already completes the new course. Strikes per race (shipped, 1 seat): track
-crossing 3.9, track pull 3.5, own rail 1.5 - fewer than on the old polyline.
+On the first (symmetric) course a 16-generation CEM re-tune reached 39/40 at median 145.7 s -
+within noise, one race lost - and anchors lifted 0/12/24 u off the ribbon gave 146/150/161 s, so
+neither shipped and neither was repeated on the final course. Strikes per race on the final course
+(1 seat): track crossing 3.7, track pull 3.6, own rail 1.3. With two seats the second seat adds
+other-rail 3.7 and pickup-ring 2.9 strikes, which is what leaves it unfinished inside 180 s.
 
-The 70 s limit is effectively out of reach on Relativity: two laps of crystal-to-crystal chords
-are ~20,700 u, **69 s at 300 u/s** with zero time lost to any turn, and the ribbon itself is
-22,166 u (74 s). Same situation as I3; re-baselining the I4 limit is a product decision (as I2's
-was, §6.11) and has not been made.
+The 70 s limit is out of reach on Relativity: two laps of crystal-to-crystal chords are
+~22,700 u, **76 s at 300 u/s** with zero time lost to any turn, and the ribbon itself is 23,900 u
+(80 s). Same situation as I3; re-baselining the I4 limit is a product decision (as I2's was,
+§6.11) and has not been made.
 
 ## 7. Running the benchmark
 
@@ -689,7 +691,7 @@ not (90-128 s, §8.0c).**
   per race and no lever or tune tried reduces that without losing more time (§6.8).
 - **I4: not met, and not reachable with this approach.** Even with every hull contact switched off
   the simulator needs ~124 s for one AI seat (§6.7, old polyline). On Relativity (§6.12) the
-  shipped policy completes in ~150 s median and 70 s is below the ~69-74 s physical floor.
+  shipped policy completes in ~151 s median and 70 s is below the ~76-80 s physical floor.
 - **I3: not attempted; physically impossible** (56 crystals over ~37,000 u needs 528 u/s; the
   Squirrel tops out at 300 u/s).
 - **I2 second pass (§6.10):** best real result 96.8 s race median at 2 AI seats (lane step 1 +

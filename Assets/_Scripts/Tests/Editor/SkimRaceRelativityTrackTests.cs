@@ -34,14 +34,14 @@ namespace CosmicShore.Tests
         public void TearDown() => PrefabUtility.UnloadPrefabContents(_root);
 
         [Test]
-        public void CrystalsPerLap_LegacyIntensitiesFallBackToWaypointCount_RelativityAuthors24()
+        public void CrystalsPerLap_LegacyIntensitiesFallBackToWaypointCount_RelativityAuthors25()
         {
             for (int intensity = 1; intensity <= 3; intensity++)
                 Assert.AreEqual(_track.waypoints[intensity - 1].positions.Count, _track.CrystalsPerLap(intensity),
                     $"I{intensity} authors no crystalsPerLap, so a lap must stay worth one crystal per waypoint");
 
-            Assert.AreEqual(24, _track.CrystalsPerLap(4));
-            Assert.Greater(_track.waypoints[3].positions.Count, 24,
+            Assert.AreEqual(25, _track.CrystalsPerLap(4));
+            Assert.Greater(_track.waypoints[3].positions.Count, 25,
                 "I4's waypoints are a dense spline sample - if this fails the target would be waypoints x laps");
         }
 
@@ -70,13 +70,13 @@ namespace CosmicShore.Tests
                 Vector3 nextUp = blocks[(i + 1) % blocks.Count].Rotation * Vector3.up;
                 worstStep = Mathf.Max(worstStep, Vector3.Angle(up, nextUp));
             }
-            // 12 u apart, a quarter roll over a 600 u pass plus the lobe's own curvature: a few degrees.
+            // 12 u apart, at most a 75-degree roll over a ~600 u pass plus the lobe's own curvature: a few degrees.
             // A sign slip between two waypoint normals would show here as a ~180-degree step.
             Assert.Less(worstStep, 10f, "the ribbon flips between two consecutive prisms");
         }
 
         [Test]
-        public void Relativity_StrandsNeverComeWithin60Units()
+        public void Relativity_StrandsNeverComeWithin100Units()
         {
             var p = _track.GetPreviewBlocks(4).Select(b => b.Position).ToList();
             int n = p.Count;
@@ -88,17 +88,19 @@ namespace CosmicShore.Tests
                 if (n - (j - i) < gap) continue;
                 best = Mathf.Min(best, Vector3.Distance(p[i], p[j]));
             }
-            Assert.GreaterOrEqual(best, 60f, "two strands of the knot pass closer than the generator allows");
+            Assert.GreaterOrEqual(best, 100f, "two strands of the knot pass closer than the generator allows");
         }
 
         [Test]
-        public void Relativity_ThreadsTheNucleusSixTimesALap()
+        public void Relativity_ThreadsTheNucleusFiveTimesALap_WithoutPilingUpOnTheCentre()
         {
             var p = _track.GetPreviewBlocks(4).Select(b => b.Position).ToList();
             int entries = 0;
             for (int i = 0; i < p.Count; i++)
-                if (p[i].magnitude < 120f && p[(i + p.Count - 1) % p.Count].magnitude >= 120f) entries++;
-            Assert.AreEqual(6, entries);
+                if (p[i].magnitude < 330f && p[(i + p.Count - 1) % p.Count].magnitude >= 330f) entries++;
+            Assert.AreEqual(5, entries);
+            Assert.GreaterOrEqual(p.Min(x => x.magnitude), 100f,
+                "a pass runs through the centre point - the passes are meant to cross the cage at different places");
         }
     }
 }

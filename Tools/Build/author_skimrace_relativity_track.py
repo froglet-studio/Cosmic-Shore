@@ -1,33 +1,38 @@
 #!/usr/bin/env python3
 """Author Skim Race intensity 4 - "Relativity" - into MinigameSkimRace.unity.
 
-The track is a closed space curve with S6 symmetry (a 60-degree rotoreflection about the
-(1,1,1) diagonal, the symmetry of a cyclohexane chair), built from two pieces:
+A closed space curve that threads the cell's nucleus five times a lap, built from two pieces:
 
-  * SIX CORE PASSES - the six struts of a tensegrity icosahedron (two parallel struts per
-    axis, X struts offset along Z, Y along X, Z along Y). Struts never meet: perpendicular
-    struts pass CORE_GAP apart, parallel ones 2 x CORE_GAP. The whole weave sits inside the
-    nucleus cage, so every lap threads the cell's centre six times and every pass is a
-    near-miss with three others - whoever is on them.
-  * SIX LOBES - one rose petal per pair of consecutive passes, leaving along one axis and
-    returning along a perpendicular one (a 270-degree turn). The petals point at six of the
-    twelve cuboctahedron directions: a three-petal flower toward (1,1,1) and its inverse
-    toward (-1,-1,-1), visited alternately, so each pass through the nucleus flips you from
-    one flower to the other and every lobe is in view of the core.
+  * FIVE CORE PASSES - straight chords through the nucleus cage. Each starts from a strut of a
+    tensegrity icosahedron (two parallel struts per axis, X split along Z, Y along X, Z along Y)
+    and is then tilted off its axis and pushed 130-185 u from the centre, so the five chords cross
+    the cage at five different places, like string art - never all at one point. Every pass is
+    still a near-miss with the others (>= 100 u), and racers on different lobes keep seeing each
+    other cut across the core.
+  * FIVE LOBES - one petal per pair of consecutive passes, leaving along one chord and returning
+    along the next. Every lobe has its own character: reach 700 -> 1070 u, apex turn radius
+    215 -> 405 u (a hairpin, a sweeper and three between), petal fullness, out-of-plane warp and
+    apex skew all differ, so no two lobes ride alike.
 
-The ribbon lies flat in each lobe's plane. Consecutive lobe planes are perpendicular, so each
-core pass rolls the ribbon a quarter turn (alternating left/right - the symmetry is improper,
-so the handedness must alternate): what was the floor on one lobe is a wall on the next. That
-is Escher's Relativity, three orthogonal gravities, and it is authored as per-waypoint ribbon
-normals (SpawnableWaypointTrack.waypointUps) - world up is undefined on a vertical pass.
+The parameter tables below were found by a cross-entropy search (offsets, tilts, half-lengths,
+reach, fullness, warp, skew) that held strand clearance, turn radius, lap length, centre miss and
+reach to the asserts below while pulling the lobes' turn radii and reaches onto a LADDER - the
+first, fully symmetric version had six identical petals and six passes within 64 u of the centre,
+and was rejected in review for exactly that ("repetition of curvature, piled up in the center").
+The asserts now hold the line: MIN_LOBE_REACH_SPREAD, MIN_LOBE_TURN_SPREAD, MIN_CENTRE_MISS.
 
-Crystals: one anchor every 1/24 of a lap, phased so one sits on every core pass and every
-lobe apex (core, out-arm, apex, in-arm per lobe). Target = 24 x 2 laps = 48, set through the
-track's crystalsPerLap (the waypoint list is a dense spline sample, not one point per crystal).
+The ribbon lies flat in each lobe's plane (its floor). Each core pass rolls the ribbon about the
+direction of travel onto the next lobe's floor - here 2, 74, -74, 75 and 12 degrees: some passes
+keep the floor, others turn it into a wall (Escher's Relativity). Authored as per-waypoint ribbon
+normals (SpawnableWaypointTrack.waypointUps).
 
-The race starts at a lobe apex: the whole knot is rotated so lobe 0's apex sits just ahead of
-the shared spawn stack at (700, y, -200), heading +Z with the ribbon horizontal, so the grid
-lines up above and below the road and the first turn dives into the nucleus.
+Crystals: one anchor on every core pass (its point of closest approach to the centre) and each
+pass-to-pass span divided evenly at ~ANCHOR_SPACING, so a long lobe carries more crystals than a
+short one. Crystals per lap is written to the track's crystalsPerLap (the waypoint list is a dense
+spline sample, not one point per crystal); target = crystals per lap x LAPS.
+
+The race starts at lobe 0's apex: the whole knot is rotated so that apex sits just ahead of the
+shared spawn stack at (700, y, -200), heading +Z with the ribbon horizontal.
 
 Everything is validated BEFORE a byte is written, on the prisms as SpawnableWaypointTrack.Spawn
 actually lays them (12 u Catmull-Rom spacing, the same up interpolation):
@@ -52,27 +57,48 @@ BAKE = os.path.join(ROOT, "Assets/_Prefabs/Environment/Spawners/SkimRaceWaypoint
 INTENSITY = 4
 
 # ---------------------------------------------------------------- the design (tune here)
-CORE_GAP = 64.0        # perpendicular-strut miss distance at the core (centre line to centre line)
-STRUT_HALF = 300.0     # each core pass runs +-STRUT_HALF along its axis
-LOBE_R = 655.0         # petal apex radius (before the strut-offset blend)
-LOBE_SHAPE = 0.5       # r(th) = L + (R - L) * sin(2 th)^SHAPE; 0.5 = finite curvature at the joint
-WAYPOINT_SPACING = 100.0
-ANCHORS_PER_LAP = 24
-ANCHOR_LIFT = 0.0      # crystal anchors sit this far above the ribbon, along its normal (the local floor)
+# Five core passes. Each is a straight chord through the nucleus cage: it starts from one strut of a
+# tensegrity icosahedron (axis, which side of the axis it is offset to, direction of travel) and is
+# then TILTED off that axis (a rotation vector, radians) and pushed OFFSET units from the centre, so
+# the five chords cross the cage at six different places instead of piling up on the centre point.
+# HALF is the chord's half-length; the lobe takes over where the chord ends.
+#            axis side travel  tilt (rotation vector, rad)          offset   half
+PASSES = [
+    ("X",  1,  1, (-0.2618, -0.0922, -0.0055), 130.1, 297.6),
+    ("Z", -1, -1, (0.1565, -0.0831, -0.2380), 185.5, 281.6),
+    ("Y",  1,  1, (-0.1169, -0.0153, 0.2720), 174.2, 328.6),
+    ("X", -1, -1, (-0.0442, 0.0741, -0.1904), 146.7, 352.3),
+    ("Z",  1,  1, (0.1017, -0.0057, -0.0391), 175.2, 363.8),
+]
+# Five lobes, lobe i joining pass i's exit to pass i+1's entry: a petal in the plane of the two
+# passes, r = base + (REACH - base) * sin(pi g)^FULL. Every lobe has its own character, so no two
+# turns ride alike: REACH (how far out), FULL (0.33 = a pointed petal with a tight apex, 0.6 = a
+# full round one), WARP (how far the lobe bows out of its plane, x REACH) and SKEW (the apex slides
+# toward the exit or the entry arm, so the turn tightens early or late).
+#          reach   full   warp    skew
+LOBES = [
+    (668.2, 0.567, -0.006, -0.118),
+    (978.6, 0.484, -0.154, 0.218),
+    (901.5, 0.541, -0.056, 0.062),
+    (738.4, 0.528, 0.055, -0.211),
+    (836.3, 0.474, 0.078, -0.074),
+]
+WAYPOINT_SPACING = 70.0
+ANCHOR_SPACING = 470.0  # target arc between crystal anchors; each pass->pass span is divided evenly
+ANCHOR_LIFT = 0.0       # crystal anchors sit this far above the ribbon, along its normal (the local floor)
 LAPS = 2
-
-# The strut sequence: (axis, offset sign, travel sign). Consecutive axes differ (every lobe is a
-# 270-degree petal), the six lobe quadrants are distinct, and the sequence is invariant under the
-# 3-fold rotation (x,y,z)->(z,x,y) shifted by two and under inversion shifted by three: S6.
-SEQUENCE = [("X", 1, 1), ("Z", -1, -1), ("Y", 1, 1), ("X", -1, -1), ("Z", 1, 1), ("Y", -1, -1)]
 
 # ---------------------------------------------------------------- what the track must satisfy
 SPAWN = (700.0, 0.0, -200.0)  # the scene's PlayerOrigin stack (y = -20..20), facing +Z
-MIN_STRAND_CLEARANCE = 60.0   # prism centre to prism centre, strands >= 480 u apart along the track
+MIN_STRAND_CLEARANCE = 100.0  # prism centre to prism centre, strands >= 480 u apart along the track
+MIN_CENTRE_MISS = 100.0       # no pass comes nearer the cell centre than this (the core must not pile up)
 MIN_CURVATURE_RADIUS = 200.0  # Squirrel: 300 u/s at 120 deg/s turns on a 143 u circle, before lag
+MIN_LOBE_REACH_SPREAD = 200.0 # farthest lobe reach - nearest lobe reach: the lobes must not repeat
+MIN_LOBE_TURN_SPREAD = 60.0   # widest lobe turn radius - tightest: nor may their turns
 MAX_SPLINE_DEVIATION = 3.0    # laid ribbon vs the analytic curve
 MAX_UP_STEP_DEG = 25.0        # ribbon roll between consecutive waypoints (the runtime interpolates)
-LAP_RANGE = (10000.0, 12500.0)
+LAP_RANGE = (10500.0, 13500.0)
+NUCLEUS_R = 330.0             # a pass counts as threading the nucleus once it is inside this radius
 
 AXES = {"X": (1.0, 0.0, 0.0), "Y": (0.0, 1.0, 0.0), "Z": (0.0, 0.0, 1.0)}
 OFFSET_AXIS = {"X": "Z", "Y": "X", "Z": "Y"}   # tensegrity: which axis each strut pair is split along
@@ -98,46 +124,77 @@ def smoothstep(x):
     return x * x * (3 - 2 * x)
 
 
+def rotvec(v, w):
+    """v rotated by the rotation vector w (axis * angle)."""
+    ang = norm(w)
+    return v if ang < 1e-12 else rotate_about(v, mul(w, 1.0 / ang), ang)
+
+
 def strut(i):
-    axis, off, travel = SEQUENCE[i % len(SEQUENCE)]
-    return mul(AXES[OFFSET_AXIS[axis]], off * CORE_GAP), mul(AXES[axis], float(travel))
+    """(offset point, unit direction, half-length) of core pass i."""
+    axis, side, travel, tilt, offset, half = PASSES[i % len(PASSES)]
+    d = rotvec(mul(AXES[axis], float(travel)), tilt)
+    o = mul(unit(rotvec(mul(AXES[OFFSET_AXIS[axis]], float(side)), tilt)), offset)
+    return o, d, half
 
 
 def lobe_normal(i):
     """Plane normal of lobe i (between pass i and pass i+1): e1 x e2, e1 = out arm, e2 = in arm."""
-    _, d0 = strut(i)
-    _, d1 = strut(i + 1)
+    _, d0, _ = strut(i)
+    _, d1, _ = strut(i + 1)
     return unit(cross(d0, mul(d1, -1.0)))
 
 
+def slerp_dir(a, b, f):
+    om = math.acos(max(-1.0, min(1.0, dot(a, b))))
+    s = math.sin(om)
+    return add(mul(a, math.sin((1 - f) * om) / s), mul(b, math.sin(f * om) / s))
+
+
+def floor_normals():
+    """Each lobe's floor (its plane normal, sign chosen so the pass into it rolls <= 90 degrees) and
+    the signed roll each pass makes about its own direction of travel to get there."""
+    n = len(PASSES)
+    floors = [lobe_normal(0)]
+    for i in range(1, n):
+        nl = lobe_normal(i)
+        floors.append(nl if dot(nl, floors[-1]) >= 0 or abs(dot(nl, floors[-1])) < 1e-9 else mul(nl, -1.0))
+    rolls = []
+    for i in range(n):
+        _, d, _ = strut(i)
+        a, b = floors[i - 1], floors[i]
+        rolls.append(math.atan2(dot(cross(a, b), d), dot(a, b)))
+    return floors, rolls
+
+
 # ---------------------------------------------------------------- the analytic curve
-def dense_curve(step=2.0):
+def dense_curve(step=3.0, lobe_samples=1400):
     """[(point, normal, tag)] around one lap starting at pass 0's entry. tag = ('S'|'L', i, param)."""
     out = []
-    n = len(SEQUENCE)
+    n = len(PASSES)
+    floors, rolls = floor_normals()
     for i in range(n):
-        o0, d0 = strut(i)
-        o1, d1 = strut(i + 1)
+        o0, d0, h0 = strut(i)
+        o1, d1, h1 = strut(i + 1)
         # core pass i: roll from lobe i-1's floor to lobe i's floor about the travel axis
-        n_in, n_out = lobe_normal(i - 1), lobe_normal(i)
-        roll = math.atan2(dot(cross(n_in, n_out), d0), dot(n_in, n_out))
-        m = int(round(2 * STRUT_HALF / step))
+        m = int(2 * h0 / step)
         for k in range(m):
             u = k / m
-            p = add(o0, mul(d0, -STRUT_HALF + 2 * STRUT_HALF * u))
-            out.append((p, rotate_about(n_in, d0, roll * smoothstep(u)), ("S", i, u)))
-        # lobe i: rose petal from pass i's exit (along d0) back into pass i+1 (along d1)
+            p = add(o0, mul(d0, -h0 + 2 * h0 * u))
+            out.append((p, rotate_about(floors[i - 1], d0, rolls[i] * smoothstep(u)), ("S", i, u)))
+        # lobe i: a petal from pass i's exit (along d0) back into pass i+1 (along d1)
         e1, e2 = d0, mul(d1, -1.0)
         nl = lobe_normal(i)
-        m = 1600
-        for k in range(m):
-            # th eases in and out (th ~ v^2 at both ends): r - L grows like sqrt(th) at the joints,
-            # so uniform th would leave the dense reference coarse exactly where the lobe meets the pass.
-            th = (math.pi / 4) * (1 - math.cos(math.pi * k / m))
-            r = STRUT_HALF + (LOBE_R - STRUT_HALF) * max(math.sin(2 * th), 0.0) ** LOBE_SHAPE
-            w = smoothstep(th / (math.pi / 2))
-            p = add(mul(add(mul(e1, math.cos(th)), mul(e2, math.sin(th))), r), lerp(o0, o1, w))
-            out.append((p, nl, ("L", i, th)))
+        reach, full, warp, skew = LOBES[i]
+        for k in range(lobe_samples):
+            # f eases in and out: r - base grows like sin^FULL, so uniform steps would leave the dense
+            # reference coarse exactly where the lobe meets the pass.
+            f = 0.5 * (1 - math.cos(math.pi * k / lobe_samples))
+            g = f + skew * math.sin(math.pi * f) * f * (1 - f) * 4   # monotone for |skew| < 0.25
+            sg = smoothstep(g)
+            r = h0 + (h1 - h0) * sg + (reach - 0.5 * (h0 + h1)) * max(math.sin(math.pi * g), 0.0) ** full
+            p = add(add(mul(slerp_dir(e1, e2, g), r), lerp(o0, o1, sg)), mul(nl, warp * reach * math.sin(math.pi * g)))
+            out.append((p, floors[i], ("L", i, g)))
     return out
 
 
@@ -169,6 +226,27 @@ def sample_at(pts, s_tab, s):
     return lo, lerp(pts[lo], pts[(lo + 1) % len(pts)], t)
 
 
+def resample_open(pts, step):
+    s = [0.0]
+    for k in range(1, len(pts)):
+        s.append(s[-1] + norm(sub(pts[k], pts[k - 1])))
+    out, j = [], 0
+    x = 0.0
+    while x <= s[-1]:
+        while s[j + 1] < x:
+            j += 1
+        seg = s[j + 1] - s[j]
+        out.append(lerp(pts[j], pts[j + 1], (x - s[j]) / seg if seg > 0 else 0.0))
+        x += step
+    return out
+
+
+def circle_radius(a, b, c):
+    ab, bc, ac = norm(sub(b, a)), norm(sub(c, b)), norm(sub(c, a))
+    area = norm(cross(sub(b, a), sub(c, a))) / 2
+    return ab * bc * ac / (4 * area) if area > 1e-9 else 1e9
+
+
 def project_normal(nrm, tan):
     return unit(sub(nrm, mul(tan, dot(nrm, tan))))
 
@@ -182,8 +260,10 @@ def build():
     s_tab = arc_lengths(pts)
     lap = s_tab[-1]
 
-    # Lobe 0's apex (th = pi/4) is the start line.
-    apex_k = next(k for k, c in enumerate(curve) if c[2][0] == "L" and c[2][1] == 0 and c[2][2] >= math.pi / 4)
+    # Lobe 0's apex - its farthest point from the centre, where the tangent is square to the radius -
+    # is the start line.
+    lobe0 = [k for k, c in enumerate(curve) if c[2][0] == "L" and c[2][1] == 0]
+    apex_k = max(lobe0, key=lambda k: norm(pts[k]))
     s0 = s_tab[apex_k]
 
     # Rigid rotation: apex radial -> +X, apex tangent -> +Z (so the ribbon is horizontal at the start).
@@ -205,14 +285,18 @@ def build():
         waypoints.append(p)
         ups.append(project_normal(nrms[k], tans[k]))
 
-    # Anchors: every lap/24 phased on the core-pass midpoints, listed from the first one ahead of the
-    # start line - which lands on the start apex itself (the asymmetric offset blend puts the apex
-    # anchor ~12 u past th = pi/4), so the race opens with a launch crystal and a lap's last crystal
-    # is lobe 0's out-arm, just after the sixth nucleus pass.
-    strut_mid0 = s_tab[next(k for k, c in enumerate(curve) if c[2][0] == "S" and c[2][1] == 0 and c[2][2] >= 0.5)]
-    spacing = lap / ANCHORS_PER_LAP
-    phase = (strut_mid0 - s0) % spacing
-    anchor_s = sorted(((phase + spacing * j) % lap) for j in range(ANCHORS_PER_LAP))
+    # Anchors: one on every core pass, at its point of closest approach to the centre (the chord's
+    # midpoint - the pickup sits inside the weave), and each pass-to-pass span (the lobe between
+    # them) divided evenly at ~ANCHOR_SPACING. A long lobe carries more crystals than a short one, so
+    # crystal density is even round the lap. Listed from the first one ahead of the start line.
+    mids = [s_tab[next(k for k, c in enumerate(curve) if c[2][0] == "S" and c[2][1] == i and c[2][2] >= 0.5)]
+            for i in range(len(PASSES))]
+    anchor_abs = []
+    for i in range(len(mids)):
+        a0, a1 = mids[i], mids[(i + 1) % len(mids)] + (lap if i == len(mids) - 1 else 0.0)
+        k = max(2, int(round((a1 - a0) / ANCHOR_SPACING)))
+        anchor_abs += [a0 + (a1 - a0) * j / k for j in range(k)]
+    anchor_s = sorted(((x - s0) % lap) for x in anchor_abs)
     anchor_s = [x for x in anchor_s if x > 1e-6] + [x for x in anchor_s if x <= 1e-6]
     anchors = []
     for x in anchor_s:
@@ -220,9 +304,17 @@ def build():
         anchors.append(add(p, mul(project_normal(nrms[k], tans[k]), ANCHOR_LIFT)))
     anchor_tags = [curve[sample_at(pts, s_tab, s0 + x)[0]][2] for x in anchor_s]
 
+    # Per-lobe character, measured (the variety asserts read these).
+    lobe_reach, lobe_turn = [], []
+    for i in range(len(LOBES)):
+        idx = [k for k, c in enumerate(curve) if c[2][0] == "L" and c[2][1] == i]
+        lobe_reach.append(max(norm(pts[k]) for k in idx))
+        q = resample_open([pts[k] for k in idx], 12.0)
+        lobe_turn.append(min(circle_radius(q[k - 3], q[k], q[k + 3]) for k in range(3, len(q) - 3)))
+
     return {"pts": pts, "s_tab": s_tab, "lap": lap, "waypoints": waypoints, "ups": ups,
             "anchors": anchors, "anchor_tags": anchor_tags, "curve": curve,
-            "symmetry_axis": rot(unit((1.0, 1.0, 1.0)))}
+            "lobe_reach": lobe_reach, "lobe_turn": lobe_turn}
 
 
 # ---------------------------------------------------------------- SpawnableWaypointTrack, ported
@@ -338,24 +430,37 @@ def validate(d):
     if not LAP_RANGE[0] <= lap <= LAP_RANGE[1]:
         errs.append(f"lap {lap:.0f} outside {LAP_RANGE}")
     anchors = d["anchors"]
-    if len(anchors) != ANCHORS_PER_LAP:
-        errs.append(f"{len(anchors)} anchors, want {ANCHORS_PER_LAP}")
     far = max(min(norm(sub(a, p)) for p in pos) for a in anchors)
     if far > ANCHOR_LIFT + 8.0:
         errs.append(f"an anchor sits {far:.1f} u off the laid ribbon")
     cores = [t for t in d["anchor_tags"] if t[0] == "S"]
-    if len(cores) != len(SEQUENCE):
-        errs.append(f"{len(cores)} anchors on core passes, want one per pass ({len(SEQUENCE)})")
+    if len(cores) != len(PASSES):
+        errs.append(f"{len(cores)} anchors on core passes, want one per pass ({len(PASSES)})")
     a0 = anchors[0]
-    if d["anchor_tags"][0][1] != 0 or norm(sub(a0, w0)) > 40 or a0[2] < w0[2]:
-        errs.append(f"the first crystal {fmt_vec(a0)} is not on the start apex, just past the start line")
-    nucleus_hits = sum(1 for k in range(n) if norm(pos[k]) < 120 and norm(pos[k - 1]) >= 120)
-    if nucleus_hits != len(SEQUENCE):
-        errs.append(f"{nucleus_hits} passes inside r=120 per lap, want {len(SEQUENCE)}")
+    ahead = dot(sub(a0, w0), fwd0)
+    if not 0 < ahead < 600:
+        errs.append(f"the first crystal {fmt_vec(a0)} is not just past the start line ({ahead:.0f} u)")
+
+    # 7. the core threads the nucleus once per pass, without piling up on the centre
+    nucleus_hits = sum(1 for k in range(n) if norm(pos[k]) < NUCLEUS_R and norm(pos[k - 1]) >= NUCLEUS_R)
+    if nucleus_hits != len(PASSES):
+        errs.append(f"{nucleus_hits} passes inside r={NUCLEUS_R:.0f} per lap, want {len(PASSES)}")
+    centre_miss = min(norm(p) for p in pos)
+    if centre_miss < MIN_CENTRE_MISS:
+        errs.append(f"a pass comes {centre_miss:.0f} u from the centre (< {MIN_CENTRE_MISS}) - the core piles up")
+
+    # 8. no two lobes alike
+    reach_spread = max(d["lobe_reach"]) - min(d["lobe_reach"])
+    turn_spread = max(d["lobe_turn"]) - min(d["lobe_turn"])
+    if reach_spread < MIN_LOBE_REACH_SPREAD:
+        errs.append(f"lobe reaches span only {reach_spread:.0f} u (< {MIN_LOBE_REACH_SPREAD}) - the lobes repeat")
+    if turn_spread < MIN_LOBE_TURN_SPREAD:
+        errs.append(f"lobe turn radii span only {turn_spread:.0f} u (< {MIN_LOBE_TURN_SPREAD}) - the turns repeat")
 
     stats = {"prisms": n, "clearance": clearance, "min_turn_radius": min_r, "spline_dev": dev,
              "up_step": step, "lap": lap, "waypoints": len(wps), "max_r": max(norm(p) for p in pos),
-             "core_passes": nucleus_hits}
+             "core_passes": nucleus_hits, "centre_miss": centre_miss, "crystals": len(anchors),
+             "lobe_reach": [round(x) for x in d["lobe_reach"]], "lobe_turn": [round(x) for x in d["lobe_turn"]]}
     return errs, stats
 
 
@@ -433,7 +538,7 @@ def patch_track(text, d):
     ups_sets = [[] for _ in range(4)]
     ups_sets[INTENSITY - 1] = d["ups"]
     per_lap = [0, 0, 0, 0]
-    per_lap[INTENSITY - 1] = ANCHORS_PER_LAP
+    per_lap[INTENSITY - 1] = len(d["anchors"])
     block = (f"  useSplinePerIntensity: {int_list_hex(spl)}\n"
              "  waypointUps:\n" + "".join(render_set(s, fmt_unit) for s in ups_sets) +
              f"  crystalsPerLap: {int_list_hex(per_lap)}\n")
@@ -491,10 +596,11 @@ def main():
     d = build()
     errs, st = validate(d)
     print(f"Relativity (Skim Race I{INTENSITY}): lap {st['lap']:.0f} u, {st['waypoints']} waypoints, "
-          f"{st['prisms']} prisms, {ANCHORS_PER_LAP} crystals/lap x {LAPS} = {ANCHORS_PER_LAP * LAPS}")
+          f"{st['prisms']} prisms, {st['crystals']} crystals/lap x {LAPS} = {st['crystals'] * LAPS}")
     print(f"  strand clearance {st['clearance']:.1f} u, tightest turn r {st['min_turn_radius']:.0f} u, "
           f"spline dev {st['spline_dev']:.2f} u, max roll/waypoint {st['up_step']:.1f} deg, "
-          f"reach {st['max_r']:.0f} u, nucleus passes/lap {st['core_passes']}")
+          f"reach {st['max_r']:.0f} u, nucleus passes/lap {st['core_passes']}, nearest the centre {st['centre_miss']:.0f} u")
+    print(f"  lobe reach {st['lobe_reach']}  lobe turn radius {st['lobe_turn']}")
     if errs:
         for e in errs:
             print("ERROR:", e)
