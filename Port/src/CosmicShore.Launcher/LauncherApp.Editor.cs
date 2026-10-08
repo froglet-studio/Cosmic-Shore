@@ -38,7 +38,7 @@ namespace CosmicShore.Launcher
             {
                 0 => "Every FrogletTools tool - the agent runs it on the project files, no Unity needed",
                 1 => "The game's ScriptableObject data sets - browse and edit fields; edits land in the workspace (commit on GIT)",
-                _ => "Every FBX model as Unity imports it - preview, meshes, materials, blend shapes, bones, takes",
+                _ => "Every model (FBX, Blender, Maya) as Unity imports it, in the game's colours - drag to turn, VIEW IN ENGINE",
             });
             ImGui.SetCursorScreenPos(new Vector2(b.X - 470, a.Y + 6));
             Segmented("edtab", new[] { "TOOLS", "DATA", "MODELS" }, _edTab, i => { _edTab = i; _edSearch = ""; }, Neon.Cyan);
@@ -498,7 +498,7 @@ namespace CosmicShore.Launcher
                     else
                     {
                         bool data = f.RefPath.EndsWith(".asset", StringComparison.OrdinalIgnoreCase);
-                        bool model = f.RefPath.EndsWith(".fbx", StringComparison.OrdinalIgnoreCase);
+                        bool model = IsModelFile(f.RefPath);
                         ImGui.TextColored(data || model ? Neon.Cyan : Neon.Ink, Trim(f.RefPath, 90));
                         if (ImGui.IsItemHovered())
                         {
@@ -569,8 +569,21 @@ namespace CosmicShore.Launcher
         string? _edModelPath;
         JsonDocument? _edModel;
         bool _edModelLoading, _edPreviewLoading;
-        int _edYaw = 145;
+        string? _edModelError;
+
+        /// <summary>A file Unity's ModelImporter takes: FBX, and Blender/Maya files through the installed application.</summary>
+        static bool IsModelFile(string path) =>
+            path.EndsWith(".fbx", StringComparison.OrdinalIgnoreCase) || DccOf(path) != null;
+
+        static string? DccOf(string? path) =>
+            path == null ? null
+            : path.EndsWith(".blend", StringComparison.OrdinalIgnoreCase) ? "BLENDER"
+            : path.EndsWith(".ma", StringComparison.OrdinalIgnoreCase) || path.EndsWith(".mb", StringComparison.OrdinalIgnoreCase) ? "MAYA"
+            : null;
         string? _edPreviewFile;
+        // The turntable sheet: frames around the model, cols to a row, the yaw of frame 0 and the step.
+        (int frames, int cols, double yaw0, double step) _edSheet = (1, 1, 145, 0);
+        float _edAngle = 145;
         readonly Dictionary<string, (uint tex, Vector2 size)> _edTex = new();
 
         void SelectModel(string path)
@@ -584,7 +597,7 @@ namespace CosmicShore.Launcher
                 try
                 {
                     var doc = await Ed.Json("model", path);
-                    if (_edModelPath == path) _edModel = doc; else doc?.Dispose();
+                    if (_edModelPath == path) { _edModel = doc; _edModelError = doc == null ? Ed.Error : null; } else doc?.Dispose();
                 }
                 finally { _edModelLoading = false; }
             });
@@ -593,28 +606,52 @@ namespace CosmicShore.Launcher
 
         static string PreviewDir => Path.Combine(LauncherSettings.DataDir, "previews");
 
+        /// <summary>
+        /// One turntable sheet per model (24 views, game colours) so dragging the preview turns it at
+        /// once; a branch whose cs-asset predates --turntable answers one picture, shown as it is.
+        /// </summary>
         void RenderPreview()
         {
             var path = _edModelPath;
             if (path == null) return;
             var full = Ed.FullPath(path);
             long stamp = File.Exists(full) ? File.GetLastWriteTimeUtc(full).Ticks : 0;
-            var key = Convert.ToHexString(System.Security.Cryptography.SHA1.HashData(System.Text.Encoding.UTF8.GetBytes($"{path}|{stamp}|{_edYaw}")))[..16];
+            var key = Convert.ToHexString(System.Security.Cryptography.SHA1.HashData(System.Text.Encoding.UTF8.GetBytes($"{path}|{stamp}|tt24")))[..16];
             var png = Path.Combine(PreviewDir, key + ".png");
-            if (File.Exists(png)) { _edPreviewFile = png; return; }
+            var meta = png + ".json";
+            if (File.Exists(png) && File.Exists(meta)) { _edSheet = ReadSheet(File.ReadAllText(meta)); _edPreviewFile = png; return; }
+            _edPreviewFile = null;
             _edPreviewLoading = true;
-            int yaw = _edYaw;
             Task.Run(async () =>
             {
                 try
                 {
                     Directory.CreateDirectory(PreviewDir);
-                    var (ok, _, err) = await Ed.Run("model-preview", path, "--out", png, "--size", "640", "--yaw", yaw.ToString());
-                    if (ok && _edModelPath == path && _edYaw == yaw) _edPreviewFile = png;
-                    else if (!ok) EdNote(err.Split('\n').FirstOrDefault(l => l.Trim().Length > 0) ?? "preview failed", "");
+                    var (ok, stdout, err) = await Ed.Run("model-preview", path, "--out", png, "--size", "320", "--turntable", "24", "--yaw", "145");
+                    if (ok)
+                    {
+                        File.WriteAllText(meta, stdout);
+                        if (_edModelPath == path) { _edSheet = ReadSheet(stdout); _edPreviewFile = png; }
+                    }
+                    else EdNote(err.Split('\n').FirstOrDefault(l => l.Trim().Length > 0) ?? "preview failed", "");
                 }
                 finally { _edPreviewLoading = false; }
             });
+        }
+
+        static (int frames, int cols, double yaw0, double step) ReadSheet(string json)
+        {
+            try
+            {
+                using var d = JsonDocument.Parse(json);
+                var r = d.RootElement;
+                int frames = r.TryGetProperty("frames", out var f) ? f.GetInt32() : 1;
+                int cols = r.TryGetProperty("cols", out var c) ? c.GetInt32() : 1;
+                double yaw0 = r.TryGetProperty("yaw", out var y) ? y.GetDouble() : 145;
+                double step = r.TryGetProperty("step", out var st) ? st.GetDouble() : 0;
+                return (Math.Max(1, frames), Math.Max(1, cols), yaw0, step);
+            }
+            catch (JsonException) { return (1, 1, 145, 0); }
         }
 
         unsafe (uint tex, Vector2 size) PngTexture(string file)
@@ -641,10 +678,10 @@ namespace CosmicShore.Launcher
         void DrawEdModels(Vector2 a, Vector2 b)
         {
             if (!_ws.Exists) { ImGui.SetCursorScreenPos(a); ImGui.TextColored(Neon.Dim, "No workspace yet: press START on PLAY once."); return; }
-            _edModels ??= Directory.EnumerateFiles(Path.Combine(_ws.Dir, "Assets"), "*.fbx", SearchOption.AllDirectories)
-                .Concat(Directory.EnumerateFiles(Path.Combine(_ws.Dir, "Assets"), "*.FBX", SearchOption.AllDirectories))
+            _edModels ??= Directory.EnumerateFiles(Path.Combine(_ws.Dir, "Assets"), "*", SearchOption.AllDirectories)
+                .Where(IsModelFile)
                 .Select(f => Path.GetRelativePath(_ws.Dir, f).Replace('\\', '/')).Distinct().OrderBy(f => f, StringComparer.OrdinalIgnoreCase).ToList();
-            if (_edOpen != null && _edOpen.EndsWith(".fbx", StringComparison.OrdinalIgnoreCase)) { SelectModel(_edOpen); _edOpen = null; }
+            if (_edOpen != null && IsModelFile(_edOpen)) { SelectModel(_edOpen); _edOpen = null; }
             var dl = ImGui.GetWindowDrawList();
             float c1 = 320;
             var la = a; var lb = new Vector2(a.X + c1, b.Y);
@@ -656,7 +693,10 @@ namespace CosmicShore.Launcher
             {
                 ImGui.PushFont(Neon.Small); ImGui.TextColored(Neon.Dim, Trim(g.Key.Replace("Assets/", ""), 44)); ImGui.PopFont();
                 foreach (var m in g)
+                {
                     if (ImGui.Selectable("   " + Path.GetFileNameWithoutExtension(m) + "##" + m, _edModelPath == m)) SelectModel(m);
+                    if (DccOf(m) is { } dcc) { ImGui.SameLine(); ImGui.PushFont(Neon.Small); ImGui.TextColored(Neon.Violet, dcc); ImGui.PopFont(); }
+                }
             }
             ImGui.EndChild();
 
@@ -669,7 +709,10 @@ namespace CosmicShore.Launcher
             }
             dl.AddText(Neon.Strong, 15, ra + new Vector2(18, 12), Neon.U(Neon.Ink), Path.GetFileName(_edModelPath));
             dl.AddText(Neon.Small, 12, ra + new Vector2(18, 34), Neon.U(Neon.Dim), _edModelPath);
-            ImGui.SetCursorScreenPos(new Vector2(b.X - 290, ra.Y + 10));
+            ImGui.SetCursorScreenPos(new Vector2(b.X - 470, ra.Y + 10));
+            if (SmallButton("VIEW IN ENGINE", 174, !_jobs.Busy)) _jobs.ViewModel(_edModelPath);
+            if (ImGui.IsItemHovered()) ImGui.SetTooltip("Open it in Prisma's renderer with the game's materials:\ndrag to turn, wheel to zoom, Tab for another prefab's materials.");
+            ImGui.SameLine(0, 6);
             if (SmallButton("ASK CLAUDE", 130, true))
             {
                 var chat = _chats.New(); chat.Title = "Model: " + Path.GetFileNameWithoutExtension(_edModelPath);
@@ -683,26 +726,44 @@ namespace CosmicShore.Launcher
             float pv = Math.Min(460, (b.X - ra.X) * 0.48f);
             var pa = ra + new Vector2(18, 60);
             dl.AddRectFilled(pa, pa + new Vector2(pv, pv), Neon.U(Neon.Space0, 0.9f), 8);
+            // Drag across the picture to turn the model (the sheet's nearest view).
+            ImGui.SetCursorScreenPos(pa);
+            ImGui.InvisibleButton("##edturn", new Vector2(pv, pv));
+            if (ImGui.IsItemActive()) _edAngle = Wrap(_edAngle - ImGui.GetIO().MouseDelta.X * 0.6f);
+            if (ImGui.IsItemHovered()) ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeEW);
             if (_edPreviewFile != null && File.Exists(_edPreviewFile))
             {
                 var (tex, _) = PngTexture(_edPreviewFile);
-                if (tex != 0) dl.AddImageRounded((IntPtr)tex, pa, pa + new Vector2(pv, pv), Vector2.Zero, Vector2.One, Neon.U(Neon.Ink), 8);
+                var (frames, cols, yaw0, step) = _edSheet;
+                int rows = (frames + cols - 1) / cols;
+                int k = step > 0 ? ((int)Math.Round((_edAngle - yaw0) / step) % frames + frames) % frames : 0;
+                var uv0 = new Vector2((float)(k % cols) / cols, (float)(k / cols) / rows);
+                var uv1 = uv0 + new Vector2(1f / cols, 1f / rows);
+                if (tex != 0) dl.AddImageRounded((IntPtr)tex, pa, pa + new Vector2(pv, pv), uv0, uv1, Neon.U(Neon.Ink), 8);
             }
             if (_edPreviewLoading) dl.AddText(Neon.Small, 13, pa + new Vector2(12, pv - 24), Neon.U(Neon.Amber), "rendering...");
             ImGui.SetCursorScreenPos(pa + new Vector2(0, pv + 10));
-            if (SmallButton("<", 50, !_edPreviewLoading)) { _edYaw = (_edYaw + 315) % 360; RenderPreview(); }
+            bool turns = _edSheet.step > 0;
+            if (SmallButton("<", 50, turns)) _edAngle = Wrap(_edAngle - 45);
             ImGui.SameLine(0, 6);
-            if (SmallButton(">", 50, !_edPreviewLoading)) { _edYaw = (_edYaw + 45) % 360; RenderPreview(); }
+            if (SmallButton(">", 50, turns)) _edAngle = Wrap(_edAngle + 45);
             ImGui.SameLine(0, 6);
-            if (SmallButton("FRONT", 90, !_edPreviewLoading)) { _edYaw = 180; RenderPreview(); }
+            if (SmallButton("FRONT", 90, turns)) _edAngle = 180;
             ImGui.SameLine(0, 10);
-            ImGui.PushFont(Neon.Small); ImGui.TextColored(Neon.Dim, $"yaw {_edYaw}°  ·  a colour per submesh"); ImGui.PopFont();
+            string source = _edModel != null && _edModel.RootElement.TryGetProperty("materialSource", out var ms) && ms.ValueKind == JsonValueKind.String
+                ? "colours from " + Path.GetFileNameWithoutExtension(ms.GetString())
+                : "the model's own colours";
+            ImGui.PushFont(Neon.Small); ImGui.TextColored(Neon.Dim, turns ? $"drag to turn  ·  {source}" : source); ImGui.PopFont();
 
             // facts
             var ia = new Vector2(pa.X + pv + 24, pa.Y);
             ImGui.SetCursorScreenPos(ia);
             ImGui.BeginChild("##edmodelinfo", new Vector2(b.X - ia.X - 16, b.Y - ia.Y - 12));
-            if (_edModel == null) ImGui.TextColored(Neon.Dim, _edModelLoading ? "Importing..." : "");
+            if (_edModel == null)
+            {
+                if (_edModelLoading) ImGui.TextColored(Neon.Dim, DccOf(_edModelPath) is { } dcc ? $"Converting through {dcc}, as Unity does..." : "Importing...");
+                else if (_edModelError != null) { ImGui.PushTextWrapPos(); ImGui.TextColored(Neon.Amber, _edModelError); ImGui.PopTextWrapPos(); }
+            }
             else
             {
                 // The JSON comes from the branch's own cs-asset, which may be older or newer than this
@@ -715,6 +776,8 @@ namespace CosmicShore.Launcher
             }
             ImGui.EndChild();
         }
+
+        static float Wrap(float deg) => ((deg % 360) + 360) % 360;
 
         void DrawModelFacts(JsonElement m)
         {
@@ -739,6 +802,7 @@ namespace CosmicShore.Launcher
             Fact("File", $"{S("sizeKB")} KB  ·  guid {Trim(S("guid"), 12)}");
             if (m.TryGetProperty("discardedPolygons", out var dp) && dp.GetInt32() > 0) Fact("Discarded", $"{dp.GetInt32()} degenerate polygons");
             foreach (var w in m.GetProperty("warnings").EnumerateArray()) { ImGui.PushFont(Neon.Small); ImGui.TextColored(Neon.Amber, Glyphs(w.GetString() ?? "")); ImGui.PopFont(); }
+            if (m.TryGetProperty("gameMaterials", out var gm) && gm.ValueKind == JsonValueKind.Array) DrawGameMaterials(m, gm);
             ImGui.Dummy(new Vector2(0, 8));
             ImGui.PushFont(Neon.Strong); ImGui.TextColored(Neon.Cyan, "MESHES"); ImGui.PopFont();
             ImGui.PushFont(Neon.Small);
@@ -749,6 +813,38 @@ namespace CosmicShore.Launcher
                 ImGui.TextColored(Neon.Dim, $"   {mesh.GetProperty("triangles").GetInt32():N0} tris  ·  {mesh.GetProperty("submeshes")} submesh  ·  " +
                                             (mesh.GetProperty("skinned").GetBoolean() ? $"skinned, {mesh.GetProperty("bones")} bones  ·  " : "") +
                                             (shapes.Count > 0 ? $"shapes: {string.Join(", ", shapes)}" : ""));
+            }
+            ImGui.PopFont();
+        }
+
+        /// <summary>The materials the game draws the model with (from the prefabs that use it), as swatches.</summary>
+        void DrawGameMaterials(JsonElement m, JsonElement gm)
+        {
+            ImGui.Dummy(new Vector2(0, 8));
+            ImGui.PushFont(Neon.Strong); ImGui.TextColored(Neon.Cyan, "IN THE GAME"); ImGui.PopFont();
+            ImGui.PushFont(Neon.Small);
+            var used = m.TryGetProperty("usedBy", out var u) ? u.EnumerateArray().Select(x => Path.GetFileNameWithoutExtension(x.GetString() ?? "")).ToList() : new List<string>();
+            ImGui.TextColored(Neon.Dim, used.Count == 0 ? "No prefab draws it: these are its own materials." : "Drawn by " + string.Join(", ", used.Take(6)) + (used.Count > 6 ? $" +{used.Count - 6}" : ""));
+            var dl = ImGui.GetWindowDrawList();
+            foreach (var mesh in gm.EnumerateArray())
+            {
+                ImGui.TextColored(Neon.Ink, Glyphs(mesh.GetProperty("mesh").GetString() ?? ""));
+                foreach (var mat in mesh.GetProperty("materials").EnumerateArray())
+                {
+                    var p = ImGui.GetCursorScreenPos() + new Vector2(14, 3);
+                    var hex = mat.TryGetProperty("color", out var c) && c.ValueKind == JsonValueKind.String ? c.GetString() : null;
+                    if (hex is { Length: 7 })
+                    {
+                        var col = new Vector4(Convert.ToInt32(hex[1..3], 16) / 255f, Convert.ToInt32(hex[3..5], 16) / 255f, Convert.ToInt32(hex[5..7], 16) / 255f, 1f);
+                        dl.AddRectFilled(p, p + new Vector2(12, 12), Neon.U(col), 3);
+                    }
+                    dl.AddRect(p, p + new Vector2(12, 12), Neon.U(Neon.Dim, 0.6f), 3);
+                    ImGui.SetCursorScreenPos(ImGui.GetCursorScreenPos() + new Vector2(32, 0));
+                    string shader = mat.TryGetProperty("shader", out var sh) && sh.ValueKind == JsonValueKind.String ? sh.GetString()!.Replace("Shader Graphs/", "") : "?";
+                    ImGui.TextColored(Neon.Ink, Glyphs(mat.GetProperty("name").GetString() ?? "")); ImGui.SameLine(0, 8);
+                    ImGui.TextColored(Neon.Dim, shader + (hex != null ? "  " + hex : ""));
+                    if (ImGui.IsItemHovered() && mat.TryGetProperty("path", out var mp) && mp.ValueKind == JsonValueKind.String) ImGui.SetTooltip(mp.GetString());
+                }
             }
             ImGui.PopFont();
         }

@@ -134,8 +134,11 @@ Editor data (JSON on stdout, what Prisma's TOOLS / DATA / MODELS pages read):
   tools                                     every FrogletTools menu item: category, importance, description, source
   datasets                                  every ScriptableObject .asset, grouped by script type
   dataset <file.asset>                      its fields: value, kind, type, header, tooltip, range (edit with set)
-  model <file.fbx>                          nodes, meshes, triangles, materials, blend shapes, bones, takes, import settings
-  model-preview <file.fbx> --out <png> [--size 512] [--yaw 145] [--pitch 20]  a shaded picture, drawn on the CPU
+  model <file.fbx>                          nodes, meshes, triangles, materials, blend shapes, bones, takes, import settings,
+                                            and the game's materials (the prefabs that draw it: usedBy, gameMaterials)
+  model-preview <file.fbx> --out <png> [--size 512] [--yaw 145] [--pitch 20] [--colors game|submesh] [--turntable N]
+                                            a shaded picture drawn on the CPU, in the game's material colours;
+                                            --turntable: N views around it in one sheet, 6 to a row
 
 <object>: &id | GameObject path (Canvas/Panel/Button) | unique GameObject name
           paths and names reach inside placed prefabs; there, set/add/create/delete/remove-component

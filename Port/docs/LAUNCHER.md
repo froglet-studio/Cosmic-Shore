@@ -33,7 +33,7 @@ Source: `Port/src/CosmicShore.Launcher` (C#, Dear ImGui on our own Silk.NET wind
 | **PROJECT** | The engine's own Project Settings (below). |
 | **AGENT** | The Prisma Agent, powered by Claude: as many chats as you like, side by side (below). |
 | **GIT** | What the agent (or you) changed in the workspace, and getting it to GitHub (below). |
-| **EDITOR** | TOOLS (every FrogletTools tool, run by the agent), DATA (the data sets, editable) and MODELS (every FBX with a preview) (below). |
+| **EDITOR** | TOOLS (every FrogletTools tool, run by the agent), DATA (the data sets, editable) and MODELS (every model in the game's colours; VIEW IN ENGINE) (below). |
 | **TRACKS** | Every play run: performance per scene, features used, audio, every problem over time (below). |
 | **BOARD** | Bugs and tasks, with Prisma's suggestions (below). |
 | **SETTINGS** | Folded sections: Game, Source, Look, Claude, Advanced, Toolchain, About (versions). |
@@ -271,10 +271,25 @@ longer has are amber (Unity ignores them). **ASK CLAUDE** starts a chat about th
 
 ![MODELS](architecture/launcher_editor_models.png)
 
-**MODELS** - every FBX (66), by folder. Pick one for a preview (drawn on the CPU, a colour per
-submesh; **<** **>** turn it, **FRONT** faces it) and what Unity's importer makes of it: triangles,
-vertices, meshes and nodes, size, materials, blend shapes, skinning and bones, animation takes, the
-`.meta` import scale, and warnings. **ASK CLAUDE** starts a chat about the model.
+**MODELS** - every model by folder: the 66 FBX files, and Blender (`.blend`) and Maya (`.ma`/`.mb`)
+files, tagged BLENDER / MAYA. Unity cannot read those two either: its importer runs the installed
+Blender or Maya in the background to export an FBX. Prisma does the same (Unity's own export
+settings), keeps the FBX until the file changes, and says so plainly when the application is not
+installed (`PRISMA_BLENDER` / `PRISMA_MAYAPY` point at one that is not where Prisma looks).
+
+Pick a model for a preview **in the colours the game draws it with**: the materials come from the
+prefabs that draw its meshes (Manta's model from `Manta.prefab`, VesselGraph's `_Color1`), not from
+the model file, whose own materials are usually placeholders. **Drag across the picture to turn it**
+(24 views rendered once, about a second), **<** **>** step, **FRONT** faces it. Beside it: what
+Unity's importer makes of it (triangles, vertices, meshes and nodes, size, materials, blend shapes,
+skinning and bones, animation takes, the `.meta` import scale, warnings) and **IN THE GAME** - the
+prefabs that draw it and each mesh's materials with shader and colour swatch.
+
+**VIEW IN ENGINE** opens the model in Prisma's own renderer - the real shaders, not the CPU
+picture - on a turntable: drag to turn, wheel to zoom, right-drag to pan, **F** frame, **R** reset,
+**Space** stop/start the spin, **Tab** the next prefab's materials (and the model's own). No game
+scene loads, so it opens in seconds once the player is built (`CosmicShore --view-model FILE`).
+**ASK CLAUDE** starts a chat about the model.
 
 The agent has the same data through MCP: `asset_froglet_tools`, `asset_datasets`,
 `asset_dataset`, `asset_model`, `asset_model_preview`.

@@ -73,8 +73,9 @@ relapse reopens it). Tools: `prisma_tracks` (read this before asking what is wro
 
 Prisma's editor starts where the work is (`docs/ROADMAP.md` § M2, decided 2026-10-08): EDITOR >
 TOOLS (every FrogletTools tool, handed to the agent with its source), DATA (the ScriptableObject
-data sets, edited field by field through `cs-asset set`) and MODELS (each FBX as Unity imports it,
-with a CPU-drawn preview). There is no hierarchy or scene inspector: scene and prefab structure is
+data sets, edited field by field through `cs-asset set`) and MODELS (each FBX, and `.blend`/`.ma`/`.mb`
+through the installed Blender/Maya as Unity does, with a CPU-drawn drag turntable in the colours of
+the materials the game's prefabs give it, and VIEW IN ENGINE: the player's `--view-model FILE`). There is no hierarchy or scene inspector: scene and prefab structure is
 edited by the agent through `cs-asset`. MCP: `asset_froglet_tools`, `asset_datasets`,
 `asset_dataset`, `asset_model`, `asset_model_preview`. Tests: `tests/CosmicShore.AssetTool.Tests`
 (cs-asset's editor commands) and `tests/CosmicShore.Launcher.Tests` (Prisma.exe's chats, usage, git

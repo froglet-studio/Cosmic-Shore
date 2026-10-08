@@ -103,15 +103,16 @@ namespace CosmicShore.Mcp
                 new JsonObject { ["type"] = P("string", "a script type name, e.g. SO_ArcadeGame, to list its files") }),
             Tool("asset_dataset", "One ScriptableObject data file's fields: key, inspector label, kind (number, bool, text, enum, vector, color, ref, list, object), value, header, tooltip, range, and keys the script no longer has (stale). Edit a field with cs-asset set <file> &<fileId> <path> <value>.",
                 new JsonObject { ["path"] = P("string", "project-relative .asset path") }, "path"),
-            Tool("asset_model", "What Unity's importer makes of an FBX: nodes, meshes with vertex/triangle counts, submeshes, materials, blend shapes, bones, takes, bounds and the .meta import settings.",
+            Tool("asset_model", "What Unity's importer makes of a model (FBX; .blend/.ma/.mb through Blender/Maya when installed): nodes, meshes with vertex/triangle counts, submeshes, materials, blend shapes, bones, takes, bounds, the .meta import settings, and the materials the game draws it with (usedBy: the prefabs that draw it; gameMaterials: per mesh, name, shader, colour).",
                 new JsonObject { ["path"] = P("string", "project-relative .fbx path") }, "path"),
-            Tool("asset_model_preview", "A shaded picture of an FBX model, drawn on the CPU (no GPU needed): every mesh at its pose, a colour per submesh. yaw 180 looks at its front (Unity's +Z), 145 is a front three-quarter view.",
+            Tool("asset_model_preview", "A shaded picture of a model (FBX; .blend/.ma/.mb when Blender/Maya is installed), drawn on the CPU (no GPU needed): every mesh at its pose, in the colours of the materials the game gives it (the prefabs that draw it; asset_model lists them as gameMaterials). yaw 180 looks at its front (Unity's +Z), 145 is a front three-quarter view.",
                 new JsonObject
                 {
                     ["path"] = P("string", "project-relative .fbx path"),
                     ["yaw"] = P("number", "degrees around the model, default 145"),
                     ["pitch"] = P("number", "degrees above, default 20"),
                     ["size"] = P("integer", "pixels, default 512"),
+                    ["colors"] = P("string", "game (default: the game's material colours) or submesh (one key colour per submesh)"),
                 }, "path"),
             Tool("unity_isolation_check", "Fails if the branch changes anything outside Port/ that Unity would see. Run before committing.",
                 new JsonObject { ["base"] = P("string", "branch to diff against (default origin/bleeding-edge)") }),
@@ -207,7 +208,7 @@ namespace CosmicShore.Mcp
                 {
                     var png = Path.Combine(Path.GetTempPath(), "froglet-mcp", $"model-{DateTime.Now:HHmmss-fff}.png");
                     var args = new List<string> { "model-preview", Str(a, "path"), "--out", png };
-                    foreach (var k in new[] { "yaw", "pitch", "size" }) if (Str(a, k).Length > 0) { args.Add("--" + k); args.Add(Str(a, k)); }
+                    foreach (var k in new[] { "yaw", "pitch", "size", "colors" }) if (Str(a, k).Length > 0) { args.Add("--" + k); args.Add(Str(a, k)); }
                     await AssetCli(args.ToArray());
                     var bytes = await File.ReadAllBytesAsync(png);
                     File.Delete(png);

@@ -373,8 +373,12 @@ namespace CosmicShore.AssetTool
         static ImportedModel LoadModel(string full)
         {
             var guid = Scripts.Db.GuidOf(full);
+            var settings = ModelImportSettings.FromMeta(File.Exists(full + ".meta") ? UnityYaml.ParseDocuments(File.ReadAllText(full + ".meta")).FirstOrDefault()?.Body : null);
+            // Blender/Maya: through the installed application, as Unity imports them; say why when it cannot.
+            if (DccModelConverter.IsDccPath(full))
+                return DccModelConverter.Import(full, settings, guid, out var error) ?? throw new ArgumentException(error);
             var model = guid != null ? Scripts.Db.LoadModel(guid) : null;
-            return model ?? FbxModelImporter.Import(full, ModelImportSettings.FromMeta(File.Exists(full + ".meta") ? UnityYaml.ParseDocuments(File.ReadAllText(full + ".meta")).FirstOrDefault()?.Body : null));
+            return model ?? FbxModelImporter.Import(full, settings);
         }
 
         /// <summary>cs-asset model FILE: what Unity's importer makes of an FBX, as the game sees it.</summary>
@@ -399,6 +403,17 @@ namespace CosmicShore.AssetTool
             }).ToList();
             var clips = model.Scene.ObjectList.Where(o => o.Kind == "AnimationStack").Select(o => o.Name).ToList();
             var s = model.Settings;
+            var uses = ModelMaterialUsage.Find(Scripts.Db, model);
+            var resolved = ModelMaterialUsage.Resolve(model, uses, out var fromPrefab);
+            var gameMaterials = model.Meshes.Where(m => m.Mesh != null).Select(m => new
+            {
+                mesh = m.Name,
+                materials = (resolved.TryGetValue(m.FileId, out var refs) ? refs : new List<ObjRef>()).Select(r =>
+                {
+                    var sw = ModelMaterialUsage.Swatch(Scripts.Db, model, r);
+                    return new { name = sw.Name, path = sw.Path is { } mp ? Rel(mp) : null, shader = sw.Shader, color = Hex(sw.Color) };
+                }).ToList(),
+            }).ToList();
             return Write(new
             {
                 path = Rel(full),
@@ -408,7 +423,8 @@ namespace CosmicShore.AssetTool
                 meshCount = meshes.Count,
                 vertices = meshes.Sum(m => m.vertices),
                 triangles = meshes.Sum(m => m.triangles),
-                materials = meshes.SelectMany(m => m.materials).Distinct().ToList(),
+                materials = meshes.SelectMany(m => m.materials).Where(n => n != null).Distinct().ToList(),
+                convertedBy = DccModelConverter.ToolFor(full),
                 blendShapes = meshes.Sum(m => m.blendShapes.Count),
                 skinned = meshes.Any(m => m.skinned),
                 bounds = new { min = new[] { lo.X, lo.Y, lo.Z }, max = new[] { hi.X, hi.Y, hi.Z }, size = new[] { hi.X - lo.X, hi.Y - lo.Y, hi.Z - lo.Z } },
@@ -421,11 +437,32 @@ namespace CosmicShore.AssetTool
                     externalMaterials = s.ExternalMaterials.ToDictionary(kv => kv.Key, kv => Scripts.Db.PathOf(kv.Value.Guid ?? "") is { } p ? Rel(p) : kv.Value.ToString()),
                 },
                 takes = clips,
+                materialSource = fromPrefab is { } fp ? Rel(fp) : null,
+                usedBy = uses.Select(u => Rel(u.Prefab)).Distinct().ToList(),
+                gameMaterials,
                 hierarchy = model.Nodes.Take(400).Select(n => n.Path).ToList(),
                 meshes,
                 warnings = model.Warnings.ToList(),
                 discardedPolygons = model.DiscardedPolygons,
             });
+        }
+
+        static string Hex(CosmicShore.Engine.Color? c) => c is { } v
+            ? $"#{(int)Math.Round(Math.Clamp(v.r, 0, 1) * 255):x2}{(int)Math.Round(Math.Clamp(v.g, 0, 1) * 255):x2}{(int)Math.Round(Math.Clamp(v.b, 0, 1) * 255):x2}"
+            : null;
+
+        /// <summary>The colour of each mesh's submesh in the materials the game gives it (<see cref="ModelMaterialUsage"/>).</summary>
+        static Func<ImportedMesh, int, (double r, double g, double b)?> GameColors(ImportedModel model, out string prefab)
+        {
+            var resolved = ModelMaterialUsage.Resolve(model, ModelMaterialUsage.Find(Scripts.Db, model), out prefab);
+            // Read every swatch up front: the turntable renders its views in parallel.
+            var colors = resolved.Values.SelectMany(r => r).Distinct().ToDictionary(r => r,
+                r => ModelMaterialUsage.Swatch(Scripts.Db, model, r).Color is { } c ? ((double, double, double)?)(c.r, c.g, c.b) : null);
+            return (mesh, sub) =>
+            {
+                if (!resolved.TryGetValue(mesh.FileId, out var refs) || refs.Count == 0) return null;
+                return colors[refs[Math.Min(sub, refs.Count - 1)]];
+            };
         }
 
         static bool HasUv(CosmicShore.Engine.Mesh mesh, int channel)
@@ -439,7 +476,7 @@ namespace CosmicShore.AssetTool
             catch { return false; }
         }
 
-        static IEnumerable<(DVec3 a, DVec3 b, DVec3 c, int sub)> Triangles(ImportedModel model)
+        static IEnumerable<(DVec3 a, DVec3 b, DVec3 c, int sub, ImportedMesh mesh)> Triangles(ImportedModel model)
         {
             foreach (var im in model.Meshes)
             {
@@ -452,7 +489,7 @@ namespace CosmicShore.AssetTool
                 for (int s = 0; s < mesh.subMeshCount; s++)
                 {
                     var t = mesh.GetTriangles(s);
-                    for (int i = 0; i + 2 < t.Length; i += 3) yield return (w[t[i]], w[t[i + 1]], w[t[i + 2]], s);
+                    for (int i = 0; i + 2 < t.Length; i += 3) yield return (w[t[i]], w[t[i + 1]], w[t[i + 2]], s, im);
                 }
             }
         }
@@ -460,7 +497,7 @@ namespace CosmicShore.AssetTool
         static (DVec3 lo, DVec3 hi) Bounds(ImportedModel model)
         {
             double[] lo = { double.MaxValue, double.MaxValue, double.MaxValue }, hi = { double.MinValue, double.MinValue, double.MinValue };
-            foreach (var (a, b, c, _) in Triangles(model))
+            foreach (var (a, b, c, _, _) in Triangles(model))
                 foreach (var p in new[] { a, b, c })
                     for (int k = 0; k < 3; k++) { lo[k] = Math.Min(lo[k], p[k]); hi[k] = Math.Max(hi[k], p[k]); }
             if (lo[0] > hi[0]) return (default, default);
@@ -482,10 +519,18 @@ namespace CosmicShore.AssetTool
             double yaw = opts.TryGetValue("yaw", out var y) ? double.Parse(y, CultureInfo.InvariantCulture) : 145;
             double pitch = opts.TryGetValue("pitch", out var p) ? double.Parse(p, CultureInfo.InvariantCulture) : 20;
             var model = LoadModel(full) ?? throw new ArgumentException("the model did not import");
-            var png = Render(model, size, yaw, pitch);
+            // --colors game (default): each submesh in the colour of the material the game gives it;
+            // --colors submesh: one key colour per submesh, to tell them apart.
+            bool game = !opts.TryGetValue("colors", out var cm) || cm != "submesh";
+            var colorOf = game ? GameColors(model, out _) : null;
+            // --turntable N: N views around the model in one sheet (6 to a row) for drag-to-turn.
+            int frames = opts.TryGetValue("turntable", out var tt) ? Math.Clamp(int.Parse(tt, CultureInfo.InvariantCulture), 2, 72) : 0;
+            int cols = Math.Min(frames, 6);
+            var png = frames > 0 ? RenderTurntable(model, size, frames, cols, yaw, pitch, colorOf) : Render(model, size, yaw, pitch, colorOf);
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(outPath))!);
             File.WriteAllBytes(outPath, png);
-            return Write(new { path = Rel(full), @out = Path.GetFullPath(outPath), size });
+            return Write(new { path = Rel(full), @out = Path.GetFullPath(outPath), size, colors = colorOf != null ? "game" : "submesh",
+                               frames = Math.Max(1, frames), cols = Math.Max(1, cols), yaw, step = frames > 0 ? 360.0 / frames : 0 });
         }
 
         static readonly (double r, double g, double b)[] Palette =
@@ -493,7 +538,32 @@ namespace CosmicShore.AssetTool
             (0.55, 0.80, 0.95), (0.95, 0.55, 0.80), (0.65, 0.95, 0.55), (0.98, 0.80, 0.45), (0.70, 0.60, 0.98), (0.55, 0.95, 0.90),
         };
 
-        public static byte[] Render(ImportedModel model, int size, double yaw, double pitch)
+        /// <param name="colorOf">The colour of a mesh's submesh (the game's material), or null for the key palette.</param>
+        public static byte[] Render(ImportedModel model, int size, double yaw, double pitch,
+                                    Func<ImportedMesh, int, (double r, double g, double b)?> colorOf = null)
+            => Png(RenderRgba(model, size, yaw, pitch, colorOf, sphereFit: false), size, size);
+
+        /// <summary>
+        /// <paramref name="frames"/> views turning once around the model (frame k at yaw + k*360/frames),
+        /// laid out <paramref name="cols"/> to a row, all framed alike (the model's bounding sphere)
+        /// so the size holds still while it turns. Prisma's MODELS page drags through them.
+        /// </summary>
+        public static byte[] RenderTurntable(ImportedModel model, int size, int frames, int cols, double yaw, double pitch,
+                                             Func<ImportedMesh, int, (double r, double g, double b)?> colorOf = null)
+        {
+            int rows = (frames + cols - 1) / cols, w = size * cols, h = size * rows;
+            var sheet = new byte[w * h * 4];
+            System.Threading.Tasks.Parallel.For(0, frames, k =>
+            {
+                var cell = RenderRgba(model, size, (yaw + k * 360.0 / frames) % 360, pitch, colorOf, sphereFit: true);
+                int cx = k % cols * size, cy = k / cols * size;
+                for (int y = 0; y < size; y++) Buffer.BlockCopy(cell, y * size * 4, sheet, ((cy + y) * w + cx) * 4, size * 4);
+            });
+            return Png(sheet, w, h);
+        }
+
+        static byte[] RenderRgba(ImportedModel model, int size, double yaw, double pitch,
+                                 Func<ImportedMesh, int, (double r, double g, double b)?> colorOf, bool sphereFit)
         {
             int ss = 2, n = size * ss;
             var (lo, hi) = Bounds(model);
@@ -503,12 +573,13 @@ namespace CosmicShore.AssetTool
             var view = DMat4.RotX(pitch) * DMat4.RotY(-yaw) * DMat4.Translate(-center);
             // Fit what the camera actually sees: the model's extent on screen after turning it.
             double sx0 = double.MaxValue, sx1 = double.MinValue, sy0 = double.MaxValue, sy1 = double.MinValue;
-            foreach (var (a0, b0, c0, _) in Triangles(model))
+            foreach (var (a0, b0, c0, _, _) in Triangles(model))
                 foreach (var q in new[] { view.Point(a0), view.Point(b0), view.Point(c0) })
                 { sx0 = Math.Min(sx0, q.X); sx1 = Math.Max(sx1, q.X); sy0 = Math.Min(sy0, q.Y); sy1 = Math.Max(sy1, q.Y); }
             double span = Math.Max(Math.Max(sx1 - sx0, sy1 - sy0), radius * 1e-3);
             double scale = n * 0.86 / span;
             double offX = -(sx0 + sx1) * 0.5, offY = -(sy0 + sy1) * 0.5;
+            if (sphereFit) { scale = n * 0.98 / (2 * radius); offX = offY = 0; }
             var color = new double[n * n * 3];
             var depth = new double[n * n];
             Array.Fill(depth, double.MaxValue);
@@ -516,18 +587,19 @@ namespace CosmicShore.AssetTool
                 for (int xx = 0; xx < n; xx++)
                 {
                     double t = (double)yy / n; int i = (yy * n + xx) * 3;
-                    color[i] = 0.035 + 0.03 * t; color[i + 1] = 0.03 + 0.035 * t; color[i + 2] = 0.10 + 0.07 * t;
+                    if (colorOf == null) { color[i] = 0.035 + 0.03 * t; color[i + 1] = 0.03 + 0.035 * t; color[i + 2] = 0.10 + 0.07 * t; }
+                    else { color[i] = color[i + 1] = 0.30 - 0.12 * t; color[i + 2] = 0.33 - 0.12 * t; } // grey: dark hulls stay visible
                 }
             var key = new DVec3(-0.45, 0.65, -0.6).Normalized;   // from the camera's upper left
             var rim = new DVec3(0.6, 0.2, 0.75).Normalized;      // from behind
-            foreach (var (a0, b0, c0, sub) in Triangles(model))
+            foreach (var (a0, b0, c0, sub, im) in Triangles(model))
             {
                 var a = view.Point(a0); var b = view.Point(b0); var c = view.Point(c0);
                 var nrm = DVec3.Cross(b - a, c - a).Normalized;
                 if (nrm.Length < 0.5) continue;
                 if (nrm.Z > 0) nrm = -nrm; // two-sided: face the camera (camera looks along +Z here)
                 double diffuse = Math.Max(0, DVec3.Dot(nrm, -key)), back = Math.Pow(Math.Max(0, DVec3.Dot(nrm, -rim)), 2);
-                var pc = Palette[sub % Palette.Length];
+                var pc = colorOf?.Invoke(im, sub) ?? Palette[sub % Palette.Length];
                 double li = 0.22 + 0.78 * diffuse;
                 double r = pc.r * li + 0.35 * back, g = pc.g * li + 0.45 * back, bl = pc.b * li + 0.6 * back;
                 // screen: x right, y down; depth = view Z (bigger is farther)
@@ -568,7 +640,7 @@ namespace CosmicShore.AssetTool
                     int o2 = (y * size + x) * 4;
                     rgba[o2] = ToByte(r * k); rgba[o2 + 1] = ToByte(g * k); rgba[o2 + 2] = ToByte(b * k); rgba[o2 + 3] = 255;
                 }
-            return Png(rgba, size, size);
+            return rgba;
         }
 
         static byte ToByte(double v) => (byte)Math.Clamp((int)Math.Round(Math.Pow(Math.Clamp(v, 0, 1), 1 / 1.1) * 255), 0, 255);

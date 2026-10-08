@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using CosmicShore.AssetTool;
 using CosmicShore.Content;
+using CosmicShore.Content.Models;
 
 // The JSON commands write to Console.Out: run them one at a time.
 [assembly: CollectionBehavior(DisableTestParallelization = true)]
@@ -147,6 +148,116 @@ namespace CosmicShore.AssetTool.Tests
             Assert.Equal(new byte[] { 137, 80, 78, 71 }, bytes[..4]);
             Assert.Equal(128, (bytes[16] << 24) | (bytes[17] << 16) | (bytes[18] << 8) | bytes[19]); // IHDR width
             Directory.Delete(Path.GetDirectoryName(png)!, true);
+        }
+
+        [Fact]
+        public void A_model_shows_the_materials_the_prefabs_that_draw_it_give_it()
+        {
+            // Manta.prefab's renderer draws the Manta mesh with the vessel graph's materials; the
+            // model's own .meta remaps nothing, so only the prefab scan can find them.
+            const string fbx = "Assets/_Models/Vessel Models/Manta_shapekey_rigged.fbx";
+            using var doc = Capture(() => EditorData.Model(fbx));
+            var m = doc.RootElement;
+            var used = m.GetProperty("usedBy").EnumerateArray().Select(x => x.GetString()).ToList();
+            Assert.Contains("Assets/_Prefabs/Spacevessels/Manta.prefab", used);
+            // Of the prefabs that draw it alike, the one named like the model wins.
+            Assert.Equal("Assets/_Prefabs/Spacevessels/Manta.prefab", m.GetProperty("materialSource").GetString());
+            var mats = m.GetProperty("gameMaterials")[0].GetProperty("materials").EnumerateArray().ToList();
+            Assert.Contains(mats, x => x.GetProperty("shader").GetString() == "Shader Graphs/VesselGraph");
+            // VesselGraph's colour is _Color1 (its _BaseColor is white): BlueBaseShipMaterial is navy.
+            var blue = mats.Single(x => x.GetProperty("name").GetString() == "BlueBaseShipMaterial");
+            Assert.Equal("#000029", blue.GetProperty("color").GetString());
+        }
+
+        [Fact]
+        public void A_turntable_sheet_holds_every_view_around_the_model()
+        {
+            const string fbx = "Assets/_Models/Vessel Models/Dolphin_Test.fbx";
+            var png = Path.Combine(Temp(), "turn.png");
+            using (var doc = Capture(() => EditorData.ModelPreview(fbx, new() { ["out"] = png, ["size"] = "64", ["turntable"] = "12" })))
+            {
+                var r = doc.RootElement;
+                Assert.Equal(12, r.GetProperty("frames").GetInt32());
+                Assert.Equal(6, r.GetProperty("cols").GetInt32());
+                Assert.Equal(30, r.GetProperty("step").GetDouble());
+            }
+            var bytes = File.ReadAllBytes(png);
+            Assert.Equal(64 * 6, (bytes[16] << 24) | (bytes[17] << 16) | (bytes[18] << 8) | bytes[19]); // IHDR width
+            Assert.Equal(64 * 2, (bytes[20] << 24) | (bytes[21] << 16) | (bytes[22] << 8) | bytes[23]); // IHDR height
+            Directory.Delete(Path.GetDirectoryName(png)!, true);
+        }
+
+        /// <summary>
+        /// A Maya file goes through mayapy, as Unity's import does: a stand-in mayapy that writes a
+        /// known FBX proves the hand-off (script, source, output), the import of what it wrote, and
+        /// the cache (the second import runs no mayapy at all).
+        /// </summary>
+        [Fact]
+        public void A_Maya_file_imports_through_mayapy_and_is_cached()
+        {
+            if (OperatingSystem.IsWindows()) return; // the stand-in is a shell script
+            var dir = Temp();
+            var cacheBefore = DccModelConverter.CacheDir;
+            var envBefore = Environment.GetEnvironmentVariable("PRISMA_MAYAPY");
+            try
+            {
+                DccModelConverter.CacheDir = Path.Combine(dir, "cache");
+                var ma = Path.Combine(dir, "Probe.ma");
+                File.WriteAllText(ma, "//Maya ASCII scene");
+                var calls = Path.Combine(dir, "calls.txt");
+                var dolphin = Path.Combine(Root, "Assets/_Models/Vessel Models/Dolphin_Test.fbx");
+                var fake = Path.Combine(dir, "mayapy");
+                File.WriteAllText(fake, $"#!/bin/sh\necho \"$2\" >> '{calls}'\ncp '{dolphin}' \"$3\"\n");
+                File.SetUnixFileMode(fake, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+                Environment.SetEnvironmentVariable("PRISMA_MAYAPY", fake);
+
+                var model = DccModelConverter.Import(ma, new CosmicShore.Content.Models.ModelImportSettings(), null, out var error);
+                Assert.True(model != null, error);
+                Assert.Equal(ma, model!.Path);
+                Assert.Equal("Probe", model.Name); // the root takes the source's name: fileIDs hash from it
+                Assert.True(model.Meshes.Count > 0);
+                Assert.NotNull(DccModelConverter.Import(ma, new CosmicShore.Content.Models.ModelImportSettings(), null, out _));
+                Assert.Single(File.ReadAllLines(calls));
+                Assert.Equal(Path.GetFullPath(ma), File.ReadAllLines(calls)[0]);
+            }
+            finally
+            {
+                DccModelConverter.CacheDir = cacheBefore;
+                Environment.SetEnvironmentVariable("PRISMA_MAYAPY", envBefore);
+                Directory.Delete(dir, true);
+            }
+        }
+
+        [Fact]
+        public void A_Blender_file_says_Blender_is_missing_instead_of_failing_blindly()
+        {
+            var pathBefore = Environment.GetEnvironmentVariable("PATH");
+            var envBefore = Environment.GetEnvironmentVariable("PRISMA_BLENDER");
+            try
+            {
+                Environment.SetEnvironmentVariable("PRISMA_BLENDER", null);
+                Environment.SetEnvironmentVariable("PATH", "");
+                if (DccModelConverter.FindBlender() != null) return; // installed where Prisma looks: nothing to prove here
+                Assert.Null(DccModelConverter.ToFbx(Path.Combine(Root, "Assets/_Models/shield1.blend"), out var error));
+                Assert.Contains("Blender is not installed", error);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("PATH", pathBefore);
+                Environment.SetEnvironmentVariable("PRISMA_BLENDER", envBefore);
+            }
+        }
+
+        /// <summary>The real thing, where Blender is installed (PRISMA_BLENDER or PATH): shield1.blend, a hex-tiled sphere.</summary>
+        [Fact]
+        public void A_Blender_file_imports_through_Blender_when_it_is_installed()
+        {
+            if (DccModelConverter.FindBlender() == null) return;
+            using var doc = Capture(() => EditorData.Model("Assets/_Models/shield1.blend"));
+            var m = doc.RootElement;
+            Assert.Equal("Blender", m.GetProperty("convertedBy").GetString());
+            Assert.Equal(636, m.GetProperty("triangles").GetInt32());
+            Assert.InRange(m.GetProperty("bounds").GetProperty("size")[0].GetDouble(), 1.9, 2.0);
         }
 
         [Fact]

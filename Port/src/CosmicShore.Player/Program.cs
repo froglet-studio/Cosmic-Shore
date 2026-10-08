@@ -119,6 +119,7 @@ namespace CosmicShore.Player
                         PlayerWindow.GalleryLegend = c > 0 ? spec[(c + 1)..] : null;
                         break;
                     }
+                    case "--view-model" when i + 1 < args.Length: ModelViewer.Path = args[++i]; break;
                     case "--hidden": PlayerWindow.StartHidden = true; break;
                     case "--control-port" when i + 1 < args.Length: int.TryParse(args[++i], out controlPort); break;
                     case "--session-report" when i + 1 < args.Length: sessionReport = args[++i]; break;

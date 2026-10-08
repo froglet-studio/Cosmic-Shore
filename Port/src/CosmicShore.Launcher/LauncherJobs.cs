@@ -117,6 +117,45 @@ namespace CosmicShore.Launcher
             return LaunchGame(audio);
         });
 
+        /// <summary>
+        /// EDITOR > MODELS' VIEW IN ENGINE: the player built as PLAY builds it, opened on one model
+        /// (<c>--view-model</c>): drawn by the engine with the game's materials, turned with the mouse.
+        /// No game scene loads, so it opens in seconds once the player is built.
+        /// </summary>
+        public void ViewModel(string projectRelative) => Start("View model", async ct =>
+        {
+            if (!await EnsureTools(ct)) return false;
+            if (!File.Exists(Path.Combine(_ws.Dir, "Port", "src", "CosmicShore.Player", "ModelViewer.cs")))
+            {
+                Log.Add(LogKind.Error, $"{_s.Branch}'s engine has no model viewer yet: play a branch that has Port/src/CosmicShore.Player/ModelViewer.cs.");
+                return false;
+            }
+            if (!await BuildPlayer(ct)) return false;
+            Step("Opening the model viewer", 1);
+            var psi = new ProcessStartInfo(PlayerExe)
+            {
+                WorkingDirectory = Path.Combine(_ws.Dir, "Port"),
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true,
+            };
+            foreach (var a in new[] { "--view-model", projectRelative, "--size", "1280x800" }) psi.ArgumentList.Add(a);
+            foreach (var kv in _tools.DotnetEnv()) psi.Environment[kv.Key] = kv.Value;
+            psi.Environment["COSMIC_SHORE_PROJECT"] = _ws.Dir;
+            psi.Environment["COSMIC_SHORE_AUDIO"] = "off";
+            psi.Environment["COSMIC_SHORE_NET"] = "off";
+            if (_s.MobileRenderPath) psi.Environment["COSMIC_SHORE_GLES"] = "1";
+            var viewer = new Process { StartInfo = psi, EnableRaisingEvents = true };
+            viewer.OutputDataReceived += (_, e) => { if (e.Data != null) Log.Add(LogKind.Output, e.Data); };
+            viewer.ErrorDataReceived += (_, e) => { if (e.Data != null) Log.Add(LogKind.Output, e.Data); };
+            viewer.Start();
+            viewer.BeginOutputReadLine();
+            viewer.BeginErrorReadLine();
+            Log.Add(LogKind.Success, "Model viewer open: drag to turn, wheel to zoom, right-drag to pan, F frame, R reset, Space spin, Tab the next prefab's materials.");
+            return true;
+        });
+
         /// <summary>The BUILD page's iOS button, in whichever mode SETTINGS chose.</summary>
         public void BuildIos()
         {

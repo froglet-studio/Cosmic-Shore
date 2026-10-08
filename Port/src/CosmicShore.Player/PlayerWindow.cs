@@ -100,6 +100,7 @@ namespace CosmicShore.Player
         public void RunOn(IView view)
         {
             _window = view;
+            if (view is IWindow titled) ModelViewer.SetTitle = t => titled.Title = t;
             _window.Load += OnLoad;
             _window.Update += OnUpdate;
             _window.Render += OnRender;
@@ -160,7 +161,7 @@ namespace CosmicShore.Player
             SystemInfo.supportsComputeShaders = true;
             if (Control != null) { Control.Quit = () => _window.Close(); Control.FrameMs = () => _lastFrameMs; }
             if (StartHidden && Control != null) Control.VirtualSize = (_width, _height);
-            _boot = new PlayerBoot();
+            _boot = new PlayerBoot { NoScene = ModelViewer.Path != null };
             SessionReport.Log = _boot.Log;
             SessionReport.Frame = () => _frameIndex;
             _boot.Start(_scene);
@@ -174,6 +175,11 @@ namespace CosmicShore.Player
             BeforeTick?.Invoke(step);
             _script.BeforeTick(_frameIndex);
             if (GalleryFrame > 0 && _frameIndex == GalleryFrame) ShaderGallery.Build(GalleryLegend);
+            if (ModelViewer.Path != null)
+            {
+                if (_frameIndex == 1) ModelViewer.Build();
+                ModelViewer.Tick(step);
+            }
             Control?.BeforeTick(_frameIndex);
             long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
             CosmicShore.Engine.GameLoop.PhaseTiming = s_timing || SessionReport.Enabled;
