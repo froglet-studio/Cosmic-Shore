@@ -675,9 +675,10 @@ CAMERAS = {
     # Grizzly Charge is the Boneyard's fourth card (with Dog Fight / Salvo / Broadside / Dustup):
     # low, close, and down the axis of the Grizzly's run.
     "GrizzlyCharge": (75, 6, 0.55, 48),
-    # Grizzly Time is the fourth gate circuit (Headlong / Redline / Regatta): the same solver at a
-    # third of the scale: fourteen tight rings wrapping the nucleus, shot from a new side.
-    "GrizzlyTime": (125, 34, 0.85, 42),
+    # Grizzly Time is the fourth gate circuit (Headlong / Redline / Regatta): Headlong's octagon
+    # since the bomb launch was tripled - eight rings round the nucleus, shot from a new side and
+    # pulled back far enough to keep the whole lap in frame.
+    "GrizzlyTime": (125, 34, 0.95, 42),
 }
 
 # Pilots in the shot: (domain, radius fraction, tilt, start angle, sweep). None = generic trio.

@@ -822,15 +822,15 @@ MonoBehaviour:
   courseOuterRadius: 1080
   courseInnerRadiusFallback: 480
   innerRadiusNucleusFactor: 1.22
-  laps: 2
+  laps: 3
   gateBloomSeconds: 0.9
   courseSeed: 0
-  aiCommitDistance: 160
-  aiApproachLead: 180
-  aiThroughDistance: 120
+  aiCommitDistance: 380
+  aiApproachLead: 420
+  aiThroughDistance: 285
   aiCrystalDetourSlack: 220
   aiCrystalScanSeconds: 0.5
-  maxPlausibleSpeed: 600
+  maxPlausibleSpeed: 1400
   reportResyncSeconds: 3
 --- !u!114 &1628508347
 MonoBehaviour:

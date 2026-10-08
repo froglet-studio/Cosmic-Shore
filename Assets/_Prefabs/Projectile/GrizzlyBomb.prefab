@@ -172,8 +172,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 62654af5dd3d4bf1837331ac9a76a16a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  projectileImpactorDataContainer: {fileID: 11400000, guid: c876b418c4188d546996eaabb11d0f26,
-    type: 2}
+  projectileImpactorDataContainer: {fileID: 11400000, guid: a37643702e83cb4bae962f38a186c708, type: 2}
 --- !u!114 &6501871947578768307
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -318,7 +317,7 @@ MonoBehaviour:
   trail: {fileID: 5130000000000000001}
   trailWidthFactor: 0.7
   pulseHzAtLaunch: 2.5
-  pulseHzAtFuseEnd: 11
+  pulseHzAtRest: 11
   haloScale: 3
   pulseAmplitude: 0.22
   armedHaloScale: 5
@@ -328,6 +327,8 @@ MonoBehaviour:
   sparkColor: {r: 1, g: 0.92, b: 0.7, a: 1}
   sparkMix: 0.45
   coreDarkness: 0.12
+  litRadiusFactor: 1.5
+  litWakeSeconds: 0.3
 --- !u!1 &5130000000000000010
 GameObject:
   m_ObjectHideFlags: 0

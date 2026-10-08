@@ -1,7 +1,7 @@
 # Grizzly Time — the Grizzly-only circuit race
 
 > `GameModes.GrizzlyTime = 63`. A closed loop of switch rings is cut through the cell and every
-> pilot flies **two laps** of it in order; the first **domain** whose **lead runner** threads the
+> pilot flies **three laps** of it in order; the first **domain** whose **lead runner** threads the
 > last gate of the last lap wins, on finish **time** (golf). The race the Grizzly was asked for,
 > alongside its existing arena mode **Grizzly Charge** (`62`).
 
@@ -12,10 +12,11 @@ The Grizzly is the fleet's slowest, tightest hull: it cruises at **50 u/s** and 
 blasts** (`R_VesselActions/GRIZZLY_TRIGGER_BOMBS.md`): LT and RT each fire a bomb, a second pull
 freezes it, the release detonates it, and a Grizzly inside its own blast is **thrown away from
 the bomb** — so the race is fire, freeze, fly past, blow it behind you. A full squeeze's blast
-(scale 200) hands over `200 / 1.2 s × 1.5` = 250 u/s at the bomb, eased 1.5 → 0.5 over a second
-and clamped by the vessel's **100 u/s** velocity-modifier ceiling — so a full launch ridden close
-sits on the ceiling for its whole second and carries the hull **~100 u**. Launching flat out:
-**150 u/s**, three times cruise.
+(scale 200) hands over `200 / 1.2 s × 4.5` = 750 u/s at the bomb, eased 1.5 → 0.5 over a second
+and clamped by the launch's own **300 u/s** ceiling (`selfLaunchCeiling` — three times the 100 u/s
+every other shove shares; the launch was tripled on 2026-10-08) — so a full launch ridden close
+sits on that ceiling for its whole second and carries the hull **~300 u**. Launching flat out:
+**350 u/s**, seven times cruise.
 
 That push is a **world-space** velocity (`VesselTransformer.velocityShift`). It keeps going the
 way it was thrown when the bomb went off, and the turn rate never sees it. So a corner is one
@@ -25,32 +26,32 @@ question:
 
 | launch held | speed | circle it holds | reads as |
 |---|---|---|---|
-| full | **150 u/s** | **90 u** | riding a full-squeeze blast |
-| ~half | ~100 | ~60 | a half-squeeze blast, or a full one bleeding off |
-| none | 50 | **30 u** | coasting — a pivot, once the last launch has carried its ~100 u |
+| full | **350 u/s** | **211 u** | riding a full-squeeze blast |
+| ~half | ~200 | ~120 | a launch bleeding off |
+| none | 50 | **30 u** | coasting — a pivot, once the last launch has carried its ~300 u |
 
 A launch taken into a corner throws you wide of it; a launch saved for after the corner costs the
 time it takes to fire, freeze and ride the next bomb. **Ammo, not the ceiling, sets the sustained
 pace:** a full launch costs 0.35 of a pool that refills at 0.15/s, so a pilot who launches as
-often as the pool allows averages ~90 u/s (cruise plus ~41 u/s of launch carry) and bursts to 150
-— the opening full pool is worth three launches. That is the Manta's Soar trade in Redline, at a
-third of the scale, with the boost meter replaced by a magazine.
+often as the pool allows averages ~180 u/s (cruise plus ~130 u/s of launch carry) and bursts to 350
+— the opening full pool is worth three launches. That is the Manta's Soar trade in Redline, with
+the boost meter replaced by a magazine.
 
 **Intensity is how many corners a lap asks that question at.** Measured over 400 seeds, the
 median lap (`GrizzlyTimeCourseTests`):
 
 | intensity | corners that cost launch | hardest corner | 2nd | 3rd | mouth radius | lap |
 |---|---|---|---|---|---|---|
-| 1 | **0** of 14 | 253 u · 100% | 283 u · 100% | 302 u · 100% | 64 | ~3.8 k u |
-| 2 | **1** of 14 | 69 u · **76%** | 181 u · 100% | 201 u · 100% | 52 | ~4.0 k u |
-| 3 | **2** of 14 | 54 u · **59%** | 69 u · 76% | 101 u · 100% | 42 | ~4.5 k u |
-| 4 | **3** of 14 | 43 u · **47%** | 57 u · 63% | 78 u · 87% | 34 | ~4.7 k u |
+| 1 | **0** of 8 | 321 u · 100% | 387 u · 100% | 487 u · 100% | 96 | ~4.7 k u |
+| 2 | **1** of 8 | 161 u · **76%** | 299 u · 100% | 353 u · 100% | 72 | ~4.9 k u |
+| 3 | **2** of 8 | 136 u · **64%** | 149 u · 71% | 306 u · 100% | 58 | ~5.1 k u |
+| 4 | **3** of 8 | 98 u · **47%** | 115 u · 54% | 190 u · 90% | 46 | ~5.2 k u |
 
-Percentages are of the 150 u/s top speed via `FastestSpeedForCorner`. A two-lap race is ~8 k u:
-~55 s if every metre were flown on the ceiling, ~90 s at the ammo-limited sustained pace, three
-minutes coasting. The ladder was measured when the speed came from a bomb pump (2026-10-06); the
-pump and the launch share the same ceiling and the same turn rate, so the ladder carried over
-unchanged — `GrizzlyTimeCourseTests` re-ran it against the launch model.
+Percentages are of the 350 u/s top speed via `FastestSpeedForCorner`. A three-lap race is
+~15 k u: ~45 s if every metre were flown on the ceiling, ~85 s at the ammo-limited sustained pace,
+five minutes coasting. The first cut (2026-10-06) was fourteen gates on a 560 u ring against a
+150 u/s top speed; tripling the launch (2026-10-08) made every one of those legs shorter than a
+single launch's carry, so the circuit was re-cut (§3).
 
 ## 2. What the mode does NOT add
 
@@ -69,25 +70,28 @@ generator**. It reuses:
   onto a straight, **Dig In** (A) is a hard stop, and a bomb blown across a rival's trail breaks it
   (the blast spares only your own domain). None of that is scored; the race is.
 
-## 3. The cut — why fourteen gates on a small circle
+## 3. The cut — Headlong's octagon, against the 211 u circle
 
-A corner's radius on this metric is `(shorter leg / 2) / tan(turn / 2)`. Redline's eight-gate
-circle at 820 leaves 466–868 u legs, which no Grizzly corner could ever fall inside 90 u on. Three
-things moved, each measured with the shipped solver compiled out of editor:
+A corner's radius on this metric is `(shorter leg / 2) / tan(turn / 2)`. With the launch tripled,
+the Grizzly's full-launch circle is **211 u** and a full launch carries **~300 u** — the Rhino's
+territory, so the cut is Headlong's, re-measured with the shipped solver compiled out of editor:
 
-- **Fourteen gates a lap** on a **560 u** base circle (just outside the nucleus shell at 480):
-  legs of 250–420 u, two and a half to four and a half full launches' carry each. Ten gates at 620 left 375–570 u
-  legs and the ladder did not separate (levels 2 and 3 both produced zero-or-one costing corner).
-- **The reach dial is `AngularSpread`, not the profile** — REDLINE.md §4's finding, reproduced.
-  Levels 2–4 ask for 140°, 150°+135° and 160°+150°+50° and only produce them at spreads of
-  3 / 6 / 10. At 14 gates the profile asking three ~110–130° corners (the obvious level-4 row)
-  produced one costing corner; two near-hairpins plus a 50° kink produce three.
-- **`RadialSwing` is inert on this cut** (the flat ring already sits against the nucleus shell);
-  kept at 0.42 so the three cuts read alike.
+- **Eight gates a lap** on Headlong's **800 u** base circle, three laps a race (Headlong's and
+  Redline's 24). Legs of 475–610 u at the median: one launch's carry and half again on every leg
+  (`Legs_are_long_enough_to_launch_down`). The old fourteen gates on 560 u left 250–420 u legs —
+  shorter than one launch now carries — and no shorter lap fits a hairpin with long enough legs
+  inside the 480–1080 shell.
+- **The reach dial is `AngularSpread`** — REDLINE.md §4's finding, again. Profiles were swept over
+  four spreads per level and picked so each level's hardest corner costs ≥ 8 points more than the
+  last: level 2 asks one 110° corner and needs spread 4 to make it cost anything; level 3 asks
+  150° + 135° half a lap apart, which pull the ring into a lens at spread 2 on their own; level 4 is
+  140° + 135° + 70° at spread 4 — a triangle with three braking zones.
+- **`RadialSwing` 0.42**, Headlong's.
 
-The safety floor is stated in absolute Grizzly units (`CornerFloorRadius` 72 / 45 / 41 / 38 u),
-never below the 30 u cruise pivot. Presentation caps (50 / 82 / 84 / 86°) each sit over the
-level's measured worst half-turn (44 / 79 / 77 / 80°).
+The safety floor is stated in absolute Grizzly units (`CornerFloorRadius` 169 / 106 / 95 / 89 u),
+never below the 30 u cruise pivot. Presentation caps (50 / 70 / 72 / 76°) each sit over the
+level's measured worst half-turn (44 / 68 / 68 / 73°). Mouths are Headlong's (96 / 72 / 58 / 46):
+the Grizzly now arrives at a Rhino's pace, on a push it cannot steer.
 
 ## 4. The AI bomb-jumps — a vessel change, not a mode one
 
@@ -109,28 +113,28 @@ pre-restoration prefab):
 - **AI throttle was pinned at 0.6** (a 30 u/s cruise). Now 0.7 → 1.0 across skill (skill =
   intensity × 0.25), so a level-4 bot cruises at the full 50.
 
-AI approach numbers are Redline's scaled to the Grizzly's 90 u circle: commit **160** / lead
-**180** / through **120** (Redline: 420 / 480 / 320 against 237 u).
+AI approach numbers are Redline's ratios on the Grizzly's 211 u circle: commit **380** / lead
+**420** / through **285** (Redline: 420 / 480 / 320 against 237 u).
 
 ## 5. Numbers, and where they are authored
 
 | Knob | Where | Shipped |
 |---|---|---|
-| race length (laps × rings) | `Resources/EndConditionOverrides` → `grizzlyTimeGateTarget` | **28** |
-| laps | `MinigameGrizzlyTime.unity` → `GrizzlyTimeController.laps` | **2** |
-| rings per lap / base circle | `GrizzlyTimeCourse.GatesPerLap` / `.BaseRadius` | **14** / **560** |
+| race length (laps × rings) | `Resources/EndConditionOverrides` → `grizzlyTimeGateTarget` | **24** |
+| laps | `MinigameGrizzlyTime.unity` → `GrizzlyTimeController.laps` | **3** |
+| rings per lap / base circle | `GrizzlyTimeCourse.GatesPerLap` / `.BaseRadius` | **8** / **800** |
 | corner profile, spread, floor, mouth, presentation | `GrizzlyTimeCourse.ForIntensity` | §1, §3 |
-| AI commit / lead / through | scene → `GateRaceController` | 160 / 180 / 120 |
-| detection clamp | scene → `maxPlausibleSpeed` | **600** |
+| AI commit / lead / through | scene → `GateRaceController` | 380 / 420 / 285 |
+| detection clamp | scene → `maxPlausibleSpeed` | **1400** (4× the 350 top speed) |
 | autopilot bomb-jump | `GrizzlyTriggerBombConfig.asset` → `aiFireStickBand` / `aiFreezeDistance` | 0.35 / 18 |
-| launch strength | `VesselImpulseByExplosionEffect.asset` → `selfLaunchMultiplier`; trigger-bomb `maxBlastScale` | 1.5; 120 |
+| launch strength / ceiling | `GrizzlyTriggerBombConfig.asset` → `selfLaunchMultiplier` / `selfLaunchCeiling`; `maxBlastScale` | 4.5 / 300; 200 |
 | ammo (the sustained pace) | `Grizzly.prefab` Ammo `resourceGainRate`; `maxAmmoCost` | 0.15/s; 0.35 |
-| comeback rate | `ArcadeGameGrizzlyTime.asset` | **0.25** (7 gates behind buys 1.75 levels) |
+| comeback rate | `ArcadeGameGrizzlyTime.asset` | **0.3** (6 gates behind buys 1.8 levels) |
 | course shell | scene → `courseOuterRadius` / `courseInnerRadiusFallback` | 1080 / 480 |
 
 Every vessel number the cut depends on is restated as a constant on `GrizzlyTimeCourse` and
-**read back off `Grizzly.prefab`, `GrizzlyTriggerBombConfig.asset`,
-`VesselImpulseByExplosionEffect.asset` and `AOEGrizzlyExplosion.prefab`** by
+**read back off `Grizzly.prefab`, `GrizzlyTriggerBombConfig.asset` and
+`AOEGrizzlyExplosion.prefab`** by
 `Course_constants_match_the_shipped_Grizzly_and_its_launch` — retune the hull, the bombs or the
 launch and the test names the constant that moved.
 
@@ -148,14 +152,14 @@ autopilot bomb-jump (on, and freezing inside its own blast) and the toybox roste
 
 1. **Arcade card.** Menu → Arcade: **Grizzly Time** and **Grizzly Charge** both appear and are
    clickable on a fresh account; Grizzly Time's launch panel pins the vessel to **Grizzly**.
-2. **Launch at intensity 1, 2 players.** Fourteen rings bloom in a closed loop; your next gate is
+2. **Launch at intensity 1, 2 players.** Eight rings bloom in a closed loop; your next gate is
    lit and the objective arrow points at it.
 3. **Bomb-jump a lap.** Fire, freeze just ahead, ride the blast; alternate LT/RT. Each launch
-   should throw you to ~150 for about a second. At intensity 1 every corner can be taken with a
-   launch running.
-4. **Lap wrap.** After gate 14 the lit ring returns to gate 1 and the goal row reads 14/28.
-5. **Intensity 4.** A median lap has two near-hairpins that punish launching into them (you
-   swing wide of the next mouth) and a third you can just hold on a half-squeeze launch.
+   should throw you to ~350 for about a second and carry you ~300 u. At intensity 1 every corner
+   can be taken with a launch running.
+4. **Lap wrap.** After gate 8 the lit ring returns to gate 1 and the goal row reads 8/24.
+5. **Intensity 4.** A median lap is a triangle: two near-hairpins that punish launching into
+   them (you swing wide of the next mouth) and a third you can hold with most of a launch.
 6. **AI.** Add AI Grizzlies: they must **steer** (the `AIPilot` enable), **fire, freeze and ride
    bombs on the straights** (the autopilot bomb-jump), and complete more than one lap.
 7. **MPPM two clients.** Both see the same circuit; a client's gate reports are credited once;
@@ -165,14 +169,17 @@ autopilot bomb-jump (on, and freezing inside its own blast) and the toybox roste
 
 ## 8. Known limitations / follow-ups
 
-- **Not editor-verified.** Authored headless: the course and its 14-test suite were compiled and
+- **Not editor-verified.** Authored headless: the course and its test suite were compiled and
   run out of editor (Roslyn, against the card-art harness's Unity shim) over 400 seeds × 4
   intensities, and the suite was watched failing under a mutated course. Nobody has flown it.
 - **The launch curve is the steady-state circle.** A launch keeps the direction it was thrown in
-  when the bomb went off, so a turn taken mid-launch slides wide of 90 u; every costing corner sits well
-  inside it (≤ 78 u at the median), so the slide moves no corner across the line — but a play-test
-  may want the level-2 corner tighter.
-- **Ammo sets the sustained pace (~90 u/s), and it is a first-pass number.** If races feel like
+  when the bomb went off, so a turn taken mid-launch slides wide of 211 u; the level-4 corners sit
+  well inside it (≤ 115 u at the median), but level 2's single corner (161 u) is closer to the
+  line, so a play-test may want it tighter.
+- **The launch cannot be steered.** At 300 u/s of world-space push, a launch aimed badly carries
+  the hull ~300 u the wrong way. The mouths are Headlong's for that reason; if threading still
+  reads as luck, the dials are `RingRadius` or `selfLaunchSeconds` (shorter launch, same peak).
+- **Ammo sets the sustained pace (~180 u/s), and it is a first-pass number.** If races feel like
   coasting between launches, the dial is the Ammo `resourceGainRate` on `Grizzly.prefab` (0.15/s)
   or `maxAmmoCost` (0.35); neither moves the corner ladder, which is cut against the ceiling.
 - **Card art** is the `/cardart` COURSE-tier render (`CardBackgrounds/GrizzlyTime.png`): the

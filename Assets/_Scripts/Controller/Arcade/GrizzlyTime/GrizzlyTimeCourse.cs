@@ -15,26 +15,31 @@ namespace CosmicShore.Gameplay
     /// freezes it, the release detonates it, and a Grizzly inside its own blast is LAUNCHED AWAY
     /// FROM THE BOMB (<c>GrizzlyTriggerBombExecutor.LaunchSelf</c>, GRIZZLY_TRIGGER_BOMBS.md) -
     /// so the bomb is left BEHIND you and blown. A full squeeze's blast (scale 200) hands over
-    /// <c>200 / 1.2 s x 1.5</c> = 250 u/s at the bomb, eased 1.5 -> 0.5 over a second and clamped
-    /// by the vessel's 100 u/s velocity-modifier ceiling - so a full launch sits ON the ceiling for
-    /// its whole second: 150 u/s, three times cruise. That push is a WORLD-SPACE velocity
+    /// <c>200 / 1.2 s x 4.5</c> = 750 u/s at the bomb, eased 1.5 -> 0.5 over a second and clamped
+    /// by the launch's own 300 u/s ceiling (<c>selfLaunchCeiling</c> - three times the 100 u/s
+    /// every other shove shares, design ask 2026-10-08) - so a full launch sits ON that ceiling
+    /// for its whole second: 350 u/s, seven times cruise. That push is a WORLD-SPACE velocity
     /// (<c>VesselTransformer.velocityShift</c>): it keeps going the way it was thrown, and the
     /// turn rate does not see it at all.</para>
     ///
     /// <para><b>So a corner is one question: how much launch is it worth?</b> Launching into a
-    /// corner keeps the 150 u/s but the hull swings round at the same 95 deg/s, a 90 u circle;
-    /// coasting it lets the launch bleed off (a full one carries ~100 u the way it was thrown) and
+    /// corner keeps the 350 u/s but the hull swings round at the same 95 deg/s, a 211 u circle;
+    /// coasting it lets the launch bleed off (a full one carries ~300 u the way it was thrown) and
     /// the hull pivots on its 30 u cruise circle - and then the next bomb has to be
     /// fired, frozen and ridden before the speed is back. <see cref="CornerRadiusAtLaunch"/> is
     /// the curve, the same shape <see cref="RedlineCourse.CornerRadiusAtBoost"/> is for the
-    /// Manta's Soar, at a third of the scale.</para>
+    /// Manta's Soar.</para>
     ///
     /// <para><b>The curve is the STEADY-STATE circle.</b> A launch's push keeps the direction it
     /// was thrown in when the bomb went off, so a turn taken mid-launch slides a little wide of
     /// <see cref="FullLaunchRadius"/>. The ladder keeps every demanding corner well inside the
-    /// full-launch circle, so the slide moves no corner across the line. The bomb pump this course
-    /// was first cut against (2026-10-06) had the same ceiling and the same turn rate, which is
-    /// why the measured ladder survived the switch to launches unchanged.</para>
+    /// full-launch circle, so the slide moves no corner across the line.</para>
+    ///
+    /// <para><b>The cut followed the launch.</b> The course was first cut (2026-10-06) against a
+    /// 100 u/s ceiling - 150 u/s top, a 90 u full-launch circle, fourteen gates on a 560 u ring.
+    /// Tripling the launch (2026-10-08) made every one of those legs shorter than one launch's
+    /// carry, so the lap became Headlong's octagon - eight gates on an 800 u ring - with the
+    /// ladder re-measured against the 211 u circle (GRIZZLYTIME.md §4).</para>
     /// </summary>
     public static class GrizzlyTimeCourse
     {
@@ -61,15 +66,16 @@ namespace CosmicShore.Gameplay
         public const float ExplosionDuration = 1.2f;
 
         /// <summary>`selfLaunchMultiplier` on GrizzlyTriggerBombConfig.asset.</summary>
-        public const float SelfLaunchMultiplier = 1.5f;
+        public const float SelfLaunchMultiplier = 4.5f;
 
         /// <summary>`selfLaunchSeconds` on GrizzlyTriggerBombConfig.asset - seconds a launch lives
         /// (cosine ease-out).</summary>
         public const float ImpulseDuration = 1f;
 
-        /// <summary>`velocityModifierMax` on VesselTransformer - the ceiling every launch, kick
-        /// and knock-back shares.</summary>
-        public const float VelocityModifierCeiling = 100f;
+        /// <summary>`selfLaunchCeiling` on GrizzlyTriggerBombConfig.asset - the velocity ceiling a
+        /// live bomb launch raises the hull's to (every other shove stays under VesselTransformer's
+        /// shared 100 u/s).</summary>
+        public const float VelocityModifierCeiling = 300f;
 
         /// <summary>Cruise turn rate, deg/s. A launch never changes it: `speed` is the throttle
         /// speed, and the launch rides `velocityShift`, which the turn rate does not read.</summary>
@@ -91,26 +97,26 @@ namespace CosmicShore.Gameplay
 
         /// <summary>The impulse a bomb of size <paramref name="size01"/> hands the Grizzly that
         /// rides it, before the ease and the ceiling: <c>blast scale / ExplosionDuration x
-        /// selfLaunchMultiplier</c>. 62.5 u/s for a tap, 250 for a full squeeze, at the bomb.</summary>
+        /// selfLaunchMultiplier</c>. 187.5 u/s for a tap, 750 for a full squeeze, at the bomb.</summary>
         public static float LaunchImpulse(float size01) =>
             Mathf.Lerp(MinBlastScale, MaxBlastScale, Mathf.Clamp01(size01)) / ExplosionDuration * SelfLaunchMultiplier;
 
         /// <summary>Sustained speed at a share <paramref name="launch"/> in [0,1] of the
-        /// velocity ceiling: cruise plus the launches riding on it. 150 u/s flat out, 50 coasting.</summary>
+        /// velocity ceiling: cruise plus the launches riding on it. 350 u/s flat out, 50 coasting.</summary>
         public static float SpeedAtLaunch(float launch) =>
             GrizzlyThrottleScaler + VelocityModifierCeiling * Mathf.Clamp01(launch);
 
-        /// <summary>Top speed: launching flat out. 150 u/s - the ceiling, which a full squeeze's
-        /// launch reaches at birth (asserted by the tests).</summary>
+        /// <summary>Top speed: launching flat out. 350 u/s - cruise plus the ceiling, which a full
+        /// squeeze's launch reaches at birth (asserted by the tests).</summary>
         public static float TopSpeed => SpeedAtLaunch(1f);
 
         /// <summary>The steady circle a Grizzly flies at launch share <paramref name="launch"/>:
-        /// 90 u launching flat out, 30 u coasting.</summary>
+        /// 211 u launching flat out, 30 u coasting.</summary>
         public static float CornerRadiusAtLaunch(float launch) =>
             SpeedAtLaunch(launch) / (TurnRateDegPerSec * Mathf.Deg2Rad);
 
         /// <summary>THE number the course is cut around: the tightest corner a Grizzly holds
-        /// without giving up any launch. ~90 u.</summary>
+        /// without giving up any launch. ~211 u.</summary>
         public static float FullLaunchRadius => CornerRadiusAtLaunch(1f);
 
         /// <summary>The cruise pivot: the tightest circle the hull can fly at all. ~30 u - the
@@ -142,9 +148,9 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// How far one launch of size <paramref name="size01"/> carries the hull along the heading
         /// it was aimed down, over its whole life, clamped by the ceiling as the transformer clamps
-        /// it, ridden at the bomb (the launch eases toward the blast's edge). ~100 u for a full
-        /// squeeze - about one full-launch circle, which is why a launch is thrown DOWN a leg and a
-        /// corner is turned before the bomb goes off, not after.
+        /// it, ridden at the bomb (the launch eases toward the blast's edge). ~300 u for a full
+        /// squeeze - about one and a half full-launch circles, which is why a launch is thrown DOWN
+        /// a leg and a corner is turned before the bomb goes off, not after.
         /// </summary>
         public static float CarryAfterLaunch(float size01 = 1f)
         {
@@ -158,12 +164,12 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// The shipped circuit per intensity. <b>INTENSITY IS WHAT MIX OF CORNERS A LAP ASKS
-        /// FOR</b> - Headlong's and Redline's rule, cut against the Grizzly's curve. Fourteen gates
-        /// a lap on a small base circle, because the hull is a third of the Manta's speed: short
-        /// legs are what make a corner TIGHT on this metric (a corner's radius is half its shorter
-        /// leg over the tangent of half its turn), and a leg is about one or two launches long, so
-        /// every leg asks for a fresh bomb. See <see cref="GrizzlyTimeCourse"/> for the curve; the
-        /// measured ladder is in GRIZZLYTIME.md §4 and asserted by GrizzlyTimeCourseTests.
+        /// FOR</b> - Headlong's and Redline's rule, cut against the Grizzly's curve. Eight gates a
+        /// lap on Headlong's 800 u ring: a leg is one launch's carry and a turn-in long, so every
+        /// leg asks for a fresh bomb. Measured median hardest corner per level: 100% / 76% / 64% /
+        /// 47% of top speed, with 0 / 1 / 2 / 3 corners costing launch. See
+        /// <see cref="GrizzlyTimeCourse"/> for the curve; the measured ladder is in GRIZZLYTIME.md
+        /// §4 and asserted by GrizzlyTimeCourseTests.
         /// </summary>
         public static HeadlongCircuitSettings ForIntensity(int intensity)
         {
@@ -175,45 +181,43 @@ namespace CosmicShore.Gameplay
                 BaseRadius = BaseRadius,
                 CornerProfile = new[]
                 {
-                    new[] {  40f,  36f,  34f,  32f,  30f,  28f,  26f,  24f,  22f,  20f,  20f,  18f,  16f,  14f },
-                    new[] { 140f,  40f,  30f,  26f,  22f,  20f,  18f,  16f,  14f,  10f,   8f,   8f,   4f,   4f },
-                    new[] { 150f, 135f,  20f,  15f,  12f,   8f,   6f,   5f,   4f,   3f,   2f,   0f,   0f,   0f },
-                    new[] { 160f, 150f,  50f,   0f,   0f,   0f,   0f,   0f,   0f,   0f,   0f,   0f,   0f,   0f },
+                    new[] { 125f,  90f,  60f,  40f,  25f,  12f,   5f,   3f },
+                    new[] { 110f,  90f,  60f,  40f,  25f,  18f,  12f,   5f },
+                    new[] { 150f, 135f,  60f,   6f,   4f,   3f,   2f,   1f },
+                    new[] { 140f, 135f,  70f,   6f,   4f,   3f,   2f,   1f },
                 }[i - 1],
-                // The SAFETY floor in the Grizzly's own units (72 / 45 / 41 / 38 u): never tighter
-                // than its 30 u cruise pivot plus a margin, so a corner the solver overshot is
-                // still one the hull flies with the triggers released. Not the design -
-                // CornerProfile is. CornerRadiusFactor stays 0: it would be read as a fraction of
+                // The SAFETY floor in the Grizzly's own units (169 / 106 / 95 / 89 u): never
+                // tighter than its 30 u cruise pivot plus a margin, so a corner the solver
+                // overshot is still one the hull flies with the triggers released. Not the design
+                // - CornerProfile is. CornerRadiusFactor stays 0: it would be read as a fraction of
                 // the RHINO's flat-out radius.
                 CornerRadiusFactor = 0f,
                 CornerFloorRadius = new[] { 0.80f, 0.50f, 0.45f, 0.42f }[i - 1] * full,
-                // Measured inert on this cut (the flat ring already sits against the nucleus
-                // shell); kept at Headlong's and Redline's value so the three cuts read alike.
                 RadialSwing = 0.42f,
                 // THE reach dial (REDLINE.md §4): the profile asks for a hairpin, but only a gap
-                // squeezed hard enough produces one. 3 / 6 / 10 are what turn levels 2-4's asked-for
-                // 140 / 150+135 / 160+150+50 into one, two and three corners that cost launch.
-                AngularSpread = new[] { 1.2f, 3.0f, 6.0f, 10.0f }[i - 1],
-                // Less out-of-plane than Redline (160-280): the legs are a third as long, and a
-                // swing that size would turn every leg into a corner of its own.
-                LateralPerturbation = new[] { 80f, 110f, 140f, 170f }[i - 1],
-                // The mouth. The Grizzly arrives at a third of the Manta's speed with three times
-                // its turn rate, so it can be asked to thread far tighter rings (Redline: 110 / 88
-                // / 72 / 44). Level 4's 34 u is a hull-and-a-bit for a pilot carrying a slide.
-                RingRadius = new[] { 64f, 52f, 42f, 34f }[i - 1],
+                // squeezed hard enough produces one. Level 3 needs LESS squeeze than level 2:
+                // its two big turns sit half a lap apart and pull the ring into a lens on their
+                // own, where level 2's single 110 has to be squeezed to cost anything.
+                AngularSpread = new[] { 1.2f, 4.0f, 2.0f, 4.0f }[i - 1],
+                // Headlong's out-of-plane swing: the legs are Headlong's length now.
+                LateralPerturbation = new[] { 120f, 170f, 215f, 260f }[i - 1],
+                // The mouth - Headlong's (the Rhino's), because the Grizzly now arrives at a
+                // Rhino's pace and, worse, on a launch it cannot steer: the push keeps the
+                // direction it was thrown in, so the approach is aimed before the bomb goes off.
+                RingRadius = new[] { 96f, 72f, 58f, 46f }[i - 1],
                 AxisJitterDegrees = new[] { 20f, 28f, 36f, 44f }[i - 1],
                 // Must COVER half the level's hardest turn (a gate faces its corner's bisector,
                 // so the jitter budget is `cap - halfTurn` and clamps to zero past it).
-                MaxPresentDegrees = new[] { 50f, 82f, 84f, 86f }[i - 1],
+                MaxPresentDegrees = new[] { 50f, 70f, 72f, 76f }[i - 1],
             };
         }
 
         /// <summary>Rings per lap. The race target is <c>laps x GatesPerLap</c>.</summary>
-        public const int GatesPerLap = 14;
+        public const int GatesPerLap = 8;
 
-        /// <summary>The circuit's base circle. Close outside the race cell's nucleus shell (480),
-        /// so fourteen gates leave 250-420 u legs - two and a half to four full launches' carry
-        /// (~100 u each).</summary>
-        public const float BaseRadius = 560f;
+        /// <summary>The circuit's base circle - Headlong's octagon at 800, mid-shell. Eight gates
+        /// leave 475-610 u legs: one full launch's carry (300 u) and a turn-in to spare on every
+        /// one.</summary>
+        public const float BaseRadius = 800f;
     }
 }

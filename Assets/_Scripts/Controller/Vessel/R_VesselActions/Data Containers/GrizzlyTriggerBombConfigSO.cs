@@ -15,6 +15,11 @@ namespace CosmicShore.Gameplay
     ///   pull    -> freeze the bomb where it is
     ///   release -> detonate it - and a Grizzly inside its own blast is LAUNCHED AWAY FROM IT
     ///
+    /// <b>Only the trigger detonates a bomb.</b> It never goes off on a clock or on contact: it
+    /// flies THROUGH prisms (lighting them as it passes - LIT, Docs/LIT.md) and, if nobody
+    /// freezes it, eases to rest at the end of its throw and hangs there, live, until the
+    /// trigger blows it (design ask, 2026-10-08).
+    ///
     /// <b>Pressure is the commitment.</b> One number - the peak pressure - sets the ammo spent,
     /// the bomb's visible size and the blast's size together, so a feather tap is a cheap pop
     /// and a full squeeze is an expensive launch. A pull the ammo pool cannot pay for in full
@@ -43,9 +48,9 @@ namespace CosmicShore.Gameplay
         float maxAmmoCost = 0.35f;
 
         [Header("Projectile")]
-        [SerializeField, Tooltip("Muzzle speed ADDED to the hull's own velocity, u/s. The flight eases to rest over the fuse (Projectile's cos(pi t / 2T)), so it leaves faster than the Grizzly and the Grizzly catches it near the end.")]
+        [SerializeField, Tooltip("Muzzle speed ADDED to the hull's own velocity, u/s. The flight eases to rest over the throw (Projectile's cos(pi t / 2T)), so it leaves faster than the Grizzly and the Grizzly catches it near the end.")]
         float projectileSpeed = 90f;
-        [SerializeField, Tooltip("Fuse, seconds. A bomb nobody freezes detonates where it comes to rest; one that hits a prism detonates there.")]
+        [SerializeField, Tooltip("The THROW, seconds: how long the bomb flies before it eases to rest. It is not a fuse - a bomb nobody freezes hangs where it stopped, live, until the trigger detonates it. Range = (muzzle + inherited speed) x 2T / pi.")]
         float projectileTime = 3f;
         [SerializeField, Tooltip("Visible bomb scale of a minimum bomb. Small on purpose: a bomb is a little hot thing that becomes a huge blast (design ask, 2026-10-08).")]
         float minProjectileScale = 2.5f;
@@ -63,12 +68,20 @@ namespace CosmicShore.Gameplay
         float maxBlastScale = 200f;
 
         [Header("Self launch (away from the bomb)")]
-        [SerializeField, Tooltip("A Grizzly inside its own blast is thrown AWAY FROM THE BOMB at blast scale / ExplosionDuration x this, capped by the 100 u/s velocity ceiling.")]
-        float selfLaunchMultiplier = 1.5f;
+        [SerializeField, Tooltip("A Grizzly inside its own blast is thrown AWAY FROM THE BOMB at blast scale / ExplosionDuration x this, capped by Self Launch Ceiling. 4.5 = three times the 1.5 it first shipped at (design ask, 2026-10-08).")]
+        float selfLaunchMultiplier = 4.5f;
+        [SerializeField, Tooltip("The velocity ceiling a bomb launch may reach, u/s. Every other shove a vessel takes shares VesselTransformer's 100 u/s cap; a live bomb launch raises it to this for its own lifetime only (ShipVelocityModifier.ceiling). 300 = three times the shared cap, which a full squeeze used to sit on.")]
+        float selfLaunchCeiling = 300f;
         [SerializeField, Tooltip("Seconds the launch lasts (cosine ease-out, VesselTransformer.ModifyVelocity).")]
         float selfLaunchSeconds = 1f;
         [SerializeField, Tooltip("Launch strength at the blast's EDGE as a fraction of the strength at the bomb. 1 = flat; lower rewards blowing it close.")]
         [Range(0f, 1f)] float selfLaunchEdgeStrength = 0.5f;
+
+        [Header("Colour")]
+        [SerializeField, Tooltip("Fallback DANGER colour, used only when the theme palette authors none (SO_ColorSet.GetDangerSignalColor answers alpha 0). The shipped palette's danger rim wins.")]
+        Color fallbackDangerColor = new(1f, 0.072f, 0.105f, 1f);
+        [SerializeField, Tooltip("How far each trigger's bomb is rotated off the danger hue, in HSV hue (0-1). LT turns one way (toward crimson-magenta), RT the other (toward red-orange), so the two bombs are both DANGER and still told apart.")]
+        [Range(0f, 0.2f)] float sideHueShift = 0.045f;
 
         [Header("Autopilot")]
         [SerializeField, Tooltip("An AUTOPILOT presses no triggers (AIPilot writes stick and throttle only), so without this an AI Grizzly never bombs. While AIPilot.AutoPilotEnabled the executor fires full-size bombs while the stick is inside this band, freezes each one Ai Freeze Distance ahead, flies past it and detonates it behind - a launch. 0 disables the drive.")]
@@ -106,6 +119,9 @@ namespace CosmicShore.Gameplay
         public float SelfLaunchMultiplier => selfLaunchMultiplier;
         public float SelfLaunchSeconds => selfLaunchSeconds;
         public float SelfLaunchEdgeStrength => selfLaunchEdgeStrength;
+        public float SelfLaunchCeiling => selfLaunchCeiling;
+        public Color FallbackDangerColor => fallbackDangerColor;
+        public float SideHueShift => sideHueShift;
         public float AiFireIntervalSeconds => aiFireIntervalSeconds;
         public EventReference FireEvent => fireEvent;
         public EventReference DetonateEvent => detonateEvent;
@@ -117,6 +133,21 @@ namespace CosmicShore.Gameplay
             float hi = Mathf.Max(pressureForMinBomb, pressureForMaxBomb);
             float t = hi - lo <= 1e-5f ? (pressure >= hi ? 1f : 0f) : Mathf.Clamp01((pressure - lo) / (hi - lo));
             return Mathf.Pow(t, pressureExponent);
+        }
+
+        /// <summary>
+        /// One trigger's bomb colour: <paramref name="danger"/> (alpha 0 = no palette colour, use
+        /// <see cref="FallbackDangerColor"/>) rotated <see cref="SideHueShift"/> one way for LT and
+        /// the other for RT, saturation and brightness kept. Pure; edit-mode tested.
+        /// </summary>
+        public Color BombColor(bool leftTrigger, Color danger)
+        {
+            var c = danger.a > 0f ? danger : fallbackDangerColor;
+            Color.RGBToHSV(c, out float h, out float sat, out float v);
+            h = Mathf.Repeat(h + (leftTrigger ? -sideHueShift : sideHueShift), 1f);
+            var shifted = Color.HSVToRGB(h, sat, v);
+            shifted.a = 1f;
+            return shifted;
         }
 
         public float AmmoCostForSize(float size01) => Mathf.Lerp(minAmmoCost, maxAmmoCost, Mathf.Clamp01(size01));

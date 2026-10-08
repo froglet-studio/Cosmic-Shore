@@ -8,9 +8,14 @@ Run from the repo root:  python3 Tools/Build/author_grizzly_bomb_assets.py [--ch
 WHAT IT AUTHORS
   1. Assets/_Prefabs/Projectile/GrizzlyBomb.prefab - GrizzlyShell.prefab (the charged cannon's
      round, read off disk every run) plus the bomb's look:
-       - a camera-facing additive GLOW quad ("Halo", glow1_ADD) the visual breathes with the fuse,
-       - a short streak (TrailRenderer, Unity's Default-Line material so the per-shot domain
+       - a camera-facing additive GLOW quad ("Halo", glow1_ADD) the visual breathes with,
+       - a short streak (TrailRenderer, Unity's Default-Line material so the per-shot danger
          gradient needs no material instance),
+       - its OWN impact container (GrizzlyBombProjectileImpactContainer, all four lists empty):
+         a bomb touches nothing - it flies through prisms (lighting them, GrizzlyBombVisual),
+         never stops on one, and goes off only on the trigger. GrizzlyShell's container is the
+         Sparrow full-auto's (prism damage, a detonate end effect), which is what made the bombs
+         carve and blow on contact,
        - GrizzlyBombVisual on the root, wired to the core, the halo and the streak,
        - the core casts no shadow (a glowing bomb does not).
      The cannon keeps GrizzlyShell untouched: the bombs used to share it, which is why they
@@ -20,6 +25,8 @@ WHAT IT AUTHORS
      factory; GrizzlyTriggerBombExecutor.gun is pointed at that Gun. Inserted once (idempotent),
      validated every run.
   3. GrizzlyBombVisual.cs.meta.
+  4. Assets/_SO_Assets/Effects/Effect Containers/Projectile Containers/
+     GrizzlyBombProjectileImpactContainer.asset (+meta).
 
 Deterministic: guids are md5("CosmicShore/<name>") (arcade_mode_lib.guid), new prefab-local
 fileIDs are fixed constants checked for collisions, and the whole result is validated in memory
@@ -37,12 +44,19 @@ BOMB = "Assets/_Prefabs/Projectile/GrizzlyBomb.prefab"
 GRIZZLY = "Assets/_Prefabs/Spacevessels/Grizzly.prefab"
 VISUAL_CS = "Assets/_Scripts/Controller/Projectiles/GrizzlyBombVisual.cs"
 
+CONTAINER = ("Assets/_SO_Assets/Effects/Effect Containers/Projectile Containers/"
+             "GrizzlyBombProjectileImpactContainer.asset")
+
 G_BOMB = lib.guid("prefab/GrizzlyBomb")
 G_VISUAL = lib.guid("script/GrizzlyBombVisual")
+G_CONTAINER = lib.guid("asset/GrizzlyBombProjectileImpactContainer")
 
 EXISTING = {
     "GrizzlyShell":     lib.existing_guid(SHELL),
     "Glow1Add":         "e653836c30661fe419b8992e230ca189",   # Epic Toon FX glow1_ADD (URP particles, additive)
+    "ShellContainer":   "c876b418c4188d546996eaabb11d0f26",   # SparrowFullAutoProjectileImpactContainer
+    "ImpactContainerSO": lib.existing_guid(
+        "Assets/_Scripts/Controller/ImpactEffects/Containers/ProjectileImpactorDataContainerSO.cs"),
     "PoolManager":      "b5daed71d21246db9fdb15a9d495e1ec",
     "ProjectileFactory": "a9b3080b23e64bba93ece7a3dece3463",
     "Gun":              "35a4e5dfc7064254cb27fc78eefb05a0",
@@ -55,6 +69,7 @@ SHELL_ROOT_GO = "7877928849292311340"
 SHELL_ROOT_TF = "714786179197644117"
 SHELL_CORE_MR = "7231651320737456340"
 SHELL_PROJECTILE = "7632677803272750685"
+SHELL_IMPACTOR = "4476692679679402743"
 
 # ── New objects in the bomb prefab ──
 B_TRAIL = "5130000000000000001"
@@ -210,7 +225,7 @@ MonoBehaviour:
   trail: {{fileID: {B_TRAIL}}}
   trailWidthFactor: 0.7
   pulseHzAtLaunch: 2.5
-  pulseHzAtFuseEnd: 11
+  pulseHzAtRest: 11
   haloScale: 3
   pulseAmplitude: 0.22
   armedHaloScale: 5
@@ -220,6 +235,8 @@ MonoBehaviour:
   sparkColor: {{r: 1, g: 0.92, b: 0.7, a: 1}}
   sparkMix: 0.45
   coreDarkness: 0.12
+  litRadiusFactor: 1.5
+  litWakeSeconds: 0.3
 """
 
 HALO = f"""--- !u!1 &{B_HALO_GO}
@@ -278,6 +295,15 @@ def build_bomb(shell: str) -> str:
     core = re.search(rf"--- !u!23 &{SHELL_CORE_MR}\nMeshRenderer:\n(?:(?!--- ).*\n)*", bomb).group(0)
     assert core.count("  m_CastShadows: 1\n") == 1, "core renderer shadow flag not found"
     bomb = bomb.replace(core, core.replace("  m_CastShadows: 1\n", "  m_CastShadows: 0\n"), 1)
+    # Its own impact container: a bomb touches nothing (see the module doc).
+    impactor = re.search(rf"--- !u!114 &{SHELL_IMPACTOR}\nMonoBehaviour:\n(?:(?!--- ).*\n)*", bomb).group(0)
+    shell_ref = re.search(r"  projectileImpactorDataContainer: \{fileID: 11400000, guid: (\w+),\s+type: 2\}\n",
+                          impactor)
+    assert shell_ref and shell_ref.group(1) == EXISTING["ShellContainer"], \
+        "GrizzlyShell's impactor no longer names the Sparrow full-auto container"
+    bomb = bomb.replace(impactor, impactor.replace(
+        shell_ref.group(0),
+        f"  projectileImpactorDataContainer: {{fileID: 11400000, guid: {G_CONTAINER}, type: 2}}\n"), 1)
     if not bomb.endswith("\n"):
         bomb += "\n"
     return bomb + TRAIL + VISUAL + HALO
@@ -355,8 +381,15 @@ MonoBehaviour:
     return prefab + pool + factory + gun
 
 
+CONTAINER_ASSET = (lib.header_for(EXISTING["ImpactContainerSO"], "GrizzlyBombProjectileImpactContainer")
+                   + "  projectileShipEffects: []\n"
+                   + "  projectilePrismEffects: []\n"
+                   + "  projectileMineEffects: []\n"
+                   + "  projectileEndEffects: []\n")
+
 g = lib.Generator(mode_id=0, mode_name="GrizzlyBomb")
 g.script_meta(VISUAL_CS, G_VISUAL)
+g.emit_asset(CONTAINER, G_CONTAINER, CONTAINER_ASSET)
 bomb = build_bomb(g.read(SHELL))
 g.emit_prefab(BOMB, G_BOMB, bomb)
 grizzly = wire_grizzly(g.read(GRIZZLY))
@@ -386,6 +419,17 @@ for field in re.findall(r"^  (\w+): ", VISUAL.split("m_EditorClassIdentifier:", 
     if not re.search(rf"\b{field}\b\s*(=|;)", _visual_src):
         errors.append(f"GrizzlyBombVisual has no serialized field '{field}' (the prefab would carry a dead key)")
 
+# A bomb touches nothing: its impactor names the bombs' own container, and that container is empty.
+if f"guid: {G_CONTAINER}, type: 2}}" not in block(bomb, SHELL_IMPACTOR):
+    errors.append("GrizzlyBomb's ProjectileImpactor does not use GrizzlyBombProjectileImpactContainer")
+for key in ("projectileShipEffects", "projectilePrismEffects", "projectileMineEffects", "projectileEndEffects"):
+    if f"  {key}: []\n" not in CONTAINER_ASSET:
+        errors.append(f"GrizzlyBombProjectileImpactContainer.{key} is not empty - the bomb would act on contact")
+_container_src = g.read("Assets/_Scripts/Controller/ImpactEffects/Containers/ProjectileImpactorDataContainerSO.cs")
+for key in ("projectileShipEffects", "projectilePrismEffects", "projectileMineEffects", "projectileEndEffects"):
+    if not re.search(rf"\b{key}\s*;", _container_src):
+        errors.append(f"ProjectileImpactorDataContainerSO has no serialized field '{key}'")
+
 # The executor fires the bombs' own gun, the gun uses the bombs' own factory, the pool holds the bomb.
 if f"  gun: {{fileID: {GZ_GUN}}}\n" not in block(grizzly, GZ_EXECUTOR):
     errors.append("GrizzlyTriggerBombExecutor does not fire the bombs' own Gun")
@@ -397,4 +441,4 @@ if f"prefab: {{fileID: {SHELL_PROJECTILE}, guid: {G_BOMB}, type: 3}}" not in blo
 if "projectileFactory: {fileID: 9100000000000001016}" not in block(grizzly, GZ_CANNON_GUN):
     errors.append("the charged cannon's Gun no longer uses its own factory")
 
-g.finish(errors, referenced=EXISTING, minted=[G_BOMB, G_VISUAL])
+g.finish(errors, referenced=EXISTING, minted=[G_BOMB, G_VISUAL, G_CONTAINER])

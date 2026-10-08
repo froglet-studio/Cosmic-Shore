@@ -11,7 +11,7 @@ Run from the repo root:  python3 Tools/Build/author_grizzly_time_assets.py [--ch
 WHAT THIS MODE IS. Grizzly Time is the Grizzly-only CIRCUIT race: a closed loop of switch rings
 cut through the cell, flown in LAPS, and the first DOMAIN whose LEAD RUNNER threads the last gate
 of the last lap wins (golf: finish time). Every corner is cut against the Grizzly's FULL-LAUNCH
-circle - 150 u/s on its 95 deg/s turn, ~90 u - so a corner is one question: how much of a launch
+circle - 350 u/s on its 95 deg/s turn, ~211 u - so a corner is one question: how much of a launch
 (riding your own trigger-bomb blast) is it worth? See Assets/_Scripts/Controller/Arcade/GRIZZLYTIME.md.
 
 THE DONOR IS REDLINE, and that is the point rather than a shortcut. Redline is already a lapped
@@ -19,9 +19,9 @@ gate race in the barren race cell with an EQUATORIAL spawn ring (gate 0 on its p
 rule), on the shared GateRaceController with a RaceGateTurnMonitor, a RaceGateObjectiveProvider
 and the generic GateRaceScoringRuleSO. The clone swaps FIVE things and inherits the rest:
 
-  1. the controller script (GrizzlyTimeController), keeping Redline's `laps` field (2, not 3).
+  1. the controller script (GrizzlyTimeController), keeping Redline's `laps` field (3, as Redline's).
   2. its scoring rule ASSET (another asset on the same GateRaceScoringRuleSO script).
-  3. the AI approach numbers and the plausible-speed clamp, scaled to the Grizzly's 90 u circle
+  3. the AI approach numbers and the plausible-speed clamp, scaled to the Grizzly's 211 u circle
      (Redline's were sized to the Manta's 237 u).
   4. the scene's Netcode GlobalObjectIdHash values, minted fresh so no in-scene NetworkObject
      shares an id with its donor (the rule the Grizzly Charge scene rebuild adopted).
@@ -92,26 +92,28 @@ EXISTING = {
 # to size the circuit and the turn monitor asks the controller for the target, so the finish line
 # and the course cannot be different lengths. Kept in sync with
 # EndConditionOverridesSO.DefaultGrizzlyTimeGateTarget.
-LAPS = 2
-RINGS_PER_LAP = 14                # GrizzlyTimeCourse.GatesPerLap
+LAPS = 3
+RINGS_PER_LAP = 8                 # GrizzlyTimeCourse.GatesPerLap (14 until the launch was tripled)
 GATE_TARGET = LAPS * RINGS_PER_LAP
-BASE_RADIUS = 560                 # GrizzlyTimeCourse.BaseRadius
+BASE_RADIUS = 800                 # GrizzlyTimeCourse.BaseRadius
 
-# AI approach geometry, sized to the Grizzly's 90 u full-launch circle the way Redline's were sized
-# to the Manta's 237 u (420 / 480 / 320 there - 1.8x, 2x and 1.35x the circle).
-AI_COMMIT_DISTANCE = 160
-AI_APPROACH_LEAD = 180
-AI_THROUGH_DISTANCE = 120
+# AI approach geometry, sized to the Grizzly's 211 u full-launch circle the way Redline's were
+# sized to the Manta's 237 u (420 / 480 / 320 there - 1.8x, 2x and 1.35x the circle).
+AI_COMMIT_DISTANCE = 380
+AI_APPROACH_LEAD = 420
+AI_THROUGH_DISTANCE = 285
 
 # Detection clamp: a frame's motion longer than this x dt x 2 + 5 is read as a respawn. A launching
-# Grizzly makes 150 u/s; Rush, trigger-bomb and cannon launches all share the same 100 u/s velocity
-# ceiling, so 600 is four times anything the hull can fly and still far under a respawn's jump.
-MAX_PLAUSIBLE_SPEED = 600
+# Grizzly makes 350 u/s (cruise + the bomb launch's own 300 u/s ceiling; Rush and the cannon stay
+# under the shared 100), so 1400 is four times anything the hull can fly and still far under a
+# respawn's jump.
+MAX_PLAUSIBLE_SPEED = 1400
 
-# The comeback strength, a FUNCTION OF THE TARGET (`bonusLevels = deficit x rate`): at 0.25 a
-# quarter-of-race deficit (7 gates) buys 1.75 element levels. The Grizzly's Time element scales
-# Rush, its burst onto a straight, so the buff lands on the mode's axis.
-COMEBACK_RATE = 0.25
+# The comeback strength, a FUNCTION OF THE TARGET (`bonusLevels = deficit x rate`): at 0.3 a
+# quarter-of-race deficit (6 gates) buys 1.8 element levels - the 1.75 it bought on the old
+# 28-gate race. The Grizzly's Time element scales Rush, its burst onto a straight, so the buff
+# lands on the mode's axis.
+COMEBACK_RATE = 0.3
 
 # Fresh Netcode ids for the clone's in-scene NetworkObjects (rule 4 above).
 HASH_SALT = "MinigameGrizzlyTime"

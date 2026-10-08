@@ -27,9 +27,12 @@ MonoBehaviour:
   - {fileID: 3479271500403630839, guid: 8713aea50e6b47119e57afc2ce603771, type: 3}
   minBlastScale: 50
   maxBlastScale: 200
-  selfLaunchMultiplier: 1.5
+  selfLaunchMultiplier: 4.5
+  selfLaunchCeiling: 300
   selfLaunchSeconds: 1
   selfLaunchEdgeStrength: 0.5
+  fallbackDangerColor: {r: 1, g: 0.072, b: 0.105, a: 1}
+  sideHueShift: 0.045
   aiFireStickBand: 0.35
   aiFreezeDistance: 18
   aiDetonateBehindDistance: 10

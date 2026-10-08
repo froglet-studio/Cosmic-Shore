@@ -30,7 +30,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("Laps of the ring set that make one race. The authored gate target is the RACE " +
                  "length, so the circuit is laid with target/laps rings - one number authored " +
                  "once, in the end-condition overrides, and the two can never disagree.")]
-        [SerializeField, Min(1)] int laps = 2;
+        [SerializeField, Min(1)] int laps = 3;
 
         protected override string ModeName => "Grizzly Time";
 

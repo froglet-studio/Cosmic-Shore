@@ -173,10 +173,11 @@ namespace CosmicShore.ScriptableObjects
         public const int DefaultRedlineGateTarget = 24;
 
         /// <summary>Grizzly Time RACE length used when <see cref="grizzlyTimeGateTarget"/> is 0 -
-        /// gate threadings, i.e. laps x rings. 28 = two laps of the shipped fourteen-gate
-        /// circuit. Read by <c>GrizzlyTimeController</c> both to size the circuit and (through
+        /// gate threadings, i.e. laps x rings. 24 = three laps of the shipped eight-gate
+        /// circuit (28 = two laps of fourteen until the bomb launch was tripled, 2026-10-08).
+        /// Read by <c>GrizzlyTimeController</c> both to size the circuit and (through
         /// it) by the turn monitor for the finish line, so the two cannot drift.</summary>
-        public const int DefaultGrizzlyTimeGateTarget = 28;
+        public const int DefaultGrizzlyTimeGateTarget = 24;
 
         /// <summary>Regatta RACE length used when <see cref="regattaGateTarget"/> is 0 - gate
         /// threadings, i.e. laps x rings. 24 = three laps of the eight-ring circuit. The rings
@@ -304,8 +305,8 @@ namespace CosmicShore.ScriptableObjects
 
         [Tooltip("Grizzly Time: gate threadings that win the race - LAPS x RINGS, not rings. The " +
                  "controller lays target/laps rings, so this one number is both the finish line " +
-                 "and the size of the circuit. 28 = two laps of fourteen. 0 uses the default.")]
-        [Min(0)] public int grizzlyTimeGateTarget = 28;
+                 "and the size of the circuit. 24 = three laps of eight. 0 uses the default.")]
+        [Min(0)] public int grizzlyTimeGateTarget = 24;
 
         [Tooltip("Regatta: gate threadings that win the race - LAPS x RINGS, not rings. The " +
                  "arena lays eight rings a lap with the rails threaded through them, so this " +
@@ -376,7 +377,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int skeinRingTargetBuild = 24;
         [Min(0)] public int headlongGateTargetBuild = 24;
         [Min(0)] public int redlineGateTargetBuild = 24;
-        [Min(0)] public int grizzlyTimeGateTargetBuild = 28;
+        [Min(0)] public int grizzlyTimeGateTargetBuild = 24;
         [Min(0)] public int regattaGateTargetBuild = 24;
         [Min(0)] public int hijackStealTargetBuild = 750;
         [Min(0)] public int tollwayTollTargetBuild = 8;

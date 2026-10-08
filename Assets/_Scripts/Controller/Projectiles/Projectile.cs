@@ -292,6 +292,17 @@ namespace CosmicShore.Gameplay
         public bool SpareOwnDomain { get; private set; }
 
         /// <summary>
+        /// Per-flight: when the lifetime runs out the round comes to REST where it is and stays
+        /// live, rendered and detonatable - no <see cref="FlightEnded"/>, no end effects, no pool
+        /// return - until its owner retires it (<see cref="ReturnToFactory"/>). The flight
+        /// already eases to a stop (<c>cos(pi t / 2T)</c>), so the round simply parks at the end
+        /// of its throw. The Grizzly trigger bomb is the one user: it goes off when the trigger
+        /// says so and never on its own clock. A proximity fuze still ends the flight normally.
+        /// Cleared by <see cref="Initialize"/>, so set it AFTER the gun fires.
+        /// </summary>
+        public bool HoldAtFlightEnd { get; set; }
+
+        /// <summary>
         /// What THIS flight is carrying. Reset to <see cref="ProjectilePayload.Default"/> by
         /// <see cref="Initialize"/>, so a pooled reissue can never inherit the previous shot's
         /// payload and a caller that says nothing gets the prefab's own authoring.
@@ -555,6 +566,7 @@ namespace CosmicShore.Gameplay
             StopOnFirstPrismImpact = stopOnFirstPrismImpact;
             SpareOwnDomain = spareOwnDomain;
             IsCarriedByHost = carriedByHost;
+            HoldAtFlightEnd = false;
 
             // Per-flight: a pooled reissue must not inherit the previous shooter's
             // end-of-flight handler, and the once-only latches must re-arm.
@@ -966,6 +978,14 @@ namespace CosmicShore.Gameplay
 
                     elapsedTime += deltaTime;
                     await UniTask.Yield(PlayerLoopTiming.PreLateUpdate, token);
+                }
+
+                // A round that HOLDS at the end of its flight parks where its throw ran out and
+                // waits for its owner (HoldAtFlightEnd). A fuzed or cancelled flight never parks.
+                if (HoldAtFlightEnd && !fuzed && !token.IsCancellationRequested)
+                {
+                    Velocity = Vector3.zero;
+                    return;
                 }
 
                 // Death point #1: the lifetime expired, or the proximity fuze tripped. Signal

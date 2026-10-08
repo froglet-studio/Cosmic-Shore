@@ -15,8 +15,13 @@ namespace CosmicShore.Gameplay
     /// lifecycle (GRIZZLY_CHARGED_CANNON.md) and PRESSURE where the cannon has hold time:
     ///
     ///   Idle -pull-> Arming -release-> InFlight -pull-> Frozen -release-> (detonate) -> Idle
-    ///                                     |
-    ///                                     +- natural end (prism hit or fuse out) -> detonate -> Idle
+    ///
+    /// <b>Only the trigger detonates a bomb</b> (design ask, 2026-10-08). There is no fuse and no
+    /// contact detonation: the bomb flies THROUGH prisms - lighting them as it passes
+    /// (<see cref="GrizzlyBombVisual"/>, Docs/LIT.md) - and touches nothing (its impact container,
+    /// GrizzlyBombProjectileImpactContainer, is empty), and a bomb nobody freezes eases to rest
+    /// at the end of its throw and HANGS there (<see cref="Projectile.HoldAtFlightEnd"/>), still
+    /// InFlight, until the next pull freezes it and the release blows it.
     ///
     /// The release that fires reads the PEAK analog pressure of that pull: it sets the ammo
     /// spent, the bomb's visible size and the blast's size together (config
@@ -43,7 +48,9 @@ namespace CosmicShore.Gameplay
     ///
     /// <para><b>A bomb never leaks.</b> A live bomb is silently returned (no blast) on turn end,
     /// disable and re-<see cref="Initialize"/>; stale-shell races are guarded with
-    /// <see cref="Projectile.FlightGeneration"/> snapshots, the cannon's pattern.</para>
+    /// <see cref="Projectile.FlightGeneration"/> snapshots, the cannon's pattern. A bomb that
+    /// can hang forever is exactly the one that could leak, so these three are the whole of its
+    /// retirement: the trigger, the turn, the vessel.</para>
     /// </summary>
     public sealed class GrizzlyTriggerBombExecutor : ShipActionExecutorBase
     {
@@ -296,7 +303,7 @@ namespace CosmicShore.Gameplay
                 FiringPatterns.Default,
                 0,
                 detachAfterSpawn: true,                // a frozen bomb must not ride the ship
-                stopOnFirstPrismImpact: true,          // a BOMB: it goes off where it hits
+                stopOnFirstPrismImpact: false,         // it flies THROUGH mass - only the trigger detonates it
                 spareOwnDomain: false,
                 aimDirection: aim);
 
@@ -307,10 +314,12 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            // No fuse: when the throw runs out the bomb parks where it is and waits.
+            s.Shot.HoldAtFlightEnd = true;
             s.Size01 = size;
             s.ShotGeneration = s.Shot.FlightGeneration;
             if (s.Shot.TryGetComponent<GrizzlyBombVisual>(out var visual))
-                visual.Arm(DomainColor(), config.ProjectileTime);
+                visual.Arm(BombColor(s.Side), _status.Domain, config.ProjectileTime);
             s.Shot.FlightEnded += s.Side == GrizzlyBombActionSO.TriggerSide.Left
                 ? HandleLeftFlightEnded
                 : HandleRightFlightEnded;
@@ -346,22 +355,16 @@ namespace CosmicShore.Gameplay
         void HandleRightFlightEnded(Projectile p, bool stoppedByImpact) => HandleFlightEnded(_slots[1], p);
 
         /// <summary>
-        /// A bomb's NATURAL end - it hit a prism, or its fuse ran out - is a detonation where it
-        /// ended. The projectile's own impactor / end effects return it to the pool, so the blast
-        /// is spawned directly (the cannon's HandleFlightEnded rule). The death pose is captured
-        /// before anything can recycle the shell.
+        /// Something OTHER than the trigger ended this bomb's flight. Nothing should: the bomb
+        /// holds at the end of its throw and its impact container is empty. If anything ever
+        /// does, the bomb is simply gone (whoever ended it owns the pool return) - it does NOT
+        /// detonate, because only the trigger detonates a bomb.
         /// </summary>
         void HandleFlightEnded(Slot s, Projectile p)
         {
             if (p != s.Shot) return;
-            var pos = p.transform.position;
-            var rot = p.transform.rotation;
-            var di = p.TryGetComponent<ProjectileImpactor>(out var impactor) ? impactor.DIContainer : null;
-            float size = s.Size01;
-
             Forget(s);
             SetState(s, BombState.Idle);
-            SpawnBlast(s, pos, rot, size, di);
         }
 
         /// <summary>The player's release on a frozen bomb: blast where it hangs, return the shell.</summary>
@@ -433,8 +436,10 @@ namespace CosmicShore.Gameplay
         /// (<c>scale / ExplosionDuration</c>, the AOE's <c>Impulse</c>) times
         /// <c>selfLaunchMultiplier</c>, full at the bomb and eased to <c>selfLaunchEdgeStrength</c>
         /// at the blast's edge (radius = half its scale - the AOE sphere's collider radius is 0.5),
-        /// and nothing outside it. It rides <c>VesselTransformer.ModifyVelocity</c>, so the vessel's
-        /// 100 u/s velocity ceiling caps it like every other shove.
+        /// and nothing outside it. It rides <c>VesselTransformer.ModifyVelocity</c> with its own
+        /// ceiling, <c>selfLaunchCeiling</c> (300 u/s): the launch was asked to throw three times
+        /// as hard as the shared 100 u/s cap every other shove sits under, and raising the cap
+        /// only for the launch's own lifetime keeps every knock-back the Grizzly takes where it was.
         ///
         /// <para>Applied on the SIMULATING machine only (the owner, or the server for an AI): the
         /// hull's transform is what replicates, and a peer pushing its copy of someone else's
@@ -466,16 +471,19 @@ namespace CosmicShore.Gameplay
                     registry.Get<GrizzlyDigInActionExecutor>()?.ReapplyRegen();
             }
 
-            transformer.ModifyVelocity(direction * speed, config.SelfLaunchSeconds);
+            transformer.ModifyVelocity(direction * speed, config.SelfLaunchSeconds, false, config.SelfLaunchCeiling);
         }
 
-        /// <summary>The firing pilot's domain at full signal brightness (the palette's
-        /// <c>GetDomainSignalColor</c>), read live; white when no theme is resolvable yet.</summary>
-        Color DomainColor()
+        /// <summary>This trigger's bomb colour: the palette's DANGER signal colour
+        /// (<c>GetDangerSignalColor</c>), turned a little one way for LT and the other for RT
+        /// (<see cref="GrizzlyTriggerBombConfigSO.BombColor"/>). Read live; the config's fallback
+        /// danger red stands in when no theme is resolvable yet.</summary>
+        Color BombColor(GrizzlyBombActionSO.TriggerSide side)
         {
             var theme = gameData ? gameData.ThemeManagerData : null;
             var colors = theme ? theme.ColorSet : null;
-            return colors && _status != null ? colors.GetDomainSignalColor(_status.Domain) : Color.white;
+            var danger = colors ? colors.GetDangerSignalColor() : default;
+            return config.BombColor(side == GrizzlyBombActionSO.TriggerSide.Left, danger);
         }
 
         static void PlayAt(FMODUnity.EventReference ev, Vector3 pos)

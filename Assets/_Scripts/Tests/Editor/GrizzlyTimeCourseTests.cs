@@ -11,7 +11,7 @@ namespace CosmicShore.Tests
     /// <summary>
     /// The Grizzly Time circuit contract. The mode's proposition is that a corner is a question -
     /// how much launch is it worth? - and that is only true if the corners are actually cut around
-    /// the Grizzly's FULL-LAUNCH circle (150 u/s on a 95 deg/s turn: ~90 u), with the intensity
+    /// the Grizzly's FULL-LAUNCH circle (350 u/s on a 95 deg/s turn: ~211 u), with the intensity
     /// ladder DEMANDING the corners it claims rather than merely permitting them (HEADLONG.md §1:
     /// a floor is a permission, not a demand). Asserted across a 400-seed sweep of every
     /// intensity, because a generated course is exactly the kind of thing that is fine on the
@@ -92,6 +92,7 @@ namespace CosmicShore.Tests
             Assert.AreEqual(GrizzlyTimeCourse.MinBlastScale, AssetFloat(bombs, "minBlastScale"), 1e-4f, "trigger bomb minBlastScale" + why);
             Assert.AreEqual(GrizzlyTimeCourse.MaxBlastScale, AssetFloat(bombs, "maxBlastScale"), 1e-4f, "trigger bomb maxBlastScale" + why);
             Assert.AreEqual(GrizzlyTimeCourse.SelfLaunchMultiplier, AssetFloat(bombs, "selfLaunchMultiplier"), 1e-4f, "trigger bomb selfLaunchMultiplier" + why);
+            Assert.AreEqual(GrizzlyTimeCourse.VelocityModifierCeiling, AssetFloat(bombs, "selfLaunchCeiling"), 1e-4f, "trigger bomb selfLaunchCeiling" + why);
             Assert.AreEqual(GrizzlyTimeCourse.ImpulseDuration, AssetFloat(bombs, "selfLaunchSeconds"), 1e-4f, "trigger bomb selfLaunchSeconds" + why);
             Assert.AreEqual(GrizzlyTimeCourse.ExplosionDuration, AssetFloat(blast, "ExplosionDuration"), 1e-4f, "AOEGrizzlyExplosion ExplosionDuration" + why);
         }
@@ -99,14 +100,14 @@ namespace CosmicShore.Tests
         [Test]
         public void Full_launch_radius_matches_the_shipped_Grizzly()
         {
-            Assert.AreEqual(150f, GrizzlyTimeCourse.TopSpeed, 0.1f,
-                "50 cruise + the 100 u/s velocity-modifier ceiling. If either moved, so did every corner.");
+            Assert.AreEqual(350f, GrizzlyTimeCourse.TopSpeed, 0.1f,
+                "50 cruise + the 300 u/s bomb-launch ceiling. If either moved, so did every corner.");
             Assert.GreaterOrEqual(GrizzlyTimeCourse.LaunchImpulse(1f) * GrizzlyTimeCourse.ImpulseWeight(0f),
                 GrizzlyTimeCourse.VelocityModifierCeiling,
                 "a full squeeze's launch must reach the ceiling, or top speed is the bomb's and not the ceiling's");
 
-            // 150 u/s over 95 deg/s: a 90u circle launching flat out; 50 u/s over 95: 30u coasting.
-            Assert.AreEqual(90.5f, GrizzlyTimeCourse.FullLaunchRadius, 0.5f, "full-launch radius changed - re-derive the ladder");
+            // 350 u/s over 95 deg/s: a 211u circle launching flat out; 50 u/s over 95: 30u coasting.
+            Assert.AreEqual(211.1f, GrizzlyTimeCourse.FullLaunchRadius, 0.5f, "full-launch radius changed - re-derive the ladder");
             Assert.AreEqual(30.2f, GrizzlyTimeCourse.CruiseRadius, 0.5f, "cruise radius changed - re-derive the safety floors");
         }
 
@@ -280,7 +281,7 @@ namespace CosmicShore.Tests
         public void The_hardest_corner_of_each_level_costs_more_speed_than_the_last()
         {
             // Speed, not radius: the ladder is stated in what a corner COSTS, via the Grizzly's
-            // own curve (measured 100% / 76% / 59% / 47% of top speed). Each level's hardest
+            // own curve (measured 100% / 76% / 64% / 47% of top speed). Each level's hardest
             // corner must give up at least 8 more points than the level below.
             var costs = new float[5];
             for (int intensity = 1; intensity <= 4; intensity++)
@@ -302,11 +303,14 @@ namespace CosmicShore.Tests
         public void Legs_are_long_enough_to_launch_down()
         {
             // A leg is where a launch is taken: fire, freeze a few lengths ahead, ride it - and
-            // the launch then carries ~one full-launch circle down the leg. A leg shorter than
-            // two launches' carry is one the pilot can never launch down without throwing the
-            // hull past the next mouth, and the race stops being a bomb-jump. The shortest leg of
-            // a median lap must hold two full launches' carry, and a second and a half at top
-            // speed, at every level.
+            // the launch then carries ~one and a half full-launch circles down the leg (300 u
+            // since the launch was tripled, 2026-10-08). A leg that cannot hold one launch's
+            // carry with half a carry left to turn in is one the pilot can never launch down
+            // without throwing the hull past the next mouth, and the race stops being a
+            // bomb-jump. The shortest leg of a median lap must hold a carry and a half, and a
+            // second and a quarter at top speed, at every level. (It was two carries when a
+            // launch carried 100 u; at 300 u that asks for 600 u legs, which the 480-1080 shell
+            // cannot lay eight of round a lap with a hairpin in it.)
             for (int intensity = 1; intensity <= 4; intensity++)
             {
                 var shortest = new List<float>();
@@ -318,10 +322,10 @@ namespace CosmicShore.Tests
                         lo = Mathf.Min(lo, (c[(i + 1) % c.Count].Position - c[i].Position).magnitude);
                     shortest.Add(lo);
                 }
-                Assert.GreaterOrEqual(Median(shortest), 2f * GrizzlyTimeCourse.CarryAfterLaunch(1f),
-                    $"i{intensity}: the shortest leg of a median lap must hold two full launches' carry");
-                Assert.GreaterOrEqual(Median(shortest), GrizzlyTimeCourse.TopSpeed * 1.5f,
-                    $"i{intensity}: the shortest leg of a median lap must be 1.5 s at top speed");
+                Assert.GreaterOrEqual(Median(shortest), 1.5f * GrizzlyTimeCourse.CarryAfterLaunch(1f),
+                    $"i{intensity}: the shortest leg of a median lap must hold a full launch's carry and half again");
+                Assert.GreaterOrEqual(Median(shortest), GrizzlyTimeCourse.TopSpeed * 1.25f,
+                    $"i{intensity}: the shortest leg of a median lap must be 1.25 s at top speed");
             }
         }
     }

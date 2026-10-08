@@ -122,6 +122,58 @@ namespace CosmicShore.Tests
                 "a full squeeze must out-blast the charged cannon's full charge (120)");
         }
 
+        // ── Launch 3x, trigger-only detonation, danger shades (design ask, 2026-10-08) ──
+
+        [Test]
+        public void TheLaunchThrowsThreeTimesHarderThanAnyOtherShove()
+        {
+            // Every shove a vessel takes shares VesselTransformer's 100 u/s ceiling; the bomb
+            // launch raises it for its own lifetime only. Read off the source so a change to the
+            // shared cap names this test.
+            const string transformer = "Assets/_Scripts/Controller/Vessel/VesselTransformer.cs";
+            var m = System.Text.RegularExpressions.Regex.Match(System.IO.File.ReadAllText(transformer),
+                @"float velocityModifierMax = ([0-9.]+)f;");
+            Assert.IsTrue(m.Success, "VesselTransformer.velocityModifierMax not found");
+            float shared = float.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture);
+            Assert.AreEqual(3f * shared, _cfg.SelfLaunchCeiling, 1e-3f,
+                "the bomb launch was asked to throw 3x as hard as the shared ceiling it used to sit on");
+            Assert.AreEqual(4.5f, _cfg.SelfLaunchMultiplier, 1e-4f,
+                "3x the 1.5 the launch first shipped at, so a launch under the ceiling is tripled too");
+            // 1.2 s = AOEGrizzlyExplosion's ExplosionDuration; 0.5 = the launch's weakest weight
+            // (cos ease 1.5 -> 0.5), so this is its LAST frame.
+            Assert.GreaterOrEqual(_cfg.MaxBlastScale / 1.2f * _cfg.SelfLaunchMultiplier * 0.5f, _cfg.SelfLaunchCeiling,
+                "a full squeeze ridden at the bomb must hold the raised ceiling for its whole second");
+        }
+
+        [Test]
+        public void BothBombsAreDangerColouredAndToldApart()
+        {
+            var danger = new Color(1f, 0.004f, 0.005f, 1f);   // the shipped palette's rim, normalised
+            var left = _cfg.BombColor(true, danger);
+            var right = _cfg.BombColor(false, danger);
+            Color.RGBToHSV(danger, out float hd, out _, out _);
+            Color.RGBToHSV(left, out float hl, out float sl, out float vl);
+            Color.RGBToHSV(right, out float hr, out float sr, out float vr);
+
+            float Wrap(float d) => Mathf.Abs(Mathf.Repeat(d + 0.5f, 1f) - 0.5f);
+            Assert.Greater(Wrap(hl - hr), 0.05f, "LT's and RT's bombs must read as two colours");
+            Assert.LessOrEqual(Wrap(hl - hd), _cfg.SideHueShift + 1e-3f, "LT's bomb must stay a DANGER shade");
+            Assert.LessOrEqual(Wrap(hr - hd), _cfg.SideHueShift + 1e-3f, "RT's bomb must stay a DANGER shade");
+            Assert.Less(_cfg.SideHueShift, 1f / 12f, "past 30 degrees a shade stops reading as danger red");
+            Assert.Greater(sl, 0.9f); Assert.Greater(sr, 0.9f);
+            Assert.AreEqual(1f, vl, 1e-3f); Assert.AreEqual(1f, vr, 1e-3f);
+        }
+
+        [Test]
+        public void APaletteWithNoDangerColourFallsBackToDangerRed()
+        {
+            // GetDangerSignalColor answers alpha 0 when the palette authors none.
+            var left = _cfg.BombColor(true, new Color(0f, 0f, 0f, 0f));
+            Assert.AreEqual(1f, left.a);
+            Assert.Greater(left.r, 0.5f, "the fallback must still be a red, not black");
+            Assert.AreNotEqual(_cfg.BombColor(true, default), _cfg.BombColor(false, default));
+        }
+
         [Test]
         public void TheLaunchIsStrongestAtTheBombAndNeverInverts()
         {
