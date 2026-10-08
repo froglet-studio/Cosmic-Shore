@@ -13,5 +13,6 @@
   <ItemGroup>
     <Compile Include="../Shared/PrismaTracks.cs" Link="Shared/PrismaTracks.cs" />
     <Compile Include="../Shared/PrismaBoard.cs" Link="Shared/PrismaBoard.cs" />
+    <Compile Include="../Shared/Workspace/*.cs" Link="Shared/Workspace/%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>

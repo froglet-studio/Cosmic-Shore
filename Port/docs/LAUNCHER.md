@@ -79,6 +79,11 @@ and a notification offers MARK DONE (moving it stays your call). If the problem 
 card loses MET, and a DONE card reopens to TO DO. A card in DOING tells the agent's brief that a
 fix is in progress.
 
+The board is `board.json` beside the tracks. A suggestion an agent makes while Prisma is open shows up
+within a second and survives Prisma's next save (saves merge with the file instead of overwriting it).
+If the file cannot be read, Prisma keeps a copy as `board.json.corrupt-<time>`, says so in CONSOLE and
+starts an empty board; the copy is never overwritten.
+
 ## MILESTONES - engine work, inside Prisma
 
 ![MILESTONES](architecture/prisma_milestones.png)

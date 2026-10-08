@@ -159,6 +159,7 @@ namespace CosmicShore.Launcher
                 _toolsScanned = true;
                 _jobs.RefreshLocalState();
                 if (!_args.Offline) _jobs.LoadBranches();
+                ReportBoardLoad();
                 IngestSessions(notify: true); // runs that ended while Prisma was closed are news too
                 RunDoctor();
                 // Only LOOK for a newer launcher; installing it is the user's call (UPDATE).
@@ -249,6 +250,7 @@ namespace CosmicShore.Launcher
             _imgui.Render();
 
             SaveProjectIfDirty(dt);
+            PollBoard(dt);
             _saveTimer += dt;
             if (_dirty && _saveTimer > 0.75) { _s.Save(); _dirty = false; _saveTimer = 0; }
 

@@ -70,6 +70,29 @@ namespace CosmicShore.Launcher
 
         void SaveBoard() { lock (_dataLock) _board.Save(TracksDir); }
 
+        double _boardPoll;
+
+        /// <summary>
+        /// Once a second: pulls in what another writer put in board.json (an agent's
+        /// prisma_board_suggest, another Prisma) so the board shows it and the next save keeps it.
+        /// A stat per second; the file is read only when it changed.
+        /// </summary>
+        void PollBoard(double dt)
+        {
+            if ((_boardPoll += dt) < 1) return;
+            _boardPoll = 0;
+            try { lock (_dataLock) _board.Refresh(TracksDir); }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException) { /* next second */ }
+        }
+
+        /// <summary>Says in CONSOLE when board.json could not be read, and where the copy of it went.</summary>
+        void ReportBoardLoad()
+        {
+            if (_board.LoadError != null)
+                _jobs.Log.Add(LogKind.Warn, $"board.json could not be read ({_board.LoadError}); " +
+                    (_board.Preserved != null ? $"a copy was kept at {_board.Preserved}" : "no copy could be kept") + ". The board starts empty and the copy is never overwritten.");
+        }
+
         /// <summary>
         /// Moves a card and keeps its tracked problem in step: a bug in DOING marks the problem as
         /// being fixed (the agent's brief says so); anywhere else it is just open again.
