@@ -285,9 +285,10 @@ grew, shielded, went dangerous, shrank, was stolen or died. The particle object 
 blast and outlives it by one mote lifetime. Cosmetic only, private xorshift scatter.
 
 **Telemetry.** Turn on **FrogletTools > Toolbox > Logging > `[ButterflyBloom]`** and each bloom
-logs one line as it retires: `reached=N` (prisms the sweep queued) and the outcome tally (grow /
-danger / shield / super / untouched · destroy / shrink / steal / deflect · skipped). It separates
-"the sweep found nothing" (`reached=0`), "found prisms, dispatched nothing" (all-zero tally) and
+logs one line as it retires: `reached=N` (prisms the sweep queued), `dispatched=N` (prisms a payload
+actually ran on) and the outcome tally (grow / danger / shield / super / untouched · destroy /
+shrink / steal / deflect · skipped). It separates "the sweep found nothing" (`reached=0`), "found
+prisms, dispatched nothing" (`dispatched=0`) and
 "changed things too subtly to see". The first playtest of round 1 reported exactly that ambiguity
 ("prisms briefly turned lit, none seemed affected") — the lit is the bloom's long-standing
 own-domain passthrough light, not evidence the dust ran.

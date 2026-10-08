@@ -126,52 +126,36 @@ makes); `check_generated_assets.py` audits the new prefab/material clean (negati
 
 ---
 
-### 🔴 Butterfly omni-crystal bloom: strips pilots, dusts prisms (`cece/awesome-hopper-rj9b50`, 2026-10-08)
+### 🟡 Butterfly omni-crystal bloom: strips pilots, scores a hit, dusts prisms (`cece/awesome-hopper-rj9b50`, 2026-10-08)
 
 **Landed** (`R_VesselActions/BUTTERFLY.md §3.3a`, generator `Tools/Build/author_butterfly_dust.py --check`):
-the 900-unit bloom used to carry only a heart-kill. Its container now also authors
+the 900-unit bloom used to carry only a heart-kill. Its container now also carries
 `ButterflyBloomDebuffByExplosionEffect` (all four elements ejected as crystals, -0.12 each, priced by
-`author_combat_debuff_magnitudes.py`) and `ButterflyBloomScaleDustPrismEffect` (new
-`ExplosionScaleDustPrismEffectSO`, which calls the dust asset's new `Apply`). New dispatch path:
-`ExplosionImpactor.SweepPrismEffects` (spherical, `affectsPrisms: 0` blasts only, 48/frame).
-No editor was available — nothing here has compiled in Unity.
+`author_combat_debuff_magnitudes.py`) and the shared `VesselCombatHitByCrystalBlast` reporter. Its
+prism outcome — the Dust-mode capsule's own one-of-three roll — is applied by `ButterflyBloomDust` on
+`AOEButterflyBloom.prefab`, an `IExplosionPrismPayload` dispatched by the new
+`ExplosionImpactor.SweepPrismEffects` (spherical, `affectsPrisms: 0` blasts only, 48/frame). The same
+component draws the bloom as the capsule's motes and puffs on every changed prism, and logs a
+per-bloom tally on `[ButterflyBloom]`.
 
-**Verify in editor**
-1. Compile clean (new script `ExplosionScaleDustPrismEffectSO`; changed `ExplosionImpactor`,
-   `SkimmerScaleDustPrismEffectSO`).
-2. Freestyle, Butterfly, near your own trail: collect an omni crystal → own keys grow / go dangerous /
-   go shielded, rippling outward with the bloom.
-3. Same near an AI's trail → its keys vanish / shrink / turn your colour.
-4. An AI pilot inside the bloom → its element flowers drop ~1 petal each and crystals eject; yours
-   do not.
-5. Dust capsule unchanged (Dust mode over own/opposing trail behaves exactly as before).
-6. MPPM: same prisms reach the same outcome on both clients.
+**Confirmed in editor (playtest, 2026-10-08):** the dust look; prism outcomes (after round 4).
 
-**First-pass tuning**: bloom radius 450 (`BLOOM_SCALE`), strip 1.2 petals/element, per-frame budget 48.
+**Still to verify**
+1. An AI pilot inside the bloom sheds elemental crystals (~1 petal per element), and you score a
+   Debuff hit (points + hit toast). Your own pilot is untouched.
+2. The Dust-mode capsule behaves exactly as before (own trail grows / danger / shield; opposing trail
+   destroyed / shrunk / stolen).
+3. MPPM: host and owning client reach the same prism outcomes (a third client sees no bloom — known,
+   BUTTERFLY.md §9).
 
-**Round 2 (playtest: "prisms briefly lit, none affected"; asked for scoring + a dust look)**
-- The bloom now also carries `VesselCombatHitByCrystalBlast` → a strip scores a Debuff hit.
-- `ButterflyBloomDust` (new, on `AOEButterflyBloom.prefab`) fills the sphere with the capsule's motes
-  and puffs dust on every prism it changes.
-- Telemetry channel `[ButterflyBloom]` (Toolbox > Logging) logs `reached=N` + outcome tally per bloom.
-  The round-1 "nothing happened" could not be reproduced from source; this line is how the next run
-  answers it. The lit seen in round 1 is the bloom's pre-existing own-domain passthrough light.
-- Compiled outside Unity: the Prisma port's live build of `Assets/_Scripts` reports no errors in any
-  file this branch touched (its 4 errors are pre-existing engine gaps in WormholeMouth / NestedGyroidFlora).
+**History.** Rounds 1-3 routed the prism outcome through a separate `ExplosionScaleDustPrismEffectSO`
+container asset; in the playtester's editor it loaded as null three times running
+(`explosionPrismEffects[0] is empty`, `reached=858 dispatched=0`) with every repo-side cause of a
+null slot ruled out, and a forced re-import did not help. Round 4 deleted that type and moved the
+outcome onto the prefab component, which fixed it. Root cause of the null load is still unknown.
 
-**Round 3 (playtest: dust visuals good, still no prism outcomes; log `reached=617`, all-zero tally,
-`explosionPrismEffects[0] is empty`)** — the dust asset failed to load in the editor (imported before
-its new script compiled; branch data verified clean). Asset bytes changed to force a re-import on
-pull; log now prints `dispatched=N`. Verify: select
-`Assets/_SO_Assets/Effects/Explosion Prism Effects/ButterflyBloomScaleDustPrismEffect.asset` → the
-inspector shows a `Dust` field (not "script cannot be loaded"); a bloom logs `dispatched` ≈ `reached`
-with a non-zero tally, and dust puffs appear on changed prisms.
-
-**Round 4 (same: `reached=858 dispatched=0`, slot still empty after the forced re-import)** — the
-separate SO type is retired: `ExplosionScaleDustPrismEffectSO` + `ButterflyBloomScaleDustPrismEffect`
-deleted, container `explosionPrismEffects: []`, and `ButterflyBloomDust` (an `IExplosionPrismPayload`)
-now applies the capsule's dust asset itself. Verify: no "explosionPrismEffects[0] is empty" error;
-`[ButterflyBloom]` logs `dispatched` ≈ `reached` with a non-zero tally; puffs on changed prisms.
+**First-pass tuning**: bloom radius 450 (`BLOOM_SCALE`), strip 1.2 petals/element, 2400 bloom motes,
+5 motes per changed prism, per-frame budget 48.
 
 ---
 

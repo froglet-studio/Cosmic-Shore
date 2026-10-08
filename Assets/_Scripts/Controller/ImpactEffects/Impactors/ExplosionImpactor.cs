@@ -969,13 +969,14 @@ namespace CosmicShore.Gameplay
             DrainPrismEffects();
         }
 
-        /// <summary>Dispatch up to <see cref="MaxPrismEffectsPerFrame"/> deferred prism effects.</summary>
         /// <summary>Does this blast carry anything to do to a prism it reaches — container
         /// effects or an <see cref="IExplosionPrismPayload"/> component?</summary>
         bool HasPrismPayload =>
             (explosionImpactorDataContainer && DoesEffectExist(explosionImpactorDataContainer.explosionPrismEffects))
             || _prismPayloads is { Length: > 0 };
 
+        /// <summary>Dispatch up to <see cref="MaxPrismEffectsPerFrame"/> deferred prisms to the
+        /// container's prism effects and every <see cref="IExplosionPrismPayload"/>.</summary>
         void DrainPrismEffects()
         {
             if (_prismEffectsPending == null || _prismEffectsPending.Count == 0) return;
