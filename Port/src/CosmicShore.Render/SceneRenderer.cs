@@ -1697,7 +1697,7 @@ void main(){
             if (e == null) { why = "graph GLSL did not link"; return false; }
             st.Graph = e;
             st.Family = g.Lit ? 1 : 0;
-            st.Route = "compiled";
+            st.Route = g.AssetPath != null && g.AssetPath.EndsWith(".shader", StringComparison.OrdinalIgnoreCase) ? "hand" : "compiled";
             return true;
         }
 
@@ -1710,7 +1710,9 @@ void main(){
             int alphaMode = over && m.HasStoredProperty(IdBlendMode) ? (int)m.GetFloat(IdBlendMode) : g.AlphaMode;
             st.Transparent = transparent;
             st.AlphaMode = transparent ? alphaMode : 0;
-            (st.Src, st.Dst) = !transparent ? (BlendingFactor.One, BlendingFactor.Zero) : alphaMode switch
+            (st.Src, st.Dst) = !transparent ? (BlendingFactor.One, BlendingFactor.Zero)
+                : g.BlendSrc >= 0 && g.BlendDst >= 0 && !(over && m.HasStoredProperty(IdBlendMode)) ? (Blend(g.BlendSrc), Blend(g.BlendDst))
+                : alphaMode switch
             {
                 1 => (BlendingFactor.One, BlendingFactor.OneMinusSrcAlpha),
                 2 => (BlendingFactor.SrcAlpha, BlendingFactor.One),
@@ -1722,7 +1724,7 @@ void main(){
             st.GraphAlphaClip = over && m.HasStoredProperty(IdAlphaClip) ? m.GetFloat(IdAlphaClip) >= 0.5f : g.AlphaClip;
             st.Cutoff = -1f; // the graph clips against its own threshold
             // A material saved with the shader's queue (-1) loads as 2000: take the queue the graph implies.
-            if (m.renderQueue == 2000) st.Queue = transparent ? 3000 : st.GraphAlphaClip ? 2450 : 2000;
+            if (m.renderQueue == 2000) st.Queue = g.Queue >= 0 ? g.Queue : transparent ? 3000 : st.GraphAlphaClip ? 2450 : 2000;
         }
 
         static Color Mul(Color c, float k) => new(c.r * k, c.g * k, c.b * k, c.a);

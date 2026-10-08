@@ -27,4 +27,8 @@
     <Compile Include="../Shared/PrismaProjectSettings.cs" Link="Shared/PrismaProjectSettings.cs" />
     <Compile Include="../Shared/DccLocator.cs" Link="Shared/DccLocator.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- Hand translations of the hand-written .shader files (Shaders/HandShaders.cs). -->
+    <EmbeddedResource Include="Shaders/Hand/*.glsl" LogicalName="CosmicShore.Content.Shaders.Hand.%(Filename).glsl" />
+  </ItemGroup>
 </Project>

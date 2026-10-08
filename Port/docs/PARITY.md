@@ -9,7 +9,7 @@ Last parity run against Unity goldens: 2026-10-07 (boot-menu, random, skimrace-f
 | | Faithful | Approximate | Missing |
 |---|---|---|---|
 | Subsystems | 0 | 26 | 6 |
-| Shaders | 0 | 54 | 27 |
+| Shaders | 0 | 63 | 18 |
 
 ## Subsystems
 
@@ -71,7 +71,7 @@ Last parity run against Unity goldens: 2026-10-07 (boot-menu, random, skimrace-f
 | Shader Graphs/ExplosionGraph | `Assets/_Graphics/Materials/Graphs/ExplosionGraph.shadergraph` | Approximate | Shader Graph compiler; frames not yet compared per shader (C2) |
 | Shader Graphs/ForceFieldGraph | `Assets/_Graphics/Materials/Graphs/ForceFieldGraph.shadergraph` | Approximate | Shader Graph compiler; frames not yet compared per shader (C2) |
 | Shader Graphs/ForcefieldCrackle | `Assets/_Graphics/Materials/Graphs/ForcefieldCrackle.shader` | Approximate | hand-tuned family; frames not yet compared per shader (C2) |
-| Shader Graphs/ForcefieldCrackleCapsule | `Assets/_Graphics/Materials/Graphs/ForcefieldCrackleCapsule.shader` | Missing | hand-written .shader: no translation yet |
+| Shader Graphs/ForcefieldCrackleCapsule | `Assets/_Graphics/Materials/Graphs/ForcefieldCrackleCapsule.shader` | Approximate | hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2) |
 | Shader Graphs/FresnelGraph | `Assets/_Graphics/Materials/Graphs/FresnelGraph.shadergraph` | Approximate | Shader Graph compiler; frames not yet compared per shader (C2) |
 | Shader Graphs/HilbertGraph | `Assets/_Graphics/Materials/Graphs/HilbertGraph.shadergraph` | Approximate | Shader Graph compiler; frames not yet compared per shader (C2) |
 | Shader Graphs/InverseDynamicFresnelGraph | `Assets/_Graphics/Materials/Graphs/InverseDynamicFresnelGraph.shadergraph` | Approximate | Shader Graph compiler; frames not yet compared per shader (C2); approximate nodes: ObjectNode |
@@ -80,7 +80,7 @@ Last parity run against Unity goldens: 2026-10-07 (boot-menu, random, skimrace-f
 | Shader Graphs/UnstablePrismGraph | `Assets/_Graphics/Materials/Graphs/PrismGraphs/UnstablePrismGraph.shadergraph` | Approximate | Shader Graph compiler; frames not yet compared per shader (C2); approximate nodes: ObjectNode |
 | Hidden/CosmicShore/PrismOcclusionDitherPreview | `Assets/_Graphics/Materials/Graphs/PrismOcclusionDitherPreview.shader` | Missing | hand-written .shader: no translation yet |
 | CosmicShore/PrismSlice | `Assets/_Graphics/Materials/Graphs/PrismSlice.shader` | Approximate | hand-tuned family; frames not yet compared per shader (C2) |
-| Shader Graphs/ProjectileChargeField | `Assets/_Graphics/Materials/Graphs/ProjectileChargeField.shader` | Missing | hand-written .shader: no translation yet |
+| Shader Graphs/ProjectileChargeField | `Assets/_Graphics/Materials/Graphs/ProjectileChargeField.shader` | Approximate | hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2) |
 | Shader Graphs/ProjectileGraph | `Assets/_Graphics/Materials/Graphs/ProjectileGraph.shadergraph` | Approximate | Shader Graph compiler; frames not yet compared per shader (C2) |
 | Shader Graphs/RippleGraph | `Assets/_Graphics/Materials/Graphs/RippleGraph.shadergraph` | Approximate | Shader Graph compiler; frames not yet compared per shader (C2); approximate nodes: SceneColorNode |
 | Shader Graphs/SharkSpikeGraph | `Assets/_Graphics/Materials/Graphs/SharkSpikeGraph.shadergraph` | Approximate | Shader Graph compiler; frames not yet compared per shader (C2); approximate nodes: SceneColorNode |
@@ -115,16 +115,16 @@ Last parity run against Unity goldens: 2026-10-07 (boot-menu, random, skimrace-f
 | Shader Graphs/WorldSpaceDesign8_Graph | `Assets/_Graphics/Materials/Lifeform_World_Shader Graphs/WorldSpaceDesign8_Graph.shadergraph` | Approximate | Shader Graph compiler; frames not yet compared per shader (C2) |
 | Shader Graphs/WorldSpaceDesign9_Graph | `Assets/_Graphics/Materials/Lifeform_World_Shader Graphs/WorldSpaceDesign9_Graph.shadergraph` | Approximate | Shader Graph compiler; frames not yet compared per shader (C2) |
 | Custom/TransparentPerlinDistortion | `Assets/_Graphics/Materials/Shaders/DistortionShader.shader` | Missing | hand-written .shader: no translation yet |
-| CosmicShore/HyperSeaSkybox | `Assets/_Graphics/Materials/Shaders/HyperSeaSkybox.shader` | Missing | hand-written .shader: no translation yet |
+| CosmicShore/HyperSeaSkybox | `Assets/_Graphics/Materials/Shaders/HyperSeaSkybox.shader` | Approximate | skybox pass (Render/SkyboxPass.cs, HyperSeaSkyboxGlsl.cs); frames not yet compared per shader (C2) |
 | Custom/OmniChargeEdgesShader | `Assets/_Graphics/Materials/Shaders/OmniChargeEdgesShader.shader` | Missing | hand-written .shader: no translation yet |
-| Custom/OmniCrystalFresnelShader | `Assets/_Graphics/Materials/Shaders/OmniCrystalFresnelShader.shader` | Missing | hand-written .shader: no translation yet |
-| Custom/OmniShepardFresnelShader | `Assets/_Graphics/Materials/Shaders/OmniShepardFresnelShader.shader` | Missing | hand-written .shader: no translation yet |
+| Custom/OmniCrystalFresnelShader | `Assets/_Graphics/Materials/Shaders/OmniCrystalFresnelShader.shader` | Approximate | hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2); approximate nodes: CrystalMorph |
+| Custom/OmniShepardFresnelShader | `Assets/_Graphics/Materials/Shaders/OmniShepardFresnelShader.shader` | Approximate | hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2) |
 | Shapes_Shader_Pack | `Assets/_Graphics/Materials/Shaders/Shapes_Shader_ST.shader` | Missing | hand-written .shader: no translation yet |
-| Custom/SpreadFresnelShader | `Assets/_Graphics/Materials/Shaders/SpreadFresnelShader.shader` | Missing | hand-written .shader: no translation yet |
+| Custom/SpreadFresnelShader | `Assets/_Graphics/Materials/Shaders/SpreadFresnelShader.shader` | Approximate | hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2) |
 | Sprite Shaders Ultimate/Standard SSU | `Assets/_Graphics/Materials/Shaders/Standard SSU.shader` | Missing | hand-written .shader: no translation yet |
 | CosmicShore/StaticSkyPanorama | `Assets/_Graphics/Materials/Shaders/StaticSkyPanorama.shader` | Missing | hand-written .shader: no translation yet |
-| Custom/ViewAngleBasedColorBlendHDR | `Assets/_Graphics/Materials/Shaders/TrailViewerShader.shader` | Missing | hand-written .shader: no translation yet |
-| Custom/CircularGradientFresnel | `Assets/_Graphics/Materials/Shaders/TriangleFresnelShader.shader` | Missing | hand-written .shader: no translation yet |
+| Custom/ViewAngleBasedColorBlendHDR | `Assets/_Graphics/Materials/Shaders/TrailViewerShader.shader` | Approximate | hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2) |
+| Custom/CircularGradientFresnel | `Assets/_Graphics/Materials/Shaders/TriangleFresnelShader.shader` | Approximate | hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2) |
 | UI/Gradient | `Assets/_Graphics/Materials/Shaders/UI/Gradient.shader` | Missing | hand-written .shader: no translation yet |
 | CosmicShore/UI/SilhouetteHolo | `Assets/_Graphics/Materials/Shaders/UI/SilhouetteHolo.shader` | Missing | hand-written .shader: no translation yet |
 | Shader Graphs/VolumeDisplayShader | `Assets/_Graphics/Materials/Shaders/UI/VolumeDisplayShader.shader` | Missing | hand-written .shader: no translation yet |
@@ -132,4 +132,4 @@ Last parity run against Unity goldens: 2026-10-07 (boot-menu, random, skimrace-f
 | GAPH Custom Shader/Shader_IntegradedEffect | `Assets/_Prefabs/Spacevessels/Components/Jet/Shader_IntegratedEffect.shader` | Missing | hand-written .shader: no translation yet |
 | Shader Graphs/SpriteAnimation | `Assets/_Scripts/DialogueSystem/Animation/SpriteAnimation.shadergraph` | Approximate | Shader Graph compiler; frames not yet compared per shader (C2) |
 | Shader Graphs/UI_NoiseDissolve | `Assets/_Scripts/DialogueSystem/Animation/UI_NoiseDissolve.shadergraph` | Approximate | Shader Graph compiler; frames not yet compared per shader (C2) |
-| Custom/JetShader | `Assets/_Scripts/Game/Vessel/Animation/JetShader.shader` | Missing | hand-written .shader: no translation yet |
+| Custom/JetShader | `Assets/_Scripts/Game/Vessel/Animation/JetShader.shader` | Approximate | hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2) |

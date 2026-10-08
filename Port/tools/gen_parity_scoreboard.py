@@ -118,7 +118,8 @@ def build():
         })
 
     # The shader routes come from `cs-asset shadergraph-census` (Port/parity/shaders.json): a
-    # hand-tuned family (keyed by guid), a graph the Shader Graph compiler translates, or missing.
+    # hand-tuned family (keyed by guid), a graph the Shader Graph compiler translates, a hand
+    # translation of a .shader, a dedicated renderer (TextMesh Pro, the skybox), or missing.
     # Without that file, fall back to the old name scan of Port/src.
     census = {r['path']: r for r in (load_json(os.path.join(PORT, 'parity', 'shaders.json'), {}) or {}).get('shaders', [])}
     src = None if census else port_source_text()
@@ -126,9 +127,11 @@ def build():
     for path, name in shaders():
         c = census.get(path)
         if c is not None:
-            translated = c['route'] in ('family', 'compiled')
+            translated = c['route'] in ('family', 'compiled', 'hand', 'own')
             why = {'family': 'hand-tuned family; frames not yet compared per shader (C2)',
-                   'compiled': 'Shader Graph compiler; frames not yet compared per shader (C2)'}.get(c['route'], c.get('why', 'no translation'))
+                   'compiled': 'Shader Graph compiler; frames not yet compared per shader (C2)',
+                   'hand': 'hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2)',
+                   'own': (c.get('why') or 'its own renderer') + '; frames not yet compared per shader (C2)'}.get(c['route'], c.get('why', 'no translation'))
             if c.get('approximations'):
                 why += '; approximate nodes: ' + ', '.join(a.split(':')[0] for a in c['approximations'])
         else:
@@ -138,7 +141,9 @@ def build():
             'path': path, 'name': name,
             'status': 'Approximate' if translated else 'Missing',
             'why': why,
-            'test': 'ShaderGraphCompilerTests, --check-shaders' if c is not None and c['route'] == 'compiled' else ('engine_parity frames' if translated else ''),
+            'test': 'ShaderGraphCompilerTests, --check-shaders' if c is not None and c['route'] == 'compiled'
+                    else 'HandShaderTests, --check-shaders' if c is not None and c['route'] == 'hand'
+                    else ('engine_parity frames' if translated else ''),
         })
 
     def count(rows):

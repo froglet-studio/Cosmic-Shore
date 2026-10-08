@@ -16,8 +16,8 @@
     },
     "shaders": {
       "Faithful": 0,
-      "Approximate": 54,
-      "Missing": 27
+      "Approximate": 63,
+      "Missing": 18
     }
   },
   "subsystems": [
@@ -620,9 +620,9 @@
     {
       "path": "Assets/_Graphics/Materials/Graphs/ForcefieldCrackleCapsule.shader",
       "name": "Shader Graphs/ForcefieldCrackleCapsule",
-      "status": "Missing",
-      "why": "hand-written .shader: no translation yet",
-      "test": ""
+      "status": "Approximate",
+      "why": "hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2)",
+      "test": "HandShaderTests, --check-shaders"
     },
     {
       "path": "Assets/_Graphics/Materials/Graphs/FresnelGraph.shadergraph",
@@ -683,9 +683,9 @@
     {
       "path": "Assets/_Graphics/Materials/Graphs/ProjectileChargeField.shader",
       "name": "Shader Graphs/ProjectileChargeField",
-      "status": "Missing",
-      "why": "hand-written .shader: no translation yet",
-      "test": ""
+      "status": "Approximate",
+      "why": "hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2)",
+      "test": "HandShaderTests, --check-shaders"
     },
     {
       "path": "Assets/_Graphics/Materials/Graphs/ProjectileGraph.shadergraph",
@@ -928,9 +928,9 @@
     {
       "path": "Assets/_Graphics/Materials/Shaders/HyperSeaSkybox.shader",
       "name": "CosmicShore/HyperSeaSkybox",
-      "status": "Missing",
-      "why": "hand-written .shader: no translation yet",
-      "test": ""
+      "status": "Approximate",
+      "why": "skybox pass (Render/SkyboxPass.cs, HyperSeaSkyboxGlsl.cs); frames not yet compared per shader (C2)",
+      "test": "engine_parity frames"
     },
     {
       "path": "Assets/_Graphics/Materials/Shaders/OmniChargeEdgesShader.shader",
@@ -942,16 +942,16 @@
     {
       "path": "Assets/_Graphics/Materials/Shaders/OmniCrystalFresnelShader.shader",
       "name": "Custom/OmniCrystalFresnelShader",
-      "status": "Missing",
-      "why": "hand-written .shader: no translation yet",
-      "test": ""
+      "status": "Approximate",
+      "why": "hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2); approximate nodes: CrystalMorph",
+      "test": "HandShaderTests, --check-shaders"
     },
     {
       "path": "Assets/_Graphics/Materials/Shaders/OmniShepardFresnelShader.shader",
       "name": "Custom/OmniShepardFresnelShader",
-      "status": "Missing",
-      "why": "hand-written .shader: no translation yet",
-      "test": ""
+      "status": "Approximate",
+      "why": "hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2)",
+      "test": "HandShaderTests, --check-shaders"
     },
     {
       "path": "Assets/_Graphics/Materials/Shaders/Shapes_Shader_ST.shader",
@@ -963,9 +963,9 @@
     {
       "path": "Assets/_Graphics/Materials/Shaders/SpreadFresnelShader.shader",
       "name": "Custom/SpreadFresnelShader",
-      "status": "Missing",
-      "why": "hand-written .shader: no translation yet",
-      "test": ""
+      "status": "Approximate",
+      "why": "hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2)",
+      "test": "HandShaderTests, --check-shaders"
     },
     {
       "path": "Assets/_Graphics/Materials/Shaders/Standard SSU.shader",
@@ -984,16 +984,16 @@
     {
       "path": "Assets/_Graphics/Materials/Shaders/TrailViewerShader.shader",
       "name": "Custom/ViewAngleBasedColorBlendHDR",
-      "status": "Missing",
-      "why": "hand-written .shader: no translation yet",
-      "test": ""
+      "status": "Approximate",
+      "why": "hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2)",
+      "test": "HandShaderTests, --check-shaders"
     },
     {
       "path": "Assets/_Graphics/Materials/Shaders/TriangleFresnelShader.shader",
       "name": "Custom/CircularGradientFresnel",
-      "status": "Missing",
-      "why": "hand-written .shader: no translation yet",
-      "test": ""
+      "status": "Approximate",
+      "why": "hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2)",
+      "test": "HandShaderTests, --check-shaders"
     },
     {
       "path": "Assets/_Graphics/Materials/Shaders/UI/Gradient.shader",
@@ -1047,9 +1047,9 @@
     {
       "path": "Assets/_Scripts/Game/Vessel/Animation/JetShader.shader",
       "name": "Custom/JetShader",
-      "status": "Missing",
-      "why": "hand-written .shader: no translation yet",
-      "test": ""
+      "status": "Approximate",
+      "why": "hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2)",
+      "test": "HandShaderTests, --check-shaders"
     }
   ]
 }
