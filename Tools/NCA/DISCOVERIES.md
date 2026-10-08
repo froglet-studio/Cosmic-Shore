@@ -2378,3 +2378,13 @@ whale and jelly; channels 13-15 are a one-hot genome set in the seed, ordinary s
   - a whale cut in half gains 14% jelly; repeated wounds every 400 steps shrink the splice to 307 cells.
 - CPU only (~3 s/it, 3 threads). This thread's VM is reclaimed when the session idles; training only
   advanced while a turn was live. The RTX 3080 on Gbox ran 33 s/it because Unity shared its memory.
+
+### H1 final rule (step 4000, `results/hybrid3d/model_04000.pt`, probe `probe_04000_*`)
+
+The extra 2000 steps made each form a stronger attractor: most 50/50 seeds now settle on whale (the lizard+whale seed that grew a whale tail at step 2000 is now a plain whale). The surprises moved to damage and the lizard/jelly boundary:
+
+- **Split lizard regrows as conjoined twins**: both halves regrow, fused (3.2k cells, the same size as two lizard seeds). At step 2000 the second half grew a jelly bell instead.
+- **Lizard+jelly 50/50 seed is a runaway chimera**: lizard for ~50 steps, then whale, then jellyfish bells bud one after another along the whale body. It never stabilises (1.1k cells at 50 steps, 5.3k at 1000, 29% whale / 66% jelly). Whale appears even though no cell started with a whale gene.
+- **Spliced whale+jelly comes back**: the jelly takes over, then at ~450 steps a whale part re-emerges, and they hold at 42/58 to step 1000.
+- **Wounded whale** sprouts jelly tentacles mid-run, then heals back to a whale.
+- Split jelly regrows to 1.5x size (2.2k cells) and holds.
