@@ -9,6 +9,9 @@ named after it, and when the asset changes the page must follow (or say on scree
 |---|---|---|
 | Stoat Flight Studio | https://claude.ai/artifact/Busc3KW6DmVzbsiA2qxoHc | `StoatFlightStudio.html` |
 
+**Next: Prisma.** `PRISMA_WORMHOLE_SESSION_PROMPT.md` is the prompt for an engine session that makes the
+Stoat and both pair styles flyable, inspectable and swappable in Prisma (`Port/`).
+
 ## Stoat Flight Studio (round 3)
 
 **What it is.** The plated Stoat (`StoatHullForm`, body-only `StoatLopeMath` lope) flown round a
