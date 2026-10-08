@@ -1,12 +1,16 @@
 # QA Backlog — untested development on `bleeding-edge`
 
-**Generated:** 2026-10-05 (arcade/arena matrix pass), **refreshed 2026-10-06** for PRs #971–#976
+**Generated:** 2026-10-05 (arcade/arena matrix pass), **refreshed 2026-10-06** for PRs #971–#976,
+**refreshed 2026-10-08** for the party cards and the round-3 PRs
 · **Scan covers:** PR bodies for merges up to `3ba8ea1d2` (PRs #583–#956, the 2026-10-05 refresh
 in PR #961), plus a full sweep of every launchable Arcade and Arena card, its mode doc's
 verification section, and the per-vessel entries in `Docs/UNITY_VERIFICATION_CHECKLIST.md`,
 against `bleeding-edge` at `bf0015838`; **plus** PRs #971–#976 at `71d67ba9b` (six new Block P
-items). PRs #964–#970 are merged too: the "Known, do not fail on" lines they made untrue are
-corrected below, but their own Editor checks are not yet items.
+items); **plus**, at `1a437696a`, Block J (the two party cards, never tracked before) and
+Block Q (seven items from merged PRs #998, #1001, #1002, #1004, #1005 and #1007, read from each PR's
+"Needs Editor verification" section). PRs #964–#970, #980, #983, #985–#996, #999, #1006, #1009 and
+#1010 are merged too but are **not** itemised yet: the "Known, do not fail on" lines that round 3
+made untrue are corrected below, and their own checks wait for the next full `/qa-backlog` scan.
 · **Owner of this file:** the `/qa-backlog` skill — do not hand-edit.
 
 > **The 11 parallel PRs from the same 2026-10-05 audit have all merged (#964–#976, 2026-10-06).**
@@ -34,7 +38,9 @@ has its own item, and each hull's open vessel checks sit next to the modes that 
 | G | Rhino: Cleave, Headlong | 2 hull-locked cards | 2 |
 | H | Manta: Redline, Bloomrush | 2 hull-locked cards | 2 |
 | I | Urchin hull + Skein, Hijack | Least finished; its HUD, AI and Hijack sync merged 2026-10-06 (Block P) | 3 |
+| J | Party cards: Multiplayer Freestyle, Online Duel for the Cell | Never opened or tracked; on no live roster; two players needed | 2 |
 | P | The parallel PRs' own Editor checks (#971–#976) | Merged 2026-10-06, never opened in Unity | 6 |
+| Q | The round-3 PRs' own Editor checks (#998, #1001, #1002, #1004, #1005, #1007) | Merged 2026-10-08, never opened in Unity; three need two players | 7 |
 
 Priority 1 and 2 (platform, ecology, toys, UI, the other vessels) follow unchanged.
 
@@ -414,8 +420,8 @@ no new home yet).
 ### QA-SCARAB-SCRAMBLE-MODE ⬜ — "Scarab Scramble" has never been opened
 **Source:** `Docs/UNITY_VERIFICATION_CHECKLIST.md` 🔴 "Scarab Scramble — the Scarab-only
 hoop-court party mode" (`claude/scarab-party-game-pxe569`). `GameModes.ScarabScramble = 43`.
-The forge gate is now installed by nobody, and the doc's "AI cannot juke" predates the
-autopilot dash — both unverified. Reference: `_Scripts/Controller/Arcade/SCARABSCRAMBLE.md`
+The forge gate is now installed by nobody (unverified). AI Scarabs juke since PR #1002 (checked in
+QA-SCARAB-SCRAMBLE-AI-JUKES). Reference: `_Scripts/Controller/Arcade/SCARABSCRAMBLE.md`
 § In-editor verification.
 
 1. Open `MinigameScarabScramble.unity`. Select the `Game` object and confirm it carries
@@ -451,8 +457,8 @@ trail piles up.
 ball · an enemy ball scoring for you · a plain bump stealing · balls at the wrong size on the
 second machine · a match that never ends or Play Again that does nothing.
 **Known, do not fail on:** intensity changes nothing in this arena (single cell by design).
-**Report:** whether AI Scarabs ever juke-steal a ball (the doc says they cannot; the newer
-autopilot dash may have changed that).
+**Report:** whether AI Scarabs juke-steal balls in a real match (PR #1002 added it; the ratio of
+steals to plate knocks is the number QA-SCARAB-SCRAMBLE-AI-JUKES asks for).
 
 ### QA-TOLLWAY-MODE ⬜ — "Tollway" has never been played end to end (GameModes 48)
 **Source:** PR #848 + the replicated-press and plant-anchoring passes. Scarab-only toll race:
@@ -600,8 +606,8 @@ recolouring · Dust treating own and opposing mass the same · no ghost, or pris
 during a hold · a fold that teleports you straight back · a ring that shows the world behind
 it, or a one-frame jump on transit · a guest not teleporting.
 **Known, do not fail on:** pressing **A** on the gamepad in menu freestyle makes the camera
-stop following the vessel (logged, unresolved — a separate bug). The Butterfly has **no
-sounds at all** (no sound slots exist). Its ship icons are placeholders and its class icon
+stop following the vessel (logged, unresolved — a separate bug). The Butterfly makes **no
+sounds** (its sound slots exist since PRs #966 and #1001 but are all empty). Its ship icons are placeholders and its class icon
 is empty. The ghost is an opaque copy of the hull (a translucent one is intended later).
 **Report the feel — this is the point of the item:** say whether the fold's stop, the ghost's
 bloom, the wither/re-appear and the gate transit read well or feel slow, and whether
@@ -1202,8 +1208,8 @@ of order) · intensity 4 rendering Atlantis · solid, un-enterable hulks · base
 by thousands · spawning inside the arena · a missile scoring 100 · scenery scoring ·
 a client's hits appearing only on the client · teammates damaging or scoring off each
 other · a non-Sparrow vessel spawning.
-**Known, do not fail on:** a hit is not yet shown to the **victim** (hit feedback is
-not replicated); the card preview's objective text is the placeholder "Classic
+**Known, do not fail on:** a hit flash is not yet shown to the **victim** (hit feedback is
+not replicated; the victim's petal loss IS, since PR #1007 - QA-COMBAT-PETAL-DRAIN-NET); the card preview's objective text is the placeholder "Classic
 Dogfight". The 90-point target is unmeasured — report the match length.
 
 ### QA-SALVO-MODE ⬜ — "Salvo" has never been opened
@@ -1827,13 +1833,16 @@ by design until audio lands.
 
 Last because the Urchin was the least finished hull. Its HUD, its AI and Hijack's replicated
 arena all merged 2026-10-06 and have their own items in Block P (QA-URCHIN-HUD, QA-URCHIN-AI,
-QA-HIJACK-OWNERSHIP-SYNC); run those first, then this block. The vessel item first.
+QA-HIJACK-OWNERSHIP-SYNC); run those first, then this block. The vessel item first. Its
+2026-10-08 fixes (Urchin backlog U1–U16 and Hijack shield sync) are in Block Q
+(QA-URCHIN-TWO-PEER, QA-URCHIN-BACKLOG-SOLO, QA-HIJACK-SHIELD-SYNC).
 
 ### QA-URCHIN-VESSEL ⬜ — the Urchin's spikes, trail ride, launch and Track Projector
 **Source:** `Docs/UNITY_VERIFICATION_CHECKLIST.md` 🔴 "Urchin revival — chain-reaction spikes +
 trail rider" and 🔴 "Urchin — end-of-ribbon launch, merged spike trigger, Track Projector"
-(prefab edited as YAML, import never checked). Open items: `URCHIN_BACKLOG.md` (U1/U2 block a
-multiplayer ship). References: `URCHIN_TRAIL_RIDER.md`, `URCHIN_CHAIN_SPIKES.md`,
+(prefab edited as YAML, import never checked). `URCHIN_BACKLOG.md` U1/U2 (which blocked a
+multiplayer ship) and U4-U16 were fixed by PR #1005 - Block Q items QA-URCHIN-TWO-PEER and
+QA-URCHIN-BACKLOG-SOLO. References: `URCHIN_TRAIL_RIDER.md`, `URCHIN_CHAIN_SPIKES.md`,
 `URCHIN_TRACK_PROJECTOR.md`.
 
 1. Open `Urchin.prefab`: `ActionExecutorRegistry` lists **three** executors and the input
@@ -1861,8 +1870,8 @@ cooldown; the Urchin rolls across a surface flora.
 re-latching to the same ribbon at once · a tap that bursts, or a hold that fires nothing · a burst
 after a mid-hold swap · a track that lands behind you or never cools down.
 **Known, do not fail on:** the four ability icons are white placeholders (art pending); three
-sound slots are empty; in multiplayer, chain depth and reach may differ between machines (backlog U1) and a remote steal
-does not debit the victim's count (U2).
+sound slots are empty. (Chain depth and reach must now agree between machines, and a remote steal
+must debit the victim - both checked in QA-URCHIN-TWO-PEER.)
 
 ### QA-SKEIN-MODE ⬜ — "Skein": the intensity ladder and the AI Urchin have never been verified
 **Source:** PR #855. `GameModes.Skein = 51`, Urchin-only cable race. **Two playtest passes
@@ -1927,9 +1936,116 @@ crystal; a trailing team's flowers fill about 3 levels; the match ends at 750 wi
 the **scores agree** on both machines; freestyle Urchin unchanged.
 **FAIL:** stealing that does not score · own-colour riding that scores · a launch that needs
 steering to hit the burr · AI that orbit or crawl · scores that differ between machines.
-**Known, do not fail on:** a rail prism's SHIELD may differ between machines (shields are not
-replicated), so a steal refused on one machine may land on another; the Urchin's ability icons
-are white placeholders. Rail colours, ride speeds and the arrow must now AGREE between machines.
+**Known, do not fail on:** the Urchin's ability icons are white placeholders. Rail colours, ride
+speeds, the arrow and (since PR #1004, QA-HIJACK-SHIELD-SYNC) rail prism SHIELDS must now AGREE
+between machines - a shield on one machine and not the other is a failure.
+
+## Priority 0 — Block J: the two party cards — Multiplayer Freestyle and Online Duel for the Cell
+
+Neither card has ever been opened in Unity, and until this refresh neither was tracked here or in
+`Docs/UNITY_VERIFICATION_CHECKLIST.md` (re-audit G37). Both are on `AllGames.asset` and
+`LaunchPartyAllGames.asset` but on **neither** live roster (`ArcadeGames.asset`,
+`ArenaGames.asset`), so the first thing each item checks is whether a player can reach the card at
+all. Both need **two players**, so run them in one Multiplayer Play Mode session.
+
+**Two-player setup used by every two-player item in Blocks J and Q:**
+1. Open **Window ▸ Multiplayer ▸ Multiplayer Play Mode**. Tick **Player 2** and type a tag for it
+   (for example `P2`) **before** you press Play. Without a tag the second window signs in as the
+   same account as other untagged windows and the invite in step 3 never arrives.
+2. Open `Menu_Main` and press Play. Wait until both windows show the main menu.
+3. In the main window, click the **+** slot on the party panel and pick the other player. In the
+   Player 2 window, press **Accept** on the invite. Wait (up to 15 seconds) until both windows show
+   two people in the party. The main window is the **host**; the Player 2 window is the **client**.
+
+### QA-PARTY-FREESTYLE-MODE ⬜ — "Multiplayer Freestyle" has never been opened
+**Source:** `GameModes.MultiplayerFreestyle = 28`; card `ArcadeGameMultiplayerFreestyle.asset`;
+scene `MinigameFreestyleMultiplayer_Gameplay.unity`; `MultiplayerFreestyleController`. Status read
+off the card and scene in `Docs/SCENES.md` § Multiplayer Freestyle (PR #1000, whose step 4 is
+folded in here): no scoring, no natural end (the scene's turn-monitor list is empty), each player
+starts on their own countdown, 2–3 players, no AI fill, six hulls on the card. Re-audit G37.
+
+1. In the Project window, select `Assets/_SO_Assets/Games/ArcadeGameMultiplayerFreestyle.asset`.
+   Read **Vessels**, **Min Players Allowed**, **Max Players Allowed** and **Scene Name**.
+2. Open `MinigameFreestyleMultiplayer_Gameplay.unity` (type its name in the Project window's search
+   box). Select the object that has `TurnMonitorController` and look at its **Monitors** list. Look
+   at the Console for red errors and at the Hierarchy for any `Missing (Mono Script)`.
+3. Do the two-player setup at the top of Block J.
+4. In the host window, open the **Arcade** screen and then the **Arena** screen and look for a card
+   named **Multiplayer Freestyle**. If neither screen has it, stop: mark this item ⛔ BLOCKED and
+   write "no Multiplayer Freestyle card on the Arcade or Arena screen" in the notes.
+5. Open the card, pick a ship, and launch. Watch both windows through the countdown.
+6. In each window, fly for a minute: lay trail, fly through the other player's trail, and find the
+   other player's ship.
+7. Keep flying for five minutes and watch for any end-of-round or winner screen.
+8. In the client window, leave the match with the in-game leave button. Watch both windows.
+
+**PASS:** the card lists six ships (Dolphin, Manta, Rhino, Sparrow, Serpent, Squirrel), 2 and 3
+players, and that scene name; the scene opens with no red errors or missing scripts and its
+Monitors list is empty; both windows get through the countdown and each player can fly; each
+window shows the other player's ship and trail moving smoothly in the same place; the match keeps
+running with no end screen; the leaving player returns to the menu and the host keeps flying with
+no errors.
+**FAIL:** a red error or `Missing (Mono Script)` · a window stuck on the connecting panel or the
+countdown · a player who never gets control · the other player's ship invisible, frozen or in the
+wrong place · an end screen or a winner banner · the leaving player stranded on a black screen, or
+an error in either window when they leave.
+**Known, do not fail on:** there is no score, no timer and no end by design (the card says "No
+rules, time, or score"); intensity changes nothing (the scene has one cell config); no AI fills an
+empty seat; the card has no background render of its own yet.
+**Report:** whether the card was reachable from the menu (step 4), and if not, how (if at all) you
+launched the scene.
+
+### QA-PARTY-DUEL-MODE ⬜ — "Online Duel for the Cell" has never been opened
+**Source:** `GameModes.OnlineDuelForTheCell = 29`; card `ArcadeGameOnlineDuelForTheCell.asset`;
+scene `MinigameDuelForCellMultiplayer_Gameplay.unity`; `OnlineDuelForTheCellController`. Status in
+`Docs/SCENES.md` § Multiplayer Cellular Duel (PR #1000, whose step 3 is folded in here): exactly two
+players; two rounds of one 120 s turn; at round 2 the controller swaps the two ships
+(`NetworkObject.ChangeOwnership` + `gameData.SwapVessels`) and swaps back on replay; most mass wins
+(`VolumeCreated` + `HostileVolumeDestroyed` + `FriendlyVolumeDestroyed`, ×1 each, no scoring-rule
+asset); no AI fill. The card's hull list is still serialized under the retired `Captains` key, so
+**Vessels** is expected to read empty and each pilot flies the ship they brought. The swap reads
+`Players[0]` and `Players[1]` only. The Urchin's swap throw was fixed by PR #973. Re-audit G37/G38.
+
+1. Select `Assets/_SO_Assets/Games/ArcadeGameOnlineDuelForTheCell.asset`. Look at **Vessels** and
+   write down exactly what it shows: an empty list, six ships, or "Type mismatch" / None entries.
+   Read **Min/Max Players Allowed** and **Min/Max Intensity**.
+2. Open `MinigameDuelForCellMultiplayer_Gameplay.unity`. Look at the Console for red errors and the
+   Hierarchy for `Missing (Mono Script)`. Select the object that has `NetworkTimeBasedTurnMonitor`
+   and read its duration.
+3. Do the two-player setup at the top of Block J. In each window, take control of the ship (click
+   the centre of the screen, or press **Y** on a gamepad), open the Vessel Changer and pick a
+   **different** ship in each window (for example Sparrow in the host, Dolphin in the client).
+4. In the host window, look for an **Online Duel for the Cell** card on the Arcade and Arena
+   screens. If neither has it, stop: mark this item ⛔ BLOCKED and write "no Duel card on the Arcade
+   or Arena screen".
+5. Launch it at intensity 1. Write down which ship each window flies.
+6. Round 1: in both windows, lay trail and fly through the other player's trail for the whole two
+   minutes. Watch both players' scores in both windows.
+7. When round 2 starts, look at each window: which ship are you flying now? Steer it and check the
+   camera follows it.
+8. Play round 2 to the end. Read the end screen in both windows.
+9. Press **Play Again** (or Ready) in both windows. Check which ship each window flies.
+10. Go back to the menu, pick the **Urchin** in one window, and repeat steps 5–7.
+11. Leave the party so you are alone, and try to launch the card.
+
+**PASS:** the card reads 2 / 2 players and intensity 1–2; the scene opens clean and the turn lasts
+120 seconds; both players start round 1 in the ships they picked; scores rise when you lay trail and
+when you destroy the other player's trail, and match in both windows; at round 2 each player is
+flying the ship the **other** player flew in round 1, can steer it, and the camera follows it; the
+match ends after round 2 and both windows name the same winner, the one with the higher score; after
+Play Again each player is back in their original ship; the Urchin swaps with no error; a
+one-player launch is refused (or not offered) rather than starting.
+**FAIL:** a red error or missing script · a window stuck on the connecting panel · after the swap, a
+player steering the wrong ship, a camera left on the old ship, or dead controls · scores that differ
+between windows · the lower score named winner, or the two windows naming different winners ·
+"No network object found in vessel", `NullReferenceException` or `ArgumentOutOfRangeException` in
+the Console · a one-player match that starts.
+**Known, do not fail on:** intensity 2 looks the same as 1 (one cell config); no AI fills the second
+seat; the card has no background render of its own yet.
+**Report:** what **Vessels** shows (step 1) — that decides whether the card's ship list must be
+re-authored — and whether the card was reachable from the menu (step 4).
+
+---
 
 ## Priority 0 — Block P: the parallel PRs' own checks (merged 2026-10-06)
 
@@ -2122,8 +2238,7 @@ thief's colour; scores agree; the solo match plays as before with no warnings.
 stolen prisms that flip and then snap back after about half a second · an arrow pointing at an
 empty burr · AI raiders still heading for an emptied burr · a late joiner seeing the original
 colours · scores that differ.
-**Known, do not fail on:** a rail prism's shield may differ between machines (shields are not
-synced), so occasionally a steal blocked on one machine lands on another.
+(Shields are synced too since PR #1004; their two-machine checks are QA-HIJACK-SHIELD-SYNC.)
 
 ### QA-MODE-TOASTS ⬜ — pop-up messages in eleven modes that had none
 **Source:** PR #976 (eleven `GameToastConfig_*` assets, `DomainRaceToasts`, new publishers in the
@@ -2163,6 +2278,277 @@ twice in one window · a burst of stale messages after a rejoin or replay.
 noisy.
 
 <!-- /qa-parallel-pr-checks -->
+
+---
+
+## Priority 0 — Block Q: the round-3 PRs' own checks (merged 2026-10-08)
+
+PRs #998–#1007 from the 2026-10-08 re-audit merged without anyone opening them in Unity. The items
+below cover #1007, #998, #1005, #1004, #1002 and #1001, ordered from the widest reach to the
+narrowest. Three of them need **two players** (the two-player setup at the top of Block J) —
+QA-COMBAT-PETAL-DRAIN-NET, QA-URCHIN-TWO-PEER and QA-HIJACK-SHIELD-SYNC — so run those three in
+one session. #1000 changed docs only; its two Inspector checks are folded into Block J. #999,
+#1006 and the other PRs merged the same week carry no Editor checklist of their own and are not
+itemised yet.
+
+<!-- qa-round3-pr-checks: new items from the round-3 PRs go between these markers -->
+
+### QA-COMBAT-PETAL-DRAIN-NET ⬜ — a shot pilot loses petals once, on every machine, and a client's hit scores once
+**Source:** PR #1007 (`ElementalTransfer.ApplyAllAuthoritative` / `RouteFor`, the relay RPCs on
+`NetworkVesselImpactor`, `CombatHitDrain.Apply`; `Docs/ELEMENTAL_ECONOMY.md` §7–§8,
+`_Scripts/Controller/Arcade/DOGFIGHT.md`). A combat hit's petal drain is now settled once, on the
+victim's own machine. Before it, an AI that shot a client never drained the client, and in human
+vs human the victim lost petals only if its own copy of the shot connected. Reaches every armed
+mode (Dog Fight, Salvo, Broadside, The Bends, Undertow). Compiled offline only; Netcode's RPC code
+generation has never run on it. **Also checks a question the PR left open:**
+`StatsManager.CombatHitLanded` credits every hit the host sees, and the host also replays a client's
+shots, so a client's hit may be scored twice — once from the host's replay and once from the
+client's own `Player.ReportCombatHit_ServerRpc` (step 9).
+
+1. Open the project and wait for Unity to finish compiling. Look at the Console for red errors,
+   especially any naming `NetworkVesselImpactor` or an RPC.
+2. Open **Window ▸ General ▸ Test Runner**, choose **EditMode**, and run
+   `ElementalTransferRouteTests` and `CombatHitDrainTests`.
+3. Play **Dog Fight** alone against AI. Let an AI hit you, and watch your four element flowers
+   (above your ability cards) and the crystals that fly off your ship.
+4. Do the two-player setup at the top of Block J, then launch **Dog Fight** with AI filling the
+   other seats. In the client window, fly through elemental crystals until the client's flowers
+   are coloured, not grey.
+5. **AI shoots the client.** Fly the client in front of an AI ship and take hits. Watch the client's
+   flowers in the client window, and count the crystals that leave the client's ship in **both**
+   windows.
+6. **Host shoots the client.** Have the host hit the client a few times. Watch the client's flowers
+   and the crystals in both windows.
+7. **Client shoots the host.** Swap roles and repeat step 6.
+8. **Client shoots an AI.** Watch that AI's flowers (or its ship's shape changing) and its crystals
+   in both windows.
+9. **Is a client's hit scored twice?** Note the host's score. Have the host hit the client with
+   exactly **one** missile, dead-on, and write down how much the host's score rises. Then have the
+   client hit the host with exactly one missile and write down how much the client's score rises,
+   in both windows. Then have the client land a short burst of bullets on the host while you count
+   the hits, and compare with how much the client's score rose.
+10. **One shot, four petals.** Hit a pilot who has petals in all four elements with one missile
+    blast. Count the crystals that fly off in each window.
+11. **Ward.** Hit a pilot while it is immune to debuffs (just after it respawns or uses a ward).
+12. Optional: in **Hijack** with two players, spike the other pilot just as a ship swap happens.
+
+**PASS:** no red errors; both test classes pass; solo play drains and ejects as before; when an AI
+hits the client, the client's flowers step down in the client window and the same number of
+crystals leave its ship in both windows; host→client and client→host hits step the victim's flowers
+down in both windows a moment after the hit, with one crystal per petal in both windows, and only on
+hits the shooter's score counted; client→AI hits drain the AI in both windows; **a client's missile
+raises the client's score by the same amount as the host's identical missile (50 in Dog Fight), and
+each client bullet hit adds 1, in both windows**; one blast on a four-element pilot ejects exactly 4
+crystals in each window and each flower steps down once; a warded pilot loses nothing; nothing
+throws in Hijack.
+**FAIL:** a red error or RPC error · a failing test · the client's flowers not moving when an AI
+shoots it (the bug this PR fixes) · flowers stepping down in one window only · different crystal
+counts in the two windows · 8 crystals from one four-element blast · **a client's hit scoring twice
+(a missile adding 100, or bullets adding 2 each)** · a warded pilot losing petals · solo play
+changed.
+**Known, do not fail on:** a pilot whose flowers are all grey has nothing to lose, so hitting it
+ejects nothing; the victim's own screen still shows no hit flash (hit feedback is not replicated);
+the Serpent's sniper round, explosion debuffs and skimmer steals still settle on each machine
+separately (named in the PR as not covered yet), so do not judge them here.
+**Report:** the two score jumps from step 9. If the client's is double, say so in the notes — it
+points at `StatsManager.CombatHitLanded`.
+
+### QA-CLEAVE-PREVIEW-RING ⬜ — the Cleave card preview stands you on the real spawn ring at every intensity
+**Source:** PR #998 (`Tools/Build/author_preview_spawns.py`,
+`ModePreviewDefinitionSO.ResolveSpawnRingRadiusFloor`, `ModePreviewArena`, `ModePreviewSession`;
+tests `ModePreviewSpawnFloorTests`; `_Scripts/Controller/Arcade/CLEAVE.md`). The preview used to
+stand the pilot 3150 out on all four rungs, about three times too far on the small rungs 3 and 4.
+The change runs through every card's preview, so step 6 checks two others.
+
+1. Wait for Unity to finish compiling. In **Window ▸ General ▸ Test Runner ▸ EditMode**, run
+   `ModePreviewSpawnFloorTests`.
+2. Select `Assets/_SO_Assets/Mode Previews/ModePreview_Cleave.asset` and read **Spawn Ring Radius
+   Floor By Intensity**. Then select `ModePreview_Rampage.asset` in the same folder and read the
+   same field.
+3. Open **FrogletTools ▸ Toolbox ▸ Logging** and turn on the **ArcadeLaunch** channel.
+4. Open `Menu_Main`, press Play, open the **Arcade** screen, open the **Cleave** card and start
+   **Test Flight** at intensity 1. Find the `[ModePreview] Spawn for Cleave` line in the Console.
+5. Step the intensity row to **3**, then **4**, then **2**. Each time, watch where the ship arrives
+   and read the new log line.
+6. Open the **Rampage** and **Wrecking Ball** cards' previews.
+
+**PASS:** all 9 tests pass; Cleave's list reads 3150, 3150, 1050, 1050 and Rampage's list is empty;
+at intensities 1 and 2 the log line says `floor=3150` and the ship arrives about 3150 from the
+centre; at 3 and 4 the arena rebuilds (the Cage), the line says `floor=1050`, and the ship arrives
+about 1050 from the centre, outside the cage; the Rampage and Wrecking Ball previews put the ship
+where they did before.
+**FAIL:** a failing test · different numbers in either list · at intensity 3 or 4 the ship still far
+out (about 3150) or inside the cage · the arena not rebuilding when the intensity changes · another
+card's preview ship arriving somewhere new.
+
+### QA-URCHIN-TWO-PEER ⬜ — two machines agree on an Urchin's spike chains, its steals, and a quick double swap
+**Source:** PR #1005, `URCHIN_BACKLOG.md` U1, U2 and U13 (in
+`_Scripts/Controller/Vessel/R_VesselActions/`). U1 and U2 blocked shipping the Urchin in
+multiplayer: each machine ran the spike chain off its own copy of the pilot's Charge level, and a
+client's steal credited the thief but never took the prisms off the victim. Now the chain reads the
+replicated level (`R_VesselElementalAbilityHandler.ReplicatedLevel`), and
+`ReportPrismStolen_ServerRpc` names the victim so the host debits it (`StatsManager.DebitPrismSteal`;
+the trade is `Docs/ScoringSystem/BUGS.md` B19). U13: a client's second quick ship swap used to
+start while its player still pointed at the despawned ship. Compiled offline only.
+
+1. Do the two-player setup at the top of Block J. Launch **Hijack** with the two players on
+   **different** teams.
+2. **U1, Charge 8+.** In the client window, fly through Charge crystals until the client's Charge
+   flower reads 8 or more. Tap the right trigger into a stretch of rail of the host's colour, then
+   hold it for 2.5 seconds and release. In **both** windows, count how many waves the chain spreads
+   in and how far it reaches.
+3. **U1, Charge 0.** Start a fresh match and repeat step 2 before collecting any Charge.
+4. **U2, client steals.** Before stealing, in the host window, select the host's player object in the
+   Hierarchy and find its **Round Stats** component; write down **Prisms Remaining** and **Volume
+   Remaining**. Do the same for the client's player object. Then, with the client, steal about 20
+   of the host's prisms and read the four numbers again in the host window.
+5. **U2, host steals.** With the host, steal about 20 of the client's prisms and read the numbers
+   again, in both windows.
+6. **U13.** Go back to `Menu_Main` with both players still in the party. In the client window, take
+   control of the ship and use the Vessel Changer twice in quick succession. Then open any Arcade
+   card's preview in the client window and swap ship there.
+
+**PASS:** at Charge 8+ both windows show the same number of chain waves and the same reach, and at
+Charge 0 both show the same short resting chain; after the client's steal the host's Prisms Remaining
+and Volume Remaining fall by about the same amount the client's rose; after the host's steal the
+client's numbers move once (not twice); the second quick swap waits until the first new ship is in
+place, with no `MissingReferenceException`, and the preview swap still lands.
+**FAIL:** a longer or shorter chain in one window than the other · the victim's remaining numbers
+not moving after a client steal (the U2 bug) · a tally moving twice for one steal · a
+`MissingReferenceException` or a stuck swap after the double swap.
+**Known, do not fail on:** a pilot whose Charge is below zero (a Charge debuff) now gets the short
+resting chain on every machine — that is the trade the fix chose.
+
+### QA-URCHIN-BACKLOG-SOLO ⬜ — five Urchin fixes you can check alone: stuck spikes, cell rides, guns, shared materials, double Slip
+**Source:** PR #1005, `URCHIN_BACKLOG.md` U4, U5, U6, U14, U16. U4: a spike that stuck kept
+converting that frame's hits. U5: every authored cell environment declared its world a 1D trail, so
+the Urchin tried to rail-grind it (now `PrismscapeDimension.Volume`). U6: a dead `GunsActive` flag
+removed. U14: `ApplyShipMaterialToSlots` cloned every material (now `sharedMaterials`). U16: a
+cancelled Slip ghost could make the hull solid again mid-way through the next ghost. Compiled
+offline only.
+
+1. Start freestyle (click the centre of the main menu screen, or press **Y** on a gamepad) and pick
+   the **Urchin** in the Vessel Changer.
+2. **U4.** Fire Chain Spikes (right trigger) into a dense mass of prisms. Watch a spike that sticks.
+3. **U5.** Still in freestyle, fly the **Cell Selector** toy (about 300° around the membrane ring)
+   and pick a world with a built structure (for example **Atlantis**, **Geode** or the
+   **Boneyard** if offered, otherwise **Yggdra**). When it has grown in, fly the Urchin into the
+   structure.
+4. **U5 regression.** Launch **Skein**, **Hijack**, **Regatta** (with an Urchin seat) and
+   **Breakwater** and latch onto their rails.
+5. **U6.** Latch onto a trail and fire spikes while riding.
+6. **U14.** Open **Window ▸ Analysis ▸ Frame Debugger** (or the Memory Profiler), then change the
+   Urchin's team colour mid-session (with the domain-changer toy) and check the ship's materials.
+7. **U16.** Press Slip (**B**) twice inside one ghost window, then watch the second ghost.
+
+**PASS:** a stuck spike converts only the prism it stuck in and stays where it struck; in an authored
+cell structure the Urchin rides the surface instead of snapping onto a rail that runs through the
+world; the Skein, Hijack, Regatta and Breakwater rails still rail-grind; spikes fire while riding; the
+ship repaints in the new colour and no new `(Instance)` materials appear for its Body or Window slots;
+the second ghost lasts its full time and the ship stays intangible throughout.
+**FAIL:** a stuck spike that keeps converting or jumps forward a segment · the Urchin snapping onto a
+line through an authored cell · a mode rail that no longer grinds · no spikes while riding · new
+`(Instance)` materials after a colour change · the ship turning solid partway through the second
+ghost.
+
+### QA-HIJACK-SHIELD-SYNC ⬜ — a rail prism's shield is the same on every machine in Hijack
+**Source:** PR #1004 (`HijackOwnershipLedger` packs each yard prism's shield tier into the same
+ownership word #972 replicates; new `shieldSweepBudget` field; `HijackYard` loot skips
+super-shielded prisms; `_Scripts/Controller/Arcade/HIJACK.md` §9 steps 10g–10h, §10–§11). Before it
+shields were local, so a Mass-5 prism shielded on one machine and not on the other counted as a steal
+on one and a shield break on the other. Compiled and simulated offline (46/46 two-peer assertions)
+only.
+
+1. Open `Assets/_Scenes/Multiplayer Scenes/MinigameHijack.unity` and let it compile. Select the
+   Hijack controller object and find **Shield Sweep Budget** under **Ownership Sync**. Look at the
+   Console for red errors, especially RPC errors.
+2. Do the two-player setup at the top of Block J, then launch **Hijack** with the two players on
+   **different** teams.
+3. **Client shields, host steals.** In the client window, raise the client's **Mass** to level 5
+   (fly through Mass crystals) and ride one of the client's own rail thirds. Watch those prisms in
+   both windows.
+4. In the host window, ride the host's ship (or watch an AI raider) over that third, twice. Watch
+   both windows after each pass.
+5. **Host shields, client steals.** Swap roles and repeat steps 3–4.
+6. **No flicker.** While the other player lays Mass-5 armour, watch the shields on your screen for
+   ten seconds.
+7. **Late join.** With some Mass-5 armour laid, add a third Multiplayer Play Mode player (tag `P3`)
+   and join it to the match. Once its yard is laid, look at the same prisms.
+8. **Regression.** Run QA-HIJACK-OWNERSHIP-SYNC steps 3–8.
+9. **Profiler.** In the host window, open **Window ▸ Analysis ▸ Profiler** at intensity 4 and find
+   `HijackOwnershipLedger.SweepShields`.
+10. Play one full match alone with AI.
+
+**PASS:** the field reads 4096 and there are no errors; the shielded prisms come up shielded in both
+windows within a blink; the **first** pass only breaks the shields (the prisms keep their owner's
+colour and the shield-break debris plays in both windows) and the **second** pass flips them, in both
+windows; the same holds with roles swapped and both windows agree after each pass; shields stay up
+with no drop-and-return after about half a second; the late joiner sees the same prisms shielded;
+the QA-HIJACK-OWNERSHIP-SYNC steps still pass; `SweepShields` costs a few tens of microseconds a
+frame; the solo match plays as before with no new warnings.
+**FAIL:** an RPC error · a prism shielded in one window and bare in the other · a first pass that
+flips a shielded prism in either window · the two windows disagreeing after a pass · shields that
+blink off and back · a late joiner seeing bare prisms · `SweepShields` costing much more than about
+0.1 ms a frame · a changed solo match.
+
+### QA-SCARAB-SCRAMBLE-AI-JUKES ⬜ — AI Scarabs dash to steal rival balls and to escort their own
+**Source:** PR #1002 (`ScarabScrambleController.TryAIJuke`, the `ScarabScrambleJukePlanner` geometry,
+6 new **AI Jukes** fields; tests `ScarabScrambleJukePlannerTests`;
+`_Scripts/Controller/Arcade/SCARABSCRAMBLE.md` § AI). Before it the AI never juked, so it never
+stole a ball or fired the cavitation plate. The steal-versus-plate-knock ratio is modelled, not
+measured. Compiled offline; the 16 tests ran headless outside Unity.
+
+1. Open `MinigameScarabScramble.unity` and let it compile. Select the `Game` object and find the
+   **AI Jukes** header on `ScarabScrambleController`.
+2. In **Window ▸ General ▸ Test Runner ▸ EditMode**, run `ScarabScrambleJukePlannerTests`.
+3. Open **FrogletTools ▸ Toolbox ▸ Logging** and turn on the **ScarabDash** channel. Launch Scarab
+   Scramble at intensity 1, you plus two AI teams.
+4. **Steal.** Forge a ball (fly your front sphere through a white crystal) and leave it loose near an
+   AI that has no ball. Watch the AI.
+5. **Escort.** Follow an AI escorting its own ball down a long straight.
+6. Play to the final whistle and keep watching the AI for ten seconds after it.
+7. Optional: with two players (setup at the top of Block J), watch an AI steal from the client
+   window.
+
+**PASS:** six fields read 260, 0.1, 4.5, 150, 30, 70; all 16 tests pass; the Console shows
+`[ScarabJuke] Fired … committed` lines from AI ships with the 360° spin and the plate; the AI flies
+at the loose ball and dashes as it arrives, and the ball either turns the AI's colour or is thrown
+off its line; an escorting AI makes about one sideways dash per straight, never with its own ball
+close beside it, and never more than one dash per half second; no AI dashes after the final whistle;
+in the client window an AI steal shows the right colour change.
+**FAIL:** missing fields or a failing test · no `[ScarabJuke]` lines from AI ships · an AI that never
+goes for a loose rival ball · dashes faster than one per half second, or with its own ball beside it
+· an AI dashing after full time · a colour change missing on the client.
+**Report:** roughly how often an AI dash steals the ball versus knocks it away with the plate, and
+whether the escort dash helps or only looks busy.
+
+### QA-BUTTERFLY-SOUND-SLOTS ⬜ — the Butterfly's wingbeat and heart sounds have (empty) slots
+**Source:** PR #1001 (`ButterflyAnimation.wingbeatEvent` + `wingbeatMinAmplitude`,
+`ButterflyDustField.heartWitherEvent` / `heartNourishEvent`; `BUTTERFLY.md`). Three sounds that had
+no slot at all now have empty ones, per the locked "every sound is an exposed, empty field" rule. No
+prefab was edited, so the fields appear on the next save. Compiled offline only.
+
+1. Open `Assets/_Prefabs/Spacevessels/Butterfly.prefab`, select its `ButterflyAnimation` component
+   and look under **Audio**.
+2. Open `Assets/_Prefabs/Spacevessels/Components/ButterflyDustSkimmer.prefab`, select
+   `ButterflyDustField` and look under **Audio**.
+3. Start freestyle and fly the Butterfly for a minute with every slot empty. Watch the Console.
+4. Optional: temporarily assign any sound to the three slots (**do not save**), then fly: flap, hold
+   the Fold (left trigger), pass over a rival creature's heart in Dust mode, and pass over your own
+   team's lifeform. Undo the assignments afterwards.
+
+**PASS:** `ButterflyAnimation` shows an empty **Wingbeat Event** and **Wingbeat Min Amplitude** = 4;
+`ButterflyDustField` shows empty **Heart Wither Event** and **Heart Nourish Event**; no new warnings
+or errors in the Console; with test sounds assigned, the wingbeat plays once per flap and goes quiet
+while the Fold is held, the wither plays once as a rival creature dies, and the nourish plays at most
+once per lifeform every 5 seconds.
+**FAIL:** a slot missing from either component · a Console error or warning from these components ·
+(with test sounds) a wingbeat that keeps playing during the Fold, or a wither or nourish that plays
+when nothing died or was fed.
+**Known, do not fail on:** the Butterfly is silent with the slots empty — the audio owner wires them.
+
+<!-- /qa-round3-pr-checks -->
+
 
 ---
 
