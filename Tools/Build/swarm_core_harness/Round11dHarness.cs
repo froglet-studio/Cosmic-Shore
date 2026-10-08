@@ -248,6 +248,13 @@ static class Round11dHarness
             bool zeroIsRound10 = SwarmTickJob.StrikeState(3, 0, 0, 0.5f, 0, z) == 2;
             Check(firstAt4 && dipHolds && calmResets && zeroIsRound10,
                 $"pack hunter wind-up: the plate goes up on the 4th shown tick (got {upAt}), a dip holds the count, a calm resets it, 0 strikes at once");
+            // the pufferfish winds up the same way above DangerEnter (0.45; a calm is below 0.18)
+            var pw = S(); pw.PuffWindupTicks = 4;
+            byte state0 = 0; int puffAt = -1;
+            for (int t = 0; t < 10 && puffAt < 0; t++) { state0 = SwarmTickJob.StrikeState(0, 0, t, 0.6f, state0, pw); if (state0 == 2) puffAt = t + 1; }
+            byte held = 2; held = SwarmTickJob.StrikeState(0, 0, 0, 0.3f, held, pw);
+            Check(puffAt == 4 && held == 2 && SwarmTickJob.StrikeState(0, 0, 0, 0.6f, 0, S()) == 2,
+                $"pufferfish wind-up: the plate goes up on the 4th shown tick (got {puffAt}), a lit plate keeps its exit hysteresis, 0 puffs at once");
         }
         // off: no bestiary, only the pufferfish strikes
         {

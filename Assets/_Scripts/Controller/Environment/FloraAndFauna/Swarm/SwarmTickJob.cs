@@ -77,6 +77,9 @@ namespace CosmicShore.Gameplay
         /// <summary>Ticks a pack hunter must show its startle above HuntEnter before its plate goes up (the lab's fair
         /// burns WINDUP, 0.4 s). 0 = strike on the tick it crosses (round 10).</summary>
         public int HuntWindupTicks;
+        /// <summary>Ticks a Charge pufferfish must show its startle above DangerEnter before its plate goes up (the same
+        /// wind-up, applied to its strike). 0 = strike on the tick it crosses (round 9).</summary>
+        public int PuffWindupTicks;
         /// <summary>Ticks a locust shimmer holds before the dangerous quarter of the cloud moves on.</summary>
         public int LocustPhaseTicks = 20;
         /// <summary>World radius around a vessel inside which a member becomes a real proxy.</summary>
@@ -163,7 +166,8 @@ namespace CosmicShore.Gameplay
         /// (ELEMENTAL_ECONOMY.md §4); the swarm's own domain is only stung. Pure and static so the harness asserts it.
         /// States: 0 calm, 1 noticed (lurker only), 2 striking (the plate is up), 3 bolted (lurker only: safe until calm).
         /// <list type="bullet">
-        /// <item>Charge pufferfish: strikes above DangerEnter until below DangerExit (unchanged, hysteresis).</item>
+        /// <item>Charge pufferfish: strikes above DangerEnter until below DangerExit (hysteresis), after a wind-up of
+        /// PuffWindupTicks shown ticks counted the same way as the pack hunter's.</item>
         /// <item>Mass lurker: bristles while half-startled, but only once it has been so for TWO ticks (a member a rush
         /// carries straight through the band never flashes), and a lurker that BOLTS (startle reaches DangerEnter) stays
         /// safe until it is fully calm again (below LurkCalm / 2). Round 10 read the band every tick, so every bolted
@@ -178,8 +182,23 @@ namespace CosmicShore.Gameplay
         /// </list>
         /// A NaN or negative startle reads as calm. Returns the new state; the plate is up iff it is 2.
         /// </summary>
-        /// <summary>A pack hunter's wind-up resets once its startle falls below this fraction of HuntEnter.</summary>
-        public const float HuntWindupResetFrac = 0.4f;
+        /// <summary>A wind-up resets once the startle falls below this fraction of the strike threshold (the lab's 0.2
+        /// against 0.5).</summary>
+        public const float WindupResetFrac = 0.4f;
+
+        /// <summary>The WIND-UP before a plate goes up (lab fair burns, bestiary WINDUP): states 4 + n count the ticks the
+        /// startle has shown above <paramref name="enter"/>; the plate goes up (2) on the <paramref name="ticks"/>-th. A dip
+        /// holds the count, a startle below WindupResetFrac x enter resets it (0). ticks 0 or 1 = strike on crossing.</summary>
+        static byte WindUp(float st, float enter, byte state, int ticks)
+        {
+            int wound = state >= 4 ? state - 4 : 0;
+            if (st > enter)
+            {
+                wound++;
+                return wound >= ticks ? (byte)2 : (byte)(4 + Math.Min(wound, 250));
+            }
+            return wound > 0 && st >= WindupResetFrac * enter ? state : (byte)0;
+        }
 
         public static byte StrikeState(int eff, int slot, long tick, float st, byte state, SwarmTickSettings s)
         {
@@ -187,7 +206,7 @@ namespace CosmicShore.Gameplay
             switch (eff)
             {
                 case 0:
-                    return state == 2 ? (st < MathF.Min(s.DangerExit, s.DangerEnter) ? (byte)0 : (byte)2) : (st > s.DangerEnter ? (byte)2 : (byte)0);
+                    return state == 2 ? (st < MathF.Min(s.DangerExit, s.DangerEnter) ? (byte)0 : (byte)2) : WindUp(st, s.DangerEnter, state, s.PuffWindupTicks);
                 case 1 when s.Bestiary:
                 {
                     float calm = 0.5f * s.LurkCalm;
@@ -203,16 +222,7 @@ namespace CosmicShore.Gameplay
                 case 2 when s.Bestiary:
                     return ((slot * 7919L + tick / Math.Max(1, s.LocustPhaseTicks)) & 3L) == 0L ? (byte)2 : (byte)0;
                 case 3 when s.Bestiary:
-                {
-                    if (state == 2) return st < MathF.Min(s.DangerExit, s.HuntEnter) ? (byte)0 : (byte)2;
-                    int wound = state >= 4 ? state - 4 : 0;
-                    if (st > s.HuntEnter)
-                    {
-                        wound++;
-                        return wound >= s.HuntWindupTicks ? (byte)2 : (byte)(4 + Math.Min(wound, 250));
-                    }
-                    return wound > 0 && st >= HuntWindupResetFrac * s.HuntEnter ? state : (byte)0;
-                }
+                    return state == 2 ? (st < MathF.Min(s.DangerExit, s.HuntEnter) ? (byte)0 : (byte)2) : WindUp(st, s.HuntEnter, state, s.HuntWindupTicks);
                 default:
                     return 0;
             }

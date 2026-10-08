@@ -130,7 +130,7 @@ static class Driver
         Check(PetalBurnRules.Magnitude((PetalBurnRule)7, shipped, tuned) == shipped,
               "  ... and an unknown rule falls back to Shipped");
         Check((int)PetalBurnRule.Shipped == 0 && (int)PetalBurnRule.Tuned == 1,
-              "  ... and the enum's serialized values are Shipped=0, Tuned=1 (a silent cell plays Shipped)");
+              "  ... and the enum's serialized values are Shipped=0, Tuned=1 (a silent cell plays the field default, Tuned)");
         // The effect burns -magnitude on each of the four elements; a start-of-match pilot holds 5.
         int burnedS = 0, burnedT = 0;
         for (int el = 0; el < 4; el++) { burnedS += new Pot(0.5f).Accrue(-ms); burnedT += new Pot(0.5f).Accrue(-mt); }

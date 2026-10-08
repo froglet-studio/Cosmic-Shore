@@ -280,6 +280,7 @@ namespace CosmicShore.Gameplay
                 Bestiary = config.Bestiary, HuntEnter = config.HuntEnter, LurkCalm = config.LurkCalm,
                 LocustPhaseTicks = Mathf.Max(1, Mathf.RoundToInt(config.LocustPhaseSeconds * config.TickHz)),
                 HuntWindupTicks = Mathf.Max(0, Mathf.RoundToInt(config.HuntWindupSeconds * config.TickHz)),
+                PuffWindupTicks = Mathf.Max(0, Mathf.RoundToInt(config.PuffWindupSeconds * config.TickHz)),
                 EngageRadius = config.EngageRadius, MaxEngaged = config.MaxProxies,
                 MultiDomain = Lineages,
             };
