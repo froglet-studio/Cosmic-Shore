@@ -29,4 +29,4 @@ points at the repository it was exported from; set `COSMIC_SHORE_REPO` to use an
 
 Bundle id, version and build number come from Unity's Player Settings unless the engine's
 Project Settings (`Port/ProjectSettings/PrismaProject.json`, launcher PROJECT page) override
-them. iOS defaults to the test id `com.FrogletGames.CosmicShore.dev` (`Docs/IOS_BUILD.md` section 1).
+them. iOS Player Settings carry the production id `com.FrogletGames.CosmicShore`; the free sideload `.ipa` is rewritten to the test id `com.FrogletGames.CosmicShore.dev` (`Docs/IOS_BUILD.md` section 1).

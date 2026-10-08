@@ -25,7 +25,7 @@ a green player run.
 
 A small re-implementation of Unity's script pipeline (`build.py`):
 
-1. **Discovers every `.asmdef`/`.asmref`** in the fetched package sources and `Assets/`, evaluates
+1. **Discovers every `.asmdef`/`.asmref`** in the fetched package sources and `Assets/`. Only packages that `Packages/packages-lock.json` still lists count: the cache outlives a removal, and a stale package would keep satisfying references the project can no longer make (seen 2026-10-08, when `com.unity.purchasing` was uninstalled). It evaluates
    `includePlatforms`/`excludePlatforms` (WindowsStandalone64), `defineConstraints`,
    `versionDefines`, `overrideReferences`/`precompiledReferences`/`autoReferenced`, name and GUID
    references.

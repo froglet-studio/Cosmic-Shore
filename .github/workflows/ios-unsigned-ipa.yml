@@ -204,10 +204,17 @@ jobs:
           [ -n "$APP" ] || { echo "::error::No .app produced"; exit 1; }
           mkdir -p "$WORK/stage/Payload" "$WORK/out"
           cp -R "$APP" "$WORK/stage/Payload/"
+          # Always the TEST id, whatever Player Settings exported. The production id
+          # (com.FrogletGames.CosmicShore) belongs to Froglet's paid team; a free Apple ID that
+          # signs it in Sideloadly would register it to a personal team and lock the store app out
+          # (Docs/IOS_BUILD.md section 1). The app is unsigned here, so its plist is still editable;
+          # only the app's own id moves, never an embedded framework's.
+          /usr/libexec/PlistBuddy -c 'Set :CFBundleIdentifier com.FrogletGames.CosmicShore.dev' \
+            "$WORK/stage/Payload/$(basename "$APP")/Info.plist"
           # An .ipa is a zip with Payload/ at its root. -y keeps framework symlinks as symlinks.
           (cd "$WORK/stage" && zip -qry "$WORK/out/CosmicShore-dev.ipa" Payload)
           ls -lh "$WORK/out/CosmicShore-dev.ipa"
-          /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Info.plist"
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$WORK/stage/Payload/$(basename "$APP")/Info.plist"
 
       - name: Upload the .ipa
         if: steps.gate.outputs.ready == 'true'

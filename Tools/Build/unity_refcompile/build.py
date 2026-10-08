@@ -238,9 +238,17 @@ class Asm:
 def package_roots():
     lock = load_json(os.path.join(ROOT, "Packages", "packages-lock.json"))["dependencies"]
     versions = {k: v["version"] for k, v in lock.items()}
-    roots = []
-    for d in glob.glob(os.path.join(CACHE, "packages", "*@*")):
-        roots.append((os.path.basename(d).split("@")[0], d))
+    # The cache outlives the lock. A package since removed (or the old version of one since
+    # upgraded) must not compile, or it keeps satisfying references the project can no longer
+    # make. A name the lock still lists is kept even off-version: fetch.NEAREST_TAG substitutes.
+    cached = {}
+    for d in sorted(glob.glob(os.path.join(CACHE, "packages", "*@*"))):
+        name, _, ver = os.path.basename(d).partition("@")
+        if name not in versions:
+            continue
+        if name not in cached or ver == versions[name]:
+            cached[name] = d
+    roots = list(cached.items())
     for name, info in lock.items():
         if info["source"] == "git":
             path = ""

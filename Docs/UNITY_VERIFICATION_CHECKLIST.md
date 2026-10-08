@@ -65,6 +65,63 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Store readiness: production iOS id, Android API 36 + ARM64, Unity IAP removed, iOS export-compliance plist (`claude/serene-edison-lfv24f`, 2026-10-08)
+
+Step 1 and the store settings of `Docs/PLATFORM_UNIFICATION.md` (§3.9). The console walkthrough is
+the shared doc *Cosmic Shore — Google Play & App Store setup guide*. No editor and no `unity` CLI in
+the authoring session, so `/verify-unity` did NOT run. Out of editor:
+
+- `unity_refcompile` compiled the branch with the IAP package gone. Its package scan now compiles only
+  what the lock lists, so a stale cache cannot mask a removed package.
+- The conditional-compilation and console-logging gates pass.
+- The `UNITY_IOS` body of the new post-processor is compiled by nothing here. The first iOS build is
+  its proof.
+
+**What landed**
+
+1. **Player Settings:**
+   - iOS `com.FrogletGames.CosmicShore` (was `.dev`).
+   - Android target API 36 (was 35), ARM64 only (was ARMv7 + ARM64).
+   - The TailGlider keystore path and alias cleared.
+2. **`ios-unsigned-ipa.yml`** rewrites the sideload `.ipa`'s `CFBundleIdentifier` to `.dev`.
+3. **Gradle templates:** namespace and NDK lines outside the EDM4U block; Unity Ads gone (two commits
+   cherry-picked).
+4. **IAP removed:** `com.unity.purchasing` uninstalled, `BillingMode.json` deleted, the Purchasing
+   service off.
+5. **Legacy Unity Analytics** (engine-level, ran before consent) off.
+6. **`IosExportCompliancePostprocess`** writes `ITSAppUsesNonExemptEncryption = NO` into every iOS
+   `Info.plist`.
+
+**Verify in editor**
+
+1. Open the project. The Package Manager resolves without `com.unity.purchasing`, and the console has
+   no compile errors. Nothing in project code or asmdefs referenced it (grep); a reference that only
+   the editor resolves would show here.
+2. Build the Android App Bundle (Release, upload keystore selected). If Unity says the SDK is older
+   than API 36, install Android SDK Platform 36 and rebuild.
+3. Inspect the bundle with `bundletool`:
+   - `dump config` shows `PAGE_ALIGNMENT_16K`.
+   - `dump manifest` shows `android:appCategory="game"`. Android 16 exempts only games from forced
+     large-screen resizing under API 36.
+   - The bundle carries no `com.android.vending.BILLING`.
+   - Note whether `POST_NOTIFICATIONS` / `AD_ID` appear.
+4. Install the bundle on a phone (internal testing track or `bundletool install-apks`):
+   - It launches.
+   - The first-run consent screen appears.
+   - A match plays.
+   - Haptics fire. Nice Vibrations' `liblofelt_sdk.so` is still 4 KB-aligned; only Play's
+     1 Feb 2027 update gate cares, not the phone.
+5. iOS build (Release):
+   - In the exported Xcode project, `Info.plist` has `ITSAppUsesNonExemptEncryption` = NO and the
+     bundle id `com.FrogletGames.CosmicShore`.
+   - Archive and upload to TestFlight. The build appears **without** a "Missing Compliance" flag.
+6. Path A: run `ios-unsigned-ipa.yml` once. Its log prints `com.FrogletGames.CosmicShore.dev`, and
+   Sideloadly installs it with a free Apple ID.
+7. Windows: a Release build from `FrogletTools ▸ Build` still succeeds, and the game runs unchanged.
+   Nothing here touches Standalone settings, but the package removal re-resolves every platform.
+
+---
+
 ### 🔴 Platform-agnostic fixes: boost event quiet at rest, skim-tick rate limit, Squirrel beam retired (`claude/serene-edison-lfv24f`, 2026-10-06)
 
 Step 6 of `Docs/PLATFORM_UNIFICATION.md` (§3.7). These change EVERY platform, Windows included. No
