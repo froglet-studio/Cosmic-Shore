@@ -10,23 +10,35 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3f03d828bede4b39957e306dbed9ba58, type: 3}
-  m_Name: GrizzlyBombPumpConfig
+  m_Name: GrizzlyTriggerBombConfig
   m_EditorClassIdentifier: 
   pressureForMinBomb: 0.1
   pressureForMaxBomb: 0.95
   pressureExponent: 1
-  cooldownPerTrigger: 0.45
-  minKick: 10
-  maxKick: 40
-  kickDuration: 0.8
+  ammoIndex: 1
+  minAmmoCost: 0.08
+  maxAmmoCost: 0.35
+  projectileSpeed: 90
+  projectileTime: 3
+  minProjectileScale: 8
+  maxProjectileScale: 20
+  sideYawDegrees: 3
   aoePrefabs:
   - {fileID: 3479271500403630839, guid: 8713aea50e6b47119e57afc2ce603771, type: 3}
-  minBlastScale: 15
-  maxBlastScale: 60
-  spawnBehindDistance: 6
-  spawnSideOffset: 3
-  aiPumpStickBand: 0.35
-  bombEvent:
+  minBlastScale: 30
+  maxBlastScale: 120
+  aiFireStickBand: 0.35
+  aiFreezeDistance: 18
+  aiDetonateDistance: 10
+  aiFireIntervalSeconds: 0.6
+  fireEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  detonateEvent:
     Guid:
       Data1: 0
       Data2: 0

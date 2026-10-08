@@ -10,8 +10,8 @@ namespace CosmicShore.Tests
 {
     /// <summary>
     /// The Grizzly Time circuit contract. The mode's proposition is that a corner is a question -
-    /// how much pump is it worth? - and that is only true if the corners are actually cut around
-    /// the Grizzly's FULL-PUMP circle (150 u/s on a 95 deg/s turn: ~90 u), with the intensity
+    /// how much launch is it worth? - and that is only true if the corners are actually cut around
+    /// the Grizzly's FULL-LAUNCH circle (150 u/s on a 95 deg/s turn: ~90 u), with the intensity
     /// ladder DEMANDING the corners it claims rather than merely permitting them (HEADLONG.md §1:
     /// a floor is a permission, not a demand). Asserted across a 400-seed sweep of every
     /// intensity, because a generated course is exactly the kind of thing that is fine on the
@@ -21,7 +21,8 @@ namespace CosmicShore.Tests
     /// (closed ring, shell, mouth separation, pole placement) is re-asserted against the
     /// Grizzly's settings - a change to the shared solver has to keep every mode's contract - and
     /// the ladder half is the Grizzly's own. The vessel constants are read back off the shipped
-    /// prefab and pump config, so a retune of either names every corner that moved with it.</para>
+    /// prefab, the trigger-bomb config, the self-launch effect and the blast prefab, so a retune
+    /// of any of them names every corner that moved with it.</para>
     /// </summary>
     public class GrizzlyTimeCourseTests
     {
@@ -76,10 +77,12 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Course_constants_match_the_shipped_Grizzly_and_pump()
+        public void Course_constants_match_the_shipped_Grizzly_and_its_launch()
         {
             const string prefab = "Assets/_Prefabs/Spacevessels/Grizzly.prefab";
-            const string pump = "Assets/_SO_Assets/VesselActions/Grizzly/GrizzlyBombPumpConfig.asset";
+            const string bombs = "Assets/_SO_Assets/VesselActions/Grizzly/GrizzlyTriggerBombConfig.asset";
+            const string impulse = "Assets/_SO_Assets/Effects/Vessel Explosion Effects/VesselImpulseByExplosionEffect.asset";
+            const string blast = "Assets/_Prefabs/Projectile/AOEGrizzlyExplosion.prefab";
             const string why = " moved - GrizzlyTimeCourse states it as a constant and the whole ladder is cut against it. " +
                                "Update the constant, re-run the sweep and re-read GRIZZLYTIME.md §4.";
 
@@ -87,50 +90,55 @@ namespace CosmicShore.Tests
             Assert.AreEqual(GrizzlyTimeCourse.GrizzlyRotationThrottleScaler, AssetFloat(prefab, "RotationThrottleScaler"), 1e-4f, "Grizzly RotationThrottleScaler" + why);
             Assert.AreEqual(GrizzlyTimeCourse.GrizzlyTurnScaler,
                 Mathf.Min(AssetFloat(prefab, "PitchScaler"), AssetFloat(prefab, "YawScaler")), 1e-4f, "Grizzly Pitch/YawScaler" + why);
-            Assert.AreEqual(GrizzlyTimeCourse.PumpMaxKick, AssetFloat(pump, "maxKick"), 1e-4f, "pump maxKick" + why);
-            Assert.AreEqual(GrizzlyTimeCourse.PumpKickDuration, AssetFloat(pump, "kickDuration"), 1e-4f, "pump kickDuration" + why);
-            Assert.AreEqual(GrizzlyTimeCourse.PumpCooldownPerTrigger, AssetFloat(pump, "cooldownPerTrigger"), 1e-4f, "pump cooldownPerTrigger" + why);
+            Assert.AreEqual(GrizzlyTimeCourse.MinBlastScale, AssetFloat(bombs, "minBlastScale"), 1e-4f, "trigger bomb minBlastScale" + why);
+            Assert.AreEqual(GrizzlyTimeCourse.MaxBlastScale, AssetFloat(bombs, "maxBlastScale"), 1e-4f, "trigger bomb maxBlastScale" + why);
+            Assert.AreEqual(GrizzlyTimeCourse.SelfLaunchMultiplier, AssetFloat(impulse, "selfLaunchMultiplier"), 1e-4f, "selfLaunchMultiplier" + why);
+            Assert.AreEqual(GrizzlyTimeCourse.ImpulseDuration, AssetFloat(impulse, "impulseDuration"), 1e-4f, "impulseDuration" + why);
+            Assert.AreEqual(GrizzlyTimeCourse.ExplosionDuration, AssetFloat(blast, "ExplosionDuration"), 1e-4f, "AOEGrizzlyExplosion ExplosionDuration" + why);
         }
 
         [Test]
-        public void Full_pump_radius_matches_the_shipped_Grizzly()
+        public void Full_launch_radius_matches_the_shipped_Grizzly()
         {
             Assert.AreEqual(150f, GrizzlyTimeCourse.TopSpeed, 0.1f,
                 "50 cruise + the 100 u/s velocity-modifier ceiling. If either moved, so did every corner.");
-            Assert.Greater(GrizzlyTimeCourse.RawPumpSurplus(1f), GrizzlyTimeCourse.VelocityModifierCeiling,
-                "a full LT/RT pump must out-run the ceiling, or top speed is the bomb's and not the ceiling's");
+            Assert.GreaterOrEqual(GrizzlyTimeCourse.LaunchImpulse(1f) * GrizzlyTimeCourse.ImpulseWeight(0f),
+                GrizzlyTimeCourse.VelocityModifierCeiling,
+                "a full squeeze's launch must reach the ceiling, or top speed is the bomb's and not the ceiling's");
 
-            // 150 u/s over 95 deg/s: a 90u circle pumping flat out; 50 u/s over 95: 30u lifted.
-            Assert.AreEqual(90.5f, GrizzlyTimeCourse.FullPumpRadius, 0.5f, "full-pump radius changed - re-derive the ladder");
+            // 150 u/s over 95 deg/s: a 90u circle launching flat out; 50 u/s over 95: 30u coasting.
+            Assert.AreEqual(90.5f, GrizzlyTimeCourse.FullLaunchRadius, 0.5f, "full-launch radius changed - re-derive the ladder");
             Assert.AreEqual(30.2f, GrizzlyTimeCourse.CruiseRadius, 0.5f, "cruise radius changed - re-derive the safety floors");
         }
 
         [Test]
-        public void Corner_radius_is_monotone_in_pump()
+        public void Corner_radius_is_monotone_in_launch()
         {
             float previous = 0f;
             for (int step = 0; step <= 20; step++)
             {
-                float radius = GrizzlyTimeCourse.CornerRadiusAtPump(step / 20f);
-                Assert.GreaterOrEqual(radius, previous, $"radius must not shrink with pump (step {step})");
+                float radius = GrizzlyTimeCourse.CornerRadiusAtLaunch(step / 20f);
+                Assert.GreaterOrEqual(radius, previous, $"radius must not shrink with launch (step {step})");
                 previous = radius;
             }
 
-            Assert.AreEqual(1f, GrizzlyTimeCourse.FastestPumpForCorner(GrizzlyTimeCourse.FullPumpRadius + 1f), 1e-4f);
-            Assert.AreEqual(0f, GrizzlyTimeCourse.FastestPumpForCorner(GrizzlyTimeCourse.CruiseRadius - 1f), 1e-4f);
-            Assert.AreEqual(0.5f, GrizzlyTimeCourse.FastestPumpForCorner(GrizzlyTimeCourse.CornerRadiusAtPump(0.5f)), 1e-3f,
-                "the inverse must recover the pump the forward curve was evaluated at");
+            Assert.AreEqual(1f, GrizzlyTimeCourse.FastestLaunchForCorner(GrizzlyTimeCourse.FullLaunchRadius + 1f), 1e-4f);
+            Assert.AreEqual(0f, GrizzlyTimeCourse.FastestLaunchForCorner(GrizzlyTimeCourse.CruiseRadius - 1f), 1e-4f);
+            Assert.AreEqual(0.5f, GrizzlyTimeCourse.FastestLaunchForCorner(GrizzlyTimeCourse.CornerRadiusAtLaunch(0.5f)), 1e-3f,
+                "the inverse must recover the launch the forward curve was evaluated at");
         }
 
         [Test]
-        public void A_lift_slides_about_two_cruise_circles()
+        public void A_full_launch_carries_about_one_full_launch_circle()
         {
-            // The momentum a pilot carries past a lift is what makes the lift a DECISION a beat
-            // early rather than a reaction at the gate: under one cruise circle and lifting would
-            // be free; over three and a lift would miss the next mouth.
-            float slide = GrizzlyTimeCourse.SlideAfterLift();
-            Assert.Greater(slide, GrizzlyTimeCourse.CruiseRadius, "a lift should carry the hull past its own pivot");
-            Assert.Less(slide, GrizzlyTimeCourse.CruiseRadius * 3f, "a lift should not carry the hull three pivots wide");
+            // The distance one launch carries along the heading it was aimed down is what makes
+            // aiming a launch down the leg a DECISION: under half a full-launch circle and the
+            // launch would be too short to matter; over two and a launch taken before a corner
+            // would throw the hull past the next mouth.
+            float carry = GrizzlyTimeCourse.CarryAfterLaunch(1f);
+            Assert.Greater(carry, GrizzlyTimeCourse.FullLaunchRadius * 0.5f, "a full launch should carry the hull a real distance");
+            Assert.Less(carry, GrizzlyTimeCourse.FullLaunchRadius * 2f, "a full launch should not carry the hull two circles wide");
+            Assert.Greater(carry, GrizzlyTimeCourse.CarryAfterLaunch(0f), "a full squeeze must carry further than a tap");
         }
 
         // ── The circuit is a circuit ─────────────────────────────────────────
@@ -250,12 +258,12 @@ namespace CosmicShore.Tests
 
         // ── The ladder, which IS the mode ────────────────────────────────────
 
-        /// <summary>How many corners of a median lap cost pump - sit inside the full-pump
+        /// <summary>How many corners of a median lap cost launch - sit inside the full-launch
         /// circle. 0 / 1 / 2 / 3 at levels 1-4.</summary>
         [Test]
         public void Every_intensity_demands_the_corners_it_claims()
         {
-            float full = GrizzlyTimeCourse.FullPumpRadius;
+            float full = GrizzlyTimeCourse.FullLaunchRadius;
             int[] expected = { 0, 0, 1, 2, 3 };   // index = intensity
             for (int intensity = 1; intensity <= 4; intensity++)
             {
@@ -265,7 +273,7 @@ namespace CosmicShore.Tests
 
                 var sorted = counts.OrderBy(c => c).ToList();
                 Assert.AreEqual(expected[intensity], sorted[sorted.Count / 2],
-                    $"i{intensity}: a median lap must have exactly {expected[intensity]} corner(s) that cost pump");
+                    $"i{intensity}: a median lap must have exactly {expected[intensity]} corner(s) that cost launch");
             }
         }
 
@@ -284,7 +292,7 @@ namespace CosmicShore.Tests
                 costs[intensity] = GrizzlyTimeCourse.FastestSpeedForCorner(Median(tightest)) / GrizzlyTimeCourse.TopSpeed;
             }
 
-            Assert.AreEqual(1f, costs[1], 1e-3f, "i1's hardest corner must hold full pump");
+            Assert.AreEqual(1f, costs[1], 1e-3f, "i1's hardest corner must hold full launch");
             for (int intensity = 2; intensity <= 4; intensity++)
                 Assert.LessOrEqual(costs[intensity], costs[intensity - 1] - 0.08f,
                     $"i{intensity}'s hardest corner must cost at least 8 more points of top speed than i{intensity - 1}'s");
@@ -292,12 +300,14 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Legs_are_long_enough_to_wind_the_pump_back_up()
+        public void Legs_are_long_enough_to_launch_down()
         {
-            // A pump climbs to the ceiling in three bombs - about 0.7 s - so a leg shorter than
-            // that is a corner the pilot can never be at full speed out of, and the race stops
-            // being a pump rhythm. The shortest leg of a median lap must be at least a second and
-            // a half at top speed at every level.
+            // A leg is where a launch is taken: fire, freeze a few lengths ahead, ride it - and
+            // the launch then carries ~one full-launch circle down the leg. A leg shorter than
+            // two launches' carry is one the pilot can never launch down without throwing the
+            // hull past the next mouth, and the race stops being a bomb-jump. The shortest leg of
+            // a median lap must hold two full launches' carry, and a second and a half at top
+            // speed, at every level.
             for (int intensity = 1; intensity <= 4; intensity++)
             {
                 var shortest = new List<float>();
@@ -309,6 +319,8 @@ namespace CosmicShore.Tests
                         lo = Mathf.Min(lo, (c[(i + 1) % c.Count].Position - c[i].Position).magnitude);
                     shortest.Add(lo);
                 }
+                Assert.GreaterOrEqual(Median(shortest), 2f * GrizzlyTimeCourse.CarryAfterLaunch(1f),
+                    $"i{intensity}: the shortest leg of a median lap must hold two full launches' carry");
                 Assert.GreaterOrEqual(Median(shortest), GrizzlyTimeCourse.TopSpeed * 1.5f,
                     $"i{intensity}: the shortest leg of a median lap must be 1.5 s at top speed");
             }

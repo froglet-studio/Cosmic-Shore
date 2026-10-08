@@ -15,8 +15,8 @@ MonoBehaviour:
   Mode: 62
   Notes: 'Grizzly proving grounds in the Boneyard - the scene''s own four intensity
     cells, referenced, not forked. OPEN-ENDED: what it teaches is the Grizzly kit,
-    above all the bomb pump (alternate LT/RT; squeeze harder for a bigger kick) and
-    riding your own cannon blast. Vessel pinned to Grizzly(5).'
+    above all the trigger bombs (LT/RT fire, pull again to freeze, release to blow;
+    squeeze harder for a bigger bomb) and riding your own blasts. Vessel pinned to Grizzly(5).'
   PreviewCell: {fileID: 11400000, guid: cc21823da49bd38535c54796c4a1c168, type: 2}
   PreviewCellsByIntensity:
   - {fileID: 11400000, guid: cc21823da49bd38535c54796c4a1c168, type: 2}

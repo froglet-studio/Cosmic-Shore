@@ -52,7 +52,7 @@ namespace CosmicShore.UI
             // They live in the QWER + Space cluster so one resting left hand reaches all of them,
             // assigned in REVERSE priority order: the mouse buttons carry the two highest-priority
             // abilities, so Space takes the next and R the one after, then Q (the Grizzly's fire,
-            // since its triggers became the bomb pump). There is ONE keyboardLabel per control,
+            // since its triggers became its bombs). There is ONE keyboardLabel per control,
             // so these must match whatever the strategies actually raise or the chip is confidently wrong — which is the
             // failure this whole table exists to prevent.
             [HintBinding.KeySpace] = new[] { InputEvents.Button1Action },

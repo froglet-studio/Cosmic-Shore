@@ -15,10 +15,10 @@ MonoBehaviour:
   Mode: 63
   IsMultiplayer: 1
   DisplayName: Grizzly Time
-  Description: Grizzlies only, against the clock. Your speed is your bombs - pump LT and
-    RT and every blast shoves you three times cruise down the straight. But a kick keeps
-    going the way you were pointed, so every corner asks how much pump it is worth. Two
-    laps. Fastest domain home wins.
+  Description: Grizzlies only, against the clock. Your speed is your bombs - squeeze LT or
+    RT to fire, pull again to freeze it, let go to blow it and ride the blast at three times
+    cruise. A launch keeps going the way you were pointed, so every corner asks how much
+    launch it is worth. Two laps. Fastest domain home wins.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 438aea60b3ad404d920ef47ba6fa114c, type: 3}

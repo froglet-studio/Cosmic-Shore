@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: ModePreview_GrizzlyTime
   m_EditorClassIdentifier:
   Mode: 63
-  Notes: 'OPEN-ENDED, shell-only: Headlong''s solver cut to the Grizzly''s full-pump circle, laid
+  Notes: 'OPEN-ENDED, shell-only: Headlong''s solver cut to the Grizzly''s full-launch circle, laid
     as rings at match start, so a preview has no gates. It teaches the Barren cell and the
-    LT/RT bomb pump. One cell serves every intensity.'
+    LT/RT bomb-jump. One cell serves every intensity.'
   PreviewCell: {fileID: 11400000, guid: 52de45c2fab54ea0a35bc37a311d80e6, type: 2}
   PreviewCellsByIntensity: []
   StructurePrefab: {fileID: 0}
@@ -23,7 +23,7 @@ MonoBehaviour:
   PreviewFauna: {fileID: 0}
   PreviewFaunaCount: 4
   Vessel: 5
-  ObjectiveText: Pump the straights, lift for the hairpins
+  ObjectiveText: Ride your blasts down the straights
   ObjectiveMetric: 9
   ObjectiveTarget: 0
   DurationSeconds: 60

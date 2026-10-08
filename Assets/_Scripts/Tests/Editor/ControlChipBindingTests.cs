@@ -153,7 +153,7 @@ namespace CosmicShore.Tests
         [Test]
         public void GrizzlyMovedAbilitiesDrawAChipOnBothDevices()
         {
-            // The Grizzly's triggers became the bomb pump, so its fire moved to X / Q and its
+            // The Grizzly's triggers became its bombs (the pump, then the trigger bombs), so its fire moved to X / Q and its
             // weapon cycle to RB / E. Both must draw a chip on pad AND keyboard, from one row.
             var set = LoadSet();
             foreach (var input in new[] { InputEvents.Button3Action, InputEvents.FlipAction })

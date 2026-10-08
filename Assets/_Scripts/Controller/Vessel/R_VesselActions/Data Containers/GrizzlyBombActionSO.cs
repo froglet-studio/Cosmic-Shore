@@ -3,10 +3,13 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// One trigger of the Grizzly's bomb pump (LT or RT). Press arms the trigger, release blows
-    /// the bomb — sized by the PEAK pressure of that pull. Two assets (Left / Right) share one
-    /// executor and one config; the only thing this asset carries is which trigger it is,
-    /// because each trigger has its own cooldown. See GRIZZLY_BOMB_PUMP.md.
+    /// One trigger of the Grizzly's TRIGGER BOMBS (LT or RT). Each trigger owns one bomb:
+    /// pull arms it, release fires it (sized by the PEAK pressure of that pull, which also sets
+    /// the ammo spent), pull again freezes it, release detonates it - launching a Grizzly caught
+    /// in its own blast. Two assets (Left / Right) share one executor and one config; the only
+    /// thing this asset carries is which trigger it is. See GRIZZLY_TRIGGER_BOMBS.md.
+    ///
+    /// Press and release both carry meaning, so StopAction is the release - not a no-op.
     /// </summary>
     [CreateAssetMenu(fileName = "GrizzlyBombAction", menuName = "ScriptableObjects/Vessel Actions/Grizzly Bomb")]
     public class GrizzlyBombActionSO : ShipActionSO
@@ -19,9 +22,9 @@ namespace CosmicShore.Gameplay
         public TriggerSide Side => side;
 
         public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
-            => execs?.Get<GrizzlyBombPumpExecutor>()?.OnPress(side);
+            => execs?.Get<GrizzlyTriggerBombExecutor>()?.OnPress(side);
 
         public override void StopAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
-            => execs?.Get<GrizzlyBombPumpExecutor>()?.OnRelease(side);
+            => execs?.Get<GrizzlyTriggerBombExecutor>()?.OnRelease(side);
     }
 }

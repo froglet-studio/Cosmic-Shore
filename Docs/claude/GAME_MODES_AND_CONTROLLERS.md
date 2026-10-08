@@ -863,18 +863,22 @@ same kit. The scene's `maxPlausibleSpeed` is 1400 (the inherited 400 rejects a T
 (prisms to nuke, an opponent to shove, the cannon's shockwaves to ride).
 
 `GrizzlyTime(63)` is the **Grizzly-only circuit race** — Redline's shape (`GateRaceController`,
-the shared `HeadlongCircuit` solver, laps, golf on finish time) cut against the Grizzly's **bomb
-pump** instead of a boost. The hull cruises at 50 u/s on a 30 u circle; alternating LT/RT bombs
-stack world-space kicks to the 100 u/s velocity ceiling (150 u/s, a 90 u circle), and because a
-kick keeps going the way the nose pointed every corner asks *how much pump is it worth?* —
-`GrizzlyTimeCourse.CornerRadiusAtPump`. **Fourteen gates on a 560 u circle** (short legs are what
-make a corner tight on this metric), two laps, 0 / 1 / 2 / 3 costing corners at levels 1–4 (hardest
-at 100 / 76 / 59 / 47% of top speed), asserted over 400 seeds by `GrizzlyTimeCourseTests`, whose
-constants are read back off `Grizzly.prefab` and the pump config. It fixed two things on the hull:
-`GrizzlyBombPumpExecutor` gained an **autopilot pump** (Redline's autopilot-Soar rule; bomb size =
-how straight the stick is, `aiPumpStickBand` 0.35), and `Grizzly.prefab`'s `AIPilot` was
-serialized DISABLED, so no AI Grizzly had ever steered — Grizzly Charge's bots included. See
-`_Scripts/Controller/Arcade/GRIZZLYTIME.md`.
+the shared `HeadlongCircuit` solver, laps, golf on finish time) cut against the Grizzly **riding its
+own blasts** instead of a boost. The hull cruises at 50 u/s on a 30 u circle; its **trigger bombs**
+(LT/RT each fire one, a second pull freezes it, the release detonates it — `GRIZZLY_TRIGGER_BOMBS.md`)
+launch a Grizzly caught in its own blast along its nose, up to the 100 u/s velocity ceiling (150 u/s,
+a 90 u circle), and because a launch keeps going the way the nose pointed every corner asks *how
+much launch is it worth?* — `GrizzlyTimeCourse.CornerRadiusAtLaunch`. **Fourteen gates on a 560 u
+circle** (short legs are what make a corner tight on this metric), two laps, 0 / 1 / 2 / 3 costing
+corners at levels 1–4 (hardest at 100 / 76 / 59 / 47% of top speed), asserted over 400 seeds by
+`GrizzlyTimeCourseTests`, whose constants are read back off `Grizzly.prefab`, the trigger-bomb
+config, the self-launch effect and the blast prefab. The ladder was first cut against a bomb pump
+(2026-10-06) that shared the ceiling and turn rate, so it carried over unchanged when the pump was
+replaced by the trigger bombs (2026-10-08); ammo (0.15/s regen, 0.35 per full bomb) now sets the
+sustained pace (~90 u/s). Two hull fixes came with it: `GrizzlyTriggerBombExecutor` carries an
+**autopilot bomb-jump** (fire, freeze 18 u ahead, detonate inside the blast, via replicated
+presses), and `Grizzly.prefab`'s `AIPilot` was serialized DISABLED, so no AI Grizzly had ever
+steered — Grizzly Charge's bots included. See `_Scripts/Controller/Arcade/GRIZZLYTIME.md`.
 
 `WreckingBall(54)` (display name "Wrecking Ball") is the **Scarab-only demolition race** —
 Rampage's analog for the hull whose weapons are a BALL and a PLATE. A sphere court (Scramble's:
@@ -1279,7 +1283,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
             ├── BreakwaterController              — Sparrow-only station race; a polar START GATE (the platform's one lead-in) plus a closed circuit of danger-woven dishes, fire/saw/thread. 202 lines: the course, the lead-in and the stations, and nothing else
             ├── SkeinController                   — Urchin-only cable race; the rings sit ON the arena's own rails, so the course is a thing you RIDE rather than fly between
             └── RedlineController                 — Manta-only circuit race; Headlong's solver cut to the Manta's 237u full-boost circle, laps, and an autopilot that Soars
-            ├── GrizzlyTimeController             — Grizzly-only circuit race; Headlong's solver cut to the Grizzly's 90u full-pump circle, 14 gates x 2 laps, and an autopilot that pumps
+            ├── GrizzlyTimeController             — Grizzly-only circuit race; Headlong's solver cut to the Grizzly's 90u full-launch circle, 14 gates x 2 laps, and an autopilot that bomb-jumps
             ├── RegattaController                 — the ARENA race: every playable hull, three domain-coloured super-shielded rails braided along a lapped circuit, a start line behind gate 0 (`IPlayerSpawnLine`); the grid balanced by the card's `StartingElements`
             └── WaystationController              — Butterfly-only migration race; an OPEN chain dealt into CLUSTERS (coils you weave) laid a FOLD apart, so the course is half flown and half teleported. A teleport threads NOTHING (`VesselTransformer.TeleportCount`), and an autopilot folds through the base's new `OnServerTick` seam
         └── BroadsideController                 — the ARENA brawl: seven hulls in the Boneyard, each fighting with the weapon it has; a hit priced by its VERB (round 1 / strike 8 / debuff 12 / rocket 10-30), never by its hull

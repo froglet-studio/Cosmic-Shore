@@ -10,9 +10,9 @@ Run from the repo root:  python3 Tools/Build/author_grizzly_time_assets.py [--ch
 
 WHAT THIS MODE IS. Grizzly Time is the Grizzly-only CIRCUIT race: a closed loop of switch rings
 cut through the cell, flown in LAPS, and the first DOMAIN whose LEAD RUNNER threads the last gate
-of the last lap wins (golf: finish time). Every corner is cut against the Grizzly's FULL-PUMP
-circle - 150 u/s on its 95 deg/s turn, ~90 u - so a corner is one question: how much bomb pump is
-it worth? See Assets/_Scripts/Controller/Arcade/GRIZZLYTIME.md.
+of the last lap wins (golf: finish time). Every corner is cut against the Grizzly's FULL-LAUNCH
+circle - 150 u/s on its 95 deg/s turn, ~90 u - so a corner is one question: how much of a launch
+(riding your own trigger-bomb blast) is it worth? See Assets/_Scripts/Controller/Arcade/GRIZZLYTIME.md.
 
 THE DONOR IS REDLINE, and that is the point rather than a shortcut. Redline is already a lapped
 gate race in the barren race cell with an EQUATORIAL spawn ring (gate 0 on its pole - the fairness
@@ -97,15 +97,15 @@ RINGS_PER_LAP = 14                # GrizzlyTimeCourse.GatesPerLap
 GATE_TARGET = LAPS * RINGS_PER_LAP
 BASE_RADIUS = 560                 # GrizzlyTimeCourse.BaseRadius
 
-# AI approach geometry, sized to the Grizzly's 90 u full-pump circle the way Redline's were sized
+# AI approach geometry, sized to the Grizzly's 90 u full-launch circle the way Redline's were sized
 # to the Manta's 237 u (420 / 480 / 320 there - 1.8x, 2x and 1.35x the circle).
 AI_COMMIT_DISTANCE = 160
 AI_APPROACH_LEAD = 180
 AI_THROUGH_DISTANCE = 120
 
-# Detection clamp: a frame's motion longer than this x dt x 2 + 5 is read as a respawn. A pumping
-# Grizzly makes 150 u/s; Rush and a cannon self-launch share the same 100 u/s velocity ceiling, so
-# 600 is four times anything the hull can fly and still far under a respawn's jump.
+# Detection clamp: a frame's motion longer than this x dt x 2 + 5 is read as a respawn. A launching
+# Grizzly makes 150 u/s; Rush, trigger-bomb and cannon launches all share the same 100 u/s velocity
+# ceiling, so 600 is four times anything the hull can fly and still far under a respawn's jump.
 MAX_PLAUSIBLE_SPEED = 600
 
 # The comeback strength, a FUNCTION OF THE TARGET (`bonusLevels = deficit x rate`): at 0.25 a
@@ -140,10 +140,10 @@ g.emit_asset(RULE, G_RULE, header(EXISTING["GateRaceScoringRuleSO"], "GrizzlyTim
 g.emit_asset(CARD, G_CARD, header(EXISTING["SO_ArcadeGame"], "ArcadeGameGrizzlyTime") + f"""  Mode: {MODE_ID}
   IsMultiplayer: 1
   DisplayName: Grizzly Time
-  Description: Grizzlies only, against the clock. Your speed is your bombs - pump LT and
-    RT and every blast shoves you three times cruise down the straight. But a kick keeps
-    going the way you were pointed, so every corner asks how much pump it is worth. Two
-    laps. Fastest domain home wins.
+  Description: Grizzlies only, against the clock. Your speed is your bombs - squeeze LT or
+    RT to fire, pull again to freeze it, let go to blow it and ride the blast at three times
+    cruise. A launch keeps going the way you were pointed, so every corner asks how much
+    launch it is worth. Two laps. Fastest domain home wins.
   IconActive: {{fileID: 21300000, guid: {EXISTING['IconActive']}, type: 3}}
   IconInactive: {{fileID: 21300000, guid: {EXISTING['IconInactive']}, type: 3}}
   CardBackground: {{fileID: 21300000, guid: {lib.card_background('GrizzlyTime')}, type: 3}}
@@ -247,9 +247,9 @@ g.emit_scene(SCENE_NAME, G_SCENE, scene)
 
 # ── 5. Preview (a card without one offers no Test Flight) ────────────────────
 g.emit_asset(PREVIEW, G_PREVIEW, header(EXISTING["ModePreviewDefinitionSO"], "ModePreview_GrizzlyTime") + f"""  Mode: {MODE_ID}
-  Notes: 'OPEN-ENDED, shell-only: Headlong''s solver cut to the Grizzly''s full-pump circle, laid
+  Notes: 'OPEN-ENDED, shell-only: Headlong''s solver cut to the Grizzly''s full-launch circle, laid
     as rings at match start, so a preview has no gates. It teaches the Barren cell and the
-    LT/RT bomb pump. One cell serves every intensity.'
+    LT/RT bomb-jump. One cell serves every intensity.'
   PreviewCell: {{fileID: 11400000, guid: {EXISTING['PreviewCell']}, type: 2}}
   PreviewCellsByIntensity: []
   StructurePrefab: {{fileID: 0}}
@@ -257,7 +257,7 @@ g.emit_asset(PREVIEW, G_PREVIEW, header(EXISTING["ModePreviewDefinitionSO"], "Mo
   PreviewFauna: {{fileID: 0}}
   PreviewFaunaCount: 4
   Vessel: {lib.VESSEL_CLASS_ID['Grizzly']}
-  ObjectiveText: Pump the straights, lift for the hairpins
+  ObjectiveText: Ride your blasts down the straights
   ObjectiveMetric: 9
   ObjectiveTarget: 0
   DurationSeconds: 60
@@ -333,11 +333,17 @@ _ai = re.search(r"  m_Enabled: (\d)\n  m_EditorHideFlags: 0\n  m_Script: \{fileI
                 r"guid: a58bf4fb65afa704194fe9e28e67d58d, type: 3\}", _grizzly)
 if not _ai or _ai.group(1) != "1":
     errors.append("Grizzly.prefab's AIPilot is not enabled - an AI Grizzly cannot race")
-_pump = read_or_empty("Assets/_SO_Assets/VesselActions/Grizzly/GrizzlyBombPumpConfig.asset")
-m = re.search(r"^  aiPumpStickBand: ([0-9.]+)$", _pump, re.M)
+_bombs = read_or_empty("Assets/_SO_Assets/VesselActions/Grizzly/GrizzlyTriggerBombConfig.asset")
+m = re.search(r"^  aiFireStickBand: ([0-9.]+)$", _bombs, re.M)
 if not m or float(m.group(1)) <= 0:
-    errors.append("GrizzlyBombPumpConfig.aiPumpStickBand is 0 or missing - an AI Grizzly never pumps "
-                  "and races at cruise")
+    errors.append("GrizzlyTriggerBombConfig.aiFireStickBand is 0 or missing - an AI Grizzly never bombs, "
+                  "so it is never launched and races at cruise")
+# The launch only happens if the hull is INSIDE its own blast when the autopilot detonates.
+_freeze = re.search(r"^  aiFreezeDistance: ([0-9.]+)$", _bombs, re.M)
+_blast = re.search(r"^  maxBlastScale: ([0-9.]+)$", _bombs, re.M)
+if not _freeze or not _blast or float(_freeze.group(1)) >= float(_blast.group(1)) * 0.5:
+    errors.append("GrizzlyTriggerBombConfig.aiFreezeDistance is not inside the blast radius (maxBlastScale / 2) - "
+                  "an AI Grizzly's launch would miss its own hull")
 
 # The toybox must offer the hull this mode is built for (ToyVesselRosterCoverageTests asserts the
 # general rule; this names it for the mode that needs it).

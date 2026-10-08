@@ -19,6 +19,10 @@ namespace CosmicShore.UI
         [SerializeField] Image energyFill;
         [SerializeField] Image chargeRing;
 
+        [Header("Trigger bombs")]
+        [SerializeField, Tooltip("Fill bar for the Ammo pool the LT/RT bombs spend (GRIZZLY_TRIGGER_BOMBS.md).")]
+        Image ammoFill;
+
         [Header("Rush pips")]
         [SerializeField] List<Image> rushPips = new();
         [SerializeField] Color pipReady = Color.white;
@@ -77,6 +81,7 @@ namespace CosmicShore.UI
         {
             SetEnergy(0f);
             SetCharge(0f);
+            SetAmmo(1f);
             SetDugIn(false);
             SetWeaponMode("EXPLOSIVES");
             SetScope(false);
@@ -85,6 +90,11 @@ namespace CosmicShore.UI
         public void SetEnergy(float energy01)
         {
             if (energyFill) energyFill.fillAmount = Mathf.Clamp01(energy01);
+        }
+
+        public void SetAmmo(float ammo01)
+        {
+            if (ammoFill) ammoFill.fillAmount = Mathf.Clamp01(ammo01);
         }
 
         public void SetCharge(float charge01)

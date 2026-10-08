@@ -95,20 +95,43 @@ namespace CosmicShore.UI
                 _vesselStatus.ResourceSystem.OnResourceChanged -= HandleResourceChanged;
         }
 
+        /// <summary>Name of the pool the trigger bombs spend. Bound BY NAME so a reordered
+        /// resource list cannot point the bar at the cannon's Energy.</summary>
+        const string AmmoResourceName = "Ammo";
+
         void HandleResourceChanged(int index, float current, float max)
         {
-            if (index != 0) return; // single Energy pool
-            if (view) view.SetEnergy(max > 0f ? current / max : 0f);
+            if (!view) return;
+            float fill = max > 0f ? current / max : 0f;
+            if (index == 0) view.SetEnergy(fill);              // the charged cannon's Energy
+            else if (index == AmmoIndex()) view.SetAmmo(fill); // the trigger bombs' Ammo
         }
 
         void PaintEnergy()
         {
             var resources = _vesselStatus.ResourceSystem.Resources;
-            if (resources.Count > 0 && view)
+            if (!view) return;
+            if (resources.Count > 0)
             {
                 var r = resources[0];
                 view.SetEnergy(r.MaxAmount > 0f ? r.CurrentAmount / r.MaxAmount : 0f);
             }
+            int ammo = AmmoIndex();
+            if (ammo >= 0)
+            {
+                var r = resources[ammo];
+                view.SetAmmo(r.MaxAmount > 0f ? r.CurrentAmount / r.MaxAmount : 0f);
+            }
+        }
+
+        int AmmoIndex()
+        {
+            var system = _vesselStatus != null ? _vesselStatus.ResourceSystem : null;
+            var resources = system ? system.Resources : null;
+            if (resources == null) return -1;
+            for (int i = 0; i < resources.Count; i++)
+                if (resources[i] != null && resources[i].Name == AmmoResourceName) return i;
+            return -1;
         }
 
         void HandleChargeChanged(float charge01) { if (view) view.SetCharge(charge01); }

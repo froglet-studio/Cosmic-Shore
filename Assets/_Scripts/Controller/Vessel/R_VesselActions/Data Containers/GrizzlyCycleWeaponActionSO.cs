@@ -4,7 +4,7 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Grizzly Change Weapon (RB / E; the triggers are the bomb pump): cycles Explosives → Sniper (→ Plasma Claw
+    /// Grizzly Change Weapon (RB / E; the triggers are the trigger bombs): cycles Explosives → Sniper (→ Plasma Claw
     /// at Mass 5). The active mode lives on GrizzlyWeaponModeExecutor (per vessel);
     /// GrizzlyModeSwitchingFireSO reads it when Fire is pressed.
     /// </summary>

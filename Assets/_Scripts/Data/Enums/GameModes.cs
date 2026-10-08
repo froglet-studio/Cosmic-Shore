@@ -290,8 +290,8 @@ namespace CosmicShore.Data
         GrizzlyCharge = 62,
 
         // GrizzlyTime (63): the Grizzly-only circuit race - Redline's shape (a lapped gate
-        // circuit on the shared HeadlongCircuit solver) cut against the Grizzly's BOMB PUMP
-        // rather than a boost: a corner asks how much pump it is worth. See
+        // circuit on the shared HeadlongCircuit solver) cut against the Grizzly riding its own
+        // trigger-bomb blasts rather than a boost: a corner asks how much launch it is worth. See
         // _Scripts/Controller/Arcade/GRIZZLYTIME.md.
         GrizzlyTime = 63,
 

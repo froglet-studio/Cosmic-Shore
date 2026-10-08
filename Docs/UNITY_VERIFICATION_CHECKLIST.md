@@ -4306,17 +4306,47 @@ executor + config type-checked with Roslyn against stubs transcribed from the re
 `_Scripts/Controller/Arcade/GRIZZLYTIME.md` §7. The short list:
 
 1. **Compiles in the editor** — the new/changed C#: `GrizzlyTimeController`, `GrizzlyTimeCourse`,
-   `GrizzlyBombPumpExecutor` (autopilot pump), `GrizzlyBombPumpConfigSO`, `EndConditionOverridesSO`
+   `GrizzlyTriggerBombExecutor` (was `GrizzlyBombPumpExecutor`; see the 2026-10-08 entry below), `GrizzlyTriggerBombConfigSO`, `EndConditionOverridesSO`
    + its window, `MiniGameHUD`, `ToyVesselRoster`, and the tests. Edit-mode suite green,
-   especially `GrizzlyTimeCourseTests`, `GrizzlyBombPumpTests`, `EnumIntegrityTests` (61 modes),
+   especially `GrizzlyTimeCourseTests`, `GrizzlyTriggerBombTests`, `EnumIntegrityTests` (61 modes),
    `ToyVesselRosterCoverageTests`.
 2. **Toybox** — Menu freestyle: the Vessel Changer and the Spawn Matrix hangar each offer a
    **Grizzly** station; flying into it swaps you into a Grizzly. Releasing an AI Grizzly from the
-   hangar gives a companion that **steers and pumps** (it never steered before: `AIPilot` was
+   hangar gives a companion that **steers and bomb-jumps** (it never steered before: `AIPilot` was
    serialized disabled on `Grizzly.prefab`).
 3. **Arcade** — both **Grizzly Charge** and **Grizzly Time** cards show, clickable on a fresh
    account, each pinned to the Grizzly. Grizzly Time launches into a 14-ring circuit, two laps.
 4. **Grizzly Charge regression** — its AI Grizzlies now steer (same prefab fix); confirm the
    match still plays as Jonathan left it.
-5. **Lava-lamp** — the menu autopilot Grizzly now bombs on the straights. If that is too busy,
-   `GrizzlyBombPumpConfig.aiPumpStickBand` = 0 turns the drive off.
+5. **Lava-lamp** — the menu autopilot Grizzly now bomb-jumps on the straights. If that is too busy,
+   `GrizzlyTriggerBombConfig.aiFireStickBand` = 0 turns the drive off.
+
+## 🔴 Grizzly trigger bombs — LT/RT fire, freeze, detonate, launch (`cece/eloquent-goodall-g1llta`, 2026-10-08) — NOT EDITOR-VERIFIED
+
+Replaces the bomb pump after a playtest found its blasts never launched the pilot (they were
+spawned with `AffectSelfOverride = false`, which is also what makes the shooter a valid target for
+the self-launch impulse). Full design, numbers and steps: `R_VesselActions/GRIZZLY_TRIGGER_BOMBS.md`.
+
+What ran out of editor: `GrizzlyTriggerBombExecutor`, `GrizzlyTriggerBombConfigSO`,
+`GrizzlyBombActionSO` and `GrizzlyTriggerBombTests` type-checked with Roslyn against stubs
+transcribed from the real declarations (watched failing on two mutated members); the config's maps
+run for real (9/9) against the card-art harness's `Mathf`; `GrizzlyTimeCourseTests` 14/14 and
+`RedlineCourseTests` 14/14 on the launch model. The `GrizzlyHUDController` / `GrizzlyHUDView`
+ammo-bar change was read, not compiled (the controller pulls in five other executors).
+`Grizzly.prefab` surgery validated by script: no duplicate fileIDs, no dangling local refs.
+
+1. **Compiles; edit-mode suite green** — especially `GrizzlyTriggerBombTests`,
+   `GrizzlyTimeCourseTests`, `ControlChipBindingTests`. The executor and config were RENAMED in
+   place (script GUIDs kept), and `GrizzlyBombNetworkRelay` was DELETED along with its component on
+   `Grizzly.prefab` — confirm the prefab opens with no missing-script warnings.
+2. **Fire / freeze / blow / launch** — RT full squeeze: a visible bomb leaves faster than you,
+   Ammo bar (orange, above Energy) drops ~1/3. Pull RT again: it freezes. Fly up to it, release:
+   it blows and **you are thrown forward along your nose** (~3× cruise for ~1 s).
+3. **Pressure** — a feather pull fires a small bomb, a small Ammo dip and a 15 u blast; a full
+   squeeze a big bomb and a 60 u blast.
+4. **Independence** — LT and RT bombs in flight / frozen / detonated independently.
+5. **Fuse + impact** — an unfrozen bomb goes off where it comes to rest (~3 s) or on the first prism.
+6. **Ammo** — a low pool fires a smaller bomb; an empty one fizzles; refills ~0.15/s.
+7. **AI** — an AI Grizzly fires, freezes and blows bombs just ahead of itself and lunges each time.
+8. **MPPM two clients** — peers see each other's bombs at the same places and sizes.
+9. **Regression** — X still fires the charged cannon unchanged; Energy bar unaffected.

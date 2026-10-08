@@ -5,7 +5,7 @@ using CosmicShore.Gameplay;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Grizzly Fire (X / Q; the triggers are the bomb pump) — composite dispatcher over the active weapon:
+    /// Grizzly Fire (X / Q; the triggers are the trigger bombs) — composite dispatcher over the active weapon:
     /// Explosives (charged cannon), Sniper, or Plasma Claw (Mass 5).
     ///
     /// Follows SparrowModeSwitchingFireSO's shared-asset discipline: SO assets are

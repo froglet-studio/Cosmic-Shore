@@ -1,8 +1,10 @@
 # Grizzly — Charged Cannon (Fire, X / Q)
 
-> **Input moved 2026-10-02:** both triggers are now the bomb pump (`GRIZZLY_BOMB_PUMP.md`),
-> so Fire is on the pad's X (keyboard Q) and the weapon cycle on RB (keyboard E). The
-> gesture below is unchanged — it only changed buttons.
+> **Input moved 2026-10-02:** both triggers are the Grizzly's bombs (the bomb pump then, the
+> **trigger bombs** since 2026-10-08 — `GRIZZLY_TRIGGER_BOMBS.md`, which reuse this gesture
+> per trigger with pressure in place of hold time), so Fire is on the pad's X (keyboard Q)
+> and the weapon cycle on RB (keyboard E). The gesture below is unchanged — it only changed
+> buttons.
 
 Design source: `ClassGrizzly.md` (07/16/2026 design pass). Element link: **Space**.
 
@@ -35,9 +37,9 @@ the restoration branch's tap-race bug). The freeze is `Projectile.Freeze()`
 (engine addition): cancels the move loop, keeps the shell alive, rendered, and
 detonatable, zeroes `Velocity`.
 
-## Economy (single pool)
+## Economy (Energy pool)
 
-The Grizzly has ONE resource: Energy (index 0). Holding the trigger builds energy
+The cannon spends Energy (index 0). (Index 1, Ammo, belongs to the trigger bombs.) Holding the trigger builds energy
 (`ChargePerSecond`); release spends the entire accumulated charge — the charge IS
 the cost. Dig In (Button1) accelerates regeneration; Rush (Button2) spends from
 the same pool.
