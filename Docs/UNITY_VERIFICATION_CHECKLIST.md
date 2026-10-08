@@ -227,7 +227,9 @@ against bleeding-edge's sky; repo C# gates green.
    off, `HyperSeaSkybox.mat` → `StaticHyperSeaSkybox.mat`, membrane level 3 (642 capsules), fold-gate
    cap 0.5, and its first-run AA is now 4x MSAA.
 2. `PlatformRenderApplier` swaps the skybox on every scene load; `GraphicsSettingsApplier` turns
-   HDR off; `CapsuleMembrane` draws the capped prefix; `FoldGatePortalView` caps the window.
+   HDR off; `CapsuleMembrane` draws the capped prefix; `FoldGatePortalView` caps the window
+   *(retired 2026-10-08 — the same cap now reaches the wormhole mouths' exact views through
+   `WormholeView`; the fold gates became wormholes, `BUTTERFLY_FOLD.md`)*.
 3. **All platforms:** the fold-gate window renders only its on-screen footprint (shader remap
    `_FoldGatePortalUV`) and no longer reallocates its target every frame.
 4. Editor: `UrpAssetPlayModeRestore` restores the URP asset's HDR / render scale / MSAA / upscaler
