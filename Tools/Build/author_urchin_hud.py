@@ -141,12 +141,21 @@ SLOTS = [
 ]
 
 
+def charge_ring(px, py):
+    """The Chain Spikes hold-to-charge ring: a thin annulus the view radially fills. Not an
+    ability icon (no coverage band) - it is the sprite the radial fill draws."""
+    return ring(px, py, 64, 64, 58.0, 5.0)
+
+
+CHARGE_RING_PNG = "Urchin_ChargeRing.png"
+
+
 def icon_writes() -> dict:
     for _, _, png, fn in SLOTS:
         c = coverage(fn)
         assert 0.08 <= c <= 0.45, f"{png}: coverage {c:.3f} outside the readable band"
     out = {ICON_DIR + ".meta": folder_meta(guid_for("Urchin.folder"))}
-    for _, _, png, fn in SLOTS:
+    for _, _, png, fn in SLOTS + [(None, None, CHARGE_RING_PNG, charge_ring)]:
         out[f"{ICON_DIR}/{png}"] = render(fn)
         out[f"{ICON_DIR}/{png}.meta"] = sprite_meta(guid_for(png))
     return out
@@ -178,6 +187,11 @@ V_BASE = 7781000000000001000
 AMMO = dict(go=V_BASE + 200, rt=V_BASE + 201, cr=V_BASE + 202, img=V_BASE + 203)
 RIDE = dict(go=V_BASE + 210, rt=V_BASE + 211, cr=V_BASE + 212, img=V_BASE + 213)
 GAUGE_ON = {"Charge": ("SpikeAmmoGauge", AMMO), "Mass": ("RidingIndicator", RIDE)}
+# The Chain Spikes hold-to-charge ring. A CHILD of the Charge ICON, not of its host: the card's
+# one lockup gauge is the ammo meter, and RetireLegacyChrome deactivates every other child of a
+# host - an icon's children travel with it (the Dolphin's blast profile is seated the same way).
+CHARGE_RING = dict(go=V_BASE + 220, rt=V_BASE + 221, cr=V_BASE + 222, img=V_BASE + 223)
+CHARGE_RING_SIZE = 76   # rings the 60 px icon inside the 88 px ability cell
 
 # Colours are the lockup's own vocabulary (Resources/AbilityLockupStyle), not new hues:
 # a gauge fills in gaugeFillColor; a FULL ammo meter brightens toward cooldownReadyFlashColor,
@@ -254,7 +268,7 @@ CanvasRenderer:
 """
 
 
-def image(fid, go, sprite_guid, fill=False):
+def image(fid, go, sprite_guid, fill=False, radial=False, color="{r: 1, g: 1, b: 1, a: 1}"):
     # A gauge is authored bare: the lockup's AdoptGauge re-homes it, gives it the plain sprite
     # its stencil needs and sets the fill mode itself.
     sprite = "{fileID: 0}" if sprite_guid is None else \
@@ -272,7 +286,7 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier:
   m_Material: {{fileID: 0}}
-  m_Color: {{r: 1, g: 1, b: 1, a: 1}}
+  m_Color: {color}
   m_RaycastTarget: 0
   m_RaycastPadding: {{x: 0, y: 0, z: 0, w: 0}}
   m_Maskable: 1
@@ -281,12 +295,12 @@ MonoBehaviour:
       m_Calls: []
   m_Sprite: {sprite}
   m_Type: {3 if fill else 0}
-  m_PreserveAspect: {0 if fill else 1}
+  m_PreserveAspect: {0 if fill and not radial else 1}
   m_FillCenter: 1
-  m_FillMethod: {1 if fill else 4}
+  m_FillMethod: {1 if fill and not radial else 4}
   m_FillAmount: {0 if fill else 1}
   m_FillClockwise: 1
-  m_FillOrigin: 0
+  m_FillOrigin: {2 if radial else 0}
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
 """
@@ -329,9 +343,20 @@ def variant_text() -> str:
         blocks.append(rect(f["host_rt"], f["host_go"], V_ROOT_RT, children, ICON_BOX))
         blocks.append(game_object(f["icon_go"], f"{name}Icon",
                                   [f["icon_rt"], f["icon_cr"], f["icon_img"]]))
-        blocks.append(rect(f["icon_rt"], f["icon_go"], f["host_rt"], [], ICON_BOX))
+        ring = CHARGE_RING if name == "Charge" else None
+        blocks.append(rect(f["icon_rt"], f["icon_go"], f["host_rt"],
+                           [ring["rt"]] if ring else [], ICON_BOX))
         blocks.append(canvas_renderer(f["icon_cr"], f["icon_go"]))
         blocks.append(image(f["icon_img"], f["icon_go"], guid_for(png)))
+        if ring:
+            # Radial from the top, clockwise, empty and transparent at rest: the view fades it
+            # in only once a hold has become a charge.
+            blocks.append(game_object(ring["go"], "SpikeChargeRing",
+                                      [ring["rt"], ring["cr"], ring["img"]]))
+            blocks.append(rect(ring["rt"], ring["go"], f["icon_rt"], [], CHARGE_RING_SIZE))
+            blocks.append(canvas_renderer(ring["cr"], ring["go"]))
+            blocks.append(image(ring["img"], ring["go"], guid_for(CHARGE_RING_PNG),
+                                fill=True, radial=True, color=GAUGE_CLEAR))
         if gauge:
             gname, g = gauge
             blocks.append(game_object(g["go"], gname, [g["rt"], g["cr"], g["img"]]))
@@ -411,6 +436,10 @@ MonoBehaviour:
   ridingOffColor: {GAUGE_CLEAR}
   ridingOnColor: {GAUGE_FILL}
   ridingBlendSeconds: 0.15
+  chargeRing: {{fileID: {CHARGE_RING['img']}}}
+  chargeBuildingColor: {GAUGE_FILL}
+  chargeFullColor: {READY}
+  chargeFadeSeconds: 0.12
 """
     return head + "".join(blocks)
 
@@ -433,6 +462,7 @@ VESSEL = "Assets/_Prefabs/Spacevessels/Urchin.prefab"
 ROOT_GO = 6417075533431866457
 ROOT_TF = 5928382658856804067
 TRACK_EXECUTOR = 7770000000000000052      # UrchinTrackActionExecutor on VesselActions/Track
+SPIKE_EXECUTOR = 7770000000000000007      # UrchinSpikeActionExecutor (Chain Spikes)
 
 U_BASE = 7791000000000000000
 SHC_GO, SHC_RT, SHC_CANVAS, SHC_SCALER, SHC_RAYCASTER = (U_BASE + 1, U_BASE + 2, U_BASE + 3,
@@ -454,6 +484,9 @@ def vessel_blocks() -> str:
     track = script_guid("Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/"
                         "UrchinTrackActionExecutor.cs")
     assert track == "377b57f5def70b3b58d3c6fe5393ae03", "track executor script guid moved"
+    spike = script_guid("Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/"
+                        "UrchinSpikeActionExecutor.cs")
+    assert spike == "e244ff59b5cb4f02a4cfd8779916ec34", "spike executor script guid moved"
     return f"""--- !u!1 &{SHC_GO}
 GameObject:
   m_ObjectHideFlags: 0
@@ -604,6 +637,7 @@ MonoBehaviour:
   view: {{fileID: {U_HUD_VIEW}}}
   ammoIndex: 0
   trackExecutor: {{fileID: {TRACK_EXECUTOR}}}
+  spikeExecutor: {{fileID: {SPIKE_EXECUTOR}}}
 """
 
 
@@ -628,6 +662,14 @@ def strip_vessel(text: str) -> str:
 def apply_vessel(clean: str) -> str:
     collide = OWNED_DOCS & set(doc_ids(clean))
     assert not collide, f"Urchin.prefab already uses fileIDs this tool owns: {sorted(collide)}"
+
+    # The two executors the controller is bound to must still BE those executors - a wire to a
+    # fileID that now names some other component would deserialize as a silent null.
+    for fid, guid, what in ((TRACK_EXECUTOR, "377b57f5def70b3b58d3c6fe5393ae03", "Track"),
+                            (SPIKE_EXECUTOR, "e244ff59b5cb4f02a4cfd8779916ec34", "Chain Spikes")):
+        doc = re.search(rf"(?ms)^--- !u!114 &{fid}\n.*?(?=^--- !u!)", clean)
+        assert doc and f"guid: {guid}," in doc.group(0), \
+            f"Urchin.prefab fileID {fid} is no longer the {what} executor"
 
     # The root GameObject's component list, the root Transform's children, and the status field.
     go_doc = re.search(rf"(?ms)^--- !u!1 &{ROOT_GO}\n.*?^  m_Layer:", clean)

@@ -171,7 +171,7 @@ namespace CosmicShore.Gameplay
                     // `when` filter expiring at attempt == maxRetries.
                     CSDebug.LogVerbose(CSLogChannel.Party,
                         $"[LobbyPropertyWriter] Save failed ({e.GetType().Name}: {e.Message}) - retry {attempt + 1}/{maxRetries} in {baseDelayMs}ms");
-                    await UniTask.Delay(baseDelayMs);
+                    await UniTask.Delay(baseDelayMs, DelayType.UnscaledDeltaTime);
                     try { await lobby.RefreshAsync().AsMainThread(); } catch { /* best-effort */ }
                 }
             }

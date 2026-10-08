@@ -1,8 +1,8 @@
 Prisma - distributables
 
-Prisma-Windows.zip  - the launcher. Unzip, run Prisma.exe, pick a branch,
-    press START GAME. It builds the game from that branch's source, so it is never stale.
-    Rebuild it with ..\build-launcher.bat. Guide: ..\docs\LAUNCHER.md
+The everyday way: in Unity, FrogletTools > Prisma > Launch Prisma. It builds Prisma.exe from
+your checkout (so it is always current after a pull) and opens it. Nothing to unzip.
 
-The older prebuilt player zips were removed: they were frozen at one commit, while the
-launcher always runs the branch you pick.
+Prisma-Windows.zip  - the same launcher without Unity, or for a PC with no .NET SDK yet (Launch
+    Prisma uses it then by itself). Unzip, run Prisma.exe, pick a branch, press START GAME.
+    Rebuild it with ..\build-launcher.bat. Guide: ..\docs\LAUNCHER.md

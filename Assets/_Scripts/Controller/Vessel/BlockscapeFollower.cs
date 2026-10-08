@@ -31,6 +31,13 @@ namespace CosmicShore.Gameplay
     ///    pilot keeps full steering; the surface constrains position, not attitude. (The
     ///    transformer separately eases the hull's belly onto <see cref="SurfaceNormal"/>.)
     ///
+    /// A STACK of nested layers (<see cref="ILayeredPrismscape"/> - the nested gyroid) is ridden one
+    /// layer at a time: the ground may only move to a prism of the SAME layer, unless the pilot pitches
+    /// toward the next layer, in which case the next strut or sheet in that direction becomes eligible and
+    /// the hover spring lets go so the rider can actually reach it (Docs/ECOSYSTEM.md §58.4). Every other
+    /// prismscape rides exactly as before - the layered rules engage only while the ground's owner declares
+    /// a stack.
+    ///
     /// Ground tracking is <see cref="PrismSpatialIndex.QuerySphere"/> - the canonical spatial
     /// store, never physics. When the rider moves onto a different prism,
     /// <see cref="OnPrismCrossed"/> fires - the surface analogue of the trail's block crossing,
@@ -85,6 +92,17 @@ namespace CosmicShore.Gameplay
                  "drifting arcs, high = direct control.")]
         [SerializeField] float surfaceInertiaRate = 4f;
 
+        [Header("Layered prismscapes (a stack of nested sheets)")]
+        [Tooltip("Share of the crawl speed that carries the rider THROUGH a layered prismscape when the " +
+                 "pilot pitches toward the next layer. Only read while the ground belongs to an " +
+                 "ILayeredPrismscape; a single shell never climbs.")]
+        [Range(0f, 1f)] [SerializeField] float layerClimbFraction = 0.6f;
+
+        [Tooltip("How far the aim must point out of the ridden plane (|dot(forward, normal)|) before the " +
+                 "pilot is read as climbing to the next layer. Below it the ride holds its layer, so " +
+                 "ordinary steering on a curved sheet never drifts through the stack.")]
+        [Range(0f, 0.95f)] [SerializeField] float layerClimbDeadzone = 0.35f;
+
         [Tooltip("How far past the ground prism's in-plane footprint (in multiples of its " +
                  "largest extent) the wrap completes. Reaching a sheet's EDGE rolls the rider " +
                  "around the rim onto the other side - marble over the table's edge.")]
@@ -104,6 +122,13 @@ namespace CosmicShore.Gameplay
 
         IVesselStatus vesselData;
 
+        // Layered ride state - null / 0 whenever the ground is not part of a stack.
+        ILayeredPrismscape _layers;
+        object _layerSpace;      // _layers.LayerSpace - every structure sharing it is one stack
+        int _groundStack;
+        int _climbIntent;        // +1 up the stack, -1 down, 0 = hold the layer
+        bool _layerAhead;        // the last refresh saw a layer to climb INTO
+
         void Awake()
         {
             // Awake, not Start: Attach can arrive from the transformer's first MoveShip on a
@@ -114,6 +139,9 @@ namespace CosmicShore.Gameplay
         public void Attach(Prism prism)
         {
             AttachedPrism = prism;
+            ResolveLayers(prism);
+            _climbIntent = 0;
+            _layerAhead = false;
             // First orientation has no smoothed state to agree with - point the normal at the
             // side the vessel arrived on.
             SurfaceNormal = OrientNormal(prism, transform.position - prism.transform.position);
@@ -125,12 +153,40 @@ namespace CosmicShore.Gameplay
         public void Detach()
         {
             AttachedPrism = null;
+            _layers = null;
+            _layerSpace = null;
+        }
+
+        void ResolveLayers(Prism ground)
+        {
+            _layers = PrismscapeTopology.LayeredOwnerOf(ground);
+            if (_layers == null || !_layers.TryGetStackCoordinate(ground, out _groundStack))
+            {
+                _layers = null;
+                _groundStack = 0;
+            }
+            _layerSpace = _layers?.LayerSpace;
         }
 
         public void RideTheTrail()
         {
             if (AttachedPrism == null) return;
             float dt = Time.deltaTime;
+
+            // Layered climb intent, read BEFORE the ground refresh because it decides which layers are
+            // eligible. The aim's component out of the ridden plane past the deadzone, signed in the
+            // STACK's direction (the ground's +z points up the stack).
+            float climb = 0f;
+            _climbIntent = 0;
+            if (_layers != null)
+            {
+                float pitch = Vector3.Dot(transform.forward, SurfaceNormal) * Mathf.Sign(Throttle);
+                if (Mathf.Abs(Throttle) > 0f && Mathf.Abs(pitch) > layerClimbDeadzone)
+                {
+                    climb = Mathf.Sign(pitch) * (Mathf.Abs(pitch) - layerClimbDeadzone) / (1f - layerClimbDeadzone);
+                    _climbIntent = Vector3.Dot(SurfaceNormal, AttachedPrism.transform.forward) * climb > 0f ? 1 : -1;
+                }
+            }
 
             RefreshGroundPrism();
 
@@ -162,13 +218,21 @@ namespace CosmicShore.Gameplay
 
             Vector3 move = _surfaceVelocity * dt;
 
+            // Through the stack: while climbing toward a layer that EXISTS in reach, the climb carries the
+            // rider along the normal and the hover spring lets go - otherwise the spring's equilibrium
+            // (climb speed / hoverTrackingRate) sits short of the halfway point to a deep layer and the
+            // rider stalls. Pitching out of the outermost skin finds no layer ahead, so the spring holds
+            // and the skin stays ridden.
+            bool climbing = _layers != null && _climbIntent != 0 && _layerAhead;
+            if (climbing) move += SurfaceNormal * (climb * targetSpeed * layerClimbFraction * dt);
+
             // Soft hover spring toward hoverHeight along the smoothed normal, measured from
             // the resolved anchor (the ground's mid-plane over the sheet, the RIM POINT during
             // a wrap - so the wrap pivots the rider around the edge at hover distance, a
             // rounded lip). Prism-to-prism anchor shifts read as swell through the spring.
             float height = Vector3.Dot(transform.position + move - hoverAnchor, SurfaceNormal);
             float hoverT = 1f - Mathf.Exp(-hoverTrackingRate * dt);
-            move += SurfaceNormal * ((hoverHeight - height) * hoverT);
+            if (!climbing) move += SurfaceNormal * ((hoverHeight - height) * hoverT);
 
             transform.position += move;
         }
@@ -232,13 +296,15 @@ namespace CosmicShore.Gameplay
 
             index.QuerySphere(transform.position, radius, s_groundCandidates);
 
+            _layerAhead = false;
             Prism best = AttachedPrism;
-            float bestSq = (AttachedPrism.transform.position - transform.position).sqrMagnitude;
+            float bestSq = GroundScore(AttachedPrism);
             for (int i = 0; i < s_groundCandidates.Count; i++)
             {
                 var candidate = s_groundCandidates[i];
                 if (!candidate || candidate == AttachedPrism) continue;
-                float dSq = (candidate.transform.position - transform.position).sqrMagnitude;
+                if (_layers != null && !IsLayerEligible(candidate)) continue;
+                float dSq = GroundScore(candidate);
                 if (dSq < bestSq)
                 {
                     bestSq = dSq;
@@ -249,8 +315,40 @@ namespace CosmicShore.Gameplay
             if (best != AttachedPrism)
             {
                 AttachedPrism = best;
+                ResolveLayers(best);
                 OnPrismCrossed?.Invoke(best);
             }
+        }
+
+        /// <summary>
+        /// Distance used to pick the ground. On a single shell: to the prism's centre (unchanged). In a stack:
+        /// to the prism's HOVER POINT - its centre lifted <see cref="hoverHeight"/> along its normal toward the
+        /// ridden side - so a climb hands over at the halfway point between two layers' riding heights rather
+        /// than wherever the plates' mid-planes happen to fall.
+        /// </summary>
+        float GroundScore(Prism prism)
+        {
+            Vector3 c = prism.transform.position;
+            if (_layers != null) c += OrientNormal(prism, SurfaceNormal) * hoverHeight;
+            return (c - transform.position).sqrMagnitude;
+        }
+
+        /// <summary>
+        /// In a stack, the ground may stay on its layer, or - only while the pilot climbs - step to the next
+        /// strut or sheet in the direction of the climb (stack coordinate ±1 or ±2). "The stack" is every structure
+        /// sharing the ground's layer space (one colony of plants is one stack). A prism of ANOTHER stack is
+        /// eligible exactly as it always was: a stack must not wall the rider off the world.
+        /// </summary>
+        bool IsLayerEligible(Prism candidate)
+        {
+            var owner = PrismscapeTopology.LayeredOwnerOf(candidate);
+            if (owner == null || !ReferenceEquals(owner.LayerSpace, _layerSpace)
+                || !owner.TryGetStackCoordinate(candidate, out int stack)) return true;
+            int delta = stack - _groundStack;
+            if (delta == 0) return true;
+            bool ahead = _climbIntent != 0 && (delta > 0 ? 1 : -1) == _climbIntent && Mathf.Abs(delta) <= 2;
+            _layerAhead |= ahead;
+            return ahead;
         }
 
         /// <summary>

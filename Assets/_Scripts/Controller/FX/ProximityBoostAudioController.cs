@@ -300,7 +300,10 @@ namespace CosmicShore.Gameplay.Audio
             }
             if (!_classGatePass) return;
 
-            if (_localGateResolved) return;
+            // Re-evaluated on every call rather than latched: a LIVE hull can change pilot
+            // (Cellular Duel's round swap, the arena PilotSwap). Only the ownership-free answer
+            // below is final.
+            if (_localGateResolved && (!onlyAudibleToController || forceLoopAttachToListener)) return;
 
             // Player can be null until VesselController.Initialize() finishes,
             // so we re-evaluate every frame until we know the answer.
@@ -320,11 +323,11 @@ namespace CosmicShore.Gameplay.Audio
             }
             else
             {
+                // Was local and is no longer: release the loop it was driving.
+                if (_localGatePass && _loopStarted)
+                    StopAndReleaseLoop(FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
                 _localGatePass = false;
                 _localGateResolved = true;
-                if (debugLog && CSDebug.IsVerbose(CSLogChannel.Audio))
-                    CSDebug.LogVerbose(CSLogChannel.Audio, $"[ProximityBoostAudio] '{name}' is remote/AI; disabling.", this);
-                enabled = false;
             }
         }
 

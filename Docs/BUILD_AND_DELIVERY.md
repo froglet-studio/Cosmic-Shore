@@ -223,7 +223,8 @@ Run top to bottom. Every step is either a command above or a box to tick.
 
 | Tier | Trigger | What runs | Catches | Rough time |
 |---|---|---|---|---|
-| `compile` | Every PR into `bleeding-edge` | Edit-mode tests (which force a full compile of runtime, editor, and test assemblies) | Non-compiling C#, broken tests | 5–15 min |
+| `static` | Every PR into `bleeding-edge` **except from a `claude/**` branch**; manual dispatch (the `/ship` commands dispatch it for `claude/**`) | The ubuntu static checks only (conditional compilation, console logging, prism shader wiring). Never takes the Unity runner | Release-preprocessor mistakes, raw `Debug.Log`, shader wiring drift | 1–2 min |
+| `compile` | **Manual dispatch only** (post-merge compiles are `bleeding-edge-guard.yml`'s job, §10.1) | Edit-mode tests (which force a full compile of runtime, editor, and test assemblies) | Non-compiling C#, broken tests | 5–15 min |
 | `il2cpp` | **Thursday 09:00 UTC**, against `bleeding-edge` | Full IL2CPP release build | Above, plus AOT/generic failures and native link errors — the ones that only appear in a shipping build | 60–150 min cold, far less warm |
 | `il2cpp` | **Tuesday 13:00 UTC**, against `development`, only when the next day is an on-cycle promotion Wednesday | Full IL2CPP release build | Same, on the branch UGS is about to build | as above |
 | `mono` | **Manual dispatch only** | Mono standalone player build | Produces a player in ~a third of the time, but is blind to AOT and native link errors — useful when iterating, never a gate | 20–40 min |
@@ -244,6 +245,23 @@ The Tuesday tier is cycle-gated on the same `CYCLE_ANCHOR` / `CYCLE_DAYS` as the
 fires exactly one Tuesday in three rather than burning an IL2CPP build on a commit nothing will ship.
 
 Any tier can also be run on demand from the Actions tab (**Run workflow** → pick a mode).
+
+### `claude/**` branches do not trigger CI on their own
+
+Agent sessions push often and open many pull requests, so a branch named `claude/**` fires CI in
+exactly two cases:
+
+1. **It lands on `bleeding-edge`.** The merge push runs `bleeding-edge-guard.yml` (§10.1) and
+   `prisma-parity-ci.yml` like any other.
+2. **A `/ship`, `/ship-quick`, `/ship-deep` or `/ship-tools` command runs on it.** The skill
+   dispatches `unity-ci.yml` with `mode=static` on the branch once, after its final push
+   (`.claude/skills/ship/SKILL.md` §5.5).
+
+Everything else is suppressed: `unity-ci.yml` skips every job for a `pull_request` event whose head
+is `claude/**` (a skipped check, never a pending one), and `ios-unsigned-ipa.yml` / `prisma-ios.yml`
+list `claude/**` in `branches-ignore`, because an agent branch merging `bleeding-edge` in would
+otherwise "change" the request file and start a Mac build nobody asked for. A human can still run
+any of them on a `claude/**` branch from the Actions tab (**Run workflow**).
 
 ### The runner is not chosen yet
 

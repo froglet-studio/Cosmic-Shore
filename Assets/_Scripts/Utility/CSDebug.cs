@@ -287,15 +287,14 @@ namespace CosmicShore.Utility
         [CSLogChannelLabel("[FTUE] tutorial step flow")]
         FTUE = 1 << 27,
         /// <summary>
-        /// <c>[FoldGate]</c> — the Butterfly's standing portal pair: where a fold laid its gates,
-        /// who threaded one, and when a pair was replaced.
+        /// <c>[FoldGate]</c> — the Butterfly's standing wormhole pair (it began as a pair of ring
+        /// gates, hence the tag): where a fold laid it and when a pair was replaced.
         ///
-        /// It exists because a gate's failure modes all read the same on screen ("it did
-        /// nothing"): no pair was placed at all, a pair was placed too short to keep, the pilot's
-        /// domain does not match, or the transit fired on a machine that does not own that
-        /// vessel. One line separates them.
+        /// It exists because a pair's failure modes all read the same on screen ("it did
+        /// nothing"): no pair was placed at all, or a pair was placed too short to keep. One line
+        /// separates them.
         /// </summary>
-        [CSLogChannelLabel("[FoldGate] Butterfly fold gate placement and transits")]
+        [CSLogChannelLabel("[FoldGate] Butterfly fold wormhole placement")]
         ButterflyFold = 1 << 28,
         /// <summary>
         /// <c>[Training]</c> — overnight GA bring-up: launch, rollout start, a recorded
@@ -306,16 +305,28 @@ namespace CosmicShore.Utility
         [CSLogChannelLabel("[Training] overnight GA bring-up")]
         AITraining = 1 << 29,
         /// <summary>
+        /// <c>[ButterflyBloom]</c> — one line per omni-crystal bloom as it retires: how many
+        /// prisms its sweep reached and what the dust did to them, by outcome.
+        ///
+        /// It exists because the bloom's failure mode reads as "it did nothing", which is the
+        /// same report whether the sweep found no prisms, found prisms and dispatched nothing, or
+        /// dispatched outcomes too subtle to see at the Butterfly's camera range. The tally
+        /// separates the three.
+        /// </summary>
+        [CSLogChannelLabel("[ButterflyBloom] omni-crystal bloom sweep and dust outcomes")]
+        ButterflyBloom = 1 << 30,
+        /// <summary>
         /// <c>[BlackHole]</c> — the gravity well's one-line-per-second report: live holes
         /// (strength, horizon, influence), the prism bodies under gravity, captures this
-        /// second, warp residents, vessels being pulled — including the idle case with its
+        /// second, how many holes are stretching prisms, vessels being pulled — including the idle case with its
         /// reason, because a field's failure modes all render as "nothing is happening"
         /// (Docs/BLACK_HOLE.md). Off by default like every channel; a real fault (a spawn
         /// with no prefab, a job that could not schedule) stays a warning or an error.
-        /// Nothing per-body or per-frame logs here.
+        /// Nothing per-body or per-frame logs here. The SIGN bit, and the last free one: this
+        /// int-backed enum is FULL — the next channel needs the enum widened to long.
         /// </summary>
-        [CSLogChannelLabel("[BlackHole] gravity wells, bodies, captures, warp residents")]
-        BlackHole = 1 << 30,
+        [CSLogChannelLabel("[BlackHole] gravity wells, bodies, captures, stretching, vessels")]
+        BlackHole = 1 << 31,
         All = ~0
     }
 

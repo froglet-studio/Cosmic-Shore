@@ -194,15 +194,31 @@ namespace CosmicShore.Gameplay
         }
 
 
+        /// <summary>
+        /// Destroys the ghost AND the assets it owns. The baked mesh and the material clones are
+        /// runtime-created assets: Unity never frees them with the GameObject, so destroying only
+        /// the GameObject leaked one skinned-hull mesh plus every hull material per cloak, per
+        /// Serpent, on every peer (Toggle runs everywhere through the press RPC).
+        /// </summary>
+        private void DestroySerpentGhost()
+        {
+            if (!_serpentGhost) return;
+
+            if (_serpentGhost.TryGetComponent(out MeshFilter mf) && mf.sharedMesh)
+                Destroy(mf.sharedMesh);
+            if (_serpentGhost.TryGetComponent(out MeshRenderer mr))
+                foreach (var m in mr.sharedMaterials)
+                    if (m) Destroy(m);
+
+            Destroy(_serpentGhost);
+            _serpentGhost = null;
+        }
+
         private void SpawnSerpentGhost()
         {
             if (!shipRenderer) return;
 
-            if (_serpentGhost)
-            {
-                Destroy(_serpentGhost);
-                _serpentGhost = null;
-            }
+            DestroySerpentGhost();
 
             var baked = new Mesh();
             shipRenderer.BakeMesh(baked, true);
@@ -255,11 +271,7 @@ namespace CosmicShore.Gameplay
 
         private void RestoreShipImmediate()
         {
-            if (_serpentGhost)
-            {
-                Destroy(_serpentGhost);
-                _serpentGhost = null;
-            }
+            DestroySerpentGhost();
 
             if (!shipRenderer) return;
 

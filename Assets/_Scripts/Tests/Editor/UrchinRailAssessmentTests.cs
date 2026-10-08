@@ -27,6 +27,21 @@ namespace CosmicShore.Tests
             }
         }
 
+        /// <summary>A CLOSED rail: <c>N</c> points round a circle of radius <c>R</c> in the XZ plane.</summary>
+        struct CircleRail : IUrchinRailPoints
+        {
+            public int N;
+            public float R;
+            public int Count => N;
+
+            public bool TryGetPoint(int index, out Vector3 point)
+            {
+                float a = 2f * Mathf.PI * index / N;
+                point = new Vector3(Mathf.Cos(a) * R, 0f, Mathf.Sin(a) * R);
+                return true;
+            }
+        }
+
         static LineRail Line(int n = 101, float spacing = 8f) =>
             new() { N = n, Spacing = spacing, HoleFrom = 1, HoleTo = 0 };
 
@@ -156,6 +171,79 @@ namespace CosmicShore.Tests
         {
             Assert.AreEqual(UrchinRailVerdict.Leave,
                 UrchinRailAssessment.Decide(UrchinRailScan.Invalid, UrchinRailScan.Invalid, 600f, Rules, false));
+        }
+
+        // ---------------------------------------------------------------- closed rails
+
+        [Test]
+        public void Scan_LoopWrapsPastTheSeam()
+        {
+            var rail = new CircleRail { N = 100, R = 100f };
+            rail.TryGetPoint(3, out var ring);   // just past the seam from index 95
+            var open = UrchinRailAssessment.Scan(ref rail, 95, +1, ring, 1600f);
+            var loop = UrchinRailAssessment.Scan(ref rail, 95, +1, ring, 1600f, loop: true);
+
+            Assert.IsTrue(open.ReachesEnd, "an open walk stops at the list's end");
+            Assert.Greater(open.MinDistance, 20f, "...and never sees the ring across the seam");
+            Assert.Less(loop.MinDistance, 0.01f, "a loop walk wraps and threads it");
+            Assert.AreEqual(8f * 2f * Mathf.PI * 100f / 100f, loop.ArcToMin, 0.5f);
+            Assert.IsFalse(loop.ReachesEnd, "a loop has no end to launch off");
+        }
+
+        [Test]
+        public void Scan_LoopStopsAfterOneLap()
+        {
+            var rail = new CircleRail { N = 100, R = 100f };
+            var scan = UrchinRailAssessment.Scan(ref rail, 10, -1, new Vector3(0f, 500f, 0f), 1e6f, loop: true);
+            Assert.IsTrue(scan.Valid);
+            Assert.IsFalse(scan.ReachesEnd);
+            // 99 segments of a 100-gon: one lap, never a second.
+            Assert.Less(scan.ArcWalked, 2f * Mathf.PI * 100f);
+            Assert.Greater(scan.ArcWalked, 0.97f * 2f * Mathf.PI * 100f);
+        }
+
+        // ---------------------------------------------------------------- dry crawl
+
+        [Test]
+        public void IsDryCrawl_OwnColourIsNeverACrawl()
+        {
+            Assert.IsFalse(UrchinRailAssessment.IsDryCrawl(hostile: false, rideSlowed: false, convertible: true, canAffordSpike: false));
+            Assert.IsFalse(UrchinRailAssessment.IsDryCrawl(hostile: false, rideSlowed: false, convertible: false, canAffordSpike: false));
+        }
+
+        [Test]
+        public void IsDryCrawl_ConvertibleMassIsDryOnlyWithoutAmmo()
+        {
+            // Skein / Hijack: plain mass - the volley converts it, so a crawl ends while the meter pays.
+            Assert.IsFalse(UrchinRailAssessment.IsDryCrawl(true, true, convertible: true, canAffordSpike: true));
+            Assert.IsTrue(UrchinRailAssessment.IsDryCrawl(true, true, convertible: true, canAffordSpike: false));
+        }
+
+        [Test]
+        public void IsDryCrawl_SuperShieldedMassIsAlwaysDry()
+        {
+            // Regatta: a rival's super-shielded rail refuses every steal - a full meter changes nothing.
+            Assert.IsTrue(UrchinRailAssessment.IsDryCrawl(true, true, convertible: false, canAffordSpike: true));
+            Assert.IsTrue(UrchinRailAssessment.IsDryCrawl(true, true, convertible: false, canAffordSpike: false));
+        }
+
+        [Test]
+        public void IsDryCrawl_SlipstreamRidesHostileMassAtFullPace()
+        {
+            // Time-5 Slipstream: the ride is not slowed, so it is not a crawl at all.
+            Assert.IsFalse(UrchinRailAssessment.IsDryCrawl(true, rideSlowed: false, convertible: false, canAffordSpike: false));
+        }
+
+        [Test]
+        public void Regatta_RivalLaneIsLeftUnlessTheRingIsAShortCrawl()
+        {
+            // The braid threads every ring on every lane, so "threads ahead" alone would RIDE a rival's
+            // lane at crawl speed. As a dry crawl it is left unless the ring is within DryCrawlArc.
+            bool dry = UrchinRailAssessment.IsDryCrawl(true, true, convertible: false, canAffordSpike: true);
+            Assert.AreEqual(UrchinRailVerdict.Leave,
+                UrchinRailAssessment.Decide(S(5f, 600f), S(900f, 4000f), 700f, Rules, dry));
+            Assert.AreEqual(UrchinRailVerdict.Ride,
+                UrchinRailAssessment.Decide(S(5f, 600f), S(900f, 4000f), 700f, Rules, crawlingDry: false));
         }
     }
 }

@@ -858,7 +858,8 @@ namespace CosmicShore.Gameplay
                 $"(cell-relative), ring={definition.SpawnFromCellRing}, " +
                 $"nucleus={( _arena.Cell ? _arena.Cell.ExpectedNucleusWorldRadius : -1f):0.#}, " +
                 $"dist={definition.SpawnDistanceOutsideNucleus:0.#}, " +
-                $"floor={definition.SpawnRingRadiusFloor:0.#}, formation={definition.SpawnFormation}.");
+                $"floor={definition.ResolveSpawnRingRadiusFloor(_arena.Intensity):0.#} " +
+                $"(intensity {_arena.Intensity}), formation={definition.SpawnFormation}.");
         }
 
         void ReturnVesselHome()

@@ -42,10 +42,14 @@ namespace CosmicShore.AssetTool
     {
         static int Main(string[] args)
         {
+            // UTF-8 out, whatever the console's code page (Windows redirects in the OEM page otherwise).
+            Console.OutputEncoding = new System.Text.UTF8Encoding(false);
             var opts = new Dictionary<string, string>();
             var pos = new List<string>();
             for (int i = 0; i < args.Length; i++)
             {
+                // --json is a flag, or names the file to write when a .json path follows (shadergraph-census --json PATH).
+                if (args[i] == "--json" && i + 1 < args.Length && args[i + 1].EndsWith(".json", StringComparison.OrdinalIgnoreCase)) { opts["json"] = args[++i]; continue; }
                 if (args[i] is "--dry-run" or "--force" or "--all" or "--json") { opts[args[i][2..]] = "1"; continue; }
                 if (args[i].StartsWith("--", StringComparison.Ordinal) && i + 1 < args.Length) { opts[args[i][2..]] = args[++i]; continue; }
                 pos.Add(args[i]);
@@ -58,7 +62,14 @@ namespace CosmicShore.AssetTool
                     "roundtrip" => RoundTrip(pos.Skip(1).ToList()),
                     "schema" => Scripts.Schema(pos.Skip(1).ToList()),
                     "serialization-audit" => SerializationAudit.Run(pos.Skip(1).ToList(), opts.ContainsKey("json")),
+                    "shadergraph-census" => ShaderCensus.Run(opts),
                     "addall" => Scripts.AddAll(),
+                    // Prisma's editor pages (TOOLS, DATA, MODELS) read these; JSON on stdout.
+                    "tools" => EditorData.Tools(),
+                    "datasets" => EditorData.Datasets(),
+                    "dataset" => EditorData.Dataset(Need(pos, 2)[1]),
+                    "model" => EditorData.Model(Need(pos, 2)[1]),
+                    "model-preview" => EditorData.ModelPreview(Need(pos, 2)[1], opts),
                     "list" => List(Need(pos, 2)),
                     "docs" => Docs(Need(pos, 2)),
                     "get" => Get(Need(pos, 3), opts),
@@ -97,6 +108,8 @@ namespace CosmicShore.AssetTool
 
   roundtrip [path...]                       verify parse -> write is byte-identical (default: all of Assets/)
   serialization-audit [path...] [--json]    every script field Unity reads that Prisma drops (and the reverse)
+  shadergraph-census [--json PATH]          Shader Graph compiler coverage: node types, custom functions, each
+                                            shader's route (family / compiled / missing); writes Port/parity/shaders.json
   list   <file>                             GameObjects and their hierarchy paths
   docs   <file>                             every document: fileID, class, type
   get    <file> <object> [field.path]       print a document, or one field of it
@@ -118,6 +131,16 @@ namespace CosmicShore.AssetTool
                                             every change of that object's instance (overrides, additions,
                                             removals). Writes the prefab AND this file
   schema [path...]                          check the component serializer against every saved script
+
+Editor data (JSON on stdout, what Prisma's TOOLS / DATA / MODELS pages read):
+  tools                                     every FrogletTools menu item: category, importance, description, source
+  datasets                                  every ScriptableObject .asset, grouped by script type
+  dataset <file.asset>                      its fields: value, kind, type, header, tooltip, range (edit with set)
+  model <file.fbx>                          nodes, meshes, triangles, materials, blend shapes, bones, takes, import settings,
+                                            and the game's materials (the prefabs that draw it: usedBy, gameMaterials)
+  model-preview <file.fbx> --out <png> [--size 512] [--yaw 145] [--pitch 20] [--colors game|submesh] [--turntable N]
+                                            a shaded picture drawn on the CPU, in the game's material colours;
+                                            --turntable: N views around it in one sheet, 6 to a row
 
 <object>: &id | GameObject path (Canvas/Panel/Button) | unique GameObject name
           paths and names reach inside placed prefabs; there, set/add/create/delete/remove-component

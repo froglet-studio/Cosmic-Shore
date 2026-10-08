@@ -27,3 +27,24 @@ generator drifts, and the drift is invisible because both files look authored.**
 source of truth, not a more careful copy. Do not re-expand this file; if something genuinely
 belongs to non-Claude agents and not to `CLAUDE.md`, add it *below* as a short delta and say why
 it is not in `CLAUDE.md`.
+
+## Delta: `.junie/skills` is a symlink to `.claude/skills`
+
+Not in `CLAUDE.md` because it only matters to JetBrains Junie, which loads project skills from
+`.junie/skills/<name>/SKILL.md` and never reads `.claude/skills` itself. **Edit skills in
+`.claude/skills/` only.** `.junie/skills` is one committed symlink (`../.claude/skills`), so Junie
+sees every skill, including new ones, the moment it lands. There is nothing to sync.
+`python3 Tools/Build/check_junie_skills.py` runs in both CI workflows. It fails if the link ever
+becomes a real directory again, and its failure message prints the commands that restore it.
+
+It used to be a copy. Junie offers to import `.claude/skills` into `.junie/skills`, and that import
+COPIES. The 2026-08-25 merge `def29f5e1` committed one such copy: the nine skills that existed
+then, byte-identical to that branch's `.claude/skills`. Every later branch edited `.claude/skills`
+alone. By 2026-10-08 the copies were 3,920 `diff -r` lines behind (asset-surgery 2,138, vessel 744,
+ship 660), and a Junie session was following rules that `.claude/skills` had already retired. If
+Junie offers that import again, decline it. The link already gives Junie everything the import
+would copy.
+
+A Windows checkout with `core.symlinks=false` turns the link into a one-line text file, so Junie
+on that machine sees no skills. Enable symlinks (`git config core.symlinks true` plus Developer
+Mode) rather than committing a real directory in its place.

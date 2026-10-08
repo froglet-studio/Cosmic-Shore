@@ -24,11 +24,17 @@ checklist.
 5. **Inspect, don't guess.** `game_find` / `game_hierarchy` to locate objects, `game_get` to read
    live fields, `game_ui_at X,Y` for "what is that on screen", `game_dump_ui` for layout and
    anchors, `game_logs` for errors.
-6. **Fix in the right place.** Engine gaps in `Port/src`; gameplay bugs in `Assets/_Scripts` on a
+6. **Data, models and editor tools without Unity.** `asset_datasets` / `asset_dataset` read the
+   ScriptableObject data sets (fields with Unity's labels, ranges, enums, references, stale keys);
+   change one with `cs-asset set <file> &<fileId> <path> <value>`. `asset_model` and
+   `asset_model_preview` show an FBX as Unity imports it, with a picture. `asset_froglet_tools`
+   lists the FrogletTools with their source - read a tool's source before doing its job. Scene and
+   hierarchy edits go through `cs-asset` (create, add, delete, overrides, apply), never by hand.
+7. **Fix in the right place.** Engine gaps in `Port/src`; gameplay bugs in `Assets/_Scripts` on a
    separate Unity PR. Never edit `obj/live-src` (it is regenerated); errors there already name the
    original `Assets/` file and line. Treat a `PRISMA001` warning (an RPC Prisma cannot intercept)
    as a bug.
-7. **Before committing**: `engine_test`, then `unity_isolation_check` - the port must not change
+8. **Before committing**: `engine_test`, then `unity_isolation_check` - the port must not change
    anything Unity reads. `game_stop` when done.
 
 Report what you saw (attach the screenshot path) and what you verified; say plainly if a check

@@ -154,7 +154,7 @@ The vessels' `_touchActionOverrides` are unchanged in net; touch and pad bind th
 | Skybox → baked 4096×2048 panorama (`StaticSkyPanorama.shader`, `Resources/StaticHyperSeaSkybox.mat`), post-processing only on the presenting camera, FXAA Low | `PerfStripRuntime.cs` (stomps every camera's clear/post/AA) | in `Resources`, so it ships on every platform even unused; second writer of camera AA beside `GraphicsSettingsApplier` |
 | `CapsuleMembrane` (2,562 instanced capsules) → `MeshMembrane` (one 642-vertex icosphere) | 13 cell configs | Barren and Skim Race configs are shared by ~10 modes the strip doesn't ship |
 | Skim Race intensity 3 → own larger membrane + `IntensityWise` | `MinigameSkimRace.unity` | also changes Skim Race's life spawner on every platform (a food-web change) |
-| Butterfly fold-gate window renders only its footprint (crop + RT quantize) | `FoldGatePortalView.cs` + `FoldGatePortal.shader` | crop is platform-agnostic; must merge with the shader. Resolution cap 0.5 is `PerfStrip`-gated |
+| Butterfly fold-gate window renders only its footprint (crop + RT quantize) — *the window is retired (2026-10-08); the same crop and sizing rules (`WormholeGeometry.Crop` / `TargetSize` / `TargetFits`) now serve the wormhole mouths' exact views, under the same `foldGateWindowMaxRenderScale` tier cap* | `FoldGatePortalView.cs` + `FoldGatePortal.shader` | crop is platform-agnostic; must merge with the shader. Resolution cap 0.5 is `PerfStrip`-gated |
 | Graphics settings menu disabled; target fps −1 → 240 | `GraphicsSettingsApplier.cs`, `BootstrapConfig.asset` | the strip turns OFF the very hook bleeding-edge already has for per-tier render settings |
 
 ### 2.4 CPU / content cuts
@@ -462,7 +462,14 @@ fixed on this branch before the PR:
   next tick). Accepted: the run is ending.
 - **Pre-existing, found in passing (task suggested):** AI Squirrels never drift on a PC -
   `SkimRacePilot` resolves the drift's TOUCH input, which the PC's gamepad/keyboard overrides reject.
+  **Fixed on `claude/kind-edison-nvml7l` (2026-10-06):** the autopilot lookup now resolves against
+  the active device, and the Skim Race pilot holds its own left trigger at full pull while drifting,
+  so its drift is full depth on a pad device too - `AIPilot`'s drifts elsewhere still read trigger 0
+  on a pad (the §2.2 row above). The shipped Skim Race policy keeps `UseDrift: 0`, so nothing changes
+  on screen until that is turned on. `SQUIRREL_DRIFT.md` §10.
 - **Tooling (task suggested):** `unity_refcompile --config editor` false positives, recorded in its README.
+  Fixed 2026-10-08: the editor config now compiles Editor-folder scripts as a separate
+  Assembly-CSharp-Editor (no more false CS0118), and the tool runs on any .NET SDK from 8.0 up.
 ---
 
 ## 4. Step plan

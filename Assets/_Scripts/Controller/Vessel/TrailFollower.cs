@@ -223,6 +223,14 @@ namespace CosmicShore.Gameplay
         public float RideSpeed => _rideSpeed;
         float _rideSpeed;
 
+        /// <summary>
+        /// True when riding <paramref name="prism"/> runs SLOWER than this hull's own colour - a
+        /// rival's mass without the Time-5 Slipstream. Read-only, and the same rule the ride
+        /// itself applies (<see cref="GetTerrainAwareBlockSpeed"/>), so an autopilot asking "am I
+        /// crawling?" cannot disagree with the speed it is actually riding at.
+        /// </summary>
+        public bool IsCrawlTerrain(Prism prism) => prism && GetTerrainAwareBlockSpeed(prism) < FriendlyTerrainSpeed;
+
         public void RideTheTrail()
         {
             ReachedEnd = false;

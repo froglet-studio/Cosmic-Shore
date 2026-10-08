@@ -56,6 +56,25 @@ namespace CosmicShore.Gameplay
         UrchinSpikeActionSO _charging;
         float _chargeStartTime;
 
+        // ── Read-only charge readout (HUD) ───────────────────────────────────
+        // Presentation only: nothing here changes what a release fires. All three answer from
+        // the SAME two fields ReleaseCharge reads, through the SAME Charge01 curve, so the gauge
+        // shows exactly the burst the trigger would throw if it came up this frame.
+
+        /// <summary>True while the trigger is held on a charge-enabled spike ability.</summary>
+        public bool IsCharging => _charging;
+
+        /// <summary>True once the hold has outlasted the authored minimum - i.e. a release NOW
+        /// throws a burst rather than counting as the tap the press already paid for.</summary>
+        public bool IsChargeArmed => _charging && Time.time - _chargeStartTime >= _charging.MinChargeSeconds;
+
+        /// <summary>
+        /// 0..1 progress of the held charge: 0 at (and below) the minimum hold, 1 at the authored
+        /// maximum (<see cref="UrchinSpikeActionSO.Charge01"/>), and 0 whenever nothing is
+        /// charging. This is the fraction the burst's spike count is lerped by.
+        /// </summary>
+        public float ChargeProgress01 => _charging ? _charging.Charge01(Time.time - _chargeStartTime) : 0f;
+
         public override void Initialize(IVesselStatus shipStatus)
         {
             _status = shipStatus;

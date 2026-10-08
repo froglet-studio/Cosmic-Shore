@@ -162,10 +162,14 @@ namespace CosmicShore.UI
             // The label of the branch row that opened this layer; null on the toy's own top
             // layer. Read back as the PATH a committed variant is remembered under.
             public readonly string OpenedBy;
-            public Layer(List<ToyShellOption> options, string openedBy = null)
+            // The opening row's own Description, shown while the player is inside this layer (a
+            // species' element row is still "about" that species).
+            public readonly string Description;
+            public Layer(List<ToyShellOption> options, string openedBy = null, string description = null)
             {
-                Options  = options;
-                OpenedBy = openedBy;
+                Options     = options;
+                OpenedBy    = openedBy;
+                Description = description;
             }
         }
 
@@ -314,7 +318,7 @@ namespace CosmicShore.UI
                     if (!option.IsBranch) return null;
                     var next = option.Expand();
                     if (next is not { Count: > 0 }) return null;
-                    PushLayer(next, option.Label);
+                    PushLayer(next, option.Label, option.Description);
                     continue;
                 }
 
@@ -476,7 +480,7 @@ namespace CosmicShore.UI
             // tagline - falling back to the toy definition's own line for a toy the codex has not
             // been scanned for. Never a string table in the UI layer: that would be a second place
             // to describe a toy, and it would drift from the toy's own assets.
-            if (descriptionText) descriptionText.text = ToyPortraitLibrary.Body(def);
+            UpdateDescription();
 
             if (preview) preview.Show(ResolveToy());
 
@@ -550,9 +554,9 @@ namespace CosmicShore.UI
             DrawRows();
         }
 
-        void PushLayer(List<ToyShellOption> options, string openedBy = null)
+        void PushLayer(List<ToyShellOption> options, string openedBy = null, string description = null)
         {
-            _stack.Add(new Layer(options, openedBy));
+            _stack.Add(new Layer(options, openedBy, description));
             _selected = -1;
             if (preview) preview.ClearVariant();
             DrawRows();
@@ -612,6 +616,36 @@ namespace CosmicShore.UI
 
             AutoSelectLoneRow();
             UpdateSwitchButton();
+            UpdateDescription();
+        }
+
+        /// <summary>
+        /// The description panel says what the player is LOOKING AT: the selected row's own
+        /// <see cref="ToyShellOption.Description"/>, else the description of the row that opened
+        /// the layer they are in (a species, while its elements are listed), else the toy's codex
+        /// body. A list of forty creature names is unreadable without it.
+        /// </summary>
+        void UpdateDescription()
+        {
+            if (!descriptionText) return;
+
+            if (_selected >= 0 && _selected < _rows.Count &&
+                !string.IsNullOrEmpty(_rows[_selected].Description))
+            {
+                descriptionText.text = _rows[_selected].Description;
+                return;
+            }
+            for (int i = _stack.Count - 1; i >= 0; i--)
+            {
+                if (string.IsNullOrEmpty(_stack[i].Description)) continue;
+                descriptionText.text = _stack[i].Description;
+                return;
+            }
+            // The codex's authored BODY copy - a paragraph, where the card gets the one-line
+            // tagline - falling back to the toy definition's own line for a toy the codex has not
+            // been scanned for. Never a string table in the UI layer: that would be a second place
+            // to describe a toy, and it would drift from the toy's own assets.
+            descriptionText.text = ToyPortraitLibrary.Body(LiveSurface?.ShellDefinition);
         }
 
         /// <summary>
@@ -703,7 +737,7 @@ namespace CosmicShore.UI
                 }
 
                 PlayMenuAudio(MenuAudioCategory.OptionClick);
-                PushLayer(next, option.Label);
+                PushLayer(next, option.Label, option.Description);
                 return;
             }
 
@@ -743,6 +777,7 @@ namespace CosmicShore.UI
                 if (_variantCards[i]) _variantCards[i].Bind(_rows[i], i == _selected);
 
             UpdateSwitchButton();
+            UpdateDescription();
         }
 
         void SwitchToSelected()
@@ -804,12 +839,15 @@ namespace CosmicShore.UI
             // picture stays where it was.
             var made = option.WatchAfterApply?.Invoke();
             if (made && preview)
-            {
                 preview.Watch(made, option.WatchRadius);
-                // The button is SPENT: the row is deselected, so Spawn goes dark until the player
-                // picks a card again - which is also what brings the picture back from the
-                // creature to the preview. Without this a second press would fire on the same row
-                // while the window was still showing the first release land.
+
+            if (made && !option.Repeatable)
+            {
+                // The button is SPENT: the row is deselected, so the verb goes dark until the
+                // player picks a card again - which is also what brings the picture back from what
+                // was made to the preview. A REPEATABLE row (Spawn) stays armed instead: each
+                // press releases more, and the selection is also what Navigate follows to the
+                // thing it made (ResolveDestination).
                 _selected = -1;
                 for (int i = 0; i < _variantCards.Count && i < _rows.Count; i++)
                     if (_variantCards[i]) _variantCards[i].Bind(_rows[i], false);
@@ -980,12 +1018,16 @@ namespace CosmicShore.UI
                 return;
             }
 
+            // Resolved BEFORE the window closes: closing deselects the row, and the selection is
+            // what says "take me to what I spawned" rather than "take me to the toy".
+            var destination = ResolveDestination(toy);
+
             // Already flying (the player opened the Toy Box mid-freestyle): there is no blend to
             // ride and no coast to allow for, so this is a straight teleport to the stand-off.
             if (crystalClickHandler.IsInFreestyle)
             {
                 OnCloseModal();
-                PlaceVesselAt(toy, 0f);
+                PlaceVesselAt(destination, 0f);
                 return;
             }
 
@@ -1008,11 +1050,43 @@ namespace CosmicShore.UI
 
             // Placed inside the SAME frame the blend started, and before the camera's LateUpdate,
             // so the very first blend frame already aims at the toy.
-            PlaceVesselAt(toy, crystalClickHandler.TransitionDuration);
+            PlaceVesselAt(destination, crystalClickHandler.TransitionDuration);
+        }
+
+        /// <summary>Where Navigate takes the player, and how big that place is.</summary>
+        readonly struct NavigateDestination
+        {
+            public readonly Transform Target;
+            public readonly float Radius;
+            public readonly string Label;
+
+            public NavigateDestination(Transform target, float radius, string label)
+            {
+                Target = target;
+                Radius = Mathf.Max(1f, radius);
+                Label = label;
+            }
         }
 
         /// <summary>
-        /// Put the vessel in front of the toy's ring, facing it.
+        /// Where Navigate goes: the SELECTED row's live place in the world when it has one
+        /// (<see cref="ToyShellOption.WorldAnchor"/>), otherwise the toy. A spawner's variant row
+        /// anchors on what it last released, so after a Spawn, Navigate takes the player to the
+        /// creature or plant they made rather than back to the bench that made it.
+        /// </summary>
+        NavigateDestination ResolveDestination(Toy toy)
+        {
+            if (_selected >= 0 && _selected < _rows.Count)
+            {
+                var option = _rows[_selected];
+                var anchor = option.WorldAnchor?.Invoke();
+                if (anchor) return new NavigateDestination(anchor, option.WorldAnchorRadius, option.Label);
+            }
+            return new NavigateDestination(toy.transform, toy.SwitchRingRadius, toy.DisplayName);
+        }
+
+        /// <summary>
+        /// Put the vessel in front of the target (a toy's ring, or the thing a toy made), facing it.
         ///
         /// <para>Placed OUTSIDE the ring (<see cref="arrivalDistanceFactor"/> &gt; 1) and pointed
         /// at it, so the player arrives looking at the thing they chose and flies THROUGH the ring
@@ -1033,8 +1107,12 @@ namespace CosmicShore.UI
         /// vessel's own live speed, so a fast hull is not under-allowed and a stationary one costs
         /// nothing) and the pilot takes over at the intended distance.</para>
         /// </summary>
-        void PlaceVesselAt(Toy toy, float coastSeconds)
+        void PlaceVesselAt(NavigateDestination destination, float coastSeconds)
         {
+            var target = destination.Target;
+            float radius = destination.Radius;
+            string label = destination.Label;
+            if (!target) return; // released creature died between the press and the handoff
             var player = gameData ? gameData.LocalPlayer : null;
             if (player?.Vessel == null)
             {
@@ -1043,17 +1121,16 @@ namespace CosmicShore.UI
                 return;
             }
 
-            var toyPos = toy.transform.position;
-            float radius = Mathf.Max(1f, toy.SwitchRingRadius);
+            var toyPos = target.position;
 
             // The toybox places toys on a ring around the cell centre facing inward, so the lane
             // that keeps the player inside the world is the toy's INWARD radial - the direction
             // the toy is already looking. Falls back to the toy's own forward when it sits exactly
             // on the centre, which no placement produces but which would otherwise yield a
             // zero-length direction.
-            var cellCentre = ResolveCellCentre(toy);
+            var cellCentre = ResolveCellCentre(toyPos);
             var approach = cellCentre - toyPos;
-            approach = approach.sqrMagnitude > 0.001f ? approach.normalized : toy.transform.forward;
+            approach = approach.sqrMagnitude > 0.001f ? approach.normalized : target.forward;
 
             float standOff = radius * Mathf.Max(1.1f, arrivalDistanceFactor);
             float speed = player.Vessel.VesselStatus != null
@@ -1075,17 +1152,17 @@ namespace CosmicShore.UI
             // The platform's own off-screen arrow, for the frames after the arrival: the toy is
             // dead ahead on the frame the player lands, so the indicator hides itself immediately
             // and only speaks up once they have turned away. It takes itself down on arrival.
-            ToyNavigationBeacon.PointAt(toy, player, crystalClickHandler);
+            ToyNavigationBeacon.PointAt(target, radius, label, player, crystalClickHandler);
 
             CSDebug.LogVerbose(CSLogChannel.ToyBox,
-                $"[ToyBox] placed at {stand} facing '{toy.DisplayName}' (ring {radius:0.#}, " +
+                $"[ToyBox] placed at {stand} facing '{label}' (ring {radius:0.#}, " +
                 $"stand-off {standOff:0.#} + {coast:0.#} coast at {speed:0.#} u/s, " +
                 $"reach {reach:0.#} along a {lane:0.#} inward lane).");
         }
 
-        static Vector3 ResolveCellCentre(Toy toy)
+        static Vector3 ResolveCellCentre(Vector3 position)
         {
-            var cell = Cell.FindNearestActiveCell(toy.transform.position);
+            var cell = Cell.FindNearestActiveCell(position);
             return cell ? cell.transform.position : Vector3.zero;
         }
     }

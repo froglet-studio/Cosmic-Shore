@@ -179,6 +179,13 @@ EXCLUDE = set()
 OWNED_ELSEWHERE = {
     "Lattice ": ("prefix", "Tools/Build/author_lattice_cell.py"),
     "Garland ": ("prefix", "Tools/Build/author_garland_cell.py"),
+    # Tollway's anchors are territory markers with a fixed census (floor = cap, no breeding),
+    # authored with the rest of the mode.
+    "Tollway Anchor ": ("prefix", "Tools/Build/author_tollway_assets.py"),
+    # Threat flora breed through their grove's reserve, not the growth quota; their own
+    # generator authors the populations.
+    "Snap Trap": ("species", "Tools/Build/author_threat_flora.py"),
+    "Physarum": ("species", "Tools/Build/author_threat_flora.py"),
     "Borromean": ("species", "Tools/Build/author_borromean_flora_assets.py"),
     # The Mandelbulb family: four species on one growth rule, each with a MEASURED
     # per-element budget, so their own generator owns the populations wherever the config
@@ -187,6 +194,24 @@ OWNED_ELSEWHERE = {
     "Coral Bloom": ("species", "Tools/Build/author_mandelbulb_flora_assets.py"),
     "Watershed": ("species", "Tools/Build/author_mandelbulb_flora_assets.py"),
     "Apollonia": ("species", "Tools/Build/author_mandelbulb_flora_assets.py"),
+    # Tollway's per-intensity ANCHOR species (one per rung). They are mode furniture, not
+    # biome flora: the mode needs exactly ANCHOR_PLANTS hearts for its switches to graft onto,
+    # so floor == cap == InitialSpawnCount and GrowthPerOffspring is 0 (no colonising) - and
+    # author_tollway_assets.py writes every one of those fields in the same emit. This file's
+    # rule (cap = ISC x 1.5, or old_budget / patch for the Gyroid rung, which never had a
+    # pre-conversion budget to record) would re-cut a roster that is sized to the court.
+    "Tollway Anchor Flora ": ("prefix", "Tools/Build/author_tollway_assets.py"),
+    # The Swarm cell's THREAT GROVE (Docs/THREAT_FLORA.md). Its two species are predators with
+    # a seed floor and cap read from ThreatGroveDefaults.cs (SnapTrapSeedFloor / SnapTrapCap,
+    # Sclerotia) and no colonising quota; author_threat_flora.py writes all seven population
+    # fields. This file's non-lattice rule (quota = 35% of budget, reproduction on) would turn a
+    # placed grove back into an ordinary spreading plant.
+    "Swarm Snap Trap Flora ": ("prefix", "Tools/Build/author_threat_flora.py"),
+    "Swarm Physarum Flora ": ("prefix", "Tools/Build/author_threat_flora.py"),
+    # The nested gyroid: a colony species whose seed floor / cap its own generator authors
+    # (Docs/ECOSYSTEM.md §58.9). Its configs sit in no SpawnProfile today; registered so an
+    # adopting cell's copy stands down by name rather than being re-modelled here.
+    "Nested Gyroid": ("species", "Tools/Build/author_nested_gyroid_flora_assets.py"),
 }
 
 
@@ -289,12 +314,17 @@ def collect_targets(guids, defaults):
     # The shared per-element species assets (_SO_Assets/Lifeforms) are the ELEMENT PALETTE and
     # the Spawn Matrix toy's source. A lattice species' budget is its element identity, so the
     # unit-cell shrink has to land there too or the toy keeps spawning the old 1000-prism plant.
+    # EVERY flora species there is covered, not just the lattice ones: these assets are what a
+    # Spawn Matrix release clones, and a species with no authored population fields defaults to
+    # GrowthPerOffspring 0 - a plant that can never reproduce (Wall, Branching, Cacti, Pine,
+    # Nerve and the eight phyllotactic sets were all in that state). A biome reads these assets
+    # only as ElementPalette siblings, which take Element and Variant alone, so no biome changes.
     lifeforms = os.path.join(SO, "Lifeforms")
     for name in sorted(os.listdir(lifeforms)):
         if not name.endswith(".asset"):
             continue
         path = os.path.join(lifeforms, name)
-        if f"guid: {flora_guid}" in read(path) and is_lattice(path, guids) and path not in referenced:
+        if f"guid: {flora_guid}" in read(path) and path not in referenced:
             referenced.append(path)
     return referenced
 

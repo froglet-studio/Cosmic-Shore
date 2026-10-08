@@ -42,9 +42,12 @@ namespace CosmicShore.Gameplay
     /// <para>All of it is counted platform-wide and PAID only here, the split Dog Fight
     /// established: a Rhino sword scores in this mode and nowhere else.</para>
     ///
-    /// <para><b>The Serpent is deliberately not on the card.</b> It has no anti-vessel verb
-    /// authored at all (0/4 abilities), so listing it would seat a pilot who cannot score.
-    /// Giving it one is a /vessel job, not a mode's.</para>
+    /// <para><b>The Serpent is deliberately not on the card.</b> It has an anti-vessel verb now:
+    /// the Sniper Shot (<c>SniperShotActionExecutor.StripVessels</c>) ejects elements from every
+    /// opposing pilot in the round's cone. But that verb raises no combat-hit report, so it would
+    /// score nothing in this mode, and listing the Serpent would still seat a pilot who cannot
+    /// score. Seating it means giving the round a hit report plus a balance row, and whether to do
+    /// that is a design call, not a missing kit.</para>
     ///
     /// <para><b>The arena is Dog Fight's Boneyard, referenced and read-only</b> - the cell is
     /// per-ARENA, not per-mode (Salvo reuses the same one). It happens to feed every hull's

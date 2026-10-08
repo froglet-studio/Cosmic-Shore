@@ -537,7 +537,8 @@ namespace CosmicShore.Editor.Froglet
             layout.startCorner = GridLayoutGroup.Corner.UpperLeft;
             layout.startAxis = GridLayoutGroup.Axis.Horizontal;
             layout.childAlignment = ToyLayout.GridAlignment;
-            layout.constraint = GridLayoutGroup.Constraint.Flexible;
+            layout.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+            layout.constraintCount = ToyLayout.ToyColumns;
             return 1;
         }
 
@@ -1280,7 +1281,11 @@ namespace CosmicShore.Editor.Froglet
             public const float CardSectionMin = 10f, CardSectionMax = 13f;
 
             public static readonly Vector2 ToyCell = new(400f, 250f);
-            public static readonly Vector2 ToySpacing = new(20f, 20f);
+            // x 10, not 20: the shipped Menu_Main grid was re-tuned in the Editor on 2026-09-09 to a
+            // FIXED three-column grid with a 10 gutter (3 x 400 + 2 x 10 + the 36/16 insets). This
+            // mirrors Tools/Build/author_toybox_layout.py TOY_SPACING, so WIRE IT cannot widen it.
+            public static readonly Vector2 ToySpacing = new(10f, 20f);
+            public const int ToyColumns = 3;
             public const int ToyPadding = 16;
             public static readonly Vector2 VariantCell = new(275f, 88f);
             public static readonly Vector2 VariantSpacing = new(16f, 14f);

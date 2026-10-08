@@ -11,7 +11,7 @@ namespace CosmicShore.Core
     ///
     /// The other Step 4 choices are applied where their owner already is: HDR in
     /// <c>GraphicsSettingsApplier.ApplyQuality</c>, the membrane capsule cap in
-    /// <c>CapsuleMembrane.Awake</c>, the fold-gate window cap in <c>FoldGatePortalView</c>.
+    /// <c>CapsuleMembrane.Awake</c>, the wormhole exact-view cap in <c>WormholeView</c>.
     /// <c>Docs/PLATFORM_UNIFICATION.md</c>, Step 4.
     ///
     /// Only the sky MATERIAL changes. Ambient light and reflections were baked from the authored sky

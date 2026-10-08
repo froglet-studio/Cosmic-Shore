@@ -17,38 +17,10 @@ namespace CosmicShore.Engine
             return true;
         }
 
-        static Vector3 ClosestOnSegment(Vector3 a, Vector3 b, Vector3 p)
-        {
-            var ab = b - a;
-            float len2 = ab.sqrMagnitude;
-            if (len2 < 1e-12f) return a;
-            float t = Mathf.Clamp01(Vector3.Dot(p - a, ab) / len2);
-            return a + ab * t;
-        }
-
         static bool RayCollider(Vector3 o, Vector3 d, Collider c, out float dist, out Vector3 normal)
         {
             dist = 0f; normal = -d;
-            if (c is SphereCollider s)
-            {
-                var ctr = s.transform.TransformPoint(s.center);
-                float r = WorldRadius(s);
-                var oc = o - ctr;
-                float b = Vector3.Dot(oc, d), cc = oc.sqrMagnitude - r * r;
-                if (cc > 0f && b > 0f) return false;
-                float disc = b * b - cc;
-                if (disc < 0f) return false;
-                dist = MathF.Max(0f, -b - MathF.Sqrt(disc));
-                normal = (o + d * dist - ctr).normalized;
-                return true;
-            }
-            var bounds = c.bounds;
-            if (!bounds.IntersectRay(new Ray(o, d), out dist)) return false;
-            var p = o + d * dist - bounds.center;
-            var e = bounds.extents;
-            float ax = MathF.Abs(p.x / MathF.Max(e.x, 1e-6f)), ay = MathF.Abs(p.y / MathF.Max(e.y, 1e-6f)), az = MathF.Abs(p.z / MathF.Max(e.z, 1e-6f));
-            normal = ax >= ay && ax >= az ? new Vector3(MathF.Sign(p.x), 0, 0) : ay >= az ? new Vector3(0, MathF.Sign(p.y), 0) : new Vector3(0, 0, MathF.Sign(p.z));
-            return true;
+            return ShapeMath.TryBuild(c, out var shape) && ShapeMath.Raycast(in shape, o, d, out dist, out normal);
         }
     }
 
@@ -60,12 +32,38 @@ namespace CosmicShore.Engine
         public static Vector3 gravity = new(0f, -9.81f, 0f);
         public static bool autoSyncTransforms;
 
+        /// <summary>Approach speed below which a contact does not bounce (DynamicsManager m_BounceThreshold).</summary>
+        public static float bounceThreshold = 2f;
+
+        // The layer collision matrix: bit j of row i set = layers i and j make contact. Read by the
+        // contact pass only (the trigger pass does not filter by layer).
+        static readonly uint[] s_layerMatrix = NewMatrix();
+        static readonly HashSet<(Collider, Collider)> s_ignoredPairs = new();
+
+        static uint[] NewMatrix() { var m = new uint[32]; Array.Fill(m, uint.MaxValue); return m; }
+
         /// <summary>The engine defaults, for a fresh world (the project's DynamicsManager is read after).</summary>
         internal static void ResetSettings()
         {
             queriesHitTriggers = true;
             gravity = new Vector3(0f, -9.81f, 0f);
             autoSyncTransforms = false;
+            bounceThreshold = 2f;
+            Array.Fill(s_layerMatrix, uint.MaxValue);
+            s_ignoredPairs.Clear();
+        }
+
+        /// <summary>Loads DynamicsManager's m_LayerCollisionMatrix: 32 rows, each a little-endian uint in 8 hex digits.</summary>
+        public static void SetLayerCollisionMatrix(string hex)
+        {
+            if (string.IsNullOrEmpty(hex)) return;
+            for (int row = 0; row < 32 && (row + 1) * 8 <= hex.Length; row++)
+            {
+                uint v = 0;
+                for (int b = 0; b < 4; b++)
+                    v |= (uint)Convert.ToByte(hex.Substring(row * 8 + b * 2, 2), 16) << (8 * b);
+                s_layerMatrix[row] = v;
+            }
         }
         /// <summary>Moves every collider in the query scene to its transform's current pose (see TriggerPass snapshot).</summary>
         public static void SyncTransforms() => Pass?.SyncQuerySnapshot();
@@ -121,14 +119,40 @@ namespace CosmicShore.Engine
 
         public static Collider[] OverlapBox(Vector3 center, Vector3 halfExtents, Quaternion orientation = default, int layerMask = AllLayers,
             QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.UseGlobal)
-            => Pass?.OverlapBox(center, halfExtents, layerMask, queryTriggerInteraction) ?? Array.Empty<Collider>();
+            => Pass?.OverlapBox(center, halfExtents, orientation, layerMask, queryTriggerInteraction) ?? Array.Empty<Collider>();
+
+        public static int OverlapBoxNonAlloc(Vector3 center, Vector3 halfExtents, Collider[] results, Quaternion orientation = default, int layerMask = AllLayers,
+            QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.UseGlobal)
+            => Pass?.OverlapBoxNonAlloc(center, halfExtents, results, orientation, layerMask, queryTriggerInteraction) ?? 0;
 
         public static bool CheckSphere(Vector3 position, float radius, int layerMask = AllLayers,
             QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.UseGlobal)
             => OverlapSphereNonAlloc(position, radius, new Collider[1], layerMask, queryTriggerInteraction) > 0;
 
-        public static void IgnoreCollision(Collider a, Collider b, bool ignore = true) { }
-        public static void IgnoreLayerCollision(int layer1, int layer2, bool ignore = true) { }
-        public static bool GetIgnoreLayerCollision(int layer1, int layer2) => false;
+        /// <summary>Contacts between these two colliders are skipped (contact pass; triggers are unaffected).</summary>
+        public static void IgnoreCollision(Collider a, Collider b, bool ignore = true)
+        {
+            if (a is null || b is null) return;
+            var key = PairKey(a, b);
+            if (ignore) s_ignoredPairs.Add(key); else s_ignoredPairs.Remove(key);
+        }
+
+        public static bool GetIgnoreCollision(Collider a, Collider b) => IsCollisionIgnored(a, b);
+
+        internal static bool IsCollisionIgnored(Collider a, Collider b)
+            => s_ignoredPairs.Count > 0 && s_ignoredPairs.Contains(PairKey(a, b));
+
+        static (Collider, Collider) PairKey(Collider a, Collider b)
+            => System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(a) <= System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(b) ? (a, b) : (b, a);
+
+        public static void IgnoreLayerCollision(int layer1, int layer2, bool ignore = true)
+        {
+            if ((uint)layer1 > 31 || (uint)layer2 > 31) return;
+            if (ignore) { s_layerMatrix[layer1] &= ~(1u << layer2); s_layerMatrix[layer2] &= ~(1u << layer1); }
+            else { s_layerMatrix[layer1] |= 1u << layer2; s_layerMatrix[layer2] |= 1u << layer1; }
+        }
+
+        public static bool GetIgnoreLayerCollision(int layer1, int layer2)
+            => (uint)layer1 <= 31 && (uint)layer2 <= 31 && (s_layerMatrix[layer1] & (1u << layer2)) == 0;
     }
 }

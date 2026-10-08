@@ -231,9 +231,12 @@ namespace CosmicShore.Content
 
         readonly ConcurrentDictionary<string, Lazy<Models.ImportedModel>> _models = new(StringComparer.Ordinal);
 
-        /// <summary>True for a file Unity's ModelImporter owns and the port can import (FBX).</summary>
+        /// <summary>
+        /// True for a file Unity's ModelImporter owns and the port can import: FBX, and Blender/Maya
+        /// files, which (as in Unity) go through the installed application (<see cref="Models.DccModelConverter"/>).
+        /// </summary>
         public static bool IsModelPath(string path)
-            => path != null && path.EndsWith(".fbx", StringComparison.OrdinalIgnoreCase);
+            => path != null && (path.EndsWith(".fbx", StringComparison.OrdinalIgnoreCase) || Models.DccModelConverter.IsDccPath(path));
 
         public bool IsModel(string guid) => IsModelPath(PathOf(guid));
 
@@ -255,6 +258,12 @@ namespace CosmicShore.Content
             try
             {
                 var settings = Models.ModelImportSettings.FromMeta(Meta(guid));
+                if (Models.DccModelConverter.IsDccPath(path))
+                {
+                    var model = Models.DccModelConverter.Import(path, settings, guid, out var error);
+                    if (model == null) Console.Error.WriteLine($"[content] {ProjectRelative(path)} not imported: {error}");
+                    return model;
+                }
                 return Models.FbxModelImporter.Import(path, settings, guid);
             }
             catch (Exception e)

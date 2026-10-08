@@ -54,6 +54,10 @@ namespace CosmicShore.Gameplay
         /// <summary>The population's body assembled (Value = members attached) / dissolved.</summary>
         Assemble = 10,
         Dissolve = 11,
+        /// <summary>A siege changed phase (Docs/SUBSTRATE_FAUNA.md §10). Index = the population's first slot, Value =
+        /// the new <see cref="SubstrateSiegePhase"/>, Other = why: 0 its clock, 1 the pilot escaped, 2 the pilot breached
+        /// the wall (everyone dives), 3 the pilot was lost.</summary>
+        SiegePhase = 12,
     }
 
     public struct SubstrateEvent
@@ -129,6 +133,12 @@ namespace CosmicShore.Gameplay
         internal int PreyPop = -1;
         /// <summary>This tick's kernel numbers (built by SubstrateCore.BeginStep).</summary>
         internal SubstrateKernelPop Kernel;
+        /// <summary>A siege population's phase machine and shell (Docs/SUBSTRATE_FAUNA.md §10); null for every other
+        /// species. A siege is moved by <see cref="SubstrateSiege"/> in BeginStep, never by the agent kernel.</summary>
+        public readonly SubstrateSiegeState Siege;
+        /// <summary>An arms-race population's lab state (Docs/SUBSTRATE_FAUNA.md §11); null for every other species. Its
+        /// pond is stepped by <see cref="SubstrateArms"/> in BeginStep, never by the agent kernel.</summary>
+        public readonly SubstrateArmsState Arms;
 
         internal SubstratePopulation(int index, int start, SubstrateSpeciesParams p)
         {
@@ -140,6 +150,8 @@ namespace CosmicShore.Gameplay
             int bk = p.BodyK;
             SlotW = new Vector3[bk]; SlotV = new Vector3[bk];
             for (int k = 0; k < bk; k++) MouthZ = Math.Max(MouthZ, p.BodySlots[3 * k + 2]);
+            if (p.Siege != null && p.Siege.Enabled) Siege = new SubstrateSiegeState(Cap, p.Siege.FirstCool, 7919 * (start + 1));
+            if (p.Arms != null && p.Arms.Role != 0) Arms = new SubstrateArmsState(Cap, 104729 * (start + 1));
         }
     }
 
@@ -525,6 +537,23 @@ namespace CosmicShore.Gameplay
                 }
                 MsFields += Ms(t0);
                 pop.Kernel = KernelPop(pop);
+                // a siege is moved here, on the tick's thread, by its phase machine - the agent pass skips it
+                if (pop.Siege != null)
+                {
+                    t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+                    SubstrateSiege.Step(this, pop);
+                    MsAgents += Ms(t0);
+                }
+            }
+            // the arms race's ponds are moved here, once every population's live list is built (a pond steps its prey and
+            // its predators together, as the lab does) - the agent pass skips them
+            bool arms = false;
+            for (int q = 0; q < Pops.Count; q++) arms |= Pops[q].Active && Pops[q].Arms != null;
+            if (arms)
+            {
+                t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+                SubstrateArms.Step(this, food);
+                MsAgents += Ms(t0);
             }
         }
 
@@ -538,7 +567,7 @@ namespace CosmicShore.Gameplay
             {
                 var pop = Pops[q];
                 int n = pop.LiveCount;
-                if (!pop.Active || n == 0) continue;
+                if (!pop.Active || n == 0 || pop.Siege != null || pop.Arms != null) continue;   // moved in BeginStep
                 if (Stepper != null)
                 {
                     Span<float> I = stackalloc float[pop.Dirs.Length];
@@ -746,6 +775,10 @@ namespace CosmicShore.Gameplay
         /// <summary>During the ring hold a hunter's phase is held at or below this fraction of its danger phase.</summary>
         public const float HoldPhase = 0.4f;
 
+        /// <summary>A bite wind-up (<see cref="SubstrateSpeciesParams.StrikeWindupS"/>) resets once phase falls to this
+        /// fraction of the danger phase (bestiary pack.py: intent below 0.2 against the 0.5 it shows at).</summary>
+        public const float WindupResetFrac = 0.4f;
+
         void RingHoldClock(SubstratePopulation pop)
         {
             var P = pop.P;
@@ -850,6 +883,23 @@ namespace CosmicShore.Gameplay
                 }
                 else if (!riding && Rest[i] > 0f) Rest[i] = MathF.Max(0f, Rest[i] - dt);   // a daze with no posture clock
 
+                // the BITE WIND-UP (lab fair burns, bestiary pack.py WINDUP): a biter with no ramp shows its intent -
+                // aggressive at the gregarious end - for StrikeWindupS before its bite may land. The clock (this agent's
+                // Ramp slot, unused without a ramp) runs while the intent shows, holds through a dip, and resets once
+                // the agent is spent or its phase falls to WindupResetFrac x DangerPhase (the lab's 0.2 against 0.5; a ring
+                // hold caps phase exactly there, so held hunters wind up afresh, together, after the release)
+                bool windup = !needRamp && P.StrikeWindupS > 0f;
+                if (windup)
+                {
+                    bool shows = Aggr[i] > 0.5f && Phase[i] > P.DangerPhase;
+                    if (riding || Rest[i] > 0f || Phase[i] <= WindupResetFrac * P.DangerPhase || Aggr[i] < 0.2f) Ramp[i] = 0f;
+                    else if (shows)
+                    {
+                        if (Ramp[i] <= 0f) { pop.Windups++; Events.Add(new SubstrateEvent { Kind = SubstrateEventKind.Windup, Index = i }); }
+                        Ramp[i] += dt;
+                    }
+                }
+
                 // danger: an aggressive agent at the gregarious end that is not spent (research harm = aggr > 0.5), or a
                 // TRAMPLER - fast and running into the pilot (research trample; the bestiary's closing test); a ramped
                 // role must have finished its windup; an assembled body member burns to touch
@@ -858,17 +908,21 @@ namespace CosmicShore.Gameplay
                 if (!riding && Rest[i] <= 0f)
                 {
                     // a ramped role's strike IS its harm (a bull's charge, a mobber's dive); anyone else bites by aggression
-                    now = needRamp ? Ramp[i] >= P.RampS : Aggr[i] > 0.5f && Phase[i] > P.DangerPhase;
+                    now = needRamp ? Ramp[i] >= P.RampS : Aggr[i] > 0.5f && Phase[i] > P.DangerPhase
+                                                          && (!windup || Ramp[i] >= P.StrikeWindupS - 1e-4f);
                     if (!now && P.Solitary.Trample + (P.Gregarious.Trample - P.Solitary.Trample) * Phase[i] > 0.5f)
                         now = Trampling(i, P.TrampleClose);
                 }
                 if (!riding && P.DangerAttached && pop.BodyActive && Attach[i] > 0.5f && Rest[i] <= 0f) now = true;
+                // a siege member is dangerous while its phase machine says it may bite (the glow is up, it has not bitten)
+                if (pop.Siege != null) now = pop.Siege.Dangerous[i - pop.Start];
                 Danger[i] = now;
                 if (now) striking++;
                 if (now && !was) { pop.Strikes++; Events.Add(new SubstrateEvent { Kind = SubstrateEventKind.Strike, Index = i }); }
 
-                // food: the slice that is hungry asks the owner for a bite of REAL food - flora, or prey it has caught
-                if (Steered[i] && MathF.Min(1f, Hunger[i]) > P.EatHunger)
+                // food: the slice that is hungry asks the owner for a bite of REAL food - flora, or prey it has caught (an
+                // arms pond asks for its own: its catches are the lab's rule, SubstrateArms)
+                if (pop.Arms == null && Steered[i] && MathF.Min(1f, Hunger[i]) > P.EatHunger)
                 {
                     EatRequests.Add(i);
                     if (pop.PreyPop >= 0)
@@ -893,6 +947,7 @@ namespace CosmicShore.Gameplay
             pop.Striking = striking;
 
             if (cling) Latch(pop);
+            else if (pop.Siege != null) { }   // a siege's bites are its phase machine's (SubstrateSiege: one per BiteGap)
             else
                 // bites: one harm EVENT per pilot per bite_cool (a swarm nibbles, it does not machine-gun)
                 for (int j = 0; j < _npil; j++)
@@ -1343,7 +1398,7 @@ namespace CosmicShore.Gameplay
 
         // ───────────────────────────────────────────────────────────── helpers
 
-        void ClampMembrane(int i)
+        internal void ClampMembrane(int i)
         {
             float r = Pos[i].Length();
             if (r > 0.98f * R) Pos[i] *= 0.98f * R / r;
