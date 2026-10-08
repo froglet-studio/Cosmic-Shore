@@ -4447,6 +4447,24 @@ same). Where QA-TANDAVA-11/12 say "Sea Lion", read "Antlion". Headless only: har
    out of the halo, jaws open."), and the end card on a loss reads that the Antlion has fed.
 5. **Size.** The body is 675-744 tadpoles (the Sea Lion's were 618-642): watch the frame time through the final form.
 
+### QA-TANDAVA-19 — the sixth pass: the Antlion's jaws snap at the pilot it lunges at (`TANDAVA.md` §0)
+
+C# changed (`TandavaDirectorCore`: `TandavaForm.LungePlanIndex` / `SnapPlanIndex` / `LungeMouth`, `Snapping`, the
+`Snapped` event, `SnapReach` / `SnapLeadSeconds` / `SnapHoldSeconds` / `TurnSnap`, `LeversFor(..., snapping)`;
+`TandavaVariantSpec`'s three fields; `TandavaController.ApplyToSwarm`; the platform's `SwarmSortParams.PlanWellClip`
+and `SwarmFaunaConfigSO.ScriptedPlanWellClip`, null/empty for every other swarm). `/verify-unity` was not available:
+compiled headless (`unity_refcompile`, player config) and run in the swarm harness (T1-T19 pass); never in the Editor.
+
+1. **The charge.** Reach the Antlion and loiter about 250 u off it: it turns on you with its jaws spread WIDE, the six
+   teeth (danger plates) visible on their inner edges.
+2. **The snap.** As the jaws come within about 150 u, they slam shut in well under a second, and stay shut a moment; it
+   barely turns while they close. Dodge and it snaps anyway (half a second before the lunge would run out).
+3. **Stung.** Let it catch you: a snap that closes on your hull stings and slows it (the danger-plate teeth).
+4. **On a client.** In a networked match the client's Antlion wears the same wide and snapped poses at the same moments
+   (the plan index is replicated), and swims the same committed line while snapping.
+5. **Nothing else moved.** The serpents' lunges look as before (their strike pose); every other swarm in the game (the
+   Swarm cell, Brood Rush) moves as before - the new well-clip multiplier is empty for them.
+
 
 **What landed.** A new arena card, `GameModes.Tandava = 62` (Rhino / Squirrel / Sparrow, every pilot on ONE
 domain), scene `MinigameTandava`, every asset authored by `Tools/Build/author_tandava_assets.py`. A tadpole swarm

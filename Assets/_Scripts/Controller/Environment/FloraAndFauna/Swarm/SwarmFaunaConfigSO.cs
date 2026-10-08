@@ -56,6 +56,9 @@ namespace CosmicShore.Gameplay
         [Tooltip("Steps per animation frame for each scripted form (same order). Missing or 0 = the form's major " +
                  "element's SortFramePeriod.")]
         public int[] ScriptedPlanPeriods = System.Array.Empty<int>();
+        [Tooltip("How hard each scripted form's members may be pulled toward their wells, as a multiple of SortWellClip " +
+                 "(same order). Missing or 0 = 1. More makes a pose READ fast - the Tandava Antlion's jaws snapping shut.")]
+        public float[] ScriptedPlanWellClip = System.Array.Empty<float>();
         /// <summary>True when a director, not the census, names this swarm's form.</summary>
         public bool HasScriptedPlans => ScriptedPlans is { Length: > 0 };
 

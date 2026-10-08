@@ -146,6 +146,10 @@ namespace CosmicShore.Gameplay
         /// <summary>Scripted only: steps per animation frame per PLAN index; a missing or non-positive entry falls back
         /// to <see cref="Periods"/> of the plan's major element.</summary>
         public int[] PlanPeriods;
+        /// <summary>Scripted only: per PLAN index, a multiple of <see cref="WellClip"/> - how hard a member may be pulled
+        /// toward its well in one step. A pose that must READ fast (the Tandava Antlion's jaws snapping shut) gets more;
+        /// a missing or non-positive entry is 1. Null (every census swarm) = unchanged.</summary>
+        public float[] PlanWellClip;
         /// <summary>Turn the code into the body's heading (swimming). False = the research's fixed frame.</summary>
         public bool Oriented = false;
         public float Cruise = 0f, Turn = 0.03f;
@@ -788,6 +792,8 @@ namespace CosmicShore.Gameplay
             float swell = 1f + C.Inflate[Major] * ThreatLevel;
 
             // the code's frame (research: frame 0; game: the plan's animation, interpolated)
+            float wellClip = C.WellClip * (C.PlanWellClip != null && PlanIx >= 0 && PlanIx < C.PlanWellClip.Length && C.PlanWellClip[PlanIx] > 0f
+                ? C.PlanWellClip[PlanIx] : 1f);
             int fA = 0, fB = 0; float fa = 0f, per = PeriodOfPlan();
             if (C.Animate && plan.Order.Length > 0)
             {
@@ -882,7 +888,7 @@ namespace CosmicShore.Gameplay
                 Energy[i] = E;
                 var step = -C.KWell * Rotate(g) / swell;
                 float sn = step.Length();
-                if (sn > C.WellClip) step *= C.WellClip / sn;
+                if (sn > wellClip) step *= wellClip / sn;
                 _grad[i] = step;
             }
 

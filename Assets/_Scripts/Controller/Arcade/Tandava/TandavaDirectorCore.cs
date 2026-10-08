@@ -105,6 +105,9 @@ namespace CosmicShore.Gameplay
         HaloBroken = 6,
         /// <summary>A: the form it ended in, B: the <see cref="TandavaOutcome"/>.</summary>
         Ended = 7,
+        /// <summary>Its jaws snapped shut at the end of a lunge. A: the form, B: how far its jaws were from the pilot
+        /// (world, rounded).</summary>
+        Snapped = 8,
     }
 
     public struct TandavaEvent
@@ -143,6 +146,14 @@ namespace CosmicShore.Gameplay
         /// coils' reach. A coiled body is a third the size of a swimming one, so it can reach a plant by the wall that
         /// <see cref="TandavaDirectorSettings.RoamRadius"/> (the wall less the swimming body's reach) keeps it off.</summary>
         public float CoilRoamRadius;
+        /// <summary>Its own LUNGE pose's index (-1: it lunges in its strike pose, <see cref="FeedPlanIndex"/>) - the
+        /// Antlion's, charging with its jaws held wide, danger-plate teeth on their inner edges.</summary>
+        public int LungePlanIndex = -1;
+        /// <summary>The same jaws SNAPPED shut (-1: none): committed as they reach the pilot.</summary>
+        public int SnapPlanIndex = -1;
+        /// <summary>Where its jaws meet in <see cref="LungePlanIndex"/> (world units along the body axes from its centre):
+        /// what a lunge aims at the pilot.</summary>
+        public Vector3 LungeMouth;
         /// <summary>Members of its full body.</summary>
         public int PlanCount;
         /// <summary>The body must be at least this share of <see cref="PlanCount"/> to take the next form.</summary>
@@ -217,6 +228,12 @@ namespace CosmicShore.Gameplay
         public float LungeLead = 0.35f;
         /// <summary>Its mouth this close to the pilot (world): it has struck, and the lunge ends.</summary>
         public float LungeReach = 40f;
+        /// <summary>A form with snapping jaws (<see cref="TandavaForm.SnapPlanIndex"/>) slams them shut when they come this
+        /// close to the pilot (world) - a beat before it reaches - or this long before a lunge runs out, and holds them shut
+        /// this long: a snap reads whether it catches the pilot or not.</summary>
+        public float SnapReach = 150f, SnapLeadSeconds = 0.5f, SnapHoldSeconds = 1f;
+        /// <summary>Its turn while its jaws snap shut, x the config's TurnPerStep: barely, it is committed to the bite.</summary>
+        public float TurnSnap = 0.3f;
 
         // ── the levers, per mood: x the config's Cruise and TurnPerStep
         public float CruiseCalm = 1f, CruiseWary = 1.5f, CruiseFlee = 2.1f, CruiseFeed = 0.5f, CruiseLunge = 2.4f;
@@ -337,21 +354,25 @@ namespace CosmicShore.Gameplay
         public int FinalIx => Forms.Count - 1;
         public bool IsFinalForm => FormIx == FinalIx;
         /// <summary>The plan the body should wear now: its coil while it eats (its strike pose, for a form without coils),
-        /// its strike pose while it lunges (it charges a pilot with the guard plates out round its jaws), else its travel
-        /// plan.</summary>
+        /// while it lunges its lunge pose (the Antlion's gaping jaws, then the same jaws snapped shut) or else its strike pose (it charges a pilot with the
+        /// guard plates out round its jaws), else its travel plan.</summary>
         public int WantPlan => Feeding && Coil >= 0 ? Form.CoilPlanIndices[Coil]
+            : Snapping && Form.SnapPlanIndex >= 0 ? Form.SnapPlanIndex
+            : Lunging && Form.LungePlanIndex >= 0 ? Form.LungePlanIndex
             : (Feeding || Lunging) && Form.FeedPlanIndex >= 0 ? Form.FeedPlanIndex : Form.PlanIndex;
         /// <summary>The formation the current (or the coming) meal rolls up in - an index into the form's
         /// <see cref="TandavaForm.CoilPlanIndices"/>, -1 for none.</summary>
         public int Coil { get; private set; } = -1;
         public bool Lunging => Mood == TandavaMood.Lunging;
+        /// <summary>Its jaws are snapped shut: the end of a lunge, held <see cref="TandavaDirectorSettings.SnapHoldSeconds"/>.</summary>
+        public bool Snapping => Clock < _snapUntil;
         public float DrumRemaining => InDance ? MathF.Max(0f, S.DrumSeconds - DanceTime) : 0f;
         public float RiseRemaining => Phase == TandavaPhase.Rising ? MathF.Max(0f, S.RiseSeconds - (Clock - _phaseSince)) : 0f;
         public float TimeRemaining => S.MatchSeconds > 0f ? MathF.Max(0f, S.MatchSeconds - Clock) : -1f;
 
         readonly Random _rng;
         readonly Dictionary<int, float> _restUntil = new();
-        float _feedSince, _eatenAtMeal, _phaseSince, _fleeUntil = -1f, _lossRate, _lungeUntil = -1f, _lungeReadyAt;
+        float _feedSince, _eatenAtMeal, _phaseSince, _fleeUntil = -1f, _lossRate, _lungeUntil = -1f, _lungeReadyAt, _snapUntil = -1f;
         int _lostAtMeal, _lostPrev = -1, _coilFor = -1, _coilForm = -1;
         bool _armed, _haveWander;
         Vector3 _wander;
@@ -571,14 +592,16 @@ namespace CosmicShore.Gameplay
 
         void Levers()
         {
-            LeversFor(Phase, Mood, S, out float cruise, out float turn, out bool hold);
+            LeversFor(Phase, Mood, S, out float cruise, out float turn, out bool hold, Snapping && Form.SnapPlanIndex >= 0);
             CruiseScale = cruise; TurnScale = turn; HoldLaying = hold;
         }
 
         /// <summary>The levers a phase and mood mean - the server's director and every client's swarm (which knows only
-        /// the replicated phase and mood) read the same rule.</summary>
+        /// the replicated phase and mood, and the plan the body wears) read the same rule. <paramref name="snapping"/>:
+        /// its jaws are snapping shut - it commits to the line of the bite (it barely turns), so the long jaws close
+        /// instead of trailing a hard turn.</summary>
         public static void LeversFor(TandavaPhase phase, TandavaMood mood, TandavaDirectorSettings s,
-                                     out float cruise, out float turn, out bool holdLaying)
+                                     out float cruise, out float turn, out bool holdLaying, bool snapping = false)
         {
             switch (phase)
             {
@@ -594,6 +617,7 @@ namespace CosmicShore.Gameplay
                     return;
             }
             holdLaying = false;
+            if (snapping) { cruise = s.CruiseLunge; turn = s.TurnSnap; return; }
             switch (mood)
             {
                 case TandavaMood.Lunging: cruise = s.CruiseLunge; turn = s.TurnLunge; break;
@@ -619,9 +643,17 @@ namespace CosmicShore.Gameplay
                 TargetFood = -1;
                 var p = pilots[prey];
                 var aim = p.Position + p.Velocity * S.LungeLead;
-                Goal = ClampInside(aim - InBody(s, Form.FeedMouth), S.RoamRadius);
-                var jaws = s.Anchor + InBody(s, Form.FeedMouth);
-                if (Vector3.Distance(jaws, p.Position) <= S.LungeReach)
+                var bite = Form.LungePlanIndex >= 0 ? Form.LungeMouth : Form.FeedMouth;
+                Goal = ClampInside(aim - InBody(s, bite), S.RoamRadius);
+                var jaws = s.Anchor + InBody(s, bite);
+                float gap = Vector3.Distance(jaws, p.Position);
+                if (Form.SnapPlanIndex >= 0 && !Snapping && (gap <= S.SnapReach || Clock >= _lungeUntil - S.SnapLeadSeconds))
+                {
+                    // the jaws slam shut on it - a beat before they reach, so the snap has time to read
+                    _snapUntil = Clock + S.SnapHoldSeconds;
+                    Events.Add(new TandavaEvent { Kind = TandavaEventKind.Snapped, A = FormIx, B = (int)MathF.Round(gap) });
+                }
+                if (gap <= S.LungeReach)
                 {
                     EndLunge();
                     SetMood(TandavaMood.Wary);

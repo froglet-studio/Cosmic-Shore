@@ -24,6 +24,14 @@ namespace CosmicShore.Gameplay
         [Tooltip("How far from the cell's centre its centre may go to roll up round a plant (world): the wall less its " +
                  "coils' reach. 0 without coils.")]
         [Min(0f)] public float CoilRoamRadius;
+        [Tooltip("Its own LUNGE pose's index in ScriptedPlans (the Antlion's jaws held wide, danger-plate teeth on their " +
+                 "inner edges). -1: it lunges in its strike pose.")]
+        public int LungePlanIndex;
+        [Tooltip("The same jaws SNAPPED shut, committed as they reach the pilot. -1: none.")]
+        public int SnapPlanIndex;
+        [Tooltip("Where its jaws meet in the lunge pose (world units from the body's centre, along its axes): what a lunge " +
+                 "aims at the pilot.")]
+        public Vector3 LungeMouth;
         [Tooltip("Its mouth in the TRAVEL pose (world units from the body's centre, along its axes: x forward, y up, z " +
                  "side) - how it lines its head up on a plant. Baked by Tools/Build/tandava_plans.py.")]
         public Vector3 Mouth;

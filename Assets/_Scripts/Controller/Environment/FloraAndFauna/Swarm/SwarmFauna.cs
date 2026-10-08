@@ -616,6 +616,7 @@ namespace CosmicShore.Gameplay
                 // Tandava: a director names the form (TANDAVA.md §4); every shipped config leaves this off
                 Scripted = config.HasScriptedPlans, TurnCarry = config.SortTurnCarry,
                 PlanPeriods = config.HasScriptedPlans ? config.ScriptedPlanPeriods : null,
+                PlanWellClip = config.HasScriptedPlans ? config.ScriptedPlanWellClip : null,
                 // round 6 (Docs/SWARM_FAUNA.md §12): sortfeel's flat wells + wander, the 1-in-k update
                 WellDead = config.SortWellDead, WellDeadTime = config.SortWellDeadTime,
                 Wander = config.SortWander, WanderTau = config.SortWanderTau,

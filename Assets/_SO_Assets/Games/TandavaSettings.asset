@@ -35,6 +35,9 @@ MonoBehaviour:
       - {x: -0.868, y: -1.644, z: -4.272}
       - {x: -8.299, y: -0.6, z: -2.931}
       CoilRoamRadius: 703.2
+      LungePlanIndex: -1
+      SnapPlanIndex: -1
+      LungeMouth: {x: 0, y: 0, z: 0}
       Mouth: {x: 137.063, y: -0.586, z: -0.081}
       FeedMouth: {x: 136.22, y: 0, z: -0.02}
       HaloCentre: {x: 0, y: 0, z: 0}
@@ -50,6 +53,9 @@ MonoBehaviour:
       - {x: 0.381, y: -1.563, z: -4.18}
       - {x: -6.248, y: -0.173, z: -3.029}
       CoilRoamRadius: 699.4
+      LungePlanIndex: -1
+      SnapPlanIndex: -1
+      LungeMouth: {x: 0, y: 0, z: 0}
       Mouth: {x: 151.419, y: -0.597, z: -0.026}
       FeedMouth: {x: 150.784, y: 0, z: -0.006}
       HaloCentre: {x: 0, y: 0, z: 0}
@@ -65,6 +71,9 @@ MonoBehaviour:
       - {x: -1.243, y: -1.731, z: -3.73}
       - {x: -11.483, y: -1.301, z: -2.769}
       CoilRoamRadius: 700.1
+      LungePlanIndex: -1
+      SnapPlanIndex: -1
+      LungeMouth: {x: 0, y: 0, z: 0}
       Mouth: {x: 125.906, y: -0.45, z: -0.329}
       FeedMouth: {x: 124.746, y: 0, z: -0.092}
       HaloCentre: {x: 0, y: 0, z: 0}
@@ -87,6 +96,9 @@ MonoBehaviour:
       - {x: 72.202, y: 32.474, z: 18.158}
       - {x: 82.981, y: 33.801, z: -9.706}
       CoilRoamRadius: 661.9
+      LungePlanIndex: -1
+      SnapPlanIndex: -1
+      LungeMouth: {x: 0, y: 0, z: 0}
       Mouth: {x: 146.821, y: 10.116, z: 0.185}
       FeedMouth: {x: 143.836, y: 12.054, z: 0.049}
       HaloCentre: {x: 0, y: 0, z: 0}
@@ -102,6 +114,9 @@ MonoBehaviour:
       - {x: 69.317, y: 29.886, z: 17.053}
       - {x: 80.452, y: 31.179, z: -10.456}
       CoilRoamRadius: 665.4
+      LungePlanIndex: -1
+      SnapPlanIndex: -1
+      LungeMouth: {x: 0, y: 0, z: 0}
       Mouth: {x: 134.239, y: 8.763, z: 0.248}
       FeedMouth: {x: 129.615, y: 11.852, z: 0.101}
       HaloCentre: {x: 0, y: 0, z: 0}
@@ -117,6 +132,9 @@ MonoBehaviour:
       - {x: 67.474, y: 25.819, z: 15.112}
       - {x: 77.83, y: 26.82, z: -10.612}
       CoilRoamRadius: 668.6
+      LungePlanIndex: -1
+      SnapPlanIndex: -1
+      LungeMouth: {x: 0, y: 0, z: 0}
       Mouth: {x: 114.719, y: 7.508, z: 0.972}
       FeedMouth: {x: 107.491, y: 12.098, z: 0.242}
       HaloCentre: {x: 0, y: 0, z: 0}
@@ -133,6 +151,9 @@ MonoBehaviour:
       CoilPlanIndices: []
       CoilMouths: []
       CoilRoamRadius: 0
+      LungePlanIndex: -1
+      SnapPlanIndex: -1
+      LungeMouth: {x: 0, y: 0, z: 0}
       Mouth: {x: 0, y: 0, z: 0}
       FeedMouth: {x: 0, y: 0, z: 0}
       HaloCentre: {x: 0.012, y: 3.854, z: 1.125}
@@ -142,6 +163,9 @@ MonoBehaviour:
       CoilPlanIndices: []
       CoilMouths: []
       CoilRoamRadius: 0
+      LungePlanIndex: -1
+      SnapPlanIndex: -1
+      LungeMouth: {x: 0, y: 0, z: 0}
       Mouth: {x: 0, y: 0, z: 0}
       FeedMouth: {x: 0, y: 0, z: 0}
       HaloCentre: {x: 0.012, y: 3.854, z: -1.125}
@@ -151,6 +175,9 @@ MonoBehaviour:
       CoilPlanIndices: []
       CoilMouths: []
       CoilRoamRadius: 0
+      LungePlanIndex: -1
+      SnapPlanIndex: -1
+      LungeMouth: {x: 0, y: 0, z: 0}
       Mouth: {x: 0, y: 0, z: 0}
       FeedMouth: {x: 0, y: 0, z: 0}
       HaloCentre: {x: 0.012, y: 1.76, z: 0.937}
@@ -167,17 +194,11 @@ MonoBehaviour:
       CoilPlanIndices: []
       CoilMouths: []
       CoilRoamRadius: 0
-      Mouth: {x: 85.771, y: -0.219, z: -0.26}
-      FeedMouth: {x: 73.953, y: 0.173, z: -0.254}
-      HaloCentre: {x: 0, y: 0, z: 0}
-    - DisplayName: Antlion
-      PlanIndex: 35
-      FeedPlanIndex: 36
-      CoilPlanIndices: []
-      CoilMouths: []
-      CoilRoamRadius: 0
-      Mouth: {x: 82.598, y: -1.004, z: -0.11}
-      FeedMouth: {x: 64.959, y: 0.115, z: -0.101}
+      LungePlanIndex: 35
+      SnapPlanIndex: 36
+      LungeMouth: {x: 75.885, y: 0.182, z: -0.254}
+      Mouth: {x: 86.492, y: -0.219, z: -0.26}
+      FeedMouth: {x: 74.596, y: 0.173, z: -0.254}
       HaloCentre: {x: 0, y: 0, z: 0}
     - DisplayName: Antlion
       PlanIndex: 37
@@ -185,8 +206,23 @@ MonoBehaviour:
       CoilPlanIndices: []
       CoilMouths: []
       CoilRoamRadius: 0
-      Mouth: {x: 92.688, y: -0.329, z: -0.312}
-      FeedMouth: {x: 81.326, y: 0.029, z: -0.303}
+      LungePlanIndex: 39
+      SnapPlanIndex: 40
+      LungeMouth: {x: 66.554, y: 0.124, z: -0.101}
+      Mouth: {x: 83.336, y: -1.004, z: -0.11}
+      FeedMouth: {x: 65.57, y: 0.115, z: -0.101}
+      HaloCentre: {x: 0, y: 0, z: 0}
+    - DisplayName: Antlion
+      PlanIndex: 41
+      FeedPlanIndex: 42
+      CoilPlanIndices: []
+      CoilMouths: []
+      CoilRoamRadius: 0
+      LungePlanIndex: 43
+      SnapPlanIndex: 44
+      LungeMouth: {x: 83.307, y: 0.037, z: -0.303}
+      Mouth: {x: 93.412, y: -0.329, z: -0.312}
+      FeedMouth: {x: 81.975, y: 0.029, z: -0.303}
       HaloCentre: {x: 0, y: 0, z: 0}
   Director:
     RoamRadius: 616
@@ -208,6 +244,10 @@ MonoBehaviour:
     LungeCooldownSeconds: 6
     LungeLead: 0.35
     LungeReach: 40
+    SnapReach: 150
+    SnapLeadSeconds: 0.5
+    SnapHoldSeconds: 1
+    TurnSnap: 0.3
     CruiseCalm: 1
     CruiseWary: 1.5
     CruiseFlee: 2.1

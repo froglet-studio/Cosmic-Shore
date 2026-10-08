@@ -104,7 +104,8 @@ static class TandavaHarness
         "many_headed_7", "many_headed_7_feed", "many_headed_7_coil", "many_headed_7_wrap", "many_headed_7_eight",
         "many_headed_10", "many_headed_10_feed", "many_headed_10_coil", "many_headed_10_wrap", "many_headed_10_eight",
         "dancer_1", "dancer_2", "dancer_3",
-        "antlion_1", "antlion_1_feed", "antlion_2", "antlion_2_feed", "antlion_3", "antlion_3_feed",
+        "antlion_1", "antlion_1_feed", "antlion_1_gape", "antlion_1_snap", "antlion_2", "antlion_2_feed", "antlion_2_gape", "antlion_2_snap",
+        "antlion_3", "antlion_3_feed", "antlion_3_gape", "antlion_3_snap",
     };
     /// <summary>The meal formations the two serpents roll up in (tandava_plans.COILS).</summary>
     static readonly string[] Coils = { "coil", "wrap", "eight" };
@@ -132,6 +133,8 @@ static class TandavaHarness
         public readonly Dictionary<string, Vector3> Mouth = new();
         /// <summary>The farthest any of a plan's units comes from its centre, in any frame (world).</summary>
         public readonly Dictionary<string, float> Reach = new();
+        /// <summary>Each plan's well clip multiple, in plan order (the JSON's "wellClip"; 1 when absent).</summary>
+        public float[] WellClip;
         public readonly Dictionary<string, (Vector3 centre, float radius, float orbit)> Ring = new();
     }
 
@@ -163,6 +166,9 @@ static class TandavaHarness
             }
         }
         b.Plans = plans.ToArray();
+        b.WellClip = Keys.Select(k => { using var doc = JsonDocument.Parse(File.ReadAllText(Path.Combine(dir, $"SwarmPlan_tandava_{k}.json")));
+                                        return doc.RootElement.TryGetProperty("wellClip", out var w) ? w.GetSingle() : 1f; }).ToArray();
+        _wellClip = b.WellClip;
         return b;
     }
 
@@ -194,6 +200,10 @@ static class TandavaHarness
                     form.CoilMouths = Coils.Select(c => b.Mouth[$"{key}_{c}"]).ToArray();
                     form.CoilRoamRadius = TandavaArena.MembraneRadius * 0.97f - Coils.Max(c => b.Reach[$"{key}_{c}"]);
                 }
+                if (b.Ix.TryGetValue(key + "_gape", out int gape))
+                {
+                    form.LungePlanIndex = gape; form.SnapPlanIndex = b.Ix[key + "_snap"]; form.LungeMouth = b.Mouth[key + "_gape"];
+                }
                 form.Bank = BankShare[f] * StomachCapacity;
                 form.MealVolume = MealVolume;
             }
@@ -203,11 +213,14 @@ static class TandavaHarness
         return forms;
     }
 
+    static float[] _wellClip;
+
     static SwarmSortParams Params(SwarmPlanData[] plans)
     {
         var p = SortHarness.Game(plans);
         p.Scripted = true;
         p.PlanPeriods = plans.Select(x => x.FrameSteps).ToArray();   // TandavaSwarmFaunaConfig ScriptedPlanPeriods
+        p.PlanWellClip = _wellClip;                                    // ... and ScriptedPlanWellClip
         p.K = SortWellsPerType;
         p.WellDead = SortWellDead;
         p.Cap = plans.Max(x => x.N);
@@ -586,7 +599,7 @@ static class TandavaHarness
             bool twins = true, mouths = true, rings = true;
             foreach (var key in Variants[0].Concat(Variants[1]).Concat(Variants[3]))
             {
-                var poses = new[] { "_feed" }.Concat(Variants[3].Contains(key) ? Array.Empty<string>() : Coils.Select(c => "_" + c));
+                var poses = new[] { "_feed" }.Concat(Variants[3].Contains(key) ? new[] { "_gape", "_snap" } : Coils.Select(c => "_" + c));
                 foreach (var pose in poses)
                 {
                     twins &= Mix(b.Plans[b.Ix[key]]).SequenceEqual(Mix(b.Plans[b.Ix[key + pose]]));
@@ -595,8 +608,8 @@ static class TandavaHarness
                 mouths &= b.Mouth.ContainsKey(key);
             }
             foreach (var key in Variants[2]) rings &= b.Ring.ContainsKey(key);
-            Check(b.Plans.Length == 39, "39 plans: 4 forms x 3 variants, a strike pose for each variant of the three forms that eat, " +
-                                        "and three coils for each serpent");
+            Check(b.Plans.Length == 45, "45 plans: 4 forms x 3 variants, a strike pose for each variant of the three forms that eat, " +
+                                        "three coils for each serpent and two lunge poses (jaws wide, jaws shut) for each Antlion");
             Check(twins, "every pose carries exactly its travel plan's element counts (a pose commit is a re-sort, never a molt)");
             Check(mouths && rings, "every eating plan bakes its mouth, every dance plan its halo");
             bool grows = true;
@@ -604,7 +617,7 @@ static class TandavaHarness
                 grows &= Variants[f].Min(k => b.Plans[b.Ix[k]].N) >= Variants[f - 1].Max(k => b.Plans[b.Ix[k]].N);
             Check(grows, "every variant of a form is at least as big as every variant of the one before (a commit only grows the body)");
             bool danger = true;
-            foreach (var key in Keys.Where(k => k.EndsWith("_feed") || Coils.Any(c => k.EndsWith("_" + c))))
+            foreach (var key in Keys.Where(k => k.EndsWith("_feed") || k.EndsWith("_gape") || k.EndsWith("_snap") || Coils.Any(c => k.EndsWith("_" + c))))
             {
                 var p = b.Plans[b.Ix[key]];
                 int charge = Enumerable.Range(0, p.N).Count(u => p.Elem[u] == 0);
@@ -1055,6 +1068,91 @@ static class TandavaHarness
             Check(rateOn >= 2f * rateOff, $"the Great Serpent coiled round its plant eats {rateOn / Math.Max(1f, rateOff):F1}x as fast as its strike pose (>= 2x)");
             float mealOn = secs[0, 0] / Math.Max(1, meals[0, 0]), mealOff = secs[1, 0] / Math.Max(1, meals[1, 0]);
             Check(mealOn <= 6f && mealOn < mealOff, $"a Great Serpent meal takes {mealOn:F1} s (<= 6 s; {mealOff:F1} s in the strike pose)");
+        }
+
+        // ── T19: the Antlion's jaws SNAP at the pilot it lunges at (the prompter, 2026-10-08: "make the antlion jaws snap
+        // at pilots when it lunges") - it charges jaws wide, and they slam shut as they reach the pilot
+        Console.WriteLine("T19 the Antlion snaps");
+        foreach (var key in Variants[3])
+        {
+            var gapePlan = b.Plans[b.Ix[key + "_gape"]];
+            var snapPlan = b.Plans[b.Ix[key + "_snap"]];
+            // how wide the jaws (the Antlion's only Time units) stand: twice their mean distance off their own midline -
+            // a measure a straggling tadpole cannot swing
+            float Spread(IEnumerable<Vector3> jaw)
+            {
+                var zs = jaw.Select(q => q.Z).ToArray(); if (zs.Length == 0) return 0f;
+                float mid = zs.Average(); return 2f * zs.Average(z => MathF.Abs(z - mid)) * UnitScale;
+            }
+            float PlanSpread(SwarmPlanData pl) => Spread(Enumerable.Range(0, pl.N).Where(u => pl.Elem[u] == 3).Select(u => pl.P[0][u]));
+            float wide = PlanSpread(gapePlan), shut = PlanSpread(snapPlan);
+            // its TEETH: danger plates riding the jaws (within 11 u of a jaw unit), as against the guards ringing them
+            int teeth = Enumerable.Range(0, snapPlan.N).Count(u => snapPlan.Elem[u] == 0 && snapPlan.Tier[u] == 1 &&
+                Enumerable.Range(0, snapPlan.N).Any(w => snapPlan.Elem[w] == 3 && Vector3.Distance(snapPlan.P[0][u], snapPlan.P[0][w]) * UnitScale < 11f)) / Density;
+            if (Environment.GetEnvironmentVariable("TANDAVA_DIAG") == "4")
+            {
+                var c0 = MakeCore(b, b.Ix[key], Vector3.Zero, 5, fed: true);
+                Step(c0, 80);
+                foreach (var (pose, steps) in new[] { ("_gape", 25), ("_snap", 25), ("_gape", 25) })
+                {
+                    c0.RequestPose(b.Ix[key + pose]);
+                    for (int q = 0; q < steps; q++)
+                    {
+                        Step(c0);
+                        var zs = Enumerable.Range(0, c0.Cap).Where(i => c0.Active[i] && c0.Hatched[i] && c0.EffectiveElement(i) == 3 && Vector3.Dot(c0.Pos[i] - c0.Anchor, c0.BX) > 0f)
+                                           .Select(i => Vector3.Dot(c0.Pos[i] - c0.Anchor, c0.BZ)).ToArray();
+                        float m = zs.Average();
+                        if (q % 2 == 1) Console.WriteLine($"      still {pose} +{q + 1} steps: spread {2f * zs.Average(z => MathF.Abs(z - m)) * UnitScale:F0} (plan {c0.PlanIx})");
+                    }
+                }
+            }
+            // a lone Antlion, healthy and lightly fed (the feast far off), with a pilot loitering in lunge range
+            var forms = BuildForms(b, new[] { 0, 0, 0, Array.IndexOf(Variants[3], key) });
+            var s = new Sim { B = b, Rng = new Random(71), Forms = new List<TandavaForm> { forms[3] } };
+            s.C = MakeCore(b, forms[3].PlanIndex, TandavaArena.Hatch, 71, fed: false);
+            s.C.Stomach[1] = 0.15f * StomachCapacity;
+            s.D = new TandavaDirectorCore(s.Forms, DirectorSettings(), 71);
+            s.Plants = LayPlants(71);
+            RunFor(s, 8f);   // it grows whole
+            var pilot = new Pilot { At = s.C.Anchor * UnitScale + new Vector3(0f, 250f, 0f) };
+            s.Pilots.Add(pilot);
+            int lunges = 0, snaps = 0, gaped = 0, closed = 0, ended = 0, endedSnapped = 0; bool snappedThis = false; float widest = 0f;
+            var was = TandavaMood.Calm; float lungeAt = -1f, snapAt = -1f, atSnap = 0f, after = float.MaxValue;
+            var lens = new List<float>(); var drops = new List<float>();
+            RunFor(s, 40f, x =>
+            {
+                var me = x.C.Anchor * UnitScale;
+                var want = me + Vector3.Normalize(pilot.At - me + new Vector3(0f, 1f, 0f)) * 250f;
+                var to = want - pilot.At; float dd = to.Length();
+                pilot.Vel = dd > 5f ? to / dd * MathF.Min(150f, dd * 4f) : Vector3.Zero;
+                var c = x.C;
+                float spread = Spread(Enumerable.Range(0, c.Cap)
+                    .Where(i => c.Active[i] && c.Hatched[i] && c.EffectiveElement(i) == 3 && Vector3.Dot(c.Pos[i] - c.Anchor, c.BX) > 0f)
+                    .Select(i => { var d = c.Pos[i] - c.Anchor; return new Vector3(0f, 0f, Vector3.Dot(d, c.BZ)); }));
+                bool lunging = x.D.Mood == TandavaMood.Lunging;
+                if (Environment.GetEnvironmentVariable("TANDAVA_DIAG") == "3" && (lunging || x.D.Snapping || x.Now - lungeAt < 4f) && lungeAt >= 0f)
+                    Console.WriteLine($"      {x.Now:F1} s {x.D.Mood} snap {x.D.Snapping} plan {Keys[x.C.PlanIx]} spread {spread:F0}");
+                if (lunging && was != TandavaMood.Lunging) { lunges++; lungeAt = x.Now; widest = 0f; snappedThis = false; }
+                if (!lunging && was == TandavaMood.Lunging) { ended++; if (snappedThis || x.D.Snapping) endedSnapped++; }
+                if (lunging && x.D.Snapping) snappedThis = true;
+                was = x.D.Mood;
+                if (lunging && !x.D.Snapping) { widest = MathF.Max(widest, spread); if (x.C.PlanIx == x.D.Form.LungePlanIndex) gaped++; }
+                if (x.D.Snapping)
+                {
+                    if (snapAt < 0f) { snaps++; snapAt = x.Now; atSnap = widest; after = spread; }
+                    after = MathF.Min(after, spread);
+                    if (x.C.PlanIx == x.D.Form.SnapPlanIndex) closed++;
+                }
+                else if (snapAt >= 0f) { drops.Add(atSnap - after); snapAt = -1f; }
+                if (lunging) lens.Add(x.Now - lungeAt);
+            });
+            float meanDrop = drops.Count > 0 ? drops.Average() : 0f;
+            Console.WriteLine($"    {key}: jaws {wide:F0} u wide, {shut:F0} u shut in the plans; {lunges} lunges, {snaps} snaps, " +
+                              $"the live jaws closing {meanDrop:F0} u a snap; {teeth} teeth");
+            Check(teeth >= 6, $"{key}: six danger-plate teeth ride the jaws ({teeth} plan units)");
+            Check(ended >= 2 && endedSnapped == ended && gaped > 0 && closed > 0,
+                  $"{key}: every lunge it finished ({endedSnapped} of {ended}) charged jaws wide and ended in a snap");
+            Check(meanDrop >= 0.5f * (wide - shut), $"{key}: the live jaws slam shut by {meanDrop:F0} u a snap (at least half the plans' {wide - shut:F0})");
         }
 
         Console.WriteLine(_fail == 0 ? "\ntandava: OK" : $"\ntandava: {_fail} FAILED");

@@ -639,6 +639,13 @@ ANTLION = {
 }
 ANTLION_JAW_ROW = 1.12     # a jaw's two rows sit this far (plan voxels) above and below its line
 ANTLION_TIP_GAP = 2.4      # the jaw tips, at their most closed, stop this far (unscaled) either side of the midline
+# the LUNGE: it charges with its jaws held wide open (`gape`) and, as they reach the pilot, the director commits the
+# shut pose (`snap`): the jaws SLAM closed on it. Both carry six bristles as danger-plate teeth on the jaws' inner edges
+SNAP_WELL_CLIP = 5.0       # both lunge poses pull their members this many times harder (SwarmSortParams.PlanWellClip):
+                           # at the shipped clip a jaw swings ~10 u/s, a snap that reads as a drift
+SNAP_GAPE = 0.8            # rad: how far past shut each jaw swings out, held open through the charge
+SNAP_TEETH = (0.42, 0.62, 0.82)   # where along each jaw a danger-plate TOOTH rides its inner edge
+SNAP_TOOTH_IN = 2.2        # plan voxels in from the jaw's line, toward the midline
 ANTLION_LOOKS = {1: "long sickle jaws", 2: "short hooked jaws, a double fringe", 3: "a broad abdomen, the longest jaws"}
 
 
@@ -670,10 +677,13 @@ def antlion(v, pose="travel"):
     head, and two great sickle JAWS (Time) curving forward and hooking in, their tips pointing at each other across a gap.
     Six short Space legs paddle in a tripod gait (every form flies: the HyperSea has no ground). Feeding, it clasps the
     plant INSIDE the ring its jaws make (so every jaw unit and the head's front are in reach of the food) and the
-    bristles leave the rim to orbit it as danger-tier guards."""
+    bristles leave the rim to orbit it as danger-tier guards. LUNGING it holds its jaws wide (`gape`) and, as they reach
+    the pilot, SNAPS them shut (`snap`); in both, six of its bristles ride the jaws' inner edges as danger-plate teeth -
+    a snap that closes on a pilot stings it - and the rest ring the jaws."""
     p = ANTLION[v]
     s = ANTLION_SCALE
-    feed = pose == "feed"
+    snap = pose in ("gape", "snap")
+    feed = pose == "feed" or snap
     calm = FEED_SETTLE if feed else 1.0
     units, plates = [], []
     S3 = lambda q: [q[0] * s, q[1] * s, q[2] * s]
@@ -702,7 +712,7 @@ def antlion(v, pose="travel"):
     gape = 0.12 if feed else 0.0                                           # feeding: eased open round the plant
     swing = 0.06 if feed else 0.1
     n_jaw = max(4, round(p["jaw"] * s / SPACING))
-    root_x, root_z = head_c[0] + 2.4, 2.4
+    root_x, root_z = head_c[0] + 2.6, 2.4
 
     def sickle(t, out, hook, side):
         x, z, h, steps = root_x, side * root_z, side * out, 40
@@ -721,9 +731,16 @@ def antlion(v, pose="travel"):
         else:
             hi = mid
     hook = lo
+    def opening(f):
+        if pose == "gape":   # held wide, quivering
+            return p["out"] - swing + SNAP_GAPE + 0.04 * cycle(f)
+        if pose == "snap":   # slammed shut: the tips ANTLION_TIP_GAP off the midline
+            return p["out"] - swing
+        return p["out"] + gape + swing * cycle(f)
+
     for side in (-1, 1):
         def jaw_pt(f, t, side=side):
-            return sickle(t, p["out"] + gape + swing * cycle(f), hook, side)
+            return sickle(t, opening(f), hook, side)
         for j in range(n_jaw):
             t = (j + 0.5) / n_jaw
             # a heavy jaw: two rows, one over the other, tapering to one for the hooked last third
@@ -761,6 +778,27 @@ def antlion(v, pose="travel"):
             return S3([abd_c[0] + math.cos(a) * (ax * shrink + 2.1) * k, lift, math.sin(a) * (az * shrink + 2.1) * k])
         plates.append(_unit_at(CHARGE, 0, 2, at,
                                lambda f, a=a: unit([math.cos(a), 0.6, math.sin(a)])))
+    if snap:
+        # six bristles become the jaws' TEETH (danger tier) on their inner edges; the rest ring the jaws as guards
+        teeth = []
+        for k, (side, tt) in enumerate((sd, tt) for sd in (-1, 1) for tt in SNAP_TEETH):
+            def tooth(f, side=side, tt=tt):
+                a, b_ = sickle(tt, opening(f), hook, side), sickle(min(1.0, tt + 0.05), opening(f), hook, side)
+                fwd = unit(sub(b_, a))
+                inward = unit([-fwd[2] * side, 0.0, fwd[0] * side])          # in the jaw's plane, toward the midline
+                return S3(add(a, mul(inward, SNAP_TOOTH_IN / s)))
+
+            def tooth_face(f, side=side, tt=tt):
+                a, b_ = sickle(tt, opening(f), hook, side), sickle(min(1.0, tt + 0.05), opening(f), hook, side)
+                fwd = unit(sub(b_, a))
+                return [-fwd[2] * side, 0.0, fwd[0] * side]
+            teeth.append(_unit_at(CHARGE, plates[k].slot, 1, tooth, tooth_face))
+        mouth = S3([clasp_x, 0.2, 0.0])                                        # where the jaws meet: aimed at the pilot
+        near = [math.hypot(u.pos[f][1] - mouth[1], u.pos[f][2]) for u in units + teeth for f in range(FRAMES)
+                if abs(u.pos[f][0] - mouth[0]) < 3.5]
+        guards = _guard_ring(plates[len(teeth):], mouth, [1.0, 0.0, 0.0], max(10.0, max(near, default=0.0) + 4.5),
+                             1 if v != 2 else -1)
+        return units + teeth + guards, mouth
     if feed:
         mouth = S3([clasp_x, 0.2, 0.0])                                        # clasped INSIDE the jaws' ring: all of
                                                                                # each jaw and the head's front are at the food
@@ -799,6 +837,12 @@ def coils_of(form):
     return COILS if form in (0, 1) else ()
 
 
+def lunges_of(form):
+    """A form's own LUNGE poses, when it has them (the others lunge in their strike pose): the Antlion charges with its
+    jaws held wide (`gape`) and snaps them shut (`snap`) as they reach the pilot."""
+    return ("gape", "snap") if form == 3 else ()
+
+
 def plan_keys():
     """Every plan key in swarm-config order: each variant's travel plan, then its strike pose (`_feed`) when it eats,
     then its coils."""
@@ -807,13 +851,13 @@ def plan_keys():
         keys.append(key)
         if feeds:
             keys.append(key + "_feed")
-            keys += [f"{key}_{c}" for c in coils_of(form)]
+            keys += [f"{key}_{c}" for c in coils_of(form) + lunges_of(form)]
     return keys
 
 
 def split_key(key):
-    """(variant key, pose): pose is "travel", "feed" or one of COILS."""
-    for pose in ("feed",) + COILS:
+    """(variant key, pose): pose is "travel", "feed", "gape", "snap" or one of COILS."""
+    for pose in ("feed", "gape", "snap") + COILS:
         if key.endswith("_" + pose):
             return key[:-len(pose) - 1], pose
     return key, "travel"
@@ -859,7 +903,7 @@ def _build_variant(base):
     THINNED together, so all keep the same members in the same order."""
     if base not in _BUILT:
         entry = next(e for e in VARIANTS if e[0] == base)
-        names = ["travel"] + (["feed"] + list(coils_of(entry[1])) if entry[4] else [])
+        names = ["travel"] + (["feed"] + list(coils_of(entry[1]) + lunges_of(entry[1])) if entry[4] else [])
         built = {name: entry[3](name) for name in names}
         n = len(built["travel"][0])
         for name, (units, _) in built.items():
@@ -904,6 +948,8 @@ def bake(key):
         "slot": [u.slot for u in units], "halfF": half_f, "tierF": tier_f, "sp": sp_f,
         "centroid": [_r(x) for x in c],
     }
+    if split_key(key)[1] in lunges_of(form):
+        out["wellClip"] = SNAP_WELL_CLIP   # the swarm config's ScriptedPlanWellClip (author_tandava_assets.py)
     if form == 2:
         out["ring"] = ring_of(c)
     if mouth is not None:

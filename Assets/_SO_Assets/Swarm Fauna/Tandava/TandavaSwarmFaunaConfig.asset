@@ -55,10 +55,16 @@ MonoBehaviour:
   - {fileID: 4900000, guid: d779594b3a418b6f34302f2086da0047, type: 3}
   - {fileID: 4900000, guid: 5dd8e9e5977af15fd7e4437a3a243c34, type: 3}
   - {fileID: 4900000, guid: ca5cf5f999d5ca373b3e582ad0e6d651, type: 3}
+  - {fileID: 4900000, guid: 469fef5a3c862b5277c2c2c33d4de296, type: 3}
+  - {fileID: 4900000, guid: b31c910af4d07c675442eee71f44c4d0, type: 3}
   - {fileID: 4900000, guid: 67f057b76085bdae34a46d44ec8275fc, type: 3}
   - {fileID: 4900000, guid: 33b0a61f49f195da62703baf4a6c8bb3, type: 3}
+  - {fileID: 4900000, guid: d8ad7d41e805af55b86f4a3266b8beb3, type: 3}
+  - {fileID: 4900000, guid: e2bfe24d27c283ff9ba49bd03574f35d, type: 3}
   - {fileID: 4900000, guid: 3970c26897543759522842bb6c6db567, type: 3}
   - {fileID: 4900000, guid: cfe8addce06f49bf8056db5f142c3abb, type: 3}
+  - {fileID: 4900000, guid: 10908e19e7fcd9ed9ffe6effaa93df3c, type: 3}
+  - {fileID: 4900000, guid: c3ff6a514f76aa347a78e0ebc863b6cb, type: 3}
   ScriptedPlanPeriods:
   - 6
   - 40
@@ -96,9 +102,61 @@ MonoBehaviour:
   - 12
   - 40
   - 12
-  - 40
+  - 12
   - 12
   - 40
+  - 12
+  - 12
+  - 12
+  - 40
+  - 12
+  - 12
+  ScriptedPlanWellClip:
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 5
+  - 5
+  - 1
+  - 1
+  - 5
+  - 5
+  - 1
+  - 1
+  - 5
+  - 5
   TadpolePrefab: {fileID: 5945480239701989318, guid: 66504f098e300c8a60c29e3d931eaa0a, type: 3}
   UnitScale: 2
   TickHz: 10

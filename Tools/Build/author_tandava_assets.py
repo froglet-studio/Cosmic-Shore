@@ -12,7 +12,8 @@ Every pilot flies on ONE domain against it, in a Squirrel, a Sparrow or a Rhino.
 
 What this script owns (one owner per file; the folders below are this script's alone):
 
-  * the 39 form plans (every variant's travel plan, its strike pose, and each serpent's three meal coils), baked by
+  * the 45 form plans (every variant's travel plan, its strike pose, each serpent's three meal coils and the Antlion's
+    two lunge poses - jaws wide, jaws snapped shut), baked by
     Tools/Build/tandava_plans.py (it validates them; this script refuses to write a plan
     that fails) - Assets/_SO_Assets/Swarm Fauna/Tandava/SwarmPlan_tandava_<key>.json;
   * the swarm: TandavaSwarmFaunaConfig.asset (the Swarm cell's sort config with Tandava's numbers and the scripted plan
@@ -285,9 +286,13 @@ def build_forms():
             p = PLANS[key]
             feeds = key + "_feed" in PLANS
             coils = [f"{key}_{c}" for c in tandava_plans.coils_of(k)]
+            lunge = [f"{key}_{c}" for c in tandava_plans.lunges_of(k)]
             vs.append(dict(name=name, plan=PLAN_KEYS.index(key), feed=PLAN_KEYS.index(key + "_feed") if feeds else -1,
                            coils=[PLAN_KEYS.index(c) for c in coils], coil_mouths=[wv(PLANS[c]["mouth"]) for c in coils],
                            coil_roam=MEMBRANE_RADIUS * 0.97 - max(plan_reach(PLANS[c]) for c in coils) if coils else 0.0,
+                           lunge=PLAN_KEYS.index(f"{key}_gape") if lunge else -1,
+                           snap=PLAN_KEYS.index(f"{key}_snap") if lunge else -1,
+                           lunge_mouth=wv(PLANS[f"{key}_gape"]["mouth"]) if lunge else [0.0, 0.0, 0.0],
                            mouth=wv(p["mouth"]) if "mouth" in p else [0.0, 0.0, 0.0],
                            feed_mouth=wv(PLANS[key + "_feed"]["mouth"]) if feeds else [0.0, 0.0, 0.0],
                            halo=wv(p["ring"]["centre"]) if "ring" in p else [0.0, 0.0, 0.0],
@@ -423,14 +428,16 @@ for key, value in (("Model", 2), ("MultiDomain", MULTI_DOMAIN), ("PlanDensity", 
     cfg = set_key(cfg, key, value)
 # keys the shipped sort config predates (Unity has been reading their C# defaults): written explicitly here, in
 # declaration order, because each is a Tandava decision
-for key in ("ScriptedPlans", "ScriptedPlanPeriods", "SortTurnCarry", "SortVMaxScale", "MaxHitMaterialisationsPerFrame",
+for key in ("ScriptedPlans", "ScriptedPlanPeriods", "ScriptedPlanWellClip", "SortTurnCarry", "SortVMaxScale", "MaxHitMaterialisationsPerFrame",
             "UnifiedPrismBodies", "MacroLod", "Bestiary", "HuntEnter", "LurkCalm", "LocustPhaseSeconds"):
     assert not re.search(rf"(?m)^  {key}:", cfg), f"the shipped sort config now carries '{key}' - set it, do not insert it"
 cfg = insert_after(cfg, "TimePlan",
                    "  ScriptedPlans:\n" +
                    "".join(f"  - {{fileID: 4900000, guid: {G_PLAN[k]}, type: 3}}\n" for k in PLAN_KEYS) +
                    "  ScriptedPlanPeriods:\n" +
-                   "".join(f"  - {PLANS[k]['frameSteps']}\n" for k in PLAN_KEYS))
+                   "".join(f"  - {PLANS[k]['frameSteps']}\n" for k in PLAN_KEYS) +
+                   "  ScriptedPlanWellClip:\n" +
+                   "".join(f"  - {num(PLANS[k].get('wellClip', 1.0))}\n" for k in PLAN_KEYS))
 cfg = insert_after(cfg, "TurnPerStep", f"  SortTurnCarry: {num(SORT_TURN_CARRY)}\n  SortVMaxScale: {num(SORT_VMAX_SCALE)}\n")
 cfg = insert_after(cfg, "ProxyLingerSeconds",
                    f"  MaxHitMaterialisationsPerFrame: 48\n  UnifiedPrismBodies: 1\n  MacroLod: {MACRO_LOD}\n")
@@ -578,6 +585,8 @@ for f in FORM_ROWS:
                        + ("      CoilPlanIndices:\n" + "".join(f"      - {c}\n" for c in v["coils"]) if v["coils"] else "      CoilPlanIndices: []\n")
                        + ("      CoilMouths:\n" + "".join(f"      - {v3(*m)}\n" for m in v["coil_mouths"]) if v["coil_mouths"] else "      CoilMouths: []\n")
                        + f"      CoilRoamRadius: {num(round(v['coil_roam'], 1))}\n"
+                       + f"      LungePlanIndex: {v['lunge']}\n      SnapPlanIndex: {v['snap']}\n"
+                       + f"      LungeMouth: {v3(*v['lunge_mouth'])}\n"
                        f"      Mouth: {v3(*v['mouth'])}\n      FeedMouth: {v3(*v['feed_mouth'])}\n      HaloCentre: {v3(*v['halo'])}\n")
 
 director_yaml = "  Director:\n" + "".join(
@@ -807,6 +816,8 @@ for f in FORM_ROWS:
             errors.append(f"{v['name']}: a form that eats needs a strike pose and only those do")
         if (len(v["coils"]) == 3) != (f["name"] in ("Great Serpent", "Many-Headed Serpent")) or len(v["coil_mouths"]) != len(v["coils"]):
             errors.append(f"{v['name']}: the two serpents (and only they) roll up to eat, in three formations, each with its mouth")
+        if (v["lunge"] >= 0) != (f["name"] == "Antlion") or (v["snap"] >= 0) != (v["lunge"] >= 0):
+            errors.append(f"{v['name']}: the Antlion (and only it) lunges in its own poses - its jaws held wide, then snapped shut")
         if v["coils"] and not ROAM_RADIUS <= v["coil_roam"] < MEMBRANE_RADIUS * 0.97:
             errors.append(f"{v['name']}: it may roll up {v['coil_roam']:.0f} u out - not between the swimming body's {ROAM_RADIUS:.0f} "
                           f"and the wall's {MEMBRANE_RADIUS * 0.97:.0f}")
@@ -874,7 +885,7 @@ SO_SRC = {
     "TandavaSettingsSO": g.read(SCRIPT_PATHS["TandavaSettingsSO"]),
     "TandavaScoringRuleSO": g.read(SCRIPT_PATHS["TandavaScoringRuleSO"]),
 }
-for so_name, keys in (("SwarmFaunaConfigSO", ("ScriptedPlans", "ScriptedPlanPeriods", "MacroLod", "MultiDomain", "PlanDensity",
+for so_name, keys in (("SwarmFaunaConfigSO", ("ScriptedPlans", "ScriptedPlanPeriods", "ScriptedPlanWellClip", "MacroLod", "MultiDomain", "PlanDensity",
                                               "SortTurnCarry", "SortVMaxScale", "SortWellClip", "KillLayHoldSeconds",
                                               "SortLayRampSeconds", "SortLayMax")),
                       ("CellConfigDataSO", ("CytoplasmShardDistance", "EnvironmentPrefab", "EnvironmentIntensity")),
@@ -896,7 +907,8 @@ if director_keys != [name for name, _, _ in DIRECTOR]:
     errors.append("the settings asset's Director block is not TandavaDirectorSettings' fields in declaration order")
 for spec_struct, keys in (("TandavaFormSpec", ("DisplayName", "Role", "FillToEvolve", "BankShare", "MealVolume", "Line", "Variants")),
                           ("TandavaVariantSpec", ("DisplayName", "PlanIndex", "FeedPlanIndex", "CoilPlanIndices", "CoilMouths",
-                                                  "CoilRoamRadius", "Mouth", "FeedMouth", "HaloCentre"))):
+                                                  "CoilRoamRadius", "LungePlanIndex", "SnapPlanIndex", "LungeMouth", "Mouth", "FeedMouth",
+                                                  "HaloCentre"))):
     body = SO_SRC["TandavaSettingsSO"].split(f"public struct {spec_struct}")[1].split("\n    }")[0]
     if re.findall(r"public\s+[\w<>\[\]]+\s+(\w+)\s*;", body) != list(keys):
         errors.append(f"{spec_struct}'s fields are not {keys} in order (the asset this script writes)")
@@ -1018,6 +1030,9 @@ if [x for x in re.findall(r"guid: ([0-9a-f]{32}), type: 3\}", sw.split("Scripted
 periods = [int(x) for x in re.findall(r"(?m)^  - (\d+)$", sw.split("ScriptedPlanPeriods:\n")[1])[:len(PLAN_KEYS)]]
 if periods != [PLANS[k]["frameSteps"] for k in PLAN_KEYS]:
     errors.append(f"swarm config's ScriptedPlanPeriods {periods} are not the plans' own frame steps")
+clips = [float(x) for x in re.findall(r"(?m)^  - ([\d.]+)$", sw.split("ScriptedPlanWellClip:\n")[1])[:len(PLAN_KEYS)]]
+if clips != [float(PLANS[k].get("wellClip", 1.0)) for k in PLAN_KEYS] or sum(c != 1.0 for c in clips) != 6:
+    errors.append(f"swarm config's ScriptedPlanWellClip {clips} are not the plans' own (1, the Antlion's six lunge poses more)")
 if SEED_MEMBERS * DENSITY < max(v["n"] for v in FORM_ROWS[0]["variants"]):
     errors.append("the seed is smaller than a Great Serpent: it would hatch as a young serpent")
 

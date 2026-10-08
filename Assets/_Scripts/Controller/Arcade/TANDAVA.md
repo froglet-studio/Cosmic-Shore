@@ -49,6 +49,17 @@ final form is the **Antlion** (§2): the same role, bank and feast; new plans `a
 Lion's 12 s - and an unopposed cycle completes in 116-148 s (T7). The body is bigger (675-744 tadpoles against 618-642),
 which raises the phase ladder's biggest-body term.
 
+**The sixth pass (2026-10-08)**: "make the antlion jaws snap at pilots when it lunges". The Antlion has two lunge poses
+of its own, `antlion_N_gape` and `antlion_N_snap` (45 plans in all): it CHARGES with its jaws held wide (0.8 rad past
+shut), six of its bristles riding their inner edges as danger-plate TEETH, and when its jaws come within 150 u of the
+pilot - or half a second before the lunge runs out - the director commits the shut pose and the jaws SLAM closed, held
+1 s (`TandavaDirectorSettings.SnapReach`, `SnapLeadSeconds`, `SnapHoldSeconds`; a `Snapped` event). While they snap it
+barely turns (`TurnSnap` 0.3): committed to the bite, its long jaws close instead of trailing a hard turn. A snap reads
+whether it catches the pilot or not, and one that closes on a pilot stings it (the teeth are danger plates). For the jaws
+to move fast enough, the two lunge poses pull their members 5x harder than the shipped clip
+(`SwarmSortParams.PlanWellClip`, §8): at the shipped clip a jaw swings at about 10 u/s and a "snap" reads as a drift.
+Harness T19: every lunge it finishes ends in a snap, and the live jaws close 22-32 u per snap.
+
 ## 1. The pitch
 
 One creature lives in this cell, and it is hungry. It hatches as a **Great Serpent** and goes where it likes to eat,
@@ -157,7 +168,7 @@ THREAT (0..1) is the larger of two readings, smoothed (rising in 0.25 s, falling
 |---|---|---|---|---|
 | Calm | below 0.2 | 1.0 - **60 u/s** | 1.0 | the best plant, a plant spoiled by half by a nearby pilot |
 | Wary | 0.3 | 1.5 - **90 u/s** | 1.6 | hurries, and avoids plants near pilots (spoiled by 90%) |
-| **Lunging** | 0.25, HEALTHY (body 70%+ of its form), a pilot within 380 u, 6 s since the last | 2.4 - **144 u/s** | 3.0 | turns on the nearest pilot and charges it JAWS first, wearing its strike pose - the guard plates out round its mouth are the weapon (a pilot who touches one is stung and slowed). Aimed 0.35 s ahead of the pilot; it ends when the jaws are within 40 u, after 2.5 s, or when the pilot is out of reach |
+| **Lunging** | 0.25, HEALTHY (body 70%+ of its form), a pilot within 380 u, 6 s since the last | 2.4 - **144 u/s** | 3.0 | turns on the nearest pilot and charges it JAWS first, wearing its strike pose (the Antlion: its jaws held wide, then SNAPPED shut as they reach the pilot - the sixth pass) - the guard plates out round its mouth are the weapon (a pilot who touches one is stung and slowed). Aimed 0.35 s ahead of the pilot; it ends when the jaws are within 40 u, after 2.5 s, or when the pilot is out of reach |
 | Fleeing | 0.65 (out below 0.4, at least 4 s), only HURT (body under 70%) | 2.1 - **126 u/s** | 2.5 | bolts AWAY from the pilots, weighted by how near each is; cornered at the wall, it runs along it |
 | Feeding | - | 0.5 (it holds station) | 1.0 | see §3.4. It neither lunges nor bolts from pilots it merely sees: its guards are out |
 
@@ -343,6 +354,7 @@ policies.
 | T15 | no clock: the shipped settings carry `MatchSeconds` 0, and twenty minutes alone end nothing |
 | T16 | a form change READS fast: Great Serpent -> Seven-Headed at 60% coverage in 1.0 s (3.5 s at the research's member speeds) |
 | T17 | aggression does not starve it: a pilot loitering 250 u off it for 120 s is charged 8 times, and it still eats 4 meals |
+| T19 | the Antlion's jaws SNAP: every variant charges wearing its gape pose and ends every lunge it finishes in a snap (3 of 3); the live jaws close 22-32 u in the snap (at least half each plan's open-to-shut difference); six danger-plate teeth ride the jaws |
 | T18 | it eats ROLLED UP: every serpent meal in a coil (12 of 12), every formation used, never the same twice running; the Great Serpent coiled round its plant eats 3.4x as fast as its strike pose and finishes a meal in 2.5 s (10.7 s); the free run 125 s against 170 s (the A/B: `NoCoils`, or `TANDAVA_NOCOIL=1` for every test) |
 
 What it is not: the game's bites are prism queries against real plants, its pilots are people and its kills are
@@ -418,7 +430,7 @@ Prisms: the reef 2,682 + one body of up to 642.
 | `Environment/CellVisualTint.cs` | the cell's colour transition (platform, phase A) |
 | `Environment/FloraAndFauna/Swarm/*` | the levers (§3.1) |
 | `Tools/Build/tandava_plans.py`, `Tools/Build/author_tandava_assets.py` | the plans; every asset (`--check`; `--self-test` runs the scene checks on the donor scene, where all 16 must fire) |
-| `Tools/Build/swarm_core_harness/TandavaHarness.cs` | T1-T18 |
+| `Tools/Build/swarm_core_harness/TandavaHarness.cs` | T1-T19 |
 | `Assets/_Scenes/Multiplayer Scenes/MinigameTandava.unity` | a one-shot clone of `MinigameBroodRush`: the controller, monitor, cell and four RANDOM-hull AI templates swapped, the pilots' line at x = 600 facing the hatch. When the donor moves on, the generator keeps the committed scene and still validates it |
 | `Assets/_SO_Assets/Cell Configs/Tandava Cell/` | the cell config, spawn profile, the swarm species and the seven dispersed flora forks |
 | `Assets/_Prefabs/Environment/TandavaMembrane.prefab` | a generated copy: the CapsuleMembrane at 800 u |
@@ -426,6 +438,12 @@ Prisms: the reef 2,682 + one body of up to 642.
 | `Assets/_Graphics/ARCADE/CardBackgrounds/Tandava.png` | the card backdrop (`render_card_backgrounds.py`, MODEL tier): the reef as species glyphs, the Great Serpent FEEDING (its own wrap plan, rolled up round a plant, its danger plates circling it), pilots striking the body |
 
 ## 8. Platform changes (and the rule each records)
+
+- **`SwarmSortParams.PlanWellClip`** / **`SwarmFaunaConfigSO.ScriptedPlanWellClip`** (null / empty: every swarm
+  unchanged) multiplies the sort core's `WellClip` - the most a member is pulled toward its well in one step - per
+  scripted plan. Tandava sets 5 on the Antlion's two lunge poses and 1 everywhere else. The rule it records: **the clip
+  that keeps a body calm is the same clip that makes a fast gesture impossible**, so speed is a property of the POSE,
+  not of the swarm - a snap needs its members pulled hard for the half second it lasts, and only then.
 
 - **`SwarmFaunaConfigSO.SortVMaxScale`** (default 1: every shipped swarm unchanged) scales the sort core's top member speed
   (`SwarmSortParams.VMax`), the thing that paces a re-sort. A form change that takes 3.5 s to read is a form change

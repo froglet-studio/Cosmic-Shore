@@ -289,7 +289,8 @@ namespace CosmicShore.Gameplay
                     PlanCount = swarm.FormMemberCount(v.PlanIndex), FillToEvolve = spec.FillToEvolve,
                     Bank = spec.BankShare * stomach, MealVolume = spec.MealVolume, Mouth = S(v.Mouth), FeedMouth = S(v.FeedMouth),
                     CoilPlanIndices = coilMouths.Length > 0 ? v.CoilPlanIndices : System.Array.Empty<int>(), CoilMouths = coilMouths,
-                    CoilRoamRadius = v.CoilRoamRadius,
+                    CoilRoamRadius = v.CoilRoamRadius, LungePlanIndex = v.LungePlanIndex, SnapPlanIndex = v.SnapPlanIndex,
+                    LungeMouth = S(v.LungeMouth),
                 });
             }
             var overrides = EndConditionOverridesSO.Instance;
@@ -517,8 +518,11 @@ namespace CosmicShore.Gameplay
                 else swarm.RequestPose(want);
             }
             _appliedForm = form;
+            // snapping: the body wears its form's snap plan (index 0 is the hatchling's travel plan, never a snap - and a
+            // default spec reads 0)
+            int snapPlan = Variant(Mathf.Clamp(form, 0, settings.Forms.Count - 1)).SnapPlanIndex;
             TandavaDirectorCore.LeversFor(_racing.Value ? Phase : TandavaPhase.Over, Mood, settings.Director,
-                                          out float cruise, out float turn, out bool hold);
+                                          out float cruise, out float turn, out bool hold, snapPlan > 0 && want == snapPlan);
             swarm.SetLevers(cruise, turn, hold);
             swarm.Goal = CurrentGoal();
         }
