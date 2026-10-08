@@ -471,8 +471,8 @@ Three rules, all carried by one authored bit on the card - **`SO_ArcadeGame.Aren
 the four `ArenaGames` cards and nowhere else (`ArenaSeatingTests` holds both directions) - and
 published at launch as **`GameDataSO.IsArenaMatch`** (by `SyncFromArcadeGame` on the host, by the
 config-sync RPC on a guest, cleared by the menu). It is an explicit bit rather than "the card lists
-several hulls" because that proxy is false: Scurry, Multiplayer Freestyle and the Maelstrom card
-all list several hulls and are not arenas.
+several hulls" because that proxy is false: Scurry and the Maelstrom card
+both list several hulls and are not arenas.
 
 **1. Arena cards go up to six pilots.** `MaxPlayersAllowed` is 6 on Astro League (already), Brood
 Rush, Regatta and Broadside; the two Regatta/Broadside generators author the same number. What the
