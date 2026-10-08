@@ -26,6 +26,10 @@
 
 **The performance record and how to measure (2026-10-07) - start here before any perf work:**
 
+- **Plugins first (2026-10-08):** check `Docs/claude/PLUGINS_AND_CONNECTORS.md`. The **unity-perf** plugin
+  (`/unity-performance`, `/csharp-zero-gc`, `/code-standards`) runs the performance restart, and Unity's official
+  plugin covers URP, TMP, uGUI, physics and the Unity CLI. If a fitting plugin is not enabled, suggest it once and
+  carry on; this repo's measured rules win over its general advice.
 - **Read first:** `Docs/PERFORMANCE_OPTIMIZATION.md` (where the game stands, what was done, the ranked lever
   list, how to measure without fooling yourself). Then `Docs/MEMORY_AUDIT.md` (what the game HOLDS) and
   `Docs/PLATFORM_UNIFICATION.md` (device tiers: Desktop / MobileHigh / MobileLow, the trail cap, one codebase

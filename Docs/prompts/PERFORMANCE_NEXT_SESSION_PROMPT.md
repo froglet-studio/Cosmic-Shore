@@ -10,6 +10,13 @@ pushing to the branch updates it; do not open another PR). You cannot run Unity.
 the editor and sends you results. **Plan first, then tests.** Do not ask the human to measure
 anything until steps 1–3 are done and the plan is written down.
 
+> **Status 2026-10-08 (read this first; the rest of this prompt is older).** The effort moved to branch
+> **`perf/performance-optimization`**. The human asked to RESTART the performance review with the **unity-perf**
+> plugin (`/unity-performance`, then `/csharp-zero-gc`, then `/code-standards`). Start from
+> `Docs/claude/PLUGINS_AND_CONNECTORS.md`: check the plugin is enabled (`ListPlugins`; if not, render its install
+> card and stop there), then follow its "performance restart" section, which holds the starting numbers. The open
+> test is the Burst fix (`Docs/SKIM_RACE_AI.md` §8.0k): `burst`, `diag` and `prof` in Skim Race, in Release.
+>
 > **Status 2026-09-26: steps 1–5 are done.** §1.0 of the perf doc holds the six scenarios, and
 > §3.3 holds the re-rank and the one pick, **L8**. Three things are still waiting:
 > 1. One `prof S5_Wildlife` run with the markers from `aaa1517fe`. It is L8's go / no-go.
