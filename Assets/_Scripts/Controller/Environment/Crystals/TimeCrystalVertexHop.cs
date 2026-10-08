@@ -26,7 +26,7 @@ namespace CosmicShore.Gameplay
     /// the blocks that flip first sit on the pentagon around the wave's start vertex, so their rest
     /// centroid IS that vertex (exactly, in the source file) - and snapping it onto a five-fold axis
     /// fixes the orientation too. Measured from the FBX by
-    /// <c>Tools/Build/measure_time_crystal_wave.py</c>.
+    /// <c>Tools/Build/measure_time_crystal_wave.py</c>; design record in <c>Docs/TIME_CRYSTAL.md</c>.
     /// </summary>
     public class TimeCrystalVertexHop : MonoBehaviour
     {
