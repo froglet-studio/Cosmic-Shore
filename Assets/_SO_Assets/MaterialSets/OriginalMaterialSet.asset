@@ -16,10 +16,11 @@ MonoBehaviour:
   BlockMaterial: {fileID: 2100000, guid: 5140ec1c42866e849927f442d5965f7f, type: 2}
   TransparentBlockMaterial: {fileID: 2100000, guid: cc4ffbaa55bcb9b4494cfdc9d19d1214,
     type: 2}
-  CrystalMaterial: {fileID: 2100000, guid: 20e4974a2de18e44880740ec87d82e44, type: 2}
-  CrystalMaterial1: {fileID: 2100000, guid: 2438fa6e25f42f04f9cff49f3f505acc, type: 2}
-  CrystalMaterial2: {fileID: 2100000, guid: 0605bc709a4621e48984803a3ebca8a3, type: 2}
-  CrystalMaterial3: {fileID: 2100000, guid: ef54fe02f6405e64aa62634bbc9ddefa, type: 2}
+  CrystalMaterial: {fileID: 2100000, guid: 63ce94214497a2f466a97d10e8820e24, type: 2}
+  CrystalMaterial1: {fileID: 2100000, guid: f64b610cd0fc29c73ef60ac67ab6f650, type: 2}
+  CrystalMaterial2: {fileID: 2100000, guid: 86a628bc334c763d18839a698dea9560, type: 2}
+  CrystalMaterial3: {fileID: 2100000, guid: e5025c1e2d3c395dd30853e40a3d6baa, type: 2}
+  CrystalMaterial4: {fileID: 2100000, guid: 153ba8e33afacf20884504a038bb0aef, type: 2}
   ExplodingBlockMaterial: {fileID: 2100000, guid: 0840df18df0bd8646b11c95e1861492d,
     type: 2}
   ShieldedBlockMaterial: {fileID: 2100000, guid: d8eecfb8be075a44991cdede59d8e0f1,

@@ -105,18 +105,23 @@ MonoBehaviour:
     spaceCrystalAnimator: {fileID: 0}
   - model: {fileID: 2907786364588143348}
     defaultMaterial: {fileID: 2100000, guid: f64b610cd0fc29c73ef60ac67ab6f650, type: 2}
-    explodingMaterial: {fileID: 2100000, guid: f64b610cd0fc29c73ef60ac67ab6f650, type: 2}
+    explodingMaterial: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
     inactiveMaterial: {fileID: 2100000, guid: bbc8c36cce48e42f14e748d0c664eb18, type: 2}
     spaceCrystalAnimator: {fileID: 0}
   - model: {fileID: 1039871714678528508}
     defaultMaterial: {fileID: 2100000, guid: 86a628bc334c763d18839a698dea9560, type: 2}
-    explodingMaterial: {fileID: 2100000, guid: 86a628bc334c763d18839a698dea9560, type: 2}
+    explodingMaterial: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
     inactiveMaterial: {fileID: 2100000, guid: 2bde09dd37406fc9dce8c57d76d53e66, type: 2}
     spaceCrystalAnimator: {fileID: 0}
   - model: {fileID: 8089558117201123893}
     defaultMaterial: {fileID: 2100000, guid: e5025c1e2d3c395dd30853e40a3d6baa, type: 2}
-    explodingMaterial: {fileID: 2100000, guid: e5025c1e2d3c395dd30853e40a3d6baa, type: 2}
+    explodingMaterial: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
     inactiveMaterial: {fileID: 2100000, guid: b2f5083b09f2b70c02bb0d031a7cbb80, type: 2}
+    spaceCrystalAnimator: {fileID: 0}
+  - model: {fileID: 3086241560104200023}
+    defaultMaterial: {fileID: 2100000, guid: 153ba8e33afacf20884504a038bb0aef, type: 2}
+    explodingMaterial: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
+    inactiveMaterial: {fileID: 2100000, guid: b538bf519fc836a026d822abd43002c8, type: 2}
     spaceCrystalAnimator: {fileID: 0}
   allowVesselImpactEffect: 1
   allowRespawnOnImpact: 1

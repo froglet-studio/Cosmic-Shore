@@ -473,34 +473,58 @@ had two consequences and neither was authored:
    **0.02–0.07** — a ghost, one hundredth above the graph's own 0.01 clip. Everything you could see
    of an omni crystal was the pulse.
 
-What ships is a body plus a three-shell tone chain, authored by
+What ships is a body plus a three-shell tone chain and a stationary rim, authored by
 `Tools/Build/author_omni_crystal_triangles.py` (`--check`):
 
 | slot | geometry | default / inactive material | band (s, falling) |
 |---|---|---|---|
 | 0 | **the whole omni model**, static | `OmniCrystalBody` / `OmniCrystalBodyInactive` (`OmniCrystalFresnelShader`) | — |
-| 1 | triangles only (`OmniCrystalTriangles.asset`) | `OmniShepardTriangles 0` / `…Inactive 0` (`ShepardGraph`) | 1.000 → 0.833 |
+| 1 | triangles only (`OmniCrystalTriangles.asset`) | `OmniShepardTriangles 0` / `…Inactive 0` (`OmniShepardFresnelShader`) | 1.000 → 0.833 |
 | 2 | triangles only | `OmniShepardTriangles 1` / `…Inactive 1` | 0.833 → 0.667 |
 | 3 | triangles only | `OmniShepardTriangles 2` / `…Inactive 2` | 0.667 → 0.500 |
-| — | triangles only, **stationary** (a plain child, not a model) | `OmniShepardTrianglesRim` | 1.03 → 0.98, unscaled |
+| 4 | triangles only, **stationary** | `OmniShepardTrianglesRim` / `…RimInactive` | 1.03 → 0.98, unscaled |
+
+**Body and triangles are ONE colour system.** The triangles are on `OmniShepardFresnelShader`, the
+body's own family: the body's colour formula verbatim — `lerp(_BrightColor, _DarkColor, (1 + N·V)/2)`,
+dark where a face looks at you, bright toward the silhouette — on the body's own colour pair (each
+tone material is the body material moved onto the tone shader, nothing else changed), with
+ShepardGraph's motion and alpha transcribed. A falling triangle is therefore the body's triangle made
+see-through; it cannot drift to a different lime than the plate it lands on. This retired the
+mismatch the first pass had: the triangles were on `ShepardGraph`, whose colour is
+`lerp(dull, bright, (1−N·V)⁴)` and which `Crystal.ApplyColorSetTint` repaints with the CTA pair at
+runtime, while the body showed its authored Fresnel lime — two formulas, two limes. Neither Fresnel
+shader is reached by the CTA tint (they name the pair `_BrightColor`/`_DarkColor`), so the omni shows
+exactly its authored lime, like the Space and Time crystals.
+
+**Team crystals are the same crystal in domain colours.** A domain-owned crystal (Skim Race track
+crystals through `CrystalManager.ChangeDomain`, the Dolphin's `TeamCrystal`) swaps every model to
+`GetTeamCrystalMaterial(domain, slot)`, which `ThemeManager` builds by cloning the BASE set
+(`OriginalMaterialSet`) slot by slot. That set still pointed at the four Mass-era Shepard materials,
+so a team omni ran a Shepard band on its BODY (shrinking it toward the centre) and the old inward
+bands on its triangles — the "scaling issues". The base set now points at exactly the omni's five
+per-slot materials, and `ThemeManager` paints each clone's `_BrightColor`/`_DarkColor` from the
+domain pair (`BrightCrystalColor`/`DullCrystalColor`). That mapping is one-to-one: Dull is authored
+black on Jade, Ruby and Gold, which is precisely the lime body's near-black face. Side effect, by
+design: `MazeCrystal` (one model, the omni mesh) also reads slot 0 when domain-owned, so it now wears
+the omni body in its domain colour instead of a Shepard band.
+
+**Five slots, and the fifth is real.** The rim is slot 4 so a team crystal paints it too:
+`SO_MaterialSet.CrystalMaterial4` (optional — `ThemeManager` skips it when a base set does not
+author it) and `GetTeamCrystalMaterial` case 4. Every slot explodes on `CrystalMaterial`, because the
+spent husk animates `CrystalGraph`'s `_velocity` and a tone material on a husk would play its band
+instead of bursting; the cost is one more pooled husk per collect.
 
 **The stationary rim is what hides the pop.** The Mass crystal's fourth shell never moves
 (`_ScaleDistance 0`) and holds alpha 0.02–0.07 at the full radius, so each new shell is born on a
 faint copy of itself instead of out of nothing. The omni carries the same shell at its tone's birth
-radius (s = 1, twice the crystal): an omni-only copy of `ActiveMassCrystalMaterial 3`, values
-unchanged. It is a fifth CHILD but deliberately not a `crystalModels` entry — `CrystalManager` calls
-`ChangeDomain` on every spawn and `GetTeamCrystalMaterial` answers 0..3, so a fifth model would warn
-on every domain-owned spawn and add a fifth husk on explode. The trade: Crystal does not touch it, so
-it keeps its authored Mass colours rather than the runtime CTA tint the moving shells get — at alpha
-≤ 0.07 that is not expected to read, and is the first thing to check if the outer edge looks off.
+radius (s = 1, twice the crystal), with `ActiveMassCrystalMaterial 3`'s motion values on the tone
+shader.
 
 **The body is slot 0, and that is load-bearing.** Everything that wants "the crystal's shape" reads
 `crystalModels[0]` (`ElementCrystalModelBuilder`, `SpawnMatrixToy`'s element visual), and the
 Scarab's crystal→ball forge (`ScarabCrystalMorph.AdoptShells`) builds its morph mesh from shell 0 and
 folds every shell drawing that same mesh. The triangle shells are a different mesh, so the forge
-leaves them out (a verbose `CrystalMorph`-channel line, not a warning: it is the design). **Four slots
-exactly**: `ThemeManagerDataContainerSO.GetTeamCrystalMaterial` answers indices 0..3 and warns past
-them, so a fifth model would log on every domain-owned activation and reuse slot 0's team material.
+leaves them out (a verbose `CrystalMorph`-channel line, not a warning: it is the design).
 
 **The body wears the elemental crystals' Fresnel look on the omni's own shader.**
 `OmniCrystalFresnelShader` is `SpreadFresnelShader`'s displacement and colour transcribed verbatim,
@@ -515,7 +539,8 @@ verified in the editor. The body's materials are clones of `LimeCrystalFresnelMa
 `CrystalMaterial`, because the spent husk animates `CrystalGraph`'s `_velocity`.
 
 **The tone falls INTO the crystal.** ShepardGraph's band comparison is `Start < Stop` (`Comparison`,
-type 2), so a band with `_Start > _Stop` — every Mass material — sweeps `s` DOWNWARD. It scales the
+type 2), so a band with `_Start > _Stop` — every Mass material — sweeps `s` DOWNWARD (the tone shader
+transcribes that rule). It scales the
 mesh by `s` about the origin and draws `Alpha = (1.05 − s) × _Opacity`. The first omni pass reused
 the Mass bands (`0.33→0`, `0.66→0.33`, `1→0.66`) on shells scaled so `s = 1` was the surface, which
 made the triangles leave the surface and shrink to the centre — backwards. Now the shells are scaled
@@ -531,12 +556,12 @@ all 120 vertices (worst direction mismatch 1.2e-13, max residual 8.3e-07 against
 radius). Re-export either model at a different scale and `--check` fails at the script rather than
 in play.
 
-**Not reached by §2.2's tint, deliberately, for now.** `Crystal.FindColorPropertyNames` accepts
+**Not reached by §2.2's tint, deliberately.** `Crystal.FindColorPropertyNames` accepts
 `_BrightCrystalColor`/`_DullCrystalColor` or `_BrightColor`/`_DullColor`; the Fresnel family names
-its pair `_BrightColor`/`_DarkColor`, so the CTA tint reaches neither the elemental Space/Time
-crystals (upstream, 2026-10-07) nor the omni body — they show their authored lime/blue. The omni
-keeps the family's names so it reads exactly like its siblings. Whether the Fresnel family should
-join the collectability tint is one decision for all three, not this one's.
+its pair `_BrightColor`/`_DarkColor`, so the runtime tint reaches neither the elemental Space/Time
+crystals nor any part of the omni — free crystals show their authored lime, team crystals the domain
+pair `ThemeManager` paints into their team materials. Whether the Fresnel family should join the
+collectability tint is one decision for all three crystals, not this one's.
 
 **The triangle shells draw a BAKED native mesh, not the FBX's own.** A hand-written prefab cannot
 reference an FBX sub-asset: Unity mints that fileID inside the editor, and it is not reproducible

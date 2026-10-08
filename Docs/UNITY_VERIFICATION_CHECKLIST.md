@@ -92,6 +92,13 @@ No Unity CLI in the authoring container, so none of this has been opened in the 
 6. A toy/matrix that shows the omni's shape (`SpawnMatrixToy`, `ElementCrystalModelBuilder`)
    shows the whole omni model, not just triangles.
 
+7. **Colour match (2026-10-08):** the falling triangles are the body's lime, see-through - same hue
+   and the same dark-face / bright-silhouette shading as the plates they land on.
+8. **Team crystals:** a Skim Race track crystal and a Dolphin-produced crystal look exactly like the
+   lime omni (body the same size, triangles falling inward onto it, faint rim) in Jade / Ruby / Gold
+   instead of lime. Nothing shrinks toward the centre. Console: no "Invalid crystal material index".
+9. A `MazeCrystal` taken by a domain shows the omni body in that domain's colour.
+
 **First-pass tuning:** `OUTER_REACH = 2.0` in the generator (how far out the tone starts); band
 period is the Mass materials' 3 s.
 
