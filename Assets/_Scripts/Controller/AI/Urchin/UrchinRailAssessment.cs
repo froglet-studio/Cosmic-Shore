@@ -99,8 +99,15 @@ namespace CosmicShore.Gameplay
         /// arc, measuring how close the centre line comes to <paramref name="objective"/>.
         /// Distance is measured to each SEGMENT, not each point, so a rail that runs through a
         /// ring between two prisms reads as threading it.
+        ///
+        /// <para><paramref name="loop"/>: the rail is CLOSED (<c>Trail.IsLoop</c> - Regatta's
+        /// lanes), so the walk WRAPS past either end exactly as the ride does, never reports
+        /// <see cref="UrchinRailScan.ReachesEnd"/> (a loop has no end to launch off), and stops
+        /// after one full lap. Without it, a pilot near a closed lane's seam would read the ring
+        /// across the seam as unreachable.</para>
         /// </summary>
-        public static UrchinRailScan Scan<T>(ref T rail, int start, int step, Vector3 objective, float maxArc)
+        public static UrchinRailScan Scan<T>(ref T rail, int start, int step, Vector3 objective, float maxArc,
+                                             bool loop = false)
             where T : IUrchinRailPoints
         {
             int count = rail.Count;
@@ -110,23 +117,35 @@ namespace CosmicShore.Gameplay
             // The start may itself be a hole; the walk starts from the first ridable point at or
             // past it, which is where the ride would be bridged to anyway.
             int i = start;
+            int walked = 0;   // indices visited, so a loop stops after one lap
             Vector3 prev = default;
             bool found = false;
-            for (; i >= 0 && i < count; i += step)
+            while (walked < count)
             {
-                if (!rail.TryGetPoint(i, out prev)) continue;
-                found = true;
-                break;
+                if (i < 0 || i >= count)
+                {
+                    if (!loop) break;
+                    i = (i % count + count) % count;
+                }
+                walked++;
+                if (rail.TryGetPoint(i, out prev)) { found = true; break; }
+                i += step;
             }
             if (!found) return UrchinRailScan.Invalid;
 
             float min = Vector3.Distance(prev, objective);
             float arcToMin = 0f;
             float arc = 0f;
-            bool reachesEnd = true;
+            bool reachesEnd = !loop;
 
-            for (i += step; i >= 0 && i < count; i += step)
+            for (i += step; walked < count; i += step)
             {
+                if (i < 0 || i >= count)
+                {
+                    if (!loop) break;
+                    i = (i % count + count) % count;
+                }
+                walked++;
                 if (!rail.TryGetPoint(i, out var p)) continue;
 
                 float seg = Vector3.Distance(prev, p);
@@ -188,6 +207,22 @@ namespace CosmicShore.Gameplay
 
             return UrchinRailVerdict.Leave;
         }
+
+        /// <summary>
+        /// The <c>crawlingDry</c> input to <see cref="Decide"/>: is the pilot stuck grinding a
+        /// rival's mass at crawl speed with no way to make it its own?
+        /// <list type="bullet">
+        /// <item>Not <paramref name="hostile"/>, or hostile but not <paramref name="rideSlowed"/>
+        /// (the Time-5 Slipstream rides it at full pace): no crawl at all.</item>
+        /// <item>A crawl over <paramref name="convertible"/> mass is dry only while the spikes
+        /// cannot pay - with ammo the volley converts the rail ahead and the crawl ends.</item>
+        /// <item>A crawl over mass the spikes can NEVER convert (super-shielded - Regatta's rails,
+        /// <c>PrismTeamManager.Steal</c> refuses them outright) is always dry, however full the
+        /// meter: spiking it changes nothing.</item>
+        /// </list>
+        /// </summary>
+        public static bool IsDryCrawl(bool hostile, bool rideSlowed, bool convertible, bool canAffordSpike) =>
+            hostile && rideSlowed && (!convertible || !canAffordSpike);
 
         static bool Threads(in UrchinRailScan scan, float capture, bool crawlingDry, float dryCrawlArc) =>
             scan.Valid && scan.MinDistance <= capture && (!crawlingDry || scan.ArcToMin <= dryCrawlArc);

@@ -1391,9 +1391,15 @@ this list.
 - **The ghost is collider-only.** The hull does not visually phase, so a slip currently reads as
   "nothing happened" until you fly through a prism. A dissolve on the hull material would make the
   ability legible; continuity of existence applies (fade, do not blink).
-- **No AI path.** `AIPilot` has no notion of attaching, so an AI Urchin never rides. It will
-  attach on incidental contact and then sit on the ribbon at zero throttle, which is worth
-  checking before shipping AI-backfilled Urchin matches.
+- ~~**No AI path.**~~ **Landed:** `UrchinAutopilotDriver` (#975) chooses the rail for every mode
+  that seats an AI Urchin — Skein, Hijack and (Regatta follow-up) Regatta: ride it, reverse onto
+  it, or Slip off it, plus the parked-ride escape. Whether the pilot is CRAWLING is asked of the
+  ride itself through **`TrailFollower.IsCrawlTerrain(prism)`** — the same
+  `GetTerrainAwareBlockSpeed` rule the ride applies, so a Time-5 Slipstream (hostile mass at
+  friendly speed) is not a crawl and an autopilot cannot disagree with the speed it is riding at.
+  A crawl over SUPER-SHIELDED mass (Regatta's rails) is always "dry" — no spike can convert it —
+  so the AI leaves a rival's rail unless the ring is a short crawl away (`REGATTA.md` §6). A
+  CLOSED trail (`Trail.IsLoop`, Regatta's lanes) is walked with wrap-around, as the ride wraps.
 
 ---
 

@@ -1035,6 +1035,12 @@ references, m_Script classes). Four things that cost time on the first run (2026
   With only a .NET 10 SDK, `depublicize()` dies with `IndexError: list index out of range` after a
   full ten-minute fetch, which reads as a broken tool. Install the 8.0 channel per-user (above) and
   point `DOTNET_ROOT` at it; `TMPDIR` decides where the ~550 MB cache lands.
+- **`check_generated_assets.py` needs the SAME `DOTNET_ROOT` and `TMPDIR` the compile ran with.**
+  Run it bare after a compile that used a per-user SDK and it says `no Roslyn tools in
+  <TMPDIR>/unity_refcompile_cache/tools - run run.sh first` — while the tools sit in that very
+  directory. It is not missing the cache; it cannot find `csc.dll` under the system
+  `DOTNET_ROOT`. Export both for the audit too (2026-10-08). Negative-control it the same way as
+  the compile: misspell one key in a changed asset, confirm `[field] 1` names it, restore.
 - **"218 errors" is not 218 errors.** Read the `ERRORS in project code:` line. The large bucket is
   files that `using` a UGS package no mirror carries (Multiplayer, Friends, Leaderboards); they are
   counted, not judged. Check your own files are not in that bucket (they would be unverified):
@@ -1049,6 +1055,17 @@ references, m_Script classes). Four things that cost time on the first run (2026
   silently left out and the run is green without having compiled it. Read the
   `editor config: + N Editor-folder file(s) changed since …` line and confirm your file is named;
   if not, commit first and re-run (2026-10-06: `SkimRaceAITests.cs` was missing until committed).
+- **`check_generated_assets.py` needs `DOTNET_ROOT` exported too, and lies about why when it
+  is not.** Without it the audit says `no Roslyn tools in …/tools - run run.sh first` even though
+  `run.sh` just populated that folder — it looks for `csc.dll` under `$DOTNET_ROOT`, not under the
+  cache. Export the same `DOTNET_ROOT`/`PATH`/`TMPDIR` you gave `run.sh`. It also audits only what
+  is COMMITTED since the base (`audited 0 added + 0 modified` on an uncommitted tree is not a pass).
+- **`--config editor` puts a test's `LogAssert` in the "unverified" bucket, not the error count.**
+  `UnityEngine.TestTools.LogAssert` lives in the test-framework DLL, which is not among its
+  references, so a new edit-mode test that uses it reports `CS0103 'LogAssert'` under *unverified*.
+  Confirm the same call already compiles in an existing test (`GameObjectExtensionTests` uses
+  `LogAssert.Expect(LogType.Error, new Regex(...))`) rather than reading it as a defect — and do
+  read the bucket, because everything ELSE in your test file was bound for real.
 - **Negative-control both tools before quoting them**: plant a call to a missing member in a file
   you changed (the compile must fail with that file tagged `[CHANGED-TONIGHT]`), and misspell one
   key in an asset you changed (the audit must name the file and the key). Restore, then
@@ -2381,6 +2398,25 @@ measured at 0.991, so 1.25 ships with headroom). The constant then arrives with 
 derivation attached, and re-running the harness after any shader edit re-checks it. Assert the
 ratio in the harness, so a later change to the motion that widens the envelope fails there
 rather than as prisms popping at the screen edge.
+
+**Prove a shader REFACTOR behaviour-neutral by compiling BOTH revisions into one binary.**
+Factoring a term out of a shipped function (2026-10: `ChargeCrystalDischarge` out of
+`ChargeCrystalSurface`) is the change most likely to be "obviously the same" and least likely to be
+checked. `git show HEAD:<file>.hlsl > old.hlsl`, translate old and new through the same `SUBS`, wrap
+them in `namespace OLD { … }` / `namespace NEW { … }` (strip the include guard first, or the second
+copy compiles to nothing), and `memcmp` the two entry points over a few hundred thousand random
+inputs — include the degenerate ones (here: an all-zero barycentric, the unbaked fail-safe). Then
+assert the extracted term equals the old function with the rest zeroed out, and negative-control
+by perturbing one expression in `NEW` (it must report thousands of mismatches). Zero bitwise
+mismatches is a stronger claim than "it compiles and looks right", and costs ten minutes.
+
+**A NEW URP `.shader` can be front-end compiled with the repo's own glslang mock.**
+`Tools/Shaders/verify_prism_slice.py` exports `URP_MOCK` and `glslang_compile(work, include,
+program, stage, entry, defines)`; import it, append the few URP functions your pass calls that the
+mock lacks (`TransformObjectToHClip`, `ComputeFogFactor`, `MixFogColor`, `#define half float`), copy
+any `Assets/...` include into the work dir at the same relative path, and compile every
+`HLSLPROGRAM` vertex+fragment with and without `INSTANCING_ON`. It proves the shader's OWN code
+type-checks, nothing about URP; negative-control it (drop an argument from a call) before quoting.
 
 **Reuse an existing harness's shim for a DIFFERENT function in the same file — do not write a
 second one.** `Tools/Shaders/verify_prism_shard3d.py` exposes `SHIM`, `translate()` and

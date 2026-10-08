@@ -169,6 +169,12 @@ namespace CosmicShore.Gameplay
                 Course = shipStatus.Course,
                 Speed = shipStatus.Speed,
                 PlayerName = shipStatus.PlayerName,
+                // A hull with its own retirement carries the crystal's body itself (the Squirrel
+                // morphs it into its boost ring), so only the spray is withheld — the sound and the
+                // latch belong to the pickup. That animation runs from
+                // VesselImpactor.ExecuteOmniCrystalImpact on every peer; this flag reaches every peer
+                // on the payload the manager already broadcasts.
+                SuppressHusk = vesselImpactee.OmniCrystalRetirement != null,
             };
             // Manager-less local mint (conveyor toy): explode locally so the spent-crystal
             // VFX still plays (continuity of existence) instead of the crystal popping out.
