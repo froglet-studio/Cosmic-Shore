@@ -95,13 +95,40 @@ namespace CosmicShore.Tests
         // ── Autopilot (an AI Grizzly that cannot bomb never launches) ──
 
         [Test]
-        public void AutopilotDriveIsOnAndFreezesInsideItsOwnBlast()
+        public void AutopilotDriveIsOnAndDetonatesInsideItsOwnBlast()
         {
             Assert.Greater(_cfg.AiFireStickBand, 0f,
                 "the shipped band is 0, which disables the drive - every AI Grizzly flies at cruise");
             Assert.Less(_cfg.AiFreezeDistance, _cfg.MaxBlastScale * 0.5f,
                 "an autopilot that freezes its bomb outside the blast radius is never launched by it");
-            Assert.LessOrEqual(_cfg.AiDetonateDistance, _cfg.AiFreezeDistance);
+            Assert.Greater(_cfg.AiDetonateBehindDistance, 0f,
+                "the launch is AWAY from the bomb, so the autopilot must blow it once it is BEHIND the hull");
+            Assert.Less(_cfg.AiDetonateBehindDistance, _cfg.MaxBlastScale * 0.5f,
+                "an autopilot that waits until its bomb is outside the blast is never launched by it");
+        }
+
+        // ── Small before, big after (design ask, 2026-10-08) ──
+
+        [Test]
+        public void TheBombIsSmallAndItsBlastIsHuge()
+        {
+            // A blast's SCALE is its diameter (the AOE sphere's collider radius is 0.5), as is the
+            // projectile's. "Smaller before it explodes, bigger explosion": every bomb's blast must
+            // be at least ten times the bomb, and a full squeeze's blast the biggest Grizzly blast.
+            for (float size = 0f; size <= 1.0001f; size += 0.1f)
+                Assert.GreaterOrEqual(_cfg.BlastScaleForSize(size), 10f * _cfg.ProjectileScaleForSize(size),
+                    $"at size {size:F1} the blast is not ten times the bomb");
+            Assert.Greater(_cfg.MaxBlastScale, 120f,
+                "a full squeeze must out-blast the charged cannon's full charge (120)");
+        }
+
+        [Test]
+        public void TheLaunchIsStrongestAtTheBombAndNeverInverts()
+        {
+            Assert.Greater(_cfg.SelfLaunchMultiplier, 0f, "a self-launch of 0 launches nobody");
+            Assert.Greater(_cfg.SelfLaunchSeconds, 0f);
+            Assert.GreaterOrEqual(_cfg.SelfLaunchEdgeStrength, 0f, "a negative edge strength would pull you INTO the bomb");
+            Assert.LessOrEqual(_cfg.SelfLaunchEdgeStrength, 1f, "the edge of a blast must not throw harder than its heart");
         }
     }
 }

@@ -21,8 +21,8 @@ namespace CosmicShore.Tests
     /// (closed ring, shell, mouth separation, pole placement) is re-asserted against the
     /// Grizzly's settings - a change to the shared solver has to keep every mode's contract - and
     /// the ladder half is the Grizzly's own. The vessel constants are read back off the shipped
-    /// prefab, the trigger-bomb config, the self-launch effect and the blast prefab, so a retune
-    /// of any of them names every corner that moved with it.</para>
+    /// prefab, the trigger-bomb config (which owns the self-launch since 2026-10-08) and the blast
+    /// prefab, so a retune of any of them names every corner that moved with it.</para>
     /// </summary>
     public class GrizzlyTimeCourseTests
     {
@@ -81,7 +81,6 @@ namespace CosmicShore.Tests
         {
             const string prefab = "Assets/_Prefabs/Spacevessels/Grizzly.prefab";
             const string bombs = "Assets/_SO_Assets/VesselActions/Grizzly/GrizzlyTriggerBombConfig.asset";
-            const string impulse = "Assets/_SO_Assets/Effects/Vessel Explosion Effects/VesselImpulseByExplosionEffect.asset";
             const string blast = "Assets/_Prefabs/Projectile/AOEGrizzlyExplosion.prefab";
             const string why = " moved - GrizzlyTimeCourse states it as a constant and the whole ladder is cut against it. " +
                                "Update the constant, re-run the sweep and re-read GRIZZLYTIME.md §4.";
@@ -92,8 +91,8 @@ namespace CosmicShore.Tests
                 Mathf.Min(AssetFloat(prefab, "PitchScaler"), AssetFloat(prefab, "YawScaler")), 1e-4f, "Grizzly Pitch/YawScaler" + why);
             Assert.AreEqual(GrizzlyTimeCourse.MinBlastScale, AssetFloat(bombs, "minBlastScale"), 1e-4f, "trigger bomb minBlastScale" + why);
             Assert.AreEqual(GrizzlyTimeCourse.MaxBlastScale, AssetFloat(bombs, "maxBlastScale"), 1e-4f, "trigger bomb maxBlastScale" + why);
-            Assert.AreEqual(GrizzlyTimeCourse.SelfLaunchMultiplier, AssetFloat(impulse, "selfLaunchMultiplier"), 1e-4f, "selfLaunchMultiplier" + why);
-            Assert.AreEqual(GrizzlyTimeCourse.ImpulseDuration, AssetFloat(impulse, "impulseDuration"), 1e-4f, "impulseDuration" + why);
+            Assert.AreEqual(GrizzlyTimeCourse.SelfLaunchMultiplier, AssetFloat(bombs, "selfLaunchMultiplier"), 1e-4f, "trigger bomb selfLaunchMultiplier" + why);
+            Assert.AreEqual(GrizzlyTimeCourse.ImpulseDuration, AssetFloat(bombs, "selfLaunchSeconds"), 1e-4f, "trigger bomb selfLaunchSeconds" + why);
             Assert.AreEqual(GrizzlyTimeCourse.ExplosionDuration, AssetFloat(blast, "ExplosionDuration"), 1e-4f, "AOEGrizzlyExplosion ExplosionDuration" + why);
         }
 

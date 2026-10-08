@@ -2,15 +2,21 @@
 
 Each trigger owns **one bomb**. Pull and release to fire it; pull again to **freeze** it where it
 is; let go to **detonate** it. How hard you squeeze is the bomb: the peak pressure of the firing
-pull sets the **ammo spent**, the bomb's **visible size** and the **blast's size** together. A
-Grizzly inside its own blast is **launched** along its nose.
+pull sets the **ammo spent** and the **size** of both the bomb and its blast. A Grizzly inside its
+own blast is **thrown away from the bomb**.
 
-Replaced the bomb pump (2026-10-02 → 2026-10-08) at the design owner's request, after a playtest:
-*"I was expecting to have two different explosives each controlled by the two triggers. The amount
-I press the analog trigger should control the amount of ammo used and the size of the explosion.
-The projectile should be visible and travel at decent speed — faster than the vessel but not too
-fast to track. Pulling the trigger again should freeze it in place. Letting go of the trigger
-should detonate the explosion. This explosion should launch the Grizzly."*
+History, all at the design owner's request after playtests:
+
+- **2026-10-02 → 10-08 — the bomb pump.** Blasts kicked you along the nose; they never launched
+  you, because they were spawned with `AffectSelfOverride = false` and the cannon's self-launch
+  effect only reaches a shooter its blast is allowed to hit.
+- **2026-10-08 — trigger bombs:** *"two different explosives each controlled by the two triggers…
+  the amount I press… should control the amount of ammo used and the size of the explosion… visible
+  and travel at decent speed — faster than the vessel but not too fast to track. Pulling the
+  trigger again should freeze it in place. Letting go… should detonate. This explosion should
+  launch the Grizzly."*
+- **2026-10-08 — the second pass:** *"the bombs should launch you away from the bomb and make the
+  bomb look good… smaller before it explodes but bigger explosion."*
 
 ## The gesture (per trigger)
 
@@ -26,58 +32,78 @@ its 3 s fuse runs out. LT and RT are fully independent — two bombs can be in f
 going off at once. It is the charged cannon's lifecycle (`GRIZZLY_CHARGED_CANNON.md`) with
 **pressure** where the cannon has **hold time**.
 
-## Why the pump never launched you
+## The launch — away from the bomb
 
-The pump's blasts were spawned with `AffectSelfOverride = false` so they would spare the pilot's
-own trail — and `AffectSelfOverride` is also what makes the shooter a valid impact pair for
-`VesselImpulseByExplosionEffectSO`, the effect that launches a Grizzly caught in its own blast.
-So no pump bomb could ever launch its pilot; the pump's only push was a separate 10–40 u/s kick
-along the nose. The trigger bombs detonate with `AffectSelfOverride = true`, exactly as the cannon
-does, and accept the cannon's trade: **a blast that can launch you also breaks your own trail
-inside it.**
+`GrizzlyTriggerBombExecutor.LaunchSelf`, applied at detonation:
 
-## The launch
+- **Direction: from the bomb to you.** Leave a frozen bomb **behind** you and blow it — you are
+  thrown forward. Beside you — you are thrown sideways. Ahead of you — it stops you dead. (Sitting
+  exactly on it, the nose stands in for "away".) The charged cannon still launches you along the
+  nose (`VesselImpulseByExplosionEffectSO`); only the trigger bombs push away from themselves.
+- **Strength:** the blast's own impulse, `blast scale / ExplosionDuration (1.2 s)`, ×
+  `selfLaunchMultiplier` (1.5) — **full at the bomb, easing to half at the blast's edge**
+  (`selfLaunchEdgeStrength` 0.5), nothing outside it — over `selfLaunchSeconds` (1 s, cosine
+  ease-out), clamped by the vessel's **100 u/s** velocity ceiling. A full squeeze (scale 200)
+  hands over 250 u/s at the bomb, so a full launch ridden close sits **on the ceiling for its
+  whole second** and carries the hull **~100 u** (`GrizzlyTimeCourse.CarryAfterLaunch`).
+- **Reach:** blast radius is half its scale (the AOE sphere's collider radius is 0.5): **100 u**
+  for a full squeeze, **25 u** for a tap.
+- **Your own trail is SPARED.** The blast is spawned with `AffectSelfOverride = false`: your own
+  domain's mass shields instead of breaking and teammates are untouched, while enemy mass and
+  pilots inside it are hit and knocked back radially (the impulse effect's bystander path). The
+  launch no longer needs the blast to hit you, because the executor applies it directly — so the
+  cannon's "launch costs your trail" trade is gone for the bombs.
+- A dug-in Grizzly is blasted out of turret stance (through the controller, so the replicated flag
+  stays in sync).
+- Applied on the **simulating machine** only (your client, or the server for an AI): the hull's
+  transform is what replicates.
 
-`VesselImpulseByExplosionEffectSO` (in `GrizzlyExplosionImpactorDataContainer`, on
-`AOEGrizzlyExplosion.prefab`):
+## Small before, big after
 
-- **Direction:** along the Grizzly's **nose** — the one direction the pilot controls — not away
-  from the blast. Point, then blow.
-- **Strength:** `blast scale / ExplosionDuration (1.2 s) × selfLaunchMultiplier (1.5)`, eased
-  1.5 → 0.5 over `impulseDuration` (1 s) and clamped by the vessel's **100 u/s** velocity ceiling.
-  A full squeeze (scale 120) hands over 150 u/s and sits on the ceiling for ~0.7 s; a tap (scale
-  30) hands over 37.5 u/s. A full launch carries the hull **~95 u** (`GrizzlyTimeCourse
-  .CarryAfterLaunch`).
-- **Reach:** you are launched only if you are **inside** the blast when it goes off. Blast radius
-  is half its scale (the AOE sphere's collider radius is 0.5): **60 u** for a full squeeze, **15 u**
-  for a tap. Small bombs are for hitting things; big ones are for riding.
-- A dug-in Grizzly is blasted out of turret stance (`selfLaunchUnplants`).
+| Squeeze | Bomb size | Ammo | Bomb (diameter) | Blast (radius) | Launch at the bomb |
+|---|---|---|---|---|---|
+| tap (≤ 0.1 pressure) | 0 | 0.08 | 2.5 | 50 (25 u) | 62.5 u/s |
+| half | ~0.5 | ~0.22 | ~3.75 | ~125 (~62 u) | ~156 → ceiling |
+| full (≥ 0.95) | 1 | 0.35 | 5 | 200 (100 u) | 250 → ceiling 100 u/s |
+
+Every blast is at least **ten times** its bomb (`TheBombIsSmallAndItsBlastIsHuge`), and a full
+squeeze out-blasts the charged cannon's full charge (120).
+
+## The look — `GrizzlyBomb.prefab` + `GrizzlyBombVisual`
+
+The bombs used to fire the cannon's round (`GrizzlyShell`), which is why they looked like cannon
+shells. They now have their own projectile, built from that shell by
+`Tools/Build/author_grizzly_bomb_assets.py`, and their own pool, factory and `Gun` on the
+cannon's muzzle (the cannon is untouched):
+
+- **Core** — a small dark body with a hot fresnel rim in the **firing pilot's domain colour**
+  (`SO_ColorSet.GetDomainSignalColor`), casting no shadow.
+- **Halo** — an additive glow billboard (`glow1_ADD`) around the core that **breathes with the
+  fuse**: 2.5 breaths/s at the muzzle climbing to 11/s at the end of the fuse (quadratically — the
+  last second is the frantic one), each peak flashing toward a warm spark colour. You can read how
+  long a bomb has left without a HUD.
+- **Armed** — freezing a bomb stops its streak, **flares the halo** to 5× the core and strobes it
+  at 14/s: "this one is about to go".
+- **Streak** — a 0.3 s domain-coloured trail behind the flying bomb (Unity's Default-Line
+  material, coloured per shot through the trail's own gradient), sized to the bomb.
+
+All colour rides `MaterialPropertyBlock`s on shared materials — no material instances. Pooled
+shells are reset on every `Arm`.
 
 ## Ammo
 
-A new resource, **Ammo** (index 1 on `Grizzly.prefab`'s `ResourceSystem`; Energy stays index 0 and
-belongs to the charged cannon). Full pool 1.0, starts full, regenerates **0.15 / s**.
+**Ammo** is index 1 on `Grizzly.prefab`'s `ResourceSystem` (Energy stays index 0, the cannon's).
+Full pool 1.0, starts full, regenerates **0.15 / s**; about three full squeezes in a burst, then
+one every ~2.3 s. A pull the pool cannot pay for in full fires **the biggest bomb it can pay for**;
+under 0.08 it fizzles. The HUD shows it as an orange **Ammo** bar above the Energy bar.
 
-| Squeeze | Bomb size | Ammo | Bomb scale | Blast scale (radius) | Launch |
-|---|---|---|---|---|---|
-| tap (≤ 0.1 pressure) | 0 | 0.08 | 8 | 30 (15 u) | 37.5 u/s |
-| half | ~0.5 | ~0.22 | ~14 | ~75 (~37 u) | ~94 u/s |
-| full (≥ 0.95) | 1 | 0.35 | 20 | 120 (60 u) | 150 → ceiling 100 u/s |
+## The projectile's flight
 
-A pull the pool cannot pay for in full fires **the biggest bomb it can pay for**; a pool under
-0.08 fizzles. A full pool is about **three full squeezes**, then one every ~2.3 s. The HUD shows
-the pool as an orange **Ammo** bar just above the Energy bar.
-
-## The projectile
-
-Fired from the charged cannon's `Gun` (shared — `Gun` keeps no per-shot state), each trigger
-yawed **3°** off the muzzle (LT left, RT right) so two bombs read as two. Muzzle speed **90 u/s**
-on top of the hull's own velocity, so a bomb from a cruising Grizzly leaves at ~140 u/s — well
-ahead of you, easy to track. Projectile flight eases to rest over the fuse
-(`Projectile.MoveProjectileAsync`: `cos(πt / 2T)`), so a cruising Grizzly **catches its own bomb**
-about 2.3 s after firing — the moment to freeze-and-blow is built into the flight. Range is
-`speed × 2T/π` ≈ 270 u at cruise (vessel contract rule 34). The bomb is sized 8–20 by the
-squeeze, so you can see how big the blast will be before it goes off.
+Muzzle speed **90 u/s** on top of the hull's own velocity (~140 u/s from a cruising Grizzly — well
+ahead of you, easy to track), each trigger yawed **3°** off the muzzle (LT left, RT right). The
+flight eases to rest over the 3 s fuse (`Projectile.MoveProjectileAsync`: `cos(πt / 2T)`), so a
+cruising Grizzly catches its own bomb after ~2.3 s; range ≈ `speed × 2T/π` ≈ 270 u (vessel
+contract rule 34). The natural move: fire, pull to freeze as you close on it, fly past, release.
 
 ## Controls
 
@@ -93,24 +119,21 @@ Mouse buttons and the shift keys report no analog value, so every desktop bomb i
 
 ## Multiplayer
 
-Every peer simulates, exactly as the cannon does: presses and releases are replayed to every peer
-(owner → server → all, `R_VesselActionHandler`) and each peer fires its own local bomb. The size
-comes from `InputStatus.Left/RightTriggerAnalog`, an **owner-written NetworkVariable** every peer
-reads, so peers size the bomb from the same pull. The owner-only relay the pump needed
-(`GrizzlyBombNetworkRelay`) is deleted. Known limit: a tap shorter than one network tick can be
-sampled smaller on a remote peer than on the owner — the owner's blast is the one that launches
-the owner's hull, and the hull's transform is what replicates.
+Every peer simulates, as the cannon does: presses and releases are replayed to every peer
+(owner → server → all) and each peer fires its own local bomb, sized from
+`InputStatus.Left/RightTriggerAnalog` (an owner-written NetworkVariable every peer reads). The
+self-launch is applied on the simulating machine only. Known limit: a tap shorter than one
+network tick can be sampled smaller on a remote peer than on the owner.
 
 ## AI
 
-An autopilot presses no triggers (`AIPilot` writes stick and throttle only), so
-`GrizzlyTriggerBombExecutor` carries an **autopilot drive** on the simulating machine: while the
-stick is straight (inside `aiFireStickBand` 0.35) and the pool can buy a full bomb, fire one; freeze
-it **18 u** ahead (`aiFreezeDistance`, inside the 60 u blast); detonate it once the hull is within
-**10 u** or has passed it (or after 1.5 s) — a launch. Triggers alternate at most every 0.6 s. Every
-step goes through `PerformShipControllerActionsReplicated` / `StopShipControllerActionsReplicated`,
-so every peer runs the same bomb. The drive is gated on the PILOT, so the menu's lava-lamp Grizzly
-and released companions bomb-jump too. `aiFireStickBand = 0` turns it off.
+`GrizzlyTriggerBombExecutor`'s **autopilot drive**, on the simulating machine: while the stick is
+straight (inside `aiFireStickBand` 0.35) and the pool can buy a full bomb, fire one; freeze it
+**18 u** ahead (`aiFreezeDistance`); **fly past it** and detonate once it is **10 u behind**
+(`aiDetonateBehindDistance`, well inside the 100 u blast), or after 1.5 s — so the AI is thrown
+forward, away from its bomb. Triggers alternate at most every 0.6 s; every step goes through the
+replicated press/release, so every peer runs the same bomb. Gated on the PILOT, so the menu's
+lava-lamp Grizzly and released companions bomb-jump too. `aiFireStickBand = 0` turns it off.
 
 ## Files
 
@@ -118,67 +141,66 @@ and released companions bomb-jump too. `aiFireStickBand = 0` turns it off.
 |---|---|
 | `Data Containers/GrizzlyBombActionSO.cs` | Trigger action (side only); press → `OnPress`, release → `OnRelease` |
 | `Data Containers/GrizzlyTriggerBombConfigSO.cs` | All tuning + the pure pressure → size / ammo / scale maps |
-| `Executors/GrizzlyTriggerBombExecutor.cs` | Two per-trigger state machines, pressure tracking, fire / freeze / detonate, autopilot drive |
+| `Executors/GrizzlyTriggerBombExecutor.cs` | Per-trigger state machines, pressure tracking, fire / freeze / detonate, `LaunchSelf`, autopilot |
+| `Controller/Projectiles/GrizzlyBombVisual.cs` | The bomb's fuse pulse, armed flare, domain tint, streak |
+| `_Prefabs/Projectile/GrizzlyBomb.prefab` | The bomb (generated) |
 | `_SO_Assets/VesselActions/Grizzly/GrizzlyBomb{Left,Right}Action.asset`, `GrizzlyTriggerBombConfig.asset` | Assets |
-| `_Prefabs/Spacevessels/Grizzly.prefab` | Bindings, executor (wired to the cannon's `Gun`), **Ammo** resource, **AmmoBar** HUD |
+| `_Prefabs/Spacevessels/Grizzly.prefab` | Bindings, executor, the bombs' pool / factory / `Gun`, **Ammo** resource, **AmmoBar** HUD |
 | `UI/View/GrizzlyHUDView.cs`, `UI/Controller/GrizzlyHUDController.cs` | `ammoFill` / `SetAmmo`, bound to the resource named `Ammo` |
-| `Tests/Editor/GrizzlyTriggerBombTests.cs` | Edit-mode tests of the maps and the affordability rule |
+| `Tests/Editor/GrizzlyTriggerBombTests.cs` | Size / ammo / affordability / small-vs-big / launch / autopilot |
+| `Tools/Build/author_grizzly_bomb_assets.py` | Authors `GrizzlyBomb.prefab` from `GrizzlyShell.prefab` and wires the bombs' pool onto the Grizzly (`--check`) |
 
-The executor and config keep the pump's script GUIDs (renamed in place), so every prefab and asset
-reference survived the rename.
+## Tuning knobs
 
-## Tuning knobs (`GrizzlyTriggerBombConfig.asset`)
+`GrizzlyTriggerBombConfig.asset`:
 
 | Field | Shipped | Effect |
 |---|---|---|
 | `pressureForMinBomb` / `pressureForMaxBomb` / `pressureExponent` | 0.1 / 0.95 / 1 | Pressure window → size 0..1 |
-| `ammoIndex` | 1 | The Ammo resource |
-| `minAmmoCost` / `maxAmmoCost` | 0.08 / 0.35 | Ammo per tap / full squeeze |
-| `projectileSpeed` | 90 | Added to the hull's velocity |
-| `projectileTime` | 3 | Fuse; the flight eases to rest over it |
-| `minProjectileScale` / `maxProjectileScale` | 8 / 20 | Visible bomb size |
+| `ammoIndex` / `minAmmoCost` / `maxAmmoCost` | 1 / 0.08 / 0.35 | Ammo per tap / full squeeze |
+| `projectileSpeed` / `projectileTime` | 90 / 3 | Muzzle speed over the hull's; fuse |
+| `minProjectileScale` / `maxProjectileScale` | 2.5 / 5 | Bomb diameter — small on purpose |
 | `sideYawDegrees` | 3 | LT left / RT right |
-| `minBlastScale` / `maxBlastScale` | 30 / 120 | Blast size → reach (½ scale) and launch strength |
-| `aoePrefabs` | `AOEGrizzlyExplosion` | Same blast as the cannon |
-| `aiFireStickBand` / `aiFreezeDistance` / `aiDetonateDistance` / `aiFireIntervalSeconds` | 0.35 / 18 / 10 / 0.6 | Autopilot drive |
+| `minBlastScale` / `maxBlastScale` | 50 / 200 | Blast diameter → reach (½) and launch strength |
+| `selfLaunchMultiplier` / `selfLaunchSeconds` / `selfLaunchEdgeStrength` | 1.5 / 1 / 0.5 | The launch away from the bomb |
+| `aiFireStickBand` / `aiFreezeDistance` / `aiDetonateBehindDistance` / `aiFireIntervalSeconds` | 0.35 / 18 / 10 / 0.6 | Autopilot |
 | `fireEvent` / `detonateEvent` | empty | FMOD — ship silent until audio authors them (LOCKED convention) |
 
-Launch strength itself lives on `VesselImpulseByExplosionEffect.asset` (`selfLaunchMultiplier` 1.5,
-`impulseDuration` 1) and is shared with the cannon. Ammo regen is `resourceGainRate` on the Ammo
-entry of `Grizzly.prefab`'s `ResourceSystem` (0.15).
+`GrizzlyBomb.prefab` → `GrizzlyBombVisual` (authored by the generator — edit there, re-run):
+`pulseHzAtLaunch` 2.5, `pulseHzAtFuseEnd` 11, `haloScale` 3, `pulseAmplitude` 0.22,
+`armedHaloScale` 5, `armedPulseHz` 14, `rimIntensityPeak` / `Trough` 6 / 1.5, `sparkColor`,
+`sparkMix` 0.45, `coreDarkness` 0.12, `trailWidthFactor` 0.7; streak length `TRAIL_SECONDS` 0.3.
+Ammo regen is `resourceGainRate` on the Ammo entry of `Grizzly.prefab` (0.15).
 
 ## In-editor verification
 
 Not run in the editor — no Unity in the authoring session. Steps:
 
-1. **Fire and watch.** Fly a Grizzly (Menu freestyle via the Vessel Changer). Squeeze RT fully and
-   release: a visible bomb leaves the nose slightly right, clearly faster than you, and the orange
-   Ammo bar drops by about a third.
-2. **Freeze and launch.** Fire RT, pull RT again as you close on it: the bomb stops dead. Fly up
-   to it and release: it blows, and **you are thrown forward along your nose** hard (~3× cruise
-   for about a second). Turn first, then blow — you go where you point.
-3. **Pressure.** Feather LT (light pull) and release: a small bomb, a small Ammo dip, a small blast
-   (15 u). It should not launch you unless you are right on it. Full squeeze: big bomb, big dip.
-4. **Two bombs.** Fire LT and RT back to back: two bombs fly side by side; freeze and blow each
-   independently.
-5. **Fuse and impact.** Fire and do nothing: the bomb slows, stops ~270 u out, and goes off. Fire
-   into a prism wall: it goes off on contact.
-6. **Empty pool.** Fire full bombs until the bar is low: the next squeeze fires a smaller bomb; at
-   the bottom a pull does nothing. The bar refills at ~0.15/s.
-7. **AI.** Release an AI Grizzly from the Spawn Matrix hangar: it fires, freezes and blows bombs
-   just ahead of itself and visibly lunges forward on each.
-8. **MPPM two clients.** Client A fires and freezes; client B sees A's bombs in the same places at
-   the same sizes, and A lunging on detonation.
-9. **Regression.** X still fires the charged cannon exactly as before; Energy bar unaffected by
-   trigger bombs. Console clean — in particular no `[GrizzlyTriggerBomb]` errors.
+1. **The bomb.** Fly a Grizzly (Menu freestyle via the Vessel Changer). Squeeze RT: a **small**
+   glowing bomb in your domain colour leaves slightly right of the nose, faster than you, with a
+   short streak; its glow breathes, faster and faster as its fuse runs. Ammo bar (orange) drops ~⅓.
+2. **Freeze.** Pull RT again: it stops, the streak ends, the glow **flares wide and strobes**.
+3. **Launch away.** Fly past the frozen bomb and release when it is just behind you: a **huge**
+   blast, and **you are thrown forward, away from it** (~3× cruise for a second). Try it beside
+   you — thrown sideways; ahead of you — stopped. Blow it at the far edge of its blast — a weaker
+   throw.
+4. **Your trail survives** your own blast; an enemy trail inside it breaks; an enemy pilot inside
+   it is knocked away.
+5. **Pressure.** Feather LT: a tiny bomb, small dip, a 25 u blast. Full squeeze: a 100 u blast.
+6. **Two bombs, fuse, impact, empty pool** — as before: independent; an unfrozen bomb goes off at
+   rest (~3 s) or on the first prism; a low pool fires smaller; an empty one fizzles.
+7. **The cannon is unchanged**: X fires the cannon's own shell and still launches along the nose.
+8. **AI** — an AI Grizzly fires, freezes, flies past and blows its bombs, lunging forward each time.
+9. **MPPM two clients** — each peer sees the other's bombs pulse, freeze and blow in the same places.
+10. **Console clean** — no `[GrizzlyTriggerBomb]` errors; no missing-script warnings on
+    `Grizzly.prefab` or `GrizzlyBomb.prefab`.
 
 ## Follow-ups
 
 - **No element scales the trigger bombs** — the four elements are spoken for (Space = cannon, Mass
-  = weapon systems, Charge = Dig In, Time = Rush). Candidates for design: Space on blast scale
-  (the cannon's own channel), Time on ammo regen.
-- **No HUD cue per trigger** beyond the Ammo bar — a bomb in flight / frozen per side would be a
-  pair of pips. `OnBombStateChanged` / `OnBombFired` / `OnBombDetonated` are the hooks.
-- **Own-trail damage** is the cannon's accepted trade; if trigger bombs need to spare the trail,
-  that is an `ExplosionImpactor` change (split "self is a valid pair" from "destroy own prisms"),
-  not a config value.
+  = weapon systems, Charge = Dig In, Time = Rush). Candidates for design: Space on blast scale,
+  Time on ammo regen.
+- **No per-trigger HUD pips** beyond the Ammo bar. `OnBombStateChanged` / `OnBombFired` /
+  `OnBombDetonated` are the hooks.
+- **The cannon still launches along the nose.** If it should push away from its blast too, that is
+  one branch in `VesselImpulseByExplosionEffectSO` (its self path) — a design call, not made here.

@@ -866,8 +866,8 @@ same kit. The scene's `maxPlausibleSpeed` is 1400 (the inherited 400 rejects a T
 the shared `HeadlongCircuit` solver, laps, golf on finish time) cut against the Grizzly **riding its
 own blasts** instead of a boost. The hull cruises at 50 u/s on a 30 u circle; its **trigger bombs**
 (LT/RT each fire one, a second pull freezes it, the release detonates it — `GRIZZLY_TRIGGER_BOMBS.md`)
-launch a Grizzly caught in its own blast along its nose, up to the 100 u/s velocity ceiling (150 u/s,
-a 90 u circle), and because a launch keeps going the way the nose pointed every corner asks *how
+throw a Grizzly caught in its own blast AWAY FROM THE BOMB, up to the 100 u/s velocity ceiling (150 u/s,
+a 90 u circle), and because a launch keeps going the way it was thrown every corner asks *how
 much launch is it worth?* — `GrizzlyTimeCourse.CornerRadiusAtLaunch`. **Fourteen gates on a 560 u
 circle** (short legs are what make a corner tight on this metric), two laps, 0 / 1 / 2 / 3 costing
 corners at levels 1–4 (hardest at 100 / 76 / 59 / 47% of top speed), asserted over 400 seeds by
@@ -876,7 +876,7 @@ config, the self-launch effect and the blast prefab. The ladder was first cut ag
 (2026-10-06) that shared the ceiling and turn rate, so it carried over unchanged when the pump was
 replaced by the trigger bombs (2026-10-08); ammo (0.15/s regen, 0.35 per full bomb) now sets the
 sustained pace (~90 u/s). Two hull fixes came with it: `GrizzlyTriggerBombExecutor` carries an
-**autopilot bomb-jump** (fire, freeze 18 u ahead, detonate inside the blast, via replicated
+**autopilot bomb-jump** (fire, freeze 18 u ahead, fly past, detonate it behind, via replicated
 presses), and `Grizzly.prefab`'s `AIPilot` was serialized DISABLED, so no AI Grizzly had ever
 steered — Grizzly Charge's bots included. See `_Scripts/Controller/Arcade/GRIZZLYTIME.md`.
 

@@ -13,7 +13,7 @@ namespace CosmicShore.Gameplay
     ///   pull    -> arm (the peak analog pressure of this pull is the bomb's size)
     ///   release -> fire: spend ammo for that size, launch a visible bomb
     ///   pull    -> freeze the bomb where it is
-    ///   release -> detonate it - and a Grizzly inside its own blast is LAUNCHED
+    ///   release -> detonate it - and a Grizzly inside its own blast is LAUNCHED AWAY FROM IT
     ///
     /// <b>Pressure is the commitment.</b> One number - the peak pressure - sets the ammo spent,
     /// the bomb's visible size and the blast's size together, so a feather tap is a cheap pop
@@ -47,28 +47,37 @@ namespace CosmicShore.Gameplay
         float projectileSpeed = 90f;
         [SerializeField, Tooltip("Fuse, seconds. A bomb nobody freezes detonates where it comes to rest; one that hits a prism detonates there.")]
         float projectileTime = 3f;
-        [SerializeField, Tooltip("Visible bomb scale of a minimum bomb.")]
-        float minProjectileScale = 8f;
-        [SerializeField, Tooltip("Visible bomb scale of a maximum bomb.")]
-        float maxProjectileScale = 20f;
+        [SerializeField, Tooltip("Visible bomb scale of a minimum bomb. Small on purpose: a bomb is a little hot thing that becomes a huge blast (design ask, 2026-10-08).")]
+        float minProjectileScale = 2.5f;
+        [SerializeField, Tooltip("Visible bomb scale of a maximum bomb - still small; the glow halo (GrizzlyBombVisual) carries the read.")]
+        float maxProjectileScale = 5f;
         [SerializeField, Tooltip("Degrees each trigger's bomb is yawed off the muzzle (LT left, RT right) so the two bombs read as two.")]
         float sideYawDegrees = 3f;
 
         [Header("Blast")]
-        [SerializeField, Tooltip("Explosion prefab(s) spawned at detonation. AffectSelfOverride is on: a Grizzly inside its own blast is launched along its nose (VesselImpulseByExplosionEffectSO) - and, as with the cannon, the blast also breaks its own trail.")]
+        [SerializeField, Tooltip("Explosion prefab(s) spawned at detonation. Spawned with AffectSelfOverride OFF: the pilot's own domain is spared (own trail shields, teammates untouched); enemy mass and pilots are hit and knocked back. The pilot's own launch is applied by the executor (Self Launch below).")]
         AOEExplosion[] aoePrefabs;
-        [SerializeField, Tooltip("Blast scale of a minimum bomb. The self-launch impulse is scale / ExplosionDuration x selfLaunchMultiplier, capped by the 100 u/s velocity ceiling.")]
-        float minBlastScale = 30f;
-        [SerializeField, Tooltip("Blast scale of a maximum bomb (the cannon's full charge is 120).")]
-        float maxBlastScale = 120f;
+        [SerializeField, Tooltip("Blast scale of a minimum bomb. Reach is half the scale.")]
+        float minBlastScale = 50f;
+        [SerializeField, Tooltip("Blast scale of a maximum bomb (the cannon's full charge is 120). Reach is half the scale: 100 u.")]
+        float maxBlastScale = 200f;
+
+        [Header("Self launch (away from the bomb)")]
+        [SerializeField, Tooltip("A Grizzly inside its own blast is thrown AWAY FROM THE BOMB at blast scale / ExplosionDuration x this, capped by the 100 u/s velocity ceiling.")]
+        float selfLaunchMultiplier = 1.5f;
+        [SerializeField, Tooltip("Seconds the launch lasts (cosine ease-out, VesselTransformer.ModifyVelocity).")]
+        float selfLaunchSeconds = 1f;
+        [SerializeField, Tooltip("Launch strength at the blast's EDGE as a fraction of the strength at the bomb. 1 = flat; lower rewards blowing it close.")]
+        [Range(0f, 1f)] float selfLaunchEdgeStrength = 0.5f;
 
         [Header("Autopilot")]
-        [SerializeField, Tooltip("An AUTOPILOT presses no triggers (AIPilot writes stick and throttle only), so without this an AI Grizzly never bombs. While AIPilot.AutoPilotEnabled the executor fires full-size bombs while the stick is inside this band, freezes each one Ai Freeze Distance ahead and detonates it as the hull closes on it - a launch. 0 disables the drive.")]
+        [SerializeField, Tooltip("An AUTOPILOT presses no triggers (AIPilot writes stick and throttle only), so without this an AI Grizzly never bombs. While AIPilot.AutoPilotEnabled the executor fires full-size bombs while the stick is inside this band, freezes each one Ai Freeze Distance ahead, flies past it and detonates it behind - a launch. 0 disables the drive.")]
         [Range(0f, 1f)] float aiFireStickBand = 0.35f;
         [SerializeField, Tooltip("How far ahead of the hull an autopilot freezes its bomb, world units. Must sit well inside the blast radius (maxBlastScale / 2) or the launch misses the hull.")]
         float aiFreezeDistance = 18f;
-        [SerializeField, Tooltip("An autopilot detonates a frozen bomb once the hull is this close to it, world units.")]
-        float aiDetonateDistance = 10f;
+        [FormerlySerializedAs("aiDetonateDistance")]
+        [SerializeField, Tooltip("An autopilot flies PAST its frozen bomb and detonates it once it is this far behind the hull, world units - the launch is away from the bomb, so behind you is forward.")]
+        float aiDetonateBehindDistance = 10f;
         [SerializeField, Tooltip("Seconds between autopilot bombs, so the two triggers alternate rather than fire together.")]
         float aiFireIntervalSeconds = 0.6f;
 
@@ -93,7 +102,10 @@ namespace CosmicShore.Gameplay
         public float MaxBlastScale => maxBlastScale;
         public float AiFireStickBand => aiFireStickBand;
         public float AiFreezeDistance => aiFreezeDistance;
-        public float AiDetonateDistance => aiDetonateDistance;
+        public float AiDetonateBehindDistance => aiDetonateBehindDistance;
+        public float SelfLaunchMultiplier => selfLaunchMultiplier;
+        public float SelfLaunchSeconds => selfLaunchSeconds;
+        public float SelfLaunchEdgeStrength => selfLaunchEdgeStrength;
         public float AiFireIntervalSeconds => aiFireIntervalSeconds;
         public EventReference FireEvent => fireEvent;
         public EventReference DetonateEvent => detonateEvent;

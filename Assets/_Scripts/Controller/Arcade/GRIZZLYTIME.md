@@ -10,14 +10,15 @@
 The Grizzly is the fleet's slowest, tightest hull: it cruises at **50 u/s** and turns at
 `50 × 0.1 + 90` = **95 °/s** — a **30 u** circle. Everything past cruise is **riding its own
 blasts** (`R_VesselActions/GRIZZLY_TRIGGER_BOMBS.md`): LT and RT each fire a bomb, a second pull
-freezes it, the release detonates it, and a Grizzly inside its own blast is **launched** along its
-nose. A full squeeze's blast (scale 120) hands over `120 / 1.2 s × 1.5` = 150 u/s, eased
-1.5 → 0.5 over a second and clamped by the vessel's **100 u/s** velocity-modifier ceiling — so a
-launch sits on the ceiling for ~0.7 s and carries the hull **~95 u**. Launching flat out:
+freezes it, the release detonates it, and a Grizzly inside its own blast is **thrown away from
+the bomb** — so the race is fire, freeze, fly past, blow it behind you. A full squeeze's blast
+(scale 200) hands over `200 / 1.2 s × 1.5` = 250 u/s at the bomb, eased 1.5 → 0.5 over a second
+and clamped by the vessel's **100 u/s** velocity-modifier ceiling — so a full launch ridden close
+sits on the ceiling for its whole second and carries the hull **~100 u**. Launching flat out:
 **150 u/s**, three times cruise.
 
 That push is a **world-space** velocity (`VesselTransformer.velocityShift`). It keeps going the
-way the nose pointed when the bomb went off, and the turn rate never sees it. So a corner is one
+way it was thrown when the bomb went off, and the turn rate never sees it. So a corner is one
 question:
 
 > **How much launch is this corner worth?**
@@ -26,7 +27,7 @@ question:
 |---|---|---|---|
 | full | **150 u/s** | **90 u** | riding a full-squeeze blast |
 | ~half | ~100 | ~60 | a half-squeeze blast, or a full one bleeding off |
-| none | 50 | **30 u** | coasting — a pivot, once the last launch has carried its ~95 u |
+| none | 50 | **30 u** | coasting — a pivot, once the last launch has carried its ~100 u |
 
 A launch taken into a corner throws you wide of it; a launch saved for after the corner costs the
 time it takes to fire, freeze and ride the next bomb. **Ammo, not the ceiling, sets the sustained
@@ -95,8 +96,8 @@ trigger. In a race cut around the full-launch circle that would make every bot a
 and an all-AI domain that cannot play is a defect. `GrizzlyTriggerBombExecutor` carries an
 **autopilot drive** (Redline's autopilot Soar, REDLINE.md §5, on the Grizzly's kit): while
 `AIPilot.AutoPilotEnabled` and the stick is straight (inside `aiFireStickBand` 0.35), it fires a
-full bomb, freezes it 18 u ahead, and detonates it as the hull closes on it — a launch — through the
-REPLICATED press/release, so every peer runs the same bomb. Gated on the pilot being an autopilot,
+full bomb, freezes it 18 u ahead, flies past it and detonates it 10 u behind — thrown forward, away
+from it — through the REPLICATED press/release, so every peer runs the same bomb. Gated on the pilot being an autopilot,
 so the menu's lava-lamp Grizzly and a released companion bomb-jump too. `0` disables the drive.
 
 Two prefab defects had to go for any of that to matter (both on `Grizzly.prefab`, both from the
@@ -167,8 +168,8 @@ autopilot bomb-jump (on, and freezing inside its own blast) and the toybox roste
 - **Not editor-verified.** Authored headless: the course and its 14-test suite were compiled and
   run out of editor (Roslyn, against the card-art harness's Unity shim) over 400 seeds × 4
   intensities, and the suite was watched failing under a mutated course. Nobody has flown it.
-- **The launch curve is the steady-state circle.** A launch pushes the way the nose pointed when
-  the bomb went off, so a turn taken mid-launch slides wide of 90 u; every costing corner sits well
+- **The launch curve is the steady-state circle.** A launch keeps the direction it was thrown in
+  when the bomb went off, so a turn taken mid-launch slides wide of 90 u; every costing corner sits well
   inside it (≤ 78 u at the median), so the slide moves no corner across the line — but a play-test
   may want the level-2 corner tighter.
 - **Ammo sets the sustained pace (~90 u/s), and it is a first-pass number.** If races feel like

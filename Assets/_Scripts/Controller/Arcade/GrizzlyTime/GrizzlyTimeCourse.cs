@@ -4,32 +4,33 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// The Grizzly's circuit, stated against the GRIZZLY's own flight model - every number below
-    /// is read off Grizzly.prefab, GrizzlyTriggerBombConfig.asset, VesselImpulseByExplosionEffect
-    /// .asset, AOEGrizzlyExplosion.prefab and VesselTransformer rather than picked by eye, and
+    /// is read off Grizzly.prefab, GrizzlyTriggerBombConfig.asset, AOEGrizzlyExplosion.prefab and
+    /// VesselTransformer rather than picked by eye, and
     /// the intensity ladder is derived from them. The solver is <see cref="HeadlongCircuit"/>,
     /// shared: what makes this course the Grizzly's is the CUT.
     ///
     /// <para><b>The Grizzly's speed is not its throttle.</b> It cruises at 50 u/s and turns at
     /// <c>50 x 0.1 + 90</c> = 95 deg/s - a 30 u circle, the tightest in the fleet. Everything
     /// past cruise comes from riding its own blasts: LT and RT each fire a bomb, a second pull
-    /// freezes it, the release detonates it, and a Grizzly inside its own blast is LAUNCHED along
-    /// its nose (<c>VesselImpulseByExplosionEffectSO</c>, GRIZZLY_TRIGGER_BOMBS.md). A full
-    /// squeeze's blast (scale 120) hands over <c>120 / 1.2 s x 1.5</c> = 150 u/s, eased
-    /// 1.5 -> 0.5 over a second and clamped by the vessel's 100 u/s velocity-modifier ceiling -
-    /// so a launch sits ON the ceiling for its first ~0.7 s: 150 u/s, three times cruise. That
-    /// push is a WORLD-SPACE velocity (<c>VesselTransformer.velocityShift</c>): it keeps going the
-    /// way the nose pointed at detonation, and the turn rate does not see it at all.</para>
+    /// freezes it, the release detonates it, and a Grizzly inside its own blast is LAUNCHED AWAY
+    /// FROM THE BOMB (<c>GrizzlyTriggerBombExecutor.LaunchSelf</c>, GRIZZLY_TRIGGER_BOMBS.md) -
+    /// so the bomb is left BEHIND you and blown. A full squeeze's blast (scale 200) hands over
+    /// <c>200 / 1.2 s x 1.5</c> = 250 u/s at the bomb, eased 1.5 -> 0.5 over a second and clamped
+    /// by the vessel's 100 u/s velocity-modifier ceiling - so a full launch sits ON the ceiling for
+    /// its whole second: 150 u/s, three times cruise. That push is a WORLD-SPACE velocity
+    /// (<c>VesselTransformer.velocityShift</c>): it keeps going the way it was thrown, and the
+    /// turn rate does not see it at all.</para>
     ///
     /// <para><b>So a corner is one question: how much launch is it worth?</b> Launching into a
     /// corner keeps the 150 u/s but the hull swings round at the same 95 deg/s, a 90 u circle;
-    /// coasting it lets the launch bleed off (it carries ~95 u along the heading it was aimed
-    /// down) and the hull pivots on its 30 u cruise circle - and then the next bomb has to be
+    /// coasting it lets the launch bleed off (a full one carries ~100 u the way it was thrown) and
+    /// the hull pivots on its 30 u cruise circle - and then the next bomb has to be
     /// fired, frozen and ridden before the speed is back. <see cref="CornerRadiusAtLaunch"/> is
     /// the curve, the same shape <see cref="RedlineCourse.CornerRadiusAtBoost"/> is for the
     /// Manta's Soar, at a third of the scale.</para>
     ///
-    /// <para><b>The curve is the STEADY-STATE circle.</b> A launch's push points the way the nose
-    /// pointed when the bomb went off, so a turn taken mid-launch slides a little wide of
+    /// <para><b>The curve is the STEADY-STATE circle.</b> A launch's push keeps the direction it
+    /// was thrown in when the bomb went off, so a turn taken mid-launch slides a little wide of
     /// <see cref="FullLaunchRadius"/>. The ladder keeps every demanding corner well inside the
     /// full-launch circle, so the slide moves no corner across the line. The bomb pump this course
     /// was first cut against (2026-10-06) had the same ceiling and the same turn rate, which is
@@ -52,18 +53,18 @@ namespace CosmicShore.Gameplay
 
         /// <summary>`minBlastScale` / `maxBlastScale` on GrizzlyTriggerBombConfig.asset - a tap's
         /// blast and a full squeeze's.</summary>
-        public const float MinBlastScale = 30f;
-        public const float MaxBlastScale = 120f;
+        public const float MinBlastScale = 50f;
+        public const float MaxBlastScale = 200f;
 
         /// <summary>`ExplosionDuration` on AOEGrizzlyExplosion.prefab. An AOE's impulse speed is
         /// <c>MaxScale / ExplosionDuration</c> (<c>AOEExplosion</c>, Inertia 1).</summary>
         public const float ExplosionDuration = 1.2f;
 
-        /// <summary>`selfLaunchMultiplier` on VesselImpulseByExplosionEffect.asset.</summary>
+        /// <summary>`selfLaunchMultiplier` on GrizzlyTriggerBombConfig.asset.</summary>
         public const float SelfLaunchMultiplier = 1.5f;
 
-        /// <summary>`impulseDuration` on VesselImpulseByExplosionEffect.asset - seconds a launch
-        /// lives (cosine ease-out).</summary>
+        /// <summary>`selfLaunchSeconds` on GrizzlyTriggerBombConfig.asset - seconds a launch lives
+        /// (cosine ease-out).</summary>
         public const float ImpulseDuration = 1f;
 
         /// <summary>`velocityModifierMax` on VesselTransformer - the ceiling every launch, kick
@@ -90,7 +91,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>The impulse a bomb of size <paramref name="size01"/> hands the Grizzly that
         /// rides it, before the ease and the ceiling: <c>blast scale / ExplosionDuration x
-        /// selfLaunchMultiplier</c>. 37.5 u/s for a tap, 150 for a full squeeze.</summary>
+        /// selfLaunchMultiplier</c>. 62.5 u/s for a tap, 250 for a full squeeze, at the bomb.</summary>
         public static float LaunchImpulse(float size01) =>
             Mathf.Lerp(MinBlastScale, MaxBlastScale, Mathf.Clamp01(size01)) / ExplosionDuration * SelfLaunchMultiplier;
 
@@ -141,8 +142,9 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// How far one launch of size <paramref name="size01"/> carries the hull along the heading
         /// it was aimed down, over its whole life, clamped by the ceiling as the transformer clamps
-        /// it. ~95 u for a full squeeze - about one full-launch circle, which is why a launch is
-        /// aimed DOWN a leg and a corner is turned before the bomb goes off, not after.
+        /// it, ridden at the bomb (the launch eases toward the blast's edge). ~100 u for a full
+        /// squeeze - about one full-launch circle, which is why a launch is thrown DOWN a leg and a
+        /// corner is turned before the bomb goes off, not after.
         /// </summary>
         public static float CarryAfterLaunch(float size01 = 1f)
         {
@@ -210,8 +212,8 @@ namespace CosmicShore.Gameplay
         public const int GatesPerLap = 14;
 
         /// <summary>The circuit's base circle. Close outside the race cell's nucleus shell (480),
-        /// so fourteen gates leave 250-420 u legs - two and a half to four and a half full launches' carry
-        /// (~95 u each).</summary>
+        /// so fourteen gates leave 250-420 u legs - two and a half to four full launches' carry
+        /// (~100 u each).</summary>
         public const float BaseRadius = 560f;
     }
 }

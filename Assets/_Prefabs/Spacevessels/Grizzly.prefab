@@ -504,6 +504,7 @@ GameObject:
   - component: {fileID: 8882324691466000757}
   - component: {fileID: 2353136872146328024}
   - component: {fileID: 777000000000000035}
+  - component: {fileID: 777000000000000412}
   m_Layer: 8
   m_Name: Ship_Wedge_Projectile
   m_TagString: Untagged
@@ -965,6 +966,8 @@ GameObject:
   - component: {fileID: 9100000000000001020}
   - component: {fileID: 9100000000000001015}
   - component: {fileID: 9100000000000001016}
+  - component: {fileID: 777000000000000410}
+  - component: {fileID: 777000000000000411}
   - component: {fileID: -3607265076877978738}
   - component: {fileID: 874579555101021522}
   - component: {fileID: 1435252848482629424}
@@ -4437,5 +4440,55 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   config: {fileID: 11400000, guid: 55d0a36755aa4d22a9bf278180c97f13, type: 2}
-  gun: {fileID: 2353136872146328024}
+  gun: {fileID: 777000000000000412}
   OnMiniGameTurnEnd: {fileID: 11400000, guid: 498a06d44bde9184f985c938c803b2a1, type: 2}
+--- !u!114 &777000000000000410
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b5daed71d21246db9fdb15a9d495e1ec, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  prefab: {fileID: 7632677803272750685, guid: d6e1fe636eb02bb73852e896ccb0532e, type: 3}
+  defaultCapacity: 4
+  maxSize: 12
+  enableBufferMaintenance: 1
+  bufferSizeTarget: 4
+  maxInstantiateRate: 5
+  baseInstantiateRate: 2
+  maxAddsPerFrame: 2
+--- !u!114 &777000000000000411
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a9b3080b23e64bba93ece7a3dece3463, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  poolEntries:
+  - type: 0
+    poolManager: {fileID: 777000000000000410}
+--- !u!114 &777000000000000412
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3907232763667441001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 35a4e5dfc7064254cb27fc78eefb05a0, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  firePeriod: 0.2
+  sideLength: 2
+  projectileFactory: {fileID: 777000000000000411}

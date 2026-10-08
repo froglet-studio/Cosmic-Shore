@@ -4,6 +4,7 @@ using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.Utility;
 using Obvious.Soap;
+using Reflex.Attributes;
 using Reflex.Injectors;
 using UnityEngine;
 
@@ -20,8 +21,11 @@ namespace CosmicShore.Gameplay
     /// The release that fires reads the PEAK analog pressure of that pull: it sets the ammo
     /// spent, the bomb's visible size and the blast's size together (config
     /// <see cref="GrizzlyTriggerBombConfigSO"/>). Every detonation is spawned with
-    /// <c>AffectSelfOverride = true</c>, so a Grizzly inside its own blast is LAUNCHED along its
-    /// nose by <see cref="VesselImpulseByExplosionEffectSO"/> - the cannon's self-launch.
+    /// <c>AffectSelfOverride = false</c> - the blast spares the pilot's own domain, so their own
+    /// trail survives it - and the executor LAUNCHES a Grizzly inside its own blast AWAY FROM THE
+    /// BOMB itself (<see cref="LaunchSelf"/>), strongest at the bomb and easing toward the edge.
+    /// (The charged cannon's self-launch, through <see cref="VesselImpulseByExplosionEffectSO"/>,
+    /// steers by the nose instead; the bombs were asked to push you away from them, 2026-10-08.)
     ///
     /// <para><b>Every peer simulates.</b> Presses and releases reach this executor on every
     /// peer (owner -> server -> all, <c>R_VesselActionHandler</c>), exactly as the cannon's do,
@@ -64,6 +68,8 @@ namespace CosmicShore.Gameplay
         [Header("Events")]
         [SerializeField, Tooltip("A live bomb is silently returned at turn end - no surprise blasts across turns.")]
         ScriptableEventNoParam OnMiniGameTurnEnd;
+
+        [Inject] GameDataSO gameData;
 
         /// <summary>Analog value a pull must exceed to count. Matches the input strategies' trigger deadzone.</summary>
         const float GestureThreshold = 0.05f;
@@ -215,6 +221,7 @@ namespace CosmicShore.Gameplay
                     if (ShotIsLive(s))
                     {
                         s.Shot.Freeze();
+                        if (s.Shot.TryGetComponent<GrizzlyBombVisual>(out var visual)) visual.Freeze();
                         s.FrozenSince = Time.time;
                         SetState(s, BombState.Frozen);
                     }
@@ -302,6 +309,8 @@ namespace CosmicShore.Gameplay
 
             s.Size01 = size;
             s.ShotGeneration = s.Shot.FlightGeneration;
+            if (s.Shot.TryGetComponent<GrizzlyBombVisual>(out var visual))
+                visual.Arm(DomainColor(), config.ProjectileTime);
             s.Shot.FlightEnded += s.Side == GrizzlyBombActionSO.TriggerSide.Left
                 ? HandleLeftFlightEnded
                 : HandleRightFlightEnded;
@@ -378,16 +387,18 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// One trigger-bomb blast. <c>AffectSelfOverride = true</c> is the point: the shooter is a
-        /// valid impact pair, so <see cref="VesselImpulseByExplosionEffectSO"/> launches a Grizzly
-        /// caught in its own blast along its nose (impulse = blast scale / duration x
-        /// selfLaunchMultiplier, capped at the 100 u/s velocity ceiling).
+        /// One trigger-bomb blast. <c>AffectSelfOverride = false</c>: the blast spares the pilot's
+        /// own domain (their trail shields instead of breaking, teammates are untouched) while
+        /// enemy mass and pilots inside it are hit and knocked back radially as by any Grizzly
+        /// blast. The pilot's own launch is applied here, AWAY from the bomb - see
+        /// <see cref="LaunchSelf"/>.
         /// </summary>
         void SpawnBlast(Slot s, Vector3 pos, Quaternion rot, float size01, Reflex.Core.Container di)
         {
             if (!config || config.AoePrefabs == null || _status == null) return;
 
             float scale = config.BlastScaleForSize(size01);
+            float blastSeconds = 0f;
             foreach (var prefab in config.AoePrefabs)
             {
                 if (!prefab) continue;
@@ -403,13 +414,68 @@ namespace CosmicShore.Gameplay
                     AnnonymousExplosion = false,
                     SpawnPosition       = pos,
                     SpawnRotation       = rot,
-                    AffectSelfOverride  = true,
+                    AffectSelfOverride  = false,
                 });
                 spawned.Detonate();
+                if (blastSeconds <= 0f) blastSeconds = spawned.Duration;
             }
+
+            LaunchSelf(pos, scale, blastSeconds);
 
             PlayAt(config.DetonateEvent, pos);
             OnBombDetonated?.Invoke(s.Side, size01);
+        }
+
+        /// <summary>
+        /// Throws the pilot AWAY from their own bomb when the blast catches them: direction is
+        /// bomb -> hull, so a bomb left behind you throws you forward, one beside you throws you
+        /// sideways, and one ahead of you stops you dead. Strength is the blast's own impulse
+        /// (<c>scale / ExplosionDuration</c>, the AOE's <c>Impulse</c>) times
+        /// <c>selfLaunchMultiplier</c>, full at the bomb and eased to <c>selfLaunchEdgeStrength</c>
+        /// at the blast's edge (radius = half its scale - the AOE sphere's collider radius is 0.5),
+        /// and nothing outside it. It rides <c>VesselTransformer.ModifyVelocity</c>, so the vessel's
+        /// 100 u/s velocity ceiling caps it like every other shove.
+        ///
+        /// <para>Applied on the SIMULATING machine only (the owner, or the server for an AI): the
+        /// hull's transform is what replicates, and a peer pushing its copy of someone else's
+        /// vessel would only fight that replication.</para>
+        /// </summary>
+        void LaunchSelf(Vector3 blastPos, float blastScale, float blastSeconds)
+        {
+            if (_status == null || !IsSimAuthority(_status)) return;
+            var hull = _status.Transform;
+            var transformer = _status.VesselTransformer;
+            if (!hull || !transformer || blastSeconds <= 0f) return;
+
+            float radius = blastScale * 0.5f;
+            Vector3 away = hull.position - blastPos;
+            float distance = away.magnitude;
+            if (distance > radius) return;
+
+            // Sitting on the bomb has no "away"; the one direction the pilot controls stands in.
+            Vector3 direction = distance > 0.01f ? away / distance : hull.forward;
+            float falloff = Mathf.Lerp(1f, config.SelfLaunchEdgeStrength, radius > 0f ? distance / radius : 0f);
+            float speed = blastScale / blastSeconds * config.SelfLaunchMultiplier * falloff;
+
+            // A dug-in Grizzly is blasted out of turret stance, as the cannon's blast does - routed
+            // through the controller so the replicated flag stays in sync.
+            if (_status.IsTranslationRestricted && _status.Vessel is VesselController controller)
+            {
+                controller.SetTranslationRestricted(false);
+                if (TryGetComponent<ActionExecutorRegistry>(out var registry))
+                    registry.Get<GrizzlyDigInActionExecutor>()?.ReapplyRegen();
+            }
+
+            transformer.ModifyVelocity(direction * speed, config.SelfLaunchSeconds);
+        }
+
+        /// <summary>The firing pilot's domain at full signal brightness (the palette's
+        /// <c>GetDomainSignalColor</c>), read live; white when no theme is resolvable yet.</summary>
+        Color DomainColor()
+        {
+            var theme = gameData ? gameData.ThemeManagerData : null;
+            var colors = theme ? theme.ColorSet : null;
+            return colors && _status != null ? colors.GetDomainSignalColor(_status.Domain) : Color.white;
         }
 
         static void PlayAt(FMODUnity.EventReference ev, Vector3 pos)
@@ -458,8 +524,9 @@ namespace CosmicShore.Gameplay
         /// The bomb-jump an autopilot cannot press. Each trigger in turn, on the simulating
         /// machine: fire a full bomb while the stick is straight (inside
         /// <see cref="GrizzlyTriggerBombConfigSO.AiFireStickBand"/>) and the pool can pay for one,
-        /// freeze it <see cref="GrizzlyTriggerBombConfigSO.AiFreezeDistance"/> ahead, and detonate
-        /// it as the hull closes on it - inside its own blast, so the hull is launched. Every step
+        /// freeze it <see cref="GrizzlyTriggerBombConfigSO.AiFreezeDistance"/> ahead, fly past it,
+        /// and detonate it once it is <see cref="GrizzlyTriggerBombConfigSO.AiDetonateBehindDistance"/>
+        /// behind - inside its blast, so the hull is thrown forward, away from it. Every step
         /// goes through the REPLICATED press/release, so every peer runs the same bomb a human's
         /// pull would have produced (an autopilot writes no analog, so every peer reads a full
         /// press).
@@ -501,12 +568,13 @@ namespace CosmicShore.Gameplay
                         break;
 
                     case BombState.Frozen:
+                        // The launch is AWAY from the bomb, so the bomb must be BEHIND the hull
+                        // when it goes: fly past it, then blow it.
                         if (ShotIsLive(s) && hull &&
                             Time.time - s.FrozenSince < AiMaxFrozenSeconds &&
-                            (s.Shot.transform.position - hull.position).sqrMagnitude >
-                            config.AiDetonateDistance * config.AiDetonateDistance &&
-                            Vector3.Dot(s.Shot.transform.position - hull.position, hull.forward) > 0f)
-                            break;   // still closing on it
+                            Vector3.Dot(hull.position - s.Shot.transform.position, hull.forward) <
+                            config.AiDetonateBehindDistance)
+                            break;   // not far enough past it yet
                         Command(s);
                         handler.StopShipControllerActionsReplicated(ie);      // detonate
                         break;
