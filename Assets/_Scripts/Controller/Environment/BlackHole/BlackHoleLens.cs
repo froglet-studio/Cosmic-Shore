@@ -25,9 +25,9 @@ namespace CosmicShore.Gameplay
     ///
     /// <para><b>The camera textures.</b> The lens reads URP's opaque-scene copy and depth texture,
     /// which the project has OFF in <c>URP_Asset</c> (they cost a copy every frame). Rather than
-    /// switching them on for every scene, <see cref="CameraSupport"/> turns them on for the MAIN
-    /// camera only while at least one lens is live, follows the main camera if it changes, and
-    /// restores the camera's own settings when the last hole goes.</para>
+    /// switching them on for every scene, <see cref="CameraSupport"/> turns them on for every
+    /// enabled game camera only while at least one lens is live, and restores each camera's own
+    /// settings when the last hole goes.</para>
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class BlackHoleLens : MonoBehaviour
@@ -247,17 +247,38 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Keeps the main camera's opaque and depth textures on while any lens is live, and
-        /// restores what the camera had before when the last one goes. Follows the main camera if
-        /// it changes (a vessel spawn swaps cameras). Owner-restores-only: it never clears a value
-        /// it did not set.
+        /// The camera the player is LOOKING THROUGH: the last base game camera that rendered to the
+        /// screen in the most recent frame — the image left on screen — else <see cref="Camera.main"/>.
+        /// Not <c>Camera.main</c> first: in the real game the vessel's camera (CameraManager's
+        /// "CM PlayerCam", its own Unity Camera) is UNTAGGED in Bootstrap, so while you fly,
+        /// <c>Camera.main</c> is the menu's camera — still rendering, every camera at depth 0, and
+        /// not the one on screen. Spawning "ahead of the camera" measures from this one.
+        /// </summary>
+        public static Camera ViewCamera()
+        {
+            var cam = CameraSupport.LastScreenCamera;
+            return cam != null && cam.isActiveAndEnabled ? cam : Camera.main;
+        }
+
+        /// <summary>
+        /// Keeps the opaque and depth textures on for EVERY enabled game camera while any lens is
+        /// live, and restores each camera's own settings when the last one goes. Every camera,
+        /// not one: the lens draws in whichever camera sees it, and a camera without the copies
+        /// samples black — which is what the vessel camera did in lava-lamp freestyle while only
+        /// <c>Camera.main</c> (the menu's) was patched: the whole 30 r_s lens sphere painted black,
+        /// with only the off-screen rays (the sky) showing as a ring. Owner-restores-only: it never
+        /// clears a value it did not set. Also tracks <see cref="LastScreenCamera"/> for
+        /// <see cref="ViewCamera"/>.
         /// </summary>
         internal static class CameraSupport
         {
             static int s_users;
-            static Camera s_patched;
-            static CameraOverrideOption s_savedColor;
-            static CameraOverrideOption s_savedDepth;
+            static readonly Dictionary<Camera, (CameraOverrideOption color, CameraOverrideOption depth)> s_patched = new();
+            static readonly List<Camera> s_stale = new();
+            static Camera[] s_buffer = new Camera[8];
+
+            /// <summary>The last base game camera that finished rendering to the screen.</summary>
+            internal static Camera LastScreenCamera { get; private set; }
 
             internal static void Acquire()
             {
@@ -275,36 +296,58 @@ namespace CosmicShore.Gameplay
             internal static void Maintain()
             {
                 if (s_users == 0) { Restore(); return; }
-                var cam = Camera.main;
-                if (cam == s_patched) return;
-                Restore();
-                if (cam == null) return;
-                var data = cam.GetUniversalAdditionalCameraData();
-                if (data == null) return;
-                s_savedColor = data.requiresColorOption;
-                s_savedDepth = data.requiresDepthOption;
-                data.requiresColorOption = CameraOverrideOption.On;
-                data.requiresDepthOption = CameraOverrideOption.On;
-                s_patched = cam;
+
+                // A camera switched on since last frame (a vessel spawn, the death or end camera)
+                // is patched before it renders a lens.
+                if (s_buffer.Length < Camera.allCamerasCount) s_buffer = new Camera[Mathf.NextPowerOfTwo(Camera.allCamerasCount)];
+                int n = Camera.GetAllCameras(s_buffer);
+                for (int i = 0; i < n; i++)
+                {
+                    var cam = s_buffer[i];
+                    s_buffer[i] = null;
+                    if (cam == null || cam.cameraType != CameraType.Game || s_patched.ContainsKey(cam)) continue;
+                    var data = cam.GetUniversalAdditionalCameraData();
+                    if (data == null || data.renderType != CameraRenderType.Base) continue;
+                    s_patched[cam] = (data.requiresColorOption, data.requiresDepthOption);
+                    data.requiresColorOption = CameraOverrideOption.On;
+                    data.requiresDepthOption = CameraOverrideOption.On;
+                }
+
+                // Forget cameras that were destroyed (scene changes), so the set does not grow.
+                foreach (var cam in s_patched.Keys)
+                    if (cam == null) s_stale.Add(cam);
+                foreach (var cam in s_stale) s_patched.Remove(cam);
+                s_stale.Clear();
             }
 
             static void Restore()
             {
-                if (s_patched == null) { s_patched = null; return; }
-                var data = s_patched.GetUniversalAdditionalCameraData();
-                if (data != null)
+                foreach (var kv in s_patched)
                 {
-                    data.requiresColorOption = s_savedColor;
-                    data.requiresDepthOption = s_savedDepth;
+                    if (kv.Key == null) continue;
+                    var data = kv.Key.GetUniversalAdditionalCameraData();
+                    if (data == null) continue;
+                    data.requiresColorOption = kv.Value.color;
+                    data.requiresDepthOption = kv.Value.depth;
                 }
-                s_patched = null;
+                s_patched.Clear();
             }
 
-            /// <summary>Play-mode (re)entry: forget the previous session's camera (it is gone).</summary>
+            static void OnEndCameraRendering(ScriptableRenderContext context, Camera cam)
+            {
+                if (cam == null || cam.cameraType != CameraType.Game || cam.targetTexture != null) return;
+                if (cam.TryGetComponent<UniversalAdditionalCameraData>(out var data) && data.renderType != CameraRenderType.Base) return;
+                LastScreenCamera = cam;
+            }
+
+            /// <summary>Play-mode (re)entry: forget the previous session's cameras (they are gone).</summary>
             internal static void ResetOnLoad()
             {
                 s_users = 0;
-                s_patched = null;
+                s_patched.Clear();
+                LastScreenCamera = null;
+                RenderPipelineManager.endCameraRendering -= OnEndCameraRendering;
+                RenderPipelineManager.endCameraRendering += OnEndCameraRendering;
             }
         }
 

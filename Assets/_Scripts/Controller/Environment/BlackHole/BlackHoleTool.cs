@@ -137,7 +137,7 @@ namespace CosmicShore.Gameplay
                     $"influence {config.InfluenceRadius(strength, rs):F0} u";
 
             var holes = BlackHoleRegistry.Holes;
-            var cam = Camera.main;
+            var cam = BlackHoleLens.ViewCamera();
             int row = 0;
             for (int i = 0; i < holes.Count && row < LiveRows; i++)
             {
@@ -162,12 +162,12 @@ namespace CosmicShore.Gameplay
         /// <summary>" · N u from the camera", or nothing without a main camera.</summary>
         static string FromCamera(Vector3 p)
         {
-            var cam = Camera.main;
+            var cam = BlackHoleLens.ViewCamera();
             return cam != null ? $" · {Vector3.Distance(cam.transform.position, p):F0} u from the camera" : "";
         }
 
         static string SpawnWhere(BlackHoleConfigSO config, float rs) =>
-            config.SpawnAheadOfCamera && Camera.main != null
+            config.SpawnAheadOfCamera && BlackHoleLens.ViewCamera() != null
                 ? $"spawns {rs * config.SpawnDistanceHorizons:F0} u ahead of the camera"
                 : $"spawns at {Fmt(config.SpawnPosition)}{FromCamera(config.SpawnPosition)}" +
                   (config.SpawnAheadOfCamera ? " (no main camera)" : "");

@@ -139,7 +139,7 @@ namespace CosmicShore.Gameplay
                     Vector3 position;
                     if (!TryVector(args, 2, out position))
                     {
-                        var cam = Camera.main;
+                        var cam = BlackHoleLens.ViewCamera();
                         position = cam != null
                             ? cam.transform.position + cam.transform.forward * SpawnAheadDistance
                             : Vector3.zero;
@@ -152,7 +152,7 @@ namespace CosmicShore.Gameplay
                 {
                     if (args.Length < 2 || !TryFloat(args[1], out float strength) || strength < 0f)
                         return Usage;
-                    var cam = Camera.main;
+                    var cam = BlackHoleLens.ViewCamera();
                     var position = cam != null ? cam.transform.position : Vector3.zero;
                     var hole = BlackHoleRegistry.Spawn(position, strength);
                     return hole == null ? "spawn refused (see console)" : "spawned " + Describe(hole);

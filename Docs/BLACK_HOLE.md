@@ -318,9 +318,16 @@ effect:* it would shade every pixel of every camera for every hole; the sphere s
 lens's own footprint, with the same per-pixel trace, and needs no renderer feature.
 
 **Camera textures.** The lens reads URP's opaque-scene copy and depth texture, which are OFF in
-`URP_Asset` (they cost a copy per frame). `BlackHoleLens.CameraSupport` turns them on for the MAIN
-camera only while a hole is live, follows the main camera if it changes, and restores the camera's
-own settings when the last hole goes. The project's opaque copy is 2× downsampled (asset-level, left
+`URP_Asset` (they cost a copy per frame). `BlackHoleLens.CameraSupport` turns them on for EVERY
+enabled game camera while a hole is live and restores each camera's own settings when the last hole
+goes. **Every camera, not `Camera.main` (incident, 2026-10-08):** in the real game the vessel's camera
+(CameraManager's `CM PlayerCam`, its own Unity Camera) is Untagged in Bootstrap, so while flying in
+lava-lamp freestyle `Camera.main` was the menu's camera. Only that one got the copies; the vessel
+camera's lens sampled an empty opaque texture, so the whole lens sphere (30 r_s) drew BLACK and only
+rays bent off-screen (the sky) showed, as a ring — and from inside the sphere, as a sliver at the
+edge. The same mistake put "ahead of the camera" ahead of the wrong camera, so spawning now measures
+from `BlackHoleLens.ViewCamera()`: the last base game camera URP finished rendering to the screen —
+the image actually on screen. The project's opaque copy is 2× downsampled (asset-level, left
 alone), so the lensed background is slightly softer than the unbent scene.
 
 **The sky a bent ray sees off-screen is the scene's own skybox** (`BlackHoleSky.cs`). Whatever
@@ -467,8 +474,8 @@ Editor and development builds, any scene, ignored while a text field has focus:
 
 **In lava-lamp freestyle** (Menu_Main, flying a vessel): **B** → set strength/size/distance → close
 it with B → **Shift+B** while flying: the hole appears straight ahead of your vessel's camera
-(Cinemachine drives `Camera.main` from the vessel's virtual camera, so "the camera" is the view you
-fly). It pulls the cell's prisms and your vessel — faster than the local escape speed gets away,
+(the view you fly — `BlackHoleLens.ViewCamera()`, the camera actually on screen, which is not `Camera.main` there).
+It pulls the cell's prisms and your vessel — faster than the local escape speed gets away,
 slower is drawn in and held at the horizon (§4) — so boost out, or **Despawn all** / `blackhole
 despawn all`. Lava lamp's lifeforms are not pulled (§8), and the scene's lighting bake does not
 matter: the lens bends whatever skybox the scene renders (§5.1).

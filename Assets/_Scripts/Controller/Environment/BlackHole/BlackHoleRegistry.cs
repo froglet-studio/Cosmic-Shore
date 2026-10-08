@@ -116,14 +116,15 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Spawn a hole exactly as the config's Spawn section says — strength, size, where
-        /// (<see cref="SpawnPoint"/>, ahead of the main camera — the vessel's camera while flying —
+        /// (<see cref="SpawnPoint"/>, ahead of <see cref="BlackHoleLens.ViewCamera"/> — the camera on
+        /// screen, the vessel's while flying, which in the real game is NOT <c>Camera.main</c> —
         /// or at the spawn position), velocity, spin — what the Black Hole tool's Spawn button,
         /// Shift+B and <c>blackhole spawn</c> with no strength do. Null when refused (see <see cref="Spawn"/>).
         /// </summary>
         public static BlackHole SpawnFromConfig()
         {
             var config = Config;
-            var cam = Camera.main;
+            var cam = BlackHoleLens.ViewCamera();
             return Spawn(SpawnPoint(config, cam != null ? cam.transform : null), config.SpawnStrength,
                 config.SpawnVelocity, config.SpawnSpinAxis, config.SpawnHorizonRadius);
         }
@@ -197,8 +198,8 @@ namespace CosmicShore.Gameplay
             BlackHoleGravityField.Tick(_holes, config, dt);
             BlackHoleVesselPull.Tick(_holes, config, dt);
             BlackHoleWarp.Flush(_warpHoles, config);
-            // The lens reads the main camera's opaque + depth copies; keep them on the CURRENT main
-            // camera while any lens is live (a vessel spawn can swap it).
+            // The lens reads the camera's opaque + depth copies; keep them on for EVERY enabled game
+            // camera while any lens is live (a vessel spawn, the death or end camera switch cameras).
             BlackHoleLens.CameraSupport.Maintain();
             // ...and the sky a ray bent off-screen sees: the scene's own skybox, kept current.
             BlackHoleSky.Maintain(config);
