@@ -114,7 +114,7 @@ C0 foundations (done Oct 6)
 | # | Checkpoint | Exit criterion (measurable) | Weeks | Depends on |
 |---|---|---|---|---|
 | **C0** | **Foundations** (done 2026-10-06) | `#line` maps errors to `Assets/`; incremental sync; RPCs the sync cannot intercept are warned (`PRISMA001`); execution order from `.meta` and the attribute in every phase; Unity's serialization rules with `cs-asset serialization-audit` at 0 dropped / 0 extra; CPU, allocation and GC per phase in session reports; acceptance criteria on the board; budgets and fallback for milestone sessions; GL kept behind the render boundary (test) | - | - |
-| **C1** | **Parity harness** | (1) An input recorder/replayer in game code (`Assets/_Scripts/Utility`, its own Unity PR) that both engines run. (2) A Unity-side capture command producing golden frames, scores and audio events for a replay, plus `Random` sequences for a set of seeds. (3) `engine_parity` in the MCP server: replay in the engine and diff against the goldens using the per-channel tolerances in the review response (C9): exact state, RNG and event order; transforms within 1e-4 relative for 10 s; SSIM per frame. (4) GitHub CI: build the port and run `engine_smoke` for every mode on each bleeding-edge push. (5) A generated parity scoreboard (`docs/PARITY.md` + JSON for MILESTONES): every subsystem and shader Faithful / Approximate / Missing with its covering test | 4 | C0 |
+| **C1** | **Parity harness** | (1) An input recorder/replayer in game code (`Assets/_Scripts/Utility`, its own Unity PR) that both engines run. (2) A Unity-side capture command producing golden frames, scores and audio events for a replay, plus `Random` sequences for a set of seeds. (3) `engine_parity` in the MCP server: replay in the engine and diff against the goldens using the per-channel tolerances in the review response (C9): exact state, RNG and event order; transforms within 1e-4 relative for 10 s; SSIM per frame. (4) GitHub CI: build the port and run `engine_smoke` for every mode on each bleeding-edge push. (5) A generated parity scoreboard (`docs/PARITY.md` + JSON): every subsystem and shader Faithful / Approximate / Missing with its covering test | 4 | C0 |
 | **C1b** | **Bisect** | `prisma_bisect(good, bad, check)` in the MCP server: `git bisect run` over commits touching `Port/`, each built in a scratch worktree and checked by a replay diff or an `engine_smoke` error signature; finds a planted regression in under 15 steps | 1 | C1 |
 | **C2** | **Visual completeness** | A Shader Graph compiler (the 85 node types the project uses) with the 30 custom functions ported once and families keyed by guid; the 38 `.shader` files hand-translated by on-screen use; an unknown shader warns once; ParticleSystem (the modules the 26 prefabs use) and both VFX Graphs draw (VFX Graph as Approximate); the Timeline plays; SSIM >= 0.97 against goldens in every mode's first 60 s | 14 (rolling) | C1 |
 | **C3** | **Physics parity** | Contact resolution for the 17 Rigidbody users, plus oriented boxes; OnCollision* fires; replays end with identical scores. Rule: never a general solver in-house; bind BepuPhysics v2 for contacts only if the census needs mesh contacts or PhysX-like friction | 3 | C1 |
@@ -169,10 +169,9 @@ hands, it comes back as a narrow tool for that job, not a general hierarchy.
 
 ## How to run each checkpoint (prompts)
 
-**In Prisma:** MILESTONES lists every checkpoint from `docs/milestones.json` (status, weeks,
-dependencies, exit criterion, prompt). START opens an engine session for it in plan mode with the
-prompt below; the session updates `milestones.json` as it moves the checkpoint. The prompts also
-work pasted into Claude Code at the repo root. Each one assumes `Port/CLAUDE.md` and this file. Every checkpoint ends with:
+Milestones are worked in Claude Code at the repository root (Prisma's MILESTONES page was retired
+on 2026-10-08): paste a prompt below; the session updates `docs/milestones.json` as it moves the
+checkpoint. Each one assumes `Port/CLAUDE.md` and this file. Every checkpoint ends with:
 `engine_test` green, `engine_smoke` PASS, `unity_isolation_check` ok, docs updated, and this
 file's row marked done with the date and the measurement.
 

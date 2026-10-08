@@ -19,7 +19,8 @@ namespace CosmicShore.Editor
     /// <c>Port/src/CosmicShore.Launcher</c> into <c>Library/Prisma</c>; later launches start it at
     /// once and rebuild only when the launcher's source changed (after a pull, say). Without a
     /// .NET 10 SDK on the machine it falls back to <c>Port/dist/Prisma-Windows.zip</c>, and Prisma
-    /// installs its own SDK the first time START is pressed, after which builds work.
+    /// installs its own SDK the first time START is pressed, after which builds work. Prisma is told
+    /// which clone opened it, so its PLAY page follows the branch Unity has checked out.
     /// READER: writes only under the gitignored <c>Library/</c>, never assets - no ship panel.
     /// </summary>
     public static class LaunchPrisma
@@ -278,7 +279,8 @@ namespace CosmicShore.Editor
         {
             try
             {
-                Process.Start(new ProcessStartInfo(exe) { UseShellExecute = true, WorkingDirectory = Path.GetDirectoryName(exe)! });
+                // --clone: Prisma's PLAY follows the branch this checkout is on (and says when it plays another).
+                Process.Start(new ProcessStartInfo(exe, $"--clone \"{Root}\"") { UseShellExecute = true, WorkingDirectory = Path.GetDirectoryName(exe)! });
             }
             catch (Exception e) { Debug.LogError($"[Prisma] Could not start {exe}: {e.Message}"); }
         }

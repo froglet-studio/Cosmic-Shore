@@ -285,7 +285,6 @@ namespace CosmicShore.Launcher
             new TourStep("Prisma Agent", "Powered by Claude. It works on the game, starting from what your last runs recorded. Sign in with your Claude plan, pick a model, plan first or let it edit.", () => Rail(Page.Chat), Page.Chat),
             new TourStep("Tracks", "Every run's performance per scene, the modes and vessels you used, audio, and every problem with when it was first and last seen.", () => Rail(Page.Tracks), Page.Tracks),
             new TourStep("Board", "Your bugs and tasks. Prisma suggests new ones from your runs; nothing joins the board until you accept it.", () => Rail(Page.Board), Page.Board),
-            new TourStep("Milestones", "The roadmap to parity with Unity and beyond. START a checkpoint to open an engine session for it, right here.", () => Rail(Page.Milestones), Page.Milestones),
             new TourStep("Notifications", "Prisma tells you what each run found and offers clean-ups - it never cleans up without asking.", () => Title("tbbell")),
             new TourStep("Settings", "Looks and themes, the Claude account, updates and every installed version. Press ? in the top bar to see this tour again.", () => Rail(Page.Options), Page.Options),
         };

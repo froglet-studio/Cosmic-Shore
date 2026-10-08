@@ -3,8 +3,7 @@
 Prisma is Froglet's own engine for Cosmic Shore, and this is its app: one `.exe` for anyone who
 works on or tests the game. Pick a branch, press **START**: Prisma fetches that branch, builds it
 from its own source and runs it - and records the run. It also builds phone apps, keeps the
-engine's Project Settings, tracks every play run, keeps a task and bug board, runs the roadmap's
-milestones, and has the **Prisma Agent, powered by Claude**, built in.
+engine's Project Settings, tracks every play run, keeps a task and bug board, and has the **Prisma Agent, powered by Claude**, built in.
 
 Source: `Port/src/CosmicShore.Launcher` (C#, Dear ImGui on our own Silk.NET window).
 
@@ -37,11 +36,18 @@ Source: `Port/src/CosmicShore.Launcher` (C#, Dear ImGui on our own Silk.NET wind
 | **EDITOR** | TOOLS (every FrogletTools tool, run by the agent), DATA (the data sets, editable) and MODELS (every FBX with a preview) (below). |
 | **TRACKS** | Every play run: performance per scene, features used, audio, every problem over time (below). |
 | **BOARD** | Bugs and tasks, with Prisma's suggestions (below). |
-| **MILESTONES** | The roadmap's checkpoints; START opens an engine session for one (below). |
 | **SETTINGS** | Folded sections: Game, Source, Look, Claude, Advanced, Toolchain, About (versions). |
 | **CONSOLE** | Every command the launcher ran and its output. COPY for a bug report. |
 
 ![PLAY](architecture/launcher_play.png)
+
+**Prisma and Unity can be on different branches.** Prisma plays its *own* copy of the repository
+(the workspace), never your Unity checkout. Opened from Unity (**FrogletTools > Prisma > Launch
+Prisma**), it is told where that checkout is and follows the branch Unity / GitHub Desktop has open:
+PLAY shows *Same branch as Unity / GitHub Desktop*, and switches with you (checked every few
+seconds). Pick any other branch and Prisma plays that one instead, with your Unity checkout
+untouched; **FOLLOW UNITY** goes back. A branch that exists only on your machine has to be pushed
+from GitHub Desktop before Prisma can fetch it.
 
 The two dots at the bottom of the rail are git and .NET (hover for versions). The bar at the
 bottom shows what is happening, a progress bar and CANCEL. The title bar shows the branch, the
@@ -75,35 +81,15 @@ history.
 ![BOARD](architecture/prisma_board.png)
 
 TO DO / DOING / DONE columns of bugs and tasks; click a card for its detail and to move it, or
-hand it to the agent. Prisma *suggests* items - problems from the tracks, the next milestones
-whose dependencies are done - and so can the agent (`prisma_board_suggest`); a suggestion joins
+hand it to the agent. Prisma *suggests* items - problems from the tracks - and so can the agent (`prisma_board_suggest`); a suggestion joins
 the board only when you ACCEPT it.
 
 Every card has a **done when** line: the check that proves it. Type one next to a new item's
-title; the agent must give one with every suggestion; a milestone task carries its checkpoint's
-exit criterion. A bug that came from the tracks is checked by Prisma itself after every run: when
+title; the agent must give one with every suggestion. A bug that came from the tracks is checked by Prisma itself after every run: when
 the problem has stayed away for three runs through its scene, the card gets a green **MET** pill
 and a notification offers MARK DONE (moving it stays your call). If the problem comes back, the
 card loses MET, and a DONE card reopens to TO DO. A card in DOING tells the agent's brief that a
 fix is in progress.
-
-## MILESTONES - engine work, inside Prisma
-
-![MILESTONES](architecture/prisma_milestones.png)
-
-The roadmap (`docs/ROADMAP.md`) as checkpoints with their exit criteria, weeks and dependencies,
-read from `docs/milestones.json` in the branch (commit it to share progress). **START** opens an
-engine session for that checkpoint in plan mode with its prompt; that session works on `Port/`
-and may not touch the Unity project, and it records progress back into `milestones.json`. It
-marks a checkpoint done only after running its exit criterion.
-
-Each milestone run has a **budget**: agentic turns (default 80), wall-clock minutes (default 60)
-and optionally dollars, set in SETTINGS > CLAUDE > Milestone budget. A run that reaches a limit,
-or fails, stops and leaves a record instead of half-done work: a suggested board task listing every
-tool call it made and its last message, a dated note on the checkpoint, and a notification with
-**CONTINUE** (the same conversation, a fresh budget) and **BOARD**. Your own STOP leaves none.
-
-![A milestone run that stopped at its budget](architecture/prisma_milestone_stopped.png)
 
 ## BUILD
 
@@ -179,16 +165,15 @@ warning and exception with its count, and the crash, branch and commit. They are
 ![AGENT](architecture/launcher_claude.png)
 
 The **Prisma Agent** works on the game (Cosmic Shore's code and content in `Assets/`) as it runs
-in Prisma, and it is refused any edit to Prisma itself (`Port/`) in every mode - engine work is
-what MILESTONES sessions are for. It does what you ask and nothing more: it reads TRACKS (every
+in Prisma, and it is refused any edit to Prisma itself (`Port/`) in every mode - engine work (the
+roadmap's milestones) is done in Claude Code at the repository root, not in Prisma. It does what you ask and nothing more: it reads TRACKS (every
 run Prisma recorded) only when your question is about a bug, a crash, performance or a run, and
 it does not go looking for engine problems on its own.
 
 **Chats.** The list on the left holds every conversation, the way Claude Code keeps sessions:
 **+ NEW CHAT** opens another, a click switches, the x deletes. Each chat has its own transcript,
 its own Claude Code session (resumed on the next message, also after Prisma restarts) and its own
-context, and several can work at once - a pulsing dot marks the ones that are. Milestone sessions
-are chats too (tagged ENGINE). FIX, AGENT and ANALYSE buttons elsewhere open a fresh chat for the
+context, and several can work at once - a pulsing dot marks the ones that are. FIX, AGENT and ANALYSE buttons elsewhere open a fresh chat for the
 job. Chats are kept in `%LOCALAPPDATA%\Prisma\chats`.
 
 The layout follows Claude Code: a bullet per message and tool call, each tool's result folded
@@ -314,4 +299,3 @@ folder - a second, separate Prisma, or the tests. `Port/tests/CosmicShore.Launch
 chats and their persistence, plan usage and the GIT page's git steps.
 `--auto launcher-update:REV` / `launcher-use:SHORT` exercise the version flow. `--auto play|update|android|ios` presses the button on
 its own and echoes the log; `--auto "chat:<message>"` sends one chat message;
-`--auto milestone:C1` presses a checkpoint's START.

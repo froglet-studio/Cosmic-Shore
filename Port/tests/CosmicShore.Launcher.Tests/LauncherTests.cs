@@ -132,9 +132,25 @@ namespace CosmicShore.Launcher.Tests
             var a = store.New();
             var b = store.New();
             Assert.Same(a, b);
-            var m = store.ForMilestone("C1", "Parity harness");
-            Assert.Equal(ClaudeChat.Scope.Milestone, m.CurrentScope);
-            Assert.Same(m, store.ForMilestone("C1", "Parity harness"));
+        }
+
+        [Fact]
+        public void Old_milestone_chats_are_cleared_on_load_now_that_milestones_run_in_Claude_Code()
+        {
+            var s = new LauncherSettings();
+            var tools = new Toolchain();
+            var store = new ChatStore(s, tools, _ => { });
+            var m = store.New(ClaudeChat.Scope.Milestone, "C1", "Parity harness");
+            UserSays(m, "Plan C1");
+            m.Save();
+            var game = store.New();
+            UserSays(game, "Keep me");
+            game.Save();
+
+            var reopened = new ChatStore(s, tools, _ => { });
+            Assert.DoesNotContain(reopened.All, c => c.Id == m.Id);
+            Assert.Contains(reopened.All, c => c.Id == game.Id);
+            Assert.False(File.Exists(Path.Combine(ClaudeChat.ChatsDir, m.Id + ".json")));
         }
     }
 

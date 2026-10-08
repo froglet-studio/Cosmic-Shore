@@ -23,7 +23,18 @@ namespace CosmicShore.Launcher
         static string TracksDir => Path.Combine(LauncherSettings.DataDir, "tracks");
 
         PrismaTracks _tracks = PrismaTracks.Load(TracksDir);
-        PrismaBoard _board = PrismaBoard.Load(TracksDir);
+        PrismaBoard _board = ClearMilestoneCards(PrismaBoard.Load(TracksDir));
+
+        /// <summary>
+        /// Milestone sessions left the app (engine work runs in Claude Code at the repository root),
+        /// so the cards they left on the board - "Milestone C1 stopped at the 80-turn limit", "Start
+        /// milestone E1" - are cleared the first time this Prisma starts.
+        /// </summary>
+        static PrismaBoard ClearMilestoneCards(PrismaBoard board)
+        {
+            if (board.Items.RemoveAll(i => i.Source == "milestones" || i.Milestone != null) > 0) board.Save(TracksDir);
+            return board;
+        }
         readonly object _dataLock = new();
         int _tracksTab, _boardTab;
         string _newItem = "", _newCriterion = "";
@@ -42,7 +53,7 @@ namespace CosmicShore.Launcher
             {
                 foreach (var f in LauncherJobs.Sessions().OrderBy(f => f.LastWriteTimeUtc))
                     if (_tracks.Ingest(f.FullName) is { } r) results.Add(r);
-                suggested = _board.Suggest(_tracks, Checkpoints());
+                suggested = _board.Suggest(_tracks);
                 verified = _board.Verify(_tracks);
                 if (results.Count > 0) _tracks.Save(TracksDir);
                 if (suggested.Count > 0 || results.Count > 0 || verified.Count > 0) _board.Save(TracksDir);
@@ -87,101 +98,6 @@ namespace CosmicShore.Launcher
                 }
                 _board.Save(TracksDir);
             }
-        }
-
-        // milestones.json lives in the workspace (Port/docs), so progress is committed with the branch
-        string MilestonesFile => Path.Combine(_ws.Dir, "Port", "docs", "milestones.json");
-        JsonObject? _milestones;
-        DateTime _milestonesRead;
-
-        JsonObject? Milestones()
-        {
-            try
-            {
-                if (!File.Exists(MilestonesFile)) return _milestones = null;
-                var t = File.GetLastWriteTimeUtc(MilestonesFile);
-                if (_milestones == null || t != _milestonesRead) { _milestones = JsonNode.Parse(File.ReadAllText(MilestonesFile))!.AsObject(); _milestonesRead = t; }
-            }
-            catch { _milestones = null; }
-            return _milestones;
-        }
-
-        IEnumerable<(string id, string title, string status, List<string> deps, string exit)> Checkpoints()
-        {
-            var m = Milestones();
-            if (m?["checkpoints"] is not JsonArray arr) yield break;
-            foreach (var c in arr.OfType<JsonObject>())
-                yield return (c["id"]?.ToString() ?? "", c["title"]?.ToString() ?? "", c["status"]?.ToString() ?? "todo",
-                              (c["dependsOn"] as JsonArray)?.Select(x => x?.ToString() ?? "").ToList() ?? new List<string>(),
-                              c["exit"]?.ToString() ?? "");
-        }
-
-        // The file is read by people and committed: keep ' ` > and non-ASCII as written, not \u-escaped.
-        static readonly JsonSerializerOptions MilestonesJson = new()
-        {
-            WriteIndented = true,
-            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-        };
-
-        void SetMilestoneStatus(JsonObject c, string status)
-        {
-            c["status"] = status;
-            (c["notes"] as JsonArray ?? (JsonArray)(c["notes"] = new JsonArray())).Add($"{DateTime.Now:yyyy-MM-dd} status -> {status} (Prisma)");
-            File.WriteAllText(MilestonesFile, _milestones!.ToJsonString(MilestonesJson));
-            _milestonesRead = File.GetLastWriteTimeUtc(MilestonesFile);
-        }
-
-        /// <summary>START / CONTINUE (and --auto milestone:ID): an engine session for the checkpoint, in PLAN mode with its prompt.</summary>
-        void StartMilestone(string id)
-        {
-            if (Milestones()?["checkpoints"] is not JsonArray arr) return;
-            if (arr.OfType<JsonObject>().FirstOrDefault(x => x["id"]?.ToString() == id) is not { } c) return;
-            if ((c["status"]?.ToString() ?? "todo") == "todo") SetMilestoneStatus(c, "in-progress");
-            var chat = _chats.ForMilestone(id, c["title"]?.ToString() ?? "");
-            _page = Page.Chat;
-            if (chat.Busy) return; // already running: just show it
-            _s.ChatMode = 0; _dirty = true;
-            SendChat(c["prompt"]?.ToString() ?? $"Plan checkpoint {id}.", ClaudeChat.Mode.Plan);
-        }
-
-        void AddMilestoneNote(string id, string note)
-        {
-            if (Milestones()?["checkpoints"] is not JsonArray arr) return;
-            if (arr.OfType<JsonObject>().FirstOrDefault(c => c["id"]?.ToString() == id) is not { } c) return;
-            (c["notes"] as JsonArray ?? (JsonArray)(c["notes"] = new JsonArray())).Add($"{DateTime.Now:yyyy-MM-dd} {note}");
-            File.WriteAllText(MilestonesFile, _milestones!.ToJsonString(MilestonesJson));
-            _milestonesRead = File.GetLastWriteTimeUtc(MilestonesFile);
-        }
-
-        /// <summary>
-        /// A milestone run stopped short (a budget limit or a failure): what it tried goes on the board
-        /// as a suggestion with the checkpoint's exit criterion, the checkpoint gets a dated note, and
-        /// a notification offers to continue the same conversation with a fresh budget.
-        /// </summary>
-        void OnMilestoneStopped(ClaudeChat.SessionStop stop)
-        {
-            var exit = Checkpoints().FirstOrDefault(c => c.id == stop.Milestone).exit ?? "";
-            PrismaBoard.Item item;
-            lock (_dataLock)
-            {
-                item = _board.Add(PrismaBoard.Kind.Task, $"Milestone {stop.Milestone} stopped {stop.Reason}",
-                    $"{stop.Title}\nWhat the run tried:\n{stop.Tried}" + (stop.LastWords.Length > 0 ? $"\nIts last words:\n{stop.LastWords}" : ""),
-                    "milestones", PrismaBoard.Status.Suggested, 1, milestone: stop.Milestone, criterion: exit);
-                _board.Save(TracksDir);
-            }
-            AddMilestoneNote(stop.Milestone, $"run stopped {stop.Reason}; what it tried is board item {item.Id} (Prisma)");
-            Notify($"Milestone {stop.Milestone} stopped", $"Stopped {stop.Reason}. What it tried is on the BOARD as {item.Id}.", NoteKind.Warning,
-                ("CONTINUE", () =>
-                {
-                    // Same conversation when it is still open; otherwise a fresh one told what was tried.
-                    var chat = _chats.ForMilestone(stop.Milestone, stop.Title);
-                    bool same = !chat.Empty;
-                    _page = Page.Chat;
-                    if (chat.Busy) return;
-                    SendChat("Continue where the last run stopped. Check what is already done before redoing anything, and keep to the exit criterion." +
-                             (same ? "" : $"\nThe last run stopped {stop.Reason}. What it tried:\n{stop.Tried}"), (ClaudeChat.Mode)_s.ChatMode);
-                }),
-                ("BOARD", () => { _page = Page.Board; _openCard = item.Id; }));
         }
 
         int RailBadge(Page p) => p switch
@@ -604,77 +520,9 @@ namespace CosmicShore.Launcher
                              (it.Criterion.Length > 0 ? $"Acceptance criterion: {it.Criterion}\nRun that check (engine_smoke, game_* or a test) and show its result before saying the work is done. " : "Say how you proved it before saying it is done. ") +
                              "The user moves the card.", (ClaudeChat.Mode)_s.ChatMode);
                 }
-                if (it.Milestone != null)
-                {
-                    ImGui.SameLine(0, 6);
-                    if (SmallButton("OPEN", 70, true)) _page = Page.Milestones;
-                }
             }
             ImGui.PopID();
             return p.Y + h;
-        }
-
-        // ------------------------------------------------------------------ MILESTONES
-
-        void DrawMilestones(Vector2 a, Vector2 b)
-        {
-            var dl = ImGui.GetWindowDrawList();
-            var m = Milestones();
-            var cps = (m?["checkpoints"] as JsonArray)?.OfType<JsonObject>().ToList() ?? new List<JsonObject>();
-            int done = cps.Count(c => c["status"]?.ToString() == "done");
-            PageHeader(a, "MILESTONES", m == null ? "This branch has no Port/docs/milestones.json yet" :
-                $"{done} of {cps.Count} checkpoints done  ·  engine work toward the roadmap runs here, as its own session");
-            if (m == null) return;
-            var ca = new Vector2(a.X, a.Y + 66);
-            ImGui.SetCursorScreenPos(ca);
-            ImGui.BeginChild("##ms", b - ca);
-            var doneIds = new HashSet<string>(cps.Where(c => c["status"]?.ToString() == "done").Select(c => c["id"]!.ToString()));
-            foreach (var group in new[] { "M1", "M2" })
-            {
-                var gs = cps.Where(c => c["milestone"]?.ToString() == group).ToList();
-                int gd = gs.Count(c => c["status"]?.ToString() == "done");
-                var p = ImGui.GetCursorScreenPos();
-                float w = ImGui.GetContentRegionAvail().X;
-                dl.AddText(Neon.Heading, 22, p, Neon.U(Neon.Cyan), group);
-                dl.AddText(Neon.Small, 14, p + new Vector2(48, 6), Neon.U(Neon.Dim), Trim(m["milestones"]?[group]?.ToString() ?? "", 120));
-                // progress
-                var pa = p + new Vector2(0, 32); var pb = pa + new Vector2(w, 6);
-                dl.AddRectFilled(pa, pb, Neon.U(Neon.Ink, 0.08f), 3);
-                if (gs.Count > 0) dl.AddRectFilled(pa, new Vector2(pa.X + w * gd / gs.Count, pb.Y), Neon.U(Neon.Lime), 3);
-                ImGui.SetCursorScreenPos(p + new Vector2(0, 50));
-                foreach (var c in gs) MilestoneRow(c, doneIds);
-                ImGui.Dummy(new Vector2(0, 12));
-            }
-            ImGui.EndChild();
-        }
-
-        void MilestoneRow(JsonObject c, HashSet<string> doneIds)
-        {
-            var dl = ImGui.GetWindowDrawList();
-            string id = c["id"]!.ToString(), title = c["title"]?.ToString() ?? "", status = c["status"]?.ToString() ?? "todo";
-            var deps = (c["dependsOn"] as JsonArray)?.Select(x => x!.ToString()).ToList() ?? new();
-            bool ready = deps.All(doneIds.Contains);
-            var p = ImGui.GetCursorScreenPos();
-            float w = ImGui.GetContentRegionAvail().X;
-            Card(dl, p, p + new Vector2(w, 66));
-            var sc = status == "done" ? Neon.Lime : status == "in-progress" ? Neon.Amber : ready ? Neon.Cyan : Neon.Dim;
-            dl.AddCircleFilled(p + new Vector2(22, 33), 9, Neon.U(sc, status == "todo" ? 0.25f : 0.9f), 20);
-            if (status == "done") { dl.AddLine(p + new Vector2(17, 33), p + new Vector2(21, 37), Neon.U(Neon.Space0), 2); dl.AddLine(p + new Vector2(21, 37), p + new Vector2(28, 29), Neon.U(Neon.Space0), 2); }
-            dl.AddText(Neon.Strong, 16, p + new Vector2(42, 10), Neon.U(Neon.Ink), $"{id}  {title}");
-            dl.AddText(Neon.Small, 13, p + new Vector2(42, 36), Neon.U(Neon.Dim),
-                Trim($"{c["weeks"]} week{(c["weeks"]?.ToString() == "1" ? "" : "s")}  ·  {(deps.Count > 0 ? "needs " + string.Join(", ", deps) : "no dependencies")}  ·  {c["exit"]}", (int)((w - 360) / 6.6f)));
-            ImGui.PushID(id);
-            ImGui.SetCursorScreenPos(p + new Vector2(w - 300, 16));
-            bool running = _chats.All.Any(x => x.Milestone == id && x.Busy);
-            if (status != "done" && SmallButton(running ? "OPEN" : status == "in-progress" ? "CONTINUE" : "START", 110, true))
-                StartMilestone(id);
-            Neon.Tooltip(ready ? "Opens an engine session for this checkpoint in PLAN mode with its prompt." : "Its dependencies are not done yet - you can still start it.");
-            ImGui.SameLine(0, 6);
-            int idx = status switch { "in-progress" => 1, "done" => 2, _ => 0 };
-            if (SmallButton(new[] { "MARK DOING", "MARK DONE", "REOPEN" }[idx], 130, true))
-                SetMilestoneStatus(c, new[] { "in-progress", "done", "todo" }[idx]);
-            ImGui.PopID();
-            ImGui.SetCursorScreenPos(p + new Vector2(0, 74));
         }
 
         // ------------------------------------------------------------------ icons

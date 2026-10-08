@@ -46,17 +46,16 @@ the game uses that the engine lacks) belongs in `Port/src/CosmicShore.Engine` / 
 | Session | Scope | May edit | Started from |
 |---|---|---|---|
 | **Prisma Agent** (powered by Claude) | the game, as it runs in Prisma | `Assets/` and the rest of the repo, **never `Port/`** | Prisma's AGENT page |
-| **Milestone session** | the engine, toward a roadmap checkpoint | `Port/`, **never `Assets/`, `Packages/`, `ProjectSettings/`** | Prisma's MILESTONES page (START) |
-| Engine development in Claude Code | the engine | `Port/` (this file's rules) | the repo root |
+| **Engine development / milestones** | the engine, toward a roadmap checkpoint | `Port/` (this file's rules), **never `Assets/`, `Packages/`, `ProjectSettings/`** | Claude Code at the repo root |
 
-Deny rules on the Claude Code CLI enforce the first two in every mode. Prisma runs any number of
-these as separate chats side by side, all in Prisma's workspace (not the user's clone): their edits
+Deny rules on the Claude Code CLI enforce the agent's scope in every mode. Prisma runs any number of
+agent chats side by side, all in Prisma's workspace (not the user's clone): their edits
 stay uncommitted there until the user commits and pushes them on Prisma's GIT page, so a session
-in Prisma does not commit, push or switch branches unless asked, and START never discards them. A milestone session
+in Prisma does not commit, push or switch branches unless asked, and START never discards them. Milestone work
 records progress in `docs/milestones.json` (status plus a dated note with evidence), and marks a
-checkpoint done only after running its exit criterion. Each milestone run has a budget (turns,
-minutes, optional dollars; Prisma's Settings > CLAUDE); a run that stops short leaves a board item
-listing what it tried, a note on the checkpoint, and a CONTINUE button.
+checkpoint done only after running its exit criterion. Prisma plays its own workspace, so it can be
+on a different branch from the user's Unity checkout; opened from Unity's Launch Prisma it follows
+Unity's branch (`--clone`) until the user picks another.
 
 ## Prisma's memory: tracks and the board
 

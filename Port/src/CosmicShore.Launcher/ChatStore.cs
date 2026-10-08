@@ -32,7 +32,13 @@ namespace CosmicShore.Launcher
             Cli = new ClaudeCli(s);
             if (Directory.Exists(ClaudeChat.ChatsDir))
                 foreach (var f in Directory.GetFiles(ClaudeChat.ChatsDir, "*.json").Where(f => !Path.GetFileName(f).StartsWith("mcp-")))
-                    if (ClaudeChat.Load(f, s, tools, Cli) is { } c) { _all.Add(c); wire(c); }
+                    if (ClaudeChat.Load(f, s, tools, Cli) is { } c)
+                    {
+                        // Milestone sessions no longer run in Prisma (engine work happens in Claude Code
+                        // at the repository root): their old chats are cleared on the first start.
+                        if (c.CurrentScope == ClaudeChat.Scope.Milestone) { c.Delete(); continue; }
+                        _all.Add(c); wire(c);
+                    }
             Active = All.FirstOrDefault(c => c.CurrentScope == ClaudeChat.Scope.Game) ?? New();
         }
 
@@ -48,14 +54,6 @@ namespace CosmicShore.Launcher
                 _wire(chat);
                 return Active = chat;
             }
-        }
-
-        /// <summary>The milestone's own conversation (the latest one for that checkpoint), or a new one.</summary>
-        public ClaudeChat ForMilestone(string id, string title, bool fresh = false)
-        {
-            ClaudeChat? found;
-            lock (_lock) found = fresh ? null : _all.Where(c => c.Milestone == id).OrderByDescending(c => c.Updated).FirstOrDefault();
-            return found != null ? Active = found : New(ClaudeChat.Scope.Milestone, id, title);
         }
 
         public void Show(ClaudeChat chat) { lock (_lock) if (_all.Contains(chat)) Active = chat; }
