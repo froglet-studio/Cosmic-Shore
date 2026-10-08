@@ -4656,3 +4656,30 @@ own branches (it used to jump around the membrane by straight-line distance).
 Starvation: fins / arms before the core body, the heart collectable only once the wither reaches
 the core. Joust: heart taken at the strike, body unravels from the heart outward. If either reads
 wrong on a creature whose prefab nests its spindles oddly, report the prefab.
+
+## 🔴 The Time crystal holds still; its flip wave hops between its 12 vertices (`cece/eager-lovelace-i4o8jk`, 2026-10-08) — NOT EDITOR-VERIFIED
+
+`CrystalTime.prefab` (and its variant `CrystalTimeDandruff`) no longer carries `JustRotate`. In its
+place `TimeCrystalVertexHop` snaps the model child to a random rotation of the icosahedral group on
+the frame the 2 s flip-wave loop wraps, so the next wave starts from another of the 12 five-fold
+vertices while the crystal never visibly turns. The snap is only invisible because the shape at the
+loop seam is the fully symmetric bind pose — proved from the FBX by
+`python3 Tools/Build/measure_time_crystal_wave.py` (and `--self-test`). The symmetry frame is read at
+runtime from Unity's own import of the five first-ring bones, so no axis-conversion assumption ships.
+
+### 1. Run the edit-mode suite's `TimeCrystalVertexHopTests`
+
+All six pass offline against faithful math stubs. The seventh,
+`CrystalTimePrefab_ResolvesItsWaveAxis_FromTheImportedRig`, only runs in the editor: it resolves the
+wave's start axis from the REAL imported rig. If it fails, nothing else below is worth checking.
+
+### 2. Watch a Time crystal for ~10 s in any scene that spawns one
+
+- The crystal itself never turns: no tumble, and no jump/pop/twitch at any moment.
+- Each wave starts from a different vertex from the one before it (12 possible), never the same one twice in a row.
+- No `TimeCrystalVertexHop` error in the console.
+
+### 3. Capture one (Elemental capture / skim)
+
+The capture flourish still spins and flies the crystal into the hull as before (it owns the ROOT's
+rotation; the hop only touches the model child).
