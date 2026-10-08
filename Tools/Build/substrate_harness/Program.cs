@@ -1097,8 +1097,8 @@ static partial class SubstrateHarness
         // round 11-14: a lurker and a stampede proxy moved to the leech - the pen's full pull at its edge
         // (SubstrateKernel.PenWeight) packs a puddle of 4 tighter, and two proxies covered 84% of a ram's passes (three,
         // 89.5%); a lurker never has more than one agent in the contact horizon at once, a stampede three
-        ("pack", 7, 260f), ("locust", 12, 140f), ("lurker", 3, 160f), ("stampede", 5, 200f), ("mobber", 4, 120f),
-        ("leech", 4, 140f), ("leviathan", 4, 200f),
+        ("pack", 7, 260f), ("locust", 8, 140f), ("lurker", 3, 160f), ("stampede", 5, 200f), ("mobber", 4, 120f),
+        ("leech", 4, 140f), ("leviathan", 4, 200f), ("siege", 4, 200f),
     };
 
     /// <summary>
@@ -1126,9 +1126,14 @@ static partial class SubstrateHarness
             foreach (int i in LiveOf(w.Core, q))
             {
                 if (w.Core.Host[i] != 0) continue;   // a rider has no proxy
-                float best = float.MaxValue;
-                foreach (var p in w.Pilots) best = MathF.Min(best, Vector3.Distance(w.Core.Pos[i], p.Pos));
-                if (best <= engage) cand.Add((w.Core.Danger[i] ? -1f + best * 1e-6f : best, i));   // the tick job's rule: dangerous first
+                float best = float.MaxValue, soon = float.MaxValue;
+                foreach (var p in w.Pilots)
+                {
+                    best = MathF.Min(best, Vector3.Distance(w.Core.Pos[i], p.Pos));
+                    soon = MathF.Min(soon, Vector3.Distance(w.Core.Pos[i] + w.Core.Vel[i] * Dt, p.Pos + p.Vel * Dt));
+                }
+                // the tick job's rule: dangerous first - nearest a tick from now - then nearest
+                if (best <= engage) cand.Add((w.Core.Danger[i] ? -1f + soon * 1e-6f : best, i));
             }
             foreach (var c in cand.OrderBy(c => c.d).Take(cap)) eng.Add(c.i);
             w.Step();
@@ -1239,6 +1244,12 @@ static partial class SubstrateHarness
                             ticks = 120;
                             break;
                         }
+                    case "siege":
+                        // a careless wanderer: the siege's worst case (it breaches the web; the whole cloud dives)
+                        w.Core.Seed(q, P.N0, new Vector3(600, 0, 0), 70f);
+                        w.Pilots.Add(Wanderer(seed));
+                        ticks = 1800;
+                        break;
                     case "leviathan":
                         w.Core.Seed(q, P.N0, new Vector3(400, 0, 0), 60f);
                         for (int t = 0; t < 150; t++) w.Step();   // formed (it dissolves when hungry again, ~25 s)

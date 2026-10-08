@@ -163,7 +163,7 @@ namespace CosmicShore.Gameplay
         internal readonly Vector3[] SDir;
 
         /// <summary>The lab's ablations (siege_eval.js --ablate), for the harness's negative controls. None in play.</summary>
-        internal SubstrateSiegeAblation Ablate;
+        internal SubstrateSiegeAblation Ablate = SubstrateSiegeAblation.None;
 
         public SubstrateSiegeState(int cap, float firstCool, int seed)
         {

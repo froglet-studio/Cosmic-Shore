@@ -10,104 +10,104 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 616507327e6850e772f83e235ef5507f, type: 3}
-  m_Name: Substrate Stampede Species
+  m_Name: Substrate Siege Species
   m_EditorClassIdentifier:
   species:
-    Name: stampede
-    N0: 48
-    Capacity: 72
+    Name: siege
+    N0: 150
+    Capacity: 160
     Solitary:
-      Speed: 22
-      Burst: 2
-      Turn: 2
-      Accel: 50
-      WFood: 1
-      WCoh: 0.4
-      WAlign: 0.4
-      WSep: 0.9
-      WWander: 0.3
-      WCurious: 0.3
-      Comfort: 150
-      WFlee: 1.2
-      WHunt: 0
-      WRing: 0
-      RingR: 90
-      WTrail: 0
-      WAlarm: 0.6
-      WThreat: 0.3
-      WHome: 0
-      Crowd: 1
-      GaitHz: 0
-      GaitAmp: 0
-      Aspect: 1.5
-      Size: 4
-      Trample: 0
-    Gregarious:
-      Speed: 110
-      Burst: 1.2
-      Turn: 1.6
+      Speed: 120
+      Burst: 1
+      Turn: 3
       Accel: 120
       WFood: 1
-      WCoh: 1
-      WAlign: 2.5
-      WSep: 0.5
-      WWander: 0.02
+      WCoh: 0.3
+      WAlign: 0.3
+      WSep: 0.6
+      WWander: 0.3
       WCurious: 0
-      Comfort: 150
-      WFlee: 0.4
+      Comfort: 120
+      WFlee: 1
       WHunt: 0
       WRing: 0
       RingR: 90
       WTrail: 0
-      WAlarm: 1.5
-      WThreat: 0.3
+      WAlarm: 0.5
+      WThreat: 0.5
       WHome: 0
       Crowd: 1
       GaitHz: 0
       GaitAmp: 0
-      Aspect: 1.5
-      Size: 4.5
-      Trample: 1
-    NbrR: 35
+      Aspect: 1.6
+      Size: 3.4
+      Trample: 0
+    Gregarious:
+      Speed: 120
+      Burst: 1
+      Turn: 3
+      Accel: 120
+      WFood: 1
+      WCoh: 0.3
+      WAlign: 0.3
+      WSep: 0.6
+      WWander: 0.3
+      WCurious: 0
+      Comfort: 120
+      WFlee: 1
+      WHunt: 0
+      WRing: 0
+      RingR: 90
+      WTrail: 0
+      WAlarm: 0.5
+      WThreat: 0.5
+      WHome: 0
+      Crowd: 1
+      GaitHz: 0
+      GaitAmp: 0
+      Aspect: 1.6
+      Size: 4.4
+      Trample: 0
+    NbrR: 30
     DensNorm: 6
-    Metabolism: 0.008
-    EatR: 9
+    Metabolism: 0.0015
+    EatR: 8
     EatHunger: 0.25
     HungerPerVol: 0.02
-    FearGain: 1.6
+    FearGain: 1
     AggrBase: 0
     FearDecay: 0.5
-    Sense: 260
+    Sense: 250
     CuriosityRate: 0.3
-    QUp: 0.35
-    QDown: 0.08
-    QWidth: 0.04
-    QRate: 0.9
-    QContagion: 0.7
-    QWDens: 0
+    QUp: 9
+    QDown: 9
+    QWidth: 0.05
+    QRate: 0.4
+    QContagion: 0.5
+    QWDens: 1
     QWProx: 0
-    QWAlarm: 1
-    QHunger: 0
-    BiteR: 16
-    BiteCool: 1
-    StarveS: 30
-    BirthStock: 120
+    QWAlarm: 0
+    QHunger: 1
+    BiteR: 10
+    BiteCool: 1.5
+    StarveS: 120
+    BirthStock: 60
     Stock0: 25
     GrowS: 2
     DepositThreat: 0
-    DepositAlarm: 1.2
+    DepositAlarm: 0.5
     NDirs: 18
     FracK: 4
     RingRoles: 0
     SpacingSpring: 1
     Momentum: 0.15
     IntentBlend: 0
-    AttnR: 150
-    AttnUrg: 0.6
+    AttnR: 0
+    AttnUrg: 1
     QWClose: 0
     CloseR: 350
-    StaminaS: 1.5
-    RestS: 4
+    StaminaS: 0
+    RestS: 0
     RestSpeed: 0.5
     WRestRetreat: 0
     RestTogether: 0
@@ -132,18 +132,18 @@ MonoBehaviour:
     BodyScale: 1
     BodyWell: 4
     BodySpeed: 50
-    ChargeEvery: 4
-    RampS: 0.9
-    RampSpeed: 0.2
-    RampR: 260
-    RampOnSight: 1
-    WStrike: 3
-    StrikeSpeed: 170
-    StrikeAccel: 400
-    StrikeTurn: 2.4
-    HuntLeadMax: 1.2
-    WAlarmClimb: 2
-    TrampleClose: 0.3
+    ChargeEvery: 0
+    RampS: 0
+    RampSpeed: 1
+    RampR: 0
+    RampOnSight: 0
+    WStrike: 0
+    StrikeSpeed: 0
+    StrikeAccel: 0
+    StrikeTurn: 0
+    HuntLeadMax: 2
+    WAlarmClimb: 0
+    TrampleClose: 0
     QWProvoke: 0
     SlowBelow: 100
     RoostR: 260
@@ -174,7 +174,7 @@ MonoBehaviour:
     RingHoldSeconds: 0
     StrikeWindupS: 0
     Siege:
-      Enabled: 0
+      Enabled: 1
       Stalk: 430
       Detect: 640
       Cruise: 120
@@ -217,11 +217,11 @@ MonoBehaviour:
       Substeps: 3
       FoodPull: 150
   seedCount: 0
-  seedSpread: 40
-  seedAtFlora: 1
-  seedClusters: 4
+  seedSpread: 70
+  seedAtFlora: 0
+  seedClusters: 0
   sectorAxis: {x: 1, y: 0, z: 0}
-  sectorHalfAngle: 55
+  sectorHalfAngle: 0
   contactEffect: {fileID: 11400000, guid: c7ccaca885824b24b716b12148d77ce1, type: 2}
   agentPrefab: {fileID: 5945480239701989318, guid: 793b57ef1f0760e8f2776be94c7905f5, type: 3}
   memberShader: {fileID: 4800000, guid: 887013231f4a269178623abc40fc1a02, type: 3}
@@ -230,12 +230,12 @@ MonoBehaviour:
   heartPrismGap: 0.6
   bodyThin: 0.6
   engageRadius: 200
-  maxProxies: 5
+  maxProxies: 4
   proxyLingerSeconds: 2
-  maxSpawnsPerFrame: 5
+  maxSpawnsPerFrame: 4
   vesselRadius: 6
   biteRadius: 24
-  maxBitesPerTick: 4
+  maxBitesPerTick: 6
   cellCapacity: 1024
   simulateOffMainThread: 1
   extinctLingerSeconds: 8
