@@ -56,7 +56,11 @@ namespace CosmicShore.UI
 
             var ds = _ugsDataService;
             if (ds != null)
+            {
                 ds.OnInitialized -= HandleDataServiceReady;
+                if (ds.ProfileRepo != null)
+                    ds.ProfileRepo.OnDataChanged -= HandleProfileRepoDataChanged;
+            }
 
             OnProfileChanged -= SyncProfileToGameData;
 
@@ -96,6 +100,12 @@ namespace CosmicShore.UI
             StampSessionLifecycle();
             ApplyPendingDebugCrystals();
 
+            if (_ugsDataService.ProfileRepo != null)
+            {
+                _ugsDataService.ProfileRepo.OnDataChanged -= HandleProfileRepoDataChanged;
+                _ugsDataService.ProfileRepo.OnDataChanged += HandleProfileRepoDataChanged;
+            }
+
             IsInitialized = true;
             OnProfileChanged?.Invoke(CurrentProfile);
 
@@ -110,6 +120,28 @@ namespace CosmicShore.UI
             // Notify currency displays of the freshly-loaded cloud value. Those views subscribe
             // to the static balance event, which is otherwise only raised on mutation
             // (AddCrystals), so without this they'd show the local-default 0 until the next change.
+            OnCrystalBalanceChanged?.Invoke(GetCrystalBalance());
+        }
+
+        /// <summary>
+        /// The profile repository can REPLACE its data object after this service merged it: a
+        /// load that failed at sign-in and later recovers adopts the real cloud record
+        /// (CloudDataRepository.TryResolveFailedLoadAsync), and a late sign-in after an offline
+        /// boot reloads it (UGSDataService.ReloadFromCloudAfterLateSignInAsync). CurrentProfile
+        /// still pointed at the stand-in, so the next SyncCurrentProfileToRepo (any AddCrystals,
+        /// any game end) copied the stand-in's identity, economy and lifecycle over the adopted
+        /// record and uploaded them - erasing the real crystals, name, owned episodes and
+        /// redeemed orders, the very loss BH-2.1 exists to prevent. Re-merge when the repo now
+        /// holds a REAL record that is not ours; a fresh/wiped one (no UserId) is left alone.
+        /// </summary>
+        void HandleProfileRepoDataChanged()
+        {
+            var repoData = _ugsDataService?.ProfileRepo?.Data;
+            if (repoData == null || ReferenceEquals(repoData, CurrentProfile)) return;
+            if (repoData.Identity == null || string.IsNullOrEmpty(repoData.Identity.UserId)) return;
+
+            MergeCloudProfile();
+            OnProfileChanged?.Invoke(CurrentProfile);
             OnCrystalBalanceChanged?.Invoke(GetCrystalBalance());
         }
 
