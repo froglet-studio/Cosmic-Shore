@@ -232,21 +232,29 @@ namespace CosmicShore.Launcher
 
         // ---------------------------------------------------------------- local multiplayer
 
-        readonly List<(int player, Process proc)> _locals = new();
+        readonly List<(int player, Process proc, int port)> _locals = new();
 
         /// <summary>The local multiplayer instances still running.</summary>
         public int LocalPlayersRunning { get { lock (_locals) return _locals.Count(l => !l.proc.HasExited); } }
 
+        /// <summary>Every local player of the current run: its number, control port and whether it still runs.</summary>
+        public List<(int player, int port, bool running)> LocalPlayers { get { lock (_locals) return _locals.Select(l => (l.player, l.port, !l.proc.HasExited)).ToList(); } }
+
+        /// <summary>The session folder the current local run's players share (the stand-in for UGS Lobby + Relay).</summary>
+        public string? LocalNetDir { get; private set; }
+
         /// <summary>
-        /// TIME > MULTIPLAYER: N game windows on this machine, each its own player (profile
-        /// player1..N, so each has its own save and name), networking on. They find each other the
-        /// way two PCs on a LAN do: through the shared local session directory, so one hosts a
-        /// party or match and the others join it from the game's own menus. Only player 1 plays
+        /// NET > PLAYERS: N game windows on this machine (a party is 4, so 2-4), each its own player
+        /// (profile player1..N, so each has its own save and name), networking on, tiled 2x2. They
+        /// find each other the way PCs on a LAN do, through one fresh session folder, so one hosts a
+        /// party or match and the others join it from the game's own menus. Each has a control port
+        /// the NET page drives (stats, network simulator, session faults) and may start on a
+        /// simulated line (<paramref name="sims"/>, docs/MULTIPLAYER.md §6.2). Only player 1 plays
         /// sound. Each writes a session report under sessions/.
         /// </summary>
-        public void LaunchLocalPlayers(int players, string? scene, string size) => Start("Local multiplayer", async ct =>
+        public void LaunchLocalPlayers(int players, string? scene, string size, IReadOnlyList<string>? sims = null) => Start("Local multiplayer", async ct =>
         {
-            players = Math.Clamp(players, 2, 6);
+            players = Math.Clamp(players, 2, Prisma.MultiplayerRun.MaxPlayers);
             if (!await EnsureTools(ct)) return false;
             string cfg = _s.ReleaseBuild ? "Release" : "Debug";
             if (!await EnsurePlayerBuilt(ct, cfg)) return false;
@@ -254,14 +262,23 @@ namespace CosmicShore.Launcher
             Step($"Starting {players} players", 1);
             var exe = PlayerExeFor(cfg);
             bool audio = _s.Audio && await _ws.FetchNatives(Log, ct);
+            // A fresh session folder per run: no session a previous run left behind shows up as joinable.
+            LocalNetDir = Path.Combine(Path.GetTempPath(), "prisma-multiplayer", DateTime.Now.ToString("yyyyMMdd-HHmmss"), "sessions");
+            Directory.CreateDirectory(LocalNetDir);
+            var wh = size.Split('x');
+            int w = wh.Length == 2 && int.TryParse(wh[0], out var pw) ? pw : 960, h = wh.Length == 2 && int.TryParse(wh[1], out var ph) ? ph : 540;
             for (int i = 1; i <= players; i++)
             {
-                var args = new List<string> { "--size", size };
+                int port = FreeLocalPort();
+                var args = new List<string> { "--size", size, "--control-port", port.ToString(), "--position", $"{(i - 1) % 2 * w},{(i - 1) / 2 * (h + 32)}" };
                 if (!string.IsNullOrWhiteSpace(scene)) { args.Add("--scene"); args.Add(scene!); }
                 var report = Path.Combine(SessionsDir, $"session-{DateTime.Now:yyyyMMdd-HHmmss}-p{i}.json");
                 Directory.CreateDirectory(SessionsDir);
                 args.Add("--session-report"); args.Add(report);
                 var psi = PlayerStart(exe, args, audio: audio && i == 1, network: true, profile: "player" + i);
+                psi.Environment["COSMIC_SHORE_NET_DIR"] = LocalNetDir;
+                var sim = sims != null && i - 1 < sims.Count ? sims[i - 1] : "";
+                if (!string.IsNullOrWhiteSpace(sim)) psi.Environment["COSMIC_SHORE_NET_SIM"] = sim;
                 var p = new Process { StartInfo = psi, EnableRaisingEvents = true };
                 int n = i;
                 p.OutputDataReceived += (_, e) => { if (e.Data != null) Log.Add(LogKind.Output, $"[P{n}] {e.Data}"); };
@@ -270,7 +287,7 @@ namespace CosmicShore.Launcher
                 p.Start();
                 p.BeginOutputReadLine();
                 p.BeginErrorReadLine();
-                lock (_locals) _locals.Add((i, p));
+                lock (_locals) _locals.Add((i, p, port));
                 // A moment apart, so player 1 is up first and the windows do not all fight for the GPU at once.
                 await Task.Delay(1500, ct);
             }
@@ -278,11 +295,20 @@ namespace CosmicShore.Launcher
             return true;
         });
 
+        static int FreeLocalPort()
+        {
+            var l = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, 0);
+            l.Start();
+            int port = ((System.Net.IPEndPoint)l.LocalEndpoint).Port;
+            l.Stop();
+            return port;
+        }
+
         public void StopLocalPlayers()
         {
             lock (_locals)
             {
-                foreach (var (_, p) in _locals)
+                foreach (var (_, p, _) in _locals)
                     try { if (!p.HasExited) p.Kill(entireProcessTree: true); } catch (InvalidOperationException) { }
                 _locals.Clear();
             }

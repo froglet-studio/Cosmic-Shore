@@ -247,13 +247,36 @@ transforms, the first place to look when bandwidth matters (§3).
 Reading RTT: two headless players on one machine at `--realtime` see ~18-30 ms, which is the
 frames each side takes to read a message (the driver polls once a frame), not the network.
 
-### 6.5 Step 4: the Launcher's MULTIPLAYER panel and MCP tools
+### 6.5 Step 4: the Launcher's NET page and the MCP tools
 
-Players 1-4 (a party is always four), each row with a name (`PilotA`...), a profile, windowed or
-headless, and the simulator preset it runs under. **START ALL** creates a fresh session folder,
-gives each player its own save folder and control port, and tiles the windows. **STOP ALL** ends
-them. Each row has a log tab and a control-port console. MCP: `net_players` (start/stop N),
-`net_sim`, `net_fault`, `net_stats`, `net_scenario`.
+**The Launcher's NET page** (`src/CosmicShore.Launcher/LauncherApp.Net.cs`; manual:
+`LAUNCHER.md` § NET). PLAYERS: 2-4 windows (a party is four), tiled two by two, each its own
+profile (`player1`...) and save, one fresh session folder per run, a simulated line per player.
+LIVE: each player's scene, role, traffic and RTT once a second, and per player a line picker, PULL
+CABLE / PLUG IN, a fault picker and CAPTURE 10 S. It replaces the TIME page's old MULTIPLAYER
+card, which allowed six players and had no control ports.
+
+**The MCP tools** (`src/CosmicShore.Mcp/Tools.Multiplayer.cs`), backed by `Shared/MultiplayerRun.cs`:
+
+| Tool | What |
+|---|---|
+| `net_players` | `action=start` 1-4 players (headless by default, `--realtime`), `profiles`, `sims`, `faults` per player; `status`; `stop` |
+| `net_input` | Any `--do` action on one player or all (`party invite PilotB` through the console route, `click X,Y` ...) |
+| `net_command` | Any control-port command on one player or all (`state`, `wait`, `find`, `get`, `screenshot` ...) |
+| `net_sim` / `net_fault` | The simulator and the session faults, live, per player |
+| `net_stats` | `do net`: text, `json`, `reset`, `capture N [PATH]` |
+| `net_logs` | One player's console, optionally filtered |
+| `net_scenario` | The five-player party scenario harness (`Tools/Build/prisma_party_scenarios/run.sh`), ~10-15 min |
+
+From a shell, without MCP, the same pieces are the player's own flags:
+
+```bash
+P=Port/src/CosmicShore.Player/bin/Debug/net10.0/CosmicShore.dll
+export COSMIC_SHORE_NET_DIR=/tmp/mp/sessions COSMIC_SHORE_AUDIO=off
+COSMIC_SHORE_PROFILE=PilotA dotnet $P --control-port 47801 --position 0,0 &
+COSMIC_SHORE_PROFILE=PilotB COSMIC_SHORE_NET_SIM=4g dotnet $P --control-port 47802 --position 960,0 &
+curl -s -X POST -d '{"cmd":"do","arg":"net"}' http://127.0.0.1:47801/
+```
 
 ### 6.6 Step 5: our reliable-UDP transport
 
@@ -274,7 +297,7 @@ argument, and TCP treats both channels as reliable).
 | 1 | Network simulator | Done 2026-10-08 | `SimulatedTransportTests` 14/14; the 7 transport contract checks pass behind a bad line (latency 5, jitter 10, loss 20%) over TCP and loopback; `NetDriverTransportTests` approves a real TCP client behind 40 ms each way in >= 80 ms; 5 repeat runs stable |
 | 2 | Stats, `do net`, capture, window-title monitor | Done 2026-10-08 | `NetStatsTests` 8/8. Two real players: traffic, kinds and RPC names on both; localhost RTT 27.7 ms (min 18); `netsim latency=100` on the guest read 238 ms on both ends (28 + 200) |
 | 3 | Session-service faults | Done 2026-10-08 | `NetFaultsTests` 10/10. Two real players: `netfault full` refused the guest's join with the game's "That party is full." and bounced it to its menu (host stayed 1/4; the next join seated it); `ratelimit=3` raised 3 and the party survived |
-| 4 | Launcher MULTIPLAYER panel, MCP tools | Planned | |
+| 4 | Launcher NET page, MCP `net_*` tools | Done 2026-10-08 | `MultiplayerRunTests` 7/7, Launcher tests 21/21; NET page screenshotted under xvfb (empty and with four player rows); the MCP server over stdio started 2 headless players (one on `4g` from launch), and `net_sim`, `net_fault`, `net_stats`, `net_players status`, `net_logs` and `stop` worked against them |
 | 5 | Reliable-UDP transport, unreliable transforms | Planned | |
 | G2 | UGS backend (Auth, Lobby, Relay protocol) | After gate G2 | |
 

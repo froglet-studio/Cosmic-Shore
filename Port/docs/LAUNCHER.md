@@ -34,7 +34,8 @@ Source: `Port/src/CosmicShore.Launcher` (C#, Dear ImGui on our own Silk.NET wind
 | **AGENT** | The Prisma Agent, powered by Claude: as many chats as you like, side by side (below). |
 | **GIT** | What the agent (or you) changed in the workspace, and getting it to GitHub (below). |
 | **EDITOR** | TOOLS (every FrogletTools tool, run by the agent), DATA (the data sets, editable) and MODELS (every model in the game's colours; VIEW IN ENGINE) (below). |
-| **TIME** | Benchmarks (timed runs of scenes and replays that close themselves, with a results table against the last run) and local multiplayer (2-4 game windows that join each other) (below). |
+| **TIME** | Benchmarks (timed runs of scenes and replays that close themselves, with a results table against the last run) (below). |
+| **NET** | Multiplayer on this PC: 2-4 game windows that join each other, a simulated line per player, live traffic and RTT, a pulled cable, session faults (below; `docs/MULTIPLAYER.md`). |
 | **TRACKS** | Every play run: performance per scene, features used, audio, every problem over time (below). |
 | **BOARD** | Bugs and tasks, with Prisma's suggestions (below). |
 | **SETTINGS** | Folded sections: Game, Source, Look, Claude, Advanced, Toolchain, About (versions). |
@@ -55,7 +56,7 @@ bottom shows what is happening, a progress bar and CANCEL. The title bar shows t
 agent's state (green: ready on your Claude plan), the notification bell and **?** (the tour).
 The first start shows a one-minute tour of every page; **?** replays it.
 
-## TIME - benchmarks and local multiplayer
+## TIME - benchmarks
 
 **BENCHMARK** times the game on this machine. Tick scenes and replays (REPLAY rows are the parity
 harness's recorded inputs, `Port/parity/manifest.json`: they fly a real match, so they measure
@@ -75,10 +76,23 @@ faster, red slower). Every benchmark is kept in `%LOCALAPPDATA%\Prisma\bench` an
 from the history list. `Prisma --auto bench:Menu_Main,MinigameSkimRace:600` runs a headless
 benchmark unattended and closes Prisma when it is saved.
 
-**MULTIPLAYER** opens 2, 3 or 4 game windows on this PC, each in its own save slot (`player1`,
-`player2` ...) with networking on and sound only in the first. They share one session folder, so
-a party or match hosted in one window shows up in the others: host in one, join from the rest.
-Start them at Bootstrap (log in, menu) or straight into a scene. **CLOSE** closes them all.
+## NET - multiplayer on this PC
+
+Prisma's counterpart of Unity's Multiplayer Play Mode, Network Simulator and Runtime Network Stats
+Monitor (`docs/MULTIPLAYER.md` §6).
+
+**PLAYERS** opens 2, 3 or 4 game windows (a party is four), tiled two by two, each in its own save
+slot (`player1`, `player2` ...) with networking on and sound only in the first. They share one
+fresh session folder per run, so a party or match hosted in one window shows up in the others:
+host in one, join from the rest (the friends list, or the DiagnosticsHUD's `party invite <name>` /
+`party join <name>`). Each player can start on a simulated line (clean, lan, broadband, dsl, 4g, 3g,
+poor). Start them at Bootstrap (log in, menu) or straight into a scene. **CLOSE** closes them all.
+
+**LIVE** shows, once a second, each player's scene, role (server or client), traffic in and out and
+RTT to each peer, read from its control port. Per player, while it runs: change its line, **PULL
+CABLE** (after 10 s every peer drops it, as a real timeout does; **PLUG IN** ends it), arm a session
+fault (full, ratelimit=3, relayfail, slow=2000, down) and **CAPTURE 10 S** (600 frames of per-frame
+traffic and RTT to a JSON file the console names). The windows' titles carry the same line.
 
 ## TRACKS - Prisma's memory of every run
 

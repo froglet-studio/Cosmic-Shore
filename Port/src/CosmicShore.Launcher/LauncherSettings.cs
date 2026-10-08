@@ -98,6 +98,8 @@ namespace CosmicShore.Launcher
         public int MpPlayers { get; set; } = 2;
         public string MpScene { get; set; } = "";
         public string MpSize { get; set; } = "960x540";
+        /// <summary>The network simulator preset each local player starts on (NET page), "" = a clean line.</summary>
+        public List<string> MpSims { get; set; } = new() { "", "", "", "" };
 
         // Toolchain
         public string DotnetPath { get; set; } = "";

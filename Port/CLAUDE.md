@@ -100,7 +100,10 @@ With the **prisma MCP server** (preferred - see below), the loop is tools:
 3. `game_start` - boots the real game with a control port (under xvfb on a display-less server).
 4. Look and act (and read `prisma_tracks` first when chasing a reported problem): `game_screenshot`, `game_state`, `game_input` ("click X,Y", "type pilot",
    "key Enter", "hold W 60"), `game_wait`, `game_find`, `game_hierarchy`, `game_get` /
-   `game_set`, `game_ui_at`, `game_dump_ui`, `game_logs`, `game_load_scene`.
+   `game_set`, `game_ui_at`, `game_dump_ui`, `game_logs`, `game_load_scene`. For multiplayer, the
+   `net_*` tools start and drive up to four players at once (`net_players`, `net_input`,
+   `net_command`, `net_sim`, `net_fault`, `net_stats`, `net_logs`, `net_scenario`;
+   `docs/MULTIPLAYER.md` §6.5).
 5. `game_stop`, then `engine_test` and `unity_isolation_check` before committing.
 
 When something that used to work is broken, `prisma_bisect` (good, bad, check) finds the commit:

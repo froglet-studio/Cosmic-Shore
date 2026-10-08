@@ -44,6 +44,7 @@
     <Compile Include="../../src/Shared/Workspace/*.cs" Link="Shared/Workspace/%(Filename)%(Extension)" />
     <Compile Include="../../src/Shared/ParityDiff.cs" Link="Shared/ParityDiff.cs" />
     <Compile Include="../../src/Shared/Bisect.cs" Link="Shared/Bisect.cs" />
+    <Compile Include="../../src/Shared/MultiplayerRun.cs" Link="Shared/MultiplayerRun.cs" />
   </ItemGroup>
 
 </Project>
