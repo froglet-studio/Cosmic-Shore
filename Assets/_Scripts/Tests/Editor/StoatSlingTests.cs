@@ -47,6 +47,19 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Peak_KeepsTheDeepestSqueezeThroughTheLetGo()
+        {
+            // A real trigger let go from full travel: the samples sweep back down before the release
+            // edge (deadzone 0.05). The pair must be slung at the full squeeze, not the last sample.
+            float peak = 0f;
+            foreach (float sample in new[] { 0.2f, 0.7f, 1f, 1f, 0.8f, 0.45f, 0.15f, 0.06f })
+                peak = StoatSlingMath.Peak(peak, sample);
+            Assert.AreEqual(1f, peak, 1e-6f);
+            Assert.AreEqual(0.4f, StoatSlingMath.Peak(0.4f, 0.1f), 1e-6f, "a lighter sample never shrinks the hold");
+            Assert.AreEqual(1f, StoatSlingMath.Peak(0f, 3f), 1e-6f, "clamped to 1");
+        }
+
+        [Test]
         public void Hold01_AutopilotTakesItsFixedSqueeze()
         {
             Assert.AreEqual(0.5f, StoatSlingMath.Hold01(1f, 99f, true, 1f, autopilot: true, autopilotHold01: 0.5f), 1e-6f);

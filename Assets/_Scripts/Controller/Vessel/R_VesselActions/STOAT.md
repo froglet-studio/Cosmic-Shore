@@ -25,7 +25,7 @@ documented there and not repeated here.
 | Input | What happens |
 |---|---|
 | **LT press** (`InputEvents.LeftStickAction`, 2) | the squeeze begins; a sound slot (`holdStartEvent`, empty) |
-| **LT held** | the trigger's depth (its hold time on keyboard / mouse / touch) is sampled every frame — that is the pair's SIZE |
+| **LT held** | the trigger's depth (its hold time on keyboard / mouse / touch) is sampled every frame; the DEEPEST squeeze of the hold is the pair's SIZE |
 | **LT release** | the pair is slung: **attractor on the LEFT, repulsor on the RIGHT**, on the hull's own horizontal, `aheadHorizons` horizon radii ahead; the previous pair this hull slung is annihilated first; if the hull was holding still (X) the stance ENDS — a sling is a launch |
 | **RT** (`RightStickAction`, 1) | the mirror: attractor on the right, repulsor on the left |
 | **X** (`Button1Action`, 6) | `StoatHoldAction` — `ToggleTranslationModeActionSO` in **Sparrow** mode: stop translating and stop laying prisms; press again to move |
@@ -70,7 +70,7 @@ let go, get thrown.
 | `driftSpeed` / `lifetime` | 20 u/s / 4 s | the pair's drift and its life, handed to `BlackHoleRegistry.SpawnPair` |
 | `holdStartEvent` / `slingEvent` | **empty** | FMOD slots; wire them in the inspector |
 
-Pure arithmetic in `StoatSlingMath` (`Hold01`, `Strength`, `PairAxis`, `Midpoint`), held by
+Pure arithmetic in `StoatSlingMath` (`Hold01`, `Peak`, `Strength`, `PairAxis`, `Midpoint`), held by
 `StoatSlingTests`. The axis runs black → white, so the LEFT trigger's axis is the hull's **+right**:
 `BlackHolePairMath.Positions` puts the black hole at −axis. Spin axis = the hull's up, so the frame
 drag turns on the plane the pair lies in.
@@ -118,10 +118,16 @@ through the base class's lerp (the Butterfly lesson: it eats a slow periodic mot
 | `StoatLopeMath.cs`, `StoatAnimation.cs` (Animation/) | the lope (pure) and the puppetry + morph plumbing (§2.2) |
 | `Tools/Build/stoat_hull_harness/` | compiles and RUNS the shipped hull form offline; `--obj` exports it |
 | `Tools/Build/author_stoat_assets.py` | the generator + `--check` + `--self-test` (ten negative controls); stage 2 authors the hull and the animation swap |
+| `Docs/Studios/StoatFlightStudio.html` | the web studio: fly the Stoat on a gamepad, sling either wormhole style, compare them, log decisions (`Docs/Studios/README.md`; live copy with the shared log: https://claude.ai/artifact/Busc3KW6DmVzbsiA2qxoHc) |
 
-**Why the hold is sampled per frame, not read at release.** The release edge is raised when the
-trigger drops back below the deadzone, so it reads ~0 by the time `Release` runs; sampling it there
-would sling every pair at minimum size. The Gibbon's lesson, inherited.
+**Why the hold is sampled per frame, not read at release — and why the PEAK slings.** The release
+edge is raised when the trigger drops back below the deadzone (0.05), so it reads ~0 by the time
+`Release` runs; sampling it there would sling every pair at minimum size (the Gibbon's lesson). Keeping
+the LATEST per-frame sample is no better: a let-go trigger sweeps back down through several frames
+before it crosses the deadzone, so the last sample is ~0.05 too. The first cut shipped exactly that,
+and every gamepad sling would have been a minimum-size nudge; it was caught building the web studio,
+whose scripted pad releases the way a thumb does. `StoatSlingMath.Peak` keeps the deepest sample
+(`StoatSlingTests.Peak_KeepsTheDeepestSqueezeThroughTheLetGo`).
 
 **One pair per Stoat.** A new sling annihilates THIS hull's previous pair first (never the tool's or
 another hull's), so a pilot can chain nudges without exhausting `BlackHoleConfig.maxBlackHoles` (4 —

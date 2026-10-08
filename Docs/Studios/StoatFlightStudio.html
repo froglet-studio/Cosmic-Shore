@@ -1,0 +1,1323 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<!-- Stoat Flight Studio. Generated from the published artifact (https://claude.ai/artifact/Busc3KW6DmVzbsiA2qxoHc);
+     open this file directly in Chrome when the artifact viewer does not pass the gamepad through.
+     Opened as a file, the decision log is kept in this browser: use "Copy log". See Docs/Studios/README.md. -->
+<style>body{margin:0}</style>
+</head>
+<body>
+<title>Stoat Flight Studio</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
+<style>
+  /* Dark-first: the stage is the HyperSea at night whatever the theme; the page chrome follows the viewer. */
+  :root {
+    --bg: #0b1026; --panel: #121a3a; --panel-2: #0e1531; --line: #27336a; --fg: #e8ecff; --dim: #9aa6d6;
+    --accent: #ffb347;   /* stoat amber */
+    --accent-2: #7fd7ff; /* membrane cyan */
+    --a-col: #b9a4ff;    /* pair A: this branch */
+    --b-col: #6fe3d0;    /* pair B: charming-cerf */
+    --good: #6fe39a; --warn: #ffcf5c; --bad: #ff7a8a;
+    --font-display: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+    --font-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+    color-scheme: dark;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) { --bg: #eef1fb; --panel: #ffffff; --panel-2: #f5f7ff; --line: #c9d0ee; --fg: #141a3a; --dim: #4b567f; --accent: #a65f00; --accent-2: #0a6fa8; --a-col: #5b3fc4; --b-col: #0b7f6e; --good: #1f8a4c; --warn: #8a6100; --bad: #b3243a; color-scheme: light; }
+  }
+  :root[data-theme="light"] { --bg: #eef1fb; --panel: #ffffff; --panel-2: #f5f7ff; --line: #c9d0ee; --fg: #141a3a; --dim: #4b567f; --accent: #a65f00; --accent-2: #0a6fa8; --a-col: #5b3fc4; --b-col: #0b7f6e; --good: #1f8a4c; --warn: #8a6100; --bad: #b3243a; color-scheme: light; }
+
+  body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.45; }
+  .wrap { max-width: 1340px; margin: 0 auto; padding-inline: 16px; padding-block: 12px 32px; display: flex; flex-direction: column; gap: 14px; }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; }
+  h1 { font-family: var(--font-display); font-weight: 700; font-size: 1.5rem; margin: 0; letter-spacing: 0.01em; text-wrap: balance; }
+  h2 { font-family: var(--font-display); font-weight: 700; font-size: 1.1rem; margin: 0; letter-spacing: 0.03em; text-wrap: balance; }
+  .round { font-family: var(--font-display); font-size: 0.8rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
+  header p { margin: 0; color: var(--dim); max-width: 78ch; flex-basis: 100%; }
+  code { font-size: 0.88em; background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+  kbd { font-family: var(--font-display); font-size: 0.8em; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--panel-2); }
+
+  .stage { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 12px; align-items: start; }
+  .main { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  @media (max-width: 960px) { .stage { grid-template-columns: minmax(0, 1fr); } }
+  .viewport { position: relative; min-width: 0; }
+  #stage { width: 100%; max-width: 100%; display: block; aspect-ratio: 16 / 10; background: #050817; border: 1px solid var(--line); border-radius: 8px; outline: none; }
+  #stage:focus-visible { box-shadow: 0 0 0 2px var(--accent-2); }
+  #hud { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; border-radius: 8px; }
+  .overlay { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
+  .overlay .box { pointer-events: auto; max-width: min(520px, 92%); max-height: calc(100% - 16px); overflow-y: auto; background: rgba(8, 12, 34, 0.86); color: #e8ecff; border: 1px solid #35448a; border-radius: 10px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; backdrop-filter: blur(3px); }
+  .overlay .box h2 { color: #ffb347; }
+  .overlay .box p { margin: 0; color: #c3cbef; }
+  .overlay .box kbd { background: #121a3a; border-color: #35448a; color: #e8ecff; }
+  .devline { font-size: 0.85rem; color: #9aa6d6; }
+  @media (max-width: 600px) { .overlay .box { padding: 10px 12px; gap: 5px; font-size: 0.82rem; } .overlay .box h2 { font-size: 0.95rem; } }
+  .devline.ok { color: #6fe39a; }
+  .devline.bad { color: #ffcf5c; }
+
+  .rail { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; min-width: 0; }
+  .card h3 { margin: 0 0 6px; font-family: var(--font-display); font-size: 0.95rem; letter-spacing: 0.04em; text-transform: uppercase; }
+  details.card > summary { cursor: pointer; font-family: var(--font-display); font-weight: 700; font-size: 0.9rem; letter-spacing: 0.04em; text-transform: uppercase; list-style: none; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  details.card > summary::-webkit-details-marker { display: none; }
+  details.card > summary::after { content: "+"; color: var(--dim); }
+  details.card[open] > summary::after { content: "–"; }
+  details.card > summary small { font-family: var(--font-body); font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--dim); font-size: 0.78rem; }
+  .styles { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .stylebtn { text-align: left; background: var(--panel-2); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 9px; cursor: pointer; font-family: var(--font-body); display: flex; flex-direction: column; gap: 2px; }
+  .stylebtn b { font-family: var(--font-display); font-size: 0.95rem; letter-spacing: 0.02em; }
+  .stylebtn span { font-size: 0.78rem; color: var(--dim); line-height: 1.3; }
+  .stylebtn[data-s="A"][aria-pressed="true"] { border-color: var(--a-col); box-shadow: inset 0 0 0 1px var(--a-col); }
+  .stylebtn[data-s="A"] b { color: var(--a-col); }
+  .stylebtn[data-s="B"][aria-pressed="true"] { border-color: var(--b-col); box-shadow: inset 0 0 0 1px var(--b-col); }
+  .stylebtn[data-s="B"] b { color: var(--b-col); }
+  .stylebtn:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
+  .seg { display: flex; gap: 0; margin-top: 8px; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+  .seg button { flex: 1 1 0; background: transparent; color: var(--dim); border: 0; padding: 6px 8px; font-family: var(--font-display); font-weight: 700; font-size: 0.82rem; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--accent); color: #1a1200; }
+  .check { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 0.88rem; }
+  .check input { accent-color: var(--accent); width: 16px; height: 16px; }
+  .row { display: flex; align-items: center; gap: 8px; margin-top: 5px; }
+  .row label { flex: 0 0 118px; font-size: 0.8rem; color: var(--dim); line-height: 1.2; }
+  .row input[type=range] { flex: 1 1 auto; min-width: 0; accent-color: var(--accent); }
+  .row output { flex: 0 0 44px; text-align: right; font-variant-numeric: tabular-nums; font-size: 0.85rem; }
+  .row output.changed { color: var(--accent); }
+  .rowsel { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; margin-top: 6px; font-size: 0.85rem; color: var(--dim); }
+  select, input[type=text], textarea { font-family: var(--font-body); font-size: 0.9rem; background: var(--panel-2); color: var(--fg); border: 1px solid var(--line); border-radius: 6px; padding: 5px 7px; }
+  textarea { resize: vertical; }
+  button.pick { font-family: var(--font-body); font-weight: 700; font-size: 0.85rem; background: transparent; color: var(--fg); border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; cursor: pointer; }
+  button.pick:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); color: #1a1200; border-color: var(--accent); }
+  .btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; align-items: center; }
+  .hint { color: var(--dim); font-size: 0.82rem; margin: 6px 0 0; }
+  .src { font-size: 0.75rem; color: var(--dim); margin: 4px 0 0; }
+  .runs { width: 100%; border-collapse: collapse; font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+  .runs td { padding: 2px 4px; border-top: 1px solid var(--line); }
+  .runs td:last-child { text-align: right; }
+
+  .lower { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 12px; align-items: start; }
+  @media (max-width: 1180px) { .lower { grid-template-columns: minmax(0, 1fr); } }
+  .tablewrap { overflow-x: auto; }
+  table.keys { border-collapse: collapse; width: 100%; font-size: 0.86rem; }
+  table.keys th { text-align: left; font-family: var(--font-display); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dim); padding: 4px 8px 4px 0; border-bottom: 1px solid var(--line); }
+  table.keys td { padding: 5px 8px 5px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .log form { display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 8px; align-items: end; margin-top: 8px; }
+  .log form label { display: flex; flex-direction: column; gap: 3px; font-size: 0.8rem; color: var(--dim); min-width: 0; }
+  .log form .full { grid-column: 1 / -1; }
+  @media (max-width: 560px) { .log form { grid-template-columns: minmax(0, 1fr); } }
+  .logHead { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 6px 12px; }
+  .quick { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .quick button[data-quick="A"] { border-color: var(--a-col); color: var(--a-col); }
+  .quick button[data-quick="B"] { border-color: var(--b-col); color: var(--b-col); }
+  ol.logList { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; max-height: 420px; overflow-y: auto; }
+  ol.logList li { background: var(--panel-2); border: 1px solid var(--line); border-radius: 7px; padding: 7px 9px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 8px; }
+  ol.logList .meta { font-size: 0.75rem; color: var(--dim); display: flex; flex-wrap: wrap; gap: 4px 10px; }
+  ol.logList .topic { font-family: var(--font-display); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+  ol.logList .choice { font-weight: 700; overflow-wrap: anywhere; }
+  ol.logList .note { color: var(--dim); font-size: 0.86rem; overflow-wrap: anywhere; }
+  ol.logList button { grid-row: 1 / span 3; grid-column: 2; align-self: start; }
+  .status-ok { color: var(--good); }
+  .status-warn { color: var(--warn); }
+  .toast { color: var(--good); font-size: 0.85rem; }
+  .empty { color: var(--dim); font-size: 0.88rem; }
+  [hidden] { display: none !important; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Stoat Flight Studio</h1>
+    <span class="round">Round 3 · fly it</span>
+    <p>Fly the plated Stoat round a Slingshot course on your gamepad, read exactly the way the game reads it, and sling either wormhole pair: <b style="color:var(--a-col)">A</b>, the drift pair built on this branch, or <b style="color:var(--b-col)">B</b>, the crystal wormhole from <code>cece/charming-cerf-alf1j1</code>. Fly both, compare them side by side, and record what you decide. The log below is saved with the studio, so I can read it back.</p>
+  </header>
+
+  <div class="stage">
+    <div class="main">
+    <div class="viewport" id="viewport">
+      <canvas id="stage" tabindex="0" width="1280" height="800" aria-label="3D flight stage: the Stoat, the Slingshot course rings, prisms, and any wormhole pair you sling"></canvas>
+      <canvas id="hud" aria-hidden="true"></canvas>
+      <div class="overlay" id="overlay"><div class="box" id="overlayBox"></div></div>
+    </div>
+  <div class="lower">
+    <section class="card" aria-labelledby="keysH">
+      <h2 id="keysH">Controls</h2>
+      <p class="hint" style="margin-top:4px">The gamepad goes through the game's own dual-stick mix (<code>InputController</code>): yaw and pitch are the SUM of both sticks, roll and throttle their DIFFERENCE, eased so one stick alone gives 29%. At rest the throttle sits at half cruise.</p>
+      <div class="tablewrap"><table class="keys">
+        <thead><tr><th>Gamepad</th><th>Keyboard</th><th>Does</th></tr></thead>
+        <tbody>
+          <tr><td>Both sticks left / right</td><td><kbd>A</kbd> <kbd>D</kbd></td><td>Yaw</td></tr>
+          <tr><td>Both sticks up / down</td><td><kbd>W</kbd> <kbd>S</kbd></td><td>Pitch (up = nose up; Invert Y flips it)</td></tr>
+          <tr><td>Sticks opposite, up / down</td><td><kbd>Q</kbd> <kbd>E</kbd></td><td>Roll</td></tr>
+          <tr><td>Sticks spread apart / together</td><td><kbd>↑</kbd> <kbd>↓</kbd></td><td>Throttle</td></tr>
+          <tr><td><b>LT</b>: squeeze, let go</td><td><kbd>J</kbd> or <kbd>Left Shift</kbd></td><td>Sling a pair, attractor on the LEFT. Deeper squeeze, bigger pair (a key ramps over the hold).</td></tr>
+          <tr><td><b>RT</b>: squeeze, let go</td><td><kbd>L</kbd> or <kbd>Right Shift</kbd></td><td>Sling a pair, attractor on the RIGHT</td></tr>
+          <tr><td><b>X</b></td><td><kbd>Space</kbd></td><td>Hold still (the stance); a sling breaks it</td></tr>
+          <tr><td><b>Y</b></td><td><kbd>T</kbd></td><td>Swap pair A ⇄ B mid-flight</td></tr>
+          <tr><td><b>A</b> / Menu</td><td><kbd>Enter</kbd></td><td>Start, or fly again</td></tr>
+          <tr><td><b>B</b> / View</td><td><kbd>R</kbd></td><td>Back to the start line</td></tr>
+        </tbody>
+      </table></div>
+      <p class="hint">Compare view: drag to orbit, wheel to zoom; on a gamepad the right stick orbits and the left stick zooms. If your controller isn't detected here, this viewer may be blocking gamepads: open <code>Docs/Studios/StoatFlightStudio.html</code> from the repo directly in Chrome (the log is then kept on that machine; use Copy log).</p>
+    </section>
+
+    <section class="card log" aria-labelledby="logH">
+      <div class="logHead"><h2 id="logH">Decisions</h2><span id="logStatus" class="hint" style="margin:0">Connecting…</span></div>
+      <div class="quick">
+        <button class="pick" type="button" data-quick="A">A feels right</button>
+        <button class="pick" type="button" data-quick="B">B feels right</button>
+        <button class="pick" type="button" data-quick="run">Log my last run</button>
+      </div>
+      <form id="logForm" autocomplete="off">
+        <label>Topic
+          <select id="logTopic">
+            <option>Wormhole style</option><option>Sling feel</option><option>Portal</option><option>Lope & body</option><option>Course</option><option>Controls</option><option>Run</option><option>Other</option>
+          </select></label>
+        <label>Decision <input type="text" id="logChoice" maxlength="400" required></label>
+        <label class="full">Why (optional) <textarea id="logNote" rows="2" maxlength="1500"></textarea></label>
+        <div class="full btns" style="margin:0"><button type="submit" class="pick primary">Record decision</button><button type="button" class="pick" id="useCurrent">Fill from current settings</button><span class="toast" id="toast" aria-live="polite"></span></div>
+      </form>
+      <ol class="logList" id="logList"></ol>
+      <div class="btns"><button class="pick" type="button" id="copyLog">Copy log</button><button class="pick" type="button" id="pushLocal" hidden>Save local entries to the shared log</button></div>
+    </section>
+  </div>
+    </div>
+
+    <aside class="rail" aria-label="Studio controls">
+      <div class="card">
+        <h3>Wormhole pair</h3>
+        <div class="styles" role="group" aria-label="Pair style">
+          <button class="stylebtn" data-s="A" type="button" aria-pressed="true"><b>A · Drift pair</b><span>This branch. Black attractor with a shadow and an Einstein ring, a white-hot repulsor, Paczyński–Wiita pull capped at 90 u/s.</span></button>
+          <button class="stylebtn" data-s="B" type="button" aria-pressed="false"><b>B · Crystal wormhole</b><span>charming-cerf. Smooth wells, a graded lens, seamless mouths you can fly through, a felt pull in cruise units, a spiral annihilation.</span></button>
+        </div>
+        <div class="seg" role="group" aria-label="View">
+          <button type="button" data-mode="fly" aria-pressed="true">Fly</button>
+          <button type="button" data-mode="compare" aria-pressed="false">Compare side by side</button>
+        </div>
+        <label class="check"><input type="checkbox" id="portal"> <span id="portalLabel">Carry the Stoat through the pair</span></label>
+        <p class="src" id="portalSrc"></p>
+      </div>
+
+      <div class="card" id="runsCard">
+        <h3>Runs on this course</h3>
+        <table class="runs" id="runs"><tbody><tr><td class="empty" colspan="2">No finished runs yet.</td></tr></tbody></table>
+      </div>
+
+      <details class="card" id="grp-sling" open><summary>Sling <small>StoatSlingConfig</small></summary><div class="rows"></div>
+        <p class="src">Hold → size: strength = lerp(min, max, squeeze<sup>curve</sup>). The horizon (A) or throat (B) is 2 u per unit of strength. Sling at the <b>deepest</b> squeeze of the hold.</p>
+        <div class="btns"><button class="pick" type="button" data-reset="sling">Reset to shipped</button></div></details>
+      <details class="card" id="grp-A"><summary>Pair A tuning <small>this branch</small></summary><div class="rows"></div>
+        <p class="src">BlackHoleConfig: GM = strength × 20,000; pull on the owner only (ELEMENTAL_ECONOMY §9).</p>
+        <div class="btns"><button class="pick" type="button" data-reset="A">Reset to shipped</button></div></details>
+      <details class="card" id="grp-B"><summary>Pair B tuning <small>charming-cerf</small></summary><div class="rows"></div>
+        <p class="src">Felt pull k·cruise²·R<sub>t</sub>·r/(r²+R<sub>t</sub>²)<sup>1.5</sup>; lens α = A·u·e<sup>−u²/2</sup>, u = b/w, shipped w = the throat (lens width 1). Life is sling-tuned here; their crystal cell ships 6 s to form, 9 s to annihilate.</p>
+        <div class="btns"><button class="pick" type="button" data-reset="B">Reset</button><button class="pick" type="button" id="theirLife">Their cell's 6 s / 9 s</button></div></details>
+      <details class="card" id="grp-flight"><summary>Flight & course</summary><div class="rows"></div>
+        <div class="rowsel">
+          <label>Intensity <select id="intensity"><option value="1">1 · 48 u mouths</option><option value="2" selected>2 · 40 u</option><option value="3">3 · 32 u</option><option value="4">4 · 26 u</option></select></label>
+          <label>Laps <select id="laps"><option value="1">1</option><option value="2" selected>2</option></select></label>
+          <label><input type="checkbox" id="invertY"> Invert Y</label>
+        </div>
+        <div class="rowsel">
+          <span>Course seed <b id="seedOut">7</b></span>
+          <button class="pick" type="button" id="newCourse">New course</button>
+          <label>Domain <select id="domain"><option value="jade">Jade</option><option value="ruby">Ruby</option><option value="blue">Blue</option><option value="gold">Gold</option></select></label>
+        </div>
+        <p class="src">A stand-in course on the shipped numbers: 8 rings on a 600 u circle, the mouth per intensity. Not the shipped HeadlongCircuit solver.</p>
+        <div class="btns"><button class="pick" type="button" data-reset="flight">Reset to shipped</button></div></details>
+      <details class="card" id="grp-lope"><summary>Lope <small>StoatLopeMath</small></summary><div class="rows"></div>
+        <p class="src">Body-only bound (the hull's path and trail stay straight). Amplitude is in world units: 1.6 u is the viewer's 1.00.</p>
+        <div class="btns"><button class="pick" type="button" data-reset="lope">Reset to shipped</button></div></details>
+    </aside>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  if (typeof THREE === 'undefined') { $('overlayBox').innerHTML = '<h2>3D library did not load</h2><p>Reload the page.</p>'; return; }
+  const V3 = THREE.Vector3;
+  const clamp01 = (x) => Math.max(0, Math.min(1, x));
+  const smooth = (a, b, x) => { const t = clamp01((x - a) / (b - a)); return t * t * (3 - 2 * t); };
+  const fmtTime = (s) => { if (s == null) return '—'; const m = Math.floor(s / 60); return m + ':' + (s - m * 60).toFixed(1).padStart(4, '0'); };
+
+  // ================= the shipped numbers =================
+  const SHIPPED = {
+    // StoatSlingConfig
+    minStrength: 2, maxStrength: 12, holdExponent: 1.5, holdRamp: 1.2, aheadHorizons: 2, halfGapHorizons: 4,
+    // A: this branch (BlackHoleConfig + the sling's drift-pair life)
+    pullScale: 1, maxPull: 90, driftSpeed: 20, lifetime: 4, releaseDamping: 1.5,
+    // B: charming-cerf crystal wormhole (felt law, lens, life curve)
+    feltK: 4, feltCap: 1.3, feltReach: 12, lensA: 0.6, lensWidth: 1, formS: 0.6, annihilateS: 3.4, spiralTurns: 2.5, beatDepth: 0.5, beatCycles: 7, softEdge: 0.65,
+    // the Stoat's flight (prefab: throttle scaler 60, pitch/yaw 120, roll 130)
+    cruise: 60, pitchYaw: 120, roll: 130,
+    // StoatLopeMath.Defaults
+    lopeAmp: 1.6, lopeRate: 0.66, lopeArch: 0.45, lopeSquash: 0.2,
+  };
+  const GM_PER_STRENGTH = 20000, HORIZON_PER_STRENGTH = 2, MIN_HORIZON = 1.5;
+  const SPEC = [
+    ['sling', 'minStrength', 'Light squeeze strength', 0.5, 6, 0.1],
+    ['sling', 'maxStrength', 'Full squeeze strength', 4, 24, 0.5],
+    ['sling', 'holdExponent', 'Squeeze curve', 0.5, 4, 0.05],
+    ['sling', 'aheadHorizons', 'Laid ahead (horizons)', 0, 8, 0.1],
+    ['sling', 'halfGapHorizons', 'Half gap (horizons)', 1.5, 10, 0.1],
+    ['sling', 'holdRamp', 'Key hold = full (s)', 0.1, 3, 0.05],
+    ['A', 'pullScale', 'Pull scale', 0, 3, 0.05],
+    ['A', 'maxPull', 'Pull ceiling (u/s)', 20, 200, 5],
+    ['A', 'driftSpeed', 'Drift apart (u/s)', 0, 80, 1],
+    ['A', 'lifetime', 'Life (s)', 0.5, 12, 0.1],
+    ['A', 'releaseDamping', 'Release damping (/s)', 0, 5, 0.1],
+    ['B', 'feltK', 'Felt k', 0, 10, 0.1],
+    ['B', 'feltCap', 'Ceiling (× cruise)', 0.2, 3, 0.05],
+    ['B', 'feltReach', 'Reach (throats)', 2, 20, 0.5],
+    ['B', 'lensA', 'Lens A', 0, 0.95, 0.01],
+    ['B', 'lensWidth', 'Lens width (× throat)', 0.5, 6, 0.1],
+    ['B', 'formS', 'Form (s)', 0.1, 8, 0.1],
+    ['B', 'annihilateS', 'Annihilate (s)', 0.5, 12, 0.1],
+    ['B', 'spiralTurns', 'Spiral turns', 0, 5, 0.1],
+    ['B', 'beatDepth', 'Beat depth', 0, 1, 0.05],
+    ['B', 'beatCycles', 'Beat cycles', 0, 14, 0.5],
+    ['B', 'softEdge', 'Mouth soft edge', 0, 1, 0.01],
+    ['flight', 'cruise', 'Cruise (u/s)', 20, 200, 5],
+    ['flight', 'pitchYaw', 'Pitch & yaw (°/s)', 30, 360, 5],
+    ['flight', 'roll', 'Roll (°/s)', 30, 360, 5],
+    ['lope', 'lopeAmp', 'Amplitude (u)', 0, 4, 0.05],
+    ['lope', 'lopeRate', 'Rate (bounds/s)', 0, 2, 0.01],
+    ['lope', 'lopeArch', 'Arch', 0, 1, 0.01],
+    ['lope', 'lopeSquash', 'Stretch', 0, 1, 0.01],
+  ];
+
+  // ================= per-viewer state (convenience only) =================
+  const LS_KEY = 'stoat-studio-v3';
+  function lsGet(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* storage blocked: fine */ } }
+  const saved = lsGet(LS_KEY, {});
+  const P = Object.assign({}, SHIPPED, saved.P || {});
+  let style = saved.style === 'B' ? 'B' : 'A';
+  const portal = Object.assign({ A: false, B: true }, saved.portal || {});
+  let mode = 'fly';
+  let invertY = !!saved.invertY;
+  let intensity = saved.intensity || 2, laps = saved.laps || 2, seed = saved.seed || 7, domainKey = saved.domain || 'jade';
+  let runs = saved.runs || [];
+  function persist() { lsSet(LS_KEY, { P, style, portal, invertY, intensity, laps, seed, domain: domainKey, runs: runs.slice(-40) }); }
+
+  // ================= renderer =================
+  const canvas = $('stage'), hud = $('hud'), hctx = hud.getContext('2d');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+  const scene = new THREE.Scene();
+  const cam = new THREE.PerspectiveCamera(68, 16 / 10, 0.5, 9000);
+  const thruCam = new THREE.PerspectiveCamera(68, 16 / 10, 0.5, 9000);
+  scene.add(new THREE.HemisphereLight(0x9fbaff, 0x1a1230, 0.85));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.85); sun.position.set(0.4, 1, 0.3); scene.add(sun);
+
+  // ---- the sky, carried with whichever camera renders, so it reads as infinitely far ----
+  const skyMat = new THREE.ShaderMaterial({
+    side: THREE.BackSide, depthWrite: false,
+    vertexShader: 'varying vec3 vDir; void main(){ vDir = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    fragmentShader: [
+      'varying vec3 vDir;',
+      'void main(){',
+      '  vec3 d = normalize(vDir);',
+      '  float h = d.y * 0.5 + 0.5;',
+      '  vec3 col = mix(vec3(0.015, 0.02, 0.07), vec3(0.05, 0.08, 0.2), smoothstep(0.0, 1.0, h));',
+      '  float n = sin(d.x * 5.1 + sin(d.y * 3.7)) * sin(d.z * 4.3 + sin(d.x * 2.9)) * 0.5 + 0.5;',
+      '  float n2 = sin(d.x * 11.3 + d.z * 7.1) * sin(d.y * 9.7 - d.x * 5.3) * 0.5 + 0.5;',
+      '  float n3 = sin(d.z * 17.0 + d.y * 3.0) * sin(d.x * 13.0 - d.z * 6.0) * 0.5 + 0.5;',
+      '  col += vec3(0.30, 0.12, 0.48) * pow(n, 3.0) * 0.55 + vec3(0.04, 0.26, 0.36) * pow(n2, 4.0) * 0.5 + vec3(0.2, 0.1, 0.05) * pow(n3, 8.0) * 0.4;',
+      '  float lat = abs(fract(asin(clamp(d.y, -1.0, 1.0)) * 3.8197) - 0.5);',
+      '  float lon = abs(fract(atan(d.z, d.x) * 3.8197) - 0.5);',
+      '  col += vec3(0.10, 0.16, 0.32) * (smoothstep(0.485, 0.5, lat) + smoothstep(0.485, 0.5, lon)) * 0.6;',
+      '  gl_FragColor = vec4(col, 1.0);',
+      '}'].join('\n'),
+  });
+  const sky = new THREE.Mesh(new THREE.SphereGeometry(3000, 48, 24), skyMat);
+  sky.frustumCulled = false; sky.renderOrder = -10;
+  sky.onBeforeRender = (r, s, c) => { sky.position.copy(c.position); sky.updateMatrixWorld(); };
+  scene.add(sky);
+  {
+    const N = 5000, pos = new Float32Array(N * 3), col = new Float32Array(N * 3);
+    for (let i = 0; i < N; i++) {
+      const u = Math.random() * 2 - 1, a = Math.random() * Math.PI * 2, r = Math.sqrt(1 - u * u);
+      pos[i * 3] = 2900 * r * Math.cos(a); pos[i * 3 + 1] = 2900 * u; pos[i * 3 + 2] = 2900 * r * Math.sin(a);
+      const b = 0.5 + Math.random() * 0.5, t = Math.random();
+      col[i * 3] = b * (0.8 + 0.2 * t); col[i * 3 + 1] = b * 0.9; col[i * 3 + 2] = b * (1.0 - 0.15 * t);
+    }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    const stars = new THREE.Points(g, new THREE.PointsMaterial({ size: 2, sizeAttenuation: false, vertexColors: true, depthWrite: false }));
+    stars.frustumCulled = false; stars.renderOrder = -9;
+    stars.onBeforeRender = (r, s, c) => { stars.position.copy(c.position); stars.updateMatrixWorld(); };
+    scene.add(stars);
+  }
+
+  // ================= the plated Stoat (round 2, Option 2), world scale ×1.6 =================
+  const DOMAIN = { jade: 0x37e3a0, ruby: 0xff4d6d, blue: 0x4da3ff, gold: 0xffc93c };
+  const FUR = 0xa5682a, BELLY = 0xf1e6cf, TIP = 0x1a1410, EYE = 0x111111;
+  const domainMat = new THREE.MeshStandardMaterial({ color: DOMAIN[domainKey], emissive: DOMAIN[domainKey], emissiveIntensity: 0.5, roughness: 0.4, flatShading: true });
+  function makeStoat(o) {
+    const g = new THREE.Group();
+    const fur = new THREE.MeshStandardMaterial({ color: FUR, roughness: 0.75, flatShading: true });
+    const belly = new THREE.MeshStandardMaterial({ color: BELLY, roughness: 0.85, flatShading: true });
+    const seg = o.length / o.segments, segs = [];
+    for (let i = 0; i < o.segments; i++) {
+      const t = i / Math.max(1, o.segments - 1), r = o.r0 * (1 - t) + o.r1 * t;
+      const pivot = new THREE.Group(); pivot.position.z = o.length / 2 - i * seg - seg / 2;
+      const body = new THREE.Mesh(new THREE.CylinderGeometry(r, r * 0.9, seg * 1.04, o.sides), fur); body.rotation.x = Math.PI / 2; body.rotation.y = Math.PI / o.sides; pivot.add(body);
+      const b = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.72, r * 0.66, seg * 0.92, o.sides), belly); b.rotation.x = Math.PI / 2; b.position.y = -r * 0.34; pivot.add(b);
+      if (i % 2 === 0) { const f = new THREE.Mesh(new THREE.ConeGeometry(r * 0.32, r * 0.9, 4), domainMat); f.position.y = r * 1.15; f.rotation.y = Math.PI / 4; pivot.add(f); }
+      g.add(pivot); segs.push(pivot);
+    }
+    const headG = new THREE.Group();
+    const head = new THREE.Mesh(new THREE.ConeGeometry(o.head * 0.95, o.head * 2.4, 4), fur); head.rotation.x = Math.PI / 2; head.rotation.z = Math.PI / 4; head.position.z = o.head * 0.6; headG.add(head);
+    const nose = new THREE.Mesh(new THREE.OctahedronGeometry(o.head * 0.15, 0), new THREE.MeshStandardMaterial({ color: TIP, flatShading: true })); nose.position.z = o.head * 1.8; headG.add(nose);
+    for (const sx of [-1, 1]) {
+      const ear = new THREE.Mesh(new THREE.TetrahedronGeometry(o.head * 0.34, 0), fur); ear.position.set(sx * o.head * 0.55, o.head * 0.72, -o.head * 0.15); headG.add(ear);
+      const eye = new THREE.Mesh(new THREE.OctahedronGeometry(o.head * 0.11, 0), new THREE.MeshStandardMaterial({ color: EYE })); eye.position.set(sx * o.head * 0.45, o.head * 0.22, o.head * 0.85); headG.add(eye);
+    }
+    headG.position.z = o.length / 2 + o.head * 0.9; g.add(headG);
+    const tailSegs = [], tn = 5;
+    for (let i = 0; i < tn; i++) {
+      const t = i / (tn - 1), r = o.r1 * 0.6 * (1 - t) + 0.05, last = i === tn - 1;
+      const geo = last ? new THREE.OctahedronGeometry(r * 1.9, 0) : new THREE.CylinderGeometry(r, r * 0.85, o.tail / tn, o.sides);
+      const tm = new THREE.Mesh(geo, last ? domainMat : fur);
+      if (!last) tm.rotation.x = Math.PI / 2; else tm.scale.set(1, 1, 1.7);
+      const p = new THREE.Group(); p.position.z = -o.length / 2 - i * (o.tail / tn) - o.tail / (2 * tn); p.add(tm); g.add(p); tailSegs.push(p);
+    }
+    const legs = [];
+    for (const [sx, z] of [[-1, o.length * 0.32], [1, o.length * 0.32], [-1, -o.length * 0.3], [1, -o.length * 0.3]]) {
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.035, o.legs, 4), fur); leg.position.set(sx * o.r0 * 0.7, -o.r0 * 0.95, z); g.add(leg); legs.push(leg);
+    }
+    g.userData = { segs, headG, tailSegs, legs };
+    return g;
+  }
+  const hull = new THREE.Object3D(); scene.add(hull);                 // the flight transform: forward −Z, right +X, up +Y
+  const model = makeStoat({ segments: 5, sides: 4, length: 2.5, r0: 0.28, r1: 0.16, head: 0.28, tail: 1.3, legs: 0.16 });
+  const modelRoot = new THREE.Group(); modelRoot.rotation.y = Math.PI; modelRoot.scale.setScalar(1.6); modelRoot.add(model); hull.add(modelRoot);
+  let lopePhase = 0;
+  function applyLope(dt, speed01) {   // StoatLopeMath, body-only
+    lopePhase += Math.PI * Math.max(0, P.lopeRate) * dt;
+    const sn = Math.sin(lopePhase), s2 = sn * sn, arch = clamp01(P.lopeArch);
+    const lift = Math.max(0, P.lopeAmp) * s2, pitch = -arch * 0.45 * Math.sin(2 * lopePhase);
+    const spine = arch * (s2 - 0.5) * 2, stretch = 1 + (0.18 + 0.35 * clamp01(P.lopeSquash)) * (s2 - 0.5) * arch * (1 + clamp01(speed01)), legsK = 1 - s2;
+    const u = model.userData;
+    model.position.y = lift / 1.6; model.rotation.set(pitch, 0, 0);
+    model.scale.set(1 / Math.sqrt(stretch), 1 / Math.sqrt(stretch), stretch);
+    const n = u.segs.length;
+    u.segs.forEach((seg, i) => { const t = i / Math.max(1, n - 1); seg.position.y = 0.22 * spine * Math.sin(Math.PI * t); seg.rotation.x = -0.35 * spine * Math.cos(Math.PI * t); });
+    u.headG.rotation.x = 0.25 * spine;
+    u.tailSegs.forEach((ts, i) => { ts.position.y = 0.05 + (0.08 + 0.05 * i) * legsK; });
+    u.legs.forEach((l, i) => { l.rotation.x = (i < 2 ? -1 : 1) * 0.9 * legsK; });
+  }
+
+  // ================= prisms: a field around the course, plus the Stoat's own trail =================
+  const NF = 2400, NT = 380, NB = NF + NT;
+  const bp = new Float32Array(NB * 3), bv = new Float32Array(NB * 3), bh = new Float32Array(NB * 3), bq = new Float32Array(NB * 4);
+  const act = new Uint8Array(NB), tAge = new Float32Array(NT).fill(-1);
+  const fieldMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1.6, 0.55, 4.4), new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x0b1b4a, roughness: 0.55, flatShading: true }), NF);
+  const trailMat = new THREE.MeshStandardMaterial({ color: DOMAIN[domainKey], emissive: DOMAIN[domainKey], emissiveIntensity: 0.35, roughness: 0.5, flatShading: true });
+  const trailMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1.3, 0.45, 3.6), trailMat, NT);
+  fieldMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); trailMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  fieldMesh.frustumCulled = false; trailMesh.frustumCulled = false;
+  scene.add(fieldMesh, trailMesh);
+  const dum = new THREE.Object3D(), tq = new THREE.Quaternion(), tv = new V3(), tv2 = new V3(), tv3 = new V3(), ZAX = new V3(0, 0, 1);
+  {
+    const c = new THREE.Color();
+    for (let i = 0; i < NF; i++) {
+      const a = Math.random() * Math.PI * 2, r = 330 + Math.random() * 600, y = (Math.random() - 0.5) * 520;
+      const j = i * 3; bp[j] = bh[j] = Math.cos(a) * r; bp[j + 1] = bh[j + 1] = y; bp[j + 2] = bh[j + 2] = Math.sin(a) * r;
+      tq.setFromEuler(new THREE.Euler(Math.random() * 6.28, Math.random() * 6.28, Math.random() * 6.28)); tq.toArray(bq, i * 4);
+      c.setHSL(0.6 + Math.random() * 0.12, 0.65, 0.35 + Math.random() * 0.2); fieldMesh.setColorAt(i, c);
+      act[i] = 1;
+    }
+    for (let k = 0; k < NT; k++) { dum.position.set(0, -1e5, 0); dum.scale.setScalar(0); dum.updateMatrix(); trailMesh.setMatrixAt(k, dum.matrix); }
+  }
+
+  // ================= the course =================
+  const MOUTHS = [48, 40, 32, 26];
+  let gates = [];
+  const courseGroup = new THREE.Group(); scene.add(courseGroup);
+  function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  function buildCourse() {
+    while (courseGroup.children.length) { const c = courseGroup.children.pop(); c.geometry.dispose(); c.material.dispose(); }
+    const rng = mulberry32(seed * 7919 + intensity), I = intensity - 1, mouth = MOUTHS[I];
+    const jitA = [0.10, 0.2, 0.3, 0.38][I], jitR = [50, 100, 150, 190][I], yAmp = [20, 80, 140, 190][I];
+    const pts = [];
+    for (let k = 0; k < 8; k++) {
+      const ang = k / 8 * Math.PI * 2 + (k ? (rng() - 0.5) * 2 * jitA : 0), r = 600 + (k ? (rng() - 0.5) * 2 * jitR : 0), y = k ? (rng() - 0.5) * 2 * yAmp : 0;
+      pts.push(new V3(Math.cos(ang) * r, y, Math.sin(ang) * r));
+    }
+    const curve = new THREE.CatmullRomCurve3(pts, true, 'centripetal');
+    gates = pts.map((p, k) => {
+      const n = curve.getTangent(k / 8).normalize();
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(mouth, 1.1, 8, 72), new THREE.MeshBasicMaterial({ color: 0x7fd7ff, transparent: true, opacity: 0.85 }));
+      ring.position.copy(p); ring.quaternion.setFromUnitVectors(ZAX, n); courseGroup.add(ring);
+      const disc = new THREE.Mesh(new THREE.CircleGeometry(mouth, 48), new THREE.MeshBasicMaterial({ color: 0xffb347, transparent: true, opacity: 0.0, depthWrite: false, side: THREE.DoubleSide }));
+      disc.position.copy(p); disc.quaternion.copy(ring.quaternion); courseGroup.add(disc);
+      return { p, n, mouth, ring, disc };
+    });
+    const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(curve.getPoints(400)), new THREE.LineBasicMaterial({ color: 0x35448a, transparent: true, opacity: 0.55 }));
+    courseGroup.add(line);
+    $('seedOut').textContent = seed;
+  }
+
+  // ================= wormhole pairs =================
+  // A: the drift pair (this branch) — half gap s(t) = s0 + v·t − (v/T)·t², gone at T.
+  // B: the crystal wormhole (charming-cerf) — CrystalWormhole.Curve, formation runs it backwards, annihilation forwards.
+  function curveB(p) {
+    p = clamp01(p); const q = 1 - p, env = q * Math.sqrt(q), beat = P.beatDepth * Math.sin(2 * Math.PI * P.beatCycles * p * p);
+    return { sep: Math.pow(q, 0.75), angle: 2 * Math.PI * P.spiralTurns * p * p, ampA: env * (1 + beat), ampR: env * (1 - beat) };
+  }
+  class Pair {
+    constructor(st, mid, axis, up, S, owned) {
+      this.style = st; this.mid = mid.clone(); this.axis = axis.clone().normalize(); this.up = up.clone().normalize(); this.S = S; this.owned = owned;
+      this.rs = Math.max(MIN_HORIZON, S * HORIZON_PER_STRENGTH); this.h0 = this.rs * P.halfGapHorizons;
+      this.t = 0; this.alive = true; this.frozen = false; this.loop = false;
+      this.att = new V3(); this.rep = new V3(); this.ampA = 1; this.ampR = 1; this.update(0);
+    }
+    life() { return this.style === 'A' ? P.lifetime : P.formS + P.annihilateS; }
+    update(dt) {
+      if (!this.frozen) this.t += dt;
+      if (this.t >= this.life()) { if (this.loop) this.t = 0; else { this.alive = false; return; } }
+      if (this.style === 'A') {
+        const T = P.lifetime, v = P.driftSpeed, t = this.t, h = this.h0 + v * t - (v / T) * t * t;
+        this.att.copy(this.mid).addScaledVector(this.axis, -h); this.rep.copy(this.mid).addScaledVector(this.axis, h); this.ampA = this.ampR = 1;
+      } else {
+        const p = this.t < P.formS ? 1 - this.t / P.formS : (this.t - P.formS) / P.annihilateS, c = curveB(p);
+        tv.copy(this.axis).multiplyScalar(this.h0 * c.sep).applyAxisAngle(this.up, c.angle);
+        this.att.copy(this.mid).sub(tv); this.rep.copy(this.mid).add(tv); this.ampA = c.ampA; this.ampR = c.ampR;
+      }
+    }
+  }
+  let pairs = [], myPair = null;
+  const W = [];
+  function collectWells() {
+    W.length = 0;
+    for (const pr of pairs) {
+      const GM = pr.S * GM_PER_STRENGTH;
+      if (pr.style === 'A') {
+        const inf = Math.min(900, Math.sqrt(GM / 0.6));
+        W.push({ pr, style: 'A', role: 'att', sign: 1, p: pr.att, rs: pr.rs, GM, amp: 1, inf2: inf * inf });
+        W.push({ pr, style: 'A', role: 'rep', sign: -1, p: pr.rep, rs: pr.rs, GM, amp: 1, inf2: inf * inf });
+      } else {
+        for (const role of ['att', 'rep']) {
+          const amp = role === 'att' ? pr.ampA : pr.ampR, inf = Math.min(900, Math.sqrt(GM * Math.max(amp, 0) / 0.6));
+          W.push({ pr, style: 'B', role, sign: role === 'att' ? 1 : -1, p: role === 'att' ? pr.att : pr.rep, other: role === 'att' ? pr.rep : pr.att, rs: pr.rs, GM, amp, inf2: inf * inf });
+        }
+      }
+    }
+  }
+
+  // ================= prism bodies under the wells =================
+  function stepBodies(dt) {
+    for (let i = 0; i < NB; i++) {
+      if (i >= NF && tAge[i - NF] < 0) continue;
+      const j = i * 3;
+      let px = bp[j], py = bp[j + 1], pz = bp[j + 2], ax = 0, ay = 0, az = 0, inf = false, moved = false;
+      for (let k = 0; k < W.length; k++) {
+        const w = W[k], dx = w.p.x - px, dy = w.p.y - py, dz = w.p.z - pz, r2 = dx * dx + dy * dy + dz * dz;
+        if (r2 > w.inf2) continue;
+        inf = true; const r = Math.sqrt(r2) + 1e-6;
+        if (w.style === 'A') {
+          if (w.sign > 0 && r < w.rs) {           // captured: re-emerge from the white hole, point-reflected through the pair's midpoint
+            const m = w.pr.mid; px = 2 * m.x - px; py = 2 * m.y - py; pz = 2 * m.z - pz; bv[j] = -bv[j]; bv[j + 1] = -bv[j + 1]; bv[j + 2] = -bv[j + 2]; moved = true; break;
+          }
+          if (w.sign < 0 && r < w.rs) { const s = w.rs / r; px = w.p.x - dx * s; py = w.p.y - dy * s; pz = w.p.z - dz * s; }
+          const x = Math.max(r - w.rs, 0.25 * w.rs), a = w.sign * w.GM / (x * x) / r;
+          ax += dx * a; ay += dy * a; az += dz * a;
+        } else {
+          if (w.sign > 0 && r < 0.5 * w.rs && w.amp > 0.05) {   // the attractor's core is the repulsor's: carried through with its velocity
+            px += w.other.x - w.p.x; py += w.other.y - w.p.y; pz += w.other.z - w.p.z; moved = true; break;
+          }
+          const s = r2 + w.rs * w.rs, a = w.sign * w.GM * w.amp / (s * Math.sqrt(s));
+          ax += dx * a; ay += dy * a; az += dz * a;
+        }
+      }
+      let vx = bv[j], vy = bv[j + 1], vz = bv[j + 2];
+      if (inf) {
+        const am = Math.hypot(ax, ay, az); if (am > 4000) { const s = 4000 / am; ax *= s; ay *= s; az *= s; }
+        vx += ax * dt; vy += ay * dt; vz += az * dt;
+      } else if (act[i]) {                        // released: settle, and drift back home
+        const d = Math.exp(-P.releaseDamping * dt); vx *= d; vy *= d; vz *= d;
+        vx += (bh[j] - px) * 0.5 * dt; vy += (bh[j + 1] - py) * 0.5 * dt; vz += (bh[j + 2] - pz) * 0.5 * dt;
+      }
+      const vm = Math.hypot(vx, vy, vz); if (vm > 450) { const s = 450 / vm; vx *= s; vy *= s; vz *= s; }
+      px += vx * dt; py += vy * dt; pz += vz * dt;
+      bp[j] = px; bp[j + 1] = py; bp[j + 2] = pz; bv[j] = vx; bv[j + 1] = vy; bv[j + 2] = vz;
+      const disp = Math.abs(px - bh[j]) + Math.abs(py - bh[j + 1]) + Math.abs(pz - bh[j + 2]);
+      if (inf || moved || disp > 0.05 || vm > 0.05) {
+        act[i] = 2;
+        if (!inf && disp < 0.3 && vm < 0.3) { bp[j] = bh[j]; bp[j + 1] = bh[j + 1]; bp[j + 2] = bh[j + 2]; bv[j] = bv[j + 1] = bv[j + 2] = 0; act[i] = 1; }
+        bodyStretch[i] = inf ? Math.min(5, Math.hypot(ax, ay, az) / 50) : 0;
+      }
+    }
+  }
+  const bodyStretch = new Float32Array(NB);
+  function writeBodies() {
+    let fd = false, td = false;
+    for (let i = 0; i < NB; i++) {
+      const trail = i >= NF, k = trail ? i - NF : i;
+      if (trail && tAge[k] < 0) continue;
+      let sc = 1;
+      if (trail) { const a = tAge[k]; sc = Math.min(1, a / 0.25) * (a > TRAIL_LIFE - 1.5 ? Math.max(0, (TRAIL_LIFE - a) / 1.5) : 1); if (!act[i] && a > 0.25 && a < TRAIL_LIFE - 1.5) continue; }
+      else if (!act[i]) continue;
+      const j = i * 3; dum.position.set(bp[j], bp[j + 1], bp[j + 2]);
+      const vm = Math.hypot(bv[j], bv[j + 1], bv[j + 2]);
+      if (vm > 3) { tv.set(bv[j] / vm, bv[j + 1] / vm, bv[j + 2] / vm); dum.quaternion.setFromUnitVectors(ZAX, tv); } else dum.quaternion.fromArray(bq, i * 4);
+      const st = 1 + bodyStretch[i]; dum.scale.set(sc / Math.sqrt(st), sc / Math.sqrt(st), sc * st);
+      dum.updateMatrix();
+      if (trail) { trailMesh.setMatrixAt(k, dum.matrix); td = true; } else { fieldMesh.setMatrixAt(k, dum.matrix); fd = true; }
+      if (act[i] === 1) act[i] = 0;
+    }
+    if (fd) fieldMesh.instanceMatrix.needsUpdate = true;
+    if (td) trailMesh.instanceMatrix.needsUpdate = true;
+  }
+  const TRAIL_LIFE = 16; let trailHead = 0, trailClock = 0;
+  function dropTrail(dt) {
+    for (let k = 0; k < NT; k++) if (tAge[k] >= 0) { tAge[k] += dt; if (tAge[k] > TRAIL_LIFE) { tAge[k] = -1; dum.position.set(0, -1e5, 0); dum.scale.setScalar(0); dum.updateMatrix(); trailMesh.setMatrixAt(k, dum.matrix); trailMesh.instanceMatrix.needsUpdate = true; } }
+    trailClock += dt;
+    if (stance || speed < 2 || trailClock < 0.1) return;
+    trailClock = 0;
+    const k = trailHead++ % NT, i = NF + k, j = i * 3;
+    tv.set(0, 0, 5.5).applyQuaternion(hull.quaternion).add(hull.position);
+    bp[j] = bh[j] = tv.x; bp[j + 1] = bh[j + 1] = tv.y; bp[j + 2] = bh[j + 2] = tv.z; bv[j] = bv[j + 1] = bv[j + 2] = 0;
+    hull.quaternion.toArray(bq, i * 4); tAge[k] = 0; act[i] = 1; bodyStretch[i] = 0;
+  }
+
+  // ================= hole meshes (A only: B has no surface) and the squeeze preview =================
+  const blackMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+  const whiteMat = new THREE.MeshBasicMaterial({ color: 0xfff4dc });
+  const holeMeshes = [];
+  for (let i = 0; i < 4; i++) { const m = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 16), blackMat); m.visible = false; scene.add(m); holeMeshes.push(m); }
+  function circleLoop(color) {
+    const pts = []; for (let i = 0; i <= 64; i++) { const a = i / 64 * Math.PI * 2; pts.push(new V3(Math.cos(a), Math.sin(a), 0)); }
+    const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.9, depthTest: false }));
+    l.visible = false; l.renderOrder = 5; scene.add(l); return l;
+  }
+  const ghostAtt = circleLoop(0xb9a4ff), ghostRep = circleLoop(0xfff1c9), ghostAtt2 = circleLoop(0xb9a4ff), ghostRep2 = circleLoop(0xfff1c9);
+  function updateHoleMeshes() {
+    let k = 0;
+    for (const w of W) {
+      if (w.style !== 'A' || k >= 4) continue;
+      const m = holeMeshes[k++]; m.visible = true; m.material = w.sign > 0 ? blackMat : whiteMat; m.position.copy(w.p); m.scale.setScalar(w.rs);
+    }
+    for (; k < 4; k++) holeMeshes[k].visible = false;
+  }
+
+  // ================= flight =================
+  let speed = 0, stance = false;
+  const vg = new V3(), vf = new V3();     // A's gravitational velocity channel, B's felt channel
+  const fwd = new V3(), right = new V3(), up = new V3(), aA = new V3(), aB = new V3(), p0 = new V3(), dq = new THREE.Quaternion();
+  const X = new V3(1, 0, 0), Y = new V3(0, 1, 0), Zn = new V3(0, 0, 1);
+  function basis() { fwd.set(0, 0, -1).applyQuaternion(hull.quaternion); right.set(1, 0, 0).applyQuaternion(hull.quaternion); up.set(0, 1, 0).applyQuaternion(hull.quaternion); }
+  function vesselAccel(w, p, out) {
+    tv.subVectors(w.p, p); const r = tv.length() + 1e-6;
+    if (w.style === 'A') {
+      const x = Math.max(r - w.rs, 0.02 * w.rs);
+      out.addScaledVector(tv, w.sign * w.GM * P.pullScale / (x * x) / r);
+    } else {
+      const c = Math.max(20, P.cruise), Rt = w.rs, reach = P.feltReach * Rt;
+      if (r > reach) return;
+      const taper = 1 - smooth(0.8 * reach, reach, r), s = r * r + Rt * Rt;
+      out.addScaledVector(tv, w.sign * P.feltK * c * c * Rt * w.amp * taper / (s * Math.sqrt(s)));
+    }
+  }
+
+  // ---- race ----
+  let race = 'ready', raceT = 0, threaded = 0, slings = 0, lastRun = null, swapFlash = 0, portalFlash = 0;
+  function spawn() {
+    const g = gates[0]; hull.position.copy(g.p).addScaledVector(g.n, -170);
+    const m = new THREE.Matrix4().lookAt(hull.position, tv.copy(hull.position).add(g.n), Y); hull.quaternion.setFromRotationMatrix(m);
+    speed = 0; vg.set(0, 0, 0); vf.set(0, 0, 0); stance = false; race = 'ready'; raceT = 0; threaded = 0; slings = 0;
+    for (const pr of pairs) if (pr.owned) pr.alive = false;
+    myPair = null; snapCam = true; showOverlay();
+  }
+  function startRace() {
+    if (mode !== 'fly' || race === 'running') return;
+    if (race === 'finished') spawn();
+    race = 'running'; raceT = 0; threaded = 0; slings = 0; runStyles.clear(); hideOverlay(); canvas.focus({ preventScroll: true });
+  }
+  const runStyles = new Set();
+  function finishRace() {
+    race = 'finished';
+    const used = Array.from(runStyles).sort().join('+') || style;   // a run that swapped pairs mid-race is its own row
+    lastRun = { time: raceT, slings, style: used, intensity, seed, laps, at: Date.now() };
+    runs.push(lastRun); persist(); renderRuns(); showOverlay();
+  }
+
+  function stepFly(dt, inp) {
+    basis();
+    // the game's mix (InputController): sums steer, differences roll and throttle, eased
+    const ease = (x) => x < 0 ? Math.cos(x * Math.PI / 4) - 1 : -(Math.cos(x * Math.PI / 4) - 1);
+    let XSum, YSum, YDiff, XDiff;
+    if (inp.pad) {
+      XSum = ease(inp.R.x + inp.L.x); YSum = -ease(inp.R.y + inp.L.y); YDiff = ease(inp.R.y - inp.L.y); XDiff = (inp.R.x - inp.L.x + 2) / 4;
+    } else {
+      XSum = inp.kYaw; YSum = -inp.kPitch; YDiff = inp.kRoll; XDiff = kbThrottle;
+    }
+    if (invertY) { YSum = -YSum; YDiff = -YDiff; }
+    const rad = Math.PI / 180;
+    if (race !== 'ready') {
+      dq.setFromAxisAngle(X, -YSum * P.pitchYaw * rad * dt); hull.quaternion.multiply(dq);    // Unity +X = nose down; three +X = nose up
+      dq.setFromAxisAngle(Y, -XSum * P.pitchYaw * rad * dt); hull.quaternion.multiply(dq);
+      dq.setFromAxisAngle(Zn, YDiff * P.roll * rad * dt); hull.quaternion.multiply(dq);
+      hull.quaternion.normalize();
+    }
+    basis();
+    throttleNow = XDiff;
+    const target = race === 'ready' ? 0 : stance ? 0 : XDiff * P.cruise;
+    speed += (target - speed) * (1 - Math.exp(-(stance ? 6 : 2.2) * dt));
+
+    aA.set(0, 0, 0); aB.set(0, 0, 0); let anyA = false, anyB = false;
+    for (const w of W) { if (!w.pr.owned) continue; if (w.style === 'A') { anyA = true; vesselAccel(w, hull.position, aA); } else { anyB = true; vesselAccel(w, hull.position, aB); } }
+    if (anyA) { vg.addScaledVector(aA, dt); vg.clampLength(0, P.maxPull); } else vg.multiplyScalar(Math.exp(-P.releaseDamping * dt));
+    if (anyB && aB.lengthSq() > 1e-4) { vf.addScaledVector(aB, dt); vf.clampLength(0, P.feltCap * P.cruise); } else vf.multiplyScalar(Math.exp(-P.releaseDamping * dt));
+    if (race === 'ready' || stance) { vg.set(0, 0, 0); vf.set(0, 0, 0); }
+
+    p0.copy(hull.position);
+    tv2.copy(fwd).multiplyScalar(speed).add(vg).add(vf);
+    hull.position.addScaledVector(tv2, dt);
+    velNow.copy(tv2);
+
+    if (race === 'running') {
+      raceT += dt;
+      const g = gates[threaded % 8], s0 = tv.subVectors(p0, g.p).dot(g.n), s1 = tv3.subVectors(hull.position, g.p).dot(g.n);
+      if (s0 * s1 <= 0 && s0 !== s1) {
+        const t = s0 / (s0 - s1); tv.copy(p0).lerp(hull.position, t);
+        if (tv.distanceTo(g.p) <= g.mouth) { threaded++; gateFlash = 1; if (threaded >= 8 * laps) finishRace(); }
+      }
+    }
+    // the portal: enter either mouth from outside → out of the other, displaced by a pure translation
+    // B's mouth is the throat; A's door (only when the portal is switched on) is the attractor's horizon.
+    for (const w of W) {
+      if (!w.pr.owned || !portal[w.style]) continue;
+      if (w.style === 'A' && w.sign < 0) continue;       // A: only the attractor swallows; its repulsor only emits
+      if (w.style === 'B' && w.amp < 0.15) continue;     // a mouth still forming (or nearly gone) carries no one
+      if (p0.distanceTo(w.p) > w.rs && hull.position.distanceTo(w.p) <= w.rs) {
+        const other = w.style === 'A' ? w.pr.rep : w.other;
+        tv.subVectors(other, w.p);
+        hull.position.add(tv); cam.position.add(tv); camLook.add(tv); portalFlash = 1;
+        // A's repulsor has a horizon of its own: come out on its far side, along the nose.
+        if (w.style === 'A' && hull.position.distanceTo(other) < w.rs * 1.05) hull.position.copy(other).addScaledVector(fwd, w.rs * 1.05);
+        break;
+      }
+    }
+    dropTrail(dt);
+    applyLope(dt, speed / Math.max(1, P.cruise));
+  }
+  let throttleNow = 0.5, gateFlash = 0; const velNow = new V3();
+
+  // ---- the sling ----
+  const holds = { L: { on: false, t: 0, peak: 0, live: 0 }, R: { on: false, t: 0, peak: 0, live: 0 } };
+  const strengthOf = (h) => { const t = Math.pow(clamp01(h), Math.max(0.01, P.holdExponent)); const lo = Math.min(P.minStrength, P.maxStrength); return lo + (Math.max(lo, P.maxStrength) - lo) * t; };
+  function trackHold(side, raw, analog, dt) {
+    const h = holds[side];
+    const pressed = raw > 0.05;
+    if (pressed && !h.on) { h.on = true; h.t = 0; h.peak = 0; }
+    if (h.on) {
+      h.t += dt;
+      h.live = analog ? clamp01(raw) : clamp01(h.t / P.holdRamp);
+      h.peak = Math.max(h.peak, h.live);                // sling at the DEEPEST squeeze, not the last sample
+    }
+    if (!pressed && h.on) { h.on = false; sling(side, h.peak); h.live = 0; }
+  }
+  function slingGeometry(side, hold01) {
+    basis();
+    const S = strengthOf(hold01), rs = Math.max(MIN_HORIZON, S * HORIZON_PER_STRENGTH);
+    const mid = new V3().copy(hull.position).addScaledVector(fwd, rs * P.aheadHorizons);
+    const axis = new V3().copy(right).multiplyScalar(side === 'L' ? 1 : -1);    // runs attractor → repulsor; the attractor lands on the pressed side
+    return { S, rs, mid, axis, up: up.clone() };
+  }
+  function sling(side, hold01) {
+    if (mode !== 'fly' || race === 'ready') return;
+    const g = slingGeometry(side, hold01);
+    if (myPair && myPair.alive) myPair.alive = false;              // one pair per Stoat: the new sling annihilates the old
+    myPair = new Pair(style, g.mid, g.axis, g.up, g.S, true); pairs.push(myPair);
+    slings++; runStyles.add(style);
+    if (stance) stance = false;                                    // a sling is a launch: it ends the hold-still stance
+  }
+  function updateGhosts() {
+    const show = (side, gA, gR) => {
+      const h = holds[side];
+      if (!h.on || mode !== 'fly') { gA.visible = gR.visible = false; return; }
+      const g = slingGeometry(side, h.peak), hh = g.rs * P.halfGapHorizons;
+      gA.position.copy(g.mid).addScaledVector(g.axis, -hh); gR.position.copy(g.mid).addScaledVector(g.axis, hh);
+      for (const l of [gA, gR]) { l.visible = true; l.quaternion.copy(cam.quaternion); l.scale.setScalar(g.rs); l.material.color.setHex(style === 'A' ? (l === gA ? 0xb9a4ff : 0xfff1c9) : (l === gA ? 0x6fe3d0 : 0xd8fff6)); }
+    };
+    show('L', ghostAtt, ghostRep); show('R', ghostAtt2, ghostRep2);
+  }
+
+  // ================= input =================
+  const keys = new Set();
+  let kbThrottle = 1, armed = false, padSeen = false, padBlocked = false, padName = '';
+  const prevBtn = [];
+  function isFormTarget(t) { return t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable); }
+  const GAME_KEYS = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'KeyJ', 'KeyL', 'KeyT', 'KeyR', 'ShiftLeft', 'ShiftRight', 'Space', 'Enter', 'ArrowUp', 'ArrowDown']);
+  window.addEventListener('keydown', (e) => {
+    if (isFormTarget(e.target) || !armed) return;
+    if (GAME_KEYS.has(e.code)) e.preventDefault();
+    if (e.repeat) return;
+    keys.add(e.code);
+    if (e.code === 'Enter') startRace();
+    if (e.code === 'Space') stance = !stance && race === 'running';
+    if (e.code === 'KeyT') swapStyle();
+    if (e.code === 'KeyR') spawn();
+  });
+  window.addEventListener('keyup', (e) => { keys.delete(e.code); });
+  window.addEventListener('blur', () => keys.clear());
+  document.addEventListener('pointerdown', (e) => { armed = $('viewport').contains(e.target); });
+  canvas.addEventListener('focus', () => { armed = true; });
+  window.addEventListener('gamepadconnected', () => { padSeen = true; showOverlay(); });
+  window.addEventListener('gamepaddisconnected', () => { showOverlay(); });
+
+  function readPad() {
+    let pads = [];
+    try { pads = navigator.getGamepads ? Array.from(navigator.getGamepads()) : []; padBlocked = false; } catch (e) { padBlocked = true; return null; }
+    for (const g of pads) if (g && g.connected && g.axes.length >= 4) { padSeen = true; padName = g.id; return g; }
+    return null;
+  }
+  function stick(x, y) { const m = Math.hypot(x, y); if (m < 0.15) return { x: 0, y: 0 }; const s = Math.min(1, (m - 0.15) / 0.85) / m; return { x: x * s, y: y * s }; }
+  function pollInput(dt) {
+    const g = readPad();
+    const inp = { pad: !!g, L: { x: 0, y: 0 }, R: { x: 0, y: 0 }, lt: 0, rt: 0, analog: !!g, kYaw: 0, kPitch: 0, kRoll: 0 };
+    if (g) {
+      inp.L = stick(g.axes[0], -g.axes[1]); inp.R = stick(g.axes[2], -g.axes[3]);   // Unity: up = +y
+      inp.lt = g.buttons[6] ? g.buttons[6].value : 0; inp.rt = g.buttons[7] ? g.buttons[7].value : 0;
+      const e = [];
+      for (let i = 0; i < 10; i++) { const b = !!(g.buttons[i] && g.buttons[i].pressed); e[i] = b && !prevBtn[i]; prevBtn[i] = b; }
+      if (e[0] || e[9]) startRace();
+      if ((e[1] || e[8]) && mode === 'fly') spawn();
+      if (e[2]) stance = !stance && race === 'running';
+      if (e[3]) swapStyle();
+    }
+    const k = (c) => keys.has(c) ? 1 : 0;
+    if (!g || (inp.L.x === 0 && inp.L.y === 0 && inp.R.x === 0 && inp.R.y === 0 && inp.lt === 0 && inp.rt === 0 && keys.size)) {
+      if (keys.size) { inp.pad = false; inp.analog = false; }
+      inp.kYaw = k('KeyD') - k('KeyA'); inp.kPitch = k('KeyW') - k('KeyS'); inp.kRoll = k('KeyQ') - k('KeyE');
+      if (!inp.pad) { inp.lt = Math.max(k('KeyJ'), k('ShiftLeft')); inp.rt = Math.max(k('KeyL'), k('ShiftRight')); }
+      kbThrottle = clamp01(kbThrottle + (k('ArrowUp') - k('ArrowDown')) * 0.6 * dt);
+    }
+    if (mode === 'compare' && g) { orbit.yaw -= inp.R.x * 1.4 * dt; orbit.pitch = Math.max(-1.2, Math.min(1.2, orbit.pitch + inp.R.y * 1.1 * dt)); orbit.dist = Math.max(140, Math.min(1400, orbit.dist * (1 - inp.L.y * 0.9 * dt))); if (Math.abs(inp.R.x) + Math.abs(inp.R.y) > 0) orbit.auto = false; }
+    if (mode === 'fly') { trackHold('L', inp.lt, inp.analog, dt); trackHold('R', inp.rt, inp.analog, dt); }
+    lastInput = inp;
+    return inp;
+  }
+  let lastInput = null;
+  function swapStyle() { setStyle(style === 'A' ? 'B' : 'A'); swapFlash = 1.6; }
+
+  // ================= camera =================
+  const camLook = new V3(); let snapCam = true;
+  const orbit = { yaw: 0.35, pitch: 0.12, dist: 340, auto: true };
+  // Compare is a split screen: each pair in its own corner of the field, 1,280 u apart (beyond either's reach),
+  // each half rendered with only its own wells, both under the same orbit.
+  const CMP = { A: new V3(640, 40, 0), B: new V3(-640, 40, 0) };
+  const camA = new THREE.PerspectiveCamera(68, 0.8, 0.5, 9000), camB = new THREE.PerspectiveCamera(68, 0.8, 0.5, 9000);
+  function updateCamera(dt) {
+    if (mode === 'fly') {
+      basis();
+      const want = tv.set(0, 6.5, 21).applyQuaternion(hull.quaternion).add(hull.position);
+      const look = tv2.copy(hull.position).addScaledVector(fwd, 40).addScaledVector(up, 3);
+      const k = snapCam ? 1 : 1 - Math.exp(-7 * dt);
+      cam.position.lerp(want, k); camLook.lerp(look, k); snapCam = false;
+      cam.up.copy(up); cam.lookAt(camLook);
+    } else {
+      if (orbit.auto) orbit.yaw += dt * 0.12;
+      for (const [k, c] of [['A', camA], ['B', camB]]) {
+        const C = CMP[k];
+        c.position.set(C.x + Math.sin(orbit.yaw) * Math.cos(orbit.pitch) * orbit.dist, C.y + Math.sin(orbit.pitch) * orbit.dist, C.z + Math.cos(orbit.yaw) * Math.cos(orbit.pitch) * orbit.dist);
+        c.up.set(0, 1, 0); c.lookAt(C); c.fov = cam.fov; c.aspect = cam.aspect / 2; c.updateProjectionMatrix(); c.updateMatrixWorld();
+      }
+      cam.position.copy(camA.position); cam.quaternion.copy(camA.quaternion);
+    }
+    cam.updateMatrixWorld();
+  }
+  let drag = null;
+  canvas.addEventListener('pointerdown', (e) => { if (mode !== 'compare') return; drag = { x: e.clientX, y: e.clientY }; canvas.setPointerCapture(e.pointerId); orbit.auto = false; });
+  canvas.addEventListener('pointermove', (e) => { if (!drag) return; orbit.yaw -= (e.clientX - drag.x) * 0.006; orbit.pitch = Math.max(-1.2, Math.min(1.2, orbit.pitch + (e.clientY - drag.y) * 0.005)); drag = { x: e.clientX, y: e.clientY }; });
+  canvas.addEventListener('pointerup', () => { drag = null; });
+  canvas.addEventListener('wheel', (e) => { if (mode !== 'compare') return; e.preventDefault(); orbit.dist = Math.max(140, Math.min(1400, orbit.dist * (1 + Math.sign(e.deltaY) * 0.08))); }, { passive: false });
+
+  // ================= compare: both pairs, laid side by side =================
+  let comparePairs = [];
+  function buildCompare(playLives) {
+    for (const pr of comparePairs) pr.alive = false;
+    const S = P.maxStrength;
+    const a = new Pair('A', CMP.A, X, Y, S, false);
+    const b = new Pair('B', CMP.B, X, Y, S, false);
+    a.loop = b.loop = playLives; a.frozen = b.frozen = !playLives;
+    if (!playLives) { b.t = P.formS; b.update(0); }
+    comparePairs = [a, b]; pairs.push(a, b);
+  }
+  let playLives = false;
+
+  // ================= lens + seamless mouths: one screen-space pass =================
+  let rtScene, rtThruA, rtThruB, rtW = 0, rtH = 0;
+  function ensureTargets(w, h) {
+    if (w === rtW && h === rtH) return; rtW = w; rtH = h;
+    for (const t of [rtScene, rtThruA, rtThruB]) if (t) t.dispose();
+    rtScene = new THREE.WebGLRenderTarget(w, h, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter });
+    rtScene.depthTexture = new THREE.DepthTexture(w, h); rtScene.depthTexture.type = THREE.UnsignedIntType;
+    rtThruA = new THREE.WebGLRenderTarget(Math.max(2, w >> 1), Math.max(2, h >> 1));
+    rtThruB = new THREE.WebGLRenderTarget(Math.max(2, w >> 1), Math.max(2, h >> 1));
+  }
+  const vec4s = () => [0, 1, 2, 3].map(() => new THREE.Vector4());
+  const lensMat = new THREE.ShaderMaterial({
+    uniforms: { tScene: { value: null }, tDepth: { value: null }, tThruA: { value: null }, tThruB: { value: null }, aspect: { value: 1.6 }, camNear: { value: 0.5 }, camFar: { value: 9000 }, soft: { value: 0.65 },
+      wC: { value: vec4s() }, wP: { value: vec4s() }, wM: { value: vec4s() } },
+    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
+    fragmentShader: [
+      'uniform sampler2D tScene; uniform sampler2D tDepth; uniform sampler2D tThruA; uniform sampler2D tThruB;',
+      'uniform float aspect; uniform float camNear; uniform float camFar; uniform float soft;',
+      'uniform vec4 wC[4]; uniform vec4 wP[4]; uniform vec4 wM[4];',
+      'varying vec2 vUv;',
+      'float linDepth(float d){ float z = d * 2.0 - 1.0; return (2.0 * camNear * camFar) / (camFar + camNear - z * (camFar - camNear)); }',
+      'void main(){',
+      '  vec2 p = (vUv - 0.5) * vec2(aspect, 1.0);',
+      '  float sceneZ = linDepth(texture2D(tDepth, vUv).x);',
+      '  vec2 disp = vec2(0.0); float shadow = 0.0; float core = 0.0; vec3 glow = vec3(0.0);',
+      '  for (int i = 0; i < 4; i++) {',
+      '    if (wC[i].w < 0.5) continue;',
+      '    if (sceneZ < wC[i].z - wM[i].w) continue;',            // a foreground object is not bent
+      '    vec2 d = p - wC[i].xy; float th = max(length(d), 1e-6); vec2 dir = d / th;',
+      '    float type = wP[i].x; float rc = max(wP[i].y, 1e-6);',
+      '    if (type < 2.5) {',
+      '      float fade = 1.0 - smoothstep(0.55 * wM[i].x, wM[i].x, th);',
+      '      if (type < 1.5) {',                                       // A attractor: Schwarzschild shadow + Einstein lens
+      '        float sh = 2.6 * rc;',
+      '        if (th < sh) shadow = 1.0;',
+      '        disp -= dir * (wP[i].w / max(th, sh)) * fade;',
+      '        glow += vec3(1.0, 0.8, 0.55) * 0.55 * exp(-pow((th - sh * 1.03) / (0.06 * sh), 2.0));',
+      '      } else {',                                                // A repulsor: diverging lens + white-hot core
+      '        disp += dir * (wP[i].w / max(th, rc)) * fade;',
+      '        core = max(core, 1.0 - smoothstep(0.6 * rc, 1.25 * rc, th));',
+      '        glow += vec3(1.0, 0.93, 0.8) * 0.5 * exp(-th / (1.1 * rc));',
+      '      }',
+      '    } else {',                                                  // B: the graded lens, signed, summed over wells
+      '      float u = th / rc; float a = wP[i].z * rc * u * exp(-0.5 * u * u);',
+      '      disp += (type < 3.5 ? -1.0 : 1.0) * dir * a;',
+      '    }',
+      '  }',
+      '  vec2 s = p + disp;',
+      '  vec2 suv = s / vec2(aspect, 1.0) + 0.5;',
+      '  suv = 1.0 - abs(1.0 - abs(suv));',
+      '  vec3 col = texture2D(tScene, suv).rgb;',
+      '  for (int i = 0; i < 4; i++) {',                               // B: seamless mouths, graded by impact parameter, bent with everything else
+      '    if (wC[i].w < 0.5 || wM[i].z < 0.5) continue;',
+      '    if (sceneZ < wC[i].z - wM[i].w) continue;',
+      '    float b = length(s - wC[i].xy) / max(wM[i].y, 1e-6);',
+      '    if (b >= 1.0) continue;',
+      '    float x = clamp((b - (1.0 - soft)) / max(soft, 1e-3), 0.0, 1.0);',
+      '    x = x * x * (3.0 - 2.0 * x); x = x * x * (3.0 - 2.0 * x);',
+      '    vec3 through = wM[i].z < 1.5 ? texture2D(tThruA, suv).rgb : texture2D(tThruB, suv).rgb;',
+      '    col = mix(col, through, (1.0 - x) * wP[i].w);',
+      '  }',
+      '  col = mix(col, vec3(1.0, 0.97, 0.9), core * 0.92);',
+      '  col += glow;',
+      '  if (shadow > 0.5) col = vec3(0.0);',
+      '  gl_FragColor = vec4(col, 1.0);',
+      '}'].join('\n'),
+    depthTest: false, depthWrite: false,
+  });
+  const postScene = new THREE.Scene(), postCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+  postScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), lensMat));
+
+  const thruJobs = [];
+  function setLensUniforms(cam, wells) {
+    const U = lensMat.uniforms, f = 0.5 / Math.tan(cam.fov * Math.PI / 360);
+    for (let i = 0; i < 4; i++) U.wC.value[i].set(0, 0, 0, 0);
+    thruJobs.length = 0;
+    let slot = 0, mouthTex = 1;
+    for (const w of wells) {
+      if (slot >= 4) break;
+      tv.copy(w.p).applyMatrix4(cam.matrixWorldInverse);
+      const vz = -tv.z; if (vz <= cam.near + 1) continue;
+      tv.copy(w.p).project(cam);
+      const D = cam.position.distanceTo(w.p), sx = tv.x * 0.5 * cam.aspect, sy = tv.y * 0.5;
+      const ang = (r) => f * Math.tan(Math.min(1.45, Math.asin(Math.min(0.999, r / Math.max(D, r * 1.001)))));
+      const i = slot++;
+      U.wC.value[i].set(sx, sy, vz, 1);
+      if (w.style === 'A') {
+        const thE = f * Math.tan(Math.min(1.2, Math.sqrt(2 * w.rs / D)));
+        U.wP.value[i].set(w.sign > 0 ? 1 : 2, ang(w.rs), 0, thE * thE);
+        U.wM.value[i].set(f * Math.tan(Math.min(1.45, Math.atan(30 * w.rs / D))), 0, 0, 2.6 * w.rs);
+      } else {
+        const amp = Math.max(0, w.amp);
+        // w = the throat as shipped; the studio's width dial asks whether B should read from racing distance
+        U.wP.value[i].set(w.sign > 0 ? 3 : 4, ang(w.rs * P.lensWidth), Math.min(0.95, P.lensA * amp), Math.min(1, amp));   // A < 1: the image never folds
+        let tex = 0;
+        if (mouthTex <= 2 && amp > 0.02) { tex = mouthTex++; thruJobs.push({ tex, w, delta: new V3().subVectors(w.other, w.p) }); }
+        U.wM.value[i].set(0, ang(w.rs), tex, w.rs);
+      }
+    }
+    U.aspect.value = cam.aspect; U.camNear.value = cam.near; U.camFar.value = cam.far; U.soft.value = P.softEdge;
+  }
+  function renderView(cam, wells, vx, vw, vh) {
+    setLensUniforms(cam, wells);
+    for (const job of thruJobs) {      // the view through a mouth: the world from this vantage carried by Δ, with the near side cut away
+      thruCam.position.copy(cam.position).add(job.delta); thruCam.quaternion.copy(cam.quaternion); thruCam.aspect = cam.aspect; thruCam.fov = cam.fov;
+      thruCam.near = Math.max(0.5, cam.position.distanceTo(job.w.p) - job.w.rs); thruCam.updateProjectionMatrix(); thruCam.updateMatrixWorld();
+      renderer.setRenderTarget(job.tex === 1 ? rtThruA : rtThruB); renderer.render(scene, thruCam);
+    }
+    renderer.setRenderTarget(rtScene); renderer.render(scene, cam);
+    const U = lensMat.uniforms; U.tScene.value = rtScene.texture; U.tDepth.value = rtScene.depthTexture; U.tThruA.value = rtThruA.texture; U.tThruB.value = rtThruB.texture;
+    renderer.setRenderTarget(null); renderer.setViewport(vx, 0, vw, vh); renderer.setScissor(vx, 0, vw, vh); renderer.setScissorTest(true);
+    renderer.render(postScene, postCam); renderer.setScissorTest(false);
+  }
+  function renderAll() {
+    const pr = renderer.getPixelRatio();
+    if (mode === 'fly') { ensureTargets(Math.round(lastW * pr), Math.round(lastH * pr)); renderView(cam, W, 0, lastW, lastH); }
+    else {
+      const half = Math.floor(lastW / 2);
+      ensureTargets(Math.round(half * pr), Math.round(lastH * pr));
+      renderView(camA, W.filter((w) => w.pr.style === 'A'), 0, half, lastH);
+      renderView(camB, W.filter((w) => w.pr.style === 'B'), half, lastW - half, lastH);
+    }
+    renderer.setViewport(0, 0, lastW, lastH);
+  }
+
+  // ================= HUD =================
+  function drawHud(dt) {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2), cw = hud.clientWidth, ch = hud.clientHeight;
+    if (hud.width !== Math.round(cw * dpr) || hud.height !== Math.round(ch * dpr)) { hud.width = Math.round(cw * dpr); hud.height = Math.round(ch * dpr); }
+    const c = hctx; c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, cw, ch);
+    const sc = Math.max(0.7, Math.min(1.15, cw / 900));
+    const font = (px, w) => (w || 600) + ' ' + Math.round(px * sc) + 'px "Chakra Petch", "Segoe UI", sans-serif';
+    const colA = '#b9a4ff', colB = '#6fe3d0', amber = '#ffb347', ink = '#e8ecff', dim = '#9aa6d6';
+    const pad = 14 * sc;
+    if (mode === 'compare') {
+      const half = Math.floor(cw / 2);
+      for (const pr of comparePairs) {
+        if (!pr.alive) continue;
+        const x0 = pr.style === 'A' ? 0 : half, vw = pr.style === 'A' ? half : cw - half;
+        c.textAlign = 'left'; c.font = font(15, 700); c.fillStyle = pr.style === 'A' ? colA : colB;
+        c.fillText(pr.style === 'A' ? 'A · DRIFT PAIR' : 'B · CRYSTAL WORMHOLE', x0 + pad, pad + 13 * sc);
+        c.font = font(11, 500); c.fillStyle = dim;
+        c.fillText(pr.style === 'A' ? 'this branch' : 'cece/charming-cerf-alf1j1', x0 + pad, pad + 28 * sc);
+        c.fillText(pr.style === 'A' ? 'shadow · Einstein ring · white-hot repulsor · horizon ' + pr.rs.toFixed(0) + ' u'
+          : 'graded lens · seamless mouths · throat ' + pr.rs.toFixed(0) + ' u · amp ' + pr.ampA.toFixed(2) + ' / ' + pr.ampR.toFixed(2), x0 + pad, pad + 42 * sc);
+        wellMarkers(c, pr.style === 'A' ? camA : camB, x0, vw, ch, sc, font, W.filter((w) => w.pr === pr), false);
+      }
+      c.fillStyle = 'rgba(232,236,255,0.35)'; c.fillRect(half - 0.5, 0, 1, ch);
+      c.textAlign = 'left'; c.font = font(12, 500); c.fillStyle = dim;
+      c.fillText('Strength ' + P.maxStrength.toFixed(1) + ' (a full squeeze), same orbit both sides · drag to orbit, wheel to zoom', pad, ch - pad);
+      return;
+    }
+    // reticle
+    c.strokeStyle = 'rgba(232,236,255,0.55)'; c.lineWidth = 1.5;
+    c.beginPath(); c.arc(cw / 2, ch / 2, 9 * sc, 0, Math.PI * 2); c.moveTo(cw / 2 - 18 * sc, ch / 2); c.lineTo(cw / 2 - 12 * sc, ch / 2); c.moveTo(cw / 2 + 12 * sc, ch / 2); c.lineTo(cw / 2 + 18 * sc, ch / 2); c.stroke();
+    // next ring marker
+    if (gates.length && race !== 'finished') {
+      const g = gates[threaded % 8]; tv.copy(g.p).applyMatrix4(cam.matrixWorldInverse); const behind = tv.z > 0;
+      tv.copy(g.p).project(cam); let x = tv.x, y = tv.y; if (behind) { x = -x; y = -y; }
+      const on = !behind && Math.abs(x) < 0.95 && Math.abs(y) < 0.92;
+      if (!on) { const m = Math.max(Math.abs(x) / 0.92, Math.abs(y) / 0.88); x /= m; y /= m; }
+      const px = (x * 0.5 + 0.5) * cw, py = (-y * 0.5 + 0.5) * ch, d = Math.round(hull.position.distanceTo(g.p));
+      c.fillStyle = amber; c.strokeStyle = amber; c.lineWidth = 2; c.textAlign = 'center';
+      if (on) { c.beginPath(); c.arc(px, py, 13 * sc, 0, Math.PI * 2); c.stroke(); }
+      else { const a = Math.atan2(py - ch / 2, px - cw / 2); c.save(); c.translate(px, py); c.rotate(a); c.beginPath(); c.moveTo(12 * sc, 0); c.lineTo(-6 * sc, -8 * sc); c.lineTo(-6 * sc, 8 * sc); c.closePath(); c.fill(); c.restore(); }
+      c.font = font(12, 700); c.fillText('RING ' + (threaded % 8 + 1) + ' · ' + d + ' u', px, py + (on ? 28 : 24) * sc);
+    }
+    wellMarkers(c, cam, 0, cw, ch, sc, font, W.filter((w) => w.pr.owned), true);
+    // top-left: the pair being flown
+    c.textAlign = 'left'; c.font = font(14, 700); c.fillStyle = style === 'A' ? colA : colB;
+    c.fillText(style === 'A' ? 'PAIR A · DRIFT PAIR' : 'PAIR B · CRYSTAL WORMHOLE', pad, pad + 12 * sc);
+    c.font = font(11, 500); c.fillStyle = dim;
+    c.fillText(style === 'A' ? 'this branch' : 'cece/charming-cerf-alf1j1', pad, pad + 27 * sc);
+    c.fillText((portal[style] ? 'portal ON' : 'portal off') + (stance ? '  ·  HOLDING STILL' : ''), pad, pad + 41 * sc);
+    if (swapFlash > 0) { c.globalAlpha = Math.min(1, swapFlash); c.textAlign = 'center'; c.font = font(22, 700); c.fillStyle = style === 'A' ? colA : colB; c.fillText('NOW FLYING PAIR ' + style, cw / 2, ch * 0.3); c.globalAlpha = 1; }
+    if (portalFlash > 0) { c.globalAlpha = Math.min(1, portalFlash); c.textAlign = 'center'; c.font = font(16, 700); c.fillStyle = '#ffffff'; c.fillText('THROUGH THE WORMHOLE', cw / 2, ch * 0.38); c.globalAlpha = 1; }
+    // top-right: the race
+    c.textAlign = 'right'; c.font = font(14, 700); c.fillStyle = ink;
+    const lap = Math.min(laps, Math.floor(threaded / 8) + 1);
+    c.fillText('LAP ' + lap + '/' + laps + '   RINGS ' + threaded + '/' + 8 * laps, cw - pad, pad + 12 * sc);
+    c.font = font(20, 700); c.fillStyle = gateFlash > 0 ? amber : ink; c.fillText(fmtTime(raceT), cw - pad, pad + 36 * sc);
+    c.font = font(11, 500); c.fillStyle = dim; c.fillText(slings + (slings === 1 ? ' sling' : ' slings'), cw - pad, pad + 51 * sc);
+    // bottom-left: speed, throttle, pull channel
+    const v = velNow.length(), pull = (style === 'A' ? vg : vf).length();
+    c.textAlign = 'left'; c.font = font(30, 700); c.fillStyle = ink; c.fillText(Math.round(v), pad, ch - pad - 26 * sc);
+    c.font = font(11, 500); c.fillStyle = dim; c.fillText('u/s   throttle ' + Math.round(throttleNow * 100) + '%   cruise ' + P.cruise, pad + 52 * sc, ch - pad - 28 * sc);
+    const bw = 180 * sc, by = ch - pad - 14 * sc;
+    c.fillStyle = 'rgba(255,255,255,0.12)'; c.fillRect(pad, by, bw, 5 * sc);
+    c.fillStyle = ink; c.fillRect(pad, by, bw * Math.min(1, speed / (P.cruise * 2.5)), 5 * sc);
+    c.fillStyle = style === 'A' ? colA : colB; c.fillRect(pad, by + 7 * sc, bw * Math.min(1, pull / (P.cruise * 2.5)), 5 * sc);
+    c.fillStyle = 'rgba(255,255,255,0.5)'; c.fillRect(pad + bw * 0.4, by - 3 * sc, 1.5, 17 * sc);
+    c.font = font(10, 500); c.fillStyle = dim; c.fillText('engine / pull ' + Math.round(pull) + ' u/s', pad + bw + 8 * sc, by + 10 * sc);
+    // bottom-right: the two triggers
+    const trig = (side, x) => {
+      const h = holds[side], r = 22 * sc, y = ch - pad - r - 6 * sc;
+      c.lineWidth = 5 * sc; c.strokeStyle = 'rgba(255,255,255,0.14)'; c.beginPath(); c.arc(x, y, r, -Math.PI / 2, Math.PI * 1.5); c.stroke();
+      if (h.on) {
+        c.strokeStyle = style === 'A' ? colA : colB; c.beginPath(); c.arc(x, y, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * h.peak); c.stroke();
+        c.strokeStyle = '#ffffff'; c.lineWidth = 2 * sc; c.beginPath(); c.arc(x, y, r - 6 * sc, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * h.live); c.stroke();
+      }
+      c.textAlign = 'center'; c.font = font(13, 700); c.fillStyle = h.on ? ink : dim; c.fillText(side === 'L' ? 'LT' : 'RT', x, y + 5 * sc);
+      if (h.on) { const S = strengthOf(h.peak); c.font = font(11, 600); c.fillStyle = ink; c.fillText('S ' + S.toFixed(1) + ' · ' + Math.max(MIN_HORIZON, S * 2).toFixed(0) + ' u', x, y - r - 8 * sc); }
+    };
+    trig('L', cw - pad - 90 * sc); trig('R', cw - pad - 30 * sc);
+    c.textAlign = 'right'; c.font = font(10, 500); c.fillStyle = dim;
+    c.fillText(lastInput && lastInput.pad ? 'gamepad' : 'keyboard', cw - pad, ch - pad - 62 * sc);
+    swapFlash = Math.max(0, swapFlash - dt); portalFlash = Math.max(0, portalFlash - dt); gateFlash = Math.max(0, gateFlash - dt * 2);
+  }
+  // Where each live well is: a tick and a word on screen, an arrow at the edge when it is off it.
+  // The sling lays its pair wide (half gap 4 horizons), so most of a throw happens off-screen.
+  function wellMarkers(c, vcam, x0, cw, ch, sc, font, wells, withDist) {
+    for (const w of wells) {
+      if (w.style === 'B' && w.amp < 0.02) continue;
+      tv.copy(w.p).applyMatrix4(vcam.matrixWorldInverse); const behind = tv.z > 0;
+      tv.copy(w.p).project(vcam); let x = tv.x, y = tv.y; if (behind) { x = -x; y = -y; }
+      const on = !behind && Math.abs(x) < 0.97 && Math.abs(y) < 0.95;
+      if (!on) { const m = Math.max(Math.abs(x) / 0.93, Math.abs(y) / 0.86); x /= m; y /= m; }
+      const px = x0 + (x * 0.5 + 0.5) * cw, py = (-y * 0.5 + 0.5) * ch;
+      const col = w.style === 'A' ? (w.sign > 0 ? '#b9a4ff' : '#fff1c9') : (w.sign > 0 ? '#6fe3d0' : '#d8fff6');
+      const word = (w.sign > 0 ? 'attractor' : 'repulsor') + (withDist ? ' · ' + Math.round(hull.position.distanceTo(w.p)) + ' u' : '');
+      c.fillStyle = col; c.strokeStyle = col; c.lineWidth = 1.5; c.textAlign = 'center'; c.font = font(11, 600);
+      if (on) {
+        const r = 5 * sc; c.beginPath(); c.moveTo(px - r, py); c.lineTo(px, py - r); c.lineTo(px + r, py); c.lineTo(px, py + r); c.closePath(); c.stroke();
+        c.fillText(word, px, py + 18 * sc);
+      } else {
+        const a = Math.atan2(py - ch / 2, px - cw / 2); c.save(); c.translate(px, py); c.rotate(a); c.beginPath(); c.moveTo(9 * sc, 0); c.lineTo(-5 * sc, -6 * sc); c.lineTo(-5 * sc, 6 * sc); c.closePath(); c.fill(); c.restore();
+        c.fillText(word, Math.max(x0 + 50 * sc, Math.min(x0 + cw - 50 * sc, px)), py + (py > ch / 2 ? -12 : 20) * sc);
+      }
+    }
+  }
+  function updateRings(now) {
+    gates.forEach((g, k) => {
+      const next = race !== 'finished' && k === threaded % 8;
+      g.ring.material.color.setHex(next ? 0xffb347 : 0x7fd7ff);
+      g.ring.material.opacity = next ? 1 : 0.45;
+      g.disc.material.opacity = next ? 0.06 + 0.05 * Math.sin(now * 0.005) : 0;
+    });
+  }
+
+  // ================= overlay =================
+  function deviceLine() {
+    if (padBlocked) return '<p class="devline bad">This viewer is blocking gamepads. Keyboard works here; for the controller, open <code>Docs/Studios/StoatFlightStudio.html</code> from the repo directly in Chrome.</p>';
+    if (padName) return '<p class="devline ok">Gamepad: ' + escapeHtml(padName.slice(0, 60)) + '</p>';
+    return '<p class="devline">No gamepad seen yet: press any button on it. Keyboard works meanwhile.</p>';
+  }
+  function showOverlay() {
+    const box = $('overlayBox');
+    if (mode !== 'fly' || race === 'running') { hideOverlay(); return; }
+    $('overlay').hidden = false;
+    if (race === 'ready') {
+      box.innerHTML = '<h2>Slingshot · intensity ' + intensity + '</h2>' +
+        '<p>Thread the 8 rings in order, ' + laps + (laps > 1 ? ' laps' : ' lap') + '. Squeeze <kbd>LT</kbd> or <kbd>RT</kbd> and let go to sling pair <b style="color:' + (style === 'A' ? '#b9a4ff' : '#6fe3d0') + '">' + style + '</b> across your nose, the attractor on that side. Deeper squeeze, bigger pair.</p>' +
+        '<p>Click the stage, then press <kbd>A</kbd> on the gamepad or <kbd>Enter</kbd>.</p>' + deviceLine() +
+        '<div class="btns"><button class="pick primary" type="button" id="startBtn">Start</button></div>';
+      $('startBtn').addEventListener('click', startRace);
+    } else {
+      const best = bestFor(style);
+      box.innerHTML = '<h2>Finished · ' + fmtTime(lastRun.time) + '</h2>' +
+        '<p>' + lastRun.slings + ' slings with pair <b>' + lastRun.style + '</b>' + (best != null ? ' · best with ' + style + ': ' + fmtTime(best) : '') + '. Keep flying, swap with <kbd>Y</kbd>, or go again.</p>' +
+        '<div class="btns"><button class="pick primary" type="button" id="againBtn">Fly again</button><button class="pick" type="button" id="logRunBtn">Log this run</button></div>';
+      $('againBtn').addEventListener('click', () => { spawn(); startRace(); });
+      $('logRunBtn').addEventListener('click', () => quick('run'));
+    }
+  }
+  function hideOverlay() { $('overlay').hidden = true; }
+  function escapeHtml(s) { return String(s).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch])); }
+
+  // ================= rail =================
+  const outputs = {};
+  function buildRail() {
+    for (const [grp, key, label, lo, hi, step] of SPEC) {
+      const host = document.querySelector('#grp-' + grp + ' .rows');
+      const row = document.createElement('div'); row.className = 'row';
+      const id = 'p-' + key;
+      row.innerHTML = '<label for="' + id + '">' + label + '</label><input type="range" id="' + id + '" min="' + lo + '" max="' + hi + '" step="' + step + '"><output></output>';
+      host.appendChild(row);
+      const inp = row.querySelector('input'), out = row.querySelector('output');
+      inp.value = P[key]; outputs[key] = { inp, out, step };
+      inp.addEventListener('input', () => { P[key] = parseFloat(inp.value); refreshOut(key); persist(); if (mode === 'compare' && (grp === 'A' || grp === 'B' || key === 'maxStrength' || key === 'halfGapHorizons')) buildCompare(playLives); });
+      refreshOut(key);
+    }
+  }
+  function refreshOut(key) {
+    const o = outputs[key], v = P[key], dec = o.step >= 1 ? 0 : o.step >= 0.1 ? 1 : 2;
+    o.out.textContent = v.toFixed(dec); o.out.classList.toggle('changed', Math.abs(v - SHIPPED[key]) > 1e-9);
+    o.out.title = 'shipped ' + SHIPPED[key];
+  }
+  function resetGroup(grp) { for (const [g, key] of SPEC) if (g === grp) { P[key] = SHIPPED[key]; outputs[key].inp.value = P[key]; refreshOut(key); } persist(); if (mode === 'compare') buildCompare(playLives); }
+  document.querySelectorAll('[data-reset]').forEach((b) => b.addEventListener('click', () => resetGroup(b.dataset.reset)));
+  $('theirLife').addEventListener('click', () => { for (const [k, v] of [['formS', 6], ['annihilateS', 9]]) { P[k] = v; outputs[k].inp.value = v; refreshOut(k); } persist(); if (mode === 'compare') buildCompare(playLives); });
+
+  function setStyle(s) {
+    style = s;
+    document.querySelectorAll('.stylebtn').forEach((b) => b.setAttribute('aria-pressed', b.dataset.s === s ? 'true' : 'false'));
+    $('grp-A').open = s === 'A'; $('grp-B').open = s === 'B';
+    $('portal').checked = !!portal[s];
+    $('portalSrc').textContent = s === 'A'
+      ? 'As built on this branch the Stoat is NOT carried: inside the horizon it is held at the pull ceiling; prisms pass through (point-reflected out of the repulsor).'
+      : 'As built on charming-cerf the mouths carry every pilot: enter either, leave the other, displaced by a pure translation.';
+    persist(); renderRuns();
+    if (race === 'ready') showOverlay();
+  }
+  document.querySelectorAll('.stylebtn').forEach((b) => b.addEventListener('click', () => setStyle(b.dataset.s)));
+  $('portal').addEventListener('change', (e) => { portal[style] = e.target.checked; persist(); });
+  document.querySelectorAll('[data-mode]').forEach((b) => b.addEventListener('click', () => setMode(b.dataset.mode)));
+  function setMode(m) {
+    mode = m;
+    document.querySelectorAll('[data-mode]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.mode === m ? 'true' : 'false'));
+    hull.visible = m === 'fly'; courseGroup.visible = m === 'fly';
+    if (m === 'compare') { for (const pr of pairs) if (pr.owned) pr.alive = false; orbit.auto = true; buildCompare(playLives); hideOverlay(); compareBar(true); }
+    else { for (const pr of comparePairs) pr.alive = false; comparePairs = []; compareBar(false); spawn(); }
+  }
+  function compareBar(on) {
+    let bar = $('cmpBar');
+    if (!on) { if (bar) bar.remove(); return; }
+    if (bar) return;
+    bar = document.createElement('div'); bar.id = 'cmpBar'; bar.className = 'btns';
+    bar.innerHTML = '<button class="pick" type="button" id="cmpLives" aria-pressed="false">Play their lives</button><span class="hint" style="margin:0">Split screen, same orbit: A on the left, B on the right. Off: both held at full strength. On: A drifts apart and annihilates; B forms, spirals and annihilates; on a loop.</span>';
+    document.querySelector('.rail .card').appendChild(bar);
+    $('cmpLives').addEventListener('click', (e) => { playLives = !playLives; e.currentTarget.setAttribute('aria-pressed', playLives ? 'true' : 'false'); buildCompare(playLives); });
+  }
+  $('intensity').value = String(intensity); $('laps').value = String(laps); $('invertY').checked = invertY; $('domain').value = domainKey;
+  $('intensity').addEventListener('change', (e) => { intensity = parseInt(e.target.value, 10); buildCourse(); spawn(); persist(); renderRuns(); });
+  $('laps').addEventListener('change', (e) => { laps = parseInt(e.target.value, 10); spawn(); persist(); renderRuns(); });
+  $('invertY').addEventListener('change', (e) => { invertY = e.target.checked; persist(); });
+  $('newCourse').addEventListener('click', () => { seed = 1 + Math.floor(Math.random() * 9999); buildCourse(); spawn(); persist(); renderRuns(); });
+  $('domain').addEventListener('change', (e) => { domainKey = e.target.value; const c = DOMAIN[domainKey]; domainMat.color.setHex(c); domainMat.emissive.setHex(c); trailMat.color.setHex(c); trailMat.emissive.setHex(c); persist(); });
+
+  function courseKey(r) { return r.seed + '/' + r.intensity + '/' + r.laps; }
+  function bestFor(s) { const key = courseKey({ seed, intensity, laps }); const t = runs.filter((r) => r.style === s && courseKey(r) === key).map((r) => r.time); return t.length ? Math.min.apply(null, t) : null; }
+  function renderRuns() {
+    const key = courseKey({ seed, intensity, laps }), here = runs.filter((r) => courseKey(r) === key);
+    const tb = $('runs').tBodies[0];
+    if (!here.length) { tb.innerHTML = '<tr><td class="empty" colspan="2">No finished runs on this course yet (seed ' + seed + ', intensity ' + intensity + ', ' + laps + ' lap' + (laps > 1 ? 's' : '') + ').</td></tr>'; return; }
+    const row = (s) => { const rs = here.filter((r) => r.style === s); if (!rs.length) return '<tr><td>Pair ' + s + '</td><td class="empty">not flown</td></tr>'; const b = rs.reduce((a, r) => (r.time < a.time ? r : a)); return '<tr><td>Pair ' + s + ' · ' + rs.length + ' run' + (rs.length > 1 ? 's' : '') + '</td><td>best ' + fmtTime(b.time) + ' · ' + b.slings + ' slings</td></tr>'; };
+    tb.innerHTML = row('A') + row('B');
+  }
+
+  // ================= the decision log (shared db when the viewer serves it, else this browser) =================
+  let db = null, me = '', remote = null;
+  const LOCAL_LOG = 'stoat-studio-log';
+  let localLog = lsGet(LOCAL_LOG, []);
+  function snapshot() { const o = {}; for (const k of Object.keys(SHIPPED)) if (Math.abs(P[k] - SHIPPED[k]) > 1e-9) o[k] = P[k]; return { style, portalA: portal.A, portalB: portal.B, intensity, laps, seed, changed: o }; }
+  function changedText(keys) { const parts = []; for (const k of keys) if (Math.abs(P[k] - SHIPPED[k]) > 1e-9) parts.push(k + ' ' + P[k]); return parts.length ? ' (changed: ' + parts.join(', ') + ')' : ' (shipped numbers)'; }
+  const SLING_KEYS = ['minStrength', 'maxStrength', 'holdExponent', 'aheadHorizons', 'halfGapHorizons', 'holdRamp'];
+  const A_KEYS = ['pullScale', 'maxPull', 'driftSpeed', 'lifetime', 'releaseDamping'];
+  const B_KEYS = ['feltK', 'feltCap', 'feltReach', 'lensA', 'lensWidth', 'formS', 'annihilateS', 'spiralTurns', 'beatDepth', 'beatCycles', 'softEdge'];
+  function currentChoice(topic) {
+    switch (topic) {
+      case 'Wormhole style': return style === 'A' ? 'Pair A: the drift pair (this branch)' : 'Pair B: the crystal wormhole (charming-cerf)';
+      case 'Sling feel': return 'Sling with pair ' + style + changedText(SLING_KEYS.concat(style === 'A' ? A_KEYS : B_KEYS));
+      case 'Portal': return 'Pair ' + style + ': carry the Stoat through = ' + (portal[style] ? 'yes' : 'no');
+      case 'Lope & body': return 'Plated body, body-only lope' + changedText(['lopeAmp', 'lopeRate', 'lopeArch', 'lopeSquash']);
+      case 'Course': return 'Intensity ' + intensity + ', ' + laps + ' lap' + (laps > 1 ? 's' : '') + ', seed ' + seed;
+      case 'Controls': return 'Game dual-stick mix' + (invertY ? ', Y inverted' : '') + changedText(['cruise', 'pitchYaw', 'roll']);
+      case 'Run': return lastRun ? 'Pair ' + lastRun.style + ': ' + fmtTime(lastRun.time) + ', ' + lastRun.slings + ' slings (intensity ' + lastRun.intensity + ', seed ' + lastRun.seed + ')' : 'No finished run yet';
+      default: return '';
+    }
+  }
+  $('logTopic').addEventListener('change', () => { $('logChoice').value = currentChoice($('logTopic').value); });
+  $('useCurrent').addEventListener('click', () => { $('logChoice').value = currentChoice($('logTopic').value); });
+  $('logChoice').value = currentChoice($('logTopic').value);
+
+  async function record(entry) {
+    const doc = Object.assign({ createdAt: Date.now(), by: me || '' , settings: snapshot() }, entry);
+    if (db) {
+      try { await db.collection('decisions').add(doc); toast('Recorded in the shared log.'); return; }
+      catch (e) { toast('Could not save to the shared log (' + (e && e.code || 'error') + '); kept in this browser.'); }
+    } else toast('Recorded in this browser. Use Copy log to send it.');
+    doc.localId = 'l' + doc.createdAt; localLog.push(doc); lsSet(LOCAL_LOG, localLog); renderLog();
+  }
+  $('logForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const choice = $('logChoice').value.trim(); if (!choice) return;
+    record({ topic: $('logTopic').value, choice, note: $('logNote').value.trim(), style });
+    $('logNote').value = '';
+  });
+  function quick(kind) {
+    if (kind === 'run') { if (!lastRun) { toast('Finish a run first.'); return; } record({ topic: 'Run', choice: currentChoice('Run'), note: '', style: lastRun.style }); return; }
+    const best = bestFor(kind);
+    record({ topic: 'Wormhole style', choice: kind === 'A' ? 'Pair A feels right: the drift pair (this branch)' : 'Pair B feels right: the crystal wormhole (charming-cerf)', note: (best != null ? 'Best run with it on this course: ' + fmtTime(best) + '. ' : '') + $('logNote').value.trim(), style: kind });
+    $('logNote').value = '';
+  }
+  document.querySelectorAll('[data-quick]').forEach((b) => b.addEventListener('click', () => quick(b.dataset.quick)));
+  let toastTimer = 0;
+  function toast(msg) { $('toast').textContent = msg; clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('toast').textContent = ''; }, 4000); }
+  function allEntries() { return (remote || []).concat(localLog.map((d) => Object.assign({ local: true }, d))).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)); }
+  function renderLog() {
+    const list = $('logList'), items = allEntries();
+    $('pushLocal').hidden = !(db && localLog.length);
+    if (!items.length) { list.innerHTML = '<li class="empty" style="display:block">Nothing recorded yet. Fly both pairs, then record what you decide.</li>'; return; }
+    list.innerHTML = '';
+    for (const d of items) {
+      const li = document.createElement('li');
+      const meta = document.createElement('div'); meta.className = 'meta';
+      const tp = document.createElement('span'); tp.className = 'topic'; tp.textContent = d.topic || 'Other';
+      const tm = document.createElement('span'); tm.textContent = new Date(d.createdAt || 0).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) + (d.local ? ' · this browser' : '');
+      meta.append(tp, tm);
+      const ch = document.createElement('div'); ch.className = 'choice'; ch.textContent = d.choice || '';
+      li.append(meta, ch);
+      if (d.note) { const n = document.createElement('div'); n.className = 'note'; n.textContent = d.note; li.append(n); }
+      const del = document.createElement('button'); del.className = 'pick'; del.type = 'button'; del.textContent = 'Remove'; del.setAttribute('aria-label', 'Remove this decision');
+      del.addEventListener('click', async () => {
+        if (d.local) { localLog = localLog.filter((x) => x.localId !== d.localId); lsSet(LOCAL_LOG, localLog); renderLog(); return; }
+        try { await db.doc('decisions/' + d.id).delete(); } catch (e) { toast('Could not remove it (' + (e && e.code || 'error') + ').'); }
+      });
+      li.append(del);
+      list.append(li);
+    }
+  }
+  $('copyLog').addEventListener('click', async () => {
+    const text = allEntries().slice().reverse().map((d) => '- [' + (d.topic || 'Other') + '] ' + d.choice + (d.note ? ' — ' + d.note : '') + (d.settings && d.settings.changed && Object.keys(d.settings.changed).length ? ' {' + Object.entries(d.settings.changed).map(([k, v]) => k + '=' + v).join(', ') + '}' : '')).join('\n') || '(no decisions yet)';
+    try { await navigator.clipboard.writeText('Stoat Flight Studio decisions\n' + text); toast('Copied.'); }
+    catch (e) { const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.append(ta); ta.select(); try { document.execCommand('copy'); toast('Copied.'); } catch (e2) { toast('Select and copy the list by hand.'); } ta.remove(); }
+  });
+  $('pushLocal').addEventListener('click', async () => {
+    if (!db) return;
+    const pending = localLog.slice();
+    for (const d of pending) {
+      const body = Object.assign({}, d); delete body.localId;
+      try { await db.collection('decisions').add(body); localLog = localLog.filter((x) => x.localId !== d.localId); lsSet(LOCAL_LOG, localLog); }
+      catch (e) { toast('Stopped: ' + (e && e.code || 'error')); break; }
+    }
+    renderLog();
+  });
+  (async function connect() {
+    const status = $('logStatus');
+    const c = window.claude;
+    if (!c || typeof c.use !== 'function') { status.textContent = 'Kept in this browser (Copy log to send it).'; status.className = 'hint status-warn'; renderLog(); return; }
+    try { db = await c.use('db'); } catch (e) { db = null; }
+    try { const u = await c.use('user'); if (u && u.id) me = (await u.id()) || ''; } catch (e) { me = ''; }
+    if (!db) { status.textContent = 'Kept in this browser (Copy log to send it).'; status.className = 'hint status-warn'; renderLog(); return; }
+    status.textContent = 'Shared log: saved with the studio, readable by Claude.'; status.className = 'hint status-ok';
+    db.collection('decisions').orderBy('createdAt', 'desc').limit(300).onSnapshot((snap) => {
+      remote = snap.docs.map((d) => Object.assign({ id: d.id }, d.data())); renderLog();
+    }, (err) => { status.textContent = 'Shared log unavailable (' + (err && err.code || 'error') + '); kept in this browser.'; status.className = 'hint status-warn'; db = null; renderLog(); });
+    renderLog();
+  })();
+
+  // ================= sizing + loop =================
+  let lastW = 0, lastH = 0;
+  function resize() {
+    const w = canvas.clientWidth || 960, h = Math.round(w * 10 / 16);
+    if (w === lastW && h === lastH) return; lastW = w; lastH = h;
+    renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix();
+  }
+  window.addEventListener('resize', resize);
+
+  buildRail(); buildCourse(); setStyle(style); renderRuns(); resize(); spawn(); renderLog();
+  let last = performance.now();
+  function frame(now) {
+    const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
+    resize();
+    const inp = pollInput(dt);
+    for (const pr of pairs) pr.update(dt);
+    pairs = pairs.filter((pr) => pr.alive);
+    collectWells();
+    if (mode === 'fly') stepFly(dt, inp); else { for (let k = 0; k < NT; k++) if (tAge[k] >= 0) tAge[k] += dt; }
+    stepBodies(dt); writeBodies();
+    updateHoleMeshes(); updateCamera(dt); updateGhosts(); updateRings(now);
+    renderAll(); drawHud(dt);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+  window.__stoatStudio = { aimAt(x, y, z) { const m = new THREE.Matrix4().lookAt(hull.position, new V3(x, y, z), Y); hull.quaternion.setFromRotationMatrix(m); }, orbit, P, get style() { return style; }, sling, startRace, setMode, setStyle, holds, hull, get pairs() { return pairs; }, get race() { return race; }, vg, vf };
+})();
+</script>
+
+</body>
+</html>

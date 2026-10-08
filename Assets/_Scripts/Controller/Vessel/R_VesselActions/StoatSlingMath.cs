@@ -25,6 +25,15 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// The squeeze a hold has reached: the DEEPEST sample so far, never the latest. A real trigger
+        /// is let go over several frames — its travel sweeps back down through the samples before
+        /// it crosses the deadzone and the release edge fires — so the latest sample at release is
+        /// ~the deadzone, and slinging on it would throw every gamepad pair at minimum size. The
+        /// keyboard ramp and the autopilot's fixed squeeze never fall, so for them peak == latest.
+        /// </summary>
+        public static float Peak(float peakSoFar, float sample) => Mathf.Max(Mathf.Clamp01(peakSoFar), Mathf.Clamp01(sample));
+
+        /// <summary>
         /// The attractor's strength for a squeeze: <paramref name="minStrength"/> at a touch,
         /// <paramref name="maxStrength"/> fully buried, along <c>hold^exponent</c> so a light press
         /// stays a nudge.

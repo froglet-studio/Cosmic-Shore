@@ -24,8 +24,9 @@ namespace CosmicShore.Gameplay
     /// <para><b>Why the hold is tracked per frame, not read at release.</b> The release edge is
     /// raised when the trigger crosses back below the deadzone, so it reads ~0 by the time
     /// <see cref="Release"/> runs — sampling it there would sling every pair at minimum size. The
-    /// squeeze is sampled every frame while held and the last sample is what slings
-    /// (the <c>GibbonTetherExecutor</c> lesson).</para>
+    /// squeeze is sampled every frame while held and the DEEPEST sample is what slings
+    /// (<see cref="StoatSlingMath.Peak"/>): the latest one is no better than reading at release,
+    /// because a let-go trigger sweeps back down through several frames before the edge fires.</para>
     ///
     /// <para><b>One pair per Stoat.</b> A new sling annihilates THIS hull's previous pair first, so
     /// a pilot can chain nudges without filling the registry's hole budget; other hulls' and the
@@ -47,7 +48,7 @@ namespace CosmicShore.Gameplay
         {
             public bool Holding;
             public float HeldFor;   // seconds, for devices with no analog trigger
-            public float Hold01;    // the last sample; what slings
+            public float Hold01;    // the deepest sample of this hold; what slings
         }
 
         readonly Hold[] _holds = new Hold[2];
@@ -195,8 +196,8 @@ namespace CosmicShore.Gameplay
             int i = (int)side;
             if (!_holds[i].Holding) return;
             _holds[i].HeldFor += Time.deltaTime;
-            _holds[i].Hold01 = StoatSlingMath.Hold01(rawAnalog, _holds[i].HeldFor, analog, config.HoldRampSeconds,
-                autopilot, config.AutopilotHold01);
+            _holds[i].Hold01 = StoatSlingMath.Peak(_holds[i].Hold01, StoatSlingMath.Hold01(rawAnalog, _holds[i].HeldFor, analog,
+                config.HoldRampSeconds, autopilot, config.AutopilotHold01));
         }
 
         /// <summary>The transform <see cref="BlackHoleVesselPull"/> knows this vessel by (its
