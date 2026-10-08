@@ -39,6 +39,7 @@ static partial class SubstrateHarness
         if (all || which == "mobber") Mobber();
         if (all || which == "leech") Leech();
         if (all || which == "leviathan") Leviathan();
+        if (all || which == "siege") Siege();
         if (all || which == "proxies") Proxies();
         if (all || which == "ledger") Ledger();
         if (all || which == "job") Job();
@@ -229,6 +230,7 @@ static partial class SubstrateHarness
                 bool b => b ? "true" : "false",
                 string s => JsonSerializer.Serialize(s),
                 SubstrateRegime r => Obj(r, ind + "  "),
+                SubstrateSiegeParams sg => Obj(sg, ind + "  "),
                 float[] arr => "[" + string.Join(", ", arr.Select(a => a.ToString("R", System.Globalization.CultureInfo.InvariantCulture))) + "]",
                 _ => throw new InvalidOperationException($"export: unhandled field {f.Name} ({f.FieldType})"),
             };
